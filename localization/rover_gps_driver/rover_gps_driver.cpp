@@ -17,7 +17,7 @@ namespace mrover {
         std::string port_string = std::to_string(baud);
         serial.set_option(boost::asio::serial_port_base::baud_rate(baud));
 
-        RCLCPP_INFO(get_logger(), "Connected to GPS via serial!");
+        //RCLCPP_INFO(get_logger(), "Connected to GPS via serial!");
         
         // publishers and subscribers
         gps_pub = this->create_publisher<sensor_msgs::msg::NavSatFix>("/gps/fix", 10);
@@ -51,11 +51,11 @@ namespace mrover {
             mrover::msg::FixType fix_type;
 
             if (stoi(tokens[GNGGA_QUAL_POS]) == 0) {
-                RCLCPP_WARN(get_logger(), "Invalid fix. Are we inside?");
+                //RCLCPP_WARN(get_logger(), "Invalid fix. Are we inside?");
                 return;
             }
             else {
-                RCLCPP_INFO(get_logger(), "Valid fix, %s satellites in use.", tokens[GNGGA_SATELLITES_POS].c_str());
+                //RCLCPP_INFO(get_logger(), "Valid fix, %s satellites in use.", tokens[GNGGA_SATELLITES_POS].c_str());
             }
             
             uint16_t lat_deg = stoi(tokens[GNGGA_LAT_POS].substr(0, 2));
@@ -94,7 +94,7 @@ namespace mrover {
                 fix_type.fix = mrover::msg::FixType::FIXED;
             }
             else {
-                RCLCPP_WARN(get_logger(), "Position: No RTK fix. Has the basestation finished survey-in?");
+                //RCLCPP_WARN(get_logger(), "Position: No RTK fix. Has the basestation finished survey-in?");
                 fix_type.fix = mrover::msg::FixType::NONE;
             }
 
@@ -119,7 +119,7 @@ namespace mrover {
                 fix_type.fix = mrover::msg::FixType::FIXED;
             }
             else {
-                RCLCPP_WARN(get_logger(), "Heading: no solution. Are both antennas plugged in?");
+                ////RCLCPP_WARN(get_logger(), "Heading: no solution. Are both antennas plugged in?");
                 return;
             }
 
@@ -140,50 +140,50 @@ namespace mrover {
         if (msg_header == GPS_HEADER) {
 
             if (tokens[CNO_POS] == "") {
-                RCLCPP_INFO(get_logger(), "GPS signal strength: 0");
+                ////RCLCPP_INFO(get_logger(), "GPS signal strength: 0");
             }
             else {
-                RCLCPP_INFO(get_logger(), "GPS signal strength: %s", tokens[CNO_POS].c_str());
+                ////RCLCPP_INFO(get_logger(), "GPS signal strength: %s", tokens[CNO_POS].c_str());
             }
         }
 
         if (msg_header == GLONASS_HEADER) {
 
             if (tokens[CNO_POS] == "") {
-                RCLCPP_INFO(get_logger(), "GNONASS signal strength: 0");
+                ////RCLCPP_INFO(get_logger(), "GNONASS signal strength: 0");
             }
             else {
-                RCLCPP_INFO(get_logger(), "GLONASS signal strength: %s", tokens[CNO_POS].c_str());
+                ////RCLCPP_INFO(get_logger(), "GLONASS signal strength: %s", tokens[CNO_POS].c_str());
             }
         }
 
         if (msg_header == BEIDOU_HEADER) {
 
             if (tokens[CNO_POS] == "") {
-                RCLCPP_INFO(get_logger(), "BeiDou signal strength: 0");
+                ////RCLCPP_INFO(get_logger(), "BeiDou signal strength: 0");
             }
             else {
-                RCLCPP_INFO(get_logger(), "BeiDou signal strength: %s", tokens[CNO_POS].c_str());
+                //RCLCPP_INFO(get_logger(), "BeiDou signal strength: %s", tokens[CNO_POS].c_str());
             }
         }
 
         if (msg_header == GALILEO_HEADER) {
 
             if (tokens[CNO_POS] == "") {
-                RCLCPP_INFO(get_logger(), "Galileo signal strength: 0");
+                //RCLCPP_INFO(get_logger(), "Galileo signal strength: 0");
             }
             else {
-                RCLCPP_INFO(get_logger(), "Galileo signal strength: %s", tokens[CNO_POS].c_str());
+                //RCLCPP_INFO(get_logger(), "Galileo signal strength: %s", tokens[CNO_POS].c_str());
             }
         }
 
         if (msg_header == QZSS_HEADER) {
 
             if (tokens[CNO_POS] == "") {
-                RCLCPP_INFO(get_logger(), "QZSS signal strength: 0");
+                //RCLCPP_INFO(get_logger(), "QZSS signal strength: 0");
             }
             else {
-                RCLCPP_INFO(get_logger(), "QZSS signal strength: %s", tokens[CNO_POS].c_str());
+                //RCLCPP_INFO(get_logger(), "QZSS signal strength: %s", tokens[CNO_POS].c_str());
             }
         }
     }

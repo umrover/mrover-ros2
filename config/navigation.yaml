@@ -69,8 +69,8 @@ navigation:
       give_up_time: 10.0
 
     # TODO(quintin): Avoid storing these in multiple config files
-    ref_lat: 38.4225202
-    ref_lon: -110.7844653
+    ref_lat: 42.293195
+    ref_lon: -83.7096706
     ref_alt: 0.0
     world_frame: "map"
     rover_frame: "base_link"
@@ -92,6 +92,6 @@ stuck_detector:
 debug_course_publisher:
   ros__parameters:
     # TODO(quintin): Avoid storing these in multiple config files
-    ref_lat: 38.4225202
-    ref_lon: -110.7844653
+    ref_lat: 42.293195
+    ref_lon: -83.7096706
     ref_alt: 0.0
