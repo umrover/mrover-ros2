@@ -22,6 +22,12 @@ namespace mrover {
 
     using namespace std::chrono_literals;
 
+    constexpr static BrushlessController<Revolutions>::Config WHEEL_CONFIG = {
+        .minVelocity = RevolutionsPerSecond{-10.0},
+        .maxVelocity = RevolutionsPerSecond{10.0},
+        .maxTorque = 25.0
+    };
+
     class DriveHardwareBridge final : public rclcpp::Node {
     public:
         DriveHardwareBridge() : Node{"drive_hw_bridge"} {
@@ -43,7 +49,7 @@ namespace mrover {
                 }));
                 for (std::string const& motor : mMotors) {
                     std::string name = std::format("{}_{}", motor, group);
-                    mControllers.try_emplace(name, shared_from_this(), "jetson", name, BrushlessController<Revolutions>::Config{});
+                    mControllers.try_emplace(name, shared_from_this(), "jetson", name, WHEEL_CONFIG);
                     mJointState.name.push_back(name);
                 }
                 mJointState.position.resize(mControllers.size());
