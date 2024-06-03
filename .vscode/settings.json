@@ -1,0 +1,48 @@
+{
+    //// CMake
+    "cmake.generator": "Ninja",
+    // Set to the catkin build directory
+    "cmake.buildDirectory": "${workspaceFolder}/../../build/mrover",
+    // We want catkin to configure
+    // VSCode will try to use its own toolchain and ignore the catkin profile
+    "cmake.configureOnOpen": false,
+    "cmake.configureOnEdit": false,
+    "cmake.automaticReconfigure": false,
+    "cmake.debugConfig": {
+        "miDebuggerPath": "/usr/bin/gdb",
+    },
+    //// Microsoft C++
+    // Disable since clangd is used instead
+    "C_Cpp.intelliSenseEngine": "disabled",
+    //// Python
+    "python.analysis.inlayHints.variableTypes": true,
+    "python.analysis.inlayHints.callArgumentNames": "all",
+    "python.analysis.inlayHints.functionReturnTypes": true,
+    // ~/ros2_ws/install/mrover/local/lib/python3.10/dist-packages is already in PYTHONPATH,
+    // but Pylance currently has a bug where it cannot handle the symlinks in it.
+    // Below we are just putting directly where those symlinks go
+    "python.analysis.extraPaths": [
+        "/opt/ros/humble/lib/python3/dist-packages",
+        "../../install/mrover/local/lib/python3.10/dist-packages",
+    ],
+    "[python]": {
+        "editor.defaultFormatter": "ms-python.black-formatter",
+    },
+    // We use mypy for this, see style.sh
+    "python.analysis.typeCheckingMode": "off",
+    //// Miscellaneous
+    "redhat.telemetry.enabled": false,
+    "git.ignoreSubmodules": true,
+    "git.detectSubmodules": false,
+    "cSpell.words": [
+        "Eigen",
+        "GLFW",
+        "wgpu"
+    ],
+    "search.exclude": {
+        "**/node_modules": true,
+        "**/bower_components": true,
+        "**/*.code-search": true,
+        "deps/dawn": true,
+    },
+}

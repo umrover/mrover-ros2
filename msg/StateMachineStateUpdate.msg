@@ -1,0 +1,2 @@
+string state_machine_name
+string state

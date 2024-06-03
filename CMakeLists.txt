@@ -1,0 +1,37 @@
+cmake_minimum_required(VERSION 3.8)
+project(mrover)
+
+include(cmake/macros.cmake)
+
+if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  add_compile_options(-Wall -Wextra -Wpedantic)
+endif()
+
+find_package(ament_cmake REQUIRED)
+find_package(ament_cmake_python REQUIRED)
+find_package(geometry_msgs REQUIRED)
+find_package(rosidl_default_generators REQUIRED)
+
+if(BUILD_TESTING)
+  find_package(ament_lint_auto REQUIRED)
+  # the following line skips the linter which checks for copyrights
+  # comment the line when a copyright and license is added to all source files
+  set(ament_cmake_copyright_FOUND TRUE)
+  # the following line skips cpplint (only works in a git repo)
+  # comment the line when this package is in a git repo and when
+  # a copyright and license is added to all source files
+  set(ament_cmake_cpplint_FOUND TRUE)
+  ament_lint_auto_find_test_dependencies()
+endif()
+
+file(GLOB_RECURSE MROVER_MESSAGE_FILE_PATHS RELATIVE ${CMAKE_CURRENT_LIST_DIR} CONFIGURE_DEPENDS msg/*.msg)
+message(STATUS "Found message files: ${MROVER_MESSAGE_FILE_PATHS}")
+rosidl_generate_interfaces(${PROJECT_NAME}
+  ${MROVER_MESSAGE_FILE_PATHS}
+  DEPENDENCIES geometry_msgs
+)
+
+ament_python_install_package(navigation)
+ament_python_install_package(state_machine)
+
+ament_package()
