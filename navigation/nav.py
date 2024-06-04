@@ -12,6 +12,7 @@ from navigation.recovery import RecoveryState
 from navigation.search import SearchState
 from navigation.state import DoneState, OffState, off_check
 from navigation.waypoint import WaypointState
+from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 from state_machine.state_machine import StateMachine
 from state_machine.state_publisher_server import StatePublisher
@@ -93,5 +94,10 @@ if __name__ == '__main__':
     navigation = Navigation(context)
     context.setup(navigation)
 
-    rclpy.spin(navigation)
-    rclpy.shutdown()
+    try:
+        rclpy.spin(navigation)
+        rclpy.shutdown()
+    except KeyboardInterrupt:
+        pass
+    except ExternalShutdownException:
+        sys.exit(1)
