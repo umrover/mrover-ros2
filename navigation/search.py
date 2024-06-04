@@ -50,7 +50,7 @@ class SearchState(State):
         ref = np.array(
             [
                 context.node.get_parameter("gps_linearization/ref_lat").value,
-                context.node.get_parameter("gps_linearization/ref_long").value,
+                context.node.get_parameter("gps_linearization/ref_lon").value,
                 context.node.get_parameter("gps_linearization/ref_alt").value,
             ]
         )

@@ -15,12 +15,15 @@ class DriveController:
         DRIVE_FORWARD = 2
         STOPPED = 3
 
-    _last_angular_error: float | None = None
-    _last_target: np.ndarray | None = None
-    _driver_state: DriveMode = DriveMode.STOPPED
+    _last_angular_error: float | None
+    _last_target: np.ndarray | None
+    _driver_state: DriveMode
 
     def __init__(self, node: Node):
         self.node = node
+        self._last_angular_error = None
+        self._last_target = None
+        self._driver_state = self.DriveMode.STOPPED
 
     def reset(self) -> None:
         self._driver_state = self.DriveMode.STOPPED

@@ -16,7 +16,7 @@
     gps_linearization:
       # Exception, these are in degrees
       ref_lat: 38.4225202
-      ref_long: -110.7844653
+      ref_lon: -110.7844653
       ref_alt: 0.0
 
     # How long it takes to forget about a target

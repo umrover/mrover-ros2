@@ -1,2 +1,15 @@
 # All units are in SI
 # ===================
+
+/basestation_gps_driver:
+  ros__parameters:
+    port: /dev/gps
+    baudrate: 38400
+
+/gps_linearization:
+  ros__parameters:
+    world_frame: "map"
+    # Exception, these are in degrees
+    ref_lat: 38.4225202
+    ref_lon: -110.7844653
+    ref_alt: 0.0

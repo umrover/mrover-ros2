@@ -115,8 +115,8 @@ class StuckDetector(Node):
 
 
 def main() -> None:
-    rclpy.init(args=sys.argv)
     try:
+        rclpy.init(args=sys.argv)
         rclpy.spin(StuckDetector())
         rclpy.shutdown()
     except KeyboardInterrupt:

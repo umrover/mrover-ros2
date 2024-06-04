@@ -49,6 +49,9 @@ ament_python_install_package(state_machine)
 install(PROGRAMS
   navigation/nav.py
   navigation/stuck_detector/stuck_detector.py
+  localization/rover_gps_driver.py
+  localization/gps_linearization.py
+  localization/basestation_gps_driver.py
   DESTINATION lib/${PROJECT_NAME}
 )
 

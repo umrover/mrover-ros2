@@ -24,7 +24,7 @@ class Navigation(Node):
     ctx: Context
     state_machine_server: StatePublisher
 
-    def __init__(self, ctx: Context):
+    def __init__(self, ctx: Context) -> None:
         super().__init__("navigation")
 
         self.get_logger().info("Starting...")
@@ -104,7 +104,7 @@ class Navigation(Node):
 
         self.get_logger().info("Armed!")
 
-    def publish_path(self):
+    def publish_path(self) -> None:
         if (rover_pose_in_map := self.ctx.rover.get_pose_in_map()) is not None:
             x, y, _ = rover_pose_in_map.translation()
             self.ctx.rover.path_history.poses.append(
@@ -117,14 +117,14 @@ class Navigation(Node):
 
 
 if __name__ == "__main__":
-    rclpy.init(args=sys.argv)
-
-    context = Context()
-    navigation = Navigation(context)
-    context.setup(navigation)
-
     try:
-        rclpy.spin(navigation)
+        rclpy.init(args=sys.argv)
+
+        context = Context()
+        node = Navigation(context)
+        context.setup(node)
+
+        rclpy.spin(node)
         rclpy.shutdown()
     except KeyboardInterrupt:
         pass

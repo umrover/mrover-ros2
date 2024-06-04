@@ -304,8 +304,8 @@ def convert_cartesian_to_gps(reference_point: np.ndarray, coordinate: np.ndarray
     Converts a coordinate to a GPSWaypoint (used for sending data back to basestation)
     """
     x, y, z = coordinate
-    ref_lat, ref_long, _ = reference_point
-    lat, long, _ = pymap3d.enu2geodetic(x, y, z, ref_lat, ref_long, 0)
+    ref_lat, ref_lon, _ = reference_point
+    lat, long, _ = pymap3d.enu2geodetic(x, y, z, ref_lat, ref_lon, 0)
     return GPSWaypoint(
         latitude_degree=lat,
         longitude_degrees=long,
@@ -373,7 +373,7 @@ class Context:
             ref = np.array(
                 [
                     self.node.get_parameter("gps_linearization/ref_lat").value,
-                    self.node.get_parameter("gps_linearization/ref_long").value,
+                    self.node.get_parameter("gps_linearization/ref_lon").value,
                     self.node.get_parameter("gps_linearization/ref_alt").value,
                 ]
             )
