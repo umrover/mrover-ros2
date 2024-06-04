@@ -6,7 +6,7 @@ import numpy as np
 
 from geometry import SE3, normalized, angle_to_rotate
 from geometry_msgs.msg import Twist, Vector3
-from rclpy import Node
+from rclpy.node import Node
 
 
 class DriveController:
@@ -165,7 +165,7 @@ class DriveController:
         if drive_back:
             rover_dir *= -1
 
-        rover_pos = rover_pose.position
+        rover_pos = rover_pose.translation()
         rover_pos[2] = 0
         target_pos[2] = 0
 

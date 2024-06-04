@@ -3,9 +3,10 @@ from manifpy import SE3, SO2
 
 from .conversions import from_position_orientation, from_tf_tree, to_tf_tree
 
-SE3.from_position_orientation = classmethod(from_position_orientation)
-SE3.from_tf_tree = classmethod(from_tf_tree)
-SE3.to_tf_tree = classmethod(to_tf_tree)
+SE3.from_position_orientation = staticmethod(from_position_orientation)
+SE3.from_tf_tree = staticmethod(from_tf_tree)
+SE3.from_tf_tree_with_time = staticmethod(from_tf_tree)
+SE3.to_tf_tree = staticmethod(to_tf_tree)
 
 
 def normalized(v: np.ndarray) -> np.ndarray:

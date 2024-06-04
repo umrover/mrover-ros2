@@ -54,7 +54,7 @@ class WaypointState(State):
             return self
 
         # Attempt to find the waypoint in the TF tree and drive to it
-        waypoint_position_in_map = context.course.current_waypoint_pose_in_map().position
+        waypoint_position_in_map = context.course.current_waypoint_pose_in_map().translation()
         cmd_vel, arrived = context.drive.get_drive_command(
             waypoint_position_in_map,
             rover_in_map,

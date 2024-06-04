@@ -19,8 +19,8 @@ from mrover.msg import (
 )
 from mrover.srv import EnableAuton
 from nav_msgs.msg import Path
-from rclpy import Node
 from rclpy.duration import Duration
+from rclpy.node import Node
 from rclpy.publisher import Publisher
 from rclpy.service import Service
 from rclpy.subscription import Subscription
@@ -42,7 +42,7 @@ class Rover:
     def get_pose_in_map(self) -> SE3 | None:
         try:
             return SE3.from_tf_tree(
-                self.ctx.tf_buffer, parent_frame=self.ctx.world_frame, child_frame=self.ctx.rover_frame
+                self.ctx.tf_buffer, self.ctx.rover_frame, self.ctx.world_frame
             )
         except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
             self.ctx.node.get_logger().warn("Navigation failed to get rover pose. Is localization running?")
@@ -88,7 +88,7 @@ class Environment:
         if now - time > target_expiration_duration:
             return None
 
-        return target_pose.position
+        return target_pose.translation()
 
     def current_target_pos(self) -> np.ndarray | None:
         assert self.ctx.course is not None

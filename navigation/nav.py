@@ -4,32 +4,32 @@ import sys
 
 import rclpy
 from geometry_msgs.msg import Pose, PoseStamped, Point
-from rclpy import Node
+from navigation.approach_target import ApproachTargetState
+from navigation.context import Context
+from navigation.long_range import LongRangeState
+from navigation.post_backup import PostBackupState
+from navigation.recovery import RecoveryState
+from navigation.search import SearchState
+from navigation.state import DoneState, OffState, off_check
+from navigation.waypoint import WaypointState
+from rclpy.node import Node
 from state_machine.state_machine import StateMachine
 from state_machine.state_publisher_server import StatePublisher
-from .approach_target import ApproachTargetState
-from .context import Context
-from .long_range import LongRangeState
-from .post_backup import PostBackupState
-from .recovery import RecoveryState
-from .search import SearchState
-from .state import DoneState, OffState, off_check
-from .waypoint import WaypointState
 
 
 class Navigation(Node):
     state_machine: StateMachine
-    context: Context
+    ctx: Context
     state_machine_server: StatePublisher
 
-    def __init__(self, context: Context):
-        super().__init__("navigation")
+    def __init__(self, ctx: Context):
+        super().__init__("navigation", allow_undeclared_parameters=True)
 
-        self.context = context
+        self.ctx = ctx
 
         self.get_logger().info("Navigation starting...")
 
-        self.state_machine = StateMachine[Context](OffState(), "NavigationStateMachine", context)
+        self.state_machine = StateMachine[Context](OffState(), "NavigationStateMachine", ctx, self.get_logger())
         self.state_machine.add_transitions(
             ApproachTargetState(),
             [WaypointState(), SearchState(), RecoveryState(), DoneState()],
@@ -78,21 +78,20 @@ class Navigation(Node):
         self.get_logger().info("Navigation started!")
 
     def publish_path(self):
-        if rover_pose_in_map := self.context.rover.get_pose_in_map() is not None:
-            x, y, _ = rover_pose_in_map.position
-            self.context.rover.path_history.poses.append(
-                PoseStamped(header=self.context.rover.path_history.header, pose=Pose(position=Point(x=x, y=y)))
+        if (rover_pose_in_map := self.ctx.rover.get_pose_in_map()) is not None:
+            x, y, _ = rover_pose_in_map.translation()
+            self.ctx.rover.path_history.poses.append(
+                PoseStamped(header=self.ctx.rover.path_history.header, pose=Pose(position=Point(x=x, y=y)))
             )
-            self.context.path_history_publisher.publish(self.context.rover.path_history)
+            self.ctx.path_history_publisher.publish(self.ctx.rover.path_history)
 
 
-def main():
+if __name__ == '__main__':
     rclpy.init(args=sys.argv)
-    navigation = Navigation(Context())
-    navigation.context.node = navigation
+
+    context = Context()
+    navigation = Navigation(context)
+    context.setup(navigation)
+
     rclpy.spin(navigation)
     rclpy.shutdown()
-
-
-if __name__ == "__main__":
-    main()

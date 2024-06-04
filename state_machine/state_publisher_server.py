@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from mrover.msg import StateMachineStructure, StateMachineTransition, StateMachineStateUpdate
 
-from rclpy import Node
+from rclpy.node import Node
 from rclpy.publisher import Publisher
 from state_machine.state_machine import StateMachine
 

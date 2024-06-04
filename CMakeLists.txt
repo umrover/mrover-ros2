@@ -47,7 +47,7 @@ ament_python_install_package(navigation)
 ament_python_install_package(state_machine)
 
 install(PROGRAMS
-  navigation/navigation.py
+  navigation/nav.py
   navigation/stuck_detector/stuck_detector.py
   DESTINATION lib/${PROJECT_NAME}
 )

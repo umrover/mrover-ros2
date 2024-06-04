@@ -38,7 +38,7 @@ class AvoidPostTrajectory(Trajectory):
         Then the trajectory is backup_point, avoidance_point where we drive backwards to
         the backup_point and forwards to the avoidance_point.
         """
-        rover_pos = rover_pose.position
+        rover_pos = rover_pose.translation()
         rover_direction = rover_pose.rotation()[:, 0]
 
         # Converting to 2D arrays
@@ -99,7 +99,7 @@ class PostBackupState(State):
         self.trajectory = AvoidPostTrajectory.avoid_post_trajectory(
             rover_in_map,
             context.env.last_target_location,
-            context.course.current_waypoint_pose_in_map().position,
+            context.course.current_waypoint_pose_in_map().translation(),
         )
         self.trajectory.cur_pt = 0
 

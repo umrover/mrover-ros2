@@ -76,7 +76,7 @@ class SearchState(State):
 
         if search_center.type.val == WaypointType.POST:
             SearchState.trajectory = SearchTrajectory.spiral_traj(
-                context.course.current_waypoint_pose_in_map().position[0:2],
+                context.course.current_waypoint_pose_in_map().translation()[0:2],
                 context.node.get_parameter("search/coverage_radius").get_parameter_value().double_value,
                 context.node.get_parameter("search/distance_between_spirals").get_parameter_value().double_value,
                 context.node.get_parameter("search/segments_per_rotation").get_parameter_value().integer_value,
@@ -85,7 +85,7 @@ class SearchState(State):
             )
         else:  # water bottle or mallet
             SearchState.trajectory = SearchTrajectory.spiral_traj(
-                context.course.current_waypoint_pose_in_map().position[0:2],
+                context.course.current_waypoint_pose_in_map().translation()[0:2],
                 context.node.get_parameter("object_search/coverage_radius").get_parameter_value().double_value,
                 context.node.get_parameter("object_search/distance_between_spirals").get_parameter_value().double_value,
                 context.node.get_parameter("search/segments_per_rotation").get_parameter_value().integer_value,

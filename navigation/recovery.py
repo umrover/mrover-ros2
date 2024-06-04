@@ -56,7 +56,7 @@ class RecoveryState(State):
             # further back every iteration
             if self.waypoint_behind is None:
                 dir_vector = -1 * recovery_distance * rover_in_map.rotation()[:, 0]
-                self.waypoint_behind = rover_in_map.position + dir_vector
+                self.waypoint_behind = rover_in_map.translation() + dir_vector
 
             cmd_vel, arrived_back = context.drive.get_drive_command(
                 self.waypoint_behind, rover_in_map, stop_thresh, drive_fwd_thresh, drive_back=True
@@ -76,7 +76,7 @@ class RecoveryState(State):
                 dir_vector = rover_in_map.rotation()[:, 0]
                 # The waypoint will be 45 degrees to the left of the rover behind it.
                 dir_vector[:2] = recovery_distance * SO2(3 * np.pi / 4).act(dir_vector[:2])
-                self.waypoint_behind = rover_in_map.position + dir_vector
+                self.waypoint_behind = rover_in_map.translation() + dir_vector
 
             cmd_vel, arrived_turn = context.drive.get_drive_command(
                 self.waypoint_behind, rover_in_map, stop_thresh, drive_fwd_thresh, drive_back=True
