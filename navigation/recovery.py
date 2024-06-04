@@ -35,11 +35,11 @@ class RecoveryState(State):
         self.reset(context)
 
     def on_loop(self, context: Context) -> State:
-        give_up_time = context.node.get_parameter("recovery/give_up_time").get_parameter_value().double_value
-        recovery_distance = context.node.get_parameter("recovery/recovery_distance").get_parameter_value().double_value
-        stop_thresh = context.node.get_parameter("recovery/stop_threshold").get_parameter_value().double_value
+        give_up_time = context.node.get_parameter("recovery/give_up_time").value
+        recovery_distance = context.node.get_parameter("recovery/recovery_distance").value
+        stop_thresh = context.node.get_parameter("recovery/stop_threshold").value
         drive_fwd_thresh = (
-            context.node.get_parameter("recovery/drive_forward_threshold").get_parameter_value().double_value
+            context.node.get_parameter("recovery/drive_forward_threshold").value
         )
 
         if context.node.get_clock().now() - self.start_time > Duration(seconds=give_up_time):

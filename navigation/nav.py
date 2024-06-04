@@ -12,6 +12,7 @@ from navigation.recovery import RecoveryState
 from navigation.search import SearchState
 from navigation.state import DoneState, OffState, off_check
 from navigation.waypoint import WaypointState
+from rclpy import Parameter
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 from state_machine.state_machine import StateMachine
@@ -24,11 +25,36 @@ class Navigation(Node):
     state_machine_server: StatePublisher
 
     def __init__(self, ctx: Context):
-        super().__init__("navigation", allow_undeclared_parameters=True)
+        super().__init__("navigation")
+
+        self.get_logger().info("Starting...")
 
         self.ctx = ctx
 
-        self.get_logger().info("Starting...")
+        self.declare_parameters(
+            "",
+            [
+                ("update_rate", Parameter.Type.DOUBLE),
+                ("pub_path_rate", Parameter.Type.DOUBLE),
+                ("world_frame", Parameter.Type.STRING),
+                ("rover_frame", Parameter.Type.STRING),
+                ("gps_linearization/ref_lat", Parameter.Type.DOUBLE),
+                ("gps_linearization/ref_lon", Parameter.Type.DOUBLE),
+                ("gps_linearization/ref_alt", Parameter.Type.DOUBLE),
+                ("target_expiration_duration", Parameter.Type.DOUBLE),
+                ("image_targets/increment_weight", Parameter.Type.INTEGER),
+                ("image_targets/decrement_weight", Parameter.Type.INTEGER),
+                ("image_targets/min_hits", Parameter.Type.INTEGER),
+                ("image_targets/max_hits", Parameter.Type.INTEGER),
+                ("drive/max_driving_effort", Parameter.Type.DOUBLE),
+                ("drive/min_driving_effort", Parameter.Type.DOUBLE),
+                ("drive/max_turning_effort", Parameter.Type.DOUBLE),
+                ("drive/min_turning_effort", Parameter.Type.DOUBLE),
+                ("drive/turning_p", Parameter.Type.DOUBLE),
+                ("drive/driving_p", Parameter.Type.DOUBLE),
+                ("drive/lookahead_distance", Parameter.Type.DOUBLE),
+            ],
+        )
 
         self.state_machine = StateMachine[Context](OffState(), "NavigationStateMachine", ctx, self.get_logger())
         self.state_machine.add_transitions(
@@ -71,8 +97,8 @@ class Navigation(Node):
         # TODO(quintin): Make the rates configurable as parameters
         self.state_machine_server = StatePublisher(self, self.state_machine, "nav_structure", 1, "nav_state", 10)
 
-        update_rate = self.get_parameter("update_rate").get_parameter_value().double_value
-        pub_path_rate = self.get_parameter("pub_path_rate").get_parameter_value().double_value
+        update_rate = self.get_parameter("update_rate").value
+        pub_path_rate = self.get_parameter("pub_path_rate").value
         self.create_timer(update_rate, self.state_machine.update)
         self.create_timer(pub_path_rate, self.publish_path)
 
@@ -82,12 +108,15 @@ class Navigation(Node):
         if (rover_pose_in_map := self.ctx.rover.get_pose_in_map()) is not None:
             x, y, _ = rover_pose_in_map.translation()
             self.ctx.rover.path_history.poses.append(
-                PoseStamped(header=self.ctx.rover.path_history.header, pose=Pose(position=Point(x=x, y=y)))
+                PoseStamped(
+                    header=self.ctx.rover.path_history.header,
+                    pose=Pose(position=Point(x=x, y=y)),
+                )
             )
             self.ctx.path_history_publisher.publish(self.ctx.rover.path_history)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     rclpy.init(args=sys.argv)
 
     context = Context()

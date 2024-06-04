@@ -42,36 +42,12 @@ class DriveController:
         :return: a tuple of the command to send to the rover and a boolean indicating whether we are at the target
         :modifies: self._driver_state
         """
-        turning_p = (
-            self.node.get_parameter("drive/turning_p")
-            .get_parameter_value()
-            .double_value
-        )
-        driving_p = (
-            self.node.get_parameter("drive/driving_p")
-            .get_parameter_value()
-            .double_value
-        )
-        min_turning_effort = (
-            self.node.get_parameter("drive/min_turning_effort")
-            .get_parameter_value()
-            .double_value
-        )
-        max_turning_effort = (
-            self.node.get_parameter("drive/max_turning_effort")
-            .get_parameter_value()
-            .double_value
-        )
-        min_driving_effort = (
-            self.node.get_parameter("drive/min_driving_effort")
-            .get_parameter_value()
-            .double_value
-        )
-        max_driving_effort = (
-            self.node.get_parameter("drive/max_driving_effort")
-            .get_parameter_value()
-            .double_value
-        )
+        turning_p = self.node.get_parameter("drive/turning_p").value
+        driving_p = self.node.get_parameter("drive/driving_p").value
+        min_turning_effort = self.node.get_parameter("drive/min_turning_effort").value
+        max_turning_effort = self.node.get_parameter("drive/max_turning_effort").value
+        min_driving_effort = self.node.get_parameter("drive/min_driving_effort").value
+        max_driving_effort = self.node.get_parameter("drive/max_driving_effort").value
 
         # if we are at the target position, reset the controller and return a zero command
         if abs(linear_error) < completion_thresh:
@@ -94,9 +70,7 @@ class DriveController:
 
             # IVT (Intermediate Value Theorem) check. If the sign of the angular error has changed, this means we've crossed through 0 error
             # in order to prevent oscillation, we 'give up' and just switch to the drive forward state
-            elif self._last_angular_error is not None and np.sign(
-                self._last_angular_error
-            ) != np.sign(angular_error):
+            elif self._last_angular_error is not None and np.sign(self._last_angular_error) != np.sign(angular_error):
                 self._driver_state = self.DriveMode.DRIVE_FORWARD
                 return Twist(), False
 
@@ -121,8 +95,7 @@ class DriveController:
             # check in the TURN_IN_PLACE state and cause oscillation, checking it this way makes it so that we only
             # switch back into the TURN_IN_PLACE state on the "rising edge" of the turn error
             last_angular_was_inside = (
-                self._last_angular_error is not None
-                and abs(self._last_angular_error) < turn_in_place_thresh
+                self._last_angular_error is not None and abs(self._last_angular_error) < turn_in_place_thresh
             )
             cur_angular_is_outside = abs(angular_error) >= turn_in_place_thresh
             if cur_angular_is_outside and last_angular_was_inside:
@@ -218,26 +191,14 @@ class DriveController:
             self.reset()
             return Twist(), True
 
-        lookahead_distance = (
-            self.node.get_parameter("drive/lookahead_distance")
-            .get_parameter_value()
-            .double_value
-        )
-        if (
-            path_start is not None
-            and np.linalg.norm(path_start - target_pos) > lookahead_distance
-        ):
-            target_pos = self.compute_lookahead_point(
-                path_start, target_pos, rover_pos, lookahead_distance
-            )
+        lookahead_distance = self.node.get_parameter("drive/lookahead_distance").value
+        if path_start is not None and np.linalg.norm(path_start - target_pos) > lookahead_distance:
+            target_pos = self.compute_lookahead_point(path_start, target_pos, rover_pos, lookahead_distance)
 
         target_dir = target_pos - rover_pos
 
         # If the target is farther than completion distance away from the last one, reset the controller
-        if (
-            self._last_target is not None
-            and np.linalg.norm(target_pos - self._last_target) > completion_thresh
-        ):
+        if self._last_target is not None and np.linalg.norm(target_pos - self._last_target) > completion_thresh:
             self.reset()
 
         # Compute errors

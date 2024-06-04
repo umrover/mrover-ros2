@@ -4,59 +4,61 @@
 # Angle:    radian
 # Distance: meter
 
-navigation:
-  pub_path_rate: 1.0
-  # How many state machine iterations per second
-  update_rate: 60.0
+/navigation:
+  ros__parameters:
+    pub_path_rate: 1.0
+    # How many state machine iterations per second
+    update_rate: 60.0
 
-  world_frame: "map"
-  rover_frame: "base_link"
+    world_frame: "map"
+    rover_frame: "base_link"
 
-  gps_linearization:
-    # Exception, these are in degrees
-    ref_lat: 38.4225202
-    ref_long: -110.7844653
-    ref_alt: 0.0
+    gps_linearization:
+      # Exception, these are in degrees
+      ref_lat: 38.4225202
+      ref_long: -110.7844653
+      ref_alt: 0.0
 
-  # How long it takes to forget about a target
-  # Useful if the rover turns away from the target for a brief moment
-  # Or if there was an ephemeral false positive detection
-  target_expiration_duration: 60.0
+    # How long it takes to forget about a target
+    # Useful if the rover turns away from the target for a brief moment
+    # Or if there was an ephemeral false positive detection
+    target_expiration_duration: 60.0
 
-  image_targets:
-    increment_weight: 5
-    decrement_weight: 1
-    min_hits: 3 # TODO(quintin): This is not used, see corresponding comment in context.py
-    max_hits: 10
+    image_targets:
+      increment_weight: 5
+      decrement_weight: 1
+      min_hits: 3 # TODO(quintin): This is not used, see corresponding comment in context.py
+      max_hits: 10
 
-  drive:
-    max_driving_effort: 0.7
-    min_driving_effort: -0.7
-    max_turning_effort: 1.2
-    min_turning_effort: -1.2
-    turning_p: 3.0
-    driving_p: 20.0
-    lookahead_distance: 1.0
+    drive:
+      max_driving_effort: 0.7
+      min_driving_effort: -0.7
+      max_turning_effort: 1.2
+      min_turning_effort: -1.2
+      turning_p: 3.0
+      driving_p: 20.0
+      lookahead_distance: 1.0
 
-  single_tag:
-    stop_threshold: 1.0
-    tag_stop_threshold: 1.75
-    post_avoidance_multiplier: 1.42
-    post_radius: 0.7
+    single_tag:
+      stop_threshold: 1.0
+      tag_stop_threshold: 1.75
+      post_avoidance_multiplier: 1.42
+      post_radius: 0.7
 
-  waypoint:
-    stop_threshold: 0.5
-    drive_forward_threshold: 0.34
+    waypoint:
+      stop_threshold: 0.5
+      drive_forward_threshold: 0.34
 
-stuck_detector:
-  # How many readings to consider the rover stuck
-  # NOTE(quintin): This is probably bad since it depends on the data publishing rate...
-  #                May want to refactor this to be time based
-  window_size: 30
-  # How long to wait until the stuck detection can trigger again after the last one
-  post_recovery_grace_period: 5.0
-  # If the rover is being commanded to move, it must be below both of these thresholds to be considered stuck
-  angular_vel_thresh: 0.08
-  linear_vel_thresh: 0.16
-  # Clear the window if the time since last data is greater than this
-  data_watchdog_timeout: 1.0
+/stuck_detector:
+  ros__parameters:
+    # How many readings to consider the rover stuck
+    # NOTE(quintin): This is probably bad since it depends on the data publishing rate...
+    #                May want to refactor this to be time based
+    window_size: 30
+    # How long to wait until the stuck detection can trigger again after the last one
+    post_recovery_grace_period: 5.0
+    # If the rover is being commanded to move, it must be below both of these thresholds to be considered stuck
+    angular_vel_thresh: 0.08
+    linear_vel_thresh: 0.16
+    # Clear the window if the time since last data is greater than this
+    data_watchdog_timeout: 1.0
