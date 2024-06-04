@@ -1,0 +1,42 @@
+# All units are in SI
+# ===================
+# Time:     second, hz
+# Angle:    radian
+# Distance: meter
+
+navigation:
+  pub_path_rate: 1.0
+  # How many state machine iterations per second
+  update_rate: 60.0
+
+  # How long it takes to forget about a target
+  # Useful if the rover turns away from the target for a brief moment
+  # Or if there was an ephemeral false positive detection
+  target_expiration_duration: 60.0
+
+  image_targets:
+    increment_weight: 5
+    decrement_weight: 1
+    min_hits: 3 # TODO(quintin): This is not used, see corresponding comment in context.py
+    max_hits: 10
+
+  world_frame: "map"
+  rover_frame: "base_link"
+
+  gps_linearization:
+    reference_point_latitude: 38.4225202
+    reference_point_longitude: -110.7844653
+    reference_point_altitude: 0.0
+
+stuck_detector:
+  # How many readings to consider the rover stuck
+  # NOTE(quintin): This is probably bad since it depends on the data publishing rate...
+  #                May want to refactor this to be time based
+  window_size: 30
+  # How long to wait until the stuck detection can trigger again after the last one
+  post_recovery_grace_period: 5.0
+  # If the rover is being commanded to move, it must be below both of these thresholds to be considered stuck
+  angular_vel_thresh: 0.08
+  linear_vel_thresh: 0.16
+  # Clear the window if the time since last data is greater than this
+  data_watchdog_timeout: 1.0

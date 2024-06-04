@@ -1,12 +1,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional, Tuple
 
 import numpy as np
 import pymap3d
+from manifpy import SE3
 
-import rospy
 import tf2_ros
 from geometry_msgs.msg import Twist
 from mrover.msg import (
@@ -18,26 +17,33 @@ from mrover.msg import (
     ImageTarget,
     ImageTargets,
 )
-from mrover.srv import EnableAuton, EnableAutonRequest, EnableAutonResponse
-from nav_msgs.msg import OccupancyGrid, Path
-from navigation.drive import DriveController
-from std_msgs.msg import Bool
-from util.SE3 import SE3
+from mrover.srv import EnableAuton
+from nav_msgs.msg import Path
+from rclpy import Node
+from rclpy.duration import Duration
+from rclpy.publisher import Publisher
+from rclpy.service import Service
+from rclpy.subscription import Subscription
+from rclpy.time import Time
 from state_machine.state import State
+from std_msgs.msg import Bool, Header
+from .drive import DriveController
 
-TARGET_EXPIRATION_DURATION = rospy.Duration(60)
+NO_TAG: int = -1
 
-LONG_RANGE_EXPIRATION_DURATION = rospy.Duration(rospy.get_param("long_range/time_threshold"))
-INCREMENT_WEIGHT = rospy.get_param("long_range/increment_weight")
-DECREMENT_WEIGHT = rospy.get_param("long_range/decrement_weight")
-MIN_HITS = rospy.get_param("long_range/min_hits")
-MAX_HITS = rospy.get_param("long_range/max_hits")
+# TARGET_EXPIRATION_DURATION = Duration(60)
 
-REF_LAT = rospy.get_param("gps_linearization/reference_point_latitude")
-REF_LON = rospy.get_param("gps_linearization/reference_point_longitude")
-REF_ALT = rospy.get_param("gps_linearization/reference_point_altitude")
-
-tf_broadcaster: tf2_ros.StaticTransformBroadcaster = tf2_ros.StaticTransformBroadcaster()
+# LONG_RANGE_EXPIRATION_DURATION = rospy.Duration(rospy.get_param("long_range/time_threshold"))
+# INCREMENT_WEIGHT = rospy.get_param("long_range/increment_weight")
+# DECREMENT_WEIGHT = rospy.get_param("long_range/decrement_weight")
+# MIN_HITS = rospy.get_param("long_range/min_hits")
+# MAX_HITS = rospy.get_param("long_range/max_hits")
+#
+# REF_LAT = rospy.get_param("gps_linearization/reference_point_latitude")
+# REF_LON = rospy.get_param("gps_linearization/reference_point_longitude")
+# REF_ALT = rospy.get_param("gps_linearization/reference_point_altitude")
+#
+# tf_broadcaster: tf2_ros.StaticTransformBroadcaster = tf2_ros.StaticTransformBroadcaster()
 
 
 @dataclass
@@ -45,20 +51,20 @@ class Rover:
     ctx: Context
     stuck: bool
     previous_state: State
-    path_history: Path
+    path_history: Path = Path(header=Header(frame_id="map"))
     driver: DriveController = DriveController()
 
-    def get_pose_in_map(self) -> Optional[SE3]:
+    def get_pose_in_map(self) -> SE3 | None:
         try:
             return SE3.from_tf_tree(
                 self.ctx.tf_buffer, parent_frame=self.ctx.world_frame, child_frame=self.ctx.rover_frame
             )
         except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
-            rospy.logwarn_throttle(1, "Navigation failed to get rover pose. Is localization running?")
+            self.ctx.node.get_logger().warn("Navigation failed to get rover pose. Is localization running?")
             return None
 
     def send_drive_command(self, twist: Twist) -> None:
-        self.ctx.vel_cmd_publisher.publish(twist)
+        self.ctx.command_publisher.publish(twist)
 
     def send_drive_stop(self) -> None:
         self.send_drive_command(Twist())
@@ -73,15 +79,12 @@ class Environment:
 
     ctx: Context
     image_targets: ImageTargetsStore
-    cost_map: CostMap
-
-    NO_TAG: int = -1
 
     arrived_at_target: bool = False
     arrived_at_waypoint: bool = False
-    last_target_location: Optional[np.ndarray] = None
+    last_target_location: np.ndarray | None = None
 
-    def get_target_position(self, frame: str) -> Optional[np.ndarray]:
+    def get_target_position(self, frame: str) -> np.ndarray | None:
         """
         :param frame:   Target frame name. Could be for a tag, the hammer, or the water bottle.
         :return:        Pose of the target in the world frame if it exists and is not too old, otherwise None
@@ -93,11 +96,16 @@ class Environment:
         except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
             return None
 
-        if rospy.Time.now() - time > TARGET_EXPIRATION_DURATION:
+        now = self.ctx.node.get_clock().now()
+        target_expiration_duration = Duration(
+            seconds=self.ctx.node.get_parameter("target_expiration_duration").get_parameter_value().double_value
+        )
+        if now - time > target_expiration_duration:
             return None
+
         return target_pose.position
 
-    def current_target_pos(self) -> Optional[np.ndarray]:
+    def current_target_pos(self) -> np.ndarray | None:
         assert self.ctx.course is not None
 
         match self.ctx.course.current_waypoint():
@@ -120,18 +128,14 @@ class ImageTargetsStore:
     class TargetData:
         hit_count: int
         target: ImageTarget
-        time: rospy.Time
+        time: Time
 
     _data: dict[str, TargetData]
     _context: Context
-    _min_hits: int
-    _max_hits: int
 
-    def __init__(self, context: Context, min_hits: int = MIN_HITS, max_hits: int = MAX_HITS) -> None:
+    def __init__(self, context: Context) -> None:
         self._data = {}
         self._context = context
-        self._min_hits = min_hits
-        self._max_hits = max_hits
 
     def push_frame(self, targets: list[ImageTarget]) -> None:
         """
@@ -141,32 +145,49 @@ class ImageTargetsStore:
         If there are targets in the new message that we don't have stored, we will add it to our stored list.
         :param targets: A list of image targets sent by perception, which includes an id/name and bearing for each target in the list
         """
+        now = self._context.node.get_clock().now()
+
+        increment_weight = (
+            self._context.node.get_parameter("image_targets/increment_weight").get_parameter_value().integer_value
+        )
+        decrement_weight = (
+            self._context.node.get_parameter("image_targets/decrement_weight").get_parameter_value().integer_value
+        )
+        # TODO(quintin): Seems like this was never used in 2024, might have been an oversight
+        min_hits = self._context.node.get_parameter("image_targets/min_hits").get_parameter_value().integer_value
+        max_hits = self._context.node.get_parameter("image_targets/max_hits").get_parameter_value().integer_value
+
         # Update our current targets
         # Collect the iterator in to a list first since we will be modifying the dictionary
         target_names = {tag.name for tag in targets}
         for _, stored_tag in list(self._data.items()):
             # If we do see one of our targets in the new message, increment its hit count
             if stored_tag.target.name in target_names:
-                stored_tag.hit_count += INCREMENT_WEIGHT
-                if stored_tag.hit_count > self._max_hits:
-                    stored_tag.hit_count = self._max_hits
+                stored_tag.hit_count += increment_weight
+                if stored_tag.hit_count > max_hits:
+                    stored_tag.hit_count = max_hits
             # If we do not see one of our targets in the new message, decrement its hit count
             else:
-                stored_tag.hit_count -= DECREMENT_WEIGHT
+                stored_tag.hit_count -= decrement_weight
                 if stored_tag.hit_count <= 0:
                     stored_tag.hit_count = 0
                     # If we haven't seen the target in a while, remove it from our list
-                    time_difference = rospy.Time.now() - stored_tag.time
-                    if time_difference > LONG_RANGE_EXPIRATION_DURATION:
+                    time_difference = now - stored_tag.time
+                    target_expiration_duration = Duration(
+                        seconds=self._context.node.get_parameter("target_expiration_duration")
+                        .get_parameter_value()
+                        .double_value
+                    )
+                    if time_difference > target_expiration_duration:
                         del self._data[stored_tag.target.name]
 
         # Add or update seen targets
         for target in targets:
             # Keep hit count if already in the list, otherwise initialize
-            hit_count = self._data[target.name].hit_count if target.name in self._data else INCREMENT_WEIGHT
-            self._data[target.name] = self.TargetData(hit_count=hit_count, target=target, time=rospy.Time.now())
+            hit_count = self._data[target.name].hit_count if target.name in self._data else increment_weight
+            self._data[target.name] = self.TargetData(hit_count=hit_count, target=target, time=now)
 
-    def query(self, name: str) -> Optional[TargetData]:
+    def query(self, name: str) -> TargetData | None:
         """
         :param name:    Image target name
         :return:        Image target if it exists and has been seen repeatedly recently, otherwise None
@@ -175,21 +196,11 @@ class ImageTargetsStore:
             return None
         if name not in self._data:
             return None
-        if rospy.Time.now() - self._data[name].time >= LONG_RANGE_EXPIRATION_DURATION:
+        if self._context.node.get_clock().now() - self._data[name].time >= Duration(
+            seconds=self._context.node.get_parameter("target_expiration_duration").get_parameter_value().double_value
+        ):
             return None
         return self._data[name]
-
-
-class CostMap:
-    """
-    Context class to represent the costmap generated around the water bottle waypoint
-    """
-
-    data: np.ndarray
-    origin: np.ndarray
-    resolution: float
-    height: int
-    width: int
 
 
 @dataclass
@@ -209,7 +220,7 @@ class Course:
     def current_waypoint_pose_in_map(self) -> SE3:
         return self.waypoint_pose(self.waypoint_index)
 
-    def current_waypoint(self) -> Optional[Waypoint]:
+    def current_waypoint(self) -> Waypoint | None:
         """
         :return: The currently active waypoint if we have an active course
         """
@@ -253,131 +264,124 @@ class Course:
     def is_complete(self) -> bool:
         return self.waypoint_index == len(self.course_data.waypoints)
 
-    def get_approach_state(self) -> Optional[State]:
+    def get_approach_state(self) -> State | None:
         """
         :return: One of the approach states (ApproachTargetState or LongRangeState)
                  if we are looking for a post or object, and we see it in one of the cameras (ZED or long range)
         """
-        from navigation import long_range, approach_target
+        from . import long_range, approach_target
 
         # If we see the target in the ZED, go to ApproachTargetState
         if self.ctx.env.current_target_pos() is not None:
             return approach_target.ApproachTargetState()
         # If we see the target in the long range camera, go to LongRangeState
         assert self.ctx.course is not None
-        if self.ctx.course.image_target_name() != "bottle" and self.ctx.env.image_targets.query(self.ctx.course.image_target_name()) is not None:
+        if (
+            self.ctx.course.image_target_name() != "bottle"
+            and self.ctx.env.image_targets.query(self.ctx.course.image_target_name()) is not None
+        ):
             return long_range.LongRangeState()
         return None
 
 
-def setup_course(ctx: Context, waypoints: list[Tuple[Waypoint, SE3]]) -> Course:
+def setup_course(ctx: Context, waypoints: list[tuple[Waypoint, SE3]]) -> Course:
     all_waypoint_info = []
     for index, (waypoint_info, pose) in enumerate(waypoints):
         all_waypoint_info.append(waypoint_info)
-        pose.publish_to_tf_tree(tf_broadcaster, "map", f"course{index}")
+        pose.publish_to_tf_tree(ctx.tf_broadcaster, "map", f"course{index}")
     # Make the course out of just the pure waypoint objects which is the 0th element in the tuple
-    return Course(ctx=ctx, course_data=CourseMsg([waypoint for waypoint, _ in waypoints]))
+    return Course(ctx=ctx, course_data=CourseMsg(waypoints=[waypoint for waypoint, _ in waypoints]))
 
 
-def convert_gps_to_cartesian(waypoint: GPSWaypoint) -> Tuple[Waypoint, SE3]:
+def convert_gps_to_cartesian(reference_point: np.ndarray, waypoint: GPSWaypoint) -> tuple[Waypoint, SE3]:
     """
     Converts a GPSWaypoint into a "Waypoint" used for publishing to the CourseService.
     """
     # Create a cartesian position based on GPS latitude and longitude
-    position = np.array(
-        pymap3d.geodetic2enu(
-            waypoint.latitude_degrees, waypoint.longitude_degrees, 0.0, REF_LAT, REF_LON, REF_ALT, deg=True
-        )
+    x, y, _ = np.array(
+        pymap3d.geodetic2enu(waypoint.latitude_degrees, waypoint.longitude_degrees, 0, *reference_point, deg=True)
     )
     # Zero the z-coordinate because even though the altitudes are set to zero,
     # Two points on a sphere are not going to have the same z-coordinate.
     # Navigation algorithms currently require all coordinates to have zero as the z-coordinate.
-    position[2] = 0
-    return Waypoint(tag_id=waypoint.tag_id, type=waypoint.type), SE3(position=position)
+    return Waypoint(tag_id=waypoint.tag_id, type=waypoint.type), SE3.from_position_orientation(x, y)
 
 
-def convert_cartesian_to_gps(coordinate: np.ndarray) -> GPSWaypoint:
+def convert_cartesian_to_gps(reference_point: np.ndarray, coordinate: np.ndarray) -> GPSWaypoint:
     """
     Converts a coordinate to a GPSWaypoint (used for sending data back to basestation)
     """
-    lat, lon, _ = pymap3d.enu2geodetic(
-        e=coordinate[0], n=coordinate[1], u=0.0, lat0=REF_LAT, lon0=REF_LON, h0=0.0, deg=True
-    )
-    return GPSWaypoint(lat, lon, WaypointType(val=WaypointType.NO_SEARCH), 0)
+    x, y, z = coordinate
+    ref_lat, ref_long, _ = reference_point
+    lat, long, _ = pymap3d.enu2geodetic(x, y, z, ref_lat, ref_long, 0)
+    return GPSWaypoint(latitude_degree=lat, longitude_degrees=long, type=WaypointType(val=WaypointType.NO_SEARCH))
 
 
-def convert_and_get_course(ctx: Context, data: EnableAutonRequest) -> Course:
-    waypoints = [convert_gps_to_cartesian(waypoint) for waypoint in data.waypoints]
+def convert_and_get_course(ctx: Context, reference_point: np.ndarray, request: EnableAuton.Request) -> Course:
+    waypoints = [convert_gps_to_cartesian(reference_point, waypoint) for waypoint in request.waypoints]
     return setup_course(ctx, waypoints)
 
 
 class Context:
+    node: Node
     tf_buffer: tf2_ros.Buffer
     tf_listener: tf2_ros.TransformListener
-    vel_cmd_publisher: rospy.Publisher
-    search_point_publisher: rospy.Publisher
-    course_listener: rospy.Subscriber
-    stuck_listener: rospy.Subscriber
-    costmap_listener: rospy.Subscriber
-    path_history_publisher: rospy.Publisher
+    tf_broadcaster: tf2_ros.TransformBroadcaster
+    command_publisher: Publisher
+    search_point_publisher: Publisher
+    course_listener: Subscription
+    stuck_listener: Subscription
+    path_history_publisher: Publisher
+    enable_auton_service: Service
 
     # Use these as the primary interfaces in states
-    course: Optional[Course]
+    course: Course | None
     rover: Rover
     env: Environment
     disable_requested: bool
 
-    # ROS Params from localization.yaml
+    # ROS parameters
     world_frame: str
     rover_frame: str
 
-    def __init__(self) -> None:
-        from navigation.state import OffState
+    def setup(self, node: Node):
+        from .state import OffState
 
-        self.tf_buffer = tf2_ros.Buffer()
-        self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
-        self.vel_cmd_publisher = rospy.Publisher("navigation_cmd_vel", Twist, queue_size=1)
-        self.search_point_publisher = rospy.Publisher("search_path", GPSPointList, queue_size=1)
-        self.path_history_publisher = rospy.Publisher("ground_truth_path", Path, queue_size=10)
-        self.enable_auton_service = rospy.Service("enable_auton", EnableAuton, self.recv_enable_auton)
-        self.stuck_listener = rospy.Subscriber("nav_stuck", Bool, self.stuck_callback)
+        self.node = node
+
         self.course = None
         self.rover = Rover(self, False, OffState(), Path())
-        self.env = Environment(self, image_targets=ImageTargetsStore(self), cost_map=CostMap())
+        self.env = Environment(self, image_targets=ImageTargetsStore(self))
         self.disable_requested = False
-        self.world_frame = rospy.get_param("world_frame")
-        self.rover_frame = rospy.get_param("rover_frame")
-        rospy.Subscriber("tags", ImageTargets, self.image_targets_callback)
-        rospy.Subscriber("objects", ImageTargets, self.image_targets_callback)
-        self.costmap_listener = rospy.Subscriber("costmap", OccupancyGrid, self.costmap_callback)
+        self.world_frame = node.get_parameter("world_frame").get_parameter_value().string_value
+        self.rover_frame = node.get_parameter("rover_frame").get_parameter_value().string_value
 
-    def recv_enable_auton(self, req: EnableAutonRequest) -> EnableAutonResponse:
-        if req.enable:
-            self.course = convert_and_get_course(self, req)
+        self.enable_auton_service = node.create_service(EnableAuton, "enable_auton", self.recv_enable_auton)
+
+        self.command_publisher = node.create_publisher(Twist, "nav_cmd_vel", 1)
+        self.search_point_publisher = node.create_publisher(GPSPointList, "search_path", 1)
+        self.path_history_publisher = node.create_publisher(Path, "ground_truth_path", 10)
+        self.tf_broadcaster = tf2_ros.TransformBroadcaster(node)
+
+        node.create_subscription(Bool, "nav_stuck", self.stuck_callback, 1)
+        node.create_subscription(ImageTargets, "tags", self.image_targets_callback, 1)
+        node.create_subscription(ImageTargets, "objects", self.image_targets_callback, 1)
+        self.tf_buffer = tf2_ros.Buffer()
+        tf2_ros.TransformListener(self.tf_buffer, node)
+
+    def recv_enable_auton(self, request: EnableAuton.Request, response: EnableAuton.Response) -> EnableAuton.Response:
+        ref_lat = self.node.get_parameter("gps_linearization/reference_point_latitude").get_parameter_value()
+        ref_long = self.node.get_parameter("gps_linearization/reference_point_longitude").get_parameter_value()
+        ref_alt = self.node.get_parameter("gps_linearization/reference_point_altitude").get_parameter_value()
+        if request.enable:
+            self.course = convert_and_get_course(self, np.array([ref_lat, ref_long, ref_alt]), request)
         else:
             self.disable_requested = True
-        return EnableAutonResponse(True)
+        response.success = True
+        return response
 
     def stuck_callback(self, msg: Bool) -> None:
         self.rover.stuck = msg.data
 
     def image_targets_callback(self, tags: ImageTargets) -> None:
         self.env.image_targets.push_frame(tags.targets)
-
-    def costmap_callback(self, msg: OccupancyGrid) -> None:
-        """
-        Callback function for the occupancy grid perception sends
-        :param msg: Occupancy Grid representative of a 32m x 32m square area with origin at GNSS waypoint. Values are 0, 1, -1
-        """
-        cost_map_data = np.array(msg.data).reshape((msg.info.height, msg.info.width)).T
-
-        self.env.cost_map.origin = np.array([msg.info.origin.position.x, msg.info.origin.position.y])
-        self.env.cost_map.resolution = msg.info.resolution  # meters/cell
-        self.env.cost_map.height = msg.info.height  # cells
-        self.env.cost_map.width = msg.info.width  # cells
-        self.env.cost_map.data = cost_map_data.astype(np.float32)
-
-        # change all unidentified points to have a slight cost
-        self.env.cost_map.data[cost_map_data == -1] = 10.0  # TODO: find optimal value
-        # normalize to [0, 1]
-        self.env.cost_map.data /= 100.0

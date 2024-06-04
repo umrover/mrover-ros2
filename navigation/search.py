@@ -1,18 +1,16 @@
-from typing import Optional
-
 import numpy as np
-
 import rospy
-from mrover.msg import GPSPointList, WaypointType
-from navigation import recovery, waypoint
 from navigation.context import convert_cartesian_to_gps, Context
 from navigation.trajectory import SearchTrajectory
+
+from mrover.msg import GPSPointList, WaypointType
+from navigation import recovery, waypoint
 from state_machine.state import State
 
 
 class SearchState(State):
-    trajectory: Optional[SearchTrajectory] = None
-    prev_target_pos_in_map: Optional[np.ndarray] = None
+    trajectory: SearchTrajectory | None = None
+    prev_target_pos_in_map: np.ndarray | None = None
     is_recovering: bool = False
 
     STOP_THRESH = rospy.get_param("search/stop_threshold")

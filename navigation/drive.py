@@ -5,19 +5,23 @@ from typing import Tuple, Optional
 
 import numpy as np
 
-import rospy
 from geometry_msgs.msg import Twist
-from util.SE3 import SE3
-from util.np_utils import angle_to_rotate, normalized
+from rclpy import Node
 
-MAX_DRIVING_EFFORT_WAYPOINT = rospy.get_param("drive/max_driving_effort_waypoint")
-MAX_DRIVING_EFFORT = rospy.get_param("drive/max_driving_effort")
-MIN_DRIVING_EFFORT = rospy.get_param("drive/min_driving_effort")
-MAX_TURNING_EFFORT = rospy.get_param("drive/max_turning_effort")
-MIN_TURNING_EFFORT = rospy.get_param("drive/min_turning_effort")
-TURNING_P = rospy.get_param("drive/turning_p")
-DRIVING_P = rospy.get_param("drive/driving_p")
-LOOKAHEAD_DISTANCE = rospy.get_param("drive/lookahead_distance")
+
+# import rospy
+# from geometry_msgs.msg import Twist
+# from util.SE3 import SE3
+# from util.np_utils import angle_to_rotate, normalized
+#
+# MAX_DRIVING_EFFORT_WAYPOINT = rospy.get_param("drive/max_driving_effort_waypoint")
+# MAX_DRIVING_EFFORT = rospy.get_param("drive/max_driving_effort")
+# MIN_DRIVING_EFFORT = rospy.get_param("drive/min_driving_effort")
+# MAX_TURNING_EFFORT = rospy.get_param("drive/max_turning_effort")
+# MIN_TURNING_EFFORT = rospy.get_param("drive/min_turning_effort")
+# TURNING_P = rospy.get_param("drive/turning_p")
+# DRIVING_P = rospy.get_param("drive/driving_p")
+# LOOKAHEAD_DISTANCE = rospy.get_param("drive/lookahead_distance")
 
 
 class DriveController:
@@ -30,6 +34,9 @@ class DriveController:
     _last_target: Optional[np.ndarray] = None
     _driver_state: DriveMode = DriveMode.STOPPED
 
+    def __init__(self, node: Node):
+        self.node = node
+
     def reset(self) -> None:
         self._driver_state = self.DriveMode.STOPPED
         self._last_angular_error = None
@@ -41,7 +48,7 @@ class DriveController:
         completion_thresh: float,
         turn_in_place_thresh: float,
         waypoint_state: bool,
-    ) -> Tuple[Twist, bool]:
+    ) -> tuple[Twist, bool]:
         """
         Gets the state machine output for a given angular and linear error.
         :param angular_error: the angular error to the target
@@ -80,6 +87,7 @@ class DriveController:
             # if neither of those things are true, we need to turn in place towards our target heading, so set the z component of the output Twist message
             else:
                 cmd_vel = Twist()
+                turning_p =
                 cmd_vel.angular.z = np.clip(angular_error * TURNING_P, MIN_TURNING_EFFORT, MAX_TURNING_EFFORT)
                 return cmd_vel, False
 
@@ -152,7 +160,7 @@ class DriveController:
         drive_back: bool = False,
         path_start: Optional[np.ndarray] = None,
         waypoint_state: bool = False,
-    ) -> Tuple[Twist, bool]:
+    ) -> tuple[Twist, bool]:
         """
         Returns a drive command to get the rover to the target position, calls the state machine to do so and updates the last angular error in the process
         :param target_pos: The target position to drive to.

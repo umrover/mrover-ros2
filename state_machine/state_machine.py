@@ -1,3 +1,5 @@
+__author__ = "Ankith Udupa"
+
 import time
 from collections import defaultdict
 from dataclasses import dataclass
@@ -28,11 +30,11 @@ class StateMachine(Generic[ContextType]):
     logger: RcutilsLogger
 
     def __init__(
-            self,
-            initial_state: State,
-            name: str,
-            context: ContextType,
-            logger: RcutilsLogger,
+        self,
+        initial_state: State,
+        name: str,
+        context: ContextType,
+        logger: RcutilsLogger,
     ):
         self.current_state = initial_state
         self.state_transitions = defaultdict(set)

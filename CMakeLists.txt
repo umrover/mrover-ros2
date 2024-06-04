@@ -7,8 +7,10 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
+find_package(manif REQUIRED)
 find_package(ament_cmake REQUIRED)
 find_package(ament_cmake_python REQUIRED)
+find_package(sensor_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 
@@ -26,12 +28,24 @@ endif()
 
 file(GLOB_RECURSE MROVER_MESSAGE_FILE_PATHS RELATIVE ${CMAKE_CURRENT_LIST_DIR} CONFIGURE_DEPENDS msg/*.msg)
 message(STATUS "Found message files: ${MROVER_MESSAGE_FILE_PATHS}")
+
+file(GLOB_RECURSE MROVER_SERVICE_FILE_PATHS RELATIVE ${CMAKE_CURRENT_LIST_DIR} CONFIGURE_DEPENDS srv/*.srv)
+message(STATUS "Found service files: ${MROVER_SERVICE_FILE_PATHS}")
+
 rosidl_generate_interfaces(${PROJECT_NAME}
   ${MROVER_MESSAGE_FILE_PATHS}
-  DEPENDENCIES geometry_msgs
+  ${MROVER_SERVICE_FILE_PATHS}
+  DEPENDENCIES sensor_msgs geometry_msgs
 )
 
+ament_python_install_package(geometry)
 ament_python_install_package(navigation)
 ament_python_install_package(state_machine)
+
+install(PROGRAMS
+  navigation/navigation.py
+  navigation/stuck_detector/stuck_detector.py
+  DESTINATION lib/${PROJECT_NAME}
+)
 
 ament_package()

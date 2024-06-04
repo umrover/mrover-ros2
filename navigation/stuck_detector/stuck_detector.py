@@ -1,52 +1,75 @@
 #!/usr/bin/env python3
 
+"""
+Detects if the rover is "stuck" - if it is commanded a nonzero velocity but the rover is neither moving nor turning.
+At URC (MDRS) there is sometimes sandy terrain. It is possible the wheels will get stuck free spinning and the rover will not move.
+This node only alerts, it does not actually perform recovery.
+"""
+
+__author__ = "Quintin Dwight"
+__credits__ = ["Neha", "Emerson"]
+
+import sys
 from typing import Optional
 
 import numpy as np
 
 import message_filters
-import rospy
+import rclpy
 from geometry_msgs.msg import Twist
 from mrover.msg import StateMachineStateUpdate
 from nav_msgs.msg import Odometry
+from rclpy import Node
+from rclpy.duration import Duration
+from rclpy.time import Time
 from std_msgs.msg import Bool
 
-WINDOW_SIZE = rospy.get_param("stuck_detector/window_size")
-POST_RECOVERY_GRACE_PERIOD = rospy.get_param("stuck_detector/post_recovery_grace_period")
-ANGULAR_THRESHOLD = rospy.get_param("stuck_detector/angular_threshold")
-LINEAR_THRESHOLD = rospy.get_param("stuck_detector/linear_threshold")
+RECOVERY_STATE_NAME = "RecoveryState"
 
 
-class StuckDetector:
+class StuckDetector(Node):
     cmd_vel: np.ndarray
     real_vel: np.ndarray
-    last_update: rospy.Time
-    last_trigger_time: Optional[rospy.Time]
+    last_data_update: Time
+    last_trigger_time: Optional[Time]
 
     def __init__(self) -> None:
-        nav_status_sub = message_filters.Subscriber("nav_state", StateMachineStateUpdate)
-        odometry_sub = message_filters.Subscriber("odometry", Odometry)
-        cmd_vel_sub = message_filters.Subscriber("cmd_vel", Twist)
+        super().__init__("stuck_detector")
 
-        ts = message_filters.ApproximateTimeSynchronizer(
+        self.stuck_pub = self.create_publisher(Bool, "nav_stuck", 1)
+
+        nav_status_sub = message_filters.Subscriber(self, "nav_state", StateMachineStateUpdate)
+        odometry_sub = message_filters.Subscriber(self, "odometry", Odometry)
+        cmd_vel_sub = message_filters.Subscriber(self, "cmd_vel", Twist)
+        message_filters.ApproximateTimeSynchronizer(
             [nav_status_sub, cmd_vel_sub, odometry_sub], 10, 1.0, allow_headerless=True
-        )
-        ts.registerCallback(self.update)
-
-        self.stuck_publisher = rospy.Publisher("nav_stuck", Bool, queue_size=1)
+        ).registerCallback(self.update)
 
         self.last_trigger_time = None
 
         self.reset()
 
     def reset(self) -> None:
-        self.cmd_vel = np.zeros((2, WINDOW_SIZE))
-        self.real_vel = np.zeros((2, WINDOW_SIZE))
-        self.last_update = rospy.Time.now()
+        window_size = self.get_parameter("window_size").get_parameter_value().integer_value
+
+        self.cmd_vel = np.zeros((2, window_size))
+        self.real_vel = np.zeros((2, window_size))
+        self.last_data_update = self.get_clock().now()
 
     def update(self, nav_status: StateMachineStateUpdate, cmd_vel: Twist, odometry: Odometry) -> None:
-        if self.last_update and rospy.Time.now() - self.last_update > rospy.Duration(1):
-            rospy.logwarn("Resetting failure identification due to long time since last update")
+        now = self.get_clock().now()
+
+        post_recovery_grace_period = Duration(
+            seconds=self.get_parameter("post_recovery_grace_period").get_parameter_value().double_value
+        )
+        angular_threshold = self.get_parameter("angular_vel_thresh").get_parameter_value().double_value
+        linear_threshold = self.get_parameter("linear_vel_thresh").get_parameter_value().double_value
+
+        data_watchdog_timeout = Duration(
+            seconds=self.get_parameter("data_watchdog_timeout").get_parameter_value().double_value
+        )
+        if self.last_data_update and now - self.last_data_update > data_watchdog_timeout:
+            self.get_logger().warn("Resetting failure identification due to long time since last update")
             self.reset()
 
         # Shift over all columns and replace the first column with the new values
@@ -56,31 +79,30 @@ class StuckDetector:
         self.cmd_vel[:, 0] = [cmd_vel.linear.x, cmd_vel.angular.z]
         self.real_vel[:, 0] = [odometry.twist.twist.linear.x, odometry.twist.twist.angular.z]
 
-        is_trying_to_move = np.count_nonzero(self.cmd_vel) >= WINDOW_SIZE
+        _, window_size = self.cmd_vel.shape
+        is_trying_to_move = np.count_nonzero(self.cmd_vel) >= window_size
         linear_speed_average = np.average(np.abs(self.real_vel[0, :]))
         angular_speed_average = np.average(np.abs(self.real_vel[1, :]))
-        is_not_moving = linear_speed_average < LINEAR_THRESHOLD and angular_speed_average < ANGULAR_THRESHOLD
-        is_outside_grace = self.last_trigger_time is None or rospy.Time.now() - self.last_trigger_time > rospy.Duration(
-            POST_RECOVERY_GRACE_PERIOD
-        )
-        is_not_recovery = nav_status.state != "RecoveryState"
+        is_not_moving = linear_speed_average < linear_threshold and angular_speed_average < angular_threshold
+        is_outside_grace = self.last_trigger_time is None or now - self.last_trigger_time > post_recovery_grace_period
+        is_not_recovery = nav_status.state != RECOVERY_STATE_NAME
 
         if is_trying_to_move and is_not_moving and is_outside_grace and is_not_recovery:
-            rospy.logwarn("Detecting rover being stuck!")
+            self.get_logger().warn("Detecting rover being stuck!")
             is_stuck = True
-            self.last_trigger_time = rospy.Time.now()
+            self.last_trigger_time = now
         else:
             is_stuck = False
 
-        self.stuck_publisher.publish(is_stuck)
+        self.stuck_pub.publish(is_stuck)
 
-        self.last_update = rospy.Time.now()
+        self.last_data_update = now
 
 
 def main() -> None:
-    rospy.init_node("stuck_detector")
-    StuckDetector()
-    rospy.spin()
+    rclpy.init(args=sys.argv)
+    rclpy.spin(StuckDetector())
+    rclpy.shutdown()
 
 
 if __name__ == "__main__":

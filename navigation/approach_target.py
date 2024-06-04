@@ -2,17 +2,9 @@ from typing import Optional
 
 import numpy as np
 
-import rospy
-from mrover.msg import WaypointType
-from navigation import search, waypoint, state, recovery, water_bottle_search
-from navigation.context import Context
 from state_machine.state import State
-
-STOP_THRESHOLD = rospy.get_param("single_tag/stop_threshold")
-STOP_THRESH_WAYPOINT = rospy.get_param("waypoint/stop_threshold")
-TAG_STOP_THRESHOLD = rospy.get_param("single_tag/tag_stop_threshold")
-DRIVE_FORWARD_THRESHOLD = rospy.get_param("waypoint/drive_forward_threshold")
-USE_COSTMAP: bool = rospy.get_param("water_bottle_search/use_costmap")
+from . import search, waypoint, state, recovery
+from .context import Context
 
 
 class ApproachTargetState(State):
@@ -41,28 +33,29 @@ class ApproachTargetState(State):
         Return to search if there is no target position.
         :return: Next state
         """
+
         assert context.course is not None
 
-        target_pos = self.get_target_position(context)
-        if target_pos is None:
-            # TODO(quintin): Clean this up
-            if self.__class__.__name__ == "LongRangeState" and not context.env.arrived_at_waypoint:
+        target_position = self.get_target_position(context)
+        if target_position is None:
+            from .long_range import LongRangeState
+
+            if isinstance(self, LongRangeState) and not context.env.arrived_at_waypoint:
                 return waypoint.WaypointState()
-            elif context.course.current_waypoint().type.val == WaypointType.WATER_BOTTLE and USE_COSTMAP:
-                return water_bottle_search.WaterBottleSearchState()
+
             return search.SearchState()
 
         rover_in_map = context.rover.get_pose_in_map()
         assert rover_in_map is not None
 
-        cmd_vel, arrived = context.rover.driver.get_drive_command(
-            target_pos,
+        cmd_vel, has_arrived = context.rover.driver.get_drive_command(
+            target_position,
             rover_in_map,
-            STOP_THRESHOLD,
-            DRIVE_FORWARD_THRESHOLD,
+            context.node.get_parameter("single_tag/stop_threshold").get_parameter_value().double_value,
+            context.node.get_parameter("waypoint/drive_forward_threshold").get_parameter_value().double_value,
         )
-        next_state = self.determine_next(context, arrived)
-        if arrived:
+        next_state = self.determine_next(context, has_arrived)
+        if has_arrived:
             context.env.arrived_at_target = True
             context.env.last_target_location = self.get_target_position(context)
             context.course.increment_waypoint()

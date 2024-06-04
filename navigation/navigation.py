@@ -3,11 +3,10 @@
 import sys
 
 import rclpy
-from geometry_msgs.msg import Pose, PoseStamped, Point, Quaternion
+from geometry_msgs.msg import Pose, PoseStamped, Point
 from rclpy import Node
 from state_machine.state_machine import StateMachine
 from state_machine.state_publisher_server import StatePublisher
-from std_msgs.msg import Header
 from .approach_target import ApproachTargetState
 from .context import Context
 from .long_range import LongRangeState
@@ -27,9 +26,11 @@ class Navigation(Node):
     def __init__(self, context: Context):
         super().__init__("navigation")
 
+        self.context = context
+
         self.get_logger().info("Navigation starting...")
 
-        self.state_machine = StateMachine[Context](OffState(), "NavStateMachine", context)
+        self.state_machine = StateMachine[Context](OffState(), "NavigationStateMachine", context)
         self.state_machine.add_transitions(
             ApproachTargetState(),
             [WaypointState(), SearchState(), WaterBottleSearchState(), RecoveryState(), DoneState()],
@@ -73,36 +74,25 @@ class Navigation(Node):
         )
         self.state_machine.configure_off_switch(OffState(), off_check)
         self.state_machine_server = StatePublisher(self, self.state_machine, "nav_structure", 1, "nav_state", 10)
-        self.context = context
 
-        self.create_timer(1, self.publish_path)
-        self.create_timer(0.01, self.update)
+        self.create_timer(self.declare_parameter("pub_path_rate").value, self.publish_path)
+        self.create_timer(self.declare_parameter("update_rate").value, self.state_machine.update)
 
-        self.get_logger().info("Navigation started")
-
-    def update(self):
-        self.state_machine.update()
+        self.get_logger().info("Navigation started!")
 
     def publish_path(self):
-        self.context.rover.path_history.header = Header()
-        self.context.rover.path_history.header.frame_id = "map"
-        poses = []
-        pose_stamped = PoseStamped()
-        pose_stamped.header = Header()
-        pose_stamped.header.frame_id = "map"
-        rover_pose_in_map = self.context.rover.get_pose_in_map()
-        if rover_pose_in_map is not None:
-            point = Point(rover_pose_in_map.position[0], rover_pose_in_map.position[1], 0)
-            quat = Quaternion(0, 0, 0, 1)
-            pose_stamped.pose = Pose(point, quat)
-            poses.append(pose_stamped)
-            self.context.rover.path_history.poses = poses
+        if rover_pose_in_map := self.context.rover.get_pose_in_map() is not None:
+            x, y, _ = rover_pose_in_map.position
+            self.context.rover.path_history.poses.append(
+                PoseStamped(header=self.context.rover.path_history.header, pose=Pose(position=Point(x=x, y=y)))
+            )
             self.context.path_history_publisher.publish(self.context.rover.path_history)
 
 
 def main():
     rclpy.init(args=sys.argv)
     navigation = Navigation(Context())
+    navigation.context.node = navigation
     rclpy.spin(navigation)
     rclpy.shutdown()
 
