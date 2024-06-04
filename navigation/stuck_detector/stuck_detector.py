@@ -37,7 +37,9 @@ class StuckDetector(Node):
 
         self.stuck_pub = self.create_publisher(Bool, "nav_stuck", 1)
 
-        nav_status_sub = message_filters.Subscriber(self, StateMachineStateUpdate, "nav_state")
+        nav_status_sub = message_filters.Subscriber(
+            self, StateMachineStateUpdate, "nav_state"
+        )
         odometry_sub = message_filters.Subscriber(self, Odometry, "odometry")
         cmd_vel_sub = message_filters.Subscriber(self, Twist, "cmd_vel")
         message_filters.ApproximateTimeSynchronizer(
@@ -49,26 +51,43 @@ class StuckDetector(Node):
         self.reset()
 
     def reset(self) -> None:
-        window_size = self.get_parameter("window_size").get_parameter_value().integer_value
+        window_size = (
+            self.get_parameter("window_size").get_parameter_value().integer_value
+        )
 
         self.cmd_vel = np.zeros((2, window_size))
         self.real_vel = np.zeros((2, window_size))
         self.last_data_update = self.get_clock().now()
 
-    def update(self, nav_status: StateMachineStateUpdate, cmd_vel: Twist, odometry: Odometry) -> None:
+    def update(
+        self, nav_status: StateMachineStateUpdate, cmd_vel: Twist, odometry: Odometry
+    ) -> None:
         now = self.get_clock().now()
 
         post_recovery_grace_period = Duration(
-            seconds=self.get_parameter("post_recovery_grace_period").get_parameter_value().double_value
+            seconds=self.get_parameter("post_recovery_grace_period")
+            .get_parameter_value()
+            .double_value
         )
-        angular_threshold = self.get_parameter("angular_vel_thresh").get_parameter_value().double_value
-        linear_threshold = self.get_parameter("linear_vel_thresh").get_parameter_value().double_value
+        angular_threshold = (
+            self.get_parameter("angular_vel_thresh").get_parameter_value().double_value
+        )
+        linear_threshold = (
+            self.get_parameter("linear_vel_thresh").get_parameter_value().double_value
+        )
 
         data_watchdog_timeout = Duration(
-            seconds=self.get_parameter("data_watchdog_timeout").get_parameter_value().double_value
+            seconds=self.get_parameter("data_watchdog_timeout")
+            .get_parameter_value()
+            .double_value
         )
-        if self.last_data_update and now - self.last_data_update > data_watchdog_timeout:
-            self.get_logger().warn("Resetting failure identification due to long time since last update")
+        if (
+            self.last_data_update
+            and now - self.last_data_update > data_watchdog_timeout
+        ):
+            self.get_logger().warn(
+                "Resetting failure identification due to long time since last update"
+            )
             self.reset()
 
         # Shift over all columns and replace the first column with the new values
@@ -76,14 +95,23 @@ class StuckDetector(Node):
         self.cmd_vel = np.roll(self.cmd_vel, 1, axis=1)
         self.real_vel = np.roll(self.real_vel, 1, axis=1)
         self.cmd_vel[:, 0] = [cmd_vel.linear.x, cmd_vel.angular.z]
-        self.real_vel[:, 0] = [odometry.twist.twist.linear.x, odometry.twist.twist.angular.z]
+        self.real_vel[:, 0] = [
+            odometry.twist.twist.linear.x,
+            odometry.twist.twist.angular.z,
+        ]
 
         _, window_size = self.cmd_vel.shape
         is_trying_to_move = np.count_nonzero(self.cmd_vel) >= window_size
         linear_speed_average = np.average(np.abs(self.real_vel[0, :]))
         angular_speed_average = np.average(np.abs(self.real_vel[1, :]))
-        is_not_moving = linear_speed_average < linear_threshold and angular_speed_average < angular_threshold
-        is_outside_grace = self.last_trigger_time is None or now - self.last_trigger_time > post_recovery_grace_period
+        is_not_moving = (
+            linear_speed_average < linear_threshold
+            and angular_speed_average < angular_threshold
+        )
+        is_outside_grace = (
+            self.last_trigger_time is None
+            or now - self.last_trigger_time > post_recovery_grace_period
+        )
         is_not_recovery = nav_status.state != RECOVERY_STATE_NAME
 
         if is_trying_to_move and is_not_moving and is_outside_grace and is_not_recovery:

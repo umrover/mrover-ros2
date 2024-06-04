@@ -44,8 +44,14 @@ class Rover:
             return SE3.from_tf_tree(
                 self.ctx.tf_buffer, self.ctx.rover_frame, self.ctx.world_frame
             )
-        except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
-            self.ctx.node.get_logger().warn("Navigation failed to get rover pose. Is localization running?")
+        except (
+            tf2_ros.LookupException,
+            tf2_ros.ConnectivityException,
+            tf2_ros.ExtrapolationException,
+        ):
+            self.ctx.node.get_logger().warn(
+                "Navigation failed to get rover pose. Is localization running?"
+            )
             return None
 
     def send_drive_command(self, twist: Twist) -> None:
@@ -78,12 +84,18 @@ class Environment:
             target_pose, time = SE3.from_tf_tree_with_time(
                 self.ctx.tf_buffer, parent_frame=self.ctx.world_frame, child_frame=frame
             )
-        except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
+        except (
+            tf2_ros.LookupException,
+            tf2_ros.ConnectivityException,
+            tf2_ros.ExtrapolationException,
+        ):
             return None
 
         now = self.ctx.node.get_clock().now()
         target_expiration_duration = Duration(
-            seconds=self.ctx.node.get_parameter("target_expiration_duration").get_parameter_value().double_value
+            seconds=self.ctx.node.get_parameter("target_expiration_duration")
+            .get_parameter_value()
+            .double_value
         )
         if now - time > target_expiration_duration:
             return None
@@ -133,14 +145,26 @@ class ImageTargetsStore:
         now = self._context.node.get_clock().now()
 
         increment_weight = (
-            self._context.node.get_parameter("image_targets/increment_weight").get_parameter_value().integer_value
+            self._context.node.get_parameter("image_targets/increment_weight")
+            .get_parameter_value()
+            .integer_value
         )
         decrement_weight = (
-            self._context.node.get_parameter("image_targets/decrement_weight").get_parameter_value().integer_value
+            self._context.node.get_parameter("image_targets/decrement_weight")
+            .get_parameter_value()
+            .integer_value
         )
         # TODO(quintin): Seems like this was never used in 2024, might have been an oversight
-        min_hits = self._context.node.get_parameter("image_targets/min_hits").get_parameter_value().integer_value
-        max_hits = self._context.node.get_parameter("image_targets/max_hits").get_parameter_value().integer_value
+        min_hits = (
+            self._context.node.get_parameter("image_targets/min_hits")
+            .get_parameter_value()
+            .integer_value
+        )
+        max_hits = (
+            self._context.node.get_parameter("image_targets/max_hits")
+            .get_parameter_value()
+            .integer_value
+        )
 
         # Update our current targets
         # Collect the iterator in to a list first since we will be modifying the dictionary
@@ -159,7 +183,9 @@ class ImageTargetsStore:
                     # If we haven't seen the target in a while, remove it from our list
                     time_difference = now - stored_tag.time
                     target_expiration_duration = Duration(
-                        seconds=self._context.node.get_parameter("target_expiration_duration")
+                        seconds=self._context.node.get_parameter(
+                            "target_expiration_duration"
+                        )
                         .get_parameter_value()
                         .double_value
                     )
@@ -169,8 +195,14 @@ class ImageTargetsStore:
         # Add or update seen targets
         for target in targets:
             # Keep hit count if already in the list, otherwise initialize
-            hit_count = self._data[target.name].hit_count if target.name in self._data else increment_weight
-            self._data[target.name] = self.TargetData(hit_count=hit_count, target=target, time=now)
+            hit_count = (
+                self._data[target.name].hit_count
+                if target.name in self._data
+                else increment_weight
+            )
+            self._data[target.name] = self.TargetData(
+                hit_count=hit_count, target=target, time=now
+            )
 
     def query(self, name: str) -> TargetData | None:
         """
@@ -182,7 +214,9 @@ class ImageTargetsStore:
         if name not in self._data:
             return None
         if self._context.node.get_clock().now() - self._data[name].time >= Duration(
-            seconds=self._context.node.get_parameter("target_expiration_duration").get_parameter_value().double_value
+            seconds=self._context.node.get_parameter("target_expiration_duration")
+            .get_parameter_value()
+            .double_value
         ):
             return None
         return self._data[name]
@@ -200,7 +234,9 @@ class Course:
 
     def waypoint_pose(self, index: int) -> SE3:
         waypoint_frame = f"course{index}"
-        return SE3.from_tf_tree(self.ctx.tf_buffer, parent_frame="map", child_frame=waypoint_frame)
+        return SE3.from_tf_tree(
+            self.ctx.tf_buffer, parent_frame="map", child_frame=waypoint_frame
+        )
 
     def current_waypoint_pose_in_map(self) -> SE3:
         return self.waypoint_pose(self.waypoint_index)
@@ -220,7 +256,10 @@ class Course:
         :return: Whether the currently active waypoint is a post (if it exists)
         """
         current_waypoint = self.current_waypoint()
-        return current_waypoint is not None and current_waypoint.type.val == WaypointType.POST
+        return (
+            current_waypoint is not None
+            and current_waypoint.type.val == WaypointType.POST
+        )
 
     def look_for_object(self) -> bool:
         """
@@ -263,7 +302,8 @@ class Course:
         assert self.ctx.course is not None
         if (
             self.ctx.course.image_target_name() != "bottle"
-            and self.ctx.env.image_targets.query(self.ctx.course.image_target_name()) is not None
+            and self.ctx.env.image_targets.query(self.ctx.course.image_target_name())
+            is not None
         ):
             return long_range.LongRangeState()
         return None
@@ -275,35 +315,59 @@ def setup_course(ctx: Context, waypoints: list[tuple[Waypoint, SE3]]) -> Course:
         all_waypoint_info.append(waypoint_info)
         pose.publish_to_tf_tree(ctx.tf_broadcaster, "map", f"course{index}")
     # Make the course out of just the pure waypoint objects which is the 0th element in the tuple
-    return Course(ctx=ctx, course_data=CourseMsg(waypoints=[waypoint for waypoint, _ in waypoints]))
+    return Course(
+        ctx=ctx,
+        course_data=CourseMsg(waypoints=[waypoint for waypoint, _ in waypoints]),
+    )
 
 
-def convert_gps_to_cartesian(reference_point: np.ndarray, waypoint: GPSWaypoint) -> tuple[Waypoint, SE3]:
+def convert_gps_to_cartesian(
+    reference_point: np.ndarray, waypoint: GPSWaypoint
+) -> tuple[Waypoint, SE3]:
     """
     Converts a GPSWaypoint into a "Waypoint" used for publishing to the CourseService.
     """
     # Create a cartesian position based on GPS latitude and longitude
     x, y, _ = np.array(
-        pymap3d.geodetic2enu(waypoint.latitude_degrees, waypoint.longitude_degrees, 0, *reference_point, deg=True)
+        pymap3d.geodetic2enu(
+            waypoint.latitude_degrees,
+            waypoint.longitude_degrees,
+            0,
+            *reference_point,
+            deg=True,
+        )
     )
     # Zero the z-coordinate because even though the altitudes are set to zero,
     # Two points on a sphere are not going to have the same z-coordinate.
     # Navigation algorithms currently require all coordinates to have zero as the z-coordinate.
-    return Waypoint(tag_id=waypoint.tag_id, type=waypoint.type), SE3.from_position_orientation(x, y)
+    return Waypoint(
+        tag_id=waypoint.tag_id, type=waypoint.type
+    ), SE3.from_position_orientation(x, y)
 
 
-def convert_cartesian_to_gps(reference_point: np.ndarray, coordinate: np.ndarray) -> GPSWaypoint:
+def convert_cartesian_to_gps(
+    reference_point: np.ndarray, coordinate: np.ndarray
+) -> GPSWaypoint:
     """
     Converts a coordinate to a GPSWaypoint (used for sending data back to basestation)
     """
     x, y, z = coordinate
     ref_lat, ref_long, _ = reference_point
     lat, long, _ = pymap3d.enu2geodetic(x, y, z, ref_lat, ref_long, 0)
-    return GPSWaypoint(latitude_degree=lat, longitude_degrees=long, type=WaypointType(val=WaypointType.NO_SEARCH))
+    return GPSWaypoint(
+        latitude_degree=lat,
+        longitude_degrees=long,
+        type=WaypointType(val=WaypointType.NO_SEARCH),
+    )
 
 
-def convert_and_get_course(ctx: Context, reference_point: np.ndarray, request: EnableAuton.Request) -> Course:
-    waypoints = [convert_gps_to_cartesian(reference_point, waypoint) for waypoint in request.waypoints]
+def convert_and_get_course(
+    ctx: Context, reference_point: np.ndarray, request: EnableAuton.Request
+) -> Course:
+    waypoints = [
+        convert_gps_to_cartesian(reference_point, waypoint)
+        for waypoint in request.waypoints
+    ]
     return setup_course(ctx, waypoints)
 
 
@@ -340,30 +404,50 @@ class Context:
         self.rover = Rover(self, False, OffState(), Path())
         self.env = Environment(self, image_targets=ImageTargetsStore(self))
         self.disable_requested = False
-        self.world_frame = node.get_parameter("world_frame").get_parameter_value().string_value
-        self.rover_frame = node.get_parameter("rover_frame").get_parameter_value().string_value
+        self.world_frame = (
+            node.get_parameter("world_frame").get_parameter_value().string_value
+        )
+        self.rover_frame = (
+            node.get_parameter("rover_frame").get_parameter_value().string_value
+        )
 
-        self.enable_auton_service = node.create_service(EnableAuton, "enable_auton", self.recv_enable_auton)
+        self.enable_auton_service = node.create_service(
+            EnableAuton, "enable_auton", self.recv_enable_auton
+        )
 
         self.command_publisher = node.create_publisher(Twist, "nav_cmd_vel", 1)
-        self.search_point_publisher = node.create_publisher(GPSPointList, "search_path", 1)
-        self.path_history_publisher = node.create_publisher(Path, "ground_truth_path", 10)
+        self.search_point_publisher = node.create_publisher(
+            GPSPointList, "search_path", 1
+        )
+        self.path_history_publisher = node.create_publisher(
+            Path, "ground_truth_path", 10
+        )
         self.tf_broadcaster = tf2_ros.TransformBroadcaster(node)
 
         node.create_subscription(Bool, "nav_stuck", self.stuck_callback, 1)
         node.create_subscription(ImageTargets, "tags", self.image_targets_callback, 1)
-        node.create_subscription(ImageTargets, "objects", self.image_targets_callback, 1)
+        node.create_subscription(
+            ImageTargets, "objects", self.image_targets_callback, 1
+        )
         self.tf_buffer = tf2_ros.Buffer()
         tf2_ros.TransformListener(self.tf_buffer, node)
 
-    def recv_enable_auton(self, request: EnableAuton.Request, response: EnableAuton.Response) -> EnableAuton.Response:
+    def recv_enable_auton(
+        self, request: EnableAuton.Request, response: EnableAuton.Response
+    ) -> EnableAuton.Response:
 
         if request.enable:
             ref = np.array(
                 [
-                    self.node.get_parameter("gps_linearization/ref_lat").get_parameter_value().double_value,
-                    self.node.get_parameter("gps_linearization/ref_long").get_parameter_value().double_value,
-                    self.node.get_parameter("gps_linearization/ref_alt").get_parameter_value().double_value,
+                    self.node.get_parameter("gps_linearization/ref_lat")
+                    .get_parameter_value()
+                    .double_value,
+                    self.node.get_parameter("gps_linearization/ref_long")
+                    .get_parameter_value()
+                    .double_value,
+                    self.node.get_parameter("gps_linearization/ref_alt")
+                    .get_parameter_value()
+                    .double_value,
                 ]
             )
             self.course = convert_and_get_course(self, ref, request)

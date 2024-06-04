@@ -54,12 +54,18 @@ class WaypointState(State):
             return self
 
         # Attempt to find the waypoint in the TF tree and drive to it
-        waypoint_position_in_map = context.course.current_waypoint_pose_in_map().translation()
+        waypoint_position_in_map = (
+            context.course.current_waypoint_pose_in_map().translation()
+        )
         cmd_vel, arrived = context.drive.get_drive_command(
             waypoint_position_in_map,
             rover_in_map,
-            context.node.get_parameter("waypoint/stop_threshold").get_parameter_value().double_value,
-            context.node.get_parameter("waypoint/drive_forward_threshold").get_parameter_value().double_value,
+            context.node.get_parameter("waypoint/stop_threshold")
+            .get_parameter_value()
+            .double_value,
+            context.node.get_parameter("waypoint/drive_forward_threshold")
+            .get_parameter_value()
+            .double_value,
         )
         if arrived:
             context.env.arrived_at_waypoint = True

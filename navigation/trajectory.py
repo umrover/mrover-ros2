@@ -35,7 +35,11 @@ class SearchTrajectory(Trajectory):
 
     @classmethod
     def gen_spiral_coordinates(
-        cls, coverage_radius: float, distance_between_spirals: float, num_segments_per_rotation: int, insert_extra: bool
+        cls,
+        coverage_radius: float,
+        distance_between_spirals: float,
+        num_segments_per_rotation: int,
+        insert_extra: bool,
     ) -> np.ndarray:
         """
         Generates a set of coordinates for a spiral search pattern centered at the origin
@@ -47,9 +51,13 @@ class SearchTrajectory(Trajectory):
         # The number of spirals should ensure coverage of the entire radius.
         # We add 1 to ensure that the last spiral covers the radius along the entire rotation,
         # as otherwise we will just make the outermost point touch the radius
-        num_spirals = np.ceil(coverage_radius / distance_between_spirals).astype("int") + 1
+        num_spirals = (
+            np.ceil(coverage_radius / distance_between_spirals).astype("int") + 1
+        )
         # The angles are evenly spaced between 0 and 2pi*num_segments_per_rotation (add one to the number of points because N+1 points make N segments)
-        angles = np.linspace(0, 2 * np.pi * num_spirals, num_segments_per_rotation * num_spirals + 1)
+        angles = np.linspace(
+            0, 2 * np.pi * num_spirals, num_segments_per_rotation * num_spirals + 1
+        )
         # Radii are computed via following polar formula.
         # This is correct because you want the radius to increase by 'distance_between_spirals' every 2pi radians (one rotation)
         radii = angles * (distance_between_spirals / (2 * np.pi))
@@ -68,7 +76,9 @@ class SearchTrajectory(Trajectory):
                 unit_vector = vector / magnitude
                 count = 0.0
                 while count < magnitude - 3.5:
-                    all_points.append(all_points[-1] + (unit_vector * 2.5))  # TODO: figure out how far apart to insert
+                    all_points.append(
+                        all_points[-1] + (unit_vector * 2.5)
+                    )  # TODO: figure out how far apart to insert
                     count += 2.5
             return np.array(all_points)
 
@@ -95,14 +105,20 @@ class SearchTrajectory(Trajectory):
         :return:    SearchTrajectory object
         """
         zero_centered_spiral_r2 = cls.gen_spiral_coordinates(
-            coverage_radius, distance_between_spirals, segments_per_rotation, insert_extra
+            coverage_radius,
+            distance_between_spirals,
+            segments_per_rotation,
+            insert_extra,
         )
 
         # numpy broadcasting magic to add center to each row of the spiral coordinates
         spiral_coordinates_r2 = zero_centered_spiral_r2 + center
         # add a column of zeros to make it 3D
         spiral_coordinates_r3 = np.hstack(
-            (spiral_coordinates_r2, np.zeros(spiral_coordinates_r2.shape[0]).reshape(-1, 1))
+            (
+                spiral_coordinates_r2,
+                np.zeros(spiral_coordinates_r2.shape[0]).reshape(-1, 1),
+            )
         )
         return SearchTrajectory(
             spiral_coordinates_r3,

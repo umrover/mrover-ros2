@@ -28,7 +28,7 @@ class Navigation(Node):
 
         self.ctx = ctx
 
-        self.get_logger().info("Navigation starting...")
+        self.get_logger().info("Starting...")
 
         self.state_machine = StateMachine[Context](OffState(), "NavigationStateMachine", ctx, self.get_logger())
         self.state_machine.add_transitions(
@@ -76,7 +76,7 @@ class Navigation(Node):
         self.create_timer(update_rate, self.state_machine.update)
         self.create_timer(pub_path_rate, self.publish_path)
 
-        self.get_logger().info("Navigation started!")
+        self.get_logger().info("Armed!")
 
     def publish_path(self):
         if (rover_pose_in_map := self.ctx.rover.get_pose_in_map()) is not None:

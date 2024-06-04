@@ -16,7 +16,10 @@ from .trajectory import Trajectory
 class AvoidPostTrajectory(Trajectory):
     @staticmethod
     def avoid_post_trajectory(
-        context: Context, rover_pose: SE3, post_pos: np.ndarray, waypoint_pos: np.ndarray
+        context: Context,
+        rover_pose: SE3,
+        post_pos: np.ndarray,
+        waypoint_pos: np.ndarray,
     ) -> AvoidPostTrajectory:
         """
         Generates a trajectory that avoids a post until the rover has a clear path to the waypoint
@@ -49,10 +52,18 @@ class AvoidPostTrajectory(Trajectory):
 
         rover_direction = rover_direction / np.linalg.norm(rover_direction)
 
-        post_radius = context.node.get_parameter("single_tag/post_radius").get_parameter_value().double_value
+        post_radius = (
+            context.node.get_parameter("single_tag/post_radius")
+            .get_parameter_value()
+            .double_value
+        )
         post_circle = Point(post_pos[0], post_pos[1]).buffer(post_radius)
 
-        backup_distance = context.node.get_parameter("recovery/recovery_distance").get_parameter_value().double_value
+        backup_distance = (
+            context.node.get_parameter("recovery/recovery_distance")
+            .get_parameter_value()
+            .double_value
+        )
         backup_point = rover_pos - backup_distance * rover_direction
 
         path = LineString([backup_point, waypoint_pos])
@@ -116,9 +127,15 @@ class PostBackupState(State):
         rover_in_map = context.rover.get_pose_in_map()
         assert rover_in_map is not None
 
-        stop_thresh = context.node.get_parameter("search/stop_threshold").get_parameter_value().double_value
+        stop_thresh = (
+            context.node.get_parameter("search/stop_threshold")
+            .get_parameter_value()
+            .double_value
+        )
         drive_fwd_thresh = (
-            context.node.get_parameter("search/drive_forward_threshold").get_parameter_value().double_value
+            context.node.get_parameter("search/drive_forward_threshold")
+            .get_parameter_value()
+            .double_value
         )
         cmd_vel, arrived = context.drive.get_drive_command(
             target_pos,
