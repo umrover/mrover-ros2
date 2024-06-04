@@ -18,8 +18,8 @@ import rclpy
 from geometry_msgs.msg import Twist
 from mrover.msg import StateMachineStateUpdate
 from nav_msgs.msg import Odometry
-from rclpy import Node
 from rclpy.duration import Duration
+from rclpy.node import Node
 from rclpy.time import Time
 from std_msgs.msg import Bool
 
@@ -33,13 +33,13 @@ class StuckDetector(Node):
     last_trigger_time: Time | None
 
     def __init__(self) -> None:
-        super().__init__("stuck_detector")
+        super().__init__("stuck_detector", allow_undeclared_parameters=True)
 
         self.stuck_pub = self.create_publisher(Bool, "nav_stuck", 1)
 
-        nav_status_sub = message_filters.Subscriber(self, "nav_state", StateMachineStateUpdate)
-        odometry_sub = message_filters.Subscriber(self, "odometry", Odometry)
-        cmd_vel_sub = message_filters.Subscriber(self, "cmd_vel", Twist)
+        nav_status_sub = message_filters.Subscriber(self, StateMachineStateUpdate, "nav_state")
+        odometry_sub = message_filters.Subscriber(self, Odometry, "odometry")
+        cmd_vel_sub = message_filters.Subscriber(self, Twist, "cmd_vel")
         message_filters.ApproximateTimeSynchronizer(
             [nav_status_sub, cmd_vel_sub, odometry_sub], 10, 1.0, allow_headerless=True
         ).registerCallback(self.update)
