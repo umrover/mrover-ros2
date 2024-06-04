@@ -44,21 +44,21 @@ class SearchTrajectory(Trajectory):
         :param num_segments_per_rotation:   number of segments that the spiral has per rotation (int)
         :return                             np.ndarray of coordinates
         """
-        # the number of spirals should ensure coverage of the entire radius.
+        # The number of spirals should ensure coverage of the entire radius.
         # We add 1 to ensure that the last spiral covers the radius along the entire rotation,
         # as otherwise we will just make the outermost point touch the radius
         num_spirals = np.ceil(coverage_radius / distance_between_spirals).astype("int") + 1
-        # the angles are evenly spaced between 0 and 2pi*num_segments_per_rotation (add one to the number of points because N+1 points make N segments)
+        # The angles are evenly spaced between 0 and 2pi*num_segments_per_rotation (add one to the number of points because N+1 points make N segments)
         angles = np.linspace(0, 2 * np.pi * num_spirals, num_segments_per_rotation * num_spirals + 1)
-        # radii are computed via following polar formula.
+        # Radii are computed via following polar formula.
         # This is correct because you want the radius to increase by 'distance_between_spirals' every 2pi radians (one rotation)
         radii = angles * (distance_between_spirals / (2 * np.pi))
         # convert to cartesian coordinates
-        xcoords = np.cos(angles) * radii
-        ycoords = np.sin(angles) * radii
+        x_coords = np.cos(angles) * radii
+        y_coords = np.sin(angles) * radii
         # we want to return as a 2D matrix where each row is a coordinate pair
         # so we reshape x and y coordinates to be (n, 1) matricies then stack horizontally to get (n, 2) matrix
-        vertices = np.hstack((xcoords.reshape(-1, 1), ycoords.reshape(-1, 1)))
+        vertices = np.hstack((x_coords.reshape(-1, 1), y_coords.reshape(-1, 1)))
         all_points = []
         if insert_extra:
             for i in range(len(vertices) - 1):

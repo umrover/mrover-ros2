@@ -1,1 +1,1 @@
-GPSWaypoint[] point
+GPSWaypoint[] points

@@ -1,27 +1,12 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import Tuple, Optional
 
 import numpy as np
 
-from geometry_msgs.msg import Twist
+from geometry import SE3, normalized, angle_to_rotate
+from geometry_msgs.msg import Twist, Vector3
 from rclpy import Node
-
-
-# import rospy
-# from geometry_msgs.msg import Twist
-# from util.SE3 import SE3
-# from util.np_utils import angle_to_rotate, normalized
-#
-# MAX_DRIVING_EFFORT_WAYPOINT = rospy.get_param("drive/max_driving_effort_waypoint")
-# MAX_DRIVING_EFFORT = rospy.get_param("drive/max_driving_effort")
-# MIN_DRIVING_EFFORT = rospy.get_param("drive/min_driving_effort")
-# MAX_TURNING_EFFORT = rospy.get_param("drive/max_turning_effort")
-# MIN_TURNING_EFFORT = rospy.get_param("drive/min_turning_effort")
-# TURNING_P = rospy.get_param("drive/turning_p")
-# DRIVING_P = rospy.get_param("drive/driving_p")
-# LOOKAHEAD_DISTANCE = rospy.get_param("drive/lookahead_distance")
 
 
 class DriveController:
@@ -30,8 +15,8 @@ class DriveController:
         DRIVE_FORWARD = 2
         STOPPED = 3
 
-    _last_angular_error: Optional[float] = None
-    _last_target: Optional[np.ndarray] = None
+    _last_angular_error: float | None = None
+    _last_target: np.ndarray | None = None
     _driver_state: DriveMode = DriveMode.STOPPED
 
     def __init__(self, node: Node):
@@ -47,7 +32,6 @@ class DriveController:
         linear_error: float,
         completion_thresh: float,
         turn_in_place_thresh: float,
-        waypoint_state: bool,
     ) -> tuple[Twist, bool]:
         """
         Gets the state machine output for a given angular and linear error.
@@ -58,6 +42,12 @@ class DriveController:
         :return: a tuple of the command to send to the rover and a boolean indicating whether we are at the target
         :modifies: self._driver_state
         """
+        turning_p = self.node.get_parameter("drive/turning_p").get_parameter_value().double_value
+        driving_p = self.node.get_parameter("drive/driving_p").get_parameter_value().double_value
+        min_turning_effort = self.node.get_parameter("drive/min_turning_effort").get_parameter_value().double_value
+        max_turning_effort = self.node.get_parameter("drive/max_turning_effort").get_parameter_value().double_value
+        min_driving_effort = self.node.get_parameter("drive/min_driving_effort").get_parameter_value().double_value
+        max_driving_effort = self.node.get_parameter("drive/max_driving_effort").get_parameter_value().double_value
 
         # if we are at the target position, reset the controller and return a zero command
         if abs(linear_error) < completion_thresh:
@@ -86,9 +76,9 @@ class DriveController:
 
             # if neither of those things are true, we need to turn in place towards our target heading, so set the z component of the output Twist message
             else:
-                cmd_vel = Twist()
-                turning_p =
-                cmd_vel.angular.z = np.clip(angular_error * TURNING_P, MIN_TURNING_EFFORT, MAX_TURNING_EFFORT)
+                cmd_vel = Twist(
+                    angular=Vector3(z=np.clip(angular_error * turning_p, min_turning_effort, max_turning_effort))
+                )
                 return cmd_vel, False
 
         elif self._driver_state == self.DriveMode.DRIVE_FORWARD:
@@ -107,14 +97,10 @@ class DriveController:
                 return Twist(), False
             # otherwise we compute a drive command with both a linear and angular component in the Twist message
             else:
-                cmd_vel = Twist()
-                if waypoint_state:
-                    cmd_vel.linear.x = np.clip(
-                        linear_error * DRIVING_P, MIN_DRIVING_EFFORT, MAX_DRIVING_EFFORT_WAYPOINT
-                    )
-                else:
-                    cmd_vel.linear.x = np.clip(linear_error * DRIVING_P, MIN_DRIVING_EFFORT, MAX_DRIVING_EFFORT)
-                cmd_vel.angular.z = np.clip(angular_error * TURNING_P, MIN_TURNING_EFFORT, MAX_TURNING_EFFORT)
+                cmd_vel = Twist(
+                    linear=Vector3(x=np.clip(linear_error * driving_p, min_driving_effort, max_driving_effort)),
+                    angular=Vector3(z=np.clip(angular_error * turning_p, min_turning_effort, max_turning_effort)),
+                )
                 return cmd_vel, False
         else:
             raise ValueError(f"Invalid drive state {self._driver_state}")
@@ -136,7 +122,6 @@ class DriveController:
         :param lookahead_dist: the distance to look ahead on the path
         :return: the lookahead point
         """
-
         # Compute the vector from the previous target position to the current target position
         path_vec = path_end - path_start
         # compute the vector from the previous target position to the rover position
@@ -144,12 +129,12 @@ class DriveController:
         # compute the projection of the rover vector onto the target vector
         proj_vec = np.dot(rover_vec, path_vec) / np.dot(path_vec, path_vec) * path_vec
         lookahead_vec = lookahead_dist * normalized(path_vec)
-        lookahead_pt = proj_vec + lookahead_vec
+        lookahead_point = proj_vec + lookahead_vec
         # if the lookahead point is further away than the target, just return the target
-        if np.linalg.norm(lookahead_pt) > np.linalg.norm(path_vec):
+        if np.linalg.norm(lookahead_point) > np.linalg.norm(path_vec):
             return path_end
         else:
-            return path_start + lookahead_pt
+            return path_start + lookahead_point
 
     def get_drive_command(
         self: DriveController,
@@ -158,8 +143,7 @@ class DriveController:
         completion_thresh: float,
         turn_in_place_thresh: float,
         drive_back: bool = False,
-        path_start: Optional[np.ndarray] = None,
-        waypoint_state: bool = False,
+        path_start: np.ndarray | None = None,
     ) -> tuple[Twist, bool]:
         """
         Returns a drive command to get the rover to the target position, calls the state machine to do so and updates the last angular error in the process
@@ -169,13 +153,13 @@ class DriveController:
         :param turn_in_place_thresh: The angle threshold to consider the rover facing the target position and ready to drive forward towards it.
         :param drive_back: True if rover should drive backwards, false otherwise.
         :param path_start: If you want the rover to drive on a line segment (and actively try to stay on the line), pass the start of the line segment as this param, otherwise pass None.
-        :param waypoint_state:
         :return: A tuple of the drive command and a boolean indicating whether the rover is at the target position.
         :modifies: self._last_angular_error
         """
 
-        # Get the direction vector of the rover and the target position, zero the Z components of both since our controller only assumes motion and control over the Rover in the XY plane
-        rover_dir = rover_pose.rotation.direction_vector()
+        # Get the direction vector of the rover and the target position,
+        # zero the Z components since our controller only assumes motion and control over the rover in the XY plane
+        rover_dir = rover_pose.rotation()[:, 0]
         rover_dir[2] = 0
 
         if drive_back:
@@ -189,8 +173,9 @@ class DriveController:
             self.reset()
             return Twist(), True
 
-        if path_start is not None and np.linalg.norm(path_start - target_pos) > LOOKAHEAD_DISTANCE:
-            target_pos = self.compute_lookahead_point(path_start, target_pos, rover_pos, LOOKAHEAD_DISTANCE)
+        lookahead_distance = self.node.get_parameter("drive/lookahead_distance").get_parameter_value().double_value
+        if path_start is not None and np.linalg.norm(path_start - target_pos) > lookahead_distance:
+            target_pos = self.compute_lookahead_point(path_start, target_pos, rover_pos, lookahead_distance)
 
         target_dir = target_pos - rover_pos
 
@@ -203,7 +188,10 @@ class DriveController:
         angular_error = angle_to_rotate(rover_dir, target_dir)
 
         output = self._get_state_machine_output(
-            angular_error, linear_error, completion_thresh, turn_in_place_thresh, waypoint_state
+            angular_error,
+            linear_error,
+            completion_thresh,
+            turn_in_place_thresh,
         )
 
         if drive_back:

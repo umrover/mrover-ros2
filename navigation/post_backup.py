@@ -1,31 +1,26 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional
 
 import numpy as np
 from shapely.geometry import Point, LineString
 
-import rospy
-from navigation import waypoint, recovery
-from navigation.context import Context
-from navigation.trajectory import Trajectory
-from util.SE3 import SE3
-from util.np_utils import perpendicular_2d
+from geometry import SE3, perpendicular_2d
 from state_machine.state import State
-
-POST_RADIUS = rospy.get_param("single_tag/post_radius") * rospy.get_param("single_tag/post_avoidance_multiplier")
-BACKUP_DISTANCE = rospy.get_param("recovery/recovery_distance")
-STOP_THRESH = rospy.get_param("search/stop_threshold")
-DRIVE_FWD_THRESH = rospy.get_param("search/drive_forward_threshold")
+from . import waypoint, recovery
+from .context import Context
+from .trajectory import Trajectory
 
 
 @dataclass
 class AvoidPostTrajectory(Trajectory):
     @staticmethod
-    def avoid_post_trajectory(rover_pose: SE3, post_pos: np.ndarray, waypoint_pos: np.ndarray) -> AvoidPostTrajectory:
+    def avoid_post_trajectory(
+        context: Context, rover_pose: SE3, post_pos: np.ndarray, waypoint_pos: np.ndarray
+    ) -> AvoidPostTrajectory:
         """
         Generates a trajectory that avoids a post until the rover has a clear path to the waypoint
+        :param context:         State machine context
         :param rover_pose:      The current pose of the rover
         :param post_pos:        The position of the post
         :param waypoint_pos:    The position of the waypoint
@@ -44,34 +39,33 @@ class AvoidPostTrajectory(Trajectory):
         the backup_point and forwards to the avoidance_point.
         """
         rover_pos = rover_pose.position
-        rover_direction = rover_pose.rotation.direction_vector()
+        rover_direction = rover_pose.rotation()[:, 0]
 
-        # Converting to 2d arrays
+        # Converting to 2D arrays
         post_pos = post_pos[:2]
         rover_pos = rover_pos[:2]
         rover_direction = rover_direction[:2]
         waypoint_pos = waypoint_pos[:2]
 
-        # normalize rover_direction
         rover_direction = rover_direction / np.linalg.norm(rover_direction)
 
-        # create a Shapeley point of raidus POST_RADIUS around the post
-        post_circle = Point(post_pos[0], post_pos[1]).buffer(POST_RADIUS)
+        post_radius = context.node.get_parameter("single_tag/post_radius").get_parameter_value().double_value
+        post_circle = Point(post_pos[0], post_pos[1]).buffer(post_radius)
 
-        # generate a point BACKUP_DISTANCE behind the rover
-        backup_point = rover_pos - BACKUP_DISTANCE * rover_direction
+        backup_distance = context.node.get_parameter("recovery/recovery_distance").get_parameter_value().double_value
+        backup_point = rover_pos - backup_distance * rover_direction
 
-        # generate a line from the backup point to the waypoint
         path = LineString([backup_point, waypoint_pos])
-        # check if the path intersects the post circle
+
+        # Check if the path intersects the post circle
         if path.intersects(post_circle):
-            # get a vector perpendicular to vector from rover to post
+            # Get a vector perpendicular to vector from rover to post
             rover_to_post = post_pos - backup_point
             rover_to_post = rover_to_post / np.linalg.norm(rover_to_post)
             left_perp = perpendicular_2d(rover_to_post)  # (-y,x)
             right_perp = -left_perp
-            avoidance_point_left = post_pos + BACKUP_DISTANCE * left_perp
-            avoidance_point_right = post_pos + BACKUP_DISTANCE * right_perp
+            avoidance_point_left = post_pos + backup_distance * left_perp
+            avoidance_point_right = post_pos + backup_distance * right_perp
             left_dist = np.linalg.norm(avoidance_point_left - waypoint_pos)
             right_dist = np.linalg.norm(avoidance_point_right - waypoint_pos)
             if left_dist < right_dist:
@@ -87,7 +81,7 @@ class AvoidPostTrajectory(Trajectory):
 
 
 class PostBackupState(State):
-    trajectory: Optional[AvoidPostTrajectory]
+    trajectory: AvoidPostTrajectory | None
 
     def on_exit(self, context: Context) -> None:
         self.trajectory = None
@@ -122,15 +116,19 @@ class PostBackupState(State):
         rover_in_map = context.rover.get_pose_in_map()
         assert rover_in_map is not None
 
-        cmd_vel, arrived = context.rover.driver.get_drive_command(
+        stop_thresh = context.node.get_parameter("search/stop_threshold").get_parameter_value().double_value
+        drive_fwd_thresh = (
+            context.node.get_parameter("search/drive_forward_threshold").get_parameter_value().double_value
+        )
+        cmd_vel, arrived = context.drive.get_drive_command(
             target_pos,
             rover_in_map,
-            STOP_THRESH,
-            DRIVE_FWD_THRESH,
+            stop_thresh,
+            drive_fwd_thresh,
             drive_back=drive_backwards,
         )
         if arrived:
-            rospy.loginfo(f"Arrived at point indexed: {point_index}")
+            context.node.get_logger().info(f"Arrived at point indexed: {point_index}")
             if self.trajectory.increment_point():
                 self.trajectory = None
                 return waypoint.WaypointState()

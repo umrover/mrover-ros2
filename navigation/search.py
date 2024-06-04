@@ -1,26 +1,16 @@
 import numpy as np
-import rospy
-from navigation.context import convert_cartesian_to_gps, Context
-from navigation.trajectory import SearchTrajectory
 
 from mrover.msg import GPSPointList, WaypointType
-from navigation import recovery, waypoint
 from state_machine.state import State
+from . import recovery, waypoint
+from .context import convert_cartesian_to_gps, Context
+from .trajectory import SearchTrajectory
 
 
 class SearchState(State):
     trajectory: SearchTrajectory | None = None
     prev_target_pos_in_map: np.ndarray | None = None
     is_recovering: bool = False
-
-    STOP_THRESH = rospy.get_param("search/stop_threshold")
-    DRIVE_FORWARD_THRESHOLD = rospy.get_param("search/drive_forward_threshold")
-    SPIRAL_COVERAGE_RADIUS = rospy.get_param("search/coverage_radius")
-    SEGMENTS_PER_ROTATION = rospy.get_param("search/segments_per_rotation")
-    DISTANCE_BETWEEN_SPIRALS = rospy.get_param("search/distance_between_spirals")
-
-    OBJECT_SPIRAL_COVERAGE_RADIUS = rospy.get_param("object_search/coverage_radius")
-    OBJECT_DISTANCE_BETWEEN_SPIRALS = rospy.get_param("object_search/distance_between_spirals")
 
     def on_enter(self, context: Context) -> None:
         if SearchState.trajectory is None:
@@ -37,11 +27,11 @@ class SearchState(State):
 
         # Continue executing the path from wherever it left off
         target_position_in_map = SearchState.trajectory.get_current_point()
-        cmd_vel, arrived = context.rover.driver.get_drive_command(
+        cmd_vel, arrived = context.drive.get_drive_command(
             target_position_in_map,
             rover_in_map,
-            self.STOP_THRESH,
-            self.DRIVE_FORWARD_THRESHOLD,
+            context.node.get_parameter("search/stop_threshold").get_parameter_value().double_value,
+            context.node.get_parameter("search/drive_forward_threshold").get_parameter_value().double_value,
             path_start=self.prev_target_pos_in_map,
         )
         if arrived:
@@ -57,8 +47,15 @@ class SearchState(State):
         else:
             self.is_recovering = False
 
+        ref = np.array(
+            [
+                context.node.get_parameter("gps_linearization/ref_lat").get_parameter_value().double_value,
+                context.node.get_parameter("gps_linearization/ref_long").get_parameter_value().double_value,
+                context.node.get_parameter("gps_linearization/ref_alt").get_parameter_value().double_value,
+            ]
+        )
         context.search_point_publisher.publish(
-            GPSPointList([convert_cartesian_to_gps(pt) for pt in SearchState.trajectory.coordinates])
+            GPSPointList(points=[convert_cartesian_to_gps(ref, p) for p in SearchState.trajectory.coordinates])
         )
         context.rover.send_drive_command(cmd_vel)
 
@@ -71,26 +68,28 @@ class SearchState(State):
         return self
 
     def new_trajectory(self, context) -> None:
+        if self.is_recovering:
+            return
+
         assert context.course is not None
         search_center = context.course.current_waypoint()
 
-        if not self.is_recovering:
-            if search_center.type.val == WaypointType.POST:
-                SearchState.trajectory = SearchTrajectory.spiral_traj(
-                    context.course.current_waypoint_pose_in_map().position[0:2],
-                    self.SPIRAL_COVERAGE_RADIUS,
-                    self.DISTANCE_BETWEEN_SPIRALS,
-                    self.SEGMENTS_PER_ROTATION,
-                    search_center.tag_id,
-                    False,
-                )
-            else:  # water bottle or mallet
-                SearchState.trajectory = SearchTrajectory.spiral_traj(
-                    context.course.current_waypoint_pose_in_map().position[0:2],
-                    self.OBJECT_SPIRAL_COVERAGE_RADIUS,
-                    self.OBJECT_DISTANCE_BETWEEN_SPIRALS,
-                    self.SEGMENTS_PER_ROTATION,
-                    search_center.tag_id,
-                    False,
-                )
-            self.prev_target_pos_in_map = None
+        if search_center.type.val == WaypointType.POST:
+            SearchState.trajectory = SearchTrajectory.spiral_traj(
+                context.course.current_waypoint_pose_in_map().position[0:2],
+                context.node.get_parameter("search/coverage_radius").get_parameter_value().double_value,
+                context.node.get_parameter("search/distance_between_spirals").get_parameter_value().double_value,
+                context.node.get_parameter("search/segments_per_rotation").get_parameter_value().integer_value,
+                search_center.tag_id,
+                False,
+            )
+        else:  # water bottle or mallet
+            SearchState.trajectory = SearchTrajectory.spiral_traj(
+                context.course.current_waypoint_pose_in_map().position[0:2],
+                context.node.get_parameter("object_search/coverage_radius").get_parameter_value().double_value,
+                context.node.get_parameter("object_search/distance_between_spirals").get_parameter_value().double_value,
+                context.node.get_parameter("search/segments_per_rotation").get_parameter_value().integer_value,
+                search_center.tag_id,
+                False,
+            )
+        self.prev_target_pos_in_map = None

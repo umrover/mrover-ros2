@@ -1,15 +1,10 @@
-from typing import Optional
-
 import numpy as np
-from scipy.spatial.transform import Rotation
 
-import rospy
-from navigation import recovery
-from navigation.approach_target import ApproachTargetState
-from navigation.context import Context
+from geometry import SO2
 from state_machine.state import State
-
-DISTANCE_AHEAD = rospy.get_param("long_range/distance_ahead")
+from . import recovery
+from .approach_target import ApproachTargetState
+from .context import Context
 
 
 class LongRangeState(ApproachTargetState):
@@ -28,7 +23,7 @@ class LongRangeState(ApproachTargetState):
     def on_exit(self, context: Context) -> None:
         pass
 
-    def get_target_position(self, context: Context) -> Optional[np.ndarray]:
+    def get_target_position(self, context: Context) -> np.ndarray | None:
         assert context.course is not None
 
         current_waypoint = context.course.current_waypoint()
@@ -41,8 +36,8 @@ class LongRangeState(ApproachTargetState):
         rover_in_map = context.rover.get_pose_in_map()
         assert rover_in_map is not None
 
-        rover_position = rover_in_map.position
-        rover_direction = rover_in_map.rotation.direction_vector()
+        rover_position = rover_in_map.translation()
+        rover_direction = rover_in_map.rotation()[:, 0]
 
         bearing_to_tag = target.target.bearing
         # If you have not seen the tag in a while but are waiting until the expiration time is up,
@@ -50,11 +45,9 @@ class LongRangeState(ApproachTargetState):
         if target.hit_count <= 0:
             bearing_to_tag = 0
 
-        bearing_rotation_mat = Rotation.from_rotvec([0, 0, bearing_to_tag]).as_matrix()
+        direction_to_tag = SO2(bearing_to_tag).act(rover_direction[:2])
 
-        direction_to_tag = bearing_rotation_mat[:2, :2] @ rover_direction[:2]
-
-        distance = DISTANCE_AHEAD
+        distance = context.node.get_parameter("long_range/distance_ahead").get_parameter_value().double_value
         direction_to_tag = np.array([direction_to_tag[0], direction_to_tag[1], 0.0])
         tag_position = rover_position + direction_to_tag * distance
         return tag_position

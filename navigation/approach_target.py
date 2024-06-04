@@ -1,5 +1,3 @@
-from typing import Optional
-
 import numpy as np
 
 from state_machine.state import State
@@ -14,7 +12,7 @@ class ApproachTargetState(State):
     def on_exit(self, context: Context) -> None:
         pass
 
-    def get_target_position(self, context: Context) -> Optional[np.ndarray]:
+    def get_target_position(self, context: Context) -> np.ndarray | None:
         return context.env.current_target_pos()
 
     def determine_next(self, context: Context, is_finished: bool) -> State:
@@ -48,7 +46,7 @@ class ApproachTargetState(State):
         rover_in_map = context.rover.get_pose_in_map()
         assert rover_in_map is not None
 
-        cmd_vel, has_arrived = context.rover.driver.get_drive_command(
+        cmd_vel, has_arrived = context.drive.get_drive_command(
             target_position,
             rover_in_map,
             context.node.get_parameter("single_tag/stop_threshold").get_parameter_value().double_value,

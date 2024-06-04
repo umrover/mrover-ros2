@@ -1,6 +1,6 @@
 from geometry_msgs.msg import Twist
-from navigation import waypoint
 from state_machine.state import State
+from . import waypoint
 
 
 class DoneState(State):

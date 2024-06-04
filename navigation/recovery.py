@@ -1,17 +1,12 @@
 from enum import Enum
-from typing import Optional
 
 import numpy as np
 
-import rospy
-from navigation.context import Context
-from util.np_utils import rotate_2d
+from geometry import SO2
+from rclpy.duration import Duration
+from rclpy.time import Time
 from state_machine.state import State
-
-STOP_THRESH = rospy.get_param("recovery/stop_threshold")
-DRIVE_FWD_THRESH = rospy.get_param("recovery/drive_forward_threshold")
-RECOVERY_DISTANCE = rospy.get_param("recovery/recovery_distance")
-GIVE_UP_TIME = rospy.get_param("recovery/give_up_time")
+from .context import Context
 
 
 class JTurnAction(Enum):
@@ -20,9 +15,9 @@ class JTurnAction(Enum):
 
 
 class RecoveryState(State):
-    waypoint_behind: Optional[np.ndarray]
+    waypoint_behind: np.ndarray | None
     current_action: JTurnAction
-    start_time: Optional[rospy.Time] = None
+    start_time: Time | None = None
     waypoint_calculated: bool
 
     def reset(self, context: Context) -> None:
@@ -34,13 +29,20 @@ class RecoveryState(State):
 
     def on_enter(self, context: Context) -> None:
         self.reset(context)
-        self.start_time = rospy.Time.now()
+        self.start_time = context.node.get_clock().now()
 
     def on_exit(self, context: Context) -> None:
         self.reset(context)
 
     def on_loop(self, context: Context) -> State:
-        if rospy.Time.now() - self.start_time > rospy.Duration(GIVE_UP_TIME):
+        give_up_time = context.node.get_parameter("recovery/give_up_time").get_parameter_value().double_value
+        recovery_distance = context.node.get_parameter("recovery/recovery_distance").get_parameter_value().double_value
+        stop_thresh = context.node.get_parameter("recovery/stop_threshold").get_parameter_value().double_value
+        drive_fwd_thresh = (
+            context.node.get_parameter("recovery/drive_forward_threshold").get_parameter_value().double_value
+        )
+
+        if context.node.get_clock().now() - self.start_time > Duration(seconds=give_up_time):
             return context.rover.previous_state
 
         # Making waypoint behind the rover to go backwards
@@ -53,31 +55,31 @@ class RecoveryState(State):
             # Only set waypoint_behind once so that it doesn't get overwritten and moved
             # further back every iteration
             if self.waypoint_behind is None:
-                dir_vector = -1 * RECOVERY_DISTANCE * rover_in_map.rotation.direction_vector()
+                dir_vector = -1 * recovery_distance * rover_in_map.rotation()[:, 0]
                 self.waypoint_behind = rover_in_map.position + dir_vector
 
-            cmd_vel, arrived_back = context.rover.driver.get_drive_command(
-                self.waypoint_behind, rover_in_map, STOP_THRESH, DRIVE_FWD_THRESH, drive_back=True
+            cmd_vel, arrived_back = context.drive.get_drive_command(
+                self.waypoint_behind, rover_in_map, stop_thresh, drive_fwd_thresh, drive_back=True
             )
             context.rover.send_drive_command(cmd_vel)
 
             if arrived_back:
                 self.current_action = JTurnAction.J_TURNING  # move to second part of turn
                 self.waypoint_behind = None
-                context.rover.driver.reset()
+                context.drive.reset()
 
         # If second round, set a waypoint off to the side of the rover and command it to
         # turn and drive backwards towards it until it arrives at that point. So it will begin
         # by turning then it will drive backwards.
         if self.current_action == JTurnAction.J_TURNING:
             if self.waypoint_behind is None:
-                dir_vector = rover_in_map.rotation.direction_vector()
-                # the waypoint will be 45 degrees to the left of the rover behind it.
-                dir_vector[:2] = RECOVERY_DISTANCE * rotate_2d(dir_vector[:2], 3 * np.pi / 4)
+                dir_vector = rover_in_map.rotation()[:, 0]
+                # The waypoint will be 45 degrees to the left of the rover behind it.
+                dir_vector[:2] = recovery_distance * SO2(3 * np.pi / 4).act(dir_vector[:2])
                 self.waypoint_behind = rover_in_map.position + dir_vector
 
-            cmd_vel, arrived_turn = context.rover.driver.get_drive_command(
-                self.waypoint_behind, rover_in_map, STOP_THRESH, DRIVE_FWD_THRESH, drive_back=True
+            cmd_vel, arrived_turn = context.drive.get_drive_command(
+                self.waypoint_behind, rover_in_map, stop_thresh, drive_fwd_thresh, drive_back=True
             )
             context.rover.send_drive_command(cmd_vel)
 

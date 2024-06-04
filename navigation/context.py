@@ -4,9 +4,9 @@ from dataclasses import dataclass
 
 import numpy as np
 import pymap3d
-from manifpy import SE3
 
 import tf2_ros
+from geometry import SE3
 from geometry_msgs.msg import Twist
 from mrover.msg import (
     Waypoint,
@@ -31,20 +31,6 @@ from .drive import DriveController
 
 NO_TAG: int = -1
 
-# TARGET_EXPIRATION_DURATION = Duration(60)
-
-# LONG_RANGE_EXPIRATION_DURATION = rospy.Duration(rospy.get_param("long_range/time_threshold"))
-# INCREMENT_WEIGHT = rospy.get_param("long_range/increment_weight")
-# DECREMENT_WEIGHT = rospy.get_param("long_range/decrement_weight")
-# MIN_HITS = rospy.get_param("long_range/min_hits")
-# MAX_HITS = rospy.get_param("long_range/max_hits")
-#
-# REF_LAT = rospy.get_param("gps_linearization/reference_point_latitude")
-# REF_LON = rospy.get_param("gps_linearization/reference_point_longitude")
-# REF_ALT = rospy.get_param("gps_linearization/reference_point_altitude")
-#
-# tf_broadcaster: tf2_ros.StaticTransformBroadcaster = tf2_ros.StaticTransformBroadcaster()
-
 
 @dataclass
 class Rover:
@@ -52,7 +38,6 @@ class Rover:
     stuck: bool
     previous_state: State
     path_history: Path = Path(header=Header(frame_id="map"))
-    driver: DriveController = DriveController()
 
     def get_pose_in_map(self) -> SE3 | None:
         try:
@@ -337,6 +322,7 @@ class Context:
     # Use these as the primary interfaces in states
     course: Course | None
     rover: Rover
+    drive: DriveController
     env: Environment
     disable_requested: bool
 
@@ -348,6 +334,7 @@ class Context:
         from .state import OffState
 
         self.node = node
+        self.drive = DriveController(node)
 
         self.course = None
         self.rover = Rover(self, False, OffState(), Path())
@@ -370,11 +357,16 @@ class Context:
         tf2_ros.TransformListener(self.tf_buffer, node)
 
     def recv_enable_auton(self, request: EnableAuton.Request, response: EnableAuton.Response) -> EnableAuton.Response:
-        ref_lat = self.node.get_parameter("gps_linearization/reference_point_latitude").get_parameter_value()
-        ref_long = self.node.get_parameter("gps_linearization/reference_point_longitude").get_parameter_value()
-        ref_alt = self.node.get_parameter("gps_linearization/reference_point_altitude").get_parameter_value()
+
         if request.enable:
-            self.course = convert_and_get_course(self, np.array([ref_lat, ref_long, ref_alt]), request)
+            ref = np.array(
+                [
+                    self.node.get_parameter("gps_linearization/ref_lat").get_parameter_value().double_value,
+                    self.node.get_parameter("gps_linearization/ref_long").get_parameter_value().double_value,
+                    self.node.get_parameter("gps_linearization/ref_alt").get_parameter_value().double_value,
+                ]
+            )
+            self.course = convert_and_get_course(self, ref, request)
         else:
             self.disable_requested = True
         response.success = True

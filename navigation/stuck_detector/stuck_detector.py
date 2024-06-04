@@ -10,7 +10,6 @@ __author__ = "Quintin Dwight"
 __credits__ = ["Neha", "Emerson"]
 
 import sys
-from typing import Optional
 
 import numpy as np
 
@@ -31,7 +30,7 @@ class StuckDetector(Node):
     cmd_vel: np.ndarray
     real_vel: np.ndarray
     last_data_update: Time
-    last_trigger_time: Optional[Time]
+    last_trigger_time: Time | None
 
     def __init__(self) -> None:
         super().__init__("stuck_detector")
