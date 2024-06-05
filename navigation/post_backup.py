@@ -100,6 +100,7 @@ class PostBackupState(State):
         assert rover_in_map is not None
 
         self.trajectory = AvoidPostTrajectory.avoid_post_trajectory(
+            context,
             rover_in_map,
             context.env.last_target_location,
             context.course.current_waypoint_pose_in_map().translation(),

@@ -1,0 +1,35 @@
+[project]
+name = "mrover"
+version = "2025.0.0"
+description = "MRover Python Code"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { file = "LICENSE.md" }
+maintainers = [
+    { name = "Michigan Mars Rover Team", email = "rover-software-team@umich.edu" }
+]
+dependencies = [
+    "numpy==1.26.4",
+    "shapely==2.0.4",
+    "moteus==0.3.70",
+    "pymap3d==3.1.0",
+    "pyubx2==1.2.43",
+]
+
+[project.optional-dependencies]
+dev = [
+    # If you update these, be sure to update the correspondig version checkers in style.sh
+    "black==24.4.2",
+    "mypy==1.10.0",
+    "ipython==8.25.0",
+]
+
+[build-system]
+requires = ["flit_core"]
+build-backend = "flit_core.buildapi"
+
+[project.urls]
+"Homepage" = "https://mrover.org"
+
+[tool.black]
+line-length = 120
