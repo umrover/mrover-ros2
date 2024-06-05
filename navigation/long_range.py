@@ -1,6 +1,6 @@
 import numpy as np
 
-from geometry import SO2
+from lie import SO2
 from state_machine.state import State
 from . import recovery
 from .approach_target import ApproachTargetState

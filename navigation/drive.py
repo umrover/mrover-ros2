@@ -4,7 +4,7 @@ from enum import Enum
 
 import numpy as np
 
-from geometry import SE3, normalized, angle_to_rotate
+from lie import SE3, normalized, angle_to_rotate
 from geometry_msgs.msg import Twist, Vector3
 from rclpy.node import Node
 

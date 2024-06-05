@@ -2,7 +2,7 @@ from enum import Enum
 
 import numpy as np
 
-from geometry import SO2
+from lie import SO2
 from rclpy.duration import Duration
 from rclpy.time import Time
 from state_machine.state import State

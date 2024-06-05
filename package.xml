@@ -7,8 +7,12 @@
     <maintainer email="rover-software-team@umich.edu">MRover</maintainer>
     <license>GPL-3.0</license>
 
+    <depend>tf2</depend>
+    <depend>tf2_ros</depend>
+    <depend>urdf</depend>
     <depend>rclpy</depend>
     <depend>rclcpp</depend>
+    <depend>nav_msgs</depend>
     <depend>sensor_msgs</depend>
     <depend>geometry_msgs</depend>
 

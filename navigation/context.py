@@ -6,7 +6,7 @@ import numpy as np
 import pymap3d
 
 import tf2_ros
-from geometry import SE3
+from lie import SE3
 from geometry_msgs.msg import Twist
 from mrover.msg import (
     Waypoint,

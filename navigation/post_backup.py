@@ -5,7 +5,7 @@ from dataclasses import dataclass
 import numpy as np
 from shapely.geometry import Point, LineString
 
-from geometry import SE3, perpendicular_2d
+from lie import SE3, perpendicular_2d
 from state_machine.state import State
 from . import waypoint, recovery
 from .context import Context
