@@ -1,5 +1,15 @@
 #!/usr/bin/env python3
 
+"""
+Converts geodetic GPS coordinates (latitude, longitude, altitude) to local ENU coordinates (x, y, z) using a reference.
+These are spherical and cartesian coordinate systems, respectively.
+The former would be hard when working on autonomous tasks.
+The latter allows us to use the TF tree and simplifies math.
+
+This approximation is valid for small distances around the reference point.
+At competition, it should be moved from the Wilson Center to MDRS, or better yet the starting point of the course.
+"""
+
 import sys
 
 import numpy as np
@@ -31,8 +41,9 @@ class GPSLinearization(Node):
         self.ref_alt = self.get_parameter("ref_alt").value
         self.world_frame = self.get_parameter("world_frame").value
 
-        self.subscription = self.create_subscription(NavSatFix, "gps/fix", self.single_gps_callback, 10)
-        self.position_publisher = self.create_publisher(Vector3Stamped, "linearized_position", 10)
+        self.pos_pub = self.create_publisher(Vector3Stamped, "linearized_position", 10)
+
+        self.fix_sub = self.create_subscription(NavSatFix, "gps/fix", self.single_gps_callback, 10)
 
     def single_gps_callback(self, msg: NavSatFix):
         if np.isnan([msg.latitude, msg.longitude, msg.altitude]).any():
@@ -40,7 +51,7 @@ class GPSLinearization(Node):
             return
 
         x, y, _ = geodetic2enu(msg.latitude, msg.longitude, 0.0, self.ref_lat, self.ref_lon, self.ref_alt, deg=True)
-        self.position_publisher.publish(Vector3Stamped(header=msg.header, vector=Vector3(x=x, y=y)))
+        self.pos_pub.publish(Vector3Stamped(header=msg.header, vector=Vector3(x=x, y=y)))
 
 
 def main() -> None:

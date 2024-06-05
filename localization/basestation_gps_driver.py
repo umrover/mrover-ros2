@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
 
+"""
+TODO(quintin): Document
+"""
+
 import sys
 
 from pyubx2 import UBXReader, UBX_PROTOCOL, RTCM3_PROTOCOL, protocol
@@ -9,7 +13,7 @@ import rclpy
 from rclpy import Parameter
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
-from rtcm_msgs.msg import Message
+from rtcm_msgs.msg import Message as RTCMMessage
 
 
 class BaseStationDriverNode(Node):
@@ -26,7 +30,7 @@ class BaseStationDriverNode(Node):
         port = self.get_parameter("port").value
         baud = self.get_parameter("baud").value
 
-        self.rtcm_pub = self.create_publisher(Message, "rtcm", 10)
+        self.rtcm_pub = self.create_publisher(RTCMMessage, "rtcm", 10)
 
         self.svin_started = False
         self.svin_complete = False
@@ -43,7 +47,7 @@ class BaseStationDriverNode(Node):
                     continue
 
                 if protocol(raw_msg) == RTCM3_PROTOCOL:
-                    self.rtcm_pub.publish(Message(message=raw_msg))
+                    self.rtcm_pub.publish(RTCMMessage(message=raw_msg))
                 elif msg.identity == "NAV-SVIN":
                     if not self.svin_started and msg.active:
                         self.svin_started = True
