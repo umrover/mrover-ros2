@@ -3,6 +3,7 @@
 namespace mrover {
 
     Simulator::Simulator() : Node{"simulator", rclcpp::NodeOptions{}
+                                                       .use_intra_process_comms(true)
                                                        .allow_undeclared_parameters(true)
                                                        .automatically_declare_parameters_from_overrides(true)} {
         try {

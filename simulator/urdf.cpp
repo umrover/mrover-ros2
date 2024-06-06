@@ -32,11 +32,19 @@ namespace mrover {
 
     auto Simulator::initUrdfsFromParams() -> void {
         {
+            // As far as I can tell array of structs in YAML is not even supported by ROS 2 as compared to ROS 1
+            // See: https://robotics.stackexchange.com/questions/109909/reading-a-vector-of-structs-as-parameters-in-ros2
+
             std::map<std::string, rclcpp::Parameter> objects;
             get_parameters("objects", objects);
 
-            for (auto const& [fullName, object]: objects) {
-                std::string name = fullName.substr(0, fullName.find('.'));
+            // Extract the names of the objects, there will be multiple object_name.* keys that we consolidate into just object_name
+            std::set<std::string> names;
+            std::ranges::transform(objects | std::views::keys, std::inserter(names, names.end()), [](std::string const& fullName) {
+                return fullName.substr(0, fullName.find('.'));
+            });
+
+            for (auto const& name: names) {
                 std::string uri = objects.at(std::format("{}.uri", name)).as_string();
                 std::vector<double> position = objects.contains(std::format("{}.position", name)) ? objects.at(std::format("{}.position", name)).as_double_array() : std::vector<double>{0, 0, 0};
                 std::vector<double> orientation = objects.contains(std::format("{}.orientation", name)) ? objects.at(std::format("{}.orientation", name)).as_double_array() : std::vector<double>{0, 0, 0, 1};
