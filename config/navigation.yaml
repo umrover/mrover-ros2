@@ -10,15 +10,6 @@
     # How many state machine iterations per second
     update_rate: 60.0
 
-    world_frame: "map"
-    rover_frame: "base_link"
-
-    gps_linearization:
-      # Exception, these are in degrees
-      ref_lat: 38.4225202
-      ref_lon: -110.7844653
-      ref_alt: 0.0
-
     # How long it takes to forget about a target
     # Useful if the rover turns away from the target for a brief moment
     # Or if there was an ephemeral false positive detection

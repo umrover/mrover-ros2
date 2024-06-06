@@ -4,7 +4,6 @@
 
 #include "glfw_pointer.hpp"
 #include "wgpu_objects.hpp"
-#include <ros/publisher.h>
 
 using namespace std::literals;
 
@@ -21,13 +20,13 @@ namespace mrover {
                                      0, 0, 0, 1)
                                             .finished();
 
-    static auto const COLOR_FORMAT = wgpu::TextureFormat::BGRA8Unorm;
-    static auto const DEPTH_FORMAT = wgpu::TextureFormat::Depth32Float;
-    static auto const NORMAL_FORMAT = wgpu::TextureFormat::RGBA16Float;
+    static constexpr auto COLOR_FORMAT = wgpu::TextureFormat::BGRA8Unorm;
+    static constexpr auto DEPTH_FORMAT = wgpu::TextureFormat::Depth32Float;
+    static constexpr auto NORMAL_FORMAT = wgpu::TextureFormat::RGBA16Float;
 
     struct Camera;
     struct StereoCamera;
-    class SimulatorNodelet;
+    class Simulator;
 
     // Eigen stores matrices in column-major which is the same as WGPU
     // As such there is no need to modify data before uploading to the device
@@ -69,9 +68,9 @@ namespace mrover {
         // DO NOT access the mesh unless you are certain it has been set from the async loader
         std::vector<Mesh> meshes;
         // https://en.cppreference.com/w/cpp/thread/future
-        boost::future<decltype(meshes)> asyncMeshesLoader;
+        std::future<decltype(meshes)> asyncMeshesLoader;
 
-        explicit Model(std::string_view uri);
+        Model(Simulator& logger, std::string_view uri);
 
         auto waitMeshes() -> void;
 
@@ -87,16 +86,15 @@ namespace mrover {
             boost::container::static_vector<Uniform<ModelUniforms>, 2> collisionUniforms;
         };
 
-        std::string name;
         urdf::Model model;
         btMultiBody* physics = nullptr;
         std::unordered_map<std::string, LinkMeta> linkNameToMeta;
 
-        URDF(SimulatorNodelet& simulator, XmlRpc::XmlRpcValue const& init);
+        URDF(Simulator& simulator, std::string_view name, std::string_view uri, btTransform const& transform);
 
-        static auto makeCollisionShapeForLink(SimulatorNodelet& simulator, urdf::LinkConstSharedPtr const& link) -> btCollisionShape*;
+        static auto makeCollisionShapeForLink(Simulator& simulator, urdf::LinkConstSharedPtr const& link) -> btCollisionShape*;
 
-        static auto makeCameraForLink(SimulatorNodelet& simulator, btMultibodyLink const* link) -> Camera;
+        static auto makeCameraForLink(Simulator& simulator, btMultibodyLink const* link) -> Camera;
 
         [[nodiscard]] auto linkInWorld(std::string const& linkName) const -> SE3d;
     };
@@ -110,8 +108,8 @@ namespace mrover {
         explicit PeriodicTask(Clock::duration period)
             : period{period} {}
 
-        explicit PeriodicTask(float rate)
-            : PeriodicTask{std::chrono::duration_cast<Clock::duration>(std::chrono::duration<float>{1.0f / rate})} {}
+        explicit PeriodicTask(double rate)
+            : PeriodicTask{std::chrono::duration_cast<Clock::duration>(std::chrono::duration<double>{1 / rate})} {}
 
         [[nodiscard]] auto shouldUpdate() -> bool {
             if (Clock::time_point now = Clock::now(); now - lastUpdate > period) {
@@ -126,10 +124,11 @@ namespace mrover {
     struct SensorBase {
         btMultibodyLink const* link = nullptr;
         PeriodicTask updateTask;
-        ros::Publisher pub;
     };
 
     struct Camera : SensorBase {
+        rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr imgPub;
+
         Eigen::Vector2i resolution;
         float fov{};
         std::string frameId;
@@ -154,7 +153,8 @@ namespace mrover {
 
     struct StereoCamera {
         Camera base;
-        ros::Publisher pcPub;
+
+        rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pcPub;
 
         wgpu::Buffer pointCloudStagingBuffer;
         wgpu::Buffer pointCloudBuffer;
@@ -169,18 +169,23 @@ namespace mrover {
     struct MotorGroup {
         std::vector<std::string> names;
         PeriodicTask updateTask;
-        ros::Subscriber throttleSub, velocitySub, positionSub;
-        ros::Publisher jointStatePub, controllerStatePub;
+        rclcpp::Subscription<msg::Throttle>::SharedPtr throttleSub;
+        rclcpp::Subscription<msg::Velocity>::SharedPtr velocitySub;
+        rclcpp::Subscription<msg::Position>::SharedPtr positionSub;
+        rclcpp::Publisher<sensor_msgs::msg::JointState>::SharedPtr jointStatePub;
+        rclcpp::Publisher<msg::ControllerState>::SharedPtr controllerStatePub;
     };
 
-    struct Imu : SensorBase {
-        ros::Publisher magPub, uncalibPub, calibStatusPub;
-    };
+    // TODO(quintin): I removed IMU, you may want to add it back
+    // struct Imu : SensorBase {
+    //     ros::Publisher magPub, uncalibPub, calibStatusPub;
+    // };
 
     struct Gps : SensorBase {
+        rclcpp::Publisher<sensor_msgs::msg::NavSatFix>::SharedPtr fixPub;
     };
 
-    class SimulatorNodelet final : public nodelet::Nodelet {
+    class Simulator final : public rclcpp::Node {
         friend Model;
         friend URDF;
 
@@ -223,26 +228,24 @@ namespace mrover {
 
         // ROS
 
-        ros::NodeHandle mNh, mPnh;
+        rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr mGroundTruthPub;
 
-        ros::Publisher mGroundTruthPub;
+        rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr mCmdVelPub;
 
-        ros::Publisher mCmdVelPub;
+        rclcpp::Publisher<msg::ImageTargets>::SharedPtr mImageTargetsPub;
 
-        ros::Publisher mImageTargetsPub;
-
-        tf2_ros::Buffer mTfBuffer;
+        tf2_ros::Buffer mTfBuffer{get_clock()};
         tf2_ros::TransformListener mTfListener{mTfBuffer};
-        tf2_ros::TransformBroadcaster mTfBroadcaster;
+        tf2_ros::TransformBroadcaster mTfBroadcaster{this};
 
         bool mPublishIk = true;
         Eigen::Vector3f mIkTarget{0.382, 0.01, -0.217};
-        ros::Publisher mIkTargetPub;
+        rclcpp::Publisher<msg::IK>::SharedPtr mIkTargetPub;
 
         R3d mGpsLinearizationReferencePoint{};
         double mGpsLinerizationReferenceHeading{};
 
-        std::default_random_engine mRNG;
+        std::default_random_engine mRNG{std::random_device{}()};
         std::normal_distribution<> mGPSDist{0, 0.02},
                 mAccelDist{0, 0.01},
                 mGyroDist{0, 0.01},
@@ -341,33 +344,17 @@ namespace mrover {
 
         std::vector<StereoCamera> mStereoCameras;
         std::vector<Camera> mCameras;
-        std::vector<Imu> mImus;
+        // std::vector<Imu> mImus;
         std::vector<Gps> mGps;
         std::vector<MotorGroup> mMotorGroups;
 
         static constexpr float NEAR = 0.1f;
         static constexpr float FAR = 1000.0f;
 
-        // TODO(quintin): May want to restructure the names to all agree
-        bimap<std::string, std::string> msgToUrdf{
-                {"joint_a", "arm_a_link"},
-                {"joint_b", "arm_b_link"},
-                {"joint_c", "arm_c_link"},
-                {"joint_de_pitch", "arm_d_link"},
-                {"joint_de_roll", "arm_e_link"},
-                {"front_left", "front_left_wheel_link"},
-                {"middle_left", "center_left_wheel_link"},
-                {"back_left", "back_left_wheel_link"},
-                {"front_right", "front_right_wheel_link"},
-                {"middle_right", "center_right_wheel_link"},
-                {"back_right", "back_right_wheel_link"},
-                {"mast_gimbal_y", "zed_mini_camera"},
-        };
-
         template<typename F, typename N, typename V>
         auto forEachMotor(N const& names, V const& values, F&& function) -> void {
             if (names.size() != values.size()) {
-                ROS_WARN_STREAM_THROTTLE(1, "Received different number of joint names and values. Ignoring...");
+                RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, "Received different number of joint names and values. Ignoring...");
                 return;
             }
 
@@ -378,17 +365,18 @@ namespace mrover {
                     std::string const& name = boost::get<0>(combined);
                     float value = boost::get<1>(combined);
 
-                    if (auto urdfNameOpt = msgToUrdf.forward(name)) {
-                        std::string const& urdfName = urdfNameOpt.value();
-
-                        int linkIndex = rover.linkNameToMeta.at(urdfName).index;
-
-                        auto* motor = std::bit_cast<btMultiBodyJointMotor*>(rover.physics->getLink(linkIndex).m_userPtr);
-                        assert(motor);
-                        function(motor, value);
-                    } else {
-                        ROS_WARN_STREAM_THROTTLE(1, std::format("Unknown joint name: {}. Either the wrong name was sent OR the simulator does not yet support it", name));
-                    }
+                    // TODO(quintin): Fix
+                    // if (auto urdfNameOpt = msgToUrdf.forward(name)) {
+                    //     std::string const& urdfName = urdfNameOpt.value();
+                    //
+                    //     int linkIndex = rover.linkNameToMeta.at(urdfName).index;
+                    //
+                    //     auto* motor = std::bit_cast<btMultiBodyJointMotor*>(rover.physics->getLink(linkIndex).m_userPtr);
+                    //     assert(motor);
+                    //     function(motor, value);
+                    // } else {
+                    //     ROS_WARN_STREAM_THROTTLE(1, std::format("Unknown joint name: {}. Either the wrong name was sent OR the simulator does not yet support it", name));
+                    // }
                 }
             }
         }
@@ -397,7 +385,7 @@ namespace mrover {
 
         std::thread mRunThread;
 
-        LoopProfiler mLoopProfiler{"Simulator"};
+        LoopProfiler mLoopProfiler{get_logger()};
 
         auto renderCamera(Camera& camera, wgpu::CommandEncoder& encoder, wgpu::RenderPassDescriptor const& passDescriptor) -> void;
 
@@ -413,22 +401,22 @@ namespace mrover {
 
         auto frameBufferResizedCallback(int width, int height) -> void;
 
-        auto positionsCallback(Position::ConstPtr const& msg) -> void;
+        auto positionsCallback(msg::Position::ConstSharedPtr const& msg) -> void;
 
-        auto velocitiesCallback(Velocity::ConstPtr const& msg) -> void;
+        auto velocitiesCallback(msg::Velocity::ConstSharedPtr const& msg) -> void;
 
-        auto throttlesCallback(Throttle::ConstPtr const& msg) -> void;
+        auto throttlesCallback(msg::Throttle::ConstSharedPtr const& msg) -> void;
 
     public:
-        SimulatorNodelet() = default;
+        Simulator();
 
-        ~SimulatorNodelet() override;
+        ~Simulator() override;
 
-        SimulatorNodelet(SimulatorNodelet const&) = delete;
-        SimulatorNodelet(SimulatorNodelet&&) = delete;
+        Simulator(Simulator const&) = delete;
+        Simulator(Simulator&&) = delete;
 
-        auto operator=(SimulatorNodelet const&) -> SimulatorNodelet& = delete;
-        auto operator=(SimulatorNodelet&&) -> SimulatorNodelet& = delete;
+        auto operator=(Simulator const&) -> Simulator& = delete;
+        auto operator=(Simulator&&) -> Simulator& = delete;
 
         auto initWindow() -> void;
 
@@ -439,8 +427,6 @@ namespace mrover {
         auto initPhysics() -> void;
 
         auto initUrdfsFromParams() -> void;
-
-        auto onInit() -> void override;
 
         auto run() -> void;
 
@@ -475,6 +461,10 @@ namespace mrover {
         auto makeFramebuffers(int width, int height) -> void;
 
         auto makeRenderPipelines() -> void;
+
+        auto computeNavSatFix(R3d const& gpsInMap, R3d const& referenceGeodetic, double referenceHeadingDegrees) -> sensor_msgs::msg::NavSatFix;
+
+        auto computeImu(SO3d const& imuInMap, R3d const& imuAngularVelocity, R3d const& linearAcceleration) -> sensor_msgs::msg::Imu;
     };
 
     auto uriToPath(std::string_view uri) -> std::filesystem::path;

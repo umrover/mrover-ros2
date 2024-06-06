@@ -49,8 +49,8 @@ class ApproachTargetState(State):
         cmd_vel, has_arrived = context.drive.get_drive_command(
             target_position,
             rover_in_map,
-            context.node.get_parameter("single_tag/stop_threshold").value,
-            context.node.get_parameter("waypoint/drive_forward_threshold").value,
+            context.node.get_parameter("single_tag.stop_threshold").value,
+            context.node.get_parameter("waypoint.drive_forward_threshold").value,
         )
         next_state = self.determine_next(context, has_arrived)
         if has_arrived:

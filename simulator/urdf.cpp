@@ -30,30 +30,43 @@ namespace mrover {
         return btVector3{static_cast<btScalar>(inertia->ixx), static_cast<btScalar>(inertia->iyy), static_cast<btScalar>(inertia->izz)} * INERTIA_MULTIPLIER;
     }
 
-    auto SimulatorNodelet::initUrdfsFromParams() -> void {
+    auto Simulator::initUrdfsFromParams() -> void {
         {
-            XmlRpc::XmlRpcValue objects;
-            mNh.getParam("objects", objects);
-            if (objects.getType() != XmlRpc::XmlRpcValue::TypeArray) throw std::invalid_argument{"URDFs to load must be an array. Did you rosparam load a simulator config file properly?"};
+            std::map<std::string, rclcpp::Parameter> objects;
+            get_parameters("objects", objects);
 
-            for (int i = 0; i < objects.size(); ++i) { // NOLINT(*-loop-convert)
-                XmlRpc::XmlRpcValue const& object = objects[i];
-
-                auto type = xmlRpcValueToTypeOrDefault<std::string>(object, "type");
-                auto name = xmlRpcValueToTypeOrDefault<std::string>(object, "name", "<unnamed>");
-
-                NODELET_INFO_STREAM(std::format("Loading object: {} of type: {}", name, type));
-
-                if (type == "urdf") {
-                    if (auto [_, was_added] = mUrdfs.try_emplace(name, *this, object); !was_added) {
-                        throw std::invalid_argument{std::format("Duplicate object name: {}", name)};
-                    }
+            for (auto const& [fullName, object]: objects) {
+                std::string name = fullName.substr(0, fullName.find('.'));
+                std::string uri = objects.at(std::format("{}.uri", name)).as_string();
+                std::vector<double> position = objects.contains(std::format("{}.position", name)) ? objects.at(std::format("{}.position", name)).as_double_array() : std::vector<double>{0, 0, 0};
+                std::vector<double> orientation = objects.contains(std::format("{}.orientation", name)) ? objects.at(std::format("{}.orientation", name)).as_double_array() : std::vector<double>{0, 0, 0, 1};
+                if (position.size() != 3) throw std::invalid_argument{"Position must have 3 elements"};
+                if (orientation.size() != 4) throw std::invalid_argument{"Orientation must have 4 elements"};
+                btTransform transform{btQuaternion{static_cast<btScalar>(orientation[0]), static_cast<btScalar>(orientation[1]), static_cast<btScalar>(orientation[2]), static_cast<btScalar>(orientation[3])}, btVector3{static_cast<btScalar>(position[0]), static_cast<btScalar>(position[1]), static_cast<btScalar>(position[2])}};
+                if (auto [_, was_added] = mUrdfs.try_emplace(name, *this, name, uri, transform); !was_added) {
+                    throw std::invalid_argument{std::format("Duplicate object name: {}", name)};
                 }
             }
+
+            // TODO(quintin): Implement
+            // for (int i = 0; i < objects.size(); ++i) { // NOLINT(*-loop-convert)
+            //     XmlRpc::XmlRpcValue const& object = objects[i];
+            //
+            //     auto type = xmlRpcValueToTypeOrDefault<std::string>(object, "type");
+            //     auto name = xmlRpcValueToTypeOrDefault<std::string>(object, "name", "<unnamed>");
+            //
+            //     NODELET_INFO_STREAM(std::format("Loading object: {} of type: {}", name, type));
+            //
+            //     if (type == "urdf") {
+            //         if (auto [_, was_added] = mUrdfs.try_emplace(name, *this, object); !was_added) {
+            //             throw std::invalid_argument{std::format("Duplicate object name: {}", name)};
+            //         }
+            //     }
+            // }
         }
     }
 
-    auto URDF::makeCollisionShapeForLink(SimulatorNodelet& simulator, urdf::LinkConstSharedPtr const& link) -> btCollisionShape* {
+    auto URDF::makeCollisionShapeForLink(Simulator& simulator, urdf::LinkConstSharedPtr const& link) -> btCollisionShape* {
         boost::container::static_vector<std::pair<btCollisionShape*, btTransform>, 4> shapes;
         for (urdf::CollisionSharedPtr const& collision: link->collision_array) {
             if (!collision->geometry) throw std::invalid_argument{"Collision has no geometry"};
@@ -91,7 +104,7 @@ namespace mrover {
                     assert(mesh);
 
                     std::string const& fileUri = mesh->filename;
-                    auto [it, was_inserted] = simulator.mUriToModel.try_emplace(fileUri, fileUri);
+                    auto [it, was_inserted] = simulator.mUriToModel.try_emplace(fileUri, simulator, fileUri);
                     Model& model = it->second;
 
                     model.waitMeshes();
@@ -149,7 +162,7 @@ namespace mrover {
         return finalShape;
     }
 
-    auto URDF::makeCameraForLink(SimulatorNodelet& simulator, btMultibodyLink const* link) -> Camera {
+    auto URDF::makeCameraForLink(Simulator& simulator, btMultibodyLink const* link) -> Camera {
         Camera camera;
         camera.link = link;
         camera.resolution = {640, 480};
@@ -163,31 +176,20 @@ namespace mrover {
         return camera;
     }
 
-    URDF::URDF(SimulatorNodelet& simulator, XmlRpc::XmlRpcValue const& init) {
-        auto urdfUri = xmlRpcValueToTypeOrDefault<std::string>(init, "uri");
-        if (!model.initString(performXacro(uriToPath(urdfUri)))) throw std::runtime_error{std::format("Failed to parse URDF from URI: {}", urdfUri)};
+    URDF::URDF(Simulator& simulator, std::string_view name, std::string_view uri, btTransform const& transform) {
+        if (!model.initString(performXacro(uriToPath(uri)))) throw std::runtime_error{std::format("Failed to parse URDF from URI: {}", uri)};
 
-        name = xmlRpcValueToTypeOrDefault<std::string>(init, "name");
-
-        auto rootLinkInMap = btTransform::getIdentity();
-        if (init.hasMember("translation")) {
-            std::array<double, 3> translation = xmlRpcValueToNumberArray<3>(init, "translation");
-            rootLinkInMap.setOrigin(btVector3{urdfDistToBtDist(translation[0]), urdfDistToBtDist(translation[1]), urdfDistToBtDist(translation[2])});
-        }
-        if (init.hasMember("rotation")) {
-            std::array<double, 4> rotation = xmlRpcValueToNumberArray<4>(init, "rotation");
-            rootLinkInMap.setRotation(btQuaternion{static_cast<btScalar>(rotation[0]), static_cast<btScalar>(rotation[1]), static_cast<btScalar>(rotation[2]), static_cast<btScalar>(rotation[3])});
-        }
+        // this->name = name;
 
         std::size_t multiBodyLinkCount = model.links_.size() - 1; // Root link is treated separately by multibody, so subtract it off
         auto* multiBody = physics = simulator.makeBulletObject<btMultiBody>(simulator.mMultiBodies, multiBodyLinkCount, 0, btVector3{0, 0, 0}, false, false);
-        multiBody->setBaseWorldTransform(rootLinkInMap);
+        multiBody->setBaseWorldTransform(transform);
 
         std::vector<btMultiBodyLinkCollider*> collidersToFinalize;
         std::vector<btMultiBodyConstraint*> constraintsToFinalize;
 
         auto traverse = [&](auto&& self, urdf::LinkConstSharedPtr const& link) -> void {
-            ROS_INFO_STREAM(std::format("Processing link: {}", link->name));
+            RCLCPP_INFO_STREAM(simulator.get_logger(), std::format("Processing link: {}", link->name));
 
             auto linkIndex = static_cast<int>(linkNameToMeta.size()) - 1;
             auto [it, was_inserted] = linkNameToMeta.emplace(link->name, linkIndex);
@@ -208,26 +210,27 @@ namespace mrover {
                         pointCloudTopic = "camera/left/points";
                     }
                     camera.frameId = frameId;
-                    camera.pub = simulator.mNh.advertise<sensor_msgs::Image>(imageTopic, 1);
+                    camera.imgPub = simulator.create_publisher<sensor_msgs::msg::Image>(imageTopic, 1);
                     camera.fov = 60;
                     StereoCamera stereoCamera;
                     stereoCamera.base = std::move(camera);
-                    stereoCamera.pcPub = simulator.mNh.advertise<sensor_msgs::PointCloud2>(pointCloudTopic, 1);
+                    stereoCamera.pcPub = simulator.create_publisher<sensor_msgs::msg::PointCloud2>(pointCloudTopic, 1);
                     simulator.mStereoCameras.emplace_back(std::move(stereoCamera));
                 } else {
                     camera.frameId = "long_range_camera_link";
-                    camera.pub = simulator.mNh.advertise<sensor_msgs::Image>("long_range_camera/image", 1);
+                    camera.imgPub = simulator.create_publisher<sensor_msgs::msg::Image>("long_range_camera/image", 1);
                     camera.fov = 15;
                     simulator.mCameras.push_back(std::move(camera));
                 }
             } else if (link->name.contains("imu"sv)) {
-                Imu& imu = simulator.mImus.emplace_back();
-                imu.link = &multiBody->getLink(linkIndex);
-                imu.updateTask = PeriodicTask{50};
-                imu.pub = simulator.mNh.advertise<sensor_msgs::Imu>("imu/data", 1);
-                imu.magPub = simulator.mNh.advertise<sensor_msgs::MagneticField>("imu/mag", 1);
-                imu.uncalibPub = simulator.mNh.advertise<sensor_msgs::Imu>("imu/data_raw", 1);
-                imu.calibStatusPub = simulator.mNh.advertise<CalibrationStatus>("imu/calibration", 1);
+                // TODO(quintin): I removed IMU, you may want to add it back
+                // Imu& imu = simulator.mImus.emplace_back();
+                // imu.link = &multiBody->getLink(linkIndex);
+                // imu.updateTask = PeriodicTask{50};
+                // imu.pub = simulator.mNh.advertise<sensor_msgs::Imu>("imu/data", 1);
+                // imu.magPub = simulator.mNh.advertise<sensor_msgs::MagneticField>("imu/mag", 1);
+                // imu.uncalibPub = simulator.mNh.advertise<sensor_msgs::Imu>("imu/data_raw", 1);
+                // imu.calibStatusPub = simulator.mNh.advertise<CalibrationStatus>("imu/calibration", 1);
             } else if (link->name.contains("gps"sv)) {
                 Gps& gps = simulator.mGps.emplace_back();
                 gps.link = &multiBody->getLink(linkIndex);
@@ -240,7 +243,7 @@ namespace mrover {
                 } else {
                     topic = "gps/fix";
                 }
-                gps.pub = simulator.mNh.advertise<sensor_msgs::NavSatFix>(topic, 1);
+                gps.fixPub = simulator.create_publisher<sensor_msgs::msg::NavSatFix>(topic, 1);
             }
 
             for (urdf::VisualSharedPtr const& visual: link->visual_array) {
@@ -248,11 +251,12 @@ namespace mrover {
                     case urdf::Geometry::MESH: {
                         auto mesh = std::dynamic_pointer_cast<urdf::Mesh>(link->visual->geometry);
                         std::string const& fileUri = mesh->filename;
-                        simulator.mUriToModel.try_emplace(fileUri, fileUri);
+                        simulator.mUriToModel.try_emplace(fileUri, simulator, fileUri);
                         break;
                     }
                     default: {
-                        ROS_WARN_STREAM("Currently only mesh visuals are supported");
+                        RCLCPP_WARN_STREAM(simulator.get_logger(), "Currently only mesh visuals are supported");
+                        break;
                     }
                 }
             }
@@ -278,17 +282,17 @@ namespace mrover {
 
                 switch (parentJoint->type) {
                     case urdf::Joint::FIXED: {
-                        ROS_INFO_STREAM(std::format("Fixed joint {}: {} <-> {}", parentJoint->name, parentJoint->parent_link_name, parentJoint->child_link_name));
+                        RCLCPP_INFO_STREAM(simulator.get_logger(), std::format("Fixed joint {}: {} <-> {}", parentJoint->name, parentJoint->parent_link_name, parentJoint->child_link_name));
                         multiBody->setupFixed(linkIndex, mass, inertia, parentIndex, jointInParent.getRotation().inverse(), jointInParent.getOrigin(), comInJoint.getOrigin());
                         break;
                     }
                     case urdf::Joint::CONTINUOUS:
                     case urdf::Joint::REVOLUTE: {
-                        ROS_INFO_STREAM(std::format("Rotating joint {}: {} ({}) <-> {} ({})", parentJoint->name, parentJoint->parent_link_name, parentIndex, parentJoint->child_link_name, linkIndex));
+                        RCLCPP_INFO_STREAM(simulator.get_logger(), std::format("Rotating joint {}: {} <-> {}", parentJoint->name, parentJoint->parent_link_name, parentJoint->child_link_name));
                         multiBody->setupRevolute(linkIndex, mass, inertia, parentIndex, jointInParent.getRotation().inverse(), axisInJoint, jointInParent.getOrigin(), comInJoint.getOrigin(), true);
 
                         if (link->name.contains("wheel"sv)) {
-                            ROS_INFO_STREAM("\tWheel");
+                            RCLCPP_INFO_STREAM(simulator.get_logger(), "\tWheel");
 
                             collider->setRollingFriction(0.0);
                             collider->setSpinningFriction(0.0);
@@ -298,7 +302,7 @@ namespace mrover {
                         break;
                     }
                     case urdf::Joint::PRISMATIC: {
-                        ROS_INFO_STREAM(std::format("Prismatic joint {}: {} <-> {}", parentJoint->name, parentJoint->parent_link_name, parentJoint->child_link_name));
+                        RCLCPP_INFO_STREAM(simulator.get_logger(), std::format("Prismatic joint {}: {} <-> {}", parentJoint->name, parentJoint->parent_link_name, parentJoint->child_link_name));
                         multiBody->setupPrismatic(linkIndex, mass, inertia, parentIndex, jointInParent.getRotation().inverse(), axisInJoint, jointInParent.getOrigin(), comInJoint.getOrigin(), true);
                         break;
                     }
@@ -309,7 +313,7 @@ namespace mrover {
                     case urdf::Joint::CONTINUOUS:
                     case urdf::Joint::REVOLUTE:
                     case urdf::Joint::PRISMATIC: {
-                        ROS_INFO_STREAM("\tMotor");
+                        RCLCPP_INFO_STREAM(simulator.get_logger(), "\tMotor");
                         auto* motor = simulator.makeBulletObject<btMultiBodyJointMotor>(simulator.mMultibodyConstraints, multiBody, linkIndex, 0, 0);
                         constraintsToFinalize.push_back(motor);
                         multiBody->getLink(linkIndex).m_userPtr = motor;
@@ -359,7 +363,7 @@ namespace mrover {
         }
     }
 
-    auto SimulatorNodelet::getUrdf(std::string const& name) -> std::optional<std::reference_wrapper<URDF>> {
+    auto Simulator::getUrdf(std::string const& name) -> std::optional<std::reference_wrapper<URDF>> {
         auto it = mUrdfs.find(name);
         if (it == mUrdfs.end()) return std::nullopt;
 

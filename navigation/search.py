@@ -30,8 +30,8 @@ class SearchState(State):
         cmd_vel, arrived = context.drive.get_drive_command(
             target_position_in_map,
             rover_in_map,
-            context.node.get_parameter("search/stop_threshold").value,
-            context.node.get_parameter("search/drive_forward_threshold").value,
+            context.node.get_parameter("search.stop_threshold").value,
+            context.node.get_parameter("search.drive_forward_threshold").value,
             path_start=self.prev_target_pos_in_map,
         )
         if arrived:
@@ -49,9 +49,9 @@ class SearchState(State):
 
         ref = np.array(
             [
-                context.node.get_parameter("gps_linearization/ref_lat").value,
-                context.node.get_parameter("gps_linearization/ref_lon").value,
-                context.node.get_parameter("gps_linearization/ref_alt").value,
+                context.node.get_parameter("ref_lat").value,
+                context.node.get_parameter("ref_lon").value,
+                context.node.get_parameter("ref_alt").value,
             ]
         )
         context.search_point_publisher.publish(
@@ -77,18 +77,18 @@ class SearchState(State):
         if search_center.type.val == WaypointType.POST:
             SearchState.trajectory = SearchTrajectory.spiral_traj(
                 context.course.current_waypoint_pose_in_map().translation()[0:2],
-                context.node.get_parameter("search/coverage_radius").value,
-                context.node.get_parameter("search/distance_between_spirals").value,
-                context.node.get_parameter("search/segments_per_rotation").value,
+                context.node.get_parameter("search.coverage_radius").value,
+                context.node.get_parameter("search.distance_between_spirals").value,
+                context.node.get_parameter("search.segments_per_rotation").value,
                 search_center.tag_id,
                 False,
             )
         else:  # water bottle or mallet
             SearchState.trajectory = SearchTrajectory.spiral_traj(
                 context.course.current_waypoint_pose_in_map().translation()[0:2],
-                context.node.get_parameter("object_search/coverage_radius").value,
-                context.node.get_parameter("object_search/distance_between_spirals").value,
-                context.node.get_parameter("search/segments_per_rotation").value,
+                context.node.get_parameter("object_search.coverage_radius").value,
+                context.node.get_parameter("object_search.distance_between_spirals").value,
+                context.node.get_parameter("search.segments_per_rotation").value,
                 search_center.tag_id,
                 False,
             )

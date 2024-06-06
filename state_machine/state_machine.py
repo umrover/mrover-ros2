@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from typing import DefaultDict, Set, List, Callable, TypeVar, Optional, Generic
 
 from rclpy.impl.rcutils_logger import RcutilsLogger
-from .state import State
+from state_machine.state import State
 
 
 @dataclass

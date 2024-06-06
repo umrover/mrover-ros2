@@ -1,7 +1,7 @@
 import numpy as np
 from manifpy import SE3, SO2
 
-from .conversions import from_position_orientation, from_tf_tree, to_tf_tree
+from lie.conversions import from_position_orientation, from_tf_tree, to_tf_tree
 
 SE3.from_position_orientation = staticmethod(from_position_orientation)
 SE3.from_tf_tree = staticmethod(from_tf_tree)

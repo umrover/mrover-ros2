@@ -11,7 +11,7 @@ from .context import Context
 class WaypointState(State):
     # STOP_THRESHOLD: float = rospy.get_param("waypoint/stop_threshold")
     # DRIVE_FORWARD_THRESHOLD: float = rospy.get_param("waypoint/drive_forward_threshold")
-    # USE_COSTMAP: bool = rospy.get_param("water_bottle_search/use_costmap")
+    # USE_COSTMAP: bool = rospy.get_param("water_bottle_search.use_costmap")
     # NO_TAG: int = -1
 
     def on_enter(self, context: Context) -> None:
@@ -58,8 +58,8 @@ class WaypointState(State):
         cmd_vel, arrived = context.drive.get_drive_command(
             waypoint_position_in_map,
             rover_in_map,
-            context.node.get_parameter("waypoint/stop_threshold").value,
-            context.node.get_parameter("waypoint/drive_forward_threshold").value,
+            context.node.get_parameter("waypoint.stop_threshold").value,
+            context.node.get_parameter("waypoint.drive_forward_threshold").value,
         )
         if arrived:
             context.env.arrived_at_waypoint = True

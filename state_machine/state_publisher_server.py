@@ -4,7 +4,7 @@ from mrover.msg import StateMachineStructure, StateMachineTransition, StateMachi
 
 from rclpy.node import Node
 from rclpy.publisher import Publisher
-from state_machine.state_machine import StateMachine
+from common.state_machine.state_machine import StateMachine
 
 
 class StatePublisher:

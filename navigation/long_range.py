@@ -1,7 +1,7 @@
 import numpy as np
 
 from lie import SO2
-from state_machine.state import State
+from state_machine import State
 from . import recovery
 from .approach_target import ApproachTargetState
 from .context import Context
@@ -47,7 +47,7 @@ class LongRangeState(ApproachTargetState):
 
         direction_to_tag = SO2(bearing_to_tag).act(rover_direction[:2])
 
-        distance = context.node.get_parameter("long_range/distance_ahead").value
+        distance = context.node.get_parameter("long_range.distance_ahead").value
         direction_to_tag = np.array([direction_to_tag[0], direction_to_tag[1], 0.0])
         tag_position = rover_position + direction_to_tag * distance
         return tag_position

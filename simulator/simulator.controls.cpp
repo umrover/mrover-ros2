@@ -2,7 +2,7 @@
 
 namespace mrover {
 
-    auto SimulatorNodelet::throttlesCallback(Throttle::ConstPtr const& msg) -> void {
+    auto Simulator::throttlesCallback(msg::Throttle::ConstSharedPtr const& msg) -> void {
         forEachMotor(msg->names, msg->throttles, [&](btMultiBodyJointMotor* motor, float throttle) {
             motor->setMaxAppliedImpulse(0.5);
             motor->setPositionTarget(0, 0);
@@ -10,7 +10,7 @@ namespace mrover {
         });
     }
 
-    auto SimulatorNodelet::positionsCallback(Position::ConstPtr const& msg) -> void {
+    auto Simulator::positionsCallback(msg::Position::ConstSharedPtr const& msg) -> void {
         forEachMotor(msg->names, msg->positions, [&](btMultiBodyJointMotor* motor, float position) {
             motor->setMaxAppliedImpulse(0.5);
             motor->setPositionTarget(position, 0.05);
@@ -18,7 +18,7 @@ namespace mrover {
         });
     }
 
-    void SimulatorNodelet::velocitiesCallback(Velocity::ConstPtr const& msg) {
+    void Simulator::velocitiesCallback(msg::Velocity::ConstSharedPtr const& msg) {
         forEachMotor(msg->names, msg->velocities, [&](btMultiBodyJointMotor* motor, float velocity) {
             motor->setMaxAppliedImpulse(0.5);
             motor->setPositionTarget(0, 0);
@@ -26,16 +26,16 @@ namespace mrover {
         });
     }
 
-    auto SimulatorNodelet::centerCursor() const -> void {
+    auto Simulator::centerCursor() const -> void {
         Eigen::Vector2i size;
         glfwGetWindowSize(mWindow.get(), &size.x(), &size.y());
         Eigen::Vector2i center = size / 2;
         glfwSetCursorPos(mWindow.get(), center.x(), center.y());
     }
 
-    auto SimulatorNodelet::keyCallback(int key, [[maybe_unused]] int scancode, int action, [[maybe_unused]] int mods) -> void {
+    auto Simulator::keyCallback(int key, [[maybe_unused]] int scancode, int action, [[maybe_unused]] int mods) -> void {
         if (action == GLFW_PRESS) {
-            if (key == mQuitKey) ros::requestShutdown();
+            if (key == mQuitKey) rclcpp::shutdown();
             if (key == mTogglePhysicsKey) mEnablePhysics = !mEnablePhysics;
             if (key == mToggleRenderModelsKey) mRenderModels = !mRenderModels;
             if (key == mToggleRenderWireframeCollidersKey) mRenderWireframeColliders = !mRenderWireframeColliders;
@@ -61,7 +61,7 @@ namespace mrover {
         }
     }
 
-    auto SimulatorNodelet::freeLook(Clock::duration dt) -> void {
+    auto Simulator::freeLook(Clock::duration dt) -> void {
         auto axis = [this](int positive, int negative) -> double {
             return (glfwGetKey(mWindow.get(), positive) == GLFW_PRESS) - (glfwGetKey(mWindow.get(), negative) == GLFW_PRESS);
         };
@@ -96,7 +96,7 @@ namespace mrover {
         centerCursor();
     }
 
-    auto SimulatorNodelet::cameraLock([[maybe_unused]] Clock::duration dt) -> void {
+    auto Simulator::cameraLock([[maybe_unused]] Clock::duration dt) -> void {
         if (!mCameraInRoverTarget) setCameraInRoverTarget();
 
         if (auto lookup = getUrdf("rover")) {
@@ -108,7 +108,7 @@ namespace mrover {
         centerCursor();
     }
 
-    auto SimulatorNodelet::setCameraInRoverTarget() -> void {
+    auto Simulator::setCameraInRoverTarget() -> void {
         if (auto lookup = getUrdf("rover")) {
             URDF const& rover = *lookup;
             SE3d roverInWorld = rover.linkInWorld("base_link");
@@ -116,15 +116,15 @@ namespace mrover {
         }
     }
 
-    auto SimulatorNodelet::userControls(Clock::duration dt) -> void {
+    auto Simulator::userControls(Clock::duration dt) -> void {
         if (mPublishIk) {
-            IK ik;
-            ik.target.header.stamp = ros::Time::now();
+            msg::IK ik;
+            ik.target.header.stamp = get_clock()->now();
             ik.target.header.frame_id = "arm_base_link";
             ik.target.pose.position.x = mIkTarget.x();
             ik.target.pose.position.y = mIkTarget.y();
             ik.target.pose.position.z = mIkTarget.z();
-            mIkTargetPub.publish(ik);
+            mIkTargetPub->publish(ik);
         }
 
         if (!mHasFocus || mInGui) return;
@@ -134,7 +134,7 @@ namespace mrover {
         else
             freeLook(dt);
 
-        geometry_msgs::Twist twist;
+        geometry_msgs::msg::Twist twist;
         if (glfwGetKey(mWindow.get(), mRoverRightKey) == GLFW_PRESS) {
             twist.angular.z = -mRoverAngularSpeed;
         }
@@ -151,7 +151,7 @@ namespace mrover {
             twist.linear.x = 0;
             twist.angular.z = 0;
         }
-        mCmdVelPub.publish(twist);
+        mCmdVelPub->publish(twist);
     }
 
 } // namespace mrover

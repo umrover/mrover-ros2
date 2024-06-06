@@ -2,65 +2,66 @@
 
 namespace mrover {
 
-    auto SimulatorNodelet::onInit() -> void try {
-        mNh = getNodeHandle();
-        mPnh = getPrivateNodeHandle();
+    Simulator::Simulator() : Node{"simulator", rclcpp::NodeOptions{}
+                                                       .allow_undeclared_parameters(true)
+                                                       .automatically_declare_parameters_from_overrides(true)} {
+        try {
+            mSaveTask = PeriodicTask{get_parameter("save_rate").as_double()};
+            mSaveHistory = boost::circular_buffer<SaveData>{static_cast<std::size_t>(get_parameter("save_history").as_int())};
 
-        mSaveTask = PeriodicTask{mPnh.param<float>("save_rate", 5)};
-        mSaveHistory = boost::circular_buffer<SaveData>{static_cast<std::size_t>(mPnh.param<int>("save_history", 4096))};
+            mCmdVelPub = create_publisher<geometry_msgs::msg::Twist>("simulator_cmd_vel", 1);
 
-        mGroundTruthPub = mNh.advertise<nav_msgs::Odometry>("/ground_truth", 1);
+            mImageTargetsPub = create_publisher<msg::ImageTargets>("objects", 1);
 
-        mCmdVelPub = mNh.advertise<geometry_msgs::Twist>("/simulator_cmd_vel", 1);
+            mIkTargetPub = create_publisher<msg::IK>("arm_ik", 1);
 
-        mImageTargetsPub = mNh.advertise<ImageTargets>("/objects", 1);
+            mIsHeadless = get_parameter("headless").as_bool();
+            mEnablePhysics = mIsHeadless;
+            {
+                mGpsLinearizationReferencePoint = {
+                        get_parameter("ref_lat").as_double(),
+                        get_parameter("ref_lon").as_double(),
+                        get_parameter("ref_alt").as_double(),
+                };
+                mGpsLinerizationReferenceHeading = get_parameter("ref_heading").as_double();
+            }
 
-        mIkTargetPub = mNh.advertise<IK>("/arm_ik", 1);
+            if (!mIsHeadless) initWindow();
 
-        mIsHeadless = mPnh.param<bool>("headless", false);
-        mEnablePhysics = mIsHeadless;
-        {
-            XmlRpc::XmlRpcValue gpsLinearization;
-            mNh.getParam("gps_linearization", gpsLinearization);
-            if (gpsLinearization.getType() != XmlRpc::XmlRpcValue::TypeStruct) throw std::invalid_argument{"GPS lineraization must be a struct. Did you rosparam load a localization config file properly?"};
+            initPhysics();
 
-            mGpsLinearizationReferencePoint = {
-                    xmlRpcValueToTypeOrDefault<double>(gpsLinearization, "reference_point_latitude"),
-                    xmlRpcValueToTypeOrDefault<double>(gpsLinearization, "reference_point_longitude"),
-                    xmlRpcValueToTypeOrDefault<double>(gpsLinearization, "reference_point_altitude"),
-            };
-            mGpsLinerizationReferenceHeading = xmlRpcValueToTypeOrDefault<double>(gpsLinearization, "reference_heading");
+            initRender();
+
+            initUrdfsFromParams();
+
+            {
+                auto addGroup = [&](std::string_view groupName, std::vector<std::string> const& names) {
+                    MotorGroup& group = mMotorGroups.emplace_back();
+                    group.updateTask = PeriodicTask{50};
+                    group.jointStatePub = create_publisher<sensor_msgs::msg::JointState>(std::format("{}_joint_data", groupName), 1);
+                    group.controllerStatePub = create_publisher<msg::ControllerState>(std::format("{}_controller_data", groupName), 1);
+                    group.names = names;
+                    // group.throttleSub = create_subscription<msg::Throttle>(std::format("{}_throttle_cmd", groupName), 1, [this](msg::Throttle::SharedPtr const& msg) {
+                    //     throttlesCallback(msg);
+                    // });
+                    // group.velocitySub = create_subscription<msg::Velocity>(std::format("{}_velocity_cmd", groupName), 1, [this](msg::Velocity::SharedPtr const& msg) {
+                    //     velocitiesCallback(msg);
+                    // });
+                    // group.positionSub = create_subscription<msg::Position>(std::format("{}_position_cmd", groupName), 1, [this](msg::Position::SharedPtr const& msg) {
+                    //     positionsCallback(msg);
+                    // });
+                };
+                addGroup("arm", {"joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_roll"});
+                addGroup("drive_left", {"front_left", "middle_left", "back_left"});
+                addGroup("drive_right", {"front_right", "middle_right", "back_right"});
+            }
+
+            mRunThread = std::thread{&Simulator::run, this};
+
+        } catch (std::exception const& e) {
+            RCLCPP_FATAL_STREAM(get_logger(), e.what());
+            rclcpp::shutdown();
         }
-
-        if (!mIsHeadless) initWindow();
-
-        initPhysics();
-
-        initRender();
-
-        initUrdfsFromParams();
-
-        {
-            auto addGroup = [&](std::string_view groupName, std::vector<std::string> const& names) {
-                MotorGroup& group = mMotorGroups.emplace_back();
-                group.updateTask = PeriodicTask{50};
-                group.jointStatePub = mNh.advertise<sensor_msgs::JointState>(std::format("{}_joint_data", groupName), 1);
-                group.controllerStatePub = mNh.advertise<ControllerState>(std::format("{}_controller_data", groupName), 1);
-                group.names = names;
-                group.throttleSub = mNh.subscribe<Throttle>(std::format("{}_throttle_cmd", groupName), 1, &SimulatorNodelet::throttlesCallback, this);
-                group.velocitySub = mNh.subscribe<Velocity>(std::format("{}_velocity_cmd", groupName), 1, &SimulatorNodelet::velocitiesCallback, this);
-                group.positionSub = mNh.subscribe<Position>(std::format("{}_position_cmd", groupName), 1, &SimulatorNodelet::positionsCallback, this);
-            };
-            addGroup("arm", {"joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_roll"});
-            addGroup("drive_left", {"front_left", "middle_left", "back_left"});
-            addGroup("drive_right", {"front_right", "middle_right", "back_right"});
-        }
-
-        mRunThread = std::thread{&SimulatorNodelet::run, this};
-
-    } catch (std::exception const& e) {
-        NODELET_FATAL_STREAM(e.what());
-        ros::shutdown();
     }
 
     auto spinSleep(Clock::time_point const& until) -> void {
@@ -71,8 +72,8 @@ namespace mrover {
             ;
     }
 
-    auto SimulatorNodelet::run() -> void try {
-        for (Clock::duration dt{}; ros::ok();) {
+    auto Simulator::run() -> void try {
+        for (Clock::duration dt{}; rclcpp::ok();) {
             Clock::time_point beginTime = Clock::now();
 
             mLoopProfiler.beginLoop();
@@ -113,11 +114,11 @@ namespace mrover {
         }
 
     } catch (std::exception const& e) {
-        NODELET_FATAL_STREAM(e.what());
-        ros::shutdown();
+        RCLCPP_FATAL_STREAM(get_logger(), e.what());
+        rclcpp::shutdown();
     }
 
-    SimulatorNodelet::~SimulatorNodelet() {
+    Simulator::~Simulator() {
         mRunThread.join();
 
         if (!mIsHeadless) {
@@ -137,3 +138,10 @@ namespace mrover {
     }
 
 } // namespace mrover
+
+auto main(int argc, char** argv) -> int {
+    rclcpp::init(argc, argv);
+    rclcpp::spin(std::make_shared<mrover::Simulator>());
+    rclcpp::shutdown();
+    return EXIT_SUCCESS;
+}

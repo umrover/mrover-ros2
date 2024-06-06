@@ -45,12 +45,12 @@ class DriveController:
         :return: a tuple of the command to send to the rover and a boolean indicating whether we are at the target
         :modifies: self._driver_state
         """
-        turning_p = self.node.get_parameter("drive/turning_p").value
-        driving_p = self.node.get_parameter("drive/driving_p").value
-        min_turning_effort = self.node.get_parameter("drive/min_turning_effort").value
-        max_turning_effort = self.node.get_parameter("drive/max_turning_effort").value
-        min_driving_effort = self.node.get_parameter("drive/min_driving_effort").value
-        max_driving_effort = self.node.get_parameter("drive/max_driving_effort").value
+        turning_p = self.node.get_parameter("drive.turning_p").value
+        driving_p = self.node.get_parameter("drive.driving_p").value
+        min_turning_effort = self.node.get_parameter("drive.min_turning_effort").value
+        max_turning_effort = self.node.get_parameter("drive.max_turning_effort").value
+        min_driving_effort = self.node.get_parameter("drive.min_driving_effort").value
+        max_driving_effort = self.node.get_parameter("drive.max_driving_effort").value
 
         # if we are at the target position, reset the controller and return a zero command
         if abs(linear_error) < completion_thresh:
@@ -194,7 +194,7 @@ class DriveController:
             self.reset()
             return Twist(), True
 
-        lookahead_distance = self.node.get_parameter("drive/lookahead_distance").value
+        lookahead_distance = self.node.get_parameter("drive.lookahead_distance").value
         if path_start is not None and np.linalg.norm(path_start - target_pos) > lookahead_distance:
             target_pos = self.compute_lookahead_point(path_start, target_pos, rover_pos, lookahead_distance)
 

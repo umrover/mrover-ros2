@@ -1,5 +1,8 @@
 # All units are in SI
 # ===================
+# Time:     second, hz
+# Angle:    radian
+# Distance: meter
 
 /basestation_gps_driver:
   ros__parameters:
@@ -9,6 +12,8 @@
 /gps_linearization:
   ros__parameters:
     world_frame: "map"
+    rover_frame: "base_link"
+
     # Exception, these are in degrees
     ref_lat: 38.4225202
     ref_lon: -110.7844653

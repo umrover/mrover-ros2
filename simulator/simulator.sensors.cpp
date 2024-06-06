@@ -2,7 +2,7 @@
 
 namespace mrover {
 
-    auto SimulatorNodelet::renderCamera(Camera& camera, wgpu::CommandEncoder& encoder, wgpu::RenderPassDescriptor const& passDescriptor) -> void {
+    auto Simulator::renderCamera(Camera& camera, wgpu::CommandEncoder& encoder, wgpu::RenderPassDescriptor const& passDescriptor) -> void {
         wgpu::RenderPassEncoder colorPass = encoder.beginRenderPass(passDescriptor);
         colorPass.setPipeline(mPbrPipeline);
 
@@ -35,7 +35,7 @@ namespace mrover {
         colorPass.release();
     }
 
-    auto SimulatorNodelet::computeStereoCamera(StereoCamera& stereoCamera, wgpu::CommandEncoder& encoder) -> void {
+    auto Simulator::computeStereoCamera(StereoCamera& stereoCamera, wgpu::CommandEncoder& encoder) -> void {
         wgpu::ComputePassEncoder computePass = encoder.beginComputePass();
         computePass.setPipeline(mPointCloudPipeline);
 
@@ -111,9 +111,9 @@ namespace mrover {
         return {lat, lon, alt};
     }
 
-    auto computeNavSatFix(R3d const& gpsInMap, R3d const& referenceGeodetic, double referenceHeadingDegrees) -> sensor_msgs::NavSatFix {
-        sensor_msgs::NavSatFix gpsMessage;
-        gpsMessage.header.stamp = ros::Time::now();
+    auto Simulator::computeNavSatFix(R3d const& gpsInMap, R3d const& referenceGeodetic, double referenceHeadingDegrees) -> sensor_msgs::msg::NavSatFix {
+        sensor_msgs::msg::NavSatFix gpsMessage;
+        gpsMessage.header.stamp = get_clock()->now();
         gpsMessage.header.frame_id = "map";
         auto geodetic = cartesianToGeodetic(gpsInMap, referenceGeodetic, referenceHeadingDegrees);
         gpsMessage.latitude = geodetic(0);
@@ -122,9 +122,9 @@ namespace mrover {
         return gpsMessage;
     }
 
-    auto computeImu(SO3d const& imuInMap, R3d const& imuAngularVelocity, R3d const& linearAcceleration) -> sensor_msgs::Imu {
-        sensor_msgs::Imu imuMessage;
-        imuMessage.header.stamp = ros::Time::now();
+    auto Simulator::computeImu(SO3d const& imuInMap, R3d const& imuAngularVelocity, R3d const& linearAcceleration) -> sensor_msgs::msg::Imu {
+        sensor_msgs::msg::Imu imuMessage;
+        imuMessage.header.stamp = get_clock()->now();
         imuMessage.header.frame_id = "base_link";
         S3d q = imuInMap.quat();
         imuMessage.orientation.w = q.w();
@@ -144,14 +144,14 @@ namespace mrover {
         return {v.x(), v.y(), v.z()};
     }
 
-    auto SimulatorNodelet::gpsAndImusUpdate(Clock::duration dt) -> void {
+    auto Simulator::gpsAndImusUpdate(Clock::duration dt) -> void {
         if (auto lookup = getUrdf("rover")) {
             URDF const& rover = *lookup;
 
             {
                 SE3d baseLinkInMap = rover.linkInWorld("base_link");
-                nav_msgs::Odometry odometry;
-                odometry.header.stamp = ros::Time::now();
+                nav_msgs::msg::Odometry odometry;
+                odometry.header.stamp = get_clock()->now();
                 odometry.header.frame_id = "map";
                 R3d p = baseLinkInMap.translation();
                 odometry.pose.pose.position.x = p.x();
@@ -170,95 +170,99 @@ namespace mrover {
                 odometry.twist.twist.angular.x = w.x();
                 odometry.twist.twist.angular.y = w.y();
                 odometry.twist.twist.angular.z = w.z();
-                mGroundTruthPub.publish(odometry);
+                mGroundTruthPub->publish(odometry);
             }
-            for (auto& [link, updateTask, pub]: mGps) {
-                if (!updateTask.shouldUpdate()) continue;
 
-                R3d gpsInMap = btTransformToSe3(link->m_cachedWorldTransform).translation();
+            for (Gps& gps: mGps) {
+                if (!gps.updateTask.shouldUpdate()) continue;
+
+                R3d gpsInMap = btTransformToSe3(gps.link->m_cachedWorldTransform).translation();
                 R3d gpsNoise{mGPSDist(mRNG), mGPSDist(mRNG), mGPSDist(mRNG)};
                 gpsInMap += gpsNoise;
-                pub.publish(computeNavSatFix(gpsInMap, mGpsLinearizationReferencePoint, mGpsLinerizationReferenceHeading));
+                gps.fixPub->publish(computeNavSatFix(gpsInMap, mGpsLinearizationReferencePoint, mGpsLinerizationReferenceHeading));
             }
-            for (Imu imu: mImus) {
-                if (!imu.updateTask.shouldUpdate()) continue;
 
-                auto dtS = std::chrono::duration_cast<std::chrono::duration<double>>(dt).count();
-                R3d roverAngularVelocity = btVector3ToR3(rover.physics->getBaseOmega());
-                R3d roverLinearVelocity = btVector3ToR3(rover.physics->getBaseVel());
-                R3d roverLinearAcceleration = (roverLinearVelocity - mRoverLinearVelocity) / dtS;
-                mRoverLinearVelocity = roverLinearVelocity;
-                SO3d imuInMap = btTransformToSe3(imu.link->m_cachedWorldTransform).asSO3();
-                R3d roverMagVector = imuInMap.inverse().rotation().col(1);
-
-                R3d
-                        accelNoise{mAccelDist(mRNG), mAccelDist(mRNG), mAccelDist(mRNG)},
-                        gyroNoise{mGyroDist(mRNG), mGyroDist(mRNG), mGyroDist(mRNG)},
-                        magNoise{mMagDist(mRNG), mMagDist(mRNG), mMagDist(mRNG)};
-                roverLinearAcceleration += accelNoise;
-                roverAngularVelocity += gyroNoise;
-                roverMagVector += magNoise;
-
-                imu.pub.publish(computeImu(imuInMap, roverAngularVelocity, roverLinearAcceleration));
-
-                constexpr double SEC_TO_MIN = 1.0 / 60.0;
-                mOrientationDrift += mOrientationDriftRate * SEC_TO_MIN * dtS;
-                SO3d::Tangent orientationNoise;
-                orientationNoise << mRollDist(mRNG), mPitchDist(mRNG), mYawDist(mRNG);
-                imuInMap += orientationNoise + mOrientationDrift;
-
-                imu.uncalibPub.publish(computeImu(imuInMap, roverAngularVelocity, roverLinearAcceleration));
-
-                CalibrationStatus calibrationStatus;
-                calibrationStatus.header.stamp = ros::Time::now();
-                calibrationStatus.header.frame_id = "base_link";
-                calibrationStatus.magnetometer_calibration = 3;
-                imu.calibStatusPub.publish(calibrationStatus);
-
-                sensor_msgs::MagneticField field;
-                field.header.stamp = ros::Time::now();
-                field.header.frame_id = "base_link";
-                field.magnetic_field.x = roverMagVector.x();
-                field.magnetic_field.y = roverMagVector.y();
-                field.magnetic_field.z = roverMagVector.z();
-                imu.magPub.publish(field);
-            }
+            // TODO(quintin): I removed IMU, you may want to add it back
+            // for (Imu imu: mImus) {
+            //     if (!imu.updateTask.shouldUpdate()) continue;
+            //
+            //     auto dtS = std::chrono::duration_cast<std::chrono::duration<double>>(dt).count();
+            //     R3d roverAngularVelocity = btVector3ToR3(rover.physics->getBaseOmega());
+            //     R3d roverLinearVelocity = btVector3ToR3(rover.physics->getBaseVel());
+            //     R3d roverLinearAcceleration = (roverLinearVelocity - mRoverLinearVelocity) / dtS;
+            //     mRoverLinearVelocity = roverLinearVelocity;
+            //     SO3d imuInMap = btTransformToSe3(imu.link->m_cachedWorldTransform).asSO3();
+            //     R3d roverMagVector = imuInMap.inverse().rotation().col(1);
+            //
+            //     R3d
+            //             accelNoise{mAccelDist(mRNG), mAccelDist(mRNG), mAccelDist(mRNG)},
+            //             gyroNoise{mGyroDist(mRNG), mGyroDist(mRNG), mGyroDist(mRNG)},
+            //             magNoise{mMagDist(mRNG), mMagDist(mRNG), mMagDist(mRNG)};
+            //     roverLinearAcceleration += accelNoise;
+            //     roverAngularVelocity += gyroNoise;
+            //     roverMagVector += magNoise;
+            //
+            //     imu.pub.publish(computeImu(imuInMap, roverAngularVelocity, roverLinearAcceleration));
+            //
+            //     constexpr double SEC_TO_MIN = 1.0 / 60.0;
+            //     mOrientationDrift += mOrientationDriftRate * SEC_TO_MIN * dtS;
+            //     SO3d::Tangent orientationNoise;
+            //     orientationNoise << mRollDist(mRNG), mPitchDist(mRNG), mYawDist(mRNG);
+            //     imuInMap += orientationNoise + mOrientationDrift;
+            //
+            //     imu.uncalibPub.publish(computeImu(imuInMap, roverAngularVelocity, roverLinearAcceleration));
+            //
+            //     CalibrationStatus calibrationStatus;
+            //     calibrationStatus.header.stamp = ros::Time::now();
+            //     calibrationStatus.header.frame_id = "base_link";
+            //     calibrationStatus.magnetometer_calibration = 3;
+            //     imu.calibStatusPub.publish(calibrationStatus);
+            //
+            //     sensor_msgs::MagneticField field;
+            //     field.header.stamp = ros::Time::now();
+            //     field.header.frame_id = "base_link";
+            //     field.magnetic_field.x = roverMagVector.x();
+            //     field.magnetic_field.y = roverMagVector.y();
+            //     field.magnetic_field.z = roverMagVector.z();
+            //     imu.magPub.publish(field);
+            // }
         }
     }
 
-    auto SimulatorNodelet::motorStatusUpdate() -> void {
+    auto Simulator::motorStatusUpdate() -> void {
         if (auto lookup = getUrdf("rover"); lookup) {
             URDF const& rover = *lookup;
 
             for (MotorGroup& motorGroup: mMotorGroups) {
-                ControllerState controllerState;
+                msg::ControllerState controllerState;
 
-                sensor_msgs::JointState jointState;
-                jointState.header.stamp = ros::Time::now();
+                sensor_msgs::msg::JointState jointState;
+                jointState.header.stamp = get_clock()->now();
 
-                for (std::string const& msgName: motorGroup.names) {
-                    std::string urdfName = msgToUrdf.forward(msgName).value();
+                // TODO(quintin): Make this work
+                // for (std::string const& msgName: motorGroup.names) {
+                //     std::string urdfName = msgToUrdf.forward(msgName).value();
+                //
+                //     controllerState.name.push_back(msgName);
+                //     controllerState.state.emplace_back("Armed");
+                //     controllerState.error.emplace_back("None");
+                //     std::uint8_t limitSwitches = 0b000;
+                //     if (auto limits = rover.model.getLink(urdfName)->parent_joint->limits) {
+                //         double jointPosition = rover.physics->getJointPos(rover.linkNameToMeta.at(urdfName).index);
+                //         constexpr double OFFSET = 0.05;
+                //         if (jointPosition < limits->lower + OFFSET) limitSwitches |= 0b001;
+                //         if (jointPosition > limits->upper - OFFSET) limitSwitches |= 0b010;
+                //     }
+                //     controllerState.limit_hit.push_back(limitSwitches);
+                //
+                //     jointState.name.push_back(msgName);
+                //     jointState.position.push_back(rover.physics->getJointPos(rover.linkNameToMeta.at(urdfName).index));
+                //     jointState.velocity.push_back(rover.physics->getJointVel(rover.linkNameToMeta.at(urdfName).index));
+                //     jointState.effort.push_back(rover.physics->getJointTorque(rover.linkNameToMeta.at(urdfName).index));
+                // }
 
-                    controllerState.name.push_back(msgName);
-                    controllerState.state.emplace_back("Armed");
-                    controllerState.error.emplace_back("None");
-                    std::uint8_t limitSwitches = 0b000;
-                    if (auto limits = rover.model.getLink(urdfName)->parent_joint->limits) {
-                        double jointPosition = rover.physics->getJointPos(rover.linkNameToMeta.at(urdfName).index);
-                        constexpr double OFFSET = 0.05;
-                        if (jointPosition < limits->lower + OFFSET) limitSwitches |= 0b001;
-                        if (jointPosition > limits->upper - OFFSET) limitSwitches |= 0b010;
-                    }
-                    controllerState.limit_hit.push_back(limitSwitches);
-
-                    jointState.name.push_back(msgName);
-                    jointState.position.push_back(rover.physics->getJointPos(rover.linkNameToMeta.at(urdfName).index));
-                    jointState.velocity.push_back(rover.physics->getJointVel(rover.linkNameToMeta.at(urdfName).index));
-                    jointState.effort.push_back(rover.physics->getJointTorque(rover.linkNameToMeta.at(urdfName).index));
-                }
-
-                motorGroup.controllerStatePub.publish(controllerState);
-                motorGroup.jointStatePub.publish(jointState);
+                motorGroup.controllerStatePub->publish(controllerState);
+                motorGroup.jointStatePub->publish(jointState);
             }
         }
     }

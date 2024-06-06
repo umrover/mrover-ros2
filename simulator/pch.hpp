@@ -9,8 +9,10 @@
 #include <filesystem>
 #include <format>
 #include <fstream>
+#include <future>
 #include <iostream>
 #include <memory>
+#include <numbers>
 #include <random>
 #include <source_location>
 #include <span>
@@ -21,26 +23,21 @@
 #include <boost/circular_buffer.hpp>
 #include <boost/container/static_vector.hpp>
 #include <boost/range/combine.hpp>
-#include <boost/thread.hpp>
-#include <boost/thread/future.hpp>
-#include <boost/bimap.hpp>
 
+#include <ament_index_cpp/get_package_share_directory.hpp>
 #include <geometry_msgs/msg/twist_stamped.hpp>
 #include <nav_msgs/msg/odometry.hpp>
-//#include <nodelet/loader.h>
-//#include <nodelet/nodelet.h>
-//#include <ros/package.h>
-//#include <ros/serialization.h>
+#include <sensor_msgs/image_encodings.hpp>
 #include <sensor_msgs/msg/image.hpp>
 #include <sensor_msgs/msg/imu.hpp>
 #include <sensor_msgs/msg/joint_state.hpp>
 #include <sensor_msgs/msg/magnetic_field.hpp>
 #include <sensor_msgs/msg/nav_sat_fix.hpp>
 #include <sensor_msgs/msg/point_cloud2.hpp>
+#include <sensor_msgs/point_cloud2_iterator.hpp>
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2_ros/transform_listener.h>
 #include <urdf/model.h>
-//#include <xmlrpcpp/XmlRpcValue.h>
 
 #include <glfw3webgpu.h>
 
@@ -75,15 +72,13 @@
 #include <loop_profiler.hpp>
 #include <manif/algorithms/interpolation.h>
 #include <manif/manif.h>
-#include <params_utils.hpp>
 #include <point.hpp>
-#include <units/units.hpp>
 
-#include <mrover/CalibrationStatus.h>
-#include <mrover/ControllerState.h>
-#include <mrover/IK.h>
-#include <mrover/ImageTarget.h>
-#include <mrover/ImageTargets.h>
-#include <mrover/Position.h>
-#include <mrover/Throttle.h>
-#include <mrover/Velocity.h>
+#include <mrover/msg/calibration_status.hpp>
+#include <mrover/msg/controller_state.hpp>
+#include <mrover/msg/ik.hpp>
+#include <mrover/msg/image_target.hpp>
+#include <mrover/msg/image_targets.hpp>
+#include <mrover/msg/position.hpp>
+#include <mrover/msg/throttle.hpp>
+#include <mrover/msg/velocity.hpp>

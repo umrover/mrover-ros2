@@ -11,6 +11,8 @@ namespace mrover {
     // Important formula that needs to hold true to avoid dropping: timeStep < maxSubSteps * fixedTimeStep
     constexpr int MAX_SUB_STEPS = 1024;
 
+    constexpr double TAU = 2 * std::numbers::pi;
+
     auto btTransformToSe3(btTransform const& transform) -> SE3d {
         btVector3 const& p = transform.getOrigin();
         btQuaternion const& q = transform.getRotation();
@@ -19,8 +21,8 @@ namespace mrover {
         return SE3d{R3d{p.x(), p.y(), p.z()}, Eigen::Quaterniond{q.w(), q.x(), q.y(), q.z()}.normalized()};
     }
 
-    auto SimulatorNodelet::initPhysics() -> void {
-        NODELET_INFO_STREAM(std::format("Using Bullet Physics Version: {}", btGetVersion()));
+    auto Simulator::initPhysics() -> void {
+        RCLCPP_INFO_STREAM(get_logger(), std::format("Using Bullet Physics Version: {}", btGetVersion()));
 
         mCollisionConfig = std::make_unique<btDefaultCollisionConfiguration>();
 
@@ -37,7 +39,7 @@ namespace mrover {
         // mDynamicsWorld->getSolverInfo().m_minimumSolverBatchSize = 1;
     }
 
-    auto SimulatorNodelet::physicsUpdate(Clock::duration dt) -> void {
+    auto Simulator::physicsUpdate(Clock::duration dt) -> void {
         mDynamicsWorld->setGravity(mGravityAcceleration);
 
         // TODO(quintin): clean this up
@@ -57,14 +59,14 @@ namespace mrover {
 
         if (auto* mlcpSolver = dynamic_cast<btMLCPSolver*>(mDynamicsWorld->getConstraintSolver())) {
             if (int fallbackCount = mlcpSolver->getNumFallbacks()) {
-                NODELET_WARN_STREAM_THROTTLE(1, std::format("MLCP solver failed {} times", fallbackCount));
+                RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, std::format("MLCP solver failed {} times", fallbackCount));
             }
             mlcpSolver->setNumFallbacks(0);
         }
 
         if (!mHeadless && simStepCount && simStepCount > MAX_SUB_STEPS) {
             int droppedSteps = simStepCount - MAX_SUB_STEPS;
-            NODELET_ERROR_STREAM(std::format("Dropped {} simulation steps out of {}! This should never happen unless you have a literal potatoe of a computer", droppedSteps, simStepCount));
+            RCLCPP_ERROR_STREAM(get_logger(), std::format("Dropped {} simulation steps out of {}! This should never happen unless you have a literal potato of a computer OR someone wrote bad code in the iteration loop", droppedSteps, simStepCount));
         }
 
         linksToTfUpdate();
@@ -74,7 +76,7 @@ namespace mrover {
         motorStatusUpdate();
     }
 
-    auto SimulatorNodelet::linksToTfUpdate() -> void {
+    auto Simulator::linksToTfUpdate() -> void {
 
         for (auto const& [name, urdf]: mUrdfs) {
             auto publishLink = [&](auto&& self, urdf::LinkConstSharedPtr const& link) -> void {
@@ -84,12 +86,12 @@ namespace mrover {
                     btTransform parentToChild{urdf.physics->getParentToLocalRot(index), -urdf.physics->getRVector(index)};
                     SE3d childInParent = btTransformToSe3(parentToChild.inverse());
 
-                    SE3Conversions::pushToTfTree(mTfBroadcaster, link->name, link->getParent()->name, childInParent, TODO);
+                    SE3Conversions::pushToTfTree(mTfBroadcaster, link->name, link->getParent()->name, childInParent, get_clock()->now());
                 }
                 // TODO(quintin): This is kind of hacky
                 if (name.contains("tag"sv) || name.contains("hammer"sv) || name.contains("bottle"sv)) {
                     SE3d modelInMap = btTransformToSe3(urdf.physics->getBaseWorldTransform());
-                    SE3Conversions::pushToTfTree(mTfBroadcaster, std::format("{}_truth", name), "map", modelInMap, TODO);
+                    SE3Conversions::pushToTfTree(mTfBroadcaster, std::format("{}_truth", name), "map", modelInMap, get_clock()->now());
                 }
 
                 for (urdf::JointSharedPtr const& child_joint: link->child_joints) {
@@ -102,7 +104,7 @@ namespace mrover {
         if (auto roverOpt = getUrdf("rover")) {
             URDF const& rover = *roverOpt;
 
-            ImageTargets targets;
+            msg::ImageTargets targets;
 
             auto publishModel = [&](std::string const& modelName, double threshold) {
                 if (auto modelOpt = getUrdf(modelName)) {
@@ -123,11 +125,11 @@ namespace mrover {
                     if (angleToModel < TAU / 8 && angleToModel > -TAU / 8) {
 
                         if (roverDistanceToModel < threshold) {
-                            SE3Conversions::pushToTfTree(mTfBroadcaster, modelName, "map", modelInMap, TODO);
+                            SE3Conversions::pushToTfTree(mTfBroadcaster, modelName, "map", modelInMap, get_clock()->now());
                         }
 
                         if (roverDistanceToModel < threshold * 2) {
-                            ImageTarget target;
+                            msg::ImageTarget target;
                             target.name = modelName;
                             target.bearing = static_cast<float>(angleToModel); // TODO: make bearing negative if needed
                             if (angleToModel < TAU / 8 && angleToModel > -TAU / 8) {
@@ -141,7 +143,7 @@ namespace mrover {
             if (mPublishBottleDistanceThreshold > 0) publishModel("bottle", mPublishBottleDistanceThreshold);
             if (mPublishHammerDistanceThreshold > 0) publishModel("hammer", mPublishHammerDistanceThreshold);
 
-            mImageTargetsPub.publish(targets);
+            mImageTargetsPub->publish(targets);
         }
     }
 

@@ -4,26 +4,25 @@ namespace mrover {
 
     using namespace std::literals;
 
-    Model::Model(std::string_view uri) {
+    Model::Model(Simulator& simulator, std::string_view uri) {
         // Note(quintin):
         // Ideally we would use glTF as it is open-source (unlike FBX) and has a binary format (unlike OBJ and STL)
         // However I could not get Blender to export the textures by filename
         // The only option was to embed them, but that results in needing to decode the data and duplicating it across models
         if (!uri.ends_with("fbx")) {
-            ROS_WARN_STREAM(std::format("Model importer has only been tested with the FBX file format: {}", uri));
+            RCLCPP_WARN_STREAM(simulator.get_logger(), std::format("Model importer has only been tested with the FBX file format: {}", uri));
         }
 
         // assimp's scene import is slow on the larger rover models, so we load it in a separate thread
-        asyncMeshesLoader = boost::async(boost::launch::async, [uri = std::string{uri}] {
+        asyncMeshesLoader = std::async(std::launch::async, [logger=simulator.get_logger(), uri = std::string{uri}] {
             Assimp::Importer importer;
             importer.SetPropertyInteger(AI_CONFIG_PP_SBP_REMOVE, aiPrimitiveType_POINT | aiPrimitiveType_LINE); // Drop points and lines
 
             // aiScene const* scene = importer.ReadFile(uri.data(),aiProcessPreset_TargetRealtime_MaxQuality);
             aiScene const* scene = importer.ReadFile(uriToPath(uri), aiProcessPreset_TargetRealtime_Fast | aiProcess_FlipUVs);
-            if (!scene) {
-                throw std::runtime_error{std::format("Scene import error: {} on path: {}", importer.GetErrorString(), uri)};
-            }
-            ROS_INFO_STREAM(std::format("Loaded scene: {} with mesh count: {}", uri, scene->mNumMeshes));
+            if (!scene) throw std::runtime_error{std::format("Scene import error: {} on path: {}", importer.GetErrorString(), uri)};
+
+            RCLCPP_INFO_STREAM(logger, std::format("Loaded scene: {} with mesh count: {}", uri, scene->mNumMeshes));
             if (scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE) throw std::runtime_error{std::format("Incomplete asset: {}", uri)};
 
             std::vector<Mesh> meshes;
@@ -41,7 +40,7 @@ namespace mrover {
                 vertices.data.resize(mesh->mNumVertices);
                 for (std::size_t vertexIndex = 0; vertexIndex < mesh->mNumVertices; ++vertexIndex) {
                     aiVector3D const& vertex = mesh->mVertices[vertexIndex];
-                    vertices.data[vertexIndex] = Eigen::Vector3f{vertex.x, vertex.y, vertex.z};
+                    vertices.data[vertexIndex] = {vertex.x, vertex.y, vertex.z};
                 }
 
                 indices.data.resize(mesh->mNumFaces * 3);
@@ -65,7 +64,7 @@ namespace mrover {
                 uvs.data.resize(mesh->mNumVertices);
                 for (std::size_t uvIndex = 0; uvIndex < mesh->mNumVertices; ++uvIndex) {
                     aiVector3D const& uv = mesh->mTextureCoords[0][uvIndex];
-                    uvs.data[uvIndex] = Eigen::Vector2f{uv.x, uv.y};
+                    uvs.data[uvIndex] = {uv.x, uv.y};
                 }
 
                 if (aiMaterial const* material = scene->mMaterials[mesh->mMaterialIndex]) {
@@ -83,10 +82,10 @@ namespace mrover {
                     }
                     aiString name;
                     material->Get(AI_MATKEY_NAME, name);
-                    ROS_INFO_STREAM(std::format("\tLoaded material: {}", name.C_Str()));
+                    RCLCPP_INFO_STREAM(logger, std::format("\tLoaded material: {}", name.C_Str()));
                 }
 
-                ROS_INFO_STREAM(std::format("\tLoaded mesh: #{} with {} vertices and {} faces", meshIndex, mesh->mNumVertices, mesh->mNumFaces));
+                RCLCPP_INFO_STREAM(logger, std::format("\tLoaded mesh: #{} with {} vertices and {} faces", meshIndex, mesh->mNumVertices, mesh->mNumFaces));
             }
 
             return meshes;
@@ -103,7 +102,7 @@ namespace mrover {
     auto Model::areMeshesReady() -> bool {
         if (!asyncMeshesLoader.valid()) return true;
 
-        if (asyncMeshesLoader.wait_for(boost::chrono::seconds{0}) == boost::future_status::ready) {
+        if (asyncMeshesLoader.wait_for(std::chrono::seconds{0}) == std::future_status::ready) {
             waitMeshes();
             return true;
         }

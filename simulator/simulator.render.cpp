@@ -9,7 +9,7 @@ namespace mrover {
     static std::string const SPHERE_PRIMITIVE_URI = std::format("{}/sphere.fbx", MESHES_PATH);
     static std::string const CYLINDER_PRIMITIVE_URI = std::format("{}/cylinder.fbx", MESHES_PATH);
 
-    auto SimulatorNodelet::makeTextureAndView(int width, int height, wgpu::TextureFormat const& format, wgpu::TextureUsage const& usage, wgpu::TextureAspect const& aspect) -> std::pair<wgpu::Texture, wgpu::TextureView> {
+    auto Simulator::makeTextureAndView(int width, int height, wgpu::TextureFormat const& format, wgpu::TextureUsage const& usage, wgpu::TextureAspect const& aspect) -> std::pair<wgpu::Texture, wgpu::TextureView> {
         wgpu::TextureDescriptor textureDescriptor;
         textureDescriptor.dimension = wgpu::TextureDimension::_2D;
         textureDescriptor.format = format;
@@ -34,7 +34,7 @@ namespace mrover {
         return {texture, textureView};
     }
 
-    auto SimulatorNodelet::makeFramebuffers(int width, int height) -> void {
+    auto Simulator::makeFramebuffers(int width, int height) -> void {
         wgpu::SwapChainDescriptor descriptor;
         descriptor.usage = wgpu::TextureUsage::RenderAttachment;
         descriptor.format = COLOR_FORMAT;
@@ -47,7 +47,7 @@ namespace mrover {
         std::tie(mDepthTexture, mDepthTextureView) = makeTextureAndView(width, height, DEPTH_FORMAT, wgpu::TextureUsage::RenderAttachment, wgpu::TextureAspect::DepthOnly);
     }
 
-    auto SimulatorNodelet::makeRenderPipelines() -> void {
+    auto Simulator::makeRenderPipelines() -> void {
         wgpu::RenderPipelineDescriptor descriptor;
         descriptor.primitive.topology = wgpu::PrimitiveTopology::TriangleList;
         descriptor.primitive.cullMode = wgpu::CullMode::Back;
@@ -190,10 +190,10 @@ namespace mrover {
         return result * ROS_TO_WGPU;
     }
 
-    auto SimulatorNodelet::initWindow() -> void {
+    auto Simulator::initWindow() -> void {
         mGlfwInstance.init();
         glfwSetErrorCallback([](int error, char const* description) { throw std::runtime_error(std::format("GLFW Error {}: {}", error, description)); });
-        NODELET_INFO_STREAM(std::format("Initialized GLFW Version: {}.{}.{}", GLFW_VERSION_MAJOR, GLFW_VERSION_MINOR, GLFW_VERSION_REVISION));
+        RCLCPP_INFO_STREAM(get_logger(), std::format("Initialized GLFW Version: {}.{}.{}", GLFW_VERSION_MAJOR, GLFW_VERSION_MINOR, GLFW_VERSION_REVISION));
 
         int x, y, w, h;
         glfwGetMonitorWorkarea(glfwGetPrimaryMonitor(), &x, &y, &w, &h);
@@ -206,7 +206,7 @@ namespace mrover {
         glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
         glfwWindowHint(GLFW_COCOA_RETINA_FRAMEBUFFER, GLFW_FALSE);
         mWindow = GlfwPointer<GLFWwindow, glfwCreateWindow, glfwDestroyWindow>{w, h, WINDOW_NAME, nullptr, nullptr};
-        NODELET_INFO_STREAM(std::format("Created window of size: {}x{}", w, h));
+        RCLCPP_INFO_STREAM(get_logger(), std::format("Created window of size: {}x{}", w, h));
 
 #ifndef __APPLE__
         if (cv::Mat logo = imread(std::filesystem::path{std::source_location::current().file_name()}.parent_path() / "mrover_logo.png", cv::IMREAD_UNCHANGED);
@@ -219,7 +219,7 @@ namespace mrover {
             };
             glfwSetWindowIcon(mWindow.get(), 1, &logoImage);
         } else {
-            ROS_WARN_STREAM("Failed to load logo image");
+            RCLCPP_INFO_STREAM(get_logger(), "Failed to load logo image");
         }
 #endif
 
@@ -227,27 +227,27 @@ namespace mrover {
 
         glfwSetWindowUserPointer(mWindow.get(), this);
         glfwSetKeyCallback(mWindow.get(), [](GLFWwindow* window, int key, int scancode, int action, int mods) {
-            if (auto* simulator = static_cast<SimulatorNodelet*>(glfwGetWindowUserPointer(window))) {
+            if (auto* simulator = static_cast<Simulator*>(glfwGetWindowUserPointer(window))) {
                 simulator->keyCallback(key, scancode, action, mods);
             }
         });
         glfwSetFramebufferSizeCallback(mWindow.get(), [](GLFWwindow* window, int width, int height) {
-            if (auto* simulator = static_cast<SimulatorNodelet*>(glfwGetWindowUserPointer(window))) {
+            if (auto* simulator = static_cast<Simulator*>(glfwGetWindowUserPointer(window))) {
                 simulator->frameBufferResizedCallback(width, height);
             }
         });
         glfwSetWindowFocusCallback(mWindow.get(), [](GLFWwindow* window, int focused) {
-            if (auto* simulator = static_cast<SimulatorNodelet*>(glfwGetWindowUserPointer(window))) {
+            if (auto* simulator = static_cast<Simulator*>(glfwGetWindowUserPointer(window))) {
                 simulator->mHasFocus = focused;
                 if (focused && !simulator->mInGui) simulator->centerCursor();
             }
         });
         glfwSetWindowCloseCallback(mWindow.get(), [](GLFWwindow*) {
-            ros::requestShutdown();
+            rclcpp::shutdown();
         });
     }
 
-    auto SimulatorNodelet::frameBufferResizedCallback(int width, int height) -> void {
+    auto Simulator::frameBufferResizedCallback(int width, int height) -> void {
         if (width == 0 || height == 0) return;
 
         mQueue.submit(0, nullptr);
@@ -263,7 +263,7 @@ namespace mrover {
         makeFramebuffers(width, height);
     }
 
-    auto SimulatorNodelet::initRender() -> void {
+    auto Simulator::initRender() -> void {
         {
             wgpu::InstanceDescriptor descriptor{};
             mWgpuInstance = wgpu::createInstance(descriptor);
@@ -283,9 +283,9 @@ namespace mrover {
             wgpu::AdapterProperties properties;
             mAdapter.getProperties(&properties);
 
-            ROS_INFO_STREAM(std::format("\tWGPU Adapter Name: {}", properties.name));
-            ROS_INFO_STREAM(std::format("\tWGPU Adapter Vendor: {}", properties.vendorName));
-            ROS_INFO_STREAM(std::format("\tWGPU Adapter Driver: {}", properties.driverDescription));
+            RCLCPP_INFO_STREAM(get_logger(), std::format("\tWGPU Adapter Name: {}", properties.name));
+            RCLCPP_INFO_STREAM(get_logger(), std::format("\tWGPU Adapter Vendor: {}", properties.vendorName));
+            RCLCPP_INFO_STREAM(get_logger(), std::format("\tWGPU Adapter Driver: {}", properties.driverDescription));
         }
 
         wgpu::SupportedLimits limits;
@@ -307,8 +307,8 @@ namespace mrover {
         mDevice = mAdapter.requestDevice(deviceDescriptor);
         if (!mDevice) throw std::runtime_error("Failed to create WGPU device");
 
-        mErrorCallback = mDevice.setUncapturedErrorCallback([](wgpu::ErrorType type, char const* message) {
-            ROS_ERROR_STREAM(std::format("WGPU Error {}: {}", static_cast<int>(type), message));
+        mErrorCallback = mDevice.setUncapturedErrorCallback([&](wgpu::ErrorType type, char const* message) {
+            RCLCPP_ERROR_STREAM(get_logger(), std::format("WGPU Error {}: {}", static_cast<int>(type), message));
         });
 
         mQueue = mDevice.getQueue();
@@ -374,9 +374,9 @@ namespace mrover {
             mPointCloudPipeline = mDevice.createComputePipeline(descriptor);
         }
 
-        mUriToModel.try_emplace(CUBE_PRIMITIVE_URI, CUBE_PRIMITIVE_URI);
-        mUriToModel.try_emplace(SPHERE_PRIMITIVE_URI, SPHERE_PRIMITIVE_URI);
-        mUriToModel.try_emplace(CYLINDER_PRIMITIVE_URI, CYLINDER_PRIMITIVE_URI);
+        mUriToModel.try_emplace(CUBE_PRIMITIVE_URI, *this, CUBE_PRIMITIVE_URI);
+        mUriToModel.try_emplace(SPHERE_PRIMITIVE_URI, *this, SPHERE_PRIMITIVE_URI);
+        mUriToModel.try_emplace(CYLINDER_PRIMITIVE_URI, *this, CYLINDER_PRIMITIVE_URI);
 
         if (!mIsHeadless) {
             IMGUI_CHECKVERSION();
@@ -400,7 +400,7 @@ namespace mrover {
         }
     }
 
-    auto SimulatorNodelet::renderModel(wgpu::RenderPassEncoder& pass, Model& model, Uniform<ModelUniforms>& uniforms, SIM3 const& modelToWorld, [[maybe_unused]] bool isRoverCamera) -> void {
+    auto Simulator::renderModel(wgpu::RenderPassEncoder& pass, Model& model, Uniform<ModelUniforms>& uniforms, SIM3 const& modelToWorld, [[maybe_unused]] bool isRoverCamera) -> void {
         if (!model.areMeshesReady()) return;
 
         if (!uniforms.buffer) uniforms.init(mDevice);
@@ -446,7 +446,7 @@ namespace mrover {
         }
     }
 
-    auto SimulatorNodelet::renderModels(wgpu::RenderPassEncoder& pass) -> void {
+    auto Simulator::renderModels(wgpu::RenderPassEncoder& pass) -> void {
         for (auto& [_, urdf]: mUrdfs) {
 
             auto renderLink = [&](auto&& self, urdf::LinkConstSharedPtr const& link) -> void {
@@ -471,7 +471,7 @@ namespace mrover {
         }
     }
 
-    auto SimulatorNodelet::renderWireframeColliders(wgpu::RenderPassEncoder& pass) -> void {
+    auto Simulator::renderWireframeColliders(wgpu::RenderPassEncoder& pass) -> void {
         pass.setPipeline(mWireframePipeline);
 
         for (auto& [_, urdf]: mUrdfs) {
@@ -507,7 +507,7 @@ namespace mrover {
                                 SIM3 modelToWorld{modelInWorld, R3d::Ones()};
                                 renderModel(pass, mUriToModel.at(mMeshToUri.at(const_cast<btBvhTriangleMeshShape*>(mesh))), meta.collisionUniforms.at(i), modelToWorld);
                             } else {
-                                NODELET_WARN_STREAM_ONCE(std::format("Tried to render unsupported collision shape: {}", shape->getName()));
+                                RCLCPP_WARN_STREAM_ONCE(get_logger(), std::format("Tried to render unsupported collision shape: {}", shape->getName()));
                             }
                         }
                     }
@@ -541,7 +541,7 @@ namespace mrover {
     // Pool<sensor_msgs::PointCloud2> pointCloudPool;
     // Pool<sensor_msgs::Image> imagePool;
 
-    auto SimulatorNodelet::camerasUpdate(wgpu::CommandEncoder encoder, wgpu::RenderPassColorAttachment& colorAttachment, wgpu::RenderPassColorAttachment& normalAttachment, wgpu::RenderPassDepthStencilAttachment& depthStencilAttachment, wgpu::RenderPassDescriptor const& renderPassDescriptor) -> void {
+    auto Simulator::camerasUpdate(wgpu::CommandEncoder encoder, wgpu::RenderPassColorAttachment& colorAttachment, wgpu::RenderPassColorAttachment& normalAttachment, wgpu::RenderPassDepthStencilAttachment& depthStencilAttachment, wgpu::RenderPassDescriptor const& renderPassDescriptor) -> void {
         // TODO(quintin): Remote duplicate code
         for (StereoCamera& stereoCamera: mStereoCameras) {
             std::size_t imageSize = stereoCamera.base.resolution.x() * stereoCamera.base.resolution.y() * 4;
@@ -550,12 +550,12 @@ namespace mrover {
                 if (stereoCamera.pointCloudStagingBuffer.getMapState() == wgpu::BufferMapState::Mapped && stereoCamera.base.stagingBuffer.getMapState() == wgpu::BufferMapState::Mapped) {
                     {
                         // auto pointCloud = boost::shared_ptr<sensor_msgs::PointCloud2>{pointCloudPool.borrowFrom(), [](sensor_msgs::PointCloud2* msg) { pointCloudPool.returnTo(msg); }};
-                        auto pointCloud = boost::make_shared<sensor_msgs::PointCloud2>();
+                        auto pointCloud = std::make_unique<sensor_msgs::msg::PointCloud2>();
                         pointCloud->is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
                         pointCloud->is_dense = true;
                         pointCloud->width = stereoCamera.base.resolution.x();
                         pointCloud->height = stereoCamera.base.resolution.y();
-                        pointCloud->header.stamp = ros::Time::now();
+                        pointCloud->header.stamp = get_clock()->now();
                         pointCloud->header.frame_id = stereoCamera.base.frameId;
                         fillPointCloudMessageHeader(pointCloud);
 
@@ -565,17 +565,17 @@ namespace mrover {
                         stereoCamera.pointCloudStagingBuffer.unmap();
                         stereoCamera.pointCloudCallback = nullptr;
 
-                        stereoCamera.pcPub.publish(pointCloud);
+                        stereoCamera.pcPub->publish(std::move(pointCloud));
                     }
                     {
                         // auto image = boost::shared_ptr<sensor_msgs::Image>{imagePool.borrowFrom(), [](sensor_msgs::Image* msg) { imagePool.returnTo(msg); }};
-                        auto image = boost::make_shared<sensor_msgs::Image>();
+                        auto image = std::make_unique<sensor_msgs::msg::Image>();
                         image->is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
                         image->encoding = sensor_msgs::image_encodings::BGRA8;
                         image->width = stereoCamera.base.resolution.x();
                         image->height = stereoCamera.base.resolution.y();
                         image->step = stereoCamera.base.resolution.x() * 4;
-                        image->header.stamp = ros::Time::now();
+                        image->header.stamp = get_clock()->now();
                         image->header.frame_id = stereoCamera.base.frameId;
                         image->data.resize(imageSize);
 
@@ -585,7 +585,7 @@ namespace mrover {
                         stereoCamera.base.stagingBuffer.unmap();
                         stereoCamera.base.callback = nullptr;
 
-                        stereoCamera.base.pub.publish(image);
+                        stereoCamera.base.imgPub->publish(std::move(image));
                     }
                 }
             }
@@ -638,13 +638,13 @@ namespace mrover {
                 mWgpuInstance.processEvents();
                 if (camera.stagingBuffer.getMapState() == wgpu::BufferMapState::Mapped) {
                     // auto image = boost::shared_ptr<sensor_msgs::Image>{imagePool.borrowFrom(), [](sensor_msgs::Image* msg) { imagePool.returnTo(msg); }};
-                    auto image = boost::make_shared<sensor_msgs::Image>();
+                    auto image = std::make_unique<sensor_msgs::msg::Image>();
                     image->is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
                     image->encoding = sensor_msgs::image_encodings::BGRA8;
                     image->width = camera.resolution.x();
                     image->height = camera.resolution.y();
                     image->step = camera.resolution.x() * 4;
-                    image->header.stamp = ros::Time::now();
+                    image->header.stamp = get_clock()->now();
                     image->header.frame_id = camera.frameId;
                     image->data.resize(area * 4);
 
@@ -655,7 +655,7 @@ namespace mrover {
                     camera.stagingBuffer.unmap();
                     camera.callback = nullptr;
 
-                    camera.pub.publish(image);
+                    camera.imgPub->publish(std::move(image));
                 }
             }
             if (!camera.callback && camera.updateTask.shouldUpdate()) {
@@ -691,17 +691,17 @@ namespace mrover {
         }
     }
 
-    auto SimulatorNodelet::renderUpdate() -> void {
+    auto Simulator::renderUpdate() -> void {
         std::array<wgpu::RenderPassColorAttachment, 2> colorAttachments{};
         auto& [colorAttachment, normalAttachment] = colorAttachments;
         colorAttachment.loadOp = wgpu::LoadOp::Clear;
         colorAttachment.storeOp = wgpu::StoreOp::Store;
         colorAttachment.clearValue = {mSkyColor.x(), mSkyColor.y(), mSkyColor.z(), mSkyColor.w()};
-        colorAttachment.depthSlice = wgpu::kDepthSliceUndefined;
+        colorAttachment.depthSlice = -1;
         normalAttachment.loadOp = wgpu::LoadOp::Clear;
         normalAttachment.storeOp = wgpu::StoreOp::Store;
         normalAttachment.clearValue = {0, 0, 0, 0};
-        normalAttachment.depthSlice = wgpu::kDepthSliceUndefined;
+        normalAttachment.depthSlice = -1;
 
         wgpu::RenderPassDepthStencilAttachment depthStencilAttachment;
         depthStencilAttachment.depthClearValue = 1.0f;

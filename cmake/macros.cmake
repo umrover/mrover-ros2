@@ -1,3 +1,8 @@
+macro(mrover_add_header_only_library name includes)
+    add_library(${name} INTERFACE)
+    target_include_directories(${name} INTERFACE ${includes})
+endmacro()
+
 macro(mrover_add_library name sources includes)
     file(GLOB_RECURSE LIBRARY_SOURCES CONFIGURE_DEPENDS ${sources})
     add_library(${name} ${ARGV3} ${LIBRARY_SOURCES})

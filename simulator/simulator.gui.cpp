@@ -6,7 +6,7 @@ namespace mrover {
         return btVector3{static_cast<btScalar>(r3.x()), static_cast<btScalar>(r3.y()), static_cast<btScalar>(r3.z())};
     }
 
-    auto SimulatorNodelet::guiUpdate(wgpu::RenderPassEncoder& pass) -> void {
+    auto Simulator::guiUpdate(wgpu::RenderPassEncoder& pass) -> void {
         if (mSaveTask.shouldUpdate() && mEnablePhysics) {
             if (auto it = mUrdfs.find("rover"); it != mUrdfs.end()) {
                 URDF const& rover = it->second;

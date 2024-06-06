@@ -4,10 +4,6 @@ from dataclasses import dataclass
 
 import numpy as np
 import pymap3d
-
-import tf2_ros
-from lie import SE3
-from geometry_msgs.msg import Twist
 from mrover.msg import (
     Waypoint,
     GPSWaypoint,
@@ -18,6 +14,10 @@ from mrover.msg import (
     ImageTargets,
 )
 from mrover.srv import EnableAuton
+
+import tf2_ros
+from geometry_msgs.msg import Twist
+from lie import SE3
 from nav_msgs.msg import Path
 from rclpy.duration import Duration
 from rclpy.node import Node
@@ -136,11 +136,11 @@ class ImageTargetsStore:
         """
         now = self._context.node.get_clock().now()
 
-        increment_weight = self._context.node.get_parameter("image_targets/increment_weight").value
-        decrement_weight = self._context.node.get_parameter("image_targets/decrement_weight").value
+        increment_weight = self._context.node.get_parameter("image_targets.increment_weight").value
+        decrement_weight = self._context.node.get_parameter("image_targets.decrement_weight").value
         # TODO(quintin): Seems like this was never used in 2024, might have been an oversight
-        min_hits = self._context.node.get_parameter("image_targets/min_hits").value
-        max_hits = self._context.node.get_parameter("image_targets/max_hits").value
+        min_hits = self._context.node.get_parameter("image_targets.min_hits").value
+        max_hits = self._context.node.get_parameter("image_targets.max_hits").value
 
         # Update our current targets
         # Collect the iterator in to a list first since we will be modifying the dictionary
@@ -372,9 +372,9 @@ class Context:
         if request.enable:
             ref = np.array(
                 [
-                    self.node.get_parameter("gps_linearization/ref_lat").value,
-                    self.node.get_parameter("gps_linearization/ref_lon").value,
-                    self.node.get_parameter("gps_linearization/ref_alt").value,
+                    self.node.get_parameter("ref_lat").value,
+                    self.node.get_parameter("ref_lon").value,
+                    self.node.get_parameter("ref_alt").value,
                 ]
             )
             self.course = convert_and_get_course(self, ref, request)

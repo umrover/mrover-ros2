@@ -50,7 +50,7 @@ namespace mrover {
         std::filesystem::path package = *path.begin();
         std::filesystem::path rest = path.lexically_relative(package);
 
-        std::filesystem::path packagePath = ros::package::getPath(package);
+        std::filesystem::path packagePath = ament_index_cpp::get_package_share_directory(package);
         if (packagePath.empty()) throw std::runtime_error{std::format("Failed to find package: {}", package.string())};
 
         return packagePath / rest;

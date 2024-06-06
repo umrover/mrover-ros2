@@ -2,8 +2,6 @@
 
 #include "pch.hpp"
 
-class SimulatorNodelet;
-
 namespace mrover {
 
     /**
