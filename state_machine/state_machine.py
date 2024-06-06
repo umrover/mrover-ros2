@@ -3,7 +3,7 @@ __author__ = "Ankith Udupa"
 import time
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import DefaultDict, Set, List, Callable, TypeVar, Optional, Generic
+from typing import DefaultDict, Callable, TypeVar, Generic
 
 from rclpy.impl.rcutils_logger import RcutilsLogger
 from state_machine.state import State
@@ -21,12 +21,12 @@ ContextType = TypeVar("ContextType")
 
 class StateMachine(Generic[ContextType]):
     current_state: State
-    state_transitions: DefaultDict[type[State], Set[type[State]]]
-    transition_log: List[TransitionRecord]
+    state_transitions: DefaultDict[type[State], set[type[State]]]
+    transition_log: list[TransitionRecord]
     context: ContextType
     name: str
-    off_lambda: Optional[Callable[[ContextType], bool]]
-    off_state: Optional[State]
+    off_lambda: Callable[[ContextType], bool] | None
+    off_state: State | None
     logger: RcutilsLogger
 
     def __init__(
@@ -39,7 +39,7 @@ class StateMachine(Generic[ContextType]):
         self.current_state = initial_state
         self.state_transitions = defaultdict(set)
         self.state_transitions[type(self.current_state)] = set()
-        self.transition_log: List[TransitionRecord] = []
+        self.transition_log: list[TransitionRecord] = []
         self.context = context
         self.name = name
         self.off_lamdba = None
@@ -65,7 +65,7 @@ class StateMachine(Generic[ContextType]):
     def add_transition(self, state_from: State, state_to: State) -> None:
         self.state_transitions[type(state_from)].add(type(state_to))
 
-    def add_transitions(self, state_from: State, states_to: List[State]) -> None:
+    def add_transitions(self, state_from: State, states_to: list[State]) -> None:
         for state_to in states_to:
             self.add_transition(state_from, state_to)
         self.add_transition(state_from, state_from)
@@ -74,7 +74,8 @@ class StateMachine(Generic[ContextType]):
 
     def configure_off_switch(self, off_state: State, off_lambda: Callable[[ContextType], bool]):
         if type(off_state) not in self.state_transitions:
-            raise Exception("Attempted to configure an Off State that doesn't exist")
+            raise Exception("Attempted to configure an off state that does not exist")
+
         self.off_state = off_state
         self.off_lambda = off_lambda
         for _, to_states in self.state_transitions.items():

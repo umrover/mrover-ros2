@@ -10,7 +10,9 @@ namespace mrover {
             mSaveTask = PeriodicTask{get_parameter("save_rate").as_double()};
             mSaveHistory = boost::circular_buffer<SaveData>{static_cast<std::size_t>(get_parameter("save_history").as_int())};
 
-            mCmdVelPub = create_publisher<geometry_msgs::msg::Twist>("simulator_cmd_vel", 1);
+            mGroundTruthPub = create_publisher<nav_msgs::msg::Odometry>("ground_truth", 1);
+
+            mCmdVelPub = create_publisher<geometry_msgs::msg::Twist>("sim_cmd_vel", 1);
 
             mImageTargetsPub = create_publisher<msg::ImageTargets>("objects", 1);
 
@@ -38,19 +40,18 @@ namespace mrover {
             {
                 auto addGroup = [&](std::string_view groupName, std::vector<std::string> const& names) {
                     MotorGroup& group = mMotorGroups.emplace_back();
-                    group.updateTask = PeriodicTask{50};
                     group.jointStatePub = create_publisher<sensor_msgs::msg::JointState>(std::format("{}_joint_data", groupName), 1);
                     group.controllerStatePub = create_publisher<msg::ControllerState>(std::format("{}_controller_data", groupName), 1);
                     group.names = names;
-                    // group.throttleSub = create_subscription<msg::Throttle>(std::format("{}_throttle_cmd", groupName), 1, [this](msg::Throttle::SharedPtr const& msg) {
-                    //     throttlesCallback(msg);
-                    // });
-                    // group.velocitySub = create_subscription<msg::Velocity>(std::format("{}_velocity_cmd", groupName), 1, [this](msg::Velocity::SharedPtr const& msg) {
-                    //     velocitiesCallback(msg);
-                    // });
-                    // group.positionSub = create_subscription<msg::Position>(std::format("{}_position_cmd", groupName), 1, [this](msg::Position::SharedPtr const& msg) {
-                    //     positionsCallback(msg);
-                    // });
+                    group.throttleSub = create_subscription<msg::Throttle>(std::format("{}_throttle_cmd", groupName), 1, [this](msg::Throttle::SharedPtr msg) {
+                        throttlesCallback(msg);
+                    });
+                    group.velocitySub = create_subscription<msg::Velocity>(std::format("{}_velocity_cmd", groupName), 1, [this](msg::Velocity::SharedPtr msg) {
+                        velocitiesCallback(msg);
+                    });
+                    group.positionSub = create_subscription<msg::Position>(std::format("{}_position_cmd", groupName), 1, [this](msg::Position::SharedPtr msg) {
+                        positionsCallback(msg);
+                    });
                 };
                 addGroup("arm", {"joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_roll"});
                 addGroup("drive_left", {"front_left", "middle_left", "back_left"});

@@ -1,7 +1,7 @@
 import numpy as np
 
 from lie import SO2
-from state_machine import State
+from state_machine.state import State
 from . import recovery
 from .approach_target import ApproachTargetState
 from .context import Context

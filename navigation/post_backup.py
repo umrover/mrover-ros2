@@ -6,7 +6,7 @@ import numpy as np
 from shapely.geometry import Point, LineString
 
 from lie import SE3, perpendicular_2d
-from state_machine import State
+from state_machine.state import State
 from . import waypoint, recovery
 from .context import Context
 from .trajectory import Trajectory

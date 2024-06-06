@@ -4,12 +4,12 @@
 # Angle:    radian
 # Distance: meter
 
-/basestation_gps_driver:
+basestation_gps_driver:
   ros__parameters:
     port: /dev/gps
     baudrate: 38400
 
-/gps_linearization:
+gps_linearization:
   ros__parameters:
     world_frame: "map"
     rover_frame: "base_link"

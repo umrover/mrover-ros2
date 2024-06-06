@@ -4,7 +4,7 @@
 # Angle:    radian
 # Distance: meter
 
-/navigation:
+navigation:
   ros__parameters:
     pub_path_rate: 1.0
     # How many state machine iterations per second
@@ -40,7 +40,14 @@
       stop_threshold: 0.5
       drive_forward_threshold: 0.34
 
-/stuck_detector:
+    # TODO(quintin): Avoid storing these in multiple config files
+    ref_lat: 38.4225202
+    ref_lon: -110.7844653
+    ref_alt: 0.0
+    world_frame: "map"
+    rover_frame: "base_link"
+
+stuck_detector:
   ros__parameters:
     # How many readings to consider the rover stuck
     # NOTE(quintin): This is probably bad since it depends on the data publishing rate...

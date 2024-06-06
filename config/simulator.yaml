@@ -4,16 +4,11 @@
 # Angle:    radian
 # Distance: meter
 
-/simulator:
+simulator:
   ros__parameters:
     save_rate: 1.0
     save_history: 4096
     headless: false
-
-    # TODO(quintin): Avoid storing these in multiple config files
-    ref_lat: 38.4225202
-    ref_lon: -110.7844653
-    ref_alt: 0.0
 
     ref_heading: 90.0  # For the GPS sensor to work
 
@@ -57,3 +52,10 @@
         type: urdf
         uri: package://mrover/urdf/world/rock.urdf.xacro
         position: [ 9.0, -2.0, 0.2 ]
+
+    # TODO(quintin): Avoid storing these in multiple config files
+    ref_lat: 38.4225202
+    ref_lon: -110.7844653
+    ref_alt: 0.0
+    world_frame: "map"
+    rover_frame: "base_link"

@@ -18,14 +18,13 @@ import rclpy
 from geometry_msgs.msg import Twist
 from mrover.msg import StateMachineStateUpdate
 from nav_msgs.msg import Odometry
+from navigation.recovery import RecoveryState
 from rclpy import Parameter
 from rclpy.duration import Duration
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 from rclpy.time import Time
 from std_msgs.msg import Bool
-
-RECOVERY_STATE_NAME = "RecoveryState"
 
 
 class StuckDetector(Node):
@@ -100,7 +99,7 @@ class StuckDetector(Node):
         angular_speed_average = np.average(np.abs(self.real_vel[1, :]))
         is_not_moving = linear_speed_average < linear_threshold and angular_speed_average < angular_threshold
         is_outside_grace = self.last_trigger_time is None or now - self.last_trigger_time > post_recovery_grace_period
-        is_not_recovery = nav_status.state != RECOVERY_STATE_NAME
+        is_not_recovery = nav_status.state != str(RecoveryState())
 
         if is_trying_to_move and is_not_moving and is_outside_grace and is_not_recovery:
             self.get_logger().warn("Detecting rover being stuck!")

@@ -1,10 +1,9 @@
 from __future__ import annotations
 
 from mrover.msg import StateMachineStructure, StateMachineTransition, StateMachineStateUpdate
-
 from rclpy.node import Node
 from rclpy.publisher import Publisher
-from common.state_machine.state_machine import StateMachine
+from state_machine.state_machine import StateMachine
 
 
 class StatePublisher:
@@ -39,7 +38,5 @@ class StatePublisher:
 
     def publish_state(self) -> None:
         current_state = self.state_machine.current_state
-        state = StateMachineStateUpdate()
-        state.state_machine_name = self.state_machine.name
-        state.state = str(current_state)
+        state = StateMachineStateUpdate(state=str(current_state), state_machine_name=self.state_machine.name)
         self.state_publisher.publish(state)

@@ -90,7 +90,7 @@ namespace mrover {
         btMultiBody* physics = nullptr;
         std::unordered_map<std::string, LinkMeta> linkNameToMeta;
 
-        URDF(Simulator& simulator, std::string_view name, std::string_view uri, btTransform const& transform);
+        URDF(Simulator& simulator, std::string_view uri, btTransform const& transform);
 
         static auto makeCollisionShapeForLink(Simulator& simulator, urdf::LinkConstSharedPtr const& link) -> btCollisionShape*;
 
@@ -168,7 +168,6 @@ namespace mrover {
 
     struct MotorGroup {
         std::vector<std::string> names;
-        PeriodicTask updateTask;
         rclcpp::Subscription<msg::Throttle>::SharedPtr throttleSub;
         rclcpp::Subscription<msg::Velocity>::SharedPtr velocitySub;
         rclcpp::Subscription<msg::Position>::SharedPtr positionSub;
@@ -361,22 +360,21 @@ namespace mrover {
             if (auto it = mUrdfs.find("rover"); it != mUrdfs.end()) {
                 URDF const& rover = it->second;
 
-                for (auto const& combined: boost::combine(names, values)) {
-                    std::string const& name = boost::get<0>(combined);
-                    float value = boost::get<1>(combined);
+                for (std::size_t i = 0; i < names.size(); ++i) {
+                    std::string const& name = names[i];
+                    float value = values[i];
 
-                    // TODO(quintin): Fix
-                    // if (auto urdfNameOpt = msgToUrdf.forward(name)) {
-                    //     std::string const& urdfName = urdfNameOpt.value();
-                    //
-                    //     int linkIndex = rover.linkNameToMeta.at(urdfName).index;
-                    //
-                    //     auto* motor = std::bit_cast<btMultiBodyJointMotor*>(rover.physics->getLink(linkIndex).m_userPtr);
-                    //     assert(motor);
-                    //     function(motor, value);
-                    // } else {
-                    //     ROS_WARN_STREAM_THROTTLE(1, std::format("Unknown joint name: {}. Either the wrong name was sent OR the simulator does not yet support it", name));
-                    // }
+                    auto it = rover.linkNameToMeta.find(name);
+                    if (it == rover.linkNameToMeta.end()) {
+                        RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, std::format("Unknown joint name: {}. Either the wrong name was sent OR the simulator does not yet support it", name));
+                        continue;
+                    }
+
+                    int linkIndex = it->second.index;
+
+                    auto* motor = std::bit_cast<btMultiBodyJointMotor*>(rover.physics->getLink(linkIndex).m_userPtr);
+                    assert(motor);
+                    function(motor, value);
                 }
             }
         }

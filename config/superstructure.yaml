@@ -1,0 +1,11 @@
+# All units are in SI
+# ===================
+# Time:     second, hz
+# Angle:    radian
+# Distance: meter
+
+superstructure:
+  ros__parameters:
+    input_topics: [ 'sim_cmd_vel' ]
+    timeout: 0.5
+    rate: 30.0

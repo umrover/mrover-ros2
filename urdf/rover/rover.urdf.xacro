@@ -73,7 +73,7 @@
   </xacro:macro>
 
   <xacro:macro name="wheel" params="pos side reflect">
-    <link name="${pos}_${side}_wheel_link">
+    <link name="${pos}_${side}">
       <xacro:cylinder_inertia m="${wheel_mass}" r="${wheel_radius}" h="${wheel_width}"/>
       <visual>
         <geometry>
@@ -90,7 +90,7 @@
 
   <xacro:macro name="wheels" params="side reflect">
     <xacro:wheel pos="front" side="${side}" reflect="${reflect}"/>
-    <xacro:wheel pos="center" side="${side}" reflect="${reflect}"/>
+    <xacro:wheel pos="middle" side="${side}" reflect="${reflect}"/>
     <xacro:wheel pos="back" side="${side}" reflect="${reflect}"/>
 
     <link name="${side}_bogie_link">
@@ -143,9 +143,9 @@
       <limit lower="-0.122173" upper="0.523599" effort="0" velocity="0"/>
     </joint>
 
-    <joint name="${side}_rocker_link_to_back_${side}_wheel_link" type="continuous">
+    <joint name="${side}_rocker_link_to_back_${side}" type="continuous">
       <parent link="${side}_rocker_link"/>
-      <child link="back_${side}_wheel_link"/>
+      <child link="back_${side}"/>
       <origin xyz="-0.417094 0.28513 ${reflect * 0.09}"/>
       <axis xyz="0 0 1"/>
       <limit effort="${wheel_torque}" velocity="0"/>
@@ -159,17 +159,17 @@
       <limit lower="-0.349066" upper="0.349066" effort="0" velocity="0"/>
     </joint>
 
-    <joint name="${side}_bogie_link_to_front_${side}_wheel_link" type="continuous">
+    <joint name="${side}_bogie_link_to_front_${side}" type="continuous">
       <parent link="${side}_bogie_link"/>
-      <child link="front_${side}_wheel_link"/>
+      <child link="front_${side}"/>
       <origin xyz="0.215233 0.147933 ${reflect * 0.09}"/>
       <axis xyz="0 0 1"/>
       <limit effort="${wheel_torque}" velocity="0"/>
     </joint>
 
-    <joint name="${side}_bogie_link_to_center_${side}_wheel_link" type="continuous">
+    <joint name="${side}_bogie_link_to_middle_${side}" type="continuous">
       <parent link="${side}_bogie_link"/>
-      <child link="center_${side}_wheel_link"/>
+      <child link="middle_${side}"/>
       <origin xyz="-0.173532 0.147659 ${reflect * 0.09}"/>
       <axis xyz="0 0 1"/>
       <limit effort="${wheel_torque}" velocity="0"/>
@@ -266,13 +266,13 @@
 
   <link name="right_gps"/>
 
-    <joint name="chassis_link_to_center_gps" type="fixed">
-      <origin xyz="0 0 1"/>
-      <parent link="chassis_link"/>
-      <child link="center_gps"/>
-    </joint>
+  <joint name="chassis_link_to_center_gps" type="fixed">
+    <origin xyz="0 0 1"/>
+    <parent link="chassis_link"/>
+    <child link="center_gps"/>
+  </joint>
 
-    <link name="center_gps"/>
+  <link name="center_gps"/>
 
   <joint name="chassis_link_to_imu" type="fixed">
     <origin xyz="0 0 0"/>
@@ -312,24 +312,24 @@
     </collision>
   </link>
 
-  <joint name="chassis_link_to_mast_link" type="fixed">
-    <origin xyz="0.0505 -0.086 0.558"/>
-    <parent link="chassis_link"/>
-    <child link="mast_link"/>
-  </joint>
+  <!-- TODO(quintin): I removed this for now, feel free to add it back when needed -->
 
-  <link name="mast_link"/>
+  <!--  <joint name="chassis_link_to_mast_link" type="fixed">-->
+  <!--    <origin xyz="0.0505 -0.086 0.558"/>-->
+  <!--    <parent link="chassis_link"/>-->
+  <!--    <child link="mast_link"/>-->
+  <!--  </joint>-->
 
-  <joint name="mast_link_to_zed_mini_camera" type="continuous">
-    <origin xyz="0.05 0 0.0"/>
-    <parent link="mast_link"/>
-    <child link="zed_mini_camera"/>
-    <axis xyz="0 0 1"/>
-    <limit effort="2.68" velocity="0"/>
-  </joint>
+  <!--  <link name="mast_link"/>-->
 
-  <link name="zed_mini_camera"/>
+  <!--  <joint name="mast_link_to_zed_mini_camera" type="continuous">-->
+  <!--    <origin xyz="0.05 0 0.0"/>-->
+  <!--    <parent link="mast_link"/>-->
+  <!--    <child link="zed_mini_camera"/>-->
+  <!--    <axis xyz="0 0 1"/>-->
+  <!--    <limit effort="2.68" velocity="0"/>-->
+  <!--  </joint>-->
 
-  <!--  <xacro:include filename="$(find mrover)/urdf/rover/rover_gazebo_plugins.urdf.xacro"/>-->
+  <!--  <link name="zed_mini_camera"/>-->
 
 </robot>

@@ -91,6 +91,11 @@ target_link_libraries(simulator
 )
 target_include_directories(simulator SYSTEM PRIVATE ${BULLET_INCLUDE_DIRS} ${OPENCV_INCLUDE_DIRS})
 
+mrover_add_node(differential_drive_controller esw/differential_drive_controller.cpp)
+target_link_libraries(differential_drive_controller units)
+ament_target_dependencies(differential_drive_controller rclcpp)
+rosidl_target_interfaces(differential_drive_controller ${PROJECT_NAME} "rosidl_typesupport_cpp")
+
 ## Install
 
 install(PROGRAMS
@@ -99,6 +104,7 @@ install(PROGRAMS
         localization/rover_gps_driver.py
         localization/gps_linearization.py
         localization/basestation_gps_driver.py
+        superstructure/superstructure.py
         DESTINATION
         lib/${PROJECT_NAME}
 )

@@ -51,26 +51,10 @@ namespace mrover {
                 if (position.size() != 3) throw std::invalid_argument{"Position must have 3 elements"};
                 if (orientation.size() != 4) throw std::invalid_argument{"Orientation must have 4 elements"};
                 btTransform transform{btQuaternion{static_cast<btScalar>(orientation[0]), static_cast<btScalar>(orientation[1]), static_cast<btScalar>(orientation[2]), static_cast<btScalar>(orientation[3])}, btVector3{static_cast<btScalar>(position[0]), static_cast<btScalar>(position[1]), static_cast<btScalar>(position[2])}};
-                if (auto [_, was_added] = mUrdfs.try_emplace(name, *this, name, uri, transform); !was_added) {
+                if (auto [_, was_added] = mUrdfs.try_emplace(name, *this, uri, transform); !was_added) {
                     throw std::invalid_argument{std::format("Duplicate object name: {}", name)};
                 }
             }
-
-            // TODO(quintin): Implement
-            // for (int i = 0; i < objects.size(); ++i) { // NOLINT(*-loop-convert)
-            //     XmlRpc::XmlRpcValue const& object = objects[i];
-            //
-            //     auto type = xmlRpcValueToTypeOrDefault<std::string>(object, "type");
-            //     auto name = xmlRpcValueToTypeOrDefault<std::string>(object, "name", "<unnamed>");
-            //
-            //     NODELET_INFO_STREAM(std::format("Loading object: {} of type: {}", name, type));
-            //
-            //     if (type == "urdf") {
-            //         if (auto [_, was_added] = mUrdfs.try_emplace(name, *this, object); !was_added) {
-            //             throw std::invalid_argument{std::format("Duplicate object name: {}", name)};
-            //         }
-            //     }
-            // }
         }
     }
 
@@ -184,10 +168,8 @@ namespace mrover {
         return camera;
     }
 
-    URDF::URDF(Simulator& simulator, std::string_view name, std::string_view uri, btTransform const& transform) {
+    URDF::URDF(Simulator& simulator, std::string_view uri, btTransform const& transform) {
         if (!model.initString(performXacro(uriToPath(uri)))) throw std::runtime_error{std::format("Failed to parse URDF from URI: {}", uri)};
-
-        // this->name = name;
 
         std::size_t multiBodyLinkCount = model.links_.size() - 1; // Root link is treated separately by multibody, so subtract it off
         auto* multiBody = physics = simulator.makeBulletObject<btMultiBody>(simulator.mMultiBodies, multiBodyLinkCount, 0, btVector3{0, 0, 0}, false, false);
