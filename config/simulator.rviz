@@ -8,6 +8,12 @@ Panels:
         - /Status1
         - /RobotModel1
         - /TF1
+        - /TF1/Status1
+        - /TF1/Frames1
+        - /TF1/Frames1/course01
+        - /TF1/Frames1/course11
+        - /TF1/Frames1/course31
+        - /Path1
       Splitter Ratio: 0.5
     Tree Height: 1075
   - Class: rviz_common/Selection
@@ -118,9 +124,19 @@ Visualization Manager:
           Value: true
         chassis_link:
           Value: true
+        course0:
+          Value: true
+        course1:
+          Value: true
+        course2:
+          Value: true
+        course3:
+          Value: true
         front_left_wheel_link:
           Value: true
         front_right_wheel_link:
+          Value: true
+        hammer:
           Value: true
         hammer_truth:
           Value: true
@@ -210,8 +226,18 @@ Visualization Manager:
                   {}
             zed_left_camera_frame:
               {}
+        course3:
+          {}
         map:
           bottle_truth:
+            {}
+          course0:
+            {}
+          course1:
+            {}
+          course2:
+            {}
+          hammer:
             {}
           hammer_truth:
             {}
@@ -233,11 +259,39 @@ Visualization Manager:
             {}
       Update Interval: 0
       Value: true
+    - Alpha: 1
+      Buffer Length: 1
+      Class: rviz_default_plugins/Path
+      Color: 25; 255; 0
+      Enabled: true
+      Head Diameter: 0.30000001192092896
+      Head Length: 0.20000000298023224
+      Length: 0.30000001192092896
+      Line Style: Lines
+      Line Width: 0.029999999329447746
+      Name: Path
+      Offset:
+        X: 0
+        Y: 0
+        Z: 0
+      Pose Color: 255; 85; 255
+      Pose Style: None
+      Radius: 0.029999999329447746
+      Shaft Diameter: 0.10000000149011612
+      Shaft Length: 0.10000000149011612
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        Filter size: 10
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /ground_truth_path
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
     Fixed Frame: map
-    Frame Rate: 30
+    Frame Rate: 60
   Name: root
   Tools:
     - Class: rviz_default_plugins/Interact
@@ -279,25 +333,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/Orbit
-      Distance: 14.547320365905762
+      Distance: 10.37869644165039
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 0
-        Y: 0
-        Z: 0
+        X: 0.6313318610191345
+        Y: -3.1521317958831787
+        Z: 0.04634761065244675
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.35039815306663513
+      Pitch: 0.29539820551872253
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 1.475407361984253
+      Yaw: 1.5704118013381958
     Saved: ~
 Window Geometry:
   Displays:

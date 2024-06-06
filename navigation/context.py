@@ -46,7 +46,9 @@ class Rover:
             tf2_ros.ConnectivityException,
             tf2_ros.ExtrapolationException,
         ):
-            self.ctx.node.get_logger().warn("Failed to get rover pose. Is localization running?")
+            self.ctx.node.get_logger().warn(
+                "Failed to get rover pose. Is localization running?", throttle_duration_sec=1
+            )
             return None
 
     def send_drive_command(self, twist: Twist) -> None:
