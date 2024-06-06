@@ -4,6 +4,10 @@ from dataclasses import dataclass
 
 import numpy as np
 import pymap3d
+
+import tf2_ros
+from geometry_msgs.msg import Twist
+from lie import SE3
 from mrover.msg import (
     Waypoint,
     GPSWaypoint,
@@ -14,15 +18,10 @@ from mrover.msg import (
     ImageTargets,
 )
 from mrover.srv import EnableAuton
-
-import tf2_ros
-from geometry_msgs.msg import Twist
-from lie import SE3
 from nav_msgs.msg import Path
 from rclpy.duration import Duration
 from rclpy.node import Node
 from rclpy.publisher import Publisher
-from rclpy.service import Service
 from rclpy.subscription import Subscription
 from rclpy.time import Time
 from state_machine.state import State
@@ -37,7 +36,7 @@ class Rover:
     ctx: Context
     stuck: bool
     previous_state: State
-    path_history: Path = Path(header=Header(frame_id="map"))
+    path_history: Path
 
     def get_pose_in_map(self) -> SE3 | None:
         try:
@@ -77,9 +76,7 @@ class Environment:
         :return:        Pose of the target in the world frame if it exists and is not too old, otherwise None
         """
         try:
-            target_pose, time = SE3.from_tf_tree_with_time(
-                self.ctx.tf_buffer, parent_frame=self.ctx.world_frame, child_frame=frame
-            )
+            target_pose, time = SE3.from_tf_tree_with_time(self.ctx.tf_buffer, frame, self.ctx.world_frame)
         except (
             tf2_ros.LookupException,
             tf2_ros.ConnectivityException,
@@ -197,8 +194,7 @@ class Course:
         self.waypoint_index += 1
 
     def waypoint_pose(self, index: int) -> SE3:
-        waypoint_frame = f"course{index}"
-        return SE3.from_tf_tree(self.ctx.tf_buffer, parent_frame="map", child_frame=waypoint_frame)
+        return SE3.from_tf_tree(self.ctx.tf_buffer, f"course{index}", self.ctx.world_frame)
 
     def current_waypoint_pose_in_map(self) -> SE3:
         return self.waypoint_pose(self.waypoint_index)
@@ -269,9 +265,9 @@ class Course:
 
 def setup_course(ctx: Context, waypoints: list[tuple[Waypoint, SE3]]) -> Course:
     all_waypoint_info = []
-    for index, (waypoint_info, pose) in enumerate(waypoints):
+    for index, (waypoint_info, waypoint_in_world) in enumerate(waypoints):
         all_waypoint_info.append(waypoint_info)
-        pose.publish_to_tf_tree(ctx.tf_broadcaster, "map", f"course{index}")
+        SE3.to_tf_tree(ctx.tf_broadcaster, waypoint_in_world, f"course{index}", ctx.world_frame)
     # Make the course out of just the pure waypoint objects which is the 0th element in the tuple
     return Course(
         ctx=ctx,
@@ -305,10 +301,10 @@ def convert_cartesian_to_gps(reference_point: np.ndarray, coordinate: np.ndarray
     """
     x, y, z = coordinate
     ref_lat, ref_lon, _ = reference_point
-    lat, long, _ = pymap3d.enu2geodetic(x, y, z, ref_lat, ref_lon, 0)
+    lat, lon, _ = pymap3d.enu2geodetic(x, y, z, ref_lat, ref_lon, 0)
     return GPSWaypoint(
-        latitude_degree=lat,
-        longitude_degrees=long,
+        latitude_degrees=lat,
+        longitude_degrees=lon,
         type=WaypointType(val=WaypointType.NO_SEARCH),
     )
 
@@ -328,7 +324,6 @@ class Context:
     course_listener: Subscription
     stuck_listener: Subscription
     path_history_publisher: Publisher
-    enable_auton_service: Service
 
     # Use these as the primary interfaces in states
     course: Course | None
@@ -347,14 +342,14 @@ class Context:
         self.node = node
         self.drive = DriveController(node)
 
-        self.course = None
-        self.rover = Rover(self, False, OffState(), Path())
-        self.env = Environment(self, image_targets=ImageTargetsStore(self))
-        self.disable_requested = False
         self.world_frame = node.get_parameter("world_frame").value
         self.rover_frame = node.get_parameter("rover_frame").value
+        self.course = None
+        self.rover = Rover(self, False, OffState(), Path(header=Header(frame_id=self.world_frame)))
+        self.env = Environment(self, image_targets=ImageTargetsStore(self))
+        self.disable_requested = False
 
-        self.enable_auton_service = node.create_service(EnableAuton, "enable_auton", self.recv_enable_auton)
+        node.create_service(EnableAuton, "enable_auton", self.enable_auton)
 
         self.command_publisher = node.create_publisher(Twist, "nav_cmd_vel", 1)
         self.search_point_publisher = node.create_publisher(GPSPointList, "search_path", 1)
@@ -367,17 +362,17 @@ class Context:
         self.tf_buffer = tf2_ros.Buffer()
         tf2_ros.TransformListener(self.tf_buffer, node)
 
-    def recv_enable_auton(self, request: EnableAuton.Request, response: EnableAuton.Response) -> EnableAuton.Response:
-
+    def enable_auton(self, request: EnableAuton.Request, response: EnableAuton.Response) -> EnableAuton.Response:
+        self.node.get_logger().info("Received new course to navigate!")
         if request.enable:
-            ref = np.array(
+            ref_point = np.array(
                 [
                     self.node.get_parameter("ref_lat").value,
                     self.node.get_parameter("ref_lon").value,
                     self.node.get_parameter("ref_alt").value,
                 ]
             )
-            self.course = convert_and_get_course(self, ref, request)
+            self.course = convert_and_get_course(self, ref_point, request)
         else:
             self.disable_requested = True
         response.success = True

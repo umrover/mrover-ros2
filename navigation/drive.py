@@ -4,7 +4,7 @@ from enum import Enum
 
 import numpy as np
 
-from lie import SE3, normalized, angle_to_rotate
+from lie import SE3, normalized, angle_to_rotate_2d
 from geometry_msgs.msg import Twist, Vector3
 from rclpy.node import Node
 
@@ -206,7 +206,7 @@ class DriveController:
 
         # Compute errors
         linear_error = float(np.linalg.norm(target_dir))
-        angular_error = angle_to_rotate(rover_dir, target_dir)
+        angular_error = angle_to_rotate_2d(rover_dir[:2], target_dir[:2])
 
         output = self._get_state_machine_output(
             angular_error,

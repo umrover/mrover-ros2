@@ -42,7 +42,8 @@ namespace mrover {
     auto Simulator::physicsUpdate(Clock::duration dt) -> void {
         mDynamicsWorld->setGravity(mGravityAcceleration);
 
-        // TODO(quintin): clean this up
+        // Make the rocker and bogie try to always return to their initial positions
+        // They can still move, so they act as a suspension system
         if (auto it = mUrdfs.find("rover"); it != mUrdfs.end()) {
             URDF const& rover = it->second;
 
@@ -88,11 +89,11 @@ namespace mrover {
 
                     SE3Conversions::pushToTfTree(mTfBroadcaster, link->name, link->getParent()->name, childInParent, get_clock()->now());
                 }
-                // TODO(quintin): This is kind of hacky
-                if (name.contains("tag"sv) || name.contains("hammer"sv) || name.contains("bottle"sv)) {
-                    SE3d modelInMap = btTransformToSe3(urdf.physics->getBaseWorldTransform());
-                    SE3Conversions::pushToTfTree(mTfBroadcaster, std::format("{}_truth", name), "map", modelInMap, get_clock()->now());
-                }
+
+                SE3d modelInMap = btTransformToSe3(urdf.physics->getBaseWorldTransform());
+                SE3Conversions::pushToTfTree(mTfBroadcaster, std::format("{}_truth", name), "map", modelInMap, get_clock()->now());
+
+                if (name == "rover") SE3Conversions::pushToTfTree(mTfBroadcaster, "base_link", "map", modelInMap, get_clock()->now());
 
                 for (urdf::JointSharedPtr const& child_joint: link->child_joints) {
                     self(self, urdf.model.getLink(child_joint->child_link_name));

@@ -53,6 +53,17 @@ class Navigation(Node):
                 ("drive.turning_p", Parameter.Type.DOUBLE),
                 ("drive.driving_p", Parameter.Type.DOUBLE),
                 ("drive.lookahead_distance", Parameter.Type.DOUBLE),
+                ("waypoint.stop_threshold", Parameter.Type.DOUBLE),
+                ("waypoint.drive_forward_threshold", Parameter.Type.DOUBLE),
+                ("search.stop_threshold", Parameter.Type.DOUBLE),
+                ("search.drive_forward_threshold", Parameter.Type.DOUBLE),
+                ("search.coverage_radius", Parameter.Type.DOUBLE),
+                ("search.segments_per_rotation", Parameter.Type.INTEGER),
+                ("search.distance_between_spirals", Parameter.Type.DOUBLE),
+                ("single_tag.stop_threshold", Parameter.Type.DOUBLE),
+                ("single_tag.tag_stop_threshold", Parameter.Type.DOUBLE),
+                ("single_tag.post_avoidance_multiplier", Parameter.Type.DOUBLE),
+                ("single_tag.post_radius", Parameter.Type.DOUBLE),
             ],
         )
 
@@ -99,8 +110,8 @@ class Navigation(Node):
 
         update_rate = self.get_parameter("update_rate").value
         pub_path_rate = self.get_parameter("pub_path_rate").value
-        self.create_timer(update_rate, self.state_machine.update)
-        self.create_timer(pub_path_rate, self.publish_path)
+        self.create_timer(1 / update_rate, self.state_machine.update)
+        self.create_timer(1 / pub_path_rate, self.publish_path)
 
         self.get_logger().info("Armed!")
 

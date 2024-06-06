@@ -13,7 +13,9 @@ def normalized(v: np.ndarray) -> np.ndarray:
     return v / np.linalg.norm(v)
 
 
-def angle_to_rotate(v1: np.ndarray, v2: np.ndarray) -> float:
+def angle_to_rotate_2d(v1: np.ndarray, v2: np.ndarray) -> float:
+    assert v1.size == 2 and v2.size == 2
+
     (v2i, v1j), (v2i, v2j) = normalized(v1), normalized(v2)
     o1, o2 = SO2(v2i, v1j), SO2(v2i, v2j)
     (angle,) = (o2 - o1).coeffs()
@@ -21,7 +23,7 @@ def angle_to_rotate(v1: np.ndarray, v2: np.ndarray) -> float:
 
 
 def perpendicular_2d(v: np.ndarray) -> np.ndarray:
-    assert v.shape == (2,) or v.shape == (1, 2) or v.shape == (2, 1)
+    assert v.size == 2
 
     # If you are curious, this can be thought of as the 2D cross product
     # The best theory for this is geometric algebra

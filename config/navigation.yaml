@@ -22,23 +22,30 @@ navigation:
       max_hits: 10
 
     drive:
-      max_driving_effort: 0.7
-      min_driving_effort: -0.7
-      max_turning_effort: 1.2
-      min_turning_effort: -1.2
+      max_driving_effort: 1.2
+      min_driving_effort: -1.2
+      max_turning_effort: 1.8
+      min_turning_effort: -1.8
       turning_p: 3.0
       driving_p: 20.0
       lookahead_distance: 1.0
+
+    waypoint:
+      stop_threshold: 0.5
+      drive_forward_threshold: 0.34
+
+    search:
+      stop_threshold: 0.5
+      drive_forward_threshold: 0.34
+      coverage_radius: 20.0
+      segments_per_rotation: 8
+      distance_between_spirals: 3.0
 
     single_tag:
       stop_threshold: 1.0
       tag_stop_threshold: 1.75
       post_avoidance_multiplier: 1.42
       post_radius: 0.7
-
-    waypoint:
-      stop_threshold: 0.5
-      drive_forward_threshold: 0.34
 
     # TODO(quintin): Avoid storing these in multiple config files
     ref_lat: 38.4225202
@@ -60,3 +67,10 @@ stuck_detector:
     linear_vel_thresh: 0.16
     # Clear the window if the time since last data is greater than this
     data_watchdog_timeout: 1.0
+
+debug_course_publisher:
+  ros__parameters:
+    # TODO(quintin): Avoid storing these in multiple config files
+    ref_lat: 38.4225202
+    ref_lon: -110.7844653
+    ref_alt: 0.0

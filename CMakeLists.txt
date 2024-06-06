@@ -110,6 +110,7 @@ install(PROGRAMS
         localization/gps_linearization.py
         localization/basestation_gps_driver.py
         superstructure/superstructure.py
+        scripts/debug_course_publisher.py
         DESTINATION
         lib/${PROJECT_NAME}
 )
