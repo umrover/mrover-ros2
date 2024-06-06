@@ -350,6 +350,8 @@ namespace mrover {
         static constexpr float NEAR = 0.1f;
         static constexpr float FAR = 1000.0f;
 
+        boost::bimap<std::string, std::string> mMsgToUrdf;
+
         template<typename F, typename N, typename V>
         auto forEachMotor(N const& names, V const& values, F&& function) -> void {
             if (names.size() != values.size()) {
@@ -364,15 +366,16 @@ namespace mrover {
                     std::string const& name = names[i];
                     float value = values[i];
 
-                    auto it = rover.linkNameToMeta.find(name);
-                    if (it == rover.linkNameToMeta.end()) {
+                    auto it = mMsgToUrdf.left.find(name);
+                    if (it == mMsgToUrdf.left.end()) {
                         RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, std::format("Unknown joint name: {}. Either the wrong name was sent OR the simulator does not yet support it", name));
                         continue;
                     }
 
-                    int linkIndex = it->second.index;
+                    std::string const& urdfName = it->second;
+                    URDF::LinkMeta const& linkMeta = rover.linkNameToMeta.at(urdfName);
 
-                    auto* motor = std::bit_cast<btMultiBodyJointMotor*>(rover.physics->getLink(linkIndex).m_userPtr);
+                    auto* motor = std::bit_cast<btMultiBodyJointMotor*>(rover.physics->getLink(linkMeta.index).m_userPtr);
                     assert(motor);
                     function(motor, value);
                 }

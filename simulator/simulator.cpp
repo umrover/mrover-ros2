@@ -56,6 +56,22 @@ namespace mrover {
                 addGroup("arm", {"joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_roll"});
                 addGroup("drive_left", {"front_left", "middle_left", "back_left"});
                 addGroup("drive_right", {"front_right", "middle_right", "back_right"});
+
+                std::vector<decltype(mMsgToUrdf)::value_type> elements{
+                        {"joint_a", "arm_a_link"},
+                        {"joint_b", "arm_b_link"},
+                        {"joint_c", "arm_c_link"},
+                        {"joint_de_pitch", "arm_d_link"},
+                        {"joint_de_roll", "arm_e_link"},
+                        {"front_left", "front_left_wheel_link"},
+                        {"middle_left", "center_left_wheel_link"},
+                        {"back_left", "back_left_wheel_link"},
+                        {"front_right", "front_right_wheel_link"},
+                        {"middle_right", "center_right_wheel_link"},
+                        {"back_right", "back_right_wheel_link"},
+                        {"mast_gimbal_y", "zed_mini_camera"},
+                };
+                mMsgToUrdf.insert(elements.begin(), elements.end());
             }
 
             mRunThread = std::thread{&Simulator::run, this};

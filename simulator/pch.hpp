@@ -20,6 +20,7 @@
 #include <thread>
 #include <unordered_set>
 
+#include <boost/bimap.hpp>
 #include <boost/circular_buffer.hpp>
 #include <boost/container/static_vector.hpp>
 #include <boost/range/combine.hpp>

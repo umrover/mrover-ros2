@@ -96,6 +96,11 @@ target_link_libraries(differential_drive_controller units)
 ament_target_dependencies(differential_drive_controller rclcpp)
 rosidl_target_interfaces(differential_drive_controller ${PROJECT_NAME} "rosidl_typesupport_cpp")
 
+mrover_add_node(arm_controller teleoperation/arm_controller/arm_controller.cpp teleoperation/arm_controller/pch.hpp)
+target_link_libraries(arm_controller lie)
+ament_target_dependencies(arm_controller rclcpp)
+rosidl_target_interfaces(arm_controller ${PROJECT_NAME} "rosidl_typesupport_cpp")
+
 ## Install
 
 install(PROGRAMS

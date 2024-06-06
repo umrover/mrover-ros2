@@ -73,7 +73,7 @@
   </xacro:macro>
 
   <xacro:macro name="wheel" params="pos side reflect">
-    <link name="${pos}_${side}">
+    <link name="${pos}_${side}_wheel_link">
       <xacro:cylinder_inertia m="${wheel_mass}" r="${wheel_radius}" h="${wheel_width}"/>
       <visual>
         <geometry>
@@ -90,7 +90,7 @@
 
   <xacro:macro name="wheels" params="side reflect">
     <xacro:wheel pos="front" side="${side}" reflect="${reflect}"/>
-    <xacro:wheel pos="middle" side="${side}" reflect="${reflect}"/>
+    <xacro:wheel pos="center" side="${side}" reflect="${reflect}"/>
     <xacro:wheel pos="back" side="${side}" reflect="${reflect}"/>
 
     <link name="${side}_bogie_link">
@@ -143,9 +143,9 @@
       <limit lower="-0.122173" upper="0.523599" effort="0" velocity="0"/>
     </joint>
 
-    <joint name="${side}_rocker_link_to_back_${side}" type="continuous">
+    <joint name="${side}_rocker_link_to_back_${side}_wheel_link" type="continuous">
       <parent link="${side}_rocker_link"/>
-      <child link="back_${side}"/>
+      <child link="back_${side}_wheel_link"/>
       <origin xyz="-0.417094 0.28513 ${reflect * 0.09}"/>
       <axis xyz="0 0 1"/>
       <limit effort="${wheel_torque}" velocity="0"/>
@@ -159,17 +159,17 @@
       <limit lower="-0.349066" upper="0.349066" effort="0" velocity="0"/>
     </joint>
 
-    <joint name="${side}_bogie_link_to_front_${side}" type="continuous">
+    <joint name="${side}_bogie_link_to_front_${side}_wheel_link" type="continuous">
       <parent link="${side}_bogie_link"/>
-      <child link="front_${side}"/>
+      <child link="front_${side}_wheel_link"/>
       <origin xyz="0.215233 0.147933 ${reflect * 0.09}"/>
       <axis xyz="0 0 1"/>
       <limit effort="${wheel_torque}" velocity="0"/>
     </joint>
 
-    <joint name="${side}_bogie_link_to_middle_${side}" type="continuous">
+    <joint name="${side}_bogie_link_to_center_${side}_wheel_link" type="continuous">
       <parent link="${side}_bogie_link"/>
-      <child link="middle_${side}"/>
+      <child link="center_${side}_wheel_link"/>
       <origin xyz="-0.173532 0.147659 ${reflect * 0.09}"/>
       <axis xyz="0 0 1"/>
       <limit effort="${wheel_torque}" velocity="0"/>
