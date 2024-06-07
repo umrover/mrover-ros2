@@ -62,7 +62,7 @@ class StuckDetector(Node):
 
         self.reset()
 
-        self.get_logger().info("Armed!")
+        self.get_logger().info("Ready!")
 
     def reset(self) -> None:
         window_size = self.get_parameter("window_size").value

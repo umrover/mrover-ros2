@@ -20,12 +20,14 @@ find_package(rosidl_default_generators REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(urdf REQUIRED)
+find_package(std_srvs REQUIRED)
 
 find_package(Assimp NAMES Assimp assimp REQUIRED)
 find_package(Bullet REQUIRED)
 find_package(glfw3 REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(OpenCV REQUIRED)
+find_package(TBB REQUIRED)
 
 find_package(manif QUIET)
 find_package(dawn QUIET)
@@ -91,15 +93,20 @@ target_link_libraries(simulator
 )
 target_include_directories(simulator SYSTEM PRIVATE ${BULLET_INCLUDE_DIRS} ${OPENCV_INCLUDE_DIRS})
 
+mrover_add_node(tag_detector perception/tag_detector/*.cpp perception/tag_detector/pch.hpp)
+ament_target_dependencies(tag_detector rclcpp tf2 tf2_ros)
+rosidl_target_interfaces(tag_detector ${PROJECT_NAME} rosidl_typesupport_cpp)
+target_link_libraries(tag_detector lie opencv_core opencv_aruco opencv_imgproc loop_profiler TBB::tbb)
+
 mrover_add_node(differential_drive_controller esw/differential_drive_controller.cpp)
 target_link_libraries(differential_drive_controller units)
 ament_target_dependencies(differential_drive_controller rclcpp)
-rosidl_target_interfaces(differential_drive_controller ${PROJECT_NAME} "rosidl_typesupport_cpp")
+rosidl_target_interfaces(differential_drive_controller ${PROJECT_NAME} rosidl_typesupport_cpp)
 
 mrover_add_node(arm_controller teleoperation/arm_controller/arm_controller.cpp teleoperation/arm_controller/pch.hpp)
 target_link_libraries(arm_controller lie)
 ament_target_dependencies(arm_controller rclcpp)
-rosidl_target_interfaces(arm_controller ${PROJECT_NAME} "rosidl_typesupport_cpp")
+rosidl_target_interfaces(arm_controller ${PROJECT_NAME} rosidl_typesupport_cpp)
 
 ## Install
 

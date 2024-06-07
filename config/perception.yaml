@@ -1,0 +1,36 @@
+# All units are in SI
+# ===================
+# Time:     second, hz
+# Angle:    radian
+# Distance: meter
+
+stereo_tag_detector:
+  ros__parameters:
+    world_frame: "map"
+    camera_frame: "zed_left_camera_frame"
+    min_hit_count_before_publish: 5
+    max_hit_count: 5
+    increment_weight: 2
+    decrement_weight: 1
+    dictionary: 0
+    adaptive_thresh_constant: 7.0
+    adaptive_thresh_win_size_max: 23
+    adaptive_thresh_win_size_min: 3
+    adaptive_thresh_win_size_step: 10
+    corner_refinement_max_iterations: 30
+    corner_refinement_min_accuracy: 0.1
+    corner_refinement_win_size: 5
+    do_corner_refinement: true
+    corner_refinement_subpix: true
+    error_correction_rate: 0.6
+    min_corner_distance_rate: 0.05
+    marker_border_bits: 1
+    max_erroneous_bits_in_border_rate: 0.35
+    min_distance_to_border: 3
+    min_marker_distance_rate: 0.05
+    min_marker_perimeter_rate: 0.03
+    max_marker_perimeter_rate: 4.0
+    min_otsu_std_dev: 5.0
+    perspective_remove_ignored_margin_per_cell: 0.13
+    perspective_remove_pixel_per_cell: 4
+    polygonal_approx_accuracy_rate: 0.08

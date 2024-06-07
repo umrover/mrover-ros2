@@ -239,27 +239,26 @@ namespace mrover {
                 sensor_msgs::msg::JointState jointState;
                 jointState.header.stamp = get_clock()->now();
 
-                // TODO(quintin): Make this work
-                // for (std::string const& msgName: motorGroup.names) {
-                //     std::string urdfName = msgToUrdf.forward(msgName).value();
-                //
-                //     controllerState.name.push_back(msgName);
-                //     controllerState.state.emplace_back("Armed");
-                //     controllerState.error.emplace_back("None");
-                //     std::uint8_t limitSwitches = 0b000;
-                //     if (auto limits = rover.model.getLink(urdfName)->parent_joint->limits) {
-                //         double jointPosition = rover.physics->getJointPos(rover.linkNameToMeta.at(urdfName).index);
-                //         constexpr double OFFSET = 0.05;
-                //         if (jointPosition < limits->lower + OFFSET) limitSwitches |= 0b001;
-                //         if (jointPosition > limits->upper - OFFSET) limitSwitches |= 0b010;
-                //     }
-                //     controllerState.limit_hit.push_back(limitSwitches);
-                //
-                //     jointState.name.push_back(msgName);
-                //     jointState.position.push_back(rover.physics->getJointPos(rover.linkNameToMeta.at(urdfName).index));
-                //     jointState.velocity.push_back(rover.physics->getJointVel(rover.linkNameToMeta.at(urdfName).index));
-                //     jointState.effort.push_back(rover.physics->getJointTorque(rover.linkNameToMeta.at(urdfName).index));
-                // }
+                for (std::string const& msgName: motorGroup.names) {
+                    std::string urdfName = mMsgToUrdf.left.at(msgName);
+
+                    controllerState.name.push_back(msgName);
+                    controllerState.state.emplace_back("Armed");
+                    controllerState.error.emplace_back("None");
+                    std::uint8_t limitSwitches = 0b000;
+                    if (auto limits = rover.model.getLink(urdfName)->parent_joint->limits) {
+                        double jointPosition = rover.physics->getJointPos(rover.linkNameToMeta.at(urdfName).index);
+                        constexpr double OFFSET = 0.05;
+                        if (jointPosition < limits->lower + OFFSET) limitSwitches |= 0b001;
+                        if (jointPosition > limits->upper - OFFSET) limitSwitches |= 0b010;
+                    }
+                    controllerState.limit_hit.push_back(limitSwitches);
+
+                    jointState.name.push_back(msgName);
+                    jointState.position.push_back(rover.physics->getJointPos(rover.linkNameToMeta.at(urdfName).index));
+                    jointState.velocity.push_back(rover.physics->getJointVel(rover.linkNameToMeta.at(urdfName).index));
+                    jointState.effort.push_back(rover.physics->getJointTorque(rover.linkNameToMeta.at(urdfName).index));
+                }
 
                 motorGroup.controllerStatePub->publish(controllerState);
                 motorGroup.jointStatePub->publish(jointState);

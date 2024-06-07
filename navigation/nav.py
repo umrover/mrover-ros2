@@ -113,7 +113,7 @@ class Navigation(Node):
         self.create_timer(1 / update_rate, self.state_machine.update)
         self.create_timer(1 / pub_path_rate, self.publish_path)
 
-        self.get_logger().info("Armed!")
+        self.get_logger().info("Ready!")
 
     def publish_path(self) -> None:
         if (rover_pose_in_map := self.ctx.rover.get_pose_in_map()) is not None:

@@ -196,8 +196,8 @@ namespace mrover {
                         pointCloudTopic = "mast_camera/left/points";
                     } else {
                         frameId = "zed_left_camera_frame";
-                        imageTopic = "camera/left/image";
-                        pointCloudTopic = "camera/left/points";
+                        imageTopic = "zed/left/image";
+                        pointCloudTopic = "zed/left/points";
                     }
                     camera.frameId = frameId;
                     camera.imgPub = simulator.create_publisher<sensor_msgs::msg::Image>(imageTopic, 1);
