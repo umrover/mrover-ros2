@@ -13,10 +13,11 @@ differential_drive_controller:
       max_linear_speed: 1.0
       max_angular_speed: 3.0
 
-can_bridge:
+can_bridge_0:
   ros__parameters:
+    interface: can0
+    is_extended_frame: true
     devices:
       jetson:
-        bus: 0
         id: 0x10
       # TODO: Add more devices here

@@ -31,15 +31,6 @@ namespace mrover {
     };
     static_assert(sizeof(CanFdMessageId) == 2);
 
-    struct CanFdAddress {
-        std::uint8_t bus{};
-        std::uint8_t id{};
-
-        // "Spaceship" operator
-        // See: https://devblogs.microsoft.com/cppblog/simplify-your-code-with-rocket-science-c20s-spaceship-operator/
-        auto operator<=>(CanFdAddress const& other) const = default;
-    };
-
     struct CanFdPubSub {
         rclcpp::Publisher<msg::CAN>::SharedPtr publisher;
         rclcpp::Subscription<msg::CAN>::SharedPtr subscriber;
@@ -53,7 +44,6 @@ namespace mrover {
 
     private:
         std::string mInterface;
-        std::uint8_t mBus{};
 
         canfd_frame mReadFrame{};
         CanNetLink mCanNetLink;
@@ -61,7 +51,7 @@ namespace mrover {
         std::jthread mIoThread;
         boost::asio::io_service mIoService;
 
-        boost::bimap<std::string, CanFdAddress> mDevices;
+        boost::bimap<std::string, std::uint8_t> mDevices;
         std::unordered_map<std::string, CanFdPubSub> mDevicesPubSub;
 
         [[nodiscard]] auto setupSocket() const -> int;

@@ -32,12 +32,6 @@ namespace mrover {
         try {
             RCLCPP_INFO_STREAM(get_logger(), "Starting...");
 
-            declare_parameter("interface", rclcpp::ParameterType::PARAMETER_STRING);
-            declare_parameter("is_extended_frame", rclcpp::ParameterType::PARAMETER_BOOL);
-
-            mInterface = get_parameter("interface").as_string();
-            mBus = mInterface.back() - '0';
-
             // As far as I can tell array of structs in YAML is not even supported by ROS 2 as compared to ROS 1
             // See: https://robotics.stackexchange.com/questions/109909/reading-a-vector-of-structs-as-parameters-in-ros2
 
@@ -55,17 +49,9 @@ namespace mrover {
             });
 
             for (auto const& name: names) {
-                auto bus = static_cast<std::uint8_t>(devices.at(std::format("{}.bus", name)).as_int());
-
-                if (bus != mBus) continue;
-
                 auto id = static_cast<std::uint8_t>(devices.at(std::format("{}.id", name)).as_int());
 
-                mDevices.insert({name,
-                                 CanFdAddress{
-                                         .bus = bus,
-                                         .id = id,
-                                 }});
+                mDevices.insert({name, id});
 
                 mDevicesPubSub.emplace(name,
                                        CanFdPubSub{
@@ -75,10 +61,10 @@ namespace mrover {
                                                }),
                                        });
 
-                RCLCPP_INFO_STREAM(get_logger(), std::format("Added device: {} (bus: {}, id: {})", name, bus, id));
+                RCLCPP_INFO_STREAM(get_logger(), std::format("Added device: {}@{}", name, id));
             }
 
-            mCanNetLink = CanNetLink{get_logger().get_child("link"), mInterface};
+            mCanNetLink = CanNetLink{get_logger().get_child("link"), get_parameter("interface").as_string()};
 
             int socketFileDescriptor = setupSocket();
             mStream.emplace(mIoService);
@@ -143,19 +129,13 @@ namespace mrover {
         auto [identifier, isErrorFrame, isRemoteTransmissionRequest, isExtendedFrame] = std::bit_cast<RawCanFdId>(mReadFrame.can_id);
         auto [destination, source, isReplyRequired] = std::bit_cast<CanFdMessageId>(static_cast<std::uint16_t>(identifier));
 
-        auto sourceDeviceNameIt = mDevices.right.find(CanFdAddress{
-                .bus = mBus,
-                .id = source,
-        });
+        auto sourceDeviceNameIt = mDevices.right.find(source);
         if (sourceDeviceNameIt == mDevices.right.end()) {
             RCLCPP_WARN_STREAM(get_logger(), std::format("Received message on interface {} that had an unknown source ID: {}", mInterface, std::uint8_t{source}));
             return;
         }
 
-        auto destinationDeviceNameIt = mDevices.right.find(CanFdAddress{
-                .bus = mBus,
-                .id = destination,
-        });
+        auto destinationDeviceNameIt = mDevices.right.find(destination);
         if (destinationDeviceNameIt == mDevices.right.end()) {
             RCLCPP_WARN_STREAM(get_logger(), std::format("Received message on interface {} that had an unknown destination ID: {}", mInterface, std::uint8_t{destination}));
             return;
@@ -182,8 +162,8 @@ namespace mrover {
         }
 
         CanFdMessageId messageId{
-                .destination = destinationIt->second.id,
-                .source = sourceIt->second.id,
+                .destination = destinationIt->second,
+                .source = sourceIt->second,
                 .replyRequired = static_cast<bool>(msg->reply_required),
         };
 
