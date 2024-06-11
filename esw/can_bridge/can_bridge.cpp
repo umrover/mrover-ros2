@@ -61,7 +61,7 @@ namespace mrover {
                                                }),
                                        });
 
-                RCLCPP_INFO_STREAM(get_logger(), std::format("Added device: {}@{}", name, id));
+                RCLCPP_INFO_STREAM(get_logger(), std::format("Added device: {} (id: {:#x})", name, id));
             }
 
             mCanNetLink = CanNetLink{get_logger().get_child("link"), get_parameter("interface").as_string()};
@@ -131,13 +131,13 @@ namespace mrover {
 
         auto sourceDeviceNameIt = mDevices.right.find(source);
         if (sourceDeviceNameIt == mDevices.right.end()) {
-            RCLCPP_WARN_STREAM(get_logger(), std::format("Received message on interface {} that had an unknown source ID: {}", mInterface, std::uint8_t{source}));
+            RCLCPP_WARN_STREAM(get_logger(), std::format("Received message that had an unknown source ID: {}", std::uint8_t{source}));
             return;
         }
 
         auto destinationDeviceNameIt = mDevices.right.find(destination);
         if (destinationDeviceNameIt == mDevices.right.end()) {
-            RCLCPP_WARN_STREAM(get_logger(), std::format("Received message on interface {} that had an unknown destination ID: {}", mInterface, std::uint8_t{destination}));
+            RCLCPP_WARN_STREAM(get_logger(), std::format("Received message that had an unknown destination ID: {}", std::uint8_t{destination}));
             return;
         }
 
@@ -151,13 +151,13 @@ namespace mrover {
     auto CanBridge::frameSendRequestCallback(msg::CAN::ConstSharedPtr const& msg) -> void {
         auto sourceIt = mDevices.left.find(msg->source);
         if (sourceIt == mDevices.left.end()) {
-            RCLCPP_WARN_STREAM(get_logger(), std::format("Sending message on interface {} that had an unknown source: {}", mInterface, msg->source));
+            RCLCPP_WARN_STREAM(get_logger(), std::format("Sending message that had an unknown source: {}", msg->source));
             return;
         }
 
         auto destinationIt = mDevices.left.find(msg->destination);
         if (destinationIt == mDevices.left.end()) {
-            RCLCPP_WARN_STREAM(get_logger(), std::format("Sending message on interface {} that had an unknown destination: {}", mInterface, msg->destination));
+            RCLCPP_WARN_STREAM(get_logger(), std::format("Sending message that had an unknown destination: {}", msg->destination));
             return;
         }
 
