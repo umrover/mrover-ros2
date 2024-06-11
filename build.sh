@@ -9,7 +9,6 @@ export CC=clang-18
 export CXX=clang++-18
 
 colcon build \
-	--cmake-args -G Ninja \
-	--cmake-args -W no-dev \
+	--cmake-args -G Ninja -W no-dev \
 	--symlink-install \
 	$@

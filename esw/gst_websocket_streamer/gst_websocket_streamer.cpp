@@ -14,7 +14,9 @@ namespace mrover {
         if (!b) throw std::runtime_error{"Failed to create"};
     }
 
-    auto GstWebsocketStreamerNodelet::pullStreamSamplesLoop() -> void {
+    auto gstBusMessage(GstBus*, GstMessage* message, gpointer data) -> gboolean;
+
+    auto GstWebsocketStreamer::pullStreamSamplesLoop() -> void {
         // Block until we receive a new encoded chunk from the encoder
         // This is okay since we are on a separate thread
         while (GstSample* sample = gst_app_sink_pull_sample(GST_APP_SINK(mStreamSink))) {
@@ -35,7 +37,7 @@ namespace mrover {
         }
     }
 
-    auto GstWebsocketStreamerNodelet::initPipeline(std::string_view deviceNode) -> void {
+    auto GstWebsocketStreamer::initPipeline(std::string_view deviceNode) -> void {
         RCLCPP_INFO_STREAM(get_logger(), "Initializing and starting GStreamer pipeline...");
 
         mMainLoop = gstCheck(g_main_loop_new(nullptr, FALSE));
@@ -102,6 +104,10 @@ namespace mrover {
         RCLCPP_INFO_STREAM(get_logger(), std::format("GStreamer launch string: {}", launch));
         mPipeline = gstCheck(gst_parse_launch(launch.c_str(), nullptr));
 
+        GstBus* bus = gstCheck(gst_element_get_bus(mPipeline));
+        gst_bus_add_watch(bus, gstBusMessage, this);
+        gst_object_unref(bus);
+
         if (deviceNode.empty()) mImageSource = gstCheck(gst_bin_get_by_name(GST_BIN(mPipeline), "imageSource"));
         mStreamSink = gstCheck(gst_bin_get_by_name(GST_BIN(mPipeline), "streamSink"));
 
@@ -109,21 +115,21 @@ namespace mrover {
             throw std::runtime_error{"Failed initial pause on GStreamer pipeline"};
 
         mMainLoopThread = std::thread{[this] {
-            RCLCPP_INFO_STREAM(get_logger(), "Started GStreamer main loop");
+            RCLCPP_INFO_STREAM(get_logger(), "Entering GStreamer main loop");
             g_main_loop_run(mMainLoop);
-            std::cout << "Stopped GStreamer main loop" << std::endl;
+            RCLCPP_INFO_STREAM(get_logger(), "Leaving GStreamer main loop");
         }};
 
         mStreamSinkThread = std::thread{[this] {
-            RCLCPP_INFO_STREAM(get_logger(), "Started stream sink thread");
+            RCLCPP_INFO_STREAM(get_logger(), "Entering stream sink thread");
             pullStreamSamplesLoop();
-            std::cout << "Stopped stream sink thread" << std::endl;
+            RCLCPP_INFO_STREAM(get_logger(), "Leaving stream sink thread");
         }};
 
         RCLCPP_INFO_STREAM(get_logger(), "Initialized and started GStreamer pipeline");
     }
 
-    auto GstWebsocketStreamerNodelet::imageCallback(sensor_msgs::msg::Image::ConstSharedPtr const& msg) -> void {
+    auto GstWebsocketStreamer::imageCallback(sensor_msgs::msg::Image::ConstSharedPtr const& msg) -> void {
         try {
             if (mStreamServer->clientCount() == 0) return;
 
@@ -132,7 +138,7 @@ namespace mrover {
             cv::Size receivedSize{static_cast<int>(msg->width), static_cast<int>(msg->height)};
             cv::Mat bgraFrame{receivedSize, CV_8UC4, const_cast<std::uint8_t*>(msg->data.data()), msg->step};
 
-            if (cv::Size targetSize{static_cast<int>(mImageWidth), static_cast<int>(mImageHeight)};
+            if (cv::Size targetSize{mImageWidth, mImageHeight};
                 receivedSize != targetSize) {
                 RCLCPP_WARN_ONCE(get_logger(), "Image size does not match pipeline app source size, will resize");
                 resize(bgraFrame, bgraFrame, targetSize);
@@ -198,7 +204,7 @@ namespace mrover {
         return deviceNode;
     }
 
-    GstWebsocketStreamerNodelet::GstWebsocketStreamerNodelet() : Node{"gst_websocket_streamer", rclcpp::NodeOptions{}.use_intra_process_comms(true)} {
+    GstWebsocketStreamer::GstWebsocketStreamer() : Node{"gst_websocket_streamer", rclcpp::NodeOptions{}.use_intra_process_comms(true)} {
         try {
             declare_parameter("dev_node", "");
             declare_parameter("dev_path", "");
@@ -217,8 +223,8 @@ namespace mrover {
             mImageWidth = get_parameter("width").as_int();
             mImageHeight = get_parameter("height").as_int();
             mImageFramerate = get_parameter("framerate").as_int();
-            auto address = get_parameter("address").as_string();
-            auto port = get_parameter("port").as_int();
+            std::string address = get_parameter("address").as_string();
+            std::int64_t port = get_parameter("port").as_int();
             mBitrate = get_parameter("bitrate").as_int();
             // For example, /dev/video0
             // These device paths are not garunteed to stay the same between reboots
@@ -286,7 +292,7 @@ namespace mrover {
         }
     }
 
-    GstWebsocketStreamerNodelet::~GstWebsocketStreamerNodelet() {
+    GstWebsocketStreamer::~GstWebsocketStreamer() {
         if (mImageSource) gst_app_src_end_of_stream(GST_APP_SRC(mImageSource));
 
         if (mMainLoop) {
@@ -304,11 +310,52 @@ namespace mrover {
         mStreamServer.reset();
     }
 
+    auto gstBusMessage(GstBus*, GstMessage* message, gpointer data) -> gboolean {
+        auto node = static_cast<GstWebsocketStreamer*>(data);
+        switch (message->type) {
+            case GST_MESSAGE_INFO:
+            case GST_MESSAGE_WARNING:
+            case GST_MESSAGE_ERROR: {
+                GError* error;
+                gchar* debug;
+                auto logger = node->get_logger().get_child("gstreamer");
+                switch (message->type) {
+                    case GST_MESSAGE_INFO:
+                        gst_message_parse_info(message, &error, &debug);
+                        RCLCPP_INFO_STREAM(logger, std::format("{} ({})", error->message, debug));
+                        break;
+                    case GST_MESSAGE_WARNING:
+                        gst_message_parse_warning(message, &error, &debug);
+                        RCLCPP_WARN_STREAM(logger, std::format("{} ({})", error->message, debug));
+                        break;
+                    case GST_MESSAGE_ERROR:
+                        gst_message_parse_error(message, &error, &debug);
+                        RCLCPP_FATAL_STREAM(logger, std::format("{} ({})", error->message, debug));
+                        rclcpp::shutdown();
+                        break;
+                    default:
+                        assert(false);
+                }
+                g_error_free(error);
+                g_free(debug);
+                break;
+            }
+            case GST_MESSAGE_EOS: {
+                RCLCPP_ERROR_STREAM(node->get_logger().get_child("gstreamer"), "End of stream");
+                rclcpp::shutdown();
+                break;
+            }
+            default:
+                break;
+        }
+        return TRUE;
+    }
+
 } // namespace mrover
 
 auto main(int argc, char** argv) -> int {
     rclcpp::init(argc, argv);
-    rclcpp::spin(std::make_shared<mrover::GstWebsocketStreamerNodelet>());
+    rclcpp::spin(std::make_shared<mrover::GstWebsocketStreamer>());
     rclcpp::shutdown();
     return EXIT_SUCCESS;
 }

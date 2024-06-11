@@ -21,7 +21,7 @@ namespace mrover {
         } codec;
     };
 
-    class GstWebsocketStreamerNodelet final : public rclcpp::Node {
+    class GstWebsocketStreamer final : public rclcpp::Node {
 
         bool mDecodeJpegFromDevice{};    // Uses less USB hub bandwidth, which is limited since we are using 2.0
         bool mDisableAutoWhiteBalance{}; // Useful for science, the UV LEDs can mess with the white balance
@@ -48,9 +48,9 @@ namespace mrover {
         auto imageCallback(sensor_msgs::msg::Image::ConstSharedPtr const& msg) -> void;
 
     public:
-        GstWebsocketStreamerNodelet();
+        GstWebsocketStreamer();
 
-        ~GstWebsocketStreamerNodelet() override;
+        ~GstWebsocketStreamer() override;
     };
 
 } // namespace mrover

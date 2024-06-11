@@ -33,9 +33,9 @@ namespace mrover {
 
             mWidth = get_parameter("width").as_int();
             mHeight = get_parameter("height").as_int();
-            auto framerate = get_parameter("framerate").as_int();
-            auto device = get_parameter("device").as_string();
-            auto decodeJpegFromDevice = get_parameter("decode_jpeg_from_device").as_bool();
+            std::int64_t framerate = get_parameter("framerate").as_int();
+            std::string device = get_parameter("device").as_string();
+            bool decodeJpegFromDevice = get_parameter("decode_jpeg_from_device").as_bool();
 
             /* Interfaces */
             mImgPub = create_publisher<sensor_msgs::msg::Image>("image", 1);
@@ -62,7 +62,7 @@ namespace mrover {
 
             mPipeline = gstCheck(gst_parse_launch(launch.c_str(), nullptr));
 
-            auto bus = gst_element_get_bus(mPipeline);
+            GstBus* bus = gstCheck(gst_element_get_bus(mPipeline));
             gst_bus_add_watch(bus, gstBusMessage, this);
             gst_object_unref(bus);
 
