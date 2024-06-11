@@ -16,8 +16,6 @@ namespace mrover {
 
         std::thread mMainLoopThread, mStreamSinkThread;
 
-        LoopProfiler mGrabThreadProfiler{get_logger()};
-
     public:
         UsbCamera();
 

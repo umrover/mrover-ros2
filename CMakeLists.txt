@@ -3,8 +3,17 @@ project(mrover VERSION 2025.0.0 LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 23)
 
+find_program(CCACHE_FOUND ccache)
+if (CCACHE_FOUND)
+    set(CMAKE_CXX_COMPILER_LAUNCHER ccache)
+    set(CMAKE_C_COMPILER_LAUNCHER ccache)
+    set(CMAKE_CUDA_COMPILER_LAUNCHER ccache)
+endif ()
+
 if (CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    add_compile_options(-Wall -Wextra -Wpedantic -Wno-missing-field-initializers)
+    add_compile_options(-Wall -Wextra -Wpedantic -Wno-missing-field-initializers -Wno-deprecated-declarations)
+
+    add_link_options(-fuse-ld=lld-18)
 endif ()
 
 ## Dependencies
@@ -37,7 +46,6 @@ pkg_search_module(NetLink libnl-3.0 IMPORTED_TARGET QUIET)
 pkg_search_module(NetLinkRoute libnl-route-3.0 IMPORTED_TARGET QUIET)
 pkg_search_module(Gst gstreamer-1.0 IMPORTED_TARGET QUIET)
 pkg_search_module(GstApp gstreamer-app-1.0 IMPORTED_TARGET QUIET)
-pkg_search_module(LibUsb libusb-1.0 IMPORTED_TARGET QUIET)
 pkg_search_module(LibUdev libudev IMPORTED_TARGET QUIET)
 
 add_subdirectory(deps/imgui EXCLUDE_FROM_ALL SYSTEM)
@@ -123,8 +131,18 @@ ament_target_dependencies(arm_controller rclcpp)
 
 if (Gst_FOUND AND GstApp_FOUND)
     mrover_add_node(usb_camera esw/usb_camera/*.cpp esw/usb_camera/pch.hpp)
-    target_link_libraries(usb_camera PkgConfig::Gst PkgConfig::GstApp opencv_core opencv_imgcodecs loop_profiler)
+    target_link_libraries(usb_camera PkgConfig::Gst PkgConfig::GstApp opencv_core opencv_imgcodecs)
     ament_target_dependencies(usb_camera rclcpp)
+
+    if (LibUdev_FOUND)
+        mrover_add_library(websocket_server esw/websocket_server/*.cpp esw/websocket_server)
+        target_compile_definitions(websocket_server PUBLIC BOOST_ASIO_NO_DEPRECATED)
+        ament_target_dependencies(websocket_server rclcpp)
+
+        mrover_add_node(gst_websocket_streamer esw/gst_websocket_streamer/*.c* esw/gst_websocket_streamer/pch.hpp)
+        target_link_libraries(gst_websocket_streamer PkgConfig::Gst PkgConfig::GstApp PkgConfig::LibUdev opencv_core opencv_imgcodecs websocket_server)
+        ament_target_dependencies(gst_websocket_streamer rclcpp)
+    endif ()
 endif ()
 
 if (NetLink_FOUND AND NetLinkRoute_FOUND)

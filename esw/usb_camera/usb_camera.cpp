@@ -10,7 +10,7 @@ namespace mrover {
 
     auto gstBusMessage(GstBus*, GstMessage* message, gpointer data) -> gboolean;
 
-    UsbCamera::UsbCamera() : Node{"usb_camera"} {
+    UsbCamera::UsbCamera() : Node{"usb_camera", rclcpp::NodeOptions{}.use_intra_process_comms(true)} {
         try {
             /* Parameters */
             declare_parameter("width", rclcpp::ParameterType::PARAMETER_INTEGER);
@@ -181,5 +181,5 @@ auto main(int argc, char** argv) -> int {
     rclcpp::init(argc, argv);
     rclcpp::spin(std::make_shared<mrover::UsbCamera>());
     rclcpp::shutdown();
-    return 0;
+    return EXIT_SUCCESS;
 }
