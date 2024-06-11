@@ -4,7 +4,7 @@ project(mrover VERSION 2025.0.0 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 23)
 
 if (CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    add_compile_options(-Wall -Wextra -Wpedantic)
+    add_compile_options(-Wall -Wextra -Wpedantic -Wno-missing-field-initializers)
 endif ()
 
 ## Dependencies
@@ -32,9 +32,14 @@ find_package(TBB REQUIRED)
 find_package(manif QUIET)
 find_package(dawn QUIET)
 
+find_package(PkgConfig REQUIRED)
+pkg_search_module(NetLink libnl-3.0 QUIET)
+pkg_search_module(NetLinkRoute libnl-route-3.0 QUIET)
+
 add_subdirectory(deps/imgui EXCLUDE_FROM_ALL SYSTEM)
 add_subdirectory(deps/webgpuhpp EXCLUDE_FROM_ALL SYSTEM)
 add_subdirectory(deps/glfw3webgpu EXCLUDE_FROM_ALL SYSTEM)
+add_subdirectory(deps/mjbots EXCLUDE_FROM_ALL SYSTEM)
 
 if (BUILD_TESTING)
     find_package(ament_lint_auto REQUIRED)
@@ -107,6 +112,14 @@ mrover_add_node(arm_controller teleoperation/arm_controller/arm_controller.cpp t
 target_link_libraries(arm_controller lie)
 ament_target_dependencies(arm_controller rclcpp)
 rosidl_target_interfaces(arm_controller ${PROJECT_NAME} rosidl_typesupport_cpp)
+
+if (NetLink_FOUND AND NetLinkRoute_FOUND)
+    mrover_add_node(can_bridge esw/can_bridge/*.cpp esw/can_bridge/pch.hpp)
+    target_link_libraries(can_bridge ${NetLink_LIBRARIES} ${NetLinkRoute_LIBRARIES})
+    target_include_directories(can_bridge PRIVATE ${NetLink_INCLUDE_DIRS} ${NetLinkRoute_INCLUDE_DIRS})
+    ament_target_dependencies(can_bridge rclcpp)
+    rosidl_target_interfaces(can_bridge ${PROJECT_NAME} rosidl_typesupport_cpp)
+endif ()
 
 ## Install
 

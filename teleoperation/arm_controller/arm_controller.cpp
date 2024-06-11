@@ -5,8 +5,8 @@ namespace mrover {
     ArmController::ArmController() : Node{"arm_controller"} {
         mPosPub = create_publisher<msg::Position>("arm_position_cmd", 10);
 
-        mIkSub = create_subscription<msg::IK>("arm_ik", 1, [this](msg::IK::SharedPtr msg) {
-            ik_callback(msg);
+        mIkSub = create_subscription<msg::IK>("arm_ik", 1, [this](msg::IK::ConstSharedPtr const& msg) {
+            ikCallback(msg);
         });
     }
 
@@ -15,10 +15,7 @@ namespace mrover {
         return {q.normalized()};
     }
 
-    void ArmController::ik_callback(msg::IK::ConstSharedPtr const& ik_target) {
-        msg::Position positions;
-        positions.names = {"joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_roll"};
-        positions.positions.resize(positions.names.size());
+    void ArmController::ikCallback(msg::IK::ConstSharedPtr const& ik_target) {
         SE3d targetFrameToArmBaseLink;
         try {
             targetFrameToArmBaseLink = SE3Conversions::fromTfTree(mTfBuffer, ik_target->target.header.frame_id, "arm_base_link");
@@ -49,23 +46,27 @@ namespace mrover {
         double q3 = -thetaC - 0.1608485915;
 
         if (std::isfinite(q1) && std::isfinite(q2) && std::isfinite(q3)) {
-            SE3d joint_b_pos{{0.034346, 0, 0.049024}, SO3d::Identity()};
-            SE3d joint_c_pos{{LINK_BC * cos(thetaA), 0, LINK_BC * sin(thetaA)}, yawSo3(-thetaA)};
-            SE3d joint_d_pos{{LINK_CD * cos(thetaB), 0, LINK_CD * sin(thetaB)}, yawSo3(-thetaB)};
-            SE3d joint_e_pos{{LINK_DE * cos(thetaC), 0, LINK_DE * sin(thetaC)}, yawSo3(-thetaC)};
-            SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_b_target", "arm_a_link", joint_b_pos, get_clock()->now());
-            SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_c_target", "arm_b_target", joint_c_pos, get_clock()->now());
-            SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_d_target", "arm_c_target", joint_d_pos, get_clock()->now());
-            SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_e_target", "arm_d_target", joint_e_pos, get_clock()->now());
+            SE3d jointBPose{{0.034346, 0, 0.049024}, SO3d::Identity()};
+            SE3d jointCPose{{LINK_BC * cos(thetaA), 0, LINK_BC * sin(thetaA)}, yawSo3(-thetaA)};
+            SE3d jointDPose{{LINK_CD * cos(thetaB), 0, LINK_CD * sin(thetaB)}, yawSo3(-thetaB)};
+            SE3d jointEPose{{LINK_DE * cos(thetaC), 0, LINK_DE * sin(thetaC)}, yawSo3(-thetaC)};
+            SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_b_target", "arm_a_link", jointBPose, get_clock()->now());
+            SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_c_target", "arm_b_target", jointCPose, get_clock()->now());
+            SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_d_target", "arm_c_target", jointDPose, get_clock()->now());
+            SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_e_target", "arm_d_target", jointEPose, get_clock()->now());
 
             if (y >= JOINT_A_MIN && y <= JOINT_A_MAX &&
                 q1 >= JOINT_B_MIN && q1 <= JOINT_B_MAX &&
                 q2 >= JOINT_C_MIN && q2 <= JOINT_C_MAX &&
                 q3 >= JOINT_DE_PITCH_MIN && q3 <= JOINT_DE_PITCH_MAX) {
-                positions.positions[0] = static_cast<float>(y);
-                positions.positions[1] = static_cast<float>(q1);
-                positions.positions[2] = static_cast<float>(q2);
-                positions.positions[3] = static_cast<float>(q3);
+                msg::Position positions;
+                positions.names = {"joint_a", "joint_b", "joint_c", "joint_de_pitch"};
+                positions.positions = {
+                        static_cast<float>(y),
+                        static_cast<float>(q1),
+                        static_cast<float>(q2),
+                        static_cast<float>(q3),
+                };
                 mPosPub->publish(positions);
             } else {
                 RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1000, "Can not reach target within arm limits!");

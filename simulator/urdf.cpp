@@ -51,7 +51,7 @@ namespace mrover {
                 if (position.size() != 3) throw std::invalid_argument{"Position must have 3 elements"};
                 if (orientation.size() != 4) throw std::invalid_argument{"Orientation must have 4 elements"};
                 btTransform transform{btQuaternion{static_cast<btScalar>(orientation[0]), static_cast<btScalar>(orientation[1]), static_cast<btScalar>(orientation[2]), static_cast<btScalar>(orientation[3])}, btVector3{static_cast<btScalar>(position[0]), static_cast<btScalar>(position[1]), static_cast<btScalar>(position[2])}};
-                if (auto [_, was_added] = mUrdfs.try_emplace(name, *this, uri, transform); !was_added) {
+                if (auto [_, wasAdded] = mUrdfs.try_emplace(name, *this, uri, transform); !wasAdded) {
                     throw std::invalid_argument{std::format("Duplicate object name: {}", name)};
                 }
             }
@@ -96,7 +96,7 @@ namespace mrover {
                     assert(mesh);
 
                     std::string const& fileUri = mesh->filename;
-                    auto [it, was_inserted] = simulator.mUriToModel.try_emplace(fileUri, simulator, fileUri);
+                    auto [it, wasInserted] = simulator.mUriToModel.try_emplace(fileUri, simulator, fileUri);
                     Model& model = it->second;
 
                     model.waitMeshes();

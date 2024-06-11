@@ -30,13 +30,13 @@ namespace mrover {
             leftVelocityPub = create_publisher<msg::Velocity>("drive_left_velocity_cmd", 10);
             rightVelocityPub = create_publisher<msg::Velocity>("drive_right_velocity_cmd", 10);
 
-            twistSub = create_subscription<geometry_msgs::msg::Twist>("cmd_vel", 10, [this](geometry_msgs::msg::Twist::SharedPtr msg) {
+            twistSub = create_subscription<geometry_msgs::msg::Twist>("cmd_vel", 10, [this](geometry_msgs::msg::Twist::ConstSharedPtr const& msg) {
                 moveDrive(msg);
             });
         }
 
     private:
-        auto moveDrive(geometry_msgs::msg::Twist::SharedPtr const& msg) -> void {
+        auto moveDrive(geometry_msgs::msg::Twist::ConstSharedPtr const& msg) -> void {
             // See 13.3.1.4 in "Modern Robotics" for the math
             // Link: https://hades.mech.northwestern.edu/images/7/7f/MR.pdf
 

@@ -32,7 +32,7 @@ namespace mrover {
 
         ArmController();
 
-        void ik_callback(msg::IK::ConstSharedPtr const& ik_target);
+        void ikCallback(msg::IK::ConstSharedPtr const& ik_target);
     };
 
 } // namespace mrover
