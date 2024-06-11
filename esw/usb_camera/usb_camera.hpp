@@ -10,7 +10,6 @@ namespace mrover {
         rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr mImgPub;
 
         std::uint16_t mWidth{}, mHeight{};
-        std::chrono::nanoseconds mRestartDelay{};
 
         GstElement *mStreamSink{}, *mPipeline{};
         GMainLoop* mMainLoop{};

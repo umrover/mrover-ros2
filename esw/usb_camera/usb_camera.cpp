@@ -8,6 +8,8 @@ namespace mrover {
         return t;
     }
 
+    auto gstBusMessage(GstBus*, GstMessage* message, gpointer data) -> gboolean;
+
     UsbCamera::UsbCamera() : Node{"usb_camera"} {
         try {
             /* Parameters */
@@ -33,8 +35,6 @@ namespace mrover {
             mHeight = get_parameter("height").as_int();
             auto framerate = get_parameter("framerate").as_int();
             auto device = get_parameter("device").as_string();
-            rclcpp::Duration watchdogTimeout = std::chrono::duration<double>{get_parameter("watchdog_timeout").as_double()};
-            mRestartDelay = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>(get_parameter("restart_delay").as_double()));
             auto decodeJpegFromDevice = get_parameter("decode_jpeg_from_device").as_bool();
 
             /* Interfaces */
@@ -63,28 +63,7 @@ namespace mrover {
             mPipeline = gstCheck(gst_parse_launch(launch.c_str(), nullptr));
 
             auto bus = gst_element_get_bus(mPipeline);
-            gst_bus_add_watch(bus, [](GstBus*, GstMessage* message, gpointer data) -> gboolean {
-                auto node = static_cast<UsbCamera*>(data);
-                switch (message->type) {
-                    case GST_MESSAGE_ERROR: {
-                        GError* error;
-                        gchar* debug;
-                        gst_message_parse_error(message, &error, &debug);
-                        RCLCPP_ERROR_STREAM(node->get_logger(), std::format("GStreamer error: {} ({})", error->message, debug));
-                        g_error_free(error);
-                        g_free(debug);
-                        rclcpp::shutdown();
-                        break;
-                    }
-                    case GST_MESSAGE_EOS: {
-                        RCLCPP_ERROR_STREAM(node->get_logger(), "GStreamer end of stream");
-                        rclcpp::shutdown();
-                        break;
-                    }
-                    default:
-                        break;
-                }
-                return TRUE; }, this);
+            gst_bus_add_watch(bus, gstBusMessage, this);
             gst_object_unref(bus);
 
             mStreamSink = gstCheck(gst_bin_get_by_name(GST_BIN(mPipeline), "streamSink"));
@@ -93,15 +72,15 @@ namespace mrover {
                 throw std::runtime_error{"Failed initial pause on GStreamer pipeline"};
 
             mMainLoopThread = std::thread{[this] {
-                RCLCPP_INFO_STREAM(get_logger(), "Started GStreamer main loop");
+                RCLCPP_INFO_STREAM(get_logger(), "Entering GStreamer main loop");
                 g_main_loop_run(mMainLoop);
-                RCLCPP_INFO_STREAM(get_logger(), "GStreamer main loop exited");
+                RCLCPP_INFO_STREAM(get_logger(), "Leaving GStreamer main loop");
             }};
 
             mStreamSinkThread = std::thread{[this] {
-                RCLCPP_INFO_STREAM(get_logger(), "Started stream sink thread");
+                RCLCPP_INFO_STREAM(get_logger(), "Entering stream sink thread");
                 pullSampleLoop();
-                RCLCPP_INFO_STREAM(get_logger(), "Stopped stream sink thread");
+                RCLCPP_INFO_STREAM(get_logger(), "Leaving stream sink thread");
             }};
 
             if (gst_element_set_state(mPipeline, GST_STATE_PLAYING) == GST_STATE_CHANGE_FAILURE)
@@ -110,7 +89,7 @@ namespace mrover {
             RCLCPP_INFO_STREAM(get_logger(), "Initialized and started GStreamer pipeline");
 
         } catch (std::exception const& e) {
-            RCLCPP_ERROR_STREAM(get_logger(), std::format("Exception initializing USB camera: {}", e.what()));
+            RCLCPP_ERROR_STREAM(get_logger(), std::format("Exception initializing: {}", e.what()));
             rclcpp::shutdown();
         }
     }
@@ -153,6 +132,47 @@ namespace mrover {
             mStreamSinkThread.join();
             gst_object_unref(mPipeline);
         }
+    }
+
+    auto gstBusMessage(GstBus*, GstMessage* message, gpointer data) -> gboolean {
+        auto node = static_cast<UsbCamera*>(data);
+        switch (message->type) {
+            case GST_MESSAGE_INFO:
+            case GST_MESSAGE_WARNING:
+            case GST_MESSAGE_ERROR: {
+                GError* error;
+                gchar* debug;
+                auto logger = node->get_logger().get_child("gstreamer");
+                switch (message->type) {
+                    case GST_MESSAGE_INFO:
+                        gst_message_parse_info(message, &error, &debug);
+                        RCLCPP_INFO_STREAM(logger, std::format("{} ({})", error->message, debug));
+                        break;
+                    case GST_MESSAGE_WARNING:
+                        gst_message_parse_warning(message, &error, &debug);
+                        RCLCPP_WARN_STREAM(logger, std::format("{} ({})", error->message, debug));
+                        break;
+                    case GST_MESSAGE_ERROR:
+                        gst_message_parse_error(message, &error, &debug);
+                        RCLCPP_FATAL_STREAM(logger, std::format("{} ({})", error->message, debug));
+                        rclcpp::shutdown();
+                        break;
+                    default:
+                        assert(false);
+                }
+                g_error_free(error);
+                g_free(debug);
+                break;
+            }
+            case GST_MESSAGE_EOS: {
+                RCLCPP_ERROR_STREAM(node->get_logger().get_child("gstreamer"), "End of stream");
+                rclcpp::shutdown();
+                break;
+            }
+            default:
+                break;
+        }
+        return TRUE;
     }
 
 } // namespace mrover
