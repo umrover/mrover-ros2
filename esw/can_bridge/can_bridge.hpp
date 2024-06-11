@@ -4,8 +4,6 @@
 
 #include "can_net_link.hpp"
 
-// TODO(owen): support multiple buses
-
 namespace mrover {
 
     // [0-28]: CAN identifier (11/29bit)
@@ -63,12 +61,6 @@ namespace mrover {
         std::jthread mIoThread;
         boost::asio::io_service mIoService;
 
-        // boost::bimap<
-        //         boost::bimaps::unordered_set_of<std::string>,
-        //         boost::bimaps::unordered_set_of<CanFdAddress, decltype([](CanFdAddress const& address) {
-        //                                             return std::hash<std::uint8_t>{}(address.bus) ^ std::hash<std::uint8_t>{}(address.id);
-        //                                         })>>
-        //         mDevices;
         boost::bimap<std::string, CanFdAddress> mDevices;
         std::unordered_map<std::string, CanFdPubSub> mDevicesPubSub;
 

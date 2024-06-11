@@ -86,7 +86,7 @@ namespace mrover {
 
             readFrameAsync();
 
-            // Since "onInit" needs to return, kick off a self-joining thread to run the IO concurrently
+            // Since the constructor needs to return, kick off a self-joining thread to run the IO concurrently
             mIoThread = std::jthread{[this] { mIoService.run(); }};
 
             RCLCPP_INFO_STREAM(get_logger(), "Started");
@@ -165,7 +165,6 @@ namespace mrover {
         msg.source = sourceDeviceNameIt->second;
         msg.destination = destinationDeviceNameIt->second;
         msg.data.assign(mReadFrame.data, mReadFrame.data + mReadFrame.len);
-
         mDevicesPubSub.at(msg.source).publisher->publish(msg);
     }
 
@@ -205,7 +204,6 @@ namespace mrover {
                 rclcpp::shutdown();
             }
         } catch (boost::system::system_error const& error) {
-            // check if ran out of buffer space
             if (error.code() == boost::asio::error::no_buffer_space) {
                 RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, "No buffer space available to send the message. This usually indicates an electrical problem with the bus. CAN will avoid sending out messages if it can not see other devices.");
                 return;
