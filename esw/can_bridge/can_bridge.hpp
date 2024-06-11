@@ -56,7 +56,6 @@ namespace mrover {
     private:
         std::string mInterface;
         std::uint8_t mBus{};
-        bool mIsExtendedFrame{};
 
         canfd_frame mReadFrame{};
         CanNetLink mCanNetLink;

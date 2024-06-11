@@ -34,7 +34,6 @@ namespace mrover {
 
             declare_parameter("interface", rclcpp::ParameterType::PARAMETER_STRING);
             declare_parameter("is_extended_frame", rclcpp::ParameterType::PARAMETER_BOOL);
-            declare_parameter("bitrate_switch", rclcpp::ParameterType::PARAMETER_BOOL);
 
             mInterface = get_parameter("interface").as_string();
             mBus = mInterface.back() - '0';
@@ -193,7 +192,7 @@ namespace mrover {
         canfd_frame frame{
                 .can_id = std::bit_cast<canid_t>(RawCanFdId{
                         .identifier = std::bit_cast<std::uint16_t>(messageId),
-                        .isExtendedFrame = mIsExtendedFrame,
+                        .isExtendedFrame = get_parameter("is_extended_frame").as_bool(),
                 }),
                 .len = nearestFittingFdcanFrameSize(msg->data.size()),
         };
