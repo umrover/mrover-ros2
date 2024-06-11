@@ -15,6 +15,7 @@ macro(mrover_add_node name sources)
     if (ARGV3)
         target_precompile_headers(${name} PRIVATE ${ARGV3})
     endif ()
+    rosidl_target_interfaces(${name} ${PROJECT_NAME} rosidl_typesupport_cpp)
     install(
             TARGETS ${name}
             DESTINATION lib/${PROJECT_NAME}

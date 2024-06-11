@@ -33,8 +33,12 @@ find_package(manif QUIET)
 find_package(dawn QUIET)
 
 find_package(PkgConfig REQUIRED)
-pkg_search_module(NetLink libnl-3.0 QUIET)
-pkg_search_module(NetLinkRoute libnl-route-3.0 QUIET)
+pkg_search_module(NetLink libnl-3.0 IMPORTED_TARGET QUIET)
+pkg_search_module(NetLinkRoute libnl-route-3.0 IMPORTED_TARGET QUIET)
+pkg_search_module(Gst gstreamer-1.0 IMPORTED_TARGET QUIET)
+pkg_search_module(GstApp gstreamer-app-1.0 IMPORTED_TARGET QUIET)
+pkg_search_module(LibUsb libusb-1.0 IMPORTED_TARGET QUIET)
+pkg_search_module(LibUdev libudev IMPORTED_TARGET QUIET)
 
 add_subdirectory(deps/imgui EXCLUDE_FROM_ALL SYSTEM)
 add_subdirectory(deps/webgpuhpp EXCLUDE_FROM_ALL SYSTEM)
@@ -77,6 +81,8 @@ ament_python_install_package(state_machine)
 
 ## C++
 
+# Libraries
+
 include_directories(perception)
 
 mrover_add_library(lie lie/*.cpp lie)
@@ -86,9 +92,10 @@ ament_target_dependencies(lie rclcpp geometry_msgs tf2 tf2_ros)
 mrover_add_header_only_library(units units)
 mrover_add_header_only_library(loop_profiler loop_profiler)
 
+# Simulator
+
 mrover_add_node(simulator simulator/*.cpp simulator simulator/pch.hpp)
 ament_target_dependencies(simulator rclcpp nav_msgs sensor_msgs geometry_msgs tf2 tf2_ros urdf)
-rosidl_target_interfaces(simulator ${PROJECT_NAME} "rosidl_typesupport_cpp")
 target_link_libraries(simulator
         assimp::assimp glfw3webgpu webgpu glfw webgpu_hpp imgui
         ${BULLET_LIBRARIES}
@@ -98,31 +105,37 @@ target_link_libraries(simulator
 )
 target_include_directories(simulator SYSTEM PRIVATE ${BULLET_INCLUDE_DIRS} ${OPENCV_INCLUDE_DIRS})
 
+# Perception
+
 mrover_add_node(tag_detector perception/tag_detector/*.cpp perception/tag_detector/pch.hpp)
 ament_target_dependencies(tag_detector rclcpp tf2 tf2_ros)
-rosidl_target_interfaces(tag_detector ${PROJECT_NAME} rosidl_typesupport_cpp)
 target_link_libraries(tag_detector lie opencv_core opencv_aruco opencv_imgproc loop_profiler TBB::tbb)
+
+# Embedded
 
 mrover_add_node(differential_drive_controller esw/differential_drive_controller.cpp)
 target_link_libraries(differential_drive_controller units)
 ament_target_dependencies(differential_drive_controller rclcpp)
-rosidl_target_interfaces(differential_drive_controller ${PROJECT_NAME} rosidl_typesupport_cpp)
 
 mrover_add_node(arm_controller teleoperation/arm_controller/arm_controller.cpp teleoperation/arm_controller/pch.hpp)
 target_link_libraries(arm_controller lie)
 ament_target_dependencies(arm_controller rclcpp)
-rosidl_target_interfaces(arm_controller ${PROJECT_NAME} rosidl_typesupport_cpp)
+
+if (Gst_FOUND AND GstApp_FOUND)
+    mrover_add_node(usb_camera esw/usb_camera/*.cpp esw/usb_camera/pch.hpp)
+    target_link_libraries(usb_camera PkgConfig::Gst PkgConfig::GstApp opencv_core opencv_imgcodecs loop_profiler)
+    ament_target_dependencies(usb_camera rclcpp)
+endif ()
 
 if (NetLink_FOUND AND NetLinkRoute_FOUND)
     mrover_add_node(can_bridge esw/can_bridge/*.cpp esw/can_bridge/pch.hpp)
-    target_link_libraries(can_bridge ${NetLink_LIBRARIES} ${NetLinkRoute_LIBRARIES})
-    target_include_directories(can_bridge PRIVATE ${NetLink_INCLUDE_DIRS} ${NetLinkRoute_INCLUDE_DIRS})
+    target_link_libraries(can_bridge PkgConfig::NetLink PkgConfig::NetLinkRoute)
     ament_target_dependencies(can_bridge rclcpp)
-    rosidl_target_interfaces(can_bridge ${PROJECT_NAME} rosidl_typesupport_cpp)
 endif ()
 
 ## Install
 
+# You must add Python scripts here to be able to "ros2 launch" them in terminal
 install(PROGRAMS
         navigation/nav.py
         navigation/stuck_detector/stuck_detector.py
