@@ -50,10 +50,11 @@ namespace mrover {
             if (decodeJpegFromDevice) {
                 launch += std::format("! image/jpeg,width={},height={},framerate={}/1 ", mWidth, mHeight, framerate);
                 if (gst_element_factory_find("nvv4l2decoder")) {
-                    launch += "! nvv4l2decoder mjpeg=1 ! nvvidconv ! video/x-raw,format=YUY2 ";
+                    launch += "! nvv4l2decoder mjpeg=1 ! nvvidconv ";
                 } else {
-                    throw std::runtime_error{"Not supported yet!"};
+                    launch += "! jpegdec ! videoconvert ";
                 }
+                launch += "! video/x-raw,format=YUY2 ";
             } else {
                 launch += std::format("! video/x-raw,format=YUY2,width={},height={},framerate={}/1 ", mWidth, mHeight, framerate);
             }
