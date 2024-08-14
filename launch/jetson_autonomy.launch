@@ -1,0 +1,67 @@
+<launch>
+  <arg name="tag_detector" default="true"/>
+  <arg name="object_detector" default="true"/>
+  <arg name="stuck_detection" default="true"/>
+  <arg name="cameras" default="true"/>
+
+  <include file="$(find mrover)/launch/jetson_base.launch">
+    <arg name="cameras" value="$(arg cameras)"/>
+  </include>
+
+  <include file="$(find mrover)/launch/zed.launch">
+    <arg name="zed_model" value="zed"/>
+    <arg name="serial_number" value="14458"/>
+  </include>
+  
+  <include file="$(find mrover)/launch/long_range_cam.launch"/>
+
+  <node pkg="mrover" type="gst_websocket_streamer" name="static_streamer"
+        output="screen">
+    <param name="dev_path" value="/devices/platform/3610000.xhci/usb1/1-2/1-2.4/1-2.4.4"/>
+    <param name="port" value="8083"/>
+  </node>
+
+  <!-- Zed mini -->
+  <!-- <node pkg="nodelet" type="nodelet" name="zed_mini_nodelet_manager"
+        args="manager" output="screen"/>
+  <node pkg="nodelet" type="nodelet" name="zed_mini_auton"
+        args="load mrover/ZedNodelet zed_mini_nodelet_manager" output="screen">
+    <param name="serial_number" value="12046231"/>
+    <remap from="/camera/left/image" to="/zed_mini/left/image"/>
+  </node>
+  <node pkg="nodelet" type="nodelet" name="zed_mini_streamer"
+        args="load mrover/GstWebsocketStreamerNodelet zed_mini_nodelet_manager"
+        output="screen">
+    <param name="image_topic" value="/zed_mini/left/image"/>
+    <param name="port" value="8086"/>
+    <param name="width" value="640"/>
+    <param name="height" value="480"/>
+  </node> -->
+
+  <include file="$(find mrover)/launch/perception.launch">
+    <arg name="tag_detector" value="$(arg tag_detector)"/>
+    <arg name="object_detector" value="$(arg object_detector)"/>
+  </include>
+
+  <include file="$(find mrover)/launch/navigation.launch">
+    <arg name="stuck_detection" value="$(arg stuck_detection)"/>
+  </include>
+
+  <node pkg="nodelet" type="nodelet" name="tag_detection_streamer"
+        args="load mrover/GstWebsocketStreamerNodelet perception_nodelet_manager"
+        output="screen">
+    <param name="image_topic" value="/tag_detection"/>
+    <param name="port" value="8084"/>
+    <param name="width" value="640"/>
+    <param name="height" value="480"/>
+  </node>
+
+  <node pkg="nodelet" type="nodelet" name="object_detection_streamer"
+        args="load mrover/GstWebsocketStreamerNodelet perception_nodelet_manager"
+        output="screen">
+    <param name="image_topic" value="/object_detection"/>
+    <param name="port" value="8085"/>
+    <param name="width" value="640"/>
+    <param name="height" value="480"/>
+  </node>
+</launch>

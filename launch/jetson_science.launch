@@ -1,0 +1,62 @@
+<launch>
+  <arg name="cameras" default="true"/>
+
+  <include file="$(find mrover)/launch/jetson_base.launch">
+    <arg name="cameras" value="$(arg cameras)"/>
+  </include>
+
+  <node name="cache_bridge" pkg="mrover" type="simple_bridge">
+    <param name="group_name" value="cache"/>
+  </node>
+  <node name="sa_bridge" pkg="mrover" type="simple_bridge">
+    <param name="group_name" value="sa"/>
+  </node>
+  <node name="science_bridge" pkg="mrover" type="science_bridge"/>
+
+  <group if="$(arg cameras)">
+
+    <node pkg="mrover" type="gst_websocket_streamer" name="ish_1_streamer"
+          output="screen">
+      <param name="dev_path" value="/devices/platform/3610000.xhci/usb1/1-2/1-2.3"/>
+      <param name="port" value="8084"/>
+      <param name="disable_auto_white_balance" value="true"/>
+    </node>
+
+    <node pkg="mrover" type="gst_websocket_streamer" name="ish_2_streamer"
+          output="screen">
+      <param name="dev_path" value="/devices/platform/3610000.xhci/usb1/1-2/1-2.3"/>
+      <param name="port" value="8084"/>
+      <param name="disable_auto_white_balance" value="true"/>
+    </node>
+
+    <node pkg="mrover" type="gst_websocket_streamer" name="ish_3_streamer"
+          output="screen">
+      <param name="dev_path" value="/devices/platform/3610000.xhci/usb1/1-2/1-2.4/1-2.4.2"/>
+      <param name="port" value="8085"/>
+      <param name="disable_auto_white_balance" value="true"/>
+    </node>
+
+    <node pkg="mrover" type="gst_websocket_streamer" name="sa_ee_streamer"
+          output="screen">
+      <param name="dev_path" value="/devices/platform/3610000.xhci/usb1/1-2/1-2.2/1-2.2"/>
+      <param name="port" value="8086"/>
+    </node>
+
+  </group>
+  
+  <node name="serial_node" pkg="rosserial_python" type="serial_node.py">
+    <param name="port" type="string" value="/dev/ttyACM0" />
+    <param name="baud" type="int" value="57600" />
+  </node>
+  
+  <arg name="use_builtin_visual_odom" default="true"/>
+
+  <include file="$(find mrover)/launch/zed.launch">
+    <arg name="use_builtin_visual_odom" value="$(arg use_builtin_visual_odom)"/>
+  </include>
+
+  <node name="panorama" pkg="mrover" type="panorama.py" output="screen"/>
+
+  <node pkg="tf" type="static_transform_publisher" name="base_link_publisher"
+        args="0 0 0 0 0 0 base_link zed_base_link 100"/>
+</launch>

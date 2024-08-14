@@ -1,0 +1,12 @@
+<launch>
+  <!-- <include file="$(find mrover)/launch/localization.launch"/> -->
+  <node name="differential_drive_controller" pkg="mrover" exec="differential_drive_controller" output="screen">
+    <param from="$(dirname)/../config/esw.yaml"/>
+  </node>
+
+  <node name="superstructure" pkg="mrover" exec="superstructure.py" output="screen">
+    <param from="$(dirname)/../config/superstructure.yaml"/>
+  </node>
+
+  <!-- <node name="led" pkg="mrover" type="led" /> -->
+</launch>
