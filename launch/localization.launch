@@ -1,9 +1,0 @@
-<launch>
-  <rosparam command="load" file="$(find mrover)/config/localization.yaml"/>
-  <rosparam command="load" file="$(find mrover)/config/esw.yaml"/>
-
-  <!-- Linearize GPS from geodetic to ENU cartesian coords -->
-  <node name="gps_linearization" pkg="mrover" type="gps_linearization.py" output="screen"/>
-
-  <node name="pose_filter" pkg="mrover" type="pose_filter" output="screen"/>
-</launch>

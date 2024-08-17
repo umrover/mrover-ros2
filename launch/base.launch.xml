@@ -1,11 +1,12 @@
 <launch>
   <!-- <include file="$(find mrover)/launch/localization.launch"/> -->
   <node name="differential_drive_controller" pkg="mrover" exec="differential_drive_controller" output="screen">
-    <param from="$(dirname)/../config/esw.yaml"/>
+    <param from="$(find-pkg-share mrover)/config/esw.yaml"/>
   </node>
 
+  <!-- TODO (ali): find a better way to load yamls w/o relative path -->
   <node name="superstructure" pkg="mrover" exec="superstructure.py" output="screen">
-    <param from="$(dirname)/../config/superstructure.yaml"/>
+    <param from="$(find-pkg-share mrover)/config/superstructure.yaml"/>
   </node>
 
   <!-- <node name="led" pkg="mrover" type="led" /> -->

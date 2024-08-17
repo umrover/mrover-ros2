@@ -20,6 +20,7 @@ endif ()
 
 find_package(rclpy REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(rclcpp_components REQUIRED)
 find_package(ament_cmake REQUIRED)
 find_package(ament_cmake_python REQUIRED)
 find_package(nav_msgs REQUIRED)
@@ -103,7 +104,7 @@ mrover_add_header_only_library(loop_profiler loop_profiler)
 # Simulator
 
 mrover_add_node(simulator simulator/*.cpp simulator simulator/pch.hpp)
-ament_target_dependencies(simulator rclcpp nav_msgs sensor_msgs geometry_msgs tf2 tf2_ros urdf)
+ament_target_dependencies(simulator rclcpp rclcpp_components nav_msgs sensor_msgs geometry_msgs tf2 tf2_ros urdf)
 target_link_libraries(simulator
         assimp::assimp glfw3webgpu webgpu glfw webgpu_hpp imgui
         ${BULLET_LIBRARIES}
@@ -168,5 +169,6 @@ install(PROGRAMS
 
 install(DIRECTORY launch DESTINATION share/${PROJECT_NAME})
 install(DIRECTORY urdf DESTINATION share/${PROJECT_NAME})
+install(DIRECTORY config DESTINATION share/${PROJECT_NAME})
 
 ament_package()

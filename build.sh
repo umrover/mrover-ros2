@@ -11,4 +11,5 @@ export CXX=clang++-18
 colcon build \
 	--cmake-args -G Ninja -W no-dev \
 	--symlink-install \
+	--event-handlers console_direct+ \
 	$@
