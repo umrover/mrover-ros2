@@ -169,6 +169,7 @@ namespace mrover {
     }
 
     URDF::URDF(Simulator& simulator, std::string_view uri, btTransform const& transform) {
+        RCLCPP_INFO_STREAM(simulator.get_logger(), std::format("{}", performXacro(uriToPath(uri))));
         if (!model.initString(performXacro(uriToPath(uri)))) throw std::runtime_error{std::format("Failed to parse URDF from URI: {}", uri)};
 
         std::size_t multiBodyLinkCount = model.links_.size() - 1; // Root link is treated separately by multibody, so subtract it off

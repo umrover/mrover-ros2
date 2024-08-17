@@ -6,7 +6,7 @@ namespace mrover {
                                                        .use_intra_process_comms(true)
                                                        .allow_undeclared_parameters(true)
                                                        .automatically_declare_parameters_from_overrides(true)} {
-        try {
+        // try {
             mSaveTask = PeriodicTask{get_parameter("save_rate").as_double()};
             mSaveHistory = boost::circular_buffer<SaveData>{static_cast<std::size_t>(get_parameter("save_history").as_int())};
 
@@ -75,11 +75,10 @@ namespace mrover {
             }
 
             mRunThread = std::thread{&Simulator::run, this};
-
-        } catch (std::exception const& e) {
-            RCLCPP_FATAL_STREAM(get_logger(), e.what());
-            rclcpp::shutdown();
-        }
+        // } catch (std::exception const& e) {
+        //     RCLCPP_FATAL_STREAM(get_logger(), e.what());
+        //     rclcpp::shutdown();
+        // }
     }
 
     auto spinSleep(Clock::time_point const& until) -> void {
@@ -156,6 +155,10 @@ namespace mrover {
     }
 
 } // namespace mrover
+
+
+// #include "rclcpp_components/register_node_macro.hpp"
+// RCLCPP_COMPONENTS_REGISTER_NODE(mrover::Simulator)
 
 auto main(int argc, char** argv) -> int {
     rclcpp::init(argc, argv);
