@@ -14,6 +14,8 @@ dependencies = [
     "moteus==0.3.70",
     "pymap3d==3.1.0",
     "pyubx2==1.2.43",
+    "lark==1.1.2",
+    "empy==3.3.4"
 ]
 
 [project.optional-dependencies]
