@@ -15,7 +15,8 @@ dependencies = [
     "pymap3d==3.1.0",
     "pyubx2==1.2.43",
     "lark==1.1.2",
-    "empy==3.3.4"
+    "empy==3.3.4",
+    "catkin-pkg==1.0.0"
 ]
 
 [project.optional-dependencies]

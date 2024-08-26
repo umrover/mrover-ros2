@@ -72,7 +72,7 @@
       - unzip
       - rsync
       - python3-pip
-      # - python3-rosdep
+      - python3-rosdep
       # - python3-catkin-tools
       - python3-virtualenvwrapper
       - clang-18
