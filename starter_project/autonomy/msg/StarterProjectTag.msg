@@ -1,0 +1,4 @@
+int32 tag_id
+float32 x_tag_center_pixel
+float32 y_tag_center_pixel
+float32 closeness_metric
