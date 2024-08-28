@@ -66,6 +66,16 @@ if (BUILD_TESTING)
     ament_lint_auto_find_test_dependencies()
 endif ()
 
+# Starter Projects
+
+set(MROVER_CMAKE_INCLUDES
+        starter_project/autonomy/AutonomyStarterProject.cmake
+)
+
+foreach (MROVER_CMAKE_INCLUDE ${MROVER_CMAKE_INCLUDES})
+    include(${MROVER_CMAKE_INCLUDE})
+endforeach ()
+
 include(cmake/macros.cmake)
 
 ## Messages & Services & Actions
@@ -140,9 +150,13 @@ if (Gst_FOUND AND GstApp_FOUND)
         target_compile_definitions(websocket_server PUBLIC BOOST_ASIO_NO_DEPRECATED)
         ament_target_dependencies(websocket_server rclcpp)
 
-        mrover_add_node(gst_websocket_streamer esw/gst_websocket_streamer/*.c* esw/gst_websocket_streamer/pch.hpp)
+        mrover_add_component(gst_websocket_streamer esw/gst_websocket_streamer/*.c* esw/gst_websocket_streamer/pch.hpp)
         target_link_libraries(gst_websocket_streamer PkgConfig::Gst PkgConfig::GstApp PkgConfig::LibUdev opencv_core opencv_imgcodecs websocket_server)
-        ament_target_dependencies(gst_websocket_streamer rclcpp)
+        ament_target_dependencies(gst_websocket_streamer rclcpp rclcpp_components sensor_msgs)
+
+        rclcpp_components_register_nodes(gst_websocket_streamer "mrover::GstWebsocketStreamer")
+        set(node_plugins "${node_plugins}mrover::GstWebsocketStreamer;$<TARGET_FILE:gst_websocket_streamer>\n")
+        
     endif ()
 endif ()
 
@@ -163,6 +177,10 @@ install(PROGRAMS
         localization/basestation_gps_driver.py
         superstructure/superstructure.py
         scripts/debug_course_publisher.py
+
+        # starter project sources
+        starter_project/autonomy/src/localization.py
+        starter_project/autonomy/src/navigation/navigation_starter_project.py
         DESTINATION
         lib/${PROJECT_NAME}
 )
@@ -170,5 +188,6 @@ install(PROGRAMS
 install(DIRECTORY launch DESTINATION share/${PROJECT_NAME})
 install(DIRECTORY urdf DESTINATION share/${PROJECT_NAME})
 install(DIRECTORY config DESTINATION share/${PROJECT_NAME})
+install (DIRECTORY ${} DESTINATION lib/${PROJECT_NAME})
 
 ament_package()
