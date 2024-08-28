@@ -68,9 +68,9 @@ endif ()
 
 # Starter Projects
 
-set(MROVER_CMAKE_INCLUDES
-        starter_project/autonomy/AutonomyStarterProject.cmake
-)
+# set(MROVER_CMAKE_INCLUDES
+#         starter_project/autonomy/AutonomyStarterProject.cmake
+# )
 
 foreach (MROVER_CMAKE_INCLUDE ${MROVER_CMAKE_INCLUDES})
     include(${MROVER_CMAKE_INCLUDE})
