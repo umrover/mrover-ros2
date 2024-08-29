@@ -66,16 +66,6 @@ if (BUILD_TESTING)
     ament_lint_auto_find_test_dependencies()
 endif ()
 
-# Starter Projects
-
-# set(MROVER_CMAKE_INCLUDES
-#         starter_project/autonomy/AutonomyStarterProject.cmake
-# )
-
-foreach (MROVER_CMAKE_INCLUDE ${MROVER_CMAKE_INCLUDES})
-    include(${MROVER_CMAKE_INCLUDE})
-endforeach ()
-
 include(cmake/macros.cmake)
 
 ## Messages & Services & Actions
@@ -85,6 +75,18 @@ message(STATUS "Found message files: ${MROVER_MESSAGE_FILE_PATHS}")
 
 file(GLOB_RECURSE MROVER_SERVICE_FILE_PATHS RELATIVE ${CMAKE_CURRENT_LIST_DIR} CONFIGURE_DEPENDS srv/*.srv)
 message(STATUS "Found service files: ${MROVER_SERVICE_FILE_PATHS}")
+
+# Starter Project
+
+set(MROVER_CMAKE_INCLUDES
+        starter_project/autonomy/AutonomyStarterProject.cmake
+)
+
+foreach (MROVER_CMAKE_INCLUDE ${MROVER_CMAKE_INCLUDES})
+    include(${MROVER_CMAKE_INCLUDE})
+endforeach ()
+
+message(STATUS "Found message files: ${MROVER_MESSAGE_FILE_PATHS}")
 
 rosidl_generate_interfaces(${PROJECT_NAME}
         ${MROVER_MESSAGE_FILE_PATHS}
