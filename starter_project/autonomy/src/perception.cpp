@@ -1,8 +1,8 @@
 #include "perception.hpp"
-#include "mrover/StarterProjectTag.h"
 
 // ROS Headers, ros namespace
 #include <cmath>
+#include <functional>
 #include <iterator>
 #include <limits>
 #include <memory>
@@ -13,17 +13,13 @@
 #include <opencv2/core/types.hpp>
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgproc.hpp>
-#include <ros/init.h>
 
 auto main(int argc, char** argv) -> int {
     rclcpp::init(argc, argv);
-    rclcpp.spin(std::make_shared<mrover::Perception>(Args &&args...))
-
-    [[maybe_unused]] mrover::Perception perception;
 
     // "spin" blocks until our node dies
-    // It listens for new messages and calls our subscribed functions with them
-    ros::spin();
+    rclcpp::spin(std::make_shared<mrover::Perception>());
+    rclcpp::shutdown();
 
     return EXIT_SUCCESS;
 }
@@ -34,17 +30,19 @@ namespace mrover {
         // Subscribe to camera image messages
         // Every time another node publishes to this topic we will be notified
         // Specifically the callback we passed will be invoked
-        mImageSubscriber = mNodeHandle.subscribe("camera/left/image", 1, &Perception::imageCallback, this);
+        mImageSubscriber = create_subscription<sensor_msgs::msg::Image>("zed/left/image", 1, [this](sensor_msgs::msg::Image::ConstSharedPtr const& msg) {
+            imageCallback(msg);
+        });
 
         // Create a publisher for our tag topic
         // See: http://wiki.ros.org/ROS/Tutorials/WritingPublisherSubscriber%28c%2B%2B%29
         // TODO: uncomment me!
-        mTagPublisher = mNodeHandle.advertise<StarterProjectTag>("tag", 1);
+        mTagPublisher = create_publisher<msg::StarterProjectTag>("tag", 1);
 
         mTagDictionary = cv::makePtr<cv::aruco::Dictionary>(cv::aruco::getPredefinedDictionary(cv::aruco::DICT_4X4_50));
     }
 
-    auto Perception::imageCallback(sensor_msgs::ImageConstPtr const& imageMessage) -> void {
+    auto Perception::imageCallback(sensor_msgs::msg::Image::ConstSharedPtr const& imageMessage) -> void {
         // Create a cv::Mat from the ROS image message
         // Note this does not copy the image data, it is basically a pointer
         // Be careful if you extend its lifetime beyond this function
@@ -60,12 +58,12 @@ namespace mrover {
         // Detect tags in the image pixels
         findTagsInImage(image, mTags);
         // Select the tag that is closest to the middle of the screen
-        StarterProjectTag tag = selectTag(image, mTags);
+        msg::StarterProjectTag tag = selectTag(image, mTags);
         // Publish the message to our topic so navigation or others can receive it
         publishTag(tag);
     }
 
-    auto Perception::findTagsInImage(cv::Mat const& image, std::vector<StarterProjectTag>& tags) -> void { // NOLINT(*-convert-member-functions-to-static)
+    auto Perception::findTagsInImage(cv::Mat const& image, std::vector<msg::StarterProjectTag>& tags) -> void { // NOLINT(*-convert-member-functions-to-static)
         // hint: take a look at OpenCV's documentation for the detectMarkers function
         // hint: you have mTagDictionary, mTagCorners, and mTagIds member variables already defined! (look in perception.hpp)
         // hint: write and use the "getCenterFromTagCorners" and "getClosenessMetricFromTagCorners" functions
@@ -82,26 +80,26 @@ namespace mrover {
             auto center = getCenterFromTagCorners(mTagCorners[i]);
             auto closeness = getClosenessMetricFromTagCorners(image, mTagCorners[i]);
             
-            StarterProjectTag newTag;
-            newTag.tagId = mTagIds[i];
-            newTag.xTagCenterPixel = center.first;
-            newTag.yTagCenterPixel = center.second;
-            newTag.closenessMetric = closeness;
+            msg::StarterProjectTag newTag;
+            newTag.tag_id = mTagIds[i];
+            newTag.x_tag_center_pixel = center.first;
+            newTag.y_tag_center_pixel = center.second;
+            newTag.closeness_metric = closeness;
 
             tags.push_back(newTag);
         }
     }
 
-    auto Perception::selectTag(cv::Mat const& image, std::vector<StarterProjectTag> const& tags) -> StarterProjectTag { // NOLINT(*-convert-member-functions-to-static)
+    auto Perception::selectTag(cv::Mat const& image, std::vector<msg::StarterProjectTag> const& tags) -> msg::StarterProjectTag { // NOLINT(*-convert-member-functions-to-static)
         // TODO: implement me!
 
         std::pair<float, float> center{image.cols / 2.0, image.rows / 2.0};
 
         float closestDistance = std::numeric_limits<float>::infinity();
-        StarterProjectTag closestTag{};
+        msg::StarterProjectTag closestTag{};
 
         for(auto const& tag : tags){
-            std::pair<float, float> tagCenter{tag.xTagCenterPixel, tag.yTagCenterPixel};
+            std::pair<float, float> tagCenter{tag.x_tag_center_pixel, tag.y_tag_center_pixel};
 
             auto distFromImageCenter = static_cast<float>(std::sqrt(std::pow((tagCenter.first - center.first), 2) + std::pow((tagCenter.second - center.second), 2)));
 
@@ -112,10 +110,10 @@ namespace mrover {
         return closestTag;
     }
 
-    auto Perception::publishTag(StarterProjectTag const& tag) -> void {
+    auto Perception::publishTag(msg::StarterProjectTag const& tag) -> void {
         // TODO: implement me!
 
-        mTagPublisher.publish(tag);
+        mTagPublisher->publish(tag);
     }
 
     auto Perception::getClosenessMetricFromTagCorners(cv::Mat const& image, std::vector<cv::Point2f> const& tagCorners) -> float { // NOLINT(*-convert-member-functions-to-static)

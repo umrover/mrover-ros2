@@ -9,6 +9,7 @@
 
     <depend>tf2</depend>
     <depend>tf2_ros</depend>
+    <depend>tf_transformations</depend>
     <depend>urdf</depend>
     <depend>rclpy</depend>
     <depend>rclcpp</depend>

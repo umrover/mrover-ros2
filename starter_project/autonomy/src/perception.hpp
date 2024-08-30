@@ -2,6 +2,7 @@
 
 // C++ Standard Library Headers, std namespace
 #include <memory>
+#include <functional>
 #include <optional>
 #include <string>
 #include <unordered_map>
@@ -15,12 +16,13 @@
 # include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/image.hpp>
 #include <sensor_msgs/msg/point_cloud2.hpp>
+#include <mrover/msg/starter_project_tag.hpp>
 
-#if __has_include(<mrover/StarterProjectTag.h>)
-#include <mrover/StarterProjectTag.h>
-#else
-struct StarterProjectTag {};
-#endif
+// #if __has_include(<mrover/msg/starter_project_tag.hpp>)
+// #include <mrover/StarterProjectTag.h>
+// #else
+// struct StarterProjectTag {};
+// #endif
 
 namespace mrover {
 
@@ -33,12 +35,12 @@ namespace mrover {
      */
     class Perception : public rclcpp::Node {
     private:
-        rclcpp::Subscription mImageSubscriber;
+        rclcpp::Subscription<sensor_msgs::msg::Image>::ConstSharedPtr mImageSubscriber;
         cv::Ptr<cv::aruco::Dictionary> mTagDictionary;
         std::vector<std::vector<cv::Point2f>> mTagCorners;
         std::vector<int> mTagIds;
-        std::vector<StarterProjectTag> mTags;
-        ros::Publisher mTagPublisher;
+        std::vector<msg::StarterProjectTag> mTags;
+        rclcpp::Publisher<msg::StarterProjectTag>::SharedPtr mTagPublisher;
 
     public:
         Perception();
@@ -49,7 +51,7 @@ namespace mrover {
          *
          * @param imageMessage
          */
-        void imageCallback(sensor_msgs::ImageConstPtr const& imageMessage);
+        void imageCallback(sensor_msgs::msg::Image::ConstSharedPtr const& imageMessage);
 
         /**
          *  Given an image, detect ArUco tags, and fill a vector full of output messages.
@@ -57,14 +59,14 @@ namespace mrover {
          * @param image Image
          * @param tags  Output vector of tags
          */
-        void findTagsInImage(cv::Mat const& image, std::vector<StarterProjectTag>& tags);
+        void findTagsInImage(cv::Mat const& image, std::vector<msg::StarterProjectTag>& tags);
 
         /**
          * Publish our processed tag
          *
          * @param tag Selected tag message
          */
-        void publishTag(StarterProjectTag const& tag);
+        void publishTag(msg::StarterProjectTag const& tag);
 
         /**
          *  Given an ArUco tag in pixel space, find a metric for how close we are.
@@ -89,7 +91,7 @@ namespace mrover {
          * @param tags          Vector of tags
          * @return              Center tag
          */
-        [[nodiscard]] auto selectTag(cv::Mat const& image, std::vector<StarterProjectTag> const& tags) -> StarterProjectTag;
+        [[nodiscard]] auto selectTag(cv::Mat const& image, std::vector<msg::StarterProjectTag> const& tags) -> msg::StarterProjectTag;
     };
 
 } // namespace mrover

@@ -77,6 +77,7 @@ file(GLOB_RECURSE MROVER_SERVICE_FILE_PATHS RELATIVE ${CMAKE_CURRENT_LIST_DIR} C
 message(STATUS "Found service files: ${MROVER_SERVICE_FILE_PATHS}")
 
 # Starter Project
+message(STATUS "PROJ NAME: ${PROJECT_NAME}")
 
 set(MROVER_CMAKE_INCLUDES
         starter_project/autonomy/AutonomyStarterProject.cmake
@@ -92,6 +93,22 @@ rosidl_generate_interfaces(${PROJECT_NAME}
         ${MROVER_MESSAGE_FILE_PATHS}
         ${MROVER_SERVICE_FILE_PATHS}
         DEPENDENCIES nav_msgs sensor_msgs geometry_msgs
+)
+
+# Starter project 
+# TODO (ali): delete once AutonomyStarterProject.cmake is fixed
+mrover_add_node(starter_project_perception ${CMAKE_CURRENT_LIST_DIR}/starter_project/autonomy/src/*.cpp)
+target_link_libraries(starter_project_perception ${OpenCV_LIBS})
+ament_target_dependencies(starter_project_perception rclcpp std_msgs sensor_msgs)
+
+
+# Install our executable so that ROS knows about it
+# This allows us to launch it with ros2 run
+install(PROGRAMS
+        starter_project/autonomy/src/localization.py
+        starter_project/autonomy/src/navigation/navigation_starter_project.py
+        DESTINATION
+        lib/${PROJECT_NAME}
 )
 
 ## Python
