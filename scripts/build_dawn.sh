@@ -3,9 +3,10 @@
 # git submodule update --init deps/dawn
 
 pushd deps/dawn || exit
-CC=clang CXX=clang++ cmake \
+CC=clang-18 CXX=clang++-18 cmake \
     -B out/Release \
     -G Ninja \
+    -W no-dev \
     -D CMAKE_BUILD_TYPE=Release \
     -D CMAKE_CXX_FLAGS="-march=native" \
     -D DAWN_FETCH_DEPENDENCIES=ON \
