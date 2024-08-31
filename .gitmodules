@@ -1,0 +1,3 @@
+[submodule "deps/manif"]
+	path = deps/manif
+	url = git@github.com:artivis/manif.git
