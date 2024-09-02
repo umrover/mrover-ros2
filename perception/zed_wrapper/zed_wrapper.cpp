@@ -2,7 +2,19 @@
 
 namespace mrover {
 	ZedWrapper::ZedWrapper() : Node(NODE_NAME){
-		RCLCPP_INFO(this->get_logger(), "Created Zed Wrapper Node");
+		RCLCPP_INFO(this->get_logger(), "Created Zed Wrapper Node, %s", NODE_NAME);
+	}
+
+
+	auto ZedWrapper::grabThread() -> void{
+		RCLCPP_INFO(this->get_logger(), "Starting grab thread");
+		while(rclcpp::ok()){
+			
+		}
+	}
+
+	auto pointCloudUpdateThread() -> void{
+
 	}
 };
 

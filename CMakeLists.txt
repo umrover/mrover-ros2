@@ -180,8 +180,13 @@ target_include_directories(simulator SYSTEM PRIVATE ${BULLET_INCLUDE_DIRS} ${OPE
 
 # Perception
 
-mrover_add_node(zed perception/zed_wrapper/*.c* perception/zed_wrapper/pch.hpp)
-ament_target_dependencies(zed rclcpp)
+find_package(ZED QUIET)
+if(ZED_FOUND)
+	mrover_add_node(zed perception/zed_wrapper/*.c* perception/zed_wrapper/pch.hpp)
+	ament_target_dependencies(zed rclcpp)
+else()
+	message("ZED not found...")
+endif()
 
 mrover_add_node(tag_detector perception/tag_detector/*.cpp perception/tag_detector/pch.hpp)
 ament_target_dependencies(tag_detector rclcpp tf2 tf2_ros)
