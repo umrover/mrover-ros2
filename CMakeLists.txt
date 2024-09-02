@@ -182,7 +182,7 @@ target_include_directories(simulator SYSTEM PRIVATE ${BULLET_INCLUDE_DIRS} ${OPE
 
 find_package(ZED QUIET)
 find_package(CUDA QUIET)
-if(ZED_FOUND)
+if(ZED_FOUND AND CUDA_FOUND)
 	mrover_add_node(zed perception/zed_wrapper/*.c* perception/zed_wrapper/pch.hpp)
 	ament_target_dependencies(zed rclcpp ZED CUDA)
 else()

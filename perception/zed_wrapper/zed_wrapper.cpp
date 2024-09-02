@@ -3,6 +3,27 @@
 namespace mrover {
 	ZedWrapper::ZedWrapper() : Node(NODE_NAME){
 		RCLCPP_INFO(this->get_logger(), "Created Zed Wrapper Node, %s", NODE_NAME);
+
+		// Declare Params
+		std::map<std::string, int> integerParams{
+			{"depth_confidence", 70},
+			{"serial_number", -1},
+			{"grab_target_fps", 60},
+			{"texture_confidence", 100}
+		};
+
+		this->declare_parameters("", integerParams);
+
+		std::map<std::string, int&> integerVariables{
+			{"depth_confidence", mDepthConfidence},
+			{"serial_number", mSerialNumber},
+			{"grab_target_fps", mGrabTargetFps},
+			{"texture_confidence", mTextureConfidence}
+		};
+
+		this->get_parameters("", integerVariables);
+
+		//grabThread();
 	}
 
 
@@ -10,6 +31,8 @@ namespace mrover {
 		RCLCPP_INFO(this->get_logger(), "Starting grab thread");
 		while(rclcpp::ok()){
 			sl::RuntimeParameters runtimeParameters;
+			runtimeParameters.confidence_threshold = mDepthConfidence;
+			RCLCPP_INFO(this->get_logger(), "%d\n", mDepthConfidence);
 		}
 	}
 

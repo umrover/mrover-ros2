@@ -6,3 +6,7 @@
 
 // ZED
 #include <sl/Camera.hpp>
+
+// STD
+#include <vector>
+#include <string>

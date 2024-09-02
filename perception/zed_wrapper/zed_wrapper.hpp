@@ -7,6 +7,12 @@ namespace mrover {
 		private:
 			static constexpr char const* NODE_NAME = "zed_wrapper";
 
+			// Params
+			int mSerialNumber{};
+			int mGrabTargetFps{};
+			int mDepthConfidence{};
+			int mTextureConfidence{};
+
 			auto grabThread() -> void;
 
 			auto pointCloudUpdateThread() -> void;
