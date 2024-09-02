@@ -9,7 +9,7 @@ namespace mrover {
 	auto ZedWrapper::grabThread() -> void{
 		RCLCPP_INFO(this->get_logger(), "Starting grab thread");
 		while(rclcpp::ok()){
-			
+			sl::RuntimeParameters runtimeParameters;
 		}
 	}
 
