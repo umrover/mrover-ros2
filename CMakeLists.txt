@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.25)
 project(mrover VERSION 2025.0.0 LANGUAGES C CXX)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 set(CMAKE_CXX_STANDARD 23)
 
 find_program(CCACHE_FOUND ccache)
@@ -177,6 +179,9 @@ target_link_libraries(simulator
 target_include_directories(simulator SYSTEM PRIVATE ${BULLET_INCLUDE_DIRS} ${OPENCV_INCLUDE_DIRS})
 
 # Perception
+
+mrover_add_node(zed perception/zed_wrapper/*.c* perception/zed_wrapper/pch.hpp)
+ament_target_dependencies(zed rclcpp)
 
 mrover_add_node(tag_detector perception/tag_detector/*.cpp perception/tag_detector/pch.hpp)
 ament_target_dependencies(tag_detector rclcpp tf2 tf2_ros)
