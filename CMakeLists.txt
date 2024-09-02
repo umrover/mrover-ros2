@@ -226,6 +226,9 @@ target_include_directories(simulator SYSTEM PRIVATE ${BULLET_INCLUDE_DIRS} ${OPE
 
 # Perception
 
+mrover_add_node(zed perception/zed_wrapper/*.c* perception/zed_wrapper/pch.hpp)
+ament_target_dependencies(zed rclcpp)
+
 mrover_add_node(tag_detector perception/tag_detector/*.cpp perception/tag_detector/pch.hpp)
 ament_target_dependencies(tag_detector rclcpp tf2 tf2_ros)
 target_link_libraries(tag_detector lie opencv_core opencv_aruco opencv_imgproc loop_profiler)
