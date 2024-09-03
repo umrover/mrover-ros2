@@ -13,6 +13,10 @@ namespace mrover {
 			int mDepthConfidence{};
 			int mTextureConfidence{};
 
+			// ZED
+			sl::Camera mZed;
+			sl::CameraInformation mZedInfo;
+
 			auto grabThread() -> void;
 
 			auto pointCloudUpdateThread() -> void;
