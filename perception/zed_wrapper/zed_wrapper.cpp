@@ -5,6 +5,8 @@ namespace mrover {
 		RCLCPP_INFO(this->get_logger(), "Created Zed Wrapper Node, %s", NODE_NAME);
 
 		// Declare Params
+        auto paramSub = std::make_shared<rclcpp::ParameterEventHandler>(this);
+
 		std::map<std::string, int> integerParams{
 			{"depth_confidence", 70},
 			{"serial_number", -1},
@@ -21,9 +23,16 @@ namespace mrover {
 			{"texture_confidence", mTextureConfidence}
 		};
 
-		this->get_parameters("", integerVariables);
+		for(auto& [descriptor, variable] : integerVariables){
+			get_parameter(descriptor, variable);
+			paramSub->add_parameter_callback(descriptor, [&](rclcpp::Parameter const& param) {
+				RCLCPP_INFO(this->get_logger(), "Recieved %d", static_cast<int>(param.as_int()));
+				variable = static_cast<int>(param.as_int());
+			});
+		}
 
-		//grabThread();
+		grabThread();
+
 	}
 
 
