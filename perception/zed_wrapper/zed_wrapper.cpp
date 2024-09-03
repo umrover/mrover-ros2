@@ -117,8 +117,21 @@ namespace mrover {
                     throw std::runtime_error(std::format("ZED failed to grab {}", sl::toString(error).c_str()));
 
 			// Retrieval has to happen on the same thread as grab so that the image and point cloud are synced
-				if (mZed.retrieveImage(mGrabMeasures.rightImage, sl::VIEW::RIGHT, sl::MEM::GPU, mImageResolution) != sl::ERROR_CODE::SUCCESS)
-					throw std::runtime_error("ZED failed to retrieve right image");
+			if (mZed.retrieveImage(mGrabMeasures.rightImage, sl::VIEW::RIGHT, sl::MEM::GPU, mImageResolution) != sl::ERROR_CODE::SUCCESS)
+				throw std::runtime_error("ZED failed to retrieve right image");
+
+			// Only left set is used for processing
+			if (mDepthEnabled) {
+				if (mZed.retrieveImage(mGrabMeasures.leftImage, sl::VIEW::LEFT, sl::MEM::GPU, mImageResolution) != sl::ERROR_CODE::SUCCESS)
+					throw std::runtime_error("ZED failed to retrieve left image");
+				if (mZed.retrieveMeasure(mGrabMeasures.leftPoints, sl::MEASURE::XYZ, sl::MEM::GPU, mPointResolution) != sl::ERROR_CODE::SUCCESS)
+					throw std::runtime_error("ZED failed to retrieve point cloud");
+			}
+
+			// if (mZed.retrieveMeasure(mGrabMeasures.leftNormals, sl::MEASURE::NORMALS, sl::MEM::GPU, mNormalsResolution) != sl::ERROR_CODE::SUCCESS)
+			//     throw std::runtime_error("ZED failed to retrieve point cloud normals");
+			
+			assert(mGrabMeasures.leftImage.timestamp == mGrabMeasures.leftPoints.timestamp);
 		}
 	}
 
