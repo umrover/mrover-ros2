@@ -31,13 +31,25 @@ namespace mrover {
 		void visit(rclcpp::Node* node, std::shared_ptr<rclcpp::ParameterEventHandler>& paramSub){
 			std::visit(overload{
 				[&](int* arg){
-					*arg = static_cast<int>(node->get_parameter(mParamDescriptor).as_int());
+					try{
+						*arg = static_cast<int>(node->get_parameter(mParamDescriptor).as_int());
+					}catch(rclcpp::exceptions::ParameterUninitializedException& e){
+						*arg = 0;
+					}
 				},
 				[&](std::string* arg){
-					*arg = node->get_parameter(mParamDescriptor).as_string();
+					try{
+						*arg = node->get_parameter(mParamDescriptor).as_string();
+					}catch(rclcpp::exceptions::ParameterUninitializedException& e){
+						*arg = std::string();
+					}
 				},
 				[&](bool* arg){
-					*arg = node->get_parameter(mParamDescriptor).as_bool();
+					try{
+						*arg = node->get_parameter(mParamDescriptor).as_bool();
+					}catch(rclcpp::exceptions::ParameterUninitializedException& e){
+						*arg = false;
+					}
 				}
 			}, mData);
 		}
