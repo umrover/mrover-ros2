@@ -28,6 +28,9 @@ namespace mrover {
 
 			sl::Resolution mImageResolution, mPointResolution, mNormalsResolution;
 
+			// Publishers
+			rclcpp::Publisher<sensor_msgs::Image>::SharedPtr mRightImgPub;
+
 			auto grabThread() -> void;
 
 			auto pointCloudUpdateThread() -> void;
