@@ -36,7 +36,9 @@ namespace mrover {
 			{"grab_resolution", grabResolutionString},
 			{"depth_mode", depthModeString},
 			{"depth_maximum_distance", mDepthMaximumDistance},
-			{"use_builtin_visual_odom", mUseBuiltinPosTracking}
+			{"use_builtin_visual_odom", mUseBuiltinPosTracking},
+			{"use_pose_smoothing", mUsePoseSmoothing},
+			{"use_area_memory", mUseAreaMemory}
 		};
 
 		RCLCPP_INFO(get_logger(), "Camera Resolution: %s", sl::toString(sl::DEPTH_MODE::PERFORMANCE).c_str());
@@ -84,6 +86,15 @@ namespace mrover {
 
 		if (mZed.open(initParameters) != sl::ERROR_CODE::SUCCESS) {
 			throw std::runtime_error("ZED failed to open");
+		}
+
+		mZedInfo = mZed.getCameraInformation();
+
+		if (mUseBuiltinPosTracking) {
+			sl::PositionalTrackingParameters positionalTrackingParameters;
+			positionalTrackingParameters.enable_pose_smoothing = mUsePoseSmoothing;
+			positionalTrackingParameters.enable_area_memory = mUseAreaMemory;
+			mZed.enablePositionalTracking(positionalTrackingParameters);
 		}
 	}
 
