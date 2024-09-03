@@ -12,6 +12,15 @@ namespace mrover {
 		int imageWidth{};
 		int imageHeight{};
 
+		std::vector<ParameterWrapper> params{
+			{"image_width", imageWidth},
+			{"image_height", imageHeight}
+		};
+
+		ParameterWrapper::declareParameters(this, paramSub, params);
+
+
+		/*
 		std::map<std::string, int> integerParams{
 			{"depth_confidence", 70},
 			{"serial_number", -1},
@@ -35,7 +44,6 @@ namespace mrover {
 		for(auto& [descriptor, variable] : integerVariables){
 			get_parameter(descriptor, variable);
 			paramSub->add_parameter_callback(descriptor, [&](rclcpp::Parameter const& param) {
-				RCLCPP_INFO(this->get_logger(), "Recieved %d", static_cast<int>(param.as_int()));
 				variable = static_cast<int>(param.as_int());
 			});
 		}
@@ -79,23 +87,21 @@ namespace mrover {
 			}
 		}
 
-		initParameters.depth_stabilization = mUseDepthStabilization;
-		initParameters.camera_resolution = stringToZedEnum<sl::RESOLUTION>(grabResolutionString);
-		initParameters.depth_mode = stringToZedEnum<sl::DEPTH_MODE>(depthModeString);
+		//initParameters.depth_stabilization = mUseDepthStabilization;
+		//initParameters.camera_resolution = stringToZedEnum<sl::RESOLUTION>(grabResolutionString);
+		//initParameters.depth_mode = stringToZedEnum<sl::DEPTH_MODE>(depthModeString);
 		initParameters.coordinate_units = sl::UNIT::METER;
 		initParameters.sdk_verbose = true; // Log useful information
 		initParameters.camera_fps = mGrabTargetFps;
 		initParameters.coordinate_system = sl::COORDINATE_SYSTEM::RIGHT_HANDED_Z_UP_X_FWD; // Match ROS
-		initParameters.depth_maximum_distance = mDepthMaximumDistance;
+		//initParameters.depth_maximum_distance = mDepthMaximumDistance;
 
-		mDepthEnabled = initParameters.depth_mode != sl::DEPTH_MODE::NONE;
+		//mDepthEnabled = initParameters.depth_mode != sl::DEPTH_MODE::NONE;
 
 		if (mZed.open(initParameters) != sl::ERROR_CODE::SUCCESS) {
 			throw std::runtime_error("ZED failed to open");
 		}
-
-		grabThread();
-
+		*/
 	}
 
 

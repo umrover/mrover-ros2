@@ -165,6 +165,8 @@ ament_target_dependencies(lie rclcpp geometry_msgs tf2 tf2_ros)
 mrover_add_header_only_library(units units)
 mrover_add_header_only_library(loop_profiler loop_profiler)
 
+mrover_add_header_only_library(parameter_utils parameter_utils)
+
 # Simulator
 
 mrover_add_node(simulator simulator/*.cpp simulator simulator/pch.hpp)
@@ -184,6 +186,7 @@ find_package(ZED QUIET)
 find_package(CUDA QUIET)
 if(ZED_FOUND AND CUDA_FOUND)
 	mrover_add_node(zed perception/zed_wrapper/*.c* perception/zed_wrapper/pch.hpp)
+	target_link_libraries(zed parameter_utils)
 	ament_target_dependencies(zed rclcpp ZED CUDA)
 else()
 	message("ZED not found...")

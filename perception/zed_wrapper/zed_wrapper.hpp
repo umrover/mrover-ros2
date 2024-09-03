@@ -13,6 +13,9 @@ namespace mrover {
 			int mDepthConfidence{};
 			int mTextureConfidence{};
 
+			int imageWidth{};
+			int imageHeight{};
+
 			// ZED
 			sl::Camera mZed;
 			sl::CameraInformation mZedInfo;
