@@ -17,3 +17,5 @@
     depth_mode: "PERFORMANCE"
     depth_maximum_distance: 12.0
     use_builtin_visual_odom: false
+    use_pose_smoothing: true
+    use_area_memory: true
