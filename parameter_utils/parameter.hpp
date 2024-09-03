@@ -31,32 +31,13 @@ namespace mrover {
 		void visit(rclcpp::Node* node, std::shared_ptr<rclcpp::ParameterEventHandler>& paramSub){
 			std::visit(overload{
 				[&](int* arg){
-				cbHande = paramSub->add_parameter_callback(mParamDescriptor, [&](rclcpp::Parameter const& rclcppParam) {
-						try{
-							*arg = static_cast<int>(rclcppParam.as_int());
-							RCLCPP_INFO(node->get_logger(), "Recieved %s as %d", mParamDescriptor.c_str(), *arg);
-						}catch(const std::bad_variant_access& e){
-							throw std::runtime_error(std::format("Bad variant access while recieving parameter"));
-						}
-					});
+					*arg = static_cast<int>(node->get_parameter(mParamDescriptor).as_int());
 				},
 				[&](std::string* arg){
-					ParameterWrapper::cbHande = paramSub->add_parameter_callback(mParamDescriptor, [&](rclcpp::Parameter const& rclcppParam) {
-						try{
-							*arg = rclcppParam.as_string();
-						}catch(const std::bad_variant_access& e){
-							throw std::runtime_error(std::format("Bad variant access while recieving parameter"));
-						}
-					});
+					*arg = node->get_parameter(mParamDescriptor).as_string();
 				},
 				[&](bool* arg){
-					ParameterWrapper::cbHande = paramSub->add_parameter_callback(mParamDescriptor, [&](rclcpp::Parameter const& rclcppParam) {
-						try{
-							*arg = rclcppParam.as_bool();
-						}catch(const std::bad_variant_access& e){
-							throw std::runtime_error(std::format("Bad variant access while recieving parameter"));
-						}
-					});
+					*arg = node->get_parameter(mParamDescriptor).as_bool();
 				}
 			}, mData);
 		}

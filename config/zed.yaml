@@ -6,5 +6,9 @@
 
 /zed_wrapper:
   ros__parameters:
+    depth_confidence: 70
+    serial_number: -1
+    grab_target_fps: 60
+    texture_confidence: 100
     image_width: 1280
     image_height: 720
