@@ -17,7 +17,7 @@ namespace mrover {
 		try{
 			RCLCPP_INFO(this->get_logger(), "Created Zed Wrapper Node, %s", NODE_NAME);
 
-			mRightImgPub = create_publisher<sensor_msgs::Image>("right/image", 1);
+			mRightImgPub = create_publisher<sensor_msgs::msg::Image>("right/image", 1);
 
 			// Declare Params
 			auto paramSub = std::make_shared<rclcpp::ParameterEventHandler>(this);
