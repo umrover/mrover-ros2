@@ -15,3 +15,5 @@
     use_depth_stabilization: false
     grab_resolution: "HD720"
     depth_mode: "PERFORMANCE"
+    depth_maximum_distance: 12.0
+    use_builtin_visual_odom: false
