@@ -14,11 +14,17 @@ namespace mrover {
 			int mTextureConfidence{};
 
 			bool mUseDepthStabilization{};
+			bool mDepthEnabled{};
+			bool mUseBuiltinPosTracking{};
+
+			double mDepthMaximumDistance{};
 
 
 			// ZED
 			sl::Camera mZed;
 			sl::CameraInformation mZedInfo;
+
+			sl::Resolution mImageResolution, mPointResolution, mNormalsResolution;
 
 			auto grabThread() -> void;
 

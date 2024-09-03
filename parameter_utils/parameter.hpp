@@ -20,13 +20,15 @@ namespace mrover {
 
 		std::string mParamDescriptor;
 
-		std::variant<int*, std::string*, bool*> mData;
+		std::variant<int*, std::string*, bool*, double*> mData;
 
 		ParameterWrapper(std::string paramDescriptor, int& variable) : mType{rclcpp::ParameterType::PARAMETER_INTEGER}, mParamDescriptor{std::move(paramDescriptor)}, mData{&variable}{}
 
 		ParameterWrapper(std::string paramDescriptor, std::string& variable) : mType{rclcpp::ParameterType::PARAMETER_STRING}, mParamDescriptor{std::move(paramDescriptor)}, mData{&variable}{}
 
 		ParameterWrapper(std::string paramDescriptor, bool& variable) : mType{rclcpp::ParameterType::PARAMETER_BOOL}, mParamDescriptor{std::move(paramDescriptor)}, mData{&variable}{}
+
+		ParameterWrapper(std::string paramDescriptor, double& variable) : mType{rclcpp::ParameterType::PARAMETER_DOUBLE}, mParamDescriptor{std::move(paramDescriptor)}, mData{&variable}{}
 
 		void visit(rclcpp::Node* node, std::shared_ptr<rclcpp::ParameterEventHandler>& paramSub){
 			std::visit(overload{
@@ -49,6 +51,13 @@ namespace mrover {
 						*arg = node->get_parameter(mParamDescriptor).as_bool();
 					}catch(rclcpp::exceptions::ParameterUninitializedException& e){
 						*arg = false;
+					}
+				},
+				[&](double* arg){
+					try{
+						*arg = node->get_parameter(mParamDescriptor).as_double();
+					}catch(rclcpp::exceptions::ParameterUninitializedException& e){
+						*arg = 0.0;
 					}
 				}
 			}, mData);
