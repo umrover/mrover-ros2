@@ -117,7 +117,6 @@ namespace mrover {
                     throw std::runtime_error(std::format("ZED failed to grab {}", sl::toString(error).c_str()));
 
 			// Retrieval has to happen on the same thread as grab so that the image and point cloud are synced
-			if (mRightImgPub.getNumSubscribers())
 				if (mZed.retrieveImage(mGrabMeasures.rightImage, sl::VIEW::RIGHT, sl::MEM::GPU, mImageResolution) != sl::ERROR_CODE::SUCCESS)
 					throw std::runtime_error("ZED failed to retrieve right image");
 		}
