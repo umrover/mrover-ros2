@@ -4,6 +4,7 @@
 // Messages
 #include "sensor_msgs/msg/point_cloud.hpp"
 #include "sensor_msgs/msg/image.hpp"
+#include "sensor_msgs/image_encodings.hpp"
 
 // ZED
 #include <sl/Camera.hpp>
