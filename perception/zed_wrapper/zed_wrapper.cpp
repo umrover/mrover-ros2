@@ -1,6 +1,18 @@
 #include "zed_wrapper.hpp"
 
 namespace mrover {
+	template<typename TEnum>
+    [[nodiscard]] auto stringToZedEnum(std::string_view string) -> TEnum {
+        using int_t = std::underlying_type_t<TEnum>;
+        for (int_t i = 0; i < static_cast<int_t>(TEnum::LAST); ++i) {
+            if (sl::String{string.data()} == sl::toString(static_cast<TEnum>(i))) {
+                return static_cast<TEnum>(i);
+            }
+        }
+        throw std::invalid_argument("Invalid enum string");
+    }
+
+
 	ZedWrapper::ZedWrapper() : Node(NODE_NAME){
 		RCLCPP_INFO(this->get_logger(), "Created Zed Wrapper Node, %s", NODE_NAME);
 
@@ -10,7 +22,7 @@ namespace mrover {
 		int imageWidth{};
 		int imageHeight{};
 
-		std::string svoFile{};
+		std::string svoFile{}, grabResolutionString{}, depthModeString{};
 
 		std::vector<ParameterWrapper> params{
 			{"depth_confidence", mDepthConfidence},
@@ -20,8 +32,12 @@ namespace mrover {
 			{"image_width", imageWidth},
 			{"image_height", imageHeight},
 			{"svo_file", svoFile},
-			{}
+			{"use_depth_stabilization", mUseDepthStabilization},
+			{"grab_resolution", grabResolutionString},
+			{"depth_mode", depthModeString}
 		};
+
+		RCLCPP_INFO(get_logger(), "Camera Resolution: %s", sl::toString(sl::DEPTH_MODE::PERFORMANCE).c_str());
 
 		ParameterWrapper::declareParameters(this, paramSub, params);
 
@@ -44,6 +60,7 @@ namespace mrover {
 			}
 		}
 
+
 		initParameters.depth_stabilization = mUseDepthStabilization;
 		initParameters.camera_resolution = stringToZedEnum<sl::RESOLUTION>(grabResolutionString);
 		initParameters.depth_mode = stringToZedEnum<sl::DEPTH_MODE>(depthModeString);
@@ -51,9 +68,9 @@ namespace mrover {
 		initParameters.sdk_verbose = true; // Log useful information
 		initParameters.camera_fps = mGrabTargetFps;
 		initParameters.coordinate_system = sl::COORDINATE_SYSTEM::RIGHT_HANDED_Z_UP_X_FWD; // Match ROS
-		initParameters.depth_maximum_distance = mDepthMaximumDistance;
+		//initParameters.depth_maximum_distance = mDepthMaximumDistance;
 
-		mDepthEnabled = initParameters.depth_mode != sl::DEPTH_MODE::NONE;
+		//mDepthEnabled = initParameters.depth_mode != sl::DEPTH_MODE::NONE;
 
 		if (mZed.open(initParameters) != sl::ERROR_CODE::SUCCESS) {
 			throw std::runtime_error("ZED failed to open");
