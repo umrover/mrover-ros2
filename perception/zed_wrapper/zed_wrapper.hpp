@@ -55,7 +55,7 @@ namespace mrover {
 
 		sl::Resolution mImageResolution, mPointResolution, mNormalsResolution;
 
-		std::string mSvoPath;
+		sl::String mSvoPath;
 
 		// Publishers
 		rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr mRightImgPub;

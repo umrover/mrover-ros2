@@ -61,7 +61,7 @@ namespace mrover {
      * @param msg       Point cloud message with buffer on the CPU
      */
     void fillPointCloudMessageFromGpu(sl::Mat& xyzGpu, sl::Mat& bgraGpu, sl::Mat& normalsGpu, PointCloudGpu& pcGpu, sensor_msgs::msg::PointCloud2::UniquePtr const& msg) {
-        /*assert(bgraGpu.getWidth() >= xyzGpu.getWidth());
+        assert(bgraGpu.getWidth() >= xyzGpu.getWidth());
         assert(bgraGpu.getHeight() >= xyzGpu.getHeight());
         assert(bgraGpu.getChannels() == 4);
         assert(xyzGpu.getChannels() == 4); // Last channel is unused
@@ -83,7 +83,7 @@ namespace mrover {
         dim3 numBlocks{static_cast<uint>(std::ceil(static_cast<float>(size) / BLOCK_SIZE))};
         fillPointCloudMessageKernel<<<numBlocks, threadsPerBlock>>>(xyzGpuPtr, bgraGpuPtr, normalsGpuPtr, pcGpuPtr, size);
         checkCudaError(cudaPeekAtLastError());
-        checkCudaError(cudaMemcpy(msg->data.data(), pcGpuPtr, size * sizeof(Point), cudaMemcpyDeviceToHost));*/
+        checkCudaError(cudaMemcpy(msg->data.data(), pcGpuPtr, size * sizeof(Point), cudaMemcpyDeviceToHost));
     }
 
 
