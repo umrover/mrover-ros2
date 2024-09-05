@@ -43,4 +43,75 @@ namespace mrover {
         msg.magnetic_field_covariance[4] = 0.037e-6;
         msg.magnetic_field_covariance[8] = 0.047e-6;
     }
+
+	auto fillImageMessage(sl::Mat const& bgra, sensor_msgs::msg::Image::UniquePtr const& msg) -> void {
+        assert(bgra.getChannels() == 4);
+        assert(msg);
+
+        msg->height = bgra.getHeight();
+        msg->width = bgra.getWidth();
+        msg->encoding = sensor_msgs::image_encodings::BGRA8;
+        msg->step = bgra.getStepBytes();
+        msg->is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
+        auto* bgrGpuPtr = bgra.getPtr<sl::uchar1>(sl::MEM::GPU);
+        size_t size = msg->step * msg->height;
+        msg->data.resize(size);
+        checkCudaError(cudaMemcpy(msg->data.data(), bgrGpuPtr, size, cudaMemcpyDeviceToHost));
+    }
+
+	auto fillCameraInfoMessages(sl::CalibrationParameters& calibration, sl::Resolution const& resolution,
+                                sensor_msgs::msg::CameraInfo& leftInfoMsg, sensor_msgs::msg::CameraInfo& rightInfoMsg) -> void {
+        assert(leftInfoMsg);
+        assert(rightInfoMsg);
+
+        leftInfoMsg.width = resolution.width;
+        leftInfoMsg.height = resolution.height;
+        rightInfoMsg.width = resolution.width;
+        rightInfoMsg.height = resolution.height;
+        leftInfoMsg.distortion_model = sensor_msgs::distortion_models::PLUMB_BOB;
+        rightInfoMsg.distortion_model = sensor_msgs::distortion_models::PLUMB_BOB;
+        leftInfoMsg.d.resize(5);
+        rightInfoMsg.d.resize(5);
+        leftInfoMsg.d[0] = calibration.left_cam.disto[0];
+        leftInfoMsg.d[1] = calibration.left_cam.disto[1];
+        leftInfoMsg.d[2] = calibration.left_cam.disto[4];
+        leftInfoMsg.d[3] = calibration.left_cam.disto[2];
+        leftInfoMsg.d[4] = calibration.left_cam.disto[3];
+        rightInfoMsg.d[0] = calibration.right_cam.disto[0];
+        rightInfoMsg.d[1] = calibration.right_cam.disto[1];
+        rightInfoMsg.d[2] = calibration.right_cam.disto[4];
+        rightInfoMsg.d[3] = calibration.right_cam.disto[2];
+        rightInfoMsg.d[4] = calibration.right_cam.disto[3];
+        leftInfoMsg.k.fill(0.0);
+        rightInfoMsg.k.fill(0.0);
+        leftInfoMsg.k[0] = calibration.left_cam.fx;
+        leftInfoMsg.k[2] = calibration.left_cam.cx;
+        leftInfoMsg.k[4] = calibration.left_cam.fy;
+        leftInfoMsg.k[5] = calibration.left_cam.cy;
+        leftInfoMsg.k[8] = 1.0;
+        rightInfoMsg.k[0] = calibration.right_cam.fx;
+        rightInfoMsg.k[2] = calibration.right_cam.cx;
+        rightInfoMsg.k[4] = calibration.right_cam.fy;
+        rightInfoMsg.k[5] = calibration.right_cam.cy;
+        rightInfoMsg.k[8] = 1;
+        leftInfoMsg.r.fill(0.0);
+        rightInfoMsg.r.fill(0.0);
+        for (size_t i = 0; i < 3; ++i) {
+            leftInfoMsg.r[i * 3 + i] = 1.0;
+            rightInfoMsg.r[i * 3 + i] = 1.0;
+        }
+        leftInfoMsg.p.fill(0.0);
+        rightInfoMsg.p.fill(0.0);
+        leftInfoMsg.p[0] = calibration.left_cam.fx;
+        leftInfoMsg.p[2] = calibration.left_cam.cx;
+        leftInfoMsg.p[5] = calibration.left_cam.fy;
+        leftInfoMsg.p[6] = calibration.left_cam.cy;
+        leftInfoMsg.p[10] = 1.0;
+        rightInfoMsg.p[3] = -1.0 * calibration.left_cam.fx * calibration.getCameraBaseline();
+        rightInfoMsg.p[0] = calibration.right_cam.fx;
+        rightInfoMsg.p[2] = calibration.right_cam.cx;
+        rightInfoMsg.p[5] = calibration.right_cam.fy;
+        rightInfoMsg.p[6] = calibration.right_cam.cy;
+        rightInfoMsg.p[10] = 1.0;
+    }
 };

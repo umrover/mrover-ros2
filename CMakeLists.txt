@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.25)
-project(mrover VERSION 2025.0.0 LANGUAGES C CXX)
+project(mrover VERSION 2025.0.0 LANGUAGES C CXX CUDA)
 
 # Supress ROS CMake warning about Python.
 cmake_policy(SET CMP0148 OLD)
@@ -231,7 +231,7 @@ find_package(ZED QUIET)
 find_package(CUDA QUIET)
 if(ZED_FOUND AND CUDA_FOUND)
 	mrover_add_node(zed perception/zed_wrapper/*.c* perception/zed_wrapper/pch.hpp)
-	target_link_libraries(zed parameter_utils lie MANIF::manif)
+	target_link_libraries(zed parameter_utils lie MANIF::manif ${CUDA_LIBRARIES})
 	ament_target_dependencies(zed rclcpp sensor_msgs ZED CUDA tf2 tf2_ros)
 else()
 	message("ZED not found...")

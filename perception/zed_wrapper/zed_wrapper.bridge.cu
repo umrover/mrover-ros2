@@ -1,6 +1,7 @@
 // Be careful what you include in this file, it is compiled with nvcc (NVIDIA CUDA compiler)
 
 #include "zed_wrapper.hpp"
+#include "point.hpp"
 
 namespace mrover {
 
@@ -35,8 +36,8 @@ namespace mrover {
      * @param pcGpu     Point cloud buffer on the GPU (@see Point)
      * @param msg       Point cloud message with buffer on the CPU
      */
-    void fillPointCloudMessageFromGpu(sl::Mat& xyzGpu, sl::Mat& bgraGpu, sl::Mat& normalsGpu, PointCloudGpu& pcGpu, sensor_msgs::msg::PointCloud2::UniquePtr const& msg) {
-        assert(bgraGpu.getWidth() >= xyzGpu.getWidth());
+    void fillPointCloudMessageFromGpu(/*sl::Mat& xyzGpu, sl::Mat& bgraGpu, sl::Mat& normalsGpu, */Point*& pcGpu, sensor_msgs::msg::PointCloud2::UniquePtr const& msg) {
+        /*assert(bgraGpu.getWidth() >= xyzGpu.getWidth());
         assert(bgraGpu.getHeight() >= xyzGpu.getHeight());
         assert(bgraGpu.getChannels() == 4);
         assert(xyzGpu.getChannels() == 4); // Last channel is unused
@@ -58,7 +59,7 @@ namespace mrover {
         dim3 numBlocks{static_cast<uint>(std::ceil(static_cast<float>(size) / BLOCK_SIZE))};
         fillPointCloudMessageKernel<<<numBlocks, threadsPerBlock>>>(xyzGpuPtr, bgraGpuPtr, normalsGpuPtr, pcGpuPtr, size);
         checkCudaError(cudaPeekAtLastError());
-        checkCudaError(cudaMemcpy(msg->data.data(), pcGpuPtr, size * sizeof(Point), cudaMemcpyDeviceToHost));
+        checkCudaError(cudaMemcpy(msg->data.data(), pcGpuPtr, size * sizeof(Point), cudaMemcpyDeviceToHost));*/
     }
 
     void checkCudaError(cudaError_t err) {
