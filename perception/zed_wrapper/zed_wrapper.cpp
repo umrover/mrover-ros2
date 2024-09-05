@@ -13,7 +13,7 @@ namespace mrover {
     }
 
 
-	ZedWrapper::ZedWrapper() : Node(NODE_NAME) {
+	ZedWrapper::ZedWrapper() : Node(NODE_NAME, rclcpp::NodeOptions().use_intra_process_comms(true)) {
 		try{
 			RCLCPP_INFO(this->get_logger(), "Created Zed Wrapper Node, %s", NODE_NAME);
 
@@ -228,22 +228,22 @@ namespace mrover {
                         pointCloudMsg->header.frame_id = "zed_left_camera_frame";
                     }
 
-					auto leftImgMsg = std::make_shared<sensor_msgs::msg::Image>();
+					auto leftImgMsg = std::make_unique<sensor_msgs::msg::Image>();
 					fillImageMessage(mPcMeasures.leftImage, leftImgMsg);
 					leftImgMsg->header.frame_id = "zed_left_camera_optical_frame";
 					leftImgMsg->header.stamp = mPcMeasures.time;
-					mLeftImgPub->publish(leftImgMsg);
+					mLeftImgPub->publish(std::move(leftImgMsg));
 
 					auto rightImgMsg = std::make_unique<sensor_msgs::msg::Image>();
 					fillImageMessage(mPcMeasures.rightImage, rightImgMsg);
 					rightImgMsg->header.frame_id = "zed_right_camera_optical_frame";
 					rightImgMsg->header.stamp = mPcMeasures.time;
-					mRightImgPub->publish(rightImgMsg);
+					mRightImgPub->publish(std::move(rightImgMsg));
 				
                 }
 
                 if (mDepthEnabled) {
-                    mPcPub->publish(pointCloudMsg);
+                    mPcPub->publish(std::move(pointCloudMsg));
                 }
 
                 if (mLeftCamInfoPub.getNumSubscribers() || mRightCamInfoPub.getNumSubscribers()) {
