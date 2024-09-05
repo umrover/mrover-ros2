@@ -1,9 +1,26 @@
 // Be careful what you include in this file, it is compiled with nvcc (NVIDIA CUDA compiler)
 
-#include "zed_wrapper.hpp"
 #include "point.hpp"
 
+#include <sensor_msgs/msg/imu.hpp>
+#include <sensor_msgs/msg/magnetic_field.hpp>
+#include <sensor_msgs/image_encodings.hpp>
+#include <sensor_msgs/msg/image.hpp>
+#include <sensor_msgs/msg/camera_info.hpp>
+#include <sensor_msgs/distortion_models.hpp>
+#include <sensor_msgs/msg/point_cloud2.hpp>
+#include <sensor_msgs/point_cloud2_iterator.hpp>
+#include "sensor_msgs/msg/image.hpp"
+#include "sensor_msgs/image_encodings.hpp"
+
+#include <sl/Camera.hpp>
+#include <thrust/device_vector.h>
+
+#include <cstdint>
+
 namespace mrover {
+
+	using PointCloudGpu = thrust::device_vector<Point>;
 
     // Optimal for the Jetson Xavier NX - this is max threads per block and each block has a max of 2048 threads
     constexpr uint BLOCK_SIZE = 1024;
@@ -28,6 +45,13 @@ namespace mrover {
         // pcGpuPtr[i].normal_z = normalsGpuPtr[i].z;
     }
 
+    void checkCudaError(cudaError_t err) {
+        if (err == cudaSuccess) return;
+
+        //RCLCPP_ERROR_STREAM(rclcpp::get_logger("cuda_error"), "CUDA error: " << cudaGetErrorString(err));
+        throw std::runtime_error("CUDA error");
+    }
+
     /**
      * Fills a PointCloud2 message residing on the CPU from two GPU buffers (one for XYZ and one for BGRA).
      *
@@ -36,7 +60,7 @@ namespace mrover {
      * @param pcGpu     Point cloud buffer on the GPU (@see Point)
      * @param msg       Point cloud message with buffer on the CPU
      */
-    void fillPointCloudMessageFromGpu(/*sl::Mat& xyzGpu, sl::Mat& bgraGpu, sl::Mat& normalsGpu, */Point*& pcGpu, sensor_msgs::msg::PointCloud2::UniquePtr const& msg) {
+    void fillPointCloudMessageFromGpu(sl::Mat& xyzGpu, sl::Mat& bgraGpu, sl::Mat& normalsGpu, PointCloudGpu& pcGpu, sensor_msgs::msg::PointCloud2::UniquePtr const& msg) {
         /*assert(bgraGpu.getWidth() >= xyzGpu.getWidth());
         assert(bgraGpu.getHeight() >= xyzGpu.getHeight());
         assert(bgraGpu.getChannels() == 4);
@@ -62,11 +86,5 @@ namespace mrover {
         checkCudaError(cudaMemcpy(msg->data.data(), pcGpuPtr, size * sizeof(Point), cudaMemcpyDeviceToHost));*/
     }
 
-    void checkCudaError(cudaError_t err) {
-        if (err == cudaSuccess) return;
-
-        RCLCPP_ERROR_STREAM(rclcpp::get_logger("cuda_error"), "CUDA error: " << cudaGetErrorString(err));
-        throw std::runtime_error("CUDA error");
-    }
 
 } // namespace mrover

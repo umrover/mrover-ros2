@@ -1,4 +1,5 @@
 #include "zed_wrapper.hpp"
+#include <format>
 
 namespace mrover {
 	template<typename TEnum>
@@ -224,7 +225,7 @@ namespace mrover {
                     mIsSwapReady = false;
 
                     if (mDepthEnabled) {
-                        fillPointCloudMessageFromGpu(/*mPcMeasures.leftPoints, mPcMeasures.leftImage, mPcMeasures.leftNormals, */mPointCloudGpu, pointCloudMsg);
+                        fillPointCloudMessageFromGpu(mPcMeasures.leftPoints, mPcMeasures.leftImage, mPcMeasures.leftNormals, mPointCloudGpu, pointCloudMsg);
                         pointCloudMsg->header.stamp = mPcMeasures.time;
                         pointCloudMsg->header.frame_id = "zed_left_camera_frame";
                     }
