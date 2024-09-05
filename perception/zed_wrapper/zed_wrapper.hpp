@@ -4,56 +4,73 @@
 
 namespace mrover {
 	class ZedWrapper : public rclcpp::Node{
-		private:
-			static constexpr char const* NODE_NAME = "zed_wrapper";
+	private:
+		static constexpr char const* NODE_NAME = "zed_wrapper";
 
-			struct Measures {
-				rclcpp::Time time;
-				sl::Mat leftImage;
-				sl::Mat rightImage;
-				sl::Mat leftPoints;
-				sl::Mat leftNormals;
+		std::unique_ptr<tf2_ros::Buffer> mTfBuffer = std::make_unique<tf2_ros::Buffer>(get_clock());
+		std::shared_ptr<tf2_ros::TransformBroadcaster> mTfBroadcaster = std::make_shared<tf2_ros::TransformBroadcaster>(this);
+		std::shared_ptr<tf2_ros::TransformListener> mTfListener = std::make_shared<tf2_ros::TransformListener>(*mTfBuffer);
 
-				Measures() = default;
+		struct Measures {
+			rclcpp::Time time;
+			sl::Mat leftImage;
+			sl::Mat rightImage;
+			sl::Mat leftPoints;
+			sl::Mat leftNormals;
 
-				Measures(Measures&) = delete;
-				auto operator=(Measures&) -> Measures& = delete;
+			Measures() = default;
 
-				Measures(Measures&&) noexcept;
-				auto operator=(Measures&&) noexcept -> Measures&;
-			};
+			Measures(Measures&) = delete;
+			auto operator=(Measures&) -> Measures& = delete;
 
-			// Params
-			int mSerialNumber{};
-			int mGrabTargetFps{};
-			int mDepthConfidence{};
-			int mTextureConfidence{};
+			Measures(Measures&&) noexcept;
+			auto operator=(Measures&&) noexcept -> Measures&;
+		};
 
-			bool mUseDepthStabilization{};
-			bool mDepthEnabled{};
-			bool mUseBuiltinPosTracking{};
-			bool mUsePoseSmoothing{};
-			bool mUseAreaMemory{};
+		// Params
+		int mSerialNumber{};
+		int mGrabTargetFps{};
+		int mDepthConfidence{};
+		int mTextureConfidence{};
 
-			double mDepthMaximumDistance{};
+		bool mUseDepthStabilization{};
+		bool mDepthEnabled{};
+		bool mUseBuiltinPosTracking{};
+		bool mUsePoseSmoothing{};
+		bool mUseAreaMemory{};
+
+		double mDepthMaximumDistance{};
 
 
-			// ZED
-			sl::Camera mZed;
-			sl::CameraInformation mZedInfo;
+		// ZED
+		sl::Camera mZed;
+		sl::CameraInformation mZedInfo;
 
-			Measures mGrabMeasures, mPcMeasures;
+		Measures mGrabMeasures, mPcMeasures;
 
-			sl::Resolution mImageResolution, mPointResolution, mNormalsResolution;
+		sl::Resolution mImageResolution, mPointResolution, mNormalsResolution;
 
-			// Publishers
-			rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr mRightImgPub;
+		std::string mSvoPath;
 
-			auto grabThread() -> void;
+		// Publishers
+		rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr mRightImgPub;
 
-			auto pointCloudUpdateThread() -> void;
+		// Thread
+		
+		std::thread mPointCloudThread, mGrabThread;
+		std::mutex mSwapMutex;
+		std::condition_variable mSwapCv;
+		bool mIsSwapReady = false;
 
-		public:
-			ZedWrapper();
+		auto grabThread() -> void;
+
+		auto pointCloudUpdateThread() -> void;
+
+	public:
+		ZedWrapper();
+
+		~ZedWrapper() override;
 	};
+
+	auto slTime2Ros(sl::Timestamp t) -> rclcpp::Time;
 };
