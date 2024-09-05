@@ -13,7 +13,7 @@ namespace mrover {
     }
 
 
-	ZedWrapper::ZedWrapper() : Node(NODE_NAME){
+	ZedWrapper::ZedWrapper() : Node(NODE_NAME) {
 		try{
 			RCLCPP_INFO(this->get_logger(), "Created Zed Wrapper Node, %s", NODE_NAME);
 
@@ -25,7 +25,7 @@ namespace mrover {
 			int imageWidth{};
 			int imageHeight{};
 
-			std::string svoFile{}, grabResolutionString{}, depthModeString{};
+			std::string grabResolutionString{}, depthModeString{};
 
 			std::vector<ParameterWrapper> params{
 				{"depth_confidence", mDepthConfidence},
@@ -34,7 +34,7 @@ namespace mrover {
 				{"texture_confidence", mTextureConfidence},
 				{"image_width", imageWidth},
 				{"image_height", imageHeight},
-				{"svo_file", svoFile},
+				{"svo_file", mSvoPath},
 				{"use_depth_stabilization", mUseDepthStabilization},
 				{"grab_resolution", grabResolutionString},
 				{"depth_mode", depthModeString},
@@ -47,7 +47,6 @@ namespace mrover {
 			RCLCPP_INFO(get_logger(), "Camera Resolution: %s", sl::toString(sl::DEPTH_MODE::PERFORMANCE).c_str());
 
 			ParameterWrapper::declareParameters(this, paramSub, params);
-
 
 			if (imageWidth < 0 || imageHeight < 0) {
 				throw std::invalid_argument("Invalid image dimensions");
@@ -66,8 +65,8 @@ namespace mrover {
 
 			sl::InitParameters initParameters;
 
-			if (svoFile.c_str()) {
-				initParameters.input.setFromSVOFile(svoFile.c_str());
+			if (mSvoPath.c_str()) {
+				initParameters.input.setFromSVOFile(mSvoPath.c_str());
 			} else {
 				if (mSerialNumber == -1) {
 					initParameters.input.setFromCameraID(-1, sl::BUS_TYPE::USB);
@@ -132,15 +131,66 @@ namespace mrover {
 			//     throw std::runtime_error("ZED failed to retrieve point cloud normals");
 			
 			assert(mGrabMeasures.leftImage.timestamp == mGrabMeasures.leftPoints.timestamp);
+
+			mGrabMeasures.time = mSvoPath.c_str() ? now() : slTime2Ros(mZed.getTimestamp(sl::TIME_REFERENCE::IMAGE));
+
+			// If the processing thread is busy skip
+			// We want this thread to run as fast as possible for grab and positional tracking
+			if (mSwapMutex.try_lock()) {
+				std::swap(mGrabMeasures, mPcMeasures);
+				mIsSwapReady = true;
+				mSwapMutex.unlock();
+				mSwapCv.notify_one();
+			}
+
+			// Positional tracking module publishing
+			if (mUseBuiltinPosTracking) {
+				sl::Pose pose;
+				sl::POSITIONAL_TRACKING_STATE status = mZed.getPosition(pose);
+				if (status == sl::POSITIONAL_TRACKING_STATE::OK) {
+					sl::Translation const& translation = pose.getTranslation();
+					sl::Orientation const& orientation = pose.getOrientation();
+					try {
+						SE3d leftCameraInOdom{{translation.x, translation.y, translation.z},
+											  Eigen::Quaterniond{orientation.w, orientation.x, orientation.y, orientation.z}.normalized()};
+						SE3d baseLinkToLeftCamera = SE3Conversions::fromTfTree(*mTfBuffer, "base_link", "zed_left_camera_frame");
+						SE3d baseLinkInOdom = leftCameraInOdom * baseLinkToLeftCamera;
+						SE3Conversions::pushToTfTree(*mTfBroadcaster, "base_link", "odom", baseLinkInOdom, now());
+					} catch (tf2::TransformException& e) {
+						RCLCPP_INFO_STREAM(get_logger(), "Failed to get transform: " << e.what());
+					}
+				} else {
+					RCLCPP_INFO_STREAM(get_logger(), "Positional tracking failed: " << status);
+				}
+			}
 		}
 	}
 
 	auto pointCloudUpdateThread() -> void{
 
 	}
+
+	ZedWrapper::~ZedWrapper() {
+        RCLCPP_INFO(get_logger(), "ZED node shutting down");
+        mPointCloudThread.join();
+        mGrabThread.join();
+    }
+
+    ZedWrapper::Measures::Measures(Measures&& other) noexcept {
+        *this = std::move(other);
+    }
+
+    auto ZedWrapper::Measures::operator=(Measures&& other) noexcept -> Measures& {
+        sl::Mat::swap(other.leftImage, leftImage);
+        sl::Mat::swap(other.rightImage, rightImage);
+        sl::Mat::swap(other.leftPoints, leftPoints);
+        sl::Mat::swap(other.leftNormals, leftNormals);
+        std::swap(time, other.time);
+        return *this;
+    }
 };
 
-int main(int argc, char * argv[])
+auto main(int argc, char * argv[]) -> int
 {
   rclcpp::init(argc, argv);
   rclcpp::spin(std::make_shared<mrover::ZedWrapper>());
