@@ -3,6 +3,9 @@
 #include "pch.hpp"
 
 namespace mrover {
+
+	using PointCloudGpu = thrust::device_vector<Point>;
+
 	class ZedWrapper : public rclcpp::Node{
 	private:
 		static constexpr char const* NODE_NAME = "zed_wrapper";
@@ -41,6 +44,8 @@ namespace mrover {
 
 		double mDepthMaximumDistance{};
 
+		// CUDA
+		PointCloudGpu mPointCloudGpu;
 
 		// ZED
 		sl::Camera mZed;
@@ -54,6 +59,10 @@ namespace mrover {
 
 		// Publishers
 		rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr mRightImgPub;
+		rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr mLeftImgPub;
+		rclcpp::Publisher<sensor_msgs::msg::Imu>::SharedPtr mImuPub;
+		rclcpp::Publisher<sensor_msgs::msg::MagneticField>::SharedPtr mMagPub;
+		rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr mPcPub;
 
 		// Thread
 		
@@ -73,4 +82,17 @@ namespace mrover {
 	};
 
 	auto slTime2Ros(sl::Timestamp t) -> rclcpp::Time;
+
+	auto fillImuMessage(rclcpp::Node* node, sl::SensorsData::IMUData& imuData, sensor_msgs::msg::Imu& msg) -> void;
+
+    auto fillMagMessage(sl::SensorsData::MagnetometerData const& magData, sensor_msgs::msg::MagneticField& msg) -> void;
+
+	auto checkCudaError(cudaError_t error) -> void;
+
+	void fillPointCloudMessageFromGpu(sl::Mat& xyzGpu, sl::Mat& bgraGpu, sl::Mat& normalsGpu, PointCloudGpu& pcGpu, sensor_msgs::msg::PointCloud2::UniquePtr const& msg);
+
+    auto fillCameraInfoMessages(sl::CalibrationParameters& calibration, sl::Resolution const& resolution,
+                                sensor_msgs::msg::CameraInfo::SharedPtr const& leftInfoMsg, sensor_msgs::msg::CameraInfo::SharedPtr const& rightInfoMsg) -> void;
+
+    auto fillImageMessage(sl::Mat const& bgra, sensor_msgs::msg::Image::UniquePtr const& msg) -> void;
 };
