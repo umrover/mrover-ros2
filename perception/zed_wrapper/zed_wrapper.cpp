@@ -1,5 +1,4 @@
 #include "zed_wrapper.hpp"
-#include <format>
 
 namespace mrover {
 	template<typename TEnum>
