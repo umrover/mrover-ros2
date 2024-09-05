@@ -2,7 +2,6 @@
 #include <string>
 #include <variant>
 #include <exception>
-#include <format>
 #include <rclcpp/rclcpp.hpp>
 
 // Overloads pattern for visit

@@ -7,6 +7,8 @@ pushd ../..
 
 export CC=clang-18
 export CXX=clang++-18
+export CUDAHOSTCXX=g++-9
+export CUDACXX=/usr/local/cuda-12.3/bin/nvcc
 
 
 # TODO (ali): add build configs for debug vs release
