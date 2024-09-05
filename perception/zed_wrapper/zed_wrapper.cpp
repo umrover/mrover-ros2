@@ -23,6 +23,8 @@ namespace mrover {
 			mImuPub = create_publisher<sensor_msgs::msg::Imu>("zed_imu/data_raw", 1);
 			mMagPub = create_publisher<sensor_msgs::msg::MagneticField>("zed_imu/mag", 1);
 			mPcPub = create_publisher<sensor_msgs::msg::PointCloud2>("camera/left/points", 1);
+			mRightCamInfoPub = create_publisher<sensor_msgs::msg::CameraInfo>("camera/right/camera_info", 1);
+			mLeftCamInfoPub = create_publisher<sensor_msgs::msg::CameraInfo>("camera/left/camera_info", 1);
 
 			// Declare and set Params
 			auto paramSub = std::make_shared<rclcpp::ParameterEventHandler>(this);
@@ -212,7 +214,6 @@ namespace mrover {
 
 				// TODO(quintin): May be bad to allocate every update, best case optimized by tcache
                 // Needed because publish directly shares the pointer to other nodelets running in this process
-                //auto pointCloudMsg = boost::make_shared<sensor_msgs::msg::PointCloud2>();
 				auto pointCloudMsg = std::make_unique<sensor_msgs::msg::PointCloud2>();
 
 				// Swap critical section
@@ -246,19 +247,16 @@ namespace mrover {
                     mPcPub->publish(std::move(pointCloudMsg));
                 }
 
-                if (mLeftCamInfoPub.getNumSubscribers() || mRightCamInfoPub.getNumSubscribers()) {
-                    sl::CalibrationParameters calibration = mZedInfo.camera_configuration.calibration_parameters;
-                    auto leftCamInfoMsg = boost::make_shared<sensor_msgs::CameraInfo>();
-                    auto rightCamInfoMsg = boost::make_shared<sensor_msgs::CameraInfo>();
-                    fillCameraInfoMessages(calibration, mImageResolution, leftCamInfoMsg, rightCamInfoMsg);
-                    leftCamInfoMsg->header.frame_id = "zed_left_camera_optical_frame";
-                    leftCamInfoMsg->header.stamp = mPcMeasures.time;
-                    rightCamInfoMsg->header.frame_id = "zed_right_camera_optical_frame";
-                    rightCamInfoMsg->header.stamp = mPcMeasures.time;
-                    mLeftCamInfoPub.publish(leftCamInfoMsg);
-                    mRightCamInfoPub.publish(rightCamInfoMsg);
-                    mPcThreadProfiler.measureEvent("Image + camera info publish");
-                }
+				sl::CalibrationParameters calibration = mZedInfo.camera_configuration.calibration_parameters;
+				auto leftCamInfoMsg = sensor_msgs::msg::CameraInfo();
+				auto rightCamInfoMsg = sensor_msgs::msg::CameraInfo();
+				fillCameraInfoMessages(calibration, mImageResolution, leftCamInfoMsg, rightCamInfoMsg);
+				leftCamInfoMsg.header.frame_id = "zed_left_camera_optical_frame";
+				leftCamInfoMsg.header.stamp = mPcMeasures.time;
+				rightCamInfoMsg.header.frame_id = "zed_right_camera_optical_frame";
+				rightCamInfoMsg.header.stamp = mPcMeasures.time;
+				mLeftCamInfoPub->publish(leftCamInfoMsg);
+				mRightCamInfoPub->publish(rightCamInfoMsg);
 			}
 
 			RCLCPP_INFO(get_logger(), "Tag thread finished");

@@ -63,6 +63,8 @@ namespace mrover {
 		rclcpp::Publisher<sensor_msgs::msg::Imu>::SharedPtr mImuPub;
 		rclcpp::Publisher<sensor_msgs::msg::MagneticField>::SharedPtr mMagPub;
 		rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr mPcPub;
+		rclcpp::Publisher<sensor_msgs::msg::CameraInfo>::SharedPtr mLeftCamInfoPub;
+		rclcpp::Publisher<sensor_msgs::msg::CameraInfo>::SharedPtr mRightCamInfoPub;
 
 		// Thread
 		
@@ -92,7 +94,7 @@ namespace mrover {
 	void fillPointCloudMessageFromGpu(sl::Mat& xyzGpu, sl::Mat& bgraGpu, sl::Mat& normalsGpu, PointCloudGpu& pcGpu, sensor_msgs::msg::PointCloud2::UniquePtr const& msg);
 
     auto fillCameraInfoMessages(sl::CalibrationParameters& calibration, sl::Resolution const& resolution,
-                                sensor_msgs::msg::CameraInfo::SharedPtr const& leftInfoMsg, sensor_msgs::msg::CameraInfo::SharedPtr const& rightInfoMsg) -> void;
+                                sensor_msgs::msg::CameraInfo& leftInfoMsg, sensor_msgs::msg::CameraInfo& rightInfoMsg) -> void;
 
     auto fillImageMessage(sl::Mat const& bgra, sensor_msgs::msg::Image::UniquePtr const& msg) -> void;
 };
