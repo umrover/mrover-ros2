@@ -98,22 +98,18 @@ namespace mrover {
 
 			mDepthEnabled = initParameters.depth_mode != sl::DEPTH_MODE::NONE;
 
-			RCLCPP_INFO_STREAM(get_logger(), "bruh 1");
 			if (mZed.open(initParameters) != sl::ERROR_CODE::SUCCESS) {
 				throw std::runtime_error("ZED failed to open");
 			}
-			RCLCPP_INFO_STREAM(get_logger(), "bruh 1");
 
 			mZedInfo = mZed.getCameraInformation();
 
-			RCLCPP_INFO_STREAM(get_logger(), "bruh 1");
 			if (mUseBuiltinPosTracking) {
 				sl::PositionalTrackingParameters positionalTrackingParameters;
 				positionalTrackingParameters.enable_pose_smoothing = mUsePoseSmoothing;
 				positionalTrackingParameters.enable_area_memory = mUseAreaMemory;
 				mZed.enablePositionalTracking(positionalTrackingParameters);
 			}
-			RCLCPP_INFO_STREAM(get_logger(), "bruh 1");
 
 			cudaDeviceProp prop{};
 			cudaGetDeviceProperties(&prop, 0);
