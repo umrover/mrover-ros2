@@ -33,7 +33,9 @@ namespace mrover {
 			int imageWidth{};
 			int imageHeight{};
 
-			std::string grabResolutionString{}, depthModeString{};
+			std::string svoFile{};
+
+			std::string grabResolutionString, depthModeString;
 
 			std::vector<ParameterWrapper> params{
 				{"depth_confidence", mDepthConfidence},
@@ -42,7 +44,7 @@ namespace mrover {
 				{"texture_confidence", mTextureConfidence},
 				{"image_width", imageWidth},
 				{"image_height", imageHeight},
-				{"svo_file", mSvoPath},
+				{"svo_file", svoFile},
 				{"use_depth_stabilization", mUseDepthStabilization},
 				{"grab_resolution", grabResolutionString},
 				{"depth_mode", depthModeString},
@@ -53,6 +55,8 @@ namespace mrover {
 			};
 
 			ParameterWrapper::declareParameters(this, paramSub, params);
+
+			mSvoPath = svoFile.c_str();
 
 			if (imageWidth < 0 || imageHeight < 0) {
 				throw std::invalid_argument("Invalid image dimensions");
@@ -71,8 +75,8 @@ namespace mrover {
 
 			sl::InitParameters initParameters;
 
-			if (mSvoPath.c_str()) {
-				initParameters.input.setFromSVOFile(mSvoPath.c_str());
+			if (mSvoPath) {
+				initParameters.input.setFromSVOFile(mSvoPath);
 			} else {
 				if (mSerialNumber == -1) {
 					initParameters.input.setFromCameraID(-1, sl::BUS_TYPE::USB);
@@ -80,6 +84,8 @@ namespace mrover {
 					initParameters.input.setFromSerialNumber(mSerialNumber, sl::BUS_TYPE::USB);
 				}
 			}
+
+			RCLCPP_INFO_STREAM(get_logger(), grabResolutionString);
 
 			initParameters.depth_stabilization = mUseDepthStabilization;
 			initParameters.camera_resolution = stringToZedEnum<sl::RESOLUTION>(grabResolutionString);
@@ -89,26 +95,34 @@ namespace mrover {
 			initParameters.camera_fps = mGrabTargetFps;
 			initParameters.coordinate_system = sl::COORDINATE_SYSTEM::RIGHT_HANDED_Z_UP_X_FWD; // Match ROS
 			initParameters.depth_maximum_distance = static_cast<float>(mDepthMaximumDistance);
+			RCLCPP_INFO_STREAM(get_logger(), depthModeString);
 
 			mDepthEnabled = initParameters.depth_mode != sl::DEPTH_MODE::NONE;
 
+			RCLCPP_INFO_STREAM(get_logger(), "bruh 1");
 			if (mZed.open(initParameters) != sl::ERROR_CODE::SUCCESS) {
 				throw std::runtime_error("ZED failed to open");
 			}
+			RCLCPP_INFO_STREAM(get_logger(), "bruh 1");
 
 			mZedInfo = mZed.getCameraInformation();
 
+			RCLCPP_INFO_STREAM(get_logger(), "bruh 1");
 			if (mUseBuiltinPosTracking) {
 				sl::PositionalTrackingParameters positionalTrackingParameters;
 				positionalTrackingParameters.enable_pose_smoothing = mUsePoseSmoothing;
 				positionalTrackingParameters.enable_area_memory = mUseAreaMemory;
 				mZed.enablePositionalTracking(positionalTrackingParameters);
 			}
+			RCLCPP_INFO_STREAM(get_logger(), "bruh 1");
 
 			cudaDeviceProp prop{};
 			cudaGetDeviceProperties(&prop, 0);
 			RCLCPP_INFO_STREAM(get_logger(), std::format("MP count: {}, Max threads/MP: {}, Max blocks/MP: {}, max threads/block: {}",
                                             prop.multiProcessorCount, prop.maxThreadsPerMultiProcessor, prop.maxBlocksPerMultiProcessor, prop.maxThreadsPerBlock));
+
+			mGrabThread = std::thread(&ZedWrapper::grabThread, this);
+            mPointCloudThread = std::thread(&ZedWrapper::pointCloudUpdateThread, this);
 		}catch (std::exception const& e) {
             RCLCPP_FATAL_STREAM(get_logger(), std::format("Exception while starting: {}", e.what()));
             rclcpp::shutdown();
