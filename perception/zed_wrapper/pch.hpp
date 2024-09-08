@@ -30,3 +30,4 @@
 #include "parameter.hpp"
 #include "lie.hpp"
 #include "point.hpp"
+#include "loop_profiler.hpp"
