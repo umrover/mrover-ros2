@@ -100,13 +100,13 @@ namespace mrover {
             // Instead add to ROS's global callback queue which I think will be served by the main thread
             if (!mIsHeadless) {
 #ifdef __APPLE__
-                struct PollGlfw : ros::CallbackInterface {
-                    auto call() -> CallResult override {
-                        glfwPollEvents();
-                        return Success;
-                    }
-                };
-                ros::getGlobalCallbackQueue()->addCallback(boost::make_shared<PollGlfw>());
+                // struct PollGlfw : ros::CallbackInterface {
+                //     auto call() -> CallResult override {
+                //         glfwPollEvents();
+                //         return Success;
+                //     }
+                // };
+                // ros::getGlobalCallbackQueue()->addCallback(std::make_shared<PollGlfw>());
 #else
                 glfwPollEvents();
 #endif
