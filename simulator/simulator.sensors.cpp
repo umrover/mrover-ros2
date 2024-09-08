@@ -183,49 +183,49 @@ namespace mrover {
             }
 
             // TODO(quintin): I removed IMU, you may want to add it back
-            // for (Imu imu: mImus) {
-            //     if (!imu.updateTask.shouldUpdate()) continue;
-            //
-            //     auto dtS = std::chrono::duration_cast<std::chrono::duration<double>>(dt).count();
-            //     R3d roverAngularVelocity = btVector3ToR3(rover.physics->getBaseOmega());
-            //     R3d roverLinearVelocity = btVector3ToR3(rover.physics->getBaseVel());
-            //     R3d roverLinearAcceleration = (roverLinearVelocity - mRoverLinearVelocity) / dtS;
-            //     mRoverLinearVelocity = roverLinearVelocity;
-            //     SO3d imuInMap = btTransformToSe3(imu.link->m_cachedWorldTransform).asSO3();
-            //     R3d roverMagVector = imuInMap.inverse().rotation().col(1);
-            //
-            //     R3d
-            //             accelNoise{mAccelDist(mRNG), mAccelDist(mRNG), mAccelDist(mRNG)},
-            //             gyroNoise{mGyroDist(mRNG), mGyroDist(mRNG), mGyroDist(mRNG)},
-            //             magNoise{mMagDist(mRNG), mMagDist(mRNG), mMagDist(mRNG)};
-            //     roverLinearAcceleration += accelNoise;
-            //     roverAngularVelocity += gyroNoise;
-            //     roverMagVector += magNoise;
-            //
-            //     imu.pub.publish(computeImu(imuInMap, roverAngularVelocity, roverLinearAcceleration));
-            //
-            //     constexpr double SEC_TO_MIN = 1.0 / 60.0;
-            //     mOrientationDrift += mOrientationDriftRate * SEC_TO_MIN * dtS;
-            //     SO3d::Tangent orientationNoise;
-            //     orientationNoise << mRollDist(mRNG), mPitchDist(mRNG), mYawDist(mRNG);
-            //     imuInMap += orientationNoise + mOrientationDrift;
-            //
-            //     imu.uncalibPub.publish(computeImu(imuInMap, roverAngularVelocity, roverLinearAcceleration));
-            //
-            //     CalibrationStatus calibrationStatus;
-            //     calibrationStatus.header.stamp = ros::Time::now();
-            //     calibrationStatus.header.frame_id = "base_link";
-            //     calibrationStatus.magnetometer_calibration = 3;
-            //     imu.calibStatusPub.publish(calibrationStatus);
-            //
-            //     sensor_msgs::MagneticField field;
-            //     field.header.stamp = ros::Time::now();
-            //     field.header.frame_id = "base_link";
-            //     field.magnetic_field.x = roverMagVector.x();
-            //     field.magnetic_field.y = roverMagVector.y();
-            //     field.magnetic_field.z = roverMagVector.z();
-            //     imu.magPub.publish(field);
-            // }
+            for (Imu& imu: mImus) {
+                if (!imu.updateTask.shouldUpdate()) continue;
+            
+                auto dtS = std::chrono::duration_cast<std::chrono::duration<double>>(dt).count();
+                R3d roverAngularVelocity = btVector3ToR3(rover.physics->getBaseOmega());
+                R3d roverLinearVelocity = btVector3ToR3(rover.physics->getBaseVel());
+                R3d roverLinearAcceleration = (roverLinearVelocity - mRoverLinearVelocity) / dtS;
+                mRoverLinearVelocity = roverLinearVelocity;
+                SO3d imuInMap = btTransformToSe3(imu.link->m_cachedWorldTransform).asSO3();
+                R3d roverMagVector = imuInMap.inverse().rotation().col(1);
+            
+                R3d
+                        accelNoise{mAccelDist(mRNG), mAccelDist(mRNG), mAccelDist(mRNG)},
+                        gyroNoise{mGyroDist(mRNG), mGyroDist(mRNG), mGyroDist(mRNG)},
+                        magNoise{mMagDist(mRNG), mMagDist(mRNG), mMagDist(mRNG)};
+                roverLinearAcceleration += accelNoise;
+                roverAngularVelocity += gyroNoise;
+                roverMagVector += magNoise;
+            
+                imu.imuPub->publish(computeImu(imuInMap, roverAngularVelocity, roverLinearAcceleration));
+            
+                constexpr double SEC_TO_MIN = 1.0 / 60.0;
+                mOrientationDrift += mOrientationDriftRate * SEC_TO_MIN * dtS;
+                SO3d::Tangent orientationNoise;
+                orientationNoise << mRollDist(mRNG), mPitchDist(mRNG), mYawDist(mRNG);
+                imuInMap += orientationNoise + mOrientationDrift;
+            
+                imu.uncalibPub->publish(computeImu(imuInMap, roverAngularVelocity, roverLinearAcceleration));
+            
+                msg::CalibrationStatus calibrationStatus;
+                calibrationStatus.header.stamp = get_clock()->now();
+                calibrationStatus.header.frame_id = "base_link";
+                calibrationStatus.magnetometer_calibration = 3;
+                imu.calibStatusPub->publish(calibrationStatus);
+            
+                sensor_msgs::msg::MagneticField field;
+                field.header.stamp = get_clock()->now();
+                field.header.frame_id = "base_link";
+                field.magnetic_field.x = roverMagVector.x();
+                field.magnetic_field.y = roverMagVector.y();
+                field.magnetic_field.z = roverMagVector.z();
+                imu.magPub->publish(field);
+            }
         }
     }
 

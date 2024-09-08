@@ -176,9 +176,12 @@ namespace mrover {
     };
 
     // TODO(quintin): I removed IMU, you may want to add it back
-    // struct Imu : SensorBase {
-    //     ros::Publisher magPub, uncalibPub, calibStatusPub;
-    // };
+    struct Imu : SensorBase {
+        rclcpp::Publisher<sensor_msgs::msg::MagneticField>::SharedPtr magPub;
+        rclcpp::Publisher<sensor_msgs::msg::Imu>::SharedPtr uncalibPub, imuPub;
+        rclcpp::Publisher<mrover::msg::CalibrationStatus>::SharedPtr calibStatusPub;
+        // ros::Publisher<sensor_msgs::msg::MagneticField> magPub, uncalibPub, calibStatusPub;
+    };
 
     struct Gps : SensorBase {
         rclcpp::Publisher<sensor_msgs::msg::NavSatFix>::SharedPtr fixPub;
@@ -343,7 +346,7 @@ namespace mrover {
 
         std::vector<StereoCamera> mStereoCameras;
         std::vector<Camera> mCameras;
-        // std::vector<Imu> mImus;
+        std::vector<Imu> mImus;
         std::vector<Gps> mGps;
         std::vector<MotorGroup> mMotorGroups;
 
