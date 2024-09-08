@@ -14,7 +14,7 @@ using namespace nvinfer1;
 constexpr static auto INPUT_BINDING_NAME = "images";
 constexpr static auto OUTPUT_BINDING_NAME = "output0";
 
-Inference::Inference(std::filesystem::path const& onnxModelPath, std::string const& modelName) {
+Inference::Inference(std::filesystem::path const& onnxModelPath, std::string const& modelName, std::string packagePathString) : mPackagePath{std::move(packagePathString)} {
     mModelPath = onnxModelPath.string();
 
     // Create the engine object from either the file or from onnx file
@@ -59,12 +59,11 @@ auto Inference::createCudaEngine(std::filesystem::path const& onnxModelPath, std
     IRuntime* runtime = createInferRuntime(mLogger);
 
     // Define the engine file location relative to the mrover package
-    std::filesystem::path packagePath = ros::package::getPath("mrover");
+    std::filesystem::path packagePath{mPackagePath};
     std::filesystem::path enginePath = packagePath / "data" / std::string("tensorrt-engine-").append(modelName).append(".engine");
-    ROS_INFO_STREAM(enginePath);
     // Check if engine file exists
     if (!exists(enginePath)) {
-        ROS_WARN_STREAM("Optimizing ONXX model for TensorRT. This make take a long time...");
+		std::cout << "Optimizing ONXX model for TensorRT. This make take a long time..." << std::endl;
 
         // Create the Engine from onnx file
         IHostMemory* serializedEngine = builder->buildSerializedNetwork(*network, *config);

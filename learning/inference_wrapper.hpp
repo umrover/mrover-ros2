@@ -12,7 +12,7 @@ public:
 
     ~InferenceWrapper() = default;
 
-    explicit InferenceWrapper(std::string const& onnxModelPath, std::string const& modelName);
+    explicit InferenceWrapper(std::string onnxModelPath, std::string const& modelName, std::string const& packagePath);
 
     auto doDetections(cv::Mat const& img) const -> void;
 
