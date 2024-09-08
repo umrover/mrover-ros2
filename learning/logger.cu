@@ -5,19 +5,19 @@ namespace nvinfer1 {
     auto Logger::log(Severity severity, char const* msg) noexcept -> void {
         switch (severity) {
             case Severity::kINTERNAL_ERROR:
-                ROS_FATAL_STREAM(msg);
+				std::cout << "[FATAL] " << msg << "\n";
                 break;
             case Severity::kERROR:
-                ROS_ERROR_STREAM(msg);
+				std::cout << "[ERROR] " << msg << "\n";
                 break;
             case Severity::kWARNING:
-                ROS_WARN_STREAM(msg);
+				std::cout << "[WARN] " << msg << "\n";
                 break;
             case Severity::kINFO:
-                ROS_INFO_STREAM(msg);
+				std::cout << "[INFO] " << msg << "\n";
                 break;
             case Severity::kVERBOSE:
-                ROS_DEBUG_STREAM(msg);
+				std::cout << "[VERBOSE] " << msg << "\n";
                 break;
         }
     }
