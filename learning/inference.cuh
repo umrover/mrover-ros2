@@ -12,6 +12,7 @@ using nvinfer1::IExecutionContext;
 
 class Inference {
     std::string mModelPath;
+	std::string mPackagePath;
 
     nvinfer1::Logger mLogger;
 
@@ -60,7 +61,7 @@ class Inference {
     auto createExecutionContext() -> void;
 
 public:
-    explicit Inference(std::filesystem::path const& onnxModelPath, std::string const& modelName);
+    explicit Inference(std::filesystem::path const& onnxModelPath, std::string const& modelName, std::string packagePathString);
 
     /**
      * @brief Runs the forward pass on the given input image in CNN format

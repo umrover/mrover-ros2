@@ -8,6 +8,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <iostream>
 
 #include <opencv2/core.hpp>
 #include <opencv2/dnn.hpp>

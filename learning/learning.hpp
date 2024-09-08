@@ -24,7 +24,7 @@ class Learning {
 public:
     Learning();
 
-    explicit Learning(std::string& modelName, std::string& dataPath);
+    explicit Learning(std::string& modelName, std::string& packagePathString);
 
     ~Learning();
 
