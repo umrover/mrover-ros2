@@ -2,42 +2,33 @@
 
 namespace mrover {
 
-    auto ObjectDetectorNodeletBase::onInit() -> void {
-        mNh = getMTNodeHandle();
-        mPnh = getMTPrivateNodeHandle();
+    ObjectDetectorNodeletBase::ObjectDetectorNodeletBase() : rclcpp::Node(NODE_NAME), mLoopProfiler{get_logger()}{
 
-        mNh.param<std::string>("camera_frame", mCameraFrame, "zed_left_camera_frame");
-        mNh.param<std::string>("world_frame", mWorldFrame, "map");
+		auto paramSub = std::make_shared<rclcpp::ParameterEventHandler>(this);
 
-        mPnh.param<int>("increment_weight", mObjIncrementWeight, 2);
-        mPnh.param<int>("decrement_weight", mObjDecrementWeight, 1);
-        mPnh.param<int>("hitcount_threshold", mObjHitThreshold, 5);
-        mPnh.param<int>("hitcount_max", mObjMaxHitcount, 10);
-        mPnh.param<std::string>("model_name", mModelName, "yolov8s_mallet_bottle");
-        mPnh.param<float>("model_score_threshold", mModelScoreThreshold, 0.75);
-        mPnh.param<float>("model_nms_threshold", mModelNmsThreshold, 0.5);
+		std::vector<ParameterWrapper> params{
+			{"camera_frame", mCameraFrame},
+			{"world_frame", mWorldFrame},
+			{"increment_weight", mObjIncrementWeight},
+			{"decrement_weight", mObjDecrementWeight},
+			{"hitcount_threshold", mObjHitThreshold},
+			{"hitcount_max", mObjMaxHitcount},
+			{"model_name", mModelName},
+			{"model_score_threshold", mModelScoreThreshold},
+			{"model_nms_threshold", mModelNmsThreshold}
+		};
 
-        mLearning = Learning{mModelName};
+		ParameterWrapper::declareParameters(this, paramSub, params);
 
-        mDebugImagePub = mNh.advertise<sensor_msgs::Image>("object_detection", 1);
+		std::string packagePath{"/home/john/ros2_ws/src/mrover"};
+        mLearning = Learning{mModelName, packagePath};
 
-        ROS_INFO_STREAM(std::format("Object detector initialized with model: {} and thresholds: {} and {}", mModelName, mModelScoreThreshold, mModelNmsThreshold));
+        mDebugImgPub = create_publisher<sensor_msgs::msg::Image>("object_detector/debug_img", 1);
+
+        RCLCPP_INFO_STREAM(get_logger(), std::format("Object detector initialized with model: {} and thresholds: {} and {}", mModelName, mModelScoreThreshold, mModelNmsThreshold));
     }
 
-    auto StereoObjectDetectorNodelet::onInit() -> void {
-        ObjectDetectorNodeletBase::onInit();
-
-        mSensorSub = mNh.subscribe("/camera/left/points", 1, &StereoObjectDetectorNodelet::pointCloudCallback, this);
+	StereoObjectDetectorNodelet::StereoObjectDetectorNodelet(){
+        mSensorSub = create_subscription<sensor_msgs::msg::PointCloud2>("/camera/left/points", 1, &StereoObjectDetectorNodelet::pointCloudCallback);
     }
-
-    auto ImageObjectDetectorNodelet::onInit() -> void {
-        ObjectDetectorNodeletBase::onInit();
-
-        mPnh.param<float>("long_range_camera/fov", mCameraHorizontalFov, 80.0);
-
-        mSensorSub = mNh.subscribe("long_range_camera/image", 1, &ImageObjectDetectorNodelet::imageCallback, this);
-
-        mTargetsPub = mNh.advertise<ImageTargets>("objects", 1);
-    }
-
 } // namespace mrover

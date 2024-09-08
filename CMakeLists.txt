@@ -187,9 +187,7 @@ find_package(OpenCV REQUIRED)
 if(ZED_FOUND AND CUDA_FOUND)
 	# ZED Wrapper
 	mrover_add_node(zed perception/zed_wrapper/*.c* perception/zed_wrapper/pch.hpp)
-	target_compile_options(zed PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:
-							--allow-unsupported-compiler
-                       >)
+	target_compile_options(zed PRIVATE $<$<COMPILE_LANGUAGE:CUDA>: --allow-unsupported-compiler>)
 	target_link_libraries(zed parameter_utils lie MANIF::manif ${CUDA_LIBRARIES} loop_profiler)
 	ament_target_dependencies(zed rclcpp sensor_msgs ZED CUDA tf2 tf2_ros)
 
@@ -199,6 +197,11 @@ if(ZED_FOUND AND CUDA_FOUND)
     target_compile_options(_learning PRIVATE -Wno-deprecated-declarations -std=c++17)
 	target_include_directories(_learning PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
 	target_link_libraries(_learning PRIVATE opencv_core opencv_dnn opencv_imgproc lie nvinfer nvonnxparser tbb)
+
+	# Object Detector
+	mrover_add_node(object_detector perception/object_detector/*.c* src/perception/object_detector/pch.hpp)
+    target_link_libraries(object_detector opencv_core opencv_dnn opencv_imgproc lie tbb _learning opencv_imgcodecs opencv_highgui loop_profiler parameter_utils)
+	ament_target_dependencies(object_detector rclcpp sensor_msgs CUDA tf2 tf2_ros)
 else()
 	message("ZED not found...")
 endif()

@@ -2,7 +2,7 @@
 
 namespace mrover {
 
-    auto StereoObjectDetectorNodelet::pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const& msg) -> void {
+    auto StereoObjectDetectorNodelet::pointCloudCallback(sensor_msgs::msg::PointCloud2::UniquePtr const& msg) -> void {
         assert(msg);
         assert(msg->height > 0);
         assert(msg->width > 0);
@@ -11,7 +11,7 @@ namespace mrover {
 
         // Adjust the picture size to be in line with the expected img size from the Point Cloud
         if (static_cast<int>(msg->height) != mRgbImage.rows || static_cast<int>(msg->width) != mRgbImage.cols) {
-            NODELET_INFO_STREAM(std::format("Image size changed from [{}, {}] to [{}, {}]", mRgbImage.cols, mRgbImage.rows, msg->width, msg->height));
+            RCLCPP_INFO_STREAM(get_logger(), std::format("Image size changed from [{}, {}] to [{}, {}]", mRgbImage.cols, mRgbImage.rows, msg->width, msg->height));
             mRgbImage = cv::Mat{static_cast<int>(msg->height), static_cast<int>(msg->width), CV_8UC3, cv::Scalar{0, 0, 0, 0}};
         }
         convertPointCloudToRGB(msg, mRgbImage);
@@ -41,48 +41,7 @@ namespace mrover {
         mLoopProfiler.measureEvent("Publication");
     }
 
-    // TODO(quintin): Remove code duplication here
-
-    auto ImageObjectDetectorNodelet::imageCallback(sensor_msgs::ImageConstPtr const& msg) -> void {
-        assert(msg);
-        assert(msg->height > 0);
-        assert(msg->width > 0);
-        assert(msg->encoding == sensor_msgs::image_encodings::BGRA8);
-
-        mLoopProfiler.beginLoop();
-
-        cv::Mat bgraImage{static_cast<int>(msg->height), static_cast<int>(msg->width), CV_8UC4, const_cast<uint8_t*>(msg->data.data())};
-        cv::cvtColor(bgraImage, mRgbImage, cv::COLOR_BGRA2RGB);
-
-        cv::Size blobSize{640, 640};
-        cv::Mat blobSizedImage;
-        cv::resize(mRgbImage, blobSizedImage, blobSize);
-
-        cv::dnn::blobFromImage(blobSizedImage, mImageBlob, 1.0 / 255.0, blobSize, cv::Scalar{}, false, false);
-
-        mLoopProfiler.measureEvent("Conversion");
-
-        std::vector<Detection> detections{};
-        mLearning.modelForwardPass(mImageBlob, detections, mModelScoreThreshold, mModelNmsThreshold);
-
-        mLoopProfiler.measureEvent("Execution");
-
-        ImageTargets targets;
-        for (auto const& [classId, className, confidence, box]: detections) {
-            ImageTarget target;
-            target.name = className;
-            target.bearing = getTagBearing(blobSizedImage, box);
-            targets.targets.push_back(target);
-        }
-        mTargetsPub.publish(targets);
-
-        drawDetectionBoxes(blobSizedImage, detections);
-        publishDetectedObjects(blobSizedImage);
-
-        mLoopProfiler.measureEvent("Publication");
-    }
-
-    auto ObjectDetectorNodeletBase::updateHitsObject(sensor_msgs::PointCloud2ConstPtr const& msg, std::span<Detection const> detections, cv::Size const& imageSize) -> void {
+    auto ObjectDetectorNodeletBase::updateHitsObject(sensor_msgs::msg::PointCloud2::UniquePtr const& msg, std::span<Detection const> detections, cv::Size const& imageSize) -> void {
         // Set of flags indicating if the given object has been seen
         // TODO(quintin): Do not hard code exactly two classes
         std::bitset<2> seenObjects{0b00};
@@ -105,7 +64,7 @@ namespace mrover {
                 try {
                     std::string objectImmediateFrame = std::format("immediate{}", className);
                     // Push the immediate detections to the camera frame
-                    SE3Conversions::pushToTfTree(mTfBroadcaster, objectImmediateFrame, mCameraFrame, objectInCamera.value());
+                    SE3Conversions::pushToTfTree(*mTfBroadcaster, objectImmediateFrame, mCameraFrame, objectInCamera.value(), get_clock()->now());
                     // Since the object is seen we need to increment the hit counter
                     mObjectHitCounts[classId] = std::min(mObjMaxHitcount, mObjectHitCounts[classId] + mObjIncrementWeight);
 
@@ -113,16 +72,16 @@ namespace mrover {
                     if (mObjectHitCounts[classId] > mObjHitThreshold) {
                         std::string objectPermanentFrame = className;
                         // Grab the object inside of the camera frame and push it into the map frame
-                        SE3d objectInMap = SE3Conversions::fromTfTree(mTfBuffer, objectImmediateFrame, mWorldFrame);
-                        SE3Conversions::pushToTfTree(mTfBroadcaster, objectPermanentFrame, mWorldFrame, objectInMap);
+                        SE3d objectInMap = SE3Conversions::fromTfTree(*mTfBuffer, objectImmediateFrame, mWorldFrame);
+                        SE3Conversions::pushToTfTree(*mTfBroadcaster, objectPermanentFrame, mWorldFrame, objectInMap, get_clock()->now());
                     }
 
                 } catch (tf2::ExtrapolationException const&) {
-                    NODELET_WARN("Old data for immediate tag");
+                    RCLCPP_INFO_STREAM(get_logger(), "Old data for immediate tag");
                 } catch (tf2::LookupException const&) {
-                    NODELET_WARN("Expected transform for immediate tag");
-                } catch (tf::ConnectivityException const&) {
-                    NODELET_WARN("Expected connection to odom frame. Is visual odometry running?");
+                    RCLCPP_INFO_STREAM(get_logger(), "Expected transform for immediate tag");
+                } catch (tf2::ConnectivityException const&) {
+                    RCLCPP_INFO_STREAM(get_logger(), "Expected connection to odom frame. Is visual odometry running?");
                 }
             }
         }
@@ -135,15 +94,7 @@ namespace mrover {
         }
     }
 
-    auto ImageObjectDetectorNodelet::getTagBearing(cv::InputArray image, cv::Rect const& box) const -> float {
-        cv::Point2f center = cv::Point2f{box.tl()} + cv::Point2f{box.size()} / 2;
-        float xNormalized = center.x / static_cast<float>(image.cols());
-        float xRecentered = 0.5f - xNormalized;
-        float bearingDegrees = xRecentered * mCameraHorizontalFov;
-        return bearingDegrees * std::numbers::pi_v<float> / 180.0f;
-    }
-
-    auto ObjectDetectorNodeletBase::spiralSearchForValidPoint(sensor_msgs::PointCloud2ConstPtr const& cloudPtr, std::size_t u, std::size_t v, std::size_t width, std::size_t height) const -> std::optional<SE3d> {
+    auto ObjectDetectorNodeletBase::spiralSearchForValidPoint(sensor_msgs::msg::PointCloud2::UniquePtr const& cloudPtr, std::size_t u, std::size_t v, std::size_t width, std::size_t height) const -> std::optional<SE3d> {
         // See: https://stackoverflow.com/a/398302
         auto xc = static_cast<int>(u), yc = static_cast<int>(v);
         auto sw = static_cast<int>(width), sh = static_cast<int>(height);
@@ -157,7 +108,7 @@ namespace mrover {
                 int ix = xc + sx, iy = yc + sy; // Image coordinates
 
                 if (ix < 0 || ix >= iw || iy < 0 || iy >= ih) {
-                    NODELET_WARN_STREAM(std::format("Spiral query is outside the image: [{}, {}]", ix, iy));
+                    RCLCPP_INFO_STREAM(get_logger(), std::format("Spiral query is outside the image: [{}, {}]", ix, iy));
                     continue;
                 }
 
@@ -195,22 +146,20 @@ namespace mrover {
     }
 
     auto ObjectDetectorNodeletBase::publishDetectedObjects(cv::InputArray image) -> void {
-        if (!mDebugImagePub.getNumSubscribers()) return;
-
-        mDetectionsImageMessage.header.stamp = ros::Time::now();
+        mDetectionsImageMessage.header.stamp = get_clock()->now();
         mDetectionsImageMessage.height = image.rows();
         mDetectionsImageMessage.width = image.cols();
-        mDetectionsImageMessage.encoding = sensor_msgs::image_encodings::BGRA8;
+		mDetectionsImageMessage.encoding = sensor_msgs::image_encodings::BGRA8;
         mDetectionsImageMessage.is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
         mDetectionsImageMessage.step = 4 * mDetectionsImageMessage.width;
         mDetectionsImageMessage.data.resize(mDetectionsImageMessage.step * mDetectionsImageMessage.height);
         cv::Mat debugImageWrapper{image.size(), CV_8UC4, mDetectionsImageMessage.data.data()};
         cv::cvtColor(image, debugImageWrapper, cv::COLOR_RGB2BGRA);
 
-        mDebugImagePub.publish(mDetectionsImageMessage);
+        mDebugImgPub->publish(mDetectionsImageMessage);
     }
 
-    auto StereoObjectDetectorNodelet::convertPointCloudToRGB(sensor_msgs::PointCloud2ConstPtr const& msg, cv::Mat const& image) -> void {
+    auto StereoObjectDetectorNodelet::convertPointCloudToRGB(sensor_msgs::msg::PointCloud2::UniquePtr const& msg, cv::Mat const& image) -> void {
         auto* pixelPtr = reinterpret_cast<cv::Vec3b*>(image.data);
         auto* pointPtr = reinterpret_cast<Point const*>(msg->data.data());
         std::for_each(std::execution::par_unseq, pixelPtr, pixelPtr + image.total(), [&](cv::Vec3b& pixel) {

@@ -4,32 +4,30 @@
 
 namespace mrover {
 
-    class ObjectDetectorNodeletBase : public nodelet::Nodelet {
+    class ObjectDetectorNodeletBase : public rclcpp::Node {
 
     protected:
-        ros::NodeHandle mNh, mPnh;
 
-        tf2_ros::Buffer mTfBuffer;
-        tf2_ros::TransformListener mTfListener{mTfBuffer};
-        tf2_ros::TransformBroadcaster mTfBroadcaster;
+		static constexpr char const* NODE_NAME = "object_detector";
+
+		std::unique_ptr<tf2_ros::Buffer> mTfBuffer = std::make_unique<tf2_ros::Buffer>(get_clock());
+		std::shared_ptr<tf2_ros::TransformBroadcaster> mTfBroadcaster = std::make_shared<tf2_ros::TransformBroadcaster>(this);
+		std::shared_ptr<tf2_ros::TransformListener> mTfListener = std::make_shared<tf2_ros::TransformListener>(*mTfBuffer);
+
         std::string mCameraFrame;
         std::string mWorldFrame;
 
-        dynamic_reconfigure::Server<ObjectDetectorParamsConfig> mConfigServer;
-        dynamic_reconfigure::Server<ObjectDetectorParamsConfig>::CallbackType mCallbackType;
-
         std::string mModelName;
 
-        LoopProfiler mLoopProfiler{"Object Detector", 1};
+        LoopProfiler mLoopProfiler;
 
         Learning mLearning;
 
         cv::Mat mRgbImage, mImageBlob;
-        sensor_msgs::Image mDetectionsImageMessage;
+        sensor_msgs::msg::Image mDetectionsImageMessage;
 
-        ros::Publisher mDebugImagePub;
-
-        ros::Subscriber mSensorSub;
+		rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr mDebugImgPub;
+		rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr mSensorSub;
 
         // TODO(quintin): Do not hard code exactly two classes
         std::vector<int> mObjectHitCounts{0, 0};
@@ -41,13 +39,11 @@ namespace mrover {
         float mModelScoreThreshold{};
         float mModelNmsThreshold{};
 
-        auto onInit() -> void override;
-
-        auto spiralSearchForValidPoint(sensor_msgs::PointCloud2ConstPtr const& cloudPtr,
+        auto spiralSearchForValidPoint(sensor_msgs::msg::PointCloud2::UniquePtr const& cloudPtr,
                                        std::size_t u, std::size_t v,
                                        std::size_t width, std::size_t height) const -> std::optional<SE3d>;
 
-        auto updateHitsObject(sensor_msgs::PointCloud2ConstPtr const& msg,
+        auto updateHitsObject(sensor_msgs::msg::PointCloud2::UniquePtr const& msg,
                               std::span<Detection const> detections,
                               cv::Size const& imageSize = {640, 640}) -> void;
 
@@ -56,29 +52,17 @@ namespace mrover {
         static auto drawDetectionBoxes(cv::InputOutputArray image, std::span<Detection const> detections) -> void;
 
     public:
-        ObjectDetectorNodeletBase() = default;
+        explicit ObjectDetectorNodeletBase();
 
         ~ObjectDetectorNodeletBase() override = default;
     };
 
     class StereoObjectDetectorNodelet final : public ObjectDetectorNodeletBase {
-        auto onInit() -> void override;
 
-        static auto convertPointCloudToRGB(sensor_msgs::PointCloud2ConstPtr const& msg, cv::Mat const& image) -> void;
+		explicit StereoObjectDetectorNodelet();
 
-        auto pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const& msg) -> void;
+        static auto convertPointCloudToRGB(sensor_msgs::msg::PointCloud2::UniquePtr const& msg, cv::Mat const& image) -> void;
+
+        auto pointCloudCallback(sensor_msgs::msg::PointCloud2::UniquePtr const& msg) -> void;
     };
-
-    class ImageObjectDetectorNodelet final : public ObjectDetectorNodeletBase {
-        ros::Publisher mTargetsPub;
-
-        float mCameraHorizontalFov{};
-
-        auto onInit() -> void override;
-
-        auto getTagBearing(cv::InputArray image, cv::Rect const& box) const -> float;
-
-        auto imageCallback(sensor_msgs::ImageConstPtr const& msg) -> void;
-    };
-
 } // namespace mrover
