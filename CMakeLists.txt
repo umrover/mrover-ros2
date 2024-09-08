@@ -229,13 +229,21 @@ target_include_directories(simulator SYSTEM PRIVATE ${BULLET_INCLUDE_DIRS} ${OPE
 
 find_package(ZED QUIET)
 find_package(CUDA QUIET)
+find_package(OpenCV REQUIRED)
 if(ZED_FOUND AND CUDA_FOUND)
+	# ZED Wrapper
 	mrover_add_node(zed perception/zed_wrapper/*.c* perception/zed_wrapper/pch.hpp)
 	target_compile_options(zed PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:
 							--allow-unsupported-compiler
                        >)
 	target_link_libraries(zed parameter_utils lie MANIF::manif ${CUDA_LIBRARIES} loop_profiler)
 	ament_target_dependencies(zed rclcpp sensor_msgs ZED CUDA tf2 tf2_ros)
+
+	# Learning Library
+    # TODO(john): Update to use the new API
+	mrover_add_library(_learning learning/*.c* learning)
+    target_compile_options(_learning PRIVATE -Wno-deprecated-declarations)
+	target_link_libraries(_learning PRIVATE CUDA opencv_core opencv_dnn opencv_imgproc lie nvinfer nvonnxparser tbb)
 else()
 	message("ZED not found...")
 endif()
