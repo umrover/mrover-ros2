@@ -140,8 +140,11 @@ auto Inference::prepTensors() -> void {
 
         // Multiply sizeof(float) by the product of the extents
         // This is essentially: element count * size of each element
-        std::size_t const size = std::reduce(extents, extents + rank, sizeof(float), std::multiplies<>());
-        // Create GPU memory for TensorRT to operate on
+        std::size_t size = 1;
+		for(int32_t i = 0; i < rank; ++i){
+			size *= extents[i];
+		}
+		// Create GPU memory for TensorRT to operate on
         if (cudaError_t result = cudaMalloc(mBindings.data() + i, size); result != cudaSuccess)
             throw std::runtime_error{"Failed to allocate GPU memory: " + std::string{cudaGetErrorString(result)}};
     }

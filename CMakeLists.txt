@@ -242,7 +242,7 @@ if(ZED_FOUND AND CUDA_FOUND)
 	# Learning Library
     # TODO(john): Update to use the new API
 	mrover_add_library(_learning learning/*.c* learning)
-    target_compile_options(_learning PRIVATE -Wno-deprecated-declarations)
+    target_compile_options(_learning PRIVATE -Wno-deprecated-declarations -std=c++17)
 	target_include_directories(_learning PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
 	target_link_libraries(_learning PRIVATE opencv_core opencv_dnn opencv_imgproc lie nvinfer nvonnxparser tbb)
 else()
