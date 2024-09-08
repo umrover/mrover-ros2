@@ -1,0 +1,18 @@
+
+# All units are in SI
+# ===================
+# Time:     second, hz
+# Angle:    radian
+# Distance: meter
+
+/zed_wrapper:
+  ros__parameters:
+    camera_frame: "zed_left_camera_frame"
+    world_frame: "map"
+    increment_weight: 2
+    decrement_weight: 1
+    hitcount_threshold: 5
+    hitcount_max: 10
+    model_name: "yolov8s_mallet_bottle"
+    model_score_threshold: 0.75
+    model_nms_threshold: 0.5
