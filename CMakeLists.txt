@@ -234,7 +234,7 @@ if(ZED_FOUND AND CUDA_FOUND)
 	target_compile_options(zed PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:
 							--allow-unsupported-compiler
                        >)
-	target_link_libraries(zed parameter_utils lie MANIF::manif ${CUDA_LIBRARIES})
+	target_link_libraries(zed parameter_utils lie MANIF::manif ${CUDA_LIBRARIES} loop_profiler)
 	ament_target_dependencies(zed rclcpp sensor_msgs ZED CUDA tf2 tf2_ros)
 else()
 	message("ZED not found...")

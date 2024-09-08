@@ -13,7 +13,7 @@ namespace mrover {
     }
 
 
-	ZedWrapper::ZedWrapper() : Node(NODE_NAME, rclcpp::NodeOptions().use_intra_process_comms(true)) {
+	ZedWrapper::ZedWrapper() : Node(NODE_NAME, rclcpp::NodeOptions().use_intra_process_comms(true)), mLoopProfilerGrab{get_logger()}, mLoopProfilerUpdate{get_logger()} {
 		try{
 			RCLCPP_INFO(this->get_logger(), "Created Zed Wrapper Node, %s", NODE_NAME);
 
@@ -129,16 +129,23 @@ namespace mrover {
 		try{
 			RCLCPP_INFO(this->get_logger(), "Starting grab thread");
 			while(rclcpp::ok()){
+				mLoopProfilerGrab.beginLoop();
+
 				sl::RuntimeParameters runtimeParameters;
 				runtimeParameters.confidence_threshold = mDepthConfidence;
 				runtimeParameters.texture_confidence_threshold = mTextureConfidence;
 
+
 				if (sl::ERROR_CODE error = mZed.grab(runtimeParameters); error != sl::ERROR_CODE::SUCCESS)
 						throw std::runtime_error(std::format("ZED failed to grab {}", sl::toString(error).c_str()));
+
+				mLoopProfilerGrab.measureEvent("zed_grab");
 
 				// Retrieval has to happen on the same thread as grab so that the image and point cloud are synced
 				if (mZed.retrieveImage(mGrabMeasures.rightImage, sl::VIEW::RIGHT, sl::MEM::GPU, mImageResolution) != sl::ERROR_CODE::SUCCESS)
 					throw std::runtime_error("ZED failed to retrieve right image");
+
+				mLoopProfilerGrab.measureEvent("zed_retrieve_right_image");
 
 				// Only left set is used for processing
 				if (mDepthEnabled) {
@@ -147,6 +154,8 @@ namespace mrover {
 					if (mZed.retrieveMeasure(mGrabMeasures.leftPoints, sl::MEASURE::XYZ, sl::MEM::GPU, mPointResolution) != sl::ERROR_CODE::SUCCESS)
 						throw std::runtime_error("ZED failed to retrieve point cloud");
 				}
+
+				mLoopProfilerGrab.measureEvent("zed_retrieve_left_image");
 
 				// if (mZed.retrieveMeasure(mGrabMeasures.leftNormals, sl::MEASURE::NORMALS, sl::MEM::GPU, mNormalsResolution) != sl::ERROR_CODE::SUCCESS)
 				//     throw std::runtime_error("ZED failed to retrieve point cloud normals");
@@ -185,6 +194,8 @@ namespace mrover {
 					}
 				}
 
+				mLoopProfilerGrab.measureEvent("pose_tracking");
+
 				if (mZedInfo.camera_model != sl::MODEL::ZED) {
 					sl::SensorsData sensorData;
 					mZed.getSensorsData(sensorData, sl::TIME_REFERENCE::CURRENT);
@@ -203,6 +214,8 @@ namespace mrover {
 						mMagPub->publish(magMsg);
 					}
 				}
+
+				mLoopProfilerGrab.measureEvent("publish_imu_and_mag");
 			}
 
 			mZed.close();
@@ -221,6 +234,7 @@ namespace mrover {
             RCLCPP_INFO(get_logger(), "Starting point cloud thread");
 
             while (rclcpp::ok()) {
+				mLoopProfilerUpdate.beginLoop();
 
 				// TODO(quintin): May be bad to allocate every update, best case optimized by tcache
                 // Needed because publish directly shares the pointer to other nodelets running in this process
@@ -232,30 +246,36 @@ namespace mrover {
                     // Waiting on the condition variable will drop the lock and reacquire it when the condition is met
                     mSwapCv.wait(lock, [this] { return mIsSwapReady; });
                     mIsSwapReady = false;
+					mLoopProfilerUpdate.measureEvent("wait_and_alloc");
 
                     if (mDepthEnabled) {
                         fillPointCloudMessageFromGpu(mPcMeasures.leftPoints, mPcMeasures.leftImage, mPcMeasures.leftNormals, mPointCloudGpu, pointCloudMsg);
                         pointCloudMsg->header.stamp = mPcMeasures.time;
                         pointCloudMsg->header.frame_id = "zed_left_camera_frame";
+						mLoopProfilerUpdate.measureEvent("fill_pc");
                     }
+
 
 					auto leftImgMsg = std::make_unique<sensor_msgs::msg::Image>();
 					fillImageMessage(mPcMeasures.leftImage, leftImgMsg);
 					leftImgMsg->header.frame_id = "zed_left_camera_optical_frame";
 					leftImgMsg->header.stamp = mPcMeasures.time;
 					mLeftImgPub->publish(std::move(leftImgMsg));
+					mLoopProfilerUpdate.measureEvent("pub_left");
 
 					auto rightImgMsg = std::make_unique<sensor_msgs::msg::Image>();
 					fillImageMessage(mPcMeasures.rightImage, rightImgMsg);
 					rightImgMsg->header.frame_id = "zed_right_camera_optical_frame";
 					rightImgMsg->header.stamp = mPcMeasures.time;
 					mRightImgPub->publish(std::move(rightImgMsg));
+					mLoopProfilerUpdate.measureEvent("pub_right");
 				
                 }
 
                 if (mDepthEnabled) {
                     mPcPub->publish(std::move(pointCloudMsg));
                 }
+				mLoopProfilerUpdate.measureEvent("pub_pc");
 
 				sl::CalibrationParameters calibration = mZedInfo.camera_configuration.calibration_parameters;
 				auto leftCamInfoMsg = sensor_msgs::msg::CameraInfo();
@@ -267,6 +287,7 @@ namespace mrover {
 				rightCamInfoMsg.header.stamp = mPcMeasures.time;
 				mLeftCamInfoPub->publish(leftCamInfoMsg);
 				mRightCamInfoPub->publish(rightCamInfoMsg);
+				mLoopProfilerUpdate.measureEvent("pub_camera_info");
 			}
 
 			RCLCPP_INFO(get_logger(), "Tag thread finished");

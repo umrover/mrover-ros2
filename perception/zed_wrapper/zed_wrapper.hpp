@@ -30,6 +30,9 @@ namespace mrover {
 			auto operator=(Measures&&) noexcept -> Measures&;
 		};
 
+		LoopProfiler mLoopProfilerGrab;
+		LoopProfiler mLoopProfilerUpdate;
+
 		// Params
 		int mSerialNumber{};
 		int mGrabTargetFps{};
