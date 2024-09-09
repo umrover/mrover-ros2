@@ -3,10 +3,12 @@ project(mrover VERSION 2025.0.0 LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON) # Generate compile_commands.json for clangd
+# Generate compile_commands.json for clangd language server.
+# Can be used by VSCode, CLion, VIM, etc.
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 if (APPLE)
-    # Ensures that homebrew packages are never used over miniforge packages
+    # Ensures that homebrew packages are never used over miniforge packages.
     set(CMAKE_IGNORE_PATH /opt/homebrew)
     # This is so dumb!
     link_libraries(/opt/homebrew/Caskroom/miniforge/base/envs/ros2_env/lib/libpython3.11.dylib)
