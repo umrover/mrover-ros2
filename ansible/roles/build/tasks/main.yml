@@ -163,6 +163,22 @@
     link: /usr/bin/gcc
     priority: 130
 
+- name: Set clang++18 as Default
+  become: True
+  alternatives:
+    name: clang++
+    path: /usr/bin/clang++-18
+    link: /usr/bin/clang++
+    priority: 180
+
+- name: Set clang-18 as Default
+  become: True
+  alternatives:
+    name: clang
+    path: /usr/bin/clang-18
+    link: /usr/bin/clang
+    priority: 180
+
 - name: Set clangd 18 as Default
   become: True
   alternatives:
