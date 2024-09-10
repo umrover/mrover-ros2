@@ -10,8 +10,8 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 if (APPLE)
     # Ensures that homebrew packages are never used over miniforge packages.
     set(CMAKE_IGNORE_PATH /opt/homebrew)
-    # This is so dumb!
-    link_libraries(/opt/homebrew/Caskroom/miniforge/base/envs/ros2_env/lib/libpython3.11.dylib)
+    # Find mamba python
+    find_package(Python 3.11 COMPONENTS Interpreter Development)
 endif ()
 
 # Ccache is a compiler cache.
