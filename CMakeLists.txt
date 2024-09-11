@@ -11,7 +11,9 @@ if (APPLE)
     # Ensures that homebrew packages are never used over miniforge packages.
     set(CMAKE_IGNORE_PATH /opt/homebrew)
     # Find mamba python
-    find_package(Python 3.11 COMPONENTS Interpreter Development)
+    find_package(PythonLibs REQUIRED)
+    link_libraries(${PYTHON_LIBRARIES})
+    # link_libraries()
 endif ()
 
 # Ccache is a compiler cache.
