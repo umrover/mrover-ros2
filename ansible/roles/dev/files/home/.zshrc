@@ -100,7 +100,7 @@ source $ZSH/oh-my-zsh.sh
 # alias zshconfig="mate ~/.zshrc"
 # alias ohmyzsh="mate ~/.oh-my-zsh"
 
-alias mrover="cd ~/ros2_ws/src/mrover"
+alias mrover="cd ~/ros2_ws/src/mrover && source ~/ros2_ws/src/mrover/venv/bin/activate"
 
 readonly ROS2_WS_PATH=~/ros2_ws
 source /opt/ros/humble/setup.zsh
