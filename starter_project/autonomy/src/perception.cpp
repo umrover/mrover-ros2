@@ -37,7 +37,7 @@ namespace mrover {
         // Create a publisher for our tag topic
         // See: http://wiki.ros.org/ROS/Tutorials/WritingPublisherSubscriber%28c%2B%2B%29
         // TODO: uncomment me!
-        mTagPublisher = create_publisher<msg::StarterProjectTag>("tag", 1);
+        // mTagPublisher = create_publisher<msg::StarterProjectTag>("tag", 1);
 
         mTagDictionary = cv::makePtr<cv::aruco::Dictionary>(cv::aruco::getPredefinedDictionary(cv::aruco::DICT_4X4_50));
     }
@@ -55,12 +55,6 @@ namespace mrover {
         // TODO: implement me!
         // hint: think about the order in which these functions were implemented ;)
 
-        // Detect tags in the image pixels
-        findTagsInImage(image, mTags);
-        // Select the tag that is closest to the middle of the screen
-        msg::StarterProjectTag tag = selectTag(image, mTags);
-        // Publish the message to our topic so navigation or others can receive it
-        publishTag(tag);
     }
 
     auto Perception::findTagsInImage(cv::Mat const& image, std::vector<msg::StarterProjectTag>& tags) -> void { // NOLINT(*-convert-member-functions-to-static)
@@ -72,42 +66,11 @@ namespace mrover {
 
         // TODO: implement me!
 
-        cv::aruco::detectMarkers(image, mTagDictionary, mTagCorners, mTagIds);
-
-        unsigned int numTagsDetected = mTagCorners.size();
-
-        for(unsigned int i  = 0; i < numTagsDetected; ++i){
-            auto center = getCenterFromTagCorners(mTagCorners[i]);
-            auto closeness = getClosenessMetricFromTagCorners(image, mTagCorners[i]);
-            
-            msg::StarterProjectTag newTag;
-            newTag.tag_id = mTagIds[i];
-            newTag.x_tag_center_pixel = center.first;
-            newTag.y_tag_center_pixel = center.second;
-            newTag.closeness_metric = closeness;
-
-            tags.push_back(newTag);
-        }
     }
 
     auto Perception::selectTag(cv::Mat const& image, std::vector<msg::StarterProjectTag> const& tags) -> msg::StarterProjectTag { // NOLINT(*-convert-member-functions-to-static)
         // TODO: implement me!
 
-        std::pair<float, float> center{image.cols / 2.0, image.rows / 2.0};
-
-        float closestDistance = std::numeric_limits<float>::infinity();
-        msg::StarterProjectTag closestTag{};
-
-        for(auto const& tag : tags){
-            std::pair<float, float> tagCenter{tag.x_tag_center_pixel, tag.y_tag_center_pixel};
-
-            auto distFromImageCenter = static_cast<float>(std::sqrt(std::pow((tagCenter.first - center.first), 2) + std::pow((tagCenter.second - center.second), 2)));
-
-            closestTag = (distFromImageCenter < closestDistance) ? tag : closestTag;
-            closestDistance = (distFromImageCenter < closestDistance) ? distFromImageCenter : closestDistance;
-        }
-
-        return closestTag;
     }
 
     auto Perception::publishTag(msg::StarterProjectTag const& tag) -> void {
@@ -126,18 +89,12 @@ namespace mrover {
         // Side length (Not perfect because it may not be parrallel with the image plane)
 
         // This works because the ordering os clockwise
-        auto length = static_cast<float>(std::sqrt(std::pow(tagCorners[0].x - tagCorners[3].x, 2) + std::pow(tagCorners[0].y - tagCorners[3].y, 2)));
 
-        return length / static_cast<float>(image.rows);
     }
 
     auto Perception::getCenterFromTagCorners(std::vector<cv::Point2f> const& tagCorners) -> std::pair<float, float> { // NOLINT(*-convert-member-functions-to-static)
         // TODO: implement me!
 
-        cv::Point2f sum = std::accumulate(std::begin(tagCorners), std::end(tagCorners), cv::Point2f{0, 0});
-        sum /= 4;
-        
-        return {sum.x, sum.y};
     }
 
 } // namespace mrover
