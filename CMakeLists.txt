@@ -176,6 +176,8 @@ install(PROGRAMS
         lib/${PROJECT_NAME}
 )
 
+install(DIRECTORY starter_project/autonomy/launch DESTINATION share/${PROJECT_NAME})
+
 ## Python
 
 ament_python_install_package(navigation)

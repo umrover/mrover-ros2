@@ -26,7 +26,7 @@ class SO3:
 
     """
 
-    quaternion: np.ndarray = field(default_factory=lambda: np.array([0, 0, 0, 1]))
+    quaternion: np.ndarray = field(default_factory=lambda: np.array([0.0, 0.0, 0.0, 1.0]))
 
     @classmethod
     def from_matrix(cls, rotation_matrix: np.ndarray) -> SO3:

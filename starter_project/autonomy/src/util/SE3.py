@@ -67,6 +67,7 @@ class SE3:
         tf_broadcaster: tf2_ros.TransformBroadcaster | tf2_ros.StaticTransformBroadcaster,
         parent_frame: str,
         child_frame: str,
+        timestamp: rclpy.time.Time
     ):
         """
         Publish the SE3 to the TF tree as a transform from parent_frame to child_frame.
@@ -78,10 +79,17 @@ class SE3:
         :param parent_frame: the parent frame of the transform to be published
         :param child_frame: the child frame of the transform to be published
         """
+
+        #TODO (ali): More pythonic way to do this?
         tf = TransformStamped()
-        tf.transform.translation = Vector3(*self.position)
-        tf.transform.rotation = Quaternion(*self.rotation.quaternion)
-        tf.header.stamp = rospy.Time.now()
+        tf.transform.translation.x = self.position[0]
+        tf.transform.translation.y = self.position[1]
+        tf.transform.translation.z = self.position[2]
+        tf.transform.rotation.x = self.rotation.quaternion[0]
+        tf.transform.rotation.y = self.rotation.quaternion[1]
+        tf.transform.rotation.z = self.rotation.quaternion[2]
+        tf.transform.rotation.w = self.rotation.quaternion[3]
+        tf.header.stamp = timestamp.to_msg()
         tf.header.frame_id = parent_frame
         tf.child_frame_id = child_frame
         tf_broadcaster.sendTransform(tf)
