@@ -1,0 +1,8 @@
+---
+- hosts: all
+  vars:
+    ros_distro: humble
+    ubuntu_release: jammy
+  roles:
+    - build
+    - dev

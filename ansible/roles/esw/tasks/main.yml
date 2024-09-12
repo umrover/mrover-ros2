@@ -1,0 +1,25 @@
+- name: mjbots fdcanusb Rules
+  become: true
+  synchronize:
+    src: files/rules/
+    dest: /etc/udev/rules.d
+    recursive: true
+
+- name: udev Reload Rules
+  become: true
+  command: udevadm control --reload-rules
+
+- name: udev TTY Trigger
+  become: true
+  command: udevadm trigger --subsystem-match=tty
+
+- name: Install fdcanusb Binary
+  become: true
+  copy:
+    src: files/bin/fdcanusb_daemon
+    dest: /usr/local/bin/
+    mode: 0755
+
+- name: Install Moteus GUI
+  pip:
+    name: moteus-gui

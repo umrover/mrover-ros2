@@ -1,0 +1,6 @@
+[submodule "deps/manif"]
+	path = deps/manif
+	url = git@github.com:artivis/manif.git
+[submodule "deps/dawn"]
+	path = deps/dawn
+	url = https://dawn.googlesource.com/dawn

@@ -2,7 +2,22 @@ cmake_minimum_required(VERSION 3.25)
 project(mrover VERSION 2025.0.0 LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+# Generate compile_commands.json for clangd language server.
+# Can be used by VSCode, CLion, VIM, etc.
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+if (APPLE)
+    # Ensures that homebrew packages are never used over miniforge packages.
+    set(CMAKE_IGNORE_PATH /opt/homebrew)
+    # Find mamba python
+    find_package(Python 3.11 COMPONENTS Interpreter Development)
+endif ()
+
+# Ccache is a compiler cache.
+# It speeds up recompilation by caching previous compilations and detecting when the same compilation is being done again.
+# It is global, so even if you delete the build directory, it will still work.
+# This can cause problems in rare cases so run "ccache -C" to clear the cache.
 find_program(CCACHE_FOUND ccache)
 if (CCACHE_FOUND)
     set(CMAKE_C_COMPILER_LAUNCHER ccache)
@@ -13,13 +28,23 @@ endif ()
 if (CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     add_compile_options(-Wall -Wextra -Wpedantic -Wno-missing-field-initializers -Wno-deprecated-declarations)
 
-    add_link_options(-fuse-ld=lld-18)
+    # Try to use LLD instead of the system linker (which is usually GNU ld).
+    # LLD is faster and uses less memory.
+    # Could look into using mold which should be even faster.
+    find_program(LLD_18_FOUND lld-18)
+    if (LLD_18_FOUND)
+        message(STATUS "Using lld-18 linker")
+        add_link_options(-fuse-ld=lld-18)
+    endif()
 endif ()
+
+
 
 ## Dependencies
 
 find_package(rclpy REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(rclcpp_components REQUIRED)
 find_package(ament_cmake REQUIRED)
 find_package(ament_cmake_python REQUIRED)
 find_package(nav_msgs REQUIRED)
@@ -36,10 +61,48 @@ find_package(Bullet REQUIRED)
 find_package(glfw3 REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(OpenCV REQUIRED)
-find_package(TBB REQUIRED)
+if (NOT APPLE)
+    find_package(TBB REQUIRED)
+    link_libraries(TBB::tbb)
+endif()
+
+find_package(dawn QUIET)
+if (dawn_FOUND)
+    message(STATUS "Using Dawn system install")
+else ()
+    message(STATUS "Using Dawn from source")
+    add_library(webgpu SHARED IMPORTED)
+
+    set(WEBGPU_BUILD_DIR ${CMAKE_CURRENT_LIST_DIR}/deps/dawn/out/Release)
+    if (APPLE)
+        set(WEBGPU_SHARED_LIB ${WEBGPU_BUILD_DIR}/src/dawn/native/libwebgpu_dawn.dylib)
+    else ()
+        set(WEBGPU_SHARED_LIB ${WEBGPU_BUILD_DIR}/src/dawn/native/libwebgpu_dawn.so)
+    endif ()
+    if (EXISTS ${WEBGPU_SHARED_LIB})
+        target_include_directories(webgpu INTERFACE ${CMAKE_CURRENT_LIST_DIR}/deps/dawn/include ${WEBGPU_BUILD_DIR}/gen/include)
+        set_property(TARGET webgpu PROPERTY IMPORTED_LOCATION ${WEBGPU_SHARED_LIB})
+
+        set(dawn_FOUND TRUE)
+    else ()
+        message(WARNING "Dawn not found. If on Ubuntu install with 'sudo apt install -f ./pkg/libdawn-dev.deb'. Or build from source with ./scripts/build_dawn.sh")
+    endif ()
+endif ()
 
 find_package(manif QUIET)
-find_package(dawn QUIET)
+if (NOT manif_FOUND)
+    if (EXISTS ${CMAKE_CURRENT_LIST_DIR}/deps/manif/include/manif)
+        set(BUILD_TESTING_OLD ${BUILD_TESTING})
+        set(BUILD_TESTING OFF)
+        add_subdirectory(deps/manif SYSTEM)
+        set(BUILD_TESTING ${BUILD_TESTING_OLD})
+        add_library(MANIF::manif ALIAS manif)
+
+        set(manif_FOUND TRUE)
+    else()
+        message(FATAL_ERROR "Manif not found. If on Ubuntu install with 'sudo apt install -f ./pkg/libmanif-dev.deb'. Or build from source with 'submodule update --init deps/manif' and make sure it is non-empty")
+    endif()
+endif()
 
 find_package(PkgConfig REQUIRED)
 pkg_search_module(NetLink libnl-3.0 IMPORTED_TARGET QUIET)
@@ -65,7 +128,10 @@ if (BUILD_TESTING)
     ament_lint_auto_find_test_dependencies()
 endif ()
 
+include_directories(BEFORE SYSTEM preload)
+
 include(cmake/macros.cmake)
+# include(cmake/deps.cmake)
 
 ## Messages & Services & Actions
 
@@ -75,11 +141,42 @@ message(STATUS "Found message files: ${MROVER_MESSAGE_FILE_PATHS}")
 file(GLOB_RECURSE MROVER_SERVICE_FILE_PATHS RELATIVE ${CMAKE_CURRENT_LIST_DIR} CONFIGURE_DEPENDS srv/*.srv)
 message(STATUS "Found service files: ${MROVER_SERVICE_FILE_PATHS}")
 
+# Starter Project
+message(STATUS "PROJ NAME: ${PROJECT_NAME}")
+
+set(MROVER_CMAKE_INCLUDES
+        starter_project/autonomy/AutonomyStarterProject.cmake
+)
+
+foreach (MROVER_CMAKE_INCLUDE ${MROVER_CMAKE_INCLUDES})
+    include(${MROVER_CMAKE_INCLUDE})
+endforeach ()
+
+message(STATUS "Found message files: ${MROVER_MESSAGE_FILE_PATHS}")
+
 rosidl_generate_interfaces(${PROJECT_NAME}
         ${MROVER_MESSAGE_FILE_PATHS}
         ${MROVER_SERVICE_FILE_PATHS}
         DEPENDENCIES nav_msgs sensor_msgs geometry_msgs
 )
+
+# Starter project 
+# TODO (ali): delete once AutonomyStarterProject.cmake is fixed
+mrover_add_node(starter_project_perception ${CMAKE_CURRENT_LIST_DIR}/starter_project/autonomy/src/*.cpp)
+target_link_libraries(starter_project_perception ${OpenCV_LIBS})
+ament_target_dependencies(starter_project_perception rclcpp std_msgs sensor_msgs)
+
+
+# Install our executable so that ROS knows about it
+# This allows us to launch it with ros2 run
+install(PROGRAMS
+        starter_project/autonomy/src/localization.py
+        starter_project/autonomy/src/navigation/navigation_starter_project.py
+        DESTINATION
+        lib/${PROJECT_NAME}
+)
+
+install(DIRECTORY starter_project/autonomy/launch DESTINATION share/${PROJECT_NAME})
 
 ## Python
 
@@ -103,7 +200,7 @@ mrover_add_header_only_library(loop_profiler loop_profiler)
 # Simulator
 
 mrover_add_node(simulator simulator/*.cpp simulator simulator/pch.hpp)
-ament_target_dependencies(simulator rclcpp nav_msgs sensor_msgs geometry_msgs tf2 tf2_ros urdf)
+ament_target_dependencies(simulator rclcpp rclcpp_components nav_msgs sensor_msgs geometry_msgs tf2 tf2_ros urdf)
 target_link_libraries(simulator
         assimp::assimp glfw3webgpu webgpu glfw webgpu_hpp imgui
         ${BULLET_LIBRARIES}
@@ -117,7 +214,7 @@ target_include_directories(simulator SYSTEM PRIVATE ${BULLET_INCLUDE_DIRS} ${OPE
 
 mrover_add_node(tag_detector perception/tag_detector/*.cpp perception/tag_detector/pch.hpp)
 ament_target_dependencies(tag_detector rclcpp tf2 tf2_ros)
-target_link_libraries(tag_detector lie opencv_core opencv_aruco opencv_imgproc loop_profiler TBB::tbb)
+target_link_libraries(tag_detector lie opencv_core opencv_aruco opencv_imgproc loop_profiler)
 
 # Embedded
 
@@ -139,9 +236,13 @@ if (Gst_FOUND AND GstApp_FOUND)
         target_compile_definitions(websocket_server PUBLIC BOOST_ASIO_NO_DEPRECATED)
         ament_target_dependencies(websocket_server rclcpp)
 
-        mrover_add_node(gst_websocket_streamer esw/gst_websocket_streamer/*.c* esw/gst_websocket_streamer/pch.hpp)
+        mrover_add_component(gst_websocket_streamer esw/gst_websocket_streamer/*.c* esw/gst_websocket_streamer/pch.hpp)
         target_link_libraries(gst_websocket_streamer PkgConfig::Gst PkgConfig::GstApp PkgConfig::LibUdev opencv_core opencv_imgcodecs websocket_server)
-        ament_target_dependencies(gst_websocket_streamer rclcpp)
+        ament_target_dependencies(gst_websocket_streamer rclcpp rclcpp_components sensor_msgs)
+
+        rclcpp_components_register_nodes(gst_websocket_streamer "mrover::GstWebsocketStreamer")
+        set(node_plugins "${node_plugins}mrover::GstWebsocketStreamer;$<TARGET_FILE:gst_websocket_streamer>\n")
+        
     endif ()
 endif ()
 
@@ -162,11 +263,17 @@ install(PROGRAMS
         localization/basestation_gps_driver.py
         superstructure/superstructure.py
         scripts/debug_course_publisher.py
+
+        # starter project sources
+        starter_project/autonomy/src/localization.py
+        starter_project/autonomy/src/navigation/navigation_starter_project.py
         DESTINATION
         lib/${PROJECT_NAME}
 )
 
 install(DIRECTORY launch DESTINATION share/${PROJECT_NAME})
 install(DIRECTORY urdf DESTINATION share/${PROJECT_NAME})
+install(DIRECTORY config DESTINATION share/${PROJECT_NAME})
+# install (DIRECTORY ${} DESTINATION lib/${PROJECT_NAME})
 
 ament_package()
