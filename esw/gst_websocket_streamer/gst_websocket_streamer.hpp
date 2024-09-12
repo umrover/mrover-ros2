@@ -48,7 +48,8 @@ namespace mrover {
         auto imageCallback(sensor_msgs::msg::Image::ConstSharedPtr const& msg) -> void;
 
     public:
-        GstWebsocketStreamer();
+        // __attribute__ ((visibility("default")))
+        explicit GstWebsocketStreamer(const rclcpp::NodeOptions &options);
 
         ~GstWebsocketStreamer() override;
     };

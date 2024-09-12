@@ -48,8 +48,8 @@ namespace mrover {
         for (std::size_t i = 0; i < mImmediateIds.size(); ++i) {
             int id = mImmediateIds[i];
             Tag& tag = mTags[id];
-            tag.hitCount = std::clamp(tag.hitCount + tagIncrementWeight, 0l, maxTagHitCount);
-            tag.hitCount = std::clamp(tag.hitCount + tagIncrementWeight, 0l, maxTagHitCount);
+            tag.hitCount = std::clamp(tag.hitCount + tagIncrementWeight, std::int64_t{0}, maxTagHitCount);
+            tag.hitCount = std::clamp(tag.hitCount + tagIncrementWeight, std::int64_t{0}, maxTagHitCount);
             tag.id = id;
             tag.imageCenter = std::reduce(mImmediateCorners[i].begin(), mImmediateCorners[i].end()) / static_cast<float>(mImmediateCorners[i].size());
             auto approximateSize = static_cast<std::size_t>(std::sqrt(cv::contourArea(mImmediateCorners[i])));

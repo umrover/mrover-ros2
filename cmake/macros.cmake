@@ -9,6 +9,13 @@ macro(mrover_add_library name sources includes)
     target_include_directories(${name} PUBLIC ${includes})
 endmacro()
 
+macro(mrover_add_component name sources includes)
+    file(GLOB_RECURSE LIBRARY_SOURCES CONFIGURE_DEPENDS ${sources})
+    add_library(${name} SHARED ${ARGV3} ${LIBRARY_SOURCES})
+    target_compile_definitions(${name} PRIVATE "COMPOSITION_BUILDING_DLL")
+
+endmacro()
+
 macro(mrover_add_node name sources)
     file(GLOB_RECURSE NODE_SOURCES CONFIGURE_DEPENDS ${sources})
     add_executable(${name} ${NODE_SOURCES})
