@@ -16,7 +16,8 @@ dependencies = [
     "pyubx2==1.2.43",
     "lark==1.1.2",
     "empy==3.3.4",
-    "transforms3d==0.4.2"
+    "transforms3d==0.4.2",
+    "colcon-common-extensions==0.3.0"
 ]
 
 [project.optional-dependencies]

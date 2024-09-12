@@ -97,8 +97,12 @@
       - libgstreamer-plugins-base1.0-dev
       - vainfo
       - x264
+      - ros-humble-ros-base
+      - ros-humble-rviz2
       - ros-humble-xacro
-      - ros-humble-rtcm-msgs
+      # TODO (ali): why do these need to be installed manually
+      - libassimp-dev
+      - libboost-dev
 
 - name: Install Local APT Packages
   become: True
@@ -119,8 +123,8 @@
 - name: Update rosdep
   command: rosdep update
 
-- name: Install ROS Packages
-  command: rosdep install --from-paths {{ ros2_workspace }}/src --ignore-src -y --rosdistro={{ ros_distro }}
+# - name: Install ROS Packages
+#   # command: rosdep install --from-paths {{ ros2_workspace }}/src --ignore-src -y --rosdistro={{ ros_distro }}
 
 # - name: Download Bun Installer
 #   get_url:
