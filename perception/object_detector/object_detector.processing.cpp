@@ -2,7 +2,7 @@
 
 namespace mrover {
 
-    auto StereoObjectDetectorNodelet::pointCloudCallback(sensor_msgs::msg::PointCloud2::UniquePtr const& msg) -> void {
+    auto StereoObjectDetector::pointCloudCallback(sensor_msgs::msg::PointCloud2::UniquePtr const& msg) -> void {
         assert(msg);
         assert(msg->height > 0);
         assert(msg->width > 0);
@@ -41,7 +41,7 @@ namespace mrover {
         mLoopProfiler.measureEvent("Publication");
     }
 
-    auto ObjectDetectorNodeletBase::updateHitsObject(sensor_msgs::msg::PointCloud2::UniquePtr const& msg, std::span<Detection const> detections, cv::Size const& imageSize) -> void {
+    auto ObjectDetectorBase::updateHitsObject(sensor_msgs::msg::PointCloud2::UniquePtr const& msg, std::span<Detection const> detections, cv::Size const& imageSize) -> void {
         // Set of flags indicating if the given object has been seen
         // TODO(quintin): Do not hard code exactly two classes
         std::bitset<2> seenObjects{0b00};
@@ -94,7 +94,7 @@ namespace mrover {
         }
     }
 
-    auto ObjectDetectorNodeletBase::spiralSearchForValidPoint(sensor_msgs::msg::PointCloud2::UniquePtr const& cloudPtr, std::size_t u, std::size_t v, std::size_t width, std::size_t height) const -> std::optional<SE3d> {
+    auto ObjectDetectorBase::spiralSearchForValidPoint(sensor_msgs::msg::PointCloud2::UniquePtr const& cloudPtr, std::size_t u, std::size_t v, std::size_t width, std::size_t height) const -> std::optional<SE3d> {
         // See: https://stackoverflow.com/a/398302
         auto xc = static_cast<int>(u), yc = static_cast<int>(v);
         auto sw = static_cast<int>(width), sh = static_cast<int>(height);
@@ -129,7 +129,7 @@ namespace mrover {
         return std::nullopt;
     }
 
-    auto ObjectDetectorNodeletBase::drawDetectionBoxes(cv::InputOutputArray image, std::span<Detection const> detections) -> void {
+    auto ObjectDetectorBase::drawDetectionBoxes(cv::InputOutputArray image, std::span<Detection const> detections) -> void {
         // Draw the detected object's bounding boxes on the image for each of the objects detected
         std::array const fontColors{cv::Scalar{232, 115, 5}, cv::Scalar{0, 4, 227}};
         for (std::size_t i = 0; i < detections.size(); i++) {
@@ -145,7 +145,7 @@ namespace mrover {
         }
     }
 
-    auto ObjectDetectorNodeletBase::publishDetectedObjects(cv::InputArray image) -> void {
+    auto ObjectDetectorBase::publishDetectedObjects(cv::InputArray image) -> void {
         mDetectionsImageMessage.header.stamp = get_clock()->now();
         mDetectionsImageMessage.height = image.rows();
         mDetectionsImageMessage.width = image.cols();
@@ -159,7 +159,7 @@ namespace mrover {
         mDebugImgPub->publish(mDetectionsImageMessage);
     }
 
-    auto StereoObjectDetectorNodelet::convertPointCloudToRGB(sensor_msgs::msg::PointCloud2::UniquePtr const& msg, cv::Mat const& image) -> void {
+    auto StereoObjectDetector::convertPointCloudToRGB(sensor_msgs::msg::PointCloud2::UniquePtr const& msg, cv::Mat const& image) -> void {
         auto* pixelPtr = reinterpret_cast<cv::Vec3b*>(image.data);
         auto* pointPtr = reinterpret_cast<Point const*>(msg->data.data());
         std::for_each(std::execution::par_unseq, pixelPtr, pixelPtr + image.total(), [&](cv::Vec3b& pixel) {

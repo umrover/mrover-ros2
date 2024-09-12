@@ -129,7 +129,7 @@ namespace mrover {
 		try{
 			RCLCPP_INFO(this->get_logger(), "Starting grab thread");
 			while(rclcpp::ok()){
-				mLoopProfilerGrab.beginLoop();
+				//mLoopProfilerGrab.beginLoop();
 
 				sl::RuntimeParameters runtimeParameters;
 				runtimeParameters.confidence_threshold = mDepthConfidence;
@@ -234,7 +234,7 @@ namespace mrover {
             RCLCPP_INFO(get_logger(), "Starting point cloud thread");
 
             while (rclcpp::ok()) {
-				mLoopProfilerUpdate.beginLoop();
+				//mLoopProfilerUpdate.beginLoop();
 
 				// TODO(quintin): May be bad to allocate every update, best case optimized by tcache
                 // Needed because publish directly shares the pointer to other nodelets running in this process

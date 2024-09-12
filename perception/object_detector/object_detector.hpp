@@ -4,7 +4,7 @@
 
 namespace mrover {
 
-    class ObjectDetectorNodeletBase : public rclcpp::Node {
+    class ObjectDetectorBase : public rclcpp::Node {
 
     protected:
 
@@ -52,14 +52,14 @@ namespace mrover {
         static auto drawDetectionBoxes(cv::InputOutputArray image, std::span<Detection const> detections) -> void;
 
     public:
-        explicit ObjectDetectorNodeletBase();
+        explicit ObjectDetectorBase();
 
-        ~ObjectDetectorNodeletBase() override = default;
+        ~ObjectDetectorBase() override = default;
     };
 
-    class StereoObjectDetectorNodelet final : public ObjectDetectorNodeletBase {
-
-		explicit StereoObjectDetectorNodelet();
+    class StereoObjectDetector final : public ObjectDetectorBase {
+	public:
+		explicit StereoObjectDetector();
 
         static auto convertPointCloudToRGB(sensor_msgs::msg::PointCloud2::UniquePtr const& msg, cv::Mat const& image) -> void;
 

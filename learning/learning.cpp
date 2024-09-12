@@ -4,10 +4,10 @@ using namespace std;
 
 Learning::Learning() = default;
 
-Learning::Learning(string& modelName, string& packagePathString) : mModelName{std::move(modelName)} {
+Learning::Learning(string modelName, string& packagePathString) : mModelName{std::move(modelName)} {
 
     std::filesystem::path packagePath = packagePathString;
-    std::filesystem::path modelFileName = mModelName + ".onnx";
+    std::filesystem::path modelFileName = mModelName.append(".onnx");
     std::filesystem::path modelPath = packagePath / "data" / modelFileName;
 
     mInferenceWrapper = InferenceWrapper{modelPath, mModelName, packagePath};

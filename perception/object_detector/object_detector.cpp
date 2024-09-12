@@ -2,7 +2,7 @@
 
 namespace mrover {
 
-    ObjectDetectorNodeletBase::ObjectDetectorNodeletBase() : rclcpp::Node(NODE_NAME), mLoopProfiler{get_logger()}{
+    ObjectDetectorBase::ObjectDetectorBase() : rclcpp::Node(NODE_NAME), mLoopProfiler{get_logger()}{
 
 		auto paramSub = std::make_shared<rclcpp::ParameterEventHandler>(this);
 
@@ -21,6 +21,11 @@ namespace mrover {
 		ParameterWrapper::declareParameters(this, paramSub, params);
 
 		std::string packagePath{"/home/john/ros2_ws/src/mrover"};
+
+		mModelName = "Large-Dataset";
+
+		RCLCPP_INFO_STREAM(get_logger(), "Opening Model " << mModelName);
+
         mLearning = Learning{mModelName, packagePath};
 
         mDebugImgPub = create_publisher<sensor_msgs::msg::Image>("object_detector/debug_img", 1);
@@ -28,7 +33,17 @@ namespace mrover {
         RCLCPP_INFO_STREAM(get_logger(), std::format("Object detector initialized with model: {} and thresholds: {} and {}", mModelName, mModelScoreThreshold, mModelNmsThreshold));
     }
 
-	StereoObjectDetectorNodelet::StereoObjectDetectorNodelet(){
-        mSensorSub = create_subscription<sensor_msgs::msg::PointCloud2>("/camera/left/points", 1, &StereoObjectDetectorNodelet::pointCloudCallback);
+	StereoObjectDetector::StereoObjectDetector(){
+        mSensorSub = create_subscription<sensor_msgs::msg::PointCloud2>("/camera/left/points", 1, [this](sensor_msgs::msg::PointCloud2::UniquePtr const& msg){
+			StereoObjectDetector::pointCloudCallback(msg);
+		});
     }
 } // namespace mrover
+
+
+auto main(int argc, char** argv) -> int {
+    rclcpp::init(argc, argv);
+    rclcpp::spin(std::make_shared<mrover::StereoObjectDetector>());
+    rclcpp::shutdown();
+    return EXIT_SUCCESS;
+}
