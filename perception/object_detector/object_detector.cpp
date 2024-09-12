@@ -22,8 +22,6 @@ namespace mrover {
 
 		std::string packagePath{"/home/john/ros2_ws/src/mrover"};
 
-		mModelName = "Large-Dataset";
-
 		RCLCPP_INFO_STREAM(get_logger(), "Opening Model " << mModelName);
 
         mLearning = Learning{mModelName, packagePath};
