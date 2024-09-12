@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import sys
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from functools import partial
 
 import rclpy
@@ -18,7 +18,7 @@ class Superstructure(Node):
     @dataclass
     class Publisher:
         sub: Subscription
-        twist: Twist = Twist()
+        twist: Twist = field(default_factory=Twist)
         last_time: Time | None = None
 
     def __init__(self) -> None:

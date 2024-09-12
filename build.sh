@@ -5,9 +5,9 @@ set -euxo pipefail
 # Build in the colcon workspace, not the package
 pushd ../..
 
-export CC=clang-18
-export CXX=clang++-18
-
+# set C/CXX compilers
+export CC=clang
+export CXX=clang++ 
 
 # TODO (ali): add build configs for debug vs release
 colcon build \

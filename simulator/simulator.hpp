@@ -387,7 +387,7 @@ namespace mrover {
 
         // Other
 
-        std::thread mRunThread;
+        Clock::time_point mLastTickTime = Clock::now();
 
         LoopProfiler mLoopProfiler{get_logger()};
 
@@ -432,7 +432,7 @@ namespace mrover {
 
         auto initUrdfsFromParams() -> void;
 
-        auto run() -> void;
+        auto tick() -> void;
 
         auto centerCursor() const -> void;
 
