@@ -21,7 +21,7 @@ def generate_launch_description():
         ]
     )
 
-    zed_node = Node(
+    object_detector_node = Node(
         package="mrover",
         executable="object_detector",
         name="object_detector",
@@ -32,5 +32,6 @@ def generate_launch_description():
     )
 
     return LaunchDescription([
-        zed_node
+        zed_node,
+        object_detector_node
     ])

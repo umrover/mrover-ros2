@@ -61,8 +61,7 @@ namespace mrover {
 
 	auto fillCameraInfoMessages(sl::CalibrationParameters& calibration, sl::Resolution const& resolution,
                                 sensor_msgs::msg::CameraInfo& leftInfoMsg, sensor_msgs::msg::CameraInfo& rightInfoMsg) -> void {
-        assert(leftInfoMsg);
-        assert(rightInfoMsg);
+
 
         leftInfoMsg.width = resolution.width;
         leftInfoMsg.height = resolution.height;
