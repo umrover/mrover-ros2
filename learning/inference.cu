@@ -144,9 +144,10 @@ auto Inference::prepTensors() -> void {
 		for(int32_t i = 0; i < rank; ++i){
 			size *= extents[i];
 		}
+		std::cout << tensorName << " is getting allocated to size " << size << std::endl;
 
 		// Create GPU memory for TensorRT to operate on
-        if (cudaError_t result = cudaMalloc(mBindings.data() + i, size); result != cudaSuccess)
+        if (cudaError_t result = cudaMalloc(mBindings.data() + i, size * sizeof(float)); result != cudaSuccess)
             throw std::runtime_error{"Failed to allocate GPU memory: " + std::string{cudaGetErrorString(result)}};
     }
 
