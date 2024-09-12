@@ -73,7 +73,6 @@
       - rsync
       - python3-pip
       - python3-rosdep
-      # - python3-catkin-tools
       - python3-virtualenvwrapper
       - clang-18
       - clangd-18
@@ -86,7 +85,6 @@
       - python3.10
       - python3.10-dev
       - python3.10-venv
-      # - ros-{{ ros_distro }}-
       - lld
       - libbullet-dev
       - libglfw3-dev
@@ -106,7 +104,7 @@
   become: True
   apt:
     state: present
-    deb: "{{ catkin_workspace }}/src/mrover/pkg/{{ item }}"
+    deb: "{{ ros2_workspace }}/src/mrover/pkg/{{ item }}"
   with_items:
     - libmanif-dev.deb
     - libdawn-dev.deb
@@ -122,7 +120,7 @@
   command: rosdep update
 
 - name: Install ROS Packages
-  command: rosdep install --from-paths {{ catkin_workspace }}/src --ignore-src -y --rosdistro={{ ros_distro }}
+  command: rosdep install --from-paths {{ ros2_workspace }}/src --ignore-src -y --rosdistro={{ ros_distro }}
 
 # - name: Download Bun Installer
 #   get_url:
@@ -207,8 +205,8 @@
   pip:
     name:
       # Installs from pyproject.toml
-      - "{{ catkin_workspace }}/src/mrover[dev]"
-    virtualenv: "{{ catkin_workspace }}/src/mrover/venv"
+      - "{{ ros2_workspace }}/src/mrover[dev]"
+    virtualenv: "{{ ros2_workspace }}/src/mrover/venv"
     virtualenv_command: /usr/bin/python3.10 -m venv
 
 - name: Install Chromium

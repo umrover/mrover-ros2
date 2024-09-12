@@ -102,9 +102,9 @@ source $ZSH/oh-my-zsh.sh
 
 alias mrover="cd ~/ros2_ws/src/mrover"
 
-readonly CATKIN_WORKSPACE_PATH=~/ros2_ws
+readonly ROS2_WS_PATH=~/ros2_ws
 source /opt/ros/humble/setup.zsh
-readonly CATKIN_SETUP_PATH=${CATKIN_WORKSPACE_PATH}/install/setup.zsh
+readonly CATKIN_SETUP_PATH=${ROS2_WS_PATH}/install/setup.zsh
 if [ -f ${CATKIN_SETUP_PATH} ]; then
     source ${CATKIN_SETUP_PATH}
 fi
