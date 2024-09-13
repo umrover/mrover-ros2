@@ -31,39 +31,59 @@ namespace mrover {
 
 		ParameterWrapper(std::string paramDescriptor, float& variable) : mType{rclcpp::ParameterType::PARAMETER_DOUBLE}, mParamDescriptor{std::move(paramDescriptor)}, mData{&variable}{}
 
-		void visit(rclcpp::Node* node, std::shared_ptr<rclcpp::ParameterEventHandler>& paramSub){
+		void visit(rclcpp::Node* node){
 			std::visit(overload{
 				[&](int* arg){
 					try{
-						*arg = static_cast<int>(node->get_parameter(mParamDescriptor).as_int());
+						if(std::holds_alternative<int*>(mData)){
+							*arg = static_cast<int>(node->get_parameter(mParamDescriptor).as_int());
+						}else{
+							throw std::runtime_error("Parameter has wrong type!");
+						}
 					}catch(rclcpp::exceptions::ParameterUninitializedException& e){
 						*arg = 0;
 					}
 				},
 				[&](std::string* arg){
 					try{
-						*arg = node->get_parameter(mParamDescriptor).as_string();
+						if(std::holds_alternative<std::string*>(mData)){
+							*arg = node->get_parameter(mParamDescriptor).as_string();
+						}else{
+							throw std::runtime_error("Parameter has wrong type!");
+						}
 					}catch(rclcpp::exceptions::ParameterUninitializedException& e){
 						*arg = std::string();
 					}
 				},
 				[&](bool* arg){
 					try{
-						*arg = node->get_parameter(mParamDescriptor).as_bool();
+						if(std::holds_alternative<bool*>(mData)){
+							*arg = node->get_parameter(mParamDescriptor).as_bool();
+						}else{
+							throw std::runtime_error("Parameter has wrong type!");
+						}
 					}catch(rclcpp::exceptions::ParameterUninitializedException& e){
 						*arg = false;
 					}
 				},
 				[&](double* arg){
 					try{
-						*arg = node->get_parameter(mParamDescriptor).as_double();
+						if(std::holds_alternative<double*>(mData)){
+							*arg = node->get_parameter(mParamDescriptor).as_double();
+						}else{
+							throw std::runtime_error("Parameter has wrong type!");
+						}
 					}catch(rclcpp::exceptions::ParameterUninitializedException& e){
 						*arg = 0.0;
 					}
 				},
 				[&](float* arg){
 					try{
-						*arg = static_cast<float>(node->get_parameter(mParamDescriptor).as_double());
+						if(std::holds_alternative<float*>(mData)){
+							*arg = static_cast<float>(node->get_parameter(mParamDescriptor).as_double());
+						}else{
+							throw std::runtime_error("Parameter has wrong type!");
+						}
 					}catch(rclcpp::exceptions::ParameterUninitializedException& e){
 						*arg = 0.0;
 					}
@@ -75,7 +95,7 @@ namespace mrover {
 			RCLCPP_INFO(rclcpp::get_logger("param_logger"), "Declaring %zu parameters...", params.size());
 			for(auto& param : params){
 				node->declare_parameter(param.mParamDescriptor, param.mType);
-				param.visit(node, paramSub);
+				param.visit(node);
 			}
 		}
 	};

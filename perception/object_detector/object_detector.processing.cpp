@@ -131,7 +131,7 @@ namespace mrover {
 
     auto ObjectDetectorBase::drawDetectionBoxes(cv::InputOutputArray image, std::span<Detection const> detections) -> void {
         // Draw the detected object's bounding boxes on the image for each of the objects detected
-        std::array const fontColors{cv::Scalar{232, 115, 5}, cv::Scalar{0, 4, 227}};
+        std::array const fontColors{cv::Scalar{0, 4, 227}, cv::Scalar{232, 115, 5}};
         for (std::size_t i = 0; i < detections.size(); i++) {
             // Font color will change for each different detection
             cv::Scalar const& fontColor = fontColors.at(detections[i].classId);
