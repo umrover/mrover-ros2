@@ -80,6 +80,7 @@ namespace mrover {
     auto Simulator::linksToTfUpdate() -> void {
 
         for (auto const& [name, urdf]: mUrdfs) {
+            // NOLINTNEXTLINE(misc-no-recursion)
             auto publishLink = [&](auto&& self, urdf::LinkConstSharedPtr const& link) -> void {
                 if (link->parent_joint) {
                     int index = urdf.linkNameToMeta.at(link->name).index;

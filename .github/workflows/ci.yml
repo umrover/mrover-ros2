@@ -25,8 +25,14 @@ jobs:
       - name: Style Check
         run: . /home/mrover/ros2_ws/src/mrover/venv/bin/activate && cd $GITHUB_WORKSPACE/src/mrover/ && ./style.sh
       - name: Build
-        if: github.event.pull_request.draft == false && github.event.pull_request.base.ref != 'refs/heads/master'
+        if: github.event.pull_request.draft == false
         run: . /opt/ros/humble/setup.sh && . /home/mrover/ros2_ws/src/mrover/venv/bin/activate && cd $GITHUB_WORKSPACE/src/mrover/ && ./build.sh
+      # - name: Build Without Static Analysis
+      #   if: github.event.pull_request.draft == false && github.event.pull_request.base.ref != 'refs/heads/master'
+      #   run: . /opt/ros/humble/setup.sh && . /home/mrover/ros2_ws/src/mrover/venv/bin/activate && cd $GITHUB_WORKSPACE/src/mrover/ && ./build.sh
+      # - name: Build With Static Analysis
+      #   if: github.event_name == 'push' && github.event.pull_request.base.ref == 'refs/heads/master'
+      #   run: . /opt/ros/humble/setup.sh && . /home/mrover/ros2_ws/src/mrover/venv/bin/activate && cd $GITHUB_WORKSPACE/src/mrover/ && ./build_ci.sh
       # - name: Test
       #   if: github.event.pull_request.draft == false
       #   run: . /opt/ros/noetic/setup.sh && . /home/mrover/ros2_ws/src/mrover/venv/bin/activate && . $GITHUB_WORKSPACE/devel/setup.sh && catkin test && rostest mrover integration.test --text
