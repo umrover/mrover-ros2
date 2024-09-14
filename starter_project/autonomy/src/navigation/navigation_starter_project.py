@@ -14,7 +14,7 @@ from state_machine.state_publisher_server import StatePublisher
 # navigation specific imports
 from context import Context
 from drive_state import DriveState
-from state import DoneState, Off
+from state import DoneState
 from tag_seek import TagSeekState
 
 
