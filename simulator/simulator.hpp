@@ -70,7 +70,7 @@ namespace mrover {
         // https://en.cppreference.com/w/cpp/thread/future
         std::future<decltype(meshes)> asyncMeshesLoader;
 
-        Model(Simulator& logger, std::string_view uri);
+        Model(Simulator& simulator, std::string_view uri);
 
         auto waitMeshes() -> void;
 

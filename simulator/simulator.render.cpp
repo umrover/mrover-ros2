@@ -449,6 +449,7 @@ namespace mrover {
     auto Simulator::renderModels(wgpu::RenderPassEncoder& pass) -> void {
         for (auto& [_, urdf]: mUrdfs) {
 
+            // NOLINTNEXTLINE(misc-no-recursion)
             auto renderLink = [&](auto&& self, urdf::LinkConstSharedPtr const& link) -> void {
                 for (std::size_t visualIndex = 0; urdf::VisualSharedPtr const& visual: link->visual_array) {
                     if (auto urdfMesh = std::dynamic_pointer_cast<urdf::Mesh>(visual->geometry)) {
@@ -476,6 +477,7 @@ namespace mrover {
 
         for (auto& [_, urdf]: mUrdfs) {
 
+            // NOLINTNEXTLINE(misc-no-recursion)
             auto renderLink = [&](auto&& self, urdf::LinkConstSharedPtr const& link) -> void {
                 URDF::LinkMeta& meta = urdf.linkNameToMeta.at(link->name);
 

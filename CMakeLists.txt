@@ -1,11 +1,16 @@
 cmake_minimum_required(VERSION 3.25)
 project(mrover VERSION 2025.0.0 LANGUAGES C CXX)
 
+# Supress ROS CMake warning about Python.
+cmake_policy(SET CMP0148 OLD)
+
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # Generate compile_commands.json for clangd language server.
 # Can be used by VSCode, CLion, VIM, etc.
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+option(MROVER_CLANG_TIDY "Enable static analysis with Clang tidy" OFF)
 
 if (APPLE)
     # Ensures that homebrew packages are never used over miniforge packages.
@@ -13,6 +18,21 @@ if (APPLE)
     # Find mamba python
     find_package(PythonLibs REQUIRED)
     link_libraries(${PYTHON_LIBRARIES})
+endif ()
+
+if (CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    add_compile_options(-Wall -Wextra -Wpedantic -Wno-missing-field-initializers -Wno-deprecated-declarations)
+
+    if (NOT APPLE)
+        # Try to use LLD instead of the system linker (which is usually GNU ld).
+        # LLD is faster and uses less memory.
+        # Could look into using mold which should be even faster.
+        find_program(LLD_PROGRAM lld)
+        if (LLD_PROGRAM)
+            message(STATUS "Using lld linker")
+            add_link_options(-fuse-ld=lld-18)
+        endif()
+    endif ()
 endif ()
 
 # Ccache is a compiler cache.
@@ -25,20 +45,6 @@ if (CCACHE_FOUND)
     set(CMAKE_CXX_COMPILER_LAUNCHER ccache)
     set(CMAKE_CUDA_COMPILER_LAUNCHER ccache)
 endif ()
-
-if (CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    add_compile_options(-Wall -Wextra -Wpedantic -Wno-missing-field-initializers -Wno-deprecated-declarations)
-
-    # Try to use LLD instead of the system linker (which is usually GNU ld).
-    # LLD is faster and uses less memory.
-    # Could look into using mold which should be even faster.
-    find_program(LLD_18_FOUND lld-18)
-    if (LLD_18_FOUND)
-        message(STATUS "Using lld-18 linker")
-        add_link_options(-fuse-ld=lld-18)
-    endif()
-endif ()
-
 
 
 ## Dependencies
