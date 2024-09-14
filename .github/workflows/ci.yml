@@ -2,11 +2,11 @@ name: CI
 on:
   pull_request:
     branches:
-      - master
+      - main
       - integration
   push:
     branches:
-      - master
+      - main
 jobs:
   ci:
     name: CI
@@ -28,10 +28,10 @@ jobs:
         if: github.event.pull_request.draft == false
         run: . /opt/ros/humble/setup.sh && . /home/mrover/ros2_ws/src/mrover/venv/bin/activate && cd $GITHUB_WORKSPACE/src/mrover/ && ./build.sh
       # - name: Build Without Static Analysis
-      #   if: github.event.pull_request.draft == false && github.event.pull_request.base.ref != 'refs/heads/master'
+      #   if: github.event.pull_request.draft == false && github.event.pull_request.base.ref != 'refs/heads/main'
       #   run: . /opt/ros/humble/setup.sh && . /home/mrover/ros2_ws/src/mrover/venv/bin/activate && cd $GITHUB_WORKSPACE/src/mrover/ && ./build.sh
       # - name: Build With Static Analysis
-      #   if: github.event_name == 'push' && github.event.pull_request.base.ref == 'refs/heads/master'
+      #   if: github.event_name == 'push' && github.event.pull_request.base.ref == 'refs/heads/main'
       #   run: . /opt/ros/humble/setup.sh && . /home/mrover/ros2_ws/src/mrover/venv/bin/activate && cd $GITHUB_WORKSPACE/src/mrover/ && ./build_ci.sh
       # - name: Test
       #   if: github.event.pull_request.draft == false
