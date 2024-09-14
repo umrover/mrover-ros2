@@ -85,7 +85,7 @@
   become: True
   apt:
     state: present
-    deb: "{{ catkin_workspace }}/src/mrover/pkg/{{ item }}"
+    deb: "{{ ros2_workspace }}/src/mrover/pkg/{{ item }}"
   with_items:
     - libmanif-dev.deb
     - libdawn-dev.deb
@@ -101,7 +101,7 @@
   command: rosdep update
 
 - name: Install ROS Packages
-  command: rosdep install --from-paths {{ catkin_workspace }}/src --ignore-src -y --rosdistro={{ ros_distro }}
+  command: rosdep install --from-paths {{ ros2_workspace }}/src --ignore-src -y --rosdistro={{ ros_distro }}
 
 #- name: Download Bun Installer
 #  get_url:
@@ -170,6 +170,6 @@
   pip:
     name:
       # Installs from pyproject.toml
-      - "{{ catkin_workspace }}/src/mrover[dev]"
-    virtualenv: "{{ catkin_workspace }}/src/mrover/venv"
+      - "{{ ros2_workspace }}/src/mrover[dev]"
+    virtualenv: "{{ ros2_workspace }}/src/mrover/venv"
     virtualenv_command: /usr/bin/python3.10 -m venv

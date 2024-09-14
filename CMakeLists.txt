@@ -4,7 +4,24 @@ project(mrover VERSION 2025.0.0 LANGUAGES C CXX CUDA)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+# Generate compile_commands.json for clangd language server.
+# Can be used by VSCode, CLion, VIM, etc.
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+if (APPLE)
+    # Ensures that homebrew packages are never used over miniforge packages.
+    set(CMAKE_IGNORE_PATH /opt/homebrew)
+    # Find mamba python
+    find_package(PythonLibs REQUIRED)
+    link_libraries(${PYTHON_LIBRARIES})
+    # link_libraries()
+endif ()
+
+# Ccache is a compiler cache.
+# It speeds up recompilation by caching previous compilations and detecting when the same compilation is being done again.
+# It is global, so even if you delete the build directory, it will still work.
+# This can cause problems in rare cases so run "ccache -C" to clear the cache.
 find_program(CCACHE_FOUND ccache)
 if (CCACHE_FOUND)
     set(CMAKE_C_COMPILER_LAUNCHER ccache)
@@ -15,8 +32,17 @@ endif ()
 if (CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     add_compile_options(-Wall -Wextra -Wpedantic -Wno-missing-field-initializers -Wno-deprecated-declarations)
 
-    add_link_options(-fuse-ld=lld-18)
+    # Try to use LLD instead of the system linker (which is usually GNU ld).
+    # LLD is faster and uses less memory.
+    # Could look into using mold which should be even faster.
+    find_program(LLD_18_FOUND lld-18)
+    if (LLD_18_FOUND)
+        message(STATUS "Using lld-18 linker")
+        add_link_options(-fuse-ld=lld-18)
+    endif()
 endif ()
+
+
 
 ## Dependencies
 
@@ -39,7 +65,10 @@ find_package(Bullet REQUIRED)
 find_package(glfw3 REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(OpenCV REQUIRED)
-find_package(TBB REQUIRED)
+if (NOT APPLE)
+    find_package(TBB REQUIRED)
+    link_libraries(TBB::tbb)
+endif()
 
 find_package(dawn QUIET)
 if (dawn_FOUND)
@@ -67,7 +96,10 @@ endif ()
 find_package(manif QUIET)
 if (NOT manif_FOUND)
     if (EXISTS ${CMAKE_CURRENT_LIST_DIR}/deps/manif/include/manif)
+        set(BUILD_TESTING_OLD ${BUILD_TESTING})
+        set(BUILD_TESTING OFF)
         add_subdirectory(deps/manif SYSTEM)
+        set(BUILD_TESTING ${BUILD_TESTING_OLD})
         add_library(MANIF::manif ALIAS manif)
 
         set(manif_FOUND TRUE)
@@ -99,6 +131,8 @@ if (BUILD_TESTING)
     set(ament_cmake_cpplint_FOUND TRUE)
     ament_lint_auto_find_test_dependencies()
 endif ()
+
+include_directories(BEFORE SYSTEM preload)
 
 include(cmake/macros.cmake)
 # include(cmake/deps.cmake)
@@ -145,6 +179,8 @@ install(PROGRAMS
         DESTINATION
         lib/${PROJECT_NAME}
 )
+
+install(DIRECTORY starter_project/autonomy/launch DESTINATION share/${PROJECT_NAME})
 
 ## Python
 
@@ -221,7 +257,7 @@ endif()
 
 mrover_add_node(tag_detector perception/tag_detector/*.cpp perception/tag_detector/pch.hpp)
 ament_target_dependencies(tag_detector rclcpp tf2 tf2_ros)
-target_link_libraries(tag_detector lie opencv_core opencv_aruco opencv_imgproc loop_profiler TBB::tbb)
+target_link_libraries(tag_detector lie opencv_core opencv_aruco opencv_imgproc loop_profiler)
 
 # Embedded
 
@@ -281,6 +317,6 @@ install(PROGRAMS
 install(DIRECTORY launch DESTINATION share/${PROJECT_NAME})
 install(DIRECTORY urdf DESTINATION share/${PROJECT_NAME})
 install(DIRECTORY config DESTINATION share/${PROJECT_NAME})
-install (DIRECTORY ${} DESTINATION lib/${PROJECT_NAME})
+# install (DIRECTORY ${} DESTINATION lib/${PROJECT_NAME})
 
 ament_package()

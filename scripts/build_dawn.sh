@@ -3,7 +3,7 @@
 # git submodule update --init deps/dawn
 
 pushd deps/dawn || exit
-CC=clang-18 CXX=clang++-18 cmake \
+cmake \
     -B out/Release \
     -G Ninja \
     -W no-dev \
@@ -22,4 +22,4 @@ CC=clang-18 CXX=clang++-18 cmake \
     -D TINT_BUILD_CMD_TOOLS=OFF \
     -D TINT_BUILD_DOCS=OFF \
     -D TINT_BUILD_TESTS=OFF
-cmake --build out/Release
+cmake --build out/Release --target webgpu_dawn

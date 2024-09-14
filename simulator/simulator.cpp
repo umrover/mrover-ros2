@@ -6,7 +6,7 @@ namespace mrover {
                                                        .use_intra_process_comms(true)
                                                        .allow_undeclared_parameters(true)
                                                        .automatically_declare_parameters_from_overrides(true)} {
-        // try {
+        try {
             mSaveTask = PeriodicTask{get_parameter("save_rate").as_double()};
             mSaveHistory = boost::circular_buffer<SaveData>{static_cast<std::size_t>(get_parameter("save_history").as_int())};
 
@@ -73,12 +73,10 @@ namespace mrover {
                 };
                 mMsgToUrdf.insert(elements.begin(), elements.end());
             }
-
-            mRunThread = std::thread{&Simulator::run, this};
-        // } catch (std::exception const& e) {
-        //     RCLCPP_FATAL_STREAM(get_logger(), e.what());
-        //     rclcpp::shutdown();
-        // }
+        } catch (std::exception const& e) {
+            RCLCPP_FATAL_STREAM(get_logger(), e.what());
+            rclcpp::shutdown();
+        }
     }
 
     auto spinSleep(Clock::time_point const& until) -> void {
@@ -89,46 +87,32 @@ namespace mrover {
             ;
     }
 
-    auto Simulator::run() -> void try {
-        for (Clock::duration dt{}; rclcpp::ok();) {
-            Clock::time_point beginTime = Clock::now();
+    auto Simulator::tick() -> void try {
+        Clock::time_point begin = Clock::now();
+        Clock::duration dt = begin - mLastTickTime;
 
-            mLoopProfiler.beginLoop();
+        mLoopProfiler.beginLoop();
 
-            // Note(quintin):
-            // Apple sucks and does not support polling on a non-main thread (which we are currently on)
-            // Instead add to ROS's global callback queue which I think will be served by the main thread
-            if (!mIsHeadless) {
-#ifdef __APPLE__
-                struct PollGlfw : ros::CallbackInterface {
-                    auto call() -> CallResult override {
-                        glfwPollEvents();
-                        return Success;
-                    }
-                };
-                ros::getGlobalCallbackQueue()->addCallback(boost::make_shared<PollGlfw>());
-#else
-                glfwPollEvents();
-#endif
-                // Comments this out while debugging segfaults, otherwise it captures your cursor
-                // glfwSetInputMode(mWindow.get(), GLFW_CURSOR, mInGui ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_DISABLED);
-            }
-            mLoopProfiler.measureEvent("GLFW Events");
-
-            userControls(dt);
-            mLoopProfiler.measureEvent("Controls");
-
-            if (mEnablePhysics) physicsUpdate(dt);
-            mLoopProfiler.measureEvent("Physics");
-
-            renderUpdate();
-            mLoopProfiler.measureEvent("Render");
-
-            spinSleep(beginTime + std::chrono::duration_cast<Clock::duration>(std::chrono::duration<float>{1.0f / mTargetUpdateRate}));
-            dt = Clock::now() - beginTime;
-
-            mLoopProfiler.measureEvent("Sleep");
+        if (!mIsHeadless) {
+            glfwPollEvents();
+            // Comments this out while debugging segfaults, otherwise it captures your cursor
+            // glfwSetInputMode(mWindow.get(), GLFW_CURSOR, mInGui ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_DISABLED);
         }
+        mLoopProfiler.measureEvent("GLFW Events");
+
+        userControls(dt);
+        mLoopProfiler.measureEvent("Controls");
+
+        if (mEnablePhysics) physicsUpdate(dt);
+        mLoopProfiler.measureEvent("Physics");
+
+        renderUpdate();
+        mLoopProfiler.measureEvent("Render");
+
+        spinSleep(begin + std::chrono::duration_cast<Clock::duration>(std::chrono::duration<float>{1.0f / mTargetUpdateRate}));
+        mLoopProfiler.measureEvent("Sleep");
+
+        mLastTickTime = begin;
 
     } catch (std::exception const& e) {
         RCLCPP_FATAL_STREAM(get_logger(), e.what());
@@ -136,8 +120,6 @@ namespace mrover {
     }
 
     Simulator::~Simulator() {
-        mRunThread.join();
-
         if (!mIsHeadless) {
             ImGui_ImplWGPU_Shutdown();
             ImGui_ImplGlfw_Shutdown();
@@ -162,7 +144,13 @@ namespace mrover {
 
 auto main(int argc, char** argv) -> int {
     rclcpp::init(argc, argv);
-    rclcpp::spin(std::make_shared<mrover::Simulator>());
+    rclcpp::executors::SingleThreadedExecutor executor;
+    auto simulator = std::make_shared<mrover::Simulator>();
+    executor.add_node(simulator);
+    while (rclcpp::ok()) {
+        executor.spin_some();
+        simulator->tick();
+    }
     rclcpp::shutdown();
     return EXIT_SUCCESS;
 }

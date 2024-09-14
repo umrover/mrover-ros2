@@ -73,7 +73,6 @@
       - rsync
       - python3-pip
       - python3-rosdep
-      # - python3-catkin-tools
       - python3-virtualenvwrapper
       - clang-18
       - clangd-18
@@ -86,7 +85,6 @@
       - python3.10
       - python3.10-dev
       - python3.10-venv
-      # - ros-{{ ros_distro }}-
       - lld
       - libbullet-dev
       - libglfw3-dev
@@ -99,14 +97,18 @@
       - libgstreamer-plugins-base1.0-dev
       - vainfo
       - x264
+      - ros-humble-ros-base
+      - ros-humble-rviz2
       - ros-humble-xacro
-      - ros-humble-rtcm-msgs
+      # TODO (ali): why do these need to be installed manually
+      - libassimp-dev
+      - libboost-dev
 
 - name: Install Local APT Packages
   become: True
   apt:
     state: present
-    deb: "{{ catkin_workspace }}/src/mrover/pkg/{{ item }}"
+    deb: "{{ ros2_workspace }}/src/mrover/pkg/{{ item }}"
   with_items:
     - libmanif-dev.deb
     - libdawn-dev.deb
@@ -121,8 +123,8 @@
 - name: Update rosdep
   command: rosdep update
 
-- name: Install ROS Packages
-  command: rosdep install --from-paths {{ catkin_workspace }}/src --ignore-src -y --rosdistro={{ ros_distro }}
+# - name: Install ROS Packages
+#   # command: rosdep install --from-paths {{ ros2_workspace }}/src --ignore-src -y --rosdistro={{ ros_distro }}
 
 # - name: Download Bun Installer
 #   get_url:
@@ -163,6 +165,22 @@
     link: /usr/bin/gcc
     priority: 130
 
+- name: Set clang++18 as Default
+  become: True
+  alternatives:
+    name: clang++
+    path: /usr/bin/clang++-18
+    link: /usr/bin/clang++
+    priority: 180
+
+- name: Set clang-18 as Default
+  become: True
+  alternatives:
+    name: clang
+    path: /usr/bin/clang-18
+    link: /usr/bin/clang
+    priority: 180
+
 - name: Set clangd 18 as Default
   become: True
   alternatives:
@@ -191,8 +209,8 @@
   pip:
     name:
       # Installs from pyproject.toml
-      - "{{ catkin_workspace }}/src/mrover[dev]"
-    virtualenv: "{{ catkin_workspace }}/src/mrover/venv"
+      - "{{ ros2_workspace }}/src/mrover[dev]"
+    virtualenv: "{{ ros2_workspace }}/src/mrover/venv"
     virtualenv_command: /usr/bin/python3.10 -m venv
 
 - name: Install Chromium

@@ -159,7 +159,7 @@ namespace mrover {
                         rclcpp::shutdown();
                         break;
                     default:
-                        assert(false);
+                        std::abort();
                 }
                 g_error_free(error);
                 g_free(debug);
