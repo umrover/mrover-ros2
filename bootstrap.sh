@@ -54,7 +54,7 @@ if [ ! -d ${MROVER_PATH} ]; then
   echo -e "${GREY_BOLD}Creating ROS workspace ...${NC}"
   mkdir -p ${CATKIN_PATH}/src
   git clone git@github.com:umrover/mrover-ros2 ${CATKIN_PATH}/src/mrover
-  cd ${CATKIN_PATH}/src/mrover && git checkout ali
+  cd ${CATKIN_PATH}/src/mrover
   FIRST_TIME_SETUP=true
 fi
 
