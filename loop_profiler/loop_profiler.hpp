@@ -8,6 +8,7 @@
 #include <unordered_map>
 
 #include <rclcpp/logger.hpp>
+#include <rclcpp/logging.hpp>
 
 namespace mrover {
 

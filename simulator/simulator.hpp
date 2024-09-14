@@ -389,7 +389,7 @@ namespace mrover {
 
         Clock::time_point mLastTickTime = Clock::now();
 
-        LoopProfiler mLoopProfiler{get_logger()};
+        LoopProfiler mLoopProfiler{get_logger(), 512};
 
         auto renderCamera(Camera& camera, wgpu::CommandEncoder& encoder, wgpu::RenderPassDescriptor const& passDescriptor) -> void;
 
