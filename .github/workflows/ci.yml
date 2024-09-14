@@ -19,7 +19,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          lfs: "true"
+          # lfs: "true"
           # This makes sure that $GITHUB_WORKSPACE is the catkin workspace path
           path: "src/mrover"
       - name: Style Check
