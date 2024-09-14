@@ -179,6 +179,7 @@ namespace mrover {
         std::vector<btMultiBodyLinkCollider*> collidersToFinalize;
         std::vector<btMultiBodyConstraint*> constraintsToFinalize;
 
+        // NOLINTNEXTLINE(misc-no-recursion)
         auto traverse = [&](auto&& self, urdf::LinkConstSharedPtr const& link) -> void {
             RCLCPP_INFO_STREAM(simulator.get_logger(), std::format("Processing link: {}", link->name));
 

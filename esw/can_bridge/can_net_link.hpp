@@ -8,7 +8,7 @@ namespace mrover {
 
         CanNetLink() = default;
 
-        CanNetLink(rclcpp::Logger logger, std::string);
+        CanNetLink(rclcpp::Logger const& logger, std::string);
 
         CanNetLink(CanNetLink const&) = delete;
         auto operator=(CanNetLink const&) -> CanNetLink& = delete;

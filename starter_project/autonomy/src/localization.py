@@ -19,7 +19,7 @@ class Localization(Node):
     pose: SE3
 
     def __init__(self):
-        super().__init__('localization')
+        super().__init__("localization")
         # create subscribers for GPS and IMU data, linking them to our callback functions
         # TODO
 
@@ -71,7 +71,7 @@ def main():
     # let the callback functions run asynchronously in the background
     rclpy.spin(localization)
 
-    #TODO (ali): shutdown maybe?
+    # TODO (ali): shutdown maybe?
     # rclpy.shutdown()
 
 

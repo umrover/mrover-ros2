@@ -15,6 +15,7 @@ def normalized(v: np.ndarray) -> np.ndarray:
 
 # For more mathy approaches to the following check out geometric algebra
 
+
 def angle_to_rotate_2d(v1, v2):
     """
     :return: The angle in radians to rotate v1 to align with v2

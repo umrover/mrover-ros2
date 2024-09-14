@@ -2,7 +2,7 @@
 
 namespace mrover {
 
-    CanNetLink::CanNetLink(rclcpp::Logger logger, std::string interface)
+    CanNetLink::CanNetLink(rclcpp::Logger const& logger, std::string interface)
         : mInterface{std::move(interface)} {
 
         try {

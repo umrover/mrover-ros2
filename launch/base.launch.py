@@ -9,33 +9,25 @@ from launch_ros.actions import Node, ComposableNodeContainer
 from launch_ros.descriptions import ComposableNode
 from launch.conditions import LaunchConfigurationEquals
 
+
 def generate_launch_description():
-    
-    #TODO (ali): add localization.launch
+
+    # TODO (ali): add localization.launch
 
     diff_drive_controller_node = Node(
         package="mrover",
         executable="differential_drive_controller",
         name="differential_drive_controller",
-        parameters=[
-            os.path.join(
-                get_package_share_directory("mrover"),"config","esw.yaml")
-        ]
+        parameters=[os.path.join(get_package_share_directory("mrover"), "config", "esw.yaml")],
     )
 
     superstructure_node = Node(
         package="mrover",
         executable="superstructure.py",
         name="superstructure",
-        parameters=[
-            os.path.join(
-                get_package_share_directory("mrover"),"config","superstructure.yaml")
-        ]
+        parameters=[os.path.join(get_package_share_directory("mrover"), "config", "superstructure.yaml")],
     )
 
     # TODO (ali): add LED
 
-    return LaunchDescription([
-        diff_drive_controller_node,
-        superstructure_node
-    ])
+    return LaunchDescription([diff_drive_controller_node, superstructure_node])
