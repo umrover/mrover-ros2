@@ -31,12 +31,16 @@ def to_tf_tree(
     )
 
 
-def from_tf_tree(tf_buffer: tf2_ros.buffer, child_frame: str, parent_frame: str, time: Time = Time(), timeout: Duration = Duration()) -> SE3:
+def from_tf_tree(
+    tf_buffer: tf2_ros.buffer, child_frame: str, parent_frame: str, time: Time = Time(), timeout: Duration = Duration()
+) -> SE3:
     se3, _ = from_tf_tree_with_time(tf_buffer, child_frame, parent_frame, time, timeout)
     return se3
 
 
-def from_tf_tree_with_time(tf_buffer: tf2_ros.buffer, child_frame: str, parent_frame: str, time: Time = Time(), timeout: Duration = Duration()) -> tuple[SE3, Time]:
+def from_tf_tree_with_time(
+    tf_buffer: tf2_ros.buffer, child_frame: str, parent_frame: str, time: Time = Time(), timeout: Duration = Duration()
+) -> tuple[SE3, Time]:
     tf = tf_buffer.lookup_transform(parent_frame, child_frame, time, timeout)
     translation = tf.transform.translation
     rotation = tf.transform.rotation

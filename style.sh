@@ -5,6 +5,7 @@ set -Eeuo pipefail
 
 readonly RED='\033[0;31m'
 readonly NC='\033[0m'
+readonly YELLOW_BOLD='\033[1;33m'
 
 BLACK_ARGS=(
   "--line-length=120"
@@ -61,3 +62,10 @@ echo
 echo "Style checking Python with mypy ..."
 # TODO(quintin): Add other subteam folders and scripts folder
 "$MYPY_PATH" --config-file=mypy.ini --check ./navigation ./scripts
+
+if [ $# -eq 0 ] || [ "$1" != "--fix" ]; then
+  echo
+  echo -e "====================================================================="
+  echo -e "${YELLOW_BOLD}Please run ./style.sh --fix if you want to actually update the files!${NC}"
+  echo -e "====================================================================="
+fi
