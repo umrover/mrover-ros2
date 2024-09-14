@@ -5,6 +5,8 @@ from typing import Optional
 
 import numpy as np
 import rclpy
+from rclpy.publisher import Publisher
+from rclpy.subscription import Subscription
 from rclpy.node import Node
 import tf2_ros
 from geometry_msgs.msg import Twist
@@ -23,15 +25,15 @@ class Rover:
 
     def get_pose(self) -> Optional[SE3]:
         # TODO: return the pose of the rover (or None if we don't have one (catch exception))
-        pass
+        return SE3.from_tf_tree(self.ctx.tf_buffer, "map", "base_link")
 
     def send_drive_command(self, twist: Twist):
         # TODO: send the Twist message to the rover
-        pass
+        self.ctx.vel_cmd_publisher.publish(twist)
 
     def send_drive_stop(self):
         # TODO: tell the rover to stop
-        pass
+        self.send_drive_command(Twist())
 
 
 @dataclass
@@ -46,7 +48,7 @@ class Environment:
 
     def receive_fid_data(self, message: StarterProjectTag):
         # TODO: handle incoming FID data messages here
-        pass
+        self.fid_pos = message
 
     def get_fid_data(self) -> Optional[StarterProjectTag]:
         """
@@ -54,25 +56,34 @@ class Environment:
         if it exists, otherwise returns None
         """
         # TODO: return either None or your position message
-        pass
+        if self.fid_pos:
+            return self.fid_pos
+        else:
+            return None
 
 
-class Context(Node):
+class Context:
+    node: Node
     tf_buffer: tf2_ros.Buffer
     tf_listener: tf2_ros.TransformListener
-    vel_cmd_publisher: rclpy.Publisher
-    vis_publisher: rclpy.Publisher
-    fid_listener: rclpy.Subscriber
+    vel_cmd_publisher: Publisher
+    vis_publisher: Publisher
+    fid_listener: Subscription
 
     # Use these as the primary interfaces in states
     rover: Rover
     env: Environment
+    disable_requested: bool
 
-    def __init__(self):
+    def setup(self, node: Node):
+        self.node = node
         self.tf_buffer = tf2_ros.Buffer()
-        self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
-        self.vel_cmd_publisher = self.create_publisher(Twist, "cmd_vel", queue_size=1)
-        self.vis_publisher = self.create_publisher("nav_vis", Marker)
+
+        self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self.node)
+        self.vel_cmd_publisher = node.create_publisher(Twist, "cmd_vel", 1)
+        self.vis_publisher = node.create_publisher(Marker, "nav_vis", 1)
         self.rover = Rover(self)
         self.env = Environment(self, None)
-        self.fid_listener = self.create_subscription(StarterProjectTag, "/tag", self.env.receive_fid_data)
+        self.disable_requested = False
+
+        self.fid_listener = node.create_subscription(StarterProjectTag, "/tag", self.env.receive_fid_data, 1)

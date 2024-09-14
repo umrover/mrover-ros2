@@ -63,5 +63,5 @@ def generate_launch_description():
         # ============
         # Localization
         # ============
-        # localization_node
+        localization_node
     ])

@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 
 import numpy as np
 import rclpy
+from rclpy.duration import Duration
 import tf2_ros
 from geometry_msgs.msg import TransformStamped, Vector3, Quaternion
 
@@ -58,7 +59,7 @@ class SE3:
 
         :returns: an SE3 containing the transform from parent_frame to child_frame
         """
-        tf_msg = tf_buffer.lookup_transform(parent_frame, child_frame, rospy.Time()).transform
+        tf_msg = tf_buffer.lookup_transform(parent_frame, child_frame, rclpy.time.Time()).transform
         result = SE3(position=numpify(tf_msg.translation), rotation=SO3(numpify(tf_msg.rotation)))
         return result
 

@@ -42,7 +42,7 @@ class StateMachine(Generic[ContextType]):
         self.transition_log: list[TransitionRecord] = []
         self.context = context
         self.name = name
-        self.off_lamdba = None
+        self.off_lambda = None
         self.off_state = None
         self.logger = logger
 
