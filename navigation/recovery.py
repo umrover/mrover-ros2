@@ -38,9 +38,7 @@ class RecoveryState(State):
         give_up_time = context.node.get_parameter("recovery.give_up_time").value
         recovery_distance = context.node.get_parameter("recovery.recovery_distance").value
         stop_thresh = context.node.get_parameter("recovery.stop_threshold").value
-        drive_fwd_thresh = (
-            context.node.get_parameter("recovery.drive_forward_threshold").value
-        )
+        drive_fwd_thresh = context.node.get_parameter("recovery.drive_forward_threshold").value
 
         if context.node.get_clock().now() - self.start_time > Duration(seconds=give_up_time):
             return context.rover.previous_state

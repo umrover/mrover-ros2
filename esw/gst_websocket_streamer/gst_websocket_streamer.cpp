@@ -204,7 +204,7 @@ namespace mrover {
         return deviceNode;
     }
 
-    GstWebsocketStreamer::GstWebsocketStreamer(const rclcpp::NodeOptions &options) : Node{"gst_websocket_streamer", rclcpp::NodeOptions{}.use_intra_process_comms(true)} {
+    GstWebsocketStreamer::GstWebsocketStreamer([[maybe_unused]] const rclcpp::NodeOptions &options) : Node{"gst_websocket_streamer", rclcpp::NodeOptions{}.use_intra_process_comms(true)} {
         try {
             declare_parameter("dev_node", "");
             declare_parameter("dev_path", "");

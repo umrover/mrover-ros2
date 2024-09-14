@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Run on a fresh Ubuntu 20.04 install.
+# Run on a fresh Ubuntu 22 install.
 # Installs Ansible and Git, then clones the mrover repo
 # Ansible will be used to finish configuring the system
 

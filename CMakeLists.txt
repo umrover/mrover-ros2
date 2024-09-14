@@ -13,7 +13,6 @@ if (APPLE)
     # Find mamba python
     find_package(PythonLibs REQUIRED)
     link_libraries(${PYTHON_LIBRARIES})
-    # link_libraries()
 endif ()
 
 # Ccache is a compiler cache.
