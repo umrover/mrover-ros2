@@ -53,18 +53,6 @@ class Navigation(Node):
 
         self.create_timer(1 / 60, self.state_machine.update)
 
-    def run(self):
-        self.state_machine.execute()
-
-    def stop(self):
-        self.sis.stop()
-        # Requests current state to go into 'terminated' to cleanly exit state machine
-        self.state_machine.request_preempt()
-        # Wait for smach thread to terminate
-        self.join()
-        self.context.rover.send_drive_stop()
-
-
 def main():
     try:
         # TODO: init a node called "navigation"
