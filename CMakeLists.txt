@@ -4,10 +4,8 @@ project(mrover VERSION 2025.0.0 LANGUAGES C CXX)
 # Supress ROS CMake warning about Python.
 cmake_policy(SET CMP0148 OLD)
 
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-
 set(CMAKE_CXX_STANDARD 23)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 # Generate compile_commands.json for clangd language server.
 # Can be used by VSCode, CLion, VIM, etc.
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -250,19 +248,20 @@ if(ZED_FOUND AND CUDA_FOUND)
 
 	# ZED Wrapper
 	mrover_add_node(zed perception/zed_wrapper/*.c* perception/zed_wrapper/pch.hpp)
+	target_compile_options(zed PRIVATE -std=c++20)
 	target_link_libraries(zed parameter_utils lie MANIF::manif ${CUDA_LIBRARIES} loop_profiler cuda_compiler_flags)
 	ament_target_dependencies(zed rclcpp sensor_msgs ZED CUDA tf2 tf2_ros)
 
 	# Learning Library
     # TODO(john): Update to use the new API
-	mrover_add_library(_learning learning/*.c* learning)
-    target_compile_options(_learning PRIVATE -Wno-deprecated-declarations -std=c++17)
-	target_include_directories(_learning PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
-	target_link_libraries(_learning PRIVATE opencv_core opencv_dnn opencv_imgproc lie nvinfer nvonnxparser tbb cuda_compiler_flags)
+	mrover_add_library(tensorrt tensorrt/*.c* tensorrt)
+    target_compile_options(tensorrt PRIVATE -Wno-deprecated-declarations -std=c++17)
+	target_include_directories(tensorrt PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
+	target_link_libraries(tensorrt PRIVATE opencv_core opencv_dnn opencv_imgproc lie nvinfer nvonnxparser tbb cuda_compiler_flags)
 
 	# Object Detector
 	mrover_add_node(object_detector perception/object_detector/*.c* src/perception/object_detector/pch.hpp)
-    target_link_libraries(object_detector opencv_core opencv_dnn opencv_imgproc lie tbb _learning opencv_imgcodecs opencv_highgui loop_profiler parameter_utils cuda_compiler_flags)
+    target_link_libraries(object_detector opencv_core opencv_dnn opencv_imgproc lie tbb tensorrt opencv_imgcodecs opencv_highgui loop_profiler parameter_utils cuda_compiler_flags)
 	ament_target_dependencies(object_detector rclcpp sensor_msgs CUDA tf2 tf2_ros)
 else()
 	message("ZED not found...")
