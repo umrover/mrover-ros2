@@ -204,6 +204,8 @@ namespace mrover {
         constexpr auto WINDOW_NAME = "MRover Simulator (DEBUG BUILD, MAY BE SLOW)";
 #endif
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+        // There is still an off-by-one error on Vulkan with resizing windows and ImGui.
+        // See: https://matrix.to/#/!ZSOHTEPDbwuEgSJwYw:matrix.org
         glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
         glfwWindowHint(GLFW_COCOA_RETINA_FRAMEBUFFER, GLFW_FALSE);
         mWindow = GlfwPointer<GLFWwindow, glfwCreateWindow, glfwDestroyWindow>{w, h, WINDOW_NAME, nullptr, nullptr};
