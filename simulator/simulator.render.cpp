@@ -805,15 +805,12 @@ namespace mrover {
             // Temporary fix...
             // See: https://issues.chromium.org/issues/338710345
             // This only happens on M2/M3 (M1 is fine)
-            bool isWorkDone = false;
-            auto workDoneCallback = mQueue.onSubmittedWorkDone([&isWorkDone](wgpu::QueueWorkDoneStatus const& status) {
-                if (status == wgpu::QueueWorkDoneStatus::Success) {
-                    isWorkDone = true;
-                }
-            });
-            while (!isWorkDone) {
-                mDevice.tick();
-            }
+            wgpu::QueueWorkDoneCallbackInfo2 info;
+            info.mode = wgpu::CallbackMode::WaitAnyOnly;
+            wgpu::Future workDoneFuture = mQueue.onSubmittedWorkDone2(info);
+            wgpu::FutureWaitInfo waitInfo;
+            waitInfo.future = workDoneFuture;
+            mWgpuInstance.waitAny(1, &waitInfo, 1'000'000'000'000);
         }
 #endif
 
