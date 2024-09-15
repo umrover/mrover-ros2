@@ -12,7 +12,7 @@ from state_machine.state_publisher_server import StatePublisher
 # navigation specific imports
 from context import Context
 from drive_state import DriveState
-from state import DoneState, OffState, off_check
+from state import DoneState
 from tag_seek import TagSeekState
 
 
@@ -47,8 +47,6 @@ class Navigation(Node):
             [TagSeekState(), DoneState()]
         )
 
-        # self.state_machine.add_transition(OffState(), [DriveState(), DoneState()])
-        # self.state_machine.configure_off_switch(OffState(), off_check)
         self.state_machine_server = StatePublisher(self, self.state_machine, "nav_structure", 1, "nav_state", 10)
 
         self.create_timer(1 / 60, self.state_machine.update)
