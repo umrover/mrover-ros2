@@ -31,10 +31,6 @@ class Navigation(Node):
         self.state_machine = StateMachine[Context](DriveState(), "NavigationStateMachine", self.ctx, self.get_logger())
 
         # TODO: add DriveState and its transitions here
-        self.state_machine.add_transitions(
-            DriveState(), 
-            [DriveState(), TagSeekState()]
-        )
 
         # DoneState and its transitions
         self.state_machine.add_transitions(
@@ -49,10 +45,6 @@ class Navigation(Node):
         )
 
         # TODO: add TagSeekState and its transitions here
-        self.state_machine.add_transitions(
-            TagSeekState(),
-            [TagSeekState(), DoneState(), FailState()]
-        )
 
         self.state_machine_server = StatePublisher(self, self.state_machine, "nav_structure", 1, "nav_state", 10)
 
@@ -61,7 +53,7 @@ class Navigation(Node):
 def main():
     try:
         # TODO: init a node called "navigation"
-        rclpy.init()
+
         # context and navigation objects
         context = Context()
         navigation = Navigation(context)
