@@ -35,14 +35,15 @@ namespace mrover {
     }
 
     auto Simulator::makeFramebuffers(int width, int height) -> void {
-        wgpu::SwapChainDescriptor descriptor;
-        descriptor.usage = wgpu::TextureUsage::RenderAttachment;
-        descriptor.format = COLOR_FORMAT;
-        descriptor.width = width;
-        descriptor.height = height;
-        descriptor.presentMode = wgpu::PresentMode::Immediate;
-        mSwapChain = mDevice.createSwapChain(mSurface, descriptor);
-        if (!mSwapChain) throw std::runtime_error("Failed to create WGPU swap chain");
+        wgpu::SurfaceConfiguration surfaceConfiguration;
+        surfaceConfiguration.device = mDevice;
+        surfaceConfiguration.format = COLOR_FORMAT;
+        surfaceConfiguration.usage = wgpu::TextureUsage::RenderAttachment;
+        surfaceConfiguration.width = width;
+        surfaceConfiguration.height = height;
+        surfaceConfiguration.alphaMode = wgpu::CompositeAlphaMode::Auto;
+        surfaceConfiguration.presentMode = wgpu::PresentMode::Immediate;
+        mSurface.configure(surfaceConfiguration);
         std::tie(mNormalTexture, mNormalTextureView) = makeTextureAndView(width, height, NORMAL_FORMAT, wgpu::TextureUsage::RenderAttachment, wgpu::TextureAspect::All);
         std::tie(mDepthTexture, mDepthTextureView) = makeTextureAndView(width, height, DEPTH_FORMAT, wgpu::TextureUsage::RenderAttachment, wgpu::TextureAspect::DepthOnly);
     }
@@ -203,7 +204,9 @@ namespace mrover {
         constexpr auto WINDOW_NAME = "MRover Simulator (DEBUG BUILD, MAY BE SLOW)";
 #endif
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-        glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+        // There is still an off-by-one error on Vulkan with resizing windows and ImGui.
+        // See: https://matrix.to/#/!ZSOHTEPDbwuEgSJwYw:matrix.org
+        glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
         glfwWindowHint(GLFW_COCOA_RETINA_FRAMEBUFFER, GLFW_FALSE);
         mWindow = GlfwPointer<GLFWwindow, glfwCreateWindow, glfwDestroyWindow>{w, h, WINDOW_NAME, nullptr, nullptr};
         RCLCPP_INFO_STREAM(get_logger(), std::format("Created window of size: {}x{}", w, h));
@@ -258,7 +261,7 @@ namespace mrover {
         mNormalTextureView.release();
         mNormalTexture.destroy();
         mNormalTexture.release();
-        mSwapChain.release();
+        mSurface.unconfigure();
 
         makeFramebuffers(width, height);
     }
@@ -492,7 +495,7 @@ namespace mrover {
                         for (int i = 0; i < compound->getNumChildShapes(); ++i) {
                             SE3d modelInLink = btTransformToSe3(urdfPoseToBtTransform(link->collision_array.at(i)->origin));
                             SE3d modelInWorld = linkToWorld * modelInLink;
-                            auto* shape = compound->getChildShape(i);
+                            btCollisionShape* shape = compound->getChildShape(i);
                             if (auto* box = dynamic_cast<btBoxShape const*>(shape)) {
                                 btVector3 extents = box->getHalfExtentsWithoutMargin() * 2;
                                 SIM3 modelToWorld{modelInWorld, R3d{extents.x(), extents.y(), extents.z()}};
@@ -723,10 +726,20 @@ namespace mrover {
         camerasUpdate(encoder, colorAttachment, normalAttachment, depthStencilAttachment, renderPassDescriptor);
 
         if (!mIsHeadless) {
-            wgpu::TextureView nextTexture = mSwapChain.getCurrentTextureView();
-            if (!nextTexture) throw std::runtime_error("Failed to get WGPU next texture view");
+            wgpu::SurfaceTexture surfaceTexture;
+            mSurface.getCurrentTexture(&surfaceTexture);
+            if (surfaceTexture.status != wgpu::SurfaceGetCurrentTextureStatus::Success)
+                throw std::runtime_error{"Failed to get WGPU surface texture"};
 
-            colorAttachment.view = nextTexture;
+            wgpu::TextureViewDescriptor nextTextureViewDescriptor;
+            nextTextureViewDescriptor.format = COLOR_FORMAT;
+            nextTextureViewDescriptor.dimension = wgpu::TextureViewDimension::_2D;
+            nextTextureViewDescriptor.mipLevelCount = 1;
+            nextTextureViewDescriptor.arrayLayerCount = 1;
+            nextTextureViewDescriptor.aspect = wgpu::TextureAspect::All;
+            wgpu::TextureView nextTextureView = wgpu::Texture{surfaceTexture.texture}.createView(nextTextureViewDescriptor);
+
+            colorAttachment.view = nextTextureView;
             normalAttachment.view = mNormalTextureView;
             depthStencilAttachment.view = mDepthTextureView;
 
@@ -768,7 +781,7 @@ namespace mrover {
 
             bindGroup.release();
 
-            nextTexture.release();
+            nextTextureView.release();
         }
 
         wgpu::CommandBuffer commands = encoder.finish();
@@ -791,7 +804,7 @@ namespace mrover {
         }
 #endif
 
-        if (!mIsHeadless) mSwapChain.present();
+        if (!mIsHeadless) mSurface.present();
 
         // TODO(quintin): Remote duplicate code
         for (StereoCamera& stereoCamera: mStereoCameras) {
