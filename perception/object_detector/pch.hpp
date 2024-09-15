@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <array>
+#include <bitset>
 #include <cassert>
 #include <cmath>
 #include <cstddef>
@@ -21,7 +22,6 @@
 #include <string>
 #include <type_traits>
 #include <unordered_map>
-#include <bitset>
 
 #include <opencv2/core.hpp>
 #include <opencv2/dnn.hpp>
@@ -33,20 +33,20 @@
 #include <tf2_ros/transform_listener.h>
 
 // Messages
+#include "sensor_msgs/image_encodings.hpp"
+#include "sensor_msgs/msg/image.hpp"
+#include <sensor_msgs/distortion_models.hpp>
+#include <sensor_msgs/image_encodings.hpp>
+#include <sensor_msgs/msg/camera_info.hpp>
+#include <sensor_msgs/msg/image.hpp>
 #include <sensor_msgs/msg/imu.hpp>
 #include <sensor_msgs/msg/magnetic_field.hpp>
-#include <sensor_msgs/image_encodings.hpp>
-#include <sensor_msgs/msg/image.hpp>
-#include <sensor_msgs/msg/camera_info.hpp>
-#include <sensor_msgs/distortion_models.hpp>
 #include <sensor_msgs/msg/point_cloud2.hpp>
 #include <sensor_msgs/point_cloud2_iterator.hpp>
-#include "sensor_msgs/msg/image.hpp"
-#include "sensor_msgs/image_encodings.hpp"
 
 #include <lie.hpp>
 #include <loop_profiler.hpp>
 
+#include "parameter.hpp"
 #include "point.hpp"
 #include <learning.hpp>
-#include "parameter.hpp"
