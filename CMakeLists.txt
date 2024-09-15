@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.25)
-project(mrover VERSION 2025.0.0 LANGUAGES C CXX CUDA)
+project(mrover VERSION 2025.0.0 LANGUAGES C CXX)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
@@ -221,6 +221,8 @@ find_package(ZED QUIET)
 find_package(CUDA QUIET)
 find_package(OpenCV REQUIRED)
 if(ZED_FOUND AND CUDA_FOUND)
+	enable_language(CUDA)
+
 	# CUDA Compile Options
 	add_library(cuda_compiler_flags INTERFACE)
 	target_compile_options(cuda_compiler_flags INTERFACE 
