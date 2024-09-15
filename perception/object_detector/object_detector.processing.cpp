@@ -149,7 +149,7 @@ namespace mrover {
         mDetectionsImageMessage.header.stamp = get_clock()->now();
         mDetectionsImageMessage.height = image.rows();
         mDetectionsImageMessage.width = image.cols();
-		mDetectionsImageMessage.encoding = sensor_msgs::image_encodings::BGRA8;
+        mDetectionsImageMessage.encoding = sensor_msgs::image_encodings::BGRA8;
         mDetectionsImageMessage.is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
         mDetectionsImageMessage.step = 4 * mDetectionsImageMessage.width;
         mDetectionsImageMessage.data.resize(mDetectionsImageMessage.step * mDetectionsImageMessage.height);

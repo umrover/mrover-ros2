@@ -7,12 +7,11 @@ namespace mrover {
     class ObjectDetectorBase : public rclcpp::Node {
 
     protected:
+        static constexpr char const* NODE_NAME = "object_detector";
 
-		static constexpr char const* NODE_NAME = "object_detector";
-
-		std::unique_ptr<tf2_ros::Buffer> mTfBuffer = std::make_unique<tf2_ros::Buffer>(get_clock());
-		std::shared_ptr<tf2_ros::TransformBroadcaster> mTfBroadcaster = std::make_shared<tf2_ros::TransformBroadcaster>(this);
-		std::shared_ptr<tf2_ros::TransformListener> mTfListener = std::make_shared<tf2_ros::TransformListener>(*mTfBuffer);
+        std::unique_ptr<tf2_ros::Buffer> mTfBuffer = std::make_unique<tf2_ros::Buffer>(get_clock());
+        std::shared_ptr<tf2_ros::TransformBroadcaster> mTfBroadcaster = std::make_shared<tf2_ros::TransformBroadcaster>(this);
+        std::shared_ptr<tf2_ros::TransformListener> mTfListener = std::make_shared<tf2_ros::TransformListener>(*mTfBuffer);
 
         std::string mCameraFrame;
         std::string mWorldFrame;
@@ -26,8 +25,8 @@ namespace mrover {
         cv::Mat mRgbImage, mImageBlob;
         sensor_msgs::msg::Image mDetectionsImageMessage;
 
-		rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr mDebugImgPub;
-		rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr mSensorSub;
+        rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr mDebugImgPub;
+        rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr mSensorSub;
 
         // TODO(quintin): Do not hard code exactly two classes
         std::vector<int> mObjectHitCounts{0, 0};
@@ -58,8 +57,8 @@ namespace mrover {
     };
 
     class StereoObjectDetector final : public ObjectDetectorBase {
-	public:
-		explicit StereoObjectDetector();
+    public:
+        explicit StereoObjectDetector();
 
         static auto convertPointCloudToRGB(sensor_msgs::msg::PointCloud2::UniquePtr const& msg, cv::Mat const& image) -> void;
 
