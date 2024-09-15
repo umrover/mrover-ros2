@@ -35,55 +35,35 @@ namespace mrover {
 			std::visit(overload{
 				[&](int* arg){
 					try{
-						if(std::holds_alternative<int*>(mData)){
-							*arg = static_cast<int>(node->get_parameter(mParamDescriptor).as_int());
-						}else{
-							throw std::runtime_error("Parameter has wrong type!");
-						}
+						*arg = static_cast<int>(node->get_parameter(mParamDescriptor).as_int());
 					}catch(rclcpp::exceptions::ParameterUninitializedException& e){
 						*arg = 0;
 					}
 				},
 				[&](std::string* arg){
 					try{
-						if(std::holds_alternative<std::string*>(mData)){
 							*arg = node->get_parameter(mParamDescriptor).as_string();
-						}else{
-							throw std::runtime_error("Parameter has wrong type!");
-						}
 					}catch(rclcpp::exceptions::ParameterUninitializedException& e){
 						*arg = std::string();
 					}
 				},
 				[&](bool* arg){
 					try{
-						if(std::holds_alternative<bool*>(mData)){
-							*arg = node->get_parameter(mParamDescriptor).as_bool();
-						}else{
-							throw std::runtime_error("Parameter has wrong type!");
-						}
+						*arg = node->get_parameter(mParamDescriptor).as_bool();
 					}catch(rclcpp::exceptions::ParameterUninitializedException& e){
 						*arg = false;
 					}
 				},
 				[&](double* arg){
 					try{
-						if(std::holds_alternative<double*>(mData)){
-							*arg = node->get_parameter(mParamDescriptor).as_double();
-						}else{
-							throw std::runtime_error("Parameter has wrong type!");
-						}
+						*arg = node->get_parameter(mParamDescriptor).as_double();
 					}catch(rclcpp::exceptions::ParameterUninitializedException& e){
 						*arg = 0.0;
 					}
 				},
 				[&](float* arg){
 					try{
-						if(std::holds_alternative<float*>(mData)){
-							*arg = static_cast<float>(node->get_parameter(mParamDescriptor).as_double());
-						}else{
-							throw std::runtime_error("Parameter has wrong type!");
-						}
+						*arg = static_cast<float>(node->get_parameter(mParamDescriptor).as_double());
 					}catch(rclcpp::exceptions::ParameterUninitializedException& e){
 						*arg = 0.0;
 					}
