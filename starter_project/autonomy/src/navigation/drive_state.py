@@ -5,6 +5,7 @@ from drive import get_drive_command
 from state_machine.state import State
 from tag_seek import TagSeekState
 
+
 class DriveState(State):
     def on_enter(self, context) -> None:
         pass
@@ -21,7 +22,7 @@ class DriveState(State):
         # (HINT: use get_drive_command(), with completion_thresh set to 0.7 and turn_in_place_thresh set to 0.2)
 
         # TODO: if we are finished getting to the target, go to TagSeekState
-        
+
         # TODO: send the drive command to the rover
 
         # TODO: tell state machine to stay in the DriveState by returning self

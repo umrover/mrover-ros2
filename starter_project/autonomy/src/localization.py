@@ -61,6 +61,7 @@ class Localization(Node):
         """
         # TODO
 
+
 def main():
     # initialize the node
     rclpy.init()

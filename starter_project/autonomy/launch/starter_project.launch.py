@@ -31,22 +31,21 @@ def generate_launch_description():
         condition=LaunchConfigurationEquals("rviz", "true"),
     )
 
-    return LaunchDescription([
-        launch_include_sim,
-        rviz_node,
-
-        # ==========
-        # Perception
-        # ==========
-        perception_node,
-
-        # ===========
-        # Navigation
-        # ===========
-        navigation_node,
-
-        # ============
-        # Localization
-        # ============
-        localization_node
-    ])
+    return LaunchDescription(
+        [
+            launch_include_sim,
+            rviz_node,
+            # ==========
+            # Perception
+            # ==========
+            perception_node,
+            # ===========
+            # Navigation
+            # ===========
+            navigation_node,
+            # ============
+            # Localization
+            # ============
+            localization_node,
+        ]
+    )

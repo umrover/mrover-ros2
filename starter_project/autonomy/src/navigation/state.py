@@ -6,6 +6,7 @@ from geometry_msgs.msg import Twist
 
 from context import Context
 
+
 class DoneState(State):
     def on_enter(self, context) -> None:
         pass
@@ -18,7 +19,8 @@ class DoneState(State):
         cmd_vel = Twist()
         context.rover.send_drive_command(cmd_vel)
         return self
-    
+
+
 class FailState(State):
     def on_enter(self, context) -> None:
         pass

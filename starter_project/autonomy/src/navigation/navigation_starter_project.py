@@ -50,6 +50,7 @@ class Navigation(Node):
 
         self.create_timer(1 / 60, self.state_machine.update)
 
+
 def main():
     try:
         # TODO: init a node called "navigation"

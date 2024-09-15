@@ -14,7 +14,8 @@ from mrover.msg import StarterProjectTag
 
 import sys
 import os
-sys.path.append(os.getcwd() + '/starter_project/autonomy/src')
+
+sys.path.append(os.getcwd() + "/starter_project/autonomy/src")
 from util.SE3 import SE3
 from visualization_msgs.msg import Marker
 
@@ -34,6 +35,7 @@ class Rover:
     def send_drive_stop(self):
         # TODO: tell the rover to stop
         pass
+
 
 @dataclass
 class Environment:
