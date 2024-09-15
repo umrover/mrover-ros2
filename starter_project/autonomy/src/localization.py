@@ -23,7 +23,7 @@ class Localization(Node):
         super().__init__('localization')
         # create subscribers for GPS and IMU data, linking them to our callback functions
         # TODO
-        self.create_subscription(Imu, "imu/imu_only", self.imu_callback, 1)
+        self.create_subscription(Imu, "imu/data_raw", self.imu_callback, 1)
         self.create_subscription(NavSatFix, "gps/fix", self.gps_callback, 1)
 
         # create a transform broadcaster for publishing to the TF tree
@@ -40,11 +40,12 @@ class Localization(Node):
         that pose to the TF tree.
         """
         # TODO
-        ref = np.array([(42.293195), (-83.7096706)])
+        ref = np.array([(38.4225202), (-110.7844653)])
         point = np.array([(msg.latitude), (msg.longitude)])
         cartesian = self.spherical_to_cartesian(point, ref)
         self.pose = SE3.from_pos_quat(cartesian, self.pose.rotation.quaternion)
-        self.pose.publish_to_tf_tree(self.tf_broadcaster, "map", "base_link", self.get_clock().now())
+        print("publishing gps")
+        self.pose.publish_to_tf_tree(self.tf_broadcaster, "map", "rover_base_link", self.get_clock().now())
 
     def imu_callback(self, msg: Imu):
         """
@@ -56,7 +57,8 @@ class Localization(Node):
         self.pose = SE3.from_pos_quat(
             self.pose.position, np.array([msg.orientation.x, msg.orientation.y, msg.orientation.z, msg.orientation.w])
         )
-        self.pose.publish_to_tf_tree(self.tf_broadcaster, "map", "base_link", self.get_clock().now())
+        print("publishing imu")
+        self.pose.publish_to_tf_tree(self.tf_broadcaster, "map", "rover_base_link", self.get_clock().now())
 
     @staticmethod
     def spherical_to_cartesian(spherical_coord: np.ndarray, reference_coord: np.ndarray) -> np.ndarray:
@@ -91,8 +93,7 @@ def main():
     # let the callback functions run asynchronously in the background
     rclpy.spin(localization)
 
-    #TODO (ali): shutdown maybe?
-    # rclpy.shutdown()
+    rclpy.shutdown()
 
 
 if __name__ == "__main__":

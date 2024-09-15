@@ -18,3 +18,16 @@ class DoneState(State):
         cmd_vel = Twist()
         context.rover.send_drive_command(cmd_vel)
         return self
+    
+class FailState(State):
+    def on_enter(self, context) -> None:
+        pass
+
+    def on_exit(self, context) -> None:
+        pass
+
+    def on_loop(self, context) -> State:
+        # Stop rover
+        cmd_vel = Twist()
+        context.rover.send_drive_command(cmd_vel)
+        return self

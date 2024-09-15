@@ -12,7 +12,7 @@ from state_machine.state_publisher_server import StatePublisher
 # navigation specific imports
 from context import Context
 from drive_state import DriveState
-from state import DoneState
+from state import DoneState, FailState
 from tag_seek import TagSeekState
 
 
@@ -41,10 +41,17 @@ class Navigation(Node):
             DoneState(),
             [DoneState()],
         )
+
+        # FailState and its transitions
+        self.state_machine.add_transitions(
+            FailState(),
+            [FailState()],
+        )
+
         # TODO: add TagSeekState and its transitions here
         self.state_machine.add_transitions(
             TagSeekState(),
-            [TagSeekState(), DoneState()]
+            [TagSeekState(), DoneState(), FailState()]
         )
 
         self.state_machine_server = StatePublisher(self, self.state_machine, "nav_structure", 1, "nav_state", 10)
@@ -55,7 +62,6 @@ def main():
     try:
         # TODO: init a node called "navigation"
         rclpy.init()
-        # rclpy.create_node("navigation")
         # context and navigation objects
         context = Context()
         navigation = Navigation(context)

@@ -26,7 +26,7 @@ class Rover:
     def get_pose(self) -> Optional[SE3]:
         # TODO: return the pose of the rover (or None if we don't have one (catch exception))
         try:
-            return SE3.from_tf_tree(self.ctx.tf_buffer, "map", "base_link")
+            return SE3.from_tf_tree(self.ctx.tf_buffer, "map", "rover_base_link")
         except:
             return None
 

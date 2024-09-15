@@ -79,6 +79,7 @@ namespace mrover {
             // Express each tag center to be relative to the center of the image
             // This is to make calculating the center tag in selectTag possible and it makes navigation easier down the line
             // Ask an auton lead if you have questions about this!
+            // std::cout << center.first << " " << center.second << std::endl;
             tag.x_tag_center_pixel = (center.first - float(image.cols) / 2) / float(image.cols);
             tag.y_tag_center_pixel = (center.second - float(image.rows) / 2) / float(image.rows);
             tag.closeness_metric = getClosenessMetricFromTagCorners(image, mTagCorners[i]);
@@ -156,7 +157,7 @@ namespace mrover {
             xSum += corner.x;
             ySum += corner.y;
         }
-        std::pair<float, float> center(xSum, ySum);
+        std::pair<float, float> center(xSum / 4.0, ySum / 4.0);
         return center;
     }
 

@@ -19,7 +19,7 @@ class DriveState(State):
         SE3_pose = context.rover.get_pose()
         if SE3_pose is None:
             return self
-        
+
         # TODO: get the drive command and completion status based on target and pose
         # (HINT: use get_drive_command(), with completion_thresh set to 0.7 and turn_in_place_thresh set to 0.2)
         drive_command, completion_status = get_drive_command(
