@@ -21,7 +21,7 @@ namespace mrover {
 			this, 
 			"LanderAlignAction", 
 			std::bind(
-				[&](const rclcpp_action::GoalUUID & uuid, std::shared_ptr<const action::LanderAlign_Goal> goal){
+				[&](rclcpp_action::GoalUUID& uuid, std::shared_ptr<const action::LanderAlign::Goal> goal){
 					//TODO: This function body is not correct
 					return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
 				},
@@ -30,7 +30,7 @@ namespace mrover {
 				std::placeholders::_2
 			),
 			std::bind(
-				[&](std::shared_ptr<const action::LanderAlign_Goal> goal){
+				[&](std::shared_ptr<GoalHandleLanderAlign> const goal){
 					//TODO: This function body is not correct
 					return rclcpp_action::CancelResponse::ACCEPT;
 				},
@@ -38,7 +38,7 @@ namespace mrover {
 				std::placeholders::_1
 			),
 			std::bind(
-				[&](std::shared_ptr<const action::LanderAlign_Goal> goal){
+				[&](std::shared_ptr<GoalHandleLanderAlign> const goal){
 					//TODO: This function body is not correct
 				},
 				this,
