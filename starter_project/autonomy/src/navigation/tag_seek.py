@@ -16,7 +16,6 @@ class TagSeekState(State):
         DISTANCE_TOLERANCE = 0.995
         ANUGLAR_TOLERANCE = 0.3
         # TODO: get the tag's location and properties (HINT: use get_fid_data() from context.env)
-        tag = context.env.get_fid_data()
 
         # TODO: if we don't have a tag: go to the FailState
 
