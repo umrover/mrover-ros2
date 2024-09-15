@@ -5,15 +5,16 @@ from typing import Optional
 
 import numpy as np
 import rclpy
+from rclpy.publisher import Publisher
+from rclpy.subscription import Subscription
 from rclpy.node import Node
 import tf2_ros
 from geometry_msgs.msg import Twist
 from mrover.msg import StarterProjectTag
 
-# import sys
-# TODO (ali): python relative imports are the bane of my existence
-# sys.path.append('..')
-# print(sys.path)
+import sys
+import os
+sys.path.append(os.getcwd() + '/starter_project/autonomy/src')
 from util.SE3 import SE3
 from visualization_msgs.msg import Marker
 
@@ -33,7 +34,6 @@ class Rover:
     def send_drive_stop(self):
         # TODO: tell the rover to stop
         pass
-
 
 @dataclass
 class Environment:
@@ -55,25 +55,30 @@ class Environment:
         if it exists, otherwise returns None
         """
         # TODO: return either None or your position message
-        pass
 
 
-class Context(Node):
+class Context:
+    node: Node
     tf_buffer: tf2_ros.Buffer
     tf_listener: tf2_ros.TransformListener
-    vel_cmd_publisher: rclpy.Publisher
-    vis_publisher: rclpy.Publisher
-    fid_listener: rclpy.Subscriber
+    vel_cmd_publisher: Publisher
+    vis_publisher: Publisher
+    fid_listener: Subscription
 
     # Use these as the primary interfaces in states
     rover: Rover
     env: Environment
+    disable_requested: bool
 
-    def __init__(self):
+    def setup(self, node: Node):
+        self.node = node
         self.tf_buffer = tf2_ros.Buffer()
-        self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
-        self.vel_cmd_publisher = self.create_publisher(Twist, "cmd_vel", queue_size=1)
-        self.vis_publisher = self.create_publisher("nav_vis", Marker)
+
+        self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self.node)
+        self.vel_cmd_publisher = node.create_publisher(Twist, "cmd_vel", 1)
+        self.vis_publisher = node.create_publisher(Marker, "nav_vis", 1)
         self.rover = Rover(self)
         self.env = Environment(self, None)
-        self.fid_listener = self.create_subscription(StarterProjectTag, "/tag", self.env.receive_fid_data)
+        self.disable_requested = False
+
+        self.fid_listener = node.create_subscription(StarterProjectTag, "/tag", self.env.receive_fid_data, 1)

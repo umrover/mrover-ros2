@@ -98,11 +98,17 @@ class GUI(QWidget):  # type: ignore
         self.viz = Node("Visualizer")
 
         self.viz.create_subscription(
-            StateMachineStructure, STRUCTURE_TOPIC, self.state_machine.container_structure_callback, 1
+            StateMachineStructure,
+            STRUCTURE_TOPIC,
+            self.state_machine.container_structure_callback,
+            1
         )
 
         self.viz.create_subscription(
-            StateMachineStateUpdate, STATUS_TOPIC, self.state_machine.container_status_callback, 1
+            StateMachineStateUpdate,
+            STATUS_TOPIC,
+            self.state_machine.container_status_callback,
+            1
         )
 
     def paintEvent(self, event):
@@ -138,10 +144,20 @@ def main():
         signal.signal(signal.SIGINT, signal.SIG_DFL)
         state_machine = StateMachine()
 
+<<<<<<< HEAD
         print("Node Created...")
 
         print("Subscriptions Created...")
 
+=======
+
+        print("Node Created...")
+
+
+        print("Subscriptions Created...")
+
+
+>>>>>>> nav_fixes
         app = QApplication([])  # type: ignore
         g = GUI(state_machine)
         g.show()

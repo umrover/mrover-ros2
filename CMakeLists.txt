@@ -277,6 +277,7 @@ install(PROGRAMS
         localization/basestation_gps_driver.py
         superstructure/superstructure.py
         scripts/debug_course_publisher.py
+		scripts/visualizer.py
 
         # starter project sources
         starter_project/autonomy/src/localization.py

@@ -1,35 +1,34 @@
 #!/usr/bin/env python3
 
-import signal
 import sys
-import threading
 
 # ros and state machine imports
 import rclpy
 from rclpy.executors import ExternalShutdownException
-
+from rclpy.node import Node
 from state_machine.state_machine import StateMachine
 from state_machine.state_publisher_server import StatePublisher
 
 # navigation specific imports
 from context import Context
 from drive_state import DriveState
-from state import DoneState, Off
+from state import DoneState, FailState
 from tag_seek import TagSeekState
 
 
-class Navigation(threading.Thread):
+class Navigation(Node):
     state_machine: StateMachine
-    context: Context
+    ctx: Context
     state_machine_server: StatePublisher
 
-    def __init__(self, context: Context):
-        super().__init__()
-        self.name = "NavigationThread"
-        self.state_machine = StateMachine(outcomes=["terminated"])
-        self.context = context
-        self.state_machine_server = StatePublisher(self, self.state_machine, "/SM_ROOT")
-        self.state_machine = StateMachine[Context]
+    def __init__(self, ctx: Context):
+        super().__init__("navigation")
+
+        self.get_logger().info("Starting...")
+
+        self.ctx = ctx
+
+        self.state_machine = StateMachine[Context](DriveState(), "NavigationStateMachine", self.ctx, self.get_logger())
 
         # TODO: add DriveState and its transitions here
 
@@ -38,19 +37,18 @@ class Navigation(threading.Thread):
             DoneState(),
             [DoneState()],
         )
+
+        # FailState and its transitions
+        self.state_machine.add_transitions(
+            FailState(),
+            [FailState()],
+        )
+
         # TODO: add TagSeekState and its transitions here
 
-    def run(self):
-        self.state_machine.execute()
+        self.state_machine_server = StatePublisher(self, self.state_machine, "nav_structure", 1, "nav_state", 10)
 
-    def stop(self):
-        self.sis.stop()
-        # Requests current state to go into 'terminated' to cleanly exit state machine
-        self.state_machine.request_preempt()
-        # Wait for smach thread to terminate
-        self.join()
-        self.context.rover.send_drive_stop()
-
+        self.create_timer(1 / 60, self.state_machine.update)
 
 def main():
     try:
@@ -59,6 +57,7 @@ def main():
         # context and navigation objects
         context = Context()
         navigation = Navigation(context)
+        context.setup(navigation)
 
         rclpy.spin(navigation)
         rclpy.shutdown()
