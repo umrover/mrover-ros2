@@ -13,7 +13,7 @@ class DriveState(State):
         pass
 
     def on_loop(self, context) -> State:
-        target = np.array([5.5, 2.0, 0.0])
+        target = np.array([8.0, 2.0, 0.0])
 
         # TODO: get the rover's pose, if it doesn't exist stay in DriveState (return self)
         SE3_pose = context.rover.get_pose()
@@ -23,7 +23,7 @@ class DriveState(State):
         # TODO: get the drive command and completion status based on target and pose
         # (HINT: use get_drive_command(), with completion_thresh set to 0.7 and turn_in_place_thresh set to 0.2)
         drive_command, completion_status = get_drive_command(
-            target_pos=target, rover_pose=SE3_pose, completion_thresh=0.1, turn_in_place_thresh=0.2
+            target_pos=target, rover_pose=SE3_pose, completion_thresh=0.7, turn_in_place_thresh=0.2
         )
 
         # TODO: if we are finished getting to the target, go to TagSeekState

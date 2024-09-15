@@ -12,7 +12,7 @@ from state_machine.state_publisher_server import StatePublisher
 # navigation specific imports
 from context import Context
 from drive_state import DriveState
-from state import DoneState, OffState, off_check
+from state import DoneState
 from tag_seek import TagSeekState
 
 
@@ -50,18 +50,6 @@ class Navigation(Node):
         self.state_machine_server = StatePublisher(self, self.state_machine, "nav_structure", 1, "nav_state", 10)
 
         self.create_timer(1 / 60, self.state_machine.update)
-
-    def run(self):
-        self.state_machine.execute()
-
-    def stop(self):
-        self.sis.stop()
-        # Requests current state to go into 'terminated' to cleanly exit state machine
-        self.state_machine.request_preempt()
-        # Wait for smach thread to terminate
-        self.join()
-        self.context.rover.send_drive_stop()
-
 
 def main():
     try:

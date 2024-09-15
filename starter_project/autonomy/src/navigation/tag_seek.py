@@ -29,9 +29,9 @@ class TagSeekState(State):
         # TODO: figure out the Twist command to be applied to move the rover closer to the tag
         twist = Twist()
         if tag.closeness_metric >= DISTANCE_TOLERANCE:
-            twist.linear.x = 1
+            twist.linear.x = 1.0
         if abs(tag.x_tag_center_pixel) >= ANUGLAR_TOLERANCE:
-            twist.angular.z = tag.x_tag_center_pixel
+            twist.angular.z = -0.5 * tag.x_tag_center_pixel
 
         # TODO: send Twist command to rover
         context.rover.send_drive_command(twist)
