@@ -25,7 +25,10 @@ class Rover:
 
     def get_pose(self) -> Optional[SE3]:
         # TODO: return the pose of the rover (or None if we don't have one (catch exception))
-        return SE3.from_tf_tree(self.ctx.tf_buffer, "map", "base_link")
+        try:
+            return SE3.from_tf_tree(self.ctx.tf_buffer, "map", "base_link")
+        except:
+            return None
 
     def send_drive_command(self, twist: Twist):
         # TODO: send the Twist message to the rover
