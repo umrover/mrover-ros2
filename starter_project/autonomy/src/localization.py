@@ -6,6 +6,7 @@ import numpy as np
 # library for interacting with ROS and TF tree
 import rclpy
 from rclpy.node import Node
+import rclpy.time
 import tf2_ros
 
 # ROS message types we need to use
@@ -71,8 +72,7 @@ def main():
     # let the callback functions run asynchronously in the background
     rclpy.spin(localization)
 
-    # TODO (ali): shutdown maybe?
-    # rclpy.shutdown()
+    rclpy.shutdown()
 
 
 if __name__ == "__main__":

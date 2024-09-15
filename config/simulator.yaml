@@ -23,7 +23,7 @@ simulator:
       tag_0:
         type: urdf
         uri: package://mrover/urdf/world/tag_0.urdf.xacro
-        position: [ -2.0, -2.0, 0.7 ]
+        position: [ 11.0, 3.0, 0.7 ]
       tag_1:
         type: urdf
         uri: package://mrover/urdf/world/tag_1.urdf.xacro
@@ -31,7 +31,7 @@ simulator:
       hammer:
         type: urdf
         uri: package://mrover/urdf/world/hammer.urdf.xacro
-        position: [ 5.0, 2.0, 0.7 ]
+        position: [ -2.0, -2.0, 0.7 ]
       bottle:
         type: urdf
         uri: package://mrover/urdf/world/bottle.urdf.xacro
@@ -58,4 +58,4 @@ simulator:
     ref_lon: -110.7844653
     ref_alt: 0.0
     world_frame: "map"
-    rover_frame: "base_link"
+    rover_frame: "sim_base_link"
