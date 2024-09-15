@@ -14,7 +14,7 @@ class DriveState(BaseState):
         )
 
     def evaluate(self, ud):
-        target = np.array([5.5, 2.0, 0.0])
+        target = np.array([8.0, 2.0, 0.0])
 
         # TODO: get the rover's pose, if it doesn't exist stay in DriveState (with outcome "driving_to_point")
 
