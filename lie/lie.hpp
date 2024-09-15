@@ -66,6 +66,8 @@ namespace mrover {
      * \param time
      */
         static auto pushToTfTree(tf2_ros::TransformBroadcaster& broadcaster, std::string const& fromFrame, std::string const& toFrame, SE3d const& transform, rclcpp::Time const& time) -> void;
+
+		static auto fromColumns(R3d const& c1, R3d const& c2, R3d const& c3) -> SO3d;
     };
 
     class SIM3 {

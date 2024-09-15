@@ -76,4 +76,12 @@ namespace mrover {
         return transform;
     }
 
+	auto SE3Conversions::fromColumns(R3d const &c1, R3d const &c2, R3d const &c3) -> SO3d {
+		Eigen::Matrix3d m;
+		m.col(0) = c1;
+		m.col(1) = c2;
+		m.col(2) = c3;
+		return {Eigen::Quaterniond{m}.normalized()};
+	}
+
 } // namespace mrover
