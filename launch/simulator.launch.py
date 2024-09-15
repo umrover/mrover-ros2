@@ -12,25 +12,15 @@ from launch_ros.actions import Node, ComposableNodeContainer
 from launch_ros.descriptions import ComposableNode
 from launch.conditions import LaunchConfigurationEquals
 
+
 def generate_launch_description():
-    headless_arg = DeclareLaunchArgument(
-        "headless", default_value="false"
-    )
-    rviz_arg = DeclareLaunchArgument(
-        "rviz", default_value="true"
-    )
-    object_detector_arg = DeclareLaunchArgument(
-        "object_detector", default_value="False"
-    )
-    cost_map_arg = DeclareLaunchArgument(
-        "cost_map", default_value="True"
-    )
+    headless_arg = DeclareLaunchArgument("headless", default_value="false")
+    rviz_arg = DeclareLaunchArgument("rviz", default_value="true")
+    object_detector_arg = DeclareLaunchArgument("object_detector", default_value="False")
+    cost_map_arg = DeclareLaunchArgument("cost_map", default_value="True")
 
     launch_include_base = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            os.path.join(
-                get_package_share_directory("mrover"),
-                "launch/base.launch.py"))
+        PythonLaunchDescriptionSource(os.path.join(get_package_share_directory("mrover"), "launch/base.launch.py"))
     )
 
     # TODO (ali): make gst streamer a composed node
@@ -58,41 +48,36 @@ def generate_launch_description():
     # )
 
     simulator_node = Node(
-            package="mrover",
-            executable="simulator",
-            name="simulator",
-            parameters=[
-                os.path.join(
-                    get_package_share_directory("mrover"),"config","simulator.yaml"),
-                {
-                "headless": LaunchConfiguration("headless")
-            }]
+        package="mrover",
+        executable="simulator",
+        name="simulator",
+        parameters=[
+            os.path.join(get_package_share_directory("mrover"), "config", "simulator.yaml"),
+            {"headless": LaunchConfiguration("headless")},
+        ],
     )
 
-    arm_controller_node = Node(
-        package="mrover",
-        executable="arm_controller",
-        name="arm_controller"
-    )
+    arm_controller_node = Node(package="mrover", executable="arm_controller", name="arm_controller")
 
     rviz_node = Node(
         package="rviz2",
         executable="rviz2",
         name="rviz2",
-        arguments=['-d', [os.path.join(
-            get_package_share_directory("mrover"), "config/rviz", "auton_sim.rviz")]],
-        condition=LaunchConfigurationEquals("rviz", "true")
+        arguments=["-d", [os.path.join(get_package_share_directory("mrover"), "config/rviz", "auton_sim.rviz")]],
+        condition=LaunchConfigurationEquals("rviz", "true"),
     )
 
-    return LaunchDescription([
-        headless_arg,
-        rviz_arg,
-        object_detector_arg,
-        cost_map_arg,
-        launch_include_base,
-        # gst_websocket_streamer_node,
-        # launch_include_base,
-        simulator_node,
-        arm_controller_node,
-        rviz_node
-    ])
+    return LaunchDescription(
+        [
+            headless_arg,
+            rviz_arg,
+            object_detector_arg,
+            cost_map_arg,
+            launch_include_base,
+            # gst_websocket_streamer_node,
+            # launch_include_base,
+            simulator_node,
+            arm_controller_node,
+            rviz_node,
+        ]
+    )

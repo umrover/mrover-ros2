@@ -1,4 +1,4 @@
-# Allows us to install Python versions newer than 3.8
+# Allows us to install Python versions newer than 3.10
 - name: Add Python PPA
   become: True
   apt_repository:
@@ -28,7 +28,7 @@
     url: https://apt.kitware.com/keys/kitware-archive-latest.asc
     keyring: /usr/share/keyrings/kitware-archive-keyring.gpg
 
-# Allows us to install CMake versions newer than 3.16
+# Allows us to install CMake versions newer than 3.22
 - name: Add CMake APT List
   become: True
   apt_repository:
@@ -72,8 +72,9 @@
       - unzip
       - rsync
       - python3-pip
+      - python3-dev
+      - python3-venv
       - python3-rosdep
-      - python3-virtualenvwrapper
       - clang-18
       - clangd-18
       - clang-tidy-18
@@ -82,16 +83,14 @@
       - lldb-18
       - gcc-13
       - g++-13
-      - python3.10
-      - python3.10-dev
-      - python3.10-venv
-      - lld
       - libbullet-dev
       - libglfw3-dev
       - libx11-xcb-dev
       - libnl-3-dev
       - libnl-route-3-dev
       - libtbb-dev
+      - libassimp-dev
+      - libeigen3-dev
       - libopencv-dev
       - libgstreamer1.0-dev
       - libgstreamer-plugins-base1.0-dev
@@ -100,8 +99,7 @@
       - ros-humble-ros-base
       - ros-humble-rviz2
       - ros-humble-xacro
-      # TODO (ali): why do these need to be installed manually
-      - libassimp-dev
+      # TODO (ali): why does this need to be installed manually
       - libboost-dev
 
 - name: Install Local APT Packages
@@ -142,12 +140,6 @@
 
 # - name: Install Bun Packages
 #   command: ~/.bun/bin/bun install --cwd {{ catkin_workspace }}/src/mrover/src/teleoperation/frontend
-
-# - name: Install Catkin Profiles
-#   synchronize:
-#     src: files/profiles
-#     dest: "{{ catkin_workspace }}/.catkin_tools"
-#     recursive: true
 
 - name: Set G++ 13 as Default
   become: True

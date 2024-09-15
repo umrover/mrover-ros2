@@ -29,7 +29,6 @@ def publish_waypoints(node: Node, waypoints: list[GPSWaypoint]):
     return client.call_async(EnableAuton.Request(enable=True, waypoints=waypoints))
 
 
-
 def convert_waypoint_to_gps(reference_point: np.ndarray, waypoint_pose_pair: tuple[Waypoint, SE3]) -> GPSWaypoint:
     waypoint, pose = waypoint_pose_pair
     ref_lat, ref_lon, _ = reference_point
@@ -48,7 +47,7 @@ class DebugCoursePublisher(Node):
                 ("ref_lat", Parameter.Type.DOUBLE),
                 ("ref_lon", Parameter.Type.DOUBLE),
                 ("ref_alt", Parameter.Type.DOUBLE),
-            ]
+            ],
         )
         ref_point = np.array(
             [

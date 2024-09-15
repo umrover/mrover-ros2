@@ -12,13 +12,13 @@ class StatePublisher:
     state_machine: StateMachine
 
     def __init__(
-            self,
-            node: Node,
-            state_machine: StateMachine,
-            structure_pub_topic: str,
-            structure_update_rate_hz: float,
-            state_pub_topic: str,
-            state_update_rate_hz: float,
+        self,
+        node: Node,
+        state_machine: StateMachine,
+        structure_pub_topic: str,
+        structure_update_rate_hz: float,
+        state_pub_topic: str,
+        state_update_rate_hz: float,
     ):
         self.state_machine = state_machine
         self.structure_publisher = node.create_publisher(StateMachineStructure, structure_pub_topic, 1)

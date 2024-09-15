@@ -67,7 +67,7 @@ class SE3:
         tf_broadcaster: tf2_ros.TransformBroadcaster | tf2_ros.StaticTransformBroadcaster,
         parent_frame: str,
         child_frame: str,
-        timestamp: rclpy.time.Time
+        timestamp: rclpy.time.Time,
     ):
         """
         Publish the SE3 to the TF tree as a transform from parent_frame to child_frame.
@@ -80,7 +80,7 @@ class SE3:
         :param child_frame: the child frame of the transform to be published
         """
 
-        #TODO (ali): More pythonic way to do this?
+        # TODO (ali): More pythonic way to do this?
         tf = TransformStamped()
         tf.transform.translation.x = self.position[0]
         tf.transform.translation.y = self.position[1]

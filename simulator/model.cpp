@@ -14,7 +14,7 @@ namespace mrover {
         }
 
         // assimp's scene import is slow on the larger rover models, so we load it in a separate thread
-        asyncMeshesLoader = std::async(std::launch::async, [logger=simulator.get_logger(), uri = std::string{uri}] {
+        asyncMeshesLoader = std::async(std::launch::async, [logger = simulator.get_logger(), uri = std::string{uri}] {
             Assimp::Importer importer;
             importer.SetPropertyInteger(AI_CONFIG_PP_SBP_REMOVE, aiPrimitiveType_POINT | aiPrimitiveType_LINE); // Drop points and lines
 

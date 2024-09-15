@@ -1,5 +1,8 @@
 cmake_minimum_required(VERSION 3.25)
-project(mrover VERSION 2025.0.0 LANGUAGES C CXX)
+project(mrover VERSION 2025.0.0 LANGUAGES C CXX CUDA)
+
+# Supress ROS CMake warning about Python.
+cmake_policy(SET CMP0148 OLD)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
@@ -9,13 +12,36 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # Can be used by VSCode, CLion, VIM, etc.
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+option(MROVER_CI "Enable CI options" OFF)
+option(MROVER_CLANG_TIDY "Enable static analysis with Clang tidy" ${MROVER_CI})
+option(MROVER_WARNINGS_AS_ERRORS "Treat warnings as errors" ${MROVER_CI})
+
 if (APPLE)
     # Ensures that homebrew packages are never used over miniforge packages.
     set(CMAKE_IGNORE_PATH /opt/homebrew)
     # Find mamba python
     find_package(PythonLibs REQUIRED)
     link_libraries(${PYTHON_LIBRARIES})
-    # link_libraries()
+endif ()
+
+if (CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    add_compile_options(-Wall -Wextra -Wpedantic -Wno-missing-field-initializers -Wno-deprecated-declarations)
+
+    if (MROVER_WARNINGS_AS_ERRORS)
+        message(STATUS "Treating warnings as errors")
+        add_compile_options(-Werror)
+    endif ()
+
+    if (NOT APPLE)
+        # Try to use LLD instead of the system linker (which is usually GNU ld).
+        # LLD is faster and uses less memory.
+        # Could look into using mold which should be even faster.
+        find_program(LLD_PROGRAM lld)
+        if (LLD_PROGRAM)
+            message(STATUS "Using lld linker")
+            add_link_options(-fuse-ld=lld-18)
+        endif()
+    endif ()
 endif ()
 
 # Ccache is a compiler cache.
@@ -28,20 +54,6 @@ if (CCACHE_FOUND)
     set(CMAKE_CXX_COMPILER_LAUNCHER ccache)
     set(CMAKE_CUDA_COMPILER_LAUNCHER ccache)
 endif ()
-
-if (CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    add_compile_options(-Wall -Wextra -Wpedantic -Wno-missing-field-initializers -Wno-deprecated-declarations)
-
-    # Try to use LLD instead of the system linker (which is usually GNU ld).
-    # LLD is faster and uses less memory.
-    # Could look into using mold which should be even faster.
-    find_program(LLD_18_FOUND lld-18)
-    if (LLD_18_FOUND)
-        message(STATUS "Using lld-18 linker")
-        add_link_options(-fuse-ld=lld-18)
-    endif()
-endif ()
-
 
 
 ## Dependencies
@@ -98,7 +110,7 @@ if (NOT manif_FOUND)
     if (EXISTS ${CMAKE_CURRENT_LIST_DIR}/deps/manif/include/manif)
         set(BUILD_TESTING_OLD ${BUILD_TESTING})
         set(BUILD_TESTING OFF)
-        add_subdirectory(deps/manif SYSTEM)
+        add_subdirectory(deps/manif EXCLUDE_FROM_ALL SYSTEM)
         set(BUILD_TESTING ${BUILD_TESTING_OLD})
         add_library(MANIF::manif ALIAS manif)
 
@@ -222,7 +234,6 @@ find_package(CUDA QUIET)
 find_package(OpenCV REQUIRED)
 if(ZED_FOUND AND CUDA_FOUND)
 	enable_language(CUDA)
-
 	# CUDA Compile Options
 	add_library(cuda_compiler_flags INTERFACE)
 	target_compile_options(cuda_compiler_flags INTERFACE 

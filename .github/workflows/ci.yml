@@ -1,0 +1,38 @@
+name: CI
+on:
+  pull_request:
+    branches:
+      - main
+      - integration
+  push:
+    branches:
+      - main
+jobs:
+  ci:
+    name: CI
+    runs-on: ubuntu-latest
+    container:
+      image: umrover1/ros2:latest
+      # GitHub is silly and requires us to be running as root for their checkout action
+      # Our docker container exports the user mrover, so we have to specific this explicitly
+      options: --user root
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # lfs: "true"
+          # This makes sure that $GITHUB_WORKSPACE is the catkin workspace path
+          path: "src/mrover"
+      - name: Style Check
+        run: . /home/mrover/ros2_ws/src/mrover/venv/bin/activate && cd $GITHUB_WORKSPACE/src/mrover/ && ./style.sh
+      - name: Build
+        if: github.event.pull_request.draft == false
+        run: . /opt/ros/humble/setup.sh && . /home/mrover/ros2_ws/src/mrover/venv/bin/activate && cd $GITHUB_WORKSPACE/src/mrover/ && ./build.sh
+      # - name: Build Without Static Analysis
+      #   if: github.event.pull_request.draft == false && github.event.pull_request.base.ref != 'refs/heads/main'
+      #   run: . /opt/ros/humble/setup.sh && . /home/mrover/ros2_ws/src/mrover/venv/bin/activate && cd $GITHUB_WORKSPACE/src/mrover/ && ./build.sh
+      # - name: Build With Static Analysis
+      #   if: github.event_name == 'push' && github.event.pull_request.base.ref == 'refs/heads/main'
+      #   run: . /opt/ros/humble/setup.sh && . /home/mrover/ros2_ws/src/mrover/venv/bin/activate && cd $GITHUB_WORKSPACE/src/mrover/ && ./build_ci.sh
+      # - name: Test
+      #   if: github.event.pull_request.draft == false
+      #   run: . /opt/ros/noetic/setup.sh && . /home/mrover/ros2_ws/src/mrover/venv/bin/activate && . $GITHUB_WORKSPACE/devel/setup.sh && catkin test && rostest mrover integration.test --text

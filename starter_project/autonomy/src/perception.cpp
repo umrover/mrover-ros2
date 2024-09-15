@@ -54,7 +54,7 @@ namespace mrover {
 
         // TODO: implement me!
         // hint: think about the order in which these functions were implemented ;)
-
+        (void)this;
     }
 
     auto Perception::findTagsInImage(cv::Mat const& image, std::vector<msg::StarterProjectTag>& tags) -> void { // NOLINT(*-convert-member-functions-to-static)
@@ -65,16 +65,20 @@ namespace mrover {
         tags.clear(); // Clear old tags in output vector
 
         // TODO: implement me!
+        (void)image;
 
     }
 
     auto Perception::selectTag(cv::Mat const& image, std::vector<msg::StarterProjectTag> const& tags) -> msg::StarterProjectTag { // NOLINT(*-convert-member-functions-to-static)
         // TODO: implement me!
-
+        (void)image;
+        (void)tags;
+        return msg::StarterProjectTag{};
     }
 
     auto Perception::publishTag(msg::StarterProjectTag const& tag) -> void {
         // TODO: implement me!
+        (void)tag;
 
         mTagPublisher->publish(tag);
     }
@@ -85,16 +89,15 @@ namespace mrover {
         // hint: try not overthink, this metric does not have to be perfectly accurate, just correlated to distance away from a tag
 
         // TODO: implement me!
-
-        // Side length (Not perfect because it may not be parrallel with the image plane)
-
-        // This works because the ordering os clockwise
-
+        (void)image;
+        (void)tagCorners;
+        return {};
     }
 
     auto Perception::getCenterFromTagCorners(std::vector<cv::Point2f> const& tagCorners) -> std::pair<float, float> { // NOLINT(*-convert-member-functions-to-static)
         // TODO: implement me!
-
+        (void)tagCorners;
+        return {};
     }
 
 } // namespace mrover

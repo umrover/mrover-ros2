@@ -43,6 +43,7 @@
         "**/node_modules": true,
         "**/bower_components": true,
         "**/*.code-search": true,
-        "deps/dawn": true,
+        "deps": true,
+        "venv": true,
     },
 }
