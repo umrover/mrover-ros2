@@ -273,7 +273,6 @@ namespace mrover {
         wgpu::Device mDevice;
         std::unique_ptr<wgpu::ErrorCallback> mErrorCallback;
         wgpu::Queue mQueue;
-        wgpu::SwapChain mSwapChain;
         wgpu::Texture mDepthTexture;
         wgpu::TextureView mDepthTextureView;
         wgpu::Texture mNormalTexture;
