@@ -28,9 +28,9 @@ function print_update_error() {
 }
 
 function find_executable() {
-  local readonly executable="$1"
-  local readonly version="$2"
-  local readonly path=$(which "${executable}")
+  local -r executable="$1"
+  local -r version="$2"
+  local -r path=$(which "${executable}")
   if [ ! -x "${path}" ]; then
     echo -e "${RED}[Error] Could not find ${executable}${NC}"
     print_update_error
@@ -44,24 +44,58 @@ function find_executable() {
 
 ## Check that all tools are installed
 
-readonly CLANG_FORMAT_PATH=$(find_executable clang-format-18 18.1.8)
+readonly CLANG_FORMAT_PATH=$(find_executable clang-format-18 18.1)
 readonly BLACK_PATH=$(find_executable black 24.8.0)
 readonly MYPY_PATH=$(find_executable mypy 1.11.2)
 
 ## Run checks
 
+# Add new directories with C++ code here:
+readonly CPP_DIRS=(
+  ./perception
+  ./lie
+  ./esw
+  ./simulator
+)
+
 echo "Style checking C++ ..."
-find ./perception ./lie ./esw ./simulator -regex '.*\.\(cpp\|hpp\|h\)' -exec "${CLANG_FORMAT_PATH}" "${CLANG_FORMAT_ARGS[@]}" -i {} \;
+readonly CPP_FILES=$(find "${CPP_DIRS[@]}" -name "*.cpp" -o -name "*.hpp" -o -name "*.h" -o -name "*.cu")
+for file in $CPP_FILES; do
+  "${CLANG_FORMAT_PATH}" "${CLANG_FORMAT_ARGS[@]}" -i "${file}"
+done
 echo "Done"
+
+# Add new directories with Python code here:
+readonly PYTHON_LINT_DIRS=(
+  ./navigation
+  ./localization
+  ./scripts
+  ./state_machine
+  ./lie
+  ./superstructure
+)
+readonly PYTHON_STYLE_DIRS=(
+  "${PYTHON_LINT_DIRS[@]}"
+  ./launch
+)
 
 echo
 echo "Style checking Python with black ..."
-"$BLACK_PATH" "${BLACK_ARGS[@]}" . --exclude=venv
+"${BLACK_PATH}" "${BLACK_ARGS[@]}" "${PYTHON_STYLE_DIRS[@]}"
 
 echo
-echo "Style checking Python with mypy ..."
-# TODO(quintin): Add other subteam folders and scripts folder
-"$MYPY_PATH" --config-file=mypy.ini --check ./navigation ./scripts
+echo "Linting Python with mypy ..."
+"${MYPY_PATH}" --config-file=mypy.ini --check "${PYTHON_LINT_DIRS[@]}"
+
+if command -v shellcheck &> /dev/null; then
+  echo
+  echo "Linting bash scripts with shellcheck ..."
+  readonly SHELL_FILES=$(find . -depth 1 -name "*.sh")
+  for file in $SHELL_FILES; do
+    # SC2155 is separate declaration and command.
+    shellcheck "${file}" --exclude=SC2155
+  done
+fi
 
 if [ $# -eq 0 ] || [ "$1" != "--fix" ]; then
   echo
