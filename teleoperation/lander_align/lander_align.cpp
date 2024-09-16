@@ -1,4 +1,7 @@
 #include "lander_align.hpp"
+#include "mrover/action/detail/lander_align__struct.hpp"
+#include <rclcpp/utilities.hpp>
+#include <rclcpp/wait_set_template.hpp>
 
 namespace mrover {
     auto operator<<(std::ostream& ostream, RTRSTATE state) -> std::ostream& {
@@ -16,69 +19,54 @@ namespace mrover {
         mDebugPCPub = create_publisher<sensor_msgs::msg::PointCloud2>("/lander_align/debugPC", 1);
 
 		using GoalHandleLanderAlign = rclcpp_action::ServerGoalHandle<action::LanderAlign>;
-
-        mActionServer = rclcpp_action::create_server<action::LanderAlign>(
-			this, 
-			"LanderAlignAction", 
-			std::bind(
-				[&](rclcpp_action::GoalUUID& uuid, std::shared_ptr<const action::LanderAlign::Goal> goal){
-					//TODO: This function body is not correct
-					return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
-				},
-				this,
-				std::placeholders::_1,
-				std::placeholders::_2
-			),
-			std::bind(
-				[&](std::shared_ptr<GoalHandleLanderAlign> const goal){
-					//TODO: This function body is not correct
-					return rclcpp_action::CancelResponse::ACCEPT;
-				},
-				this,
-				std::placeholders::_1
-			),
-			std::bind(
-				[&](std::shared_ptr<GoalHandleLanderAlign> const goal){
-					//TODO: This function body is not correct
-				},
-				this,
-				std::placeholders::_1
-			)
-		); 
-
-        mActionServer.value().start();
+        // explicit LanderAlign(const rclcpp::NodeOptions & options = rclcpp::NodeOptions())
+        // : Node("lander_align", options)
+        // {   
         
-        //TF Create the Reference Frames
-        mNh.param<std::string>("camera_frame", mCameraFrameId, "zed_left_camera_frame");
-        mNh.param<std::string>("world_frame", mMapFrameId, "map");
+        mActionServer = rclcpp_action::create_server<action::LanderAlign>(
+            this,
+            "LanderAlignAction",
+            std::bind(&LanderAlign::handle_goal, this, std::placeholders::_1, std::placeholders::_2),
+            std::bind(&LanderAlign::handle_cancel, this, std::placeholders::_1),
+            std::bind(&LanderAlign::handle_accepted, this, std::placeholders::_1)
+        );
 
-        // ROS Params for ransac
-        mNh.param<double>("ransac/distance_threshold", mDistanceThreshold, 0.1);
+        // mActionServer.value().start(); // This motherfucker
+
+        auto paramSub = std::make_shared<rclcpp::ParameterEventHandler>(this);
+
+        std::vector<ParameterWrapper> params{
+                {"camera_frame", mCameraFrameId},
+                {"world_frame", mMapFrameId},
+                {"ransac/distance_threshold", mDistanceThreshold}};
+
+        ParameterWrapper::declareParameters(this, paramSub, params);
 
         mPlaneLocationInWorldVector = std::make_optional<Eigen::Vector3d>(0, 0, 0);
         mNormalInWorldVector = std::make_optional<Eigen::Vector3d>(0, 0, 0);
         mLoopState = RTRSTATE::turn1;
     }
 
-    auto LanderAlign::ActionServerCallBack(std::shared_ptr<action::LanderAlign_Goal> const goal) -> void {
+    auto LanderAlign::ActionServerCallBack(std::shared_ptr<GoalHandleLanderAlign> const goal) -> void {
 		std::shared_ptr<action::LanderAlign_Result> result;
 
         //If we haven't yet defined the point cloud we are working with
-		mCloud = rclcpp::wait_for_message<sensor_msgs::msg::PointCloud2>("/camera/left/points", 1);
+		mCloud = rclcpp::wait_for_message<sensor_msgs::msg::PointCloud2>("/camera/left/points", 1); // Use WaitSet????? Subscribe in constructor and take when data present
 		filterNormals(mCloud);
 		ransac(mDistanceThreshold, 10, 100);
 
         try{
             if(mNormalInWorldVector.has_value()){
                 if(!createSpline(7, 0.75)){
-                    mActionServer->setPreempted();
+                    rclcpp::shutdown(); 
                     return;
                 }    
                 publishSpline();
                 //calcMotionToo();
             }
         }catch(const tf2::LookupException& e){
-            mActionServer->setAborted();
+            rclcpp::shutdown();
+            return;
         }
         
         mPathPoints.clear();
@@ -226,8 +214,9 @@ namespace mrover {
         
         twist->angular.z = 0;
         twist->linear.x = 0;
-        mActionServer->setPreempted();
         mTwistPub->publish(twist);
+
+        rclcpp::shutdown(); // perchance a touch yucky
     }
 
     void LanderAlign::filterNormals(sensor_msgs::PointCloud2ConstPtr const& cloud) {
@@ -598,6 +587,25 @@ namespace mrover {
             SE3Conversions::pushToTfTree(mTfBroadcaster, std::format("point_{}", index), mMapFrameId, mPlaneLocationInZEDSE3d);
             index++;
         }
+    }
+
+    // ACTION SERVER FUNCTIONS
+    rclcpp_action::GoalResponse LanderAlign::handle_goal(const rclcpp_action::GoalUUID &uuid, shared_ptr<const action::LanderAlign::Goal> goal) {
+        return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
+    } 
+
+    rclcpp_action::CancelResponse LanderAlign::handle_cancel(shared_ptr<GoalHandleLanderAlign> goal_handle) {
+        (void)goal_handle;
+        return rclcpp_action::CancelResponse::ACCEPT;
+    }
+
+    void LanderAlign::handle_accepted(shared_ptr<GoalHandleStringTask> goal_handle) {
+        std::thread{&LanderAlign::execute, this, goal_handle}.detach();
+    }
+
+    auto LanderAlign::execute(const std::shared_ptr<GoalHandleLanderAlign> goal_handle) -> void {
+        ActionServerCallBack(goal_handle);
+
     }
 } // namespace mrover
 

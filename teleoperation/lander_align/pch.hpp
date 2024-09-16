@@ -24,6 +24,7 @@
 // MRover
 #include "lie.hpp"
 #include "point.hpp"
+#include "parameter.hpp"
 
 // STD
 #include <iostream>
