@@ -1,4 +1,4 @@
-import os
+from pathlib import Path
 
 from ament_index_python import get_package_share_directory
 
@@ -15,14 +15,14 @@ def generate_launch_description():
         package="mrover",
         executable="zed",
         name="zed_wrapper",
-        parameters=[os.path.join(get_package_share_directory("mrover"), "config", "zed.yaml")],
+        parameters=[Path(get_package_share_directory("mrover"), "config", "zed.yaml")],
     )
 
     object_detector_node = Node(
         package="mrover",
         executable="object_detector",
         name="object_detector",
-        parameters=[os.path.join(get_package_share_directory("mrover"), "config", "object_detector.yaml")],
+        parameters=[Path(get_package_share_directory("mrover"), "config", "object_detector.yaml")],
     )
 
     return LaunchDescription([zed_node, object_detector_node])
