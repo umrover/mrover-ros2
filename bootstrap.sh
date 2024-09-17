@@ -50,16 +50,16 @@ echo -e "${GREY_BOLD}Using ${CATKIN_PATH} as ROS workspace${NC}"
 readonly MROVER_PATH=${CATKIN_PATH}/src/mrover
 FIRST_TIME_SETUP=false
 
-if [ ! -d ${MROVER_PATH} ]; then
+if [ ! -d "${MROVER_PATH}" ]; then
   echo -e "${GREY_BOLD}Creating ROS workspace ...${NC}"
-  mkdir -p ${CATKIN_PATH}/src
-  git clone git@github.com:umrover/mrover-ros2 ${CATKIN_PATH}/src/mrover
-  cd ${CATKIN_PATH}/src/mrover
+  mkdir -p "${CATKIN_PATH}"/src
+  git clone git@github.com:umrover/mrover-ros2 "${CATKIN_PATH}"/src/mrover
+  cd "${CATKIN_PATH}"/src/mrover
   FIRST_TIME_SETUP=true
 fi
 
 echo -e "${GREY_BOLD}Using Ansible to finish up ...${NC}"
-${MROVER_PATH}/ansible.sh dev.yml
+"${MROVER_PATH}"/ansible.sh dev.yml
 
 if [ "${FIRST_TIME_SETUP}" ]; then
   echo -e "${GREY_BOLD}All done! Welcome to MRover!${NC}"

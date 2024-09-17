@@ -18,4 +18,4 @@ colcon build \
 	--cmake-args -G Ninja -W no-dev -DCMAKE_BUILD_TYPE=RelWithDebInfo \
 	--symlink-install \
 	--event-handlers console_direct+ \
-	$@
+	"$@"

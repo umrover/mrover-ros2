@@ -1,5 +1,8 @@
 #pragma once
 
+// Including this file provides baseline compatibility with Eigen.
+// Should be able to use unit types in Eigen matrices.
+
 #include "units.hpp"
 
 #include <Eigen/Core>
