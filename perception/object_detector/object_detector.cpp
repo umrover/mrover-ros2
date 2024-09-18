@@ -23,7 +23,7 @@ namespace mrover {
 
         RCLCPP_INFO_STREAM(get_logger(), "Opening Model " << mModelName);
 
-        mLearning = Learning{mModelName, packagePath};
+        mTensorRT = TensortRT{mModelName, packagePath};
 
         mDebugImgPub = create_publisher<sensor_msgs::msg::Image>("object_detector/debug_img", 1);
 

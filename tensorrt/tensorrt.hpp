@@ -9,7 +9,7 @@ struct Detection {
     cv::Rect box;
 };
 
-class Learning {
+class TensortRT {
     std::string mModelName;
 
     std::vector<std::string> classes{"bottle", "hammer"};
@@ -22,11 +22,11 @@ class Learning {
                           float modelNMSThreshold = 0.5) const -> void;
 
 public:
-    Learning();
+    TensortRT();
 
-    explicit Learning(std::string modelName, std::string& packagePathString);
+    explicit TensortRT(std::string modelName, std::string& packagePathString);
 
-    ~Learning();
+    ~TensortRT();
 
     auto modelForwardPass(cv::Mat const& blob,
                           std::vector<Detection>& detections,

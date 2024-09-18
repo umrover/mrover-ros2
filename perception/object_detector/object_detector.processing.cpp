@@ -26,7 +26,7 @@ namespace mrover {
 
         // Run the blob through the model
         std::vector<Detection> detections{};
-        mLearning.modelForwardPass(mImageBlob, detections, mModelScoreThreshold, mModelNmsThreshold);
+        mTensorRT.modelForwardPass(mImageBlob, detections, mModelScoreThreshold, mModelNmsThreshold);
 
         mLoopProfiler.measureEvent("Execution");
 

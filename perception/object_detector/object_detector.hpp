@@ -20,7 +20,7 @@ namespace mrover {
 
         LoopProfiler mLoopProfiler;
 
-        Learning mLearning;
+        TensortRT mTensorRT;
 
         cv::Mat mRgbImage, mImageBlob;
         sensor_msgs::msg::Image mDetectionsImageMessage;

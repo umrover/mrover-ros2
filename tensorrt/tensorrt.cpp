@@ -1,10 +1,10 @@
-#include "learning.hpp"
+#include "tensorrt.hpp"
 
 using namespace std;
 
-Learning::Learning() = default;
+TensortRT::TensortRT() = default;
 
-Learning::Learning(string modelName, string& packagePathString) : mModelName{std::move(modelName)} {
+TensortRT::TensortRT(string modelName, string& packagePathString) : mModelName{std::move(modelName)} {
 
     std::filesystem::path packagePath = packagePathString;
     std::filesystem::path modelFileName = mModelName.append(".onnx");
@@ -13,15 +13,15 @@ Learning::Learning(string modelName, string& packagePathString) : mModelName{std
     mInferenceWrapper = InferenceWrapper{modelPath, mModelName, packagePath};
 }
 
-Learning::~Learning() = default;
+TensortRT::~TensortRT() = default;
 
-auto Learning::modelForwardPass(cv::Mat const& blob, std::vector<Detection>& detections, float modelScoreThreshold, float modelNMSThreshold) const -> void {
+auto TensortRT::modelForwardPass(cv::Mat const& blob, std::vector<Detection>& detections, float modelScoreThreshold, float modelNMSThreshold) const -> void {
     mInferenceWrapper.doDetections(blob);
     cv::Mat output = mInferenceWrapper.getOutputTensor();
     parseModelOutput(output, detections, modelScoreThreshold, modelNMSThreshold);
 }
 
-auto Learning::parseModelOutput(cv::Mat& output, std::vector<Detection>& detections, float modelScoreThreshold, float modelNMSThreshold) const -> void {
+auto TensortRT::parseModelOutput(cv::Mat& output, std::vector<Detection>& detections, float modelScoreThreshold, float modelNMSThreshold) const -> void {
     // Parse model specific dimensioning from the output
 
     // The input to this function is expecting a YOLOv8 style model, thus the dimensions should be > rows
