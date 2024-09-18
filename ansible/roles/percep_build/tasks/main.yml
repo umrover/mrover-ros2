@@ -1,6 +1,11 @@
+- name: Install NVIDIA Drivers
+  become: True
+  apt:
+    name: nvidia-driver-{{driver_edition}}
+
 - name: Download CUDA Keyring
   get_url:
-    url: https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/cuda-keyring_1.1-1_all.deb
+    url: https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-keyring_1.1-1_all.deb
     dest: /tmp/cuda-keyring_1.1-1_all.deb
 
 - name: Install CUDA Keyring
@@ -11,20 +16,21 @@
 - name: Install APT Packages
   become: True
   apt:
-    cache_valid_time: 604800
+    update_cache: true
     state: latest
     name:
-      - cuda
+      - cuda-12-3
+      - g++-9
       - zstd # Required to unpack ZED installer
 
 - name: ZED SDK Download
   get_url:
-    url: https://download.stereolabs.com/zedsdk/4.0/cu121/ubuntu20
-    dest: /tmp/ZED_SDK_Ubuntu20_cuda12.1_v4.0.7.zstd.run
+    url: https://download.stereolabs.com/zedsdk/4.1/cu121/ubuntu22
+    dest: /tmp/ZED_SDK_Ubuntu22_cuda12.1_v4.1.4.zstd.run
     mode: 0755
 
 - name: ZED SDK Install
   # Silent mode prevents any user input prompting
-  command: /tmp/ZED_SDK_Ubuntu20_cuda12.1_v4.0.7.zstd.run -- silent
+  command: /tmp/ZED_SDK_Ubuntu22_cuda12.1_v4.1.4.zstd.run -- silent
   args:
     creates: /usr/local/zed
