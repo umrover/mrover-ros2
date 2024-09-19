@@ -18,11 +18,13 @@ namespace mrover {
 
         ParameterWrapper::declareParameters(this, params);
 
-        std::string packagePath{"/home/john/ros2_ws/src/mrover"};
+		std::filesystem::path packagePath = std::filesystem::path{ament_index_cpp::get_package_prefix("mrover")} / ".." / ".." / "src" / "mrover";
 
         RCLCPP_INFO_STREAM(get_logger(), "Opening Model " << mModelName);
 
-        mTensorRT = TensortRT{mModelName, packagePath};
+        RCLCPP_INFO_STREAM(get_logger(), "Found package path " << packagePath);
+
+        mTensorRT = TensortRT{mModelName, packagePath.string()};
 
         mDebugImgPub = create_publisher<sensor_msgs::msg::Image>("object_detector/debug_img", 1);
 

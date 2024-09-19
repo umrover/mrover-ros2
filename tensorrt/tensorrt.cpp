@@ -4,9 +4,9 @@ using namespace std;
 
 TensortRT::TensortRT() = default;
 
-TensortRT::TensortRT(string modelName, string& packagePathString) : mModelName{std::move(modelName)} {
+TensortRT::TensortRT(string modelName, string packagePathString) : mModelName{std::move(modelName)} {
 
-    std::filesystem::path packagePath = packagePathString;
+    std::filesystem::path packagePath{std::move(packagePathString)};
     std::filesystem::path modelFileName = mModelName.append(".onnx");
     std::filesystem::path modelPath = packagePath / "data" / modelFileName;
 

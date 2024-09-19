@@ -24,7 +24,7 @@ class TensortRT {
 public:
     TensortRT();
 
-    explicit TensortRT(std::string modelName, std::string& packagePathString);
+    explicit TensortRT(std::string modelName, std::string packagePathString);
 
     ~TensortRT();
 
