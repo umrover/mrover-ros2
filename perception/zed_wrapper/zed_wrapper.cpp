@@ -35,20 +35,21 @@ namespace mrover {
             std::string grabResolutionString, depthModeString;
 
             std::vector<ParameterWrapper> params{
-                    {"depth_confidence", mDepthConfidence},
-                    {"serial_number", mSerialNumber},
-                    {"grab_target_fps", mGrabTargetFps},
-                    {"texture_confidence", mTextureConfidence},
-                    {"image_width", imageWidth},
-                    {"image_height", imageHeight},
-                    {"svo_file", svoFile},
-                    {"use_depth_stabilization", mUseDepthStabilization},
-                    {"grab_resolution", grabResolutionString},
-                    {"depth_mode", depthModeString},
-                    {"depth_maximum_distance", mDepthMaximumDistance},
-                    {"use_builtin_visual_odom", mUseBuiltinPosTracking},
-                    {"use_pose_smoothing", mUsePoseSmoothing},
-                    {"use_area_memory", mUseAreaMemory}};
+                    {"depth_confidence", mDepthConfidence, 70},
+                    {"serial_number", mSerialNumber, -1},
+                    {"grab_target_fps", mGrabTargetFps, 60},
+                    {"texture_confidence", mTextureConfidence, 100},
+                    {"image_width", imageWidth, 1280},
+                    {"image_height", imageHeight, 720},
+                    {"svo_file", svoFile, ""},
+                    {"use_depth_stabilization", mUseDepthStabilization, false},
+                    {"grab_resolution", grabResolutionString, std::string{sl::toString(sl::RESOLUTION::HD720)}},
+                    {"depth_mode", depthModeString, std::string{sl::toString(sl::DEPTH_MODE::PERFORMANCE)}},
+                    {"depth_maximum_distance", mDepthMaximumDistance, 12.0},
+                    {"use_builtin_visual_odom", mUseBuiltinPosTracking, false},
+                    {"use_pose_smoothing", mUsePoseSmoothing, true},
+                    {"use_area_memory", mUseAreaMemory, true}
+			};
 
             ParameterWrapper::declareParameters(this, params);
 
