@@ -82,8 +82,8 @@ namespace mrover {
     struct URDF {
         struct LinkMeta {
             int index{};
-            boost::container::static_vector<Uniform<ModelUniforms>, 2> visualUniforms;
-            boost::container::static_vector<Uniform<ModelUniforms>, 2> collisionUniforms;
+            boost::container::small_vector<Uniform<ModelUniforms>, 2> visualUniforms;
+            boost::container::small_vector<Uniform<ModelUniforms>, 2> collisionUniforms;
         };
 
         urdf::Model model;
@@ -145,7 +145,7 @@ namespace mrover {
 
         wgpu::Buffer stagingBuffer;
 
-        std::unique_ptr<wgpu::BufferMapCallback> callback;
+        std::optional<wgpu::Future> future;
         bool needsMap = false;
 
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -158,7 +158,7 @@ namespace mrover {
 
         wgpu::Buffer pointCloudStagingBuffer;
         wgpu::Buffer pointCloudBuffer;
-        std::unique_ptr<wgpu::BufferMapCallback> pointCloudCallback;
+        std::optional<wgpu::Future> pointCloudFuture;
 
         Uniform<ComputeUniforms> computeUniforms{};
         wgpu::BindGroup computeBindGroup;
@@ -316,7 +316,7 @@ namespace mrover {
 
             btTransform baseTransform;
             btVector3 baseVelocity;
-            boost::container::static_vector<LinkData, 32> links;
+            boost::container::small_vector<LinkData, 32> links;
         };
 
         int mSaveSelection = 0;
