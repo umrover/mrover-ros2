@@ -4,8 +4,6 @@ namespace mrover {
 
     ObjectDetectorBase::ObjectDetectorBase() : rclcpp::Node(NODE_NAME), mLoopProfiler{get_logger()} {
 
-        auto paramSub = std::make_shared<rclcpp::ParameterEventHandler>(this);
-
         std::vector<ParameterWrapper> params{
                 {"camera_frame", mCameraFrame},
                 {"world_frame", mWorldFrame},
@@ -17,7 +15,7 @@ namespace mrover {
                 {"model_score_threshold", mModelScoreThreshold},
                 {"model_nms_threshold", mModelNmsThreshold}};
 
-        ParameterWrapper::declareParameters(this, paramSub, params);
+        ParameterWrapper::declareParameters(this, params);
 
         std::string packagePath{"/home/john/ros2_ws/src/mrover"};
 

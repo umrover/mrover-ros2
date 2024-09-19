@@ -27,8 +27,6 @@ namespace mrover {
             mLeftCamInfoPub = create_publisher<sensor_msgs::msg::CameraInfo>("camera/left/camera_info", 1);
 
             // Declare and set Params
-            auto paramSub = std::make_shared<rclcpp::ParameterEventHandler>(this);
-
             int imageWidth{};
             int imageHeight{};
 
@@ -52,7 +50,7 @@ namespace mrover {
                     {"use_pose_smoothing", mUsePoseSmoothing},
                     {"use_area_memory", mUseAreaMemory}};
 
-            ParameterWrapper::declareParameters(this, paramSub, params);
+            ParameterWrapper::declareParameters(this, params);
 
             mSvoPath = svoFile.c_str();
 
