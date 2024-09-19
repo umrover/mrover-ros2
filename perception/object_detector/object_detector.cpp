@@ -5,15 +5,16 @@ namespace mrover {
     ObjectDetectorBase::ObjectDetectorBase() : rclcpp::Node(NODE_NAME), mLoopProfiler{get_logger()} {
 
         std::vector<ParameterWrapper> params{
-                {"camera_frame", mCameraFrame},
-                {"world_frame", mWorldFrame},
-                {"increment_weight", mObjIncrementWeight},
-                {"decrement_weight", mObjDecrementWeight},
-                {"hitcount_threshold", mObjHitThreshold},
-                {"hitcount_max", mObjMaxHitcount},
-                {"model_name", mModelName},
-                {"model_score_threshold", mModelScoreThreshold},
-                {"model_nms_threshold", mModelNmsThreshold}};
+                {"camera_frame", mCameraFrame, "zed_left_camera_frame"},
+                {"world_frame", mWorldFrame, "map"},
+                {"increment_weight", mObjIncrementWeight, 2},
+                {"decrement_weight", mObjDecrementWeight, 1},
+                {"hitcount_threshold", mObjHitThreshold, 5},
+                {"hitcount_max", mObjMaxHitcount, 10},
+                {"model_name", mModelName, "Large-Dataset"},
+                {"model_score_threshold", mModelScoreThreshold, 0.75},
+                {"model_nms_threshold", mModelNmsThreshold, 0.5}
+		};
 
         ParameterWrapper::declareParameters(this, params);
 
