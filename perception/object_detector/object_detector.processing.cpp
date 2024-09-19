@@ -77,9 +77,9 @@ namespace mrover {
                     }
 
                 } catch (tf2::ExtrapolationException const&) {
-                    RCLCPP_INFO_STREAM(get_logger(), "Old data for immediate tag");
+                    RCLCPP_INFO_STREAM(get_logger(), "Old data for immediate objects");
                 } catch (tf2::LookupException const&) {
-                    RCLCPP_INFO_STREAM(get_logger(), "Expected transform for immediate tag");
+                    RCLCPP_INFO_STREAM(get_logger(), "Expected transform for immediate objects");
                 } catch (tf2::ConnectivityException const&) {
                     RCLCPP_INFO_STREAM(get_logger(), "Expected connection to odom frame. Is visual odometry running?");
                 }
