@@ -3,8 +3,8 @@
 # See: https://vaneyckt.io/posts/safer_bash_scripts_with_set_euxo_pipefail/
 set -Eeuo pipefail
 
-# Prevent globbing from failing if no files match
-shopt -s nullglob
+shopt -s nullglob globstar
+GLOBIGNORE="./venv/**"
 
 readonly RED='\033[0;31m'
 readonly NC='\033[0m'
@@ -86,11 +86,12 @@ echo "Linting Python with mypy ..."
 if command -v shellcheck &> /dev/null; then
   echo
   echo "Linting bash scripts with shellcheck ..."
-  readonly SHELL_FILES=$(find . -depth 1 -name "*.sh")
-  for file in $SHELL_FILES; do
-    # SC2155 is separate declaration and command.
-    shellcheck "${file}" --exclude=SC2155
-  done
+  readonly SHELL_FILES=(
+    ./**/*.sh
+  )
+  # SC2155 is separate declaration and command.
+  shellcheck --exclude=SC2155 "${SHELL_FILES[@]}"
+  echo "Done"
 fi
 
 if [ $# -eq 0 ] || [ "$1" != "--fix" ]; then
