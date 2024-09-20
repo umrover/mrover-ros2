@@ -2,6 +2,8 @@
 #include "mrover/action/detail/lander_align__struct.hpp"
 #include <rclcpp/utilities.hpp>
 #include <rclcpp/wait_set_template.hpp>
+#include <rclcpp/wait_for_message.hpp>
+
 
 namespace mrover {
     auto operator<<(std::ostream& ostream, RTRSTATE state) -> std::ostream& {
@@ -51,7 +53,7 @@ namespace mrover {
 		std::shared_ptr<action::LanderAlign_Result> result;
 
         //If we haven't yet defined the point cloud we are working with
-		mCloud = rclcpp::wait_for_message<sensor_msgs::msg::PointCloud2>("/camera/left/points", 1); // Use WaitSet????? Subscribe in constructor and take when data present
+		rclcpp::wait_for_message<sensor_msgs::msg::PointCloud2::ConstSharedPtr>(mCloud, make_shared(this), "/camera/left/points"); // Use WaitSet????? Subscribe in constructor and take when data present
 		filterNormals(mCloud);
 		ransac(mDistanceThreshold, 10, 100);
 
@@ -87,7 +89,6 @@ namespace mrover {
     };
 
     void LanderAlign::calcMotionToo() {
-		std::shared_ptr<geometry_msgs::msg::Twist> twist;
         SE3d roverInWorld = SE3Conversions::fromTfTree(*mTfBuffer, "base_link", "map");
         
         // Inital State
@@ -145,13 +146,13 @@ namespace mrover {
                 twist->angular.z = omega;
                 twist->linear.x = v;
 
-                if(mActionServer->isPreemptRequested()){
-                    twist->angular.z = 0;
-                    twist->linear.x = 0;
-                    mActionServer->setPreempted();
-                    mTwistPub->publish(twist);
-                    break;
-                }
+                // if(mActionServer->isPreemptRequested()){
+                //     twist->angular.z = 0;
+                //     twist->linear.x = 0;
+                //     mActionServer->setPreempted();
+                //     mTwistPub->publish(twist);
+                //     break;
+                // }
                 mTwistPub->publish(twist);
             }        
         }
@@ -170,15 +171,15 @@ namespace mrover {
 
             rclcpp::Rate rate(20); // ROS Rate at 20Hzn::Matrix3d roverToPlaneNorm;
             
-            while (rclcpp::ok()) {
-                // If the client has cancelled the server stop moving
-                if(mActionServer->isPreemptRequested()){
-                    mActionServer->setPreempted();
-                    twist->angular.z = 0;
-                    twist->linear.x = 0;
-                    mTwistPub->publish(twist);
-                    break;
-                }
+            // while (rclcpp::ok()) {
+            //     // If the client has cancelled the server stop moving
+            //     if(mActionServer->isPreemptRequested()){
+            //         mActionServer->setPreempted();
+            //         twist->angular.z = 0;
+            //         twist->linear.x = 0;
+            //         mTwistPub->publish(twist);
+            //         break;
+            //     }
                 
                 SE3d roverInWorld = SE3Conversions::fromTfTree(mTfBuffer, "base_link", "map");
                 Eigen::Vector3d roverPosInWorld{(roverInWorld.translation().x()), (roverInWorld.translation().y()), 0.0};
@@ -216,7 +217,7 @@ namespace mrover {
         twist->linear.x = 0;
         mTwistPub->publish(twist);
 
-        rclcpp::shutdown(); // perchance a touch yucky
+        // rclcpp::shutdown(); // perchance a touch yuckycky
     }
 
     void LanderAlign::filterNormals(sensor_msgs::PointCloud2ConstPtr const& cloud) {
@@ -596,6 +597,9 @@ namespace mrover {
 
     rclcpp_action::CancelResponse LanderAlign::handle_cancel(shared_ptr<GoalHandleLanderAlign> goal_handle) {
         (void)goal_handle;
+        twist->angular.z = 0;
+        twist->linear.x = 0;
+        mTwistPub->publish(twist);
         return rclcpp_action::CancelResponse::ACCEPT;
     }
 
@@ -607,6 +611,7 @@ namespace mrover {
         ActionServerCallBack(goal_handle);
 
     }
+
 } // namespace mrover
 
 

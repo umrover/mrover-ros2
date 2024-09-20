@@ -60,6 +60,7 @@ namespace mrover {
         RTRSTATE mLoopState;
 
         rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr mTwistPub;
+        std::shared_ptr<geometry_msgs::msg::Twist> twist;
 
         //PID CONSTANTS
         double const mAngleP = 1;
@@ -98,6 +99,8 @@ namespace mrover {
         auto createSpline(int density, double offset) -> bool;
 
         void publishSpline();
+
+        
 
         using GoalUUID = rclcpp_action::GoalUUID;
         using GoalHandleLanderAlign = rclcpp_action::ServerGoalHandle<action::LanderAlign>;
