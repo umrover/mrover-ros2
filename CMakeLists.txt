@@ -230,6 +230,10 @@ mrover_add_node(tag_detector perception/tag_detector/*.cpp perception/tag_detect
 ament_target_dependencies(tag_detector rclcpp tf2 tf2_ros)
 target_link_libraries(tag_detector lie opencv_core opencv_aruco opencv_imgproc loop_profiler)
 
+# Localization
+mrover_add_node(pose_filter src/localization/pose_filter.cpp)
+target_link_libraries(pose_filter PRIVATE lie)
+
 # Embedded
 
 mrover_add_node(differential_drive_controller esw/differential_drive_controller.cpp)
