@@ -1,5 +1,8 @@
 #include "lander_align.hpp"
 #include "mrover/action/detail/lander_align__struct.hpp"
+#include <boost/smart_ptr/shared_ptr.hpp>
+#include <chrono>
+#include <rclcpp/duration.hpp>
 #include <rclcpp/utilities.hpp>
 #include <rclcpp/wait_set_template.hpp>
 #include <rclcpp/wait_for_message.hpp>
@@ -143,17 +146,11 @@ namespace mrover {
                 RCLCPP_INFO_STREAM(get_logger(), "omega: " << omega);
                 RCLCPP_INFO_STREAM(get_logger(), "tan: " << tan(errState.z()));
                 
-                twist->angular.z = omega;
-                twist->linear.x = v;
-
-                // if(mActionServer->isPreemptRequested()){
-                //     twist->angular.z = 0;
-                //     twist->linear.x = 0;
-                //     mActionServer->setPreempted();
-                //     mTwistPub->publish(twist);
-                //     break;
-                // }
-                mTwistPub->publish(twist);
+                driveTwist->angular.z = omega;
+                driveTwist->linear.x = v;
+                driveTwist->angular.z = 0;
+                driveTwist->linear.x = 0;
+                mTwistPub->publish(driveTwist);
             }        
         }
 
@@ -162,26 +159,14 @@ namespace mrover {
             //Locations
             Eigen::Vector3d rover_dir;
 
-            //Final msg
-			std::shared_ptr<geometry_msgs::msg::Twist> twist;
-
             //Threhsolds
             float const angular_thresh = 0.001;
 
 
             rclcpp::Rate rate(20); // ROS Rate at 20Hzn::Matrix3d roverToPlaneNorm;
             
-            // while (rclcpp::ok()) {
-            //     // If the client has cancelled the server stop moving
-            //     if(mActionServer->isPreemptRequested()){
-            //         mActionServer->setPreempted();
-            //         twist->angular.z = 0;
-            //         twist->linear.x = 0;
-            //         mTwistPub->publish(twist);
-            //         break;
-            //     }
-                
-                SE3d roverInWorld = SE3Conversions::fromTfTree(mTfBuffer, "base_link", "map");
+            while (rclcpp::ok()) {                
+                SE3d roverInWorld = SE3Conversions::fromTfTree(*mTfBuffer, "base_link", "map");
                 Eigen::Vector3d roverPosInWorld{(roverInWorld.translation().x()), (roverInWorld.translation().y()), 0.0};
 
                 Eigen::Vector3d roverToTargetForward = -mNormalInWorldVector.value();
@@ -203,24 +188,24 @@ namespace mrover {
 
                 double angle_rate = mAngleP * SO3tan.z();
                 angle_rate = (std::abs(angle_rate) > mAngleFloor) ? angle_rate : copysign(mAngleFloor, angle_rate);
-                twist->angular.z = angle_rate;
-                twist->linear.x = 0;
+                turnTwist->angular.z = angle_rate;
+                turnTwist->linear.x = 0;
 
                 if (std::abs(SO3tan.z()) < angular_thresh) {
                     break;
                 }
-                mTwistPub->publish(twist);
+                mTwistPub->publish(turnTwist);
             }
         }
         
-        twist->angular.z = 0;
-        twist->linear.x = 0;
-        mTwistPub->publish(twist);
+        driveTwist->angular.z = 0;
+        driveTwist->linear.x = 0;
+        mTwistPub->publish(driveTwist);
 
         // rclcpp::shutdown(); // perchance a touch yuckycky
     }
 
-    void LanderAlign::filterNormals(sensor_msgs::PointCloud2ConstPtr const& cloud) {
+    void LanderAlign::filterNormals(sensor_msgs::msg::PointCloud2::ConstSharedPtr const& cloud) {
         mFilteredPoints.clear();
         
         // Pointer to the underlying point cloud data
@@ -241,14 +226,15 @@ namespace mrover {
     }
 
     void LanderAlign::uploadPC(int numInliers, double distanceThreshold) {
-        auto debugPointCloudPtr = boost::make_shared<sensor_msgs::PointCloud2>();
+        // auto debugPointCloudPtr = boost::make_shared<sensor_msgs::PointCloud2>();
+        auto debugPointCloudPtr = sensor_msgs::msg::PointCloud2::SharedPtr();
         fillPointCloudMessageHeader(debugPointCloudPtr);
         debugPointCloudPtr->is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
         debugPointCloudPtr->is_dense = true;
         debugPointCloudPtr->height = 1;
         debugPointCloudPtr->width = numInliers;
-        debugPointCloudPtr->header.seq = 0;
-        debugPointCloudPtr->header.stamp = ros::Time();
+        // debugPointCloudPtr->header.seq = 0; 
+        debugPointCloudPtr->header.stamp = rclcpp::Time();
         debugPointCloudPtr->header.frame_id = "zed_left_camera_frame";
         debugPointCloudPtr->data.resize(numInliers * sizeof(Point));
         auto pcPtr = reinterpret_cast<Point*>(debugPointCloudPtr->data.data());
@@ -269,7 +255,7 @@ namespace mrover {
                 ++i;
             }
         }
-        mDebugPCPub.publish(debugPointCloudPtr);
+        mDebugPCPub->publish(debugPointCloudPtr);
     }
 
     void LanderAlign::ransac(double const distanceThreshold, int minInliers, int const epochs) {
@@ -355,7 +341,7 @@ namespace mrover {
 
         mOffsetLocationInZEDVector = std::make_optional<Eigen::Vector3d>(mPlaneLocationInZEDVector.value() + mPlaneOffsetScalar * mNormalInZEDVector.value());
 
-        SE3d zedToMap = SE3Conversions::fromTfTree(mTfBuffer, mCameraFrameId, mMapFrameId);
+        SE3d zedToMap = SE3Conversions::fromTfTree(*mTfBuffer, mCameraFrameId, mMapFrameId);
 
         mNormalInWorldVector = std::make_optional<Eigen::Vector3d>(zedToMap.rotation() * mNormalInZEDVector.value());
 
@@ -381,8 +367,9 @@ namespace mrover {
         mOffsetLocationInWorldVector = std::make_optional<Eigen::Vector3d>(mOffsetLocationInWorldSE3d.translation());
 
         //Push to the tf tree
-        SE3Conversions::pushToTfTree(mTfBroadcaster, "plane", mMapFrameId, mPlaneLocationInWorldSE3d);
-        SE3Conversions::pushToTfTree(mTfBroadcaster, "offset", mMapFrameId, mOffsetLocationInWorldSE3d);
+        SE3Conversions::pushToTfTree(*mTfBroadcaster, "plane", mMapFrameId, mPlaneLocationInWorldSE3d, get_clock()->now());
+
+        SE3Conversions::pushToTfTree(*mTfBroadcaster, "offset", mMapFrameId, mOffsetLocationInWorldSE3d, get_clock()->now());
 
         
 
@@ -390,14 +377,14 @@ namespace mrover {
         if(mOffsetLocationInZEDSE3d.translation().x() < 0) mNormalInZEDVector = std::nullopt;
     }
 
-    void LanderAlign::sendTwist() {
+    /* void LanderAlign::sendTwist() { // We currently don't call this and it has errors
         //Locations
         Eigen::Vector3d rover_dir;
 
         //Final msg
         geometry_msgs::Twist twist;
 
-        //Threhsolds
+        //Thresholds
         float const linear_thresh = 0.01; // could be member variables
         float const angular_thresh = 0.001;
 
@@ -406,13 +393,13 @@ namespace mrover {
         
         while (ros::ok()) {
             // If the client has cancelled the server stop moving
-            if(mActionServer->isPreemptRequested()){
-                mActionServer->setPreempted();
-                twist.angular.z = 0;
-                twist.linear.x = 0;
-                mTwistPub.publish(twist);
-                break;
-            }
+            // if(mActionServer->isPreemptRequested()){
+            //     mActionServer->setPreempted();
+            //     twist.angular.z = 0;
+            //     twist.linear.x = 0;
+            //     mTwistPub.publish(twist);
+            //     break;
+            // }
                 
             // Publish the current state of the RTR controller 
         	LanderAlignFeedback feedback;
@@ -423,7 +410,7 @@ namespace mrover {
             SE3Conversions::pushToTfTree(mTfBroadcaster, "plane", mMapFrameId, mPlaneLocationInWorldSE3d);
             SE3Conversions::pushToTfTree(mTfBroadcaster, "offset", mMapFrameId, mOffsetLocationInWorldSE3d);
             
-            SE3d roverInWorld = SE3Conversions::fromTfTree(mTfBuffer, "base_link", "map");
+            SE3d roverInWorld = SE3Conversions::fromTfTree(*mTfBuffer, "base_link", "map");
             Eigen::Vector3d roverPosInWorld{(roverInWorld.translation().x()), (roverInWorld.translation().y()), 0.0};
             Eigen::Vector3d targetPosInWorld;
 
@@ -531,7 +518,7 @@ namespace mrover {
                 break;
             }
         }
-    }
+     }*/
     
 
     auto LanderAlign::createSpline(int density, double offset) -> bool{
@@ -543,9 +530,8 @@ namespace mrover {
         // Calculate the angle to the world
         const double dAngle = calcAngleWithWorldX(-mNormalInWorldVector.value());
 
-        //Calcuulate the spline length
-        rclcpp::Duration(0.5).sleep();
-        SE3d planeInRover = SE3Conversions::fromTfTree(mTfBuffer, "plane", mCameraFrameId);
+        //Calculate the spline length
+        SE3d planeInRover = SE3Conversions::fromTfTree(*mTfBuffer, "plane", mCameraFrameId);
         double xDistanceFromRoverToPlane = planeInRover.translation().x();
         double splineLength = kSplineStart * xDistanceFromRoverToPlane;
 
@@ -585,25 +571,25 @@ namespace mrover {
         int index = 0;
         for(auto const & point : mPathPoints){
             SE3d mPlaneLocationInZEDSE3d = {{point.coeff(0,0), point.coeff(1,0), 0}, SO3d{Eigen::Quaterniond{rot}.normalized()}};
-            SE3Conversions::pushToTfTree(mTfBroadcaster, std::format("point_{}", index), mMapFrameId, mPlaneLocationInZEDSE3d);
+            SE3Conversions::pushToTfTree(*mTfBroadcaster, std::format("point_{}", index), mMapFrameId, mPlaneLocationInZEDSE3d, get_clock()->now());
             index++;
         }
     }
 
     // ACTION SERVER FUNCTIONS
-    rclcpp_action::GoalResponse LanderAlign::handle_goal(const rclcpp_action::GoalUUID &uuid, shared_ptr<const action::LanderAlign::Goal> goal) {
+    rclcpp_action::GoalResponse LanderAlign::handle_goal(const rclcpp_action::GoalUUID &uuid, std::shared_ptr<const action::LanderAlign::Goal> goal) {
         return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
     } 
 
-    rclcpp_action::CancelResponse LanderAlign::handle_cancel(shared_ptr<GoalHandleLanderAlign> goal_handle) {
+    rclcpp_action::CancelResponse LanderAlign::handle_cancel(std::shared_ptr<GoalHandleLanderAlign> goal_handle){
         (void)goal_handle;
-        twist->angular.z = 0;
-        twist->linear.x = 0;
-        mTwistPub->publish(twist);
+        driveTwist->angular.z = 0;
+        driveTwist->linear.x = 0;
+        mTwistPub->publish(driveTwist);
         return rclcpp_action::CancelResponse::ACCEPT;
     }
 
-    void LanderAlign::handle_accepted(shared_ptr<GoalHandleStringTask> goal_handle) {
+    void LanderAlign::handle_accepted(std::shared_ptr<GoalHandleLanderAlign> goal_handle) {
         std::thread{&LanderAlign::execute, this, goal_handle}.detach();
     }
 

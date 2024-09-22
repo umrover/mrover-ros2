@@ -40,4 +40,17 @@ namespace mrover {
                 "curvature", 1, sensor_msgs::msg::PointField::FLOAT32);
     }
 
+    inline void fillPointCloudMessageHeader(sensor_msgs::msg::PointCloud2::SharedPtr const& msg) {
+        sensor_msgs::PointCloud2Modifier modifier{*msg};
+        modifier.setPointCloud2Fields(
+                8,
+                "x", 1, sensor_msgs::msg::PointField::FLOAT32,
+                "y", 1, sensor_msgs::msg::PointField::FLOAT32,
+                "z", 1, sensor_msgs::msg::PointField::FLOAT32,
+                "rgb", 1, sensor_msgs::msg::PointField::FLOAT32, // by convention rgb is stored as float32 even thought it is three bytes
+                "normal_x", 1, sensor_msgs::msg::PointField::FLOAT32,
+                "normal_y", 1, sensor_msgs::msg::PointField::FLOAT32,
+                "normal_z", 1, sensor_msgs::msg::PointField::FLOAT32,
+                "curvature", 1, sensor_msgs::msg::PointField::FLOAT32);
+    }
 } // namespace mrover
