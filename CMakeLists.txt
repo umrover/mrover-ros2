@@ -269,7 +269,7 @@ endif()
 
 mrover_add_node(tag_detector perception/tag_detector/*.cpp perception/tag_detector/pch.hpp)
 ament_target_dependencies(tag_detector rclcpp tf2 tf2_ros)
-target_link_libraries(tag_detector lie opencv_core opencv_aruco opencv_imgproc loop_profiler)
+target_link_libraries(tag_detector lie opencv_core opencv_aruco opencv_imgproc loop_profiler parameter_utils)
 
 # Embedded
 
