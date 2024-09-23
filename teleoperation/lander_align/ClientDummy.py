@@ -1,7 +1,4 @@
 #!/usr/bin/env python3
-import rospkg
-import actionlib
-
 import os
 
 # python linear algebra library
@@ -11,42 +8,41 @@ import numpy as np
 import rclpy
 import mrover
 
-from mrover.msg import LanderAlignAction
-from mrover.msg import LanderAlignGoal
+from rclpy.action import ActionClient
+from rclpy.node import Node
+
+from mrover.action import LanderAlignAction
 
 
-class ClientDummy:
+class ClientDummy(Node):
     def __init__(self):
-        self.landerClient = actionlib.SimpleActionClient('LanderAlignAction', LanderAlignAction)
-        self.landerClient.wait_for_server()
+        super().__init__('client_dummy')
+        self._action_client = ActionClient(self, LanderAlignAction, 'LanderAlignAction')  
         print("finished init")
 
-        
-    def start_lander_align(self) -> None:
-        print("start")
-        goal = LanderAlignGoal()
-        self.landerClient.send_goal(goal)
+    def send_goal(self, order):
+        print("starting")
+        goal_msg = LanderAlignAction.Goal()
+        goal_msg.order = order
+
+        self._action_client.wait_for_server()
         print("finished start")
-        pass
-
-    def stop_lander_align(self) -> None:
-        print("stop")
-        self.landerClient.cancel_goal()
-        pass
-
+        return self._action_client.send_goal_async(goal_msg)
 
 
 def main():
     # initialize the node
-    rospy.init_node("ClientDummy")
+    print("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
+    rclpy.init("ClientDummy")
     dummy = ClientDummy()
+    future = ActionClient.cancel_goal() # TODO: THIS IS WRONG FIND THE CORRECT ONE
 
     dummy.start_lander_align()
-    rospy.sleep(4)
+    rclpy.sleep(4)
     dummy.stop_lander_align()
 
     # let the callback functions run asynchronously in the background
-    rospy.spin()
+    rclpy.spin()
     
     
 if __name__ == "__main__":
