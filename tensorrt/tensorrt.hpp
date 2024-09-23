@@ -32,4 +32,6 @@ public:
                           std::vector<Detection>& detections,
                           float modelScoreThreshold = 0.75,
                           float modelNMSThreshold = 0.5) const -> void;
+
+	auto getInputBlobSize() -> std::vector<int64_t>;
 };

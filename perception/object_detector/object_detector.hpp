@@ -7,22 +7,30 @@ namespace mrover {
     class ObjectDetectorBase : public rclcpp::Node {
 
     protected:
+		enum MODEL_TYPE {
+			YOLOv8 = 0,
+		};
+
         static constexpr char const* NODE_NAME = "object_detector";
 
         std::unique_ptr<tf2_ros::Buffer> mTfBuffer = std::make_unique<tf2_ros::Buffer>(get_clock());
         std::shared_ptr<tf2_ros::TransformBroadcaster> mTfBroadcaster = std::make_shared<tf2_ros::TransformBroadcaster>(this);
         std::shared_ptr<tf2_ros::TransformListener> mTfListener = std::make_shared<tf2_ros::TransformListener>(*mTfBuffer);
 
+		// TF Frames
         std::string mCameraFrame;
         std::string mWorldFrame;
 
+		// Model Member Variables
+		MODEL_TYPE mModelType;
         std::string mModelName;
+        cv::Mat mRgbImage, mImageBlob;
+		std::vector<int64_t> mBlobSize;
 
         LoopProfiler mLoopProfiler;
 
         TensortRT mTensorRT;
 
-        cv::Mat mRgbImage, mImageBlob;
         sensor_msgs::msg::Image mDetectionsImageMessage;
 
         rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr mDebugImgPub;

@@ -170,3 +170,22 @@ auto Inference::getBindingInputIndex(IExecutionContext const* context) -> int {
     // Returns the id for the input tensor
     return context->getEngine().getTensorIOMode(context->getEngine().getIOTensorName(0)) != TensorIOMode::kINPUT; // 0 (false) if bindingIsInput(0), 1 (true) otherwise
 }
+
+
+auto Inference::getInputBlobSize() -> std::vector<int64_t>{
+	auto dims =  mEngine->getTensorShape(INPUT_BINDING_NAME);
+	std::vector<int64_t> inputBlobSize;
+	inputBlobSize.reserve(dims.nbDims);
+
+	for(int32_t i = 0; i < dims.nbDims; ++i){
+		inputBlobSize.push_back(dims.d[i]);
+	}
+
+	for(int i = 0; i < dims.nbDims; ++i){
+        std::array<char, 512> message;
+        std::snprintf(message.data(), message.size(), "Blob Size %d %d", i, dims.d[i]);
+        mLogger.log(ILogger::Severity::kINFO, message.data());
+	}
+
+	return inputBlobSize;
+}

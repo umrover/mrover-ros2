@@ -72,4 +72,9 @@ public:
      * @brief Retrieves the mat where the output from the forward pass was stored
      */
     auto getOutputTensor() -> cv::Mat;
+
+	/**
+	  * @brief Retrives the expected input matrix size
+	  */
+	auto getInputBlobSize() -> std::vector<int64_t>;
 };

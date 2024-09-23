@@ -24,3 +24,7 @@ auto InferenceWrapper::doDetections(cv::Mat const& img) const -> void {
 auto InferenceWrapper::getOutputTensor() const -> cv::Mat {
     return mInference->getOutputTensor();
 }
+
+auto InferenceWrapper::getInputBlobSize() -> std::vector<int64_t>{
+	return mInference->getInputBlobSize();
+}

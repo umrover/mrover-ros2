@@ -23,7 +23,10 @@ namespace mrover {
 
         RCLCPP_INFO_STREAM(get_logger(), "Found package path " << packagePath);
 
+		// Initialize TensorRT Inference Object and Get Important Output Information
+		mModelType = MODEL_TYPE::YOLOv8;
         mTensorRT = TensortRT{mModelName, packagePath.string()};
+		mBlobSize = mTensorRT.getInputBlobSize();
 
         mDebugImgPub = create_publisher<sensor_msgs::msg::Image>("object_detector/debug_img", 1);
 

@@ -16,11 +16,21 @@ namespace mrover {
         }
         convertPointCloudToRGB(msg, mRgbImage);
 
-        // TODO(quintin): Avoid hard coding blob size
-        cv::Size blobSize{640, 640};
+		
+		// Convert the RGB Image into the blob Image format
         cv::Mat blobSizedImage;
-        cv::resize(mRgbImage, blobSizedImage, blobSize);
-        cv::dnn::blobFromImage(blobSizedImage, mImageBlob, 1.0 / 255.0, blobSize, cv::Scalar{}, false, false);
+		switch(mModelType){
+			case MODEL_TYPE::YOLOv8: 
+			{
+				if(mBlobSize.size() != 4){
+					throw std::runtime_error("Expected Blob Size to be of size 4, are you using the correct model type?");
+				}
+				cv::Size blobSize{static_cast<int32_t>(mBlobSize[2]), static_cast<int32_t>(mBlobSize[3])};
+				cv::resize(mRgbImage, blobSizedImage, blobSize);
+				cv::dnn::blobFromImage(blobSizedImage, mImageBlob, 1.0 / 255.0, blobSize, cv::Scalar{}, false, false);
+				break;
+			}
+		}
 
         mLoopProfiler.measureEvent("Conversion");
 
