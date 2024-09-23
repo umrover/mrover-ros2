@@ -11,8 +11,6 @@ using namespace nvinfer1;
 * Requires bindings, inputTensor, stream
 * Modifies stream, outputTensor
 */
-constexpr static auto INPUT_BINDING_NAME = "images";
-constexpr static auto OUTPUT_BINDING_NAME = "output0";
 
 Inference::Inference(std::filesystem::path const& onnxModelPath, std::string const& modelName, std::string packagePathString) : mPackagePath{std::move(packagePathString)} {
     mModelPath = onnxModelPath.string();
@@ -25,8 +23,32 @@ Inference::Inference(std::filesystem::path const& onnxModelPath, std::string con
 
     // Check some assumptions about the model
     if (mEngine->getNbIOTensors() != 2) throw std::runtime_error("Invalid Binding Count");
-    if (mEngine->getTensorIOMode(INPUT_BINDING_NAME) != TensorIOMode::kINPUT) throw std::runtime_error("Expected Input Binding 0 Is An Input");
-    if (mEngine->getTensorIOMode(OUTPUT_BINDING_NAME) != TensorIOMode::kOUTPUT) throw std::runtime_error("Expected Input Binding Input To Be 1");
+
+	// Store the IO Tensor Names
+	mInputTensorName = mEngine->getIOTensorName(0);
+	mOutputTensorName = mEngine->getIOTensorName(1);
+
+    if (mEngine->getTensorIOMode(mInputTensorName.c_str()) != TensorIOMode::kINPUT) throw std::runtime_error("Expected Input Binding 0 Is An Input");
+    if (mEngine->getTensorIOMode(mOutputTensorName.c_str()) != TensorIOMode::kOUTPUT) throw std::runtime_error("Expected Output Binding Input To Be 1");
+
+	// Be verbose about the input tensor size
+	auto inputTensorSize = getInputTensorSize();
+	std::array<char, 35> message;
+	std::snprintf(message.data(), message.size(), "%s Tensor's Dimensions:", mInputTensorName.c_str());
+        mLogger.log(ILogger::Severity::kINFO, message.data());
+	for(size_t i = 0; i < inputTensorSize.size(); ++i){
+        std::snprintf(message.data(), message.size(), "Dimension: %zu Size: %zu", i, inputTensorSize[i]);
+        mLogger.log(ILogger::Severity::kINFO, message.data());
+	}
+
+	// Be verbose about the input tensor size
+	auto outputTensorSize = getInputTensorSize();
+	std::snprintf(message.data(), message.size(), "%s Tensor's Dimensions:", mOutputTensorName.c_str());
+	mLogger.log(ILogger::Severity::kINFO, message.data());
+	for(size_t i = 0; i < outputTensorSize.size(); ++i){
+        std::snprintf(message.data(), message.size(), "Dimension: %zu Size: %zu", i, outputTensorSize[i]);
+        mLogger.log(ILogger::Severity::kINFO, message.data());
+	}
 
     createExecutionContext();
 
@@ -99,7 +121,7 @@ auto Inference::createExecutionContext() -> void {
     if (!mContext) throw std::runtime_error("Failed to create execution context");
 
     // Set up the input tensor sizing
-    mContext->setInputShape(INPUT_BINDING_NAME, mEngine->getTensorShape(INPUT_BINDING_NAME));
+    mContext->setInputShape(mInputTensorName.c_str(), mEngine->getTensorShape(mInputTensorName.c_str()));
 }
 
 auto Inference::doDetections(cv::Mat const& img) const -> void {
@@ -144,7 +166,6 @@ auto Inference::prepTensors() -> void {
 		for(int32_t i = 0; i < rank; ++i){
 			size *= extents[i];
 		}
-		std::cout << tensorName << " is getting allocated to size " << size << std::endl;
 
 		// Create GPU memory for TensorRT to operate on
         if (cudaError_t result = cudaMalloc(mBindings.data() + i, size * sizeof(float)); result != cudaSuccess)
@@ -153,7 +174,7 @@ auto Inference::prepTensors() -> void {
 
     assert(mContext);
     // Create an appropriately sized output tensor
-    auto const [nbDims, d] = mEngine->getTensorShape(OUTPUT_BINDING_NAME);
+    auto const [nbDims, d] = mEngine->getTensorShape(mOutputTensorName.c_str());
     for (int i = 0; i < nbDims; i++) {
         std::array<char, 512> message;
         std::snprintf(message.data(), message.size(), "Size %d %d", i, d[i]);
@@ -172,8 +193,8 @@ auto Inference::getBindingInputIndex(IExecutionContext const* context) -> int {
 }
 
 
-auto Inference::getInputBlobSize() -> std::vector<int64_t>{
-	auto dims =  mEngine->getTensorShape(INPUT_BINDING_NAME);
+auto Inference::getInputTensorSize() -> std::vector<int64_t>{
+	auto dims =  mEngine->getTensorShape(mInputTensorName.c_str());
 	std::vector<int64_t> inputBlobSize;
 	inputBlobSize.reserve(dims.nbDims);
 
@@ -181,10 +202,16 @@ auto Inference::getInputBlobSize() -> std::vector<int64_t>{
 		inputBlobSize.push_back(dims.d[i]);
 	}
 
-	for(int i = 0; i < dims.nbDims; ++i){
-        std::array<char, 512> message;
-        std::snprintf(message.data(), message.size(), "Blob Size %d %d", i, dims.d[i]);
-        mLogger.log(ILogger::Severity::kINFO, message.data());
+	return inputBlobSize;
+}
+
+auto Inference::getOutputTensorSize() -> std::vector<int64_t>{
+	auto dims =  mEngine->getTensorShape(mOutputTensorName.c_str());
+	std::vector<int64_t> inputBlobSize;
+	inputBlobSize.reserve(dims.nbDims);
+
+	for(int32_t i = 0; i < dims.nbDims; ++i){
+		inputBlobSize.push_back(dims.d[i]);
 	}
 
 	return inputBlobSize;

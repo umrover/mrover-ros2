@@ -26,7 +26,7 @@ namespace mrover {
 		// Initialize TensorRT Inference Object and Get Important Output Information
 		mModelType = MODEL_TYPE::YOLOv8;
         mTensorRT = TensortRT{mModelName, packagePath.string()};
-		mBlobSize = mTensorRT.getInputBlobSize();
+		mInputTensorSize = mTensorRT.getInputTensorSize();
 
         mDebugImgPub = create_publisher<sensor_msgs::msg::Image>("object_detector/debug_img", 1);
 

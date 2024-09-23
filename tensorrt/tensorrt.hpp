@@ -33,5 +33,5 @@ public:
                           float modelScoreThreshold = 0.75,
                           float modelNMSThreshold = 0.5) const -> void;
 
-	auto getInputBlobSize() -> std::vector<int64_t>;
+	auto getInputTensorSize() -> std::vector<int64_t>;
 };

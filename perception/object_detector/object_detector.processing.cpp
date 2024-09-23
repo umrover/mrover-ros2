@@ -22,13 +22,13 @@ namespace mrover {
 		switch(mModelType){
 			case MODEL_TYPE::YOLOv8: 
 			{
-				if(mBlobSize.size() != 4){
+				if(mInputTensorSize.size() != 4){
 					throw std::runtime_error("Expected Blob Size to be of size 4, are you using the correct model type?");
 				}
 
 				static constexpr double UCHAR_TO_DOUBLE = 1.0 / 255.0;
 
-				cv::Size blobSize{static_cast<int32_t>(mBlobSize[2]), static_cast<int32_t>(mBlobSize[3])};
+				cv::Size blobSize{static_cast<int32_t>(mInputTensorSize[2]), static_cast<int32_t>(mInputTensorSize[3])};
 				cv::resize(mRgbImage, blobSizedImage, blobSize);
 				cv::dnn::blobFromImage(blobSizedImage, mImageBlob, UCHAR_TO_DOUBLE, blobSize, cv::Scalar{}, false, false);
 				break;

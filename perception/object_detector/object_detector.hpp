@@ -25,7 +25,7 @@ namespace mrover {
 		MODEL_TYPE mModelType;
         std::string mModelName;
         cv::Mat mRgbImage, mImageBlob;
-		std::vector<int64_t> mBlobSize;
+		std::vector<int64_t> mInputTensorSize;
 
         LoopProfiler mLoopProfiler;
 

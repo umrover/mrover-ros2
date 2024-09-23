@@ -99,6 +99,6 @@ auto TensortRT::parseModelOutput(cv::Mat& output, std::vector<Detection>& detect
     }
 }
 
-auto TensortRT::getInputBlobSize() -> std::vector<int64_t>{
-	return mInferenceWrapper.getInputBlobSize();
+auto TensortRT::getInputTensorSize() -> std::vector<int64_t>{
+	return mInferenceWrapper.getInputTensorSize();
 }

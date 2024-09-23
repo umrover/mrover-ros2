@@ -21,7 +21,9 @@ class Inference {
     std::unique_ptr<IExecutionContext> mContext{};
 
     cv::Mat mInputTensor;
+	std::string mInputTensorName;
     cv::Mat mOutputTensor;
+	std::string mOutputTensorName;
 
     std::array<void*, 2> mBindings{};
 
@@ -74,7 +76,12 @@ public:
     auto getOutputTensor() -> cv::Mat;
 
 	/**
-	  * @brief Retrives the expected input matrix size
+	  * @brief Retrives the expected input tensor size
 	  */
-	auto getInputBlobSize() -> std::vector<int64_t>;
+	auto getInputTensorSize() -> std::vector<int64_t>;
+
+	/**
+	  * @brief Retrives the expected input tensor size
+	  */
+	auto getOutputTensorSize() -> std::vector<int64_t>;
 };
