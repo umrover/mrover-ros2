@@ -174,6 +174,7 @@ auto Inference::prepTensors() -> void {
 
     assert(mContext);
     // Create an appropriately sized output tensor
+	// TODO: Fix this
     auto const [nbDims, d] = mEngine->getTensorShape(mOutputTensorName.c_str());
     for (int i = 0; i < nbDims; i++) {
         std::array<char, 512> message;
