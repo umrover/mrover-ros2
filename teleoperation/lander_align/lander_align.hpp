@@ -60,8 +60,8 @@ namespace mrover {
         RTRSTATE mLoopState;
 
         rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr mTwistPub;
-        std::shared_ptr<geometry_msgs::msg::Twist> driveTwist;
-        std::shared_ptr<geometry_msgs::msg::Twist> turnTwist;
+        geometry_msgs::msg::Twist driveTwist;
+        geometry_msgs::msg::Twist turnTwist;
 
         //PID CONSTANTS
         double const mAngleP = 1;

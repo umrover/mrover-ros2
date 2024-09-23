@@ -56,7 +56,7 @@ namespace mrover {
 		std::shared_ptr<action::LanderAlign_Result> result;
 
         //If we haven't yet defined the point cloud we are working with
-		rclcpp::wait_for_message<sensor_msgs::msg::PointCloud2::ConstSharedPtr>(mCloud, make_shared(this), "/camera/left/points"); // Use WaitSet????? Subscribe in constructor and take when data present
+		rclcpp::wait_for_message<sensor_msgs::msg::PointCloud2::ConstSharedPtr>(mCloud, this->shared_from_this(), "/camera/left/points"); // Use WaitSet????? Subscribe in constructor and take when data present
 		filterNormals(mCloud);
 		ransac(mDistanceThreshold, 10, 100);
 
@@ -146,10 +146,10 @@ namespace mrover {
                 RCLCPP_INFO_STREAM(get_logger(), "omega: " << omega);
                 RCLCPP_INFO_STREAM(get_logger(), "tan: " << tan(errState.z()));
                 
-                driveTwist->angular.z = omega;
-                driveTwist->linear.x = v;
-                driveTwist->angular.z = 0;
-                driveTwist->linear.x = 0;
+                driveTwist.angular.z = omega;
+                driveTwist.linear.x = v;
+                driveTwist.angular.z = 0;
+                driveTwist.linear.x = 0;
                 mTwistPub->publish(driveTwist);
             }        
         }
@@ -188,8 +188,8 @@ namespace mrover {
 
                 double angle_rate = mAngleP * SO3tan.z();
                 angle_rate = (std::abs(angle_rate) > mAngleFloor) ? angle_rate : copysign(mAngleFloor, angle_rate);
-                turnTwist->angular.z = angle_rate;
-                turnTwist->linear.x = 0;
+                turnTwist.angular.z = angle_rate;
+                turnTwist.linear.x = 0;
 
                 if (std::abs(SO3tan.z()) < angular_thresh) {
                     break;
@@ -198,8 +198,8 @@ namespace mrover {
             }
         }
         
-        driveTwist->angular.z = 0;
-        driveTwist->linear.x = 0;
+        driveTwist.angular.z = 0;
+        driveTwist.linear.x = 0;
         mTwistPub->publish(driveTwist);
 
         // rclcpp::shutdown(); // perchance a touch yuckycky
@@ -255,7 +255,7 @@ namespace mrover {
                 ++i;
             }
         }
-        mDebugPCPub->publish(debugPointCloudPtr);
+        mDebugPCPub->publish(*debugPointCloudPtr);
     }
 
     void LanderAlign::ransac(double const distanceThreshold, int minInliers, int const epochs) {
@@ -583,8 +583,8 @@ namespace mrover {
 
     rclcpp_action::CancelResponse LanderAlign::handle_cancel(std::shared_ptr<GoalHandleLanderAlign> goal_handle){
         (void)goal_handle;
-        driveTwist->angular.z = 0;
-        driveTwist->linear.x = 0;
+        driveTwist.angular.z = 0;
+        driveTwist.linear.x = 0;
         mTwistPub->publish(driveTwist);
         return rclcpp_action::CancelResponse::ACCEPT;
     }
@@ -597,6 +597,8 @@ namespace mrover {
         ActionServerCallBack(goal_handle);
 
     }
+
+    LanderAlign::~LanderAlign() {}
 
 } // namespace mrover
 
