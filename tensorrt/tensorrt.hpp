@@ -34,4 +34,6 @@ public:
                           float modelNMSThreshold = 0.5) const -> void;
 
 	auto getInputTensorSize() -> std::vector<int64_t>;
+
+	auto getOutputTensorSize() -> std::vector<int64_t>;
 };

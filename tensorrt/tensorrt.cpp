@@ -7,10 +7,8 @@ TensortRT::TensortRT() = default;
 TensortRT::TensortRT(string modelName, string packagePathString) : mModelName{std::move(modelName)} {
 
     std::filesystem::path packagePath{std::move(packagePathString)};
-    std::filesystem::path modelFileName = mModelName.append(".onnx");
-    std::filesystem::path modelPath = packagePath / "data" / modelFileName;
 
-    mInferenceWrapper = InferenceWrapper{modelPath, mModelName, packagePath};
+    mInferenceWrapper = InferenceWrapper{mModelName, packagePath};
 }
 
 TensortRT::~TensortRT() = default;
@@ -101,4 +99,8 @@ auto TensortRT::parseModelOutput(cv::Mat& output, std::vector<Detection>& detect
 
 auto TensortRT::getInputTensorSize() -> std::vector<int64_t>{
 	return mInferenceWrapper.getInputTensorSize();
+}
+
+auto TensortRT::getOutputTensorSize() -> std::vector<int64_t>{
+	return mInferenceWrapper.getOutputTensorSize();
 }
