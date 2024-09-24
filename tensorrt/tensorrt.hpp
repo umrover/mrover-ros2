@@ -12,9 +12,7 @@ struct Detection {
 class TensortRT {
     std::string mModelName;
 
-
     InferenceWrapper mInferenceWrapper;
-
 
 public:
     TensortRT();
