@@ -7,9 +7,9 @@ namespace mrover {
     class ObjectDetectorBase : public rclcpp::Node {
 
     protected:
-		enum MODEL_TYPE {
-			YOLOv8 = 0,
-		};
+        enum MODEL_TYPE {
+            YOLOv8 = 0,
+        };
 
         static constexpr char const* NODE_NAME = "object_detector";
 
@@ -17,15 +17,15 @@ namespace mrover {
         std::shared_ptr<tf2_ros::TransformBroadcaster> mTfBroadcaster = std::make_shared<tf2_ros::TransformBroadcaster>(this);
         std::shared_ptr<tf2_ros::TransformListener> mTfListener = std::make_shared<tf2_ros::TransformListener>(*mTfBuffer);
 
-		// TF Frames
+        // TF Frames
         std::string mCameraFrame;
         std::string mWorldFrame;
 
-		// Model Member Variables
-		MODEL_TYPE mModelType;
+        // Model Member Variables
+        MODEL_TYPE mModelType;
         std::string mModelName;
         cv::Mat mRgbImage, mImageBlob;
-		std::vector<int64_t> mInputTensorSize;
+        std::vector<int64_t> mInputTensorSize;
 
         LoopProfiler mLoopProfiler;
 
@@ -38,7 +38,7 @@ namespace mrover {
 
         // TODO(quintin): Do not hard code exactly two classes
         std::vector<int> mObjectHitCounts{0, 0};
-		std::vector<std::string> mClasses{"bottle", "hammer"};
+        std::vector<std::string> mClasses{"bottle", "hammer"};
 
         int mObjIncrementWeight{};
         int mObjDecrementWeight{};
@@ -59,11 +59,11 @@ namespace mrover {
 
         static auto drawDetectionBoxes(cv::InputOutputArray image, std::span<Detection const> detections) -> void;
 
-		auto static parseYOLOv8Output(cv::Mat& output,
-							  std::vector<Detection>& detections,
-							  std::vector<std::string> const& classes,
-							  float modelScoreThreshold = 0.75,
-							  float modelNMSThreshold = 0.5) -> void;
+        auto static parseYOLOv8Output(cv::Mat& output,
+                                      std::vector<Detection>& detections,
+                                      std::vector<std::string> const& classes,
+                                      float modelScoreThreshold = 0.75,
+                                      float modelNMSThreshold = 0.5) -> void;
 
     public:
         explicit ObjectDetectorBase();

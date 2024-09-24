@@ -17,7 +17,6 @@ auto TensortRT::modelForwardPass(cv::Mat const& inputBlobTensor, cv::Mat& output
     outputTensor = mInferenceWrapper.getOutputTensor();
 }
 
-
 auto TensortRT::getInputTensorSize() -> std::vector<int64_t>{
 	return mInferenceWrapper.getInputTensorSize();
 }

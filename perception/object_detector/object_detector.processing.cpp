@@ -15,38 +15,37 @@ namespace mrover {
             mRgbImage = cv::Mat{static_cast<int>(msg->height), static_cast<int>(msg->width), CV_8UC3, cv::Scalar{0, 0, 0, 0}};
         }
 
-		// If 0x0 image
-		if(!mRgbImage.total()){
-			return;
-		}
+        // If 0x0 image
+        if (!mRgbImage.total()) {
+            return;
+        }
 
         convertPointCloudToRGB(msg, mRgbImage);
-		
-		// Convert the RGB Image into the blob Image format
+
+        // Convert the RGB Image into the blob Image format
         cv::Mat blobSizedImage;
-		switch(mModelType){
-			case MODEL_TYPE::YOLOv8: 
-			{
-				if(mInputTensorSize.size() != 4){
-					throw std::runtime_error("Expected Blob Size to be of size 4, are you using the correct model type?");
-				}
+        switch (mModelType) {
+            case MODEL_TYPE::YOLOv8: {
+                if (mInputTensorSize.size() != 4) {
+                    throw std::runtime_error("Expected Blob Size to be of size 4, are you using the correct model type?");
+                }
 
-				static constexpr double UCHAR_TO_DOUBLE = 1.0 / 255.0;
+                static constexpr double UCHAR_TO_DOUBLE = 1.0 / 255.0;
 
-				cv::Size blobSize{static_cast<int32_t>(mInputTensorSize[2]), static_cast<int32_t>(mInputTensorSize[3])};
-				cv::resize(mRgbImage, blobSizedImage, blobSize);
-				cv::dnn::blobFromImage(blobSizedImage, mImageBlob, UCHAR_TO_DOUBLE, blobSize, cv::Scalar{}, false, false);
-				break;
-			}
-		}
+                cv::Size blobSize{static_cast<int32_t>(mInputTensorSize[2]), static_cast<int32_t>(mInputTensorSize[3])};
+                cv::resize(mRgbImage, blobSizedImage, blobSize);
+                cv::dnn::blobFromImage(blobSizedImage, mImageBlob, UCHAR_TO_DOUBLE, blobSize, cv::Scalar{}, false, false);
+                break;
+            }
+        }
 
         mLoopProfiler.measureEvent("Conversion");
 
         // Run the blob through the model
         std::vector<Detection> detections{};
-		cv::Mat outputTensor;
+        cv::Mat outputTensor;
         mTensorRT.modelForwardPass(mImageBlob, outputTensor);
-		ObjectDetectorBase::parseYOLOv8Output(outputTensor, detections, mClasses, mModelScoreThreshold, mModelNMSThreshold);
+        ObjectDetectorBase::parseYOLOv8Output(outputTensor, detections, mClasses, mModelScoreThreshold, mModelNMSThreshold);
 
         mLoopProfiler.measureEvent("Execution");
 

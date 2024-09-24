@@ -25,7 +25,7 @@ public:
 
 	auto modelForwardPass(cv::Mat const& inputBlobTensor, cv::Mat& outputTensor) const -> void;
 
-	auto getInputTensorSize() -> std::vector<int64_t>;
+	[[nodiscard]] auto getInputTensorSize() -> std::vector<int64_t>;
 
-	auto getOutputTensorSize() -> std::vector<int64_t>;
+	[[nodiscard]] auto getOutputTensorSize() -> std::vector<int64_t>;
 };
