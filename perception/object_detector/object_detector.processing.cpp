@@ -14,8 +14,13 @@ namespace mrover {
             RCLCPP_INFO_STREAM(get_logger(), std::format("Image size changed from [{}, {}] to [{}, {}]", mRgbImage.cols, mRgbImage.rows, msg->width, msg->height));
             mRgbImage = cv::Mat{static_cast<int>(msg->height), static_cast<int>(msg->width), CV_8UC3, cv::Scalar{0, 0, 0, 0}};
         }
-        convertPointCloudToRGB(msg, mRgbImage);
 
+		// If 0x0 image
+		if(!mRgbImage.total()){
+			return;
+		}
+
+        convertPointCloudToRGB(msg, mRgbImage);
 		
 		// Convert the RGB Image into the blob Image format
         cv::Mat blobSizedImage;
@@ -39,7 +44,9 @@ namespace mrover {
 
         // Run the blob through the model
         std::vector<Detection> detections{};
-        mTensorRT.modelForwardPass(mImageBlob, detections, mModelScoreThreshold, mModelNmsThreshold);
+		cv::Mat outputTensor;
+        mTensorRT.modelForwardPass(mImageBlob, outputTensor);
+		ObjectDetectorBase::parseYOLOv8Output(outputTensor, detections, mClasses, mModelScoreThreshold, mModelNMSThreshold);
 
         mLoopProfiler.measureEvent("Execution");
 

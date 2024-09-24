@@ -13,7 +13,7 @@ namespace mrover {
                 {"hitcount_max", mObjMaxHitcount, 10},
                 {"model_name", mModelName, "Large-Dataset"},
                 {"model_score_threshold", mModelScoreThreshold, 0.75},
-                {"model_nms_threshold", mModelNmsThreshold, 0.5}};
+                {"model_nms_threshold", mModelNMSThreshold, 0.5}};
 
         ParameterWrapper::declareParameters(this, params);
 
@@ -30,7 +30,7 @@ namespace mrover {
 
         mDebugImgPub = create_publisher<sensor_msgs::msg::Image>("object_detector/debug_img", 1);
 
-        RCLCPP_INFO_STREAM(get_logger(), std::format("Object detector initialized with model: {} and thresholds: {} and {}", mModelName, mModelScoreThreshold, mModelNmsThreshold));
+        RCLCPP_INFO_STREAM(get_logger(), std::format("Object detector initialized with model: {} and thresholds: {} and {}", mModelName, mModelScoreThreshold, mModelNMSThreshold));
     }
 
     StereoObjectDetector::StereoObjectDetector() {

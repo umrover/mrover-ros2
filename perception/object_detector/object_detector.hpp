@@ -38,13 +38,14 @@ namespace mrover {
 
         // TODO(quintin): Do not hard code exactly two classes
         std::vector<int> mObjectHitCounts{0, 0};
+		std::vector<std::string> mClasses{"bottle", "hammer"};
 
         int mObjIncrementWeight{};
         int mObjDecrementWeight{};
         int mObjHitThreshold{};
         int mObjMaxHitcount{};
         float mModelScoreThreshold{};
-        float mModelNmsThreshold{};
+        float mModelNMSThreshold{};
 
         auto spiralSearchForValidPoint(sensor_msgs::msg::PointCloud2::UniquePtr const& cloudPtr,
                                        std::size_t u, std::size_t v,
@@ -57,6 +58,12 @@ namespace mrover {
         auto publishDetectedObjects(cv::InputArray image) -> void;
 
         static auto drawDetectionBoxes(cv::InputOutputArray image, std::span<Detection const> detections) -> void;
+
+		auto static parseYOLOv8Output(cv::Mat& output,
+							  std::vector<Detection>& detections,
+							  std::vector<std::string> const& classes,
+							  float modelScoreThreshold = 0.75,
+							  float modelNMSThreshold = 0.5) -> void;
 
     public:
         explicit ObjectDetectorBase();
