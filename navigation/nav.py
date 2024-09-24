@@ -64,6 +64,15 @@ class Navigation(Node):
                 ("single_tag.tag_stop_threshold", Parameter.Type.DOUBLE),
                 ("single_tag.post_avoidance_multiplier", Parameter.Type.DOUBLE),
                 ("single_tag.post_radius", Parameter.Type.DOUBLE),
+                ("water_bottle_search.use_costmap", Parameter.Type.BOOL),
+                ("water_bottle_search.stop_threshold", Parameter.Type.DOUBLE),
+                ("water_bottle_search.drive_forward_threshold", Parameter.Type.DOUBLE),
+                ("water_bottle_search.coverage_radius", Parameter.Type.DOUBLE),
+                ("water_bottle_search.segments_per_rotation", Parameter.Type.INTEGER),
+                ("water_bottle_search.distance_between_spirals", Parameter.Type.DOUBLE),
+                ("water_bottle_search.traversable_cost", Parameter.Type.DOUBLE),
+                ("water_bottle_search.update_delay", Parameter.Type.DOUBLE),
+                ("water_bottle_search.safe_approach_distance", Parameter.Type.DOUBLE),
             ],
         )
 
