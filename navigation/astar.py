@@ -184,7 +184,7 @@ class AStar:
                 outer_iterations += 1
                 if outer_iterations > max_iterations:
                     # If we hit this point return the path such as it is. It will not contain the destination
-                    rospy.logwarn("Giving up on pathfinding, too many iterations")
+                    self.context.node.get_logger().warn("Giving up on pathfinding, too many iterations")
                     return self.return_path(current_node)
 
                 # found the goal
@@ -242,5 +242,5 @@ class AStar:
                     # add the child to the open list
                     heapq.heappush(open_list, child)
 
-            rospy.logwarn("Could not find a path to destination")
+            self.context.node.get_logger().warn("Could not find a path to destination")
             raise NoPath()
