@@ -95,5 +95,4 @@ namespace mrover {
             detections.push_back(result);
         }
     }
-
 }; // namespace mrover
