@@ -326,7 +326,7 @@ install(PROGRAMS
         localization/basestation_gps_driver.py
         superstructure/superstructure.py
         scripts/debug_course_publisher.py
-        teleoperation/lander_align/ClientDummy.py
+        teleoperation/lander_align/client_dummy.py
 
         # starter project sources
         starter_project/autonomy/src/localization.py

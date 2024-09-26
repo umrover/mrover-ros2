@@ -3,6 +3,8 @@
 #include <boost/smart_ptr/shared_ptr.hpp>
 #include <chrono>
 #include <rclcpp/duration.hpp>
+#include <rclcpp/logger.hpp>
+#include <rclcpp/logging.hpp>
 #include <rclcpp/utilities.hpp>
 #include <rclcpp/wait_set_template.hpp>
 #include <rclcpp/wait_for_message.hpp>
@@ -19,6 +21,7 @@ namespace mrover {
         mXThreshold = .1;
         mPlaneOffsetScalar = 2.5;
 
+        RCLCPP_INFO_STREAM(get_logger(), "KILL YOURSELF");
         mDebugVectorPub = create_publisher<geometry_msgs::msg::Vector3>("/lander_align/Pose", 1);
         mTwistPub = create_publisher<geometry_msgs::msg::Twist>("/cmd_vel", 1);
         mDebugPCPub = create_publisher<sensor_msgs::msg::PointCloud2>("/lander_align/debugPC", 1);
@@ -578,10 +581,14 @@ namespace mrover {
 
     // ACTION SERVER FUNCTIONS
     rclcpp_action::GoalResponse LanderAlign::handle_goal(const rclcpp_action::GoalUUID &uuid, std::shared_ptr<const action::LanderAlign::Goal> goal) {
+        RCLCPP_INFO_STREAM(get_logger(), "in handle goal");
+
         return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
     } 
 
     rclcpp_action::CancelResponse LanderAlign::handle_cancel(std::shared_ptr<GoalHandleLanderAlign> goal_handle){
+        RCLCPP_INFO_STREAM(get_logger(), "in handle cancel");
+
         (void)goal_handle;
         driveTwist.angular.z = 0;
         driveTwist.linear.x = 0;
@@ -590,10 +597,13 @@ namespace mrover {
     }
 
     void LanderAlign::handle_accepted(std::shared_ptr<GoalHandleLanderAlign> goal_handle) {
+        RCLCPP_INFO_STREAM(get_logger(), "in handle accepted");
+
         std::thread{&LanderAlign::execute, this, goal_handle}.detach();
     }
 
     auto LanderAlign::execute(const std::shared_ptr<GoalHandleLanderAlign> goal_handle) -> void {
+        RCLCPP_INFO_STREAM(get_logger(), "in execute");
         ActionServerCallBack(goal_handle);
 
     }
