@@ -45,7 +45,12 @@ namespace mrover {
         std::vector<Detection> detections{};
         cv::Mat outputTensor;
         mTensorRT.modelForwardPass(mImageBlob, outputTensor);
-        ObjectDetectorBase::parseYOLOv8Output(outputTensor, detections, mClasses, mModelScoreThreshold, mModelNMSThreshold);
+		
+		switch (mModelType) {
+			case MODEL_TYPE::YOLOv8: {
+				ObjectDetectorBase::parseYOLOv8Output(outputTensor, detections, mClasses, mModelScoreThreshold, mModelNMSThreshold);
+			}
+		}
 
         mLoopProfiler.measureEvent("Execution");
 
