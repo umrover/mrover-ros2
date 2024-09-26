@@ -7,9 +7,29 @@ namespace mrover {
     class ObjectDetectorBase : public rclcpp::Node {
 
     protected:
-        enum MODEL_TYPE {
-            YOLOv8 = 0,
-        };
+		struct Model {
+			std::string modelName;
+
+			std::vector<int> objectHitCounts;
+
+			std::vector<std::string> classes;
+
+			std::vector<int64_t> inputTensorSize;
+
+			std::vector<int64_t> outputTensorSize;
+
+			std::vector<float> buffer;
+			
+			// Converts an rgb image to a blob
+			std::function<void(Model const&, cv::Mat&, cv::Mat&)> rbgImageToBlob;
+
+			// Converts an output tensor into a vector of detections
+			std::function<void(Model const&, cv::Mat&, std::vector<Detection>&)> outputTensorToDetections;
+
+			Model() = default;
+
+			Model(std::string _modelName, std::vector<int> _objectHitCounts, std::vector<std::string> _classes, std::vector<int64_t> _inputTensorSize, std::vector<int64_t> _outputTensorSize, std::vector<float> _buffer, std::function<void(Model const&, cv::Mat&, cv::Mat&)> _rbgImageToBlob, std::function<void(Model const&, cv::Mat&, std::vector<Detection>&)> _outputTensorToDetections) : modelName{std::move(_modelName)}, 	objectHitCounts(std::move(_objectHitCounts)), classes(std::move(_classes)), inputTensorSize(std::move(_inputTensorSize)), outputTensorSize(std::move(_outputTensorSize)), buffer(std::move(_buffer)), rbgImageToBlob{std::move(_rbgImageToBlob)}, outputTensorToDetections{std::move(_outputTensorToDetections)} {}
+		};
 
         static constexpr char const* NODE_NAME = "object_detector";
 
@@ -17,15 +37,12 @@ namespace mrover {
         std::shared_ptr<tf2_ros::TransformBroadcaster> mTfBroadcaster = std::make_shared<tf2_ros::TransformBroadcaster>(this);
         std::shared_ptr<tf2_ros::TransformListener> mTfListener = std::make_shared<tf2_ros::TransformListener>(*mTfBuffer);
 
-        // TF Frames
+		Model mModel;
+
         std::string mCameraFrame;
         std::string mWorldFrame;
 
-        // Model Member Variables
-        MODEL_TYPE mModelType;
-        std::string mModelName;
         cv::Mat mRgbImage, mImageBlob;
-        std::vector<int64_t> mInputTensorSize;
 
         LoopProfiler mLoopProfiler;
 
@@ -36,16 +53,10 @@ namespace mrover {
         rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr mDebugImgPub;
         rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr mSensorSub;
 
-        // TODO(quintin): Do not hard code exactly two classes
-        std::vector<int> mObjectHitCounts{0, 0};
-        std::vector<std::string> mClasses{"bottle", "hammer"};
-
         int mObjIncrementWeight{};
         int mObjDecrementWeight{};
         int mObjHitThreshold{};
         int mObjMaxHitcount{};
-        float mModelScoreThreshold{};
-        float mModelNMSThreshold{};
 
         auto spiralSearchForValidPoint(sensor_msgs::msg::PointCloud2::UniquePtr const& cloudPtr,
                                        std::size_t u, std::size_t v,
@@ -59,11 +70,11 @@ namespace mrover {
 
         static auto drawDetectionBoxes(cv::InputOutputArray image, std::span<Detection const> detections) -> void;
 
-        auto static parseYOLOv8Output(cv::Mat& output,
-                                      std::vector<Detection>& detections,
-                                      std::vector<std::string> const& classes,
-                                      float modelScoreThreshold = 0.75,
-                                      float modelNMSThreshold = 0.5) -> void;
+        auto static parseYOLOv8Output(Model const& model,
+								      cv::Mat& output,
+							   		  std::vector<Detection>& detections) -> void;
+
+		auto static preprocessYOLOv8Input(Model const& model, cv::Mat& rgbImage, cv::Mat& blob) -> void;
 
     public:
         explicit ObjectDetectorBase();

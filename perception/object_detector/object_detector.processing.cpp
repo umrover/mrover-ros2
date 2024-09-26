@@ -15,7 +15,7 @@ namespace mrover {
             mRgbImage = cv::Mat{static_cast<int>(msg->height), static_cast<int>(msg->width), CV_8UC3, cv::Scalar{0, 0, 0, 0}};
         }
 
-        // If 0x0 image
+        // if 0x0 image
         if (!mRgbImage.total()) {
             return;
         }
@@ -24,20 +24,7 @@ namespace mrover {
 
         // Convert the RGB Image into the blob Image format
         cv::Mat blobSizedImage;
-        switch (mModelType) {
-            case MODEL_TYPE::YOLOv8: {
-                if (mInputTensorSize.size() != 4) {
-                    throw std::runtime_error("Expected Blob Size to be of size 4, are you using the correct model type?");
-                }
-
-                static constexpr double UCHAR_TO_DOUBLE = 1.0 / 255.0;
-
-                cv::Size blobSize{static_cast<int32_t>(mInputTensorSize[2]), static_cast<int32_t>(mInputTensorSize[3])};
-                cv::resize(mRgbImage, blobSizedImage, blobSize);
-                cv::dnn::blobFromImage(blobSizedImage, mImageBlob, UCHAR_TO_DOUBLE, blobSize, cv::Scalar{}, false, false);
-                break;
-            }
-        }
+		mModel.rbgImageToBlob(mModel, mRgbImage, blobSizedImage);
 
         mLoopProfiler.measureEvent("Conversion");
 
@@ -46,11 +33,7 @@ namespace mrover {
         cv::Mat outputTensor;
         mTensorRT.modelForwardPass(mImageBlob, outputTensor);
 		
-		switch (mModelType) {
-			case MODEL_TYPE::YOLOv8: {
-				ObjectDetectorBase::parseYOLOv8Output(outputTensor, detections, mClasses, mModelScoreThreshold, mModelNMSThreshold);
-			}
-		}
+		mModel.outputTensorToDetections(mModel, outputTensor, detections);
 
         mLoopProfiler.measureEvent("Execution");
 
@@ -69,7 +52,7 @@ namespace mrover {
         // Set of flags indicating if the given object has been seen
         // TODO(quintin): Do not hard code exactly two classes
         std::bitset<2> seenObjects{0b00};
-        for (auto const& [classId, className, confidence, box]: detections) {
+        for (auto const& [classId, className, confidence, box] : detections) {
             // Resize from blob space to image space
             cv::Point2f centerInBlob = cv::Point2f{box.tl()} + cv::Point2f{box.size()} / 2;
             float xRatio = static_cast<float>(msg->width) / static_cast<float>(imageSize.width);
@@ -90,10 +73,10 @@ namespace mrover {
                     // Push the immediate detections to the camera frame
                     SE3Conversions::pushToTfTree(*mTfBroadcaster, objectImmediateFrame, mCameraFrame, objectInCamera.value(), get_clock()->now());
                     // Since the object is seen we need to increment the hit counter
-                    mObjectHitCounts[classId] = std::min(mObjMaxHitcount, mObjectHitCounts[classId] + mObjIncrementWeight);
+                    mModel.objectHitCounts[classId] = std::min(mObjMaxHitcount, mModel.objectHitCounts[classId] + mObjIncrementWeight);
 
                     // Only publish to permament if we are confident in the object
-                    if (mObjectHitCounts[classId] > mObjHitThreshold) {
+                    if (mModel.objectHitCounts[classId] > mObjHitThreshold) {
                         std::string objectPermanentFrame = className;
                         // Grab the object inside of the camera frame and push it into the map frame
                         SE3d objectInMap = SE3Conversions::fromTfTree(*mTfBuffer, objectImmediateFrame, mWorldFrame);
@@ -114,7 +97,7 @@ namespace mrover {
             if (seenObjects[i]) continue;
 
             assert(i < mObjectHitCounts.size());
-            mObjectHitCounts[i] = std::max(0, mObjectHitCounts[i] - mObjDecrementWeight);
+            mModel.objectHitCounts[i] = std::max(0, mModel.objectHitCounts[i] - mObjDecrementWeight);
         }
     }
 

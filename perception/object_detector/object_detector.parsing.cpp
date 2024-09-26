@@ -1,6 +1,19 @@
 #include "object_detector.hpp"
 namespace mrover {
-    auto ObjectDetectorBase::parseYOLOv8Output(cv::Mat& output, std::vector<Detection>& detections, std::vector<std::string> const& classes, float modelScoreThreshold, float modelNMSThreshold) -> void {
+	auto ObjectDetectorBase::preprocessYOLOv8Input(Model const& model, cv::Mat& rgbImage, cv::Mat& blob) -> void{
+		cv::Mat blobSizedImage;
+		if (model.inputTensorSize.size() != 4) {
+			throw std::runtime_error("Expected Blob Size to be of size 4, are you using the correct model type?");
+		}
+
+		static constexpr double UCHAR_TO_DOUBLE = 1.0 / 255.0;
+
+		cv::Size blobSize{static_cast<int32_t>(model.inputTensorSize[2]), static_cast<int32_t>(model.inputTensorSize[3])};
+		cv::resize(rgbImage, blobSizedImage, blobSize);
+		cv::dnn::blobFromImage(blobSizedImage, blob, UCHAR_TO_DOUBLE, blobSize, cv::Scalar{}, false, false);
+	}
+
+    auto ObjectDetectorBase::parseYOLOv8Output(Model const& model, cv::Mat& output, std::vector<Detection>& detections) -> void {
         // Parse model specific dimensioning from the output
 
         // The input to this function is expecting a YOLOv8 style model, thus the dimensions should be > rows
@@ -37,7 +50,7 @@ namespace mrover {
             cv::minMaxLoc(scores, nullptr, &maxClassScore, nullptr, &classId);
 
             // Determine if the class is an acceptable confidence level, otherwise disregard
-            if (maxClassScore <= modelScoreThreshold) continue;
+            if (maxClassScore <= model.buffer[0]) continue;
 
             confidences.push_back(static_cast<float>(maxClassScore));
             classIds.push_back(classId.x);
@@ -61,7 +74,7 @@ namespace mrover {
 
         //Coalesce the boxes into a smaller number of distinct boxes
         std::vector<int> nmsResult;
-        cv::dnn::NMSBoxes(boxes, confidences, modelScoreThreshold, modelNMSThreshold, nmsResult);
+        cv::dnn::NMSBoxes(boxes, confidences, model.buffer[0], model.buffer[1], nmsResult);
 
         // Fill in the output Detections Vector
         for (int i: nmsResult) {
@@ -72,7 +85,7 @@ namespace mrover {
             result.confidence = confidences[i];
 
             //Fill in the class name and box information
-            result.className = classes[result.classId];
+            result.className = model.classes[result.classId];
             result.box = boxes[i];
 
             //Push back the detection into the for storagevector
