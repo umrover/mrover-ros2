@@ -24,7 +24,7 @@ namespace mrover {
 
         // Convert the RGB Image into the blob Image format
         cv::Mat blobSizedImage;
-		mModel.rbgImageToBlob(mModel, mRgbImage, blobSizedImage);
+		mModel.rbgImageToBlob(mModel, mRgbImage, blobSizedImage, mImageBlob);
 
         mLoopProfiler.measureEvent("Conversion");
 

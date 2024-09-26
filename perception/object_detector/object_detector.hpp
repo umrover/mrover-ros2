@@ -18,17 +18,18 @@ namespace mrover {
 
 			std::vector<int64_t> outputTensorSize;
 
+			// Additional space for params that one algorithm might need and not others
 			std::vector<float> buffer;
 			
 			// Converts an rgb image to a blob
-			std::function<void(Model const&, cv::Mat&, cv::Mat&)> rbgImageToBlob;
+			std::function<void(Model const&, cv::Mat&, cv::Mat&, cv::Mat&)> rbgImageToBlob;
 
 			// Converts an output tensor into a vector of detections
 			std::function<void(Model const&, cv::Mat&, std::vector<Detection>&)> outputTensorToDetections;
 
 			Model() = default;
 
-			Model(std::string _modelName, std::vector<int> _objectHitCounts, std::vector<std::string> _classes, std::vector<int64_t> _inputTensorSize, std::vector<int64_t> _outputTensorSize, std::vector<float> _buffer, std::function<void(Model const&, cv::Mat&, cv::Mat&)> _rbgImageToBlob, std::function<void(Model const&, cv::Mat&, std::vector<Detection>&)> _outputTensorToDetections) : modelName{std::move(_modelName)}, 	objectHitCounts(std::move(_objectHitCounts)), classes(std::move(_classes)), inputTensorSize(std::move(_inputTensorSize)), outputTensorSize(std::move(_outputTensorSize)), buffer(std::move(_buffer)), rbgImageToBlob{std::move(_rbgImageToBlob)}, outputTensorToDetections{std::move(_outputTensorToDetections)} {}
+			Model(std::string _modelName, std::vector<int> _objectHitCounts, std::vector<std::string> _classes, std::vector<int64_t> _inputTensorSize, std::vector<int64_t> _outputTensorSize, std::vector<float> _buffer, std::function<void(Model const&, cv::Mat&, cv::Mat&, cv::Mat&)> _rbgImageToBlob, std::function<void(Model const&, cv::Mat&, std::vector<Detection>&)> _outputTensorToDetections) : modelName{std::move(_modelName)}, 	objectHitCounts(std::move(_objectHitCounts)), classes(std::move(_classes)), inputTensorSize(std::move(_inputTensorSize)), outputTensorSize(std::move(_outputTensorSize)), buffer(std::move(_buffer)), rbgImageToBlob{std::move(_rbgImageToBlob)}, outputTensorToDetections{std::move(_outputTensorToDetections)} {}
 		};
 
         static constexpr char const* NODE_NAME = "object_detector";
@@ -74,7 +75,7 @@ namespace mrover {
 								      cv::Mat& output,
 							   		  std::vector<Detection>& detections) -> void;
 
-		auto static preprocessYOLOv8Input(Model const& model, cv::Mat& rgbImage, cv::Mat& blob) -> void;
+		auto static preprocessYOLOv8Input(Model const& model, cv::Mat& rgbImage, cv::Mat& blobSizedImage, cv::Mat& blob) -> void;
 
     public:
         explicit ObjectDetectorBase();

@@ -28,3 +28,7 @@ auto InferenceWrapper::getOutputTensor() const -> cv::Mat {
 auto InferenceWrapper::getInputTensorSize() -> std::vector<int64_t>{
 	return mInference->getInputTensorSize();
 }
+
+auto InferenceWrapper::getOutputTensorSize() -> std::vector<int64_t>{
+	return mInference->getInputTensorSize();
+}

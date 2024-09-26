@@ -1,9 +1,12 @@
 #include "object_detector.hpp"
 namespace mrover {
-	auto ObjectDetectorBase::preprocessYOLOv8Input(Model const& model, cv::Mat& rgbImage, cv::Mat& blob) -> void{
-		cv::Mat blobSizedImage;
+	auto ObjectDetectorBase::preprocessYOLOv8Input(Model const& model, cv::Mat& rgbImage, cv::Mat& blobSizedImage, cv::Mat& blob) -> void{
 		if (model.inputTensorSize.size() != 4) {
 			throw std::runtime_error("Expected Blob Size to be of size 4, are you using the correct model type?");
+		}
+
+		if (model.buffer.size() != 2){
+			throw std::runtime_error("Expected 2 additional parameters!");
 		}
 
 		static constexpr double UCHAR_TO_DOUBLE = 1.0 / 255.0;
