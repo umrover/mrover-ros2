@@ -4,7 +4,7 @@ namespace mrover {
 
     ObjectDetectorBase::ObjectDetectorBase() : rclcpp::Node(NODE_NAME), mLoopProfiler{get_logger()} {
 
-		std::string modelName;
+        std::string modelName;
         float modelScoreThreshold{};
         float modelNMSThreshold{};
 
@@ -20,8 +20,8 @@ namespace mrover {
                 {"model_nms_threshold", modelNMSThreshold, 0.5}};
 
         ParameterWrapper::declareParameters(this, params);
-		
-		// All of these variables will be invalidated after calling this function
+
+        // All of these variables will be invalidated after calling this function
 
         std::filesystem::path packagePath = std::filesystem::path{ament_index_cpp::get_package_prefix("mrover")} / ".." / ".." / "src" / "mrover";
 
@@ -32,7 +32,7 @@ namespace mrover {
         // Initialize TensorRT Inference Object and Get Important Output Information
         mTensorRT = TensortRT{modelName, packagePath.string()};
 
-		mModel = Model(modelName, {0, 0}, {"bottle", "hammer"}, mTensorRT.getInputTensorSize(), mTensorRT.getOutputTensorSize(), {modelScoreThreshold, modelNMSThreshold}, ObjectDetectorBase::preprocessYOLOv8Input, ObjectDetectorBase::parseYOLOv8Output);
+        mModel = Model(modelName, {0, 0}, {"bottle", "hammer"}, mTensorRT.getInputTensorSize(), mTensorRT.getOutputTensorSize(), {modelScoreThreshold, modelNMSThreshold}, ObjectDetectorBase::preprocessYOLOv8Input, ObjectDetectorBase::parseYOLOv8Output);
 
         mDebugImgPub = create_publisher<sensor_msgs::msg::Image>("object_detector/debug_img", 1);
 

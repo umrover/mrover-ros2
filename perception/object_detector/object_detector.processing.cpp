@@ -24,7 +24,7 @@ namespace mrover {
 
         // Convert the RGB Image into the blob Image format
         cv::Mat blobSizedImage;
-		mModel.rbgImageToBlob(mModel, mRgbImage, blobSizedImage, mImageBlob);
+        mModel.rbgImageToBlob(mModel, mRgbImage, blobSizedImage, mImageBlob);
 
         mLoopProfiler.measureEvent("Conversion");
 
@@ -32,8 +32,8 @@ namespace mrover {
         std::vector<Detection> detections{};
         cv::Mat outputTensor;
         mTensorRT.modelForwardPass(mImageBlob, outputTensor);
-		
-		mModel.outputTensorToDetections(mModel, outputTensor, detections);
+
+        mModel.outputTensorToDetections(mModel, outputTensor, detections);
 
         mLoopProfiler.measureEvent("Execution");
 
@@ -52,7 +52,7 @@ namespace mrover {
         // Set of flags indicating if the given object has been seen
         // TODO(quintin): Do not hard code exactly two classes
         std::bitset<2> seenObjects{0b00};
-        for (auto const& [classId, className, confidence, box] : detections) {
+        for (auto const& [classId, className, confidence, box]: detections) {
             // Resize from blob space to image space
             cv::Point2f centerInBlob = cv::Point2f{box.tl()} + cv::Point2f{box.size()} / 2;
             float xRatio = static_cast<float>(msg->width) / static_cast<float>(imageSize.width);

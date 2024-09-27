@@ -11,6 +11,7 @@
 #include <filesystem>
 #include <format>
 #include <fstream>
+#include <functional>
 #include <iostream>
 #include <limits>
 #include <memory>
@@ -22,7 +23,6 @@
 #include <string>
 #include <type_traits>
 #include <unordered_map>
-#include <functional>
 
 #include <opencv2/core.hpp>
 #include <opencv2/dnn.hpp>
