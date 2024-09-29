@@ -4,7 +4,9 @@ from . import (
     recovery,
     post_backup,
     state,
+    water_bottle_search,
 )
+from mrover.msg import WaypointType
 from .context import Context
 
 
@@ -21,6 +23,8 @@ class WaypointState(State):
         assert current_waypoint is not None
 
         context.env.arrived_at_waypoint = False
+
+        # TODO(neven): add service to move costmap if going to watter bottle search
 
     def on_exit(self, context: Context) -> None:
         pass
@@ -63,7 +67,12 @@ class WaypointState(State):
         )
         if arrived:
             context.env.arrived_at_waypoint = True
-            if context.course.look_for_post() or context.course.look_for_object():
+            if current_waypoint.type.val == WaypointType.WATER_BOTTLE and context.node.get_parameter("water_bottle_search.use_costmap").value:
+                # We finished a waypoint associated with the water bottle, but we have not seen it yet and are using the costmap to search
+                water_bottle_search_state = water_bottle_search.WaterBottleSearchState()
+                # water_bottle_search_state.new_trajectory(context)
+                return water_bottle_search_state
+            elif context.course.look_for_post() or context.course.look_for_object():
                 # We finished a waypoint associated with a post, mallet, or water bottle, but we have not seen it yet
                 search_state = search.SearchState()
                 search_state.new_trajectory(context)  # reset trajectory

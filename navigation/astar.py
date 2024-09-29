@@ -33,7 +33,7 @@ class AStar:
         self.origin = origin
         self.context = context
 
-        self.TRAVERSABLE_COST = self.context.node.get_parameter("water_bottle_search.traversable_cost")
+        self.TRAVERSABLE_COST = self.context.node.get_parameter("water_bottle_search.traversable_cost").value
 
         self.costmap_lock = Lock()
 

@@ -12,6 +12,7 @@ from navigation.recovery import RecoveryState
 from navigation.search import SearchState
 from navigation.state import DoneState, OffState, off_check
 from navigation.waypoint import WaypointState
+from navigation.water_bottle_search import WaterBottleSearchState
 from rclpy import Parameter
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
@@ -79,7 +80,7 @@ class Navigation(Node):
         self.state_machine = StateMachine[Context](OffState(), "NavigationStateMachine", ctx, self.get_logger())
         self.state_machine.add_transitions(
             ApproachTargetState(),
-            [WaypointState(), SearchState(), RecoveryState(), DoneState()],
+            [WaypointState(), SearchState(), WaterBottleSearchState(), RecoveryState(), DoneState()],
         )
         self.state_machine.add_transitions(PostBackupState(), [WaypointState(), RecoveryState()])
         self.state_machine.add_transitions(
@@ -90,6 +91,7 @@ class Navigation(Node):
                 PostBackupState(),
                 ApproachTargetState(),
                 LongRangeState(),
+                WaterBottleSearchState(),
             ],
         )
         self.state_machine.add_transitions(
@@ -103,6 +105,7 @@ class Navigation(Node):
                 PostBackupState(),
                 ApproachTargetState(),
                 LongRangeState(),
+                WaterBottleSearchState(),
                 SearchState(),
                 RecoveryState(),
                 DoneState(),
@@ -110,7 +113,11 @@ class Navigation(Node):
         )
         self.state_machine.add_transitions(
             LongRangeState(),
-            [ApproachTargetState(), SearchState(), WaypointState(), RecoveryState()],
+            [ApproachTargetState(), SearchState(), WaterBottleSearchState(), WaypointState(), RecoveryState()],
+        )
+        self.state_machine.add_transitions(
+            WaterBottleSearchState(),
+            [WaypointState(), RecoveryState(), ApproachTargetState(), LongRangeState()]
         )
         self.state_machine.add_transitions(OffState(), [WaypointState(), DoneState()])
         self.state_machine.configure_off_switch(OffState(), off_check)

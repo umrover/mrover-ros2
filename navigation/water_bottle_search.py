@@ -112,14 +112,14 @@ class WaterBottleSearchState(State):
         return total_cost / count
 
     def on_enter(self, context: Context) -> None:
-        self.STOP_THRESH = context.node.get_parameter("water_bottle_search.stop_threshold")
-        self.DRIVE_FWD_THRESH = context.node.get_parameter("water_bottle_search.drive_forward_threshold")
-        self.SPIRAL_COVERAGE_RADIUS = context.node.get_parameter("water_bottle_search.coverage_radius")
-        self.SEGMENTS_PER_ROTATION = context.node.get_parameter("water_bottle_search.segments_per_rotation")
-        self.DISTANCE_BETWEEN_SPIRALS = context.node.get_parameter("water_bottle_search.distance_between_spirals")
-        self.TRAVERSABLE_COST = context.node.get_parameter("water_bottle_search.traversable_cost")
-        self.UPDATE_DELAY = context.node.get_parameter("water_bottle_search.update_delay")
-        self.SAFE_APPROACH_DISTANCE = context.node.get_parameter("water_bottle_search.safe_approach_distance")
+        self.STOP_THRESH = context.node.get_parameter("water_bottle_search.stop_threshold").value
+        self.DRIVE_FWD_THRESH = context.node.get_parameter("water_bottle_search.drive_forward_threshold").value
+        self.SPIRAL_COVERAGE_RADIUS = context.node.get_parameter("water_bottle_search.coverage_radius").value
+        self.SEGMENTS_PER_ROTATION = context.node.get_parameter("water_bottle_search.segments_per_rotation").value
+        self.DISTANCE_BETWEEN_SPIRALS = context.node.get_parameter("water_bottle_search.distance_between_spirals").value
+        self.TRAVERSABLE_COST = context.node.get_parameter("water_bottle_search.traversable_cost").value
+        self.UPDATE_DELAY = context.node.get_parameter("water_bottle_search.update_delay").value
+        self.SAFE_APPROACH_DISTANCE = context.node.get_parameter("water_bottle_search.safe_approach_distance").value
 
         if WaterBottleSearchState.trajectory is None:
             self.new_trajectory(context)
@@ -127,7 +127,7 @@ class WaterBottleSearchState(State):
         if not self.is_recovering:
             self.prev_target_pos_in_map = None
 
-        origin_in_map = context.course.current_waypoint_pose_in_map().position[0:2]
+        origin_in_map = context.course.current_waypoint_pose_in_map().translation()[0:2]
         self.astar = AStar(origin_in_map, context)
         context.node.get_logger().info(f"Origin: {origin_in_map}")
         self.star_traj = Trajectory(np.array([]))
@@ -135,7 +135,7 @@ class WaterBottleSearchState(State):
         self.path_pub = context.node.create_publisher(Path, "path", 10)
 
     def on_exit(self, context: Context) -> None:
-        context.costmap_listener.unregister()
+        pass
 
     def on_loop(self, context: Context) -> State:
         assert context.course is not None
@@ -147,7 +147,7 @@ class WaterBottleSearchState(State):
 
         # Only update our costmap every so often
         if context.node.get_clock().now() - self.time_last_updated > Duration(seconds=self.UPDATE_DELAY):
-            rover_position_in_map = rover_in_map.position[0:2]
+            rover_position_in_map = rover_in_map.translation()[0:2]
 
             if bottle_in_map is None:
                 end_point_in_map = self.find_endpoint(
@@ -193,7 +193,7 @@ class WaterBottleSearchState(State):
                         pose_stamped = PoseStamped()
                         pose_stamped.header = Header()
                         pose_stamped.header.frame_id = "map"
-                        point = Point(coord[0], coord[1], 0)
+                        point = Point(x=coord[0], y=coord[1], z=0)
                         quat = Quaternion(0, 0, 0, 1)
                         pose_stamped.pose = Pose(point, quat)
                         poses.append(pose_stamped)
@@ -209,7 +209,7 @@ class WaterBottleSearchState(State):
         if len(self.star_traj.coordinates) != 0:
             target_position_in_map = self.star_traj.get_current_point()
             traj_target = False
-        cmd_vel, arrived = context.rover.driver.get_drive_command(
+        cmd_vel, arrived = context.drive.get_drive_command(
             target_position_in_map,
             rover_in_map,
             self.STOP_THRESH,
@@ -238,14 +238,22 @@ class WaterBottleSearchState(State):
             return recovery.RecoveryState()
         else:
             self.is_recovering = False
+
+        ref = np.array(
+            [
+                context.node.get_parameter("ref_lat").value,
+                context.node.get_parameter("ref_lon").value,
+                context.node.get_parameter("ref_alt").value,
+            ]
+        )
         context.search_point_publisher.publish(
-            GPSPointList([convert_cartesian_to_gps(pt) for pt in WaterBottleSearchState.trajectory.coordinates])
+            GPSPointList(points=[convert_cartesian_to_gps(ref, pt) for pt in WaterBottleSearchState.trajectory.coordinates])
         )
         context.rover.send_drive_command(cmd_vel)
 
         if (
             bottle_in_map is not None
-            and np.linalg.norm(rover_in_map.position[0:2] - bottle_in_map[0:2]) < self.SAFE_APPROACH_DISTANCE
+            and np.linalg.norm(rover_in_map.translation()[0:2] - bottle_in_map[0:2]) < self.SAFE_APPROACH_DISTANCE
         ):
             return approach_target.ApproachTargetState()
 
@@ -258,7 +266,7 @@ class WaterBottleSearchState(State):
 
         if not self.is_recovering:
             WaterBottleSearchState.trajectory = SearchTrajectory.spiral_traj(
-                context.course.current_waypoint_pose_in_map().position[0:2],
+                context.course.current_waypoint_pose_in_map().translation()[0:2],
                 self.SPIRAL_COVERAGE_RADIUS,
                 self.DISTANCE_BETWEEN_SPIRALS,
                 self.SEGMENTS_PER_ROTATION,
