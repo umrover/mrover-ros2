@@ -32,7 +32,7 @@ class GUIConsumer(JsonWebsocketConsumer):
         # without needing any modifications done on it. For instance, reading motor output.
         ########################################################################################
         self.forward_ros_topic("/wheel_cmd", WheelCmd, "wheel_cmd")
-        rclpy.spin(node)
+        # rclpy.spin(node)
 
     def disconnect(self, close_code) -> None:
         for subscriber in self.subscribers:
