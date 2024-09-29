@@ -1,7 +1,7 @@
 #include "pose_filter.hpp"
 
 
-auto rosQuaternionToEigenQuaternion(geometry_msgs::msg::Quaternion const& q) -> Eigen::Quaterniond {
+auto PoseFilter::rosQuaternionToEigenQuaternion(geometry_msgs::msg::Quaternion const& q) -> Eigen::Quaterniond {
     return {q.w, q.x, q.y, q.z};
 }
 
