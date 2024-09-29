@@ -91,12 +91,14 @@ namespace mrover {
         }
     }
 
-    // auto CostMapNodelet::moveCostMapCallback(MoveCostMap::Request& req, MoveCostMap::Response& res) -> bool {
-    //     SE3d centerInMap = SE3Conversions::fromTfTree(mTfBuffer, req.course, mMapFrame);
-    //     std::ranges::fill(mGlobalGridMsg.data, UNKNOWN_COST);
-    //     mGlobalGridMsg.info.origin.position.x = centerInMap.x() - mSize / 2;
-    //     mGlobalGridMsg.info.origin.position.y = centerInMap.y() - mSize / 2;
-    //     return res.success = true;
-    // }
+    auto CostMapNode::moveCostMapCallback(mrover::srv::MoveCostMap::Request::ConstSharedPtr& req, mrover::srv::MoveCostMap::Response::SharedPtr& res) -> void {
+        RCLCPP_INFO_STREAM(get_logger(), "Incoming request: " + req->course);
+        SE3d centerInMap = SE3Conversions::fromTfTree(mTfBuffer, req->course, mMapFrame);
+        std::ranges::fill(mGlobalGridMsg.data, UNKNOWN_COST);
+        mGlobalGridMsg.info.origin.position.x = centerInMap.x() - mSize / 2;
+        mGlobalGridMsg.info.origin.position.y = centerInMap.y() - mSize / 2;
+        res->success = true;
+        RCLCPP_INFO_STREAM(get_logger(), "Moved cost map");
+    }
 
 } // namespace mrover

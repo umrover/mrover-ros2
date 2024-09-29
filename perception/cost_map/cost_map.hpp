@@ -31,7 +31,7 @@ namespace mrover {
         std::optional<SE3d> mPreviousPose;
         nav_msgs::msg::OccupancyGrid mGlobalGridMsg;
 
-        // ros::ServiceServer mServer;
+        rclcpp::Service<mrover::srv::MoveCostMap>::SharedPtr mServer;
 
     public:
         CostMapNode();
@@ -40,7 +40,7 @@ namespace mrover {
 
         auto pointCloudCallback(sensor_msgs::msg::PointCloud2::ConstSharedPtr const& msg) -> void;
 
-        // auto moveCostMapCallback(MoveCostMap::Request& req, MoveCostMap::Response& res) -> bool;
+        auto moveCostMapCallback(mrover::srv::MoveCostMap::Request::ConstSharedPtr& req, mrover::srv::MoveCostMap::Response::SharedPtr& res) -> void;
     };
 
 } // namespace mrover

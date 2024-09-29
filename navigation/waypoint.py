@@ -7,7 +7,9 @@ from . import (
     water_bottle_search,
 )
 from mrover.msg import WaypointType
+from mrover.srv import MoveCostMap
 from .context import Context
+import rclpy
 
 
 class WaypointState(State):
@@ -25,6 +27,24 @@ class WaypointState(State):
         context.env.arrived_at_waypoint = False
 
         # TODO(neven): add service to move costmap if going to watter bottle search
+        if current_waypoint.type.val == WaypointType.WATER_BOTTLE:
+            context.node.get_logger().info("Moving cost map")
+            client = context.node.create_client(MoveCostMap, "move_cost_map")
+            while not client.wait_for_service(timeout_sec=1.0):
+                context.node.get_logger().info("waiting for move_cost_map service...")
+            req = MoveCostMap.Request()
+
+            req.course = f"course{context.course.waypoint_index}"
+            future = client.call_async(req)
+            # TODO(neven): make this actually wait for the service to finish
+            #context.node.get_logger().info("called thing")
+            # rclpy.spin_until_future_complete(context.node, future)
+            # while not future.done():
+            #     pass
+            # if not future.result():
+                # context.node.get_logger().info("move_cost_map service call failed")
+            context.node.get_logger().info("Moved cost map")
+            
 
     def on_exit(self, context: Context) -> None:
         pass

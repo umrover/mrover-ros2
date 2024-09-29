@@ -20,7 +20,10 @@ namespace mrover {
 
         mCostMapPub = create_publisher<nav_msgs::msg::OccupancyGrid>("costmap", 1); // We publish our results to "costmap"
 
-        // mServer = mNh.advertiseService("move_cost_map", &CostMapNodelet::moveCostMapCallback, this);
+        mServer = create_service<mrover::srv::MoveCostMap>("move_cost_map", [this](mrover::srv::MoveCostMap::Request::ConstSharedPtr request, 
+                                                                                                          mrover::srv::MoveCostMap::Response::SharedPtr response) {
+            moveCostMapCallback(request, response);
+        });
         mPcSub = create_subscription<sensor_msgs::msg::PointCloud2>("/zed/left/points", 1, [this](sensor_msgs::msg::PointCloud2::ConstSharedPtr const& msg) {
             pointCloudCallback(msg);
         });
