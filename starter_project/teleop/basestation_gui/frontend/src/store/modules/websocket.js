@@ -15,7 +15,7 @@ function setupWebsocket() {
   webSocket.onclose = e => {
     console.log('Socket is closed. Reconnect will be attempted in 1 second.', e.reason)
     setTimeout(() => {
-      seutpWebsocket()
+      setupWebsocket()
     }, 2000)
   }
   webSocket.onerror = error => {
