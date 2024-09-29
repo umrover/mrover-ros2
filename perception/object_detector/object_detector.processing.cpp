@@ -177,4 +177,54 @@ namespace mrover {
         });
     }
 
+	auto ImageObjectDetector::imageCallback(sensor_msgs::msg::Image::SharedPtr const& msg) -> void {
+        assert(msg);
+        assert(msg->height > 0);
+        assert(msg->width > 0);
+        assert(msg->encoding == sensor_msgs::image_encodings::BGRA8);
+
+        mLoopProfiler.beginLoop();
+
+        cv::Mat bgraImage{static_cast<int>(msg->height), static_cast<int>(msg->width), CV_8UC4, const_cast<uint8_t*>(msg->data.data())};
+        cv::cvtColor(bgraImage, mRgbImage, cv::COLOR_BGRA2RGB);
+
+        // Convert the RGB Image into the blob Image format
+        cv::Mat blobSizedImage;
+        mModel.rbgImageToBlob(mModel, mRgbImage, blobSizedImage, mImageBlob);
+
+        mLoopProfiler.measureEvent("Conversion");
+
+        // Run the blob through the model
+        std::vector<Detection> detections{};
+        cv::Mat outputTensor;
+        mTensorRT.modelForwardPass(mImageBlob, outputTensor);
+
+        mModel.outputTensorToDetections(mModel, outputTensor, detections);
+
+        mLoopProfiler.measureEvent("Execution");
+
+		mrover::msg::ImageTargets targets;
+        for (auto const& [classId, className, confidence, box]: detections) {
+			mrover::msg::ImageTarget target;
+            target.name = className;
+            target.bearing = getTagBearing(blobSizedImage, box);
+            targets.targets.push_back(target);
+        }
+
+        mTargetsPub->publish(targets);
+
+        drawDetectionBoxes(blobSizedImage, detections);
+        publishDetectedObjects(blobSizedImage);
+
+        mLoopProfiler.measureEvent("Publication");
+    }
+
+    auto ImageObjectDetector::getTagBearing(cv::InputArray image, cv::Rect const& box) const -> float {
+        cv::Point2f center = cv::Point2f{box.tl()} + cv::Point2f{box.size()} / 2;
+        float xNormalized = center.x / static_cast<float>(image.cols());
+        float xRecentered = 0.5f - xNormalized;
+        float bearingDegrees = xRecentered * mCameraHorizontalFov;
+        return bearingDegrees * std::numbers::pi_v<float> / 180.0f;
+    }
+
 } // namespace mrover

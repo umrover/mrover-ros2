@@ -25,8 +25,8 @@ namespace mrover {
 				{"height", mHeight, 480},
 				{"framerate", framerate, 30},
 				{"device", device, "/dev/video0"},
-				{"image_topic", imageTopicName, "/image"},
-				{"camera_info_topic", cameraInfoTopicName, "/camera_info"},
+				{"image_topic", imageTopicName, "/usb_camera/image"},
+				{"camera_info_topic", cameraInfoTopicName, "/usb_camera/camera_info"},
 				{"watchdog_timeout", watchdogTimeout, 1.0},
 				{"decode_jpeg_from_device", decodeJpegFromDevice, false}
 			};
@@ -34,8 +34,8 @@ namespace mrover {
 			ParameterWrapper::declareParameters(this, params);
 
             /* Interfaces */
-            mImgPub = create_publisher<sensor_msgs::msg::Image>("image", 1);
-            mCamInfoPub = create_publisher<sensor_msgs::msg::CameraInfo>("camera_info", 1);
+            mImgPub = create_publisher<sensor_msgs::msg::Image>(imageTopicName, 1);
+            mCamInfoPub = create_publisher<sensor_msgs::msg::CameraInfo>(cameraInfoTopicName, 1);
 
             /* Pipeline */
             gst_init(nullptr, nullptr);
