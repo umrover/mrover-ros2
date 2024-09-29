@@ -46,7 +46,7 @@ class Navigation(Node):
 
         # TODO: add TagSeekState and its transitions here
 
-        # self.state_machine_server = StatePublisher(self, self.state_machine, "nav_structure", 1, "nav_state", 10)
+        self.state_machine_server = StatePublisher(self, self.state_machine, "nav_structure", 1, "nav_state", 10)
 
         self.create_timer(1 / 60, self.state_machine.update)
 
