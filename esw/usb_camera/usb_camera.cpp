@@ -13,25 +13,24 @@ namespace mrover {
     UsbCamera::UsbCamera() : Node{"usb_camera", rclcpp::NodeOptions{}.use_intra_process_comms(true)} {
         try {
             /* Parameters */
-			int framerate{};
-			std::string device{};
-			std::string imageTopicName{};
-			std::string cameraInfoTopicName{};
-			double watchdogTimeout{};
-			bool decodeJpegFromDevice{};
+            int framerate{};
+            std::string device{};
+            std::string imageTopicName{};
+            std::string cameraInfoTopicName{};
+            double watchdogTimeout{};
+            bool decodeJpegFromDevice{};
 
-			std::vector<ParameterWrapper> params{
-				{"width", mWidth, 640},
-				{"height", mHeight, 480},
-				{"framerate", framerate, 30},
-				{"device", device, "/dev/video2"},
-				{"image_topic", imageTopicName, "/usb_camera/image"},
-				{"camera_info_topic", cameraInfoTopicName, "/usb_camera/camera_info"},
-				{"watchdog_timeout", watchdogTimeout, 1.0},
-				{"decode_jpeg_from_device", decodeJpegFromDevice, false}
-			};
+            std::vector<ParameterWrapper> params{
+                    {"width", mWidth, 640},
+                    {"height", mHeight, 480},
+                    {"framerate", framerate, 30},
+                    {"device", device, "/dev/video2"},
+                    {"image_topic", imageTopicName, "/usb_camera/image"},
+                    {"camera_info_topic", cameraInfoTopicName, "/usb_camera/camera_info"},
+                    {"watchdog_timeout", watchdogTimeout, 1.0},
+                    {"decode_jpeg_from_device", decodeJpegFromDevice, false}};
 
-			ParameterWrapper::declareParameters(this, params);
+            ParameterWrapper::declareParameters(this, params);
 
             /* Interfaces */
             mImgPub = create_publisher<sensor_msgs::msg::Image>(imageTopicName, 1);
