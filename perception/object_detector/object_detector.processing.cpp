@@ -203,7 +203,7 @@ namespace mrover {
 
         mLoopProfiler.measureEvent("Execution");
 
-		mrover::msg::ImageTargets targets;
+		mrover::msg::ImageTargets targets{};
         for (auto const& [classId, className, confidence, box]: detections) {
 			mrover::msg::ImageTarget target;
             target.name = className;

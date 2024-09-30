@@ -54,6 +54,8 @@ namespace mrover {
                 {"long_range_camera/fov", mCameraHorizontalFov, 80.0}};
 
         ParameterWrapper::declareParameters(this, params);
+
+        mTargetsPub = create_publisher<mrover::msg::ImageTargets>("/long_range_camera/objects", 1);
     }
 } // namespace mrover
 
