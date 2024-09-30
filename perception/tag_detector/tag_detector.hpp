@@ -66,6 +66,8 @@ namespace mrover {
 
     class ImageTagDetectorNodelet final : public TagDetectorNodeletBase {
 
+		float mCameraHorizontalFOV;
+
         rclcpp::Publisher<msg::ImageTargets>::SharedPtr mTargetsPub;
 
         rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr mImageSub;

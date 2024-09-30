@@ -2,7 +2,7 @@
 
 namespace mrover {
 
-    TagDetectorNodeletBase::TagDetectorNodeletBase(std::string const& name) : Node{name, rclcpp::NodeOptions{}.use_intra_process_comms(true)} {
+    TagDetectorNodeletBase::TagDetectorNodeletBase(std::string const& name) : Node{name, rclcpp::NodeOptions{}.use_intra_process_comms(true)}, mMinTagHitCountBeforePublish{}, mMaxTagHitCount{}, mTagIncrementWeight{}, mTagDecrementWeight{} {
 
 		int dictionaryNumber{};
 		bool doCornerRefinement{};
@@ -66,8 +66,12 @@ namespace mrover {
         });
     }
 
-    ImageTagDetectorNodelet::ImageTagDetectorNodelet() : TagDetectorNodeletBase{"image_tag_detector"} {
-        declare_parameter("camera_horizontal_fov", rclcpp::ParameterType::PARAMETER_DOUBLE);
+    ImageTagDetectorNodelet::ImageTagDetectorNodelet() : TagDetectorNodeletBase{"image_tag_detector"}, mCameraHorizontalFOV{} {
+		std::vector<ParameterWrapper> params{
+			{"camera_horizontal_fov", mCameraHorizontalFOV, 80.0}
+		};
+
+		ParameterWrapper::declareParameters(this, params);
 
         mTargetsPub = create_publisher<msg::ImageTargets>("tags", 1);
 
@@ -80,7 +84,15 @@ namespace mrover {
 
 auto main(int argc, char** argv) -> int {
     rclcpp::init(argc, argv);
-    rclcpp::spin(std::make_shared<mrover::StereoTagDetectorNodelet>());
+
+	auto stereoTD = std::make_shared<mrover::StereoTagDetectorNodelet>();
+	auto imageTD = std::make_shared<mrover::ImageTagDetectorNodelet>();
+
+	rclcpp::executors::SingleThreadedExecutor executor;
+	executor.add_node(stereoTD);
+	executor.add_node(imageTD);
+	executor.spin();
+
     rclcpp::shutdown();
     return EXIT_SUCCESS;
 }

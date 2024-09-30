@@ -206,7 +206,7 @@ namespace mrover {
         cv::Point2f center = std::reduce(tagCorners.begin(), tagCorners.end()) / static_cast<float>(tagCorners.size());
         float xNormalized = center.x / static_cast<float>(image.cols());
         float xRecentered = 0.5f - xNormalized;
-        float bearingDegrees = xRecentered * static_cast<float>(get_parameter("camera_horizontal_fov").as_double());
+        float bearingDegrees = xRecentered * mCameraHorizontalFOV;
         return bearingDegrees * std::numbers::pi_v<float> / 180.0f;
     }
 
