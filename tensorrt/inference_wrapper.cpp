@@ -30,5 +30,5 @@ auto InferenceWrapper::getInputTensorSize() -> std::vector<int64_t>{
 }
 
 auto InferenceWrapper::getOutputTensorSize() -> std::vector<int64_t>{
-	return mInference->getInputTensorSize();
+	return mInference->getOutputTensorSize();
 }

@@ -65,7 +65,7 @@ Inference::Inference(std::string modelName, std::string packagePathString) :  mM
 }
 
 auto Inference::createCudaEngine() -> ICudaEngine* {
-	mLogger.log(ILogger::Severity::kINFO, "Creating engine building tools...")
+	mLogger.log(ILogger::Severity::kINFO, "Creating engine building tools...");
     constexpr auto explicitBatch = 1U << static_cast<std::uint32_t>(NetworkDefinitionCreationFlag::kEXPLICIT_BATCH);
 
     IBuilder* builder = createInferBuilder(mLogger);
