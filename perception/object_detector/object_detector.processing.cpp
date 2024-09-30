@@ -177,7 +177,7 @@ namespace mrover {
         });
     }
 
-	auto ImageObjectDetector::imageCallback(sensor_msgs::msg::Image::SharedPtr const& msg) -> void {
+	auto ImageObjectDetector::imageCallback(sensor_msgs::msg::Image::UniquePtr const& msg) -> void {
         assert(msg);
         assert(msg->height > 0);
         assert(msg->width > 0);

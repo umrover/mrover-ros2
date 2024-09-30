@@ -83,10 +83,12 @@ namespace mrover {
     };
 
     class StereoObjectDetector final : public ObjectDetectorBase {
-    public:
-        explicit StereoObjectDetector();
+	private:
 
         rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr mSensorSub;
+
+    public:
+        explicit StereoObjectDetector();
 
         static auto convertPointCloudToRGB(sensor_msgs::msg::PointCloud2::UniquePtr const& msg, cv::Mat const& image) -> void;
 
@@ -94,16 +96,19 @@ namespace mrover {
     };
 
 	class ImageObjectDetector final : public ObjectDetectorBase {
+	private:
         rclcpp::Publisher<mrover::msg::ImageTargets>::SharedPtr mTargetsPub;
 
         rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr mSensorSub;
 
         float mCameraHorizontalFov{};
+	
+	public:
 
 		explicit ImageObjectDetector();
 
         auto getTagBearing(cv::InputArray image, cv::Rect const& box) const -> float;
 
-        auto imageCallback(sensor_msgs::msg::Image::SharedPtr const& msg) -> void;
+        auto imageCallback(sensor_msgs::msg::Image::UniquePtr const& msg) -> void;
     };
 } // namespace mrover

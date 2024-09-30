@@ -44,6 +44,17 @@ namespace mrover {
             StereoObjectDetector::pointCloudCallback(msg);
         });
     }
+
+    ImageObjectDetector::ImageObjectDetector() {
+        mSensorSub = create_subscription<sensor_msgs::msg::Image>("/usb_camera/image", 1, [this](sensor_msgs::msg::Image::UniquePtr const& msg) {
+            ImageObjectDetector::imageCallback(msg);
+        });
+
+        std::vector<ParameterWrapper> params{
+                {"long_range_camera/fov", mCameraHorizontalFov, 80.0}};
+
+        ParameterWrapper::declareParameters(this, params);
+    }
 } // namespace mrover
 
 
