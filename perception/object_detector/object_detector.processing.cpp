@@ -14,19 +14,26 @@ namespace mrover {
             RCLCPP_INFO_STREAM(get_logger(), std::format("Image size changed from [{}, {}] to [{}, {}]", mRgbImage.cols, mRgbImage.rows, msg->width, msg->height));
             mRgbImage = cv::Mat{static_cast<int>(msg->height), static_cast<int>(msg->width), CV_8UC3, cv::Scalar{0, 0, 0, 0}};
         }
+
+        // if 0x0 image
+        if (!mRgbImage.total()) {
+            return;
+        }
+
         convertPointCloudToRGB(msg, mRgbImage);
 
-        // TODO(quintin): Avoid hard coding blob size
-        cv::Size blobSize{640, 640};
+        // Convert the RGB Image into the blob Image format
         cv::Mat blobSizedImage;
-        cv::resize(mRgbImage, blobSizedImage, blobSize);
-        cv::dnn::blobFromImage(blobSizedImage, mImageBlob, 1.0 / 255.0, blobSize, cv::Scalar{}, false, false);
+        mModel.rbgImageToBlob(mModel, mRgbImage, blobSizedImage, mImageBlob);
 
         mLoopProfiler.measureEvent("Conversion");
 
         // Run the blob through the model
         std::vector<Detection> detections{};
-        mTensorRT.modelForwardPass(mImageBlob, detections, mModelScoreThreshold, mModelNmsThreshold);
+        cv::Mat outputTensor;
+        mTensorRT.modelForwardPass(mImageBlob, outputTensor);
+
+        mModel.outputTensorToDetections(mModel, outputTensor, detections);
 
         mLoopProfiler.measureEvent("Execution");
 
@@ -66,10 +73,10 @@ namespace mrover {
                     // Push the immediate detections to the camera frame
                     SE3Conversions::pushToTfTree(*mTfBroadcaster, objectImmediateFrame, mCameraFrame, objectInCamera.value(), get_clock()->now());
                     // Since the object is seen we need to increment the hit counter
-                    mObjectHitCounts[classId] = std::min(mObjMaxHitcount, mObjectHitCounts[classId] + mObjIncrementWeight);
+                    mModel.objectHitCounts[classId] = std::min(mObjMaxHitcount, mModel.objectHitCounts[classId] + mObjIncrementWeight);
 
                     // Only publish to permament if we are confident in the object
-                    if (mObjectHitCounts[classId] > mObjHitThreshold) {
+                    if (mModel.objectHitCounts[classId] > mObjHitThreshold) {
                         std::string objectPermanentFrame = className;
                         // Grab the object inside of the camera frame and push it into the map frame
                         SE3d objectInMap = SE3Conversions::fromTfTree(*mTfBuffer, objectImmediateFrame, mWorldFrame);
@@ -90,7 +97,7 @@ namespace mrover {
             if (seenObjects[i]) continue;
 
             assert(i < mObjectHitCounts.size());
-            mObjectHitCounts[i] = std::max(0, mObjectHitCounts[i] - mObjDecrementWeight);
+            mModel.objectHitCounts[i] = std::max(0, mModel.objectHitCounts[i] - mObjDecrementWeight);
         }
     }
 
@@ -168,6 +175,56 @@ namespace mrover {
             pixel[1] = pointPtr[i].g;
             pixel[2] = pointPtr[i].b;
         });
+    }
+
+	auto ImageObjectDetector::imageCallback(sensor_msgs::msg::Image::UniquePtr const& msg) -> void {
+        assert(msg);
+        assert(msg->height > 0);
+        assert(msg->width > 0);
+        assert(msg->encoding == sensor_msgs::image_encodings::BGRA8);
+
+        mLoopProfiler.beginLoop();
+
+        cv::Mat bgraImage{static_cast<int>(msg->height), static_cast<int>(msg->width), CV_8UC4, const_cast<uint8_t*>(msg->data.data())};
+        cv::cvtColor(bgraImage, mRgbImage, cv::COLOR_BGRA2RGB);
+
+        // Convert the RGB Image into the blob Image format
+        cv::Mat blobSizedImage;
+        mModel.rbgImageToBlob(mModel, mRgbImage, blobSizedImage, mImageBlob);
+
+        mLoopProfiler.measureEvent("Conversion");
+
+        // Run the blob through the model
+        std::vector<Detection> detections{};
+        cv::Mat outputTensor;
+        mTensorRT.modelForwardPass(mImageBlob, outputTensor);
+
+        mModel.outputTensorToDetections(mModel, outputTensor, detections);
+
+        mLoopProfiler.measureEvent("Execution");
+
+		mrover::msg::ImageTargets targets{};
+        for (auto const& [classId, className, confidence, box]: detections) {
+			mrover::msg::ImageTarget target;
+            target.name = className;
+            target.bearing = getTagBearing(blobSizedImage, box);
+            targets.targets.push_back(target);
+        }
+
+        mTargetsPub->publish(targets);
+
+        drawDetectionBoxes(blobSizedImage, detections);
+        publishDetectedObjects(blobSizedImage);
+
+        mLoopProfiler.measureEvent("Publication");
+    }
+
+    auto ImageObjectDetector::getTagBearing(cv::InputArray image, cv::Rect const& box) const -> float {
+        cv::Point2f center = cv::Point2f{box.tl()} + cv::Point2f{box.size()} / 2;
+        float xNormalized = center.x / static_cast<float>(image.cols());
+        float xRecentered = 0.5f - xNormalized;
+        float bearingDegrees = xRecentered * mCameraHorizontalFov;
+        return bearingDegrees * std::numbers::pi_v<float> / 180.0f;
     }
 
 } // namespace mrover

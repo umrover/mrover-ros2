@@ -12,8 +12,8 @@ using namespace nvinfer1;
 * Modifies stream, outputTensor
 */
 
-InferenceWrapper::InferenceWrapper(std::string onnxModelPath, std::string const& modelName, std::string const& packagePath) {
-    mInference.reset(new Inference(std::move(onnxModelPath), modelName, packagePath));
+InferenceWrapper::InferenceWrapper(std::string const& modelName, std::string const& packagePath) {
+    mInference = std::make_shared<Inference>(modelName, packagePath);
 }
 
 auto InferenceWrapper::doDetections(cv::Mat const& img) const -> void {
@@ -23,4 +23,12 @@ auto InferenceWrapper::doDetections(cv::Mat const& img) const -> void {
 
 auto InferenceWrapper::getOutputTensor() const -> cv::Mat {
     return mInference->getOutputTensor();
+}
+
+auto InferenceWrapper::getInputTensorSize() -> std::vector<int64_t>{
+	return mInference->getInputTensorSize();
+}
+
+auto InferenceWrapper::getOutputTensorSize() -> std::vector<int64_t>{
+	return mInference->getOutputTensorSize();
 }
