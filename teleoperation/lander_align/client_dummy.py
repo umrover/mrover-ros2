@@ -62,15 +62,13 @@ class ClientDummy(Node):
         self._send_goal_future = self._action_client.send_goal_async(
             goal_msg,
             feedback_callback=self.feedback_callback)
-        print("f")
 
         self._send_goal_future.add_done_callback(self.goal_response_callback)
-        print("uck")
 
 def main():
     # initialize the node
     
-    print("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
+    # print("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
     rclpy.init(args=sys.argv)
     client_dummy = ClientDummy()
     client_dummy.send_goal()

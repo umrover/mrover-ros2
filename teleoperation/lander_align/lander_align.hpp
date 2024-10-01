@@ -1,6 +1,8 @@
 #pragma once
 
 #include "pch.hpp"
+#include <rclcpp/subscription.hpp>
+#include <rclcpp/wait_set.hpp>
 
 namespace mrover {
 
@@ -51,6 +53,9 @@ namespace mrover {
         int mLeastSamplingDistribution = 10;
 
         rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr mDebugPCPub;
+        rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr mSubscriber;
+
+        bool mReadPointCloud = true;
 
         std::vector<Point const*> mFilteredPoints;
 
@@ -71,7 +76,7 @@ namespace mrover {
         rclcpp::Publisher<geometry_msgs::msg::Vector3>::SharedPtr mDebugVectorPub;
 
         //Action Server Variables
-        sensor_msgs::msg::PointCloud2::ConstSharedPtr mCloud;
+        std::optional<sensor_msgs::msg::PointCloud2::ConstSharedPtr> mCloud;
 
         std::optional<Server> mActionServer;
 
@@ -118,6 +123,8 @@ namespace mrover {
         ~LanderAlign() override;
 	
         void ActionServerCallBack(std::shared_ptr<GoalHandleLanderAlign> goal);
+
+        void subscriberCallback(sensor_msgs::msg::PointCloud2::ConstSharedPtr const& msg);
     };
 
 } // namespace mrover

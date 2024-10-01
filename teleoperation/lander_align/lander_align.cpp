@@ -1,14 +1,12 @@
 #include "lander_align.hpp"
 #include "mrover/action/detail/lander_align__struct.hpp"
 #include <boost/smart_ptr/shared_ptr.hpp>
-#include <chrono>
+#include <memory>
+#include <optional>
 #include <rclcpp/duration.hpp>
 #include <rclcpp/logger.hpp>
 #include <rclcpp/logging.hpp>
 #include <rclcpp/utilities.hpp>
-#include <rclcpp/wait_set_template.hpp>
-#include <rclcpp/wait_for_message.hpp>
-
 
 namespace mrover {
     auto operator<<(std::ostream& ostream, RTRSTATE state) -> std::ostream& {
@@ -25,6 +23,12 @@ namespace mrover {
         mDebugVectorPub = create_publisher<geometry_msgs::msg::Vector3>("/lander_align/Pose", 1);
         mTwistPub = create_publisher<geometry_msgs::msg::Twist>("/cmd_vel", 1);
         mDebugPCPub = create_publisher<sensor_msgs::msg::PointCloud2>("/lander_align/debugPC", 1);
+
+        mCloud = std::nullopt;
+        mSubscriber = create_subscription<sensor_msgs::msg::PointCloud2>("/zed/left/points", 1, [this](sensor_msgs::msg::PointCloud2::ConstSharedPtr const& msg){
+            LanderAlign::subscriberCallback(msg);
+        });
+    
 
 		using GoalHandleLanderAlign = rclcpp_action::ServerGoalHandle<action::LanderAlign>;
         // explicit LanderAlign(const rclcpp::NodeOptions & options = rclcpp::NodeOptions())
@@ -55,29 +59,56 @@ namespace mrover {
         mLoopState = RTRSTATE::turn1;
     }
 
+    void LanderAlign::subscriberCallback(sensor_msgs::msg::PointCloud2::ConstSharedPtr const& msg){
+        if (mReadPointCloud) {
+            mCloud = std::make_optional(msg);
+        }
+        // if(mCloud.has_value()){ return; }
+        // else{  }
+    }
+
     auto LanderAlign::ActionServerCallBack(std::shared_ptr<GoalHandleLanderAlign> const goal) -> void {
-		std::shared_ptr<action::LanderAlign_Result> result;
+		RCLCPP_INFO_STREAM(get_logger(), "in action server callback");
+        std::shared_ptr<action::LanderAlign_Result> result;
 
         //If we haven't yet defined the point cloud we are working with
-		rclcpp::wait_for_message<sensor_msgs::msg::PointCloud2::ConstSharedPtr>(mCloud, this->shared_from_this(), "/camera/left/points"); // Use WaitSet????? Subscribe in constructor and take when data present
-		filterNormals(mCloud);
-		ransac(mDistanceThreshold, 10, 100);
-
-        try{
-            if(mNormalInWorldVector.has_value()){
-                if(!createSpline(7, 0.75)){
-                    rclcpp::shutdown(); 
-                    return;
-                }    
-                publishSpline();
-                //calcMotionToo();
-            }
-        }catch(const tf2::LookupException& e){
-            rclcpp::shutdown();
-            return;
+		RCLCPP_INFO_STREAM(get_logger(), "before wait");
+		
+        while (!mCloud.has_value()) {
+            mReadPointCloud = true;
         }
-        
+
+        if (mCloud.has_value()) {
+            mReadPointCloud = false;
+            RCLCPP_INFO_STREAM(get_logger(), "cloud has value");
+            filterNormals(mCloud.value());
+            ransac(1, 10, 100);
+            RCLCPP_INFO_STREAM(get_logger(), "post ransac");
+            try{
+                if(mNormalInWorldVector.has_value()){
+                    if(!createSpline(7, 0.75)){
+                        rclcpp::shutdown(); 
+                        return;
+                    }
+                    RCLCPP_INFO_STREAM(get_logger(), "spline created");    
+                    publishSpline();
+                    //calcMotionToo();
+                }
+            } catch(const tf2::LookupException& e){
+                rclcpp::shutdown();
+                return;
+            }
+        // }
+
         mPathPoints.clear();
+        } else {
+            RCLCPP_INFO_STREAM(get_logger(), "cloud not has value");
+        }
+        // RCLCPP_INFO_STREAM(get_logger(), mCloud.value());
+        // if (mCloud.has_value()) {
+        // RCLCPP_INFO_STREAM(get_logger(), "cloud has value");
+
+        
     }
 
     //Returns angle (yaw) around the z axis
@@ -209,29 +240,42 @@ namespace mrover {
     }
 
     void LanderAlign::filterNormals(sensor_msgs::msg::PointCloud2::ConstSharedPtr const& cloud) {
+        RCLCPP_INFO_STREAM(get_logger(), "in filter normals");
         mFilteredPoints.clear();
         
         // Pointer to the underlying point cloud data
         auto* cloudData = reinterpret_cast<Point const*>(cloud->data.data());
-
+        // RCLCPP_INFO_STREAM(get_logger(),"this part");
         std::default_random_engine generator;
         std::uniform_int_distribution<int> pointDistribution(0, mLeastSamplingDistribution);
+
+        // RCLCPP_INFO_STREAM(get_logger(),"this part2");
 
         // Loop over the entire PC
         for (auto point = cloudData; point < cloudData + (cloud->height * cloud->width); point += pointDistribution(generator)) {
             // Make sure all of the values are defined
+            // RCLCPP_INFO_STREAM(get_logger(),"this part3");
+
             bool isPointInvalid = (!std::isfinite(point->x) || !std::isfinite(point->y) || !std::isfinite(point->z));
             if (!isPointInvalid && abs(point->normal_z) < mZThreshold && abs(point->normal_x) > mXThreshold) {
                     mFilteredPoints.push_back(point);
             }
+            // RCLCPP_INFO_STREAM(get_logger(),"this part4");
         }
+
         RCLCPP_INFO_STREAM(get_logger(), "Filtered Points: " << mFilteredPoints.size());
     }
 
     void LanderAlign::uploadPC(int numInliers, double distanceThreshold) {
         // auto debugPointCloudPtr = boost::make_shared<sensor_msgs::PointCloud2>();
+        RCLCPP_INFO_STREAM(get_logger(), "in uploadPC");
+        
         auto debugPointCloudPtr = sensor_msgs::msg::PointCloud2::SharedPtr();
+        RCLCPP_INFO_STREAM(get_logger(), "pre fillpointcloudmessage");
+
         fillPointCloudMessageHeader(debugPointCloudPtr);
+        RCLCPP_INFO_STREAM(get_logger(), "post fillpointcloudmessage");
+
         debugPointCloudPtr->is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
         debugPointCloudPtr->is_dense = true;
         debugPointCloudPtr->height = 1;
@@ -274,12 +318,13 @@ namespace mrover {
             return;
         }
 
-
+        RCLCPP_INFO_STREAM(get_logger(), "before while");
         mNormalInZEDVector = std::make_optional<Eigen::Vector3d>(0, 0, 0);
         mPlaneLocationInZEDVector = std::make_optional<Eigen::Vector3d>(0, 0, 0);
 
         int numInliers = 0;
         while (mNormalInZEDVector.value().isZero()) { // TODO add give up condition after X iter
+            // RCLCPP_INFO_STREAM(get_logger(), "Still 0");
             for (int i = 0; i < epochs; ++i) {
                 // sample 3 random points (potential inliers)
                 Point const* point1 = mFilteredPoints[distribution(generator)];
@@ -293,24 +338,30 @@ namespace mrover {
                 // fit a plane to these points
                 Eigen::Vector3d normal = (vec1 - vec2).cross(vec1 - vec3).normalized();
                 offset = -normal.dot(vec1); // calculate offset (D value) using one of the points
+                RCLCPP_INFO_STREAM(get_logger(),"offset: "<< offset);
+                RCLCPP_INFO_STREAM(get_logger(),"normal: "<< normal);
 
                 numInliers = 0;
 
                 for (auto p: mFilteredPoints) {
                     // calculate distance of each point from potential plane
                     double distance = std::abs(normal.x() * p->x + normal.y() * p->y + normal.z() * p->z + offset); //
-
+                    
                     if (distance < distanceThreshold) {
                         ++numInliers; // count num of inliers that pass the "good enough fit" threshold
                     }
                 }
-
+                RCLCPP_INFO_STREAM(get_logger(), "numInliers: " << numInliers);
+                RCLCPP_INFO_STREAM(get_logger(), "normal x " << normal.x());
+                RCLCPP_INFO_STREAM(get_logger(), "minLiers " << minInliers);
                 // update best plane if better inlier count
-                if (numInliers > minInliers && normal.x() != 0) { 
+                if ((numInliers > minInliers) && (normal.x() != 0)) { 
+                    RCLCPP_INFO_STREAM(get_logger(), "Updating plane");
                     minInliers = numInliers;
                     mNormalInZEDVector.value() = normal;
                     mBestOffset = offset;
                 }
+                RCLCPP_INFO_STREAM(get_logger(), "Condition Passed");
             }
         }
 
@@ -328,6 +379,8 @@ namespace mrover {
             }
         }
 
+        RCLCPP_INFO_STREAM(get_logger(), "after center calculation");
+
         if (numInliers == 0) {
             mNormalInZEDVector = std::nullopt;
             mPlaneLocationInZEDVector = std::nullopt;
@@ -336,7 +389,6 @@ namespace mrover {
 
         //Average pnts
         mPlaneLocationInZEDVector.value() /= static_cast<float>(numInliers);
-
 
         uploadPC(numInliers, distanceThreshold);
 
@@ -359,6 +411,7 @@ namespace mrover {
         rot.col(1) = left;
         rot.col(2) = up;
 
+        RCLCPP_INFO_STREAM(get_logger(), "pre-publish");
         //Calculate the plane location in the world frame
         SE3d mPlaneLocationInZEDSE3d = {{mPlaneLocationInZEDVector.value().x(), mPlaneLocationInZEDVector.value().y(), mPlaneLocationInZEDVector.value().z()}, SO3d{Eigen::Quaterniond{rot}.normalized()}};
         mPlaneLocationInWorldSE3d = zedToMap * mPlaneLocationInZEDSE3d;
@@ -374,7 +427,7 @@ namespace mrover {
 
         SE3Conversions::pushToTfTree(*mTfBroadcaster, "offset", mMapFrameId, mOffsetLocationInWorldSE3d, get_clock()->now());
 
-        
+        RCLCPP_INFO_STREAM(get_logger(), "post publish");
 
         //Compare Rover Location to Target Location
         if(mOffsetLocationInZEDSE3d.translation().x() < 0) mNormalInZEDVector = std::nullopt;
