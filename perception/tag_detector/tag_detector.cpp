@@ -73,9 +73,9 @@ namespace mrover {
 
 		ParameterWrapper::declareParameters(this, params);
 
-        mTargetsPub = create_publisher<msg::ImageTargets>("tags", 1);
+        mTargetsPub = create_publisher<msg::ImageTargets>("/tags", 1);
 
-        mImageSub = create_subscription<sensor_msgs::msg::Image>("image", 1, [this](sensor_msgs::msg::Image::ConstSharedPtr const& msg) {
+        mImageSub = create_subscription<sensor_msgs::msg::Image>("/usb_camera/image", 1, [this](sensor_msgs::msg::Image::ConstSharedPtr const& msg) {
             imageCallback(msg);
         });
     }
