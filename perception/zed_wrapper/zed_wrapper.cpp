@@ -18,13 +18,13 @@ namespace mrover {
             RCLCPP_INFO(this->get_logger(), "Created Zed Wrapper Node, %s", NODE_NAME);
 
             // Publishers
-            mRightImgPub = create_publisher<sensor_msgs::msg::Image>("right/image", 1);
-            mLeftImgPub = create_publisher<sensor_msgs::msg::Image>("left/image", 1);
+            mRightImgPub = create_publisher<sensor_msgs::msg::Image>("zed/right/image", 1);
+            mLeftImgPub = create_publisher<sensor_msgs::msg::Image>("zed/left/image", 1);
             mImuPub = create_publisher<sensor_msgs::msg::Imu>("zed_imu/data_raw", 1);
             mMagPub = create_publisher<sensor_msgs::msg::MagneticField>("zed_imu/mag", 1);
-            mPcPub = create_publisher<sensor_msgs::msg::PointCloud2>("camera/left/points", 1);
-            mRightCamInfoPub = create_publisher<sensor_msgs::msg::CameraInfo>("camera/right/camera_info", 1);
-            mLeftCamInfoPub = create_publisher<sensor_msgs::msg::CameraInfo>("camera/left/camera_info", 1);
+            mPcPub = create_publisher<sensor_msgs::msg::PointCloud2>("zed/left/points", 1);
+            mRightCamInfoPub = create_publisher<sensor_msgs::msg::CameraInfo>("zed/right/camera_info", 1);
+            mLeftCamInfoPub = create_publisher<sensor_msgs::msg::CameraInfo>("zed/left/camera_info", 1);
 
             // Declare and set Params
             int imageWidth{};
@@ -240,7 +240,7 @@ namespace mrover {
 
                 // Swap critical section
                 {
-                    std::unique_lock lock{mSwapMutex};
+                    std::uniq   ue_lock lock{mSwapMutex};
                     // Waiting on the condition variable will drop the lock and reacquire it when the condition is met
                     mSwapCv.wait(lock, [this] { return mIsSwapReady; });
                     mIsSwapReady = false;
