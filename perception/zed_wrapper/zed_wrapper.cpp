@@ -240,7 +240,7 @@ namespace mrover {
 
                 // Swap critical section
                 {
-                    std::uniq   ue_lock lock{mSwapMutex};
+                    std::unique_lock lock{mSwapMutex};
                     // Waiting on the condition variable will drop the lock and reacquire it when the condition is met
                     mSwapCv.wait(lock, [this] { return mIsSwapReady; });
                     mIsSwapReady = false;
