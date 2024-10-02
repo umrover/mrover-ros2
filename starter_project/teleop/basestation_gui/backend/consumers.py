@@ -2,7 +2,7 @@ import json
 import traceback
 from typing import Any, Type
 
-import yaml
+import threading
 from channels.generic.websocket import JsonWebsocketConsumer
 
 import rclpy
@@ -17,6 +17,8 @@ from backend.input import DeviceInputs
 
 node = rclpy.create_node('teleoperation')
 
+thread = threading.Thread(target=rclpy.spin, args=(node, ), daemon=True)
+thread.start()
 
 class GUIConsumer(JsonWebsocketConsumer):
     subscribers: list[Subscription] = []
@@ -44,11 +46,20 @@ class GUIConsumer(JsonWebsocketConsumer):
         @param gui_msg_type:    String to identify the message type in the GUI
         """
 
+        def ros_message_to_dict(msg):
+            if hasattr(msg, '__slots__'):
+                msg_dict = {}
+                for slot in msg.__slots__:
+                    value = getattr(msg, slot)
+                    # Recursively convert ROS messages and remove leading underscores from the slot names
+                    key = slot.lstrip('_')
+                    msg_dict[key] = ros_message_to_dict(value)
+                return msg_dict
+            return msg
+            
         def callback(ros_message: Any):
-            # Formatting a ROS message as a string outputs YAML
-            # Parse it back into a dictionary, so we can send it as JSON
-            self.send_message_as_json({"type": gui_msg_type, **yaml.safe_load(str(ros_message))})
-
+            # Formatting a ROS message as a dictionary so we can send it as JSON
+            self.send_message_as_json({"type": gui_msg_type, **ros_message_to_dict(ros_message)})
         self.subscribers.append(node.create_subscription(topic_type, topic_name , callback, qos_profile=1))
 
     def send_message_as_json(self, msg: dict):
