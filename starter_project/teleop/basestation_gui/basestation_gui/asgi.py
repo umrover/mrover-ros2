@@ -11,11 +11,8 @@ from channels.auth import AuthMiddlewareStack
 from channels.routing import ProtocolTypeRouter, URLRouter
 from django.core.asgi import get_asgi_application
 import basestation_gui.urls
-from backend.ros2_utils import get_ros2_node_instance
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "basestation_gui.settings")
-
-ros2_node = get_ros2_node_instance()
 
 application = ProtocolTypeRouter(
     {

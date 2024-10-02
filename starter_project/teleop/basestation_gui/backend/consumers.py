@@ -16,32 +16,21 @@ from backend.input import DeviceInputs
 from mrover.msg import WheelCmd
 from geometry_msgs.msg import Twist
 
-from backend.ros2_utils import get_ros2_node_instance
+import threading
 
-# node = rclpy.create_node('teleoperation')
+import logging
+logger = logging.getLogger('django')
+
+node = rclpy.create_node('teleoperation')
+thread = threading.Thread(target=rclpy.spin, args=(node, ), daemon=True)
+thread.start()
 
 class GUIConsumer(JsonWebsocketConsumer):
     subscribers = []
     
     def connect(self) -> None:
-        self.node = get_ros2_node_instance()
         self.forward_ros_topic("/wheel_cmd", WheelCmd, "wheel_cmd")
         self.accept()
-
-        ########################################################################################
-        # Use self.forward_ros_topic when you want to get data from a ROS topic to a GUI
-        # without needing any modifications done on it. For instance, reading motor output.
-        ########################################################################################
-
-
-    # def ros2_spin(self):
-    #     while rclpy.ok():
-    #         rclpy.spin_once(self.node)
-
-    # def disconnect(self, close_code) -> None:
-    #     rclpy.shutdown()
-    #     # for subscriber in self.subscribers:
-    #     #     node.destroy_subscription(subscriber)
 
     def forward_ros_topic(self, topic_name: str, topic_type: Type, gui_msg_type: str) -> None:
         """
@@ -52,20 +41,28 @@ class GUIConsumer(JsonWebsocketConsumer):
         @param gui_msg_type:    String to identify the message type in the GUI
         """
 
+        def ros_message_to_dict(msg):
+            if hasattr(msg, '__slots__'):
+                msg_dict = {}
+                for slot in msg.__slots__:
+                    value = getattr(msg, slot)
+                    # Recursively convert ROS messages and remove leading underscores from the slot names
+                    key = slot.lstrip('_')
+                    msg_dict[key] = ros_message_to_dict(value)
+                return msg_dict
+            return msg
+            
         def callback(ros_message: Any):
             # Formatting a ROS message as a string outputs YAML
             # Parse it back into a dictionary, so we can send it as JSON
-            self.node.get_logger().error(f"{ros_message}")
-            self.send_message_as_json({"type": gui_msg_type})
-            # self.send_message_as_json({"type": gui_msg_type, **yaml.safe_load(str(ros_message))})
-        self.subscribers.append(self.node.create_subscription(topic_type, topic_name , callback, qos_profile=1))
-        self.node.get_logger().error(f"{self.subscribers[0]}")
+            self.send_message_as_json({"type": gui_msg_type, **ros_message_to_dict(ros_message)})
+        self.subscribers.append(node.create_subscription(topic_type, topic_name , callback, qos_profile=1))
 
     def send_message_as_json(self, msg: dict):
         try:
             self.send(text_data=json.dumps(msg))
         except Exception as e:
-            self.node.get_logger().warning(f"Failed to send message: {e}")
+            node.get_logger().warning(f"Failed to send message: {e}")
 
 
     def receive(self, text_data=None, bytes_data=None, **kwargs) -> None:

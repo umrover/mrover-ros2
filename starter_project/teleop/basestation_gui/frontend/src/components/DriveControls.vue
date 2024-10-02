@@ -26,8 +26,8 @@
     watch: {
       message(msg) {
         if (msg.type == 'wheel_cmd') {
-          left = msg.left;
-          right = msg.right;
+          this.left = msg.left;
+          this.right = msg.right;
         }
       }
     },
