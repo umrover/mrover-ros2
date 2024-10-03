@@ -270,7 +270,8 @@ namespace mrover {
         // auto debugPointCloudPtr = boost::make_shared<sensor_msgs::PointCloud2>();
         RCLCPP_INFO_STREAM(get_logger(), "in uploadPC");
         
-        auto debugPointCloudPtr = sensor_msgs::msg::PointCloud2::SharedPtr();
+        auto debugPointCloudPtr = std::make_shared<sensor_msgs::msg::PointCloud2>();
+        
         RCLCPP_INFO_STREAM(get_logger(), "pre fillpointcloudmessage");
 
         fillPointCloudMessageHeader(debugPointCloudPtr);
