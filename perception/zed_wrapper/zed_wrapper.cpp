@@ -18,17 +18,15 @@ namespace mrover {
             RCLCPP_INFO(this->get_logger(), "Created Zed Wrapper Node, %s", NODE_NAME);
 
             // Publishers
-            mRightImgPub = create_publisher<sensor_msgs::msg::Image>("right/image", 1);
-            mLeftImgPub = create_publisher<sensor_msgs::msg::Image>("left/image", 1);
+            mRightImgPub = create_publisher<sensor_msgs::msg::Image>("zed/right/image", 1);
+            mLeftImgPub = create_publisher<sensor_msgs::msg::Image>("zed/left/image", 1);
             mImuPub = create_publisher<sensor_msgs::msg::Imu>("zed_imu/data_raw", 1);
             mMagPub = create_publisher<sensor_msgs::msg::MagneticField>("zed_imu/mag", 1);
-            mPcPub = create_publisher<sensor_msgs::msg::PointCloud2>("camera/left/points", 1);
-            mRightCamInfoPub = create_publisher<sensor_msgs::msg::CameraInfo>("camera/right/camera_info", 1);
-            mLeftCamInfoPub = create_publisher<sensor_msgs::msg::CameraInfo>("camera/left/camera_info", 1);
+            mPcPub = create_publisher<sensor_msgs::msg::PointCloud2>("zed/left/points", 1);
+            mRightCamInfoPub = create_publisher<sensor_msgs::msg::CameraInfo>("zed/right/camera_info", 1);
+            mLeftCamInfoPub = create_publisher<sensor_msgs::msg::CameraInfo>("zed/left/camera_info", 1);
 
             // Declare and set Params
-            auto paramSub = std::make_shared<rclcpp::ParameterEventHandler>(this);
-
             int imageWidth{};
             int imageHeight{};
 
@@ -37,22 +35,22 @@ namespace mrover {
             std::string grabResolutionString, depthModeString;
 
             std::vector<ParameterWrapper> params{
-                    {"depth_confidence", mDepthConfidence},
-                    {"serial_number", mSerialNumber},
-                    {"grab_target_fps", mGrabTargetFps},
-                    {"texture_confidence", mTextureConfidence},
-                    {"image_width", imageWidth},
-                    {"image_height", imageHeight},
-                    {"svo_file", svoFile},
-                    {"use_depth_stabilization", mUseDepthStabilization},
-                    {"grab_resolution", grabResolutionString},
-                    {"depth_mode", depthModeString},
-                    {"depth_maximum_distance", mDepthMaximumDistance},
-                    {"use_builtin_visual_odom", mUseBuiltinPosTracking},
-                    {"use_pose_smoothing", mUsePoseSmoothing},
-                    {"use_area_memory", mUseAreaMemory}};
+                    {"depth_confidence", mDepthConfidence, 70},
+                    {"serial_number", mSerialNumber, -1},
+                    {"grab_target_fps", mGrabTargetFps, 60},
+                    {"texture_confidence", mTextureConfidence, 100},
+                    {"image_width", imageWidth, 1280},
+                    {"image_height", imageHeight, 720},
+                    {"svo_file", svoFile, ""},
+                    {"use_depth_stabilization", mUseDepthStabilization, false},
+                    {"grab_resolution", grabResolutionString, std::string{sl::toString(sl::RESOLUTION::HD720)}},
+                    {"depth_mode", depthModeString, std::string{sl::toString(sl::DEPTH_MODE::PERFORMANCE)}},
+                    {"depth_maximum_distance", mDepthMaximumDistance, 12.0},
+                    {"use_builtin_visual_odom", mUseBuiltinPosTracking, false},
+                    {"use_pose_smoothing", mUsePoseSmoothing, true},
+                    {"use_area_memory", mUseAreaMemory, true}};
 
-            ParameterWrapper::declareParameters(this, paramSub, params);
+            ParameterWrapper::declareParameters(this, params);
 
             mSvoPath = svoFile.c_str();
 

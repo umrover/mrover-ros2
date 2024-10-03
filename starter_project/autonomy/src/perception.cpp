@@ -80,7 +80,6 @@ namespace mrover {
         // TODO: implement me!
         (void)tag;
 
-        mTagPublisher->publish(tag);
     }
 
     auto Perception::getClosenessMetricFromTagCorners(cv::Mat const& image, std::vector<cv::Point2f> const& tagCorners) -> float { // NOLINT(*-convert-member-functions-to-static)

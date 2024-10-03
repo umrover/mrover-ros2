@@ -23,9 +23,9 @@ function print_update_error() {
 }
 
 function find_executable() {
-  local readonly executable="$1"
-  local readonly version="$2"
-  local readonly path=$(which "${executable}")
+  local -r executable="$1"
+  local -r version="$2"
+  local -r path=$(which "${executable}")
   if [ ! -x "${path}" ]; then
     echo -e "${RED}[Error] Could not find ${executable}${NC}"
     print_update_error

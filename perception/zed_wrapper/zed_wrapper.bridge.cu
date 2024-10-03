@@ -21,7 +21,7 @@ namespace mrover {
      */
     __global__ void fillPointCloudMessageKernel(sl::float4* xyzGpuPtr, sl::uchar4* bgraGpuPtr, sl::float4* normalsGpuPtr, Point* pcGpuPtr, size_t size) {
         // This function is invoked once per element at index #i in the point cloud
-        size_t i = blockIdx.x * blockDim.x + threadIdx.x;
+        size_t const i = blockIdx.x * blockDim.x + threadIdx.x;
         if (i >= size) return;
 
         pcGpuPtr[i].x = xyzGpuPtr[i].x;

@@ -35,14 +35,15 @@ namespace mrover {
     }
 
     auto Simulator::makeFramebuffers(int width, int height) -> void {
-        wgpu::SwapChainDescriptor descriptor;
-        descriptor.usage = wgpu::TextureUsage::RenderAttachment;
-        descriptor.format = COLOR_FORMAT;
-        descriptor.width = width;
-        descriptor.height = height;
-        descriptor.presentMode = wgpu::PresentMode::Immediate;
-        mSwapChain = mDevice.createSwapChain(mSurface, descriptor);
-        if (!mSwapChain) throw std::runtime_error("Failed to create WGPU swap chain");
+        wgpu::SurfaceConfiguration surfaceConfiguration;
+        surfaceConfiguration.device = mDevice;
+        surfaceConfiguration.format = COLOR_FORMAT;
+        surfaceConfiguration.usage = wgpu::TextureUsage::RenderAttachment;
+        surfaceConfiguration.width = width;
+        surfaceConfiguration.height = height;
+        surfaceConfiguration.alphaMode = wgpu::CompositeAlphaMode::Auto;
+        surfaceConfiguration.presentMode = wgpu::PresentMode::Immediate;
+        mSurface.configure(surfaceConfiguration);
         std::tie(mNormalTexture, mNormalTextureView) = makeTextureAndView(width, height, NORMAL_FORMAT, wgpu::TextureUsage::RenderAttachment, wgpu::TextureAspect::All);
         std::tie(mDepthTexture, mDepthTextureView) = makeTextureAndView(width, height, DEPTH_FORMAT, wgpu::TextureUsage::RenderAttachment, wgpu::TextureAspect::DepthOnly);
     }
@@ -203,7 +204,9 @@ namespace mrover {
         constexpr auto WINDOW_NAME = "MRover Simulator (DEBUG BUILD, MAY BE SLOW)";
 #endif
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-        glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+        // There is still an off-by-one error on Vulkan with resizing windows and ImGui.
+        // See: https://matrix.to/#/!ZSOHTEPDbwuEgSJwYw:matrix.org
+        glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
         glfwWindowHint(GLFW_COCOA_RETINA_FRAMEBUFFER, GLFW_FALSE);
         mWindow = GlfwPointer<GLFWwindow, glfwCreateWindow, glfwDestroyWindow>{w, h, WINDOW_NAME, nullptr, nullptr};
         RCLCPP_INFO_STREAM(get_logger(), std::format("Created window of size: {}x{}", w, h));
@@ -258,7 +261,7 @@ namespace mrover {
         mNormalTextureView.release();
         mNormalTexture.destroy();
         mNormalTexture.release();
-        mSwapChain.release();
+        mSurface.unconfigure();
 
         makeFramebuffers(width, height);
     }
@@ -492,7 +495,7 @@ namespace mrover {
                         for (int i = 0; i < compound->getNumChildShapes(); ++i) {
                             SE3d modelInLink = btTransformToSe3(urdfPoseToBtTransform(link->collision_array.at(i)->origin));
                             SE3d modelInWorld = linkToWorld * modelInLink;
-                            auto* shape = compound->getChildShape(i);
+                            btCollisionShape* shape = compound->getChildShape(i);
                             if (auto* box = dynamic_cast<btBoxShape const*>(shape)) {
                                 btVector3 extents = box->getHalfExtentsWithoutMargin() * 2;
                                 SIM3 modelToWorld{modelInWorld, R3d{extents.x(), extents.y(), extents.z()}};
@@ -547,8 +550,14 @@ namespace mrover {
         // TODO(quintin): Remote duplicate code
         for (StereoCamera& stereoCamera: mStereoCameras) {
             std::size_t imageSize = stereoCamera.base.resolution.x() * stereoCamera.base.resolution.y() * 4;
-            if (stereoCamera.pointCloudCallback) {
-                mWgpuInstance.processEvents();
+
+            if (stereoCamera.pointCloudFuture && stereoCamera.base.future) {
+                std::array<wgpu::FutureWaitInfo, 2> waitInfo;
+                waitInfo[0].future = stereoCamera.pointCloudFuture.value();
+                waitInfo[1].future = stereoCamera.base.future.value();
+                mWgpuInstance.waitAny(waitInfo.size(), waitInfo.data(), 0);
+
+                // If reading back the data from the GPU is complete, publish the data.
                 if (stereoCamera.pointCloudStagingBuffer.getMapState() == wgpu::BufferMapState::Mapped && stereoCamera.base.stagingBuffer.getMapState() == wgpu::BufferMapState::Mapped) {
                     {
                         // auto pointCloud = boost::shared_ptr<sensor_msgs::PointCloud2>{pointCloudPool.borrowFrom(), [](sensor_msgs::PointCloud2* msg) { pointCloudPool.returnTo(msg); }};
@@ -565,7 +574,7 @@ namespace mrover {
                         auto* toMessage = pointCloud->data.data();
                         std::memcpy(toMessage, fromCompute, stereoCamera.pointCloudStagingBuffer.getSize());
                         stereoCamera.pointCloudStagingBuffer.unmap();
-                        stereoCamera.pointCloudCallback = nullptr;
+                        stereoCamera.pointCloudFuture.reset();
 
                         stereoCamera.pcPub->publish(std::move(pointCloud));
                     }
@@ -585,13 +594,15 @@ namespace mrover {
                         auto* toMessage = image->data.data();
                         std::memcpy(toMessage, fromRender, stereoCamera.base.stagingBuffer.getSize());
                         stereoCamera.base.stagingBuffer.unmap();
-                        stereoCamera.base.callback = nullptr;
+                        stereoCamera.base.future.reset();
 
                         stereoCamera.base.imgPub->publish(std::move(image));
                     }
                 }
             }
-            if (!stereoCamera.pointCloudCallback && !stereoCamera.base.callback && stereoCamera.base.updateTask.shouldUpdate()) {
+
+            // Queue GPU compute jobs if there are none running.
+            if (!stereoCamera.pointCloudFuture && !stereoCamera.base.future && stereoCamera.base.updateTask.shouldUpdate()) {
                 {
                     colorAttachment.view = stereoCamera.base.colorTextureView;
                     normalAttachment.view = stereoCamera.base.normalTextureView;
@@ -634,10 +645,15 @@ namespace mrover {
                 }
             }
         }
+
         for (Camera& camera: mCameras) {
             std::size_t area = camera.resolution.x() * camera.resolution.y();
-            if (camera.callback) {
-                mWgpuInstance.processEvents();
+
+            if (camera.future) {
+                wgpu::FutureWaitInfo waitInfo;
+                waitInfo.future = camera.future.value();
+                mWgpuInstance.waitAny(1, &waitInfo, 0);
+
                 if (camera.stagingBuffer.getMapState() == wgpu::BufferMapState::Mapped) {
                     // auto image = boost::shared_ptr<sensor_msgs::Image>{imagePool.borrowFrom(), [](sensor_msgs::Image* msg) { imagePool.returnTo(msg); }};
                     auto image = std::make_unique<sensor_msgs::msg::Image>();
@@ -655,12 +671,13 @@ namespace mrover {
                     auto* toMessage = image->data.data();
                     std::memcpy(toMessage, fromRender, camera.stagingBuffer.getSize());
                     camera.stagingBuffer.unmap();
-                    camera.callback = nullptr;
+                    camera.future.reset();
 
                     camera.imgPub->publish(std::move(image));
                 }
             }
-            if (!camera.callback && camera.updateTask.shouldUpdate()) {
+
+            if (!camera.future && camera.updateTask.shouldUpdate()) {
                 colorAttachment.view = camera.colorTextureView;
                 normalAttachment.view = camera.normalTextureView;
                 depthStencilAttachment.view = camera.depthTextureView;
@@ -723,10 +740,19 @@ namespace mrover {
         camerasUpdate(encoder, colorAttachment, normalAttachment, depthStencilAttachment, renderPassDescriptor);
 
         if (!mIsHeadless) {
-            wgpu::TextureView nextTexture = mSwapChain.getCurrentTextureView();
-            if (!nextTexture) throw std::runtime_error("Failed to get WGPU next texture view");
+            wgpu::SurfaceTexture surfaceTexture;
+            mSurface.getCurrentTexture(&surfaceTexture);
+            if (surfaceTexture.status != wgpu::SurfaceGetCurrentTextureStatus::Success) throw std::runtime_error{"Failed to get WGPU surface texture"};
 
-            colorAttachment.view = nextTexture;
+            wgpu::TextureViewDescriptor nextTextureViewDescriptor;
+            nextTextureViewDescriptor.format = COLOR_FORMAT;
+            nextTextureViewDescriptor.dimension = wgpu::TextureViewDimension::_2D;
+            nextTextureViewDescriptor.mipLevelCount = 1;
+            nextTextureViewDescriptor.arrayLayerCount = 1;
+            nextTextureViewDescriptor.aspect = wgpu::TextureAspect::All;
+            wgpu::TextureView nextTextureView = wgpu::Texture{surfaceTexture.texture}.createView(nextTextureViewDescriptor);
+
+            colorAttachment.view = nextTextureView;
             normalAttachment.view = mNormalTextureView;
             depthStencilAttachment.view = mDepthTextureView;
 
@@ -768,7 +794,7 @@ namespace mrover {
 
             bindGroup.release();
 
-            nextTexture.release();
+            nextTextureView.release();
         }
 
         wgpu::CommandBuffer commands = encoder.finish();
@@ -779,33 +805,32 @@ namespace mrover {
             // Temporary fix...
             // See: https://issues.chromium.org/issues/338710345
             // This only happens on M2/M3 (M1 is fine)
-            bool isWorkDone = false;
-            auto workDoneCallback = mQueue.onSubmittedWorkDone([&isWorkDone](wgpu::QueueWorkDoneStatus const& status) {
-                if (status == wgpu::QueueWorkDoneStatus::Success) {
-                    isWorkDone = true;
-                }
-            });
-            while (!isWorkDone) {
-                mDevice.tick();
-            }
+            wgpu::QueueWorkDoneCallbackInfo2 info;
+            info.mode = wgpu::CallbackMode::WaitAnyOnly;
+            wgpu::Future workDoneFuture = mQueue.onSubmittedWorkDone2(info);
+            wgpu::FutureWaitInfo waitInfo;
+            waitInfo.future = workDoneFuture;
+            mWgpuInstance.waitAny(1, &waitInfo, 1'000'000'000'000);
         }
 #endif
 
-        if (!mIsHeadless) mSwapChain.present();
+        if (!mIsHeadless) mSurface.present();
+
+        wgpu::BufferMapCallbackInfo2 callbackInfo;
+        callbackInfo.mode = wgpu::CallbackMode::WaitAnyOnly;
+        callbackInfo.callback = [](WGPUMapAsyncStatus, char const*, void*, void*) -> void {};
 
         // TODO(quintin): Remote duplicate code
         for (StereoCamera& stereoCamera: mStereoCameras) {
             if (stereoCamera.base.needsMap) {
-                stereoCamera.pointCloudCallback = stereoCamera.pointCloudStagingBuffer.mapAsync(wgpu::MapMode::Read, 0, stereoCamera.pointCloudStagingBuffer.getSize(), [](wgpu::BufferMapAsyncStatus const&) {});
-
-                stereoCamera.base.callback = stereoCamera.base.stagingBuffer.mapAsync(wgpu::MapMode::Read, 0, stereoCamera.base.stagingBuffer.getSize(), [](wgpu::BufferMapAsyncStatus const&) {});
-
+                stereoCamera.pointCloudFuture = stereoCamera.pointCloudStagingBuffer.mapAsync2(wgpu::MapMode::Read, 0, stereoCamera.pointCloudStagingBuffer.getSize(), callbackInfo);
+                stereoCamera.base.future = stereoCamera.base.stagingBuffer.mapAsync2(wgpu::MapMode::Read, 0, stereoCamera.base.stagingBuffer.getSize(), callbackInfo);
                 stereoCamera.base.needsMap = false;
             }
         }
         for (Camera& camera: mCameras) {
             if (camera.needsMap) {
-                camera.callback = camera.stagingBuffer.mapAsync(wgpu::MapMode::Read, 0, camera.stagingBuffer.getSize(), [](wgpu::BufferMapAsyncStatus const&) {});
+                camera.future = camera.stagingBuffer.mapAsync2(wgpu::MapMode::Read, 0, camera.stagingBuffer.getSize(), callbackInfo);
                 camera.needsMap = false;
             }
         }

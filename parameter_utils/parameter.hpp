@@ -21,77 +21,79 @@ namespace mrover {
 
 		std::variant<int*, std::string*, bool*, double*, float*> mData;
 
-		ParameterWrapper(std::string paramDescriptor, int& variable) : mType{rclcpp::ParameterType::PARAMETER_INTEGER}, mParamDescriptor{std::move(paramDescriptor)}, mData{&variable}{}
+		std::variant<int, std::string, bool, double, float> mDefaultValue;
 
-		ParameterWrapper(std::string paramDescriptor, std::string& variable) : mType{rclcpp::ParameterType::PARAMETER_STRING}, mParamDescriptor{std::move(paramDescriptor)}, mData{&variable}{}
+		ParameterWrapper(std::string paramDescriptor, int& variable, int defaultValue = 0) : mType{rclcpp::ParameterType::PARAMETER_INTEGER}, mParamDescriptor{std::move(paramDescriptor)}, mData{&variable}, mDefaultValue{defaultValue}{}
 
-		ParameterWrapper(std::string paramDescriptor, bool& variable) : mType{rclcpp::ParameterType::PARAMETER_BOOL}, mParamDescriptor{std::move(paramDescriptor)}, mData{&variable}{}
+		ParameterWrapper(std::string paramDescriptor, std::string& variable, std::string defaultValue = "") : mType{rclcpp::ParameterType::PARAMETER_STRING}, mParamDescriptor{std::move(paramDescriptor)}, mData{&variable}, mDefaultValue{std::move(defaultValue)}{}
 
-		ParameterWrapper(std::string paramDescriptor, double& variable) : mType{rclcpp::ParameterType::PARAMETER_DOUBLE}, mParamDescriptor{std::move(paramDescriptor)}, mData{&variable}{}
+		ParameterWrapper(std::string paramDescriptor, bool& variable, bool defaultValue = false) : mType{rclcpp::ParameterType::PARAMETER_BOOL}, mParamDescriptor{std::move(paramDescriptor)}, mData{&variable}, mDefaultValue{defaultValue}{}
 
-		ParameterWrapper(std::string paramDescriptor, float& variable) : mType{rclcpp::ParameterType::PARAMETER_DOUBLE}, mParamDescriptor{std::move(paramDescriptor)}, mData{&variable}{}
+		ParameterWrapper(std::string paramDescriptor, double& variable, double defaultValue = 0.0) : mType{rclcpp::ParameterType::PARAMETER_DOUBLE}, mParamDescriptor{std::move(paramDescriptor)}, mData{&variable}, mDefaultValue{defaultValue}{}
+
+		ParameterWrapper(std::string paramDescriptor, float& variable, float defaultValue = 0.0) : mType{rclcpp::ParameterType::PARAMETER_DOUBLE}, mParamDescriptor{std::move(paramDescriptor)}, mData{&variable}, mDefaultValue{defaultValue}{}
 
 		void visit(rclcpp::Node* node){
 			std::visit(overload{
 				[&](int* arg){
 					try{
-						if(std::holds_alternative<int*>(mData)){
-							*arg = static_cast<int>(node->get_parameter(mParamDescriptor).as_int());
-						}else{
-							throw std::runtime_error("Parameter has wrong type!");
-						}
+						*arg = static_cast<int>(node->get_parameter(mParamDescriptor).as_int());
 					}catch(rclcpp::exceptions::ParameterUninitializedException& e){
-						*arg = 0;
+						try{
+							*arg = std::get<int>(mDefaultValue);
+						}catch (std::bad_variant_access const& ex){
+							throw std::runtime_error("Bad Variant Access: Type not int");
+						}
 					}
 				},
 				[&](std::string* arg){
 					try{
-						if(std::holds_alternative<std::string*>(mData)){
 							*arg = node->get_parameter(mParamDescriptor).as_string();
-						}else{
-							throw std::runtime_error("Parameter has wrong type!");
-						}
 					}catch(rclcpp::exceptions::ParameterUninitializedException& e){
-						*arg = std::string();
+						try{
+							*arg = std::get<std::string>(mDefaultValue);
+						}catch (std::bad_variant_access const& ex){
+							throw std::runtime_error("Bad Variant Access: Type not std::string");
+						}
 					}
 				},
 				[&](bool* arg){
 					try{
-						if(std::holds_alternative<bool*>(mData)){
-							*arg = node->get_parameter(mParamDescriptor).as_bool();
-						}else{
-							throw std::runtime_error("Parameter has wrong type!");
-						}
+						*arg = node->get_parameter(mParamDescriptor).as_bool();
 					}catch(rclcpp::exceptions::ParameterUninitializedException& e){
-						*arg = false;
+						try{
+							*arg = std::get<bool>(mDefaultValue);
+						}catch (std::bad_variant_access const& ex){
+							throw std::runtime_error("Bad Variant Access: Type not bool");
+						}
 					}
 				},
 				[&](double* arg){
 					try{
-						if(std::holds_alternative<double*>(mData)){
-							*arg = node->get_parameter(mParamDescriptor).as_double();
-						}else{
-							throw std::runtime_error("Parameter has wrong type!");
-						}
+						*arg = node->get_parameter(mParamDescriptor).as_double();
 					}catch(rclcpp::exceptions::ParameterUninitializedException& e){
-						*arg = 0.0;
+						try{
+							*arg = std::get<double>(mDefaultValue);
+						}catch (std::bad_variant_access const& ex){
+							throw std::runtime_error("Bad Variant Access: Type not double");
+						}
 					}
 				},
 				[&](float* arg){
 					try{
-						if(std::holds_alternative<float*>(mData)){
-							*arg = static_cast<float>(node->get_parameter(mParamDescriptor).as_double());
-						}else{
-							throw std::runtime_error("Parameter has wrong type!");
-						}
+						*arg = static_cast<float>(node->get_parameter(mParamDescriptor).as_double());
 					}catch(rclcpp::exceptions::ParameterUninitializedException& e){
-						*arg = 0.0;
+						try{
+							*arg = std::get<float>(mDefaultValue);
+						}catch (std::bad_variant_access const& ex){
+							throw std::runtime_error("Bad Variant Access: Type not float");
+						}
 					}
 				}
 			}, mData);
 		}
 
-		static inline auto declareParameters(rclcpp::Node* node, std::shared_ptr<rclcpp::ParameterEventHandler>& paramSub, std::vector<ParameterWrapper>& params) -> void{
+		static inline auto declareParameters(rclcpp::Node* node, std::vector<ParameterWrapper>& params) -> void{
 			RCLCPP_INFO(rclcpp::get_logger("param_logger"), "Declaring %zu parameters...", params.size());
 			for(auto& param : params){
 				node->declare_parameter(param.mParamDescriptor, param.mType);

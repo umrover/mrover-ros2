@@ -59,7 +59,7 @@ namespace mrover {
     }
 
     auto URDF::makeCollisionShapeForLink(Simulator& simulator, urdf::LinkConstSharedPtr const& link) -> btCollisionShape* {
-        boost::container::static_vector<std::pair<btCollisionShape*, btTransform>, 4> shapes;
+        boost::container::small_vector<std::pair<btCollisionShape*, btTransform>, 4> shapes;
         for (urdf::CollisionSharedPtr const& collision: link->collision_array) {
             if (!collision->geometry) throw std::invalid_argument{"Collision has no geometry"};
 
