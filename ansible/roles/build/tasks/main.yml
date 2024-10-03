@@ -141,7 +141,7 @@
   command: ~/.bun/bin/bun upgrade
 
 - name: Install Bun Packages
-  command: ~/.bun/bin/bun install --cwd {{ ros2_workspace }}/src/mrover/src/
+  command: ~/.bun/bin/bun install --cwd {{ ros2_workspace }}/src/mrover/starter_project/teleop/basestation_gui/frontend
 
 # - name: Install Catkin Profiles
 #   synchronize:
