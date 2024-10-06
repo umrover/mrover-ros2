@@ -270,7 +270,7 @@ endif()
 
 mrover_add_node(tag_detector perception/tag_detector/*.cpp perception/tag_detector/pch.hpp)
 ament_target_dependencies(tag_detector rclcpp tf2 tf2_ros)
-target_link_libraries(tag_detector lie opencv_core opencv_aruco opencv_imgproc loop_profiler)
+target_link_libraries(tag_detector lie opencv_core opencv_aruco opencv_imgproc loop_profiler parameter_utils)
 
 # Embedded
 
@@ -284,7 +284,7 @@ ament_target_dependencies(arm_controller rclcpp)
 
 if (Gst_FOUND AND GstApp_FOUND)
     mrover_add_node(usb_camera esw/usb_camera/*.cpp esw/usb_camera/pch.hpp)
-    target_link_libraries(usb_camera PkgConfig::Gst PkgConfig::GstApp opencv_core opencv_imgcodecs)
+    target_link_libraries(usb_camera PkgConfig::Gst PkgConfig::GstApp opencv_core opencv_imgcodecs parameter_utils)
     ament_target_dependencies(usb_camera rclcpp)
 
     if (LibUdev_FOUND)
