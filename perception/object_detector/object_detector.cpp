@@ -37,11 +37,15 @@ namespace mrover {
     }
 
     StereoObjectDetector::StereoObjectDetector() {
+<<<<<<< HEAD
         RCLCPP_INFO_STREAM(get_logger(), "Creating Stereo Object Detector...");
 
         mDebugImgPub = create_publisher<sensor_msgs::msg::Image>("/stereo_object_detector/debug_img", 1);
 
         mSensorSub = create_subscription<sensor_msgs::msg::PointCloud2>("/camera/left/points", 1, [this](sensor_msgs::msg::PointCloud2::UniquePtr const& msg) {
+=======
+        mSensorSub = create_subscription<sensor_msgs::msg::PointCloud2>("/zed/left/points", 1, [this](sensor_msgs::msg::PointCloud2::UniquePtr const& msg) {
+>>>>>>> main
             StereoObjectDetector::pointCloudCallback(msg);
         });
     }
