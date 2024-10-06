@@ -87,7 +87,7 @@ auto main(int argc, char** argv) -> int {
     auto imageTD = std::make_shared<mrover::ImageTagDetectorNodelet>();
 
     rclcpp::executors::SingleThreadedExecutor executor;
-    executor.add_node(stereoTD);
+    //executor.add_node(stereoTD);
     executor.add_node(imageTD);
     executor.spin();
 
