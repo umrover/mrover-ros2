@@ -48,11 +48,11 @@ namespace mrover {
         auto paramSub = std::make_shared<rclcpp::ParameterEventHandler>(this);
 
         std::vector<ParameterWrapper> params{
-                {"camera_frame", mCameraFrameId},
-                {"world_frame", mMapFrameId},
+                {"camera_frame", mCameraFrameId, "zed_left_camera_frame"},
+                {"world_frame", mMapFrameId, "map"},
                 {"ransac/distance_threshold", mDistanceThreshold}};
 
-        ParameterWrapper::declareParameters(this, paramSub, params);
+        ParameterWrapper::declareParameters(this, params);
 
         mPlaneLocationInWorldVector = std::make_optional<Eigen::Vector3d>(0, 0, 0);
         mNormalInWorldVector = std::make_optional<Eigen::Vector3d>(0, 0, 0);
