@@ -54,13 +54,14 @@ namespace mrover {
             mDetectorParams->cornerRefinementMethod = cv::aruco::CORNER_REFINE_NONE;
         }
 
-        mDetectedImagePub = create_publisher<sensor_msgs::msg::Image>("tag_detection", 1);
 
         RCLCPP_INFO(get_logger(), "Tag detection ready!");
     }
 
     StereoTagDetectorNodelet::StereoTagDetectorNodelet() : TagDetectorNodeletBase{"stereo_tag_detector"} {
-        mPointCloudSub = create_subscription<sensor_msgs::msg::PointCloud2>("/camera/left/points", 1, [this](sensor_msgs::msg::PointCloud2::ConstSharedPtr const& msg) {
+        mDetectedImagePub = create_publisher<sensor_msgs::msg::Image>("stereo_tag_detection", 1);
+
+        mPointCloudSub = create_subscription<sensor_msgs::msg::PointCloud2>("/zed/left/points", 1, [this](sensor_msgs::msg::PointCloud2::ConstSharedPtr const& msg) {
             pointCloudCallback(msg);
         });
     }
@@ -70,6 +71,8 @@ namespace mrover {
                 {"camera_horizontal_fov", mCameraHorizontalFOV, 80.0}};
 
         ParameterWrapper::declareParameters(this, params);
+
+        mDetectedImagePub = create_publisher<sensor_msgs::msg::Image>("image_tag_detection", 1);
 
         mTargetsPub = create_publisher<msg::ImageTargets>("/tags", 1);
 
@@ -87,7 +90,7 @@ auto main(int argc, char** argv) -> int {
     auto imageTD = std::make_shared<mrover::ImageTagDetectorNodelet>();
 
     rclcpp::executors::SingleThreadedExecutor executor;
-    //executor.add_node(stereoTD);
+    executor.add_node(stereoTD);
     executor.add_node(imageTD);
     executor.spin();
 
