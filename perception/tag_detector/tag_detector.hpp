@@ -16,9 +16,9 @@ namespace mrover {
     protected:
         rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr mDetectedImagePub;
         std::unordered_map<int, rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr> mThreshImagePubs; // Map from threshold scale to publisher
-		
-		std::string mMapFrameId;
-		std::string mCameraFrameId;
+
+        std::string mMapFrameId;
+        std::string mCameraFrameId;
         int mMinTagHitCountBeforePublish;
         int mMaxTagHitCount;
         int mTagIncrementWeight;
@@ -66,7 +66,7 @@ namespace mrover {
 
     class ImageTagDetectorNodelet final : public TagDetectorNodeletBase {
 
-		float mCameraHorizontalFOV;
+        float mCameraHorizontalFOV;
 
         rclcpp::Publisher<msg::ImageTargets>::SharedPtr mTargetsPub;
 

@@ -177,7 +177,7 @@ namespace mrover {
         });
     }
 
-	auto ImageObjectDetector::imageCallback(sensor_msgs::msg::Image::UniquePtr const& msg) -> void {
+    auto ImageObjectDetector::imageCallback(sensor_msgs::msg::Image::UniquePtr const& msg) -> void {
         assert(msg);
         assert(msg->height > 0);
         assert(msg->width > 0);
@@ -203,9 +203,9 @@ namespace mrover {
 
         mLoopProfiler.measureEvent("Execution");
 
-		mrover::msg::ImageTargets targets{};
+        mrover::msg::ImageTargets targets{};
         for (auto const& [classId, className, confidence, box]: detections) {
-			mrover::msg::ImageTarget target;
+            mrover::msg::ImageTarget target;
             target.name = className;
             target.bearing = getTagBearing(blobSizedImage, box);
             targets.targets.push_back(target);
