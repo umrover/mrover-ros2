@@ -8,6 +8,8 @@ namespace mrover {
         mIkSub = create_subscription<msg::IK>("arm_ik", 1, [this](msg::IK::ConstSharedPtr const& msg) {
             ikCallback(msg);
         });
+
+        mArmStatusPub = create_publisher<msg::ArmStatus>("arm_status", 1);
     }
 
     auto yawSo3(double r) -> SO3d {

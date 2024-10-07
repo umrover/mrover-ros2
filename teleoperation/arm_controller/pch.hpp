@@ -12,5 +12,6 @@
 
 #include <mrover/msg/ik.hpp>
 #include <mrover/msg/position.hpp>
+#include <mrover/msg/arm_status.hpp>
 
 #include <lie.hpp>

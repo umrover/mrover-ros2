@@ -11,6 +11,7 @@ namespace mrover {
         tf2_ros::TransformBroadcaster mTfBroadcaster{this};
         tf2_ros::Buffer mTfBuffer{get_clock()};
         tf2_ros::TransformListener mTfListener{mTfBuffer};
+        rclcpp::Publisher<msg::ArmStatus>::SharedPtr mArmStatusPub;
 
     public:
         // TODO(quintin): Neven, please load these from config YAML files instead of hard coding. Ideally they would even be computed at runtime. This way you can change the xacro without worry.
