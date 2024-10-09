@@ -1,3 +1,5 @@
+#pragma once
+
 #include "pch.hpp"
 
 namespace mrover {
@@ -8,41 +10,42 @@ namespace mrover {
 
         auto rosQuaternionToEigenQuaternion(geometry_msgs::msg::Quaternion const& q) -> Eigen::Quaterniond;
 
-        void pose_sub_callback(geometry_msgs::msg::Vector3StampedConstPtr const& msg);
+        void pose_sub_callback(geometry_msgs::msg::Vector3Stamped::ConstSharedPtr const& msg);
 
         void correction_timer_callback();
 
-        const rclcpp::Duration STEP(0, 500000000);
-        const rclcpp::Duration WINDOW(2 + STEP.seconds() / 2);
-        constexpr std::uint8_t FULL_CALIBRATION = 3;
-        constexpr double IMU_WATCHDOG_TIMEOUT = 1.0;
-        constexpr float MIN_LINEAR_SPEED = 0.2, MAX_ANGULAR_SPEED = 0.1, MAX_ANGULAR_CHANGE = 0.2;
+        const rclcpp::Duration STEP = rclcpp::Duration::from_seconds(0.5);
+        const rclcpp::Duration IMU_WATCHDOG_TIMEOUT = rclcpp::Duration::from_seconds(1.0);
+        const rclcpp::Duration WINDOW{STEP * 2.5};
+        
+        static constexpr std::uint8_t FULL_CALIBRATION = 3;
+        static constexpr float MIN_LINEAR_SPEED = 0.2, MAX_ANGULAR_SPEED = 0.1, MAX_ANGULAR_CHANGE = 0.2;
 
         rclcpp::TimerBase::SharedPtr imu_watchdog;
         rclcpp::TimerBase::SharedPtr correction_timer;
         
-        rclcpp::Publisher<nav_msgs::msg::Odometry> odometry_pub;
-        rclcpp::Subscription<mrover::msg::CalibrationStatus> calibration_status_sub;
-        rclcpp::Subscription<geometry_msgs::msg::Twist> twist_sub;
-        rclcpp::Subscription<sensor_msgs::msg::Imu> imu_uncalib_sub;
-        rclcpp::Subscription<sensor_msgs::msg::Imu> imu_calib_sub;
-        rclcpp::Subscription<geometry_msgs::msg::Vector3Stamped> pose_sub;
+        rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odometry_pub;
+        rclcpp::Subscription<mrover::msg::CalibrationStatus>::SharedPtr calibration_status_sub;
+        rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr twist_sub;
+        rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr imu_uncalib_sub;
+        rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr imu_calib_sub;
+        rclcpp::Subscription<geometry_msgs::msg::Vector3Stamped>::SharedPtr pose_sub;
 
         std::optional<mrover::msg::CalibrationStatus> calibration_status;
         std::vector<geometry_msgs::msg::Twist> twists;
         std::optional<sensor_msgs::msg::Imu> current_imu_uncalib;
         std::optional<sensor_msgs::msg::Imu> current_imu_calib;
 
-        std::optional<SE3> last_pose_in_map;
-        std::optional<rclcpp::Time> last_pose_time;
-        std::optional<SO3> correction_rotation;
+        std::optional<SE3d> last_pose_in_map;
+        std::optional<builtin_interfaces::msg::Time> last_pose_time;
+        std::optional<SO3d> correction_rotation;
 
-        tf2_ros::Buffer tf_buffer;
+        tf2_ros::Buffer tf_buffer{get_clock()};
         tf2_ros::TransformListener tf_listener{tf_buffer};
-        tf2_ros::TransformBroadcaster tf_broadcaster;
+        tf2_ros::TransformBroadcaster tf_broadcaster{this};
 
-        auto rover_frame;
-        auto world_frame;
+        std::string rover_frame;
+        std::string world_frame;
 
     public:
         PoseFilter();
