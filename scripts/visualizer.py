@@ -112,7 +112,7 @@ class GUI(QWidget):  # type: ignore
         self.resize(self.renderer.defaultSize())
         self.renderer.render(painter)
 
-    def update(self):
+    def update(self):  # type: ignore[override]
         rclpy.spin_once(self.viz)
         with self.state_machine.mutex:
             if self.graph is None or self.state_machine.needs_redraw:

@@ -13,12 +13,11 @@ namespace mrover {
                 {"hitcount_max", mObjMaxHitcount, 10},
                 {"model_name", mModelName, "Large-Dataset"},
                 {"model_score_threshold", mModelScoreThreshold, 0.75},
-                {"model_nms_threshold", mModelNmsThreshold, 0.5}
-		};
+                {"model_nms_threshold", mModelNmsThreshold, 0.5}};
 
         ParameterWrapper::declareParameters(this, params);
 
-		std::filesystem::path packagePath = std::filesystem::path{ament_index_cpp::get_package_prefix("mrover")} / ".." / ".." / "src" / "mrover";
+        std::filesystem::path packagePath = std::filesystem::path{ament_index_cpp::get_package_prefix("mrover")} / ".." / ".." / "src" / "mrover";
 
         RCLCPP_INFO_STREAM(get_logger(), "Opening Model " << mModelName);
 
@@ -32,7 +31,7 @@ namespace mrover {
     }
 
     StereoObjectDetector::StereoObjectDetector() {
-        mSensorSub = create_subscription<sensor_msgs::msg::PointCloud2>("/camera/left/points", 1, [this](sensor_msgs::msg::PointCloud2::UniquePtr const& msg) {
+        mSensorSub = create_subscription<sensor_msgs::msg::PointCloud2>("/zed/left/points", 1, [this](sensor_msgs::msg::PointCloud2::UniquePtr const& msg) {
             StereoObjectDetector::pointCloudCallback(msg);
         });
     }
