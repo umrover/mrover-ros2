@@ -29,6 +29,8 @@ namespace mrover {
     private:
 		static constexpr char const* NODE_NAME = "lander_align";
 
+        rclcpp::Time fuck = rclcpp::Time(0);
+        
 		//RANSAC VARS
         double mDistanceThreshold{};
 
@@ -106,7 +108,6 @@ namespace mrover {
 
         void publishSpline();
 
-        
 
         using GoalUUID = rclcpp_action::GoalUUID;
         using GoalHandleLanderAlign = rclcpp_action::ServerGoalHandle<action::LanderAlign>;

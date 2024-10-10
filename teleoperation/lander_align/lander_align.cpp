@@ -1,11 +1,13 @@
 #include "lander_align.hpp"
 #include "mrover/action/detail/lander_align__struct.hpp"
 #include <boost/smart_ptr/shared_ptr.hpp>
+#include <chrono>
 #include <memory>
 #include <optional>
 #include <rclcpp/duration.hpp>
 #include <rclcpp/logger.hpp>
 #include <rclcpp/logging.hpp>
+#include <rclcpp/time.hpp>
 #include <rclcpp/utilities.hpp>
 
 namespace mrover {
@@ -74,7 +76,7 @@ namespace mrover {
         //If we haven't yet defined the point cloud we are working with
 		RCLCPP_INFO_STREAM(get_logger(), "before wait");
 		
-        while (!mCloud.has_value()) {
+        while (!mCloud.has_value()) { // TODO: Wait for value (this does not work)
             mReadPointCloud = true;
         }
 
@@ -86,6 +88,7 @@ namespace mrover {
             RCLCPP_INFO_STREAM(get_logger(), "post ransac");
             try{
                 if(mNormalInWorldVector.has_value()){
+                    RCLCPP_INFO_STREAM(get_logger(), "normal has value");
                     if(!createSpline(7, 0.75)){
                         rclcpp::shutdown(); 
                         return;
@@ -424,7 +427,8 @@ namespace mrover {
         mOffsetLocationInWorldVector = std::make_optional<Eigen::Vector3d>(mOffsetLocationInWorldSE3d.translation());
 
         //Push to the tf tree
-        SE3Conversions::pushToTfTree(*mTfBroadcaster, "plane", mMapFrameId, mPlaneLocationInWorldSE3d, get_clock()->now());
+        fuck = get_clock()->now();
+        SE3Conversions::pushToTfTree(*mTfBroadcaster, "plane", mMapFrameId, mPlaneLocationInWorldSE3d, fuck);
 
         SE3Conversions::pushToTfTree(*mTfBroadcaster, "offset", mMapFrameId, mOffsetLocationInWorldSE3d, get_clock()->now());
 
@@ -588,7 +592,13 @@ namespace mrover {
         const double dAngle = calcAngleWithWorldX(-mNormalInWorldVector.value());
 
         //Calculate the spline length
-        SE3d planeInRover = SE3Conversions::fromTfTree(*mTfBuffer, "plane", mCameraFrameId);
+        RCLCPP_INFO_STREAM(get_logger(), "pre fromTfTree");
+        // rclcpp::sleep_for(std::chrono::nanoseconds(10348));
+        SE3d planeInRover = SE3Conversions::fromTfTree(*mTfBuffer, "plane", mCameraFrameId, fuck);
+        RCLCPP_INFO_STREAM(get_logger(), "post fromTfTree");
+            // SE3Conversions::pushToTfTree(*mTfBroadcaster, "spline_point", mMapFrameId, temp, get_clock()->now());
+
+
         double xDistanceFromRoverToPlane = planeInRover.translation().x();
         double splineLength = kSplineStart * xDistanceFromRoverToPlane;
 
@@ -626,6 +636,7 @@ namespace mrover {
                 0, 1, 0,
                 0, 0, 1;
         int index = 0;
+        RCLCPP_INFO_STREAM(get_logger(), "publish spline");
         for(auto const & point : mPathPoints){
             SE3d mPlaneLocationInZEDSE3d = {{point.coeff(0,0), point.coeff(1,0), 0}, SO3d{Eigen::Quaterniond{rot}.normalized()}};
             SE3Conversions::pushToTfTree(*mTfBroadcaster, std::format("point_{}", index), mMapFrameId, mPlaneLocationInZEDSE3d, get_clock()->now());
