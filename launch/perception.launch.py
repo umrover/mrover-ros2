@@ -25,11 +25,10 @@ def generate_launch_description():
         parameters=[Path(get_package_share_directory("mrover"), "config", "object_detector.yaml")],
     )
 
-    cost_map_node = Node(
-        package="mrover",
-        executable="cost_map",
-        name="cost_map",
-        parameters=[Path(get_package_share_directory("mrover"), "config", "perception.yaml")],
+    world_to_zed = Node(
+        package='tf2_ros',
+        executable='static_transform_publisher',
+        arguments = ['0', '0', '0', '0', '0', '0', 'map', 'zed_left_camera_frame']
     )
 
-    return LaunchDescription([zed_node, object_detector_node, cost_map_node])
+    return LaunchDescription([zed_node, world_to_zed])
