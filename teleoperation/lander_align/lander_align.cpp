@@ -95,7 +95,7 @@ namespace mrover {
                     }
                     RCLCPP_INFO_STREAM(get_logger(), "spline created");    
                     publishSpline();
-                    //calcMotionToo();
+                    calcMotionToo();
                 }
             } catch(const tf2::LookupException& e){
                 rclcpp::shutdown();
@@ -179,14 +179,14 @@ namespace mrover {
                 r.sleep();
                 double v = (point.coeff(3, 0) - K1 * abs(point.coeff(3, 0) * (errState.x() + errState.y() * tan(errState.z()))))/(cos(errState.z()));
                 double omega = point.coeff(4, 0) - ((K2*point.coeff(3, 0)*errState.y() + K3*abs(point.coeff(3, 0))*tan(errState.z()))*pow(cos(errState.z()), 2));
-                RCLCPP_INFO_STREAM(get_logger(), "v: " << v);
-                RCLCPP_INFO_STREAM(get_logger(), "omega: " << omega);
-                RCLCPP_INFO_STREAM(get_logger(), "tan: " << tan(errState.z()));
+                // RCLCPP_INFO_STREAM(get_logger(), "v: " << v);
+                // RCLCPP_INFO_STREAM(get_logger(), "omega: " << omega);
+                // RCLCPP_INFO_STREAM(get_logger(), "tan: " << tan(errState.z()));
                 
                 driveTwist.angular.z = omega;
                 driveTwist.linear.x = v;
-                driveTwist.angular.z = 0;
-                driveTwist.linear.x = 0;
+                // driveTwist.angular.z = 0;
+                driveTwist.linear.y = 0;
                 mTwistPub->publish(driveTwist);
             }        
         }
@@ -355,9 +355,9 @@ namespace mrover {
                         ++numInliers; // count num of inliers that pass the "good enough fit" threshold
                     }
                 }
-                RCLCPP_INFO_STREAM(get_logger(), "numInliers: " << numInliers);
-                RCLCPP_INFO_STREAM(get_logger(), "normal x " << normal.x());
-                RCLCPP_INFO_STREAM(get_logger(), "minLiers " << minInliers);
+                // RCLCPP_INFO_STREAM(get_logger(), "numInliers: " << numInliers);
+                // RCLCPP_INFO_STREAM(get_logger(), "normal x " << normal.x());
+                // RCLCPP_INFO_STREAM(get_logger(), "minLiers " << minInliers);
                 // update best plane if better inlier count
                 if ((numInliers > minInliers) && (normal.x() != 0)) { 
                     RCLCPP_INFO_STREAM(get_logger(), "Updating plane");
@@ -594,7 +594,13 @@ namespace mrover {
         //Calculate the spline length
         RCLCPP_INFO_STREAM(get_logger(), "pre fromTfTree");
         // rclcpp::sleep_for(std::chrono::nanoseconds(10348));
-        SE3d planeInRover = SE3Conversions::fromTfTree(*mTfBuffer, "plane", mCameraFrameId, fuck);
+        SE3d planeInRover;
+        if (mTfBuffer->canTransform(mCameraFrameId, "plane", fuck, rclcpp::Duration(1,0))){
+            planeInRover = SE3Conversions::fromTfTree(*mTfBuffer, "plane", mCameraFrameId);
+            RCLCPP_INFO_STREAM(get_logger(), "in fromTfTree");
+        } else {
+            RCLCPP_INFO_STREAM(get_logger(), "panic");
+        }
         RCLCPP_INFO_STREAM(get_logger(), "post fromTfTree");
             // SE3Conversions::pushToTfTree(*mTfBroadcaster, "spline_point", mMapFrameId, temp, get_clock()->now());
 
