@@ -19,6 +19,15 @@ namespace mrover {
 
     class Controller {
 
+        template <typename Func>
+        void foreach_motor(Func func) {
+            for (auto& m : m_motors) {
+                if (m.has_value()) {
+                    func(m.value());
+                }
+            }
+        }
+
         /* ==================== Hardware ==================== */
         FDCAN<InBoundMessage> m_fdcan;
         TIM_HandleTypeDef* m_watchdog_timer{};
@@ -26,87 +35,24 @@ namespace mrover {
         std::array<std::optional<Motor>, 3> m_motors{};
 
         /* ==================== Error State ==================== */
+        // TODO(eric): array of these?
         BDCMCErrorInfo m_error = BDCMCErrorInfo::DEFAULT_START_UP_NOT_CONFIGURED;
 
         /* ==================== Messaging ==================== */
         InBoundMessage m_inbound = IdleCommand{};
         OutBoundMessage m_outbound = ControllerDataState{.config_calib_error_data = {.error = m_error}};
 
-        /**
-         * \brief Updates \link m_uncalib_position \endlink and \link m_velocity \endlink based on the hardware
-         */
+        /* ==================== Per-Motor Functions ==================== */
         auto update_relative_encoder() -> void {
-            if (!m_relative_encoder) return;
-
-            if (std::optional<EncoderReading> reading = m_relative_encoder->read()) {
-                auto const& [position, velocity] = reading.value();
-                m_uncalib_position = position;
-                m_velocity = velocity;
-            } else {
-                m_uncalib_position.reset();
-                m_velocity.reset();
-            }
+            foreach_motor([](auto& motor) { motor.update_relative_encoder(); });
         }
 
         auto update_limit_switches() -> void {
-            // TODO: verify this is correct
-            for (LimitSwitch& limit_switch: m_limit_switches) {
-                limit_switch.update_limit_switch();
-                // Each limit switch may have a position associated with it
-                // If we reach there update our offset position since we know exactly where we are
-
-                if (limit_switch.pressed()) {
-                    if (std::optional<Radians> readjustment_position = limit_switch.get_readjustment_position()) {
-                        if (m_uncalib_position) {
-                            if (!m_state_after_calib) m_state_after_calib.emplace();
-
-                            m_state_after_calib->offset_position = m_uncalib_position.value() - readjustment_position.value();
-                        }
-                    }
-                }
-            }
+            foreach_motor([](auto& motor) { motor.update_limit_switches(); });
         }
 
         auto drive_motor() -> void {
-            std::optional<Percent> output;
-
-            if (m_state_after_config) {
-                // TODO: verify this is correct
-                bool limit_forward = m_desired_output > 0_percent && (std::ranges::any_of(m_limit_switches, &LimitSwitch::limit_forward)
-                                         //|| m_uncalib_position > m_state_after_config->max_position
-                                     );
-                bool limit_backward = m_desired_output < 0_percent && (std::ranges::any_of(m_limit_switches, &LimitSwitch::limit_backward)
-                                          //|| m_uncalib_position < m_state_after_config->min_position
-                                      );
-                if (limit_forward || limit_backward) {
-                    m_error = BDCMCErrorInfo::OUTPUT_SET_TO_ZERO_SINCE_EXCEEDING_LIMITS;
-                } else {
-                    output = m_desired_output;
-                }
-            }
-
-            Percent output_after_limit = output.value_or(0_percent);
-            Percent delta = output_after_limit - m_throttled_output;
-
-            Seconds dt = cycle_time(m_throttle_timer, CLOCK_FREQ);
-
-            Percent applied_delta = m_throttle_rate * dt;
-
-            if (signum(output_after_limit) != signum(m_throttled_output) && signum(m_throttled_output) != 0) {
-                // If we are changing directions, go straight to zero
-                // This also includes when going to zero from a non-zero value (since signum(0) == 0), helpful for when you want to stop moving quickly on input release
-                m_throttled_output = 0_percent;
-            } else {
-                if (abs(delta) < applied_delta) {
-                    // We are very close to the desired output, just set it
-                    m_throttled_output = output_after_limit;
-                } else {
-                    m_throttled_output += applied_delta * signum(delta);
-                }
-            }
-
-
-            m_motor_driver.write(m_throttled_output);
+            foreach_motor([](auto& motor) { motor.drive_motor(); });
         }
 
         auto process_command(AdjustCommand const& message) -> void {
