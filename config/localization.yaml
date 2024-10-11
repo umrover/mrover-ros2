@@ -18,3 +18,8 @@ gps_linearization:
     ref_lat: 42.293195
     ref_lon: -83.7096706
     ref_alt: 0.0
+
+pose_filter:
+  ros__parameters:
+    world_frame: "map"
+    rover_frame: "base_link"

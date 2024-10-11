@@ -43,10 +43,10 @@ namespace mrover {
         });
 
         declare_parameter("rover_frame", rclcpp::ParameterType::PARAMETER_STRING);
-        declare_parameter("map_frame", rclcpp::ParameterType::PARAMETER_STRING);
+        declare_parameter("world_frame", rclcpp::ParameterType::PARAMETER_STRING);
 
         rover_frame = get_parameter("rover_frame").as_string();
-        world_frame = get_parameter("map_frame").as_string();
+        world_frame = get_parameter("world_frame").as_string();
 
     }
 
