@@ -60,8 +60,8 @@ namespace mrover {
                 PIDF_TIMER,
                 ABSOLUTE_I2C,
                 {
-                        LimitSwitch{Pin{LIMIT_0_0_GPIO_Port, LIMIT_0_0_Pin}},
-                        LimitSwitch{Pin{LIMIT_0_1_GPIO_Port, LIMIT_0_1_Pin}},
+                        // LimitSwitch{Pin{LIMIT_0_0_GPIO_Port, LIMIT_0_0_Pin}},
+                        // LimitSwitch{Pin{LIMIT_0_1_GPIO_Port, LIMIT_0_1_Pin}},
                         // LimitSwitch{Pin{LIMIT_0_2_GPIO_Port, LIMIT_0_2_Pin}},
                         // LimitSwitch{Pin{LIMIT_0_3_GPIO_Port, LIMIT_0_3_Pin}},
                 },
@@ -126,7 +126,6 @@ namespace mrover {
 
 } // namespace mrover
 
-// TOOD: is this really necesssary?
 extern "C" {
 
 void HAL_PostInit() {
