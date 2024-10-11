@@ -135,7 +135,7 @@ namespace mrover {
         // hint: this is an approximation that will be used later by navigation to stop "close enough" to a tag.
         // hint: try not overthink, this metric does not have to be perfectly accurate, just correlated to distance away from a tag
         std::pair<float, float> center = getCenterFromTagCorners(tagCorners);
-        float tagArea = 4 * (tagCorners[0].x - center.first) * (tagCorners[0].y - center.second);
+        float tagArea = abs(tagCorners[0].x - tagCorners[1].x) * abs(tagCorners[0].y - tagCorners[2].y);
         uint32_t imageArea = image.cols * image.rows;
         return tagArea / (float) imageArea;
     }
@@ -144,7 +144,7 @@ namespace mrover {
     auto Perception::getCenterFromTagCorners(std::vector<cv::Point2f> const& tagCorners) -> std::pair<float, float> { // NOLINT(*-convert-member-functions-to-static)
         std::pair<float, float> center;
         for (auto tagCorner: tagCorners) {
-            center = {(center.first + tagCorner.x) / 4, (center.second + tagCorner.y) / 4};
+            center = {(center.first + tagCorner.x) / 4, (center.second + tagCorner.y) / 4} * 10;
         }
         return center;
     }

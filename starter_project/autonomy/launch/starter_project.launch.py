@@ -29,14 +29,14 @@ def generate_launch_description():
             # ==========
             # Perception
             # ==========
-            #perception_node,
+            perception_node,
             # ===========
             # Navigation
             # ===========
-            #navigation_node,
+            navigation_node,
             # ============
             # Localization
             # ============
-            #localization_node,
+            localization_node,
         ]
     )
