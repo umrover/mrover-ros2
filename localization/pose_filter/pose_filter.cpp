@@ -3,7 +3,7 @@
 namespace mrover {
     
 
-    auto PoseFilter::rosQuaternionToEigenQuaternion(geometry_msgs::msg::Quaternion const& q) -> Eigen::Quaterniond {
+    auto PoseFilter::ros_quat_to_eigen_quat(geometry_msgs::msg::Quaternion const& q) -> Eigen::Quaterniond {
         return {q.w, q.x, q.y, q.z};
     }
 
@@ -59,11 +59,11 @@ namespace mrover {
         bool mag_fully_calibrated = calibration_status && calibration_status->magnetometer_calibration == FULL_CALIBRATION;
 
         if (!mag_fully_calibrated && current_imu_calib && correction_rotation) {
-            SO3d uncalibrated_orientation = rosQuaternionToEigenQuaternion(current_imu_uncalib->orientation);
+            SO3d uncalibrated_orientation = ros_quat_to_eigen_quat(current_imu_uncalib->orientation);
             pose_in_map.asSO3() = correction_rotation.value() * uncalibrated_orientation;
         }
         else if (current_imu_calib) {
-            SO3d calibrated_orientation = rosQuaternionToEigenQuaternion(current_imu_calib->orientation);
+            SO3d calibrated_orientation = ros_quat_to_eigen_quat(current_imu_calib->orientation);
             pose_in_map.asSO3() = calibrated_orientation;
         }
         else {
@@ -162,7 +162,7 @@ namespace mrover {
 
         double corrected_heading_in_map = std::atan2(rover_velocity_sum.y(), rover_velocity_sum.x());
 
-        SO3d uncorrected_orientation = rosQuaternionToEigenQuaternion(current_imu_uncalib->orientation);
+        SO3d uncorrected_orientation = ros_quat_to_eigen_quat(current_imu_uncalib->orientation);
         R2d uncorrected_forward = uncorrected_orientation.rotation().col(0).head<2>();
         double estimated_heading_in_map = std::atan2(uncorrected_forward.y(), uncorrected_forward.x());
 

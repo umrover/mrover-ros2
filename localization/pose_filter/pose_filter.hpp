@@ -8,7 +8,7 @@ namespace mrover {
 
     private:
 
-        auto rosQuaternionToEigenQuaternion(geometry_msgs::msg::Quaternion const& q) -> Eigen::Quaterniond;
+        auto ros_quat_to_eigen_quat(geometry_msgs::msg::Quaternion const& q) -> Eigen::Quaterniond;
 
         void pose_sub_callback(geometry_msgs::msg::Vector3Stamped::ConstSharedPtr const& msg);
 
