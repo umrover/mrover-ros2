@@ -224,6 +224,11 @@ target_link_libraries(simulator
 )
 target_include_directories(simulator SYSTEM PRIVATE ${BULLET_INCLUDE_DIRS} ${OPENCV_INCLUDE_DIRS})
 
+# Localization
+
+mrover_add_node(rover_gps_driver localization/rover_gps_driver.cpp)
+ament_target_dependencies(rover_gps_driver rclcpp sensor_msgs)
+
 # Perception
 
 mrover_add_node(tag_detector perception/tag_detector/*.cpp perception/tag_detector/pch.hpp)

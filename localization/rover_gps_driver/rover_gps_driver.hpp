@@ -3,22 +3,26 @@
 #include "pch.hpp"
 
 namespace mrover {
-    class RoverDriverNode : public rclcpp::Node {
+
+    class RoverGPSDriver : public rclcpp::Node {
+
     private:
-        void process_rtcm(Message rtcm_message);
-        void process_unicore(std::string unicore_message);
+        void process_rtcm(rtcm_msgs::msg::Message::ConstSharedPtr rtcm_msg);
+        void process_unicore(std::string unicore_msg);
 
         rclcpp::Publisher<sensor_msgs::msg::NavSatFix>::SharedPtr gps_pub;
-        rclcppp::Publisher<mrover::msg::RTKStatus>::SharedPtr rtk_status_pub;
+        rclcpp::Publisher<mrover::msg::RTKStatus>::SharedPtr rtk_status_pub;
         rclcpp::Subscriber<rtcm_msgs::msg::Message>::SharedPtr rtcm_sub;
 
-        const unsigned short baud;
-        const std::string port;
+        boost::asio::basic_serial_port<boost::asio::io_context::executor_type> serial;
 
-
+        unsigned short baud;
+        std::string port;
 
     public:
-        RoverDriverNode();
+        explicit RoverGPSDriver(boost::asio::io_context& io);
+        void spin();
+
     }; // class RoverDriverNode
 } // namespace mrover
 
