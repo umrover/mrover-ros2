@@ -41,26 +41,26 @@ simulator:
         type: urdf
         uri: package://mrover/urdf/world/large_rock.urdf.xacro
         position: [ 6.0, 6.0, 1.5 ]
-      # large_rock1:
-      #   type: urdf
-      #   uri: package://mrover/urdf/world/large_rock.urdf.xacro
-      #   position: [ 7.0, 7.0, 1.5 ]
-      # medium_rock0:
-      #   type: urdf
-      #   uri: package://mrover/urdf/world/medium_rock.urdf.xacro
-      #   position: [ 5.0, 5.0, 1.5 ]
-      # medium_rock1:
-      #   type: urdf
-      #   uri: package://mrover/urdf/world/medium_rock.urdf.xacro
-      #   position: [ 5.0, 4.0, 1.5 ]
-      # small_rock0:
-      #   type: urdf
-      #   uri: package://mrover/urdf/world/small_rock.urdf.xacro
-      #   position: [ 5.0, 3.0, 1.5 ]
-      # small_rock1:
-      #   type: urdf
-      #   uri: package://mrover/urdf/world/small_rock.urdf.xacro
-      #   position: [ 3.0, 4.0, 1.5 ]
+      large_rock1:
+        type: urdf
+        uri: package://mrover/urdf/world/large_rock.urdf.xacro
+        position: [ 7.0, 7.0, 1.5 ]
+      medium_rock0:
+        type: urdf
+        uri: package://mrover/urdf/world/medium_rock.urdf.xacro
+        position: [ 5.0, 5.0, 1.5 ]
+      medium_rock1:
+        type: urdf
+        uri: package://mrover/urdf/world/medium_rock.urdf.xacro
+        position: [ 5.0, 4.0, 1.5 ]
+      small_rock0:
+        type: urdf
+        uri: package://mrover/urdf/world/small_rock.urdf.xacro
+        position: [ 5.0, 3.0, 1.5 ]
+      small_rock1:
+        type: urdf
+        uri: package://mrover/urdf/world/small_rock.urdf.xacro
+        position: [ 3.0, 4.0, 1.5 ]
 
     # TODO(quintin): Avoid storing these in multiple config files
     ref_lat: 38.4225202
