@@ -1,3 +1,6 @@
+#include <cmath>
+#include <execution>
+#include <random>
 #define WEBGPU_CPP_IMPLEMENTATION
 
 #include "simulator.hpp"
@@ -575,6 +578,33 @@ namespace mrover {
                         std::memcpy(toMessage, fromCompute, stereoCamera.pointCloudStagingBuffer.getSize());
                         stereoCamera.pointCloudStagingBuffer.unmap();
                         stereoCamera.pointCloudFuture.reset();
+
+                        std::random_device rd;
+                        std::mt19937 genPose(rd());
+                        std::normal_distribution<float> dPose(0, 0.01); // mean 0 m, std dev. 0.1 m
+
+                        std::mt19937 genNorm(rd());
+                        std::normal_distribution<float> dNorm(0, 0.01); // mean 0 m, std dev. 0.01
+
+                        auto *const pointPtr = reinterpret_cast<Point*>(pointCloud->data.data());
+                        std::for_each(std::execution::par_unseq, pointPtr, pointPtr + pointCloud->height * pointCloud->width, [&](Point& point) {
+                            std::size_t i = &point - pointPtr;
+                            Point& p = pointPtr[i];
+                            
+                            // add noise to xyz loc 
+                            p.x += dPose(genPose);
+                            p.y += dPose(genPose);
+                            p.z += dPose(genPose);
+
+                            // add noise to normal vectors
+                            // this will work execpt for when the normals are perfectly
+                            // in either the x or y direction, but close enough
+                            p.normal_x += dNorm(genNorm);
+                            p.normal_y += dNorm(genNorm);
+
+                            float sigZ = (p.normal_z < 0) ? -1.0f : 1.0f;
+                            p.normal_z = sigZ * sqrt(1 - p.normal_x * p.normal_x + p.normal_y * p.normal_y);
+                        });
 
                         stereoCamera.pcPub->publish(std::move(pointCloud));
                     }
