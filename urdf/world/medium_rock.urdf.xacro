@@ -16,7 +16,7 @@
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://mrover/urdf/meshes/medium_rock.fbx"/>
+        <mesh filename="package://mrover/urdf/meshes/medium_rock_decimated.fbx"/>
       </geometry>
     </collision>
   </link>
