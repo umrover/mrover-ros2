@@ -12,7 +12,7 @@ namespace mrover {
 
         rclcpp::Publisher<sensor_msgs::msg::NavSatFix>::SharedPtr gps_pub;
         rclcpp::Publisher<mrover::msg::RTKStatus>::SharedPtr rtk_status_pub;
-        rclcpp::Subscriber<rtcm_msgs::msg::Message>::SharedPtr rtcm_sub;
+        rclcpp::Subscription<rtcm_msgs::msg::Message>::SharedPtr rtcm_sub;
 
         boost::asio::basic_serial_port<boost::asio::io_context::executor_type> serial;
 

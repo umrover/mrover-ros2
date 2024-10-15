@@ -24,11 +24,12 @@ namespace mrover {
     }
 
     void RoverGPSDriver::process_rtcm(rtcm_msgs::msg::Message::ConstSharedPtr rtcm_msg) {
-        boost::asio::write(serial, boost::asio::buffer(rtcm_msg.message));
+        boost::asio::write(serial, boost::asio::buffer(rtcm_msg->message));
     }
 
+    // just want to log the messages for now
     void RoverGPSDriver::process_unicore(std::string unicore_msg) {
-        RCLCPP_INFO(get_logger(), "Message: " + unicore_msg);
+        RCLCPP_INFO(get_logger(), ("Message: " + unicore_msg).c_str());
     }
 
     void RoverGPSDriver::spin() {
