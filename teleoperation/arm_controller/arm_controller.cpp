@@ -1,4 +1,6 @@
 #include "arm_controller.hpp"
+#include "mrover/msg/detail/arm_status__struct.hpp"
+#include "mrover/msg/detail/position__struct.hpp"
 
 namespace mrover {
 
@@ -19,10 +21,16 @@ namespace mrover {
 
     void ArmController::ikCallback(msg::IK::ConstSharedPtr const& ik_target) {
         SE3d targetFrameToArmBaseLink;
+
+        //Arm Position message
+        msg::ArmStatus armStatus;
+
         try {
             targetFrameToArmBaseLink = SE3Conversions::fromTfTree(mTfBuffer, ik_target->target.header.frame_id, "arm_base_link");
         } catch (tf2::TransformException const& exception) {
             RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, std::format("Failed to get transform from {} to arm_base_link: {}", ik_target->target.header.frame_id, exception.what()));
+            armStatus.status = false;
+            mArmStatusPub->publish(armStatus);
             return;
         }
         SE3d endEffectorInTarget{{ik_target->target.pose.position.x, ik_target->target.pose.position.y, ik_target->target.pose.position.z}, SO3d::Identity()};
@@ -47,6 +55,8 @@ namespace mrover {
         double q2 = -thetaB + 0.1608485915;
         double q3 = -thetaC - 0.1608485915;
 
+
+
         if (std::isfinite(q1) && std::isfinite(q2) && std::isfinite(q3)) {
             SE3d jointBPose{{0.034346, 0, 0.049024}, SO3d::Identity()};
             SE3d jointCPose{{LINK_BC * cos(thetaA), 0, LINK_BC * sin(thetaA)}, yawSo3(-thetaA)};
@@ -56,6 +66,7 @@ namespace mrover {
             SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_c_target", "arm_b_target", jointCPose, get_clock()->now());
             SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_d_target", "arm_c_target", jointDPose, get_clock()->now());
             SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_e_target", "arm_d_target", jointEPose, get_clock()->now());
+
 
             if (y >= JOINT_A_MIN && y <= JOINT_A_MAX &&
                 q1 >= JOINT_B_MIN && q1 <= JOINT_B_MAX &&
@@ -70,12 +81,19 @@ namespace mrover {
                         static_cast<float>(q3),
                 };
                 mPosPub->publish(positions);
+
+                armStatus.status = true;
             } else {
                 RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1000, "Can not reach target within arm limits!");
+
+                armStatus.status = false;
             }
         } else {
             RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1000, "Can not solve for arm target!");
+            armStatus.status = false;
         }
+
+        mArmStatusPub->publish(armStatus);
     }
 
 } // namespace mrover
