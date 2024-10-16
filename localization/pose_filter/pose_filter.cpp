@@ -35,6 +35,7 @@ namespace mrover {
         });
 
         imu_calib_sub = this->create_subscription<sensor_msgs::msg::Imu>("/imu/data", 1, [&](sensor_msgs::msg::Imu::ConstSharedPtr const& imu) {
+            imu_watchdog->reset();
             current_imu_calib = *imu;
         });
 
