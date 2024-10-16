@@ -1,4 +1,5 @@
 #include "cost_map.hpp"
+#include <memory>
 
 namespace mrover {
 
@@ -18,12 +19,26 @@ namespace mrover {
         return gridY * static_cast<int>(grid.info.width) + gridX;
     }
 
-    auto CostMapNode::pointCloudCallback(sensor_msgs::msg::PointCloud2::ConstSharedPtr const& msg) -> void {
-        assert(msg);
-        assert(msg->height > 0);
-        assert(msg->width > 0);
+    auto CostMapNode::pointCloudCallback(sensor_msgs::msg::PointCloud2::UniquePtr const& inputMsg) -> void {
+        assert(inputMsg);
+        assert(inputMsg->height > 0);
+        assert(inputMsg->width > 0);
+	
+		// Choose whether we are using a noisy pointcloud or a regular pointcloud
+		// TODO (john): change to shader
+		sensor_msgs::msg::PointCloud2::UniquePtr noisyMsg = createNoisyPointCloud(inputMsg);
 
-        // if (!mLastImuTime || ros::Time::now() - mLastImuTime.value() > ros::Duration{IMU_WATCHDOG_TIMEOUT}) return;
+        if constexpr (useNoisyPointCloud) {
+            mInliers.clear();
+        }
+
+		sensor_msgs::msg::PointCloud2::UniquePtr const& msg = [&]() -> sensor_msgs::msg::PointCloud2::UniquePtr const& {
+			if constexpr (useNoisyPointCloud){
+				return noisyMsg;
+			}else{
+				return inputMsg;
+			}
+		}();
 
         try {
             SE3f cameraToMap = SE3Conversions::fromTfTree(mTfBuffer, "zed_left_camera_frame", "map").cast<float>();
@@ -41,13 +56,22 @@ namespace mrover {
             for (std::size_t r = 0; r < msg->height; r += mDownSamplingFactor) {
                 for (std::size_t c = 0; c < msg->width; c += mDownSamplingFactor) {
                     Point const& point = points[r * msg->width + c];
+
                     R3f pointInCamera{point.x, point.y, point.z};
 
                     // Points with no stereo correspondence are NaN's, so ignore them
                     if (pointInCamera.hasNaN()) continue;
 
-                    if (double distanceSquared = pointInCamera.squaredNorm();
-                        distanceSquared < square(mNearClip) || distanceSquared > square(mFarClip)) continue;
+                    if (pointInCamera.y() > mRightClip &&
+						pointInCamera.y() < mLeftClip &&
+						pointInCamera.x() < mFarClip &&
+						pointInCamera.x() > mNearClip){
+						if constexpr (uploadDebugPointCloud){
+							mInliers.push_back(point);
+						}	
+					}else{
+						continue;
+					}
 
                     R3f pointInMap = cameraToMap.act(pointInCamera);
 
@@ -57,6 +81,10 @@ namespace mrover {
                     bins[index].emplace_back(BinEntry{pointInCamera, pointInMap});
                 }
             }
+			
+			if constexpr (uploadDebugPointCloud){
+				uploadPC();
+			}
 
             for (std::size_t i = 0; i < mGlobalGridMsg.data.size(); ++i) {
                 Bin& bin = bins[i];
@@ -89,6 +117,22 @@ namespace mrover {
         } catch (tf2::TransformException const& e) {
             RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, std::format("TF tree error processing point cloud: {}", e.what()));
         }
+    }
+
+	void CostMapNode::uploadPC() {
+        auto debugPointCloudPtr = std::make_unique<sensor_msgs::msg::PointCloud2>();
+        fillPointCloudMessageHeader(debugPointCloudPtr);
+        debugPointCloudPtr->is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
+        debugPointCloudPtr->is_dense = true;
+        debugPointCloudPtr->height = 1;
+        debugPointCloudPtr->width = mInliers.size();
+        debugPointCloudPtr->header.stamp = get_clock()->now();
+        debugPointCloudPtr->header.frame_id = "zed_left_camera_frame";
+        debugPointCloudPtr->data.resize(mInliers.size() * sizeof(Point));
+
+		std::memcpy(debugPointCloudPtr->data.data(), mInliers.data(), mInliers.size() * sizeof(Point));
+
+    	mPCDebugPub->publish(std::move(debugPointCloudPtr));
     }
 
     auto CostMapNode::moveCostMapCallback(mrover::srv::MoveCostMap::Request::ConstSharedPtr& req, mrover::srv::MoveCostMap::Response::SharedPtr& res) -> void {

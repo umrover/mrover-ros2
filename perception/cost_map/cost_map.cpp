@@ -1,4 +1,5 @@
 #include "cost_map.hpp"
+#include <sensor_msgs/msg/detail/point_cloud2__struct.hpp>
 
 namespace mrover {
 
@@ -11,6 +12,8 @@ namespace mrover {
             {"map_frame", mMapFrame, "map"},
             {"near_clip", mNearClip, 0.5},
             {"far_clip", mFarClip, 10.0},
+            {"left_clip", mRightClip, -2.0},
+            {"right_clip", mLeftClip, 2.0},
             {"z_percent", mZPercent, 0.1},
             {"alpha", mAlpha, 0.05},
             {"z_threshold", mZThreshold, 0.0}
@@ -24,9 +27,11 @@ namespace mrover {
                                                                                                           mrover::srv::MoveCostMap::Response::SharedPtr response) {
             moveCostMapCallback(request, response);
         });
-        mPcSub = create_subscription<sensor_msgs::msg::PointCloud2>("/zed/left/points", 1, [this](sensor_msgs::msg::PointCloud2::ConstSharedPtr const& msg) {
+        mPcSub = create_subscription<sensor_msgs::msg::PointCloud2>("/zed/left/points", 1, [this](sensor_msgs::msg::PointCloud2::UniquePtr const& msg) {
             pointCloudCallback(msg);
         });
+
+        mPCDebugPub = create_publisher<sensor_msgs::msg::PointCloud2>("cost_map/debug_pc", 1);
         // mImuSub = mNh.subscribe<sensor_msgs::Imu>("imu/data", 1, [this](sensor_msgs::ImuConstPtr const&) {
         //     mLastImuTime = ros::Time::now();
         // });

@@ -10,6 +10,12 @@ namespace mrover {
 
         constexpr static double TAU = 2 * std::numbers::pi;
 
+		// Noise/Debug Vars
+		constexpr static bool useNoisyPointCloud = true;
+		constexpr static bool uploadDebugPointCloud = true;
+		rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr mPCDebugPub;
+		std::vector<Point> mInliers;
+
         rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr mCostMapPub;
         rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr mPcSub;
 
@@ -19,12 +25,12 @@ namespace mrover {
 
         double mZPercent{}, mZThreshold{};
         double mAlpha{};
-        double mNearClip{}, mFarClip{};
+        double mNearClip{}, mFarClip{}, mLeftClip{}, mRightClip{};
         double mResolution{}; // Meters per cell
         double mSize{};       // Size of the square costmap in meters
         int mDownSamplingFactor = 4;
         std::string mMapFrame;
-
+		
         tf2_ros::Buffer mTfBuffer{get_clock()};
         tf2_ros::TransformListener mTfListener{mTfBuffer};
 
@@ -38,9 +44,11 @@ namespace mrover {
 
         ~CostMapNode() override = default;
 
-        auto pointCloudCallback(sensor_msgs::msg::PointCloud2::ConstSharedPtr const& msg) -> void;
+        auto pointCloudCallback(sensor_msgs::msg::PointCloud2::UniquePtr const& inputMsg) -> void;
 
         auto moveCostMapCallback(mrover::srv::MoveCostMap::Request::ConstSharedPtr& req, mrover::srv::MoveCostMap::Response::SharedPtr& res) -> void;
+
+		void uploadPC();
     };
 
 } // namespace mrover

@@ -6,6 +6,8 @@
 #include <format>
 #include <numbers>
 #include <memory>
+#include <numeric>
+#include <random>
 
 #include <Eigen/Core>
 

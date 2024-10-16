@@ -3,6 +3,9 @@
 #include "sensor_msgs/image_encodings.hpp"
 #include "sensor_msgs/msg/image.hpp"
 #include <cstdint>
+#include <random>
+#include <cmath>
+#include <execution>
 #include <sensor_msgs/distortion_models.hpp>
 #include <sensor_msgs/image_encodings.hpp>
 #include <sensor_msgs/msg/camera_info.hpp>
@@ -40,4 +43,36 @@ namespace mrover {
                 "curvature", 1, sensor_msgs::msg::PointField::FLOAT32);
     }
 
+	inline auto createNoisyPointCloud(sensor_msgs::msg::PointCloud2::UniquePtr const& msg) -> sensor_msgs::msg::PointCloud2::UniquePtr {
+		// Copy the PointCloud Message
+		sensor_msgs::msg::PointCloud2::UniquePtr ptr = std::make_unique<sensor_msgs::msg::PointCloud2>(*msg);
+        std::random_device rd;
+        std::mt19937 genPose(rd());
+        std::normal_distribution<float> dPose(0, 0.01); // mean 0 m, std dev. 0.1 m
+
+        std::mt19937 genNorm(rd());
+        std::normal_distribution<float> dNorm(0, 0.01); // mean 0 m, std dev. 0.01
+
+        auto * pointPtr = reinterpret_cast<Point*>(ptr->data.data());
+        std::for_each(pointPtr, pointPtr + msg->height * msg->width, [&](Point& point) {
+            std::size_t i = &point - pointPtr;
+            Point& p = pointPtr[i];
+            
+            // add noise to xyz loc 
+            p.x += dPose(genPose);
+            p.y += dPose(genPose);
+            p.z += dPose(genPose);
+
+            // add noise to normal vectors
+            // this will work execpt for when the normals are perfectly
+            // in either the x or y direction, but close enough
+            p.normal_x += dNorm(genNorm);
+            p.normal_y += dNorm(genNorm);
+
+            float sigZ = (p.normal_z < 0) ? -1.0f : 1.0f;
+            p.normal_z = sigZ * std::sqrt(1 - p.normal_x * p.normal_x + p.normal_y * p.normal_y);
+        });
+
+		return ptr;
+	}
 } // namespace mrover
