@@ -5,6 +5,7 @@ project(mrover VERSION 2025.0.0 LANGUAGES C CXX)
 cmake_policy(SET CMP0148 OLD)
 
 set(CMAKE_CXX_STANDARD 23)
+set(CXX_STANDARD_REQUIRED ON)
 
 # Generate compile_commands.json for clangd language server.
 # Can be used by VSCode, CLion, VIM, etc.
@@ -248,10 +249,16 @@ if(ZED_FOUND AND CUDA_FOUND)
 	)
 
 	# ZED Wrapper
-	mrover_add_node(zed perception/zed_wrapper/*.c* perception/zed_wrapper/pch.hpp)
-	target_compile_options(zed PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-std=c++20>)
+    # add_library(zed SHARED perception/zed_wrapper/zed_wrapper.cpp perception/zed_wrapper/ perception/zed_wrapper/pch.hpp)
+    # target_compile_definitions(zed PRIVATE "COMPOSITION_BUILDING_DLL")
+    # ament_target_dependencies(zed rclcpp rclcpp_components sensor_msgs ZED CUDA tf2 tf2_ros)
+    # rclcpp_components_register_nodes(zed "mrover::ZedWrapper")
+    # set(node_plugins "${node_plugins}mrover::ZedWrapper;$<TARGET_FILE:zed_wrapper>\n")
+
+    mrover_add_component(zed perception/zed_wrapper/*.c* perception/zed_wrapper/pch.hpp)
+	# target_compile_options(zed PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-std=c++20>)
 	target_link_libraries(zed parameter_utils lie MANIF::manif ${CUDA_LIBRARIES} loop_profiler cuda_compiler_flags)
-	ament_target_dependencies(zed rclcpp sensor_msgs ZED CUDA tf2 tf2_ros)
+	ament_target_dependencies(zed rclcpp rclcpp_components sensor_msgs ZED CUDA tf2 tf2_ros)
 
 	# Learning Library
     # TODO(john): Update to use the new API

@@ -315,9 +315,5 @@ namespace mrover {
     }
 }; // namespace mrover
 
-auto main(int argc, char* argv[]) -> int {
-    rclcpp::init(argc, argv);
-    rclcpp::spin(std::make_shared<mrover::ZedWrapper>());
-    rclcpp::shutdown();
-    return 0;
-}
+#include "rclcpp_components/register_node_macro.hpp"
+RCLCPP_COMPONENTS_REGISTER_NODE(mrover::ZedWrapper)
