@@ -13,7 +13,7 @@ namespace mrover {
     }
 
 
-    ZedWrapper::ZedWrapper() : Node(NODE_NAME, rclcpp::NodeOptions().use_intra_process_comms(true)), mLoopProfilerGrab{get_logger()}, mLoopProfilerUpdate{get_logger()} {
+    ZedWrapper::ZedWrapper(rclcpp::NodeOptions const& options) : Node(NODE_NAME, options), mLoopProfilerGrab{get_logger()}, mLoopProfilerUpdate{get_logger()} {
         try {
             RCLCPP_INFO(this->get_logger(), "Created Zed Wrapper Node, %s", NODE_NAME);
 
@@ -315,9 +315,5 @@ namespace mrover {
     }
 }; // namespace mrover
 
-auto main(int argc, char* argv[]) -> int {
-    rclcpp::init(argc, argv);
-    rclcpp::spin(std::make_shared<mrover::ZedWrapper>());
-    rclcpp::shutdown();
-    return 0;
-}
+#include "rclcpp_components/register_node_macro.hpp"
+RCLCPP_COMPONENTS_REGISTER_NODE(mrover::ZedWrapper)
