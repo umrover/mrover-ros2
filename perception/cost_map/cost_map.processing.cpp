@@ -52,6 +52,7 @@ namespace mrover {
             std::vector<Bin> bins;
             bins.resize(mGlobalGridMsg.data.size());
 
+			// Clips the point cloud and fills bins the points
             auto* points = reinterpret_cast<Point const*>(msg->data.data());
             for (std::size_t r = 0; r < msg->height; r += mDownSamplingFactor) {
                 for (std::size_t c = 0; c < msg->width; c += mDownSamplingFactor) {
@@ -82,26 +83,16 @@ namespace mrover {
                 }
             }
 			
+			// If we are using the debug point cloud publish it
 			if constexpr (uploadDebugPointCloud){
 				uploadPC();
 			}
 
             for (std::size_t i = 0; i < mGlobalGridMsg.data.size(); ++i) {
-                Bin& bin = bins[i];
-                if (bin.size() < 16) continue;
-
-                std::size_t pointsHigh = std::ranges::count_if(bin, [this](BinEntry const& entry) {
-                    return entry.pointInCamera.z() > mZThreshold;
-                });
-                double percent = static_cast<double>(pointsHigh) / static_cast<double>(bin.size());
-
-                std::int8_t cost = percent > mZPercent ? OCCUPIED_COST : FREE_COST;
-
-                // Update cell with EWMA acting as a low-pass filter
-                auto& cell = mGlobalGridMsg.data[i];
-                cell = static_cast<std::int8_t>(mAlpha * cost + (1 - mAlpha) * cell);
+				// TODO: fill out cost map grid using height (z) and EWMA
             }
 
+			// Square Dilate operation
             nav_msgs::msg::OccupancyGrid postProcesed = mGlobalGridMsg;
             std::array<std::ptrdiff_t, 9> dis{0,
                                               -1, +1, -postProcesed.info.width, +postProcesed.info.width,
