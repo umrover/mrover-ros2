@@ -2,7 +2,7 @@
 
 namespace mrover {
 
-    ObjectDetectorBase::ObjectDetectorBase() : rclcpp::Node(NODE_NAME), mLoopProfiler{get_logger()} {
+    ObjectDetectorBase::ObjectDetectorBase(rclcpp::NodeOptions const& options) : rclcpp::Node(NODE_NAME, options), mLoopProfiler{get_logger()} {
         std::string modelName;
         float modelScoreThreshold{};
         float modelNMSThreshold{};
@@ -36,7 +36,7 @@ namespace mrover {
         RCLCPP_INFO_STREAM(get_logger(), std::format("Object detector initialized with model: {} and thresholds: {} and {}", mModel.modelName, modelScoreThreshold, modelNMSThreshold));
     }
 
-    StereoObjectDetector::StereoObjectDetector() {
+    StereoObjectDetector::StereoObjectDetector(rclcpp::NodeOptions const& options) : ObjectDetectorBase(options) {
         RCLCPP_INFO_STREAM(get_logger(), "Creating Stereo Object Detector...");
 
         mDebugImgPub = create_publisher<sensor_msgs::msg::Image>("/stereo_object_detector/debug_img", 1);
@@ -46,7 +46,7 @@ namespace mrover {
         });
     }
 
-    ImageObjectDetector::ImageObjectDetector() {
+    ImageObjectDetector::ImageObjectDetector(rclcpp::NodeOptions const& options) : ObjectDetectorBase(options) {
         RCLCPP_INFO_STREAM(get_logger(), "Creating Image Object Detector...");
 
         std::vector<ParameterWrapper> params{
@@ -65,18 +65,7 @@ namespace mrover {
 } // namespace mrover
 
 
-auto main(int argc, char** argv) -> int {
-    rclcpp::init(argc, argv);
 
-    // DO NOT REMOVE OR ELSE REF COUNT WILL GO TO ZERO
-    auto imgOD = std::make_shared<mrover::ImageObjectDetector>();
-    auto stereoOD = std::make_shared<mrover::StereoObjectDetector>();
-
-    rclcpp::executors::SingleThreadedExecutor executor;
-    executor.add_node(imgOD);
-    executor.add_node(stereoOD);
-    executor.spin();
-
-    rclcpp::shutdown();
-    return EXIT_SUCCESS;
-}
+#include "rclcpp_components/register_node_macro.hpp"
+RCLCPP_COMPONENTS_REGISTER_NODE(mrover::StereoObjectDetector)
+RCLCPP_COMPONENTS_REGISTER_NODE(mrover::ImageObjectDetector)

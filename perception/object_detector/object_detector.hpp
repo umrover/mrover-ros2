@@ -77,7 +77,7 @@ namespace mrover {
         auto static preprocessYOLOv8Input(Model const& model, cv::Mat& rgbImage, cv::Mat& blobSizedImage, cv::Mat& blob) -> void;
 
     public:
-        explicit ObjectDetectorBase();
+        explicit ObjectDetectorBase(rclcpp::NodeOptions const& options = rclcpp::NodeOptions());
 
         ~ObjectDetectorBase() override = default;
     };
@@ -87,7 +87,7 @@ namespace mrover {
         rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr mSensorSub;
 
     public:
-        explicit StereoObjectDetector();
+        explicit StereoObjectDetector(rclcpp::NodeOptions const& options = rclcpp::NodeOptions());
 
         static auto convertPointCloudToRGB(sensor_msgs::msg::PointCloud2::UniquePtr const& msg, cv::Mat const& image) -> void;
 
@@ -103,7 +103,7 @@ namespace mrover {
         float mCameraHorizontalFov{};
 
     public:
-        explicit ImageObjectDetector();
+        explicit ImageObjectDetector(rclcpp::NodeOptions const& options = rclcpp::NodeOptions());
 
         auto getTagBearing(cv::InputArray image, cv::Rect const& box) const -> float;
 
