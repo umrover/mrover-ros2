@@ -89,7 +89,7 @@ namespace mrover {
 			}
 
             for (std::size_t i = 0; i < mGlobalGridMsg.data.size(); ++i) {
-				// TODO: fill out cost map grid using height (z) and EWMA
+				// TODO: fill out cost map grid using height (z) and EWMA (alpha = mAlpha)
             }
 
 			// Square Dilate operation
