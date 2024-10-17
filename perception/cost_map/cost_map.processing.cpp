@@ -47,6 +47,7 @@ namespace mrover {
                 R3f pointInCamera;
                 R3f pointInMap;
             };
+
             using Bin = std::vector<BinEntry>;
 
             std::vector<Bin> bins;
