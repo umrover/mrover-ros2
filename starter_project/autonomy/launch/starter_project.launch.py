@@ -58,10 +58,10 @@ def generate_launch_description():
         # ===========
         # Navigation
         # ===========
-        # navigation_node,
+        navigation_node,
 
         # ============
         # Localization
         # ============
-        # localization_node
+        localization_node
     ])
