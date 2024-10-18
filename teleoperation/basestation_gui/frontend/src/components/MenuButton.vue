@@ -1,11 +1,10 @@
 <template>
-  <div class="menu-btn">
-    <a :href="link">{{ name }}</a>
-  </div>
+  <a class="btn btn-primary" :href="link">{{ name }}</a>
 </template>
+<script lang="ts">
+import { defineComponent } from 'vue'
 
-<script>
-export default {
+export default defineComponent({
   name: 'MenuButton',
 
   props: {
@@ -17,27 +16,17 @@ export default {
       type: String,
       required: true
     }
-  }
-}
+  },
+})
 </script>
 
 <style scoped>
-.menu-btn {
-  font-size: 3em;
-  border: black solid 1px;
-  border-radius: 5px;
-  margin: 0px 5px;
-  padding: 0px 5px;
-  transition: 0.25s;
-  background-color: silver;
-}
+a {
+  margin: 5px;
+  width: 250px;
+  height: 150px;
 
-.menu-btn:hover {
-  background-color: gray;
-}
-
-.menu-btn a {
   text-decoration: none;
-  color: black;
+  color: white;
 }
 </style>
