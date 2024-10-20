@@ -13,6 +13,7 @@ import tf2_ros
 import numpy as np
 from backend.drive_controls import send_joystick_twist
 from backend.input import DeviceInputs
+from backend.models import AutonTyping
 from mrover.msg import WheelCmd
 from geometry_msgs.msg import Twist
 
@@ -64,6 +65,16 @@ class GUIConsumer(JsonWebsocketConsumer):
         except Exception as e:
             node.get_logger().warning(f"Failed to send message: {e}")
 
+    def get_auton_typing_message(self) -> None:
+        self.send_message_as_json(
+            {
+                "type": "get_auton_typing_message",
+                "data": [
+                    {"typingMessage": AutonTyping.objects.typingMessage}
+                ],
+            }
+        )
+
 
     def receive(self, text_data=None, bytes_data=None, **kwargs) -> None:
         """
@@ -92,8 +103,9 @@ class GUIConsumer(JsonWebsocketConsumer):
                     device_input = DeviceInputs(axes, buttons)
                     send_joystick_twist(device_input)
                 case _:
-                    # node.get_logger().warning(f"Unhandled message: {message}")
-                    pass
+                    match message["type"]:
+                        case "get_auton_typing_message":
+                            self.get_auton_typing_message()
 
         except:
             # node.get_logger().error(f"Failed to handle message: {message}")
