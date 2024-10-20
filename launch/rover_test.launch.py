@@ -19,12 +19,12 @@ def generate_launch_description():
         parameters=[os.path.join(get_package_share_directory("mrover"), "config", "localization.yaml")],
     )
 
-    rover_gps_driver_node = Node(
-        package="mrover",
-        executable="rover_gps_driver.py",
-        name="rover_gps_driver",
-        parameters=[os.path.join(get_package_share_directory("mrover"), "config", "localization.yaml")],
-    )
+    # rover_gps_driver_node = Node(
+    #     package="mrover",
+    #     executable="rover_gps_driver.py",
+    #     name="rover_gps_driver",
+    #     parameters=[os.path.join(get_package_share_directory("mrover"), "config", "localization.yaml")],
+    # )
 
     pose_filter_node = Node(
         package="mrover",
@@ -36,7 +36,7 @@ def generate_launch_description():
     return LaunchDescription(
         [
             gps_linearization_node,
-            rover_gps_driver_node,
+            # rover_gps_driver_node,
             pose_filter_node,
         ]
     )
