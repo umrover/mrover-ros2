@@ -45,10 +45,11 @@ namespace mrover {
 
 int main(int argc, char**argv) {
 
+    rclcpp::init(argc, argv);
+
     boost::asio::io_context io;
     auto node = std::make_shared<mrover::RoverGPSDriver>(io);
 
-    rclcpp::init(argc, argv);
     node->spin();
     rclcpp::shutdown();
 
