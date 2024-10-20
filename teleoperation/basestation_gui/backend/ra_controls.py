@@ -136,38 +136,11 @@ def send_ra_controls(ra_mode: str, inputs: DeviceInputs) -> None:
 
                 match ra_mode:
                     case "manual":
-                        throttle_publisher.publish(Throttle(JOINT_NAMES, manual_controls))
-                    case "hybrid":
-                        # Control all joints before DE normally
-                        names, throttles = subset(JOINT_NAMES, manual_controls, {Joint.A, Joint.B, Joint.C})
-                        throttle_publisher.publish(Throttle(names, throttles))
-
-                        # Control DE joints based on current position
-                        if joint_positions:
-                            joint_de_pitch = joint_positions.position[joint_positions.name.index("joint_de_pitch")]
-                            joint_de_roll = joint_positions.position[joint_positions.name.index("joint_de_roll")]
-
-                            names, (de_pitch_throttle, de_roll_throttle) = subset(
-                                JOINT_NAMES, manual_controls, {Joint.DE_PITCH, Joint.DE_ROLL}
-                            )
-                            position_publisher.publish(
-                                Position(
-                                    names,
-                                    [
-                                        # Extend out like a carrot on a stick
-                                        np.clip(
-                                            joint_de_pitch + de_pitch_throttle * JOINT_DE_POSITION_SCALE,
-                                            -TAU / 4,
-                                            TAU / 4,
-                                        ),
-                                        np.clip(
-                                            joint_de_roll + de_roll_throttle * JOINT_DE_POSITION_SCALE,
-                                            -TAU / 4,
-                                            TAU / 4,
-                                        ),
-                                    ],
-                                )
-                            )
+                        #TODO: publish to throttle
+                        pass
+                    case "ik":
+                        #TODO: publish to arm_ik message
+                        pass
             else:
                 if joint_positions:
                     de_pitch = joint_positions.position[joint_positions.name.index("joint_de_pitch")]
