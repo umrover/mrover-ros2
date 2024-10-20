@@ -148,12 +148,12 @@ namespace mrover {
                     0, 1, 0,
                     0, 0, 1;
             SE3d temp = {{point.coeff(0,0), point.coeff(1, 0), 0}, SO3d{Eigen::Quaterniond{rot}.normalized()}};
-            SE3Conversions::pushToTfTree(*mTfBroadcaster, "spline_point", mMapFrameId, temp, get_clock()->now());
+            // SE3Conversions::pushToTfTree(*mTfBroadcaster, "spline_point", mMapFrameId, temp, get_clock()->now());
             RCLCPP_INFO_STREAM(get_logger(), "Switching to target position: (x, y, theta): (" << tarState.x() << ", " << tarState.y() << ", " << tarState.z() << ")");
 
             double distanceToTarget = std::numeric_limits<double>::max();
 
-            while (rclcpp::ok() && distanceToTarget > 0.7) {
+            while (rclcpp::ok() && distanceToTarget > 1) {
                 roverInWorld = SE3Conversions::fromTfTree(*mTfBuffer, "base_link", "map");
                 Eigen::Vector3d xOrientation = roverInWorld.rotation().col(0); 
                 double roverHeading = calcAngleWithWorldX(xOrientation);
@@ -179,15 +179,15 @@ namespace mrover {
                 r.sleep();
                 double v = (point.coeff(3, 0) - K1 * abs(point.coeff(3, 0) * (errState.x() + errState.y() * tan(errState.z()))))/(cos(errState.z()));
                 double omega = point.coeff(4, 0) - ((K2*point.coeff(3, 0)*errState.y() + K3*abs(point.coeff(3, 0))*tan(errState.z()))*pow(cos(errState.z()), 2));
-                // RCLCPP_INFO_STREAM(get_logger(), "v: " << v);
-                // RCLCPP_INFO_STREAM(get_logger(), "omega: " << omega);
-                // RCLCPP_INFO_STREAM(get_logger(), "tan: " << tan(errState.z()));
+                RCLCPP_INFO_STREAM(get_logger(), "v: " << v);
+                RCLCPP_INFO_STREAM(get_logger(), "omega: " << omega);
+                RCLCPP_INFO_STREAM(get_logger(), "tan: " << tan(errState.z()));
                 
                 driveTwist.angular.z = omega;
                 driveTwist.linear.x = v;
                 // driveTwist.angular.z = 0;
-                driveTwist.linear.y = 0;
-                mTwistPub->publish(driveTwist);
+                // driveTwist.linear.y = 0;
+                // mTwistPub->publish(driveTwist);
             }        
         }
 
@@ -231,13 +231,13 @@ namespace mrover {
                 if (std::abs(SO3tan.z()) < angular_thresh) {
                     break;
                 }
-                mTwistPub->publish(turnTwist);
+                // mTwistPub->publish(turnTwist);
             }
         }
         
         driveTwist.angular.z = 0;
         driveTwist.linear.x = 0;
-        mTwistPub->publish(driveTwist);
+        // mTwistPub->publish(driveTwist);
 
         // rclcpp::shutdown(); // perchance a touch yuckycky
     }
@@ -645,7 +645,7 @@ namespace mrover {
         RCLCPP_INFO_STREAM(get_logger(), "publish spline");
         for(auto const & point : mPathPoints){
             SE3d mPlaneLocationInZEDSE3d = {{point.coeff(0,0), point.coeff(1,0), 0}, SO3d{Eigen::Quaterniond{rot}.normalized()}};
-            SE3Conversions::pushToTfTree(*mTfBroadcaster, std::format("point_{}", index), mMapFrameId, mPlaneLocationInZEDSE3d, get_clock()->now());
+            // SE3Conversions::pushToTfTree(*mTfBroadcaster, std::format("point_{}", index), mMapFrameId, mPlaneLocationInZEDSE3d, get_clock()->now());
             index++;
         }
     }
