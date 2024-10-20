@@ -21,33 +21,54 @@ extern I2C_HandleTypeDef hi2c1;
  * You must also set auto reload to true so the interrupt gets called on a cycle.
  */
 
+extern TIM_HandleTypeDef htim1;
 extern TIM_HandleTypeDef htim2;
 extern TIM_HandleTypeDef htim3;
+extern TIM_HandleTypeDef htim4;
 extern TIM_HandleTypeDef htim6;
 extern TIM_HandleTypeDef htim7;
 extern TIM_HandleTypeDef htim8;
-extern TIM_HandleTypeDef htim15;
 extern TIM_HandleTypeDef htim16;
 extern TIM_HandleTypeDef htim17;
 // extern WWDG_HandleTypeDef hwwdg;
 
+#define PWM_TIMER_0 &htim1                    // H-Bridge PWM
+#define PWM_TIMER_CHANNEL_0 TIM_CHANNEL_1
+
+#define PWM_TIMER_1 &htim1
+#define PWM_TIMER_CHANNEL_1 TIM_CHANNEL_2
+
+#define PWM_TIMER_2 &htim1
+#define PWM_TIMER_CHANNEL_2 TIM_CHANNEL_3
+
+#define QUADRATURE_TICK_TIMER_0 &htim2      // Special encoder timer which externally reads quadrature encoder ticks
 #define QUADRATURE_TICK_TIMER_1 &htim3      // Special encoder timer which externally reads quadrature encoder ticks
-// #define QUADRATURE_TIMER_2 &htim4
-#define QUADRATURE_ELAPSED_TIMER_1 &htim17  // Measures time since the lsat quadrature tick reading
-#define ABSOLUTE_ENCODER_TIMER &htim2       // 20 Hz repeating timer to kick off I2C transactions with the absolute encoder
-#define THROTTLE_LIMIT_TIMER &htim6         // Measures time since the last throttle command
-#define SEND_TIMER &htim7                   // 20 Hz FDCAN repeating timer
-#define PIDF_TIMER &htim8                   // Measures time since the last PIDF update, used for the "D" term
-#define PWM_TIMER_1 &htim15                 // H-Bridge PWM
-#define FDCAN_WATCHDOG_TIMER &htim16        // FDCAN watchdog timer that needs to be reset every time a message is received
+#define QUADRATURE_TICK_TIMER_2 &htim4      // Special encoder timer which externally reads quadrature encoder ticks
+
+#define ENCODER_ELAPSED_TIMER_0  &htim8   // Measures time since the last quadrature tick reading or the last absolute encoder reading
+#define ENCODER_ELAPSED_TIMER_CHANNEL_0 (TIM_CHANNEL_1)
+#define ENCODER_ELAPSED_TIMER_1  &htim8
+#define ENCODER_ELAPSED_TIMER_CHANNEL_1 (TIM_CHANNEL_2)
+#define ENCODER_ELAPSED_TIMER_2  &htim8
+#define ENCODER_ELAPSED_TIMER_CHANNEL_2 (TIM_CHANNEL_3)
+
+#define GLOBAL_UPDATE_TIMER &htim6          // 20 Hz global timer for: FDCAN send, I2C transaction (absolute encoders)
+
+#define THROTTLE_LIMIT_TIMER &htim7         // Measures time since the last throttle command
+#define PIDF_TIMER &htim16                  // Measures time since the last PIDF update, used for the "D" term
+#define FDCAN_WATCHDOG_TIMER &htim17        // FDCAN watchdog timer that needs to be reset every time a message is received
 
 namespace mrover {
 
     FDCAN<InBoundMessage> fdcan_bus;
-    Controller controller;
+    Controller<NUM_MOTORS> controller;
 
     auto init() -> void {
         fdcan_bus = FDCAN<InBoundMessage>{DEVICE_ID, DESTINATION_DEVICE_ID, &hfdcan1};
+        controller = Controller<NUM_MOTORS>{
+            {PWM_TIMER_0, PWM_TIMER_1, PWM_TIMER_2}
+        };
+        /*
         controller = Controller{
                 PWM_TIMER_1,
                 Pin{GPIOB, GPIO_PIN_15},
@@ -60,19 +81,19 @@ namespace mrover {
                 PIDF_TIMER,
                 ABSOLUTE_I2C,
                 {
-                        // LimitSwitch{Pin{LIMIT_0_0_GPIO_Port, LIMIT_0_0_Pin}},
-                        // LimitSwitch{Pin{LIMIT_0_1_GPIO_Port, LIMIT_0_1_Pin}},
+                        LimitSwitch{Pin{LIMIT_0_0_GPIO_Port, LIMIT_0_0_Pin}},
+                        LimitSwitch{Pin{LIMIT_0_1_GPIO_Port, LIMIT_0_1_Pin}},
                         // LimitSwitch{Pin{LIMIT_0_2_GPIO_Port, LIMIT_0_2_Pin}},
                         // LimitSwitch{Pin{LIMIT_0_3_GPIO_Port, LIMIT_0_3_Pin}},
                 },
         };
+        */
 
         // TODO: these should probably be in the controller / encoders themselves
         // Necessary for the timer interrupt to work
         check(HAL_TIM_Base_Start(THROTTLE_LIMIT_TIMER) == HAL_OK, Error_Handler);
         check(HAL_TIM_Base_Start(PIDF_TIMER) == HAL_OK, Error_Handler);
-        check(HAL_TIM_Base_Start_IT(SEND_TIMER) == HAL_OK, Error_Handler);
-        check(HAL_TIM_Base_Start_IT(ABSOLUTE_ENCODER_TIMER) == HAL_OK, Error_Handler);
+        check(HAL_TIM_Base_Start_IT(GLOBAL_UPDATE_TIMER) == HAL_OK, Error_Handler);
     }
 
     auto fdcan_received_callback() -> void {
@@ -88,11 +109,8 @@ namespace mrover {
         }
     }
 
-    auto update_callback() -> void {
+    auto global_update_callback() -> void {
         controller.update();
-    }
-
-    auto request_absolute_encoder_data_callback() -> void {
         controller.request_absolute_encoder_data();
     }
 
@@ -126,6 +144,7 @@ namespace mrover {
 
 } // namespace mrover
 
+// TOOD: is this really necesssary?
 extern "C" {
 
 void HAL_PostInit() {
@@ -145,14 +164,12 @@ void HAL_PostInit() {
  */
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim) {
     // HAL_WWDG_Refresh(&hwwdg);
-    if (htim == SEND_TIMER) {
-        mrover::send_callback();
+    if (htim == GLOBAL_UPDATE_TIMER) {
+        mrover::global_update_callback();
     } else if (htim == FDCAN_WATCHDOG_TIMER) {
         mrover::fdcan_watchdog_expired();
     } else if (htim == QUADRATURE_ELAPSED_TIMER_1) {
         mrover::quadrature_elapsed_timer_expired();
-    } else if (htim == ABSOLUTE_ENCODER_TIMER) {
-        mrover::request_absolute_encoder_data_callback();
     }
 }
 

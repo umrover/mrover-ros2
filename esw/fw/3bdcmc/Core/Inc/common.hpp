@@ -4,6 +4,8 @@
 
 namespace mrover {
 
+    constexpr static std::uint8_t NUM_MOTORS = 3;
+
     constexpr auto TAU_F = 2 * std::numbers::pi_v<float>;
 
     constexpr auto CLOCK_FREQ = Hertz{140000000};

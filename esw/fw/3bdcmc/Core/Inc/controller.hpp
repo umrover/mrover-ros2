@@ -17,14 +17,14 @@
 
 namespace mrover {
 
+    template<std::size_t MotorCount>
     class Controller {
+        static_assert(MotorCount > 0 && MotorCount <= 3, "Motor count must be between 1 and 3");
 
-        template <typename Func>
+        template<typename Func>
         void foreach_motor(Func func) {
-            for (auto& m : m_motors) {
-                if (m.has_value()) {
-                    func(m.value());
-                }
+            for (auto& m: m_motors) {
+                func(m.value());
             }
         }
 
@@ -32,7 +32,7 @@ namespace mrover {
         FDCAN<InBoundMessage> m_fdcan;
         TIM_HandleTypeDef* m_watchdog_timer{};
         bool m_watchdog_enabled{};
-        std::array<std::optional<Motor>, 3> m_motors{};
+        std::array<Motor, MotorCount> m_motors{};
 
         /* ==================== Error State ==================== */
         // TODO(eric): array of these?
