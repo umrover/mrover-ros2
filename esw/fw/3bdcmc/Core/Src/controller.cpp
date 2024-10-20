@@ -45,6 +45,7 @@ extern TIM_HandleTypeDef htim17;
 #define QUADRATURE_TICK_TIMER_1 &htim3      // Special encoder timer which externally reads quadrature encoder ticks
 #define QUADRATURE_TICK_TIMER_2 &htim4      // Special encoder timer which externally reads quadrature encoder ticks
 
+#define VIRTUAL_ELAPSED_TIMER &htim8
 #define ENCODER_ELAPSED_TIMER_0  &htim8   // Measures time since the last quadrature tick reading or the last absolute encoder reading
 #define ENCODER_ELAPSED_TIMER_CHANNEL_0 (TIM_CHANNEL_1)
 #define ENCODER_ELAPSED_TIMER_1  &htim8
