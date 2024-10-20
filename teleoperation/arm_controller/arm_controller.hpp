@@ -1,6 +1,9 @@
 #pragma once
 
+#include "mrover/srv/detail/enable_auton__struct.hpp"
+#include "mrover/srv/detail/ik_test__struct.hpp"
 #include "pch.hpp"
+#include <rclcpp/service.hpp>
 
 namespace mrover {
 
@@ -11,7 +14,9 @@ namespace mrover {
         tf2_ros::TransformBroadcaster mTfBroadcaster{this};
         tf2_ros::Buffer mTfBuffer{get_clock()};
         tf2_ros::TransformListener mTfListener{mTfBuffer};
-        rclcpp::Publisher<msg::ArmStatus>::SharedPtr mArmStatusPub;
+        //rclcpp::Publisher<msg::ArmStatus>::SharedPtr mArmStatusPub;
+        rclcpp::Service<srv::IkTest>::SharedPtr mIkServer;
+        
 
     public:
         // TODO(quintin): Neven, please load these from config YAML files instead of hard coding. Ideally they would even be computed at runtime. This way you can change the xacro without worry.
@@ -34,6 +39,7 @@ namespace mrover {
         ArmController();
 
         void ikCallback(msg::IK::ConstSharedPtr const& ik_target);
+        void ikTestCallback(srv::IkTest_Request::ConstSharedPtr& req, srv::IkTest_Response::SharedPtr& res);
     };
 
 } // namespace mrover
