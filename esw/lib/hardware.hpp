@@ -256,4 +256,21 @@ namespace mrover {
         return 1 / clock_freq * std::exchange(__HAL_TIM_GetCounter(timer), 0);
     }
 
+
+
+    template<typename T, std::size_t TimCount>
+    class VirtualTimer {
+    public:
+
+
+    private:
+        struct tim_stamp_t {
+            T last_count{};
+            std::size_t num_elapses{};
+        };
+
+        TIM_HandleTypeDef* m_tim{};
+        std::array<tim_stamp_t, TimCount> m_tim_stamps{};
+    };
+
 } // namespace mrover
