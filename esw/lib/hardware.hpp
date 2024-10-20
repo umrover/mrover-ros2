@@ -252,25 +252,71 @@ namespace mrover {
         std::uint8_t m_source{}, m_destination{};
     };
 
-    inline auto cycle_time(TIM_HandleTypeDef* timer, Hertz clock_freq) -> Seconds {
-        return 1 / clock_freq * std::exchange(__HAL_TIM_GetCounter(timer), 0);
-    }
+    template<typename CountType, std::size_t VirtualStopwatchCount, Hertz TimFrequency>
+    class VirtualStopwatches {
+        static_assert(std::is_unsigned_v<CountType>, "Template parameter T must be an unsigned integer type");
 
+        template<typename Func>
+        void foreach_tim(Func func) {
+            for (auto& t: m_tim_stamps) {
+                func(t);
+            }
+        }
 
-
-    template<typename T, std::size_t TimCount>
-    class VirtualTimer {
     public:
-
-
-    private:
         struct tim_stamp_t {
-            T last_count{};
+            CountType last_count{};
             std::size_t num_elapses{};
         };
 
-        TIM_HandleTypeDef* m_tim{};
-        std::array<tim_stamp_t, TimCount> m_tim_stamps{};
+        VirtualStopwatches() = default;
+
+        explicit VirtualStopwatches(TIM_HandleTypeDef* htim) : m_hardware_tim(htim) {}
+
+        auto init() const -> void {
+            HAL_TIM_Base_Start_IT(m_hardware_tim);
+        }
+
+        auto period_elapsed_callback() -> void {
+            for (auto& tim_stamp: m_tim_stamps) {
+                ++tim_stamp.num_elapses;
+            }
+        }
+
+        template<std::size_t Index>
+        [[nodiscard]] auto get_time_since_last_read() -> Seconds {
+            static_assert(Index < VirtualStopwatchCount, "Index out of range");
+
+            CountType count_since_last = get_count_since_last_read<Index>();
+
+            return 1 / TimFrequency * count_since_last;
+        }
+
+    private:
+        TIM_HandleTypeDef* m_hardware_tim{};
+        std::array<tim_stamp_t, VirtualStopwatchCount> m_tim_stamps{};
+
+        [[nodiscard]] auto get_currrent_count() const -> CountType {
+            return __HAL_TIM_GetCounter(m_hardware_tim);
+        }
+
+        template<std::size_t Index>
+        [[nodiscard]] auto get_count_since_last_read() -> CountType {
+            static_assert(Index < VirtualStopwatchCount, "Index out of range");
+
+            tim_stamp_t& stamp = m_tim_stamps[Index];
+            CountType current_count = get_currrent_count();
+            CountType last_count = stamp.last_count();
+
+            stamp.last_count = current_count;
+            stamp.num_elapses = 0;
+
+            return (std::numeric_limits<CountType>::max() * stamp.num_elapses) + current_count - stamp.last_count;
+        }
     };
+
+    inline auto cycle_time(TIM_HandleTypeDef* timer, Hertz clock_freq) -> Seconds {
+        return 1 / clock_freq * std::exchange(__HAL_TIM_GetCounter(timer), 0);
+    }
 
 } // namespace mrover
