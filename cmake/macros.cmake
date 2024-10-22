@@ -45,7 +45,7 @@ macro(mrover_add_node name sources)
     endif ()
 endmacro()
 
-macro(mrover_add_component name class_name sources includes)
+macro(mrover_add_component name sources includes)
 	# Create Executable
 	mrover_add_node(${name} ${sources})
 	rosidl_target_interfaces(${name} ${PROJECT_NAME} "rosidl_typesupport_cpp")
@@ -54,9 +54,12 @@ macro(mrover_add_component name class_name sources includes)
 	set(component_name ${name}_component)
 	mrover_add_library(${component_name} ${sources} ${includes} SHARED)
 	rosidl_target_interfaces(${component_name} ${PROJECT_NAME} "rosidl_typesupport_cpp")
-    rclcpp_components_register_nodes(${component_name} "mrover::${class_name}")
+    foreach(node ${ARGN})
+        message("Registering ${node}")
+        rclcpp_components_register_nodes(${component_name} "mrover::${node}")
+        set(node_plugins "${node_plugins}mrover::${node};$<TARGET_FILE:${component_name}>\n")
+    endforeach()
     target_compile_definitions(${component_name} PRIVATE "COMPOSITION_BUILDING_DLL")
-    set(node_plugins "${node_plugins}mrover::${class_name};$<TARGET_FILE:${component_name}>\n")
     install(CODE "execute_process( \
             COMMAND ${CMAKE_COMMAND} -E create_symlink \
             ${CMAKE_CURRENT_LIST_DIR}/../../build/${PROJECT_NAME}/lib${component_name}.so \

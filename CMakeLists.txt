@@ -258,7 +258,7 @@ if(ZED_FOUND AND CUDA_FOUND)
     # rclcpp_components_register_nodes(zed "mrover::ZedWrapper")
     # set(node_plugins "${node_plugins}mrover::ZedWrapper;$<TARGET_FILE:zed_wrapper>\n")
 
-    mrover_add_component(zed ZedWrapper perception/zed_wrapper/*.c* perception/zed_wrapper/pch.hpp)
+    mrover_add_component(zed perception/zed_wrapper/*.c* perception/zed_wrapper/pch.hpp ZedWrapper)
 	mrover_link_component(zed parameter_utils lie MANIF::manif ${CUDA_LIBRARIES} loop_profiler cuda_compiler_flags)
 	mrover_ament_component(zed rclcpp rclcpp_components sensor_msgs ZED CUDA tf2 tf2_ros)
 
@@ -270,7 +270,7 @@ if(ZED_FOUND AND CUDA_FOUND)
 	target_link_libraries(tensorrt PRIVATE opencv_core opencv_dnn opencv_imgproc lie nvinfer nvonnxparser tbb cuda_compiler_flags)
 
 	# Object Detector
-	mrover_add_component(object_detector StereoObjectDetector perception/object_detector/*.c* src/perception/object_detector/pch.hpp)
+	mrover_add_component(object_detector perception/object_detector/*.c* src/perception/object_detector/pch.hpp StereoObjectDetector ImageObjectDetector)
 	target_compile_options(zed PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-std=c++20>)
     mrover_link_component(object_detector opencv_core opencv_dnn opencv_imgproc lie tbb tensorrt opencv_imgcodecs opencv_highgui loop_profiler parameter_utils cuda_compiler_flags)
 	mrover_ament_component(object_detector rclcpp sensor_msgs rclcpp_components CUDA tf2 tf2_ros)
@@ -302,7 +302,7 @@ if (Gst_FOUND AND GstApp_FOUND)
         target_compile_definitions(websocket_server PUBLIC BOOST_ASIO_NO_DEPRECATED)
         ament_target_dependencies(websocket_server rclcpp)
 
-        mrover_add_component(gst_websocket_streamer GstWebsocketStreamer esw/gst_websocket_streamer/*.c* esw/gst_websocket_streamer/pch.hpp)
+        mrover_add_component(gst_websocket_streamer esw/gst_websocket_streamer/*.c* esw/gst_websocket_streamer/pch.hpp GstWebsocketStreamer)
 		mrover_link_component(gst_websocket_streamer PkgConfig::Gst PkgConfig::GstApp PkgConfig::LibUdev opencv_core opencv_imgcodecs websocket_server)
 		mrover_ament_component(gst_websocket_streamer rclcpp rclcpp_components sensor_msgs)
     endif ()

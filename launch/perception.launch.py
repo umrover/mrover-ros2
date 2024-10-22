@@ -21,14 +21,20 @@ def generate_launch_description():
         composable_node_descriptions=[
             ComposableNode(
                 package="mrover",
-                plugin="mrover::object_detector_component",
+                plugin="mrover::StereoObjectDetector",
                 name="object_detector_component",
                 parameters=[Path(get_package_share_directory("mrover"), "config", "object_detector.yaml")],
             ),
             ComposableNode(
                 package="mrover",
-                plugin="mrover::zed_wrapper_component",
-                name="zed_wrapper_component",
+                plugin="mrover::ImageObjectDetector",
+                name="object_detector_component",
+                parameters=[Path(get_package_share_directory("mrover"), "config", "object_detector.yaml")],
+            ),
+            ComposableNode(
+                package="mrover",
+                plugin="mrover::ZedWrapper",
+                name="zed_component",
                 parameters=[Path(get_package_share_directory("mrover"), "config", "zed.yaml")],
             ),
         ],
