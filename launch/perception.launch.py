@@ -14,25 +14,25 @@ from launch.conditions import LaunchConfigurationEquals
 def generate_launch_description():
 
     container = ComposableNodeContainer(
-        name='perception',
-        namespace='',
-        package='rclcpp_components',
-        executable='component_container',
+        name="perception",
+        namespace="",
+        package="rclcpp_components",
+        executable="component_container",
         composable_node_descriptions=[
             ComposableNode(
-                package='mrover',
-                plugin='mrover::object_detector_component',
-                name='object_detector_component',
+                package="mrover",
+                plugin="mrover::object_detector_component",
+                name="object_detector_component",
                 parameters=[Path(get_package_share_directory("mrover"), "config", "object_detector.yaml")],
-                ),
+            ),
             ComposableNode(
-                package='mrover',
-                plugin='mrover::zed_wrapper_component',
-                name='zed_wrapper_component',
+                package="mrover",
+                plugin="mrover::zed_wrapper_component",
+                name="zed_wrapper_component",
                 parameters=[Path(get_package_share_directory("mrover"), "config", "zed.yaml")],
-                )
+            ),
         ],
-        output='screen',
+        output="screen",
     )
 
     return launch.LaunchDescription([container])

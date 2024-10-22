@@ -65,7 +65,6 @@ namespace mrover {
 } // namespace mrover
 
 
-
 #include "rclcpp_components/register_node_macro.hpp"
 RCLCPP_COMPONENTS_REGISTER_NODE(mrover::StereoObjectDetector)
 RCLCPP_COMPONENTS_REGISTER_NODE(mrover::ImageObjectDetector)
