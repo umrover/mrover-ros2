@@ -98,7 +98,6 @@ namespace mrover {
 
         for (auto total = static_cast<double>(twists.size()); auto const& twist : twists) {
             mean_twist.linear.x += twist.linear.x / total;
-            mean_twist.linear.y += twist.linear.y / total;
             mean_twist.angular.z += twist.angular.z / total;
         }
 
