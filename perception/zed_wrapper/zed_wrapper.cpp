@@ -20,7 +20,7 @@ namespace mrover {
             // Publishers
             mRightImgPub = create_publisher<sensor_msgs::msg::Image>("zed/right/image", 1);
             mLeftImgPub = create_publisher<sensor_msgs::msg::Image>("zed/left/image", 1);
-            mImuPub = create_publisher<sensor_msgs::msg::Imu>("zed_imu/data_raw", 1);
+            mImuPub = create_publisher<sensor_msgs::msg::Imu>("imu/data", 1);
             mMagPub = create_publisher<sensor_msgs::msg::MagneticField>("zed_imu/mag", 1);
             mPcPub = create_publisher<sensor_msgs::msg::PointCloud2>("zed/left/points", 1);
             mRightCamInfoPub = create_publisher<sensor_msgs::msg::CameraInfo>("zed/right/camera_info", 1);
