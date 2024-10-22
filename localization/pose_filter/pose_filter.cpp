@@ -12,7 +12,7 @@ namespace mrover {
         imu_watchdog = this->create_wall_timer(IMU_WATCHDOG_TIMEOUT.to_chrono<std::chrono::milliseconds>(), [&]() {
             RCLCPP_WARN(get_logger(), "IMU data watchdog expired");
             current_imu_calib.reset();
-            current_imu_uncalib.reset();
+            //current_imu_uncalib.reset();
             correction_rotation.reset();
         });
         
@@ -22,17 +22,17 @@ namespace mrover {
 
         odometry_pub = this->create_publisher<nav_msgs::msg::Odometry>("/odometry", 1);
 
-        calibration_status_sub = this->create_subscription<mrover::msg::CalibrationStatus>("/imu/calibration", 1, [&](mrover::msg::CalibrationStatus::ConstSharedPtr const & status) {
-            calibration_status = *status;
-        });
+        // calibration_status_sub = this->create_subscription<mrover::msg::CalibrationStatus>("/imu/calibration", 1, [&](mrover::msg::CalibrationStatus::ConstSharedPtr const & status) {
+        //     calibration_status = *status;
+        // });
 
         twist_sub = this->create_subscription<geometry_msgs::msg::Twist>("/cmd_vel", 1, [&](geometry_msgs::msg::Twist::ConstSharedPtr const& twist) {
             twists.push_back(*twist);
         });
 
-        imu_uncalib_sub = this->create_subscription<sensor_msgs::msg::Imu>("/imu/data_raw", 1, [&](sensor_msgs::msg::Imu::ConstSharedPtr const& imu) {
-            current_imu_uncalib = *imu;
-        });
+        // imu_uncalib_sub = this->create_subscription<sensor_msgs::msg::Imu>("/imu/data_raw", 1, [&](sensor_msgs::msg::Imu::ConstSharedPtr const& imu) {
+        //     current_imu_uncalib = *imu;
+        // });
 
         imu_calib_sub = this->create_subscription<sensor_msgs::msg::Imu>("/imu/data", 1, [&](sensor_msgs::msg::Imu::ConstSharedPtr const& imu) {
             imu_watchdog->reset();
@@ -57,20 +57,26 @@ namespace mrover {
 
         SE3d pose_in_map(position_in_map, SO3d::Identity());
 
-        bool mag_fully_calibrated = calibration_status && calibration_status->magnetometer_calibration == FULL_CALIBRATION;
+        //bool mag_fully_calibrated = calibration_status && calibration_status->magnetometer_calibration == FULL_CALIBRATION;
 
-        if (!mag_fully_calibrated && current_imu_calib && correction_rotation) {
-            SO3d uncalibrated_orientation = ros_quat_to_eigen_quat(current_imu_uncalib->orientation);
-            pose_in_map.asSO3() = correction_rotation.value() * uncalibrated_orientation;
-        }
-        else if (current_imu_calib) {
-            SO3d calibrated_orientation = ros_quat_to_eigen_quat(current_imu_calib->orientation);
-            pose_in_map.asSO3() = calibrated_orientation;
+        if (current_imu_calib) {
+            SO3d uncorrected_orientation = ros_quat_to_eigen_quat(current_imu_calib->orientation);
+            pose_in_map.asSO3() = correction_rotation.value() * uncorrected_orientation;
         }
         else {
             RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1, "Not enough IMU data available");
             return;
         }
+
+        // if (!mag_fully_calibrated && current_imu_calib && correction_rotation) {
+        //     SO3d uncalibrated_orientation = ros_quat_to_eigen_quat(current_imu_uncalib->orientation);
+        //     pose_in_map.asSO3() = correction_rotation.value() * uncalibrated_orientation;
+        // }
+        // else if (current_imu_calib) {
+        //     SO3d calibrated_orientation = ros_quat_to_eigen_quat(current_imu_calib->orientation);
+        //     pose_in_map.asSO3() = calibrated_orientation;
+        // }
+        
 
         SE3Conversions::pushToTfTree(tf_broadcaster, rover_frame, world_frame, pose_in_map, get_clock()->now());
 
@@ -163,7 +169,7 @@ namespace mrover {
 
         double corrected_heading_in_map = std::atan2(rover_velocity_sum.y(), rover_velocity_sum.x());
 
-        SO3d uncorrected_orientation = ros_quat_to_eigen_quat(current_imu_uncalib->orientation);
+        SO3d uncorrected_orientation = ros_quat_to_eigen_quat(current_imu_calib->orientation);
         R2d uncorrected_forward = uncorrected_orientation.rotation().col(0).head<2>();
         double estimated_heading_in_map = std::atan2(uncorrected_forward.y(), uncorrected_forward.x());
 

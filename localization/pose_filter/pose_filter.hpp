@@ -25,15 +25,15 @@ namespace mrover {
         rclcpp::TimerBase::SharedPtr correction_timer;
         
         rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odometry_pub;
-        rclcpp::Subscription<mrover::msg::CalibrationStatus>::SharedPtr calibration_status_sub;
+        //rclcpp::Subscription<mrover::msg::CalibrationStatus>::SharedPtr calibration_status_sub;
         rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr twist_sub;
-        rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr imu_uncalib_sub;
+        //rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr imu_uncalib_sub;
         rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr imu_calib_sub;
         rclcpp::Subscription<geometry_msgs::msg::Vector3Stamped>::SharedPtr pose_sub;
 
-        std::optional<mrover::msg::CalibrationStatus> calibration_status;
+        //std::optional<mrover::msg::CalibrationStatus> calibration_status;
         std::vector<geometry_msgs::msg::Twist> twists;
-        std::optional<sensor_msgs::msg::Imu> current_imu_uncalib;
+        //std::optional<sensor_msgs::msg::Imu> current_imu_uncalib;
         std::optional<sensor_msgs::msg::Imu> current_imu_calib;
 
         std::optional<SE3d> last_pose_in_map;
