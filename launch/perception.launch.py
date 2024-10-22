@@ -16,19 +16,19 @@ def generate_launch_description():
     container = ComposableNodeContainer(
         name='perception',
         namespace='',
-        package='mrover',
+        package='rclcpp_components',
         executable='component_container',
         composable_node_descriptions=[
             ComposableNode(
                 package='mrover',
-                plugin='mrover::ObjectDetector',
-                name='object_detector',
+                plugin='mrover::object_detector_component',
+                name='object_detector_component',
                 parameters=[Path(get_package_share_directory("mrover"), "config", "object_detector.yaml")],
                 ),
             ComposableNode(
                 package='mrover',
-                plugin='mrover::ZedWrapper',
-                name='zed_wrapper',
+                plugin='mrover::zed_wrapper_component',
+                name='zed_wrapper_component',
                 parameters=[Path(get_package_share_directory("mrover"), "config", "zed.yaml")],
                 )
         ],
@@ -36,17 +36,3 @@ def generate_launch_description():
     )
 
     return launch.LaunchDescription([container])
-    zed_node = Node(
-        package="mrover",
-        executable="zed",
-        name="zed_wrapper",
-        
-    )
-
-    object_detector_node = Node(
-        package="mrover",
-        executable="object_detector",
-        name="object_detector",
-    )
-
-    return LaunchDescription([zed_node, object_detector_node])
