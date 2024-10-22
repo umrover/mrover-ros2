@@ -15,13 +15,15 @@ namespace mrover {
         rclcpp::Subscription<rtcm_msgs::msg::Message>::SharedPtr rtcm_sub;
 
         boost::asio::basic_serial_port<boost::asio::io_context::executor_type> serial;
+        boost::asio::streambuf read_buffer;
 
-        unsigned short baud;
+        unsigned long baud;
         std::string port;
 
     public:
         explicit RoverGPSDriver(boost::asio::io_context& io);
         void spin();
+        void parse();
 
     }; // class RoverDriverNode
 } // namespace mrover

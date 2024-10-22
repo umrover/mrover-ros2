@@ -24,4 +24,4 @@ rover_gps_driver:
   ros__parameters:
     #TODO: change this
     port: /dev/ttyUSB0
-    baud: 38400
+    baud: 115200

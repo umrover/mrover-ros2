@@ -12,7 +12,10 @@ namespace mrover {
         baud = get_parameter("baud").as_int();
 
         serial.open(port);
+        std::string port_string = std::to_string(baud);
+        RCLCPP_INFO(get_logger(), port_string.c_str());
         serial.set_option(boost::asio::serial_port_base::baud_rate(baud));
+        RCLCPP_INFO(get_logger(), "made it");
         
         // publishers and subscribers
         gps_pub = this->create_publisher<sensor_msgs::msg::NavSatFix>("/gps/fix", 10);
@@ -34,13 +37,15 @@ namespace mrover {
 
     void RoverGPSDriver::spin() {
         while (rclcpp::ok()) {
-            boost::asio::streambuf buffer;
-            boost::asio::read_until(serial, buffer, '\n');
-            process_unicore(std::string(boost::asio::buffers_begin(buffer.data()), boost::asio::buffers_end(buffer.data())));
+            std::size_t bytes_transferred = boost::asio::read_until(serial, read_buffer, '\n');
+            std::istream buffer(&read_buffer);
+            std::string unicore_msg;
+            std::getline(buffer, unicore_msg);
+            process_unicore(unicore_msg);
             rclcpp::spin_some(this->get_node_base_interface());
         }
     }
-    
+
 }
 
 int main(int argc, char**argv) {
