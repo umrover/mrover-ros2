@@ -22,6 +22,9 @@ macro(mrover_add_library name sources includes)
     add_library(${name} ${ARGV3} ${LIBRARY_SOURCES})
     mrover_target(${name})
     target_include_directories(${name} PUBLIC ${includes})
+    if (APPLE)
+        target_link_libraries(${name} /opt/homebrew/Caskroom/miniforge/base/envs/ros2_env/lib/libpython3.11.dylib)
+    endif ()
 endmacro()
 
 macro(mrover_add_component name sources includes)
@@ -44,4 +47,7 @@ macro(mrover_add_node name sources)
             TARGETS ${name}
             DESTINATION lib/${PROJECT_NAME}
     )
+    if (APPLE)
+        target_link_libraries(${name}  /opt/homebrew/Caskroom/miniforge/base/envs/ros2_env/lib/libpython3.11.dylib)
+    endif ()
 endmacro()

@@ -1,0 +1,22 @@
+# All units are in SI
+# ===================
+# Time:     second, hz
+# Angle:    radian
+# Distance: meter
+
+/zed_wrapper:
+  ros__parameters:
+    depth_confidence: 70
+    serial_number: -1
+    grab_target_fps: 60
+    texture_confidence: 100
+    image_width: 1280
+    image_height: 720
+    svo_file: ""
+    use_depth_stabilization: false
+    grab_resolution: "HD720"
+    depth_mode: "PERFORMANCE"
+    depth_maximum_distance: 12.0
+    use_builtin_visual_odom: false
+    use_pose_smoothing: true
+    use_area_memory: true

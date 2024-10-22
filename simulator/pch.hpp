@@ -22,7 +22,7 @@
 
 #include <boost/bimap.hpp>
 #include <boost/circular_buffer.hpp>
-#include <boost/container/static_vector.hpp>
+#include <boost/container/small_vector.hpp>
 #include <boost/range/combine.hpp>
 
 #include <ament_index_cpp/get_package_share_directory.hpp>
