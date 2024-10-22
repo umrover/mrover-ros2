@@ -11,8 +11,7 @@ namespace mrover {
 
         imu_watchdog = this->create_wall_timer(IMU_WATCHDOG_TIMEOUT.to_chrono<std::chrono::milliseconds>(), [&]() {
             RCLCPP_WARN(get_logger(), "IMU data watchdog expired");
-            current_imu_calib.reset();
-            //current_imu_uncalib.reset();
+            current_imu.reset();
             correction_rotation.reset();
         });
         
@@ -26,9 +25,9 @@ namespace mrover {
             twists.push_back(*twist);
         });
 
-        imu_calib_sub = this->create_subscription<sensor_msgs::msg::Imu>("/imu/data", 1, [&](sensor_msgs::msg::Imu::ConstSharedPtr const& imu) {
+        imu_sub = this->create_subscription<sensor_msgs::msg::Imu>("/imu/data", 1, [&](sensor_msgs::msg::Imu::ConstSharedPtr const& imu) {
             imu_watchdog->reset();
-            current_imu_calib = *imu;
+            current_imu = *imu;
         });
 
         pose_sub = this->create_subscription<geometry_msgs::msg::Vector3Stamped>("/linearized_position", 1, [this](geometry_msgs::msg::Vector3Stamped::ConstSharedPtr const& msg) -> void {
@@ -49,12 +48,12 @@ namespace mrover {
 
         SE3d pose_in_map(position_in_map, SO3d::Identity());
 
-        if (current_imu_calib && correction_rotation) {
-            SO3d uncorrected_orientation = ros_quat_to_eigen_quat(current_imu_calib->orientation);
+        if (current_imu && correction_rotation) {
+            SO3d uncorrected_orientation = ros_quat_to_eigen_quat(current_imu->orientation);
             pose_in_map.asSO3() = correction_rotation.value() * uncorrected_orientation;
         }
-        else if (current_imu_calib) {
-            SO3d uncorrected_orientation = ros_quat_to_eigen_quat(current_imu_calib->orientation);
+        else if (current_imu) {
+            SO3d uncorrected_orientation = ros_quat_to_eigen_quat(current_imu->orientation);
             pose_in_map.asSO3() = uncorrected_orientation;
         }
         else {
@@ -105,7 +104,7 @@ namespace mrover {
 
         twists.clear();
 
-        if (!current_imu_calib) return;
+        if (!current_imu) return;
         if (mean_twist.linear.x < MIN_LINEAR_SPEED) return;
         if (std::fabs(mean_twist.angular.z) > MAX_ANGULAR_SPEED) return;
 
@@ -153,7 +152,7 @@ namespace mrover {
 
         double corrected_heading_in_map = std::atan2(rover_velocity_sum.y(), rover_velocity_sum.x());
 
-        SO3d uncorrected_orientation = ros_quat_to_eigen_quat(current_imu_calib->orientation);
+        SO3d uncorrected_orientation = ros_quat_to_eigen_quat(current_imu->orientation);
         R2d uncorrected_forward = uncorrected_orientation.rotation().col(0).head<2>();
         double estimated_heading_in_map = std::atan2(uncorrected_forward.y(), uncorrected_forward.x());
 

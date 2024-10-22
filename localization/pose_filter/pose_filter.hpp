@@ -26,11 +26,11 @@ namespace mrover {
         
         rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odometry_pub;
         rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr twist_sub;
-        rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr imu_calib_sub;
+        rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr imu_sub;
         rclcpp::Subscription<geometry_msgs::msg::Vector3Stamped>::SharedPtr pose_sub;
 
         std::vector<geometry_msgs::msg::Twist> twists;
-        std::optional<sensor_msgs::msg::Imu> current_imu_calib;
+        std::optional<sensor_msgs::msg::Imu> current_imu;
 
         std::optional<SE3d> last_pose_in_map;
         std::optional<builtin_interfaces::msg::Time> last_pose_time;
