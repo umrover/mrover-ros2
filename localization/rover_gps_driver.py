@@ -73,12 +73,12 @@ class GpsDriverNode(Node):
                         header=Header(stamp=self.get_clock().now().to_msg(), frame_id="base_link"),
                         latitude=msg.lat,
                         longitude=msg.lon,
-                        altitude=msg.hMSL,
+                        altitude=float(msg.hMSL),
                     )
                 )
                 self.rtk_fix_pub.publish(RTKStatus(fix_type=msg.carrSoln))
 
-                if msg.difSoln == 1:
+                if msg.diffSoln == 1:
                     self.get_logger().debug("Differential correction applied")
                 if msg.carrSoln == 0:
                     self.get_logger().warn("No RTK")

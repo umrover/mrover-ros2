@@ -61,7 +61,8 @@ namespace mrover {
 
         if (current_imu_calib) {
             SO3d uncorrected_orientation = ros_quat_to_eigen_quat(current_imu_calib->orientation);
-            pose_in_map.asSO3() = correction_rotation.value() * uncorrected_orientation;
+            //pose_in_map.asSO3() = correction_rotation.value() * uncorrected_orientation;
+            pose_in_map.asSO3() = uncorrected_orientation;
         }
         else {
             RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1, "Not enough IMU data available");

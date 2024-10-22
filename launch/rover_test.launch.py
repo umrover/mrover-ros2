@@ -33,10 +33,25 @@ def generate_launch_description():
         parameters=[os.path.join(get_package_share_directory("mrover"), "config", "localization.yaml")],
     )
 
+    zed_node = Node(
+        package="mrover",
+        executable="zed",
+        name="zed_wrapper",
+        parameters=[os.path.join(get_package_share_directory("mrover"), "config", "zed.yaml")],
+    )
+
+    base_link_to_zed = Node(
+        package="tf2_ros",
+        executable="static_transform_publisher",
+        arguments=["0", "0", "0", "0", "0", "0", "1", "base_link", "zed_left_camera_frame"],
+    )
+
     return LaunchDescription(
         [
             gps_linearization_node,
             rover_gps_driver_node,
             pose_filter_node,
+            zed_node,
+            base_link_to_zed,
         ]
     )

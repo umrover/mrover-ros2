@@ -15,7 +15,7 @@ namespace mrover {
         void correction_timer_callback();
 
         const rclcpp::Duration STEP = rclcpp::Duration::from_seconds(0.5);
-        const rclcpp::Duration IMU_WATCHDOG_TIMEOUT = rclcpp::Duration::from_seconds(1.0);
+        const rclcpp::Duration IMU_WATCHDOG_TIMEOUT = rclcpp::Duration::from_seconds(5.0);
         const rclcpp::Duration WINDOW{STEP * 2.5};
         
         static constexpr std::uint8_t FULL_CALIBRATION = 3;

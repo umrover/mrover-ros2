@@ -7,13 +7,13 @@
 basestation_gps_driver:
   ros__parameters:
     # TODO: update thus
-    port: /dev/gps
+    port: /dev/ttyACM0
     baud: 38400
 
 rover_gps_driver:
   ros__parameters:
     # TODO: update thus
-    port: /dev/gps
+    port: /dev/ttyACM0
     baud: 38400
 
 gps_linearization:
@@ -22,8 +22,8 @@ gps_linearization:
     rover_frame: "base_link"
 
     # Exception, these are in degrees
-    ref_lat: 42.293195
-    ref_lon: -83.7096706
+    ref_lat: 42.29341
+    ref_lon: -83.71017
     ref_alt: 0.0
 
 pose_filter:
