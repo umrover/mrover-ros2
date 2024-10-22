@@ -23,7 +23,6 @@ namespace mrover {
     public:
         explicit RoverGPSDriver(boost::asio::io_context& io);
         void spin();
-        void parse();
 
     }; // class RoverDriverNode
 } // namespace mrover
