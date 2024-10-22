@@ -22,17 +22,9 @@ namespace mrover {
 
         odometry_pub = this->create_publisher<nav_msgs::msg::Odometry>("/odometry", 1);
 
-        // calibration_status_sub = this->create_subscription<mrover::msg::CalibrationStatus>("/imu/calibration", 1, [&](mrover::msg::CalibrationStatus::ConstSharedPtr const & status) {
-        //     calibration_status = *status;
-        // });
-
         twist_sub = this->create_subscription<geometry_msgs::msg::Twist>("/cmd_vel", 1, [&](geometry_msgs::msg::Twist::ConstSharedPtr const& twist) {
             twists.push_back(*twist);
         });
-
-        // imu_uncalib_sub = this->create_subscription<sensor_msgs::msg::Imu>("/imu/data_raw", 1, [&](sensor_msgs::msg::Imu::ConstSharedPtr const& imu) {
-        //     current_imu_uncalib = *imu;
-        // });
 
         imu_calib_sub = this->create_subscription<sensor_msgs::msg::Imu>("/imu/data", 1, [&](sensor_msgs::msg::Imu::ConstSharedPtr const& imu) {
             imu_watchdog->reset();
@@ -57,11 +49,12 @@ namespace mrover {
 
         SE3d pose_in_map(position_in_map, SO3d::Identity());
 
-        //bool mag_fully_calibrated = calibration_status && calibration_status->magnetometer_calibration == FULL_CALIBRATION;
-
-        if (current_imu_calib) {
+        if (current_imu_calib && correction_rotation) {
             SO3d uncorrected_orientation = ros_quat_to_eigen_quat(current_imu_calib->orientation);
-            //pose_in_map.asSO3() = correction_rotation.value() * uncorrected_orientation;
+            pose_in_map.asSO3() = correction_rotation.value() * uncorrected_orientation;
+        }
+        else if (current_imu_calib) {
+            SO3d uncorrected_orientation = ros_quat_to_eigen_quat(current_imu_calib->orientation);
             pose_in_map.asSO3() = uncorrected_orientation;
         }
         else {
@@ -69,18 +62,7 @@ namespace mrover {
             return;
         }
 
-        // if (!mag_fully_calibrated && current_imu_calib && correction_rotation) {
-        //     SO3d uncalibrated_orientation = ros_quat_to_eigen_quat(current_imu_uncalib->orientation);
-        //     pose_in_map.asSO3() = correction_rotation.value() * uncalibrated_orientation;
-        // }
-        // else if (current_imu_calib) {
-        //     SO3d calibrated_orientation = ros_quat_to_eigen_quat(current_imu_calib->orientation);
-        //     pose_in_map.asSO3() = calibrated_orientation;
-        // }
-        
-
         SE3Conversions::pushToTfTree(tf_broadcaster, rover_frame, world_frame, pose_in_map, get_clock()->now());
-
 
         SE3d::Tangent twist;
         if (last_pose_in_map && last_pose_time) {
@@ -117,6 +99,7 @@ namespace mrover {
 
         for (auto total = static_cast<double>(twists.size()); auto const& twist : twists) {
             mean_twist.linear.x += twist.linear.x / total;
+            mean_twist.linear.y += twist.linear.y / total;
             mean_twist.angular.z += twist.angular.z / total;
         }
 
