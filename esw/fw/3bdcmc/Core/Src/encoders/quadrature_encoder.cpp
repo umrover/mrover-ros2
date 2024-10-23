@@ -1,14 +1,13 @@
 #include "encoders.hpp"
 
 #include <cstdint>
-#include <utility>
 
 #include <units/units.hpp>
 
 namespace mrover {
 
-    QuadratureEncoderReader::QuadratureEncoderReader(TIM_HandleTypeDef* tick_timer, Ratio multiplier, TIM_HandleTypeDef* elapsed_timer)
-        : m_tick_timer{tick_timer}, m_elapsed_timer{elapsed_timer}, m_multiplier{multiplier} {
+    QuadratureEncoderReader::QuadratureEncoderReader(TIM_HandleTypeDef* tick_timer, Ratio multiplier, IStopwatch* stopwatch)
+        : m_tick_timer{tick_timer}, m_stopwatch(stopwatch), m_multiplier{multiplier} {
 
         // // Per Sashreek's hypothesis in `Motor velocity calc.pdf` #esw-brushed-24
         // compound_unit<Ticks, inverse<Seconds>> min_measurable_velocity = MIN_MEASURABLE_VELOCITY * RELATIVE_CPR;
@@ -20,10 +19,7 @@ namespace mrover {
         m_counts_unwrapped_prev = __HAL_TIM_GetCounter(m_tick_timer);
         check(HAL_TIM_Encoder_Start_IT(m_tick_timer, TIM_CHANNEL_ALL) == HAL_OK, Error_Handler);
 
-        // m_vel_counts_unwrapped_prev = __HAL_TIM_GetCounter(m_timer);
-        // check(HAL_TIM_Base_Start_IT(m_timer) == HAL_OK, Error_Handler);
-
-        check(HAL_TIM_Base_Start_IT(m_elapsed_timer) == HAL_OK, Error_Handler);
+        m_stopwatch_id = m_stopwatch->add_stopwatch();
     }
 
     auto count_delta(std::int64_t& store, TIM_HandleTypeDef* timer) -> std::int64_t {
@@ -51,7 +47,7 @@ namespace mrover {
     }
 
     auto QuadratureEncoderReader::update() -> void {
-        Seconds elapsed_time = cycle_time(m_elapsed_timer, CLOCK_FREQ);
+        Seconds elapsed_time = m_stopwatch->get_time_since_last_read(m_stopwatch_id);
         std::int64_t delta_ticks = count_delta(m_counts_unwrapped_prev, m_tick_timer);
         Radians delta_angle = m_multiplier * Ticks{delta_ticks} / RELATIVE_CPR;
 

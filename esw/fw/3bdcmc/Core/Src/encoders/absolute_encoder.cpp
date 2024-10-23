@@ -2,7 +2,6 @@
 
 #include <cstdint>
 #include <optional>
-#include <utility>
 
 namespace mrover {
     /* ABSOLUTE ENCODER PROCESS:
@@ -16,8 +15,8 @@ namespace mrover {
 
     constexpr static std::uint16_t REQUEST_ANGLE = 0xFE;
 
-    AbsoluteEncoderReader::AbsoluteEncoderReader(AS5048B_Bus i2c_bus, Radians offset, Ratio multiplier, TIM_HandleTypeDef* elapsed_timer)
-        : m_elapsed_timer{elapsed_timer}, m_i2cBus{i2c_bus}, m_offset{offset}, m_multiplier{multiplier} {
+    AbsoluteEncoderReader::AbsoluteEncoderReader(AS5048B_Bus i2c_bus, Radians offset, Ratio multiplier, IStopwatch* stopwatch)
+        : m_stopwatch(stopwatch), m_i2cBus{i2c_bus}, m_offset{offset}, m_multiplier{multiplier} {
         // NOTE(quintin): I commented this out until BDCMCv2 comes out
         // A1/A2 is 1 if pin connected to power, 0 if pin connected to ground
         // if (A1 && A2) {
@@ -29,7 +28,8 @@ namespace mrover {
         // } else {
         //     m_address = I2CAddress::device_slave_address_none_high;
         // }
-        check(HAL_TIM_Base_Start_IT(m_elapsed_timer) == HAL_OK, Error_Handler);
+
+        m_stopwatch_id = m_stopwatch->add_stopwatch();
     }
 
     auto AbsoluteEncoderReader::request_raw_angle() -> void {
@@ -62,7 +62,7 @@ namespace mrover {
 
     [[nodiscard]] auto AbsoluteEncoderReader::read() -> std::optional<EncoderReading> {
         if (std::optional<std::uint64_t> count = try_read_buffer()) {
-            Seconds elapsed_time = cycle_time(m_elapsed_timer, CLOCK_FREQ);
+            Seconds elapsed_time = m_stopwatch->get_time_since_last_read(m_stopwatch_id);
 
             // Absolute encoder returns [0, COUNTS_PER_REVOLUTION)
             // We need to convert this to [-𝜏/2, 𝜏/2)
