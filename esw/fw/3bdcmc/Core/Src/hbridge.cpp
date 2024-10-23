@@ -5,10 +5,14 @@
 
 namespace mrover {
 
-    HBridge::HBridge(TIM_HandleTypeDef* timer, Pin positive_pin, Pin negative_pin)
-        : m_positive_pin{positive_pin},
-          m_negative_pin{negative_pin},
+    // HBridge::HBridge(TIM_HandleTypeDef* timer, std::uint32_t channel, Pin positive_pin, Pin negative_pin)
+    //     : m_positive_pin{positive_pin},
+    //       m_negative_pin{negative_pin},
+
+    HBridge::HBridge(TIM_HandleTypeDef* timer, std::uint32_t channel, Pin direction_pin)
+        : m_direction_pin{direction_pin},
           m_timer{timer},
+          m_channel{channel},
           m_max_pwm{0_percent} {
 
         // Prevent the motor from spinning on boot up
@@ -23,12 +27,13 @@ namespace mrover {
     }
 
     auto HBridge::set_direction_pins(Percent duty_cycle) const -> void {
-        // TODO(quintin): Guthrie says only one of these pins is actually used?
-        GPIO_PinState positive_state = duty_cycle > 0_percent ? GPIO_PIN_SET : GPIO_PIN_RESET;
-        GPIO_PinState negative_state = duty_cycle < 0_percent ? GPIO_PIN_SET : GPIO_PIN_RESET;
-        if (m_is_inverted) std::swap(positive_state, negative_state);
-        m_positive_pin.write(positive_state);
-        m_negative_pin.write(negative_state);
+        // GPIO_PinState positive_state = duty_cycle > 0_percent ? GPIO_PIN_SET : GPIO_PIN_RESET;
+        // GPIO_PinState negative_state = duty_cycle < 0_percent ? GPIO_PIN_SET : GPIO_PIN_RESET;
+        // if (m_is_inverted) std::swap(positive_state, negative_state);
+        // m_positive_pin.write(positive_state);
+        // m_negative_pin.write(negative_state);
+        GPIO_PinState const pin_state = (duty_cycle > 0_percent && !m_is_inverted) ? GPIO_PIN_SET : GPIO_PIN_RESET;
+        m_direction_pin.write(pin_state);
     }
 
     auto HBridge::set_duty_cycle(Percent duty_cycle, Percent max_duty_cycle) const -> void {
