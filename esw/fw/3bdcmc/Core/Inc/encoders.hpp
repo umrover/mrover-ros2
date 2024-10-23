@@ -1,14 +1,12 @@
 #pragma once
 
 #include <cstdint>
-#include <numbers>
 #include <optional>
 
-#include <hardware.hpp>
+#include <hardware_tim.hpp>
 #include <hardware_i2c.hpp>
 #include <units/units.hpp>
 
-#include "common.hpp"
 #include "filtering.hpp"
 
 namespace mrover {
@@ -24,7 +22,7 @@ namespace mrover {
 
         AbsoluteEncoderReader() = default;
 
-        AbsoluteEncoderReader(AS5048B_Bus i2c_bus, Radians offset, Ratio multiplier, TIM_HandleTypeDef* elapsed_timer);
+        AbsoluteEncoderReader(AS5048B_Bus i2c_bus, Radians offset, Ratio multiplier, IStopwatch* stopwatch);
 
         auto request_raw_angle() -> void;
         auto read_raw_angle_into_buffer() -> void;
@@ -41,7 +39,8 @@ namespace mrover {
                     device_slave_address_both_high = 0x43;
         };
 
-        TIM_HandleTypeDef* m_elapsed_timer{};
+        IStopwatch* m_stopwatch{};
+        std::uint8_t m_stopwatch_id{};
 
         std::uint16_t m_address = I2CAddress::device_slave_address_none_high;
         AS5048B_Bus m_i2cBus;
@@ -60,7 +59,7 @@ namespace mrover {
     public:
         QuadratureEncoderReader() = default;
 
-        QuadratureEncoderReader(TIM_HandleTypeDef* tick_timer, Ratio multiplier, TIM_HandleTypeDef* elapsed_timer);
+        QuadratureEncoderReader(TIM_HandleTypeDef* tick_timer, Ratio multiplier, IStopwatch* stopwatch);
 
         [[nodiscard]] auto read() const -> std::optional<EncoderReading>;
 
@@ -72,7 +71,9 @@ namespace mrover {
 
     private:
         TIM_HandleTypeDef* m_tick_timer{};
-        TIM_HandleTypeDef* m_elapsed_timer{};
+
+        IStopwatch* m_stopwatch{};
+        std::uint8_t m_stopwatch_id{};
         std::int64_t m_counts_unwrapped_prev{};
         Ratio m_multiplier;
 
