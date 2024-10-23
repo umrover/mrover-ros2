@@ -71,6 +71,10 @@ void Error_Handler(void);
 #define QUAD_2_A_GPIO_Port GPIOA
 #define QUAD_2_B_Pin GPIO_PIN_1
 #define QUAD_2_B_GPIO_Port GPIOA
+#define QUAD_1_B_Pin GPIO_PIN_4
+#define QUAD_1_B_GPIO_Port GPIOA
+#define QUAD_1_A_Pin GPIO_PIN_6
+#define QUAD_1_A_GPIO_Port GPIOA
 #define CAN_RX_LED_Pin GPIO_PIN_11
 #define CAN_RX_LED_GPIO_Port GPIOB
 #define CAN_TX_LED_Pin GPIO_PIN_12
