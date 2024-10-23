@@ -32,7 +32,12 @@ extern TIM_HandleTypeDef htim16;
 extern TIM_HandleTypeDef htim17;
 // extern WWDG_HandleTypeDef hwwdg;
 
-#define PWM_TIMER_0 &htim1                    // H-Bridge PWM
+// Measures time since the last quadrature tick reading or the last absolute encoder reading
+// Measures time since the last throttle command
+// Measures time since the last PIDF update, used for the "D" term
+#define VIRTUAL_STOPWATCHES_TIMER &htim7
+
+#define PWM_TIMER_0 &htim1 // H-Bridge PWM
 #define PWM_TIMER_CHANNEL_0 TIM_CHANNEL_1
 
 #define PWM_TIMER_1 &htim1
@@ -41,23 +46,13 @@ extern TIM_HandleTypeDef htim17;
 #define PWM_TIMER_2 &htim1
 #define PWM_TIMER_CHANNEL_2 TIM_CHANNEL_3
 
-#define QUADRATURE_TICK_TIMER_0 &htim2      // Special encoder timer which externally reads quadrature encoder ticks
-#define QUADRATURE_TICK_TIMER_1 &htim3      // Special encoder timer which externally reads quadrature encoder ticks
-#define QUADRATURE_TICK_TIMER_2 &htim4      // Special encoder timer which externally reads quadrature encoder ticks
+#define QUADRATURE_TICK_TIMER_0 &htim2 // Special encoder timer which externally reads quadrature encoder ticks
+#define QUADRATURE_TICK_TIMER_1 &htim3 // Special encoder timer which externally reads quadrature encoder ticks
+#define QUADRATURE_TICK_TIMER_2 &htim4 // Special encoder timer which externally reads quadrature encoder ticks
 
-#define VIRTUAL_ELAPSED_TIMER &htim8
-#define ENCODER_ELAPSED_TIMER_0  &htim8   // Measures time since the last quadrature tick reading or the last absolute encoder reading
-#define ENCODER_ELAPSED_TIMER_CHANNEL_0 (TIM_CHANNEL_1)
-#define ENCODER_ELAPSED_TIMER_1  &htim8
-#define ENCODER_ELAPSED_TIMER_CHANNEL_1 (TIM_CHANNEL_2)
-#define ENCODER_ELAPSED_TIMER_2  &htim8
-#define ENCODER_ELAPSED_TIMER_CHANNEL_2 (TIM_CHANNEL_3)
+#define GLOBAL_UPDATE_TIMER &htim6 // 20 Hz global timer for: FDCAN send, I2C transaction (absolute encoders)
 
-#define GLOBAL_UPDATE_TIMER &htim6          // 20 Hz global timer for: FDCAN send, I2C transaction (absolute encoders)
-
-#define THROTTLE_LIMIT_TIMER &htim7         // Measures time since the last throttle command
-#define PIDF_TIMER &htim16                  // Measures time since the last PIDF update, used for the "D" term
-#define FDCAN_WATCHDOG_TIMER &htim17        // FDCAN watchdog timer that needs to be reset every time a message is received
+#define FDCAN_WATCHDOG_TIMER &htim17 // FDCAN watchdog timer that needs to be reset every time a message is received
 
 namespace mrover {
 
@@ -66,10 +61,7 @@ namespace mrover {
 
     auto init() -> void {
         fdcan_bus = FDCAN<InBoundMessage>{DEVICE_ID, DESTINATION_DEVICE_ID, &hfdcan1};
-        controller = Controller<NUM_MOTORS>{
-            {PWM_TIMER_0, PWM_TIMER_1, PWM_TIMER_2}
-        };
-        /*
+        stopwatches = ControllerStopwatches(VIRTUAL_STOPWATCHES_TIMER);
         controller = Controller{
                 PWM_TIMER_1,
                 Pin{GPIOB, GPIO_PIN_15},
@@ -88,12 +80,9 @@ namespace mrover {
                         // LimitSwitch{Pin{LIMIT_0_3_GPIO_Port, LIMIT_0_3_Pin}},
                 },
         };
-        */
 
-        // TODO: these should probably be in the controller / encoders themselves
-        // Necessary for the timer interrupt to work
-        check(HAL_TIM_Base_Start(THROTTLE_LIMIT_TIMER) == HAL_OK, Error_Handler);
-        check(HAL_TIM_Base_Start(PIDF_TIMER) == HAL_OK, Error_Handler);
+        controller.init();
+
         check(HAL_TIM_Base_Start_IT(GLOBAL_UPDATE_TIMER) == HAL_OK, Error_Handler);
     }
 
@@ -169,7 +158,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim) {
         mrover::global_update_callback();
     } else if (htim == FDCAN_WATCHDOG_TIMER) {
         mrover::fdcan_watchdog_expired();
-    } else if (htim == QUADRATURE_ELAPSED_TIMER_1) {
+    } else if (htim == VIRTUAL_STOPWATCHES_TIMER) {
         mrover::quadrature_elapsed_timer_expired();
     }
 }
