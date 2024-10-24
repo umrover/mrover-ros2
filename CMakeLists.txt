@@ -226,6 +226,12 @@ target_link_libraries(simulator
 )
 target_include_directories(simulator SYSTEM PRIVATE ${BULLET_INCLUDE_DIRS} ${OPENCV_INCLUDE_DIRS})
 
+# Localization
+
+mrover_add_node(pose_filter localization/pose_filter.cpp)
+target_link_libraries(pose_filter lie)
+ament_target_dependencies(pose_filter rclcpp geometry_msgs nav_msgs sensor_msgs tf2 tf2_ros)
+
 # Perception
 
 find_package(ZED QUIET)
@@ -321,6 +327,7 @@ install(PROGRAMS
         localization/rover_gps_driver.py
         localization/gps_linearization.py
         localization/basestation_gps_driver.py
+        localization/imu_driver.py
         superstructure/superstructure.py
         scripts/debug_course_publisher.py
 		scripts/visualizer.py
