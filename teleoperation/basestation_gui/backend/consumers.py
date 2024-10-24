@@ -13,7 +13,6 @@ import tf2_ros
 import numpy as np
 from backend.drive_controls import send_joystick_twist
 from backend.input import DeviceInputs
-from mrover.msg import WheelCmd
 from geometry_msgs.msg import Twist
 
 import threading
@@ -21,6 +20,7 @@ import threading
 import logging
 logger = logging.getLogger('django')
 
+rclpy.init()
 node = rclpy.create_node('teleoperation')
 thread = threading.Thread(target=rclpy.spin, args=(node, ), daemon=True)
 thread.start()
@@ -29,7 +29,6 @@ class GUIConsumer(JsonWebsocketConsumer):
     subscribers = []
     
     def connect(self) -> None:
-        self.forward_ros_topic("/wheel_cmd", WheelCmd, "wheel_cmd")
         self.accept()
 
     def forward_ros_topic(self, topic_name: str, topic_type: Type, gui_msg_type: str) -> None:
@@ -73,14 +72,12 @@ class GUIConsumer(JsonWebsocketConsumer):
         """
 
         if text_data is None:
-            # node.get_logger().warning("Expecting text but received binary on GUI websocket...")
-            return
+            node.get_logger().warning("Expecting text but received binary on GUI websocket...")
 
         try:
             message = json.loads(text_data)
         except json.JSONDecodeError as e:
-            # node.get_logger().warning(f"Failed to decode JSON: {e}")
-            return
+            node.get_logger().warning(f"Failed to decode JSON: {e}")
 
         try:
             match message:
@@ -92,10 +89,8 @@ class GUIConsumer(JsonWebsocketConsumer):
                     device_input = DeviceInputs(axes, buttons)
                     send_joystick_twist(device_input)
                 case _:
-                    # node.get_logger().warning(f"Unhandled message: {message}")
-                    pass
+                    node.get_logger().warning(f"Unhandled message: {message}")
 
         except:
-            # node.get_logger().error(f"Failed to handle message: {message}")
-            # node.get_logger().error(traceback.format_exc())
-            pass
+            node.get_logger().error(f"Failed to handle message: {message}")
+            node.get_logger().error(traceback.format_exc())

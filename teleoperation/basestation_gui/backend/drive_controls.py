@@ -1,24 +1,24 @@
-import rospy
+# import rospy
 from backend.input import filter_input, simulated_axis, safe_index, remap, DeviceInputs
 from backend.mappings import JoystickAxis, ControllerButton
 from geometry_msgs.msg import Twist, Vector3
 
-rospy.init_node("teleoperation", disable_signals=True)
+# rospy.init_node("teleoperation", disable_signals=True)
 
-joystick_twist_publisher = rospy.Publisher("/joystick_cmd_vel", Twist, queue_size=1)
-controller_twist_publisher = rospy.Publisher("/controller_cmd_vel", Twist, queue_size=1)
+# joystick_twist_publisher = rospy.Publisher("/joystick_cmd_vel", Twist, queue_size=1)
+# controller_twist_publisher = rospy.Publisher("/controller_cmd_vel", Twist, queue_size=1)
 
 JOYSTICK_MICRO_LINEAR = -0.05
 JOYSTICK_MICRO_ANGULAR = -0.1
 CONTROLLER_LINEAR = 0.05
 CONTROLLER_ANGULAR = -0.1
 
-MAX_LINEAR_SPEED = rospy.get_param("rover/max_speed")
-WHEEL_RADIUS = rospy.get_param("wheel/radius")
-MAX_ANGULAR_SPEED = MAX_LINEAR_SPEED / WHEEL_RADIUS
+# MAX_LINEAR_SPEED = rospy.get_param("rover/max_speed")
+# WHEEL_RADIUS = rospy.get_param("wheel/radius")
+# MAX_ANGULAR_SPEED = MAX_LINEAR_SPEED / WHEEL_RADIUS
 
-JOYSTICK_LINEAR = -MAX_LINEAR_SPEED
-JOYSTICK_ANGULAR = -MAX_ANGULAR_SPEED * 0.3
+JOYSTICK_LINEAR = 0 # -MAX_LINEAR_SPEED
+# JOYSTICK_ANGULAR = -MAX_ANGULAR_SPEED * 0.3
 
 JOYSTICK_DEADZONE = 0.02
 
@@ -47,12 +47,12 @@ def send_joystick_twist(joystick: DeviceInputs) -> None:
     linear = joystick_linear + joystick_micro_linear
     angular = joystick_angular + joystick_micro_angular
 
-    joystick_twist_publisher.publish(
-        Twist(
-            linear=Vector3(x=linear),
-            angular=Vector3(z=angular),
-        )
-    )
+    # joystick_twist_publisher.publish(
+    #     Twist(
+    #         linear=Vector3(x=linear),
+    #         angular=Vector3(z=angular),
+    #     )
+    # )
 
 
 def send_controller_twist(controller: DeviceInputs) -> None:
@@ -66,9 +66,9 @@ def send_controller_twist(controller: DeviceInputs) -> None:
         simulated_axis(buttons, ControllerButton.DPAD_RIGHT, ControllerButton.DPAD_LEFT),
         scale=CONTROLLER_ANGULAR,
     )
-    controller_twist_publisher.publish(
-        Twist(
-            linear=Vector3(x=controller_linear),
-            # angular=Vector3(z=controller_angular),
-        )
-    )
+    # controller_twist_publisher.publish(
+    #     Twist(
+    #         linear=Vector3(x=controller_linear),
+    #         # angular=Vector3(z=controller_angular),
+    #     )
+    # )

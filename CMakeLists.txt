@@ -320,6 +320,8 @@ install(PROGRAMS
         superstructure/superstructure.py
         scripts/debug_course_publisher.py
 		scripts/visualizer.py
+        teleoperation/basestation_gui/gui_frontend.sh
+        teleoperation/basestation_gui/gui_backend.sh
 
         # starter project sources
         starter_project/autonomy/src/localization.py
