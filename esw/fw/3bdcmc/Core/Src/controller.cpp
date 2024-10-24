@@ -30,29 +30,32 @@ extern TIM_HandleTypeDef htim7;
 extern TIM_HandleTypeDef htim8;
 extern TIM_HandleTypeDef htim16;
 extern TIM_HandleTypeDef htim17;
-// extern WWDG_HandleTypeDef hwwdg;
 
 // Measures time since the last quadrature tick reading or the last absolute encoder reading
 // Measures time since the last throttle command
 // Measures time since the last PIDF update, used for the "D" term
 #define VIRTUAL_STOPWATCHES_TIMER &htim7
 
-#define PWM_TIMER_0 &htim1 // H-Bridge PWM
+// H-Bridge PWM
+#define PWM_TIMER_0 &htim1 // Motor 0
 #define PWM_TIMER_CHANNEL_0 TIM_CHANNEL_1
-
-#define PWM_TIMER_1 &htim1
+#define PWM_TIMER_1 &htim1 // Motor 1
 #define PWM_TIMER_CHANNEL_1 TIM_CHANNEL_2
-
-#define PWM_TIMER_2 &htim1
+#define PWM_TIMER_2 &htim1 // Motor 2
 #define PWM_TIMER_CHANNEL_2 TIM_CHANNEL_3
 
-#define QUADRATURE_TICK_TIMER_0 &htim2 // Special encoder timer which externally reads quadrature encoder ticks
-#define QUADRATURE_TICK_TIMER_1 &htim3 // Special encoder timer which externally reads quadrature encoder ticks
-#define QUADRATURE_TICK_TIMER_2 &htim4 // Special encoder timer which externally reads quadrature encoder ticks
+// Special encoder timer which externally reads quadrature encoder ticks
+#define QUADRATURE_TICK_TIMER_0 &htim2 // Motor 0
+#define QUADRATURE_TICK_TIMER_1 &htim3 // Motor 1
+#define QUADRATURE_TICK_TIMER_2 &htim4 // Motor 2
 
-#define GLOBAL_UPDATE_TIMER &htim6 // 20 Hz global timer for: FDCAN send, I2C transaction (absolute encoders)
+// 20 Hz global timer for: FDCAN send, I2C transaction (absolute encoders)
+#define GLOBAL_UPDATE_TIMER &htim6
 
-#define FDCAN_WATCHDOG_TIMER &htim17 // FDCAN watchdog timer that needs to be reset every time a message is received
+// FDCAN watchdog timer that needs to be reset every time a message is received
+#define COMMAND_WATCHDOG_TIMER_0 &htim15 // Motor 0
+#define COMMAND_WATCHDOG_TIMER_1 &htim16 // Motor 1
+#define COMMAND_WATCHDOG_TIMER_2 &htim17 // Motor 2
 
 namespace mrover {
 
