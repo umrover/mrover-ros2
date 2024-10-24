@@ -6,7 +6,7 @@ namespace mrover {
 
     struct Tag {
         int id = -1;
-        std::int64_t hitCount = 0;
+        int hitCount = 0;
         cv::Point2f imageCenter{};
         std::optional<SE3d> tagInCam;
     };
@@ -16,6 +16,13 @@ namespace mrover {
     protected:
         rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr mDetectedImagePub;
         std::unordered_map<int, rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr> mThreshImagePubs; // Map from threshold scale to publisher
+
+        std::string mMapFrameId;
+        std::string mCameraFrameId;
+        int mMinTagHitCountBeforePublish;
+        int mMaxTagHitCount;
+        int mTagIncrementWeight;
+        int mTagDecrementWeight;
 
         tf2_ros::Buffer mTfBuffer{get_clock()};
         tf2_ros::TransformListener mTfListener{mTfBuffer};
@@ -58,6 +65,8 @@ namespace mrover {
     };
 
     class ImageTagDetectorNodelet final : public TagDetectorNodeletBase {
+
+        float mCameraHorizontalFOV;
 
         rclcpp::Publisher<msg::ImageTargets>::SharedPtr mTargetsPub;
 
