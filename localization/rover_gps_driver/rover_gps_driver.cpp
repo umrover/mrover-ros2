@@ -13,9 +13,9 @@ namespace mrover {
 
         serial.open(port);
         std::string port_string = std::to_string(baud);
-        RCLCPP_INFO(get_logger(), port_string.c_str());
         serial.set_option(boost::asio::serial_port_base::baud_rate(baud));
-        RCLCPP_INFO(get_logger(), "made it");
+
+        RCLCPP_INFO(get_logger(), "Connected to GPS via serial!");
         
         // publishers and subscribers
         gps_pub = this->create_publisher<sensor_msgs::msg::NavSatFix>("/gps/fix", 10);
@@ -33,11 +33,13 @@ namespace mrover {
     // just want to log the messages for now
     void RoverGPSDriver::process_unicore(std::string unicore_msg) {
         RCLCPP_INFO(get_logger(), ("Message: " + unicore_msg).c_str());
+
+        // parse messages here:
     }
 
     void RoverGPSDriver::spin() {
         while (rclcpp::ok()) {
-            std::size_t bytes_transferred = boost::asio::read_until(serial, read_buffer, '\n');
+            boost::asio::read_until(serial, read_buffer, '\n');
             std::istream buffer(&read_buffer);
             std::string unicore_msg;
             std::getline(buffer, unicore_msg);
