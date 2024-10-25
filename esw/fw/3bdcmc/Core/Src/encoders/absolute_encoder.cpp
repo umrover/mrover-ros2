@@ -17,17 +17,16 @@ namespace mrover {
 
     AbsoluteEncoderReader::AbsoluteEncoderReader(AS5048B_Bus i2c_bus, Radians offset, Ratio multiplier, IStopwatch* stopwatch)
         : m_stopwatch(stopwatch), m_i2cBus{i2c_bus}, m_offset{offset}, m_multiplier{multiplier} {
-        // NOTE(quintin): I commented this out until BDCMCv2 comes out
         // A1/A2 is 1 if pin connected to power, 0 if pin connected to ground
-        // if (A1 && A2) {
-        //     m_address = I2CAddress::device_slave_address_both_high;
-        // } else if (A1) {
-        //     m_address = I2CAddress::device_slave_address_a1_high;
-        // } else if (A2) {
-        //     m_address = I2CAddress::device_slave_address_a2_high;
-        // } else {
-        //     m_address = I2CAddress::device_slave_address_none_high;
-        // }
+        if (A1 && A2) {
+            m_address = I2CAddress::device_slave_address_both_high;
+        } else if (A1) {
+            m_address = I2CAddress::device_slave_address_a1_high;
+        } else if (A2) {
+            m_address = I2CAddress::device_slave_address_a2_high;
+        } else {
+            m_address = I2CAddress::device_slave_address_none_high;
+        }
 
         m_stopwatch_id = m_stopwatch->add_stopwatch();
     }

@@ -1,9 +1,5 @@
 #include "encoders.hpp"
 
-#include <cstdint>
-
-#include <units/units.hpp>
-
 namespace mrover {
 
     QuadratureEncoderReader::QuadratureEncoderReader(TIM_HandleTypeDef* tick_timer, Ratio multiplier, IStopwatch* stopwatch)

@@ -27,14 +27,9 @@ extern TIM_HandleTypeDef htim3;
 extern TIM_HandleTypeDef htim4;
 extern TIM_HandleTypeDef htim6;
 extern TIM_HandleTypeDef htim7;
-extern TIM_HandleTypeDef htim8;
+extern TIM_HandleTypeDef htim15;
 extern TIM_HandleTypeDef htim16;
 extern TIM_HandleTypeDef htim17;
-
-// Measures time since the last quadrature tick reading or the last absolute encoder reading
-// Measures time since the last throttle command
-// Measures time since the last PIDF update, used for the "D" term
-#define VIRTUAL_STOPWATCHES_TIMER &htim7
 
 // H-Bridge PWM
 #define PWM_TIMER_0 &htim1 // Motor 0
@@ -52,37 +47,66 @@ extern TIM_HandleTypeDef htim17;
 // 20 Hz global timer for: FDCAN send, I2C transaction (absolute encoders)
 #define GLOBAL_UPDATE_TIMER &htim6
 
+// Measures time since the last quadrature tick reading or the last absolute encoder reading
+// Measures time since the last throttle command
+// Measures time since the last PIDF update, used for the "D" term
+#define VIRTUAL_STOPWATCHES_TIMER &htim7
+
 // FDCAN watchdog timer that needs to be reset every time a message is received
-#define COMMAND_WATCHDOG_TIMER_0 &htim15 // Motor 0
-#define COMMAND_WATCHDOG_TIMER_1 &htim16 // Motor 1
-#define COMMAND_WATCHDOG_TIMER_2 &htim17 // Motor 2
+#define RECEIVE_WATCHDOG_TIMER_0 &htim15 // Motor 0
+#define RECEIVE_WATCHDOG_TIMER_1 &htim16 // Motor 1
+#define RECEIVE_WATCHDOG_TIMER_2 &htim17 // Motor 2
 
 namespace mrover {
 
     FDCAN<InBoundMessage> fdcan_bus;
     Controller<NUM_MOTORS> controller;
 
+    auto create_motor_config(std::size_t index) -> MotorConfig {
+        switch (index) {
+            case 0:
+                return {
+                        .hbridge_output = PWM_TIMER_0,
+                        .hbridge_output_channel = PWM_TIMER_CHANNEL_0,
+                        .hbridge_direction = Pin{MOTOR_DIR_0_GPIO_Port, MOTOR_DIR_0_Pin},
+                        .receive_watchdog_timer = RECEIVE_WATCHDOG_TIMER_0,
+                        .limit_switches = {LimitSwitch{Pin{LIMIT_0_A_GPIO_Port, LIMIT_0_A_Pin}}, LimitSwitch{Pin{LIMIT_0_B_GPIO_Port, LIMIT_0_B_Pin}}},
+                        .quad_encoder_tick = QUADRATURE_TICK_TIMER_0};
+            case 1:
+                return {
+                        .hbridge_output = PWM_TIMER_1,
+                        .hbridge_output_channel = PWM_TIMER_CHANNEL_1,
+                        .hbridge_direction = Pin{MOTOR_DIR_1_GPIO_Port, MOTOR_DIR_1_Pin},
+                        .receive_watchdog_timer = RECEIVE_WATCHDOG_TIMER_1,
+                        .limit_switches = {LimitSwitch{Pin{LIMIT_1_A_GPIO_Port, LIMIT_1_A_Pin}}, LimitSwitch{Pin{LIMIT_1_B_GPIO_Port, LIMIT_1_B_Pin}}},
+                        .quad_encoder_tick = QUADRATURE_TICK_TIMER_1};
+            case 2:
+                return {
+                        .hbridge_output = PWM_TIMER_2,
+                        .hbridge_output_channel = PWM_TIMER_CHANNEL_2,
+                        .hbridge_direction = Pin{MOTOR_DIR_2_GPIO_Port, MOTOR_DIR_2_Pin},
+                        .receive_watchdog_timer = RECEIVE_WATCHDOG_TIMER_2,
+                        .limit_switches = {LimitSwitch{Pin{LIMIT_2_A_GPIO_Port, LIMIT_2_A_Pin}}, LimitSwitch{Pin{LIMIT_2_B_GPIO_Port, LIMIT_2_B_Pin}}},
+                        .quad_encoder_tick = QUADRATURE_TICK_TIMER_2};
+            default:
+                return {};
+        }
+    }
+
+    template<std::size_t... Indices>
+    auto create_motor_configs(std::index_sequence<Indices...>) -> std::array<MotorConfig, sizeof...(Indices)> {
+        return {create_motor_config(Indices)...};
+    }
+
+    auto motor_configs = create_motor_configs(std::make_index_sequence<NUM_MOTORS>{});
+
     auto init() -> void {
         fdcan_bus = FDCAN<InBoundMessage>{DEVICE_ID, DESTINATION_DEVICE_ID, &hfdcan1};
-        stopwatches = ControllerStopwatches(VIRTUAL_STOPWATCHES_TIMER);
         controller = Controller{
-                PWM_TIMER_1,
-                Pin{GPIOB, GPIO_PIN_15},
-                Pin{GPIOC, GPIO_PIN_6},
                 fdcan_bus,
-                FDCAN_WATCHDOG_TIMER,
-                QUADRATURE_TICK_TIMER_1,
-                QUADRATURE_ELAPSED_TIMER_1,
-                THROTTLE_LIMIT_TIMER,
-                PIDF_TIMER,
+                VIRTUAL_STOPWATCHES_TIMER,
                 ABSOLUTE_I2C,
-                {
-                        LimitSwitch{Pin{LIMIT_0_0_GPIO_Port, LIMIT_0_0_Pin}},
-                        LimitSwitch{Pin{LIMIT_0_1_GPIO_Port, LIMIT_0_1_Pin}},
-                        // LimitSwitch{Pin{LIMIT_0_2_GPIO_Port, LIMIT_0_2_Pin}},
-                        // LimitSwitch{Pin{LIMIT_0_3_GPIO_Port, LIMIT_0_3_Pin}},
-                },
-        };
+                motor_configs};
 
         controller.init();
 
@@ -127,7 +151,8 @@ namespace mrover {
         controller.send();
     }
 
-    auto fdcan_watchdog_expired() -> void {
+    template<std::uint8_t MotorIndex>
+    auto receive_watchdog_timer_expired() -> void {
         controller.receive_watchdog_expired();
     }
 
@@ -159,8 +184,12 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim) {
     // HAL_WWDG_Refresh(&hwwdg);
     if (htim == GLOBAL_UPDATE_TIMER) {
         mrover::global_update_callback();
-    } else if (htim == FDCAN_WATCHDOG_TIMER) {
-        mrover::fdcan_watchdog_expired();
+    } else if (htim == RECEIVE_WATCHDOG_TIMER_0) {
+        mrover::receive_watchdog_timer_expired<0>();
+    } else if (htim == RECEIVE_WATCHDOG_TIMER_1) {
+        mrover::receive_watchdog_timer_expired<1>();
+    } else if (htim == RECEIVE_WATCHDOG_TIMER_2) {
+        mrover::receive_watchdog_timer_expired<2>();
     } else if (htim == VIRTUAL_STOPWATCHES_TIMER) {
         mrover::quadrature_elapsed_timer_expired();
     }
