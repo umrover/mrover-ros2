@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <optional>
 
+#include <common.hpp>
 #include <hardware_tim.hpp>
 #include <hardware_i2c.hpp>
 #include <units/units.hpp>
@@ -36,7 +37,7 @@ namespace mrover {
                     device_slave_address_none_high = 0x40,
                     device_slave_address_a1_high = 0x41,
                     device_slave_address_a2_high = 0x42,
-                    device_slave_address_both_high = 0x43;
+                    device_slave_address_both_high = 0x43; 0b100 {00, A2, A1}
         };
 
         IStopwatch* m_stopwatch{};

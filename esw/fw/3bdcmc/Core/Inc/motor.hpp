@@ -42,6 +42,8 @@ namespace mrover {
         IStopwatch* m_stopwatch{};
         std::uint8_t m_throttle_stopwatch_id{};
         std::uint8_t m_pidf_stopwatch_id{};
+        TIM_HandleTypeDef* m_receive_watchdog_timer{};
+        bool m_receive_watchdog_enabled{};
         TIM_HandleTypeDef* m_relative_encoder_tick_timer{};
         I2C_HandleTypeDef* m_absolute_encoder_i2c{};
         std::optional<QuadratureEncoderReader> m_relative_encoder;
@@ -132,7 +134,7 @@ namespace mrover {
             Percent output_after_limit = output.value_or(0_percent);
             Percent delta = output_after_limit - m_throttled_output;
 
-            Seconds dt = cycle_time(m_throttle_timer, CLOCK_FREQ);
+            Seconds dt = m_stopwatch->get_time_since_last_read(m_throttle_stopwatch_id);
 
             Percent applied_delta = m_throttle_rate * dt;
 
@@ -165,12 +167,12 @@ namespace mrover {
             StateAfterConfig config{.gear_ratio = message.gear_ratio};
 
             if (message.enc_info.quad_present) {
-                if (!m_relative_encoder) m_relative_encoder.emplace(m_encoder_timer, message.enc_info.quad_ratio, m_encoder_elapsed_timer);
+                if (!m_relative_encoder) m_relative_encoder.emplace(m_relative_encoder_tick_timer, message.enc_info.quad_ratio, m_stopwatch);
                 EncoderReading enc_read = m_relative_encoder->read().value();
                 m_uncalib_position = enc_read.position; // usually but not always 0
             }
             if (message.enc_info.abs_present) {
-                if (!m_absolute_encoder) m_absolute_encoder.emplace(AbsoluteEncoderReader::AS5048B_Bus{m_absolute_encoder_i2c}, message.enc_info.abs_offset, message.enc_info.abs_ratio, m_encoder_elapsed_timer);
+                if (!m_absolute_encoder) m_absolute_encoder.emplace(AbsoluteEncoderReader::AS5048B_Bus{m_absolute_encoder_i2c}, message.enc_info.abs_offset, message.enc_info.abs_ratio, m_stopwatch);
             }
 
             m_motor_driver.change_max_pwm(message.max_pwm);
@@ -239,7 +241,8 @@ namespace mrover {
             mode.pidf.with_d(message.d);
             mode.pidf.with_ff(message.ff);
             mode.pidf.with_output_bound(-1.0, 1.0);
-            m_desired_output = mode.pidf.calculate(input, target, cycle_time(m_pidf_timer, CLOCK_FREQ));
+            Seconds t = m_stopwatch->get_time_since_last_read(m_pidf_stopwatch_id);
+            m_desired_output = mode.pidf.calculate(input, target, t);
             m_error = BDCMCErrorInfo::NO_ERROR;
 
             // m_fdcan.broadcast(OutBoundMessage{DebugState{
@@ -269,7 +272,8 @@ namespace mrover {
             // mode.pidf.with_i(message.i);
             mode.pidf.with_d(message.d);
             mode.pidf.with_output_bound(-1.0, 1.0);
-            m_desired_output = mode.pidf.calculate(input, target, cycle_time(m_pidf_timer, CLOCK_FREQ));
+            Seconds t = m_stopwatch->get_time_since_last_read(m_pidf_stopwatch_id);
+            m_desired_output = mode.pidf.calculate(input, target, t);
             m_error = BDCMCErrorInfo::NO_ERROR;
         }
 
@@ -280,7 +284,7 @@ namespace mrover {
             template<typename Command, typename ModeHead, typename... Modes>
             struct command_to_mode<Command, std::variant<ModeHead, Modes...>> {
                 // Linear search to find corresponding mode
-                using type = std::conditional_t<requires(Motor motor, Command command, ModeHead mode) { controller.process_command(command, mode); },
+                using type = std::conditional_t<requires(Motor motor, Command command, ModeHead mode) { motor.process_command(command, mode); },
                                                 ModeHead,
                                                 typename command_to_mode<Command, std::variant<Modes...>>::type>; // Recursive call
             };
@@ -297,9 +301,10 @@ namespace mrover {
     public:
         Motor() = default;
 
-        Motor(HBridge const& motor_driver, IStopwatch* stopwatch, std::array<LimitSwitch, 2> const& limit_switches)
+        Motor(HBridge const& motor_driver, IStopwatch* stopwatch, TIM_HandleTypeDef* command_watchdog_timer, std::array<LimitSwitch, 2> const& limit_switches)
             : m_motor_driver(motor_driver),
               m_stopwatch(stopwatch),
+              m_receive_watchdog_timer(command_watchdog_timer),
               m_limit_switches(limit_switches) {}
 
 
@@ -326,10 +331,10 @@ namespace mrover {
          */
         auto receive(InBoundMessage const& message) -> void {
             // Ensure watchdog timer is reset and enabled now that we are receiving messages
-            __HAL_TIM_SetCounter(m_watchdog_timer, 0);
-            if (!m_watchdog_enabled) {
-                HAL_TIM_Base_Start_IT(m_watchdog_timer);
-                m_watchdog_enabled = true;
+            __HAL_TIM_SetCounter(m_receive_watchdog_timer, 0);
+            if (!m_receive_watchdog_enabled) {
+                HAL_TIM_Base_Start_IT(m_receive_watchdog_timer);
+                m_receive_watchdog_enabled = true;
             }
 
             m_inbound = message;
@@ -354,8 +359,8 @@ namespace mrover {
          * This disables the watchdog timer until we receive another message.
          */
         auto receive_watchdog_expired() -> void {
-            HAL_TIM_Base_Stop_IT(m_watchdog_timer);
-            m_watchdog_enabled = false;
+            HAL_TIM_Base_Stop_IT(m_receive_watchdog_timer);
+            m_receive_watchdog_enabled = false;
 
             // We lost connection or some other error happened
             // Make sure the motor stops

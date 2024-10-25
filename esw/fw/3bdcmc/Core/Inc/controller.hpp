@@ -2,12 +2,10 @@
 
 #include <array>
 #include <optional>
-#include <type_traits>
 #include <variant>
 
 #include <hardware.hpp>
 #include <messaging.hpp>
-#include <pidf.hpp>
 #include <units/units.hpp>
 
 #include "common.hpp"
@@ -20,6 +18,7 @@ namespace mrover {
         TIM_HandleTypeDef* hbridge_output{};
         std::uint32_t hbridge_output_channel{};
         Pin hbridge_direction{};
+        TIM_HandleTypeDef* receive_watchdog_timer{};
         std::array<LimitSwitch, 2> limit_switches{};
         TIM_HandleTypeDef* quad_encoder_tick{};
     };
@@ -38,8 +37,6 @@ namespace mrover {
         /* ==================== Hardware ==================== */
         FDCAN<InBoundMessage> m_fdcan;
         VirtualStopwatches<MotorCount * 3, std::uint32_t, mrover::CLOCK_FREQ> m_stopwatches; // MotorCount * 3 = MotorCount(encoder elapsed timer + last throttle timer + last PIDF timer)
-        TIM_HandleTypeDef* m_watchdog_timer{};
-        bool m_watchdog_enabled{};
         std::array<Motor, MotorCount> m_motors{};
 
         /* ==================== Per-Motor Functions ==================== */
@@ -59,11 +56,10 @@ namespace mrover {
     public:
         Controller() = default;
 
-        Controller(FDCAN<InBoundMessage> const& fdcan, TIM_HandleTypeDef* stopwatch_timer, TIM_HandleTypeDef* watchdog_timer,
+        Controller(FDCAN<InBoundMessage> const& fdcan, TIM_HandleTypeDef* stopwatch_timer,
                    I2C_HandleTypeDef* absolute_encoder_i2c, std::array<MotorConfig, MotorCount> const& motor_configs)
             : m_fdcan{fdcan},
-              m_stopwatches{stopwatch_timer},
-              m_watchdog_timer(watchdog_timer) {
+              m_stopwatches{stopwatch_timer} {
             for (std::size_t i = 0; i < MotorCount; ++i) {
                 MotorConfig const& config = motor_configs;
                 m_motors[i] = Motor{
@@ -92,5 +88,5 @@ namespace mrover {
             }
         }
 
-
+    };
 } // namespace mrover

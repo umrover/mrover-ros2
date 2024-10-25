@@ -4,7 +4,7 @@
 
 namespace mrover {
 
-    constexpr static std::uint8_t NUM_MOTORS = 3;
+    constexpr static std::uint8_t MAX_MOTORS = 3;
 
     constexpr auto TAU_F = 2 * std::numbers::pi_v<float>;
 
@@ -21,5 +21,9 @@ namespace mrover {
 
     // Usually this is the Jetson
     constexpr static std::uint8_t DESTINATION_DEVICE_ID = 0x10;
+
+    constexpr static std::uint8_t NUM_MOTORS = 3;
+
+    static_assert(NUM_MOTORS <= MAX_MOTORS, "NUM_MOTORS exceeds the maximum allowed motors");
 
 } // namespace mrover
