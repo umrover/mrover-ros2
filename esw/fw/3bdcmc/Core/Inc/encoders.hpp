@@ -23,7 +23,7 @@ namespace mrover {
 
         AbsoluteEncoderReader() = default;
 
-        AbsoluteEncoderReader(AS5048B_Bus i2c_bus, Radians offset, Ratio multiplier, IStopwatch* stopwatch);
+        AbsoluteEncoderReader(AS5048B_Bus i2c_bus, uint8_t a2_a1, Radians offset, Ratio multiplier, IStopwatch* stopwatch);
 
         auto request_raw_angle() -> void;
         auto read_raw_angle_into_buffer() -> void;
@@ -37,7 +37,7 @@ namespace mrover {
                     device_slave_address_none_high = 0x40,
                     device_slave_address_a1_high = 0x41,
                     device_slave_address_a2_high = 0x42,
-                    device_slave_address_both_high = 0x43; 0b100 {00, A2, A1}
+                    device_slave_address_both_high = 0x43;
         };
 
         IStopwatch* m_stopwatch{};
