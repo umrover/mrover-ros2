@@ -15,14 +15,20 @@ namespace mrover {
 
     constexpr static std::uint16_t REQUEST_ANGLE = 0xFE;
 
-    AbsoluteEncoderReader::AbsoluteEncoderReader(AS5048B_Bus i2c_bus, Radians offset, Ratio multiplier, IStopwatch* stopwatch)
+    AbsoluteEncoderReader::AbsoluteEncoderReader(AS5048B_Bus i2c_bus, uint8_t a2_a1, Radians offset, Ratio multiplier, IStopwatch* stopwatch)
         : m_stopwatch(stopwatch), m_i2cBus{i2c_bus}, m_offset{offset}, m_multiplier{multiplier} {
         // A1/A2 is 1 if pin connected to power, 0 if pin connected to ground
-        if (A1 && A2) {
+        // This is used for address selection per
+        // [datasheet](https://www.mouser.com/datasheet/2/588/AS5048_DS000298_4-00-1100510.pdf?srsltid=AfmBOorG94PYEL0t30_O-gjnl7_jXUCsNwnBYo8pr5MZHPaUmn4QbLmg)
+        // I2C Address = 0b10000{a2}{a1}
+        const uint8_t a1 = a2_a1 & 0x01;
+        const uint8_t a2 = (a2_a1 >> 1) & 0x01;
+
+        if (a1 && a2) {
             m_address = I2CAddress::device_slave_address_both_high;
-        } else if (A1) {
+        } else if (a1) {
             m_address = I2CAddress::device_slave_address_a1_high;
-        } else if (A2) {
+        } else if (a2) {
             m_address = I2CAddress::device_slave_address_a2_high;
         } else {
             m_address = I2CAddress::device_slave_address_none_high;

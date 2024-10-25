@@ -172,7 +172,7 @@ namespace mrover {
                 m_uncalib_position = enc_read.position; // usually but not always 0
             }
             if (message.enc_info.abs_present) {
-                if (!m_absolute_encoder) m_absolute_encoder.emplace(AbsoluteEncoderReader::AS5048B_Bus{m_absolute_encoder_i2c}, message.enc_info.abs_offset, message.enc_info.abs_ratio, m_stopwatch);
+                if (!m_absolute_encoder) m_absolute_encoder.emplace(AbsoluteEncoderReader::AS5048B_Bus{m_absolute_encoder_i2c}, message.enc_info.abs_a2_a1, message.enc_info.abs_offset, message.enc_info.abs_ratio, m_stopwatch);
             }
 
             m_motor_driver.change_max_pwm(message.max_pwm);

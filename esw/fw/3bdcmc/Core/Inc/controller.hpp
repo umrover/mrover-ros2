@@ -82,7 +82,7 @@ namespace mrover {
          * The update rate should be limited to avoid hammering the FDCAN bus.
          */
         auto send() -> void {
-            update();
+            foreach_motor([](auto& motor) { motor.update(); });
             if (bool success = m_fdcan.broadcast(m_outbound); !success) {
                 m_fdcan.reset();
             }
