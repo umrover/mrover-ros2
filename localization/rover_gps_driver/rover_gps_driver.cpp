@@ -1,6 +1,4 @@
 #include "rover_gps_driver.hpp"
-#include <std_msgs/msg/detail/header__struct.hpp>
-#include <string>
 
 namespace mrover {
 
@@ -9,9 +7,11 @@ namespace mrover {
         // connect to serial
         declare_parameter("port", rclcpp::ParameterType::PARAMETER_STRING);
         declare_parameter("baud", rclcpp::ParameterType::PARAMETER_INTEGER);
+        declare_parameter("frame_id", rclcpp::ParameterType::PARAMETER_STRING);
 
         port = get_parameter("port").as_string();
         baud = get_parameter("baud").as_int();
+        frame_id = get_parameter("frame_id").as_string();
 
         serial.open(port);
         std::string port_string = std::to_string(baud);
@@ -21,95 +21,147 @@ namespace mrover {
         
         // publishers and subscribers
         gps_pub = this->create_publisher<sensor_msgs::msg::NavSatFix>("/gps/fix", 10);
-        rtk_status_pub = this->create_publisher<mrover::msg::RTKStatus>("/rtk_fix_status", 10);
+        gps_status_pub = this->create_publisher<mrover::msg::RTKStatus>("/gps_fix_status", 10);
+        heading_pub = this->create_publisher<mrover::msg::RTKHeading>("/heading/fix", 10);
+        heading_status_pub = this->create_publisher<mrover::msg::RTKStatus>("/heading_fix_status", 10);
         rtcm_sub = this->create_subscription<rtcm_msgs::msg::Message>("/rtcm", 10, [&](rtcm_msgs::msg::Message::ConstSharedPtr const& rtcm_message) {
             process_rtcm(rtcm_message);
         });
-
     }
 
     void RoverGPSDriver::process_rtcm(rtcm_msgs::msg::Message::ConstSharedPtr rtcm_msg) {
         boost::asio::write(serial, boost::asio::buffer(rtcm_msg->message));
     }
 
-
-    std::string get_next_token(std::string& msg) {
-        std::string delimeter = ",";
-        std::string token = msg.substr(0,msg.find(delimeter));
-        msg = msg.substr(msg.find(delimeter)+1);
-        return token;
-    }
-    // just want to log the messages for now
     void RoverGPSDriver::process_unicore(std::string unicore_msg) {
-        RCLCPP_INFO(get_logger(), ("Message: " + unicore_msg).c_str());
-        std::string type = get_next_token(unicore_msg);
-        
-        std::string first_char = type.substr(0,1);
-        std::string header = type.substr(1, 7);
-        float lat;
-        std::string lat_dir = "K"; // dummy value
-        float lon;
-        std::string lon_dir;
-        float alt;
 
+        std::vector<std::string> tokens;
+        boost::split(tokens, unicore_msg, boost::is_any_of(",;"));
 
-        // GP whatever
-        if (first_char == "$") {
-            std::string code = type.substr(1);
-            if (code == "GNGGA") {
-                // get lat/lon
-                std::string utc = get_next_token(unicore_msg);
-                lat = stof(get_next_token(unicore_msg));
-                lat_dir = get_next_token(unicore_msg);
-                lon = stof(get_next_token(unicore_msg));
-                lon_dir = get_next_token(unicore_msg);
-                for (int i = 0; i < 3; ++i) {
-                    get_next_token(unicore_msg);
-                }
-                alt = stof(get_next_token(unicore_msg));
-                
-            } else {
+        std::string msg_header = tokens[0];
+
+        std_msgs::msg::Header header;
+        header.stamp = get_clock()->now();
+        header.frame_id = frame_id;
+
+        if (msg_header == GNGGA_HEADER) {
+
+            sensor_msgs::msg::NavSatFix nav_sat_fix;
+
+            if (tokens[GNGGA_LAT_POS].empty() || tokens[GNGGA_LON_POS].empty() || tokens[GNGGA_ALT_POS].empty()) {
+                RCLCPP_WARN(get_logger(), "No satellite fix. Are we inside?");
                 return;
             }
-            
 
-        } 
-        else if (first_char == "#") {
-            if (header == "ADRNAVA") {
-                for (int i = 0; i < 10; i++) {
-                    get_next_token(unicore_msg);
-                }
-                lat = stod(get_next_token(unicore_msg));
-                lon = stod(get_next_token(unicore_msg));
-                alt = stod(get_next_token(unicore_msg));
+            uint16_t lat_deg = stoi(tokens[GNGGA_LAT_POS].substr(0, 2));
+            double lat_min = stod(tokens[GNGGA_LAT_POS].substr(2, 13));
+            uint16_t lon_deg = stoi(tokens[GNGGA_LON_POS].substr(0, 3));
+            double lon_min = stod(tokens[GNGGA_LON_POS].substr(3, 14));
+            double alt = stod(tokens[GNGGA_ALT_POS]);
+
+            // 60 minutes = 1 degree
+            double lat = lat_deg + lat_min / 60;
+            double lon = lon_deg + lon_min / 60;
+
+            char lat_dir = tokens[GNGGA_LAT_DIR_POS][0];
+            char lon_dir = tokens[GNGGA_LON_DIR_POS][0];
+
+            if (lat_dir == 'S') {
+                lat = -lat;
+            }
+            if (lon_dir == 'W') {
+                lon = -lon;
             }
 
+            // TODO: get real covariance
+            std::array<double, 9> cov = {1, 0, 0, 0, 1, 0, 0, 0, 1};
+
+            nav_sat_fix.header = header;
+            nav_sat_fix.latitude = lat;
+            nav_sat_fix.longitude = lon;
+            nav_sat_fix.altitude = alt;
+            nav_sat_fix.position_covariance = cov;
+
+            gps_pub->publish(nav_sat_fix);
+
         }
 
-        sensor_msgs::msg::NavSatFix pose_data;
-        pose_data.set__altitude(alt);
-        if (lat_dir == "S") {
-            lat = -lat;
+        if (msg_header == ADRNAV_HEADER) {
+
+            sensor_msgs::msg::NavSatFix nav_sat_fix;
+            mrover::msg::RTKStatus rtk_status;
+            mrover::msg::RTKFixType sol_status;
+
+            if (tokens[ADRNAV_STATUS_POS] == "SOL_COMPUTED") {
+                sol_status.fix_type = mrover::msg::RTKFixType::SOL_COMPUTED;
+            }
+            else if (tokens[ADRNAV_STATUS_POS] == "NO_CONVERGENCE") {
+                sol_status.fix_type = mrover::msg::RTKFixType::NO_CONVERGENCE;
+            }
+            else if (tokens[ADRNAV_STATUS_POS] == "COV_TRACE") {
+                sol_status.fix_type = mrover::msg::RTKFixType::COV_TRACE;
+            }
+            else {
+                RCLCPP_WARN(get_logger(), "No RTK fix. Is the basestation on?");
+                return;
+            }
+
+            rtk_status.sol_status = sol_status;
+
+            double lat = stod(tokens[ADRNAV_LAT_POS]);
+            double lon = stod(tokens[ADRNAV_LON_POS]);
+            double alt = stod(tokens[ADRNAV_ALT_POS]);
+
+            // TODO: get real covariance
+            std::array<double, 9> cov = {1, 0, 0, 0, 1, 0, 0, 0, 1};
+
+            nav_sat_fix.header = header;
+            nav_sat_fix.latitude = lat;
+            nav_sat_fix.longitude = lon;
+            nav_sat_fix.altitude = alt;
+            nav_sat_fix.position_covariance = cov;
+
+            rtk_status.header = header;
+
+            gps_pub->publish(nav_sat_fix);
+            gps_status_pub->publish(rtk_status);
+
         }
-        pose_data.set__latitude(lat);
-        if (lon_dir == "W") {
-            lon = -lon;
+
+        if (msg_header == UNIHEADING_HEADER) {
+
+            mrover::msg::RTKHeading heading;
+            mrover::msg::RTKStatus rtk_status;
+            mrover::msg::RTKFixType sol_status;
+
+            if (tokens[ADRNAV_STATUS_POS] == "SOL_COMPUTED") {
+                sol_status.fix_type = mrover::msg::RTKFixType::SOL_COMPUTED;
+            }
+            else if (tokens[ADRNAV_STATUS_POS] == "NO_CONVERGENCE") {
+                sol_status.fix_type = mrover::msg::RTKFixType::NO_CONVERGENCE;
+            }
+            else if (tokens[ADRNAV_STATUS_POS] == "COV_TRACE") {
+                sol_status.fix_type = mrover::msg::RTKFixType::COV_TRACE;
+            }
+            else {
+                RCLCPP_WARN(get_logger(), "No RTK fix. Is the basestation on?");
+                return;
+            }
+
+            rtk_status.sol_status = sol_status;
+
+            float uniheading = stod(tokens[UNIHEADING_HEADING_POS]);
+
+            heading.header = header;
+            heading.heading = uniheading;
+
+            rtk_status.header = header;
+
+            heading_pub->publish(heading);
+            heading_status_pub->publish(rtk_status);
+
         }
-        pose_data.set__longitude(lon);
-        
-        // TODO: get real covariance
-        std::array<double, 9> cov = {1, 0, 0, 0, 1, 0, 0, 0, 1};
-        
-        // TODO fix this stuff and push
-        pose_data.set__position_covariance(const &cov);
 
-        auto header = std_msgs::msg::Header_();
-        header.
-
-        pose_data.set__header(const std_msgs::msg::Header_<allocator<void>> &_arg)
-
-        
-        // parse messages here:
     }
 
     void RoverGPSDriver::spin() {

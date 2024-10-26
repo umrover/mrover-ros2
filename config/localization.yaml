@@ -25,3 +25,4 @@ rover_gps_driver:
     #TODO: change this
     port: /dev/ttyUSB0
     baud: 115200
+    frame_id: "base_link"

@@ -1,0 +1,6 @@
+uint8 SOL_COMPUTED = 0
+uint8 INSUFFICIENT_OBS = 1
+uint8 NO_CONVERGENCE = 2
+uint8 COV_TRACE = 3
+
+uint8 fix_type
