@@ -102,7 +102,7 @@ namespace mrover {
                 sol_status.fix_type = mrover::msg::RTKFixType::COV_TRACE;
             }
             else {
-                RCLCPP_WARN(get_logger(), "No RTK fix. Is the basestation on?");
+                RCLCPP_WARN(get_logger(), "Position: no RTK fix. Is the basestation on?");
                 return;
             }
 
@@ -144,7 +144,7 @@ namespace mrover {
                 sol_status.fix_type = mrover::msg::RTKFixType::COV_TRACE;
             }
             else {
-                RCLCPP_WARN(get_logger(), "No RTK fix. Is the basestation on?");
+                RCLCPP_WARN(get_logger(), "Heading: no RTK fix. Is the basestation on?");
                 return;
             }
 
