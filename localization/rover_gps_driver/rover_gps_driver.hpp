@@ -27,11 +27,11 @@ namespace mrover {
         constexpr static std::string ADRNAV_HEADER = "#ADRNAVA";
         constexpr static std::string UNIHEADING_HEADER = "#UNIHEADINGA";
 
-        constexpr static uint8_t GNGGA_LAT_POS = 3;
-        constexpr static uint8_t GNGGA_LAT_DIR_POS = 4;
-        constexpr static uint8_t GNGGA_LON_POS = 5;
-        constexpr static uint8_t GNGGA_LON_DIR_POS = 6;
-        constexpr static uint8_t GNGGA_ALT_POS = 10;
+        constexpr static uint8_t GNGGA_LAT_POS = 2;
+        constexpr static uint8_t GNGGA_LAT_DIR_POS = 3;
+        constexpr static uint8_t GNGGA_LON_POS = 4;
+        constexpr static uint8_t GNGGA_LON_DIR_POS = 5;
+        constexpr static uint8_t GNGGA_ALT_POS = 9;
 
         constexpr static uint8_t ADRNAV_LAT_POS = 12;
         constexpr static uint8_t ADRNAV_LON_POS = 13;

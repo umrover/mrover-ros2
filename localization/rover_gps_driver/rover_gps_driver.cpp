@@ -52,7 +52,7 @@ namespace mrover {
                 RCLCPP_WARN(get_logger(), "No satellite fix. Are we inside?");
                 return;
             }
-
+            
             uint16_t lat_deg = stoi(tokens[GNGGA_LAT_POS].substr(0, 2));
             double lat_min = stod(tokens[GNGGA_LAT_POS].substr(2, 13));
             uint16_t lon_deg = stoi(tokens[GNGGA_LON_POS].substr(0, 3));
