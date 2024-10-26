@@ -90,8 +90,19 @@ namespace mrover {
 			}
 
             for (std::size_t i = 0; i < mGlobalGridMsg.data.size(); ++i) {
-				// TODO: fill out cost map grid using height (z) and EWMA (alpha = mAlpha)
-            }
+				Bin& bin = bins[i];
+                if (bin.size() < 16) continue;
+
+                std::size_t pointsHigh = std::ranges::count_if(bin, [this](BinEntry const& entry) {
+                    return entry.pointInCamera.z() > mZThreshold;
+                });
+                double percent = static_cast<double>(pointsHigh) / static_cast<double>(bin.size());
+
+                std::int8_t cost = percent > mZPercent ? OCCUPIED_COST : FREE_COST;
+
+                // Update cell with EWMA acting as a low-pass filter
+                auto& cell = mGlobalGridMsg.data[i];
+                cell = static_cast<std::int8_t>(mAlpha * cost + (1 - mAlpha) * cell);}
 
 			// Square Dilate operation
             nav_msgs::msg::OccupancyGrid postProcesed = mGlobalGridMsg;

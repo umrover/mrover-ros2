@@ -59,11 +59,13 @@ namespace mrover {
 
         //bool mag_fully_calibrated = calibration_status && calibration_status->magnetometer_calibration == FULL_CALIBRATION;
 
-        if (current_imu_calib) {
+        if (current_imu_calib && correction_rotation) {
             SO3d uncorrected_orientation = ros_quat_to_eigen_quat(current_imu_calib->orientation);
             pose_in_map.asSO3() = correction_rotation.value() * uncorrected_orientation;
-        }
-        else {
+        }else if(current_imu_calib){
+            SO3d uncorrected_orientation = ros_quat_to_eigen_quat(current_imu_calib->orientation);
+            pose_in_map.asSO3() = uncorrected_orientation;
+		}else {
             RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1, "Not enough IMU data available");
             return;
         }
