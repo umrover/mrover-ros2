@@ -30,7 +30,8 @@ class GUIConsumer(JsonWebsocketConsumer):
     subscribers = []
     
     def connect(self) -> None:
-        self.forward_ros_topic("/wheel_cmd", WheelCmd, "wheel_cmd")
+        self.forward_ros_topic("/angle", , "wheel_cmd") # angle message type? need to send to front end
+        # create a publisher
         self.accept()
 
     def forward_ros_topic(self, topic_name: str, topic_type: Type, gui_msg_type: str) -> None:
@@ -101,6 +102,7 @@ class GUIConsumer(JsonWebsocketConsumer):
                     "buttons": buttons,
                 }:
                     device_input = DeviceInputs(axes, buttons)
+                    # pass in a publisher that you will define in connect function
                     send_joystick_twist(device_input)
                 case _:
                     match message["type"]:
