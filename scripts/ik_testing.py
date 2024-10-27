@@ -2,6 +2,9 @@
 from rclpy.node import Node
 import rclpy
 
+from rclpy.executors import ExternalShutdownException
+import sys
+
 from mrover.srv import IkTest
 
 
@@ -35,10 +38,15 @@ class IK_Testing(Node):
 
 
 def main(args = None):
-    rclpy.init(args)
+    try:
+        rclpy.init(args)
 
 
-    ik_tester = IK_Testing()
-    ik_tester.get_logger().info(ik_tester.test_points())
+        ik_tester = IK_Testing()
+        ik_tester.get_logger().info(ik_tester.test_points())
 
-    rclpy.shutdown()
+        rclpy.shutdown()
+    except KeyboardInterrupt:
+        pass
+    except ExternalShutdownException:
+        sys.exit(1)
