@@ -91,6 +91,8 @@ namespace mrover {
 
             for (std::size_t i = 0; i < mGlobalGridMsg.data.size(); ++i) {
 				// TODO: fill out cost map grid using height (z) and EWMA (alpha = mAlpha)
+                Bin temp = bins[i];
+                
             }
 
 			// Square Dilate operation
@@ -135,6 +137,10 @@ namespace mrover {
         mGlobalGridMsg.info.origin.position.y = centerInMap.y() - mSize / 2;
         res->success = true;
         RCLCPP_INFO_STREAM(get_logger(), "Moved cost map");
+    }
+
+    auto CostMapNode::processHeight(mrover::srv::MoveCostMap::Request::ConstSharedPtr& req, mrover::srv::MoveCostMap::Response::SharedPtr& res, std::vector<Bin> bins) -> void{
+
     }
 
 } // namespace mrover

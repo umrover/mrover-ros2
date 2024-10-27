@@ -1,6 +1,7 @@
 #pragma once
 
 #include "pch.hpp"
+#include <vector>
 
 namespace mrover {
 
@@ -39,6 +40,13 @@ namespace mrover {
 
         rclcpp::Service<mrover::srv::MoveCostMap>::SharedPtr mServer;
 
+        struct BinEntry {
+                R3f pointInCamera;
+                R3f pointInMap;
+            };
+
+            using Bin = std::vector<BinEntry>;
+
     public:
         CostMapNode();
 
@@ -49,6 +57,8 @@ namespace mrover {
         auto moveCostMapCallback(mrover::srv::MoveCostMap::Request::ConstSharedPtr& req, mrover::srv::MoveCostMap::Response::SharedPtr& res) -> void;
 
 		void uploadPC();
+
+        auto processHeight(mrover::srv::MoveCostMap::Request::ConstSharedPtr& req, mrover::srv::MoveCostMap::Response::SharedPtr& res, std::vector<Bin> bins) -> void;
     };
 
 } // namespace mrover
