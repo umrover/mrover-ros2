@@ -10,8 +10,9 @@ class PairHash{
 };
 
 namespace mrover {
-	class LightDetector : public nodelet::Nodelet {
+	class LightDetector : public rclcpp::Node {
 	private:
+		//Completely different way in ros2
 		ros::NodeHandle mNh, mPnh;
 
 		cv::Mat mImgRGB;
@@ -47,18 +48,18 @@ namespace mrover {
 		cv::Mat mDialtedImg;
 
 		// Pub Sub
-		ros::Subscriber imgSub;
-		ros::Publisher imgPub;
+		rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr imgSub;
+		rclcpp::Publisher<geometry_msgs::msg::Vector3>::SharedPtr imgPub;
 
-		auto imageCallback(sensor_msgs::PointCloud2ConstPtr const& msg) -> void;
+		auto imageCallback(sensor_msgs::msg::PointCloud2::ConstSharedPtr const& msg) -> void;
 
-		auto static convertPointCloudToRGB(sensor_msgs::PointCloud2ConstPtr const& msg, cv::Mat const& image) -> void;
+		auto static convertPointCloudToRGB(sensor_msgs::msg::PointCloud2::ConstSharedPtr const& msg, cv::Mat const& image) -> void;
 
 		auto publishDetectedObjects(cv::InputArray image, std::vector<std::pair<int, int>> const& centroids) -> void;
 
 		auto static rgb_to_hsv(cv::Vec3b const& rgb) -> cv::Vec3d;
 
-		auto spiralSearchForValidPoint(sensor_msgs::PointCloud2ConstPtr const& cloudPtr, std::size_t u, std::size_t v, std::size_t width, std::size_t height) const -> std::optional<SE3d>;
+		auto spiralSearchForValidPoint(sensor_msgs::msg::PointCloud2::ConstSharedPtr const& cloudPtr, std::size_t u, std::size_t v, std::size_t width, std::size_t height) const -> std::optional<SE3d>;
 
 		void increaseHitCount(std::optional<SE3d> const& light);
 

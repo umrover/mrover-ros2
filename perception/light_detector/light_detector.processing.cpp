@@ -6,7 +6,7 @@
 
 namespace mrover {
     // TODO: (john) break this out into a utility so we dont have to copy all of this code
-	auto LightDetector::convertPointCloudToRGB(sensor_msgs::PointCloud2ConstPtr const& msg, cv::Mat const& image) -> void {
+	auto LightDetector::convertPointCloudToRGB(sensor_msgs::PointCloud2::ConstSharedPtr const& msg, cv::Mat const& image) -> void {
         auto* pixelPtr = reinterpret_cast<cv::Vec3b*>(image.data);
         auto* pointPtr = reinterpret_cast<Point const*>(msg->data.data());
         std::for_each(std::execution::par_unseq, pixelPtr, pixelPtr + image.total(), [&](cv::Vec3b& pixel) {
@@ -17,12 +17,12 @@ namespace mrover {
         });
     }
     
-    auto LightDetector::imageCallback(sensor_msgs::PointCloud2ConstPtr const& msg) -> void {
+    auto LightDetector::imageCallback(sensor_msgs::PointCloud2::ConstSharedPtr const& msg) -> void {
 		
         // resizing image is mImgRGB dimensions doesn't match msg dimensions
         // initialize mThresholdedImg to grayscale image 
         if(mImgRGB.rows != static_cast<int>(msg->height) || mImgRGB.cols != static_cast<int>(msg->width)){
-			RCLCPP_INFO_STREAM(rclcpp::get_logger("UPDATE_THIS"),"Adjusting Image Size... " << msg->width << ", " << msg->height);
+			RCLCPP_INFO_STREAM(get_logger(),"Adjusting Image Size... " << msg->width << ", " << msg->height);
 		    mImgRGB = cv::Mat{cv::Size{static_cast<int>(msg->width), static_cast<int>(msg->height)}, CV_8UC3, {0, 0, 0}};
 			//mImgHSV = cv::Mat{cv::Size{static_cast<int>(msg->width), static_cast<int>(msg->height)}, CV_8UC3, {0, 0, 0}};
 			mThresholdedImg = cv::Mat{cv::Size{static_cast<int>(msg->width), static_cast<int>(msg->height)}, CV_8UC1, cv::Scalar{0}};
@@ -123,7 +123,7 @@ namespace mrover {
             // If the position of the light is defined, then push it into the TF tree
             std::optional<SE3d> lightInCamera = spiralSearchForValidPoint(msg, centroid.second, centroid.first, SPIRAL_SEARCH_DIM, SPIRAL_SEARCH_DIM);
             
-            ROS_INFO_STREAM("Contour " << i << " has " << lightInCamera.has_value());
+            RCLCPP_INFO_STREAM(get_logger(),"Contour " << i << " has " << lightInCamera.has_value());
             
             if(lightInCamera){
                 ++numLightsSeen;
@@ -237,7 +237,7 @@ namespace mrover {
 
     void LightDetector::printHitCounts(){
         for(auto const& [key, val] : mHitCounts){
-            ROS_INFO_STREAM("Key: (" << key.first << ", " << key.second << ") Val: " << val);
+            RCLCPP_INFO_STREAM(get_logger(),"Key: ( " << key.first << ", " << key.second << ") Val: " << val);
         }
     }
 
@@ -269,7 +269,7 @@ namespace mrover {
         imgPub.publish(imgMsg);
     }
 
-    auto LightDetector::spiralSearchForValidPoint(sensor_msgs::PointCloud2ConstPtr const& cloudPtr, std::size_t u, std::size_t v, std::size_t width, std::size_t height) const -> std::optional<SE3d> {
+    auto LightDetector::spiralSearchForValidPoint(sensor_msgs::PointCloud2::ConstSharedPtr const& cloudPtr, std::size_t u, std::size_t v, std::size_t width, std::size_t height) const -> std::optional<SE3d> {
         // See: https://stackoverflow.com/a/398302
         auto xc = static_cast<int>(u), yc = static_cast<int>(v);
         auto sw = static_cast<int>(width), sh = static_cast<int>(height);

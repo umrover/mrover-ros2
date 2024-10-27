@@ -4,7 +4,7 @@
 namespace mrover{
 
 	auto LightDetector::onInit() -> void{
-		ROS_INFO_STREAM("Light Detector Initializing");
+		RCLCPP_INFO_STREAM(get_logger(),"Light Detector Initializing");
 		mNh = getMTNodeHandle();
         mPnh = getMTPrivateNodeHandle();
 
