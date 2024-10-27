@@ -17,7 +17,10 @@
         <input v-model='mode' class='form-check-input' type='radio' id='manual' value='manual' />
         <label class='form-check-label' for='manual'>Manual</label>
       </div>
-      <!-- TODO: add ik radio button -->
+      <div class='form-check'>
+        <input v-model='mode' class='form-check-input' type='radio' id='ik' value='ik' />
+        <label class='form-check-label' for='IK'>IK</label>
+      </div>
     </div>
   </div>
 </template>

@@ -3,12 +3,15 @@ from math import pi
 from typing import Union
 
 import numpy as np
+import rclpy
+from rclpy.node import Node
 
 # import rospy
 from backend.input import filter_input, simulated_axis, safe_index, DeviceInputs
 from backend.mappings import ControllerAxis, ControllerButton
 from mrover.msg import Throttle, Position
 from sensor_msgs.msg import JointState
+from geometry_msgs.msg import PoseStamped
 
 TAU = 2 * pi
 
@@ -117,7 +120,7 @@ def subset(names: list[str], values: list[float], joints: set[Joint]) -> tuple[l
 
 def send_ra_controls(ra_mode: str, inputs: DeviceInputs) -> None:
     match ra_mode:
-        case "manual" | "hybrid":
+        case "manual" | "hybrid" | "ik": #added filter for IK mode, hybrid deprecated
             back_pressed = safe_index(inputs.buttons, ControllerButton.BACK) > 0.5
             forward_pressed = safe_index(inputs.buttons, ControllerButton.FORWARD) > 0.5
             home_pressed = safe_index(inputs.buttons, ControllerButton.HOME) > 0.5
@@ -136,11 +139,25 @@ def send_ra_controls(ra_mode: str, inputs: DeviceInputs) -> None:
 
                 match ra_mode:
                     case "manual":
-                        #TODO: publish to throttle
-                        pass
+                        throttle_msg = Throttle()
+                        joint_names, throttle_values = subset(JOINT_NAMES, manual_controls, set(Joint))
+                        throttle_msg.names = joint_names
+                        throttle_msg.throttles = throttle_values
+                        #throttle_publisher.publish(throttle_msg) #uncomment
                     case "ik":
-                        #TODO: publish to arm_ik message
-                        pass
+                        ik_msg = PoseStamped()
+                        ik_msg.header.stamp = rclpy.Time.now() #what is correct way to get time?
+                        ik_msg.header.frame_id = "base_link"
+                        #how compute positions?
+                        ik_msg.pose.position.x = 0.5  
+                        ik_msg.pose.position.y = 0.0
+                        ik_msg.pose.position.z = 0.5
+                        ik_msg.pose.orientation.x = 0.0
+                        ik_msg.pose.orientation.y = 0.0
+                        ik_msg.pose.orientation.z = 0.0
+                        ik_msg.pose.orientation.w = 1.0
+                        #position_publisher.publish(ik_msg) #uncomment
+
             else:
                 if joint_positions:
                     de_pitch = joint_positions.position[joint_positions.name.index("joint_de_pitch")]
