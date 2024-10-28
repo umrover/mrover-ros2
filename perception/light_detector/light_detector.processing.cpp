@@ -6,7 +6,7 @@
 
 namespace mrover {
     // TODO: (john) break this out into a utility so we dont have to copy all of this code
-	auto LightDetector::convertPointCloudToRGB(sensor_msgs::PointCloud2::ConstSharedPtr const& msg, cv::Mat const& image) -> void {
+	auto LightDetector::convertPointCloudToRGB(sensor_msgs::msg::PointCloud2::ConstSharedPtr const& msg, cv::Mat const& image) -> void {
         auto* pixelPtr = reinterpret_cast<cv::Vec3b*>(image.data);
         auto* pointPtr = reinterpret_cast<Point const*>(msg->data.data());
         std::for_each(std::execution::par_unseq, pixelPtr, pixelPtr + image.total(), [&](cv::Vec3b& pixel) {
@@ -24,57 +24,20 @@ namespace mrover {
         if(mImgRGB.rows != static_cast<int>(msg->height) || mImgRGB.cols != static_cast<int>(msg->width)){
 			RCLCPP_INFO_STREAM(get_logger(),"Adjusting Image Size... " << msg->width << ", " << msg->height);
 		    mImgRGB = cv::Mat{cv::Size{static_cast<int>(msg->width), static_cast<int>(msg->height)}, CV_8UC3, {0, 0, 0}};
-			//mImgHSV = cv::Mat{cv::Size{static_cast<int>(msg->width), static_cast<int>(msg->height)}, CV_8UC3, {0, 0, 0}};
 			mThresholdedImg = cv::Mat{cv::Size{static_cast<int>(msg->width), static_cast<int>(msg->height)}, CV_8UC1, cv::Scalar{0}};
 		
-
+        
 		convertPointCloudToRGB(msg, mImgRGB);
 
         // conversion to grayscale and storing in mGreyScale - (added)
-        vs::Mat mGreyScale;
-        cv::cvtColor(mImgRGB, mGreyScale, CV_BGR2GRAY);
+        cv::Mat mGreyScale;
+        cv::cvtColor(mImgRGB, mGreyScale, cv::COLOR_RGB2GRAY);
 
-/* TODO: POTENTIALLY REPLACE */
-
-		// BELOW IS COPY PASTED FROM OPENCV DOCUMENTATION
         //applies a gaussian blur and thresholding to mGreyScale
-        auto mGBlur = cv.GaussianBlur(mGreyScale,(5,5),0);
-        auto thresh, mThresholdedImg = cv.threshold(mGBlur,0,255,cv.THRESH_BINARY+cv.THRESH_OTSU);
-        //ret3,th3 = cv.threshold(mGBlur,0,255,cv.THRESH_OTSU) //idk
-
-		// ABOVE IS COPY PASTED FROM OPENCV DOCUMENTATION
-
-        // Sets up pointers to the start (first) and end (last) of the 
-        // image data for efficient pixel manipulation. 
-        auto* first = reinterpret_cast<cv::Vec3b*>(mImgRGB.data);
-        auto* last = reinterpret_cast<cv::Vec3b*>(first + mImgRGB.total());
-
-        // defines comparison functions to filter pixels 
-        auto less = [](cv::Vec3d const& lhs, cv::Vec3d const& rhs){
-            return lhs[0] < rhs[0] && lhs[1] < rhs[1] && lhs[2] < rhs[2];
-        };
-
-        auto greater = [](cv::Vec3d const& lhs, cv::Vec3d const& rhs){
-            return lhs[0] > rhs[0] && lhs[1] > rhs[1] && lhs[2] > rhs[2];
-        };
-
-        // loops through each pixel, convert rgb to hsv and apply threshold filter
-        // update mThresholdedImg if it falls within specified HSV range
-        std::for_each(std::execution::par_unseq, first, last, [&](cv::Vec3b& pixel){
-            std::size_t const i = &pixel - first;
-            if(i == 479*640){
-                mThresholdedImg.data[i] = 0;
-            }
-            cv::Vec3b pixelHSV = rgb_to_hsv(pixel);
-
-            if((less(mLowerBound, pixelHSV) && greater(mUpperBound, pixelHSV))){
-                mThresholdedImg.data[i] = 255;
-            } else{
-                mThresholdedImg.data[i] = 0;
-            }
-        });
-
-	/* TODO: POTENTIALLY REPLACE */
+        cv::Mat mGBlur;
+        cv::Mat mThresholdedImg;
+        cv::GaussianBlur(mGreyScale, mGBlur, cv::Size(5,5), 0);
+        cv::threshold(mGBlur,mThresholdedImg,0,255,cv::THRESH_BINARY+cv::THRESH_OTSU);
 
         // applies dilation, uses structuring element to expand highlighted regions
         // erodes, to refine shape of highlighted regions
@@ -90,7 +53,6 @@ namespace mrover {
         // converts erode into BGRA format and stores in mOutputImage
         cv::cvtColor(erode, mOutputImage, cv::COLOR_GRAY2BGRA);
 		
-
         // finds contours in eroded image and stores in "contours"
         // contour hierarchy information stored in hierarchy
 		std::vector<std::vector<cv::Point>> contours;
@@ -104,7 +66,6 @@ namespace mrover {
         // The number of lights that we push into the TF
         unsigned int numLightsSeen = 0;
 
-        // originally ROS_INFO_STREAM, trying to replace with alternative
         RCLCPP_INFO_STREAM(get_logger(),"Number of contours " << contours.size());
 
 		for(std::size_t i = 0; i < contours.size(); ++i){
@@ -144,25 +105,25 @@ namespace mrover {
 		publishDetectedObjects(mOutputImage, centroids);
 	}
     
-	auto LightDetector::caching() -> void{
-		for (auto const& [id, tag]: mTags) {
-            if (tag.hitCount >= mMinHitCountBeforePublish && tag.tagInCam) {
-                try {
-                    // Use the TF tree to transform the tag from the camera frame to the map frame
-                    // Then publish it in the map frame persistently
-                    std::string immediateFrameId = std::format("immediateTag{}", tag.id);
-                    SE3d tagInParent = SE3Conversions::fromTfTree(mTfBuffer, immediateFrameId, mMapFrameId);
-                    SE3Conversions::pushToTfTree(mTfBroadcaster, std::format("tag{}", tag.id), mMapFrameId, tagInParent);
-                } catch (tf2::ExtrapolationException const&) {
-                    NODELET_WARN("Old data for immediate tag");
-                } catch (tf2::LookupException const&) {
-                    NODELET_WARN("Expected transform for immediate tag");
-                } catch (tf2::ConnectivityException const&) {
-                    NODELET_WARN("Expected connection to odom frame. Is visual odometry running?");
-                }
-            }
-        }
-	}
+	// auto LightDetector::caching() -> void{
+	// 	for (auto const& [id, tag]: mTags) {
+    //         if (tag.hitCount >= mMinHitCountBeforePublish && tag.tagInCam) {
+    //             try {
+    //                 // Use the TF tree to transform the tag from the camera frame to the map frame
+    //                 // Then publish it in the map frame persistently
+    //                 std::string immediateFrameId = std::format("immediateTag{}", tag.id);
+    //                 SE3d tagInParent = SE3Conversions::fromTfTree(mTfBuffer, immediateFrameId, mMapFrameId);
+    //                 SE3Conversions::pushToTfTree(mTfBroadcaster, std::format("tag{}", tag.id), mMapFrameId, tagInParent);
+    //             } catch (tf2::ExtrapolationException const&) {
+    //                 NODELET_WARN("Old data for immediate tag");
+    //             } catch (tf2::LookupException const&) {
+    //                 NODELET_WARN("Expected transform for immediate tag");
+    //             } catch (tf2::ConnectivityException const&) {
+    //                 NODELET_WARN("Expected connection to odom frame. Is visual odometry running?");
+    //             }
+    //         }
+    //     }
+	// }
     
     auto LightDetector::rgb_to_hsv(cv::Vec3b const& rgb) -> cv::Vec3d{
         // https://math.stackexchange.com/questions/556341/rgb-to-hsv-color-conversion-algorithm
