@@ -11,9 +11,10 @@ class PairHash{
 
 namespace mrover {
 	class LightDetector : public rclcpp::Node {
+
 	private:
 		//Completely different way in ros2
-		ros::NodeHandle mNh, mPnh;
+		ros::NodeHandle mNh, mPnh; //node handling isn't done in ros2, confused on how to fix this
 
 		cv::Mat mImgRGB;
 		cv::Mat mImgHSV;

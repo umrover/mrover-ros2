@@ -3,7 +3,8 @@ from enum import Enum
 
 import numpy as np
 
-import rospy
+import rclpy
+from rclpy.node import Node
 from mrover.msg import GPSPointList, WaypointType
 from navigation import recovery, waypoint
 from navigation.context import convert_cartesian_to_gps, Context
@@ -18,7 +19,7 @@ class LightState(Enum):
     FINAL = 1
     IMMEDIATE_TO_FINAL = 2
 
-class FollowLightsState(State):
+class FollowLightsState(State, Node):
     """
         This state aims to follow trails of lights for CIRC's traversal mission
 
@@ -26,19 +27,22 @@ class FollowLightsState(State):
         trajectories are used for well defined paths while this is still heavily reliant on the 
         perception currently avaiable
     """
-  
 
-    prev_target_pos_in_map: Optional[np.ndarray] = None
-    is_recovering: bool = False
+    def __init__(self):
+        super().__init__('follow_lights_state')
 
-    STOP_THRESH = rospy.get_param("search/stop_threshold")
-    DRIVE_FORWARD_THRESHOLD = rospy.get_param("search/drive_forward_threshold")
-    SPIRAL_COVERAGE_RADIUS = rospy.get_param("search/coverage_radius")
-    SEGMENTS_PER_ROTATION = rospy.get_param("search/segments_per_rotation")
-    DISTANCE_BETWEEN_SPIRALS = rospy.get_param("search/distance_between_spirals")
+        
+        prev_target_pos_in_map: Optional[np.ndarray] = None
+        is_recovering: bool = False
 
-    OBJECT_SPIRAL_COVERAGE_RADIUS = rospy.get_param("object_search/coverage_radius")
-    OBJECT_DISTANCE_BETWEEN_SPIRALS = rospy.get_param("object_search/distance_between_spirals")
+        STOP_THRESH = rospy.get_parameter("search/stop_threshold")
+        DRIVE_FORWARD_THRESHOLD = rclpy.get_param("search/drive_forward_threshold")
+        SPIRAL_COVERAGE_RADIUS = rospy.get_param("search/coverage_radius")
+        SEGMENTS_PER_ROTATION = rospy.get_param("search/segments_per_rotation")
+        DISTANCE_BETWEEN_SPIRALS = rospy.get_param("search/distance_between_spirals")
+
+        OBJECT_SPIRAL_COVERAGE_RADIUS = rospy.get_param("object_search/coverage_radius")
+        OBJECT_DISTANCE_BETWEEN_SPIRALS = rospy.get_param("object_search/distance_between_spirals")
 
     def on_enter(self, context: Context) -> None:
         self.final_light_points: dict[tuple[int, int], tuple[SE3, bool]] = dict()

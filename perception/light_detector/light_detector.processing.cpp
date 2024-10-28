@@ -246,7 +246,7 @@ namespace mrover {
 
 		sensor_msgs::Image imgMsg;
 
-        imgMsg.header.stamp = ros::Time::now();
+        imgMsg.header.stamp = this->get_clock()->now(); //ros origionally, but changed to this, not sure if it works.
         imgMsg.height = image.rows();
         imgMsg.width = image.cols();
         imgMsg.encoding = sensor_msgs::image_encodings::BGRA8;
