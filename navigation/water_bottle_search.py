@@ -193,9 +193,9 @@ class WaterBottleSearchState(State):
                         pose_stamped = PoseStamped()
                         pose_stamped.header = Header()
                         pose_stamped.header.frame_id = "map"
-                        point = Point(x=coord[0], y=coord[1], z=0)
-                        quat = Quaternion(0, 0, 0, 1)
-                        pose_stamped.pose = Pose(point, quat)
+                        point = Point(x=coord[0], y=coord[1], z=0.0)
+                        quat = Quaternion(x=0.0, y=0.0, z=0.0, w=1.0)
+                        pose_stamped.pose = Pose(position=point, orientation=quat)
                         poses.append(pose_stamped)
                     path.poses = poses
                     self.path_pub.publish(path)
