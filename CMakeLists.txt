@@ -320,6 +320,8 @@ install(PROGRAMS
         superstructure/superstructure.py
         scripts/debug_course_publisher.py
 		scripts/visualizer.py
+        scripts/simple_sub.py
+        scripts/simple_pub.py
 
         # starter project sources
         starter_project/autonomy/src/localization.py
