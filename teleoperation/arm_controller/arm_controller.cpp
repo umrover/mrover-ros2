@@ -3,6 +3,7 @@
 #include "mrover/msg/detail/position__struct.hpp"
 #include "mrover/srv/detail/ik_test__struct.hpp"
 #include <string>
+#include <functional>
 
 namespace mrover {
 
@@ -15,7 +16,7 @@ namespace mrover {
 
         //mArmStatusPub = create_publisher<msg::ArmStatus>("arm_status", 1);
 
-        mIkServer = create_service<srv::IkTest>("ik_test", &ArmController::ikTestCallback);
+        mIkServer = create_service<srv::IkTest>("ik_test", std::bind(&ArmController::ikTestCallback, this, _1));
     }
 
     auto yawSo3(double r) -> SO3d {

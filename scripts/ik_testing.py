@@ -43,7 +43,8 @@ def main(args = None):
 
 
         ik_tester = IK_Testing()
-        ik_tester.get_logger().info(ik_tester.test_points())
+        pointMap = ik_tester.test_points()
+        ik_tester.get_logger().info(pointMap)
 
         rclpy.shutdown()
     except KeyboardInterrupt:
