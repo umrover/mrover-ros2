@@ -20,17 +20,18 @@ namespace mrover {
         Pin hbridge_direction{};
         TIM_HandleTypeDef* receive_watchdog_timer{};
         std::array<LimitSwitch, 2> limit_switches{};
-        TIM_HandleTypeDef* quad_encoder_tick{};
+        TIM_HandleTypeDef* relative_encoder_tick{};
+        std::uint8_t absolute_encoder_a2_a1{};
     };
 
-    template<std::size_t MotorCount>
+    template<std::uint8_t MotorCount>
     class Controller {
         static_assert(MotorCount > 0 && MotorCount <= 3, "Motor count must be between 1 and 3");
 
         template<typename Func>
         void foreach_motor(Func func) {
             for (auto& m: m_motors) {
-                func(m.value());
+                func(m);
             }
         }
 
@@ -61,11 +62,14 @@ namespace mrover {
             : m_fdcan{fdcan},
               m_stopwatches{stopwatch_timer} {
             for (std::size_t i = 0; i < MotorCount; ++i) {
-                MotorConfig const& config = motor_configs;
+                MotorConfig const& config = motor_configs[i];
                 m_motors[i] = Motor{
                         HBridge{config.hbridge_output, config.hbridge_output_channel, config.hbridge_direction},
                         &m_stopwatches,
-                        config.limit_switches};
+                        config.receive_watchdog_timer,
+                        config.limit_switches,
+                        config.relative_encoder_tick,
+                        config.absolute_encoder_a2_a1};
             }
         }
 
@@ -77,16 +81,51 @@ namespace mrover {
         }
 
         /**
-         * \brief Send out the current outbound status message.
+         * \brief           Called from the FDCAN interrupt handler when a new message is received, updating \link m_inbound \endlink and processing it.
+         * \param message   Command message to process.
+         *
+         * \note            This resets the message watchdog timer.
+         */
+        auto receive(FDCAN<InBoundMessage>::MessageId id, InBoundMessage const& message) -> void {
+            if (id.destination == DEVICE_ID_0) {
+                m_motors[0].receive(message);
+                m_motors[0].update();
+            } else if (id.destination == DEVICE_ID_1) {
+                m_motors[1].receive(message);
+                m_motors[1].update();
+            } else if (id.destination == DEVICE_ID_2) {
+                m_motors[2].receive(message);
+                m_motors[2].update();
+            }
+        }
+
+        auto request_absolute_encoder_data() -> void {
+            foreach_motor([](auto& motor) {
+                motor.request_absolute_encoder_data();
+            });
+        }
+
+        template<std::uint8_t MotorIndex>
+        auto update_quadrature_encoder() -> void {
+            m_motors[MotorIndex].update_quadrature_encoder();
+        }
+
+        /**
+         * \brief Send out the current outbound status message of each motor.
          *
          * The update rate should be limited to avoid hammering the FDCAN bus.
          */
         auto send() -> void {
-            foreach_motor([](auto& motor) { motor.update(); });
-            if (bool success = m_fdcan.broadcast(m_outbound); !success) {
-                m_fdcan.reset();
-            }
+            foreach_motor([this](auto& motor) {
+                if (bool success = m_fdcan.broadcast(motor.get_outbound()); !success) {
+                    m_fdcan.reset();
+                }
+            });
         }
 
+        template<std::uint8_t MotorIndex>
+        auto receive_watchdog_expired() -> void {
+            m_motors[MotorIndex].receive_watchdog_expired();
+        }
     };
 } // namespace mrover
