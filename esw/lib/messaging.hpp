@@ -22,12 +22,11 @@ namespace mrover {
     };
 
     struct ConfigEncoderInfo {
-        [[maybe_unused]] std::uint8_t _ignore : 2 {}; // 8 bits - (6 meaningful bits) = 2 ignored bits
+        [[maybe_unused]] std::uint8_t _ignore : 4 {}; // 8 bits - (4 meaningful bits) = 4 ignored bits
         std::uint8_t quad_present : 1 {};
         std::uint8_t _quad_is_forward_polarity : 1 {};
         std::uint8_t abs_present : 1 {};
         std::uint8_t _abs_is_forward_polarity : 1 {};
-        std::uint8_t abs_a2_a1 : 2 {};
         Ratio quad_ratio;
         Ratio abs_ratio;
         Radians abs_offset;

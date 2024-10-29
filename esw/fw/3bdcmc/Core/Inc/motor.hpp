@@ -44,11 +44,12 @@ namespace mrover {
         std::uint8_t m_pidf_stopwatch_id{};
         TIM_HandleTypeDef* m_receive_watchdog_timer{};
         bool m_receive_watchdog_enabled{};
+        std::array<LimitSwitch, 2> m_limit_switches;
         TIM_HandleTypeDef* m_relative_encoder_tick_timer{};
         I2C_HandleTypeDef* m_absolute_encoder_i2c{};
         std::optional<QuadratureEncoderReader> m_relative_encoder;
         std::optional<AbsoluteEncoderReader> m_absolute_encoder;
-        std::array<LimitSwitch, 2> m_limit_switches;
+        std::uint8_t m_absolute_encoder_a2_a1;
 
         /* ==================== Internal State ==================== */
         Mode m_mode;
@@ -81,7 +82,7 @@ namespace mrover {
         /**
          * \brief Updates \link m_uncalib_position \endlink and \link m_velocity \endlink based on the hardware
          */
-        auto update_relative_encoder() -> void {
+        auto update_based_on_relative_encoder_reading() -> void {
             if (!m_relative_encoder) return;
 
             if (std::optional<EncoderReading> reading = m_relative_encoder->read()) {
@@ -172,7 +173,7 @@ namespace mrover {
                 m_uncalib_position = enc_read.position; // usually but not always 0
             }
             if (message.enc_info.abs_present) {
-                if (!m_absolute_encoder) m_absolute_encoder.emplace(AbsoluteEncoderReader::AS5048B_Bus{m_absolute_encoder_i2c}, message.enc_info.abs_a2_a1, message.enc_info.abs_offset, message.enc_info.abs_ratio, m_stopwatch);
+                if (!m_absolute_encoder) m_absolute_encoder.emplace(AbsoluteEncoderReader::AS5048B_Bus{m_absolute_encoder_i2c}, m_absolute_encoder_a2_a1, message.enc_info.abs_offset, message.enc_info.abs_ratio, m_stopwatch);
             }
 
             m_motor_driver.change_max_pwm(message.max_pwm);
@@ -301,11 +302,15 @@ namespace mrover {
     public:
         Motor() = default;
 
-        Motor(HBridge const& motor_driver, IStopwatch* stopwatch, TIM_HandleTypeDef* command_watchdog_timer, std::array<LimitSwitch, 2> const& limit_switches)
+        Motor(HBridge const& motor_driver, IStopwatch* stopwatch, TIM_HandleTypeDef* command_watchdog_timer,
+              std::array<LimitSwitch, 2> const& limit_switches, TIM_HandleTypeDef* relative_encoder_tick_timer,
+              std::uint8_t absolute_encoder_a2_a1)
             : m_motor_driver(motor_driver),
               m_stopwatch(stopwatch),
               m_receive_watchdog_timer(command_watchdog_timer),
-              m_limit_switches(limit_switches) {}
+              m_limit_switches(limit_switches),
+              m_relative_encoder_tick_timer(relative_encoder_tick_timer),
+              m_absolute_encoder_a2_a1(absolute_encoder_a2_a1) {}
 
 
         template<typename Command>
@@ -348,7 +353,7 @@ namespace mrover {
          */
         auto process_command() -> void {
             update_limit_switches();
-            update_relative_encoder();
+            update_based_on_relative_encoder_reading();
             std::visit([&](auto const& command) { process_command(command); }, m_inbound);
             drive_motor();
         }
@@ -368,10 +373,10 @@ namespace mrover {
             process_command();
         }
 
-        auto quadrature_elapsed_timer_expired() -> void {
+        auto relative_elapsed_timer_expired() -> void {
             if (m_relative_encoder) {
                 m_relative_encoder->expired();
-                update_relative_encoder();
+                update_based_on_relative_encoder_reading();
             }
         }
 
@@ -383,6 +388,15 @@ namespace mrover {
         // auto calc_quadrature_velocity() -> void {
         //     m_relative_encoder->update();
         // }
+
+        /**
+         * \brief Get the outbound status message of the controller
+         *
+         * \return the outbound status message
+         */
+        [[nodiscard]] auto get_outbound() const -> OutBoundMessage {
+            return m_outbound;
+        }
 
         /**
          * \brief Serialize our internal state into an outbound status message

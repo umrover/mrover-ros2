@@ -71,7 +71,8 @@ namespace mrover {
                         .hbridge_direction = Pin{MOTOR_DIR_0_GPIO_Port, MOTOR_DIR_0_Pin},
                         .receive_watchdog_timer = RECEIVE_WATCHDOG_TIMER_0,
                         .limit_switches = {LimitSwitch{Pin{LIMIT_0_A_GPIO_Port, LIMIT_0_A_Pin}}, LimitSwitch{Pin{LIMIT_0_B_GPIO_Port, LIMIT_0_B_Pin}}},
-                        .quad_encoder_tick = QUADRATURE_TICK_TIMER_0};
+                        .relative_encoder_tick = QUADRATURE_TICK_TIMER_0,
+                        .absolute_encoder_a2_a1 = A2_A1_0};
             case 1:
                 return {
                         .hbridge_output = PWM_TIMER_1,
@@ -79,7 +80,8 @@ namespace mrover {
                         .hbridge_direction = Pin{MOTOR_DIR_1_GPIO_Port, MOTOR_DIR_1_Pin},
                         .receive_watchdog_timer = RECEIVE_WATCHDOG_TIMER_1,
                         .limit_switches = {LimitSwitch{Pin{LIMIT_1_A_GPIO_Port, LIMIT_1_A_Pin}}, LimitSwitch{Pin{LIMIT_1_B_GPIO_Port, LIMIT_1_B_Pin}}},
-                        .quad_encoder_tick = QUADRATURE_TICK_TIMER_1};
+                        .relative_encoder_tick = QUADRATURE_TICK_TIMER_1,
+                        .absolute_encoder_a2_a1 = A2_A1_1};
             case 2:
                 return {
                         .hbridge_output = PWM_TIMER_2,
@@ -87,7 +89,8 @@ namespace mrover {
                         .hbridge_direction = Pin{MOTOR_DIR_2_GPIO_Port, MOTOR_DIR_2_Pin},
                         .receive_watchdog_timer = RECEIVE_WATCHDOG_TIMER_2,
                         .limit_switches = {LimitSwitch{Pin{LIMIT_2_A_GPIO_Port, LIMIT_2_A_Pin}}, LimitSwitch{Pin{LIMIT_2_B_GPIO_Port, LIMIT_2_B_Pin}}},
-                        .quad_encoder_tick = QUADRATURE_TICK_TIMER_2};
+                        .relative_encoder_tick = QUADRATURE_TICK_TIMER_2,
+                        .absolute_encoder_a2_a1 = A2_A1_1};
             default:
                 return {};
         }
@@ -101,8 +104,8 @@ namespace mrover {
     auto motor_configs = create_motor_configs(std::make_index_sequence<NUM_MOTORS>{});
 
     auto init() -> void {
-        fdcan_bus = FDCAN<InBoundMessage>{DEVICE_ID, DESTINATION_DEVICE_ID, &hfdcan1};
-        controller = Controller{
+        // fdcan_bus = FDCAN<InBoundMessage>{DEVICE_ID, DESTINATION_DEVICE_ID, &hfdcan1};
+        controller = Controller<NUM_MOTORS>{
                 fdcan_bus,
                 VIRTUAL_STOPWATCHES_TIMER,
                 ABSOLUTE_I2C,
@@ -119,15 +122,13 @@ namespace mrover {
 
         auto const& [header, message] = received.value();
 
-        auto messageId = std::bit_cast<FDCAN<InBoundMessage>::MessageId>(header.Identifier);
+        auto id = std::bit_cast<FDCAN<InBoundMessage>::MessageId>(header.Identifier);
 
-        if (messageId.destination == DEVICE_ID) {
-            controller.receive(message);
-        }
+        controller.receive(id, message);
     }
 
     auto global_update_callback() -> void {
-        controller.update();
+        controller.send();
         controller.request_absolute_encoder_data();
     }
 
@@ -139,8 +140,9 @@ namespace mrover {
         controller.update_absolute_encoder();
     }
 
+    template<std::uint8_t MotorIndex>
     auto update_quadrature_encoder_callback() -> void {
-        controller.update_quadrature_encoder();
+        controller.update_quadrature_encoder<MotorIndex>();
     }
 
     auto quadrature_elapsed_timer_expired() -> void {
@@ -153,7 +155,7 @@ namespace mrover {
 
     template<std::uint8_t MotorIndex>
     auto receive_watchdog_timer_expired() -> void {
-        controller.receive_watchdog_expired();
+        controller.receive_watchdog_expired<MotorIndex>();
     }
 
     // void calc_velocity() {
@@ -196,8 +198,12 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim) {
 }
 
 void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef* htim) {
-    if (htim == QUADRATURE_TICK_TIMER_1) {
-        mrover::update_quadrature_encoder_callback();
+    if (htim == QUADRATURE_TICK_TIMER_0) {
+        mrover::update_quadrature_encoder_callback<0>();
+    } else if (htim == QUADRATURE_TICK_TIMER_1) {
+        mrover::update_quadrature_encoder_callback<1>();
+    } else if (htim == QUADRATURE_TICK_TIMER_2) {
+        mrover::update_quadrature_encoder_callback<2>();
     }
 }
 
