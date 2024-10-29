@@ -60,6 +60,7 @@ namespace mrover {
 		cv::findContours(erode, contours, hierarchy, cv::RETR_TREE, cv::CHAIN_APPROX_SIMPLE);
 
 		// Find the centroids for all of the different contours
+        // quick question: why not store as cv::point? 
 		std::vector<std::pair<int, int>> centroids; // These are in image space
 		centroids.resize(contours.size());
 
@@ -230,7 +231,7 @@ namespace mrover {
         imgPub.publish(imgMsg);
     }
 
-    auto LightDetector::spiralSearchForValidPoint(sensor_msgs::PointCloud2::ConstSharedPtr const& cloudPtr, std::size_t u, std::size_t v, std::size_t width, std::size_t height) const -> std::optional<SE3d> {
+    auto LightDetector::spiralSearchForValidPoint(sensor_msgs::msg::PointCloud2::ConstSharedPtr const& cloudPtr, std::size_t u, std::size_t v, std::size_t width, std::size_t height)const -> std::optional<SE3d> {
         // See: https://stackoverflow.com/a/398302
         auto xc = static_cast<int>(u), yc = static_cast<int>(v);
         auto sw = static_cast<int>(width), sh = static_cast<int>(height);

@@ -19,7 +19,6 @@ namespace mrover {
 
 		cv::Mat mImgRGB;
 		cv::Mat mImgHSV;
-
 		cv::Mat mOutputImage;
 
 		int SPIRAL_SEARCH_DIM{};
