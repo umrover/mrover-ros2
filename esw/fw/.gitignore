@@ -4,6 +4,7 @@ Release/
 .metadata/
 .settings/
 RemoteSystemsTempFiles/
+.osx.project
 
 *.chm
 *.settings.xml
