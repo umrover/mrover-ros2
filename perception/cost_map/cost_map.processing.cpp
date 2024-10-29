@@ -1,4 +1,5 @@
 #include "cost_map.hpp"
+#include "lie.hpp"
 #include <memory>
 
 namespace mrover {
@@ -42,6 +43,7 @@ namespace mrover {
 
         try {
             SE3f cameraToMap = SE3Conversions::fromTfTree(mTfBuffer, "zed_left_camera_frame", "map").cast<float>();
+            SE3f roverSE3 = SE3Conversions::fromTfTree(mTfBuffer, "base_link", "map").cast<float>();
 
             struct BinEntry {
                 R3f pointInCamera;
@@ -93,16 +95,21 @@ namespace mrover {
 				Bin& bin = bins[i];
                 if (bin.size() < 16) continue;
 
-                std::size_t pointsHigh = std::ranges::count_if(bin, [this](BinEntry const& entry) {
-                    return entry.pointInCamera.z() > mZThreshold;
+                // USING ABSOLUTE HEIGHT DIFFERENCE BETWEEN POINT AND ROVER HEIGHT
+                std::size_t pointsHigh = std::ranges::count_if(bin, [this, &roverSE3](BinEntry const& entry) {
+                    return abs(entry.pointInMap.z() - (roverSE3.z() - 0.25)) > mZThreshold;
                 });
                 double percent = static_cast<double>(pointsHigh) / static_cast<double>(bin.size());
 
                 std::int8_t cost = percent > mZPercent ? OCCUPIED_COST : FREE_COST;
 
+                // IMPLEMENT "AVERAGE" OF NORMALS IN BIN
+
                 // Update cell with EWMA acting as a low-pass filter
                 auto& cell = mGlobalGridMsg.data[i];
-                cell = static_cast<std::int8_t>(mAlpha * cost + (1 - mAlpha) * cell);}
+                cell = static_cast<std::int8_t>(mAlpha * cost + (1 - mAlpha) * cell);
+            }
+
 
 			// Square Dilate operation
             nav_msgs::msg::OccupancyGrid postProcesed = mGlobalGridMsg;
