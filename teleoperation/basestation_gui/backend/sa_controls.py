@@ -1,16 +1,16 @@
 from enum import Enum
 from math import pi
 
-import rospy
+# import rospy
 from backend.input import filter_input, simulated_axis, safe_index, DeviceInputs
 from backend.mappings import ControllerAxis, ControllerButton
 from mrover.msg import Throttle
 
 TAU = 2 * pi
 
-rospy.init_node("teleoperation", disable_signals=True)
+# rospy.init_node("teleoperation", disable_signals=True)
 
-throttle_publisher = rospy.Publisher("sa_throttle_cmd", Throttle, queue_size=1)
+# throttle_publisher = rospy.Publisher("sa_throttle_cmd", Throttle, queue_size=1)
 
 
 class Joint(Enum):
@@ -75,4 +75,4 @@ def compute_manual_joint_controls(controller: DeviceInputs) -> list[float]:
 
 def send_sa_controls(inputs: DeviceInputs) -> None:
     manual_controls = compute_manual_joint_controls(inputs)
-    throttle_publisher.publish(Throttle(JOINT_NAMES, manual_controls))
+    # throttle_publisher.publish(Throttle(JOINT_NAMES, manual_controls))

@@ -22,6 +22,7 @@ import threading
 import logging
 logger = logging.getLogger('django')
 
+rclpy.init()
 node = rclpy.create_node('teleoperation')
 thread = threading.Thread(target=rclpy.spin, args=(node, ), daemon=True)
 thread.start()
@@ -85,14 +86,12 @@ class GUIConsumer(JsonWebsocketConsumer):
         """
 
         if text_data is None:
-            # node.get_logger().warning("Expecting text but received binary on GUI websocket...")
-            return
+            node.get_logger().warning("Expecting text but received binary on GUI websocket...")
 
         try:
             message = json.loads(text_data)
         except json.JSONDecodeError as e:
-            # node.get_logger().warning(f"Failed to decode JSON: {e}")
-            return
+            node.get_logger().warning(f"Failed to decode JSON: {e}")
 
         try:
             match message:
@@ -110,6 +109,5 @@ class GUIConsumer(JsonWebsocketConsumer):
                             self.get_auton_typing_message()
 
         except:
-            # node.get_logger().error(f"Failed to handle message: {message}")
-            # node.get_logger().error(traceback.format_exc())
-            pass
+            node.get_logger().error(f"Failed to handle message: {message}")
+            node.get_logger().error(traceback.format_exc())
