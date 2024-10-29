@@ -16,7 +16,9 @@ namespace mrover {
 
         //mArmStatusPub = create_publisher<msg::ArmStatus>("arm_status", 1);
 
-        mIkServer = create_service<srv::IkTest>("ik_test", std::bind(&ArmController::ikTestCallback, this, _1));
+        mIkServer = create_service<srv::IkTest>("ik_test", [this](srv::IkTest_Request::ConstSharedPtr req, srv::IkTest_Response::SharedPtr res) {
+            ikTestCallback(req, res);
+        });
     }
 
     auto yawSo3(double r) -> SO3d {
