@@ -16,7 +16,7 @@ namespace mrover {
             {"right_clip", mLeftClip, 2.0},
             {"z_percent", mZPercent, 0.1},
             {"alpha", mAlpha, 0.05},
-            {"z_threshold", mZThreshold, 1.0}
+            {"z_threshold", mZThreshold, 0.5}
         };
 
         ParameterWrapper::declareParameters(this, params);
