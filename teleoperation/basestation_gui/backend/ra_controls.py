@@ -5,7 +5,9 @@ from typing import Union
 import numpy as np
 import rclpy
 from rclpy.node import Node
+from rclpy.time import Time
 
+from lie import SE3
 # import rospy
 from backend.input import filter_input, simulated_axis, safe_index, DeviceInputs
 from backend.mappings import ControllerAxis, ControllerButton
@@ -13,12 +15,15 @@ from mrover.msg import Throttle, Position
 from sensor_msgs.msg import JointState
 from geometry_msgs.msg import PoseStamped
 
+import tf2_ros
+buffer = tf2_ros.buffer()
+
 TAU = 2 * pi
 
 # rospy.init_node("teleoperation", disable_signals=True)
 
-# throttle_publisher = rospy.Publisher("arm_throttle_cmd", Throttle, queue_size=1)
-# position_publisher = rospy.Publisher("arm_position_cmd", Position, queue_size=1)
+# throttle_publisher = rospy.Publisher("arm_throttle_cmd", Throttle, queue_size=1) FOR MANUAL
+# position_publisher = rospy.Publisher("arm_position_cmd", Position, queue_size=1) for IK
 
 
 class Joint(Enum):
@@ -118,9 +123,9 @@ def subset(names: list[str], values: list[float], joints: set[Joint]) -> tuple[l
     return [names[i.value] for i in joints], [values[i.value] for i in joints]
 
 
-def send_ra_controls(ra_mode: str, inputs: DeviceInputs) -> None:
+def send_ra_controls(ra_mode: str, inputs: DeviceInputs, node: Node) -> Union[Throttle, PoseStamped, None]: #unsure if function shoudl return None, how publish to topic?
     match ra_mode:
-        case "manual" | "hybrid" | "ik": #added filter for IK mode, hybrid deprecated
+        case "manual" | "ik": #added filter for IK mode, hybrid removed
             back_pressed = safe_index(inputs.buttons, ControllerButton.BACK) > 0.5
             forward_pressed = safe_index(inputs.buttons, ControllerButton.FORWARD) > 0.5
             home_pressed = safe_index(inputs.buttons, ControllerButton.HOME) > 0.5
@@ -143,20 +148,14 @@ def send_ra_controls(ra_mode: str, inputs: DeviceInputs) -> None:
                         joint_names, throttle_values = subset(JOINT_NAMES, manual_controls, set(Joint))
                         throttle_msg.names = joint_names
                         throttle_msg.throttles = throttle_values
-                        #throttle_publisher.publish(throttle_msg) #uncomment
+                        return throttle_msg #how to import publisher and publish?
+                        
                     case "ik":
                         ik_msg = PoseStamped()
-                        ik_msg.header.stamp = rclpy.Time.now() #what is correct way to get time?
+                        ik_msg.header.stamp = node.get_clock().now().to_msg()
                         ik_msg.header.frame_id = "base_link"
-                        #how compute positions?
-                        ik_msg.pose.position.x = 0.5  
-                        ik_msg.pose.position.y = 0.0
-                        ik_msg.pose.position.z = 0.5
-                        ik_msg.pose.orientation.x = 0.0
-                        ik_msg.pose.orientation.y = 0.0
-                        ik_msg.pose.orientation.z = 0.0
-                        ik_msg.pose.orientation.w = 1.0
-                        #position_publisher.publish(ik_msg) #uncomment
+                        ik_msg.pose = SE3.from_tf_tree(buffer, "base_link", "map")
+                        return ik_msg #how to import publisher and publish?
 
             else:
                 if joint_positions:
