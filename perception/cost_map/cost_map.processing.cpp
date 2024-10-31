@@ -46,14 +46,6 @@ namespace mrover {
             SE3f cameraToMap = SE3Conversions::fromTfTree(mTfBuffer, "zed_left_camera_frame", "map").cast<float>();
             SE3f roverSE3 = SE3Conversions::fromTfTree(mTfBuffer, "base_link", "map").cast<float>();
 
-            RCLCPP_INFO_STREAM(get_logger(), "Rover Height" << roverSE3);
-            RCLCPP_INFO_STREAM(get_logger(), "Rover Height" << roverSE3.z());
-
-            if(roverSE3.z() == 0){
-                throw std::runtime_error("ZERO!!");
-            }
-
-
             struct BinEntry {
                 R3f pointInCamera;
                 R3f pointInMap;
