@@ -1,7 +1,9 @@
 #include "cost_map.hpp"
 #include "lie.hpp"
 #include <Eigen/src/Core/Matrix.h>
+#include <format>
 #include <memory>
+#include <rclcpp/logging.hpp>
 #include <stdexcept>
 
 namespace mrover {
@@ -116,6 +118,7 @@ namespace mrover {
                 }
 
                 avgNormal.normalize();
+                RCLCPP_INFO_STREAM(get_logger(), std::format("Normal Z {}", avgNormal.z()));
                 std::int8_t cost = avgNormal.z() < mZThreshold ? OCCUPIED_COST : FREE_COST;
 
                 // Update cell with EWMA acting as a low-pass filter
