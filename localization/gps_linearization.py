@@ -51,7 +51,7 @@ class GPSLinearization(Node):
             return
 
         x, y, _ = geodetic2enu(msg.latitude, msg.longitude, msg.altitude, self.ref_lat, self.ref_lon, self.ref_alt, deg=True)
-        self.pos_pub.publish(Vector3Stamped(header=msg.header, vector=Vector3(x=x, y=y, z=0.0)))
+        self.pos_pub.publish(Vector3Stamped(header=msg.header, vector=Vector3(x=x, y=y, z=msg.altitude)))
 
 
 def main() -> None:
