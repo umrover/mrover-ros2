@@ -6,9 +6,10 @@ import time
 import numpy as np
 
 import rclpy
+import tf2_ros
 from rclpy.node import Node
 from mrover.srv import MoveCostMap
-from util.SE3 import SE3
+from lie.conversions import SE3, from_position_orientation
 
 class MoveCostMapNode(Node):
     def __init__(self, course_x, course_y) -> None:
@@ -21,7 +22,7 @@ class MoveCostMapNode(Node):
         while not self.move_cost_map_srv.wait_for_service(timeout_sec=1.0):
             self.get_logger().info('service not available, waiting again...')
 
-        course_in_map = SE3.from_pos_quat(np.array([course_x, course_y,0]), np.array([0, 0, 0, 1]))
+        course_in_map = from_position_orientation(course_x, course_y)
 
         SE3.to_tf_tree(self.tf_broadcaster, course_in_map, "debug_course", "map")
 
@@ -31,7 +32,7 @@ class MoveCostMapNode(Node):
 
         self.req.course = "debug_course"
 
-        self.future = self.cli.call_async(self.req)
+        self.future = self.move_cost_map_srv.call_async(self.req)
         rclpy.spin_until_future_complete(self, self.future)
         if(self.future.result().success):
             self.get_logger().info("Successfuly Sent Moved Cost Map")
@@ -39,8 +40,8 @@ class MoveCostMapNode(Node):
 
 def main() -> None:
 
-    COURSE_X = -66
-    COURSE_Y = 0
+    COURSE_X = -44
+    COURSE_Y = 19
 
     try:
         rclpy.init(args=sys.argv)

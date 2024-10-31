@@ -2,6 +2,7 @@
 #include "lie.hpp"
 #include <Eigen/src/Core/Matrix.h>
 #include <memory>
+#include <stdexcept>
 
 namespace mrover {
 
@@ -96,13 +97,15 @@ namespace mrover {
 
             for (std::size_t i = 0; i < mGlobalGridMsg.data.size(); ++i) {
 				Bin& bin = bins[i];
-                if (bin.size() < 16) continue;
+                if (bin.size() < 16){
+                    mGlobalGridMsg.data[i] = UNKNOWN_COST;
+                }
 
                 // USING ABSOLUTE HEIGHT DIFFERENCE BETWEEN POINT AND ROVER HEIGHT
-                // std::size_t pointsHigh = std::ranges::count_if(bin, [this, &roverSE3](BinEntry const& entry) {
-                //     return abs(entry.pointInMap.z() - (roverSE3.z() - 0.25)) > mZThreshold;
-                // });
-                // double percent = static_cast<double>(pointsHigh) / static_cast<double>(bin.size());
+                std::size_t pointsHigh = std::ranges::count_if(bin, [this, &roverSE3](BinEntry const& entry) {
+                    return abs(entry.pointInMap.z() - (roverSE3.z())) > mZThreshold;
+                });
+                double percent = static_cast<double>(pointsHigh) / static_cast<double>(bin.size());
 
                 // std::int8_t cost = percent > mZPercent ? OCCUPIED_COST : FREE_COST;
 
@@ -134,6 +137,9 @@ namespace mrover {
                     })) postProcesed.data[i] = OCCUPIED_COST;
             }
             mCostMapPub->publish(postProcesed);
+            if(!mCostMapPub){
+                mCostMapPub->publish(postProcesed);
+            }
         } catch (tf2::TransformException const& e) {
             RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, std::format("TF tree error processing point cloud: {}", e.what()));
         }

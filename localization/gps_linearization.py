@@ -50,8 +50,8 @@ class GPSLinearization(Node):
             self.get_logger().warn("Received NaN GPS data, ignoring")
             return
 
-        x, y, _ = geodetic2enu(msg.latitude, msg.longitude, 0.0, self.ref_lat, self.ref_lon, self.ref_alt, deg=True)
-        self.pos_pub.publish(Vector3Stamped(header=msg.header, vector=Vector3(x=x, y=y)))
+        x, y, _ = geodetic2enu(msg.latitude, msg.longitude, msg.altitude, self.ref_lat, self.ref_lon, self.ref_alt, deg=True)
+        self.pos_pub.publish(Vector3Stamped(header=msg.header, vector=Vector3(x=x, y=y, z=msg.altitude)))
 
 
 def main() -> None:

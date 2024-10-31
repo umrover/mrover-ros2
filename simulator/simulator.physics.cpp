@@ -94,7 +94,7 @@ namespace mrover {
                 SE3d modelInMap = btTransformToSe3(urdf.physics->getBaseWorldTransform());
                 SE3Conversions::pushToTfTree(mTfBroadcaster, std::format("{}_truth", name), "map", modelInMap, get_clock()->now());
 
-                if (name == "rover") SE3Conversions::pushToTfTree(mTfBroadcaster, "base_link", "map", modelInMap, get_clock()->now());
+                if (name == "rover") SE3Conversions::pushToTfTree(mTfBroadcaster, "base_link_truth", "map", modelInMap, get_clock()->now());
 
                 for (urdf::JointSharedPtr const& child_joint: link->child_joints) {
                     self(self, urdf.model.getLink(child_joint->child_link_name));
