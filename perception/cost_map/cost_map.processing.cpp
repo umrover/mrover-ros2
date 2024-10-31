@@ -1,6 +1,7 @@
 #include "cost_map.hpp"
 #include "lie.hpp"
 #include <memory>
+#include <stdexcept>
 
 namespace mrover {
 
@@ -44,6 +45,14 @@ namespace mrover {
         try {
             SE3f cameraToMap = SE3Conversions::fromTfTree(mTfBuffer, "zed_left_camera_frame", "map").cast<float>();
             SE3f roverSE3 = SE3Conversions::fromTfTree(mTfBuffer, "base_link", "map").cast<float>();
+
+            RCLCPP_INFO_STREAM(get_logger(), "Rover Height" << roverSE3);
+            RCLCPP_INFO_STREAM(get_logger(), "Rover Height" << roverSE3.z());
+
+            if(roverSE3.z() == 0){
+                throw std::runtime_error("ZERO!!");
+            }
+
 
             struct BinEntry {
                 R3f pointInCamera;
@@ -93,11 +102,13 @@ namespace mrover {
 
             for (std::size_t i = 0; i < mGlobalGridMsg.data.size(); ++i) {
 				Bin& bin = bins[i];
-                if (bin.size() < 16) continue;
+                if (bin.size() < 16){
+                    mGlobalGridMsg.data[i] = UNKNOWN_COST;
+                }
 
                 // USING ABSOLUTE HEIGHT DIFFERENCE BETWEEN POINT AND ROVER HEIGHT
                 std::size_t pointsHigh = std::ranges::count_if(bin, [this, &roverSE3](BinEntry const& entry) {
-                    return abs(entry.pointInMap.z() - (roverSE3.z() - 0.25)) > mZThreshold;
+                    return abs(entry.pointInMap.z() - (roverSE3.z())) > mZThreshold;
                 });
                 double percent = static_cast<double>(pointsHigh) / static_cast<double>(bin.size());
 
@@ -124,6 +135,9 @@ namespace mrover {
                     })) postProcesed.data[i] = OCCUPIED_COST;
             }
             mCostMapPub->publish(postProcesed);
+            if(!mCostMapPub){
+                mCostMapPub->publish(postProcesed);
+            }
         } catch (tf2::TransformException const& e) {
             RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, std::format("TF tree error processing point cloud: {}", e.what()));
         }

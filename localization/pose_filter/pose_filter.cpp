@@ -1,4 +1,5 @@
 #include "pose_filter.hpp"
+#include "cost_map/pch.hpp"
 
 namespace mrover {
     
@@ -43,12 +44,12 @@ namespace mrover {
             pose_sub_callback(msg);
         });
 
-        declare_parameter("rover_frame", rclcpp::ParameterType::PARAMETER_STRING);
-        declare_parameter("world_frame", rclcpp::ParameterType::PARAMETER_STRING);
+        std::vector<ParameterWrapper> params{
+            {"rover_frame", rover_frame, "base_link"},
+            {"world_frame", world_frame, "map"}
+        };
 
-        rover_frame = get_parameter("rover_frame").as_string();
-        world_frame = get_parameter("world_frame").as_string();
-
+            ParameterWrapper::declareParameters(this, params);
     }
 
     void PoseFilter::pose_sub_callback(geometry_msgs::msg::Vector3Stamped::ConstSharedPtr const& msg) {
@@ -79,6 +80,7 @@ namespace mrover {
         //     pose_in_map.asSO3() = calibrated_orientation;
         // }
         
+        RCLCPP_INFO_STREAM(get_logger(), "Rover Height" << pose_in_map.z());
 
         SE3Conversions::pushToTfTree(tf_broadcaster, rover_frame, world_frame, pose_in_map, get_clock()->now());
 
