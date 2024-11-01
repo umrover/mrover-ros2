@@ -39,20 +39,7 @@ namespace mrover {
         FDCAN<InBoundMessage> m_fdcan;
         VirtualStopwatches<MotorCount * 3, std::uint32_t, mrover::CLOCK_FREQ> m_stopwatches; // MotorCount * 3 = MotorCount(encoder elapsed timer + last throttle timer + last PIDF timer)
         std::array<Motor, MotorCount> m_motors{};
-
-        /* ==================== Per-Motor Functions ==================== */
-        auto update_relative_encoder() -> void {
-            foreach_motor([](auto& motor) { motor.update_relative_encoder(); });
-        }
-
-        auto update_limit_switches() -> void {
-            foreach_motor([](auto& motor) { motor.update_limit_switches(); });
-        }
-
-        auto drive_motor() -> void {
-            foreach_motor([](auto& motor) { motor.drive_motor(); });
-        }
-
+        typename std::array<Motor, MotorCount>::iterator m_motor_requesting_absolute_encoder;
 
     public:
         Controller() = default;
@@ -71,10 +58,10 @@ namespace mrover {
                         config.relative_encoder_tick,
                         config.absolute_encoder_a2_a1};
             }
+            auto it = m_motors.begin();
         }
 
         auto init() -> void {
-            assert_param(!m_stopwatches.at_capacity());
             m_stopwatches.init();
 
             m_fdcan.start();
@@ -99,17 +86,6 @@ namespace mrover {
             }
         }
 
-        auto request_absolute_encoder_data() -> void {
-            foreach_motor([](auto& motor) {
-                motor.request_absolute_encoder_data();
-            });
-        }
-
-        template<std::uint8_t MotorIndex>
-        auto update_quadrature_encoder() -> void {
-            m_motors[MotorIndex].update_quadrature_encoder();
-        }
-
         /**
          * \brief Send out the current outbound status message of each motor.
          *
@@ -123,9 +99,28 @@ namespace mrover {
             });
         }
 
+        auto request_absolute_encoder_data() -> void {
+            foreach_motor([](auto& motor) {
+                motor.request_absolute_encoder_data();
+            });
+        }
+
+        auto read_abolute_encoder_data() -> void {
+
+        }
+
+        template<std::uint8_t MotorIndex>
+        auto update_quadrature_encoder() -> void {
+            m_motors[MotorIndex].update_quadrature_encoder();
+        }
+
         template<std::uint8_t MotorIndex>
         auto receive_watchdog_expired() -> void {
             m_motors[MotorIndex].receive_watchdog_expired();
+        }
+
+        auto virtual_stopwatch_elapsed() -> void {
+            m_stopwatches.period_elapsed();
         }
     };
 } // namespace mrover

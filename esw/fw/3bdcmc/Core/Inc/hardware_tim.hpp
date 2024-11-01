@@ -1,23 +1,26 @@
 #pragma once
 
 #include <array>
-#include <limits>
-#include <utility>
 #include <cstdint>
+#include <functional>
+#include <limits>
 #include <type_traits>
+#include <utility>
 
 #include <units/units.hpp>
 
 #include "main.h"
 
 namespace mrover {
-class IStopwatch {
+    class IStopwatch {
     public:
+        using TimerCallback = std::function<void()>;
+
         virtual ~IStopwatch() = default;
 
         virtual auto add_stopwatch() -> std::uint8_t = 0;
+        virtual auto add_stopwatch(std::optional<TimerCallback> callback) -> std::uint8_t = 0;
         virtual auto get_time_since_last_read(std::uint8_t index) -> Seconds = 0;
-
     };
 
     template<std::uint8_t MaxStopwatchCount, typename CountType, Hertz TimFrequency>
@@ -29,6 +32,11 @@ class IStopwatch {
         struct tim_stamp_t {
             CountType last_count{};
             std::size_t num_elapses{};
+        };
+
+        struct stopwatch_data_t {
+            tim_stamp_t tim_stamp{};
+            std::optional<TimerCallback> elapsed_callback{};
         };
 
         VirtualStopwatches() = default;
@@ -47,13 +55,17 @@ class IStopwatch {
             return m_num_stopwatches == MaxStopwatchCount;
         }
 
-        // TODO(owen): terrified of race conditions. what interrupts can happen that screw this up?
         auto add_stopwatch() -> std::uint8_t override {
-            if (m_num_stopwatches >= MaxStopwatchCount-1) {
+            return add_stopwatch(std::nullopt);
+        }
+
+        auto add_stopwatch(std::optional<TimerCallback> callback) -> std::uint8_t override {
+            if (m_num_stopwatches >= MaxStopwatchCount - 1) {
                 return 0;
             }
             ++m_num_stopwatches;
-            m_tim_stamps[m_num_stopwatches].last_count = get_current_count();
+            m_stopwatches[m_num_stopwatches].tim_stamp.last_count = get_current_count();
+            m_stopwatches[m_num_stopwatches].elapsed_callback = callback;
 
             return m_num_stopwatches;
         }
@@ -62,9 +74,12 @@ class IStopwatch {
             HAL_TIM_Base_Start_IT(m_hardware_tim);
         }
 
-        auto period_elapsed_callback() -> void {
+        auto period_elapsed() -> void {
             for (std::size_t i = 0; i < m_num_stopwatches; ++i) {
-                ++m_tim_stamps[i].num_elapses;
+                ++m_stopwatches[i].tim_stamp.num_elapses;
+                if (m_stopwatches[i].elapsed_callback.has_value()) {
+                    m_stopwatches[i].elapsed_callback.value()();
+                }
             }
         }
 
@@ -74,11 +89,11 @@ class IStopwatch {
             }
 
             HAL_TIM_Base_Stop_IT(m_hardware_tim);
-            tim_stamp_t last_tim_stamp = std::exchange(m_tim_stamps[index], {get_current_count(), 0});
+            tim_stamp_t last_tim_stamp = std::exchange(m_stopwatches[index].tim_stamp, {get_current_count(), 0});
             HAL_TIM_Base_Start_IT(m_hardware_tim);
 
 
-            CountType current_count = m_tim_stamps[index].last_count;
+            CountType current_count = m_stopwatches[index].tim_stamp.last_count;
 
             CountType last_count = last_tim_stamp.last_count;
             std::size_t num_elapses = last_tim_stamp.num_elapses;
@@ -102,11 +117,11 @@ class IStopwatch {
     private:
         TIM_HandleTypeDef* m_hardware_tim{};
         std::uint8_t m_num_stopwatches{};
-        std::array<tim_stamp_t, MaxStopwatchCount> m_tim_stamps{};
+        std::array<stopwatch_data_t, MaxStopwatchCount> m_stopwatches{};
 
         [[nodiscard]] auto get_current_count() const -> CountType {
             return __HAL_TIM_GetCounter(m_hardware_tim);
         }
     };
 
-    }
+} // namespace mrover

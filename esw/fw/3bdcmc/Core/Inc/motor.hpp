@@ -373,22 +373,6 @@ namespace mrover {
             process_command();
         }
 
-        auto relative_elapsed_timer_expired() -> void {
-            if (m_relative_encoder) {
-                m_relative_encoder->expired();
-                update_based_on_relative_encoder_reading();
-            }
-        }
-
-        // /**
-        //  * \brief Update the quadrature velocity measurement.
-        //  *
-        //  * \note Called more frequently than update position.
-        //  */
-        // auto calc_quadrature_velocity() -> void {
-        //     m_relative_encoder->update();
-        // }
-
         /**
          * \brief Get the outbound status message of the controller
          *

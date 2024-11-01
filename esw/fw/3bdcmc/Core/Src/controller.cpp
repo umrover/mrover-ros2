@@ -145,10 +145,6 @@ namespace mrover {
         controller.update_quadrature_encoder<MotorIndex>();
     }
 
-    auto quadrature_elapsed_timer_expired() -> void {
-        controller.quadrature_elapsed_timer_expired();
-    }
-
     auto send_callback() -> void {
         controller.send();
     }
@@ -158,6 +154,9 @@ namespace mrover {
         controller.receive_watchdog_expired<MotorIndex>();
     }
 
+    auto virtual_stopwatch_elapsed_callback() -> void {
+        controller.virtual_stopwatch_elapsed();
+    }
     // void calc_velocity() {
     //     controller.calc_quadrature_velocity();
     // }
@@ -193,7 +192,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim) {
     } else if (htim == RECEIVE_WATCHDOG_TIMER_2) {
         mrover::receive_watchdog_timer_expired<2>();
     } else if (htim == VIRTUAL_STOPWATCHES_TIMER) {
-        mrover::quadrature_elapsed_timer_expired();
+        mrover::virtual_stopwatch_elapsed_callback();
     }
 }
 
