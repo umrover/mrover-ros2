@@ -66,10 +66,10 @@ class DebugCoursePublisher(Node):
                         Waypoint(type=WaypointType(val=WaypointType.WATER_BOTTLE)),
                         SE3.from_position_orientation(2.0, -2.0),
                     ),
-                    # (
-                    #     Waypoint(tag_id=0, type=WaypointType(val=WaypointType.POST)),
-                    #     SE3.from_position_orientation(-2, -2),
-                    # ),
+                    (
+                        Waypoint(type=WaypointType(val=WaypointType.MALLET)),
+                        SE3.from_position_orientation(-1.0, -1.0),
+                    ),
                     # (
                     #     Waypoint(tag_id=1, type=WaypointType(val=WaypointType.POST)),
                     #     SE3.from_position_orientation(11, -10),

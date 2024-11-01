@@ -17,12 +17,12 @@ from navigation.trajectory import Trajectory, SearchTrajectory
 from std_msgs.msg import Header
 from state_machine.state import State
 
-
 # REFERENCE: https://docs.google.com/document/d/18GjDWxIu5f5-N5t5UgbrZGdEyaDj9ZMEUuXex8-NKrA/edit
-class WaterBottleSearchState(State):
+class CostmapSearchState(State):
     """
-    State when searching for the water bottle
+    General search state that utilizes the costmap for searching for any obstacles
     Follows a search spiral but uses A* to avoid obstacles
+    Intended to be implemented over the current search state
     """
 
     trajectory: Optional[SearchTrajectory] = None  # spiral
@@ -62,13 +62,13 @@ class WaterBottleSearchState(State):
                 costmap_2d[end_node.position[0], end_node.position[1]] >= self.TRAVERSABLE_COST
             ):  # TODO: find optimal value
                 # True if the trajectory is finished
-                if WaterBottleSearchState.trajectory.increment_point():
+                if CostmapSearchState.trajectory.increment_point():
                     raise SpiralEnd()
                 # update end point to be the next point in the search spiral
-                end_ij = self.astar.cartesian_to_ij(WaterBottleSearchState.trajectory.get_current_point())
+                end_ij = self.astar.cartesian_to_ij(CostmapSearchState.trajectory.get_current_point())
                 end_node = self.astar.Node(None, (end_ij[0], end_ij[1]))
                 context.node.get_logger().info(f"End has high cost! new end: {end_ij}")
-        return WaterBottleSearchState.trajectory.get_current_point()
+        return CostmapSearchState.trajectory.get_current_point()
 
     def avg_cell_cost(self, context: Context, start: np.ndarray, end: np.ndarray) -> float:
         start_ij = self.astar.cartesian_to_ij(start)
@@ -112,16 +112,16 @@ class WaterBottleSearchState(State):
         return total_cost / count
 
     def on_enter(self, context: Context) -> None:
-        self.STOP_THRESH = context.node.get_parameter("water_bottle_search.stop_threshold").value
-        self.DRIVE_FWD_THRESH = context.node.get_parameter("water_bottle_search.drive_forward_threshold").value
-        self.SPIRAL_COVERAGE_RADIUS = context.node.get_parameter("water_bottle_search.coverage_radius").value
-        self.SEGMENTS_PER_ROTATION = context.node.get_parameter("water_bottle_search.segments_per_rotation").value
-        self.DISTANCE_BETWEEN_SPIRALS = context.node.get_parameter("water_bottle_search.distance_between_spirals").value
-        self.TRAVERSABLE_COST = context.node.get_parameter("water_bottle_search.traversable_cost").value
-        self.UPDATE_DELAY = context.node.get_parameter("water_bottle_search.update_delay").value
-        self.SAFE_APPROACH_DISTANCE = context.node.get_parameter("water_bottle_search.safe_approach_distance").value
+        self.STOP_THRESH = context.node.get_parameter("search.stop_threshold").value
+        self.DRIVE_FWD_THRESH = context.node.get_parameter("search.drive_forward_threshold").value
+        self.SPIRAL_COVERAGE_RADIUS = context.node.get_parameter("search.coverage_radius").value
+        self.SEGMENTS_PER_ROTATION = context.node.get_parameter("search.segments_per_rotation").value
+        self.DISTANCE_BETWEEN_SPIRALS = context.node.get_parameter("search.distance_between_spirals").value
+        self.TRAVERSABLE_COST = context.node.get_parameter("search.traversable_cost").value
+        self.UPDATE_DELAY = context.node.get_parameter("search.update_delay").value
+        self.SAFE_APPROACH_DISTANCE = context.node.get_parameter("search.safe_approach_distance").value
 
-        if WaterBottleSearchState.trajectory is None:
+        if CostmapSearchState.trajectory is None:
             self.new_trajectory(context)
 
         if not self.is_recovering:
@@ -151,7 +151,7 @@ class WaterBottleSearchState(State):
 
             if bottle_in_map is None:
                 end_point_in_map = self.find_endpoint(
-                    context, WaterBottleSearchState.trajectory.get_current_point()[0:2]
+                    context, CostmapSearchState.trajectory.get_current_point()[0:2]
                 )
             else:
                 end_point_in_map = bottle_in_map
@@ -168,13 +168,13 @@ class WaterBottleSearchState(State):
                     occupancy_list = self.astar.a_star(rover_position_in_map, end_point_in_map[0:2])
                 except SpiralEnd:
                     # TODO: what to do in this case
-                    WaterBottleSearchState.trajectory.reset()
+                    CostmapSearchState.trajectory.reset()
                     occupancy_list = None
                 except NoPath:
                     # increment end point
-                    if WaterBottleSearchState.trajectory.increment_point():
+                    if CostmapSearchState.trajectory.increment_point():
                         # TODO: what to do in this case
-                        WaterBottleSearchState.trajectory.reset()
+                        CostmapSearchState.trajectory.reset()
                     occupancy_list = None
                 if occupancy_list is None:
                     self.star_traj = Trajectory(np.array([]))
@@ -203,7 +203,7 @@ class WaterBottleSearchState(State):
                 self.time_last_updated = context.node.get_clock().now()
 
         # Continue executing the path from wherever it left off
-        target_position_in_map = WaterBottleSearchState.trajectory.get_current_point()
+        target_position_in_map = CostmapSearchState.trajectory.get_current_point()
         traj_target = True
         # If there is an alternate path we need to take to avoid the obstacle, use that trajectory
         if len(self.star_traj.coordinates) != 0:
@@ -222,14 +222,14 @@ class WaterBottleSearchState(State):
             if traj_target:
                 context.node.get_logger().info("Arrived at spiral point")
                 # If we finish the spiral without seeing the object, move on with course
-                if WaterBottleSearchState.trajectory.increment_point():
+                if CostmapSearchState.trajectory.increment_point():
                     return waypoint.WaypointState()
             else:  # Otherwise, increment the astar path
                 # If we finish the astar path, then reset astar and increment the spiral path
                 if self.star_traj.increment_point():
                     context.node.get_logger().info("Arrived at end of astar")
                     self.star_traj = Trajectory(np.array([]))
-                    if WaterBottleSearchState.trajectory.increment_point():
+                    if CostmapSearchState.trajectory.increment_point():
                         return waypoint.WaypointState()
 
         if context.rover.stuck:
@@ -247,7 +247,7 @@ class WaterBottleSearchState(State):
             ]
         )
         context.search_point_publisher.publish(
-            GPSPointList(points=[convert_cartesian_to_gps(ref, pt) for pt in WaterBottleSearchState.trajectory.coordinates])
+            GPSPointList(points=[convert_cartesian_to_gps(ref, pt) for pt in CostmapSearchState.trajectory.coordinates])
         )
         context.rover.send_drive_command(cmd_vel)
 
@@ -266,7 +266,7 @@ class WaterBottleSearchState(State):
         assert search_center is not None
 
         if not self.is_recovering:
-            WaterBottleSearchState.trajectory = SearchTrajectory.spiral_traj(
+            CostmapSearchState.trajectory = SearchTrajectory.spiral_traj(
                 context.course.current_waypoint_pose_in_map().translation()[0:2],
                 self.SPIRAL_COVERAGE_RADIUS,
                 self.DISTANCE_BETWEEN_SPIRALS,
