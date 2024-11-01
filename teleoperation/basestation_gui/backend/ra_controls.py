@@ -6,6 +6,7 @@ import numpy as np
 import rclpy
 from rclpy.node import Node
 from rclpy.time import Time
+from rclpy.publisher import Publisher
 
 from lie import SE3
 # import rospy
@@ -16,7 +17,8 @@ from sensor_msgs.msg import JointState
 from geometry_msgs.msg import PoseStamped
 
 import tf2_ros
-buffer = tf2_ros.buffer()
+from tf2_ros.buffer import Buffer
+buffer = Buffer()
 
 TAU = 2 * pi
 
@@ -123,7 +125,7 @@ def subset(names: list[str], values: list[float], joints: set[Joint]) -> tuple[l
     return [names[i.value] for i in joints], [values[i.value] for i in joints]
 
 
-def send_ra_controls(ra_mode: str, inputs: DeviceInputs, node: Node) -> Union[Throttle, PoseStamped, None]: #unsure if function shoudl return None, how publish to topic?
+def send_ra_controls(ra_mode: str, inputs: DeviceInputs, node: Node, thr_pub: Publisher, pos_pub: Publisher) -> None: 
     match ra_mode:
         case "manual" | "ik": #added filter for IK mode, hybrid removed
             back_pressed = safe_index(inputs.buttons, ControllerButton.BACK) > 0.5
@@ -148,14 +150,14 @@ def send_ra_controls(ra_mode: str, inputs: DeviceInputs, node: Node) -> Union[Th
                         joint_names, throttle_values = subset(JOINT_NAMES, manual_controls, set(Joint))
                         throttle_msg.names = joint_names
                         throttle_msg.throttles = throttle_values
-                        return throttle_msg #how to import publisher and publish?
+                        thr_pub.publish(throttle_msg)
                         
                     case "ik":
                         ik_msg = PoseStamped()
                         ik_msg.header.stamp = node.get_clock().now().to_msg()
                         ik_msg.header.frame_id = "base_link"
                         ik_msg.pose = SE3.from_tf_tree(buffer, "base_link", "map")
-                        return ik_msg #how to import publisher and publish?
+                        pos_pub.publish(ik_msg)
 
             else:
                 if joint_positions:

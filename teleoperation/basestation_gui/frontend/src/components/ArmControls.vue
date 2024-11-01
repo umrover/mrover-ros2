@@ -3,24 +3,24 @@
     <h2>Arm Controls</h2>
     <div class='controls-flex'>
       <h4>Mode</h4>
-      <div class='form-check'>
-        <input
-          v-model='mode'
-          class='form-check-input'
-          type='radio'
-          id='disabled'
-          value='disabled'
-        />
+      <!-- <div class='form-check'>
+        <input v-model='mode' type='radio' class='form-check-input' id='disabled' value='disabled' />
         <label class='form-check-label' for='disabled'>Disabled</label>
       </div>
       <div class='form-check'>
-        <input v-model='mode' class='form-check-input' type='radio' id='manual' value='manual' />
+        <input v-model='mode' type='radio' class='form-check-input' id='manual' value='manual' />
         <label class='form-check-label' for='manual'>Manual</label>
       </div>
       <div class='form-check'>
-        <input v-model='mode' class='form-check-input' type='radio' id='ik' value='ik' />
-        <label class='form-check-label' for='IK'>IK</label>
-      </div>
+        <input v-model='mode' type='radio' class='form-check-input' id='ik' value='ik' />
+        <label class='form-check-label' for='ik'>IK</label>
+      </div> -->
+        <input v-model='mode' type="radio" class="btn-check" name="options-outlined" id="disabled" value='disabled' autocomplete="off" checked>
+        <label class="btn btn-outline-danger" for="disabled">Disabled</label>
+        <input v-model='mode' type="radio" class="btn-check" name="options-outlined" id="manual" value='manual' autocomplete="off">
+        <label class="btn btn-outline-success" for="manual">Manual</label>
+        <input v-model='mode' type="radio" class="btn-check" name="options-outlined" id="ik" value='ik' autocomplete="off">
+        <label class="btn btn-outline-success" for="ik">IK</label>
     </div>
   </div>
 </template>
