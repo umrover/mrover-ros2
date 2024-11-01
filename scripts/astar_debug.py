@@ -11,6 +11,8 @@ import numpy as np
 import tkinter as tk
 import time
 
+from numpy._typing._array_like import NDArray
+
 import rclpy
 from navigation.context import Context, CostMap, Environment, ImageTargetsStore
 from navigation.astar import AStar
@@ -27,23 +29,23 @@ import numpy as np
 import time
 
 class SimWindow:
-    def __init__(self, rows=10, cols=10, cell_size=50, grid=None, path_history=None, start=None, end=None):
+    def __init__(self, ctx: Context, rows=10, cols=10, cell_size=50, grid=None, start=None, end=None, speed=250):
+        self.ctx = ctx
+
         self.root = tk.Tk()
         self.root.title("AStar Simulation Testing")
-
-        self.number_padding = 20
+        self.number_padding = cell_size
 
         self.rows = rows
         self.cols = cols
         self.cell_size = cell_size
-        self.path_history = path_history
         self.current_path_index = 0
-        self.current_coord_index = 0
 
         self.grid = np.zeros((self.rows, self.cols), dtype=int) if grid is None else grid
         self.grid_copy = np.copy(self.grid)
         self.start = start
         self.end = end
+        self.speed = speed
 
         self.canvas = tk.Canvas(
             self.root, 
@@ -56,54 +58,79 @@ class SimWindow:
         # Draw grid
         self.draw_grid()
         
-        if self.path_history is None:
-            self.dragging = False
-            self.start_x = None
-            self.start_y = None
-            self.curr_cell = (-1, -1)
-            
-            # Bind mouse events
-            self.canvas.bind("<ButtonPress-1>", self.start_drag)
-            self.canvas.bind("<B1-Motion>", self.on_drag)
-            self.canvas.bind("<ButtonRelease-1>", self.stop_drag)
+        self.dragging = False
+        self.start_x = None
+        self.start_y = None
+        self.curr_cell = (-1, -1)
+        
+        # Bind mouse events
+        self.canvas.bind("<ButtonPress-1>", self.start_drag)
+        self.canvas.bind("<B1-Motion>", self.on_drag)
+        self.canvas.bind("<ButtonRelease-1>", self.stop_drag)
+        self.canvas.bind_all("<q>", lambda event: self.root.destroy())
 
-            # Add print button
-            self.print_button = tk.Button(
-                self.root,
-                text="Run Simulation",
-                command=self.button_press
-            )
-            self.print_button.pack(pady=5)
+        # Add print button
+        self.print_button = tk.Button(
+            self.root,
+            text="Run Simulation",
+            command=self.run_astar
+        )
+        self.print_button.pack(pady=5)
 
+    def run_astar(self):
+        self.current_path_index = 0
+        self.canvas.unbind("<ButtonPress-1>")
+        self.canvas.unbind("<B1-Motion>")
+        self.canvas.unbind("<ButtonRelease-1>")
+
+        if not hasattr(self.ctx, 'env'):
+            costmap = CostMap()
+            costmap.origin = np.array([0,0])
+            costmap.height = 15
+            costmap.width = 10
+            costmap.resolution = 1
+            costmap.data = np.copy(self.grid)
+            self.ctx.env = Environment(self.ctx, image_targets=ImageTargetsStore(self.ctx), cost_map=costmap)
+
+        astar = AStar(np.array([0,0]), self.ctx)
+        self.path_history = astar.a_star(self.start[::-1], self.end[::-1], debug=True)
         if self.path_history:
+            self.pause = False
+            if self.path_history:
+                self.root.bind("<space>", self.toggle_animation)
             # Start the animation loop
             self.animate_path()
 
+    def toggle_animation(self, event):
+        self.pause = not self.pause
+        if not self.pause:
+            # Resume animation if we're unpausing
+            self.animate_path()
+
     def animate_path(self):
-        
+        if self.pause: return
         
         if self.path_history and self.current_path_index < len(self.path_history):
-            current_path = self.path_history[self.current_path_index]
-            
-            if self.current_coord_index < len(current_path):
-                # Get the current coordinate and update the grid
-                coord = current_path[self.current_coord_index]
+            self.draw_grid()
+            self.grid = np.copy(self.grid_copy)
+            for i, coord in enumerate(self.path_history[self.current_path_index][1:-1]):
                 self.grid[coord[0]][coord[1]] = 10
-                #self.draw_grid()
                 
-                # Move to next coordinate
-                self.current_coord_index += 1
+                x = coord[1] * self.cell_size + self.cell_size/2 + self.number_padding
+                y = coord[0] * self.cell_size + self.cell_size/2 + self.number_padding
                 
-                # Schedule the next animation step
-                self.root.after(0, self.animate_path)
-            else:
-                # Move to next path
-                self.current_path_index += 1
-                self.current_coord_index = 0
-                self.draw_grid()
-                if self.current_path_index < len(self.path_history): self.grid = np.copy(self.grid_copy)
-                
-                self.root.after(500, self.animate_path)
+                self.fill_cell(coord[0], coord[1], 'blue')
+                self.canvas.create_text(
+                    x,
+                    y,
+                    text=str(i),
+                    font=('Arial', self.cell_size // 2),
+                    fill='white'
+                )
+
+            self.current_path_index += 1
+
+            self.root.after(self.speed, self.animate_path)
 
     def draw_grid(self):
         self.canvas.delete("all")
@@ -114,7 +141,7 @@ class SimWindow:
                 self.number_padding/2, 
                 y,
                 text=str(row),
-                font=('Arial', 10)
+                font=('Arial', self.cell_size // 2)
             )
 
         # Draw column numbers
@@ -124,22 +151,20 @@ class SimWindow:
                 x,
                 self.number_padding/2,
                 text=str(col),
-                font=('Arial', 10)
+                font=('Arial', self.cell_size // 2)
             )
         
         # Fill cells based on array values
         for row in range(self.rows):
             for col in range(self.cols):
-                if self.grid[row][col] == 10:
-                    self.fill_cell(row, col, 'blue')
-                elif self.grid[row][col] == 1:  # Path cells
+                if self.grid[row][col] == 1:  # Path cells
                     self.fill_cell(row, col, 'gray')
         
         # start cell
-        if self.start is not None: self.fill_cell(self.start[0],self.start[1], 'green')
+        if self.start is not None: self.fill_cell(self.start[1],self.start[0], 'green')
 
         # end cell
-        if self.end is not None: self.fill_cell(self.end[0],self.end[1], 'red')
+        if self.end is not None: self.fill_cell(self.end[1],self.end[0], 'red')
 
         # Draw vertical lines
         for i in range(self.cols + 1):
@@ -182,13 +207,11 @@ class SimWindow:
     
     def stop_drag(self, event):
         self.dragging = False
-    
-    def button_press(self):
-        self.root.destroy()
+        self.grid_copy = np.copy(self.grid)
     
     def run(self):
         self.root.mainloop()
-        return self.grid
+        return self.path_history
 
 
 class AStarDebug(Node):
@@ -200,32 +223,18 @@ class AStarDebug(Node):
         self.ctx.node = self
         self.declare_parameters("",[("search.traversable_cost", Parameter.Type.DOUBLE)])
         self.set_parameters([Parameter("search.traversable_cost", Parameter.Type.DOUBLE, 0.2)])
-        costmap = CostMap()
-        costmap.origin = np.array([0,0])
-        costmap.height = 15
-        costmap.width = 10
-        costmap.resolution = 1
 
         start = np.array([3,3])
-        end = np.array([8,8])
+        end = np.array([10,15])
 
-        sim = SimWindow(costmap.height, costmap.width, 50, start=start, end=end)
-        
-        costmap_data = sim.run()
-        costmap.data = costmap_data
+        sim = SimWindow(self.ctx, rows=20, cols=30, cell_size=30, start=start, end=end)
+        path_history = sim.run()
 
-        self.ctx.env = Environment(self.ctx, image_targets=ImageTargetsStore(self.ctx), cost_map=costmap)
-
-        astar = AStar(np.array([0,0]), self.ctx)
-
-        path_history = astar.a_star(start, end, debug=True)
-
-        sim = SimWindow(costmap.height, costmap.width, 50, grid=costmap_data, path_history=path_history, start=start, end=end)
-        sim.run()
-        
-        for path in path_history or []:
+        for path in path_history:
             temp = ""
-            self.get_logger().info(str(path))
+            for coord in path:
+                temp += str(coord) + " "
+            self.get_logger().info(temp)
 
                 
 
