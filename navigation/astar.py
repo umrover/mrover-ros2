@@ -59,6 +59,9 @@ class AStar:
         # defining greater than for purposes of heap queue
         def __gt__(self, other):
             return self.f > other.f
+        
+        def __hash__(self):
+            return hash(self.position)
 
     def cartesian_to_ij(self, cart_coord: np.ndarray) -> np.ndarray:
         """
@@ -163,7 +166,7 @@ class AStar:
 
             # Initialize both open and closed list
             open_list: list[AStar.Node] = []
-            closed_list: list[AStar.Node] = []
+            closed_list: set[AStar.Node] = set()
 
             # heapify the open_list and add the start node
             heapq.heapify(open_list)
@@ -187,7 +190,7 @@ class AStar:
 
                 # get the current node
                 current_node = heapq.heappop(open_list)
-                closed_list.append(current_node)
+                closed_list.add(current_node)
                 if debug: debug_list.append(self.return_path(current_node, debug=debug).copy())
 
                 outer_iterations += 1
@@ -228,7 +231,7 @@ class AStar:
                 # loop through children
                 for child in children:
                     # child is on the closed list
-                    if len([closed_child for closed_child in closed_list if closed_child == child]) > 0:
+                    if child in closed_list:
                         continue
                     # create the f (total), g (cost in map), and h (Euclidean distance) values
                     child.g = current_node.g + costmap2d[child.position[0], child.position[1]]
