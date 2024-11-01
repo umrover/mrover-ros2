@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 
 from rclpy.node import Node
 import rclpy
@@ -7,6 +9,8 @@ import sys
 
 from mrover.srv import IkTest
 
+import numpy as np
+
 
 
 class IK_Testing(Node):
@@ -15,25 +19,35 @@ class IK_Testing(Node):
         super().__init__("ik_testing")
 
     def test_points(self):
-        ROWS = 1
-        COLS = 1
-        pointMap = [[False] * ROWS for i in range(ROWS)]
+        MAX_X = 1.
+        MAX_Y = 1.
+        MAX_Z = 1.
 
-        row = 0
-        col = 0
+        pointMap = [[[]]]
         request = IkTest.Request()
-        request._target._header._stamp = self.get_clock().now()
-        request.target.header._frame_id = "arm_base_link"
-        request.target.pose._position.x = request.target.pose._position.y = request.target.pose._position.z = 0.
 
+        x_idx = 0
+        y_idx = 0
 
-        client = self.create_client(IkTest, "ik_test")
-        if not client.wait_for_service(timeout_sec=2.0):
-            raise RuntimeError("IK testing not working :(")
-
-        future = client.call_async(request)
-        rclpy.spin_until_future_complete(self, future)        
-        pointMap[row][col] = future.result().success
+        for x in np.arange(-MAX_X, MAX_X, 0.5):
+            pointMap.append([[]])
+            for y in np.arange(-MAX_Y, MAX_Y, 0.5):
+                pointMap[x_idx].append([])
+                for z in np.arange(-MAX_Z, MAX_Z, 0.5):
+                    #request._target._header._stamp = self.get_clock().now()
+                    request.target.header._frame_id = "arm_base_link"
+                    request.target.pose._position.x = x
+                    request.target.pose._position.y = y
+                    request.target.pose._position.z = z
+                    client = self.create_client(IkTest, "ik_test")
+                    if not client.wait_for_service(timeout_sec=2.0):
+                        raise RuntimeError("IK testing not working :(")
+                    future = client.call_async(request)
+                    rclpy.spin_until_future_complete(self, future)        
+                    pointMap[x_idx][y_idx].append (future.result().success)
+                y_idx+=1
+            x_idx += 1
+        
         return pointMap
 
 
@@ -44,7 +58,7 @@ def main(args = None):
 
         ik_tester = IK_Testing()
         pointMap = ik_tester.test_points()
-        ik_tester.get_logger().info(pointMap)
+        ik_tester.get_logger().info(f"Point map: {pointMap}")
 
         rclpy.shutdown()
     except KeyboardInterrupt:
