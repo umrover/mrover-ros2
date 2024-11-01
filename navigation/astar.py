@@ -33,7 +33,7 @@ class AStar:
         self.origin = origin
         self.context = context
 
-        self.TRAVERSABLE_COST = self.context.node.get_parameter("water_bottle_search.traversable_cost").value
+        self.TRAVERSABLE_COST = self.context.node.get_parameter("search.traversable_cost").value
 
         self.costmap_lock = Lock()
 
@@ -88,7 +88,7 @@ class AStar:
         half_res = np.array([self.context.env.cost_map.resolution / 2, self.context.env.cost_map.resolution / 2])
         return self.context.env.cost_map.origin + ij_coords * self.context.env.cost_map.resolution + half_res
 
-    def return_path(self, current_node: Node) -> list:
+    def return_path(self, current_node: Node, debug=False) -> list:
         """
         Return the path given from A-Star in reverse through current node's parents
         :param current_node: end point of path which contains parents to retrieve path
@@ -103,8 +103,13 @@ class AStar:
         reversed_path = path[::-1]
 
         filtered_path = []
-        for i, x in enumerate(reversed_path[1:]):
-            if i % 2 == 0:
+        if not debug: 
+            for i, x in enumerate(reversed_path[1:]):
+                if i % 2 == 0:
+                    filtered_path.append(x)
+        
+        else:
+            for i, x in enumerate(reversed_path):
                 filtered_path.append(x)
 
         # Print visual of costmap with path and start (S) and end (E) points
@@ -136,7 +141,7 @@ class AStar:
 
         return filtered_path
 
-    def a_star(self, start: np.ndarray, end: np.ndarray) -> list | None:
+    def a_star(self, start: np.ndarray, end: np.ndarray, debug=False) -> list | None:
         """
         A-STAR Algorithm: f(n) = g(n) + h(n) to find a path from the given start to the given end in the given costmap
         :param start: rover pose in cartesian coordinates
@@ -172,6 +177,9 @@ class AStar:
             adjacent_squares = ((0, -1), (0, 1), (-1, 0), (1, 0), (-1, -1), (-1, 1), (1, -1), (1, 1))
             adjacent_square_pick_index = [0, 1, 2, 3, 4, 5, 6, 7]
 
+            # saving open_list for debugging
+            debug_list = []
+
             # loop until you find the end
             while len(open_list) > 0:
                 # randomize the order of the adjacent_squares_pick_index to avoid a decision-making bias
@@ -180,16 +188,17 @@ class AStar:
                 # get the current node
                 current_node = heapq.heappop(open_list)
                 closed_list.append(current_node)
+                if debug: debug_list.append(self.return_path(current_node, debug=debug).copy())
 
                 outer_iterations += 1
                 if outer_iterations > max_iterations:
                     # If we hit this point return the path such as it is. It will not contain the destination
                     self.context.node.get_logger().warn("Giving up on pathfinding, too many iterations")
-                    return self.return_path(current_node)
+                    return self.return_path(current_node) if not debug else debug_list
 
                 # found the goal
                 if current_node == end_node:
-                    return self.return_path(current_node)
+                    return self.return_path(current_node) if not debug else debug_list
 
                 # generate children
                 children = []

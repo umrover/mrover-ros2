@@ -143,18 +143,18 @@ class CostmapSearchState(State):
         rover_in_map = context.rover.get_pose_in_map()
         assert rover_in_map is not None
 
-        bottle_in_map = context.env.current_target_pos()
+        target_object_in_map = context.env.current_target_pos()
 
         # Only update our costmap every so often
         if context.node.get_clock().now() - self.time_last_updated > Duration(seconds=self.UPDATE_DELAY):
             rover_position_in_map = rover_in_map.translation()[0:2]
 
-            if bottle_in_map is None:
+            if target_object_in_map is None:
                 end_point_in_map = self.find_endpoint(
                     context, CostmapSearchState.trajectory.get_current_point()[0:2]
                 )
             else:
-                end_point_in_map = bottle_in_map
+                end_point_in_map = target_object_in_map
 
             # If path to next spiral point has minimal cost per cell, continue normally to next spiral point
             if self.avg_cell_cost(context, rover_position_in_map, end_point_in_map[0:2]) < self.TRAVERSABLE_COST / 2:
@@ -252,10 +252,10 @@ class CostmapSearchState(State):
         context.rover.send_drive_command(cmd_vel)
 
         if (
-            bottle_in_map is not None
-            and np.linalg.norm(rover_in_map.translation()[0:2] - bottle_in_map[0:2]) < self.SAFE_APPROACH_DISTANCE
+            target_object_in_map is not None
+            and np.linalg.norm(rover_in_map.translation()[0:2] - target_object_in_map[0:2]) < self.SAFE_APPROACH_DISTANCE
         ):
-            context.node.get_logger().info(f"Bottle found. Acceptable distance away is: {self.SAFE_APPROACH_DISTANCE}")
+            #context.node.get_logger().info(f"Bottle found. Acceptable distance away is: {self.SAFE_APPROACH_DISTANCE}")
             return approach_target.ApproachTargetState()
 
         return self
