@@ -1,5 +1,19 @@
 <template>
-  <div class="wrap row">
+ <div v-for="(mission, index) in missionType" :key="index" :class="'feed' + index">
+    <div class="form-check">
+      <input
+        v-model="selectedMission"
+        class="form-check-input"
+        type="radio"
+        :id="'mission' + index"
+        :value="mission"
+      />
+      <label class="form-check-label" :for="'mission' + index">{{ mission }}</label>
+    </div>
+  </div>
+
+
+  <!-- <div class="wrap row">
     <div class="col">
       <div class="row justify-content-md-left">
         <div class="form-group col-md-4">
@@ -50,9 +64,9 @@
             <p class="my-auto percent">{{ (percent*100).toFixed(2) }}%</p>
           </div>
       </div>
-    </div>
+    </div> -->
+
     <CameraDisplay :streamOrder="streamOrder" :mission="mission" :names="names" />
-  </div>
 </template>
 
 <script lang="ts">
@@ -81,7 +95,9 @@ export default {
       cameraName: '',
       capacity: 9,
       streamOrder: [-1, -1, -1, -1, -1, -1, -1, -1, -1],
-      percent: 0
+      percent: 0,
+      missionType: ["DM Mission", "ES Mission", "ISH GUI", "Sample Acquisition GUI", "Autonomy Mission"],
+      selectedMission: ""
     }
   },
 
