@@ -29,11 +29,11 @@ namespace mrover {
         });
     }
 
-    void RoverGPSDriver::process_rtcm(rtcm_msgs::msg::Message::ConstSharedPtr rtcm_msg) {
+    void RoverGPSDriver::process_rtcm(const rtcm_msgs::msg::Message::ConstSharedPtr &rtcm_msg) {
         boost::asio::write(serial, boost::asio::buffer(rtcm_msg->message));
     }
 
-    void RoverGPSDriver::process_unicore(std::string unicore_msg) {
+    void RoverGPSDriver::process_unicore(std::string &unicore_msg) {
 
         std::vector<std::string> tokens;
         boost::split(tokens, unicore_msg, boost::is_any_of(",;"));
@@ -150,7 +150,7 @@ namespace mrover {
 
             rtk_status.sol_status = sol_status;
 
-            float uniheading = stod(tokens[UNIHEADING_HEADING_POS]);
+            float uniheading = stof(tokens[UNIHEADING_HEADING_POS]);
 
             heading.header = header;
             heading.heading = uniheading;
@@ -163,6 +163,7 @@ namespace mrover {
         }
 
     }
+
 
     void RoverGPSDriver::spin() {
         while (rclcpp::ok()) {
@@ -178,7 +179,7 @@ namespace mrover {
 }
 
 int main(int argc, char**argv) {
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                
+
     rclcpp::init(argc, argv);
 
     boost::asio::io_context io;
@@ -187,5 +188,8 @@ int main(int argc, char**argv) {
     node->spin();
     rclcpp::shutdown();
 
+    // TODO: graceful keyboard interrupt
+    
     return 0;
+
 }

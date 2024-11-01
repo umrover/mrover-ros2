@@ -7,8 +7,8 @@ namespace mrover {
     class RoverGPSDriver : public rclcpp::Node {
 
     private:
-        void process_rtcm(rtcm_msgs::msg::Message::ConstSharedPtr rtcm_msg);
-        void process_unicore(std::string unicore_msg);
+        void process_rtcm(const rtcm_msgs::msg::Message::ConstSharedPtr &rtcm_msg);
+        void process_unicore(std::string &unicore_msg);
 
         rclcpp::Publisher<sensor_msgs::msg::NavSatFix>::SharedPtr gps_pub;
         rclcpp::Publisher<mrover::msg::RTKStatus>::SharedPtr gps_status_pub;

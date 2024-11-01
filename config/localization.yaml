@@ -7,7 +7,7 @@
 basestation_gps_driver:
   ros__parameters:
     #TODO: change this
-    port: /dev/gps
+    port: /dev/ttyACM0
     baud: 38400
 
 gps_linearization:
