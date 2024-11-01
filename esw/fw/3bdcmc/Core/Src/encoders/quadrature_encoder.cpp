@@ -15,7 +15,7 @@ namespace mrover {
         m_counts_unwrapped_prev = __HAL_TIM_GetCounter(m_tick_timer);
         check(HAL_TIM_Encoder_Start_IT(m_tick_timer, TIM_CHANNEL_ALL) == HAL_OK, Error_Handler);
 
-        m_stopwatch_id = m_stopwatch->add_stopwatch();
+        m_stopwatch_id = m_stopwatch->add_stopwatch(std::bind(&QuadratureEncoderReader::expired, this));
     }
 
     auto count_delta(std::int64_t& store, TIM_HandleTypeDef* timer) -> std::int64_t {
