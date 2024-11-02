@@ -14,10 +14,7 @@ def generate_launch_description():
     astar_publisher_node = Node(
         package="mrover",
         executable="astar_debug.py",
-        name="astar_debug",
-        parameters=[
-            os.path.join(get_package_share_directory("mrover"), "config", "navigation.yaml"),
-        ],
+        name="astar_debug"
     )
 
     return LaunchDescription(

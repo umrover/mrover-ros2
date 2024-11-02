@@ -166,7 +166,7 @@ class AStar:
 
             # Initialize both open and closed list
             open_list: list[AStar.Node] = []
-            closed_list: set[AStar.Node] = set()
+            closed_nodes: set[AStar.Node] = set()
 
             # heapify the open_list and add the start node
             heapq.heapify(open_list)
@@ -174,7 +174,7 @@ class AStar:
 
             # add a stop condition
             outer_iterations = 0
-            max_iterations = costmap2d.shape[0] * costmap2d.shape[1] // 2
+            max_iterations = costmap2d.shape[0] * costmap2d.shape[1]
 
             # movements/squares we can search
             adjacent_squares = ((0, -1), (0, 1), (-1, 0), (1, 0), (-1, -1), (-1, 1), (1, -1), (1, 1))
@@ -190,7 +190,7 @@ class AStar:
 
                 # get the current node
                 current_node = heapq.heappop(open_list)
-                closed_list.add(current_node)
+                closed_nodes.add(current_node)
                 if debug: debug_list.append(self.return_path(current_node, debug=debug).copy())
 
                 outer_iterations += 1
@@ -231,7 +231,7 @@ class AStar:
                 # loop through children
                 for child in children:
                     # child is on the closed list
-                    if child in closed_list:
+                    if child in closed_nodes:
                         continue
                     # create the f (total), g (cost in map), and h (Euclidean distance) values
                     child.g = current_node.g + costmap2d[child.position[0], child.position[1]]
