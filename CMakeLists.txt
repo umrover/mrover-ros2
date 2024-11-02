@@ -332,6 +332,7 @@ install(PROGRAMS
         scripts/debug_course_publisher.py
 		scripts/visualizer.py
         scripts/move_cost_map.py
+        scripts/pc_visualizer.py
 
         # starter project sources
         starter_project/autonomy/src/localization.py
