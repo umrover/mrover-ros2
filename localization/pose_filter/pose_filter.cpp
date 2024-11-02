@@ -80,6 +80,8 @@ namespace mrover {
         //     pose_in_map.asSO3() = calibrated_orientation;
         // }
         
+		RCLCPP_INFO_STREAM(get_logger(), world_frame << " " << rover_frame);
+
         SE3Conversions::pushToTfTree(tf_broadcaster, rover_frame, world_frame, pose_in_map, get_clock()->now());
 
 
