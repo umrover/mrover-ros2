@@ -30,9 +30,7 @@ namespace mrover {
 		// TODO (john): change to shader
 		sensor_msgs::msg::PointCloud2::UniquePtr noisyMsg = createNoisyPointCloud(inputMsg);
 
-        if constexpr (useNoisyPointCloud) {
-            mInliers.clear();
-        }
+		mInliers.clear();
 
 		sensor_msgs::msg::PointCloud2::UniquePtr const& msg = [&]() -> sensor_msgs::msg::PointCloud2::UniquePtr const& {
 			if constexpr (useNoisyPointCloud){
@@ -45,14 +43,6 @@ namespace mrover {
         try {
             SE3f cameraToMap = SE3Conversions::fromTfTree(mTfBuffer, "zed_left_camera_frame", "map").cast<float>();
             SE3f roverSE3 = SE3Conversions::fromTfTree(mTfBuffer, "base_link", "map").cast<float>();
-
-            RCLCPP_INFO_STREAM(get_logger(), "Rover Height" << roverSE3);
-            RCLCPP_INFO_STREAM(get_logger(), "Rover Height" << roverSE3.z());
-
-            if(roverSE3.z() == 0){
-                throw std::runtime_error("ZERO!!");
-            }
-
 
             struct BinEntry {
                 R3f pointInCamera;
@@ -108,7 +98,7 @@ namespace mrover {
 
                 // USING ABSOLUTE HEIGHT DIFFERENCE BETWEEN POINT AND ROVER HEIGHT
                 std::size_t pointsHigh = std::ranges::count_if(bin, [this, &roverSE3](BinEntry const& entry) {
-                    return abs(entry.pointInMap.z() - (roverSE3.z())) > mZThreshold;
+                    return (entry.pointInMap.z() - roverSE3.z()) > mZThreshold;
                 });
                 double percent = static_cast<double>(pointsHigh) / static_cast<double>(bin.size());
 

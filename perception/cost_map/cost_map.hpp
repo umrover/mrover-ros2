@@ -12,7 +12,7 @@ namespace mrover {
         constexpr static double TAU = 2 * std::numbers::pi;
 
 		// Noise/Debug Vars
-		constexpr static bool useNoisyPointCloud = true;
+		constexpr static bool useNoisyPointCloud = false;
 		constexpr static bool uploadDebugPointCloud = true;
 		rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr mPCDebugPub;
 		std::vector<Point> mInliers;

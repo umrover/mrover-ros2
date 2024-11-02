@@ -73,7 +73,7 @@ class GpsDriverNode(Node):
                         header=Header(stamp=self.get_clock().now().to_msg(), frame_id="base_link"),
                         latitude=msg.lat,
                         longitude=msg.lon,
-                        altitude=0.0,
+                        altitude=float(0.0),
                     )
                 )
                 self.rtk_fix_pub.publish(RTKStatus(fix_type=msg.carrSoln))
