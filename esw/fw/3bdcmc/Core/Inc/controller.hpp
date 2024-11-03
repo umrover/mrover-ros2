@@ -99,14 +99,33 @@ namespace mrover {
             });
         }
 
-        auto request_absolute_encoder_data() -> void {
-            foreach_motor([](auto& motor) {
-                motor.request_absolute_encoder_data();
-            });
+        auto start_absolute_encoder_reads() -> void {
+            if (m_motor_requesting_absolute_encoder != m_motors.end()) {
+                return;
+            }
+
+            m_motor_requesting_absolute_encoder = m_motors.begin();
+            request_absolute_encoder_data();
         }
 
-        auto read_abolute_encoder_data() -> void {
+        auto request_absolute_encoder_data() -> void {
+            while (m_motor_requesting_absolute_encoder != m_motors.end()) {
+                if (m_motor_requesting_absolute_encoder->has_absolute_encoder_configued()) {
+                    m_motor_requesting_absolute_encoder->request_absolute_encoder_data();
+                    return;
+                }
+                ++m_motor_requesting_absolute_encoder;
+            }
+        }
 
+        auto read_absolute_encoder_data() -> void {
+            m_motor_requesting_absolute_encoder->read_absolute_encoder_data();
+        }
+
+        auto update_absolute_encoder_data() -> void {
+            m_motor_requesting_absolute_encoder->update_absolute_encoder();
+            ++m_motor_requesting_absolute_encoder;
+            m_motor_requesting_absolute_encoder->request_absolute_encoder_data();
         }
 
         template<std::uint8_t MotorIndex>

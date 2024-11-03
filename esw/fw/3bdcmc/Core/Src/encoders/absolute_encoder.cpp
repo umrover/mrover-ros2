@@ -21,8 +21,8 @@ namespace mrover {
         // This is used for address selection per
         // [datasheet](https://www.mouser.com/datasheet/2/588/AS5048_DS000298_4-00-1100510.pdf?srsltid=AfmBOorG94PYEL0t30_O-gjnl7_jXUCsNwnBYo8pr5MZHPaUmn4QbLmg)
         // I2C Address = 0b10000{a2}{a1}
-        const uint8_t a1 = a2_a1 & 0x01;
-        const uint8_t a2 = (a2_a1 >> 1) & 0x01;
+        uint8_t const a1 = a2_a1 & 0x01;
+        uint8_t const a2 = (a2_a1 >> 1) & 0x01;
 
         if (a1 && a2) {
             m_address = I2CAddress::device_slave_address_both_high;
@@ -42,18 +42,14 @@ namespace mrover {
     }
 
     auto AbsoluteEncoderReader::read_raw_angle_into_buffer() -> void {
-        m_i2cBus.async_receive(m_address);
+        m_i2cBus.async_receive(m_address, m_i2c_buffer);
     }
 
-    auto AbsoluteEncoderReader::try_read_buffer() -> std::optional<std::uint64_t> {
-        std::optional raw_data_optional = m_i2cBus.get_buffer();
-        if (!raw_data_optional) return std::nullopt;
-
+    auto AbsoluteEncoderReader::convert_buffer_into_raw_angle() -> std::uint64_t {
         // See: https://github.com/Violin9906/STM32_AS5048B_HAL/blob/0dfcdd2377f332b6bff7dcd948d85de1571d7977/Src/as5048b.c#L28
         // And also the datasheet: https://ams.com/documents/20143/36005/AS5048_DS000298_4-00.pdf
-        std::array<std::uint8_t, 2> raw_data = raw_data_optional.value();
-        std::uint16_t angle = (raw_data[1] << 6) | (raw_data[0] & 0x3F);
-        m_previous_raw_data = angle;
+        std::uint16_t angle = (m_i2c_buffer[1] << 6) | (m_i2c_buffer[0] & 0x3F);
+        m_previous_raw_angle = angle;
         return angle;
     }
 
@@ -66,16 +62,15 @@ namespace mrover {
     }
 
     [[nodiscard]] auto AbsoluteEncoderReader::read() -> std::optional<EncoderReading> {
-        if (std::optional<std::uint64_t> count = try_read_buffer()) {
-            Seconds elapsed_time = m_stopwatch->get_time_since_last_read(m_stopwatch_id);
+        std::uint64_t angle = convert_buffer_into_raw_angle();
+        Seconds elapsed_time = m_stopwatch->get_time_since_last_read(m_stopwatch_id);
 
-            // Absolute encoder returns [0, COUNTS_PER_REVOLUTION)
-            // We need to convert this to [-𝜏/2, 𝜏/2)
-            // Angles always need to be wrapped after addition/subtraction
-            m_position = wrap_angle(m_multiplier * Ticks{count.value()} / ABSOLUTE_CPR + m_offset);
-            m_velocity_filter.add_reading(wrap_angle(m_position - m_position_prev) / elapsed_time);
-            m_position_prev = m_position;
-        }
+        // Absolute encoder returns [0, COUNTS_PER_REVOLUTION)
+        // We need to convert this to [-𝜏/2, 𝜏/2)
+        // Angles always need to be wrapped after addition/subtraction
+        m_position = wrap_angle(m_multiplier * Ticks{angle} / ABSOLUTE_CPR + m_offset);
+        m_velocity_filter.add_reading(wrap_angle(m_position - m_position_prev) / elapsed_time);
+        m_position_prev = m_position;
 
         return std::make_optional<EncoderReading>(m_position, m_velocity_filter.get_filtered());
     }
