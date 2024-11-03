@@ -430,6 +430,10 @@ namespace mrover {
             update();
         }
 
+        [[nodiscard]] auto has_absolute_encoder_configued() const -> bool {
+            return m_absolute_encoder.has_value();
+        }
+
         // Max hits before we remove the calibration state
         constexpr static std::size_t MAX_MISSED_ABSOLUTE_ENCODER_READS = 32;
 

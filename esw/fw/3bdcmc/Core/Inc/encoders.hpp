@@ -4,8 +4,8 @@
 #include <optional>
 
 #include <common.hpp>
-#include <hardware_tim.hpp>
 #include <hardware_i2c.hpp>
+#include <hardware_tim.hpp>
 #include <units/units.hpp>
 
 #include "filtering.hpp"
@@ -27,7 +27,7 @@ namespace mrover {
 
         auto request_raw_angle() -> void;
         auto read_raw_angle_into_buffer() -> void;
-        auto try_read_buffer() -> std::optional<std::uint64_t>;
+        auto convert_buffer_into_raw_angle() -> std::uint64_t;
 
         [[nodiscard]] auto read() -> std::optional<EncoderReading>;
 
@@ -46,7 +46,8 @@ namespace mrover {
         std::uint16_t m_address = I2CAddress::device_slave_address_none_high;
         AS5048B_Bus m_i2cBus;
 
-        std::uint64_t m_previous_raw_data{};
+        std::array<std::uint8_t, 2> m_i2c_buffer{};
+        std::uint64_t m_previous_raw_angle{};
 
         Radians m_offset;
         Ratio m_multiplier;

@@ -63,32 +63,24 @@ namespace mrover {
         }
 
         auto async_transmit(std::uint16_t const address, TSend send) -> void {
-            // TODO: make sure actually sends to absolute encoder
             check(HAL_I2C_Master_Transmit_DMA(m_i2c, address << 1,
                                               address_of<uint8_t>(send),
                                               sizeof(send)) == HAL_OK,
                   Error_Handler);
-            while (HAL_I2C_GetState(m_i2c) != HAL_I2C_STATE_READY) {
-            }
+            // This is stupid. I remember writing this stupid thing. I regret everything. This is stupid.
+            // while (HAL_I2C_GetState(m_i2c) != HAL_I2C_STATE_READY) {
+            // }
         }
 
-        auto async_receive(std::uint16_t const address) -> void {
-            m_receive_buffer = TReceive{};
+        auto async_receive(std::uint16_t const address, TReceive receive) -> void {
             check(HAL_I2C_Master_Receive_DMA(m_i2c, address << 1 | 1,
-                                             address_of<uint8_t>(m_receive_buffer),
-                                             sizeof(m_receive_buffer)) == HAL_OK,
+                                             address_of<uint8_t>(receive),
+                                             sizeof(receive)) == HAL_OK,
                   Error_Handler);
-        }
-
-        // breaks science code: error: 'const class std::any' has no member named
-        // 'type'
-        auto get_buffer() const -> std::optional<TReceive> {
-            return m_receive_buffer;
         }
 
     private:
         I2C_HandleTypeDef* m_i2c{};
-        TReceive m_receive_buffer{};
     };
 
 } // namespace mrover

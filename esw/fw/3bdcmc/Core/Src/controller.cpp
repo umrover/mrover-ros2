@@ -129,7 +129,7 @@ namespace mrover {
 
     auto global_update_callback() -> void {
         controller.send();
-        controller.request_absolute_encoder_data();
+        controller.start_absolute_encoder_reads();
     }
 
     auto read_absolute_encoder_data_callback() -> void {
@@ -137,7 +137,7 @@ namespace mrover {
     }
 
     auto update_absolute_encoder_callback() -> void {
-        controller.update_absolute_encoder();
+        controller.update_absolute_encoder_data();
     }
 
     template<std::uint8_t MotorIndex>
@@ -223,12 +223,6 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef* hfdcan, uint32_t RxFifo0ITs)
 void HAL_FDCAN_ErrorCallback(FDCAN_HandleTypeDef* hfdcan) {}
 
 void HAL_FDCAN_ErrorStatusCallback(FDCAN_HandleTypeDef* hfdcan, uint32_t ErrorStatusITs) {}
-
-// TODO(quintin): Do we need these two callbacks?
-
-void HAL_I2C_SlaveRxCpltCallback(I2C_HandleTypeDef* hi2c) {}
-
-void HAL_I2C_SlaveTxCpltCallback(I2C_HandleTypeDef* hi2c) {}
 
 void HAL_I2C_MasterRxCpltCallback(I2C_HandleTypeDef* hi2c) {
     mrover::update_absolute_encoder_callback();
