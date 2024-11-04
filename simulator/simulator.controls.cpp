@@ -117,16 +117,6 @@ namespace mrover {
     }
 
     auto Simulator::userControls(Clock::duration dt) -> void {
-        if (mPublishIk) {
-            msg::IK ik;
-            ik.target.header.stamp = get_clock()->now();
-            ik.target.header.frame_id = "arm_base_link";
-            ik.target.pose.position.x = mIkTarget.x();
-            ik.target.pose.position.y = mIkTarget.y();
-            ik.target.pose.position.z = mIkTarget.z();
-            mIkTargetPub->publish(ik);
-        }
-
         if (!mHasFocus || mInGui) return;
 
         if (mCameraInRoverTarget)
@@ -151,6 +141,44 @@ namespace mrover {
             twist.linear.x = 0;
             twist.angular.z = 0;
         }
+
+        if (glfwGetKey(mWindow.get(), mArmForwardKey) == GLFW_PRESS) {
+            mIkVel.x() = 1;
+        }
+        if (glfwGetKey(mWindow.get(), mArmBackwardKey) == GLFW_PRESS) {
+            mIkVel.x() = -1;
+        }
+        if (glfwGetKey(mWindow.get(), mArmLeftKey) == GLFW_PRESS) {
+            mIkVel.y() = 1;
+        }
+        if (glfwGetKey(mWindow.get(), mArmRightKey) == GLFW_PRESS) {
+            mIkVel.y() = -1;
+        }
+        if (glfwGetKey(mWindow.get(), mArmUpKey) == GLFW_PRESS) {
+            mIkVel.y() = 1;
+        }
+        if (glfwGetKey(mWindow.get(), mArmDownKey) == GLFW_PRESS) {
+            mIkVel.y() = -1;
+        }
+        mIkVel.normalize();
+        if (mPublishIk) {
+            if (mIkMode) {
+                msg::IK ik;
+                ik.target.header.stamp = get_clock()->now();
+                ik.target.header.frame_id = "arm_base_link";
+                ik.target.pose.position.x = mIkTarget.x();
+                ik.target.pose.position.y = mIkTarget.y();
+                ik.target.pose.position.z = mIkTarget.z();
+                mIkTargetPub->publish(ik);
+            } else {
+                geometry_msgs::msg::Vector3 vel;
+                vel.x = mIkVel.x();
+                vel.y = mIkVel.y();
+                vel.z = mIkVel.z();
+                mIkVelPub->publish(vel);
+            }
+        }
+
         mCmdVelPub->publish(twist);
     }
 

@@ -18,6 +18,8 @@ namespace mrover {
 
             mIkTargetPub = create_publisher<msg::IK>("arm_ik", 1);
 
+            mIkVelPub = create_publisher<geometry_msgs::msg::Vector3>("ee_vel_cmd", 1);
+
             mIsHeadless = get_parameter("headless").as_bool();
             mEnablePhysics = mIsHeadless;
             {
