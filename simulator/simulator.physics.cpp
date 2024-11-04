@@ -54,7 +54,7 @@ namespace mrover {
                 motor->setPositionTarget(0);
             }
             // check if arm motor commands have expired
-            // TODO(quintin): fix hard-coded names?
+            // TODO: fix hard-coded names?
             for (auto const& name : {"arm_a_link", "arm_b_link", "arm_c_link", "arm_d_link", "arm_e_link"}) {
                 bool expired = std::chrono::duration_cast<std::chrono::milliseconds>(Clock::now() - rover.linkNameToMeta.at(name).lastUpdate).count() > 20;
                 if (expired) {
