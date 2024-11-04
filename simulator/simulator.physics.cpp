@@ -13,6 +13,8 @@ namespace mrover {
 
     constexpr double TAU = 2 * std::numbers::pi;
 
+    constexpr int MOTOR_TIMEOUT_MS = 20;
+
     auto btTransformToSe3(btTransform const& transform) -> SE3d {
         btVector3 const& p = transform.getOrigin();
         btQuaternion const& q = transform.getRotation();
@@ -56,7 +58,7 @@ namespace mrover {
             // check if arm motor commands have expired
             // TODO: fix hard-coded names?
             for (auto const& name: {"arm_a_link", "arm_b_link", "arm_c_link", "arm_d_link", "arm_e_link"}) {
-                bool expired = std::chrono::duration_cast<std::chrono::milliseconds>(Clock::now() - rover.linkNameToMeta.at(name).lastUpdate).count() > 20;
+                bool expired = std::chrono::duration_cast<std::chrono::milliseconds>(Clock::now() - rover.linkNameToMeta.at(name).lastUpdate).count() > MOTOR_TIMEOUT_MS;
                 if (expired) {
                     int linkIndex = rover.linkNameToMeta.at(name).index;
                     auto* motor = std::bit_cast<btMultiBodyJointMotor*>(rover.physics->getLink(linkIndex).m_userPtr);
