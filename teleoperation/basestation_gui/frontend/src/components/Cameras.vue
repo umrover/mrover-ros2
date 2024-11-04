@@ -1,16 +1,24 @@
 <template>
- <div v-for="(mission, index) in missionType" :key="index" :class="'feed' + index">
-    <div class="form-check">
-      <input
-        v-model="selectedMission"
-        class="form-check-input"
-        type="radio"
-        :id="'mission' + index"
-        :value="mission"
-      />
-      <label class="form-check-label" :for="'mission' + index">{{ mission }}</label>
+  <div class="row">
+    <div v-for="(mission, index) in missionType" :key="index" :class="'col-sm feed' + index">
+      <div class="form-check d-flex justify-content-center align-items-center">
+        <input
+          v-model="selectedMission"
+          class="form-check-input"
+          type="radio"
+          :id="'mission' + index"
+          :value="mission"
+        />
+        <label class="form-check-label ms-2" :for="'mission' + index">{{ mission }}</label>
+      </div>
     </div>
   </div>
+
+  <div v-for="cameraId in selectedMissionCameras" :key="cameraId" class="camera">
+    <p>Displaying Camera {{ cameraId }}</p>
+    <!-- Additional camera content or functionality here -->
+  </div>
+  
 
 
   <!-- <div class="wrap row">
@@ -56,17 +64,12 @@
           <h3>All Cameras</h3>
         </div>
           <div class="col" v-if="mission === 'ish'">
-            <button class="btn btn-primary" @click="takePanorama()">
-              Take Panorama
-            </button>
-          </div>
-          <div class="col" v-if="mission === 'ish'">
             <p class="my-auto percent">{{ (percent*100).toFixed(2) }}%</p>
           </div>
       </div>
     </div> -->
 
-    <CameraDisplay :streamOrder="streamOrder" :mission="mission" :names="names" />
+    <!-- <CameraDisplay :streamOrder="streamOrder" :mission="mission" :names="names" /> -->
 </template>
 
 <script lang="ts">
@@ -97,7 +100,14 @@ export default {
       streamOrder: [-1, -1, -1, -1, -1, -1, -1, -1, -1],
       percent: 0,
       missionType: ["DM Mission", "ES Mission", "ISH GUI", "Sample Acquisition GUI", "Autonomy Mission"],
-      selectedMission: ""
+      selectedMission: "",
+      missionCameras: {
+      "DM Mission": [1, 2, 3],
+      "ES Mission": [4, 5],
+      "ISH GUI": [6, 7, 8, 9],
+      "Sample Acquisition GUI": [1, 3, 5],
+      "Autonomy Mission": [2, 4, 6, 8]
+    }
     }
   },
 
@@ -120,6 +130,10 @@ export default {
     ...mapState('websocket', ['message']),
     color: function() {
       return this.camsEnabled ? 'btn-success' : 'btn-secondary'
+    },
+
+    selectedMissionCameras() {
+      return this.missionCameras[this.selectedMission] || [];
     }
   },
 
