@@ -274,6 +274,11 @@ target_link_libraries(tag_detector lie opencv_core opencv_aruco opencv_imgproc l
 
 # Embedded
 
+mrover_add_header_only_library(can_device esw/can_device)
+ament_target_dependencies(can_device INTERFACE rclcpp)
+mrover_add_library(motor_library esw/motor_library/*.cpp esw/motor_library)
+target_link_libraries(motor_library PUBLIC can_device moteus)
+
 mrover_add_node(differential_drive_controller esw/differential_drive_controller.cpp)
 target_link_libraries(differential_drive_controller units)
 ament_target_dependencies(differential_drive_controller rclcpp)
