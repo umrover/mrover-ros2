@@ -32,9 +32,12 @@ class SimWindow:
         self.rows = rows
         self.cols = cols
         self.cell_size = cell_size
-        self.number_padding = cell_size // 2
-        self.start = start
-        self.end = end
+        self.number_padding = cell_size
+
+        # convert to (row, col) format
+        self.start = start[::-1]
+        self.end = end[::-1]
+
         self.speed = speed
         self.root = tk.Tk()
         self.root.title("AStar Simulation Testing")
@@ -77,14 +80,14 @@ class SimWindow:
         if not hasattr(self.ctx, "env"):
             costmap = CostMap()
             costmap.origin = np.array([0, 0])
-            costmap.height = 15
-            costmap.width = 10
+            costmap.height = self.rows
+            costmap.width = self.cols
             costmap.resolution = 1
             costmap.data = np.copy(self.grid)
             self.ctx.env = Environment(
                 self.ctx, image_targets=ImageTargetsStore(self.ctx), cost_map=costmap
             )
-
+            #self.ctx.node.get_logger().info(costmap.data)
         astar = AStar(np.array([0, 0]), self.ctx)
         self.path_history = astar.a_star(self.start[::-1], self.end[::-1], debug=True)
         if self.path_history:
@@ -105,13 +108,16 @@ class SimWindow:
         if self.path_history and self.current_path_index < len(self.path_history):
             self.draw_grid()
             self.grid = np.copy(self.grid_copy)
+
             for i, coord in enumerate(self.path_history[self.current_path_index][1:-1]):
-                self.grid[coord[0]][coord[1]] = 10
+                row, col = coord[1], coord[0]
+                self.grid[row][col] = 10
 
-                x = coord[1] * self.cell_size + self.cell_size / 2 + self.number_padding
-                y = coord[0] * self.cell_size + self.cell_size / 2 + self.number_padding
+                self.fill_cell(row, col, "blue")
 
-                self.fill_cell(coord[0], coord[1], "blue")
+                # converts the coordinates along the path to x, y in the canvas
+                x = col * self.cell_size + self.cell_size / 2 + self.number_padding
+                y = row * self.cell_size + self.cell_size / 2 + self.number_padding
                 self.canvas.create_text(
                     x, y, text=str(i), font=("Arial", self.cell_size // 2), fill="white"
                 )
@@ -147,10 +153,10 @@ class SimWindow:
                     self.fill_cell(row, col, "gray")
 
         if self.start is not None:
-            self.fill_cell(self.start[1], self.start[0], "green")
+            self.fill_cell(self.start[0], self.start[1], "green")
 
         if self.end is not None:
-            self.fill_cell(self.end[1], self.end[0], "red")
+            self.fill_cell(self.end[0], self.end[1], "red")
 
         for i in range(self.cols + 1):
             x = i * self.cell_size + self.number_padding
@@ -172,6 +178,7 @@ class SimWindow:
                 width=2,
             )
 
+    # fills in a cell given a row and col
     def fill_cell(self, row, col, color="blue"):
         x1 = col * self.cell_size + self.number_padding
         y1 = row * self.cell_size + self.number_padding
@@ -233,10 +240,10 @@ class AStarDebug(Node):
             [Parameter("search.traversable_cost", Parameter.Type.DOUBLE, 0.2)]
         )
 
-        start = np.array([3, 3])
-        end = np.array([10, 15])
+        start = np.array([0, 1])
+        end = np.array([25, 18])
 
-        sim = SimWindow(self.ctx, rows=20, cols=30, cell_size=30, start=start, end=end, speed=10)
+        sim = SimWindow(self.ctx, rows=30, cols=30, cell_size=30, start=start, end=end, speed=10)
         path_history = sim.run()
 
         for path in path_history:
@@ -244,6 +251,7 @@ class AStarDebug(Node):
             for coord in path:
                 temp += str(coord) + " "
             self.get_logger().info(temp)
+        self.get_logger().info(f"Total iterations: {len(path_history)}")
 
 
 if __name__ == "__main__":

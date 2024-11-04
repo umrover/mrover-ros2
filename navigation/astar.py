@@ -12,7 +12,7 @@ class SpiralEnd(Exception):
     """
     Raise when there are no more points left in the search spiral
     """
-
+    
     pass
 
 
@@ -36,32 +36,7 @@ class AStar:
         self.TRAVERSABLE_COST = self.context.node.get_parameter("search.traversable_cost").value
 
         self.costmap_lock = Lock()
-
-    class Node:
-        """
-        Node class for astar pathfinding
-        """
-
-        def __init__(self, parent=None, position=None):
-            self.parent = parent
-            self.position = position
-            self.g = 0
-            self.h = 0
-            self.f = 0
-
-        def __eq__(self, other):
-            return self.position == other.position
-
-        # defining less than for purposes of heap queue
-        def __lt__(self, other):
-            return self.f < other.f
-
-        # defining greater than for purposes of heap queue
-        def __gt__(self, other):
-            return self.f > other.f
-        
-        def __hash__(self):
-            return hash(self.position)
+    
 
     def cartesian_to_ij(self, cart_coord: np.ndarray) -> np.ndarray:
         """
@@ -91,58 +66,19 @@ class AStar:
         half_res = np.array([self.context.env.cost_map.resolution / 2, self.context.env.cost_map.resolution / 2])
         return self.context.env.cost_map.origin + ij_coords * self.context.env.cost_map.resolution + half_res
 
-    def return_path(self, current_node: Node, debug=False) -> list:
-        """
-        Return the path given from A-Star in reverse through current node's parents
-        :param current_node: end point of path which contains parents to retrieve path
-        :return: reversed path except the starting point (we are already there)
-        """
-        costmap_2d = np.copy(self.context.env.cost_map.data)
-        path = []
-        current = current_node
-        while current is not None:
-            path.append(current.position)
-            current = current.parent
-        reversed_path = path[::-1]
+    # distance heuristic using euclidean distance
+    def d_calc(self, start: tuple, end: tuple) -> float:
+        return np.sqrt((start[0] - end[0]) ** 2 + (start[1] - end[1]) ** 2)
 
-        filtered_path = []
-        if not debug: 
-            for i, x in enumerate(reversed_path[1:]):
-                if i % 2 == 0:
-                    filtered_path.append(x)
-        
-        else:
-            for i, x in enumerate(reversed_path):
-                filtered_path.append(x)
-
-        # Print visual of costmap with path and start (S) and end (E) points
-        for step in filtered_path:
-            costmap_2d[step[0]][step[1]] = 2  # path (.)
-        costmap_2d[reversed_path[0][0]][reversed_path[0][1]] = 3  # start
-        costmap_2d[reversed_path[-1][0]][reversed_path[-1][1]] = 4  # end
-        #
-        # for row in costmap_2d:
-        #     line = []
-        #     for col in row:
-        #         if col == 1.0:
-        #             line.append("\u2588")
-        #         elif 1.0 > col >= 0.8:
-        #             line.append("\u2593")
-        #         elif 0.8 > col >= 0.5:
-        #             line.append("\u2592")
-        #         elif 0.5 > col >= 0.2:
-        #             line.append("\u2591")
-        #         elif col < 0.2:
-        #             line.append(" ")
-        #         elif col == 2:
-        #             line.append(".")
-        #         elif col == 3:
-        #             line.append("S")
-        #         elif col == 4:
-        #             line.append("E")
-        #     print("".join(line))
-
-        return filtered_path
+    # TODO: do we want a filtered path that is every other position?
+    def return_path(self, came_from: dict[tuple, tuple], current_pos: tuple):
+        path: list[tuple] = []
+        pos = current_pos
+        while pos:
+            path.append(pos)
+            if pos not in came_from: break
+            pos = came_from[pos]
+        return path[::-1]
 
     def a_star(self, start: np.ndarray, end: np.ndarray, debug=False) -> list | None:
         """
@@ -154,105 +90,62 @@ class AStar:
         with self.costmap_lock:
             costmap2d = self.context.env.cost_map.data
             # convert start and end to occupancy grid coordinates
-            start_ij = self.cartesian_to_ij(start)
-            end_ij = self.cartesian_to_ij(end)
+            start_ij = tuple(self.cartesian_to_ij(start))
+            end_ij = tuple(self.cartesian_to_ij(end))
 
-            # initialize start and end nodes
-            start_node = self.Node(None, (start_ij[0], start_ij[1]))
-            end_node = self.Node(None, (end_ij[0], end_ij[1]))
 
-            if start_node == end_node:
+            if start_ij == end_ij:
                 return None
+            
+            came_from: dict[tuple, tuple] = {}
 
-            # Initialize both open and closed list
-            open_list: list[AStar.Node] = []
-            closed_nodes: set[AStar.Node] = set()
+            g_scores: dict[tuple, float] = {}
+            g_scores[start_ij] = 0.0
 
-            # heapify the open_list and add the start node
-            heapq.heapify(open_list)
-            heapq.heappush(open_list, start_node)
+            f_scores: dict[tuple, float] = {}
+            f_scores[start_ij] = self.d_calc(start_ij, end_ij)
 
-            # add a stop condition
-            outer_iterations = 0
-            max_iterations = costmap2d.shape[0] * costmap2d.shape[1]
+            # priority queue of open nodes sorted based on f score
+            open_set: list[tuple] = []
+            heapq.heappush(open_set, (f_scores[start_ij], start_ij))
+            
+            # a node's neighbors relative positions
+            adjacent_squares = np.array([[0, -1], [0, 1], [-1, 0], [1, 0], [-1, -1], [-1, 1], [1, -1], [1, 1]])
 
-            # movements/squares we can search
-            adjacent_squares = ((0, -1), (0, 1), (-1, 0), (1, 0), (-1, -1), (-1, 1), (1, -1), (1, 1))
-            adjacent_square_pick_index = [0, 1, 2, 3, 4, 5, 6, 7]
+            debug_list: list = []
+            while open_set:
+                curr = heapq.heappop(open_set)[1]
+                if debug: debug_list.append(self.return_path(came_from, curr))
+                if curr == end_ij:
+                    if debug: return debug_list
+                    return self.return_path(came_from, curr)
 
-            # saving open_list for debugging
-            debug_list = []
 
-            # loop until you find the end
-            while len(open_list) > 0:
-                # randomize the order of the adjacent_squares_pick_index to avoid a decision-making bias
-                random.shuffle(adjacent_square_pick_index)
-
-                # get the current node
-                current_node = heapq.heappop(open_list)
-                closed_nodes.add(current_node)
-                if debug: debug_list.append(self.return_path(current_node, debug=debug).copy())
-
-                outer_iterations += 1
-                if outer_iterations > max_iterations:
-                    # If we hit this point return the path such as it is. It will not contain the destination
-                    self.context.node.get_logger().warn("Giving up on pathfinding, too many iterations")
-                    return self.return_path(current_node) if not debug else debug_list
-
-                # found the goal
-                if current_node == end_node:
-                    return self.return_path(current_node) if not debug else debug_list
-
-                # generate children
-                children = []
-                for pick_index in adjacent_square_pick_index:
-                    new_position = adjacent_squares[pick_index]
-                    node_position = (
-                        current_node.position[0] + new_position[0],
-                        current_node.position[1] + new_position[1],
-                    )
+                for rel_pos in adjacent_squares:
+                    neighbor_pos = tuple(np.asarray(curr) + rel_pos)
+                
                     # make sure within range
                     if (
-                        node_position[0] > (costmap2d.shape[0] - 1)
-                        or node_position[0] < 0
-                        or node_position[1] > (costmap2d.shape[1] - 1)
-                        or node_position[1] < 0
+                        neighbor_pos[0] > (costmap2d.shape[0] - 1)
+                        or neighbor_pos[0] < 0
+                        or neighbor_pos[1] > (costmap2d.shape[1] - 1)
+                        or neighbor_pos[1] < 0
                     ):
                         continue
 
+                    # TODO: make sure that costmap is in (x, y) format and not (row, col)
                     # make sure it is traversable terrain (not too high of a cost), skip if greater than or equal to traversable cost
-                    if costmap2d[node_position[0]][node_position[1]] >= self.TRAVERSABLE_COST:  # TODO: find optimal value
+                    if costmap2d[neighbor_pos[1]][neighbor_pos[0]] >= self.TRAVERSABLE_COST:  # TODO: find optimal value
                         continue
+                    
+                    tentative_g_score = g_scores[curr] + self.d_calc(curr, neighbor_pos)
 
-                    # create new node and append it
-                    new_node = self.Node(current_node, node_position)
-                    children.append(new_node)
-
-                # loop through children
-                for child in children:
-                    # child is on the closed list
-                    if child in closed_nodes:
-                        continue
-                    # create the f (total), g (cost in map), and h (Euclidean distance) values
-                    child.g = current_node.g + costmap2d[child.position[0], child.position[1]]
-                    child.h = ((child.position[0] - end_node.position[0]) ** 2) + (
-                        (child.position[1] - end_node.position[1]) ** 2
-                    ) * 2
-                    child.f = child.g + child.h
-                    # child is already in the open list
-                    if (
-                        len(
-                            [
-                                open_node
-                                for open_node in open_list
-                                if child.position == open_node.position and child.g > open_node.g
-                            ]
-                        )
-                        > 0
-                    ):
-                        continue
-                    # add the child to the open list
-                    heapq.heappush(open_list, child)
-
-            self.context.node.get_logger().warn("Could not find a path to destination")
+                    if neighbor_pos not in g_scores or tentative_g_score < g_scores[neighbor_pos]:
+                        came_from[neighbor_pos] = curr
+                        g_scores[neighbor_pos] = tentative_g_score
+                        f_scores[neighbor_pos] = tentative_g_score + self.d_calc(neighbor_pos, end_ij)
+                        if neighbor_pos not in (pos[1] for pos in open_set):
+                            heapq.heappush(open_set, (f_scores[neighbor_pos], neighbor_pos))
             raise NoPath()
+        
+        
