@@ -24,7 +24,7 @@ namespace mrover {
         std::string frame_id;
 
         constexpr static std::string GNGGA_HEADER = "$GNGGA";
-        constexpr static std::string ADRNAV_HEADER = "#ADRNAVA";
+        constexpr static std::string RTKSTATUS_HEADER = "#RTKSTATUSA";
         constexpr static std::string UNIHEADING_HEADER = "#UNIHEADINGA";
 
         constexpr static uint8_t GNGGA_LAT_POS = 2;
@@ -33,12 +33,10 @@ namespace mrover {
         constexpr static uint8_t GNGGA_LON_DIR_POS = 5;
         constexpr static uint8_t GNGGA_ALT_POS = 9;
 
-        constexpr static uint8_t ADRNAV_LAT_POS = 12;
-        constexpr static uint8_t ADRNAV_LON_POS = 13;
-        constexpr static uint8_t ADRNAV_ALT_POS = 14;
-        constexpr static uint8_t ADRNAV_STATUS_POS = 10;
+        constexpr static uint8_t RTKSTATUS_POS = 21;
 
         constexpr static uint8_t UNIHEADING_HEADING_POS = 13;
+        // TODO: status position may not be right
         constexpr static uint8_t UNIHEADING_STATUS_POS = 10;
         
 

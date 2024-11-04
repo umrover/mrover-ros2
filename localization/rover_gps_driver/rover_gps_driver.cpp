@@ -86,81 +86,113 @@ namespace mrover {
 
         }
 
-        if (msg_header == ADRNAV_HEADER) {
+        if (msg_header == RTKSTATUS_HEADER) {
 
-            sensor_msgs::msg::NavSatFix nav_sat_fix;
             mrover::msg::RTKStatus rtk_status;
             mrover::msg::RTKFixType sol_status;
 
-            if (tokens[ADRNAV_STATUS_POS] == "SOL_COMPUTED") {
-                sol_status.fix_type = mrover::msg::RTKFixType::SOL_COMPUTED;
+            if (tokens[RTKSTATUS_POS] == "FIXEDPOS") {
+                sol_status.fix_type = mrover::msg::RTKFixType::FIXEDPOS;
             }
-            else if (tokens[ADRNAV_STATUS_POS] == "NO_CONVERGENCE") {
-                sol_status.fix_type = mrover::msg::RTKFixType::NO_CONVERGENCE;
+            else if (tokens[RTKSTATUS_POS] = "FIXEDHEIGHT") {
+                sol_status.fix_type = mrover::msg::RTKFixType::FIXEDHEIGHT;
             }
-            else if (tokens[ADRNAV_STATUS_POS] == "COV_TRACE") {
-                sol_status.fix_type = mrover::msg::RTKFixType::COV_TRACE;
+            else if (tokens[RTKSTATUS_POS] = "DOPPLER_VELOCITY") {
+                sol_status.fix_type = mrover::msg::RTKFixType::DOPPLER_VELOCITY;
+            }
+            else if (tokens[RTKSTATUS_POS] = "SINGLE") {
+                sol_status.fix_type = mrover::msg::RTKFixType::SINGLE;
+            }
+            else if (tokens[RTKSTATUS_POS] = "PSRDIFF") {
+                sol_status.fix_type = mrover::msg::RTKFixType::PSRDIFF;
+            }
+            else if (tokens[RTKSTATUS_POS] = "SBAS") {
+                sol_status.fix_tyoe = mrover::msg::RTKFixType::SBAS;
+            }
+            else if (tokens[RTKSTATUS_POS] = "L1_FLOAT") {
+                sol_status.fix_type = mrover::msg::RTKFixType::L1_FLOAT;
+            }
+            else if (tokens[RTKSTATUS_POS] = "IONOFREE_FLOAT") {
+                sol_status.fix_type = mrover::msg::RTKFixType::IONOFREE_FLOAT;
+            }
+            else if (tokens[RTKSTATUS_POS] = "NARROW_FLOAT") {
+                sol_status.fix_type = mrover::msg::RTKFixType::NARROW_FLOAT;
+            }
+            else if (tokens[RTKSTATUS_POS] = "L1_INT") {
+                sol_status.fix_type = mrover::msg::RTKFixType::L1_INT;
+            }
+            else if (tokens[RTKSTATUS_POS] = "WIDE_INT") {
+                sol_status.fix_type = mrover::msg::RTKFixType::WIDE_INT;
+            }
+            else if (tokens[RTKSTATUS_POS] = "NARROW_INT") {
+                sol_status.fix_type = mrover::msg::RTKFixType::NARROW_INT;
+            }
+            else if (tokens[RTKSTATUS_POS] = "INS") {
+                sol_status.fix_type = mrover::msg::RTKFixType::INS;
+            }
+            else if (tokens[RTKSTATUS_POS] = "INS_PSRSP") {
+                sol_status.fix_type = mrover::msg::RTKFixType::INS_PSRSP;
+            }
+            else if (tokens[RTKSTATUS_POS] = "INS_PSRDIFF") {
+                sol_status.fix_type = mrover::msg::RTKFixType::INS_PSRDIFF;
+            }
+            else if (tokens[RTKSTATUS_POS] = "INS_RTKFLOAT") {
+                sol_status.fix_type = mrover::msg::RTKFixType::INS_RTKFLOAT;
+            }
+            else if (tokens[RTKSTATUS_POS] = "INS_RTKFIXED") {
+                sol_status.fix_type = mrover::msg::RTKFixType::INS_RTKFIXED;
+            }
+            else if (tokens[RTKSTATUS_POS] = "PPP_CONVERGING") {
+                sol_status.fix_type = mrover::msg::RTKFixType::PPP_CONVERGING;
+            }
+            else if (tokens[RTKSTATUS_POS] = "PPP") {
+                sol_status.fix_type = mrover::msg::RTKFixType::PPP;
             }
             else {
-                RCLCPP_WARN(get_logger(), "Position: no RTK fix. Is the basestation on?");
-                return;
+                RCLCPP_WARN(get_logger(), "Position: No RTK fix. Has the basestation finished survey-in?");
+                sol_status.fix_type = mrover::msg::RTKFixType::NONE;
             }
 
             rtk_status.sol_status = sol_status;
-
-            double lat = stod(tokens[ADRNAV_LAT_POS]);
-            double lon = stod(tokens[ADRNAV_LON_POS]);
-            double alt = stod(tokens[ADRNAV_ALT_POS]);
-
-            // TODO: get real covariance
-            std::array<double, 9> cov = {1, 0, 0, 0, 1, 0, 0, 0, 1};
-
-            nav_sat_fix.header = header;
-            nav_sat_fix.latitude = lat;
-            nav_sat_fix.longitude = lon;
-            nav_sat_fix.altitude = alt;
-            nav_sat_fix.position_covariance = cov;
-
             rtk_status.header = header;
-
-            gps_pub->publish(nav_sat_fix);
+            
             gps_status_pub->publish(rtk_status);
 
         }
 
-        if (msg_header == UNIHEADING_HEADER) {
+        // if (msg_header == UNIHEADING_HEADER) {
 
-            mrover::msg::RTKHeading heading;
-            mrover::msg::RTKStatus rtk_status;
-            mrover::msg::RTKFixType sol_status;
+        //     mrover::msg::RTKHeading heading;
+        //     mrover::msg::RTKStatus rtk_status;
+        //     mrover::msg::RTKFixType sol_status;
 
-            if (tokens[ADRNAV_STATUS_POS] == "SOL_COMPUTED") {
-                sol_status.fix_type = mrover::msg::RTKFixType::SOL_COMPUTED;
-            }
-            else if (tokens[ADRNAV_STATUS_POS] == "NO_CONVERGENCE") {
-                sol_status.fix_type = mrover::msg::RTKFixType::NO_CONVERGENCE;
-            }
-            else if (tokens[ADRNAV_STATUS_POS] == "COV_TRACE") {
-                sol_status.fix_type = mrover::msg::RTKFixType::COV_TRACE;
-            }
-            else {
-                RCLCPP_WARN(get_logger(), "Heading: no RTK fix. Is the basestation on?");
-                return;
-            }
+        //     if (tokens[ADRNAV_STATUS_POS] == "SOL_COMPUTED") {
+        //         sol_status.fix_type = mrover::msg::RTKFixType::SOL_COMPUTED;
+        //     }
+        //     else if (tokens[ADRNAV_STATUS_POS] == "NO_CONVERGENCE") {
+        //         sol_status.fix_type = mrover::msg::RTKFixType::NO_CONVERGENCE;
+        //     }
+        //     else if (tokens[ADRNAV_STATUS_POS] == "COV_TRACE") {
+        //         sol_status.fix_type = mrover::msg::RTKFixType::COV_TRACE;
+        //     }
+        //     else {
+        //         RCLCPP_WARN(get_logger(), "Heading: no RTK fix. Is the basestation on?");
+        //         return;
+        //     }
 
-            rtk_status.sol_status = sol_status;
+        //     rtk_status.sol_status = sol_status;
 
-            float uniheading = stof(tokens[UNIHEADING_HEADING_POS]);
+        //     float uniheading = stof(tokens[UNIHEADING_HEADING_POS]);
 
-            heading.header = header;
-            heading.heading = uniheading;
+        //     heading.header = header;
+        //     heading.heading = uniheading;
 
-            rtk_status.header = header;
+        //     rtk_status.header = header;
 
-            heading_pub->publish(heading);
-            heading_status_pub->publish(rtk_status);
+        //     heading_pub->publish(heading);
+        //     heading_status_pub->publish(rtk_status);
 
-        }
+        // }
 
     }
 

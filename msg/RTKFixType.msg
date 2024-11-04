@@ -1,6 +1,22 @@
-uint8 SOL_COMPUTED = 0
-uint8 INSUFFICIENT_OBS = 1
-uint8 NO_CONVERGENCE = 2
-uint8 COV_TRACE = 3
+uint8 NONE = 0
+uint8 FIXEDPOS = 1
+uint8 FIXEDHEIGHT = 2
+uint8 DOPPLER_VELOCITY = 3
+uint8 SINGLE = 4
+uint8 PSRDIFF = 5
+uint8 SBAS = 6
+uint8 L1_FLOAT = 7
+uint8 IONOFREE_FLOAT = 8
+uint8 NARROW_FLOAT = 9
+uint8 L1_INT = 10
+uint8 WIDE_INT = 11
+uint8 NARROW_INT = 12
+uint8 INS = 13
+uint8 INS_PSRSP = 14
+uint8 INS_PSRDIFF = 15
+uint8 INS_RTKFLOAT = 16
+uint8 INS_RTKFIXED = 17
+uint8 PPP_CONVERGING = 18
+uint8 PPP = 19
 
 uint8 fix_type
