@@ -64,12 +64,12 @@ class DebugCoursePublisher(Node):
                 for waypoint in [
                     (
                         Waypoint(type=WaypointType(val=WaypointType.WATER_BOTTLE)),
-                        SE3.from_position_orientation(2.0, -2.0),
+                        SE3.from_position_orientation(0.0, 0.0),
                     ),
-                    (
-                        Waypoint(type=WaypointType(val=WaypointType.MALLET)),
-                        SE3.from_position_orientation(-1.0, -1.0),
-                    ),
+                    # (
+                    #     Waypoint(type=WaypointType(val=WaypointType.MALLET)),
+                    #     SE3.from_position_orientation(-1.0, -1.0),
+                    # ),
                     # (
                     #     Waypoint(tag_id=1, type=WaypointType(val=WaypointType.POST)),
                     #     SE3.from_position_orientation(11, -10),

@@ -83,7 +83,7 @@ class SimWindow:
             costmap.height = self.rows
             costmap.width = self.cols
             costmap.resolution = 1
-            costmap.data = np.copy(self.grid)
+            costmap.data = np.copy(self.grid).T
             self.ctx.env = Environment(
                 self.ctx, image_targets=ImageTargetsStore(self.ctx), cost_map=costmap
             )

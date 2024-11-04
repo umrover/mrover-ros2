@@ -135,7 +135,7 @@ class AStar:
 
                     # TODO: make sure that costmap is in (x, y) format and not (row, col)
                     # make sure it is traversable terrain (not too high of a cost), skip if greater than or equal to traversable cost
-                    if costmap2d[neighbor_pos[1]][neighbor_pos[0]] >= self.TRAVERSABLE_COST:  # TODO: find optimal value
+                    if costmap2d[neighbor_pos[0], neighbor_pos[1]] >= self.TRAVERSABLE_COST:  # TODO: find optimal value
                         continue
                     
                     tentative_g_score = g_scores[curr] + self.d_calc(curr, neighbor_pos)

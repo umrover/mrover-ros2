@@ -25,10 +25,20 @@ def generate_launch_description():
         name="cost_map",
     )
 
+    debug_course_publisher_node = Node(
+        package="mrover",
+        executable="debug_course_publisher.py",
+        name="debug_course_publisher",
+        parameters=[
+            os.path.join(get_package_share_directory("mrover"), "config", "navigation.yaml"),
+        ],
+    )
+
     return LaunchDescription(
         [
             launch_include_sim,
             launch_include_nav,
             costmap_node,
+            debug_course_publisher_node
         ]
     )

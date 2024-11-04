@@ -17,7 +17,7 @@ from navigation.trajectory import Trajectory, SearchTrajectory
 from std_msgs.msg import Header
 from state_machine.state import State
 
-
+# TODO: Consider reducing costmap resolution so that the rover does not bump into things
 # REFERENCE: https://docs.google.com/document/d/18GjDWxIu5f5-N5t5UgbrZGdEyaDj9ZMEUuXex8-NKrA/edit
 class WaterBottleSearchState(State):
     """
@@ -52,21 +52,19 @@ class WaterBottleSearchState(State):
         costmap_2d = context.env.cost_map.data
         # convert end to occupancy grid coordinates then node
         end_ij = self.astar.cartesian_to_ij(end)
-        end_node = self.astar.Node(None, (end_ij[0], end_ij[1]))
 
         # check if end node is within range, if it is, check if it has a high cost
-        if (costmap_2d.shape[0] - 1) >= end_node.position[0] >= 0 and (costmap_2d.shape[1] - 1) >= end_node.position[
+        if (costmap_2d.shape[0] - 1) >= end_ij[0] >= 0 and (costmap_2d.shape[1] - 1) >= end_ij[
             1
         ] >= 0:
             while (
-                costmap_2d[end_node.position[0], end_node.position[1]] >= self.TRAVERSABLE_COST
+                costmap_2d[end_ij[0], end_ij[1]] >= self.TRAVERSABLE_COST
             ):  # TODO: find optimal value
                 # True if the trajectory is finished
                 if WaterBottleSearchState.trajectory.increment_point():
                     raise SpiralEnd()
                 # update end point to be the next point in the search spiral
                 end_ij = self.astar.cartesian_to_ij(WaterBottleSearchState.trajectory.get_current_point())
-                end_node = self.astar.Node(None, (end_ij[0], end_ij[1]))
                 context.node.get_logger().info(f"End has high cost! new end: {end_ij}")
         return WaterBottleSearchState.trajectory.get_current_point()
 
@@ -149,23 +147,16 @@ class WaterBottleSearchState(State):
         if context.node.get_clock().now() - self.time_last_updated > Duration(seconds=self.UPDATE_DELAY):
             rover_position_in_map = rover_in_map.translation()[0:2]
 
-            if bottle_in_map is None:
-                end_point_in_map = self.find_endpoint(
-                    context, WaterBottleSearchState.trajectory.get_current_point()[0:2]
-                )
-            else:
-                end_point_in_map = bottle_in_map
-
             # If path to next spiral point has minimal cost per cell, continue normally to next spiral point
-            if self.avg_cell_cost(context, rover_position_in_map, end_point_in_map[0:2]) < self.TRAVERSABLE_COST / 2:
-                self.star_traj = Trajectory(np.array([]))
-                context.node.get_logger().info("NOT running A*, path ahead is clear!", throttle_duration_sec=1)
+            if not hasattr(context.env.cost_map, 'data'):
+                context.node.get_logger().info("Waiting for costmap to develop", throttle_duration_sec=1)
+                return self
             # Otherwise, create a path planned through the cost
             else:
                 context.node.get_logger().info("Running A*...")
                 context.rover.send_drive_command(Twist())  # stop while planning
                 try:
-                    occupancy_list = self.astar.a_star(rover_position_in_map, end_point_in_map[0:2])
+                    occupancy_list = self.astar.a_star(rover_position_in_map, WaterBottleSearchState.trajectory.get_current_point()[0:2])
                 except SpiralEnd:
                     # TODO: what to do in this case
                     WaterBottleSearchState.trajectory.reset()
@@ -203,12 +194,18 @@ class WaterBottleSearchState(State):
                 self.time_last_updated = context.node.get_clock().now()
 
         # Continue executing the path from wherever it left off
+        
+        # We only use this position if astar has no more coordinates left, that being astar thinks we are at the end
         target_position_in_map = WaterBottleSearchState.trajectory.get_current_point()
         traj_target = True
-        # If there is an alternate path we need to take to avoid the obstacle, use that trajectory
+
+        # Otherwise always follow the astar path provided
         if len(self.star_traj.coordinates) != 0:
             target_position_in_map = self.star_traj.get_current_point()
             traj_target = False
+
+        
+        # Create a drive command and determine if we have reached the end position
         cmd_vel, arrived = context.drive.get_drive_command(
             target_position_in_map,
             rover_in_map,
@@ -216,6 +213,7 @@ class WaterBottleSearchState(State):
             self.DRIVE_FWD_THRESH,
             path_start=self.prev_target_pos_in_map,
         )
+
         if arrived:
             self.prev_target_pos_in_map = target_position_in_map
             # If our target was the search spiral point, only increment the spiral path
@@ -239,23 +237,23 @@ class WaterBottleSearchState(State):
         else:
             self.is_recovering = False
 
-        ref = np.array(
-            [
-                context.node.get_parameter("ref_lat").value,
-                context.node.get_parameter("ref_lon").value,
-                context.node.get_parameter("ref_alt").value,
-            ]
-        )
-        context.search_point_publisher.publish(
-            GPSPointList(points=[convert_cartesian_to_gps(ref, pt) for pt in WaterBottleSearchState.trajectory.coordinates])
-        )
+        # TODO: This fucks things up for some reason idk why
+        # ref = np.array(
+        #     [
+        #         context.node.get_parameter("ref_lat").value,
+        #         context.node.get_parameter("ref_lon").value,
+        #         context.node.get_parameter("ref_alt").value,
+        #     ]
+        # )
+        # context.search_point_publisher.publish(
+        #     GPSPointList(points=[convert_cartesian_to_gps(ref, pt) for pt in WaterBottleSearchState.trajectory.coordinates])
+        # )
         context.rover.send_drive_command(cmd_vel)
 
         if (
             bottle_in_map is not None
-            and np.linalg.norm(rover_in_map.translation()[0:2] - bottle_in_map[0:2]) < self.SAFE_APPROACH_DISTANCE
         ):
-            context.node.get_logger().info(f"Bottle found. Acceptable distance away is: {self.SAFE_APPROACH_DISTANCE}")
+            context.node.get_logger().info(f"Bottle found. Attempting to drive to it")
             return approach_target.ApproachTargetState()
 
         return self
