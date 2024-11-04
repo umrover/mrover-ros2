@@ -94,58 +94,58 @@ namespace mrover {
             if (tokens[RTKSTATUS_POS] == "FIXEDPOS") {
                 sol_status.fix_type = mrover::msg::RTKFixType::FIXEDPOS;
             }
-            else if (tokens[RTKSTATUS_POS] = "FIXEDHEIGHT") {
+            else if (tokens[RTKSTATUS_POS] == "FIXEDHEIGHT") {
                 sol_status.fix_type = mrover::msg::RTKFixType::FIXEDHEIGHT;
             }
-            else if (tokens[RTKSTATUS_POS] = "DOPPLER_VELOCITY") {
+            else if (tokens[RTKSTATUS_POS] == "DOPPLER_VELOCITY") {
                 sol_status.fix_type = mrover::msg::RTKFixType::DOPPLER_VELOCITY;
             }
-            else if (tokens[RTKSTATUS_POS] = "SINGLE") {
+            else if (tokens[RTKSTATUS_POS] == "SINGLE") {
                 sol_status.fix_type = mrover::msg::RTKFixType::SINGLE;
             }
-            else if (tokens[RTKSTATUS_POS] = "PSRDIFF") {
+            else if (tokens[RTKSTATUS_POS] == "PSRDIFF") {
                 sol_status.fix_type = mrover::msg::RTKFixType::PSRDIFF;
             }
-            else if (tokens[RTKSTATUS_POS] = "SBAS") {
-                sol_status.fix_tyoe = mrover::msg::RTKFixType::SBAS;
+            else if (tokens[RTKSTATUS_POS] == "SBAS") {
+                sol_status.fix_type = mrover::msg::RTKFixType::SBAS;
             }
-            else if (tokens[RTKSTATUS_POS] = "L1_FLOAT") {
+            else if (tokens[RTKSTATUS_POS] == "L1_FLOAT") {
                 sol_status.fix_type = mrover::msg::RTKFixType::L1_FLOAT;
             }
-            else if (tokens[RTKSTATUS_POS] = "IONOFREE_FLOAT") {
+            else if (tokens[RTKSTATUS_POS] == "IONOFREE_FLOAT") {
                 sol_status.fix_type = mrover::msg::RTKFixType::IONOFREE_FLOAT;
             }
-            else if (tokens[RTKSTATUS_POS] = "NARROW_FLOAT") {
+            else if (tokens[RTKSTATUS_POS] == "NARROW_FLOAT") {
                 sol_status.fix_type = mrover::msg::RTKFixType::NARROW_FLOAT;
             }
-            else if (tokens[RTKSTATUS_POS] = "L1_INT") {
+            else if (tokens[RTKSTATUS_POS] == "L1_INT") {
                 sol_status.fix_type = mrover::msg::RTKFixType::L1_INT;
             }
-            else if (tokens[RTKSTATUS_POS] = "WIDE_INT") {
+            else if (tokens[RTKSTATUS_POS] == "WIDE_INT") {
                 sol_status.fix_type = mrover::msg::RTKFixType::WIDE_INT;
             }
-            else if (tokens[RTKSTATUS_POS] = "NARROW_INT") {
+            else if (tokens[RTKSTATUS_POS] == "NARROW_INT") {
                 sol_status.fix_type = mrover::msg::RTKFixType::NARROW_INT;
             }
-            else if (tokens[RTKSTATUS_POS] = "INS") {
+            else if (tokens[RTKSTATUS_POS] == "INS") {
                 sol_status.fix_type = mrover::msg::RTKFixType::INS;
             }
-            else if (tokens[RTKSTATUS_POS] = "INS_PSRSP") {
+            else if (tokens[RTKSTATUS_POS] == "INS_PSRSP") {
                 sol_status.fix_type = mrover::msg::RTKFixType::INS_PSRSP;
             }
-            else if (tokens[RTKSTATUS_POS] = "INS_PSRDIFF") {
+            else if (tokens[RTKSTATUS_POS] == "INS_PSRDIFF") {
                 sol_status.fix_type = mrover::msg::RTKFixType::INS_PSRDIFF;
             }
-            else if (tokens[RTKSTATUS_POS] = "INS_RTKFLOAT") {
+            else if (tokens[RTKSTATUS_POS] == "INS_RTKFLOAT") {
                 sol_status.fix_type = mrover::msg::RTKFixType::INS_RTKFLOAT;
             }
-            else if (tokens[RTKSTATUS_POS] = "INS_RTKFIXED") {
+            else if (tokens[RTKSTATUS_POS] == "INS_RTKFIXED") {
                 sol_status.fix_type = mrover::msg::RTKFixType::INS_RTKFIXED;
             }
-            else if (tokens[RTKSTATUS_POS] = "PPP_CONVERGING") {
+            else if (tokens[RTKSTATUS_POS] == "PPP_CONVERGING") {
                 sol_status.fix_type = mrover::msg::RTKFixType::PPP_CONVERGING;
             }
-            else if (tokens[RTKSTATUS_POS] = "PPP") {
+            else if (tokens[RTKSTATUS_POS] == "PPP") {
                 sol_status.fix_type = mrover::msg::RTKFixType::PPP;
             }
             else {
