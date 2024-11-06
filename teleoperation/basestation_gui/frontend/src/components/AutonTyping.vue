@@ -46,6 +46,7 @@ export default {
   data() {
     return {
       typingMessage: '',
+      codeSent: false,
     }
   },
 
@@ -69,7 +70,14 @@ export default {
     ...mapActions('websocket', ['sendMessage']),
 
     submitMessage: function() {
-      //TODO: sen
+      //TODO: send the code via ROS action
+      if (!this.codeSent) {
+        this.sendMessage({
+          type: 'code',
+          code: this.typingMessage
+        })
+      }
+
     },
   }
 }

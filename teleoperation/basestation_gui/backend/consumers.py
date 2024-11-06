@@ -103,6 +103,11 @@ class GUIConsumer(JsonWebsocketConsumer):
                     device_input = DeviceInputs(axes, buttons)
                     # pass in a publisher that you will define in connect function
                     send_joystick_twist(device_input)
+                case {
+                    "type": "code",
+                    "code": typingMessage,
+                }:
+                    
                 case _:
                     match message["type"]:
                         case "get_auton_typing_message":
