@@ -2,10 +2,11 @@
   <div class='wrap'>
     <h2>Arm Controls</h2>
     <div class='controls-flex'>
-      <h4>Mode</h4>
+      <div class="mode">
+        <h4>Mode</h4>
       <div class='form-check'>
         <input
-          v-model='mode'
+          v-model='controlMode'
           class='form-check-input'
           type='radio'
           id='disabled'
@@ -14,10 +15,30 @@
         <label class='form-check-label' for='disabled'>Disabled</label>
       </div>
       <div class='form-check'>
-        <input v-model='mode' class='form-check-input' type='radio' id='manual' value='manual' />
+        <input v-model='controlMode' class='form-check-input' type='radio' id='manual' value='manual' />
         <label class='form-check-label' for='manual'>Manual</label>
       </div>
       <!-- TODO: add ik radio button -->
+      </div>
+
+      <div class="control">
+        <h4>Control</h4>
+        <div class='form-check'>
+          <input
+            v-model='mode'
+            class='form-check-input'
+            type='radio'
+            id='velocity'
+            value='velocity'
+          />
+          <label class='form-check-label' for='velocity'>Velocity</label>
+        </div>
+        <div class='form-check'>
+          <input v-model='mode' class='form-check-input' type='radio' id='position' value='position' />
+          <label class='form-check-label' for='position'>Position</label>
+        </div>
+      </div>
+      
     </div>
   </div>
 </template>
@@ -35,7 +56,8 @@ export default defineComponent({
   },
   data() {
     return {
-      mode: 'disabled'
+      mode: 'disabled',
+      controlMode: 'velocity'
     }
   },
 
@@ -61,7 +83,8 @@ export default defineComponent({
 
       this.sendMessage({
         type: 'ra_mode',
-        mode: this.mode
+        mode: this.mode,
+        controlMode: this.controlMode
       })
     }, 1000 / UPDATE_HZ)
   },
@@ -107,7 +130,22 @@ export default defineComponent({
   flex-wrap: wrap;
   display: flex;
   align-items: center;
+  justify-content: space-evenly;
   width: 100%;
+}
+
+.mode {
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: 20px;
+  padding-left: 10px;
+  margin-bottom: 5px;
+  margin-top: 5px;
+}
+
+.control {
+  display: flex;
+  flex-wrap: wrap;
   column-gap: 20px;
   padding-left: 10px;
   margin-bottom: 5px;

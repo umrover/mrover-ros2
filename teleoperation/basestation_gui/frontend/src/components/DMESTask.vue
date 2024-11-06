@@ -3,7 +3,7 @@
     <div class='shadow p-3 mb-5 header'>
       <h1 v-if="type === 'ES'">ES GUI Dashboard</h1>
       <h1 v-else>DM GUI Dashboard</h1>
-      <img class='logo' src='/mrover.png' alt='MRover' title='MRover' width='200' />
+      <a class='logo' href="/"><img src='/mrover.png' alt='MRover' title='MRover' width='200' /></a>
     </div>
 
     <div v-if="type === 'DM'" class='shadow p-3 rounded odom'>
@@ -24,10 +24,22 @@
     <div class='shadow p-3 rounded rover-3d'>
       <Rover3D />
     </div>
+
     <div class='shadow p-3 rounded controller_state'>
       <ControllerDataTable msg-type='arm_state' header='Arm States' />
       <ControllerDataTable msg-type='drive_left_state' header='Left Drive States' />
       <ControllerDataTable msg-type='drive_right_state' header='Right Drive States' />
+
+      <div v-if="type === 'ES'" class="auton-typing">
+        <div class="auton-typing-input">
+          <h4>Autonomous Typing Task</h4>
+          <AutonTyping :mission="'auton'"/>
+        </div>
+        <div class="auton-typing-output">
+          <p>Current key: <span>key</span></p>
+          <p>Output: <span>state</span></p>
+        </div>
+      </div>
     </div>
     <div v-show='false'>
       <MastGimbalControls />
@@ -40,6 +52,7 @@ import { defineComponent } from 'vue'
 import { mapActions, mapState } from 'vuex'
 import ControllerDataTable from './ControllerDataTable.vue'
 import ArmControls from './ArmControls.vue'
+import AutonTyping from './AutonTyping.vue'
 import BasicMap from './BasicRoverMap.vue'
 import BasicWaypointEditor from './BasicWaypointEditor.vue'
 import OdometryReading from './OdometryReading.vue'
@@ -52,6 +65,7 @@ export default defineComponent({
   components: {
     ControllerDataTable,
     ArmControls,
+    AutonTyping,
     BasicMap,
     BasicWaypointEditor,
     OdometryReading,
@@ -113,6 +127,16 @@ export default defineComponent({
 </script>
 
 <style>
+.auton-typing {
+  display: flex;
+  flex-direction: row;
+}
+
+.auton-typing-input {
+  margin-left: 20px;
+  margin-right: 40px;
+}
+
 .wrapper-dm {
   display: grid;
   gap: 10px;

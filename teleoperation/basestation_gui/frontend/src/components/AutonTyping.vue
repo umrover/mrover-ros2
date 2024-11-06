@@ -10,12 +10,13 @@ create instance of rosaction in callback area -->
   <form>
     <div class="form-group col-md-4">
           <label for="Camera Name">Camera name</label>
-          <input
+          <input 
             v-model="typingMessage"
             type="text"
             class="form-control"
             id="autonTyping"
             placeholder="Enter Message"
+            maxlength="6"
           />
           <small id="autonTypingMission" class="form-text text-muted"></small>
         </div>
@@ -49,15 +50,15 @@ export default {
   },
 
   watch: {
-    message(msg) {
-      if (msg.type == '') { // TODO: where message needs to be assigned?
-      }
-    },
+    // message(msg) {
+    //   if (msg.type == '') { // TODO: where message needs to be assigned?
+    //   }
+    // },
 
-    window.setTimeout(() => {
-      // Timeout so websocket will be initialized
-      this.sendMessage({ type: 'get_auton_typing_message' })
-    }, 250),
+    // window.setTimeout(() => {
+    //   // Timeout so websocket will be initialized
+    //   this.sendMessage({ type: 'get_auton_typing_message' })
+    // }, 250),
   },
 
   computed: {
