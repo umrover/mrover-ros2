@@ -16,6 +16,9 @@ from backend.input import DeviceInputs
 from backend.models import AutonTyping
 from mrover.msg import WheelCmd
 from geometry_msgs.msg import Twist
+from lie import SE3
+from mrover.msg import Throttle, Position
+from backend.ra_controls import send_ra_controls
 
 import threading
 
@@ -26,14 +29,16 @@ rclpy.init()
 node = rclpy.create_node('teleoperation')
 thread = threading.Thread(target=rclpy.spin, args=(node, ), daemon=True)
 thread.start()
+cur_mode = "disabled"
 
 class GUIConsumer(JsonWebsocketConsumer):
     subscribers = []
     
     def connect(self) -> None:
-        self.forward_ros_topic("/angle", , "wheel_cmd") # angle message type? need to send to front end
         # create a publisher
         self.accept()
+        thr_pub = node.create_publisher(Throttle, "arm_throttle_cmd",1)
+        pos_pub = node.create_publisher(Position, "arm_position_cmd",1) 
 
     def forward_ros_topic(self, topic_name: str, topic_type: Type, gui_msg_type: str) -> None:
         """
@@ -49,7 +54,7 @@ class GUIConsumer(JsonWebsocketConsumer):
                 msg_dict = {}
                 for slot in msg.__slots__:
                     value = getattr(msg, slot)
-                    # Recursively convert ROS messages and remove leading underscores from the slot names
+                    # Recursively converst ROS messages and remove leading underscores from the slot names
                     key = slot.lstrip('_')
                     msg_dict[key] = ros_message_to_dict(value)
                 return msg_dict
@@ -95,7 +100,7 @@ class GUIConsumer(JsonWebsocketConsumer):
 
         try:
             match message:
-                case {
+                case { #deprecated?
                     "type": "joystick",
                     "axes": axes,
                     "buttons": buttons,
@@ -107,6 +112,7 @@ class GUIConsumer(JsonWebsocketConsumer):
                     "type": "code",
                     "code": typingMessage,
                 }:
+                    self.action_client = ActionClient(node, SendCode, '/code')
                     
                 case _:
                     match message["type"]:
