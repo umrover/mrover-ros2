@@ -63,7 +63,7 @@ class DebugCoursePublisher(Node):
                 convert_waypoint_to_gps(ref_point, waypoint)
                 for waypoint in [
                     (
-                        Waypoint(type=WaypointType(val=WaypointType.WATER_BOTTLE)),
+                        Waypoint(type=WaypointType(val=WaypointType.POST)),
                         SE3.from_position_orientation(0.0, 0.0),
                     ),
                     # (

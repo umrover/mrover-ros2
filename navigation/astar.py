@@ -78,7 +78,10 @@ class AStar:
             path.append(pos)
             if pos not in came_from: break
             pos = came_from[pos]
-        return path[::-1]
+        reversed_path = path[::-1]
+
+        filter_n = 1
+        return reversed_path
 
     def a_star(self, start: np.ndarray, end: np.ndarray, debug=False) -> list | None:
         """

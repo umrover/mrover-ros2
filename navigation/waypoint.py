@@ -88,16 +88,11 @@ class WaypointState(State):
         )
         if arrived:
             context.env.arrived_at_waypoint = True
-            if current_waypoint.type.val == WaypointType.WATER_BOTTLE and context.node.get_parameter("water_bottle_search.use_costmap").value:
+            if context.node.get_parameter("search.use_costmap").value and not current_waypoint.type.val == WaypointType.NO_SEARCH:
                 # We finished a waypoint associated with the water bottle, but we have not seen it yet and are using the costmap to search
-                water_bottle_search_state = costmap_search.CostmapSearchState()
+                costmap_search_state = costmap_search.CostmapSearchState()
                 # water_bottle_search_state.new_trajectory(context)
-                return water_bottle_search_state
-            elif context.course.look_for_post() or context.course.look_for_object():
-                # We finished a waypoint associated with a post, mallet, or water bottle, but we have not seen it yet
-                search_state = search.SearchState()
-                search_state.new_trajectory(context)  # reset trajectory
-                return search_state
+                return costmap_search_state
             else:
                 # We finished a regular waypoint, go onto the next one
                 context.course.increment_waypoint()

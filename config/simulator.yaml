@@ -38,36 +38,36 @@ simulator:
         position: [ 10.0, -10.0, 0.5 ]
       rock1:
         type: urdf
-        uri: package://mrover/urdf/world/medium_rock.urdf.xacro
-        position: [ 3.5, -2.0, 1.0 ]
+        uri: package://mrover/urdf/world/small_rock.urdf.xacro
+        position: [ 3.5, -3.0, 0.4 ]
       rock2:
         type: urdf
         uri: package://mrover/urdf/world/small_rock.urdf.xacro
-        position: [ 7.0, -6.0, 0.5 ]
+        position: [ 4.0, -5.0, 0.4 ]
       rock3:
         type: urdf
         uri: package://mrover/urdf/world/small_rock.urdf.xacro
-        position: [ 8.0, -10.0, 0.5 ]
+        position: [ 3.0, -4.0, 0.4 ]
       rock4:
         type: urdf
         uri: package://mrover/urdf/world/small_rock.urdf.xacro
-        position: [ 9.0, -2.0, 0.5 ]
+        position: [ 2.0, -2.0, 0.4 ]
       rock5:
           type: urdf
           uri: package://mrover/urdf/world/small_rock.urdf.xacro
-          position: [ 4.0, -2.0, 0.5 ]
+          position: [ 4.0, -2.0, 0.4 ]
       rock6:
           type: urdf
           uri: package://mrover/urdf/world/small_rock.urdf.xacro
-          position: [ 5.0, -8.0, 0.5 ]
+          position: [ 5.0, -8.0, 0.4 ]
       rock7:
           type: urdf
           uri: package://mrover/urdf/world/small_rock.urdf.xacro
-          position: [ 5.0, 8.0, 0.5 ]
+          position: [ 5.0, 8.0, 0.4 ]
       rock8:
           type: urdf
           uri: package://mrover/urdf/world/small_rock.urdf.xacro
-          position: [ -3.0, -5.0, 0.5 ]
+          position: [ -3.0, -5.0, 0.4 ]
 
     # TODO(quintin): Avoid storing these in multiple config files
     ref_lat: 38.4225202
