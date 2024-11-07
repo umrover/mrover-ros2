@@ -1,4 +1,5 @@
 <template>
+<img class='logo' src='/mrover.png' alt='MRover' title='MRover' width='200' />
  <div v-for="(mission, index) in missionType" :key="index" :class="'feed' + index">
     <div class="form-check">
       <input
