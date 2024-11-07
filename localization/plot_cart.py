@@ -7,5 +7,9 @@ linearized_position = pd.read_csv("../linearized_position_cart.csv")
 x = linearized_position["x"]
 y = linearized_position["y"]
 
-plt.scatter(x,y)
+plt.figure(figsize=(8, 6))
+plt.scatter(x,y,s=10)
+plt.title("Moving RTK test (tethered, none/float)")
+plt.xlabel("x (m)")
+plt.ylabel("y (m)")
 plt.savefig("cart.png")
