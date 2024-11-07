@@ -31,13 +31,13 @@ namespace mrover {
         constexpr static uint8_t GNGGA_LAT_DIR_POS = 3;
         constexpr static uint8_t GNGGA_LON_POS = 4;
         constexpr static uint8_t GNGGA_LON_DIR_POS = 5;
+        constexpr static uint8_t GNGGA_SATELLITES_POS = 7;
         constexpr static uint8_t GNGGA_ALT_POS = 9;
 
         constexpr static uint8_t RTKSTATUS_POS = 21;
 
+        constexpr static uint8_t UNIHEADING_STATUS_POS = 11;
         constexpr static uint8_t UNIHEADING_HEADING_POS = 13;
-        // TODO: status position may not be right
-        constexpr static uint8_t UNIHEADING_STATUS_POS = 10;
         
 
     public:

@@ -48,9 +48,12 @@ namespace mrover {
 
             sensor_msgs::msg::NavSatFix nav_sat_fix;
 
-            if (tokens[GNGGA_LAT_POS].empty() || tokens[GNGGA_LON_POS].empty() || tokens[GNGGA_ALT_POS].empty()) {
-                RCLCPP_WARN(get_logger(), "No satellite fix. Are we inside?");
+            if (tokens[GNGGA_SATELLITES_POS] == "" || stoi(tokens[GNGGA_SATELLITES_POS]) == 0) {
+                RCLCPP_WARN(get_logger(), "Zero satellite fix. Are we inside?");
                 return;
+            }
+            else {
+                RCLCPP_INFO(get_logger(), (tokens[GNGGA_SATELLITES_POS] + " satellites in use.").c_str());
             }
             
             uint16_t lat_deg = stoi(tokens[GNGGA_LAT_POS].substr(0, 2));
@@ -109,39 +112,36 @@ namespace mrover {
 
         }
 
-        // if (msg_header == UNIHEADING_HEADER) {
+        if (msg_header == UNIHEADING_HEADER) {
 
-        //     mrover::msg::RTKHeading heading;
-        //     mrover::msg::RTKStatus rtk_status;
-        //     mrover::msg::RTKFixType sol_status;
+            mrover::msg::RTKHeading heading;
+            mrover::msg::RTKStatus rtk_status;
+            mrover::msg::RTKFixType sol_status;
 
-        //     if (tokens[ADRNAV_STATUS_POS] == "SOL_COMPUTED") {
-        //         sol_status.fix_type = mrover::msg::RTKFixType::SOL_COMPUTED;
-        //     }
-        //     else if (tokens[ADRNAV_STATUS_POS] == "NO_CONVERGENCE") {
-        //         sol_status.fix_type = mrover::msg::RTKFixType::NO_CONVERGENCE;
-        //     }
-        //     else if (tokens[ADRNAV_STATUS_POS] == "COV_TRACE") {
-        //         sol_status.fix_type = mrover::msg::RTKFixType::COV_TRACE;
-        //     }
-        //     else {
-        //         RCLCPP_WARN(get_logger(), "Heading: no RTK fix. Is the basestation on?");
-        //         return;
-        //     }
+            if (tokens[UNIHEADING_STATUS_POS] == "NARROW_FLOAT") {
+                sol_status.fix_type = mrover::msg::RTKFixType::NARROW_FLOAT;
+            }
+            else if (tokens[UNIHEADING_STATUS_POS] == "NARROW_INT") {
+                sol_status.fix_type = mrover::msg::RTKFixType::NARROW_INT;
+            }
+            else {
+                RCLCPP_WARN(get_logger(), "Heading: no solution. Are both antennas plugged in?");
+                return;
+            }
 
-        //     rtk_status.sol_status = sol_status;
+            rtk_status.sol_status = sol_status;
 
-        //     float uniheading = stof(tokens[UNIHEADING_HEADING_POS]);
+            float uniheading = stof(tokens[UNIHEADING_HEADING_POS]);
 
-        //     heading.header = header;
-        //     heading.heading = uniheading;
+            heading.header = header;
+            heading.heading = uniheading;
 
-        //     rtk_status.header = header;
+            rtk_status.header = header;
 
-        //     heading_pub->publish(heading);
-        //     heading_status_pub->publish(rtk_status);
+            heading_pub->publish(heading);
+            heading_status_pub->publish(rtk_status);
 
-        // }
+        }
 
     }
 
