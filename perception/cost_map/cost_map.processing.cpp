@@ -92,8 +92,16 @@ namespace mrover {
                         return j < postProcesed.data.size() && postProcesed.data[j] > FREE_COST;
                     })) postProcesed2.data[i] = OCCUPIED_COST;
             }
-            
-            mCostMapPub->publish(postProcesed2);
+            nav_msgs::msg::OccupancyGrid postProcesed3 = postProcesed2;
+            for (std::size_t i = 0; i < postProcesed2.data.size(); ++i) {
+                if (std::ranges::any_of(dis, [&](std::ptrdiff_t di) {
+                        std::size_t j = i + di;
+                        return j < postProcesed2.data.size() && postProcesed2.data[j] > FREE_COST;
+                    })) postProcesed3.data[i] = OCCUPIED_COST;
+            }
+
+
+            mCostMapPub->publish(postProcesed3);
         } catch (tf2::TransformException const& e) {
             RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, std::format("TF tree error processing point cloud: {}", e.what()));
         }
