@@ -80,7 +80,7 @@ namespace mrover {
 
             ImGui::Checkbox("Publish IK", &mPublishIk);
             if (mPublishIk) ImGui::Checkbox("Arm Position Control", &mIkMode);
-            if (mPublishIk) ImGui::SliderFloat3("IK Target", mIkTarget.data(), -1.f, 1.f);
+            if (mPublishIk && mIkMode) ImGui::SliderFloat3("IK Target", mIkTarget.data(), -1.f, 1.f);
 
             ImGui::InputDouble("Publish Hammer Distance Threshold", &mPublishHammerDistanceThreshold);
             ImGui::InputDouble("Publish Bottle Distance Threshold", &mPublishBottleDistanceThreshold);
