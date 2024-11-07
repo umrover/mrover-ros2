@@ -14,6 +14,7 @@ import cv2
 
 from rclpy.executors import ExternalShutdownException
 
+
 class ImageCapture(Node):
     def __init__(self) -> None:
         super().__init__("image_capture")
@@ -29,17 +30,18 @@ class ImageCapture(Node):
         if not os.path.exists(path):
             os.mkdir(path)
 
-        path = os.path.join(path, f'image_{unique_id}.jpg')
+        path = os.path.join(path, f"image_{unique_id}.jpg")
 
         cv2.imwrite(path, img)
 
-        self.get_logger().info(f'Saved image_{unique_id}.jpg')
+        self.get_logger().info(f"Saved image_{unique_id}.jpg")
         pass
+
 
 def main() -> None:
     try:
         rclpy.init(args=sys.argv)
-        while(True):
+        while True:
             input()
             rclpy.spin_once(ImageCapture())
         rclpy.shutdown()
@@ -48,5 +50,6 @@ def main() -> None:
     except ExternalShutdownException:
         sys.exit(1)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()
