@@ -108,23 +108,23 @@ class WaypointState(State):
         context.env.arrived_at_waypoint = False
 
         # TODO(neven): add service to move costmap if going to watter bottle search
-        if current_waypoint.type.val == WaypointType.WATER_BOTTLE:
-            context.node.get_logger().info("Moving cost map")
-            client = context.node.create_client(MoveCostMap, "move_cost_map")
-            while not client.wait_for_service(timeout_sec=1.0):
-                context.node.get_logger().info("waiting for move_cost_map service...")
-            req = MoveCostMap.Request()
+        # if current_waypoint.type.val == WaypointType.WATER_BOTTLE:
+        #     context.node.get_logger().info("Moving cost map")
+        #     client = context.node.create_client(MoveCostMap, "move_cost_map")
+        #     while not client.wait_for_service(timeout_sec=1.0):
+        #         context.node.get_logger().info("waiting for move_cost_map service...")
+        #     req = MoveCostMap.Request()
 
-            req.course = f"course{context.course.waypoint_index}"
-            future = client.call_async(req)
-            # TODO(neven): make this actually wait for the service to finish
-            #context.node.get_logger().info("called thing")
-            # rclpy.spin_until_future_complete(context.node, future)
-            # while not future.done():
-            #     pass
-            # if not future.result():
-                # context.node.get_logger().info("move_cost_map service call failed")
-            context.node.get_logger().info("Moved cost map")
+        #     req.course = f"course{context.course.waypoint_index}"
+        #     future = client.call_async(req)
+        #     # TODO(neven): make this actually wait for the service to finish
+        #     #context.node.get_logger().info("called thing")
+        #     # rclpy.spin_until_future_complete(context.node, future)
+        #     # while not future.done():
+        #     #     pass
+        #     # if not future.result():
+        #         # context.node.get_logger().info("move_cost_map service call failed")
+        #     context.node.get_logger().info("Moved cost map")
             
 
     def on_exit(self, context: Context) -> None:
@@ -159,39 +159,53 @@ class WaypointState(State):
             return self
 
         # Attempt to find the waypoint in the TF tree and drive to it
-        waypoint_position_in_map = context.course.current_waypoint_pose_in_map().translation()
-        if self.USE_COSTMAP:
+        if not self.USE_COSTMAP: 
+            waypoint_position_in_map = context.course.current_waypoint_pose_in_map().translation()
+            cmd_vel, arrived = context.drive.get_drive_command(
+                    waypoint_position_in_map,
+                    rover_in_map,
+                    context.node.get_parameter("waypoint.stop_threshold").value,
+                    context.node.get_parameter("waypoint.drive_forward_threshold").value,
+                )
+
+            if context.rover.stuck:
+                context.rover.previous_state = self
+                return recovery.RecoveryState()
+
+            context.rover.send_drive_command(cmd_vel)
+        else:
             if not hasattr(context.env.cost_map, 'data'): return self
+            
             if context.node.get_clock().now() - self.time_last_updated > Duration(seconds=self.UPDATE_DELAY):
                 context.node.get_logger().info(f"Generating new A-Star path")
                 self.generate_astar_path(context)
                 self.time_last_updated = context.node.get_clock().now()
+
             if len(self.trajectory.coordinates) - self.trajectory.cur_pt != 0: 
                 waypoint_position_in_map = self.trajectory.get_current_point()
+                cmd_vel, arrived = context.drive.get_drive_command(
+                    waypoint_position_in_map,
+                    rover_in_map,
+                    context.node.get_parameter("waypoint.stop_threshold").value,
+                    context.node.get_parameter("waypoint.drive_forward_threshold").value,
+                )
 
-        cmd_vel, arrived = context.drive.get_drive_command(
-            waypoint_position_in_map,
-            rover_in_map,
-            context.node.get_parameter("waypoint.stop_threshold").value,
-            context.node.get_parameter("waypoint.drive_forward_threshold").value,
-        )
+                if arrived:
+                    if self.trajectory.increment_point():
+                        context.env.arrived_at_waypoint = True
+                        if context.node.get_parameter("search.use_costmap").value and not current_waypoint.type.val == WaypointType.NO_SEARCH:
+                            # We finished a waypoint associated with the water bottle, but we have not seen it yet and are using the costmap to search
+                            costmap_search_state = costmap_search.CostmapSearchState()
+                            # water_bottle_search_state.new_trajectory(context)
+                            return costmap_search_state
+                        else:
+                            # We finished a regular waypoint, go onto the next one
+                            context.course.increment_waypoint()
 
+                if context.rover.stuck:
+                    context.rover.previous_state = self
+                    return recovery.RecoveryState()
 
-        if arrived:
-            context.env.arrived_at_waypoint = True
-            if context.node.get_parameter("search.use_costmap").value and not current_waypoint.type.val == WaypointType.NO_SEARCH:
-                # We finished a waypoint associated with the water bottle, but we have not seen it yet and are using the costmap to search
-                costmap_search_state = costmap_search.CostmapSearchState()
-                # water_bottle_search_state.new_trajectory(context)
-                return costmap_search_state
-            else:
-                # We finished a regular waypoint, go onto the next one
-                context.course.increment_waypoint()
-
-        if context.rover.stuck:
-            context.rover.previous_state = self
-            return recovery.RecoveryState()
-
-        context.rover.send_drive_command(cmd_vel)
+                context.rover.send_drive_command(cmd_vel)
 
         return self
