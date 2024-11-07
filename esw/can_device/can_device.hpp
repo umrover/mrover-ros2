@@ -1,15 +1,18 @@
 #pragma once
 
+#include "mrover/msg/detail/can__struct.hpp"
 #include <algorithm>
+#include <cstddef>
 #include <cstdint>
 #include <format>
+#include <rclcpp/utilities.hpp>
 #include <span>
 #include <string>
 #include <variant>
 
 #include <rclcpp/rclcpp.hpp>
 
-#include <mrover/CAN.h>
+#include <mrover/msg/can.hpp>
 
 #include <moteus/moteus.h>
 
@@ -23,13 +26,30 @@ namespace mrover {
     template<typename T>
     concept IsCanFdSerializable = IsSerializable<T> && sizeof(T) <= 64;
 
-    class CanDevice {
+    class CanDevice : public rclcpp::Node {
+    private:
+        static constexpr char const* NODE_NAME = "can_bridge";
+
+        rclcpp::Publisher<msg::CAN>::SharedPtr m_can_publisher;
+        std::string mFromDevice{}, mToDevice{};
+
+        void publish_data(std::span<std::byte const> data, bool replyRequired = false) {
+            msg::CAN can_message;
+            can_message.source = mFromDevice;
+            can_message.destination = mToDevice;
+            can_message.reply_required = replyRequired;
+            // This is needed since ROS is old and uses std::uint8_t instead of std::byte
+            std::ranges::transform(data, std::back_inserter(can_message.data), [](std::byte b) { return static_cast<std::uint8_t>(b); });
+            m_can_publisher->publish(can_message);
+        }
+
     public:
-        CanDevice(ros::NodeHandle const& nh, std::string from_device, std::string to_device)
-            : m_nh{nh},
+        CanDevice(std::string from_device, std::string to_device) 
+            : rclcpp::Node(NODE_NAME),
               mFromDevice{std::move(from_device)},
               mToDevice{std::move(to_device)} {
-            m_can_publisher = m_nh.advertise<CAN>(std::format("can/{}/out", mToDevice), 1);
+            // rclcpp::init(0, nullptr);
+            m_can_publisher = create_publisher<msg::CAN>(std::format("can/{}/out", mToDevice), 1);
         }
 
 
@@ -51,21 +71,13 @@ namespace mrover {
             auto* address = reinterpret_cast<std::byte const*>(frame.data);
             publish_data({address, frame.size}, frame.reply_required);
         }
-
-    private:
-        ros::NodeHandle m_nh;
-        ros::Publisher m_can_publisher;
-        std::string mFromDevice{}, mToDevice{};
-
-        void publish_data(std::span<std::byte const> data, bool replyRequired = false) {
-            CAN can_message;
-            can_message.source = mFromDevice;
-            can_message.destination = mToDevice;
-            can_message.reply_required = replyRequired;
-            // This is needed since ROS is old and uses std::uint8_t instead of std::byte
-            std::ranges::transform(data, std::back_inserter(can_message.data), [](std::byte b) { return static_cast<std::uint8_t>(b); });
-            m_can_publisher.publish(can_message);
-        }
     };
+
+auto main(int argc, char** argv) -> int {
+    rclcpp::init(argc, argv);
+    rclcpp::spin(std::make_shared<mrover::CanDevice>());
+    rclcpp::shutdown();
+    return EXIT_SUCCESS;
+}
 
 } // namespace mrover

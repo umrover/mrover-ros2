@@ -19,7 +19,7 @@ def generate_launch_description():
         name="can_bridge_1",
         parameters=[
             Path(get_package_share_directory("mrover"), "config", "esw.yaml"),
-            {"interface": "can1"}
+            {"interface": "can_bridge_1"}
         ],
     )
 
@@ -29,7 +29,7 @@ def generate_launch_description():
         name="can_bridge_2",
         parameters=[
             Path(get_package_share_directory("mrover"), "config", "esw.yaml"),
-            {"interface": "can2"}
+            {"interface": "can_bridge_2"}
         ],
     )
 
@@ -39,8 +39,8 @@ def generate_launch_description():
         name="can_bridge_3",
         parameters=[
             Path(get_package_share_directory("mrover"), "config", "esw.yaml"),
-            {"interface": "can3"}
+            {"interface": "can_bridge_3"}
         ],
     )
 
-    return LaunchDescription([can_bridge_1_node, can_bridge_2_node, can_bridge_3_node])
+    return LaunchDescription([can_bridge_1_node]) #, can_bridge_2_node, can_bridge_3_node])

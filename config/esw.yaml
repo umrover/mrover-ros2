@@ -20,4 +20,37 @@ can_bridge_0:
     devices:
       jetson:
         id: 0x10
+can_bridge_1:
+  ros__parameters:
+    interface: can1
+    is_extended_frame: true
+    devices:
+      jetson:
+        id: 0x10
+can_bridge_2:
+  ros__parameters:
+    interface: can2
+    is_extended_frame: true
+    devices:
+      jetson:
+        id: 0x10
+      front_left:
+        id: 0x12
+      front_right:
+        id: 0x11
+      middle_left:
+        id: 0x14
+      middle_right:
+        id: 0x13
+      back_left:
+        id: 0x16
+      back_right:
+        id: 0x15
+can_bridge_3:
+  ros__parameters:
+    interface: can3
+    is_extended_frame: true
+    devices:
+      jetson:
+        id: 0x10
       # TODO: Add more devices here

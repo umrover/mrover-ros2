@@ -15,7 +15,7 @@ option(MROVER_CLANG_TIDY "Enable static analysis with Clang tidy" ${MROVER_CI})
 option(MROVER_WARNINGS_AS_ERRORS "Treat warnings as errors" ${MROVER_CI})
 
 if (APPLE)
-    # Ensures that homebrew packages are never used over miniforge packages.
+    # Ensures that libraryhomebrew packages are never used over miniforge packages.
     # TODO (ali): Pretty sure this doesn't do anything on macs
     set(CMAKE_IGNORE_PATH /opt/homebrew)
     # Find mamba python
@@ -166,9 +166,7 @@ set(MROVER_CMAKE_INCLUDES
 foreach (MROVER_CMAKE_INCLUDE ${MROVER_CMAKE_INCLUDES})
     include(${MROVER_CMAKE_INCLUDE})
 endforeach ()
-
-message(STATUS "Found message files: ${MROVER_MESSAGE_FILE_PATHS}")
-
+ 
 rosidl_generate_interfaces(${PROJECT_NAME}
         ${MROVER_MESSAGE_FILE_PATHS}
         ${MROVER_SERVICE_FILE_PATHS}
@@ -258,7 +256,7 @@ if(ZED_FOUND AND CUDA_FOUND)
 	mrover_add_library(tensorrt tensorrt/*.c* tensorrt)
 	target_compile_options(tensorrt PRIVATE -Wno-deprecated-declarations $<$<COMPILE_LANGUAGE:CUDA>:-std=c++17>)
 	target_include_directories(tensorrt PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
-	target_link_libraries(tensorrt PRIVATE opencv_core opencv_dnn opencv_imgproc lie nvinfer nvonnxparser tbb cuda_compiler_flags)
+	target_link_libraries(tensorrt opencv_core opencv_dnn opencv_imgproc lie nvinfer nvonnxparser tbb cuda_compiler_flags)
 
 	# Object Detector
 	mrover_add_node(object_detector perception/object_detector/*.c* src/perception/object_detector/pch.hpp)
@@ -275,9 +273,10 @@ target_link_libraries(tag_detector lie opencv_core opencv_aruco opencv_imgproc l
 # Embedded
 
 mrover_add_header_only_library(can_device esw/can_device)
-ament_target_dependencies(can_device INTERFACE rclcpp)
-mrover_add_library(motor_library esw/motor_library/*.cpp esw/motor_library)
-target_link_libraries(motor_library PUBLIC can_device moteus)
+target_link_libraries(can_device INTERFACE rclcpp)
+# mrover_add_library(motor_library esw/motor_library/*.cpp esw/motor_library)
+# ament_target_dependencies(motor_library rclcpp)
+# target_link_libraries(motor_library can_device moteus)
 
 mrover_add_node(differential_drive_controller esw/differential_drive_controller.cpp)
 target_link_libraries(differential_drive_controller units)
