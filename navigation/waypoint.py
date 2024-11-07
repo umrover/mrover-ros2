@@ -5,6 +5,7 @@ from . import (
     post_backup,
     state,
     water_bottle_search,
+    costmap_search,
 )
 from mrover.msg import WaypointType
 from mrover.srv import MoveCostMap
@@ -89,7 +90,7 @@ class WaypointState(State):
             context.env.arrived_at_waypoint = True
             if current_waypoint.type.val == WaypointType.WATER_BOTTLE and context.node.get_parameter("water_bottle_search.use_costmap").value:
                 # We finished a waypoint associated with the water bottle, but we have not seen it yet and are using the costmap to search
-                water_bottle_search_state = water_bottle_search.WaterBottleSearchState()
+                water_bottle_search_state = costmap_search.CostmapSearchState()
                 # water_bottle_search_state.new_trajectory(context)
                 return water_bottle_search_state
             elif context.course.look_for_post() or context.course.look_for_object():
