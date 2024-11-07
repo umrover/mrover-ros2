@@ -32,6 +32,8 @@ class ImageCapture(Node):
         path = os.path.join(path, f'image_{unique_id}.jpg')
 
         cv2.imwrite(path, img)
+
+        self.get_logger().info(f'Saved image_{unique_id}.jpg')
         pass
 
 def main() -> None:
