@@ -45,16 +45,20 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-for="(state, key) in feedback" :key="key">
-                <td>{{ key }}</td>
-                <td>{{ state }}</td>
+              <!-- add this back into the tr tag underneath: v-for="(state, key) in feedback" :key="key" -->
+              <tr>
+                <!-- <td>{{ key }}</td>
+                <td>{{ state }}</td> -->
+                <!-- TODO: Remove this (only used for example purposes) -->
+                <td>key</td>
+                <td>state</td>
               </tr>
             </tbody>
           </table>
         </div>
         <div class="alignment-section">
           <h4>Planar Alignment</h4>
-          <p>{{ alignmentDegrees }} degrees</p>
+          <p><!--{{ alignmentDegrees }}--> 0 degrees</p>
         </div>
       </div>
     </div>
