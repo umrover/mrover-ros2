@@ -41,7 +41,7 @@ namespace mrover {
         rclcpp::Service<mrover::srv::MoveCostMap>::SharedPtr mServer;
 
         struct BinEntry {
-                R3f pointInCamera;
+                R3f pointNormals;
                 R3f pointInMap;
             };
 
@@ -52,7 +52,7 @@ namespace mrover {
 
         ~CostMapNode() override = default;
 
-        auto pointCloudCallback(sensor_msgs::msg::PointCloud2::UniquePtr const& inputMsg) -> void;
+		auto pointCloudCallback(sensor_msgs::msg::PointCloud2::ConstSharedPtr const& msg) -> void;
 
         auto moveCostMapCallback(mrover::srv::MoveCostMap::Request::ConstSharedPtr& req, mrover::srv::MoveCostMap::Response::SharedPtr& res) -> void;
 

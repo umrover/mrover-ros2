@@ -98,6 +98,6 @@ def generate_launch_description():
             arm_controller_node,
             rviz_node,
             gps_linearization_node,
-            #pose_filter_node
+            pose_filter_node
         ]
     )

@@ -14,9 +14,9 @@ namespace mrover {
             {"far_clip", mFarClip, 7.0},
             {"left_clip", mRightClip, -2.0},
             {"right_clip", mLeftClip, 2.0},
-            {"z_percent", mZPercent, 0.2},
+            {"z_percent", mZPercent, 0.4},
             {"alpha", mAlpha, 0.05},
-            {"z_threshold", mZThreshold, -0.5}
+            {"z_threshold", mZThreshold, 0.2}
         };
 
         ParameterWrapper::declareParameters(this, params);
@@ -27,7 +27,7 @@ namespace mrover {
                                                                                                           mrover::srv::MoveCostMap::Response::SharedPtr response) {
             moveCostMapCallback(request, response);
         });
-        mPcSub = create_subscription<sensor_msgs::msg::PointCloud2>("/zed/left/points", 1, [this](sensor_msgs::msg::PointCloud2::UniquePtr const& msg) {
+        mPcSub = create_subscription<sensor_msgs::msg::PointCloud2>("/zed/left/points", 1, [this](sensor_msgs::msg::PointCloud2::ConstSharedPtr const& msg) {
             pointCloudCallback(msg);
         });
 
