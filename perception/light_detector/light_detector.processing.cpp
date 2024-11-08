@@ -1,4 +1,5 @@
 #include "light_detector.hpp"
+#include <execution>
 #include <manif/impl/se3/SE3.h>
 #include <opencv2/core/types.hpp>
 #include <opencv2/imgproc.hpp>
@@ -8,12 +9,12 @@ namespace mrover {
     // TODO: (john) break this out into a utility so we dont have to copy all of this code
 	auto LightDetector::convertPointCloudToRGB(sensor_msgs::msg::PointCloud2::ConstSharedPtr const& msg, cv::Mat const& image) -> void {
         auto* pixelPtr = reinterpret_cast<cv::Vec3b*>(image.data);
-        auto* pointPtr = reinterpret_cast<Point const*>(msg->data.data());
+        auto* pointPtr = reinterpret_cast<cv::Point3i const*>(msg->data.data());
         std::for_each(std::execution::par_unseq, pixelPtr, pixelPtr + image.total(), [&](cv::Vec3b& pixel) {
             std::size_t const i = &pixel - pixelPtr;
-            pixel[0] = pointPtr[i].r;
-            pixel[1] = pointPtr[i].g;
-            pixel[2] = pointPtr[i].b;
+            pixel[0] = pointPtr[i].x;
+            pixel[1] = pointPtr[i].y;
+            pixel[2] = pointPtr[i].z;
         });
     }
     
@@ -21,11 +22,11 @@ namespace mrover {
 		
         // resizing image is mImgRGB dimensions doesn't match msg dimensions
         // initialize mThresholdedImg to grayscale image 
-        if(mImgRGB.rows != static_cast<int>(msg->height) || mImgRGB.cols != static_cast<int>(msg->width)){
+        if(mImgRGB.rows != static_cast<int>(msg->height) || mImgRGB.cols != static_cast<int>(msg->width)) {
 			RCLCPP_INFO_STREAM(get_logger(),"Adjusting Image Size... " << msg->width << ", " << msg->height);
 		    mImgRGB = cv::Mat{cv::Size{static_cast<int>(msg->width), static_cast<int>(msg->height)}, CV_8UC3, {0, 0, 0}};
 			mThresholdedImg = cv::Mat{cv::Size{static_cast<int>(msg->width), static_cast<int>(msg->height)}, CV_8UC1, cv::Scalar{0}};
-		
+        }
         
 		convertPointCloudToRGB(msg, mImgRGB);
 
@@ -63,16 +64,19 @@ namespace mrover {
         // quick question: why not store as cv::point? 
 		std::vector<std::pair<int, int>> centroids; // These are in image space
 		centroids.resize(contours.size());
-
+        
+        //Might not need these
         // The number of lights that we push into the TF
         unsigned int numLightsSeen = 0;
 
         RCLCPP_INFO_STREAM(get_logger(),"Number of contours " << contours.size());
+    
 
 		for(std::size_t i = 0; i < contours.size(); ++i){
 			auto const& vec = contours[i];
 			auto& centroid = centroids[i]; // first = row, second = col
 
+            // find avg of the contour for each contour for midpoint
 			for(auto const& point : vec){
 				centroid.first += point.y;
 				centroid.second += point.x;
@@ -85,17 +89,17 @@ namespace mrover {
             // If the position of the light is defined, then push it into the TF tree
             std::optional<SE3d> lightInCamera = spiralSearchForValidPoint(msg, centroid.second, centroid.first, SPIRAL_SEARCH_DIM, SPIRAL_SEARCH_DIM);
             
-            RCLCPP_INFO_STREAM(get_logger(),"Contour " << i << " has " << lightInCamera.has_value());
+            //RCLCPP_INFO_STREAM(get_logger(),"Contour " << i << " has " << lightInCamera.has_value());
             
             if(lightInCamera){
                 ++numLightsSeen;
                 std::string immediateLightFrame = std::format("immediateLight{}", numLightsSeen);
-                if(lightInCamera.value().translation().norm() < mImmediateLightRange && getHitCount(lightInCamera) > mPublishThreshold){
+                if(lightInCamera.value().translation().norm() < mImmediateLightRange && getHitCount(lightInCamera) > mPublishThreshold) {
                     std::string lightFrame = std::format("light{}", numLightsSeen);
-                    SE3Conversions::pushToTfTree(mTfBroadcaster, lightFrame, mCameraFrame, lightInCamera.value());
+                    SE3Conversions::pushToTfTree(mTfBroadcaster, lightFrame, mCameraFrame, lightInCamera.value(), this->get_clock()->now());
                 }
                 increaseHitCount(lightInCamera);
-                SE3Conversions::pushToTfTree(mTfBroadcaster, immediateLightFrame, mCameraFrame, lightInCamera.value());
+                SE3Conversions::pushToTfTree(mTfBroadcaster, immediateLightFrame, mCameraFrame, lightInCamera.value(), this->get_clock()->now());
             }
 		}
 
@@ -125,40 +129,8 @@ namespace mrover {
     //         }
     //     }
 	// }
-    
-    auto LightDetector::rgb_to_hsv(cv::Vec3b const& rgb) -> cv::Vec3d{
-        // https://math.stackexchange.com/questions/556341/rgb-to-hsv-color-conversion-algorithm
-        double r = static_cast<double>(rgb[0]) / 255;
-        double g = static_cast<double>(rgb[1]) / 255;
-        double b = static_cast<double>(rgb[2]) / 255;
-        double maxc = std::max(r, std::max(g, b));
-        double minc = std::min(r, std::min(g, b));
-        double v = maxc;
 
-        if(minc == maxc)
-            return {0.0, 0.0, v};
-
-        double s = (maxc-minc) / maxc;
-        double rc = (maxc-r) / (maxc-minc);
-        double gc = (maxc-g) / (maxc-minc);
-        double bc = (maxc-b) / (maxc-minc);
-        double h = 0;
-
-        if(r == maxc){
-            h = 0.0+bc-gc;
-        }else if(g == maxc){
-            h = 2.0+rc-bc;
-        }else{
-            h = 4.0+gc-rc;
-        }
-
-        h = (h/6.0) - static_cast<int>(h/6.0); // get decimal
-
-        return {h * 360, s * 100, v * 100};
-    } 
-
-
-    auto LightDetector::getHitCount(std::optional<SE3d> const& light) -> int{
+    auto LightDetector::getHitCount(std::optional<SE3d> const& light) -> int {
         if(light.has_value()){
             SE3d cameraToMap = SE3Conversions::fromTfTree(mTfBuffer, mCameraFrame, mWorldFrame);
 
@@ -204,9 +176,9 @@ namespace mrover {
     }
 
     auto LightDetector::publishDetectedObjects(cv::InputArray image, std::vector<std::pair<int, int>> const& centroids) -> void {
-        if (!imgPub.getNumSubscribers()) return;
+        //if (!imgPub.getNumSubscribers()) return;
 
-		sensor_msgs::Image imgMsg;
+		sensor_msgs::msg::Image imgMsg;
 
         imgMsg.header.stamp = this->get_clock()->now(); //ros origionally, but changed to this, not sure if it works.
         imgMsg.height = image.rows();
@@ -228,14 +200,14 @@ namespace mrover {
 			cv::circle(debugImageWrapper, {centroid.second, centroid.first}, MARKER_RADIUS, MARKER_COLOR);
 		}
 
-        imgPub.publish(imgMsg);
+        imgPub->publish(imgMsg);
     }
 
     auto LightDetector::spiralSearchForValidPoint(sensor_msgs::msg::PointCloud2::ConstSharedPtr const& cloudPtr, std::size_t u, std::size_t v, std::size_t width, std::size_t height)const -> std::optional<SE3d> {
         // See: https://stackoverflow.com/a/398302
-        auto xc = static_cast<int>(u), yc = static_cast<int>(v);
-        auto sw = static_cast<int>(width), sh = static_cast<int>(height);
-        auto ih = static_cast<int>(cloudPtr->height), iw = static_cast<int>(cloudPtr->width);
+        int xc = static_cast<int>(u), yc = static_cast<int>(v);
+        int sw = static_cast<int>(width), sh = static_cast<int>(height);
+        int ih = static_cast<int>(cloudPtr->height), iw = static_cast<int>(cloudPtr->width);
         int sx = 0, sy = 0; // Spiral coordinates starting at (0, 0)
         int dx = 0, dy = -1;
         std::size_t bigger = std::max(width, height);
@@ -243,13 +215,15 @@ namespace mrover {
         for (std::size_t i = 0; i < maxIterations; i++) {
             if (-sw / 2 < sx && sx <= sw / 2 && -sh / 2 < sy && sy <= sh / 2) {
                 int ix = xc + sx, iy = yc + sy; // Image coordinates
-
+                
+                // Outside Image
                 if (ix < 0 || ix >= iw || iy < 0 || iy >= ih) {
-                    NODELET_WARN_STREAM(std::format("Spiral query is outside the image: [{}, {}]", ix, iy));
+                    //rclcpp::RCLCPP_(std::format("Spiral query is outside the image: [{}, {}]", ix, iy));
                     continue;
                 }
 
-                Point const& point = reinterpret_cast<Point const*>(cloudPtr->data.data())[ix + iy * cloudPtr->width];
+                // Could be error cause of double instead of int
+                cv::Point3d const& point = reinterpret_cast<cv::Point3d const*>(cloudPtr->data.data())[ix + iy * cloudPtr->width];
                 if (!std::isfinite(point.x) || !std::isfinite(point.y) || !std::isfinite(point.z)) continue;
 
                 return std::make_optional<SE3d>(R3d{point.x, point.y, point.z}, SO3d::Identity());

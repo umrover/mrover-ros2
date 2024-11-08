@@ -14,9 +14,6 @@ namespace mrover {
 	class LightDetector : public rclcpp::Node {
 
 	private:
-		//Completely different way in ros2
-		// ros::NodeHandle mNh, mPnh; //node handling isn't done in ros2, confused on how to fix this
-
 		cv::Mat mImgRGB;
 		cv::Mat mImgHSV;
 		cv::Mat mOutputImage;
@@ -45,12 +42,15 @@ namespace mrover {
 		cv::Vec3d mLowerBound;
 
 		cv::Mat mErodedImg;
-
 		cv::Mat mDialtedImg;
+
+		// Detected Objects
+		geometry_msgs::msg::Vector3 detectedPoints;
 
 		// Pub Sub
 		rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr imgSub;
-		rclcpp::Publisher<geometry_msgs::msg::Vector3>::SharedPtr imgPub;
+		rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr imgPub;
+		rclcpp::Publisher<geometry_msgs::msg::Vector3>::SharedPtr pointPub;
 
 		auto imageCallback(sensor_msgs::msg::PointCloud2::ConstSharedPtr const& msg) -> void;
 
@@ -73,7 +73,7 @@ namespace mrover {
 	public:
 		auto onInit() -> void;
 
-		LightDetector() = default;
+		explicit LightDetector();
 
 		~LightDetector() override = default;
 	}; // LightDetector
