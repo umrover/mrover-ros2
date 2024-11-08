@@ -35,9 +35,26 @@
           <h4>Autonomous Typing Task</h4>
           <AutonTyping :mission="'auton'"/>
         </div>
-        <div class="auton-typing-output">
-          <p>Current key: <span>key</span></p>
-          <p>Output: <span>state</span></p>
+        <div class="feedback-section">
+          <h4>Feedback</h4>
+          <table>
+            <thead>
+              <tr>
+                <th>Key</th>
+                <th>State</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="(state, key) in feedback" :key="key">
+                <td>{{ key }}</td>
+                <td>{{ state }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="alignment-section">
+          <h4>Planar Alignment</h4>
+          <p>{{ alignmentDegrees }} degrees</p>
         </div>
       </div>
     </div>
@@ -130,11 +147,18 @@ export default defineComponent({
 .auton-typing {
   display: flex;
   flex-direction: row;
+  margin-top: 20px;
+  justify-content: space-between;
 }
 
-.auton-typing-input {
-  margin-left: 20px;
-  margin-right: 40px;
+.feedback-section table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.feedback-section th, .feedback-section td {
+  padding: 8px;
+  border: 1px solid #ddd;
 }
 
 .wrapper-dm {

@@ -108,11 +108,14 @@ class GUIConsumer(JsonWebsocketConsumer):
                     device_input = DeviceInputs(axes, buttons)
                     # pass in a publisher that you will define in connect function
                     send_joystick_twist(device_input)
+
+                # TODO: define a function here and create a client to send the code to the action server and return its feedback
                 case {
                     "type": "code",
                     "code": typingMessage,
                 }:
-                    self.action_client = ActionClient(node, SendCode, '/code')
+                    # self.action_client = ActionClient(node, SendCode, '/code')
+                    pass
                     
                 case _:
                     match message["type"]:

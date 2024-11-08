@@ -18,7 +18,6 @@
         <input v-model='controlMode' class='form-check-input' type='radio' id='manual' value='manual' />
         <label class='form-check-label' for='manual'>Manual</label>
       </div>
-<<<<<<< HEAD
       <!-- TODO: add ik radio button -->
       </div>
 
@@ -39,13 +38,6 @@
           <label class='form-check-label' for='position'>Position</label>
         </div>
       </div>
-      
-=======
-      <div class='form-check'>
-        <input v-model='mode' class='form-check-input' type='radio' id='ik' value='ik' />
-        <label class='form-check-label' for='IK'>IK</label>
-      </div>
->>>>>>> teleop-ra-controls
     </div>
   </div>
 </template>

@@ -9,13 +9,12 @@ create instance of rosaction in callback area -->
 <template>
   <form>
     <div class="form-group col-md-4">
-          <label for="Camera Name">Camera name</label>
           <input 
             v-model="typingMessage"
             type="text"
             class="form-control"
             id="autonTyping"
-            placeholder="Enter Message"
+            placeholder="Message"
             maxlength="6"
           />
           <small id="autonTypingMission" class="form-text text-muted"></small>
