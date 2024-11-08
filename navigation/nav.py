@@ -67,6 +67,7 @@ class Navigation(Node):
                 ("search.traversable_cost", Parameter.Type.DOUBLE),
                 ("search.update_delay", Parameter.Type.DOUBLE),
                 ("search.safe_approach_distance", Parameter.Type.DOUBLE),
+                ("search.a_star_thresh", Parameter.Type.DOUBLE),
 
                 ("single_tag.stop_threshold", Parameter.Type.DOUBLE),
                 ("single_tag.tag_stop_threshold", Parameter.Type.DOUBLE),
