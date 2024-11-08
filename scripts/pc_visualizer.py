@@ -12,9 +12,9 @@ class PointCloudHistogramNode(Node):
         super().__init__('pointcloud_histogram_node')
         self.subscription = self.create_subscription(
             PointCloud2,
-            '/cost_map/debug_pc',
+            '/zed/left/points',
             self.listener_callback,
-            10)
+            1)
         self.subscription  # prevent unused variable warning
 
     def listener_callback(self, msg):
@@ -40,7 +40,7 @@ class PointCloudHistogramNode(Node):
     def convert_pointcloud2_to_numpy(self, cloud_msg):
         # Read the point cloud message into a numpy array
         point_list = []
-        for point in point_cloud2.read_points(cloud_msg, field_names=("x", "y", "z"), skip_nans=True):
+        for point in point_cloud2.read_points(cloud_msg, field_names=("normal_x", "normal_y", "normal_z"), skip_nans=True):
             point_list.append([point[0], point[1], point[2]])
         return np.array(point_list, dtype=np.float32)
 

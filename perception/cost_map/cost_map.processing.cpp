@@ -43,7 +43,6 @@ namespace mrover {
                     Point const& point = points[r * msg->width + c];
                     R3f pointInCamera{point.x, point.y, point.z};
                     R3f pointNormals{point.normal_x, point.normal_y, point.normal_z};
-					RCLCPP_INFO_STREAM(get_logger(), "Normal " << point.normal_z);
 
                     // Points with no stereo correspondence are NaN's, so ignore them
                     if (pointInCamera.hasNaN()) continue;
