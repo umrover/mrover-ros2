@@ -208,7 +208,11 @@ class Course:
         self.waypoint_index += 1
 
     def waypoint_pose(self, index: int) -> SE3:
-        return SE3.from_tf_tree(self.ctx.tf_buffer, f"course{index}", self.ctx.world_frame)
+        while True:
+            try:
+                return SE3.from_tf_tree(self.ctx.tf_buffer, f"course{index}", self.ctx.world_frame) 
+            except: 
+                pass
 
     def current_waypoint_pose_in_map(self) -> SE3:
         return self.waypoint_pose(self.waypoint_index)

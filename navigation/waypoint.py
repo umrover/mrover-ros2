@@ -159,7 +159,7 @@ class WaypointState(State):
             return self
 
         # Attempt to find the waypoint in the TF tree and drive to it
-        if not self.USE_COSTMAP: 
+        if True: 
             waypoint_position_in_map = context.course.current_waypoint_pose_in_map().translation()
             cmd_vel, arrived = context.drive.get_drive_command(
                     waypoint_position_in_map,
@@ -167,6 +167,25 @@ class WaypointState(State):
                     context.node.get_parameter("waypoint.stop_threshold").value,
                     context.node.get_parameter("waypoint.drive_forward_threshold").value,
                 )
+
+            if arrived:
+                    if self.trajectory.increment_point():
+                        context.env.arrived_at_waypoint = True
+                        if current_waypoint.type.val != WaypointType.NO_SEARCH:
+                            
+                            if context.node.get_parameter("search.use_costmap").value:
+                                # We finished a waypoint associated with the water bottle, but we have not seen it yet and are using the costmap to search
+                                costmap_search_state = costmap_search.CostmapSearchState()
+                                # water_bottle_search_state.new_trajectory(context)
+                                return costmap_search_state
+
+                            else:
+                                search_state = search.SearchState()
+                                return search_state
+                            
+                        else:
+                            # We finished a regular waypoint, go onto the next one
+                            context.course.increment_waypoint()
 
             if context.rover.stuck:
                 context.rover.previous_state = self

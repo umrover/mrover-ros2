@@ -150,5 +150,6 @@ class AStar:
                         if neighbor_pos not in (pos[1] for pos in open_set):
                             heapq.heappush(open_set, (f_scores[neighbor_pos], neighbor_pos))
             raise NoPath()
+            
         
         
