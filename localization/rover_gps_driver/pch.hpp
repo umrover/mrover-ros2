@@ -8,9 +8,9 @@
 #include <rclcpp/executors.hpp>
 
 #include <sensor_msgs/msg/nav_sat_fix.hpp>
-#include <mrover/msg/rtk_status.hpp>
-#include <mrover/msg/rtk_heading.hpp>
-#include <mrover/msg/rtk_fix_type.hpp>
+#include <mrover/msg/fix_status.hpp>
+#include <mrover/msg/heading.hpp>
+#include <mrover/msg/fix_type.hpp>
 #include <rtcm_msgs/msg/message.hpp>
 #include <builtin_interfaces/msg/time.hpp>
 

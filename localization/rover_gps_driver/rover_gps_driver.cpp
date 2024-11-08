@@ -21,9 +21,9 @@ namespace mrover {
         
         // publishers and subscribers
         gps_pub = this->create_publisher<sensor_msgs::msg::NavSatFix>("/gps/fix", 10);
-        gps_status_pub = this->create_publisher<mrover::msg::RTKStatus>("/gps_fix_status", 10);
-        heading_pub = this->create_publisher<mrover::msg::RTKHeading>("/heading/fix", 10);
-        heading_status_pub = this->create_publisher<mrover::msg::RTKStatus>("/heading_fix_status", 10);
+        gps_status_pub = this->create_publisher<mrover::msg::FixStatus>("/gps_fix_status", 10);
+        heading_pub = this->create_publisher<mrover::msg::Heading>("/heading/fix", 10);
+        heading_status_pub = this->create_publisher<mrover::msg::FixStatus>("/heading_fix_status", 10);
         rtcm_sub = this->create_subscription<rtcm_msgs::msg::Message>("/rtcm", 10, [&](rtcm_msgs::msg::Message::ConstSharedPtr const& rtcm_message) {
             process_rtcm(rtcm_message);
         });
@@ -47,13 +47,15 @@ namespace mrover {
         if (msg_header == GNGGA_HEADER) {
 
             sensor_msgs::msg::NavSatFix nav_sat_fix;
+            mrover::msg::FixStatus fix_status;
+            mrover::msg::FixType fix_type;
 
-            if (tokens[GNGGA_SATELLITES_POS] == "" || stoi(tokens[GNGGA_SATELLITES_POS]) == 0) {
-                RCLCPP_WARN(get_logger(), "Zero satellite fix. Are we inside?");
+            if (stoi(tokens[GNGGA_QUAL_POS]) == 0) {
+                RCLCPP_WARN(get_logger(), "Invalid fix. Are we inside?");
                 return;
             }
             else {
-                RCLCPP_INFO(get_logger(), (tokens[GNGGA_SATELLITES_POS] + " satellites in use.").c_str());
+                RCLCPP_INFO(get_logger(), "Valid fix, %s satellites in use.", tokens[GNGGA_SATELLITES_POS].c_str());
             }
             
             uint16_t lat_deg = stoi(tokens[GNGGA_LAT_POS].substr(0, 2));
@@ -85,64 +87,128 @@ namespace mrover {
             nav_sat_fix.altitude = alt;
             nav_sat_fix.position_covariance = cov;
 
+            if (stoi(tokens[GNGGA_QUAL_POS]) == 5) {
+                fix_type.fix = mrover::msg::FixType::FLOAT;
+            }
+            else if (stoi(tokens[GNGGA_QUAL_POS]) == 4) {
+                fix_type.fix = mrover::msg::FixType::FIXED;
+            }
+            else {
+                RCLCPP_WARN(get_logger(), "Position: No RTK fix. Has the basestation finished survey-in?");
+                fix_type.fix = mrover::msg::FixType::NONE;
+            }
+
+            fix_status.fix_type = fix_type;
+            fix_status.header = header;
+            
+            gps_status_pub->publish(fix_status);
             gps_pub->publish(nav_sat_fix);
 
         }
 
-        if (msg_header == RTKSTATUS_HEADER) {
+        // if (msg_header == RTKSTATUS_HEADER) {
 
-            mrover::msg::RTKStatus rtk_status;
-            mrover::msg::RTKFixType sol_status;
+        //     mrover::msg::RTKStatus fix_status;
+        //     mrover::msg::FixType fix_type;
 
-            if (tokens[RTKSTATUS_POS] == "NARROW_FLOAT") {
-                sol_status.fix_type = mrover::msg::RTKFixType::NARROW_FLOAT;
-            }
-            else if (tokens[RTKSTATUS_POS] == "NARROW_INT") {
-                sol_status.fix_type = mrover::msg::RTKFixType::NARROW_INT;
-            }
-            else {
-                RCLCPP_WARN(get_logger(), "Position: No RTK fix. Has the basestation finished survey-in?");
-                sol_status.fix_type = mrover::msg::RTKFixType::NONE;
-            }
+        //     if (tokens[RTKSTATUS_POS] == "NARROW_FLOAT") {
+        //         fix_type.fix = mrover::msg::FixType::FLOAT;
+        //     }
+        //     else if (tokens[RTKSTATUS_POS] == "NARROW_INT") {
+        //         fix_type.fix = mrover::msg::FixType::FIXED;
+        //     }
+        //     else {
+        //         RCLCPP_WARN(get_logger(), "Position: No RTK fix. Has the basestation finished survey-in?");
+        //         fix_type.fix = mrover::msg::FixType::NONE;
+        //     }
 
-            rtk_status.sol_status = sol_status;
-            rtk_status.header = header;
+        //     fix_status.fix_type = fix_type;
+        //     fix_status.header = header;
             
-            gps_status_pub->publish(rtk_status);
+        //     gps_status_pub->publish(fix_status);
 
-        }
+        // }
 
         if (msg_header == UNIHEADING_HEADER) {
 
-            mrover::msg::RTKHeading heading;
-            mrover::msg::RTKStatus rtk_status;
-            mrover::msg::RTKFixType sol_status;
+            mrover::msg::Heading heading;
+            mrover::msg::FixStatus fix_status;
+            mrover::msg::FixType fix_type;
 
             if (tokens[UNIHEADING_STATUS_POS] == "NARROW_FLOAT") {
-                sol_status.fix_type = mrover::msg::RTKFixType::NARROW_FLOAT;
+                fix_type.fix = mrover::msg::FixType::FLOAT;
             }
             else if (tokens[UNIHEADING_STATUS_POS] == "NARROW_INT") {
-                sol_status.fix_type = mrover::msg::RTKFixType::NARROW_INT;
+                fix_type.fix = mrover::msg::FixType::FIXED;
             }
             else {
                 RCLCPP_WARN(get_logger(), "Heading: no solution. Are both antennas plugged in?");
                 return;
             }
 
-            rtk_status.sol_status = sol_status;
+            fix_status.fix_type = fix_type;
 
             float uniheading = stof(tokens[UNIHEADING_HEADING_POS]);
 
             heading.header = header;
             heading.heading = uniheading;
 
-            rtk_status.header = header;
+            fix_status.header = header;
 
             heading_pub->publish(heading);
-            heading_status_pub->publish(rtk_status);
+            heading_status_pub->publish(fix_status);
 
         }
 
+        if (msg_header == GPS_HEADER) {
+
+            if (tokens[CNO_POS] == "") {
+                RCLCPP_INFO(get_logger(), "GPS signal strength: 0");
+            }
+            else {
+                RCLCPP_INFO(get_logger(), "GPS signal strength: %s", tokens[CNO_POS].c_str());
+            }
+        }
+
+        if (msg_header == GLONASS_HEADER) {
+
+            if (tokens[CNO_POS] == "") {
+                RCLCPP_INFO(get_logger(), "GNONASS signal strength: 0");
+            }
+            else {
+                RCLCPP_INFO(get_logger(), "GLONASS signal strength: %s", tokens[CNO_POS].c_str());
+            }
+        }
+
+        if (msg_header == BEIDOU_HEADER) {
+
+            if (tokens[CNO_POS] == "") {
+                RCLCPP_INFO(get_logger(), "BeiDou signal strength: 0");
+            }
+            else {
+                RCLCPP_INFO(get_logger(), "BeiDou signal strength: %s", tokens[CNO_POS].c_str());
+            }
+        }
+
+        if (msg_header == GALILEO_HEADER) {
+
+            if (tokens[CNO_POS] == "") {
+                RCLCPP_INFO(get_logger(), "Galileo signal strength: 0");
+            }
+            else {
+                RCLCPP_INFO(get_logger(), "Galileo signal strength: %s", tokens[CNO_POS].c_str());
+            }
+        }
+
+        if (msg_header == QZSS_HEADER) {
+
+            if (tokens[CNO_POS] == "") {
+                RCLCPP_INFO(get_logger(), "QZSS signal strength: 0");
+            }
+            else {
+                RCLCPP_INFO(get_logger(), "QZSS signal strength: %s", tokens[CNO_POS].c_str());
+            }
+        }
     }
 
 

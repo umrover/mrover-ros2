@@ -1,2 +1,2 @@
 std_msgs/Header header
-RTKFixType sol_status
+FixType fix_type
