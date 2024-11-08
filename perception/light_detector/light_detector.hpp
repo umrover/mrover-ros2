@@ -30,9 +30,10 @@ namespace mrover {
 		int mPublishThreshold{};
 
 		// TF variables
-		tf2_ros::Buffer mTfBuffer;
+		tf2_ros::Buffer mTfBuffer{get_clock()};
+        tf2_ros::TransformBroadcaster mTfBroadcaster{this};
         tf2_ros::TransformListener mTfListener{mTfBuffer};
-        tf2_ros::TransformBroadcaster mTfBroadcaster;
+
 		std::string mCameraFrame;
         std::string mWorldFrame;
 
@@ -51,6 +52,8 @@ namespace mrover {
 		rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr imgSub;
 		rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr imgPub;
 		rclcpp::Publisher<geometry_msgs::msg::Vector3>::SharedPtr pointPub;
+
+		static constexpr char const* NODE_NAME = "light_detector";
 
 		auto imageCallback(sensor_msgs::msg::PointCloud2::ConstSharedPtr const& msg) -> void;
 
@@ -73,7 +76,7 @@ namespace mrover {
 	public:
 		auto onInit() -> void;
 
-		explicit LightDetector();
+		explicit LightDetector(rclcpp::NodeOptions const& options = rclcpp::NodeOptions());
 
 		~LightDetector() override = default;
 	}; // LightDetector

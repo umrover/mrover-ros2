@@ -1,5 +1,4 @@
 #include "light_detector.hpp"
-#include "pch.hpp"
 
 auto main(int argc, char* argv[]) -> int{
     rclcpp::init(argc, argv);

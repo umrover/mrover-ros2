@@ -1,5 +1,6 @@
 // RCLCPP
 #include <rclcpp/rclcpp.hpp>
+#include "parameter.hpp"
 
 // Messages
 #include "sensor_msgs/image_encodings.hpp"
