@@ -5,6 +5,7 @@ from state_machine.state import State
 from . import recovery, waypoint
 from .context import convert_cartesian_to_gps, Context
 from .trajectory import SearchTrajectory
+from navigation import approach_target
 
 
 class SearchState(State):
@@ -61,9 +62,10 @@ class SearchState(State):
 
         # Returns either ApproachTargetState, LongRangeState, or None
         assert context.course is not None
-        approach_state = context.course.get_approach_state()
-        if approach_state is not None:
-            return approach_state
+        #approach_state = context.course.get_approach_state()
+        
+        if context.env.current_target_pos() is not None:
+            return approach_target.ApproachTargetState()
 
         return self
 
@@ -86,8 +88,8 @@ class SearchState(State):
         else:  # water bottle or mallet
             SearchState.trajectory = SearchTrajectory.spiral_traj(
                 context.course.current_waypoint_pose_in_map().translation()[0:2],
-                context.node.get_parameter("object_search.coverage_radius").value,
-                context.node.get_parameter("object_search.distance_between_spirals").value,
+                context.node.get_parameter("search.coverage_radius").value,
+                context.node.get_parameter("search.distance_between_spirals").value,
                 context.node.get_parameter("search.segments_per_rotation").value,
                 search_center.tag_id,
                 False,
