@@ -106,29 +106,6 @@ namespace mrover {
 
         }
 
-        // if (msg_header == RTKSTATUS_HEADER) {
-
-        //     mrover::msg::RTKStatus fix_status;
-        //     mrover::msg::FixType fix_type;
-
-        //     if (tokens[RTKSTATUS_POS] == "NARROW_FLOAT") {
-        //         fix_type.fix = mrover::msg::FixType::FLOAT;
-        //     }
-        //     else if (tokens[RTKSTATUS_POS] == "NARROW_INT") {
-        //         fix_type.fix = mrover::msg::FixType::FIXED;
-        //     }
-        //     else {
-        //         RCLCPP_WARN(get_logger(), "Position: No RTK fix. Has the basestation finished survey-in?");
-        //         fix_type.fix = mrover::msg::FixType::NONE;
-        //     }
-
-        //     fix_status.fix_type = fix_type;
-        //     fix_status.header = header;
-            
-        //     gps_status_pub->publish(fix_status);
-
-        // }
-
         if (msg_header == UNIHEADING_HEADER) {
 
             mrover::msg::Heading heading;

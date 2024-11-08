@@ -24,7 +24,6 @@ namespace mrover {
         std::string frame_id;
 
         constexpr static std::string GNGGA_HEADER = "$GNGGA";
-        //constexpr static std::string RTKSTATUS_HEADER = "#RTKSTATUSA";
         constexpr static std::string UNIHEADING_HEADER = "#UNIHEADINGA";
 
         constexpr static std::string GPS_HEADER = "$GPGSV";
@@ -40,8 +39,6 @@ namespace mrover {
         constexpr static uint8_t GNGGA_QUAL_POS = 6;
         constexpr static uint8_t GNGGA_SATELLITES_POS = 7;
         constexpr static uint8_t GNGGA_ALT_POS = 9;
-
-        //constexpr static uint8_t RTKSTATUS_POS = 21;
 
         constexpr static uint8_t UNIHEADING_STATUS_POS = 11;
         constexpr static uint8_t UNIHEADING_HEADING_POS = 13;
