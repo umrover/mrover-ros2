@@ -3,12 +3,12 @@
         <div>
             <h2>Select Site</h2>
         </div>
-        <div class="form-check form-check-inline">
+        <!-- <div class="form-check form-check-inline">
             <input v-model="site" class="form-check-input" type="radio" name="flexRadioDefault" id="site0" value="0">
             <label class="form-check-label" for="site0">
                 0
             </label>
-        </div>
+        </div> -->
         <div class="form-check form-check-inline">
             <input v-model="site" class="form-check-input" type="radio" name="flexRadioDefault" id="site1" value="1">
             <label class="form-check-label" for="site1">

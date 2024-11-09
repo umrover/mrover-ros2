@@ -13,9 +13,9 @@
     <div class='shadow p-3 rounded waypoints'>
       <BasicWaypointEditor :odom='odom' />
     </div>
-    <div class='shadow p-3 rounded soilData'>
+    <!-- <div class='shadow p-3 rounded soilData'>
       <SoilData />
-    </div>
+    </div> -->
     <div>
       <DriveControls />
     </div>
@@ -150,7 +150,7 @@ export default {
   grid-template-columns: 50% 50%;
   grid-template-areas:
     'header header'
-    'arm soilData'
+    'arm arm' /*soilData'*/
     'map waypoints'
     'map odom'
     'moteus joints';

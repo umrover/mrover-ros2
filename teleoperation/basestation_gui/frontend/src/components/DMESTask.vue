@@ -173,7 +173,8 @@ export default defineComponent({
     'header header'
     'arm-controls arm-controls'
     'map waypoint-editor'
-    'map odom';
+    'map odom'
+    'controller_state rover-3d';
   font-family: sans-serif;
   height: auto;
 }

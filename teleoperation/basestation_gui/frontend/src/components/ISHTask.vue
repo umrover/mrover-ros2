@@ -10,9 +10,12 @@
     <div class="shadow p-3 rounded siteSelect">
       <SelectSite @site="onSiteChange" />
     </div>
-    <div class="shadow p-3 rounded cameras">
+    <!-- <div class="shadow p-3 rounded cameras">
       <Cameras :mission="'ish'" />
-    </div>
+    </div> -->
+    <div class='shadow p-3 rounded soilData'>
+      <SoilData />
+    </div> 
     <div class="shadow p-3 rounded benedicts">
       <AminoBenedict :site="site" :isAmino="false" />
     </div>
@@ -30,6 +33,7 @@
 
 <script lang="ts">
 import SelectSite from './SelectSite.vue'
+import SoilData from './SoilData.vue'
 import Cache from './CacheControls.vue'
 import Chlorophyll from './Chlorophyll.vue'
 import AminoBenedict from './AminoBenedict.vue'
@@ -40,6 +44,7 @@ import NetworkMonitor from "./NetworkMonitor.vue";
 export default {
   components: {
     SelectSite,
+    SoilData,
     Cache,
     Chlorophyll,
     AminoBenedict,
@@ -71,9 +76,9 @@ export default {
   grid-template-areas:
     'header header'
     'cache siteSelect'
-    'cache benedicts'
+    'soilData benedicts'
     'chlorophyll amino'
-    'cameras cameras';
+    /*'cameras cameras'*/;
   font-family: sans-serif;
   height: auto;
 }

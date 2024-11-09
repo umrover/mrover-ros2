@@ -1,12 +1,11 @@
 <template>
   <div class='wrap'>
     <h2>Arm Controls</h2>
-    <div class='controls-flex'>
       <div class="mode">
         <h4>Mode</h4>
       <div class='form-check'>
         <input
-          v-model='controlMode'
+          v-model='mode'
           class='form-check-input'
           type='radio'
           id='disabled'
@@ -15,30 +14,22 @@
         <label class='form-check-label' for='disabled'>Disabled</label>
       </div>
       <div class='form-check'>
-        <input v-model='controlMode' class='form-check-input' type='radio' id='manual' value='manual' />
-        <label class='form-check-label' for='manual'>Manual</label>
+        <input v-model='mode' class='form-check-input' type='radio' id='manual' value='throttle' />
+        <label class='form-check-label' for='manual'>Throttle</label>
       </div>
-      <!-- TODO: add ik radio button -->
+      <div class='form-check'>
+        <input v-model='mode' class='form-check-input' type='radio' id='manual' value='velocity' />
+        <label class='form-check-label' for='manual'>Velocity</label>
       </div>
-
-      <div class="control">
-        <h4>Control</h4>
-        <div class='form-check'>
-          <input
-            v-model='mode'
-            class='form-check-input'
-            type='radio'
-            id='velocity'
-            value='velocity'
-          />
-          <label class='form-check-label' for='velocity'>Velocity</label>
-        </div>
-        <div class='form-check'>
-          <input v-model='mode' class='form-check-input' type='radio' id='position' value='position' />
-          <label class='form-check-label' for='position'>Position</label>
-        </div>
+      <div class='form-check'>
+        <input v-model='mode' class='form-check-input' type='radio' id='manual' value='position' />
+        <label class='form-check-label' for='manual'>Position</label>
       </div>
-    </div>
+      <div class='form-check'>
+        <input v-model='mode' class='form-check-input' type='radio' id='manual' value='ik' />
+        <label class='form-check-label' for='manual'>IK</label>
+      </div>
+      </div>
   </div>
 </template>
 
@@ -56,7 +47,6 @@ export default defineComponent({
   data() {
     return {
       mode: 'disabled',
-      controlMode: 'velocity'
     }
   },
 
@@ -125,14 +115,6 @@ export default defineComponent({
   padding: 5px 0;
 }
 
-.controls-flex {
-  flex-wrap: wrap;
-  display: flex;
-  align-items: center;
-  justify-content: space-evenly;
-  width: 100%;
-}
-
 .mode {
   display: flex;
   flex-wrap: wrap;
@@ -142,12 +124,4 @@ export default defineComponent({
   margin-top: 5px;
 }
 
-.control {
-  display: flex;
-  flex-wrap: wrap;
-  column-gap: 20px;
-  padding-left: 10px;
-  margin-bottom: 5px;
-  margin-top: 5px;
-}
 </style>
