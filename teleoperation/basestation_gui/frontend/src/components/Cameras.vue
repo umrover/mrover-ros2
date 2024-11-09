@@ -1,16 +1,15 @@
 <template>
-  <div class="row">
-    <div v-for="(mission, index) in missionType" :key="index" :class="'col-sm feed' + index">
-      <div class="form-check d-flex justify-content-center align-items-center">
-        <input
-          v-model="selectedMission"
-          class="form-check-input"
-          type="radio"
-          :id="'mission' + index"
-          :value="mission"
-        />
-        <label class="form-check-label ms-2" :for="'mission' + index">{{ mission }}</label>
-      </div>
+<img class='logo' src='/mrover.png' alt='MRover' title='MRover' width='200' />
+ <div v-for="(mission, index) in missionType" :key="index" :class="'feed' + index">
+    <div class="form-check">
+      <input
+        v-model="selectedMission"
+        class="form-check-input"
+        type="radio"
+        :id="'mission' + index"
+        :value="mission"
+      />
+      <label class="form-check-label" :for="'mission' + index">{{ mission }}</label>
     </div>
   </div>
 
