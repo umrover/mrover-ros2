@@ -41,7 +41,7 @@ class MoveCostMapNode(Node):
 def main() -> None:
 
     COURSE_X = -53
-    COURSE_Y = 19
+    COURSE_Y = 17
 
     try:
         rclpy.init(args=sys.argv)

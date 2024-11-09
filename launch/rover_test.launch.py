@@ -42,7 +42,7 @@ def generate_launch_description():
     base_link_to_zed = Node(
         package="tf2_ros",
         executable="static_transform_publisher",
-        arguments=["0", "0", "0", "0", "0", "0", "1", "base_link", "zed_left_camera_frame"],
+        arguments=["0", "0", "1", "0", "0", "0", "1", "base_link", "zed_left_camera_frame"],
     )
 
     return LaunchDescription(
