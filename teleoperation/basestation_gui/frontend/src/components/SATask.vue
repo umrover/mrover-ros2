@@ -1,7 +1,6 @@
 <template>
   <div class='wrapper'>
     <div class='shadow p-3 mb-5 header'>
-      <a class='logo' href="/"><img src='/mrover.png' alt='MRover' title='MRover' width='200' /></a>
       <h1>SA Dashboard</h1>
       <div class="network">
       <NetworkMonitor />
@@ -13,20 +12,20 @@
     <div class='shadow p-3 rounded waypoints'>
       <BasicWaypointEditor :odom='odom' />
     </div>
-    <!-- <div class='shadow p-3 rounded soilData'>
+    <div class='shadow p-3 rounded soilData'>
       <SoilData />
-    </div> -->
+    </div>
     <div>
       <DriveControls />
     </div>
-    <div class='shadow p-3 rounded arm'>
+    <!-- <div class='shadow p-3 rounded arm'>
       <SAArmControls />
-    </div>
+    </div> -->
     <div class='shadow p-3 rounded moteus'>
       <ControllerDataTable msg-type='drive_state' header='Drive States' />
     </div>
     <div class='shadow p-3 rounded joints'>
-      <JointStateDataTable msg-type='sa_joint' header='SA Joints' />
+      <!-- <JointStateDataTable msg-type='sa_joint' header='SA Joints' /> -->
       <JointStateDataTable msg-type='plunger' header='Plunger (w/o offset)' />
     </div>
     <!--    <div class='shadow p-3 rounded limit'>-->
@@ -147,13 +146,12 @@ export default {
 .wrapper {
   display: grid;
   grid-gap: 10px;
-  grid-template-columns: 50% 50%;
+  grid-template-columns: 33% 33% 33%;
   grid-template-areas:
-    'header header'
-    'arm arm' /*soilData'*/
-    'map waypoints'
-    'map odom'
-    'moteus joints';
+    'header header header'
+    'map waypoints waypoints'
+    'map odom odom'
+    'joints moteus soilData';
   font-family: sans-serif;
   height: auto;
 }
@@ -164,12 +162,6 @@ export default {
   justify-content: space-between;
   align-items: center;
   padding: 10px;
-}
-
-.logo {
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
 }
 
 .network {
