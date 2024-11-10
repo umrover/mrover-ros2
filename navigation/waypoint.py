@@ -159,7 +159,7 @@ class WaypointState(State):
             return self
 
         # Attempt to find the waypoint in the TF tree and drive to it
-        if True: 
+        if not self.USE_COSTMAP:
             waypoint_position_in_map = context.course.current_waypoint_pose_in_map().translation()
             cmd_vel, arrived = context.drive.get_drive_command(
                     waypoint_position_in_map,
@@ -192,7 +192,11 @@ class WaypointState(State):
                 return recovery.RecoveryState()
 
             context.rover.send_drive_command(cmd_vel)
+
+
+
         else:
+            context.node.get_logger().info("Using costmap to traverse to waypoint")
             if not hasattr(context.env.cost_map, 'data'): return self
             
             if context.node.get_clock().now() - self.time_last_updated > Duration(seconds=self.UPDATE_DELAY):
