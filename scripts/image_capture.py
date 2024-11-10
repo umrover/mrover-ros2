@@ -7,7 +7,7 @@ from ament_index_python import get_package_share_directory
 
 import numpy as np
 import sys
-import os
+from pathlib import Path
 import datetime
 
 import cv2
@@ -25,14 +25,14 @@ class ImageCapture(Node):
         img = np.frombuffer(msg.data, dtype=np.uint8).reshape(msg.height, msg.width, -1)
         unique_id = "{date:%Y-%m-%d_%H:%M:%S}".format(date=datetime.datetime.now())
 
-        path = os.path.join(get_package_share_directory("mrover"), "../../../../src/mrover/data/images")
+        path = Path(get_package_share_directory("mrover")) / ".."/ ".." / ".." / ".." / "src" / "mrover" / "data" / "images"
 
-        if not os.path.exists(path):
-            os.mkdir(path)
+        if not path.exists():
+            path.mkdir(parents=True, exist_ok=True)
 
-        path = os.path.join(path, f"image_{unique_id}.jpg")
+        path = path / f"image_{unique_id}.jpg"
 
-        cv2.imwrite(path, img)
+        cv2.imwrite(str(path), img)
 
         self.get_logger().info(f"Saved image_{unique_id}.jpg")
         pass
