@@ -74,34 +74,43 @@ namespace mrover {
                 cell = static_cast<std::int8_t>(mAlpha * cost + (1 - mAlpha) * cell);
             }
 
-            nav_msgs::msg::OccupancyGrid postProcesed = mGlobalGridMsg;
-            std::array<std::ptrdiff_t, 9> dis{0,
-                                              -1, +1, -postProcesed.info.width, +postProcesed.info.width,
-                                              -1 - postProcesed.info.width, +1 - postProcesed.info.width,
-                                              -1 + postProcesed.info.width, +1 + postProcesed.info.width};
-            for (std::size_t i = 0; i < mGlobalGridMsg.data.size(); ++i) {
-                if (std::ranges::any_of(dis, [&](std::ptrdiff_t di) {
-                        std::size_t j = i + di;
-                        return j < mGlobalGridMsg.data.size() && mGlobalGridMsg.data[j] > FREE_COST;
-                    })) postProcesed.data[i] = OCCUPIED_COST;
-            }
-            nav_msgs::msg::OccupancyGrid postProcesed2 = postProcesed;
-            for (std::size_t i = 0; i < postProcesed.data.size(); ++i) {
-                if (std::ranges::any_of(dis, [&](std::ptrdiff_t di) {
-                        std::size_t j = i + di;
-                        return j < postProcesed.data.size() && postProcesed.data[j] > FREE_COST;
-                    })) postProcesed2.data[i] = OCCUPIED_COST;
-            }
-            nav_msgs::msg::OccupancyGrid postProcesed3 = postProcesed2;
-            for (std::size_t i = 0; i < postProcesed2.data.size(); ++i) {
-                if (std::ranges::any_of(dis, [&](std::ptrdiff_t di) {
-                        std::size_t j = i + di;
-                        return j < postProcesed2.data.size() && postProcesed2.data[j] > FREE_COST;
-                    })) postProcesed3.data[i] = OCCUPIED_COST;
+            
+
+            nav_msgs::msg::OccupancyGrid postProcessed = mGlobalGridMsg;
+            std::ptrdiff_t width = postProcessed.info.width;
+
+            std::array<std::ptrdiff_t, 11> dis
+                                        {0, 
+                                        -1, 
+                                        +1, 
+                                        -width, 
+                                        -1 -width, 
+                                        +1 -width, 
+                                        +width, 
+                                        -1 +width, 
+                                        +1 +width};
+
+            for (std::ptrdiff_t &di : dis) {
+                mGlobalGridMsg.data[mapToGrid(cameraToMap.translation(), mGlobalGridMsg)+di] = FREE_COST;
             }
 
-
-            mCostMapPub->publish(postProcesed3);
+            for(std::size_t di_n = 0; di_n < 2; di_n++) {
+                auto temp = postProcessed;
+                for (std::size_t i = 0; i < postProcessed.data.size(); ++i) {
+                    // If the current cell has any cost, then give it and all its neighbors high cost
+                    std::size_t j;
+                    if (temp.data[i] > FREE_COST) {
+                        for (std::ptrdiff_t &di : dis) {
+                            j = i + di;
+                            if ((j / width >= 0 && j / width < std::size_t(postProcessed.info.height)) &&
+                                (j % width >= 0 && j % width < std::size_t(width))) {
+                                    postProcessed.data[j] = OCCUPIED_COST;
+                                }
+                        }
+                    }
+                }
+            }
+            mCostMapPub->publish(postProcessed);
         } catch (tf2::TransformException const& e) {
             RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, std::format("TF tree error processing point cloud: {}", e.what()));
         }
