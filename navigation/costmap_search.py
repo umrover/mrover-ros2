@@ -101,7 +101,9 @@ class CostmapSearchState(State):
 
     def on_loop(self, context: Context) -> State:
         # Wait until the costmap is ready
-        if not hasattr(context.env.cost_map, 'data'): return self
+        if not hasattr(context.env.cost_map, 'data'): 
+            context.node.get_logger().warn(f"No costmap found, waiting...")
+            return self
 
         assert context.course is not None
 

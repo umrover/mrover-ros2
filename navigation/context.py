@@ -7,6 +7,7 @@ import pymap3d
 
 import tf2_ros
 from geometry_msgs.msg import Twist
+from mrover.srv import MoveCostMap
 from lie import SE3
 from mrover.msg import (
     Waypoint,
@@ -421,3 +422,21 @@ class Context:
         self.env.cost_map.data[cost_map_data == -1] = 10.0  # TODO: find optimal value
         # normalize to [0, 1]
         self.env.cost_map.data /= 100.0
+
+    def move_costmap(self, course_name="center_gps"):
+        # TODO(neven): add service to move costmap if going to watter bottle search
+        self.node.get_logger().info(f"Requesting to move cost map to {course_name}")
+        client = self.node.create_client(MoveCostMap, "move_cost_map")
+        while not client.wait_for_service(timeout_sec=1.0):
+            self.node.get_logger().info("waiting for move_cost_map service...")
+        req = MoveCostMap.Request()
+
+        req.course = course_name
+        future = client.call_async(req)
+        # TODO(neven): make this actually wait for the service to finish
+        # context.node.get_logger().info("called thing")
+        # rclpy.spin_until_future_complete(context.node, future)
+        # while not future.done():
+        #     pass
+        # if not future.result():
+        #     context.node.get_logger().info("move_cost_map service call failed")

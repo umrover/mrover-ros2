@@ -42,6 +42,24 @@ class WaypointState(State):
     SAFE_APPROACH_DISTANCE: float
     USE_COSTMAP: bool
 
+    def move_costmap(self, context, course_name="center_gps"):
+        # TODO(neven): add service to move costmap if going to watter bottle search
+        context.node.get_logger().info(f"Requesting to move cost map to {course_name}")
+        client = context.node.create_client(MoveCostMap, "move_cost_map")
+        while not client.wait_for_service(timeout_sec=1.0):
+            context.node.get_logger().info("waiting for move_cost_map service...")
+        req = MoveCostMap.Request()
+
+        req.course = course_name
+        future = client.call_async(req)
+        # TODO(neven): make this actually wait for the service to finish
+        # context.node.get_logger().info("called thing")
+        # rclpy.spin_until_future_complete(context.node, future)
+        # while not future.done():
+        #     pass
+        # if not future.result():
+        #     context.node.get_logger().info("move_cost_map service call failed")
+
     def on_enter(self, context: Context) -> None:
         origin_in_map = context.course.current_waypoint_pose_in_map().translation()[0:2]
         self.astar = AStar(origin_in_map, context)
@@ -50,31 +68,7 @@ class WaypointState(State):
         self.time_last_updated = context.node.get_clock().now() - Duration(seconds=self.UPDATE_DELAY)
         self.astar_traj = Trajectory(np.array([]))
         self.follow_astar = False
-        
-        assert context.course is not None
-
-        current_waypoint = context.course.current_waypoint()
-        assert current_waypoint is not None
-
         context.env.arrived_at_waypoint = False
-
-        # TODO(neven): add service to move costmap if going to watter bottle search
-        if current_waypoint.type.val == WaypointType.WATER_BOTTLE:
-            context.node.get_logger().info("Requesting to move cost map")
-            client = context.node.create_client(MoveCostMap, "move_cost_map")
-            while not client.wait_for_service(timeout_sec=1.0):
-                context.node.get_logger().info("waiting for move_cost_map service...")
-            req = MoveCostMap.Request()
-
-            req.course = f"course{context.course.waypoint_index}"
-            future = client.call_async(req)
-            # TODO(neven): make this actually wait for the service to finish
-            # context.node.get_logger().info("called thing")
-            # rclpy.spin_until_future_complete(context.node, future)
-            # while not future.done():
-            #     pass
-            # if not future.result():
-            #     context.node.get_logger().info("move_cost_map service call failed")
             
 
     def on_exit(self, context: Context) -> None:
@@ -109,7 +103,9 @@ class WaypointState(State):
             return self
         
 
-        if not hasattr(context.env.cost_map, 'data'): return self
+        if not hasattr(context.env.cost_map, 'data'): 
+            context.node.get_logger().warn(f"No costmap found, waiting...")
+            return self
         # If there are no more points in the current a_star path or we are past the update delay, then create a new one
         if len(self.astar_traj.coordinates) == 0 or \
             context.node.get_clock().now() - self.time_last_updated > Duration(seconds=self.UPDATE_DELAY):
@@ -156,6 +152,8 @@ class WaypointState(State):
         if arrived:
             if self.astar_traj.increment_point():
                 context.env.arrived_at_waypoint = True
+                context.node.get_logger().info("Arrived at waypoint")
+                context.move_costmap()
                 if context.node.get_parameter("search.use_costmap").value and not current_waypoint.type.val == WaypointType.NO_SEARCH:
                     # We finished a waypoint associated with the water bottle, but we have not seen it yet and are using the costmap to search
                     costmap_search_state = costmap_search.CostmapSearchState()

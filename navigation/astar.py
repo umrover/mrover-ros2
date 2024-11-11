@@ -29,9 +29,11 @@ class AStar:
     origin: np.ndarray  # Holds the initial rover pose (waypoint of water bottle)
     context: Context
     costmap_lock: Lock
+
+    path_pub: Publisher
     TRAVERSABLE_COST: float
     A_STAR_THRESH: float
-    path_pub: Publisher
+    COSTMAP_THRESH: float
 
     def __init__(self, origin: np.ndarray, context: Context) -> None:
         self.origin = origin
@@ -42,6 +44,7 @@ class AStar:
             self.path_pub = context.node.create_publisher(Path, "astar_path", 10)
             self.TRAVERSABLE_COST = self.context.node.get_parameter("search.traversable_cost").value
             self.A_STAR_THRESH = self.context.node.get_parameter("search.a_star_thresh").value
+            self.COSTMAP_THRESH = self.context.node.get_parameter("search.costmap_thresh").value
         except:
             pass
     
@@ -184,6 +187,15 @@ class AStar:
         """
         # Get rover position in map
         rover_position_in_map = context.rover.get_pose_in_map().translation()[0:2]
+
+        # Move the costmap if we are outside of the threshold for it
+        # costmap_length = self.context.env.cost_map.data.shape[0]
+        # thresh = (costmap_length * self.COSTMAP_THRESH, costmap_length * (1 - self.COSTMAP_THRESH))
+        # rover_ij = self.cartesian_to_ij(rover_position_in_map)
+
+        # if rover_ij[0] < thresh[0] or rover_ij[0] > thresh[1] \
+        #     or rover_ij[1] < thresh[0] or rover_ij[1] > thresh[1]:
+        #     context.move_costmap()
 
         # If path to next spiral point has minimal cost per cell, continue normally to next spiral point
         trajectory = Trajectory(np.array([]))
