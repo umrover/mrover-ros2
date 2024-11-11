@@ -180,7 +180,8 @@ class CostmapSearchState(State):
                 self.follow_astar = self.astar.use_astar(context=context, star_traj=self.star_traj, trajectory=self.trajectory.get_current_point())
 
         # If our target object has been detected, approach it
-        if (context.env.current_target_pos() is not None):
+        if (context.env.current_target_pos() is not None
+            and context.env.current_target_pos() - rover_in_map.translation()[0:2] < self.SAFE_APPROACH_DISTANCE):
             return approach_target.ApproachTargetState()
 
         return self
