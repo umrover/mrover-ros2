@@ -1,10 +1,12 @@
 import heapq
-import random
 from threading import Lock
 
 import numpy as np
-
-import rclpy
+from navigation.trajectory import Trajectory
+from geometry_msgs.msg import Pose, PoseStamped, Point, Quaternion, Twist
+from rclpy.publisher import Publisher
+from nav_msgs.msg import Path
+from std_msgs.msg import Header
 
 from navigation.context import Context
 
@@ -28,13 +30,15 @@ class AStar:
     context: Context
     costmap_lock: Lock
     TRAVERSABLE_COST: float
+    A_STAR_THRESH: float
+    path_pub: Publisher
 
     def __init__(self, origin: np.ndarray, context: Context) -> None:
         self.origin = origin
         self.context = context
-
+        self.path_pub = context.node.create_publisher(Path, "astar_path", 10)
         self.TRAVERSABLE_COST = self.context.node.get_parameter("search.traversable_cost").value
-
+        self.A_STAR_THRESH = self.context.node.get_parameter("search.a_star_thresh").value
         self.costmap_lock = Lock()
     
 
@@ -150,6 +154,70 @@ class AStar:
                         if neighbor_pos not in (pos[1] for pos in open_set):
                             heapq.heappush(open_set, (f_scores[neighbor_pos], neighbor_pos))
             raise NoPath()
+        
+    def generate_trajectory(self, context: Context, dest: np.ndarray) -> Trajectory:
+        rover_position_in_map = context.rover.get_pose_in_map().translation()[0:2]
+
+        # If path to next spiral point has minimal cost per cell, continue normally to next spiral point
+        trajectory = Trajectory(np.array([]))
+        context.rover.send_drive_command(Twist())  # stop while planning
+        try:
+            occupancy_list = self.a_star(rover_position_in_map, dest)
+
+        except SpiralEnd:
+            # TODO: what to do in this case
+            trajectory.reset()
+            occupancy_list = None
+
+        except NoPath:
+            # increment end point
+            if trajectory.increment_point():
+                # TODO: what to do in this case
+                trajectory.reset()
+            occupancy_list = None
+
+        if occupancy_list is None:
+            trajectory = Trajectory(np.array([]))
+        else:
+            cartesian_coords = self.ij_to_cartesian(np.array(occupancy_list))
+            trajectory = Trajectory(
+                np.hstack((cartesian_coords, np.zeros((cartesian_coords.shape[0], 1))))
+            )  # current point gets set back to 0
+
+            # create path type to publish planned path segments to see in rviz
+            path = Path()
+            poses = []
+            path.header = Header()
+            path.header.frame_id = "map"
+            for coord in cartesian_coords:
+                pose_stamped = PoseStamped()
+                pose_stamped.header = Header()
+                pose_stamped.header.frame_id = "map"
+                point = Point(x=coord[0], y=coord[1], z=0.0)
+                quat = Quaternion(x=0.0, y=0.0, z=0.0, w=1.0)
+                pose_stamped.pose = Pose(position=point, orientation=quat)
+                poses.append(pose_stamped)
+            path.poses = poses
+            self.path_pub.publish(path)
+        return trajectory
+
+    def use_astar(self, context: Context, star_traj: Trajectory, trajectory: np.ndarray | None) -> bool:
+        rover_in_map = context.rover.get_pose_in_map()
+        follow_astar: bool
+        if rover_in_map is None or \
+            trajectory is None or \
+            len(star_traj.coordinates) < 4: 
+            follow_astar = False
+
+        else: 
+            astar_dist = 0.0
+            for i in range(len(star_traj.coordinates[:-1])):
+                astar_dist += self.d_calc(star_traj.coordinates[i], star_traj.coordinates[i+1])
+
+            eucl_dist = self.d_calc(context.rover.get_pose_in_map().translation()[0:2], tuple(trajectory))
+
+            follow_astar = abs(astar_dist - eucl_dist) / eucl_dist > self.A_STAR_THRESH
+        return follow_astar
             
         
         

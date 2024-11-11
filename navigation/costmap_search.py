@@ -46,64 +46,27 @@ class CostmapSearchState(State):
 
     def use_astar(self, context: Context) -> bool:
         rover_in_map = context.rover.get_pose_in_map()
+        follow_astar: bool
         if rover_in_map is None or \
             self.trajectory.get_current_point() is None or \
             len(self.star_traj.coordinates) < 4: 
-            return False
+            follow_astar = False
 
-        astar_dist = 0.0
-        for i, coordinate in enumerate(self.star_traj.coordinates[:-1]):
-            astar_dist += self.astar.d_calc(self.star_traj.coordinates[i], self.star_traj.coordinates[i+1])
+        else: 
+            astar_dist = 0.0
+            for i, coordinate in enumerate(self.star_traj.coordinates[:-1]):
+                astar_dist += self.astar.d_calc(self.star_traj.coordinates[i], self.star_traj.coordinates[i+1])
 
-        eucl_dist = self.astar.d_calc(context.rover.get_pose_in_map().translation()[0:2], self.trajectory.get_current_point())
-        return abs(astar_dist - eucl_dist) / eucl_dist > self.A_STAR_THRESH
+            eucl_dist = self.astar.d_calc(context.rover.get_pose_in_map().translation()[0:2], tuple(self.trajectory.get_current_point()))
 
-    def generate_astar_path(self, context: Context):
-        rover_position_in_map = context.rover.get_pose_in_map().translation()[0:2]
+            follow_astar = abs(astar_dist - eucl_dist) / eucl_dist > self.A_STAR_THRESH
 
-        # If path to next spiral point has minimal cost per cell, continue normally to next spiral point
-        self.star_traj = Trajectory(np.array([]))
-        context.rover.send_drive_command(Twist())  # stop while planning
-        try:
-            occupancy_list = self.astar.a_star(rover_position_in_map, self.trajectory.get_current_point())
-
-        except SpiralEnd:
-            # TODO: what to do in this case
-            return waypoint.WaypointState()
-
-        except NoPath:
-            context.node.get_logger().warn("Unable to pathfind to the next search spiral")
-            # currently skipping a spiral point if no path is found there
-            # TODO: Figure out what is best in this case
-            if self.trajectory.increment_point():
-                return waypoint.WaypointState()
-            occupancy_list = None
-
-        if occupancy_list is None:
-            self.star_traj = Trajectory(np.array([]))
-        else:
-            cartesian_coords = self.astar.ij_to_cartesian(np.array(occupancy_list))
-            self.star_traj = Trajectory(
-                np.hstack((cartesian_coords, np.zeros((cartesian_coords.shape[0], 1))))
-            )  # current point gets set back to 0
-
-            # create path type to publish planned path segments to see in rviz
-            path = Path()
-            poses = []
-            path.header = Header()
-            path.header.frame_id = "map"
-            for coord in cartesian_coords:
-                pose_stamped = PoseStamped()
-                pose_stamped.header = Header()
-                pose_stamped.header.frame_id = "map"
-                point = Point(x=coord[0], y=coord[1], z=0.0)
-                quat = Quaternion(x=0.0, y=0.0, z=0.0, w=1.0)
-                pose_stamped.pose = Pose(position=point, orientation=quat)
-                poses.append(pose_stamped)
-            path.poses = poses
-            self.path_pub.publish(path)
-
-        self.time_last_updated = context.node.get_clock().now()
+        if (follow_astar and not self.follow_astar) or (not follow_astar and self.follow_astar):   
+            if follow_astar: 
+                context.node.get_logger().info(f"Switching to astar path")
+            else:
+                context.node.get_logger().info(f"Switching to regular path")
+        return follow_astar
 
     def on_enter(self, context: Context) -> None:
 
@@ -131,7 +94,6 @@ class CostmapSearchState(State):
         context.node.get_logger().info(f"Origin: {origin_in_map}")
         self.star_traj = Trajectory(np.array([]))
         self.time_last_updated = context.node.get_clock().now()
-        self.path_pub = context.node.create_publisher(Path, "path", 10)
         self.follow_astar = False
 
     def on_exit(self, context: Context) -> None:
@@ -153,39 +115,23 @@ class CostmapSearchState(State):
         else:
             self.is_recovering = False
 
-        # If there are no more points in the current a_star path, then create a new one
-        if len(self.star_traj.coordinates) - self.star_traj.cur_pt == 0:
-            self.star_traj = Trajectory(np.array([]))
-            # If there are no more points in the spiral trajectory, we have finished
-            if self.trajectory.increment_point():
-                return waypoint.WaypointState()
-            self.follow_astar = False
+        # If there are no more points in the current a_star path or we are past the update delay, then create a new one
+        if len(self.star_traj.coordinates) - self.star_traj.cur_pt == 0 or \
+            context.node.get_clock().now() - self.time_last_updated > Duration(seconds=self.UPDATE_DELAY):
+
+            # If there are no more points in the spiral trajectory, move to the next spiral point
+            if len(self.star_traj.coordinates) - self.star_traj.cur_pt == 0:
+                self.star_traj = Trajectory(np.array([]))
+                if self.trajectory.increment_point():
+                    context.node.get_logger().info(f"Reached the end of search spiral")
+                    return waypoint.WaypointState()
             
             # Otherwise generate a path
-            context.node.get_logger().info(f"Reached spiral node. Generating new A-Star path")
-            self.generate_astar_path(context)
+            self.star_traj = self.astar.generate_trajectory(context, self.trajectory.get_current_point())
+            self.time_last_updated = context.node.get_clock().now()
 
             # Decide whether we follow the astar path to the next point in the spiral
-            self.follow_astar = self.use_astar(context=context)
-            if not self.follow_astar:
-                # context.node.get_logger().info(f"A-Star is unnecessary")
-                pass
-            else:
-                context.node.get_logger().info(f"A-Star is necessary")
-
-        # Update astar path every update delay
-        elif context.node.get_clock().now() - self.time_last_updated > Duration(seconds=self.UPDATE_DELAY):
-            #context.node.get_logger().info(f"Last update was {self.UPDATE_DELAY} seconds ago. Generating new A-Star path")
-            self.generate_astar_path(context)
-
-            # Decide whether we follow the astar path to the next point in the spiral
-            self.follow_astar = self.use_astar(context=context)
-            if not self.follow_astar:
-                # context.node.get_logger().info(f"A-Star is unnecessary")
-                pass
-            else:
-                context.node.get_logger().info(f"A-Star is necessary")
-
+            self.follow_astar = self.astar.use_astar(context=context, star_traj=self.star_traj, trajectory=self.trajectory.get_current_point())
         
         # Choosing which path to take: A-Star or regular
         if self.follow_astar:
@@ -224,17 +170,14 @@ class CostmapSearchState(State):
                 # If we finish the spiral without seeing the tag, move on with course
                 if self.trajectory.increment_point():
                     return waypoint.WaypointState()
+                
                 # Otherwise generate a path
                 context.node.get_logger().info(f"Reached spiral node. Generating new A-Star path")
-                self.generate_astar_path(context)
+                self.star_traj = self.astar.generate_trajectory(context, self.trajectory.get_current_point())
+                self.time_last_updated = context.node.get_clock().now()
 
                 # Decide whether we follow the astar path to the next point in the spiral
-                self.follow_astar = self.use_astar(context=context)
-                if not self.follow_astar:
-                    # context.node.get_logger().info(f"A-Star is unnecessary")
-                    pass
-                else:
-                    context.node.get_logger().info(f"A-Star is necessary")
+                self.follow_astar = self.astar.use_astar(context=context, star_traj=self.star_traj, trajectory=self.trajectory.get_current_point())
 
         # If our target object has been detected, approach it
         if (context.env.current_target_pos() is not None):
