@@ -44,7 +44,8 @@ navigation:
       traversable_cost: 0.2
       update_delay: 1.0
       safe_approach_distance: 5.0
-      a_star_thresh: 0.10
+      a_star_thresh: 0.15
+      costmap_thresh: 0.25
 
     single_tag:
       stop_threshold: 1.0
