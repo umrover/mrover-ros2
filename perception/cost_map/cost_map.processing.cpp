@@ -94,7 +94,8 @@ namespace mrover {
                 mGlobalGridMsg.data[mapToGrid(cameraToMap.translation(), mGlobalGridMsg)+di] = FREE_COST;
             }
 
-            for(std::size_t di_n = 0; di_n < 2; di_n++) {
+            // TODO: Find optimal value of di_n
+            for(std::size_t di_n = 0; di_n < 3; di_n++) {
                 auto temp = postProcessed;
                 for (std::size_t i = 0; i < postProcessed.data.size(); ++i) {
                     // If the current cell has any cost, then give it and all its neighbors high cost
