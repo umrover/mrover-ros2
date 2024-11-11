@@ -33,9 +33,7 @@ namespace mrover {
 		// TODO (john): change to shader
 		sensor_msgs::msg::PointCloud2::UniquePtr noisyMsg = createNoisyPointCloud(inputMsg);
 
-        if constexpr (useNoisyPointCloud) {
-            mInliers.clear();
-        }
+		mInliers.clear();
 
 		sensor_msgs::msg::PointCloud2::UniquePtr const& msg = [&]() -> sensor_msgs::msg::PointCloud2::UniquePtr const& {
 			if constexpr (useNoisyPointCloud){
@@ -104,10 +102,10 @@ namespace mrover {
                 }
 
                 // USING ABSOLUTE HEIGHT DIFFERENCE BETWEEN POINT AND ROVER HEIGHT
-                // std::size_t pointsHigh = std::ranges::count_if(bin, [this, &roverSE3](BinEntry const& entry) {
-                //     return abs(entry.pointInMap.z() - (roverSE3.z())) > mZThreshold;
-                // });
-                // double percent = static_cast<double>(pointsHigh) / static_cast<double>(bin.size());
+                std::size_t pointsHigh = std::ranges::count_if(bin, [this, &roverSE3](BinEntry const& entry) {
+                    return (entry.pointInMap.z() - roverSE3.z()) > mZThreshold;
+                });
+                double percent = static_cast<double>(pointsHigh) / static_cast<double>(bin.size());
 
                 // std::int8_t cost = percent > mZPercent ? OCCUPIED_COST : FREE_COST;
 
