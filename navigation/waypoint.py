@@ -108,7 +108,7 @@ class WaypointState(State):
             return self
         # If there are no more points in the current a_star path or we are past the update delay, then create a new one
         if len(self.astar_traj.coordinates) == 0 or \
--            context.node.get_clock().now() - self.time_last_updated > Duration(seconds=self.UPDATE_DELAY):
+            context.node.get_clock().now() - self.time_last_updated > Duration(seconds=self.UPDATE_DELAY):
 
             # Generate a path
             self.astar_traj = self.astar.generate_trajectory(context, context.course.current_waypoint_pose_in_map().translation())
