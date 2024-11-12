@@ -35,7 +35,9 @@ namespace mrover{
 		mLowerBound = cv::Vec3d(lowerBoundH, lowerBoundS, lowerBoundV);
 
 		// TODO: fix this next time! check wiki for what the message type should be
-		imgSub = this->create_subscription<sensor_msgs::msg::PointCloud2>("/camera/left/points", 1, &LightDetector::imageCallback);
+		imgSub = create_subscription<sensor_msgs::msg::PointCloud2>("/camera/left/points", 1, [this](sensor_msgs::msg::PointCloud2::ConstSharedPtr const& msg) {
+			LightDetector::imageCallback(msg);
+		});
 		imgPub = this->create_publisher<sensor_msgs::msg::Image>("/light_detector/img", 1);
 		pointPub = this->create_publisher<geometry_msgs::msg::Vector3>("/light_detector/points", 1);
 	}
