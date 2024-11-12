@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 
+from numpy._typing._array_like import NDArray
 from rclpy.node import Node
 import rclpy
 
@@ -17,6 +18,8 @@ from std_msgs.msg import Header
 
 import time
 
+import struct
+
 
 class IK_Testing(Node):
 
@@ -25,21 +28,23 @@ class IK_Testing(Node):
         self.publisher_ = self.create_publisher(PointCloud2, 'point_cloud', 10)
 
 
-    def test_points(self, MAX_X = 1., MAX_Y = 1., MAX_Z = 1., STEP = 0.5):
+    def test_points(self, MAX_X = 1., MAX_Y = 0.4, MAX_Z = 1., STEP = 0.5):
 
-        self.pointRawResults = np.zeros((int(2*MAX_X / STEP) + 1, int(2*MAX_Y / STEP) + 1, int(2*MAX_Z / STEP) + 1), bool)
 
         # Create a 1D array from -1 to 1 with a step of 0.5
-        x_values = np.arange(-MAX_X, MAX_X, STEP)
-        y_values = np.arange(-MAX_Y, MAX_Y, STEP)
-        z_values = np.arange(-MAX_Z, MAX_Z, STEP)
+        x_values = np.arange(0., MAX_X + STEP, STEP)
+        y_values = np.arange(0., MAX_Y + 0.2, 0.2)
+        z_values = np.arange(-MAX_Z, MAX_Z + STEP, STEP)
 
         X, Y, Z = np.meshgrid(x_values, y_values, z_values)
 
         self.points = np.vstack([X.ravel(), Y.ravel(), Z.ravel()]).T
 
 
-        self.point_cloud_data = []
+        self.point_cloud_data = bytes()
+
+        pointRawResults = np.zeros(shape=(len(x_values), len(y_values), len(z_values)), dtype=bool)
+
 
         request = IkTest.Request()
 
@@ -59,46 +64,46 @@ class IK_Testing(Node):
                     success = future.result().success  
 
                     #Store result in numpy array to print to terminal      
-                    self.pointRawResults[x_idx][y_idx][z_idx] = (success)
+                    pointRawResults[x_idx][y_idx][z_idx] = (success)
 
                     #Store result as point in pointcloud
-                    self.point_cloud_data.append([x, y, z, 0, 255, 0]) if success else self.point_cloud_data.append([x, y, z, 255, 0, 0])
-        
-        self.point_cloud_data = np.array(self.point_cloud_data, dtype=np.float32)
+                    self.point_cloud_data += struct.pack("fffBBB", x, y, z, 0, 255, 0) if success else struct.pack("fffBBB", x, y, z, 0, 0, 255)
+        self.get_logger().info(f"Point map: {pointRawResults}")
 
+       
 
 
 
 
     
-    def publishPointCloud(self):
-        header = Header(**{"frame_id": "arm_base_link"})
+    def makePointCloud(self):
        # Create PointCloud2 message
-        pc_data = pc2.create_cloud_xyz32(header, self.points)
+        self.pc_data = PointCloud2()
+        self.pc_data.header = Header(**{"frame_id": "arm_base_link"})
 
-        pc_data.fields.append(pc2.PointField(name='x', offset=0, datatype=7, count=1))  # float32
-        pc_data.fields.append(pc2.PointField(name='y', offset=4, datatype=7, count=1))  # float32
-        pc_data.fields.append(pc2.PointField(name='z', offset=8, datatype=7, count=1))  # float32
-        pc_data.fields.append(pc2.PointField(name='r', offset=12, datatype=2, count=1))  # uint8
-        pc_data.fields.append(pc2.PointField(name='g', offset=16, datatype=2, count=1))  # uint8
-        pc_data.fields.append(pc2.PointField(name='b', offset=20, datatype=2, count=1))  # uint8
+        self.pc_data.fields.append(pc2.PointField(name='x', offset=0, datatype=7, count=1))  # float32
+        self.pc_data.fields.append(pc2.PointField(name='y', offset=4, datatype=7, count=1))  # float32
+        self.pc_data.fields.append(pc2.PointField(name='z', offset=8, datatype=7, count=1))  # float32
+        self.pc_data.fields.append(pc2.PointField(name='rgb', offset=12, datatype=6, count=1))  # uint32
 
 
         # Create the PointField for RGB
-        pc_data.data = self.point_cloud_data.tobytes()  # Convert to bytes for the PointCloud2
-        pc_data.is_bigendian = False
-        pc_data.point_step = 24  # 3 floats (x, y, z) + 3 bytes (r, g, b)
-        pc_data.row_step = pc_data.point_step * len(self.points)
-        pc_data.height = 1
-        pc_data.width = len(self.points)
-        pc_data.is_dense = True
+        self.pc_data.data = self.point_cloud_data # Convert to bytes for the PointCloud2
+        self.pc_data.is_bigendian = False
+        self.pc_data.point_step = 15 # 3 floats (x, y, z) + 1 bytes (r, g, b)
+        self.pc_data.row_step = self.pc_data.point_step * len(self.points)
+        self.pc_data.height = 1
+        self.pc_data.width = len(self.points)
+        self.pc_data.is_dense = True
 
-
-        # Publish the PointCloud2 message
-        while (True):
-            self.publisher_.publish(pc_data)
-            time.sleep(1)
         self.get_logger().info('Publishing colored point cloud data')
+
+        self.timer = self.create_timer(1.0, self.publishPointCloud)
+
+
+    def publishPointCloud(self):
+        self.publisher_.publish(self.pc_data)
+
         
 
 def main(args = None):
@@ -108,10 +113,11 @@ def main(args = None):
 
 
         ik_tester = IK_Testing()
-        ik_tester.test_points()
-        ik_tester.get_logger().info(f"Point map: {ik_tester.pointRawResults}")
-        ik_tester.publishPointCloud()
+        ik_tester.test_points(1.5, 0.4, 1.5, 0.1)
+        ik_tester.makePointCloud()
+        rclpy.spin(ik_tester)
 
+        ik_tester.destroy_node()
         rclpy.shutdown()
     except KeyboardInterrupt:
         pass
