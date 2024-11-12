@@ -19,7 +19,7 @@ namespace mrover {
     }
     
     auto LightDetector::imageCallback(sensor_msgs::msg::PointCloud2::ConstSharedPtr const& msg) -> void {
-		
+        std::cout<<"image callback"<<std::endl;
         // resizing image is mImgRGB dimensions doesn't match msg dimensions
         // initialize mThresholdedImg to grayscale image 
         if(mImgRGB.rows != static_cast<int>(msg->height) || mImgRGB.cols != static_cast<int>(msg->width)) {
@@ -73,6 +73,7 @@ namespace mrover {
     
 
 		for(std::size_t i = 0; i < contours.size(); ++i){
+            std::cout<<"!!!!"<<std::endl;
 			auto const& vec = contours[i];
 			auto& centroid = centroids[i]; // first = row, second = col
 
@@ -108,6 +109,9 @@ namespace mrover {
         decreaseHitCounts();
 
 		publishDetectedObjects(mOutputImage, centroids);
+
+        std::cout<<"image callback end"<<std::endl;
+
 	}
     
 	// auto LightDetector::caching() -> void{
@@ -179,6 +183,8 @@ namespace mrover {
         //if (!imgPub.getNumSubscribers()) return;
 
 		sensor_msgs::msg::Image imgMsg;
+        std::cout<<"entering publishDetectedObjects!"<<std::endl;
+
 
         imgMsg.header.stamp = this->get_clock()->now(); //ros origionally, but changed to this, not sure if it works.
         imgMsg.height = image.rows();
@@ -201,6 +207,8 @@ namespace mrover {
 		}
 
         imgPub->publish(imgMsg);
+        std::cout<<"published detected objects!"<<std::endl;
+
     }
 
     auto LightDetector::spiralSearchForValidPoint(sensor_msgs::msg::PointCloud2::ConstSharedPtr const& cloudPtr, std::size_t u, std::size_t v, std::size_t width, std::size_t height)const -> std::optional<SE3d> {

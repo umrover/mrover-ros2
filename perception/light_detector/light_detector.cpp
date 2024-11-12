@@ -5,7 +5,9 @@
 namespace mrover{
 
 	LightDetector::LightDetector(rclcpp::NodeOptions const& options) : rclcpp::Node(NODE_NAME, options) {
+		std::cout<<"BEFORE";
 		RCLCPP_INFO_STREAM(get_logger(),"Light Detector Initializing");
+		std::cout<<"AFTER";
 
 		int upperBoundH = 0;
 		int upperBoundS = 0;
@@ -35,11 +37,15 @@ namespace mrover{
 		mLowerBound = cv::Vec3d(lowerBoundH, lowerBoundS, lowerBoundV);
 
 		// TODO: fix this next time! check wiki for what the message type should be
-		imgSub = create_subscription<sensor_msgs::msg::PointCloud2>("/camera/left/points", 1, [this](sensor_msgs::msg::PointCloud2::ConstSharedPtr const& msg) {
+		imgSub = create_subscription<sensor_msgs::msg::PointCloud2>("/zed/left/points", 1, [this](sensor_msgs::msg::PointCloud2::ConstSharedPtr const& msg) {
 			LightDetector::imageCallback(msg);
 		});
+		std::cout<<"created img sub!"<<std::endl;
 		imgPub = this->create_publisher<sensor_msgs::msg::Image>("/light_detector/img", 1);
+		std::cout<<"created img pub!"<<std::endl;
 		pointPub = this->create_publisher<geometry_msgs::msg::Vector3>("/light_detector/points", 1);
+		std::cout<<"created point pub!"<<std::endl;
+
 	}
 
 } // mrover
