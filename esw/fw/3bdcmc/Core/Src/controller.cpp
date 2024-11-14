@@ -66,6 +66,7 @@ namespace mrover {
         switch (index) {
             case 0:
                 return {
+                        .id = DEVICE_ID_0,
                         .hbridge_output = PWM_TIMER_0,
                         .hbridge_output_channel = PWM_TIMER_CHANNEL_0,
                         .hbridge_direction = Pin{MOTOR_DIR_0_GPIO_Port, MOTOR_DIR_0_Pin},
@@ -75,6 +76,7 @@ namespace mrover {
                         .absolute_encoder_a2_a1 = A2_A1_0};
             case 1:
                 return {
+                        .id = DEVICE_ID_1,
                         .hbridge_output = PWM_TIMER_1,
                         .hbridge_output_channel = PWM_TIMER_CHANNEL_1,
                         .hbridge_direction = Pin{MOTOR_DIR_1_GPIO_Port, MOTOR_DIR_1_Pin},
@@ -84,6 +86,7 @@ namespace mrover {
                         .absolute_encoder_a2_a1 = A2_A1_1};
             case 2:
                 return {
+                        .id = DEVICE_ID_2,
                         .hbridge_output = PWM_TIMER_2,
                         .hbridge_output_channel = PWM_TIMER_CHANNEL_2,
                         .hbridge_direction = Pin{MOTOR_DIR_2_GPIO_Port, MOTOR_DIR_2_Pin},

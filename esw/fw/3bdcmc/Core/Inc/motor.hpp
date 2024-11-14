@@ -75,6 +75,7 @@ namespace mrover {
         std::optional<StateAfterCalib> m_state_after_calib;
 
         /* ==================== Messaging ==================== */
+        std::uint8_t m_id;
         InBoundMessage m_inbound = IdleCommand{};
         OutBoundMessage m_outbound = ControllerDataState{.config_calib_error_data = {.error = m_error}};
 
@@ -302,16 +303,20 @@ namespace mrover {
     public:
         Motor() = default;
 
-        Motor(HBridge const& motor_driver, IStopwatch* stopwatch, TIM_HandleTypeDef* command_watchdog_timer,
+        Motor(std::uint8_t id, HBridge const& motor_driver, IStopwatch* stopwatch, TIM_HandleTypeDef* command_watchdog_timer,
               std::array<LimitSwitch, 2> const& limit_switches, TIM_HandleTypeDef* relative_encoder_tick_timer,
               std::uint8_t absolute_encoder_a2_a1)
-            : m_motor_driver(motor_driver),
+            : m_id(id),
+              m_motor_driver(motor_driver),
               m_stopwatch(stopwatch),
               m_receive_watchdog_timer(command_watchdog_timer),
               m_limit_switches(limit_switches),
               m_relative_encoder_tick_timer(relative_encoder_tick_timer),
               m_absolute_encoder_a2_a1(absolute_encoder_a2_a1) {}
 
+        [[nodiscard]] auto get_id() const -> std::uint8_t{
+            return m_id;
+        }
 
         template<typename Command>
         auto process_command(Command const& command) -> void {
