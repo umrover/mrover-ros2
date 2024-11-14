@@ -28,11 +28,11 @@ class IK_Testing(Node):
         self.publisher_ = self.create_publisher(PointCloud2, 'point_cloud', 10)
 
 
-    def test_points(self, MAX_X = 1.5, MAX_Y = 0.4, MAX_Z = 1.5, STEP = 0.1):
+    def test_points(self, MAX_X = 1.5, MAX_Y = 0.4, MAX_Z = 1., STEP = 0.1):
 
 
         # Create a 1D array from -1 to 1 with a step of 0.5
-        x_values = np.arange(0., MAX_X + STEP, STEP)
+        x_values = np.arange(0.1, MAX_X + STEP, STEP)
         y_values = np.arange(0., MAX_Y + MAX_Y, MAX_Y)
         z_values = np.arange(-MAX_Z, MAX_Z + STEP, STEP)
 
