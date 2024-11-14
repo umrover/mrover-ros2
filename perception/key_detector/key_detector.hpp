@@ -16,6 +16,7 @@ namespace mrover {
 
 	public:
 		KeyDetector();
+
 		~KeyDetector() override;
 	};
 
