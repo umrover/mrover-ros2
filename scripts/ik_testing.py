@@ -28,12 +28,12 @@ class IK_Testing(Node):
         self.publisher_ = self.create_publisher(PointCloud2, 'point_cloud', 10)
 
 
-    def test_points(self, MAX_X = 1.5, MAX_Y = 0.4, MAX_Z = 1., STEP = 0.1):
+    def test_points(self, MAX_X = 1.5, MAX_Y = 0., MAX_Z = 1., STEP = 0.038):
 
 
         # Create a 1D array from -1 to 1 with a step of 0.5
         x_values = np.arange(0.1, MAX_X + STEP, STEP)
-        y_values = np.arange(0., MAX_Y + MAX_Y, MAX_Y)
+        y_values = np.array([0.])
         z_values = np.arange(-MAX_Z, MAX_Z + STEP, STEP)
 
         X, Y, Z = np.meshgrid(x_values, y_values, z_values)
@@ -97,6 +97,7 @@ class IK_Testing(Node):
         self.pc_data.is_dense = True
 
         self.get_logger().info('Publishing colored point cloud data')
+        self.get_logger().info("Number of points: " + str(len(self.points)))
 
         self.timer = self.create_timer(1.0, self.publishPointCloud)
 
@@ -113,7 +114,7 @@ def main(args = None):
 
 
         ik_tester = IK_Testing()
-        ik_tester.test_points(1.5, 0.4, 1.5, 0.1)
+        ik_tester.test_points()
         ik_tester.makePointCloud()
         rclpy.spin(ik_tester)
 
