@@ -15,6 +15,7 @@
 
 namespace mrover {
     struct MotorConfig {
+        std::uint8_t id{};
         TIM_HandleTypeDef* hbridge_output{};
         std::uint32_t hbridge_output_channel{};
         Pin hbridge_direction{};
@@ -51,6 +52,7 @@ namespace mrover {
             for (std::size_t i = 0; i < MotorCount; ++i) {
                 MotorConfig const& config = motor_configs[i];
                 m_motors[i] = Motor{
+                        config.id,
                         HBridge{config.hbridge_output, config.hbridge_output_channel, config.hbridge_direction},
                         &m_stopwatches,
                         config.receive_watchdog_timer,
@@ -63,6 +65,10 @@ namespace mrover {
 
         auto init() -> void {
             m_stopwatches.init();
+
+            m_fdcan.configure_filter(DEVICE_ID_0);
+            m_fdcan.configure_filter(DEVICE_ID_1);
+            m_fdcan.configure_filter(DEVICE_ID_2);
 
             m_fdcan.start();
         }
@@ -93,7 +99,7 @@ namespace mrover {
          */
         auto send() -> void {
             foreach_motor([this](auto& motor) {
-                if (bool success = m_fdcan.broadcast(motor.get_outbound()); !success) {
+                if (bool success = m_fdcan.broadcast(motor.get_outbound(), motor.get_id(), DESTINATION_DEVICE_ID); !success) {
                     m_fdcan.reset();
                 }
             });

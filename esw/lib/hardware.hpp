@@ -137,11 +137,8 @@ namespace mrover {
 
         FDCAN() = default;
 
-        explicit FDCAN(std::uint8_t source, std::uint8_t destination, FDCAN_HandleTypeDef* fdcan)
-            : m_fdcan{fdcan}, m_source{source}, m_destination{destination} {
-
-            configure_filter();
-        }
+        explicit FDCAN(FDCAN_HandleTypeDef* fdcan)
+            : m_fdcan{fdcan} { }
 
         auto start() -> void {
             check(HAL_FDCAN_ActivateNotification(m_fdcan, FDCAN_IT_RX_FIFO0_NEW_MESSAGE, 0) == HAL_OK, Error_Handler);
@@ -152,14 +149,16 @@ namespace mrover {
          * By default CAN is a broadcast protocol, meaning that all devices on the bus receive all messages.
          * We have limited queue space, so we want to filter out messages that are not intended for us.
          */
-        auto configure_filter() const -> void {
-            std::bitset<8> filter{m_source};
+        auto configure_filter(std::uint8_t source) const -> void {
+            static std::uint8_t filter_index = 0;
+
+            std::bitset<8> filter{source};
             std::bitset<8> mask; // Check lowest 8 bits to see if destination of message is our source
             mask.set();
 
             FDCAN_FilterTypeDef filter_config{
                     .IdType = FDCAN_EXTENDED_ID,
-                    .FilterIndex = 0,
+                    .FilterIndex = filter_index++,
                     .FilterType = FDCAN_FILTER_MASK, // Classic filter: FilterID1 = filter, FilterID2 = mask
                     .FilterConfig = FDCAN_FILTER_TO_RXFIFO0,
                     .FilterID1 = filter.to_ulong(), // Ensure that bits that survive the mask match the filter
@@ -213,10 +212,10 @@ namespace mrover {
             return {};
         }
 
-        auto broadcast(IsFdcanSerializable auto const& send) -> bool {
+        auto broadcast(IsFdcanSerializable auto const& send, std::uint8_t const source, std::uint8_t const destination) -> bool {
             MessageId messageId{
-                    .destination = m_destination,
-                    .source = m_source,
+                    .destination = destination,
+                    .source = source,
             };
             FDCAN_TxHeaderTypeDef header{
                     .Identifier = std::bit_cast<std::uint32_t>(messageId),
@@ -251,7 +250,6 @@ namespace mrover {
 
     private:
         FDCAN_HandleTypeDef* m_fdcan{};
-        std::uint8_t m_source{}, m_destination{};
     };
 
 
