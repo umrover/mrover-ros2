@@ -212,6 +212,7 @@ ament_target_dependencies(lie rclcpp geometry_msgs tf2 tf2_ros)
 mrover_add_header_only_library(units units)
 mrover_add_header_only_library(loop_profiler loop_profiler)
 mrover_add_header_only_library(parameter_utils parameter_utils)
+mrover_add_header_only_library(state_machine state_machine)
 
 # Simulator
 
@@ -264,6 +265,11 @@ if(ZED_FOUND AND CUDA_FOUND)
 	mrover_add_node(object_detector perception/object_detector/*.c* src/perception/object_detector/pch.hpp)
     target_link_libraries(object_detector opencv_core opencv_dnn opencv_imgproc lie tbb tensorrt opencv_imgcodecs opencv_highgui loop_profiler parameter_utils cuda_compiler_flags)
 	ament_target_dependencies(object_detector rclcpp sensor_msgs CUDA tf2 tf2_ros)
+
+	# Key Detector
+	mrover_add_node(key_detector perception/key_detector/*.c* src/perception/key_detector/pch.hpp)
+	target_link_libraries(key_detector loop_profiler parameter_utils state_machine)
+	ament_target_dependencies(key_detector rclcpp sensor_msgs tf2 tf2_ros)
 else()
 	message("ZED not found...")
 endif()
