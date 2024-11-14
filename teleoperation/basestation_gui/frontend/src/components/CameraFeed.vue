@@ -247,6 +247,7 @@ export default defineComponent({
 canvas {
   width: 640px;
   height: 480px;
+  background-color: black;
 }
 </style>
 

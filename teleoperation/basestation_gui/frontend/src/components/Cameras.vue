@@ -1,104 +1,52 @@
 <template>
-<img class='logo' src='/mrover.png' alt='MRover' title='MRover' width='200' />
- <div v-for="(mission, index) in missionType" :key="index" :class="'feed' + index">
-    <div class="form-check">
-      <input
-        v-model="selectedMission"
-        class="form-check-input"
-        type="radio"
-        :id="'mission' + index"
-        :value="mission"
-      />
-      <label class="form-check-label" :for="'mission' + index">{{ mission }}</label>
+  <div class="shadow p-3 mb-5 header">
+    <h1>Cameras Dashboard</h1>
+    <img class='logo' src='/mrover.png' alt='MRover' title='MRover' width='200' />
+  </div>
+  <div class="row">
+    <div v-for="(mission, index) in missionType" :key="index" class="col-sm feed">
+      <div class="form-check d-flex justify-content-center align-items-center">
+        <input
+          v-model="selectedMission"
+          class="form-check-input"
+          type="radio"
+          :id="'mission' + index"
+          :value="mission"
+        />
+        <label class="form-check-label" :for="'mission' + index">{{ mission }}</label>
+      </div>
     </div>
   </div>
-
-
-  <!-- <div class="wrap row">
-    <div class="col">
-      <div class="row justify-content-md-left">
-        <div class="form-group col-md-4">
-          <label for="Camera Name">Camera name</label>
-          <input
-            v-model="cameraName"
-            type="text"
-            class="form-control"
-            id="CameraName"
-            placeholder="Enter Camera Name"
-          />
-          <small id="cameraDescrip" class="form-text text-muted"></small>
-        </div>
-        <div class="form-group col-md-4">
-          <label for="Camera ID">Camera ID</label>
-          <input
-            v-model="cameraIdx"
-            type="number"
-            min="0"
-            max="8"
-            class="form-control"
-            id="CameraIdx"
-            placeholder="Camera ID"
-          />
-        </div>
-        <button class="btn btn-primary custom-btn" @click="addCameraName()">Change Name</button>
-      </div>
-      <div class="cameraselection">
-        <CameraSelection
-          :cams-enabled="camsEnabled"
-          :names="names"
-          :capacity="capacity"
-          @cam_index="setCamIndex($event)"
-        />
-      </div>
-    </div>
-    <div class="col">
-      <div class="row text-center align-items-center">
-        <div class="col">
-          <h3>All Cameras</h3>
-        </div>
-          <div class="col" v-if="mission === 'ish'">
-            <button class="btn btn-primary" @click="takePanorama()">
-              Take Panorama
-            </button>
-          </div>
-          <div class="col" v-if="mission === 'ish'">
-            <p class="my-auto percent">{{ (percent*100).toFixed(2) }}%</p>
-          </div>
-      </div>
-    </div> -->
-
-    <CameraDisplay :streamOrder="streamOrder" :mission="mission" :names="names" />
+<div v-for = "cam in cameras[selectedMission]" :key="cam">
+  <!-- TODO: figure out ID -->
+  <CameraFeed :mission="selectedMission" :id="0" :name="cam"></CameraFeed>
+</div>
 </template>
 
 <script lang="ts">
 import CameraSelection from '../components/CameraSelection.vue'
-import CameraDisplay from './CameraDisplay.vue'
+import CameraFeed from './CameraFeed.vue'
 import { mapActions, mapState } from 'vuex'
 import { reactive } from 'vue'
 
 export default {
   components: {
     CameraSelection,
-    CameraDisplay
+    CameraFeed
   },
 
-  props: {
-    mission: {
-      type: String, // {'ish', 'ik', 'sa', 'auton'}
-      required: true
-    }
-  },
   data() {
     return {
-      camsEnabled: reactive(new Array(9).fill(false)),
-      names: reactive(Array.from({ length: 9 }, (_, i) => 'Camera: ' + i)),
-      cameraIdx: 0,
-      cameraName: '',
-      capacity: 9,
-      streamOrder: [-1, -1, -1, -1, -1, -1, -1, -1, -1],
       percent: 0,
       missionType: ["DM Mission", "ES Mission", "ISH GUI", "Sample Acquisition GUI", "Autonomy Mission"],
-      selectedMission: ""
+      selectedMission: "",
+      cameras: {
+        "DM Mission": ["Cam1" ,"Cam2"],
+        "ES Mission": ["Cam3" ,"Cam4","Cam5"],
+        "ISH GUI": ["Cam6" ,"Cam7"],
+        "Sample Acquisition GUI": ["Cam8" ,"Cam9"],
+        "Autonomy Mission": ["Cam10" ,"Cam11"]
+      }
     }
   },
 
