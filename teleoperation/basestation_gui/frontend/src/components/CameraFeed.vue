@@ -238,15 +238,15 @@ export default defineComponent({
 </script>
 <style>
 .wrap {
-  width: fit-content;
+  width: 100%;
   display: flex;
   flex-direction: column;
   gap: 5px;
 }
 
 canvas {
-  width: 640px;
-  height: 480px;
+  /* width: 640px;
+  height: 480px; */
   background-color: black;
 }
 </style>

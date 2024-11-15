@@ -17,10 +17,24 @@
       </div>
     </div>
   </div>
-<div v-for = "cam in cameras[selectedMission]" :key="cam">
-  <!-- TODO: figure out ID -->
-  <CameraFeed :mission="selectedMission" :id="0" :name="cam"></CameraFeed>
-</div>
+  <div class="container-fluid">
+    <div class="row gx-3 gy-3">
+      <div
+        class="col-sm-4"
+        v-for="cam in cameras[selectedMission]"
+        :key="cam"
+      >
+        <div class="camera-feed-container">
+          <CameraFeed
+            :mission="selectedMission"
+            :id="0"
+            :name="cam"
+            :class="cam"
+          ></CameraFeed>
+        </div>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script lang="ts">
@@ -117,5 +131,11 @@ export default {
 
 .percent {
   font-size: large;
+}
+
+.camera-feed-container {
+  padding: 10px; /* Adjust padding to add space inside each camera feed container */
+  border: 1px solid #ddd; /* Optional: Add a border to visually separate the feeds */
+  background-color: #fff; 
 }
 </style>
