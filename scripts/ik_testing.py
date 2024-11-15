@@ -28,7 +28,7 @@ class IK_Testing(Node):
         self.publisher_ = self.create_publisher(PointCloud2, 'point_cloud', 10)
 
 
-    def test_points(self, MAX_X = 1.5, MAX_Y = 0., MAX_Z = 1., STEP = 0.038):
+    def test_points(self, MAX_X = 1.5, MAX_Y = 0., MAX_Z = 1., STEP = 0.1):
 
 
         # Create a 1D array from -1 to 1 with a step of 0.5

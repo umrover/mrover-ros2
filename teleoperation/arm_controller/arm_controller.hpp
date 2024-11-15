@@ -28,12 +28,12 @@ namespace mrover {
         static constexpr double LINK_DE = 0.044886000454425812;
         static constexpr double JOINT_A_MIN = 0;
         static constexpr double JOINT_A_MAX = 0.45;
-        static constexpr double JOINT_B_MIN = -0.25 * std::numbers::pi;
+        static constexpr double JOINT_B_MIN = -1. * std::numbers::pi/3.;
         static constexpr double JOINT_B_MAX = 0;
         static constexpr double JOINT_C_MIN = -0.959931;
         static constexpr double JOINT_C_MAX = 2.87979;
-        static constexpr double JOINT_DE_PITCH_MIN = -0.75 * std::numbers::pi;
-        static constexpr double JOINT_DE_PITCH_MAX = 0.75 * std::numbers::pi;
+        static constexpr double JOINT_DE_PITCH_MIN = -0.71;
+        static constexpr double JOINT_DE_PITCH_MAX = 0.97;
         static constexpr double END_EFFECTOR_LENGTH = 0.13; // Measured from blender
 
         ArmController();
