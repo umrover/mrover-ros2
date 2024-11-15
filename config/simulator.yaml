@@ -59,7 +59,7 @@ simulator:
       rock7:
           type: urdf
           uri: package://mrover/urdf/world/small_rock.urdf.xacro
-          position: [ 5.0, 8.0, 0.35 ]
+          position: [ 8.0, 8.0, 0.35 ]
       rock8:
           type: urdf
           uri: package://mrover/urdf/world/small_rock.urdf.xacro

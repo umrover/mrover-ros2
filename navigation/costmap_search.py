@@ -169,7 +169,7 @@ class CostmapSearchState(State):
                     context.rover.send_drive_command(cmd_vel)
             else:
                 self.prev_target_pos_in_map = target_position_in_map
-                # If we finish the spiral without seeing the tag, move on with course
+                
                 if self.trajectory.increment_point():
                     return waypoint.WaypointState()
                 

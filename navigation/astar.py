@@ -4,6 +4,7 @@ from threading import Lock
 import numpy as np
 from navigation.trajectory import Trajectory
 from geometry_msgs.msg import Pose, PoseStamped, Point, Quaternion, Twist
+from navigation import waypoint
 from rclpy.publisher import Publisher
 from nav_msgs.msg import Path
 from std_msgs.msg import Header
@@ -189,13 +190,13 @@ class AStar:
         rover_position_in_map = context.rover.get_pose_in_map().translation()[0:2]
 
         # Move the costmap if we are outside of the threshold for it
-        # costmap_length = self.context.env.cost_map.data.shape[0]
-        # thresh = (costmap_length * self.COSTMAP_THRESH, costmap_length * (1 - self.COSTMAP_THRESH))
-        # rover_ij = self.cartesian_to_ij(rover_position_in_map)
+        costmap_length = self.context.env.cost_map.data.shape[0]
+        thresh = (costmap_length * self.COSTMAP_THRESH, costmap_length * (1 - self.COSTMAP_THRESH))
+        rover_ij = self.cartesian_to_ij(rover_position_in_map)
 
-        # if rover_ij[0] < thresh[0] or rover_ij[0] > thresh[1] \
-        #     or rover_ij[1] < thresh[0] or rover_ij[1] > thresh[1]:
-        #     context.move_costmap()
+        if rover_ij[0] < thresh[0] or rover_ij[0] > thresh[1] \
+            or rover_ij[1] < thresh[0] or rover_ij[1] > thresh[1]:
+            context.move_costmap()
 
         # If path to next spiral point has minimal cost per cell, continue normally to next spiral point
         trajectory = Trajectory(np.array([]))
@@ -211,10 +212,9 @@ class AStar:
 
         except NoPath:
             # increment end point
-            if trajectory.increment_point():
-                # TODO: what to do in this case
-                trajectory.reset()
-            occupancy_list = None
+            context.node.get_logger().info("No path found")
+            trajectory.reset()
+            return trajectory
 
         if occupancy_list is None:
             # If no path was found, reset the trajectory

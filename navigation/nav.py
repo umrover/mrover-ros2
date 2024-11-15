@@ -33,6 +33,8 @@ class Navigation(Node):
 
         self.ctx = ctx
 
+        
+
         self.declare_parameters(
             "",
             [
