@@ -1,4 +1,6 @@
 #include "cost_map.hpp"
+#include <cstddef>
+#include <nav_msgs/msg/detail/occupancy_grid__struct.hpp>
 
 namespace mrover {
 
@@ -75,43 +77,86 @@ namespace mrover {
             }
 
             
+            constexpr double MAX_COST_RADIUS = 1.5; 
+            constexpr double INFLATION_RADIUS = 3; 
 
             nav_msgs::msg::OccupancyGrid postProcessed = mGlobalGridMsg;
             std::ptrdiff_t width = postProcessed.info.width;
+            std::ptrdiff_t height = postProcessed.info.height;
+            double resolution = postProcessed.info.resolution;
 
-            std::array<std::ptrdiff_t, 11> dis
-                                        {0, 
-                                        -1, 
-                                        +1, 
-                                        -width, 
-                                        -1 -width, 
-                                        +1 -width, 
-                                        +width, 
-                                        -1 +width, 
-                                        +1 +width};
+            int maxInflationCells = static_cast<int>(INFLATION_RADIUS / resolution);
 
-            for (std::ptrdiff_t &di : dis) {
-                mGlobalGridMsg.data[mapToGrid(cameraToMap.translation(), mGlobalGridMsg)+di] = FREE_COST;
-            }
+            // Inflate cost map
+            auto temp = postProcessed;
+            for (std::size_t i = 0; i < postProcessed.data.size(); ++i) {
+                if (temp.data[i] > FREE_COST) {
+                    int centerX = i % width;
+                    int centerY = i / width;
 
-            // TODO: Find optimal value of di_n
-            for(std::size_t di_n = 0; di_n < 3; di_n++) {
-                auto temp = postProcessed;
-                for (std::size_t i = 0; i < postProcessed.data.size(); ++i) {
-                    // If the current cell has any cost, then give it and all its neighbors high cost
-                    std::size_t j;
-                    if (temp.data[i] > FREE_COST) {
-                        for (std::ptrdiff_t &di : dis) {
-                            j = i + di;
-                            if ((j / width >= 0 && j / width < std::size_t(postProcessed.info.height)) &&
-                                (j % width >= 0 && j % width < std::size_t(width))) {
-                                    postProcessed.data[j] = OCCUPIED_COST;
+                    for (int dx = -maxInflationCells; dx <= maxInflationCells; ++dx) {
+                        for (int dy = -maxInflationCells; dy <= maxInflationCells; ++dy) {
+                            if (centerX + dx < 0 || centerX + dx >= width || centerY + dy < 0 || centerY + dy >= height) {
+                                continue;
+                            }
+
+                            double distance = std::sqrt(dx * dx + dy * dy);
+
+                            if (distance <= INFLATION_RADIUS) {
+                                std::ptrdiff_t neighborIndex = (centerY + dy) * width + (centerX + dx);
+
+                                if (distance <= MAX_COST_RADIUS) {
+                                    postProcessed.data[neighborIndex] = OCCUPIED_COST;
                                 }
+                                else {
+                                    double factor = (INFLATION_RADIUS - distance) / (INFLATION_RADIUS - MAX_COST_RADIUS);
+                                    postProcessed.data[neighborIndex] = std::max(postProcessed.data[neighborIndex], 
+                                    static_cast<std::int8_t>(factor * OCCUPIED_COST));
+                                }
+                            }
                         }
                     }
                 }
             }
+
             mCostMapPub->publish(postProcessed);
+
+            // nav_msgs::msg::OccupancyGrid postProcessed = mGlobalGridMsg;
+            // std::ptrdiff_t width = postProcessed.info.width;
+
+            // std::array<std::ptrdiff_t, 11> dis
+            //                             {0, 
+            //                             -1, 
+            //                             +1, 
+            //                             -width, 
+            //                             -1 -width, 
+            //                             +1 -width, 
+            //                             +width, 
+            //                             -1 +width, 
+            //                             +1 +width};
+
+            // for (std::ptrdiff_t &di : dis) {
+            //     mGlobalGridMsg.data[mapToGrid(cameraToMap.translation(), mGlobalGridMsg)+di] = FREE_COST;
+            // }
+
+            // // TODO: Find optimal value of di_n
+            // for(std::size_t di_n = 0; di_n < 3; di_n++) {
+            //     auto temp = postProcessed;
+            //     for (std::size_t i = 0; i < postProcessed.data.size(); ++i) {
+            //         // If the current cell has any cost, then give it and all its neighbors high cost
+            //         std::size_t j;
+            //         if (temp.data[i] > FREE_COST) {
+            //             for (std::ptrdiff_t &di : dis) {
+            //                 j = i + di;
+            //                 if ((j / width >= 0 && j / width < std::size_t(postProcessed.info.height)) &&
+            //                     (j % width >= 0 && j % width < std::size_t(width))) {
+            //                         postProcessed.data[j] = OCCUPIED_COST;
+            //                     }
+            //             }
+            //         }
+            //     }
+            // }
+            // mCostMapPub->publish(postProcessed);
         } catch (tf2::TransformException const& e) {
             RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, std::format("TF tree error processing point cloud: {}", e.what()));
         }
