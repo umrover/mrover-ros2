@@ -9,20 +9,24 @@ import rclpy
 import tf2_ros
 from rclpy.node import Node
 from mrover.srv import MoveCostMap
-from lie.conversions import SE3, from_position_orientation
+from lie.conversions import SE3, from_position_orientation, from_tf_tree
 
 class MoveCostMapNode(Node):
-    def __init__(self, course_x, course_y) -> None:
+    def __init__(self) -> None:
         super().__init__("move_cost_map_node")
 
         self.tf_broadcaster = tf2_ros.TransformBroadcaster(self)
+        self.tf_buffer = tf2_ros.Buffer()
+        tf2_ros.TransformListener(self.tf_buffer, self)
+        position = from_tf_tree(self.tf_buffer, 'base_link', 'map')
 
         self.move_cost_map_srv = self.create_client(MoveCostMap, 'move_cost_map')
 
         while not self.move_cost_map_srv.wait_for_service(timeout_sec=1.0):
             self.get_logger().info('service not available, waiting again...')
 
-        course_in_map = from_position_orientation(course_x, course_y)
+        tx, ty, tz = position.translation()
+        course_in_map = from_position_orientation(tx, ty)
 
         SE3.to_tf_tree(self.tf_broadcaster, course_in_map, "debug_course", "map")
 
@@ -39,13 +43,9 @@ class MoveCostMapNode(Node):
 
 
 def main() -> None:
-
-    COURSE_X = -53
-    COURSE_Y = 17
-
     try:
         rclpy.init(args=sys.argv)
-        rclpy.spin(MoveCostMapNode(COURSE_X, COURSE_Y))
+        rclpy.spin(MoveCostMapNode())
         rclpy.shutdown()
     except KeyboardInterrupt:
         pass

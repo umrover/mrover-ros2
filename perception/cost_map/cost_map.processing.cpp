@@ -51,6 +51,7 @@ namespace mrover {
                 R3f pointInCamera;
                 R3f pointInMap;
                 R3f normal;
+                double height;
             };
 
             using Bin = std::vector<BinEntry>;
@@ -86,7 +87,7 @@ namespace mrover {
                     int index = mapToGrid(pointInMap, mGlobalGridMsg);
                     if (index < 0 || index >= static_cast<int>(mGlobalGridMsg.data.size())) continue;
 
-                    bins[index].emplace_back(BinEntry{pointInCamera, pointInMap, normal});
+                    bins[index].emplace_back(BinEntry{pointInCamera, pointInMap, normal, pointInMap.z() - roverSE3.z()});
                 }
             }
 			
@@ -98,30 +99,33 @@ namespace mrover {
             for (std::size_t i = 0; i < mGlobalGridMsg.data.size(); ++i) {
 				Bin& bin = bins[i];
                 if (bin.size() < 16){
-                    mGlobalGridMsg.data[i] = UNKNOWN_COST;
+                    // mGlobalGridMsg.data[i] = UNKNOWN_COST;
                 }
 
                 // USING ABSOLUTE HEIGHT DIFFERENCE BETWEEN POINT AND ROVER HEIGHT
-                std::size_t pointsHigh = std::ranges::count_if(bin, [this, &roverSE3](BinEntry const& entry) {
-                    return (entry.pointInMap.z() - roverSE3.z()) > mZThreshold;
-                });
-                double percent = static_cast<double>(pointsHigh) / static_cast<double>(bin.size());
+                // std::size_t pointsHigh = std::ranges::count_if(bin, [this, &roverSE3](BinEntry const& entry) {
+                //     return (entry.height) > mZThreshold;
+                // });
+                // double percent = static_cast<double>(pointsHigh) / static_cast<double>(bin.size());
 
                 // std::int8_t cost = percent > mZPercent ? OCCUPIED_COST : FREE_COST;
 
-                // IMPLEMENT "AVERAGE" OF NORMALS IN BIN COMBINED WITH PROJECTION
-                R3f avgNormal{};
-                for(auto& point : bin){
-                    avgNormal += point.normal;
+                // // IMPLEMENT "AVERAGE" OF NORMALS IN BIN COMBINED WITH PROJECTION
+                if (bin.size() >= 16){
+                    // RCLCPP_INFO_STREAM(get_logger(), "WHOOOOOOOOOO");
+                    R3f avgNormal{};
+                    for(auto& point : bin){
+                        avgNormal += point.normal;
+                    }
+
+                    avgNormal.normalize();
+                    RCLCPP_INFO_STREAM(get_logger(), std::format("Normal Z {}", avgNormal.z()));
+                    std::int8_t cost = avgNormal.z() < mZThreshold ? OCCUPIED_COST : FREE_COST;
+
+                    // Update cell with EWMA acting as a low-pass filter
+                    auto& cell = mGlobalGridMsg.data[i];
+                    cell = static_cast<std::int8_t>(mAlpha * cost + (1 - mAlpha) * cell);
                 }
-
-                avgNormal.normalize();
-                RCLCPP_INFO_STREAM(get_logger(), std::format("Normal Z {}", avgNormal.z()));
-                std::int8_t cost = avgNormal.z() < mZThreshold ? OCCUPIED_COST : FREE_COST;
-
-                // Update cell with EWMA acting as a low-pass filter
-                auto& cell = mGlobalGridMsg.data[i];
-                cell = static_cast<std::int8_t>(mAlpha * cost + (1 - mAlpha) * cell);
             }
 
 
