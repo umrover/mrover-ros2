@@ -10,7 +10,7 @@ status = heading_status["fix_status"]
 
 
 plt.figure(figsize=(8, 6))
-plt.scatter(sec,heading_deg,c=status,cmap=plt.cm.Accent,s=10)
+plt.scatter(sec,heading_deg,s=10)
 plt.xlabel("time (s)")
 plt.ylabel("heading (deg)")
 plt.title("Stationary heading test (fixed, No RTK, untethered)")
