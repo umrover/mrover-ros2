@@ -37,7 +37,6 @@
 
   <div class="container-fluid">
     <div class="row gx-3 gy-3 justify-content-center">
-      <div v-if="cameraSwitch[camera[selectedMission][0]]">
       <div v-if="cameras[selectedMission].length == 1">
         <div class="camera-feed-container col-12">
           <CameraFeed
@@ -50,14 +49,12 @@
         </div>
 
       </div>
-      </div>
       <div
         v-else
         class="col-12 col-md-6"
         v-for="cam in cameras[selectedMission]"
         :key="cam"
       >
-      <div v-if="cameraSwitch[cam]">
         <div class="camera-feed-container ">
           <CameraFeed
             :mission="selectedMission"
@@ -67,7 +64,6 @@
             
           ></CameraFeed>
         </div>
-      </div>
       </div>
     </div>
   </div> 
