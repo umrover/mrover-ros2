@@ -1,6 +1,6 @@
 <template>
   <div class="wrap">
-    <canvas :id="'stream-' + id" v-on:click="handleClick"></canvas>
+    <canvas :id="'' + id" v-on:click="handleClick"></canvas>
     <div v-if="mission != 'ZED'">
       <p>{{ name }} • ID: {{ id }}</p>
       <Checkbox v-if="mission === 'ik'" :name="'IK Camera'" v-on:toggle="toggleIKMode" />

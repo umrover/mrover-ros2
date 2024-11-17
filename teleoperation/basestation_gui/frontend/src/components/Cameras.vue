@@ -1,8 +1,10 @@
 <template>
+
   <div class="shadow p-3 mb-5 header">
     <h1>Cameras Dashboard</h1>
-    <img class='logo' src='/mrover.png' alt='MRover' title='MRover' width='200' />
+    <a class='logo' href = "/"><img src='/mrover.png' alt='MRover' title='MRover' width='200' /></a>
   </div>
+
   <div class="row">
     <div v-for="(mission, index) in missionType" :key="index" class="col-sm feed">
       <div class="form-check d-flex justify-content-center align-items-center">
@@ -17,24 +19,58 @@
       </div>
     </div>
   </div>
-  <div class="container-fluid">
-    <div class="row gx-3 gy-3">
-      <div
-        class="col-sm-4"
-        v-for="cam in cameras[selectedMission]"
-        :key="cam"
-      >
-        <div class="camera-feed-container">
-          <CameraFeed
-            :mission="selectedMission"
-            :id="0"
-            :name="cam"
-            :class="cam"
-          ></CameraFeed>
-        </div>
+
+  <div class="row">
+  <div v-for="(camera, index) in cameras[selectedMission]" :key="index" class="col-sm feed">
+    <div class="form-check d-flex justify-content-center align-items-center">
+      <input
+        v-model="cameraSwitch['cam' + index]"
+        class="form-check-input"
+        type="radio"
+        :id="'cam' + index"
+        :value="true"
+       />
+        <label class="form-check-label" :for="'cam' + index">{{ camera }}</label>
       </div>
     </div>
   </div>
+
+  <div class="container-fluid">
+    <div class="row gx-3 gy-3 justify-content-center">
+      <div v-if="cameraSwitch[camera[selectedMission][0]]">
+      <div v-if="cameras[selectedMission].length == 1">
+        <div class="camera-feed-container col-12">
+          <CameraFeed
+            :mission="selectedMission"
+            :id="cameras[selectedMission][0]"
+            :name="cameras[selectedMission][0]"
+            :class="cameras[selectedMission][0]"
+            
+          ></CameraFeed>
+        </div>
+
+      </div>
+      </div>
+      <div
+        v-else
+        class="col-12 col-md-6"
+        v-for="cam in cameras[selectedMission]"
+        :key="cam"
+      >
+      <div v-if="cameraSwitch[cam]">
+        <div class="camera-feed-container ">
+          <CameraFeed
+            :mission="selectedMission"
+            :id="cam"
+            :name="cam"
+            :class="cam"
+            
+          ></CameraFeed>
+        </div>
+      </div>
+      </div>
+    </div>
+  </div> 
 </template>
 
 <script lang="ts">
@@ -57,9 +93,21 @@ export default {
       cameras: {
         "DM Mission": ["Cam1" ,"Cam2"],
         "ES Mission": ["Cam3" ,"Cam4","Cam5"],
-        "ISH GUI": ["Cam6" ,"Cam7"],
-        "Sample Acquisition GUI": ["Cam8" ,"Cam9"],
-        "Autonomy Mission": ["Cam10" ,"Cam11"]
+        "ISH GUI": ["Cam2" ,"Cam3", "Cam6", "Cam7",],
+        "Sample Acquisition GUI": ["Cam8"],
+        "Autonomy Mission": ["Cam9" ,"Cam1"]
+      },
+      cameraSwitch: { // determines whether camera is on or off <.>
+        "Cam1": true,
+        "Cam2": true,
+        "Cam3": true,
+        "Cam4": true,
+        "Cam5": true,
+        "Cam6": true,
+        "Cam7": true,
+        "Cam8": true,
+        "Cam9": true,
+
       }
     }
   },
@@ -134,8 +182,9 @@ export default {
 }
 
 .camera-feed-container {
-  padding: 10px; /* Adjust padding to add space inside each camera feed container */
-  border: 1px solid #ddd; /* Optional: Add a border to visually separate the feeds */
-  background-color: #fff; 
+  background-color: #fff;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 </style>
