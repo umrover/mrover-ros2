@@ -79,7 +79,11 @@ namespace mrover {
             // ImGui::SliderFloat("Float", &mFloat, 0.0f, 1000.0f);
 
             ImGui::Checkbox("Publish IK", &mPublishIk);
-            if (mPublishIk) ImGui::SliderFloat3("IK Target", mIkTarget.data(), -1.f, 1.f);
+            if (mPublishIk) {
+                ImGui::SliderFloat("IK Target X", &mIkTarget.x(), 0.f, 1.5);
+                ImGui::SliderFloat("IK Target Y", &mIkTarget.y(), 0.f, 0.45);
+                ImGui::SliderFloat("IK Target Z", &mIkTarget.z(), -1.f, 1.f);
+            }
 
             ImGui::InputDouble("Publish Hammer Distance Threshold", &mPublishHammerDistanceThreshold);
             ImGui::InputDouble("Publish Bottle Distance Threshold", &mPublishBottleDistanceThreshold);
