@@ -10,6 +10,7 @@
 
 class StateMachine{
 private:
+	std::string mName;
 	State* currState;
 	std::unordered_map<std::size_t, std::vector<std::size_t>> validTransitions;
 
@@ -25,9 +26,13 @@ private:
 	}
 
 public:
-	explicit StateMachine(State* initialState) : currState{initialState}{};
+	explicit StateMachine(std::string name, State* initialState) : mName{std::move(name)}, currState{initialState}{};
 	~StateMachine(){
 		delete currState;
+	}
+
+	auto getName() const -> std::string const& {
+		return mName;
 	}
 
 	template<StateLike From, StateLike ...To>
