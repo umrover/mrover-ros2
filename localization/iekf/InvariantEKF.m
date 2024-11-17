@@ -47,7 +47,7 @@ classdef InvariantEKF < handle
                     0 0 0 0 0];
         end
 
-        % w is 3x1 matrix of angular velocities
+        % w is 3x1 matrix of angular velocities (rad/s)
         function gyro_predict(obj, w, dt)
 
             w_skew = [0 -w(3) w(2); w(3) 0 -w(1); -w(2) w(1) 0];
@@ -57,7 +57,7 @@ classdef InvariantEKF < handle
 
             % propogate
             obj.X(1:3,1:3) = obj.X(1:3,1:3) * expm(w_skew * dt);
-            obj.P = expm(obj.A * dt) * obj.P * (expm(obj.A * dt))' + Ad_X * obj.Q * Ad_X';
+            obj.P = expm(obj.A * dt) * obj.P * (expm(obj.A * dt))' + Ad_X * obj.Q * Ad_X'; % TODO: Q here is wrong, take another look at this
 
         end
 
@@ -69,9 +69,9 @@ classdef InvariantEKF < handle
 
             % propogate
             temp = obj.X;
-            temp(1:3,4) = obj.X(1:3,4) + obj.X(1:3,1:3) * a * dt - g * dt;
-            temp(1:3,5) = obj.X(1:3,5) + obj.X(1:3,4) * dt + 0.5 * obj.X(1:3,1:3) * a * dt.^2 - 0.5 * g * dt.^2;
-            obj.P = expm(obj.A * dt) * obj.P * (expm(obj.A * dt))' + Ad_X * obj.Q * Ad_X';
+            temp(1:3,4) = obj.X(1:3,4) + obj.X(1:3,1:3) * a * dt - g * dt; % velocity
+            temp(1:3,5) = obj.X(1:3,5) + obj.X(1:3,4) * dt + 0.5 * obj.X(1:3,1:3) * a * dt.^2 - 0.5 * g * dt.^2; % position
+            obj.P = expm(obj.A * dt) * obj.P * (expm(obj.A * dt))' + Ad_X * obj.Q * Ad_X'; % TODO: Q here is wrong, take another look at this
             obj.X = temp;
 
         end
@@ -98,16 +98,67 @@ classdef InvariantEKF < handle
             % correction
             obj.X = expm(delta) * obj.X;
             obj.P = (eye(9) - L * H) * obj.P * (eye(9) - L * H)' + L * N * L';
-            disp(obj.P);
+            %disp(obj.P);
         end
         
         % TODO
-        function mag_update()
 
+        % m is mag heading measurement in radians
+        function mag_update(obj, m)
+            disp(rotm2eul(obj.X(1:3,1:3)));
+            % measurement representation of m
+            eulerZYX = rotm2eul(obj.X(1:3,1:3));
+            pitch = eulerZYX(2);
+            roll = eulerZYX(3);
+
+            M = eul2rotm([m, pitch, roll]);
+
+            %H = 
+
+            Y = [[M'; zeros(2,3)], [zeros(3,1); 1; 0], [zeros(3,1); 0; 1]];
+            b = [[zeros(5,3)], [obj.X(1:3,4);1;0], [obj.X(1:3,5);0;1]];
+            innov = obj.X * Y - b;
+            
+            disp(innov);
+            disp(rotm2eul(innov(1:3,1:3)));
+
+
+
+            %disp(rotm2eul(obj.X(1:3,1:3)));
+            % H = [R zeros(3) zeros(3)];
+            % 
+            % % take the inverse
+            % R = R';
+            % Y = [R zeros(3,1) zeros(3,1); 0 0 0 1 0; 0 0 0 0 1];
+            % b = [zeros(5,3) [obj.X(1:3,4); 1; 0] [obj.X(1:3,5); 0; 1]];
+            % innov = obj.X * Y - b;
+            % 
+            % disp(innov);
+            % 
+            % disp(rotm2eul(innov(1:3,1:3)));
+
+            % delta should be [0 0 some change]
+
+            
+            
+           
+            
+
+            % 
+            % [x,y] = pol2cart(m, 1);
+            % m = [x;y;0];
+            %disp(m);
+            % disp(obj.X(1:3,1:3));
+            % disp(obj.X(1:3,1:3) \ R);
+            % disp(obj.X(1:3,1:3) * m);
+
+            
+            % get m in robot frame
+            
         end
 
         function rtk_heading_update()
-
+        
         end
 
         function accel_update()
