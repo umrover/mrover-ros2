@@ -35,7 +35,8 @@ class GUIConsumer(JsonWebsocketConsumer):
     def connect(self) -> None:
         self.accept()
         self.thr_pub = node.create_publisher(Throttle, "arm_throttle_cmd",1)
-        self.pos_pub = node.create_publisher(Position, "arm_position_cmd",1)
+        self.ee_pos_pub = node.create_publisher(Position, "ee_pos_cmd",1)
+        self.ee_vel_pub = node.create_publisher(Position, "ee_vel_cmd",1) #changed
 
     def forward_ros_topic(self, topic_name: str, topic_type: Type, gui_msg_type: str) -> None:
         """
@@ -101,7 +102,7 @@ class GUIConsumer(JsonWebsocketConsumer):
                     "buttons": buttons,
                 }:
                     device_input = DeviceInputs(axes, buttons)
-                    send_ra_controls(cur_mode,device_input,node, self.thr_pub, self.pos_pub)
+                    send_ra_controls(cur_mode,device_input,node, self.thr_pub, self.ee_pos_pub, self.ee_vel_pub)
                 #change input mode
                 case{
                     "type":"ra_mode",

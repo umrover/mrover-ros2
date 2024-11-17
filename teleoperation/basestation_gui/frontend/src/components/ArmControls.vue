@@ -17,10 +17,12 @@
       </div> -->
         <input v-model='mode' type="radio" class="btn-check" name="options-outlined" id="disabled" value='disabled' autocomplete="off" checked>
         <label class="btn btn-outline-danger" for="disabled">Disabled</label>
-        <input v-model='mode' type="radio" class="btn-check" name="options-outlined" id="manual" value='manual' autocomplete="off">
-        <label class="btn btn-outline-success" for="manual">Manual</label>
-        <input v-model='mode' type="radio" class="btn-check" name="options-outlined" id="ik" value='ik' autocomplete="off">
-        <label class="btn btn-outline-success" for="ik">IK</label>
+        <input v-model='mode' type="radio" class="btn-check" name="options-outlined" id="throttle" value='throttle' autocomplete="off">
+        <label class="btn btn-outline-success" for="throttle">Throttle</label>
+        <input v-model='mode' type="radio" class="btn-check" name="options-outlined" id="ik-pos" value='ik-pos' autocomplete="off">
+        <label class="btn btn-outline-success" for="ik-pos">IK Position</label>
+        <input v-model='mode' type="radio" class="btn-check" name="options-outlined" id="ik-vel" value='ik-vel' autocomplete="off">
+        <label class="btn btn-outline-success" for="ik-vel">IK Velocity</label>
     </div>
   </div>
 </template>

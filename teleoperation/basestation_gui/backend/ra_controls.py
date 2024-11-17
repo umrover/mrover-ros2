@@ -14,7 +14,7 @@ from backend.input import filter_input, simulated_axis, safe_index, DeviceInputs
 from backend.mappings import ControllerAxis, ControllerButton
 from mrover.msg import Throttle, Position
 from sensor_msgs.msg import JointState
-from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import PoseStamped, Vector3
 
 import tf2_ros
 from tf2_ros.buffer import Buffer
@@ -125,9 +125,9 @@ def subset(names: list[str], values: list[float], joints: set[Joint]) -> tuple[l
     return [names[i.value] for i in joints], [values[i.value] for i in joints]
 
 
-def send_ra_controls(ra_mode: str, inputs: DeviceInputs, node: Node, thr_pub: Publisher, pos_pub: Publisher) -> None: 
+def send_ra_controls(ra_mode: str, inputs: DeviceInputs, node: Node, thr_pub: Publisher, ee_pos_pub: Publisher, ee_vel_pub: Publisher) -> None: 
     match ra_mode:
-        case "manual" | "ik": #added filter for IK mode, hybrid removed
+        case "throttle" | "ik-pos" | "ik-vel": #added filter for IK modes, hybrid removed
             back_pressed = safe_index(inputs.buttons, ControllerButton.BACK) > 0.5
             forward_pressed = safe_index(inputs.buttons, ControllerButton.FORWARD) > 0.5
             home_pressed = safe_index(inputs.buttons, ControllerButton.HOME) > 0.5
@@ -145,19 +145,26 @@ def send_ra_controls(ra_mode: str, inputs: DeviceInputs, node: Node, thr_pub: Pu
                 manual_controls = compute_manual_joint_controls(inputs)
 
                 match ra_mode:
-                    case "manual":
+                    case "throttle":
                         throttle_msg = Throttle()
                         joint_names, throttle_values = subset(JOINT_NAMES, manual_controls, set(Joint))
                         throttle_msg.names = joint_names
                         throttle_msg.throttles = throttle_values
                         thr_pub.publish(throttle_msg)
                         
-                    case "ik":
-                        ik_msg = PoseStamped()
-                        ik_msg.header.stamp = node.get_clock().now().to_msg()
-                        ik_msg.header.frame_id = "base_link"
-                        ik_msg.pose = SE3.from_tf_tree(buffer, "base_link", "map")
-                        pos_pub.publish(ik_msg)
+                    case "ik-pos":
+                        ik_pos_msg = PoseStamped()
+                        ik_pos_msg.header.stamp = node.get_clock().now().to_msg()
+                        ik_pos_msg.header.frame_id = "base_link"
+                        ik_pos_msg.pose = SE3.from_tf_tree(buffer, "base_link", "map")
+                        ee_pos_pub.publish(ik_pos_msg)
+                    case "ik-vel":
+                        ik_vel_msg = Vector3() 
+                        #range -1 to 1 for each axis
+                        ik_vel_msg.x = safe_index(inputs.axes, ControllerAxis.LEFT_Y)
+                        ik_vel_msg.y = safe_index(inputs.axes, ControllerAxis.LEFT_X)
+                        ik_vel_msg.z = safe_index(inputs.axes, ControllerAxis.RIGHT_Y)
+                        ee_vel_pub.publish(ik_vel_msg)
 
             else:
                 if joint_positions:
