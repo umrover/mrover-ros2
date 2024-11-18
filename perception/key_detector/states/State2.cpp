@@ -12,4 +12,8 @@ namespace mrover {
 		++numLoops;
 		return this;
 	}
+
+	[[nodiscard]] auto State2::getName() const -> std::string{
+		return "State2";
+	}
 }

@@ -32,20 +32,32 @@ namespace mrover{
         void publishStructure(){
             auto structureMsg = mrover::msg::StateMachineStructure();
             structureMsg.machine_name = mStateMachine.getName();
+			auto transitionTable = mStateMachine.getTransitionTable();
+
+			for(auto const&[_, entries] : transitionTable){
+				auto transition = mrover::msg::StateMachineTransition();
+				transition.origin = std::get<0>(entries);
+				std::copy(std::get<2>(entries).begin(), std::get<2>(entries).end(), std::back_inserter(transition.destinations));
+				structureMsg.transitions.push_back(std::move(transition));
+			}
+
+			mStructurePub->publish(structureMsg);
         }
 
         void publishState(){
-
+			auto stateMachineUpdate = mrover::msg::StateMachineStateUpdate();
+			stateMachineUpdate.state_machine_name = mStateMachine.getName();
+			stateMachineUpdate.state = mStateMachine.getCurrentState();
+			mStatePub->publish(stateMachineUpdate);
         }
 
     public:
-        StatePublisher(std::weak_ptr<rclcpp::Node> const& node, StateMachine const& stateMachine, std::string const& structureTopicName, double structureTopicHz, std::string const& stateTopicName, double stateTopicHz) : mStateMachine{stateMachine} {
-            auto lockedNode = node.lock();
-            mStructurePub = lockedNode->create_publisher<mrover::msg::StateMachineStructure>(structureTopicName, 1);
-            mStatePub = lockedNode->create_publisher<mrover::msg::StateMachineStateUpdate>(stateTopicName, 1);
+        StatePublisher(rclcpp::Node* node, StateMachine const& stateMachine, std::string const& structureTopicName, double structureTopicHz, std::string const& stateTopicName, double stateTopicHz) : mStateMachine{stateMachine} {
+            mStructurePub = node->create_publisher<mrover::msg::StateMachineStructure>(structureTopicName, 1);
+            mStatePub = node->create_publisher<mrover::msg::StateMachineStateUpdate>(stateTopicName, 1);
 
-            mStructureTimer = lockedNode->create_wall_timer(std::chrono::milliseconds(static_cast<std::size_t>(1 / structureTopicHz)), [&](){publishStructure();});
-            mStateTimer = lockedNode->create_wall_timer(std::chrono::milliseconds(static_cast<std::size_t>(1 / stateTopicHz)), [&](){publishState();});
+            mStructureTimer = node->create_wall_timer(std::chrono::milliseconds(static_cast<std::size_t>(1 / structureTopicHz)), [&](){publishStructure();});
+            mStateTimer = node->create_wall_timer(std::chrono::milliseconds(static_cast<std::size_t>(1 / stateTopicHz)), [&](){publishState();});
         }
     };
 }

@@ -12,6 +12,8 @@ namespace mrover {
 
 		StateMachine mStateMachine;
 
+		StatePublisher mStatePublisher;
+
 		void updateFSM();
 
 	public:

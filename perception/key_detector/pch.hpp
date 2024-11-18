@@ -13,6 +13,7 @@
 // MRover Libs
 #include <state_machine.hpp>
 #include <state.hpp>
+#include <state_publisher_server.hpp>
 
 // States
 #include "states/State1.hpp"
