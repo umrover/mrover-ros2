@@ -10,13 +10,15 @@ from rclpy.subscription import Subscription
 from rclpy.node import Node
 
 import tf2_ros
+from tf2_ros.buffer import Buffer
 import numpy as np
 from backend.drive_controls import send_joystick_twist
 from backend.input import DeviceInputs
-from geometry_msgs.msg import Twist
+from geometry_msgs.msg import Twist, Vector3
 from lie import SE3
-from mrover.msg import Throttle, Position
+from mrover.msg import Throttle, Position, IK
 from backend.ra_controls import send_ra_controls
+from backend.mast_controls import send_mast_controls
 
 import threading
 
@@ -35,8 +37,11 @@ class GUIConsumer(JsonWebsocketConsumer):
     def connect(self) -> None:
         self.accept()
         self.thr_pub = node.create_publisher(Throttle, "arm_throttle_cmd",1)
-        self.ee_pos_pub = node.create_publisher(Position, "ee_pos_cmd",1)
-        self.ee_vel_pub = node.create_publisher(Position, "ee_vel_cmd",1) #changed
+        self.ee_pos_pub = node.create_publisher(IK, "ee_pos_cmd",1)
+        self.ee_vel_pub = node.create_publisher(Vector3, "ee_vel_cmd",1) #changed
+
+        self.buffer = Buffer()
+        self.tf_listener = tf2_ros.TransformListener(self.buffer, node)
 
     def forward_ros_topic(self, topic_name: str, topic_type: Type, gui_msg_type: str) -> None:
         """
@@ -78,6 +83,8 @@ class GUIConsumer(JsonWebsocketConsumer):
         @param text_data:   Stringfied JSON message
         """
 
+        global cur_mode
+
         if text_data is None:
             node.get_logger().warning("Expecting text but received binary on GUI websocket...")
 
@@ -88,21 +95,19 @@ class GUIConsumer(JsonWebsocketConsumer):
 
         try:
             match message:
-                case { #deprecated?
-                    "type": "joystick",
+                case {
+                    "type": "joystick" | "mast_keyboard" | "ra_controller",
                     "axes": axes,
                     "buttons": buttons,
                 }:
                     device_input = DeviceInputs(axes, buttons)
-                    send_joystick_twist(device_input)
-                #publish to topic
-                case{
-                    "type": "ra_controller",
-                    "axes": axes,
-                    "buttons": buttons,
-                }:
-                    device_input = DeviceInputs(axes, buttons)
-                    send_ra_controls(cur_mode,device_input,node, self.thr_pub, self.ee_pos_pub, self.ee_vel_pub)
+                    match message["type"]:
+                        case "joystick":  
+                            send_joystick_twist(device_input)
+                        case "ra_controller":
+                            send_ra_controls(cur_mode,device_input,node, self.thr_pub, self.ee_pos_pub, self.ee_vel_pub, self.buffer)
+                        case "mast_keyboard":
+                            send_mast_controls(device_input)
                 #change input mode
                 case{
                     "type":"ra_mode",

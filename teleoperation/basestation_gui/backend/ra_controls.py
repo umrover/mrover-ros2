@@ -12,15 +12,19 @@ from lie import SE3
 # import rospy
 from backend.input import filter_input, simulated_axis, safe_index, DeviceInputs
 from backend.mappings import ControllerAxis, ControllerButton
-from mrover.msg import Throttle, Position
+from mrover.msg import Throttle, Position, IK
 from sensor_msgs.msg import JointState
-from geometry_msgs.msg import PoseStamped, Vector3
+from geometry_msgs.msg import PoseStamped, Vector3, Pose, Point, Quaternion
 
 import tf2_ros
 from tf2_ros.buffer import Buffer
-buffer = Buffer()
+
+import logging
+logger = logging.getLogger('django')
+
 
 TAU = 2 * pi
+
 
 # rospy.init_node("teleoperation", disable_signals=True)
 
@@ -125,7 +129,7 @@ def subset(names: list[str], values: list[float], joints: set[Joint]) -> tuple[l
     return [names[i.value] for i in joints], [values[i.value] for i in joints]
 
 
-def send_ra_controls(ra_mode: str, inputs: DeviceInputs, node: Node, thr_pub: Publisher, ee_pos_pub: Publisher, ee_vel_pub: Publisher) -> None: 
+def send_ra_controls(ra_mode: str, inputs: DeviceInputs, node: Node, thr_pub: Publisher, ee_pos_pub: Publisher, ee_vel_pub: Publisher, buffer: Buffer) -> None: 
     match ra_mode:
         case "throttle" | "ik-pos" | "ik-vel": #added filter for IK modes, hybrid removed
             back_pressed = safe_index(inputs.buttons, ControllerButton.BACK) > 0.5
@@ -153,17 +157,22 @@ def send_ra_controls(ra_mode: str, inputs: DeviceInputs, node: Node, thr_pub: Pu
                         thr_pub.publish(throttle_msg)
                         
                     case "ik-pos":
-                        ik_pos_msg = PoseStamped()
-                        ik_pos_msg.header.stamp = node.get_clock().now().to_msg()
-                        ik_pos_msg.header.frame_id = "base_link"
-                        ik_pos_msg.pose = SE3.from_tf_tree(buffer, "base_link", "map")
+                        ik_pos_msg = IK()
+                        ik_pos_msg.target.header.stamp = node.get_clock().now().to_msg()
+                        ik_pos_msg.target.header.frame_id = "base_link"
+                        # gets se3 from TF tree
+                        se3 = SE3.from_tf_tree(buffer, "base_link", "map")
+                        tx, ty, tz = se3.translation()
+                        qx, qy, qz, qw = se3.quat()
+                        # constructs pose
+                        ik_pos_msg.target.pose = Pose(position=Point(x=tx, y=ty, z=tz), orientation=Quaternion(x=qx, y=qy, z=qz, w=qw))
                         ee_pos_pub.publish(ik_pos_msg)
                     case "ik-vel":
                         ik_vel_msg = Vector3() 
                         #range -1 to 1 for each axis
-                        ik_vel_msg.x = safe_index(inputs.axes, ControllerAxis.LEFT_Y)
-                        ik_vel_msg.y = safe_index(inputs.axes, ControllerAxis.LEFT_X)
-                        ik_vel_msg.z = safe_index(inputs.axes, ControllerAxis.RIGHT_Y)
+                        ik_vel_msg.x = (-1.0) * safe_index(inputs.axes, ControllerAxis.LEFT_Y)
+                        ik_vel_msg.y = (-1.0) * safe_index(inputs.axes, ControllerAxis.LEFT_X)
+                        ik_vel_msg.z = (-1.0) * safe_index(inputs.axes, ControllerAxis.RIGHT_Y)
                         ee_vel_pub.publish(ik_vel_msg)
 
             else:
