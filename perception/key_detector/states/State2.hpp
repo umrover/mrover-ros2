@@ -11,6 +11,6 @@ namespace mrover {
 
 		auto onLoop() -> State* override;
 
-		[[nodiscard]] auto getName() const -> std::string override;
+		static auto getName() -> std::string;
 	};
 }

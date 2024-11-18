@@ -48,7 +48,7 @@ public:
 
 	template<StateLike From, StateLike ...To>
 	void enableTransitions(){
-		validTransitions[typeid(From).hash_code()] = std::make_tuple<std::string, std::vector<std::size_t>, std::vector<std::string>>(From().getName(), {typeid(To).hash_code()...}, {To().getName()...});
+		validTransitions[typeid(From).hash_code()] = std::make_tuple<std::string, std::vector<std::size_t>, std::vector<std::string>>(From::getName(), {typeid(To).hash_code()...}, {To::getName()...});
 	}
 
 	void update(){

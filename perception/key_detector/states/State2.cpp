@@ -13,7 +13,7 @@ namespace mrover {
 		return this;
 	}
 
-	[[nodiscard]] auto State2::getName() const -> std::string{
+	auto State2::getName() -> std::string{
 		return "State2";
 	}
 }
