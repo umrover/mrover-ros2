@@ -87,9 +87,26 @@ namespace mrover {
 
             int maxInflationCells = static_cast<int>(INFLATION_RADIUS / resolution);
 
+            std::array<std::ptrdiff_t, 11> dis
+                                        {0, 
+                                        -1, 
+                                        +1, 
+                                        -width, 
+                                        -1 -width, 
+                                        +1 -width, 
+                                        +width, 
+                                        -1 +width, 
+                                        +1 +width};
+
+            for (std::ptrdiff_t &di : dis) {
+                mGlobalGridMsg.data[mapToGrid(cameraToMap.translation(), mGlobalGridMsg)+di] = FREE_COST;
+            }
+
             // Inflate cost map
             auto temp = postProcessed;
             for (std::size_t i = 0; i < postProcessed.data.size(); ++i) {
+
+
                 if (temp.data[i] > FREE_COST) {
                     int centerX = i % width;
                     int centerY = i / width;
