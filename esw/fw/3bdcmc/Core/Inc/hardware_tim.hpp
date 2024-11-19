@@ -16,8 +16,7 @@ namespace mrover {
     public:
         using TimerCallback = std::function<void()>;
 
-        virtual ~IStopwatch() = default;
-
+        virtual auto remove_stopwatch() -> std::uint8_t = 0;
         virtual auto add_stopwatch() -> std::uint8_t = 0;
         virtual auto add_stopwatch(std::optional<TimerCallback> callback) -> std::uint8_t = 0;
         virtual auto get_time_since_last_read(std::uint8_t index) -> Seconds = 0;
@@ -55,19 +54,22 @@ namespace mrover {
             return m_num_stopwatches == MaxStopwatchCount;
         }
 
+        auto remove_stopwatch() -> std::uint8_t override {
+            return 0;
+        }
+
         auto add_stopwatch() -> std::uint8_t override {
             return add_stopwatch(std::nullopt);
         }
 
         auto add_stopwatch(std::optional<TimerCallback> callback) -> std::uint8_t override {
-            if (m_num_stopwatches >= MaxStopwatchCount - 1) {
+            if (m_num_stopwatches >= MaxStopwatchCount) {
                 return 0;
             }
-            ++m_num_stopwatches;
             m_stopwatches[m_num_stopwatches].tim_stamp.last_count = get_current_count();
             m_stopwatches[m_num_stopwatches].elapsed_callback = callback;
 
-            return m_num_stopwatches;
+            return m_num_stopwatches++;
         }
 
         auto init() const -> void {
