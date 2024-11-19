@@ -312,7 +312,10 @@ namespace mrover {
               m_receive_watchdog_timer(command_watchdog_timer),
               m_limit_switches(limit_switches),
               m_relative_encoder_tick_timer(relative_encoder_tick_timer),
-              m_absolute_encoder_a2_a1(absolute_encoder_a2_a1) {}
+              m_absolute_encoder_a2_a1(absolute_encoder_a2_a1) {
+
+        	m_throttle_stopwatch_id = m_stopwatch->add_stopwatch();
+        }
 
         [[nodiscard]] auto get_id() const -> std::uint8_t{
             return m_id;
@@ -348,7 +351,6 @@ namespace mrover {
             }
 
             m_inbound = message;
-            update();
         }
 
         /**

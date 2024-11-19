@@ -59,7 +59,7 @@ extern TIM_HandleTypeDef htim17;
 
 namespace mrover {
 
-    FDCAN<InBoundMessage> fdcan_bus;
+    FDCAN<InBoundMessage> fdcan_bus(&hfdcan1);
     Controller<NUM_MOTORS> controller;
 
     auto create_motor_config(std::size_t index) -> MotorConfig {

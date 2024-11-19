@@ -66,9 +66,9 @@ namespace mrover {
         auto init() -> void {
             m_stopwatches.init();
 
-            m_fdcan.configure_filter(DEVICE_ID_0);
-            m_fdcan.configure_filter(DEVICE_ID_1);
-            m_fdcan.configure_filter(DEVICE_ID_2);
+//            m_fdcan.configure_filter(DEVICE_ID_0);
+//            m_fdcan.configure_filter(DEVICE_ID_1);
+//            m_fdcan.configure_filter(DEVICE_ID_2);
 
             m_fdcan.start();
         }
@@ -80,16 +80,12 @@ namespace mrover {
          * \note            This resets the message watchdog timer.
          */
         auto receive(FDCAN<InBoundMessage>::MessageId id, InBoundMessage const& message) -> void {
-            if (id.destination == DEVICE_ID_0) {
-                m_motors[0].receive(message);
-                m_motors[0].update();
-            } else if (id.destination == DEVICE_ID_1) {
-                m_motors[1].receive(message);
-                m_motors[1].update();
-            } else if (id.destination == DEVICE_ID_2) {
-                m_motors[2].receive(message);
-                m_motors[2].update();
-            }
+        	for (std::size_t i = 0; i < MotorCount; ++i) {
+        		if (m_motors[i].get_id() == id.destination) {
+        			m_motors[i].receive(message);
+        			m_motors[i].update();
+        		}
+        	}
         }
 
         /**
