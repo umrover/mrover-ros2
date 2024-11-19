@@ -58,12 +58,10 @@ public:
 	}
 
 	void addNameToDecoder(std::size_t hash, std::string const& name){
+		constexpr static std::string prefix{"mrover::"};
+		std::size_t index = name.find(prefix);
 		std::string _name = name;
-		for(char& c : _name){
-			if(c == ':'){
-				c = '_';
-			}
-		}
+		_name.replace(index, index + prefix.size(), "");
 		decoder[hash] = _name;
 	}
 
@@ -86,7 +84,6 @@ public:
 		for(auto const& type : types){
 			int status = 0;
 			char* demangledName = abi::__cxa_demangle(type.get().name(), nullptr, nullptr, &status);
-			std::cout << demangledName << std::endl;
 			addNameToDecoder(type.get().hash_code(), demangledName);
 			free(demangledName);
 		}
