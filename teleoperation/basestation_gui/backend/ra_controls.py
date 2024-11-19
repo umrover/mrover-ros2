@@ -15,8 +15,8 @@ from mrover.msg import Throttle, Position
 from sensor_msgs.msg import JointState
 from geometry_msgs.msg import PoseStamped
 
-import tf2_ros
-buffer = tf2_ros.buffer()
+from tf2_ros import Buffer
+buffer = Buffer()
 
 TAU = 2 * pi
 

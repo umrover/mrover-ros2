@@ -16,6 +16,7 @@ create instance of rosaction in callback area -->
             id="autonTyping"
             placeholder="Message"
             maxlength="6"
+            required
           />
           <small id="autonTypingMission" class="form-text text-muted"></small>
         </div>
@@ -24,7 +25,9 @@ create instance of rosaction in callback area -->
         Must be 3-6 characters long.
       </span>
     </div>
-    <button class="btn btn-primary custom-btn" @click="submitMessage()">Submit</button>
+    <button v-if="codeSent === false" class="btn btn-primary custom-btn" :disabled="typingMessage.length < 3" @click.prevent="submitMessage()">Submit</button>
+    <!-- TODO: add a separate function to cancel current message -->
+    <button v-if="codeSent === true" class="btn btn-primary custom-btn bg-danger" @click.prevent="submitMessage()">Cancel</button>
   </form>
 </template>
 
@@ -75,7 +78,17 @@ export default {
           type: 'code',
           code: this.typingMessage
         })
-      }
+        this.codeSent = !this.codeSent;
+      } 
+      else {
+      // Canceling the current message
+      this.sendMessage({
+        type: 'code',
+        code: 'cancel'
+      });
+      this.codeSent = false;  // Reset the button to "Submit"
+      this.typingMessage = ''; // Optionally, clear the input field
+    }
 
     },
   }

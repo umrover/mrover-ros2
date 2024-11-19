@@ -2,7 +2,7 @@ import json
 import traceback
 from typing import Any, Type
 
-import yaml
+# import yaml
 from channels.generic.websocket import JsonWebsocketConsumer
 
 import rclpy
@@ -13,8 +13,7 @@ import tf2_ros
 import numpy as np
 from backend.drive_controls import send_joystick_twist
 from backend.input import DeviceInputs
-from backend.models import AutonTyping
-from mrover.msg import WheelCmd
+# from backend.models import AutonTyping
 from geometry_msgs.msg import Twist
 from lie import SE3
 from mrover.msg import Throttle, Position
@@ -115,7 +114,8 @@ class GUIConsumer(JsonWebsocketConsumer):
                     "code": typingMessage,
                 }:
                     # self.action_client = ActionClient(node, SendCode, '/code')
-                    pass
+                    print(typingMessage)
+                    # pass
                     
                 case _:
                     match message["type"]:
