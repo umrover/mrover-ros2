@@ -34,10 +34,13 @@ namespace mrover{
             structureMsg.machine_name = mStateMachine.getName();
 			auto transitionTable = mStateMachine.getTransitionTable();
 
-			for(auto const&[_, entries] : transitionTable){
+			for(auto const&[from, tos] : transitionTable){
 				auto transition = mrover::msg::StateMachineTransition();
-				transition.origin = std::get<0>(entries);
-				std::copy(std::get<2>(entries).begin(), std::get<2>(entries).end(), std::back_inserter(transition.destinations));
+				transition.origin = mStateMachine.decodeTypeHash(from);
+				for(auto& hash : tos){
+					std::cout << mStateMachine.decodeTypeHash(hash) << std::endl;
+					transition.destinations.push_back(mStateMachine.decodeTypeHash(hash));
+				}
 				structureMsg.transitions.push_back(std::move(transition));
 			}
 

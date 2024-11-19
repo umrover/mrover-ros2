@@ -5,7 +5,6 @@
 template<typename T>
 concept StateLike = requires(T state){
 	{ state.onLoop() };
-	{ T::getName() };
 };
 
 class State {

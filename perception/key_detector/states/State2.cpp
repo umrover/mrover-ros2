@@ -12,8 +12,4 @@ namespace mrover {
 		++numLoops;
 		return this;
 	}
-
-	auto State2::getName() -> std::string{
-		return "State2";
-	}
 }
