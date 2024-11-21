@@ -1,4 +1,6 @@
 #include "simulator.hpp"
+#include <manif/impl/se3/SE3.h>
+#include <string_view>
 
 namespace mrover {
 
@@ -95,6 +97,17 @@ namespace mrover {
                 SE3Conversions::pushToTfTree(mTfBroadcaster, std::format("{}_truth", name), "map", modelInMap, get_clock()->now());
 
                 if (name == "rover") SE3Conversions::pushToTfTree(mTfBroadcaster, "base_link", "map", modelInMap, get_clock()->now());
+
+                if(name == "lander"){
+					using KeyMapping = std::pair<std::string, SE3d>;
+                    static std::array<KeyMapping, 1> keyMappings{
+						KeyMapping{std::string{"q_key"}, SE3d{R3d{1, -0.5, 1}, Eigen::Quaterniond{0, 0, 0, 1}.normalized()}}
+                    };
+
+					for(auto const&[key, se3] : keyMappings){
+						SE3Conversions::pushToTfTree(mTfBroadcaster, std::format("{}_truth", key), "lander_truth", se3, get_clock()->now());
+					}
+                }
 
                 for (urdf::JointSharedPtr const& child_joint: link->child_joints) {
                     self(self, urdf.model.getLink(child_joint->child_link_name));
