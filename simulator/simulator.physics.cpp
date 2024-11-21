@@ -105,6 +105,7 @@ namespace mrover {
 					constexpr static double FIRST_ROW_START = -0.155;
 					constexpr static double SECOND_ROW_START = -0.146;
 					constexpr static double THIRD_ROW_START = -0.135;
+
                     static std::array<KeyMapping, 26> keyMappings{
 						KeyMapping{std::string{"q_key"}, SE3d{R3d{FIRST_ROW_START + 0 * KEY_SPACING, -0.5, TOP_ROW_START}, Eigen::Quaterniond{0, 0, 0, 1}.normalized()}},
 						KeyMapping{std::string{"w_key"}, SE3d{R3d{FIRST_ROW_START + 1 * KEY_SPACING, -0.5, TOP_ROW_START}, Eigen::Quaterniond{0, 0, 0, 1}.normalized()}},
