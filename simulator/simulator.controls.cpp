@@ -171,6 +171,7 @@ namespace mrover {
             mIkVel.z() = -1;
         }
         mIkVel.normalize();
+        mIkVel *= mArmSpeed;
         if (mPublishIk && !mIkMode) {
             geometry_msgs::msg::Vector3 vel;
             vel.x = mIkVel.x();
