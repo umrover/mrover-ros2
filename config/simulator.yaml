@@ -55,7 +55,7 @@ simulator:
       lander:
         type: urdf
         uri: package://mrover/urdf/world/lander.urdf.xacro
-        position: [ 15.0, -2.0, 0.2 ]
+        position: [ 0.0, 5.0, 0.2 ]
 
     # TODO(quintin): Avoid storing these in multiple config files
     ref_lat: 38.4225202
