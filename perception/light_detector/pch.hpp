@@ -34,3 +34,7 @@
 #include <tf2_ros/buffer.h>
 #include <tf2_ros/static_transform_broadcaster.h>
 #include <geometry_msgs/msg/transform_stamped.hpp>
+
+// MRover
+#include "point.hpp"
+#include "mrover/msg/vector3_array.hpp"

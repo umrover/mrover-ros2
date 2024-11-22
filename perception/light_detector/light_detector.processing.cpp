@@ -9,17 +9,16 @@ namespace mrover {
     // TODO: (john) break this out into a utility so we dont have to copy all of this code
 	auto LightDetector::convertPointCloudToRGB(sensor_msgs::msg::PointCloud2::ConstSharedPtr const& msg, cv::Mat const& image) -> void {
         auto* pixelPtr = reinterpret_cast<cv::Vec3b*>(image.data);
-        auto* pointPtr = reinterpret_cast<cv::Point3i const*>(msg->data.data());
+        auto* pointPtr = reinterpret_cast<Point const*>(msg->data.data());
         std::for_each(std::execution::par_unseq, pixelPtr, pixelPtr + image.total(), [&](cv::Vec3b& pixel) {
             std::size_t const i = &pixel - pixelPtr;
-            pixel[0] = pointPtr[i].x;
-            pixel[1] = pointPtr[i].y;
-            pixel[2] = pointPtr[i].z;
+            pixel[0] = pointPtr[i].r;
+            pixel[1] = pointPtr[i].g;
+            pixel[2] = pointPtr[i].b;
         });
     }
     
     auto LightDetector::imageCallback(sensor_msgs::msg::PointCloud2::ConstSharedPtr const& msg) -> void {
-        std::cout<<"image callback"<<std::endl;
         // resizing image is mImgRGB dimensions doesn't match msg dimensions
         // initialize mThresholdedImg to grayscale image 
         if(mImgRGB.rows != static_cast<int>(msg->height) || mImgRGB.cols != static_cast<int>(msg->width)) {
@@ -51,7 +50,7 @@ namespace mrover {
 
         cv::dilate(mThresholdedImg, erode, cv::getStructuringElement(cv::MORPH_CROSS, cv::Size(3,3), cv::Point(-1,-1)), cv::Point(-1,-1), cv::BORDER_REFLECT_101, 0);
 		
-        // converts erode into BGRA format and stores in mOutputImage
+        // // converts erode into BGRA format and stores in mOutputImage
         cv::cvtColor(erode, mOutputImage, cv::COLOR_GRAY2BGRA);
 		
         // finds contours in eroded image and stores in "contours"
@@ -64,16 +63,11 @@ namespace mrover {
         // quick question: why not store as cv::point? 
 		std::vector<std::pair<int, int>> centroids; // These are in image space
 		centroids.resize(contours.size());
-        
-        //Might not need these
-        // The number of lights that we push into the TF
-        unsigned int numLightsSeen = 0;
 
         RCLCPP_INFO_STREAM(get_logger(),"Number of contours " << contours.size());
     
 
 		for(std::size_t i = 0; i < contours.size(); ++i){
-            std::cout<<"!!!!"<<std::endl;
 			auto const& vec = contours[i];
 			auto& centroid = centroids[i]; // first = row, second = col
 
@@ -109,9 +103,6 @@ namespace mrover {
         decreaseHitCounts();
 
 		publishDetectedObjects(mOutputImage, centroids);
-
-        std::cout<<"image callback end"<<std::endl;
-
 	}
     
 	// auto LightDetector::caching() -> void{
@@ -174,17 +165,16 @@ namespace mrover {
     }
 
     void LightDetector::printHitCounts(){
-        for(auto const& [key, val] : mHitCounts){
-            RCLCPP_INFO_STREAM(get_logger(),"Key: ( " << key.first << ", " << key.second << ") Val: " << val);
-        }
+        // for(auto const& [key, val] : mHitCounts){
+        //     //RCLCPP_INFO_STREAM(get_logger(),"Key: ( " << key.first << ", " << key.second << ") Val: " << val);
+        // }
     }
 
     auto LightDetector::publishDetectedObjects(cv::InputArray image, std::vector<std::pair<int, int>> const& centroids) -> void {
         //if (!imgPub.getNumSubscribers()) return;
 
 		sensor_msgs::msg::Image imgMsg;
-        std::cout<<"entering publishDetectedObjects!"<<std::endl;
-
+        mrover::msg::Vector3Array poseMsg;
 
         imgMsg.header.stamp = this->get_clock()->now(); //ros origionally, but changed to this, not sure if it works.
         imgMsg.height = image.rows();
@@ -202,13 +192,21 @@ namespace mrover {
 		constexpr int MARKER_RADIUS = 10;
 		cv::Scalar const MARKER_COLOR = {255, 0, 0, 0};
 
+        auto point = mHitCounts.begin();
+
+        
+        // for(size_t i = 0; i < mHitCounts.size(); i++) {
+        //     poseMsg.x = point->first.first;
+        //     poseMsg.y = point->first.second;
+        //     point++;
+        //     pointPub->publish(poseMsg);
+        // }
+        
 		for(auto const& centroid : centroids){
 			cv::circle(debugImageWrapper, {centroid.second, centroid.first}, MARKER_RADIUS, MARKER_COLOR);
 		}
 
         imgPub->publish(imgMsg);
-        std::cout<<"published detected objects!"<<std::endl;
-
     }
 
     auto LightDetector::spiralSearchForValidPoint(sensor_msgs::msg::PointCloud2::ConstSharedPtr const& cloudPtr, std::size_t u, std::size_t v, std::size_t width, std::size_t height)const -> std::optional<SE3d> {

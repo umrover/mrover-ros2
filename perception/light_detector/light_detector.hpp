@@ -45,13 +45,13 @@ namespace mrover {
 		cv::Mat mErodedImg;
 		cv::Mat mDialtedImg;
 
-		// Detected Objects
-		geometry_msgs::msg::Vector3 detectedPoints;
-
 		// Pub Sub
 		rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr imgSub;
 		rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr imgPub;
 		rclcpp::Publisher<geometry_msgs::msg::Vector3>::SharedPtr pointPub;
+
+		// The number of lights that we push into the TF
+        unsigned int numLightsSeen = 0;
 
 		static constexpr char const* NODE_NAME = "light_detector";
 

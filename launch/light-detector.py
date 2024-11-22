@@ -14,7 +14,7 @@ def generate_launch_description():
     light_detector_position_node = Node(
         package="tf2_ros",
         executable="static_transform_publisher",
-        arguments=["0", "0", "0", "0", "0", "0", "zed_left_camera_frame", "mWorldFrame"],
+        arguments=["0", "0", "0", "0", "0", "0", "zed_left_camera_frame", "map"],
     )
 
     return LaunchDescription(
