@@ -1,7 +1,7 @@
 #include "State1.hpp"
 
 namespace mrover {
-	State1::State1() : numLoops{0}{}
+	State1::State1(int _numLoops) : numLoops{_numLoops}{}
 
 	auto State1::onLoop() -> State*{
 		if(numLoops >= 5){

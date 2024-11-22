@@ -7,7 +7,7 @@ namespace mrover{
 	private:
 		std::int64_t numLoops;
 	public:
-		explicit State1();
+		explicit State1(int numLoops);
 
 		auto onLoop() -> State* override;
 	};

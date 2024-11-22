@@ -5,7 +5,7 @@ namespace mrover {
 
 	 auto State2::onLoop() -> State*{
 		if(numLoops >= 5){
-			return new State1();
+			return StateMachine::make_state<State1>(2);
 		}
 		auto logger = rclcpp::get_logger("State2");
 		RCLCPP_INFO_STREAM(logger, "In State2 " << numLoops << "\n");

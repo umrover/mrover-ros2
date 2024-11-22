@@ -36,6 +36,11 @@ public:
 	~StateMachine(){
 		delete currState;
 	}
+	
+	template<typename T, typename ...Args>
+	static auto make_state(Args... args) -> T*{
+		return new T(args...);
+	}
 
 	auto getName() const -> std::string const& {
 		return mName;
@@ -65,8 +70,10 @@ public:
 		decoder[hash] = _name;
 	}
 
-	template<StateLike From, StateLike ...To>
+	template<typename From, typename ...To>
 	void enableTransitions(){
+		static_assert(std::derived_from<From, State>, "From State Must Be Derived From The State Class");
+		static_assert((std::derived_from<To, State> && ...), "All States Must Be Derived From The State Class");
 		// Add From State To Decoder
 		int status = 0;
 		char* demangledName = abi::__cxa_demangle(typeid(From).name(), nullptr, nullptr, &status);
