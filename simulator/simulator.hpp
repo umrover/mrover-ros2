@@ -254,6 +254,7 @@ namespace mrover {
         float mArmSpeed = 1;
         rclcpp::Publisher<msg::IK>::SharedPtr mIkTargetPub;
         rclcpp::Publisher<geometry_msgs::msg::Vector3>::SharedPtr mIkVelPub;
+        rclcpp::Client<srv::IkMode>::SharedPtr mIkModeClient;
 
         R3d mGpsLinearizationReferencePoint{};
         double mGpsLinerizationReferenceHeading{};

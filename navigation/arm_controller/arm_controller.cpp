@@ -1,17 +1,32 @@
 #include "arm_controller.hpp"
 
 namespace mrover {
+    const rclcpp::Duration ArmController::TIMEOUT = rclcpp::Duration(1, 0); // one second
 
     ArmController::ArmController() : Node{"arm_controller"} {
         mPosPub = create_publisher<msg::Position>("arm_position_cmd", 10);
 
-        mIkSub = create_subscription<msg::IK>("arm_ik", 1, [this](msg::IK::ConstSharedPtr const& msg) {
+        mIkSub = create_subscription<msg::IK>("ee_pos_cmd", 1, [this](msg::IK::ConstSharedPtr const& msg) {
             ikCallback(msg);
         });
 
-        // TODO: create a new subscription for the topic "ee_vel_cmd"
+        mVelSub = create_subscription<geometry_msgs::msg::Vector3>("ee_vel_cmd", 1, [this](geometry_msgs::msg::Vector3::ConstSharedPtr const& msg) {
+            velCallback(msg);
+        });
 
-        // TODO: create a new subscription for the topic "arm_joint_data" - this will be used to determine the current position of the arm
+        mJointSub = create_subscription<sensor_msgs::msg::JointState>("arm_joint_data", 1, [this](sensor_msgs::msg::JointState::ConstSharedPtr const& msg) {
+            fkCallback(msg);
+        });
+
+        mTimer = create_wall_timer(std::chrono::milliseconds(33), [this]() {
+            timerCallback();
+        });
+
+        mModeServ = create_service<srv::IkMode>("ik_mode", [this](srv::IkMode::Request::ConstSharedPtr const& req, srv::IkMode::Response::SharedPtr const& resp) {
+            modeCallback(req, resp);
+        });
+    
+        mLastUpdate = get_clock()->now();
     }
 
     auto yawSo3(double r) -> SO3d {
@@ -20,13 +35,13 @@ namespace mrover {
     }
 
     auto ArmController::ikCalc(SE3d target) -> std::optional<msg::Position> {
-        double x = target.translation().x() - END_EFFECTOR_LENGTH; // shift back by the length of the end effector
+        double x = target.translation().x(); // shift back by the length of the end effector
         double y = target.translation().y();
         double z = target.translation().z();
 
         double gamma = 0;
-        double x3 = x - LINK_DE * std::cos(gamma);
-        double z3 = z - LINK_DE * std::sin(gamma);
+        double x3 = x - (LINK_DE + END_EFFECTOR_LENGTH) * std::cos(gamma);
+        double z3 = z - (LINK_DE + END_EFFECTOR_LENGTH) * std::sin(gamma);
 
         double C = std::sqrt(x3 * x3 + z3 * z3);
         double alpha = std::acos((LINK_BC * LINK_BC + LINK_CD * LINK_CD - C * C) / (2 * LINK_BC * LINK_CD));
@@ -59,13 +74,29 @@ namespace mrover {
     }
 
     void ArmController::velCallback(geometry_msgs::msg::Vector3::ConstSharedPtr const& ik_vel) {
-        // TODO: implement this function using the "carrot on a stick" approach
+        R3d new_vel{ik_vel->x, ik_vel->y, ik_vel->z};
+        if (!mVelTarget.isZero() && new_vel.isZero()) { // stop arm
+            mPosTarget = mArmPos;
+        }
+        mVelTarget = new_vel;
+        mLastUpdate = get_clock()->now();
     }
 
     void ArmController::fkCallback(sensor_msgs::msg::JointState::ConstSharedPtr const& joint_state) {
-        // TODO: implement forward kinematics here to determine the position of the end of the arm based on the joint angles
-        // HINT: compute the position of each link of the arm one at a time
-        // NOTE: you will need to add the constant JOINT_C_OFFSET to the angle for joint c
+        double y = joint_state->position[0]; // joint a position
+        // joint b position
+        double angle = -joint_state->position[1];
+        double x = LINK_BC * std::cos(angle);
+        double z = LINK_BC * std::sin(angle);
+        // joint c position
+        angle -= joint_state->position[2] - JOINT_C_OFFSET;
+        x += LINK_CD * std::cos(angle);
+        z += LINK_CD * std::sin(angle);
+        // joint de position
+        angle -= joint_state->position[3] + JOINT_C_OFFSET;
+        x += (LINK_DE + END_EFFECTOR_LENGTH) * std::cos(angle);
+        z += (LINK_DE + END_EFFECTOR_LENGTH) * std::sin(angle);
+        mArmPos = SE3d{{x, y, z}, SO3d::Identity()};
     }
 
     void ArmController::ikCallback(msg::IK::ConstSharedPtr const& ik_target) {
@@ -76,19 +107,40 @@ namespace mrover {
             RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, std::format("Failed to get transform from {} to arm_base_link: {}", ik_target->target.header.frame_id, exception.what()));
             return;
         }
-        SE3d endEffectorInTarget{{ik_target->target.pose.position.x, ik_target->target.pose.position.y, ik_target->target.pose.position.z}, SO3d::Identity()};
+        SE3d endEffectorInTarget{{ik_target->target.pose.position.x, ik_target->target.pose.position.y, ik_target->target.pose.position.z}, 
+                                 SO3d{ik_target->target.pose.orientation.x, ik_target->target.pose.orientation.y, ik_target->target.pose.orientation.z, ik_target->target.pose.orientation.w}};
         SE3d endEffectorInArmBaseLink = targetFrameToArmBaseLink * endEffectorInTarget;
         SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_target", "arm_base_link", endEffectorInArmBaseLink, get_clock()->now());
+        mPosTarget = endEffectorInArmBaseLink;
+        mLastUpdate = get_clock()->now();
+    }
 
-        std::optional<msg::Position> positions = ikCalc(endEffectorInArmBaseLink);
-
+    auto ArmController::timerCallback() -> void {
+        if (get_clock()->now() - mLastUpdate > TIMEOUT) {
+            RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 100, "IK Timed Out");
+            return;
+        }
+        if (mArmMode == ArmMode::VELOCITY_CONTROL) {
+            mPosTarget = mPosTarget * SE3d{mVelTarget * 0.01, SO3d::Identity()};
+        }
+        auto positions = ikCalc(mPosTarget);
         if (positions) {
             mPosPub->publish(positions.value());
         } else {
-            RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1000, "IK Positon Control Failed");
+            RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1000, "IK Failed");
         }
     }
 
+    auto ArmController::modeCallback(srv::IkMode::Request::ConstSharedPtr const& req, srv::IkMode::Response::SharedPtr const& resp) -> void {
+        if (req->mode == req->POSITION_CONTROL) {
+            mArmMode = ArmMode::POSITION_CONTROL;
+            RCLCPP_INFO(get_logger(), "IK Switching to Position Control Mode");
+        } else {
+            mArmMode = ArmMode::VELOCITY_CONTROL;
+            RCLCPP_INFO(get_logger(), "IK Switching to Velocity Control Mode");
+        }
+        resp->success = true;
+    }
 } // namespace mrover
 
 auto main(int argc, char** argv) -> int {

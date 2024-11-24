@@ -7,17 +7,31 @@ namespace mrover {
     class ArmController final : public rclcpp::Node {
 
         [[maybe_unused]] rclcpp::Subscription<msg::IK>::SharedPtr mIkSub;
-        // TODO: declare a new subscriber for the velocity commands (topic: "ee_vel_cmd") and the joint state (topic: "arm_joint_data")
-        // Hint: to figure out what the message type is, use the command ros2 topic info <topic_name>
+        [[maybe_unused]] rclcpp::Subscription<geometry_msgs::msg::Vector3>::SharedPtr mVelSub;
+        [[maybe_unused]] rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr mJointSub;
 
         rclcpp::Publisher<msg::Position>::SharedPtr mPosPub;
         tf2_ros::TransformBroadcaster mTfBroadcaster{this};
         tf2_ros::Buffer mTfBuffer{get_clock()};
         tf2_ros::TransformListener mTfListener{mTfBuffer};
+        rclcpp::TimerBase::SharedPtr mTimer;
+        rclcpp::Service<srv::IkMode>::SharedPtr mModeServ;
 
         auto ikCalc(SE3d target) -> std::optional<msg::Position>;
+        auto timerCallback() -> void;
+        auto modeCallback(srv::IkMode::Request::ConstSharedPtr const& req, srv::IkMode::Response::SharedPtr const& resp) -> void;
 
         SE3d mArmPos;
+        SE3d mPosTarget;
+        R3d mVelTarget = {0, 0, 0};
+        rclcpp::Time mLastUpdate;
+
+        enum class ArmMode : bool {
+            VELOCITY_CONTROL,
+            POSITION_CONTROL
+        };
+        ArmMode mArmMode = ArmMode::POSITION_CONTROL;
+        static const rclcpp::Duration TIMEOUT;
 
     public:
         // TODO(quintin): Neven, please load these from config YAML files instead of hard coding. Ideally they would even be computed at runtime. This way you can change the xacro without worry.

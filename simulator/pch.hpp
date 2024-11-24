@@ -86,3 +86,4 @@
 #include <mrover/msg/position.hpp>
 #include <mrover/msg/throttle.hpp>
 #include <mrover/msg/velocity.hpp>
+#include <mrover/srv/ik_mode.hpp>

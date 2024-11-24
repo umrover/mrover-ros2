@@ -79,8 +79,19 @@ namespace mrover {
             // ImGui::SliderFloat("Float", &mFloat, 0.0f, 1000.0f);
 
             ImGui::Checkbox("Publish IK", &mPublishIk);
-            if (mPublishIk) ImGui::Checkbox("Arm Position Control", &mIkMode);
-            if (mPublishIk && mIkMode) ImGui::SliderFloat3("IK Target", mIkTarget.data(), -1.f, 1.f);
+            if (mPublishIk) {
+                if (ImGui::Checkbox("Arm Position Control", &mIkMode)) {
+                    auto req = std::make_shared<srv::IkMode::Request>();
+                    req->mode = mIkMode ? srv::IkMode::Request::POSITION_CONTROL : srv::IkMode::Request::VELOCITY_CONTROL;
+                    mIkModeClient->async_send_request(req);
+                }
+                if (mIkMode) {
+                    ImGui::SliderFloat("IK X Position", &mIkTarget.x(), 0, 1.5);
+                    ImGui::SliderFloat("IK Y Position", &mIkTarget.y(), 0, .45);
+                    ImGui::SliderFloat("IK Z Position", &mIkTarget.z(), -1.0, 1.0);
+                } else
+                    ImGui::SliderFloat("Arm Speed", &mArmSpeed,  0, 1);
+            }
 
             ImGui::InputDouble("Publish Hammer Distance Threshold", &mPublishHammerDistanceThreshold);
             ImGui::InputDouble("Publish Bottle Distance Threshold", &mPublishBottleDistanceThreshold);
