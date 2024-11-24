@@ -1,11 +1,11 @@
 obj = InvariantEKF();
-obj.gyro_predict([0.0; 1.0; 2.0], 0.2);
-obj.position_update([0.0; 0; 1.5], [0.2; 0.2; 0.2]);
+obj.gyro_predict([0.0; 0.0; 2.0], 0.2);
+%obj.position_update([0.0; 0; 1.5], [0.2; 0.2; 0.2]);
 
-R = eul2rotm([0.0 0 3.0]);
+R = eul2rotm([0.0 0.0 3.0]);
 %disp(obj.X)
 
-obj.mag_update(3.0);
+obj.mag_update(4.0);
 
 %obj.position_update([0.0; -1.5; 1.5], [0.2; 0.2; 0.05]);
 

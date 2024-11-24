@@ -5,6 +5,7 @@ classdef InvariantEKF < handle
         X
         P
         Q
+        % TODO: confirm A is correct
         A
        
     end
@@ -98,62 +99,59 @@ classdef InvariantEKF < handle
             % correction
             obj.X = expm(delta) * obj.X;
             obj.P = (eye(9) - L * H) * obj.P * (eye(9) - L * H)' + L * N * L';
-            %disp(obj.P);
+            
         end
         
         % TODO
 
         % m is mag heading measurement in radians
         function mag_update(obj, m)
-            disp(rotm2eul(obj.X(1:3,1:3)));
-            % measurement representation of m
-            eulerZYX = rotm2eul(obj.X(1:3,1:3));
-            pitch = eulerZYX(2);
-            roll = eulerZYX(3);
-
-            M = eul2rotm([m, pitch, roll]);
-
-            %H = 
-
-            Y = [[M'; zeros(2,3)], [zeros(3,1); 1; 0], [zeros(3,1); 0; 1]];
-            b = [[zeros(5,3)], [obj.X(1:3,4);1;0], [obj.X(1:3,5);0;1]];
-            innov = obj.X * Y - b;
             
+            % get mag measurement in the robot frame
+            eulerXYZ = rotm2eul(obj.X(1:3,1:3));
+            roll = eulerXYZ(3);
+            pitch = eulerXYZ(2);
+
+            R_m = eul2rotm([m, pitch, roll]);
+
+            b = [0; 0; -9.81; 0; 0; 1; 1; 1; 0; 0];
+            Y = [inv(obj.X) zeros(5,5);
+                 zeros(5,5), inv(obj.X)] * b;
+
+            innov = [obj.X zeros(5,5);
+                     zeros(5,5), obj.X] * Y - b;
             disp(innov);
-            disp(rotm2eul(innov(1:3,1:3)));
+
+            g_skew = [0 -9.81 0;
+                      0 0 9.81;
+                      0 0 0];
+
+            m_skew = [1 1 0;
+                      -1 0 1;
+                      0 -1 -1];
+
+            H = [g_skew zeros(3,3) zeros(3,3);
+                 zeros(2,3) zeros(2,3) zeros(2,3);
+                 m_skew zeros(3,3) zeros(3,3);
+                 zeros(2,3) zeros(2,3) zeros(2,3)];
+
+            S = H * obj.P * H' + eye(10);
+            % disp(S);
+            % disp(obj.P);
+            % disp(H);
+            L = obj.P * H' / S;
+
+            delta = L * innov;
+            disp(delta);
+
+
+            % b_2 = [1; 1; 1];
+            % Y_2 = R_m' * b_2;
+            % innov_2 = obj.X(1:3,1:3) * Y_2 - b_2;
+            % disp(innov_2);
 
 
 
-            %disp(rotm2eul(obj.X(1:3,1:3)));
-            % H = [R zeros(3) zeros(3)];
-            % 
-            % % take the inverse
-            % R = R';
-            % Y = [R zeros(3,1) zeros(3,1); 0 0 0 1 0; 0 0 0 0 1];
-            % b = [zeros(5,3) [obj.X(1:3,4); 1; 0] [obj.X(1:3,5); 0; 1]];
-            % innov = obj.X * Y - b;
-            % 
-            % disp(innov);
-            % 
-            % disp(rotm2eul(innov(1:3,1:3)));
-
-            % delta should be [0 0 some change]
-
-            
-            
-           
-            
-
-            % 
-            % [x,y] = pol2cart(m, 1);
-            % m = [x;y;0];
-            %disp(m);
-            % disp(obj.X(1:3,1:3));
-            % disp(obj.X(1:3,1:3) \ R);
-            % disp(obj.X(1:3,1:3) * m);
-
-            
-            % get m in robot frame
             
         end
 
