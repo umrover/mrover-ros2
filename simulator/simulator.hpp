@@ -263,7 +263,7 @@ namespace mrover {
         R3d mOrientationDrift = R3d::Zero();
 
         bool mIsHeadless{};
-        
+
         int64_t mMotorTimeoutMs{};
 
         // Rendering
