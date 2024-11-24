@@ -106,6 +106,8 @@ classdef InvariantEKF < handle
 
         % m is mag heading measurement in radians
         function mag_update(obj, m)
+
+            disp(obj.X);
             
             % get mag measurement in the robot frame
             eulerXYZ = rotm2eul(obj.X(1:3,1:3));
@@ -113,14 +115,24 @@ classdef InvariantEKF < handle
             pitch = eulerXYZ(2);
 
             R_m = eul2rotm([m, pitch, roll]);
+            X_m = [R_m, obj.X(1:3,4), obj.X(1:3,5);
+                    zeros(1,3), 1, 0;
+                    zeros(1,3), 0, 1];
 
             b = [0; 0; -9.81; 0; 0; 1; 1; 1; 0; 0];
-            Y = [inv(obj.X) zeros(5,5);
-                 zeros(5,5), inv(obj.X)] * b;
+            Y = [inv(X_m) zeros(5,5);
+                 zeros(5,5), inv(X_m)] * b;
+
+
+
+            % disp(obj.X);
+            % disp(X_m);
+
+            %disp(Y);
 
             innov = [obj.X zeros(5,5);
                      zeros(5,5), obj.X] * Y - b;
-            disp(innov);
+            % disp(innov);
 
             g_skew = [0 -9.81 0;
                       0 0 9.81;
@@ -140,9 +152,12 @@ classdef InvariantEKF < handle
             % disp(obj.P);
             % disp(H);
             L = obj.P * H' / S;
-
-            delta = L * innov;
-            disp(delta);
+            
+            delta = obj.wedge(L * innov);
+            % disp(L * innov);
+            
+            obj.X = expm(delta) * obj.X;
+            disp(obj.X);
 
 
             % b_2 = [1; 1; 1];
