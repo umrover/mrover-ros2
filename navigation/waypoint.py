@@ -102,6 +102,9 @@ class WaypointState(State):
             context.node.get_logger().warn(f"No costmap found, waiting...")
             return self
         
+
+        self.is_path_blocked(context)
+
         # If there are no more points in the current a_star path or we are past the update delay, then create a new one
         if len(self.astar_traj.coordinates) == 0 or \
             context.node.get_clock().now() - self.time_last_updated > Duration(seconds=self.UPDATE_DELAY):
@@ -219,3 +222,41 @@ class WaypointState(State):
         context.node.get_logger().info(f"{cost_map[int(point_ij[0])][int(point_ij[1])]}")
         return cost_map[int(point_ij[0])][int(point_ij[1])] > self.TRAVERSABLE_COST
     
+    def is_path_blocked(self, context: Context) -> bool:
+        if not hasattr(context.env.cost_map, 'data'): return False
+
+        cost_map = context.env.cost_map.data
+        rover_pos = context.rover.get_pose_in_map().translation()[0:2]
+        target_pos = self.traj.get_current_point()[0:2]
+        
+        direction = target_pos - rover_pos
+        direction_norm = direction / np.linalg.norm(direction)
+
+        CHECK_DISTANCE = 2.0    # meters ahead to check
+        CHECK_WIDTH = 2.0       # meters to each side of center
+        NUM_WIDTH_CHECKS = 5    # number of points to check across width
+
+        check_center = rover_pos + direction_norm * CHECK_DISTANCE
+
+        perp_vec = np.array([-direction_norm[1], direction_norm[0]])
+
+        for width_mult in np.linspace(-1, 1, NUM_WIDTH_CHECKS):
+            check_point = check_center + perp_vec * (width_mult * CHECK_WIDTH)
+            
+            # Convert to costmap indices
+            point_ij = self.astar.cartesian_to_ij(check_point)
+            i, j = int(point_ij[0]), int(point_ij[1])
+            
+            # Boundary check
+            if 0 <= i < cost_map.shape[0] and 0 <= j < cost_map.shape[1]:
+                # Check if cost is above traversable threshold
+                if cost_map[i][j] > self.TRAVERSABLE_COST:
+                    context.node.get_logger().info(
+                        f"Obstacle detected at distance {CHECK_DISTANCE}m, "
+                        f"offset {width_mult * CHECK_WIDTH:.2f}m"
+                    )
+                    return True
+    
+        return False
+
+
