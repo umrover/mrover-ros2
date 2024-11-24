@@ -35,6 +35,7 @@ class AStar:
     TRAVERSABLE_COST: float
     A_STAR_THRESH: float
     COSTMAP_THRESH: float
+    ANGLE_THRESH: float
 
     def __init__(self, origin: np.ndarray, context: Context) -> None:
         self.origin = origin
@@ -46,6 +47,7 @@ class AStar:
             self.TRAVERSABLE_COST = self.context.node.get_parameter("search.traversable_cost").value
             self.A_STAR_THRESH = self.context.node.get_parameter("search.a_star_thresh").value
             self.COSTMAP_THRESH = self.context.node.get_parameter("search.costmap_thresh").value
+            self.ANGLE_THRESH = self.context.node.get_parameter("search.angle_thresh").value
         except:
             pass
     
@@ -86,6 +88,7 @@ class AStar:
         :return: euclidean distance between start and end nodes
         """
         return np.sqrt((start[0] - end[0]) ** 2 + (start[1] - end[1]) ** 2)
+    
 
     def return_path(self, came_from: dict[tuple, tuple], current_pos: tuple):
         """
@@ -104,6 +107,27 @@ class AStar:
 
         filter_n = 1
         return reversed_path
+    
+    def vec_angle(self, v1: tuple, v2:tuple) -> float:
+        """
+        Calculates angle between two vectors
+        """
+        # Compute dot product and magnitudes
+        dot_product = np.dot(v1, v2)
+        magnitude_v1 = np.linalg.norm(v1)
+        magnitude_v2 = np.linalg.norm(v2)
+    
+        # Calculate cosine of the angle
+        cos_theta = dot_product / (magnitude_v1 * magnitude_v2)
+        
+        # Clamp the value to avoid numerical errors outside the range [-1, 1]
+        cos_theta = np.clip(cos_theta, -1.0, 1.0)
+
+        #Compute the angle in radians
+        angle_rad = np.arccos(cos_theta)
+
+        return abs(angle_rad)
+         
 
     def a_star(self, start: np.ndarray, end: np.ndarray, debug=False) -> list | None:
         """
@@ -270,7 +294,11 @@ class AStar:
 
             # Determine whether the relative difference between A* and Euclidean distances exceeds the threshold
             follow_astar = abs(astar_dist - eucl_dist) / eucl_dist > self.A_STAR_THRESH
-        
+            angle = self.vec_angle(np.subtract(star_traj.coordinates[2], star_traj.coordinates[0])[0:2], np.subtract(tuple(trajectory)[0:2], context.rover.get_pose_in_map().translation()[0:2]))
+            # if angle < self.ANGLE_THRESH:
+            #     follow_astar = False
+            #     context.node.get_logger().info(f"Angle {np.degrees(angle):.2f} degrees not sharp enough for ASTAR")
+
         return follow_astar
             
         
