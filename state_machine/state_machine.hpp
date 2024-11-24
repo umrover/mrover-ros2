@@ -11,13 +11,25 @@
 #include <cxxabi.h>
 #include <iostream>
 
+	/**
+ * \brief             State Machine class that facilitates transitioning between different states which inherit from the State class
+ * \see               state.hpp for reference on creating states
+ */
 class StateMachine{
 private:
 	std::string mName;
 	State* currState;
-	std::unordered_map<std::size_t, std::vector<std::size_t>> mValidTransitions;
-	std::unordered_map<std::size_t, std::string> decoder;
 
+	using TypeHash = std::size_t;
+
+	std::unordered_map<TypeHash, std::vector<TypeHash>> mValidTransitions;
+	std::unordered_map<TypeHash, std::string> decoder;
+
+        /**
+     * \brief           Ensures that transitioning from "from" to "to" is a valid transition
+     * \param from		The runtime type of the from state
+     * \param to		The runtime type of the to state
+     */
 	void assertValidTransition(std::type_info const& from, std::type_info const& to) const {
 		auto it = mValidTransitions.find(from.hash_code());
 
@@ -25,7 +37,7 @@ private:
 			throw std::runtime_error(std::format("{} is not in the state machine ", typeid(from).name()));
 		}
 
-		std::vector<std::size_t> const& toTransitions = it->second;
+		std::vector<TypeHash> const& toTransitions = it->second;
 		if(std::find(toTransitions.begin(), toTransitions.end(), to.hash_code()) == toTransitions.end()){
 			throw std::runtime_error(std::format("Invalid State Transition from {} to {}", typeid(currState).name(), typeid(to).name()));
 		}
@@ -54,18 +66,18 @@ public:
 		return decoder.find(typeid(*currState).hash_code())->second;
 	}
 
-	auto getTransitionTable() const -> std::unordered_map<std::size_t, std::vector<std::size_t>> const&{
+	auto getTransitionTable() const -> std::unordered_map<TypeHash, std::vector<TypeHash>> const&{
 		return mValidTransitions;
 	}
 
-	auto decodeTypeHash(std::size_t hash) const -> std::string const&{
+	auto decodeTypeHash(TypeHash hash) const -> std::string const&{
 		return decoder.find(hash)->second;
 	}
 
-	void addNameToDecoder(std::size_t hash, std::string const& name){
+	void addNameToDecoder(TypeHash hash, std::string const& name){
 		constexpr static std::string prefix{"mrover::"};
-		std::size_t index = name.find(prefix);
-		std::string _name = name;
+		TypeHash index = name.find(prefix);
+		std::string _name{name};
 		_name.replace(index, index + prefix.size(), "");
 		decoder[hash] = _name;
 	}
@@ -89,8 +101,7 @@ public:
 	 
 		std::vector<std::reference_wrapper<std::type_info const>> types{std::ref(typeid(To))...};
 		for(auto const& type : types){
-			int status = 0;
-			char* demangledName = abi::__cxa_demangle(type.get().name(), nullptr, nullptr, &status);
+			demangledName = abi::__cxa_demangle(type.get().name(), nullptr, nullptr, &status);
 			addNameToDecoder(type.get().hash_code(), demangledName);
 			free(demangledName);
 		}
