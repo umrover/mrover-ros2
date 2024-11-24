@@ -21,19 +21,20 @@
   </div>
 
   <div class="row">
-  <div v-for="(camera, index) in cameras[selectedMission]" :key="index" class="col-sm feed">
-    <div class="form-check d-flex justify-content-center align-items-center">
-      <input
-        v-model="cameraSwitch['cam' + index]"
-        class="form-check-input"
-        type="radio"
-        :id="'cam' + index"
-        :value="true"
-       />
-        <label class="form-check-label" :for="'cam' + index">{{ camera }}</label>
+      <div
+        v-for="(camera, index) in cameras[selectedMission]"
+        :key="camera"
+        class="col-sm feed"
+      >
+        <ToggleButton
+          :id="camera"
+          :labelEnableText="'Enable Camera'"
+          :labelDisableText="'Disable Camera'"
+          :currentState="cameraSwitch[camera]"
+          @change="toggleCamera"
+        />
       </div>
     </div>
-  </div>
 
   <div class="container-fluid">
     <div class="row gx-3 gy-3 justify-content-center">
@@ -72,12 +73,14 @@
 <script lang="ts">
 import CameraSelection from '../components/CameraSelection.vue'
 import CameraFeed from './CameraFeed.vue'
+import ToggleButton from "../components/ToggleButton.vue";
 import { mapActions, mapState } from 'vuex'
 import { reactive } from 'vue'
 
 export default {
   components: {
     CameraSelection,
+    ToggleButton,
     CameraFeed
   },
 
@@ -85,7 +88,7 @@ export default {
     return {
       percent: 0,
       missionType: ["DM Mission", "ES Mission", "ISH GUI", "Sample Acquisition GUI", "Autonomy Mission"],
-      selectedMission: "",
+      selectedMission: "DM Mission",
       cameras: {
         "DM Mission": ["Cam1" ,"Cam2"],
         "ES Mission": ["Cam3" ,"Cam4","Cam5"],
@@ -153,6 +156,11 @@ export default {
 
     takePanorama() {
       this.sendMessage({ type: 'takePanorama' })
+    },
+
+    toggleCamera({ id, state }) {
+      this.cameraSwitch[id] = state;
+      console.log(`Camera ${id} toggled to ${state ? "ON" : "OFF"}`);
     }
   }
 }
