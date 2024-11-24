@@ -128,6 +128,14 @@ namespace mrover {
             mPosPub->publish(positions.value());
         } else {
             RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1000, "IK Failed");
+            if (mArmMode == ArmMode::VELOCITY_CONTROL) {
+                mPosTarget *= SE3d(-mVelTarget * 0.01, SO3d::Identity()); // undo velocity offset
+                positions = ikCalc(mPosTarget);
+                if (!positions) // surely this will never happen right
+                    RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1000, "Undo velocity control failed");
+                else
+                    mPosPub->publish(positions.value());
+            }
         }
     }
 
