@@ -101,9 +101,6 @@ class WaypointState(State):
         if not hasattr(context.env.cost_map, 'data'): 
             context.node.get_logger().warn(f"No costmap found, waiting...")
             return self
-        
-
-        self.is_path_blocked(context)
 
         # If there are no more points in the current a_star path or we are past the update delay, then create a new one
         if len(self.astar_traj.coordinates) == 0 or \
