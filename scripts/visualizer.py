@@ -22,6 +22,7 @@ from typing import Optional, List, Dict
 import threading
 import sys
 
+
 @dataclass
 class State:
     name: str
@@ -156,7 +157,7 @@ def main(structure_topic, state_topic):
 if __name__ == "__main__":
     argc = len(sys.argv)
     if argc != 3:
-        print('Usage ros2 run mrover visualizer.py \"[structure topic]\" \"[state topic]\"')
+        print('Usage ros2 run mrover visualizer.py "[structure topic]" "[state topic]"')
         sys.exit(1)
 
     main(sys.argv[1], sys.argv[2])
