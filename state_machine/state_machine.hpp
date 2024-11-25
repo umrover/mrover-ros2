@@ -88,7 +88,7 @@ public:
 
         /**
      * \brief           Returns the demangled name of the state at runtime
-     * \param state		A point to a state derived object which will have its runtime type analyzed
+     * \param state		A pointer to a state derived object which will have its runtime type analyzed
      * \return          A constant reference to the demangled state name at runtime
      */
 	auto getStateName(State const* state) const -> std::string const&{
@@ -113,7 +113,7 @@ public:
 
         /**
      * \brief           Takes in a type hash and returns the demangled state name
-     * \return          A constant reference to the demangles state name
+     * \return          A constant reference to the demangled state name
      */
 	auto decodeTypeHash(TypeHash hash) const -> std::string const&{
 		return decoder.find(hash)->second;
