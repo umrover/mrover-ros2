@@ -43,6 +43,18 @@ private:
 		}
 	}
 
+        /**
+     * \brief           Adds the demangled name to the map in the corresponding type hash slot
+     * \param hash		The type hash for the runtime type
+     * \param name		The demangled name of the runtime type
+     */
+	void addNameToDecoder(TypeHash hash, std::string const& name){
+		constexpr static std::string prefix{"mrover::"};
+		TypeHash index = name.find(prefix);
+		std::string _name{name};
+		_name.replace(index, index + prefix.size(), "");
+		decoder[hash] = _name;
+	}
 public:
         /**
      * \brief           	Constructor for the StateMachine Class
@@ -88,7 +100,7 @@ public:
      * \return          A constant reference to the current state's demangled state name
      */
 	auto getCurrentState() const -> std::string const& {
-		return decoder.find(typeid(*currState).hash_code())->second;
+		return getStateName(currState);
 	}
 
         /**
@@ -100,21 +112,16 @@ public:
 	}
 
         /**
-     * \brief           Takes in a type hash 
-     * \return          A constant reference to the map describing all valid state transitions
+     * \brief           Takes in a type hash and returns the demangled state name
+     * \return          A constant reference to the demangles state name
      */
 	auto decodeTypeHash(TypeHash hash) const -> std::string const&{
 		return decoder.find(hash)->second;
 	}
 
-	void addNameToDecoder(TypeHash hash, std::string const& name){
-		constexpr static std::string prefix{"mrover::"};
-		TypeHash index = name.find(prefix);
-		std::string _name{name};
-		_name.replace(index, index + prefix.size(), "");
-		decoder[hash] = _name;
-	}
-
+        /**
+     * \brief           Enables the state transition from the first templated type to the subsequent templated types
+     */
 	template<typename From, typename ...To>
 	void enableTransitions(){
 		static_assert(std::derived_from<From, State>, "From State Must Be Derived From The State Class");
@@ -140,6 +147,9 @@ public:
 		}
 	}
 
+        /**
+     * \brief        Runs the onLoop function for the state and then transitions to the state returned from that function   
+     */
 	void update(){
 		State* newState = currState->onLoop();
 		

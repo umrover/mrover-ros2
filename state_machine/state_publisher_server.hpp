@@ -28,7 +28,10 @@ namespace mrover{
 
         rclcpp::TimerBase::SharedPtr mStructureTimer;
         rclcpp::TimerBase::SharedPtr mStateTimer;
-
+            /**
+         * \brief             Publishes the structure to be used by visualizer.py
+         * \see               visualizer.py to see how these topic will be used
+         */
         void publishStructure(){
             auto structureMsg = mrover::msg::StateMachineStructure();
             structureMsg.machine_name = mStateMachine.getName();
@@ -46,6 +49,10 @@ namespace mrover{
 			mStructurePub->publish(structureMsg);
         }
 
+            /**
+         * \brief             Publishes the current state of the state machine
+         * \see               visualizer.py to see how these topic will be used
+         */
         void publishState(){
 			auto stateMachineUpdate = mrover::msg::StateMachineStateUpdate();
 			stateMachineUpdate.state_machine_name = mStateMachine.getName();
@@ -54,6 +61,15 @@ namespace mrover{
         }
 
     public:
+            /**
+         * \brief                       Creates a State Publisher to facilitate the communications between visualizer.py and the state machine
+         * \param node		            The node which owns the state publisher
+         * \param stateMachine          The state machine which the publisher will describe
+         * \param structureTopicName    The topic which will publish the state machine's structure
+         * \param structureTopicHz      The rate at which the structure topic will publish
+         * \param stateTopicName        The topic which will publish the state machine's state
+         * \param stateTopicHz          The rate at which the state topic will publish
+         */
         StatePublisher(rclcpp::Node* node, StateMachine const& stateMachine, std::string const& structureTopicName, double structureTopicHz, std::string const& stateTopicName, double stateTopicHz) : mStateMachine{stateMachine} {
             mStructurePub = node->create_publisher<mrover::msg::StateMachineStructure>(structureTopicName, 1);
             mStatePub = node->create_publisher<mrover::msg::StateMachineStateUpdate>(stateTopicName, 1);
