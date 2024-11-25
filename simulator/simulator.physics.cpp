@@ -1,6 +1,4 @@
 #include "simulator.hpp"
-#include <manif/impl/se3/SE3.h>
-#include <string_view>
 
 namespace mrover {
 
