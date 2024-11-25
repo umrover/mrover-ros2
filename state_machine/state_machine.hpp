@@ -44,32 +44,65 @@ private:
 	}
 
 public:
+        /**
+     * \brief           	Constructor for the StateMachine Class
+     * \param name			The name of the state machine useful for visualization
+     * \param initialState	The initial state which the state machine will begin execution in
+     */
 	explicit StateMachine(std::string name, State* initialState) : mName{std::move(name)}, currState{initialState}{};
+
 	~StateMachine(){
 		delete currState;
 	}
 	
+        /**
+     * \brief           Makes a state which the state machine will use for execution.
+	 * 					DO NOT CALL THIS FUNCTION AND NOT PASS THE STATE TO THE STATE MACHINE
+     * \param args		The arguments that will be passed to the constructor of the state
+     */
 	template<typename T, typename ...Args>
 	static auto make_state(Args... args) -> T*{
+		static_assert(std::derived_from<T, State>, "State Must Be Derived From The State Class");
 		return new T(args...);
 	}
 
+        /**
+     * \brief           Returns the name of the state machine
+     * \return          A constant reference to the name of the state machine
+     */
 	auto getName() const -> std::string const& {
 		return mName;
 	}
 
+        /**
+     * \brief           Returns the demangled name of the state at runtime
+     * \param state		A point to a state derived object which will have its runtime type analyzed
+     * \return          A constant reference to the demangled state name at runtime
+     */
 	auto getStateName(State const* state) const -> std::string const&{
 		return decoder.find(typeid(*state).hash_code())->second;
 	}
 
+        /**
+     * \brief           Returns the demangled name of the current state in the state machine
+     * \return          A constant reference to the current state's demangled state name
+     */
 	auto getCurrentState() const -> std::string const& {
 		return decoder.find(typeid(*currState).hash_code())->second;
 	}
 
+        /**
+     * \brief           Returns a map of type hashes to a vector of each type hash
+     * \return          A constant reference to the map describing all valid state transitions
+     */
 	auto getTransitionTable() const -> std::unordered_map<TypeHash, std::vector<TypeHash>> const&{
 		return mValidTransitions;
 	}
 
+        /**
+     * \brief           Takes in a type hash 
+     * \return          A constant reference to the map describing all valid state transitions
+     */
 	auto decodeTypeHash(TypeHash hash) const -> std::string const&{
 		return decoder.find(hash)->second;
 	}
