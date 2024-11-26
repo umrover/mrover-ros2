@@ -50,8 +50,7 @@ namespace mrover {
 
     auto ObjectDetectorBase::updateHitsObject(sensor_msgs::msg::PointCloud2::UniquePtr const& msg, std::span<Detection const> detections, cv::Size const& imageSize) -> void {
         // Set of flags indicating if the given object has been seen
-        // TODO(quintin): Do not hard code exactly two classes
-        std::bitset<2> seenObjects{0b00};
+        std::vector<bool> seenObjects(mModel.classes.size(), false);
         for (auto const& [classId, className, confidence, box]: detections) {
             // Resize from blob space to image space
             cv::Point2f centerInBlob = cv::Point2f{box.tl()} + cv::Point2f{box.size()} / 2;
