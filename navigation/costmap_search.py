@@ -96,6 +96,9 @@ class CostmapSearchState(State):
         self.time_last_updated = context.node.get_clock().now()
         self.follow_astar = False
 
+        #Initialize stopwatch
+        self.time_begin = context.node.get_clock().now()
+
     def on_exit(self, context: Context) -> None:
         pass
 
@@ -184,6 +187,8 @@ class CostmapSearchState(State):
         # If our target object has been detected, approach it
         if (context.env.current_target_pos() is not None
             and self.astar.d_calc(context.env.current_target_pos(), rover_in_map.translation()[0:2]) < self.SAFE_APPROACH_DISTANCE):
+            total_time = context.node.get_clock().now() - self.time_begin
+            context.node.get_logger().info(f"Total search time: {total_time.nanoseconds/1000000000}")
             return approach_target.ApproachTargetState()
 
         return self

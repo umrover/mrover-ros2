@@ -7,6 +7,7 @@ from .context import Context
 
 class ApproachTargetState(State):
     def on_enter(self, context: Context) -> None:
+        self.time_begin = context.node.get_clock().now()
         pass
 
     def on_exit(self, context: Context) -> None:
@@ -17,6 +18,8 @@ class ApproachTargetState(State):
 
     def determine_next(self, context: Context, is_finished: bool) -> State:
         if is_finished:
+            total_time = context.node.get_clock().now() - self.time_begin
+            context.node.get_logger().info(f"Total approach time: {total_time.nanoseconds/1000000000}")
             return state.DoneState()
 
         if context.rover.stuck:

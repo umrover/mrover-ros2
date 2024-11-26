@@ -278,13 +278,18 @@ class AStar:
         :return: True if the A* path should be followed, False otherwise
         """
         rover_in_map = context.rover.get_pose_in_map()
-        follow_astar: bool
+        follow_astar: bool = True
 
         # If any required information is missing or A* trajectory has fewer than 4 coordinates, do not follow A* path
         if rover_in_map is None or trajectory is None or len(star_traj.coordinates) < 4:
             follow_astar = False
-        else:
-            # Calculate the total distance of the A* path
+        #else: 
+            # angle = self.vec_angle(np.subtract(star_traj.coordinates[3], star_traj.coordinates[0])[0:2], np.subtract(tuple(trajectory)[0:2], context.rover.get_pose_in_map().translation()[0:2]))
+            # if angle < self.ANGLE_THRESH:
+            #     follow_astar = False
+            #     context.node.get_logger().info(f"Angle {np.degrees(angle):.2f} degrees not sharp enough for ASTAR")
+                # Calculate the total distance of the A* path
+        if follow_astar == True:
             astar_dist = 0.0
             for i in range(len(star_traj.coordinates[:-1])):
                 astar_dist += self.d_calc(star_traj.coordinates[i], star_traj.coordinates[i + 1])
@@ -294,10 +299,7 @@ class AStar:
 
             # Determine whether the relative difference between A* and Euclidean distances exceeds the threshold
             follow_astar = abs(astar_dist - eucl_dist) / eucl_dist > self.A_STAR_THRESH
-            angle = self.vec_angle(np.subtract(star_traj.coordinates[2], star_traj.coordinates[0])[0:2], np.subtract(tuple(trajectory)[0:2], context.rover.get_pose_in_map().translation()[0:2]))
-            # if angle < self.ANGLE_THRESH:
-            #     follow_astar = False
-            #     context.node.get_logger().info(f"Angle {np.degrees(angle):.2f} degrees not sharp enough for ASTAR")
+
 
         return follow_astar
             
