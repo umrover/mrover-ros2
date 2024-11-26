@@ -321,6 +321,7 @@ install(PROGRAMS
         superstructure/superstructure.py
         scripts/debug_course_publisher.py
 		scripts/visualizer.py
+		scripts/image_capture.py
 
         # starter project sources
         starter_project/autonomy/src/localization.py
