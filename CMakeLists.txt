@@ -16,11 +16,9 @@ option(MROVER_WARNINGS_AS_ERRORS "Treat warnings as errors" ${MROVER_CI})
 
 if (APPLE)
     # Ensures that homebrew packages are never used over miniforge packages.
-    # TODO (ali): Pretty sure this doesn't do anything on macs
     set(CMAKE_IGNORE_PATH /opt/homebrew)
     # Find mamba python
-    find_package(PythonLibs REQUIRED)
-    # link_libraries(${PYTHON_LIBRARIES})
+    find_package(PythonLibs 3.10 EXACT REQUIRED)
 endif ()
 
 if (CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
