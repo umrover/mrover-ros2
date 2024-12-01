@@ -40,9 +40,9 @@ extern TIM_HandleTypeDef htim17;
 #define PWM_TIMER_CHANNEL_2 TIM_CHANNEL_3
 
 // Special encoder timer which externally reads quadrature encoder ticks
-#define QUADRATURE_TICK_TIMER_0 &htim2 // Motor 0
+#define QUADRATURE_TICK_TIMER_0 &htim4 // Motor 0
 #define QUADRATURE_TICK_TIMER_1 &htim3 // Motor 1
-#define QUADRATURE_TICK_TIMER_2 &htim4 // Motor 2
+#define QUADRATURE_TICK_TIMER_2 &htim2 // Motor 2
 
 // 20 Hz global timer for: FDCAN send, I2C transaction (absolute encoders)
 #define GLOBAL_UPDATE_TIMER &htim6

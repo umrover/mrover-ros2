@@ -37,6 +37,7 @@ namespace mrover {
             Radians offset_position;
         };
 
+        std::uint8_t m_id;
         /* ==================== Hardware ==================== */
         HBridge m_motor_driver;
         IStopwatch* m_stopwatch{};
@@ -75,7 +76,6 @@ namespace mrover {
         std::optional<StateAfterCalib> m_state_after_calib;
 
         /* ==================== Messaging ==================== */
-        std::uint8_t m_id;
         InBoundMessage m_inbound = IdleCommand{};
         OutBoundMessage m_outbound = ControllerDataState{.config_calib_error_data = {.error = m_error}};
 
@@ -303,13 +303,13 @@ namespace mrover {
     public:
         Motor() = default;
 
-        Motor(std::uint8_t id, HBridge const& motor_driver, IStopwatch* stopwatch, TIM_HandleTypeDef* command_watchdog_timer,
+        Motor(std::uint8_t id, HBridge const& motor_driver, IStopwatch* stopwatch, TIM_HandleTypeDef* receive_watchdog_timer,
               std::array<LimitSwitch, 2> const& limit_switches, TIM_HandleTypeDef* relative_encoder_tick_timer,
               std::uint8_t absolute_encoder_a2_a1)
             : m_id(id),
               m_motor_driver(motor_driver),
               m_stopwatch(stopwatch),
-              m_receive_watchdog_timer(command_watchdog_timer),
+              m_receive_watchdog_timer(receive_watchdog_timer),
               m_limit_switches(limit_switches),
               m_relative_encoder_tick_timer(relative_encoder_tick_timer),
               m_absolute_encoder_a2_a1(absolute_encoder_a2_a1) {
