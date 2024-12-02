@@ -52,7 +52,7 @@ Inference::Inference(std::string modelName, std::string packagePathString) :  mM
 	}
 
 	// Be verbose about the input tensor size
-	auto outputTensorSize = getInputTensorSize();
+	auto outputTensorSize = getOutputTensorSize();
 	std::snprintf(message.data(), message.size(), "%s Tensor's Dimensions:", mOutputTensorName.c_str());
 	mLogger.log(ILogger::Severity::kINFO, message.data());
 	for(size_t i = 0; i < outputTensorSize.size(); ++i){
