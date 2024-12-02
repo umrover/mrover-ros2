@@ -71,6 +71,7 @@ class Navigation(Node):
                 ("search.safe_approach_distance", Parameter.Type.DOUBLE),
                 ("search.a_star_thresh", Parameter.Type.DOUBLE),
                 ("search.costmap_thresh", Parameter.Type.DOUBLE),
+                ("search.angle_thresh", Parameter.Type.DOUBLE),
 
                 ("single_tag.stop_threshold", Parameter.Type.DOUBLE),
                 ("single_tag.tag_stop_threshold", Parameter.Type.DOUBLE),

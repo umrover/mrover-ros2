@@ -46,6 +46,7 @@ navigation:
       safe_approach_distance: 5.0
       a_star_thresh: 0.15
       costmap_thresh: 0.25
+      angle_thresh: 0.0872665 #pi/36 radians / 5 degrees
 
     single_tag:
       stop_threshold: 1.0

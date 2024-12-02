@@ -77,8 +77,8 @@ namespace mrover {
             }
 
             
-            constexpr double MAX_COST_RADIUS = 1.5; 
-            constexpr double INFLATION_RADIUS = 3; 
+            constexpr double MAX_COST_RADIUS = 2; 
+            constexpr double INFLATION_RADIUS = 5; 
 
             nav_msgs::msg::OccupancyGrid postProcessed = mGlobalGridMsg;
             std::ptrdiff_t width = postProcessed.info.width;
