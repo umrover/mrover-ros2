@@ -1,11 +1,10 @@
 #include "object_detector.hpp"
+#include <functional>
 
 namespace mrover {
 
     ObjectDetectorBase::ObjectDetectorBase(rclcpp::NodeOptions const& options) : rclcpp::Node(NODE_NAME, options), mLoopProfiler{get_logger()} {
         std::string modelName;
-        float modelScoreThreshold{};
-        float modelNMSThreshold{};
 
         std::vector<ParameterWrapper> params{
                 {"camera_frame", mCameraFrame, "zed_left_camera_frame"},
@@ -15,8 +14,8 @@ namespace mrover {
                 {"hitcount_threshold", mObjHitThreshold, 5},
                 {"hitcount_max", mObjMaxHitcount, 10},
                 {"model_name", modelName, "Large-Dataset"},
-                {"model_score_threshold", modelScoreThreshold, 0.75},
-                {"model_nms_threshold", modelNMSThreshold, 0.5}};
+                {"model_score_threshold", mModelScoreThreshold, 0.75},
+                {"model_nms_threshold", mModelNMSThreshold, 0.5}};
 
         ParameterWrapper::declareParameters(this, params);
 
@@ -31,9 +30,11 @@ namespace mrover {
         // Initialize TensorRT Inference Object and Get Important Output Information
         mTensorRT = TensortRT{modelName, packagePath.string()};
 
-        mModel = Model(modelName, {0, 0}, {"bottle", "hammer"}, mTensorRT.getInputTensorSize(), mTensorRT.getOutputTensorSize(), {modelScoreThreshold, modelNMSThreshold}, ObjectDetectorBase::preprocessYOLOv8Input, ObjectDetectorBase::parseYOLOv8Output);
+        using namespace std::placeholders;
 
-        RCLCPP_INFO_STREAM(get_logger(), std::format("Object detector initialized with model: {} and thresholds: {} and {}", mModel.modelName, modelScoreThreshold, modelNMSThreshold));
+        mModel = Model(modelName, {0, 0}, {"bottle", "hammer"}, mTensorRT.getInputTensorSize(), mTensorRT.getOutputTensorSize(), [this](Model const& model, cv::Mat& rgbImage, cv::Mat& blobSizedImage, cv::Mat& blob){preprocessYOLOv8Input(model, rgbImage, blobSizedImage, blob);}, [this](Model const& model, cv::Mat& output, std::vector<Detection>& detections){parseYOLOv8Output(model, output, detections);});
+
+        RCLCPP_INFO_STREAM(get_logger(), std::format("Object detector initialized with model: {} and thresholds: {} and {}", mModel.modelName, mModelScoreThreshold, mModelNMSThreshold));
     }
 
     StereoObjectDetector::StereoObjectDetector(rclcpp::NodeOptions const& options) : ObjectDetectorBase(options) {

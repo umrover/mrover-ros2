@@ -1,12 +1,8 @@
 #include "object_detector.hpp"
 namespace mrover {
-    auto ObjectDetectorBase::preprocessYOLOv8Input(Model const& model, cv::Mat& rgbImage, cv::Mat& blobSizedImage, cv::Mat& blob) -> void {
+    auto ObjectDetectorBase::preprocessYOLOv8Input(Model const& model, cv::Mat const& rgbImage, cv::Mat& blobSizedImage, cv::Mat& blob) -> void {
         if (model.inputTensorSize.size() != 4) {
             throw std::runtime_error("Expected Blob Size to be of size 4, are you using the correct model type?");
-        }
-
-        if (model.buffer.size() != 2) {
-            throw std::runtime_error("Expected 2 additional parameters!");
         }
 
         static constexpr double UCHAR_TO_DOUBLE = 1.0 / 255.0;
@@ -16,7 +12,7 @@ namespace mrover {
         cv::dnn::blobFromImage(blobSizedImage, blob, UCHAR_TO_DOUBLE, blobSize, cv::Scalar{}, false, false);
     }
 
-    auto ObjectDetectorBase::parseYOLOv8Output(Model const& model, cv::Mat& output, std::vector<Detection>& detections) -> void {
+    auto ObjectDetectorBase::parseYOLOv8Output(Model const& model, cv::Mat& output, std::vector<Detection>& detections) const -> void {
         // Parse model specific dimensioning from the output
 
         // The input to this function is expecting a YOLOv8 style model, thus the dimensions should be > rows
@@ -26,12 +22,12 @@ namespace mrover {
             throw std::runtime_error(message.data());
         }
 
-        int rows = output.cols;
-        int dimensions = output.rows;
+        int numCandidates = output.cols;
+        int predictionDimension = output.rows;
 
         // The output of the model is a batchSizex84x8400 matrix
         // This converts the model to a TODO: Check this dimensioning
-        output = output.reshape(1, dimensions);
+        output = output.reshape(1, predictionDimension);
         cv::transpose(output, output);
 
         // This function expects the image to already be in the correct format thus no distrotion is needed
@@ -44,16 +40,16 @@ namespace mrover {
         std::vector<cv::Rect> boxes;
 
         // Each row of the output is a detection with a bounding box and associated class scores
-        for (int r = 0; r < rows; ++r) {
+        for (int r = 0; r < numCandidates; ++r) {
             // Skip first four values as they are the box data
-            cv::Mat scores = output.row(r).colRange(4, dimensions);
+            cv::Mat scores = output.row(r).colRange(4, predictionDimension);
 
             cv::Point classId;
             double maxClassScore;
             cv::minMaxLoc(scores, nullptr, &maxClassScore, nullptr, &classId);
 
             // Determine if the class is an acceptable confidence level, otherwise disregard
-            if (maxClassScore <= model.buffer[0]) continue;
+            if (maxClassScore <= mModelScoreThreshold) continue;
 
             confidences.push_back(static_cast<float>(maxClassScore));
             classIds.push_back(classId.x);
@@ -77,22 +73,12 @@ namespace mrover {
 
         //Coalesce the boxes into a smaller number of distinct boxes
         std::vector<int> nmsResult;
-        cv::dnn::NMSBoxes(boxes, confidences, model.buffer[0], model.buffer[1], nmsResult);
+        cv::dnn::NMSBoxes(boxes, confidences, mModelScoreThreshold, mModelNMSThreshold, nmsResult);
 
         // Fill in the output Detections Vector
         for (int i: nmsResult) {
-            Detection result;
-
-            //Fill in the id and confidence for the class
-            result.classId = classIds[i];
-            result.confidence = confidences[i];
-
-            //Fill in the class name and box information
-            result.className = model.classes[result.classId];
-            result.box = boxes[i];
-
-            //Push back the detection into the for storagevector
-            detections.push_back(result);
+            //Push back the detection into the for storage vector
+            detections.emplace_back(classIds[i], model.classes[classIds[i]], confidences[i], boxes[i]);
         }
     }
 

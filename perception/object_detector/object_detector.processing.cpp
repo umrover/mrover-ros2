@@ -24,7 +24,7 @@ namespace mrover {
 
         // Convert the RGB Image into the blob Image format
         cv::Mat blobSizedImage;
-        mModel.rbgImageToBlob(mModel, mRgbImage, blobSizedImage, mImageBlob);
+        mModel.rgbImageToBlob(mModel, mRgbImage, blobSizedImage, mImageBlob);
 
         mLoopProfiler.measureEvent("Conversion");
 
@@ -151,7 +151,7 @@ namespace mrover {
         }
     }
 
-    auto ObjectDetectorBase::publishDetectedObjects(cv::InputArray image) -> void {
+    auto ObjectDetectorBase::publishDetectedObjects(cv::InputArray const& image) -> void {
         mDetectionsImageMessage.header.stamp = get_clock()->now();
         mDetectionsImageMessage.height = image.rows();
         mDetectionsImageMessage.width = image.cols();
@@ -189,7 +189,7 @@ namespace mrover {
 
         // Convert the RGB Image into the blob Image format
         cv::Mat blobSizedImage;
-        mModel.rbgImageToBlob(mModel, mRgbImage, blobSizedImage, mImageBlob);
+        mModel.rgbImageToBlob(mModel, mRgbImage, blobSizedImage, mImageBlob);
 
         mLoopProfiler.measureEvent("Conversion");
 
@@ -207,7 +207,7 @@ namespace mrover {
             mrover::msg::ImageTarget target;
             target.name = className;
             target.bearing = getTagBearing(blobSizedImage, box);
-            targets.targets.push_back(target);
+            targets.targets.emplace_back(target);
         }
 
         mTargetsPub->publish(targets);
@@ -218,7 +218,7 @@ namespace mrover {
         mLoopProfiler.measureEvent("Publication");
     }
 
-    auto ImageObjectDetector::getTagBearing(cv::InputArray image, cv::Rect const& box) const -> float {
+    auto ImageObjectDetector::getTagBearing(cv::InputArray const& image, cv::Rect const& box) const -> float {
         cv::Point2f center = cv::Point2f{box.tl()} + cv::Point2f{box.size()} / 2;
         float xNormalized = center.x / static_cast<float>(image.cols());
         float xRecentered = 0.5f - xNormalized;

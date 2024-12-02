@@ -182,10 +182,9 @@ auto Inference::prepTensors() -> void {
 
 	assert(mContext);
 	// Create an appropriately sized output tensor
-	// TODO: Fix this
 	auto const [nbDims, d] = mEngine->getTensorShape(mOutputTensorName.c_str());
 	for (int i = 0; i < nbDims; i++) {
-		std::array<char, 512> message;
+		std::array<char, 512> message{};
 		std::snprintf(message.data(), message.size(), "Size %d %d", i, d[i]);
 		mLogger.log(ILogger::Severity::kINFO, message.data());
 	}

@@ -5,8 +5,16 @@
 namespace mrover {
 
     class ObjectDetectorBase : public rclcpp::Node {
-
     protected:
+        struct Detection {
+            int classId{};
+            std::string className;
+            float confidence{};
+            cv::Rect box;
+
+            Detection(int _classId, std::string _className, float _confidence, cv::Rect _box) : classId{_classId}, className{_className}, confidence{_confidence}, box{_box}{}
+        };
+
         struct Model {
             std::string modelName;
 
@@ -18,19 +26,18 @@ namespace mrover {
 
             std::vector<int64_t> outputTensorSize;
 
-            // Additional space for params that one algorithm might need and not others
-            std::vector<float> buffer;
-
             // Converts an rgb image to a blob
-            std::function<void(Model const&, cv::Mat&, cv::Mat&, cv::Mat&)> rbgImageToBlob;
+            std::function<void(Model const&, cv::Mat&, cv::Mat&, cv::Mat&)> rgbImageToBlob;
 
             // Converts an output tensor into a vector of detections
             std::function<void(Model const&, cv::Mat&, std::vector<Detection>&)> outputTensorToDetections;
 
             Model() = default;
 
-            Model(std::string _modelName, std::vector<int> _objectHitCounts, std::vector<std::string> _classes, std::vector<int64_t> _inputTensorSize, std::vector<int64_t> _outputTensorSize, std::vector<float> _buffer, std::function<void(Model const&, cv::Mat&, cv::Mat&, cv::Mat&)> _rbgImageToBlob, std::function<void(Model const&, cv::Mat&, std::vector<Detection>&)> _outputTensorToDetections) : modelName{std::move(_modelName)}, objectHitCounts(std::move(_objectHitCounts)), classes(std::move(_classes)), inputTensorSize(std::move(_inputTensorSize)), outputTensorSize(std::move(_outputTensorSize)), buffer(std::move(_buffer)), rbgImageToBlob{std::move(_rbgImageToBlob)}, outputTensorToDetections{std::move(_outputTensorToDetections)} {}
+            Model(std::string _modelName, std::vector<int> _objectHitCounts, std::vector<std::string> _classes, std::vector<int64_t> _inputTensorSize, std::vector<int64_t> _outputTensorSize, std::function<void(Model const&, cv::Mat&, cv::Mat&, cv::Mat&)> _rbgImageToBlob, std::function<void(Model const&, cv::Mat&, std::vector<Detection>&)> _outputTensorToDetections) : modelName{std::move(_modelName)}, objectHitCounts(std::move(_objectHitCounts)), classes(std::move(_classes)), inputTensorSize(std::move(_inputTensorSize)), outputTensorSize(std::move(_outputTensorSize)), rgbImageToBlob{std::move(_rbgImageToBlob)}, outputTensorToDetections{std::move(_outputTensorToDetections)} {}
         };
+
+        
 
         static constexpr char const* NODE_NAME = "object_detector";
 
@@ -57,6 +64,8 @@ namespace mrover {
         int mObjDecrementWeight{};
         int mObjHitThreshold{};
         int mObjMaxHitcount{};
+        float mModelScoreThreshold{};
+        float mModelNMSThreshold{};
 
         auto spiralSearchForValidPoint(sensor_msgs::msg::PointCloud2::UniquePtr const& cloudPtr,
                                        std::size_t u, std::size_t v,
@@ -66,15 +75,15 @@ namespace mrover {
                               std::span<Detection const> detections,
                               cv::Size const& imageSize = {640, 640}) -> void;
 
-        auto publishDetectedObjects(cv::InputArray image) -> void;
+        auto publishDetectedObjects(cv::InputArray const& image) -> void;
 
-        static auto drawDetectionBoxes(cv::InputOutputArray image, std::span<Detection const> detections) -> void;
-
-        auto static parseYOLOv8Output(Model const& model,
+        static auto drawDetectionBoxes(cv::InputOutputArray& image, std::span<Detection const> detections) -> void;
+        
+        auto parseYOLOv8Output(Model const& model,
                                       cv::Mat& output,
-                                      std::vector<Detection>& detections) -> void;
+                                      std::vector<Detection>& detections) const -> void;
 
-        auto static preprocessYOLOv8Input(Model const& model, cv::Mat& rgbImage, cv::Mat& blobSizedImage, cv::Mat& blob) -> void;
+        static auto preprocessYOLOv8Input(Model const& model, cv::Mat const& rgbImage, cv::Mat& blobSizedImage, cv::Mat& blob) -> void;
 
     public:
         explicit ObjectDetectorBase(rclcpp::NodeOptions const& options = rclcpp::NodeOptions());
@@ -105,7 +114,7 @@ namespace mrover {
     public:
         explicit ImageObjectDetector(rclcpp::NodeOptions const& options = rclcpp::NodeOptions());
 
-        auto getTagBearing(cv::InputArray image, cv::Rect const& box) const -> float;
+        auto getTagBearing(cv::InputArray const& image, cv::Rect const& box) const -> float;
 
         auto imageCallback(sensor_msgs::msg::Image::UniquePtr const& msg) -> void;
     };

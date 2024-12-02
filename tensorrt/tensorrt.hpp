@@ -2,13 +2,6 @@
 
 #include "pch.hpp"
 
-struct Detection {
-    int classId{};
-    std::string className;
-    float confidence{};
-    cv::Rect box;
-};
-
 class TensortRT {
     std::string mModelName;
 
