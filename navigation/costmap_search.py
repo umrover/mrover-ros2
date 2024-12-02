@@ -44,30 +44,6 @@ class CostmapSearchState(State):
     SAFE_APPROACH_DISTANCE: float
     A_STAR_THRESH: float
 
-    def use_astar(self, context: Context) -> bool:
-        rover_in_map = context.rover.get_pose_in_map()
-        follow_astar: bool
-        if rover_in_map is None or \
-            self.trajectory.get_current_point() is None or \
-            len(self.star_traj.coordinates) < 4: 
-            follow_astar = False
-
-        else: 
-            astar_dist = 0.0
-            for i, coordinate in enumerate(self.star_traj.coordinates[:-1]):
-                astar_dist += self.astar.d_calc(self.star_traj.coordinates[i], self.star_traj.coordinates[i+1])
-
-            eucl_dist = self.astar.d_calc(context.rover.get_pose_in_map().translation()[0:2], tuple(self.trajectory.get_current_point()))
-
-            follow_astar = abs(astar_dist - eucl_dist) / eucl_dist > self.A_STAR_THRESH
-
-        if (follow_astar and not self.follow_astar) or (not follow_astar and self.follow_astar):   
-            if follow_astar: 
-                context.node.get_logger().info(f"Switching to astar path")
-            else:
-                context.node.get_logger().info(f"Switching to regular path")
-        return follow_astar
-
     def on_enter(self, context: Context) -> None:
 
         # Parameter initialization
@@ -169,7 +145,7 @@ class CostmapSearchState(State):
                     context.rover.send_drive_command(cmd_vel)
             else:
                 self.prev_target_pos_in_map = target_position_in_map
-                
+
                 if self.trajectory.increment_point():
                     return waypoint.WaypointState()
                 
