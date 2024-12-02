@@ -1,4 +1,5 @@
 #include "inference.cuh"
+#include <ios>
 
 using namespace nvinfer1;
 
@@ -106,7 +107,7 @@ auto Inference::createCudaEngine() -> ICudaEngine* {
 		// Save Engine to File
 		auto trtModelStream = tempEng->serialize();
 		std::ofstream outputFileStream{mEngineModelPath, std::ios::binary};
-		outputFileStream.write(static_cast<char const*>(trtModelStream->data()), static_cast<int32_t>(trtModelStream->size()));
+		outputFileStream.write(static_cast<char const*>(trtModelStream->data()), static_cast<std::streamsize>(trtModelStream->size()));
 		outputFileStream.close();
 
 		return tempEng;
