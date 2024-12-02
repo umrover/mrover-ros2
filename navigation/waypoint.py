@@ -101,29 +101,29 @@ class WaypointState(State):
         if not hasattr(context.env.cost_map, 'data'): 
             context.node.get_logger().warn(f"No costmap found, waiting...")
             return self
-        
+
         # If there are no more points in the current a_star path or we are past the update delay, then create a new one
         if len(self.astar_traj.coordinates) == 0 or \
             context.node.get_clock().now() - self.time_last_updated > Duration(seconds=self.UPDATE_DELAY):
 
             if self.is_high_cost_point(context):
                 context.node.get_logger().info(f"High cost segment point, skipping it")
-                self.traj.increment_point()
-                return self
+                
+                if not self.traj.increment_point():
+                    # Generate a path
+                    self.astar_traj = self.astar.generate_trajectory(context, self.traj.get_current_point())
 
-            # Generate a path
-            self.astar_traj = self.astar.generate_trajectory(context, self.traj.get_current_point())
-
-            # Decide whether we follow the astar path to the next point in the spiral
-            self.follow_astar = self.astar.use_astar(context=context, star_traj=self.astar_traj, trajectory=self.traj.get_current_point())
-            self.time_last_updated = context.node.get_clock().now()
+                    # Decide whether we follow the astar path to the next point in the spiral
+                    self.follow_astar = self.astar.use_astar(context=context, star_traj=self.astar_traj, trajectory=self.traj.get_current_point())
+                    self.time_last_updated = context.node.get_clock().now()
+            
 
         # Attempt to find the waypoint in the TF tree and drive to it
         arrived = False
         cmd_vel = Twist()
         if not self.USE_COSTMAP or not self.follow_astar:
             waypoint_position_in_map = self.traj.get_current_point()
-            cmd_vel, arrived = context.drive.get_drive_command(
+            cmd_vel,arrived = context.drive.get_drive_command(
                     waypoint_position_in_map,
                     rover_in_map,
                     context.node.get_parameter("waypoint.stop_threshold").value,
@@ -132,16 +132,6 @@ class WaypointState(State):
 
         else:
             if not hasattr(context.env.cost_map, 'data'): return self
-            
-            if context.node.get_clock().now() - self.time_last_updated > Duration(seconds=self.UPDATE_DELAY):
-                self.astar_traj = self.astar.generate_trajectory(context, context.course.current_waypoint_pose_in_map().translation())
-
-                if self.is_high_cost_point(context):
-                    context.node.get_logger().info(f"High cost segment point, skipping it")
-                    self.traj.increment_point()
-                    return self
-    
-                self.time_last_updated = context.node.get_clock().now()
 
             if len(self.astar_traj.coordinates) - self.astar_traj.cur_pt != 0: 
                 waypoint_position_in_map = self.astar_traj.get_current_point()
