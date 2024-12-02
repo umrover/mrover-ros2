@@ -1,9 +1,11 @@
-#include "controller.hpp"
-
 #include <cstdint>
 
+#include <common.hpp>
 #include <hardware.hpp>
+#include <hardware_tim.hpp>
+#include <hbridge.hpp>
 #include <messaging.hpp>
+#include <motor.hpp>
 
 #include "main.h"
 
@@ -58,67 +60,77 @@ extern TIM_HandleTypeDef htim17;
 #define RECEIVE_WATCHDOG_TIMER_2 &htim17 // Motor 2
 
 namespace mrover {
+    using ControllerStopwatches = VirtualStopwatches<NUM_MOTORS * 3, std::uint32_t, mrover::CLOCK_FREQ / 170>;
 
-    FDCAN<InBoundMessage> fdcan_bus(&hfdcan1);
-    Controller<NUM_MOTORS> controller;
+    FDCAN<InBoundMessage> fdcan_bus;
+    ControllerStopwatches stopwatches; // MotorCount * 3 = MotorCount(encoder elapsed timer + last throttle timer + last PIDF timer)
+    std::array<Motor, NUM_MOTORS> motors;
+    typename std::array<Motor, NUM_MOTORS>::iterator motor_requesting_absolute_encoder;
 
-    auto create_motor_config(std::size_t index) -> MotorConfig {
+    constexpr auto create_motor(std::size_t index) -> Motor {
         switch (index) {
             case 0:
-                return {
-                        .id = DEVICE_ID_0,
-                        .hbridge_output = PWM_TIMER_0,
-                        .hbridge_output_channel = PWM_TIMER_CHANNEL_0,
-                        .hbridge_direction = Pin{MOTOR_DIR_0_GPIO_Port, MOTOR_DIR_0_Pin},
-                        .receive_watchdog_timer = RECEIVE_WATCHDOG_TIMER_0,
-                        .limit_switches = {LimitSwitch{Pin{LIMIT_0_A_GPIO_Port, LIMIT_0_A_Pin}}, LimitSwitch{Pin{LIMIT_0_B_GPIO_Port, LIMIT_0_B_Pin}}},
-                        .relative_encoder_tick = QUADRATURE_TICK_TIMER_0,
-                        .absolute_encoder_a2_a1 = A2_A1_0};
+                return Motor(
+                        DEVICE_ID_0,
+                        HBridge{PWM_TIMER_0, PWM_TIMER_CHANNEL_0, Pin{MOTOR_DIR_0_GPIO_Port, MOTOR_DIR_0_Pin}},
+                        &stopwatches,
+                        RECEIVE_WATCHDOG_TIMER_0,
+                        {LimitSwitch{Pin{LIMIT_0_A_GPIO_Port, LIMIT_0_A_Pin}}, LimitSwitch{Pin{LIMIT_0_B_GPIO_Port, LIMIT_0_B_Pin}}},
+                        QUADRATURE_TICK_TIMER_0,
+                        A2_A1_0);
             case 1:
-                return {
-                        .id = DEVICE_ID_1,
-                        .hbridge_output = PWM_TIMER_1,
-                        .hbridge_output_channel = PWM_TIMER_CHANNEL_1,
-                        .hbridge_direction = Pin{MOTOR_DIR_1_GPIO_Port, MOTOR_DIR_1_Pin},
-                        .receive_watchdog_timer = RECEIVE_WATCHDOG_TIMER_1,
-                        .limit_switches = {LimitSwitch{Pin{LIMIT_1_A_GPIO_Port, LIMIT_1_A_Pin}}, LimitSwitch{Pin{LIMIT_1_B_GPIO_Port, LIMIT_1_B_Pin}}},
-                        .relative_encoder_tick = QUADRATURE_TICK_TIMER_1,
-                        .absolute_encoder_a2_a1 = A2_A1_1};
+                return Motor(
+                        DEVICE_ID_1,
+                        HBridge{PWM_TIMER_1, PWM_TIMER_CHANNEL_1, Pin{MOTOR_DIR_1_GPIO_Port, MOTOR_DIR_1_Pin}},
+                        &stopwatches,
+                        RECEIVE_WATCHDOG_TIMER_1,
+                        {LimitSwitch{Pin{LIMIT_1_A_GPIO_Port, LIMIT_1_A_Pin}}, LimitSwitch{Pin{LIMIT_1_B_GPIO_Port, LIMIT_1_B_Pin}}},
+                        QUADRATURE_TICK_TIMER_1,
+                        A2_A1_1);
             case 2:
-                return {
-                        .id = DEVICE_ID_2,
-                        .hbridge_output = PWM_TIMER_2,
-                        .hbridge_output_channel = PWM_TIMER_CHANNEL_2,
-                        .hbridge_direction = Pin{MOTOR_DIR_2_GPIO_Port, MOTOR_DIR_2_Pin},
-                        .receive_watchdog_timer = RECEIVE_WATCHDOG_TIMER_2,
-                        .limit_switches = {LimitSwitch{Pin{LIMIT_2_A_GPIO_Port, LIMIT_2_A_Pin}}, LimitSwitch{Pin{LIMIT_2_B_GPIO_Port, LIMIT_2_B_Pin}}},
-                        .relative_encoder_tick = QUADRATURE_TICK_TIMER_2,
-                        .absolute_encoder_a2_a1 = A2_A1_1};
+                return Motor(
+                        DEVICE_ID_2,
+                        HBridge{PWM_TIMER_2, PWM_TIMER_CHANNEL_2, Pin{MOTOR_DIR_2_GPIO_Port, MOTOR_DIR_2_Pin}},
+                        &stopwatches,
+                        RECEIVE_WATCHDOG_TIMER_2,
+                        {LimitSwitch{Pin{LIMIT_2_A_GPIO_Port, LIMIT_2_A_Pin}}, LimitSwitch{Pin{LIMIT_2_B_GPIO_Port, LIMIT_2_B_Pin}}},
+                        QUADRATURE_TICK_TIMER_2,
+                        A2_A1_2);
             default:
                 return {};
         }
     }
 
     template<std::size_t... Indices>
-    auto create_motor_configs(std::index_sequence<Indices...>) -> std::array<MotorConfig, sizeof...(Indices)> {
-        return {create_motor_config(Indices)...};
+    constexpr auto create_motor_array_impl(std::index_sequence<Indices...>) -> std::array<Motor, sizeof...(Indices)> {
+        return {create_motor(Indices)...};
     }
 
-    auto motor_configs = create_motor_configs(std::make_index_sequence<NUM_MOTORS>{});
+    template<std::size_t N>
+    constexpr auto create_motor_array() -> std::array<Motor, N> {
+        return create_motor_array_impl(std::make_index_sequence<N>{});
+    }
 
     auto init() -> void {
-        // fdcan_bus = FDCAN<InBoundMessage>{DEVICE_ID, DESTINATION_DEVICE_ID, &hfdcan1};
-        controller = Controller<NUM_MOTORS>{
-                fdcan_bus,
-                VIRTUAL_STOPWATCHES_TIMER,
-                ABSOLUTE_I2C,
-                motor_configs};
+        fdcan_bus = FDCAN<InBoundMessage>(&hfdcan1);
+        stopwatches = ControllerStopwatches(VIRTUAL_STOPWATCHES_TIMER);
+        motors = create_motor_array<NUM_MOTORS>();
+        motor_requesting_absolute_encoder = motors.begin();
 
-        controller.init();
+        stopwatches.init();
+
+        // fdcan_bus.configure_filter(DEVICE_ID_0);
+        // fdcan_bus.configure_filter(DEVICE_ID_1);
+        // fdcan_bus.configure_filter(DEVICE_ID_2);
+
+        fdcan_bus.start();
 
         check(HAL_TIM_Base_Start_IT(GLOBAL_UPDATE_TIMER) == HAL_OK, Error_Handler);
     }
 
+    /**
+     * \brief Called from the FDCAN interrupt handler when a new message is received, updating \link m_inbound \endlink and processing it.
+     */
     auto fdcan_received_callback() -> void {
         std::optional<std::pair<FDCAN_RxHeaderTypeDef, InBoundMessage>> received = fdcan_bus.receive();
         if (!received) Error_Handler(); // This function is called WHEN we receive a message so this should never happen
@@ -127,42 +139,75 @@ namespace mrover {
 
         auto id = std::bit_cast<FDCAN<InBoundMessage>::MessageId>(header.Identifier);
 
-        controller.receive(id, message);
+        for (std::size_t i = 0; i < NUM_MOTORS; ++i) {
+            if (motors[i].get_id() == id.destination) {
+                motors[i].receive(message);
+                motors[i].update();
+            }
+        }
+    }
+
+    /**
+     * \brief Send out the current outbound status message of each motor.
+     *
+     * The update rate should be limited to avoid hammering the FDCAN bus.
+     */
+    auto send_motor_statuses() -> void {
+        for (const auto& motor: motors) {
+            if (bool success = fdcan_bus.broadcast(motor.get_outbound(), motor.get_id(), DESTINATION_DEVICE_ID); !success) {
+                fdcan_bus.reset();
+            }
+        }
+    }
+
+    auto request_absolute_encoder_data() -> void {
+        while (motor_requesting_absolute_encoder != motors.end()) {
+            if (motor_requesting_absolute_encoder->has_absolute_encoder_configued()) {
+                motor_requesting_absolute_encoder->request_absolute_encoder_data();
+                return;
+            }
+            ++motor_requesting_absolute_encoder;
+        }
+    }
+
+    auto start_absolute_encoder_reads() -> void {
+        if (motor_requesting_absolute_encoder != motors.end()) {
+            return;
+        }
+
+        motor_requesting_absolute_encoder = motors.begin();
+        request_absolute_encoder_data();
     }
 
     auto global_update_callback() -> void {
-        controller.send();
-        controller.start_absolute_encoder_reads();
+        send_motor_statuses();
+        start_absolute_encoder_reads();
     }
 
     auto read_absolute_encoder_data_callback() -> void {
-        controller.read_absolute_encoder_data();
+        motor_requesting_absolute_encoder->read_absolute_encoder_data();
     }
 
     auto update_absolute_encoder_callback() -> void {
-        controller.update_absolute_encoder_data();
+        motor_requesting_absolute_encoder->update_absolute_encoder();
+        ++motor_requesting_absolute_encoder;
+        motor_requesting_absolute_encoder->request_absolute_encoder_data();
     }
 
     template<std::uint8_t MotorIndex>
     auto update_quadrature_encoder_callback() -> void {
-        controller.update_quadrature_encoder<MotorIndex>();
+        motors[MotorIndex].update_quadrature_encoder();
     }
 
-    auto send_callback() -> void {
-        controller.send();
-    }
 
     template<std::uint8_t MotorIndex>
     auto receive_watchdog_timer_expired() -> void {
-        controller.receive_watchdog_expired<MotorIndex>();
+        motors[MotorIndex].receive_watchdog_expired();
     }
 
     auto virtual_stopwatch_elapsed_callback() -> void {
-        controller.virtual_stopwatch_elapsed();
+        stopwatches.period_elapsed();
     }
-    // void calc_velocity() {
-    //     controller.calc_quadrature_velocity();
-    // }
 
 } // namespace mrover
 

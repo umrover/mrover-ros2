@@ -315,6 +315,7 @@ namespace mrover {
               m_absolute_encoder_a2_a1(absolute_encoder_a2_a1) {
 
         	m_throttle_stopwatch_id = m_stopwatch->add_stopwatch();
+            m_pidf_stopwatch_id = m_stopwatch->add_stopwatch();
         }
 
         [[nodiscard]] auto get_id() const -> std::uint8_t{

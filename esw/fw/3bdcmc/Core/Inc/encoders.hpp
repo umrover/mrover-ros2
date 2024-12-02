@@ -68,7 +68,7 @@ namespace mrover {
         auto update() -> void;
 
         auto expired() -> void {
-            m_velocity_filter.clear();
+            m_velocity_filter.add_reading(RadiansPerSecond{0});
         }
 
     private:

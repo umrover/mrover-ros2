@@ -8,7 +8,7 @@ namespace mrover {
 
     constexpr auto TAU_F = 2 * std::numbers::pi_v<float>;
 
-    constexpr auto CLOCK_FREQ = Hertz{140000000};
+    constexpr auto CLOCK_FREQ = Hertz{170000000};
 
     // Counts (ticks) per radian (NOT per rotation)
     using CountsPerRad = compound_unit<Ticks, inverse<Radians>>;
