@@ -16,7 +16,6 @@ using namespace nvinfer1;
 Inference::Inference(std::string modelName, std::string packagePathString) :  mModelName{std::move(modelName)}, mPackagePath{std::move(packagePathString)}{
 
 	//Create ONNX and engine file paths
-
 	mLogger.log(ILogger::Severity::kINFO, mModelName.c_str());
 	mLogger.log(ILogger::Severity::kINFO, mPackagePath.c_str());
 	mONNXModelPath = std::filesystem::path{packagePathString} / "data" / std::string(mModelName + ".onnx");
