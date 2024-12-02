@@ -35,8 +35,10 @@
     "git.ignoreSubmodules": true,
     "git.detectSubmodules": false,
     "cSpell.words": [
+        "coeffs",
         "Eigen",
         "GLFW",
+        "Procesed",
         "wgpu"
     ],
     "search.exclude": {

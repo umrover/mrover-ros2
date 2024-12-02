@@ -10,7 +10,7 @@ import tf2_ros
 from rclpy.node import Node
 from mrover.srv import MoveCostMap
 from lie.conversions import SE3, from_position_orientation, from_tf_tree
-from lie.lie import SE3Conversions
+# from lie import SE3Conversions
 
 class MoveCostMapNode(Node):
     def __init__(self) -> None:

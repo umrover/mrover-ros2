@@ -4,7 +4,7 @@
 #include <format>
 #include <memory>
 #include <rclcpp/logging.hpp>
-#include <stdexcept>
+#include <unsupported/Eigen/EulerAngles>
 
 namespace mrover {
 
@@ -99,6 +99,7 @@ namespace mrover {
             for (std::size_t i = 0; i < mGlobalGridMsg.data.size(); ++i) {
 				Bin& bin = bins[i];
                 if (bin.size() < 16){
+                    continue;
                     // mGlobalGridMsg.data[i] = UNKNOWN_COST;
                 }
 
@@ -111,21 +112,22 @@ namespace mrover {
                 // std::int8_t cost = percent > mZPercent ? OCCUPIED_COST : FREE_COST;
 
                 // // IMPLEMENT "AVERAGE" OF NORMALS IN BIN COMBINED WITH PROJECTION
-                if (bin.size() >= 16){
-                    // RCLCPP_INFO_STREAM(get_logger(), "WHOOOOOOOOOO");
-                    R3f avgNormal{};
-                    for(auto& point : bin){
-                        avgNormal += point.normal;
-                    }
-
-                    avgNormal.normalize();
-                    RCLCPP_INFO_STREAM(get_logger(), std::format("Normal Z {}", avgNormal.z()));
-                    std::int8_t cost = avgNormal.z() < mZThreshold ? OCCUPIED_COST : FREE_COST;
-
-                    // Update cell with EWMA acting as a low-pass filter
-                    auto& cell = mGlobalGridMsg.data[i];
-                    cell = static_cast<std::int8_t>(mAlpha * cost + (1 - mAlpha) * cell);
+                // RCLCPP_INFO_STREAM(get_logger(), "WHOOOOOOOOOO");
+                R3f avgNormal{};
+                for(auto& point : bin){
+                    avgNormal += point.normal;
                 }
+
+                // roverSE3.rotation().;
+
+                avgNormal.normalize();
+                // RCLCPP_INFO_STREAM(get_logger(), std::format("Normal Z {}", avgNormal.z()));
+                RCLCPP_INFO_STREAM(get_logger(), std::format("ROLL: {}", *(roverSE3.coeffs().data()+3)));
+                std::int8_t cost = avgNormal.z() < mZThreshold ? OCCUPIED_COST : FREE_COST;
+
+                // Update cell with EWMA acting as a low-pass filter
+                auto& cell = mGlobalGridMsg.data[i];
+                cell = static_cast<std::int8_t>(mAlpha * cost + (1 - mAlpha) * cell);
             }
 
 

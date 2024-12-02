@@ -8,9 +8,9 @@ namespace mrover {
 
         std::vector<ParameterWrapper> params{
             {"resolution", mResolution, 0.5},
-            {"size", mSize, 10},
+            {"size", mSize, 25},
             {"map_frame", mMapFrame, "map"},
-            {"near_clip", mNearClip, 0.5},
+            {"near_clip", mNearClip, 2.0},
             {"far_clip", mFarClip, 7.0},
             {"left_clip", mRightClip, -2.0},
             {"right_clip", mLeftClip, 2.0},

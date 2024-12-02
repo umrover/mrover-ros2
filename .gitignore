@@ -20,3 +20,5 @@ __pycache__/
 .mypy_cache/
 *.egg-info/
 venv/
+.vscode/settings.json
+.vscode/settings.json
