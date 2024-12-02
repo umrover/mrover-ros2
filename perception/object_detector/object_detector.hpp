@@ -12,7 +12,7 @@ namespace mrover {
             float confidence{};
             cv::Rect box;
 
-            Detection(int _classId, std::string _className, float _confidence, cv::Rect _box) : classId{_classId}, className{_className}, confidence{_confidence}, box{_box}{}
+            Detection(int _classId, std::string _className, float _confidence, cv::Rect _box) : classId{_classId}, className{_className}, confidence{_confidence}, box{_box} {}
         };
 
         struct Model {
@@ -37,7 +37,6 @@ namespace mrover {
             Model(std::string _modelName, std::vector<int> _objectHitCounts, std::vector<std::string> _classes, std::vector<int64_t> _inputTensorSize, std::vector<int64_t> _outputTensorSize, std::function<void(Model const&, cv::Mat&, cv::Mat&, cv::Mat&)> _rbgImageToBlob, std::function<void(Model const&, cv::Mat&, std::vector<Detection>&)> _outputTensorToDetections) : modelName{std::move(_modelName)}, objectHitCounts(std::move(_objectHitCounts)), classes(std::move(_classes)), inputTensorSize(std::move(_inputTensorSize)), outputTensorSize(std::move(_outputTensorSize)), rgbImageToBlob{std::move(_rbgImageToBlob)}, outputTensorToDetections{std::move(_outputTensorToDetections)} {}
         };
 
-        
 
         static constexpr char const* NODE_NAME = "object_detector";
 
@@ -78,10 +77,10 @@ namespace mrover {
         auto publishDetectedObjects(cv::InputArray const& image) -> void;
 
         static auto drawDetectionBoxes(cv::InputOutputArray& image, std::span<Detection const> detections) -> void;
-        
+
         auto parseYOLOv8Output(Model const& model,
-                                      cv::Mat& output,
-                                      std::vector<Detection>& detections) const -> void;
+                               cv::Mat& output,
+                               std::vector<Detection>& detections) const -> void;
 
         static auto preprocessYOLOv8Input(Model const& model, cv::Mat const& rgbImage, cv::Mat& blobSizedImage, cv::Mat& blob) -> void;
 
