@@ -84,6 +84,7 @@ namespace mrover {
             int index{};
             boost::container::small_vector<Uniform<ModelUniforms>, 2> visualUniforms;
             boost::container::small_vector<Uniform<ModelUniforms>, 2> collisionUniforms;
+            Clock::time_point lastUpdate = Clock::now();
         };
 
         urdf::Model model;
@@ -263,6 +264,8 @@ namespace mrover {
 
         bool mIsHeadless{};
 
+        int64_t mMotorTimeoutMs{};
+
         // Rendering
 
         GlfwInstance mGlfwInstance;
@@ -362,7 +365,7 @@ namespace mrover {
             }
 
             if (auto it = mUrdfs.find("rover"); it != mUrdfs.end()) {
-                URDF const& rover = it->second;
+                URDF& rover = it->second;
 
                 for (std::size_t i = 0; i < names.size(); ++i) {
                     std::string const& name = names[i];
@@ -375,7 +378,8 @@ namespace mrover {
                     }
 
                     std::string const& urdfName = it->second;
-                    URDF::LinkMeta const& linkMeta = rover.linkNameToMeta.at(urdfName);
+                    URDF::LinkMeta& linkMeta = rover.linkNameToMeta.at(urdfName);
+                    linkMeta.lastUpdate = Clock::now();
 
                     auto* motor = std::bit_cast<btMultiBodyJointMotor*>(rover.physics->getLink(linkMeta.index).m_userPtr);
                     assert(motor);
