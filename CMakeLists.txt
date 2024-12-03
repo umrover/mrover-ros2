@@ -233,6 +233,8 @@ target_link_libraries(tag_detector lie opencv_core opencv_aruco opencv_imgproc l
 # Localization
 mrover_add_node(pose_filter src/localization/pose_filter.cpp)
 target_link_libraries(pose_filter PRIVATE lie)
+mrover_add_node(iekf src/localization/iekf/iekf.cpp)
+target_link_libraries(iekf PRIVATE lie geometry_msgs)
 
 # Embedded
 
