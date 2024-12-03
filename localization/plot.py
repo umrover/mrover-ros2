@@ -1,7 +1,8 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 
-linearized_position = pd.read_csv("../linearized_position_11_18.csv")
+linearized_position = pd.read_csv("../long_linearized_position.csv")
+heading = pd.read_csv
 
 x = linearized_position["x"]
 y = linearized_position["y"]
