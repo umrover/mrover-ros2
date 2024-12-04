@@ -6,7 +6,7 @@
 
 #include <rclcpp/rclcpp.hpp>
 
-#include <units.hpp>
+#include <units/units.hpp>
 
 #include <mrover/msg/velocity.hpp>
 

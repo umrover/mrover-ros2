@@ -15,7 +15,7 @@ option(MROVER_CLANG_TIDY "Enable static analysis with Clang tidy" ${MROVER_CI})
 option(MROVER_WARNINGS_AS_ERRORS "Treat warnings as errors" ${MROVER_CI})
 
 if (APPLE)
-    # Ensures that libraryhomebrew packages are never used over miniforge packages.
+    # Ensures that homebrew packages are never used over miniforge packages.
     # TODO (ali): Pretty sure this doesn't do anything on macs
     set(CMAKE_IGNORE_PATH /opt/homebrew)
     # Find mamba python
@@ -159,7 +159,7 @@ message(STATUS "Found service files: ${MROVER_SERVICE_FILE_PATHS}")
 # Starter Project
 message(STATUS "PROJ NAME: ${PROJECT_NAME}")
 
-set(MROVER_CMAKE_INCLUDES
+set(MROVER_CMAKE_INCLUDE
         starter_project/autonomy/AutonomyStarterProject.cmake
 )
 
@@ -175,9 +175,9 @@ rosidl_generate_interfaces(${PROJECT_NAME}
 
 # Starter project 
 # TODO (ali): delete once AutonomyStarterProject.cmake is fixed
-mrover_add_node(starter_project_perception ${CMAKE_CURRENT_LIST_DIR}/starter_project/autonomy/src/*.cpp)
-target_link_libraries(starter_project_perception ${OpenCV_LIBS})
-ament_target_dependencies(starter_project_perception rclcpp std_msgs sensor_msgs)
+# mrover_add_node(starter_project_perception ${CMAKE_CURRENT_LIST_DIR}/starter_project/autonomy/src/*.cpp)
+# target_link_libraries(starter_project_perception ${OpenCV_LIBS})
+# ament_target_dependencies(starter_project_perception rclcpp std_msgs sensor_msgs)
 
 
 # Install our executable so that ROS knows about it
@@ -274,9 +274,9 @@ target_link_libraries(tag_detector lie opencv_core opencv_aruco opencv_imgproc l
 
 mrover_add_header_only_library(can_device esw/can_device)
 target_link_libraries(can_device INTERFACE rclcpp)
-# mrover_add_library(motor_library esw/motor_library/*.cpp esw/motor_library)
-# ament_target_dependencies(motor_library rclcpp)
-# target_link_libraries(motor_library can_device moteus)
+mrover_add_library(motor_library esw/motor_library/*.cpp esw/motor_library)
+ament_target_dependencies(motor_library rclcpp std_srvs)
+target_link_libraries(motor_library can_device moteus units)
 
 mrover_add_node(differential_drive_controller esw/differential_drive_controller.cpp)
 target_link_libraries(differential_drive_controller units)
