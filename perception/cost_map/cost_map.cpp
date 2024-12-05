@@ -6,20 +6,18 @@ namespace mrover {
     CostMapNode::CostMapNode() : Node("cost_map") {
 
 
-        Parameters params{
-            {"resolution", mResolution, 0.5},
-            {"size", mSize, 10},
-            {"map_frame", mMapFrame, "map"},
-            {"near_clip", mNearClip, 0.5},
-            {"far_clip", mFarClip, 7.0},
-            {"left_clip", mRightClip, -2.0},
-            {"right_clip", mLeftClip, 2.0},
-            {"z_percent", mZPercent, 0.2},
-            {"alpha", mAlpha, 0.05},
-            {"z_threshold", mZThreshold, 0.5}
+        std::vector<ParameterWrapper> params{
+            {this, "resolution", mResolution, 0.5},
+            {this, "size", mSize, 10},
+            {this, "map_frame", mMapFrame, "map"},
+            {this, "near_clip", mNearClip, 0.5},
+            {this, "far_clip", mFarClip, 7.0},
+            {this, "left_clip", mRightClip, -2.0},
+            {this, "right_clip", mLeftClip, 2.0},
+            {this, "z_percent", mZPercent, 0.2},
+            {this, "alpha", mAlpha, 0.05},
+            {this, "z_threshold", mZThreshold, 0.5}
         };
-
-        ParameterWrapper::declareParameters(this, params);
 
         mCostMapPub = create_publisher<nav_msgs::msg::OccupancyGrid>("costmap", 1); // We publish our results to "costmap"
 

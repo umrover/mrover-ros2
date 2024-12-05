@@ -4,18 +4,16 @@ namespace mrover {
 
     ObjectDetectorBase::ObjectDetectorBase() : rclcpp::Node(NODE_NAME), mLoopProfiler{get_logger()} {
 
-        Parameters params{
-                {"camera_frame", mCameraFrame, "zed_left_camera_frame"},
-                {"world_frame", mWorldFrame, "map"},
-                {"increment_weight", mObjIncrementWeight, 2},
-                {"decrement_weight", mObjDecrementWeight, 1},
-                {"hitcount_threshold", mObjHitThreshold, 5},
-                {"hitcount_max", mObjMaxHitcount, 10},
-                {"model_name", mModelName, "Large-Dataset"},
-                {"model_score_threshold", mModelScoreThreshold, 0.75},
-                {"model_nms_threshold", mModelNmsThreshold, 0.5}};
-
-        ParameterWrapper::declareParameters(this, params);
+        std::vector<ParameterWrapper> params{
+                {this, "camera_frame", mCameraFrame, "zed_left_camera_frame"},
+                {this, "world_frame", mWorldFrame, "map"},
+                {this, "increment_weight", mObjIncrementWeight, 2},
+                {this, "decrement_weight", mObjDecrementWeight, 1},
+                {this, "hitcount_threshold", mObjHitThreshold, 5},
+                {this, "hitcount_max", mObjMaxHitcount, 10},
+                {this, "model_name", mModelName, "Large-Dataset"},
+                {this, "model_score_threshold", mModelScoreThreshold, 0.75},
+                {this, "model_nms_threshold", mModelNmsThreshold, 0.5}};
 
         std::filesystem::path packagePath = std::filesystem::path{ament_index_cpp::get_package_prefix("mrover")} / ".." / ".." / "src" / "mrover";
 

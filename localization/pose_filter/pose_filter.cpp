@@ -1,9 +1,11 @@
 #include "pose_filter.hpp"
 #include "cost_map/pch.hpp"
 #include "parameter.hpp"
+#include <initializer_list>
 
 namespace mrover {
-    
+    template<typename ...Ts>
+    using Params = std::initializer_list<std::variant<Ts...>>;
 
     auto PoseFilter::ros_quat_to_eigen_quat(geometry_msgs::msg::Quaternion const& q) -> Eigen::Quaterniond {
         return {q.w, q.x, q.y, q.z};

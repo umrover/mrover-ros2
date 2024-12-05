@@ -1,4 +1,5 @@
 #include "zed_wrapper.hpp"
+#include "parameter.hpp"
 
 namespace mrover {
     template<typename TEnum>
@@ -34,23 +35,21 @@ namespace mrover {
 
             std::string grabResolutionString, depthModeString;
 
-            Parameters params{
-                    {"depth_confidence", mDepthConfidence, 70},
-                    {"serial_number", mSerialNumber, -1},
-                    {"grab_target_fps", mGrabTargetFps, 60},
-                    {"texture_confidence", mTextureConfidence, 100},
-                    {"image_width", imageWidth, 1280},
-                    {"image_height", imageHeight, 720},
-                    {"svo_file", svoFile, ""},
-                    {"use_depth_stabilization", mUseDepthStabilization, false},
-                    {"grab_resolution", grabResolutionString, std::string{sl::toString(sl::RESOLUTION::HD720)}},
-                    {"depth_mode", depthModeString, std::string{sl::toString(sl::DEPTH_MODE::PERFORMANCE)}},
-                    {"depth_maximum_distance", mDepthMaximumDistance, 12.0},
-                    {"use_builtin_visual_odom", mUseBuiltinPosTracking, false},
-                    {"use_pose_smoothing", mUsePoseSmoothing, true},
-                    {"use_area_memory", mUseAreaMemory, true}};
-
-            ParameterWrapper::declareParameters(this, params);
+            std::vector<ParameterWrapper> params{
+                    {this, "depth_confidence", mDepthConfidence, 70},
+                    {this, "serial_number", mSerialNumber, -1},
+                    {this, "grab_target_fps", mGrabTargetFps, 60},
+                    {this, "texture_confidence", mTextureConfidence, 100},
+                    {this, "image_width", imageWidth, 1280},
+                    {this, "image_height", imageHeight, 720},
+                    {this, "svo_file", svoFile, ""},
+                    {this, "use_depth_stabilization", mUseDepthStabilization, false},
+                    {this, "grab_resolution", grabResolutionString, std::string{sl::toString(sl::RESOLUTION::HD720)}},
+                    {this, "depth_mode", depthModeString, std::string{sl::toString(sl::DEPTH_MODE::PERFORMANCE)}},
+                    {this, "depth_maximum_distance", mDepthMaximumDistance, 12.0},
+                    {this, "use_builtin_visual_odom", mUseBuiltinPosTracking, false},
+                    {this, "use_pose_smoothing", mUsePoseSmoothing, true},
+                    {this, "use_area_memory", mUseAreaMemory, true}};
 
             mSvoPath = svoFile.c_str();
 
