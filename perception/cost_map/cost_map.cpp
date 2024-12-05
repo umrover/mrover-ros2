@@ -6,7 +6,7 @@ namespace mrover {
     CostMapNode::CostMapNode() : Node("cost_map") {
 
 
-        std::vector<ParameterWrapper> params{
+        Parameters params{
             {"resolution", mResolution, 0.5},
             {"size", mSize, 10},
             {"map_frame", mMapFrame, "map"},

@@ -1,5 +1,6 @@
 #include "pose_filter.hpp"
 #include "cost_map/pch.hpp"
+#include "parameter.hpp"
 
 namespace mrover {
     
@@ -45,11 +46,8 @@ namespace mrover {
         });
 
         std::vector<ParameterWrapper> params{
-            {"rover_frame", rover_frame, "base_link"},
-            {"world_frame", world_frame, "map"}
-        };
-
-            ParameterWrapper::declareParameters(this, params);
+            {this, "rover_frame", rover_frame, "base_link"},
+            {this, "world_frame", world_frame, "map"}};
     }
 
     void PoseFilter::pose_sub_callback(geometry_msgs::msg::Vector3Stamped::ConstSharedPtr const& msg) {

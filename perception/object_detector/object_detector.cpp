@@ -4,7 +4,7 @@ namespace mrover {
 
     ObjectDetectorBase::ObjectDetectorBase() : rclcpp::Node(NODE_NAME), mLoopProfiler{get_logger()} {
 
-        std::vector<ParameterWrapper> params{
+        Parameters params{
                 {"camera_frame", mCameraFrame, "zed_left_camera_frame"},
                 {"world_frame", mWorldFrame, "map"},
                 {"increment_weight", mObjIncrementWeight, 2},

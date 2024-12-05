@@ -34,7 +34,7 @@ namespace mrover {
 
             std::string grabResolutionString, depthModeString;
 
-            std::vector<ParameterWrapper> params{
+            Parameters params{
                     {"depth_confidence", mDepthConfidence, 70},
                     {"serial_number", mSerialNumber, -1},
                     {"grab_target_fps", mGrabTargetFps, 60},
