@@ -1,6 +1,8 @@
 #pragma once
 
 #include "pch.hpp"
+#include <cstddef>
+#include <cstdint>
 
 namespace mrover {
 
