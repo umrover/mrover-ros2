@@ -1,112 +1,113 @@
 <template>
-<img class='logo' src='/mrover.png' alt='MRover' title='MRover' width='200' />
- <div v-for="(mission, index) in missionType" :key="index" :class="'feed' + index">
-    <div class="form-check">
-      <input
-        v-model="selectedMission"
-        class="form-check-input"
-        type="radio"
-        :id="'mission' + index"
-        :value="mission"
-      />
-      <label class="form-check-label" :for="'mission' + index">{{ mission }}</label>
+
+  <div class="shadow p-3 mb-5 header">
+    <h1>Cameras Dashboard</h1>
+    <a class='logo' href = "/"><img src='/mrover.png' alt='MRover' title='MRover' width='200' /></a>
+  </div>
+
+  <div class="row">
+    <div v-for="(mission, index) in missionType" :key="index" class="col-sm feed">
+      <div class="form-check d-flex justify-content-center align-items-center">
+        <input
+          v-model="selectedMission"
+          class="form-check-input"
+          type="radio"
+          :id="'mission' + index"
+          :value="mission"
+        />
+        <label class="form-check-label" :for="'mission' + index">{{ mission }}</label>
+      </div>
     </div>
   </div>
 
-  <div v-for="cameraId in selectedMissionCameras" :key="cameraId" class="camera">
-    <p>Displaying Camera {{ cameraId }}</p>
-    <!-- Additional camera content or functionality here -->
-  </div>
-  
-
-
-  <!-- <div class="wrap row">
-    <div class="col">
-      <div class="row justify-content-md-left">
-        <div class="form-group col-md-4">
-          <label for="Camera Name">Camera name</label>
-          <input
-            v-model="cameraName"
-            type="text"
-            class="form-control"
-            id="CameraName"
-            placeholder="Enter Camera Name"
-          />
-          <small id="cameraDescrip" class="form-text text-muted"></small>
-        </div>
-        <div class="form-group col-md-4">
-          <label for="Camera ID">Camera ID</label>
-          <input
-            v-model="cameraIdx"
-            type="number"
-            min="0"
-            max="8"
-            class="form-control"
-            id="CameraIdx"
-            placeholder="Camera ID"
-          />
-        </div>
-        <button class="btn btn-primary custom-btn" @click="addCameraName()">Change Name</button>
-      </div>
-      <div class="cameraselection">
-        <CameraSelection
-          :cams-enabled="camsEnabled"
-          :names="names"
-          :capacity="capacity"
-          @cam_index="setCamIndex($event)"
+  <div class="row">
+      <div
+        v-for="(camera, index) in cameras[selectedMission]"
+        :key="camera"
+        class="col-sm feed"
+      >
+        <ToggleButton
+          :id="camera"
+          :labelEnableText="'Enable Camera'"
+          :labelDisableText="'Disable Camera'"
+          :currentState="cameraSwitch[camera]"
+          @change="toggleCamera"
         />
       </div>
     </div>
-    <div class="col">
-      <div class="row text-center align-items-center">
-        <div class="col">
-          <h3>All Cameras</h3>
-        </div>
-          <div class="col" v-if="mission === 'ish'">
-            <p class="my-auto percent">{{ (percent*100).toFixed(2) }}%</p>
-          </div>
-      </div>
-    </div> -->
 
-    <!-- <CameraDisplay :streamOrder="streamOrder" :mission="mission" :names="names" /> -->
+  <div class="container-fluid">
+    <div class="row gx-3 gy-3 justify-content-center">
+      <div v-if="cameras[selectedMission].length == 1">
+        <div class="camera-feed-container col-12">
+          <CameraFeed
+            :mission="selectedMission"
+            :id="cameras[selectedMission][0]"
+            :name="cameras[selectedMission][0]"
+            :class="cameras[selectedMission][0]"
+            
+          ></CameraFeed>
+        </div>
+
+      </div>
+      <div
+        v-else
+        class="col-12 col-md-6"
+        v-for="cam in cameras[selectedMission]"
+        :key="cam"
+      >
+        <div class="camera-feed-container ">
+          <CameraFeed
+            :mission="selectedMission"
+            :id="cam"
+            :name="cam"
+            :class="cam"
+            
+          ></CameraFeed>
+        </div>
+      </div>
+    </div>
+  </div> 
 </template>
 
 <script lang="ts">
 import CameraSelection from '../components/CameraSelection.vue'
-import CameraDisplay from './CameraDisplay.vue'
+import CameraFeed from './CameraFeed.vue'
+import ToggleButton from "../components/ToggleButton.vue";
 import { mapActions, mapState } from 'vuex'
 import { reactive } from 'vue'
 
 export default {
   components: {
     CameraSelection,
-    CameraDisplay
+    ToggleButton,
+    CameraFeed
   },
 
-  props: {
-    mission: {
-      type: String, // {'ish', 'ik', 'sa', 'auton'}
-      required: true
-    }
-  },
   data() {
     return {
-      camsEnabled: reactive(new Array(9).fill(false)),
-      names: reactive(Array.from({ length: 9 }, (_, i) => 'Camera: ' + i)),
-      cameraIdx: 0,
-      cameraName: '',
-      capacity: 9,
-      streamOrder: [-1, -1, -1, -1, -1, -1, -1, -1, -1],
       percent: 0,
       missionType: ["DM Mission", "ES Mission", "ISH GUI", "Sample Acquisition GUI", "Autonomy Mission"],
-      selectedMission: "",
-      missionCameras: {
-      "DM Mission": [1, 2, 3],
-      "ES Mission": [4, 5],
-      "ISH GUI": [6, 7, 8, 9],
-      "Sample Acquisition GUI": [1, 3, 5],
-      "Autonomy Mission": [2, 4, 6, 8]
-    }
+      selectedMission: "DM Mission",
+      cameras: {
+        "DM Mission": ["Cam1" ,"Cam2"],
+        "ES Mission": ["Cam3" ,"Cam4","Cam5"],
+        "ISH GUI": ["Cam2" ,"Cam3", "Cam6", "Cam7",],
+        "Sample Acquisition GUI": ["Cam8"],
+        "Autonomy Mission": ["Cam9" ,"Cam1"]
+      },
+      cameraSwitch: { // determines whether camera is on or off <.>
+        "Cam1": true,
+        "Cam2": true,
+        "Cam3": true,
+        "Cam4": true,
+        "Cam5": true,
+        "Cam6": true,
+        "Cam7": true,
+        "Cam8": true,
+        "Cam9": true,
+
+      }
     }
   },
 
@@ -159,6 +160,11 @@ export default {
 
     takePanorama() {
       this.sendMessage({ type: 'takePanorama' })
+    },
+
+    toggleCamera({ id, state }) {
+      this.cameraSwitch[id] = state;
+      console.log(`Camera ${id} toggled to ${state ? "ON" : "OFF"}`);
     }
   }
 }
@@ -181,5 +187,12 @@ export default {
 
 .percent {
   font-size: large;
+}
+
+.camera-feed-container {
+  background-color: #fff;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 </style>
