@@ -231,10 +231,13 @@ ament_target_dependencies(tag_detector rclcpp tf2 tf2_ros)
 target_link_libraries(tag_detector lie opencv_core opencv_aruco opencv_imgproc loop_profiler)
 
 # Localization
-mrover_add_node(pose_filter src/localization/pose_filter.cpp)
-target_link_libraries(pose_filter PRIVATE lie)
-mrover_add_node(iekf src/localization/iekf/iekf.cpp)
-target_link_libraries(iekf PRIVATE lie geometry_msgs)
+# mrover_add_node(pose_filter src/localization/pose_filter.cpp)
+# ament_target_dependencies(pose_filter rclcpp tf2 tf2_ros)
+# target_link_libraries(pose_filter PRIVATE lie)
+
+mrover_add_node(iekf localization/iekf/*.cpp)
+ament_target_dependencies(iekf rclcpp tf2 tf2_ros)
+target_link_libraries(iekf lie geometry_msgs)
 
 # Embedded
 

@@ -10,5 +10,6 @@
 #include <geometry_msgs/msg/vector3_stamped.hpp>
 #include <mrover/msg/heading.hpp>
 #include <lie.hpp>
+#include <manif/SO3.h>
 
 
