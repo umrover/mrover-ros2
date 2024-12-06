@@ -99,7 +99,7 @@ public:
 	 * \brief           Returns the demangled name of the current state in the state machine
 	 * \return          A constant reference to the current state's demangled state name
 	 */
-	auto getCurrentState() const -> std::string const& {
+	auto getCurrentStateName() const -> std::string const& {
 		return getStateName(currState);
 	}
 
@@ -142,6 +142,9 @@ public:
 			std::vector<std::reference_wrapper<std::type_info const>> types{std::ref(typeid(To))...};
 			for(auto const& type : types){
 				demangledName = abi::__cxa_demangle(type.get().name(), nullptr, nullptr, &status);
+				if(status){
+					throw std::runtime_error("C++ demangle failed!");
+				}
 				addNameToDecoder(type.get().hash_code(), demangledName);
 				free(demangledName);
 			}

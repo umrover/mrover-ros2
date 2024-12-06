@@ -56,7 +56,7 @@ namespace mrover{
 		void publishState(){
 			auto stateMachineUpdate = mrover::msg::StateMachineStateUpdate();
 			stateMachineUpdate.state_machine_name = mStateMachine.getName();
-			stateMachineUpdate.state = mStateMachine.getCurrentState();
+			stateMachineUpdate.state = mStateMachine.getCurrentStateName();
 			mStatePub->publish(stateMachineUpdate);
 		}
 
@@ -74,8 +74,8 @@ namespace mrover{
 			mStructurePub = node->create_publisher<mrover::msg::StateMachineStructure>(structureTopicName, 1);
 			mStatePub = node->create_publisher<mrover::msg::StateMachineStateUpdate>(stateTopicName, 1);
 
-			mStructureTimer = node->create_wall_timer(std::chrono::milliseconds(static_cast<std::size_t>(1 / structureTopicHz)), [&](){publishStructure();});
-			mStateTimer = node->create_wall_timer(std::chrono::milliseconds(static_cast<std::size_t>(1 / stateTopicHz)), [&](){publishState();});
+			mStructureTimer = node->create_wall_timer(std::chrono::milliseconds(static_cast<std::size_t>(1000 / structureTopicHz)), [&](){publishStructure();});
+			mStateTimer = node->create_wall_timer(std::chrono::milliseconds(static_cast<std::size_t>(1000 / stateTopicHz)), [&](){publishState();});
 		}
 	};
 }
