@@ -38,7 +38,7 @@ namespace mrover{
 		imgSub = create_subscription<sensor_msgs::msg::PointCloud2>("/zed/left/points", 1, [this](sensor_msgs::msg::PointCloud2::ConstSharedPtr const& msg) {
 			LightDetector::imageCallback(msg);
 		});
-		imgPub = this->create_publisher<sensor_msgs::msg::Image>("/light_detector/img", 1);
+		imgPub = this->create_publisher<sensor_msgs::msg::Image>("/light_detector/light_img", 1);
 		pointPub = this->create_publisher<geometry_msgs::msg::Vector3>("/light_detector/light_poses", 1);
 	}
 

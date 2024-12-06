@@ -4,6 +4,7 @@
 #include <opencv2/core/types.hpp>
 #include <opencv2/imgproc.hpp>
 #include <optional>
+#include <tuple>
 
 namespace mrover {
     // TODO: (john) break this out into a utility so we dont have to copy all of this code
@@ -66,7 +67,6 @@ namespace mrover {
 
         RCLCPP_INFO_STREAM(get_logger(),"Number of contours " << contours.size());
     
-
 		for(std::size_t i = 0; i < contours.size(); ++i){
 			auto const& vec = contours[i];
 			auto& centroid = centroids[i]; // first = row, second = col
@@ -85,7 +85,6 @@ namespace mrover {
             std::optional<SE3d> lightInCamera = spiralSearchForValidPoint(msg, centroid.second, centroid.first, SPIRAL_SEARCH_DIM, SPIRAL_SEARCH_DIM);
             
             //RCLCPP_INFO_STREAM(get_logger(),"Contour " << i << " has " << lightInCamera.has_value());
-            
             if(lightInCamera){
                 ++numLightsSeen;
                 std::string immediateLightFrame = std::format("immediateLight{}", numLightsSeen);
@@ -100,30 +99,12 @@ namespace mrover {
 
         printHitCounts();
 
+        caching();
+
         decreaseHitCounts();
 
 		publishDetectedObjects(mOutputImage, centroids);
 	}
-    
-	// auto LightDetector::caching() -> void{
-	// 	for (auto const& [id, tag]: mTags) {
-    //         if (tag.hitCount >= mMinHitCountBeforePublish && tag.tagInCam) {
-    //             try {
-    //                 // Use the TF tree to transform the tag from the camera frame to the map frame
-    //                 // Then publish it in the map frame persistently
-    //                 std::string immediateFrameId = std::format("immediateTag{}", tag.id);
-    //                 SE3d tagInParent = SE3Conversions::fromTfTree(mTfBuffer, immediateFrameId, mMapFrameId);
-    //                 SE3Conversions::pushToTfTree(mTfBroadcaster, std::format("tag{}", tag.id), mMapFrameId, tagInParent);
-    //             } catch (tf2::ExtrapolationException const&) {
-    //                 NODELET_WARN("Old data for immediate tag");
-    //             } catch (tf2::LookupException const&) {
-    //                 NODELET_WARN("Expected transform for immediate tag");
-    //             } catch (tf2::ConnectivityException const&) {
-    //                 NODELET_WARN("Expected connection to odom frame. Is visual odometry running?");
-    //             }
-    //         }
-    //     }
-	// }
 
     auto LightDetector::getHitCount(std::optional<SE3d> const& light) -> int {
         if(light.has_value()){
@@ -134,8 +115,9 @@ namespace mrover {
             auto location = lightInMap.translation();
             int x = static_cast<int>(location.x());
             int y = static_cast<int>(location.y());
+            int z = static_cast<int>(location.z());
 
-            std::pair<int, int> key{x, y};
+            std::tuple<int,int,int>key{x, y, z};
 
             return mHitCounts[key];
         }
@@ -151,6 +133,7 @@ namespace mrover {
             auto location = lightInMap.translation();
             int x = static_cast<int>(location.x());
             int y = static_cast<int>(location.y());
+            int z = static_cast<int>(location.z());
 
             std::pair<int, int> key{x, y};
 
@@ -170,13 +153,36 @@ namespace mrover {
         // }
     }
 
+    """Publish the detected poses that exceed hit threshold. 
+        Publish as a Vector3Array"""
+    auto LightDetector::caching() {
+        std::int64_t minLightHitCountBeforePublish = get_parameter("min_light_hit_count_before_publish").as_int();
+        std::tuple<int, int, int> closestLight;
+        int minDistance = std::numeric_limits<int>::max();
+
+        for (auto const& light : mHitCounts) {
+            if (light.second >= minLightHitCountBeforePublish && calcDistance(light.first) < minDistance) {
+                minDistance = calcDistance(light.first);
+                closestLight = light.first;
+            }
+        }
+        // SE3Conversions::pushToTfTree(mTfBroadcaster, immediateLightFrame, mCameraFrame, closestLight, this->get_clock()->now());
+        lightPose = std::make_optional<SE3d>(R3d{std::get<0>(closestLight), std::get<1>(closestLight), std::get<2>(closestLight)}, SO3d::Identity());closestLight
+        std::string closestLightPose = std::format("closestLightPose{}", /1);
+        SE3Conversions::pushToTfTree(mTfBroadcaster, closestLightPose, mCameraFrame, lightPose, this->get_clock()->now());
+    }
+
+    auto LightDetector::calcDistance(tuple<int, int, int> mPoint) -> std::float {
+        float distance = cmath::pow(std::get<0>(mPoint),2) + cmath::pow(std::get<1>(mPoint),2) + cmath::pow(std::get<2>(mPoint),2);
+        return distance;
+    }
+    
     auto LightDetector::publishDetectedObjects(cv::InputArray image, std::vector<std::pair<int, int>> const& centroids) -> void {
         //if (!imgPub.getNumSubscribers()) return;
 
 		sensor_msgs::msg::Image imgMsg;
-        mrover::msg::Vector3Array poseMsg;
 
-        imgMsg.header.stamp = this->get_clock()->now(); //ros origionally, but changed to this, not sure if it works.
+        imgMsg.header.stamp = this->get_clock()->now();
         imgMsg.height = image.rows();
         imgMsg.width = image.cols();
         imgMsg.encoding = sensor_msgs::image_encodings::BGRA8;
@@ -193,14 +199,6 @@ namespace mrover {
 		cv::Scalar const MARKER_COLOR = {255, 0, 0, 0};
 
         auto point = mHitCounts.begin();
-
-        
-        // for(size_t i = 0; i < mHitCounts.size(); i++) {
-        //     poseMsg.x = point->first.first;
-        //     poseMsg.y = point->first.second;
-        //     point++;
-        //     pointPub->publish(poseMsg);
-        // }
         
 		for(auto const& centroid : centroids){
 			cv::circle(debugImageWrapper, {centroid.second, centroid.first}, MARKER_RADIUS, MARKER_COLOR);

@@ -22,7 +22,8 @@ namespace mrover {
 
 		double mImmediateLightRange{};
 
-		std::unordered_map<std::pair<int, int>, int, PairHash> mHitCounts;
+		std::unordered_map<std::tuple<int, int,int>, int, PairHash> mHitCounts;
+
 
 		int mHitIncrease{};
 		int mHitDecrease{};
@@ -48,7 +49,6 @@ namespace mrover {
 		// Pub Sub
 		rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr imgSub;
 		rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr imgPub;
-		rclcpp::Publisher<geometry_msgs::msg::Vector3>::SharedPtr pointPub;
 
 		// The number of lights that we push into the TF
         unsigned int numLightsSeen = 0;
