@@ -114,7 +114,7 @@ class GUIConsumer(JsonWebsocketConsumer):
                     "mode": mode,
                 }:
                     cur_mode = mode
-                    node.get_logger().debug(f"publishing to {cur_mode}")
+                    # logger.info(f"publishing to {cur_mode}")
                 case _:
                     node.get_logger().warning(f"Unhandled message: {message}")
 
