@@ -1,6 +1,7 @@
 #include "cost_map.hpp"
 #include "lie.hpp"
 #include <Eigen/src/Core/Matrix.h>
+#include <cstddef>
 #include <format>
 #include <memory>
 #include <rclcpp/logging.hpp>
@@ -70,11 +71,14 @@ namespace mrover {
 
                     // Points with no stereo correspondence are NaN's, so ignore them
                     if (pointInCamera.hasNaN()) continue;
+                    if(normal.hasNaN()) continue;
+                    
 
                     if (pointInCamera.y() > mRightClip &&
 						pointInCamera.y() < mLeftClip &&
 						pointInCamera.x() < mFarClip &&
-						pointInCamera.x() > mNearClip){
+						pointInCamera.x() > mNearClip &&
+                        pointInCamera.z() < mTopClip){
 						if constexpr (uploadDebugPointCloud){
 							mInliers.push_back(point);
 						}	
@@ -115,15 +119,17 @@ namespace mrover {
                 // RCLCPP_INFO_STREAM(get_logger(), "WHOOOOOOOOOO");
                 R3f avgNormal{};
                 for(auto& point : bin){
-                    avgNormal += point.normal;
+                    avgNormal.x() += point.normal.x();
+                    avgNormal.y() += point.normal.y();
+                    avgNormal.z() += abs(point.normal.z());
                 }
 
                 // roverSE3.rotation().;
 
                 avgNormal.normalize();
-                // RCLCPP_INFO_STREAM(get_logger(), std::format("Normal Z {}", avgNormal.z()));
-                RCLCPP_INFO_STREAM(get_logger(), std::format("ROLL: {}", *(roverSE3.coeffs().data()+3)));
-                std::int8_t cost = avgNormal.z() < mZThreshold ? OCCUPIED_COST : FREE_COST;
+                RCLCPP_INFO_STREAM(get_logger(), std::format("Normal Z {}; Bin Size {}; One Point {}", avgNormal.z(), bin.size(), bin[0].normal.z()));
+                // RCLCPP_INFO_STREAM(get_logger(), std::format("ROLL: {}", *(roverSE3.coeffs().data()+3)));
+                std::int8_t cost = avgNormal.z() <= mZThreshold ? OCCUPIED_COST : FREE_COST;
 
                 // Update cell with EWMA acting as a low-pass filter
                 auto& cell = mGlobalGridMsg.data[i];
@@ -139,8 +145,8 @@ namespace mrover {
                                               -1 + postProcesed.info.width, +1 + postProcesed.info.width};
             for (std::size_t i = 0; i < mGlobalGridMsg.data.size(); ++i) {
                 if (std::ranges::any_of(dis, [&](std::ptrdiff_t di) {
-                        std::size_t j = i + di;
-                        return j < mGlobalGridMsg.data.size() && mGlobalGridMsg.data[j] > FREE_COST;
+                        std::int64_t j = static_cast<int64_t>(i) + di;
+                        return j < static_cast<int64_t>(mGlobalGridMsg.data.size()) && mGlobalGridMsg.data[j] > FREE_COST;
                     })) postProcesed.data[i] = OCCUPIED_COST;
             }
             mCostMapPub->publish(postProcesed);

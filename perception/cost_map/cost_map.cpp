@@ -11,12 +11,13 @@ namespace mrover {
             {"size", mSize, 25},
             {"map_frame", mMapFrame, "map"},
             {"near_clip", mNearClip, 2.0},
-            {"far_clip", mFarClip, 12.0},
-            {"left_clip", mRightClip, -5.0},
-            {"right_clip", mLeftClip, 5.0},
+            {"far_clip", mFarClip, 7.0},
+            {"left_clip", mRightClip, -2.0},
+            {"right_clip", mLeftClip, 2.0},
+            {"top_clip", mTopClip, 3.0},
             {"z_percent", mZPercent, 0.2},
             {"alpha", mAlpha, 0.05},
-            {"z_threshold", mZThreshold, 0.5}
+            {"z_threshold", mZThreshold, 0.40}
         };
 
         ParameterWrapper::declareParameters(this, params);

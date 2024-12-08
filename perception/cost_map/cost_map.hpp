@@ -12,7 +12,7 @@ namespace mrover {
         constexpr static double TAU = 2 * std::numbers::pi;
 
 		// Noise/Debug Vars
-		constexpr static bool useNoisyPointCloud = true;
+		constexpr static bool useNoisyPointCloud = false;
 		constexpr static bool uploadDebugPointCloud = true;
 		rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr mPCDebugPub;
 		std::vector<Point> mInliers;
@@ -26,7 +26,7 @@ namespace mrover {
 
         double mZPercent{}, mZThreshold{};
         double mAlpha{};
-        double mNearClip{}, mFarClip{}, mLeftClip{}, mRightClip{};
+        double mNearClip{}, mFarClip{}, mLeftClip{}, mRightClip{}, mTopClip{};
         double mResolution{}; // Meters per cell
         double mSize{};       // Size of the square costmap in meters
         int mDownSamplingFactor = 4;
