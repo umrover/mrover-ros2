@@ -13,6 +13,7 @@ from .context import Context
 import rclpy
 from .context import Context
 from navigation.astar import AStar, SpiralEnd, NoPath
+from navigation.coordinate_utils import ij_to_cartesian, cartesian_to_ij, vec_angle, d_calc
 from navigation.trajectory import Trajectory, SearchTrajectory
 from typing import Optional
 from rclpy.publisher import Publisher
@@ -34,6 +35,7 @@ class WaypointState(State):
     prev_target_pos_in_map: Optional[np.ndarray] = None
     is_recovering: bool = False
     time_last_updated: Time
+    start_time = Time
     path_pub: Publisher
     astar: AStar
     follow_astar: bool
@@ -50,6 +52,7 @@ class WaypointState(State):
         self.UPDATE_DELAY = context.node.get_parameter("search.update_delay").value
         self.TRAVERSABLE_COST = context.node.get_parameter("search.traversable_cost").value
         self.time_last_updated = context.node.get_clock().now() - Duration(seconds=self.UPDATE_DELAY)
+        self.start_time = context.node.get_clock().now()
         self.astar_traj = Trajectory(np.array([]))
         self.traj = Trajectory(np.array([]))
         self.follow_astar = False
@@ -67,17 +70,8 @@ class WaypointState(State):
         :param context: Context object
         :return:        Next state
         """
-        #context.node.get_logger().info("Waypoint loop")
 
         assert context.course is not None
-
-        if len(self.traj.coordinates) == 0:
-            if context.rover.get_pose_in_map() is None:
-                return self
-            
-            context.node.get_logger().info("Generating segmented path")
-            self.segment_path(context)
-            return self
 
         current_waypoint = context.course.current_waypoint()
         if current_waypoint is None:
@@ -97,25 +91,44 @@ class WaypointState(State):
         if rover_in_map is None:
             return self
         
+        if len(self.traj.coordinates) == 0:
+            if context.rover.get_pose_in_map() is None:
+                return self
+            
+            context.node.get_logger().info("Generating segmented path")
+            self.segment_path(context)
+            return self
 
         if not hasattr(context.env.cost_map, 'data'): 
             context.node.get_logger().warn(f"No costmap found, waiting...")
+            self.start_time = context.node.get_clock().now()
             return self
+        
+        if context.node.get_clock().now() - Duration(nanoseconds=1000000000) < self.start_time:
+            context.node.get_logger().info("Waiting for initial costmap generation")
+            return self
+    
+        # BEGINNING OF LOGIC
 
         # If there are no more points in the current a_star path or we are past the update delay, then create a new one
         if len(self.astar_traj.coordinates) == 0 or \
             context.node.get_clock().now() - self.time_last_updated > Duration(seconds=self.UPDATE_DELAY):
 
-            if self.is_high_cost_point(context):
+            while self.is_high_cost_point(context):
                 context.node.get_logger().info(f"High cost segment point, skipping it")
                 
-                if not self.traj.increment_point():
-                    # Generate a path
-                    self.astar_traj = self.astar.generate_trajectory(context, self.traj.get_current_point())
+                if self.traj.increment_point():
+                    context.course.increment_waypoint()
+                    self.astar_traj = Trajectory(np.array([]))
+                    self.traj = Trajectory(np.array([]))
+                    return self
+        
+            # Generate a path
+            self.astar_traj = self.astar.generate_trajectory(context, self.traj.get_current_point())
 
-                    # Decide whether we follow the astar path to the next point in the spiral
-                    self.follow_astar = self.astar.use_astar(context=context, star_traj=self.astar_traj, trajectory=self.traj.get_current_point())
-                    self.time_last_updated = context.node.get_clock().now()
+            # Decide whether we follow the astar path to the next point in the spiral
+            self.follow_astar = self.astar.use_astar(context=context, star_traj=self.astar_traj, trajectory=self.traj.get_current_point())
+            self.time_last_updated = context.node.get_clock().now()
             
 
         # Attempt to find the waypoint in the TF tree and drive to it
@@ -160,12 +173,15 @@ class WaypointState(State):
                     else:
                         # We finished a regular waypoint, go onto the next one
                         context.course.increment_waypoint()
+                        self.astar_traj = Trajectory(np.array([]))
+                        self.traj = Trajectory(np.array([]))
+                        return self
         else:
             context.rover.send_drive_command(cmd_vel)
 
         return self
     
-    def segment_path(self, context: Context, seg_len: float = 2):
+    def segment_path(self, context: Context, seg_len: float = 1):
         """
         Segment the path from the rover's current position to the current waypoint into equally spaced points
 
@@ -183,7 +199,7 @@ class WaypointState(State):
         traj_path = np.array([rover_translation, waypoint_translation])
 
         # Calculate the number of segments needed for the path
-        num_segments: int = int(np.ceil(self.astar.d_calc(waypoint_translation,rover_translation) // seg_len))
+        num_segments: int = int(np.ceil(d_calc(waypoint_translation,rover_translation) // seg_len))
 
         # If there is more than one segment, create the segments
         if num_segments > 0:
@@ -192,7 +208,7 @@ class WaypointState(State):
             direction = (waypoint_translation - rover_translation) / num_segments
 
             # Create the segments by adding the direction vector to the rover's position
-            traj_path = np.array([np.round(rover_translation + np.floor(i * direction)) for i in range(0, num_segments)])
+            traj_path = np.array([rover_translation + i * direction for i in range(0, num_segments)])
             np.append(traj_path, waypoint_translation)
 
         # Create a Trajectory object from the segmented path
@@ -205,7 +221,12 @@ class WaypointState(State):
 
     def is_high_cost_point(self, context: Context) -> bool: 
         cost_map = context.env.cost_map.data
-        point_ij = self.astar.cartesian_to_ij(self.traj.get_current_point())
+        point_ij = cartesian_to_ij(context, self.traj.get_current_point())
+
+        if not (0 <= int(point_ij[0]) < cost_map.shape[0] and 0 <= int(point_ij[1]) < cost_map.shape[1]):
+            context.node.get_logger().warn("Point is out of bounds in the costmap")
+            return False
+
         context.node.get_logger().info(f"{cost_map[int(point_ij[0])][int(point_ij[1])]}")
         return cost_map[int(point_ij[0])][int(point_ij[1])] > self.TRAVERSABLE_COST
     
@@ -231,7 +252,7 @@ class WaypointState(State):
             check_point = check_center + perp_vec * (width_mult * CHECK_WIDTH)
             
             # Convert to costmap indices
-            point_ij = self.astar.cartesian_to_ij(check_point)
+            point_ij = cartesian_to_ij(context, check_point)
             i, j = int(point_ij[0]), int(point_ij[1])
             
             # Boundary check
