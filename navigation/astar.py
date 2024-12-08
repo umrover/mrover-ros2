@@ -282,7 +282,7 @@ class AStar:
         follow_astar: bool = True
 
         # If any required information is missing or A* trajectory has fewer than 4 coordinates, do not follow A* path
-        if rover_in_map is None or trajectory is None or len(star_traj.coordinates) < 4:
+        if rover_in_map is None or trajectory is None:
             follow_astar = False
         #else: 
             # angle = self.vec_angle(np.subtract(star_traj.coordinates[3], star_traj.coordinates[0])[0:2], np.subtract(tuple(trajectory)[0:2], context.rover.get_pose_in_map().translation()[0:2]))

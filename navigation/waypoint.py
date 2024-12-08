@@ -227,7 +227,7 @@ class WaypointState(State):
             context.node.get_logger().warn("Point is out of bounds in the costmap")
             return False
 
-        context.node.get_logger().info(f"{cost_map[int(point_ij[0])][int(point_ij[1])]}")
+        #context.node.get_logger().info(f"{cost_map[int(point_ij[0])][int(point_ij[1])]}")
         return cost_map[int(point_ij[0])][int(point_ij[1])] > self.TRAVERSABLE_COST
     
     def is_path_blocked(self, context: Context) -> bool:
