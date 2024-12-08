@@ -19,7 +19,7 @@ class ApproachTargetState(State):
     def determine_next(self, context: Context, is_finished: bool) -> State:
         if is_finished:
             total_time = context.node.get_clock().now() - self.time_begin
-            context.node.get_logger().info(f"Total approach time: {total_time.seconds_nanoseconds()[0]}")
+            context.node.get_logger().info(f"Total approach time: {total_time.nanoseconds // 1000000000}")
             return state.DoneState()
 
         if context.rover.stuck:

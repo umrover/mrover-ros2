@@ -164,7 +164,7 @@ class CostmapSearchState(State):
         if (context.env.current_target_pos() is not None
             and self.astar.d_calc(context.env.current_target_pos(), rover_in_map.translation()[0:2]) < self.SAFE_APPROACH_DISTANCE):
             total_time = context.node.get_clock().now() - self.time_begin
-            context.node.get_logger().info(f"Total search time: {total_time.nanoseconds() // 1000000000}")
+            context.node.get_logger().info(f"Total search time: {total_time.nanoseconds // 1000000000}")
             return approach_target.ApproachTargetState()
 
         return self
