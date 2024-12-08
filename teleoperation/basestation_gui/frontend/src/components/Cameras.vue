@@ -31,7 +31,7 @@
           :labelEnableText="'Enable Camera'"
           :labelDisableText="'Disable Camera'"
           :currentState="cameraSwitch[camera]"
-          @change="toggleCamera"
+          @change="toggleCamera({ id: camera, state: cameraSwitch[camera] })"
         />
       </div>
     </div>
@@ -39,7 +39,7 @@
   <div class="container-fluid">
     <div class="row gx-3 gy-3 justify-content-center">
       <div v-if="cameras[selectedMission].length == 1">
-        <div class="camera-feed-container col-12">
+        <div v-if="cameraSwitch[cameras[selectedMission][0]]" class="camera-feed-container col-12">
           <CameraFeed
             :mission="selectedMission"
             :id="cameras[selectedMission][0]"
@@ -56,7 +56,10 @@
         v-for="cam in cameras[selectedMission]"
         :key="cam"
       >
-        <div class="camera-feed-container ">
+        <div 
+          class="camera-feed-container "
+          v-if="cameraSwitch[cameras[selectedMission][0]]"
+        >
           <CameraFeed
             :mission="selectedMission"
             :id="cam"
@@ -90,13 +93,13 @@ export default {
       missionType: ["DM Mission", "ES Mission", "ISH GUI", "Sample Acquisition GUI", "Autonomy Mission"],
       selectedMission: "DM Mission",
       cameras: {
-        "DM Mission": ["Cam1" ,"Cam2"],
+        "DM Mission": ["Cam1","Cam2"],
         "ES Mission": ["Cam3" ,"Cam4","Cam5"],
         "ISH GUI": ["Cam2" ,"Cam3", "Cam6", "Cam7",],
         "Sample Acquisition GUI": ["Cam8"],
         "Autonomy Mission": ["Cam9" ,"Cam1"]
       },
-      cameraSwitch: { // determines whether camera is on or off <.>
+      cameraSwitch: { // determines whether camera is on or off >.<
         "Cam1": true,
         "Cam2": true,
         "Cam3": true,
@@ -159,9 +162,11 @@ export default {
     },
 
     toggleCamera({ id, state }) {
-      this.cameraSwitch[id] = state;
-      console.log(`Camera ${id} toggled to ${state ? "ON" : "OFF"}`);
+      this.cameraSwitch[id] = !state;
+      console.log(`Camera ${id} toggled to ${this.cameraSwitch[id] ? "ON" : "OFF"}`);
+      // this.sendMessage({ type: 'toggleCamera', id: id, state: this.cameraSwitch[id] });
     }
+
   }
 }
 </script>
