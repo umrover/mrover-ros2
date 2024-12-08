@@ -75,6 +75,12 @@ stuck_detector:
     # Clear the window if the time since last data is greater than this
     data_watchdog_timeout: 1.0
 
+recovery:
+  stop_threshold: 0.2
+  drive_forward_threshold: 0.34
+  recovery_distance: 2.0
+  give_up_time: 10.0
+
 debug_course_publisher:
   ros__parameters:
     # TODO(quintin): Avoid storing these in multiple config files
