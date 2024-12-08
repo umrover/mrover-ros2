@@ -58,7 +58,7 @@ classdef InvariantEKF < handle
             Q = [q, zeros(3,3), zeros(3,3);
                  zeros(3,3), zeros(3,3), zeros(3,3);
                  zeros(3,3), zeros(3,3), zeros(3,3)];
-            Q_d = expm(obj.A * dt) * Q * dt * (expm(obj.A * dt))';
+            Q_d = expm(obj.A * dt) * Q * dt * (expm(obj.A * dt));
 
 
             % propogate
@@ -76,7 +76,7 @@ classdef InvariantEKF < handle
             Q = [zeros(3,3), q, zeros(3,3);
                  zeros(3,3), zeros(3,3), zeros(3,3);
                  zeros(3,3), zeros(3,3), zeros(3,3)];
-            Q_d = expm(obj.A * dt) * Q * dt * (expm(obj.A * dt))'; % TODO: check during testing
+            Q_d = expm(obj.A * dt) * Q * dt * (expm(obj.A * dt)); % TODO: check during testing
 
             % propogate
             temp = obj.X;
@@ -165,14 +165,6 @@ classdef InvariantEKF < handle
         end
 
         function accel_update()
-
-        end
-
-        function velocity_predict()
-
-        end
-
-        function rtk_pitch_update()
 
         end
 
