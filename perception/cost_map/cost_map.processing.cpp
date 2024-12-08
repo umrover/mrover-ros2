@@ -6,6 +6,7 @@
 #include <memory>
 #include <rclcpp/logging.hpp>
 #include <unsupported/Eigen/EulerAngles>
+#include <vector>
 
 namespace mrover {
 
@@ -182,6 +183,19 @@ namespace mrover {
         mGlobalGridMsg.info.origin.position.y = centerInMap.y() - mSize / 2;
         res->success = true;
         RCLCPP_INFO_STREAM(get_logger(), "Moved cost map");
+    }
+
+    // TODO: FINISH
+    void CostMapNode::publishBinInfo(std::vector<Bin> const& bins){
+        struct BinInfo{
+            std::size_t binNum;
+            int binSize;
+            double normal;
+        };
+
+        std::vector<BinInfo> info;
+        for(std::size_t i = 0; i < bins.size(); i++){
+        }
     }
 
     auto CostMapNode::processHeight(mrover::srv::MoveCostMap::Request::ConstSharedPtr& req, mrover::srv::MoveCostMap::Response::SharedPtr& res, std::vector<Bin> bins) -> void{

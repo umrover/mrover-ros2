@@ -45,7 +45,7 @@ namespace mrover {
                 R3f pointInMap;
             };
 
-            using Bin = std::vector<BinEntry>;
+        using Bin = std::vector<BinEntry>;
 
     public:
         CostMapNode();
@@ -59,6 +59,8 @@ namespace mrover {
 		void uploadPC();
 
         auto processHeight(mrover::srv::MoveCostMap::Request::ConstSharedPtr& req, mrover::srv::MoveCostMap::Response::SharedPtr& res, std::vector<Bin> bins) -> void;
+
+        void publishBinInfo(std::vector<Bin> const& bins);
     };
 
 } // namespace mrover
