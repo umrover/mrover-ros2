@@ -3,6 +3,7 @@ from threading import Lock
 
 import numpy as np
 from navigation.trajectory import Trajectory
+from navigation.coordinate_utils import ij_to_cartesian, cartesian_to_ij, d_calc, vec_angle
 from geometry_msgs.msg import Pose, PoseStamped, Point, Quaternion, Twist
 from navigation import waypoint
 from rclpy.publisher import Publisher
@@ -140,8 +141,8 @@ class AStar:
         with self.costmap_lock:
             costmap2d = self.context.env.cost_map.data
             # Convert start and end to occupancy grid coordinates
-            start_ij = tuple(self.cartesian_to_ij(start))
-            end_ij = tuple(self.cartesian_to_ij(end))
+            start_ij = tuple(cartesian_to_ij(self.context, start))
+            end_ij = tuple(cartesian_to_ij(self.context, end))
 
             # If start and end are the same, return None
             if start_ij == end_ij:
@@ -216,7 +217,7 @@ class AStar:
         # Move the costmap if we are outside of the threshold for it
         costmap_length = self.context.env.cost_map.data.shape[0]
         thresh = (costmap_length * self.COSTMAP_THRESH, costmap_length * (1 - self.COSTMAP_THRESH))
-        rover_ij = self.cartesian_to_ij(rover_position_in_map)
+        rover_ij = cartesian_to_ij(context, rover_position_in_map)
 
         if rover_ij[0] < thresh[0] or rover_ij[0] > thresh[1] \
             or rover_ij[1] < thresh[0] or rover_ij[1] > thresh[1]:
@@ -245,7 +246,7 @@ class AStar:
             trajectory = Trajectory(np.array([]))
         else:
             # Convert the occupancy list to cartesian coordinates
-            cartesian_coords = self.ij_to_cartesian(np.array(occupancy_list))
+            cartesian_coords = ij_to_cartesian(context, np.array(occupancy_list))
             trajectory = Trajectory(
                 np.hstack((cartesian_coords, np.zeros((cartesian_coords.shape[0], 1))))
             )  # Current point gets set back to 0

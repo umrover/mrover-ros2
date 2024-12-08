@@ -78,7 +78,7 @@ namespace mrover {
 
             
             constexpr double MAX_COST_RADIUS = 2; 
-            constexpr double INFLATION_RADIUS = 5; 
+            constexpr double INFLATION_RADIUS = 4; 
 
             nav_msgs::msg::OccupancyGrid postProcessed = mGlobalGridMsg;
             std::ptrdiff_t width = postProcessed.info.width;
@@ -128,7 +128,7 @@ namespace mrover {
                                 else {
                                     double factor = (INFLATION_RADIUS - distance) / (INFLATION_RADIUS - MAX_COST_RADIUS);
                                     postProcessed.data[neighborIndex] = std::max(postProcessed.data[neighborIndex], 
-                                    static_cast<std::int8_t>(factor * OCCUPIED_COST));
+                                    static_cast<std::int8_t>(/*factor * */OCCUPIED_COST));
                                 }
                             }
                         }
