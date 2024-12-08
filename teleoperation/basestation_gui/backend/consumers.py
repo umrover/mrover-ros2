@@ -95,6 +95,7 @@ class GUIConsumer(JsonWebsocketConsumer):
 
         try:
             match message:
+                #sending controls
                 case {
                     "type": "joystick" | "mast_keyboard" | "ra_controller",
                     "axes": axes,
@@ -108,13 +109,12 @@ class GUIConsumer(JsonWebsocketConsumer):
                             send_ra_controls(cur_mode,device_input,node, self.thr_pub, self.ee_pos_pub, self.ee_vel_pub, self.buffer)
                         case "mast_keyboard":
                             send_mast_controls(device_input)
-                #change input mode
+                #update input mode
                 case{
                     "type":"ra_mode",
                     "mode": mode,
                 }:
                     cur_mode = mode
-                    # logger.info(f"publishing to {cur_mode}")
                 case _:
                     node.get_logger().warning(f"Unhandled message: {message}")
 

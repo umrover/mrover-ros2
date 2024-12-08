@@ -3,18 +3,6 @@
     <h2>Arm Controls</h2>
     <div class='controls-flex'>
       <h4>Mode</h4>
-      <!-- <div class='form-check'>
-        <input v-model='mode' type='radio' class='form-check-input' id='disabled' value='disabled' />
-        <label class='form-check-label' for='disabled'>Disabled</label>
-      </div>
-      <div class='form-check'>
-        <input v-model='mode' type='radio' class='form-check-input' id='manual' value='manual' />
-        <label class='form-check-label' for='manual'>Manual</label>
-      </div>
-      <div class='form-check'>
-        <input v-model='mode' type='radio' class='form-check-input' id='ik' value='ik' />
-        <label class='form-check-label' for='ik'>IK</label>
-      </div> -->
         <input v-model='mode' type="radio" class="btn-check" name="options-outlined" id="disabled" value='disabled' autocomplete="off" checked>
         <label class="btn btn-outline-danger" for="disabled">Disabled</label>
         <input v-model='mode' type="radio" class="btn-check" name="options-outlined" id="throttle" value='throttle' autocomplete="off">
