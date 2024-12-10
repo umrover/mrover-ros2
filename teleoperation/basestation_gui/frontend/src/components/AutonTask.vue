@@ -8,8 +8,14 @@
       <h2>Nav State: {{ navState }}</h2>
       <OdometryReading :odom='odom' />
     </div>
-    <div class='shadow p-3 rounded feed'>
-      <CameraFeed :mission="'ZED'" :id='0' :name="'ZED'"></CameraFeed>
+    <div class='shadow p-3 rounded feed'> <!-- meant to be cost mapb -->
+      <button @click="toggleFeed" class="btn btn-primary mb-2">
+        {{ cameraFeedEnabled ? 'Disable' : 'Enable' }} Camera Feed
+      </button>
+      <div v-if="cameraFeedEnabled" class='camera-container'>
+        <CameraFeed :mission="'ZED'" :id='0' :name="'ZED'"/>
+        <img src='/mrover.png' width='100' /> <p v-if="cameraFeedEnabled">Camera Feed On</p>
+      </div>
     </div>
     <div class='shadow p-3 rounded map'>
       <AutonRoverMap :odom='odom' />
@@ -96,7 +102,10 @@ export default defineComponent({
         effort: [] as number[],
         state: [] as string[],
         error: [] as string[]
-      }
+      },
+
+      cameraFeedEnabled: true
+      
     }
   },
 
@@ -140,7 +149,10 @@ export default defineComponent({
   },
 
   methods: {
-    ...mapActions('websocket', ['sendMessage'])
+    ...mapActions('websocket', ['sendMessage']),
+    toggleFeed(){
+      this.cameraFeedEnabled = !this.cameraFeedEnabled
+    }
   },
 
   beforeUnmount: function() {
@@ -271,4 +283,16 @@ h2 {
 .feed {
   grid-area: feed;
 }
+
+.btn{
+  display: block;
+  margin: 10px auto;
+}
+
+.camera-container{
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
 </style>
