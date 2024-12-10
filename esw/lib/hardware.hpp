@@ -138,9 +138,12 @@ namespace mrover {
         FDCAN() = default;
 
         explicit FDCAN(FDCAN_HandleTypeDef* fdcan)
-            : m_fdcan{fdcan} { }
+            : m_fdcan{fdcan} {}
 
         auto start() -> void {
+            // TODO(owen): document this voodoo magic
+            check(HAL_FDCAN_ConfigTxDelayCompensation(m_fdcan, 13, 1) == HAL_OK, Error_Handler);
+            check(HAL_FDCAN_EnableTxDelayCompensation(m_fdcan) == HAL_OK, Error_Handler);
             check(HAL_FDCAN_ActivateNotification(m_fdcan, FDCAN_IT_RX_FIFO0_NEW_MESSAGE, 0) == HAL_OK, Error_Handler);
             check(HAL_FDCAN_Start(m_fdcan) == HAL_OK, Error_Handler);
         }
