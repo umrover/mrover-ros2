@@ -66,6 +66,7 @@ namespace mrover {
     ControllerStopwatches stopwatches; // MotorCount * 3 = MotorCount(encoder elapsed timer + last throttle timer + last PIDF timer)
     std::array<Motor, NUM_MOTORS> motors;
     typename std::array<Motor, NUM_MOTORS>::iterator motor_requesting_absolute_encoder;
+    Pin can_tx_led, can_rx_led;
 
     constexpr auto create_motor(std::size_t index) -> Motor {
         switch (index) {
@@ -116,6 +117,8 @@ namespace mrover {
         stopwatches = ControllerStopwatches(VIRTUAL_STOPWATCHES_TIMER);
         motors = create_motor_array<NUM_MOTORS>();
         motor_requesting_absolute_encoder = motors.begin();
+        can_tx_led = Pin{CAN_TX_LED_GPIO_Port, CAN_TX_LED_Pin};
+        can_rx_led = Pin{CAN_RX_LED_GPIO_Port, CAN_RX_LED_Pin};
 
         stopwatches.init();
 
@@ -137,12 +140,15 @@ namespace mrover {
 
         auto const& [header, message] = received.value();
 
-        auto id = std::bit_cast<FDCAN<InBoundMessage>::MessageId>(header.Identifier);
+        auto const id = std::bit_cast<FDCAN<InBoundMessage>::MessageId>(header.Identifier);
 
         for (std::size_t i = 0; i < NUM_MOTORS; ++i) {
             if (motors[i].get_id() == id.destination) {
+                can_rx_led.write(GPIO_PIN_SET);
                 motors[i].receive(message);
                 motors[i].update();
+                can_rx_led.write(GPIO_PIN_RESET);
+                break;
             }
         }
     }
@@ -153,10 +159,12 @@ namespace mrover {
      * The update rate should be limited to avoid hammering the FDCAN bus.
      */
     auto send_motor_statuses() -> void {
-        for (const auto& motor: motors) {
+        for (auto const& motor: motors) {
+            can_tx_led.write(GPIO_PIN_SET);
             if (bool success = fdcan_bus.broadcast(motor.get_outbound(), motor.get_id(), DESTINATION_DEVICE_ID); !success) {
                 fdcan_bus.reset();
             }
+            can_tx_led.write(GPIO_PIN_RESET);
         }
     }
 
