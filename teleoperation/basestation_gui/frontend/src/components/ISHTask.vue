@@ -13,7 +13,7 @@
       <Cameras :mission="'ish'" />
     </div>
     <div class="shadow p-3 rounded benedicts">
-      <AminoBenedict :site="site" :isAmino="false" />
+      <NinhydrinBenedict :site="site" :isNinhydrin="false" />
     </div>
     <div class="shadow p-3 rounded cache">
       <Cache />
@@ -21,8 +21,8 @@
     <div class="shadow p-3 rounded chlorophyll">
       <Chlorophyll />
     </div>
-    <div class="shadow p-3 rounded amino">
-      <AminoBenedict :site="site" :isAmino="true" />
+    <div class="shadow p-3 rounded ninhydrin">
+      <NinhydrinBenedict :site="site" :isNinhydrin="true" />
     </div>
   </div>
 </template>
@@ -31,7 +31,7 @@
 import SelectSite from './SelectSite.vue'
 import Cache from './CacheControls.vue'
 import Chlorophyll from './Chlorophyll.vue'
-import AminoBenedict from './AminoBenedict.vue'
+import NinhydrinBenedict from './NinhydrinBenedict.vue'
 import Cameras from './Cameras.vue'
 import NetworkMonitor from "./NetworkMonitor.vue";
 //   import MCUReset from "./MCUReset.vue"
@@ -41,7 +41,7 @@ export default {
     SelectSite,
     Cache,
     Chlorophyll,
-    AminoBenedict,
+    NinhydrinBenedict,
     Cameras,
     NetworkMonitor,
     //   MCUReset,
@@ -71,7 +71,7 @@ export default {
     'header header'
     'cache siteSelect'
     'cache benedicts'
-    'chlorophyll amino'
+    'chlorophyll ninhydrin'
     'cameras cameras';
   font-family: sans-serif;
   height: auto;
@@ -154,7 +154,7 @@ export default {
   grid-area: cache;
 }
 
-.amino {
-  grid-area: amino;
+.ninhydrin {
+  grid-area: ninhydrin;
 }
 </style>
