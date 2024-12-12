@@ -28,44 +28,29 @@
       >
         <ToggleButton
           :id="camera"
-          :labelEnableText="'Enable Camera'"
-          :labelDisableText="'Disable Camera'"
-          :currentState="cameraSwitch[camera]"
-          @change="toggleCamera({ id: camera, state: cameraSwitch[camera] })"
+          :labelEnableText="camera"
+          :labelDisableText="camera"
+          :currentState="camsEnabled[index]"
+          @change="toggleCamera(index)"
         />
       </div>
     </div>
 
   <div class="container-fluid">
     <div class="row gx-3 gy-3 justify-content-center">
-      <div v-if="cameras[selectedMission].length == 1">
-        <div v-if="cameraSwitch[cameras[selectedMission][0]]" class="camera-feed-container col-12">
-          <CameraFeed
-            :mission="selectedMission"
-            :id="cameras[selectedMission][0]"
-            :name="cameras[selectedMission][0]"
-            :class="cameras[selectedMission][0]"
-            
-          ></CameraFeed>
-        </div>
-
-      </div>
       <div
-        v-else
-        class="col-12 col-md-6"
-        v-for="cam in cameras[selectedMission]"
+        :class="['col-12', (numEnabled > 1) ? 'col-md-6' : '']"
+        v-for="(cam, index) in cameras[selectedMission]"
         :key="cam"
       >
         <div 
           class="camera-feed-container "
-          v-if="cameraSwitch[cameras[selectedMission][0]]"
+          v-if="camsEnabled[index]"
         >
           <CameraFeed
             :mission="selectedMission"
-            :id="cam"
+            :id="index"
             :name="cam"
-            :class="cam"
-            
           ></CameraFeed>
         </div>
       </div>
@@ -74,7 +59,6 @@
 </template>
 
 <script lang="ts">
-import CameraSelection from '../components/CameraSelection.vue'
 import CameraFeed from './CameraFeed.vue'
 import ToggleButton from "../components/ToggleButton.vue";
 import { mapActions, mapState } from 'vuex'
@@ -82,7 +66,6 @@ import { reactive } from 'vue'
 
 export default {
   components: {
-    CameraSelection,
     ToggleButton,
     CameraFeed
   },
@@ -99,18 +82,8 @@ export default {
         "Sample Acquisition GUI": ["Cam8"],
         "Autonomy Mission": ["Cam9" ,"Cam1"]
       },
-      cameraSwitch: { // determines whether camera is on or off >.<
-        "Cam1": true,
-        "Cam2": true,
-        "Cam3": true,
-        "Cam4": true,
-        "Cam5": true,
-        "Cam6": true,
-        "Cam7": true,
-        "Cam8": true,
-        "Cam9": true,
-
-      }
+      camsEnabled: [], // stores cam enabled state for cameras in selected mission (default true)
+      numEnabled: 0
     }
   },
 
@@ -120,51 +93,36 @@ export default {
         this.percent = msg.percent;
       }
     },
-    capacity: function (newCap, oldCap) {
-      if (newCap < oldCap) {
-        const numStreaming = this.streamOrder.filter(index => index != -1)
-        const index = numStreaming.length - 1
-        this.setCamIndex(numStreaming[index])
-      }
+
+    selectedMission(newMission: string) {
+      this.camsEnabled = new Array(this.cameras[newMission].length).fill(true);
+    },
+
+    camsEnabled: {
+      handler: function() {
+      this.numEnabled = this.camsEnabled.filter((x: boolean) => x).length;
+      },
+      deep: true
     }
   },
 
   computed: {
     ...mapState('websocket', ['message']),
-    color: function() {
-      return this.camsEnabled ? 'btn-success' : 'btn-secondary'
-    }
+  },
+
+  created: function() {
+    this.camsEnabled = new Array(this.cameras[this.selectedMission].length).fill(true);
   },
 
   methods: {
     ...mapActions('websocket', ['sendMessage']),
 
-    setCamIndex: function(index: number) {
-      // every time a button is pressed, it changes cam status and adds/removes from stream
-      this.camsEnabled[index] = !this.camsEnabled[index]
-      this.changeStream(index)
-    },
-
-    addCameraName: function() {
-      this.names[this.cameraIdx] = this.cameraName
-    },
-
-    changeStream(index: number) {
-      const found = this.streamOrder.includes(index)
-      if (found) {
-        this.streamOrder.splice(this.streamOrder.indexOf(index), 1)
-        this.streamOrder.push(-1)
-      } else this.streamOrder[this.streamOrder.indexOf(-1)] = index
-    },
-
     takePanorama() {
       this.sendMessage({ type: 'takePanorama' })
     },
 
-    toggleCamera({ id, state }) {
-      this.cameraSwitch[id] = !state;
-      console.log(`Camera ${id} toggled to ${this.cameraSwitch[id] ? "ON" : "OFF"}`);
-      // this.sendMessage({ type: 'toggleCamera', id: id, state: this.cameraSwitch[id] });
+    toggleCamera(idx: number) {
+      this.camsEnabled[idx] = !this.camsEnabled[idx];
     }
 
   }
@@ -172,26 +130,11 @@ export default {
 </script>
 
 <style scoped>
-.cameraselection {
-  margin: 10px;
-}
-
-.custom-btn {
-  width: 150px;
-  height: 50px;
-}
-
-.info {
-  height: 200px;
-  overflow-y: auto;
-}
-
 .percent {
   font-size: large;
 }
 
 .camera-feed-container {
-  background-color: #fff;
   display: flex;
   justify-content: center;
   align-items: center;
