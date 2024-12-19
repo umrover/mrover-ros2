@@ -18,7 +18,7 @@
       </div>
     </div>
     <div class='shadow p-3 rounded map'>
-      <AutonRoverMap :odom='odom' />
+      <AutonRoverMap :odom='odom' />  
     </div>
     <div class='shadow p-3 rounded waypoints'>
       <AutonWaypointEditor :odom='odom' @toggleTeleop='teleopEnabledCheck = $event' />
@@ -77,7 +77,8 @@ export default defineComponent({
         latitude_deg: 38.4071654,
         longitude_deg: -110.7923927,
         bearing_deg: 0,
-        altitude: 0
+        altitude: 0, 
+        status: false
       },
 
       teleopEnabledCheck: false,
@@ -142,6 +143,7 @@ export default defineComponent({
         this.odom.latitude_deg = msg.latitude
         this.odom.longitude_deg = msg.longitude
         this.odom.altitude = msg.altitude
+        this.odom.status = msg.status
       } else if (msg.type == 'orientation') {
         this.odom.bearing_deg = quaternionToMapAngle(msg.orientation)
       }
