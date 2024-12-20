@@ -1,20 +1,19 @@
 #pragma once
 
-#include "mrover/msg/detail/can__struct.hpp"
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <format>
-#include <rclcpp/utilities.hpp>
 #include <span>
 #include <string>
 #include <variant>
 
 #include <rclcpp/rclcpp.hpp>
-
-#include <mrover/msg/can.hpp>
+#include <rclcpp/utilities.hpp>
 
 #include <moteus/moteus.h>
+
+#include <mrover/msg/can.hpp>
 
 namespace mrover {
 
@@ -26,11 +25,9 @@ namespace mrover {
     template<typename T>
     concept IsCanFdSerializable = IsSerializable<T> && sizeof(T) <= 64;
 
-    class CanDevice : public rclcpp::Node {
-    private:
-        static constexpr char const* NODE_NAME = "can_bridge";
-
-        rclcpp::Publisher<msg::CAN>::SharedPtr m_can_publisher;
+    class CanDevice {
+        rclcpp::Node::SharedPtr mNode;
+        rclcpp::Publisher<msg::CAN>::SharedPtr mCanPublisher;
         std::string mFromDevice{}, mToDevice{};
 
         void publish_data(std::span<std::byte const> data, bool replyRequired = false) {
@@ -40,16 +37,16 @@ namespace mrover {
             can_message.reply_required = replyRequired;
             // This is needed since ROS is old and uses std::uint8_t instead of std::byte
             std::ranges::transform(data, std::back_inserter(can_message.data), [](std::byte b) { return static_cast<std::uint8_t>(b); });
-            m_can_publisher->publish(can_message);
+            mCanPublisher->publish(can_message);
         }
 
     public:
-        CanDevice(std::string from_device, std::string to_device) 
-            : rclcpp::Node(NODE_NAME),
+        CanDevice(rclcpp::Node::SharedPtr node, std::string from_device, std::string to_device)
+            : mNode{std::move(node)},
               mFromDevice{std::move(from_device)},
               mToDevice{std::move(to_device)} {
             // rclcpp::init(0, nullptr);
-            m_can_publisher = create_publisher<msg::CAN>(std::format("can/{}/out", mToDevice), 1);
+            mCanPublisher = mNode->create_publisher<msg::CAN>(std::format("can/{}/out", mToDevice), 1);
         }
 
 
@@ -72,12 +69,4 @@ namespace mrover {
             publish_data({address, frame.size}, frame.reply_required);
         }
     };
-
-auto main(int argc, char** argv) -> int {
-    rclcpp::init(argc, argv);
-    rclcpp::spin(std::make_shared<mrover::CanDevice>());
-    rclcpp::shutdown();
-    return EXIT_SUCCESS;
-}
-
 } // namespace mrover

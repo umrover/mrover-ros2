@@ -273,10 +273,14 @@ target_link_libraries(tag_detector lie opencv_core opencv_aruco opencv_imgproc l
 # Embedded
 
 mrover_add_header_only_library(can_device esw/can_device)
-target_link_libraries(can_device INTERFACE rclcpp)
+target_link_libraries(can_device INTERFACE ${rclcpp_LIBRARIES})
+
 mrover_add_library(motor_library esw/motor_library/*.cpp esw/motor_library)
 ament_target_dependencies(motor_library rclcpp std_srvs)
 target_link_libraries(motor_library can_device moteus units)
+
+mrover_add_node(arm_hw_bridge esw/arm_hw_bridge.cpp)
+target_link_libraries(arm_hw_bridge motor_library)
 
 mrover_add_node(differential_drive_controller esw/differential_drive_controller.cpp)
 target_link_libraries(differential_drive_controller units)

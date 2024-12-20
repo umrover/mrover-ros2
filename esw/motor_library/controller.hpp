@@ -1,30 +1,24 @@
 #pragma once
 
-#include "mrover/msg/detail/controller_state__struct.hpp"
-#include <rclcpp/create_publisher.hpp>
-#include <rclcpp/create_timer.hpp>
-#include <rclcpp/logger.hpp>
-#include <rclcpp/logging.hpp>
-#include <rclcpp/timer.hpp>
-#include <sensor_msgs/msg/detail/joint_state__struct.hpp>
+#include <chrono>
 #include <string>
 
 #include <rclcpp/executors.hpp>
+#include <rclcpp/logging.hpp>
 #include <rclcpp/node.hpp>
+#include <rclcpp/rclcpp.hpp>
 
 #include <can_device.hpp>
-#include <chrono>
 #include <units/units.hpp>
 
-#include <sensor_msgs/msg/joint_state.h>
-
-#include <mrover/srv/adjust_motor.hpp>
+#include <mrover/msg/can.hpp>
 #include <mrover/msg/controller_state.hpp>
 #include <mrover/msg/motors_adjust.hpp>
 #include <mrover/msg/position.hpp>
 #include <mrover/msg/throttle.hpp>
 #include <mrover/msg/velocity.hpp>
-#include <mrover/msg/can.hpp>
+#include <mrover/srv/adjust_motor.hpp>
+#include <sensor_msgs/msg/joint_state.hpp>
 
 namespace mrover {
 
@@ -36,20 +30,40 @@ namespace mrover {
         using OutputPosition = TOutputPosition;
         using OutputVelocity = compound_unit<OutputPosition, inverse<Seconds>>;
 
-        ControllerBase(std::string masterName, std::string controllerName) : rclcpp::Node{NODE_NAME}, mMasterName{std::move(masterName)}, mControllerName{std::move(controllerName)} {
-            try {   
-                mIncomingCANSub = create_subscription<msg::CAN>(std::format("can/{}/in", mControllerName), 16, &ControllerBase::processCANMessage);
-                mMoveThrottleSub = create_subscription<msg::Throttle>(std::format("{}_throttle_cmd", mControllerName), 1, &ControllerBase::setDesiredThrottle);
-                mMoveVelocitySub = create_subscription<msg::Velocity>(std::format("{}_velocity_cmd", mControllerName), 1, &ControllerBase::setDesiredVelocity);
-                mMovePositionSub = create_subscription<msg::Position>(std::format("{}_position_cmd", mControllerName), 1, &ControllerBase::setDesiredPosition);
-                mJointDataPub = create_publisher<sensor_msgs::msg::JointState>(std::format("{}_joint_data", mControllerName), 1);
-                mPublishDataTimer = rclcpp::create_wall_timer(std::chrono::milliseconds(100), std::bind(&ControllerBase::publishDataCallback));
-                mControllerDataPub = create_publisher<msg::ControllerState>(std::format("{}_controller_data", mControllerName), 1);
-                // mAdjustServer{mNh.advertiseService(std::format("{}_adjust", mControllerName), &ControllerBase::adjustServiceCallback, this)};
-            } catch (std::exception const& e) {
-                RCLCPP_ERROR_STREAM(get_logger(), std::format("Exception initializing: {}", e.what()));
-                rclcpp::shutdown();
-            }
+        ControllerBase(std::string masterName, std::string controllerName)
+            : rclcpp::Node{controllerName + "_controller"},
+              mMasterName{std::move(masterName)},
+              mControllerName{std::move(controllerName)},
+              mDevice{shared_from_this(), mMasterName, mControllerName} {
+
+            mIncomingCANSub = create_subscription<msg::CAN>(
+                    std::format("can/{}/in", mControllerName), 16,
+                    [this](msg::CAN::ConstSharedPtr const& msg) { processCANMessage(msg); });
+            mMoveThrottleSub = create_subscription<msg::Throttle>(
+                    std::format("{}_throttle_cmd", mControllerName), 1,
+                    [this](msg::Throttle::ConstSharedPtr const& msg) { setDesiredThrottle(msg); });
+            mMoveVelocitySub = create_subscription<msg::Velocity>(
+                    std::format("{}_velocity_cmd", mControllerName), 1,
+                    [this](msg::Velocity::ConstSharedPtr const& msg) { setDesiredVelocity(msg); });
+            mMovePositionSub = create_subscription<msg::Position>(
+                    std::format("{}_position_cmd", mControllerName), 1,
+                    [this](msg::Position::ConstSharedPtr const& msg) { setDesiredPosition(msg); });
+
+            mJointDataPub = create_publisher<sensor_msgs::msg::JointState>(
+                    std::format("{}_joint_data", mControllerName), 1);
+            mControllerDataPub = create_publisher<msg::ControllerState>(
+                    std::format("{}_controller_data", mControllerName), 1);
+
+            mPublishDataTimer = create_wall_timer(
+                    std::chrono::milliseconds(100),
+                    [this]() { publishDataCallback(); });
+
+            mAdjustServer = create_service<srv::AdjustMotor>(
+                    std::format("{}_adjust", mControllerName),
+                    [this](srv::AdjustMotor::Request::SharedPtr const req,
+                           srv::AdjustMotor::Response::SharedPtr res) {
+                        adjustServiceCallback(req, res);
+                    });
         }
 
         ControllerBase(ControllerBase const&) = delete;
@@ -58,7 +72,7 @@ namespace mrover {
         auto operator=(ControllerBase const&) -> ControllerBase& = delete;
         auto operator=(ControllerBase&&) -> ControllerBase& = delete;
 
-        // TODO(quintin): Why can't I bind directly to &Derived::processCANMessage?
+        // TODO:(quintin) Why can't I bind directly to &Derived::processCANMessage?
         auto processCANMessage(msg::CAN::ConstPtr const& msg) -> void {
             static_cast<Derived*>(this)->processCANMessage(msg);
         }
@@ -106,7 +120,7 @@ namespace mrover {
                 using Velocity = typename detail::strip_conversion<OutputVelocity>::type;
 
                 sensor_msgs::msg::JointState jointState;
-                jointState.header.stamp = get_clock()->now();
+                jointState.header.stamp = now();
                 jointState.name = {mControllerName};
                 jointState.position = {Position{mCurrentPosition}.get()};
                 jointState.velocity = {Velocity{mCurrentVelocity}.get()};
@@ -124,29 +138,26 @@ namespace mrover {
                 }
                 controllerState.limit_hit = {limit_hit};
 
-                mControllerDataPub.publish(controllerState);
+                mControllerDataPub->publish(controllerState);
             }
         }
 
-        auto adjustServiceCallback(AdjustMotor::Request& req, AdjustMotor::Response& res) -> bool {
-            if (req.name != mControllerName) {
-                RCLCPP_ERROR(get_logger(), "Adjust request at server for %s ignored", req.name.c_str());
-                res.success = false;
-                return true;
+        auto adjustServiceCallback(srv::AdjustMotor::Request::SharedPtr const req, srv::AdjustMotor::Response::SharedPtr res) -> void {
+            if (req->name != mControllerName) {
+                RCLCPP_ERROR(get_logger(), "Adjust request at server for %s ignored", req->name.c_str());
+                res->success = false;
+                return;
             }
-
             using Position = typename detail::strip_conversion<OutputPosition>::type;
-            OutputPosition position = Position{req.value};
+            OutputPosition position = Position{req->value};
             static_cast<Derived*>(this)->adjust(position);
-            res.success = true;
-            return true;
+            res->success = true;
         }
 
     protected:
-        static constexpr char const* NODE_NAME = "motor_controller";
-
         std::string mMasterName, mControllerName;
         CanDevice mDevice;
+        rclcpp::Subscription<msg::CAN>::SharedPtr mIncomingCANSub;
         OutputPosition mCurrentPosition{};
         OutputVelocity mCurrentVelocity{};
         Percent mCalibrationThrottle{};
@@ -155,16 +166,18 @@ namespace mrover {
         std::string mErrorState;
         std::string mState;
         std::array<bool, 4> mLimitHit{};
-        
 
-        rclcpp::Subscription<msg::CAN> mIncomingCANSub;
+
         rclcpp::Subscription<msg::Throttle>::SharedPtr mMoveThrottleSub;
         rclcpp::Subscription<msg::Velocity>::SharedPtr mMoveVelocitySub;
         rclcpp::Subscription<msg::Position>::SharedPtr mMovePositionSub;
-        rclcpp::Publisher<msg::Position>::SharedPtr mJointDataPub;
-        rclcpp::Publisher<msg::ControllerState> mControllerDataPub;
+
+        rclcpp::Publisher<sensor_msgs::msg::JointState>::SharedPtr mJointDataPub;
+        rclcpp::Publisher<msg::ControllerState>::SharedPtr mControllerDataPub;
+
         rclcpp::TimerBase::SharedPtr mPublishDataTimer;
-        // ros::ServiceServer mAdjustServer;
+
+        rclcpp::Service<srv::AdjustMotor>::SharedPtr mAdjustServer;
     };
 
 } // namespace mrover

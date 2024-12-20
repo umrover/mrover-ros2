@@ -11,22 +11,25 @@ namespace mrover {
 #pragma pack(push, 1)
 
     struct ConfigLimitSwitchInfo {
-        std::uint8_t present : 4 {};
-        std::uint8_t enabled : 4 {};
-        std::uint8_t active_high : 4 {};
-        std::uint8_t limits_forward : 4 {};
+        std::uint8_t present : 2 {};
+        std::uint8_t enabled : 2 {};
+        std::uint8_t active_high : 2 {};
+        std::uint8_t limits_forward : 2 {};
         std::uint8_t limit_max_forward_position : 1 {};
         std::uint8_t limit_max_backward_position : 1 {};
-        std::uint8_t use_for_readjustment : 4 {};
-        std::array<Radians, 4> limit_readj_pos;
+        std::uint8_t use_for_readjustment : 2 {};
+        [[maybe_unused]] std::uint8_t _padding_a : 4 {};
+        [[maybe_unused]] std::uint8_t _padding_b[2]{};
+        std::array<Radians, 2> limit_readj_pos;
     };
 
     struct ConfigEncoderInfo {
-        [[maybe_unused]] std::uint8_t _ignore : 4 {}; // 8 bits - (4 meaningful bits) = 4 ignored bits
         std::uint8_t quad_present : 1 {};
         std::uint8_t _quad_is_forward_polarity : 1 {};
         std::uint8_t abs_present : 1 {};
         std::uint8_t _abs_is_forward_polarity : 1 {};
+        [[maybe_unused]] std::uint8_t _padding_a : 4 {}; // 8 bits - (4 meaningful bits) = 4 ignored bits
+        [[maybe_unused]] std::uint8_t _padding_b[3]{};
         Ratio quad_ratio;
         Ratio abs_ratio;
         Radians abs_offset;
@@ -49,8 +52,8 @@ namespace mrover {
     };
 
     struct LimitStateInfo {
-        [[maybe_unused]] std::uint8_t _ignore : 4 {}; // 8 bits - (4 meaningful bits) = 4 ignored bits
-        std::uint8_t hit : 4 {};
+        [[maybe_unused]] std::uint8_t _ignore : 6 {}; // 8 bits - (2 meaningful bits) = 6 ignored bits
+        std::uint8_t hit : 2 {};
     };
 
     struct BaseCommand {
@@ -65,10 +68,10 @@ namespace mrover {
         ConfigLimitSwitchInfo limit_switch_info;
         ConfigEncoderInfo enc_info;
         Percent max_pwm;
-        [[maybe_unused]] std::uint8_t _ignore : 7 {};
-        std::uint8_t is_inverted : 1 {};
         Radians min_position, max_position;
         RadiansPerSecond min_velocity, max_velocity;
+        [[maybe_unused]] std::uint8_t _ignore : 7 {};
+        std::uint8_t is_inverted : 1 {};
     };
 
     struct IdleCommand : BaseCommand {
@@ -205,5 +208,5 @@ namespace mrover {
 } // namespace mrover
 
 // Macros needed to operate on bitfields
-#define SET_BIT_AT_INDEX(x, index, value) (x = (x & ~(1 << index)) | (value << index))
-#define GET_BIT_AT_INDEX(x, index) (x & (1 << index))
+#define SET_BIT_AT_INDEX(x, index, value) ((x) = ((x) & ~(1 << (index))) | ((value) << (index)))
+#define GET_BIT_AT_INDEX(x, index) ((x) & (1 << (index)))

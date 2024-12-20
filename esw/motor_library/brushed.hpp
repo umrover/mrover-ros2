@@ -18,7 +18,42 @@ namespace mrover {
     // For now only revolute joints are supported => hardcode to Radians
     class BrushedController final : public ControllerBase<Radians, BrushedController> {
     public:
-        BrushedController(ros::NodeHandle const& nh, std::string masterName, std::string controllerName);
+        struct Config {
+            static constexpr std::size_t MAX_NUM_LIMIT_SWITCHES = 2;
+            std::array<bool, MAX_NUM_LIMIT_SWITCHES> limitSwitchPresent = {false};
+            std::array<bool, MAX_NUM_LIMIT_SWITCHES> limitSwitchEnabled = {false};
+            std::array<bool, MAX_NUM_LIMIT_SWITCHES> limitSwitchLimitsFwd = {false};
+            std::array<bool, MAX_NUM_LIMIT_SWITCHES> limitSwitchActiveHigh = {false};
+            std::array<bool, MAX_NUM_LIMIT_SWITCHES> limitSwitchUsedForReadjustment = {false};
+            std::array<Radians, MAX_NUM_LIMIT_SWITCHES> limitSwitchReadjustPosition = {Radians{0.0}};
+            bool limitMaxForwardPosition = false;
+            bool limitMaxBackwardPosition = false;
+
+            double gearRatio = 0.0;
+            bool isInverted = false;
+
+            double driverVoltage = 0.0;
+            double motorMaxVoltage = 0.0;
+
+            bool quadPresent = false;
+            Ratio quadRatio = 1.0;
+
+            bool absPresent = false;
+            Ratio absRatio = 1.0;
+            Radians absOffset = Radians{0.0};
+
+            RadiansPerSecond minVelocity = std::numeric_limits<RadiansPerSecond>::infinity();
+            RadiansPerSecond maxVelocity = std::numeric_limits<RadiansPerSecond>::infinity();
+            Radians minPosition = -std::numeric_limits<Radians>::infinity();
+            Radians maxPosition = std::numeric_limits<Radians>::infinity();
+
+            Gains positionGains{};
+            Gains velocityGains{};
+
+            Percent calibrationThrottle = 0.0;
+        };
+
+        BrushedController(std::string masterName, std::string controllerName, Config config);
 
         auto setDesiredThrottle(Percent throttle) -> void; // from -1.0 to 1.0
 
@@ -28,7 +63,7 @@ namespace mrover {
 
         auto adjust(Radians position) -> void;
 
-        auto processCANMessage(CAN::ConstPtr const& msg) -> void;
+        auto processCANMessage(msg::CAN::ConstPtr const& msg) -> void;
 
         auto processMessage(ControllerDataState const& state) -> void;
 
@@ -38,7 +73,7 @@ namespace mrover {
 
         auto getEffort() -> double;
 
-        auto calibrateServiceCallback(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res) -> bool;
+        auto calibrateServiceCallback(std_srvs::srv::Trigger::Request::SharedPtr req, std_srvs::srv::Trigger::Response::SharedPtr res) -> void;
 
     private:
         static auto errorToString(BDCMCErrorInfo errorCode) -> std::string;
