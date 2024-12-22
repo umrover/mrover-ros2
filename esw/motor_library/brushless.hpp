@@ -69,12 +69,14 @@ namespace mrover {
         using OutputVelocity = typename Base::OutputVelocity;
 
         using Base::mControllerName;
+        using Base::mCurrentEffort;
         using Base::mCurrentPosition;
         using Base::mCurrentVelocity;
         using Base::mDevice;
         using Base::mErrorState;
         using Base::mLimitHit;
         using Base::mMasterName;
+        using Base::mNode;
         using Base::mState;
 
     public:
@@ -100,8 +102,8 @@ namespace mrover {
             OutputPosition limitSwitch1ReadjustPosition = OutputPosition{0.0};
         };
 
-        BrushlessController(std::string masterName, std::string controllerName, Config config)
-            : Base{std::move(masterName), std::move(controllerName)}, mConfig{config} {
+        BrushlessController(rclcpp::Node::SharedPtr node, std::string masterName, std::string controllerName, Config config)
+            : Base{std::move(node), std::move(masterName), std::move(controllerName)}, mConfig{config} {
 
             // if active low, we want to make the default value make it believe that
             // the limit switch is NOT pressed.
@@ -153,19 +155,19 @@ namespace mrover {
                 }
             }
 
-            position = std::clamp(position, mConfig.mMinPosition, mConfig.mMaxPosition);
+            position = std::clamp(position, mConfig.minPosition, mConfig.maxPosition);
 
             moteus::PositionMode::Command command{
                     .position = position.get(),
                     .velocity = 0.0,
-                    .maximum_torque = mConfig.mMaxTorque,
-                    .watchdog_timeout = mConfig.mWatchdogTimeout,
+                    .maximum_torque = mConfig.maxTorque,
+                    .watchdog_timeout = mConfig.watchdogTimeout,
             };
             moteus::CanFdFrame positionFrame = mMoteus->MakePosition(command);
             mDevice.publish_moteus_frame(positionFrame);
         }
 
-        auto processCANMessage(msg::CAN::ConstPtr const& msg) -> void {
+        auto processCANMessage(msg::CAN::ConstSharedPtr const& msg) -> void {
             assert(msg->source == mControllerName);
             assert(msg->destination == mMasterName);
             auto result = moteus::Query::Parse(msg->data.data(), msg->data.size());
@@ -187,7 +189,7 @@ namespace mrover {
 
             if (result.mode == moteus::Mode::kPositionTimeout || result.mode == moteus::Mode::kFault) {
                 setStop();
-                RCLCPP_WARN(this->get_logger(), "Position timeout hit");
+                RCLCPP_WARN(mNode->get_logger(), "Position timeout hit");
             }
         }
 
@@ -204,7 +206,7 @@ namespace mrover {
                 }
             }
 
-            velocity = std::clamp(velocity, mConfig.mMinVelocity, mConfig.mMaxVelocity);
+            velocity = std::clamp(velocity, mConfig.minVelocity, mConfig.maxVelocity);
 
             if (abs(velocity) < OutputVelocity{1e-5}) {
                 setBrake();
@@ -212,17 +214,13 @@ namespace mrover {
                 moteus::PositionMode::Command command{
                         .position = std::numeric_limits<double>::quiet_NaN(),
                         .velocity = velocity.get(),
-                        .maximum_torque = mConfig.mMaxTorque,
-                        .watchdog_timeout = mConfig.mWatchdogTimeout,
+                        .maximum_torque = mConfig.maxTorque,
+                        .watchdog_timeout = mConfig.watchdogTimeout,
                 };
 
                 moteus::CanFdFrame positionFrame = mMoteus->MakePosition(command);
                 mDevice.publish_moteus_frame(positionFrame);
             }
-        }
-
-        [[nodiscard]] auto getEffort() const -> double {
-            return mCurrentEffort;
         }
 
         auto setStop() -> void {
@@ -260,7 +258,7 @@ namespace mrover {
         }
 
         auto adjust(OutputPosition position) -> void {
-            position = std::clamp(position, mConfig.mMinPosition, mConfig.mMaxPosition);
+            position = std::clamp(position, mConfig.minPosition, mConfig.maxPosition);
             moteus::OutputExact::Command command{
                     .position = position.get(),
             };
@@ -278,11 +276,10 @@ namespace mrover {
         std::optional<moteus::Controller> mMoteus;
         Config mConfig;
         std::int8_t mMoteusAux1Info{}, mMoteusAux2Info{};
-        double mCurrentEffort{std::numeric_limits<double>::quiet_NaN()};
 
         [[nodiscard]] auto mapThrottleToVelocity(Percent throttle) const -> OutputVelocity {
             throttle = std::clamp(throttle, -1_percent, 1_percent);
-            return abs(throttle) * (throttle > 0_percent ? mConfig.mMaxVelocity : mConfig.mMinVelocity);
+            return abs(throttle) * (throttle > 0_percent ? mConfig.maxVelocity : mConfig.minVelocity);
         }
 
         // Converts moteus error codes and mode codes to std::string descriptions
