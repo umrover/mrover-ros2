@@ -73,7 +73,7 @@
         <button class="btn btn-primary" @click="addWaypoint(formatted_odom, false)">
           Drop Waypoint
         </button>
-        <button class="btn btn-primary" @click="addWaypoint(input, true)">
+        <button v-if="droneWaypointButton" class="btn btn-primary" @click="addWaypoint(input, true)">
           Add Drone Position
         </button>
       </div>
@@ -110,6 +110,10 @@ export default {
     odom: {
       type: Object,
       required: true
+    },
+    droneWaypointButton: {
+      type: Object,
+      required: false
     }
   },
 

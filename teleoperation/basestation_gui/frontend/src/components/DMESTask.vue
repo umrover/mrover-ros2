@@ -1,9 +1,11 @@
 <template>
   <div :class="type === 'ES' ? 'wrapper-es' : 'wrapper-dm'">
-    <div class='shadow p-3 mb-5 header'>
+    <div class='shadow p-3 mb-5 header' style="display: flex; align-items: center; justify-content: space-between;">
       <h1 v-if="type === 'ES'">ES GUI Dashboard</h1>
       <h1 v-else>DM GUI Dashboard</h1>
-      <img class='logo' src='/mrover.png' alt='MRover' title='MRover' width='200' />
+      <a href='/'>
+        <img class='logo' src='/mrover.png' alt='MRover' title='MRover' width='200' style="cursor: pointer;" />
+      </a>
     </div>
 
     <div v-if="type === 'DM'" class='shadow p-3 rounded odom'>
@@ -13,7 +15,7 @@
       <BasicMap :odom='odom' />
     </div>
     <div v-if="type === 'DM'" class='shadow p-3 rounded waypoint-editor'>
-      <BasicWaypointEditor :odom='odom' />
+      <BasicWaypointEditor :odom='odom' :droneWaypointButton='true'/>
     </div>
     <div>
       <DriveControls />
@@ -149,8 +151,9 @@ export default defineComponent({
 
 .logo {
   position: absolute;
-  left: 50%;
+  left: 44.45%;
   transform: translateX(-50%);
+  transform: translateY(-50%);
 }
 
 .map {

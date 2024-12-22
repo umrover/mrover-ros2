@@ -1,8 +1,10 @@
 <template>
   <div class='wrapper'>
     <div class='shadow p-3 mb-5 header'>
-      <img class='logo' src='/mrover.png' alt='MRover' title='MRover' width='200' />
       <h1>Auton Dashboard</h1>
+      <a href='/'>
+        <img class='logo' src='/mrover.png' alt='MRover' title='MRover' width='200' style="cursor: pointer;" />
+      </a>
     </div>
     <div :class="['shadow p-3 rounded data', ledColor]">
       <h2>Nav State: {{ navState }}</h2>
@@ -14,7 +16,7 @@
       </button>
       <div v-if="cameraFeedEnabled" class='camera-container'>
         <CameraFeed :mission="'ZED'" :id='0' :name="'ZED'"/>
-        <img src='/mrover.png' width='100' /> <p v-if="cameraFeedEnabled">Camera Feed On</p>
+        <p v-if="cameraFeedEnabled">Camera Feed On</p>
       </div>
     </div>
     <div class='shadow p-3 rounded map'>
@@ -207,8 +209,9 @@ export default defineComponent({
 
 .logo {
   position: absolute;
-  left: 50%;
+  left: 44.45%;
   transform: translateX(-50%);
+  transform: translateY(-50%);
 }
 
 h2 {
