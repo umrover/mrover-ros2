@@ -279,6 +279,15 @@ mrover_add_library(motor_library esw/motor_library/*.cpp esw/motor_library)
 ament_target_dependencies(motor_library rclcpp std_srvs)
 target_link_libraries(motor_library can_device moteus units)
 
+macro(mrover_add_esw_bridge_node name sources)
+    mrover_add_node(${name} ${sources})
+    target_link_libraries(${name} PRIVATE can_device motor_library units)
+end_macro()
+
+
+# TODO (ali): move all bridges to esw_bridge macro
+mrover_add_esw_bridge_node(drive_hw_bridge esw/drive_hw_bridge.cpp)
+
 mrover_add_node(arm_hw_bridge esw/arm_hw_bridge.cpp)
 target_link_libraries(arm_hw_bridge motor_library)
 
