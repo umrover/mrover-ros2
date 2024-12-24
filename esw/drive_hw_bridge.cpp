@@ -58,13 +58,50 @@ namespace mrover {
                     RCLCPP_ERROR(get_logger(), "Group throttle request for %s ignored (%f)!", name.c_str(), msg->throttles[i]);
                     continue;
                 }
-                BrushlessController<Revolutions> const& controller = getController(name);
-                // TODO (ali): check commanded motor is correct
+                BrushlessController<Revolutions>& controller = getController(name);
+                if (msg->names.at(i) != controller.getControllerName()) {
+                    RCLCPP_ERROR(get_logger(), "Throttle request at topic for %s ignored!", msg->names.at(0).c_str());
+                    continue;
+                }
                 controller.setDesiredThrottle(throttle);
             }
         }
 
-        // TODO: Other callbacks
+        auto moveMotorsVelocity(msg::Velocity::ConstPtr const& msg) -> void {
+            for (size_t i = 0; i < msg->names.size(); ++i) {
+                std::string const& name = msg->names[i];
+                float const& velocity = msg->velocities[i];
+                if (!mControllers.contains(name)) {
+                    RCLCPP_ERROR(get_logger(), "Velocity request for %s ignored!", name.c_str());
+                    continue;
+                }
+                BrushlessController<Revolutions>& controller = getController(name);
+                if (msg->names.at(i) != controller.getControllerName()) {
+                    RCLCPP_ERROR(get_logger(), "Velocity request at topic for %s ignored!", msg->names.at(0).c_str());
+                    continue;
+                }
+                controller.setDesiredVelocity(velocity);
+            }
+        }
+
+        auto moveMotorsPosition(msg::Position::ConstPtr const& msg) -> void {
+        // TODO - if any of the motor positions are invalid, then u should cancel the message.
+
+        for (std::size_t i = 0; i < msg->names.size(); ++i) {
+            std::string const& name = msg->names[i];
+            float const& position = msg->positions[i];
+            if (!mControllers.contains(name)) {
+                RCLCPP_ERROR(get_logger(), "Position request for %s ignored!", name.c_str());
+                continue;
+            }
+            BrushlessController<Revolutions>& controller = getController(name);
+            if (msg->names.at(i) != controller.getControllerName()) {
+                RCLCPP_ERROR(get_logger(), "Position request at topic for %s ignored!", msg->names.at(0).c_str());
+                continue;
+            }
+            controller.setDesiredPosition(position);
+        }
+    }
 
     private:
 
