@@ -3,8 +3,8 @@
 #include <array>
 
 namespace mrover {
-    BrushedController::BrushedController(std::string masterName, std::string controllerName, Config config)
-        : ControllerBase{std::move(masterName), std::move(controllerName)} {
+    BrushedController::BrushedController(rclcpp::Node::SharedPtr node, std::string masterName, std::string controllerName, Config config)
+        : ControllerBase{std::move(node), std::move(masterName), std::move(controllerName)} {
 
         for (std::size_t i = 0; i < Config::MAX_NUM_LIMIT_SWITCHES; ++i) {
             SET_BIT_AT_INDEX(mConfigCommand.limit_switch_info.present, i, config.limitSwitchPresent[i]);
@@ -129,7 +129,7 @@ namespace mrover {
         }
     }
 
-    auto BrushedController::processCANMessage(msg::CAN::ConstPtr const& msg) -> void {
+    auto BrushedController::processCANMessage(msg::CAN::ConstSharedPtr const& msg) -> void {
         assert(msg->source == mControllerName);
         assert(msg->destination == mMasterName);
 
@@ -137,10 +137,6 @@ namespace mrover {
 
         // This calls the correct process function based on the current value of the alternative
         std::visit([&](auto const& messageAlternative) { processMessage(messageAlternative); }, message);
-    }
-
-    auto BrushedController::getEffort() -> double {
-        return std::numeric_limits<double>::quiet_NaN();
     }
 
     auto BrushedController::errorToString(BDCMCErrorInfo errorCode) -> std::string {

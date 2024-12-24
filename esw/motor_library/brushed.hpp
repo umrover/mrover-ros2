@@ -25,7 +25,7 @@ namespace mrover {
             std::array<bool, MAX_NUM_LIMIT_SWITCHES> limitSwitchLimitsFwd = {false};
             std::array<bool, MAX_NUM_LIMIT_SWITCHES> limitSwitchActiveHigh = {false};
             std::array<bool, MAX_NUM_LIMIT_SWITCHES> limitSwitchUsedForReadjustment = {false};
-            std::array<Radians, MAX_NUM_LIMIT_SWITCHES> limitSwitchReadjustPosition = {Radians{0.0}};
+            std::array<Radians, MAX_NUM_LIMIT_SWITCHES> limitSwitchReadjustPosition = {0.0_rad};
             bool limitMaxForwardPosition = false;
             bool limitMaxBackwardPosition = false;
 
@@ -40,7 +40,7 @@ namespace mrover {
 
             bool absPresent = false;
             Ratio absRatio = 1.0;
-            Radians absOffset = Radians{0.0};
+            Radians absOffset = 0.0_rad;
 
             RadiansPerSecond minVelocity = std::numeric_limits<RadiansPerSecond>::infinity();
             RadiansPerSecond maxVelocity = std::numeric_limits<RadiansPerSecond>::infinity();
@@ -53,7 +53,7 @@ namespace mrover {
             Percent calibrationThrottle = 0.0;
         };
 
-        BrushedController(std::string masterName, std::string controllerName, Config config);
+        BrushedController(rclcpp::Node::SharedPtr node, std::string masterName, std::string controllerName, Config config);
 
         auto setDesiredThrottle(Percent throttle) -> void; // from -1.0 to 1.0
 
@@ -63,15 +63,13 @@ namespace mrover {
 
         auto adjust(Radians position) -> void;
 
-        auto processCANMessage(msg::CAN::ConstPtr const& msg) -> void;
+        auto processCANMessage(msg::CAN::ConstSharedPtr const& msg) -> void;
 
         auto processMessage(ControllerDataState const& state) -> void;
 
         auto processMessage(DebugState const&) -> void {}
 
         auto sendConfiguration() -> void;
-
-        auto getEffort() -> double;
 
         auto calibrateServiceCallback(std_srvs::srv::Trigger::Request::SharedPtr req, std_srvs::srv::Trigger::Response::SharedPtr res) -> void;
 
