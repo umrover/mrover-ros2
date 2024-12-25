@@ -281,8 +281,8 @@ target_link_libraries(motor_library can_device moteus units)
 
 macro(mrover_add_esw_bridge_node name sources)
     mrover_add_node(${name} ${sources})
-    target_link_libraries(${name} PRIVATE can_device motor_library units)
-end_macro()
+    target_link_libraries(${name} can_device motor_library units)
+endmacro()
 
 
 # TODO (ali): move all bridges to esw_bridge macro

@@ -81,6 +81,10 @@ namespace mrover {
             res->success = true;
         }
 
+        [[nodiscard]] auto getControllerName() const -> std::string {
+            return mControllerName;
+        }
+
         [[nodiscard]] auto getPosition() const -> OutputPosition {
             return mCurrentPosition;
         }
