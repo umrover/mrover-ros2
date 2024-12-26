@@ -9,15 +9,10 @@
     <div class="shadow p-3 rounded siteSelect">
       <SelectSite @site="onSiteChange" />
     </div>
-    <div class="shadow p-3 rounded cameras">
-      <Cameras :mission="'ish'" />
-    </div>
     <div class="shadow p-3 rounded benedicts">
       <NinhydrinBenedict :site="site" :isNinhydrin="false" />
     </div>
-    <div class="shadow p-3 rounded cache">
-      <Cache />
-    </div>
+    <!-- TODO: remove Cholorophyll (and maybe component) and replace with a new sensors component -->
     <div class="shadow p-3 rounded chlorophyll">
       <Chlorophyll />
     </div>
@@ -29,20 +24,16 @@
 
 <script lang="ts">
 import SelectSite from './SelectSite.vue'
-import Cache from './CacheControls.vue'
 import Chlorophyll from './Chlorophyll.vue'
 import NinhydrinBenedict from './NinhydrinBenedict.vue'
-import Cameras from './Cameras.vue'
 import NetworkMonitor from "./NetworkMonitor.vue";
 //   import MCUReset from "./MCUReset.vue"
 
 export default {
   components: {
     SelectSite,
-    Cache,
     Chlorophyll,
     NinhydrinBenedict,
-    Cameras,
     NetworkMonitor,
     //   MCUReset,
   },
@@ -69,10 +60,9 @@ export default {
   grid-template-columns: repeat(2, auto);
   grid-template-areas:
     'header header'
-    'cache siteSelect'
-    'cache benedicts'
-    'chlorophyll ninhydrin'
-    'cameras cameras';
+    'siteSelect siteSelect'
+    'ninhydrin benedicts'
+    'chlorophyll chlorophyll';
   font-family: sans-serif;
   height: auto;
 }
@@ -134,10 +124,6 @@ export default {
   float: right;
 }
 
-.cameras {
-  grid-area: cameras;
-}
-
 .benedicts {
   grid-area: benedicts;
 }
@@ -148,10 +134,6 @@ export default {
 
 .chlorophyll {
   grid-area: chlorophyll;
-}
-
-.cache {
-  grid-area: cache;
 }
 
 .ninhydrin {
