@@ -2,6 +2,7 @@
   <div class='wrapper'>
     <div class='shadow p-3 mb-5 header'>
       <h1>SA Dashboard</h1>
+      <a class='logo' href="/"><img src='/mrover.png' alt='MRover' title='MRover' width='200' /></a>
       <div class="network">
       <NetworkMonitor />
       </div>

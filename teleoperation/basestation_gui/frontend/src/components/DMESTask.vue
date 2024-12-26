@@ -3,7 +3,7 @@
     <div class='shadow p-3 mb-5 header'>
       <h1 v-if="type === 'ES'">ES GUI Dashboard</h1>
       <h1 v-else>DM GUI Dashboard</h1>
-      <img class='logo' src='/mrover.png' alt='MRover' title='MRover' width='200' />
+      <a class='logo' href="/"><img src='/mrover.png' alt='MRover' title='MRover' width='200' /></a>
     </div>
 
     <div v-if="type === 'DM'" class='shadow p-3 rounded odom'>

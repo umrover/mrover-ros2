@@ -1,4 +1,5 @@
 <template>
+  <a class='logo' href="/"><img src='/mrover.png' alt='MRover' title='MRover' width='200' /></a>
   <div class="wrap row">
     <div class="col">
       <div class="row justify-content-md-left">
