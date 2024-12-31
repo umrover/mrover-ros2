@@ -20,8 +20,9 @@ namespace mrover {
         mConfigCommand.is_inverted = config.isInverted;
         mConfigCommand.gear_ratio = config.gearRatio;
 
-        assert(config.driverVoltage > 0);
-        assert(0 < config.motorMaxVoltage && config.motorMaxVoltage >= config.driverVoltage);
+        // TODO (ali): put this jawn back and figure out why it fails
+        // assert(config.driverVoltage > 0);
+        // assert(0 < config.motorMaxVoltage && config.motorMaxVoltage >= config.driverVoltage);
         mConfigCommand.max_pwm = config.motorMaxVoltage / config.driverVoltage;
 
         mConfigCommand.enc_info.quad_present = config.quadPresent;

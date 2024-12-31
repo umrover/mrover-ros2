@@ -13,15 +13,6 @@ from launch_ros.actions import Node
 
 def generate_launch_description():
 
-    can_bridge_0_node = Node(
-        package="mrover",
-        executable="can_bridge",
-        name="can_bridge_0",
-        parameters=[
-            Path(get_package_share_directory("mrover"), "config", "esw.yaml"),
-        ],
-    )
-
     can_bridge_1_node = Node(
         package="mrover",
         executable="can_bridge",
@@ -40,4 +31,13 @@ def generate_launch_description():
         ],
     )
 
-    return LaunchDescription([can_bridge_0_node]) #, can_bridge_2_node, can_bridge_3_node])
+    can_bridge_3_node = Node(
+        package="mrover",
+        executable="can_bridge",
+        name="can_bridge_3",
+        parameters=[
+            Path(get_package_share_directory("mrover"), "config", "esw.yaml"),
+        ],
+    )
+
+    return LaunchDescription([can_bridge_1_node, can_bridge_2_node, can_bridge_3_node])
