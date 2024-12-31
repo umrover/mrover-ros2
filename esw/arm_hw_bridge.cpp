@@ -1,5 +1,6 @@
 #include <sensor_msgs/msg/detail/joint_state__struct.hpp>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include <rclcpp/rclcpp.hpp>
@@ -82,17 +83,22 @@ namespace mrover {
 
 
     class ArmHWBridge : public rclcpp::Node {
-    public:
-        ArmHWBridge()
-            : rclcpp::Node{"differential_drive_controller"},
-              mJointB(shared_from_this(), "jetson", "joint_b", JOINT_B_CONFIG),
-              mGripper(shared_from_this(), "jetson", "gripper", GRIPPER_CONFIG),
-              mFinger(shared_from_this(), "jetson", "finger", BrushedController::Config{}),
-              mJointA(shared_from_this(), "jetson", "joint_a", BrushlessController<Meters>::Config{}),
-              mJointC(shared_from_this(), "jetson", "joint_c", BrushlessController<Radians>::Config{}),
-              mJointDe0(shared_from_this(), "jetson", "joint_de_0", BrushlessController<Radians>::Config{}),
-              mJointDe1(shared_from_this(), "jetson", "joint_de_1", BrushlessController<Radians>::Config{}) {
 
+        using Controller = std::variant<BrushedController, BrushlessController<Meters>, BrushlessController<Radians>>;
+
+    public:
+        ArmHWBridge() : rclcpp::Node{"arm_hw_bridge"} {
+            // all initialization is done in the init() function to allow for the usage of shared_from_this()
+        }
+
+        auto init() -> void {
+            mControllers.try_emplace("joint_b", std::in_place_type<BrushedController>, shared_from_this(), "jetson", "joint_b", JOINT_B_CONFIG);
+            mControllers.try_emplace("gripper", std::in_place_type<BrushedController>, shared_from_this(), "jetson", "gripper", GRIPPER_CONFIG);
+            mControllers.try_emplace("finger", std::in_place_type<BrushedController>, shared_from_this(), "jetson", "finger", BrushedController::Config{});
+            mControllers.try_emplace("joint_a", std::in_place_type<BrushlessController<Meters>>, shared_from_this(), "jetson", "joint_a", BrushlessController<Meters>::Config{});
+            mControllers.try_emplace("joint_c", std::in_place_type<BrushlessController<Radians>>, shared_from_this(), "jetson", "joint_c", BrushlessController<Radians>::Config{});
+            mControllers.try_emplace("joint_de_0", std::in_place_type<BrushlessController<Radians>>, shared_from_this(), "jetson", "joint_de_0", BrushlessController<Radians>::Config{});
+            mControllers.try_emplace("joint_de_1", std::in_place_type<BrushlessController<Radians>>, shared_from_this(), "jetson", "joint_de_1", BrushlessController<Radians>::Config{});
 
             mArmThrottleSub = create_subscription<msg::Throttle>("arm_throttle_cmd", 1, [this](msg::Throttle::ConstSharedPtr const& msg) { processThrottleCmd(msg); });
             mArmVelocitySub = create_subscription<msg::Velocity>("arm_velocity_cmd", 1, [this](msg::Velocity::ConstSharedPtr const& msg) { processVelocityCmd(msg); });
@@ -122,14 +128,15 @@ namespace mrover {
     private:
         std::vector<std::string> const mArmJointNames{"joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_roll", "allen_key", "gripper"};
 
-        BrushedController mJointB;
-        BrushedController mGripper;
-        BrushedController mFinger; // rip the solenoid. tentative name until design finalized
+        std::unordered_map<std::string, Controller> mControllers; 
+        // BrushedController mJointB;
+        // BrushedController mGripper;
+        // BrushedController mFinger; // rip the solenoid. tentative name until design finalized
 
-        BrushlessController<Meters> mJointA;
-        BrushlessController<Radians> mJointC;
-        BrushlessController<Radians> mJointDe0;
-        BrushlessController<Radians> mJointDe1;
+        // BrushlessController<Meters> mJointA;
+        // BrushlessController<Radians> mJointC;
+        // BrushlessController<Radians> mJointDe0;
+        // BrushlessController<Radians> mJointDe1;
 
         rclcpp::Subscription<msg::Throttle>::SharedPtr mArmThrottleSub;
         rclcpp::Subscription<msg::Velocity>::SharedPtr mArmVelocitySub;
@@ -147,9 +154,8 @@ namespace mrover {
         msg::ControllerState mControllerState;
 
 
-        static auto findJointByName(std::vector<std::string> const& names, std::string const& name) -> std::optional<std::size_t> {
-            auto it = std::ranges::find(names, name);
-            return it == names.end() ? std::nullopt : std::make_optional(std::distance(names.begin(), it));
+        auto findJointByName(std::string const& name) -> Controller& {
+            return mControllers.at(name);
         }
 
         auto processThrottleCmd(msg::Throttle::ConstSharedPtr const& msg) -> void {
@@ -173,19 +179,19 @@ namespace mrover {
                         jointDeRollThrottle = throttle;
                         break;
                     case 'j' + 'a':
-                        mJointA.setDesiredThrottle(throttle);
+                        std::get<BrushlessController<Meters>>(findJointByName("joint_a")).setDesiredThrottle(throttle);
                         break;
                     case 'j' + 'b':
-                        mJointB.setDesiredThrottle(throttle);
+                        std::get<BrushedController>(findJointByName("joint_b")).setDesiredThrottle(throttle);
                         break;
                     case 'j' + 'c':
-                        mJointC.setDesiredThrottle(throttle);
+                        std::get<BrushlessController<Radians>>(findJointByName("joint_c")).setDesiredThrottle(throttle);
                         break;
                     case 'g' + 'r':
-                        mGripper.setDesiredThrottle(throttle);
+                        std::get<BrushedController>(findJointByName("gripper")).setDesiredThrottle(throttle);
                         break;
                     case 'f' + 'r':
-                        mFinger.setDesiredThrottle(throttle);
+                        std::get<BrushedController>(findJointByName("finger")).setDesiredThrottle(throttle);
                         break;
                 }
             }
@@ -194,8 +200,8 @@ namespace mrover {
                 Vector2<Dimensionless> const pitchRollThrottles{jointDePitchThrottle.value(), jointDeRollThrottle.value()};
                 Vector2<Dimensionless> const motorThrottles = PITCH_ROLL_TO_0_1 * pitchRollThrottles;
 
-                mJointDe0.setDesiredThrottle(motorThrottles[0].get());
-                mJointDe1.setDesiredThrottle(motorThrottles[1].get());
+                std::get<BrushlessController<Radians>>(findJointByName("joint_de_0")).setDesiredThrottle(motorThrottles[0].get());
+                std::get<BrushlessController<Radians>>(findJointByName("joint_de_1")).setDesiredThrottle(motorThrottles[1].get());
             }
         }
 
@@ -220,19 +226,19 @@ namespace mrover {
                         jointDeRollVelocity = RadiansPerSecond{velocity};
                         break;
                     case 'j' + 'a':
-                        mJointA.setDesiredVelocity(MetersPerSecond{velocity});
+                        std::get<BrushlessController<Meters>>(findJointByName("joint_a")).setDesiredVelocity(MetersPerSecond{velocity});
                         break;
                     case 'j' + 'b':
-                        mJointB.setDesiredVelocity(RadiansPerSecond{velocity});
+                        std::get<BrushedController>(findJointByName("joint_b")).setDesiredVelocity(RadiansPerSecond{velocity});
                         break;
                     case 'j' + 'c':
-                        mJointC.setDesiredVelocity(RadiansPerSecond{velocity});
+                        std::get<BrushlessController<Radians>>(findJointByName("joint_c")).setDesiredVelocity(RadiansPerSecond{velocity});
                         break;
                     case 'g' + 'r':
-                        mGripper.setDesiredVelocity(RadiansPerSecond{velocity});
+                        std::get<BrushedController>(findJointByName("gripper")).setDesiredVelocity(RadiansPerSecond{velocity});
                         break;
                     case 'f' + 'r':
-                        mFinger.setDesiredVelocity(RadiansPerSecond{velocity});
+                        std::get<BrushedController>(findJointByName("finger")).setDesiredVelocity(RadiansPerSecond{velocity});
                         break;
                 }
             }
@@ -241,8 +247,8 @@ namespace mrover {
                 Vector2<RadiansPerSecond> const pitchRollVelocities{jointDePitchVelocity.value(), jointDeRollVelocity.value()};
                 Vector2<RadiansPerSecond> const motorVelocities = PITCH_ROLL_TO_0_1 * pitchRollVelocities;
 
-                mJointDe0.setDesiredVelocity(RadiansPerSecond{motorVelocities[0].get()});
-                mJointDe1.setDesiredVelocity(RadiansPerSecond{motorVelocities[1].get()});
+                std::get<BrushlessController<Radians>>(findJointByName("joint_de_0")).setDesiredVelocity(RadiansPerSecond{motorVelocities[0].get()});
+                std::get<BrushlessController<Radians>>(findJointByName("joint_de_1")).setDesiredVelocity(RadiansPerSecond{motorVelocities[1].get()});
             }
         }
 
@@ -267,19 +273,19 @@ namespace mrover {
                         jointDeRollPosition = Radians{position};
                         break;
                     case 'j' + 'a':
-                        mJointA.setDesiredPosition(Meters{position});
+                        std::get<BrushlessController<Meters>>(findJointByName("joint_a")).setDesiredPosition(Meters{position});
                         break;
                     case 'j' + 'b':
-                        mJointB.setDesiredPosition(Radians{position});
+                        std::get<BrushedController>(findJointByName("joint_b")).setDesiredPosition(Radians{position});
                         break;
                     case 'j' + 'c':
-                        mJointC.setDesiredPosition(Radians{position});
+                        std::get<BrushlessController<Radians>>(findJointByName("joint_c")).setDesiredPosition(Radians{position});
                         break;
                     case 'g' + 'r':
-                        mGripper.setDesiredPosition(Radians{position});
+                        std::get<BrushedController>(findJointByName("gripper")).setDesiredPosition(Radians{position});
                         break;
                     case 'f' + 'r':
-                        mFinger.setDesiredPosition(Radians{position});
+                        std::get<BrushedController>(findJointByName("finger")).setDesiredPosition(Radians{position});
                         break;
                 }
 
@@ -287,8 +293,8 @@ namespace mrover {
                     Vector2<Radians> const pitchRollPositions{jointDePitchPosition.value(), jointDeRollPosition.value()};
                     Vector2<Radians> motorPositions = PITCH_ROLL_TO_01_SCALE * PITCH_ROLL_TO_0_1 * pitchRollPositions;
 
-                    mJointDe0.setDesiredPosition(Radians{motorPositions[0].get()});
-                    mJointDe1.setDesiredPosition(Radians{motorPositions[1].get()});
+                    std::get<BrushlessController<Radians>>(findJointByName("joint_de_0")).setDesiredPosition(Radians{motorPositions[0].get()});
+                    std::get<BrushlessController<Radians>>(findJointByName("joint_de_1")).setDesiredPosition(Radians{motorPositions[1].get()});
                 }
             }
         }
@@ -299,73 +305,78 @@ namespace mrover {
         }
 
         auto publishDataCallback() -> void {
-            {
-                mJointData.header.stamp = get_clock()->now();
-                mJointData.position[0] = mJointA.getPosition().get();
-                mJointData.velocity[0] = mJointA.getVelocity().get();
-                mJointData.effort[0] = mJointA.getEffort();
+            mJointData.header.stamp = get_clock()->now();
 
-                mJointData.position[1] = mJointB.getPosition().get();
-                mJointData.velocity[1] = mJointB.getVelocity().get();
-                mJointData.effort[1] = mJointB.getEffort();
+            auto &jointA = std::get<BrushlessController<Meters>>(findJointByName("joint_a"));
+            mJointData.position[0] = jointA.getPosition().get();
+            mJointData.velocity[0] =jointA.getVelocity().get();
+            mJointData.effort[0] = jointA.getEffort();
 
-                mJointData.position[2] = mJointC.getPosition().get();
-                mJointData.velocity[2] = mJointC.getVelocity().get();
-                mJointData.effort[2] = mJointC.getEffort();
+            auto &jointB = std::get<BrushedController>(findJointByName("joint_b"));
+            mJointData.position[1] = jointB.getPosition().get();
+            mJointData.velocity[1] = jointB.getVelocity().get();
+            mJointData.effort[1] = jointB.getEffort();
 
-                auto pitchWrapped = wrapAngle(mJointDe0.getPosition().get());
-                auto rollWrapped = wrapAngle(mJointDe1.getPosition().get());
-                mJointDePitchRoll = {pitchWrapped, rollWrapped};
+            auto &jointC = std::get<BrushlessController<Radians>>(findJointByName("joint_c"));
+            mJointData.position[2] = jointC.getPosition().get();
+            mJointData.velocity[2] = jointC.getVelocity().get();
+            mJointData.effort[2] = jointC.getEffort();
 
-                mJointData.position[3] = pitchWrapped;
-                mJointData.velocity[3] = mJointDe0.getVelocity().get();
-                mJointData.effort[3] = mJointDe0.getEffort();
+            auto &jointDe0 = std::get<BrushlessController<Radians>>(findJointByName("joint_de_0"));
+            auto &jointDe1 = std::get<BrushlessController<Radians>>(findJointByName("joint_de_1"));
+            auto pitchWrapped = wrapAngle(jointDe0.getPosition().get());
+            auto rollWrapped = wrapAngle(jointDe1.getPosition().get());
+            mJointDePitchRoll = {pitchWrapped, rollWrapped};
 
-                mJointData.position[4] = rollWrapped;
-                mJointData.velocity[4] = mJointDe1.getVelocity().get();
-                mJointData.effort[4] = mJointDe1.getEffort();
+            mJointData.position[3] = pitchWrapped;
+            mJointData.velocity[3] = jointDe0.getVelocity().get();
+            mJointData.effort[3] = jointDe0.getEffort();
 
-                mJointData.position[5] = mGripper.getPosition().get();
-                mJointData.velocity[5] = mGripper.getVelocity().get();
-                mJointData.effort[5] = mGripper.getEffort();
+            mJointData.position[4] = rollWrapped;
+            mJointData.velocity[4] = jointDe1.getVelocity().get();
+            mJointData.effort[4] = jointDe1.getEffort();
 
-                mJointData.position[6] = mFinger.getPosition().get();
-                mJointData.velocity[6] = mFinger.getVelocity().get();
-                mJointData.effort[6] = mFinger.getEffort();
+            auto &gripper = std::get<BrushedController>(findJointByName("gripper"));
+            mJointData.position[5] = gripper.getPosition().get();
+            mJointData.velocity[5] = gripper.getVelocity().get();
+            mJointData.effort[5] = gripper.getEffort();
 
-                mJointDataPub->publish(mJointData);
-            }
-            {
-                mControllerState.state[0] = mJointA.getState();
-                mControllerState.error[0] = mJointA.getErrorState();
-                mControllerState.limit_hit[0] = mJointA.getLimitsHitBits();
+            auto &finger = std::get<BrushedController>(findJointByName("finger"));
+            mJointData.position[6] = finger.getPosition().get();
+            mJointData.velocity[6] = finger.getVelocity().get();
+            mJointData.effort[6] = finger.getEffort();
 
-                mControllerState.state[1] = mJointB.getState();
-                mControllerState.error[1] = mJointB.getErrorState();
-                mControllerState.limit_hit[1] = mJointB.getLimitsHitBits();
+            mJointDataPub->publish(mJointData);
 
-                mControllerState.state[2] = mJointC.getState();
-                mControllerState.error[2] = mJointC.getErrorState();
-                mControllerState.limit_hit[2] = mJointC.getLimitsHitBits();
+            mControllerState.state[0] = jointA.getState();
+            mControllerState.error[0] = jointA.getErrorState();
+            mControllerState.limit_hit[0] = jointA.getLimitsHitBits();
 
-                mControllerState.state[3] = mJointDe0.getState();
-                mControllerState.error[3] = mJointDe0.getErrorState();
-                mControllerState.limit_hit[3] = mJointDe0.getLimitsHitBits();
+            mControllerState.state[1] = jointB.getState();
+            mControllerState.error[1] = jointB.getErrorState();
+            mControllerState.limit_hit[1] = jointB.getLimitsHitBits();
 
-                mControllerState.state[4] = mJointDe1.getState();
-                mControllerState.error[4] = mJointDe1.getErrorState();
-                mControllerState.limit_hit[4] = mJointDe1.getLimitsHitBits();
+            mControllerState.state[2] = jointC.getState();
+            mControllerState.error[2] = jointC.getErrorState();
+            mControllerState.limit_hit[2] = jointC.getLimitsHitBits();
 
-                mControllerState.state[5] = mGripper.getState();
-                mControllerState.error[5] = mGripper.getErrorState();
-                mControllerState.limit_hit[5] = mGripper.getLimitsHitBits();
+            mControllerState.state[3] = jointDe0.getState();
+            mControllerState.error[3] = jointDe0.getErrorState();
+            mControllerState.limit_hit[3] = jointDe0.getLimitsHitBits();
 
-                mControllerState.state[6] = mFinger.getState();
-                mControllerState.error[6] = mFinger.getErrorState();
-                mControllerState.limit_hit[6] = mFinger.getLimitsHitBits();
+            mControllerState.state[4] = jointDe1.getState();
+            mControllerState.error[4] = jointDe1.getErrorState();
+            mControllerState.limit_hit[4] = jointDe1.getLimitsHitBits();
 
-                mControllerStatePub->publish(mControllerState);
-            }
+            mControllerState.state[5] = gripper.getState();
+            mControllerState.error[5] = gripper.getErrorState();
+            mControllerState.limit_hit[5] = gripper.getLimitsHitBits();
+
+            mControllerState.state[6] = finger.getState();
+            mControllerState.error[6] = finger.getErrorState();
+            mControllerState.limit_hit[6] = finger.getLimitsHitBits();
+
+            mControllerStatePub->publish(mControllerState);
         }
 
         auto updateDeOffsets() -> void {
@@ -373,13 +384,13 @@ namespace mrover {
 
             Vector2<Radians> motorPositions = PITCH_ROLL_TO_01_SCALE * PITCH_ROLL_TO_0_1 * mJointDePitchRoll.value();
             {
-                srv::AdjustMotor::Request::SharedPtr adjust;
+                auto adjust = std::make_shared<srv::AdjustMotor::Request>();
                 adjust->name = "joint_de_0";
                 adjust->value = motorPositions[0].get();
                 mJointDe0AdjustClient->async_send_request(adjust);
             }
             {
-                srv::AdjustMotor::Request::SharedPtr adjust;
+                auto adjust = std::make_shared<srv::AdjustMotor::Request>();
                 adjust->name = "joint_de_1";
                 adjust->value = motorPositions[1].get();
                 mJointDe0AdjustClient->async_send_request(adjust);
@@ -391,6 +402,7 @@ namespace mrover {
 auto main(int argc, char** argv) -> int {
     rclcpp::init(argc, argv);
     auto arm_hw_bridge = std::make_shared<mrover::ArmHWBridge>();
+    arm_hw_bridge->init();
     rclcpp::spin(arm_hw_bridge);
     rclcpp::shutdown();
     return EXIT_SUCCESS;
