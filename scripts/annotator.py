@@ -1,5 +1,6 @@
 import sys
 from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QPushButton
+from PyQt5.QtGui import QPixmap
 
 # WINDOW CONSTANTS
 STARTING_X_LOCATION = 200
@@ -19,6 +20,7 @@ class ApplicationWindow(QMainWindow):
         # TODO: Make the app resizable
         self.setFixedSize(APP_WINDOW_WIDTH, APP_WINDOW_HEIGHT)
         self.init_buttons()
+        self.init_image_viewer()
 
     def init_buttons(self):
         # TOP LEFT
@@ -50,6 +52,14 @@ class ApplicationWindow(QMainWindow):
         self.bottom_right = QPushButton("Bottom Right", self)
         self.bottom_right.setGeometry(2 * BUTTON_WIDTH, self.height() - BUTTON_HEIGHT, BUTTON_WIDTH, BUTTON_HEIGHT)
         self.bottom_right.clicked.connect(self.bottom_right_click)
+
+    def init_image_viewer(self):
+        self.image_viewer_label = QLabel(self)
+        self.image_viewer_label.setGeometry(0, BUTTON_HEIGHT, APP_WINDOW_WIDTH, APP_WINDOW_HEIGHT - 2 * BUTTON_HEIGHT)
+
+        self.image_viewer_pixmap = QPixmap("data/images/pic.png")
+        self.image_viewer_label.setPixmap(self.image_viewer_pixmap)
+        self.image_viewer_label.setScaledContents(True)
 
     def top_left_click(self):
         print("Top Left Clicked")
