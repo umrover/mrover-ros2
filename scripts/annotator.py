@@ -1,22 +1,34 @@
 import sys
-from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QPushButton
-from PyQt5.QtGui import QIcon, QPixmap, QCursor
-from PyQt5.QtCore import QSize, Qt
+
+# QT
+from PyQt6.QtWidgets import QApplication, QMainWindow, QLabel, QPushButton
+from PyQt6.QtGui import QIcon, QPixmap, QCursor, QImage
+from PyQt6.QtCore import QSize, Qt
+
+# CV
+from cv2 import imread
 
 # WINDOW CONSTANTS
-STARTING_X_LOCATION = 200
-STARTING_Y_LOCATION = 100
+STARTING_X_LOCATION = 200//2
+STARTING_Y_LOCATION = 100//2
 
-APP_WINDOW_WIDTH = 1920
-APP_WINDOW_HEIGHT = 1080
+APP_WINDOW_WIDTH = 1920//2
+APP_WINDOW_HEIGHT = 1080//2
 
 # LAYOUT CONSTANTS
-BUTTON_HEIGHT = 75
+BUTTON_HEIGHT = 75//2
 BUTTON_WIDTH = APP_WINDOW_WIDTH // 3
 
 # MISC.
 IMAGE_PATH = 'data/images/pic.png'
 IMAGE_RESIZE_FACTOR = 3
+
+def cvmat_to_qpixmap(cvmat):
+    height, width, channel = cvmat.shape
+    bytesPerLine = 3 * width
+    qimg = QImage(cvmat.data, width, height, bytesPerLine, QImage.Format.Format_RGB888).rgbSwapped()
+    return QPixmap(qimg)
+
 
 class ApplicationWindow(QMainWindow):
     def __init__(self):
@@ -66,10 +78,12 @@ class ApplicationWindow(QMainWindow):
         self.image_viewer_button.clicked.connect(self.image_viewer_click)
 
         self.image_viewer_label = QLabel(self)
-        self.image_viewer_label.setAttribute(Qt.WA_TransparentForMouseEvents) # allows the click to hit the button instead of the label
+        self.image_viewer_label.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents) # allows the click to hit the button instead of the label
         self.image_viewer_label.setGeometry(0, BUTTON_HEIGHT, APP_WINDOW_WIDTH, APP_WINDOW_HEIGHT - 2 * BUTTON_HEIGHT)
 
-        self.image_viewer_pixmap = QPixmap("data/images/pic.png")
+        cvmat = imread(IMAGE_PATH)
+
+        self.image_viewer_pixmap = cvmat_to_qpixmap(cvmat)
         self.image_viewer_label.setPixmap(self.image_viewer_pixmap)
         self.image_viewer_label.setScaledContents(True)
 
@@ -104,7 +118,7 @@ def main():
     app = QApplication(sys.argv)
     window = ApplicationWindow()
     window.show()
-    sys.exit(app.exec_())
+    sys.exit(app.exec())
 
 if __name__ == "__main__":
     main()
