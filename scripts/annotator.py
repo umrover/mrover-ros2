@@ -1,6 +1,6 @@
 import sys
 from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QPushButton
-from PyQt5.QtGui import QIcon, QPixmap
+from PyQt5.QtGui import QIcon, QPixmap, QCursor
 from PyQt5.QtCore import QSize, Qt
 
 # WINDOW CONSTANTS
@@ -26,6 +26,8 @@ class ApplicationWindow(QMainWindow):
         self.setFixedSize(APP_WINDOW_WIDTH, APP_WINDOW_HEIGHT)
         self.init_buttons()
         self.init_image_viewer()
+
+        self.setMouseTracking(True)
 
     def init_buttons(self):
         # TOP LEFT
@@ -89,8 +91,14 @@ class ApplicationWindow(QMainWindow):
     def bottom_right_click(self):
         print("Bottom right Clicked")
 
+    def get_cursor_x(self):
+        return self.mapFromGlobal(QCursor.pos()).x()
+
+    def get_cursor_y(self):
+        return self.mapFromGlobal(QCursor.pos()).y() - BUTTON_HEIGHT
+
     def image_viewer_click(self):
-        print("Image Viewer Clicked")
+        print(f"Image Viewer Clicked {self.get_cursor_x()} {self.get_cursor_y()}")
 
 def main():
     app = QApplication(sys.argv)
