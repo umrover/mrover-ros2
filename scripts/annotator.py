@@ -1,7 +1,7 @@
 import sys
 from pathlib import Path
 
-# QT
+# QT6 (QT5 is deprecated with opencv)
 from PyQt6.QtWidgets import QApplication, QMainWindow, QLabel, QPushButton, QFileDialog
 from PyQt6.QtGui import QIcon, QPixmap, QCursor, QImage
 from PyQt6.QtCore import QSize, Qt
