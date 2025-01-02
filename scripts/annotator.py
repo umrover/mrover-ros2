@@ -67,6 +67,9 @@ class ApplicationWindow(QMainWindow):
         # Init Mode
         self.mode = SelectionMode.MANUAL
 
+        # Init AI Model
+        self.model = FastSAM("FastSAM-s.pt")
+
     def _set_image_viewer(self, cvmat):
         self.cvmat = cvmat
         self.image_viewer_pixmap = cvmat_to_qpixmap(self.cvmat)
@@ -174,12 +177,27 @@ class ApplicationWindow(QMainWindow):
 
     def image_viewer_click(self):
         print(f"Image Viewer Clicked {self.get_cursor_x()} {self.get_cursor_y()}")
-        new_point = np.array([[self.get_cursor_x() * self.X_COEFF, self.get_cursor_y() * self.Y_COEFF]], np.int32)
-        if self.pts.size == 0:
-            self.pts = new_point
-        else:
-            self.pts = np.vstack((self.pts, new_point))
-        self._render_selection()
+        if self.mode == SelectionMode.AI:
+            print("AI MODE")
+            results = self.model(self.img_path, points=[[self.get_cursor_x() * self.X_COEFF, self.get_cursor_y() * self.Y_COEFF]], labels=[1])
+            
+            # Create CV Mat from mask points
+            mask = np.zeros(self.cvmat_unedited.shape, dtype=np.uint8)
+            self.pts = np.array(results[0].masks.xy[0], np.int32)
+            self._render_selection()
+            print(results[0].masks.xy[0])
+            for (x, y) in results[0].masks.xy[0]:
+                print(f'({x}, {y})')
+                mask[int(y)][int(x)] = 255
+                cv2.imshow("Bruh", mask)
+        elif self.mode == SelectionMode.MANUAL:
+            print("Manual MODE")
+            new_point = np.array([[self.get_cursor_x() * self.X_COEFF, self.get_cursor_y() * self.Y_COEFF]], np.int32)
+            if self.pts.size == 0:
+                self.pts = new_point
+            else:
+                self.pts = np.vstack((self.pts, new_point))
+            self._render_selection()
 
 def main():
     app = QApplication(sys.argv)
