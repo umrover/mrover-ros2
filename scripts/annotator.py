@@ -1,6 +1,13 @@
+# Additional Non-MRover Deps
+# ultralytics
+# PyQt6
+# opencv
+
+
 import sys
 import numpy as np
 from pathlib import Path
+from enum import Enum
 
 # QT6 (QT5 is deprecated with opencv)
 from PyQt6.QtWidgets import QApplication, QMainWindow, QLabel, QPushButton, QFileDialog
@@ -9,6 +16,9 @@ from PyQt6.QtCore import QSize, Qt
 
 # CV
 import cv2
+
+# Ultralytics
+from ultralytics import FastSAM
 
 # WINDOW CONSTANTS
 STARTING_X_LOCATION = 200//2
@@ -26,6 +36,10 @@ IMAGE_PATH = 'data/images/pic.png'
 IMAGE_RESIZE_FACTOR = 3
 WATER_BOTTLE_COLOR = (247,5,41)
 MALLET_COLOR = (5,118,247)
+
+class SelectionMode(Enum):
+    MANUAL = 1
+    AI = 2
 
 def cvmat_to_qpixmap(cvmat):
     height, width, channel = cvmat.shape
@@ -49,6 +63,9 @@ class ApplicationWindow(QMainWindow):
 
         # Init Points
         self.pts = np.array([[]], np.int32)
+
+        # Init Mode
+        self.mode = SelectionMode.MANUAL
 
     def _set_image_viewer(self, cvmat):
         self.cvmat = cvmat
@@ -87,7 +104,7 @@ class ApplicationWindow(QMainWindow):
         self.top_right.clicked.connect(self.top_right_click)
 
         # BOTTOM LEFT
-        self.bottom_left = QPushButton("Bottom Left", self)
+        self.bottom_left = QPushButton("Mode: Manual", self)
         self.bottom_left.setGeometry(0, self.height() - BUTTON_HEIGHT, BUTTON_WIDTH, BUTTON_HEIGHT)
         self.bottom_left.clicked.connect(self.bottom_left_click)
 
@@ -140,9 +157,15 @@ class ApplicationWindow(QMainWindow):
 
     def bottom_left_click(self):
         print("Bottom Left Clicked")
+        if self.mode == SelectionMode.MANUAL:
+            self.bottom_left.setText("Mode: AI")
+            self.mode = SelectionMode.AI
+        elif self.mode == SelectionMode.AI:
+            self.bottom_left.setText("Mode: Manual")
+            self.mode = SelectionMode.MANUAL
 
     def bottom_center_click(self):
-        print("Bottom center Clicked")
+        print("Selection Has Been Cleared...")
         self.pts = np.array([[]], np.int32)
         self._render_selection()
 
