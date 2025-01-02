@@ -38,8 +38,9 @@ WATER_BOTTLE_COLOR = (247,5,41)
 MALLET_COLOR = (5,118,247)
 
 class SelectionMode(Enum):
-    MANUAL = 1
-    AI = 2
+    MANUAL_SEQUENTIAL = 1
+    MANUAL_CLOSEST = 2
+    AI = 3
 
 def cvmat_to_qpixmap(cvmat):
     height, width, channel = cvmat.shape
@@ -57,15 +58,15 @@ class ApplicationWindow(QMainWindow):
         # Init Buttons
         self.init_buttons()
         
+        # Init Points
+        self.pts = np.array([[]], np.int32)
+
         # Init Image Viewer
         self.img_path = IMAGE_PATH
         self.init_image_viewer()
 
-        # Init Points
-        self.pts = np.array([[]], np.int32)
-
         # Init Mode
-        self.mode = SelectionMode.MANUAL
+        self.mode = SelectionMode.MANUAL_SEQUENTIAL
 
         # Init AI Model
         self.model = FastSAM("FastSAM-s.pt")
@@ -77,9 +78,11 @@ class ApplicationWindow(QMainWindow):
 
     def _render_selection(self):
         overlay = self.cvmat_unedited.copy()
+        print("bruh")
         if self.pts.size != 0:
             pts = self.pts.reshape((-1, 1, 2))
             cv2.fillPoly(overlay, [pts], WATER_BOTTLE_COLOR)
+        print("bruh")
         alpha = 0.5
         result = cv2.addWeighted(overlay, alpha, self.cvmat_unedited, 1 - alpha, 0)
         self._set_image_viewer(result)
@@ -107,7 +110,7 @@ class ApplicationWindow(QMainWindow):
         self.top_right.clicked.connect(self.top_right_click)
 
         # BOTTOM LEFT
-        self.bottom_left = QPushButton("Mode: Manual", self)
+        self.bottom_left = QPushButton("Mode: Manual Sequential", self)
         self.bottom_left.setGeometry(0, self.height() - BUTTON_HEIGHT, BUTTON_WIDTH, BUTTON_HEIGHT)
         self.bottom_left.clicked.connect(self.bottom_left_click)
 
@@ -135,7 +138,7 @@ class ApplicationWindow(QMainWindow):
         self.X_COEFF = self.cvmat_unedited.shape[1]/(APP_WINDOW_WIDTH)
         self.Y_COEFF = self.cvmat_unedited.shape[0]/(APP_WINDOW_HEIGHT - 2 * BUTTON_HEIGHT)
 
-        self._set_image_viewer(self.cvmat_unedited)
+        self._render_selection()
         self.image_viewer_label.setScaledContents(True)
 
     def top_left_click(self):
@@ -150,7 +153,7 @@ class ApplicationWindow(QMainWindow):
 
         self.cvmat_unedited = cv2.imread(self.img_path)
 
-        self._set_image_viewer(self.cvmat_unedited)
+        self._render_selection()
 
     def top_center_click(self):
         print("Top center Clicked")
@@ -160,12 +163,15 @@ class ApplicationWindow(QMainWindow):
 
     def bottom_left_click(self):
         print("Bottom Left Clicked")
-        if self.mode == SelectionMode.MANUAL:
+        if self.mode == SelectionMode.MANUAL_SEQUENTIAL:
+            self.bottom_left.setText("Mode: Manual Closest")
+            self.mode = SelectionMode.MANUAL_CLOSEST
+        elif self.mode == SelectionMode.MANUAL_CLOSEST:
             self.bottom_left.setText("Mode: AI")
             self.mode = SelectionMode.AI
         elif self.mode == SelectionMode.AI:
-            self.bottom_left.setText("Mode: Manual")
-            self.mode = SelectionMode.MANUAL
+            self.bottom_left.setText("Mode: Manual Sequential")
+            self.mode = SelectionMode.MANUAL_SEQUENTIAL
 
     def bottom_center_click(self):
         print("Selection Has Been Cleared...")
@@ -178,19 +184,54 @@ class ApplicationWindow(QMainWindow):
     def image_viewer_click(self):
         print(f"Image Viewer Clicked {self.get_cursor_x()} {self.get_cursor_y()}")
         if self.mode == SelectionMode.AI:
-            print("AI MODE")
+            print("AI Mode")
             results = self.model(self.img_path, points=[[self.get_cursor_x() * self.X_COEFF, self.get_cursor_y() * self.Y_COEFF]], labels=[1])
             
             # Create CV Mat from mask points
-            self.pts = np.array(results[0].masks.xy[0], np.int32)
+            new_points = np.array(results[0].masks.xy[0], np.int32)
+            if self.pts.size == 0:
+                self.pts = new_points
+            else:
+                self.pts = np.vstack((self.pts, new_points))
             self._render_selection()
-        elif self.mode == SelectionMode.MANUAL:
-            print("Manual MODE")
+        elif self.mode == SelectionMode.MANUAL_SEQUENTIAL:
+            print("Manual Sequential Mode")
             new_point = np.array([[self.get_cursor_x() * self.X_COEFF, self.get_cursor_y() * self.Y_COEFF]], np.int32)
             if self.pts.size == 0:
                 self.pts = new_point
             else:
                 self.pts = np.vstack((self.pts, new_point))
+            self._render_selection()
+        elif self.mode == SelectionMode.MANUAL_CLOSEST:
+            print("Manual Closest Mode")
+            new_point = np.array([[self.get_cursor_x() * self.X_COEFF, self.get_cursor_y() * self.Y_COEFF]], np.int32)
+            print(new_point)
+            if self.pts.size == 0:
+                self.pts = new_point
+            elif self.pts.shape[0] == 1:
+                self.pts = np.vstack((self.pts, new_point))
+            else:
+                closest_point_distance = np.inf
+                closest_point_index = 0
+
+                for i, (x, y) in enumerate(self.pts):
+                    print(f'Point ({x}, {y})')
+                    distance = np.sqrt((new_point[0][0] - x) ** 2 + (new_point[0][1] - y) ** 2)
+                    print(distance)
+
+                    # Check to see if the new point is closer than the other points
+                    if distance < closest_point_distance:
+                        closest_point_index = i
+                        closest_point_distance = distance
+                print(f"{(closest_point_index+1) % self.pts.shape[0]} {(closest_point_index-1) % self.pts.shape[0]}")
+                print(f"{self.pts.shape[0]}")
+
+                distance_plus = np.sqrt((new_point[0][0] - self.pts[(closest_point_index+1) % self.pts.shape[0]][0]) ** 2 + (new_point[0][1] - self.pts[(closest_point_index+1) % self.pts.shape[0]][1]) ** 2)
+                distance_minus = np.sqrt((new_point[0][0] - self.pts[(closest_point_index-1) % self.pts.shape[0]][0]) ** 2 + (new_point[0][1] - self.pts[(closest_point_index-1) % self.pts.shape[0]][1]) ** 2)
+                if distance_plus > distance_minus:
+                    self.pts = np.insert(self.pts, closest_point_index, new_point[0], axis=0)
+                else:
+                    self.pts = np.insert(self.pts, closest_point_index + 1, new_point[0], axis=0)
             self._render_selection()
 
 def main():
