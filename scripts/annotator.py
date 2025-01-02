@@ -1,4 +1,5 @@
 import sys
+import numpy as np
 from pathlib import Path
 
 # QT6 (QT5 is deprecated with opencv)
@@ -7,7 +8,7 @@ from PyQt6.QtGui import QIcon, QPixmap, QCursor, QImage
 from PyQt6.QtCore import QSize, Qt
 
 # CV
-from cv2 import imread
+import cv2
 
 # WINDOW CONSTANTS
 STARTING_X_LOCATION = 200//2
@@ -23,6 +24,8 @@ BUTTON_WIDTH = APP_WINDOW_WIDTH // 3
 # MISC.
 IMAGE_PATH = 'data/images/pic.png'
 IMAGE_RESIZE_FACTOR = 3
+WATER_BOTTLE_COLOR = (247,5,41)
+MALLET_COLOR = (5,118,247)
 
 def cvmat_to_qpixmap(cvmat):
     height, width, channel = cvmat.shape
@@ -37,10 +40,29 @@ class ApplicationWindow(QMainWindow):
         self.setGeometry(STARTING_X_LOCATION, STARTING_Y_LOCATION, APP_WINDOW_WIDTH, APP_WINDOW_HEIGHT)
         # TODO: Make the app resizable
         self.setFixedSize(APP_WINDOW_WIDTH, APP_WINDOW_HEIGHT)
+        # Init Buttons
         self.init_buttons()
-
+        
+        # Init Image Viewer
         self.img_path = IMAGE_PATH
         self.init_image_viewer()
+
+        # Init Points
+        self.pts = np.array([[]], np.int32)
+
+    def _set_image_viewer(self, cvmat):
+        self.cvmat = cvmat
+        self.image_viewer_pixmap = cvmat_to_qpixmap(self.cvmat)
+        self.image_viewer_label.setPixmap(self.image_viewer_pixmap)
+
+    def _render_selection(self):
+        overlay = self.cvmat_unedited.copy()
+        if self.pts.size != 0:
+            pts = self.pts.reshape((-1, 1, 2))
+            cv2.fillPoly(overlay, [pts], WATER_BOTTLE_COLOR)
+        alpha = 0.5
+        result = cv2.addWeighted(overlay, alpha, self.cvmat_unedited, 1 - alpha, 0)
+        self._set_image_viewer(result)
 
     def init_buttons(self):
         # TOP LEFT
@@ -74,6 +96,7 @@ class ApplicationWindow(QMainWindow):
         self.bottom_right.clicked.connect(self.bottom_right_click)
 
     def init_image_viewer(self):
+
         self.image_viewer_button = QPushButton(self)
         self.image_viewer_button.setGeometry(0, BUTTON_HEIGHT, APP_WINDOW_WIDTH, APP_WINDOW_HEIGHT - 2 * BUTTON_HEIGHT)
         self.image_viewer_button.clicked.connect(self.image_viewer_click)
@@ -82,10 +105,12 @@ class ApplicationWindow(QMainWindow):
         self.image_viewer_label.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents) # allows the click to hit the button instead of the label
         self.image_viewer_label.setGeometry(0, BUTTON_HEIGHT, APP_WINDOW_WIDTH, APP_WINDOW_HEIGHT - 2 * BUTTON_HEIGHT)
 
-        cvmat = imread(self.img_path)
+        self.cvmat_unedited = cv2.imread(self.img_path)
 
-        self.image_viewer_pixmap = cvmat_to_qpixmap(cvmat)
-        self.image_viewer_label.setPixmap(self.image_viewer_pixmap)
+        self.X_COEFF = self.cvmat_unedited.shape[1]/(APP_WINDOW_WIDTH)
+        self.Y_COEFF = self.cvmat_unedited.shape[0]/(APP_WINDOW_HEIGHT - 2 * BUTTON_HEIGHT)
+
+        self._set_image_viewer(self.cvmat_unedited)
         self.image_viewer_label.setScaledContents(True)
 
     def top_left_click(self):
@@ -98,10 +123,10 @@ class ApplicationWindow(QMainWindow):
             self.img_path = file_dialog.selectedFiles()[0]
             print(f'Selected {self.img_path}')
 
-        cvmat = imread(self.img_path)
+        self.cvmat_unedited = cv2.imread(self.img_path)
 
-        self.image_viewer_pixmap = cvmat_to_qpixmap(cvmat)
-        self.image_viewer_label.setPixmap(self.image_viewer_pixmap)
+        self._set_image_viewer(self.cvmat_unedited)
+
 
     def top_center_click(self):
         print("Top center Clicked")
@@ -126,6 +151,12 @@ class ApplicationWindow(QMainWindow):
 
     def image_viewer_click(self):
         print(f"Image Viewer Clicked {self.get_cursor_x()} {self.get_cursor_y()}")
+        new_point = np.array([[self.get_cursor_x() * self.X_COEFF, self.get_cursor_y() * self.Y_COEFF]], np.int32)
+        if self.pts.size == 0:
+            self.pts = new_point
+        else:
+            self.pts = np.vstack((self.pts, new_point))
+        self._render_selection()
 
 def main():
     app = QApplication(sys.argv)
