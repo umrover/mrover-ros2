@@ -182,14 +182,8 @@ class ApplicationWindow(QMainWindow):
             results = self.model(self.img_path, points=[[self.get_cursor_x() * self.X_COEFF, self.get_cursor_y() * self.Y_COEFF]], labels=[1])
             
             # Create CV Mat from mask points
-            mask = np.zeros(self.cvmat_unedited.shape, dtype=np.uint8)
             self.pts = np.array(results[0].masks.xy[0], np.int32)
             self._render_selection()
-            print(results[0].masks.xy[0])
-            for (x, y) in results[0].masks.xy[0]:
-                print(f'({x}, {y})')
-                mask[int(y)][int(x)] = 255
-                cv2.imshow("Bruh", mask)
         elif self.mode == SelectionMode.MANUAL:
             print("Manual MODE")
             new_point = np.array([[self.get_cursor_x() * self.X_COEFF, self.get_cursor_y() * self.Y_COEFF]], np.int32)
