@@ -64,6 +64,12 @@ class ApplicationWindow(QMainWindow):
         result = cv2.addWeighted(overlay, alpha, self.cvmat_unedited, 1 - alpha, 0)
         self._set_image_viewer(result)
 
+    def get_cursor_x(self):
+        return self.mapFromGlobal(QCursor.pos()).x()
+
+    def get_cursor_y(self):
+        return self.mapFromGlobal(QCursor.pos()).y() - BUTTON_HEIGHT
+
     def init_buttons(self):
         # TOP LEFT
         self.top_left = QPushButton("Open Image", self)
@@ -86,7 +92,7 @@ class ApplicationWindow(QMainWindow):
         self.bottom_left.clicked.connect(self.bottom_left_click)
 
         # TOP CENTER
-        self.bottom_center = QPushButton("Bottom Center", self)
+        self.bottom_center = QPushButton("Clear Selection", self)
         self.bottom_center.setGeometry(BUTTON_WIDTH, self.height() - BUTTON_HEIGHT, BUTTON_WIDTH, BUTTON_HEIGHT)
         self.bottom_center.clicked.connect(self.bottom_center_click)
 
@@ -96,7 +102,6 @@ class ApplicationWindow(QMainWindow):
         self.bottom_right.clicked.connect(self.bottom_right_click)
 
     def init_image_viewer(self):
-
         self.image_viewer_button = QPushButton(self)
         self.image_viewer_button.setGeometry(0, BUTTON_HEIGHT, APP_WINDOW_WIDTH, APP_WINDOW_HEIGHT - 2 * BUTTON_HEIGHT)
         self.image_viewer_button.clicked.connect(self.image_viewer_click)
@@ -127,7 +132,6 @@ class ApplicationWindow(QMainWindow):
 
         self._set_image_viewer(self.cvmat_unedited)
 
-
     def top_center_click(self):
         print("Top center Clicked")
 
@@ -139,15 +143,11 @@ class ApplicationWindow(QMainWindow):
 
     def bottom_center_click(self):
         print("Bottom center Clicked")
+        self.pts = np.array([[]], np.int32)
+        self._render_selection()
 
     def bottom_right_click(self):
         print("Bottom right Clicked")
-
-    def get_cursor_x(self):
-        return self.mapFromGlobal(QCursor.pos()).x()
-
-    def get_cursor_y(self):
-        return self.mapFromGlobal(QCursor.pos()).y() - BUTTON_HEIGHT
 
     def image_viewer_click(self):
         print(f"Image Viewer Clicked {self.get_cursor_x()} {self.get_cursor_y()}")
