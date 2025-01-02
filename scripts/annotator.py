@@ -1,7 +1,8 @@
 import sys
+from pathlib import Path
 
 # QT
-from PyQt6.QtWidgets import QApplication, QMainWindow, QLabel, QPushButton
+from PyQt6.QtWidgets import QApplication, QMainWindow, QLabel, QPushButton, QFileDialog
 from PyQt6.QtGui import QIcon, QPixmap, QCursor, QImage
 from PyQt6.QtCore import QSize, Qt
 
@@ -37,13 +38,13 @@ class ApplicationWindow(QMainWindow):
         # TODO: Make the app resizable
         self.setFixedSize(APP_WINDOW_WIDTH, APP_WINDOW_HEIGHT)
         self.init_buttons()
-        self.init_image_viewer()
 
-        self.setMouseTracking(True)
+        self.img_path = IMAGE_PATH
+        self.init_image_viewer()
 
     def init_buttons(self):
         # TOP LEFT
-        self.top_left = QPushButton("Top Left", self)
+        self.top_left = QPushButton("Open Image", self)
         self.top_left.setGeometry(0, 0, BUTTON_WIDTH, BUTTON_HEIGHT)
         self.top_left.clicked.connect(self.top_left_click)
 
@@ -81,14 +82,26 @@ class ApplicationWindow(QMainWindow):
         self.image_viewer_label.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents) # allows the click to hit the button instead of the label
         self.image_viewer_label.setGeometry(0, BUTTON_HEIGHT, APP_WINDOW_WIDTH, APP_WINDOW_HEIGHT - 2 * BUTTON_HEIGHT)
 
-        cvmat = imread(IMAGE_PATH)
+        cvmat = imread(self.img_path)
 
         self.image_viewer_pixmap = cvmat_to_qpixmap(cvmat)
         self.image_viewer_label.setPixmap(self.image_viewer_pixmap)
         self.image_viewer_label.setScaledContents(True)
 
     def top_left_click(self):
-        print("Top Left Clicked")
+        print("Open Image Clicked")
+        file_dialog = QFileDialog(self)
+        file_dialog.setWindowTitle("Select an image to annotate...")
+        file_dialog.setDirectory(Path.cwd().__str__())
+
+        if file_dialog.exec():
+            self.img_path = file_dialog.selectedFiles()[0]
+            print(f'Selected {self.img_path}')
+
+        cvmat = imread(self.img_path)
+
+        self.image_viewer_pixmap = cvmat_to_qpixmap(cvmat)
+        self.image_viewer_label.setPixmap(self.image_viewer_pixmap)
 
     def top_center_click(self):
         print("Top center Clicked")
