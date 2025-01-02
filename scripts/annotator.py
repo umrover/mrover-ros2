@@ -1,17 +1,22 @@
 import sys
 from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QPushButton
-from PyQt5.QtGui import QPixmap
+from PyQt5.QtGui import QIcon, QPixmap
+from PyQt5.QtCore import QSize, Qt
 
 # WINDOW CONSTANTS
 STARTING_X_LOCATION = 200
 STARTING_Y_LOCATION = 100
 
-APP_WINDOW_WIDTH = 1280
-APP_WINDOW_HEIGHT = 720
+APP_WINDOW_WIDTH = 1920
+APP_WINDOW_HEIGHT = 1080
 
 # LAYOUT CONSTANTS
-BUTTON_HEIGHT = 150
-BUTTON_WIDTH = 426
+BUTTON_HEIGHT = 75
+BUTTON_WIDTH = APP_WINDOW_WIDTH // 3
+
+# MISC.
+IMAGE_PATH = 'data/images/pic.png'
+IMAGE_RESIZE_FACTOR = 3
 
 class ApplicationWindow(QMainWindow):
     def __init__(self):
@@ -54,7 +59,12 @@ class ApplicationWindow(QMainWindow):
         self.bottom_right.clicked.connect(self.bottom_right_click)
 
     def init_image_viewer(self):
+        self.image_viewer_button = QPushButton(self)
+        self.image_viewer_button.setGeometry(0, BUTTON_HEIGHT, APP_WINDOW_WIDTH, APP_WINDOW_HEIGHT - 2 * BUTTON_HEIGHT)
+        self.image_viewer_button.clicked.connect(self.image_viewer_click)
+
         self.image_viewer_label = QLabel(self)
+        self.image_viewer_label.setAttribute(Qt.WA_TransparentForMouseEvents) # allows the click to hit the button instead of the label
         self.image_viewer_label.setGeometry(0, BUTTON_HEIGHT, APP_WINDOW_WIDTH, APP_WINDOW_HEIGHT - 2 * BUTTON_HEIGHT)
 
         self.image_viewer_pixmap = QPixmap("data/images/pic.png")
@@ -78,6 +88,9 @@ class ApplicationWindow(QMainWindow):
 
     def bottom_right_click(self):
         print("Bottom right Clicked")
+
+    def image_viewer_click(self):
+        print("Image Viewer Clicked")
 
 def main():
     app = QApplication(sys.argv)
