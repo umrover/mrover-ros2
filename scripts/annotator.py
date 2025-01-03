@@ -241,8 +241,23 @@ class ApplicationWindow(QMainWindow):
                 closest_point_distance = np.inf
                 closest_point_index = 0
 
-                for i, (x, y) in enumerate(self.objects[self.current_selection].pts):
-                    distance = np.sqrt((new_point[0][0] - x) ** 2 + (new_point[0][1] - y) ** 2)
+                for i in range(len(self.objects[self.current_selection].pts)):
+                    # Line Segment End Points
+                    px0, py0 = self.objects[self.current_selection].pts[i]
+                    px1, py1 = self.objects[self.current_selection].pts[(i+1) % self.objects[self.current_selection].pts.shape[0]]
+
+                    # Vectors
+                    ax, ay = px0 - px1, py0 - py1
+                    bx, by = new_point[0][0] - px1, new_point[0][1] - py1
+
+                    # Scaled Projection
+                    u = (ax * bx + ay * by) / (ax ** 2 + ay ** 2)
+                    u = max(0, min(1, u))
+
+                    cx, cy = px1 + u * ax, py1 + u * ay
+
+                    distance = np.sqrt((new_point[0][0] - cx)**2 + (new_point[0][1] - cy)**2)
+
                     print(distance)
 
                     # Check to see if the new point is closer than the other points
@@ -250,14 +265,8 @@ class ApplicationWindow(QMainWindow):
                         closest_point_index = i
                         closest_point_distance = distance
 
-                # TODO: Make this closest edge not closest point
                 # Determine whether to go one forward or backward
-                distance_plus = np.sqrt((new_point[0][0] - self.objects[self.current_selection].pts[(closest_point_index+1) % self.objects[self.current_selection].pts.shape[0]][0]) ** 2 + (new_point[0][1] - self.objects[self.current_selection].pts[(closest_point_index+1) % self.objects[self.current_selection].pts.shape[0]][1]) ** 2)
-                distance_minus = np.sqrt((new_point[0][0] - self.objects[self.current_selection].pts[(closest_point_index-1) % self.objects[self.current_selection].pts.shape[0]][0]) ** 2 + (new_point[0][1] - self.objects[self.current_selection].pts[(closest_point_index-1) % self.objects[self.current_selection].pts.shape[0]][1]) ** 2)
-                if distance_plus > distance_minus:
-                    self.objects[self.current_selection] = self.objects[self.current_selection]._replace(pts=np.insert(self.objects[self.current_selection].pts, closest_point_index, new_point[0], axis=0))
-                else:
-                    self.objects[self.current_selection] = self.objects[self.current_selection]._replace(pts=np.insert(self.objects[self.current_selection].pts, closest_point_index + 1, new_point[0], axis=0))
+                self.objects[self.current_selection] = self.objects[self.current_selection]._replace(pts=np.insert(self.objects[self.current_selection].pts, (closest_point_index + 1) % self.objects[self.current_selection].pts.shape[0], new_point[0], axis=0))
             self._render_selection()
 
 def main():
