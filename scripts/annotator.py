@@ -184,6 +184,10 @@ class ApplicationWindow(QMainWindow):
         self.X_COEFF = self.cvmat_unedited.shape[1]/(APP_WINDOW_WIDTH)
         self.Y_COEFF = self.cvmat_unedited.shape[0]/(APP_WINDOW_HEIGHT - 2 * BUTTON_HEIGHT)
 
+        self.objects = []
+        self._render_selection()
+        self.current_selection = 0
+
         self._render_selection()
 
     def top_center_left_click(self):
@@ -212,7 +216,6 @@ class ApplicationWindow(QMainWindow):
             print()
 
             with open(training_dataset_labels / self.img_path.with_suffix('.txt').name, "w") as f:
-                # TODO: Loop over all fo the annotations
                 for object_index in range(len(self.objects)):
                     if self.objects[object_index].pts.size != 0:
                         x1, y1, x2, y2 =np.inf, np.inf, 0, 0 
