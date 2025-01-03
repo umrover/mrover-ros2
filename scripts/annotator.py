@@ -181,6 +181,9 @@ class ApplicationWindow(QMainWindow):
 
         self.cvmat_unedited = cv2.imread(self.img_path.__str__())
 
+        self.X_COEFF = self.cvmat_unedited.shape[1]/(APP_WINDOW_WIDTH)
+        self.Y_COEFF = self.cvmat_unedited.shape[0]/(APP_WINDOW_HEIGHT - 2 * BUTTON_HEIGHT)
+
         self._render_selection()
 
     def top_center_left_click(self):
