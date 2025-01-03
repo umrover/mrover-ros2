@@ -209,22 +209,22 @@ class ApplicationWindow(QMainWindow):
             print()
 
             with open(training_dataset_labels / self.img_path.with_suffix('.txt').name, "w") as f:
-                x1, y1, x2, y2 = 0, 0, 0, 0 
-
                 # TODO: Loop over all fo the annotations
                 for object_index in range(len(self.objects)):
-                    for (x, y) in self.objects[object_index].pts:
-                        x1 = min(x, x1)
-                        y1 = min(y, y1)
-                        x2 = max(x, x2)
-                        y2 = max(y, y2)
+                    if self.objects[object_index].pts.size != 0:
+                        x1, y1, x2, y2 =np.inf, np.inf, 0, 0 
+                        for (x, y) in self.objects[object_index].pts:
+                            x1 = min(x, x1)
+                            y1 = min(y, y1)
+                            x2 = max(x, x2)
+                            y2 = max(y, y2)
 
-                    x = (x1 + (x2 - x1) / 2) / self.cvmat_unedited.shape[1]
-                    y = (y1 + (y2 - y1) / 2) / self.cvmat_unedited.shape[0]
-                    w = (x2 - x1) / self.cvmat_unedited.shape[1]
-                    h = (y2 - y1) / self.cvmat_unedited.shape[0]
+                        x = (x1 + (x2 - x1) / 2) / self.cvmat_unedited.shape[1]
+                        y = (y1 + (y2 - y1) / 2) / self.cvmat_unedited.shape[0]
+                        w = (x2 - x1) / self.cvmat_unedited.shape[1]
+                        h = (y2 - y1) / self.cvmat_unedited.shape[0]
 
-                    f.write(f'{self.objects[object_index].identifier.value} {x} {y} {w} {h}')
+                        f.write(f'{self.objects[object_index].identifier.value} {x} {y} {w} {h}\n')
 
             print(training_dataset_images)
             print(training_dataset_labels)
