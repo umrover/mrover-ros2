@@ -8,6 +8,7 @@ import numpy as np
 from pathlib import Path
 from enum import Enum
 from collections import namedtuple
+import yaml
 
 # QT6 (QT5 is deprecated with opencv)
 from PyQt6.QtWidgets import QApplication, QMainWindow, QLabel, QPushButton, QFileDialog
@@ -74,6 +75,9 @@ class ApplicationWindow(QMainWindow):
         self.current_identifier = ObjectsIdentifier.WATER_BOTTLE
         self.current_selection = 0
 
+        # Current Yolo Project
+        self.config_path = Path("")
+
         # Init Buttons
         self.init_buttons()
 
@@ -118,9 +122,14 @@ class ApplicationWindow(QMainWindow):
         self.top_left.clicked.connect(self.top_left_click)
 
         # TOP CENTER
-        self.top_center = QPushButton("Top Center", self)
-        self.top_center.setGeometry(BUTTON_WIDTH, 0, BUTTON_WIDTH, BUTTON_HEIGHT)
-        self.top_center.clicked.connect(self.top_center_click)
+        self.top_center_left = QPushButton("Open Config", self)
+        self.top_center_left.setGeometry(BUTTON_WIDTH, 0, BUTTON_WIDTH//2, BUTTON_HEIGHT)
+        self.top_center_left.clicked.connect(self.top_center_left_click)
+
+        self.top_center_right = QPushButton("Save Annotation", self)
+        self.top_center_right.setGeometry(BUTTON_WIDTH + BUTTON_WIDTH//2, 0, BUTTON_WIDTH//2, BUTTON_HEIGHT)
+        self.top_center_right.clicked.connect(self.top_center_right_click)
+        self.top_center_right.setEnabled(False)
 
         # TOP RIGHT
         self.top_right = QPushButton(f"Class: {CLASS_NAMES[self.current_identifier.value]}", self)
@@ -132,12 +141,12 @@ class ApplicationWindow(QMainWindow):
         self.bottom_left.setGeometry(0, self.height() - BUTTON_HEIGHT, BUTTON_WIDTH, BUTTON_HEIGHT)
         self.bottom_left.clicked.connect(self.bottom_left_click)
 
-        # TOP CENTER
+        # BOTTOM CENTER
         self.bottom_center = QPushButton("Clear Selection", self)
         self.bottom_center.setGeometry(BUTTON_WIDTH, self.height() - BUTTON_HEIGHT, BUTTON_WIDTH, BUTTON_HEIGHT)
         self.bottom_center.clicked.connect(self.bottom_center_click)
 
-        # TOP RIGHT
+        # BOTTOM RIGHT
         self.bottom_right = QPushButton("New Object", self)
         self.bottom_right.setGeometry(2 * BUTTON_WIDTH, self.height() - BUTTON_HEIGHT, BUTTON_WIDTH, BUTTON_HEIGHT)
         self.bottom_right.clicked.connect(self.bottom_right_click)
@@ -173,8 +182,23 @@ class ApplicationWindow(QMainWindow):
 
         self._render_selection()
 
-    def top_center_click(self):
-        print("Top center Clicked")
+    def top_center_left_click(self):
+        print("Open Config File")
+        file_dialog = QFileDialog(self)
+        file_dialog.setWindowTitle("Select a yaml file to augment...")
+        file_dialog.setDirectory(Path.cwd().__str__())
+
+        if file_dialog.exec():
+            self.config_path = file_dialog.selectedFiles()[0]
+            print(f'Selected {self.config_path}')
+
+        self.top_center_right.setEnabled(True)
+
+    def top_center_right_click(self):
+        print("Save Annotation")
+        with open(self.config_path, 'r') as f:
+            data = yaml.load(f, Loader=yaml.SafeLoader)
+            print(data['path'])
 
     def top_right_click(self):
         print("Top right Clicked")
