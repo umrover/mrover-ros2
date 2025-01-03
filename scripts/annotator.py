@@ -3,7 +3,6 @@
 # PyQt6
 # opencv
 
-
 import sys
 import numpy as np
 from pathlib import Path
@@ -100,7 +99,8 @@ class ApplicationWindow(QMainWindow):
             if len(self.objects) != 0:
                 pts = self.objects[i].pts.reshape((-1, 1, 2))
                 color = tuple(map(int, OBJECT_COLORS[int(self.objects[i].identifier.value)]))
-                cv2.fillPoly(overlay, [pts], color)
+                if pts.size != 0:
+                    cv2.fillPoly(overlay, [pts], color)
         alpha = 0.5
         result = cv2.addWeighted(overlay, alpha, self.cvmat_unedited, 1 - alpha, 0)
         self._set_image_viewer(result)
@@ -197,6 +197,7 @@ class ApplicationWindow(QMainWindow):
         print("Selection Has Been Cleared...")
         self.objects = []
         self._render_selection()
+        self.current_selection = 0
 
     def bottom_right_click(self):
         print("New Object Created...")
@@ -223,24 +224,24 @@ class ApplicationWindow(QMainWindow):
         elif self.mode == SelectionMode.MANUAL_SEQUENTIAL:
             print("Manual Sequential Mode")
             new_point = np.array([[self.get_cursor_x() * self.X_COEFF, self.get_cursor_y() * self.Y_COEFF]], np.int32)
-            if self.pts.size == 0:
-                self.pts = new_point
+            if self.objects[self.current_selection].pts.size == 0:
+                self.objects[self.current_selection] = self.objects[self.current_selection]._replace(pts=new_point)
             else:
-                self.pts = np.vstack((self.pts, new_point))
+                self.objects[self.current_selection] = self.objects[self.current_selection]._replace(pts=np.vstack((self.objects[self.current_selection].pts, new_point)))
             self._render_selection()
         elif self.mode == SelectionMode.MANUAL_CLOSEST:
             print("Manual Closest Mode")
             new_point = np.array([[self.get_cursor_x() * self.X_COEFF, self.get_cursor_y() * self.Y_COEFF]], np.int32)
             print(new_point)
-            if self.pts.size == 0:
-                self.pts = new_point
-            elif self.pts.shape[0] == 1:
-                self.pts = np.vstack((self.pts, new_point))
+            if self.objects[self.current_selection].pts.size == 0:
+                self.objects[self.current_selection] = self.objects[self.current_selection]._replace(pts=new_point)
+            elif self.objects[self.current_selection].pts.shape[0] == 1:
+                self.objects[self.current_selection] = self.objects[self.current_selection]._replace(pts=np.vstack((self.objects[self.current_selection].pts, new_point)))
             else:
                 closest_point_distance = np.inf
                 closest_point_index = 0
 
-                for i, (x, y) in enumerate(self.pts):
+                for i, (x, y) in enumerate(self.objects[self.current_selection].pts):
                     distance = np.sqrt((new_point[0][0] - x) ** 2 + (new_point[0][1] - y) ** 2)
                     print(distance)
 
@@ -249,13 +250,14 @@ class ApplicationWindow(QMainWindow):
                         closest_point_index = i
                         closest_point_distance = distance
 
+                # TODO: Make this closest edge not closest point
                 # Determine whether to go one forward or backward
-                distance_plus = np.sqrt((new_point[0][0] - self.pts[(closest_point_index+1) % self.pts.shape[0]][0]) ** 2 + (new_point[0][1] - self.pts[(closest_point_index+1) % self.pts.shape[0]][1]) ** 2)
-                distance_minus = np.sqrt((new_point[0][0] - self.pts[(closest_point_index-1) % self.pts.shape[0]][0]) ** 2 + (new_point[0][1] - self.pts[(closest_point_index-1) % self.pts.shape[0]][1]) ** 2)
+                distance_plus = np.sqrt((new_point[0][0] - self.objects[self.current_selection].pts[(closest_point_index+1) % self.objects[self.current_selection].pts.shape[0]][0]) ** 2 + (new_point[0][1] - self.objects[self.current_selection].pts[(closest_point_index+1) % self.objects[self.current_selection].pts.shape[0]][1]) ** 2)
+                distance_minus = np.sqrt((new_point[0][0] - self.objects[self.current_selection].pts[(closest_point_index-1) % self.objects[self.current_selection].pts.shape[0]][0]) ** 2 + (new_point[0][1] - self.objects[self.current_selection].pts[(closest_point_index-1) % self.objects[self.current_selection].pts.shape[0]][1]) ** 2)
                 if distance_plus > distance_minus:
-                    self.pts = np.insert(self.pts, closest_point_index, new_point[0], axis=0)
+                    self.objects[self.current_selection] = self.objects[self.current_selection]._replace(pts=np.insert(self.objects[self.current_selection].pts, closest_point_index, new_point[0], axis=0))
                 else:
-                    self.pts = np.insert(self.pts, closest_point_index + 1, new_point[0], axis=0)
+                    self.objects[self.current_selection] = self.objects[self.current_selection]._replace(pts=np.insert(self.objects[self.current_selection].pts, closest_point_index + 1, new_point[0], axis=0))
             self._render_selection()
 
 def main():
