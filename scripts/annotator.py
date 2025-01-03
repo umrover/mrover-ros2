@@ -8,6 +8,7 @@ import sys
 import numpy as np
 from pathlib import Path
 from enum import Enum
+from collections import namedtuple
 
 # QT6 (QT5 is deprecated with opencv)
 from PyQt6.QtWidgets import QApplication, QMainWindow, QLabel, QPushButton, QFileDialog
@@ -34,13 +35,26 @@ BUTTON_WIDTH = APP_WINDOW_WIDTH // 3
 # MISC.
 IMAGE_PATH = 'data/images/pic.png'
 IMAGE_RESIZE_FACTOR = 3
-WATER_BOTTLE_COLOR = (247,5,41)
-MALLET_COLOR = (5,118,247)
+
+# Object Constants
+NUM_CLASSES = 2
+
+OBJECT_COLORS = np.array([(247,5,41),
+                          (5,118,247)], dtype=np.uint8)
+
+CLASS_NAMES = ['WATER BOTTLE',
+               'MALLET']
+
+class ObjectsIdentifier(Enum):
+    WATER_BOTTLE = 0
+    MALLET = 1
 
 class SelectionMode(Enum):
     MANUAL_SEQUENTIAL = 1
     MANUAL_CLOSEST = 2
     AI = 3
+
+Object = namedtuple('Object', ['identifier', 'pts'])
 
 def cvmat_to_qpixmap(cvmat):
     height, width, channel = cvmat.shape
@@ -55,11 +69,14 @@ class ApplicationWindow(QMainWindow):
         self.setGeometry(STARTING_X_LOCATION, STARTING_Y_LOCATION, APP_WINDOW_WIDTH, APP_WINDOW_HEIGHT)
         # TODO: Make the app resizable
         self.setFixedSize(APP_WINDOW_WIDTH, APP_WINDOW_HEIGHT)
+
+        # Init Selection
+        self.objects = []
+        self.current_identifier = ObjectsIdentifier.WATER_BOTTLE
+        self.current_selection = 0
+
         # Init Buttons
         self.init_buttons()
-        
-        # Init Points
-        self.pts = np.array([[]], np.int32)
 
         # Init Image Viewer
         self.img_path = IMAGE_PATH
@@ -78,11 +95,12 @@ class ApplicationWindow(QMainWindow):
 
     def _render_selection(self):
         overlay = self.cvmat_unedited.copy()
-        print("bruh")
-        if self.pts.size != 0:
-            pts = self.pts.reshape((-1, 1, 2))
-            cv2.fillPoly(overlay, [pts], WATER_BOTTLE_COLOR)
-        print("bruh")
+        print(self.objects)
+        for i in range(len(self.objects)):
+            if len(self.objects) != 0:
+                pts = self.objects[i].pts.reshape((-1, 1, 2))
+                color = tuple(map(int, OBJECT_COLORS[int(self.objects[i].identifier.value)]))
+                cv2.fillPoly(overlay, [pts], color)
         alpha = 0.5
         result = cv2.addWeighted(overlay, alpha, self.cvmat_unedited, 1 - alpha, 0)
         self._set_image_viewer(result)
@@ -105,7 +123,7 @@ class ApplicationWindow(QMainWindow):
         self.top_center.clicked.connect(self.top_center_click)
 
         # TOP RIGHT
-        self.top_right = QPushButton("Top Right", self)
+        self.top_right = QPushButton(f"Class: {CLASS_NAMES[self.current_identifier.value]}", self)
         self.top_right.setGeometry(2 * BUTTON_WIDTH, 0, BUTTON_WIDTH, BUTTON_HEIGHT)
         self.top_right.clicked.connect(self.top_right_click)
 
@@ -120,7 +138,7 @@ class ApplicationWindow(QMainWindow):
         self.bottom_center.clicked.connect(self.bottom_center_click)
 
         # TOP RIGHT
-        self.bottom_right = QPushButton("Bottom Right", self)
+        self.bottom_right = QPushButton("New Object", self)
         self.bottom_right.setGeometry(2 * BUTTON_WIDTH, self.height() - BUTTON_HEIGHT, BUTTON_WIDTH, BUTTON_HEIGHT)
         self.bottom_right.clicked.connect(self.bottom_right_click)
 
@@ -160,6 +178,8 @@ class ApplicationWindow(QMainWindow):
 
     def top_right_click(self):
         print("Top right Clicked")
+        self.current_identifier = ObjectsIdentifier((self.current_identifier.value + 1) % NUM_CLASSES)
+        self.top_right.setText(f"Class: {CLASS_NAMES[self.current_identifier.value]}")
 
     def bottom_left_click(self):
         print("Bottom Left Clicked")
@@ -175,24 +195,30 @@ class ApplicationWindow(QMainWindow):
 
     def bottom_center_click(self):
         print("Selection Has Been Cleared...")
-        self.pts = np.array([[]], np.int32)
+        self.objects = []
         self._render_selection()
 
     def bottom_right_click(self):
-        print("Bottom right Clicked")
+        print("New Object Created...")
+        self.objects.append(Object(identifier=self.current_identifier, pts=np.array([[]])))
+        self.current_selection = len(self.objects) - 1
 
     def image_viewer_click(self):
         print(f"Image Viewer Clicked {self.get_cursor_x()} {self.get_cursor_y()}")
+
+        if len(self.objects) == 0:
+            self.objects = [Object(identifier=self.current_identifier, pts=np.array([[]]))]
+
         if self.mode == SelectionMode.AI:
             print("AI Mode")
             results = self.model(self.img_path, points=[[self.get_cursor_x() * self.X_COEFF, self.get_cursor_y() * self.Y_COEFF]], labels=[1])
             
             # Create CV Mat from mask points
             new_points = np.array(results[0].masks.xy[0], np.int32)
-            if self.pts.size == 0:
-                self.pts = new_points
+            if self.objects[self.current_selection].pts.size == 0:
+                self.objects[self.current_selection] = self.objects[self.current_selection]._replace(pts=new_points)
             else:
-                self.pts = np.vstack((self.pts, new_points))
+                self.objects[self.current_selection] = self.objects[self.current_selection]._replace(pts=np.vstack((self.objects[self.current_selection].pts, new_points)))
             self._render_selection()
         elif self.mode == SelectionMode.MANUAL_SEQUENTIAL:
             print("Manual Sequential Mode")
@@ -215,7 +241,6 @@ class ApplicationWindow(QMainWindow):
                 closest_point_index = 0
 
                 for i, (x, y) in enumerate(self.pts):
-                    print(f'Point ({x}, {y})')
                     distance = np.sqrt((new_point[0][0] - x) ** 2 + (new_point[0][1] - y) ** 2)
                     print(distance)
 
@@ -223,9 +248,8 @@ class ApplicationWindow(QMainWindow):
                     if distance < closest_point_distance:
                         closest_point_index = i
                         closest_point_distance = distance
-                print(f"{(closest_point_index+1) % self.pts.shape[0]} {(closest_point_index-1) % self.pts.shape[0]}")
-                print(f"{self.pts.shape[0]}")
 
+                # Determine whether to go one forward or backward
                 distance_plus = np.sqrt((new_point[0][0] - self.pts[(closest_point_index+1) % self.pts.shape[0]][0]) ** 2 + (new_point[0][1] - self.pts[(closest_point_index+1) % self.pts.shape[0]][1]) ** 2)
                 distance_minus = np.sqrt((new_point[0][0] - self.pts[(closest_point_index-1) % self.pts.shape[0]][0]) ** 2 + (new_point[0][1] - self.pts[(closest_point_index-1) % self.pts.shape[0]][1]) ** 2)
                 if distance_plus > distance_minus:
