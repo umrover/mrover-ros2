@@ -9,6 +9,7 @@ from pathlib import Path
 from enum import Enum
 from collections import namedtuple
 import yaml
+import shutil
 
 # QT6 (QT5 is deprecated with opencv)
 from PyQt6.QtWidgets import QApplication, QMainWindow, QLabel, QPushButton, QFileDialog
@@ -82,7 +83,7 @@ class ApplicationWindow(QMainWindow):
         self.init_buttons()
 
         # Init Image Viewer
-        self.img_path = IMAGE_PATH
+        self.img_path = Path(IMAGE_PATH)
         self.init_image_viewer()
 
         # Init Mode
@@ -160,7 +161,7 @@ class ApplicationWindow(QMainWindow):
         self.image_viewer_label.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents) # allows the click to hit the button instead of the label
         self.image_viewer_label.setGeometry(0, BUTTON_HEIGHT, APP_WINDOW_WIDTH, APP_WINDOW_HEIGHT - 2 * BUTTON_HEIGHT)
 
-        self.cvmat_unedited = cv2.imread(self.img_path)
+        self.cvmat_unedited = cv2.imread(self.img_path.__str__())
 
         self.X_COEFF = self.cvmat_unedited.shape[1]/(APP_WINDOW_WIDTH)
         self.Y_COEFF = self.cvmat_unedited.shape[0]/(APP_WINDOW_HEIGHT - 2 * BUTTON_HEIGHT)
@@ -175,10 +176,10 @@ class ApplicationWindow(QMainWindow):
         file_dialog.setDirectory(Path.cwd().__str__())
 
         if file_dialog.exec():
-            self.img_path = file_dialog.selectedFiles()[0]
+            self.img_path = Path(file_dialog.selectedFiles()[0])
             print(f'Selected {self.img_path}')
 
-        self.cvmat_unedited = cv2.imread(self.img_path)
+        self.cvmat_unedited = cv2.imread(self.img_path.__str__())
 
         self._render_selection()
 
@@ -201,6 +202,30 @@ class ApplicationWindow(QMainWindow):
             training_dataset_dir = Path(data['path'])
             training_dataset_images = training_dataset_dir / Path(data['train'])
             training_dataset_labels = training_dataset_dir / Path(data['train'].replace('images', 'labels'))
+
+            # Copy the image to the training
+            shutil.copyfile(self.img_path, training_dataset_images / self.img_path.name, follow_symlinks = True)
+
+            print()
+
+            with open(training_dataset_labels / self.img_path.with_suffix('.txt').name, "w") as f:
+                x1, y1, x2, y2 = 0, 0, 0, 0 
+
+                # TODO: Loop over all fo the annotations
+                for object_index in range(len(self.objects)):
+                    for (x, y) in self.objects[object_index].pts:
+                        x1 = min(x, x1)
+                        y1 = min(y, y1)
+                        x2 = max(x, x2)
+                        y2 = max(y, y2)
+
+                    x = (x1 + (x2 - x1) / 2) / self.cvmat_unedited.shape[1]
+                    y = (y1 + (y2 - y1) / 2) / self.cvmat_unedited.shape[0]
+                    w = (x2 - x1) / self.cvmat_unedited.shape[1]
+                    h = (y2 - y1) / self.cvmat_unedited.shape[0]
+
+                    f.write(f'{self.objects[object_index].identifier.value} {x} {y} {w} {h}')
+
             print(training_dataset_images)
             print(training_dataset_labels)
 
