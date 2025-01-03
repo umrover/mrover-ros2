@@ -198,7 +198,11 @@ class ApplicationWindow(QMainWindow):
         print("Save Annotation")
         with open(self.config_path, 'r') as f:
             data = yaml.load(f, Loader=yaml.SafeLoader)
-            print(data['path'])
+            training_dataset_dir = Path(data['path'])
+            training_dataset_images = training_dataset_dir / Path(data['train'])
+            training_dataset_labels = training_dataset_dir / Path(data['train'].replace('images', 'labels'))
+            print(training_dataset_images)
+            print(training_dataset_labels)
 
     def top_right_click(self):
         print("Top right Clicked")
