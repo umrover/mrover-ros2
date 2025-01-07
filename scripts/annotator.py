@@ -142,8 +142,6 @@ class ApplicationWindow(QMainWindow):
 
         # Draw all of the points on the current selection
         if len(self.objects) != 0:
-            print(self.current_selection)
-            print(self.objects)
             if self.objects[self.current_selection].pts.size != 0:
                 for (x, y) in self.objects[self.current_selection].pts:
                     cv2.circle(overlay, (x, y), 3, (96, 68, 207), -1)
@@ -258,6 +256,10 @@ class ApplicationWindow(QMainWindow):
 
             with open(training_dataset_labels / self.img_path.with_suffix('.txt').name, "w") as f:
                 for object_index in range(len(self.objects)):
+                    # Make sure there are enough points to create a polygon = 3
+                    if len(self.objects[object_index].pts) < 3:
+                        continue;
+
                     if self.objects[object_index].pts.size != 0:
                         x1, y1, x2, y2 =np.inf, np.inf, 0, 0 
                         for (x, y) in self.objects[object_index].pts:
@@ -377,18 +379,37 @@ class ApplicationWindow(QMainWindow):
             for i, obj in enumerate(self.objects):
                 # Perform Horizontal Ray Cast
                 cursor_pos = np.array([self.get_cursor_x() * self.X_COEFF, self.get_cursor_y() * self.Y_COEFF], np.int32)
-                num_intersect = 0
-                for edge_index in range(len(obj.pts)):
-                    if rayintersectseg(cursor_pos, obj.pts[edge_index], obj.pts[(edge_index + 1) % len(obj.pts)]):
-                        num_intersect += 1
-                        print(f'Intersected {edge_index}')
+                print(cursor_pos.shape)
 
-                # If there are an odd number of intersections the point is inside the shape
-                if num_intersect % 2 == 1:
-                    self.current_selection = i
-                    self.current_identifier = self.objects[self.current_selection].identifier
-                    print(f'New selection is {i}')
+                CURSOR_RADIUS = 10
+
+                # If there are fewer than three points in the polygon then just look to see if the cursor is close enough to any of the points
+                if obj.pts.shape[1] == 0:
                     break
+
+                if len(obj.pts) < 3:
+                    for (x, y) in obj.pts:
+                        distance = np.sqrt((cursor_pos[0] - x) ** 2 + (cursor_pos[1] - y) ** 2)
+                        print(distance)
+
+                        if distance < CURSOR_RADIUS:
+                            print(f'New selection is {i}')
+                            self.current_selection = i
+                            self.current_identifier = self.objects[self.current_selection].identifier
+                else:       
+                    num_intersect = 0
+                    for edge_index in range(len(obj.pts)):
+                        print(f'Edge Indices {edge_index} {(edge_index + 1) % len(obj.pts)}')
+                        if rayintersectseg(cursor_pos, obj.pts[edge_index], obj.pts[(edge_index + 1) % len(obj.pts)]):
+                            num_intersect += 1
+                            print(f'Intersected {edge_index}')
+
+                    # If there are an odd number of intersections the point is inside the shape
+                    if num_intersect % 2 == 1:
+                        self.current_selection = i
+                        self.current_identifier = self.objects[self.current_selection].identifier
+                        print(f'New selection is {i}')
+                        break
             self._render_selection()
 
 def main():
