@@ -238,6 +238,8 @@ class ApplicationWindow(QMainWindow):
     def top_right_click(self):
         print("Top right Clicked")
         self.current_identifier = ObjectsIdentifier((self.current_identifier.value + 1) % NUM_CLASSES)
+        self.objects[self.current_selection] = self.objects[self.current_selection]._replace(identifier=self.current_identifier)
+        self._render_selection()
         self.top_right.setText(f"Class: {CLASS_NAMES[self.current_identifier.value]}")
 
     def bottom_left_click(self):
