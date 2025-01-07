@@ -75,7 +75,7 @@ def rayintersectseg(p, a, b):
     if a[1] > b[1]:
         a,b = b,a
     if p[1] == a[1] or p[1] == b[1]:
-        p = (p.x, p.y + _eps)
+        p = (p[0], p[1] + _eps)
 
     intersect = False
 
@@ -327,7 +327,7 @@ class ApplicationWindow(QMainWindow):
             results = self.model(self.img_path, points=[[self.get_cursor_x() * self.X_COEFF, self.get_cursor_y() * self.Y_COEFF]], labels=[1])
             
             # Create CV Mat from mask points
-            if len(results) != 0 and len(np.array(results[0].masks.xy)) != 0:
+            if len(results) != 0 and len(results[0].masks.xy) != 0:
                 new_points = np.array(results[0].masks.xy[0], np.int32)
                 self.objects[self.current_selection] = self.objects[self.current_selection]._replace(pts=new_points)
                 self._render_selection()
