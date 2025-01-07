@@ -4,6 +4,7 @@
 # opencv
 
 import sys
+import os
 import numpy as np
 from pathlib import Path
 from enum import Enum
@@ -238,10 +239,11 @@ class ApplicationWindow(QMainWindow):
         file_dialog.setDirectory(Path.cwd().__str__())
 
         if file_dialog.exec():
-            self.config_path = file_dialog.selectedFiles()[0]
+            self.config_path = Path(file_dialog.selectedFiles()[0])
             print(f'Selected {self.config_path}')
 
-        self.top_center_right.setEnabled(True)
+        if self.config_path.exists() and not os.path.isdir(self.config_path):
+            self.top_center_right.setEnabled(True)
 
     def top_center_right_click(self):
         print("Save Annotation")
@@ -325,9 +327,10 @@ class ApplicationWindow(QMainWindow):
             results = self.model(self.img_path, points=[[self.get_cursor_x() * self.X_COEFF, self.get_cursor_y() * self.Y_COEFF]], labels=[1])
             
             # Create CV Mat from mask points
-            new_points = np.array(results[0].masks.xy[0], np.int32)
-            self.objects[self.current_selection] = self.objects[self.current_selection]._replace(pts=new_points)
-            self._render_selection()
+            if len(results) != 0 and len(np.array(results[0].masks.xy)) != 0:
+                new_points = np.array(results[0].masks.xy[0], np.int32)
+                self.objects[self.current_selection] = self.objects[self.current_selection]._replace(pts=new_points)
+                self._render_selection()
         elif self.mode == SelectionMode.MANUAL_SEQUENTIAL:
             print("Manual Sequential Mode")
             new_point = np.array([[self.get_cursor_x() * self.X_COEFF, self.get_cursor_y() * self.Y_COEFF]], np.int32)
@@ -383,10 +386,11 @@ class ApplicationWindow(QMainWindow):
 
                 CURSOR_RADIUS = 10
 
-                # If there are fewer than three points in the polygon then just look to see if the cursor is close enough to any of the points
+                # If there are no points then we do not want to do any processing
                 if obj.pts.shape[1] == 0:
-                    break
+                    continue
 
+                # If there are fewer than three points in the polygon then just look to see if the cursor is close enough to any of the points
                 if len(obj.pts) < 3:
                     for (x, y) in obj.pts:
                         distance = np.sqrt((cursor_pos[0] - x) ** 2 + (cursor_pos[1] - y) ** 2)
