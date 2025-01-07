@@ -71,6 +71,7 @@ _eps = 0.00001
 _huge = sys.float_info.max
 _tiny = sys.float_info.min
 
+# https://rosettacode.org/wiki/Ray-casting_algorithm#Python
 def rayintersectseg(p, a, b):
     if a[1] > b[1]:
         a,b = b,a
@@ -382,7 +383,6 @@ class ApplicationWindow(QMainWindow):
             for i, obj in enumerate(self.objects):
                 # Perform Horizontal Ray Cast
                 cursor_pos = np.array([self.get_cursor_x() * self.X_COEFF, self.get_cursor_y() * self.Y_COEFF], np.int32)
-                print(cursor_pos.shape)
 
                 CURSOR_RADIUS = 10
 
@@ -394,7 +394,6 @@ class ApplicationWindow(QMainWindow):
                 if len(obj.pts) < 3:
                     for (x, y) in obj.pts:
                         distance = np.sqrt((cursor_pos[0] - x) ** 2 + (cursor_pos[1] - y) ** 2)
-                        print(distance)
 
                         if distance < CURSOR_RADIUS:
                             print(f'New selection is {i}')
