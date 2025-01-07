@@ -101,6 +101,11 @@ def rayintersectseg(p, a, b):
 class ApplicationWindow(QMainWindow):
     def __init__(self):
         super().__init__()
+        
+        # Set the Window Icon
+        icon = QIcon('data/IMG_0410.jpeg')
+        self.setWindowIcon(icon)
+
         self.setGeometry(STARTING_X_LOCATION, STARTING_Y_LOCATION, APP_WINDOW_WIDTH, APP_WINDOW_HEIGHT)
         # TODO: Make the app resizable
         self.setFixedSize(APP_WINDOW_WIDTH, APP_WINDOW_HEIGHT)
