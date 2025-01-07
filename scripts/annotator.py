@@ -60,8 +60,7 @@ Object = namedtuple('Object', ['identifier', 'pts'])
 
 def cvmat_to_qpixmap(cvmat):
     height, width, channel = cvmat.shape
-    print(f'channel {channel}')
-    bytesPerLine = 3 * width
+    bytesPerLine = channel * width
     qimg = QImage(cvmat.data, width, height, bytesPerLine, QImage.Format.Format_RGB888).rgbSwapped()
     return QPixmap(qimg)
 
@@ -132,13 +131,23 @@ class ApplicationWindow(QMainWindow):
 
     def _render_selection(self):
         overlay = self.cvmat_unedited.copy()
-        print(self.objects)
+
+        # Draw all of the masks
         for i in range(len(self.objects)):
             if len(self.objects) != 0:
                 pts = self.objects[i].pts.reshape((-1, 1, 2))
                 color = tuple(map(int, OBJECT_COLORS[int(self.objects[i].identifier.value)]))
                 if pts.size != 0:
                     cv2.fillPoly(overlay, [pts], color)
+
+        # Draw all of the points on the current selection
+        if len(self.objects) != 0:
+            print(self.current_selection)
+            print(self.objects)
+            if self.objects[self.current_selection].pts.size != 0:
+                for (x, y) in self.objects[self.current_selection].pts:
+                    cv2.circle(overlay, (x, y), 3, (96, 68, 207), -1)
+
         alpha = 0.5
         result = cv2.addWeighted(overlay, alpha, self.cvmat_unedited, 1 - alpha, 0)
         self._set_image_viewer(result)
@@ -270,7 +279,8 @@ class ApplicationWindow(QMainWindow):
     def top_right_click(self):
         print("Top right Clicked")
         self.current_identifier = ObjectsIdentifier((self.current_identifier.value + 1) % NUM_CLASSES)
-        self.objects[self.current_selection] = self.objects[self.current_selection]._replace(identifier=self.current_identifier)
+        if len(self.objects) != 0:
+            self.objects[self.current_selection] = self.objects[self.current_selection]._replace(identifier=self.current_identifier)
         self._render_selection()
 
     def bottom_left_click(self):
@@ -290,9 +300,12 @@ class ApplicationWindow(QMainWindow):
 
     def bottom_center_click(self):
         print("Selection Has Been Cleared...")
-        self.objects = []
+        if len(self.objects) == 0:
+            self.current_selection = 0
+        else:
+            self.objects.pop(self.current_selection)
+            self.current_selection = len(self.objects) - 1
         self._render_selection()
-        self.current_selection = 0
 
     def bottom_right_click(self):
         print("New Object Created...")
