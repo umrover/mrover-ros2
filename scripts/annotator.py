@@ -54,15 +54,48 @@ class SelectionMode(Enum):
     MANUAL_SEQUENTIAL = 1
     MANUAL_CLOSEST = 2
     AI = 3
+    OBJECT_SELECTION = 4
 
 Object = namedtuple('Object', ['identifier', 'pts'])
 
 def cvmat_to_qpixmap(cvmat):
     height, width, channel = cvmat.shape
+    print(f'channel {channel}')
     bytesPerLine = 3 * width
     qimg = QImage(cvmat.data, width, height, bytesPerLine, QImage.Format.Format_RGB888).rgbSwapped()
     return QPixmap(qimg)
 
+# Ray Casting Algorithm
+
+_eps = 0.00001
+_huge = sys.float_info.max
+_tiny = sys.float_info.min
+
+def rayintersectseg(p, a, b):
+    if a[1] > b[1]:
+        a,b = b,a
+    if p[1] == a[1] or p[1] == b[1]:
+        p = (p.x, p.y + _eps)
+
+    intersect = False
+
+    if (p[1] > b[1] or p[1] < a[1]) or (
+        p[0] > max(a[0], b[0])):
+        return False
+
+    if p[0] < min(a[0], b[0]):
+        intersect = True
+    else:
+        if abs(a[0] - b[0]) > _tiny:
+            m_red = (b[1] - a[1]) / float(b[0] - a[0])
+        else:
+            m_red = _huge
+        if abs(a[0] - p[0]) > _tiny:
+            m_blue = (p[1] - a[1]) / float(p[0] - a[0])
+        else:
+            m_blue = _huge
+        intersect = m_blue >= m_red
+    return intersect
 
 class ApplicationWindow(QMainWindow):
     def __init__(self):
@@ -109,6 +142,7 @@ class ApplicationWindow(QMainWindow):
         alpha = 0.5
         result = cv2.addWeighted(overlay, alpha, self.cvmat_unedited, 1 - alpha, 0)
         self._set_image_viewer(result)
+        self.top_right.setText(f"Class: {CLASS_NAMES[self.current_identifier.value]}")
 
     def get_cursor_x(self):
         return self.mapFromGlobal(QCursor.pos()).x()
@@ -213,8 +247,6 @@ class ApplicationWindow(QMainWindow):
             # Copy the image to the training
             shutil.copyfile(self.img_path, training_dataset_images / self.img_path.name, follow_symlinks = True)
 
-            print()
-
             with open(training_dataset_labels / self.img_path.with_suffix('.txt').name, "w") as f:
                 for object_index in range(len(self.objects)):
                     if self.objects[object_index].pts.size != 0:
@@ -240,7 +272,6 @@ class ApplicationWindow(QMainWindow):
         self.current_identifier = ObjectsIdentifier((self.current_identifier.value + 1) % NUM_CLASSES)
         self.objects[self.current_selection] = self.objects[self.current_selection]._replace(identifier=self.current_identifier)
         self._render_selection()
-        self.top_right.setText(f"Class: {CLASS_NAMES[self.current_identifier.value]}")
 
     def bottom_left_click(self):
         print("Bottom Left Clicked")
@@ -251,6 +282,9 @@ class ApplicationWindow(QMainWindow):
             self.bottom_left.setText("Mode: AI")
             self.mode = SelectionMode.AI
         elif self.mode == SelectionMode.AI:
+            self.bottom_left.setText("Mode: Object Selection")
+            self.mode = SelectionMode.OBJECT_SELECTION
+        elif self.mode == SelectionMode.OBJECT_SELECTION:
             self.bottom_left.setText("Mode: Manual Sequential")
             self.mode = SelectionMode.MANUAL_SEQUENTIAL
 
@@ -325,6 +359,23 @@ class ApplicationWindow(QMainWindow):
 
                 # Determine whether to go one forward or backward
                 self.objects[self.current_selection] = self.objects[self.current_selection]._replace(pts=np.insert(self.objects[self.current_selection].pts, (closest_point_index + 1) % self.objects[self.current_selection].pts.shape[0], new_point[0], axis=0))
+            self._render_selection()
+        elif self.mode == SelectionMode.OBJECT_SELECTION:
+            for i, obj in enumerate(self.objects):
+                # Perform Horizontal Ray Cast
+                cursor_pos = np.array([self.get_cursor_x() * self.X_COEFF, self.get_cursor_y() * self.Y_COEFF], np.int32)
+                num_intersect = 0
+                for edge_index in range(len(obj.pts)):
+                    if rayintersectseg(cursor_pos, obj.pts[edge_index], obj.pts[(edge_index + 1) % len(obj.pts)]):
+                        num_intersect += 1
+                        print(f'Intersected {edge_index}')
+
+                # If there are an odd number of intersections the point is inside the shape
+                if num_intersect % 2 == 1:
+                    self.current_selection = i
+                    self.current_identifier = self.objects[self.current_selection].identifier
+                    print(f'New selection is {i}')
+                    break
             self._render_selection()
 
 def main():
