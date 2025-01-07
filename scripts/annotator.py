@@ -275,10 +275,7 @@ class ApplicationWindow(QMainWindow):
             
             # Create CV Mat from mask points
             new_points = np.array(results[0].masks.xy[0], np.int32)
-            if self.objects[self.current_selection].pts.size == 0:
-                self.objects[self.current_selection] = self.objects[self.current_selection]._replace(pts=new_points)
-            else:
-                self.objects[self.current_selection] = self.objects[self.current_selection]._replace(pts=np.vstack((self.objects[self.current_selection].pts, new_points)))
+            self.objects[self.current_selection] = self.objects[self.current_selection]._replace(pts=new_points)
             self._render_selection()
         elif self.mode == SelectionMode.MANUAL_SEQUENTIAL:
             print("Manual Sequential Mode")
