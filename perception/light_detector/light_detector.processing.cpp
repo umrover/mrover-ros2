@@ -167,9 +167,8 @@ namespace mrover {
             }
         }
         // SE3Conversions::pushToTfTree(mTfBroadcaster, immediateLightFrame, mCameraFrame, closestLight, this->get_clock()->now());
-        lightPose = std::make_optional<SE3d>(R3d{std::get<0>(closestLight), std::get<1>(closestLight), std::get<2>(closestLight)}, SO3d::Identity());closestLight
-        std::string closestLightPose = std::format("closestLightPose{}", /1);
-        SE3Conversions::pushToTfTree(mTfBroadcaster, closestLightPose, mCameraFrame, lightPose, this->get_clock()->now());
+        lightPose = std::make_optional<SE3d>(R3d{std::get<0>(closestLight), std::get<1>(closestLight), std::get<2>(closestLight)}, SO3d::Identity());
+        SE3Conversions::pushToTfTree(mTfBroadcaster, "closestLightPose{}", mCameraFrame, lightPose, this->get_clock()->now());
     }
 
     auto LightDetector::calcDistance(tuple<int, int, int> mPoint) -> std::float {
