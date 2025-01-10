@@ -140,7 +140,7 @@ namespace mrover {
 
 			// Square Dilate operation
             nav_msgs::msg::OccupancyGrid postProcesed = mGlobalGridMsg;
-            std::array<std::ptrdiff_t, 9> dis{0,
+            std::array<std::ptrdiff_t, 9> dis{0, 
                                               -1, +1, -postProcesed.info.width, +postProcesed.info.width,
                                               -1 - postProcesed.info.width, +1 - postProcesed.info.width,
                                               -1 + postProcesed.info.width, +1 + postProcesed.info.width};
