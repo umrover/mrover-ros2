@@ -99,7 +99,7 @@ namespace mrover {
             for (std::size_t i = 0; i < mGlobalGridMsg.data.size(); ++i) {
 				Bin& bin = bins[i];
                 if (bin.size() < 16){
-                    // mGlobalGridMsg.data[i] = UNKNOWN_COST;
+                    
                 }
 
                 // USING ABSOLUTE HEIGHT DIFFERENCE BETWEEN POINT AND ROVER HEIGHT
@@ -111,6 +111,7 @@ namespace mrover {
                 // std::int8_t cost = percent > mZPercent ? OCCUPIED_COST : FREE_COST;
 
                 // // IMPLEMENT "AVERAGE" OF NORMALS IN BIN COMBINED WITH PROJECTION
+				auto& cell = mGlobalGridMsg.data[i];
                 if (bin.size() >= 16){
                     // RCLCPP_INFO_STREAM(get_logger(), "WHOOOOOOOOOO");
                     R3f avgNormal{};
@@ -123,9 +124,10 @@ namespace mrover {
                     std::int8_t cost = avgNormal.z() < mZThreshold ? OCCUPIED_COST : FREE_COST;
 
                     // Update cell with EWMA acting as a low-pass filter
-                    auto& cell = mGlobalGridMsg.data[i];
                     cell = static_cast<std::int8_t>(mAlpha * cost + (1 - mAlpha) * cell);
-                }
+                }else{
+					cell = UNKNOWN_COST;
+				}
             }
 
 
@@ -135,10 +137,10 @@ namespace mrover {
                                               -1, +1, -postProcesed.info.width, +postProcesed.info.width,
                                               -1 - postProcesed.info.width, +1 - postProcesed.info.width,
                                               -1 + postProcesed.info.width, +1 + postProcesed.info.width};
-            for (std::size_t i = 0; i < mGlobalGridMsg.data.size(); ++i) {
+            for (std::int64_t i = 0, msgSize = static_cast<std::int64_t>(mGlobalGridMsg.data.size()); i < msgSize; ++i) {
                 if (std::ranges::any_of(dis, [&](std::ptrdiff_t di) {
-                        std::size_t j = i + di;
-                        return j < mGlobalGridMsg.data.size() && mGlobalGridMsg.data[j] > FREE_COST;
+                        std::int64_t j = i + di;
+                        return j >= 0 && j < msgSize && mGlobalGridMsg.data[j] > FREE_COST;
                     })) postProcesed.data[i] = OCCUPIED_COST;
             }
             mCostMapPub->publish(postProcesed);
