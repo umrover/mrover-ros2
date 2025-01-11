@@ -19,8 +19,15 @@ namespace mrover {
     auto mapToGrid(Eigen::Vector3f const& positionInMap, nav_msgs::msg::OccupancyGrid const& grid) -> int {
         Eigen::Vector2f origin{grid.info.origin.position.x, grid.info.origin.position.y};
         Eigen::Vector2f gridFloat = (positionInMap.head<2>() - origin) / grid.info.resolution;
+
         int gridX = std::floor(gridFloat.x());
         int gridY = std::floor(gridFloat.y());
+	
+		// Clip all of the points based on their relative location to the grid
+		if(gridX >= static_cast<int>(grid.info.width) || gridX < 0 || gridY >= static_cast<int>(grid.info.height) || gridY < 0){
+			return -1;
+		}
+
         return gridY * static_cast<int>(grid.info.width) + gridX;
     }
 
@@ -85,7 +92,14 @@ namespace mrover {
                     R3f pointInMap = cameraToMap.act(pointInCamera);
 
                     int index = mapToGrid(pointInMap, mGlobalGridMsg);
-                    if (index < 0 || index >= static_cast<int>(mGlobalGridMsg.data.size())) continue;
+
+					if(index == -1){
+						continue;
+					}
+
+					if(index == 220){
+						RCLCPP_INFO_STREAM(get_logger(), std::format("x {} y {} z {}", pointInMap.x(), pointInMap.y(), pointInMap.z()));
+					}
 
                     bins[index].emplace_back(BinEntry{pointInCamera, pointInMap, normal, pointInMap.z() - roverSE3.z()});
                 }
