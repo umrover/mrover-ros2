@@ -180,7 +180,7 @@ namespace mrover {
 				std::int64_t gridX = i % mGlobalGridMsg.info.width;
 				std::int64_t gridY = i / mGlobalGridMsg.info.height;
 
-				// IDK This is kinda cooked
+				// TODO: This is kinda cooked
 				if(gridX == 0 && gridY == 0){
 					if (std::ranges::any_of(disBottomLeft, [&](std::ptrdiff_t di) {
 							std::int64_t j = i + di;
@@ -227,7 +227,6 @@ namespace mrover {
 							return j >= 0 && j < msgSize && mGlobalGridMsg.data[j] > FREE_COST;
 						})) postProcesed.data[i] = OCCUPIED_COST;
 				}
-
             }
 
 			for(size_t i = 0; i < mGlobalGridMsg.data.size(); ++i){
@@ -269,9 +268,4 @@ namespace mrover {
         res->success = true;
         RCLCPP_INFO_STREAM(get_logger(), "Moved cost map");
     }
-
-    auto CostMapNode::processHeight(mrover::srv::MoveCostMap::Request::ConstSharedPtr& req, mrover::srv::MoveCostMap::Response::SharedPtr& res, std::vector<Bin> bins) -> void{
-
-    }
-
 } // namespace mrover
