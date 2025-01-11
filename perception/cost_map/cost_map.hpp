@@ -17,6 +17,11 @@ namespace mrover {
 		rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr mPCDebugPub;
 		std::vector<Point> mInliers;
 
+		// TF Variables
+        tf2_ros::Buffer mTfBuffer{get_clock()};
+        tf2_ros::TransformBroadcaster mTfBroadcaster{this};
+        tf2_ros::TransformListener mTfListener{mTfBuffer};
+
         rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr mCostMapPub;
         rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr mPcSub;
 
@@ -32,9 +37,6 @@ namespace mrover {
         int mDownSamplingFactor = 4;
         std::string mMapFrame;
 		
-        tf2_ros::Buffer mTfBuffer{get_clock()};
-        tf2_ros::TransformListener mTfListener{mTfBuffer};
-
         std::optional<SE3d> mPreviousPose;
         nav_msgs::msg::OccupancyGrid mGlobalGridMsg;
 

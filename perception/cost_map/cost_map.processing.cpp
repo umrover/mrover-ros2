@@ -98,19 +98,7 @@ namespace mrover {
 
             for (std::size_t i = 0; i < mGlobalGridMsg.data.size(); ++i) {
 				Bin& bin = bins[i];
-                if (bin.size() < 16){
-                    
-                }
-
-                // USING ABSOLUTE HEIGHT DIFFERENCE BETWEEN POINT AND ROVER HEIGHT
-                // std::size_t pointsHigh = std::ranges::count_if(bin, [this, &roverSE3](BinEntry const& entry) {
-                //     return (entry.height) > mZThreshold;
-                // });
-                // double percent = static_cast<double>(pointsHigh) / static_cast<double>(bin.size());
-
-                // std::int8_t cost = percent > mZPercent ? OCCUPIED_COST : FREE_COST;
-
-                // // IMPLEMENT "AVERAGE" OF NORMALS IN BIN COMBINED WITH PROJECTION
+                // IMPLEMENT "AVERAGE" OF NORMALS IN BIN COMBINED WITH PROJECTION
 				auto& cell = mGlobalGridMsg.data[i];
                 if (bin.size() >= 16){
                     // RCLCPP_INFO_STREAM(get_logger(), "WHOOOOOOOOOO");
@@ -130,7 +118,6 @@ namespace mrover {
 				}
             }
 
-
 			// Square Dilate operation
             nav_msgs::msg::OccupancyGrid postProcesed = mGlobalGridMsg;
             std::array<std::ptrdiff_t, 9> dis{0,
@@ -143,6 +130,12 @@ namespace mrover {
                         return j >= 0 && j < msgSize && mGlobalGridMsg.data[j] > FREE_COST;
                     })) postProcesed.data[i] = OCCUPIED_COST;
             }
+
+			for(size_t i = 0; i < mGlobalGridMsg.data.size(); ++i){
+                RCLCPP_INFO_STREAM(get_logger(), std::format("{}: Post {} Pre {} Size {}", i, postProcesed.data[i], mGlobalGridMsg.data[i], bins[i].size()));
+				SE3Conversions::pushToTfTree(mTfBroadcaster, std::format("bin{}", i), "map", SE3d{R3d{mGlobalGridMsg.info.origin.position.x + mResolution * (i % mGlobalGridMsg.info.width), mGlobalGridMsg.info.origin.position.y + mResolution * (i / mGlobalGridMsg.info.height), 1}, SO3d::Identity()}, get_clock()->now());
+			}
+
             mCostMapPub->publish(postProcesed);
             if(!mCostMapPub){
                 mCostMapPub->publish(postProcesed);
