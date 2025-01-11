@@ -61,11 +61,9 @@ namespace mrover {
         //bool mag_fully_calibrated = calibration_status && calibration_status->magnetometer_calibration == FULL_CALIBRATION;
 
         if (current_imu_calib && correction_rotation) {
-			RCLCPP_INFO_STREAM(get_logger(), "Correction");
             SO3d uncorrected_orientation = ros_quat_to_eigen_quat(current_imu_calib->orientation);
             pose_in_map.asSO3() = correction_rotation.value() * uncorrected_orientation;
         }else if(current_imu_calib){
-			RCLCPP_INFO_STREAM(get_logger(), "No Correction");
             SO3d uncorrected_orientation = ros_quat_to_eigen_quat(current_imu_calib->orientation);
             pose_in_map.asSO3() = uncorrected_orientation;
 		}else {
@@ -82,7 +80,7 @@ namespace mrover {
         //     pose_in_map.asSO3() = calibrated_orientation;
         // }
         
-        RCLCPP_INFO_STREAM(get_logger(), "Rover Height" << pose_in_map);
+		RCLCPP_INFO_STREAM(get_logger(), world_frame << " " << rover_frame);
 
         SE3Conversions::pushToTfTree(tf_broadcaster, rover_frame, world_frame, pose_in_map, get_clock()->now());
 
