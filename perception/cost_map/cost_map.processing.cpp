@@ -7,9 +7,6 @@
 #include <stdexcept>
 
 namespace mrover {
-
-    constexpr static double IMU_WATCHDOG_TIMEOUT = 0.1;
-
     auto remap(double x, double inMin, double inMax, double outMin, double outMax) -> double {
         return (x - inMin) * (outMax - outMin) / (inMax - inMin) + outMin;
     }
@@ -97,10 +94,6 @@ namespace mrover {
 						continue;
 					}
 
-					if(index == 220){
-						RCLCPP_INFO_STREAM(get_logger(), std::format("x {} y {} z {}", pointInMap.x(), pointInMap.y(), pointInMap.z()));
-					}
-
                     bins[index].emplace_back(BinEntry{pointInCamera, pointInMap, normal, pointInMap.z() - roverSE3.z()});
                 }
             }
@@ -112,10 +105,9 @@ namespace mrover {
 
             for (std::size_t i = 0; i < mGlobalGridMsg.data.size(); ++i) {
 				Bin& bin = bins[i];
-                // IMPLEMENT "AVERAGE" OF NORMALS IN BIN COMBINED WITH PROJECTION
 				auto& cell = mGlobalGridMsg.data[i];
+
                 if (bin.size() >= 16){
-                    // RCLCPP_INFO_STREAM(get_logger(), "WHOOOOOOOOOO");
                     R3f avgNormal{};
                     for(auto& point : bin){
                         avgNormal += point.normal;
@@ -229,10 +221,12 @@ namespace mrover {
 				}
             }
 
+			/*
 			for(size_t i = 0; i < mGlobalGridMsg.data.size(); ++i){
                 RCLCPP_INFO_STREAM(get_logger(), std::format("{}: Post {} Pre {} Size {}", i, postProcesed.data[i], mGlobalGridMsg.data[i], bins[i].size()));
 				SE3Conversions::pushToTfTree(mTfBroadcaster, std::format("bin{}", i), "map", SE3d{R3d{mGlobalGridMsg.info.origin.position.x + mResolution * (i % mGlobalGridMsg.info.width), mGlobalGridMsg.info.origin.position.y + mResolution * (i / mGlobalGridMsg.info.height), 1}, SO3d::Identity()}, get_clock()->now());
 			}
+			*/
 
             mCostMapPub->publish(postProcesed);
             if(!mCostMapPub){

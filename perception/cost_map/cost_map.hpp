@@ -25,10 +25,6 @@ namespace mrover {
         rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr mCostMapPub;
         rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr mPcSub;
 
-        // TODO(quintin): This is a hack
-        // ros::Subscriber mImuSub;
-        // std::optional<ros::Time> mLastImuTime;
-
         double mZPercent{}, mZThreshold{};
         double mAlpha{};
         double mNearClip{}, mFarClip{}, mLeftClip{}, mRightClip{};
