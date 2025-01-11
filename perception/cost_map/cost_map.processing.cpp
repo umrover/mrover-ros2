@@ -134,15 +134,100 @@ namespace mrover {
 
 			// Square Dilate operation
             nav_msgs::msg::OccupancyGrid postProcesed = mGlobalGridMsg;
-            std::array<std::ptrdiff_t, 9> dis{0,
-                                              -1, +1, -postProcesed.info.width, +postProcesed.info.width,
-                                              -1 - postProcesed.info.width, +1 - postProcesed.info.width,
-                                              -1 + postProcesed.info.width, +1 + postProcesed.info.width};
+            std::array<std::ptrdiff_t, 9> disBottomLeft{0,
+												  +1, +postProcesed.info.width,
+												  +1 + postProcesed.info.width};
+
+            std::array<std::ptrdiff_t, 9> disTopLeft{0,
+												  +1, -postProcesed.info.width,
+												  +1 - postProcesed.info.width};
+
+            std::array<std::ptrdiff_t, 9> disBottomRight{0,
+												  -1, +postProcesed.info.width,
+												  -1 + postProcesed.info.width};
+
+            std::array<std::ptrdiff_t, 9> disTopRight{0,
+												  -1, -postProcesed.info.width,
+												  -1 - postProcesed.info.width};
+
+            std::array<std::ptrdiff_t, 9> disLeft{0,
+												  +1, -postProcesed.info.width, +postProcesed.info.width,
+												  +1 - postProcesed.info.width,
+												  +1 + postProcesed.info.width};
+
+            std::array<std::ptrdiff_t, 9> disBottom{0,
+												  -1, +1, +postProcesed.info.width,
+												  -1 + postProcesed.info.width, +1 + postProcesed.info.width};
+
+            std::array<std::ptrdiff_t, 9> disRight{0,
+												  -1, -postProcesed.info.width, +postProcesed.info.width,
+												  -1 - postProcesed.info.width,
+												  -1 + postProcesed.info.width};
+
+            std::array<std::ptrdiff_t, 9> disTop{0,
+												  -1, +1, -postProcesed.info.width,
+												  -1 - postProcesed.info.width, +1 - postProcesed.info.width};
+
+            std::array<std::ptrdiff_t, 9> disCenter{0,
+												  -1, +1, -postProcesed.info.width, +postProcesed.info.width,
+												  -1 - postProcesed.info.width, +1 - postProcesed.info.width,
+												  -1 + postProcesed.info.width, +1 + postProcesed.info.width};
+
+
+
             for (std::int64_t i = 0, msgSize = static_cast<std::int64_t>(mGlobalGridMsg.data.size()); i < msgSize; ++i) {
-                if (std::ranges::any_of(dis, [&](std::ptrdiff_t di) {
-                        std::int64_t j = i + di;
-                        return j >= 0 && j < msgSize && mGlobalGridMsg.data[j] > FREE_COST;
-                    })) postProcesed.data[i] = OCCUPIED_COST;
+				// Bounds Check on the dilation index
+				std::int64_t gridX = i % mGlobalGridMsg.info.width;
+				std::int64_t gridY = i / mGlobalGridMsg.info.height;
+
+				// IDK This is kinda cooked
+				if(gridX == 0 && gridY == 0){
+					if (std::ranges::any_of(disBottomLeft, [&](std::ptrdiff_t di) {
+							std::int64_t j = i + di;
+							return j >= 0 && j < msgSize && mGlobalGridMsg.data[j] > FREE_COST;
+						})) postProcesed.data[i] = OCCUPIED_COST;
+				}else if(gridX == 0 && gridY == mGlobalGridMsg.info.height - 1){
+					if (std::ranges::any_of(disTopLeft, [&](std::ptrdiff_t di) {
+							std::int64_t j = i + di;
+							return j >= 0 && j < msgSize && mGlobalGridMsg.data[j] > FREE_COST;
+						})) postProcesed.data[i] = OCCUPIED_COST;
+				}else if(gridX == mGlobalGridMsg.info.width - 1 && gridY == 0){
+					if (std::ranges::any_of(disBottomRight, [&](std::ptrdiff_t di) {
+							std::int64_t j = i + di;
+							return j >= 0 && j < msgSize && mGlobalGridMsg.data[j] > FREE_COST;
+						})) postProcesed.data[i] = OCCUPIED_COST;
+				}else if(gridX == mGlobalGridMsg.info.width - 1 && gridY == mGlobalGridMsg.info.height - 1){
+					if (std::ranges::any_of(disTopRight, [&](std::ptrdiff_t di) {
+							std::int64_t j = i + di;
+							return j >= 0 && j < msgSize && mGlobalGridMsg.data[j] > FREE_COST;
+						})) postProcesed.data[i] = OCCUPIED_COST;
+				}else if(gridX == 0){
+					if (std::ranges::any_of(disLeft, [&](std::ptrdiff_t di) {
+							std::int64_t j = i + di;
+							return j >= 0 && j < msgSize && mGlobalGridMsg.data[j] > FREE_COST;
+						})) postProcesed.data[i] = OCCUPIED_COST;
+				}else if(gridY == 0){
+					if (std::ranges::any_of(disBottom, [&](std::ptrdiff_t di) {
+							std::int64_t j = i + di;
+							return j >= 0 && j < msgSize && mGlobalGridMsg.data[j] > FREE_COST;
+						})) postProcesed.data[i] = OCCUPIED_COST;
+				}else if(gridX == mGlobalGridMsg.info.width - 1){
+					if (std::ranges::any_of(disRight, [&](std::ptrdiff_t di) {
+							std::int64_t j = i + di;
+							return j >= 0 && j < msgSize && mGlobalGridMsg.data[j] > FREE_COST;
+						})) postProcesed.data[i] = OCCUPIED_COST;
+				}else if (gridY == mGlobalGridMsg.info.height - 1){
+					if (std::ranges::any_of(disTop, [&](std::ptrdiff_t di) {
+							std::int64_t j = i + di;
+							return j >= 0 && j < msgSize && mGlobalGridMsg.data[j] > FREE_COST;
+						})) postProcesed.data[i] = OCCUPIED_COST;
+				}else{
+					if (std::ranges::any_of(disCenter, [&](std::ptrdiff_t di) {
+							std::int64_t j = i + di;
+							return j >= 0 && j < msgSize && mGlobalGridMsg.data[j] > FREE_COST;
+						})) postProcesed.data[i] = OCCUPIED_COST;
+				}
+
             }
 
 			for(size_t i = 0; i < mGlobalGridMsg.data.size(); ++i){
