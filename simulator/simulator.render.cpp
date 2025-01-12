@@ -550,8 +550,14 @@ namespace mrover {
         // TODO(quintin): Remote duplicate code
         for (StereoCamera& stereoCamera: mStereoCameras) {
             std::size_t imageSize = stereoCamera.base.resolution.x() * stereoCamera.base.resolution.y() * 4;
-            if (stereoCamera.pointCloudCallback) {
-                mWgpuInstance.processEvents();
+
+            if (stereoCamera.pointCloudFuture && stereoCamera.base.future) {
+                std::array<wgpu::FutureWaitInfo, 2> waitInfo;
+                waitInfo[0].future = stereoCamera.pointCloudFuture.value();
+                waitInfo[1].future = stereoCamera.base.future.value();
+                mWgpuInstance.waitAny(waitInfo.size(), waitInfo.data(), 0);
+
+                // If reading back the data from the GPU is complete, publish the data.
                 if (stereoCamera.pointCloudStagingBuffer.getMapState() == wgpu::BufferMapState::Mapped && stereoCamera.base.stagingBuffer.getMapState() == wgpu::BufferMapState::Mapped) {
                     {
                         // auto pointCloud = boost::shared_ptr<sensor_msgs::PointCloud2>{pointCloudPool.borrowFrom(), [](sensor_msgs::PointCloud2* msg) { pointCloudPool.returnTo(msg); }};
@@ -568,7 +574,7 @@ namespace mrover {
                         auto* toMessage = pointCloud->data.data();
                         std::memcpy(toMessage, fromCompute, stereoCamera.pointCloudStagingBuffer.getSize());
                         stereoCamera.pointCloudStagingBuffer.unmap();
-                        stereoCamera.pointCloudCallback = nullptr;
+                        stereoCamera.pointCloudFuture.reset();
 
                         stereoCamera.pcPub->publish(std::move(pointCloud));
                     }
@@ -588,13 +594,15 @@ namespace mrover {
                         auto* toMessage = image->data.data();
                         std::memcpy(toMessage, fromRender, stereoCamera.base.stagingBuffer.getSize());
                         stereoCamera.base.stagingBuffer.unmap();
-                        stereoCamera.base.callback = nullptr;
+                        stereoCamera.base.future.reset();
 
                         stereoCamera.base.imgPub->publish(std::move(image));
                     }
                 }
             }
-            if (!stereoCamera.pointCloudCallback && !stereoCamera.base.callback && stereoCamera.base.updateTask.shouldUpdate()) {
+
+            // Queue GPU compute jobs if there are none running.
+            if (!stereoCamera.pointCloudFuture && !stereoCamera.base.future && stereoCamera.base.updateTask.shouldUpdate()) {
                 {
                     colorAttachment.view = stereoCamera.base.colorTextureView;
                     normalAttachment.view = stereoCamera.base.normalTextureView;
@@ -637,10 +645,15 @@ namespace mrover {
                 }
             }
         }
+
         for (Camera& camera: mCameras) {
             std::size_t area = camera.resolution.x() * camera.resolution.y();
-            if (camera.callback) {
-                mWgpuInstance.processEvents();
+
+            if (camera.future) {
+                wgpu::FutureWaitInfo waitInfo;
+                waitInfo.future = camera.future.value();
+                mWgpuInstance.waitAny(1, &waitInfo, 0);
+
                 if (camera.stagingBuffer.getMapState() == wgpu::BufferMapState::Mapped) {
                     // auto image = boost::shared_ptr<sensor_msgs::Image>{imagePool.borrowFrom(), [](sensor_msgs::Image* msg) { imagePool.returnTo(msg); }};
                     auto image = std::make_unique<sensor_msgs::msg::Image>();
@@ -658,12 +671,13 @@ namespace mrover {
                     auto* toMessage = image->data.data();
                     std::memcpy(toMessage, fromRender, camera.stagingBuffer.getSize());
                     camera.stagingBuffer.unmap();
-                    camera.callback = nullptr;
+                    camera.future.reset();
 
                     camera.imgPub->publish(std::move(image));
                 }
             }
-            if (!camera.callback && camera.updateTask.shouldUpdate()) {
+
+            if (!camera.future && camera.updateTask.shouldUpdate()) {
                 colorAttachment.view = camera.colorTextureView;
                 normalAttachment.view = camera.normalTextureView;
                 depthStencilAttachment.view = camera.depthTextureView;
@@ -728,8 +742,7 @@ namespace mrover {
         if (!mIsHeadless) {
             wgpu::SurfaceTexture surfaceTexture;
             mSurface.getCurrentTexture(&surfaceTexture);
-            if (surfaceTexture.status != wgpu::SurfaceGetCurrentTextureStatus::Success)
-                throw std::runtime_error{"Failed to get WGPU surface texture"};
+            if (surfaceTexture.status != wgpu::SurfaceGetCurrentTextureStatus::Success) throw std::runtime_error{"Failed to get WGPU surface texture"};
 
             wgpu::TextureViewDescriptor nextTextureViewDescriptor;
             nextTextureViewDescriptor.format = COLOR_FORMAT;
@@ -792,33 +805,32 @@ namespace mrover {
             // Temporary fix...
             // See: https://issues.chromium.org/issues/338710345
             // This only happens on M2/M3 (M1 is fine)
-            bool isWorkDone = false;
-            auto workDoneCallback = mQueue.onSubmittedWorkDone([&isWorkDone](wgpu::QueueWorkDoneStatus const& status) {
-                if (status == wgpu::QueueWorkDoneStatus::Success) {
-                    isWorkDone = true;
-                }
-            });
-            while (!isWorkDone) {
-                mDevice.tick();
-            }
+            wgpu::QueueWorkDoneCallbackInfo2 info;
+            info.mode = wgpu::CallbackMode::WaitAnyOnly;
+            wgpu::Future workDoneFuture = mQueue.onSubmittedWorkDone2(info);
+            wgpu::FutureWaitInfo waitInfo;
+            waitInfo.future = workDoneFuture;
+            mWgpuInstance.waitAny(1, &waitInfo, 1'000'000'000'000);
         }
 #endif
 
         if (!mIsHeadless) mSurface.present();
 
+        wgpu::BufferMapCallbackInfo2 callbackInfo;
+        callbackInfo.mode = wgpu::CallbackMode::WaitAnyOnly;
+        callbackInfo.callback = [](WGPUMapAsyncStatus, char const*, void*, void*) -> void {};
+
         // TODO(quintin): Remote duplicate code
         for (StereoCamera& stereoCamera: mStereoCameras) {
             if (stereoCamera.base.needsMap) {
-                stereoCamera.pointCloudCallback = stereoCamera.pointCloudStagingBuffer.mapAsync(wgpu::MapMode::Read, 0, stereoCamera.pointCloudStagingBuffer.getSize(), [](wgpu::BufferMapAsyncStatus const&) {});
-
-                stereoCamera.base.callback = stereoCamera.base.stagingBuffer.mapAsync(wgpu::MapMode::Read, 0, stereoCamera.base.stagingBuffer.getSize(), [](wgpu::BufferMapAsyncStatus const&) {});
-
+                stereoCamera.pointCloudFuture = stereoCamera.pointCloudStagingBuffer.mapAsync2(wgpu::MapMode::Read, 0, stereoCamera.pointCloudStagingBuffer.getSize(), callbackInfo);
+                stereoCamera.base.future = stereoCamera.base.stagingBuffer.mapAsync2(wgpu::MapMode::Read, 0, stereoCamera.base.stagingBuffer.getSize(), callbackInfo);
                 stereoCamera.base.needsMap = false;
             }
         }
         for (Camera& camera: mCameras) {
             if (camera.needsMap) {
-                camera.callback = camera.stagingBuffer.mapAsync(wgpu::MapMode::Read, 0, camera.stagingBuffer.getSize(), [](wgpu::BufferMapAsyncStatus const&) {});
+                camera.future = camera.stagingBuffer.mapAsync2(wgpu::MapMode::Read, 0, camera.stagingBuffer.getSize(), callbackInfo);
                 camera.needsMap = false;
             }
         }

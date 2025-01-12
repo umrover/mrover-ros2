@@ -82,8 +82,9 @@ namespace mrover {
     struct URDF {
         struct LinkMeta {
             int index{};
-            boost::container::static_vector<Uniform<ModelUniforms>, 2> visualUniforms;
-            boost::container::static_vector<Uniform<ModelUniforms>, 2> collisionUniforms;
+            boost::container::small_vector<Uniform<ModelUniforms>, 2> visualUniforms;
+            boost::container::small_vector<Uniform<ModelUniforms>, 2> collisionUniforms;
+            Clock::time_point lastUpdate = Clock::now();
         };
 
         urdf::Model model;
@@ -145,7 +146,7 @@ namespace mrover {
 
         wgpu::Buffer stagingBuffer;
 
-        std::unique_ptr<wgpu::BufferMapCallback> callback;
+        std::optional<wgpu::Future> future;
         bool needsMap = false;
 
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -158,7 +159,7 @@ namespace mrover {
 
         wgpu::Buffer pointCloudStagingBuffer;
         wgpu::Buffer pointCloudBuffer;
-        std::unique_ptr<wgpu::BufferMapCallback> pointCloudCallback;
+        std::optional<wgpu::Future> pointCloudFuture;
 
         Uniform<ComputeUniforms> computeUniforms{};
         wgpu::BindGroup computeBindGroup;
@@ -263,6 +264,8 @@ namespace mrover {
 
         bool mIsHeadless{};
 
+        int64_t mMotorTimeoutMs{};
+
         // Rendering
 
         GlfwInstance mGlfwInstance;
@@ -316,7 +319,7 @@ namespace mrover {
 
             btTransform baseTransform;
             btVector3 baseVelocity;
-            boost::container::static_vector<LinkData, 32> links;
+            boost::container::small_vector<LinkData, 32> links;
         };
 
         int mSaveSelection = 0;
@@ -362,7 +365,7 @@ namespace mrover {
             }
 
             if (auto it = mUrdfs.find("rover"); it != mUrdfs.end()) {
-                URDF const& rover = it->second;
+                URDF& rover = it->second;
 
                 for (std::size_t i = 0; i < names.size(); ++i) {
                     std::string const& name = names[i];
@@ -375,7 +378,8 @@ namespace mrover {
                     }
 
                     std::string const& urdfName = it->second;
-                    URDF::LinkMeta const& linkMeta = rover.linkNameToMeta.at(urdfName);
+                    URDF::LinkMeta& linkMeta = rover.linkNameToMeta.at(urdfName);
+                    linkMeta.lastUpdate = Clock::now();
 
                     auto* motor = std::bit_cast<btMultiBodyJointMotor*>(rover.physics->getLink(linkMeta.index).m_userPtr);
                     assert(motor);

@@ -5,7 +5,7 @@ project(mrover VERSION 2025.0.0 LANGUAGES C CXX)
 cmake_policy(SET CMP0148 OLD)
 
 set(CMAKE_CXX_STANDARD 23)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 # Generate compile_commands.json for clangd language server.
 # Can be used by VSCode, CLion, VIM, etc.
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -16,10 +16,11 @@ option(MROVER_WARNINGS_AS_ERRORS "Treat warnings as errors" ${MROVER_CI})
 
 if (APPLE)
     # Ensures that homebrew packages are never used over miniforge packages.
+    # TODO (ali): Pretty sure this doesn't do anything on macs
     set(CMAKE_IGNORE_PATH /opt/homebrew)
     # Find mamba python
     find_package(PythonLibs REQUIRED)
-    link_libraries(${PYTHON_LIBRARIES})
+    # link_libraries(${PYTHON_LIBRARIES})
 endif ()
 
 if (CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
@@ -211,6 +212,7 @@ ament_target_dependencies(lie rclcpp geometry_msgs tf2 tf2_ros)
 
 mrover_add_header_only_library(units units)
 mrover_add_header_only_library(loop_profiler loop_profiler)
+mrover_add_header_only_library(parameter_utils parameter_utils)
 
 # Simulator
 
@@ -231,6 +233,46 @@ mrover_add_node(rover_gps_driver localization/rover_gps_driver.cpp)
 ament_target_dependencies(rover_gps_driver rclcpp sensor_msgs rtcm_msgs)
 
 # Perception
+
+find_package(ZED QUIET)
+find_package(CUDA QUIET)
+find_package(OpenCV REQUIRED)
+if(ZED_FOUND AND CUDA_FOUND)
+	enable_language(CUDA)
+	# CUDA Compile Options
+	add_library(cuda_compiler_flags INTERFACE)
+	target_compile_options(cuda_compiler_flags INTERFACE 
+		-Wno-pedantic 
+		-Wno-deprecated 
+		-Wno-unused-parameter 
+		-diag-suppress=815 
+		-diag-suppress=780 
+		-Wno-deprecated-copy 
+		-Wno-unused-command-line-argument 
+		-Wno-ignored-qualifiers 
+		-Wno-sometimes-uninitialized
+	)
+
+	# ZED Wrapper
+	mrover_add_node(zed perception/zed_wrapper/*.c* perception/zed_wrapper/pch.hpp)
+	target_compile_options(zed PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-std=c++20>)
+	target_link_libraries(zed parameter_utils lie MANIF::manif ${CUDA_LIBRARIES} loop_profiler cuda_compiler_flags)
+	ament_target_dependencies(zed rclcpp sensor_msgs ZED CUDA tf2 tf2_ros)
+
+	# Learning Library
+    # TODO(john): Update to use the new API
+	mrover_add_library(tensorrt tensorrt/*.c* tensorrt)
+	target_compile_options(tensorrt PRIVATE -Wno-deprecated-declarations $<$<COMPILE_LANGUAGE:CUDA>:-std=c++17>)
+	target_include_directories(tensorrt PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
+	target_link_libraries(tensorrt PRIVATE opencv_core opencv_dnn opencv_imgproc lie nvinfer nvonnxparser tbb cuda_compiler_flags)
+
+	# Object Detector
+	mrover_add_node(object_detector perception/object_detector/*.c* src/perception/object_detector/pch.hpp)
+    target_link_libraries(object_detector opencv_core opencv_dnn opencv_imgproc lie tbb tensorrt opencv_imgcodecs opencv_highgui loop_profiler parameter_utils cuda_compiler_flags)
+	ament_target_dependencies(object_detector rclcpp sensor_msgs CUDA tf2 tf2_ros)
+else()
+	message("ZED not found...")
+endif()
 
 mrover_add_node(tag_detector perception/tag_detector/*.cpp perception/tag_detector/pch.hpp)
 ament_target_dependencies(tag_detector rclcpp tf2 tf2_ros)
@@ -283,6 +325,7 @@ install(PROGRAMS
         superstructure/superstructure.py
         scripts/debug_course_publisher.py
 		scripts/visualizer.py
+		scripts/image_capture.py
 
         # starter project sources
         starter_project/autonomy/src/localization.py
