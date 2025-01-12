@@ -8,7 +8,7 @@ namespace mrover {
 		while(rclcpp::ok()){
             auto logger = rclcpp::get_logger("Wait");
             RCLCPP_INFO_STREAM(logger, "Entered Wait " <<  "\n");
-            sleepRate.sleep();
+            //sleepRate.sleep();
             RCLCPP_INFO_STREAM(logger, "Exiting Wait " <<  "\n");
 
 			return new TargetKey();
