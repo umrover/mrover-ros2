@@ -144,7 +144,8 @@ namespace mrover {
     auto Perception::getCenterFromTagCorners(std::vector<cv::Point2f> const& tagCorners) -> std::pair<float, float> { // NOLINT(*-convert-member-functions-to-static)
         std::pair<float, float> center;
         for (auto tagCorner: tagCorners) {
-            center = {(center.first + tagCorner.x) / 4, (center.second + tagCorner.y) / 4} * 10;
+            center.first = (center.first + tagCorner.x) / 4 * 10;
+            center.second = (center.second + tagCorner.y) / 4 * 10;
         }
         return center;
     }
