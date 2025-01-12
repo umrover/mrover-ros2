@@ -11,8 +11,8 @@
     </div>
     <div class="text-center">
       <button class="btn btn-danger" @click="$emit('delete', { index: index })">Delete</button>
-      <button class="btn btn-danger" @click="$emit('find', { index: index })">Find</button>
-      <button class="btn btn-danger" @click="$emit('search', {index: index})">Search</button>
+      <button class="btn btn-success" @click="$emit('find', { index: index })">Find</button>
+      <button class="btn btn-success" @click="$emit('search', {index: index})">Search</button>
     </div>
   </div>
 </template>

@@ -112,7 +112,7 @@ export default {
       required: true
     },
     droneWaypointButton: {
-      type: Object,
+      type: Boolean,
       required: false
     }
   },
@@ -151,7 +151,7 @@ export default {
       setOdomFormat: 'setOdomFormat'
     }),
 
-    deleteItem: function (payload: { index: any }) {
+    deleteItem: function (payload: { index: number }) {
       if (this.highlightedWaypoint == payload.index) {
         this.setHighlightedWaypoint(-1)
       }
@@ -177,7 +177,6 @@ export default {
     },
 
     findWaypoint: function (payload: { index: number }) {
-      console.log("find: ", payload.index)
       if (payload.index === this.highlightedWaypoint) {
         this.setHighlightedWaypoint(-1)
       } else {
@@ -186,7 +185,6 @@ export default {
     },
 
     searchForWaypoint: function (payload: { index: number }) {
-      console.log("index: ", payload.index)
       if (payload.index === this.searchWaypoint) {
         this.setSearchWaypoint(-1)
       } else {

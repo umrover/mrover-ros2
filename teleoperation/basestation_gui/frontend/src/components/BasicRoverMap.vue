@@ -88,8 +88,8 @@
               odomPath: [],
               dronePath: [],
               findRover: false,
-              drone_latitude_deg:42.293195,
-              drone_longitude_deg:-83.7096706,
+              drone_latitude_deg:38.406029,
+              drone_longitude_deg:-110.7923723,
               circle: null, //search radius
           }
       },
@@ -249,8 +249,13 @@
           },
 
           searchWaypoint(newIndex) {
-            let waypoint = this.waypointList[newIndex];
-            if(!this.circle) this.circle = L.circle(waypoint.latLng, {radius: 200}).addTo(this.map);
+            if(newIndex === -1){
+                this.map.removeLayer(this.circle);
+                this.circle = null;
+                return;
+            }
+            const waypoint = this.waypointList[newIndex];
+            if(!this.circle) this.circle = L.circle(waypoint.latLng, {radius: 20}).addTo(this.map);
             else this.circle.setLatLng(waypoint.latLng)
             this.circle.setStyle({fillColor: 'purple', stroke: false})
           }

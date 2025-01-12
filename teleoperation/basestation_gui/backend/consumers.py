@@ -15,6 +15,7 @@ import numpy as np
 from backend.drive_controls import send_joystick_twist
 from backend.input import DeviceInputs
 from geometry_msgs.msg import Twist, Vector3
+from sensor_msgs.msg import NavSatFix
 from lie import SE3
 from mrover.msg import Throttle, Position, IK
 from backend.ra_controls import send_ra_controls
@@ -39,6 +40,7 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.thr_pub = node.create_publisher(Throttle, "arm_throttle_cmd",1)
         self.ee_pos_pub = node.create_publisher(IK, "ee_pos_cmd",1)
         self.ee_vel_pub = node.create_publisher(Vector3, "ee_vel_cmd",1) #changed
+        self.forward_ros_topic("drone_waypoint", NavSatFix, "drone_waypoint")
 
         self.buffer = Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.buffer, node)
