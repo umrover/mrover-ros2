@@ -77,6 +77,10 @@ class Navigation(Node):
                 ("single_tag.tag_stop_threshold", Parameter.Type.DOUBLE),
                 ("single_tag.post_avoidance_multiplier", Parameter.Type.DOUBLE),
                 ("single_tag.post_radius", Parameter.Type.DOUBLE),
+                ("recovery.stop_threshold", Parameter.Type.DOUBLE),
+                ("recovery.drive_forward_threshold", Parameter.Type.DOUBLE),
+                ("recovery.recovery_distance", Parameter.Type.DOUBLE),
+                ("recovery.give_up_time", Parameter.Type.DOUBLE)
             ],
         )
 

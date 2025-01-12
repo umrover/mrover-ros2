@@ -44,7 +44,7 @@ navigation:
       traversable_cost: 0.2
       update_delay: 1.0
       safe_approach_distance: 5.0
-      a_star_thresh: 0.15
+      a_star_thresh: 0.10
       costmap_thresh: 0.25
       angle_thresh: 0.0872665 #pi/36 radians / 5 degrees
 
@@ -60,6 +60,12 @@ navigation:
     ref_alt: 0.0
     world_frame: "map"
     rover_frame: "base_link"
+    
+    recovery:
+      stop_threshold: 0.2
+      drive_forward_threshold: 0.34
+      recovery_distance: 2.0
+      give_up_time: 10.0
 
 stuck_detector:
   ros__parameters:
@@ -74,12 +80,6 @@ stuck_detector:
     linear_vel_thresh: 0.16
     # Clear the window if the time since last data is greater than this
     data_watchdog_timeout: 1.0
-
-recovery:
-  stop_threshold: 0.2
-  drive_forward_threshold: 0.34
-  recovery_distance: 2.0
-  give_up_time: 10.0
 
 debug_course_publisher:
   ros__parameters:

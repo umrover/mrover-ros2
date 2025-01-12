@@ -301,7 +301,10 @@ class AStar:
             # Determine whether the relative difference between A* and Euclidean distances exceeds the threshold
             follow_astar = abs(astar_dist - eucl_dist) / eucl_dist > self.A_STAR_THRESH
 
-
+        if follow_astar:
+            context.node.get_logger().info(f"Following A* path")
+        else:
+            context.node.get_logger().info(f"Not following A* path")
         return follow_astar
             
         

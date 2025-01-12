@@ -16,7 +16,7 @@ simulator:
       rover:
         type: urdf
         uri: package://mrover/urdf/rover/rover.urdf.xacro
-        position: [ 0.0, -9.0, -0.1 ]
+        position: [ 0.0, 0.0, 0.1 ]
       world:
         type: urdf
         uri: package://mrover/urdf/world/world.urdf.xacro
