@@ -20,7 +20,13 @@ namespace mrover {
 
     auto mapToGrid(Eigen::Vector3f const& positionInMap, nav_msgs::msg::OccupancyGrid const& grid) -> int {
         Eigen::Vector2f origin{grid.info.origin.position.x, grid.info.origin.position.y};
-        Eigen::Vector2f gridFloat = (positionInMap.head<2>() - origin) / grid.info.resolution;
+        Eigen::Vector2f gridFloat = (positionInMap.head<2>() - origin);
+
+        // checking for out of bounds points
+        if(gridFloat.x() < 0 || gridFloat.x() > static_cast<float>(grid.info.width) * grid.info.resolution || 
+            gridFloat.y() < 0 || gridFloat.y() > static_cast<float>(grid.info.height) * grid.info.resolution) return -1;        
+
+        gridFloat /= grid.info.resolution;
         int gridX = std::floor(gridFloat.x());
         int gridY = std::floor(gridFloat.y());
         return gridY * static_cast<int>(grid.info.width) + gridX;
@@ -146,8 +152,10 @@ namespace mrover {
                                               -1 + postProcesed.info.width, +1 + postProcesed.info.width};
             for (std::size_t i = 0; i < mGlobalGridMsg.data.size(); ++i) {
                 if (std::ranges::any_of(dis, [&](std::ptrdiff_t di) {
+                        
+
                         std::int64_t j = static_cast<int64_t>(i) + di;
-                        return j < static_cast<int64_t>(mGlobalGridMsg.data.size()) && mGlobalGridMsg.data[j] > FREE_COST;
+                        return j < static_cast<int64_t>(mGlobalGridMsg.data.size()) && mGlobalGridMsg.data[j] == OCCUPIED_COST;// > FREE_COST;
                     })) postProcesed.data[i] = OCCUPIED_COST;
             }
             mCostMapPub->publish(postProcesed);
