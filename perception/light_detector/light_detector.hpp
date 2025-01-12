@@ -60,6 +60,8 @@ namespace mrover {
 		auto static convertPointCloudToRGB(sensor_msgs::msg::PointCloud2::ConstSharedPtr const& msg, cv::Mat const& image) -> void;
 
 		auto publishDetectedObjects(cv::InputArray image, std::vector<std::pair<int, int>> const& centroids) -> void;
+		
+		auto publishClosestLight(std::pair<int, int> &point) -> void;
 
 		auto static rgb_to_hsv(cv::Vec3b const& rgb) -> cv::Vec3d;
 
@@ -68,6 +70,10 @@ namespace mrover {
 		void increaseHitCount(std::optional<SE3d> const& light);
 
 		void decreaseHitCounts();
+
+		auto caching() -> std::pair<std::pair<int, int>, bool>;
+
+		auto calculateDistance(const std::pair<int, int> &p) -> double;
 
 		auto getHitCount(std::optional<SE3d> const& light) -> int;
 

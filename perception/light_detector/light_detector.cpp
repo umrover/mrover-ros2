@@ -22,6 +22,7 @@ namespace mrover{
                 {"light_detector/hit_increase", mHitIncrease, 5},
                 {"light_detector/hit_decrease", mHitDecrease, 2},
                 {"light_detector/hit_max", mHitMax, 100},
+				{"light_detector/m_publish_threshold", mPublishThreshold, 50},
                 {"light_detector/upper_bound_h", upperBoundH, 0},
 				{"light_detector/upper_bound_s", upperBoundS, 0},
 				{"light_detector/upper_bound_v", upperBoundV, 0},
