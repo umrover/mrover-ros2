@@ -2,11 +2,9 @@
 #include <memory>
 #include <thread>
 
+#include "key_detector.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "rclcpp_action/rclcpp_action.hpp"
-#include "rclcpp_components/register_node_macro.hpp"
-
-#include "action_tutorials_cpp/visibility_control.h"
 
 class KeyActionServer : public rclcpp::Node
 {

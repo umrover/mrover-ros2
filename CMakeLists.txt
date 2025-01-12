@@ -156,6 +156,9 @@ message(STATUS "Found message files: ${MROVER_MESSAGE_FILE_PATHS}")
 file(GLOB_RECURSE MROVER_SERVICE_FILE_PATHS RELATIVE ${CMAKE_CURRENT_LIST_DIR} CONFIGURE_DEPENDS srv/*.srv)
 message(STATUS "Found service files: ${MROVER_SERVICE_FILE_PATHS}")
 
+file(GLOB_RECURSE MROVER_ACTION_FILE_PATHS RELATIVE ${CMAKE_CURRENT_LIST_DIR} CONFIGURE_DEPENDS action/*.action)
+message(STATUS "Found action files: ${MROVER_ACTION_FILE_PATHS}")
+
 # Starter Project
 message(STATUS "PROJ NAME: ${PROJECT_NAME}")
 
@@ -172,6 +175,7 @@ message(STATUS "Found message files: ${MROVER_MESSAGE_FILE_PATHS}")
 rosidl_generate_interfaces(${PROJECT_NAME}
         ${MROVER_MESSAGE_FILE_PATHS}
         ${MROVER_SERVICE_FILE_PATHS}
+        ${MROVER_ACTION_FILE_PATHS}
         DEPENDENCIES nav_msgs sensor_msgs geometry_msgs
 )
 
@@ -273,7 +277,7 @@ endif()
 # Key Detector
 mrover_add_node(key_detector perception/key_detector/*.c* src/perception/key_detector/pch.hpp)
 target_link_libraries(key_detector loop_profiler parameter_utils state_machine)
-ament_target_dependencies(key_detector rclcpp sensor_msgs tf2 tf2_ros)
+ament_target_dependencies(key_detector rclcpp rclcpp_action sensor_msgs tf2 tf2_ros)
 
 
 mrover_add_node(tag_detector perception/tag_detector/*.cpp perception/tag_detector/pch.hpp)
