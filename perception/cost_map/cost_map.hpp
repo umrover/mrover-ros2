@@ -32,6 +32,7 @@ namespace mrover {
 
         rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr mCostMapPub;
         rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr mPcSub;
+        rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr mPcPub;
 
         double mZPercent{}, mZThreshold{};
         double mAlpha{};

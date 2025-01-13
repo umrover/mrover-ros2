@@ -104,6 +104,7 @@ namespace mrover {
 				uploadPC();
 			}
 
+
             for (std::size_t i = 0; i < mGlobalGridMsg.data.size(); ++i) {
 				Bin& bin = bins[i];
 				auto& cell = mGlobalGridMsg.data[i];
@@ -129,7 +130,8 @@ namespace mrover {
 					stdDevZNormalInCamera /= static_cast<float>(bin.size());
 					stdDevZPoseInCamera /= static_cast<float>(bin.size());
 
-                    RCLCPP_INFO_STREAM(get_logger(), std::format("Normal Z avg {} std. dev. {}; Pose Z avg {} std. dev. {} num points {}", avgNormal.z(), stdDevZNormalInCamera, avgPoseInCamera.z(), stdDevZPoseInCamera, bin.size()));
+					/*
+                    RCLCPP_INFO_STREAM(get_logger(), std::format("Bin {} Normal Z avg {} std. dev. {}; Pose Z avg {} std. dev. {} num points {}", i, avgNormal.z(), stdDevZNormalInCamera, avgPoseInCamera.z(), stdDevZPoseInCamera, bin.size()));
 
 					float prediction = x0 + x1 * avgNormal.z() + x2 * stdDevZNormalInCamera + x3 * avgPoseInCamera.z() + x4 * stdDevZPoseInCamera + x5 * static_cast<float>(bin.size());
 					RCLCPP_INFO_STREAM(get_logger(), std::format("pred {}", prediction));
@@ -138,6 +140,30 @@ namespace mrover {
 					std::string s;
 					while(s != "y" && s != "n"){
 						std::cin >> s;
+						auto debugPointCloudPtr = std::make_unique<sensor_msgs::msg::PointCloud2>();
+						fillPointCloudMessageHeader(debugPointCloudPtr);
+						debugPointCloudPtr->is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
+						debugPointCloudPtr->is_dense = true;
+						debugPointCloudPtr->height = 1;
+						debugPointCloudPtr->width = bin.size();
+						debugPointCloudPtr->header.frame_id = "zed_left_camera_frame";
+						debugPointCloudPtr->data.resize(bin.size() * sizeof(Point));
+						auto pcPtr = reinterpret_cast<Point*>(debugPointCloudPtr->data.data());
+						std::size_t i = 0;
+						for (auto const& p: bin) {
+							pcPtr[i].x = p.pointInCamera.x();
+							pcPtr[i].y = p.pointInCamera.y();
+							pcPtr[i].z = p.pointInCamera.z();
+							pcPtr[i].b = 0;
+							pcPtr[i].g = 0;
+							pcPtr[i].r = 255;
+							pcPtr[i].a = 255;
+							++i;
+						}
+						mPcPub->publish(std::move(debugPointCloudPtr));
+						for(size_t i = 0; i < mGlobalGridMsg.data.size(); ++i){
+							SE3Conversions::pushToTfTree(mTfBroadcaster, std::format("bin{}", i), "map", SE3d{R3d{mGlobalGridMsg.info.origin.position.x + mResolution * (i % mGlobalGridMsg.info.width), mGlobalGridMsg.info.origin.position.y + mResolution * (i / mGlobalGridMsg.info.height), 1}, SO3d::Identity()}, get_clock()->now());
+						}
 					}
 					float label = (s == "y") ? 1 : -1;
 					if(prediction * label <= 0){
@@ -151,6 +177,7 @@ namespace mrover {
 					}else{
 						RCLCPP_INFO_STREAM(get_logger(), "Correct");
 					}
+					*/
 
                     std::int8_t cost = avgNormal.z() < mZThreshold ? OCCUPIED_COST : FREE_COST;
 
@@ -259,10 +286,6 @@ namespace mrover {
             }
 
 			/*
-			for(size_t i = 0; i < mGlobalGridMsg.data.size(); ++i){
-                RCLCPP_INFO_STREAM(get_logger(), std::format("{}: Post {} Pre {} Size {}", i, postProcesed.data[i], mGlobalGridMsg.data[i], bins[i].size()));
-				SE3Conversions::pushToTfTree(mTfBroadcaster, std::format("bin{}", i), "map", SE3d{R3d{mGlobalGridMsg.info.origin.position.x + mResolution * (i % mGlobalGridMsg.info.width), mGlobalGridMsg.info.origin.position.y + mResolution * (i / mGlobalGridMsg.info.height), 1}, SO3d::Identity()}, get_clock()->now());
-			}
 			*/
 
             mCostMapPub->publish(postProcesed);

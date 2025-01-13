@@ -16,12 +16,13 @@ namespace mrover {
             {"right_clip", mLeftClip, 2.0},
             {"z_percent", mZPercent, 0.2},
             {"alpha", mAlpha, 0.05},
-            {"z_threshold", mZThreshold, 0.4}
+            {"z_threshold", mZThreshold, 0.5}
         };
 
         ParameterWrapper::declareParameters(this, params);
 
         mCostMapPub = create_publisher<nav_msgs::msg::OccupancyGrid>("costmap", 1); // We publish our results to "costmap"
+		mPcPub = create_publisher<sensor_msgs::msg::PointCloud2>("costmap/points", 1);
 
         mServer = create_service<mrover::srv::MoveCostMap>("move_cost_map", [this](mrover::srv::MoveCostMap::Request::ConstSharedPtr request, 
                                                                                                           mrover::srv::MoveCostMap::Response::SharedPtr response) {
@@ -32,9 +33,6 @@ namespace mrover {
         });
 
         mPCDebugPub = create_publisher<sensor_msgs::msg::PointCloud2>("cost_map/debug_pc", 1);
-        // mImuSub = mNh.subscribe<sensor_msgs::Imu>("imu/data", 1, [this](sensor_msgs::ImuConstPtr const&) {
-        //     mLastImuTime = ros::Time::now();
-        // });
         RCLCPP_INFO_STREAM(get_logger(), std::format("frame: {}", mMapFrame));
         mGlobalGridMsg.info.resolution = mResolution;
         mGlobalGridMsg.info.width = static_cast<int>(mSize / mResolution);
