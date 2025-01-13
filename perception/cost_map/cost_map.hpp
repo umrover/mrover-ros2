@@ -11,6 +11,14 @@ namespace mrover {
 
         constexpr static double TAU = 2 * std::numbers::pi;
 
+		// Perceptron Alg
+		float x0 = 0;
+		float x1 = 0;
+		float x2 = 0;
+		float x3 = 0;
+		float x4 = 0;
+		float x5 = 0;
+
 		// Noise/Debug Vars
 		constexpr static bool useNoisyPointCloud = false;
 		constexpr static bool uploadDebugPointCloud = true;

@@ -3,6 +3,7 @@
 #include <Eigen/src/Core/Matrix.h>
 #include <format>
 #include <memory>
+#include <cmath>
 #include <rclcpp/logging.hpp>
 #include <stdexcept>
 
@@ -118,17 +119,39 @@ namespace mrover {
                     avgNormal.normalize();
 					avgPoseInCamera.normalize();
 
-					double stdDevZNormalInCamera{};
-					double stdDevZPoseInCamera{};
+					float stdDevZNormalInCamera{};
+					float stdDevZPoseInCamera{};
                     for(auto& point : bin){
-						stdDevZNormalInCamera += pow(point.normal.z() - avgNormal.z(), 2);
-						stdDevZPoseInCamera += pow(point.pointInCamera.z() - avgPoseInCamera.z(), 2);
+						stdDevZNormalInCamera += std::pow(point.normal.z() - avgNormal.z(), 2);
+						stdDevZPoseInCamera += std::pow(point.pointInCamera.z() - avgPoseInCamera.z(), 2);
                     }
 
-					stdDevZNormalInCamera /= static_cast<double>(bin.size());
-					stdDevZPoseInCamera /= static_cast<double>(bin.size());
+					stdDevZNormalInCamera /= static_cast<float>(bin.size());
+					stdDevZPoseInCamera /= static_cast<float>(bin.size());
 
-                    RCLCPP_INFO_STREAM(get_logger(), std::format("Normal Z avg {} std. dev. {}; Pose Z avg {} std. dev. {}", avgNormal.z(), stdDevZNormalInCamera, avgPoseInCamera.z(), stdDevZPoseInCamera));
+                    RCLCPP_INFO_STREAM(get_logger(), std::format("Normal Z avg {} std. dev. {}; Pose Z avg {} std. dev. {} num points {}", avgNormal.z(), stdDevZNormalInCamera, avgPoseInCamera.z(), stdDevZPoseInCamera, bin.size()));
+
+					float prediction = x0 + x1 * avgNormal.z() + x2 * stdDevZNormalInCamera + x3 * avgPoseInCamera.z() + x4 * stdDevZPoseInCamera + x5 * static_cast<float>(bin.size());
+					RCLCPP_INFO_STREAM(get_logger(), std::format("pred {}", prediction));
+
+					// Update weights
+					std::string s;
+					while(s != "y" && s != "n"){
+						std::cin >> s;
+					}
+					float label = (s == "y") ? 1 : -1;
+					if(prediction * label <= 0){
+						RCLCPP_INFO_STREAM(get_logger(), "Incorrect");
+						x0 += label;
+						x1 += label * avgNormal.z();
+						x2 += label * stdDevZNormalInCamera;
+						x3 += label * avgPoseInCamera.z();
+						x4 += label * stdDevZPoseInCamera;
+						x5 += label * static_cast<float>(bin.size());
+					}else{
+						RCLCPP_INFO_STREAM(get_logger(), "Correct");
+					}
+
                     std::int8_t cost = avgNormal.z() < mZThreshold ? OCCUPIED_COST : FREE_COST;
 
                     // Update cell with EWMA acting as a low-pass filter
