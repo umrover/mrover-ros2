@@ -22,8 +22,7 @@ namespace mrover {
 
 		double mImmediateLightRange{};
 
-		std::unordered_map<std::tuple<int, int,int>, int, PairHash> mHitCounts;
-
+		std::unordered_map<std::pair<int, int>, int, PairHash> mHitCounts;
 
 		int mHitIncrease{};
 		int mHitDecrease{};
@@ -49,6 +48,7 @@ namespace mrover {
 		// Pub Sub
 		rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr imgSub;
 		rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr imgPub;
+		rclcpp::Publisher<geometry_msgs::msg::Vector3>::SharedPtr pointPub;
 
 		// The number of lights that we push into the TF
         unsigned int numLightsSeen = 0;
@@ -60,14 +60,22 @@ namespace mrover {
 		auto static convertPointCloudToRGB(sensor_msgs::msg::PointCloud2::ConstSharedPtr const& msg, cv::Mat const& image) -> void;
 
 		auto publishDetectedObjects(cv::InputArray image, std::vector<std::pair<int, int>> const& centroids) -> void;
+		
+		auto publishClosestLight(std::pair<int, int> &point) -> void;
 
 		auto static rgb_to_hsv(cv::Vec3b const& rgb) -> cv::Vec3d;
 
 		auto spiralSearchForValidPoint(sensor_msgs::msg::PointCloud2::ConstSharedPtr const& cloudPtr, std::size_t u, std::size_t v, std::size_t width, std::size_t height) const -> std::optional<SE3d>;
 
+		auto getPointFromPointCloud(sensor_msgs::msg::PointCloud2::ConstSharedPtr const& cloudPtr, std::pair<int, int> coordinates) -> std::optional<SE3d>;
+
 		void increaseHitCount(std::optional<SE3d> const& light);
 
 		void decreaseHitCounts();
+
+		auto caching() -> std::pair<std::pair<int, int>, bool>;
+
+		auto calculateDistance(const std::pair<int, int> &p) -> double;
 
 		auto getHitCount(std::optional<SE3d> const& light) -> int;
 

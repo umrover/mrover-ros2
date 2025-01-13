@@ -1,10 +1,11 @@
 #include "light_detector.hpp"
+#include <cfloat>
+#include <cmath>
 #include <execution>
 #include <manif/impl/se3/SE3.h>
 #include <opencv2/core/types.hpp>
 #include <opencv2/imgproc.hpp>
 #include <optional>
-#include <tuple>
 
 namespace mrover {
     // TODO: (john) break this out into a utility so we dont have to copy all of this code
@@ -17,6 +18,23 @@ namespace mrover {
             pixel[1] = pointPtr[i].g;
             pixel[2] = pointPtr[i].b;
         });
+    }
+
+    auto LightDetector::getPointFromPointCloud(sensor_msgs::msg::PointCloud2::ConstSharedPtr const& cloudPtr, std::pair<int, int> coordinates) -> std::optional<SE3d>{
+        /* auto* pointPtr = reinterpret_cast<Point const*>(msg->data.data());
+        RCLCPP_INFO_STREAM(get_logger(),"SIZE: " << msg->data.size());
+        auto msgWidth = msg->width;
+        RCLCPP_INFO_STREAM(get_logger(),"WIDTH: " << msg->width);
+        RCLCPP_INFO_STREAM(get_logger(),"HEIGHT: " << msg->height);
+        RCLCPP_INFO_STREAM(get_logger(),"X: " << coordinates.second << " Y: " << coordinates.first);
+         */
+        cv::Point3d const& p = reinterpret_cast<cv::Point3d const*>(cloudPtr->data.data())[coordinates.second + coordinates.first * cloudPtr->width];
+        if (!std::isfinite(p.x) || !std::isfinite(p.y) || !std::isfinite(p.z)){
+            //RCLCPP_INFO_STREAM(get_logger(),"failed");
+            return std::nullopt;
+        }
+        RCLCPP_INFO_STREAM(get_logger(),"x: " << p.x << " y: " << p.y << " z: " << p.z);
+        return std::make_optional<SE3d>(R3d{p.x, p.y, p.z}, SO3d::Identity());
     }
     
     auto LightDetector::imageCallback(sensor_msgs::msg::PointCloud2::ConstSharedPtr const& msg) -> void {
@@ -38,7 +56,8 @@ namespace mrover {
         cv::Mat mGBlur;
         cv::Mat mThresholdedImg;
         cv::GaussianBlur(mGreyScale, mGBlur, cv::Size(5,5), 0);
-        cv::threshold(mGBlur,mThresholdedImg,0,255,cv::THRESH_BINARY+cv::THRESH_OTSU);
+        cv::threshold(mGBlur,mThresholdedImg,250,255,cv::THRESH_BINARY);
+        //cv::threshold(mGBlur,mThresholdedImg,0,255,cv::THRESH_BINARY+cv::THRESH_OTSU);
 
         // applies dilation, uses structuring element to expand highlighted regions
         // erodes, to refine shape of highlighted regions
@@ -65,8 +84,9 @@ namespace mrover {
 		std::vector<std::pair<int, int>> centroids; // These are in image space
 		centroids.resize(contours.size());
 
-        RCLCPP_INFO_STREAM(get_logger(),"Number of contours " << contours.size());
+        //RCLCPP_INFO_STREAM(get_logger(),"Number of contours " << contours.size());
     
+
 		for(std::size_t i = 0; i < contours.size(); ++i){
 			auto const& vec = contours[i];
 			auto& centroid = centroids[i]; // first = row, second = col
@@ -75,17 +95,25 @@ namespace mrover {
 			for(auto const& point : vec){
 				centroid.first += point.y;
 				centroid.second += point.x;
-			}
+            }
 
 			// This is protected division since vec will only exist if it contains points
 			centroid.first /= static_cast<int>(vec.size());
 			centroid.second /= static_cast<int>(vec.size());
 
             // If the position of the light is defined, then push it into the TF tree
-            std::optional<SE3d> lightInCamera = spiralSearchForValidPoint(msg, centroid.second, centroid.first, SPIRAL_SEARCH_DIM, SPIRAL_SEARCH_DIM);
+            //std::optional<SE3d> lightInCamera = spiralSearchForValidPoint(msg, centroid.second, centroid.first, SPIRAL_SEARCH_DIM, SPIRAL_SEARCH_DIM);
             
-            //RCLCPP_INFO_STREAM(get_logger(),"Contour " << i << " has " << lightInCamera.has_value());
-            if(lightInCamera){
+            std::optional<SE3d> lightInCamera = getPointFromPointCloud(msg, centroid);
+            if(lightInCamera.has_value()){
+                auto lightTranslation = lightInCamera.value().translation();
+                int x = static_cast<int>(lightTranslation.x());
+                int y = static_cast<int>(lightTranslation.y()); 
+                int z = static_cast<int>(lightTranslation.z()); 
+                //RCLCPP_INFO_STREAM(get_logger(),"X: " << x << " Y: " << y << " Z: " << z);  
+            }
+            
+            if(lightInCamera){ 
                 ++numLightsSeen;
                 std::string immediateLightFrame = std::format("immediateLight{}", numLightsSeen);
                 if(lightInCamera.value().translation().norm() < mImmediateLightRange && getHitCount(lightInCamera) > mPublishThreshold) {
@@ -97,14 +125,71 @@ namespace mrover {
             }
 		}
 
-        printHitCounts();
-
-        caching();
+        //printHitCounts();
 
         decreaseHitCounts();
 
+        std::pair<std::pair<int, int>, bool> foundPoint = caching();
+        if(foundPoint.second){
+            publishClosestLight(foundPoint.first);
+        }
+
 		publishDetectedObjects(mOutputImage, centroids);
 	}
+    
+    auto LightDetector::caching() -> std::pair<std::pair<int, int>, bool>{
+        //double shortest_distance = DBL_MAX;
+        double shortest_distance = std::numeric_limits<double>::infinity();
+        bool found = false;
+        std::pair<int, int> closest;
+        //RCLCPP_INFO_STREAM(get_logger(),"num points: " << mHitCounts.size());
+        for(auto const& [point, hc] : mHitCounts){
+            //RCLCPP_INFO_STREAM(get_logger(),"current point: " << point.first << ", " << point.second << ": " << hc);
+            double distance;
+            if(hc >= 10){ //DANTODO: ASK appropriate hitcount requirement to be considered a light
+                found = true;
+                distance = calculateDistance(point);
+                if(distance <= shortest_distance){
+                    shortest_distance = distance;
+                    closest = point;
+                    //RCLCPP_INFO_STREAM(get_logger(),"Found a new point!, distance was " << distance);
+                    //RCLCPP_INFO_STREAM(get_logger(),"This new point was at " << point.first << ", " << point.second);
+                }
+            }
+            if(found){
+                //RCLCPP_INFO_STREAM(get_logger(),"Finished with a new point!");
+            } else{
+                //RCLCPP_INFO_STREAM(get_logger(),"Didn't find a new point :(");
+            }
+        }
+        return std::pair<std::pair<int, int>, bool>(closest, found);
+    }
+
+    auto LightDetector::calculateDistance(const std::pair<int, int> &p) -> double{
+        double distance = sqrt(pow(p.first, 2) + pow(p.second, 2));
+        //RCLCPP_INFO_STREAM(get_logger(),"Calculating Distance..." << p.first << ", " << p.second);
+        return distance;
+    }
+
+	// auto LightDetector::caching() -> void{
+	// 	for (auto const& [id, tag]: mTags) {
+    //         if (tag.hitCount >= mMinHitCountBeforePublish && tag.tagInCam) {
+    //             try {
+    //                 // Use the TF tree to transform the tag from the camera frame to the map frame
+    //                 // Then publish it in the map frame persistently
+    //                 std::string immediateFrameId = std::format("immediateTag{}", tag.id);
+    //                 SE3d tagInParent = SE3Conversions::fromTfTree(mTfBuffer, immediateFrameId, mMapFrameId);
+    //                 SE3Conversions::pushToTfTree(mTfBroadcaster, std::format("tag{}", tag.id), mMapFrameId, tagInParent);
+    //             } catch (tf2::ExtrapolationException const&) {
+    //                 NODELET_WARN("Old data for immediate tag");
+    //             } catch (tf2::LookupException const&) {
+    //                 NODELET_WARN("Expected transform for immediate tag");
+    //             } catch (tf2::ConnectivityException const&) {
+    //                 NODELET_WARN("Expected connection to odom frame. Is visual odometry running?");
+    //             }
+    //         }
+    //     }
+	// }
 
     auto LightDetector::getHitCount(std::optional<SE3d> const& light) -> int {
         if(light.has_value()){
@@ -115,9 +200,8 @@ namespace mrover {
             auto location = lightInMap.translation();
             int x = static_cast<int>(location.x());
             int y = static_cast<int>(location.y());
-            int z = static_cast<int>(location.z());
 
-            std::tuple<int,int,int>key{x, y, z};
+            std::pair<int, int> key{x, y};
 
             return mHitCounts[key];
         }
@@ -127,20 +211,26 @@ namespace mrover {
     void LightDetector::increaseHitCount(std::optional<SE3d> const& light){
         if(light.has_value()){
             SE3d cameraToMap = SE3Conversions::fromTfTree(mTfBuffer, mCameraFrame, mWorldFrame);
-
+            
+            /* auto lightLocation = light.value().translation();
+            int locx = static_cast<int>(lightLocation.x());
+            int locy = static_cast<int>(lightLocation.y());
+            RCLCPP_INFO_STREAM(get_logger(),"current point: " << locx << ", " << locy);
+            */
+            
             SE3d lightInMap = cameraToMap * light.value();
 
             auto location = lightInMap.translation();
             int x = static_cast<int>(location.x());
             int y = static_cast<int>(location.y());
-            int z = static_cast<int>(location.z());
 
             std::pair<int, int> key{x, y};
-
-            mHitCounts[key] = std::min(mHitCounts[key] + mHitIncrease, mHitMax);
+            //RCLCPP_INFO_STREAM(get_logger(),"current point: " << x << ", " << y);
+            mHitCounts[key] = std::min(mHitCounts[key] + mHitIncrease, mHitMax);  //DANTODO why are values being stored as int pairs instead of more precise measures?
         }
     }
 
+    //DANTODO: ASK
     void LightDetector::decreaseHitCounts(){
         for(auto& [_, hitCount] : mHitCounts){
             hitCount = std::max(hitCount - mHitDecrease, 0);
@@ -153,35 +243,13 @@ namespace mrover {
         // }
     }
 
-    """Publish the detected poses that exceed hit threshold. 
-        Publish as a Vector3Array"""
-    auto LightDetector::caching() {
-        std::int64_t minLightHitCountBeforePublish = get_parameter("min_light_hit_count_before_publish").as_int();
-        std::tuple<int, int, int> closestLight;
-        int minDistance = std::numeric_limits<int>::max();
-
-        for (auto const& light : mHitCounts) {
-            if (light.second >= minLightHitCountBeforePublish && calcDistance(light.first) < minDistance) {
-                minDistance = calcDistance(light.first);
-                closestLight = light.first;
-            }
-        }
-        // SE3Conversions::pushToTfTree(mTfBroadcaster, immediateLightFrame, mCameraFrame, closestLight, this->get_clock()->now());
-        lightPose = std::make_optional<SE3d>(R3d{std::get<0>(closestLight), std::get<1>(closestLight), std::get<2>(closestLight)}, SO3d::Identity());
-        SE3Conversions::pushToTfTree(mTfBroadcaster, "closestLightPose{}", mCameraFrame, lightPose, this->get_clock()->now());
-    }
-
-    auto LightDetector::calcDistance(tuple<int, int, int> mPoint) -> std::float {
-        float distance = cmath::pow(std::get<0>(mPoint),2) + cmath::pow(std::get<1>(mPoint),2) + cmath::pow(std::get<2>(mPoint),2);
-        return distance;
-    }
-    
     auto LightDetector::publishDetectedObjects(cv::InputArray image, std::vector<std::pair<int, int>> const& centroids) -> void {
         //if (!imgPub.getNumSubscribers()) return;
 
 		sensor_msgs::msg::Image imgMsg;
+        mrover::msg::Vector3Array poseMsg;
 
-        imgMsg.header.stamp = this->get_clock()->now();
+        imgMsg.header.stamp = this->get_clock()->now(); //ros origionally, but changed to this, not sure if it works.
         imgMsg.height = image.rows();
         imgMsg.width = image.cols();
         imgMsg.encoding = sensor_msgs::image_encodings::BGRA8;
@@ -198,6 +266,14 @@ namespace mrover {
 		cv::Scalar const MARKER_COLOR = {255, 0, 0, 0};
 
         auto point = mHitCounts.begin();
+
+        
+        // for(size_t i = 0; i < mHitCounts.size(); i++) {
+        //     poseMsg.x = point->first.first;
+        //     poseMsg.y = point->first.second;
+        //     point++;
+        //     pointPub->publish(poseMsg);
+        // }
         
 		for(auto const& centroid : centroids){
 			cv::circle(debugImageWrapper, {centroid.second, centroid.first}, MARKER_RADIUS, MARKER_COLOR);
@@ -205,6 +281,16 @@ namespace mrover {
 
         imgPub->publish(imgMsg);
     }
+
+    auto LightDetector::publishClosestLight(std::pair<int, int> &point) -> void {
+        geometry_msgs::msg::Vector3 pointMsg;
+        pointMsg.x = point.first;
+        pointMsg.y = point.second;
+        pointMsg.z = 0;
+        pointPub->publish(pointMsg);
+        //RCLCPP_INFO_STREAM(get_logger(),"Published point " << point.first << ", " << point.second);
+    }
+
 
     auto LightDetector::spiralSearchForValidPoint(sensor_msgs::msg::PointCloud2::ConstSharedPtr const& cloudPtr, std::size_t u, std::size_t v, std::size_t width, std::size_t height)const -> std::optional<SE3d> {
         // See: https://stackoverflow.com/a/398302
@@ -228,7 +314,7 @@ namespace mrover {
                 // Could be error cause of double instead of int
                 cv::Point3d const& point = reinterpret_cast<cv::Point3d const*>(cloudPtr->data.data())[ix + iy * cloudPtr->width];
                 if (!std::isfinite(point.x) || !std::isfinite(point.y) || !std::isfinite(point.z)) continue;
-
+                RCLCPP_INFO_STREAM(get_logger(),"X: " << point.x << " Y: " << point.y << " Z: " << point.z);
                 return std::make_optional<SE3d>(R3d{point.x, point.y, point.z}, SO3d::Identity());
             }
 

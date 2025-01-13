@@ -22,6 +22,7 @@ namespace mrover{
                 {"light_detector/hit_increase", mHitIncrease, 5},
                 {"light_detector/hit_decrease", mHitDecrease, 2},
                 {"light_detector/hit_max", mHitMax, 100},
+				{"light_detector/m_publish_threshold", mPublishThreshold, 50},
                 {"light_detector/upper_bound_h", upperBoundH, 0},
 				{"light_detector/upper_bound_s", upperBoundS, 0},
 				{"light_detector/upper_bound_v", upperBoundV, 0},
@@ -38,7 +39,7 @@ namespace mrover{
 		imgSub = create_subscription<sensor_msgs::msg::PointCloud2>("/zed/left/points", 1, [this](sensor_msgs::msg::PointCloud2::ConstSharedPtr const& msg) {
 			LightDetector::imageCallback(msg);
 		});
-		imgPub = this->create_publisher<sensor_msgs::msg::Image>("/light_detector/light_img", 1);
+		imgPub = this->create_publisher<sensor_msgs::msg::Image>("/light_detector/img", 1);
 		pointPub = this->create_publisher<geometry_msgs::msg::Vector3>("/light_detector/light_poses", 1);
 	}
 
