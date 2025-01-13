@@ -109,12 +109,26 @@ namespace mrover {
 
                 if (bin.size() >= 16){
                     R3f avgNormal{};
+					R3f avgPoseInCamera{};
                     for(auto& point : bin){
                         avgNormal += point.normal;
+                        avgPoseInCamera += point.pointInCamera;
                     }
 
                     avgNormal.normalize();
-                    RCLCPP_INFO_STREAM(get_logger(), std::format("Normal Z {}", avgNormal.z()));
+					avgPoseInCamera.normalize();
+
+					double stdDevZNormalInCamera{};
+					double stdDevZPoseInCamera{};
+                    for(auto& point : bin){
+						stdDevZNormalInCamera += pow(point.normal.z() - avgNormal.z(), 2);
+						stdDevZPoseInCamera += pow(point.pointInCamera.z() - avgPoseInCamera.z(), 2);
+                    }
+
+					stdDevZNormalInCamera /= static_cast<double>(bin.size());
+					stdDevZPoseInCamera /= static_cast<double>(bin.size());
+
+                    RCLCPP_INFO_STREAM(get_logger(), std::format("Normal Z avg {} std. dev. {}; Pose Z avg {} std. dev. {}", avgNormal.z(), stdDevZNormalInCamera, avgPoseInCamera.z(), stdDevZPoseInCamera));
                     std::int8_t cost = avgNormal.z() < mZThreshold ? OCCUPIED_COST : FREE_COST;
 
                     // Update cell with EWMA acting as a low-pass filter
