@@ -110,76 +110,15 @@ namespace mrover {
 				auto& cell = mGlobalGridMsg.data[i];
 
                 if (bin.size() >= 16){
-                    R3f avgNormal{};
-					R3f avgPoseInCamera{};
+					std::size_t count = 0;
+					
+
                     for(auto& point : bin){
-                        avgNormal += point.normal;
-                        avgPoseInCamera += point.pointInCamera;
+						if(point.pointInCamera.z() > -0.3 && point.normal.z() < mZThreshold)
+							++count;
                     }
 
-                    avgNormal.normalize();
-					avgPoseInCamera.normalize();
-
-					float stdDevZNormalInCamera{};
-					float stdDevZPoseInCamera{};
-                    for(auto& point : bin){
-						stdDevZNormalInCamera += std::pow(point.normal.z() - avgNormal.z(), 2);
-						stdDevZPoseInCamera += std::pow(point.pointInCamera.z() - avgPoseInCamera.z(), 2);
-                    }
-
-					stdDevZNormalInCamera /= static_cast<float>(bin.size());
-					stdDevZPoseInCamera /= static_cast<float>(bin.size());
-
-					/*
-                    RCLCPP_INFO_STREAM(get_logger(), std::format("Bin {} Normal Z avg {} std. dev. {}; Pose Z avg {} std. dev. {} num points {}", i, avgNormal.z(), stdDevZNormalInCamera, avgPoseInCamera.z(), stdDevZPoseInCamera, bin.size()));
-
-					float prediction = x0 + x1 * avgNormal.z() + x2 * stdDevZNormalInCamera + x3 * avgPoseInCamera.z() + x4 * stdDevZPoseInCamera + x5 * static_cast<float>(bin.size());
-					RCLCPP_INFO_STREAM(get_logger(), std::format("pred {}", prediction));
-
-					// Update weights
-					std::string s;
-					while(s != "y" && s != "n"){
-						std::cin >> s;
-						auto debugPointCloudPtr = std::make_unique<sensor_msgs::msg::PointCloud2>();
-						fillPointCloudMessageHeader(debugPointCloudPtr);
-						debugPointCloudPtr->is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
-						debugPointCloudPtr->is_dense = true;
-						debugPointCloudPtr->height = 1;
-						debugPointCloudPtr->width = bin.size();
-						debugPointCloudPtr->header.frame_id = "zed_left_camera_frame";
-						debugPointCloudPtr->data.resize(bin.size() * sizeof(Point));
-						auto pcPtr = reinterpret_cast<Point*>(debugPointCloudPtr->data.data());
-						std::size_t i = 0;
-						for (auto const& p: bin) {
-							pcPtr[i].x = p.pointInCamera.x();
-							pcPtr[i].y = p.pointInCamera.y();
-							pcPtr[i].z = p.pointInCamera.z();
-							pcPtr[i].b = 0;
-							pcPtr[i].g = 0;
-							pcPtr[i].r = 255;
-							pcPtr[i].a = 255;
-							++i;
-						}
-						mPcPub->publish(std::move(debugPointCloudPtr));
-						for(size_t i = 0; i < mGlobalGridMsg.data.size(); ++i){
-							SE3Conversions::pushToTfTree(mTfBroadcaster, std::format("bin{}", i), "map", SE3d{R3d{mGlobalGridMsg.info.origin.position.x + mResolution * (i % mGlobalGridMsg.info.width), mGlobalGridMsg.info.origin.position.y + mResolution * (i / mGlobalGridMsg.info.height), 1}, SO3d::Identity()}, get_clock()->now());
-						}
-					}
-					float label = (s == "y") ? 1 : -1;
-					if(prediction * label <= 0){
-						RCLCPP_INFO_STREAM(get_logger(), "Incorrect");
-						x0 += label;
-						x1 += label * avgNormal.z();
-						x2 += label * stdDevZNormalInCamera;
-						x3 += label * avgPoseInCamera.z();
-						x4 += label * stdDevZPoseInCamera;
-						x5 += label * static_cast<float>(bin.size());
-					}else{
-						RCLCPP_INFO_STREAM(get_logger(), "Correct");
-					}
-					*/
-
-                    std::int8_t cost = avgNormal.z() < mZThreshold ? OCCUPIED_COST : FREE_COST;
+                    std::int8_t cost = count > 20 ? OCCUPIED_COST : FREE_COST;
 
                     // Update cell with EWMA acting as a low-pass filter
                     cell = static_cast<std::int8_t>(mAlpha * cost + (1 - mAlpha) * cell);
