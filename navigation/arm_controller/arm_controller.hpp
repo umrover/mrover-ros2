@@ -2,6 +2,8 @@
 
 #include "pch.hpp"
 
+#include <manif/impl/se3/SE3.h>
+
 namespace mrover {
 
     class ArmController final : public rclcpp::Node {
@@ -9,7 +11,8 @@ namespace mrover {
         [[maybe_unused]] rclcpp::Subscription<msg::IK>::SharedPtr mIkSub;
         // TODO: declare a new subscriber for the velocity commands (topic: "ee_vel_cmd") and the joint state (topic: "arm_joint_data")
         // Hint: to figure out what the message type is, use the command ros2 topic info <topic_name>
-
+        rclcpp::Subscription<geometry_msgs::msg::Vector3>::SharedPtr mVector3;
+        rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr mJointState;
         rclcpp::Publisher<msg::Position>::SharedPtr mPosPub;
         tf2_ros::TransformBroadcaster mTfBroadcaster{this};
         tf2_ros::Buffer mTfBuffer{get_clock()};
@@ -42,7 +45,8 @@ namespace mrover {
 
         void ikCallback(msg::IK::ConstSharedPtr const& ik_target);
         void velCallback(geometry_msgs::msg::Vector3::ConstSharedPtr const& ik_vel);
-        void fkCallback(sensor_msgs::msg::JointState::ConstSharedPtr const& joint_state);
+        void fkCallback(const sensor_msgs::msg::JointState::ConstSharedPtr& joint_state);
+
     };
 
 } // namespace mrover

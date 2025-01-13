@@ -9,16 +9,20 @@ namespace mrover {
             ikCallback(msg);
         });
 
-        // TODO: create a new subscription for the topic "ee_vel_cmd"
+        // Subscription for velocity commands
+        mVector3 = create_subscription<geometry_msgs::msg::Vector3>("ee_vel_cmd", 1, [this](geometry_msgs::msg::Vector3::ConstSharedPtr const& msg) {
+            velCallback(msg);
+        });
 
-        // TODO: create a new subscription for the topic "arm_joint_data" - this will be used to determine the current position of the arm
+        // Subscription for joint states
+        mJointState = create_subscription<sensor_msgs::msg::JointState>("arm_joint_data", 1, [this](sensor_msgs::msg::JointState::ConstSharedPtr const& msg) {
+            fkCallback(msg);
+        });
     }
-
     auto yawSo3(double r) -> SO3d {
         auto q = Eigen::Quaterniond{Eigen::AngleAxisd{r, R3d::UnitY()}};
         return {q.normalized()};
     }
-
     auto ArmController::ikCalc(SE3d target) -> std::optional<msg::Position> {
         double x = target.translation().x() - END_EFFECTOR_LENGTH; // shift back by the length of the end effector
         double y = target.translation().y();
@@ -58,13 +62,67 @@ namespace mrover {
     }
 
     void ArmController::velCallback(geometry_msgs::msg::Vector3::ConstSharedPtr const& ik_vel) {
-        // TODO: implement this function using the "carrot on a stick" approach
+        
+        // "Carrot on a stick" approach for controlling arm movement using velocity
+        const double increment = 0.1;
+        SE3d mCurrentEndEffector;
+        SE3d currentPosition = mCurrentEndEffector;
+
+        Eigen::Vector3d velocityVector{ik_vel->x, ik_vel->y, ik_vel->z};
+
+        Eigen::Vector3d incrementVector = velocityVector * increment;
+        SE3d newTargetPosition = currentPosition;
+        newTargetPosition.translation() = newTargetPosition.translation() + incrementVector;
+
+        std::optional<msg::Position> positions = ikCalc(newTargetPosition);
+
+        if (positions) {
+            mPosPub->publish(positions.value());
+            mCurrentEndEffector = newTargetPosition;
+
+            // Print the current end effector position after velocity update
+            double x_total = newTargetPosition.translation().x();
+            double y_total = newTargetPosition.translation().y();
+            double z_total = newTargetPosition.translation().z();
+            RCLCPP_INFO(get_logger(), "End effector position after velocity update: x=%.3f, y=%.3f, z=%.3f", x_total, y_total, z_total);
+        } else {
+            RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1000, "Failed to calculate IK");
+        }
     }
 
+
     void ArmController::fkCallback(sensor_msgs::msg::JointState::ConstSharedPtr const& joint_state) {
-        // TODO: implement forward kinematics here to determine the position of the end of the arm based on the joint angles
-        // HINT: compute the position of each link of the arm one at a time
-        // NOTE: you will need to add the constant JOINT_C_OFFSET to the angle for joint c
+        SE3d mCurrentEndEffector;
+
+        if (joint_state->position.size() < 4) {
+            RCLCPP_ERROR(get_logger(), "Not enough joints");
+            return;
+        }
+
+        double joint_a = joint_state->position[0]; 
+        double joint_b = joint_state->position[1]; 
+        double joint_c = joint_state->position[2]; 
+        double joint_de_pitch = joint_state->position[3]; 
+
+        joint_c += JOINT_C_OFFSET;
+
+        double x_link_bc = LINK_BC * std::cos(joint_b);
+        double z_link_bc = LINK_BC * std::sin(joint_b);
+
+        double x_link_cd = LINK_CD * std::cos(joint_b + joint_c);
+        double z_link_cd = LINK_CD * std::sin(joint_b + joint_c);
+
+        double x_link_de = LINK_DE * std::cos(joint_b + joint_c + joint_de_pitch);
+        double z_link_de = LINK_DE * std::sin(joint_b + joint_c + joint_de_pitch);
+
+        double x_total = x_link_bc + x_link_cd + x_link_de;
+        double z_total = z_link_bc + z_link_cd + z_link_de;
+        double y_total = joint_a; 
+
+        mCurrentEndEffector = SE3d{{x_total, y_total, z_total}, SO3d::Identity()};
+
+        RCLCPP_INFO(get_logger(), "End effector position: x=%.3f, y=%.3f, z=%.3f", x_total, y_total, z_total);
+
     }
 
     void ArmController::ikCallback(msg::IK::ConstSharedPtr const& ik_target) {
@@ -84,7 +142,7 @@ namespace mrover {
         if (positions) {
             mPosPub->publish(positions.value());
         } else {
-            RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1000, "IK Positon Control Failed");
+            RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1000, "IK Position Control Failed");
         }
     }
 
