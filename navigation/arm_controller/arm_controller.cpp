@@ -49,12 +49,13 @@ namespace mrover {
             q2 >= JOINT_C_MIN && q2 <= JOINT_C_MAX &&
             q3 >= JOINT_DE_PITCH_MIN && q3 <= JOINT_DE_PITCH_MAX) {
             msg::Position positions;
-            positions.names = {"joint_a", "joint_b", "joint_c", "joint_de_pitch"};
+            positions.names = {"joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_roll"};
             positions.positions = {
                     static_cast<float>(y),
                     static_cast<float>(q1),
                     static_cast<float>(q2),
                     static_cast<float>(q3),
+                    0.f
             };
             return positions;
         }
