@@ -20,7 +20,12 @@ from geometry_msgs.msg import Vector3Stamped, Vector3
 from rclpy import Parameter
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
-from sensor_msgs.msg import NavSatFix
+from sensor_msgs.msg import NavSatFix, Imu
+import tf2_ros
+
+from message_filters import TimeSynchronizer
+from lie.conversions import to_tf_tree, SE3
+
 
 
 class GPSLinearization(Node):
@@ -44,14 +49,30 @@ class GPSLinearization(Node):
         self.pos_pub = self.create_publisher(Vector3Stamped, "linearized_position", 10)
 
         self.fix_sub = self.create_subscription(NavSatFix, "gps/fix", self.single_gps_callback, 10)
+        self.orientation_sub = self.create_subscription(Imu, "zed_imu/data_raw", self.single_gps_callback, 10)
 
-    def single_gps_callback(self, msg: NavSatFix):
-        if np.isnan([msg.latitude, msg.longitude, msg.altitude]).any():
+        self.tf_broadcaster = tf2_ros.transform_broadcaster(self) 
+
+        self.sync = TimeSynchronizer([self.fix_sub, self.orientation_sub], 10)
+        self.sync.registerCallback(self.synced_gps_imu_callback)
+
+
+    def synced_gps_imu_callback(self, gps_msg: NavSatFix, imu_msg: Imu):
+        if np.isnan([gps_msg.latitude, gps_msg.longitude, gps_msg.altitude]).any():
             self.get_logger().warn("Received NaN GPS data, ignoring")
             return
+        
+        x, y, z = geodetic2enu(gps_msg.latitude, gps_msg.longitude, gps_msg.altitude, self.ref_lat, self.ref_lon, self.ref_alt, deg=True)
+        se3 = SE3(translation=(x, y, z), quaternion=(imu_msg.orientation.x, imu_msg.orientation.y, imu_msg.orientation.z, imu_msg.orientation.w))
 
-        x, y, _ = geodetic2enu(msg.latitude, msg.longitude, 0.0, self.ref_lat, self.ref_lon, self.ref_alt, deg=True)
-        self.pos_pub.publish(Vector3Stamped(header=msg.header, vector=Vector3(x=x, y=y)))
+        to_tf_tree(
+            tf_broadcaster=self.tf_broadcaster,
+            se3=se3,
+            child_frame="baselink",
+            parent_frame=self.world_frame
+        )
+
+        self.get_logger.info(f"Published Transform: Position({x}, {y}), Orientation({imu_msg.orientation})")
 
 
 def main() -> None:
