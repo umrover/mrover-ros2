@@ -4,7 +4,7 @@
 
 namespace mrover {
 
-	auto State1::onLoop() -> State*{
+	auto Wait::onLoop() -> State*{
 		while(rclcpp::ok()){
             auto logger = rclcpp::get_logger("Wait");
             RCLCPP_INFO_STREAM(logger, "Entered Wait " <<  "\n");

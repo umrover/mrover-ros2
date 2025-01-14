@@ -1,5 +1,4 @@
 #include "State1.hpp"
-
 namespace mrover {
 	State1::State1(int _numLoops) : numLoops{_numLoops}{}
 
