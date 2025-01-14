@@ -48,8 +48,8 @@ class GPSLinearization(Node):
 
         self.pos_pub = self.create_publisher(Vector3Stamped, "linearized_position", 10)
 
-        self.fix_sub = self.create_subscription(NavSatFix, "gps/fix", self.single_gps_callback, 10)
-        self.orientation_sub = self.create_subscription(Imu, "zed_imu/data_raw", self.single_gps_callback, 10)
+        self.fix_sub = self.create_subscription(NavSatFix, "gps/fix", self.synced_gps_imu_callback, 10)
+        self.orientation_sub = self.create_subscription(Imu, "zed_imu/data_raw", self.synced_gps_imu_callback, 10)
 
         self.tf_broadcaster = tf2_ros.transform_broadcaster(self) 
 
