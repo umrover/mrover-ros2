@@ -1,7 +1,7 @@
-- name: Install NVIDIA Drivers
-  become: True
-  apt:
-    name: nvidia-driver-{{driver_edition}}
+# - name: Install NVIDIA Drivers
+#   become: True
+#   apt:
+#     name: nvidia-driver-{{driver_edition}}
 
 - name: Download CUDA Keyring
   get_url:
