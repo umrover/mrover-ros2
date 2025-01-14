@@ -63,7 +63,7 @@ class GPSLinearization(Node):
             return
         
         x, y, z = geodetic2enu(gps_msg.latitude, gps_msg.longitude, gps_msg.altitude, self.ref_lat, self.ref_lon, self.ref_alt, deg=True)
-        se3 = SE3(translation=(x, y, z), quaternion=(imu_msg.orientation.x, imu_msg.orientation.y, imu_msg.orientation.z, imu_msg.orientation.w))
+        se3 = SE3(translation=(x, y, z), quat=(imu_msg.orientation.x, imu_msg.orientation.y, imu_msg.orientation.z, imu_msg.orientation.w))
 
         to_tf_tree(
             tf_broadcaster=self.tf_broadcaster,
