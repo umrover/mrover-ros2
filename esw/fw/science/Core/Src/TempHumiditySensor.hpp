@@ -21,14 +21,18 @@ namespace mrover {
 			uint8_t command[3] = {0xAC, 0x33, 0x00};
 			status = HAL_I2C_Master_Transmit(i2c, (dev_addr << 1), command, 3, 100);
 			if (status != HAL_OK){
-				Error_Handler();
+				temp = -1;
+				humidity = -1;
+				return;
 			}
 
 			HAL_Delay(100);
 
 			status = HAL_I2C_Master_Receive(i2c, (dev_addr << 1) | 0x01, buf, 6, 100);
 			if (status != HAL_OK){
-				Error_Handler();
+				temp = -1;
+				humidity = -1;
+				return;
 			}
 
 			HAL_Delay(100);
