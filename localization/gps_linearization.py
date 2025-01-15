@@ -72,7 +72,7 @@ class GPSLinearization(Node):
             parent_frame=self.world_frame
         )
 
-        self.get_logger().info(f"Published to TF Tree: Position({x}, {y}), Orientation({imu_msg.orientation})")
+        self.get_logger().info(f"Published to TF Tree: Position({x}, {y}, {z}), Orientation({imu_msg.orientation})")
 
 
 def main() -> None:
