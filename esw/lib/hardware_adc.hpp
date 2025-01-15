@@ -1,8 +1,6 @@
 #pragma once
 
 #include "main.h"
-#include "messaging.hpp"
-
 #include <bit>
 #include <concepts>
 #include <cstdint>
@@ -11,8 +9,6 @@
 #include <vector>
 
 namespace mrover {
-
-
     class ADCSensor {
     public:
         ADCSensor() = default;
@@ -26,14 +22,28 @@ namespace mrover {
             return m_values.at(channel);
         }
 
-        void update() {
-            HAL_ADC_Start_DMA(m_hadc, reinterpret_cast<uint32_t*>(m_values.data()), m_channels);
+        uint16_t get_raw_channel_blocking() {
+        	if (HAL_ADC_Start(m_hadc) != HAL_OK)
+			{
+				Error_Handler();
+			}
+
+			if (HAL_ADC_PollForConversion(m_hadc, HAL_MAX_DELAY) == HAL_OK)
+			{
+				return HAL_ADC_GetValue(m_hadc);
+			}
+
+			return 0;
         }
 
-    private:
-        ADC_HandleTypeDef* m_hadc;
-        uint8_t m_channels;
-        std::vector<uint32_t> m_values;
-    };
+		void update() {
+			HAL_ADC_Start_DMA(m_hadc, reinterpret_cast<uint32_t*>(m_values.data()), m_channels);
+		}
 
-} // namespace mrover
+	private:
+		ADC_HandleTypeDef* m_hadc;
+		uint8_t m_channels;
+		std::vector<uint32_t> m_values;
+	};
+
+}

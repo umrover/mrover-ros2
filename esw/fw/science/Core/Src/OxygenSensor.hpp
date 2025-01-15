@@ -34,6 +34,8 @@ namespace mrover {
 				HAL_I2C_DeInit(i2c);
 				HAL_Delay(5);
 				HAL_I2C_Init(i2c);
+				percent = -1;
+				return percent;
 			}
 
 			percent = (calibration_multiplier * (((float)buf[0]) + ((float)buf[1] / 10.0) + ((float)buf[2] / 100.0))); // Could be that the 20.9/120.00 is not the correct value for _Key
