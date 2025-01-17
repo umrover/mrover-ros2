@@ -20,50 +20,43 @@ simulator:
       world:
         type: urdf
         uri: package://mrover/urdf/world/world.urdf.xacro
-      tag_0:
-        type: urdf
-        uri: package://mrover/urdf/world/tag_0.urdf.xacro
-        position: [ 11.0, 3.0, 0.7 ]
-      tag_1:
-        type: urdf
-        uri: package://mrover/urdf/world/tag_1.urdf.xacro
-        position: [ 15.0, -14.0, 2.4 ]
-      bottle:
-        type: urdf
-        uri: package://mrover/urdf/world/bottle.urdf.xacro
-        position: [ 16.0, 18.0, 0.5 ]
+      # tag_0:
+      #   type: urdf
+      #   uri: package://mrover/urdf/world/tag_0.urdf.xacro
+      #   position: [ 11.0, 3.0, 0.7 ]
+      # tag_1:
+      #   type: urdf
+      #   uri: package://mrover/urdf/world/tag_1.urdf.xacro
+      #   position: [ 15.0, -14.0, 2.4 ]
+      # bottle:
+      #   type: urdf
+      #   uri: package://mrover/urdf/world/bottle.urdf.xacro
+      #   position: [ 16.0, 18.0, 0.5 ]
       rock1:
         type: urdf
         uri: package://mrover/urdf/world/small_rock.urdf.xacro
-        position: [ 3.5, -3.0, 0.35 ]
+        position: [ 1.85, -1.85, 0.35 ]
       rock2:
         type: urdf
         uri: package://mrover/urdf/world/small_rock.urdf.xacro
-        position: [ 4.0, -5.0, 0.35 ]
+        position: [ 2.9, 1.2, 0.35 ]
       rock3:
         type: urdf
         uri: package://mrover/urdf/world/small_rock.urdf.xacro
-        position: [ 3.0, -4.0, 0.35 ]
+        position: [ -2.9, 2.9, 0.35 ]
       rock4:
         type: urdf
         uri: package://mrover/urdf/world/small_rock.urdf.xacro
-        position: [ 2.0, -2.0, 0.35 ]
+        position: [ -4.3, -1.8, 0.35 ]
       rock5:
           type: urdf
           uri: package://mrover/urdf/world/small_rock.urdf.xacro
-          position: [ 4.0, -2.0, 0.35 ]
+          position: [ -2.25, -5.25, 0.35 ]
       rock6:
           type: urdf
           uri: package://mrover/urdf/world/small_rock.urdf.xacro
-          position: [ 13.0, 13.0, 0.35 ]
-      rock7:
-          type: urdf
-          uri: package://mrover/urdf/world/small_rock.urdf.xacro
-          position: [ 15.0, 13.0, 0.35 ]
-      rock8:
-          type: urdf
-          uri: package://mrover/urdf/world/small_rock.urdf.xacro
-          position: [ -12.0, -12.0, 0.35 ]
+          position: [ 2.5, 6.0, 0.35 ]
+
 
     # TODO(quintin): Avoid storing these in multiple config files
     ref_lat: 38.4225202
