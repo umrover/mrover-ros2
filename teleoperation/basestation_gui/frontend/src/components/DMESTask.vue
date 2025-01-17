@@ -134,6 +134,9 @@ export default defineComponent({
     ...mapActions('websocket', ['sendMessage']),
     cancelIK: function() {
       this.sendMessage({ type: 'cancel_click_ik' })
+    },
+    togglePlanar: function() {
+      this.sendMessaage({type: 'toggle_planar'})
     }
   },
 
@@ -143,6 +146,12 @@ export default defineComponent({
 
       this.cancelIK(event)
     })
+  },
+
+  craeted: function() {
+    if (this.isPlanarOn) {
+      this.togglePlanar()
+    }
   }
 })
 </script>
