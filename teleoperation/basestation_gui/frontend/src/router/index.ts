@@ -47,11 +47,7 @@ const routes = [
   {
     path: '/Cameras',
     name: 'Cameras',
-    component: Cameras,
-    props: {
-      isSA: false,
-      mission: 'other'
-    }
+    component: Cameras
   },
   {
     path: '/Control',
