@@ -5,12 +5,17 @@
 
 namespace mrover{
 	class Wait : public State {
+	public:
+
+		using KeyAction = mrover::action::KeyAction;
+		using GoalHandleKeyAction = rclcpp_action::ServerGoalHandle<KeyAction>;
+
+		explicit Wait(const std::shared_ptr<GoalHandleKeyAction> _goal);
+
+		auto onLoop() -> State* override;
 	private:
         // milliseconds ?
 		rclcpp::Rate sleepRate;
-	public:
-		explicit Wait();
-
-		auto onLoop() -> State* override;
+		const std::shared_ptr<GoalHandleKeyAction> goal;
 	};
 }

@@ -1,9 +1,6 @@
 
 #include "key_detector.hpp"
 
-
-  using KeyAction = mrover::action::KeyAction;
-  using GoalHandleKeyAction = rclcpp_action::ServerGoalHandle<KeyAction>;
   using KeyActionServer = mrover::KeyActionServer;
 
   KeyActionServer::KeyActionServer(const rclcpp::NodeOptions & options)
