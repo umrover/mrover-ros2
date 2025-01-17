@@ -66,6 +66,7 @@ class Navigation(Node):
                 ("search.coverage_radius", Parameter.Type.DOUBLE),
                 ("search.segments_per_rotation", Parameter.Type.INTEGER),
                 ("search.distance_between_spirals", Parameter.Type.DOUBLE),
+                ("search.max_segment_length", Parameter.Type.DOUBLE),
                 ("search.traversable_cost", Parameter.Type.DOUBLE),
                 ("search.update_delay", Parameter.Type.DOUBLE),
                 ("search.safe_approach_distance", Parameter.Type.DOUBLE),

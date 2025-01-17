@@ -36,6 +36,9 @@ class SearchState(State):
             path_start=self.prev_target_pos_in_map,
         )
         if arrived:
+            if target_position_in_map is not None and self.prev_target_pos_in_map is not None:
+                context.node.get_logger().info(np.sqrt((target_position_in_map[0] - self.prev_target_pos_in_map[0]) ** 2 + (target_position_in_map[1] - self.prev_target_pos_in_map[1]) ** 2))
+
             self.prev_target_pos_in_map = target_position_in_map
             # If we finish the spiral without seeing the tag, move on with course
             if SearchState.trajectory.increment_point():
@@ -48,13 +51,13 @@ class SearchState(State):
         else:
             self.is_recovering = False
 
-        ref = np.array(
-            [
-                context.node.get_parameter("ref_lat").value,
-                context.node.get_parameter("ref_lon").value,
-                context.node.get_parameter("ref_alt").value,
-            ]
-        )
+        # ref = np.array(
+        #     [
+        #         context.node.get_parameter("ref_lat").value,
+        #         context.node.get_parameter("ref_lon").value,
+        #         context.node.get_parameter("ref_alt").value,
+        #     ]
+        # )
         context.search_point_publisher.publish(
             GPSPointList(points=[convert_cartesian_to_gps(ref, p) for p in SearchState.trajectory.coordinates])
         )
