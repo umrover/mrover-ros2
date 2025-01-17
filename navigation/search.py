@@ -36,6 +36,7 @@ class SearchState(State):
             path_start=self.prev_target_pos_in_map,
         )
         if arrived:
+            context.node.get_logger().info(target_position_in_map - self.prev_target_pos_in_map)
             self.prev_target_pos_in_map = target_position_in_map
             # If we finish the spiral without seeing the tag, move on with course
             if SearchState.trajectory.increment_point():
@@ -48,16 +49,16 @@ class SearchState(State):
         else:
             self.is_recovering = False
 
-        ref = np.array(
-            [
-                context.node.get_parameter("ref_lat").value,
-                context.node.get_parameter("ref_lon").value,
-                context.node.get_parameter("ref_alt").value,
-            ]
-        )
-        context.search_point_publisher.publish(
-            GPSPointList(points=[convert_cartesian_to_gps(ref, p) for p in SearchState.trajectory.coordinates])
-        )
+        # ref = np.array(
+        #     [
+        #         context.node.get_parameter("ref_lat").value,
+        #         context.node.get_parameter("ref_lon").value,
+        #         context.node.get_parameter("ref_alt").value,
+        #     ]
+        # )
+        # context.search_point_publisher.publish(
+        #     GPSPointList(points=[convert_cartesian_to_gps(ref, p) for p in SearchState.trajectory.coordinates])
+        # )
         context.rover.send_drive_command(cmd_vel)
 
         # Returns either ApproachTargetState, LongRangeState, or None

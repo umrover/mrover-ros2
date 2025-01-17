@@ -168,8 +168,9 @@ class WaypointState(State):
                     context.move_costmap()
                     if context.node.get_parameter("search.use_costmap").value and not current_waypoint.type.val == WaypointType.NO_SEARCH:
                         # We finished a waypoint associated with the water bottle, but we have not seen it yet and are using the costmap to search
-                        costmap_search_state = costmap_search.CostmapSearchState()
-                        return costmap_search_state
+                        search_state = costmap_search.CostmapSearchState()
+                        #search_state = search.SearchState()
+                        return search_state
                     else:
                         # We finished a regular waypoint, go onto the next one
                         context.course.increment_waypoint()
