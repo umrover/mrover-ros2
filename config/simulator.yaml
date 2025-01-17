@@ -60,22 +60,22 @@ simulator:
       #     position: [ 2.5, 6.0, 0.35 ]
 
       # waypoint to waypoint test
-      rock1:
-        type: urdf
-        uri: package://mrover/urdf/world/small_rock.urdf.xacro
-        position: [ 0.0, 3.0, 0.35 ]
-      rock2:
-        type: urdf
-        uri: package://mrover/urdf/world/small_rock.urdf.xacro
-        position: [ 0.0, 5.5, 0.35 ]
-      rock3:
-        type: urdf
-        uri: package://mrover/urdf/world/small_rock.urdf.xacro
-        position: [ 0.0, 7.0, 0.35 ]
-      rock4:
-        type: urdf
-        uri: package://mrover/urdf/world/small_rock.urdf.xacro
-        position: [ 0.0, 9.5, 0.35 ]
+      # rock1:
+      #   type: urdf
+      #   uri: package://mrover/urdf/world/small_rock.urdf.xacro
+      #   position: [ 0.0, 3.0, 0.35 ]
+      # rock2:
+      #   type: urdf
+      #   uri: package://mrover/urdf/world/small_rock.urdf.xacro
+      #   position: [ 0.0, 5.5, 0.35 ]
+      # rock3:
+      #   type: urdf
+      #   uri: package://mrover/urdf/world/small_rock.urdf.xacro
+      #   position: [ 0.0, 7.0, 0.35 ]
+      # rock4:
+      #   type: urdf
+      #   uri: package://mrover/urdf/world/small_rock.urdf.xacro
+      #   position: [ 0.0, 9.5, 0.35 ]
       # rock5:
       #   type: urdf
       #   uri: package://mrover/urdf/world/small_rock.urdf.xacro

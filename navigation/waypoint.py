@@ -13,15 +13,17 @@ from .context import Context
 import rclpy
 from .context import Context
 from navigation.astar import AStar, SpiralEnd, NoPath
-from navigation.coordinate_utils import ij_to_cartesian, cartesian_to_ij, vec_angle, d_calc
+from navigation.coordinate_utils import ij_to_cartesian, cartesian_to_ij, vec_angle, d_calc, gen_marker
 from navigation.trajectory import Trajectory, SearchTrajectory
 from typing import Optional
 from rclpy.publisher import Publisher
 from rclpy.time import Time
+import time
 from rclpy.duration import Duration
 from geometry_msgs.msg import Pose, PoseStamped, Point, Quaternion, Twist
 from nav_msgs.msg import Path
 from std_msgs.msg import Header
+from visualization_msgs.msg import Marker
 import numpy as np
 
 
@@ -39,6 +41,7 @@ class WaypointState(State):
     path_pub: Publisher
     astar: AStar
     follow_astar: bool
+    marker_pub: Publisher
 
     TRAVERSABLE_COST: float
     UPDATE_DELAY: float
@@ -46,6 +49,7 @@ class WaypointState(State):
     USE_COSTMAP: bool
 
     def on_enter(self, context: Context) -> None:
+        self.marker_pub = context.node.create_publisher(Marker, "spiral_points", 10)
         origin_in_map = context.course.current_waypoint_pose_in_map().translation()[0:2]
         self.astar = AStar(origin_in_map, context)
         self.USE_COSTMAP = context.node.get_parameter("search.use_costmap").value
@@ -104,16 +108,18 @@ class WaypointState(State):
             self.start_time = context.node.get_clock().now()
             return self
         
+        
         if context.node.get_clock().now() - Duration(nanoseconds=1000000000) < self.start_time:
-            context.node.get_logger().info("Waiting for initial costmap generation")
             return self
     
         # BEGINNING OF LOGIC
 
+        
+
         # If there are no more points in the current a_star path or we are past the update delay, then create a new one
         if len(self.astar_traj.coordinates) == 0 or \
             context.node.get_clock().now() - self.time_last_updated > Duration(seconds=self.UPDATE_DELAY):
-
+            self.marker_pub.publish(gen_marker(context=context, point=context.course.current_waypoint_pose_in_map().translation()[0:2], color=[0.0, 0.0, 1.0], size=0.5, id=-1, lifetime=10000))
             while self.is_high_cost_point(context):
                 context.node.get_logger().info(f"High cost segment point, skipping it")
                 
@@ -129,6 +135,11 @@ class WaypointState(State):
             # Decide whether we follow the astar path to the next point in the spiral
             self.follow_astar = self.astar.use_astar(context=context, star_traj=self.astar_traj, trajectory=self.traj.get_current_point())
             self.time_last_updated = context.node.get_clock().now()
+
+            start_pt = self.traj.cur_pt - 3 if self.traj.cur_pt - 3 >= 0 else self.traj.cur_pt
+            end_pt = self.traj.cur_pt + 7 if self.traj.cur_pt + 7 < len(self.traj.coordinates) else len(self.traj.coordinates)
+            for i, coord in enumerate(self.traj.coordinates[start_pt:end_pt]):
+                self.marker_pub.publish(gen_marker(context=context, point=coord, color=[1.0,0.0,1.0], id=i))
             
 
         # Attempt to find the waypoint in the TF tree and drive to it
@@ -168,8 +179,8 @@ class WaypointState(State):
                     context.move_costmap()
                     if context.node.get_parameter("search.use_costmap").value and not current_waypoint.type.val == WaypointType.NO_SEARCH:
                         # We finished a waypoint associated with the water bottle, but we have not seen it yet and are using the costmap to search
-                        search_state = costmap_search.CostmapSearchState()
-                        #search_state = search.SearchState()
+                        #search_state = costmap_search.CostmapSearchState()
+                        search_state = search.SearchState()
                         return search_state
                     else:
                         # We finished a regular waypoint, go onto the next one
@@ -268,4 +279,47 @@ class WaypointState(State):
     
         return False
 
+    def __gen_marker__(self, point, id, context: Context):
+        """
+        Creates and publishes a single spherical marker at the specified (x, y, z) coordinates.
 
+        :param point: A tuple or list containing the (x, y) coordinates of the marker. 
+                    The Z coordinate is set to 0.0 by default.
+        :param context: The context object providing necessary ROS utilities, 
+                        such as the node clock for setting the timestamp.
+        :return: A Marker object representing the spherical marker with predefined size and color.
+        """
+        x = point.copy()[0]
+        y = point.copy()[1]
+        z = 0.0
+        
+        marker = Marker()
+        marker.lifetime = Duration(seconds=10000).to_msg()
+        marker.header = Header(frame_id="map")
+        marker.header.stamp = context.node.get_clock().now().to_msg()
+        
+        marker.ns = "single_point"
+        marker.id = id
+        marker.type = Marker.SPHERE
+        marker.action = Marker.ADD
+
+        # Set the scale (size) of the sphere
+        marker.scale.x = 1.0
+        marker.scale.y = 1.0
+        marker.scale.z = 1.0
+
+        # Set the color (RGBA)
+        marker.color.r = 0.0
+        marker.color.g = 0.0
+        marker.color.b = 1.0
+        marker.color.a = 1.0  # fully opaque
+
+        # Define the position
+        marker.pose.position.x = x
+        marker.pose.position.y = y
+        marker.pose.position.z = z
+
+        # Orientation is irrelevant for a sphere but must be valid
+        marker.pose.orientation.w = 1.0
+
+        return marker

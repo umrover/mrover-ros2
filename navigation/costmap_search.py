@@ -6,15 +6,11 @@ from rclpy.publisher import Publisher
 from rclpy.time import Time
 from rclpy.duration import Duration
 import time
-from geometry_msgs.msg import Pose, PoseStamped, Point, Quaternion, Twist
-from mrover.msg import GPSPointList
-from nav_msgs.msg import Path
 from navigation import approach_target, recovery, waypoint
 from navigation.astar import AStar, SpiralEnd, NoPath
-from navigation.coordinate_utils import d_calc
-from navigation.context import convert_cartesian_to_gps, Context
+from navigation.coordinate_utils import d_calc, gen_marker
+from navigation.context import Context
 from navigation.trajectory import Trajectory, SearchTrajectory
-from std_msgs.msg import Header
 from visualization_msgs.msg import Marker
 from state_machine.state import State
 from rclpy.publisher import Publisher
@@ -122,10 +118,10 @@ class CostmapSearchState(State):
             total_time = (context.node.get_clock().now() - self.time_begin).nanoseconds / 1e9
             context.node.get_logger().info(f"Total Distance Traveled: {self.total_distance}m\nTotal Time: {total_time}s\nAverage Speed: {self.total_distance/total_time}m/s")
 
-            start_pt = self.trajectory.cur_pt - 3 if self.trajectory.cur_pt - 3 >= 0 else self.trajectory.cur_pt
-            end_pt = self.trajectory.cur_pt + 3 if self.trajectory.cur_pt + 3 < len(self.trajectory.coordinates) else len(self.trajectory.coordinates)
+            start_pt = self.trajectory.cur_pt - 6 if self.trajectory.cur_pt - 3 >= 0 else self.trajectory.cur_pt
+            end_pt = self.trajectory.cur_pt + 6 if self.trajectory.cur_pt + 3 < len(self.trajectory.coordinates) else len(self.trajectory.coordinates)
             for i, coord in enumerate(self.trajectory.coordinates[start_pt:end_pt]):
-                self.marker_pub.publish(self.__gen_marker__(coord, i, context))
+                self.marker_pub.publish(gen_marker(context=context, point=coord, color=[1.0,0.0,0.0], id=i))
 
             # If there are no more points in the spiral trajectory, move to the next spiral point
             if len(self.star_traj.coordinates) - self.star_traj.cur_pt == 0:
@@ -223,48 +219,3 @@ class CostmapSearchState(State):
                 search_center.tag_id,
                 True,
             )
-    
-    def __gen_marker__(self, point, id, context: Context):
-        """
-        Creates and publishes a single spherical marker at the specified (x, y, z) coordinates.
-
-        :param point: A tuple or list containing the (x, y) coordinates of the marker. 
-                    The Z coordinate is set to 0.0 by default.
-        :param context: The context object providing necessary ROS utilities, 
-                        such as the node clock for setting the timestamp.
-        :return: A Marker object representing the spherical marker with predefined size and color.
-        """
-        x = point.copy()[0]
-        y = point.copy()[1]
-        z = 0.0
-        
-        marker = Marker()
-        marker.lifetime = Duration(seconds=5).to_msg()
-        marker.header = Header(frame_id="map")
-        marker.header.stamp = context.node.get_clock().now().to_msg()
-        
-        marker.ns = "single_point"
-        marker.id = id
-        marker.type = Marker.SPHERE
-        marker.action = Marker.ADD
-
-        # Set the scale (size) of the sphere
-        marker.scale.x = 0.2
-        marker.scale.y = 0.2
-        marker.scale.z = 0.2
-
-        # Set the color (RGBA)
-        marker.color.r = 1.0
-        marker.color.g = 0.0
-        marker.color.b = 0.0
-        marker.color.a = 1.0  # fully opaque
-
-        # Define the position
-        marker.pose.position.x = x
-        marker.pose.position.y = y
-        marker.pose.position.z = z
-
-        # Orientation is irrelevant for a sphere but must be valid
-        marker.pose.orientation.w = 1.0
-
-        return marker
