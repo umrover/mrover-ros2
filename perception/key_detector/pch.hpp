@@ -21,6 +21,9 @@
 #include <state.hpp>
 #include <state_publisher_server.hpp>
 
+//Actions
+#include <mrover/action/key_action.hpp>
+
 // States
 #include "states/State1.hpp"
 #include "states/State2.hpp"
@@ -28,6 +31,3 @@
 #include "states/PressKey.hpp"
 #include "states/Wait.hpp"
 #include "states/TargetKey.hpp"
-
-//Actions
-#include <mrover/action/key_action.hpp>

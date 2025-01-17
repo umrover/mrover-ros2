@@ -10,7 +10,11 @@ namespace mrover {
             sleepRate.sleep();
             RCLCPP_INFO_STREAM(logger, "Exiting Wait " <<  "\n");
 
-			return StateMachine::make_state<TargetKey>();
+			return StateMachine::make_state<TargetKey>(goal);
 		}
+
+		// compile fix
+		return StateMachine::make_state<TargetKey>(goal);
+
 	}
 }
