@@ -28,7 +28,7 @@ namespace mrover {
         RCLCPP_INFO_STREAM(get_logger(),"HEIGHT: " << msg->height);
         RCLCPP_INFO_STREAM(get_logger(),"X: " << coordinates.second << " Y: " << coordinates.first);
          */
-        cv::Point3d const& p = reinterpret_cast<cv::Point3d const*>(cloudPtr->data.data())[coordinates.second + coordinates.first * cloudPtr->width];
+        Point const& p = reinterpret_cast<Point const*>(cloudPtr->data.data())[coordinates.second + coordinates.first * cloudPtr->width];
         if (!std::isfinite(p.x) || !std::isfinite(p.y) || !std::isfinite(p.z)){
             //RCLCPP_INFO_STREAM(get_logger(),"failed");
             return std::nullopt;
@@ -56,8 +56,8 @@ namespace mrover {
         cv::Mat mGBlur;
         cv::Mat mThresholdedImg;
         cv::GaussianBlur(mGreyScale, mGBlur, cv::Size(5,5), 0);
-        cv::threshold(mGBlur,mThresholdedImg,250,255,cv::THRESH_BINARY);
-        //cv::threshold(mGBlur,mThresholdedImg,0,255,cv::THRESH_BINARY+cv::THRESH_OTSU);
+        cv::threshold(mGBlur,mThresholdedImg,50,255,cv::THRESH_BINARY);
+        // cv::threshold(mGBlur,mThresholdedImg,100,255,cv::THRESH_BINARY+cv::THRESH_OTSU);
 
         // applies dilation, uses structuring element to expand highlighted regions
         // erodes, to refine shape of highlighted regions
@@ -121,6 +121,7 @@ namespace mrover {
                     SE3Conversions::pushToTfTree(mTfBroadcaster, lightFrame, mCameraFrame, lightInCamera.value(), this->get_clock()->now());
                 }
                 increaseHitCount(lightInCamera);
+                RCLCPP_INFO_STREAM(get_logger(),getHitCount(lightInCamera));
                 SE3Conversions::pushToTfTree(mTfBroadcaster, immediateLightFrame, mCameraFrame, lightInCamera.value(), this->get_clock()->now());
             }
 		}
@@ -138,7 +139,6 @@ namespace mrover {
 	}
     
     auto LightDetector::caching() -> std::pair<std::pair<int, int>, bool>{
-        //double shortest_distance = DBL_MAX;
         double shortest_distance = std::numeric_limits<double>::infinity();
         bool found = false;
         std::pair<int, int> closest;
@@ -156,11 +156,11 @@ namespace mrover {
                     //RCLCPP_INFO_STREAM(get_logger(),"This new point was at " << point.first << ", " << point.second);
                 }
             }
-            if(found){
-                //RCLCPP_INFO_STREAM(get_logger(),"Finished with a new point!");
-            } else{
-                //RCLCPP_INFO_STREAM(get_logger(),"Didn't find a new point :(");
-            }
+            // if(found){
+            //     //RCLCPP_INFO_STREAM(get_logger(),"Finished with a new point!");
+            // } else{
+            //     //RCLCPP_INFO_STREAM(get_logger(),"Didn't find a new point :(");
+            // }
         }
         return std::pair<std::pair<int, int>, bool>(closest, found);
     }
@@ -170,26 +170,6 @@ namespace mrover {
         //RCLCPP_INFO_STREAM(get_logger(),"Calculating Distance..." << p.first << ", " << p.second);
         return distance;
     }
-
-	// auto LightDetector::caching() -> void{
-	// 	for (auto const& [id, tag]: mTags) {
-    //         if (tag.hitCount >= mMinHitCountBeforePublish && tag.tagInCam) {
-    //             try {
-    //                 // Use the TF tree to transform the tag from the camera frame to the map frame
-    //                 // Then publish it in the map frame persistently
-    //                 std::string immediateFrameId = std::format("immediateTag{}", tag.id);
-    //                 SE3d tagInParent = SE3Conversions::fromTfTree(mTfBuffer, immediateFrameId, mMapFrameId);
-    //                 SE3Conversions::pushToTfTree(mTfBroadcaster, std::format("tag{}", tag.id), mMapFrameId, tagInParent);
-    //             } catch (tf2::ExtrapolationException const&) {
-    //                 NODELET_WARN("Old data for immediate tag");
-    //             } catch (tf2::LookupException const&) {
-    //                 NODELET_WARN("Expected transform for immediate tag");
-    //             } catch (tf2::ConnectivityException const&) {
-    //                 NODELET_WARN("Expected connection to odom frame. Is visual odometry running?");
-    //             }
-    //         }
-    //     }
-	// }
 
     auto LightDetector::getHitCount(std::optional<SE3d> const& light) -> int {
         if(light.has_value()){
@@ -247,7 +227,6 @@ namespace mrover {
         //if (!imgPub.getNumSubscribers()) return;
 
 		sensor_msgs::msg::Image imgMsg;
-        mrover::msg::Vector3Array poseMsg;
 
         imgMsg.header.stamp = this->get_clock()->now(); //ros origionally, but changed to this, not sure if it works.
         imgMsg.height = image.rows();
@@ -265,16 +244,6 @@ namespace mrover {
 		constexpr int MARKER_RADIUS = 10;
 		cv::Scalar const MARKER_COLOR = {255, 0, 0, 0};
 
-        auto point = mHitCounts.begin();
-
-        
-        // for(size_t i = 0; i < mHitCounts.size(); i++) {
-        //     poseMsg.x = point->first.first;
-        //     poseMsg.y = point->first.second;
-        //     point++;
-        //     pointPub->publish(poseMsg);
-        // }
-        
 		for(auto const& centroid : centroids){
 			cv::circle(debugImageWrapper, {centroid.second, centroid.first}, MARKER_RADIUS, MARKER_COLOR);
 		}
@@ -288,7 +257,6 @@ namespace mrover {
         pointMsg.y = point.second;
         pointMsg.z = 0;
         pointPub->publish(pointMsg);
-        //RCLCPP_INFO_STREAM(get_logger(),"Published point " << point.first << ", " << point.second);
     }
 
 
