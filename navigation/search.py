@@ -1,21 +1,32 @@
 import numpy as np
-
+from typing import Optional
+from navigation.coordinate_utils import d_calc
 from mrover.msg import GPSPointList, WaypointType
 from state_machine.state import State
 from . import recovery, waypoint
 from .context import convert_cartesian_to_gps, Context
 from .trajectory import SearchTrajectory
 from navigation import approach_target
+from rclpy.time import Time
+from rclpy.duration import Duration
 
 
 class SearchState(State):
     trajectory: SearchTrajectory | None = None
     prev_target_pos_in_map: np.ndarray | None = None
     is_recovering: bool = False
+    prev_pos: Optional[np.ndarray]
+    time_begin: Optional[Time]
+    time_last_updated: Time
+    total_distance: float
 
     def on_enter(self, context: Context) -> None:
         if SearchState.trajectory is None:
             self.new_trajectory(context)
+        self.prev_pos = None
+        self.time_begin = None
+        self.time_last_updated = context.node.get_clock().now()
+        self.total_distance = 0.0
 
     def on_exit(self, context: Context) -> None:
         pass
@@ -25,6 +36,19 @@ class SearchState(State):
 
         assert rover_in_map is not None
         assert SearchState.trajectory is not None
+
+
+        if not self.time_begin:
+            self.time_begin = context.node.get_clock().now()
+            self.prev_pos = rover_in_map.translation()[0:2]
+        else:
+            self.total_distance += d_calc(rover_in_map.translation()[0:2], self.prev_pos)
+            self.prev_pos = rover_in_map.translation()[0:2]
+        
+        if context.node.get_clock().now() - self.time_last_updated > Duration(seconds=3.0):
+            total_time = (context.node.get_clock().now() - self.time_begin).nanoseconds / 1e9
+            context.node.get_logger().info(f"Total Distance Traveled: {self.total_distance}m\nTotal Time: {total_time}s\nAverage Speed: {self.total_distance/total_time}m/s")
+            self.time_last_updated = context.node.get_clock().now()
 
         # Continue executing the path from wherever it left off
         target_position_in_map = SearchState.trajectory.get_current_point()
@@ -36,7 +60,6 @@ class SearchState(State):
             path_start=self.prev_target_pos_in_map,
         )
         if arrived:
-            context.node.get_logger().info(target_position_in_map - self.prev_target_pos_in_map)
             self.prev_target_pos_in_map = target_position_in_map
             # If we finish the spiral without seeing the tag, move on with course
             if SearchState.trajectory.increment_point():

@@ -1,21 +1,23 @@
 from typing import Optional
-
 import numpy as np
 
 import rclpy
 from rclpy.publisher import Publisher
 from rclpy.time import Time
 from rclpy.duration import Duration
-
+import time
 from geometry_msgs.msg import Pose, PoseStamped, Point, Quaternion, Twist
 from mrover.msg import GPSPointList
 from nav_msgs.msg import Path
 from navigation import approach_target, recovery, waypoint
 from navigation.astar import AStar, SpiralEnd, NoPath
+from navigation.coordinate_utils import d_calc
 from navigation.context import convert_cartesian_to_gps, Context
 from navigation.trajectory import Trajectory, SearchTrajectory
 from std_msgs.msg import Header
+from visualization_msgs.msg import Marker
 from state_machine.state import State
+from rclpy.publisher import Publisher
 
 # REFERENCE: https://docs.google.com/document/d/18GjDWxIu5f5-N5t5UgbrZGdEyaDj9ZMEUuXex8-NKrA/edit
 class CostmapSearchState(State):
@@ -24,6 +26,10 @@ class CostmapSearchState(State):
     Follows a search spiral but uses A* to avoid obstacles
     Intended to be implemented over the current search state
     """
+
+    prev_pos: Optional[np.ndarray]
+    time_begin: Optional[Time]
+    total_distance: float
 
     trajectory: Optional[SearchTrajectory] = None  # spiral
     star_traj: Trajectory  # returned by astar
@@ -43,10 +49,15 @@ class CostmapSearchState(State):
     UPDATE_DELAY: float
     SAFE_APPROACH_DISTANCE: float
     A_STAR_THRESH: float
+    marker_pub: Publisher
 
     def on_enter(self, context: Context) -> None:
 
         # Parameter initialization
+        self.prev_pos = None
+        self.time_begin = None
+        self.total_distance = 0.0
+        self.marker_pub = context.node.create_publisher(Marker, "spiral_points", 10)
         self.STOP_THRESH = context.node.get_parameter("search.stop_threshold").value
         self.DRIVE_FWD_THRESH = context.node.get_parameter("search.drive_forward_threshold").value
         self.SPIRAL_COVERAGE_RADIUS = context.node.get_parameter("search.coverage_radius").value
@@ -73,7 +84,7 @@ class CostmapSearchState(State):
         self.follow_astar = False
 
         #Initialize stopwatch
-        self.time_begin = context.node.get_clock().now()
+        self.time_begin = None
 
     def on_exit(self, context: Context) -> None:
         pass
@@ -82,6 +93,7 @@ class CostmapSearchState(State):
         # Wait until the costmap is ready
         if not hasattr(context.env.cost_map, 'data'): 
             context.node.get_logger().warn(f"No costmap found, waiting...")
+            time.sleep(1.0)
             return self
 
         assert context.course is not None
@@ -96,9 +108,24 @@ class CostmapSearchState(State):
         else:
             self.is_recovering = False
 
+        if not self.time_begin:
+            self.time_begin = context.node.get_clock().now()
+            self.prev_pos = rover_in_map.translation()[0:2]
+        else:
+            self.total_distance += d_calc(rover_in_map.translation()[0:2], self.prev_pos)
+            self.prev_pos = rover_in_map.translation()[0:2]
+
         # If there are no more points in the current a_star path or we are past the update delay, then create a new one
         if len(self.star_traj.coordinates) - self.star_traj.cur_pt == 0 or \
             context.node.get_clock().now() - self.time_last_updated > Duration(seconds=self.UPDATE_DELAY):
+
+            total_time = (context.node.get_clock().now() - self.time_begin).nanoseconds / 1e9
+            context.node.get_logger().info(f"Total Distance Traveled: {self.total_distance}m\nTotal Time: {total_time}s\nAverage Speed: {self.total_distance/total_time}m/s")
+
+            start_pt = self.trajectory.cur_pt - 3 if self.trajectory.cur_pt - 3 >= 0 else self.trajectory.cur_pt
+            end_pt = self.trajectory.cur_pt + 3 if self.trajectory.cur_pt + 3 < len(self.trajectory.coordinates) else len(self.trajectory.coordinates)
+            for i, coord in enumerate(self.trajectory.coordinates[start_pt:end_pt]):
+                self.marker_pub.publish(self.__gen_marker__(coord, i, context))
 
             # If there are no more points in the spiral trajectory, move to the next spiral point
             if len(self.star_traj.coordinates) - self.star_traj.cur_pt == 0:
@@ -162,12 +189,13 @@ class CostmapSearchState(State):
 
         # If our target object has been detected, approach it
         if (context.env.current_target_pos() is not None
-            and self.astar.d_calc(context.env.current_target_pos(), rover_in_map.translation()[0:2]) < self.SAFE_APPROACH_DISTANCE):
+            and d_calc(context.env.current_target_pos(), rover_in_map.translation()[0:2]) < self.SAFE_APPROACH_DISTANCE):
             total_time = context.node.get_clock().now() - self.time_begin
             context.node.get_logger().info(f"Total search time: {total_time.nanoseconds // 1000000000}")
             return approach_target.ApproachTargetState()
 
         return self
+        
     
         # TODO: Figure out functionality
         # ref = np.array(
@@ -195,3 +223,48 @@ class CostmapSearchState(State):
                 search_center.tag_id,
                 True,
             )
+    
+    def __gen_marker__(self, point, id, context: Context):
+        """
+        Creates and publishes a single spherical marker at the specified (x, y, z) coordinates.
+
+        :param point: A tuple or list containing the (x, y) coordinates of the marker. 
+                    The Z coordinate is set to 0.0 by default.
+        :param context: The context object providing necessary ROS utilities, 
+                        such as the node clock for setting the timestamp.
+        :return: A Marker object representing the spherical marker with predefined size and color.
+        """
+        x = point.copy()[0]
+        y = point.copy()[1]
+        z = 0.0
+        
+        marker = Marker()
+        marker.lifetime = Duration(seconds=5).to_msg()
+        marker.header = Header(frame_id="map")
+        marker.header.stamp = context.node.get_clock().now().to_msg()
+        
+        marker.ns = "single_point"
+        marker.id = id
+        marker.type = Marker.SPHERE
+        marker.action = Marker.ADD
+
+        # Set the scale (size) of the sphere
+        marker.scale.x = 0.2
+        marker.scale.y = 0.2
+        marker.scale.z = 0.2
+
+        # Set the color (RGBA)
+        marker.color.r = 1.0
+        marker.color.g = 0.0
+        marker.color.b = 0.0
+        marker.color.a = 1.0  # fully opaque
+
+        # Define the position
+        marker.pose.position.x = x
+        marker.pose.position.y = y
+        marker.pose.position.z = z
+
+        # Orientation is irrelevant for a sphere but must be valid
+        marker.pose.orientation.w = 1.0
+
+        return marker
