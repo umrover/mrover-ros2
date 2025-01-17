@@ -33,11 +33,11 @@ void new_main(){
 
 	fdcan_bus.start();
 
-	mrover::TemperatureData temp_data;
-	mrover::HumidityData humidity_data;
-	mrover::OxygenData oxygen_data;
-	mrover::MethaneData methane_data;
-	mrover::UVData uv_data;
+	mrover::SensorData temp_data = {1, 0};
+	mrover::SensorData humidity_data = {2, 0};
+	mrover::SensorData oxygen_data = {3, 0};
+	mrover::SensorData methane_data = {4, 0};
+	mrover::SensorData uv_data = {5, 0};
 
 	while(1){
 		th_sensor.update_temp_humidity();
