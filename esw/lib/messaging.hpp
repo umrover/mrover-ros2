@@ -4,7 +4,7 @@
 #include <cstdint>
 #include <variant>
 
-#include <units/units.hpp>
+#include <units.hpp>
 
 namespace mrover {
 
@@ -190,37 +190,42 @@ namespace mrover {
     struct ThermistorData : BaseCommand {
         std::array<float, 6> temps{};
     };
-    
-    struct TemperatureData {
-    	static constexpr std::uint8_t id = 1;
-    	float temp;
+
+    struct SensorData {
+    	std::uint8_t id;
+    	float data;
     };
+    
+    // struct TemperatureData {
+    // 	static constexpr std::uint8_t id = 1;
+    // 	float temp;
+    // };
 
-    struct HumidityData {
-		static constexpr std::uint8_t id = 2;
-		float humidity;
-	};
+    // struct HumidityData {
+	// 	static constexpr std::uint8_t id = 2;
+	// 	float humidity;
+	// };
 
-    struct OxygenData {
-		static constexpr std::uint8_t id = 3;
-		float percent;
-	};
+    // struct OxygenData {
+	// 	static constexpr std::uint8_t id = 3;
+	// 	float percent;
+	// };
 
-    struct MethaneData {
-		static constexpr std::uint8_t id = 4;
-		float ppm;
-	};
+    // struct MethaneData {
+	// 	static constexpr std::uint8_t id = 4;
+	// 	float ppm;
+	// };
 
-    struct UVData {
-		static constexpr std::uint8_t id = 5;
-		float uv_index;
-	};
+    // struct UVData {
+	// 	static constexpr std::uint8_t id = 5;
+	// 	float uv_index;
+	// };
 
     using InBoundScienceMessage = std::variant<
             EnableScienceDeviceCommand, HeaterAutoShutOffCommand, ConfigThermistorAutoShutOffCommand>;
 
     using OutBoundScienceMessage = std::variant<
-            HeaterStateData, SpectralData, ThermistorData>;
+            SensorData, HeaterStateData, SpectralData, ThermistorData>;
 
 #pragma pack(pop)
 

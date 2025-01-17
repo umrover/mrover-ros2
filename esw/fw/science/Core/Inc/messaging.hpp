@@ -188,29 +188,9 @@ namespace mrover {
         std::array<float, 6> temps{};
     };
 
-    struct TemperatureData {
-    	std::uint8_t id = 1;
-    	float temp;
-    };
-
-    struct HumidityData {
-		std::uint8_t id = 2;
-		float humidity;
-	};
-
-    struct OxygenData {
-		std::uint8_t id = 3;
-		float percent;
-	};
-
-    struct MethaneData {
-		std::uint8_t id = 4;
-		float ppm;
-	};
-
-    struct UVData {
-		std::uint8_t id = 5;
-		float uv_index;
+    struct SensorData {
+		std::uint8_t id;
+		float temp;
 	};
 
     using InBoundScienceMessage = std::variant<
