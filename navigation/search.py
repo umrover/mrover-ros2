@@ -58,9 +58,9 @@ class SearchState(State):
         #         context.node.get_parameter("ref_alt").value,
         #     ]
         # )
-        context.search_point_publisher.publish(
-            GPSPointList(points=[convert_cartesian_to_gps(ref, p) for p in SearchState.trajectory.coordinates])
-        )
+        # context.search_point_publisher.publish(
+        #     GPSPointList(points=[convert_cartesian_to_gps(ref, p) for p in SearchState.trajectory.coordinates])
+        # )
         context.rover.send_drive_command(cmd_vel)
 
         # Returns either ApproachTargetState, LongRangeState, or None

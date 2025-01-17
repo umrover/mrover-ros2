@@ -1,6 +1,6 @@
 import heapq
 from threading import Lock
-
+import math
 import numpy as np
 from navigation.trajectory import Trajectory
 from navigation.coordinate_utils import ij_to_cartesian, cartesian_to_ij, d_calc, vec_angle
@@ -282,25 +282,28 @@ class AStar:
         follow_astar: bool = True
 
         # If any required information is missing or A* trajectory has fewer than 4 coordinates, do not follow A* path
-        if rover_in_map is None or trajectory is None:
+        if rover_in_map is None or trajectory is None or len(star_traj.coordinates) == 0:
             follow_astar = False
-        #else: 
-            # angle = self.vec_angle(np.subtract(star_traj.coordinates[3], star_traj.coordinates[0])[0:2], np.subtract(tuple(trajectory)[0:2], context.rover.get_pose_in_map().translation()[0:2]))
-            # if angle < self.ANGLE_THRESH:
-            #     follow_astar = False
-            #     context.node.get_logger().info(f"Angle {np.degrees(angle):.2f} degrees not sharp enough for ASTAR")
-                # Calculate the total distance of the A* path
-        if follow_astar == True:
+
+        if follow_astar:
+            # astar vs eucl distance heuristic
             astar_dist = 0.0
             for i in range(len(star_traj.coordinates[:-1])):
                 astar_dist += self.d_calc(star_traj.coordinates[i], star_traj.coordinates[i + 1])
 
-            # Calculate the Euclidean distance from the rover's position to the target
-            eucl_dist = self.d_calc(context.rover.get_pose_in_map().translation()[0:2], tuple(trajectory))
+            # # Calculate the Euclidean distance from the rover's position to the target
+            # eucl_dist = self.d_calc(context.rover.get_pose_in_map().translation()[0:2], tuple(trajectory))
 
-            # Determine whether the relative difference between A* and Euclidean distances exceeds the threshold
-            follow_astar = abs(astar_dist - eucl_dist) / eucl_dist > self.A_STAR_THRESH
-
+            # # Determine whether the relative difference between A* and Euclidean distances exceeds the threshold
+            # follow_astar = abs(astar_dist - eucl_dist) / eucl_dist > self.A_STAR_THRESH
+            
+            # chebyshev distance vs astar distance heuristic
+            #astar_steps = len(star_traj.coordinates)
+            #chebyshev_steps = max(abs(star_traj.coordinates[0][0] - trajectory[0]), abs(star_traj.coordinates[0][1] - trajectory[1]))
+            min_diag = min(abs(star_traj.coordinates[0][0] - star_traj.coordinates[-1][0]), abs(star_traj.coordinates[0][1] - star_traj.coordinates[-1][1])) * math.sqrt(2)
+            min_astar = min_diag + max(abs(star_traj.coordinates[0][0] - star_traj.coordinates[-1][0]), abs(star_traj.coordinates[0][1] - star_traj.coordinates[-1][1])) - min(abs(star_traj.coordinates[0][0] - star_traj.coordinates[-1][0]), abs(star_traj.coordinates[0][1] - star_traj.coordinates[-1][1]))
+            context.node.get_logger().info(f"minastar: {min_astar} act astar: {astar_dist}")
+            follow_astar = abs(astar_dist - min_astar) / min_astar > self.A_STAR_THRESH
         if follow_astar:
             context.node.get_logger().info(f"Following A* path")
         else:
