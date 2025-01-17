@@ -2,6 +2,7 @@
 #include "lie.hpp"
 #include <Eigen/src/Core/Matrix.h>
 #include <cstddef>
+#include <cstdint>
 #include <format>
 #include <memory>
 #include <rclcpp/logging.hpp>
@@ -146,18 +147,21 @@ namespace mrover {
 
 			// Square Dilate operation
             nav_msgs::msg::OccupancyGrid postProcesed = mGlobalGridMsg;
-            std::array<std::ptrdiff_t, 9> dis{0, 
-                                              -1, +1, -postProcesed.info.width, +postProcesed.info.width,
-                                              -1 - postProcesed.info.width, +1 - postProcesed.info.width,
-                                              -1 + postProcesed.info.width, +1 + postProcesed.info.width};
-            for (std::size_t i = 0; i < mGlobalGridMsg.data.size(); ++i) {
-                if (std::ranges::any_of(dis, [&](std::ptrdiff_t di) {
+            // std::array<std::ptrdiff_t, 9> dis{0, 
+            //                                   -1, +1, -postProcesed.info.width, +postProcesed.info.width,
+            //                                   -1 - postProcesed.info.width, +1 - postProcesed.info.width,
+            //                                   -1 + postProcesed.info.width, +1 + postProcesed.info.width};
+            std::array<CostMapNode::Coord,9> dis{Coord{-1,-1}, {-1,0}, {-1,1}, 
+                                                {0,-1}, {0, 0}, {0,1},
+                                                {1,-1}, {1, 0}, {1,1}};
+            // for (std::size_t i = 0; i < mGlobalGridMsg.data.size(); ++i) {
+            //     if (std::ranges::any_of(dis, [&](std::ptrdiff_t di) {
                         
 
-                        std::int64_t j = static_cast<int64_t>(i) + di;
-                        return j < static_cast<int64_t>(mGlobalGridMsg.data.size()) && mGlobalGridMsg.data[j] == OCCUPIED_COST;// > FREE_COST;
-                    })) postProcesed.data[i] = OCCUPIED_COST;
-            }
+            //             std::int64_t j = static_cast<int64_t>(i) + di;
+            //             return j < static_cast<int64_t>(mGlobalGridMsg.data.size()) && mGlobalGridMsg.data[j] > FREE_COST;
+            //         })) postProcesed.data[i] = OCCUPIED_COST;
+            // }
             mCostMapPub->publish(postProcesed);
             if(!mCostMapPub){
                 mCostMapPub->publish(postProcesed);
@@ -204,6 +208,14 @@ namespace mrover {
         std::vector<BinInfo> info;
         for(std::size_t i = 0; i < bins.size(); i++){
         }
+    }
+
+    auto CostMapNode::indexToCoord(int index) -> CostMapNode::Coord {
+        return CostMapNode::Coord{index / static_cast<int>(mSize), index % static_cast<int>(mSize)};
+    }
+
+    auto CostMapNode::coordToIndex(Coord c) -> int{
+        return c.row * static_cast<int>(mSize) + c.col;
     }
 
     auto CostMapNode::processHeight(mrover::srv::MoveCostMap::Request::ConstSharedPtr& req, mrover::srv::MoveCostMap::Response::SharedPtr& res, std::vector<Bin> bins) -> void{

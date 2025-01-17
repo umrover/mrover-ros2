@@ -61,6 +61,15 @@ namespace mrover {
         auto processHeight(mrover::srv::MoveCostMap::Request::ConstSharedPtr& req, mrover::srv::MoveCostMap::Response::SharedPtr& res, std::vector<Bin> bins) -> void;
 
         void publishBinInfo(std::vector<Bin> const& bins);
+
+        // Bin vector coordinate
+        struct Coord{
+            int row;
+            int col;
+        };
+
+        auto indexToCoord(int index) -> Coord;
+        auto coordToIndex(Coord c) -> int;
     };
 
 } // namespace mrover
