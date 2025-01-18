@@ -5,6 +5,7 @@
     <a class='logo' href = "/"><img src='/mrover.png' alt='MRover' title='MRover' width='200' /></a>
   </div>
 
+  <!-- creates the buttons for each mission -->
   <div class="row">
     <div v-for="(mission, index) in missionType" :key="index" class="col-sm">
       <div class="form-check d-flex justify-content-center align-items-center">
@@ -20,6 +21,7 @@
     </div>
   </div>
 
+  <!-- for each mission, buttons are created for each camera associated with the selected mission -->
   <div class="row sticky-top bg-white">
       <div
         v-for="(camera, index) in cameras[selectedMission]"
@@ -38,6 +40,7 @@
 
   <div class="container-fluid">
     <div class="row gx-3 gy-3 justify-content-center">
+      <!-- if there is only one camera streaming, take up the whole width, otherwise have two cameras on each row -->
       <div
         :class="['col-12', (camsStreaming.length > 1) ? 'col-md-6' : '', 'camera-feed-container']"
         v-for="index in camsStreaming"
@@ -78,7 +81,7 @@ export default {
         "Autonomy Mission": ["Cam9" ,"Cam1"]
       },
       camsEnabled: [], // stores cam enabled state for cameras in selected mission (default true)
-      camsStreaming: []
+      camsStreaming: [] // stores the cameras that are currently in use
     }
   },
 
@@ -88,9 +91,10 @@ export default {
         this.percent = msg.percent;
       }
     },
-
     selectedMission(newMission: string) {
+      // when another mission is selected, add true values based on the number of cameras for that mission
       this.camsEnabled = new Array(this.cameras[newMission].length).fill(true);
+      // add in the cameras for that mission that have a value set to true
       this.camsStreaming = [...Array(this.camsEnabled.length).keys()];
     },
   },
