@@ -11,7 +11,7 @@ namespace mrover {
 
     class ScienceBridge final : public rclcpp::Node {
     public:
-        ScienceBridge() : Node{"science_bridge"} {
+        ScienceBridge() : Node{"science_hw_bridge"} {
             auto tempPub = create_publisher<std_msgs::msg::Float32>("science_temperature_data", 10);
             auto humidityPub = create_publisher<std_msgs::msg::Float32>("science_humidity_data", 10);
             auto oxygenPub = create_publisher<std_msgs::msg::Float32>("science_oxygen_data", 10);
