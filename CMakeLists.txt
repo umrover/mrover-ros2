@@ -288,7 +288,13 @@ endmacro()
 # TODO (ali): move all bridges to esw_bridge macro
 mrover_add_esw_bridge_node(drive_hw_bridge esw/drive_hw_bridge.cpp)
 
-mrover_add_esw_bridge_node(science_hw_bridge esw/science_hw_bridge.cpp)
+mrover_add_node(science_hw_bridge esw/science_hw_bridge.cpp)
+target_link_libraries(science_hw_bridge units)
+ament_target_dependencies(science_hw_bridge rclcpp std_msgs)
+
+# science_test_bridge
+mrover_add_node(science_test_bridge esw/science_test_bridge.cpp)
+ament_target_dependencies(science_test_bridge rclcpp)
 
 mrover_add_node(arm_hw_bridge esw/arm_hw_bridge.cpp)
 target_link_libraries(arm_hw_bridge motor_library)

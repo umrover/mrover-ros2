@@ -3,8 +3,7 @@
 #include <array>
 #include <cstdint>
 #include <variant>
-
-#include <units.hpp>
+#include <units/units.hpp>
 
 namespace mrover {
 
@@ -194,6 +193,14 @@ namespace mrover {
     struct SensorData {
     	std::uint8_t id;
     	float data;
+    };
+
+    enum class ScienceDataID : uint8_t {
+        TEMPERATURE = 1,
+        HUMIDITY = 2,
+        OXYGEN = 3,
+        METHANE = 4,
+        UV = 5,
     };
     
     // struct TemperatureData {
