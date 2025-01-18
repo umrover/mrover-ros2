@@ -4,9 +4,8 @@
 namespace mrover {
 
     Wait::Wait(const std::shared_ptr<FSMData> fsm_data) 
-        : fsm_data(fsm_data), sleepRate(1.0) // Initialize sleepRate with a parameter (e.g., 1.0)
+        : sleepRate(1.0), fsm_data(fsm_data) // Initialize sleepRate with a parameter (e.g., 1.0)
     {
-
     }
 
     auto Wait::onLoop() -> State* {

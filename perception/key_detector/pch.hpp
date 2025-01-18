@@ -25,11 +25,14 @@
 #include <mrover/action/key_action.hpp>
 
 //Services
-#include <mrover/srv/press_key.hpp>
+#include <mrover/srv/get_key_loc.hpp>
 
+using KeyAction = mrover::action::KeyAction;
+using GoalHandleKeyAction = rclcpp_action::ServerGoalHandle<KeyAction>;
 
 struct FSMData{
-  std::shared_ptr<rclcpp_action::ServerGoalHandle<mrover::action::KeyAction>> goal;
+  std::shared_ptr<GoalHandleKeyAction> goal_handle;
+  std::shared_ptr<rclcpp::Client<mrover::srv::GetKeyLoc>> client;
   char curr_key_index;
 };
 
