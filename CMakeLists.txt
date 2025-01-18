@@ -276,7 +276,7 @@ target_link_libraries(tag_detector lie opencv_core opencv_aruco opencv_imgproc l
 
 mrover_add_node(science_bridge esw/science_bridge.cpp)
 target_link_libraries(science_bridge units)
-ament_target_dependencies(science_bridge rclcpp)
+ament_target_dependencies(science_bridge rclcpp std_msgs)
 
 mrover_add_node(differential_drive_controller esw/differential_drive_controller.cpp)
 target_link_libraries(differential_drive_controller units)
