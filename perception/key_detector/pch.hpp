@@ -24,6 +24,15 @@
 //Actions
 #include <mrover/action/key_action.hpp>
 
+//Services
+#include <mrover/srv/press_key.hpp>
+
+
+struct FSMData{
+  std::shared_ptr<rclcpp_action::ServerGoalHandle<mrover::action::KeyAction>> goal;
+  char curr_key_index;
+};
+
 // States
 #include "states/State1.hpp"
 #include "states/State2.hpp"

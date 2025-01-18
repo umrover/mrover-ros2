@@ -10,12 +10,12 @@ namespace mrover{
 		using KeyAction = mrover::action::KeyAction;
 		using GoalHandleKeyAction = rclcpp_action::ServerGoalHandle<KeyAction>;
 
-		explicit Wait(const std::shared_ptr<GoalHandleKeyAction> _goal);
+		explicit Wait(const std::shared_ptr<FSMData> fsm_data);
 
 		auto onLoop() -> State* override;
 	private:
         // milliseconds ?
 		rclcpp::Rate sleepRate;
-		const std::shared_ptr<GoalHandleKeyAction> goal;
+		const std::shared_ptr<FSMData> fsm_data;
 	};
 }

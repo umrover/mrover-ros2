@@ -5,14 +5,13 @@
 
 namespace mrover {
 
+using KeyAction = mrover::action::KeyAction;
+using GoalHandleKeyAction = rclcpp_action::ServerGoalHandle<KeyAction>;
+
 
 class KeyActionServer : public rclcpp::Node
 {
-public:
-  using KeyAction = mrover::action::KeyAction;
-  using GoalHandleKeyAction = rclcpp_action::ServerGoalHandle<KeyAction>;
-  
-
+public:  
   explicit KeyActionServer(const rclcpp::NodeOptions & options = rclcpp::NodeOptions());
 private:
   rclcpp_action::Server<KeyAction>::SharedPtr action_server_;
@@ -32,11 +31,8 @@ private:
 };
 	class KeyDetector : public rclcpp::Node{
 	public:
-    using KeyAction = mrover::action::KeyAction;
-    using GoalHandleKeyAction = rclcpp_action::ServerGoalHandle<KeyAction>;
 
-		KeyDetector(const std::shared_ptr<GoalHandleKeyAction> _goal);
-    
+		KeyDetector(const std::shared_ptr<FSMData> fsm_data);
 
 		~KeyDetector() override;
 
@@ -49,7 +45,7 @@ private:
 
 		StatePublisher mStatePublisher;
 
-    const std::shared_ptr<GoalHandleKeyAction> goal;
+    const std::shared_ptr<FSMData> fsm_data;
 
 		void updateFSM();
 	};

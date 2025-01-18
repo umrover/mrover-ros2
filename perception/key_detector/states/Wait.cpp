@@ -3,18 +3,24 @@
 
 namespace mrover {
 
-	auto Wait::onLoop() -> State*{
-		while(rclcpp::ok()){
+    Wait::Wait(const std::shared_ptr<FSMData> fsm_data) 
+        : fsm_data(fsm_data), sleepRate(1.0) // Initialize sleepRate with a parameter (e.g., 1.0)
+    {
+
+    }
+
+    auto Wait::onLoop() -> State* {
+        while(rclcpp::ok()){
             auto logger = rclcpp::get_logger("Wait");
             RCLCPP_INFO_STREAM(logger, "Entered Wait " <<  "\n");
             sleepRate.sleep();
             RCLCPP_INFO_STREAM(logger, "Exiting Wait " <<  "\n");
 
-			return StateMachine::make_state<TargetKey>(goal);
-		}
+            // after wait this state machine should end 
+            return nullptr;
+        }
 
-		// compile fix
-		return StateMachine::make_state<TargetKey>(goal);
-
-	}
+        // compile fix
+        return nullptr;
+    }
 }
