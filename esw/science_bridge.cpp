@@ -1,9 +1,10 @@
 #include "lib/messaging.hpp"
 #include <memory>
-#include <mrover/CAN.h>
 #include <unordered_map>
 #include <algorithm>
 #include <rclcpp/rclcpp.hpp>
+#include "std_msgs/msg/float32.hpp"
+#include <mrover/msg/can.hpp>
 #include <units.hpp>
 
 namespace mrover {
@@ -11,14 +12,14 @@ namespace mrover {
     class ScienceBridge final : public rclcpp::Node {
     public:
         ScienceBridge() : Node{"science_bridge"} {
-            tempPub = create_publisher<msg::TemperatureData>("science_temperature_data", 10);
-            humidityPub = create_publisher<msg::HumidityData>("science_humidity_data", 10);
-            oxygenPub = create_publisher<msg::OxygenDataData>("science_oxygen_data", 10);
-            methanePub = create_publisher<msg::MethaneDataData>("science_methane_data", 10);
-            uvPub = create_publisher<msg::UVData>("science_uv_data", 10);
+            auto tempPub = create_publisher<std_msgs::msg::Float32>("science_temperature_data", 10);
+            auto humidityPub = create_publisher<std_msgs::msg::Float32>("science_humidity_data", 10);
+            auto oxygenPub = create_publisher<std_msgs::msg::Float32>("science_oxygen_data", 10);
+            auto methanePub = create_publisher<std_msgs::msg::Float32>("science_methane_data", 10);
+            auto uvPub = create_publisher<std_msgs::msg::Float32>("science_uv_data", 10);
 
-            canSubA = create_subscription<mrover::CAN>("can/science_a/in", 10, processCANData(mrover::CAN::ConstPtr const& msg));
-            canSubB = create_subscription<mrover::CAN>("can/science_b/in", 10, processCANData(mrover::CAN::ConstPtr const& msg));
+            auto canSubA = create_subscription<msg::CAN>("can/science_a/in", 10, processCANData(msg::CAN::ConstPtr const& msg));
+            auto canSubB = create_subscription<msg::CAN>("can/science_b/in", 10, processCANData(msg::CAN::ConstPtr const& msg));
         }
 
     private:
@@ -68,7 +69,7 @@ namespace mrover {
             }
         }
 
-        void processCANData(mrover::CAN::ConstPtr const& msg) {
+        void processCANData(msg::CAN::ConstPtr const& msg) {
             // TODO - fix in future
             // ROS_ERROR("Source: %s Destination: %s", msg->source.c_str(), msg->destination.c_str());
             
