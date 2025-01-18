@@ -14,6 +14,7 @@ from tf2_ros.buffer import Buffer
 import numpy as np
 from backend.drive_controls import send_joystick_twist, send_controller_twist
 from backend.input import DeviceInputs
+from backend.models import BasicWaypoint, AutonWaypoint
 from geometry_msgs.msg import Twist, Vector3
 from lie import SE3
 from mrover.msg import Throttle, Position, IK
@@ -118,9 +119,49 @@ class GUIConsumer(JsonWebsocketConsumer):
                 }:
                     cur_mode = mode
                     node.get_logger().debug(f"publishing to {cur_mode}")
+                case{
+                    "type": "save_auton_waypoint_list",
+                    "data": waypoints,
+                }:
+                    AutonWaypoint.objects.all().delete()
+                    AutonWaypoint.objects.bulk_create(
+                    [
+                            AutonWaypoint(
+                                tag_id=w["id"],
+                                type=w["type"],
+                                latitude=w["lat"],
+                                longitude=w["lon"],
+                                name=w["name"],
+                            )
+                            for w in waypoints
+                        ]
+                    )
+                    self.send_message_as_json({"type": "save_auton_waypoint_list", "success": True})
+                case{
+                    "type": "save_basic_waypoint_list",
+                    "data": waypoints,
+                }:
+                    BasicWaypoint.objects.all().delete()
+                    # when adding a new waypoint to the db, primary key is auto generated (see models.py)
+                    BasicWaypoint.objects.bulk_create(
+                        [BasicWaypoint(drone=w["drone"], latitude=w["lat"], longitude=w["lon"], name=w["name"]) for w in waypoints]
+                    )
+                    self.send_message_as_json({"type": "save_basic_waypoint_list", "success": True})
+                case{
+                    "type": "get_basic_waypoint_list",
+                }:
+                    self.send_message_as_json(
+                        {
+                            "type": "get_basic_waypoint_list",
+                            "data": [
+                                {"name": w.name, "drone": w.drone, "lat": w.latitude, "lon": w.longitude}
+                                for w in BasicWaypoint.objects.all()
+                            ],
+                        }
+                    )
+                    
                 case _:
                     node.get_logger().warning(f"Unhandled message: {message}")
-
         except:
             node.get_logger().error(f"Failed to handle message: {message}")
             node.get_logger().error(traceback.format_exc())
