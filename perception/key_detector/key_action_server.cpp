@@ -37,7 +37,6 @@ void KeyActionServer::execute(const std::shared_ptr<GoalHandleKeyAction> goal_ha
 {
   RCLCPP_INFO(this->get_logger(), "Executing goal");
   rclcpp::Rate loop_rate(1);
-  const auto goal = goal_handle->get_goal();
   auto feedback = std::make_shared<KeyAction::Feedback>();
   auto result = std::make_shared<KeyAction::Result>();
 

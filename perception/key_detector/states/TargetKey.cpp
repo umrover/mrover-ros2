@@ -25,7 +25,6 @@ auto TargetKey::onLoop() -> State*{
         return nullptr;
     }
     
-
     if(goal_handle->is_canceling())
     {
         return StateMachine::make_state<Cancel>(fsm_ctx); //cancel if the goal is cancelled
@@ -41,8 +40,8 @@ auto TargetKey::onLoop() -> State*{
     if (rclcpp::spin_until_future_complete(node, result) ==
         rclcpp::FutureReturnCode::SUCCESS)
     {
-        auto x = result.get()->x;
-        auto y = result.get()->y;
+        int64_t x = result.get()->x;
+        int64_t y = result.get()->y;
 
         //move arm with ik
         msg::IK ik;
@@ -65,6 +64,7 @@ auto TargetKey::onLoop() -> State*{
 
     } else {
         RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Failed to call service add_two_ints");
+        return StateMachine::make_state<TargetKey>(fsm_ctx);
     }    
 
 

@@ -35,7 +35,7 @@ using GoalHandleKeyAction = rclcpp_action::ServerGoalHandle<KeyAction>;
 struct FSMCtx{
   std::shared_ptr<GoalHandleKeyAction> goal_handle;
   std::shared_ptr<rclcpp::Node> node;
-  char curr_key_index;
+  int curr_key_index;
 };
 
 // States

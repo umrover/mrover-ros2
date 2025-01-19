@@ -15,11 +15,10 @@ namespace mrover {
             sleepRate.sleep();
             RCLCPP_INFO_STREAM(logger, "Exiting Wait " <<  "\n");
 
-            // after wait this state machine should end 
-            return StateMachine::make_state<Cancel>(fsm_ctx);
+            return StateMachine::make_state<TargetKey>(fsm_ctx);
         }
 
-        // compile fix
-        return StateMachine::make_state<Cancel>(fsm_ctx);
+        // if breaks end state machine?
+        return nullptr;
     }
 }
