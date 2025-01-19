@@ -104,7 +104,7 @@ namespace mrover {
 				uploadPC();
 			}
 
-
+			/*
             for (std::size_t i = 0; i < mGlobalGridMsg.data.size(); ++i) {
 				Bin& bin = bins[i];
 				auto& cell = mGlobalGridMsg.data[i];
@@ -114,63 +114,59 @@ namespace mrover {
 					continue;
 				}
 
-				R3f avgNormal{};
-				for(auto& point : bin){
-					avgNormal.x() += point.normalInCamera.x();
-					avgNormal.y() += point.normalInCamera.y();
-					avgNormal.z() += abs(point.normalInCamera.z());
-				}
+				std::size_t count = std::ranges::count_if(bin, [&](BinEntry const& entry){ return entry.normalInCamera.z() < mZThreshold; });
 
-				avgNormal.normalize();
+				RCLCPP_INFO_STREAM(get_logger(), "Count " << count);
 
-				RCLCPP_INFO_STREAM(get_logger(), "Normal Z Avg " << avgNormal.z());
-
-				std::int8_t cost = avgNormal.z() <= mZThreshold ? OCCUPIED_COST : FREE_COST;
+				std::int8_t cost = count > 20 ? OCCUPIED_COST : FREE_COST;
 				cell = cost;
 			}
+			*/
+
+			mGlobalGridMsg.data[73] = OCCUPIED_COST;
 
 			RCLCPP_INFO_STREAM(get_logger(), "\n");
 
 			// Square Dilate operation
             nav_msgs::msg::OccupancyGrid postProcesed = mGlobalGridMsg;
             std::array<std::ptrdiff_t, 9> disBottomLeft{0,
-												  +1, +postProcesed.info.width,
-												  +1 + postProcesed.info.width};
+												  +1, +static_cast<std::ptrdiff_t>(postProcesed.info.width),
+												  +1 + static_cast<std::ptrdiff_t>(postProcesed.info.width)};
 
             std::array<std::ptrdiff_t, 9> disTopLeft{0,
-												  +1, -postProcesed.info.width,
-												  +1 - postProcesed.info.width};
+												  +1, -static_cast<std::ptrdiff_t>(postProcesed.info.width),
+												  +1 - static_cast<std::ptrdiff_t>(postProcesed.info.width)};
 
             std::array<std::ptrdiff_t, 9> disBottomRight{0,
-												  -1, +postProcesed.info.width,
-												  -1 + postProcesed.info.width};
+												  -1, +static_cast<std::ptrdiff_t>(postProcesed.info.width),
+												  -1 + static_cast<std::ptrdiff_t>(postProcesed.info.width)};
 
             std::array<std::ptrdiff_t, 9> disTopRight{0,
-												  -1, -postProcesed.info.width,
-												  -1 - postProcesed.info.width};
+												  -1, -static_cast<std::ptrdiff_t>(postProcesed.info.width),
+												  -1 - static_cast<std::ptrdiff_t>(postProcesed.info.width)};
 
             std::array<std::ptrdiff_t, 9> disLeft{0,
-												  +1, -postProcesed.info.width, +postProcesed.info.width,
-												  +1 - postProcesed.info.width,
-												  +1 + postProcesed.info.width};
+												  +1, -static_cast<std::ptrdiff_t>(postProcesed.info.width), +static_cast<std::ptrdiff_t>(postProcesed.info.width),
+												  +1 - static_cast<std::ptrdiff_t>(postProcesed.info.width),
+												  +1 + static_cast<std::ptrdiff_t>(postProcesed.info.width)};
 
             std::array<std::ptrdiff_t, 9> disBottom{0,
-												  -1, +1, +postProcesed.info.width,
-												  -1 + postProcesed.info.width, +1 + postProcesed.info.width};
+												  -1, +1, +static_cast<std::ptrdiff_t>(postProcesed.info.width),
+												  -1 + static_cast<std::ptrdiff_t>(postProcesed.info.width), +1 + static_cast<std::ptrdiff_t>(postProcesed.info.width)};
 
             std::array<std::ptrdiff_t, 9> disRight{0,
-												  -1, -postProcesed.info.width, +postProcesed.info.width,
-												  -1 - postProcesed.info.width,
-												  -1 + postProcesed.info.width};
+												  -1, -static_cast<std::ptrdiff_t>(postProcesed.info.width), +static_cast<std::ptrdiff_t>(postProcesed.info.width),
+												  -1 - static_cast<std::ptrdiff_t>(postProcesed.info.width),
+												  -1 + static_cast<std::ptrdiff_t>(postProcesed.info.width)};
 
             std::array<std::ptrdiff_t, 9> disTop{0,
-												  -1, +1, -postProcesed.info.width,
-												  -1 - postProcesed.info.width, +1 - postProcesed.info.width};
+												  -1, +1, -static_cast<std::ptrdiff_t>(postProcesed.info.width),
+												  -1 - static_cast<std::ptrdiff_t>(postProcesed.info.width), +1 - static_cast<std::ptrdiff_t>(postProcesed.info.width)};
 
             std::array<std::ptrdiff_t, 9> disCenter{0,
-												  -1, +1, -postProcesed.info.width, +postProcesed.info.width,
-												  -1 - postProcesed.info.width, +1 - postProcesed.info.width,
-												  -1 + postProcesed.info.width, +1 + postProcesed.info.width};
+												  -1, +1, -static_cast<std::ptrdiff_t>(postProcesed.info.width), +static_cast<std::ptrdiff_t>(postProcesed.info.width),
+												  -1 - static_cast<std::ptrdiff_t>(postProcesed.info.width), +1 - static_cast<std::ptrdiff_t>(postProcesed.info.width),
+												  -1 + static_cast<std::ptrdiff_t>(postProcesed.info.width), +1 + static_cast<std::ptrdiff_t>(postProcesed.info.width)};
 
 
 
@@ -179,57 +175,90 @@ namespace mrover {
 				std::int64_t gridX = i % mGlobalGridMsg.info.width;
 				std::int64_t gridY = i / mGlobalGridMsg.info.height;
 
+				if(i == 53 || i == 93)
+					RCLCPP_INFO_STREAM(get_logger(), "X, Y " << gridX << " , " << gridY);
+
 				// TODO: This is kinda cooked
 				if(gridX == 0 && gridY == 0){
 					if (std::ranges::any_of(disBottomLeft, [&](std::ptrdiff_t di) {
 							std::int64_t j = i + di;
 							return j >= 0 && j < msgSize && mGlobalGridMsg.data[j] > FREE_COST;
-						})) postProcesed.data[i] = OCCUPIED_COST;
+						})){
+						postProcesed.data[i] = OCCUPIED_COST;
+					} 
+					RCLCPP_INFO_STREAM(get_logger(), "Bottom Left");
 				}else if(gridX == 0 && gridY == mGlobalGridMsg.info.height - 1){
 					if (std::ranges::any_of(disTopLeft, [&](std::ptrdiff_t di) {
 							std::int64_t j = i + di;
 							return j >= 0 && j < msgSize && mGlobalGridMsg.data[j] > FREE_COST;
-						})) postProcesed.data[i] = OCCUPIED_COST;
+						})){
+						postProcesed.data[i] = OCCUPIED_COST;
+					} 
+					RCLCPP_INFO_STREAM(get_logger(), "Top Left");
 				}else if(gridX == mGlobalGridMsg.info.width - 1 && gridY == 0){
 					if (std::ranges::any_of(disBottomRight, [&](std::ptrdiff_t di) {
 							std::int64_t j = i + di;
 							return j >= 0 && j < msgSize && mGlobalGridMsg.data[j] > FREE_COST;
-						})) postProcesed.data[i] = OCCUPIED_COST;
+						})){
+						postProcesed.data[i] = OCCUPIED_COST;
+					} 
+					RCLCPP_INFO_STREAM(get_logger(), "Bottom Right");
 				}else if(gridX == mGlobalGridMsg.info.width - 1 && gridY == mGlobalGridMsg.info.height - 1){
 					if (std::ranges::any_of(disTopRight, [&](std::ptrdiff_t di) {
 							std::int64_t j = i + di;
 							return j >= 0 && j < msgSize && mGlobalGridMsg.data[j] > FREE_COST;
-						})) postProcesed.data[i] = OCCUPIED_COST;
+						})){
+						postProcesed.data[i] = OCCUPIED_COST;
+					} 
+					RCLCPP_INFO_STREAM(get_logger(), "Top Right");
 				}else if(gridX == 0){
 					if (std::ranges::any_of(disLeft, [&](std::ptrdiff_t di) {
 							std::int64_t j = i + di;
 							return j >= 0 && j < msgSize && mGlobalGridMsg.data[j] > FREE_COST;
-						})) postProcesed.data[i] = OCCUPIED_COST;
+						})){
+						postProcesed.data[i] = OCCUPIED_COST;
+					} 
+					RCLCPP_INFO_STREAM(get_logger(), "Left");
 				}else if(gridY == 0){
 					if (std::ranges::any_of(disBottom, [&](std::ptrdiff_t di) {
 							std::int64_t j = i + di;
 							return j >= 0 && j < msgSize && mGlobalGridMsg.data[j] > FREE_COST;
-						})) postProcesed.data[i] = OCCUPIED_COST;
+						})){
+						postProcesed.data[i] = OCCUPIED_COST;
+					} 
+					RCLCPP_INFO_STREAM(get_logger(), "Bottom");
 				}else if(gridX == mGlobalGridMsg.info.width - 1){
 					if (std::ranges::any_of(disRight, [&](std::ptrdiff_t di) {
 							std::int64_t j = i + di;
 							return j >= 0 && j < msgSize && mGlobalGridMsg.data[j] > FREE_COST;
-						})) postProcesed.data[i] = OCCUPIED_COST;
+						})){
+						postProcesed.data[i] = OCCUPIED_COST;
+					} 
+					RCLCPP_INFO_STREAM(get_logger(), "Right");
 				}else if (gridY == mGlobalGridMsg.info.height - 1){
 					if (std::ranges::any_of(disTop, [&](std::ptrdiff_t di) {
 							std::int64_t j = i + di;
 							return j >= 0 && j < msgSize && mGlobalGridMsg.data[j] > FREE_COST;
-						})) postProcesed.data[i] = OCCUPIED_COST;
+						})){
+						postProcesed.data[i] = OCCUPIED_COST;
+					} 
+					RCLCPP_INFO_STREAM(get_logger(), "Top");
 				}else{
 					if (std::ranges::any_of(disCenter, [&](std::ptrdiff_t di) {
 							std::int64_t j = i + di;
+							if(i == 93){
+								RCLCPP_INFO_STREAM(get_logger(), j << " " << di);
+							}
 							return j >= 0 && j < msgSize && mGlobalGridMsg.data[j] > FREE_COST;
-						})) postProcesed.data[i] = OCCUPIED_COST;
+						})){
+						postProcesed.data[i] = OCCUPIED_COST;
+
+
+						RCLCPP_INFO_STREAM(get_logger(), "Found");
+					} 
+					RCLCPP_INFO_STREAM(get_logger(), "Center");
 				}
             }
-
-			/*
-			*/
 
             mCostMapPub->publish(postProcesed);
             if(!mCostMapPub){
