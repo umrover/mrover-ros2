@@ -190,7 +190,7 @@ namespace mrover {
 
     struct SensorData {
 		std::uint8_t id;
-		float temp;
+		float data;
 	};
 
     using InBoundScienceMessage = std::variant<

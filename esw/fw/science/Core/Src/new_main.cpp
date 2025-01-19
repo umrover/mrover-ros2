@@ -14,6 +14,7 @@ extern FDCAN_HandleTypeDef hfdcan1;
 
 #define JETSON_ADDRESS 0x10
 #define SCIENCE_A 0x50
+#define SCIENCE_B 0x51
 
 mrover::ADCSensor adc_sensor1 = mrover::ADCSensor(&hadc1, 0);
 mrover::ADCSensor adc_sensor2 = mrover::ADCSensor(&hadc2, 0);
@@ -41,11 +42,11 @@ void new_main(){
 
 	while(1){
 		th_sensor.update_temp_humidity();
-		temp_data.temp = th_sensor.get_current_temp();
-		humidity_data.humidity = th_sensor.get_current_humidity();
-		oxygen_data.percent = oxygen_sensor.update_oxygen();
-		methane_data.ppm = methane_sensor.update_ppm_blocking();
-		uv_data.uv_index = uv_sensor.update_uv_blocking();
+		temp_data.data = th_sensor.get_current_temp();
+		humidity_data.data = th_sensor.get_current_humidity();
+		oxygen_data.data = oxygen_sensor.update_oxygen();
+		methane_data.data = methane_sensor.update_ppm_blocking();
+		uv_data.data = uv_sensor.update_uv_blocking();
 
 		fdcan_bus.broadcast(temp_data, SCIENCE_A, JETSON_ADDRESS);
 		HAL_Delay(50);
