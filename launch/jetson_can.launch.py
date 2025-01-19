@@ -11,6 +11,7 @@ from launch_ros.actions import Node
 # This driver: https://www.peak-system.com/fileadmin/media/linux/index.htm was compiled on the Jetson
 # It makes the SocketCAN interfaces show up in "ip link"
 
+
 def generate_launch_description():
 
     can_bridge_1_node = Node(
