@@ -55,7 +55,7 @@ namespace mrover {
             struct BinEntry {
                 R3f pointInCamera;
                 R3f pointInMap;
-                R3f normal;
+                R3f normalInCamera;
                 double height;
             };
 
@@ -109,23 +109,27 @@ namespace mrover {
 				Bin& bin = bins[i];
 				auto& cell = mGlobalGridMsg.data[i];
 
-                if (bin.size() >= 16){
-					std::size_t count = 0;
-					
-
-                    for(auto& point : bin){
-						if(point.pointInCamera.z() > -0.3 && point.normal.z() < mZThreshold)
-							++count;
-                    }
-
-                    std::int8_t cost = count > 20 ? OCCUPIED_COST : FREE_COST;
-
-                    // Update cell with EWMA acting as a low-pass filter
-                    cell = static_cast<std::int8_t>(mAlpha * cost + (1 - mAlpha) * cell);
-                }else{
+				if (bin.size() < 16){
 					cell = UNKNOWN_COST;
+					continue;
 				}
-            }
+
+				R3f avgNormal{};
+				for(auto& point : bin){
+					avgNormal.x() += point.normalInCamera.x();
+					avgNormal.y() += point.normalInCamera.y();
+					avgNormal.z() += abs(point.normalInCamera.z());
+				}
+
+				avgNormal.normalize();
+
+				RCLCPP_INFO_STREAM(get_logger(), "Normal Z Avg " << avgNormal.z());
+
+				std::int8_t cost = avgNormal.z() <= mZThreshold ? OCCUPIED_COST : FREE_COST;
+				cell = cost;
+			}
+
+			RCLCPP_INFO_STREAM(get_logger(), "\n");
 
 			// Square Dilate operation
             nav_msgs::msg::OccupancyGrid postProcesed = mGlobalGridMsg;
