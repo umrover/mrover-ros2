@@ -42,6 +42,7 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.ee_vel_pub = node.create_publisher(Vector3, "ee_vel_cmd",1)
         self.joystick_twist_pub = node.create_publisher(Twist, "/joystick_cmd_vel", 1)
         self.controller_twist_pub = node.create_publisher(Twist, "/controller_cmd_vel", 1)
+        self.mast_gimbal_pub = node.create_publisher(Throttle, "/mast_gimbal_throttle_cmd", 1)
 
         self.buffer = Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.buffer, node)
@@ -111,8 +112,7 @@ class GUIConsumer(JsonWebsocketConsumer):
                             send_controller_twist(device_input, self.controller_twist_pub)
                             send_ra_controls(cur_mode,device_input,node, self.thr_pub, self.ee_pos_pub, self.ee_vel_pub, self.buffer)
                         case "mast_keyboard":
-                            send_mast_controls(device_input)
-                #change input mode
+                            send_mast_controls(device_input, self.mast_gimbal_pub)
                 case{
                     "type":"ra_mode",
                     "mode": mode,

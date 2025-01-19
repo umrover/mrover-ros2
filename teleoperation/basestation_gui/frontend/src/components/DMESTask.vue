@@ -129,7 +129,7 @@ export default defineComponent({
 .wrapper-es {
   display: grid;
   gap: 10px;
-  grid-template-columns: repeat(2, auto);
+  grid-template-columns: repeat(3, auto);
   grid-template-areas:
     'header header'
     'arm-controls arm-controls'
