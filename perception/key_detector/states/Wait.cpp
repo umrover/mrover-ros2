@@ -3,7 +3,7 @@
 
 namespace mrover {
 
-    Wait::Wait(const std::shared_ptr<FSMData> fsm_data) 
+    Wait::Wait(const std::shared_ptr<FSMCtx> fsm_data) 
         : sleepRate(1.0), fsm_data(fsm_data) // Initialize sleepRate with a parameter (e.g., 1.0)
     {
     }

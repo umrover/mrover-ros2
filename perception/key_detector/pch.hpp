@@ -15,7 +15,6 @@
 #include <memory>
 #include <thread>
 
-
 // MRover Libs
 #include <state_machine.hpp>
 #include <state.hpp>
@@ -27,12 +26,15 @@
 //Services
 #include <mrover/srv/get_key_loc.hpp>
 
+//Messages
+#include <mrover/msg/ik.hpp>
+
 using KeyAction = mrover::action::KeyAction;
 using GoalHandleKeyAction = rclcpp_action::ServerGoalHandle<KeyAction>;
 
-struct FSMData{
+struct FSMCtx{
   std::shared_ptr<GoalHandleKeyAction> goal_handle;
-  std::shared_ptr<rclcpp::Client<mrover::srv::GetKeyLoc>> client;
+  std::shared_ptr<rclcpp::Node> node;
   char curr_key_index;
 };
 

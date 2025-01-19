@@ -3,7 +3,7 @@
 #include "PressKey.hpp"
 
 namespace mrover{
-PressKey::PressKey(const std::shared_ptr<FSMData> fsm_data) : fsm_data(fsm_data) 
+PressKey::PressKey(const std::shared_ptr<FSMCtx> fsm_data) : fsm_data(fsm_data) 
 {
 
 }

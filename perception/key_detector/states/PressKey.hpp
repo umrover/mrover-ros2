@@ -8,11 +8,11 @@ namespace mrover{
 		using KeyAction = mrover::action::KeyAction;
 		using GoalHandleKeyAction = rclcpp_action::ServerGoalHandle<KeyAction>;
 
-		explicit PressKey(const std::shared_ptr<FSMData> fsm_data);
+		explicit PressKey(const std::shared_ptr<FSMCtx> fsm_data);
 
 		auto onLoop() -> State* override;
 	private:
         
-		const std::shared_ptr<FSMData> fsm_data;
+		const std::shared_ptr<FSMCtx> fsm_data;
 	};
 }

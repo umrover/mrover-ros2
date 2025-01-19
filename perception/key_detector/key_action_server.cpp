@@ -41,18 +41,10 @@ void KeyActionServer::execute(const std::shared_ptr<GoalHandleKeyAction> goal_ha
   auto feedback = std::make_shared<KeyAction::Feedback>();
   auto result = std::make_shared<KeyAction::Result>();
 
-  //Todo: whatever is needed to move (Use IK)
-  // for loop through each key in the code
-
-  rclcpp::Client<srv::GetKeyLoc>::SharedPtr client =
-    create_client<srv::GetKeyLoc>("GetKeyLoc");
-
-  auto fsm_data = std::make_shared<FSMData>();
+  auto fsm_data = std::make_shared<FSMCtx>();
   fsm_data->goal_handle = goal_handle;
   fsm_data->curr_key_index = 0;
-  fsm_data->client = client;
-
-  
+  fsm_data->node = this->shared_from_this();
 
 
   // Check if movement is done
