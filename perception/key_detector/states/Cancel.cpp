@@ -3,7 +3,7 @@
 #include "Cancel.hpp"
 
 namespace mrover{
-Cancel::Cancel(const std::shared_ptr<FSMCtx> fsm_data) : fsm_data(fsm_data) 
+Cancel::Cancel(const std::shared_ptr<FSMCtx> fsm_ctx) : fsm_ctx(fsm_ctx) 
 {
 
 }

@@ -3,8 +3,8 @@
 
 namespace mrover {
 
-    Wait::Wait(const std::shared_ptr<FSMCtx> fsm_data) 
-        : sleepRate(1.0), fsm_data(fsm_data) // Initialize sleepRate with a parameter (e.g., 1.0)
+    Wait::Wait(const std::shared_ptr<FSMCtx> fsm_ctx) 
+        : sleepRate(1.0), fsm_ctx(fsm_ctx) // Initialize sleepRate with a parameter (e.g., 1.0)
     {
     }
 
@@ -16,10 +16,10 @@ namespace mrover {
             RCLCPP_INFO_STREAM(logger, "Exiting Wait " <<  "\n");
 
             // after wait this state machine should end 
-            return StateMachine::make_state<Cancel>(fsm_data);
+            return StateMachine::make_state<Cancel>(fsm_ctx);
         }
 
         // compile fix
-        return StateMachine::make_state<Cancel>(fsm_data);
+        return StateMachine::make_state<Cancel>(fsm_ctx);
     }
 }

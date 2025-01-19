@@ -29,7 +29,7 @@ class KeyActionServer : public rclcpp::Node
 class KeyDetector : public rclcpp::Node{
   public:
 
-    KeyDetector(const std::shared_ptr<FSMCtx> fsm_data);
+    KeyDetector(const std::shared_ptr<FSMCtx> fsm_ctx);
 
     ~KeyDetector() override;
 
@@ -42,7 +42,7 @@ class KeyDetector : public rclcpp::Node{
 
     StatePublisher mStatePublisher;
 
-    const std::shared_ptr<FSMCtx> fsm_data;
+    const std::shared_ptr<FSMCtx> fsm_ctx;
 
     void updateFSM();
 };

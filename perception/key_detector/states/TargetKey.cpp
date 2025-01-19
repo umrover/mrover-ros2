@@ -4,9 +4,9 @@
 #include <rclcpp/client.hpp>
 
 namespace mrover{
-TargetKey::TargetKey(const std::shared_ptr<FSMCtx> fsm_data) : fsm_data(fsm_data) 
+TargetKey::TargetKey(const std::shared_ptr<FSMCtx> fsm_ctx) : fsm_ctx(fsm_ctx) 
 {
-        mIkTargetPub = fsm_data->node->create_publisher<msg::IK>("arm_ik", 1);
+        mIkTargetPub = fsm_ctx->node->create_publisher<msg::IK>("arm_ik", 1);
 }
 
 auto TargetKey::onLoop() -> State*{
@@ -15,26 +15,26 @@ auto TargetKey::onLoop() -> State*{
         // get the location of the key by querying model
         // use ik to move to the location
         // transition to press key state
-    auto goal_handle = fsm_data->goal_handle;
+    auto goal_handle = fsm_ctx->goal_handle;
     auto goal = goal_handle->get_goal();
-    auto node = fsm_data->node;
+    auto node = fsm_ctx->node;
 
 
     // if we have pressed all the keys, end
-    if (fsm_data->curr_key_index > goal->code.size()){
+    if (fsm_ctx->curr_key_index > goal->code.size()){
         return nullptr;
     }
     
 
     if(goal_handle->is_canceling())
     {
-        return StateMachine::make_state<Cancel>(fsm_data); //cancel if the goal is cancelled
+        return StateMachine::make_state<Cancel>(fsm_ctx); //cancel if the goal is cancelled
     }
 
     auto client = node->create_client<srv::GetKeyLoc>("GetKeyLoc");
 
     auto request = std::make_shared<srv::GetKeyLoc::Request>();
-    request->key = goal->code[fsm_data->curr_key_index];
+    request->key = goal->code[fsm_ctx->curr_key_index];
     auto result = client->async_send_request(request);
 
     // Wait for the result. 
@@ -57,10 +57,10 @@ auto TargetKey::onLoop() -> State*{
         //verify that the arm is within the threshold
         bool within_threshold = false;
         if(within_threshold){
-            fsm_data->curr_key_index++;
-            return StateMachine::make_state<PressKey>(fsm_data);
+            fsm_ctx->curr_key_index++;
+            return StateMachine::make_state<PressKey>(fsm_ctx);
         } else {
-            return StateMachine::make_state<TargetKey>(fsm_data);
+            return StateMachine::make_state<TargetKey>(fsm_ctx);
         }
 
     } else {

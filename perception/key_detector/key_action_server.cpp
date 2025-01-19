@@ -41,10 +41,10 @@ void KeyActionServer::execute(const std::shared_ptr<GoalHandleKeyAction> goal_ha
   auto feedback = std::make_shared<KeyAction::Feedback>();
   auto result = std::make_shared<KeyAction::Result>();
 
-  auto fsm_data = std::make_shared<FSMCtx>();
-  fsm_data->goal_handle = goal_handle;
-  fsm_data->curr_key_index = 0;
-  fsm_data->node = this->shared_from_this();
+  auto fsm_ctx = std::make_shared<FSMCtx>();
+  fsm_ctx->goal_handle = goal_handle;
+  fsm_ctx->curr_key_index = 0;
+  fsm_ctx->node = this->shared_from_this();
 
 
   // Check if movement is done
