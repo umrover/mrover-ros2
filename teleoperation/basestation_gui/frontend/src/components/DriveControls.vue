@@ -22,6 +22,8 @@ export default {
       const gamepad = gamepads.find(gamepad => gamepad && gamepad.id.includes('Thrustmaster'))
       if (!gamepad) return
 
+      console.log(gamepad.axes)
+
       this.sendMessage({
         type: 'joystick',
         axes: gamepad.axes,
