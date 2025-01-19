@@ -55,6 +55,7 @@ export default defineComponent({
   created: function() {
     this.interval = window.setInterval(() => {
       const gamepads = navigator.getGamepads()
+      // may need to check for Xbox rather than Microsoft
       const gamepad = gamepads.find(gamepad => gamepad && gamepad.id.includes('Microsoft'))
       if (!gamepad) return
 
