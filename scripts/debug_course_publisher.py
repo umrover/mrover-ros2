@@ -64,7 +64,7 @@ class DebugCoursePublisher(Node):
                 for waypoint in [
                     (
                         Waypoint(type=WaypointType(val=WaypointType.NO_SEARCH)),
-                        SE3.from_position_orientation(10.0, 0.0),
+                        SE3.from_position_orientation(10.0, 10.0),
                     ),
                     # (
                     #     Waypoint(type=WaypointType(val=WaypointType.NO_SEARCH)),
