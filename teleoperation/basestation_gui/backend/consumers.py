@@ -2,12 +2,9 @@ import json
 import traceback
 from typing import Any, Type
 
-import yaml
 from channels.generic.websocket import JsonWebsocketConsumer
 
 import rclpy
-from rclpy.subscription import Subscription
-from rclpy.node import Node
 
 import tf2_ros
 from tf2_ros.buffer import Buffer
@@ -18,7 +15,7 @@ from backend.models import BasicWaypoint, AutonWaypoint
 from geometry_msgs.msg import Twist, Vector3
 from sensor_msgs.msg import NavSatFix
 from lie import SE3
-from mrover.msg import Throttle, Position, IK
+from mrover.msg import Throttle, IK, ControllerState
 from backend.ra_controls import send_ra_controls
 from backend.mast_controls import send_mast_controls
 
@@ -40,8 +37,12 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.accept()
         self.thr_pub = node.create_publisher(Throttle, "arm_throttle_cmd",1)
         self.ee_pos_pub = node.create_publisher(IK, "ee_pos_cmd",1)
-        self.ee_vel_pub = node.create_publisher(Vector3, "ee_vel_cmd",1) #changed
-        self.forward_ros_topic("drone_waypoint", NavSatFix, "drone_waypoint")
+        self.ee_vel_pub = node.create_publisher(Vector3, "ee_vel_cmd",1)
+        self.joystick_twist_pub = node.create_publisher(Twist, "/joystick_cmd_vel", 1)
+        self.controller_twist_pub = node.create_publisher(Twist, "/controller_cmd_vel", 1)
+        self.mast_gimbal_pub = node.create_publisher(Throttle, "/mast_gimbal_throttle_cmd", 1)
+
+        self.forward_ros_topic("/drive_controller_data", ControllerState, "drive_state")
 
         self.buffer = Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.buffer, node)
@@ -112,8 +113,7 @@ class GUIConsumer(JsonWebsocketConsumer):
                             send_controller_twist(device_input, self.controller_twist_pub)
                             send_ra_controls(cur_mode,device_input,node, self.thr_pub, self.ee_pos_pub, self.ee_vel_pub, self.buffer)
                         case "mast_keyboard":
-                            send_mast_controls(device_input)
-                #update input mode
+                            send_mast_controls(device_input, self.mast_gimbal_pub)
                 case{
                     "type":"ra_mode",
                     "mode": mode,

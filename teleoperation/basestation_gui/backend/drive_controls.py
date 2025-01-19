@@ -1,4 +1,3 @@
-# import rospy
 from backend.input import filter_input, simulated_axis, safe_index, remap, DeviceInputs
 from backend.mappings import JoystickAxis, ControllerButton
 from geometry_msgs.msg import Twist, Vector3

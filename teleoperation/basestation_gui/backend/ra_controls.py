@@ -2,21 +2,16 @@ from enum import Enum
 from math import pi
 from typing import Union
 
-import numpy as np
-import rclpy
 from rclpy.node import Node
-from rclpy.time import Time
 from rclpy.publisher import Publisher
 
 from lie import SE3
-# import rospy
 from backend.input import filter_input, simulated_axis, safe_index, DeviceInputs
 from backend.mappings import ControllerAxis, ControllerButton
-from mrover.msg import Throttle, Position, IK
+from mrover.msg import Throttle, IK
 from sensor_msgs.msg import JointState
-from geometry_msgs.msg import PoseStamped, Vector3, Pose, Point, Quaternion
+from geometry_msgs.msg import Vector3, Pose, Point, Quaternion
 
-import tf2_ros
 from tf2_ros.buffer import Buffer
 
 import logging
@@ -24,13 +19,6 @@ logger = logging.getLogger('django')
 
 
 TAU = 2 * pi
-
-
-# rospy.init_node("teleoperation", disable_signals=True)
-
-# throttle_publisher = rospy.Publisher("arm_throttle_cmd", Throttle, queue_size=1) FOR MANUAL
-# position_publisher = rospy.Publisher("arm_position_cmd", Position, queue_size=1) for IK
-
 
 class Joint(Enum):
     A = 0
