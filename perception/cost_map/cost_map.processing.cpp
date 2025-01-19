@@ -24,6 +24,7 @@ namespace mrover {
         Eigen::Vector2f gridFloat = (positionInMap.head<2>() - origin);
 
         // checking for out of bounds points
+        // TODO: replace the width [or height] * resolution with mSize
         if(gridFloat.x() < 0 || gridFloat.x() > static_cast<float>(grid.info.width) * grid.info.resolution || 
             gridFloat.y() < 0 || gridFloat.y() > static_cast<float>(grid.info.height) * grid.info.resolution) return -1;        
 
@@ -151,9 +152,35 @@ namespace mrover {
             //                                   -1, +1, -postProcesed.info.width, +postProcesed.info.width,
             //                                   -1 - postProcesed.info.width, +1 - postProcesed.info.width,
             //                                   -1 + postProcesed.info.width, +1 + postProcesed.info.width};
-            std::array<CostMapNode::Coord,9> dis{Coord{-1,-1}, {-1,0}, {-1,1}, 
+
+            /*  Grid offsets
+                [-1,-1] [-1, 0] [-1, 1]
+                [ 0,-1] [ 0, 0] [ 0, 1]
+                [ 1,-1] [ 1, 0] [ 1, 1]
+
+            */
+            std::array<CostMapNode::Coordinate,9> dis{
+                                           Coordinate{-1,-1}, {-1,0}, {-1,1}, 
                                                 {0,-1}, {0, 0}, {0,1},
-                                                {1,-1}, {1, 0}, {1,1}};
+                                                {1,-1}, {1, 0}, {1,1}
+                                                };
+            for (int row = 0; row < mWidth; ++row) {
+                for(int col = 0; col < mHeight; ++col) {
+                    int oned_index = coordinateToIndex({row, col});
+                    if(std::ranges::any_of(dis, [&](CostMapNode::Coordinate di) {
+                        // the coordinate of the cell we are checking + dis offset
+                        Coordinate dcoord = {row + di.row, col + di.col};
+                        if(dcoord.row < 0 || dcoord.row >= mHeight || dcoord.col < 0 || dcoord.col >= mWidth)
+                            return false;
+
+                        return mGlobalGridMsg.data[coordinateToIndex(dcoord)] > FREE_COST;
+                    })) postProcesed.data[oned_index] = OCCUPIED_COST;
+                }
+            }
+            // std::array<std::ptrdiff_t, 9> dis{0, 
+            //                                   -1, +1, -postProcesed.info.width, +postProcesed.info.width,
+            //                                   -1 - postProcesed.info.width, +1 - postProcesed.info.width,
+            //                                   -1 + postProcesed.info.width, +1 + postProcesed.info.width};
             // for (std::size_t i = 0; i < mGlobalGridMsg.data.size(); ++i) {
             //     if (std::ranges::any_of(dis, [&](std::ptrdiff_t di) {
                         
@@ -210,12 +237,12 @@ namespace mrover {
         }
     }
 
-    auto CostMapNode::indexToCoord(int index) -> CostMapNode::Coord {
-        return CostMapNode::Coord{index / static_cast<int>(mSize), index % static_cast<int>(mSize)};
+    auto CostMapNode::indexToCoordinate(const int index) -> CostMapNode::Coordinate {
+        return {index / mWidth, index % mWidth};
     }
 
-    auto CostMapNode::coordToIndex(Coord c) -> int{
-        return c.row * static_cast<int>(mSize) + c.col;
+    auto CostMapNode::coordinateToIndex(const Coordinate c) -> int{
+        return c.row * mWidth + c.col;
     }
 
     auto CostMapNode::processHeight(mrover::srv::MoveCostMap::Request::ConstSharedPtr& req, mrover::srv::MoveCostMap::Response::SharedPtr& res, std::vector<Bin> bins) -> void{

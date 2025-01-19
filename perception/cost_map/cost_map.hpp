@@ -29,6 +29,8 @@ namespace mrover {
         double mNearClip{}, mFarClip{}, mLeftClip{}, mRightClip{}, mTopClip{};
         double mResolution{}; // Meters per cell
         double mSize{};       // Size of the square costmap in meters
+        int mWidth{};         // Number of cells on the grid horizontally
+        int mHeight{};        // Number of cells on the grid vertically 
         int mDownSamplingFactor = 4;
         std::string mMapFrame;
 		
@@ -63,13 +65,13 @@ namespace mrover {
         void publishBinInfo(std::vector<Bin> const& bins);
 
         // Bin vector coordinate
-        struct Coord{
+        struct Coordinate{
             int row;
             int col;
         };
 
-        auto indexToCoord(int index) -> Coord;
-        auto coordToIndex(Coord c) -> int;
+        auto indexToCoordinate(int index) -> Coordinate;
+        auto coordinateToIndex(Coordinate c) -> int;
     };
 
 } // namespace mrover

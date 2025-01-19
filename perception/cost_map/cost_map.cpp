@@ -8,7 +8,9 @@ namespace mrover {
 
         std::vector<ParameterWrapper> params{
             {"resolution", mResolution, 0.5},
-            {"size", mSize, 5},
+            {"size", mSize, 20},
+            {"width", mWidth, static_cast<int>(mSize / mResolution)},
+            {"height", mHeight, static_cast<int>(mSize / mResolution)},
             {"map_frame", mMapFrame, "map"},
             {"near_clip", mNearClip, 0.0},
             {"far_clip", mFarClip, 7.0},
@@ -38,7 +40,9 @@ namespace mrover {
         // });
         RCLCPP_INFO_STREAM(get_logger(), std::format("frame: {}", mMapFrame));
         mGlobalGridMsg.info.resolution = mResolution;
+        // Number of cells horizontally
         mGlobalGridMsg.info.width = static_cast<int>(mSize / mResolution);
+        // Number of cells vertically
         mGlobalGridMsg.info.height = static_cast<int>(mSize / mResolution);
         // Center the map at (0, 0)
         mGlobalGridMsg.header.frame_id = mMapFrame;
