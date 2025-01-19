@@ -52,7 +52,7 @@ void KeyActionServer::execute(const std::shared_ptr<GoalHandleKeyAction> goal_ha
   fsm_data->curr_key_index = 0;
   fsm_data->client = client;
 
-
+  
 
 
   // Check if movement is done

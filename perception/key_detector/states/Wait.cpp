@@ -16,10 +16,10 @@ namespace mrover {
             RCLCPP_INFO_STREAM(logger, "Exiting Wait " <<  "\n");
 
             // after wait this state machine should end 
-            return nullptr;
+            return StateMachine::make_state<Cancel>(fsm_data);
         }
 
         // compile fix
-        return nullptr;
+        return StateMachine::make_state<Cancel>(fsm_data);
     }
 }

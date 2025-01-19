@@ -37,9 +37,8 @@ struct FSMData{
 };
 
 // States
-#include "states/State1.hpp"
-#include "states/State2.hpp"
 #include "states/Cancel.hpp"
 #include "states/PressKey.hpp"
 #include "states/Wait.hpp"
 #include "states/TargetKey.hpp"
+#include "states/PressKey.hpp"
