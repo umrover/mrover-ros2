@@ -7,11 +7,11 @@
 
     <div class="pages">
       <fieldset class="row">
-        <legend>Tasks</legend>
+        <legend><h1>Select Task</h1></legend>
         <MenuButton link="/DMTask" name="DM Mission" />
         <MenuButton link="/ESTask" name="ES Mission" />
         <MenuButton link="/ISHTask" name="ISH GUI" />
-        <MenuButton link="/SATask" name="Sample Acquisition GUI" />
+        <MenuButton link="/SATask" name="SA GUI" />
         <MenuButton link="/AutonTask" name="Autonomy Mission" />
         <MenuButton link="/Cameras" name="Cameras" />
       </fieldset>
@@ -61,5 +61,7 @@ export default {
   grid-template-areas: 'header' 'pages';
   font-family: sans-serif;
   height: auto;
-}
+} 
+
+
 </style>

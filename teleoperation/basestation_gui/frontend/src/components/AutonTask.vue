@@ -3,16 +3,25 @@
     <div class='shadow p-3 mb-5 header'>
       <a class='logo' href="/"><img src='/mrover.png' alt='MRover' title='MRover' width='200' /></a>
       <h1>Auton Dashboard</h1>
+      <a href='/'>
+        <img class='logo' src='/mrover.png' alt='MRover' title='MRover' width='200' style="cursor: pointer;" />
+      </a>
     </div>
     <div :class="['shadow p-3 rounded data', ledColor]">
       <h2>Nav State: {{ navState }}</h2>
       <OdometryReading :odom='odom' />
     </div>
-    <div class='shadow p-3 rounded feed'>
-      <CameraFeed :mission="'ZED'" :id='0' :name="'ZED'"></CameraFeed>
+    <div class='shadow p-3 rounded feed'> <!-- meant to be cost mapb -->
+      <button @click="toggleFeed" class="btn btn-primary mb-2">
+        {{ cameraFeedEnabled ? 'Disable' : 'Enable' }} Camera Feed
+      </button>
+      <div v-if="cameraFeedEnabled" class='camera-container'>
+        <CameraFeed :mission="'ZED'" :id='0' :name="'ZED'"/>
+        <p v-if="cameraFeedEnabled">Camera Feed On</p>
+      </div>
     </div>
     <div class='shadow p-3 rounded map'>
-      <AutonRoverMap :odom='odom' />
+      <AutonRoverMap :odom='odom' />  
     </div>
     <div class='shadow p-3 rounded waypoints'>
       <AutonWaypointEditor :odom='odom' @toggleTeleop='teleopEnabledCheck = $event' />
@@ -71,7 +80,8 @@ export default defineComponent({
         latitude_deg: 38.4071654,
         longitude_deg: -110.7923927,
         bearing_deg: 0,
-        altitude: 0
+        altitude: 0, 
+        status: false
       },
 
       teleopEnabledCheck: false,
@@ -96,7 +106,10 @@ export default defineComponent({
         effort: [] as number[],
         state: [] as string[],
         error: [] as string[]
-      }
+      },
+
+      cameraFeedEnabled: true
+      
     }
   },
 
@@ -133,6 +146,7 @@ export default defineComponent({
         this.odom.latitude_deg = msg.latitude
         this.odom.longitude_deg = msg.longitude
         this.odom.altitude = msg.altitude
+        this.odom.status = msg.status
       } else if (msg.type == 'orientation') {
         this.odom.bearing_deg = quaternionToMapAngle(msg.orientation)
       }
@@ -140,7 +154,10 @@ export default defineComponent({
   },
 
   methods: {
-    ...mapActions('websocket', ['sendMessage'])
+    ...mapActions('websocket', ['sendMessage']),
+    toggleFeed(){
+      this.cameraFeedEnabled = !this.cameraFeedEnabled
+    }
   },
 
   beforeUnmount: function() {
@@ -193,8 +210,9 @@ export default defineComponent({
 
 .logo {
   position: absolute;
-  left: 50%;
+  left: 44.45%;
   transform: translateX(-50%);
+  transform: translateY(-50%);
 }
 
 h2 {
@@ -271,4 +289,16 @@ h2 {
 .feed {
   grid-area: feed;
 }
+
+.btn{
+  display: block;
+  margin: 10px auto;
+}
+
+.camera-container{
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
 </style>

@@ -164,6 +164,10 @@ def send_ra_controls(ra_mode: str, inputs: DeviceInputs, node: Node, thr_pub: Pu
                         se3 = SE3.from_tf_tree(buffer, "base_link", "map")
                         tx, ty, tz = se3.translation()
                         qx, qy, qz, qw = se3.quat()
+                        tx += (-1.0) * safe_index(inputs.axes, ControllerAxis.LEFT_Y)
+                        ty += (-1.0) * safe_index(inputs.axes, ControllerAxis.LEFT_X)
+                        tz += (-1.0) * safe_index(inputs.axes, ControllerAxis.RIGHT_Y)
+
                         # constructs pose
                         ik_pos_msg.target.pose = Pose(position=Point(x=tx, y=ty, z=tz), orientation=Quaternion(x=qx, y=qy, z=qz, w=qw))
                         ee_pos_pub.publish(ik_pos_msg)

@@ -16,6 +16,7 @@ from backend.drive_controls import send_joystick_twist, send_controller_twist
 from backend.input import DeviceInputs
 from backend.models import BasicWaypoint, AutonWaypoint
 from geometry_msgs.msg import Twist, Vector3
+from sensor_msgs.msg import NavSatFix
 from lie import SE3
 from mrover.msg import Throttle, Position, IK
 from backend.ra_controls import send_ra_controls
@@ -39,9 +40,8 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.accept()
         self.thr_pub = node.create_publisher(Throttle, "arm_throttle_cmd",1)
         self.ee_pos_pub = node.create_publisher(IK, "ee_pos_cmd",1)
-        self.ee_vel_pub = node.create_publisher(Vector3, "ee_vel_cmd",1)
-        self.joystick_twist_pub = node.create_publisher(Twist, "/joystick_cmd_vel", 1)
-        self.controller_twist_pub = node.create_publisher(Twist, "/controller_cmd_vel", 1)
+        self.ee_vel_pub = node.create_publisher(Vector3, "ee_vel_cmd",1) #changed
+        self.forward_ros_topic("drone_waypoint", NavSatFix, "drone_waypoint")
 
         self.buffer = Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.buffer, node)
@@ -98,6 +98,7 @@ class GUIConsumer(JsonWebsocketConsumer):
 
         try:
             match message:
+                #sending controls
                 case {
                     "type": "joystick" | "mast_keyboard" | "ra_controller",
                     "axes": axes,
@@ -112,7 +113,7 @@ class GUIConsumer(JsonWebsocketConsumer):
                             send_ra_controls(cur_mode,device_input,node, self.thr_pub, self.ee_pos_pub, self.ee_vel_pub, self.buffer)
                         case "mast_keyboard":
                             send_mast_controls(device_input)
-                #change input mode
+                #update input mode
                 case{
                     "type":"ra_mode",
                     "mode": mode,

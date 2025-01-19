@@ -26,7 +26,31 @@ a {
   width: 250px;
   height: 150px;
 
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
   text-decoration: none;
-  color: white;
+  color: #FFCB05;
+  font-size: 2rem;
+  font-weight: bold;
+
+  background-color: #00274C;
+  border-radius: 10px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s, box-shadow 0.2s;
 }
+
+
+a:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 6px 10px rgba(0, 0, 0, 0.2);
+}
+
+
+a:active {
+  transform: translateY(0);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
 </style>

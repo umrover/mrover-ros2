@@ -73,7 +73,7 @@
         <button class="btn btn-primary" @click="addWaypoint(formatted_odom, false)">
           Drop Waypoint
         </button>
-        <button class="btn btn-primary" @click="addWaypoint(input, true)">
+        <button v-if="droneWaypointButton" class="btn btn-primary" @click="addWaypoint(input, true)">
           Add Drone Position
         </button>
       </div>
@@ -91,6 +91,7 @@
           :index="i"
           @delete="deleteItem($event)"
           @find="findWaypoint($event)"
+          @search="searchForWaypoint($event)"
         />
       </div>
     </div>
@@ -98,7 +99,7 @@
 </template>
 
 <script lang="ts">
-import { convertDMS } from '../utils'
+import { convertDMS } from '../utils.js'
 import WaypointItem from './BasicWaypointItem.vue'
 import { mapMutations, mapGetters, mapActions, mapState } from 'vuex'
 import _ from 'lodash'
@@ -109,6 +110,10 @@ export default {
     odom: {
       type: Object,
       required: true
+    },
+    droneWaypointButton: {
+      type: Boolean,
+      required: false
     }
   },
 
@@ -138,16 +143,20 @@ export default {
 
     ...mapMutations('erd', {
       setWaypointList: 'setWaypointList',
-      setHighlightedWaypoint: 'setHighlightedWaypoint'
+      setHighlightedWaypoint: 'setHighlightedWaypoint',
+      setSearchWaypoint: 'setSearchWaypoint'
     }),
 
     ...mapMutations('map', {
       setOdomFormat: 'setOdomFormat'
     }),
 
-    deleteItem: function (payload: { index: any }) {
+    deleteItem: function (payload: { index: number }) {
       if (this.highlightedWaypoint == payload.index) {
         this.setHighlightedWaypoint(-1)
+      }
+      if (this.searchWaypoint == payload.index) {
+        this.setSearchWaypoint(-1)
       }
       this.storedWaypoints.splice(payload.index, 1)
     },
@@ -167,11 +176,19 @@ export default {
       })
     },
 
-    findWaypoint: function (payload: { index: any }) {
+    findWaypoint: function (payload: { index: number }) {
       if (payload.index === this.highlightedWaypoint) {
         this.setHighlightedWaypoint(-1)
       } else {
         this.setHighlightedWaypoint(payload.index)
+      }
+    },
+
+    searchForWaypoint: function (payload: { index: number }) {
+      if (payload.index === this.searchWaypoint) {
+        this.setSearchWaypoint(-1)
+      } else {
+        this.setSearchWaypoint(payload.index)
       }
     },
 
@@ -233,6 +250,7 @@ export default {
   created: function () {
     // Reset waypoint editors
     this.setHighlightedWaypoint(-1)
+    this.setSearchWaypoint(-1)
     this.setWaypointList([])
 
     // Set odometer format
@@ -240,7 +258,7 @@ export default {
 
     window.setTimeout(() => {
       // Timeout so websocket will be initialized
-      this.sendMessage({ type: 'get_basic_waypoint_list' })
+      this.sendMessage({ type: 'get_basic_waypoint_list', data: null })
     }, 250)
   },
 
@@ -248,6 +266,7 @@ export default {
     ...mapState('websocket', ['message']),
     ...mapGetters('erd', {
       highlightedWaypoint: 'highlightedWaypoint',
+      searchWaypoint: 'searchWaypoint',
       clickPoint: 'clickPoint'
     }),
 
@@ -289,6 +308,10 @@ export default {
   width: 50%;
   height: 100%;
   margin-right: 20px;
+}
+
+.dragArea {
+  height: 100%;
 }
 
 .all-waypoints {
