@@ -22,7 +22,7 @@ namespace mrover {
 
 		double mImmediateLightRange{};
 
-		std::unordered_map<std::pair<int, int>, int, PairHash> mHitCounts;
+		std::unordered_map<std::pair<double, double>, int, PairHash> mHitCounts;
 
 		int mHitIncrease{};
 		int mHitDecrease{};
@@ -61,7 +61,7 @@ namespace mrover {
 
 		auto publishDetectedObjects(cv::InputArray image, std::vector<std::pair<int, int>> const& centroids) -> void;
 		
-		auto publishClosestLight(std::pair<int, int> &point) -> void;
+		auto publishClosestLight(std::pair<double, double> &point) -> void;
 
 		auto static rgb_to_hsv(cv::Vec3b const& rgb) -> cv::Vec3d;
 
@@ -73,13 +73,15 @@ namespace mrover {
 
 		void decreaseHitCounts();
 
-		auto caching() -> std::pair<std::pair<int, int>, bool>;
+		auto caching() -> std::pair<std::pair<double, double>, bool>;
 
-		auto calculateDistance(const std::pair<int, int> &p) -> double;
+		auto calculateDistance(const std::pair<double, double> &p) -> double;
 
 		auto getHitCount(std::optional<SE3d> const& light) -> int;
 
 		void printHitCounts();
+
+		auto round_to(double value, double precision) -> double;
 
 	public:
 		auto onInit() -> void;

@@ -20,6 +20,11 @@ namespace mrover {
         });
     }
 
+    auto LightDetector::round_to(double value, double precision) -> double{
+        double val = std::round(value / precision) * precision;
+        return (floor((val*2)+0.5)/2);
+    }
+
     auto LightDetector::getPointFromPointCloud(sensor_msgs::msg::PointCloud2::ConstSharedPtr const& cloudPtr, std::pair<int, int> coordinates) -> std::optional<SE3d>{
         /* auto* pointPtr = reinterpret_cast<Point const*>(msg->data.data());
         RCLCPP_INFO_STREAM(get_logger(),"SIZE: " << msg->data.size());
@@ -56,7 +61,7 @@ namespace mrover {
         cv::Mat mGBlur;
         cv::Mat mThresholdedImg;
         cv::GaussianBlur(mGreyScale, mGBlur, cv::Size(5,5), 0);
-        cv::threshold(mGBlur,mThresholdedImg,50,255,cv::THRESH_BINARY);
+        cv::threshold(mGBlur,mThresholdedImg,100,255,cv::THRESH_BINARY);
         // cv::threshold(mGBlur,mThresholdedImg,100,255,cv::THRESH_BINARY+cv::THRESH_OTSU);
 
         // applies dilation, uses structuring element to expand highlighted regions
@@ -121,7 +126,7 @@ namespace mrover {
                     SE3Conversions::pushToTfTree(mTfBroadcaster, lightFrame, mCameraFrame, lightInCamera.value(), this->get_clock()->now());
                 }
                 increaseHitCount(lightInCamera);
-                RCLCPP_INFO_STREAM(get_logger(),getHitCount(lightInCamera));
+                //RCLCPP_INFO_STREAM(get_logger(),getHitCount(lightInCamera));
                 SE3Conversions::pushToTfTree(mTfBroadcaster, immediateLightFrame, mCameraFrame, lightInCamera.value(), this->get_clock()->now());
             }
 		}
@@ -130,7 +135,7 @@ namespace mrover {
 
         decreaseHitCounts();
 
-        std::pair<std::pair<int, int>, bool> foundPoint = caching();
+        std::pair<std::pair<double, double>, bool> foundPoint = caching();
         if(foundPoint.second){
             publishClosestLight(foundPoint.first);
         }
@@ -138,22 +143,22 @@ namespace mrover {
 		publishDetectedObjects(mOutputImage, centroids);
 	}
     
-    auto LightDetector::caching() -> std::pair<std::pair<int, int>, bool>{
+    auto LightDetector::caching() -> std::pair<std::pair<double, double>, bool>{
         double shortest_distance = std::numeric_limits<double>::infinity();
         bool found = false;
-        std::pair<int, int> closest;
+        std::pair<double, double> closest;
         //RCLCPP_INFO_STREAM(get_logger(),"num points: " << mHitCounts.size());
         for(auto const& [point, hc] : mHitCounts){
             //RCLCPP_INFO_STREAM(get_logger(),"current point: " << point.first << ", " << point.second << ": " << hc);
             double distance;
-            if(hc >= 10){ //DANTODO: ASK appropriate hitcount requirement to be considered a light
+            if(hc >= mPublishThreshold){ //DANTODO: ASK appropriate hitcount requirement to be considered a light
                 found = true;
+                RCLCPP_INFO_STREAM(get_logger(),"Found a new point");
+                RCLCPP_INFO_STREAM(get_logger(),"This new point was at " << point.first << ", " << point.second);
                 distance = calculateDistance(point);
                 if(distance <= shortest_distance){
                     shortest_distance = distance;
                     closest = point;
-                    //RCLCPP_INFO_STREAM(get_logger(),"Found a new point!, distance was " << distance);
-                    //RCLCPP_INFO_STREAM(get_logger(),"This new point was at " << point.first << ", " << point.second);
                 }
             }
             // if(found){
@@ -162,12 +167,12 @@ namespace mrover {
             //     //RCLCPP_INFO_STREAM(get_logger(),"Didn't find a new point :(");
             // }
         }
-        return std::pair<std::pair<int, int>, bool>(closest, found);
+        return std::pair<std::pair<double, double>, bool>(closest, found);
     }
 
-    auto LightDetector::calculateDistance(const std::pair<int, int> &p) -> double{
+    auto LightDetector::calculateDistance(const std::pair<double, double> &p) -> double{
         double distance = sqrt(pow(p.first, 2) + pow(p.second, 2));
-        //RCLCPP_INFO_STREAM(get_logger(),"Calculating Distance..." << p.first << ", " << p.second);
+        //RCLCPP_INFO_STREAM(get_logger(),"Calculating Distance..." << p.first << ", " << p.second << " DISTANCE: " << distance);
         return distance;
     }
 
@@ -178,10 +183,10 @@ namespace mrover {
             SE3d lightInMap = cameraToMap * light.value();
 
             auto location = lightInMap.translation();
-            int x = static_cast<int>(location.x());
-            int y = static_cast<int>(location.y());
+            auto x = round_to(static_cast<double>(location.x()), 0.1);
+            auto y = round_to(static_cast<double>(location.y()), 0.1);
 
-            std::pair<int, int> key{x, y};
+            std::pair<double, double> key{x, y};
 
             return mHitCounts[key];
         }
@@ -193,20 +198,19 @@ namespace mrover {
             SE3d cameraToMap = SE3Conversions::fromTfTree(mTfBuffer, mCameraFrame, mWorldFrame);
             
             /* auto lightLocation = light.value().translation();
-            int locx = static_cast<int>(lightLocation.x());
-            int locy = static_cast<int>(lightLocation.y());
+            auto locx = static_cast<double>(lightLocation.x());
+            auto locy = static_cast<double>(lightLocation.y());
             RCLCPP_INFO_STREAM(get_logger(),"current point: " << locx << ", " << locy);
-            */
-            
+             */
             SE3d lightInMap = cameraToMap * light.value();
 
             auto location = lightInMap.translation();
-            int x = static_cast<int>(location.x());
-            int y = static_cast<int>(location.y());
+            auto x = round_to(static_cast<double>(location.x()), 0.1);
+            auto y = round_to(static_cast<double>(location.y()), 0.1);
 
-            std::pair<int, int> key{x, y};
-            //RCLCPP_INFO_STREAM(get_logger(),"current point: " << x << ", " << y);
-            mHitCounts[key] = std::min(mHitCounts[key] + mHitIncrease, mHitMax);  //DANTODO why are values being stored as int pairs instead of more precise measures?
+            std::pair<double, double> key{x, y};
+            mHitCounts[key] = std::min(mHitCounts[key] + mHitIncrease, mHitMax);
+            //mHitCounts[key] += 2;
         }
     }
 
@@ -214,6 +218,7 @@ namespace mrover {
     void LightDetector::decreaseHitCounts(){
         for(auto& [_, hitCount] : mHitCounts){
             hitCount = std::max(hitCount - mHitDecrease, 0);
+            //hitCount--; 
         }
     }
 
@@ -251,11 +256,12 @@ namespace mrover {
         imgPub->publish(imgMsg);
     }
 
-    auto LightDetector::publishClosestLight(std::pair<int, int> &point) -> void {
+    auto LightDetector::publishClosestLight(std::pair<double, double> &point) -> void {
         geometry_msgs::msg::Vector3 pointMsg;
         pointMsg.x = point.first;
         pointMsg.y = point.second;
         pointMsg.z = 0;
+        RCLCPP_INFO_STREAM(get_logger(),"Publishing " << point.first << " , " << point.second);
         pointPub->publish(pointMsg);
     }
 
