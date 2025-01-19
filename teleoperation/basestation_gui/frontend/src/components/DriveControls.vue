@@ -22,11 +22,12 @@ export default {
       const gamepad = gamepads.find(gamepad => gamepad && gamepad.id.includes('Thrustmaster'))
       if (!gamepad) return
 
-      console.log(gamepad.axes)
+      // console.log(gamepad.axes)
 
       this.sendMessage({
         type: 'joystick',
-        axes: gamepad.axes,
+        // inverted controls, get rid of map after testing
+        axes: gamepad.axes.map(axis=>-axis),
         buttons: gamepad.buttons.map(button => button.value)
       })
     }, 1000 / UPDATE_HZ)

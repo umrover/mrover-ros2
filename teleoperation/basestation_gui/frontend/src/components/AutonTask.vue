@@ -1,7 +1,6 @@
 <template>
   <div class='wrapper'>
     <div class='shadow p-3 mb-5 header'>
-      <a class='logo' href="/"><img src='/mrover.png' alt='MRover' title='MRover' width='200' /></a>
       <h1>Auton Dashboard</h1>
       <a href='/'>
         <img class='logo' src='/mrover.png' alt='MRover' title='MRover' width='200' style="cursor: pointer;" />
