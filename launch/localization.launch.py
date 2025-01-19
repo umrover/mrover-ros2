@@ -31,7 +31,7 @@ def generate_launch_description():
         package="mrover",
         executable="zed",
         name="zed_wrapper",
-        parameters=[Path(get_package_share_directory("mrover"), "config", "zed.yaml")],
+        parameters=[os.path.join(get_package_share_directory("mrover"), "config", "zed.yaml")],
     )
 
     
