@@ -2,12 +2,9 @@ import json
 import traceback
 from typing import Any, Type
 
-import yaml
 from channels.generic.websocket import JsonWebsocketConsumer
 
 import rclpy
-from rclpy.subscription import Subscription
-from rclpy.node import Node
 
 import tf2_ros
 from tf2_ros.buffer import Buffer
@@ -17,7 +14,7 @@ from backend.input import DeviceInputs
 from backend.models import BasicWaypoint, AutonWaypoint
 from geometry_msgs.msg import Twist, Vector3
 from lie import SE3
-from mrover.msg import Throttle, Position, IK
+from mrover.msg import Throttle, IK, ControllerState
 from backend.ra_controls import send_ra_controls
 from backend.mast_controls import send_mast_controls
 
@@ -43,6 +40,8 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.joystick_twist_pub = node.create_publisher(Twist, "/joystick_cmd_vel", 1)
         self.controller_twist_pub = node.create_publisher(Twist, "/controller_cmd_vel", 1)
         self.mast_gimbal_pub = node.create_publisher(Throttle, "/mast_gimbal_throttle_cmd", 1)
+
+        self.forward_ros_topic("/drive_controller_data", ControllerState, "drive_state")
 
         self.buffer = Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.buffer, node)
