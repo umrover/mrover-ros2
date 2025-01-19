@@ -104,7 +104,6 @@ namespace mrover {
 				uploadPC();
 			}
 
-			/*
             for (std::size_t i = 0; i < mGlobalGridMsg.data.size(); ++i) {
 				Bin& bin = bins[i];
 				auto& cell = mGlobalGridMsg.data[i];
@@ -121,9 +120,6 @@ namespace mrover {
 				std::int8_t cost = count > 20 ? OCCUPIED_COST : FREE_COST;
 				cell = cost;
 			}
-			*/
-
-			mGlobalGridMsg.data[73] = OCCUPIED_COST;
 
 			RCLCPP_INFO_STREAM(get_logger(), "\n");
 
@@ -174,9 +170,6 @@ namespace mrover {
 				// Bounds Check on the dilation index
 				std::int64_t gridX = i % mGlobalGridMsg.info.width;
 				std::int64_t gridY = i / mGlobalGridMsg.info.height;
-
-				if(i == 53 || i == 93)
-					RCLCPP_INFO_STREAM(get_logger(), "X, Y " << gridX << " , " << gridY);
 
 				// TODO: This is kinda cooked
 				if(gridX == 0 && gridY == 0){
