@@ -27,7 +27,6 @@ class NoPath(Exception):
 
 
 class AStar:
-    origin: np.ndarray  # Holds the initial rover pose (waypoint of water bottle).
     context: Context
     costmap_lock: Lock
 
@@ -37,8 +36,8 @@ class AStar:
     COSTMAP_THRESH: float
     ANGLE_THRESH: float
 
-    def __init__(self, origin: np.ndarray, context: Context) -> None:
-        self.origin = origin
+
+    def __init__(self, context: Context) -> None:
         self.context = context
         self.costmap_lock = Lock()
 
@@ -110,7 +109,7 @@ class AStar:
             end_ij = tuple(cartesian_to_ij(self.context, end))
 
             if start_ij == end_ij:
-                return None
+                return [end_ij]
 
             came_from: dict[tuple, tuple] = {}
             g_scores: dict[tuple, float] = {start_ij: 0.0}
@@ -159,6 +158,53 @@ class AStar:
                             heapq.heappush(open_set, (f_scores[neighbor_pos], neighbor_pos))
 
             raise NoPath("No path could be found to the destination.")
+        
+    def use_astar(self, context: Context, star_traj: Trajectory, dest: np.ndarray | None) -> bool:
+        """
+        Decide whether to follow the A* path based on the difference between the A* path distance
+        and a lower-bound distance (Chebyshev-based or Euclidean).
+        :param context: Context object containing rover and node information.
+        :param star_traj: A* trajectory to be evaluated.
+        :param trajectory: Current point in the trajectory (destination).
+        :return: True if the A* path should be followed, False otherwise.
+        """
+        rover_in_map = context.rover.get_pose_in_map()
+        follow_astar = True
+
+        # If no rover pose, no trajectory, or not enough points in star_traj, skip
+        if rover_in_map is None or len(star_traj.coordinates) < 1 or not self.context.node.get_parameter("search.use_costmap").value:
+            return False
+
+        # Calculate actual A* distance
+        astar_dist = 0.0
+        for i in range(len(star_traj.coordinates) - 1):
+            astar_dist += d_calc(star_traj.coordinates[i], star_traj.coordinates[i + 1])
+
+        # Calculate a minimal possible path (a diagonal-first approach).
+        min_diag = min(
+            abs(star_traj.coordinates[0][0] - star_traj.coordinates[-1][0]),
+            abs(star_traj.coordinates[0][1] - star_traj.coordinates[-1][1])
+        ) * math.sqrt(2)
+        straight_line = max(
+            abs(star_traj.coordinates[0][0] - star_traj.coordinates[-1][0]),
+            abs(star_traj.coordinates[0][1] - star_traj.coordinates[-1][1])
+        ) - min(
+            abs(star_traj.coordinates[0][0] - star_traj.coordinates[-1][0]),
+            abs(star_traj.coordinates[0][1] - star_traj.coordinates[-1][1])
+        )
+        min_astar = min_diag + straight_line
+
+        #context.node.get_logger().info(f"minastar: {min_astar} act_astar: {astar_dist}")
+
+        # Compare relative difference
+        if min_astar > 0:
+            follow_astar = abs(astar_dist - min_astar) / min_astar > self.A_STAR_THRESH
+        else:
+            # If min_astar is 0, it might mean start/end are the same
+            follow_astar = False
+
+        #context.node.get_logger().info("Following A* path" if follow_astar else "Not following A* path")
+        return follow_astar
 
     def generate_trajectory(self, context: Context, dest: np.ndarray) -> Trajectory:
         """
@@ -192,7 +238,7 @@ class AStar:
         except NoPath:
             context.node.get_logger().info("No path found")
             trajectory.reset()
-            return trajectory
+            return Trajectory(np.array([]))
 
         if occupancy_list is not None:
             cartesian_coords = ij_to_cartesian(context, np.array(occupancy_list))
@@ -224,52 +270,7 @@ class AStar:
             # If occupancy_list is None, no path is needed (start == end).
             trajectory = Trajectory(np.array([]))
 
-        return trajectory
-
-    def use_astar(self, context: Context, star_traj: Trajectory, trajectory: np.ndarray | None) -> bool:
-        """
-        Decide whether to follow the A* path based on the difference between the A* path distance
-        and a lower-bound distance (Chebyshev-based or Euclidean).
-        :param context: Context object containing rover and node information.
-        :param star_traj: A* trajectory to be evaluated.
-        :param trajectory: Current point in the trajectory (destination).
-        :return: True if the A* path should be followed, False otherwise.
-        """
-        rover_in_map = context.rover.get_pose_in_map()
-        follow_astar = True
-
-        # If no rover pose, no trajectory, or not enough points in star_traj, skip
-        if rover_in_map is None or trajectory is None or len(star_traj.coordinates) < 1:
-            follow_astar = False
-
-        if follow_astar:
-            # Calculate actual A* distance
-            astar_dist = 0.0
-            for i in range(len(star_traj.coordinates) - 1):
-                astar_dist += d_calc(star_traj.coordinates[i], star_traj.coordinates[i + 1])
-
-            # Calculate a minimal possible path (a diagonal-first approach).
-            min_diag = min(
-                abs(star_traj.coordinates[0][0] - star_traj.coordinates[-1][0]),
-                abs(star_traj.coordinates[0][1] - star_traj.coordinates[-1][1])
-            ) * math.sqrt(2)
-            straight_line = max(
-                abs(star_traj.coordinates[0][0] - star_traj.coordinates[-1][0]),
-                abs(star_traj.coordinates[0][1] - star_traj.coordinates[-1][1])
-            ) - min(
-                abs(star_traj.coordinates[0][0] - star_traj.coordinates[-1][0]),
-                abs(star_traj.coordinates[0][1] - star_traj.coordinates[-1][1])
-            )
-            min_astar = min_diag + straight_line
-
-            #context.node.get_logger().info(f"minastar: {min_astar} act_astar: {astar_dist}")
-
-            # Compare relative difference
-            if min_astar > 0:
-                follow_astar = abs(astar_dist - min_astar) / min_astar > self.A_STAR_THRESH
-            else:
-                # If min_astar is 0, it might mean start/end are the same
-                follow_astar = False
-
-        #context.node.get_logger().info("Following A* path" if follow_astar else "Not following A* path")
-        return follow_astar
+        if self.use_astar(context=context, star_traj=trajectory, dest=dest):
+            return trajectory
+        else:
+            return Trajectory(np.array([dest]))
