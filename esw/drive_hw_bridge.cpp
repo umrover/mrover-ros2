@@ -36,7 +36,7 @@ namespace mrover {
 
         auto init() {
             // Create publishers and subscribers for left and right motor groups
-            for (std::string const& group : mMotorGroups) {
+            for (std::string const& group: mMotorGroups) {
                 // TODO (ali): does this actually emplace lol
                 mThrottleSubs.emplace_back(create_subscription<msg::Throttle>(std::format("drive_{}_throttle_cmd", group), 1, [this](msg::Throttle::ConstSharedPtr const& msg) {
                     moveMotorsThrottle(msg);
@@ -47,7 +47,7 @@ namespace mrover {
                 mPositionSubs.emplace_back(create_subscription<msg::Position>(std::format("drive_{}_position_cmd", group), 1, [this](msg::Position::ConstSharedPtr const& msg) {
                     moveMotorsPosition(msg);
                 }));
-                for (std::string const& motor : mMotors) {
+                for (std::string const& motor: mMotors) {
                     std::string name = std::format("{}_{}", motor, group);
                     mControllers.try_emplace(name, shared_from_this(), "jetson", name, WHEEL_CONFIG);
                     mJointState.name.push_back(name);
@@ -65,7 +65,7 @@ namespace mrover {
             mControllerState.limit_hit.resize(mControllers.size());
 
             // Periodic timer for published motor states
-            mPublishDataTimer = create_wall_timer(std::chrono::milliseconds(100), [this]() {publishStatesDataCallback();});
+            mPublishDataTimer = create_wall_timer(std::chrono::milliseconds(100), [this]() { publishStatesDataCallback(); });
         }
 
         auto getController(std::string const& name) -> BrushlessController<Revolutions>& {
@@ -107,8 +107,7 @@ namespace mrover {
         }
 
         auto moveMotorsPosition(msg::Position::ConstPtr const& msg) -> void {
-        // TODO - if any of the motor positions are invalid, then u should cancel the message.
-
+            // TODO - if any of the motor positions are invalid, then u should cancel the message.
             for (std::size_t i = 0; i < msg->names.size(); ++i) {
                 std::string const& name = msg->names[i];
                 float const& position = msg->positions[i];
@@ -137,16 +136,15 @@ namespace mrover {
                 mControllerState.error[i] = controller.getErrorState();
                 mControllerState.limit_hit[i] = controller.getLimitsHitBits();
             }
-            for (auto const& jointPub : mJointStatePubs) {
+            for (auto const& jointPub: mJointStatePubs) {
                 jointPub->publish(mJointState);
             }
-            for (auto const& statePub : mControllerStatePubs) {
+            for (auto const& statePub: mControllerStatePubs) {
                 statePub->publish(mControllerState);
             }
         }
 
     private:
-
         std::unique_ptr<mrover::CanDevice> driveCanDevice;
 
         std::vector<std::string> mMotorGroups = {"left", "right"};
@@ -170,7 +168,7 @@ namespace mrover {
 
 auto main(int argc, char** argv) -> int {
     rclcpp::init(argc, argv);
-    auto drive_bridge = std::make_shared<mrover::DriveHardwareBridge>(); 
+    auto drive_bridge = std::make_shared<mrover::DriveHardwareBridge>();
     drive_bridge->init();
     rclcpp::spin(drive_bridge);
     rclcpp::shutdown();

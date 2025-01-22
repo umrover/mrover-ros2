@@ -128,7 +128,7 @@ namespace mrover {
     private:
         std::vector<std::string> const mArmJointNames{"joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_roll", "allen_key", "gripper"};
 
-        std::unordered_map<std::string, Controller> mControllers; 
+        std::unordered_map<std::string, Controller> mControllers;
         // BrushedController mJointB;
         // BrushedController mGripper;
         // BrushedController mFinger; // rip the solenoid. tentative name until design finalized
@@ -307,23 +307,23 @@ namespace mrover {
         auto publishDataCallback() -> void {
             mJointData.header.stamp = get_clock()->now();
 
-            auto &jointA = std::get<BrushlessController<Meters>>(findJointByName("joint_a"));
+            auto& jointA = std::get<BrushlessController<Meters>>(findJointByName("joint_a"));
             mJointData.position[0] = jointA.getPosition().get();
-            mJointData.velocity[0] =jointA.getVelocity().get();
+            mJointData.velocity[0] = jointA.getVelocity().get();
             mJointData.effort[0] = jointA.getEffort();
 
-            auto &jointB = std::get<BrushedController>(findJointByName("joint_b"));
+            auto& jointB = std::get<BrushedController>(findJointByName("joint_b"));
             mJointData.position[1] = jointB.getPosition().get();
             mJointData.velocity[1] = jointB.getVelocity().get();
             mJointData.effort[1] = jointB.getEffort();
 
-            auto &jointC = std::get<BrushlessController<Radians>>(findJointByName("joint_c"));
+            auto& jointC = std::get<BrushlessController<Radians>>(findJointByName("joint_c"));
             mJointData.position[2] = jointC.getPosition().get();
             mJointData.velocity[2] = jointC.getVelocity().get();
             mJointData.effort[2] = jointC.getEffort();
 
-            auto &jointDe0 = std::get<BrushlessController<Radians>>(findJointByName("joint_de_0"));
-            auto &jointDe1 = std::get<BrushlessController<Radians>>(findJointByName("joint_de_1"));
+            auto& jointDe0 = std::get<BrushlessController<Radians>>(findJointByName("joint_de_0"));
+            auto& jointDe1 = std::get<BrushlessController<Radians>>(findJointByName("joint_de_1"));
             auto pitchWrapped = wrapAngle(jointDe0.getPosition().get());
             auto rollWrapped = wrapAngle(jointDe1.getPosition().get());
             mJointDePitchRoll = {pitchWrapped, rollWrapped};
@@ -336,12 +336,12 @@ namespace mrover {
             mJointData.velocity[4] = jointDe1.getVelocity().get();
             mJointData.effort[4] = jointDe1.getEffort();
 
-            auto &gripper = std::get<BrushedController>(findJointByName("gripper"));
+            auto& gripper = std::get<BrushedController>(findJointByName("gripper"));
             mJointData.position[5] = gripper.getPosition().get();
             mJointData.velocity[5] = gripper.getVelocity().get();
             mJointData.effort[5] = gripper.getEffort();
 
-            auto &finger = std::get<BrushedController>(findJointByName("finger"));
+            auto& finger = std::get<BrushedController>(findJointByName("finger"));
             mJointData.position[6] = finger.getPosition().get();
             mJointData.velocity[6] = finger.getVelocity().get();
             mJointData.effort[6] = finger.getEffort();
