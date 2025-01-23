@@ -1,18 +1,18 @@
 #include <chrono>
 #include <memory>
-#include <rclcpp/rclcpp.hpp>
 
+#include <rclcpp/rclcpp.hpp>
 #include <rclcpp/subscription.hpp>
 #include <rclcpp/timer.hpp>
-#include <units/units.hpp>
 
-#include "can_device/can_device.hpp"
-#include "motor_library/brushless.hpp"
+#include <units/units.hpp>
 
 #include <mrover/msg/controller_state.hpp>
 #include <mrover/msg/position.hpp>
 #include <mrover/msg/throttle.hpp>
 #include <mrover/msg/velocity.hpp>
+
+#include "motor_library/brushless.hpp"
 
 /*
  *  Initializes the necessary motor controllers for drive
@@ -145,8 +145,6 @@ namespace mrover {
         }
 
     private:
-        std::unique_ptr<mrover::CanDevice> driveCanDevice;
-
         std::vector<std::string> mMotorGroups = {"left", "right"};
         std::vector<std::string> mMotors = {"front", "middle", "back"};
         std::unordered_map<std::string, BrushlessController<Revolutions>> mControllers;

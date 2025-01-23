@@ -10,6 +10,10 @@ set(CMAKE_CXX_STANDARD 23)
 # Can be used by VSCode, CLion, VIM, etc.
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+# if(CMAKE_BUILD_TYPE STREQUAL "Debug" OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
+#    add_compile_definitions(DEBUG_BUILD)
+# endif()
+
 option(MROVER_CI "Enable CI options" OFF)
 option(MROVER_CLANG_TIDY "Enable static analysis with Clang tidy" ${MROVER_CI})
 option(MROVER_WARNINGS_AS_ERRORS "Treat warnings as errors" ${MROVER_CI})
