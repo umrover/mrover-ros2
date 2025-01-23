@@ -15,5 +15,6 @@ namespace mrover{
 	private:
 		rclcpp::Publisher<msg::IK>::SharedPtr mIkTargetPub;
 		const std::shared_ptr<FSMCtx> fsm_ctx;
+		rclcpp::Rate sleepRate;
 	};
 }

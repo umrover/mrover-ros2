@@ -4,7 +4,7 @@
 #include <rclcpp/client.hpp>
 
 namespace mrover{
-TargetKey::TargetKey(const std::shared_ptr<FSMCtx> fsm_ctx) : fsm_ctx(fsm_ctx) 
+TargetKey::TargetKey(const std::shared_ptr<FSMCtx> fsm_ctx) : fsm_ctx(fsm_ctx), sleepRate(0.2)
 {
         mIkTargetPub = fsm_ctx->node->create_publisher<msg::IK>("arm_ik", 1);
 }
@@ -55,6 +55,14 @@ auto TargetKey::onLoop() -> State*{
 
         //verify that the arm is within the threshold
         bool within_threshold = false;
+        sleepRate.sleep();
+
+        // subscribe to arm state
+        // dist
+    \
+
+
+
         if(within_threshold){
             fsm_ctx->curr_key_index++;
             return StateMachine::make_state<PressKey>(fsm_ctx);
