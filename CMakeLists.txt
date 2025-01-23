@@ -65,6 +65,7 @@ find_package(ament_cmake_python REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
+find_package(rtcm_msgs REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(tf2_ros REQUIRED)
@@ -231,6 +232,9 @@ target_include_directories(simulator SYSTEM PRIVATE ${BULLET_INCLUDE_DIRS} ${OPE
 mrover_add_node(pose_filter localization/pose_filter.cpp)
 target_link_libraries(pose_filter lie parameter_utils)
 ament_target_dependencies(pose_filter rclcpp geometry_msgs nav_msgs sensor_msgs tf2 tf2_ros)
+
+mrover_add_node(rover_gps_driver localization/rover_gps_driver.cpp)
+ament_target_dependencies(rover_gps_driver rclcpp sensor_msgs rtcm_msgs)
 
 # Perception
 
