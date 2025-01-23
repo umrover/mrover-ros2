@@ -38,7 +38,7 @@ class SearchTrajectory(Trajectory):
         distance_between_spirals: float,
         num_segments_per_rotation: int,
         insert_extra: bool,
-        max_segment_length: float = None  # New parameter for max segment length
+        max_segment_length: float,  # New parameter for max segment length
     ) -> np.ndarray:
         """
         Generates a set of coordinates for a spiral search pattern centered at the origin.
@@ -83,8 +83,10 @@ class SearchTrajectory(Trajectory):
             return np.array(all_points)
 
         # If insert_extra is True and max_segment_length is set, insert intermediate points
-        if insert_extra and max_segment_length is not None:
-            vertices = insert_points_if_needed(vertices, max_segment_length)
+        # if insert_extra and max_segment_length is not None:
+        # TODO: fix the parameter declaration for max segment length should be below, temp fix by using 0.5
+        #vertices = insert_points_if_needed(vertices, max_segment_length)
+        vertices = insert_points_if_needed(vertices, 0.2)
        
         return vertices
 
@@ -132,12 +134,6 @@ class SearchTrajectory(Trajectory):
             tag_id,
         )
 
-# # Example usage
-# coverage_radius = 10
-# distance_between_spirals = 2
-# num_segments_per_rotation = 30
-# insert_extra = True
-max_segment_length = 2  # Maximum segment length, in the same units as the coordinates
 
 # # Create a SearchTrajectory with a spiral pattern, inserting points if segment length is too large
 # spiral_trajectory = SearchTrajectory.spiral_traj(
