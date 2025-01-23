@@ -333,7 +333,6 @@ install(PROGRAMS
 		scripts/visualizer.py
         scripts/move_cost_map.py
         scripts/pc_visualizer.py
-        lie/lie.py
 
         # starter project sources
         starter_project/autonomy/src/localization.py
