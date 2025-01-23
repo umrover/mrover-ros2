@@ -23,9 +23,9 @@ namespace mrover {
     using namespace std::chrono_literals;
 
     constexpr static BrushlessController<Revolutions>::Config WHEEL_CONFIG = {
-        .minVelocity = RevolutionsPerSecond{-10.0},
-        .maxVelocity = RevolutionsPerSecond{10.0},
-        .maxTorque = 25.0
+            .minVelocity = RevolutionsPerSecond{-10.0},
+            .maxVelocity = RevolutionsPerSecond{10.0},
+            .maxTorque = 25.0,
     };
 
     class DriveHardwareBridge final : public rclcpp::Node {
