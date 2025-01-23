@@ -30,6 +30,7 @@ jobs:
         if: github.event.pull_request.draft == false
         uses: hendrikmuhs/ccache-action@v1.2
       - name: manif Submodule Update
+        if: github.event.pull_request.draft == false
         run: cd $GITHUB_WORKSPACE/src/mrover/ && git submodule update --init deps/manif
       - name: Build
         if: github.event.pull_request.draft == false
