@@ -1,0 +1,66 @@
+# All units are in SI
+# ===================
+# Time:     second, hz
+# Angle:    radian
+# Distance: meter
+
+simulator:
+  ros__parameters:
+    save_rate: 1.0
+    save_history: 4096
+    headless: false
+
+    ref_heading: 90.0  # For the GPS sensor to work
+
+    objects:
+      rover:
+        type: urdf
+        uri: package://mrover/urdf/rover/rover.urdf.xacro
+        position: [ 0.0, 0.0, 2.0 ]
+      world:
+        type: urdf
+        uri: package://mrover/urdf/world/world.urdf.xacro
+        position: [ 0.0, 0.0, -0.5 ]
+      tag_0:
+        type: urdf
+        uri: package://mrover/urdf/world/tag_0.urdf.xacro
+        position: [ 11.0, 3.0, 1.7 ]
+      tag_1:
+        type: urdf
+        uri: package://mrover/urdf/world/tag_1.urdf.xacro
+        position: [ 15.0, -14.0, 1.0 ]
+      hammer:
+        type: urdf
+        uri: package://mrover/urdf/world/hammer.urdf.xacro
+        position: [ -2.0, -2.0, 0.7 ]
+      bottle:
+        type: urdf
+        uri: package://mrover/urdf/world/bottle.urdf.xacro
+        position: [ -6.25, 10.5, 1.5 ]
+      large_rock0:
+        type: urdf
+        uri: package://mrover/urdf/world/large_rock.urdf.xacro
+        position: [ -6.0, -6.0, 1.5 ]
+      medium_rock0:
+        type: urdf
+        uri: package://mrover/urdf/world/medium_rock.urdf.xacro
+        position: [ -8.5, -8.0, 1.5 ]
+      medium_rock1:
+        type: urdf
+        uri: package://mrover/urdf/world/medium_rock.urdf.xacro
+        position: [ -3.5, -4.0, 1.5 ]
+      small_rock0:
+        type: urdf
+        uri: package://mrover/urdf/world/small_rock.urdf.xacro
+        position: [ -1.0, -5.0, 1.5 ]
+      small_rock1:
+        type: urdf
+        uri: package://mrover/urdf/world/small_rock.urdf.xacro
+        position: [ -5.0, -1.0, 1.5 ]
+
+    # TODO(quintin): Avoid storing these in multiple config files
+    ref_lat: 38.4225202
+    ref_lon: -110.7844653
+    ref_alt: 0.0
+    world_frame: "map"
+    rover_frame: "sim_base_link"
