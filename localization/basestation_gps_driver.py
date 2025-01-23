@@ -61,6 +61,23 @@ class BaseStationDriverNode(Node):
                     self.get_logger().info(
                         f"{'Valid' if msg.gnssFixOk else 'Invalid'} fix, {msg.numSV} satellites used"
                     )
+                elif msg.identity == "NAV-SAT":
+                    for i in range(msg.numSvs):
+                        gnssId = getattr(msg, f"gnssId_{i+1:02d}")
+                        cno = getattr(msg, f"cno_{i+1:02d}")
+                        if (gnssId == 0):
+                            self.get_logger().info(f"GPS signal strength: {cno}")
+                        elif (gnssId == 1):
+                            self.get_logger().info(f"SBAS signal strength: {cno}")
+                        elif (gnssId == 2):
+                            self.get_logger().info(f"Galileo signal strength: {cno}")
+                        elif (gnssId == 3):
+                            self.get_logger().info(f"BeiDou signal strength: {cno}")
+                        elif (gnssId == 5):
+                            self.get_logger().info(f"QZSS signal strength: {cno}")
+                        elif (gnssId == 6):
+                            self.get_logger().info(f"GLONASS signal strength: {cno}")
+                        
             rclpy.spin_once(self, timeout_sec=0)
 
     def __del__(self) -> None:
