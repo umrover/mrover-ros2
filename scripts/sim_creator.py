@@ -121,19 +121,31 @@ def create_60x60_grid():
         update_mode_indicator()
 
     # -------------------
-    #   YAML GENERATION
+    #   HOVER COORDINATES
     # -------------------
-    def cell_to_coords(row, col):
+    hover_label = tk.Label(root, text="Hovering at: (N/A, N/A)")
+    hover_label.pack()
+
+    def on_hover(event):
         """
-        Convert (row, col) in [0..29]×[0..29] to a local coordinate system
-        centered at (row=GRID_SIZE/2, col=GRID_SIZE/2) => (0,0).
-        
-        So row=15, col=15 => (0,0). 
+        Update the label with the current grid cell coordinates where the mouse is hovering,
+        using (0, 0) as the center of the grid and aligning coordinates with Cartesian system.
         """
-        # Shift so the center cell ~ (15,15) is (0,0).
-        x = col - (GRID_SIZE / 2)
-        y = row - (GRID_SIZE / 2)
-        return x, y
+        x, y = event.x, event.y
+        if MARGIN <= x < MARGIN + GRID_SIZE * CELL_SIZE and MARGIN <= y < MARGIN + GRID_SIZE * CELL_SIZE:
+            col_hovered = (x - MARGIN) // CELL_SIZE
+            row_hovered = (y - MARGIN) // CELL_SIZE
+
+            # Convert to Cartesian-like coordinates
+            center_offset = GRID_SIZE // 2
+            adjusted_x = col_hovered - center_offset  # X-coordinate
+            adjusted_y = center_offset - row_hovered  # Y-coordinate
+
+            hover_label.config(text=f"Hovering at: ({adjusted_x}, {adjusted_y})")
+        else:
+            hover_label.config(text="Hovering at: (N/A, N/A)")
+
+    canvas.bind("<Motion>", on_hover)
 
     def on_q_press(event):
         """
@@ -192,14 +204,19 @@ simulator:
             1: "0.5",
             2: "1.0",
             3: "1.0"
+            3: "1.0"
         }
+
+        center_offset = GRID_SIZE // 2  # Center offset for coordinate transformation
 
         for row_i in range(GRID_SIZE):
             for col_i in range(GRID_SIZE):
                 val = numeric_grid[row_i][col_i]
                 # Only create a rock if val in {1,2,3}
                 if val in uri_map:
-                    x, y = cell_to_coords(row_i, col_i)
+                    # Adjust coordinates for the YAML output
+                    x = col_i - center_offset  # X-coordinate
+                    y = center_offset - row_i  # Y-coordinate (invert Y-axis)
                     rock_name = f"rock_{rock_counter}"
                     rock_counter += 1
 
@@ -219,7 +236,8 @@ simulator:
     rover_frame: "sim_base_link"
 """
 
-        with open("config/simulator.yaml", "w") as f:
+        # 5) Write out to new_sim.yaml
+        with open("new_sim.yaml", "w") as f:
             f.write(yaml_header)
             if yaml_rocks:
                 f.write("      # Auto-generated rocks from the grid\n")
@@ -227,8 +245,10 @@ simulator:
                 f.write("\n")
             f.write(yaml_footer)
 
+        print("YAML file successfully written to config/simulator.yaml.")
         # Close the window
         root.destroy()
+
 
     # Bind events
     root.bind("<space>", cycle_mode)
@@ -237,7 +257,6 @@ simulator:
     # -------------------
     #   LABEL IN CENTER
     # -------------------
-    # We call row=GRID_SIZE//2, col=GRID_SIZE//2 the "0,0" coordinate.
     center = GRID_SIZE // 2
     center_x = MARGIN + center * CELL_SIZE + (CELL_SIZE // 2)
     center_y = MARGIN + center * CELL_SIZE + (CELL_SIZE // 2)
