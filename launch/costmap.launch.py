@@ -32,8 +32,8 @@ def generate_launch_description():
     return LaunchDescription(
         [
             launch_include_sim,
+            costmap_node,
             launch_include_nav,
             launch_include_debug_course,
-            costmap_node,
         ]
     )
