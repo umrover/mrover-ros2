@@ -1,3 +1,6 @@
+#include <cmath>
+#include <execution>
+#include <random>
 #define WEBGPU_CPP_IMPLEMENTATION
 
 #include "simulator.hpp"

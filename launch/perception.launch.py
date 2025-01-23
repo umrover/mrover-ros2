@@ -2,7 +2,6 @@ from pathlib import Path
 
 from ament_index_python import get_package_share_directory
 
-import launch
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
 from launch.substitutions import LaunchConfiguration
@@ -12,33 +11,24 @@ from launch.conditions import LaunchConfigurationEquals
 
 
 def generate_launch_description():
-
-    container = ComposableNodeContainer(
-        name="perception",
-        namespace="",
-        package="rclcpp_components",
-        executable="component_container_mt",
-        composable_node_descriptions=[
-            ComposableNode(
-                package="mrover",
-                plugin="mrover::StereoObjectDetector",
-                name="object_detector_component",
-                parameters=[Path(get_package_share_directory("mrover"), "config", "object_detector.yaml")],
-            ),
-            ComposableNode(
-                package="mrover",
-                plugin="mrover::ImageObjectDetector",
-                name="object_detector_component",
-                parameters=[Path(get_package_share_directory("mrover"), "config", "object_detector.yaml")],
-            ),
-            ComposableNode(
-                package="mrover",
-                plugin="mrover::ZedWrapper",
-                name="zed_component",
-                parameters=[Path(get_package_share_directory("mrover"), "config", "zed.yaml")],
-            ),
-        ],
-        output="screen",
+    zed_node = Node(
+        package="mrover",
+        executable="zed",
+        name="zed_wrapper",
+        parameters=[Path(get_package_share_directory("mrover"), "config", "zed.yaml")],
     )
 
-    return launch.LaunchDescription([container])
+    object_detector_node = Node(
+        package="mrover",
+        executable="object_detector",
+        name="object_detector",
+        parameters=[Path(get_package_share_directory("mrover"), "config", "object_detector.yaml")],
+    )
+
+    world_to_zed = Node(
+        package='tf2_ros',
+        executable='static_transform_publisher',
+        arguments = ['0', '0', '0', '0', '0', '0', 'map', 'zed_left_camera_frame']
+    )
+
+    return LaunchDescription([zed_node, world_to_zed])

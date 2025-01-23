@@ -1,10 +1,8 @@
 #include "object_detector.hpp"
-#include <functional>
 
 namespace mrover {
 
-    ObjectDetectorBase::ObjectDetectorBase(rclcpp::NodeOptions const& options) : rclcpp::Node(NODE_NAME, options), mLoopProfiler{get_logger()} {
-        std::string modelName;
+    ObjectDetectorBase::ObjectDetectorBase() : rclcpp::Node(NODE_NAME), mLoopProfiler{get_logger()} {
 
         std::vector<ParameterWrapper> params{
                 {"camera_frame", mCameraFrame, "zed_left_camera_frame"},
@@ -13,59 +11,36 @@ namespace mrover {
                 {"decrement_weight", mObjDecrementWeight, 1},
                 {"hitcount_threshold", mObjHitThreshold, 5},
                 {"hitcount_max", mObjMaxHitcount, 10},
-                {"model_name", modelName, "Large-Dataset"},
+                {"model_name", mModelName, "Large-Dataset"},
                 {"model_score_threshold", mModelScoreThreshold, 0.75},
-                {"model_nms_threshold", mModelNMSThreshold, 0.5}};
+                {"model_nms_threshold", mModelNmsThreshold, 0.5}};
 
         ParameterWrapper::declareParameters(this, params);
 
-        // All of these variables will be invalidated after calling this function
-
         std::filesystem::path packagePath = std::filesystem::path{ament_index_cpp::get_package_prefix("mrover")} / ".." / ".." / "src" / "mrover";
 
-        RCLCPP_INFO_STREAM(get_logger(), "Opening Model " << modelName);
+        RCLCPP_INFO_STREAM(get_logger(), "Opening Model " << mModelName);
 
         RCLCPP_INFO_STREAM(get_logger(), "Found package path " << packagePath);
 
-        // Initialize TensorRT Inference Object and Get Important Output Information
-        mTensorRT = TensortRT{modelName, packagePath.string()};
+        mTensorRT = TensortRT{mModelName, packagePath.string()};
 
-        using namespace std::placeholders;
+        mDebugImgPub = create_publisher<sensor_msgs::msg::Image>("object_detector/debug_img", 1);
 
-        mModel = Model(modelName, {0, 0}, {"bottle", "hammer"}, mTensorRT.getInputTensorSize(), mTensorRT.getOutputTensorSize(), [](Model const& model, cv::Mat& rgbImage, cv::Mat& blobSizedImage, cv::Mat& blob) { preprocessYOLOv8Input(model, rgbImage, blobSizedImage, blob); }, [this](Model const& model, cv::Mat& output, std::vector<Detection>& detections) { parseYOLOv8Output(model, output, detections); });
-
-        RCLCPP_INFO_STREAM(get_logger(), std::format("Object detector initialized with model: {} and thresholds: {} and {}", mModel.modelName, mModelScoreThreshold, mModelNMSThreshold));
+        RCLCPP_INFO_STREAM(get_logger(), std::format("Object detector initialized with model: {} and thresholds: {} and {}", mModelName, mModelScoreThreshold, mModelNmsThreshold));
     }
 
-    StereoObjectDetector::StereoObjectDetector(rclcpp::NodeOptions const& options) : ObjectDetectorBase(options) {
-        RCLCPP_INFO_STREAM(get_logger(), "Creating Stereo Object Detector...");
-
-        mDebugImgPub = create_publisher<sensor_msgs::msg::Image>("/stereo_object_detector/debug_img", 1);
-
+    StereoObjectDetector::StereoObjectDetector() {
         mSensorSub = create_subscription<sensor_msgs::msg::PointCloud2>("/zed/left/points", 1, [this](sensor_msgs::msg::PointCloud2::UniquePtr const& msg) {
             StereoObjectDetector::pointCloudCallback(msg);
         });
     }
-
-    ImageObjectDetector::ImageObjectDetector(rclcpp::NodeOptions const& options) : ObjectDetectorBase(options) {
-        RCLCPP_INFO_STREAM(get_logger(), "Creating Image Object Detector...");
-
-        std::vector<ParameterWrapper> params{
-                {"long_range_camera/fov", mCameraHorizontalFov, 80.0}};
-
-        ParameterWrapper::declareParameters(this, params);
-
-        mDebugImgPub = create_publisher<sensor_msgs::msg::Image>("/long_range_object_detector/debug_img", 1);
-
-        mSensorSub = create_subscription<sensor_msgs::msg::Image>("/usb_camera/image", 1, [this](sensor_msgs::msg::Image::UniquePtr const& msg) {
-            ImageObjectDetector::imageCallback(msg);
-        });
-
-        mTargetsPub = create_publisher<mrover::msg::ImageTargets>("/long_range_camera/objects", 1);
-    }
 } // namespace mrover
 
 
-#include "rclcpp_components/register_node_macro.hpp"
-RCLCPP_COMPONENTS_REGISTER_NODE(mrover::StereoObjectDetector)
-RCLCPP_COMPONENTS_REGISTER_NODE(mrover::ImageObjectDetector)
+auto main(int argc, char** argv) -> int {
+    rclcpp::init(argc, argv);
+    rclcpp::spin(std::make_shared<mrover::StereoObjectDetector>());
+    rclcpp::shutdown();
+    return EXIT_SUCCESS;
+}

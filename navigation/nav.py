@@ -12,6 +12,7 @@ from navigation.recovery import RecoveryState
 from navigation.search import SearchState
 from navigation.state import DoneState, OffState, off_check
 from navigation.waypoint import WaypointState
+from navigation.water_bottle_search import WaterBottleSearchState
 from rclpy import Parameter
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
@@ -64,13 +65,22 @@ class Navigation(Node):
                 ("single_tag.tag_stop_threshold", Parameter.Type.DOUBLE),
                 ("single_tag.post_avoidance_multiplier", Parameter.Type.DOUBLE),
                 ("single_tag.post_radius", Parameter.Type.DOUBLE),
+                ("water_bottle_search.use_costmap", Parameter.Type.BOOL),
+                ("water_bottle_search.stop_threshold", Parameter.Type.DOUBLE),
+                ("water_bottle_search.drive_forward_threshold", Parameter.Type.DOUBLE),
+                ("water_bottle_search.coverage_radius", Parameter.Type.DOUBLE),
+                ("water_bottle_search.segments_per_rotation", Parameter.Type.INTEGER),
+                ("water_bottle_search.distance_between_spirals", Parameter.Type.DOUBLE),
+                ("water_bottle_search.traversable_cost", Parameter.Type.DOUBLE),
+                ("water_bottle_search.update_delay", Parameter.Type.DOUBLE),
+                ("water_bottle_search.safe_approach_distance", Parameter.Type.DOUBLE),
             ],
         )
 
         self.state_machine = StateMachine[Context](OffState(), "NavigationStateMachine", ctx, self.get_logger())
         self.state_machine.add_transitions(
             ApproachTargetState(),
-            [WaypointState(), SearchState(), RecoveryState(), DoneState()],
+            [WaypointState(), SearchState(), WaterBottleSearchState(), RecoveryState(), DoneState()],
         )
         self.state_machine.add_transitions(PostBackupState(), [WaypointState(), RecoveryState()])
         self.state_machine.add_transitions(
@@ -81,6 +91,7 @@ class Navigation(Node):
                 PostBackupState(),
                 ApproachTargetState(),
                 LongRangeState(),
+                WaterBottleSearchState(),
             ],
         )
         self.state_machine.add_transitions(
@@ -94,6 +105,7 @@ class Navigation(Node):
                 PostBackupState(),
                 ApproachTargetState(),
                 LongRangeState(),
+                WaterBottleSearchState(),
                 SearchState(),
                 RecoveryState(),
                 DoneState(),
@@ -101,7 +113,11 @@ class Navigation(Node):
         )
         self.state_machine.add_transitions(
             LongRangeState(),
-            [ApproachTargetState(), SearchState(), WaypointState(), RecoveryState()],
+            [ApproachTargetState(), SearchState(), WaterBottleSearchState(), WaypointState(), RecoveryState()],
+        )
+        self.state_machine.add_transitions(
+            WaterBottleSearchState(),
+            [WaypointState(), RecoveryState(), ApproachTargetState(), LongRangeState()]
         )
         self.state_machine.add_transitions(OffState(), [WaypointState(), DoneState()])
         self.state_machine.configure_off_switch(OffState(), off_check)

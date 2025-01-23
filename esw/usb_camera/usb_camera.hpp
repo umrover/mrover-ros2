@@ -9,7 +9,7 @@ namespace mrover {
         rclcpp::Publisher<sensor_msgs::msg::CameraInfo>::SharedPtr mCamInfoPub;
         rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr mImgPub;
 
-        int mWidth{}, mHeight{};
+        std::uint16_t mWidth{}, mHeight{};
 
         GstElement *mStreamSink{}, *mPipeline{};
         GMainLoop* mMainLoop{};

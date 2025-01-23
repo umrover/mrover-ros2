@@ -11,7 +11,6 @@
 #include <filesystem>
 #include <format>
 #include <fstream>
-#include <functional>
 #include <iostream>
 #include <limits>
 #include <memory>
@@ -37,8 +36,6 @@
 // Messages
 #include "sensor_msgs/image_encodings.hpp"
 #include "sensor_msgs/msg/image.hpp"
-#include <mrover/msg/image_target.hpp>
-#include <mrover/msg/image_targets.hpp>
 #include <sensor_msgs/distortion_models.hpp>
 #include <sensor_msgs/image_encodings.hpp>
 #include <sensor_msgs/msg/camera_info.hpp>

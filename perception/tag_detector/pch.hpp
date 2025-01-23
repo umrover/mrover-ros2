@@ -31,7 +31,6 @@
 #include <mrover/msg/image_target.hpp>
 #include <mrover/msg/image_targets.hpp>
 
-#include "parameter.hpp"
 #include <lie.hpp>
 #include <loop_profiler.hpp>
 #include <point.hpp>

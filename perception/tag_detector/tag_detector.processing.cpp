@@ -15,6 +15,10 @@ namespace mrover {
         assert(msg->height > 0);
         assert(msg->width > 0);
 
+        std::int64_t tagIncrementWeight = get_parameter("increment_weight").as_int();
+        std::int64_t tagDecrementWeight = get_parameter("decrement_weight").as_int();
+        std::int64_t minTagHitCountBeforePublish = get_parameter("min_hit_count_before_publish").as_int();
+        std::int64_t maxTagHitCount = get_parameter("max_hit_count").as_int();
 
         // OpenCV needs a dense BGR image |BGR|...| but out point cloud is
         // |BGRAXYZ...|...| So we need to copy the data into the correct format
@@ -44,8 +48,8 @@ namespace mrover {
         for (std::size_t i = 0; i < mImmediateIds.size(); ++i) {
             int id = mImmediateIds[i];
             Tag& tag = mTags[id];
-            tag.hitCount = std::clamp(tag.hitCount + mTagIncrementWeight, 0, mMaxTagHitCount);
-            tag.hitCount = std::clamp(tag.hitCount + mTagIncrementWeight, 0, mMaxTagHitCount);
+            tag.hitCount = std::clamp(tag.hitCount + tagIncrementWeight, std::int64_t{0}, maxTagHitCount);
+            tag.hitCount = std::clamp(tag.hitCount + tagIncrementWeight, std::int64_t{0}, maxTagHitCount);
             tag.id = id;
             tag.imageCenter = std::reduce(mImmediateCorners[i].begin(), mImmediateCorners[i].end()) / static_cast<float>(mImmediateCorners[i].size());
             auto approximateSize = static_cast<std::size_t>(std::sqrt(cv::contourArea(mImmediateCorners[i])));
@@ -55,14 +59,15 @@ namespace mrover {
 
             // Publish tag to immediate
             std::string immediateFrameId = std::format("immediateTag{}", tag.id);
-            SE3Conversions::pushToTfTree(mTfBroadcaster, immediateFrameId, mCameraFrameId, tag.tagInCam.value(), get_clock()->now());
+            std::string cameraFrameId = get_parameter("camera_frame").as_string();
+            SE3Conversions::pushToTfTree(mTfBroadcaster, immediateFrameId, cameraFrameId, tag.tagInCam.value(), get_clock()->now());
         }
         // Handle tags that were not seen this update
         // Decrement their hit count and remove if they hit zero
         auto it = mTags.begin();
         while (it != mTags.end()) {
             if (auto& [id, tag] = *it; std::ranges::find(mImmediateIds, id) == mImmediateIds.end()) {
-                tag.hitCount -= mTagDecrementWeight;
+                tag.hitCount -= tagDecrementWeight;
                 tag.tagInCam = std::nullopt;
                 if (tag.hitCount <= 0) {
                     it = mTags.erase(it);
@@ -73,13 +78,14 @@ namespace mrover {
         }
         // Publish all tags to the tf tree that have been seen enough times
         for (auto const& [id, tag]: mTags) {
-            if (tag.hitCount >= mMinTagHitCountBeforePublish && tag.tagInCam) {
+            if (tag.hitCount >= minTagHitCountBeforePublish && tag.tagInCam) {
                 try {
                     // Use the TF tree to transform the tag from the camera frame to the map frame
                     // Then publish it in the map frame persistently
                     std::string immediateFrameId = std::format("immediateTag{}", tag.id);
-                    SE3d tagInParent = SE3Conversions::fromTfTree(mTfBuffer, immediateFrameId, mMapFrameId);
-                    SE3Conversions::pushToTfTree(mTfBroadcaster, std::format("tag{}", tag.id), mMapFrameId, tagInParent, get_clock()->now());
+                    std::string mapFrameId = get_parameter("world_frame").as_string();
+                    SE3d tagInParent = SE3Conversions::fromTfTree(mTfBuffer, immediateFrameId, mapFrameId);
+                    SE3Conversions::pushToTfTree(mTfBroadcaster, std::format("tag{}", tag.id), mapFrameId, tagInParent, get_clock()->now());
                 } catch (tf2::ExtrapolationException const&) {
                     RCLCPP_WARN_STREAM(get_logger(), "Old data for immediate tag");
                 } catch (tf2::LookupException const&) {
@@ -139,7 +145,7 @@ namespace mrover {
                 }
             }
             mDetectionsImageMessage.header.stamp = get_clock()->now();
-            mDetectionsImageMessage.header.frame_id = mCameraFrameId;
+            mDetectionsImageMessage.header.frame_id = get_parameter("camera_frame").as_string();
             mDetectionsImageMessage.height = mBgrImage.rows;
             mDetectionsImageMessage.width = mBgrImage.cols;
             mDetectionsImageMessage.encoding = sensor_msgs::image_encodings::BGRA8;
@@ -206,7 +212,7 @@ namespace mrover {
         cv::Point2f center = std::reduce(tagCorners.begin(), tagCorners.end()) / static_cast<float>(tagCorners.size());
         float xNormalized = center.x / static_cast<float>(image.cols());
         float xRecentered = 0.5f - xNormalized;
-        float bearingDegrees = xRecentered * mCameraHorizontalFOV;
+        float bearingDegrees = xRecentered * static_cast<float>(get_parameter("camera_horizontal_fov").as_double());
         return bearingDegrees * std::numbers::pi_v<float> / 180.0f;
     }
 

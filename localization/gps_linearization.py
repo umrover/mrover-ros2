@@ -16,18 +16,14 @@ import numpy as np
 from pymap3d.enu import geodetic2enu
 
 import rclpy
-from geometry_msgs.msg import Vector3Stamped
+from geometry_msgs.msg import Vector3Stamped, Vector3
 from rclpy import Parameter
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
-from sensor_msgs.msg import NavSatFix, Imu
-import tf2_ros
+from sensor_msgs.msg import NavSatFix
 
-import message_filters
-from lie.conversions import to_tf_tree, SE3
 
 class GPSLinearization(Node):
-
     def __init__(self) -> None:
         super().__init__("gps_linearization")
 
@@ -40,41 +36,22 @@ class GPSLinearization(Node):
                 ("world_frame", Parameter.Type.STRING),
             ],
         )
-
         self.ref_lat = self.get_parameter("ref_lat").value
         self.ref_lon = self.get_parameter("ref_lon").value
         self.ref_alt = self.get_parameter("ref_alt").value
         self.world_frame = self.get_parameter("world_frame").value
 
-        self.gps_sub = message_filters.Subscriber(self, NavSatFix, "gps/fix")
-        self.orientation_sub = message_filters.Subscriber(self, Imu, "zed_imu/data_raw")
+        self.pos_pub = self.create_publisher(Vector3Stamped, "linearized_position", 10)
 
-        self.tf_broadcaster = tf2_ros.TransformBroadcaster(self)
+        self.fix_sub = self.create_subscription(NavSatFix, "gps/fix", self.single_gps_callback, 10)
 
-        self.sync = message_filters.ApproximateTimeSynchronizer([self.gps_sub, self.orientation_sub], 10, 1)
-        self.sync.registerCallback(self.synced_gps_imu_callback)
-
-
-    def synced_gps_imu_callback(self, gps_msg: NavSatFix, imu_msg: Imu):
-
-        if np.isnan([gps_msg.latitude, gps_msg.longitude, gps_msg.altitude]).any():
+    def single_gps_callback(self, msg: NavSatFix):
+        if np.isnan([msg.latitude, msg.longitude, msg.altitude]).any():
             self.get_logger().warn("Received NaN GPS data, ignoring")
             return
-        
-        quaternion = np.array([imu_msg.orientation.x, imu_msg.orientation.y, imu_msg.orientation.z, imu_msg.orientation.w])
-        quaternion = quaternion / np.linalg.norm(quaternion)
-        
-        x, y, z = geodetic2enu(gps_msg.latitude, gps_msg.longitude, gps_msg.altitude, self.ref_lat, self.ref_lon, self.ref_alt, deg=True)
-        pose = SE3(position=np.array([x, y, z]), quaternion=quaternion)
 
-        to_tf_tree(
-            tf_broadcaster=self.tf_broadcaster,
-            se3=pose,
-            child_frame="base_link",
-            parent_frame=self.world_frame
-        )
-
-        self.get_logger().info(f"Published to TF Tree: Position({x}, {y}, {z}), Orientation({imu_msg.orientation})")
+        x, y, _ = geodetic2enu(msg.latitude, msg.longitude, msg.altitude, self.ref_lat, self.ref_lon, self.ref_alt, deg=True)
+        self.pos_pub.publish(Vector3Stamped(header=msg.header, vector=Vector3(x=x, y=y, z=msg.altitude)))
 
 
 def main() -> None:

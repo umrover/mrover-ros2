@@ -52,7 +52,7 @@ def generate_launch_description():
         executable="simulator",
         name="simulator",
         parameters=[
-            os.path.join(get_package_share_directory("mrover"), "config", "simulator.yaml"),
+            os.path.join(get_package_share_directory("mrover"), "config", "realistic_simulator.yaml"),
             {"headless": LaunchConfiguration("headless")},
         ],
     )
@@ -67,6 +67,24 @@ def generate_launch_description():
         condition=LaunchConfigurationEquals("rviz", "true"),
     )
 
+    gps_linearization_node = Node(
+        package="mrover",
+        executable="gps_linearization.py",
+        name="gps_linearization",
+        parameters=[
+            os.path.join(get_package_share_directory(package_name="mrover"), "config", "localization.yaml")
+        ],
+    )
+
+    pose_filter_node = Node(
+        package="mrover",
+        executable="pose_filter",
+        name="pose_filter",
+        parameters=[
+            os.path.join(get_package_share_directory(package_name="mrover"), "config", "localization.yaml")
+        ],
+    )
+
     return LaunchDescription(
         [
             headless_arg,
@@ -79,5 +97,7 @@ def generate_launch_description():
             simulator_node,
             arm_controller_node,
             rviz_node,
+            gps_linearization_node,
+            pose_filter_node
         ]
     )

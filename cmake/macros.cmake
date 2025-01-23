@@ -27,6 +27,13 @@ macro(mrover_add_library name sources includes)
     endif ()
 endmacro()
 
+macro(mrover_add_component name sources includes)
+    file(GLOB_RECURSE LIBRARY_SOURCES CONFIGURE_DEPENDS ${sources})
+    add_library(${name} SHARED ${ARGV3} ${LIBRARY_SOURCES})
+    mrover_target(${name})
+    target_compile_definitions(${name} PRIVATE "COMPOSITION_BUILDING_DLL")
+endmacro()  
+
 macro(mrover_add_node name sources)
     file(GLOB_RECURSE NODE_SOURCES CONFIGURE_DEPENDS ${sources})
     add_executable(${name} ${NODE_SOURCES})
@@ -43,36 +50,4 @@ macro(mrover_add_node name sources)
     if (APPLE)
         target_link_libraries(${name}  /opt/homebrew/Caskroom/miniforge/base/envs/ros2_env/lib/libpython3.11.dylib)
     endif ()
-endmacro()
-
-macro(mrover_add_component name sources includes)
-	# Create Executable
-	mrover_add_node(${name} ${sources})
-	rosidl_target_interfaces(${name} ${PROJECT_NAME} "rosidl_typesupport_cpp")
-
-	# Create Composition Library
-	set(component_name ${name}_component)
-	mrover_add_library(${component_name} ${sources} ${includes} SHARED)
-	rosidl_target_interfaces(${component_name} ${PROJECT_NAME} "rosidl_typesupport_cpp")
-    foreach(node ${ARGN})
-        rclcpp_components_register_nodes(${component_name} "mrover::${node}")
-        set(node_plugins "${node_plugins}mrover::${node};$<TARGET_FILE:${component_name}>\n")
-    endforeach()
-    target_compile_definitions(${component_name} PRIVATE "COMPOSITION_BUILDING_DLL")
-    install(CODE "execute_process( \
-            COMMAND ${CMAKE_COMMAND} -E create_symlink \
-            ${CMAKE_CURRENT_LIST_DIR}/../../build/${PROJECT_NAME}/lib${component_name}.so \
-            ${CMAKE_CURRENT_LIST_DIR}/../../install/${PROJECT_NAME}/lib/lib${component_name}.so \
-        )"
-    )
-endmacro()  
-
-macro(mrover_link_component name)
-	target_link_libraries(${name} ${ARGN})
-	target_link_libraries(${name}_component ${ARGN})
-endmacro()
-
-macro(mrover_ament_component name)
-	ament_target_dependencies(${name} ${ARGN})
-	ament_target_dependencies(${name}_component ${ARGN})
 endmacro()
