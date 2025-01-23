@@ -13,12 +13,49 @@
     <div class="shadow p-3 rounded benedicts">
       <NinhydrinBenedict :site="site" :isNinhydrin="false" />
     </div>
-    <!-- TODO: remove Cholorophyll (and maybe component) and replace with a new sensors component -->
-    <div class="shadow p-3 rounded chlorophyll">
-      <Chlorophyll />
-    </div>
     <div class="shadow p-3 rounded ninhydrin">
       <NinhydrinBenedict :site="site" :isNinhydrin="true" />
+    </div>
+
+    <!-- TODO: create a sensor vue file (for the table) -->
+    <div class="shadow p-3 rounded sensors">
+      <div class="sensors-container">
+        <table class="sensors-table table-bordered">
+          <thead>
+            <tr class="table-primary">
+              <!-- empty for alignment -->
+              <th></th>
+              <th>Sensor 1</th>
+              <th>Sensor 2</th>
+              <th>Sensor 3</th>
+              <th>Sensor 4</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th scope="row">Site 1</th>
+              <td>voltage</td>
+              <td>voltage</td>
+              <td>voltage</td>
+              <td>voltage</td>
+            </tr>
+            <tr>
+              <th scope="row">Site 2</th>
+              <td>voltage</td>
+              <td>voltage</td>
+              <td>voltage</td>
+              <td>voltage</td>
+            </tr>
+  
+          </tbody>
+          
+        </table>
+  
+        <div class="buttons">
+          <p class="example-button"><strong>Generate report</strong></p>
+          <p class="example-button"><strong>Generate report</strong></p>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -63,7 +100,7 @@ export default {
     'header header'
     'siteSelect siteSelect'
     'ninhydrin benedicts'
-    'chlorophyll chlorophyll';
+    'sensors sensors';
   font-family: sans-serif;
   height: auto;
 }
@@ -139,5 +176,30 @@ export default {
 
 .ninhydrin {
   grid-area: ninhydrin;
+}
+
+.sensors {
+  grid-area: sensors;
+}
+
+.sensors-container {
+  display: flex; /* Aligns the table and buttons in a row */
+  align-items: start; /* Aligns the buttons to the top of the table */
+  gap: 20px; /* Adds space between the table and buttons */
+}
+
+.sensors-table {
+  width: 80%; /* Adjust table width as needed */
+}
+
+.buttons {
+  margin-top: 20px;
+}
+
+.example-button {
+  color: white;
+  ;
+  background-color: darkcyan;
+  
 }
 </style>
