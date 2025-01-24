@@ -9,17 +9,17 @@ namespace mrover {
         std::vector<ParameterWrapper> params{
             {"resolution", mResolution, 0.5},
             {"size", mSize, 20},
-            {"width", mWidth, static_cast<int>(mSize / mResolution)},
+            {"width", mWidth, static_cast<int>(mSize / mResolution)},   // THIS DECLARATION DOES NOT WORK
             {"height", mHeight, static_cast<int>(mSize / mResolution)},
             {"map_frame", mMapFrame, "map"},
-            {"near_clip", mNearClip, 0.0},
+            {"near_clip", mNearClip, 1},
             {"far_clip", mFarClip, 7.0},
             {"left_clip", mRightClip, -2.0},
             {"right_clip", mLeftClip, 2.0},
             {"top_clip", mTopClip, 3.0},
             {"z_percent", mZPercent, 0.2},
             {"alpha", mAlpha, 0.05},
-            {"z_threshold", mZThreshold, 1}
+            {"z_threshold", mZThreshold, .4}
         };
 
         ParameterWrapper::declareParameters(this, params);
@@ -42,8 +42,11 @@ namespace mrover {
         mGlobalGridMsg.info.resolution = mResolution;
         // Number of cells horizontally
         mGlobalGridMsg.info.width = static_cast<int>(mSize / mResolution);
+        mWidth = static_cast<int>(mGlobalGridMsg.info.width);
         // Number of cells vertically
         mGlobalGridMsg.info.height = static_cast<int>(mSize / mResolution);
+        mHeight = static_cast<int>(mGlobalGridMsg.info.height);
+
         // Center the map at (0, 0)
         mGlobalGridMsg.header.frame_id = mMapFrame;
         mGlobalGridMsg.info.origin.position.x = -mSize / 2;

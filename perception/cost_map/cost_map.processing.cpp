@@ -136,7 +136,7 @@ namespace mrover {
                 // roverSE3.rotation().;
 
                 avgNormal.normalize();
-                RCLCPP_INFO_STREAM(get_logger(), std::format("Normal Z {}; Bin Size {}; One Point {}", avgNormal.z(), bin.size(), bin[0].normal.z()));
+                // RCLCPP_INFO_STREAM(get_logger(), std::format("Normal Z {}; Bin Size {}; One Point {}", avgNormal.z(), bin.size(), bin[0].normal.z()));
                 // RCLCPP_INFO_STREAM(get_logger(), std::format("ROLL: {}", *(roverSE3.coeffs().data()+3)));
                 std::int8_t cost = avgNormal.z() <= mZThreshold ? OCCUPIED_COST : FREE_COST;
 
@@ -164,15 +164,18 @@ namespace mrover {
                                                 {0,-1}, {0, 0}, {0,1},
                                                 {1,-1}, {1, 0}, {1,1}
                                                 };
+            // RCLCPP_INFO_STREAM(get_logger(), std::format("Index: {}\tRow {}\tCol {}\tmWidth {}\tWidth2 {}", coordinateToIndex(dis[8]), dis[8].row, dis[8].col, mWidth, postProcesed.info.width));
             for (int row = 0; row < mWidth; ++row) {
                 for(int col = 0; col < mHeight; ++col) {
                     int oned_index = coordinateToIndex({row, col});
+                    // RCLCPP_INFO_STREAM(get_logger(), std::format("Testing Index: {}", oned_index));
                     if(std::ranges::any_of(dis, [&](CostMapNode::Coordinate di) {
                         // the coordinate of the cell we are checking + dis offset
                         Coordinate dcoord = {row + di.row, col + di.col};
                         if(dcoord.row < 0 || dcoord.row >= mHeight || dcoord.col < 0 || dcoord.col >= mWidth)
                             return false;
 
+                        // RCLCPP_INFO_STREAM(get_logger(), std::format("Index: {}", coordinateToIndex(dcoord)));
                         return mGlobalGridMsg.data[coordinateToIndex(dcoord)] > FREE_COST;
                     })) postProcesed.data[oned_index] = OCCUPIED_COST;
                 }
