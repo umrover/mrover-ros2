@@ -38,11 +38,12 @@ class KeyDetector : public rclcpp::Node{
 
     rclcpp::TimerBase::SharedPtr mFSMTimer;
 
+    std::shared_ptr<FSMCtx> fsm_ctx;
+
     StateMachine mStateMachine;
 
     StatePublisher mStatePublisher;
 
-    std::shared_ptr<FSMCtx> fsm_ctx;
 
     void updateFSM();
 
