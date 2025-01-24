@@ -20,32 +20,36 @@ simulator:
       world:
         type: urdf
         uri: package://mrover/urdf/world/world.urdf.xacro
+      bottle:
+        type: urdf
+        uri: package://mrover/urdf/world/bottle.urdf.xacro
+        position: [ -6.0, 6.0, 0.5 ]
 
       # Auto-generated rocks from the grid
       rock_1:
         type: urdf
         uri: package://mrover/urdf/world/small_rock.urdf.xacro
-        position: [ 9.00, 10.00, 0.5 ]
+        position: [ 13.00, 10.00, 0.5 ]
 
       rock_2:
         type: urdf
         uri: package://mrover/urdf/world/small_rock.urdf.xacro
-        position: [ 8.00, 9.00, 0.5 ]
+        position: [ 12.00, 9.00, 0.5 ]
 
       rock_3:
         type: urdf
         uri: package://mrover/urdf/world/small_rock.urdf.xacro
-        position: [ 8.00, 8.00, 0.5 ]
+        position: [ 12.00, 8.00, 0.5 ]
 
       rock_4:
         type: urdf
         uri: package://mrover/urdf/world/small_rock.urdf.xacro
-        position: [ 8.00, 7.00, 0.5 ]
+        position: [ 12.00, 7.00, 0.5 ]
 
       rock_5:
         type: urdf
         uri: package://mrover/urdf/world/small_rock.urdf.xacro
-        position: [ 9.00, 6.00, 0.5 ]
+        position: [ 13.00, 6.00, 0.5 ]
 
     ref_lat: 38.4225202
     ref_lon: -110.7844653
