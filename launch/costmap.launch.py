@@ -16,7 +16,9 @@ def generate_launch_description():
     )
 
     launch_include_nav = IncludeLaunchDescription(
-        launch_description_source=PythonLaunchDescriptionSource(os.path.join(get_package_share_directory("mrover"), "launch/navigation.launch.py"))
+        launch_description_source=PythonLaunchDescriptionSource(
+            os.path.join(get_package_share_directory("mrover"), "launch/navigation.launch.py")
+        )
     )
 
     costmap_node = Node(
@@ -26,7 +28,9 @@ def generate_launch_description():
     )
 
     launch_include_debug_course = IncludeLaunchDescription(
-        launch_description_source=PythonLaunchDescriptionSource(os.path.join(get_package_share_directory("mrover"), "launch/debug_course_publisher.launch.py"))
+        launch_description_source=PythonLaunchDescriptionSource(
+            os.path.join(get_package_share_directory("mrover"), "launch/debug_course_publisher.launch.py")
+        )
     )
 
     return LaunchDescription(

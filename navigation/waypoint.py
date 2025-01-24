@@ -45,6 +45,7 @@ class WaypointState(State):
     UPDATE_DELAY: float
 
     def on_enter(self, context: Context) -> None:
+        assert context.course is not None
         self.marker_pub = context.node.create_publisher(Marker, "spiral_points", 10)
         self.astar = AStar(context)
         self.UPDATE_DELAY = context.node.get_parameter("search.update_delay").value
@@ -53,7 +54,16 @@ class WaypointState(State):
         self.astar_traj = Trajectory(np.array([]))
         self.waypoint_traj = Trajectory(np.array([]))
         context.env.arrived_at_waypoint = False
-        self.marker_pub.publish(gen_marker(context=context, point=context.course.current_waypoint_pose_in_map().translation()[0:2], color=[0.0, 0.0, 1.0], size=0.5, id=-1, lifetime=10000))
+        self.marker_pub.publish(
+            gen_marker(
+                context=context,
+                point=context.course.current_waypoint_pose_in_map().translation()[0:2],
+                color=[0.0, 0.0, 1.0],
+                size=0.5,
+                id=-1,
+                lifetime=10000,
+            )
+        )
 
     def on_exit(self, context: Context) -> None:
         pass
@@ -87,46 +97,58 @@ class WaypointState(State):
         rover_in_map = context.rover.get_pose_in_map()
         if rover_in_map is None:
             return self
-        
-        self.marker_pub.publish(gen_marker(context=context, point=context.course.current_waypoint_pose_in_map().translation()[0:2], color=[0.0, 0.0, 1.0], size=0.5, id=-1, lifetime=10000))
+
+        self.marker_pub.publish(
+            gen_marker(
+                context=context,
+                point=context.course.current_waypoint_pose_in_map().translation()[0:2],
+                color=[0.0, 0.0, 1.0],
+                size=0.5,
+                id=-1,
+                lifetime=10000,
+            )
+        )
 
         if len(self.waypoint_traj.coordinates) == 0:
             if context.rover.get_pose_in_map() is None:
                 return self
-            
+
             context.node.get_logger().info("Generating segmented path")
-            self.waypoint_traj = segment_path(context=context, dest=context.course.current_waypoint_pose_in_map().translation()[0:2])
+            self.waypoint_traj = segment_path(
+                context=context, dest=context.course.current_waypoint_pose_in_map().translation()[0:2]
+            )
 
             self.display_markers(context=context)
 
             return self
 
-        if not hasattr(context.env.cost_map, 'data'): 
+        if not hasattr(context.env.cost_map, "data"):
             context.node.get_logger().warn(f"No costmap found, waiting...")
             self.start_time = context.node.get_clock().now()
             return self
-        
-        
+
         if context.node.get_clock().now() - Duration(nanoseconds=1000000000) < self.start_time:
             return self
-    
+
         # BEGINNING OF LOGIC
 
         while is_high_cost_point(context=context, point=self.waypoint_traj.get_current_point()):
             if self.waypoint_traj.increment_point():
                 return self.next_state(context=context)
             self.display_markers(context=context)
-        
+
         # If there are no more points in the current a_star path or we are past the update delay, then create a new one
-        if context.node.get_clock().now() - self.time_last_updated > Duration(seconds=self.UPDATE_DELAY) \
-            or len(self.astar_traj.coordinates) - self.astar_traj.cur_pt == 0:
+        if (
+            context.node.get_clock().now() - self.time_last_updated > Duration(seconds=self.UPDATE_DELAY)
+            or len(self.astar_traj.coordinates) - self.astar_traj.cur_pt == 0
+        ):
             self.time_last_updated = context.node.get_clock().now()
             # Generate a path
-            self.astar_traj = self.astar.generate_trajectory(context, self.waypoint_traj.get_current_point())  
-            
+            self.astar_traj = self.astar.generate_trajectory(context, self.waypoint_traj.get_current_point())
+
         arrived = False
         cmd_vel = Twist()
-        if len(self.astar_traj.coordinates) - self.astar_traj.cur_pt != 0: 
+        if len(self.astar_traj.coordinates) - self.astar_traj.cur_pt != 0:
             waypoint_position_in_map = self.astar_traj.get_current_point()
             cmd_vel, arrived = context.drive.get_drive_command(
                 waypoint_position_in_map,
@@ -134,12 +156,11 @@ class WaypointState(State):
                 context.node.get_parameter("waypoint.stop_threshold").value,
                 context.node.get_parameter("waypoint.drive_forward_threshold").value,
             )
-        
 
         if context.rover.stuck:
             context.rover.previous_state = self
             return recovery.RecoveryState()
-        
+
         if arrived:
             if self.astar_traj.increment_point():
                 context.node.get_logger().info(f"Arrived at segment point")
@@ -152,10 +173,13 @@ class WaypointState(State):
         return self
 
     def next_state(self, context: Context) -> State:
+        assert context.course is not None
         context.env.arrived_at_waypoint = True
         context.node.get_logger().info("Arrived at waypoint")
         context.rover.send_drive_command(Twist())
-        if not context.course.current_waypoint().type.val == WaypointType.NO_SEARCH:
+        current_wp = context.course.current_waypoint()
+        assert current_wp is not None
+        if not current_wp.type.val == WaypointType.NO_SEARCH:
             # We finished a waypoint associated with the water bottle, but we have not seen it yet and are using the costmap to search
             search_state = costmap_search.CostmapSearchState()
             return search_state
@@ -165,9 +189,13 @@ class WaypointState(State):
             self.astar_traj = Trajectory(np.array([]))
             self.traj = Trajectory(np.array([]))
             return self
-    
+
     def display_markers(self, context: Context):
         start_pt = self.waypoint_traj.cur_pt
-        end_pt = self.waypoint_traj.cur_pt + 7 if self.waypoint_traj.cur_pt + 7 < len(self.waypoint_traj.coordinates) else len(self.waypoint_traj.coordinates)
+        end_pt = (
+            self.waypoint_traj.cur_pt + 7
+            if self.waypoint_traj.cur_pt + 7 < len(self.waypoint_traj.coordinates)
+            else len(self.waypoint_traj.coordinates)
+        )
         for i, coord in enumerate(self.waypoint_traj.coordinates[start_pt:end_pt]):
-            self.marker_pub.publish(gen_marker(context=context, point=coord, color=[1.0,0.0,1.0], id=i, lifetime=100))
+            self.marker_pub.publish(gen_marker(context=context, point=coord, color=[1.0, 0.0, 1.0], id=i, lifetime=100))
