@@ -28,8 +28,8 @@ void KeyDetector::execute(const std::shared_ptr<GoalHandleKeyAction> goal_handle
   auto result = std::make_shared<KeyAction::Result>();
 
   fsm_ctx->goal_handle = goal_handle;
-  fsm_ctx->curr_key_index = 0;
   fsm_ctx->node = this->shared_from_this();
+  fsm_ctx->curr_key_index = 0;
 
   // start state
   while (rclcpp::ok()){
