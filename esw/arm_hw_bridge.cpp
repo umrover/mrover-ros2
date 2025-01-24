@@ -5,8 +5,8 @@
 
 #include <rclcpp/rclcpp.hpp>
 
-#include <units/units.hpp>
-#include <units/units_eigen.hpp>
+#include <units.hpp>
+#include <units_eigen.hpp>
 
 #include <mrover/msg/controller_state.hpp>
 #include <mrover/msg/position.hpp>

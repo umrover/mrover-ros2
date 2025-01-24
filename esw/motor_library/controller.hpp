@@ -8,7 +8,7 @@
 #include <rclcpp/rclcpp.hpp>
 
 #include <can_device.hpp>
-#include <units/units.hpp>
+#include <units.hpp>
 
 #include <mrover/msg/can.hpp>
 #include <mrover/msg/controller_state.hpp>
