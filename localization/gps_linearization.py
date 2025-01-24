@@ -61,10 +61,12 @@ class GPSLinearization(Node):
             self.get_logger().warn("Received NaN GPS data, ignoring")
             return
         
+
         quaternion = np.array(
             [imu_msg.orientation.x, imu_msg.orientation.y, imu_msg.orientation.z, imu_msg.orientation.w]
         )
         quaternion = quaternion / np.linalg.norm(quaternion)
+        
         
         x, y, z = geodetic2enu(
             gps_msg.latitude, gps_msg.longitude, gps_msg.altitude, self.ref_lat, self.ref_lon, self.ref_alt, deg=True
