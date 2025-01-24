@@ -149,9 +149,7 @@ export default defineComponent({
 
 .logo {
   position: absolute;
-  left: 44.45%;
-  transform: translateX(-50%);
-  transform: translateY(-50%);
+  left: 45%;
 }
 
 .map {
