@@ -24,11 +24,12 @@ extern I2C_HandleTypeDef hi2c1;
  */
 
 extern TIM_HandleTypeDef htim1;
-extern TIM_HandleTypeDef htim2;
-extern TIM_HandleTypeDef htim3;
+// extern TIM_HandleTypeDef htim2;
+// extern TIM_HandleTypeDef htim3;
 extern TIM_HandleTypeDef htim4;
 extern TIM_HandleTypeDef htim6;
 extern TIM_HandleTypeDef htim7;
+extern TIM_HandleTypeDef htim8;
 extern TIM_HandleTypeDef htim15;
 extern TIM_HandleTypeDef htim16;
 extern TIM_HandleTypeDef htim17;
@@ -42,17 +43,19 @@ extern TIM_HandleTypeDef htim17;
 #define PWM_TIMER_CHANNEL_2 TIM_CHANNEL_3
 
 // Special encoder timer which externally reads quadrature encoder ticks
-#define QUADRATURE_TICK_TIMER_0 &htim4 // Motor 0
-#define QUADRATURE_TICK_TIMER_1 &htim3 // Motor 1
-#define QUADRATURE_TICK_TIMER_2 &htim2 // Motor 2
+#define QUADRATURE_TICK_TIMER &htim4
+// #define QUADRATURE_TICK_TIMER_0 &htim4
+// #define QUADRATURE_TICK_TIMER_1 &htim3
+// #define QUADRATURE_TICK_TIMER_2 &htim2
 
 // 20 Hz global timer for: FDCAN send, I2C transaction (absolute encoders)
 #define GLOBAL_UPDATE_TIMER &htim6
 
 // Measures time since the last quadrature tick reading or the last absolute encoder reading
-// Measures time since the last throttle command
+#define ENCODER_ELAPSED_TIMER &htim7
+
 // Measures time since the last PIDF update, used for the "D" term
-#define VIRTUAL_STOPWATCHES_TIMER &htim7
+#define PIDF_TIMER &htim8
 
 // FDCAN watchdog timer that needs to be reset every time a message is received
 #define RECEIVE_WATCHDOG_TIMER_0 &htim15 // Motor 0
@@ -60,13 +63,21 @@ extern TIM_HandleTypeDef htim17;
 #define RECEIVE_WATCHDOG_TIMER_2 &htim17 // Motor 2
 
 namespace mrover {
-    using ControllerStopwatches = VirtualStopwatches<NUM_MOTORS * 3, std::uint32_t, mrover::CLOCK_FREQ / 170>;
+    typedef typename std::array<Motor, NUM_MOTORS>::iterator MotorIterator;
 
     FDCAN<InBoundMessage> fdcan_bus;
-    ControllerStopwatches stopwatches; // MotorCount * 3 = MotorCount(encoder elapsed timer + last throttle timer + last PIDF timer)
     std::array<Motor, NUM_MOTORS> motors;
-    typename std::array<Motor, NUM_MOTORS>::iterator motor_requesting_absolute_encoder;
     Pin can_tx_led, can_rx_led;
+    MotorIterator motor_with_encoder;
+
+    auto get_motor_with_encoder() -> MotorIterator {
+        for (auto motor_it = motors.begin(); motor_it != motors.end(); ++motor_it) {
+            if (motor_it->has_quadrature_encoder_configured()) {
+                return motor_it;
+            }
+        }
+        return motors.end();
+    }
 
     constexpr auto create_motor(std::size_t index) -> Motor {
         switch (index) {
@@ -74,29 +85,32 @@ namespace mrover {
                 return Motor(
                         DEVICE_ID_0,
                         HBridge{PWM_TIMER_0, PWM_TIMER_CHANNEL_0, Pin{MOTOR_DIR_0_GPIO_Port, MOTOR_DIR_0_Pin}},
-                        &stopwatches,
                         RECEIVE_WATCHDOG_TIMER_0,
                         {LimitSwitch{Pin{LIMIT_0_A_GPIO_Port, LIMIT_0_A_Pin}}, LimitSwitch{Pin{LIMIT_0_B_GPIO_Port, LIMIT_0_B_Pin}}},
-                        QUADRATURE_TICK_TIMER_0,
-                        A2_A1_0);
+                        ENCODER_ELAPSED_TIMER,
+                        QUADRATURE_TICK_TIMER,
+                        A2_A1_0,
+                        PIDF_TIMER);
             case 1:
                 return Motor(
                         DEVICE_ID_1,
                         HBridge{PWM_TIMER_1, PWM_TIMER_CHANNEL_1, Pin{MOTOR_DIR_1_GPIO_Port, MOTOR_DIR_1_Pin}},
-                        &stopwatches,
                         RECEIVE_WATCHDOG_TIMER_1,
                         {LimitSwitch{Pin{LIMIT_1_A_GPIO_Port, LIMIT_1_A_Pin}}, LimitSwitch{Pin{LIMIT_1_B_GPIO_Port, LIMIT_1_B_Pin}}},
-                        QUADRATURE_TICK_TIMER_1,
-                        A2_A1_1);
+                        ENCODER_ELAPSED_TIMER,
+                        QUADRATURE_TICK_TIMER,
+                        A2_A1_1,
+                        PIDF_TIMER);
             case 2:
                 return Motor(
                         DEVICE_ID_2,
                         HBridge{PWM_TIMER_2, PWM_TIMER_CHANNEL_2, Pin{MOTOR_DIR_2_GPIO_Port, MOTOR_DIR_2_Pin}},
-                        &stopwatches,
                         RECEIVE_WATCHDOG_TIMER_2,
                         {LimitSwitch{Pin{LIMIT_2_A_GPIO_Port, LIMIT_2_A_Pin}}, LimitSwitch{Pin{LIMIT_2_B_GPIO_Port, LIMIT_2_B_Pin}}},
-                        QUADRATURE_TICK_TIMER_2,
-                        A2_A1_2);
+                        ENCODER_ELAPSED_TIMER,
+                        QUADRATURE_TICK_TIMER,
+                        A2_A1_2,
+                        PIDF_TIMER);
             default:
                 return {};
         }
@@ -114,13 +128,11 @@ namespace mrover {
 
     auto init() -> void {
         fdcan_bus = FDCAN<InBoundMessage>(&hfdcan1);
-        stopwatches = ControllerStopwatches(VIRTUAL_STOPWATCHES_TIMER);
         motors = create_motor_array<NUM_MOTORS>();
-        motor_requesting_absolute_encoder = motors.begin();
         can_tx_led = Pin{CAN_TX_LED_GPIO_Port, CAN_TX_LED_Pin};
         can_rx_led = Pin{CAN_RX_LED_GPIO_Port, CAN_RX_LED_Pin};
 
-        stopwatches.init();
+        motor_with_encoder = motors.end();
 
         // fdcan_bus.configure_filter(DEVICE_ID_0);
         // fdcan_bus.configure_filter(DEVICE_ID_1);
@@ -129,6 +141,7 @@ namespace mrover {
         fdcan_bus.start();
 
         check(HAL_TIM_Base_Start_IT(GLOBAL_UPDATE_TIMER) == HAL_OK, Error_Handler);
+        check(HAL_TIM_Base_Start(PIDF_TIMER) == HAL_OK, Error_Handler);
     }
 
     /**
@@ -147,6 +160,11 @@ namespace mrover {
                 can_rx_led.write(GPIO_PIN_SET);
                 motors[i].receive(message);
                 motors[i].update();
+                if (motor_with_encoder == motors.end()) {
+                    if (motors[i].has_quadrature_encoder_configured() || motors[i].has_absolute_encoder_configured()) {
+                        motor_with_encoder = motors.begin() + i;
+                    }
+                }
                 can_rx_led.write(GPIO_PIN_RESET);
                 break;
             }
@@ -168,53 +186,44 @@ namespace mrover {
         }
     }
 
-    auto request_absolute_encoder_data() -> void {
-        while (motor_requesting_absolute_encoder != motors.end()) {
-            if (motor_requesting_absolute_encoder->has_absolute_encoder_configued()) {
-                motor_requesting_absolute_encoder->request_absolute_encoder_data();
-                return;
-            }
-            ++motor_requesting_absolute_encoder;
+    auto encoder_elapsed_expired_callback() -> void {
+        if (motor_with_encoder != motors.end()) {
+            motor_with_encoder->encoder_elapsed_expired();
         }
     }
 
-    auto start_absolute_encoder_reads() -> void {
-        if (motor_requesting_absolute_encoder != motors.end()) {
-            return;
+    auto request_absolute_encoder_data() -> void {
+        if (motor_with_encoder != motors.end()) {
+            motor_with_encoder->request_absolute_encoder_data();
         }
-
-        motor_requesting_absolute_encoder = motors.begin();
-        request_absolute_encoder_data();
     }
 
     auto global_update_callback() -> void {
         send_motor_statuses();
-        start_absolute_encoder_reads();
+        request_absolute_encoder_data();
     }
 
     auto read_absolute_encoder_data_callback() -> void {
-        motor_requesting_absolute_encoder->read_absolute_encoder_data();
+        if (motor_with_encoder != motors.end()) {
+            motor_with_encoder->read_absolute_encoder_data();
+        }
     }
 
     auto update_absolute_encoder_callback() -> void {
-        motor_requesting_absolute_encoder->update_absolute_encoder();
-        ++motor_requesting_absolute_encoder;
-        motor_requesting_absolute_encoder->request_absolute_encoder_data();
+        if (motor_with_encoder != motors.end()) {
+            motor_with_encoder->update_absolute_encoder();
+        }
     }
 
-    template<std::uint8_t MotorIndex>
     auto update_quadrature_encoder_callback() -> void {
-        motors[MotorIndex].update_quadrature_encoder();
+        if (motor_with_encoder != motors.end()) {
+            motor_with_encoder->update_quadrature_encoder();
+        }
     }
-
 
     template<std::uint8_t MotorIndex>
     auto receive_watchdog_timer_expired() -> void {
         motors[MotorIndex].receive_watchdog_expired();
-    }
-
-    auto virtual_stopwatch_elapsed_callback() -> void {
-        stopwatches.period_elapsed();
     }
 
 } // namespace mrover
@@ -227,11 +236,11 @@ void HAL_PostInit() {
 }
 
 /**
-* These are interrupt handlers. They are called by the HAL.
-*
-* These are set up in the .ioc file.
-* They have to be enabled in the NVIC settings.
-* It is important th
+ * These are interrupt handlers. They are called by the HAL.
+ *
+ * These are set up in the .ioc file.
+ * They have to be enabled in the NVIC settings.
+ * It is important th
 */
 
 /**
@@ -247,18 +256,14 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim) {
         mrover::receive_watchdog_timer_expired<1>();
     } else if (htim == RECEIVE_WATCHDOG_TIMER_2) {
         mrover::receive_watchdog_timer_expired<2>();
-    } else if (htim == VIRTUAL_STOPWATCHES_TIMER) {
-        mrover::virtual_stopwatch_elapsed_callback();
+    } else if (htim == ENCODER_ELAPSED_TIMER) {
+        mrover::encoder_elapsed_expired_callback();
     }
 }
 
 void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef* htim) {
-    if (htim == QUADRATURE_TICK_TIMER_0) {
-        mrover::update_quadrature_encoder_callback<0>();
-    } else if (htim == QUADRATURE_TICK_TIMER_1) {
-        mrover::update_quadrature_encoder_callback<1>();
-    } else if (htim == QUADRATURE_TICK_TIMER_2) {
-        mrover::update_quadrature_encoder_callback<2>();
+    if (htim == QUADRATURE_TICK_TIMER) {
+        mrover::update_quadrature_encoder_callback();
     }
 }
 
