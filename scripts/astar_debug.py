@@ -41,9 +41,7 @@ class SimWindow:
         self.speed = speed
         self.root = tk.Tk()
         self.root.title("AStar Simulation Testing")
-        self.grid = (
-            np.zeros((self.rows, self.cols), dtype=int) if grid is None else grid
-        )
+        self.grid = np.zeros((self.rows, self.cols), dtype=int) if grid is None else grid
         self.grid_copy = np.copy(self.grid)
 
         self.canvas = tk.Canvas(
@@ -66,9 +64,7 @@ class SimWindow:
         self.canvas.bind_all("<q>", lambda event: self.root.destroy())
 
         self.current_path_index = 0
-        self.print_button = tk.Button(
-            self.root, text="Run Simulation", command=self.run_astar
-        )
+        self.print_button = tk.Button(self.root, text="Run Simulation", command=self.run_astar)
         self.print_button.pack(pady=5)
 
     def run_astar(self):
@@ -84,11 +80,9 @@ class SimWindow:
             costmap.width = self.cols
             costmap.resolution = 1
             costmap.data = np.copy(self.grid).T
-            self.ctx.env = Environment(
-                self.ctx, image_targets=ImageTargetsStore(self.ctx), cost_map=costmap
-            )
-            #self.ctx.node.get_logger().info(costmap.data)
-        astar = AStar(np.array(self.ctx)
+            self.ctx.env = Environment(self.ctx, image_targets=ImageTargetsStore(self.ctx), cost_map=costmap)
+            # self.ctx.node.get_logger().info(costmap.data)
+        astar = AStar(self.ctx)
         self.path_history = astar.a_star(self.start[::-1], self.end[::-1], debug=True)
         if self.path_history:
             self.pause = False
@@ -118,9 +112,7 @@ class SimWindow:
                 # converts the coordinates along the path to x, y in the canvas
                 x = col * self.cell_size + self.cell_size / 2 + self.number_padding
                 y = row * self.cell_size + self.cell_size / 2 + self.number_padding
-                self.canvas.create_text(
-                    x, y, text=str(i), font=("Arial", self.cell_size // 2), fill="white"
-                )
+                self.canvas.create_text(x, y, text=str(i), font=("Arial", self.cell_size // 2), fill="white")
 
             self.current_path_index += 1
 
@@ -191,12 +183,8 @@ class SimWindow:
         self.start_x = event.x
         self.start_y = event.y
 
-        col = min(
-            max((event.x - self.number_padding) // self.cell_size, 0), self.cols - 1
-        )
-        row = min(
-            max((event.y - self.number_padding) // self.cell_size, 0), self.rows - 1
-        )
+        col = min(max((event.x - self.number_padding) // self.cell_size, 0), self.cols - 1)
+        row = min(max((event.y - self.number_padding) // self.cell_size, 0), self.rows - 1)
 
         self.grid[row][col] = 1 - self.grid[row][col]
         self.curr_cell = (row, col)
@@ -204,12 +192,8 @@ class SimWindow:
 
     def on_drag(self, event):
         if self.dragging:
-            col = min(
-                max((event.x - self.number_padding) // self.cell_size, 0), self.cols - 1
-            )
-            row = min(
-                max((event.y - self.number_padding) // self.cell_size, 0), self.rows - 1
-            )
+            col = min(max((event.x - self.number_padding) // self.cell_size, 0), self.cols - 1)
+            row = min(max((event.y - self.number_padding) // self.cell_size, 0), self.rows - 1)
 
             if (row, col) != self.curr_cell:
                 self.grid[row][col] = 1 - self.grid[row][col]
@@ -233,12 +217,8 @@ class AStarDebug(Node):
 
         self.ctx = ctx
         self.ctx.node = self
-        self.declare_parameters(
-            "", [("search.traversable_cost", Parameter.Type.DOUBLE)]
-        )
-        self.set_parameters(
-            [Parameter("search.traversable_cost", Parameter.Type.DOUBLE, 0.2)]
-        )
+        self.declare_parameters("", [("search.traversable_cost", Parameter.Type.DOUBLE)])
+        self.set_parameters([Parameter("search.traversable_cost", Parameter.Type.DOUBLE, 0.2)])
 
         start = np.array([0, 1])
         end = np.array([25, 18])

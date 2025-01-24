@@ -15,6 +15,7 @@ from visualization_msgs.msg import Marker
 from state_machine.state import State
 from rclpy.publisher import Publisher
 
+
 # REFERENCE: https://docs.google.com/document/d/18GjDWxIu5f5-N5t5UgbrZGdEyaDj9ZMEUuXex8-NKrA/edit
 class CostmapSearchState(State):
     """
@@ -50,7 +51,7 @@ class CostmapSearchState(State):
         self.STOP_THRESH = context.node.get_parameter("search.stop_threshold").value
         self.DRIVE_FWD_THRESH = context.node.get_parameter("search.drive_forward_threshold").value
         self.UPDATE_DELAY = context.node.get_parameter("search.update_delay").value
-        self.A_STAR_THRESH= context.node.get_parameter("search.a_star_thresh").value
+        self.A_STAR_THRESH = context.node.get_parameter("search.a_star_thresh").value
 
         # Creates spiral traj to follow
         self.new_traj(context)
@@ -64,7 +65,7 @@ class CostmapSearchState(State):
         self.time_last_updated = context.node.get_clock().now()
         self.follow_astar = False
 
-        #Initialize stopwatch
+        # Initialize stopwatch
         self.time_begin = None
 
     def on_exit(self, context: Context) -> None:
@@ -72,16 +73,17 @@ class CostmapSearchState(State):
 
     def on_loop(self, context: Context) -> State:
         # Wait until the costmap is ready
-        if not hasattr(context.env.cost_map, 'data'): 
+        if not hasattr(context.env.cost_map, "data"):
             context.node.get_logger().warn(f"No costmap found, waiting...")
             time.sleep(1.0)
             return self
 
         assert context.course is not None
+        assert self.prev_pos is not None
 
         rover_in_map = context.rover.get_pose_in_map()
         assert rover_in_map is not None
-        
+
         if context.rover.stuck:
             context.rover.previous_state = self
             self.is_recovering = True
@@ -92,8 +94,9 @@ class CostmapSearchState(State):
         if not self.time_begin:
             self.time_begin = context.node.get_clock().now()
             self.prev_pos = rover_in_map.translation()[0:2]
+
         else:
-            self.total_distance += d_calc(rover_in_map.translation()[0:2], self.prev_pos)
+            self.total_distance += d_calc(rover_in_map.translation()[0:2], tuple(self.prev_pos))
             self.prev_pos = rover_in_map.translation()[0:2]
 
         while is_high_cost_point(context=context, point=self.traj.get_current_point()):
@@ -102,24 +105,38 @@ class CostmapSearchState(State):
                 context.node.get_logger().info(f"Reached end of search spiral")
                 return waypoint.WaypointState()
             start_pt = self.traj.cur_pt
-            end_pt = self.traj.cur_pt + 6 if self.traj.cur_pt + 3 < len(self.traj.coordinates) else len(self.traj.coordinates)
+            end_pt = (
+                self.traj.cur_pt + 6
+                if self.traj.cur_pt + 3 < len(self.traj.coordinates)
+                else len(self.traj.coordinates)
+            )
             for i, coord in enumerate(self.traj.coordinates[start_pt:end_pt]):
-                self.marker_pub.publish(gen_marker(context=context, point=coord, color=[1.0,0.0,0.0], id=i, lifetime=100))
+                self.marker_pub.publish(
+                    gen_marker(context=context, point=coord, color=[1.0, 0.0, 0.0], id=i, lifetime=100)
+                )
             self.star_traj = Trajectory(np.array([]))
 
-
         # If there are no more points in the current a_star path or we are past the update delay, then create a new one
-        if len(self.star_traj.coordinates) - self.star_traj.cur_pt == 0 or \
-            context.node.get_clock().now() - self.time_last_updated > Duration(seconds=self.UPDATE_DELAY):
+        if len(
+            self.star_traj.coordinates
+        ) - self.star_traj.cur_pt == 0 or context.node.get_clock().now() - self.time_last_updated > Duration(
+            seconds=self.UPDATE_DELAY
+        ):
 
             start_pt = self.traj.cur_pt
-            end_pt = self.traj.cur_pt + 6 if self.traj.cur_pt + 3 < len(self.traj.coordinates) else len(self.traj.coordinates)
+            end_pt = (
+                self.traj.cur_pt + 6
+                if self.traj.cur_pt + 3 < len(self.traj.coordinates)
+                else len(self.traj.coordinates)
+            )
             for i, coord in enumerate(self.traj.coordinates[start_pt:end_pt]):
-                self.marker_pub.publish(gen_marker(context=context, point=coord, color=[1.0,0.0,0.0], id=i, lifetime=100))
+                self.marker_pub.publish(
+                    gen_marker(context=context, point=coord, color=[1.0, 0.0, 0.0], id=i, lifetime=100)
+                )
 
             total_time = (context.node.get_clock().now() - self.time_begin).nanoseconds / 1e9
-            #context.node.get_logger().info(f"Total Distance Traveled: {self.total_distance}m\nTotal Time: {total_time}s\nAverage Speed: {self.total_distance/total_time}m/s")
-            
+            # context.node.get_logger().info(f"Total Distance Traveled: {self.total_distance}m\nTotal Time: {total_time}s\nAverage Speed: {self.total_distance/total_time}m/s")
+
             # Generate a path
             self.star_traj = self.astar.generate_trajectory(context, self.traj.get_current_point())
 
@@ -143,9 +160,9 @@ class CostmapSearchState(State):
             path_start=self.prev_target_pos_in_map,
         )
 
-        if not arrived: 
+        if not arrived:
             context.rover.send_drive_command(cmd_vel)
-        else: 
+        else:
             self.prev_target_pos_in_map = target_position_in_map
             if self.star_traj.increment_point():
                 if self.traj.increment_point():
@@ -155,7 +172,9 @@ class CostmapSearchState(State):
         # If our target object has been detected, approach it
         if (context.env.current_target_pos()) is not None:
             total_time = context.node.get_clock().now() - self.time_begin
-            context.node.get_logger().info(f"Transitioning to approach target state. Total search time: {total_time.nanoseconds // 1000000000}")
+            context.node.get_logger().info(
+                f"Transitioning to approach target state. Total search time: {total_time.nanoseconds // 1000000000}"
+            )
             return approach_target.ApproachTargetState()
 
         return self
@@ -170,7 +189,7 @@ class CostmapSearchState(State):
                 context.course.current_waypoint_pose_in_map().translation()[0:2],
                 context.node.get_parameter("search.coverage_radius").value,
                 context.node.get_parameter("search.distance_between_spirals").value,
-        context.node.get_parameter("search.segments_per_rotation").value,
+                context.node.get_parameter("search.segments_per_rotation").value,
                 search_center.tag_id,
                 True,
             )

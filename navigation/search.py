@@ -41,24 +41,31 @@ class SearchState(State):
 
         assert rover_in_map is not None
         assert SearchState.trajectory is not None
-
+        assert self.prev_pos is not None
 
         if not self.time_begin:
             self.time_begin = context.node.get_clock().now()
             self.prev_pos = rover_in_map.translation()[0:2]
         else:
-            self.total_distance += d_calc(rover_in_map.translation()[0:2], self.prev_pos)
+            self.total_distance += d_calc(rover_in_map.translation()[0:2], tuple(self.prev_pos))
             self.prev_pos = rover_in_map.translation()[0:2]
-        
+
         if context.node.get_clock().now() - self.time_last_updated > Duration(seconds=3.0):
             total_time = (context.node.get_clock().now() - self.time_begin).nanoseconds / 1e9
-            context.node.get_logger().info(f"Total Distance Traveled: {self.total_distance}m\nTotal Time: {total_time}s\nAverage Speed: {self.total_distance/total_time}m/s")
+            context.node.get_logger().info(
+                f"Total Distance Traveled: {self.total_distance}m\nTotal Time: {total_time}s\nAverage Speed: {self.total_distance/total_time}m/s"
+            )
             self.time_last_updated = context.node.get_clock().now()
+            assert self.trajectory is not None
             start_pt = self.trajectory.cur_pt - 6 if self.trajectory.cur_pt - 3 >= 0 else self.trajectory.cur_pt
-            end_pt = self.trajectory.cur_pt + 6 if self.trajectory.cur_pt + 3 < len(self.trajectory.coordinates) else len(self.trajectory.coordinates)
+            end_pt = (
+                self.trajectory.cur_pt + 6
+                if self.trajectory.cur_pt + 3 < len(self.trajectory.coordinates)
+                else len(self.trajectory.coordinates)
+            )
             for i, coord in enumerate(self.trajectory.coordinates[start_pt:end_pt]):
-                self.marker_pub.publish(gen_marker(context=context, point=coord, color=[1.0,0.0,0.0], id=i))
-        
+                self.marker_pub.publish(gen_marker(context=context, point=coord, color=[1.0, 0.0, 0.0], id=i))
+
         # Continue executing the path from wherever it left off
         target_position_in_map = SearchState.trajectory.get_current_point()
         cmd_vel, arrived = context.drive.get_drive_command(
@@ -95,8 +102,8 @@ class SearchState(State):
 
         # Returns either ApproachTargetState, LongRangeState, or None
         assert context.course is not None
-        #approach_state = context.course.get_approach_state()
-        
+        # approach_state = context.course.get_approach_state()
+
         if context.env.current_target_pos() is not None:
             return approach_target.ApproachTargetState()
 

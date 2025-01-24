@@ -5,20 +5,22 @@ from rclpy.duration import Duration
 from rclpy.time import Time
 from std_msgs.msg import Header
 from navigation.trajectory import Trajectory
+from lie import SE3
+
+
 def cartesian_to_ij(context: Context, cart_coord: np.ndarray) -> np.ndarray:
-        """
-        Convert real world cartesian coordinates (x, y) to coordinates in the occupancy grid (i, j)
-        using formula floor(v - (WP + [-W/2, H/2]) / r) * [1, -1]
-        v: (x,y) coordinate
-        WP: origin
-        W, H: grid width, height (meters)
-        r: resolution (meters/cell)
-        :param cart_coord: array of x and y cartesian coordinates
-        :return: array of i and j coordinates for the occupancy grid
-        """
-        return np.floor(
-            (cart_coord[0:2] - context.env.cost_map.origin) / context.env.cost_map.resolution
-        ).astype(np.int8)
+    """
+    Convert real world cartesian coordinates (x, y) to coordinates in the occupancy grid (i, j)
+    using formula floor(v - (WP + [-W/2, H/2]) / r) * [1, -1]
+    v: (x,y) coordinate
+    WP: origin
+    W, H: grid width, height (meters)
+    r: resolution (meters/cell)
+    :param cart_coord: array of x and y cartesian coordinates
+    :return: array of i and j coordinates for the occupancy grid
+    """
+    return np.floor((cart_coord[0:2] - context.env.cost_map.origin) / context.env.cost_map.resolution).astype(np.int8)
+
 
 def ij_to_cartesian(context: Context, ij_coords: np.ndarray) -> np.ndarray:
     """
@@ -33,6 +35,7 @@ def ij_to_cartesian(context: Context, ij_coords: np.ndarray) -> np.ndarray:
     half_res = np.array([context.env.cost_map.resolution / 2, context.env.cost_map.resolution / 2])
     return context.env.cost_map.origin + ij_coords * context.env.cost_map.resolution + half_res
 
+
 def d_calc(start: tuple, end: tuple) -> float:
     """
     Distance heuristic using euclidean distance.
@@ -42,42 +45,44 @@ def d_calc(start: tuple, end: tuple) -> float:
     """
     return np.sqrt((start[0] - end[0]) ** 2 + (start[1] - end[1]) ** 2)
 
-def vec_angle(self, v1: tuple, v2:tuple) -> float:
-        """
-        Calculates angle between two vectors
-        """
-        # Compute dot product and magnitudes
-        dot_product = np.dot(v1, v2)
-        magnitude_v1 = np.linalg.norm(v1)
-        magnitude_v2 = np.linalg.norm(v2)
-    
-        # Calculate cosine of the angle
-        cos_theta = dot_product / (magnitude_v1 * magnitude_v2)
-        
-        # Clamp the value to avoid numerical errors outside the range [-1, 1]
-        cos_theta = np.clip(cos_theta, -1.0, 1.0)
 
-        #Compute the angle in radians
-        angle_rad = np.arccos(cos_theta)
+def vec_angle(self, v1: tuple, v2: tuple) -> float:
+    """
+    Calculates angle between two vectors
+    """
+    # Compute dot product and magnitudes
+    dot_product = np.dot(v1, v2)
+    magnitude_v1 = np.linalg.norm(v1)
+    magnitude_v2 = np.linalg.norm(v2)
 
-        return abs(angle_rad)
+    # Calculate cosine of the angle
+    cos_theta = dot_product / (magnitude_v1 * magnitude_v2)
 
-def gen_marker(context:Context, point=[0.0, 0.0], color=[1.0, 1.0, 1.0], size=0.2, lifetime=5, id=0) -> Marker:
+    # Clamp the value to avoid numerical errors outside the range [-1, 1]
+    cos_theta = np.clip(cos_theta, -1.0, 1.0)
+
+    # Compute the angle in radians
+    angle_rad = np.arccos(cos_theta)
+
+    return abs(angle_rad)
+
+
+def gen_marker(context: Context, point=[0.0, 0.0], color=[1.0, 1.0, 1.0], size=0.2, lifetime=5, id=0) -> Marker:
     """
     Creates and publishes a single spherical marker at the specified (x, y, z) coordinates.
 
-    :param point: A tuple or list containing the (x, y) coordinates of the marker. 
+    :param point: A tuple or list containing the (x, y) coordinates of the marker.
                 The Z coordinate is set to 0.0 by default.
-    :param context: The context object providing necessary ROS utilities, 
+    :param context: The context object providing necessary ROS utilities,
                     such as the node clock for setting the timestamp.
     :return: A Marker object representing the spherical marker with predefined size and color.
     """
-    
+
     marker = Marker()
     marker.lifetime = Duration(seconds=lifetime).to_msg()
     marker.header = Header(frame_id="map")
     marker.header.stamp = context.node.get_clock().now().to_msg()
-    
+
     marker.ns = "single_point"
     marker.id = id
     marker.type = Marker.SPHERE
@@ -104,6 +109,7 @@ def gen_marker(context:Context, point=[0.0, 0.0], color=[1.0, 1.0, 1.0], size=0.
 
     return marker
 
+
 def segment_path(context: Context, dest: np.ndarray, seg_len: float = 1):
     """
     Segment the path from the rover's current position to the current waypoint into equally spaced points
@@ -115,13 +121,16 @@ def segment_path(context: Context, dest: np.ndarray, seg_len: float = 1):
     Returns:
         Trajectory: The segmented path
     """
-    rover_translation = context.rover.get_pose_in_map().translation()[0:2]
+
+    rover_SE3 = context.rover.get_pose_in_map()
+    assert rover_SE3 is not None
+    rover_translation = rover_SE3.translation()[0:2]
 
     # Create a numpy array with the rover's current position and the waypoint position
     traj_path = np.array([rover_translation, dest])
 
     # Calculate the number of segments needed for the path
-    num_segments: int = int(np.ceil(d_calc(dest,rover_translation) // seg_len))
+    num_segments: int = int(np.ceil(d_calc(tuple(dest), rover_translation) // seg_len))
 
     # If there is more than one segment, create the segments
     if num_segments > 0:
@@ -134,17 +143,16 @@ def segment_path(context: Context, dest: np.ndarray, seg_len: float = 1):
         np.append(traj_path, dest)
 
     # Create a Trajectory object from the segmented path
-    segmented_trajectory = Trajectory(
-        np.hstack((traj_path, np.zeros((traj_path.shape[0], 1))))
-    )
+    segmented_trajectory = Trajectory(np.hstack((traj_path, np.zeros((traj_path.shape[0], 1)))))
 
     context.node.get_logger().info(f"Segmented path: {segmented_trajectory.coordinates}")
     return segmented_trajectory
 
-def is_high_cost_point(point: np.ndarray, context: Context, min_cost=0.2) -> bool: 
+
+def is_high_cost_point(point: np.ndarray, context: Context, min_cost=0.2) -> bool:
     cost_map = context.env.cost_map.data
 
-    point_ij = cartesian_to_ij(context=context,cart_coord=point)
+    point_ij = cartesian_to_ij(context=context, cart_coord=point)
 
     if not (0 <= int(point_ij[0]) < cost_map.shape[0] and 0 <= int(point_ij[1]) < cost_map.shape[1]):
         context.node.get_logger().warn("Point is out of bounds in the costmap")
