@@ -26,6 +26,7 @@ import tf2_ros
 import message_filters
 from lie.conversions import to_tf_tree, SE3
 
+
 class GPSLinearization(Node):
 
     def __init__(self) -> None:
@@ -54,25 +55,23 @@ class GPSLinearization(Node):
         self.sync = message_filters.ApproximateTimeSynchronizer([self.gps_sub, self.orientation_sub], 10, 1)
         self.sync.registerCallback(self.synced_gps_imu_callback)
 
-
     def synced_gps_imu_callback(self, gps_msg: NavSatFix, imu_msg: Imu):
 
         if np.isnan([gps_msg.latitude, gps_msg.longitude, gps_msg.altitude]).any():
             self.get_logger().warn("Received NaN GPS data, ignoring")
             return
         
-        quaternion = np.array([imu_msg.orientation.x, imu_msg.orientation.y, imu_msg.orientation.z, imu_msg.orientation.w])
+        quaternion = np.array(
+            [imu_msg.orientation.x, imu_msg.orientation.y, imu_msg.orientation.z, imu_msg.orientation.w]
+        )
         quaternion = quaternion / np.linalg.norm(quaternion)
         
-        x, y, z = geodetic2enu(gps_msg.latitude, gps_msg.longitude, gps_msg.altitude, self.ref_lat, self.ref_lon, self.ref_alt, deg=True)
+        x, y, z = geodetic2enu(
+            gps_msg.latitude, gps_msg.longitude, gps_msg.altitude, self.ref_lat, self.ref_lon, self.ref_alt, deg=True
+        )
         pose = SE3(position=np.array([x, y, z]), quaternion=quaternion)
 
-        to_tf_tree(
-            tf_broadcaster=self.tf_broadcaster,
-            se3=pose,
-            child_frame="base_link",
-            parent_frame=self.world_frame
-        )
+        to_tf_tree(tf_broadcaster=self.tf_broadcaster, se3=pose, child_frame="base_link", parent_frame=self.world_frame)
 
         self.get_logger().info(f"Published to TF Tree: Position({x}, {y}, {z}), Orientation({imu_msg.orientation})")
 
