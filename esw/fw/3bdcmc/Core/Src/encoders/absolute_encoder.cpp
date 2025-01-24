@@ -15,8 +15,8 @@ namespace mrover {
 
     constexpr static std::uint16_t REQUEST_ANGLE = 0xFE;
 
-    AbsoluteEncoderReader::AbsoluteEncoderReader(AS5048B_Bus i2c_bus, uint8_t a2_a1, Radians offset, Ratio multiplier, IStopwatch* stopwatch)
-        : m_stopwatch(stopwatch), m_i2cBus{i2c_bus}, m_offset{offset}, m_multiplier{multiplier} {
+    AbsoluteEncoderReader::AbsoluteEncoderReader(AS5048B_Bus i2c_bus, uint8_t a2_a1, Radians offset, Ratio multiplier, TIM_HandleTypeDef* elapsed_timer)
+        : m_elapsed_timer(elapsed_timer), m_i2cBus{i2c_bus}, m_offset{offset}, m_multiplier{multiplier} {
         // A1/A2 is 1 if pin connected to power, 0 if pin connected to ground
         // This is used for address selection per
         // [datasheet](https://www.mouser.com/datasheet/2/588/AS5048_DS000298_4-00-1100510.pdf?srsltid=AfmBOorG94PYEL0t30_O-gjnl7_jXUCsNwnBYo8pr5MZHPaUmn4QbLmg)
@@ -34,7 +34,7 @@ namespace mrover {
             m_address = I2CAddress::device_slave_address_none_high;
         }
 
-        m_stopwatch_id = m_stopwatch->add_stopwatch();
+        check(HAL_TIM_Base_Start_IT(m_elapsed_timer) == HAL_OK, Error_Handler);
     }
 
     auto AbsoluteEncoderReader::request_raw_angle() -> void {
@@ -62,8 +62,8 @@ namespace mrover {
     }
 
     [[nodiscard]] auto AbsoluteEncoderReader::read() -> std::optional<EncoderReading> {
-        std::uint64_t angle = convert_buffer_into_raw_angle();
-        Seconds elapsed_time = m_stopwatch->get_time_since_last_read(m_stopwatch_id);
+        std::uint64_t const angle = convert_buffer_into_raw_angle();
+        Seconds const elapsed_time = cycle_time(m_elapsed_timer, CLOCK_FREQ);
 
         // Absolute encoder returns [0, COUNTS_PER_REVOLUTION)
         // We need to convert this to [-𝜏/2, 𝜏/2)
