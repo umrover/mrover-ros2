@@ -21,177 +21,36 @@ simulator:
         type: urdf
         uri: package://mrover/urdf/world/world.urdf.xacro
 
-      # Auto-generated rocks from the grid
-      rock_1:
-        type: urdf
-        uri: package://mrover/urdf/world/small_rock.urdf.xacro
-        position: [ 12.00, 11.00, 0.5 ]
-
-      rock_2:
-        type: urdf
-        uri: package://mrover/urdf/world/small_rock.urdf.xacro
-        position: [ 8.00, 8.00, 0.5 ]
-
-      rock_3:
-        type: urdf
-        uri: package://mrover/urdf/world/small_rock.urdf.xacro
-        position: [ 8.00, -9.00, 0.5 ]
-
-      rock_4:
-        type: urdf
-        uri: package://mrover/urdf/world/small_rock.urdf.xacro
-        position: [ 10.00, -11.00, 0.5 ]
-
       bottle:
         type: urdf
         uri: package://mrover/urdf/world/bottle.urdf.xacro
-        position: [ -15.0, 15.0, 0.5 ]
+        position: [9.0, 10.0, 0.5]
 
       # Auto-generated rocks from the grid
       rock_1:
         type: urdf
         uri: package://mrover/urdf/world/small_rock.urdf.xacro
-        position: [ -5.50, -5.50, 0.5 ]
+        position: [ 9.00, 12.00, 0.5 ]
 
       rock_2:
         type: urdf
         uri: package://mrover/urdf/world/small_rock.urdf.xacro
-        position: [ -4.50, -5.50, 0.5 ]
+        position: [ 8.00, 11.00, 0.5 ]
 
       rock_3:
         type: urdf
         uri: package://mrover/urdf/world/small_rock.urdf.xacro
-        position: [ -3.50, -5.50, 0.5 ]
+        position: [ 8.00, 10.00, 0.5 ]
 
       rock_4:
         type: urdf
         uri: package://mrover/urdf/world/small_rock.urdf.xacro
-        position: [ 2.50, -5.50, 0.5 ]
+        position: [ 8.00, 9.00, 0.5 ]
 
       rock_5:
         type: urdf
         uri: package://mrover/urdf/world/small_rock.urdf.xacro
-        position: [ 3.50, -5.50, 0.5 ]
-
-      rock_6:
-        type: urdf
-        uri: package://mrover/urdf/world/small_rock.urdf.xacro
-        position: [ -5.50, -4.50, 0.5 ]
-
-      rock_7:
-        type: urdf
-        uri: package://mrover/urdf/world/small_rock.urdf.xacro
-        position: [ 3.50, -4.50, 0.5 ]
-
-      rock_8:
-        type: urdf
-        uri: package://mrover/urdf/world/small_rock.urdf.xacro
-        position: [ -5.50, -3.50, 0.5 ]
-
-      rock_9:
-        type: urdf
-        uri: package://mrover/urdf/world/small_rock.urdf.xacro
-        position: [ 3.50, -3.50, 0.5 ]
-
-      rock_10:
-        type: urdf
-        uri: package://mrover/urdf/world/small_rock.urdf.xacro
-        position: [ -5.50, -2.50, 0.5 ]
-
-      rock_11:
-        type: urdf
-        uri: package://mrover/urdf/world/small_rock.urdf.xacro
-        position: [ 3.50, -2.50, 0.5 ]
-
-      rock_12:
-        type: urdf
-        uri: package://mrover/urdf/world/small_rock.urdf.xacro
-        position: [ -5.50, -1.50, 0.5 ]
-
-      rock_13:
-        type: urdf
-        uri: package://mrover/urdf/world/small_rock.urdf.xacro
-        position: [ 3.50, -1.50, 0.5 ]
-
-      rock_14:
-        type: urdf
-        uri: package://mrover/urdf/world/small_rock.urdf.xacro
-        position: [ -5.50, -0.50, 0.5 ]
-
-      rock_15:
-        type: urdf
-        uri: package://mrover/urdf/world/small_rock.urdf.xacro
-        position: [ 3.50, -0.50, 0.5 ]
-
-      rock_16:
-        type: urdf
-        uri: package://mrover/urdf/world/small_rock.urdf.xacro
-        position: [ -5.50, 0.50, 0.5 ]
-
-      rock_17:
-        type: urdf
-        uri: package://mrover/urdf/world/small_rock.urdf.xacro
-        position: [ 3.50, 0.50, 0.5 ]
-
-      rock_18:
-        type: urdf
-        uri: package://mrover/urdf/world/small_rock.urdf.xacro
-        position: [ -5.50, 1.50, 0.5 ]
-
-      rock_19:
-        type: urdf
-        uri: package://mrover/urdf/world/small_rock.urdf.xacro
-        position: [ 3.50, 1.50, 0.5 ]
-
-      rock_20:
-        type: urdf
-        uri: package://mrover/urdf/world/small_rock.urdf.xacro
-        position: [ -5.50, 2.50, 0.5 ]
-
-      rock_21:
-        type: urdf
-        uri: package://mrover/urdf/world/small_rock.urdf.xacro
-        position: [ -4.50, 2.50, 0.5 ]
-
-      rock_22:
-        type: urdf
-        uri: package://mrover/urdf/world/small_rock.urdf.xacro
-        position: [ -3.50, 2.50, 0.5 ]
-
-      rock_23:
-        type: urdf
-        uri: package://mrover/urdf/world/small_rock.urdf.xacro
-        position: [ -2.50, 2.50, 0.5 ]
-
-      rock_24:
-        type: urdf
-        uri: package://mrover/urdf/world/small_rock.urdf.xacro
-        position: [ -1.50, 2.50, 0.5 ]
-
-      rock_25:
-        type: urdf
-        uri: package://mrover/urdf/world/small_rock.urdf.xacro
-        position: [ -0.50, 2.50, 0.5 ]
-
-      rock_26:
-        type: urdf
-        uri: package://mrover/urdf/world/small_rock.urdf.xacro
-        position: [ 0.50, 2.50, 0.5 ]
-
-      rock_27:
-        type: urdf
-        uri: package://mrover/urdf/world/small_rock.urdf.xacro
-        position: [ 1.50, 2.50, 0.5 ]
-
-      rock_28:
-        type: urdf
-        uri: package://mrover/urdf/world/small_rock.urdf.xacro
-        position: [ 2.50, 2.50, 0.5 ]
-
-      rock_29:
-        type: urdf
-        uri: package://mrover/urdf/world/small_rock.urdf.xacro
-        position: [ 3.50, 2.50, 0.5 ]
+        position: [ 9.00, 8.00, 0.5 ]
 
     ref_lat: 38.4225202
     ref_lon: -110.7844653
