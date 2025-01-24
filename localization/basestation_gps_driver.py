@@ -77,8 +77,7 @@ class BaseStationDriverNode(Node):
                             self.get_logger().info(f"QZSS signal strength: {cno}")
                         elif gnssId == 6:
                             self.get_logger().info(f"GLONASS signal strength: {cno}")
-                      
-                        
+
             rclpy.spin_once(self, timeout_sec=0)
 
     def __del__(self) -> None:
