@@ -1,22 +1,10 @@
 
 #include "key_detector.hpp"
 
-using KeyActionServer = mrover::KeyActionServer;  
+using KeyDetector = mrover::KeyDetector;  
 
-KeyActionServer::KeyActionServer(const rclcpp::NodeOptions & options)
-: Node("KeyAction_action_server", options)
-{
-  using namespace std::placeholders;
 
-  this->action_server_ = rclcpp_action::create_server<KeyAction>(
-    this,
-    "KeyAction",
-    std::bind(&KeyActionServer::handle_goal, this, _1, _2),
-    std::bind(&KeyActionServer::handle_cancel, this, _1),
-    std::bind(&KeyActionServer::handle_accepted, this, _1));
-}
-
-rclcpp_action::GoalResponse mrover::KeyActionServer::handle_goal(
+rclcpp_action::GoalResponse mrover::KeyDetector::handle_goal(
   const rclcpp_action::GoalUUID & uuid,
   std::shared_ptr<const KeyAction::Goal> goal)
 {
@@ -25,7 +13,7 @@ rclcpp_action::GoalResponse mrover::KeyActionServer::handle_goal(
   return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
 }
 
-rclcpp_action::CancelResponse KeyActionServer::handle_cancel(
+rclcpp_action::CancelResponse KeyDetector::handle_cancel(
   const std::shared_ptr<GoalHandleKeyAction> goal_handle)
 {
   RCLCPP_INFO(this->get_logger(), "Received request to cancel goal");
@@ -33,17 +21,27 @@ rclcpp_action::CancelResponse KeyActionServer::handle_cancel(
   return rclcpp_action::CancelResponse::ACCEPT;
 }
 
-void KeyActionServer::execute(const std::shared_ptr<GoalHandleKeyAction> goal_handle)
+void KeyDetector::execute(const std::shared_ptr<GoalHandleKeyAction> goal_handle)
 {
+  
   RCLCPP_INFO(this->get_logger(), "Executing goal");
-  rclcpp::Rate loop_rate(1);
-  auto feedback = std::make_shared<KeyAction::Feedback>();
   auto result = std::make_shared<KeyAction::Result>();
 
-  auto fsm_ctx = std::make_shared<FSMCtx>();
   fsm_ctx->goal_handle = goal_handle;
   fsm_ctx->curr_key_index = 0;
   fsm_ctx->node = this->shared_from_this();
+
+  // start state
+  while (rclcpp::ok()){
+    rclcpp::Rate loop_rate(1);
+    auto feedback = std::make_shared<KeyAction::Feedback>();
+
+
+    updateFSM();
+
+    loop_rate.sleep();
+  }
+
 
 
   // Check if movement is done
@@ -52,11 +50,14 @@ void KeyActionServer::execute(const std::shared_ptr<GoalHandleKeyAction> goal_ha
     goal_handle->succeed(result);
     RCLCPP_INFO(this->get_logger(), "Goal succeeded");
   }
+
+
+
 }
 
-void KeyActionServer::handle_accepted(const std::shared_ptr<GoalHandleKeyAction> goal_handle)
+void KeyDetector::handle_accepted(const std::shared_ptr<GoalHandleKeyAction> goal_handle)
 {
   using namespace std::placeholders;
   // this needs to return quickly to avoid blocking the executor, so spin up a new thread
-  std::thread{std::bind(&KeyActionServer::execute, this, _1), goal_handle}.detach();
+  std::thread{std::bind(&KeyDetector::execute, this, _1), goal_handle}.detach();
 }
