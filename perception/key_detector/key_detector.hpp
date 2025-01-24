@@ -29,7 +29,7 @@ namespace mrover {
 class KeyDetector : public rclcpp::Node{
   public:
 
-    KeyDetector(const rclcpp::NodeOptions & options = rclcpp::NodeOptions());
+    explicit KeyDetector(const rclcpp::NodeOptions & options = rclcpp::NodeOptions());
 
     ~KeyDetector() override;
 

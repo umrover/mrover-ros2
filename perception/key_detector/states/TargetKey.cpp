@@ -6,7 +6,6 @@
 namespace mrover{
 TargetKey::TargetKey(const std::shared_ptr<FSMCtx> fsm_ctx) : fsm_ctx(fsm_ctx), sleepRate(0.2)
 {
-        mIkTargetPub = fsm_ctx->node->create_publisher<msg::IK>("arm_ik", 1);
 }
 
 auto TargetKey::onLoop() -> State*{
@@ -15,6 +14,11 @@ auto TargetKey::onLoop() -> State*{
         // get the location of the key by querying model
         // use ik to move to the location
         // transition to press key state
+    
+    
+    if(mIkTargetPub == nullptr)
+        mIkTargetPub = fsm_ctx->node->create_publisher<msg::IK>("arm_ik", 1);
+
     auto goal_handle = fsm_ctx->goal_handle;
     auto goal = goal_handle->get_goal();
     auto node = fsm_ctx->node;

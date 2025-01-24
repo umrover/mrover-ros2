@@ -5,14 +5,12 @@ auto main(int argc, char** argv) -> int {
 
     // DO NOT REMOVE OR ELSE REF COUNT WILL GO TO ZERO
     rclcpp::executors::SingleThreadedExecutor executor;
-        
+
     auto actionServer = std::make_shared<mrover::KeyDetector>();
     rclcpp::executors::SingleThreadedExecutor server;
 
-
     server.add_node(actionServer);
     server.spin();
-
     rclcpp::shutdown();
     return EXIT_SUCCESS;
 }
