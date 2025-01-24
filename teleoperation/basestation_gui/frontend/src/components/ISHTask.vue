@@ -20,6 +20,30 @@
     <div class="shadow p-3 rounded ninhydrin">
       <NinhydrinBenedict :site="site" :isNinhydrin="true" />
     </div>
+    <div class="shadow p-3 rounded container-fluid camera">
+      <div class="row gx-3 gy-3 justify-content-center">
+        <ToggleButton :current-state="true" label-enable-text="Camera A On"
+      label-disable-text="Camera A off" @change="cameraA = $event" />
+      <ToggleButton :current-state="true" label-enable-text="Camera B On"
+      label-disable-text="Camera B off" @change="cameraB = $event" />
+      </div>
+      <div class="row gx-3 gy-3 justify-content-center">
+        <div v-if="cameraA" class="col-12">
+          <CameraFeed
+            :mission="'ish'"
+            :id="10"
+            :name="'Sample A'"
+          ></CameraFeed>
+        </div>
+        <div v-if="cameraB" class="col-12">
+          <CameraFeed
+            :mission="'ish'"
+            :id="11"
+            :name="'Sample B'"
+          ></CameraFeed>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -28,7 +52,8 @@ import SelectSite from './SelectSite.vue'
 import Chlorophyll from './Chlorophyll.vue'
 import NinhydrinBenedict from './NinhydrinBenedict.vue'
 import NetworkMonitor from "./NetworkMonitor.vue";
-//   import MCUReset from "./MCUReset.vue"
+import CameraFeed from './CameraFeed.vue';
+import ToggleButton from './ToggleButton.vue';
 
 export default {
   components: {
@@ -36,13 +61,15 @@ export default {
     Chlorophyll,
     NinhydrinBenedict,
     NetworkMonitor,
-    //   MCUReset,
+    CameraFeed,
+    ToggleButton
   },
 
   data() {
     return {
       site: 0 as number,
-      primary: false
+      cameraA: true,
+      cameraB: true,
     }
   },
 
@@ -58,12 +85,12 @@ export default {
 .wrapper {
   display: grid;
   grid-gap: 10px;
-  grid-template-columns: repeat(2, auto);
+  grid-template-columns: repeat(3, auto);
   grid-template-areas:
-    'header header'
-    'siteSelect siteSelect'
-    'ninhydrin benedicts'
-    'chlorophyll chlorophyll';
+    'header header header'
+    'siteSelect siteSelect camera'
+    'ninhydrin benedicts camera'
+    'chlorophyll chlorophyll camera';
   font-family: sans-serif;
   height: auto;
 }
@@ -139,5 +166,9 @@ export default {
 
 .ninhydrin {
   grid-area: ninhydrin;
+}
+
+.camera {
+  grid-area: camera;
 }
 </style>
