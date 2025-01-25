@@ -15,9 +15,11 @@ from backend.models import BasicWaypoint, AutonWaypoint
 from geometry_msgs.msg import Twist, Vector3
 from sensor_msgs.msg import NavSatFix
 from lie import SE3
-from mrover.msg import Throttle, IK, ControllerState
+from mrover.msg import Throttle, IK, ControllerState, LED, StateMachineStateUpdate, GPSWaypoint, WaypointType
 from backend.ra_controls import send_ra_controls
 from backend.mast_controls import send_mast_controls
+from mrover.srv import EnableAuton
+from std_srvs.srv import SetBool
 
 import threading
 
@@ -30,6 +32,8 @@ thread = threading.Thread(target=rclpy.spin, args=(node, ), daemon=True)
 thread.start()
 cur_mode = "disabled"
 
+LOCALIZATION_INFO_HZ = 10
+
 class GUIConsumer(JsonWebsocketConsumer):
     subscribers = []
     
@@ -41,11 +45,20 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.joystick_twist_pub = node.create_publisher(Twist, "/joystick_cmd_vel", 1)
         self.controller_twist_pub = node.create_publisher(Twist, "/controller_cmd_vel", 1)
         self.mast_gimbal_pub = node.create_publisher(Throttle, "/mast_gimbal_throttle_cmd", 1)
+        
 
         self.forward_ros_topic("/drive_controller_data", ControllerState, "drive_state")
+        self.forward_ros_topic("/led", LED, "led")
+        self.forward_ros_topic("/nav_state", StateMachineStateUpdate, "nav_state")
+        self.forward_ros_topic("/gps/fix", NavSatFix, "gps_fix")
+
+        self.enable_teleop_srv = node.create_client(SetBool, "enable_teleop")
+        self.enable_auton_srv = node.create_client(EnableAuton, "enable_auton")
 
         self.buffer = Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.buffer, node)
+
+        self.timer = node.create_timer(1 / LOCALIZATION_INFO_HZ, self.send_localization_callback)
 
     def forward_ros_topic(self, topic_name: str, topic_type: Type, gui_msg_type: str) -> None:
         """
@@ -65,6 +78,15 @@ class GUIConsumer(JsonWebsocketConsumer):
                     key = slot.lstrip('_')
                     msg_dict[key] = ros_message_to_dict(value)
                 return msg_dict
+            elif isinstance(msg, np.ndarray):
+                # Convert numpy arrays to lists
+                return msg.tolist()
+            elif isinstance(msg, (list, tuple)):
+                # Recursively handle lists or tuples
+                return [ros_message_to_dict(v) for v in msg]
+            elif isinstance(msg, dict):
+                # Recursively handle dictionaries
+                return {k: ros_message_to_dict(v) for k, v in msg.items()}
             return msg
             
         def callback(ros_message: Any):
@@ -79,6 +101,76 @@ class GUIConsumer(JsonWebsocketConsumer):
         except Exception as e:
             node.get_logger().warning(f"Failed to send message: {e}")
 
+    def send_localization_callback(self):
+        try:
+            base_link_in_map = SE3.from_tf_tree(self.buffer, "map", "base_link")
+            self.send_message_as_json(
+                {
+                    "type": "orientation",
+                    "orientation": base_link_in_map.quat().tolist(),
+                }
+            )
+        except Exception as e:
+            node.get_logger().warn(f"Failed to get bearing: {e} Is localization running?")
+
+    def save_basic_waypoint_list(self, waypoints: list[dict]) -> None:
+        BasicWaypoint.objects.all().delete()
+        BasicWaypoint.objects.bulk_create(
+            [BasicWaypoint(drone=w["drone"], latitude=w["lat"], longitude=w["lon"], name=w["name"]) for w in waypoints]
+        )
+        self.send_message_as_json({"type": "save_basic_waypoint_list", "success": True})
+
+    def get_basic_waypoint_list(self) -> None:
+        self.send_message_as_json(
+            {
+                "type": "get_basic_waypoint_list",
+                "data": [
+                    {"name": w.name, "drone": w.drone, "lat": w.latitude, "lon": w.longitude}
+                    for w in BasicWaypoint.objects.all()
+                ],
+            }
+        )
+
+    def save_auton_waypoint_list(self, waypoints: list[dict]) -> None:
+        AutonWaypoint.objects.all().delete()
+        AutonWaypoint.objects.bulk_create(
+            [
+                AutonWaypoint(
+                    tag_id=w["id"],
+                    type=w["type"],
+                    latitude=w["lat"],
+                    longitude=w["lon"],
+                    name=w["name"],
+                )
+                for w in waypoints
+            ]
+        )
+        self.send_message_as_json({"type": "save_auton_waypoint_list", "success": True})
+
+    def get_auton_waypoint_list(self) -> None:
+        self.send_message_as_json(
+            {
+                "type": "get_auton_waypoint_list",
+                "data": [
+                    {"name": w.name, "id": w.tag_id, "lat": w.latitude, "lon": w.longitude, "type": w.type}
+                    for w in AutonWaypoint.objects.all()
+                ],
+            }
+        )
+
+    def send_auton_command(self, waypoints: list[dict], enabled: bool) -> None:
+        self.enable_auton_srv(
+            enabled,
+            [
+                GPSWaypoint(
+                    tag_id=waypoint["tag_id"],
+                    latitude_degrees=waypoint["latitude_degrees"],
+                    longitude_degrees=waypoint["longitude_degrees"],
+                    type=WaypointType(val=int(waypoint["type"])),
+                )
+                for waypoint in waypoints
+            ],
+        )
 
     def receive(self, text_data=None, bytes_data=None, **kwargs) -> None:
         """
@@ -120,46 +212,28 @@ class GUIConsumer(JsonWebsocketConsumer):
                 }:
                     cur_mode = mode
                     node.get_logger().debug(f"publishing to {cur_mode}")
+                case {"type": "auton_enable", "enabled": enabled, "waypoints": waypoints}:
+                    self.send_auton_command(waypoints, enabled)
+                case {"type": "teleop_enable", "enabled": enabled}:
+                    self.enable_teleop_srv(enabled)
                 case{
                     "type": "save_auton_waypoint_list",
                     "data": waypoints,
                 }:
-                    AutonWaypoint.objects.all().delete()
-                    AutonWaypoint.objects.bulk_create(
-                    [
-                            AutonWaypoint(
-                                tag_id=w["id"],
-                                type=w["type"],
-                                latitude=w["lat"],
-                                longitude=w["lon"],
-                                name=w["name"],
-                            )
-                            for w in waypoints
-                        ]
-                    )
-                    self.send_message_as_json({"type": "save_auton_waypoint_list", "success": True})
+                    self.save_auton_waypoint_list(waypoints)
                 case{
                     "type": "save_basic_waypoint_list",
                     "data": waypoints,
                 }:
-                    BasicWaypoint.objects.all().delete()
-                    # when adding a new waypoint to the db, primary key is auto generated (see models.py)
-                    BasicWaypoint.objects.bulk_create(
-                        [BasicWaypoint(drone=w["drone"], latitude=w["lat"], longitude=w["lon"], name=w["name"]) for w in waypoints]
-                    )
-                    self.send_message_as_json({"type": "save_basic_waypoint_list", "success": True})
+                    self.save_basic_waypoint_list(waypoints)
                 case{
                     "type": "get_basic_waypoint_list",
                 }:
-                    self.send_message_as_json(
-                        {
-                            "type": "get_basic_waypoint_list",
-                            "data": [
-                                {"name": w.name, "drone": w.drone, "lat": w.latitude, "lon": w.longitude}
-                                for w in BasicWaypoint.objects.all()
-                            ],
-                        }
-                    )
+                    self.get_basic_waypoint_list()
+                case{
+                    "type": "get_auton_waypoint_list",
+                }:
+                    self.get_auton_waypoint_list()
                     
                 case _:
                     node.get_logger().warning(f"Unhandled message: {message}")

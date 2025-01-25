@@ -97,15 +97,6 @@ export default defineComponent({
         limit_hit: [] as boolean[] /* Each motor stores an array of 4 indicating which limit switches are hit */
       },
 
-      motorData: {
-        name: [] as string[],
-        position: [] as number[],
-        velocity: [] as number[],
-        effort: [] as number[],
-        state: [] as string[],
-        error: [] as string[]
-      },
-
       cameraFeedEnabled: true
       
     }
@@ -122,14 +113,7 @@ export default defineComponent({
 
   watch: {
     message(msg) {
-      if (msg.type == 'drive_status') {
-        this.motorData.name = msg.name
-        this.motorData.position = msg.position
-        this.motorData.velocity = msg.velocity
-        this.motorData.effort = msg.effort
-        this.motorData.state = msg.state
-        this.motorData.error = msg.error
-      } else if (msg.type == 'drive_moteus') {
+      if (msg.type == 'drive_state') {
         this.moteusState.name = msg.name
         this.moteusState.state = msg.state
         this.moteusState.error = msg.error
