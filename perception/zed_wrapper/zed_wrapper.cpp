@@ -44,7 +44,7 @@ namespace mrover {
                     {"svo_file", svoFile, ""},
                     {"use_depth_stabilization", mUseDepthStabilization, false},
                     {"grab_resolution", grabResolutionString, std::string{sl::toString(sl::RESOLUTION::HD720)}},
-                    {"depth_mode", depthModeString, std::string{sl::toString(sl::DEPTH_MODE::ULTRA)}},
+                    {"depth_mode", depthModeString, std::string{sl::toString(sl::DEPTH_MODE::PERFORMANCE)}},
                     {"depth_maximum_distance", mDepthMaximumDistance, 12.0},
                     {"use_builtin_visual_odom", mUseBuiltinPosTracking, false},
                     {"use_pose_smoothing", mUsePoseSmoothing, true},
@@ -127,7 +127,7 @@ namespace mrover {
         try {
             RCLCPP_INFO(this->get_logger(), "Starting grab thread");
             while (rclcpp::ok()) {
-                //mLoopProfilerGrab.beginLoop();
+                mLoopProfilerGrab.beginLoop();
 
                 sl::RuntimeParameters runtimeParameters;
                 runtimeParameters.confidence_threshold = mDepthConfidence;
