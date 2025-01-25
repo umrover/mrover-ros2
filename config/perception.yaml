@@ -4,7 +4,7 @@
 # Angle:    radian
 # Distance: meter
 
-stereo_tag_detector:
+tag_detector:
   ros__parameters:
     world_frame: "map"
     camera_frame: "zed_left_camera_frame"

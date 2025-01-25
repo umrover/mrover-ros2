@@ -15,7 +15,7 @@ from launch.conditions import LaunchConfigurationEquals
 def generate_launch_description():
     navigation_node = Node(
         package="mrover",
-        executable="navigation.py",
+        executable="nav.py",
         name="navigation",
         parameters=[
             Path(get_package_share_directory("mrover"), "config", "navigation.yaml"),

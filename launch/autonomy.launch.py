@@ -33,4 +33,4 @@ def generate_launch_description():
         PythonLaunchDescriptionSource(Path(get_package_share_directory("mrover"), "launch/navigation.launch.py").__str__())
     )
 
-    return LaunchDescription([launch_perception, launch_localization, launch_navigation])
+    return LaunchDescription([launch_jetson_base, launch_perception, launch_localization, launch_navigation])
