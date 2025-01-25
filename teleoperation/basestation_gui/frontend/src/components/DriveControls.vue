@@ -27,7 +27,7 @@ export default {
       this.sendMessage({
         type: 'joystick',
         // inverted controls, get rid of map after testing
-        axes: gamepad.axes.map(axis=>-axis),
+        axes: gamepad.axes,
         buttons: gamepad.buttons.map(button => button.value)
       })
     }, 1000 / UPDATE_HZ)
