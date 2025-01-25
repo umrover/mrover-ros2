@@ -13,7 +13,6 @@ from launch.conditions import LaunchConfigurationEquals
 
 
 def generate_launch_description():
-
     launch_include_base = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(os.path.join(get_package_share_directory("mrover"), "launch/base.launch.py"))
     )
