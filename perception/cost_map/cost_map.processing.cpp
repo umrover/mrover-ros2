@@ -116,29 +116,32 @@ namespace mrover {
                     // mGlobalGridMsg.data[i] = UNKNOWN_COST;
                 }
 
-                // USING ABSOLUTE HEIGHT DIFFERENCE BETWEEN POINT AND ROVER HEIGHT
-                // std::size_t pointsHigh = std::ranges::count_if(bin, [this, &roverSE3](BinEntry const& entry) {
-                //     return (entry.height) > mZThreshold;
-                // });
-                // double percent = static_cast<double>(pointsHigh) / static_cast<double>(bin.size());
+                // Percentage Algorithm
+                // Chose the percentage algorithm because it's less sensitive to angle changes (and outliers) and can accurately track
+                //     objects outside. Normal averaging too sensitive. Values still need to be tweaked (make z threshold less sensitive)
+                std::size_t pointsHigh = std::ranges::count_if(bin, [this, &roverSE3](BinEntry const& entry) {
+                    return (entry.normal.z()) <= mZThreshold;
+                });
+                double percent = static_cast<double>(pointsHigh) / static_cast<double>(bin.size());
 
-                // std::int8_t cost = percent > mZPercent ? OCCUPIED_COST : FREE_COST;
+                RCLCPP_INFO_STREAM(get_logger(), std::format("Percentage: {}", percent));
+                std::int8_t cost = percent > mZPercent ? OCCUPIED_COST : FREE_COST;
 
-                // // IMPLEMENT "AVERAGE" OF NORMALS IN BIN COMBINED WITH PROJECTION
-                // RCLCPP_INFO_STREAM(get_logger(), "WHOOOOOOOOOO");
-                R3f avgNormal{};
-                for(auto& point : bin){
-                    avgNormal.x() += point.normal.x();
-                    avgNormal.y() += point.normal.y();
-                    avgNormal.z() += abs(point.normal.z());
-                }
+                // Normal Averaging Algorithm
+                // R3f avgNormal{};
+                // for(auto& point : bin){
+                //     avgNormal.x() += point.normal.x();
+                //     avgNormal.y() += point.normal.y();
+                //     // avgNormal.z() += abs(point.normal.z());  // this is what was working, but abs() seems to be pointless
+                //     avgNormal.z() += point.normal.z();
+                // }
 
-                // roverSE3.rotation().;
+                // // roverSE3.rotation().;
 
-                avgNormal.normalize();
-                // RCLCPP_INFO_STREAM(get_logger(), std::format("Normal Z {}; Bin Size {}; One Point {}", avgNormal.z(), bin.size(), bin[0].normal.z()));
-                // RCLCPP_INFO_STREAM(get_logger(), std::format("ROLL: {}", *(roverSE3.coeffs().data()+3)));
-                std::int8_t cost = avgNormal.z() <= mZThreshold ? OCCUPIED_COST : FREE_COST;
+                // avgNormal.normalize();
+                // // RCLCPP_INFO_STREAM(get_logger(), std::format("Normal Z {}; Bin Size {}; One Point {}", avgNormal.z(), bin.size(), bin[0].normal.z()));
+                // // RCLCPP_INFO_STREAM(get_logger(), std::format("ROLL: {}", *(roverSE3.coeffs().data()+3)));
+                // std::int8_t cost = avgNormal.z() <= mZThreshold ? OCCUPIED_COST : FREE_COST;
 
                 // Update cell with EWMA acting as a low-pass filter
                 auto& cell = mGlobalGridMsg.data[i];

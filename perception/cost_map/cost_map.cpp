@@ -7,19 +7,19 @@ namespace mrover {
 
 
         std::vector<ParameterWrapper> params{
-            {"resolution", mResolution, 0.5},
-            {"size", mSize, 20},
+            {"resolution", mResolution, 0.3},
+            {"size", mSize, 25},
             {"width", mWidth, static_cast<int>(mSize / mResolution)},   // THIS DECLARATION DOES NOT WORK
             {"height", mHeight, static_cast<int>(mSize / mResolution)},
             {"map_frame", mMapFrame, "map"},
-            {"near_clip", mNearClip, 1},
+            {"near_clip", mNearClip, 1.0},
             {"far_clip", mFarClip, 7.0},
             {"left_clip", mRightClip, -2.0},
             {"right_clip", mLeftClip, 2.0},
             {"top_clip", mTopClip, 3.0},
-            {"z_percent", mZPercent, 0.2},
+            {"z_percent", mZPercent, 0.40},
             {"alpha", mAlpha, 0.05},
-            {"z_threshold", mZThreshold, .4}
+            {"z_threshold", mZThreshold, 0.45} // TODO make less sensitive
         };
 
         ParameterWrapper::declareParameters(this, params);
