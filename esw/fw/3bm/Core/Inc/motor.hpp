@@ -6,7 +6,7 @@
 #include <hardware.hpp>
 #include <messaging.hpp>
 #include <pidf.hpp>
-#include <units/units.hpp>
+#include <units.hpp>
 
 #include "encoders.hpp"
 #include "hbridge.hpp"
