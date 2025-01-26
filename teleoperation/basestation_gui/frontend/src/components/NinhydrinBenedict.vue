@@ -6,41 +6,25 @@
       <ToggleButton
         id="heater"
         :current-state="heaters[site].enabled"
-        :label-enable-text="'Heater ' + site"
-        :label-disable-text="'Heater ' + site"
+        :label-enable-text="'Heater ' + String.fromCharCode(65 + site)"
+        :label-disable-text="'Heater ' + String.fromCharCode(65 + site)"
         @change="toggleHeater(site)"
       />
       <p :style="{ color: heaters[site].color }">
-        Thermistor {{ site }}: {{ (heaters[site].temp).toFixed(2) }} C°
+        Thermistor {{ String.fromCharCode(65 + site) }}: {{ (heaters[site].temp).toFixed(2) }} C°
       </p>
     </div>
     <div class="comms heaterStatus">
       <LEDIndicator
         :connected="heaters[site].state"
-        :name="'Heater ' + site + ' Status'"
-        :show_name="true"
-      />
-    </div>
-    <div class="box1 shutdown">
-      <ToggleButton
-        id="autoshutdown"
-        :current-state="autoShutdownEnabled"
-        :label-enable-text="'Auto Shutdown'"
-        :label-disable-text="'Auto Shutdown'"
-        @change="sendAutoShutdownCmd()"
-      />
-    </div>
-    <div class="comms shutdownStatus">
-      <LEDIndicator
-        :connected="autoShutdownEnabled"
-        :name="'Auto Shutdown Status'"
+        :name="'Heater ' + String.fromCharCode(65 + site) + ' Status'"
         :show_name="true"
       />
     </div>
   </div>
 </template>
 
-<script>
+<script lang="ts">
 import ToggleButton from "./ToggleButton.vue";
 import LEDIndicator from "./LEDIndicator.vue";
 import { mapState, mapActions } from 'vuex';
@@ -94,13 +78,7 @@ export default {
 
   watch: {
     message(msg) {
-      if (msg.type == 'auto_shutoff') {
-        if (!msg.success) {
-          this.autoShutdownEnabled = !this.autoShutdownEnabled;
-          alert('Toggling Auto Shutdown failed.')
-        }
-      }
-      else if (msg.type == 'thermistor') {
+      if (msg.type == 'thermistor') {
         if(this.site == 0) return;
         if (this.isNinhydrin) {
           this.heaters[this.site].temp = msg.temps[this.site*2+1].temperature;
@@ -146,15 +124,10 @@ export default {
     sendHeaterRequest: function (id) {
       let heaterName = "b";
       if (this.isNinhydrin) {
-        heaterName = "n"
+        heaterName = "n";
       }
-      heaterName += id
+      heaterName += id;
       this.sendMessage({ type: "heater_enable", enabled: this.heaters[id].enabled, heater: heaterName});
-    },
-
-    sendAutoShutdownCmd: function () {
-      this.autoShutdownEnabled = !this.autoShutdownEnabled;
-      this.sendMessage({ type: "auto_shutoff", shutoff: this.autoShutdownEnabled });
     },
 
     capturePhoto() {

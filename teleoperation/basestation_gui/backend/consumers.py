@@ -15,9 +15,10 @@ from backend.models import BasicWaypoint, AutonWaypoint
 from geometry_msgs.msg import Twist, Vector3
 from sensor_msgs.msg import NavSatFix
 from lie import SE3
-from mrover.msg import Throttle, IK, ControllerState
+from mrover.msg import Throttle, IK, ControllerState, HeaterData
 from backend.ra_controls import send_ra_controls
 from backend.mast_controls import send_mast_controls
+from std_srvs.srv import SetBool
 
 import threading
 
@@ -29,6 +30,12 @@ node = rclpy.create_node('teleoperation')
 thread = threading.Thread(target=rclpy.spin, args=(node, ), daemon=True)
 thread.start()
 cur_mode = "disabled"
+heater_names = [
+                'b0', 
+                'b1', 
+                'n0', 
+                'n1',  
+                ]
 
 class GUIConsumer(JsonWebsocketConsumer):
     subscribers = []
@@ -41,6 +48,10 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.joystick_twist_pub = node.create_publisher(Twist, "/joystick_cmd_vel", 1)
         self.controller_twist_pub = node.create_publisher(Twist, "/controller_cmd_vel", 1)
         self.mast_gimbal_pub = node.create_publisher(Throttle, "/mast_gimbal_throttle_cmd", 1)
+        self.heater_services = []
+        for name in heater_names:
+            self.heater_services.append(node.create_client(SetBool, "science_enable_heater_" + name))
+        self.auto_shutoff_service = node.create_client(SetBool, "science_change_heater_auto_shutoff_state")
 
         self.forward_ros_topic("/drive_controller_data", ControllerState, "drive_state")
 
@@ -160,6 +171,23 @@ class GUIConsumer(JsonWebsocketConsumer):
                             ],
                         }
                     )
+
+                case{
+                    "type": "heater_enable",
+                    "enabled": enabled, 
+                    "heater": heater
+                }:
+                    request = SetBool.Request()
+                    request.data = enabled
+                    self.heater_services[heater_names.index(heater)].call(request)
+
+                case{
+                    "type": "auto_shutoff",
+                    "shutoff": shutoff
+                }:
+                    request = SetBool.Request()
+                    request.data = shutoff
+                    self.auto_shutoff_service.call(request)
                     
                 case _:
                     node.get_logger().warning(f"Unhandled message: {message}")
