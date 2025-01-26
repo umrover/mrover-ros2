@@ -90,7 +90,7 @@ class Environment:
             return None
 
         now = self.ctx.node.get_clock().now()
-        time = Time.from_msg(t) # have to convert because time from message is a different type
+        time = Time.from_msg(t)  # have to convert because time from message is a different type
         target_expiration_duration = Duration(seconds=self.ctx.node.get_parameter("target_expiration_duration").value)
         if now - time > target_expiration_duration:
             return None
@@ -188,6 +188,7 @@ class ImageTargetsStore:
             return None
         return self._data[name]
 
+
 class CostMap:
     """
     Context class to represent the costmap generated around the water bottle waypoint
@@ -197,6 +198,8 @@ class CostMap:
     resolution: int
     height: int
     width: int
+    origin: np.ndarray
+
 
 @dataclass
 class Course:
@@ -411,6 +414,7 @@ class Context:
         Callback function for the occupancy grid perception sends
         :param msg: Occupancy Grid representative of a 32m x 32m square area with origin at GNSS waypoint. Values are 0, 1, -1
         """
+
         cost_map_data = np.array(msg.data).reshape((msg.info.height, msg.info.width)).T
 
         self.env.cost_map.origin = np.array([msg.info.origin.position.x, msg.info.origin.position.y])

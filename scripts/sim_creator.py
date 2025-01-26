@@ -1,5 +1,6 @@
 import tkinter as tk
 
+
 def create_60x60_grid():
     root = tk.Tk()
     root.title("30×30 Grid with Toggleable Colors (including black)")
@@ -7,9 +8,9 @@ def create_60x60_grid():
     # -------------------
     #   CONFIGURATION
     # -------------------
-    GRID_SIZE = 35      # 30 cells in each dimension
-    CELL_SIZE = 25      # Each cell is 30×30 pixels
-    MARGIN = 30         # Extra space around the grid for the border
+    GRID_SIZE = 35  # 30 cells in each dimension
+    CELL_SIZE = 25  # Each cell is 30×30 pixels
+    MARGIN = 30  # Extra space around the grid for the border
     TOTAL_PIXELS = GRID_SIZE * CELL_SIZE
 
     # Now includes "black" to represent the rover's position
@@ -17,18 +18,10 @@ def create_60x60_grid():
     current_mode_index = 0  # Start with mode = "white"
 
     # 2D array to keep track of each cell's color (initially "white")
-    grid_colors = [
-        ["white" for _ in range(GRID_SIZE)]
-        for __ in range(GRID_SIZE)
-    ]
+    grid_colors = [["white" for _ in range(GRID_SIZE)] for __ in range(GRID_SIZE)]
 
     # Include black → 4
-    color_key = {
-        "white": 0,
-        "green": 1,
-        "blue": 2,
-        "red": 3
-    }
+    color_key = {"white": 0, "green": 1, "blue": 2, "red": 3}
 
     # -------------------
     #   TK WIDGETS
@@ -50,9 +43,7 @@ def create_60x60_grid():
 
     # Draw a rectangle showing the current mode color
     mode_rect = mode_canvas.create_rectangle(
-        0, 0, icon_size, icon_size,
-        fill=color_modes[current_mode_index],
-        outline="black"
+        0, 0, icon_size, icon_size, fill=color_modes[current_mode_index], outline="black"
     )
 
     def update_mode_indicator():
@@ -71,11 +62,7 @@ def create_60x60_grid():
             x2 = x1 + CELL_SIZE
             y2 = y1 + CELL_SIZE
 
-            rect_id = canvas.create_rectangle(
-                x1, y1, x2, y2,
-                fill="white",
-                outline="black"
-            )
+            rect_id = canvas.create_rectangle(x1, y1, x2, y2, fill="white", outline="black")
             rect_ids[(row, col)] = rect_id
 
     # -------------------
@@ -88,8 +75,7 @@ def create_60x60_grid():
         """
         x, y = event.x, event.y
         # Check if the click is inside the grid
-        if not (MARGIN <= x < MARGIN + GRID_SIZE * CELL_SIZE and
-                MARGIN <= y < MARGIN + GRID_SIZE * CELL_SIZE):
+        if not (MARGIN <= x < MARGIN + GRID_SIZE * CELL_SIZE and MARGIN <= y < MARGIN + GRID_SIZE * CELL_SIZE):
             return
 
         col_clicked = (x - MARGIN) // CELL_SIZE
@@ -185,7 +171,7 @@ simulator:
       bottle:
         type: urdf
         uri: package://mrover/urdf/world/bottle.urdf.xacro
-        position: [ -6.0, 6.0, 0.5 ]
+        position: [9.0, 10.0, 0.5]
 
 """
 
@@ -197,15 +183,10 @@ simulator:
         uri_map = {
             1: "package://mrover/urdf/world/small_rock.urdf.xacro",
             2: "package://mrover/urdf/world/medium_rock.urdf.xacro",
-            3: "package://mrover/urdf/world/large_rock.urdf.xacro"
+            3: "package://mrover/urdf/world/large_rock.urdf.xacro",
         }
         # For demonstration, different z's by size
-        z_map = {
-            1: "0.5",
-            2: "1.0",
-            3: "1.0"
-            3: "1.0"
-        }
+        z_map = {1: "0.5", 2: "1.0", 3: "1.0"}
 
         center_offset = GRID_SIZE // 2  # Center offset for coordinate transformation
 
@@ -224,7 +205,7 @@ simulator:
                         f"      {rock_name}:",
                         f"        type: urdf",
                         f"        uri: {uri_map[val]}",
-                        f"        position: [ {x:.2f}, {y:.2f}, {z_map[val]} ]\n"
+                        f"        position: [ {x:.2f}, {y:.2f}, {z_map[val]} ]\n",
                     ]
                     yaml_rocks.append("\n".join(lines))
 
@@ -237,7 +218,7 @@ simulator:
 """
 
         # 5) Write out to new_sim.yaml
-        with open("new_sim.yaml", "w") as f:
+        with open("config/simulator.yaml", "w") as f:
             f.write(yaml_header)
             if yaml_rocks:
                 f.write("      # Auto-generated rocks from the grid\n")
@@ -248,7 +229,6 @@ simulator:
         print("YAML file successfully written to config/simulator.yaml.")
         # Close the window
         root.destroy()
-
 
     # Bind events
     root.bind("<space>", cycle_mode)

@@ -16,6 +16,7 @@ class SpiralEnd(Exception):
     """
     Raised when there are no more points left in the search spiral.
     """
+
     pass
 
 
@@ -35,7 +36,6 @@ class AStar:
     A_STAR_THRESH: float
     COSTMAP_THRESH: float
     ANGLE_THRESH: float
-
 
     def __init__(self, context: Context) -> None:
         self.context = context
@@ -118,10 +118,7 @@ class AStar:
             open_set: list[tuple] = []
             heapq.heappush(open_set, (f_scores[start_ij], start_ij))
 
-            adjacent_squares = np.array([
-                [0, -1], [0, 1], [-1, 0], [1, 0],
-                [-1, -1], [-1, 1], [1, -1], [1, 1]
-            ])
+            adjacent_squares = np.array([[0, -1], [0, 1], [-1, 0], [1, 0], [-1, -1], [-1, 1], [1, -1], [1, 1]])
 
             debug_list = []
 
@@ -138,8 +135,9 @@ class AStar:
                     neighbor_pos = tuple(np.array(current) + rel_pos)
 
                     # Ensure within grid bounds
-                    if not (1 <= neighbor_pos[0] < costmap2d.shape[0] - 1 and
-                            1 <= neighbor_pos[1] < costmap2d.shape[1] - 1):
+                    if not (
+                        1 <= neighbor_pos[0] < costmap2d.shape[0] - 1 and 1 <= neighbor_pos[1] < costmap2d.shape[1] - 1
+                    ):
                         continue
 
                     # Check if terrain is traversable
@@ -158,7 +156,7 @@ class AStar:
                             heapq.heappush(open_set, (f_scores[neighbor_pos], neighbor_pos))
 
             raise NoPath("No path could be found to the destination.")
-        
+
     def use_astar(self, context: Context, star_traj: Trajectory, dest: np.ndarray | None) -> bool:
         """
         Decide whether to follow the A* path based on the difference between the A* path distance
@@ -172,7 +170,11 @@ class AStar:
         follow_astar = True
 
         # If no rover pose, no trajectory, or not enough points in star_traj, skip
-        if rover_in_map is None or len(star_traj.coordinates) < 1 or not self.context.node.get_parameter("search.use_costmap").value:
+        if (
+            rover_in_map is None
+            or len(star_traj.coordinates) < 1
+            or not self.context.node.get_parameter("search.use_costmap").value
+        ):
             return False
 
         # Calculate actual A* distance
@@ -183,18 +185,18 @@ class AStar:
         # Calculate a minimal possible path (a diagonal-first approach).
         min_diag = min(
             abs(star_traj.coordinates[0][0] - star_traj.coordinates[-1][0]),
-            abs(star_traj.coordinates[0][1] - star_traj.coordinates[-1][1])
+            abs(star_traj.coordinates[0][1] - star_traj.coordinates[-1][1]),
         ) * math.sqrt(2)
         straight_line = max(
             abs(star_traj.coordinates[0][0] - star_traj.coordinates[-1][0]),
-            abs(star_traj.coordinates[0][1] - star_traj.coordinates[-1][1])
+            abs(star_traj.coordinates[0][1] - star_traj.coordinates[-1][1]),
         ) - min(
             abs(star_traj.coordinates[0][0] - star_traj.coordinates[-1][0]),
-            abs(star_traj.coordinates[0][1] - star_traj.coordinates[-1][1])
+            abs(star_traj.coordinates[0][1] - star_traj.coordinates[-1][1]),
         )
         min_astar = min_diag + straight_line
 
-        #context.node.get_logger().info(f"minastar: {min_astar} act_astar: {astar_dist}")
+        # context.node.get_logger().info(f"minastar: {min_astar} act_astar: {astar_dist}")
 
         # Compare relative difference
         if min_astar > 0:
@@ -203,7 +205,7 @@ class AStar:
             # If min_astar is 0, it might mean start/end are the same
             follow_astar = False
 
-        #context.node.get_logger().info("Following A* path" if follow_astar else "Not following A* path")
+        # context.node.get_logger().info("Following A* path" if follow_astar else "Not following A* path")
         return follow_astar
 
     def generate_trajectory(self, context: Context, dest: np.ndarray) -> Trajectory:
@@ -213,18 +215,16 @@ class AStar:
         :param dest: Destination point in cartesian coordinates.
         :return: Trajectory object.
         """
-        rover_position_in_map = context.rover.get_pose_in_map().translation()[:2]
+        rover_SE3 = context.rover.get_pose_in_map()
+        assert rover_SE3 is not None
+        rover_position_in_map = rover_SE3.translation()[:2]
 
         costmap_length = self.context.env.cost_map.data.shape[0]
-        threshold = (
-            costmap_length * self.COSTMAP_THRESH,
-            costmap_length * (1 - self.COSTMAP_THRESH)
-        )
+        threshold = (costmap_length * self.COSTMAP_THRESH, costmap_length * (1 - self.COSTMAP_THRESH))
         rover_ij = cartesian_to_ij(context, rover_position_in_map)
 
         # Move the costmap if we are outside of the threshold
-        if not (threshold[0] <= rover_ij[0] <= threshold[1]
-                and threshold[0] <= rover_ij[1] <= threshold[1]):
+        if not (threshold[0] <= rover_ij[0] <= threshold[1] and threshold[0] <= rover_ij[1] <= threshold[1]):
             context.move_costmap()
 
         trajectory = Trajectory(np.array([]))
@@ -243,9 +243,7 @@ class AStar:
         if occupancy_list is not None:
             cartesian_coords = ij_to_cartesian(context, np.array(occupancy_list))
             # Z=0 for all points in the path
-            trajectory = Trajectory(
-                np.hstack((cartesian_coords, np.zeros((cartesian_coords.shape[0], 1))))
-            )
+            trajectory = Trajectory(np.hstack((cartesian_coords, np.zeros((cartesian_coords.shape[0], 1)))))
 
             # Publish the path for visualization in RViz
             path_msg = Path()
@@ -257,8 +255,7 @@ class AStar:
                 pose_stamped = PoseStamped()
                 pose_stamped.header.frame_id = "map"
                 pose_stamped.pose = Pose(
-                    position=Point(x=coord[0], y=coord[1], z=0.0),
-                    orientation=Quaternion(x=0.0, y=0.0, z=0.0, w=1.0)
+                    position=Point(x=coord[0], y=coord[1], z=0.0), orientation=Quaternion(x=0.0, y=0.0, z=0.0, w=1.0)
                 )
                 poses.append(pose_stamped)
 

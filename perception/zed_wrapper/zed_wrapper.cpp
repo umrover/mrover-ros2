@@ -48,8 +48,7 @@ namespace mrover {
                     {"depth_maximum_distance", mDepthMaximumDistance, 12.0},
                     {"use_builtin_visual_odom", mUseBuiltinPosTracking, false},
                     {"use_pose_smoothing", mUsePoseSmoothing, true},
-                    {"use_area_memory", mUseAreaMemory, true}
-			};
+                    {"use_area_memory", mUseAreaMemory, true}};
 
             ParameterWrapper::declareParameters(this, params);
 

@@ -6,22 +6,21 @@ namespace mrover {
 
 
         std::vector<ParameterWrapper> params{
-            {"resolution", mResolution, 0.5},
-            {"size", mSize, 60.0},
-            {"map_frame", mMapFrame, "map"},
-            {"near_clip", mNearClip, 0.5},
-            {"far_clip", mFarClip, 10.0},
-            {"z_percent", mZPercent, 0.1},
-            {"alpha", mAlpha, 0.05},
-            {"z_threshold", mZThreshold, 0.0}
-        };
+                {"resolution", mResolution, 0.5},
+                {"size", mSize, 60.0},
+                {"map_frame", mMapFrame, "map"},
+                {"near_clip", mNearClip, 0.5},
+                {"far_clip", mFarClip, 10.0},
+                {"z_percent", mZPercent, 0.1},
+                {"alpha", mAlpha, 0.05},
+                {"z_threshold", mZThreshold, 0.0}};
 
         ParameterWrapper::declareParameters(this, params);
 
         mCostMapPub = create_publisher<nav_msgs::msg::OccupancyGrid>("costmap", 1); // We publish our results to "costmap"
 
-        mServer = create_service<mrover::srv::MoveCostMap>("move_cost_map", [this](mrover::srv::MoveCostMap::Request::ConstSharedPtr request, 
-                                                                                                          mrover::srv::MoveCostMap::Response::SharedPtr response) {
+        mServer = create_service<mrover::srv::MoveCostMap>("move_cost_map", [this](mrover::srv::MoveCostMap::Request::ConstSharedPtr request,
+                                                                                   mrover::srv::MoveCostMap::Response::SharedPtr response) {
             moveCostMapCallback(request, response);
         });
         mPcSub = create_subscription<sensor_msgs::msg::PointCloud2>("/zed/left/points", 1, [this](sensor_msgs::msg::PointCloud2::ConstSharedPtr const& msg) {

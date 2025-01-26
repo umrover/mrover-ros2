@@ -22,7 +22,6 @@ def generate_launch_description():
 
     return LaunchDescription(
         [
-            astar_publisher_node, 
-
+            astar_publisher_node,
         ]
     )

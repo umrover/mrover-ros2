@@ -76,9 +76,9 @@ namespace mrover {
                 cell = static_cast<std::int8_t>(mAlpha * cost + (1 - mAlpha) * cell);
             }
 
-            
-            constexpr double MAX_COST_RADIUS = 2; 
-            constexpr double INFLATION_RADIUS = 3; 
+
+            constexpr double MAX_COST_RADIUS = 2;
+            constexpr double INFLATION_RADIUS = 3;
 
             nav_msgs::msg::OccupancyGrid postProcessed = mGlobalGridMsg;
             std::ptrdiff_t width = postProcessed.info.width;
@@ -87,19 +87,18 @@ namespace mrover {
 
             int maxInflationCells = static_cast<int>(INFLATION_RADIUS / resolution);
 
-            std::array<std::ptrdiff_t, 11> dis
-                                        {0, 
-                                        -1, 
-                                        +1, 
-                                        -width, 
-                                        -1 -width, 
-                                        +1 -width, 
-                                        +width, 
-                                        -1 +width, 
-                                        +1 +width};
+            std::array<std::ptrdiff_t, 11> dis{0,
+                                               -1,
+                                               +1,
+                                               -width,
+                                               -1 - width,
+                                               +1 - width,
+                                               +width,
+                                               -1 + width,
+                                               +1 + width};
 
-            for (std::ptrdiff_t &di : dis) {
-                mGlobalGridMsg.data[mapToGrid(cameraToMap.translation(), mGlobalGridMsg)+di] = FREE_COST;
+            for (std::ptrdiff_t& di: dis) {
+                mGlobalGridMsg.data[mapToGrid(cameraToMap.translation(), mGlobalGridMsg) + di] = FREE_COST;
             }
 
             // Inflate cost map
@@ -124,11 +123,10 @@ namespace mrover {
 
                                 if (distance <= MAX_COST_RADIUS) {
                                     postProcessed.data[neighborIndex] = OCCUPIED_COST;
-                                }
-                                else {
+                                } else {
                                     double factor = (INFLATION_RADIUS - distance) / (INFLATION_RADIUS - MAX_COST_RADIUS);
-                                    postProcessed.data[neighborIndex] = std::max(postProcessed.data[neighborIndex], 
-                                    static_cast<std::int8_t>(/*factor * */OCCUPIED_COST));
+                                    postProcessed.data[neighborIndex] = std::max(postProcessed.data[neighborIndex],
+                                                                                 static_cast<std::int8_t>(/*factor * */ OCCUPIED_COST));
                                 }
                             }
                         }
@@ -142,14 +140,14 @@ namespace mrover {
             // std::ptrdiff_t width = postProcessed.info.width;
 
             // std::array<std::ptrdiff_t, 11> dis
-            //                             {0, 
-            //                             -1, 
-            //                             +1, 
-            //                             -width, 
-            //                             -1 -width, 
-            //                             +1 -width, 
-            //                             +width, 
-            //                             -1 +width, 
+            //                             {0,
+            //                             -1,
+            //                             +1,
+            //                             -width,
+            //                             -1 -width,
+            //                             +1 -width,
+            //                             +width,
+            //                             -1 +width,
             //                             +1 +width};
 
             // for (std::ptrdiff_t &di : dis) {
