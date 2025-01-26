@@ -67,6 +67,13 @@ def generate_launch_description():
         condition=LaunchConfigurationEquals("rviz", "true"),
     )
 
+    nav_node = Node(
+        package="mrover",
+        executable="nav.py",
+        name="navigation",
+        parameters=[os.path.join(get_package_share_directory("mrover"), "config", "navigation.yaml")],
+    )
+
     return LaunchDescription(
         [
             headless_arg,
@@ -79,5 +86,6 @@ def generate_launch_description():
             simulator_node,
             arm_controller_node,
             rviz_node,
+            nav_node,
         ]
     )

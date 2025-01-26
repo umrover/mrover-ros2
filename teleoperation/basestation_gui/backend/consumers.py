@@ -159,9 +159,9 @@ class GUIConsumer(JsonWebsocketConsumer):
         )
 
     def send_auton_command(self, waypoints: list[dict], enabled: bool) -> None:
-        self.enable_auton_srv(
-            enabled,
-            [
+        self.enable_auton_srv.call(EnableAuton.Request(
+            enable=enabled,
+            waypoints=[
                 GPSWaypoint(
                     tag_id=waypoint["tag_id"],
                     latitude_degrees=waypoint["latitude_degrees"],
@@ -170,7 +170,7 @@ class GUIConsumer(JsonWebsocketConsumer):
                 )
                 for waypoint in waypoints
             ],
-        )
+        ))
 
     def receive(self, text_data=None, bytes_data=None, **kwargs) -> None:
         """
@@ -215,7 +215,7 @@ class GUIConsumer(JsonWebsocketConsumer):
                 case {"type": "auton_enable", "enabled": enabled, "waypoints": waypoints}:
                     self.send_auton_command(waypoints, enabled)
                 case {"type": "teleop_enable", "enabled": enabled}:
-                    self.enable_teleop_srv(enabled)
+                    self.enable_teleop_srv.call(SetBool.Request(data=enabled))
                 case{
                     "type": "save_auton_waypoint_list",
                     "data": waypoints,

@@ -168,12 +168,6 @@ export default {
 
       teleopEnabledCheck: false,
 
-      nav_status: {
-        nav_state_name: 'Off',
-        completed_wps: 0,
-        total_wps: 0
-      },
-
       route: reactive([]),
 
       autonButtonColor: 'btn-danger',
@@ -274,6 +268,7 @@ export default {
     window.setTimeout(() => {
       // Timeout so websocket will be initialized
       this.sendMessage({ type: 'get_auton_waypoint_list' })
+      console.log("getting auton list")
     }, 250)
   },
 
