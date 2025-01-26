@@ -15,20 +15,23 @@ auto TargetKey::onLoop() -> State*{
         // use ik to move to the location
         // transition to press key state
     
-    
     if(mIkTargetPub == nullptr)
         mIkTargetPub = fsm_ctx->node->create_publisher<msg::IK>("arm_ik", 1);
 
     auto goal_handle = fsm_ctx->goal_handle;
+
+    if (goal_handle == nullptr)
+        return StateMachine::make_state<TargetKey>(fsm_ctx);
+
     auto goal = goal_handle->get_goal();
     auto node = fsm_ctx->node;
 
-
     // if we have pressed all the keys, end
+
     if (fsm_ctx->curr_key_index > goal->code.size()){
         return nullptr;
     }
-    
+
     if(goal_handle->is_canceling())
     {
         return StateMachine::make_state<Cancel>(fsm_ctx); //cancel if the goal is cancelled
@@ -40,10 +43,11 @@ auto TargetKey::onLoop() -> State*{
     request->key = goal->code[fsm_ctx->curr_key_index];
     auto result = client->async_send_request(request);
 
+    result.wait_for(std::chrono::seconds(1));
     // Wait for the result. 
-    if (rclcpp::spin_until_future_complete(node, result) ==
-        rclcpp::FutureReturnCode::SUCCESS)
-    {
+    //if (rclcpp::spin_until_future_complete(node->get_node_base_interface(), result) ==
+     //   rclcpp::FutureReturnCode::SUCCESS)
+    //{
         int64_t x = result.get()->x;
         int64_t y = result.get()->y;
 
@@ -63,7 +67,6 @@ auto TargetKey::onLoop() -> State*{
 
         // subscribe to arm state
         // dist
-    \
 
 
 
@@ -74,10 +77,11 @@ auto TargetKey::onLoop() -> State*{
             return StateMachine::make_state<TargetKey>(fsm_ctx);
         }
 
-    } else {
-        RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Failed to call service add_two_ints");
-        return StateMachine::make_state<TargetKey>(fsm_ctx);
-    }    
+    //} else {
+     //   std::cout << "Check Cancel\n";
+     //   RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Failed to call service add_two_ints");
+     //   return StateMachine::make_state<TargetKey>(fsm_ctx);
+    //}    
 
 
 }
