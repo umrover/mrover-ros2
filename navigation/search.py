@@ -28,7 +28,7 @@ class SearchState(State):
         if SearchState.trajectory is None:
             self.new_trajectory(context)
         self.marker_pub = context.node.create_publisher(Marker, "spiral_points", 10)
-        self.prev_pos = np.array([-1,-1])
+        self.prev_pos = np.array([-1, -1])
         self.time_begin = None
         self.time_last_updated = context.node.get_clock().now()
         self.total_distance = 0.0
