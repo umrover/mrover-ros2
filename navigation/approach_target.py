@@ -35,9 +35,11 @@ class ApproachTargetState(State):
         self.astar = AStar(context=context)
         self.follow_astar = False
         if self.get_target_position(context) is not None:
-            self.target_position = self.get_target_position(context)
+            temp = self.get_target_position(context)
+            assert temp is not None
+            self.target_position = temp
         else:
-            self.target_position =  np.array([0, 0])
+            self.target_position = np.array([0, 0])
         self.time_last_updated = context.node.get_clock().now()
         self.UPDATE_DELAY = context.node.get_parameter("search.update_delay").value
         self.USE_COSTMAP = context.node.get_parameter("search.use_costmap").value
