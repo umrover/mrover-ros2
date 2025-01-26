@@ -4,7 +4,6 @@ from . import (
     recovery,
     post_backup,
     state,
-    water_bottle_search,
     costmap_search,
 )
 from mrover.msg import WaypointType

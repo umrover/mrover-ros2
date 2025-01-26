@@ -24,7 +24,7 @@ class CostmapSearchState(State):
     Intended to be implemented over the current search state
     """
 
-    prev_pos: Optional[np.ndarray]
+    prev_pos: np.ndarray
     time_begin: Optional[Time]
     total_distance: float
 
@@ -44,7 +44,7 @@ class CostmapSearchState(State):
     def on_enter(self, context: Context) -> None:
 
         # Parameter initialization
-        self.prev_pos = None
+        self.prev_pos = np.array([0, 0])
         self.time_begin = None
         self.total_distance = 0.0
         self.marker_pub = context.node.create_publisher(Marker, "spiral_points", 10)
