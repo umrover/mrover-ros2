@@ -1,5 +1,10 @@
 import numpy as np
 from navigation.context import Context
+from visualization_msgs.msg import Marker
+from rclpy.duration import Duration
+from rclpy.time import Time
+from std_msgs.msg import Header
+from navigation.trajectory import Trajectory
 def cartesian_to_ij(context: Context, cart_coord: np.ndarray) -> np.ndarray:
         """
         Convert real world cartesian coordinates (x, y) to coordinates in the occupancy grid (i, j)
@@ -56,3 +61,92 @@ def vec_angle(self, v1: tuple, v2:tuple) -> float:
         angle_rad = np.arccos(cos_theta)
 
         return abs(angle_rad)
+
+def gen_marker(context:Context, point=[0.0, 0.0], color=[1.0, 1.0, 1.0], size=0.2, lifetime=5, id=0) -> Marker:
+    """
+    Creates and publishes a single spherical marker at the specified (x, y, z) coordinates.
+
+    :param point: A tuple or list containing the (x, y) coordinates of the marker. 
+                The Z coordinate is set to 0.0 by default.
+    :param context: The context object providing necessary ROS utilities, 
+                    such as the node clock for setting the timestamp.
+    :return: A Marker object representing the spherical marker with predefined size and color.
+    """
+    
+    marker = Marker()
+    marker.lifetime = Duration(seconds=lifetime).to_msg()
+    marker.header = Header(frame_id="map")
+    marker.header.stamp = context.node.get_clock().now().to_msg()
+    
+    marker.ns = "single_point"
+    marker.id = id
+    marker.type = Marker.SPHERE
+    marker.action = Marker.ADD
+
+    # Set the scale (size) of the sphere
+    marker.scale.x = size
+    marker.scale.y = size
+    marker.scale.z = size
+
+    # Set the color (RGBA)
+    marker.color.r = color[0]
+    marker.color.g = color[1]
+    marker.color.b = color[2]
+    marker.color.a = 1.0  # fully opaque
+
+    # Define the position
+    marker.pose.position.x = point[0]
+    marker.pose.position.y = point[1]
+    marker.pose.position.z = 0.0
+
+    # Orientation is irrelevant for a sphere but must be valid
+    marker.pose.orientation.w = 1.0
+
+    return marker
+
+def segment_path(context: Context, dest: np.ndarray, seg_len: float = 1):
+    """
+    Segment the path from the rover's current position to the current waypoint into equally spaced points
+
+    Args:
+        context (Context): The global context object
+        seg_len (float, optional): The length of each segment of the path. Defaults to 2.
+
+    Returns:
+        Trajectory: The segmented path
+    """
+    rover_translation = context.rover.get_pose_in_map().translation()[0:2]
+
+    # Create a numpy array with the rover's current position and the waypoint position
+    traj_path = np.array([rover_translation, dest])
+
+    # Calculate the number of segments needed for the path
+    num_segments: int = int(np.ceil(d_calc(dest,rover_translation) // seg_len))
+
+    # If there is more than one segment, create the segments
+    if num_segments > 0:
+
+        # Calculate the direction vector from the rover to the waypoint
+        direction = (dest - rover_translation) / num_segments
+
+        # Create the segments by adding the direction vector to the rover's position
+        traj_path = np.array([rover_translation + i * direction for i in range(0, num_segments)])
+        np.append(traj_path, dest)
+
+    # Create a Trajectory object from the segmented path
+    segmented_trajectory = Trajectory(
+        np.hstack((traj_path, np.zeros((traj_path.shape[0], 1))))
+    )
+
+    context.node.get_logger().info(f"Segmented path: {segmented_trajectory.coordinates}")
+    return segmented_trajectory
+
+def is_high_cost_point(point: np.ndarray, context: Context, min_cost=0.2) -> bool: 
+    cost_map = context.env.cost_map.data
+
+    point_ij = cartesian_to_ij(context=context,cart_coord=point)
+
+    if not (0 <= int(point_ij[0]) < cost_map.shape[0] and 0 <= int(point_ij[1]) < cost_map.shape[1]):
+        context.node.get_logger().warn("Point is out of bounds in the costmap")
+        return False
+    return cost_map[int(point_ij[0])][int(point_ij[1])] > min_cost

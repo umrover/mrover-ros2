@@ -6,6 +6,8 @@ Panels:
       Expanded:
         - /Global Options1
         - /Status1
+        - /Marker1
+        - /Marker1/Topic1
       Splitter Ratio: 0.5
     Tree Height: 631
   - Class: rviz_common/Selection
@@ -124,6 +126,19 @@ Visualization Manager:
         Reliability Policy: Reliable
         Value: /astar_path
       Value: true
+    - Class: rviz_default_plugins/Marker
+      Enabled: true
+      Name: Marker
+      Namespaces:
+        single_point: true
+      Topic:
+        Depth: 10
+        Durability Policy: Volatile
+        Filter size: 10
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /spiral_points
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
@@ -185,10 +200,10 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.5947972536087036
+      Pitch: 0.9747968912124634
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 6.263584136962891
+      Yaw: 0.05539922043681145
     Saved: ~
 Window Geometry:
   Displays:

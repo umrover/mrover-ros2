@@ -7,7 +7,7 @@ namespace mrover {
 
         std::vector<ParameterWrapper> params{
             {"resolution", mResolution, 0.5},
-            {"size", mSize, 32.0},
+            {"size", mSize, 60.0},
             {"map_frame", mMapFrame, "map"},
             {"near_clip", mNearClip, 0.5},
             {"far_clip", mFarClip, 10.0},

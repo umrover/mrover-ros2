@@ -203,17 +203,16 @@ class Course:
     ctx: Context
     course_data: CourseMsg
     # Currently active waypoint
+    waypoints: list[tuple[Waypoint, SE3]]
     waypoint_index: int = 0
 
     def increment_waypoint(self) -> None:
         self.waypoint_index += 1
+        if self.waypoint_index > len(self.waypoints):
+            raise IndexError
 
     def waypoint_pose(self, index: int) -> SE3:
-        while True:
-            try:
-                return SE3.from_tf_tree(self.ctx.tf_buffer, f"course{index}", self.ctx.world_frame) 
-            except: 
-                pass
+        return self.waypoints[index][1]
 
     def current_waypoint_pose_in_map(self) -> SE3:
         return self.waypoint_pose(self.waypoint_index)
@@ -281,15 +280,17 @@ class Course:
             return long_range.LongRangeState()
         return None
 
-
 def setup_course(ctx: Context, waypoints: list[tuple[Waypoint, SE3]]) -> Course:
     all_waypoint_info = []
     for index, (waypoint_info, waypoint_in_world) in enumerate(waypoints):
         all_waypoint_info.append(waypoint_info)
+
+        # Either this or the lookup transform is broken
         SE3.to_tf_tree(ctx.tf_broadcaster, waypoint_in_world, f"course{index}", ctx.world_frame)
     # Make the course out of just the pure waypoint objects which is the 0th element in the tuple
     return Course(
         ctx=ctx,
+        waypoints=waypoints,
         course_data=CourseMsg(waypoints=[waypoint for waypoint, _ in waypoints]),
     )
 
@@ -337,7 +338,7 @@ class Context:
     node: Node
     tf_buffer: tf2_ros.Buffer
     tf_listener: tf2_ros.TransformListener
-    tf_broadcaster: tf2_ros.TransformBroadcaster
+    tf_broadcaster: tf2_ros.StaticTransformBroadcaster
     command_publisher: Publisher
     search_point_publisher: Publisher
     course_listener: Subscription
@@ -374,7 +375,7 @@ class Context:
         self.command_publisher = node.create_publisher(Twist, "nav_cmd_vel", 1)
         self.search_point_publisher = node.create_publisher(GPSPointList, "search_path", 1)
         self.path_history_publisher = node.create_publisher(Path, "ground_truth_path", 10)
-        self.tf_broadcaster = tf2_ros.TransformBroadcaster(node)
+        self.tf_broadcaster = tf2_ros.StaticTransformBroadcaster(node)
 
         node.create_subscription(Bool, "nav_stuck", self.stuck_callback, 1)
         node.create_subscription(ImageTargets, "tags", self.image_targets_callback, 1)

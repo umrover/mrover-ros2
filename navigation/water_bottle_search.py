@@ -58,8 +58,7 @@ class WaterBottleSearchState(State):
         if not self.is_recovering:
             self.prev_target_pos_in_map = None
 
-        origin_in_map = context.course.current_waypoint_pose_in_map().translation()[0:2]
-        self.astar = AStar(origin_in_map, context)
+        self.astar = AStar(context)
         context.node.get_logger().info(f"Origin: {origin_in_map}")
         self.star_traj = Trajectory(np.array([]))
         self.time_last_updated = context.node.get_clock().now()

@@ -86,7 +86,7 @@ class SearchTrajectory(Trajectory):
         # if insert_extra and max_segment_length is not None:
         # TODO: fix the parameter declaration for max segment length should be below, temp fix by using 0.5
         #vertices = insert_points_if_needed(vertices, max_segment_length)
-        vertices = insert_points_if_needed(vertices, 0.2)
+        vertices = insert_points_if_needed(vertices, max_segment_length)
        
         return vertices
 
@@ -99,7 +99,7 @@ class SearchTrajectory(Trajectory):
         segments_per_rotation: int,
         tag_id: int,
         insert_extra: bool,
-        max_segment_length: float = None  # New parameter for max segment length
+        max_segment_length: float, # New parameter for max segment length
     ):
         """
         Generates a spiral search pattern around a center position, assuming rover is at the center position
