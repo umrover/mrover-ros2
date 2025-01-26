@@ -150,7 +150,8 @@ export default {
   grid-template-columns: 50% 50%;
   grid-template-areas:
     'header header'
-    'arm soilData'
+    'arm hexHub'
+    'soilData soilData'
     'map waypoints'
     'map odom'
     'moteus joints';

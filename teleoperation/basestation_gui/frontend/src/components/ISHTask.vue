@@ -62,7 +62,6 @@
 
 <script lang="ts">
 import SelectSite from './SelectSite.vue'
-import Chlorophyll from './Chlorophyll.vue'
 import NinhydrinBenedict from './NinhydrinBenedict.vue'
 import NetworkMonitor from "./NetworkMonitor.vue";
 //   import MCUReset from "./MCUReset.vue"
@@ -70,7 +69,6 @@ import NetworkMonitor from "./NetworkMonitor.vue";
 export default {
   components: {
     SelectSite,
-    Chlorophyll,
     NinhydrinBenedict,
     NetworkMonitor,
     //   MCUReset,
