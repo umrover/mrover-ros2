@@ -35,7 +35,7 @@ navigation:
       drive_forward_threshold: 0.34
 
     search:
-      use_costmap: true
+      use_costmap: false
       stop_threshold: 0.5
       drive_forward_threshold: 0.34
       coverage_radius: 20.0

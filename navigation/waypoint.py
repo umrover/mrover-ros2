@@ -147,8 +147,17 @@ class WaypointState(State):
 
         arrived = False
         cmd_vel = Twist()
-        if len(self.astar_traj.coordinates) - self.astar_traj.cur_pt != 0:
-            waypoint_position_in_map = self.astar_traj.get_current_point()
+        if context.node.get_parameter("search.use_costmap").value:
+            if len(self.astar_traj.coordinates) - self.astar_traj.cur_pt != 0:
+                waypoint_position_in_map = self.astar_traj.get_current_point()
+                cmd_vel, arrived = context.drive.get_drive_command(
+                    waypoint_position_in_map,
+                    rover_in_map,
+                    context.node.get_parameter("waypoint.stop_threshold").value,
+                    context.node.get_parameter("waypoint.drive_forward_threshold").value,
+                )
+        else:
+            waypoint_position_in_map = context.course.current_waypoint_pose_in_map().translation()
             cmd_vel, arrived = context.drive.get_drive_command(
                 waypoint_position_in_map,
                 rover_in_map,
@@ -179,9 +188,10 @@ class WaypointState(State):
         current_wp = context.course.current_waypoint()
         assert current_wp is not None
         if not current_wp.type.val == WaypointType.NO_SEARCH:
-            # We finished a waypoint associated with the water bottle, but we have not seen it yet and are using the costmap to search
-            search_state = costmap_search.CostmapSearchState()
-            return search_state
+            if context.node.get_parameter("search.use_costmap").value:
+                return costmap_search.CostmapSearchState()
+            else:
+                return search.SearchState()
         else:
             # We finished a regular waypoint, go onto the next one
             context.course.increment_waypoint()
