@@ -1,7 +1,7 @@
 #THIS FILE IS AUTO GENERATED FROM THE TEMPLATE! DO NOT CHANGE!
 set(CMAKE_SYSTEM_NAME Generic)
 set(CMAKE_SYSTEM_VERSION 1)
-cmake_minimum_required(VERSION 3.29)
+cmake_minimum_required(VERSION 3.30)
 
 # specify cross-compilers and tools
 set(CMAKE_C_COMPILER arm-none-eabi-gcc)
@@ -14,7 +14,7 @@ set(SIZE arm-none-eabi-size)
 set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
 
 # project settings
-project(3bdcmc-dev C CXX ASM)
+project(3bm-dev C CXX ASM)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_C_STANDARD 17)
 

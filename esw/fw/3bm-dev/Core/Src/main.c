@@ -50,6 +50,7 @@ TIM_HandleTypeDef htim3;
 TIM_HandleTypeDef htim4;
 TIM_HandleTypeDef htim6;
 TIM_HandleTypeDef htim7;
+TIM_HandleTypeDef htim8;
 TIM_HandleTypeDef htim15;
 TIM_HandleTypeDef htim16;
 TIM_HandleTypeDef htim17;
@@ -72,6 +73,7 @@ static void MX_TIM7_Init(void);
 static void MX_TIM15_Init(void);
 static void MX_TIM16_Init(void);
 static void MX_TIM17_Init(void);
+static void MX_TIM8_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -121,6 +123,7 @@ int main(void)
   MX_TIM15_Init();
   MX_TIM16_Init();
   MX_TIM17_Init();
+  MX_TIM8_Init();
   /* USER CODE BEGIN 2 */
   HAL_FDCAN_ConfigTxDelayCompensation(&hfdcan1, 13, 1);
   HAL_FDCAN_EnableTxDelayCompensation(&hfdcan1);
@@ -524,7 +527,7 @@ static void MX_TIM6_Init(void)
   htim6.Init.Prescaler = 119;
   htim6.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim6.Init.Period = 58333;
-  htim6.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  htim6.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
   if (HAL_TIM_Base_Init(&htim6) != HAL_OK)
   {
     Error_Handler();
@@ -559,7 +562,7 @@ static void MX_TIM7_Init(void)
 
   /* USER CODE END TIM7_Init 1 */
   htim7.Instance = TIM7;
-  htim7.Init.Prescaler = 169;
+  htim7.Init.Prescaler = 0;
   htim7.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim7.Init.Period = 65535;
   htim7.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
@@ -576,6 +579,53 @@ static void MX_TIM7_Init(void)
   /* USER CODE BEGIN TIM7_Init 2 */
 
   /* USER CODE END TIM7_Init 2 */
+
+}
+
+/**
+  * @brief TIM8 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM8_Init(void)
+{
+
+  /* USER CODE BEGIN TIM8_Init 0 */
+
+  /* USER CODE END TIM8_Init 0 */
+
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+  /* USER CODE BEGIN TIM8_Init 1 */
+
+  /* USER CODE END TIM8_Init 1 */
+  htim8.Instance = TIM8;
+  htim8.Init.Prescaler = 0;
+  htim8.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim8.Init.Period = 65535;
+  htim8.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim8.Init.RepetitionCounter = 0;
+  htim8.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim8) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim8, &sClockSourceConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterOutputTrigger2 = TIM_TRGO2_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim8, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM8_Init 2 */
+
+  /* USER CODE END TIM8_Init 2 */
 
 }
 
@@ -598,7 +648,7 @@ static void MX_TIM15_Init(void)
 
   /* USER CODE END TIM15_Init 1 */
   htim15.Instance = TIM15;
-  htim15.Init.Prescaler = 512;
+  htim15.Init.Prescaler = 511;
   htim15.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim15.Init.Period = 54580;
   htim15.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
@@ -641,7 +691,7 @@ static void MX_TIM16_Init(void)
 
   /* USER CODE END TIM16_Init 1 */
   htim16.Instance = TIM16;
-  htim16.Init.Prescaler = 512;
+  htim16.Init.Prescaler = 511;
   htim16.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim16.Init.Period = 54580;
   htim16.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
@@ -673,7 +723,7 @@ static void MX_TIM17_Init(void)
 
   /* USER CODE END TIM17_Init 1 */
   htim17.Instance = TIM17;
-  htim17.Init.Prescaler = 512;
+  htim17.Init.Prescaler = 511;
   htim17.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim17.Init.Period = 54580;
   htim17.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
@@ -710,10 +760,11 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, CAN_RX_LED_Pin|CAN_TX_LED_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOC, MOTOR_DIR_5_Pin|MOTOR_DIR_3_Pin|MOTOR_DIR_2_Pin|MOTOR_DIR_1_Pin
+                          |MOTOR_DIR_0_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOC, MOTOR_DIR_0_Pin|MOTOR_DIR_1_Pin|MOTOR_DIR_2_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, CAN_RX_LED_Pin|CAN_TX_LED_Pin|MOTOR_DIR_4_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin : B1_Pin */
   GPIO_InitStruct.Pin = B1_Pin;
@@ -736,25 +787,27 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(LD2_GPIO_Port, &GPIO_InitStruct);
 
+  /*Configure GPIO pins : MOTOR_DIR_5_Pin MOTOR_DIR_3_Pin MOTOR_DIR_2_Pin MOTOR_DIR_1_Pin
+                           MOTOR_DIR_0_Pin */
+  GPIO_InitStruct.Pin = MOTOR_DIR_5_Pin|MOTOR_DIR_3_Pin|MOTOR_DIR_2_Pin|MOTOR_DIR_1_Pin
+                          |MOTOR_DIR_0_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+
   /*Configure GPIO pins : LIMIT_2_A_Pin LIMIT_2_B_Pin LIMIT_0_B_Pin LIMIT_0_A_Pin */
   GPIO_InitStruct.Pin = LIMIT_2_A_Pin|LIMIT_2_B_Pin|LIMIT_0_B_Pin|LIMIT_0_A_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : CAN_RX_LED_Pin CAN_TX_LED_Pin */
-  GPIO_InitStruct.Pin = CAN_RX_LED_Pin|CAN_TX_LED_Pin;
+  /*Configure GPIO pins : CAN_RX_LED_Pin CAN_TX_LED_Pin MOTOR_DIR_4_Pin */
+  GPIO_InitStruct.Pin = CAN_RX_LED_Pin|CAN_TX_LED_Pin|MOTOR_DIR_4_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
-
-  /*Configure GPIO pins : MOTOR_DIR_0_Pin MOTOR_DIR_1_Pin MOTOR_DIR_2_Pin */
-  GPIO_InitStruct.Pin = MOTOR_DIR_0_Pin|MOTOR_DIR_1_Pin|MOTOR_DIR_2_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
   /*Configure GPIO pins : LIMIT_1_B_Pin LIMIT_1_A_Pin */
   GPIO_InitStruct.Pin = LIMIT_1_B_Pin|LIMIT_1_A_Pin;
