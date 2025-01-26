@@ -13,7 +13,6 @@ from navigation.search import SearchState
 from navigation.costmap_search import CostmapSearchState
 from navigation.state import DoneState, OffState, off_check
 from navigation.waypoint import WaypointState
-from navigation.water_bottle_search import WaterBottleSearchState
 from rclpy import Parameter
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
