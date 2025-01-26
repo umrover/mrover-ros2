@@ -31,31 +31,7 @@
       <ControllerDataTable msg-type='drive_right_state' header='Right Drive States' />
 
       <div v-if="type === 'ES'" class="auton-typing">
-        <div class="auton-typing-input">
-          <h4>Autonomous Typing Task</h4>
-          <AutonTyping :mission="'auton'"/>
-        </div>
-        <div class="feedback-section">
-          <h4>Feedback</h4>
-          <table>
-            <thead>
-              <tr>
-                <th>Key</th>
-                <th>State</th>
-              </tr>
-            </thead>
-            <tbody>
-              <!-- add this back into the tr tag underneath: v-for="(state, key) in feedback" :key="key" -->
-              <tr>
-                <!-- <td>{{ key }}</td>
-                <td>{{ state }}</td> -->
-                <!-- TODO: Remove this (only used for example purposes) -->
-                <td>key</td>
-                <td>state</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+        <AutonTyping mission="'auton"/>
         <div class="alignment-section">
           <h4>Planar Alignment</h4>
           <p><!--{{ alignmentDegrees }}--> 0 degrees</p>
@@ -81,6 +57,7 @@ import DriveControls from './DriveControls.vue'
 import MastGimbalControls from './MastGimbalControls.vue'
 import Rover3D from './Rover3D.vue'
 import { quaternionToMapAngle } from '../utils'
+import AutonTask from './AutonTask.vue'
 
 export default defineComponent({
   components: {

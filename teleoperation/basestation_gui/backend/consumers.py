@@ -19,6 +19,7 @@ from geometry_msgs.msg import Twist
 from lie import SE3
 from mrover.msg import Throttle, Position
 from backend.ra_controls import send_ra_controls
+from backend.typingtask import TypingTaskActionClient
 
 import threading
 
@@ -39,6 +40,7 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.accept()
         thr_pub = node.create_publisher(Throttle, "arm_throttle_cmd",1)
         pos_pub = node.create_publisher(Position, "arm_position_cmd",1) 
+        typing_action_client = TypingTaskActionClient(node, self)
 
     def forward_ros_topic(self, topic_name: str, topic_type: Type, gui_msg_type: str) -> None:
         """
@@ -114,8 +116,9 @@ class GUIConsumer(JsonWebsocketConsumer):
                     "type": "code",
                     "code": typingMessage,
                 }:
-                    # self.action_client = ActionClient(node, SendCode, '/code')
-                    print(typingMessage)
+                    typing_action_client.send_code(typingMessage)
+
+                    # print(typingMessage)
                     # pass
                     
                 case _:
