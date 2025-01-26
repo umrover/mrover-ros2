@@ -26,16 +26,26 @@ classdef InvariantEKF < handle
         % I-EKF initial values
         function obj = InvariantEKF()
 
-            g_skew = [0 9.81 0; -9.81 0 0; 0 0 0];
+            g_skew = [0 -9.81 0; 9.81 0 0; 0 0 0];
 
-            obj.X = eye(5);
+            rot_init = [-0.92671502096, 0.37576491309, 0;
+                        -0.37576491309, -0.92671502096, 0;
+                        0 0 1];
+
+            % obj.X = eye(5);
+            tens = [10; 10; 10];
+            obj.X = [eye(3), zeros(3,1), tens;
+                     zeros(1,3) 1 0;
+                     zeros(1,3) 0 1];
+
+
             
             obj.A = [zeros(3), zeros(3), zeros(3);
                      g_skew, zeros(3), zeros(3);
                      zeros(3), eye(3), zeros(3)];
 
 
-            obj.P = zeros(9);
+            obj.P = eye(9); % may need to set this differently
 
         end
 
@@ -73,39 +83,78 @@ classdef InvariantEKF < handle
 
             g = [0; 0; 9.81];
             Ad_X = obj.adjoint_X();
-            Q = [zeros(3,3), q, zeros(3,3);
-                 zeros(3,3), zeros(3,3), zeros(3,3);
-                 zeros(3,3), zeros(3,3), zeros(3,3)];
-            Q_d = expm(obj.A * dt) * Q * dt * (expm(obj.A * dt)); % TODO: check during testing
 
+            
+
+            Q = [zeros(3,3), zeros(3,3), zeros(3,3);
+                 zeros(3,3), obj.X(1:3,1:3) * q * dt, zeros(3,3);
+                 zeros(3,3), zeros(3,3), obj.X(1:3,1:3) * 0.5 * q * dt.^2];
+            Q_d = expm(obj.A * dt) * Q * dt * (expm(obj.A * dt)'); % TODO: check during testing
+
+            disp("Q:");
+            disp(Q);
+            disp("Q_d");
+            disp(Q_d);
+            
             % propogate
             temp = obj.X;
-            temp(1:3,4) = obj.X(1:3,4) + obj.X(1:3,1:3) * a * dt - g * dt; % velocity
-            temp(1:3,5) = obj.X(1:3,5) + obj.X(1:3,4) * dt + 0.5 * obj.X(1:3,1:3) * a * dt.^2 - 0.5 * g * dt.^2; % position
+            temp(1:3,4) = obj.X(1:3,4) + obj.X(1:3,1:3) * a * dt + g * dt; % velocity
+            temp(1:3,5) = obj.X(1:3,5) + obj.X(1:3,4) * dt + 0.5 * obj.X(1:3,1:3) * a * dt.^2 + 0.5 * g * dt.^2; % position
+
+            disp("temp:");
+            disp(temp);
+            disp("P before:");
+            disp(obj.P);
+
 
             obj.X = temp;
-            obj.P = expm(obj.A * dt) * obj.P * (expm(obj.A * dt))' + Ad_X * Q_d * Ad_X';
+            disp("expm(obj.A * dt) * P * expm(obj.A * dt)':");
+            disp(expm(obj.A * dt) * obj.P * (expm(obj.A * dt)'));
+            disp("Ad_X * Q_d * Ad_X':");
+            disp(Ad_X * Q_d * Ad_X');
+           
+            
+            obj.P = expm(obj.A * dt) * obj.P * (expm(obj.A * dt)') + Ad_X * Q_d * Ad_X';
+            % obj.P = dt * (eye(9) + obj.A) * obj.P * dt * (eye(9) + obj.A)' + Ad_X * Q_d * Ad_X';
+            disp("P after:");
+            disp(obj.P);
 
         end
         
         % p is a 3x1 matrix of cartesian position
         % V is the 3x1 noise
+        % V can be positive or negative, but when used for noise matrix it
+        % should always be positive...
         function position_update(obj, p, V)
+            % disp("t = " + t);
             H = [zeros(3), zeros(3), -eye(3)];
 
             % get V, p into the robot frame
-            V = -obj.X(1:3,1:3)' * V;
+            % V = -obj.X(1:3,1:3)' * V;
             p = -obj.X(1:3,1:3)' * p;
 
-            Y = [p; 0; 1] + [V; 0; 0];
+            % Y = [p; 0; 1] + [V; 0; 0];
+            Y = [p; 0; 1];
             b = [zeros(3,1); 0; 1];
             innov = obj.X * Y - b;
+
+            disp(innov);
             
-            N = obj.X(1:3,1:3) * blkdiag(V(1), V(2), V(3)) * obj.X(1:3,1:3)';
+            % N = obj.X(1:3,1:3) * diag([abs(V(1)), abs(V(2)), abs(V(3))]) * obj.X(1:3,1:3)';
+            N = diag([abs(V(1)), abs(V(2)), abs(V(3))]);
+            disp("HPH':");
+            disp(H * obj.P * H');
             S = H * obj.P * H' + N;
-            L = obj.P * H' / S;
+            L = obj.P * H' / S; % L should ALWAYS be negative, otherwise something is wrong
 
             delta = InvariantEKF.wedge(L * innov(1:3,1));
+
+            disp("P * H':");
+            disp(obj.P * H');
+            % disp(S);
+            % disp(L);
+            disp("delta:")
+            disp(delta);
             
             % correction
             obj.X = expm(delta) * obj.X;
