@@ -290,7 +290,7 @@ mrover_add_esw_bridge_node(drive_hw_bridge esw/drive_hw_bridge.cpp)
 
 mrover_add_node(science_hw_bridge esw/science_hw_bridge.cpp)
 target_link_libraries(science_hw_bridge units)
-ament_target_dependencies(science_hw_bridge rclcpp std_msgs)
+ament_target_dependencies(science_hw_bridge rclcpp sensor_msgs)
 
 # science_test_bridge
 mrover_add_node(science_test_bridge esw/science_test_bridge.cpp)

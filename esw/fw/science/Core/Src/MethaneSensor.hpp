@@ -6,13 +6,13 @@ namespace mrover {
 	class MethaneSensor {
 	private:
 		ADCSensor* adc_ptr;
-		float ppm;
+		double ppm;
 		uint8_t channel;
 
 		float calculate_ppm(float analog_in) {
-			float voltage = analog_in * 5.00 / 4096.00;
-			float rs = (5 - voltage) / voltage;
-			const float r0 = 0.92;
+			double voltage = analog_in * 2.5 / 4096.00;
+			double rs = (2.5 - voltage) / voltage;
+			const double r0 = 0.92;
 			ppm = powf(rs / r0, -3.20) * 860.00;
 			return ppm;
 		}
@@ -24,19 +24,19 @@ namespace mrover {
 		};
 
 		// update value in ppm with blocking
-		float update_ppm_blocking() {
+		double update_ppm_blocking() {
 			ppm = calculate_ppm(adc_ptr->get_raw_channel_blocking());
 			return ppm;
 		}
 
 		// update value in ppm with non-blocking
-		float update_ppm_async() {
+		double update_ppm_async() {
 		    ppm = calculate_ppm(adc_ptr->get_raw_channel_value(channel));
 		    return ppm;
 		}
 
 		// returns the current value in ppm
-		float get_current_ppm() {
+		double get_current_ppm() {
 			return ppm;
 		}
 	}; // class UVSensor

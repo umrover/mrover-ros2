@@ -5,7 +5,7 @@ namespace mrover {
 	class UVSensor {
 	private:
 		ADCSensor* adc_ptr;
-		float uv_index;
+		double uv_index;
 		uint8_t channel;
 
 	public:
@@ -15,19 +15,22 @@ namespace mrover {
 		};
 
 		// update value of uv_index with blocking
-		float update_uv_blocking() {
-			uv_index = adc_ptr->get_raw_channel_blocking() / 100.00;
+		double update_uv_blocking() {
+			int y = adc_ptr->get_raw_channel_blocking();
+			float ratio = y/4096.0;
+			uv_index = 33.0 * ratio;
 			return uv_index;
 		}
 
 		// update value of uv_index with non-blocking
-		float update_uv_async() {
+		double update_uv_async() {
+			adc_ptr->update();
 		    uv_index = adc_ptr->get_raw_channel_value(channel) / 100.00;
 		    return uv_index;
 		}
 
 		// returns the current value of uv_index
-		float get_current_uv() {
+		double get_current_uv() {
 			return uv_index;
 		}
 	}; // class UVSensor

@@ -14,8 +14,8 @@ namespace mrover {
 		uint8_t mem_addr;
 		uint8_t key_addr;
 		I2C_HandleTypeDef *i2c;
-		float calibration_multiplier;
-		float percent;
+		double calibration_multiplier;
+		double percent;
 
 	public:
 		OxygenSensor (I2C_HandleTypeDef *i2c_in)
@@ -23,7 +23,7 @@ namespace mrover {
 			calibration_multiplier = (20.9 / 120.0); //default reasonable multiplier if calibration fails
 		};
 
-		float update_oxygen() {
+		double update_oxygen() {
 			calibrate_oxygen();
 			HAL_StatusTypeDef status;
 			uint8_t buf[3];
@@ -38,11 +38,11 @@ namespace mrover {
 				return percent;
 			}
 
-			percent = (calibration_multiplier * (((float)buf[0]) + ((float)buf[1] / 10.0) + ((float)buf[2] / 100.0))); // Could be that the 20.9/120.00 is not the correct value for _Key
+			percent = (calibration_multiplier * (((double)buf[0]) + ((double)buf[1] / 10.0) + ((double)buf[2] / 100.0))); // Could be that the 20.9/120.00 is not the correct value for _Key
 			return percent;
 		}
 
-		float calibrate_oxygen() {
+		double calibrate_oxygen() {
 			uint8_t calibration_buf[1];
 			HAL_StatusTypeDef status;
 			status = HAL_I2C_Mem_Read(i2c, dev_addr << 1, key_addr, 1, calibration_buf, 1, 100);
@@ -59,7 +59,7 @@ namespace mrover {
 			return calibration_multiplier;
 		}
 
-		float get_oxygen() {
+		double get_oxygen() {
 			return percent;
 		}
 	}; // class UVSensor

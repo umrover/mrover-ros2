@@ -3,7 +3,11 @@
 #include <unordered_map>
 #include <algorithm>
 #include <rclcpp/rclcpp.hpp>
-#include "std_msgs/msg/float32.hpp"
+#include <sensor_msgs/msg/temperature.hpp>
+#include <sensor_msgs/msg/relative_humidity.hpp>
+#include "mrover/msg/oxygen.hpp"
+#include "mrover/msg/methane.hpp"
+#include "mrover/msg/uv.hpp"
 #include <mrover/msg/can.hpp>
 #include <units/units.hpp>
 
@@ -12,11 +16,11 @@ namespace mrover {
     class ScienceBridge final : public rclcpp::Node {
 
     private:
-        rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr tempPub;
-        rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr humidityPub;
-        rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr oxygenPub;
-        rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr methanePub;
-        rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr uvPub;
+        rclcpp::Publisher<sensor_msgs::msg::Temperature>::SharedPtr tempPub;
+        rclcpp::Publisher<sensor_msgs::msg::RelativeHumidity>::SharedPtr humidityPub;
+        rclcpp::Publisher<msg::Oxygen>::SharedPtr oxygenPub;
+        rclcpp::Publisher<msg::Methane>::SharedPtr methanePub;
+        rclcpp::Publisher<msg::UV>::SharedPtr uvPub;
         
         rclcpp::Subscription<msg::CAN>::ConstSharedPtr canSubA;
         rclcpp::Subscription<msg::CAN>::ConstSharedPtr canSubB;
@@ -48,32 +52,46 @@ namespace mrover {
         }
 
         void processMessage(mrover::SensorData const& message) {
-            std_msgs::msg::Float32 msg;
             switch (static_cast<ScienceDataID>(message.id)) {
-                case ScienceDataID::TEMPERATURE:
-                    msg.data = message.data;
+                case ScienceDataID::TEMPERATURE: {
+                    sensor_msgs::msg::Temperature msg;
+                    msg.temperature = message.data;
+                    msg.variance = 0;
                     tempPub->publish(msg);
                     break;
+                }
                 
-                case ScienceDataID::HUMIDITY:
-                    msg.data = message.data;
+                case ScienceDataID::HUMIDITY: {
+                    sensor_msgs::msg::RelativeHumidity msg;
+                    msg.relative_humidity = message.data;
+                    msg.variance = 0;
                     humidityPub->publish(msg);
                     break;
+                }
 
-                case ScienceDataID::OXYGEN:
-                    msg.data = message.data;
+                case ScienceDataID::OXYGEN: {
+                    msg::Oxygen msg;
+                    msg.percent = message.data;
+                    msg.variance = 0;
                     oxygenPub->publish(msg);
                     break;
+                }
 
-                case ScienceDataID::METHANE:
-                    msg.data = message.data;
+                case ScienceDataID::METHANE: {
+                    msg::Methane msg;
+                    msg.ppm = message.data;
+                    msg.variance = 0;
                     methanePub->publish(msg);
                     break;
+                }
 
-                case ScienceDataID::UV:
-                    msg.data = message.data;
+                case ScienceDataID::UV: {
+                    msg::UV msg;
+                    msg.uv_index = message.data;
+                    msg.variance = 0;
                     uvPub->publish(msg);
                     break;
+                }
             }
         }
 
@@ -87,11 +105,11 @@ namespace mrover {
 
     public:
         ScienceBridge() : Node{"science_hw_bridge"} {
-            tempPub = create_publisher<std_msgs::msg::Float32>("science_temperature_data", 10);
-            humidityPub = create_publisher<std_msgs::msg::Float32>("science_humidity_data", 10);
-            oxygenPub = create_publisher<std_msgs::msg::Float32>("science_oxygen_data", 10);
-            methanePub = create_publisher<std_msgs::msg::Float32>("science_methane_data", 10);
-            uvPub = create_publisher<std_msgs::msg::Float32>("science_uv_data", 10);
+            tempPub = create_publisher<sensor_msgs::msg::Temperature>("science_temperature_data", 10);
+            humidityPub = create_publisher<sensor_msgs::msg::RelativeHumidity>("science_humidity_data", 10);
+            oxygenPub = create_publisher<msg::Oxygen>("science_oxygen_data", 10);
+            methanePub = create_publisher<msg::Methane>("science_methane_data", 10);
+            uvPub = create_publisher<msg::UV>("science_uv_data", 10);
 
             // [this](msg::CAN::ConstSharedPtr const& msg) { processCANMessage(msg); });
             canSubA = create_subscription<msg::CAN>("can/science_a/in", 10, [this](msg::CAN::ConstSharedPtr const& msg) { processCANData(msg); });

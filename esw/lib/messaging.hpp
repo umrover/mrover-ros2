@@ -192,7 +192,7 @@ namespace mrover {
 
     struct SensorData {
     	std::uint8_t id;
-    	float data;
+    	double data;
     };
 
     enum class ScienceDataID : uint8_t {

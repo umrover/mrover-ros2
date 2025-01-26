@@ -5,8 +5,8 @@
 namespace mrover {
 	class TempHumiditySensor  {
 	private:
-		float temp;
-		float humidity;
+		double temp;
+		double humidity;
 		uint8_t dev_addr;
 		I2C_HandleTypeDef *i2c;
 
@@ -44,11 +44,11 @@ namespace mrover {
 			temp = ((ST / pow(2, 20)) * 200) - 50;
 		}
 
-		float get_current_temp() {
+		double get_current_temp() {
 			return temp;
 		}
 
-		float get_current_humidity() {
+		double get_current_humidity() {
 			return humidity;
 		}
 	}; // class TempHumiditySensor

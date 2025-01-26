@@ -9,6 +9,11 @@
 
 namespace mrover {
 
+    union TestUnion {
+        double data;
+        char data_bytes[8];
+    };
+
     class ScienceTestBridge final : public rclcpp::Node {
 
     private:
@@ -33,9 +38,15 @@ namespace mrover {
             msgB.destination = "jetson";
             msgB.reply_required = false;
 
-            for (uint8_t i = 1; i < 6; i++) {
-                msgA.data.push_back(i);
-                msgB.data.push_back(i);
+            TestUnion test_union;
+            test_union.data = 23.45;
+
+            msgA.data.push_back(1);
+            msgB.data.push_back(1);
+
+            for (uint8_t i = 0; i < 8; i++) {
+                msgA.data.push_back(test_union.data_bytes[i]);
+                msgB.data.push_back(test_union.data_bytes[i]);
             }
 
             scienceAPub->publish(msgA);
