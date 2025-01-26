@@ -6,6 +6,7 @@ from typing import Any, Type
 from channels.generic.websocket import JsonWebsocketConsumer
 
 import rclpy
+from rclpy.action import ActionClient
 from rclpy.subscription import Subscription
 from rclpy.node import Node
 
