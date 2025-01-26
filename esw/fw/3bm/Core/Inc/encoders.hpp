@@ -6,7 +6,7 @@
 #include <common.hpp>
 #include <hardware_i2c.hpp>
 #include <hardware_tim.hpp>
-#include <units/units.hpp>
+#include <units.hpp>
 
 #include "filtering.hpp"
 

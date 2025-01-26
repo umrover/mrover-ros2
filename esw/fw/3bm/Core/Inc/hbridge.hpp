@@ -3,7 +3,7 @@
 #include <cstdint>
 
 #include "hardware.hpp"
-#include "units/units.hpp"
+#include "units.hpp"
 
 namespace mrover {
     class HBridge {
