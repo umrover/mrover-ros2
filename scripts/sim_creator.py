@@ -168,6 +168,10 @@ simulator:
       world:
         type: urdf
         uri: package://mrover/urdf/world/world.urdf.xacro
+      bottle:
+        type: urdf
+        uri: package://mrover/urdf/world/bottle.urdf.xacro
+        position: [9.0, 10.0, 0.5]
 
 """
 
