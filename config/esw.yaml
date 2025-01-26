@@ -10,12 +10,59 @@ differential_drive_controller:
       width: 0.86
       length: 0.86
       wheel_radius: 0.13
-      max_linear_speed: 1.0
-      max_angular_speed: 3.0
+      max_linear_speed: 10.0
+      max_angular_speed: 10.0
 
-can_bridge_0:
+can_bridge_1:
   ros__parameters:
-    interface: can0
+    interface: can2
+    is_extended_frame: true
+    devices:
+      jetson:
+        id: 0x10
+can_bridge_2:
+  ros__parameters:
+    interface: can1
+    is_extended_frame: true
+    devices:
+      jetson:
+        id: 0x10
+      joint_a:
+        id: 0x20
+      joint_b:
+        id: 0x21
+      joint_c:
+        id: 0x22
+      joint_de_0:
+        id: 0x23
+      joint_de_1:
+        id: 0x24
+      finger:
+        id: 0x25
+      gripper:
+        id: 0x26
+can_bridge_3:
+  ros__parameters:
+    interface: can2
+    is_extended_frame: true
+    devices:
+      jetson:
+        id: 0x10
+      front_left:
+        id: 0x20
+      front_right:
+        id: 0x23
+      middle_left:
+        id: 0x21
+      middle_right:
+        id: 0x24
+      back_left:
+        id: 0x22
+      back_right:
+        id: 0x25
+can_bridge_4:
+  ros__parameters:
+    interface: can3
     is_extended_frame: true
     devices:
       jetson:

@@ -2,21 +2,22 @@
 
 #include <string>
 
-#include <ros/ros.h>
+#include <rclcpp/executors.hpp>
+#include <rclcpp/logging.hpp>
+#include <rclcpp/node.hpp>
+#include <rclcpp/rclcpp.hpp>
 
 #include <can_device.hpp>
-#include <chrono>
-#include <iostream>
-#include <params_utils.hpp>
-#include <units/units.hpp>
+#include <units.hpp>
 
-#include <mrover/AdjustMotor.h>
-#include <mrover/ControllerState.h>
-#include <mrover/MotorsAdjust.h>
-#include <mrover/Position.h>
-#include <mrover/Throttle.h>
-#include <mrover/Velocity.h>
-#include <sensor_msgs/JointState.h>
+#include <mrover/msg/can.hpp>
+#include <mrover/msg/controller_state.hpp>
+#include <mrover/msg/motors_adjust.hpp>
+#include <mrover/msg/position.hpp>
+#include <mrover/msg/throttle.hpp>
+#include <mrover/msg/velocity.hpp>
+#include <mrover/srv/adjust_motor.hpp>
+#include <sensor_msgs/msg/joint_state.hpp>
 
 namespace mrover {
 
@@ -28,19 +29,27 @@ namespace mrover {
         using OutputPosition = TOutputPosition;
         using OutputVelocity = compound_unit<OutputPosition, inverse<Seconds>>;
 
-        ControllerBase(ros::NodeHandle const& nh, std::string masterName, std::string controllerName)
-            : mNh{nh},
+        ControllerBase(rclcpp::Node::SharedPtr node, std::string masterName, std::string controllerName)
+            : mNode{std::move(node)},
               mMasterName{std::move(masterName)},
               mControllerName{std::move(controllerName)},
-              mDevice{mNh, mMasterName, mControllerName},
-              mIncomingCANSub{mNh.subscribe<CAN>(std::format("can/{}/in", mControllerName), 16, &ControllerBase::processCANMessage, this)},
-              mMoveThrottleSub{mNh.subscribe<Throttle>(std::format("{}_throttle_cmd", mControllerName), 1, &ControllerBase::setDesiredThrottle, this)},
-              mMoveVelocitySub{mNh.subscribe<Velocity>(std::format("{}_velocity_cmd", mControllerName), 1, &ControllerBase::setDesiredVelocity, this)},
-              mMovePositionSub{mNh.subscribe<Position>(std::format("{}_position_cmd", mControllerName), 1, &ControllerBase::setDesiredPosition, this)},
-              mJointDataPub{mNh.advertise<sensor_msgs::JointState>(std::format("{}_joint_data", mControllerName), 1)},
-              mControllerDataPub{mNh.advertise<ControllerState>(std::format("{}_controller_data", mControllerName), 1)},
-              mPublishDataTimer{mNh.createTimer(ros::Duration{0.1}, &ControllerBase::publishDataCallback, this)},
-              mAdjustServer{mNh.advertiseService(std::format("{}_adjust", mControllerName), &ControllerBase::adjustServiceCallback, this)} {
+              mDevice{mNode->shared_from_this(), mMasterName, mControllerName} {
+
+            mIncomingCANSub = mNode->create_subscription<msg::CAN>(
+                    std::format("can/{}/in", mControllerName), 16,
+                    [this](msg::CAN::ConstSharedPtr const& msg) { processCANMessage(msg); });
+
+            mJointDataPub = mNode->create_publisher<sensor_msgs::msg::JointState>(
+                    std::format("{}_joint_data", mControllerName), 1);
+            mControllerDataPub = mNode->create_publisher<msg::ControllerState>(
+                    std::format("{}_controller_data", mControllerName), 1);
+
+            mAdjustServer = mNode->create_service<srv::AdjustMotor>(
+                    std::format("{}_adjust", mControllerName),
+                    [this](srv::AdjustMotor::Request::SharedPtr const req,
+                           srv::AdjustMotor::Response::SharedPtr res) {
+                        adjustServiceCallback(req, res);
+                    });
         }
 
         ControllerBase(ControllerBase const&) = delete;
@@ -49,97 +58,65 @@ namespace mrover {
         auto operator=(ControllerBase const&) -> ControllerBase& = delete;
         auto operator=(ControllerBase&&) -> ControllerBase& = delete;
 
-        // TODO(quintin): Why can't I bind directly to &Derived::processCANMessage?
-        auto processCANMessage(CAN::ConstPtr const& msg) -> void {
+        // TODO:(quintin) Why can't I bind directly to &Derived::processCANMessage?
+        // TODO:(owen) that's a great question
+        auto processCANMessage(msg::CAN::ConstSharedPtr const& msg) -> void {
             static_cast<Derived*>(this)->processCANMessage(msg);
-        }
-
-        auto setDesiredThrottle(Throttle::ConstPtr const& msg) -> void {
-            if (msg->names.size() != 1 || msg->names.at(0) != mControllerName || msg->throttles.size() != 1) {
-                ROS_ERROR("Throttle request at topic for %s ignored!", msg->names.at(0).c_str());
-                return;
-            }
-
-            static_cast<Derived*>(this)->setDesiredThrottle(msg->throttles.front());
-        }
-
-        auto setDesiredVelocity(Velocity::ConstPtr const& msg) -> void {
-            if (msg->names.size() != 1 || msg->names.at(0) != mControllerName || msg->velocities.size() != 1) {
-                ROS_ERROR("Velocity request at topic for %s ignored!", msg->names.at(0).c_str());
-                return;
-            }
-
-            // ROS message will always be in SI units with no conversions
-            using Velocity = typename detail::strip_conversion<OutputVelocity>::type;
-            OutputVelocity velocity = Velocity{msg->velocities.front()};
-            static_cast<Derived*>(this)->setDesiredVelocity(velocity);
-        }
-
-        auto setDesiredPosition(Position::ConstPtr const& msg) -> void {
-            if (msg->names.size() != 1 || msg->names.at(0) != mControllerName || msg->positions.size() != 1) {
-                ROS_ERROR("Position request at topic for %s ignored!", msg->names.at(0).c_str());
-                return;
-            }
-
-            // ROS message will always be in SI units with no conversions
-            using Position = typename detail::strip_conversion<OutputPosition>::type;
-            OutputPosition position = Position{msg->positions.front()};
-            static_cast<Derived*>(this)->setDesiredPosition(position);
         }
 
         [[nodiscard]] auto isJointDe() const -> bool {
             return mControllerName == "joint_de_0" || mControllerName == "joint_de_1";
         }
 
-        auto publishDataCallback(ros::TimerEvent const&) -> void {
-            {
-                using Position = typename detail::strip_conversion<OutputPosition>::type;
-                using Velocity = typename detail::strip_conversion<OutputVelocity>::type;
-
-                sensor_msgs::JointState jointState;
-                jointState.header.stamp = ros::Time::now();
-                jointState.name = {mControllerName};
-                jointState.position = {Position{mCurrentPosition}.get()};
-                jointState.velocity = {Velocity{mCurrentVelocity}.get()};
-                jointState.effort = {static_cast<Derived*>(this)->getEffort()};
-                mJointDataPub.publish(jointState);
+        auto adjustServiceCallback(srv::AdjustMotor::Request::SharedPtr const req, srv::AdjustMotor::Response::SharedPtr res) -> void {
+            if (req->name != mControllerName) {
+                RCLCPP_ERROR(mNode->get_logger(), "Adjust request at server for %s ignored", req->name.c_str());
+                res->success = false;
+                return;
             }
-            {
-                ControllerState controllerState;
-                controllerState.name = {mControllerName};
-                controllerState.state = {mState};
-                controllerState.error = {mErrorState};
-                std::uint8_t limit_hit{};
-                for (int i = 0; i < 4; ++i) {
-                    limit_hit |= mLimitHit.at(i) << i;
-                }
-                controllerState.limit_hit = {limit_hit};
-
-                mControllerDataPub.publish(controllerState);
-            }
-        }
-
-        auto adjustServiceCallback(AdjustMotor::Request& req, AdjustMotor::Response& res) -> bool {
-            if (req.name != mControllerName) {
-                ROS_ERROR("Adjust request at server for %s ignored", req.name.c_str());
-                res.success = false;
-                return true;
-            }
-
             using Position = typename detail::strip_conversion<OutputPosition>::type;
-            OutputPosition position = Position{req.value};
+            OutputPosition position = Position{req->value};
             static_cast<Derived*>(this)->adjust(position);
-            res.success = true;
-            return true;
+            res->success = true;
         }
+
+        [[nodiscard]] auto getControllerName() const -> std::string {
+            return mControllerName;
+        }
+
+        [[nodiscard]] auto getPosition() const -> OutputPosition {
+            return mCurrentPosition;
+        }
+        [[nodiscard]] auto getVelocity() const -> OutputVelocity {
+            return mCurrentVelocity;
+        }
+        [[nodiscard]] auto getEffort() const -> double {
+            return mCurrentEffort;
+        }
+
+        [[nodiscard]] auto getErrorState() const -> std::string {
+            return mErrorState;
+        }
+        [[nodiscard]] auto getState() const -> std::string {
+            return mState;
+        }
+        [[nodiscard]] auto getLimitsHitBits() const -> std::uint8_t {
+            std::uint8_t limitsHit{};
+            for (int i = 0; i < 4; ++i) {
+                limitsHit |= mLimitHit.at(i) << i;
+            }
+            return limitsHit;
+        }
+
 
     protected:
-        ros::NodeHandle mNh;
+        rclcpp::Node::SharedPtr mNode;
         std::string mMasterName, mControllerName;
         CanDevice mDevice;
-        ros::Subscriber mIncomingCANSub;
+        rclcpp::Subscription<msg::CAN>::SharedPtr mIncomingCANSub;
         OutputPosition mCurrentPosition{};
         OutputVelocity mCurrentVelocity{};
+        double mCurrentEffort{std::numeric_limits<double>::quiet_NaN()};
         Percent mCalibrationThrottle{};
         bool mIsCalibrated{};
         bool mHasLimit{};
@@ -147,15 +124,10 @@ namespace mrover {
         std::string mState;
         std::array<bool, 4> mLimitHit{};
 
-        ros::Subscriber mMoveThrottleSub;
-        ros::Subscriber mMoveVelocitySub;
-        ros::Subscriber mMovePositionSub;
-        ros::Subscriber mAdjustEncoderSub;
-        ros::Publisher mJointDataPub;
-        ros::Publisher mControllerDataPub;
-        ros::Timer mPublishDataTimer;
+        rclcpp::Publisher<sensor_msgs::msg::JointState>::SharedPtr mJointDataPub;
+        rclcpp::Publisher<msg::ControllerState>::SharedPtr mControllerDataPub;
 
-        ros::ServiceServer mAdjustServer;
+        rclcpp::Service<srv::AdjustMotor>::SharedPtr mAdjustServer;
     };
 
 } // namespace mrover
