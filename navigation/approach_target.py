@@ -97,7 +97,8 @@ class ApproachTargetState(State):
             self.astar_traj = Trajectory(np.array([]))
             self.display_markers(context=context)
 
-        while is_high_cost_point(context=context, point=self.traj.get_current_point()):
+        while self.traj.get_current_point() is not None \
+            and is_high_cost_point(context=context, point=self.traj.get_current_point()):
             if self.traj.increment_point():
                 # TODO: What do we do if we skip high cost points and reach the end of the trajectory
                 return self.next_state(context=context, is_finished=False)
