@@ -171,7 +171,7 @@ simulator:
       bottle:
         type: urdf
         uri: package://mrover/urdf/world/bottle.urdf.xacro
-        position: [ -6.0, 6.0, 0.5 ]
+        position: [9.0, 10.0, 0.5]
 
 """
 
