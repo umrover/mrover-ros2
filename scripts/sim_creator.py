@@ -171,7 +171,7 @@ simulator:
       bottle:
         type: urdf
         uri: package://mrover/urdf/world/bottle.urdf.xacro
-        position: [ -6.0, 6.0, 0.5 ]
+        position: [9.0, 10.0, 0.5]
 
 """
 
@@ -218,7 +218,7 @@ simulator:
 """
 
         # 5) Write out to new_sim.yaml
-        with open("new_sim.yaml", "w") as f:
+        with open("config/simulator.yaml", "w") as f:
             f.write(yaml_header)
             if yaml_rocks:
                 f.write("      # Auto-generated rocks from the grid\n")
