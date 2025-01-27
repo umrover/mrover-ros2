@@ -41,7 +41,7 @@ navigation:
       coverage_radius: 20.0
       segments_per_rotation: 16
       distance_between_spirals: 3.0
-      max_segment_length: 1
+      max_segment_length: 1.0
       traversable_cost: 0.2
       update_delay: 1.0
       safe_approach_distance: 5.0

@@ -36,6 +36,7 @@ LOCALIZATION_INFO_HZ = 10
 
 class GUIConsumer(JsonWebsocketConsumer):
     subscribers = []
+    timers = []
     
     def connect(self) -> None:
         self.accept()
@@ -58,7 +59,13 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.buffer = Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.buffer, node)
 
-        self.timer = node.create_timer(1 / LOCALIZATION_INFO_HZ, self.send_localization_callback)
+        self.timers.append(node.create_timer(1 / LOCALIZATION_INFO_HZ, self.send_localization_callback))
+
+    def disconnect(self, close_code) -> None:
+        for subscriber in self.subscribers:
+            node.destroy_subscription(subscriber)
+        for timer in self.timers:
+            node.destroy_timer(timer)
 
     def forward_ros_topic(self, topic_name: str, topic_type: Type, gui_msg_type: str) -> None:
         """
