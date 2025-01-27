@@ -185,9 +185,7 @@ class GUIConsumer(JsonWebsocketConsumer):
                     "type": "auto_shutoff",
                     "shutoff": shutoff
                 }:
-                    request = SetBool.Request()
-                    request.data = shutoff
-                    self.auto_shutoff_service.call(request)
+                    self.auto_shutoff_service.call(SetBool.Request(data=shutoff))
                     
                 case _:
                     node.get_logger().warning(f"Unhandled message: {message}")

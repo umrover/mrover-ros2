@@ -1,7 +1,6 @@
 <template>
     <div>
         <h2>Heater Auto Shutdown</h2>
-        <div class="box1 shutdown">
         <ToggleButton
             id="autoshutdown"
             :current-state="autoShutdownEnabled"
@@ -9,14 +8,11 @@
             :label-disable-text="'Auto Shutdown'"
             @change="sendAutoShutdownCmd()"
         />
-        </div>
-        <div class="comms shutdownStatus">
         <LEDIndicator
             :connected="autoShutdownEnabled"
             :name="'Auto Shutdown Status'"
             :show_name="true"
         />
-        </div>
     </div>
 </template>
 

@@ -319,6 +319,7 @@ install(PROGRAMS
         localization/basestation_gps_driver.py
         superstructure/superstructure.py
         scripts/debug_course_publisher.py
+        scripts/debug_service.py
 		scripts/visualizer.py
         teleoperation/basestation_gui/gui_frontend.sh
         teleoperation/basestation_gui/gui_backend.sh
