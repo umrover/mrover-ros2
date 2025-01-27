@@ -164,8 +164,6 @@ export default defineComponent({
     'map waypoint-editor'
     'map odom'
     'controller_state rover-3d';
-    'map odom'
-    'controller_state rover-3d';
   font-family: sans-serif;
   height: auto;
 }

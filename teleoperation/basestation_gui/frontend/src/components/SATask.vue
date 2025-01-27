@@ -147,7 +147,7 @@ export default {
 .wrapper {
   display: grid;
   grid-gap: 10px;
-  grid-template-columns: 33% 33% 33%;
+  grid-template-columns: 50% 50%;
   grid-template-areas:
     'header header'
     'arm hexHub'
