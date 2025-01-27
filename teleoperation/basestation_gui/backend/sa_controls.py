@@ -8,10 +8,6 @@ from mrover.msg import Throttle
 
 TAU = 2 * pi
 
-# rospy.init_node("teleoperation", disable_signals=True)
-
-# throttle_publisher = rospy.Publisher("sa_throttle_cmd", Throttle, queue_size=1)
-
 
 class Joint(Enum):
     SA_X = 0
@@ -75,4 +71,3 @@ def compute_manual_joint_controls(controller: DeviceInputs) -> list[float]:
 
 def send_sa_controls(inputs: DeviceInputs) -> None:
     manual_controls = compute_manual_joint_controls(inputs)
-    # throttle_publisher.publish(Throttle(JOINT_NAMES, manual_controls))

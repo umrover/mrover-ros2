@@ -1,8 +1,9 @@
 <template>
   <div :class="type === 'ES' ? 'wrapper-es' : 'wrapper-dm'">
-    <div class='shadow p-3 mb-5 header'>
+    <div class='shadow p-3 mb-5 header' style="display: flex; align-items: center; justify-content: space-between;">
       <h1 v-if="type === 'ES'">ES GUI Dashboard</h1>
       <h1 v-else>DM GUI Dashboard</h1>
+      <a class='logo' href="/"><img src='/mrover.png' alt='MRover' title='MRover' width='200' /></a>
       <a class='logo' href="/"><img src='/mrover.png' alt='MRover' title='MRover' width='200' /></a>
     </div>
 
@@ -13,7 +14,7 @@
       <BasicMap :odom='odom' />
     </div>
     <div v-if="type === 'DM'" class='shadow p-3 rounded waypoint-editor'>
-      <BasicWaypointEditor :odom='odom' />
+      <BasicWaypointEditor :odom='odom' :droneWaypointButton='true'/>
     </div>
     <div>
       <DriveControls />
@@ -37,6 +38,7 @@
           <p><!--{{ alignmentDegrees }}--> 0 degrees</p>
         </div>
       </div>
+      <ControllerDataTable msg-type='drive_state' header='Drive States' />
     </div>
     <div v-show='false'>
       <MastGimbalControls />
@@ -86,13 +88,14 @@ export default defineComponent({
         latitude_deg: 38.406025,
         longitude_deg: -110.7923723,
         bearing_deg: 0,
-        altitude: 0
+        altitude: 0,
+        status: false
       }
     }
   },
 
   computed: {
-    ...mapState('websocket', ['message'])
+    ...mapState('websocket', ['message']),
   },
 
   watch: {
@@ -161,6 +164,8 @@ export default defineComponent({
     'map waypoint-editor'
     'map odom'
     'controller_state rover-3d';
+    'map odom'
+    'controller_state rover-3d';
   font-family: sans-serif;
   height: auto;
 }
@@ -187,8 +192,7 @@ export default defineComponent({
 
 .logo {
   position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
+  left: 45%;
 }
 
 .map {

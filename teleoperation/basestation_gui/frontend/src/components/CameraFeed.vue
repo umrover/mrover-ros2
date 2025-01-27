@@ -1,6 +1,6 @@
 <template>
   <div class="wrap">
-    <canvas :id="'stream-' + id" v-on:click="handleClick"></canvas>
+    <canvas :id="'' + id" v-on:click="handleClick"></canvas>
     <div v-if="mission != 'ZED'">
       <p>{{ name }} • ID: {{ id }}</p>
       <Checkbox v-if="mission === 'ik'" :name="'IK Camera'" v-on:toggle="toggleIKMode" />
@@ -238,15 +238,16 @@ export default defineComponent({
 </script>
 <style>
 .wrap {
-  width: fit-content;
+  width: 100%;
   display: flex;
   flex-direction: column;
   gap: 5px;
 }
 
 canvas {
-  width: 640px;
-  height: 480px;
+  /* width: 640px;
+  height: 480px; */
+  background-color: black;
 }
 </style>
 

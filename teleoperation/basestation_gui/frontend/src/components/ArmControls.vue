@@ -1,35 +1,17 @@
 <template>
   <div class='wrap'>
     <h2>Arm Controls</h2>
-      <div class="mode">
-        <h4>Mode</h4>
-      <div class='form-check'>
-        <input
-          v-model='mode'
-          class='form-check-input'
-          type='radio'
-          id='disabled'
-          value='disabled'
-        />
-        <label class='form-check-label' for='disabled'>Disabled</label>
-      </div>
-      <div class='form-check'>
-        <input v-model='mode' class='form-check-input' type='radio' id='manual' value='throttle' />
-        <label class='form-check-label' for='manual'>Throttle</label>
-      </div>
-      <div class='form-check'>
-        <input v-model='mode' class='form-check-input' type='radio' id='manual' value='velocity' />
-        <label class='form-check-label' for='manual'>Velocity</label>
-      </div>
-      <div class='form-check'>
-        <input v-model='mode' class='form-check-input' type='radio' id='manual' value='position' />
-        <label class='form-check-label' for='manual'>Position</label>
-      </div>
-      <div class='form-check'>
-        <input v-model='mode' class='form-check-input' type='radio' id='manual' value='ik' />
-        <label class='form-check-label' for='manual'>IK</label>
-      </div>
-      </div>
+    <div class='controls-flex'>
+      <h4>Mode</h4>
+        <input v-model='mode' type="radio" class="btn-check" name="options-outlined" id="disabled" value='disabled' autocomplete="off" checked>
+        <label class="btn btn-outline-danger" for="disabled">Disabled</label>
+        <input v-model='mode' type="radio" class="btn-check" name="options-outlined" id="throttle" value='throttle' autocomplete="off">
+        <label class="btn btn-outline-success" for="throttle">Throttle</label>
+        <input v-model='mode' type="radio" class="btn-check" name="options-outlined" id="ik-pos" value='ik-pos' autocomplete="off">
+        <label class="btn btn-outline-success" for="ik-pos">IK Position</label>
+        <input v-model='mode' type="radio" class="btn-check" name="options-outlined" id="ik-vel" value='ik-vel' autocomplete="off">
+        <label class="btn btn-outline-success" for="ik-vel">IK Velocity</label>
+    </div>
   </div>
 </template>
 
@@ -61,6 +43,7 @@ export default defineComponent({
   created: function() {
     this.interval = window.setInterval(() => {
       const gamepads = navigator.getGamepads()
+      // may need to check for Xbox rather than Microsoft
       const gamepad = gamepads.find(gamepad => gamepad && gamepad.id.includes('Microsoft'))
       if (!gamepad) return
 

@@ -1,6 +1,6 @@
 <template>
   <div class="wrap">
-    <h3 v-if="isAmino">Amino Test Controls</h3>
+    <h3 v-if="isNinhydrin">Ninhydrin Test Controls</h3>
     <h3 v-else>Benedict's Test Controls</h3>
     <div class="box1 heaters">
       <ToggleButton
@@ -58,7 +58,7 @@ export default {
       type: Number,
       required: true
     },
-    isAmino: { //true = amino, false = benedict's
+    isNinhydrin: { //true = Ninhydrin, false = benedict's
       type: Boolean,
       required: true
     }
@@ -102,7 +102,7 @@ export default {
       }
       else if (msg.type == 'thermistor') {
         if(this.site == 0) return;
-        if (this.isAmino) {
+        if (this.isNinhydrin) {
           this.heaters[this.site].temp = msg.temps[this.site*2+1].temperature;
         }
         else {
@@ -111,7 +111,7 @@ export default {
       }
       else if(msg.type == 'heater_states') {
         if(this.site == 0) return;
-        if (this.isAmino) {
+        if (this.isNinhydrin) {
           this.heaters[this.site].state = msg.state[this.site*2+1];
         }
         else {
@@ -145,7 +145,7 @@ export default {
 
     sendHeaterRequest: function (id) {
       let heaterName = "b";
-      if (this.isAmino) {
+      if (this.isNinhydrin) {
         heaterName = "n"
       }
       heaterName += id

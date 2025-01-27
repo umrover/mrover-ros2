@@ -4,7 +4,7 @@
       <div class="waypoint-header">
         <h4>All Waypoints</h4>
       </div>
-      <button class="btn btn-primary" @click="openModal()">Add Waypoint From Map</button>
+      <button class="btn btn-primary" @click="openModal()">Drop Waypoint</button>
       <div class="waypoints">
         <div class="shadow p-3 my-2" v-for="(waypoint, index) in waypoints" :key="waypoint">
           <h5>{{ waypoint.name }}</h5>

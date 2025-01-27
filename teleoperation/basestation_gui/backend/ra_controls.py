@@ -2,29 +2,23 @@ from enum import Enum
 from math import pi
 from typing import Union
 
-import numpy as np
-import rclpy
 from rclpy.node import Node
-from rclpy.time import Time
+from rclpy.publisher import Publisher
 
 from lie import SE3
-# import rospy
 from backend.input import filter_input, simulated_axis, safe_index, DeviceInputs
 from backend.mappings import ControllerAxis, ControllerButton
-from mrover.msg import Throttle, Position
+from mrover.msg import Throttle, IK
 from sensor_msgs.msg import JointState
-from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import Vector3, Pose, Point, Quaternion
 
-from tf2_ros import Buffer
-buffer = Buffer()
+from tf2_ros.buffer import Buffer
+
+import logging
+logger = logging.getLogger('django')
+
 
 TAU = 2 * pi
-
-# rospy.init_node("teleoperation", disable_signals=True)
-
-# throttle_publisher = rospy.Publisher("arm_throttle_cmd", Throttle, queue_size=1) FOR MANUAL
-# position_publisher = rospy.Publisher("arm_position_cmd", Position, queue_size=1) for IK
-
 
 class Joint(Enum):
     A = 0
@@ -123,9 +117,9 @@ def subset(names: list[str], values: list[float], joints: set[Joint]) -> tuple[l
     return [names[i.value] for i in joints], [values[i.value] for i in joints]
 
 
-def send_ra_controls(ra_mode: str, inputs: DeviceInputs, node: Node) -> Union[Throttle, PoseStamped, None]: #unsure if function shoudl return None, how publish to topic?
+def send_ra_controls(ra_mode: str, inputs: DeviceInputs, node: Node, thr_pub: Publisher, ee_pos_pub: Publisher, ee_vel_pub: Publisher, buffer: Buffer) -> None: 
     match ra_mode:
-        case "manual" | "ik": #added filter for IK mode, hybrid removed
+        case "throttle" | "ik-pos" | "ik-vel": #added filter for IK modes, hybrid removed
             back_pressed = safe_index(inputs.buttons, ControllerButton.BACK) > 0.5
             forward_pressed = safe_index(inputs.buttons, ControllerButton.FORWARD) > 0.5
             home_pressed = safe_index(inputs.buttons, ControllerButton.HOME) > 0.5
@@ -143,19 +137,35 @@ def send_ra_controls(ra_mode: str, inputs: DeviceInputs, node: Node) -> Union[Th
                 manual_controls = compute_manual_joint_controls(inputs)
 
                 match ra_mode:
-                    case "manual":
+                    case "throttle":
                         throttle_msg = Throttle()
                         joint_names, throttle_values = subset(JOINT_NAMES, manual_controls, set(Joint))
                         throttle_msg.names = joint_names
                         throttle_msg.throttles = throttle_values
-                        return throttle_msg #how to import publisher and publish?
+                        thr_pub.publish(throttle_msg)
                         
-                    case "ik":
-                        ik_msg = PoseStamped()
-                        ik_msg.header.stamp = node.get_clock().now().to_msg()
-                        ik_msg.header.frame_id = "base_link"
-                        ik_msg.pose = SE3.from_tf_tree(buffer, "base_link", "map")
-                        return ik_msg #how to import publisher and publish?
+                    case "ik-pos":
+                        ik_pos_msg = IK()
+                        ik_pos_msg.target.header.stamp = node.get_clock().now().to_msg()
+                        ik_pos_msg.target.header.frame_id = "base_link"
+                        # gets se3 from TF tree
+                        se3 = SE3.from_tf_tree(buffer, "base_link", "map")
+                        tx, ty, tz = se3.translation()
+                        qx, qy, qz, qw = se3.quat()
+                        tx += (-1.0) * safe_index(inputs.axes, ControllerAxis.LEFT_Y)
+                        ty += (-1.0) * safe_index(inputs.axes, ControllerAxis.LEFT_X)
+                        tz += (-1.0) * safe_index(inputs.axes, ControllerAxis.RIGHT_Y)
+
+                        # constructs pose
+                        ik_pos_msg.target.pose = Pose(position=Point(x=tx, y=ty, z=tz), orientation=Quaternion(x=qx, y=qy, z=qz, w=qw))
+                        ee_pos_pub.publish(ik_pos_msg)
+                    case "ik-vel":
+                        ik_vel_msg = Vector3() 
+                        #range -1 to 1 for each axis
+                        ik_vel_msg.x = (-1.0) * safe_index(inputs.axes, ControllerAxis.LEFT_Y)
+                        ik_vel_msg.y = (-1.0) * safe_index(inputs.axes, ControllerAxis.LEFT_X)
+                        ik_vel_msg.z = (-1.0) * safe_index(inputs.axes, ControllerAxis.RIGHT_Y)
+                        ee_vel_pub.publish(ik_vel_msg)
 
             else:
                 if joint_positions:

@@ -1,18 +1,26 @@
 <template>
   <div class='wrapper'>
     <div class='shadow p-3 mb-5 header'>
-      <a class='logo' href="/"><img src='/mrover.png' alt='MRover' title='MRover' width='200' /></a>
       <h1>Auton Dashboard</h1>
+      <a href='/'>
+        <img class='logo' src='/mrover.png' alt='MRover' title='MRover' width='200' style="cursor: pointer;" />
+      </a>
     </div>
     <div :class="['shadow p-3 rounded data', ledColor]">
       <h2>Nav State: {{ navState }}</h2>
       <OdometryReading :odom='odom' />
     </div>
-    <div class='shadow p-3 rounded feed'>
-      <CameraFeed :mission="'ZED'" :id='0' :name="'ZED'"></CameraFeed>
+    <div class='shadow p-3 rounded feed'> <!-- meant to be cost mapb -->
+      <button @click="toggleFeed" class="btn btn-primary mb-2">
+        {{ cameraFeedEnabled ? 'Disable' : 'Enable' }} Camera Feed
+      </button>
+      <div v-if="cameraFeedEnabled" class='camera-container'>
+        <CameraFeed :mission="'ZED'" :id='0' :name="'ZED'"/>
+        <p v-if="cameraFeedEnabled">Camera Feed On</p>
+      </div>
     </div>
     <div class='shadow p-3 rounded map'>
-      <AutonRoverMap :odom='odom' />
+      <AutonRoverMap :odom='odom' />  
     </div>
     <div class='shadow p-3 rounded waypoints'>
       <AutonWaypointEditor :odom='odom' @toggleTeleop='teleopEnabledCheck = $event' />
@@ -33,8 +41,7 @@
       </div>
     </div>
     <div class='shadow p-3 rounded moteus'>
-      <ControllerDataTable msg-type='drive_left_state' header='Left Drive States' />
-      <ControllerDataTable msg-type='drive_right_state' header='Right Drive States' />
+      <ControllerDataTable msg-type='drive_state' header='Drive States' />
     </div>
   </div>
 </template>
@@ -71,7 +78,8 @@ export default defineComponent({
         latitude_deg: 38.4071654,
         longitude_deg: -110.7923927,
         bearing_deg: 0,
-        altitude: 0
+        altitude: 0, 
+        status: false
       },
 
       teleopEnabledCheck: false,
@@ -89,14 +97,8 @@ export default defineComponent({
         limit_hit: [] as boolean[] /* Each motor stores an array of 4 indicating which limit switches are hit */
       },
 
-      motorData: {
-        name: [] as string[],
-        position: [] as number[],
-        velocity: [] as number[],
-        effort: [] as number[],
-        state: [] as string[],
-        error: [] as string[]
-      }
+      cameraFeedEnabled: true
+      
     }
   },
 
@@ -111,14 +113,7 @@ export default defineComponent({
 
   watch: {
     message(msg) {
-      if (msg.type == 'drive_status') {
-        this.motorData.name = msg.name
-        this.motorData.position = msg.position
-        this.motorData.velocity = msg.velocity
-        this.motorData.effort = msg.effort
-        this.motorData.state = msg.state
-        this.motorData.error = msg.error
-      } else if (msg.type == 'drive_moteus') {
+      if (msg.type == 'drive_state') {
         this.moteusState.name = msg.name
         this.moteusState.state = msg.state
         this.moteusState.error = msg.error
@@ -133,6 +128,7 @@ export default defineComponent({
         this.odom.latitude_deg = msg.latitude
         this.odom.longitude_deg = msg.longitude
         this.odom.altitude = msg.altitude
+        this.odom.status = msg.status
       } else if (msg.type == 'orientation') {
         this.odom.bearing_deg = quaternionToMapAngle(msg.orientation)
       }
@@ -140,7 +136,10 @@ export default defineComponent({
   },
 
   methods: {
-    ...mapActions('websocket', ['sendMessage'])
+    ...mapActions('websocket', ['sendMessage']),
+    toggleFeed(){
+      this.cameraFeedEnabled = !this.cameraFeedEnabled
+    }
   },
 
   beforeUnmount: function() {
@@ -193,8 +192,9 @@ export default defineComponent({
 
 .logo {
   position: absolute;
-  left: 50%;
+  left: 44.45%;
   transform: translateX(-50%);
+  transform: translateY(-50%);
 }
 
 h2 {
@@ -271,4 +271,16 @@ h2 {
 .feed {
   grid-area: feed;
 }
+
+.btn{
+  display: block;
+  margin: 10px auto;
+}
+
+.camera-container{
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
 </style>

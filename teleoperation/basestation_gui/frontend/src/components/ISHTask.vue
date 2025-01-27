@@ -10,45 +10,66 @@
     <div class="shadow p-3 rounded siteSelect">
       <SelectSite @site="onSiteChange" />
     </div>
-    <!-- <div class="shadow p-3 rounded cameras">
-      <Cameras :mission="'ish'" />
-    </div> -->
-    <div class='shadow p-3 rounded soilData'>
-      <SoilData />
-    </div> 
     <div class="shadow p-3 rounded benedicts">
-      <AminoBenedict :site="site" :isAmino="false" />
+      <NinhydrinBenedict :site="site" :isNinhydrin="false" />
     </div>
-    <div class="shadow p-3 rounded cache">
-      <Cache />
+    <div class="shadow p-3 rounded ninhydrin">
+      <NinhydrinBenedict :site="site" :isNinhydrin="true" />
     </div>
-    <div class="shadow p-3 rounded chlorophyll">
-      <Chlorophyll />
-    </div>
-    <div class="shadow p-3 rounded amino">
-      <AminoBenedict :site="site" :isAmino="true" />
+
+    <!-- TODO: create a sensor vue file (for the table) -->
+    <div class="shadow p-3 rounded sensors">
+      <div class="sensors-container">
+        <table class="sensors-table table-bordered">
+          <thead>
+            <tr class="table-primary">
+              <!-- empty for alignment -->
+              <th></th>
+              <th>Sensor 1</th>
+              <th>Sensor 2</th>
+              <th>Sensor 3</th>
+              <th>Sensor 4</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th scope="row">Site 1</th>
+              <td>voltage</td>
+              <td>voltage</td>
+              <td>voltage</td>
+              <td>voltage</td>
+            </tr>
+            <tr>
+              <th scope="row">Site 2</th>
+              <td>voltage</td>
+              <td>voltage</td>
+              <td>voltage</td>
+              <td>voltage</td>
+            </tr>
+  
+          </tbody>
+          
+        </table>
+  
+        <div class="buttons">
+          <p class="example-button"><strong>Generate report</strong></p>
+          <p class="example-button"><strong>Generate report</strong></p>
+        </div>
+      </div>
     </div>
   </div>
 </template>
 
 <script lang="ts">
 import SelectSite from './SelectSite.vue'
-import SoilData from './SoilData.vue'
-import Cache from './CacheControls.vue'
-import Chlorophyll from './Chlorophyll.vue'
-import AminoBenedict from './AminoBenedict.vue'
-import Cameras from './Cameras.vue'
+import NinhydrinBenedict from './NinhydrinBenedict.vue'
 import NetworkMonitor from "./NetworkMonitor.vue";
 //   import MCUReset from "./MCUReset.vue"
 
 export default {
   components: {
     SelectSite,
-    SoilData,
-    Cache,
-    Chlorophyll,
-    AminoBenedict,
-    Cameras,
+    NinhydrinBenedict,
     NetworkMonitor,
     //   MCUReset,
   },
@@ -75,10 +96,9 @@ export default {
   grid-template-columns: repeat(2, auto);
   grid-template-areas:
     'header header'
-    'cache siteSelect'
-    'soilData benedicts'
-    'chlorophyll amino'
-    /*'cameras cameras'*/;
+    'siteSelect siteSelect'
+    'ninhydrin benedicts'
+    'sensors sensors';
   font-family: sans-serif;
   height: auto;
 }
@@ -146,10 +166,6 @@ export default {
   float: right;
 }
 
-.cameras {
-  grid-area: cameras;
-}
-
 .benedicts {
   grid-area: benedicts;
 }
@@ -162,11 +178,32 @@ export default {
   grid-area: chlorophyll;
 }
 
-.cache {
-  grid-area: cache;
+.ninhydrin {
+  grid-area: ninhydrin;
 }
 
-.amino {
-  grid-area: amino;
+.sensors {
+  grid-area: sensors;
+}
+
+.sensors-container {
+  display: flex; /* Aligns the table and buttons in a row */
+  align-items: start; /* Aligns the buttons to the top of the table */
+  gap: 20px; /* Adds space between the table and buttons */
+}
+
+.sensors-table {
+  width: 80%; /* Adjust table width as needed */
+}
+
+.buttons {
+  margin-top: 20px;
+}
+
+.example-button {
+  color: white;
+  ;
+  background-color: darkcyan;
+  
 }
 </style>

@@ -14,7 +14,8 @@ class AutonWaypoint(models.Model):
 
 
 class BasicWaypoint(models.Model):
-    id = models.IntegerField(unique=True, primary_key=True)
+    # change before for id: models.IntegerField(unique=True, primary_key=True)
+    id = models.AutoField(unique=True, primary_key=True)
     drone = models.BooleanField()
     created_at = models.DateTimeField(auto_now_add=True)
     latitude = models.FloatField()

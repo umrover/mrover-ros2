@@ -2,6 +2,7 @@
   <div class='wrapper'>
     <div class='shadow p-3 mb-5 header'>
       <h1>SA Dashboard</h1>
+      <a class='logo' href="/"><img src='/mrover.png' alt='MRover' title='MRover' width='200' /></a>
       <div class="network">
       <NetworkMonitor />
       </div>
@@ -148,10 +149,12 @@ export default {
   grid-gap: 10px;
   grid-template-columns: 33% 33% 33%;
   grid-template-areas:
-    'header header header'
-    'map waypoints waypoints'
-    'map odom odom'
-    'joints moteus soilData';
+    'header header'
+    'arm hexHub'
+    'soilData soilData'
+    'map waypoints'
+    'map odom'
+    'moteus joints';
   font-family: sans-serif;
   height: auto;
 }

@@ -178,7 +178,7 @@ export default {
     getClickedLatLon: function (e: { latlng: { lat: any; lng: any } }) {
       this.setClickPoint({
         lat: e.latlng.lat,
-        lon: e.latlng.lng
+        lon: e.latlng.lng,
       })
     },
 
