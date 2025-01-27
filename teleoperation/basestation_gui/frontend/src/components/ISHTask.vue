@@ -10,6 +10,9 @@
     <div class="shadow p-3 rounded siteSelect">
       <SelectSite @site="onSiteChange" />
     </div>
+    <div class="shadow p-3 rounded autoToggle">
+      <AutoShutdown @site="onSiteChange" />
+    </div>
     <div class="shadow p-3 rounded benedicts">
       <NinhydrinBenedict :site="site" :isNinhydrin="false" />
     </div>
@@ -17,11 +20,19 @@
       <NinhydrinBenedict :site="site" :isNinhydrin="true" />
     </div>
     <div class="shadow p-3 rounded container-fluid camera">
-      <div class="row gx-3 gy-3 justify-content-center">
-        <ToggleButton :current-state="true" label-enable-text="Camera A On"
-      label-disable-text="Camera A off" @change="cameraA = $event" />
-      <ToggleButton :current-state="true" label-enable-text="Camera B On"
-      label-disable-text="Camera B off" @change="cameraB = $event" />
+      <div class="row gx-3 gy-3 justify-content-center d-flex align-items-center">
+        <ToggleButton 
+          :current-state="true" 
+          label-enable-text="Camera A On" 
+          label-disable-text="Camera A Off" 
+          @change="cameraA = $event" 
+        />
+        <ToggleButton 
+          :current-state="true" 
+          label-enable-text="Camera B On" 
+          label-disable-text="Camera B Off" 
+          @change="cameraB = $event" 
+        />
       </div>
       <div class="row gx-3 gy-3 justify-content-center">
         <div v-if="cameraA" class="col-12">
@@ -29,14 +40,14 @@
             :mission="'ish'"
             :id="10"
             :name="'Sample A'"
-          ></CameraFeed>
+          />
         </div>
         <div v-if="cameraB" class="col-12">
           <CameraFeed
             :mission="'ish'"
             :id="11"
             :name="'Sample B'"
-          ></CameraFeed>
+          />
         </div>
       </div>
     </div>
@@ -92,6 +103,7 @@ import NinhydrinBenedict from './NinhydrinBenedict.vue'
 import NetworkMonitor from "./NetworkMonitor.vue";
 import CameraFeed from './CameraFeed.vue';
 import ToggleButton from './ToggleButton.vue';
+import AutoShutdown from './AutoShutdown.vue';
 
 export default {
   components: {
@@ -100,7 +112,8 @@ export default {
     NinhydrinBenedict,
     NetworkMonitor,
     CameraFeed,
-    ToggleButton
+    ToggleButton,
+    AutoShutdown
   },
 
   data() {
@@ -126,7 +139,7 @@ export default {
   grid-template-columns: repeat(3, auto);
   grid-template-areas:
     'header header header'
-    'siteSelect siteSelect camera'
+    'siteSelect autoToggle camera'
     'ninhydrin benedicts camera'
     'sensors sensors camera';
   font-family: sans-serif;
@@ -198,6 +211,10 @@ export default {
   grid-area: siteSelect;
 }
 
+.autoToggle{
+  grid-area: autoToggle;
+}
+
 .chlorophyll {
   grid-area: chlorophyll;
 }
@@ -215,13 +232,13 @@ export default {
 }
 
 .sensors-container {
-  display: flex; /* Aligns the table and buttons in a row */
-  align-items: start; /* Aligns the buttons to the top of the table */
-  gap: 20px; /* Adds space between the table and buttons */
+  display: flex;
+  align-items: start;
+  gap: 20px;
 }
 
 .sensors-table {
-  width: 80%; /* Adjust table width as needed */
+  width: 80%;
 }
 
 .buttons {
@@ -232,6 +249,10 @@ export default {
   color: white;
   ;
   background-color: darkcyan;
-  
+}
+
+.camera{
+  width: 40vw;
+  margin: 0 0 0;
 }
 </style>

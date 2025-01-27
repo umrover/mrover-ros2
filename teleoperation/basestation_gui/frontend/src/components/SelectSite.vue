@@ -17,38 +17,15 @@
                 Site B
             </label>
         </div>
-        <div>
-            <h2>Auto Shutdown Toggle</h2>
-            <div class="box1 shutdown">
-            <ToggleButton
-                id="autoshutdown"
-                :current-state="autoShutdownEnabled"
-                :label-enable-text="'Auto Shutdown'"
-                :label-disable-text="'Auto Shutdown'"
-                @change="sendAutoShutdownCmd()"
-            />
-            </div>
-            <div class="comms shutdownStatus">
-            <LEDIndicator
-                :connected="autoShutdownEnabled"
-                :name="'Auto Shutdown Status'"
-                :show_name="true"
-            />
-            </div>
-        </div>
     </div>
 </template>
 
 
 <script lang="ts">
 import { mapState, mapActions } from 'vuex';
-import ToggleButton from "./ToggleButton.vue";
-import LEDIndicator from "./LEDIndicator.vue";
 
 export default {
   components: {
-    ToggleButton,
-    LEDIndicator
   },
     data() {
         return {
@@ -72,16 +49,9 @@ export default {
     },
 
     computed: {
-    ...mapState('websocket', ['message'])
     },
 
     methods:{
-        ...mapActions('websocket', ['sendMessage']),
-
-        sendAutoShutdownCmd: function () {
-        this.autoShutdownEnabled = !this.autoShutdownEnabled;
-        this.sendMessage({ type: "auto_shutoff", shutoff: this.autoShutdownEnabled });
-        },
     }
 };
 </script>
