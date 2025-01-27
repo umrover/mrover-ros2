@@ -152,3 +152,4 @@ class ApproachTargetState(State):
         )
         for i, coord in enumerate(self.traj.coordinates[start_pt:end_pt]):
             self.marker_pub.publish(gen_marker(context=context, point=coord, color=[1.0, 0.0, 1.0], id=i, lifetime=100))
+        self.marker_pub.publish(gen_marker(context=context, point = self.get_target_position(context), color = [1.0, 1.0, 0.0], id = 15, lifetime=100, size=0.5))
