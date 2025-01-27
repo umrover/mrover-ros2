@@ -33,10 +33,11 @@ classdef InvariantEKF < handle
                         0 0 1];
 
             % obj.X = eye(5);
-            tens = [10; 10; 10];
-            obj.X = [eye(3), zeros(3,1), tens;
-                     zeros(1,3) 1 0;
-                     zeros(1,3) 0 1];
+            tens = [-10; 10; 10];
+            % obj.X = [rot_init, zeros(3,1), tens;
+                     % zeros(1,3) 1 0;
+                     % zeros(1,3) 0 1];
+            obj.X = eye(5);
 
 
             
@@ -68,7 +69,16 @@ classdef InvariantEKF < handle
             Q = [q, zeros(3,3), zeros(3,3);
                  zeros(3,3), zeros(3,3), zeros(3,3);
                  zeros(3,3), zeros(3,3), zeros(3,3)];
-            Q_d = expm(obj.A * dt) * Q * dt * (expm(obj.A * dt));
+            Q_d = expm(obj.A * dt) * Q * dt * (expm(obj.A * dt)');
+
+            disp("gyro Q_d:");
+            disp(Q_d);
+            disp("exp(A):");
+            disp(expm(obj.A * dt));
+            disp("expm(obj.A * dt) * P * expm(obj.A * dt)':");
+            disp(expm(obj.A * dt) * obj.P * (expm(obj.A * dt)'));
+            disp("Ad_X * Q_d * Ad_X':");
+            disp(Ad_X * Q_d * Ad_X');
 
 
             % propogate
@@ -84,17 +94,20 @@ classdef InvariantEKF < handle
             g = [0; 0; 9.81];
             Ad_X = obj.adjoint_X();
 
-            
+            % what Q should actually be, but will only work if rotation
+            % drift is fixed
+            % Q = [zeros(3,3), zeros(3,3), zeros(3,3);
+            %      zeros(3,3), obj.X(1:3,1:3) * abs(q), zeros(3,3);
+            %      zeros(3,3), zeros(3,3), obj.X(1:3,1:3) * abs(q) * dt];
 
             Q = [zeros(3,3), zeros(3,3), zeros(3,3);
-                 zeros(3,3), obj.X(1:3,1:3) * q * dt, zeros(3,3);
-                 zeros(3,3), zeros(3,3), obj.X(1:3,1:3) * 0.5 * q * dt.^2];
+                 zeros(3,3), abs(q), zeros(3,3);
+                 zeros(3,3), zeros(3,3), abs(q) * dt];
             Q_d = expm(obj.A * dt) * Q * dt * (expm(obj.A * dt)'); % TODO: check during testing
 
-            disp("Q:");
-            disp(Q);
-            disp("Q_d");
+            disp("accel Q_d:");
             disp(Q_d);
+            
             
             % propogate
             temp = obj.X;
@@ -110,6 +123,10 @@ classdef InvariantEKF < handle
             obj.X = temp;
             disp("expm(obj.A * dt) * P * expm(obj.A * dt)':");
             disp(expm(obj.A * dt) * obj.P * (expm(obj.A * dt)'));
+            disp("expm(A)");
+            disp(expm(obj.A * dt));
+            % disp("I + obj.A approx:");
+            % disp(1000 * dt * (eye(9) + obj.A) * obj.P * 1000 * dt * (eye(9) + obj.A)');
             disp("Ad_X * Q_d * Ad_X':");
             disp(Ad_X * Q_d * Ad_X');
            
