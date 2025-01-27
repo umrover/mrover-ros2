@@ -186,10 +186,11 @@ class CostmapSearchState(State):
 
         if not self.is_recovering:
             self.traj = SearchTrajectory.spiral_traj(
-                context.course.current_waypoint_pose_in_map().translation()[0:2],
-                context.node.get_parameter("search.coverage_radius").value,
-                context.node.get_parameter("search.distance_between_spirals").value,
-                context.node.get_parameter("search.segments_per_rotation").value,
-                search_center.tag_id,
-                True,
+                center=context.course.current_waypoint_pose_in_map().translation()[0:2],
+                coverage_radius=context.node.get_parameter("search.coverage_radius").value,
+                distance_between_spirals=context.node.get_parameter("search.distance_between_spirals").value,
+                segments_per_rotation=context.node.get_parameter("search.segments_per_rotation").value,
+                max_segment_length=context.node.get_parameter("search.max_segment_length").value,
+                tag_id=search_center.tag_id,
+                insert_extra=True,
             )
