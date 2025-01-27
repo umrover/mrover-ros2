@@ -159,16 +159,14 @@ message(STATUS "Found service files: ${MROVER_SERVICE_FILE_PATHS}")
 # Starter Project
 message(STATUS "PROJ NAME: ${PROJECT_NAME}")
 
-set(MROVER_CMAKE_INCLUDES
+set(MROVER_CMAKE_INCLUDE
         starter_project/autonomy/AutonomyStarterProject.cmake
 )
 
 foreach (MROVER_CMAKE_INCLUDE ${MROVER_CMAKE_INCLUDES})
     include(${MROVER_CMAKE_INCLUDE})
 endforeach ()
-
-message(STATUS "Found message files: ${MROVER_MESSAGE_FILE_PATHS}")
-
+ 
 rosidl_generate_interfaces(${PROJECT_NAME}
         ${MROVER_MESSAGE_FILE_PATHS}
         ${MROVER_SERVICE_FILE_PATHS}
@@ -177,9 +175,9 @@ rosidl_generate_interfaces(${PROJECT_NAME}
 
 # Starter project 
 # TODO (ali): delete once AutonomyStarterProject.cmake is fixed
-mrover_add_node(starter_project_perception ${CMAKE_CURRENT_LIST_DIR}/starter_project/autonomy/src/*.cpp)
-target_link_libraries(starter_project_perception ${OpenCV_LIBS})
-ament_target_dependencies(starter_project_perception rclcpp std_msgs sensor_msgs)
+# mrover_add_node(starter_project_perception ${CMAKE_CURRENT_LIST_DIR}/starter_project/autonomy/src/*.cpp)
+# target_link_libraries(starter_project_perception ${OpenCV_LIBS})
+# ament_target_dependencies(starter_project_perception rclcpp std_msgs sensor_msgs)
 
 
 # Install our executable so that ROS knows about it
@@ -258,7 +256,7 @@ if(ZED_FOUND AND CUDA_FOUND)
 	mrover_add_library(tensorrt tensorrt/*.c* tensorrt)
 	target_compile_options(tensorrt PRIVATE -Wno-deprecated-declarations $<$<COMPILE_LANGUAGE:CUDA>:-std=c++17>)
 	target_include_directories(tensorrt PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
-	target_link_libraries(tensorrt PRIVATE opencv_core opencv_dnn opencv_imgproc lie nvinfer nvonnxparser tbb cuda_compiler_flags)
+	target_link_libraries(tensorrt opencv_core opencv_dnn opencv_imgproc lie nvinfer nvonnxparser tbb cuda_compiler_flags)
 
 	# Object Detector
 	mrover_add_node(object_detector perception/object_detector/*.c* src/perception/object_detector/pch.hpp)
@@ -273,6 +271,25 @@ ament_target_dependencies(tag_detector rclcpp tf2 tf2_ros)
 target_link_libraries(tag_detector lie opencv_core opencv_aruco opencv_imgproc loop_profiler)
 
 # Embedded
+
+mrover_add_header_only_library(can_device esw/can_device)
+target_link_libraries(can_device INTERFACE ${rclcpp_LIBRARIES})
+
+mrover_add_library(motor_library esw/motor_library/*.cpp esw/motor_library)
+ament_target_dependencies(motor_library rclcpp std_srvs)
+target_link_libraries(motor_library can_device moteus units)
+
+macro(mrover_add_esw_bridge_node name sources)
+    mrover_add_node(${name} ${sources})
+    target_link_libraries(${name} can_device motor_library units)
+endmacro()
+
+
+# TODO (ali): move all bridges to esw_bridge macro
+mrover_add_esw_bridge_node(drive_hw_bridge esw/drive_hw_bridge.cpp)
+
+mrover_add_node(arm_hw_bridge esw/arm_hw_bridge.cpp)
+target_link_libraries(arm_hw_bridge motor_library)
 
 mrover_add_node(differential_drive_controller esw/differential_drive_controller.cpp)
 target_link_libraries(differential_drive_controller units)
