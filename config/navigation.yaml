@@ -34,6 +34,17 @@ navigation:
       stop_threshold: 0.5
       drive_forward_threshold: 0.34
 
+    water_bottle_search:
+      use_costmap: true
+      stop_threshold: 0.5
+      drive_forward_threshold: 0.34
+      coverage_radius: 10.0
+      segments_per_rotation: 8
+      distance_between_spirals: 3.0
+      traversable_cost: 0.2
+      update_delay: 2.0
+      safe_approach_distance: 1.5
+
     search:
       stop_threshold: 0.5
       drive_forward_threshold: 0.34

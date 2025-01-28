@@ -278,6 +278,10 @@ mrover_add_node(tag_detector perception/tag_detector/*.cpp perception/tag_detect
 ament_target_dependencies(tag_detector rclcpp tf2 tf2_ros)
 target_link_libraries(tag_detector lie opencv_core opencv_aruco opencv_imgproc loop_profiler parameter_utils)
 
+mrover_add_node(cost_map perception/cost_map/*.cpp perception/cost_map/pch.hpp)
+ament_target_dependencies(cost_map rclcpp tf2 tf2_ros)
+target_link_libraries(cost_map lie parameter_utils)
+
 # Embedded
 
 mrover_add_header_only_library(messaging esw/messaging)
