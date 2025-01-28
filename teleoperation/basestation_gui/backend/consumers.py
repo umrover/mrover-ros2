@@ -15,7 +15,7 @@ from backend.models import BasicWaypoint, AutonWaypoint
 from geometry_msgs.msg import Twist, Vector3
 from sensor_msgs.msg import NavSatFix
 from lie import SE3
-from mrover.msg import Throttle, IK, ControllerState, HeaterData
+from mrover.msg import Throttle, IK, ControllerState, HeaterData, ScienceThermistors
 from backend.ra_controls import send_ra_controls
 from backend.mast_controls import send_mast_controls
 from std_srvs.srv import SetBool
@@ -42,18 +42,21 @@ class GUIConsumer(JsonWebsocketConsumer):
     
     def connect(self) -> None:
         self.accept()
-        self.thr_pub = node.create_publisher(Throttle, "arm_throttle_cmd",1)
-        self.ee_pos_pub = node.create_publisher(IK, "ee_pos_cmd",1)
-        self.ee_vel_pub = node.create_publisher(Vector3, "ee_vel_cmd",1)
+        self.thr_pub = node.create_publisher(Throttle, "/arm_throttle_cmd",1)
+        self.ee_pos_pub = node.create_publisher(IK, "/ee_pos_cmd",1)
+        self.ee_vel_pub = node.create_publisher(Vector3, "/ee_vel_cmd",1)
         self.joystick_twist_pub = node.create_publisher(Twist, "/joystick_cmd_vel", 1)
         self.controller_twist_pub = node.create_publisher(Twist, "/controller_cmd_vel", 1)
         self.mast_gimbal_pub = node.create_publisher(Throttle, "/mast_gimbal_throttle_cmd", 1)
-        self.heater_services = []
-        for name in heater_names:
-            self.heater_services.append(node.create_client(SetBool, "science_enable_heater_" + name))
-        self.auto_shutoff_service = node.create_client(SetBool, "science_change_heater_auto_shutoff_state")
 
         self.forward_ros_topic("/drive_controller_data", ControllerState, "drive_state")
+        self.forward_ros_topic("/science_thermistors", ScienceThermistors, "thermistors")
+        self.forward_ros_topic("/science_heater_state", HeaterData, "heater_states")
+
+        self.heater_services = []
+        for name in heater_names:
+            self.heater_services.append(node.create_client(SetBool, "/science_enable_heater_" + name))
+        self.auto_shutoff_service = node.create_client(SetBool, "/science_change_heater_auto_shutoff_state")
 
         self.buffer = Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.buffer, node)

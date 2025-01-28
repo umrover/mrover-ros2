@@ -11,7 +11,7 @@
       <SelectSite @site="onSiteChange" />
     </div>
     <div class="shadow p-3 rounded autoToggle">
-      <AutoShutdown @site="onSiteChange" />
+      <AutoShutdown />
     </div>
     <div class="shadow p-3 rounded benedicts">
       <NinhydrinBenedict :site="site" :isNinhydrin="false" />
@@ -86,7 +86,7 @@
           </tbody>  
         </table>
   
-          <button class="btn btn-secondary">Generate Report</button>
+        <button class="btn btn-secondary">Generate Report</button>
       </div>
     </div>
   </div>
@@ -94,7 +94,6 @@
 
 <script lang="ts">
 import SelectSite from './SelectSite.vue'
-import Chlorophyll from './Chlorophyll.vue'
 import NinhydrinBenedict from './NinhydrinBenedict.vue'
 import NetworkMonitor from "./NetworkMonitor.vue";
 import CameraFeed from './CameraFeed.vue';
@@ -104,7 +103,6 @@ import AutoShutdown from './AutoShutdown.vue';
 export default {
   components: {
     SelectSite,
-    Chlorophyll,
     NinhydrinBenedict,
     NetworkMonitor,
     CameraFeed,
@@ -117,6 +115,7 @@ export default {
       site: 0 as number,
       cameraA: true,
       cameraB: true,
+      sensor_data: null
     }
   },
 
@@ -132,7 +131,7 @@ export default {
 .wrapper {
   display: grid;
   grid-gap: 10px;
-  grid-template-columns: repeat(3, auto);
+  grid-template-columns: repeat(2, auto) 40%;
   grid-template-areas:
     'header header header'
     'siteSelect autoToggle camera'

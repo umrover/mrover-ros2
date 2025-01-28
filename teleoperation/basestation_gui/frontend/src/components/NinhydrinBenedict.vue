@@ -64,22 +64,13 @@ export default {
           state: false,
           color: "grey"
         },
-        {
-          enabled: false,
-          temp: 0,
-          state: false,
-          color: "grey"
-        }
       ],
-
-      autoShutdownEnabled: true,
     };
   },
 
   watch: {
     message(msg) {
-      if (msg.type == 'thermistor') {
-        if(this.site == 0) return;
+      if (msg.type == 'thermistors') {
         if (this.isNinhydrin) {
           this.heaters[this.site].temp = msg.temps[this.site*2+1].temperature;
         }
@@ -88,7 +79,6 @@ export default {
         }
       }
       else if(msg.type == 'heater_states') {
-        if(this.site == 0) return;
         if (this.isNinhydrin) {
           this.heaters[this.site].state = msg.state[this.site*2+1];
         }
@@ -116,12 +106,11 @@ export default {
   methods: {
     ...mapActions('websocket', ['sendMessage']),
 
-    toggleHeater: function (id) {
+    toggleHeater: function (id: number) {
       this.heaters[id].enabled = !this.heaters[id].enabled;
-      this.sendHeaterRequest(id);
     },
 
-    sendHeaterRequest: function (id) {
+    sendHeaterRequest: function (id: number) {
       let heaterName = "b";
       if (this.isNinhydrin) {
         heaterName = "n";
@@ -129,10 +118,6 @@ export default {
       heaterName += id;
       this.sendMessage({ type: "heater_enable", enabled: this.heaters[id].enabled, heater: heaterName});
     },
-
-    capturePhoto() {
-      this.sendMessage({ type: "capture_photo" });
-    }
   }
 };
 </script>

@@ -23,21 +23,18 @@ import ToggleButton from "./ToggleButton.vue";
 import LEDIndicator from "./LEDIndicator.vue";
 
 export default {
-  components: {
+    components: {
     ToggleButton,
     LEDIndicator
-  },
+    },
+
     data() {
         return {
-            site: 0,
-            autoShutdownEnabled: true,
+            autoShutdownEnabled: false,
         };
     },
 
     watch: {
-        site(event) {
-            this.$emit("site", event);
-        },
         message(msg) {
             if (msg.type == 'auto_shutoff') {
                 if (!msg.success) {
@@ -58,8 +55,13 @@ export default {
         sendAutoShutdownCmd: function () {
         this.autoShutdownEnabled = !this.autoShutdownEnabled;
         this.sendMessage({ type: "auto_shutoff", shutoff: this.autoShutdownEnabled });
+        console.log("sending!")
         },
-    }
+    },
+
+    created() {
+        this.sendAutoShutdownCmd();
+    },
 };
 </script>
   
