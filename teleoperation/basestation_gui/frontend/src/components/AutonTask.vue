@@ -41,7 +41,8 @@
       </div>
     </div>
     <div class='shadow p-3 rounded moteus'>
-      <ControllerDataTable msg-type='drive_state' header='Drive States' />
+      <ControllerDataTable msg-type='drive_left_state' header='Drive Left States' />
+      <ControllerDataTable msg-type='drive_right_state' header='Drive Right States' />
     </div>
   </div>
 </template>
@@ -75,8 +76,8 @@ export default defineComponent({
     return {
       // Default coordinates are at MDRS
       odom: {
-        latitude_deg: 38.4071654,
-        longitude_deg: -110.7923927,
+        latitude_deg: 38.4225202,
+        longitude_deg: -110.7844653,
         bearing_deg: 0,
         altitude: 0, 
         status: false
@@ -89,13 +90,6 @@ export default defineComponent({
       stuck_status: false,
 
       navState: 'OffState',
-
-      moteusState: {
-        name: [] as string[],
-        error: [] as string[],
-        state: [] as string[],
-        limit_hit: [] as boolean[] /* Each motor stores an array of 4 indicating which limit switches are hit */
-      },
 
       cameraFeedEnabled: true
       
@@ -113,12 +107,7 @@ export default defineComponent({
 
   watch: {
     message(msg) {
-      if (msg.type == 'drive_state') {
-        this.moteusState.name = msg.name
-        this.moteusState.state = msg.state
-        this.moteusState.error = msg.error
-        this.moteusState.limit_hit = msg.limit_hit
-      } else if (msg.type == 'led') {
+      if (msg.type == 'led') {
         if (msg.red) this.ledColor = 'bg-danger' //red
         else if (msg.green) this.ledColor = 'blink' //blinking green
         else if (msg.blue) this.ledColor = 'bg-primary' //blue

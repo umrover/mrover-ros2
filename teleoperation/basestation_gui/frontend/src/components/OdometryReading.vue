@@ -54,8 +54,8 @@ export default {
 
   data() {
     return {
-      drone_latitude_deg:42.293195,
-      drone_longitude_deg:-83.7096706,
+      drone_latitude_deg: 38.4225202,
+      drone_longitude_deg: -110.7844653,
       drone_status: false
     }
   },

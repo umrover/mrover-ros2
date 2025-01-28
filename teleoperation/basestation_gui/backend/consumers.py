@@ -3,6 +3,7 @@ import traceback
 from typing import Any, Type
 
 from channels.generic.websocket import JsonWebsocketConsumer
+from rosidl_runtime_py.convert import message_to_ordereddict
 
 import rclpy
 
@@ -48,7 +49,8 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.mast_gimbal_pub = node.create_publisher(Throttle, "/mast_gimbal_throttle_cmd", 1)
         
 
-        self.forward_ros_topic("/drive_controller_data", ControllerState, "drive_state")
+        self.forward_ros_topic("/drive_left_controller_data", ControllerState, "drive_left_state")
+        self.forward_ros_topic("/drive_right_controller_data", ControllerState, "drive_right_state")
         self.forward_ros_topic("/led", LED, "led")
         self.forward_ros_topic("/nav_state", StateMachineStateUpdate, "nav_state")
         self.forward_ros_topic("/gps/fix", NavSatFix, "gps_fix")
@@ -75,31 +77,11 @@ class GUIConsumer(JsonWebsocketConsumer):
         @param topic_type:      ROS message type
         @param gui_msg_type:    String to identify the message type in the GUI
         """
-
-        def ros_message_to_dict(msg):
-            if hasattr(msg, '__slots__'):
-                msg_dict = {}
-                for slot in msg.__slots__:
-                    value = getattr(msg, slot)
-                    # Recursively converst ROS messages and remove leading underscores from the slot names
-                    key = slot.lstrip('_')
-                    msg_dict[key] = ros_message_to_dict(value)
-                return msg_dict
-            elif isinstance(msg, np.ndarray):
-                # Convert numpy arrays to lists
-                return msg.tolist()
-            elif isinstance(msg, (list, tuple)):
-                # Recursively handle lists or tuples
-                return [ros_message_to_dict(v) for v in msg]
-            elif isinstance(msg, dict):
-                # Recursively handle dictionaries
-                return {k: ros_message_to_dict(v) for k, v in msg.items()}
-            return msg
             
         def callback(ros_message: Any):
             # Formatting a ROS message as a string outputs YAML
             # Parse it back into a dictionary, so we can send it as JSON
-            self.send_message_as_json({"type": gui_msg_type, **ros_message_to_dict(ros_message)})
+            self.send_message_as_json({"type": gui_msg_type, **message_to_ordereddict(ros_message)})
         self.subscribers.append(node.create_subscription(topic_type, topic_name , callback, qos_profile=1))
 
     def send_message_as_json(self, msg: dict):

@@ -69,7 +69,7 @@
       data() {
           return {
               // Default Center at MDRS
-              center: L.latLng(38.406025, -110.7923723),
+              center: L.latLng(38.4225202, -110.7844653,),
               attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors',
               online: true,
               onlineUrl: onlineUrl,
@@ -88,8 +88,8 @@
               odomPath: [],
               dronePath: [],
               findRover: false,
-              drone_latitude_deg:38.406029,
-              drone_longitude_deg:-110.7923723,
+              drone_latitude_deg: 38.4225202,
+              drone_longitude_deg: -110.7844653,
               circle: null, //search radius
           }
       },
