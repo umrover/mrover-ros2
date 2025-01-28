@@ -19,7 +19,8 @@ namespace mrover {
             {"top_clip", mTopClip, 3.0},
             {"z_percent", mZPercent, 0.40},
             {"alpha", mAlpha, 0.05},
-            {"z_threshold", mZThreshold, 0.45} // TODO make less sensitive
+            {"z_threshold", mZThreshold, 0.45}, // TODO make less sensitive
+            {"debug", mDebug, false} // Change zThreshold and zPercent values
         };
 
         ParameterWrapper::declareParameters(this, params);

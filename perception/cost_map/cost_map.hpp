@@ -33,6 +33,7 @@ namespace mrover {
         int mHeight{};        // Number of cells on the grid vertically 
         int mDownSamplingFactor = 4;
         std::string mMapFrame;
+        bool mDebug{};
 		
         tf2_ros::Buffer mTfBuffer{get_clock()};
         tf2_ros::TransformListener mTfListener{mTfBuffer};
@@ -63,6 +64,8 @@ namespace mrover {
         auto processHeight(mrover::srv::MoveCostMap::Request::ConstSharedPtr& req, mrover::srv::MoveCostMap::Response::SharedPtr& res, std::vector<Bin> bins) -> void;
 
         void publishBinInfo(std::vector<Bin> const& bins);
+
+        void editThresholds();
 
         // Bin vector coordinate
         struct Coordinate{

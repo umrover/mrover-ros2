@@ -230,17 +230,21 @@ namespace mrover {
         RCLCPP_INFO_STREAM(get_logger(), "Moved cost map");
     }
 
-    // TODO: FINISH
-    void CostMapNode::publishBinInfo(std::vector<Bin> const& bins){
-        struct BinInfo{
-            std::size_t binNum;
-            int binSize;
-            double normal;
-        };
+    // // TODO: FINISH
+    // void CostMapNode::publishBinInfo(std::vector<Bin> const& bins){
+    //     struct BinInfo{
+    //         std::size_t binNum;
+    //         int binSize;
+    //         double normal;
+    //     };
 
-        std::vector<BinInfo> info;
-        for(std::size_t i = 0; i < bins.size(); i++){
-        }
+    //     std::vector<BinInfo> info;
+    //     for(std::size_t i = 0; i < bins.size(); i++){
+    //     }
+    // }
+
+    void CostMapNode::editThresholds(){
+        
     }
 
     auto CostMapNode::indexToCoordinate(const int index) -> CostMapNode::Coordinate {
