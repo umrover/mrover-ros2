@@ -36,8 +36,10 @@ void KeyDetector::execute(const std::shared_ptr<GoalHandleKeyAction> goal_handle
     rclcpp::Rate loop_rate(1);
     auto feedback = std::make_shared<KeyAction::Feedback>();
 
-
+    //RCLCPP_INFO(this->get_logger(), "Executing fsm");
     updateFSM();
+
+    RCLCPP_INFO(this->get_logger(), "Executed fsm");
 
     loop_rate.sleep();
   }
