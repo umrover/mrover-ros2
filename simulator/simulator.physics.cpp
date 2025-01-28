@@ -98,48 +98,48 @@ namespace mrover {
 
                 if (name == "rover") SE3Conversions::pushToTfTree(mTfBroadcaster, "base_link", "map", modelInMap, get_clock()->now());
 
-                if(name == "lander"){
-					using KeyMapping = std::pair<std::string, SE3d>;
-					constexpr static double KEY_SPACING = 0.023;
-					constexpr static double TOP_ROW_START = 0.898;
-					constexpr static double FIRST_ROW_START = -0.155;
-					constexpr static double SECOND_ROW_START = -0.146;
-					constexpr static double THIRD_ROW_START = -0.135;
+                if (name == "lander") {
+                    using KeyMapping = std::pair<std::string, SE3d>;
+                    constexpr static double KEY_SPACING = 0.023;
+                    constexpr static double TOP_ROW_START = 0.898;
+                    constexpr static double FIRST_ROW_START = -0.155;
+                    constexpr static double SECOND_ROW_START = -0.146;
+                    constexpr static double THIRD_ROW_START = -0.135;
 
                     static std::array<KeyMapping, 26> keyMappings{
-						KeyMapping{std::string{"q_key"}, SE3d{R3d{FIRST_ROW_START + 0 * KEY_SPACING, -0.5, TOP_ROW_START}, Eigen::Quaterniond{0, 0, 0, 1}.normalized()}},
-						KeyMapping{std::string{"w_key"}, SE3d{R3d{FIRST_ROW_START + 1 * KEY_SPACING, -0.5, TOP_ROW_START}, Eigen::Quaterniond{0, 0, 0, 1}.normalized()}},
-						KeyMapping{std::string{"e_key"}, SE3d{R3d{FIRST_ROW_START + 2 * KEY_SPACING, -0.5, TOP_ROW_START}, Eigen::Quaterniond{0, 0, 0, 1}.normalized()}},
-						KeyMapping{std::string{"r_key"}, SE3d{R3d{FIRST_ROW_START + 3 * KEY_SPACING, -0.5, TOP_ROW_START}, Eigen::Quaterniond{0, 0, 0, 1}.normalized()}},
-						KeyMapping{std::string{"t_key"}, SE3d{R3d{FIRST_ROW_START + 4 * KEY_SPACING, -0.5, TOP_ROW_START}, Eigen::Quaterniond{0, 0, 0, 1}.normalized()}},
-						KeyMapping{std::string{"y_key"}, SE3d{R3d{FIRST_ROW_START + 5 * KEY_SPACING, -0.5, TOP_ROW_START}, Eigen::Quaterniond{0, 0, 0, 1}.normalized()}},
-						KeyMapping{std::string{"u_key"}, SE3d{R3d{FIRST_ROW_START + 6 * KEY_SPACING, -0.5, TOP_ROW_START}, Eigen::Quaterniond{0, 0, 0, 1}.normalized()}},
-						KeyMapping{std::string{"i_key"}, SE3d{R3d{FIRST_ROW_START + 7 * KEY_SPACING, -0.5, TOP_ROW_START}, Eigen::Quaterniond{0, 0, 0, 1}.normalized()}},
-						KeyMapping{std::string{"o_key"}, SE3d{R3d{FIRST_ROW_START + 8 * KEY_SPACING, -0.5, TOP_ROW_START}, Eigen::Quaterniond{0, 0, 0, 1}.normalized()}},
-						KeyMapping{std::string{"p_key"}, SE3d{R3d{FIRST_ROW_START + 9 * KEY_SPACING, -0.5, TOP_ROW_START}, Eigen::Quaterniond{0, 0, 0, 1}.normalized()}},
+                            KeyMapping{std::string{"q_key"}, SE3d{R3d{FIRST_ROW_START + 0 * KEY_SPACING, -0.5, TOP_ROW_START}, Eigen::Quaterniond{0, 0, 0, 1}.normalized()}},
+                            KeyMapping{std::string{"w_key"}, SE3d{R3d{FIRST_ROW_START + 1 * KEY_SPACING, -0.5, TOP_ROW_START}, Eigen::Quaterniond{0, 0, 0, 1}.normalized()}},
+                            KeyMapping{std::string{"e_key"}, SE3d{R3d{FIRST_ROW_START + 2 * KEY_SPACING, -0.5, TOP_ROW_START}, Eigen::Quaterniond{0, 0, 0, 1}.normalized()}},
+                            KeyMapping{std::string{"r_key"}, SE3d{R3d{FIRST_ROW_START + 3 * KEY_SPACING, -0.5, TOP_ROW_START}, Eigen::Quaterniond{0, 0, 0, 1}.normalized()}},
+                            KeyMapping{std::string{"t_key"}, SE3d{R3d{FIRST_ROW_START + 4 * KEY_SPACING, -0.5, TOP_ROW_START}, Eigen::Quaterniond{0, 0, 0, 1}.normalized()}},
+                            KeyMapping{std::string{"y_key"}, SE3d{R3d{FIRST_ROW_START + 5 * KEY_SPACING, -0.5, TOP_ROW_START}, Eigen::Quaterniond{0, 0, 0, 1}.normalized()}},
+                            KeyMapping{std::string{"u_key"}, SE3d{R3d{FIRST_ROW_START + 6 * KEY_SPACING, -0.5, TOP_ROW_START}, Eigen::Quaterniond{0, 0, 0, 1}.normalized()}},
+                            KeyMapping{std::string{"i_key"}, SE3d{R3d{FIRST_ROW_START + 7 * KEY_SPACING, -0.5, TOP_ROW_START}, Eigen::Quaterniond{0, 0, 0, 1}.normalized()}},
+                            KeyMapping{std::string{"o_key"}, SE3d{R3d{FIRST_ROW_START + 8 * KEY_SPACING, -0.5, TOP_ROW_START}, Eigen::Quaterniond{0, 0, 0, 1}.normalized()}},
+                            KeyMapping{std::string{"p_key"}, SE3d{R3d{FIRST_ROW_START + 9 * KEY_SPACING, -0.5, TOP_ROW_START}, Eigen::Quaterniond{0, 0, 0, 1}.normalized()}},
 
-						KeyMapping{std::string{"a_key"}, SE3d{R3d{SECOND_ROW_START + 0 * KEY_SPACING, -0.5, TOP_ROW_START - 1 * KEY_SPACING}, Eigen::Quaterniond{0, 0, 0, 1}.normalized()}},
-						KeyMapping{std::string{"s_key"}, SE3d{R3d{SECOND_ROW_START + 1 * KEY_SPACING, -0.5, TOP_ROW_START - 1 * KEY_SPACING}, Eigen::Quaterniond{0, 0, 0, 1}.normalized()}},
-						KeyMapping{std::string{"d_key"}, SE3d{R3d{SECOND_ROW_START + 2 * KEY_SPACING, -0.5, TOP_ROW_START - 1 * KEY_SPACING}, Eigen::Quaterniond{0, 0, 0, 1}.normalized()}},
-						KeyMapping{std::string{"f_key"}, SE3d{R3d{SECOND_ROW_START + 3 * KEY_SPACING, -0.5, TOP_ROW_START - 1 * KEY_SPACING}, Eigen::Quaterniond{0, 0, 0, 1}.normalized()}},
-						KeyMapping{std::string{"g_key"}, SE3d{R3d{SECOND_ROW_START + 4 * KEY_SPACING, -0.5, TOP_ROW_START - 1 * KEY_SPACING}, Eigen::Quaterniond{0, 0, 0, 1}.normalized()}},
-						KeyMapping{std::string{"h_key"}, SE3d{R3d{SECOND_ROW_START + 5 * KEY_SPACING, -0.5, TOP_ROW_START - 1 * KEY_SPACING}, Eigen::Quaterniond{0, 0, 0, 1}.normalized()}},
-						KeyMapping{std::string{"j_key"}, SE3d{R3d{SECOND_ROW_START + 6 * KEY_SPACING, -0.5, TOP_ROW_START - 1 * KEY_SPACING}, Eigen::Quaterniond{0, 0, 0, 1}.normalized()}},
-						KeyMapping{std::string{"k_key"}, SE3d{R3d{SECOND_ROW_START + 7 * KEY_SPACING, -0.5, TOP_ROW_START - 1 * KEY_SPACING}, Eigen::Quaterniond{0, 0, 0, 1}.normalized()}},
-						KeyMapping{std::string{"l_key"}, SE3d{R3d{SECOND_ROW_START + 8 * KEY_SPACING, -0.5, TOP_ROW_START - 1 * KEY_SPACING}, Eigen::Quaterniond{0, 0, 0, 1}.normalized()}},
+                            KeyMapping{std::string{"a_key"}, SE3d{R3d{SECOND_ROW_START + 0 * KEY_SPACING, -0.5, TOP_ROW_START - 1 * KEY_SPACING}, Eigen::Quaterniond{0, 0, 0, 1}.normalized()}},
+                            KeyMapping{std::string{"s_key"}, SE3d{R3d{SECOND_ROW_START + 1 * KEY_SPACING, -0.5, TOP_ROW_START - 1 * KEY_SPACING}, Eigen::Quaterniond{0, 0, 0, 1}.normalized()}},
+                            KeyMapping{std::string{"d_key"}, SE3d{R3d{SECOND_ROW_START + 2 * KEY_SPACING, -0.5, TOP_ROW_START - 1 * KEY_SPACING}, Eigen::Quaterniond{0, 0, 0, 1}.normalized()}},
+                            KeyMapping{std::string{"f_key"}, SE3d{R3d{SECOND_ROW_START + 3 * KEY_SPACING, -0.5, TOP_ROW_START - 1 * KEY_SPACING}, Eigen::Quaterniond{0, 0, 0, 1}.normalized()}},
+                            KeyMapping{std::string{"g_key"}, SE3d{R3d{SECOND_ROW_START + 4 * KEY_SPACING, -0.5, TOP_ROW_START - 1 * KEY_SPACING}, Eigen::Quaterniond{0, 0, 0, 1}.normalized()}},
+                            KeyMapping{std::string{"h_key"}, SE3d{R3d{SECOND_ROW_START + 5 * KEY_SPACING, -0.5, TOP_ROW_START - 1 * KEY_SPACING}, Eigen::Quaterniond{0, 0, 0, 1}.normalized()}},
+                            KeyMapping{std::string{"j_key"}, SE3d{R3d{SECOND_ROW_START + 6 * KEY_SPACING, -0.5, TOP_ROW_START - 1 * KEY_SPACING}, Eigen::Quaterniond{0, 0, 0, 1}.normalized()}},
+                            KeyMapping{std::string{"k_key"}, SE3d{R3d{SECOND_ROW_START + 7 * KEY_SPACING, -0.5, TOP_ROW_START - 1 * KEY_SPACING}, Eigen::Quaterniond{0, 0, 0, 1}.normalized()}},
+                            KeyMapping{std::string{"l_key"}, SE3d{R3d{SECOND_ROW_START + 8 * KEY_SPACING, -0.5, TOP_ROW_START - 1 * KEY_SPACING}, Eigen::Quaterniond{0, 0, 0, 1}.normalized()}},
 
-						KeyMapping{std::string{"z_key"}, SE3d{R3d{THIRD_ROW_START + 0 * KEY_SPACING, -0.5, TOP_ROW_START - 2 * KEY_SPACING}, Eigen::Quaterniond{0, 0, 0, 1}.normalized()}},
-						KeyMapping{std::string{"x_key"}, SE3d{R3d{THIRD_ROW_START + 1 * KEY_SPACING, -0.5, TOP_ROW_START - 2 * KEY_SPACING}, Eigen::Quaterniond{0, 0, 0, 1}.normalized()}},
-						KeyMapping{std::string{"c_key"}, SE3d{R3d{THIRD_ROW_START + 2 * KEY_SPACING, -0.5, TOP_ROW_START - 2 * KEY_SPACING}, Eigen::Quaterniond{0, 0, 0, 1}.normalized()}},
-						KeyMapping{std::string{"v_key"}, SE3d{R3d{THIRD_ROW_START + 3 * KEY_SPACING, -0.5, TOP_ROW_START - 2 * KEY_SPACING}, Eigen::Quaterniond{0, 0, 0, 1}.normalized()}},
-						KeyMapping{std::string{"b_key"}, SE3d{R3d{THIRD_ROW_START + 4 * KEY_SPACING, -0.5, TOP_ROW_START - 2 * KEY_SPACING}, Eigen::Quaterniond{0, 0, 0, 1}.normalized()}},
-						KeyMapping{std::string{"n_key"}, SE3d{R3d{THIRD_ROW_START + 5 * KEY_SPACING, -0.5, TOP_ROW_START - 2 * KEY_SPACING}, Eigen::Quaterniond{0, 0, 0, 1}.normalized()}},
-						KeyMapping{std::string{"m_key"}, SE3d{R3d{THIRD_ROW_START + 6 * KEY_SPACING, -0.5, TOP_ROW_START - 2 * KEY_SPACING}, Eigen::Quaterniond{0, 0, 0, 1}.normalized()}},
+                            KeyMapping{std::string{"z_key"}, SE3d{R3d{THIRD_ROW_START + 0 * KEY_SPACING, -0.5, TOP_ROW_START - 2 * KEY_SPACING}, Eigen::Quaterniond{0, 0, 0, 1}.normalized()}},
+                            KeyMapping{std::string{"x_key"}, SE3d{R3d{THIRD_ROW_START + 1 * KEY_SPACING, -0.5, TOP_ROW_START - 2 * KEY_SPACING}, Eigen::Quaterniond{0, 0, 0, 1}.normalized()}},
+                            KeyMapping{std::string{"c_key"}, SE3d{R3d{THIRD_ROW_START + 2 * KEY_SPACING, -0.5, TOP_ROW_START - 2 * KEY_SPACING}, Eigen::Quaterniond{0, 0, 0, 1}.normalized()}},
+                            KeyMapping{std::string{"v_key"}, SE3d{R3d{THIRD_ROW_START + 3 * KEY_SPACING, -0.5, TOP_ROW_START - 2 * KEY_SPACING}, Eigen::Quaterniond{0, 0, 0, 1}.normalized()}},
+                            KeyMapping{std::string{"b_key"}, SE3d{R3d{THIRD_ROW_START + 4 * KEY_SPACING, -0.5, TOP_ROW_START - 2 * KEY_SPACING}, Eigen::Quaterniond{0, 0, 0, 1}.normalized()}},
+                            KeyMapping{std::string{"n_key"}, SE3d{R3d{THIRD_ROW_START + 5 * KEY_SPACING, -0.5, TOP_ROW_START - 2 * KEY_SPACING}, Eigen::Quaterniond{0, 0, 0, 1}.normalized()}},
+                            KeyMapping{std::string{"m_key"}, SE3d{R3d{THIRD_ROW_START + 6 * KEY_SPACING, -0.5, TOP_ROW_START - 2 * KEY_SPACING}, Eigen::Quaterniond{0, 0, 0, 1}.normalized()}},
                     };
 
-					for(auto const&[key, se3] : keyMappings){
-						SE3Conversions::pushToTfTree(mTfBroadcaster, std::format("{}_truth", key), "lander_truth", se3, get_clock()->now());
-					}
+                    for (auto const& [key, se3]: keyMappings) {
+                        SE3Conversions::pushToTfTree(mTfBroadcaster, std::format("{}_truth", key), "lander_truth", se3, get_clock()->now());
+                    }
                 }
 
                 for (urdf::JointSharedPtr const& child_joint: link->child_joints) {

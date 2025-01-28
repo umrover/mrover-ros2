@@ -1,24 +1,19 @@
-#pragma once
-
 #include "PressKey.hpp"
 
-namespace mrover{
-PressKey::PressKey(const std::shared_ptr<FSMCtx> fsm_ctx) : fsm_ctx(fsm_ctx) 
-{
+namespace mrover {
+    PressKey::PressKey(std::shared_ptr<FSMContext> const& fsmContext) : mFSMContext(fsmContext) {}
 
-}
+    auto PressKey::onLoop() -> State* {
+        if(mFSMContext->goal_handle->is_canceling()){
+            return StateMachine::make_state<Cancel>(mFSMContext);
+        }
 
-auto PressKey::onLoop() -> State*{
-    RCLCPP_INFO(fsm_ctx->node->get_logger(), "PressKey Onloop");
+        ++mFSMContext->curr_key_index;
 
-    //while not cancelled 
-        // If not ESW Failed
-            // query press key
-
-    if(fsm_ctx->goal_handle->is_canceling())
-    {
-        return StateMachine::make_state<Cancel>(fsm_ctx); //cancel if the goal is cancelled
+        if(static_cast<std::size_t>(mFSMContext->curr_key_index) == mFSMContext->goal_handle->get_goal()->code.size()){
+            return StateMachine::make_state<Done>(mFSMContext);
+        }else{
+            return StateMachine::make_state<Wait>(mFSMContext);
+        }
     }
-    
-}
-}
+} // namespace mrover

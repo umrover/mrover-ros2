@@ -1,20 +1,17 @@
 #pragma once
-
 #include "../pch.hpp"
-namespace mrover{
-	class TargetKey : public State {
-	public:
+#include "../FSMContext.hpp"
 
-		using KeyAction = mrover::action::KeyAction;
-		using GoalHandleKeyAction = rclcpp_action::ServerGoalHandle<KeyAction>;
+namespace mrover {
+    class TargetKey : public State {
+    public:
+        explicit TargetKey(std::shared_ptr<FSMContext> const& fsmContext);
 
-		explicit TargetKey(const std::shared_ptr<FSMCtx> fsm_ctx);
+        auto onLoop() -> State* override;
 
-		auto onLoop() -> State* override;
-
-	private:
-		rclcpp::Publisher<msg::IK>::SharedPtr mIkTargetPub;
-		const std::shared_ptr<FSMCtx> fsm_ctx;
-		rclcpp::Rate sleepRate;
-	};
-}
+    private:
+        rclcpp::Publisher<msg::IK>::SharedPtr mIkTargetPub;
+        std::shared_ptr<FSMContext> mFSMContext;
+        rclcpp::Rate sleepRate;
+    };
+} // namespace mrover

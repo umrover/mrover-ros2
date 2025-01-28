@@ -1,67 +1,60 @@
-
 #include "key_detector.hpp"
 
-using KeyDetector = mrover::KeyDetector;  
-
+using KeyDetector = mrover::KeyDetector;
 
 rclcpp_action::GoalResponse mrover::KeyDetector::handle_goal(
-  const rclcpp_action::GoalUUID & uuid,
-  std::shared_ptr<const KeyAction::Goal> goal)
-{
-  RCLCPP_INFO(this->get_logger(), "Received goal request with code %s", goal->code.data());
-  (void)uuid;
-  return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
+        rclcpp_action::GoalUUID const& uuid,
+        std::shared_ptr<KeyAction::Goal const> goal) {
+    RCLCPP_INFO(this->get_logger(), "Received goal request with code %s", goal->code.data());
+    (void) uuid;
+    return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
 }
 
 rclcpp_action::CancelResponse KeyDetector::handle_cancel(
-  const std::shared_ptr<GoalHandleKeyAction> goal_handle)
-{
-  RCLCPP_INFO(this->get_logger(), "Received request to cancel goal");
-  (void)goal_handle;
-  return rclcpp_action::CancelResponse::ACCEPT;
+        std::shared_ptr<GoalHandleKeyAction> const goal_handle) {
+    RCLCPP_INFO(this->get_logger(), "Received request to cancel goal");
+    (void) goal_handle;
+    return rclcpp_action::CancelResponse::ACCEPT;
 }
 
-void KeyDetector::execute(const std::shared_ptr<GoalHandleKeyAction> goal_handle)
-{
-  
-  RCLCPP_INFO(this->get_logger(), "Executing goal");
-  auto result = std::make_shared<KeyAction::Result>();
+void KeyDetector::execute() {
+    if(!mIsStateMachineEnabled) return;
 
-  fsm_ctx->goal_handle = goal_handle;
-  fsm_ctx->node = this->shared_from_this();
-  fsm_ctx->curr_key_index = 0;
+    if (rclcpp::ok() && (mStateMachine.getCurrentState() != "Cancel" && mStateMachine.getCurrentState() != "Done")) {
+        rclcpp::Rate loop_rate(1);
+        auto feedback = std::make_shared<KeyAction::Feedback>();
 
-  // start state
-  while (rclcpp::ok()){
-    rclcpp::Rate loop_rate(1);
-    auto feedback = std::make_shared<KeyAction::Feedback>();
+        RCLCPP_INFO(get_logger(), "Pre FSM Update");
 
-    RCLCPP_INFO(get_logger(), "Pre FSM Update");
+        // Perform loop for the state machine
+        mStateMachine.update();
 
-    // Perform loop for the state machine
-    mStateMachine.update();
+        RCLCPP_INFO(this->get_logger(), "Post FSM Update");
 
-    RCLCPP_INFO(this->get_logger(), "Post FSM Update");
+        loop_rate.sleep();
+    }
 
-    loop_rate.sleep();
-  }
-
-
-
-  // Check if movement is done
-  if (rclcpp::ok()) {
-    result->success = true;
-    goal_handle->succeed(result);
-    RCLCPP_INFO(this->get_logger(), "Goal succeeded");
-  }
-
-
-
+    // Check if movement is done
+    if (rclcpp::ok() && mStateMachine.getCurrentState() == "Done") {
+        auto result = std::make_shared<KeyAction::Result>();
+        mIsStateMachineEnabled = false;
+        result->success = true;
+        mFSMContext->goal_handle->succeed(result);
+        RCLCPP_INFO(this->get_logger(), "Goal succeeded");
+    }else if (rclcpp::ok() && mStateMachine.getCurrentState() == "Cancel"){
+        auto result = std::make_shared<KeyAction::Result>();
+        mIsStateMachineEnabled = false;
+        result->success = false;
+        mFSMContext->goal_handle->canceled(result);
+        RCLCPP_INFO(this->get_logger(), "Goal failed");
+    }
 }
 
-void KeyDetector::handle_accepted(const std::shared_ptr<GoalHandleKeyAction> goal_handle)
-{
-  using namespace std::placeholders;
-  // this needs to return quickly to avoid blocking the executor, so spin up a new thread
-  std::thread{std::bind(&KeyDetector::execute, this, _1), goal_handle}.detach();
+void KeyDetector::handle_accepted(std::shared_ptr<GoalHandleKeyAction> const goal_handle) {
+    mIsStateMachineEnabled = true;
+    mFSMContext->goal_handle = goal_handle;
+    mFSMContext->node = this->shared_from_this();
+    mFSMContext->curr_key_index = 0;
+
+    mStateMachine.setState(StateMachine::make_state<TargetKey>(mFSMContext));
 }

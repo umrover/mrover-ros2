@@ -1,26 +1,23 @@
-#include "rclcpp/rclcpp.hpp"
 #include "pch.hpp"
+#include "rclcpp/rclcpp.hpp"
 
 using std::placeholders::_1;
 using std::placeholders::_2;
 
-class GetKeyLocServer : public rclcpp::Node
-{
+class GetKeyLocServer : public rclcpp::Node {
 public:
-    GetKeyLocServer() : Node("get_key_loc_server")
-    {
+    GetKeyLocServer() : Node("get_key_loc_server") {
         service_ = this->create_service<mrover::srv::GetKeyLoc>(
-            "GetKeyLoc",
-            std::bind(&GetKeyLocServer::handle_request, this, _1, _2));
-        
+                "GetKeyLoc",
+                std::bind(&GetKeyLocServer::handle_request, this, _1, _2));
+
         RCLCPP_INFO(this->get_logger(), "Service 'GetKeyLoc' is ready.");
     }
 
 private:
     void handle_request(
-        const std::shared_ptr<mrover::srv::GetKeyLoc::Request> request,
-        std::shared_ptr<mrover::srv::GetKeyLoc::Response> response)
-    {
+            std::shared_ptr<mrover::srv::GetKeyLoc::Request> const request,
+            std::shared_ptr<mrover::srv::GetKeyLoc::Response> response) {
         RCLCPP_INFO(this->get_logger(), "Received request for key_name: %hhu", request->key);
 
         // Example logic: Assign coordinates based on the key name
@@ -41,4 +38,3 @@ private:
 
     rclcpp::Service<mrover::srv::GetKeyLoc>::SharedPtr service_;
 };
-

@@ -13,10 +13,8 @@ auto main(int argc, char** argv) -> int {
     server.add_node(actionServer);
     //server.add_node(std::make_shared<GetKeyLocServer>());
     server.spin();
-    
+
     rclcpp::shutdown();
 
     return EXIT_SUCCESS;
-
-
 }

@@ -3,24 +3,16 @@
 
 namespace mrover {
 
-    Wait::Wait(const std::shared_ptr<FSMCtx> fsm_ctx) 
-        : sleepRate(1.0), fsm_ctx(fsm_ctx) // Initialize sleepRate with a parameter (e.g., 1.0)
-    {
+    Wait::Wait(std::shared_ptr<FSMContext> const& fsmContext)
+        : sleepRate(0.1), mFSMContext{fsmContext} {
     }
 
     auto Wait::onLoop() -> State* {
-    RCLCPP_INFO(fsm_ctx->node->get_logger(), "Wait Onloop");
-
-        while(rclcpp::ok()){
-            auto logger = rclcpp::get_logger("Wait");
-            RCLCPP_INFO_STREAM(logger, "Entered Wait " <<  "\n");
-            sleepRate.sleep();
-            RCLCPP_INFO_STREAM(logger, "Exiting Wait " <<  "\n");
-
-            return StateMachine::make_state<TargetKey>(fsm_ctx);
+        if(mFSMContext->goal_handle->is_canceling()){
+            return StateMachine::make_state<Cancel>(mFSMContext);
         }
+        rclcpp::sleep_for(std::chrono::nanoseconds(1000));
 
-        // if breaks end state machine?
-        return nullptr;
+        return StateMachine::make_state<TargetKey>(mFSMContext);
     }
-}
+} // namespace mrover

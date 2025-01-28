@@ -1,41 +1,38 @@
 #pragma once
-
 #include "pch.hpp"
 
-
 namespace mrover {
-class KeyDetector : public rclcpp::Node{
-  public:
+    class KeyDetector : public rclcpp::Node {
+    public:
+        explicit KeyDetector(rclcpp::NodeOptions const& options = rclcpp::NodeOptions());
 
-    explicit KeyDetector(const rclcpp::NodeOptions & options = rclcpp::NodeOptions());
+        ~KeyDetector() override;
 
-    ~KeyDetector() override;
+    private:
+        static constexpr char const* NODE_NAME = "key_detector";
 
-  private:
-    static constexpr char const* NODE_NAME = "key_detector";
+        rclcpp::TimerBase::SharedPtr mFSMTimer;
 
-    rclcpp::TimerBase::SharedPtr mFSMTimer;
+        std::shared_ptr<FSMContext> mFSMContext;
 
-    std::shared_ptr<FSMCtx> fsm_ctx;
+        bool mIsStateMachineEnabled;
+        StateMachine mStateMachine;
 
-    StateMachine mStateMachine;
+        StatePublisher mStatePublisher;
 
-    StatePublisher mStatePublisher;
+        rclcpp_action::Server<KeyAction>::SharedPtr action_server_;
 
-    rclcpp_action::Server<KeyAction>::SharedPtr action_server_;
+        rclcpp_action::GoalResponse handle_goal(
+                rclcpp_action::GoalUUID const& uuid,
+                std::shared_ptr<KeyAction::Goal const> goal);
 
-    rclcpp_action::GoalResponse handle_goal(
-      const rclcpp_action::GoalUUID & uuid,
-      std::shared_ptr<const KeyAction::Goal> goal);
+        rclcpp_action::CancelResponse handle_cancel(
+                std::shared_ptr<GoalHandleKeyAction> const goal_handle);
 
-    rclcpp_action::CancelResponse handle_cancel(
-      const std::shared_ptr<GoalHandleKeyAction> goal_handle);
+        void execute();
 
-    void execute(const std::shared_ptr<GoalHandleKeyAction> goal_handle);
-
-    void handle_accepted(const std::shared_ptr<GoalHandleKeyAction> goal_handle);
-
-};
+        void handle_accepted(std::shared_ptr<GoalHandleKeyAction> const goal_handle);
+    };
 
 
 } // namespace mrover

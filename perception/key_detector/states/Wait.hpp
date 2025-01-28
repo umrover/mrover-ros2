@@ -1,21 +1,19 @@
 #pragma once
-
 #include "../pch.hpp"
-#include <rclcpp/rate.hpp>
+#include "../FSMContext.hpp"
 
-namespace mrover{
-	class Wait : public State {
-	public:
+namespace mrover {
+    class Wait : public State {
+    public:
+        using KeyAction = mrover::action::KeyAction;
+        using GoalHandleKeyAction = rclcpp_action::ServerGoalHandle<KeyAction>;
 
-		using KeyAction = mrover::action::KeyAction;
-		using GoalHandleKeyAction = rclcpp_action::ServerGoalHandle<KeyAction>;
+        explicit Wait(std::shared_ptr<FSMContext> const& mFSMContext);
 
-		explicit Wait(const std::shared_ptr<FSMCtx> fsm_ctx);
+        auto onLoop() -> State* override;
 
-		auto onLoop() -> State* override;
-	private:
-        // milliseconds ?
-		rclcpp::Rate sleepRate;
-		const std::shared_ptr<FSMCtx> fsm_ctx;
-	};
-}
+    private:
+        rclcpp::Rate sleepRate;
+        std::shared_ptr<FSMContext> const mFSMContext;
+    };
+} // namespace mrover

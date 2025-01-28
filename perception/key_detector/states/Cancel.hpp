@@ -1,13 +1,15 @@
 #pragma once
-
 #include "../pch.hpp"
-namespace mrover{
-	class Cancel : public State {
-	public:
-		explicit Cancel(const std::shared_ptr<FSMCtx> fsm_ctx);
+#include "../FSMContext.hpp"
 
-		auto onLoop() -> State* override;
-	private:
-		const std::shared_ptr<FSMCtx> fsm_ctx;
-	};
-}
+namespace mrover {
+    class Cancel : public State {
+    public:
+        explicit Cancel(std::shared_ptr<FSMContext> const& fsmContext);
+
+        auto onLoop() -> State* override;
+
+    private:
+        std::shared_ptr<FSMContext> const mFSMContext;
+    };
+} // namespace mrover
