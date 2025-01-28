@@ -314,7 +314,6 @@ int main(void)
   MX_FDCAN1_Init();
   MX_TIM6_Init();
   /* USER CODE BEGIN 2 */
-  new_main();
   /* USER CODE END 2 */
 
   /* Initialize leds */
@@ -336,6 +335,7 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+  HAL_PostInit();
   while (1)
   {
 //	  float ppm = get_methane_ppm();

@@ -300,6 +300,8 @@ endmacro()
 mrover_add_esw_motor_bridge_node(drive_hw_bridge esw/drive_hw_bridge.cpp)
 mrover_add_esw_motor_bridge_node(arm_hw_bridge esw/arm_hw_bridge.cpp)
 mrover_add_esw_bridge_node(differential_drive_controller esw/differential_drive_controller.cpp)
+mrover_add_esw_bridge_node(science_hw_bridge esw/science_hw_bridge.cpp)
+ament_target_dependencies(science_hw_bridge sensor_msgs)
 
 mrover_add_node(arm_controller teleoperation/arm_controller/arm_controller.cpp teleoperation/arm_controller/pch.hpp)
 target_link_libraries(arm_controller lie)

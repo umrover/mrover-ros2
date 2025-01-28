@@ -55,6 +55,7 @@ extern "C" {
 void Error_Handler(void);
 
 /* USER CODE BEGIN EFP */
+void HAL_PostInit();
 
 /* USER CODE END EFP */
 

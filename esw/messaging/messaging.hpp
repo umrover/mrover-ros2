@@ -191,11 +191,49 @@ namespace mrover {
         std::array<float, 6> temps{};
     };
 
+    struct SensorData {
+    	std::uint8_t id;
+    	double data;
+    };
+
+    enum class ScienceDataID : uint8_t {
+        TEMPERATURE = 1,
+        HUMIDITY = 2,
+        OXYGEN = 3,
+        METHANE = 4,
+        UV = 5,
+    };
+    
+    // struct TemperatureData {
+    // 	static constexpr std::uint8_t id = 1;
+    // 	float temp;
+    // };
+
+    // struct HumidityData {
+	// 	static constexpr std::uint8_t id = 2;
+	// 	float humidity;
+	// };
+
+    // struct OxygenData {
+	// 	static constexpr std::uint8_t id = 3;
+	// 	float percent;
+	// };
+
+    // struct MethaneData {
+	// 	static constexpr std::uint8_t id = 4;
+	// 	float ppm;
+	// };
+
+    // struct UVData {
+	// 	static constexpr std::uint8_t id = 5;
+	// 	float uv_index;
+	// };
+
     using InBoundScienceMessage = std::variant<
             EnableScienceDeviceCommand, HeaterAutoShutOffCommand, ConfigThermistorAutoShutOffCommand>;
 
     using OutBoundScienceMessage = std::variant<
-            HeaterStateData, SpectralData, ThermistorData>;
+            SensorData, HeaterStateData, SpectralData, ThermistorData>;
 
 #pragma pack(pop)
 
