@@ -6,7 +6,7 @@
 #include <sensor_msgs/msg/relative_humidity.hpp>
 #include <sensor_msgs/msg/temperature.hpp>
 
-#include <messaging.hpp>
+#include <messaging_science.hpp>
 #include <units.hpp>
 
 #include <mrover/msg/can.hpp>
@@ -48,10 +48,6 @@ namespace mrover {
             //     scienceThermistors.temps.at(i).temperature = message.temps.at(i);
             // }
             // thermistorDataPublisher->publish(scienceThermistors);
-        }
-
-        void processMessage([[maybe_unused]] mrover::SpectralData const& message) {
-            // Just here for the compiler to stay happy :D
         }
 
         void processMessage(mrover::SensorData const& message) {
