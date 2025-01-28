@@ -70,12 +70,15 @@ namespace mrover {
         auto const& imu_msg = current_imu.value();
         Eigen::Quaterniond quaternion(imu_msg.orientation.w, imu_msg.orientation.x, imu_msg.orientation.y, imu_msg.orientation.z);
         quaternion.normalize();
+        
 
         double heading_rad = heading_msg->heading * (M_PI / 180);
-
-        Eigen::Quaterniond desired_quaternion(Eigen::AngleAxisd(heading_rad, Eigen::Vector3d::UnitZ())); //you want to keep roll and pitch the same. 
-        Eigen::Quaterniond transformation_quaternion = quaternion * desired_quaternion.inverse();
-        Eigen::Quaterniond corrected_quaternion = transformation_quaternion * quaternion;
+        Eigen::Quaterniond desired_yaw_quaternion(Eigen::AngleAxisd(heading_rad, Eigen::Vector3d::UnitZ()));
+        Eigen::Vector3d euler_angles = quaternion.toRotationMatrix().eulerAngles(2, 1, 0);
+        double roll = euler_angles[2];
+        double pitch = euler_angles[1];
+        Eigen::Quaterniond roll_pitch_quaternion = (Eigen::AngleAxisd(roll, Eigen::Vector3d::UnitX())) * (Eigen::AngleAxisd(pitch, Eigen::Vector3d::UnitY()));
+        Eigen::Quaterniond corrected_quaternion = roll_pitch_quaternion * desired_yaw_quaternion;
         corrected_quaternion.normalize();
 
         SE3d pose_in_map(position_in_map, corrected_quaternion);
