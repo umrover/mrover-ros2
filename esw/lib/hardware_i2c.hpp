@@ -64,8 +64,8 @@ namespace mrover {
 
         auto async_transmit(std::uint16_t const address, TSend send) -> void {
             check(HAL_I2C_Master_Transmit_IT(m_i2c, address << 1,
-                                              address_of<uint8_t>(send),
-                                              sizeof(send)) == HAL_OK,
+                                             address_of<uint8_t>(send),
+                                             sizeof(send)) == HAL_OK,
                   Error_Handler);
             // This is stupid. I remember writing this stupid thing. I regret everything. This is stupid.
             // while (HAL_I2C_GetState(m_i2c) != HAL_I2C_STATE_READY) {
@@ -74,8 +74,8 @@ namespace mrover {
 
         auto async_receive(std::uint16_t const address, TReceive receive) -> void {
             check(HAL_I2C_Master_Receive_IT(m_i2c, address << 1 | 1,
-                                             address_of<uint8_t>(receive),
-                                             sizeof(receive)) == HAL_OK,
+                                            address_of<uint8_t>(receive),
+                                            sizeof(receive)) == HAL_OK,
                   Error_Handler);
         }
 
