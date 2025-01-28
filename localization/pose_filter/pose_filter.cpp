@@ -1,4 +1,7 @@
 #include "pose_filter.hpp"
+#include "message_filters/subscriber.h"
+#include "message_filters/sync_policies/approximate_time.h"
+#include "message_filters/synchronizer.h"
 
 namespace mrover {
     
@@ -8,13 +11,6 @@ namespace mrover {
     }
 
     PoseFilter::PoseFilter() : Node("pose_filter") {
-
-        imu_watchdog = this->create_wall_timer(IMU_WATCHDOG_TIMEOUT.to_chrono<std::chrono::milliseconds>(), [&]() {
-            RCLCPP_WARN(get_logger(), "IMU data watchdog expired");
-            current_imu_calib.reset();
-            current_imu_uncalib.reset();
-            correction_rotation.reset();
-        });
         
         correction_timer = this->create_wall_timer(WINDOW.to_chrono<std::chrono::milliseconds>(), [this]() -> void {
             correction_timer_callback();
@@ -22,25 +18,26 @@ namespace mrover {
 
         odometry_pub = this->create_publisher<nav_msgs::msg::Odometry>("/odometry", 1);
 
-        calibration_status_sub = this->create_subscription<mrover::msg::CalibrationStatus>("/imu/calibration", 1, [&](mrover::msg::CalibrationStatus::ConstSharedPtr const & status) {
-            calibration_status = *status;
-        });
-
         twist_sub = this->create_subscription<geometry_msgs::msg::Twist>("/cmd_vel", 1, [&](geometry_msgs::msg::Twist::ConstSharedPtr const& twist) {
             twists.push_back(*twist);
         });
 
-        imu_uncalib_sub = this->create_subscription<sensor_msgs::msg::Imu>("/imu/data_raw", 1, [&](sensor_msgs::msg::Imu::ConstSharedPtr const& imu) {
-            current_imu_uncalib = *imu;
+        zed_imu_sub = this->create_subscription<sensor_msgs::msg::Imu>("/zed_imu/data_raw", 1, [&](sensor_msgs::msg::Imu::ConstSharedPtr const& imu) {
+            current_imu = *imu;
         });
 
-        imu_calib_sub = this->create_subscription<sensor_msgs::msg::Imu>("/imu/data", 1, [&](sensor_msgs::msg::Imu::ConstSharedPtr const& imu) {
-            imu_watchdog->reset();
-            current_imu_calib = *imu;
-        });
+        heading_sub_ = std::make_shared<message_filters::Subscriber<mrover::msg::Heading>>(this, "/heading/fix");
+
+        heading_fix_sub_ = std::make_shared<message_filters::Subscriber<mrover::msg::FixStatus>>(this, "/heading_fix_status");
+
+        sync_ = std::make_shared<message_filters::Synchronizer<SyncPolicy>>(
+            SyncPolicy(10), *heading_sub_, *heading_fix_sub_
+        );
+
+        sync_->registerCallback(std::bind(&PoseFilter::heading_callback(), this, std::placeholders::_1, std::placeholders::_2));
 
         pose_sub = this->create_subscription<geometry_msgs::msg::Vector3Stamped>("/linearized_position", 1, [this](geometry_msgs::msg::Vector3Stamped::ConstSharedPtr const& msg) -> void {
-            pose_sub_callback(msg);
+            pose_sub_callback(linearized_pos_msg);
         });
 
         declare_parameter("rover_frame", rclcpp::ParameterType::PARAMETER_STRING);
@@ -49,30 +46,72 @@ namespace mrover {
         rover_frame = get_parameter("rover_frame").as_string();
         world_frame = get_parameter("world_frame").as_string();
 
+        tf_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(this);
     }
 
-    void PoseFilter::pose_sub_callback(geometry_msgs::msg::Vector3Stamped::ConstSharedPtr const& msg) {
+    void PoseFilter::heading_callback(const mrover::msg::Heading::ConstSharedPtr const& heading_msg, const mrover::msg::FixStatus::ConstSharedPtr const& fix_status_msg) {
+        current_heading *= heading_msg;
+        current_heading_fix_status *= fix_status_msg;
+    }
 
-        R3d position_in_map(msg->vector.x, msg->vector.y, msg->vector.z);
-
-        SE3d pose_in_map(position_in_map, SO3d::Identity());
-
-        bool mag_fully_calibrated = calibration_status && calibration_status->magnetometer_calibration == FULL_CALIBRATION;
-
-        if (!mag_fully_calibrated && current_imu_calib && correction_rotation) {
-            SO3d uncalibrated_orientation = ros_quat_to_eigen_quat(current_imu_uncalib->orientation);
-            pose_in_map.asSO3() = correction_rotation.value() * uncalibrated_orientation;
-        }
-        else if (current_imu_calib) {
-            SO3d calibrated_orientation = ros_quat_to_eigen_quat(current_imu_calib->orientation);
-            pose_in_map.asSO3() = calibrated_orientation;
-        }
-        else {
-            RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1, "Not enough IMU data available");
+    void PoseFilter::pose_sub_callback(geometry_msgs::msg::Vector3Stamped::ConstSharedPtr const& linearized_pos_msg) {
+\       if (!current_imu.has_value() || !current_heading.has_value() || !current_heading_fix_status.has_value()) {
+            RCLPP_WARN(get_logger(), "Missing IMU, heading or heading fix status data. Ignoring pose correction via DA-RTK Heading");
             return;
         }
 
-        SE3Conversions::pushToTfTree(tf_broadcaster, rover_frame, world_frame, pose_in_map, get_clock()->now());
+        if ((current_heading_fix_status->fix_status.fix != mrover::msg::FixType::FIXED)) {
+            RCLPP_WARN(get_logger(), "Invalid heading fix status. Ignoring pose correction via DA-RTK Heading");
+            return;
+        }
+
+        Eigen::Vector3d position_in_map(linearized_pos_msg->vector.x, linearized_pos_msg->vector.y, linearized_pos_msg->vector.z);
+
+        auto const& imu_msg = current_imu.value();
+        Eigen::Quaterniond quaternion(imu_msg.orientation.w, imu_msg.orientation.x, imu_msg.orientation.y, imu_msg.orientation.z);
+        quaternion.normalize();
+
+        double heading_rad = heading_msg->heading * (M_PI / 180);
+
+        Eigen::Quaterniond desired_quaternion(Eigen::AngleAxisd(heading_rad, Eigen::Vector3d::UnitZ())); //you want to keep roll and pitch the same. 
+        Eigen::Quaterniond transformation_quaternion = quaternion * desired_quaternion.inverse();
+        Eigen::Quaterniond corrected_quaternion = transformation_quaternion * quaternion;
+        corrected_quaternion.normalize();
+
+        SE3d pose_in_map(position_in_map, corrected_quaternion);
+
+        SE3Conversion::pushToTfTree(tf_broadcaster, rover_frame, world_frame, pose_in_map, getClock()->now())
+
+        RCLCPP_INFO(get_logger(), "Published to TF Tree: Position (%f, %f, %f), Orientation (%f, %f, %f, %f)",
+            position_in_map.x(), position_in_map.y(), position_in_map.z(),
+            corrected_quaternion.x(), corrected_quaternion.y(). corrected_quaternion.z(), corrected_quaternion.w()
+        );
+
+    }
+
+
+    // void PoseFilter::pose_sub_callback(geometry_msgs::msg::Vector3Stamped::ConstSharedPtr const& msg) {
+
+    //     R3d position_in_map(msg->vector.x, msg->vector.y, msg->vector.z);
+
+    //     SE3d pose_in_map(position_in_map, SO3d::Identity());
+
+    //     bool mag_fully_calibrated = calibration_status && calibration_status->magnetometer_calibration == FULL_CALIBRATION;
+
+    //     if (!mag_fully_calibrated && current_imu_calib && correction_rotation) {
+    //         SO3d uncalibrated_orientation = ros_quat_to_eigen_quat(current_imu_uncalib->orientation);
+    //         pose_in_map.asSO3() = correction_rotation.value() * uncalibrated_orientation;
+    //     }
+    //     else if (current_imu_calib) {
+    //         SO3d calibrated_orientation = ros_quat_to_eigen_quat(current_imu_calib->orientation);
+    //         pose_in_map.asSO3() = calibrated_orientation;
+    //     }
+    //     else {
+    //         RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1, "Not enough IMU data available");
+    //         return;
+    //     }
+
+    //     SE3Conversions::pushToTfTree(tf_broadcaster, rover_frame, world_frame, pose_in_map, get_clock()->now());
 
 
         SE3d::Tangent twist;
@@ -115,7 +154,7 @@ namespace mrover {
 
         twists.clear();
 
-        if (!current_imu_calib) return;
+        if (!current_imu.has_value()) return;
         if (mean_twist.linear.x < MIN_LINEAR_SPEED) return;
         if (std::fabs(mean_twist.angular.z) > MAX_ANGULAR_SPEED) return;
 
