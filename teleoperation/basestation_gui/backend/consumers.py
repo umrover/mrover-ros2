@@ -51,6 +51,7 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.joystick_twist_pub = node.create_publisher(Twist, "/joystick_cmd_vel", 1)
         self.controller_twist_pub = node.create_publisher(Twist, "/controller_cmd_vel", 1)
         self.mast_gimbal_pub = node.create_publisher(Throttle, "/mast_gimbal_throttle_cmd", 1)
+        typing_action_client = TypingTaskActionClient(Node, self)
         
 
         self.forward_ros_topic("/drive_controller_data", ControllerState, "drive_state")
@@ -64,7 +65,7 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.buffer = Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.buffer, node)
 
-        self.timer = node.create_timer(1 / LOCALIZATION_INFO_HZ, self.send_localization_callback)
+        # self.timer = node.create_timer(1 / LOCALIZATION_INFO_HZ, self.send_localization_callback)
 
     def forward_ros_topic(self, topic_name: str, topic_type: Type, gui_msg_type: str) -> None:
         """
@@ -107,17 +108,17 @@ class GUIConsumer(JsonWebsocketConsumer):
         except Exception as e:
             node.get_logger().warning(f"Failed to send message: {e}")
 
-    def send_localization_callback(self):
-        try:
-            base_link_in_map = SE3.from_tf_tree(self.buffer, "map", "base_link")
-            self.send_message_as_json(
-                {
-                    "type": "orientation",
-                    "orientation": base_link_in_map.quat().tolist(),
-                }
-            )
-        except Exception as e:
-            node.get_logger().warn(f"Failed to get bearing: {e} Is localization running?")
+    # def send_localization_callback(self):
+    #     try:
+    #         base_link_in_map = SE3.from_tf_tree(self.buffer, "map", "base_link")
+    #         self.send_message_as_json(
+    #             {
+    #                 "type": "orientation",
+    #                 "orientation": base_link_in_map.quat().tolist(),
+    #             }
+    #         )
+    #     except Exception as e:
+    #         node.get_logger().warn(f"Failed to get bearing: {e} Is localization running?")
 
     def save_basic_waypoint_list(self, waypoints: list[dict]) -> None:
         BasicWaypoint.objects.all().delete()
