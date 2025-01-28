@@ -58,6 +58,10 @@ namespace mrover {
         assert(throttle >= -1_percent && throttle <= 1_percent);
 
         mDevice.publish_message(InBoundMessage{ThrottleCommand{.throttle = throttle}});
+
+#ifdef DEBUG_BUILD
+        RCLCPP_DEBUG(mNode->get_logger(), "Commanding %s throttle to: %f", mControllerName.c_str(), throttle.rep);
+#endif
     }
 
     auto BrushedController::setDesiredPosition(Radians position) -> void {
@@ -74,6 +78,10 @@ namespace mrover {
                 .i = static_cast<float>(mPositionGains.i),
                 .d = static_cast<float>(mPositionGains.d),
         }});
+
+#ifdef DEBUG_BUILD
+        RCLCPP_DEBUG(mNode->get_logger(), "Commanding %s position to: %f", mControllerName.c_str(), position.rep);
+#endif
     }
 
     auto BrushedController::setDesiredVelocity(RadiansPerSecond velocity) -> void {
@@ -91,9 +99,16 @@ namespace mrover {
                 .d = static_cast<float>(mVelocityGains.d),
                 .ff = static_cast<float>(mVelocityGains.ff),
         }});
+
+#ifdef DEBUG_BUILD
+        RCLCPP_DEBUG(mNode->get_logger(), "Commanding %s velocity to: %f", mControllerName.c_str(), velocity.rep);
+#endif
     }
 
     auto BrushedController::sendConfiguration() -> void {
+#ifdef DEBUG_BUILD
+        RCLCPP_DEBUG(mNode->get_logger(), "Sending configuration to %s", mControllerName.c_str());
+#endif
         mDevice.publish_message(InBoundMessage{mConfigCommand});
 
         // Need to await configuration. Can NOT directly set mIsConfigured to true.
@@ -108,6 +123,10 @@ namespace mrover {
         assert(position >= mConfigCommand.min_position && position <= mConfigCommand.max_position);
 
         mDevice.publish_message(InBoundMessage{AdjustCommand{.position = position}});
+
+#ifdef DEBUG_BUILD
+        RCLCPP_DEBUG(mNode->get_logger(), "Adjusting %s to: %f", mControllerName.c_str(), position.rep);
+#endif
     }
 
     auto BrushedController::processMessage(ControllerDataState const& state) -> void {

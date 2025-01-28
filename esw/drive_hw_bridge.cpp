@@ -1,18 +1,18 @@
 #include <chrono>
 #include <memory>
-#include <rclcpp/rclcpp.hpp>
 
+#include <rclcpp/rclcpp.hpp>
 #include <rclcpp/subscription.hpp>
 #include <rclcpp/timer.hpp>
-#include <units/units.hpp>
 
-#include "can_device/can_device.hpp"
-#include "motor_library/brushless.hpp"
+#include <units.hpp>
 
 #include <mrover/msg/controller_state.hpp>
 #include <mrover/msg/position.hpp>
 #include <mrover/msg/throttle.hpp>
 #include <mrover/msg/velocity.hpp>
+
+#include "motor_library/brushless.hpp"
 
 /*
  *  Initializes the necessary motor controllers for drive
@@ -21,6 +21,12 @@
 namespace mrover {
 
     using namespace std::chrono_literals;
+
+    constexpr static BrushlessController<Revolutions>::Config WHEEL_CONFIG = {
+            .minVelocity = RevolutionsPerSecond{-10.0},
+            .maxVelocity = RevolutionsPerSecond{10.0},
+            .maxTorque = 25.0,
+    };
 
     class DriveHardwareBridge final : public rclcpp::Node {
     public:
@@ -43,7 +49,7 @@ namespace mrover {
                 }));
                 for (std::string const& motor: mMotors) {
                     std::string name = std::format("{}_{}", motor, group);
-                    mControllers.try_emplace(name, shared_from_this(), "jetson", name, BrushlessController<Revolutions>::Config{});
+                    mControllers.try_emplace(name, shared_from_this(), "jetson", name, WHEEL_CONFIG);
                     mJointState.name.push_back(name);
                 }
                 mJointState.position.resize(mControllers.size());
@@ -139,8 +145,6 @@ namespace mrover {
         }
 
     private:
-        std::unique_ptr<mrover::CanDevice> driveCanDevice;
-
         std::vector<std::string> mMotorGroups = {"left", "right"};
         std::vector<std::string> mMotors = {"front", "middle", "back"};
         std::unordered_map<std::string, BrushlessController<Revolutions>> mControllers;

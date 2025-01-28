@@ -192,6 +192,8 @@ namespace mrover {
                 RCLCPP_WARN(get_logger(), "Device not found.");
             }
             rclcpp::shutdown();
+        } catch (...) {
+            std::cout << "error" << std::endl;
         }
     }
 

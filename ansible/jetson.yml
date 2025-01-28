@@ -4,7 +4,4 @@
     ros_distro: noetic
     ubuntu_release: focal
   roles:
-    - jetson_build
-    - dev
     - jetson_networks
-    - jetson_services

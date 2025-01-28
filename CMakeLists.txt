@@ -10,6 +10,10 @@ set(CMAKE_CXX_STANDARD 23)
 # Can be used by VSCode, CLion, VIM, etc.
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+# if(CMAKE_BUILD_TYPE STREQUAL "Debug" OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
+#    add_compile_definitions(DEBUG_BUILD)
+# endif()
+
 option(MROVER_CI "Enable CI options" OFF)
 option(MROVER_CLANG_TIDY "Enable static analysis with Clang tidy" ${MROVER_CI})
 option(MROVER_WARNINGS_AS_ERRORS "Treat warnings as errors" ${MROVER_CI})
@@ -104,7 +108,7 @@ else ()
     endif ()
 endif ()
 
-find_package(manif QUIET)
+find_package(MANIF::manif QUIET)
 if (NOT manif_FOUND)
     if (EXISTS ${CMAKE_CURRENT_LIST_DIR}/deps/manif/include/manif)
         set(BUILD_TESTING_OLD ${BUILD_TESTING})
@@ -272,28 +276,30 @@ target_link_libraries(tag_detector lie opencv_core opencv_aruco opencv_imgproc l
 
 # Embedded
 
+mrover_add_header_only_library(messaging esw/messaging)
+
 mrover_add_header_only_library(can_device esw/can_device)
 target_link_libraries(can_device INTERFACE ${rclcpp_LIBRARIES})
 
 mrover_add_library(motor_library esw/motor_library/*.cpp esw/motor_library)
 ament_target_dependencies(motor_library rclcpp std_srvs)
-target_link_libraries(motor_library can_device moteus units)
+target_link_libraries(motor_library can_device moteus units messaging)
 
 macro(mrover_add_esw_bridge_node name sources)
     mrover_add_node(${name} ${sources})
-    target_link_libraries(${name} can_device motor_library units)
+    ament_target_dependencies(${name} rclcpp std_srvs)
+    target_link_libraries(${name} can_device units messaging)
+endmacro()
+
+macro(mrover_add_esw_motor_bridge_node name sources)
+    mrover_add_esw_bridge_node(${name} ${sources})
+    target_link_libraries(${name} motor_library)
 endmacro()
 
 
-# TODO (ali): move all bridges to esw_bridge macro
-mrover_add_esw_bridge_node(drive_hw_bridge esw/drive_hw_bridge.cpp)
-
-mrover_add_node(arm_hw_bridge esw/arm_hw_bridge.cpp)
-target_link_libraries(arm_hw_bridge motor_library)
-
-mrover_add_node(differential_drive_controller esw/differential_drive_controller.cpp)
-target_link_libraries(differential_drive_controller units)
-ament_target_dependencies(differential_drive_controller rclcpp)
+mrover_add_esw_motor_bridge_node(drive_hw_bridge esw/drive_hw_bridge.cpp)
+mrover_add_esw_motor_bridge_node(arm_hw_bridge esw/arm_hw_bridge.cpp)
+mrover_add_esw_bridge_node(differential_drive_controller esw/differential_drive_controller.cpp)
 
 mrover_add_node(arm_controller teleoperation/arm_controller/arm_controller.cpp teleoperation/arm_controller/pch.hpp)
 target_link_libraries(arm_controller lie)

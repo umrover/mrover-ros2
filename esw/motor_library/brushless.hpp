@@ -1,6 +1,5 @@
 #pragma once
 
-
 #include <rclcpp/logger.hpp>
 #include <rclcpp/logging.hpp>
 
@@ -89,16 +88,16 @@ namespace mrover {
             double watchdogTimeout = 0.25;
 
             bool limitSwitch0Present = false;
-            bool limitSwitch1Present = false;
             bool limitSwitch0Enabled = true;
-            bool limitSwitch1Enabled = true;
             bool limitSwitch0LimitsFwd = false;
-            bool limitSwitch1LimitsFwd = false;
             bool limitSwitch0ActiveHigh = true;
-            bool limitSwitch1ActiveHigh = true;
             bool limitSwitch0UsedForReadjustment = false;
-            bool limitSwitch1UsedForReadjustment = false;
             OutputPosition limitSwitch0ReadjustPosition = OutputPosition{0.0};
+            bool limitSwitch1Present = false;
+            bool limitSwitch1Enabled = true;
+            bool limitSwitch1LimitsFwd = false;
+            bool limitSwitch1ActiveHigh = true;
+            bool limitSwitch1UsedForReadjustment = false;
             OutputPosition limitSwitch1ReadjustPosition = OutputPosition{0.0};
         };
 
@@ -139,8 +138,49 @@ namespace mrover {
         }
 
         auto setDesiredThrottle(Percent throttle) -> void {
+#ifdef DEBUG_BUILD
+            RCLCPP_DEBUG(mNode->get_logger(), "%s throttle set to: %f. Commanding velocity...", mControllerName.c_str(), throttle.rep);
+#endif
             setDesiredVelocity(mapThrottleToVelocity(throttle));
         }
+
+        auto setDesiredVelocity(OutputVelocity velocity) -> void {
+            // Only check for limit switches if at least one limit switch exists and is enabled
+            if ((mConfig.limitSwitch0Enabled && mConfig.limitSwitch0Present) || (mConfig.limitSwitch1Enabled && mConfig.limitSwitch0Present)) {
+                sendQuery();
+
+                if (auto [isFwdPressed, isBwdPressed] = getPressedLimitSwitchInfo();
+                    (velocity > OutputVelocity{0} && isFwdPressed) ||
+                    (velocity < OutputVelocity{0} && isBwdPressed)) {
+#ifdef DEBUG_BUILD
+                    RCLCPP_DEBUG(mNode->get_logger(), "%s hit limit switch. Not commanding velocity", mControllerName.c_str());
+#endif
+                    setBrake();
+                    return;
+                }
+            }
+
+            velocity = std::clamp(velocity, mConfig.minVelocity, mConfig.maxVelocity);
+
+            if (abs(velocity) < OutputVelocity{1e-5}) {
+                setBrake();
+            } else {
+                moteus::PositionMode::Command command{
+                        .position = std::numeric_limits<double>::quiet_NaN(),
+                        .velocity = velocity.get(),
+                        .maximum_torque = mConfig.maxTorque,
+                        .watchdog_timeout = mConfig.watchdogTimeout,
+                };
+
+                moteus::CanFdFrame positionFrame = mMoteus->MakePosition(command);
+                mDevice.publish_moteus_frame(positionFrame);
+            }
+
+#ifdef DEBUG_BUILD
+            RCLCPP_DEBUG(mNode->get_logger(), "Commanding %s velocity to: %f", mControllerName.c_str(), velocity.get());
+#endif
+        }
+
 
         auto setDesiredPosition(OutputPosition position) -> void {
             // Only check for limit switches if at least one limit switch exists and is enabled
@@ -150,6 +190,9 @@ namespace mrover {
                 if (auto [isFwdPressed, isBwdPressed] = getPressedLimitSwitchInfo();
                     (mCurrentPosition < position && isFwdPressed) ||
                     (mCurrentPosition > position && isBwdPressed)) {
+#ifdef DEBUG_BUILD
+                    RCLCPP_DEBUG(mNode->get_logger(), "%s hit limit switch. Not commanding position", mControllerName.c_str());
+#endif
                     setBrake();
                     return;
                 }
@@ -165,6 +208,10 @@ namespace mrover {
             };
             moteus::CanFdFrame positionFrame = mMoteus->MakePosition(command);
             mDevice.publish_moteus_frame(positionFrame);
+
+#ifdef DEBUG_BUILD
+            RCLCPP_DEBUG(mNode->get_logger(), "Commanding %s position to: %f", mControllerName.c_str(), position.get());
+#endif
         }
 
         auto processCANMessage(msg::CAN::ConstSharedPtr const& msg) -> void {
@@ -190,36 +237,6 @@ namespace mrover {
             if (result.mode == moteus::Mode::kPositionTimeout || result.mode == moteus::Mode::kFault) {
                 setStop();
                 RCLCPP_WARN(mNode->get_logger(), "Position timeout hit");
-            }
-        }
-
-        auto setDesiredVelocity(OutputVelocity velocity) -> void {
-            // Only check for limit switches if at least one limit switch exists and is enabled
-            if ((mConfig.limitSwitch0Enabled && mConfig.limitSwitch0Present) || (mConfig.limitSwitch1Enabled && mConfig.limitSwitch0Present)) {
-                sendQuery();
-
-                if (auto [isFwdPressed, isBwdPressed] = getPressedLimitSwitchInfo();
-                    (velocity > OutputVelocity{0} && isFwdPressed) ||
-                    (velocity < OutputVelocity{0} && isBwdPressed)) {
-                    setBrake();
-                    return;
-                }
-            }
-
-            velocity = std::clamp(velocity, mConfig.minVelocity, mConfig.maxVelocity);
-
-            if (abs(velocity) < OutputVelocity{1e-5}) {
-                setBrake();
-            } else {
-                moteus::PositionMode::Command command{
-                        .position = std::numeric_limits<double>::quiet_NaN(),
-                        .velocity = velocity.get(),
-                        .maximum_torque = mConfig.maxTorque,
-                        .watchdog_timeout = mConfig.watchdogTimeout,
-                };
-
-                moteus::CanFdFrame positionFrame = mMoteus->MakePosition(command);
-                mDevice.publish_moteus_frame(positionFrame);
             }
         }
 

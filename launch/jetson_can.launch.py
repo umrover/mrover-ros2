@@ -41,4 +41,13 @@ def generate_launch_description():
         ],
     )
 
-    return LaunchDescription([can_bridge_1_node, can_bridge_2_node, can_bridge_3_node])
+    can_bridge_4_node = Node(
+        package="mrover",
+        executable="can_bridge",
+        name="can_bridge_4",
+        parameters=[
+            Path(get_package_share_directory("mrover"), "config", "esw.yaml"),
+        ],
+    )
+
+    return LaunchDescription([can_bridge_3_node])
