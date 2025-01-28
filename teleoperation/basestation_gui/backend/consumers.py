@@ -13,9 +13,9 @@ from backend.drive_controls import send_joystick_twist, send_controller_twist
 from backend.input import DeviceInputs
 from backend.models import BasicWaypoint, AutonWaypoint
 from geometry_msgs.msg import Twist, Vector3
-from sensor_msgs.msg import NavSatFix
+from sensor_msgs.msg import NavSatFix, Temperature, RelativeHumidity
 from lie import SE3
-from mrover.msg import Throttle, IK, ControllerState, HeaterData, ScienceThermistors
+from mrover.msg import Throttle, IK, ControllerState, HeaterData, ScienceThermistors, Oxygen, Methane, UV
 from backend.ra_controls import send_ra_controls
 from backend.mast_controls import send_mast_controls
 from std_srvs.srv import SetBool
@@ -30,18 +30,14 @@ node = rclpy.create_node('teleoperation')
 thread = threading.Thread(target=rclpy.spin, args=(node, ), daemon=True)
 thread.start()
 cur_mode = "disabled"
-heater_names = [
-                'b0', 
-                'b1', 
-                'n0', 
-                'n1',  
-                ]
+heater_names = ['a0', 'a1', 'b0', 'b1']
 
 class GUIConsumer(JsonWebsocketConsumer):
     subscribers = []
     
     def connect(self) -> None:
         self.accept()
+        # Publishers
         self.thr_pub = node.create_publisher(Throttle, "/arm_throttle_cmd",1)
         self.ee_pos_pub = node.create_publisher(IK, "/ee_pos_cmd",1)
         self.ee_vel_pub = node.create_publisher(Vector3, "/ee_vel_cmd",1)
@@ -49,14 +45,25 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.controller_twist_pub = node.create_publisher(Twist, "/controller_cmd_vel", 1)
         self.mast_gimbal_pub = node.create_publisher(Throttle, "/mast_gimbal_throttle_cmd", 1)
 
+        # Subscribers
         self.forward_ros_topic("/drive_controller_data", ControllerState, "drive_state")
         self.forward_ros_topic("/science_thermistors", ScienceThermistors, "thermistors")
         self.forward_ros_topic("/science_heater_state", HeaterData, "heater_states")
+        self.forward_ros_topic("/science_oxygen_data", Oxygen, "oxygen")
+        self.forward_ros_topic("/science_methane_data", Methane, "methane")
+        self.forward_ros_topic("/science_uv_data", UV, "uv")
+        self.forward_ros_topic("/science_temperature_data", Temperature, "temperature")
+        self.forward_ros_topic("/science_humidity_data", RelativeHumidity, "humidity")
+
+        # Services
+        self.auto_shutoff_service = node.create_client(SetBool, "/science_change_heater_auto_shutoff_state")
 
         self.heater_services = []
+        self.white_leds_services = []
         for name in heater_names:
             self.heater_services.append(node.create_client(SetBool, "/science_enable_heater_" + name))
-        self.auto_shutoff_service = node.create_client(SetBool, "/science_change_heater_auto_shutoff_state")
+        for site in ['a0', 'b0']:
+            self.white_leds_services.append(node.create_client(SetBool, "/science_enable_white_led_" + site))
 
         self.buffer = Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.buffer, node)
@@ -180,15 +187,19 @@ class GUIConsumer(JsonWebsocketConsumer):
                     "enabled": enabled, 
                     "heater": heater
                 }:
-                    request = SetBool.Request()
-                    request.data = enabled
-                    self.heater_services[heater_names.index(heater)].call(request)
+                    self.heater_services[heater_names.index(heater)].call(SetBool.Request(data=enabled))
 
                 case{
                     "type": "auto_shutoff",
                     "shutoff": shutoff
                 }:
                     self.auto_shutoff_service.call(SetBool.Request(data=shutoff))
+                case{
+                    "type": "white_leds",
+                    "site": site,
+                    "enabled": enabled
+                }:
+                    self.white_leds_services[site].call(SetBool.Request(data=enabled))
                     
                 case _:
                     node.get_logger().warning(f"Unhandled message: {message}")

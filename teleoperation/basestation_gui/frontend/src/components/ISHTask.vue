@@ -7,11 +7,16 @@
         <NetworkMonitor/>
       </div>
     </div>
-    <div class="shadow p-3 rounded siteSelect">
-      <SelectSite @site="onSiteChange" />
-    </div>
-    <div class="shadow p-3 rounded autoToggle">
-      <AutoShutdown />
+    <div class="shadow p-3 rounded row siteSelect">
+      <div class="col-4">
+        <SelectSite @site="onSiteChange" />
+      </div>
+      <div class="col-4">
+          <WhiteLEDs :site="site" />
+      </div>
+      <div class="col-4">
+        <AutoShutdown />
+      </div>
     </div>
     <div class="shadow p-3 rounded benedicts">
       <NinhydrinBenedict :site="site" :isNinhydrin="false" />
@@ -52,42 +57,8 @@
       </div>
     </div>
 
-    <!-- TODO: create a sensor vue file (for the table) -->
     <div class="shadow p-3 rounded sensors">
-      <div class="sensors-container">
-        <table class="table table-bordered">
-          <thead>
-            <tr class="table-primary">
-              <th></th>
-              <th>Oxygen</th>
-              <th>Methane</th>
-              <th>UV</th>
-              <th>Humidity</th>
-              <th>Temp °C</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <th class='table-secondary'>Site A</th>
-              <td>-</td>
-              <td>-</td>
-              <td>-</td>
-              <td>-</td>
-              <td>-</td>
-            </tr>
-            <tr>
-              <th class='table-secondary'>Site B</th>
-              <td>-</td>
-              <td>-</td>
-              <td>-</td>
-              <td>-</td>
-              <td>-</td>
-            </tr>
-          </tbody>  
-        </table>
-  
-        <button class="btn btn-secondary">Generate Report</button>
-      </div>
+      <SensorData :site="site"/>
     </div>
   </div>
 </template>
@@ -99,6 +70,8 @@ import NetworkMonitor from "./NetworkMonitor.vue";
 import CameraFeed from './CameraFeed.vue';
 import ToggleButton from './ToggleButton.vue';
 import AutoShutdown from './AutoShutdown.vue';
+import SensorData from './SensorData.vue';
+import WhiteLEDs from './WhiteLEDs.vue';
 
 export default {
   components: {
@@ -107,7 +80,9 @@ export default {
     NetworkMonitor,
     CameraFeed,
     ToggleButton,
-    AutoShutdown
+    AutoShutdown,
+    SensorData,
+    WhiteLEDs
   },
 
   data() {
@@ -115,7 +90,6 @@ export default {
       site: 0 as number,
       cameraA: true,
       cameraB: true,
-      sensor_data: null
     }
   },
 
@@ -134,56 +108,11 @@ export default {
   grid-template-columns: repeat(2, auto) 40%;
   grid-template-areas:
     'header header header'
-    'siteSelect autoToggle camera'
+    'siteSelect siteSelect camera'
     'ninhydrin benedicts camera'
     'sensors sensors camera';
   font-family: sans-serif;
   height: auto;
-}
-
-.comms {
-  margin-right: 5px;
-}
-
-.helpscreen {
-  z-index: 1000000000;
-  display: block;
-  visibility: hidden;
-  background-color: black;
-  opacity: 0.8;
-  position: absolute;
-  left: 0px;
-  top: 0px;
-  width: 100%;
-  height: 100%;
-}
-
-.helpimages {
-  z-index: 1000000001;
-  visibility: hidden;
-  position: absolute;
-  left: 5%;
-  top: 5%;
-  width: 90%;
-  height: 90%;
-}
-
-.help {
-  z-index: 1000000002;
-  display: flex;
-  float: right;
-  opacity: 0.8;
-  cursor: auto;
-}
-
-.help:hover {
-  opacity: 1;
-  cursor: pointer;
-}
-
-.help:hover ~ .helpscreen,
-.help:hover ~ .helpimages {
-  visibility: visible;
 }
 
 .header {
@@ -206,14 +135,6 @@ export default {
   grid-area: siteSelect;
 }
 
-.autoToggle{
-  grid-area: autoToggle;
-}
-
-.chlorophyll {
-  grid-area: chlorophyll;
-}
-
 .ninhydrin {
   grid-area: ninhydrin;
 }
@@ -224,15 +145,5 @@ export default {
 
 .sensors {
   grid-area: sensors;
-}
-
-.sensors-container {
-  display: flex;
-  align-items: start;
-  gap: 20px;
-}
-
-.buttons {
-  margin-top: 20px;
 }
 </style>

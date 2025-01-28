@@ -21,4 +21,8 @@ __pycache__/
 *.egg-info/
 venv/
 
+# SQL file for Teleop
 *.sqlite3
+
+# macOS
+.DS_Store
