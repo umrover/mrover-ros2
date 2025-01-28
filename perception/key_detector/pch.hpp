@@ -29,6 +29,9 @@
 //Messages
 #include <mrover/msg/ik.hpp>
 
+//Lie
+#include <lie.hpp>
+
 using KeyAction = mrover::action::KeyAction;
 using GoalHandleKeyAction = rclcpp_action::ServerGoalHandle<KeyAction>;
 
