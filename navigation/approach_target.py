@@ -62,8 +62,58 @@ class ApproachTargetState(State):
         if context.rover.stuck:
             context.rover.previous_state = self
             return recovery.RecoveryState()
-
+        
+        context.node.get_logger().info("Found closest point to target")
         return self
+    
+    def calc_point(self, context: Context) -> bool:
+        """
+        Calculate the nearest low-cost point to the target.
+        Should only run if the target is in a high-cost area.
+
+        :param context: Context object providing necessary data.
+        :return: True if a low-cost point was found, False otherwise.
+        """
+        import numpy as np
+
+        # Get the target position
+        target_position = self.get_target_position(context)
+
+        # Check if the target is in a high-cost area
+        if not self.is_high_cost_point(target_position, context):
+            # If not in a high-cost area, return success (no need to find a new point)
+            return True
+
+        # Define initial search parameters
+        search_radius = 1.0  # Adjust based on the scale of your environment
+        resolution = 0.1  # Step size for searching in each direction
+        max_radius = 10.0  # Maximum allowable radius to expand search
+        radius_increment = 1.0 #How much larger to expand radius
+
+        while search_radius <= max_radius:
+            # Generate candidate points within the search radius
+            candidates = []
+            for dx in np.arange(-search_radius, search_radius + resolution, resolution):
+                for dy in np.arange(-search_radius, search_radius + resolution, resolution):
+                    candidate = target_position + np.array([dx, dy])
+                    if not self.is_high_cost_point(candidate, context):
+                        candidates.append(candidate)
+
+            if candidates:
+                # Find the nearest low-cost point to the target position
+                nearest_low_cost_point = min(candidates, key=lambda p: np.linalg.norm(p - target_position))
+
+                # Update internal state (if necessary) or transition to the new point
+                self.low_cost_point = nearest_low_cost_point  # Assuming an attribute to store the low-cost point
+
+                
+                return True
+
+            # Expand the search radius
+            search_radius += radius_increment
+
+        # If no low-cost point is found within the maximum radius, return failure
+        return False
 
     def on_loop(self, context: Context) -> State:
         """
@@ -107,6 +157,7 @@ class ApproachTargetState(State):
         ):
             if self.traj.increment_point():
                 # TODO: What do we do if we skip high cost points and reach the end of the trajectory
+                self.calc_point()
                 return self.next_state(context=context, is_finished=False)
             self.display_markers(context=context)
 
