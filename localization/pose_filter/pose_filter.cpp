@@ -70,7 +70,7 @@ namespace mrover {
         auto const& imu_msg = current_imu.value();
         Eigen::Quaterniond quaternion(imu_msg.orientation.w, imu_msg.orientation.x, imu_msg.orientation.y, imu_msg.orientation.z);
         quaternion.normalize();
-        
+
 
         double heading_rad = heading_msg->heading * (M_PI / 180);
         Eigen::Quaterniond desired_yaw_quaternion(Eigen::AngleAxisd(heading_rad, Eigen::Vector3d::UnitZ()));
@@ -119,11 +119,11 @@ namespace mrover {
 
         SE3d::Tangent twist;
         if (last_pose_in_map && last_pose_time) {
-            twist = (pose_in_map - last_pose_in_map.value()) / ((msg->header.stamp.sec + msg->header.stamp.nanosec * 10e-9) - (last_pose_time->sec + last_pose_time->nanosec * 10e-9));
+            twist = (pose_in_map - last_pose_in_map.value()) / ((linearized_pos_msg->header.stamp.sec + linearized_pos_msg->header.stamp.nanosec * 10e-9) - (last_pose_time->sec + last_pose_time->nanosec * 10e-9));
         }
 
         nav_msgs::msg::Odometry odometry;
-        odometry.header = msg->header;
+        odometry.header = linearized_pos_msg->header;
         odometry.pose.pose.position.x = pose_in_map.translation().x();
         odometry.pose.pose.position.y = pose_in_map.translation().y();
         odometry.pose.pose.position.z = pose_in_map.translation().z();
@@ -140,14 +140,14 @@ namespace mrover {
         odometry_pub->publish(odometry);
 
         last_pose_in_map = pose_in_map;
-        last_pose_time = msg->header.stamp;
+        last_pose_time = linearized_pos_msg->header.stamp;
 
     }
 
     void PoseFilter::correction_timer_callback() {
 
         // 1. Ensure the rover is being commanded to move relatively straight forward
-
+s
         geometry_msgs::msg::Twist mean_twist;
 
         for (auto total = static_cast<double>(twists.size()); auto const& twist : twists) {
@@ -205,7 +205,7 @@ namespace mrover {
 
         double corrected_heading_in_map = std::atan2(rover_velocity_sum.y(), rover_velocity_sum.x());
 
-        SO3d uncorrected_orientation = ros_quat_to_eigen_quat(current_imu_uncalib->orientation);
+        SO3d uncorrected_orientation = ros_quat_to_eigen_quat(current_imu->orientation);
         R2d uncorrected_forward = uncorrected_orientation.rotation().col(0).head<2>();
         double estimated_heading_in_map = std::atan2(uncorrected_forward.y(), uncorrected_forward.x());
 
