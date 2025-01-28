@@ -1,0 +1,24 @@
+
+# All units are in SI
+# ===================
+# Time:     second, hz
+# Angle:    radian
+# Distance: meter
+
+/light_detector:
+  ros__parameters:
+    camera_frame: "zed_left_camera_frame"
+    world_frame: "map"
+    spiral_search_radius: 50
+    immediate_light_range: 5
+    hit_increase: 5
+    hit_decrease: 1
+    hit_max: 100
+    m_publish_threshold: 50
+    upper_bound_h: 0
+    upper_bound_s: 0
+    upper_bound_v: 0
+    lower_bound_h: 0
+    lower_bound_s: 0
+    lower_bound_v: 0
+

@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 
 from ament_index_python import get_package_share_directory
 
@@ -23,12 +24,18 @@ def generate_launch_description():
         name="zed_wrapper",
         parameters=[Path(get_package_share_directory("mrover"), "config", "zed.yaml")],
     )
-    
 
+    light_detector_node = Node(
+        package="mrover",
+        executable="light_detector",
+        name="light_detector",
+        parameters=[Path(get_package_share_directory("mrover"), "config", "light_detector.yaml")],
+    )
 
     return LaunchDescription(
         [
+            zed_node,
             light_detector_position_node,
-            zed_node
+            light_detector_node
         ]
     )
