@@ -1,11 +1,11 @@
 #include "lib/messaging.hpp"
-#include <memory>
-#include <unordered_map>
-#include <algorithm>
-#include <rclcpp/rclcpp.hpp>
 #include "std_msgs/msg/float32.hpp"
+#include <algorithm>
+#include <memory>
 #include <mrover/msg/can.hpp>
+#include <rclcpp/rclcpp.hpp>
 #include <units/units.hpp>
+#include <unordered_map>
 
 namespace mrover {
 
@@ -17,10 +17,10 @@ namespace mrover {
         rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr oxygenPub;
         rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr methanePub;
         rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr uvPub;
-        
+
         rclcpp::Subscription<msg::CAN>::ConstSharedPtr canSubA;
         rclcpp::Subscription<msg::CAN>::ConstSharedPtr canSubB;
-        
+
         void processMessage([[maybe_unused]] mrover::HeaterStateData const& message) {
             // // ROS_ERROR("heater!");
             // mrover::HeaterData heaterData;
@@ -43,10 +43,6 @@ namespace mrover {
             // thermistorDataPublisher->publish(scienceThermistors);
         }
 
-        void processMessage([[maybe_unused]] mrover::SpectralData const& message) {
-            // Just here for the compiler to stay happy :D
-        }
-
         void processMessage(mrover::SensorData const& message) {
             std_msgs::msg::Float32 msg;
             switch (static_cast<ScienceDataID>(message.id)) {
@@ -54,7 +50,7 @@ namespace mrover {
                     msg.data = message.data;
                     tempPub->publish(msg);
                     break;
-                
+
                 case ScienceDataID::HUMIDITY:
                     msg.data = message.data;
                     humidityPub->publish(msg);
@@ -80,7 +76,7 @@ namespace mrover {
         void processCANData(msg::CAN::ConstSharedPtr const& msg) {
             // TODO - fix in future
             // ROS_ERROR("Source: %s Destination: %s", msg->source.c_str(), msg->destination.c_str());
-            
+
             mrover::OutBoundScienceMessage const& message = *reinterpret_cast<mrover::OutBoundScienceMessage const*>(msg->data.data());
             std::visit([&](auto const& messageAlternative) { processMessage(messageAlternative); }, message);
         }
