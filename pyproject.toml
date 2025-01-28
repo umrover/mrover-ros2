@@ -9,7 +9,7 @@ maintainers = [
     { name = "Michigan Mars Rover Team", email = "rover-software-team@umich.edu" }
 ]
 dependencies = [
-	"empy==3.3.4",
+    "empy==3.3.4",
     "numpy==1.26.4",
     "shapely==2.0.6",
     "moteus==0.3.72",
