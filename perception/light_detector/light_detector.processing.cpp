@@ -26,13 +26,6 @@ namespace mrover {
     }
 
     auto LightDetector::getPointFromPointCloud(sensor_msgs::msg::PointCloud2::ConstSharedPtr const& cloudPtr, std::pair<int, int> coordinates) -> std::optional<SE3d>{
-        /* auto* pointPtr = reinterpret_cast<Point const*>(msg->data.data());
-        RCLCPP_INFO_STREAM(get_logger(),"SIZE: " << msg->data.size());
-        auto msgWidth = msg->width;
-        RCLCPP_INFO_STREAM(get_logger(),"WIDTH: " << msg->width);
-        RCLCPP_INFO_STREAM(get_logger(),"HEIGHT: " << msg->height);
-        RCLCPP_INFO_STREAM(get_logger(),"X: " << coordinates.second << " Y: " << coordinates.first);
-         */
         Point const& p = reinterpret_cast<Point const*>(cloudPtr->data.data())[coordinates.second + coordinates.first * cloudPtr->width];
         if (!std::isfinite(p.x) || !std::isfinite(p.y) || !std::isfinite(p.z)){
             //RCLCPP_INFO_STREAM(get_logger(),"failed");
@@ -130,8 +123,6 @@ namespace mrover {
                 SE3Conversions::pushToTfTree(mTfBroadcaster, immediateLightFrame, mCameraFrame, lightInCamera.value(), this->get_clock()->now());
             }
 		}
-
-        //printHitCounts();
 
         decreaseHitCounts();
 

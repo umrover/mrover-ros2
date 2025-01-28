@@ -20,7 +20,7 @@ namespace mrover{
                 {"light_detector/spiral_search_radius", SPIRAL_SEARCH_DIM, 50},
                 {"light_detector/immediate_light_range", mImmediateLightRange, 5},
                 {"light_detector/hit_increase", mHitIncrease, 5},
-                {"light_detector/hit_decrease", mHitDecrease, 2},
+                {"light_detector/hit_decrease", mHitDecrease, 1},
                 {"light_detector/hit_max", mHitMax, 100},
 				{"light_detector/m_publish_threshold", mPublishThreshold, 50},
                 {"light_detector/upper_bound_h", upperBoundH, 0},

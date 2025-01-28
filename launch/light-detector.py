@@ -17,8 +17,18 @@ def generate_launch_description():
         arguments=["0", "0", "0", "0", "0", "0", "zed_left_camera_frame", "map"],
     )
 
+    zed_node = Node(
+        package="mrover",
+        executable="zed",
+        name="zed_wrapper",
+        parameters=[Path(get_package_share_directory("mrover"), "config", "zed.yaml")],
+    )
+    
+
+
     return LaunchDescription(
         [
             light_detector_position_node,
+            zed_node
         ]
     )
