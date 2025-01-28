@@ -7,6 +7,7 @@ namespace mrover{
 		mStateMachine.enableTransitions<TargetKey, TargetKey, PressKey, Cancel>();
 		mStateMachine.enableTransitions<PressKey, PressKey, Wait, Cancel>();
 		mStateMachine.enableTransitions<Wait, TargetKey, Wait, Cancel>();
+		mStateMachine.enableTransitions<Cancel, Cancel>();
 		using namespace std::placeholders;
 
 		this->action_server_ = rclcpp_action::create_server<KeyAction>(

@@ -11,6 +11,7 @@ TargetKey::TargetKey(const std::shared_ptr<FSMCtx> fsm_ctx) : fsm_ctx(fsm_ctx), 
 }
 
 auto TargetKey::onLoop() -> State*{
+    RCLCPP_INFO(fsm_ctx->node->get_logger(), "TargetKey Onloop");
 
     //while not cancelled and code_index < goal->get_goal()->code.size()
         // get the location of the key by querying model
@@ -41,6 +42,8 @@ auto TargetKey::onLoop() -> State*{
 
     //Replace With Service Start
     //arm_e_link
+    
+    /*
     auto buffer = tf2_ros::Buffer(node->get_clock());
     tf2_ros::TransformBroadcaster mTfBroadcaster{node};
     auto tf = mrover::SE3Conversions::fromTfTree(buffer, std::format("{}_truth", goal->code[fsm_ctx->curr_key_index]), "lander_truth", node->get_clock()->now());
@@ -50,7 +53,7 @@ auto TargetKey::onLoop() -> State*{
 
     SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_e_link", "map", target, node->get_clock()->now());
 
-
+    */
     //Replace with Service End
     /*
     auto client = node->create_client<srv::GetKeyLoc>("GetKeyLoc");

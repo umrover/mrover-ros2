@@ -9,6 +9,7 @@ PressKey::PressKey(const std::shared_ptr<FSMCtx> fsm_ctx) : fsm_ctx(fsm_ctx)
 }
 
 auto PressKey::onLoop() -> State*{
+    RCLCPP_INFO(fsm_ctx->node->get_logger(), "PressKey Onloop");
 
     //while not cancelled 
         // If not ESW Failed

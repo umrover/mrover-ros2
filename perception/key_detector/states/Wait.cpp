@@ -9,6 +9,7 @@ namespace mrover {
     }
 
     auto Wait::onLoop() -> State* {
+    RCLCPP_INFO(fsm_ctx->node->get_logger(), "Wait Onloop");
 
         while(rclcpp::ok()){
             auto logger = rclcpp::get_logger("Wait");
