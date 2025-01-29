@@ -127,6 +127,9 @@ int main(void)
   /* USER CODE BEGIN 2 */
   HAL_FDCAN_ConfigTxDelayCompensation(&hfdcan1, 13, 1);
   HAL_FDCAN_EnableTxDelayCompensation(&hfdcan1);
+  // HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
+  // HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2);
+  // HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_3);
   HAL_PostInit();
 
   /* USER CODE END 2 */
@@ -135,6 +138,11 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+
+      // __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, 50);
+      // __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_2, 50);
+      // __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_3, 50);
+
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */

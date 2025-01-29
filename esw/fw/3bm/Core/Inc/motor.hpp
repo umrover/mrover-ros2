@@ -159,11 +159,11 @@ namespace mrover {
 
             for (std::size_t i = 0; i < m_limit_switches.size(); ++i) {
                 if (GET_BIT_AT_INDEX(message.limit_switch_info.present, i)) {
-                    bool enabled = GET_BIT_AT_INDEX(message.limit_switch_info.enabled, i);
-                    bool active_high = GET_BIT_AT_INDEX(message.limit_switch_info.active_high, i);
-                    bool used_for_readjustment = GET_BIT_AT_INDEX(message.limit_switch_info.use_for_readjustment, i);
-                    bool limits_forward = GET_BIT_AT_INDEX(message.limit_switch_info.limits_forward, i);
-                    auto associated_position = Radians{message.limit_switch_info.limit_readj_pos[i]};
+                    const bool enabled = GET_BIT_AT_INDEX(message.limit_switch_info.enabled, i);
+                    const bool active_high = GET_BIT_AT_INDEX(message.limit_switch_info.active_high, i);
+                    const bool used_for_readjustment = GET_BIT_AT_INDEX(message.limit_switch_info.use_for_readjustment, i);
+                    const bool limits_forward = GET_BIT_AT_INDEX(message.limit_switch_info.limits_forward, i);
+                    const auto associated_position = Radians{message.limit_switch_info.limit_readj_pos[i]};
 
                     m_limit_switches[i].initialize(enabled, active_high, used_for_readjustment, limits_forward, associated_position);
                 }
