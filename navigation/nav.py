@@ -74,6 +74,7 @@ class Navigation(Node):
                 ("water_bottle_search.traversable_cost", Parameter.Type.DOUBLE),
                 ("water_bottle_search.update_delay", Parameter.Type.DOUBLE),
                 ("water_bottle_search.safe_approach_distance", Parameter.Type.DOUBLE),
+                ("recovery.recovery_distance", Parameter.Type.DOUBLE),
             ],
         )
 

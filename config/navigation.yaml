@@ -58,6 +58,9 @@ navigation:
       post_avoidance_multiplier: 1.42
       post_radius: 0.7
 
+    recovery:
+      recovery_distance: 1.0
+
     # TODO(quintin): Avoid storing these in multiple config files
     ref_lat: 38.4225202
     ref_lon: -110.7844653
