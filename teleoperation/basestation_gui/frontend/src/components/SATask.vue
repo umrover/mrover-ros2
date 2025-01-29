@@ -24,49 +24,31 @@
     </div>
     <div class='shadow p-3 rounded moteus'>
       <ControllerDataTable msg-type='drive_state' header='Drive States' />
+      <ControllerDataTable msg-type='sa_state' header='SA States' />
     </div>
-    <div class='shadow p-3 rounded joints'>
-      <JointStateDataTable msg-type='sa_joint' header='SA Joints' />
-      <JointStateDataTable msg-type='plunger' header='Plunger (w/o offset)' />
-    </div>
-    <!--    <div class='shadow p-3 rounded limit'>-->
-    <!--      <h3>Limit Switches</h3>-->
-    <!--      <LimitSwitch :service_name="'sa_enable_limit_switch_sa_x'" :display_name="'SA X Switch'" />-->
-    <!--      <LimitSwitch :service_name="'sa_enable_limit_switch_sa_y'" :display_name="'SA Y Switch'" />-->
-    <!--      <LimitSwitch :service_name="'sa_enable_limit_switch_sa_z'" :display_name="'SA Z Switch'" />-->
-    <!--      <LimitSwitch-->
-    <!--        :service_name="'sa_enable_limit_switch_sampler'"-->
-    <!--        :display_name="'Sampler Switch'"-->
-    <!--      />-->
-    <!--      <LimitSwitch-->
-    <!--        :service_name="'sa_enable_limit_switch_sensor_actuator'"-->
-    <!--        :display_name="'Sensor Actuator Switch'"-->
-    <!--      />-->
-    <!--    </div>-->
-    <!--    <div class='shadow p-3 rounded calibration'>-->
-    <!--      <h3>Calibrations</h3>-->
-    <!--      <br />-->
-    <!--      <div class='calibration-checkboxes'>-->
-    <!--        <button class='btn btn-primary my-5' @click='resetGimbal()'>Reset Gimbal</button>-->
-    <!--        <CalibrationCheckbox :name="'SA X Calibration'" :topic_name="'sa_calibrate_sa_x'" />-->
-    <!--        <CalibrationCheckbox :name="'SA Y Calibration'" :topic_name="'sa_calibrate_sa_y'" />-->
-    <!--        <CalibrationCheckbox :name="'SA Z Calibration'" :topic_name="'sa_calibrate_sa_z'" />-->
-    <!--        <CalibrationCheckbox-->
-    <!--          :name="'SA Sampler Calibration'"-->
-    <!--          :topic_name="'sa_calibrate_sampler'"-->
-    <!--        />-->
-    <!--        <CalibrationCheckbox-->
-    <!--          :name="'SA Sensor Actuator Calibration'"-->
-    <!--          :topic_name="'sa_calibrate_sensor_actuator'"-->
-    <!--        />-->
-    <!--      </div>-->
-    <!--    </div>-->
     <div v-show='false'>
       <MastGimbalControls />
     </div>
     <div class='shadow p-3 rounded odom'>
       <OdometryReading :odom='odom'></OdometryReading>
     </div>
+    <div class="shadow p-3 rounded hexHub">
+      <h3>HexHub Options</h3>
+      <div class="d-flex justify-content-center">
+        <div v-for="h in hexHubOptions" :key="h" class='form-check mx-3'>
+          <input
+            v-model='hexHubPos'
+            class='form-check-input'
+            type='radio'
+            :id="'hex'+h"
+            :value='h'
+          />
+          <label class='form-check-label' :for="'hex'+h">{{h}}</label>
+        </div>
+      </div>
+    </div>
+    <!-- TODO: add pumps -->
+    <!-- TODO: add limit switch -->
   </div>
 </template>
 
@@ -76,15 +58,10 @@ import SoilData from './SoilData.vue'
 import BasicWaypointEditor from './BasicWaypointEditor.vue'
 import DriveControls from './DriveControls.vue'
 import MastGimbalControls from './MastGimbalControls.vue'
-import LimitSwitch from './LimitSwitch.vue'
-import CalibrationCheckbox from './CalibrationCheckbox.vue'
 import OdometryReading from './OdometryReading.vue'
 import ControllerDataTable from './ControllerDataTable.vue'
 import SAArmControls from './SAArmControls.vue'
-import JointStateDataTable from './JointStateDataTable.vue'
-import NetworkMonitor from "./NetworkMonitor.vue";
-import { quaternionToMapAngle } from '../utils'
-import { mapActions, mapState } from 'vuex'
+import NetworkMonitor from "./NetworkMonitor.vue"
 
 export default {
   components: {
@@ -95,12 +72,8 @@ export default {
     DriveControls,
     MastGimbalControls,
     SAArmControls,
-    LimitSwitch,
-    CalibrationCheckbox,
     NetworkMonitor,
-    //   MCUReset,
     OdometryReading,
-    JointStateDataTable
   },
   data() {
     return {
@@ -111,35 +84,10 @@ export default {
         bearing_deg: 0,
         altitude: 0
       },
+      hexHubPos: 0,
+      hexHubOptions: [1,2,3,4,5,6]
     }
   },
-
-  computed: {
-    ...mapState('websocket', ['message'])
-  },
-
-  watch: {
-    message(msg) {
-      switch (msg.type) {
-        case 'gps_fix':
-          this.odom.latitude_deg = msg.latitude
-          this.odom.longitude_deg = msg.longitude
-          this.odom.altitude = msg.altitude
-          break
-        case 'orientation':
-          this.odom.bearing_deg = quaternionToMapAngle(msg.orientation)
-          break
-      }
-    }
-  },
-
-  methods: {
-    ...mapActions('websocket', ['sendMessage'])
-
-    // resetGimbal: function() {
-    //   this.sendMessage({ type: 'reset_gimbal' })
-    // }
-  }
 }
 </script>
 
@@ -147,13 +95,13 @@ export default {
 .wrapper {
   display: grid;
   grid-gap: 10px;
-  grid-template-columns: 50% 50%;
+  grid-template-columns: 50% repeat(2, auto);
   grid-template-areas:
-    'header header'
-    'arm soilData'
-    'map waypoints'
-    'map odom'
-    'moteus joints';
+    'header header header'
+    'arm hexHub soilData'
+    'map waypoints waypoints'
+    'map odom odom'
+    'moteus moteus moteus';
   font-family: sans-serif;
   height: auto;
 }
@@ -170,47 +118,6 @@ export default {
   float: right;
 }
 
-.helpscreen {
-  z-index: 1000000000;
-  display: block;
-  visibility: hidden;
-  background-color: black;
-  opacity: 0.8;
-  position: absolute;
-  left: 0px;
-  top: 0px;
-  width: 100%;
-  height: 100%;
-}
-
-.helpimages {
-  z-index: 1000000001;
-  visibility: hidden;
-  position: absolute;
-  left: 5%;
-  top: 5%;
-  width: 90%;
-  height: 90%;
-}
-
-.help {
-  z-index: 1000000002;
-  display: flex;
-  float: right;
-  opacity: 0.8;
-  cursor: auto;
-}
-
-.help:hover {
-  opacity: 1;
-  cursor: pointer;
-}
-
-.help:hover ~ .helpscreen,
-.help:hover ~ .helpimages {
-  visibility: visible;
-}
-
 .map {
   grid-area: map;
 }
@@ -223,20 +130,8 @@ export default {
   grid-area: arm;
 }
 
-.motorData {
-  grid-area: motorData;
-}
-
 .moteus {
   grid-area: moteus;
-}
-
-.joints {
-  grid-area: joints;
-}
-
-.limit {
-  grid-area: limit;
 }
 
 .odom {
@@ -247,19 +142,7 @@ export default {
   grid-area: soilData;
 }
 
-.calibration {
-  grid-area: calibration;
-  display: flex;
-  flex-direction: column;
-}
-
-.calibration-checkboxes {
-  margin: -4% 0 1% 0;
-}
-
-ul#vitals li {
-  display: inline;
-  float: left;
-  padding: 0 10px 0 0;
+.hexHub {
+  grid-area: hexHub;
 }
 </style>
