@@ -29,7 +29,7 @@ namespace mrover {
         rclcpp::Subscription<msg::CAN>::ConstSharedPtr canSubB;
 
         void processMessage([[maybe_unused]] mrover::HeaterStateData const& message) {
-            // // ROS_ERROR("heater!");
+            RCLCPP_ERROR(get_logger(), "Heaters!");
             // mrover::HeaterData heaterData;
             // // TODO - this crashes program!
             // heaterData.state.resize(6);
@@ -41,7 +41,7 @@ namespace mrover {
         }
 
         void processMessage([[maybe_unused]] mrover::ThermistorData const& message) {
-            // // ROS_ERROR("Thermistors!");
+            RCLCPP_ERROR(get_logger(), "Thermistors!");
             // mrover::ScienceThermistors scienceThermistors;
             // scienceThermistors.temps.resize(6);
             // for (int i = 0; i < 6; ++i) {
@@ -51,6 +51,7 @@ namespace mrover {
         }
 
         void processMessage(mrover::SensorData const& message) {
+            // RCLCPP_ERROR(get_logger(), "Sensor data!");
             switch (static_cast<ScienceDataID>(message.id)) {
                 case ScienceDataID::TEMPERATURE: {
                     sensor_msgs::msg::Temperature msg;
@@ -95,10 +96,9 @@ namespace mrover {
         }
 
         void processCANData(msg::CAN::ConstSharedPtr const& msg) {
-            // TODO - fix in future
-            // ROS_ERROR("Source: %s Destination: %s", msg->source.c_str(), msg->destination.c_str());
+            // RCLCPP_ERROR(get_logger(), "Source: %s Destination: %s", msg->source.c_str(), msg->destination.c_str());
 
-            mrover::OutBoundScienceMessage const& message = *reinterpret_cast<mrover::OutBoundScienceMessage const*>(msg->data.data());
+            OutBoundScienceMessage const& message = *reinterpret_cast<OutBoundScienceMessage const*>(msg->data.data());
             std::visit([&](auto const& messageAlternative) { processMessage(messageAlternative); }, message);
         }
 

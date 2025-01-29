@@ -4,12 +4,11 @@
 #include <cstdint>
 #include <variant>
 
+#include <units.hpp>
+
 namespace mrover {
 
 #pragma pack(push, 1)
-
-    struct BaseCommand {
-    };
 
     enum struct ScienceDevice {
         HEATER_B0,
@@ -26,16 +25,16 @@ namespace mrover {
         UV_LED_2
     };
 
-    struct EnableScienceDeviceCommand : BaseCommand {
+    struct EnableScienceDeviceCommand {
         ScienceDevice science_device{};
         bool enable{};
     };
 
-    struct HeaterAutoShutOffCommand : BaseCommand {
+    struct HeaterAutoShutOffCommand {
         bool enable_auto_shutoff{};
     };
 
-    struct ConfigThermistorAutoShutOffCommand : BaseCommand {
+    struct ConfigThermistorAutoShutOffCommand {
         float shutoff_temp{};
     };
 
@@ -44,15 +43,15 @@ namespace mrover {
         std::uint8_t on : 6 {};
     };
 
-    struct HeaterStateData : BaseCommand {
+    struct HeaterStateData {
         HeaterStateInfo heater_state_info;
     };
 
-    struct ThermistorData : BaseCommand {
+    struct ThermistorData {
         std::array<float, 6> temps{};
     };
 
-    struct SensorData : BaseCommand {
+    struct SensorData {
         std::uint8_t id;
         double data;
     };
@@ -72,5 +71,11 @@ namespace mrover {
             SensorData, HeaterStateData, ThermistorData>;
 
 #pragma pack(pop)
+
+    // Utility for std::visit with lambdas
+    template<class... Ts>
+    struct overloaded : Ts... {
+        using Ts::operator()...;
+    };
 
 } // namespace mrover

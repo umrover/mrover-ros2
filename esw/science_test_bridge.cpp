@@ -2,7 +2,7 @@
 
 #include <mrover/msg/can.hpp>
 
-#include <messaging.hpp>
+#include <messaging_science.hpp>
 #include <units.hpp>
 
 namespace mrover {
@@ -36,7 +36,7 @@ namespace mrover {
             msgB.destination = "jetson";
             msgB.reply_required = false;
 
-            TestUnion test_union;
+            TestUnion test_union{};
             test_union.data = 23.45;
 
             msgA.data.push_back(1);
