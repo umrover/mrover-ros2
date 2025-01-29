@@ -9,7 +9,6 @@ simulator:
     save_rate: 1.0
     save_history: 4096
     headless: false
-    motor_timeout: 100
 
     ref_heading: 90.0  # For the GPS sensor to work
 
@@ -30,47 +29,62 @@ simulator:
       rock_1:
         type: urdf
         uri: package://mrover/urdf/world/small_rock.urdf.xacro
-        position: [ 0.00, 11.00, 0.5 ]
+        position: [ 0.00, 9.00, 0.5 ]
 
       rock_2:
         type: urdf
         uri: package://mrover/urdf/world/small_rock.urdf.xacro
-        position: [ -1.00, 9.00, 0.5 ]
+        position: [ 7.00, 7.00, 0.5 ]
 
       rock_3:
         type: urdf
         uri: package://mrover/urdf/world/small_rock.urdf.xacro
-        position: [ 0.00, 5.00, 0.5 ]
+        position: [ -8.00, 6.00, 0.5 ]
 
       rock_4:
         type: urdf
         uri: package://mrover/urdf/world/small_rock.urdf.xacro
-        position: [ -11.00, 0.00, 0.5 ]
+        position: [ 0.00, 6.00, 0.5 ]
 
       rock_5:
         type: urdf
         uri: package://mrover/urdf/world/small_rock.urdf.xacro
-        position: [ -5.00, 0.00, 0.5 ]
+        position: [ -4.00, 3.00, 0.5 ]
 
       rock_6:
         type: urdf
         uri: package://mrover/urdf/world/small_rock.urdf.xacro
-        position: [ 5.00, 0.00, 0.5 ]
+        position: [ 3.00, 3.00, 0.5 ]
 
       rock_7:
         type: urdf
         uri: package://mrover/urdf/world/small_rock.urdf.xacro
-        position: [ 11.00, 0.00, 0.5 ]
+        position: [ -10.00, 0.00, 0.5 ]
 
       rock_8:
         type: urdf
         uri: package://mrover/urdf/world/small_rock.urdf.xacro
-        position: [ 0.00, -7.00, 0.5 ]
+        position: [ -6.00, -1.00, 0.5 ]
 
       rock_9:
         type: urdf
         uri: package://mrover/urdf/world/small_rock.urdf.xacro
-        position: [ 0.00, -15.00, 0.5 ]
+        position: [ 4.00, -2.00, 0.5 ]
+
+      rock_10:
+        type: urdf
+        uri: package://mrover/urdf/world/small_rock.urdf.xacro
+        position: [ -1.00, -4.00, 0.5 ]
+
+      rock_11:
+        type: urdf
+        uri: package://mrover/urdf/world/small_rock.urdf.xacro
+        position: [ 9.00, -6.00, 0.5 ]
+
+      rock_12:
+        type: urdf
+        uri: package://mrover/urdf/world/small_rock.urdf.xacro
+        position: [ -7.00, -8.00, 0.5 ]
 
     ref_lat: 38.4225202
     ref_lon: -110.7844653
