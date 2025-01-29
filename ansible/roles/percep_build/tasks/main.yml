@@ -1,7 +1,6 @@
 - name: Install NVIDIA Drivers
   become: True
-  apt:
-    name: nvidia-driver-{{driver_edition}}
+  command: ubuntu-drivers install nvidia
 
 - name: Download CUDA Keyring
   get_url:
@@ -22,6 +21,7 @@
       - cuda-12-3
       - g++-9
       - zstd # Required to unpack ZED installer
+      - tensorrt
 
 - name: ZED SDK Download
   get_url:
