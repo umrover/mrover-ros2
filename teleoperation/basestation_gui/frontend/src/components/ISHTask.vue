@@ -115,6 +115,13 @@ export default {
   height: auto;
 }
 
+<<<<<<< HEAD
+=======
+.comms {
+  margin-right: 5px;
+}
+
+>>>>>>> 8cc53aa7d4415428dc70c5696d5031eef9c20d67
 .header {
   grid-area: header;
   display: flex;
