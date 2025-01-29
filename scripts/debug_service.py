@@ -6,7 +6,7 @@ from rclpy.node import Node
 from std_srvs.srv import SetBool
 
 SERVICE_TYPE = SetBool
-SERVICE_NAME = '/science_enable_white_led_a0'
+SERVICE_NAME = '/science_enable_heater_b0'
 
 class Service(Node):
 

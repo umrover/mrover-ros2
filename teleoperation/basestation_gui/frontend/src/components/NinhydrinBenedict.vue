@@ -8,7 +8,7 @@
         :current-state="heaters[site].enabled"
         :label-enable-text="'Heater ' + String.fromCharCode(65 + site)"
         :label-disable-text="'Heater ' + String.fromCharCode(65 + site)"
-        @change="toggleHeater(site)"
+        @change="toggleHeater()"
       />
       <p :style="{ color: heaters[site].color }">
         Thermistor {{ String.fromCharCode(65 + site) }}: {{ (heaters[site].temp).toFixed(2) }} C°
@@ -28,8 +28,6 @@
 import ToggleButton from "./ToggleButton.vue";
 import LEDIndicator from "./LEDIndicator.vue";
 import { mapState, mapActions } from 'vuex';
-
-let interval;
 
 export default {
   components: {
@@ -89,16 +87,6 @@ export default {
     },
   },
 
-  beforeUnmount: function () {
-    window.clearInterval(interval);
-  },
-
-  created: function () {
-    interval = window.setInterval(() => {
-      this.sendHeaterRequest(this.site);
-    }, 100);    
-  },
-
   computed: {
     ...mapState('websocket', ['message'])
   },
@@ -106,17 +94,17 @@ export default {
   methods: {
     ...mapActions('websocket', ['sendMessage']),
 
-    toggleHeater: function (id: number) {
-      this.heaters[id].enabled = !this.heaters[id].enabled;
+    toggleHeater: function () {
+      this.heaters[this.site].enabled = !this.heaters[this.site].enabled;
     },
 
-    sendHeaterRequest: function (id: number) {
-      let heaterName = "b";
+    sendHeaterRequest: function () {
+      let heaterName = String.fromCharCode(this.site+97);
       if (this.isNinhydrin) {
-        heaterName = "n";
+        heaterName += "1";
       }
-      heaterName += id;
-      this.sendMessage({ type: "heater_enable", enabled: this.heaters[id].enabled, heater: heaterName});
+      else heaterName += "0";
+      this.sendMessage({ type: "heater_enable", enabled: this.heaters[this.site].enabled, heater: heaterName});
     },
   }
 };

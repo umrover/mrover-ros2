@@ -2,7 +2,9 @@ import json
 import traceback
 from typing import Any, Type
 
-from channels.generic.websocket import JsonWebsocketConsumer
+from channels.generic.websocket import AsyncWebsocketConsumer
+import asyncio
+from rosidl_runtime_py.convert import message_to_ordereddict
 
 import rclpy
 
@@ -27,16 +29,23 @@ logger = logging.getLogger('django')
 
 rclpy.init()
 node = rclpy.create_node('teleoperation')
-thread = threading.Thread(target=rclpy.spin, args=(node, ), daemon=True)
-thread.start()
+def ros_spin():
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    rclpy.spin(node)
+
+ros_thread = threading.Thread(target=ros_spin, daemon=True)
+ros_thread.start()
+
 cur_mode = "disabled"
 heater_names = ['a0', 'a1', 'b0', 'b1']
 
-class GUIConsumer(JsonWebsocketConsumer):
+class GUIConsumer(AsyncWebsocketConsumer):
     subscribers = []
+    timers = []
     
-    def connect(self) -> None:
-        self.accept()
+    async def connect(self) -> None:
+        await self.accept()
         # Publishers
         self.thr_pub = node.create_publisher(Throttle, "/arm_throttle_cmd",1)
         self.ee_pos_pub = node.create_publisher(IK, "/ee_pos_cmd",1)
@@ -68,6 +77,13 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.buffer = Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.buffer, node)
 
+    async def disconnect(self, close_code):
+        for subscriber in self.subscribers:
+            node.destroy_subscription(subscriber)
+        for timer in self.timers:
+            node.destroy_timer(timer)
+
+
     def forward_ros_topic(self, topic_name: str, topic_type: Type, gui_msg_type: str) -> None:
         """
         Subscribes to a ROS topic and forwards messages to the GUI as JSON
@@ -76,32 +92,31 @@ class GUIConsumer(JsonWebsocketConsumer):
         @param topic_type:      ROS message type
         @param gui_msg_type:    String to identify the message type in the GUI
         """
-
-        def ros_message_to_dict(msg):
-            if hasattr(msg, '__slots__'):
-                msg_dict = {}
-                for slot in msg.__slots__:
-                    value = getattr(msg, slot)
-                    # Recursively converst ROS messages and remove leading underscores from the slot names
-                    key = slot.lstrip('_')
-                    msg_dict[key] = ros_message_to_dict(value)
-                return msg_dict
-            return msg
             
         def callback(ros_message: Any):
-            # Formatting a ROS message as a string outputs YAML
-            # Parse it back into a dictionary, so we can send it as JSON
-            self.send_message_as_json({"type": gui_msg_type, **ros_message_to_dict(ros_message)})
+            # Run the callback asynchronously on the main event loop
+            async def send_message():
+                await self.send_message_as_json({"type": gui_msg_type, **message_to_ordereddict(ros_message)})
+
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                # If the loop is running, use `run_coroutine_threadsafe` to schedule the task
+                asyncio.run_coroutine_threadsafe(send_message(), loop)
+            else:
+                # If the loop isn't running (which is rare for a running asyncio app), we create and run a new loop
+                new_loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(new_loop)
+                new_loop.run_until_complete(send_message())
         self.subscribers.append(node.create_subscription(topic_type, topic_name , callback, qos_profile=1))
 
-    def send_message_as_json(self, msg: dict):
+    async def send_message_as_json(self, msg: dict):
         try:
-            self.send(text_data=json.dumps(msg))
+            await self.send(text_data=json.dumps(msg))
         except Exception as e:
             node.get_logger().warning(f"Failed to send message: {e}")
 
 
-    def receive(self, text_data=None, bytes_data=None, **kwargs) -> None:
+    async def receive(self, text_data=None, bytes_data=None, **kwargs) -> None:
         """
         Callback function when a message is received in the Websocket
 
@@ -129,12 +144,12 @@ class GUIConsumer(JsonWebsocketConsumer):
                     device_input = DeviceInputs(axes, buttons)
                     match message["type"]:
                         case "joystick":  
-                            send_joystick_twist(device_input, self.joystick_twist_pub)
+                            await asyncio.to_thread(send_joystick_twist, device_input, self.joystick_twist_pub)
                         case "ra_controller":
-                            send_controller_twist(device_input, self.controller_twist_pub)
-                            send_ra_controls(cur_mode,device_input,node, self.thr_pub, self.ee_pos_pub, self.ee_vel_pub, self.buffer)
+                            await asyncio.to_thread(send_controller_twist,device_input, self.controller_twist_pub)
+                            await asyncio.to_thread(send_ra_controls,cur_mode,device_input,node, self.thr_pub, self.ee_pos_pub, self.ee_vel_pub, self.buffer)
                         case "mast_keyboard":
-                            send_mast_controls(device_input, self.mast_gimbal_pub)
+                            await asyncio.to_thread(send_mast_controls,device_input, self.mast_gimbal_pub)
                 case{
                     "type":"ra_mode",
                     "mode": mode,
@@ -158,7 +173,6 @@ class GUIConsumer(JsonWebsocketConsumer):
                             for w in waypoints
                         ]
                     )
-                    self.send_message_as_json({"type": "save_auton_waypoint_list", "success": True})
                 case{
                     "type": "save_basic_waypoint_list",
                     "data": waypoints,
@@ -168,11 +182,10 @@ class GUIConsumer(JsonWebsocketConsumer):
                     BasicWaypoint.objects.bulk_create(
                         [BasicWaypoint(drone=w["drone"], latitude=w["lat"], longitude=w["lon"], name=w["name"]) for w in waypoints]
                     )
-                    self.send_message_as_json({"type": "save_basic_waypoint_list", "success": True})
                 case{
                     "type": "get_basic_waypoint_list",
                 }:
-                    self.send_message_as_json(
+                    await self.send_message_as_json(
                         {
                             "type": "get_basic_waypoint_list",
                             "data": [
@@ -187,19 +200,19 @@ class GUIConsumer(JsonWebsocketConsumer):
                     "enabled": enabled, 
                     "heater": heater
                 }:
-                    self.heater_services[heater_names.index(heater)].call(SetBool.Request(data=enabled))
+                    self.heater_services[heater_names.index(heater)].call_async(SetBool.Request(data=enabled))
 
                 case{
                     "type": "auto_shutoff",
                     "shutoff": shutoff
                 }:
-                    self.auto_shutoff_service.call(SetBool.Request(data=shutoff))
+                    self.auto_shutoff_service.call_async(SetBool.Request(data=shutoff))
                 case{
                     "type": "white_leds",
                     "site": site,
                     "enabled": enabled
                 }:
-                    self.white_leds_services[site].call(SetBool.Request(data=enabled))
+                    self.white_leds_services[site].call_async(SetBool.Request(data=enabled))
                     
                 case _:
                     node.get_logger().warning(f"Unhandled message: {message}")
