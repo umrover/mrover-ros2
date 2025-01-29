@@ -126,6 +126,41 @@ namespace mrover {
         return create_motor_array_impl(std::make_index_sequence<N>{});
     }
 
+    [[noreturn]] auto test_message_send() -> void {
+        // configure all motors (send ConfigCommand)
+        for (auto& motor: motors) {
+            constexpr auto message = ConfigCommand{
+                .gear_ratio = Dimensionless{1},
+                .limit_switch_info = ConfigLimitSwitchInfo{
+                    .present = 0,
+                    .enabled = 0,
+                },
+                .enc_info = ConfigEncoderInfo{
+                    .quad_present = 0,
+                    .abs_present = 0,
+                },
+                .max_pwm = Percent{100},
+                // .min_position = 0,
+                // .max_position = 0,
+                // .min_velocity = 0,
+                // .max_velocity = 0,
+                .is_inverted = 0,
+            };
+            motor.receive(message);
+            motor.update();
+        }
+
+        // run through PWM frequencies and directions
+        constexpr auto throttle = 75_percent;
+        while (true) {
+            for (auto& motor: motors) {
+                auto message = ThrottleCommand{.throttle = throttle};
+                motor.receive(message);
+                motor.update();
+            }
+        }
+    }
+
     auto init() -> void {
         fdcan_bus = FDCAN<InBoundMessage>(&hfdcan1);
         motors = create_motor_array<NUM_MOTORS>();
@@ -142,6 +177,8 @@ namespace mrover {
 
         check(HAL_TIM_Base_Start_IT(GLOBAL_UPDATE_TIMER) == HAL_OK, Error_Handler);
         check(HAL_TIM_Base_Start(PIDF_TIMER) == HAL_OK, Error_Handler);
+
+        test_message_send();
     }
 
     /**
