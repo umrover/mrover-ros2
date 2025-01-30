@@ -16,12 +16,13 @@ def to_tf_tree(
     se3: SE3,
     child_frame: str,
     parent_frame: str,
+    stamp
 ) -> None:
     tx, ty, tz = se3.translation()
     qx, qy, qz, qw = se3.quat()
     tf_broadcaster.sendTransform(
         TransformStamped(
-            header=Header(frame_id=parent_frame),
+            header=Header(frame_id=parent_frame, stamp=stamp),
             child_frame_id=child_frame,
             transform=Transform(
                 translation=Vector3(x=tx, y=ty, z=tz),

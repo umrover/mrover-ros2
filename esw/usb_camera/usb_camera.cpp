@@ -24,7 +24,7 @@ namespace mrover {
                     {"width", mWidth, 640},
                     {"height", mHeight, 480},
                     {"framerate", framerate, 30},
-                    {"device", device, "/dev/video6"},
+                    {"device", device, "/dev/long_range_cam"},
                     {"image_topic", imageTopicName, "/usb_camera/image"},
                     {"camera_info_topic", cameraInfoTopicName, "/usb_camera/camera_info"},
                     {"watchdog_timeout", watchdogTimeout, 1.0},
