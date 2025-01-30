@@ -1,11 +1,11 @@
 import numpy as np
 from manifpy import SE3, SE3Tangent, SO3, SO3Tangent, SE2, SE2Tangent, SO2, SO2Tangent
 
-from lie.conversions import from_position_orientation, from_tf_tree, to_tf_tree
+from lie.conversions import from_position_orientation, from_tf_tree, to_tf_tree, from_tf_tree_with_time
 
 SE3.from_position_orientation = staticmethod(from_position_orientation)
 SE3.from_tf_tree = staticmethod(from_tf_tree)
-SE3.from_tf_tree_with_time = staticmethod(from_tf_tree)
+SE3.from_tf_tree_with_time = staticmethod(from_tf_tree_with_time)
 SE3.to_tf_tree = staticmethod(to_tf_tree)
 
 

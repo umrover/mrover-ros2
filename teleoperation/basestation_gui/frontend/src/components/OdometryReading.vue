@@ -73,8 +73,8 @@ export default {
       rover_bearing_deg: 0,
       rover_altitude: 0, 
       rover_status: false,
-      drone_latitude_deg:42.293195,
-      drone_longitude_deg:-83.7096706,
+      drone_latitude_deg:38.4071654,
+      drone_longitude_deg: -110.7923927,
       drone_status: false
     }
   },

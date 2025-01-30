@@ -4,7 +4,7 @@
       <div class="waypoint-header">
         <h4>All Waypoints</h4>
       </div>
-      <button class="btn btn-primary" @click="openModal()">Drop Waypoint</button>
+      <button class="btn btn-primary" @click="openModal()">Add Waypoint From Map</button>
       <div class="waypoints">
         <div class="shadow p-3 my-2" v-for="(waypoint, index) in waypoints" :key="waypoint">
           <h5>{{ waypoint.name }}</h5>
@@ -269,7 +269,6 @@ export default {
     window.setTimeout(() => {
       // Timeout so websocket will be initialized
       this.sendMessage({ type: 'get_auton_waypoint_list' })
-      console.log("getting auton list")
     }, 250)
   },
 
