@@ -96,6 +96,7 @@ export default {
 
     toggleHeater: function () {
       this.heaters[this.site].enabled = !this.heaters[this.site].enabled;
+      this.sendHeaterRequest();
     },
 
     sendHeaterRequest: function () {

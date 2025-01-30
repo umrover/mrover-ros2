@@ -41,18 +41,20 @@ from mrover.msg import (
 from mrover.srv import EnableAuton
 from std_srvs.srv import SetBool
 
-rclpy.init()
-node = rclpy.create_node("teleoperation")
+from rclpy.executors import MultiThreadedExecutor
+
+# rclpy.init()
+# self.node = rclpy.create_self.node("teleoperation")
 
 
-def ros_spin():
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    rclpy.spin(node)
+# def ros_spin():
+#     rclpy.spin(self.node)
+#     self.node.destroy_self.node()
+#     rclpy.shutdown()
 
 
-ros_thread = threading.Thread(target=ros_spin, daemon=True)
-ros_thread.start()
+# ros_thread = threading.Thread(target=ros_spin, daemon=True)
+# ros_thread.start()
 
 LOCALIZATION_INFO_HZ = 10
 
@@ -66,13 +68,32 @@ class GUIConsumer(AsyncWebsocketConsumer):
 
     async def connect(self) -> None:
         await self.accept()
+
+        # Store Django's event loop for use in ROS callbacks
+        self.django_event_loop = asyncio.get_running_loop()
+
+        # Initialize ROS2 inside Django's asyncio event loop
+        rclpy.init()
+        self.node = rclpy.create_node("teleoperation")
+
+        # Start an AsyncExecutor to handle ROS spin in the background
+        self.executor = MultiThreadedExecutor()
+        self.executor.add_node(self.node)
+
+        # Start ROS spin as an asyncio task
+        self.ros_task = asyncio.create_task(self.ros_spin())
+
+        # Example: Creating a timer inside ROS
+        self.timers.append(self.node.create_timer(1 / LOCALIZATION_INFO_HZ, self.send_localization_callback))
+
+
         # Publishers
-        self.thr_pub = node.create_publisher(Throttle, "/arm_throttle_cmd", 1)
-        self.ee_pos_pub = node.create_publisher(IK, "/ee_pos_cmd", 1)
-        self.ee_vel_pub = node.create_publisher(Vector3, "/ee_vel_cmd", 1)
-        self.joystick_twist_pub = node.create_publisher(Twist, "/joystick_cmd_vel", 1)
-        self.controller_twist_pub = node.create_publisher(Twist, "/controller_cmd_vel", 1)
-        self.mast_gimbal_pub = node.create_publisher(Throttle, "/mast_gimbal_throttle_cmd", 1)
+        self.thr_pub = self.node.create_publisher(Throttle, "/arm_throttle_cmd", 1)
+        self.ee_pos_pub = self.node.create_publisher(IK, "/ee_pos_cmd", 1)
+        self.ee_vel_pub = self.node.create_publisher(Vector3, "/ee_vel_cmd", 1)
+        self.joystick_twist_pub = self.node.create_publisher(Twist, "/joystick_cmd_vel", 1)
+        self.controller_twist_pub = self.node.create_publisher(Twist, "/controller_cmd_vel", 1)
+        self.mast_gimbal_pub = self.node.create_publisher(Throttle, "/mast_gimbal_throttle_cmd", 1)
 
         # Subscribers
         self.forward_ros_topic("/drive_controller_data", ControllerState, "drive_state")
@@ -88,28 +109,47 @@ class GUIConsumer(AsyncWebsocketConsumer):
         self.forward_ros_topic("/science_humidity_data", RelativeHumidity, "humidity")
 
         # Services
-        self.enable_teleop_srv = node.create_client(SetBool, "/enable_teleop")
-        self.enable_auton_srv = node.create_client(EnableAuton, "/enable_auton")
-        self.auto_shutoff_service = node.create_client(SetBool, "/science_change_heater_auto_shutoff_state")
+        self.enable_teleop_srv = self.node.create_client(SetBool, "/enable_teleop")
+        self.enable_auton_srv = self.node.create_client(EnableAuton, "/enable_auton")
+        self.auto_shutoff_service = self.node.create_client(SetBool, "/science_change_heater_auto_shutoff_state")
 
         self.heater_services = []
         self.white_leds_services = []
         for name in heater_names:
-            self.heater_services.append(node.create_client(SetBool, "/science_enable_heater_" + name))
+            self.heater_services.append(self.node.create_client(SetBool, "/science_enable_heater_" + name))
         for site in ["a0", "b0"]:
-            self.white_leds_services.append(node.create_client(SetBool, "/science_enable_white_led_" + site))
+            self.white_leds_services.append(self.node.create_client(SetBool, "/science_enable_white_led_" + site))
 
         self.buffer = Buffer()
-        self.tf_listener = tf2_ros.TransformListener(self.buffer, node)
+        self.tf_listener = tf2_ros.TransformListener(self.buffer, self.node)
 
-        self.timers.append(node.create_timer(1 / LOCALIZATION_INFO_HZ, self.send_localization_callback))
 
     async def disconnect(self, close_code):
-        node.get_logger().info("Disconnecting!")
+        self.node.get_logger().info("Disconnecting!")
+        
+        # Destroy all subscriptions and timers
         for subscriber in self.subscribers:
-            node.destroy_subscription(subscriber)
+            self.node.destroy_subscription(subscriber)
         for timer in self.timers:
-            node.destroy_timer(timer)
+            self.node.destroy_timer(timer)
+
+        # Stop ROS2 executor
+        if hasattr(self, "ros_task"):
+            self.ros_task.cancel()
+        
+        # Properly shutdown ROS2
+        self.executor.shutdown()
+        self.node.destroy_node()
+        rclpy.shutdown()
+
+    async def ros_spin(self):
+        """Runs ROS2 spin inside Django’s asyncio event loop."""
+        try:
+            while rclpy.ok():
+                self.executor.spin_once(timeout_sec=0.1)  # Process ROS2 events
+                await asyncio.sleep(0)  # Let Django’s event loop run
+        except asyncio.CancelledError:
+            pass  # Allow task cancellation without error
 
     def forward_ros_topic(self, topic_name: str, topic_type: Type, gui_msg_type: str) -> None:
         """
@@ -127,35 +167,30 @@ class GUIConsumer(AsyncWebsocketConsumer):
             async def send_message():
                 await self.send_message_as_json({"type": gui_msg_type, **message_to_ordereddict(ros_message)})
 
-            loop = asyncio.get_event_loop()
-            if loop.is_running():
-                # If the loop is running, use `run_coroutine_threadsafe` to schedule the task
-                asyncio.run_coroutine_threadsafe(send_message(), loop)
-            else:
-                # If the loop isn't running (which is rare for a running asyncio app), we create and run a new loop
-                new_loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(new_loop)
-                new_loop.run_until_complete(send_message())
+            # Use Django's stored event loop to avoid `get_running_loop()` error
+            asyncio.run_coroutine_threadsafe(send_message(), self.django_event_loop)
 
-        self.subscribers.append(node.create_subscription(topic_type, topic_name, callback, qos_profile=1))
+        self.subscribers.append(self.node.create_subscription(topic_type, topic_name, callback, qos_profile=1))
 
     async def send_message_as_json(self, msg: dict):
         try:
             await self.send(text_data=json.dumps(msg))
         except Exception as e:
-            node.get_logger().warning(f"Failed to send message: {e} {msg}")
+            self.node.get_logger().warning(f"Failed to send message: {e} {msg}")
 
     def send_localization_callback(self):
         try:
             base_link_in_map = SE3.from_tf_tree(self.buffer, "map", "base_link")
-            
-            # Instead of create_task, use run_coroutine_threadsafe to ensure it runs in the correct loop
-            asyncio.run_coroutine_threadsafe(
-                self.send_localization_callback_async(base_link_in_map),
-                asyncio.get_event_loop()
-            )
+
+            if hasattr(self, "django_event_loop"):
+                self.django_event_loop.call_soon_threadsafe(
+                    asyncio.create_task, self.send_localization_callback_async(base_link_in_map)
+                )
+            else:
+                self.node.get_logger().warn("Django event loop is not available!")
+
         except Exception as e:
-            node.get_logger().warn(f"Failed to get bearing: {e} Is localization running?")
+            self.node.get_logger().warn(f"Failed to get bearing: {e} Is localization running?")
 
     # Async function that will send the message
     async def send_localization_callback_async(self, base_link_in_map):
@@ -166,7 +201,7 @@ class GUIConsumer(AsyncWebsocketConsumer):
             }
         )
 
-    async def send_auton_command(self, waypoints: list[dict], enabled: bool) -> None:
+    def send_auton_command(self, waypoints: list[dict], enabled: bool) -> None:
         req = EnableAuton.Request(
             enable=enabled,
             waypoints=[
@@ -179,14 +214,17 @@ class GUIConsumer(AsyncWebsocketConsumer):
                 for waypoint in waypoints
             ],
         )
-        await asyncio.to_thread(self.call_service_async, self.enable_auton_srv, req, "auton_enable")
+        asyncio.create_task(self.call_service_async(self.enable_auton_srv, req, "auton_enable"))
 
-    async def call_service_async(self, srv: Service, request: SrvTypeRequest, gui_msg_type: str):
-        node.get_logger().info(f"Service call... {srv}")
-        future = srv.call_async(request)
-        node.get_logger().info(f"Finished service call! Success: {future.result().success}")
-        self.send_message_as_json({"type": gui_msg_type, "success": future.result().success})
-
+    async def call_service_async(self, service: Service, request: SrvTypeRequest, gui_msg_type: str):
+        try:
+            # Your code to call the service asynchronously
+            self.node.get_logger().info(f"Calling service with request {request}")
+            result = await service.call_async(request)
+            self.node.get_logger().info(f"Service call result: {result}")
+            await self.send_message_as_json({"type": gui_msg_type, "success": result.result().success})
+        except Exception as e:
+            self.node.get_logger().error(f"Error in call_service_async: {e}")
 
     async def receive(self, text_data=None, bytes_data=None, **kwargs) -> None:
         """
@@ -198,12 +236,12 @@ class GUIConsumer(AsyncWebsocketConsumer):
         global cur_mode
 
         if text_data is None:
-            node.get_logger().warning("Expecting text but received binary on GUI websocket...")
+            self.node.get_logger().warning("Expecting text but received binary on GUI websocket...")
 
         try:
             message = json.loads(text_data)
         except json.JSONDecodeError as e:
-            node.get_logger().warning(f"Failed to decode JSON: {e}")
+            self.node.get_logger().warning(f"Failed to decode JSON: {e}")
 
         try:
             match message:
@@ -223,7 +261,7 @@ class GUIConsumer(AsyncWebsocketConsumer):
                                 send_ra_controls,
                                 cur_mode,
                                 device_input,
-                                node,
+                                self.node,
                                 self.thr_pub,
                                 self.ee_pos_pub,
                                 self.ee_vel_pub,
@@ -236,17 +274,18 @@ class GUIConsumer(AsyncWebsocketConsumer):
                     "mode": mode,
                 }:
                     cur_mode = mode
-                    node.get_logger().debug(f"publishing to {cur_mode}")
+                    self.node.get_logger().debug(f"publishing to {cur_mode}")
                 case {"type": "auton_enable", "enabled": enabled, "waypoints": waypoints}:
-                    node.get_logger().info(f"Service call... auton_enable")
-                    await self.send_auton_command(waypoints, enabled)
+                    self.send_auton_command(waypoints, enabled)
                 case {"type": "teleop_enable", "enabled": enabled}:
-                    self.enable_teleop_srv.call_async(SetBool.Request(data=enabled))
+                    asyncio.create_task(self.call_service_async( self.enable_teleop_srv, SetBool.Request(data=enabled), "teleop_enable"))
                 case {
                     "type": "save_auton_waypoint_list",
                     "data": waypoints,
                 }:
+                    self.node.get_logger().info("SAVING waypoints!")
                     await asyncio.to_thread(save_auton_waypoint_list, waypoints)
+                    self.node.get_logger().info("DONE SAVING waypoints!")
                 case {
                     "type": "save_basic_waypoint_list",
                     "data": waypoints,
@@ -260,7 +299,9 @@ class GUIConsumer(AsyncWebsocketConsumer):
                 case {
                     "type": "get_auton_waypoint_list",
                 }:
+                    self.node.get_logger().info("Getting waypoints!")
                     waypoints = await asyncio.to_thread(get_auton_waypoint_list)
+                    self.node.get_logger().info("Got waypoints!")
                     await self.send_message_as_json({"type": "get_auton_waypoint_list", "data": waypoints})
                 case {
                     "type": "heater_enable",
@@ -268,23 +309,23 @@ class GUIConsumer(AsyncWebsocketConsumer):
                     "heater": heater
                 }:
                     req = SetBool.Request(data=enabled)
-                    await asyncio.to_thread(self.call_service_async, self.heater_services[heater_names.index(heater)], req, "heater_enable")
+                    asyncio.create_task(self.call_service_async(self.heater_services[heater_names.index(heater)], req, "heater_enable"))
                 case {
                     "type": "auto_shutoff",
                     "shutoff": shutoff
                 }:
                     req = SetBool.Request(data=shutoff)
-                    await asyncio.to_thread(self.call_service_async, self.auto_shutoff_service, req, "auto_shutoff")
+                    asyncio.create_task(self.call_service_async(self.auto_shutoff_service, req, "auto_shutoff"))
                 case {
                     "type": "white_leds",
                     "site": site,
                     "enabled": enabled
                 }:
                     req = SetBool.Request(data=enabled)
-                    await asyncio.to_thread(self.call_service_async, self.white_leds_services[site], req, "white_leds")
+                    asyncio.create_task(self.call_service_async(self.white_leds_services[site], req, "white_leds"))
 
                 case _:
-                    node.get_logger().warning(f"Unhandled message: {message}")
+                    self.node.get_logger().warning(f"Unhandled message: {message}")
         except:
-            node.get_logger().error(f"Failed to handle message: {message}")
-            node.get_logger().error(traceback.format_exc())
+            self.node.get_logger().error(f"Failed to handle message: {message}")
+            self.node.get_logger().error(traceback.format_exc())
