@@ -1,4 +1,6 @@
 #include "rover_gps_driver.hpp"
+#include "mrover/msg/detail/satellite_signal__struct.hpp"
+#include <cstdint>
 
 namespace mrover {
 
@@ -24,6 +26,7 @@ namespace mrover {
         gps_status_pub = this->create_publisher<mrover::msg::FixStatus>("/gps_fix_status", 10);
         heading_pub = this->create_publisher<mrover::msg::Heading>("/heading/fix", 10);
         heading_status_pub = this->create_publisher<mrover::msg::FixStatus>("/heading_fix_status", 10);
+        satellite_signal_pub = this->create_publisher<mrover::msg::SatelliteSignal>("/gps/satellite_signal", 10);
         rtcm_sub = this->create_subscription<rtcm_msgs::msg::Message>("/rtcm", 10, [&](rtcm_msgs::msg::Message::ConstSharedPtr const& rtcm_message) {
             process_rtcm(rtcm_message);
         });
@@ -138,53 +141,38 @@ namespace mrover {
         }
 
         if (msg_header == GPS_HEADER) {
-
-            if (tokens[CNO_POS] == "") {
-                RCLCPP_INFO(get_logger(), "GPS signal strength: 0");
-            }
-            else {
-                RCLCPP_INFO(get_logger(), "GPS signal strength: %s", tokens[CNO_POS].c_str());
-            }
+            mrover::msg::SatelliteSignal signal;
+            signal.constellation = "GPS";
+            signal.signal_strength = tokens[CNO_POS] == "" ? 0 : std::stoi(tokens[CNO_POS]);
+            satellite_signal_pub->publish(signal);
         }
 
         if (msg_header == GLONASS_HEADER) {
-
-            if (tokens[CNO_POS] == "") {
-                RCLCPP_INFO(get_logger(), "GNONASS signal strength: 0");
-            }
-            else {
-                RCLCPP_INFO(get_logger(), "GLONASS signal strength: %s", tokens[CNO_POS].c_str());
-            }
+            mrover::msg::SatelliteSignal signal;
+            signal.constellation = "GLONASS";
+            signal.signal_strength = tokens[CNO_POS] == "" ? 0 : std::stoi(tokens[CNO_POS]);
+            satellite_signal_pub->publish(signal);
         }
 
         if (msg_header == BEIDOU_HEADER) {
-
-            if (tokens[CNO_POS] == "") {
-                RCLCPP_INFO(get_logger(), "BeiDou signal strength: 0");
-            }
-            else {
-                RCLCPP_INFO(get_logger(), "BeiDou signal strength: %s", tokens[CNO_POS].c_str());
-            }
+            mrover::msg::SatelliteSignal signal;
+            signal.constellation = "BeiDou";
+            signal.signal_strength = tokens[CNO_POS] == "" ? 0 : std::stoi(tokens[CNO_POS]);
+            satellite_signal_pub->publish(signal);
         }
 
         if (msg_header == GALILEO_HEADER) {
-
-            if (tokens[CNO_POS] == "") {
-                RCLCPP_INFO(get_logger(), "Galileo signal strength: 0");
-            }
-            else {
-                RCLCPP_INFO(get_logger(), "Galileo signal strength: %s", tokens[CNO_POS].c_str());
-            }
+            mrover::msg::SatelliteSignal signal;
+            signal.constellation = "Galileo";
+            signal.signal_strength = tokens[CNO_POS] == "" ? 0 : std::stoi(tokens[CNO_POS]);
+            satellite_signal_pub->publish(signal);
         }
 
         if (msg_header == QZSS_HEADER) {
-
-            if (tokens[CNO_POS] == "") {
-                RCLCPP_INFO(get_logger(), "QZSS signal strength: 0");
-            }
-            else {
-                RCLCPP_INFO(get_logger(), "QZSS signal strength: %s", tokens[CNO_POS].c_str());
-            }
+            mrover::msg::SatelliteSignal signal;
+            signal.constellation = "QZSS";
+            signal.signal_strength = tokens[CNO_POS] == "" ? 0 : std::stoi(tokens[CNO_POS]);
+            satellite_signal_pub->publish(signal);
         }
     }
 

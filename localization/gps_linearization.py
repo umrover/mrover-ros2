@@ -62,7 +62,7 @@ class GPSLinearization(Node):
             return
 
         quaternion = np.array(
-            [imu_msg.orientation.x, imu_msg.orientation.y, imu_msg.orientation.z, imu_msg.orientation.w]
+            [imu_msg.orientation.w, imu_msg.orientation.x, imu_msg.orientation.y, imu_msg.orientation.z]
         )
         quaternion = quaternion / np.linalg.norm(quaternion)
 
