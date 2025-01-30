@@ -253,9 +253,11 @@ if(ZED_FOUND AND CUDA_FOUND)
 
     # ZED Wrapper
     mrover_add_component(zed perception/zed_wrapper/*.c* perception/zed_wrapper/pch.hpp ZedWrapper)
-    target_compile_options(zed PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-std=c++20>)
+    target_compile_options(zed_component PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-std=c++20>)
     mrover_link_component(zed parameter_utils lie MANIF::manif ${CUDA_LIBRARIES} loop_profiler cuda_compiler_flags)
     mrover_ament_component(zed rclcpp rclcpp_components sensor_msgs ZED CUDA tf2 tf2_ros)
+
+    mrover_executable_from_component(zed perception/executables/zed.cpp zed_component)
 
     # Learning Library
     # TODO(john): Update to use the new API

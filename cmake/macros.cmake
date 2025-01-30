@@ -46,10 +46,6 @@ macro(mrover_add_node name sources)
 endmacro()
 
 macro(mrover_add_component name sources includes)
-	# Create Executable
-	mrover_add_node(${name} ${sources})
-	rosidl_target_interfaces(${name} ${PROJECT_NAME} "rosidl_typesupport_cpp")
-
 	# Create Composition Library
 	mrover_add_library(${name}_component ${sources} ${includes} SHARED)
 	rosidl_target_interfaces(${name}_component ${PROJECT_NAME} "rosidl_typesupport_cpp")
@@ -71,11 +67,9 @@ macro(mrover_executable_from_component name main_file)
 endmacro()
 
 macro(mrover_link_component name)
-	target_link_libraries(${name} ${ARGN})
 	target_link_libraries(${name}_component ${ARGN})
 endmacro()
 
 macro(mrover_ament_component name)
-	ament_target_dependencies(${name} ${ARGN})
 	ament_target_dependencies(${name}_component ${ARGN})
 endmacro()
