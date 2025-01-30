@@ -77,7 +77,14 @@ class SearchState(State):
         )
         if arrived:
             if target_position_in_map is not None and self.prev_target_pos_in_map is not None:
-                context.node.get_logger().info(str(np.sqrt((target_position_in_map[0] - self.prev_target_pos_in_map[0]) ** 2 + (target_position_in_map[1] - self.prev_target_pos_in_map[1]) ** 2)))
+                context.node.get_logger().info(
+                    str(
+                        np.sqrt(
+                            (target_position_in_map[0] - self.prev_target_pos_in_map[0]) ** 2
+                            + (target_position_in_map[1] - self.prev_target_pos_in_map[1]) ** 2
+                        )
+                    )
+                )
 
             self.prev_target_pos_in_map = target_position_in_map
             # If we finish the spiral without seeing the tag, move on with course
@@ -121,22 +128,22 @@ class SearchState(State):
 
         if search_center.type.val == WaypointType.POST:
             SearchState.trajectory = SearchTrajectory.spiral_traj(
-                context.course.current_waypoint_pose_in_map().translation()[0:2],
-                context.node.get_parameter("search.coverage_radius").value,
-                context.node.get_parameter("search.distance_between_spirals").value,
-                context.node.get_parameter("search.segments_per_rotation").value,
-                context.node.get_parameter("search.max_segment_length").value,
-                search_center.tag_id,
-                False,
+                center=context.course.current_waypoint_pose_in_map().translation()[0:2],
+                coverage_radius=context.node.get_parameter("search.coverage_radius").value,
+                distance_between_spirals=context.node.get_parameter("search.distance_between_spirals").value,
+                segments_per_rotation=context.node.get_parameter("search.segments_per_rotation").value,
+                tag_id=search_center.tag_id,
+                insert_extra=False,
+                max_segment_length=context.node.get_parameter("search.max_segment_length").value,
             )
         else:  # water bottle or mallet
             SearchState.trajectory = SearchTrajectory.spiral_traj(
-                context.course.current_waypoint_pose_in_map().translation()[0:2],
-                context.node.get_parameter("search.coverage_radius").value,
-                context.node.get_parameter("search.distance_between_spirals").value,
-                context.node.get_parameter("search.segments_per_rotation").value,
-                context.node.get_parameter("search.max_segment_length").value,
-                search_center.tag_id,
-                False,
+                center=context.course.current_waypoint_pose_in_map().translation()[0:2],
+                coverage_radius=context.node.get_parameter("search.coverage_radius").value,
+                distance_between_spirals=context.node.get_parameter("search.distance_between_spirals").value,
+                segments_per_rotation=context.node.get_parameter("search.segments_per_rotation").value,
+                tag_id=search_center.tag_id,
+                insert_extra=False,
+                max_segment_length=context.node.get_parameter("search.max_segment_length").value,
             )
         self.prev_target_pos_in_map = None

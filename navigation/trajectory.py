@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 import numpy as np
 
+
 @dataclass
 class Trajectory:
     # Coordinates of the trajectory
@@ -69,7 +70,7 @@ class SearchTrajectory(Trajectory):
         def insert_points_if_needed(vertices, max_segment_length):
             all_points = [vertices[0]]
             for i in range(1, len(vertices)):
-                p1 = vertices[i-1]
+                p1 = vertices[i - 1]
                 p2 = vertices[i]
                 # Calculate the distance between consecutive points
                 dist = np.linalg.norm(p2 - p1)
@@ -85,9 +86,9 @@ class SearchTrajectory(Trajectory):
         # If insert_extra is True and max_segment_length is set, insert intermediate points
         # if insert_extra and max_segment_length is not None:
         # TODO: fix the parameter declaration for max segment length should be below, temp fix by using 0.5
-        #vertices = insert_points_if_needed(vertices, max_segment_length)
+        # vertices = insert_points_if_needed(vertices, max_segment_length)
         vertices = insert_points_if_needed(vertices, max_segment_length)
-       
+
         return vertices
 
     @classmethod
@@ -99,7 +100,7 @@ class SearchTrajectory(Trajectory):
         segments_per_rotation: int,
         tag_id: int,
         insert_extra: bool,
-        max_segment_length: float, # New parameter for max segment length
+        max_segment_length: float,  # New parameter for max segment length
     ):
         """
         Generates a spiral search pattern around a center position, assuming rover is at the center position
