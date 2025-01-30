@@ -4,15 +4,25 @@
 
 namespace mrover {
 
+    struct HeadingData {
+        double Heading;
+        rclcpp::Time timestamp;
+    }
+
     class PoseFilter : public rclcpp::Node {
 
     private:
 
+        std::optional<double> pose_callback_heading;
+        std::optional<double> correction_timer_heading;
+
         auto ros_quat_to_eigen_quat(geometry_msgs::msg::Quaternion const& q) -> Eigen::Quaterniond;
 
-        void pose_sub_callback(geometry_msgs::msg::Vector3Stamped::ConstSharedPtr const& msg);
+        void pose_sub_callback(geometry_msgs::msg::Vector3Stamped::ConstSharedPtr const& linearized_pos_msg);
 
         void correction_timer_callback();
+
+        void compare_and_select_heading();
 
         const rclcpp::Duration STEP = rclcpp::Duration::from_seconds(0.5);
         const rclcpp::Duration IMU_WATCHDOG_TIMEOUT = rclcpp::Duration::from_seconds(1.0);

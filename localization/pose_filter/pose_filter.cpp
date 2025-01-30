@@ -54,8 +54,29 @@ namespace mrover {
         current_heading_fix_status *= fix_status_msg;
     }
 
+    void PoseFilter::compare_and_select_heading() {
+        std::lock_guard<std::mutex> lock(heading_mutex_);
+
+        if (!pose_callback_heading.has_value() && !correction_timer_heading.has_value()) {
+            RCLPP_WARN(get_logger(), "Missing heading data");
+            return;
+        }
+
+        double time_difference = ((correction_timer_heading->timestamp) - (pose_callback_heading->timestamp)).seconds();
+        if (std::abs(time_difference) > TIME_THRESHOLD) {
+            RCLPP_WARN(get_logger(), "Time difference between values too far apart.");
+        } else if (((correction_timer_heading->heading) - (pose_callback_heading->heading)) > HEADING_THRESHOLD) {
+            RCLPP_WARN(get_logger(), "Heading values are too far apart");
+        }
+
+        if ((correction_timer_heading->heading) < HEADING_THRESHOLD) {
+            Eigen::Quaterniond desired_yaw_quaternion(Eigen::AngleAxis2d(heading_rad, Eigen::Vector3d::UnitZ()));
+            
+        }
+    }
+
     void PoseFilter::pose_sub_callback(geometry_msgs::msg::Vector3Stamped::ConstSharedPtr const& linearized_pos_msg) {
-\       if (!current_imu.has_value() || !current_heading.has_value() || !current_heading_fix_status.has_value()) {
+       if ((!current_imu.has_value()) || (!current_heading.has_value()) || (!current_heading_fix_status.has_value())) {
             RCLPP_WARN(get_logger(), "Missing IMU, heading or heading fix status data. Ignoring pose correction via DA-RTK Heading");
             return;
         }
@@ -72,7 +93,13 @@ namespace mrover {
         quaternion.normalize();
 
 
-        double heading_rad = heading_msg->heading * (M_PI / 180);
+        double heading_rad = current_heading->heading * (M_PI / 180); 
+        {
+            std::lock_guard<std::mutex> lock(heading_mutex_);
+            pose_callback_heading = HeadingData{heading_rad, linearized_pos_msg->header.stamp}
+        }
+        
+
         Eigen::Quaterniond desired_yaw_quaternion(Eigen::AngleAxisd(heading_rad, Eigen::Vector3d::UnitZ()));
         Eigen::Vector3d euler_angles = quaternion.toRotationMatrix().eulerAngles(2, 1, 0);
         double roll = euler_angles[2];
@@ -91,31 +118,6 @@ namespace mrover {
         );
 
     }
-
-
-    // void PoseFilter::pose_sub_callback(geometry_msgs::msg::Vector3Stamped::ConstSharedPtr const& msg) {
-
-    //     R3d position_in_map(msg->vector.x, msg->vector.y, msg->vector.z);
-
-    //     SE3d pose_in_map(position_in_map, SO3d::Identity());
-
-    //     bool mag_fully_calibrated = calibration_status && calibration_status->magnetometer_calibration == FULL_CALIBRATION;
-
-    //     if (!mag_fully_calibrated && current_imu_calib && correction_rotation) {
-    //         SO3d uncalibrated_orientation = ros_quat_to_eigen_quat(current_imu_uncalib->orientation);
-    //         pose_in_map.asSO3() = correction_rotation.value() * uncalibrated_orientation;
-    //     }
-    //     else if (current_imu_calib) {
-    //         SO3d calibrated_orientation = ros_quat_to_eigen_quat(current_imu_calib->orientation);
-    //         pose_in_map.asSO3() = calibrated_orientation;
-    //     }
-    //     else {
-    //         RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1, "Not enough IMU data available");
-    //         return;
-    //     }
-
-    //     SE3Conversions::pushToTfTree(tf_broadcaster, rover_frame, world_frame, pose_in_map, get_clock()->now());
-
 
         SE3d::Tangent twist;
         if (last_pose_in_map && last_pose_time) {
@@ -204,12 +206,16 @@ s
         }
 
         double corrected_heading_in_map = std::atan2(rover_velocity_sum.y(), rover_velocity_sum.x());
+        {
+            std::lock_guard<std::mutex> lock(heading_mutex_);
+            correction_time_heading = HeadingData{corrected_heading_in_map, this->get_clock()->now()};
+        }
 
         SO3d uncorrected_orientation = ros_quat_to_eigen_quat(current_imu->orientation);
         R2d uncorrected_forward = uncorrected_orientation.rotation().col(0).head<2>();
         double estimated_heading_in_map = std::atan2(uncorrected_forward.y(), uncorrected_forward.x());
 
-        double heading_correction_delta = corrected_heading_in_map - estimated_heading_in_map;
+        double heading_correction_delta = corrected_heading_in_map - estimated_heading_in_map; 
 
         correction_rotation = Eigen::AngleAxisd{heading_correction_delta, R3d::UnitZ()};
 
