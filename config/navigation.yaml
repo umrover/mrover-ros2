@@ -52,6 +52,10 @@ navigation:
       segments_per_rotation: 8
       distance_between_spirals: 3.0
 
+    object_search:
+      coverage_radius: 10.0
+      distance_between_spirals: 3.0
+
     single_tag:
       stop_threshold: 1.0
       tag_stop_threshold: 1.75

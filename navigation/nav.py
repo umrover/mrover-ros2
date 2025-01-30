@@ -78,6 +78,8 @@ class Navigation(Node):
                 ("recovery.stop_threshold", Parameter.Type.DOUBLE),
                 ("recovery.drive_forward_threshold", Parameter.Type.DOUBLE),
                 ("recovery.give_up_time", Parameter.Type.DOUBLE),
+                ("object_search.coverage_radius", Parameter.Type.DOUBLE),
+                ("object_search.give_up_time", Parameter.Type.DOUBLE),
             ],
         )
 
