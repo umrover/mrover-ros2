@@ -59,7 +59,10 @@ navigation:
       post_radius: 0.7
 
     recovery:
-      recovery_distance: 1.0
+      stop_threshold: 0.2
+      drive_forward_threshold: 0.34
+      recovery_distance: 2.0 # Distance the rover moves back in each leg of j-turn
+      give_up_time: 10.0
 
     # TODO(quintin): Avoid storing these in multiple config files
     ref_lat: 38.4225202
