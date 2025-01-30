@@ -10,6 +10,7 @@ from navigation.long_range import LongRangeState
 from navigation.post_backup import PostBackupState
 from navigation.recovery import RecoveryState
 from navigation.search import SearchState
+from navigation.costmap_search import CostmapSearchState
 from navigation.state import DoneState, OffState, off_check
 from navigation.waypoint import WaypointState
 from rclpy import Parameter
@@ -55,22 +56,40 @@ class Navigation(Node):
                 ("drive.lookahead_distance", Parameter.Type.DOUBLE),
                 ("waypoint.stop_threshold", Parameter.Type.DOUBLE),
                 ("waypoint.drive_forward_threshold", Parameter.Type.DOUBLE),
+                ("search.use_costmap", Parameter.Type.BOOL),
                 ("search.stop_threshold", Parameter.Type.DOUBLE),
                 ("search.drive_forward_threshold", Parameter.Type.DOUBLE),
                 ("search.coverage_radius", Parameter.Type.DOUBLE),
                 ("search.segments_per_rotation", Parameter.Type.INTEGER),
                 ("search.distance_between_spirals", Parameter.Type.DOUBLE),
+                ("search.max_segment_length", Parameter.Type.DOUBLE),
+                ("search.traversable_cost", Parameter.Type.DOUBLE),
+                ("search.update_delay", Parameter.Type.DOUBLE),
+                ("search.safe_approach_distance", Parameter.Type.DOUBLE),
+                ("search.a_star_thresh", Parameter.Type.DOUBLE),
+                ("search.costmap_thresh", Parameter.Type.DOUBLE),
+                ("search.angle_thresh", Parameter.Type.DOUBLE),
                 ("single_tag.stop_threshold", Parameter.Type.DOUBLE),
                 ("single_tag.tag_stop_threshold", Parameter.Type.DOUBLE),
                 ("single_tag.post_avoidance_multiplier", Parameter.Type.DOUBLE),
                 ("single_tag.post_radius", Parameter.Type.DOUBLE),
+                ("recovery.stop_threshold", Parameter.Type.DOUBLE),
+                ("recovery.drive_forward_threshold", Parameter.Type.DOUBLE),
+                ("recovery.recovery_distance", Parameter.Type.DOUBLE),
+                ("recovery.give_up_time", Parameter.Type.DOUBLE),
             ],
         )
 
         self.state_machine = StateMachine[Context](OffState(), "NavigationStateMachine", ctx, self.get_logger())
         self.state_machine.add_transitions(
             ApproachTargetState(),
-            [WaypointState(), SearchState(), RecoveryState(), DoneState()],
+            [
+                WaypointState(),
+                SearchState(),
+                CostmapSearchState(),
+                RecoveryState(),
+                DoneState(),
+            ],
         )
         self.state_machine.add_transitions(PostBackupState(), [WaypointState(), RecoveryState()])
         self.state_machine.add_transitions(
@@ -78,12 +97,13 @@ class Navigation(Node):
             [
                 WaypointState(),
                 SearchState(),
+                CostmapSearchState(),
                 PostBackupState(),
                 ApproachTargetState(),
                 LongRangeState(),
             ],
         )
-        self.state_machine.add_transitions(
+        self.state_machine.add_transitions(  # To be deleted eventually
             SearchState(),
             [ApproachTargetState(), LongRangeState(), WaypointState(), RecoveryState()],
         )
@@ -95,13 +115,23 @@ class Navigation(Node):
                 ApproachTargetState(),
                 LongRangeState(),
                 SearchState(),
+                CostmapSearchState(),
                 RecoveryState(),
                 DoneState(),
             ],
         )
         self.state_machine.add_transitions(
             LongRangeState(),
-            [ApproachTargetState(), SearchState(), WaypointState(), RecoveryState()],
+            [
+                ApproachTargetState(),
+                SearchState(),
+                CostmapSearchState(),
+                WaypointState(),
+                RecoveryState(),
+            ],
+        )
+        self.state_machine.add_transitions(
+            CostmapSearchState(), [WaypointState(), RecoveryState(), ApproachTargetState(), LongRangeState()]
         )
         self.state_machine.add_transitions(OffState(), [WaypointState(), DoneState()])
         self.state_machine.configure_off_switch(OffState(), off_check)

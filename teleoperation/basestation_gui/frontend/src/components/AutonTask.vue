@@ -41,7 +41,8 @@
       </div>
     </div>
     <div class='shadow p-3 rounded moteus'>
-      <ControllerDataTable msg-type='drive_state' header='Drive States' />
+      <ControllerDataTable msg-type='drive_left_state' header='Drive Left States' />
+      <ControllerDataTable msg-type='drive_right_state' header='Drive Right States' />
     </div>
   </div>
 </template>
