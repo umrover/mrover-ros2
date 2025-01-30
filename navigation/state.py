@@ -43,6 +43,6 @@ def off_check(context) -> bool:
         context.disable_requested = False
         context.course = None
         context.rover.stuck = False
-        context.rover.driver.reset()
+        context.drive.reset()
         return True
     return False

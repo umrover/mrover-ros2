@@ -17,44 +17,61 @@ simulator:
       rover:
         type: urdf
         uri: package://mrover/urdf/rover/rover.urdf.xacro
-        position: [ 0.0, 0.0, 0.5 ]
+        position: [ 0.0, 0.0, 0.1 ]
       world:
         type: urdf
         uri: package://mrover/urdf/world/world.urdf.xacro
-      tag_0:
-        type: urdf
-        uri: package://mrover/urdf/world/tag_0.urdf.xacro
-        position: [ 11.0, 3.0, 0.7 ]
-      tag_1:
-        type: urdf
-        uri: package://mrover/urdf/world/tag_1.urdf.xacro
-        position: [ 15.0, -14.0, 2.4 ]
-      hammer:
-        type: urdf
-        uri: package://mrover/urdf/world/hammer.urdf.xacro
-        position: [ -2.0, -2.0, 0.7 ]
       bottle:
         type: urdf
         uri: package://mrover/urdf/world/bottle.urdf.xacro
-        position: [ -6.25, 10.5, 0.3 ]
-      rock1:
-        type: urdf
-        uri: package://mrover/urdf/world/rock.urdf.xacro
-        position: [ 2.0, -2.0, 0.1 ]
-      rock2:
-        type: urdf
-        uri: package://mrover/urdf/world/rock.urdf.xacro
-        position: [ 7.0, -6.0, 0.2 ]
-      rock3:
-        type: urdf
-        uri: package://mrover/urdf/world/rock.urdf.xacro
-        position: [ 8.0, -10.0, 1.0 ]
-      rock4:
-        type: urdf
-        uri: package://mrover/urdf/world/rock.urdf.xacro
-        position: [ 9.0, -2.0, 0.2 ]
+        position: [ -6.0, 6.0, 0.5 ]
 
-    # TODO(quintin): Avoid storing these in multiple config files
+      # Auto-generated rocks from the grid
+      rock_1:
+        type: urdf
+        uri: package://mrover/urdf/world/small_rock.urdf.xacro
+        position: [ 0.00, 11.00, 0.5 ]
+
+      rock_2:
+        type: urdf
+        uri: package://mrover/urdf/world/small_rock.urdf.xacro
+        position: [ -1.00, 9.00, 0.5 ]
+
+      rock_3:
+        type: urdf
+        uri: package://mrover/urdf/world/small_rock.urdf.xacro
+        position: [ 0.00, 5.00, 0.5 ]
+
+      rock_4:
+        type: urdf
+        uri: package://mrover/urdf/world/small_rock.urdf.xacro
+        position: [ -11.00, 0.00, 0.5 ]
+
+      rock_5:
+        type: urdf
+        uri: package://mrover/urdf/world/small_rock.urdf.xacro
+        position: [ -5.00, 0.00, 0.5 ]
+
+      rock_6:
+        type: urdf
+        uri: package://mrover/urdf/world/small_rock.urdf.xacro
+        position: [ 5.00, 0.00, 0.5 ]
+
+      rock_7:
+        type: urdf
+        uri: package://mrover/urdf/world/small_rock.urdf.xacro
+        position: [ 11.00, 0.00, 0.5 ]
+
+      rock_8:
+        type: urdf
+        uri: package://mrover/urdf/world/small_rock.urdf.xacro
+        position: [ 0.00, -7.00, 0.5 ]
+
+      rock_9:
+        type: urdf
+        uri: package://mrover/urdf/world/small_rock.urdf.xacro
+        position: [ 0.00, -15.00, 0.5 ]
+
     ref_lat: 38.4225202
     ref_lon: -110.7844653
     ref_alt: 0.0

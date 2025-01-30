@@ -63,21 +63,33 @@ class DebugCoursePublisher(Node):
                 convert_waypoint_to_gps(ref_point, waypoint)
                 for waypoint in [
                     (
-                        Waypoint(tag_id=0, type=WaypointType(val=WaypointType.NO_SEARCH)),
-                        SE3.from_position_orientation(4, 4),
+                        Waypoint(type=WaypointType(val=WaypointType.WATER_BOTTLE)),
+                        SE3.from_position_orientation(10.0, 0.0),
                     ),
-                    (
-                        Waypoint(tag_id=0, type=WaypointType(val=WaypointType.POST)),
-                        SE3.from_position_orientation(-2, -2),
-                    ),
-                    (
-                        Waypoint(tag_id=1, type=WaypointType(val=WaypointType.POST)),
-                        SE3.from_position_orientation(11, -10),
-                    ),
-                    (
-                        Waypoint(tag_id=1, type=WaypointType(val=WaypointType.MALLET)),
-                        SE3.from_position_orientation(5, 1),
-                    ),
+                    # (
+                    #     Waypoint(type=WaypointType(val=WaypointType.NO_SEARCH)),
+                    #     SE3.from_position_orientation(20.0, 15.0),
+                    # ),
+                    # (
+                    #     Waypoint(type=WaypointType(val=WaypointType.NO_SEARCH)),
+                    #     SE3.from_position_orientation(8.0, -18.0),
+                    # ),
+                    # (
+                    #     Waypoint(type=WaypointType(val=WaypointType.NO_SEARCH)),
+                    #     SE3.from_position_orientation(-3.0, 12.0),
+                    # ),
+                    # (
+                    #     Waypoint(type=WaypointType(val=WaypointType.MALLET)),
+                    #     SE3.from_position_orientation(-1.0, -1.0),
+                    # ),
+                    # (
+                    #     Waypoint(tag_id=1, type=WaypointType(val=WaypointType.POST)),
+                    #     SE3.from_position_orientation(11, -10),
+                    # ),
+                    # (
+                    #     Waypoint(tag_id=1, type=WaypointType(val=WaypointType.MALLET)),
+                    #     SE3.from_position_orientation(5, 1),
+                    # ),
                 ]
             ],
         )
