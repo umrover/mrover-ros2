@@ -43,13 +43,9 @@ auto TargetKey::onLoop() -> State*{
     //arm_e_link
     auto buffer = tf2_ros::Buffer(node->get_clock());
     tf2_ros::TransformBroadcaster mTfBroadcaster{node};
-    auto tf = mrover::SE3Conversions::fromTfTree(buffer, std::format("{}_truth", goal->code[fsm_ctx->curr_key_index]), "lander_truth", node->get_clock()->now());
-    auto origin = mrover::SE3Conversions::fromTfTree(buffer, "map", "arm_e_link", node->get_clock()->now());
-
-    auto target = SE3d(tf.translation());
-
-    SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_e_link", "map", target, node->get_clock()->now());
-
+    auto tf = mrover::SE3Conversions::fromTfTree(buffer, "arm_e_link", std::format("{}_key_truth", goal->code[fsm_ctx->curr_key_index]), node->get_clock()->now());
+    //auto relative_rotation = origin.rotation().transpose() * tf.rotation();
+    //auto target = SE3d(tf.translation() - origin.translation(), SO3d(relative_rotation));
 
     //Replace with Service End
     /*
@@ -60,40 +56,40 @@ auto TargetKey::onLoop() -> State*{
     auto result = client->async_send_request(request);
 
     result.wait_for(std::chrono::seconds(1));
-    
+      */
     // Wait for the result. 
     //if (rclcpp::spin_until_future_complete(node->get_node_base_interface(), result) ==
      //   rclcpp::FutureReturnCode::SUCCESS)
     //{
-    std::cout << "Success" << result.get()->x << "," << result.get()->y << '\n';
-        int64_t x = result.get()->x;
-        int64_t y = result.get()->y;
+    std::cout << "Success" << tf.x() << "," << tf.y() << '\n';
+    int64_t y = tf.y(); //result.get()->x;
+    int64_t z = tf.z();//result.get()->y;
 
         //move arm with ik
-        msg::IK ik;
-        ik.target.header.stamp = node->get_clock()->now();
-        ik.target.header.frame_id = "arm_base_link"; // TODO: fix
-        ik.target.pose.position.x = x;
-        ik.target.pose.position.y = y;
-        ik.target.pose.position.z = 0;
-        mIkTargetPub->publish(ik);
+    msg::IK ik;
+    ik.target.header.stamp = node->get_clock()->now();
+    ik.target.header.frame_id = "arm_base_link"; // TODO: fix
+    ik.target.pose.position.x = 0;
+    ik.target.pose.position.y = y;
+    ik.target.pose.position.z = z;
+    mIkTargetPub->publish(ik);
 
 
         //verify that the arm is within the threshold
-        bool within_threshold = false;
-        sleepRate.sleep();
+    bool within_threshold = false;
+    sleepRate.sleep();
 
         // subscribe to arm state
         // dist
 
 
 
-        if(within_threshold){
-            fsm_ctx->curr_key_index++;
-            return StateMachine::make_state<PressKey>(fsm_ctx);
-        } else {
-            return StateMachine::make_state<TargetKey>(fsm_ctx);
-        }        */
+    if(within_threshold){
+        fsm_ctx->curr_key_index++;
+        return StateMachine::make_state<PressKey>(fsm_ctx);
+    } else {
+        return StateMachine::make_state<TargetKey>(fsm_ctx);
+    }      
 
 
     //} else {
