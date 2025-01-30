@@ -43,7 +43,9 @@ namespace mrover {
 
         // Draw the bounding boxes on the image
         drawDetectionBoxes(blobSizedImage, detections);
-        publishDetectedObjects(blobSizedImage);
+        if(mDebug){
+            publishDetectedObjects(blobSizedImage);
+        }
 
         mLoopProfiler.measureEvent("Publication");
     }
@@ -206,19 +208,21 @@ namespace mrover {
         for (auto const& [classId, className, confidence, box]: detections) {
             mrover::msg::ImageTarget target;
             target.name = className;
-            target.bearing = getTagBearing(blobSizedImage, box);
+            target.bearing = getObjectBearing(blobSizedImage, box);
             targets.targets.emplace_back(target);
         }
 
         mTargetsPub->publish(targets);
 
         drawDetectionBoxes(blobSizedImage, detections);
-        publishDetectedObjects(blobSizedImage);
+        if(mDebug){
+            publishDetectedObjects(blobSizedImage);
+        }
 
         mLoopProfiler.measureEvent("Publication");
     }
 
-    auto ImageObjectDetector::getTagBearing(cv::InputArray const& image, cv::Rect const& box) const -> float {
+    auto ImageObjectDetector::getObjectBearing(cv::InputArray const& image, cv::Rect const& box) const -> float {
         cv::Point2f center = cv::Point2f{box.tl()} + cv::Point2f{box.size()} / 2;
         float xNormalized = center.x / static_cast<float>(image.cols());
         float xRecentered = 0.5f - xNormalized;

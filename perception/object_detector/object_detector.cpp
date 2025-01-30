@@ -15,7 +15,8 @@ namespace mrover {
                 {"hitcount_max", mObjMaxHitcount, 10},
                 {"model_name", modelName, "Large-Dataset"},
                 {"model_score_threshold", mModelScoreThreshold, 0.75},
-                {"model_nms_threshold", mModelNMSThreshold, 0.5}};
+                {"model_nms_threshold", mModelNMSThreshold, 0.5},
+                {"object_detector_debug", mDebug, false}};
 
         ParameterWrapper::declareParameters(this, params);
 
