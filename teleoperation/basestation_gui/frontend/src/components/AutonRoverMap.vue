@@ -8,7 +8,6 @@
         :options="online ? onlineTileOptions : offlineTileOptions" />
 
       <!-- Markers for rover location -->
-      <!-- TODO: Figure out if we still want these -->
       <l-marker ref="rover" :lat-lng="odomLatLng" :icon="locationIcon" />
 
       <!-- Waypoint Icons -->
@@ -72,7 +71,7 @@ export default {
   props: {
     odom: {
       type: Object,
-      required: true
+      default: () => ({latitude_deg: 0, longitude_deg: 0, bearing_deg: 0})
     },
   },
   data() {
@@ -104,7 +103,13 @@ export default {
 
     // Convert to latLng object for Leaflet to use
     odomLatLng: function () {
-      return L.latLng(this.odom.latitude_deg, this.odom.longitude_deg)
+      if (this.odom && typeof this.odom === 'object' && this.odom.latitude_deg !== undefined && this.odom.longitude_deg !== undefined ) {
+        return L.latLng(this.odom.latitude_deg, this.odom.longitude_deg);
+      } else {
+        // Handle the case where odom is not yet ready
+        console.warn('odom data not ready yet');
+        return L.latLng(0,0); // or default value or return null
+      }
     },
 
     // Concat waypoints on course with rover marker at index 0 for polyline

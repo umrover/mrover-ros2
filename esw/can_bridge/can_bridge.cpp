@@ -37,6 +37,7 @@ namespace mrover {
 
             std::map<std::string, rclcpp::Parameter> devices;
             get_parameters("devices", devices);
+            mInterface = get_parameter("interface").as_string();
 
             if (devices.empty()) {
                 RCLCPP_FATAL_STREAM(get_logger(), "No devices specified. Did you forget to load the correct ROS parameters?");
@@ -187,8 +188,12 @@ namespace mrover {
             if (error.code() == boost::asio::error::no_buffer_space) {
                 RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, "No buffer space available to send the message. This usually indicates an electrical problem with the bus. CAN will avoid sending out messages if it can not see other devices.");
                 return;
+            } else if (error.code() == boost::system::errc::no_such_device_or_address) {
+                RCLCPP_WARN(get_logger(), "Device not found.");
             }
             rclcpp::shutdown();
+        } catch (...) {
+            std::cout << "error" << std::endl;
         }
     }
 
