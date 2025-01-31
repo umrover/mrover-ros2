@@ -55,23 +55,22 @@ namespace mrover {
     }
 
     void PoseFilter::compare_and_select_heading() {
-        std::lock_guard<std::mutex> lock(heading_mutex_);
-
-        if (!pose_callback_heading.has_value() && !correction_timer_heading.has_value()) {
-            RCLPP_WARN(get_logger(), "Missing heading data");
+        if (!pose_callback_heading.has_value() || !correction_timer_heading_.has_value()) {
+            RCLCPP_WARN(get_logger(), "Missing heading values");
             return;
         }
 
-        double time_difference = ((correction_timer_heading->timestamp) - (pose_callback_heading->timestamp)).seconds();
-        if (std::abs(time_difference) > TIME_THRESHOLD) {
-            RCLPP_WARN(get_logger(), "Time difference between values too far apart.");
-        } else if (((correction_timer_heading->heading) - (pose_callback_heading->heading)) > HEADING_THRESHOLD) {
-            RCLPP_WARN(get_logger(), "Heading values are too far apart");
+        double heading_difference = std::abs(!pose_callback_heading_.value() - correction_timer_heading_.value());
+        
+        if (heading_difference > HEADING_THRESHOLD) {
+            RCLCPP_WARN(get_logger(), fmt::format("Heading difference {} is too large, skipping averaged heading calculation", heading_difference));
+            return;
+        } else {
+            averaged_heading_ = ((pose_callback_heading.value()) + (correction_timer_heading_.value())) / 2.0;
         }
+       
+        RCLCPP_INFO(get_logger(), "Computer Average Heading: %f", averaged_heading_.value());
 
-        if ((correction_timer_heading->heading) < HEADING_THRESHOLD) {
-            Eigen::Quaterniond desired_yaw_quaternion(Eigen::AngleAxis2d(heading_rad, Eigen::Vector3d::UnitZ()));
-            
         }
     }
 
@@ -92,15 +91,13 @@ namespace mrover {
         Eigen::Quaterniond quaternion(imu_msg.orientation.w, imu_msg.orientation.x, imu_msg.orientation.y, imu_msg.orientation.z);
         quaternion.normalize();
 
+        pose_callback_heading_ = current_heading->heading * (M_PI / 180);
 
-        double heading_rad = current_heading->heading * (M_PI / 180); 
-        {
-            std::lock_guard<std::mutex> lock(heading_mutex_);
-            pose_callback_heading = HeadingData{heading_rad, linearized_pos_msg->header.stamp}
-        }
-        
+        compare_and_select_heading();
 
-        Eigen::Quaterniond desired_yaw_quaternion(Eigen::AngleAxisd(heading_rad, Eigen::Vector3d::UnitZ()));
+        double final_heading_value = averaged_heading_value.value() ? averaged_heading_value.value() : pose_callback_heading_.value();
+
+        Eigen::Quaterniond desired_yaw_quaternion(Eigen::AngleAxisd(final_heading_value, Eigen::Vector3d::UnitZ()));
         Eigen::Vector3d euler_angles = quaternion.toRotationMatrix().eulerAngles(2, 1, 0);
         double roll = euler_angles[2];
         double pitch = euler_angles[1];
@@ -149,7 +146,6 @@ namespace mrover {
     void PoseFilter::correction_timer_callback() {
 
         // 1. Ensure the rover is being commanded to move relatively straight forward
-s
         geometry_msgs::msg::Twist mean_twist;
 
         for (auto total = static_cast<double>(twists.size()); auto const& twist : twists) {
@@ -206,10 +202,10 @@ s
         }
 
         double corrected_heading_in_map = std::atan2(rover_velocity_sum.y(), rover_velocity_sum.x());
-        {
-            std::lock_guard<std::mutex> lock(heading_mutex_);
-            correction_time_heading = HeadingData{corrected_heading_in_map, this->get_clock()->now()};
-        }
+        
+        correction_timer_heading_ = corrected_heading_in_map;
+
+        compare_and_select_heading();
 
         SO3d uncorrected_orientation = ros_quat_to_eigen_quat(current_imu->orientation);
         R2d uncorrected_forward = uncorrected_orientation.rotation().col(0).head<2>();
@@ -231,5 +227,3 @@ int main(int argc, char** argv) {
     rclcpp::shutdown();
     return 0;
 }
-
-

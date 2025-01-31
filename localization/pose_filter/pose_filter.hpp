@@ -4,17 +4,14 @@
 
 namespace mrover {
 
-    struct HeadingData {
-        double Heading;
-        rclcpp::Time timestamp;
-    }
-
     class PoseFilter : public rclcpp::Node {
 
     private:
 
-        std::optional<double> pose_callback_heading;
-        std::optional<double> correction_timer_heading;
+        double HEADING_THRESHOLD = (15 * (M_PI / 180));
+        std::optional<double> averaged_heading_;
+        std::optional<double> pose_callback_heading_;
+        std::optional<double> correction_timer_heading_;
 
         auto ros_quat_to_eigen_quat(geometry_msgs::msg::Quaternion const& q) -> Eigen::Quaterniond;
 
