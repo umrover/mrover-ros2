@@ -49,7 +49,7 @@
     </div>
     <div class="shadow p-3 rounded pumps">
       <h3>Pump Controls</h3>
-        
+
     </div>
     <!-- TODO: add pumps -->
     <!-- TODO: add limit switch -->
@@ -89,7 +89,8 @@ export default {
         altitude: 0
       },
       hexHubPos: 0,
-      hexHubOptions: [1,2,3,4,5,6]
+      // hexHubOptions: [1,2,3,4]
+      hexHubOptions: ["Sample 1","Sample 2","Sample Cache","Empty Soil Deposit"]
     }
   },
 }

@@ -39,7 +39,10 @@ from mrover.msg import (
     Methane,
     UV,
 )
-from mrover.srv import EnableAuton
+from mrover.srv import (
+    EnableAuton, 
+    # EnableBool, #CHANGED?
+)
 from std_srvs.srv import SetBool
 
 rclpy.init()
@@ -93,6 +96,9 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.enable_teleop_srv = node.create_client(SetBool, "/enable_teleop")
         self.enable_auton_srv = node.create_client(EnableAuton, "/enable_auton")
         self.auto_shutoff_service = node.create_client(SetBool, "/science_change_heater_auto_shutoff_state")
+        self.sa_enable_pump_0_srv = node.create_client(SetBool, "/sa_enable_pump_0")
+        self.sa_enable_pump_1_srv = node.create_client(SetBool, "/sa_enable_pump_1")
+        self.sa_enable_switch_srv = node.create_client(SetBool, "/sa_enable_limit_switch_sensor_actuator")
 
         self.heater_services = []
         self.white_leds_services = []
@@ -250,6 +256,8 @@ class GUIConsumer(JsonWebsocketConsumer):
                     self.auto_shutoff_service.call(SetBool.Request(data=shutoff))
                 case {"type": "white_leds", "site": site, "enabled": enabled}:
                     self.white_leds_services[site].call(SetBool.Request(data=enabled))
+                # TODO: add service handlers here
+                
                 case _:
                     node.get_logger().warning(f"Unhandled message: {message}")
         except:
