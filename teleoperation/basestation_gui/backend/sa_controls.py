@@ -104,8 +104,9 @@ def compute_manual_joint_controls(controller: DeviceInputs) -> list[float]:
     ]
 
 
-def send_sa_controls(inputs: DeviceInputs, sa_thr_pub: Publisher) -> None:
-    # manual_controls = compute_manual_joint_controls(inputs)
+def send_sa_controls(sa_mode: str, inputs: DeviceInputs, sa_thr_pub: Publisher) -> None:
+    if(sa_mode == "disabled"):
+        return
     throttle_msg = Throttle()
     manual_controls = compute_manual_joint_controls(inputs)
     joint_names, throttle_values = subset(JOINT_NAMES, manual_controls, set(Joint))

@@ -58,6 +58,7 @@ ros_thread.start()
 LOCALIZATION_INFO_HZ = 10
 
 cur_mode = "disabled"
+cur_sa_mode = "disabled"
 heater_names = ["a0", "a1", "b0", "b1"]
 
 
@@ -208,13 +209,18 @@ class GUIConsumer(JsonWebsocketConsumer):
                     "mode": mode,
                 }:
                     cur_mode = mode
+                case {
+                    "type": "sa_mode",
+                    "mode": mode,
+                }:
+                    cur_sa_mode = mode
                 case{
                     "type": "sa_controller",
                     "axes": axes,
                     "buttons": buttons
                 }:
                     device_input = DeviceInputs(axes, buttons)
-                    send_sa_controls(device_input, self.sa_thr_pub)
+                    send_sa_controls(cur_sa_mode, device_input, self.sa_thr_pub)
                 case {"type": "auton_enable", "enabled": enabled, "waypoints": waypoints}:
                     self.send_auton_command(waypoints, enabled)
                 case {"type": "teleop_enable", "enabled": enabled}:
