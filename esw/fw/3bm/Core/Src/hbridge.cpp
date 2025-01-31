@@ -17,7 +17,7 @@ namespace mrover {
 
         // Prevent the motor from spinning on boot up
         __HAL_TIM_SET_COMPARE(m_timer, m_channel, 0);
-        HAL_TIM_PWM_Start(m_timer, m_channel);
+        check(HAL_TIM_PWM_Start(m_timer, m_channel) == HAL_OK, Error_Handler);
     }
 
     auto HBridge::write(Percent output) const -> void {
