@@ -47,6 +47,10 @@
         </div>
       </div>
     </div>
+    <div class="shadow p-3 rounded pumps">
+      <h3>Pump Controls</h3>
+
+    </div>
     <!-- TODO: add pumps -->
     <!-- TODO: add limit switch -->
   </div>
@@ -99,7 +103,7 @@ export default {
   grid-template-areas:
     'header header header'
     'arm hexHub soilData'
-    'map waypoints waypoints'
+    'map pumps waypoints'
     'map odom odom'
     'moteus moteus moteus';
   font-family: sans-serif;
@@ -144,5 +148,9 @@ export default {
 
 .hexHub {
   grid-area: hexHub;
+}
+
+.pumps {
+  grid-area: pumps;
 }
 </style>
