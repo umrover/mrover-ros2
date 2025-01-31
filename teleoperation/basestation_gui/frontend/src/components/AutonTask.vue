@@ -27,8 +27,8 @@
     </div>
     <!--Enable the drive controls if auton is off-->
     <div v-if='!autonEnabled && teleopEnabledCheck' v-show='false' class='driveControls'>
-      <DriveControls />
-      <MastGimbalControls></MastGimbalControls>
+      <DriveControls/>
+      <MastGimbalControls/>
     </div>
     <div class='conditions'>
       <div v-if='!stuck_status' class='shadow p-3 rounded bg-success text-center'>

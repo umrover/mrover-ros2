@@ -15,6 +15,7 @@ from lie import SE3
 from backend.drive_controls import send_joystick_twist, send_controller_twist
 from backend.input import DeviceInputs
 from backend.ra_controls import send_ra_controls
+from backend.sa_controls import send_sa_controls
 from backend.mast_controls import send_mast_controls
 from backend.waypoints import (
     get_auton_waypoint_list,
@@ -72,6 +73,7 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.joystick_twist_pub = node.create_publisher(Twist, "/joystick_cmd_vel", 1)
         self.controller_twist_pub = node.create_publisher(Twist, "/controller_cmd_vel", 1)
         self.mast_gimbal_pub = node.create_publisher(Throttle, "/mast_gimbal_throttle_cmd", 1)
+        self.sa_thr_pub = node.create_publisher(Throttle, "sa_throttle_cmd", 1)
 
         self.forward_ros_topic("/drive_left_controller_data", ControllerState, "drive_left_state")
         self.forward_ros_topic("/drive_right_controller_data", ControllerState, "drive_right_state")
@@ -206,7 +208,13 @@ class GUIConsumer(JsonWebsocketConsumer):
                     "mode": mode,
                 }:
                     cur_mode = mode
-                    node.get_logger().debug(f"publishing to {cur_mode}")
+                case{
+                    "type": "sa_controller",
+                    "axes": axes,
+                    "buttons": buttons
+                }:
+                    device_input = DeviceInputs(axes, buttons)
+                    send_sa_controls(device_input, self.sa_thr_pub)
                 case {"type": "auton_enable", "enabled": enabled, "waypoints": waypoints}:
                     self.send_auton_command(waypoints, enabled)
                 case {"type": "teleop_enable", "enabled": enabled}:
