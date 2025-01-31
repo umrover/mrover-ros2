@@ -25,7 +25,7 @@ class ApproachTargetState(State):
     time_last_updated: Time
     UPDATE_DELAY: float
     USE_COSTMAP: bool
-    target_position: np.ndarray
+    target_position: np.ndarray | None
 
     def on_enter(self, context: Context) -> None:
         self.marker_pub = context.node.create_publisher(Marker, "spiral_points", 10)
@@ -34,12 +34,7 @@ class ApproachTargetState(State):
         self.traj = Trajectory(np.array([]))
         self.astar = AStar(context=context)
         self.follow_astar = False
-        if self.get_target_position(context) is not None:
-            temp = self.get_target_position(context)
-            assert temp is not None
-            self.target_position = temp
-        else:
-            self.target_position = np.array([0, 0])
+        self.target_position = self.get_target_position(context)
         self.time_last_updated = context.node.get_clock().now()
         self.UPDATE_DELAY = context.node.get_parameter("search.update_delay").value
         self.USE_COSTMAP = context.node.get_parameter("search.use_costmap").value
@@ -71,51 +66,65 @@ class ApproachTargetState(State):
         Return to search if there is no target position.
         :return: Next state
         """
-
+        from .long_range import LongRangeState
         assert context.course is not None
 
         if self.target_position is None:
-            from .long_range import LongRangeState
-
+            
+            # If we lose sight of the target and we have not reached the waypoint yet are we are in the long range state,
+            # go back to following the waypoint 
             if isinstance(self, LongRangeState) and not context.env.arrived_at_waypoint:
                 return waypoint.WaypointState()
 
+            # Otherwise, if we lost sight of the target, but were in the regular state it means we were pretty 
+            # close so we should just return to spiral searching
             return costmap_search.CostmapSearchState()
 
+
+        # Establish rover's position in the world
         rover_in_map = context.rover.get_pose_in_map()
         assert rover_in_map is not None
 
+        # Assert costmap exists
         if not hasattr(context.env.cost_map, "data"):
             context.node.get_logger().warn(f"No costmap found, waiting...")
             self.time_begin = context.node.get_clock().now()
             return self
 
+        # Wait before starting state
         if context.node.get_clock().now() - Duration(nanoseconds=1000000000) < self.time_begin:
             return self
 
 
-        from .long_range import LongRangeState
-        if context.node.get_clock().now() - self.time_last_updated > Duration(seconds=self.UPDATE_DELAY):
+        if context.node.get_clock().now() - self.time_last_updated > Duration(seconds=self.UPDATE_DELAY) or self.target_position is None:
             
-            
+            # Ocassionally check if the object is in the ZED, and if so, transition to the regular approach target state
             if isinstance(self, LongRangeState) and context.env.current_target_pos() is not None:
                 context.node.get_logger().info("Transitioning from long range to regular approach target")
                 return ApproachTargetState()
 
+            # Update the time last updated and update the position of the target. Clear the current target trajectory
             self.time_last_updated = context.node.get_clock().now()
-            target_pos = self.get_target_position(context)
+            self.target_position = self.get_target_position(context)
             self.traj = Trajectory(np.array([]))
 
-        if not isinstance(self, LongRangeState):
-            target_pos = self.get_target_position(context)
-        assert target_pos is not None
-        if len(self.traj.coordinates) == 0 or d_calc(tuple(self.target_position), tuple(target_pos)) > 0.3:
-            self.target_position = target_pos
+            # Make sure to return self in case get_target_position returned None
+            return self
+
+
+        # Target position must exist
+        assert self.target_position is not None
+
+        # If there are no more coordinates left in the trajectory to the target redevelop the trajectory with segmentation
+        if len(self.traj.coordinates) == 0:
             context.node.get_logger().info("Generating approach segmented path")
             self.traj = segment_path(context=context, dest=self.target_position[0:2])
             self.astar_traj = Trajectory(np.array([]))
             self.display_markers(context=context)
 
+
+        # Check the current point in the trajectory, if its high cost, let the current point be the next point in the trajectory
+        # and check again
         while self.traj.get_current_point() is not None and is_high_cost_point(
             context=context, point=self.traj.get_current_point()
         ):
@@ -130,9 +139,11 @@ class ApproachTargetState(State):
             or len(self.astar_traj.coordinates) - self.astar_traj.cur_pt == 0
         ):
             self.time_last_updated = context.node.get_clock().now()
-            # Generate a path
+            # Generate astar trajectory between segmented points
             self.astar_traj = self.astar.generate_trajectory(context, self.traj.get_current_point())
 
+
+        # Create the twst and check if we have arrived
         arrived = False
         cmd_vel = Twist()
         if len(self.astar_traj.coordinates) - self.astar_traj.cur_pt != 0:
@@ -148,6 +159,7 @@ class ApproachTargetState(State):
             context.rover.previous_state = self
             return recovery.RecoveryState()
 
+        # If we have arrived and reached the end of both the astar trajectory and target trajectory, we have finished
         if arrived:
             if self.astar_traj.increment_point():
                 context.node.get_logger().info(f"Arrived at segment point")
