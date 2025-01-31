@@ -70,6 +70,17 @@
           LTooltip,
           LControlScale
       },
+
+      props: {
+          odom: {
+              type: Object,
+              default: () => ({latitude_deg: 0, longitude_deg: 0, bearing_deg: 0})
+          },
+          drone_odom: {
+              type: Object,
+              default: () => ({latitude_deg: 0, longitude_deg: 0, bearing_deg: 0})
+          }
+      },
   
       data() {
           return {
@@ -93,8 +104,6 @@
               odomPath: [],
               dronePath: [],
               findRover: false,
-              drone_latitude_deg: 38.4225202,
-              drone_longitude_deg: -110.7844653,
               circle: null, //search radius
           }
       },
@@ -174,11 +183,21 @@
   
           // Convert to latLng object for Leaflet to use
           odomLatLng: function () {
-              return L.latLng(this.odom.latitude_deg, this.odom.longitude_deg)
+            if (this.odom && typeof this.odom === 'object' && this.odom.latitude_deg !== undefined && this.odom.longitude_deg !== undefined ) {
+                return L.latLng(this.odom.latitude_deg, this.odom.longitude_deg);
+            } else {
+                console.warn('odom data not ready yet');
+                return L.latLng(0,0);
+            }
           },
 
           droneLatLng: function () {
-              return L.latLng(this.drone_latitude_deg, this.drone_longitude_deg)
+            if (this.drone_odom && typeof this.drone_odom === 'object' && this.drone_odom.latitude_deg !== undefined && this.drone_odom.longitude_deg !== undefined ) {
+                return L.latLng(this.drone_odom.latitude_deg, this.drone_odom.longitude_deg);
+            } else {
+                console.warn('drone odom data not ready yet');
+                return L.latLng(0,0);
+            }
           },
   
           polylinePath: function () {
@@ -190,33 +209,7 @@
           },
       },
   
-      props: {
-          odom: {
-              type: Object,
-              required: true
-          }
-      },
-  
       watch: {
-          message(msg) {
-            if (msg.type == 'drone_waypoint') {
-                this.drone_latitude_deg = msg.latitude
-                this.drone_longitude_deg = msg.longitude
-                const latLng = L.latLng(this.drone_latitude_deg, this.drone_longitude_deg)
-                this.droneMarker.setLatLng(latLng)
-                  // Update the rover path
-                  this.droneCount++
-                  if (this.droneCount % DRAW_FREQUENCY === 0) {
-                      if (this.dronePath.length > MAX_ODOM_COUNT) {
-                          this.dronePath = [...this.dronePath.slice(1), latLng] //remove oldest element
-                      }
-  
-                      this.dronePath = [...this.dronePath, latLng]
-                      this.droneCount = 0
-                  }
-            }
-          },
-
           odom: {
               handler: function (val) {
                   // Trigger every time rover odom is changed
@@ -251,6 +244,27 @@
               },
               // Deep will watch for changes in children of an object
               deep: true
+          },
+
+          drone_odom: {
+            handler: function(val) {
+                const lat = val.latitude_deg
+                const lng = val.longitude_deg
+  
+                const latLng = L.latLng(lat, lng)
+                this.droneMarker.setLatLng(latLng)
+                // Update the rover path
+                this.droneCount++
+                if (this.droneCount % DRAW_FREQUENCY === 0) {
+                    if (this.dronePath.length > MAX_ODOM_COUNT) {
+                        this.dronePath = [...this.dronePath.slice(1), latLng] //remove oldest element
+                    }
+
+                    this.dronePath = [...this.dronePath, latLng]
+                    this.droneCount = 0
+                }
+            },
+            deep: true
           },
 
           searchWaypoint(newIndex) {

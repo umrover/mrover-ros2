@@ -64,7 +64,7 @@ export default {
     IMUCalibration
   },
 
-  emits: ['odom'],
+  emits: ['odom', 'drone_odom'],
 
   data() {
     return {
@@ -136,6 +136,11 @@ export default {
           this.drone_latitude_deg = msg.latitude
           this.drone_longitude_deg = msg.longitude
           this.drone_status = msg.status
+
+          this.$emit('drone_odom', {
+            latitude_deg: this.drone_latitude_deg,
+            longitude_deg: this.drone_longitude_deg,
+          })
         }
         else if (msg.type == 'orientation') {
           this.rover_bearing_deg = quaternionToMapAngle(msg.orientation)

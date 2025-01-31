@@ -7,10 +7,10 @@
     </div>
 
     <div v-if="type === 'DM'" class='shadow p-3 rounded odom'>
-      <OdometryReading @odom='updateOdom' />
+      <OdometryReading @odom='updateOdom' @drone_odom="updateDroneOdom" />
     </div>
     <div v-if="type === 'DM'" class='shadow p-3 rounded map'>
-      <BasicMap :odom='odom' />
+      <BasicMap :odom='odom' :drone_odom="drone_odom" />
     </div>
     <div v-if="type === 'DM'" class='shadow p-3 rounded waypoint-editor'>
       <BasicWaypointEditor :odom='odom' :droneWaypointButton='true'/>
@@ -36,7 +36,6 @@
 
 <script lang='ts'>
 import { defineComponent } from 'vue'
-import { mapActions, mapState } from 'vuex'
 import ControllerDataTable from './ControllerDataTable.vue'
 import ArmControls from './ArmControls.vue'
 import BasicMap from './BasicRoverMap.vue'
@@ -50,6 +49,11 @@ interface Odom {
   latitude_deg: number;
   longitude_deg: number;
   bearing_deg: number;
+}
+
+interface DroneOdom {
+  latitude_deg: number;
+  longitude_deg: number;
 }
 
 export default defineComponent({
@@ -73,13 +77,17 @@ export default defineComponent({
 
   data() {
     return {
-      odom:  null as Odom | null
+      odom:  null as Odom | null,
+      drone_odom:  null as DroneOdom | null
     }
   },
 
   methods: {
     updateOdom(odom: Odom) {
       this.odom = odom;
+    },
+    updateDroneOdom(odom: DroneOdom) {
+      this.drone_odom = odom;
     }
   }
 
