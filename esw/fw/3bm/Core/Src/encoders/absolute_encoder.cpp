@@ -42,7 +42,7 @@ namespace mrover {
     }
 
     auto AbsoluteEncoderReader::read_raw_angle_into_buffer() -> void {
-        m_i2cBus.async_receive(m_address, m_i2c_buffer);
+        m_i2cBus.async_receive_direct(m_address, m_i2c_buffer);
     }
 
     auto AbsoluteEncoderReader::convert_buffer_into_raw_angle() -> std::uint64_t {

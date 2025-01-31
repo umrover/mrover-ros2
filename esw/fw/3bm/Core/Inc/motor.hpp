@@ -45,10 +45,10 @@ namespace mrover {
         std::array<LimitSwitch, 2> m_limit_switches;
         TIM_HandleTypeDef* m_encoder_elapsed_timer{};
         TIM_HandleTypeDef* m_relative_encoder_tick_timer{};
-        I2C_HandleTypeDef* m_absolute_encoder_i2c{};
         std::optional<QuadratureEncoderReader> m_relative_encoder;
-        std::optional<AbsoluteEncoderReader> m_absolute_encoder;
+        I2C_HandleTypeDef* m_absolute_encoder_i2c{};
         std::uint8_t m_absolute_encoder_a2_a1;
+        std::optional<AbsoluteEncoderReader> m_absolute_encoder;
         TIM_HandleTypeDef* m_pidf_timer{};
 
         /* ==================== Internal State ==================== */
@@ -275,6 +275,7 @@ namespace mrover {
 
         Motor(std::uint8_t id, HBridge const& motor_driver, TIM_HandleTypeDef* receive_watchdog_timer,
               std::array<LimitSwitch, 2> const& limit_switches, TIM_HandleTypeDef* encoder_elapsed_timer, TIM_HandleTypeDef* relative_encoder_tick_timer,
+			  I2C_HandleTypeDef* absolute_encoder_i2c,
               std::uint8_t absolute_encoder_a2_a1, TIM_HandleTypeDef* pidf_timer)
             : m_id(id),
               m_motor_driver(motor_driver),
@@ -282,6 +283,7 @@ namespace mrover {
               m_limit_switches(limit_switches),
               m_encoder_elapsed_timer(encoder_elapsed_timer),
               m_relative_encoder_tick_timer(relative_encoder_tick_timer),
+			  m_absolute_encoder_i2c(absolute_encoder_i2c),
               m_absolute_encoder_a2_a1(absolute_encoder_a2_a1),
               m_pidf_timer(pidf_timer) {
         }
