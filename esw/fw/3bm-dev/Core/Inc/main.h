@@ -31,6 +31,7 @@ extern "C" {
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#define DUAL_DIRECTION
 
 /* USER CODE END Includes */
 

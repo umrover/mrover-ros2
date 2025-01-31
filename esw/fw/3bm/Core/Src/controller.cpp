@@ -84,7 +84,11 @@ namespace mrover {
             case 0:
                 return Motor(
                         DEVICE_ID_0,
+#ifdef DUAL_DIRECTION
+                        HBridge{PWM_TIMER_0, PWM_TIMER_CHANNEL_0, Pin{MOTOR_DIR_0_GPIO_Port, MOTOR_DIR_0_Pin}, Pin{MOTOR_DIR_1_GPIO_Port, MOTOR_DIR_1_Pin}},
+#else
                         HBridge{PWM_TIMER_0, PWM_TIMER_CHANNEL_0, Pin{MOTOR_DIR_0_GPIO_Port, MOTOR_DIR_0_Pin}},
+#endif
                         RECEIVE_WATCHDOG_TIMER_0,
                         {LimitSwitch{Pin{LIMIT_0_A_GPIO_Port, LIMIT_0_A_Pin}}, LimitSwitch{Pin{LIMIT_0_B_GPIO_Port, LIMIT_0_B_Pin}}},
                         ENCODER_ELAPSED_TIMER,
@@ -95,7 +99,11 @@ namespace mrover {
             case 1:
                 return Motor(
                         DEVICE_ID_1,
+#ifdef DUAL_DIRECTION
+                        HBridge{PWM_TIMER_1, PWM_TIMER_CHANNEL_1, Pin{MOTOR_DIR_2_GPIO_Port, MOTOR_DIR_2_Pin}, Pin{MOTOR_DIR_3_GPIO_Port, MOTOR_DIR_3_Pin}},
+#else
                         HBridge{PWM_TIMER_1, PWM_TIMER_CHANNEL_1, Pin{MOTOR_DIR_1_GPIO_Port, MOTOR_DIR_1_Pin}},
+#endif
                         RECEIVE_WATCHDOG_TIMER_1,
                         {LimitSwitch{Pin{LIMIT_1_A_GPIO_Port, LIMIT_1_A_Pin}}, LimitSwitch{Pin{LIMIT_1_B_GPIO_Port, LIMIT_1_B_Pin}}},
                         ENCODER_ELAPSED_TIMER,
@@ -106,7 +114,11 @@ namespace mrover {
             case 2:
                 return Motor(
                         DEVICE_ID_2,
+#ifdef DUAL_DIRECTION
+                        HBridge{PWM_TIMER_2, PWM_TIMER_CHANNEL_2, Pin{MOTOR_DIR_4_GPIO_Port, MOTOR_DIR_4_Pin}, Pin{MOTOR_DIR_5_GPIO_Port, MOTOR_DIR_5_Pin}},
+#else
                         HBridge{PWM_TIMER_2, PWM_TIMER_CHANNEL_2, Pin{MOTOR_DIR_2_GPIO_Port, MOTOR_DIR_2_Pin}},
+#endif
                         RECEIVE_WATCHDOG_TIMER_2,
                         {LimitSwitch{Pin{LIMIT_2_A_GPIO_Port, LIMIT_2_A_Pin}}, LimitSwitch{Pin{LIMIT_2_B_GPIO_Port, LIMIT_2_B_Pin}}},
                         ENCODER_ELAPSED_TIMER,
