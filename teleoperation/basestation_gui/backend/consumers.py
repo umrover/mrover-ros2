@@ -6,57 +6,97 @@ from channels.generic.websocket import JsonWebsocketConsumer
 from rosidl_runtime_py.convert import message_to_ordereddict
 
 import rclpy
-
 import tf2_ros
+import asyncio
+import threading
+
 from tf2_ros.buffer import Buffer
-import numpy as np
+from lie import SE3
 from backend.drive_controls import send_joystick_twist, send_controller_twist
 from backend.input import DeviceInputs
-from geometry_msgs.msg import Twist, Vector3
-from sensor_msgs.msg import NavSatFix
-from lie import SE3
-from mrover.msg import Throttle, IK, ControllerState, LED, StateMachineStateUpdate, GPSWaypoint, WaypointType
 from backend.ra_controls import send_ra_controls
 from backend.mast_controls import send_mast_controls
-from backend.waypoints import get_auton_waypoint_list, get_basic_waypoint_list, save_auton_waypoint_list, save_basic_waypoint_list
+from backend.waypoints import (
+    get_auton_waypoint_list,
+    get_basic_waypoint_list,
+    save_auton_waypoint_list,
+    save_basic_waypoint_list,
+)
+from geometry_msgs.msg import Twist, Vector3
+from sensor_msgs.msg import NavSatFix, Temperature, RelativeHumidity
+from mrover.msg import (
+    Throttle,
+    IK,
+    ControllerState,
+    LED,
+    StateMachineStateUpdate,
+    GPSWaypoint,
+    WaypointType,
+    HeaterData,
+    ScienceThermistors,
+    Oxygen,
+    Methane,
+    UV,
+)
 from mrover.srv import EnableAuton
 from std_srvs.srv import SetBool
 
-import threading
-
-import logging
-logger = logging.getLogger('django')
-
 rclpy.init()
-node = rclpy.create_node('teleoperation')
-thread = threading.Thread(target=rclpy.spin, args=(node, ), daemon=True)
-thread.start()
-cur_mode = "disabled"
+node = rclpy.create_node("teleoperation")
+
+
+def ros_spin():
+    rclpy.spin(node)
+    node.destroy_node()
+    rclpy.shutdown()
+
+
+ros_thread = threading.Thread(target=ros_spin, daemon=True)
+ros_thread.start()
 
 LOCALIZATION_INFO_HZ = 10
+
+cur_mode = "disabled"
+heater_names = ["a0", "a1", "b0", "b1"]
+
 
 class GUIConsumer(JsonWebsocketConsumer):
     subscribers = []
     timers = []
-    
+
     def connect(self) -> None:
         self.accept()
-        self.thr_pub = node.create_publisher(Throttle, "arm_throttle_cmd",1)
-        self.ee_pos_pub = node.create_publisher(IK, "ee_pos_cmd",1)
-        self.ee_vel_pub = node.create_publisher(Vector3, "ee_vel_cmd",1)
+        self.thr_pub = node.create_publisher(Throttle, "arm_throttle_cmd", 1)
+        self.ee_pos_pub = node.create_publisher(IK, "ee_pos_cmd", 1)
+        self.ee_vel_pub = node.create_publisher(Vector3, "ee_vel_cmd", 1)
         self.joystick_twist_pub = node.create_publisher(Twist, "/joystick_cmd_vel", 1)
         self.controller_twist_pub = node.create_publisher(Twist, "/controller_cmd_vel", 1)
         self.mast_gimbal_pub = node.create_publisher(Throttle, "/mast_gimbal_throttle_cmd", 1)
-        
 
         self.forward_ros_topic("/drive_left_controller_data", ControllerState, "drive_left_state")
         self.forward_ros_topic("/drive_right_controller_data", ControllerState, "drive_right_state")
         self.forward_ros_topic("/led", LED, "led")
         self.forward_ros_topic("/nav_state", StateMachineStateUpdate, "nav_state")
         self.forward_ros_topic("/gps/fix", NavSatFix, "gps_fix")
+        self.forward_ros_topic("/science_thermistors", ScienceThermistors, "thermistors")
+        self.forward_ros_topic("/science_heater_state", HeaterData, "heater_states")
+        self.forward_ros_topic("/science_oxygen_data", Oxygen, "oxygen")
+        self.forward_ros_topic("/science_methane_data", Methane, "methane")
+        self.forward_ros_topic("/science_uv_data", UV, "uv")
+        self.forward_ros_topic("/science_temperature_data", Temperature, "temperature")
+        self.forward_ros_topic("/science_humidity_data", RelativeHumidity, "humidity")
 
-        self.enable_teleop_srv = node.create_client(SetBool, "enable_teleop")
-        self.enable_auton_srv = node.create_client(EnableAuton, "enable_auton")
+        # Services
+        self.enable_teleop_srv = node.create_client(SetBool, "/enable_teleop")
+        self.enable_auton_srv = node.create_client(EnableAuton, "/enable_auton")
+        self.auto_shutoff_service = node.create_client(SetBool, "/science_change_heater_auto_shutoff_state")
+
+        self.heater_services = []
+        self.white_leds_services = []
+        for name in heater_names:
+            self.heater_services.append(node.create_client(SetBool, "/science_enable_heater_" + name))
+        for site in ["a0", "b0"]:
+            self.white_leds_services.append(node.create_client(SetBool, "/science_enable_white_led_" + site))
 
         self.buffer = Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.buffer, node)
@@ -77,12 +117,13 @@ class GUIConsumer(JsonWebsocketConsumer):
         @param topic_type:      ROS message type
         @param gui_msg_type:    String to identify the message type in the GUI
         """
-            
+
         def callback(ros_message: Any):
             # Formatting a ROS message as a string outputs YAML
             # Parse it back into a dictionary, so we can send it as JSON
             self.send_message_as_json({"type": gui_msg_type, **message_to_ordereddict(ros_message)})
-        self.subscribers.append(node.create_subscription(topic_type, topic_name , callback, qos_profile=1))
+
+        self.subscribers.append(node.create_subscription(topic_type, topic_name, callback, qos_profile=1))
 
     def send_message_as_json(self, msg: dict):
         try:
@@ -102,21 +143,21 @@ class GUIConsumer(JsonWebsocketConsumer):
         except Exception as e:
             node.get_logger().warn(f"Failed to get bearing: {e} Is localization running?")
 
-    
     def send_auton_command(self, waypoints: list[dict], enabled: bool) -> None:
-        node.get_logger().info(f"{waypoints}")
-        self.enable_auton_srv.call(EnableAuton.Request(
-            enable=enabled,
-            waypoints=[
-                GPSWaypoint(
-                    tag_id=waypoint["tag_id"],
-                    latitude_degrees=waypoint["latitude_degrees"],
-                    longitude_degrees=waypoint["longitude_degrees"],
-                    type=WaypointType(val=int(waypoint["type"])),
-                )
-                for waypoint in waypoints
-            ],
-        ))
+        self.enable_auton_srv.call(
+            EnableAuton.Request(
+                enable=enabled,
+                waypoints=[
+                    GPSWaypoint(
+                        tag_id=waypoint["tag_id"],
+                        latitude_degrees=waypoint["latitude_degrees"],
+                        longitude_degrees=waypoint["longitude_degrees"],
+                        type=WaypointType(val=int(waypoint["type"])),
+                    )
+                    for waypoint in waypoints
+                ],
+            )
+        )
 
     def receive(self, text_data=None, bytes_data=None, **kwargs) -> None:
         """
@@ -137,7 +178,7 @@ class GUIConsumer(JsonWebsocketConsumer):
 
         try:
             match message:
-                #sending controls
+                # sending controls
                 case {
                     "type": "joystick" | "mast_keyboard" | "ra_controller",
                     "axes": axes,
@@ -145,15 +186,23 @@ class GUIConsumer(JsonWebsocketConsumer):
                 }:
                     device_input = DeviceInputs(axes, buttons)
                     match message["type"]:
-                        case "joystick":  
+                        case "joystick":
                             send_joystick_twist(device_input, self.joystick_twist_pub)
                         case "ra_controller":
                             send_controller_twist(device_input, self.controller_twist_pub)
-                            send_ra_controls(cur_mode,device_input,node, self.thr_pub, self.ee_pos_pub, self.ee_vel_pub, self.buffer)
+                            send_ra_controls(
+                                cur_mode,
+                                device_input,
+                                node,
+                                self.thr_pub,
+                                self.ee_pos_pub,
+                                self.ee_vel_pub,
+                                self.buffer,
+                            )
                         case "mast_keyboard":
                             send_mast_controls(device_input, self.mast_gimbal_pub)
-                case{
-                    "type":"ra_mode",
+                case {
+                    "type": "ra_mode",
                     "mode": mode,
                 }:
                     cur_mode = mode
@@ -162,25 +211,31 @@ class GUIConsumer(JsonWebsocketConsumer):
                     self.send_auton_command(waypoints, enabled)
                 case {"type": "teleop_enable", "enabled": enabled}:
                     self.enable_teleop_srv.call(SetBool.Request(data=enabled))
-                case{
+                case {
                     "type": "save_auton_waypoint_list",
                     "data": waypoints,
                 }:
                     save_auton_waypoint_list(waypoints)
-                case{
+                case {
                     "type": "save_basic_waypoint_list",
                     "data": waypoints,
                 }:
                     save_basic_waypoint_list(waypoints)
-                case{
+                case {
                     "type": "get_basic_waypoint_list",
                 }:
                     self.send_message_as_json({"type": "get_basic_waypoint_list", "data": get_basic_waypoint_list()})
-                case{
+                case {
                     "type": "get_auton_waypoint_list",
                 }:
                     self.send_message_as_json({"type": "get_auton_waypoint_list", "data": get_auton_waypoint_list()})
-                    
+                case {"type": "heater_enable", "enabled": enabled, "heater": heater}:
+                    self.heater_services[heater_names.index(heater)].call(SetBool.Request(data=enabled))
+
+                case {"type": "auto_shutoff", "shutoff": shutoff}:
+                    self.auto_shutoff_service.call(SetBool.Request(data=shutoff))
+                case {"type": "white_leds", "site": site, "enabled": enabled}:
+                    self.white_leds_services[site].call(SetBool.Request(data=enabled))
                 case _:
                     node.get_logger().warning(f"Unhandled message: {message}")
         except:
