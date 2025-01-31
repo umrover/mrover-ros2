@@ -28,7 +28,7 @@ class ApproachTargetState(State):
     target_position: np.ndarray | None
 
     def on_enter(self, context: Context) -> None:
-        self.marker_pub = context.node.create_publisher(Marker, "spiral_points", 10)
+        self.marker_pub = context.node.create_publisher(Marker, "target_trajectory", 10)
         self.time_begin = context.node.get_clock().now()
         self.astar_traj = Trajectory(np.array([]))
         self.traj = Trajectory(np.array([]))

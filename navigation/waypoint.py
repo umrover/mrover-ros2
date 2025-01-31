@@ -45,7 +45,7 @@ class WaypointState(State):
 
     def on_enter(self, context: Context) -> None:
         assert context.course is not None
-        self.marker_pub = context.node.create_publisher(Marker, "spiral_points", 10)
+        self.marker_pub = context.node.create_publisher(Marker, "waypoint_trajectory", 10)
         self.astar = AStar(context)
         self.UPDATE_DELAY = context.node.get_parameter("search.update_delay").value
         self.time_last_updated = context.node.get_clock().now() - Duration(seconds=self.UPDATE_DELAY)
