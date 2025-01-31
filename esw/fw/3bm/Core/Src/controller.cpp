@@ -89,6 +89,7 @@ namespace mrover {
                         {LimitSwitch{Pin{LIMIT_0_A_GPIO_Port, LIMIT_0_A_Pin}}, LimitSwitch{Pin{LIMIT_0_B_GPIO_Port, LIMIT_0_B_Pin}}},
                         ENCODER_ELAPSED_TIMER,
                         QUADRATURE_TICK_TIMER,
+                        ABSOLUTE_I2C,
                         A2_A1_0,
                         PIDF_TIMER);
             case 1:
@@ -99,6 +100,7 @@ namespace mrover {
                         {LimitSwitch{Pin{LIMIT_1_A_GPIO_Port, LIMIT_1_A_Pin}}, LimitSwitch{Pin{LIMIT_1_B_GPIO_Port, LIMIT_1_B_Pin}}},
                         ENCODER_ELAPSED_TIMER,
                         QUADRATURE_TICK_TIMER,
+                        ABSOLUTE_I2C,
                         A2_A1_1,
                         PIDF_TIMER);
             case 2:
@@ -109,6 +111,7 @@ namespace mrover {
                         {LimitSwitch{Pin{LIMIT_2_A_GPIO_Port, LIMIT_2_A_Pin}}, LimitSwitch{Pin{LIMIT_2_B_GPIO_Port, LIMIT_2_B_Pin}}},
                         ENCODER_ELAPSED_TIMER,
                         QUADRATURE_TICK_TIMER,
+                        ABSOLUTE_I2C,
                         A2_A1_2,
                         PIDF_TIMER);
             default:
@@ -192,7 +195,7 @@ namespace mrover {
         }
     }
 
-    auto request_absolute_encoder_data() -> void {
+    auto request_absolute_encoder_data_callback() -> void {
         if (motor_with_encoder != motors.end()) {
             motor_with_encoder->request_absolute_encoder_data();
         }
@@ -200,19 +203,15 @@ namespace mrover {
 
     auto global_update_callback() -> void {
         send_motor_statuses();
-        request_absolute_encoder_data();
+        request_absolute_encoder_data_callback();
     }
 
     auto read_absolute_encoder_data_callback() -> void {
-        if (motor_with_encoder != motors.end()) {
-            motor_with_encoder->read_absolute_encoder_data();
-        }
+        motor_with_encoder->read_absolute_encoder_data();
     }
 
     auto update_absolute_encoder_callback() -> void {
-        if (motor_with_encoder != motors.end()) {
-            motor_with_encoder->update_absolute_encoder();
-        }
+        motor_with_encoder->update_absolute_encoder();
     }
 
     auto update_quadrature_encoder_callback() -> void {
