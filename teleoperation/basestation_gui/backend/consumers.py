@@ -3,6 +3,7 @@ import traceback
 from typing import Any, Type
 
 from channels.generic.websocket import JsonWebsocketConsumer
+from rosidl_runtime_py.convert import message_to_ordereddict
 
 import rclpy
 
@@ -11,13 +12,13 @@ from tf2_ros.buffer import Buffer
 import numpy as np
 from backend.drive_controls import send_joystick_twist, send_controller_twist
 from backend.input import DeviceInputs
-from backend.models import BasicWaypoint, AutonWaypoint
 from geometry_msgs.msg import Twist, Vector3
 from sensor_msgs.msg import NavSatFix
 from lie import SE3
 from mrover.msg import Throttle, IK, ControllerState, LED, StateMachineStateUpdate, GPSWaypoint, WaypointType
 from backend.ra_controls import send_ra_controls
 from backend.mast_controls import send_mast_controls
+from backend.waypoints import get_auton_waypoint_list, get_basic_waypoint_list, save_auton_waypoint_list, save_basic_waypoint_list
 from mrover.srv import EnableAuton
 from std_srvs.srv import SetBool
 
@@ -36,6 +37,7 @@ LOCALIZATION_INFO_HZ = 10
 
 class GUIConsumer(JsonWebsocketConsumer):
     subscribers = []
+    timers = []
     
     def connect(self) -> None:
         self.accept()
@@ -47,7 +49,8 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.mast_gimbal_pub = node.create_publisher(Throttle, "/mast_gimbal_throttle_cmd", 1)
         
 
-        self.forward_ros_topic("/drive_controller_data", ControllerState, "drive_state")
+        self.forward_ros_topic("/drive_left_controller_data", ControllerState, "drive_left_state")
+        self.forward_ros_topic("/drive_right_controller_data", ControllerState, "drive_right_state")
         self.forward_ros_topic("/led", LED, "led")
         self.forward_ros_topic("/nav_state", StateMachineStateUpdate, "nav_state")
         self.forward_ros_topic("/gps/fix", NavSatFix, "gps_fix")
@@ -58,7 +61,13 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.buffer = Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.buffer, node)
 
-        self.timer = node.create_timer(1 / LOCALIZATION_INFO_HZ, self.send_localization_callback)
+        self.timers.append(node.create_timer(1 / LOCALIZATION_INFO_HZ, self.send_localization_callback))
+
+    def disconnect(self, close_code) -> None:
+        for subscriber in self.subscribers:
+            node.destroy_subscription(subscriber)
+        for timer in self.timers:
+            node.destroy_timer(timer)
 
     def forward_ros_topic(self, topic_name: str, topic_type: Type, gui_msg_type: str) -> None:
         """
@@ -68,31 +77,11 @@ class GUIConsumer(JsonWebsocketConsumer):
         @param topic_type:      ROS message type
         @param gui_msg_type:    String to identify the message type in the GUI
         """
-
-        def ros_message_to_dict(msg):
-            if hasattr(msg, '__slots__'):
-                msg_dict = {}
-                for slot in msg.__slots__:
-                    value = getattr(msg, slot)
-                    # Recursively converst ROS messages and remove leading underscores from the slot names
-                    key = slot.lstrip('_')
-                    msg_dict[key] = ros_message_to_dict(value)
-                return msg_dict
-            elif isinstance(msg, np.ndarray):
-                # Convert numpy arrays to lists
-                return msg.tolist()
-            elif isinstance(msg, (list, tuple)):
-                # Recursively handle lists or tuples
-                return [ros_message_to_dict(v) for v in msg]
-            elif isinstance(msg, dict):
-                # Recursively handle dictionaries
-                return {k: ros_message_to_dict(v) for k, v in msg.items()}
-            return msg
             
         def callback(ros_message: Any):
             # Formatting a ROS message as a string outputs YAML
             # Parse it back into a dictionary, so we can send it as JSON
-            self.send_message_as_json({"type": gui_msg_type, **ros_message_to_dict(ros_message)})
+            self.send_message_as_json({"type": gui_msg_type, **message_to_ordereddict(ros_message)})
         self.subscribers.append(node.create_subscription(topic_type, topic_name , callback, qos_profile=1))
 
     def send_message_as_json(self, msg: dict):
@@ -113,51 +102,7 @@ class GUIConsumer(JsonWebsocketConsumer):
         except Exception as e:
             node.get_logger().warn(f"Failed to get bearing: {e} Is localization running?")
 
-    def save_basic_waypoint_list(self, waypoints: list[dict]) -> None:
-        BasicWaypoint.objects.all().delete()
-        BasicWaypoint.objects.bulk_create(
-            [BasicWaypoint(drone=w["drone"], latitude=w["lat"], longitude=w["lon"], name=w["name"]) for w in waypoints]
-        )
-        self.send_message_as_json({"type": "save_basic_waypoint_list", "success": True})
-
-    def get_basic_waypoint_list(self) -> None:
-        self.send_message_as_json(
-            {
-                "type": "get_basic_waypoint_list",
-                "data": [
-                    {"name": w.name, "drone": w.drone, "lat": w.latitude, "lon": w.longitude}
-                    for w in BasicWaypoint.objects.all()
-                ],
-            }
-        )
-
-    def save_auton_waypoint_list(self, waypoints: list[dict]) -> None:
-        AutonWaypoint.objects.all().delete()
-        AutonWaypoint.objects.bulk_create(
-            [
-                AutonWaypoint(
-                    tag_id=w["id"],
-                    type=w["type"],
-                    latitude=w["lat"],
-                    longitude=w["lon"],
-                    name=w["name"],
-                )
-                for w in waypoints
-            ]
-        )
-        self.send_message_as_json({"type": "save_auton_waypoint_list", "success": True})
-
-    def get_auton_waypoint_list(self) -> None:
-        self.send_message_as_json(
-            {
-                "type": "get_auton_waypoint_list",
-                "data": [
-                    {"name": w.name, "id": w.tag_id, "lat": w.latitude, "lon": w.longitude, "type": w.type}
-                    for w in AutonWaypoint.objects.all()
-                ],
-            }
-        )
-
+    
     def send_auton_command(self, waypoints: list[dict], enabled: bool) -> None:
         self.enable_auton_srv.call(EnableAuton.Request(
             enable=enabled,
@@ -220,20 +165,20 @@ class GUIConsumer(JsonWebsocketConsumer):
                     "type": "save_auton_waypoint_list",
                     "data": waypoints,
                 }:
-                    self.save_auton_waypoint_list(waypoints)
+                    save_auton_waypoint_list(waypoints)
                 case{
                     "type": "save_basic_waypoint_list",
                     "data": waypoints,
                 }:
-                    self.save_basic_waypoint_list(waypoints)
+                    save_basic_waypoint_list(waypoints)
                 case{
                     "type": "get_basic_waypoint_list",
                 }:
-                    self.get_basic_waypoint_list()
+                    self.send_message_as_json({"type": "get_basic_waypoint_list", "data": get_basic_waypoint_list()})
                 case{
                     "type": "get_auton_waypoint_list",
                 }:
-                    self.get_auton_waypoint_list()
+                    self.send_message_as_json({"type": "get_auton_waypoint_list", "data": get_auton_waypoint_list()})
                     
                 case _:
                     node.get_logger().warning(f"Unhandled message: {message}")

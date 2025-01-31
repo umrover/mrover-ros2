@@ -107,47 +107,6 @@ export default {
   margin-right: 5px;
 }
 
-.helpscreen {
-  z-index: 1000000000;
-  display: block;
-  visibility: hidden;
-  background-color: black;
-  opacity: 0.8;
-  position: absolute;
-  left: 0px;
-  top: 0px;
-  width: 100%;
-  height: 100%;
-}
-
-.helpimages {
-  z-index: 1000000001;
-  visibility: hidden;
-  position: absolute;
-  left: 5%;
-  top: 5%;
-  width: 90%;
-  height: 90%;
-}
-
-.help {
-  z-index: 1000000002;
-  display: flex;
-  float: right;
-  opacity: 0.8;
-  cursor: auto;
-}
-
-.help:hover {
-  opacity: 1;
-  cursor: pointer;
-}
-
-.help:hover ~ .helpscreen,
-.help:hover ~ .helpimages {
-  visibility: visible;
-}
-
 .header {
   grid-area: header;
   display: flex;

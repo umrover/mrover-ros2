@@ -272,6 +272,10 @@ mrover_add_node(tag_detector perception/tag_detector/*.cpp perception/tag_detect
 ament_target_dependencies(tag_detector rclcpp tf2 tf2_ros)
 target_link_libraries(tag_detector lie opencv_core opencv_aruco opencv_imgproc loop_profiler)
 
+mrover_add_node(cost_map perception/cost_map/*.cpp perception/cost_map/pch.hpp)
+ament_target_dependencies(cost_map rclcpp tf2 tf2_ros)
+target_link_libraries(cost_map lie parameter_utils)
+
 # Embedded
 
 mrover_add_node(differential_drive_controller esw/differential_drive_controller.cpp)
@@ -319,6 +323,7 @@ install(PROGRAMS
         localization/basestation_gps_driver.py
         superstructure/superstructure.py
         scripts/debug_course_publisher.py
+        scripts/astar_debug.py
 		scripts/visualizer.py
         teleoperation/basestation_gui/gui_frontend.sh
         teleoperation/basestation_gui/gui_backend.sh

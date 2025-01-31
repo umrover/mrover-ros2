@@ -8,7 +8,7 @@
     </div>
     <div :class="['shadow p-3 rounded data', ledColor]">
       <h2>Nav State: {{ navState }}</h2>
-      <OdometryReading :odom='odom' />
+      <OdometryReading @odom='updateOdom' />
     </div>
     <div class='shadow p-3 rounded feed'> <!-- meant to be cost mapb -->
       <button @click="toggleFeed" class="btn btn-primary mb-2">
@@ -41,7 +41,8 @@
       </div>
     </div>
     <div class='shadow p-3 rounded moteus'>
-      <ControllerDataTable msg-type='drive_state' header='Drive States' />
+      <ControllerDataTable msg-type='drive_left_state' header='Drive Left States' />
+      <ControllerDataTable msg-type='drive_right_state' header='Drive Right States' />
     </div>
   </div>
 </template>
@@ -55,10 +56,15 @@ import OdometryReading from './OdometryReading.vue'
 import DriveControls from './DriveControls.vue'
 import MastGimbalControls from './MastGimbalControls.vue'
 import ControllerDataTable from './ControllerDataTable.vue'
-import { quaternionToMapAngle } from '../utils'
 import { defineComponent } from 'vue'
 
 let interval: number
+
+interface Odom {
+  latitude_deg: number;
+  longitude_deg: number;
+  bearing_deg: number;
+}
 
 export default defineComponent({
   components: {
@@ -73,14 +79,7 @@ export default defineComponent({
 
   data() {
     return {
-      // Default coordinates are at MDRS
-      odom: {
-        latitude_deg: 38.4071654,
-        longitude_deg: -110.7923927,
-        bearing_deg: 0,
-        altitude: 0, 
-        status: false
-      },
+      odom: null as Odom | null,
 
       teleopEnabledCheck: false,
 
@@ -90,15 +89,7 @@ export default defineComponent({
 
       navState: 'OffState',
 
-      moteusState: {
-        name: [] as string[],
-        error: [] as string[],
-        state: [] as string[],
-        limit_hit: [] as boolean[] /* Each motor stores an array of 4 indicating which limit switches are hit */
-      },
-
       cameraFeedEnabled: true
-      
     }
   },
 
@@ -113,25 +104,12 @@ export default defineComponent({
 
   watch: {
     message(msg) {
-      if (msg.type == 'drive_state') {
-        this.moteusState.name = msg.name
-        this.moteusState.state = msg.state
-        this.moteusState.error = msg.error
-        this.moteusState.limit_hit = msg.limit_hit
-      } else if (msg.type == 'led') {
+      if (msg.type == 'led') {
         if (msg.red) this.ledColor = 'bg-danger' //red
         else if (msg.green) this.ledColor = 'blink' //blinking green
         else if (msg.blue) this.ledColor = 'bg-primary' //blue
       } else if (msg.type == 'nav_state') {
-        console.log(msg)
         this.navState = msg.state
-      } else if (msg.type == 'gps_fix') {
-        this.odom.latitude_deg = msg.latitude
-        this.odom.longitude_deg = msg.longitude
-        this.odom.altitude = msg.altitude
-        this.odom.status = msg.status
-      } else if (msg.type == 'orientation') {
-        this.odom.bearing_deg = quaternionToMapAngle(msg.orientation)
       }
     }
   },
@@ -140,6 +118,9 @@ export default defineComponent({
     ...mapActions('websocket', ['sendMessage']),
     toggleFeed(){
       this.cameraFeedEnabled = !this.cameraFeedEnabled
+    },
+    updateOdom(odom: Odom) {
+      this.odom = odom;
     }
   },
 
@@ -205,47 +186,6 @@ h2 {
 
 .comms {
   margin-right: 5px;
-}
-
-.helpscreen {
-  z-index: 1000000000;
-  display: block;
-  visibility: hidden;
-  background-color: black;
-  opacity: 0.8;
-  position: absolute;
-  left: 0px;
-  top: 0px;
-  width: 100%;
-  height: 100%;
-}
-
-.helpimages {
-  z-index: 1000000001;
-  visibility: hidden;
-  position: absolute;
-  left: 5%;
-  top: 5%;
-  width: 90%;
-  height: 90%;
-}
-
-.help {
-  z-index: 1000000002;
-  display: flex;
-  float: right;
-  opacity: 0.8;
-  cursor: auto;
-}
-
-.help:hover {
-  opacity: 1;
-  cursor: pointer;
-}
-
-.help:hover ~ .helpscreen,
-.help:hover ~ .helpimages {
-  visibility: visible;
 }
 
 /* Grid area declarations */
