@@ -228,7 +228,8 @@ export default {
         // If still waiting for nav...
         if (
           (msg.state == 'OffState' && this.autonEnabled) ||
-          (msg.state !== 'OffState' && !this.autonEnabled)
+          (msg.state !== 'OffState' && !this.autonEnabled) ||
+          (msg.state == 'DoneState' && !this.autonEnabled)
         ) {
           return
         }

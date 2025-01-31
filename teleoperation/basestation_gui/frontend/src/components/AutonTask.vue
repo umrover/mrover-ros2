@@ -28,8 +28,6 @@
     <!--Enable the drive controls if auton is off-->
     <div v-if='!autonEnabled && teleopEnabledCheck' v-show='false' class='driveControls'>
       <DriveControls />
-    </div>
-    <div v-show='false'>
       <MastGimbalControls></MastGimbalControls>
     </div>
     <div class='conditions'>

@@ -104,6 +104,7 @@ class GUIConsumer(JsonWebsocketConsumer):
 
     
     def send_auton_command(self, waypoints: list[dict], enabled: bool) -> None:
+        node.get_logger().info(f"{waypoints}")
         self.enable_auton_srv.call(EnableAuton.Request(
             enable=enabled,
             waypoints=[
