@@ -44,6 +44,9 @@ class KeyDetector : public rclcpp::Node{
 
     StatePublisher mStatePublisher;
 
+    tf2_ros::Buffer mTfBuffer{get_clock()};
+    tf2_ros::TransformListener mTfListener{mTfBuffer};
+    tf2_ros::TransformBroadcaster mTfBroadcaster{this};
 
     void updateFSM();
 

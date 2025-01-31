@@ -41,9 +41,10 @@ auto TargetKey::onLoop() -> State*{
 
     //Replace With Service Start
     //arm_e_link
-    auto buffer = tf2_ros::Buffer(node->get_clock());
-    tf2_ros::TransformBroadcaster mTfBroadcaster{node};
-    auto tf = mrover::SE3Conversions::fromTfTree(buffer, "arm_e_link", std::format("{}_key_truth", goal->code[fsm_ctx->curr_key_index]), node->get_clock()->now());
+
+    auto tf = mrover::SE3Conversions::fromTfTree(*fsm_ctx->mTfBuffer, "map", "base_link");
+    // auto tf_test = mrover::SE3Conversions::fromTfTree(buffer, "base_link", "q_key_truth" , node->get_clock()->now());
+
     //auto relative_rotation = origin.rotation().transpose() * tf.rotation();
     //auto target = SE3d(tf.translation() - origin.translation(), SO3d(relative_rotation));
 
