@@ -26,6 +26,8 @@ class ApproachTargetState(State):
     UPDATE_DELAY: float
     USE_COSTMAP: bool
     target_position: np.ndarray
+    goto_near_point: bool
+    near_point: np.ndarray
 
     def on_enter(self, context: Context) -> None:
         self.marker_pub = context.node.create_publisher(Marker, "spiral_points", 10)
@@ -34,6 +36,8 @@ class ApproachTargetState(State):
         self.traj = Trajectory(np.array([]))
         self.astar = AStar(context=context)
         self.follow_astar = False
+        self.goto_near_point = False
+        self.near_point = np.array([])
         if self.get_target_position(context) is not None:
             temp = self.get_target_position(context)
             assert temp is not None
@@ -49,6 +53,8 @@ class ApproachTargetState(State):
         pass
 
     def get_target_position(self, context: Context) -> np.ndarray | None:
+        if (self.goto_near_point):
+            return self.near_point
         return context.env.current_target_pos()
 
     def next_state(self, context: Context, is_finished: bool) -> State:
@@ -77,10 +83,10 @@ class ApproachTargetState(State):
         import numpy as np
 
         # Get the target position
-        target_position = self.get_target_position(context)
+        target_position = self.target_position
 
         # Check if the target is in a high-cost area
-        if not self.is_high_cost_point(target_position, context):
+        if not is_high_cost_point(point=target_position, context=context):
             # If not in a high-cost area, return success (no need to find a new point)
             return True
 
@@ -95,16 +101,24 @@ class ApproachTargetState(State):
             candidates = []
             for dx in np.arange(-search_radius, search_radius + resolution, resolution):
                 for dy in np.arange(-search_radius, search_radius + resolution, resolution):
-                    candidate = target_position + np.array([dx, dy])
-                    if not self.is_high_cost_point(candidate, context):
+                    candidate = target_position + np.array([dx, dy,0.])
+                    if not is_high_cost_point(point=candidate, context=context):
                         candidates.append(candidate)
 
             if candidates:
                 # Find the nearest low-cost point to the target position
                 nearest_low_cost_point = min(candidates, key=lambda p: np.linalg.norm(p - target_position))
+                self.near_point = nearest_low_cost_point
 
                 # Update internal state (if necessary) or transition to the new point
-                self.low_cost_point = nearest_low_cost_point  # Assuming an attribute to store the low-cost point
+                self.target_position = nearest_low_cost_point
+                self.traj = segment_path(context=context, dest=nearest_low_cost_point[0:2])
+                context.node.get_logger().info("Switching target to nearest low-cost point")
+                self.astar_traj = Trajectory(np.array([]))
+                self.display_markers(context=context)
+                self.goto_near_point = True
+
+                context.node.get_logger().info(f"Nearest low cost point: {self.near_point}")
 
                 
                 return True
@@ -155,9 +169,12 @@ class ApproachTargetState(State):
         while self.traj.get_current_point() is not None and is_high_cost_point(
             context=context, point=self.traj.get_current_point()
         ):
+            context.node.get_logger().info(f"Too high cost point: {self.traj.get_current_point()}")
             if self.traj.increment_point():
                 # TODO: What do we do if we skip high cost points and reach the end of the trajectory
-                self.calc_point()
+                if(not self.calc_point(context=context)):
+                   context.node.get_logger().error("Couldn't find a better point.")
+                   #return self.next_state(context=context, is_finished=False)
                 return self.next_state(context=context, is_finished=False)
             self.display_markers(context=context)
 
@@ -203,4 +220,4 @@ class ApproachTargetState(State):
         )
         for i, coord in enumerate(self.traj.coordinates[start_pt:end_pt]):
             self.marker_pub.publish(gen_marker(context=context, point=coord, color=[1.0, 0.0, 1.0], id=i, lifetime=100))
-        self.marker_pub.publish(gen_marker(context=context, point = self.get_target_position(context), color = [1.0, 1.0, 0.0], id = 15, lifetime=100, size=0.5))
+        self.marker_pub.publish(gen_marker(context=context, point = self.target_position, color = [1.0, 1.0, 0.0], id = 15, lifetime=100, size=0.5))
