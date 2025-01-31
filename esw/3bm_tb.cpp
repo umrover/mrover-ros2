@@ -21,7 +21,7 @@
 #include "motor_library/brushless.hpp"
 
 namespace mrover {
-    
+
     constexpr static BrushedController::Config JOINT_B_CONFIG = {
             .limitSwitchPresent = {true, false},
             .limitSwitchEnabled = {true, false},
@@ -64,10 +64,18 @@ auto main(int argc, char** argv) -> int {
     auto node = rclcpp::Node::make_shared("bm_test");
     auto mJointB = std::make_shared<mrover::BrushedController>(node, "jetson", "joint_b", mrover::JOINT_B_CONFIG);
 
+    auto throttle = mrover::Percent{0.5};
+    auto rate = mrover::Percent{0.1};
+
     rclcpp::Rate loop_rate(10);
 
     while (rclcpp::ok()) {
-        mJointB->setDesiredThrottle(mrover::Percent{0.69});
+        if (throttle >= mrover::Percent{1.0} || throttle <= mrover::Percent{-1.0}) {
+            rate *= -1;
+        }
+        throttle += rate;
+        mJointB->setDesiredThrottle(throttle);
+        RCLCPP_INFO(node->get_logger(), "pos: %f | vel: %f", mJointB->getPosition().get(), mJointB->getVelocity().get());
         rclcpp::spin_some(node);
         loop_rate.sleep();
     }
