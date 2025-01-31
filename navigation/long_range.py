@@ -17,9 +17,6 @@ class LongRangeState(ApproachTargetState):
     -Stuck?
     """
 
-    def on_enter(self, context: Context) -> None:
-        pass
-
     def on_exit(self, context: Context) -> None:
         pass
 

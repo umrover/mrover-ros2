@@ -93,7 +93,21 @@ class ApproachTargetState(State):
         if context.node.get_clock().now() - Duration(nanoseconds=1000000000) < self.time_begin:
             return self
 
-        target_pos = self.get_target_position(context)
+
+        from .long_range import LongRangeState
+        if context.node.get_clock().now() - self.time_last_updated > Duration(seconds=self.UPDATE_DELAY):
+            
+            
+            if isinstance(self, LongRangeState) and context.env.current_target_pos() is not None:
+                context.node.get_logger().info("Transitioning from long range to regular approach target")
+                return ApproachTargetState()
+
+            self.time_last_updated = context.node.get_clock().now()
+            target_pos = self.get_target_position(context)
+            self.traj = Trajectory(np.array([]))
+
+        if not isinstance(self, LongRangeState):
+            target_pos = self.get_target_position(context)
         assert target_pos is not None
         if len(self.traj.coordinates) == 0 or d_calc(tuple(self.target_position), tuple(target_pos)) > 0.3:
             self.target_position = target_pos

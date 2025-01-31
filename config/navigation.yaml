@@ -29,6 +29,9 @@ navigation:
       turning_p: 3.0
       driving_p: 20.0
       lookahead_distance: 1.0
+    
+    long_range:
+      distance_ahead: 5.0
 
     waypoint:
       stop_threshold: 0.5

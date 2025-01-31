@@ -270,16 +270,15 @@ class Course:
                  if we are looking for a post or object, and we see it in one of the cameras (ZED or long range)
         """
         from . import long_range, approach_target
-
         # If we see the target in the ZED, go to ApproachTargetState
         if self.ctx.env.current_target_pos() is not None:
             return approach_target.ApproachTargetState()
         # If we see the target in the long range camera, go to LongRangeState
         assert self.ctx.course is not None
         if (
-            self.ctx.course.image_target_name() != "bottle"
-            and self.ctx.env.image_targets.query(self.ctx.course.image_target_name()) is not None
+            self.ctx.env.image_targets.query(self.ctx.course.image_target_name()) is not None
         ):
+            self.ctx.node.get_logger().info("Tried to transition to long range")
             return long_range.LongRangeState()
         return None
 
