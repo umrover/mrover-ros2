@@ -100,6 +100,7 @@ export default {
     ...mapActions('websocket', ['sendMessage']),
 
     submitMessage: function() {
+      console.log("sending a message")
       //TODO: send the code via ROS action
       if (!this.codeSent) {
         this.sendMessage({
@@ -114,6 +115,7 @@ export default {
         type: 'code',
         code: 'cancel'
       });
+      console.log("sending cancel message")
       this.codeSent = false;  // Reset the button to "Submit"
       this.typingMessage = ''; // Optionally, clear the input field
     }

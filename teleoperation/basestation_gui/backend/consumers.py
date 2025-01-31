@@ -36,7 +36,6 @@ node = rclpy.create_node('teleoperation')
 thread = threading.Thread(target=rclpy.spin, args=(node, ), daemon=True)
 thread.start()
 cur_mode = "disabled"
-typing_action_client = None
 
 LOCALIZATION_INFO_HZ = 10
 
@@ -51,7 +50,7 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.joystick_twist_pub = node.create_publisher(Twist, "/joystick_cmd_vel", 1)
         self.controller_twist_pub = node.create_publisher(Twist, "/controller_cmd_vel", 1)
         self.mast_gimbal_pub = node.create_publisher(Throttle, "/mast_gimbal_throttle_cmd", 1)
-        typing_action_client = TypingTaskActionClient(Node, self)
+        self.typing_action_client = TypingTaskActionClient(node, self)
         
 
         self.forward_ros_topic("/drive_controller_data", ControllerState, "drive_state")
@@ -203,10 +202,8 @@ class GUIConsumer(JsonWebsocketConsumer):
                     "type": "code",
                     "code": typingMessage,
                 }:
-                    typing_action_client.send_code(typingMessage)
-
-                    # print(typingMessage)
-                    # pass
+                    node.get_logger().info(f"code received: {typingMessage}")
+                    self.typing_action_client.send_code(typingMessage)
     
                 #sending controls
                 case {
@@ -257,3 +254,11 @@ class GUIConsumer(JsonWebsocketConsumer):
         except:
             node.get_logger().error(f"Failed to handle message: {message}")
             node.get_logger().error(traceback.format_exc())
+
+    def disconnect(self, close_code) -> None:
+        # for subscriber in self.subscribers:
+        #     node.destroy_subscription(subscriber)
+        # for timer in self.timers:
+        #     node.destroy_timer(timer)
+        if hasattr(self, 'typing_action_client'):
+            self.typing_action_client.shutdown()
