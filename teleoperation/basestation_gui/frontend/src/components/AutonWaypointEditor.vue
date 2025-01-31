@@ -4,7 +4,7 @@
       <div class="waypoint-header">
         <h4>All Waypoints</h4>
       </div>
-      <button class="btn btn-primary" @click="openModal()">Drop Waypoint</button>
+      <button class="btn btn-primary" @click="openModal()">Add Waypoint From Map</button>
       <div class="waypoints">
         <div class="shadow p-3 my-2" v-for="(waypoint, index) in waypoints" :key="waypoint">
           <h5>{{ waypoint.name }}</h5>
@@ -104,6 +104,8 @@ export default {
     }
   },
 
+  emits: ['toggleTeleop'],
+
   data() {
     return {
       waypoints: [
@@ -168,12 +170,6 @@ export default {
 
       teleopEnabledCheck: false,
 
-      nav_status: {
-        nav_state_name: 'Off',
-        completed_wps: 0,
-        total_wps: 0
-      },
-
       route: reactive([]),
 
       autonButtonColor: 'btn-danger',
@@ -232,7 +228,8 @@ export default {
         // If still waiting for nav...
         if (
           (msg.state == 'OffState' && this.autonEnabled) ||
-          (msg.state !== 'OffState' && !this.autonEnabled)
+          (msg.state !== 'OffState' && !this.autonEnabled) ||
+          (msg.state == 'DoneState' && !this.autonEnabled)
         ) {
           return
         }
