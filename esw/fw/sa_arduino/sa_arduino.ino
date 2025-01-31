@@ -33,19 +33,13 @@ void setup(){
   temp_sensor.setup();
 
 
-  // DEBUG_SERIAL.begin(115200);
+  Serial.begin(115200); // Match the baud rate with the C++ program
 
   // Set Port baudrate to 57600bps. This has to match with DYNAMIXEL baudrate.
   dxl.begin(57600);
   // Set Port Protocol Version. This has to match with DYNAMIXEL protocol version.
   dxl.setPortProtocolVersion(DXL_PROTOCOL_VERSION);
-  // Get DYNAMIXEL information
-  dxl.ping(DXL_ID);
-
-  // Turn off torque when configuring items in EEPROM area
-  dxl.torqueOff(DXL_ID);
-  dxl.setOperatingMode(DXL_ID, 4); // Operating Mode 4 is Extended Position Control Mode
-  dxl.torqueOn(DXL_ID);
+  
 }
 
 void loop(){
@@ -56,7 +50,80 @@ void loop(){
 
   float humidity = sht20.readHumidity() / 100.0;
 
-  delay(1000);
+  // delay(1000);
+
+
+  // START OUR CODE HERE!
+
+  if (Serial.available()) {
+    String input = Serial.readStringUntil('\n');  // Read the incoming data until newline
+    input.trim();  // Remove extra whitespace or newline characters
+
+    // Check if the input is not empty
+    if (input.length() > 0) {
+      int spaceIndex = input.indexOf(' ');  // Find the space separating ID and Degrees
+      if (spaceIndex != -1) {
+        // Extract ID and Degrees from the input string
+        int id = input.substring(0, spaceIndex).toInt();  // Get the ID (before the space)
+        int pos_new = input.substring(spaceIndex + 1).toInt() % 360;  // Get Degrees (after the space)
+
+        // Validate parsed values
+        if (id >= 0 || input.substring(spaceIndex + 1) == "0") {
+
+          // Get DYNAMIXEL information
+          dxl.ping(id);
+          
+          // Turn off torque when configuring items in EEPROM
+          // Operating Mode 4 is Extended Position Control Mode
+          dxl.torqueOff(id);
+          dxl.setOperatingMode(id, 4);
+          dxl.torqueOn(id);
+
+
+          // Adjust the motor position for the specified ID
+          int pos_prev = dxl.getPresentPosition(id, UNIT_DEGREE) % 360;
+
+          // now pos_new and pos_prev are DEG in range [0,359]
+  
+          // TODO: write logic to make sure servo moves in shortest path.
+          
+
+
+
+          int new_position = prev_position + (deg_in * (511 / 45));
+          dxl.setGoalPosition(id, new_position);
+
+          int delta = (new_position - prev_position);
+          int temp = 0;
+
+          while (abs(dxl.getPresentPosition(id)-prev_position) < abs(delta)) {
+            // Serial.print("Present Position: ");
+            // Serial.print(dxl.getPresentPosition(id));
+            // Serial.print("\t\t");
+            temp = dxl.getPresentPosition(id);
+            delay(100);
+          }
+
+          // delay(1000);
+
+          // Send back the ID and new position
+          Serial.print("ID: ");
+          Serial.print(id);
+          Serial.print(", Current Position: ");
+          Serial.print(temp);
+          Serial.print(" Done");
+
+        }
+      }
+    } 
+  }
+
+  // END OUR CODE HERE!
+
+
+
+
+  /*
 
   // Spins servo 45 degrees
   // Please refer to e-Manual(http://emanual.robotis.com/docs/en/parts/interface/dynamixel_shield/) for available range of value. 
@@ -73,5 +140,78 @@ void loop(){
   delay(1000);
   
   raw_position_value += 511;
+
+  */
 }
 
+
+
+/*
+
+#include <DynamixelShield.h>
+
+DynamixelShield dxl;
+//const uint8_t DXL_ID = 0; // check label on Dynamixel
+
+const float DXL_PROTOCOL_VERSION = 2.0;
+
+using namespace ControlTableItem;
+
+
+void loop() {
+  if (Serial.available()) {
+    String input = Serial.readStringUntil('\n');  // Read the incoming data until newline
+    input.trim();  // Remove extra whitespace or newline characters
+
+    // Check if the input is not empty
+    if (input.length() > 0) {
+      int spaceIndex = input.indexOf(' ');  // Find the space separating ID and Degrees
+      if (spaceIndex != -1) {
+        // Extract ID and Degrees from the input string
+        int id = input.substring(0, spaceIndex).toInt();  // Get the ID (before the space)
+        int deg_in = input.substring(spaceIndex + 1).toInt();  // Get Degrees (after the space)
+
+        // Validate parsed values
+        if (id >= 0 && deg_in != 0 || input.substring(spaceIndex + 1) == "0") {
+
+          // Get DYNAMIXEL information
+          dxl.ping(id);
+          
+          // Turn off torque when configuring items in EEPROM
+          // Operating Mode 4 is Extended Position Control Mode
+          dxl.torqueOff(id);
+          dxl.setOperatingMode(id, 4);
+          dxl.torqueOn(id);
+
+
+          // Adjust the motor position for the specified ID
+          int prev_position = dxl.getPresentPosition(id);
+          int new_position = prev_position + (deg_in * (511 / 45));
+          dxl.setGoalPosition(id, new_position);
+
+          int delta = (new_position - prev_position);
+          int temp = 0;
+
+          while (abs(dxl.getPresentPosition(id)-prev_position) < abs(delta)) {
+            // Serial.print("Present Position: ");
+            // Serial.print(dxl.getPresentPosition(id));
+            // Serial.print("\t\t");
+            temp = dxl.getPresentPosition(id);
+            delay(100);
+          }
+
+          // delay(1000);
+
+          // Send back the ID and new position
+          Serial.print("ID: ");
+          Serial.print(id);
+          Serial.print(", Current Position: ");
+          Serial.print(temp);
+          Serial.print(" Done");
+
+        }
+      }
+    } 
+  }
+}
+*/
