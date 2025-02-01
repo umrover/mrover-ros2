@@ -11,11 +11,14 @@ namespace mrover {
     private:
         static constexpr char const* NODE_NAME = "key_detector";
 
+        tf2_ros::Buffer mTfBuffer{get_clock()};
+        tf2_ros::TransformBroadcaster mTfBroadcaster{this};
+        tf2_ros::TransformListener mTfListener{mTfBuffer};
+
         rclcpp::TimerBase::SharedPtr mFSMTimer;
 
         std::shared_ptr<FSMContext> mFSMContext;
 
-        bool mIsStateMachineEnabled;
         StateMachine mStateMachine;
 
         StatePublisher mStatePublisher;

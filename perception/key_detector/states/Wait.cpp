@@ -8,6 +8,7 @@ namespace mrover {
     }
 
     auto Wait::onLoop() -> State* {
+        RCLCPP_INFO(mFSMContext->node->get_logger(), "Wait onLoop");
         if(mFSMContext->goal_handle->is_canceling()){
             return StateMachine::make_state<Cancel>(mFSMContext);
         }

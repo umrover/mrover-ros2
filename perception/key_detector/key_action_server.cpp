@@ -18,18 +18,16 @@ rclcpp_action::CancelResponse KeyDetector::handle_cancel(
 }
 
 void KeyDetector::execute() {
-    if(!mIsStateMachineEnabled) return;
-
+    RCLCPP_INFO_STREAM(get_logger(), "Running State Machine Execute...\n");
     if (rclcpp::ok() && (mStateMachine.getCurrentState() != "Cancel" && mStateMachine.getCurrentState() != "Done")) {
+    RCLCPP_INFO_STREAM(get_logger(), "Running State Machine Execute...\n");
         rclcpp::Rate loop_rate(1);
+    RCLCPP_INFO_STREAM(get_logger(), "Running State Machine Execute...\n");
         auto feedback = std::make_shared<KeyAction::Feedback>();
-
-        RCLCPP_INFO(get_logger(), "Pre FSM Update");
+    RCLCPP_INFO_STREAM(get_logger(), "Running State Machine Execute...\n");
 
         // Perform loop for the state machine
         mStateMachine.update();
-
-        RCLCPP_INFO(this->get_logger(), "Post FSM Update");
 
         loop_rate.sleep();
     }
@@ -37,13 +35,11 @@ void KeyDetector::execute() {
     // Check if movement is done
     if (rclcpp::ok() && mStateMachine.getCurrentState() == "Done") {
         auto result = std::make_shared<KeyAction::Result>();
-        mIsStateMachineEnabled = false;
         result->success = true;
         mFSMContext->goal_handle->succeed(result);
         RCLCPP_INFO(this->get_logger(), "Goal succeeded");
     }else if (rclcpp::ok() && mStateMachine.getCurrentState() == "Cancel"){
         auto result = std::make_shared<KeyAction::Result>();
-        mIsStateMachineEnabled = false;
         result->success = false;
         mFSMContext->goal_handle->canceled(result);
         RCLCPP_INFO(this->get_logger(), "Goal failed");
@@ -51,7 +47,7 @@ void KeyDetector::execute() {
 }
 
 void KeyDetector::handle_accepted(std::shared_ptr<GoalHandleKeyAction> const goal_handle) {
-    mIsStateMachineEnabled = true;
+    mFSMContext->restart = true;
     mFSMContext->goal_handle = goal_handle;
     mFSMContext->node = this->shared_from_this();
     mFSMContext->curr_key_index = 0;

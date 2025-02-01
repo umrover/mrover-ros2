@@ -37,4 +37,5 @@
 #include "states/TargetKey.hpp"
 #include "states/Wait.hpp"
 #include "states/Done.hpp"
+#include "states/Off.hpp"
 #include "FSMContext.hpp"

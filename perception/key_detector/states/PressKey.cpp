@@ -4,6 +4,7 @@ namespace mrover {
     PressKey::PressKey(std::shared_ptr<FSMContext> const& fsmContext) : mFSMContext(fsmContext) {}
 
     auto PressKey::onLoop() -> State* {
+        RCLCPP_INFO(mFSMContext->node->get_logger(), "Press Key onLoop");
         if(mFSMContext->goal_handle->is_canceling()){
             return StateMachine::make_state<Cancel>(mFSMContext);
         }

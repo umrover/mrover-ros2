@@ -1,7 +1,7 @@
 #include "key_detector.hpp"
 #include "states/TargetKey.hpp"
 namespace mrover {
-    KeyDetector::KeyDetector(rclcpp::NodeOptions const& options) : rclcpp::Node(NODE_NAME, options), mFSMTimer{create_wall_timer(std::chrono::milliseconds(1000), [&](){execute();})}, mFSMContext(std::make_shared<FSMContext>()), mIsStateMachineEnabled{false}, mStateMachine{"Key Detector FSM", StateMachine::make_state<TargetKey>(mFSMContext)}, mStatePublisher{this, mStateMachine, "key_detector_fsm_structure", 10, "key_detector_fsm_state", 10} {
+    KeyDetector::KeyDetector(rclcpp::NodeOptions const& options) : rclcpp::Node(NODE_NAME, options), mFSMTimer{create_wall_timer(std::chrono::milliseconds(1000), [&](){execute();})}, mFSMContext(std::make_shared<FSMContext>(mTfBuffer)), mStateMachine{"Key Detector FSM", StateMachine::make_state<Cancel>(mFSMContext)}, mStatePublisher{this, mStateMachine, "key_detector_fsm_structure", 10, "key_detector_fsm_state", 10} {
         RCLCPP_INFO_STREAM(get_logger(), "Creating KeyDetector Node...");
 
         mStateMachine.enableTransitions<TargetKey, TargetKey, PressKey, Cancel>();

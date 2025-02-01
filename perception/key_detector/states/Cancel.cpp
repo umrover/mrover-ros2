@@ -6,7 +6,11 @@ namespace mrover {
     auto Cancel::onLoop() -> State* {
         RCLCPP_INFO(mFSMContext->node->get_logger(), "Cancel Onloop");
 
-        //set the velocity of arm to zero
-        return this; //This should end loop
+        auto result = std::make_shared<KeyAction::Result>();
+        result->success = false;
+        mFSMContext->goal_handle->canceled(result);
+        RCLCPP_INFO(mFSMContext->node->get_logger(), "Goal failed");
+
+        return StateMachine::make_state<Off>(mFSMContext);
     }
 } // namespace mrover

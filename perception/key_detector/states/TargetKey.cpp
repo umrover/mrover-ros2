@@ -6,6 +6,7 @@ namespace mrover {
     TargetKey::TargetKey(std::shared_ptr<FSMContext> const& fsmContext) : mFSMContext(fsmContext), sleepRate(0.2) {}
 
     auto TargetKey::onLoop() -> State* {
+        RCLCPP_INFO(mFSMContext->node->get_logger(), "Target Key onLoop");
         if(mFSMContext->goal_handle->is_canceling()){
             return StateMachine::make_state<Cancel>(mFSMContext);
         }
