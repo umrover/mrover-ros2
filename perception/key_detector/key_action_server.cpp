@@ -34,15 +34,7 @@ void KeyDetector::execute() {
 
     // Check if movement is done
     if (rclcpp::ok() && mStateMachine.getCurrentState() == "Done") {
-        auto result = std::make_shared<KeyAction::Result>();
-        result->success = true;
-        mFSMContext->goal_handle->succeed(result);
-        RCLCPP_INFO(this->get_logger(), "Goal succeeded");
     }else if (rclcpp::ok() && mStateMachine.getCurrentState() == "Cancel"){
-        auto result = std::make_shared<KeyAction::Result>();
-        result->success = false;
-        mFSMContext->goal_handle->canceled(result);
-        RCLCPP_INFO(this->get_logger(), "Goal failed");
     }
 }
 
