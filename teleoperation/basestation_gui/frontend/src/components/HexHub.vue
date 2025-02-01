@@ -16,11 +16,23 @@
     </div>
 </template>
 
+<script lang='ts'>
+export default {
+  components: {
+  },
+  data() {
+    return {
+      hexHubPos: 0,
+      hexHubOptions: ["Sample 1","Sample 2","Sample Cache","Empty Soil Deposit"]
+    }
+  },
+}
+</script>
 
 <style scoped>
 .wrap {
     display: flex;
-    align-items: center;
+    /* align-items: center; */
     height: 100%;
     width: 100%;
 }

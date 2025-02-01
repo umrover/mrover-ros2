@@ -41,7 +41,7 @@ from mrover.msg import (
 )
 from mrover.srv import (
     EnableAuton, 
-    # EnableBool, #CHANGED?
+    EnableBool, 
 )
 from std_srvs.srv import SetBool
 
@@ -98,7 +98,8 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.auto_shutoff_service = node.create_client(SetBool, "/science_change_heater_auto_shutoff_state")
         self.sa_enable_pump_0_srv = node.create_client(SetBool, "/sa_enable_pump_0")
         self.sa_enable_pump_1_srv = node.create_client(SetBool, "/sa_enable_pump_1")
-        self.sa_enable_switch_srv = node.create_client(SetBool, "/sa_enable_limit_switch_sensor_actuator")
+        # self.sa_enable_switch_srv = node.create_client(SetBool, "/sa_enable_limit_switch_sensor_actuator")
+        self.sa_enable_switch_srv = node.create_client(EnableBool, "/sa_enable_limit_switch_sensor_actuator")
 
         self.heater_services = []
         self.white_leds_services = []
@@ -176,6 +177,7 @@ class GUIConsumer(JsonWebsocketConsumer):
         """
 
         global cur_mode
+        global cur_sa_mode
 
         if text_data is None:
             node.get_logger().warning("Expecting text but received binary on GUI websocket...")
@@ -215,11 +217,6 @@ class GUIConsumer(JsonWebsocketConsumer):
                     "mode": mode,
                 }:
                     cur_mode = mode
-                case {
-                    "type": "sa_mode",
-                    "mode": mode,
-                }:
-                    cur_sa_mode = mode
                 case{
                     "type": "sa_controller",
                     "axes": axes,
@@ -227,6 +224,11 @@ class GUIConsumer(JsonWebsocketConsumer):
                 }:
                     device_input = DeviceInputs(axes, buttons)
                     send_sa_controls(cur_sa_mode, device_input, self.sa_thr_pub)
+                case {
+                    "type": "sa_mode",
+                    "mode": mode,
+                }:
+                    cur_sa_mode = mode
                 case {"type": "auton_enable", "enabled": enabled, "waypoints": waypoints}:
                     self.send_auton_command(waypoints, enabled)
                 case {"type": "teleop_enable", "enabled": enabled}:
@@ -252,12 +254,21 @@ class GUIConsumer(JsonWebsocketConsumer):
                 case {"type": "heater_enable", "enabled": enabled, "heater": heater}:
                     self.heater_services[heater_names.index(heater)].call(SetBool.Request(data=enabled))
 
-                case {"type": "auto_shutoff", "shutoff": shutoff}:
+                case {"type": "auto_shutoff", "enable": shutoff}:
                     self.auto_shutoff_service.call(SetBool.Request(data=shutoff))
+
                 case {"type": "white_leds", "site": site, "enabled": enabled}:
                     self.white_leds_services[site].call(SetBool.Request(data=enabled))
-                # TODO: add service handlers here
-                
+
+                case {"type": "p0_toggle", "enable": enable}:
+                    self.sa_enable_pump_0_srv.call(SetBool.Request(data=enable))
+
+                case {"type": "p1_toggle", "enable": enable}:
+                    self.sa_enable_pump_1_srv.call(SetBool.Request(data=enable))
+
+                case {"type": "ls_toggle", "enable": enable}:
+                    self.sa_enable_switch_srv.call(SetBool.Request(data=enable))
+                    
                 case _:
                     node.get_logger().warning(f"Unhandled message: {message}")
         except:

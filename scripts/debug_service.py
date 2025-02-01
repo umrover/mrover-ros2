@@ -6,12 +6,13 @@ from rclpy.node import Node
 from std_srvs.srv import SetBool
 
 SERVICE_TYPE = SetBool
-SERVICE_NAME = '/science_enable_heater_b0'
+SERVICE_NAME = '/sa_enable_pump_0_srv'
 
 class Service(Node):
 
     def __init__(self):
         super().__init__('debug_service')
+        self.get_logger().info(f'Debug On' )
         self.srv = self.create_service(SERVICE_TYPE, SERVICE_NAME, self.callback)
 
     def callback(self, request, response):
