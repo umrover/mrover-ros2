@@ -1,7 +1,4 @@
 #include "pose_filter.hpp"
-#include "message_filters/subscriber.h"
-#include "message_filters/sync_policies/approximate_time.h"
-#include "message_filters/synchronizer.h"
 
 namespace mrover {
     
@@ -34,7 +31,7 @@ namespace mrover {
             SyncPolicy(10), *heading_sub_, *heading_fix_sub_
         );
 
-        sync_->registerCallback(std::bind(&PoseFilter::heading_callback(), this, std::placeholders::_1, std::placeholders::_2));
+        sync_->registerCallback(std::bind(&PoseFilter::heading_callback, this, std::placeholders::_1, std::placeholders::_2));
 
         pose_sub = this->create_subscription<geometry_msgs::msg::Vector3Stamped>("/linearized_position", 1, [this](geometry_msgs::msg::Vector3Stamped::ConstSharedPtr const& msg) -> void {
             pose_sub_callback(linearized_pos_msg);
@@ -50,17 +47,17 @@ namespace mrover {
     }
 
     void PoseFilter::heading_callback(const mrover::msg::Heading::ConstSharedPtr const& heading_msg, const mrover::msg::FixStatus::ConstSharedPtr const& fix_status_msg) {
-        current_heading *= heading_msg;
-        current_heading_fix_status *= fix_status_msg;
+        current_heading = *heading;
+        current_heading_fix_status = *fix_status_msg;
     }
 
     void PoseFilter::compare_and_select_heading() {
-        if (!pose_callback_heading.has_value() || !correction_timer_heading_.has_value()) {
+        if (!pose_callback_heading_ || !correction_timer_heading_) {
             RCLCPP_WARN(get_logger(), "Missing heading values");
             return;
         }
 
-        double heading_difference = std::abs(!pose_callback_heading_.value() - correction_timer_heading_.value());
+        double heading_difference = std::abs(pose_callback_heading_.value() - correction_timer_heading_.value());
         
         if (heading_difference > HEADING_THRESHOLD) {
             RCLCPP_WARN(get_logger(), fmt::format("Heading difference {} is too large, skipping averaged heading calculation", heading_difference));
@@ -76,12 +73,12 @@ namespace mrover {
 
     void PoseFilter::pose_sub_callback(geometry_msgs::msg::Vector3Stamped::ConstSharedPtr const& linearized_pos_msg) {
        if ((!current_imu.has_value()) || (!current_heading.has_value()) || (!current_heading_fix_status.has_value())) {
-            RCLPP_WARN(get_logger(), "Missing IMU, heading or heading fix status data. Ignoring pose correction via DA-RTK Heading");
+            RCLCPP_WARN(get_logger(), "Missing IMU, heading or heading fix status data. Ignoring pose correction via DA-RTK Heading");
             return;
         }
 
         if ((current_heading_fix_status->fix_status.fix != mrover::msg::FixType::FIXED)) {
-            RCLPP_WARN(get_logger(), "Invalid heading fix status. Ignoring pose correction via DA-RTK Heading");
+            RCLCPP_WARN(get_logger(), "Invalid heading fix status. Ignoring pose correction via DA-RTK Heading");
             return;
         }
 
@@ -107,11 +104,11 @@ namespace mrover {
 
         SE3d pose_in_map(position_in_map, corrected_quaternion);
 
-        SE3Conversion::pushToTfTree(tf_broadcaster, rover_frame, world_frame, pose_in_map, getClock()->now())
+        SE3Conversion::pushToTfTree(tf_broadcaster, rover_frame, world_frame, pose_in_map, getClock()->now());
 
         RCLCPP_INFO(get_logger(), "Published to TF Tree: Position (%f, %f, %f), Orientation (%f, %f, %f, %f)",
             position_in_map.x(), position_in_map.y(), position_in_map.z(),
-            corrected_quaternion.x(), corrected_quaternion.y(). corrected_quaternion.z(), corrected_quaternion.w()
+            corrected_quaternion.x(), corrected_quaternion.y(), corrected_quaternion.z(), corrected_quaternion.w()
         );
 
     }

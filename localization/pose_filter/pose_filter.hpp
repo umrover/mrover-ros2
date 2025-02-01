@@ -8,7 +8,11 @@ namespace mrover {
 
     private:
 
+        std::optional<mrover::msg::Heading> current_heading;
+        std::optional<mrover::msg:FixStatus> current_heading_fix_status;
+
         double HEADING_THRESHOLD = (15 * (M_PI / 180));
+
         std::optional<double> averaged_heading_;
         std::optional<double> pose_callback_heading_;
         std::optional<double> correction_timer_heading_;

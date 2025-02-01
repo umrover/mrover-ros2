@@ -1,8 +1,12 @@
 #pragma once
 
 #include <string>
+#include <fmt/core.h>
 
 #include <rclcpp/node.hpp>
+#include "message_filters/subscriber.h"
+#include "message_filters/sync_policies/approximate_time.h"
+#include "message_filters/synchronizer.h"
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2_ros/transform_listener.h>
 
