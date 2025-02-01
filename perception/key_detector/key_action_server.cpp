@@ -19,29 +19,25 @@ rclcpp_action::CancelResponse KeyDetector::handle_cancel(
 
 void KeyDetector::execute() {
     RCLCPP_INFO_STREAM(get_logger(), "Running State Machine Execute...\n");
-    if (rclcpp::ok() && (mStateMachine.getCurrentState() != "Cancel" && mStateMachine.getCurrentState() != "Done")) {
-    RCLCPP_INFO_STREAM(get_logger(), "Running State Machine Execute...\n");
+
+    if(!mFSMContext->node){
+        mFSMContext->node = this->shared_from_this(); // THIS IS COOKED BC std::bad_weak_ptr is called in init list
+    }
+
+    if (rclcpp::ok()) {
         rclcpp::Rate loop_rate(1);
-    RCLCPP_INFO_STREAM(get_logger(), "Running State Machine Execute...\n");
         auto feedback = std::make_shared<KeyAction::Feedback>();
-    RCLCPP_INFO_STREAM(get_logger(), "Running State Machine Execute...\n");
 
         // Perform loop for the state machine
         mStateMachine.update();
 
         loop_rate.sleep();
     }
-
-    // Check if movement is done
-    if (rclcpp::ok() && mStateMachine.getCurrentState() == "Done") {
-    }else if (rclcpp::ok() && mStateMachine.getCurrentState() == "Cancel"){
-    }
 }
 
 void KeyDetector::handle_accepted(std::shared_ptr<GoalHandleKeyAction> const goal_handle) {
     mFSMContext->restart = true;
     mFSMContext->goal_handle = goal_handle;
-    mFSMContext->node = this->shared_from_this();
     mFSMContext->curr_key_index = 0;
 
     mStateMachine.setState(StateMachine::make_state<TargetKey>(mFSMContext));
