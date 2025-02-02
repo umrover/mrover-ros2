@@ -36,9 +36,9 @@ export default {
   },
   data() {
     return {
-        p0state: false, 
-        p1state: false,
-        lsstate: false,
+        p0state: [false, false],
+        p1state: [false, false],
+        lsstate: [false, false],
     }
   },
 
@@ -47,7 +47,6 @@ export default {
 
     togglep0: function () {
         this.p0state = !this.p0state
-        console.log(this.p0state)
         this.sendMessage({ type: "p0_toggle", enable: this.p0state})
     },
     togglep1: function () {
@@ -71,7 +70,6 @@ export default {
 <style scoped>
 .wrap {
     display: flex;
-    /* align-items: center; */
     height: 100%;
     width: 100%;
 }

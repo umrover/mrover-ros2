@@ -17,35 +17,19 @@ TAU = 2 * pi
 
 
 class Joint(Enum):
-    # SA_X = 0
-    # SA_Y = 1
-    # SA_Z = 2
-    # SAMPLER = 3
-    # SENSOR_ACTUATOR = 4
     LINEAR_ACTUATOR = 0
     SENSOR_ACTUATOR = 1
     AUGER = 2
 
 
 # The following are indexed with the values of the enum
-
 JOINT_NAMES = [
-    # "sa_x",
-    # "sa_y",
-    # "sa_z",
-    # "sampler",
-    # "sensor_actuator",
     "linear_actuator", 
     "sensor_actuator", 
     "auger"
 ]
 
 JOINT_SCALES = [
-    # -1.0,
-    # -1.0,
-    # 1.0,
-    # 1.0,
-    # 1.0,
     -1.0, 
     -1.0, 
     1.0, 
@@ -59,32 +43,6 @@ def subset(names: list[str], values: list[float], joints: set[Joint]) -> tuple[l
 
 def compute_manual_joint_controls(controller: DeviceInputs) -> list[float]:
     return [
-        # filter_input(
-        #     safe_index(controller.axes, ControllerAxis.LEFT_Y),
-        #     quadratic=True,
-        #     scale=JOINT_SCALES[Joint.SA_X.value],
-        #     deadzone=CONTROLLER_STICK_DEADZONE,
-        # ),
-        # filter_input(
-        #     safe_index(controller.axes, ControllerAxis.LEFT_X),
-        #     quadratic=True,
-        #     scale=JOINT_SCALES[Joint.SA_Y.value],
-        #     deadzone=CONTROLLER_STICK_DEADZONE,
-        # ),
-        # filter_input(
-        #     safe_index(controller.axes, ControllerAxis.RIGHT_Y),
-        #     quadratic=True,
-        #     scale=JOINT_SCALES[Joint.SA_Z.value],
-        #     deadzone=CONTROLLER_STICK_DEADZONE,
-        # ),
-        # filter_input(
-        #     simulated_axis(controller.buttons, ControllerButton.RIGHT_BUMPER, ControllerButton.LEFT_BUMPER),
-        #     scale=JOINT_SCALES[Joint.SAMPLER.value],
-        # ),
-        # filter_input(
-        #     simulated_axis(controller.buttons, ControllerButton.RIGHT_TRIGGER, ControllerButton.LEFT_TRIGGER),
-        #     scale=JOINT_SCALES[Joint.SENSOR_ACTUATOR.value],
-        # ),
         filter_input(
             safe_index(controller.axes, ControllerAxis.LEFT_Y), 
             quadratic=True, 

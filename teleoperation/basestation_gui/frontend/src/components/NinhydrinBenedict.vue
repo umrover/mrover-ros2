@@ -105,7 +105,7 @@ export default {
         heaterName += "1";
       }
       else heaterName += "0";
-      this.sendMessage({ type: "heater_enable", enabled: this.heaters[this.site].enabled, heater: heaterName});
+      this.sendMessage({ type: "heater_enable", enable: this.heaters[this.site].enabled, heater: heaterName});
     },
   }
 };

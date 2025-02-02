@@ -95,18 +95,21 @@ class GUIConsumer(JsonWebsocketConsumer):
         # Services
         self.enable_teleop_srv = node.create_client(SetBool, "/enable_teleop")
         self.enable_auton_srv = node.create_client(EnableAuton, "/enable_auton")
-        self.auto_shutoff_service = node.create_client(SetBool, "/science_change_heater_auto_shutoff_state")
-        self.sa_enable_pump_0_srv = node.create_client(SetBool, "/sa_enable_pump_0")
-        self.sa_enable_pump_1_srv = node.create_client(SetBool, "/sa_enable_pump_1")
-        # self.sa_enable_switch_srv = node.create_client(SetBool, "/sa_enable_limit_switch_sensor_actuator")
+
+        # EnableBool Requests
+        self.auto_shutoff_service = node.create_client(EnableBool, "/science_change_heater_auto_shutoff_state")
+        self.sa_enable_pump_0_srv = node.create_client(EnableBool, "/sa_enable_pump_0")
+        self.sa_enable_pump_1_srv = node.create_client(EnableBool, "/sa_enable_pump_1")
         self.sa_enable_switch_srv = node.create_client(EnableBool, "/sa_enable_limit_switch_sensor_actuator")
 
         self.heater_services = []
         self.white_leds_services = []
         for name in heater_names:
-            self.heater_services.append(node.create_client(SetBool, "/science_enable_heater_" + name))
+            self.heater_services.append(node.create_client(EnableBool, "/science_enable_heater_" + name))
         for site in ["a0", "b0"]:
-            self.white_leds_services.append(node.create_client(SetBool, "/science_enable_white_led_" + site))
+            self.white_leds_services.append(node.create_client(EnableBool, "/science_enable_white_led_" + site))
+
+
 
         self.buffer = Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.buffer, node)
@@ -232,7 +235,7 @@ class GUIConsumer(JsonWebsocketConsumer):
                 case {"type": "auton_enable", "enabled": enabled, "waypoints": waypoints}:
                     self.send_auton_command(waypoints, enabled)
                 case {"type": "teleop_enable", "enabled": enabled}:
-                    self.enable_teleop_srv.call(SetBool.Request(data=enabled))
+                    self.enable_teleop_srv.call(SetBool.Request(data=enabled)) # SETBOOL NOT ENABLEBOOL
                 case {
                     "type": "save_auton_waypoint_list",
                     "data": waypoints,
@@ -251,24 +254,24 @@ class GUIConsumer(JsonWebsocketConsumer):
                     "type": "get_auton_waypoint_list",
                 }:
                     self.send_message_as_json({"type": "get_auton_waypoint_list", "data": get_auton_waypoint_list()})
-                case {"type": "heater_enable", "enabled": enabled, "heater": heater}:
-                    self.heater_services[heater_names.index(heater)].call(SetBool.Request(data=enabled))
+                case {"type": "heater_enable", "enabled": e, "heater": heater}:
+                    self.heater_services[heater_names.index(heater)].call(EnableBool.Request(enable=e))
 
-                case {"type": "auto_shutoff", "enable": shutoff}:
-                    self.auto_shutoff_service.call(SetBool.Request(data=shutoff))
+                case {"type": "auto_shutoff", "shutoff": shutoff}:
+                    self.auto_shutoff_service.call(EnableBool.Request(enable=shutoff))
 
-                case {"type": "white_leds", "site": site, "enabled": enabled}:
-                    self.white_leds_services[site].call(SetBool.Request(data=enabled))
+                case {"type": "white_leds", "site": site, "enabled": e}:
+                    self.white_leds_services[site].call(EnableBool.Request(enable=e))
 
-                case {"type": "p0_toggle", "enable": enable}:
-                    self.sa_enable_pump_0_srv.call(SetBool.Request(data=enable))
+                case {"type": "p0_toggle", "enable": e}:
+                    self.sa_enable_pump_0_srv.call(EnableBool.Request(enable=e))
 
-                case {"type": "p1_toggle", "enable": enable}:
-                    self.sa_enable_pump_1_srv.call(SetBool.Request(data=enable))
+                case {"type": "p1_toggle", "enable": e}:
+                    self.sa_enable_pump_1_srv.call(EnableBool.Request(enable=e))
 
-                case {"type": "ls_toggle", "enable": enable}:
-                    self.sa_enable_switch_srv.call(SetBool.Request(data=enable))
-                    
+                case {"type": "ls_toggle", "enable": e}:
+                    self.sa_enable_switch_srv.call(EnableBool.Request(enable=e))
+
                 case _:
                     node.get_logger().warning(f"Unhandled message: {message}")
         except:

@@ -12,7 +12,7 @@
         <SelectSite @site="onSiteChange" />
       </div>
       <div class="col-4">
-          <WhiteLEDs :site="site" />
+        <WhiteLEDs :site="site" />
       </div>
       <div class="col-4">
         <AutoShutdown />
