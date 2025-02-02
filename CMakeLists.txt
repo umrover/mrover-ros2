@@ -322,6 +322,7 @@ install(PROGRAMS
         navigation/stuck_detector/stuck_detector.py
         localization/gps_linearization.py
         localization/basestation_gps_driver.py
+        localization/rover_gps_driver.py
         superstructure/superstructure.py
         scripts/debug_course_publisher.py
 		scripts/visualizer.py

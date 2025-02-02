@@ -7,8 +7,8 @@ namespace mrover {
     RoverGPSDriver::RoverGPSDriver(boost::asio::io_context& io) : Node("rover_gps_driver"), serial(io) {
         
         // connect to serial
-        declare_parameter("port", rclcpp::ParameterType::PARAMETER_STRING);
-        declare_parameter("baud", rclcpp::ParameterType::PARAMETER_INTEGER);
+        declare_parameter("port_unicore", rclcpp::ParameterType::PARAMETER_STRING);
+        declare_parameter("baud_unicore", rclcpp::ParameterType::PARAMETER_INTEGER);
         declare_parameter("frame_id", rclcpp::ParameterType::PARAMETER_STRING);
 
         port = get_parameter("port").as_string();
