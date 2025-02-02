@@ -16,6 +16,7 @@ from backend.drive_controls import send_joystick_twist, send_controller_twist
 from backend.input import DeviceInputs
 from backend.ra_controls import send_ra_controls
 from backend.sa_controls import send_sa_controls
+from backend.hex_controls import send_hex_controls
 from backend.mast_controls import send_mast_controls
 from backend.waypoints import (
     get_auton_waypoint_list,
