@@ -42,7 +42,7 @@ auto TargetKey::onLoop() -> State*{
     //Replace With Service Start
     //arm_e_link
 
-    auto tf = mrover::SE3Conversions::fromTfTree(*fsm_ctx->mTfBuffer, "map", "base_link");
+    auto tf = mrover::SE3Conversions::fromTfTree(*fsm_ctx->mTfBuffer, "arm_e_link", std::format("{}_key_truth", goal->code[fsm_ctx->curr_key_index]));
     // auto tf_test = mrover::SE3Conversions::fromTfTree(buffer, "base_link", "q_key_truth" , node->get_clock()->now());
 
     //auto relative_rotation = origin.rotation().transpose() * tf.rotation();
@@ -63,6 +63,7 @@ auto TargetKey::onLoop() -> State*{
      //   rclcpp::FutureReturnCode::SUCCESS)
     //{
     std::cout << "Success" << tf.x() << "," << tf.y() << '\n';
+    int64_t x = tf.x();
     int64_t y = tf.y(); //result.get()->x;
     int64_t z = tf.z();//result.get()->y;
 
@@ -70,7 +71,7 @@ auto TargetKey::onLoop() -> State*{
     msg::IK ik;
     ik.target.header.stamp = node->get_clock()->now();
     ik.target.header.frame_id = "arm_base_link"; // TODO: fix
-    ik.target.pose.position.x = 0;
+    ik.target.pose.position.x = x;
     ik.target.pose.position.y = y;
     ik.target.pose.position.z = z;
     mIkTargetPub->publish(ik);
@@ -83,9 +84,12 @@ auto TargetKey::onLoop() -> State*{
         // subscribe to arm state
         // dist
 
+    auto thresholdCheck = mrover::SE3Conversions::fromTfTree(*fsm_ctx->mTfBuffer, "arm_e_link", std::format("{}_key_truth", goal->code[fsm_ctx->curr_key_index]));
+
+    double magnitude = std::sqrt(thresholdCheck.x() * thresholdCheck.x() + thresholdCheck.y() * thresholdCheck.y() + thresholdCheck.z() * thresholdCheck.z());
 
 
-    if(within_threshold){
+    if(magnitude < 1){
         fsm_ctx->curr_key_index++;
         return StateMachine::make_state<PressKey>(fsm_ctx);
     } else {

@@ -44,9 +44,10 @@ class KeyDetector : public rclcpp::Node{
 
     StatePublisher mStatePublisher;
 
-    tf2_ros::Buffer mTfBuffer{get_clock()};
-    tf2_ros::TransformListener mTfListener{mTfBuffer};
-    tf2_ros::TransformBroadcaster mTfBroadcaster{this};
+    std::shared_ptr<tf2_ros::Buffer> mTfBuffer = std::make_unique<tf2_ros::Buffer>(get_clock());
+    std::shared_ptr<tf2_ros::TransformBroadcaster> mTfBroadcaster = std::make_shared<tf2_ros::TransformBroadcaster>(this);
+    std::shared_ptr<tf2_ros::TransformListener> mTfListener = std::make_shared<tf2_ros::TransformListener>(*mTfBuffer);
+
 
     void updateFSM();
 

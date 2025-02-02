@@ -39,7 +39,7 @@ struct FSMCtx{
   std::shared_ptr<GoalHandleKeyAction> goal_handle;
   std::shared_ptr<rclcpp::Node> node;
   int curr_key_index;
-  tf2_ros::Buffer *mTfBuffer;
+  std::shared_ptr<tf2_ros::Buffer> mTfBuffer;
 };
 
 // States
