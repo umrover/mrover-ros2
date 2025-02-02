@@ -35,11 +35,19 @@ navigation:
       drive_forward_threshold: 0.34
 
     search:
+      use_costmap: true
       stop_threshold: 0.5
       drive_forward_threshold: 0.34
       coverage_radius: 20.0
-      segments_per_rotation: 8
+      segments_per_rotation: 16
       distance_between_spirals: 3.0
+      max_segment_length: 1.0
+      traversable_cost: 0.2
+      update_delay: 1.0
+      safe_approach_distance: 5.0
+      a_star_thresh: 0.05
+      costmap_thresh: 0.25
+      angle_thresh: 0.0872665 #pi/36 radians / 5 degrees
 
     single_tag:
       stop_threshold: 1.0
@@ -53,6 +61,12 @@ navigation:
     ref_alt: 0.0
     world_frame: "map"
     rover_frame: "base_link"
+    
+    recovery:
+      stop_threshold: 0.2
+      drive_forward_threshold: 0.34
+      recovery_distance: 2.0
+      give_up_time: 10.0
 
 stuck_detector:
   ros__parameters:

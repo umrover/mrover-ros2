@@ -7,10 +7,10 @@
     </div>
 
     <div v-if="type === 'DM'" class='shadow p-3 rounded odom'>
-      <OdometryReading :odom='odom' />
+      <OdometryReading @odom='updateOdom' @drone_odom="updateDroneOdom" />
     </div>
     <div v-if="type === 'DM'" class='shadow p-3 rounded map'>
-      <BasicMap :odom='odom' />
+      <BasicMap :odom='odom' :drone_odom="drone_odom" />
     </div>
     <div v-if="type === 'DM'" class='shadow p-3 rounded waypoint-editor'>
       <BasicWaypointEditor :odom='odom' :droneWaypointButton='true'/>
@@ -36,7 +36,6 @@
 
 <script lang='ts'>
 import { defineComponent } from 'vue'
-import { mapActions, mapState } from 'vuex'
 import ControllerDataTable from './ControllerDataTable.vue'
 import ArmControls from './ArmControls.vue'
 import BasicMap from './BasicRoverMap.vue'
@@ -45,7 +44,17 @@ import OdometryReading from './OdometryReading.vue'
 import DriveControls from './DriveControls.vue'
 import MastGimbalControls from './MastGimbalControls.vue'
 import Rover3D from './Rover3D.vue'
-import { quaternionToMapAngle } from '../utils'
+
+interface Odom {
+  latitude_deg: number;
+  longitude_deg: number;
+  bearing_deg: number;
+}
+
+interface DroneOdom {
+  latitude_deg: number;
+  longitude_deg: number;
+}
 
 export default defineComponent({
   components: {
@@ -68,47 +77,34 @@ export default defineComponent({
 
   data() {
     return {
-      // Default coordinates at MDRS
-      odom: {
-        latitude_deg: 38.406025,
-        longitude_deg: -110.7923723,
-        bearing_deg: 0,
-        altitude: 0,
-        status: false
-      }
-    }
-  },
-
-  computed: {
-    ...mapState('websocket', ['message']),
-  },
-
-  watch: {
-    message(msg) {
-      if (msg.type == 'gps_fix') {
-        this.odom.latitude_deg = msg.latitude
-        this.odom.longitude_deg = msg.longitude
-        this.odom.altitude = msg.altitude
-      } else if (msg.type == 'orientation') {
-        this.odom.bearing_deg = quaternionToMapAngle(msg.orientation)
-      }
+      odom:  null as Odom | null,
+      drone_odom:  null as DroneOdom | null
     }
   },
 
   methods: {
-    ...mapActions('websocket', ['sendMessage']),
-    cancelIK: function() {
-      this.sendMessage({ type: 'cancel_click_ik' })
+    updateOdom(odom: Odom) {
+      this.odom = odom;
+    },
+    updateDroneOdom(odom: DroneOdom) {
+      this.drone_odom = odom;
     }
-  },
-
-  created: function() {
-    window.addEventListener('keydown', (event: KeyboardEvent) => {
-      if (event.key !== ' ') return
-
-      this.cancelIK(event)
-    })
   }
+
+  // methods: {
+  //   ...mapActions('websocket', ['sendMessage']),
+  //   cancelIK: function() {
+  //     this.sendMessage({ type: 'cancel_click_ik' })
+  //   }
+  // },
+
+  // created: function() {
+  //   window.addEventListener('keydown', (event: KeyboardEvent) => {
+  //     if (event.key !== ' ') return
+
+  //     this.cancelIK(event)
+  //   })
+  // }
 })
 </script>
 

@@ -109,7 +109,7 @@ export default {
   props: {
     odom: {
       type: Object,
-      required: true
+      default: () => ({latitude_deg: 0, longitude_deg: 0, bearing_deg: 0})
     },
     droneWaypointButton: {
       type: Boolean,

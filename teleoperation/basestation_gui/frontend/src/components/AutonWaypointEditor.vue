@@ -4,7 +4,7 @@
       <div class="waypoint-header">
         <h4>All Waypoints</h4>
       </div>
-      <button class="btn btn-primary" @click="openModal()">Drop Waypoint</button>
+      <button class="btn btn-primary" @click="openModal()">Add Waypoint From Map</button>
       <div class="waypoints">
         <div class="shadow p-3 my-2" v-for="(waypoint, index) in waypoints" :key="waypoint">
           <h5>{{ waypoint.name }}</h5>
@@ -45,7 +45,7 @@
     </div>
   </div>
 
-  <div class="modal fade" id="modalWypt" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal fade" id="modalWypt" tabindex="-1" role="dialog">
         <div class="modal-dialog modal-dialog-centered" role="document">
           <div class="modal-content">
             <div class="modal-body">
@@ -97,12 +97,7 @@ export default {
     VelocityCommand
   },
 
-  props: {
-    odom: {
-      type: Object,
-      required: true
-    }
-  },
+  emits: ['toggleTeleop'],
 
   data() {
     return {
@@ -168,12 +163,6 @@ export default {
 
       teleopEnabledCheck: false,
 
-      nav_status: {
-        nav_state_name: 'Off',
-        completed_wps: 0,
-        total_wps: 0
-      },
-
       route: reactive([]),
 
       autonButtonColor: 'btn-danger',
@@ -188,10 +177,6 @@ export default {
       autonEnabled: 'autonEnabled',
       teleopEnabled: 'teleopEnabled',
       clickPoint: 'clickPoint'
-    }),
-
-    ...mapGetters('map', {
-      odom_format: 'odomFormat'
     }),
 
     autonButtonText: function () {
@@ -232,7 +217,8 @@ export default {
         // If still waiting for nav...
         if (
           (msg.state == 'OffState' && this.autonEnabled) ||
-          (msg.state !== 'OffState' && !this.autonEnabled)
+          (msg.state !== 'OffState' && !this.autonEnabled) ||
+          (msg.state == 'DoneState' && !this.autonEnabled)
         ) {
           return
         }
@@ -263,9 +249,6 @@ export default {
   },
 
   created: function () {
-    // Make sure local odom format matches vuex odom format
-    // this.odom_format_in = this.odom_format
-
     auton_publish_interval = window.setInterval(() => {
       if (this.waitingForNavResponse) {
         this.sendAutonCommand()
@@ -285,10 +268,6 @@ export default {
       setWaypointList: 'setWaypointList',
       setAutonMode: 'setAutonMode',
       setTeleopMode: 'setTeleopMode'
-    }),
-
-    ...mapMutations('map', {
-      setOdomFormat: 'setOdomFormat'
     }),
 
     sendAutonCommand() {
@@ -319,7 +298,7 @@ export default {
 
     deleteItem: function (waypoint) {
       waypoint.in_route = false
-      let index = this.route.indexOf(waypoint)
+      const index = this.route.indexOf(waypoint)
       this.route.splice(index, 1)
     },
 

@@ -33,22 +33,11 @@
       <OdometryReading :odom='odom'></OdometryReading>
     </div>
     <div class="shadow p-3 rounded hexHub">
-      <h3>HexHub Options</h3>
-      <div class="d-flex justify-content-center">
-        <div v-for="h in hexHubOptions" :key="h" class='form-check mx-3'>
-          <input
-            v-model='hexHubPos'
-            class='form-check-input'
-            type='radio'
-            :id="'hex'+h"
-            :value='h'
-          />
-          <label class='form-check-label' :for="'hex'+h">{{h}}</label>
-        </div>
-      </div>
+      <HexHub />
     </div>
-    <!-- TODO: add pumps -->
-    <!-- TODO: add limit switch -->
+    <div class="shadow p-3 rounded pumpLS">
+      <PumpLimitSwitch />
+    </div>
   </div>
 </template>
 
@@ -62,6 +51,8 @@ import OdometryReading from './OdometryReading.vue'
 import ControllerDataTable from './ControllerDataTable.vue'
 import SAArmControls from './SAArmControls.vue'
 import NetworkMonitor from "./NetworkMonitor.vue"
+import HexHub from './HexHub.vue'
+import PumpLimitSwitch from './PumpLimitSwitch.vue'
 
 export default {
   components: {
@@ -74,6 +65,8 @@ export default {
     SAArmControls,
     NetworkMonitor,
     OdometryReading,
+    HexHub,
+    PumpLimitSwitch
   },
   data() {
     return {
@@ -85,7 +78,8 @@ export default {
         altitude: 0
       },
       hexHubPos: 0,
-      hexHubOptions: [1,2,3,4,5,6]
+      // hexHubOptions: [1,2,3,4]
+      hexHubOptions: ["Sample 1","Sample 2","Sample Cache","Empty Soil Deposit"]
     }
   },
 }
@@ -98,8 +92,8 @@ export default {
   grid-template-columns: 50% repeat(2, auto);
   grid-template-areas:
     'header header header'
-    'arm hexHub soilData'
-    'map waypoints waypoints'
+    'arm pumpLS soilData'
+    'map hexHub waypoints'
     'map odom odom'
     'moteus moteus moteus';
   font-family: sans-serif;
@@ -144,5 +138,9 @@ export default {
 
 .hexHub {
   grid-area: hexHub;
+}
+
+.pumpLS {
+  grid-area: pumpLS;
 }
 </style>

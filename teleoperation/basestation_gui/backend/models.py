@@ -3,7 +3,7 @@ from django.db import models
 
 # Create your models here.
 class AutonWaypoint(models.Model):
-    id = models.IntegerField(unique=True, primary_key=True)
+    id = models.AutoField(unique=True, primary_key=True)
     tag_id = models.IntegerField()
     # Type based on WaypointType.msg
     type = models.IntegerField()
@@ -14,7 +14,6 @@ class AutonWaypoint(models.Model):
 
 
 class BasicWaypoint(models.Model):
-    # change before for id: models.IntegerField(unique=True, primary_key=True)
     id = models.AutoField(unique=True, primary_key=True)
     drone = models.BooleanField()
     created_at = models.DateTimeField(auto_now_add=True)

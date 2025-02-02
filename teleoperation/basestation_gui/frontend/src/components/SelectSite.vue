@@ -2,37 +2,54 @@
     <!-- TODO: Add in conditonal buttons based on which buttons are clicked already -->
      <!-- we want to rotate the hex hub in one direction? -->
     <div>
-        <div>
-            <h2>Select Site</h2>
-        </div>
+        <h2>Select Site</h2>
         <div class="form-check form-check-inline">
             <input v-model="site" class="form-check-input" type="radio" name="flexRadioDefault" id="site0" value="0">
             <label class="form-check-label" for="site0">
-                Site 1
+                Site A
             </label>
         </div>
         <div class="form-check form-check-inline">
             <input v-model="site" class="form-check-input" type="radio" name="flexRadioDefault" id="site1" value="1">
             <label class="form-check-label" for="site1">
-                Site 2
+                Site B
             </label>
         </div>
     </div>
 </template>
 
+
 <script lang="ts">
+import { mapState, mapActions } from 'vuex';
+
 export default {
-    components: {},
+  components: {
+  },
     data() {
         return {
-            site: 0
+            site: 0,
+            autoShutdownEnabled: true,
         };
     },
 
     watch: {
         site(event) {
             this.$emit("site", event);
-        }
+        },
+        message(msg) {
+            if (msg.type == 'auto_shutoff') {
+                if (!msg.success) {
+                this.autoShutdownEnabled = !this.autoShutdownEnabled;
+                alert('Toggling Auto Shutdown failed.')
+                }
+            }
+        },
+    },
+
+    computed: {
+    },
+
+    methods:{
     }
 };
 </script>

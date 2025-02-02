@@ -18,13 +18,11 @@
 <script lang='ts'>
 import { defineComponent } from 'vue'
 import { mapActions, mapState } from 'vuex'
-import ToggleButton from './ToggleButton.vue'
 
 const UPDATE_HZ = 20
 
 export default defineComponent({
   components: {
-    ToggleButton
   },
   data() {
     return {
