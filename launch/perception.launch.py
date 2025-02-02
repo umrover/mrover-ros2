@@ -15,7 +15,7 @@ def generate_launch_description():
     stereo_tag_detector_node = Node(
         package="mrover",
         executable="stereo_tag_detector",
-        name="image_tag_detector",
+        name="stereo_tag_detector",
         parameters=[Path(get_package_share_directory("mrover"), "config", "perception.yaml")],
     )
 
@@ -23,6 +23,20 @@ def generate_launch_description():
         package="mrover",
         executable="image_tag_detector",
         name="image_tag_detector",
+        parameters=[Path(get_package_share_directory("mrover"), "config", "perception.yaml")],
+    )
+
+    stereo_object_detector_node = Node(
+        package="mrover",
+        executable="stereo_object_detector",
+        name="stereo_object_detector",
+        parameters=[Path(get_package_share_directory("mrover"), "config", "perception.yaml")],
+    )
+
+    image_object_detector_node = Node(
+        package="mrover",
+        executable="image_object_detector",
+        name="image_object_detector",
         parameters=[Path(get_package_share_directory("mrover"), "config", "perception.yaml")],
     )
 
@@ -40,4 +54,4 @@ def generate_launch_description():
         parameters=[Path(get_package_share_directory("mrover"), "config", "perception.yaml")],
     )
 
-    return launch.LaunchDescription([stereo_tag_detector_node, image_tag_detector_node, zed_node, long_range_cam])
+    return launch.LaunchDescription([stereo_object_detector_node, image_object_detector_node, stereo_tag_detector_node, image_tag_detector_node, zed_node, long_range_cam])

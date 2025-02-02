@@ -16,7 +16,7 @@ namespace mrover {
                 {"model_name", modelName, "Large-Dataset"},
                 {"model_score_threshold", mModelScoreThreshold, 0.75},
                 {"model_nms_threshold", mModelNMSThreshold, 0.5},
-                {"object_detector_debug", mDebug, false}};
+                {"object_detector_debug", mDebug, true}};
 
         ParameterWrapper::declareParameters(this, params);
 
