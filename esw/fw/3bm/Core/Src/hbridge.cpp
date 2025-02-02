@@ -21,17 +21,17 @@ namespace mrover {
     }
 
 #ifdef DUAL_DIRECTION
-	  HBridge::HBridge(TIM_HandleTypeDef* timer, std::uint32_t channel, Pin direction_pin_0, Pin direction_pin_1)
-		  : m_direction_pin{direction_pin_0},
-			m_direction_pin_1{direction_pin_1},
-			m_timer{timer},
-			m_channel{channel},
-			m_max_pwm{0_percent} {
+    HBridge::HBridge(TIM_HandleTypeDef* timer, std::uint32_t channel, Pin direction_pin_0, Pin direction_pin_1)
+        : m_direction_pin{direction_pin_0},
+          m_direction_pin_1{direction_pin_1},
+          m_timer{timer},
+          m_channel{channel},
+          m_max_pwm{0_percent} {
 
-		  // Prevent the motor from spinning on boot up
-		  __HAL_TIM_SET_COMPARE(m_timer, m_channel, 0);
-		  check(HAL_TIM_PWM_Start(m_timer, m_channel) == HAL_OK, Error_Handler);
-	  }
+        // Prevent the motor from spinning on boot up
+        __HAL_TIM_SET_COMPARE(m_timer, m_channel, 0);
+        check(HAL_TIM_PWM_Start(m_timer, m_channel) == HAL_OK, Error_Handler);
+    }
 #endif
 
 
@@ -43,11 +43,16 @@ namespace mrover {
 
     auto HBridge::set_direction_pins(Percent duty_cycle) const -> void {
 #ifdef DUAL_DIRECTION
-        GPIO_PinState positive_state = duty_cycle > 0_percent ? GPIO_PIN_SET : GPIO_PIN_RESET;
-        GPIO_PinState negative_state = duty_cycle < 0_percent ? GPIO_PIN_SET : GPIO_PIN_RESET;
-        if (m_is_inverted) std::swap(positive_state, negative_state);
-        m_direction_pin.write(positive_state);
-        m_direction_pin_1.write(negative_state);
+        if (duty_cycle == 0_percent) {
+            m_direction_pin.reset();
+            m_direction_pin_1.reset();
+        } else {
+            GPIO_PinState positive_state = duty_cycle > 0_percent ? GPIO_PIN_SET : GPIO_PIN_RESET;
+            GPIO_PinState negative_state = duty_cycle < 0_percent ? GPIO_PIN_SET : GPIO_PIN_RESET;
+            if (m_is_inverted) std::swap(positive_state, negative_state);
+            m_direction_pin.write(positive_state);
+            m_direction_pin_1.write(negative_state);
+        }
 #else
         GPIO_PinState const pin_state = (duty_cycle > 0_percent && !m_is_inverted) ? GPIO_PIN_SET : GPIO_PIN_RESET;
         m_direction_pin.write(pin_state);
