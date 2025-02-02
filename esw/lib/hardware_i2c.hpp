@@ -63,19 +63,24 @@ namespace mrover {
         }
 
         auto async_transmit(std::uint16_t const address, TSend send) -> void {
+            if (HAL_I2C_GetState(m_i2c) != HAL_I2C_STATE_READY) {
+                reboot();
+                return;
+            }
             check(HAL_I2C_Master_Transmit_DMA(m_i2c, address << 1,
-                                             address_of<uint8_t>(send),
-                                             sizeof(send)) == HAL_OK,
+                                              address_of<uint8_t>(send),
+                                              sizeof(send)) == HAL_OK,
                   Error_Handler);
-            // This is stupid. I remember writing this stupid thing. I regret everything. This is stupid.
-            // Oh my gosh it wasn't stupid please don't delete it
-            while (HAL_I2C_GetState(m_i2c) != HAL_I2C_STATE_READY) {}
         }
 
         auto async_receive(std::uint16_t const address) -> void {
+            // TODO: (owen) change to while? maybe some max timeout?
+            if (HAL_I2C_GetState(m_i2c) != HAL_I2C_STATE_READY) {
+                reboot();
+            }
             check(HAL_I2C_Master_Receive_DMA(m_i2c, address << 1 | 1,
-                                            address_of<uint8_t>(m_receive_buffer),
-                                            sizeof(m_receive_buffer)) == HAL_OK,
+                                             address_of<uint8_t>(m_receive_buffer),
+                                             sizeof(m_receive_buffer)) == HAL_OK,
                   Error_Handler);
         }
 
@@ -85,8 +90,8 @@ namespace mrover {
 
         auto async_receive_direct(std::uint16_t const address, TReceive& receive) -> void {
             check(HAL_I2C_Master_Receive_DMA(m_i2c, address << 1 | 1,
-                                            address_of<uint8_t>(receive),
-                                            sizeof(receive)) == HAL_OK,
+                                             address_of<uint8_t>(receive),
+                                             sizeof(receive)) == HAL_OK,
                   Error_Handler);
         }
 
