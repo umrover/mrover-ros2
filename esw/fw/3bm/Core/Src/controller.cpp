@@ -149,9 +149,9 @@ namespace mrover {
 
         motor_with_encoder = motors.end();
 
-        // fdcan_bus.configure_filter(DEVICE_ID_0);
-        // fdcan_bus.configure_filter(DEVICE_ID_1);
-        // fdcan_bus.configure_filter(DEVICE_ID_2);
+        fdcan_bus.add_filter(DEVICE_ID_0);
+        fdcan_bus.add_filter(DEVICE_ID_1);
+        fdcan_bus.add_filter(DEVICE_ID_2);
 
         fdcan_bus.start();
 
