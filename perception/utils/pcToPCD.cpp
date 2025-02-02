@@ -18,13 +18,13 @@ namespace mrover{
         });
 
         // Path to save files to
-        std::string file = "perception/utils/baja2-";
+        std::string file = "perception/utils/baja1-";
 
         // File number of the message (each message gets a pcd file) will look like bajaX-X.pcd
         int msgNum = 1;
 
         void pointCloudCallback(sensor_msgs::msg::PointCloud2::UniquePtr const& msg) {
-            // if(msgNum > 3){ return; } // Just a test to see if it works creating a single file
+            if(msgNum > 1){ return; } // Just a test to see if it works creating a single file
             // std::cout << "HERE1\n";
 
             std::ofstream outf(file + std::to_string(msgNum) + ".pcd");
