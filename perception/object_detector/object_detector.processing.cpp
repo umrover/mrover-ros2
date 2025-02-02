@@ -43,7 +43,7 @@ namespace mrover {
 
         // Draw the bounding boxes on the image
         drawDetectionBoxes(blobSizedImage, detections);
-        if(mDebug){
+        if (mDebug) {
             publishDetectedObjects(blobSizedImage);
         }
 
@@ -215,7 +215,7 @@ namespace mrover {
         mTargetsPub->publish(targets);
 
         drawDetectionBoxes(blobSizedImage, detections);
-        if(mDebug){
+        if (mDebug) {
             publishDetectedObjects(blobSizedImage);
         }
 

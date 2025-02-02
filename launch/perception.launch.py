@@ -54,4 +54,13 @@ def generate_launch_description():
         parameters=[Path(get_package_share_directory("mrover"), "config", "perception.yaml")],
     )
 
-    return launch.LaunchDescription([stereo_object_detector_node, image_object_detector_node, stereo_tag_detector_node, image_tag_detector_node, zed_node, long_range_cam])
+    return launch.LaunchDescription(
+        [
+            stereo_object_detector_node,
+            image_object_detector_node,
+            stereo_tag_detector_node,
+            image_tag_detector_node,
+            zed_node,
+            long_range_cam,
+        ]
+    )
