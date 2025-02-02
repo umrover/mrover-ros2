@@ -56,18 +56,18 @@ namespace mrover {
             .calibrationThrottle = 0.5,
     };
 
-    const static BrushedController::Config JOINT_C_CONFIG;
-    const static BrushedController::Config JOINT_DE_0_CONFIG;
+    constexpr static BrushedController::Config GRIPPER_CONFIG{};
+    constexpr static BrushedController::Config FINGER_CONFIG{};
 
 } // namespace mrover
 
 auto main(int argc, char** argv) -> int {
     rclcpp::init(argc, argv);
 
-    auto node = rclcpp::Node::make_shared("bm_test");
-    auto mJointB = std::make_shared<mrover::BrushedController>(node, "jetson", "joint_b", mrover::JOINT_B_CONFIG);
-    auto mJointC = std::make_shared<mrover::BrushedController>(node, "jetson", "joint_c", mrover::JOINT_C_CONFIG);
-    auto mJointDE0 = std::make_shared<mrover::BrushedController>(node, "jetson", "joint_de_0", mrover::JOINT_DE_0_CONFIG);
+    auto node = rclcpp::Node::make_shared("bm_test_bridge");
+    auto jointB = std::make_shared<mrover::BrushedController>(node, "jetson", "joint_b", mrover::JOINT_B_CONFIG);
+    auto gripper = std::make_shared<mrover::BrushedController>(node, "jetson", "gripper", mrover::GRIPPER_CONFIG);
+    auto finger = std::make_shared<mrover::BrushedController>(node, "jetson", "finger", mrover::FINGER_CONFIG);
 
     auto throttle = mrover::Percent{0.5};
     auto rate = mrover::Percent{0.1};
@@ -79,13 +79,11 @@ auto main(int argc, char** argv) -> int {
             rate *= -1;
         }
         throttle += rate;
-        mJointB->setDesiredThrottle(throttle);
-        mJointC->setDesiredThrottle(throttle);
-        mJointDE0->setDesiredThrottle(throttle);
-        RCLCPP_INFO(node->get_logger(), "JointB --- pos: %f | vel: %f", mJointB->getPosition().get(), mJointB->getVelocity().get());
-        RCLCPP_INFO(node->get_logger(), "JointC --- pos: %f | vel: N/A", mJointC->getVelocity().get());
-        RCLCPP_INFO(node->get_logger(), "JointDE0 --- pos: %f | vel: N/A", mJointDE0->getVelocity().get());
-        
+        jointB->setDesiredThrottle(throttle);
+        gripper->setDesiredThrottle(throttle);
+        finger->setDesiredThrottle(throttle);
+        RCLCPP_INFO(node->get_logger(), "joint_b    --- pos: %f | vel: %f", jointB->getPosition().get(), jointB->getVelocity().get());
+
         rclcpp::spin_some(node);
         loop_rate.sleep();
     }
