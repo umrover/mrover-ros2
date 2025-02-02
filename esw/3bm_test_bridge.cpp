@@ -4,6 +4,7 @@
 #include <rclcpp/rate.hpp>
 #include <string>
 #include <vector>
+#include <fstream>
 
 #include <rclcpp/rclcpp.hpp>
 
@@ -69,20 +70,32 @@ auto main(int argc, char** argv) -> int {
     auto gripper = std::make_shared<mrover::BrushedController>(node, "jetson", "gripper", mrover::GRIPPER_CONFIG);
     auto finger = std::make_shared<mrover::BrushedController>(node, "jetson", "finger", mrover::FINGER_CONFIG);
 
+    rclcpp::Rate loop_rate(10);
     auto throttle = mrover::Percent{0.5};
     auto rate = mrover::Percent{0.1};
 
-    rclcpp::Rate loop_rate(10);
+    std::ofstream f_handle("data/motor_encoder_data.csv");
+    f_handle << "time,throttle,pos,vel" << std::endl;
 
-    while (rclcpp::ok()) {
+    auto timer = node->create_wall_timer(std::chrono::seconds(2), [&]() {
         if (throttle >= mrover::Percent{1.0} || throttle <= mrover::Percent{-1.0}) {
             rate *= -1;
         }
         throttle += rate;
+        RCLCPP_INFO(node->get_logger(), "RATE UPDATED TO %f", throttle.get());
+    });
+
+    while (rclcpp::ok()) {
         jointB->setDesiredThrottle(throttle);
         gripper->setDesiredThrottle(throttle);
         finger->setDesiredThrottle(throttle);
-        RCLCPP_INFO(node->get_logger(), "joint_b    --- pos: %f | vel: %f", jointB->getPosition().get(), jointB->getVelocity().get());
+
+        auto pos = jointB->getPosition().get();
+        auto vel = jointB->getVelocity().get();
+        // RCLCPP_INFO(mrover::node->get_logger(), "joint_b    --- pos: %f | vel: %f", pos, vel);
+
+        auto now = node->now();
+        f_handle << now.seconds() << "," << throttle.get() << "," << pos << "," << vel << std::endl;
 
         rclcpp::spin_some(node);
         loop_rate.sleep();
