@@ -56,6 +56,14 @@ export default defineComponent({
   components: {
     // MotorAdjust
   },
+
+  props: {
+    currentSite: {
+      type: String, 
+      required: true
+    }
+  },
+
   data() {
     return {
       mode: 'disabled',

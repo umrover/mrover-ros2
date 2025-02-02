@@ -8,7 +8,7 @@
       </div>
     </div>
     <div class='shadow p-3 rounded map'>
-      <BasicMap :odom='odom' />
+      <!-- <BasicMap :odom='odom' /> -->
     </div>
     <div class='shadow p-3 rounded waypoints'>
       <BasicWaypointEditor :odom='odom' />
@@ -20,7 +20,7 @@
       <DriveControls />
     </div>
     <div class='shadow p-3 rounded arm'>
-      <SAArmControls />
+      <SAArmControls currentSite='PASS SITE'/>
     </div>
     <div class='shadow p-3 rounded moteus'>
       <ControllerDataTable msg-type='drive_state' header='Drive States' />
@@ -30,13 +30,13 @@
       <MastGimbalControls />
     </div>
     <div class='shadow p-3 rounded odom'>
-      <OdometryReading :odom='odom'></OdometryReading>
+      <OdometryReading @odom='updateOdom'/>
     </div>
     <div class="shadow p-3 rounded hexHub">
       <HexHub />
     </div>
-    <div class="shadow p-3 rounded pumpLS">
-      <PumpLimitSwitch />
+    <div class="shadow p-3 rounded lsActuator">
+      <LSActuator />
     </div>
   </div>
 </template>
@@ -52,7 +52,13 @@ import ControllerDataTable from './ControllerDataTable.vue'
 import SAArmControls from './SAArmControls.vue'
 import NetworkMonitor from "./NetworkMonitor.vue"
 import HexHub from './HexHub.vue'
-import PumpLimitSwitch from './PumpLimitSwitch.vue'
+import LSActuator from './LSActuator.vue'
+
+interface Odom {
+  latitude_deg: number;
+  longitude_deg: number;
+  bearing_deg: number;
+}
 
 export default {
   components: {
@@ -66,19 +72,18 @@ export default {
     NetworkMonitor,
     OdometryReading,
     HexHub,
-    PumpLimitSwitch
+    LSActuator
   },
   data() {
     return {
-      // Default coordinates at MDRS
-      odom: {
-        latitude_deg: 38.406025,
-        longitude_deg: -110.7923723,
-        bearing_deg: 0,
-        altitude: 0
-      },
+      odom:  null as Odom | null,
     }
   },
+  methods: {
+    updateOdom(odom: Odom) {
+      this.odom = odom;
+    },
+  }
 }
 </script>
 
@@ -89,7 +94,7 @@ export default {
   grid-template-columns: 50% repeat(2, auto);
   grid-template-areas:
     'header header header'
-    'arm pumpLS soilData'
+    'arm lsActuator soilData'
     'map hexHub waypoints'
     'map odom odom'
     'moteus moteus moteus';
@@ -137,7 +142,7 @@ export default {
   grid-area: hexHub;
 }
 
-.pumpLS {
-  grid-area: pumpLS;
+.lsActuator {
+  grid-area: lsActuator;
 }
 </style>

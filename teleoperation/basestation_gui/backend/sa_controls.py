@@ -5,10 +5,12 @@ from typing import Union
 # import rospy
 from rclpy.node import Node
 from rclpy.publisher import Publisher
+from rclpy.client import Client
 
 from backend.input import filter_input, simulated_axis, safe_index, DeviceInputs
 from backend.mappings import ControllerAxis, ControllerButton
 from mrover.msg import Throttle
+from mrover.srv import EnableBool
 
 import logging
 logger = logging.getLogger('django')
@@ -62,7 +64,7 @@ def compute_manual_joint_controls(controller: DeviceInputs) -> list[float]:
     ]
 
 
-def send_sa_controls(sa_mode: str, inputs: DeviceInputs, sa_thr_pub: Publisher) -> None:
+def send_sa_controls(sa_mode: str, pump: int, inputs: DeviceInputs, sa_thr_pub: Publisher, pump_0_srv: Client, pump_1_srv: Client) -> None:
     if(sa_mode == "disabled"):
         return
     throttle_msg = Throttle()
@@ -70,5 +72,17 @@ def send_sa_controls(sa_mode: str, inputs: DeviceInputs, sa_thr_pub: Publisher) 
     joint_names, throttle_values = subset(JOINT_NAMES, manual_controls, set(Joint))
     throttle_msg.names = joint_names
     throttle_msg.throttles = throttle_values
+    send_pump_controls(inputs, pump, pump_0_srv, pump_1_srv)
     sa_thr_pub.publish(throttle_msg)
     
+def send_pump_controls(inputs: DeviceInputs, pump: int, pump_0_srv: Client, pump_1_srv: Client) -> None:
+    sim_axis = filter_input(
+        simulated_axis(inputs.buttons, ControllerButton.RIGHT_BUMPER, ControllerButton.LEFT_BUMPER), 
+        scale = 1
+    )
+    if((sim_axis != 1.0) & (sim_axis != -1.0)):
+        return
+    if(pump == 0):
+        pump_0_srv.call(EnableBool.Request(enable=(sim_axis == 1)))
+    else:
+        pump_1_srv.call(EnableBool.Request(enable=(sim_axis == 1)))

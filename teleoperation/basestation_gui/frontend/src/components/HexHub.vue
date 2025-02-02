@@ -16,6 +16,7 @@
         </div>
       </div>
   </template>
+
   <script lang="ts">
   import { mapState, mapActions } from 'vuex';
   export default {
@@ -37,6 +38,7 @@
     },
   };
   </script>
+  
   <style scoped>
   .btn {
     margin-top: 15px;

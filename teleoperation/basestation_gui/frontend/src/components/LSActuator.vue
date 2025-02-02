@@ -1,8 +1,8 @@
 <template>
     <div class="wrap">
-        <h3>Pump and Limit Switch Controls</h3>
+        <h3>Limit Switch Controls</h3>
         <div>
-            <ToggleButton
+            <!-- <ToggleButton
                 id="pump0"
                 :current-state="p0state"
                 :label-enable-text="'Pump 0'"
@@ -15,9 +15,9 @@
                 :label-enable-text="'Pump 1'"
                 :label-disable-text="'Pump 1'"
                 @change="togglep1()"
-            />
+            /> -->
             <ToggleButton
-                id="pump0"
+                id="ls"
                 :current-state="lsstate"
                 :label-enable-text="'Limit Switch Sensor Actuator'"
                 :label-disable-text="'Limit Switch Sensor Actuator'"
@@ -36,8 +36,8 @@ export default {
   },
   data() {
     return {
-        p0state: [false, false],
-        p1state: [false, false],
+        // p0state: [false, false],
+        // p1state: [false, false],
         lsstate: [false, false],
     }
   },
@@ -45,14 +45,14 @@ export default {
   methods:{
     ...mapActions('websocket', ['sendMessage']),
 
-    togglep0: function () {
-        this.p0state = !this.p0state
-        this.sendMessage({ type: "p0_toggle", enable: this.p0state})
-    },
-    togglep1: function () {
-        this.p1state = !this.p1state
-        this.sendMessage({ type: "p1_toggle", enable: this.p1state})
-    },
+    // togglep0: function () {
+    //     this.p0state = !this.p0state
+    //     this.sendMessage({ type: "p0_toggle", enable: this.p0state})
+    // },
+    // togglep1: function () {
+    //     this.p1state = !this.p1state
+    //     this.sendMessage({ type: "p1_toggle", enable: this.p1state})
+    // },
     togglels: function () {
         this.lsstate = !this.lsstate
         this.sendMessage({ type: "ls_toggle", enable: this.lsstate})
@@ -60,8 +60,8 @@ export default {
   },
 
   created() {
-    this.togglep0();
-    this.togglep1();
+    // this.togglep0();
+    // this.togglep1();
     this.togglels();
   }
 };

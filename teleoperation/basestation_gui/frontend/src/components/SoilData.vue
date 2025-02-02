@@ -2,7 +2,7 @@
   <div class='wrap box'>
     <h3>Soil Data</h3>
     <div class='table-responsive'>
-      <table class='table'>
+      <table class='table' id="capture">
         <thead>
         <tr class='table-primary'>
           <th scope='col'>Temperature</th>

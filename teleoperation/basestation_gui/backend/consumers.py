@@ -16,7 +16,6 @@ from backend.drive_controls import send_joystick_twist, send_controller_twist
 from backend.input import DeviceInputs
 from backend.ra_controls import send_ra_controls
 from backend.sa_controls import send_sa_controls
-from backend.hex_controls import send_hex_controls
 from backend.mast_controls import send_mast_controls
 from backend.waypoints import (
     get_auton_waypoint_list,
@@ -227,7 +226,8 @@ class GUIConsumer(JsonWebsocketConsumer):
                     "buttons": buttons
                 }:
                     device_input = DeviceInputs(axes, buttons)
-                    send_sa_controls(cur_sa_mode, device_input, self.sa_thr_pub)
+                    send_sa_controls(cur_sa_mode, 0, device_input, self.sa_thr_pub, self.sa_enable_pump_0_srv, self.sa_enable_pump_1_srv)
+                    # TODO: IMPLEMENT PUMP SWITCHING
                 case {
                     "type": "sa_mode",
                     "mode": mode,
@@ -264,11 +264,11 @@ class GUIConsumer(JsonWebsocketConsumer):
                 case {"type": "white_leds", "site": site, "enabled": e}:
                     self.white_leds_services[site].call(EnableBool.Request(enable=e))
 
-                case {"type": "p0_toggle", "enable": e}:
-                    self.sa_enable_pump_0_srv.call(EnableBool.Request(enable=e))
+                # case {"type": "p0_toggle", "enable": e}:
+                #     self.sa_enable_pump_0_srv.call(EnableBool.Request(enable=e))
 
-                case {"type": "p1_toggle", "enable": e}:
-                    self.sa_enable_pump_1_srv.call(EnableBool.Request(enable=e))
+                # case {"type": "p1_toggle", "enable": e}:
+                #     self.sa_enable_pump_1_srv.call(EnableBool.Request(enable=e))
 
                 case {"type": "ls_toggle", "enable": e}:
                     self.sa_enable_switch_srv.call(EnableBool.Request(enable=e))
