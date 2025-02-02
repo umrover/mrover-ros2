@@ -77,9 +77,6 @@ export default {
         bearing_deg: 0,
         altitude: 0
       },
-      hexHubPos: 0,
-      // hexHubOptions: [1,2,3,4]
-      hexHubOptions: ["Sample 1","Sample 2","Sample Cache","Empty Soil Deposit"]
     }
   },
 }

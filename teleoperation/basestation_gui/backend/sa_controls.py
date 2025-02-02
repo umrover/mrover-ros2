@@ -70,6 +70,5 @@ def send_sa_controls(sa_mode: str, inputs: DeviceInputs, sa_thr_pub: Publisher) 
     joint_names, throttle_values = subset(JOINT_NAMES, manual_controls, set(Joint))
     throttle_msg.names = joint_names
     throttle_msg.throttles = throttle_values
-    logger.debug("publishing")
     sa_thr_pub.publish(throttle_msg)
     
