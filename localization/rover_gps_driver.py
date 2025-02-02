@@ -35,8 +35,8 @@ class RoverGpsDriverNode(Node):
                 ("baud_ublox", Parameter.Type.INTEGER),
             ],
         )
-        self.port = self.get_parameter("port").value
-        self.baud = self.get_parameter("baud").value
+        self.port = self.get_parameter("port_ublox").value
+        self.baud = self.get_parameter("baud_ublox").value
 
         self.gps_pub = self.create_publisher(NavSatFix, "gps/fix", 10)
         self.gps_status_pub = self.create_publisher(FixStatus, "gps_fix_status", 10)

@@ -11,8 +11,8 @@ namespace mrover {
         declare_parameter("baud_unicore", rclcpp::ParameterType::PARAMETER_INTEGER);
         declare_parameter("frame_id", rclcpp::ParameterType::PARAMETER_STRING);
 
-        port = get_parameter("port").as_string();
-        baud = get_parameter("baud").as_int();
+        port = get_parameter("port_unicore").as_string();
+        baud = get_parameter("baud_unicore").as_int();
         frame_id = get_parameter("frame_id").as_string();
 
         serial.open(port);
