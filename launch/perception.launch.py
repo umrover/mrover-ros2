@@ -12,33 +12,32 @@ from launch.conditions import LaunchConfigurationEquals
 
 
 def generate_launch_description():
-
-    container = ComposableNodeContainer(
-        name="perception",
-        namespace="",
-        package="rclcpp_components",
-        executable="component_container_mt",
-        composable_node_descriptions=[
-            ComposableNode(
-                package="mrover",
-                plugin="mrover::StereoObjectDetector",
-                name="object_detector_component",
-                parameters=[Path(get_package_share_directory("mrover"), "config", "object_detector.yaml")],
-            ),
-            ComposableNode(
-                package="mrover",
-                plugin="mrover::ImageObjectDetector",
-                name="object_detector_component",
-                parameters=[Path(get_package_share_directory("mrover"), "config", "object_detector.yaml")],
-            ),
-            ComposableNode(
-                package="mrover",
-                plugin="mrover::ZedWrapper",
-                name="zed_component",
-                parameters=[Path(get_package_share_directory("mrover"), "config", "zed.yaml")],
-            ),
-        ],
-        output="screen",
+    stereo_tag_detector_node = Node(
+        package="mrover",
+        executable="stereo_tag_detector",
+        name="image_tag_detector",
+        parameters=[Path(get_package_share_directory("mrover"), "config", "perception.yaml")],
     )
 
-    return launch.LaunchDescription([container])
+    image_tag_detector_node = Node(
+        package="mrover",
+        executable="image_tag_detector",
+        name="image_tag_detector",
+        parameters=[Path(get_package_share_directory("mrover"), "config", "perception.yaml")],
+    )
+
+    long_range_cam = Node(
+        package="mrover",
+        executable="usb_camera",
+        name="long_range_cam",
+        parameters=[Path(get_package_share_directory("mrover"), "config", "perception.yaml")],
+    )
+
+    zed_node = Node(
+        package="mrover",
+        executable="zed",
+        name="zed",
+        parameters=[Path(get_package_share_directory("mrover"), "config", "perception.yaml")],
+    )
+
+    return launch.LaunchDescription([stereo_tag_detector_node, image_tag_detector_node, zed_node, long_range_cam])

@@ -14,6 +14,7 @@ namespace mrover {
         try {
             /* Parameters */
             int framerate{};
+            std::string deviceName{};
             std::string device{};
             std::string imageTopicName{};
             std::string cameraInfoTopicName{};
@@ -24,13 +25,16 @@ namespace mrover {
                     {"width", mWidth, 640},
                     {"height", mHeight, 480},
                     {"framerate", framerate, 30},
-                    {"device", device, "/dev/video0"},
+                    {"device", deviceName, "video0"},
                     {"image_topic", imageTopicName, "/usb_camera/image"},
-                    {"camera_info_topic", cameraInfoTopicName, "/usb_camera/camera_info"},
                     {"watchdog_timeout", watchdogTimeout, 1.0},
                     {"decode_jpeg_from_device", decodeJpegFromDevice, false}};
 
             ParameterWrapper::declareParameters(this, params);
+
+            device = std::format("/dev/{}", deviceName);
+            imageTopicName = std::format("/{}/image", deviceName);
+            cameraInfoTopicName = std::format("/{}/camera_info", deviceName);
 
             /* Interfaces */
             mImgPub = create_publisher<sensor_msgs::msg::Image>(imageTopicName, 1);
