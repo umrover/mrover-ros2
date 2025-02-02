@@ -6,25 +6,18 @@
         <p>{{ formatted_odom.lat.d }}º</p>
         <p v-if="min_enabled">{{ formatted_odom.lat.m }}'</p>
         <p v-if="sec_enabled">{{ formatted_odom.lat.s }}"</p>
-        N
+        <p>N</p>
       </div>
       <div>
         <p>{{ formatted_odom.lon.d }}º</p>
         <p v-if="min_enabled">{{ formatted_odom.lon.m }}'</p>
         <p v-if="sec_enabled">{{ formatted_odom.lon.s }}"</p>
-        E
-        <br />
-        <p>Bearing: {{ rover_bearing_deg.toFixed(2) }}º</p>
+        <p>E</p>
       </div>
-      <div>
-        <p>Altitude: {{ rover_altitude.toFixed(2) }}m</p>
-      </div>
-      <div>
-        <p>Odom Status: {{ get_odom_status }}</p>
-      </div>
-      <div>
-        <p>Drone Status: {{ get_drone_status }}</p>
-      </div>
+      <p>Bearing: {{ rover_bearing_deg.toFixed(2) }}º</p>
+      <p>Altitude: {{ rover_altitude.toFixed(2) }}m</p>
+      <p>Odom Status: {{ get_odom_status }}</p>
+      <p>Drone Status: {{ get_drone_status }}</p>
     </div>
     <div class="calibration imu">
       <IMUCalibration></IMUCalibration>
@@ -160,22 +153,15 @@ export default {
 
 <style scoped>
 .odom-wrap {
-  padding-left: 10px;
-  padding-right: 0px;
-  margin-top: 0.5rem;
   display: grid;
   grid-gap: 10px;
   grid-template-columns: auto auto;
   grid-template-rows: auto auto;
-  gap: 10px;
   grid-template-areas:
     'odom flightIndicator'
     'imu flightIndicator';
   height: auto;
   width: auto;
-}
-.odom-wrap p {
-  display: inline;
 }
 
 .odom {

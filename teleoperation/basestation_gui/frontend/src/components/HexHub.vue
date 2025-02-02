@@ -1,39 +1,53 @@
 <template>
-    <div class="wrap">
-        <h3>HexHub Options</h3>
-        <div class="d-flex justify-content-center">
-            <div v-for="h in hexHubOptions" :key="h" class='form-check mx-3'>
+    <h3>HexHub Controls</h3>
+      <div class="row">
+        <div v-for="name, index in siteList" :key="index" class="col-4">
+          <div class="form-check d-flex justify-content-center align-items-center">
             <input
-                v-model='hexHubPos'
-                class='form-check-input'
-                type='radio'
-                :id="'hex'+h"
-                :value='h'
+              v-model="currentSite"
+              class="btn-check"
+              type="radio"
+              :id="'Site' + index"
+              :value="index"
+              @change="sendHexHubSite"
             />
-            <label class='form-check-label' :for="'hex'+h">{{h}}</label>
-            </div>
+            <label class="btn btn-outline-secondary" :for="'Site' + index">{{ name }}</label>
+          </div>
         </div>
-    </div>
-</template>
+      </div>
+  </template>
+  <script lang="ts">
+  import { mapState, mapActions } from 'vuex';
+  export default {
+    data() {
+      return {
+        currentSite: 1, // Default site is 1 (Site A)
+        siteList: ["A", "B", "C", "D", "E", "F"],
+      };
+    },
+    computed: {
+      ...mapState('websocket', ['message']),
+    },
+    methods: {
+      ...mapActions('websocket', ['sendMessage']),
+      sendHexHubSite() {
+        // Send the selected site (A-F) to the backend
+        this.sendMessage({ type: 'hexHubSite', site: this.currentSite });
+      },
+    },
+  };
+  </script>
+  <style scoped>
+  .btn {
+    margin-top: 15px;
+    width: 150px;
+    height: 45px;
+    text-align: center !important;
+  }
 
-<script lang='ts'>
-export default {
-  components: {
-  },
-  data() {
-    return {
-      hexHubPos: 0,
-      hexHubOptions: ["Sample 1","Sample 2","Sample Cache","Empty Soil Deposit"]
-    }
-  },
-}
-</script>
-
-<style scoped>
-.wrap {
-    display: flex;
-    /* align-items: center; */
-    height: 100%;
-    width: 100%;
-}
-</style>
+  .btn:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 6px 10px rgba(0, 0, 0, 0.2);
+  }
+  </style>
+    
