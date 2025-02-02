@@ -13,7 +13,10 @@ navigation:
     # How long it takes to forget about a target
     # Useful if the rover turns away from the target for a brief moment
     # Or if there was an ephemeral false positive detection
-    target_expiration_duration: 60.0
+
+    # Problems with this in the long range, if it turns quickly, it will still think the target is at
+    # a certain bearing leading to false pathing
+    target_expiration_duration: 2.0
 
     image_targets:
       increment_weight: 5

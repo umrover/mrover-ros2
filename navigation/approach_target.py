@@ -28,6 +28,11 @@ class ApproachTargetState(State):
     target_position: np.ndarray | None
 
     def on_enter(self, context: Context) -> None:
+        from .long_range import LongRangeState
+        if isinstance(self, LongRangeState):
+            context.node.get_logger().info("In long range state")
+        else:
+            context.node.get_logger().info("In approach target state")
         self.marker_pub = context.node.create_publisher(Marker, "target_trajectory", 10)
         self.time_begin = context.node.get_clock().now()
         self.astar_traj = Trajectory(np.array([]))
@@ -98,15 +103,18 @@ class ApproachTargetState(State):
 
         if context.node.get_clock().now() - self.time_last_updated > Duration(seconds=self.UPDATE_DELAY) or self.target_position is None:
             
-            # Ocassionally check if the object is in the ZED, and if so, transition to the regular approach target state
-            if isinstance(self, LongRangeState) and context.env.current_target_pos() is not None:
-                context.node.get_logger().info("Transitioning from long range to regular approach target")
-                return ApproachTargetState()
-
             # Update the time last updated and update the position of the target. Clear the current target trajectory
             self.time_last_updated = context.node.get_clock().now()
             self.target_position = self.get_target_position(context)
+            if self.target_position is not None and self.target_position.all(): 
+                context.node.get_logger().info(f"Current target position {self.target_position}")
+            else: 
+                context.node.get_logger().info(f"No target position, should be transitioning to waypoint/search state soon")
             self.traj = Trajectory(np.array([]))
+
+            # Check if the object is in the ZED, and if so, transition to the regular approach target state
+            if isinstance(self, LongRangeState):
+                return self.next_state(context, False)
 
             # Make sure to return self in case get_target_position returned None
             return self
@@ -177,4 +185,4 @@ class ApproachTargetState(State):
             self.traj.cur_pt + 7 if self.traj.cur_pt + 7 < len(self.traj.coordinates) else len(self.traj.coordinates)
         )
         for i, coord in enumerate(self.traj.coordinates[start_pt:end_pt]):
-            self.marker_pub.publish(gen_marker(context=context, point=coord, color=[1.0, 0.0, 1.0], id=i, lifetime=100))
+            self.marker_pub.publish(gen_marker(context=context, point=coord, color=[1.0, 0.0, 1.0], id=i, lifetime=2))
