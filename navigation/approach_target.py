@@ -173,8 +173,7 @@ class ApproachTargetState(State):
             if self.traj.increment_point():
                 # TODO: What do we do if we skip high cost points and reach the end of the trajectory
                 if(not self.calc_point(context=context)):
-                   context.node.get_logger().error("Couldn't find a better point.")
-                   #return self.next_state(context=context, is_finished=False)
+                   raise RuntimeError("Couldn't find a better point.")
                 return self.next_state(context=context, is_finished=False)
             self.display_markers(context=context)
 
