@@ -33,7 +33,6 @@ namespace mrover {
         int mHeight{};        // Number of cells on the grid vertically 
         int mDownSamplingFactor = 4;
         std::string mMapFrame;
-        bool mDebug{};
 		
         tf2_ros::Buffer mTfBuffer{get_clock()};
         tf2_ros::TransformListener mTfListener{mTfBuffer};
