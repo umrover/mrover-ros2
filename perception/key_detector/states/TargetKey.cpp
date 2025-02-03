@@ -1,5 +1,3 @@
-#pragma once
-
 #include "TargetKey.hpp"
 
 namespace mrover {
@@ -12,6 +10,14 @@ namespace mrover {
         }
         char key = mFSMContext->goal_handle->get_goal()->code[mFSMContext->curr_key_index];
         RCLCPP_INFO_STREAM(mFSMContext->node->get_logger(), "FSM Targeting " << key);
+
+        // CHANGE
+        
+        SE3d keyInArmFrame = SE3Conversions::fromTfTree(mFSMContext->buffer, "e_key_truth", "arm_e_link");
+        RCLCPP_INFO_STREAM(mFSMContext->node->get_logger(), "Y Z in EE Frame " << keyInArmFrame.translation().y() << " " << keyInArmFrame.translation().z());
+        return this;
+
+        // CHANGE
 
         std::shared_ptr<action::KeyAction::Feedback> feedback = std::make_shared<action::KeyAction::Feedback>();
         feedback->key = key;

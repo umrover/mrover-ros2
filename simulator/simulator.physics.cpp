@@ -153,8 +153,10 @@ namespace mrover {
                             KeyMapping{std::string{"m_key"}, SE3d{R3d{THIRD_ROW_START + 6 * KEY_SPACING, -0.5, TOP_ROW_START - 2 * KEY_SPACING}, Eigen::Quaterniond{0, 0, 0, 1}.normalized()}},
                     };
 
+                    rclcpp::Rate rate(1000);
                     for (auto const& [key, se3]: keyMappings) {
                         SE3Conversions::pushToTfTree(mTfBroadcaster, std::format("{}_truth", key), "lander_truth", se3, get_clock()->now());
+                        rate.sleep();
                     }
                 }
 
