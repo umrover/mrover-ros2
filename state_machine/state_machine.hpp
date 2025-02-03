@@ -147,11 +147,6 @@ public:
 		}
 	}
 
-    void setState(State* newState){
-        delete currState;
-        currState = newState;
-    }
-
         /**
      * \brief        Runs the onLoop function for the state and then transitions to the state returned from that function   
      */

@@ -8,6 +8,7 @@ namespace mrover {
         mStateMachine.enableTransitions<PressKey, PressKey, Wait, Cancel, Done>();
         mStateMachine.enableTransitions<Wait, TargetKey, Wait, Cancel>();
         mStateMachine.enableTransitions<Cancel, Cancel>();
+        mStateMachine.enableTransitions<Off, Off, TargetKey, Cancel>();
 
         using namespace std::placeholders;
 
