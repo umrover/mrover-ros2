@@ -7,7 +7,7 @@ namespace mrover {
         RCLCPP_INFO(mFSMContext->node->get_logger(), "Off Onloop");
         //set the velocity of arm to zero
         if(mFSMContext->restart){
-            mFSMContext->restart = true;
+            mFSMContext->restart = false;
             return StateMachine::make_state<TargetKey>(mFSMContext);
         }
 

@@ -18,13 +18,11 @@ rclcpp_action::CancelResponse KeyDetector::handle_cancel(
 }
 
 void KeyDetector::execute() {
-    RCLCPP_INFO_STREAM(get_logger(), "Running State Machine Execute...\n");
-
     if(!mFSMContext->node){
         mFSMContext->node = this->shared_from_this(); // THIS IS COOKED BC std::bad_weak_ptr is called in init list
     }
 
-    if (rclcpp::ok() && (mStateMachine.getCurrentState() != "Cancel" && mStateMachine.getCurrentState() != "Done")) {
+    if (rclcpp::ok()) {
         rclcpp::Rate loop_rate(1);
         auto feedback = std::make_shared<KeyAction::Feedback>();
 
