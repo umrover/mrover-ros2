@@ -17,9 +17,9 @@ namespace mrover {
             {"left_clip", mRightClip, -2.0},
             {"right_clip", mLeftClip, 2.0},
             {"top_clip", mTopClip, 3.0},
-            {"z_percent", mZPercent, 0.40},
+            {"z_percent", mZPercent, 0.34}, // Tested on static visualizer
             {"alpha", mAlpha, 0.05},
-            {"z_threshold", mZThreshold, 0.45}, // TODO make less sensitive
+            {"z_threshold", mZThreshold, 0.51}, // Tested on static visualizer
         };
 
         ParameterWrapper::declareParameters(this, params);

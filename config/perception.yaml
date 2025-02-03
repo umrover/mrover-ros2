@@ -38,10 +38,13 @@ stereo_tag_detector:
 cost_map:
   ros__parameters:
     resolution: 0.5
-    size: 32.0
+    size: 25
     map_frame: "map"
-    near_clip: 0.5
-    far_clip: 10.0
-    z_percent: 0.1
+    near_clip: 1.0
+    far_clip: 7.0
     alpha: 0.05
-    z_threshold: 0.0
+    left_clip: -2.0
+    right_clip: 2.0
+    top_clip: 3.0
+    z_percent: 0.34
+    z_threshold: 0.51
