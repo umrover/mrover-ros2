@@ -12,7 +12,7 @@
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://mrover/urdf/meshes/lander_and_keyboard.fbx" />
+        <mesh filename="package://mrover/urdf/meshes/lander_and_keyboard_small.fbx" />
       </geometry>
     </collision>
   </link>

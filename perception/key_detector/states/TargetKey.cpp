@@ -8,11 +8,14 @@ namespace mrover {
         if(mFSMContext->goal_handle->is_canceling()){
             return StateMachine::make_state<Cancel>(mFSMContext);
         }
+
+        // Check to see if we are done with the code
+        if(static_cast<std::size_t>(mFSMContext->curr_key_index) == mFSMContext->goal_handle->get_goal()->code.size()){
+            return StateMachine::make_state<Done>(mFSMContext);
+        }
+
         char key = mFSMContext->goal_handle->get_goal()->code[mFSMContext->curr_key_index];
         RCLCPP_INFO_STREAM(mFSMContext->node->get_logger(), "FSM Targeting " << key);
-
-        // CHANGE
-        
 
         // Publish feedback
         std::shared_ptr<action::KeyAction::Feedback> feedback = std::make_shared<action::KeyAction::Feedback>();

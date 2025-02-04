@@ -7,8 +7,8 @@ namespace mrover {
         mArmVelocityPub = create_publisher<geometry_msgs::msg::Vector3>("/ee_vel_cmd", 1);
         mFSMContext->armVelocityPub = mArmVelocityPub;
 
-        mStateMachine.enableTransitions<TargetKey, TargetKey, PressKey, Cancel>();
-        mStateMachine.enableTransitions<PressKey, PressKey, Wait, Cancel, Done>();
+        mStateMachine.enableTransitions<TargetKey, TargetKey, PressKey, Cancel, Done>();
+        mStateMachine.enableTransitions<PressKey, PressKey, Wait, Cancel>();
         mStateMachine.enableTransitions<Wait, TargetKey, Wait, Cancel>();
         mStateMachine.enableTransitions<Cancel, Off, Cancel>();
         mStateMachine.enableTransitions<Off, Off, TargetKey, Cancel>();
