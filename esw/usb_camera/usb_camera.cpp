@@ -26,7 +26,6 @@ namespace mrover {
                     {"height", mHeight, 480},
                     {"framerate", framerate, 30},
                     {"device", deviceName, "video0"},
-                    {"image_topic", imageTopicName, "/usb_camera/image"},
                     {"watchdog_timeout", watchdogTimeout, 1.0},
                     {"decode_jpeg_from_device", decodeJpegFromDevice, false}};
 
