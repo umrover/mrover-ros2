@@ -116,11 +116,11 @@ namespace mrover {
 
                 if (name == "lander") {
                     using KeyMapping = std::pair<std::string, SE3d>;
-                    constexpr static double KEY_SPACING = 0.023;
-                    constexpr static double TOP_ROW_START = 0.898;
-                    constexpr static double FIRST_ROW_START = -0.155;
-                    constexpr static double SECOND_ROW_START = -0.146;
-                    constexpr static double THIRD_ROW_START = -0.135;
+                    constexpr static double KEY_SPACING = 0.01725;
+                    constexpr static double TOP_ROW_START = 0.6735;
+                    constexpr static double FIRST_ROW_START = -0.11625;
+                    constexpr static double SECOND_ROW_START = -0.1095;
+                    constexpr static double THIRD_ROW_START = -0.10125;
 
                     static std::array<KeyMapping, 26> keyMappings{
                             KeyMapping{std::string{"q_key"}, SE3d{R3d{FIRST_ROW_START + 0 * KEY_SPACING, -0.5, TOP_ROW_START}, Eigen::Quaterniond{0, 0, 0, 1}.normalized()}},
