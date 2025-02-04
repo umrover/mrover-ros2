@@ -13,6 +13,7 @@
 #include <functional>
 #include <memory>
 #include <thread>
+#include <numeric>
 
 // MRover Libs
 #include <state.hpp>

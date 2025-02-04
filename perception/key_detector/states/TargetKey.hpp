@@ -10,8 +10,11 @@ namespace mrover {
         auto onLoop() -> State* override;
 
     private:
+        static constexpr double KEY_TOLERANCE = 0.001;
+        static constexpr int MAX_KEY_HITCOUNT = 5;
         rclcpp::Publisher<msg::IK>::SharedPtr mIkTargetPub;
         std::shared_ptr<FSMContext> mFSMContext;
         rclcpp::Rate sleepRate;
+        int mToleranceHitcount;
     };
 } // namespace mrover
