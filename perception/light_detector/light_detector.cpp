@@ -14,6 +14,8 @@ namespace mrover{
 		int lowerBoundS = 0;
 		int lowerBoundV = 0;
 
+		std::string modelName;
+
 		std::vector<ParameterWrapper> params{
                 {"camera_frame", mCameraFrame, "zed_left_camera_frame"},
                 {"world_frame", mWorldFrame, "map"},
@@ -28,7 +30,12 @@ namespace mrover{
 				{"light_detector/upper_bound_v", upperBoundV, 0},
 				{"light_detector/lower_bound_h", lowerBoundH, 0},
 				{"light_detector/lower_bound_s", lowerBoundS, 0},
-				{"light_detector/lower_bound_v", lowerBoundV, 0}};
+				{"light_detector/lower_bound_v", lowerBoundV, 0},
+				{"light_detector/lmodel_name", modelName, "best"},
+                {"light_detector/model_score_threshold", mModelScoreThreshold, 0.75},
+            	{"mlight_detector/odel_nms_threshold", mModelNMSThreshold, 0.5},
+            	{"light_detector/debug", mDebug, true}};
+
 
         ParameterWrapper::declareParameters(this, params);
 

@@ -19,7 +19,6 @@ namespace mrover {
 		cv::Mat mOutputImage;
 
 		int SPIRAL_SEARCH_DIM{};
-
 		double mImmediateLightRange{};
 
 		std::unordered_map<std::pair<double, double>, int, PairHash> mHitCounts;
@@ -28,6 +27,12 @@ namespace mrover {
 		int mHitDecrease{};
 		int mHitMax{};
 		int mPublishThreshold{};
+		float mModelScoreThreshold{};
+        float mModelNMSThreshold{};
+        bool mDebug{};
+
+		// Model Detector
+		TensortRT mTensorRT;
 
 		// TF variables
 		tf2_ros::Buffer mTfBuffer{get_clock()};

@@ -38,3 +38,6 @@
 // MRover
 #include "point.hpp"
 #include "mrover/msg/vector3_array.hpp"
+
+// TensorRT
+#include <tensorrt.hpp>
