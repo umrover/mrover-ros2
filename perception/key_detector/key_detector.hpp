@@ -23,6 +23,8 @@ namespace mrover {
 
         StatePublisher mStatePublisher;
 
+        rclcpp::Publisher<geometry_msgs::msg::Vector3>::SharedPtr mArmVelocityPub;
+
         rclcpp_action::Server<KeyAction>::SharedPtr action_server_;
 
         rclcpp_action::GoalResponse handle_goal(

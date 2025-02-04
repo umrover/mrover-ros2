@@ -15,6 +15,12 @@ namespace mrover {
         
         SE3d keyInArmFrame = SE3Conversions::fromTfTree(mFSMContext->buffer, "e_key_truth", "arm_e_link");
         RCLCPP_INFO_STREAM(mFSMContext->node->get_logger(), "Y Z in EE Frame " << keyInArmFrame.translation().y() << " " << keyInArmFrame.translation().z());
+
+        geometry_msgs::msg::Vector3 vec;
+        vec.y = keyInArmFrame.translation().y();
+        vec.z = keyInArmFrame.translation().z();
+        mFSMContext->armVelocityPub->publish(vec);
+
         return this;
 
         // CHANGE

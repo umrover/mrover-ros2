@@ -14,6 +14,7 @@ namespace mrover {
         tf2_ros::Buffer& buffer;
         int curr_key_index;
         bool restart;
+        rclcpp::Publisher<geometry_msgs::msg::Vector3>::SharedPtr armVelocityPub;
 
         explicit FSMContext(tf2_ros::Buffer& buf) : goal_handle{nullptr}, node{nullptr}, buffer{buf}, curr_key_index{0}, restart{false}{}
     };
