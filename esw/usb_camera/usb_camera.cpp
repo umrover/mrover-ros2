@@ -13,33 +13,32 @@ namespace mrover {
     UsbCamera::UsbCamera() : Node{"usb_camera", rclcpp::NodeOptions{}.use_intra_process_comms(true)} {
         try {
             /* Parameters */
-            declare_parameter("width", rclcpp::ParameterType::PARAMETER_INTEGER);
-            declare_parameter("height", rclcpp::ParameterType::PARAMETER_INTEGER);
-            declare_parameter("framerate", rclcpp::ParameterType::PARAMETER_INTEGER);
-            declare_parameter("device", rclcpp::ParameterType::PARAMETER_STRING, [] {
-                rcl_interfaces::msg::ParameterDescriptor d;
-                d.read_only = true;
-                d.description = "The device path to the USB camera, e.g. /dev/video0";
-                return d;
-            }());
-            declare_parameter("decode_jpeg_from_device", rclcpp::ParameterType::PARAMETER_BOOL, [] {
-                rcl_interfaces::msg::ParameterDescriptor d;
-                d.read_only = true;
-                d.description = "If true, decode JPEG directly from the USB device instead of YUY2. "
-                                "This decreases image quality but increases performance and reduces USB bus load. "
-                                "It also reduces the 'jelly' effect caused by large YUY2 formats.";
-                return d;
-            }());
+            int framerate{};
+            std::string deviceName{};
+            std::string device{};
+            std::string imageTopicName{};
+            std::string cameraInfoTopicName{};
+            double watchdogTimeout{};
+            bool decodeJpegFromDevice{};
 
-            mWidth = get_parameter("width").as_int();
-            mHeight = get_parameter("height").as_int();
-            std::int64_t framerate = get_parameter("framerate").as_int();
-            std::string device = get_parameter("device").as_string();
-            bool decodeJpegFromDevice = get_parameter("decode_jpeg_from_device").as_bool();
+            std::vector<ParameterWrapper> params{
+                    {"width", mWidth, 640},
+                    {"height", mHeight, 480},
+                    {"framerate", framerate, 30},
+                    {"device", deviceName, "video0"},
+                    {"image_topic", imageTopicName, "/usb_camera/image"},
+                    {"watchdog_timeout", watchdogTimeout, 1.0},
+                    {"decode_jpeg_from_device", decodeJpegFromDevice, false}};
+
+            ParameterWrapper::declareParameters(this, params);
+
+            device = std::format("/dev/{}", deviceName);
+            imageTopicName = std::format("/{}/image", deviceName);
+            cameraInfoTopicName = std::format("/{}/camera_info", deviceName);
 
             /* Interfaces */
-            mImgPub = create_publisher<sensor_msgs::msg::Image>("image", 1);
-            mCamInfoPub = create_publisher<sensor_msgs::msg::CameraInfo>("camera_info", 1);
+            mImgPub = create_publisher<sensor_msgs::msg::Image>(imageTopicName, 1);
+            mCamInfoPub = create_publisher<sensor_msgs::msg::CameraInfo>(cameraInfoTopicName, 1);
 
             /* Pipeline */
             gst_init(nullptr, nullptr);
