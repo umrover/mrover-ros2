@@ -40,7 +40,7 @@ navigation:
       drive_forward_threshold: 0.34
       coverage_radius: 20.0
       segments_per_rotation: 16
-      distance_between_spirals: 2.0
+      distance_between_spirals: 3.0
       max_segment_length: 1.0
       traversable_cost: 0.2
       update_delay: 1.0
@@ -48,7 +48,8 @@ navigation:
       a_star_thresh: 0.05
       costmap_thresh: 0.25
       angle_thresh: 0.0872665 #pi/36 radians / 5 degrees
-
+      distance_threshold: 2.0
+      
     single_tag:
       stop_threshold: 1.0
       tag_stop_threshold: 1.75

@@ -47,6 +47,7 @@ class ApproachTargetState(State):
         self.time_last_updated = context.node.get_clock().now()
         self.UPDATE_DELAY = context.node.get_parameter("search.update_delay").value
         self.USE_COSTMAP = context.node.get_parameter("search.use_costmap").value
+        self.DISTANCE_THRESHOLD = context.node.get_parameter("search.distance_threshold").value
         pass
 
     def on_exit(self, context: Context) -> None:
@@ -80,7 +81,6 @@ class ApproachTargetState(State):
         :param context: Context object providing necessary data.
         :return: True if a low-cost point was found, False otherwise.
         """
-        import numpy as np
 
         # Get the target position
         target_position = self.target_position
@@ -205,7 +205,11 @@ class ApproachTargetState(State):
             if self.astar_traj.increment_point():
                 context.node.get_logger().info(f"Arrived at segment point")
                 if self.traj.increment_point():
-                    return self.next_state(context=context, is_finished=True)
+                    self.goto_near_point = False
+                    if (self.in_distance_threshold(context)):
+                        return self.next_state(context=context, is_finished=True)
+                    else:
+                            self.dilate_costmap(context=context)
                 self.display_markers(context=context)
         else:
             context.rover.send_drive_command(cmd_vel)
@@ -220,3 +224,16 @@ class ApproachTargetState(State):
         for i, coord in enumerate(self.traj.coordinates[start_pt:end_pt]):
             self.marker_pub.publish(gen_marker(context=context, point=coord, color=[1.0, 0.0, 1.0], id=i, lifetime=100))
         self.marker_pub.publish(gen_marker(context=context, point = self.target_position, color = [1.0, 1.0, 0.0], id = 15, lifetime=100, size=0.5))
+
+    def in_distance_threshold(self, context: Context):
+        rover_SE3 = context.rover.get_pose_in_map()
+        assert rover_SE3 is not None
+        rover_translation = rover_SE3.translation()[0:2]     
+        distance_to_target = d_calc(rover_translation, self.get_target_position(context))
+        context.node.get_logger().info(f"Distance: {distance_to_target}")
+        return distance_to_target < self.DISTANCE_THRESHOLD
+    
+    def dilate_costmap(self, context: Context):
+        context.node.get_logger().info("Too far from bottle!")
+        pass
+
