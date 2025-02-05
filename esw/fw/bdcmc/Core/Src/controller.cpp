@@ -73,6 +73,9 @@ namespace mrover {
                 },
         };
 
+        fdcan_bus.add_filter(DEVICE_ID);
+        fdcan_bus.start();
+
         // TODO: these should probably be in the controller / encoders themselves
         // Necessary for the timer interrupt to work
         check(HAL_TIM_Base_Start(THROTTLE_LIMIT_TIMER) == HAL_OK, Error_Handler);

@@ -1,14 +1,12 @@
 #pragma once
 
 #include <cstdint>
-#include <numbers>
 #include <optional>
 
-#include <hardware.hpp>
+#include <common.hpp>
 #include <hardware_i2c.hpp>
 #include <units.hpp>
 
-#include "common.hpp"
 #include "filtering.hpp"
 
 namespace mrover {
@@ -24,15 +22,17 @@ namespace mrover {
 
         AbsoluteEncoderReader() = default;
 
-        AbsoluteEncoderReader(AS5048B_Bus i2c_bus, Radians offset, Ratio multiplier, TIM_HandleTypeDef* elapsed_timer);
+        AbsoluteEncoderReader(AS5048B_Bus i2c_bus, TIM_HandleTypeDef* elapsed_timer, Radians offset, Ratio multiplier);
 
         auto request_raw_angle() -> void;
         auto read_raw_angle_into_buffer() -> void;
-        auto try_read_buffer() -> std::optional<std::uint64_t>;
+        auto try_read_buffer() -> std::optional<std::uint16_t>;
 
         [[nodiscard]] auto read() -> std::optional<EncoderReading>;
 
     private:
+        constexpr static std::uint16_t REQUEST_ANGLE = 0xFE;
+
         struct I2CAddress {
             constexpr static std::uint16_t
                     device_slave_address_none_high = 0x40,
@@ -40,13 +40,13 @@ namespace mrover {
                     device_slave_address_a2_high = 0x42,
                     device_slave_address_both_high = 0x43;
         };
-
         TIM_HandleTypeDef* m_elapsed_timer{};
+        std::uint16_t m_timer_tick_prev{};
 
         std::uint16_t m_address = I2CAddress::device_slave_address_none_high;
         AS5048B_Bus m_i2cBus;
 
-        std::uint64_t m_previous_raw_data{};
+        std::uint16_t m_previous_raw_data{};
 
         Radians m_offset;
         Ratio m_multiplier;
@@ -60,19 +60,20 @@ namespace mrover {
     public:
         QuadratureEncoderReader() = default;
 
-        QuadratureEncoderReader(TIM_HandleTypeDef* tick_timer, Ratio multiplier, TIM_HandleTypeDef* elapsed_timer);
+        QuadratureEncoderReader(TIM_HandleTypeDef* tick_timer, TIM_HandleTypeDef* elapsed_timer, Ratio multiplier);
 
         [[nodiscard]] auto read() const -> std::optional<EncoderReading>;
 
         auto update() -> void;
 
         auto expired() -> void {
-            m_velocity_filter.clear();
+            m_velocity_filter.add_reading(RadiansPerSecond{0});
         }
 
     private:
         TIM_HandleTypeDef* m_tick_timer{};
         TIM_HandleTypeDef* m_elapsed_timer{};
+
         std::int64_t m_counts_unwrapped_prev{};
         Ratio m_multiplier;
 
