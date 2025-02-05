@@ -8,9 +8,22 @@ namespace mrover {
 
 #pragma pack(push, 1)
 
-    struct sa_arduino_info {
-        std::uint8_t id : 3 {};
+    struct ServoSetPosition {
+        std::uint16_t id : 4 {}; // internal id of servo
+        std::uint16_t is_counterclockwise : 1 {};
         std::uint16_t degrees : 9 {};
+        std::uint16_t _unused: 2{};
+    };
+
+    struct ServoPositionData {
+        std::uint16_t id : 4 {}; // internal id of servo
+        std::uint16_t degrees : 9 {};
+        std::uint16_t _unused: 3{};
+    };
+
+    struct TemperatureAndHumidityData {
+        float temperature{};
+        float humidity{};
     };
 
 }

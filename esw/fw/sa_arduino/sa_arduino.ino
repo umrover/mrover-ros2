@@ -65,7 +65,8 @@ void loop(){
       if (spaceIndex != -1) {
         // Extract ID and Degrees from the input string
         int id = input.substring(0, spaceIndex).toInt();  // Get the ID (before the space)
-        int pos_new = input.substring(spaceIndex + 1).toInt() % 360;  // Get Degrees (after the space)
+        int pos_new = input.substring(spaceIndex + 1).toInt();  // Get Degrees (after the space)
+        int direction = input.substring(spaceIndex + 2).toInt();
 
         // Validate parsed values
         if (id >= 0 || input.substring(spaceIndex + 1) == "0") {
@@ -81,11 +82,25 @@ void loop(){
 
 
           // Adjust the motor position for the specified ID
-          int pos_prev = dxl.getPresentPosition(id, UNIT_DEGREE) % 360;
-
-          // now pos_new and pos_prev are DEG in range [0,359]
+          int pos_prev = dxl.getPresentPosition(id, UNIT_DEGREE);
   
           // TODO: write logic to make sure servo moves in shortest path.
+          int diff = abs((pos_new % 360) - (pos_prev % 360));
+
+          if (diff > 180) {
+            if (pos_new > pos_prev) {
+              dxl.setGoalPosition(id, pos_prev - (360 - diff));
+            } else {
+              dxl.setGoalPosition(id, pos_prev + (360 - diff));
+            }
+          } else {
+            if (pos_new > pos_prev) {
+              //C
+            } else {
+              //D
+            }
+          }
+
           
 
 
