@@ -40,11 +40,7 @@ namespace mrover {
      */
     auto wrap_angle(Radians angle) -> Radians {
         constexpr Radians PI_F{std::numbers::pi};
-        angle += PI_F;
-        angle = fmod(angle, TAU_F);
-        if (angle < 0_rad)
-            angle += Radians{TAU_F};
-        return angle - PI_F;
+        return fmod(angle + PI_F, TAU_F) - PI_F;
     }
 
     [[nodiscard]] auto AbsoluteEncoderReader::read() -> std::optional<EncoderReading> {
