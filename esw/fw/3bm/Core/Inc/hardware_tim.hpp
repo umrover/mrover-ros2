@@ -6,12 +6,36 @@
 #include <limits>
 #include <type_traits>
 #include <utility>
+#include <chrono>
+#include <limits>
 
 #include <units.hpp>
 
 #include "main.h"
 
 namespace mrover {
+
+
+	struct TimerConfig {
+		std::uint16_t psc;
+		std::uint16_t arr;
+	};
+
+	constexpr TimerConfig configure_timer_16bit(Hertz tim_frequency, std::chrono::nanoseconds period) {
+	    uint32_t expiration_ticks = (tim_frequency.get() * period.count()) / std::nano::den;
+
+	    for (uint16_t psc = 1; psc <= 65535; ++psc) {
+	        uint32_t arr = expiration_ticks / psc;
+	        if (arr > 0 && (arr - 1) <= 65535) {
+	            return { static_cast<uint16_t>(psc - 1),
+	                     static_cast<uint16_t>(arr - 1) };
+	        }
+	    }
+
+	    return { std::numeric_limits<uint16_t>::max(), std::numeric_limits<uint16_t>::max() };
+	}
+
+
     class IStopwatch {
     public:
         using TimerCallback = std::function<void()>;

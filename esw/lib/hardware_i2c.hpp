@@ -63,42 +63,51 @@ namespace mrover {
         }
 
         auto async_transmit(std::uint16_t const address, TSend send) -> void {
-            if (HAL_I2C_GetState(m_i2c) != HAL_I2C_STATE_READY) {
-                reboot();
-                return;
-            }
-            check(HAL_I2C_Master_Transmit_DMA(m_i2c, address << 1,
-                                              address_of<uint8_t>(send),
-                                              sizeof(send)) == HAL_OK,
-                  Error_Handler);
+        	if (HAL_I2C_GetState(m_i2c) != HAL_I2C_STATE_READY){
+				uint32_t tickstart = HAL_GetTick();
+				while (HAL_I2C_GetState(m_i2c) != HAL_I2C_STATE_READY) {
+					if (I2C_TIMEOUT != HAL_MAX_DELAY) {
+					  if (((HAL_GetTick() - tickstart) > I2C_TIMEOUT) || (I2C_TIMEOUT == 0U)) {
+						  // TODO: (owen) timeout behavior
+						  return;
+					  }
+					}
+				}
+			}
+
+			if (HAL_I2C_Master_Transmit_DMA(m_i2c, address << 1, address_of<uint8_t>(send), sizeof(send)) != HAL_OK) {
+				return;
+			}
         }
 
         auto async_receive(std::uint16_t const address) -> void {
-            // TODO: (owen) change to while? maybe some max timeout?
-            if (HAL_I2C_GetState(m_i2c) != HAL_I2C_STATE_READY) {
-                reboot();
+        	if (HAL_I2C_GetState(m_i2c) != HAL_I2C_STATE_READY){
+				uint32_t tickstart = HAL_GetTick();
+				while (HAL_I2C_GetState(m_i2c) != HAL_I2C_STATE_READY) {
+					if (I2C_TIMEOUT != HAL_MAX_DELAY) {
+					  if (((HAL_GetTick() - tickstart) > I2C_TIMEOUT) || (I2C_TIMEOUT == 0U)) {
+						  // TODO: (owen) timeout behavior
+						  return;
+					  }
+					}
+				}
+			}
+            m_receive_buffer = TReceive{};
+
+            if (HAL_I2C_Master_Receive_DMA(m_i2c, address << 1 | 1, address_of<uint8_t>(*m_receive_buffer), sizeof(*m_receive_buffer)) != HAL_OK) {
+            	m_receive_buffer = std::nullopt;
+            	return;
             }
-            check(HAL_I2C_Master_Receive_DMA(m_i2c, address << 1 | 1,
-                                             address_of<uint8_t>(m_receive_buffer),
-                                             sizeof(m_receive_buffer)) == HAL_OK,
-                  Error_Handler);
         }
 
-        auto get_buffer() const -> TReceive {
+        auto get_buffer() const -> std::optional<TReceive> {
             return m_receive_buffer;
-        }
-
-        auto async_receive_direct(std::uint16_t const address, TReceive& receive) -> void {
-            check(HAL_I2C_Master_Receive_DMA(m_i2c, address << 1 | 1,
-                                             address_of<uint8_t>(receive),
-                                             sizeof(receive)) == HAL_OK,
-                  Error_Handler);
         }
 
 
     private:
         I2C_HandleTypeDef* m_i2c{};
-        TReceive m_receive_buffer{};
+        std::optional<TReceive> m_receive_buffer{};
     };
 
 } // namespace mrover
