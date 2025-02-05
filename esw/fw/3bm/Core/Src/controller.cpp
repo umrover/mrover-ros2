@@ -213,11 +213,6 @@ namespace mrover {
         }
     }
 
-    auto global_update_callback() -> void {
-        send_motor_statuses();
-        request_absolute_encoder_data_callback();
-    }
-
     auto read_absolute_encoder_data_callback() -> void {
         motor_with_encoder->read_absolute_encoder_data();
     }
@@ -235,6 +230,11 @@ namespace mrover {
     template<std::uint8_t MotorIndex>
     auto receive_watchdog_timer_expired() -> void {
         motors[MotorIndex].receive_watchdog_expired();
+    }
+
+    auto global_update_callback() -> void {
+        send_motor_statuses();
+        request_absolute_encoder_data_callback();
     }
 
 } // namespace mrover

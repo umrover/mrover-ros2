@@ -2,6 +2,7 @@
 
 namespace mrover {
 
+
     QuadratureEncoderReader::QuadratureEncoderReader(TIM_HandleTypeDef* tick_timer, TIM_HandleTypeDef* elapsed_timer, Ratio multiplier)
         : m_tick_timer{tick_timer}, m_elapsed_timer(elapsed_timer), m_multiplier{multiplier} {
 
@@ -14,6 +15,9 @@ namespace mrover {
 
         m_counts_unwrapped_prev = __HAL_TIM_GetCounter(m_tick_timer);
         check(HAL_TIM_Encoder_Start_IT(m_tick_timer, TIM_CHANNEL_ALL) == HAL_OK, Error_Handler);
+
+        __HAL_TIM_SET_PRESCALER(m_elapsed_timer, 0);
+        __HAL_TIM_SET_AUTORELOAD(m_elapsed_timer, 65535);
         check(HAL_TIM_Base_Start_IT(m_elapsed_timer) == HAL_OK, Error_Handler);
     }
 
