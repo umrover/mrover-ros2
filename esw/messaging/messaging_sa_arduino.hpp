@@ -8,24 +8,37 @@ namespace mrover {
 
 #pragma pack(push, 1)
 
+    static constexpr std::uint8_t HEADER_BYTE = 0xA5;
+
+
     struct ServoSetPosition {
-        std::uint16_t id : 4 {}; // internal id of servo
-        std::uint16_t is_counterclockwise : 1 {};
-        std::uint16_t degrees : 9 {};
-        std::uint16_t _unused: 2{};
+        static constexpr std::uint8_t header = HEADER_BYTE;
+        static std::uint8_t  message_id = 0x00;
+
+        std::uint8_t _unused: 3{};
+        std::uint8_t id : 4 {}; // internal id of servo
+        std::uint8_t is_counterclockwise : 1 {};
+
+        float radians{};
     };
 
     struct ServoPositionData {
-        std::uint16_t id : 4 {}; // internal id of servo
-        std::uint16_t degrees : 9 {};
-        std::uint16_t _unused: 3{};
+        static constexpr std::uint8_t header = HEADER_BYTE;
+        static std::uint8_t  message_id = 0x01;
+
+        std::uint8_t _unused: 4{};
+        std::uint8_t id : 4 {}; // internal id of servo
+
+        float radians{};
     };
 
     struct TemperatureAndHumidityData {
+        static constexpr std::uint8_t header = HEADER_BYTE;
+        static std::uint8_t  message_id = 0x02;
+
         float temperature{};
         float humidity{};
     };
-
 }
 
 // Macros needed to operate on bitfields
