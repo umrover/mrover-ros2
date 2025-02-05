@@ -175,12 +175,12 @@ namespace mrover {
             StateAfterConfig config{.gear_ratio = message.gear_ratio};
 
             if (message.enc_info.quad_present) {
-                if (!m_relative_encoder) m_relative_encoder.emplace(m_relative_encoder_tick_timer, message.enc_info.quad_ratio, m_relative_encoder_elapsed_timer);
+                if (!m_relative_encoder) m_relative_encoder.emplace(m_relative_encoder_tick_timer, m_relative_encoder_elapsed_timer, message.enc_info.quad_ratio);
                 EncoderReading enc_read = m_relative_encoder->read().value();
                 m_uncalib_position = enc_read.position; // usually but not always 0
             }
             if (message.enc_info.abs_present) {
-                if (!m_absolute_encoder) m_absolute_encoder.emplace(AbsoluteEncoderReader::AS5048B_Bus{m_absolute_encoder_i2c}, message.enc_info.abs_offset, message.enc_info.abs_ratio, m_absolute_encoder_elapsed_timer);
+                if (!m_absolute_encoder) m_absolute_encoder.emplace(AbsoluteEncoderReader::AS5048B_Bus{m_absolute_encoder_i2c},  m_absolute_encoder_elapsed_timer, message.enc_info.abs_offset, message.enc_info.abs_ratio);
             }
 
             m_motor_driver.change_max_pwm(message.max_pwm);

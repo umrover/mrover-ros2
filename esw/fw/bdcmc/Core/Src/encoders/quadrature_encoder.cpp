@@ -7,7 +7,7 @@
 
 namespace mrover {
 
-    QuadratureEncoderReader::QuadratureEncoderReader(TIM_HandleTypeDef* tick_timer, Ratio multiplier, TIM_HandleTypeDef* elapsed_timer)
+    QuadratureEncoderReader::QuadratureEncoderReader(TIM_HandleTypeDef* tick_timer,  TIM_HandleTypeDef* elapsed_timer, Ratio multiplier)
         : m_tick_timer{tick_timer}, m_elapsed_timer{elapsed_timer}, m_multiplier{multiplier} {
 
         // // Per Sashreek's hypothesis in `Motor velocity calc.pdf` #esw-brushed-24
