@@ -1,13 +1,12 @@
 #pragma once
 
 #include <array>
+#include <chrono>
 #include <cstdint>
 #include <functional>
 #include <limits>
 #include <type_traits>
 #include <utility>
-#include <chrono>
-#include <limits>
 
 #include <units.hpp>
 
@@ -15,25 +14,49 @@
 
 namespace mrover {
 
+    template<typename CountType>
+    class ElapsedTimer {
+        static_assert(std::is_unsigned_v<CountType>, "Template parameter CountType must be an unsigned integer type");
+        static_assert(sizeof(CountType) <= 4, "Template parameter CountType must be less than or equal to 32 bits");
 
-	struct TimerConfig {
-		std::uint16_t psc;
-		std::uint16_t arr;
-	};
+    public:
+        // assumes the timer is started outside the scope of this class
+        ElapsedTimer() = default;
+        ElapsedTimer(TIM_HandleTypeDef* htim, Hertz const frequency) : m_tim(htim), m_period(1 / frequency) {};
 
-	constexpr TimerConfig configure_timer_16bit(Hertz tim_frequency, std::chrono::nanoseconds period) {
-	    uint32_t expiration_ticks = (tim_frequency.get() * period.count()) / std::nano::den;
+        auto get_time_since_last_read() -> Seconds {
+            CountType const current_tick = __HAL_TIM_GET_COUNTER(m_tim);
+            Seconds const time = m_period * (current_tick - m_tick_prev);
+            m_tick_prev = current_tick;
+            return time;
+        }
 
-	    for (uint16_t psc = 1; psc <= 65535; ++psc) {
-	        uint32_t arr = expiration_ticks / psc;
-	        if (arr > 0 && (arr - 1) <= 65535) {
-	            return { static_cast<uint16_t>(psc - 1),
-	                     static_cast<uint16_t>(arr - 1) };
-	        }
-	    }
+    private:
+        TIM_HandleTypeDef* m_tim{};
+        Seconds m_period{};
 
-	    return { std::numeric_limits<uint16_t>::max(), std::numeric_limits<uint16_t>::max() };
-	}
+        CountType m_tick_prev{};
+    };
+
+
+    struct TimerConfig {
+        std::uint16_t psc;
+        std::uint16_t arr;
+    };
+
+    constexpr TimerConfig configure_timer_16bit(Hertz tim_frequency, std::chrono::nanoseconds period) {
+        uint32_t expiration_ticks = (tim_frequency.get() * period.count()) / std::nano::den;
+
+        for (uint16_t psc = 1; psc <= 65535; ++psc) {
+            uint32_t arr = expiration_ticks / psc;
+            if (arr > 0 && (arr - 1) <= 65535) {
+                return {static_cast<uint16_t>(psc - 1),
+                        static_cast<uint16_t>(arr - 1)};
+            }
+        }
+
+        return {std::numeric_limits<uint16_t>::max(), std::numeric_limits<uint16_t>::max()};
+    }
 
 
     class IStopwatch {

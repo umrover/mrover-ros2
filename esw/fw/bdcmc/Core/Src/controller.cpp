@@ -35,15 +35,18 @@ extern TIM_HandleTypeDef htim17;
 #define QUADRATURE_ELAPSED_TIMER &htim3 // Measures time since the last quadrature tick
 #define QUADRATURE_TICK_TIMER &htim4    // Special encoder timer which externally reads quadrature encoder ticks
 
-#define ABSOLUTE_ELAPSED_TIMER &htim2  // Measures time since the last absolute encoder reading
+// Measures time since:
+// The last absolute encoder reading
+// The last throttle command
+// The last PIDF update
+#define GENERIC_ELAPSED_TIMER &htim2
+
 #define ABSOLUTE_ENCODER_TIMER &htim17 // 20 Hz repeating timer to kick off I2C transactions with the absolute encoder
 
-#define PWM_TIMER &htim15            // H-Bridge PWM
+#define PWM_TIMER &htim15 // H-Bridge PWM
 #define PWM_CHANNEL TIM_CHANNEL_1
 
-#define THROTTLE_LIMIT_TIMER &htim6  // Measures time since the last throttle command
 #define SEND_TIMER &htim7            // 20 Hz FDCAN repeating timer
-#define PIDF_TIMER &htim8            // Measures time since the last PIDF update, used for the "D" term
 #define FDCAN_WATCHDOG_TIMER &htim16 // FDCAN watchdog timer that needs to be reset every time a message is received
 
 namespace mrover {
@@ -54,17 +57,18 @@ namespace mrover {
     auto init() -> void {
         fdcan_bus = FDCAN<InBoundMessage>{&hfdcan1};
         controller = Controller{
-        		DEVICE_ID,
-				DESTINATION_DEVICE_ID,
-                PWM_TIMER, PWM_CHANNEL, Pin{MOTOR_DIR_GPIO_Port, MOTOR_DIR_Pin},
+                DEVICE_ID,
+                DESTINATION_DEVICE_ID,
+                PWM_TIMER,
+                PWM_CHANNEL,
+                Pin{MOTOR_DIR_GPIO_Port, MOTOR_DIR_Pin},
                 fdcan_bus,
                 FDCAN_WATCHDOG_TIMER,
+                GENERIC_ELAPSED_TIMER,
+                CLOCK_FREQ,
                 QUADRATURE_TICK_TIMER,
                 QUADRATURE_ELAPSED_TIMER,
-                THROTTLE_LIMIT_TIMER,
-                PIDF_TIMER,
                 ABSOLUTE_I2C,
-				ABSOLUTE_ELAPSED_TIMER,
                 {
                         LimitSwitch{Pin{LIMIT_0_GPIO_Port, LIMIT_0_Pin}},
                         LimitSwitch{Pin{LIMIT_1_GPIO_Port, LIMIT_1_Pin}},
@@ -78,8 +82,7 @@ namespace mrover {
 
         // TODO: these should probably be in the controller / encoders themselves
         // Necessary for the timer interrupt to work
-        check(HAL_TIM_Base_Start(THROTTLE_LIMIT_TIMER) == HAL_OK, Error_Handler);
-        check(HAL_TIM_Base_Start(PIDF_TIMER) == HAL_OK, Error_Handler);
+        check(HAL_TIM_Base_Start(GENERIC_ELAPSED_TIMER) == HAL_OK, Error_Handler);
         check(HAL_TIM_Base_Start_IT(SEND_TIMER) == HAL_OK, Error_Handler);
         check(HAL_TIM_Base_Start_IT(ABSOLUTE_ENCODER_TIMER) == HAL_OK, Error_Handler);
     }

@@ -15,7 +15,7 @@ namespace mrover {
     constexpr auto ABSOLUTE_CPR = CountsPerRad{(1 << 14) / TAU_F}; // Corresponds to the AS5048B
 
     // NOTE: Change This For Each Motor Controller
-    constexpr static std::uint8_t DEVICE_ID = 0x21; // currently set for joint_b
+    constexpr static std::uint8_t DEVICE_ID = 0x31; // currently set for joint_b
 
     // Usually this is the Jetson
     constexpr static std::uint8_t DESTINATION_DEVICE_ID = 0x10;
