@@ -11,8 +11,8 @@
 #include <pidf.hpp>
 #include <units.hpp>
 
-#include "common.hpp"
 #include "encoders.hpp"
+#include "hardware_tim.hpp"
 #include "hbridge.hpp"
 
 namespace mrover {
@@ -35,15 +35,17 @@ namespace mrover {
         HBridge m_motor_driver;
         TIM_HandleTypeDef* m_watchdog_timer{};
         bool m_watchdog_enabled{};
+        TIM_HandleTypeDef* m_generic_elapsed_timer{};
+        Hertz m_generic_elapsed_timer_freq{};
         TIM_HandleTypeDef* m_relative_encoder_tick_timer{};
         TIM_HandleTypeDef* m_relative_encoder_elapsed_timer{};
-        TIM_HandleTypeDef* m_throttle_timer{};
-        TIM_HandleTypeDef* m_pidf_timer{};
         I2C_HandleTypeDef* m_absolute_encoder_i2c{};
-        TIM_HandleTypeDef* m_absolute_encoder_elapsed_timer{};
         std::optional<QuadratureEncoderReader> m_relative_encoder;
         std::optional<AbsoluteEncoderReader> m_absolute_encoder;
         std::array<LimitSwitch, 4> m_limit_switches;
+
+        ElapsedTimer<std::uint32_t> m_throttle_elapsed_timer{};
+        ElapsedTimer<std::uint32_t> m_pidf_elapsed_timer{};
 
         /* ==================== Internal State ==================== */
         Mode m_mode;
@@ -56,6 +58,8 @@ namespace mrover {
         Percent m_throttled_output;
         using PercentPerSecond = compound_unit<Percent, inverse<Seconds>>;
         PercentPerSecond m_throttle_rate{100};
+
+
         std::optional<Radians> m_uncalib_position;
         std::optional<RadiansPerSecond> m_velocity;
         BDCMCErrorInfo m_error = BDCMCErrorInfo::DEFAULT_START_UP_NOT_CONFIGURED;
@@ -127,11 +131,11 @@ namespace mrover {
             if (m_state_after_config) {
                 // TODO: verify this is correct
                 bool limit_forward = m_desired_output > 0_percent && (std::ranges::any_of(m_limit_switches, &LimitSwitch::limit_forward)
-                                         //|| m_uncalib_position > m_state_after_config->max_position
-                                     );
+                                                                      //|| m_uncalib_position > m_state_after_config->max_position
+                                                                     );
                 bool limit_backward = m_desired_output < 0_percent && (std::ranges::any_of(m_limit_switches, &LimitSwitch::limit_backward)
-                                          //|| m_uncalib_position < m_state_after_config->min_position
-                                      );
+                                                                       //|| m_uncalib_position < m_state_after_config->min_position
+                                                                      );
                 if (limit_forward || limit_backward) {
                     m_error = BDCMCErrorInfo::OUTPUT_SET_TO_ZERO_SINCE_EXCEEDING_LIMITS;
                 } else {
@@ -142,7 +146,7 @@ namespace mrover {
             Percent output_after_limit = output.value_or(0_percent);
             Percent delta = output_after_limit - m_throttled_output;
 
-            Seconds dt = cycle_time(m_throttle_timer, CLOCK_FREQ);
+            Seconds dt = m_throttle_elapsed_timer.get_time_since_last_read();
 
             Percent applied_delta = m_throttle_rate * dt;
 
@@ -180,7 +184,7 @@ namespace mrover {
                 m_uncalib_position = enc_read.position; // usually but not always 0
             }
             if (message.enc_info.abs_present) {
-                if (!m_absolute_encoder) m_absolute_encoder.emplace(AbsoluteEncoderReader::AS5048B_Bus{m_absolute_encoder_i2c},  m_absolute_encoder_elapsed_timer, message.enc_info.abs_offset, message.enc_info.abs_ratio);
+                if (!m_absolute_encoder) m_absolute_encoder.emplace(AbsoluteEncoderReader::AS5048B_Bus{m_absolute_encoder_i2c}, m_generic_elapsed_timer, message.enc_info.abs_offset, message.enc_info.abs_ratio);
             }
 
             m_motor_driver.change_max_pwm(message.max_pwm);
@@ -249,7 +253,7 @@ namespace mrover {
             mode.pidf.with_d(message.d);
             mode.pidf.with_ff(message.ff);
             mode.pidf.with_output_bound(-1.0, 1.0);
-            m_desired_output = mode.pidf.calculate(input, target, cycle_time(m_pidf_timer, CLOCK_FREQ));
+            m_desired_output = mode.pidf.calculate(input, target, m_pidf_elapsed_timer.get_time_since_last_read());
             m_error = BDCMCErrorInfo::NO_ERROR;
 
             // m_fdcan.broadcast(OutBoundMessage{DebugState{
@@ -279,7 +283,7 @@ namespace mrover {
             // mode.pidf.with_i(message.i);
             mode.pidf.with_d(message.d);
             mode.pidf.with_output_bound(-1.0, 1.0);
-            m_desired_output = mode.pidf.calculate(input, target, cycle_time(m_pidf_timer, CLOCK_FREQ));
+            m_desired_output = mode.pidf.calculate(input, target, m_pidf_elapsed_timer.get_time_since_last_read());
             m_error = BDCMCErrorInfo::NO_ERROR;
         }
 
@@ -308,28 +312,28 @@ namespace mrover {
         Controller() = default;
 
         Controller(std::uint8_t device_id,
-        		   std::uint8_t destination_device_id,
-        		   TIM_HandleTypeDef* hbridge_pwm_timer, std::uint32_t hbridge_pwm_channel, Pin hbridge_direction_pin,
+                   std::uint8_t destination_device_id,
+                   TIM_HandleTypeDef* hbridge_pwm_timer, std::uint32_t hbridge_pwm_channel, Pin hbridge_direction_pin,
                    FDCAN<InBoundMessage> const& fdcan, TIM_HandleTypeDef* watchdog_timer,
+                   TIM_HandleTypeDef* generic_elapsed_timer,
+                   Hertz generic_elapsed_timer_freq,
                    TIM_HandleTypeDef* relative_encoder_tick_timer,
                    TIM_HandleTypeDef* relative_encoder_elapsed_timer,
-				   TIM_HandleTypeDef* throttle_timer,
-				   TIM_HandleTypeDef* pid_timer,
                    I2C_HandleTypeDef* absolute_encoder_i2c,
-				   TIM_HandleTypeDef* absolute_encoder_elapsed_timer,
                    std::array<LimitSwitch, 4> const& limit_switches)
             : m_device_id{device_id},
-			  m_destination_device_id{destination_device_id},
+              m_destination_device_id{destination_device_id},
               m_fdcan{fdcan},
               m_motor_driver{HBridge(hbridge_pwm_timer, hbridge_pwm_channel, hbridge_direction_pin)},
               m_watchdog_timer{watchdog_timer},
+              m_generic_elapsed_timer{generic_elapsed_timer},
+              m_generic_elapsed_timer_freq(generic_elapsed_timer_freq),
               m_relative_encoder_tick_timer{relative_encoder_tick_timer},
               m_relative_encoder_elapsed_timer{relative_encoder_elapsed_timer},
-              m_throttle_timer{throttle_timer},
-              m_pidf_timer{pid_timer},
               m_absolute_encoder_i2c{absolute_encoder_i2c},
-			  m_absolute_encoder_elapsed_timer{absolute_encoder_elapsed_timer},
-              m_limit_switches{limit_switches} {}
+              m_limit_switches{limit_switches},
+              m_throttle_elapsed_timer{generic_elapsed_timer, generic_elapsed_timer_freq},
+              m_pidf_elapsed_timer{generic_elapsed_timer, generic_elapsed_timer_freq} {}
 
         template<typename Command>
         auto process_command(Command const& command) -> void {

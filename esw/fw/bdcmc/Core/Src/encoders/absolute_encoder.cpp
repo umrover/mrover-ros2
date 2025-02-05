@@ -14,8 +14,6 @@ namespace mrover {
 
     AbsoluteEncoderReader::AbsoluteEncoderReader(AS5048B_Bus i2c_bus, TIM_HandleTypeDef* elapsed_timer, Radians offset, Ratio multiplier)
         : m_elapsed_timer(elapsed_timer), m_i2cBus{i2c_bus}, m_offset{offset}, m_multiplier{multiplier} {
-
-        check(HAL_TIM_Base_Start_IT(m_elapsed_timer) == HAL_OK, Error_Handler);
     }
 
     auto AbsoluteEncoderReader::request_raw_angle() -> void {
