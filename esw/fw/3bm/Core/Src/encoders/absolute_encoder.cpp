@@ -46,7 +46,7 @@ namespace mrover {
     }
 
     auto AbsoluteEncoderReader::try_read_buffer() -> std::optional<std::uint16_t> {
-        std::optional raw_data_optional = m_i2cBus.get_buffer();
+        const std::optional raw_data_optional = m_i2cBus.get_buffer();
         if (!raw_data_optional) return std::nullopt;
 
         // See: https://github.com/Violin9906/STM32_AS5048B_HAL/blob/0dfcdd2377f332b6bff7dcd948d85de1571d7977/Src/as5048b.c#L28
@@ -61,17 +61,13 @@ namespace mrover {
      */
     auto wrap_angle(Radians angle) -> Radians {
         constexpr Radians PI_F{std::numbers::pi};
-        angle += PI_F;
-        angle = fmod(angle, TAU_F);
-        if (angle < 0_rad)
-            angle += Radians{TAU_F};
-        return angle - PI_F;
+        return fmod(angle + PI_F, TAU_F) - PI_F;
     }
 
     [[nodiscard]] auto AbsoluteEncoderReader::read() -> std::optional<EncoderReading> {
-        if (std::optional<std::uint16_t> counts = try_read_buffer()) {
+        if (const std::optional<std::uint16_t> counts = try_read_buffer()) {
             std::uint16_t const timer_tick_current = __HAL_TIM_GET_COUNTER(m_elapsed_timer);
-            Seconds elapsed_time = (ELAPSED_TIMER_CONFIG.psc / CLOCK_FREQ) * (timer_tick_current - m_timer_tick_prev);
+            const Seconds elapsed_time = (ELAPSED_TIMER_CONFIG.psc / CLOCK_FREQ) * (timer_tick_current - m_timer_tick_prev);
 
             // Absolute encoder returns [0, COUNTS_PER_REVOLUTION)
             // We need to convert this to [-𝜏/2, 𝜏/2)

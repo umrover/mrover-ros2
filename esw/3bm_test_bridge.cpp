@@ -85,16 +85,19 @@ auto main(int argc, char** argv) -> int {
         RCLCPP_INFO(node->get_logger(), "RATE UPDATED TO %f", throttle.get());
     });
 
+    auto start = node->now();
+
     while (rclcpp::ok()) {
-        jointB->setDesiredThrottle(throttle);
+        jointB->setDesiredThrottle(0.5);
         gripper->setDesiredThrottle(throttle);
         finger->setDesiredThrottle(throttle);
 
         auto pos = jointB->getPosition().get();
         auto vel = jointB->getVelocity().get();
-        // RCLCPP_INFO(mrover::node->get_logger(), "joint_b    --- pos: %f | vel: %f", pos, vel);
+        RCLCPP_INFO(node->get_logger(), "joint_b    --- pos: %f | vel: %f", pos, vel);
 
-        auto now = node->now();
+        auto now = node->now() - start;
+        // RCLCPP_INFO(node->get_logger(), "Uptime: %.2f seconds", now.seconds());
         f_handle << now.seconds() << "," << throttle.get() << "," << pos << "," << vel << std::endl;
 
         rclcpp::spin_some(node);
