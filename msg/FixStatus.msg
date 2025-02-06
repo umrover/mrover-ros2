@@ -1,0 +1,2 @@
+std_msgs/Header header
+FixType fix_type

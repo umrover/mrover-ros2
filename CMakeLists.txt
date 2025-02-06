@@ -65,6 +65,7 @@ find_package(ament_cmake_python REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
+find_package(rtcm_msgs REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(tf2_ros REQUIRED)
@@ -226,6 +227,11 @@ target_link_libraries(simulator
 )
 target_include_directories(simulator SYSTEM PRIVATE ${BULLET_INCLUDE_DIRS} ${OPENCV_INCLUDE_DIRS})
 
+# Localization
+
+mrover_add_node(rover_gps_driver localization/rover_gps_driver.cpp)
+ament_target_dependencies(rover_gps_driver rclcpp sensor_msgs rtcm_msgs)
+
 # Perception
 
 find_package(ZED QUIET)
@@ -314,9 +320,9 @@ endif ()
 install(PROGRAMS
         navigation/nav.py
         navigation/stuck_detector/stuck_detector.py
-        localization/rover_gps_driver.py
         localization/gps_linearization.py
         localization/basestation_gps_driver.py
+        localization/rover_gps_driver.py
         superstructure/superstructure.py
         scripts/debug_course_publisher.py
 		scripts/visualizer.py
