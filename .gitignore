@@ -23,6 +23,7 @@ venv/
 <<<<<<< HEAD
 .vscode/settings.json
 .vscode/settings.json
+<<<<<<< HEAD
 
 # SQL file for Teleop
 *.sqlite3

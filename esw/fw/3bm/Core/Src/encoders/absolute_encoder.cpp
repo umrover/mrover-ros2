@@ -5,15 +5,12 @@
 
 namespace mrover {
     /* ABSOLUTE ENCODER PROCESS:
-    1. ABSOLUTE_ENCODER_TIMER elapses
-    2. Request transmission sent
-    3. Transmission callback interrupt
-    4. Set up read
-    5. Reception callback interrupt
-    6. Update controller
+    1. Request transmission sent (HAL_I2C_Master_Transmit_DMA)
+    2. Transmission callback interrupt
+    3. Set up read (HAL_I2C_Master_Receive_DMA)
+    4. Reception callback interrupt
+    5. Update controller
     */
-
-    constexpr static std::uint16_t REQUEST_ANGLE = 0xFE;
 
     AbsoluteEncoderReader::AbsoluteEncoderReader(AS5048B_Bus i2c_bus, uint8_t a2_a1, Radians offset, Ratio multiplier, TIM_HandleTypeDef* elapsed_timer)
         : m_elapsed_timer(elapsed_timer), m_i2cBus{i2c_bus}, m_offset{offset}, m_multiplier{multiplier} {
@@ -34,6 +31,9 @@ namespace mrover {
             m_address = I2CAddress::device_slave_address_none_high;
         }
 
+        __HAL_TIM_SET_PRESCALER(m_elapsed_timer, ELAPSED_TIMER_CONFIG.psc);
+        __HAL_TIM_SET_AUTORELOAD(m_elapsed_timer, ELAPSED_TIMER_CONFIG.arr);
+
         check(HAL_TIM_Base_Start_IT(m_elapsed_timer) == HAL_OK, Error_Handler);
     }
 
@@ -42,15 +42,18 @@ namespace mrover {
     }
 
     auto AbsoluteEncoderReader::read_raw_angle_into_buffer() -> void {
-        m_i2cBus.async_receive(m_address, m_i2c_buffer);
+        m_i2cBus.async_receive(m_address);
     }
 
-    auto AbsoluteEncoderReader::convert_buffer_into_raw_angle() -> std::uint64_t {
+    auto AbsoluteEncoderReader::try_read_buffer() -> std::optional<std::uint16_t> {
+        std::optional raw_data_optional = m_i2cBus.get_buffer();
+        if (!raw_data_optional) return std::nullopt;
+
         // See: https://github.com/Violin9906/STM32_AS5048B_HAL/blob/0dfcdd2377f332b6bff7dcd948d85de1571d7977/Src/as5048b.c#L28
         // And also the datasheet: https://ams.com/documents/20143/36005/AS5048_DS000298_4-00.pdf
-        std::uint16_t angle = (m_i2c_buffer[1] << 6) | (m_i2c_buffer[0] & 0x3F);
-        m_previous_raw_angle = angle;
-        return angle;
+        std::uint16_t raw_data = (raw_data_optional.value()[1] << 6) | (raw_data_optional.value()[0] & 0x3F);
+        m_previous_raw_data = raw_data;
+        return raw_data;
     }
 
     /**
@@ -58,19 +61,25 @@ namespace mrover {
      */
     auto wrap_angle(Radians angle) -> Radians {
         constexpr Radians PI_F{std::numbers::pi};
-        return fmod(angle + PI_F, TAU_F) - PI_F;
+        angle += PI_F;
+        angle = fmod(angle, TAU_F);
+        if (angle < 0_rad)
+            angle += Radians{TAU_F};
+        return angle - PI_F;
     }
 
     [[nodiscard]] auto AbsoluteEncoderReader::read() -> std::optional<EncoderReading> {
-        std::uint64_t const angle = convert_buffer_into_raw_angle();
-        Seconds const elapsed_time = cycle_time(m_elapsed_timer, CLOCK_FREQ);
+        if (std::optional<std::uint16_t> counts = try_read_buffer()) {
+            std::uint16_t const timer_tick_current = __HAL_TIM_GET_COUNTER(m_elapsed_timer);
+            Seconds elapsed_time = (ELAPSED_TIMER_CONFIG.psc / CLOCK_FREQ) * (timer_tick_current - m_timer_tick_prev);
 
-        // Absolute encoder returns [0, COUNTS_PER_REVOLUTION)
-        // We need to convert this to [-𝜏/2, 𝜏/2)
-        // Angles always need to be wrapped after addition/subtraction
-        m_position = wrap_angle(m_multiplier * Ticks{angle} / ABSOLUTE_CPR + m_offset);
-        m_velocity_filter.add_reading(wrap_angle(m_position - m_position_prev) / elapsed_time);
-        m_position_prev = m_position;
+            // Absolute encoder returns [0, COUNTS_PER_REVOLUTION)
+            // We need to convert this to [-𝜏/2, 𝜏/2)
+            // Angles always need to be wrapped after addition/subtraction
+            m_position = wrap_angle(m_multiplier * Ticks{counts.value()} / ABSOLUTE_CPR + m_offset);
+            m_velocity_filter.add_reading(wrap_angle(m_position - m_position_prev) / elapsed_time);
+            m_position_prev = m_position;
+        }
 
         return std::make_optional<EncoderReading>(m_position, m_velocity_filter.get_filtered());
     }
