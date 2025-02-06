@@ -12,10 +12,38 @@ from launch.conditions import LaunchConfigurationEquals
 
 
 def generate_launch_description():
-    tag_detector_node = Node(
+    stereo_tag_detector_node = Node(
         package="mrover",
-        executable="tag_detector",
-        name="tag_detector",
+        executable="stereo_tag_detector",
+        name="stereo_tag_detector",
+        parameters=[Path(get_package_share_directory("mrover"), "config", "perception.yaml")],
+    )
+
+    image_tag_detector_node = Node(
+        package="mrover",
+        executable="image_tag_detector",
+        name="image_tag_detector",
+        parameters=[Path(get_package_share_directory("mrover"), "config", "perception.yaml")],
+    )
+
+    stereo_object_detector_node = Node(
+        package="mrover",
+        executable="stereo_object_detector",
+        name="stereo_object_detector",
+        parameters=[Path(get_package_share_directory("mrover"), "config", "perception.yaml")],
+    )
+
+    image_object_detector_node = Node(
+        package="mrover",
+        executable="image_object_detector",
+        name="image_object_detector",
+        parameters=[Path(get_package_share_directory("mrover"), "config", "perception.yaml")],
+    )
+
+    long_range_cam = Node(
+        package="mrover",
+        executable="usb_camera",
+        name="long_range_cam",
         parameters=[Path(get_package_share_directory("mrover"), "config", "perception.yaml")],
     )
 
@@ -26,4 +54,13 @@ def generate_launch_description():
         parameters=[Path(get_package_share_directory("mrover"), "config", "perception.yaml")],
     )
 
-    return launch.LaunchDescription([tag_detector_node, zed_node])
+    return launch.LaunchDescription(
+        [
+            stereo_object_detector_node,
+            image_object_detector_node,
+            stereo_tag_detector_node,
+            image_tag_detector_node,
+            zed_node,
+            long_range_cam,
+        ]
+    )

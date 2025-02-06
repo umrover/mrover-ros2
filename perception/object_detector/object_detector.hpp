@@ -65,6 +65,7 @@ namespace mrover {
         int mObjMaxHitcount{};
         float mModelScoreThreshold{};
         float mModelNMSThreshold{};
+        bool mDebug{};
 
         auto spiralSearchForValidPoint(sensor_msgs::msg::PointCloud2::UniquePtr const& cloudPtr,
                                        std::size_t u, std::size_t v,
@@ -113,7 +114,7 @@ namespace mrover {
     public:
         explicit ImageObjectDetector(rclcpp::NodeOptions const& options = rclcpp::NodeOptions());
 
-        auto getTagBearing(cv::InputArray const& image, cv::Rect const& box) const -> float;
+        auto getObjectBearing(cv::InputArray const& image, cv::Rect const& box) const -> float;
 
         auto imageCallback(sensor_msgs::msg::Image::UniquePtr const& msg) -> void;
     };

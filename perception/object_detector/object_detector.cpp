@@ -15,7 +15,8 @@ namespace mrover {
                 {"hitcount_max", mObjMaxHitcount, 10},
                 {"model_name", modelName, "Large-Dataset"},
                 {"model_score_threshold", mModelScoreThreshold, 0.75},
-                {"model_nms_threshold", mModelNMSThreshold, 0.5}};
+                {"model_nms_threshold", mModelNMSThreshold, 0.5},
+                {"object_detector_debug", mDebug, true}};
 
         ParameterWrapper::declareParameters(this, params);
 
@@ -57,11 +58,11 @@ namespace mrover {
 
         mDebugImgPub = create_publisher<sensor_msgs::msg::Image>("/long_range_object_detector/debug_img", 1);
 
-        mSensorSub = create_subscription<sensor_msgs::msg::Image>("/usb_camera/image", 1, [this](sensor_msgs::msg::Image::UniquePtr const& msg) {
+        mSensorSub = create_subscription<sensor_msgs::msg::Image>("/long_range_cam/image", 1, [this](sensor_msgs::msg::Image::UniquePtr const& msg) {
             ImageObjectDetector::imageCallback(msg);
         });
 
-        mTargetsPub = create_publisher<mrover::msg::ImageTargets>("/long_range_camera/objects", 1);
+        mTargetsPub = create_publisher<mrover::msg::ImageTargets>("objects", 1);
     }
 } // namespace mrover
 

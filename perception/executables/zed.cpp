@@ -1,4 +1,4 @@
-#include "zed_wrapper.hpp"
+#include <zed_wrapper/zed_wrapper.hpp>
 
 auto main(int argc, char* argv[]) -> int {
     rclcpp::init(argc, argv);
