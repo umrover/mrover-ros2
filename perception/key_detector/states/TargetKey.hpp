@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../pch.hpp"
+#include "mrover/msg/detail/position__struct.hpp"
 namespace mrover{
 	class TargetKey : public State {
 	public:
@@ -14,6 +15,7 @@ namespace mrover{
 
 	private:
 		rclcpp::Publisher<msg::IK>::SharedPtr mIkTargetPub;
+		rclcpp::Subscription<msg::Position>::SharedPtr mPosSub;
 		const std::shared_ptr<FSMCtx> fsm_ctx;
 		rclcpp::Rate sleepRate;
 	};

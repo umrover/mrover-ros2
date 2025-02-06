@@ -19,6 +19,11 @@ auto TargetKey::onLoop() -> State*{
     
     if(mIkTargetPub == nullptr)
         mIkTargetPub = fsm_ctx->node->create_publisher<msg::IK>("arm_ik", 1);
+    /*
+    if(mPosSub == nullptr)
+        mPosSub = fsm_ctx->node->create_subscription<msg::Position>("arm_position_cmd", 10, [this](msg::IK::ConstSharedPtr const& msg) {
+            
+        });*/
 
     auto goal_handle = fsm_ctx->goal_handle;
 
@@ -70,7 +75,7 @@ auto TargetKey::onLoop() -> State*{
         //move arm with ik
     msg::IK ik;
     ik.target.header.stamp = node->get_clock()->now();
-    ik.target.header.frame_id = "arm_base_link"; // TODO: fix
+    ik.target.header.frame_id = "arm_e_link"; // TODO: fix
     ik.target.pose.position.x = x;
     ik.target.pose.position.y = y;
     ik.target.pose.position.z = z;
