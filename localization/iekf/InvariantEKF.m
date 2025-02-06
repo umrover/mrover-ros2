@@ -20,6 +20,13 @@ classdef InvariantEKF < handle
                     0 0 0 0 0;
                     0 0 0 0 0];
         end
+
+        % skew symmetric matrix of v
+        function result = sup_x(v)
+            result = [0 -v(3) v(2);
+                   v(3) 0 -v(1);
+                   -v(2) v(1) 0];
+        end
     end
 
     methods
@@ -34,12 +41,9 @@ classdef InvariantEKF < handle
 
             % obj.X = eye(5);
             tens = [-10; 10; 10];
-            % obj.X = [rot_init, zeros(3,1), tens;
-                     % zeros(1,3) 1 0;
-                     % zeros(1,3) 0 1];
-            obj.X = eye(5);
-
-
+            obj.X = [rot_init, zeros(3,1), tens;
+                     zeros(1,3) 1 0;
+                     zeros(1,3) 0 1];
             
             obj.A = [zeros(3), zeros(3), zeros(3);
                      g_skew, zeros(3), zeros(3);
@@ -66,24 +70,29 @@ classdef InvariantEKF < handle
 
             w_skew = [0 -w(3) w(2); w(3) 0 -w(1); -w(2) w(1) 0];
             Ad_X = obj.adjoint_X();
-            Q = [q, zeros(3,3), zeros(3,3);
+            Q = [abs(q), zeros(3,3), zeros(3,3); % Q is taken in the robot frame
                  zeros(3,3), zeros(3,3), zeros(3,3);
                  zeros(3,3), zeros(3,3), zeros(3,3)];
             Q_d = expm(obj.A * dt) * Q * dt * (expm(obj.A * dt)');
 
-            disp("gyro Q_d:");
-            disp(Q_d);
-            disp("exp(A):");
-            disp(expm(obj.A * dt));
+            disp("P before:");
+            disp(obj.P);
+
+            % disp("gyro Q_d:");
+            % disp(Q_d);
+            % disp("exp(A):");
+            % disp(expm(obj.A * dt));
             disp("expm(obj.A * dt) * P * expm(obj.A * dt)':");
             disp(expm(obj.A * dt) * obj.P * (expm(obj.A * dt)'));
             disp("Ad_X * Q_d * Ad_X':");
             disp(Ad_X * Q_d * Ad_X');
 
-
             % propogate
+            disp(expm(w_skew * dt));
             obj.X(1:3,1:3) = obj.X(1:3,1:3) * expm(w_skew * dt);
             obj.P = expm(obj.A * dt) * obj.P * (expm(obj.A * dt))' + Ad_X * Q_d * Ad_X';
+            disp("P after:");
+            disp(obj.P);
 
         end
 
@@ -100,7 +109,7 @@ classdef InvariantEKF < handle
             %      zeros(3,3), obj.X(1:3,1:3) * abs(q), zeros(3,3);
             %      zeros(3,3), zeros(3,3), obj.X(1:3,1:3) * abs(q) * dt];
 
-            Q = [zeros(3,3), zeros(3,3), zeros(3,3);
+            Q = [zeros(3,3), zeros(3,3), zeros(3,3); % Q is taken in the robot frame
                  zeros(3,3), abs(q), zeros(3,3);
                  zeros(3,3), zeros(3,3), abs(q) * dt];
             Q_d = expm(obj.A * dt) * Q * dt * (expm(obj.A * dt)'); % TODO: check during testing
@@ -151,11 +160,14 @@ classdef InvariantEKF < handle
             p = -obj.X(1:3,1:3)' * p;
 
             % Y = [p; 0; 1] + [V; 0; 0];
-            Y = [p; 0; 1];
+            Y = [p; 0; 1]; % measurement model is in robot frame
             b = [zeros(3,1); 0; 1];
             innov = obj.X * Y - b;
 
             disp(innov);
+
+            % actually I think this N might be correct, N should be taken
+            % in the robot frame
             
             % N = obj.X(1:3,1:3) * diag([abs(V(1)), abs(V(2)), abs(V(3))]) * obj.X(1:3,1:3)';
             N = diag([abs(V(1)), abs(V(2)), abs(V(3))]);
@@ -178,51 +190,31 @@ classdef InvariantEKF < handle
             obj.P = (eye(9) - L * H) * obj.P * (eye(9) - L * H)' + L * N * L';
             
         end
+
+        % consider changing to correct using fused sensor data
         
 
         % m is mag heading measurement in radians
         % V is the 10x1 noise in b
-        function mag_update(obj, m, V)
-
-            g_skew = [0 -9.81 0;
-                      9.81 0 0;
-                      0 0 0];
-
-            m_skew = [0 1 -1;
-                      -1 0 1;
-                      1 -1 0];
-
-            H = [g_skew zeros(3,3) zeros(3,3);
-                 zeros(2,3) zeros(2,3) zeros(2,3);
-                 m_skew zeros(3,3) zeros(3,3);
-                 zeros(2,3) zeros(2,3) zeros(2,3)];
+        function mag_update(obj, m, cov_m)
             
-            % get mag measurement in the robot frame
-            eulerXYZ = rotm2eul(obj.X(1:3,1:3));
-            roll = eulerXYZ(3);
-            pitch = eulerXYZ(2);
+            mag_ref = -obj.X(1:3,1:3)' * [1; 0; 0];
+            H = [InvariantEKF.sup_x(mag_ref), zeros(3), zeros(3)];
 
-            R_m = eul2rotm([m, pitch, roll]);
-            X_m = [R_m, obj.X(1:3,4), obj.X(1:3,5);
-                    zeros(1,3), 1, 0;
-                    zeros(1,3), 0, 1];
+            Y = m / norm(m);
+            innov = mag_ref - Y; % predicted - actual
 
-            b = [0; 0; -9.81; 0; 0; 1; 1; 1; 0; 0];
-            Y = [inv(X_m) zeros(5,5);
-                 zeros(5,5), inv(X_m)] * b + V;
-
-            innov = [obj.X zeros(5,5);
-                     zeros(5,5), obj.X] * Y - b;
-
-            N = [obj.X zeros(5,5); zeros(5,5), obj.X] * blkdiag(V(1), V(2), V(3), V(4), V(5), V(6), V(7), V(8), V(9), V(10)) * [obj.X zeros(5,5); zeros(5,5), obj.X]';
+            N = obj.X(1:3,1:3)' * cov_m * obj.X(1:3,1:3);
             S = H * obj.P * H' + N;
-            L = obj.P * H' / S;
-            
+            L = obj.P * H' / S; % L should ALWAYS be negative, otherwise something is wrong
+
             delta = InvariantEKF.wedge(L * innov);
-            
-            % correction
+
             obj.X = expm(delta) * obj.X;
             obj.P = (eye(9) - L * H) * obj.P * (eye(9) - L * H)' + L * N * L';
+
+            
+           
             
         end
 
@@ -230,7 +222,31 @@ classdef InvariantEKF < handle
         
         end
 
-        function accel_update()
+        function accel_update(obj, a, cov_a)
+
+            % reference vector (predicted measurement)
+            accel_ref = -obj.X(1:3,1:3)' * [0; 0; -1];
+            H = [InvariantEKF.sup_x(accel_ref), zeros(3), zeros(3)];
+
+
+            Y = a / norm(a);
+            innov = accel_ref - Y; % predicted - actual
+
+            N = obj.X(1:3,1:3)' * cov_a * obj.X(1:3,1:3); % N should be taken in robot frame
+            S = H * obj.P * H' + N;
+            L = obj.P * H' / S; % L should ALWAYS be negative, otherwise something is wrong
+
+            disp("L:");
+            disp(L);
+
+            delta = InvariantEKF.wedge(L * innov);
+
+            disp("delta:");
+            disp(delta);
+
+            obj.X = expm(delta) * obj.X;
+            obj.P = (eye(9) - L * H) * obj.P * (eye(9) - L * H)' + L * N * L';
+            
 
         end
 
