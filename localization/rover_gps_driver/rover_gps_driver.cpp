@@ -1,6 +1,4 @@
 #include "rover_gps_driver.hpp"
-#include "mrover/msg/detail/satellite_signal__struct.hpp"
-#include <cstdint>
 
 namespace mrover {
 
