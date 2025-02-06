@@ -23,32 +23,32 @@ set(node_plugins "")
 
 
 if (APPLE)
-	# Ensures that homebrew packages are never used over miniforge packages.
-	# TODO (ali): Pretty sure this doesn't do anything on macs
-	set(CMAKE_IGNORE_PATH /opt/homebrew)
-	# Find mamba python
-	find_package(PythonLibs REQUIRED)
-	# link_libraries(${PYTHON_LIBRARIES})
+    # Ensures that homebrew packages are never used over miniforge packages.
+    # TODO (ali): Pretty sure this doesn't do anything on macs
+    set(CMAKE_IGNORE_PATH /opt/homebrew)
+    # Find mamba python
+    find_package(PythonLibs REQUIRED)
+    # link_libraries(${PYTHON_LIBRARIES})
 endif ()
 
 if (CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-	add_compile_options(-Wall -Wextra -Wpedantic -Wno-missing-field-initializers -Wno-deprecated-declarations)
+    add_compile_options(-Wall -Wextra -Wpedantic -Wno-missing-field-initializers -Wno-deprecated-declarations)
 
-	if (MROVER_WARNINGS_AS_ERRORS)
-		message(STATUS "Treating warnings as errors")
-		add_compile_options(-Werror)
-	endif ()
+    if (MROVER_WARNINGS_AS_ERRORS)
+        message(STATUS "Treating warnings as errors")
+        add_compile_options(-Werror)
+    endif ()
 
-	if (NOT APPLE)
-		# Try to use LLD instead of the system linker (which is usually GNU ld).
-		# LLD is faster and uses less memory.
-		# Could look into using mold which should be even faster.
-		find_program(LLD_PROGRAM lld)
-		if (LLD_PROGRAM)
-			message(STATUS "Using lld linker")
-			add_link_options(-fuse-ld=lld-18)
-		endif()
-	endif ()
+    if (NOT APPLE)
+        # Try to use LLD instead of the system linker (which is usually GNU ld).
+        # LLD is faster and uses less memory.
+        # Could look into using mold which should be even faster.
+        find_program(LLD_PROGRAM lld)
+        if (LLD_PROGRAM)
+            message(STATUS "Using lld linker")
+            add_link_options(-fuse-ld=lld-18)
+        endif()
+    endif ()
 endif ()
 
 # Ccache is a compiler cache.
@@ -57,9 +57,9 @@ endif ()
 # This can cause problems in rare cases so run "ccache -C" to clear the cache.
 find_program(CCACHE_FOUND ccache)
 if (CCACHE_FOUND)
-	set(CMAKE_C_COMPILER_LAUNCHER ccache)
-	set(CMAKE_CXX_COMPILER_LAUNCHER ccache)
-	set(CMAKE_CUDA_COMPILER_LAUNCHER ccache)
+    set(CMAKE_C_COMPILER_LAUNCHER ccache)
+    set(CMAKE_CXX_COMPILER_LAUNCHER ccache)
+    set(CMAKE_CUDA_COMPILER_LAUNCHER ccache)
 endif ()
 
 
@@ -86,46 +86,46 @@ find_package(glfw3 REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(OpenCV REQUIRED)
 if (NOT APPLE)
-	find_package(TBB REQUIRED)
-	link_libraries(TBB::tbb)
+    find_package(TBB REQUIRED)
+    link_libraries(TBB::tbb)
 endif()
 
 find_package(dawn QUIET)
 if (dawn_FOUND)
-	message(STATUS "Using Dawn system install")
+    message(STATUS "Using Dawn system install")
 else ()
-	message(STATUS "Using Dawn from source")
-	add_library(webgpu SHARED IMPORTED)
+    message(STATUS "Using Dawn from source")
+    add_library(webgpu SHARED IMPORTED)
 
-	set(WEBGPU_BUILD_DIR ${CMAKE_CURRENT_LIST_DIR}/deps/dawn/out/Release)
-	if (APPLE)
-		set(WEBGPU_SHARED_LIB ${WEBGPU_BUILD_DIR}/src/dawn/native/libwebgpu_dawn.dylib)
-	else ()
-		set(WEBGPU_SHARED_LIB ${WEBGPU_BUILD_DIR}/src/dawn/native/libwebgpu_dawn.so)
-	endif ()
-	if (EXISTS ${WEBGPU_SHARED_LIB})
-		target_include_directories(webgpu INTERFACE ${CMAKE_CURRENT_LIST_DIR}/deps/dawn/include ${WEBGPU_BUILD_DIR}/gen/include)
-		set_property(TARGET webgpu PROPERTY IMPORTED_LOCATION ${WEBGPU_SHARED_LIB})
+    set(WEBGPU_BUILD_DIR ${CMAKE_CURRENT_LIST_DIR}/deps/dawn/out/Release)
+    if (APPLE)
+        set(WEBGPU_SHARED_LIB ${WEBGPU_BUILD_DIR}/src/dawn/native/libwebgpu_dawn.dylib)
+    else ()
+        set(WEBGPU_SHARED_LIB ${WEBGPU_BUILD_DIR}/src/dawn/native/libwebgpu_dawn.so)
+    endif ()
+    if (EXISTS ${WEBGPU_SHARED_LIB})
+        target_include_directories(webgpu INTERFACE ${CMAKE_CURRENT_LIST_DIR}/deps/dawn/include ${WEBGPU_BUILD_DIR}/gen/include)
+        set_property(TARGET webgpu PROPERTY IMPORTED_LOCATION ${WEBGPU_SHARED_LIB})
 
-		set(dawn_FOUND TRUE)
-	else ()
-		message(WARNING "Dawn not found. If on Ubuntu install with 'sudo apt install -f ./pkg/libdawn-dev.deb'. Or build from source with ./scripts/build_dawn.sh")
-	endif ()
+        set(dawn_FOUND TRUE)
+    else ()
+        message(WARNING "Dawn not found. If on Ubuntu install with 'sudo apt install -f ./pkg/libdawn-dev.deb'. Or build from source with ./scripts/build_dawn.sh")
+    endif ()
 endif ()
 
 find_package(MANIF::manif QUIET)
 if (NOT manif_FOUND)
-	if (EXISTS ${CMAKE_CURRENT_LIST_DIR}/deps/manif/include/manif)
-		set(BUILD_TESTING_OLD ${BUILD_TESTING})
-		set(BUILD_TESTING OFF)
-		add_subdirectory(deps/manif EXCLUDE_FROM_ALL SYSTEM)
-		set(BUILD_TESTING ${BUILD_TESTING_OLD})
-		add_library(MANIF::manif ALIAS manif)
+    if (EXISTS ${CMAKE_CURRENT_LIST_DIR}/deps/manif/include/manif)
+        set(BUILD_TESTING_OLD ${BUILD_TESTING})
+        set(BUILD_TESTING OFF)
+        add_subdirectory(deps/manif EXCLUDE_FROM_ALL SYSTEM)
+        set(BUILD_TESTING ${BUILD_TESTING_OLD})
+        add_library(MANIF::manif ALIAS manif)
 
-		set(manif_FOUND TRUE)
-	else()
-		message(FATAL_ERROR "Manif not found. If on Ubuntu install with 'sudo apt install -f ./pkg/libmanif-dev.deb'. Or build from source with 'git submodule update --init deps/manif' and make sure it is non-empty")
-	endif()
+        set(manif_FOUND TRUE)
+    else()
+        message(FATAL_ERROR "Manif not found. If on Ubuntu install with 'sudo apt install -f ./pkg/libmanif-dev.deb'. Or build from source with 'git submodule update --init deps/manif' and make sure it is non-empty")
+    endif()
 endif()
 
 find_package(PkgConfig REQUIRED)
@@ -141,15 +141,15 @@ add_subdirectory(deps/glfw3webgpu EXCLUDE_FROM_ALL SYSTEM)
 add_subdirectory(deps/mjbots EXCLUDE_FROM_ALL SYSTEM)
 
 if (BUILD_TESTING)
-	find_package(ament_lint_auto REQUIRED)
-	# the following line skips the linter which checks for copyrights
-	# comment the line when a copyright and license is added to all source files
-	set(ament_cmake_copyright_FOUND TRUE)
-	# the following line skips cpplint (only works in a git repo)
-	# comment the line when this package is in a git repo and when
-	# a copyright and license is added to all source files
-	set(ament_cmake_cpplint_FOUND TRUE)
-	ament_lint_auto_find_test_dependencies()
+    find_package(ament_lint_auto REQUIRED)
+    # the following line skips the linter which checks for copyrights
+    # comment the line when a copyright and license is added to all source files
+    set(ament_cmake_copyright_FOUND TRUE)
+    # the following line skips cpplint (only works in a git repo)
+    # comment the line when this package is in a git repo and when
+    # a copyright and license is added to all source files
+    set(ament_cmake_cpplint_FOUND TRUE)
+    ament_lint_auto_find_test_dependencies()
 endif ()
 
 include_directories(BEFORE SYSTEM preload)
@@ -169,17 +169,17 @@ message(STATUS "Found service files: ${MROVER_SERVICE_FILE_PATHS}")
 message(STATUS "PROJ NAME: ${PROJECT_NAME}")
 
 set(MROVER_CMAKE_INCLUDES
-	starter_project/autonomy/AutonomyStarterProject.cmake
+    starter_project/autonomy/AutonomyStarterProject.cmake
 )
 
 foreach (MROVER_CMAKE_INCLUDE ${MROVER_CMAKE_INCLUDES})
-	include(${MROVER_CMAKE_INCLUDE})
+    include(${MROVER_CMAKE_INCLUDE})
 endforeach ()
 
 rosidl_generate_interfaces(${PROJECT_NAME}
-	${MROVER_MESSAGE_FILE_PATHS}
-	${MROVER_SERVICE_FILE_PATHS}
-	DEPENDENCIES nav_msgs sensor_msgs geometry_msgs
+    ${MROVER_MESSAGE_FILE_PATHS}
+    ${MROVER_SERVICE_FILE_PATHS}
+    DEPENDENCIES nav_msgs sensor_msgs geometry_msgs
 )
 
 # Starter project 
@@ -192,10 +192,10 @@ rosidl_generate_interfaces(${PROJECT_NAME}
 # Install our executable so that ROS knows about it
 # This allows us to launch it with ros2 run
 install(PROGRAMS
-	starter_project/autonomy/src/localization.py
-	starter_project/autonomy/src/navigation/navigation_starter_project.py
-	DESTINATION
-	lib/${PROJECT_NAME}
+    starter_project/autonomy/src/localization.py
+    starter_project/autonomy/src/navigation/navigation_starter_project.py
+    DESTINATION
+    lib/${PROJECT_NAME}
 )
 
 install(DIRECTORY starter_project/autonomy/launch DESTINATION share/${PROJECT_NAME})
@@ -225,11 +225,11 @@ mrover_add_header_only_library(parameter_utils parameter_utils)
 mrover_add_node(simulator simulator/*.cpp simulator simulator/pch.hpp)
 ament_target_dependencies(simulator rclcpp rclcpp_components nav_msgs sensor_msgs geometry_msgs tf2 tf2_ros urdf)
 target_link_libraries(simulator
-	assimp::assimp glfw3webgpu webgpu glfw webgpu_hpp imgui
-	${BULLET_LIBRARIES}
-	lie Eigen3::Eigen
-	opencv_core opencv_imgcodecs opencv_imgproc
-	loop_profiler
+    assimp::assimp glfw3webgpu webgpu glfw webgpu_hpp imgui
+    ${BULLET_LIBRARIES}
+    lie Eigen3::Eigen
+    opencv_core opencv_imgcodecs opencv_imgproc
+    loop_profiler
 )
 target_include_directories(simulator SYSTEM PRIVATE ${BULLET_INCLUDE_DIRS} ${OPENCV_INCLUDE_DIRS})
 
@@ -248,45 +248,45 @@ find_package(ZED QUIET)
 find_package(CUDA QUIET)
 find_package(OpenCV REQUIRED)
 if(ZED_FOUND AND CUDA_FOUND)
-	enable_language(CUDA)
-	# CUDA Compile Options
-	add_library(cuda_compiler_flags INTERFACE)
-	target_compile_options(cuda_compiler_flags INTERFACE 
-		-Wno-pedantic 
-		-Wno-deprecated 
-		-Wno-unused-parameter 
-		-diag-suppress=815 
-		-diag-suppress=780 
-		-Wno-deprecated-copy 
-		-Wno-unused-command-line-argument 
-		-Wno-ignored-qualifiers 
-		-Wno-sometimes-uninitialized
-	)
+    enable_language(CUDA)
+    # CUDA Compile Options
+    add_library(cuda_compiler_flags INTERFACE)
+    target_compile_options(cuda_compiler_flags INTERFACE 
+        -Wno-pedantic 
+        -Wno-deprecated 
+        -Wno-unused-parameter 
+        -diag-suppress=815 
+        -diag-suppress=780 
+        -Wno-deprecated-copy 
+        -Wno-unused-command-line-argument 
+        -Wno-ignored-qualifiers 
+        -Wno-sometimes-uninitialized
+    )
 
-	# ZED Wrapper
-	mrover_add_component(zed perception/zed_wrapper/*.c* perception/zed_wrapper/pch.hpp ZedWrapper)
-	target_compile_options(zed_component PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-std=c++20>)
-	mrover_link_component(zed parameter_utils lie MANIF::manif ${CUDA_LIBRARIES} loop_profiler cuda_compiler_flags)
-	mrover_ament_component(zed rclcpp rclcpp_components sensor_msgs ZED CUDA tf2 tf2_ros)
+    # ZED Wrapper
+    mrover_add_component(zed perception/zed_wrapper/*.c* perception/zed_wrapper/pch.hpp ZedWrapper)
+    target_compile_options(zed_component PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-std=c++20>)
+    mrover_link_component(zed parameter_utils lie MANIF::manif ${CUDA_LIBRARIES} loop_profiler cuda_compiler_flags)
+    mrover_ament_component(zed rclcpp rclcpp_components sensor_msgs ZED CUDA tf2 tf2_ros)
 
-	mrover_executable_from_component(zed perception/executables/zed.cpp zed_component)
+    mrover_executable_from_component(zed perception/executables/zed.cpp zed_component)
 
-	# Learning Library
-	# TODO(john): Update to use the new API
-	mrover_add_library(tensorrt tensorrt/*.c* tensorrt)
-	target_compile_options(tensorrt PRIVATE -Wno-deprecated-declarations $<$<COMPILE_LANGUAGE:CUDA>:-std=c++17>)
-	target_include_directories(tensorrt PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
-	target_link_libraries(tensorrt opencv_core opencv_dnn opencv_imgproc lie nvinfer nvonnxparser tbb cuda_compiler_flags)
+    # Learning Library
+    # TODO(john): Update to use the new API
+    mrover_add_library(tensorrt tensorrt/*.c* tensorrt)
+    target_compile_options(tensorrt PRIVATE -Wno-deprecated-declarations $<$<COMPILE_LANGUAGE:CUDA>:-std=c++17>)
+    target_include_directories(tensorrt PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
+    target_link_libraries(tensorrt opencv_core opencv_dnn opencv_imgproc lie nvinfer nvonnxparser tbb cuda_compiler_flags)
 
-	# Object Detector
-	mrover_add_component(object_detector perception/object_detector/*.c* perception/object_detector/pch.hpp StereoObjectDetector ImageObjectDetector)
-	mrover_link_component(object_detector opencv_core opencv_dnn opencv_imgproc lie tbb tensorrt opencv_imgcodecs opencv_highgui loop_profiler parameter_utils cuda_compiler_flags)
-	mrover_ament_component(object_detector rclcpp sensor_msgs rclcpp_components CUDA tf2 tf2_ros)
+    # Object Detector
+    mrover_add_component(object_detector perception/object_detector/*.c* perception/object_detector/pch.hpp StereoObjectDetector ImageObjectDetector)
+    mrover_link_component(object_detector opencv_core opencv_dnn opencv_imgproc lie tbb tensorrt opencv_imgcodecs opencv_highgui loop_profiler parameter_utils cuda_compiler_flags)
+    mrover_ament_component(object_detector rclcpp sensor_msgs rclcpp_components CUDA tf2 tf2_ros)
 
-	mrover_executable_from_component(stereo_object_detector perception/executables/stereo_object_detector.cpp object_detector_component)
-	mrover_executable_from_component(image_object_detector perception/executables/image_object_detector.cpp object_detector_component)
+    mrover_executable_from_component(stereo_object_detector perception/executables/stereo_object_detector.cpp object_detector_component)
+    mrover_executable_from_component(image_object_detector perception/executables/image_object_detector.cpp object_detector_component)
 else()
-	message("ZED not found...")
+    message("ZED not found...")
 endif()
 
 # Tag Detector
@@ -318,14 +318,14 @@ ament_target_dependencies(motor_library rclcpp std_srvs)
 target_link_libraries(motor_library can_device moteus units messaging)
 
 macro(mrover_add_esw_bridge_node name sources)
-	mrover_add_node(${name} ${sources})
-	ament_target_dependencies(${name} rclcpp std_srvs)
-	target_link_libraries(${name} can_device units messaging)
+    mrover_add_node(${name} ${sources})
+    ament_target_dependencies(${name} rclcpp std_srvs)
+    target_link_libraries(${name} can_device units messaging)
 endmacro()
 
 macro(mrover_add_esw_motor_bridge_node name sources)
-	mrover_add_esw_bridge_node(${name} ${sources})
-	target_link_libraries(${name} motor_library)
+    mrover_add_esw_bridge_node(${name} ${sources})
+    target_link_libraries(${name} motor_library)
 endmacro()
 
 
@@ -342,67 +342,51 @@ target_link_libraries(arm_controller lie)
 ament_target_dependencies(arm_controller rclcpp)
 
 if (Gst_FOUND AND GstApp_FOUND)
-	mrover_add_node(usb_camera esw/usb_camera/*.cpp esw/usb_camera/pch.hpp)
-	target_link_libraries(usb_camera PkgConfig::Gst PkgConfig::GstApp opencv_core opencv_imgcodecs parameter_utils)
-	ament_target_dependencies(usb_camera rclcpp)
+    mrover_add_node(usb_camera esw/usb_camera/*.cpp esw/usb_camera/pch.hpp)
+    target_link_libraries(usb_camera PkgConfig::Gst PkgConfig::GstApp opencv_core opencv_imgcodecs parameter_utils)
+    ament_target_dependencies(usb_camera rclcpp)
 
-	if (LibUdev_FOUND)
-		mrover_add_library(websocket_server esw/websocket_server/*.cpp esw/websocket_server)
-		target_compile_definitions(websocket_server PUBLIC BOOST_ASIO_NO_DEPRECATED)
-		ament_target_dependencies(websocket_server rclcpp)
+    if (LibUdev_FOUND)
+        mrover_add_library(websocket_server esw/websocket_server/*.cpp esw/websocket_server)
+        target_compile_definitions(websocket_server PUBLIC BOOST_ASIO_NO_DEPRECATED)
+        ament_target_dependencies(websocket_server rclcpp)
 
-		mrover_add_component(gst_websocket_streamer esw/gst_websocket_streamer/*.c* esw/gst_websocket_streamer/pch.hpp GstWebsocketStreamer)
-		mrover_link_component(gst_websocket_streamer PkgConfig::Gst PkgConfig::GstApp PkgConfig::LibUdev opencv_core opencv_imgcodecs websocket_server)
-		mrover_ament_component(gst_websocket_streamer rclcpp rclcpp_components sensor_msgs)
-	endif ()
+        mrover_add_component(gst_websocket_streamer esw/gst_websocket_streamer/*.c* esw/gst_websocket_streamer/pch.hpp GstWebsocketStreamer)
+        mrover_link_component(gst_websocket_streamer PkgConfig::Gst PkgConfig::GstApp PkgConfig::LibUdev opencv_core opencv_imgcodecs websocket_server)
+        mrover_ament_component(gst_websocket_streamer rclcpp rclcpp_components sensor_msgs)
+    endif ()
 endif ()
 
 if (NetLink_FOUND AND NetLinkRoute_FOUND)
-	mrover_add_node(can_bridge esw/can_bridge/*.cpp esw/can_bridge/pch.hpp)
-	target_link_libraries(can_bridge PkgConfig::NetLink PkgConfig::NetLinkRoute)
-	ament_target_dependencies(can_bridge rclcpp)
+    mrover_add_node(can_bridge esw/can_bridge/*.cpp esw/can_bridge/pch.hpp)
+    target_link_libraries(can_bridge PkgConfig::NetLink PkgConfig::NetLinkRoute)
+    ament_target_dependencies(can_bridge rclcpp)
 endif ()
 
 ## Install
 
 # You must add Python scripts here to be able to "ros2 launch" them in terminal
 install(PROGRAMS
-<<<<<<< HEAD
-        navigation/nav.py
-        navigation/stuck_detector/stuck_detector.py
-        localization/gps_linearization.py
-        localization/basestation_gps_driver.py
-        localization/imu_driver.py
-        superstructure/superstructure.py
-        scripts/debug_course_publisher.py
-        scripts/debug_service.py
-        scripts/astar_debug.py
-		scripts/visualizer.py
-        scripts/move_cost_map.py
-        scripts/pc_visualizer.py
-		scripts/image_capture.py
-        teleoperation/basestation_gui/gui_frontend.sh
-        teleoperation/basestation_gui/gui_backend.sh
-=======
-	navigation/nav.py
-	navigation/stuck_detector/stuck_detector.py
-	localization/gps_linearization.py
-	localization/basestation_gps_driver.py
-	superstructure/superstructure.py
-	scripts/debug_course_publisher.py
-	scripts/astar_debug.py
-	scripts/visualizer.py
-	scripts/move_cost_map.py
-	scripts/pc_visualizer.py
-	# lie/lie.py
-	scripts/image_capture.py
->>>>>>> 621d13e94a6e09a284cd9a4947c75d3c692dcfb8
-
-	# starter project sources
-	starter_project/autonomy/src/localization.py
-	starter_project/autonomy/src/navigation/navigation_starter_project.py
-	DESTINATION
-	lib/${PROJECT_NAME}
+    navigation/nav.py
+    navigation/stuck_detector/stuck_detector.py
+    localization/gps_linearization.py
+    localization/basestation_gps_driver.py
+    localization/imu_driver.py
+    superstructure/superstructure.py
+    scripts/debug_course_publisher.py
+    scripts/debug_service.py
+    scripts/astar_debug.py
+    scripts/visualizer.py
+    scripts/move_cost_map.py
+    scripts/pc_visualizer.py
+    scripts/image_capture.py
+    teleoperation/basestation_gui/gui_frontend.sh
+    teleoperation/basestation_gui/gui_backend.sh
+    # starter project sources
+    starter_project/autonomy/src/localization.py
+    starter_project/autonomy/src/navigation/navigation_starter_project.py
+    DESTINATION
+    lib/${PROJECT_NAME}
 )
 
 install(DIRECTORY launch DESTINATION share/${PROJECT_NAME})
