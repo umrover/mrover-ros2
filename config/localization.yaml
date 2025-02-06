@@ -10,12 +10,6 @@ basestation_gps_driver:
     port: /dev/gps
     baud: 38400
 
-rover_gps_driver:
-  ros__parameters:
-    # TODO: update thus
-    port: /dev/gps
-    baud: 38400
-
 gps_linearization:
   ros__parameters:
     world_frame: "map"
@@ -26,12 +20,12 @@ gps_linearization:
     ref_lon: -110.7844653
     ref_alt: 0.0
 
-pose_filter:
+rover_gps_driver:
   ros__parameters:
-    world_frame: "map"
-    rover_frame: "base_link"
+    port_unicore: /dev/gps
+    baud_unicore: 115200
 
-imu_driver:
-  ros__parameters:
+    port_ublox: /dev/gps
+    baud_ublox: 38400
+
     frame_id: "base_link"
-    update_rate: 30

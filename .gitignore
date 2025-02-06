@@ -20,5 +20,8 @@ __pycache__/
 .mypy_cache/
 *.egg-info/
 venv/
+<<<<<<< HEAD
 .vscode/settings.json
 .vscode/settings.json
+# macOS
+.DS_Store

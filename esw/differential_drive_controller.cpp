@@ -60,15 +60,15 @@ namespace mrover {
             MetersPerSecond deltaInner = angular / Radians{1} * wheelDistanceInner;
             MetersPerSecond deltaOuter = angular / Radians{1} * wheelDistanceOuter;
 
-            RadiansPerSecond leftInner = (forward - deltaInner) * wheelLinearToAngular;
-            RadiansPerSecond rightInner = (forward + deltaInner) * wheelLinearToAngular;
-            RadiansPerSecond leftOuter = (forward - deltaOuter) * wheelLinearToAngular;
-            RadiansPerSecond rightOuter = (forward + deltaOuter) * wheelLinearToAngular;
+            RadiansPerSecond leftInner = -1 * (forward - deltaInner) * wheelLinearToAngular;
+            RadiansPerSecond rightInner = -1 * (forward + deltaInner) * wheelLinearToAngular;
+            RadiansPerSecond leftOuter = -1 * (forward - deltaOuter) * wheelLinearToAngular;
+            RadiansPerSecond rightOuter = -1 * (forward + deltaOuter) * wheelLinearToAngular;
 
             // It is possible for another node to request an invalid combination of linear and angular velocities that the rover can not realize
             // Instead of clipping, scale down based on the maximal speed to preserve the ratio
 
-            RadiansPerSecond MAX_SPEED{50.0};
+            RadiansPerSecond MAX_SPEED{70.0};
 
             if (RadiansPerSecond maximal = std::max(abs(leftOuter), abs(rightOuter)); maximal > MAX_SPEED) {
                 Dimensionless changeRatio = MAX_SPEED / maximal;
