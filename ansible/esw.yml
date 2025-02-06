@@ -1,7 +1,7 @@
 ---
 - hosts: all
   vars:
-    ros_distro: noetic
-    ubuntu_release: focal
+    ros_distro: humble
+    ubuntu_release: jammy
   roles:
     - esw
