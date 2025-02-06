@@ -15,7 +15,7 @@ differential_drive_controller:
 
 can_bridge_1:
   ros__parameters:
-    interface: can2
+    interface: can0
     is_extended_frame: true
     devices:
       jetson:
