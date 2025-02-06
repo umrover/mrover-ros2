@@ -16,7 +16,7 @@ def to_tf_tree(
     se3: SE3,
     child_frame: str,
     parent_frame: str,
-    stamp
+    stamp: Time,
 ) -> None:
     tx, ty, tz = se3.translation()
     qx, qy, qz, qw = se3.quat()
