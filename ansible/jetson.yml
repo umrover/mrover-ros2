@@ -5,3 +5,4 @@
     ubuntu_release: jammy
   roles:
     - jetson_networks
+    - jetson_can
