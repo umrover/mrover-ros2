@@ -69,6 +69,7 @@ find_package(ament_cmake_python REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
+find_package(rtcm_msgs REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(tf2_ros REQUIRED)
@@ -354,17 +355,19 @@ endif ()
 install(PROGRAMS
         navigation/nav.py
         navigation/stuck_detector/stuck_detector.py
-        localization/rover_gps_driver.py
         localization/gps_linearization.py
         localization/basestation_gps_driver.py
         localization/imu_driver.py
         superstructure/superstructure.py
         scripts/debug_course_publisher.py
+        scripts/debug_service.py
         scripts/astar_debug.py
 		scripts/visualizer.py
         scripts/move_cost_map.py
         scripts/pc_visualizer.py
 		scripts/image_capture.py
+        teleoperation/basestation_gui/gui_frontend.sh
+        teleoperation/basestation_gui/gui_backend.sh
 
         # starter project sources
         starter_project/autonomy/src/localization.py

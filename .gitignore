@@ -24,5 +24,8 @@ venv/
 .vscode/settings.json
 .vscode/settings.json
 
+# SQL file for Teleop
+*.sqlite3
+
 # macOS
 .DS_Store
