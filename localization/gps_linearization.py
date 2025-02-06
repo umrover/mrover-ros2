@@ -62,14 +62,14 @@ class GPSLinearization(Node):
             return
 
         quaternion = np.array(
-            [imu_msg.orientation.w, imu_msg.orientation.x, imu_msg.orientation.y, imu_msg.orientation.z]
+            [imu_msg.orientation.x, imu_msg.orientation.y, imu_msg.orientation.z, imu_msg.orientation.w]
         )
         quaternion = quaternion / np.linalg.norm(quaternion)
 
         x, y, z = geodetic2enu(
             gps_msg.latitude, gps_msg.longitude, gps_msg.altitude, self.ref_lat, self.ref_lon, self.ref_alt, deg=True
         )
-        pose = SE3(position=np.array([x, y, z]), quaternion=quaternion)
+        pose = SE3(position=np.array([x, y, 0]), quaternion=quaternion)
 
         to_tf_tree(tf_broadcaster=self.tf_broadcaster, se3=pose, child_frame="base_link", parent_frame=self.world_frame)
 
