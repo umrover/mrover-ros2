@@ -76,24 +76,8 @@ namespace mrover {
 
         mTargetsPub = create_publisher<msg::ImageTargets>("/tags", 1);
 
-        mImageSub = create_subscription<sensor_msgs::msg::Image>("/usb_camera/image", 1, [this](sensor_msgs::msg::Image::ConstSharedPtr const& msg) {
+        mImageSub = create_subscription<sensor_msgs::msg::Image>("/long_range_cam/image", 1, [this](sensor_msgs::msg::Image::ConstSharedPtr const& msg) {
             imageCallback(msg);
         });
     }
-
 } // namespace mrover
-
-auto main(int argc, char** argv) -> int {
-    rclcpp::init(argc, argv);
-
-    auto stereoTD = std::make_shared<mrover::StereoTagDetectorNodelet>();
-    auto imageTD = std::make_shared<mrover::ImageTagDetectorNodelet>();
-
-    rclcpp::executors::SingleThreadedExecutor executor;
-    executor.add_node(stereoTD);
-    executor.add_node(imageTD);
-    executor.spin();
-
-    rclcpp::shutdown();
-    return EXIT_SUCCESS;
-}
