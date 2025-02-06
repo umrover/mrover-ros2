@@ -13,7 +13,7 @@
 - name: Wired Connection (USB C)
   become: True
   nmcli:
-    conn_name: MRover
+    conn_name: MRover (USB C)
     state: present
     type: ethernet
     ifname: eth1
