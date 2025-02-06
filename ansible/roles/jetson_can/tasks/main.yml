@@ -1,0 +1,28 @@
+- name: Install CAN restart script
+  become: true
+  copy:
+    src: files/bin/restart_can
+    dest: /usr/local/bin/
+    mode: 0775
+
+- name: Copy CAN service file
+  ansible.builtin.copy:
+    src: files/can.service
+    dest: /etc/systemd/system/can.service
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Reload systemd daemon
+  ansible.builtin.systemd:
+    daemon_reload: yes
+
+- name: Enable CAN service
+  ansible.builtin.systemd:
+    name: can.service
+    enabled: yes
+
+- name: Start CAN service
+  ansible.builtin.systemd:
+    name: can.service
+    state: started

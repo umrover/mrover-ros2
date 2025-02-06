@@ -3,6 +3,5 @@
   vars:
     ubuntu_release: focal
   roles:
-    # - dev
     - basestation_networks
 
