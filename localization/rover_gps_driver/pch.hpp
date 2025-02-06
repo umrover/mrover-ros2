@@ -12,6 +12,7 @@
 #include <mrover/msg/heading.hpp>
 #include <mrover/msg/fix_type.hpp>
 #include <rtcm_msgs/msg/message.hpp>
+#include <mrover/msg/satellite_signal.hpp>
 #include <builtin_interfaces/msg/time.hpp>
 
 #include <boost/asio.hpp>

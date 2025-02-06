@@ -356,14 +356,15 @@ endif ()
 
 # You must add Python scripts here to be able to "ros2 launch" them in terminal
 install(PROGRAMS
-    navigation/nav.py
-    navigation/stuck_detector/stuck_detector.py
-    localization/gps_linearization.py
-    localization/basestation_gps_driver.py
-    superstructure/superstructure.py
-    scripts/debug_course_publisher.py
-    scripts/visualizer.py
-    scripts/image_capture.py
+        navigation/nav.py
+        navigation/stuck_detector/stuck_detector.py
+        localization/gps_linearization.py
+        localization/basestation_gps_driver.py
+        localization/rover_gps_driver.py
+        superstructure/superstructure.py
+        scripts/debug_course_publisher.py
+		scripts/visualizer.py
+		scripts/image_capture.py
 
     # starter project sources
     starter_project/autonomy/src/localization.py
