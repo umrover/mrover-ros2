@@ -30,6 +30,15 @@ navigation:
       driving_p: 20.0
       lookahead_distance: 1.0
 
+    long_range:
+      distance_ahead: 20.0
+      time_threshold: 5.0
+      increment_weight: 5.0
+      decrement_weight: 1.0
+      min_hits: 3.0
+      max_hits: 10.0
+
+
     waypoint:
       stop_threshold: 0.5
       drive_forward_threshold: 0.34
