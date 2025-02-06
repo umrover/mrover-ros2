@@ -31,6 +31,7 @@ extern "C" {
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#define DUAL_DIRECTION
 
 /* USER CODE END Includes */
 
@@ -70,20 +71,12 @@ void HAL_PostInit();
 #define RCC_OSC_IN_GPIO_Port GPIOF
 #define RCC_OSC_OUT_Pin GPIO_PIN_1
 #define RCC_OSC_OUT_GPIO_Port GPIOF
-#define QUAD_2_A_Pin GPIO_PIN_0
-#define QUAD_2_A_GPIO_Port GPIOA
-#define QUAD_2_B_Pin GPIO_PIN_1
-#define QUAD_2_B_GPIO_Port GPIOA
 #define LPUART1_TX_Pin GPIO_PIN_2
 #define LPUART1_TX_GPIO_Port GPIOA
 #define LPUART1_RX_Pin GPIO_PIN_3
 #define LPUART1_RX_GPIO_Port GPIOA
-#define QUAD_1_B_Pin GPIO_PIN_4
-#define QUAD_1_B_GPIO_Port GPIOA
-#define LD2_Pin GPIO_PIN_5
-#define LD2_GPIO_Port GPIOA
-#define QUAD_1_A_Pin GPIO_PIN_6
-#define QUAD_1_A_GPIO_Port GPIOA
+#define CAN_RX_LED_Pin GPIO_PIN_5
+#define CAN_RX_LED_GPIO_Port GPIOA
 #define MOTOR_DIR_5_Pin GPIO_PIN_4
 #define MOTOR_DIR_5_GPIO_Port GPIOC
 #define MOTOR_DIR_3_Pin GPIO_PIN_5
@@ -92,8 +85,6 @@ void HAL_PostInit();
 #define LIMIT_2_A_GPIO_Port GPIOB
 #define LIMIT_2_B_Pin GPIO_PIN_2
 #define LIMIT_2_B_GPIO_Port GPIOB
-#define CAN_RX_LED_Pin GPIO_PIN_11
-#define CAN_RX_LED_GPIO_Port GPIOB
 #define CAN_TX_LED_Pin GPIO_PIN_12
 #define CAN_TX_LED_GPIO_Port GPIOB
 #define MOTOR_DIR_4_Pin GPIO_PIN_15
@@ -114,6 +105,8 @@ void HAL_PostInit();
 #define T_SWDIO_GPIO_Port GPIOA
 #define T_SWCLK_Pin GPIO_PIN_14
 #define T_SWCLK_GPIO_Port GPIOA
+#define LIMIT_0_A_Pin GPIO_PIN_10
+#define LIMIT_0_A_GPIO_Port GPIOC
 #define LIMIT_1_B_Pin GPIO_PIN_11
 #define LIMIT_1_B_GPIO_Port GPIOC
 #define LIMIT_1_A_Pin GPIO_PIN_12
@@ -122,8 +115,8 @@ void HAL_PostInit();
 #define T_SWO_GPIO_Port GPIOB
 #define LIMIT_0_B_Pin GPIO_PIN_4
 #define LIMIT_0_B_GPIO_Port GPIOB
-#define LIMIT_0_A_Pin GPIO_PIN_5
-#define LIMIT_0_A_GPIO_Port GPIOB
+#define CAN_STB_Pin GPIO_PIN_5
+#define CAN_STB_GPIO_Port GPIOB
 #define QUAD_0_A_Pin GPIO_PIN_6
 #define QUAD_0_A_GPIO_Port GPIOB
 #define QUAD_0_B_Pin GPIO_PIN_7
