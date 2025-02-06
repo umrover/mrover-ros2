@@ -15,7 +15,7 @@ import serial
 from pyubx2 import UBXReader, UBX_PROTOCOL, RTCM3_PROTOCOL
 
 import rclpy
-from mrover.msg import FixStatus, SatelliteSignal
+from mrover.msg import FixStatus, SatelliteSignal, FixType
 from rclpy import Parameter
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
@@ -74,18 +74,19 @@ class RoverGpsDriverNode(Node):
                         header=Header(stamp=self.get_clock().now().to_msg(), frame_id="base_link"),
                         latitude=msg.lat,
                         longitude=msg.lon,
-                        altitude=msg.hMSL,
+                        altitude=float(msg.hMSL),
                     )
                 )
+
 
                 self.gps_status_pub.publish(
                     FixStatus(
                         header=Header(stamp=self.get_clock().now().to_msg(), frame_id="base_link"),
-                        fix_status = msg.carrSoln
+                        fix_type=FixType(fix=msg.carrSoln)
                     )
                 )
 
-                if msg.difSoln == 1:
+                if msg.diffSoln == 1:
                     self.get_logger().debug("Differential correction applied")
                 if msg.carrSoln == 0:
                     self.get_logger().warn("No RTK")
@@ -93,6 +94,7 @@ class RoverGpsDriverNode(Node):
                     self.get_logger().debug("Floating RTK Fix")
                 elif msg.carrSoln == 2:
                     self.get_logger().debug("RTK FIX")
+
 
             case "NAV-SAT":
                 for i in range(msg.numSvs):
