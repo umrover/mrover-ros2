@@ -19,10 +19,10 @@ export default {
   created: function() {
     this.interval = window.setInterval(() => {
       const gamepads = navigator.getGamepads()
-      const gamepad = gamepads.find(gamepad => gamepad && gamepad.id.includes('Logitech'))
+      const gamepad = gamepads.find(gamepad => gamepad && gamepad.id.includes('Thrustmaster'))
       if (!gamepad) return
 
-      const inverse_axes = gamepad.axes.map((value, index) => index === 2 ? -value : value)
+      const inverse_axes = gamepad.axes.map((value, index) => index === 1 ? -value : value)
 
       this.sendMessage({
         type: 'joystick',
