@@ -7,6 +7,7 @@ import pymap3d
 
 import tf2_ros
 from geometry_msgs.msg import Twist
+from mrover.srv import MoveCostMap
 from lie import SE3
 from mrover.msg import (
     Waypoint,
@@ -89,7 +90,7 @@ class Environment:
             return None
 
         now = self.ctx.node.get_clock().now()
-        time = Time.from_msg(t) # have to convert because time from message is a different type
+        time = Time.from_msg(t)  # have to convert because time from message is a different type
         target_expiration_duration = Duration(seconds=self.ctx.node.get_parameter("target_expiration_duration").value)
         if now - time > target_expiration_duration:
             return None
@@ -187,6 +188,7 @@ class ImageTargetsStore:
             return None
         return self._data[name]
 
+
 class CostMap:
     """
     Context class to represent the costmap generated around the water bottle waypoint
@@ -196,19 +198,24 @@ class CostMap:
     resolution: int
     height: int
     width: int
+    origin: np.ndarray
+
 
 @dataclass
 class Course:
     ctx: Context
     course_data: CourseMsg
     # Currently active waypoint
+    waypoints: list[tuple[Waypoint, SE3]]
     waypoint_index: int = 0
 
     def increment_waypoint(self) -> None:
         self.waypoint_index += 1
+        if self.waypoint_index > len(self.waypoints):
+            raise IndexError
 
     def waypoint_pose(self, index: int) -> SE3:
-        return SE3.from_tf_tree(self.ctx.tf_buffer, f"course{index}", self.ctx.world_frame)
+        return self.waypoints[index][1]
 
     def current_waypoint_pose_in_map(self) -> SE3:
         return self.waypoint_pose(self.waypoint_index)
@@ -281,10 +288,13 @@ def setup_course(ctx: Context, waypoints: list[tuple[Waypoint, SE3]]) -> Course:
     all_waypoint_info = []
     for index, (waypoint_info, waypoint_in_world) in enumerate(waypoints):
         all_waypoint_info.append(waypoint_info)
+
+        # Either this or the lookup transform is broken
         SE3.to_tf_tree(ctx.tf_broadcaster, waypoint_in_world, f"course{index}", ctx.world_frame)
     # Make the course out of just the pure waypoint objects which is the 0th element in the tuple
     return Course(
         ctx=ctx,
+        waypoints=waypoints,
         course_data=CourseMsg(waypoints=[waypoint for waypoint, _ in waypoints]),
     )
 
@@ -332,7 +342,7 @@ class Context:
     node: Node
     tf_buffer: tf2_ros.Buffer
     tf_listener: tf2_ros.TransformListener
-    tf_broadcaster: tf2_ros.TransformBroadcaster
+    tf_broadcaster: tf2_ros.StaticTransformBroadcaster
     command_publisher: Publisher
     search_point_publisher: Publisher
     course_listener: Subscription
@@ -369,7 +379,7 @@ class Context:
         self.command_publisher = node.create_publisher(Twist, "nav_cmd_vel", 1)
         self.search_point_publisher = node.create_publisher(GPSPointList, "search_path", 1)
         self.path_history_publisher = node.create_publisher(Path, "ground_truth_path", 10)
-        self.tf_broadcaster = tf2_ros.TransformBroadcaster(node)
+        self.tf_broadcaster = tf2_ros.StaticTransformBroadcaster(node)
 
         node.create_subscription(Bool, "nav_stuck", self.stuck_callback, 1)
         node.create_subscription(ImageTargets, "tags", self.image_targets_callback, 1)
@@ -405,6 +415,7 @@ class Context:
         Callback function for the occupancy grid perception sends
         :param msg: Occupancy Grid representative of a 32m x 32m square area with origin at GNSS waypoint. Values are 0, 1, -1
         """
+
         cost_map_data = np.array(msg.data).reshape((msg.info.height, msg.info.width)).T
 
         self.env.cost_map.origin = np.array([msg.info.origin.position.x, msg.info.origin.position.y])
@@ -417,3 +428,21 @@ class Context:
         self.env.cost_map.data[cost_map_data == -1] = 10.0  # TODO: find optimal value
         # normalize to [0, 1]
         self.env.cost_map.data /= 100.0
+
+    def move_costmap(self, course_name="center_gps"):
+        # TODO(neven): add service to move costmap if going to watter bottle search
+        self.node.get_logger().info(f"Requesting to move cost map to {course_name}")
+        client = self.node.create_client(MoveCostMap, "move_cost_map")
+        while not client.wait_for_service(timeout_sec=1.0):
+            self.node.get_logger().info("waiting for move_cost_map service...")
+        req = MoveCostMap.Request()
+
+        req.course = course_name
+        future = client.call_async(req)
+        # TODO(neven): make this actually wait for the service to finish
+        # context.node.get_logger().info("called thing")
+        # rclpy.spin_until_future_complete(context.node, future)
+        # while not future.done():
+        #     pass
+        # if not future.result():
+        #     context.node.get_logger().info("move_cost_map service call failed")

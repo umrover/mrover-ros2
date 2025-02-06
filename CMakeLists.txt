@@ -335,6 +335,7 @@ install(PROGRAMS
         localization/imu_driver.py
         superstructure/superstructure.py
         scripts/debug_course_publisher.py
+        scripts/astar_debug.py
 		scripts/visualizer.py
         scripts/move_cost_map.py
         scripts/pc_visualizer.py
