@@ -1,0 +1,15 @@
+Build/
+Debug/
+Release/
+.metadata/
+.settings/
+RemoteSystemsTempFiles/
+.osx.project
+
+*.chm
+*.settings.xml
+
+*.xml
+*.launch
+
+cmake*/
