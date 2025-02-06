@@ -1,6 +1,4 @@
 #include "cost_map.hpp"
-#include <sensor_msgs/msg/detail/point_cloud2__struct.hpp>
-
 namespace mrover {
 
     CostMapNode::CostMapNode() : Node("cost_map") {

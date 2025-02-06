@@ -7,10 +7,15 @@
 #include <memory>
 #include <numeric>
 #include <random>
+#include <cstddef>
+#include <vector>
 
 #include <Eigen/Core>
+#include <Eigen/src/Core/Matrix.h>
+#include <unsupported/Eigen/EulerAngles>
 
 #include <nav_msgs/msg/occupancy_grid.hpp>
+#include <sensor_msgs/msg/detail/point_cloud2__struct.hpp>
 #include <rclcpp/logging.hpp>
 #include <rclcpp/node.hpp>
 #include <rclcpp/service.hpp>
@@ -24,3 +29,4 @@
 #include <mrover/srv/move_cost_map.hpp>
 #include <parameter.hpp>
 #include <point.hpp>
+#include <rclcpp/logging.hpp>
