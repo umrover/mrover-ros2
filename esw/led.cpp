@@ -1,5 +1,7 @@
 #include "mrover/msg/detail/state_machine_state_update__struct.hpp"
+#include <memory>
 #include <rclcpp/create_subscription.hpp>
+#include <rclcpp/logger.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp/subscription.hpp>
 #include <std_srvs/srv/detail/set_bool__struct.hpp>
@@ -23,14 +25,14 @@ namespace mrover {
     public:
         LED() : Node {"led"} {
             mStateSub = create_subscription<mrover::msg::StateMachineStateUpdate>(
-                "nav_state", 10, [this](mrover::msg::StateMachineStateUpdate::ConstSharedPtr const& msg) {
+                "/nav_state", 10, [this](mrover::msg::StateMachineStateUpdate::ConstSharedPtr const& msg) {
                 stateMachineUpdateCallback(msg);
             });
 
             mLedPub = create_publisher<mrover::msg::LED>("led", 10);
 
             mTeleopEnableServer = create_service<std_srvs::srv::SetBool>(
-                "enable_teleop", [this](std_srvs::srv::SetBool::Request::SharedPtr const& req,
+                "/enable_teleop", [this](std_srvs::srv::SetBool::Request::SharedPtr const& req,
                            std_srvs::srv::SetBool::Response::SharedPtr const& res) {
                         teleopEnabledCallback(req, res);
             });
@@ -82,10 +84,7 @@ namespace mrover {
 
 auto main(int argc, char** argv) -> int {
     rclcpp::init(argc, argv);
-
-    std::shared_ptr<rclcpp::Node> led_node = rclcpp::Node::make_shared("led");
-
-    rclcpp::spin(led_node);
+    rclcpp::spin(std::make_shared<mrover::LED>());
     rclcpp::shutdown();
 
     return 0;
