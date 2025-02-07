@@ -97,7 +97,8 @@ void Error_Handler(void);
 #define AUTON_LED_G_GPIO_Port GPIOB
 #define AUTON_LED_R_Pin GPIO_PIN_7
 #define AUTON_LED_R_GPIO_Port GPIOB
-
+#define ARM_LASER_GPIO_Port GPIOC
+#define ARM_LASER_Pin GPIO_PIN_14
 /* USER CODE BEGIN Private defines */
 
 /* USER CODE END Private defines */
