@@ -2,6 +2,7 @@
 
 #include "TargetKey.hpp"
 #include "lie.hpp"
+#include <geometry_msgs/msg/detail/vector3__struct.hpp>
 #include <rclcpp/client.hpp>
 #include <tf2_ros/buffer.h>
 
@@ -39,7 +40,7 @@ auto TargetKey::onLoop() -> State*{
     //Replace With Service Start
     //arm_e_link
 
-    auto tf = mrover::SE3Conversions::fromTfTree(*fsm_ctx->mTfBuffer, "arm_e_link", std::format("{}_key_truth", goal->code[fsm_ctx->curr_key_index]));
+    auto tf = mrover::SE3Conversions::fromTfTree(*fsm_ctx->mTfBuffer, "arm_base_link", std::format("{}_key_truth", goal->code[fsm_ctx->curr_key_index]));
     // auto tf_test = mrover::SE3Conversions::fromTfTree(buffer, "base_link", "q_key_truth" , node->get_clock()->now());
 
     //auto relative_rotation = origin.rotation().transpose() * tf.rotation();
@@ -59,19 +60,12 @@ auto TargetKey::onLoop() -> State*{
     //if (rclcpp::spin_until_future_complete(node->get_node_base_interface(), result) ==
      //   rclcpp::FutureReturnCode::SUCCESS)
     //{
-    auto ogpos = fsm_ctx->mIKPos;
-    std::cout << "Success" << tf.x() << "," << tf.y() << '\n';
-    int64_t x = tf.x();
-    int64_t y = tf.y(); //result.get()->x;
-    int64_t z = tf.z();//result.get()->y;
 
         //move arm with ik
-    msg::IK ik;
-    ik.target.header.stamp = node->get_clock()->now();
-    ik.target.header.frame_id = "arm_e_link"; // TODO: fix
-    ik.target.pose.position.x = x;
-    ik.target.pose.position.y = y;
-    ik.target.pose.position.z = z;
+    geometry_msgs::msg::Vector3 ik;
+    ik.x = tf.x();
+    ik.y = tf.y();
+    ik.z = tf.z();
     fsm_ctx->mIkTargetPub->publish(ik);
 
 
@@ -82,12 +76,12 @@ auto TargetKey::onLoop() -> State*{
         // subscribe to arm state
         // dist
 
-    auto thresholdCheck = mrover::SE3Conversions::fromTfTree(*fsm_ctx->mTfBuffer, "arm_e_link", std::format("{}_key_truth", goal->code[fsm_ctx->curr_key_index]));
+    auto thresholdCheck = mrover::SE3Conversions::fromTfTree(*fsm_ctx->mTfBuffer, "arm_base_link", std::format("{}_key_truth", goal->code[fsm_ctx->curr_key_index]));
 
     double magnitude = std::sqrt(thresholdCheck.x() * thresholdCheck.x() + thresholdCheck.y() * thresholdCheck.y() + thresholdCheck.z() * thresholdCheck.z());
 
 
-    if(magnitude < 1){
+    if(false){
         fsm_ctx->curr_key_index++;
         return StateMachine::make_state<PressKey>(fsm_ctx);
     } else {

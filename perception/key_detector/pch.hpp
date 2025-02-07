@@ -41,8 +41,7 @@ struct FSMCtx{
   std::shared_ptr<rclcpp::Node> node;
   int curr_key_index;
   std::shared_ptr<tf2_ros::Buffer> mTfBuffer;
-  rclcpp::Publisher<mrover::msg::IK>::SharedPtr mIkTargetPub;
-  mrover::msg::Position::SharedPtr mIKPos;
+  rclcpp::Publisher<geometry_msgs::msg::Vector3>::SharedPtr mIkTargetPub;
 };
 
 // States
