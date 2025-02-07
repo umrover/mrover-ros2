@@ -19,7 +19,7 @@ namespace mrover {
         std::uint8_t id : 4 {}; // internal id of servo
         std::uint8_t is_counterclockwise : 1 {};
 
-        float radians{};
+        float radians{}; 
     };
 
     struct ServoPositionData {

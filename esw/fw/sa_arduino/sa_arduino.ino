@@ -13,6 +13,10 @@
   #define DEBUG_SERIAL Serial
 #endif
 
+
+#define PI 3.1415926535897932384626433832795
+#define HEADER_BYTE = 0xA5
+
 const uint8_t DXL_ID = 1;
 const float DXL_PROTOCOL_VERSION = 2.0;
 
@@ -50,9 +54,6 @@ void loop(){
 
   float humidity = sht20.readHumidity() / 100.0;
 
-  // delay(1000);
-
-
   // START OUR CODE HERE!
 
   if (Serial.available()) {
@@ -68,6 +69,13 @@ void loop(){
         int pos_new = input.substring(spaceIndex + 1).toInt();  // Get Degrees (after the space)
         int direction = input.substring(spaceIndex + 2).toInt();
 
+
+
+        // example numbers
+        int id = 0;
+        bool is_counterclockwise = 0; // True:CCW:Positive // False:CW:Negative
+        float radians = 4.5;
+
         // Validate parsed values
         if (id >= 0 || input.substring(spaceIndex + 1) == "0") {
 
@@ -80,7 +88,24 @@ void loop(){
           dxl.setOperatingMode(id, 4);
           dxl.torqueOn(id);
 
+          // TODO: use isCCW and radians to set position
+          float degrees = (radians * 180.0)/PI;
+          if (!is_counterclockwise)
+          {
+            degrees*=-1;
+          }
+          dxl.setGoalAngle(id,degrees);
 
+          // TODO: convert current position to radians and send out
+
+          presentDeg = dxl.getCurAngle(id);
+          uint32_t presentRad = presentDeg*PI/180.0;
+          Serial.write((byte)HEADER_BYTE);
+          Serial.write((byte)0x01); // message header
+          Serial.write((byte)id);
+          Serial.write(presentRad);
+
+          /*
           // Adjust the motor position for the specified ID
           int pos_prev = dxl.getPresentPosition(id, UNIT_DEGREE);
   
@@ -89,7 +114,7 @@ void loop(){
 
           if (diff > 180) {
             if (pos_new > pos_prev) {
-              dxl.setGoalPosition(id, pos_prev - (360 - diff));
+              dxl.setGoalPosition(id, pos_prev - (360 - diff), UNIT_DEGREE);
             } else {
               dxl.setGoalPosition(id, pos_prev + (360 - diff));
             }
@@ -127,6 +152,7 @@ void loop(){
           Serial.print(", Current Position: ");
           Serial.print(temp);
           Serial.print(" Done");
+          */
 
         }
       }
