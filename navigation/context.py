@@ -287,6 +287,7 @@ class Course:
             return long_range.LongRangeState()
         return None
 
+
 def setup_course(ctx: Context, waypoints: list[tuple[Waypoint, SE3]]) -> Course:
     all_waypoint_info = []
     for index, (waypoint_info, waypoint_in_world) in enumerate(waypoints):
