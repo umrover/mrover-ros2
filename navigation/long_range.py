@@ -30,24 +30,26 @@ class LongRangeState(ApproachTargetState):
         assert current_waypoint is not None
 
         target = context.env.image_targets.query(context.course.image_target_name())
-        if target is not None:
-            rover_in_map = context.rover.get_pose_in_map()
-            assert rover_in_map is not None
+        if target is None:
+            return None
 
-            rover_position = rover_in_map.translation()
-            rover_direction = rover_in_map.rotation()[:, 0]
+        rover_in_map = context.rover.get_pose_in_map()
+        assert rover_in_map is not None
 
-            bearing_to_tag = target.target.bearing
-            # If you have not seen the tag in a while but are waiting until the expiration time is up,
-            # keep going towards where it was last seen (the direction you are heading), don't use an old bearing value
-            if target.hit_count <= 0:
-                bearing_to_tag = 0
+        rover_position = rover_in_map.translation()
+        rover_direction = rover_in_map.rotation()[:, 0]
 
-            direction_to_tag = SO2(bearing_to_tag).act(rover_direction[:2])
+        bearing_to_tag = target.target.bearing
+        # If you have not seen the tag in a while but are waiting until the expiration time is up,
+        # keep going towards where it was last seen (the direction you are heading), don't use an old bearing value
+        if target.hit_count <= 0:
+            bearing_to_tag = 0
 
-            distance = context.node.get_parameter("long_range.distance_ahead").value
-            direction_to_tag = np.array([direction_to_tag[0], direction_to_tag[1], 0.0])
-            tag_position = rover_position + direction_to_tag * distance
+        direction_to_tag = SO2(bearing_to_tag).act(rover_direction[:2])
+
+        distance = context.node.get_parameter("long_range.distance_ahead").value
+        direction_to_tag = np.array([direction_to_tag[0], direction_to_tag[1], 0.0])
+        tag_position = rover_position + direction_to_tag * distance
         return tag_position
 
     def determine_next(self, context: Context, is_finished: bool) -> State:

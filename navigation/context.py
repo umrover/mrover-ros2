@@ -205,13 +205,9 @@ class CostMap:
 class Course:
     ctx: Context
     course_data: CourseMsg
-    
-    projections: dict[str, tuple[SE3, Time]]
-
     # Currently active waypoint
     waypoints: list[tuple[Waypoint, SE3]]
     waypoint_index: int = 0
-
 
     def increment_waypoint(self) -> None:
         self.waypoint_index += 1
