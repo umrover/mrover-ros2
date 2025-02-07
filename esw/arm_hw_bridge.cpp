@@ -226,10 +226,10 @@ namespace mrover {
 
                 // Silly little thing to save some speed. Could easily just do the straight up string comparision
                 switch (name.front() + name.back()) {
-                    case 'j' + '0':
+                    case 'j' + 'h':
                         jointDePitchThrottle = throttle;
                         break;
-                    case 'j' + '1':
+                    case 'j' + 'l':
                         jointDeRollThrottle = throttle;
                         break;
                     case 'j' + 'a':
@@ -244,7 +244,7 @@ namespace mrover {
                     case 'g' + 'r':
                         mGripper->setDesiredThrottle(throttle);
                         break;
-                    case 'f' + 'r':
+                    case 'c' + 'm':
                         mCam->setDesiredThrottle(throttle);
                         break;
                 }
@@ -273,10 +273,10 @@ namespace mrover {
 
                 // Silly little thing to save some speed. Could easily just do the straight up string comparision
                 switch (name.front() + name.back()) {
-                    case 'j' + '0':
+                    case 'j' + 'h':
                         jointDePitchVelocity = RadiansPerSecond{velocity};
                         break;
-                    case 'j' + '1':
+                    case 'j' + 'l':
                         jointDeRollVelocity = RadiansPerSecond{velocity};
                         break;
                     case 'j' + 'a':
@@ -291,7 +291,7 @@ namespace mrover {
                     case 'g' + 'r':
                         mGripper->setDesiredVelocity(RadiansPerSecond{velocity});
                         break;
-                    case 'f' + 'r':
+                    case 'c' + 'm':
                         mCam->setDesiredVelocity(RadiansPerSecond{velocity});
                         break;
                 }
@@ -320,10 +320,10 @@ namespace mrover {
 
                 // Silly little thing to save some speed. Could easily just do the straight up string comparision
                 switch (name.front() + name.back()) {
-                    case 'j' + '0':
+                    case 'j' + 'h':
                         jointDePitchPosition = Radians{position};
                         break;
-                    case 'j' + '1':
+                    case 'j' + 'l':
                         jointDeRollPosition = Radians{position};
                         break;
                     case 'j' + 'a':
@@ -338,7 +338,7 @@ namespace mrover {
                     case 'g' + 'r':
                         mGripper->setDesiredPosition(Radians{position});
                         break;
-                    case 'f' + 'r':
+                    case 'c' + 'm':
                         mCam->setDesiredPosition(Radians{position});
                         break;
                 }
