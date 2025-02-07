@@ -73,7 +73,7 @@ class ApproachTargetState(State):
         context.node.get_logger().info("Found closest point to target")
         return self
     
-    def calc_point(self, context: Context) -> bool:
+    def calc_point(self, context: Context, check_astar = False) -> bool:
         """
         Calculate the nearest low-cost point to the target.
         Should only run if the target is in a high-cost area.
@@ -86,7 +86,7 @@ class ApproachTargetState(State):
         target_position = self.target_position
 
         # Check if the target is in a high-cost area
-        if not is_high_cost_point(point=target_position, context=context):
+        if not is_high_cost_point(point=target_position, context=context) and not check_astar:
             # If not in a high-cost area, return success (no need to find a new point)
             return True
 
@@ -96,6 +96,8 @@ class ApproachTargetState(State):
         max_radius = 10.0  # Maximum allowable radius to expand search
         radius_increment = 1.0 #How much larger to expand radius
 
+        if (check_astar): resolution = 0.5
+
         while search_radius <= max_radius:
             # Generate candidate points within the search radius
             candidates = []
@@ -103,7 +105,12 @@ class ApproachTargetState(State):
                 for dy in np.arange(-search_radius, search_radius + resolution, resolution):
                     candidate = target_position + np.array([dx, dy,0.])
                     if not is_high_cost_point(point=candidate, context=context):
-                        candidates.append(candidate)
+                        if (check_astar): #If we need to consider a-star, generate a trajectory to see if it's reachable
+                            candidate_astar_traj = self.astar.generate_trajectory(context, candidate)
+                            if (len(candidate_astar_traj.coordinates) != 0):
+                                candidates.append(candidate)
+                        else:
+                            candidates.append(candidate)
 
             if candidates:
                 # Find the nearest low-cost point to the target position
@@ -185,6 +192,9 @@ class ApproachTargetState(State):
             self.time_last_updated = context.node.get_clock().now()
             # Generate a path
             self.astar_traj = self.astar.generate_trajectory(context, self.traj.get_current_point())
+            if (len(self.astar_traj.coordinates) == 0):
+                context.node.get_logger().info(f"Calculating nearest point that can be astared to:")
+                self.calc_point(context, True)
 
         arrived = False
         cmd_vel = Twist()
@@ -209,7 +219,8 @@ class ApproachTargetState(State):
                     if (self.in_distance_threshold(context)):
                         return self.next_state(context=context, is_finished=True)
                     else:
-                            self.dilate_costmap(context=context)
+                        self.dilate_costmap(context=context)
+                        return self.next_state(context=context, is_finished=True)
                 self.display_markers(context=context)
         else:
             context.rover.send_drive_command(cmd_vel)
@@ -234,6 +245,5 @@ class ApproachTargetState(State):
         return distance_to_target < self.DISTANCE_THRESHOLD
     
     def dilate_costmap(self, context: Context):
-        context.node.get_logger().info("Too far from bottle!")
+        context.node.get_logger().info("Too far from target!")
         pass
-
