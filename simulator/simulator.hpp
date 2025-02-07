@@ -84,6 +84,7 @@ namespace mrover {
             int index{};
             boost::container::small_vector<Uniform<ModelUniforms>, 2> visualUniforms;
             boost::container::small_vector<Uniform<ModelUniforms>, 2> collisionUniforms;
+            Clock::time_point lastUpdate = Clock::now();
         };
 
         urdf::Model model;
@@ -212,6 +213,12 @@ namespace mrover {
         int mToggleRenderModelsKey = GLFW_KEY_M;
         int mToggleRenderWireframeCollidersKey = GLFW_KEY_C;
         int mToggleCameraLockKey = GLFW_KEY_O;
+        int mArmForwardKey = GLFW_KEY_UP;
+        int mArmBackwardKey = GLFW_KEY_DOWN;
+        int mArmLeftKey = GLFW_KEY_LEFT;
+        int mArmRightKey = GLFW_KEY_RIGHT;
+        int mArmUpKey = GLFW_KEY_SLASH;
+        int mArmDownKey = GLFW_KEY_PERIOD;
 
         float mFlySpeed = 5.0f;
         float mRoverLinearSpeed = 1.0f;
@@ -241,8 +248,13 @@ namespace mrover {
         tf2_ros::TransformBroadcaster mTfBroadcaster{this};
 
         bool mPublishIk = true;
+        bool mIkMode = true; // true = position control, false = velocity control
         Eigen::Vector3f mIkTarget{0.382, 0.01, -0.217};
+        Eigen::Vector3f mIkVel{0, 0, 0};
+        float mArmSpeed = 1;
         rclcpp::Publisher<msg::IK>::SharedPtr mIkTargetPub;
+        rclcpp::Publisher<geometry_msgs::msg::Vector3>::SharedPtr mIkVelPub;
+        rclcpp::Client<srv::IkMode>::SharedPtr mIkModeClient;
 
         R3d mGpsLinearizationReferencePoint{};
         double mGpsLinerizationReferenceHeading{};
@@ -362,7 +374,7 @@ namespace mrover {
             }
 
             if (auto it = mUrdfs.find("rover"); it != mUrdfs.end()) {
-                URDF const& rover = it->second;
+                URDF& rover = it->second;
 
                 for (std::size_t i = 0; i < names.size(); ++i) {
                     std::string const& name = names[i];
@@ -375,7 +387,8 @@ namespace mrover {
                     }
 
                     std::string const& urdfName = it->second;
-                    URDF::LinkMeta const& linkMeta = rover.linkNameToMeta.at(urdfName);
+                    URDF::LinkMeta& linkMeta = rover.linkNameToMeta.at(urdfName);
+                    linkMeta.lastUpdate = Clock::now();
 
                     auto* motor = std::bit_cast<btMultiBodyJointMotor*>(rover.physics->getLink(linkMeta.index).m_userPtr);
                     assert(motor);
