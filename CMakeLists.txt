@@ -296,6 +296,8 @@ macro(mrover_add_esw_motor_bridge_node name sources)
     target_link_libraries(${name} motor_library)
 endmacro()
 
+mrover_add_node(led esw/led.cpp)
+ament_target_dependencies(led rclcpp std_srvs)
 
 mrover_add_esw_motor_bridge_node(drive_hw_bridge esw/drive_hw_bridge.cpp)
 mrover_add_esw_motor_bridge_node(arm_hw_bridge esw/arm_hw_bridge.cpp)
