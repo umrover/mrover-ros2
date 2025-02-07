@@ -121,6 +121,25 @@ namespace mrover {
             .calibrationThrottle = 0.5,
     };
 
+    constexpr static BrushedController::Config CAM_CONFIG = {
+            .limitSwitchPresent = {true, true},
+            .limitSwitchEnabled = {true, true},
+            .limitSwitchLimitsFwd = {false, false},
+            .limitSwitchActiveHigh = {false, false},
+            .limitSwitchUsedForReadjustment = {false, false},
+            // .limitSwitchReadjustPosition = {Radians{0.0}},
+            .limitMaxForwardPosition = true,
+            .limitMaxBackwardPosition = true,
+
+            // TODO: (owen) ask for gear ratio
+            // .gearRatio = 1.0,
+            .isInverted = false,
+            .driverVoltage = 10.5,
+            .motorMaxVoltage = 12.0,
+            .quadPresent = false,
+            .absPresent = false,
+            .calibrationThrottle = 0.5,
+    };
 
     class ArmHWBridge : public rclcpp::Node {
 
@@ -138,7 +157,7 @@ namespace mrover {
             mJointDe0 = std::make_shared<BrushlessController<Revolutions>>(shared_from_this(), "jetson", "joint_de_0", JOINT_DE_0_CONFIG);
             mJointDe1 = std::make_shared<BrushlessController<Revolutions>>(shared_from_this(), "jetson", "joint_de_1", JOINT_DE_1_CONFIG);
             mGripper = std::make_shared<BrushedController>(shared_from_this(), "jetson", "gripper", GRIPPER_CONFIG);
-            mFinger = std::make_shared<BrushedController>(shared_from_this(), "jetson", "finger", BrushedController::Config{});
+            mCam = std::make_shared<BrushedController>(shared_from_this(), "jetson", "cam", CAM_CONFIG);
 
             mArmThrottleSub = create_subscription<msg::Throttle>("arm_throttle_cmd", 1, [this](msg::Throttle::ConstSharedPtr const& msg) { processThrottleCmd(msg); });
             mArmVelocitySub = create_subscription<msg::Velocity>("arm_velocity_cmd", 1, [this](msg::Velocity::ConstSharedPtr const& msg) { processVelocityCmd(msg); });
@@ -166,7 +185,7 @@ namespace mrover {
         }
 
     private:
-        std::vector<std::string> const mArmJointNames{"joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_roll", "allen_key", "gripper"};
+        std::vector<std::string> const mArmJointNames{"joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_roll", "allen_key", "gripper", "cam"};
 
         std::shared_ptr<BrushlessController<Meters>> mJointA;
         std::shared_ptr<BrushedController> mJointB;
@@ -174,7 +193,7 @@ namespace mrover {
         std::shared_ptr<BrushlessController<Revolutions>> mJointDe0;
         std::shared_ptr<BrushlessController<Revolutions>> mJointDe1;
         std::shared_ptr<BrushedController> mGripper;
-        std::shared_ptr<BrushedController> mFinger; // rip the solenoid. tentative name until design finalized
+        std::shared_ptr<BrushedController> mCam; // rip the solenoid. tentative name until design finalized
 
 
         rclcpp::Subscription<msg::Throttle>::SharedPtr mArmThrottleSub;
@@ -226,7 +245,7 @@ namespace mrover {
                         mGripper->setDesiredThrottle(throttle);
                         break;
                     case 'f' + 'r':
-                        mFinger->setDesiredThrottle(throttle);
+                        mCam->setDesiredThrottle(throttle);
                         break;
                 }
             }
@@ -273,7 +292,7 @@ namespace mrover {
                         mGripper->setDesiredVelocity(RadiansPerSecond{velocity});
                         break;
                     case 'f' + 'r':
-                        mFinger->setDesiredVelocity(RadiansPerSecond{velocity});
+                        mCam->setDesiredVelocity(RadiansPerSecond{velocity});
                         break;
                 }
             }
@@ -320,7 +339,7 @@ namespace mrover {
                         mGripper->setDesiredPosition(Radians{position});
                         break;
                     case 'f' + 'r':
-                        mFinger->setDesiredPosition(Radians{position});
+                        mCam->setDesiredPosition(Radians{position});
                         break;
                 }
 
@@ -370,9 +389,9 @@ namespace mrover {
             mJointData.velocity[5] = {mGripper->getVelocity().get()};
             mJointData.effort[5] = {mGripper->getEffort()};
 
-            mJointData.position[6] = {mFinger->getPosition().get()};
-            mJointData.velocity[6] = {mFinger->getVelocity().get()};
-            mJointData.effort[6] = {mFinger->getEffort()};
+            mJointData.position[6] = {mCam->getPosition().get()};
+            mJointData.velocity[6] = {mCam->getVelocity().get()};
+            mJointData.effort[6] = {mCam->getEffort()};
 
             mJointDataPub->publish(mJointData);
 
@@ -400,9 +419,9 @@ namespace mrover {
             mControllerState.error[5] = {mGripper->getErrorState()};
             mControllerState.limit_hit[5] = {mGripper->getLimitsHitBits()};
 
-            mControllerState.state[6] = {mFinger->getState()};
-            mControllerState.error[6] = {mFinger->getErrorState()};
-            mControllerState.limit_hit[6] = {mFinger->getLimitsHitBits()};
+            mControllerState.state[6] = {mCam->getState()};
+            mControllerState.error[6] = {mCam->getErrorState()};
+            mControllerState.limit_hit[6] = {mCam->getLimitsHitBits()};
 
             mControllerStatePub->publish(mControllerState);
         }
