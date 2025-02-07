@@ -9,6 +9,12 @@ namespace mrover{
 		mStateMachine.enableTransitions<Wait, TargetKey, Wait, Cancel>();
 		using namespace std::placeholders;
 
+		mIkTargetPub = create_publisher<msg::IK>("arm_ik", 1);
+		mPosSub = create_subscription<msg::Position>("arm_position_cmd", 1, [this](msg::Position::ConstSharedPtr const& msg) {
+			mIKPos->set__names(msg->names);
+			mIKPos->set__positions(msg->positions);
+		});
+
 		this->action_server_ = rclcpp_action::create_server<KeyAction>(
 			this,
 			"KeyAction",

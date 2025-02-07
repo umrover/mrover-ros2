@@ -51,7 +51,10 @@ class KeyDetector : public rclcpp::Node{
 
     void updateFSM();
 
-
+    rclcpp::Subscription<mrover::msg::Position>::SharedPtr mPosSub;
+    rclcpp::Publisher<mrover::msg::IK>::SharedPtr mIkTargetPub;
+    mrover::msg::Position::SharedPtr mIKPos;
+    
     rclcpp_action::Server<KeyAction>::SharedPtr action_server_;
 
     rclcpp_action::GoalResponse handle_goal(

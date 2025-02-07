@@ -16,14 +16,6 @@ auto TargetKey::onLoop() -> State*{
         // get the location of the key by querying model
         // use ik to move to the location
         // transition to press key state
-    
-    if(mIkTargetPub == nullptr)
-        mIkTargetPub = fsm_ctx->node->create_publisher<msg::IK>("arm_ik", 1);
-    /*
-    if(mPosSub == nullptr)
-        mPosSub = fsm_ctx->node->create_subscription<msg::Position>("arm_position_cmd", 10, [this](msg::IK::ConstSharedPtr const& msg) {
-            
-        });*/
 
     auto goal_handle = fsm_ctx->goal_handle;
 
@@ -67,6 +59,7 @@ auto TargetKey::onLoop() -> State*{
     //if (rclcpp::spin_until_future_complete(node->get_node_base_interface(), result) ==
      //   rclcpp::FutureReturnCode::SUCCESS)
     //{
+    auto ogpos = fsm_ctx->mIKPos;
     std::cout << "Success" << tf.x() << "," << tf.y() << '\n';
     int64_t x = tf.x();
     int64_t y = tf.y(); //result.get()->x;
@@ -79,7 +72,7 @@ auto TargetKey::onLoop() -> State*{
     ik.target.pose.position.x = x;
     ik.target.pose.position.y = y;
     ik.target.pose.position.z = z;
-    mIkTargetPub->publish(ik);
+    fsm_ctx->mIkTargetPub->publish(ik);
 
 
         //verify that the arm is within the threshold

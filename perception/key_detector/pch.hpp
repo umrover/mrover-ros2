@@ -5,6 +5,7 @@
 #include <rclcpp/rclcpp.hpp>
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2_ros/transform_listener.h>
+#include "mrover/msg/detail/position__struct.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "rclcpp_action/rclcpp_action.hpp"
 
@@ -40,6 +41,8 @@ struct FSMCtx{
   std::shared_ptr<rclcpp::Node> node;
   int curr_key_index;
   std::shared_ptr<tf2_ros::Buffer> mTfBuffer;
+  rclcpp::Publisher<mrover::msg::IK>::SharedPtr mIkTargetPub;
+  mrover::msg::Position::SharedPtr mIKPos;
 };
 
 // States

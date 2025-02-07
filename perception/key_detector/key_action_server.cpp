@@ -31,6 +31,8 @@ void KeyDetector::execute(const std::shared_ptr<GoalHandleKeyAction> goal_handle
   fsm_ctx->node = this->shared_from_this();
   fsm_ctx->curr_key_index = 0;
   fsm_ctx->mTfBuffer = mTfBuffer;
+  fsm_ctx->mIkTargetPub = mIkTargetPub;
+  fsm_ctx->mIKPos = mIKPos;
 
   // start state
   while (rclcpp::ok()){

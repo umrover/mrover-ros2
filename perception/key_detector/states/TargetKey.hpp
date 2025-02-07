@@ -14,8 +14,6 @@ namespace mrover{
 		auto onLoop() -> State* override;
 
 	private:
-		rclcpp::Publisher<msg::IK>::SharedPtr mIkTargetPub;
-		rclcpp::Subscription<msg::Position>::SharedPtr mPosSub;
 		const std::shared_ptr<FSMCtx> fsm_ctx;
 		rclcpp::Rate sleepRate;
 	};
