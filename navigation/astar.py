@@ -24,7 +24,6 @@ class NoPath(Exception):
     """
     Raised when an A* path cannot be found.
     """
-
     pass
 
 
