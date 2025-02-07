@@ -1,13 +1,4 @@
 #include "cost_map.hpp"
-#include "lie.hpp"
-#include <Eigen/src/Core/Matrix.h>
-#include <cstddef>
-#include <cstdint>
-#include <format>
-#include <memory>
-#include <rclcpp/logging.hpp>
-#include <unsupported/Eigen/EulerAngles>
-#include <vector>
 
 namespace mrover {
 

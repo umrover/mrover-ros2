@@ -7,12 +7,12 @@
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="package://mrover/urdf/meshes/textured_ground.fbx"/>
+        <mesh filename="package://mrover/urdf/meshes/mars-sol-239.fbx"/>
       </geometry>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://mrover/urdf/meshes/textured_ground_decimated.fbx"/>
+        <mesh filename="package://mrover/urdf/meshes/mars-sol-239-decimated.fbx"/>
       </geometry>
     </collision>
   </link>

@@ -32,7 +32,7 @@ class MoveCostMapNode(Node):
         tx, ty, _ = position.translation()
         course_in_map = from_position_orientation(tx, ty)
 
-        SE3.to_tf_tree(self.tf_broadcaster, course_in_map, "debug_course", "map")
+        SE3.to_tf_tree(self.tf_broadcaster, course_in_map, "debug_course", "map", self.get_clock().now().to_msg())
 
         self.req = MoveCostMap.Request()
 
