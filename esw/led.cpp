@@ -1,5 +1,8 @@
+#include "mrover/msg/detail/state_machine_state_update__struct.hpp"
+#include <rclcpp/create_subscription.hpp>
 #include <rclcpp/rclcpp.hpp>
-#include "std_srvs/srv/detail/set_bool__struct.hpp"
+#include <rclcpp/subscription.hpp>
+#include <std_srvs/srv/detail/set_bool__struct.hpp>
 
 #include <mrover/msg/can.hpp>
 #include <mrover/msg/led.hpp>
@@ -15,54 +18,75 @@ enum class LEDMode {
 
 static constexpr std::string_view DONE_STATE = "DoneState";
 
-rclcpp::Publisher led_publisher;
+namespace mrover {
+    class LED final : public rclcpp::Node {
+    public:
+        LED() : Node {"led"} {
+            mStateSub = create_subscription<mrover::msg::StateMachineStateUpdate>(
+                "nav_state", 10, [this](mrover::msg::StateMachineStateUpdate::ConstSharedPtr const& msg) {
+                stateMachineUpdateCallback(msg);
+            });
 
-// When navigation reaches a waypoint it will publish "DoneState" to the "nav_state" topic
+            mLedPub = create_publisher<mrover::msg::LED>("led", 10);
 
-bool is_navigation_done = false;
-bool is_teleop_enabled = false;
-LEDMode led_mode = LEDMode::Unknown;
+            mTeleopEnableServer = create_service<std_srvs::srv::SetBool>(
+                "enable_teleop", [this](std_srvs::srv::SetBool::Request::SharedPtr const& req,
+                           std_srvs::srv::SetBool::Response::SharedPtr const& res) {
+                        teleopEnabledCallback(req, res);
+            });
+        }
 
-auto update_led() -> void {
-    // Teleoperation takes precedence over autonomous control
-    if (is_teleop_enabled) {
-        led_mode = LEDMode::Blue;
-    } else if (is_navigation_done) {
-        led_mode = LEDMode::BlinkingGreen;
-    } else {
-        led_mode = LEDMode::Red;
-    }
+        auto updateLED() -> void {
+            // Teleoperation takes precedence over autonomous control
+            if (is_teleop_enabled) {
+                led_mode = LEDMode::Blue;
+            } else if (is_navigation_done) {
+                led_mode = LEDMode::BlinkingGreen;
+            } else {
+                led_mode = LEDMode::Red;
+            }
 
-    mrover::msg::LED led_msg;
-    led_msg.red = led_mode == LEDMode::Red;
-    led_msg.green = led_mode == LEDMode::BlinkingGreen;
-    led_msg.blue = led_mode == LEDMode::Blue;
-    led_msg.is_blinking = led_mode == LEDMode::BlinkingGreen;
-    led_publisher.publish(led_msg);
-}
+            mrover::msg::LED led_msg;
+            led_msg.red = led_mode == LEDMode::Red;
+            led_msg.green = led_mode == LEDMode::BlinkingGreen;
+            led_msg.blue = led_mode == LEDMode::Blue;
+            led_msg.is_blinking = led_mode == LEDMode::BlinkingGreen;
+            mLedPub->publish(led_msg);
+        }
 
-auto state_machine_state_update(mrover::msg::StateMachineStateUpdate::ConstPtr const& msg) -> void {
-    is_navigation_done = msg->state == DONE_STATE;
+        // When navigation reaches a waypoint it will publish "DoneState" to the "nav_state" topic
+        auto stateMachineUpdateCallback(mrover::msg::StateMachineStateUpdate::ConstSharedPtr const& msg) -> void {
+            is_navigation_done = msg->state == DONE_STATE;
 
-    update_led();
-}
+            updateLED();
+        }
 
-auto teleop_enabled_update(std_srvs::srv::SetBoolRequest& request, std_srvs::srv::SetBoolResponse& response) -> bool {
-    is_teleop_enabled = request.data;
+        auto teleopEnabledCallback(std_srvs::srv::SetBool::Request::SharedPtr const& request, std_srvs::srv::SetBool::Response::SharedPtr const& response) -> bool {
+            is_teleop_enabled = request->data;
 
-    update_led();
+            updateLED();
 
-    return response.success = true;
+            return response->success = true;
+        }
+    
+    private:
+        bool is_navigation_done = false;
+        bool is_teleop_enabled = false;
+        LEDMode led_mode = LEDMode::Unknown;
+
+        rclcpp::Publisher<mrover::msg::LED>::SharedPtr mLedPub;
+        rclcpp::Subscription<mrover::msg::StateMachineStateUpdate>::SharedPtr mStateSub;
+        rclcpp::Service<std_srvs::srv::SetBool>::SharedPtr mTeleopEnableServer;
+    };
 }
 
 auto main(int argc, char** argv) -> int {
     rclcpp::init(argc, argv);
 
-    led_publisher = nh.advertise<mrover::msg::LED>("led", 1);
-    rclcpp::Service teleop_enabled_client = nh.advertiseService("enable_teleop", teleop_enabled_update);
-    ros::Subscriber state_machine_update_sub = nh.subscribe<mrover::StateMachineStateUpdate>("nav_state", 1, state_machine_state_update);
+    std::shared_ptr<rclcpp::Node> led_node = rclcpp::Node::make_shared("led");
 
-    ros::spin();
+    rclcpp::spin(led_node);
+    rclcpp::shutdown();
 
     return 0;
 }
