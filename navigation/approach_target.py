@@ -73,7 +73,7 @@ class ApproachTargetState(State):
         context.node.get_logger().info("Found closest point to target")
         return self
     
-    def calc_point(self, context: Context, check_astar = False) -> bool:
+    def calc_point(self, context: Context, check_astar = False):
         """
         Calculate the nearest low-cost point to the target.
         Should only run if the target is in a high-cost area.
@@ -88,7 +88,7 @@ class ApproachTargetState(State):
         # Check if the target is in a high-cost area
         if not is_high_cost_point(point=target_position, context=context) and not check_astar:
             # If not in a high-cost area, return success (no need to find a new point)
-            return True
+            return
 
         # Define initial search parameters
         search_radius = 1.0  # Adjust based on the scale of your environment
@@ -128,14 +128,13 @@ class ApproachTargetState(State):
                 context.node.get_logger().info(f"Nearest low cost point: {self.near_point}")
 
                 
-                return True
+                return
 
             # Expand the search radius
             search_radius += radius_increment
 
-        # If no low-cost point is found within the maximum radius, return failure
-        return False
-
+        # If no low-cost point is found within the maximum radius, raise error
+        raise RuntimeError("Couldn't find a better point.")
     def on_loop(self, context: Context) -> State:
         """
         Drive towards a target based on what gets returned from get_target_position().
@@ -179,8 +178,7 @@ class ApproachTargetState(State):
             context.node.get_logger().info(f"Too high cost point: {self.traj.get_current_point()}")
             if self.traj.increment_point():
                 # TODO: What do we do if we skip high cost points and reach the end of the trajectory
-                if(not self.calc_point(context=context)):
-                   raise RuntimeError("Couldn't find a better point.")
+                self.calc_point(context=context)
                 return self.next_state(context=context, is_finished=False)
             self.display_markers(context=context)
 
