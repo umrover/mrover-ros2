@@ -40,7 +40,7 @@ namespace mrover {
             .minVelocity = MetersPerSecond{-0.05},
             .maxVelocity = MetersPerSecond{0.05},
             .minPosition = Meters{0.0},
-            .maxPosition = Meters{0.4},
+            .maxPosition = Meters{0.35}, // limit switch to limit switch is roughly 13.25in. joint a roller is roughly 4.5in
             .maxTorque = 20.0,
 
             .limitSwitch0Present = true,
