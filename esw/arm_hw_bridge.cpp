@@ -78,11 +78,11 @@ namespace mrover {
 
             .absPresent = true,
             .absRatio = -1.0,
-            .absOffset = 2.68_rad,
+            .absOffset = 0.995_rad,
 
             .minVelocity = -1.0_rad_per_s,
             .maxVelocity = 1.0_rad_per_s,
-            .minPosition = -0.7853981633974483_rad,
+            .minPosition = -0.9_rad,
             .maxPosition = 0_rad,
 
             .positionGains = {.p = 30.0},
