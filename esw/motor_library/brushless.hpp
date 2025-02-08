@@ -108,11 +108,12 @@ namespace mrover {
             // the limit switch is NOT pressed.
             // This is because we may not receive the newest query message from the moteus
             // as a result of either testing or startup.
+            // TODO: make configurable
             if (mConfig.limitSwitch0Present && !mConfig.limitSwitch0ActiveHigh) {
-                mMoteusAux2Info |= 0b01;
+                mMoteusAux1Info |= 0b001;
             }
-            if (mConfig.limitSwitch1Present) {
-                mMoteusAux2Info |= 0b10;
+            if (mConfig.limitSwitch1Present && !mConfig.limitSwitch1ActiveHigh) {
+                mMoteusAux1Info |= 0b100;
             }
 
             moteus::Controller::Options options;
@@ -252,11 +253,12 @@ namespace mrover {
 
         auto getPressedLimitSwitchInfo() -> MoteusLimitSwitchInfo {
             if (mConfig.limitSwitch0Present && mConfig.limitSwitch0Enabled) {
-                bool gpioState = 0b01 & mMoteusAux2Info;
+                // TODO: make configurable
+                bool gpioState = 0b001 & mMoteusAux1Info;
                 mLimitHit[0] = gpioState == mConfig.limitSwitch0ActiveHigh;
             }
             if (mConfig.limitSwitch1Present && mConfig.limitSwitch1Enabled) {
-                bool gpioState = 0b10 & mMoteusAux2Info;
+                bool gpioState = 0b100 & mMoteusAux1Info;
                 mLimitHit[1] = gpioState == mConfig.limitSwitch1ActiveHigh;
             }
 
