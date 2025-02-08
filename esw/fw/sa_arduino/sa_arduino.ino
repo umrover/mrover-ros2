@@ -1,5 +1,5 @@
 #include <DynamixelShield.h>
-#include <DFRobot_SHT20.h>
+//#include <DFRobot_SHT20.h>
 
 #include "temp_sensor.h"
 
@@ -15,27 +15,42 @@
 
 
 #define PI 3.1415926535897932384626433832795
-#define HEADER_BYTE = 0xA5
+#define HEADER_BYTE 0xA5
 
+// Define message IDs
+#define MSG_SERVO_SET_POSITION     0x00
+#define MSG_SERVO_POSITION_DATA    0x01
+#define MSG_TEMPERATURE_HUMIDITY   0x02
+
+// Define message sizes (not including HEADER_BYTE or message_id)
+#define MSG_SERVO_SET_POSITION_SIZE 5  // ID & is_counterclockwise (1) + Radians (4)
+#define MSG_SERVO_POSITION_DATA_SIZE 5 // ID (1) + Radians (4)
+#define MSG_TEMPERATURE_HUMIDITY_SIZE 8 // Temp (4) + Humidity (4)
+
+// Maximum possible message size (largest struct)
+#define MAX_MESSAGE_SIZE 8  
+
+// Functions to handle messages
+void processServoSetPosition(uint8_t *buffer);
+void processServoPositionData(uint8_t *buffer);
+//void processTemperatureHumidityData();
+
+
+// Sensor/Servo Constants
 const uint8_t DXL_ID = 1;
 const float DXL_PROTOCOL_VERSION = 2.0;
-
 DynamixelShield dxl;
-DFRobot_SHT20 sht20(&Wire, SHT20_I2C_ADDR);
+//DFRobot_SHT20 sht20(&Wire, SHT20_I2C_ADDR);
 TempSensor temp_sensor;
 
-// int raw_position_value = 0;
-int raw_position_value = dxl.getPresentPosition(DXL_ID);
-
-//This namespace is required to use Control table item names
+//This namespace is required to use DYNAMIXEL Control table item names
 using namespace ControlTableItem;
 
 void setup(){
   //Serial.begin(9600);
-  sht20.initSHT20();
+  //sht20.initSHT20();
   delay(100);
   temp_sensor.setup();
-
 
   Serial.begin(115200); // Match the baud rate with the C++ program
 
@@ -47,6 +62,144 @@ void setup(){
 }
 
 void loop(){
+
+  if (Serial.available() >= 2) {  // ensure we have at least header (1) & message_id (1)
+    uint8_t header = Serial.read();  
+    uint8_t message_id = Serial.read();  
+
+    if (header == HEADER_BYTE) {
+
+      // determine message size to read in buffer
+      uint8_t message_size = 0;
+      switch (message_id) {
+          case MSG_SERVO_SET_POSITION:
+              message_size = MSG_SERVO_SET_POSITION_SIZE;
+              break;
+          case MSG_SERVO_POSITION_DATA:
+              message_size = MSG_SERVO_POSITION_DATA_SIZE;
+              break;
+          case MSG_TEMPERATURE_HUMIDITY:
+              message_size = MSG_TEMPERATURE_HUMIDITY_SIZE;
+              break;
+          default:
+              return;
+      }
+
+      if (Serial.available() >= message_size) {  // ensure we have full message
+        uint8_t buffer[MAX_MESSAGE_SIZE] = {0};
+        Serial.readBytes(buffer, message_size);
+
+        switch (message_id) {
+            case MSG_SERVO_SET_POSITION:
+                processServoSetPosition(buffer);
+                break;
+            case MSG_SERVO_POSITION_DATA:
+                processServoPositionData(buffer);
+                break;
+            /*  
+            // NOTE: for some reason, this file won't compile with the sensor stuff
+            // It claims to not find the library so we can fix this later when moving files probably
+            case MSG_TEMPERATURE_HUMIDITY:
+                processSensorData(buffer);
+                break;
+            */
+        }
+      }
+
+    }
+
+  }
+
+}
+
+
+// Process Different Message Types
+
+void processServoSetPosition(uint8_t *buffer) {
+    uint8_t id_flags = buffer[0]; // [3b unused][4b id][1b is_counterclockwise]
+    uint8_t id = (id_flags >> 1) & 0x0F;
+    bool is_counterclockwise = id_flags & 0x01;
+
+    float radians;
+    memcpy(&radians, &buffer[1], sizeof(float));
+
+    float set_degrees = (radians * 180.0) / PI;
+
+    dxl.ping(id);
+    dxl.torqueOff(id);
+    dxl.setOperatingMode(id, 4);
+    dxl.torqueOn(id);
+
+    float present_degrees = dxl.getPresentPosition(id, UNIT_DEGREE);
+
+    float diff = set_degrees - present_degrees;
+
+    // TODO: this logic is close bur definitely not right
+    // It will end in correct position but may go in wrong direction or wrap unnecessarily
+    // EXAMPLE: start at 180, then go to 270 CW (it goes CCW instead)
+
+    if (diff > 0) {
+      if (is_counterclockwise) {
+        dxl.setGoalPosition(id, set_degrees, UNIT_DEGREE);
+      } else {
+        dxl.setGoalPosition(id, set_degrees + 360, UNIT_DEGREE);
+      }
+    } else {
+      if (is_counterclockwise) {
+        dxl.setGoalPosition(id, set_degrees + 360, UNIT_DEGREE);
+      } else {
+        dxl.setGoalPosition(id, set_degrees, UNIT_DEGREE);
+      }
+    }
+    
+}
+
+void processServoPositionData(uint8_t *buffer) {
+
+    // NOTE: not 100% sure when we are supposed to send data
+    // this is based off Cindy's work but idk where it should go fs
+
+    uint8_t id = buffer[0] & 0x0F;  // [4b unused][4b id]
+
+    dxl.ping(id);
+    float presentDeg = dxl.getPresentPosition(id, UNIT_DEGREE);
+    float presentRad = presentDeg * PI / 180.0;
+
+    uint8_t radBytes[sizeof(float)];
+    memcpy(radBytes, &presentRad, sizeof(float));
+
+    Serial.write((byte)HEADER_BYTE);
+    Serial.write((byte)MSG_SERVO_POSITION_DATA);
+    Serial.write((byte)id);
+    Serial.write(radBytes, sizeof(float));
+}
+
+/*
+void processTemperatureHumidityData() {
+    float temp = sht20.readTemperature();
+    float humidity = sht20.readHumidity() / 100.0;
+
+    uint8_t tempBytes[sizeof(float)];
+    uint8_t humidityBytes[sizeof(float)];
+    memcpy(tempBytes, &temp, sizeof(float));
+    memcpy(humidityBytes, &humidity, sizeof(float));
+
+    Serial.write((byte)HEADER_BYTE);
+    Serial.write((byte)MSG_TEMPERATURE_HUMIDITY);
+    Serial.write(tempBytes, sizeof(float));
+    Serial.write(humidityBytes, sizeof(float));
+}
+
+*/
+
+
+
+
+
+
+/*
+  // old loop code for reference
+  
   float temp = sht20.readTemperature();
 
   float thermistorValue = temp_sensor.getTemperature(); 
@@ -94,7 +247,7 @@ void loop(){
           {
             degrees*=-1;
           }
-          dxl.setGoalAngle(id,degrees);
+          dxl.setGoalAngle(id, degrees);
 
           // TODO: convert current position to radians and send out
 
@@ -105,154 +258,8 @@ void loop(){
           Serial.write((byte)id);
           Serial.write(presentRad);
 
-          /*
-          // Adjust the motor position for the specified ID
-          int pos_prev = dxl.getPresentPosition(id, UNIT_DEGREE);
-  
-          // TODO: write logic to make sure servo moves in shortest path.
-          int diff = abs((pos_new % 360) - (pos_prev % 360));
-
-          if (diff > 180) {
-            if (pos_new > pos_prev) {
-              dxl.setGoalPosition(id, pos_prev - (360 - diff), UNIT_DEGREE);
-            } else {
-              dxl.setGoalPosition(id, pos_prev + (360 - diff));
-            }
-          } else {
-            if (pos_new > pos_prev) {
-              //C
-            } else {
-              //D
-            }
-          }
-
-          
-
-
-
-          int new_position = prev_position + (deg_in * (511 / 45));
-          dxl.setGoalPosition(id, new_position);
-
-          int delta = (new_position - prev_position);
-          int temp = 0;
-
-          while (abs(dxl.getPresentPosition(id)-prev_position) < abs(delta)) {
-            // Serial.print("Present Position: ");
-            // Serial.print(dxl.getPresentPosition(id));
-            // Serial.print("\t\t");
-            temp = dxl.getPresentPosition(id);
-            delay(100);
-          }
-
-          // delay(1000);
-
-          // Send back the ID and new position
-          Serial.print("ID: ");
-          Serial.print(id);
-          Serial.print(", Current Position: ");
-          Serial.print(temp);
-          Serial.print(" Done");
-          */
-
         }
       }
     } 
-  }
-
-  // END OUR CODE HERE!
-
-
-
-
-  /*
-
-  // Spins servo 45 degrees
-  // Please refer to e-Manual(http://emanual.robotis.com/docs/en/parts/interface/dynamixel_shield/) for available range of value. 
-  // Set Goal Position in DEGREE value
-  //dxl.setGoalPosition(DXL_ID, angle, UNIT_DEGREE);
-  // Print present position in raw value
-  dxl.setGoalPosition(DXL_ID, raw_position_value);
-  delay(1000);
-  // Print present position in raw and degree value
-  DEBUG_SERIAL.print("Present Position(raw) : ");
-  DEBUG_SERIAL.println(dxl.getPresentPosition(DXL_ID));
-  DEBUG_SERIAL.print("Present Position(degree) : ");
-  DEBUG_SERIAL.println(dxl.getPresentPosition(DXL_ID, UNIT_DEGREE));
-  delay(1000);
-  
-  raw_position_value += 511;
-
+  } 
   */
-}
-
-
-
-/*
-
-#include <DynamixelShield.h>
-
-DynamixelShield dxl;
-//const uint8_t DXL_ID = 0; // check label on Dynamixel
-
-const float DXL_PROTOCOL_VERSION = 2.0;
-
-using namespace ControlTableItem;
-
-
-void loop() {
-  if (Serial.available()) {
-    String input = Serial.readStringUntil('\n');  // Read the incoming data until newline
-    input.trim();  // Remove extra whitespace or newline characters
-
-    // Check if the input is not empty
-    if (input.length() > 0) {
-      int spaceIndex = input.indexOf(' ');  // Find the space separating ID and Degrees
-      if (spaceIndex != -1) {
-        // Extract ID and Degrees from the input string
-        int id = input.substring(0, spaceIndex).toInt();  // Get the ID (before the space)
-        int deg_in = input.substring(spaceIndex + 1).toInt();  // Get Degrees (after the space)
-
-        // Validate parsed values
-        if (id >= 0 && deg_in != 0 || input.substring(spaceIndex + 1) == "0") {
-
-          // Get DYNAMIXEL information
-          dxl.ping(id);
-          
-          // Turn off torque when configuring items in EEPROM
-          // Operating Mode 4 is Extended Position Control Mode
-          dxl.torqueOff(id);
-          dxl.setOperatingMode(id, 4);
-          dxl.torqueOn(id);
-
-
-          // Adjust the motor position for the specified ID
-          int prev_position = dxl.getPresentPosition(id);
-          int new_position = prev_position + (deg_in * (511 / 45));
-          dxl.setGoalPosition(id, new_position);
-
-          int delta = (new_position - prev_position);
-          int temp = 0;
-
-          while (abs(dxl.getPresentPosition(id)-prev_position) < abs(delta)) {
-            // Serial.print("Present Position: ");
-            // Serial.print(dxl.getPresentPosition(id));
-            // Serial.print("\t\t");
-            temp = dxl.getPresentPosition(id);
-            delay(100);
-          }
-
-          // delay(1000);
-
-          // Send back the ID and new position
-          Serial.print("ID: ");
-          Serial.print(id);
-          Serial.print(", Current Position: ");
-          Serial.print(temp);
-          Serial.print(" Done");
-
-        }
-      }
-    } 
-  }
-}
-*/
