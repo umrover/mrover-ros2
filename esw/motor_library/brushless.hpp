@@ -87,6 +87,8 @@ namespace mrover {
             double maxTorque = 0.3;
             double watchdogTimeout = 0.25;
 
+            bool throttleIsInverted = false;
+
             bool limitSwitch0Present = false;
             bool limitSwitch0Enabled = true;
             bool limitSwitch0LimitsFwd = false;
@@ -141,6 +143,9 @@ namespace mrover {
 #ifdef DEBUG_BUILD
             RCLCPP_DEBUG(mNode->get_logger(), "%s throttle set to: %f. Commanding velocity...", mControllerName.c_str(), throttle.rep);
 #endif
+            if (mConfig.throttleIsInverted) {
+                throttle = throttle * -1;
+            }
             setDesiredVelocity(mapThrottleToVelocity(throttle));
         }
 
