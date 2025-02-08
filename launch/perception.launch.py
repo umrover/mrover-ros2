@@ -25,4 +25,11 @@ def generate_launch_description():
         parameters=[Path(get_package_share_directory("mrover"), "config", "object_detector.yaml")],
     )
 
-    return LaunchDescription([zed_node, object_detector_node])
+    cost_map_node = Node(
+        package="mrover",
+        executable="cost_map",
+        name="cost_map",
+        parameters=[Path(get_package_share_directory("mrover"), "config", "perception.yaml")],
+    )
+
+    return LaunchDescription([zed_node, object_detector_node, cost_map_node])

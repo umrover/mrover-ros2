@@ -69,6 +69,7 @@ find_package(ament_cmake_python REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
+find_package(rtcm_msgs REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(tf2_ros REQUIRED)
@@ -228,6 +229,11 @@ target_link_libraries(simulator
 )
 target_include_directories(simulator SYSTEM PRIVATE ${BULLET_INCLUDE_DIRS} ${OPENCV_INCLUDE_DIRS})
 
+# Localization
+
+mrover_add_node(rover_gps_driver localization/rover_gps_driver.cpp)
+ament_target_dependencies(rover_gps_driver rclcpp sensor_msgs rtcm_msgs)
+
 # Perception
 
 find_package(ZED QUIET)
@@ -273,6 +279,10 @@ endif()
 mrover_add_node(tag_detector perception/tag_detector/*.cpp perception/tag_detector/pch.hpp)
 ament_target_dependencies(tag_detector rclcpp tf2 tf2_ros)
 target_link_libraries(tag_detector lie opencv_core opencv_aruco opencv_imgproc loop_profiler)
+
+mrover_add_node(cost_map perception/cost_map/*.cpp perception/cost_map/pch.hpp)
+ament_target_dependencies(cost_map rclcpp tf2 tf2_ros)
+target_link_libraries(cost_map lie parameter_utils)
 
 # Embedded
 
@@ -341,13 +351,15 @@ endif ()
 install(PROGRAMS
         navigation/nav.py
         navigation/stuck_detector/stuck_detector.py
-        localization/rover_gps_driver.py
         localization/gps_linearization.py
         localization/basestation_gps_driver.py
         superstructure/superstructure.py
         scripts/debug_course_publisher.py
+        scripts/debug_service.py
+        scripts/astar_debug.py
 		scripts/visualizer.py
-		scripts/image_capture.py
+        teleoperation/basestation_gui/gui_frontend.sh
+        teleoperation/basestation_gui/gui_backend.sh
 
         # starter project sources
         starter_project/autonomy/src/localization.py
