@@ -6,7 +6,6 @@
             <tr class="table-primary">
             <th></th>
             <th colspan="2">Oxygen (%)</th>
-            <th colspan="2">Methane (ppm)</th>
             <th colspan="2">UV (index)</th>
             <th colspan="2">Humidity (%)</th>
             <th colspan="2">Temp (°C)</th>
@@ -43,8 +42,6 @@ import html2canvas from "html2canvas";
           {
             oxygen: 0,
             oxygen_var: 0,
-            methane: 0,
-            methane_var: 0,
             uv: 0,
             uv_var: 0,
             humidity: 0,
@@ -58,17 +55,18 @@ import html2canvas from "html2canvas";
     computed: {
     ...mapState('websocket', ['message'])
   },
-
+  created() {
+      window.setInterval();
+      this.interval = window.setInterval(() => {
+        this.randomizeSensorData();
+      }
+  },
   watch: {
     message(msg) {
       switch (msg.type) {
         case 'oxygen':
             this.sensor_data.oxygen = msg.percent
             this.sensor_data.oxygen_var = msg.varianace
-            break
-        case 'methane':
-            this.sensor_data.methane_var = msg.ppm
-            this.sensor_data.methane_var = msg.varianace
             break
         case 'uv':
             this.sensor_data.uv = msg.uv_index
@@ -87,6 +85,12 @@ import html2canvas from "html2canvas";
   },
 
   methods: {
+    randomizeSensorData() {
+          this.sensor_data.oxygen = (19.5 + Math.random() * 4);
+          this.sensor_data.uv = (1.5 + Math.random() * 0.5);
+          this.sensor_data.humidity = (68 + Math.random() * 4);
+          this.sensor_data.temp = (-2.8 + Math.random() * 2.8);
+    },
     download() {
         // downloads screenshot of table
       const table = document.querySelector("#capture") as HTMLElement;
