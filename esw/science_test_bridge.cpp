@@ -1,3 +1,4 @@
+#include <cstdint>
 #include <rclcpp/rclcpp.hpp>
 
 #include <mrover/msg/can.hpp>
@@ -8,8 +9,8 @@
 namespace mrover {
 
     union TestUnion {
-        double data;
-        char data_bytes[8];
+        uint8_t on : 6 {};
+        uint8_t data_bytes[1];
     };
 
     class ScienceTestBridge final : public rclcpp::Node {
@@ -19,7 +20,7 @@ namespace mrover {
         rclcpp::Publisher<msg::CAN>::SharedPtr scienceBPub;
 
     public:
-        ScienceTestBridge() : Node{"science_hw_bridge"} {
+        ScienceTestBridge() : Node{"science_test_bridge"} {
             scienceAPub = create_publisher<msg::CAN>("can/science_a/in", 10);
             scienceBPub = create_publisher<msg::CAN>("can/science_b/in", 10);
         }
@@ -27,6 +28,9 @@ namespace mrover {
         void publishCanData() {
             msg::CAN msgA;
             msg::CAN msgB;
+
+            msgA.data.resize(1);
+            msgB.data.resize(1);
 
             msgA.source = "science_a";
             msgA.destination = "jetson";
@@ -37,14 +41,17 @@ namespace mrover {
             msgB.reply_required = false;
 
             TestUnion test_union{};
-            test_union.data = 23.45;
 
-            msgA.data.push_back(1);
-            msgB.data.push_back(1);
+            SET_BIT_AT_INDEX(test_union.on, 0, 1);
+            SET_BIT_AT_INDEX(test_union.on, 1, 0);
+            SET_BIT_AT_INDEX(test_union.on, 2, 1);
+            SET_BIT_AT_INDEX(test_union.on, 3, 0);
+            SET_BIT_AT_INDEX(test_union.on, 4, 1);
+            SET_BIT_AT_INDEX(test_union.on, 5, 0);
 
-            for (uint8_t i = 0; i < 8; i++) {
-                msgA.data.push_back(test_union.data_bytes[i]);
-                msgB.data.push_back(test_union.data_bytes[i]);
+            for (uint8_t i = 0; i < 1; i++) {
+                msgA.data.at(i) = test_union.data_bytes[i];
+                msgB.data.at(i) = test_union.data_bytes[i];
             }
 
             scienceAPub->publish(msgA);

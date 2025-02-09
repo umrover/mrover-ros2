@@ -16,7 +16,6 @@ namespace mrover {
 
         void init() {
 			write_register(0x00, 0x0A); // enable uv mode
-			write_register(0x04, 0x40); // set resolution to 16 bits and conversion time to 25 ms
         }
 
         void write_register(uint8_t reg, uint8_t value) {
@@ -50,7 +49,7 @@ namespace mrover {
         	uint8_t byte0 = read_register(0x10);
         	uint8_t byte1 = read_register(0x11);
         	uint8_t byte2 = read_register(0x12) & 0x0F;
-        	uv_index = (byte2 << 16) | (byte1 << 8) | byte0;
+        	uv_index = ((byte2 << 16) | (byte1 << 8) | byte0) / 2300.0;
         	return uv_index;
         }
 

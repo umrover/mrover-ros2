@@ -1,18 +1,23 @@
 #include <algorithm>
+#include <cstring>
 #include <memory>
-#include <unordered_map>
 
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/relative_humidity.hpp>
 #include <sensor_msgs/msg/temperature.hpp>
 
+#include <can_device.hpp>
 #include <messaging_science.hpp>
 #include <units.hpp>
 
 #include <mrover/msg/can.hpp>
-#include <mrover/msg/methane.hpp>
 #include <mrover/msg/oxygen.hpp>
 #include <mrover/msg/uv.hpp>
+#include <mrover/msg/science_thermistors.hpp>
+#include <mrover/msg/heater_data.hpp>
+
+#include <mrover/srv/enable_bool.hpp>
+
 
 namespace mrover {
 
@@ -22,32 +27,39 @@ namespace mrover {
         rclcpp::Publisher<sensor_msgs::msg::Temperature>::SharedPtr tempPub;
         rclcpp::Publisher<sensor_msgs::msg::RelativeHumidity>::SharedPtr humidityPub;
         rclcpp::Publisher<msg::Oxygen>::SharedPtr oxygenPub;
-        rclcpp::Publisher<msg::Methane>::SharedPtr methanePub;
         rclcpp::Publisher<msg::UV>::SharedPtr uvPub;
+        rclcpp::Publisher<msg::ScienceThermistors>::SharedPtr thermistorsPub;
+        rclcpp::Publisher<msg::HeaterData>::SharedPtr heaterPub;
+
+        rclcpp::Service<srv::EnableBool>::SharedPtr heaterAutoShutoffSrv;
 
         rclcpp::Subscription<msg::CAN>::ConstSharedPtr canSubA;
         rclcpp::Subscription<msg::CAN>::ConstSharedPtr canSubB;
 
-        void processMessage([[maybe_unused]] mrover::HeaterStateData const& message) {
-            RCLCPP_ERROR(get_logger(), "Heaters!");
-            // mrover::HeaterData heaterData;
-            // // TODO - this crashes program!
-            // heaterData.state.resize(6);
-            // for (int i = 0; i < 6; ++i) {
-            //     heaterData.state.at(i) = GET_BIT_AT_INDEX(message.heater_state_info.on, i);
-            // }
+        mrover::CanDevice canDev;
 
-            // heaterDataPublisher->publish(heaterData);
+        void processHeaterAutoShutoff(const std::shared_ptr<srv::EnableBool::Request> request, std::shared_ptr<srv::EnableBool::Response> response) {
+            canDev.publish_message(InBoundScienceMessage{HeaterAutoShutOffCommand{.enable_auto_shutoff = request->enable}}); 
         }
 
-        void processMessage([[maybe_unused]] mrover::ThermistorData const& message) {
-            RCLCPP_ERROR(get_logger(), "Thermistors!");
-            // mrover::ScienceThermistors scienceThermistors;
-            // scienceThermistors.temps.resize(6);
-            // for (int i = 0; i < 6; ++i) {
-            //     scienceThermistors.temps.at(i).temperature = message.temps.at(i);
-            // }
-            // thermistorDataPublisher->publish(scienceThermistors);
+        void processMessage(mrover::HeaterStateData const& message) {
+            // RCLCPP_ERROR(get_logger(), "Heaters!");
+            msg::HeaterData heaterData;
+            heaterData.state.resize(6);
+            for (int i = 0; i < 6; ++i) {
+                heaterData.state.at(i) = GET_BIT_AT_INDEX(message.heater_state_info.on, i);
+            }
+            heaterPub->publish(heaterData);
+        }
+
+        void processMessage(mrover::ThermistorData const& message) {
+            //RCLCPP_ERROR(get_logger(), "Thermistor data!");
+            msg::ScienceThermistors scienceThermistors;
+            scienceThermistors.temps.resize(6);
+            for (int i = 0; i < 6; ++i) {
+                scienceThermistors.temps.at(i).temperature = message.temps[i];
+            }
+            thermistorsPub->publish(scienceThermistors);
         }
 
         void processMessage(mrover::SensorData const& message) {
@@ -77,14 +89,6 @@ namespace mrover {
                     break;
                 }
 
-                case ScienceDataID::METHANE: {
-                    msg::Methane msg;
-                    msg.ppm = message.data;
-                    msg.variance = 0;
-                    methanePub->publish(msg);
-                    break;
-                }
-
                 case ScienceDataID::UV: {
                     msg::UV msg;
                     msg.uv_index = message.data;
@@ -96,10 +100,28 @@ namespace mrover {
         }
 
         void processCANData(msg::CAN::ConstSharedPtr const& msg) {
-            // RCLCPP_ERROR(get_logger(), "Source: %s Destination: %s", msg->source.c_str(), msg->destination.c_str());
+            //RCLCPP_ERROR(get_logger(), "Source: %s Destination: %s", msg->source.c_str(), msg->destination.c_str());
+            // if (msg->data.size() < sizeof(OutBoundScienceMessage)) {
+            //     RCLCPP_ERROR(get_logger(), "Received CAN message is too small! Size: %zu, Expected: %zu", msg->data.size(), sizeof(OutBoundScienceMessage));
+            //     return;
+            // }
 
-            OutBoundScienceMessage const& message = *reinterpret_cast<OutBoundScienceMessage const*>(msg->data.data());
-            std::visit([&](auto const& messageAlternative) { processMessage(messageAlternative); }, message);
+            if (msg->data.size() == sizeof(HeaterStateData)) {
+                HeaterStateData message;
+                memcpy(&message, msg->data.data(), sizeof(HeaterStateData));
+                processMessage(message);
+            } else if (msg->data.size() == sizeof(ThermistorData)) {
+                ThermistorData message;
+                memcpy(&message, msg->data.data(), sizeof(ThermistorData));
+                processMessage(message);
+            } else if (msg->data.size() == sizeof(SensorData)) {
+                SensorData message;
+                memcpy(&message, msg->data.data(), sizeof(SensorData));
+                processMessage(message);
+            }
+
+            // OutBoundScienceMessage const& message = *reinterpret_cast<OutBoundScienceMessage const*>(msg->data.data());
+            // std::visit([&](auto const& messageAlternative) { processMessage(messageAlternative); }, message);
         }
 
     public:
@@ -107,12 +129,16 @@ namespace mrover {
             tempPub = create_publisher<sensor_msgs::msg::Temperature>("science_temperature_data", 10);
             humidityPub = create_publisher<sensor_msgs::msg::RelativeHumidity>("science_humidity_data", 10);
             oxygenPub = create_publisher<msg::Oxygen>("science_oxygen_data", 10);
-            methanePub = create_publisher<msg::Methane>("science_methane_data", 10);
             uvPub = create_publisher<msg::UV>("science_uv_data", 10);
+            thermistorsPub = create_publisher<msg::ScienceThermistors>("science_thermistors", 10);
+            heaterPub = create_publisher<msg::HeaterData>("science_heater_state", 10);
 
-            // [this](msg::CAN::ConstSharedPtr const& msg) { processCANMessage(msg); });
-            canSubA = create_subscription<msg::CAN>("can/science_a/in", 10, [this](msg::CAN::ConstSharedPtr const& msg) { processCANData(msg); });
-            canSubB = create_subscription<msg::CAN>("can/science_b/in", 10, [this](msg::CAN::ConstSharedPtr const& msg) { processCANData(msg); });
+            heaterAutoShutoffSrv = create_service<srv::EnableBool>("science_change_heater_auto_shutoff_state", &ScienceBridge::processHeaterAutoShutoff);
+
+            canSubA = create_subscription<msg::CAN>("/can/science_a/in", 10, [this](msg::CAN::ConstSharedPtr const& msg) { processCANData(msg); });
+            canSubB = create_subscription<msg::CAN>("/can/science_b/in", 10, [this](msg::CAN::ConstSharedPtr const& msg) { processCANData(msg); });
+
+            canDev = CanDevice(rclcpp::Node::make_shared("science_hw_bridge"), "jetson", "science_b");
         }
     };
 

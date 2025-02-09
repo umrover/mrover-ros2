@@ -10,6 +10,8 @@ namespace mrover {
 
 #pragma pack(push, 1)
 
+    struct BaseScienceMessage {};
+
     enum struct ScienceDevice {
         HEATER_B0,
         HEATER_N0,
@@ -25,16 +27,16 @@ namespace mrover {
         UV_LED_2
     };
 
-    struct EnableScienceDeviceCommand {
+    struct EnableScienceDeviceCommand : BaseScienceMessage {
         ScienceDevice science_device{};
         bool enable{};
     };
 
-    struct HeaterAutoShutOffCommand {
+    struct HeaterAutoShutOffCommand : BaseScienceMessage {
         bool enable_auto_shutoff{};
     };
 
-    struct ConfigThermistorAutoShutOffCommand {
+    struct ConfigThermistorAutoShutOffCommand : BaseScienceMessage {
         float shutoff_temp{};
     };
 
@@ -48,7 +50,7 @@ namespace mrover {
     };
 
     struct ThermistorData {
-        std::array<float, 6> temps{};
+        float temps[6];
     };
 
     struct SensorData {
@@ -60,8 +62,7 @@ namespace mrover {
         TEMPERATURE = 1,
         HUMIDITY = 2,
         OXYGEN = 3,
-        METHANE = 4,
-        UV = 5,
+        UV = 4,
     };
 
     using InBoundScienceMessage = std::variant<
@@ -79,3 +80,7 @@ namespace mrover {
     };
 
 } // namespace mrover
+
+// Macros needed to operate on bitfields
+#define SET_BIT_AT_INDEX(x, index, value) ((x) = ((x) & ~(1 << (index))) | ((value) << (index)))
+#define GET_BIT_AT_INDEX(x, index) ((x) & (1 << (index)))
