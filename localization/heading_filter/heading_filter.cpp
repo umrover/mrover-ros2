@@ -1,12 +1,4 @@
 #include "heading_filter.hpp"
-#include "mrover/msg/detail/fix_status__struct.hpp"
-#include <chrono>
-#include <cstdint>
-#include <geometry_msgs/msg/detail/vector3_stamped__struct.hpp>
-#include <memory>
-#include <message_filters/sync_policies/approximate_time.h>
-#include <message_filters/synchronizer.h>
-#include <sensor_msgs/msg/detail/magnetic_field__struct.hpp>
 
 namespace mrover {
 
@@ -31,15 +23,15 @@ namespace mrover {
         mag_sub.subscribe(this, "/zed_imu/mag");
 
         // data watchdogs
-        rtk_heading_watchdog = this->create_wall_timer(RTK_HEADING_WATCHDOG_TIMEOUT.to_chrono<std::chrono::milliseconds>(), [&]() {
-            RCLCPP_WARN(get_logger(), "RTK heading data watchdog expired");
-            last_rtk_heading.reset();
-            last_rtk_heading_fix.reset();
-            // last_rtk_heading_time.reset();
+        // rtk_heading_watchdog = this->create_wall_timer(RTK_HEADING_WATCHDOG_TIMEOUT.to_chrono<std::chrono::milliseconds>(), [&]() {
+        //     RCLCPP_WARN(get_logger(), "RTK heading data watchdog expired");
+        //     last_rtk_heading.reset();
+        //     last_rtk_heading_fix.reset();
+        //     // last_rtk_heading_time.reset();
 
-            // last_rtk_heading_fix.reset();
-            // last_rtk_heading_correction_rotation.reset();
-        });
+        //     // last_rtk_heading_fix.reset();
+        //     // last_rtk_heading_correction_rotation.reset();
+        // });
 
         imu_and_mag_watchdog = this->create_wall_timer(IMU_AND_MAG_WATCHDOG_TIMEOUT.to_chrono<std::chrono::milliseconds>(), [&]() {
             RCLCPP_WARN(get_logger(), "ZED IMU data watchdog expired");
@@ -67,18 +59,69 @@ namespace mrover {
 
         imu_and_mag_sync->setAgePenalty(0.5);
         imu_and_mag_sync->registerCallback(&HeadingFilter::sync_imu_and_mag_callback, this);
+
+        declare_parameter("rover_frame", rclcpp::ParameterType::PARAMETER_STRING);
+        declare_parameter("world_frame", rclcpp::ParameterType::PARAMETER_STRING);
+
+        rover_frame = get_parameter("rover_frame").as_string();
+        world_frame = get_parameter("world_frame").as_string();
         
 
     }
 
     void HeadingFilter::sync_rtk_heading_callback(const mrover::msg::Heading::ConstSharedPtr &heading, const mrover::msg::FixStatus::ConstSharedPtr &heading_status) {
-        rtk_heading_watchdog.reset();
-        last_rtk_heading = heading->heading;
-        last_rtk_heading_fix = heading_status->fix_type;
+        // rtk_heading_watchdog.reset();
+        // last_rtk_heading = heading->heading;
+        // last_rtk_heading_fix = heading_status->fix_type;
         // last_rtk_heading_time = heading->header.stamp;
+
+        if (!last_imu) {
+            RCLCPP_WARN(get_logger(), "No IMU data!");
+            return;
+        }
+
+
+        Eigen::Quaterniond uncorrected_orientation(last_imu->orientation.w, last_imu->orientation.x, last_imu->orientation.y, last_imu->orientation.z);
+        R2d uncorrected_forward = uncorrected_orientation.toRotationMatrix().col(0).head(2);
+        double uncorrected_heading = std::atan2(uncorrected_forward.y(), uncorrected_forward.x());
+
+        // when a fixed rtk heading is received
+        if (heading_status->fix_type.fix == mrover::msg::FixType::FIXED) {
+
+            double measured_heading = (90 - ((heading->heading + 90) % 360)) * (M_PI / 180.0);
+            double heading_correction_delta = measured_heading - uncorrected_heading;
+            curr_heading_correction = Eigen::AngleAxisd(heading_correction_delta, R3d::UnitZ());
+
+        }
+        // magnetometer when correction already exists
+        else if (curr_heading_correction) {
+            double measured_heading = (M_PI / 2) - std::atan2(last_mag->magnetic_field.y, last_mag->magnetic_field.x);
+            double heading_correction_delta = measured_heading - uncorrected_heading;
+
+            R2d prev_heading_correction_forward = curr_heading_correction.value().coeffs().col(0).head(2);
+            double prev_heading_correction_delta = std::atan2(prev_heading_correction_forward.y(), prev_heading_correction_forward.x());
+            
+            // compare curr_heading_correction with correction made from mag
+            if (std::abs(prev_heading_correction_delta - heading_correction_delta) < HEADING_THRESHOLD) {
+                curr_heading_correction = Eigen::AngleAxisd(heading_correction_delta, R3d::UnitZ());
+            }
+
+        }
+        // magnetometer when correction does not exist
+        else {
+            double measured_heading = (M_PI / 2) - std::atan2(last_mag->magnetic_field.y, last_mag->magnetic_field.x);
+            double heading_correction_delta = measured_heading - uncorrected_heading;
+            curr_heading_correction = Eigen::AngleAxisd(heading_correction_delta, R3d::UnitZ());
+        }
+
+        
     }
 
-    // void HeadingFilter::sync_imu_and_mag_callback(const sensor_msgs::msg::)
+    void HeadingFilter::sync_imu_and_mag_callback(const sensor_msgs::msg::Imu::ConstSharedPtr &imu, const sensor_msgs::msg::MagneticField::ConstSharedPtr &mag) {
+        imu_and_mag_watchdog.reset();
+        last_imu = *imu;
+        last_mag = *mag;
+    }
 
     void HeadingFilter::correct_and_publish(const geometry_msgs::msg::Vector3Stamped::ConstSharedPtr &position) {
 
@@ -86,14 +129,18 @@ namespace mrover {
             RCLCPP_WARN(get_logger(), "No IMU data!");
             return;
         }
+
+        R3d position_in_map(position->vector.x, position->vector.y, position->vector.z);
+        SE3d pose_in_map(position_in_map, SO3d::Identity());
+
+        Eigen::Quaterniond uncorrected_orientation(last_imu->orientation.w, last_imu->orientation.x, last_imu->orientation.y, last_imu->orientation.z);
+        SO3d uncorrected_orientation_rotm = uncorrected_orientation.toRotationMatrix();
+        SO3d corrected_orientation = curr_heading_correction.value() * uncorrected_orientation_rotm;
+
+        pose_in_map.asSO3() = corrected_orientation;
         
-        if (!curr_heading_correction) {
-
-            if (last_rtk_heading_fix->fix == mrover::msg::FixType::FIXED) {
-                
-
-            }
-        }
+        SE3Conversions::pushToTfTree(tf_broadcaster, rover_frame, world_frame, pose_in_map, get_clock()->now());
+        
     }
 
 }
