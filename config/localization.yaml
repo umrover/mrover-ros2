@@ -6,8 +6,9 @@
 
 basestation_gps_driver:
   ros__parameters:
-    port: /dev/gps
-    baudrate: 38400
+    #TODO: change this
+    port: /dev/ttyACM0
+    baud: 38400
 
 gps_linearization:
   ros__parameters:
@@ -18,3 +19,10 @@ gps_linearization:
     ref_lat: 42.293195
     ref_lon: -83.7096706
     ref_alt: 0.0
+
+rover_gps_driver:
+  ros__parameters:
+    #TODO: change this
+    port: /dev/gps
+    baud: 115200
+    frame_id: "base_link"

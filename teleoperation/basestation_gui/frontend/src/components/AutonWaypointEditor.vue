@@ -45,7 +45,7 @@
     </div>
   </div>
 
-  <div class="modal fade" id="modalWypt" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal fade" id="modalWypt" tabindex="-1" role="dialog">
         <div class="modal-dialog modal-dialog-centered" role="document">
           <div class="modal-content">
             <div class="modal-body">
@@ -95,13 +95,6 @@ export default {
     AutonModeCheckbox,
     Checkbox,
     VelocityCommand
-  },
-
-  props: {
-    odom: {
-      type: Object,
-      required: true
-    }
   },
 
   emits: ['toggleTeleop'],
@@ -186,10 +179,6 @@ export default {
       clickPoint: 'clickPoint'
     }),
 
-    ...mapGetters('map', {
-      odom_format: 'odomFormat'
-    }),
-
     autonButtonText: function () {
       return this.autonButtonColor == 'btn-warning'
         ? 'Setting to ' + this.autonEnabled
@@ -228,7 +217,8 @@ export default {
         // If still waiting for nav...
         if (
           (msg.state == 'OffState' && this.autonEnabled) ||
-          (msg.state !== 'OffState' && !this.autonEnabled)
+          (msg.state !== 'OffState' && !this.autonEnabled) ||
+          (msg.state == 'DoneState' && !this.autonEnabled)
         ) {
           return
         }
@@ -259,9 +249,6 @@ export default {
   },
 
   created: function () {
-    // Make sure local odom format matches vuex odom format
-    // this.odom_format_in = this.odom_format
-
     auton_publish_interval = window.setInterval(() => {
       if (this.waitingForNavResponse) {
         this.sendAutonCommand()
@@ -281,10 +268,6 @@ export default {
       setWaypointList: 'setWaypointList',
       setAutonMode: 'setAutonMode',
       setTeleopMode: 'setTeleopMode'
-    }),
-
-    ...mapMutations('map', {
-      setOdomFormat: 'setOdomFormat'
     }),
 
     sendAutonCommand() {
@@ -315,7 +298,7 @@ export default {
 
     deleteItem: function (waypoint) {
       waypoint.in_route = false
-      let index = this.route.indexOf(waypoint)
+      const index = this.route.indexOf(waypoint)
       this.route.splice(index, 1)
     },
 

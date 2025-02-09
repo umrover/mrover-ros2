@@ -1,5 +1,5 @@
 <template>
-  <div class="form-check form-switch">
+  <div class="form-check form-switch mx-3">
     <label :class="{ active: currentState }" class="form-check-label pointer" :for="id + '_button'">
       <span v-if="currentState">{{ labelEnableText }}</span>
       <span v-if="!currentState">{{ labelDisableText }}</span>

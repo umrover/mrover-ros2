@@ -7,8 +7,16 @@
         <NetworkMonitor/>
       </div>
     </div>
-    <div class="shadow p-3 rounded siteSelect">
-      <SelectSite @site="onSiteChange" />
+    <div class="shadow p-3 rounded row siteSelect">
+      <div class="col-4">
+        <SelectSite @site="onSiteChange" />
+      </div>
+      <div class="col-4">
+          <WhiteLEDs :site="site" />
+      </div>
+      <div class="col-4">
+        <AutoShutdown />
+      </div>
     </div>
     <div class="shadow p-3 rounded benedicts">
       <NinhydrinBenedict :site="site" :isNinhydrin="false" />
@@ -16,46 +24,41 @@
     <div class="shadow p-3 rounded ninhydrin">
       <NinhydrinBenedict :site="site" :isNinhydrin="true" />
     </div>
-
-    <!-- TODO: create a sensor vue file (for the table) -->
-    <div class="shadow p-3 rounded sensors">
-      <div class="sensors-container">
-        <table class="sensors-table table-bordered">
-          <thead>
-            <tr class="table-primary">
-              <!-- empty for alignment -->
-              <th></th>
-              <th>Sensor 1</th>
-              <th>Sensor 2</th>
-              <th>Sensor 3</th>
-              <th>Sensor 4</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <th scope="row">Site 1</th>
-              <td>voltage</td>
-              <td>voltage</td>
-              <td>voltage</td>
-              <td>voltage</td>
-            </tr>
-            <tr>
-              <th scope="row">Site 2</th>
-              <td>voltage</td>
-              <td>voltage</td>
-              <td>voltage</td>
-              <td>voltage</td>
-            </tr>
-  
-          </tbody>
-          
-        </table>
-  
-        <div class="buttons">
-          <p class="example-button"><strong>Generate report</strong></p>
-          <p class="example-button"><strong>Generate report</strong></p>
+    <div class="shadow p-3 rounded container-fluid camera">
+      <div class="d-flex justify-content-center">
+        <ToggleButton 
+          :current-state="true" 
+          label-enable-text="Camera A On" 
+          label-disable-text="Camera A Off" 
+          @change="cameraA = $event" 
+        />
+        <ToggleButton 
+          :current-state="true" 
+          label-enable-text="Camera B On" 
+          label-disable-text="Camera B Off" 
+          @change="cameraB = $event" 
+        />
+      </div>
+      <div class="row gx-3 gy-3 justify-content-center">
+        <div v-if="cameraA" class="col-12">
+          <CameraFeed
+            :mission="'ish'"
+            :id="10"
+            :name="'Sample A'"
+          />
+        </div>
+        <div v-if="cameraB" class="col-12">
+          <CameraFeed
+            :mission="'ish'"
+            :id="11"
+            :name="'Sample B'"
+          />
         </div>
       </div>
+    </div>
+
+    <div class="shadow p-3 rounded sensors">
+      <SensorData :site="site"/>
     </div>
   </div>
 </template>
@@ -64,20 +67,29 @@
 import SelectSite from './SelectSite.vue'
 import NinhydrinBenedict from './NinhydrinBenedict.vue'
 import NetworkMonitor from "./NetworkMonitor.vue";
-//   import MCUReset from "./MCUReset.vue"
+import CameraFeed from './CameraFeed.vue';
+import ToggleButton from './ToggleButton.vue';
+import AutoShutdown from './AutoShutdown.vue';
+import SensorData from './SensorData.vue';
+import WhiteLEDs from './WhiteLEDs.vue';
 
 export default {
   components: {
     SelectSite,
     NinhydrinBenedict,
     NetworkMonitor,
-    //   MCUReset,
+    CameraFeed,
+    ToggleButton,
+    AutoShutdown,
+    SensorData,
+    WhiteLEDs
   },
 
   data() {
     return {
       site: 0 as number,
-      primary: false
+      cameraA: true,
+      cameraB: true,
     }
   },
 
@@ -93,20 +105,23 @@ export default {
 .wrapper {
   display: grid;
   grid-gap: 10px;
-  grid-template-columns: repeat(2, auto);
+  grid-template-columns: repeat(2, auto) 40%;
   grid-template-areas:
-    'header header'
-    'siteSelect siteSelect'
-    'ninhydrin benedicts'
-    'sensors sensors';
+    'header header header'
+    'siteSelect siteSelect camera'
+    'ninhydrin benedicts camera'
+    'sensors sensors camera';
   font-family: sans-serif;
   height: auto;
 }
 
+<<<<<<< HEAD
+=======
 .comms {
   margin-right: 5px;
 }
 
+>>>>>>> 8cc53aa7d4415428dc70c5696d5031eef9c20d67
 .header {
   grid-area: header;
   display: flex;
@@ -127,36 +142,15 @@ export default {
   grid-area: siteSelect;
 }
 
-.chlorophyll {
-  grid-area: chlorophyll;
-}
-
 .ninhydrin {
   grid-area: ninhydrin;
 }
 
+.camera {
+  grid-area: camera;
+}
+
 .sensors {
   grid-area: sensors;
-}
-
-.sensors-container {
-  display: flex; /* Aligns the table and buttons in a row */
-  align-items: start; /* Aligns the buttons to the top of the table */
-  gap: 20px; /* Adds space between the table and buttons */
-}
-
-.sensors-table {
-  width: 80%; /* Adjust table width as needed */
-}
-
-.buttons {
-  margin-top: 20px;
-}
-
-.example-button {
-  color: white;
-  ;
-  background-color: darkcyan;
-  
 }
 </style>
