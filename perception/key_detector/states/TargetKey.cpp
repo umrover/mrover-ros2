@@ -4,7 +4,6 @@
 #include "lie.hpp"
 #include <geometry_msgs/msg/detail/vector3__struct.hpp>
 #include <rclcpp/client.hpp>
-#include <tf2_ros/buffer.h>
 
 namespace mrover{
 TargetKey::TargetKey(const std::shared_ptr<FSMCtx> fsm_ctx) : fsm_ctx(fsm_ctx), sleepRate(0.2)
@@ -40,11 +39,13 @@ auto TargetKey::onLoop() -> State*{
     //Replace With Service Start
     //arm_e_link
 
-    auto tf = mrover::SE3Conversions::fromTfTree(*fsm_ctx->mTfBuffer, "arm_base_link", std::format("{}_key_truth", goal->code[fsm_ctx->curr_key_index]));
-    // auto tf_test = mrover::SE3Conversions::fromTfTree(buffer, "base_link", "q_key_truth" , node->get_clock()->now());
+    auto key_loc = mrover::SE3Conversions::fromTfTree(*fsm_ctx->mTfBuffer, "arm_base_link", std::format("{}_key_truth", goal->code[fsm_ctx->curr_key_index]));
+    auto arm_loc = mrover::SE3Conversions::fromTfTree(*fsm_ctx->mTfBuffer, "arm_base_link", "arm_e_link");
 
-    //auto relative_rotation = origin.rotation().transpose() * tf.rotation();
-    //auto target = SE3d(tf.translation() - origin.translation(), SO3d(relative_rotation));
+    // auto key_loc_test = mrover::SE3Conversions::fromTfTree(buffer, "base_link", "q_key_truth" , node->get_clock()->now());
+
+    //auto relative_rotation = origin.rotation().transpose() * key_loc.rotation();
+    //auto target = SE3d(key_loc.translation() - origin.translation(), SO3d(relative_rotation));
 
     //Replace with Service End
     /*
@@ -61,24 +62,28 @@ auto TargetKey::onLoop() -> State*{
      //   rclcpp::FutureReturnCode::SUCCESS)
     //{
 
-        //move arm with ik
+    //move arm with ik
     geometry_msgs::msg::Vector3 ik;
-    ik.x = tf.x();
-    ik.y = tf.y();
-    ik.z = tf.z();
+    ik.x = key_loc.x() - arm_loc.x();
+    ik.y = key_loc.y() - arm_loc.y();
+    ik.z = key_loc.z() - arm_loc.z();
+
+
     fsm_ctx->mIkTargetPub->publish(ik);
 
 
-        //verify that the arm is within the threshold
+    //verify that the arm is within the threshold
     bool within_threshold = false;
-    sleepRate.sleep();
+    // sleepRate.sleep();
 
-        // subscribe to arm state
-        // dist
+    // subscribe to arm state
+    // dist
 
     auto thresholdCheck = mrover::SE3Conversions::fromTfTree(*fsm_ctx->mTfBuffer, "arm_base_link", std::format("{}_key_truth", goal->code[fsm_ctx->curr_key_index]));
 
     double magnitude = std::sqrt(thresholdCheck.x() * thresholdCheck.x() + thresholdCheck.y() * thresholdCheck.y() + thresholdCheck.z() * thresholdCheck.z());
+
+    std::cout << "Magnitude: " << magnitude << std::endl;
 
 
     if(false){
