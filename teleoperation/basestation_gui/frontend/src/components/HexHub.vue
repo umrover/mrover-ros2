@@ -33,7 +33,7 @@ export default {
       ],
       selectedMission: "DM Mission",
       currentSite: 1, // Default site is 1 (Site A)
-      siteList: { 1: "A", 2: "B", 3: "C", 4: "D", 5: "E", 6: "F" },
+      siteList: { 1: "Site 1", 2: "Site 2", 3: "Empty", 4: "Cache", 5: "Closed 1", 6: "Closed 2" },
       camsEnabled: [],
       camsStreaming: []
     };

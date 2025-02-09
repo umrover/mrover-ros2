@@ -59,7 +59,7 @@ import html2canvas from "html2canvas";
       window.setInterval();
       this.interval = window.setInterval(() => {
         this.randomizeSensorData();
-      }
+      })
   },
   watch: {
     message(msg) {
