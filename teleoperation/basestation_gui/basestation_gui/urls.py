@@ -22,14 +22,8 @@ from django.shortcuts import render
 
 from backend.consumers import GUIConsumer
 
-vue_urls = [
-    path("", lambda request: HttpResponse(render(request, "vue_index.html"))),
-    path("motor_sim/", lambda request: HttpResponse(render(request, "vue_index.html"))),
-]
-
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path("", include(vue_urls)),
 ]
 
-websocket_urlpatterns = [path("ws/drive-controls", GUIConsumer.as_asgi())]
+websocket_urlpatterns = [path("ws/gui", GUIConsumer.as_asgi())]

@@ -69,6 +69,7 @@ find_package(ament_cmake_python REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
+find_package(rtcm_msgs REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(tf2_ros REQUIRED)
@@ -119,7 +120,7 @@ if (NOT manif_FOUND)
 
         set(manif_FOUND TRUE)
     else()
-        message(FATAL_ERROR "Manif not found. If on Ubuntu install with 'sudo apt install -f ./pkg/libmanif-dev.deb'. Or build from source with 'submodule update --init deps/manif' and make sure it is non-empty")
+        message(FATAL_ERROR "Manif not found. If on Ubuntu install with 'sudo apt install -f ./pkg/libmanif-dev.deb'. Or build from source with 'git submodule update --init deps/manif' and make sure it is non-empty")
     endif()
 endif()
 
@@ -228,6 +229,11 @@ target_link_libraries(simulator
 )
 target_include_directories(simulator SYSTEM PRIVATE ${BULLET_INCLUDE_DIRS} ${OPENCV_INCLUDE_DIRS})
 
+# Localization
+
+mrover_add_node(rover_gps_driver localization/rover_gps_driver.cpp)
+ament_target_dependencies(rover_gps_driver rclcpp sensor_msgs rtcm_msgs)
+
 # Perception
 
 find_package(ZED QUIET)
@@ -274,6 +280,10 @@ mrover_add_node(tag_detector perception/tag_detector/*.cpp perception/tag_detect
 ament_target_dependencies(tag_detector rclcpp tf2 tf2_ros)
 target_link_libraries(tag_detector lie opencv_core opencv_aruco opencv_imgproc loop_profiler)
 
+mrover_add_node(cost_map perception/cost_map/*.cpp perception/cost_map/pch.hpp)
+ament_target_dependencies(cost_map rclcpp tf2 tf2_ros)
+target_link_libraries(cost_map lie parameter_utils)
+
 # Embedded
 
 mrover_add_header_only_library(messaging esw/messaging)
@@ -299,10 +309,11 @@ endmacro()
 
 mrover_add_esw_motor_bridge_node(drive_hw_bridge esw/drive_hw_bridge.cpp)
 mrover_add_esw_motor_bridge_node(arm_hw_bridge esw/arm_hw_bridge.cpp)
-mrover_add_esw_motor_bridge_node(3bm_test_bridge esw/3bm_test_bridge.cpp)
+# mrover_add_esw_motor_bridge_node(3bm_test_bridge esw/3bm_test_bridge.cpp)
 mrover_add_esw_bridge_node(differential_drive_controller esw/differential_drive_controller.cpp)
 mrover_add_esw_bridge_node(science_hw_bridge esw/science_hw_bridge.cpp)
 ament_target_dependencies(science_hw_bridge sensor_msgs)
+# mrover_add_esw_motor_bridge_node(science_test_bridge esw/science_test_bridge.cpp)
 
 mrover_add_node(arm_controller teleoperation/arm_controller/arm_controller.cpp teleoperation/arm_controller/pch.hpp)
 target_link_libraries(arm_controller lie)
@@ -340,13 +351,15 @@ endif ()
 install(PROGRAMS
         navigation/nav.py
         navigation/stuck_detector/stuck_detector.py
-        localization/rover_gps_driver.py
         localization/gps_linearization.py
         localization/basestation_gps_driver.py
         superstructure/superstructure.py
         scripts/debug_course_publisher.py
+        scripts/debug_service.py
+        scripts/astar_debug.py
 		scripts/visualizer.py
-		scripts/image_capture.py
+        teleoperation/basestation_gui/gui_frontend.sh
+        teleoperation/basestation_gui/gui_backend.sh
 
         # starter project sources
         starter_project/autonomy/src/localization.py
