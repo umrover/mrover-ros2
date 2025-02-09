@@ -2,6 +2,11 @@
 
 #include "mrover/msg/detail/fix_status__struct.hpp"
 #include "pch.hpp"
+#include <memory>
+#include <message_filters/subscriber.h>
+#include <message_filters/sync_policies/approximate_time.h>
+#include <message_filters/synchronizer.h>
+#include <sensor_msgs/msg/detail/magnetic_field__struct.hpp>
 
 namespace mrover {
 
@@ -14,21 +19,27 @@ namespace mrover {
 
         void correct_and_publish(const geometry_msgs::msg::Vector3Stamped::ConstSharedPtr &position);
         void sync_rtk_heading_callback(const mrover::msg::Heading::ConstSharedPtr &heading, const mrover::msg::FixStatus::ConstSharedPtr &heading_status);
+        void sync_imu_and_mag_callback(const sensor_msgs::msg::Imu::ConstSharedPtr &imu, const sensor_msgs::msg::MagneticField::ConstSharedPtr &mag);
 
         // subscribers
         rclcpp::Subscription<geometry_msgs::msg::Vector3Stamped>::SharedPtr linearized_position_sub;
-        rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr imu_sub;
-        rclcpp::Subscription<sensor_msgs::msg::MagneticField>::SharedPtr mag_sub;
+        // rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr imu_sub;
+        // rclcpp::Subscription<sensor_msgs::msg::MagneticField>::SharedPtr mag_sub;
 
+        message_filters::Subscriber<sensor_msgs::msg::Imu> imu_sub;
+        message_filters::Subscriber<sensor_msgs::msg::MagneticField> mag_sub;
         message_filters::Subscriber<mrover::msg::Heading> rtk_heading_sub;
         message_filters::Subscriber<mrover::msg::FixStatus> rtk_heading_status_sub;
 
-        // synchronizer
+        // synchronizers
         std::shared_ptr<message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime
-            <mrover::msg::Heading, mrover::msg::FixStatus>>> sync;
+            <mrover::msg::Heading, mrover::msg::FixStatus>>> rtk_heading_sync;
+        std::shared_ptr<message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime
+            <sensor_msgs::msg::Imu, sensor_msgs::msg::MagneticField>>> imu_and_mag_sync;
 
-        // rtk heading data watchdog
+        // data watchdogs
         rclcpp::TimerBase::SharedPtr rtk_heading_watchdog;
+        rclcpp::TimerBase::SharedPtr imu_and_mag_watchdog;
 
         // data store
         std::optional<double> last_rtk_heading;
@@ -40,7 +51,8 @@ namespace mrover {
         std::optional<sensor_msgs::msg::MagneticField> last_mag;
 
         // thresholding for data
-        const rclcpp::Duration RTK_HEADING_WATCHDOG_TIMEOUT = rclcpp::Duration::from_seconds(2.0);
+        const rclcpp::Duration RTK_HEADING_WATCHDOG_TIMEOUT = rclcpp::Duration::from_seconds(1.5);
+        const rclcpp::Duration IMU_AND_MAG_WATCHDOG_TIMEOUT = rclcpp::Duration::from_seconds(1.0);
         constexpr static float HEADING_THRESHOLD = 10;
         // constexpr static bool HEADING_CORRECTED = false;
 

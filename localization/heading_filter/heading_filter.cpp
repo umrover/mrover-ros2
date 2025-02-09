@@ -1,9 +1,12 @@
 #include "heading_filter.hpp"
 #include "mrover/msg/detail/fix_status__struct.hpp"
+#include <chrono>
 #include <cstdint>
 #include <geometry_msgs/msg/detail/vector3_stamped__struct.hpp>
+#include <memory>
 #include <message_filters/sync_policies/approximate_time.h>
 #include <message_filters/synchronizer.h>
+#include <sensor_msgs/msg/detail/magnetic_field__struct.hpp>
 
 namespace mrover {
 
@@ -14,18 +17,20 @@ namespace mrover {
             correct_and_publish(position);
         });
 
-        imu_sub = this->create_subscription<sensor_msgs::msg::Imu>("/zed_imu/data_raw", 10, [&](const sensor_msgs::msg::Imu::ConstSharedPtr &imu) {
-            last_imu = *imu;
-        });
+        // imu_sub = this->create_subscription<sensor_msgs::msg::Imu>("/zed_imu/data_raw", 10, [&](const sensor_msgs::msg::Imu::ConstSharedPtr &imu) {
+        //     last_imu = *imu;
+        // });
 
-        mag_sub = this->create_subscription<sensor_msgs::msg::MagneticField>("/zed_imu/mag", 10, [&](const sensor_msgs::msg::MagneticField::ConstSharedPtr &mag) {
-            last_mag = *mag;
-        });
+        // mag_sub = this->create_subscription<sensor_msgs::msg::MagneticField>("/zed_imu/mag", 10, [&](const sensor_msgs::msg::MagneticField::ConstSharedPtr &mag) {
+        //     last_mag = *mag;
+        // });
 
         rtk_heading_sub.subscribe(this, "/heading/fix");
         rtk_heading_status_sub.subscribe(this, "/heading_fix_status");
+        imu_sub.subscribe(this, "/zed_imu/data_raw");
+        mag_sub.subscribe(this, "/zed_imu/mag");
 
-        // rtk heading data watchdog
+        // data watchdogs
         rtk_heading_watchdog = this->create_wall_timer(RTK_HEADING_WATCHDOG_TIMEOUT.to_chrono<std::chrono::milliseconds>(), [&]() {
             RCLCPP_WARN(get_logger(), "RTK heading data watchdog expired");
             last_rtk_heading.reset();
@@ -36,16 +41,32 @@ namespace mrover {
             // last_rtk_heading_correction_rotation.reset();
         });
 
-        // synchronizer
+        imu_and_mag_watchdog = this->create_wall_timer(IMU_AND_MAG_WATCHDOG_TIMEOUT.to_chrono<std::chrono::milliseconds>(), [&]() {
+            RCLCPP_WARN(get_logger(), "ZED IMU data watchdog expired");
+            last_imu.reset();
+            last_mag.reset();
+        });
+
+        // synchronizers
         uint32_t queue_size = 10;
-        sync = std::make_shared<message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<mrover::msg::Heading, mrover::msg::FixStatus>>>(
+
+        rtk_heading_sync = std::make_shared<message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<mrover::msg::Heading, mrover::msg::FixStatus>>>(
             message_filters::sync_policies::ApproximateTime<mrover::msg::Heading, mrover::msg::FixStatus>(queue_size),
             rtk_heading_sub,
             rtk_heading_status_sub
         );
 
-        sync->setAgePenalty(0.5);
-        sync->registerCallback(&HeadingFilter::sync_rtk_heading_callback, this);
+        rtk_heading_sync->setAgePenalty(0.5);
+        rtk_heading_sync->registerCallback(&HeadingFilter::sync_rtk_heading_callback, this);
+
+        imu_and_mag_sync = std::make_shared<message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<sensor_msgs::msg::Imu, sensor_msgs::msg::MagneticField>>>(
+            message_filters::sync_policies::ApproximateTime<sensor_msgs::msg::Imu, sensor_msgs::msg::MagneticField>(queue_size),
+            imu_sub,
+            mag_sub
+        );
+
+        imu_and_mag_sync->setAgePenalty(0.5);
+        imu_and_mag_sync->registerCallback(&HeadingFilter::sync_imu_and_mag_callback, this);
         
 
     }
@@ -56,6 +77,8 @@ namespace mrover {
         last_rtk_heading_fix = heading_status->fix_type;
         // last_rtk_heading_time = heading->header.stamp;
     }
+
+    // void HeadingFilter::sync_imu_and_mag_callback(const sensor_msgs::msg::)
 
     void HeadingFilter::correct_and_publish(const geometry_msgs::msg::Vector3Stamped::ConstSharedPtr &position) {
 
