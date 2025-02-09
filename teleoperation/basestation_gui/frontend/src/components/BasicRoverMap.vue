@@ -19,7 +19,7 @@
           <l-polyline :lat-lngs="dronePath" :color="'green'" />
       </l-map>
       <label><input v-model="online" type="checkbox" /> Online</label>
-        <div class="odometry">
+        <div class="odometry" v-if="odom">
             <p> Lat: {{ odom.latitude_deg.toFixed(6) }}º N, 
                 Lon: {{ odom.longitude_deg.toFixed(6) }}º E
             </p>
@@ -183,7 +183,6 @@
   
           // Convert to latLng object for Leaflet to use
           odomLatLng: function () {
-            console.log(this.odom)
             if (this.odom && typeof this.odom === 'object' && this.odom.latitude_deg !== undefined && this.odom.longitude_deg !== undefined ) {
                 return L.latLng(this.odom.latitude_deg, this.odom.longitude_deg);
             } else {

@@ -20,7 +20,7 @@
       <DriveControls />
     </div>
     <div class='shadow p-3 rounded arm'>
-      <SAArmControls currentSite='PASS SITE'/>
+      <SAArmControls :currentSite="siteSelect" /> 
     </div>
     <div class='shadow p-3 rounded moteus'>
       <ControllerDataTable msg-type='drive_state' header='Drive States' />
@@ -33,7 +33,7 @@
       <OdometryReading @odom='updateOdom'/>
     </div>
     <div class="shadow p-3 rounded hexHub">
-      <HexHub />
+      <HexHub @selectSite="updateSite" />
     </div>
     <div class="shadow p-3 rounded lsActuator">
       <LSActuator />
@@ -77,11 +77,17 @@ export default {
   data() {
     return {
       odom:  null as Odom | null,
+      siteSelect: 0,
     }
   },
   methods: {
     updateOdom(odom: Odom) {
       this.odom = odom;
+    },
+    updateSite(selectedSite: number) {
+      this.siteSelect = selectedSite;
+      console.log('Selected site index:', selectedSite);
+      
     },
   }
 }

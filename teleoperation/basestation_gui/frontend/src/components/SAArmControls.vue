@@ -59,7 +59,7 @@ export default defineComponent({
 
   props: {
     currentSite: {
-      type: String, 
+      type: Number, 
       required: true
     }
   },
@@ -70,7 +70,7 @@ export default defineComponent({
       corer_position: 0,
       plunger_position: 0,
       sensor_height: 5.36,
-      plunger_height: 5.5
+      plunger_height: 5.5,
     }
   },
 
@@ -83,7 +83,8 @@ export default defineComponent({
       this.sendMessage({
         type: 'sa_controller',
         axes: gamepad.axes,
-        buttons: gamepad.buttons.map(button => button.value)
+        buttons: gamepad.buttons.map(button => button.value),
+        pump: this.currentSite,
       })
 
       this.sendMessage({
