@@ -21,5 +21,6 @@
 #include <lie.hpp>
 // #include <mrover/MoveCostMap.h>
 #include <mrover/srv/move_cost_map.hpp>
+#include <mrover/srv/dilate_cost_map.hpp>
 #include <parameter.hpp>
 #include <point.hpp>

@@ -49,6 +49,7 @@ navigation:
       costmap_thresh: 0.25
       angle_thresh: 0.0872665 #pi/36 radians / 5 degrees
       distance_threshold: 2.0
+      initial_inflation_radius: 3.0
       
     single_tag:
       stop_threshold: 1.0

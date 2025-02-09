@@ -10,6 +10,8 @@ namespace mrover {
 
         constexpr static double TAU = 2 * std::numbers::pi;
 
+        static double inflation_radius;
+
         rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr mCostMapPub;
         rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr mPcSub;
 
@@ -33,6 +35,8 @@ namespace mrover {
 
         rclcpp::Service<mrover::srv::MoveCostMap>::SharedPtr mServer;
 
+        rclcpp::Service<mrover::srv::DilateCostMap>::SharedPtr dCostServer;
+
     public:
         CostMapNode();
 
@@ -41,6 +45,8 @@ namespace mrover {
         auto pointCloudCallback(sensor_msgs::msg::PointCloud2::ConstSharedPtr const& msg) -> void;
 
         auto moveCostMapCallback(mrover::srv::MoveCostMap::Request::ConstSharedPtr& req, mrover::srv::MoveCostMap::Response::SharedPtr& res) -> void;
+
+        auto dilateCostMapCallback(mrover::srv::DilateCostMap_Request::ConstSharedPtr& req, mrover::srv::DilateCostMap_Response::SharedPtr& res) -> void;
     };
 
 } // namespace mrover

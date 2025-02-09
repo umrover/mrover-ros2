@@ -28,6 +28,7 @@ class ApproachTargetState(State):
     target_position: np.ndarray
     goto_near_point: bool
     near_point: np.ndarray
+    cost_inflation_radius: float
 
     def on_enter(self, context: Context) -> None:
         self.marker_pub = context.node.create_publisher(Marker, "spiral_points", 10)
@@ -48,7 +49,7 @@ class ApproachTargetState(State):
         self.UPDATE_DELAY = context.node.get_parameter("search.update_delay").value
         self.USE_COSTMAP = context.node.get_parameter("search.use_costmap").value
         self.DISTANCE_THRESHOLD = context.node.get_parameter("search.distance_threshold").value
-        pass
+        self.cost_inflation_radius = context.node.get_parameter("search.initial_inflation_radius").value
 
     def on_exit(self, context: Context) -> None:
         pass
@@ -218,7 +219,7 @@ class ApproachTargetState(State):
                         return self.next_state(context=context, is_finished=True)
                     else:
                         self.dilate_costmap(context=context)
-                        return self.next_state(context=context, is_finished=True)
+                        return self.next_state(context=context, is_finished=False)
                 self.display_markers(context=context)
         else:
             context.rover.send_drive_command(cmd_vel)
@@ -243,5 +244,6 @@ class ApproachTargetState(State):
         return distance_to_target < self.DISTANCE_THRESHOLD
     
     def dilate_costmap(self, context: Context):
-        context.node.get_logger().info("Too far from target!")
-        pass
+        context.node.get_logger().info("Too far from target! Dilating cost map.")
+        self.cost_inflation_radius -= 0.2
+        context.dilate_cost(self.cost_inflation_radius)

@@ -66,10 +66,6 @@ simulator:
         uri: package://mrover/urdf/world/small_rock.urdf.xacro
         position: [ 11.00, 11.00, 0.5 ]
 
-      rock_9:
-        type: urdf
-        uri: package://mrover/urdf/world/small_rock.urdf.xacro
-        position: [ 13.00, 12.50, 0.5 ]
 
     ref_lat: 38.4225202
     ref_lon: -110.7844653
