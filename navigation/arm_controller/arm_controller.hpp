@@ -25,6 +25,42 @@ namespace mrover {
             }
         };
 
+
+        struct JointWrapper {
+            struct JointLimits {
+                double minPos, maxPos, minVel, maxVel;
+                [[nodiscard]] auto posInBounds(double pos) const -> bool {return minPos <= pos && pos <= maxPos;}
+                [[nodiscard]] auto velInBounds(double vel) const -> bool {return minPos <= vel && vel <= maxPos;}
+            };
+            
+            JointLimits limits;
+            double pos;
+        };
+        
+        // TODO: update velocity limits to make them real
+        std::unordered_map<std::string, JointWrapper> joints = {
+            {"joint_a", {
+                .limits = {.minPos = 0, .maxPos = 0.4, .minVel = -10, .maxVel = 10},
+                .pos = 0
+            }},
+            {"joint_b", {
+                .limits = {.minPos = -std::numbers::pi / 4.0, .maxPos = 0, .minVel = -10, .maxVel = 10},
+                .pos = 0
+            }},
+            {"joint_c", {
+                .limits = {.minPos = -0.959931, .maxPos = 2.87979, .minVel = -10, .maxVel = 10},
+                .pos = 0
+            }},
+            {"joint_de_pitch", {
+                .limits = {.minPos = -0.75 * std::numbers::pi, .maxPos = 0.75 * std::numbers::pi, .minVel = -10, .maxVel = 10},
+                .pos = 0
+            }},
+            {"joint_de_roll", {
+                .limits = {.minPos = -2.36, .maxPos = 1.44, .minVel = -10, .maxVel = 10},
+                .pos = 0
+            }},
+        };
+
         [[maybe_unused]] rclcpp::Subscription<msg::IK>::SharedPtr mIkSub;
         [[maybe_unused]] rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr mVelSub;
         [[maybe_unused]] rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr mJointSub;
@@ -61,16 +97,6 @@ namespace mrover {
         static constexpr double LINK_BC = 0.5344417294;
         static constexpr double LINK_CD = 0.5531735368;
         static constexpr double LINK_DE = 0.044886000454425812;
-        static constexpr double JOINT_A_MIN = 0;
-        static constexpr double JOINT_A_MAX = 0.45;
-        static constexpr double JOINT_B_MIN = -0.25 * std::numbers::pi;
-        static constexpr double JOINT_B_MAX = 0;
-        static constexpr double JOINT_C_MIN = -0.959931;
-        static constexpr double JOINT_C_MAX = 2.87979;
-        static constexpr double JOINT_DE_PITCH_MIN = -0.75 * std::numbers::pi;
-        static constexpr double JOINT_DE_PITCH_MAX = 0.75 * std::numbers::pi;
-        static constexpr double JOINT_DE_ROLL_MIN = -2.36;
-        static constexpr double JOINT_DE_ROLL_MAX = 1.44;
         static constexpr double END_EFFECTOR_LENGTH = 0.13; // Measured from blender
         static constexpr double JOINT_C_OFFSET = 0.1608485915;
 

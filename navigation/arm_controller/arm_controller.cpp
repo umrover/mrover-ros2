@@ -54,24 +54,37 @@ namespace mrover {
         double q2 = -thetaB + JOINT_C_OFFSET;
         double q3 = -thetaC - JOINT_C_OFFSET;
 
-        if (std::isfinite(q1) && std::isfinite(q2) && std::isfinite(q3) &&
-            y >= JOINT_A_MIN && y <= JOINT_A_MAX &&
-            q1 >= JOINT_B_MIN && q1 <= JOINT_B_MAX &&
-            q2 >= JOINT_C_MIN && q2 <= JOINT_C_MAX &&
-            q3 >= JOINT_DE_PITCH_MIN && q3 <= JOINT_DE_PITCH_MAX &&
-            target.roll >= JOINT_DE_ROLL_MIN && target.roll <= JOINT_DE_ROLL_MAX) {
-            msg::Position positions;
-            positions.names = {"joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_roll"};
-            positions.positions = {
-                    static_cast<float>(y),
-                    static_cast<float>(q1),
-                    static_cast<float>(q2),
-                    static_cast<float>(q3),
-                    static_cast<float>(target.roll),
-            };
-            return positions;
+        // if any angles are infinite, it means math failed (usually due to the position being out of reach of the arm)
+        if (!std::isfinite(q1) || !std::isfinite(q2) || !std::isfinite(q3)) {
+            RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1000, "Couldn't solve position IK");
+            return std::nullopt;
         }
-        return std::nullopt;
+
+        msg::Position positions;
+        positions.names = {"joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_roll"};
+        positions.positions = {
+            static_cast<float>(y),
+            static_cast<float>(q1),
+            static_cast<float>(q2),
+            static_cast<float>(q3),
+            static_cast<float>(target.roll),
+        };
+
+        for (size_t i = 0; i < positions.names.size(); ++i) {
+            auto it = joints.find(positions.names[i]);
+            // hopefully this will never happen, but just in case
+            if (it == joints.end()) {
+                RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, "Unknown joint \"" << positions.names[i] << "\"");
+                return std::nullopt;
+            }
+
+            if (!it->second.limits.posInBounds(positions.positions[i])) {
+                RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, "Position for joint " << positions.names[i] << " not within limits!");
+                return std::nullopt;
+            }
+        }
+        
+        return positions;
     }
 
     void ArmController::velCallback(geometry_msgs::msg::Twist::ConstSharedPtr const& ik_vel) {
