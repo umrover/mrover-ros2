@@ -1,6 +1,5 @@
 // RCLCPP
 #include <rclcpp/rclcpp.hpp>
-#include <ament_index_cpp/get_package_prefix.hpp>
 #include "parameter.hpp"
 
 // Messages

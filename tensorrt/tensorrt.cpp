@@ -15,7 +15,7 @@ TensortRT::TensortRT(string modelName, string packagePathString) : mModelName{st
 
 TensortRT::~TensortRT() = default;
 
-auto TensortRT::modelForwardPass(cv::Mat const& blob, std::vector<ColoDetection>& detections, float modelScoreThreshold, float modelNMSThreshold) const -> void {
+auto TensortRT::modelForwardPass(cv::Mat const& blob, std::vector<Detection>& detections, float modelScoreThreshold, float modelNMSThreshold) const -> void {
     mInferenceWrapper.doDetections(blob);
     cv::Mat output = mInferenceWrapper.getOutputTensor();
     parseModelOutput(output, detections, modelScoreThreshold, modelNMSThreshold);

@@ -21,8 +21,4 @@
     lower_bound_h: 0
     lower_bound_s: 0
     lower_bound_v: 0
-    model_name: "TemporaryNameHerePleaseChangeOrErrors"
-    model_score_threshold: 0.75
-    model_nms_threshold: 0.5
-    debug: true
 
