@@ -27,11 +27,15 @@ namespace mrover {
 
         auto request_raw_angle() -> void;
         auto read_raw_angle_into_buffer() -> void;
-        auto convert_buffer_into_raw_angle() -> std::uint64_t;
+        auto try_read_buffer() -> std::optional<std::uint16_t>;
 
         [[nodiscard]] auto read() -> std::optional<EncoderReading>;
 
     private:
+        constexpr static std::uint16_t REQUEST_ANGLE = 0xFE;
+
+        constexpr static TimerConfig ELAPSED_TIMER_CONFIG = {.psc = 259, .arr = 65535};
+
         struct I2CAddress {
             constexpr static std::uint16_t
                     device_slave_address_none_high = 0x40,
@@ -40,12 +44,12 @@ namespace mrover {
                     device_slave_address_both_high = 0x43;
         };
         TIM_HandleTypeDef* m_elapsed_timer{};
+        std::uint16_t m_timer_tick_prev{};
 
         std::uint16_t m_address = I2CAddress::device_slave_address_none_high;
         AS5048B_Bus m_i2cBus;
 
-        std::array<std::uint8_t, 2> m_i2c_buffer{};
-        std::uint64_t m_previous_raw_angle{};
+        std::uint16_t m_previous_raw_data{};
 
         Radians m_offset;
         Ratio m_multiplier;

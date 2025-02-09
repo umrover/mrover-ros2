@@ -27,6 +27,12 @@ namespace mrover {
             .maxVelocity = RevolutionsPerSecond{10.0},
             .maxTorque = 25.0,
     };
+    constexpr static BrushlessController<Revolutions>::Config INVERTED_WHEEL_CONFIG = {
+            .minVelocity = WHEEL_CONFIG.minVelocity,
+            .maxVelocity = WHEEL_CONFIG.maxVelocity,
+            .maxTorque = WHEEL_CONFIG.maxTorque,
+            .throttleIsInverted = true,
+    };
 
     class DriveHardwareBridge final : public rclcpp::Node {
     public:
@@ -49,7 +55,11 @@ namespace mrover {
                 }));
                 for (std::string const& motor: mMotors) {
                     std::string name = std::format("{}_{}", motor, group);
-                    mControllers.try_emplace(name, shared_from_this(), "jetson", name, WHEEL_CONFIG);
+                    if (name == "back_right" || name == "middle_right") {
+                        mControllers.try_emplace(name, shared_from_this(), "jetson", name, INVERTED_WHEEL_CONFIG);
+                    } else {
+                        mControllers.try_emplace(name, shared_from_this(), "jetson", name, WHEEL_CONFIG);
+                    }
                     mJointState.name.push_back(name);
                 }
                 mJointState.position.resize(mControllers.size());

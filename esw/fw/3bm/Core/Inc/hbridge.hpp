@@ -7,9 +7,10 @@
 
 namespace mrover {
     class HBridge {
-        // Pin m_positive_pin{};
-        // Pin m_negative_pin{};
         Pin m_direction_pin{};
+#ifdef DUAL_DIRECTION
+        Pin m_direction_pin_1{};
+#endif
         TIM_HandleTypeDef* m_timer{};
         std::uint32_t m_channel = TIM_CHANNEL_1;
         Percent m_max_pwm{};
@@ -20,6 +21,9 @@ namespace mrover {
 
         // explicit HBridge(TIM_HandleTypeDef* timer, std::uint32_t channel, Pin positive_pin, Pin negative_pin);
         explicit HBridge(TIM_HandleTypeDef* timer, std::uint32_t channel, Pin direction_pin);
+#ifdef DUAL_DIRECTION
+        explicit HBridge(TIM_HandleTypeDef* timer, std::uint32_t channel, Pin direction_pin_0, Pin direction_pin_1);
+#endif
 
         auto write(Percent output) const -> void;
 
