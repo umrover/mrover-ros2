@@ -12,7 +12,14 @@ class PairHash{
 
 namespace mrover {
 	class LightDetector : public rclcpp::Node {
-
+	protected:
+    struct Detection {
+        int classId{};
+        std::string className;
+        float confidence{};
+        cv::Rect box;
+        Detection(int _classId, std::string _className, float _confidence, cv::Rect _box) : classId{_classId}, className{_className}, confidence{_confidence}, box{_box} {}
+    };
 	private:
 		cv::Mat mImgRGB;
 		cv::Mat mImgHSV;
