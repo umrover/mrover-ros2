@@ -31,13 +31,13 @@
 #define MAX_MESSAGE_SIZE 8  
 
 // Functions to handle messages
-void processServoSetPosition(uint8_t *buffer);
-void processServoPositionData(uint8_t *buffer);
-//void processTemperatureHumidityData();
+void readServoSetPosition(uint8_t *buffer);
+void writeServoPositionData();
+//void writeTemperatureHumidityData();
 
 
 // Sensor/Servo Constants
-const uint8_t DXL_ID = 1;
+const uint8_t DXL_ID = 0;
 const float DXL_PROTOCOL_VERSION = 2.0;
 DynamixelShield dxl;
 //DFRobot_SHT20 sht20(&Wire, SHT20_I2C_ADDR);
@@ -47,15 +47,17 @@ TempSensor temp_sensor;
 using namespace ControlTableItem;
 
 void setup(){
-  //Serial.begin(9600);
+
   //sht20.initSHT20();
   delay(100);
   temp_sensor.setup();
 
-  Serial.begin(115200); // Match the baud rate with the C++ program
+  // Match the baud rate with the C++ program
+  Serial.begin(115200); 
 
   // Set Port baudrate to 57600bps. This has to match with DYNAMIXEL baudrate.
   dxl.begin(57600);
+
   // Set Port Protocol Version. This has to match with DYNAMIXEL protocol version.
   dxl.setPortProtocolVersion(DXL_PROTOCOL_VERSION);
   
@@ -63,12 +65,113 @@ void setup(){
 
 void loop(){
 
+  // send data here
+  writeServoPositionData();
+  //writeSensorData();
+
+  // check for set position request
   if (Serial.available() >= 2) {  // ensure we have at least header (1) & message_id (1)
     uint8_t header = Serial.read();  
     uint8_t message_id = Serial.read();  
 
-    if (header == HEADER_BYTE) {
+    if ((header == HEADER_BYTE) && (message_id == MSG_SERVO_SET_POSITION)) {
+      uint8_t buffer[MSG_SERVO_SET_POSITION_SIZE] = {0};
+      Serial.readBytes(buffer, MSG_SERVO_SET_POSITION_SIZE);
+      readServoSetPosition(buffer);
+    } 
 
+  }
+
+  delay(100); // 100ms 
+
+}
+
+
+// Process Different Message Types
+
+void readServoSetPosition(uint8_t *buffer) {
+    uint8_t id_flags = buffer[0]; // [3b unused][4b id][1b is_counterclockwise]
+    uint8_t id = (id_flags >> 1) & 0x0F;
+    bool is_counterclockwise = id_flags & 0x01;
+
+    float radians;
+    memcpy(&radians, &buffer[1], sizeof(float));
+
+    float set_degrees = (radians * 180.0) / PI;
+
+    dxl.ping(id);
+    dxl.torqueOff(id);
+    dxl.setOperatingMode(id, 4);
+    dxl.torqueOn(id);
+
+    float present_degrees = dxl.getPresentPosition(id, UNIT_DEGREE);
+
+    // find difference in range [0,360]
+    float diff = fmod(abs(set_degrees - present_degrees), 360);
+
+    if (set_degrees > present_degrees) {
+      if (is_counterclockwise) {
+        dxl.setGoalPosition(id, present_degrees + diff, UNIT_DEGREE);
+      } else {
+        dxl.setGoalPosition(id, present_degrees - (360 - diff), UNIT_DEGREE); // (360+180) - (360-90) = (360+180) - 270 = -90 == 270
+      }
+    } else {
+      if (is_counterclockwise) {
+        dxl.setGoalPosition(id, present_degrees + (360 - diff), UNIT_DEGREE);
+      } else { 
+        dxl.setGoalPosition(id, present_degrees - diff, UNIT_DEGREE);
+      }
+    }
+    
+}
+
+void writeServoPositionData() {
+
+    // 10Hz send position and temp/humidity data, this should be independant of the set position
+    
+    // TX and RX are seperate lines, do not interfere with each other
+
+    dxl.ping(DXL_ID);
+    float presentDeg = dxl.getPresentPosition(DXL_ID, UNIT_DEGREE);
+    float presentRad = presentDeg * PI / 180.0;
+
+    uint8_t radBytes[sizeof(float)];
+    memcpy(radBytes, &presentRad, sizeof(float));
+
+    Serial.write((byte)HEADER_BYTE);
+    Serial.write((byte)MSG_SERVO_POSITION_DATA);
+    Serial.write((byte)DXL_ID);
+    Serial.write(radBytes, sizeof(float));
+}
+
+/*
+void writeTemperatureHumidityData() {
+    float temp = sht20.readTemperature();
+    float humidity = sht20.readHumidity() / 100.0;
+
+    uint8_t tempBytes[sizeof(float)];
+    uint8_t humidityBytes[sizeof(float)];
+    memcpy(tempBytes, &temp, sizeof(float));
+    memcpy(humidityBytes, &humidity, sizeof(float));
+
+    Serial.write((byte)HEADER_BYTE);
+    Serial.write((byte)MSG_TEMPERATURE_HUMIDITY);
+    Serial.write(tempBytes, sizeof(float));
+    Serial.write(humidityBytes, sizeof(float));
+}
+
+*/
+
+
+
+// %%%%%%%%%%%%%%%%%% GRAVEYARD %%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+/*
+
+
+    // old vvvv
       // determine message size to read in buffer
       uint8_t message_size = 0;
       switch (message_id) {
@@ -96,170 +199,13 @@ void loop(){
             case MSG_SERVO_POSITION_DATA:
                 processServoPositionData(buffer);
                 break;
-            /*  
             // NOTE: for some reason, this file won't compile with the sensor stuff
             // It claims to not find the library so we can fix this later when moving files probably
             case MSG_TEMPERATURE_HUMIDITY:
                 processSensorData(buffer);
                 break;
-            */
+            
         }
       }
-
-    }
-
-  }
-
-}
-
-
-// Process Different Message Types
-
-void processServoSetPosition(uint8_t *buffer) {
-    uint8_t id_flags = buffer[0]; // [3b unused][4b id][1b is_counterclockwise]
-    uint8_t id = (id_flags >> 1) & 0x0F;
-    bool is_counterclockwise = id_flags & 0x01;
-
-    float radians;
-    memcpy(&radians, &buffer[1], sizeof(float));
-
-    float set_degrees = (radians * 180.0) / PI;
-
-    dxl.ping(id);
-    dxl.torqueOff(id);
-    dxl.setOperatingMode(id, 4);
-    dxl.torqueOn(id);
-
-    float present_degrees = dxl.getPresentPosition(id, UNIT_DEGREE);
-
-    float diff = set_degrees - present_degrees;
-
-    // TODO: this logic is close bur definitely not right
-    // It will end in correct position but may go in wrong direction or wrap unnecessarily
-    // EXAMPLE: start at 180, then go to 270 CW (it goes CCW instead)
-
-    if (diff > 0) {
-      if (is_counterclockwise) {
-        dxl.setGoalPosition(id, set_degrees, UNIT_DEGREE);
-      } else {
-        dxl.setGoalPosition(id, set_degrees + 360, UNIT_DEGREE);
-      }
-    } else {
-      if (is_counterclockwise) {
-        dxl.setGoalPosition(id, set_degrees + 360, UNIT_DEGREE);
-      } else {
-        dxl.setGoalPosition(id, set_degrees, UNIT_DEGREE);
-      }
-    }
-    
-}
-
-void processServoPositionData(uint8_t *buffer) {
-
-    // NOTE: not 100% sure when we are supposed to send data
-    // this is based off Cindy's work but idk where it should go fs
-
-    uint8_t id = buffer[0] & 0x0F;  // [4b unused][4b id]
-
-    dxl.ping(id);
-    float presentDeg = dxl.getPresentPosition(id, UNIT_DEGREE);
-    float presentRad = presentDeg * PI / 180.0;
-
-    uint8_t radBytes[sizeof(float)];
-    memcpy(radBytes, &presentRad, sizeof(float));
-
-    Serial.write((byte)HEADER_BYTE);
-    Serial.write((byte)MSG_SERVO_POSITION_DATA);
-    Serial.write((byte)id);
-    Serial.write(radBytes, sizeof(float));
-}
-
-/*
-void processTemperatureHumidityData() {
-    float temp = sht20.readTemperature();
-    float humidity = sht20.readHumidity() / 100.0;
-
-    uint8_t tempBytes[sizeof(float)];
-    uint8_t humidityBytes[sizeof(float)];
-    memcpy(tempBytes, &temp, sizeof(float));
-    memcpy(humidityBytes, &humidity, sizeof(float));
-
-    Serial.write((byte)HEADER_BYTE);
-    Serial.write((byte)MSG_TEMPERATURE_HUMIDITY);
-    Serial.write(tempBytes, sizeof(float));
-    Serial.write(humidityBytes, sizeof(float));
-}
 
 */
-
-
-
-
-
-
-/*
-  // old loop code for reference
-  
-  float temp = sht20.readTemperature();
-
-  float thermistorValue = temp_sensor.getTemperature(); 
-  int rawVal = temp_sensor.getRawData();
-
-  float humidity = sht20.readHumidity() / 100.0;
-
-  // START OUR CODE HERE!
-
-  if (Serial.available()) {
-    String input = Serial.readStringUntil('\n');  // Read the incoming data until newline
-    input.trim();  // Remove extra whitespace or newline characters
-
-    // Check if the input is not empty
-    if (input.length() > 0) {
-      int spaceIndex = input.indexOf(' ');  // Find the space separating ID and Degrees
-      if (spaceIndex != -1) {
-        // Extract ID and Degrees from the input string
-        int id = input.substring(0, spaceIndex).toInt();  // Get the ID (before the space)
-        int pos_new = input.substring(spaceIndex + 1).toInt();  // Get Degrees (after the space)
-        int direction = input.substring(spaceIndex + 2).toInt();
-
-
-
-        // example numbers
-        int id = 0;
-        bool is_counterclockwise = 0; // True:CCW:Positive // False:CW:Negative
-        float radians = 4.5;
-
-        // Validate parsed values
-        if (id >= 0 || input.substring(spaceIndex + 1) == "0") {
-
-          // Get DYNAMIXEL information
-          dxl.ping(id);
-          
-          // Turn off torque when configuring items in EEPROM
-          // Operating Mode 4 is Extended Position Control Mode
-          dxl.torqueOff(id);
-          dxl.setOperatingMode(id, 4);
-          dxl.torqueOn(id);
-
-          // TODO: use isCCW and radians to set position
-          float degrees = (radians * 180.0)/PI;
-          if (!is_counterclockwise)
-          {
-            degrees*=-1;
-          }
-          dxl.setGoalAngle(id, degrees);
-
-          // TODO: convert current position to radians and send out
-
-          presentDeg = dxl.getCurAngle(id);
-          uint32_t presentRad = presentDeg*PI/180.0;
-          Serial.write((byte)HEADER_BYTE);
-          Serial.write((byte)0x01); // message header
-          Serial.write((byte)id);
-          Serial.write(presentRad);
-
-        }
-      }
-    } 
-  } 
-  */

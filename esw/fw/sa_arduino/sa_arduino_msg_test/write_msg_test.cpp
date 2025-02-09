@@ -13,7 +13,7 @@
 void sendServoSetPositionMessage(int serial_port, uint8_t id, float radians, bool is_counterclockwise);
 
 int main() {
-    const char *device = "/dev/ttyACM1"; // Replace with the appropriate device
+    const char *device = "/dev/ttyACM0"; // Replace with the appropriate device
     int baudrate = B115200;               // Match the Arduino's0 baud rate
 
     // Open the serial port
