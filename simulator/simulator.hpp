@@ -219,6 +219,10 @@ namespace mrover {
         int mArmRightKey = GLFW_KEY_RIGHT;
         int mArmUpKey = GLFW_KEY_SLASH;
         int mArmDownKey = GLFW_KEY_PERIOD;
+        int mArmRollCWKey = GLFW_KEY_SEMICOLON;
+        int mArmRollCCWKey = GLFW_KEY_APOSTROPHE;
+        int mArmPitchUpKey = GLFW_KEY_RIGHT_BRACKET;
+        int mArmPitchDownKey = GLFW_KEY_LEFT_BRACKET;
 
         float mFlySpeed = 5.0f;
         float mRoverLinearSpeed = 1.0f;
@@ -250,10 +254,15 @@ namespace mrover {
         bool mPublishIk = true;
         bool mIkMode = true; // true = position control, false = velocity control
         Eigen::Vector3f mIkTarget{0.382, 0.01, -0.217};
+        float mIkPitch{0};
+        float mIkRoll{0};
+        // TODO: switch this to a twist
         Eigen::Vector3f mIkVel{0, 0, 0};
+        float mIkPitchVel{0};
+        float mIkRollVel{0};
         float mArmSpeed = 1;
         rclcpp::Publisher<msg::IK>::SharedPtr mIkTargetPub;
-        rclcpp::Publisher<geometry_msgs::msg::Vector3>::SharedPtr mIkVelPub;
+        rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr mIkVelPub;
         rclcpp::Client<srv::IkMode>::SharedPtr mIkModeClient;
 
         R3d mGpsLinearizationReferencePoint{};
