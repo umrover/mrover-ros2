@@ -22,7 +22,7 @@
   export default {
     data() {
       return {
-        currentSite: 1, // Default site is 1 (Site A)
+        currentSite: 0, //indexed to container in siteList
         siteList: ["A", "B", "C", "D", "E", "F"],
       };
     },
@@ -31,14 +31,13 @@
     },
     methods: {
       ...mapActions('websocket', ['sendMessage']),
-      sendHexHubSite() {
-        // Send the selected site (A-F) to the backend
-        this.sendMessage({ type: 'hexHubSite', site: this.currentSite });
+      emitSite() {
+        this.$emit('selectSite', this.currentSite);
       },
     },
   };
   </script>
-  
+
   <style scoped>
   .btn {
     margin-top: 15px;

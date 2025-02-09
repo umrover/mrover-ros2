@@ -223,11 +223,17 @@ class GUIConsumer(JsonWebsocketConsumer):
                 case{
                     "type": "sa_controller",
                     "axes": axes,
-                    "buttons": buttons
+                    "buttons": buttons,
+                    "pump": pump
                 }:
                     device_input = DeviceInputs(axes, buttons)
-                    send_sa_controls(cur_sa_mode, 0, device_input, self.sa_thr_pub, self.sa_enable_pump_0_srv, self.sa_enable_pump_1_srv)
-                    # TODO: IMPLEMENT PUMP SWITCHING
+                    node.get_logger().warning(f"Pump: {pump}")
+                    if((pump == 0) | (pump == 1)):
+                        send_sa_controls(cur_sa_mode, 0, device_input, self.sa_thr_pub, self.sa_enable_pump_0_srv, self.sa_enable_pump_1_srv)
+                    elif((pump == 2) | (pump == 3)):
+                        send_sa_controls(cur_sa_mode, 1, device_input, self.sa_thr_pub, self.sa_enable_pump_0_srv, self.sa_enable_pump_1_srv)
+                    else:
+                        node.get_logger().warning(f"Unhandled Pump: {pump}")
                 case {
                     "type": "sa_mode",
                     "mode": mode,
@@ -263,12 +269,6 @@ class GUIConsumer(JsonWebsocketConsumer):
 
                 case {"type": "white_leds", "site": site, "enabled": e}:
                     self.white_leds_services[site].call(EnableBool.Request(enable=e))
-
-                # case {"type": "p0_toggle", "enable": e}:
-                #     self.sa_enable_pump_0_srv.call(EnableBool.Request(enable=e))
-
-                # case {"type": "p1_toggle", "enable": e}:
-                #     self.sa_enable_pump_1_srv.call(EnableBool.Request(enable=e))
 
                 case {"type": "ls_toggle", "enable": e}:
                     self.sa_enable_switch_srv.call(EnableBool.Request(enable=e))
