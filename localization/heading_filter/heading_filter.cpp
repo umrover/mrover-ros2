@@ -88,7 +88,7 @@ namespace mrover {
         // when a fixed rtk heading is received
         if (heading_status->fix_type.fix == mrover::msg::FixType::FIXED) {
 
-            double measured_heading = (90 - ((heading->heading + 90) % 360)) * (M_PI / 180.0);
+            double measured_heading = (90 - (fmod(heading->heading + 90, 360))) * (M_PI / 180.0);
             double heading_correction_delta = measured_heading - uncorrected_heading;
             curr_heading_correction = Eigen::AngleAxisd(heading_correction_delta, R3d::UnitZ());
 
@@ -134,12 +134,14 @@ namespace mrover {
         SE3d pose_in_map(position_in_map, SO3d::Identity());
 
         Eigen::Quaterniond uncorrected_orientation(last_imu->orientation.w, last_imu->orientation.x, last_imu->orientation.y, last_imu->orientation.z);
-        SO3d uncorrected_orientation_rotm = uncorrected_orientation.toRotationMatrix();
+        SO3d uncorrected_orientation_rotm = uncorrected_orientation;
         SO3d corrected_orientation = curr_heading_correction.value() * uncorrected_orientation_rotm;
 
         pose_in_map.asSO3() = corrected_orientation;
         
         SE3Conversions::pushToTfTree(tf_broadcaster, rover_frame, world_frame, pose_in_map, get_clock()->now());
+
+        RCLCPP_INFO_STREAM(get_logger(), std::format("Heading corrected by: {}", curr_heading_correction->z()));
         
     }
 

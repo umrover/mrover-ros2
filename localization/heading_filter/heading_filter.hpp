@@ -1,18 +1,11 @@
 #pragma once
 
-#include "mrover/msg/detail/fix_status__struct.hpp"
 #include "pch.hpp"
-#include <memory>
-#include <message_filters/subscriber.h>
-#include <message_filters/sync_policies/approximate_time.h>
-#include <message_filters/synchronizer.h>
-#include <sensor_msgs/msg/detail/magnetic_field__struct.hpp>
-#include <tf2_ros/transform_broadcaster.h>
 
 namespace mrover {
 
-    using std::placeholders::_1;
-    using std::placeholders::_2;
+    // using std::placeholders::_1;
+    // using std::placeholders::_2;
 
     class HeadingFilter : public rclcpp::Node {
 
