@@ -1,7 +1,7 @@
 #pragma once
 #include "lie.hpp"
-#include "pch.hpp"
 #include <unordered_map>
+#include "pch.hpp"
 
 class PairHash{
 	public:
@@ -20,6 +20,29 @@ namespace mrover {
         cv::Rect box;
         Detection(int _classId, std::string _className, float _confidence, cv::Rect _box) : classId{_classId}, className{_className}, confidence{_confidence}, box{_box} {}
     };
+
+	struct Model {
+            std::string modelName;
+
+            std::vector<int> objectHitCounts;
+
+            std::vector<std::string> classes;
+
+            std::vector<int64_t> inputTensorSize;
+
+            std::vector<int64_t> outputTensorSize;
+
+            // Converts an rgb image to a blob
+            std::function<void(Model const&, cv::Mat&, cv::Mat&, cv::Mat&)> rgbImageToBlob;
+
+            // Converts an output tensor into a vector of detections
+            std::function<void(Model const&, cv::Mat&, std::vector<Detection>&)> outputTensorToDetections;
+
+            Model() = default;
+
+            Model(std::string _modelName, std::vector<int> _objectHitCounts, std::vector<std::string> _classes, std::vector<int64_t> _inputTensorSize, std::vector<int64_t> _outputTensorSize, std::function<void(Model const&, cv::Mat&, cv::Mat&, cv::Mat&)> _rbgImageToBlob, std::function<void(Model const&, cv::Mat&, std::vector<Detection>&)> _outputTensorToDetections) : modelName{std::move(_modelName)}, objectHitCounts(std::move(_objectHitCounts)), classes(std::move(_classes)), inputTensorSize(std::move(_inputTensorSize)), outputTensorSize(std::move(_outputTensorSize)), rgbImageToBlob{std::move(_rbgImageToBlob)}, outputTensorToDetections{std::move(_outputTensorToDetections)} {}
+        };
+
 	private:
 		cv::Mat mImgRGB;
 		cv::Mat mImgHSV;
@@ -66,6 +89,8 @@ namespace mrover {
         unsigned int numLightsSeen = 0;
 
 		static constexpr char const* NODE_NAME = "light_detector";
+
+		Model mModel;
 
 		auto imageCallback(sensor_msgs::msg::PointCloud2::ConstSharedPtr const& msg) -> void;
 

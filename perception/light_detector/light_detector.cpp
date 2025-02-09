@@ -38,6 +38,17 @@ namespace mrover{
 
 
         ParameterWrapper::declareParameters(this, params);
+        
+		std::filesystem::path packagePath = std::filesystem::path{ament_index_cpp::get_package_prefix("mrover")} / ".." / ".." / "src" / "mrover";
+
+        RCLCPP_INFO_STREAM(get_logger(), "Opening Model " << modelName);
+
+        RCLCPP_INFO_STREAM(get_logger(), "Found package path " << packagePath);
+
+        // Initialize TensorRT Inference Object and Get Important Output Information
+        mTensorRT = TensortRT{modelName, packagePath.string()};
+
+		mModel = Model(modelName, {0, 0}, {"red", "blue"}, mTensorRT.getInputTensorSize(), mTensorRT.getOutputTensorSize(), [](Model const& model, cv::Mat& rgbImage, cv::Mat& blobSizedImage, cv::Mat& blob) { preprocessYOLOv8Input(model, rgbImage, blobSizedImage, blob); }, [this](Model const& model, cv::Mat& output, std::vector<Detection>& detections) { parseYOLOv8Output(model, output, detections); });
 
 		mUpperBound = cv::Vec3d(upperBoundH, upperBoundS, upperBoundV);
 		mLowerBound = cv::Vec3d(lowerBoundH, lowerBoundS, lowerBoundV);
