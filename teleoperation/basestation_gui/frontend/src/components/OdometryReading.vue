@@ -4,15 +4,13 @@
       <p>Current odometry reading:</p>
       <div>
         <p>{{ formatted_odom.lat.d }}º</p>
-        <p v-if="min_enabled">{{ formatted_odom.lat.m }}'</p>
-        <p v-if="sec_enabled">{{ formatted_odom.lat.s }}"</p>
-        <p>N</p>
+        <p v-if="min_enabled">{{ formatted_odom.lat.m }}' N</p>
+        <p v-if="sec_enabled">{{ formatted_odom.lat.s }}" N</p>
       </div>
       <div>
         <p>{{ formatted_odom.lon.d }}º</p>
-        <p v-if="min_enabled">{{ formatted_odom.lon.m }}'</p>
-        <p v-if="sec_enabled">{{ formatted_odom.lon.s }}"</p>
-        <p>E</p>
+        <p v-if="min_enabled">{{ formatted_odom.lon.m }}' E</p>
+        <p v-if="sec_enabled">{{ formatted_odom.lon.s }}" E</p>
       </div>
       <p>Bearing: {{ rover_bearing_deg.toFixed(2) }}º</p>
       <p>Altitude: {{ rover_altitude.toFixed(2) }}m</p>
@@ -174,5 +172,10 @@ export default {
 
 .imu {
   grid-area: imu;
+}
+
+p {
+  margin: 0px;
+
 }
 </style>
