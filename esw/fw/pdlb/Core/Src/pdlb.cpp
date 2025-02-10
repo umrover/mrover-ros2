@@ -59,6 +59,6 @@ void blink_led_if_applicable() {
 
 void receive_message() {
 	mrover::receive_message();
-	mrover::pdlb.blink_led_if_applicable();
+//	mrover::pdlb.blink_led_if_applicable();
 }
 
