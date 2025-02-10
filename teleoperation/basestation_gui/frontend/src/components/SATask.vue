@@ -8,7 +8,7 @@
       </div>
     </div>
     <div class='shadow p-3 rounded map'>
-      <!-- <BasicMap :odom='odom' /> -->
+      <BasicMap :odom='odom' />
     </div>
     <div class='shadow p-3 rounded waypoints'>
       <BasicWaypointEditor :odom='odom' />
@@ -87,7 +87,6 @@ export default {
     updateSite(selectedSite: number) {
       this.siteSelect = selectedSite;
       console.log('Selected site index:', selectedSite);
-      
     },
   }
 }

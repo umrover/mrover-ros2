@@ -84,7 +84,7 @@ export default defineComponent({
         type: 'sa_controller',
         axes: gamepad.axes,
         buttons: gamepad.buttons.map(button => button.value),
-        pump: this.currentSite,
+        site: this.currentSite,
       })
 
       this.sendMessage({

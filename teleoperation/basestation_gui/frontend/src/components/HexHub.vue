@@ -1,6 +1,6 @@
 <template>
     <h3>HexHub Controls</h3>
-      <div class="row">
+      <div class="grid">
         <div v-for="name, index in siteList" :key="index" class="col-4">
           <div class="form-check d-flex justify-content-center align-items-center">
             <input
@@ -9,9 +9,9 @@
               type="radio"
               :id="'Site' + index"
               :value="index"
-              @change="sendHexHubSite"
+              @change="emitSite"
             />
-            <label class="btn btn-outline-secondary" :for="'Site' + index">{{ name }}</label>
+            <label class="btn btn-outline-secondary my-2" :for="'Site' + index">{{ name }}</label>
           </div>
         </div>
       </div>
@@ -22,8 +22,8 @@
   export default {
     data() {
       return {
-        currentSite: 0, //indexed to container in siteList
-        siteList: ["A", "B", "C", "D", "E", "F"],
+        currentSite: 0,
+        siteList: ["Sample A", "Sample B", "Sample Cache", "Empty Soil Deposit"],
       };
     },
     computed: {
@@ -32,23 +32,33 @@
     methods: {
       ...mapActions('websocket', ['sendMessage']),
       emitSite() {
-        this.$emit('selectSite', this.currentSite);
-      },
+        this.$emit('selectSite', this.currentSite); 
+      }
     },
+
+    emits: ['selectSite'],
   };
   </script>
 
   <style scoped>
-  .btn {
-    margin-top: 15px;
-    width: 150px;
-    height: 45px;
-    text-align: center !important;
+  .btn{
+    width: auto; 
+    transition: transform 0.2s, box-shadow 0.2s;
   }
 
   .btn:hover {
     transform: translateY(-4px);
     box-shadow: 0 6px 10px rgba(0, 0, 0, 0.2);
   }
+
+  .grid {
+  display: grid;
+  /* grid-gap: 0px; */
+  grid-template-columns: repeat(2, auto);
+  font-family: sans-serif;
+  height: auto;
+  align-items: center;
+  justify-items: center;
+}
   </style>
     
