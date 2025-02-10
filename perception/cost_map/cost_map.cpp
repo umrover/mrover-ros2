@@ -5,8 +5,8 @@ namespace mrover {
 
 
         std::vector<ParameterWrapper> params{
-            {"resolution", mResolution, 0.3},
-            {"size", mSize, 25},
+            {"resolution", mResolution, 0.5},
+            {"size", mSize, 60.0},
             {"width", mWidth, static_cast<int>(mSize / mResolution)},   // THIS DECLARATION DOES NOT WORK
             {"height", mHeight, static_cast<int>(mSize / mResolution)},
             {"map_frame", mMapFrame, "map"},
