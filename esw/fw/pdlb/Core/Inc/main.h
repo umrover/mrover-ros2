@@ -55,6 +55,7 @@ void Error_Handler(void);
 /* USER CODE BEGIN EFP */
 void init();
 void receive_message();
+void blink_led_if_applicable();
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/

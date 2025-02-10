@@ -8,6 +8,7 @@ extern DMA_HandleTypeDef hdma_adc1;
 extern DMA_HandleTypeDef hdma_adc2;
 
 extern FDCAN_HandleTypeDef hfdcan1;
+extern TIM_HandleTypeDef htim1;
 
 namespace mrover {
 
@@ -52,7 +53,12 @@ void init() {
     mrover::init();
 }
 
+void blink_led_if_applicable() {
+	mrover::blink_led_if_applicable();
+}
+
 void receive_message() {
 	mrover::receive_message();
+	mrover::pdlb.blink_led_if_applicable();
 }
 
