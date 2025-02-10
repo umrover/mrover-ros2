@@ -28,6 +28,20 @@ def generate_launch_description():
         parameters=[os.path.join(get_package_share_directory("mrover"), "config", "superstructure.yaml")],
     )
 
-    # TODO (ali): add LED
+    led_node = Node(
+        package="mrover",
+        executable="led",
+        name="led",
+        parameters=[os.path.join(get_package_share_directory("mrover"), "config", "led.yaml")],
+    )
 
-    return LaunchDescription([diff_drive_controller_node, superstructure_node])
+
+    pdlb_hw_bridge_node = Node(
+        package="mrover",
+        executable="pdlb_hw_bridge",
+        name="pdlb_hw_bridge",
+        parameters=[os.path.join(get_package_share_directory("mrover"), "config", "esw.yaml")],
+    )
+
+
+    return LaunchDescription([diff_drive_controller_node, superstructure_node, pdlb_hw_bridge_node])
