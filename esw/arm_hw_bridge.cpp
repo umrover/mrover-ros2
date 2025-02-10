@@ -91,8 +91,8 @@ namespace mrover {
             .calibrationThrottle = 0.5,
     };
     constexpr static BrushlessController<Revolutions>::Config JOINT_C_CONFIG = {
-            .minVelocity = RevolutionsPerSecond{-0.03},
-            .maxVelocity = RevolutionsPerSecond{0.03},
+            .minVelocity = RevolutionsPerSecond{-0.05},
+            .maxVelocity = RevolutionsPerSecond{0.05},
             .minPosition = Revolutions{-0.125},
             .maxPosition = Revolutions{0.30},
             .maxTorque = 200.0,
