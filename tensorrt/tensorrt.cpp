@@ -21,6 +21,14 @@ auto TensortRT::modelForwardPass(cv::Mat const& blob, std::vector<Detection>& de
     parseModelOutput(output, detections, modelScoreThreshold, modelNMSThreshold);
 }
 
+auto TensortRT::getInputTensorSize() -> std::vector<int64_t>{
+	return mInferenceWrapper.getInputTensorSize();
+}
+
+auto TensortRT::getOutputTensorSize() -> std::vector<int64_t>{
+	return mInferenceWrapper.getOutputTensorSize();
+}
+
 auto TensortRT::parseModelOutput(cv::Mat& output, std::vector<Detection>& detections, float modelScoreThreshold, float modelNMSThreshold) const -> void {
     // Parse model specific dimensioning from the output
 

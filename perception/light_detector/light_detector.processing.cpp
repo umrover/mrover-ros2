@@ -43,75 +43,42 @@ namespace mrover {
 		    mImgRGB = cv::Mat{cv::Size{static_cast<int>(msg->width), static_cast<int>(msg->height)}, CV_8UC3, {0, 0, 0}};
 			mThresholdedImg = cv::Mat{cv::Size{static_cast<int>(msg->width), static_cast<int>(msg->height)}, CV_8UC1, cv::Scalar{0}};
         }
+
+        assert(msg);
+        assert(msg->height > 0);
+        assert(msg->width > 0);
+        assert(msg->encoding == sensor_msgs::image_encodings::BGRA8);
+
+        cv::Mat bgraImage{static_cast<int>(msg->height), static_cast<int>(msg->width), CV_8UC4, const_cast<uint8_t*>(msg->data.data())};
+        cv::cvtColor(bgraImage, mImgRGB, cv::COLOR_BGRA2RGB);
+
+        //Convert RGB to blob
+        cv::Mat blobSizedImage;
+        mModel.rgbImageToBlob(mModel, mRgbImage, blobSizedImage, mImageBlob);
         
 		convertPointCloudToRGB(msg, mImgRGB);
 
-        // conversion to grayscale and storing in mGreyScale - (added)
-        cv::Mat mGreyScale;
-        cv::cvtColor(mImgRGB, mGreyScale, cv::COLOR_RGB2GRAY);
+		std::vector<Detection> detections{};
+        cv::Mat outputTensor;
+        mTensorRT.modelForwardPass(mImageBlob, outputTensor);
+        mModel.outputTensorToDetections(mModel, outputTensor, detections);
+        
+        drawDetectionBoxes(blobSizedImage, detections);
+        if (mDebug) {
+            publishDebugObjects(blobSizedImage);
+        }
 
-        //applies a gaussian blur and thresholding to mGreyScale
-        cv::Mat mGBlur;
-        cv::Mat mThresholdedImg;
-        cv::GaussianBlur(mGreyScale, mGBlur, cv::Size(5,5), 0);
-        cv::threshold(mGBlur,mThresholdedImg,100,255,cv::THRESH_BINARY);
-        // cv::threshold(mGBlur,mThresholdedImg,100,255,cv::THRESH_BINARY+cv::THRESH_OTSU);
-
-        // applies dilation, uses structuring element to expand highlighted regions
-        // erodes, to refine shape of highlighted regions
-        // dilates again to accentuate features
-        cv::Mat erode;
-
-        cv::dilate(mThresholdedImg, erode, cv::getStructuringElement(cv::MORPH_CROSS, cv::Size(2,2), cv::Point(-1,-1)), cv::Point(-1,-1), cv::BORDER_REFLECT_101, 0);
-
-        cv::erode(erode, mThresholdedImg, cv::getStructuringElement(cv::MORPH_RECT, cv::Size(2,2), cv::Point(-1,-1)), cv::Point(-1,-1), cv::BORDER_REFLECT_101, 0);
-
-        cv::dilate(mThresholdedImg, erode, cv::getStructuringElement(cv::MORPH_CROSS, cv::Size(3,3), cv::Point(-1,-1)), cv::Point(-1,-1), cv::BORDER_REFLECT_101, 0);
-		
-        // // converts erode into BGRA format and stores in mOutputImage
-        cv::cvtColor(erode, mOutputImage, cv::COLOR_GRAY2BGRA);
-		
-        // finds contours in eroded image and stores in "contours"
-        // contour hierarchy information stored in hierarchy
-		std::vector<std::vector<cv::Point>> contours;
-		std::vector<cv::Vec4i> hierarchy;
-		cv::findContours(erode, contours, hierarchy, cv::RETR_TREE, cv::CHAIN_APPROX_SIMPLE);
-
-		// Find the centroids for all of the different contours
-        // quick question: why not store as cv::point? 
-		std::vector<std::pair<int, int>> centroids; // These are in image space
-		centroids.resize(contours.size());
-
-        //RCLCPP_INFO_STREAM(get_logger(),"Number of contours " << contours.size());
-    
-
-		for(std::size_t i = 0; i < contours.size(); ++i){
-			auto const& vec = contours[i];
-			auto& centroid = centroids[i]; // first = row, second = col
-
-            // find avg of the contour for each contour for midpoint
-			for(auto const& point : vec){
-				centroid.first += point.y;
-				centroid.second += point.x;
-            }
-
-			// This is protected division since vec will only exist if it contains points
-			centroid.first /= static_cast<int>(vec.size());
-			centroid.second /= static_cast<int>(vec.size());
-
-            // If the position of the light is defined, then push it into the TF tree
-            //std::optional<SE3d> lightInCamera = spiralSearchForValidPoint(msg, centroid.second, centroid.first, SPIRAL_SEARCH_DIM, SPIRAL_SEARCH_DIM);
+        std::vector<bool> seenLights(mModel.classes.size(), false);
+        for (auto const& [classId, className, confidence, box]: detections) {
+            // Resize from blob space to image space
+            cv::Size const& imageSize = {640, 640};
+            cv::Point2f centerInBlob = cv::Point2f{box.tl()} + cv::Point2f{box.size()} / 2;
+            float xRatio = static_cast<float>(msg->width) / static_cast<float>(imageSize.width);
+            float yRatio = static_cast<float>(msg->height) / static_cast<float>(imageSize.height);
+            std::size_t centerXInImage = std::lround(centerInBlob.x * xRatio);
+            std::size_t centerYInImage = std::lround(centerInBlob.y * yRatio);
             
-            std::optional<SE3d> lightInCamera = getPointFromPointCloud(msg, centroid);
-            if(lightInCamera.has_value()){
-                auto lightTranslation = lightInCamera.value().translation();
-                int x = static_cast<int>(lightTranslation.x());
-                int y = static_cast<int>(lightTranslation.y()); 
-                int z = static_cast<int>(lightTranslation.z()); 
-                //RCLCPP_INFO_STREAM(get_logger(),"X: " << x << " Y: " << y << " Z: " << z);  
-            }
-            
-            if(lightInCamera){ 
+            if (std::optional<SE3d> lightInCamera = spiralSearchForValidPoint(msg, centerXInImage, centerYInImage, box.width, box.height)) {
                 ++numLightsSeen;
                 std::string immediateLightFrame = std::format("immediateLight{}", numLightsSeen);
                 if(lightInCamera.value().translation().norm() < mImmediateLightRange && getHitCount(lightInCamera) > mPublishThreshold) {
@@ -119,21 +86,34 @@ namespace mrover {
                     SE3Conversions::pushToTfTree(mTfBroadcaster, lightFrame, mCameraFrame, lightInCamera.value(), this->get_clock()->now());
                 }
                 increaseHitCount(lightInCamera);
-                //RCLCPP_INFO_STREAM(get_logger(),getHitCount(lightInCamera));
                 SE3Conversions::pushToTfTree(mTfBroadcaster, immediateLightFrame, mCameraFrame, lightInCamera.value(), this->get_clock()->now());
             }
-		}
+        }
 
         decreaseHitCounts();
-
         std::pair<std::pair<double, double>, bool> foundPoint = caching();
         if(foundPoint.second){
             publishClosestLight(foundPoint.first);
         }
+        
+    }
 
-		publishDetectedObjects(mOutputImage, centroids);
-	}
-    
+    auto LightDetector::drawDetectionBoxes(cv::InputOutputArray image, std::span<Detection const> detections) -> void {
+        // Draw the detected object's bounding boxes on the image for each of the objects detected
+        std::array const fontColors{cv::Scalar{0, 4, 227}, cv::Scalar{232, 115, 5}};
+        for (std::size_t i = 0; i < detections.size(); i++) {
+            // Font color will change for each different detection
+            cv::Scalar const& fontColor = fontColors.at(detections[i].classId);
+            cv::rectangle(image, detections[i].box, fontColor, 1, cv::LINE_8, 0);
+
+            // Put the text on the image
+            cv::Point textPosition(80, static_cast<int>(80 * (i + 1)));
+            constexpr int fontSize = 1;
+            constexpr int fontWeight = 2;
+            putText(image, detections[i].className, textPosition, cv::FONT_HERSHEY_COMPLEX, fontSize, fontColor, fontWeight); // Putting the text in the matrix
+        }
+    }
+
     auto LightDetector::caching() -> std::pair<std::pair<double, double>, bool>{
         double shortest_distance = std::numeric_limits<double>::infinity();
         bool found = false;
@@ -205,7 +185,6 @@ namespace mrover {
         }
     }
 
-    //DANTODO: ASK
     void LightDetector::decreaseHitCounts(){
         for(auto& [_, hitCount] : mHitCounts){
             hitCount = std::max(hitCount - mHitDecrease, 0);
@@ -218,6 +197,21 @@ namespace mrover {
         //     //RCLCPP_INFO_STREAM(get_logger(),"Key: ( " << key.first << ", " << key.second << ") Val: " << val);
         // }
     }
+
+    auto LightDetector::publishDebugObjects(cv::InputArray const& image) -> void {
+        mDetectionsImageMessage.header.stamp = get_clock()->now();
+        mDetectionsImageMessage.height = image.rows();
+        mDetectionsImageMessage.width = image.cols();
+        mDetectionsImageMessage.encoding = sensor_msgs::image_encodings::BGRA8;
+        mDetectionsImageMessage.is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
+        mDetectionsImageMessage.step = 4 * mDetectionsImageMessage.width;
+        mDetectionsImageMessage.data.resize(mDetectionsImageMessage.step * mDetectionsImageMessage.height);
+        cv::Mat debugImageWrapper{image.size(), CV_8UC4, mDetectionsImageMessage.data.data()};
+        cv::cvtColor(image, debugImageWrapper, cv::COLOR_RGB2BGRA);
+
+        mDebugImgPub->publish(mDetectionsImageMessage);
+    }
+
 
     auto LightDetector::publishDetectedObjects(cv::InputArray image, std::vector<std::pair<int, int>> const& centroids) -> void {
         //if (!imgPub.getNumSubscribers()) return;

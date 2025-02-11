@@ -47,6 +47,9 @@ namespace mrover {
 		cv::Mat mImgRGB;
 		cv::Mat mImgHSV;
 		cv::Mat mOutputImage;
+        cv::Mat mRgbImage, mImageBlob;
+		sensor_msgs::msg::Image mDetectionsImageMessage;
+		rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr mDebugImgPub;
 
 		int SPIRAL_SEARCH_DIM{};
 		double mImmediateLightRange{};
@@ -62,7 +65,7 @@ namespace mrover {
         bool mDebug{};
 
 		// Model Detector
-		TensortRT mTensorRT;
+		TemprRT mTensorRT;
 
 		// TF variables
 		tf2_ros::Buffer mTfBuffer{get_clock()};
@@ -110,6 +113,10 @@ namespace mrover {
 
 		void decreaseHitCounts();
 
+		auto drawDetectionBoxes(cv::InputOutputArray image, std::span<Detection const> detections) -> void;
+
+		auto publishDebugObjects(cv::InputArray const& image) -> void;
+
 		auto caching() -> std::pair<std::pair<double, double>, bool>;
 
 		auto calculateDistance(const std::pair<double, double> &p) -> double;
@@ -119,6 +126,13 @@ namespace mrover {
 		void printHitCounts();
 
 		auto round_to(double value, double precision) -> double;
+
+
+        auto parseYOLOv8Output(Model const& model,
+                               cv::Mat& output,
+                               std::vector<Detection>& detections) const -> void;
+
+		static auto preprocessYOLOv8Input(Model const& model, cv::Mat const& rgbImage, cv::Mat& blobSizedImage, cv::Mat& blob) -> void;
 
 	public:
 		auto onInit() -> void;

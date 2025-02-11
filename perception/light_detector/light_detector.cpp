@@ -46,7 +46,7 @@ namespace mrover{
         RCLCPP_INFO_STREAM(get_logger(), "Found package path " << packagePath);
 
         // Initialize TensorRT Inference Object and Get Important Output Information
-        mTensorRT = TensortRT{modelName, packagePath.string()};
+        mTensorRT = TemprRT{modelName, packagePath.string()};
 
 		mModel = Model(modelName, {0, 0}, {"red", "blue"}, mTensorRT.getInputTensorSize(), mTensorRT.getOutputTensorSize(), [](Model const& model, cv::Mat& rgbImage, cv::Mat& blobSizedImage, cv::Mat& blob) { preprocessYOLOv8Input(model, rgbImage, blobSizedImage, blob); }, [this](Model const& model, cv::Mat& output, std::vector<Detection>& detections) { parseYOLOv8Output(model, output, detections); });
 
@@ -58,6 +58,7 @@ namespace mrover{
 			LightDetector::imageCallback(msg);
 		});
 		imgPub = this->create_publisher<sensor_msgs::msg::Image>("/light_detector/img", 1);
+		mDebugImgPub = this->create_publisher<sensor_msgs::msg::Image>("/light_detector/debug_img", 1);
 		pointPub = this->create_publisher<geometry_msgs::msg::Vector3>("/light_detector/light_poses", 1);
 	}
 
