@@ -156,11 +156,16 @@ namespace mrover {
                 [ 1,-1] [ 1, 0] [ 1, 1]
 
             */
-            std::array<CostMapNode::Coordinate,9> dis{
-                                           Coordinate{-1,-1}, {-1,0}, {-1,1}, 
-                                                {0,-1}, {0, 0}, {0,1},
-                                                {1,-1}, {1, 0}, {1,1}
-                                                };
+            // Static dilation of width 1
+            // std::array<CostMapNode::Coordinate,9> dis{
+            //                                Coordinate{-1,-1}, {-1,0}, {-1,1}, 
+            //                                     {0,-1}, {0, 0}, {0,1},
+            //                                     {1,-1}, {1, 0}, {1,1}
+            //                                     };
+
+            // Variable dilation for any width type
+            std::array<CostMapNode::Coordinate,(2*dilation+1)*(2*dilation+1)> dis = diArray();
+            
             // RCLCPP_INFO_STREAM(get_logger(), std::format("Index: {}\tRow {}\tCol {}\tmWidth {}\tWidth2 {}", coordinateToIndex(dis[8]), dis[8].row, dis[8].col, mWidth, postProcesed.info.width));
             for (int row = 0; row < mWidth; ++row) {
                 for(int col = 0; col < mHeight; ++col) {
@@ -193,6 +198,20 @@ namespace mrover {
         } catch (tf2::TransformException const& e) {
             RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, std::format("TF tree error processing point cloud: {}", e.what()));
         }
+    }
+
+    constexpr auto CostMapNode::diArray()->std::array<CostMapNode::Coordinate,(2*dilation+1)*(2*dilation+1)>{
+        std::array<CostMapNode::Coordinate, (2*dilation+1)*(2*dilation+1)> di;
+        int pos = 0;
+
+        for(int r = -dilation; r <= dilation; r++){
+            for(int c = -dilation; c <= dilation; c++){
+                di[pos] = {r, c};
+                pos++;
+            }
+        }
+
+        return di;
     }
 
 	void CostMapNode::uploadPC() {

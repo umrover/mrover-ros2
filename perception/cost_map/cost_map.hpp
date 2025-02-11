@@ -10,6 +10,9 @@ namespace mrover {
 
         constexpr static double TAU = 2 * std::numbers::pi;
 
+        // Dilation for map, set as number of bins away from object to dilate by (default 1)
+        constexpr static int dilation = 1;
+
 		// Noise/Debug Vars
 		constexpr static bool useNoisyPointCloud = false;
 		constexpr static bool uploadDebugPointCloud = true;
@@ -70,6 +73,8 @@ namespace mrover {
             int row;
             int col;
         };
+
+        constexpr auto diArray()->std::array<CostMapNode::Coordinate,(2*dilation+1)*(2*dilation+1)>;
 
         auto indexToCoordinate(int index) -> Coordinate;
         auto coordinateToIndex(Coordinate c) -> int;
