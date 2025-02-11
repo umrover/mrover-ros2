@@ -204,7 +204,7 @@ namespace mrover {
         return deviceNode;
     }
 
-    GstWebsocketStreamer::GstWebsocketStreamer([[maybe_unused]] rclcpp::NodeOptions const& options) : Node{"gst_websocket_streamer", rclcpp::NodeOptions{}.use_intra_process_comms(true)} {
+    GstWebsocketStreamer::GstWebsocketStreamer() : Node{"gst_websocket_streamer", rclcpp::NodeOptions{}.use_intra_process_comms(true)} {
         try {
             declare_parameter("dev_node", "");
             declare_parameter("dev_path", "");
@@ -354,17 +354,17 @@ namespace mrover {
 } // namespace mrover
 
 
-#include "rclcpp_components/register_node_macro.hpp"
+// #include "rclcpp_components/register_node_macro.hpp"
 
 // Register the component with class_loader.
 // This acts as a sort of entry point, allowing the component to be discoverable when its library
 // is being loaded into a running process.
-RCLCPP_COMPONENTS_REGISTER_NODE(mrover::GstWebsocketStreamer)
+// RCLCPP_COMPONENTS_REGISTER_NODE(mrover::GstWebsocketStreamer)
 
 
-// auto main(int argc, char** argv) -> int {
-//     rclcpp::init(argc, argv);
-//     rclcpp::spin(std::make_shared<mrover::GstWebsocketStreamer>());
-//     rclcpp::shutdown();
-//     return EXIT_SUCCESS;
-// }
+auto main(int argc, char** argv) -> int {
+    rclcpp::init(argc, argv);
+    rclcpp::spin(std::make_shared<mrover::GstWebsocketStreamer>());
+    rclcpp::shutdown();
+    return EXIT_SUCCESS;
+}
