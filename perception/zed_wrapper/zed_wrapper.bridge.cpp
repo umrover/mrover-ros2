@@ -44,6 +44,10 @@ namespace mrover {
         msg.magnetic_field_covariance[8] = 0.047e-6;
     }
 
+    auto fillMagHeadingMessage(sl::SensorsData::MagnetometerData const& magData, mrover::msg::Heading &msg) -> void {
+        msg.heading = magData.magnetic_heading;
+    }
+
     auto fillImageMessage(sl::Mat const& bgra, sensor_msgs::msg::Image::UniquePtr const& msg) -> void {
         assert(bgra.getChannels() == 4);
         assert(msg);

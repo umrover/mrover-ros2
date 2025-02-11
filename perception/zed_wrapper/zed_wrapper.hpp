@@ -68,6 +68,7 @@ namespace mrover {
         rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr mPcPub;
         rclcpp::Publisher<sensor_msgs::msg::CameraInfo>::SharedPtr mLeftCamInfoPub;
         rclcpp::Publisher<sensor_msgs::msg::CameraInfo>::SharedPtr mRightCamInfoPub;
+        rclcpp::Publisher<mrover::msg::Heading>::SharedPtr mMagHeadingPub;
 
         // Thread
 
@@ -91,6 +92,8 @@ namespace mrover {
     auto fillImuMessage(rclcpp::Node* node, sl::SensorsData::IMUData& imuData, sensor_msgs::msg::Imu& msg) -> void;
 
     auto fillMagMessage(sl::SensorsData::MagnetometerData const& magData, sensor_msgs::msg::MagneticField& msg) -> void;
+
+    auto fillMagHeadingMessage(sl::SensorsData::MagnetometerData const& magData, mrover::msg::Heading &msg) -> void;
 
     auto checkCudaError(cudaError_t error) -> void;
 

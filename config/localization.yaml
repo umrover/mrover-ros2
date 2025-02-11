@@ -30,6 +30,6 @@ rover_gps_driver:
     frame_id: "base_link"
 
 heading_filter:
-  ros_parameters:
+  ros__parameters:
     world_frame: "map"
     rover_frame: "base_link"

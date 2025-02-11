@@ -36,6 +36,7 @@ class GPSLinearization(Node):
                 ("world_frame", Parameter.Type.STRING),
             ],
         )
+
         self.ref_lat = self.get_parameter("ref_lat").value
         self.ref_lon = self.get_parameter("ref_lon").value
         self.ref_alt = self.get_parameter("ref_alt").value

@@ -54,6 +54,10 @@ namespace mrover {
 
             if (stoi(tokens[GNGGA_QUAL_POS]) == 0) {
                 RCLCPP_WARN(get_logger(), "Invalid fix. Are we inside?");
+                nav_sat_fix.latitude = 2;
+                nav_sat_fix.longitude = 2;
+                nav_sat_fix.altitude = 0;
+                gps_pub->publish(nav_sat_fix);
                 return;
             }
             else {

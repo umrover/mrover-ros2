@@ -1,4 +1,6 @@
 #include "heading_filter.hpp"
+#include <Eigen/src/Geometry/AngleAxis.h>
+#include <rclcpp/logging.hpp>
 
 namespace mrover {
 
@@ -20,7 +22,8 @@ namespace mrover {
         rtk_heading_sub.subscribe(this, "/heading/fix");
         rtk_heading_status_sub.subscribe(this, "/heading_fix_status");
         imu_sub.subscribe(this, "/zed_imu/data_raw");
-        mag_sub.subscribe(this, "/zed_imu/mag");
+        // mag_sub.subscribe(this, "/zed_imu/mag");
+        mag_heading_sub.subscribe(this, "/zed_imu/mag_heading");
 
         // data watchdogs
         // rtk_heading_watchdog = this->create_wall_timer(RTK_HEADING_WATCHDOG_TIMEOUT.to_chrono<std::chrono::milliseconds>(), [&]() {
@@ -36,7 +39,7 @@ namespace mrover {
         imu_and_mag_watchdog = this->create_wall_timer(IMU_AND_MAG_WATCHDOG_TIMEOUT.to_chrono<std::chrono::milliseconds>(), [&]() {
             RCLCPP_WARN(get_logger(), "ZED IMU data watchdog expired");
             last_imu.reset();
-            last_mag.reset();
+            last_mag_heading.reset();
         });
 
         // synchronizers
@@ -51,10 +54,10 @@ namespace mrover {
         rtk_heading_sync->setAgePenalty(0.5);
         rtk_heading_sync->registerCallback(&HeadingFilter::sync_rtk_heading_callback, this);
 
-        imu_and_mag_sync = std::make_shared<message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<sensor_msgs::msg::Imu, sensor_msgs::msg::MagneticField>>>(
-            message_filters::sync_policies::ApproximateTime<sensor_msgs::msg::Imu, sensor_msgs::msg::MagneticField>(queue_size),
+        imu_and_mag_sync = std::make_shared<message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<sensor_msgs::msg::Imu, mrover::msg::Heading>>>(
+            message_filters::sync_policies::ApproximateTime<sensor_msgs::msg::Imu, mrover::msg::Heading>(queue_size),
             imu_sub,
-            mag_sub
+            mag_heading_sub
         );
 
         imu_and_mag_sync->setAgePenalty(0.5);
@@ -95,13 +98,38 @@ namespace mrover {
         }
         // magnetometer when correction already exists
         else if (curr_heading_correction) {
-            double measured_heading = (M_PI / 2) - std::atan2(last_mag->magnetic_field.y, last_mag->magnetic_field.x);
+            // double measured_heading = (M_PI / 2) - std::atan2(last_mag->magnetic_field.y, last_mag->magnetic_field.x);
+            double measured_heading = last_mag_heading->heading;
+
+            if (measured_heading > 270) {
+                measured_heading = measured_heading - 360;
+            }
+
+            measured_heading = (90 - measured_heading) * (M_PI / 180);
+
             double heading_correction_delta = measured_heading - uncorrected_heading;
 
-            R2d prev_heading_correction_forward = curr_heading_correction.value().coeffs().col(0).head(2);
+            R2d prev_heading_correction_forward = curr_heading_correction->rotation().col(0).head(2);
+
+            // R2d prev_heading_correction_forward = curr_heading_correction.value().coeffs().col(0).head(2);
+
+            // Eigen::MatrixXd mat = curr_heading_correction.value().coeffs();
+
+            // RCLCPP_INFO_STREAM(get_logger(), std::format("curr_heading_correction: {} {} {}", mat(0,0), mat(0, 1), mat(0, 2)));
+            // RCLCPP_INFO_STREAM(get_logger(), std::format("curr_heading_correction: {} {} {}", mat(1,0), mat(1, 1), mat(1, 2)));
+            // RCLCPP_INFO_STREAM(get_logger(), std::format("curr_heading_correction: {} {} {}", mat(2,0), mat(2, 1), mat(2, 2)));
+            // RCLCPP_INFO_STREAM(get_logger(), std::format("curr_heading_correction (0,0)", mat(0,0)));
             double prev_heading_correction_delta = std::atan2(prev_heading_correction_forward.y(), prev_heading_correction_forward.x());
             
             // compare curr_heading_correction with correction made from mag
+            // RCLCPP_INFO_STREAM(get_logger(), std::format("heading difference: {}", std::abs(prev_heading_correction_delta - heading_correction_delta)));
+            // RCLCPP_INFO_STREAM(get_logger(), std::format("prev heading correction delta: {}", prev_heading_correction_delta));
+            // RCLCPP_INFO_STREAM(get_logger(), std::format("heading correction delta: {}", heading_correction_delta));
+            // double measured_heading = (M_PI / 2) - std::atan2(last_mag->magnetic_field.y, last_mag->magnetic_field.x);/ RCLCPP_INFO_STREAM(get_logger(), std::format("mag heading: {}", measured_heading));
+            RCLCPP_INFO_STREAM(get_logger(), std::format("mag heading: {}", measured_heading));
+            RCLCPP_INFO_STREAM(get_logger(), std::format("uncorrected heading: {}", uncorrected_heading));
+            
+            
             if (std::abs(prev_heading_correction_delta - heading_correction_delta) < HEADING_THRESHOLD) {
                 curr_heading_correction = Eigen::AngleAxisd(heading_correction_delta, R3d::UnitZ());
             }
@@ -109,18 +137,46 @@ namespace mrover {
         }
         // magnetometer when correction does not exist
         else {
-            double measured_heading = (M_PI / 2) - std::atan2(last_mag->magnetic_field.y, last_mag->magnetic_field.x);
+            double measured_heading = last_mag_heading->heading;
+
+            if (measured_heading > 270) {
+                measured_heading = measured_heading - 360;
+            }
+
+            measured_heading = (90 - measured_heading) * (M_PI / 180);
+
             double heading_correction_delta = measured_heading - uncorrected_heading;
+
             curr_heading_correction = Eigen::AngleAxisd(heading_correction_delta, R3d::UnitZ());
+
+            Eigen::MatrixXd mat = curr_heading_correction->rotation();
+            // curr_heading_correction = correction.toRotationMatrix();
+
+
+            // RCLCPP_INFO_STREAM(get_logger(), std::format("measured heading: {}", measured_heading));
+            // RCLCPP_INFO_STREAM(get_logger(), std::format("uncorrected heading: {}", uncorrected_heading));
+            // RCLCPP_INFO_STREAM(get_logger(), std::format("heading correction delta: {}", heading_correction_delta));
+            // curr_heading_correction = Eigen::AngleAxisd(heading_correction_delta, R3d::UnitZ());
+
+            // Eigen::AngleAxisd rotation_temp = Eigen::AngleAxisd(heading_correction_delta, Eigen::Vector3d::UnitZ());
+            // Eigen::Matrix3d mat = rotation_temp.toRotationMatrix();
+
+            // Eigen::Matrix3d mat = curr_heading_correction.value().coeffs();
+
+            // Eigen::Matrix3d mat = curr_heading_correction.value().coeffs();
+
+            RCLCPP_INFO_STREAM(get_logger(), std::format("curr_heading_correction: {} {} {}", mat(0,0), mat(0, 1), mat(0, 2)));
+            RCLCPP_INFO_STREAM(get_logger(), std::format("curr_heading_correction: {} {} {}", mat(1,0), mat(1, 1), mat(1, 2)));
+            RCLCPP_INFO_STREAM(get_logger(), std::format("curr_heading_correction: {} {} {}", mat(2,0), mat(2, 1), mat(2, 2)));
         }
 
         
     }
 
-    void HeadingFilter::sync_imu_and_mag_callback(const sensor_msgs::msg::Imu::ConstSharedPtr &imu, const sensor_msgs::msg::MagneticField::ConstSharedPtr &mag) {
+    void HeadingFilter::sync_imu_and_mag_callback(const sensor_msgs::msg::Imu::ConstSharedPtr &imu, const mrover::msg::Heading::ConstSharedPtr &mag_heading) {
         imu_and_mag_watchdog.reset();
         last_imu = *imu;
-        last_mag = *mag;
+        last_mag_heading = *mag_heading;
     }
 
     void HeadingFilter::correct_and_publish(const geometry_msgs::msg::Vector3Stamped::ConstSharedPtr &position) {
