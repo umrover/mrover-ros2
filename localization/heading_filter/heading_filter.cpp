@@ -91,7 +91,14 @@ namespace mrover {
         // when a fixed rtk heading is received
         if (heading_status->fix_type.fix == mrover::msg::FixType::FIXED) {
 
-            double measured_heading = (90 - (fmod(heading->heading + 90, 360))) * (M_PI / 180.0);
+            double measured_heading = heading->heading;
+
+            if (measured_heading > 270) {
+                measured_heading = measured_heading - 360;
+            }
+
+            measured_heading = (90 - measured_heading) * (M_PI / 180);
+
             double heading_correction_delta = measured_heading - uncorrected_heading;
             curr_heading_correction = Eigen::AngleAxisd(heading_correction_delta, R3d::UnitZ());
 
