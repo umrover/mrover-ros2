@@ -27,7 +27,7 @@ namespace mrover {
 			Pin{AUTON_LED_G_GPIO_Port, AUTON_LED_G_Pin},
 			Pin{AUTON_LED_B_GPIO_Port, AUTON_LED_B_Pin}
         };
-
+        auton_led.change_state(true, false, true, false);
         fdcan_bus = FDCAN<InBoundPDLBMessage>{&hfdcan1};
         fdcan_bus.start();
         pdlb = PDLB{fdcan_bus, auton_led};
