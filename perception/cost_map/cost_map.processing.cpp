@@ -1,4 +1,5 @@
 #include "cost_map.hpp"
+#include <rclcpp/logging.hpp>
 
 namespace mrover {
 
@@ -47,6 +48,9 @@ namespace mrover {
         try {
             SE3f cameraToMap = SE3Conversions::fromTfTree(mTfBuffer, "zed_left_camera_frame", "map").cast<float>();
             SE3f roverSE3 = SE3Conversions::fromTfTree(mTfBuffer, "base_link", "map").cast<float>();
+
+            // TIMING DEBUG
+            RCLCPP_INFO_STREAM(get_logger(), inputMsg->header.stamp.sec);
 
             struct BinEntry {
                 R3f pointInCamera;
@@ -115,7 +119,6 @@ namespace mrover {
                 });
                 double percent = static_cast<double>(pointsHigh) / static_cast<double>(bin.size());
 
-                RCLCPP_INFO_STREAM(get_logger(), std::format("Percentage: {}", percent));
                 std::int8_t cost = percent > mZPercent ? OCCUPIED_COST : FREE_COST;
 
                 // Normal Averaging Algorithm
@@ -187,9 +190,6 @@ namespace mrover {
             //         })) postProcesed.data[i] = OCCUPIED_COST;
             // }
             mCostMapPub->publish(postProcesed);
-            if(!mCostMapPub){
-                mCostMapPub->publish(postProcesed);
-            }
         } catch (tf2::TransformException const& e) {
             RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, std::format("TF tree error processing point cloud: {}", e.what()));
         }

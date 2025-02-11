@@ -14,27 +14,6 @@ from launch.conditions import LaunchConfigurationEquals
 def generate_launch_description():
     stereo_tag_detector_node = Node(
         package="mrover",
-<<<<<<< HEAD
-        executable="zed",
-        name="zed_wrapper",
-        parameters=[Path(get_package_share_directory("mrover"), "config", "zed.yaml")],
-    )
-
-    object_detector_node = Node(
-        package="mrover",
-        executable="object_detector",
-        name="object_detector",
-        parameters=[Path(get_package_share_directory("mrover"), "config", "object_detector.yaml")],
-    )
-
-    world_to_zed = Node(
-        package='tf2_ros',
-        executable='static_transform_publisher',
-        arguments = ['0', '0', '0', '0', '0', '0', 'map', 'zed_left_camera_frame']
-    )
-
-    return LaunchDescription([zed_node, world_to_zed])
-=======
         executable="stereo_tag_detector",
         name="stereo_tag_detector",
         parameters=[Path(get_package_share_directory("mrover"), "config", "perception.yaml")],
@@ -85,4 +64,3 @@ def generate_launch_description():
             long_range_cam,
         ]
     )
->>>>>>> auton/auton-testing
