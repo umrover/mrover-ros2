@@ -83,7 +83,7 @@ auto main(int argc, char** argv) -> int {
     auto start = node->now();
 
     while (rclcpp::ok()) {
-        jointB->setDesiredThrottle(0.0);
+        jointB->setDesiredThrottle(0.5);
 
         auto pos = jointB->getPosition().get();
         auto vel = jointB->getVelocity().get();
