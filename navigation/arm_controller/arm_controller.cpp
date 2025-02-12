@@ -1,13 +1,15 @@
 #include "arm_controller.hpp"
+#include <rclcpp/logging.hpp>
 
 namespace mrover {
     const rclcpp::Duration ArmController::TIMEOUT = rclcpp::Duration(1, 0); // one second
 
-    ArmController::ArmController() : Node{"arm_controller"} {
+    ArmController::ArmController() : Node{"arm_controller"}, mLastUpdate{get_clock()->now() - TIMEOUT} {
         mPosPub = create_publisher<msg::Position>("arm_position_cmd", 10);
+        mVelPub = create_publisher<msg::Velocity>("arm_velocity_cmd", 10);
 
         mIkSub = create_subscription<msg::IK>("ee_pos_cmd", 1, [this](msg::IK::ConstSharedPtr const& msg) {
-            ikCallback(msg);
+            posCallback(msg);
         });
 
         mVelSub = create_subscription<geometry_msgs::msg::Twist>("ee_vel_cmd", 1, [this](geometry_msgs::msg::Twist::ConstSharedPtr const& msg) {
@@ -25,23 +27,16 @@ namespace mrover {
         mModeServ = create_service<srv::IkMode>("ik_mode", [this](srv::IkMode::Request::ConstSharedPtr const& req, srv::IkMode::Response::SharedPtr const& resp) {
             modeCallback(req, resp);
         });
-    
-        mLastUpdate = get_clock()->now(); // TODO: maybe subtract timeout here to make sure arm is initially timed out
     }
 
-    auto yawSo3(double r) -> SO3d {
-        auto q = Eigen::Quaterniond{Eigen::AngleAxisd{r, R3d::UnitY()}};
-        return {q.normalized()};
-    }
-
-    auto ArmController::ikCalc(ArmPos target) -> std::optional<msg::Position> {
+    auto ArmController::ikPosCalc(ArmPos target) -> std::optional<msg::Position> {
         double x = target.x; // shift back by the length of the end effector
         double y = target.y;
         double z = target.z;
 
         double gamma = -target.pitch;
-        double x3 = x - (LINK_DE + END_EFFECTOR_LENGTH) * std::cos(gamma);
-        double z3 = z - (LINK_DE + END_EFFECTOR_LENGTH) * std::sin(gamma);
+        double x3 = x - END_EFFECTOR_LENGTH * std::cos(gamma);
+        double z3 = z - END_EFFECTOR_LENGTH * std::sin(gamma);
 
         double C = std::sqrt(x3 * x3 + z3 * z3);
         double alpha = std::acos((LINK_BC * LINK_BC + LINK_CD * LINK_CD - C * C) / (2 * LINK_BC * LINK_CD));
@@ -87,23 +82,94 @@ namespace mrover {
         return positions;
     }
 
+    auto ArmController::ikVelCalc(geometry_msgs::msg::Twist vel) -> std::optional<msg::Velocity> {
+        double x_3 = mArmPos.x;
+        double z_3 = mArmPos.z;
+
+        double x_2 = x_3 - END_EFFECTOR_LENGTH * std::cos(mArmPos.pitch);
+        double x_2_vel = vel.linear.x + END_EFFECTOR_LENGTH * std::sin(mArmPos.pitch) * vel.angular.y; // derivative of x_2
+        double z_2 = z_3 + END_EFFECTOR_LENGTH * std::sin(mArmPos.pitch);
+        double z_2_vel = vel.linear.z + END_EFFECTOR_LENGTH * std::cos(mArmPos.pitch) * vel.angular.y; // derivative of z_2
+        double c2 = x_2 * x_2 + z_2 * z_2;
+        double c_vel = (2 * x_2 * x_2_vel + 2 * z_2 * z_2_vel) / (2 * std::sqrt(c2)); // derivative of c
+        double a2 = LINK_BC * LINK_BC;
+        double b2 = LINK_CD * LINK_CD;
+
+        double num = c2 + a2 - b2;
+        double denom = 2 * LINK_BC * std::sqrt(c2);
+        double joint_b_vel = 1 / std::sqrt(1 - (num / denom) * (num / denom));
+        num = c2 * c_vel - c_vel * (a2 - b2);
+        denom *= std::sqrt(c2);
+        joint_b_vel *= (num / denom);
+        num = z_2_vel * x_2 - z_2 * x_2_vel;
+        denom = x_2 * x_2;
+        joint_b_vel -= (1 / (1 + (z_2 * z_2) / (x_2 * x_2))) * (num / denom);
+
+        num = c2 - a2 - b2;
+        denom = 2 * LINK_BC * LINK_CD;
+        double joint_c_vel = -1 / std::sqrt((1 - (num * num) / (denom * denom)));
+        num = 2 * std::sqrt(c2) * c_vel;
+        joint_c_vel *= (num / denom);
+
+        double joint_de_pitch_vel = vel.angular.y - joint_b_vel - joint_c_vel;
+
+        if (!std::isfinite(joint_b_vel) || !std::isfinite(joint_c_vel) || !std::isfinite(joint_de_pitch_vel)) {
+            RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1000, "Couldn't solve velocity IK");
+            return std::nullopt;
+        }
+
+        msg::Velocity velocities;
+        velocities.names = {"joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_roll"};
+        velocities.velocities = {
+            static_cast<float>(vel.linear.y),
+            static_cast<float>(joint_b_vel),
+            static_cast<float>(joint_c_vel),
+            static_cast<float>(joint_de_pitch_vel),
+            static_cast<float>(vel.angular.x),
+        };
+
+        double scaleFactor = 1;
+        for (size_t i = 0; i < velocities.names.size(); ++i) {
+            auto it = joints.find(velocities.names[i]);
+            if (it == joints.end()) {
+                RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, "Unknown Joint\"" << velocities.names[i] << "\"");
+                return std::nullopt;
+            }
+
+            if ((velocities.velocities[i] > 0 && it->second.limits.maxPos - it->second.pos < JOINT_VEL_THRESH) ||
+                (velocities.velocities[i] < 0 && it->second.pos - it->second.limits.minPos < JOINT_VEL_THRESH)) {
+                RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, "Joint " << velocities.names[i] << " too close to limit for velocity command");
+                return std::nullopt;
+            }
+            scaleFactor = std::max(scaleFactor, velocities.velocities[i] / (velocities.velocities[i] > 0 ? it->second.limits.maxVel : it->second.limits.minVel));
+        }
+
+        // scale down all velocities so that we don't exceed motor velocity limits
+        for (auto& v : velocities.velocities)
+            v = static_cast<float>(v / scaleFactor);
+
+        return velocities;
+    }
+
     void ArmController::velCallback(geometry_msgs::msg::Twist::ConstSharedPtr const& ik_vel) {
-        mVelTarget = {ik_vel->linear.x, ik_vel->linear.y, ik_vel->linear.z};
-        mPitchVel = ik_vel->angular.y;
-        mRollVel = ik_vel->angular.x;
+        mVelTarget = *ik_vel;
         if (mArmMode == ArmMode::VELOCITY_CONTROL)
             mLastUpdate = get_clock()->now();
         else
             RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 100, "Received velocity command in posiition mode!");
-        // R3d new_vel{ik_vel->x, ik_vel->y, ik_vel->z};
-        // if (!mVelTarget.isZero() && new_vel.isZero()) { // stop arm
-        //     mPosTarget = mArmPos;
-        // }
-        // mVelTarget = new_vel;
-        // mLastUpdate = get_clock()->now();
     }
 
     void ArmController::fkCallback(sensor_msgs::msg::JointState::ConstSharedPtr const& joint_state) {
+        // update joint positions stored in ArmController class
+        for (size_t i = 0; i < joint_state->name.size(); ++i) {
+            auto it = joints.find(joint_state->name[i]);
+            if (it == joints.end()) {
+                RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, "Unknown joint \"" << joint_state->name[i] << "\"");
+                continue;
+            }
+            it->second.pos = joint_state->position[i];
+        }
+
         double y = joint_state->position[0]; // joint a position
         // joint b position
         double angle = -joint_state->position[1];
@@ -115,32 +181,19 @@ namespace mrover {
         z += LINK_CD * std::sin(angle);
         // joint de position
         angle -= joint_state->position[3] + JOINT_C_OFFSET;
-        x += (LINK_DE + END_EFFECTOR_LENGTH) * std::cos(angle);
-        z += (LINK_DE + END_EFFECTOR_LENGTH) * std::sin(angle);
+        x += END_EFFECTOR_LENGTH * std::cos(angle);
+        z += END_EFFECTOR_LENGTH * std::sin(angle);
         mArmPos = {x, y, z, -angle, joint_state->position[4]};
 	SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_fk", "arm_base_link", mArmPos.toSE3(), get_clock()->now());
     }
 
-    void ArmController::ikCallback(msg::IK::ConstSharedPtr const& ik_target) {
+    void ArmController::posCallback(msg::IK::ConstSharedPtr const& ik_target) {
         mPosTarget = *ik_target;
         SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_target", "arm_base_link", mPosTarget.toSE3(), get_clock()->now());
         if (mArmMode == ArmMode::POSITION_CONTROL)
                 mLastUpdate = get_clock()->now();
         else
                 RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 100, "Received position command in velocity mode!");
-        // SE3d targetFrameToArmBaseLink;
-        // try {
-        //     targetFrameToArmBaseLink = SE3Conversions::fromTfTree(mTfBuffer, ik_target->target.header.frame_id, "arm_base_link");
-        // } catch (tf2::TransformException const& exception) {
-        //     RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, std::format("Failed to get transform from {} to arm_base_link: {}", ik_target->target.header.frame_id, exception.what()));
-        //     return;
-        // }
-        // SE3d endEffectorInTarget{{ik_target->target.pose.position.x, ik_target->target.pose.position.y, ik_target->target.pose.position.z}, 
-        //                          SO3d{ik_target->target.pose.orientation.x, ik_target->target.pose.orientation.y, ik_target->target.pose.orientation.z, ik_target->target.pose.orientation.w}};
-        // SE3d endEffectorInArmBaseLink = targetFrameToArmBaseLink * endEffectorInTarget;
-        // SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_target", "arm_base_link", endEffectorInArmBaseLink, get_clock()->now());
-        // mPosTarget = endEffectorInArmBaseLink;
-        // mLastUpdate = get_clock()->now();
     }
 
     auto ArmController::timerCallback() -> void {
@@ -149,31 +202,20 @@ namespace mrover {
             return;
         }
 
-        ArmPos target;
         if (mArmMode == ArmMode::POSITION_CONTROL) {
-            target = mPosTarget;
-        } else {
-            target = mPosTarget + mVelTarget * 0.01;
-            target.pitch += mPitchVel * 0.05;
-            target.roll += mRollVel * 0.05;
-        }
-        SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_target", "arm_base_link", target.toSE3(), get_clock()->now());
-        auto positions = ikCalc(target);
-        if (positions) {
-            mPosPub->publish(positions.value());
-            // if successful, move the target to the new spot (relevant for velocity control)
-            mPosTarget = target;
-        } else {
-            RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1000, "IK Failed");
-            // if IK failed in velocity mode, we go back to where the target was pre-increment (this should always be a reachable
-            // position because mPosTarget only gets updated in velocity mode if the position is reachable)
-            // this should hopefully get us to the (approximately) closest point that is reachable
-            if (mArmMode == ArmMode::VELOCITY_CONTROL) {
-                positions = ikCalc(target);
-                if (!positions) // surely this will never happen right
-                    RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1000, "Undo velocity control failed");
-                else
-                    mPosPub->publish(positions.value());
+            auto positions = ikPosCalc(mPosTarget);
+            SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_target", "arm_base_link", mPosTarget.toSE3(), get_clock()->now());
+            if (positions) {
+                mPosPub->publish(positions.value());
+            } else {
+                RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1000, "Position IK failed!");
+            }
+        } else { // velocity control
+            auto velocities = ikVelCalc(mVelTarget);
+            if (velocities) {
+                mVelPub->publish(velocities.value());
+            } else {
+                RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1000, "Velocity IK failed!");
             }
         }
     }

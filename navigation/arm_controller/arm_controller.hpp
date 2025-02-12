@@ -40,23 +40,23 @@ namespace mrover {
         // TODO: update velocity limits to make them real
         std::unordered_map<std::string, JointWrapper> joints = {
             {"joint_a", {
-                .limits = {.minPos = 0, .maxPos = 0.4, .minVel = -10, .maxVel = 10},
+                .limits = {.minPos = 0, .maxPos = 0.4, .minVel = -1, .maxVel = 1},
                 .pos = 0
             }},
             {"joint_b", {
-                .limits = {.minPos = -std::numbers::pi / 4.0, .maxPos = 0, .minVel = -10, .maxVel = 10},
+                .limits = {.minPos = -std::numbers::pi / 4.0, .maxPos = 0, .minVel = -1, .maxVel = 1},
                 .pos = 0
             }},
             {"joint_c", {
-                .limits = {.minPos = -0.959931, .maxPos = 2.87979, .minVel = -10, .maxVel = 10},
+                .limits = {.minPos = -0.959931, .maxPos = 2.87979, .minVel = -1, .maxVel = 1},
                 .pos = 0
             }},
             {"joint_de_pitch", {
-                .limits = {.minPos = -0.75 * std::numbers::pi, .maxPos = 0.75 * std::numbers::pi, .minVel = -10, .maxVel = 10},
+                .limits = {.minPos = -0.75 * std::numbers::pi, .maxPos = 0.75 * std::numbers::pi, .minVel = -1, .maxVel = 1},
                 .pos = 0
             }},
             {"joint_de_roll", {
-                .limits = {.minPos = -2.36, .maxPos = 1.44, .minVel = -10, .maxVel = 10},
+                .limits = {.minPos = -2.36, .maxPos = 1.44, .minVel = -1, .maxVel = 1},
                 .pos = 0
             }},
         };
@@ -66,21 +66,21 @@ namespace mrover {
         [[maybe_unused]] rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr mJointSub;
 
         rclcpp::Publisher<msg::Position>::SharedPtr mPosPub;
+        rclcpp::Publisher<msg::Velocity>::SharedPtr mVelPub;
         tf2_ros::TransformBroadcaster mTfBroadcaster{this};
         tf2_ros::Buffer mTfBuffer{get_clock()};
         tf2_ros::TransformListener mTfListener{mTfBuffer};
         rclcpp::TimerBase::SharedPtr mTimer;
         rclcpp::Service<srv::IkMode>::SharedPtr mModeServ;
 
-        auto ikCalc(ArmPos target) -> std::optional<msg::Position>;
+        auto ikPosCalc(ArmPos target) -> std::optional<msg::Position>;
+        auto ikVelCalc(geometry_msgs::msg::Twist) -> std::optional<msg::Velocity>;
         auto timerCallback() -> void;
 
         ArmPos mArmPos;
-        ArmPos mPosTarget = {0, -1, 0}; // THIS IS SCUFFED - set y target to -1 to make sure this is position is not reachable
-        R3d mVelTarget = {0, 0, 0};
-        double mPitchVel = 0.f;
-        double mRollVel = 0.f;
-        rclcpp::Time mLastUpdate; // TODO: consider making this negative or something? to resolve above issue
+        ArmPos mPosTarget;
+        geometry_msgs::msg::Twist mVelTarget;
+        rclcpp::Time mLastUpdate;
 
         enum class ArmMode : bool {
             VELOCITY_CONTROL,
@@ -96,13 +96,13 @@ namespace mrover {
         // A is the prismatic joint, B is the first revolute joint, C is the second revolute joint
         static constexpr double LINK_BC = 0.5344417294;
         static constexpr double LINK_CD = 0.5531735368;
-        static constexpr double LINK_DE = 0.044886000454425812;
-        static constexpr double END_EFFECTOR_LENGTH = 0.13; // Measured from blender
+        static constexpr double END_EFFECTOR_LENGTH = 0.20482814; // from CAD
         static constexpr double JOINT_C_OFFSET = 0.1608485915;
+        static constexpr double JOINT_VEL_THRESH = 0.05;
 
         ArmController();
 
-        void ikCallback(msg::IK::ConstSharedPtr const& ik_target);
+        void posCallback(msg::IK::ConstSharedPtr const& ik_target);
         void velCallback(geometry_msgs::msg::Twist::ConstSharedPtr const& ik_vel);
         void fkCallback(sensor_msgs::msg::JointState::ConstSharedPtr const& joint_state);
         auto modeCallback(srv::IkMode::Request::ConstSharedPtr const& req, srv::IkMode::Response::SharedPtr const& resp) -> void;
