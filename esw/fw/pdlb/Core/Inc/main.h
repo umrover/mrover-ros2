@@ -93,6 +93,8 @@ void blink_led_if_applicable();
 #define CAN_TX_LED_GPIO_Port GPIOA
 #define CAN_STANDBY_Pin GPIO_PIN_10
 #define CAN_STANDBY_GPIO_Port GPIOA
+#define ARM_LASER_Pin GPIO_PIN_3
+#define ARM_LASER_GPIO_Port GPIOB
 #define AUTON_LED_B_Pin GPIO_PIN_5
 #define AUTON_LED_B_GPIO_Port GPIOB
 #define AUTON_LED_G_Pin GPIO_PIN_6

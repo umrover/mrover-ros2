@@ -527,7 +527,7 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(GPIOA, CAN_RX_LED_Pin|CAN_TX_LED_Pin|CAN_STANDBY_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, AUTON_LED_B_Pin|AUTON_LED_G_Pin|AUTON_LED_R_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, ARM_LASER_Pin|AUTON_LED_B_Pin|AUTON_LED_G_Pin|AUTON_LED_R_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pins : CAN_RX_LED_Pin CAN_TX_LED_Pin CAN_STANDBY_Pin */
   GPIO_InitStruct.Pin = CAN_RX_LED_Pin|CAN_TX_LED_Pin|CAN_STANDBY_Pin;
@@ -536,8 +536,8 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : AUTON_LED_B_Pin AUTON_LED_G_Pin AUTON_LED_R_Pin */
-  GPIO_InitStruct.Pin = AUTON_LED_B_Pin|AUTON_LED_G_Pin|AUTON_LED_R_Pin;
+  /*Configure GPIO pins : ARM_LASER_Pin AUTON_LED_B_Pin AUTON_LED_G_Pin AUTON_LED_R_Pin */
+  GPIO_InitStruct.Pin = ARM_LASER_Pin|AUTON_LED_B_Pin|AUTON_LED_G_Pin|AUTON_LED_R_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;

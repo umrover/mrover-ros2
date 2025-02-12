@@ -30,7 +30,7 @@ namespace mrover {
         auton_led.change_state(true, false, true, false);
         fdcan_bus = FDCAN<InBoundPDLBMessage>{&hfdcan1};
         fdcan_bus.start();
-        pdlb = PDLB{fdcan_bus, auton_led};
+        pdlb = PDLB{fdcan_bus, auton_led,  Pin{ARM_LASER_GPIO_Port, ARM_LASER_Pin}};
     }
 
     void blink_led_if_applicable() {
