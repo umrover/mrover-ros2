@@ -59,7 +59,7 @@ namespace mrover {
         // Update Covariance
         Eigen::MatrixXd IKH = Eigen::MatrixXd::Identity(dimP, dimP) - K * H;
         Eigen::MatrixXd P_new = IKH * P * IKH.transpose()
-                                + K * N * K.transpose();   
+                                + K * N * K.transpose(); 
 
         // Don't update yaw covariance
         /// TODO: Add a flag to enable yaw covariance update
