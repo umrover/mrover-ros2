@@ -27,6 +27,8 @@ namespace mrover {
         assert(inputMsg);
         assert(inputMsg->height > 0);
         assert(inputMsg->width > 0);
+
+        RCLCPP_INFO_STREAM(get_logger(), "Pointer is " << inputMsg.get());
 	
 		// Choose whether we are using a noisy pointcloud or a regular pointcloud
 		// TODO (john): change to shader

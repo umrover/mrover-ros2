@@ -270,6 +270,7 @@ namespace mrover {
                 }
 
                 if (mDepthEnabled) {
+                    RCLCPP_INFO_STREAM(get_logger(), "ZED Pointer " << pointCloudMsg.get());
                     mPcPub->publish(std::move(pointCloudMsg));
                 }
                 mLoopProfilerUpdate.measureEvent("pub_pc");
