@@ -94,10 +94,10 @@ namespace mrover {
 
     auto checkCudaError(cudaError_t error) -> void;
 
-    void fillPointCloudMessageFromGpu(sl::Mat& xyzGpu, sl::Mat& bgraGpu, sl::Mat& normalsGpu, PointCloudGpu& pcGpu, sensor_msgs::msg::PointCloud2::UniquePtr const& msg);
+    void fillPointCloudMessageFromGpu(sl::Mat& xyzGpu, sl::Mat& bgraGpu, sl::Mat& normalsGpu, PointCloudGpu& pcGpu, sensor_msgs::msg::PointCloud2::SharedPtr const& msg);
 
     auto fillCameraInfoMessages(sl::CalibrationParameters& calibration, sl::Resolution const& resolution,
                                 sensor_msgs::msg::CameraInfo& leftInfoMsg, sensor_msgs::msg::CameraInfo& rightInfoMsg) -> void;
 
-    auto fillImageMessage(sl::Mat const& bgra, sensor_msgs::msg::Image::UniquePtr const& msg) -> void;
+    auto fillImageMessage(sl::Mat const& bgra, sensor_msgs::msg::Image::SharedPtr const& msg) -> void;
 }; // namespace mrover
