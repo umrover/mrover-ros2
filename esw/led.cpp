@@ -23,19 +23,19 @@ static constexpr std::string_view DONE_STATE = "DoneState";
 namespace mrover {
     class LED final : public rclcpp::Node {
     public:
-        LED() : Node {"led"} {
+        LED() : Node{"led"} {
             mStateSub = create_subscription<mrover::msg::StateMachineStateUpdate>(
-                "/nav_state", 10, [this](mrover::msg::StateMachineStateUpdate::ConstSharedPtr const& msg) {
-                stateMachineUpdateCallback(msg);
-            });
+                    "/nav_state", 10, [this](mrover::msg::StateMachineStateUpdate::ConstSharedPtr const& msg) {
+                        stateMachineUpdateCallback(msg);
+                    });
 
             mLedPub = create_publisher<mrover::msg::LED>("led", 10);
 
             mTeleopEnableServer = create_service<std_srvs::srv::SetBool>(
-                "/enable_teleop", [this](std_srvs::srv::SetBool::Request::SharedPtr const& req,
-                           std_srvs::srv::SetBool::Response::SharedPtr const& res) {
+                    "/enable_teleop", [this](std_srvs::srv::SetBool::Request::SharedPtr const& req,
+                                             std_srvs::srv::SetBool::Response::SharedPtr const& res) {
                         teleopEnabledCallback(req, res);
-            });
+                    });
         }
 
         auto updateLED() -> void {
@@ -70,7 +70,7 @@ namespace mrover {
 
             return response->success = true;
         }
-    
+
     private:
         bool is_navigation_done = false;
         bool is_teleop_enabled = false;
@@ -80,7 +80,7 @@ namespace mrover {
         rclcpp::Subscription<mrover::msg::StateMachineStateUpdate>::SharedPtr mStateSub;
         rclcpp::Service<std_srvs::srv::SetBool>::SharedPtr mTeleopEnableServer;
     };
-}
+} // namespace mrover
 
 auto main(int argc, char** argv) -> int {
     rclcpp::init(argc, argv);

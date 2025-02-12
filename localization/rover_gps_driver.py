@@ -78,11 +78,10 @@ class RoverGpsDriverNode(Node):
                     )
                 )
 
-
                 self.gps_status_pub.publish(
                     FixStatus(
                         header=Header(stamp=self.get_clock().now().to_msg(), frame_id="base_link"),
-                        fix_type=FixType(fix=msg.carrSoln)
+                        fix_type=FixType(fix=msg.carrSoln),
                     )
                 )
 
@@ -94,7 +93,6 @@ class RoverGpsDriverNode(Node):
                     self.get_logger().debug("Floating RTK Fix")
                 elif msg.carrSoln == 2:
                     self.get_logger().debug("RTK FIX")
-
 
             case "NAV-SAT":
                 for i in range(msg.numSvs):

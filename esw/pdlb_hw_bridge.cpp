@@ -1,10 +1,10 @@
-#include "messaging.hpp"
 #include "can_device.hpp"
+#include "messaging.hpp"
 
 #include <mrover/msg/led.hpp>
 
-#include <rclcpp/rclcpp.hpp>
 #include <memory>
+#include <rclcpp/rclcpp.hpp>
 
 namespace mrover {
 
@@ -12,7 +12,7 @@ namespace mrover {
     public:
         PDLBBridge() : rclcpp::Node("pdlb_hw_bridge") {
             changeLEDSubscriber_ = this->create_subscription<mrover::msg::LED>(
-                "led", 10, std::bind(&PDLBBridge::changeLED, this, std::placeholders::_1));
+                    "led", 10, std::bind(&PDLBBridge::changeLED, this, std::placeholders::_1));
         }
 
         void initialize() {
@@ -20,7 +20,7 @@ namespace mrover {
             ledCanDevice = std::make_unique<mrover::CanDevice>(this->shared_from_this(), "jetson", "pdlb");
         }
 
-        void changeLED(const mrover::msg::LED::SharedPtr msg) {
+        void changeLED(mrover::msg::LED::SharedPtr const msg) {
             if (!ledCanDevice) {
                 RCLCPP_ERROR(this->get_logger(), "ledCanDevice not initialized!");
                 return;

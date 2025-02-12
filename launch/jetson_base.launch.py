@@ -33,7 +33,6 @@ def generate_launch_description():
         ],
     )
 
-
     pdlb_hw_bridge_node = Node(
         package="mrover",
         executable="pdlb_hw_bridge",
