@@ -26,3 +26,5 @@ venv/
 
 # macOS
 .DS_Store
+/teleoperation/basestation_gui/install/
+/teleoperation/basestation_gui/log/
