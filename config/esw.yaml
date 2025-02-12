@@ -21,17 +21,12 @@ can_bridge_0:
       jetson:
         id: 0x10
       pdlb:
-<<<<<<< HEAD
-        id: 0x11
+        id: 0x50
       mast_gimbal_pitch:
         id: 0x12
       mast_gimbal_yaw:
         id: 0x13
 can_bridge_1:
-=======
-        id: 0x50
-can_bridge_2:
->>>>>>> ajr/led
   ros__parameters:
     interface: can1
     is_extended_frame: true
