@@ -311,7 +311,7 @@ target_link_libraries(motor_library can_device moteus units messaging)
 macro(mrover_add_esw_bridge_node name sources)
     mrover_add_node(${name} ${sources})
     ament_target_dependencies(${name} rclcpp std_srvs)
-    target_link_libraries(${name} can_device units messaging)
+    target_link_libraries(${name} can_device units messaging moteus)
 endmacro()
 
 macro(mrover_add_esw_motor_bridge_node name sources)
@@ -319,6 +319,8 @@ macro(mrover_add_esw_motor_bridge_node name sources)
     target_link_libraries(${name} motor_library)
 endmacro()
 
+mrover_add_node(led esw/led.cpp)
+ament_target_dependencies(led rclcpp std_srvs)
 
 mrover_add_esw_motor_bridge_node(drive_hw_bridge esw/drive_hw_bridge.cpp)
 mrover_add_esw_motor_bridge_node(arm_hw_bridge esw/arm_hw_bridge.cpp)
@@ -327,6 +329,8 @@ mrover_add_esw_bridge_node(differential_drive_controller esw/differential_drive_
 mrover_add_esw_bridge_node(science_hw_bridge esw/science_hw_bridge.cpp)
 ament_target_dependencies(science_hw_bridge sensor_msgs)
 # mrover_add_esw_motor_bridge_node(science_test_bridge esw/science_test_bridge.cpp)
+mrover_add_esw_bridge_node(pdlb_hw_bridge esw/pdlb_hw_bridge.cpp)
+
 
 mrover_add_node(arm_controller teleoperation/arm_controller/arm_controller.cpp teleoperation/arm_controller/pch.hpp)
 target_link_libraries(arm_controller lie)
