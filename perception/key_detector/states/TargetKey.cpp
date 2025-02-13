@@ -20,7 +20,11 @@ auto TargetKey::onLoop() -> State*{
     auto goal_handle = fsm_ctx->goal_handle;
 
     if (goal_handle == nullptr)
-        return StateMachine::make_state<TargetKey>(fsm_ctx);
+    {
+        fsm_ctx->init = false;
+        return StateMachine::make_state<Off>(fsm_ctx);
+    }
+ 
 
     auto goal = goal_handle->get_goal();
     auto node = fsm_ctx->node;
@@ -28,7 +32,8 @@ auto TargetKey::onLoop() -> State*{
     // if we have pressed all the keys, end
 
     if (fsm_ctx->curr_key_index > goal->code.size()){
-        return nullptr;
+        fsm_ctx->init = false;
+        return StateMachine::make_state<Off>(fsm_ctx);
     }
 
     if(goal_handle->is_canceling())
