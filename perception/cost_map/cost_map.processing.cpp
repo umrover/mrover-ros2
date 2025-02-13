@@ -160,9 +160,9 @@ namespace mrover {
             //                                     {1,-1}, {1, 0}, {1,1}
             //                                     };
 
-            // Variable dilation for any width type
+            // Variable dilation for any width
             std::array<CostMapNode::Coordinate,(2*dilation+1)*(2*dilation+1)> dis = diArray();
-            
+
             // RCLCPP_INFO_STREAM(get_logger(), std::format("Index: {}\tRow {}\tCol {}\tmWidth {}\tWidth2 {}", coordinateToIndex(dis[8]), dis[8].row, dis[8].col, mWidth, postProcesed.info.width));
             for (int row = 0; row < mWidth; ++row) {
                 for(int col = 0; col < mHeight; ++col) {
@@ -200,6 +200,7 @@ namespace mrover {
         }
     }
 
+    // Resolved at compile time, returns dilation kernel
     constexpr auto CostMapNode::diArray()->std::array<CostMapNode::Coordinate,(2*dilation+1)*(2*dilation+1)>{
         std::array<CostMapNode::Coordinate, (2*dilation+1)*(2*dilation+1)> di;
         int pos = 0;
