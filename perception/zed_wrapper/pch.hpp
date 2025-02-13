@@ -12,6 +12,9 @@
 #include <sensor_msgs/msg/magnetic_field.hpp>
 #include <sensor_msgs/msg/point_cloud2.hpp>
 #include <sensor_msgs/point_cloud2_iterator.hpp>
+#include <mrover/msg/heading.hpp>
+#include <mrover/msg/fix_status.hpp>
+#include <mrover/msg/fix_type.hpp>
 
 // ZED
 #include <sl/Camera.hpp>
