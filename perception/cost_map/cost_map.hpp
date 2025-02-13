@@ -52,7 +52,7 @@ namespace mrover {
         using Bin = std::vector<BinEntry>;
 
     public:
-        CostMapNode();
+        explicit CostMapNode(rclcpp::NodeOptions const& options = rclcpp::NodeOptions());
 
         ~CostMapNode() override = default;
 

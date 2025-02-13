@@ -63,7 +63,7 @@ created: function () {
       for (let i = 0; i < 4; i++) {
         const gamepad = gamepads[i]
         if (gamepad) {
-          if (gamepad.id.includes('Logitech')) {
+          if (gamepad.id.includes('Thrustmaster')) {
             // -1 multiplier to make turning left a positive value
             // Both left_right axis and twisting the joystick will turn
             this.rotational = -1 * (gamepad.axes[JOYSTICK_CONFIG['left_right']] + gamepad.axes[JOYSTICK_CONFIG['twist']])

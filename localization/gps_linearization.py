@@ -61,8 +61,19 @@ class GPSLinearization(Node):
             self.get_logger().warn("Received NaN GPS data, ignoring")
             return
 
-        x, y, _ = geodetic2enu(msg.latitude, msg.longitude, msg.altitude, self.ref_lat, self.ref_lon, self.ref_alt, deg=True)
-        self.pos_pub.publish(Vector3Stamped(header=msg.header, vector=Vector3(x=x, y=y, z=msg.altitude)))
+        quaternion = np.array(
+            [imu_msg.orientation.x, imu_msg.orientation.y, imu_msg.orientation.z, imu_msg.orientation.w]
+        )
+        quaternion = quaternion / np.linalg.norm(quaternion)
+
+        x, y, z = geodetic2enu(
+            gps_msg.latitude, gps_msg.longitude, gps_msg.altitude, self.ref_lat, self.ref_lon, self.ref_alt, deg=True
+        )
+        pose = SE3(position=np.array([x, y, 0]), quaternion=quaternion)
+
+        to_tf_tree(tf_broadcaster=self.tf_broadcaster, se3=pose, child_frame="base_link", parent_frame=self.world_frame, stamp=self.get_clock().now().to_msg())
+
+        self.get_logger().info(f"Published to TF Tree: Position({x}, {y}, {z}), Orientation({imu_msg.orientation})")
 
 
 def main() -> None:
