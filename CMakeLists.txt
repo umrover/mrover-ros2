@@ -236,7 +236,10 @@ target_include_directories(simulator SYSTEM PRIVATE ${BULLET_INCLUDE_DIRS} ${OPE
 # Localization
 
 mrover_add_node(rover_gps_driver localization/rover_gps_driver.cpp)
+mrover_add_node(heading_filter localization/heading_filter.cpp)
 ament_target_dependencies(rover_gps_driver rclcpp sensor_msgs rtcm_msgs)
+ament_target_dependencies(heading_filter rclcpp rcutils sensor_msgs builtin_interfaces message_filters)
+target_link_libraries(heading_filter lie)
 
 # Perception
 
