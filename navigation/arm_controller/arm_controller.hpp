@@ -40,19 +40,19 @@ namespace mrover {
         // TODO: update velocity limits to make them real
         std::unordered_map<std::string, JointWrapper> joints = {
             {"joint_a", {
-                .limits = {.minPos = 0, .maxPos = 0.4, .minVel = -1, .maxVel = 1},
+                .limits = {.minPos = 0, .maxPos = 0.35, .minVel = -0.05, .maxVel = 0.05},
                 .pos = 0
             }},
             {"joint_b", {
-                .limits = {.minPos = -std::numbers::pi / 4.0, .maxPos = 0, .minVel = -1, .maxVel = 1},
+                .limits = {.minPos = -0.9, .maxPos = 0, .minVel = -0.05, .maxVel = 0.05},
                 .pos = 0
             }},
             {"joint_c", {
-                .limits = {.minPos = -0.959931, .maxPos = 2.87979, .minVel = -1, .maxVel = 1},
+                .limits = {.minPos = -0.959931, .maxPos = 2.87979, .minVel = -0.05 * 2 * std::numbers::pi, .maxVel = 0.05 * 2 * std::numbers::pi},
                 .pos = 0
             }},
             {"joint_de_pitch", {
-                .limits = {.minPos = -0.75 * std::numbers::pi, .maxPos = 0.75 * std::numbers::pi, .minVel = -1, .maxVel = 1},
+                .limits = {.minPos = -1.3, .maxPos = 1.2, .minVel = -0.2, .maxVel = 0.2}, // pretty conservative limits atm
                 .pos = 0
             }},
             {"joint_de_roll", {
