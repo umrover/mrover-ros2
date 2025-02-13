@@ -86,7 +86,7 @@ namespace mrover {
             .maxPosition = 0_rad,
 
             .positionGains = {.p = 30.0},
-            // .velocityGains{},
+            .velocityGains = {.p = 30.0},
 
             .calibrationThrottle = 0.5,
     };
