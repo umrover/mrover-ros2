@@ -362,9 +362,9 @@ namespace mrover {
 // RCLCPP_COMPONENTS_REGISTER_NODE(mrover::GstWebsocketStreamer)
 
 
-auto main(int argc, char** argv) -> int {
-    rclcpp::init(argc, argv);
-    rclcpp::spin(std::make_shared<mrover::GstWebsocketStreamer>());
-    rclcpp::shutdown();
-    return EXIT_SUCCESS;
-}
+// auto main(int argc, char** argv) -> int {
+//     rclcpp::init(argc, argv);
+//     rclcpp::spin(std::make_shared<mrover::GstWebsocketStreamer>());
+//     rclcpp::shutdown();
+//     return EXIT_SUCCESS;
+// }

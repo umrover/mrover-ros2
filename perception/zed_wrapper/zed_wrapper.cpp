@@ -1,4 +1,5 @@
 #include "zed_wrapper.hpp"
+#include "mrover/msg/detail/fix_status__struct.hpp"
 
 namespace mrover {
     template<typename TEnum>
@@ -13,7 +14,7 @@ namespace mrover {
     }
 
 
-    ZedWrapper::ZedWrapper() : Node(NODE_NAME, rclcpp::NodeOptions().use_intra_process_comms(true)), mLoopProfilerGrab{get_logger()}, mLoopProfilerUpdate{get_logger()} {
+    ZedWrapper::ZedWrapper(rclcpp::NodeOptions const& options) : Node(NODE_NAME, options), mLoopProfilerGrab{get_logger()}, mLoopProfilerUpdate{get_logger()} {
         try {
             RCLCPP_INFO(this->get_logger(), "Created Zed Wrapper Node, %s", NODE_NAME);
 
@@ -25,6 +26,8 @@ namespace mrover {
             mPcPub = create_publisher<sensor_msgs::msg::PointCloud2>("zed/left/points", 1);
             mRightCamInfoPub = create_publisher<sensor_msgs::msg::CameraInfo>("zed/right/camera_info", 1);
             mLeftCamInfoPub = create_publisher<sensor_msgs::msg::CameraInfo>("zed/left/camera_info", 1);
+            mMagHeadingPub = create_publisher<mrover::msg::Heading>("zed_imu/mag_heading", 1);
+            mMagHeadingStatusPub = create_publisher<mrover::msg::FixStatus>("zed_imu/mag_heading_status", 1);
 
             // Declare and set Params
             int imageWidth{};
@@ -127,7 +130,7 @@ namespace mrover {
         try {
             RCLCPP_INFO(this->get_logger(), "Starting grab thread");
             while (rclcpp::ok()) {
-                //mLoopProfilerGrab.beginLoop();
+                mLoopProfilerGrab.beginLoop();
 
                 sl::RuntimeParameters runtimeParameters;
                 runtimeParameters.confidence_threshold = mDepthConfidence;
@@ -206,10 +209,18 @@ namespace mrover {
 
                     if (mZedInfo.camera_model != sl::MODEL::ZED_M) {
                         sensor_msgs::msg::MagneticField magMsg;
-                        fillMagMessage(sensorData.magnetometer, magMsg);
+                        mrover::msg::Heading headingMsg;
+                        mrover::msg::FixStatus headingStatusMsg;
+                        fillMagMessage(sensorData.magnetometer, magMsg, headingMsg, headingStatusMsg);
                         magMsg.header.frame_id = "zed_mag_frame";
                         magMsg.header.stamp = now();
                         mMagPub->publish(magMsg);
+                        headingMsg.header.frame_id = "zed_mag_frame";
+                        headingMsg.header.stamp = now();
+                        mMagHeadingPub->publish(headingMsg);
+                        headingStatusMsg.header.frame_id = "zed)mag_frame";
+                        headingStatusMsg.header.stamp = now();
+                        mMagHeadingStatusPub->publish(headingStatusMsg);
                     }
                 }
 
@@ -232,7 +243,7 @@ namespace mrover {
             RCLCPP_INFO(get_logger(), "Starting point cloud thread");
 
             while (rclcpp::ok()) {
-                //mLoopProfilerUpdate.beginLoop();
+                mLoopProfilerUpdate.beginLoop();
 
                 // TODO(quintin): May be bad to allocate every update, best case optimized by tcache
                 // Needed because publish directly shares the pointer to other nodelets running in this process
@@ -315,9 +326,5 @@ namespace mrover {
     }
 }; // namespace mrover
 
-auto main(int argc, char* argv[]) -> int {
-    rclcpp::init(argc, argv);
-    rclcpp::spin(std::make_shared<mrover::ZedWrapper>());
-    rclcpp::shutdown();
-    return 0;
-}
+#include "rclcpp_components/register_node_macro.hpp"
+RCLCPP_COMPONENTS_REGISTER_NODE(mrover::ZedWrapper)
