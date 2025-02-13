@@ -32,17 +32,17 @@ namespace mrover {
 	
 		// Choose whether we are using a noisy pointcloud or a regular pointcloud
 		// TODO (john): change to shader
-		sensor_msgs::msg::PointCloud2::UniquePtr noisyMsg = createNoisyPointCloud(inputMsg);
+		//sensor_msgs::msg::PointCloud2::UniquePtr noisyMsg = createNoisyPointCloud(inputMsg);
 
 		mInliers.clear();
 
-		sensor_msgs::msg::PointCloud2::UniquePtr const& msg = [&]() -> sensor_msgs::msg::PointCloud2::UniquePtr const& {
+		sensor_msgs::msg::PointCloud2::UniquePtr const& msg = inputMsg;/*[&]() -> sensor_msgs::msg::PointCloud2::UniquePtr const& {
 			if constexpr (useNoisyPointCloud){
 				return noisyMsg;
 			}else{
 				return inputMsg;
 			}
-		}();
+		}();*/
 
         try {
             SE3f cameraToMap = SE3Conversions::fromTfTree(mTfBuffer, "zed_left_camera_frame", "map").cast<float>();
