@@ -33,11 +33,11 @@ namespace mrover {
     };
 
     struct TemperatureAndHumidityData {
-        static constexpr std::uint8_t header = HEADER_BYTE;
-        static std::uint8_t  message_id = 0x02;
+        static constexpr std::uint8_t header = HEADER_BYTE; // 1B 
+        static std::uint8_t  message_id = 0x02; // 1B
 
-        float temperature{};
-        float humidity{};
+        float temperature{}; // 4B
+        float humidity{}; // 4B
     };
 }
 

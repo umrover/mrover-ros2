@@ -1,5 +1,5 @@
 #include <DynamixelShield.h>
-//#include <DFRobot_SHT20.h>
+#include <DFRobot_SHT20.h>
 
 #include "temp_sensor.h"
 
@@ -33,27 +33,33 @@
 // Functions to handle messages
 void readServoSetPosition(uint8_t *buffer);
 void writeServoPositionData();
-//void writeTemperatureHumidityData();
+void writeTemperatureHumidityData();
+
+/*
+SHT3X Humidity and Temperature Sensor PinOut
+      Black     GND
+      Yellow    SCL (12)
+      Green     SDA (11)
+      Red       VCC
+*/
 
 
 // Sensor/Servo Constants
 const uint8_t DXL_ID = 0;
 const float DXL_PROTOCOL_VERSION = 2.0;
 DynamixelShield dxl;
-//DFRobot_SHT20 sht20(&Wire, SHT20_I2C_ADDR);
+DFRobot_SHT20 sht20(&Wire, SHT20_I2C_ADDR);
 TempSensor temp_sensor;
 
 //This namespace is required to use DYNAMIXEL Control table item names
 using namespace ControlTableItem;
 
 void setup(){
-
-  //sht20.initSHT20();
+  Serial.begin(115200);
+  sht20.initSHT20();
   delay(100);
   temp_sensor.setup();
 
-  // Match the baud rate with the C++ program
-  Serial.begin(115200); 
 
   // Set Port baudrate to 57600bps. This has to match with DYNAMIXEL baudrate.
   dxl.begin(57600);
@@ -67,7 +73,7 @@ void loop(){
 
   // send data here
   writeServoPositionData();
-  //writeSensorData();
+  writeTemperatureHumidityData();
 
   // check for set position request
   if (Serial.available() >= 2) {  // ensure we have at least header (1) & message_id (1)
@@ -113,7 +119,7 @@ void readServoSetPosition(uint8_t *buffer) {
       if (is_counterclockwise) {
         dxl.setGoalPosition(id, present_degrees + diff, UNIT_DEGREE);
       } else {
-        dxl.setGoalPosition(id, present_degrees - (360 - diff), UNIT_DEGREE); // (360+180) - (360-90) = (360+180) - 270 = -90 == 270
+        dxl.setGoalPosition(id, present_degrees - (360 - diff), UNIT_DEGREE); // (360+180) - (360-90) = (360+180) - 270 = -90 == 270 yay
       }
     } else {
       if (is_counterclockwise) {
@@ -144,7 +150,7 @@ void writeServoPositionData() {
     Serial.write(radBytes, sizeof(float));
 }
 
-/*
+
 void writeTemperatureHumidityData() {
     float temp = sht20.readTemperature();
     float humidity = sht20.readHumidity() / 100.0;
@@ -160,13 +166,9 @@ void writeTemperatureHumidityData() {
     Serial.write(humidityBytes, sizeof(float));
 }
 
-*/
-
 
 
 // %%%%%%%%%%%%%%%%%% GRAVEYARD %%%%%%%%%%%%%%%%%%%%%%%%
-
-
 
 /*
 

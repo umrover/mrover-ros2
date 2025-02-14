@@ -89,31 +89,74 @@ void readServoSetPositionMessage(int serial_port) {
 
     // Read from serial_port and print out the HEADER_BYTE, message_id, Servo ID, present position
 
-    uint8_t read_buffer[2 + MSG_SERVO_POSITION_DATA_SIZE];
+    uint8_t read_buffer[2 + MSG_TEMPERATURE_HUMIDITY_SIZE];
     ssize_t bytes_read = read(serial_port, &read_buffer, sizeof(read_buffer)); // temp/humidity double check the -1
 
-    if ((read_buffer[0] == HEADER_BYTE) && (read_buffer[1] == MSG_SERVO_POSITION_DATA)) {
-        std::cout << "read_buffer[0] (HEADER_BYTE): " << (int)read_buffer[0] 
-              << "\tread_buffer[1] (message_id): " << (int)read_buffer[1] 
-              << "\tread_buffer[2] (DXL_ID): " << (int)read_buffer[2] << '\n';
+    if (read_buffer[0] == HEADER_BYTE){
 
-        // Pack radians as float (4 bytes)
-        // memcpy(&read_buffer[3], &radians, sizeof(float));
-        float radians;
-        memcpy(&radians, &read_buffer[3], sizeof(float));
-        float degrees = (radians * 180.0) / PI;
+        if (read_buffer[1] == MSG_SERVO_POSITION_DATA) {
+            std::cout << "read_buffer[0] (HEADER_BYTE): " << (int)read_buffer[0] 
+                << "\tread_buffer[1] (message_id): " << (int)read_buffer[1] 
+                << "\tread_buffer[2] (DXL_ID): " << (int)read_buffer[2] << '\n';
 
-        // Debugging: Print the raw bytes for radians
-        std::cout << "read_buffer[3] (Radian bytes): ";
-        for (size_t i = 3; i < sizeof(read_buffer); ++i) {
-            std::cout << (int)read_buffer[i] << " ";
+            // Pack radians as float (4 bytes)
+            // memcpy(&read_buffer[3], &radians, sizeof(float));
+            float radians;
+            memcpy(&radians, &read_buffer[3], sizeof(float));
+            float degrees = (radians * 180.0) / PI;
+
+            // Debugging: Print the raw bytes for radians
+            std::cout << "read_buffer[3] (Radian bytes): ";
+            for (size_t i = 3; i < 7; ++i) {
+                std::cout << (int)read_buffer[i] << " ";
+            }
+            std::cout << '\n';
+
+            std::cout << "Absolute Position:\tRadians: " << radians << "\tDegrees: " << degrees << "\n";
+            std::cout << "Relative Position:\tRadians: " << fmod(radians, 2.0*PI) << "\tDegrees: " << fmod(degrees, 360.0) << "\n\n";
+
         }
-        std::cout << '\n';
 
-        std::cout << "Absolute Position:\tRadians: " << radians << "\tDegrees: " << degrees << "\n";
-        std::cout << "Relative Position:\tRadians: " << fmod(radians, 2.0*PI) << "\tDegrees: " << fmod(degrees, 360.0) << "\n\n";
+        else if (read_buffer[1] == MSG_TEMPERATURE_HUMIDITY) {
+            std::cout << "read_buffer[0] (HEADER_BYTE): " << (int)read_buffer[0] 
+                << "\tread_buffer[1] (message_id): " << (int)read_buffer[1] << '\n';
 
-    }
+            // Pack radians as float (4 bytes)
+            // memcpy(&read_buffer[3], &radians, sizeof(float));
+            float temperature;
+            memcpy(&temperature, &read_buffer[2], sizeof(float));
+            
+
+            // Debugging: Print the raw bytes for radians
+            std::cout << "read_buffer[3] (temperature bytes): ";
+            for (size_t i = 2; i < 6; ++i) {
+                std::cout << (int)read_buffer[i] << " ";
+            }
+            std::cout << '\n';
+
+
+            // Pack radians as float (4 bytes)
+            // memcpy(&read_buffer[3], &radians, sizeof(float));
+            float humidity;
+            memcpy(&humidity, &read_buffer[6], sizeof(float));
+            
+            // Debugging: Print the raw bytes for radians
+            std::cout << "read_buffer[3] (humidity bytes): ";
+            for (size_t i = 6; i < 10; ++i) {
+                std::cout << (int)read_buffer[i] << " ";
+            }
+
+            std::cout << '\n';
+            
+            // Pack temp as float
+            std::cout << "Absolute temp/humidity:" << "\tTemperature: " << temperature << " Celcius" << "\tHumidity: " << humidity << " g/kg\n\n";
+
+
+
+
+        }
+
+    } 
 
     
 
