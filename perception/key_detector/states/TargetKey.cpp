@@ -32,7 +32,6 @@ auto TargetKey::onLoop() -> State*{
     // if we have pressed all the keys, end
 
     if (fsm_ctx->curr_key_index >= static_cast<int>(goal->code.size())){
-    if (fsm_ctx->curr_key_index >= goal->code.size()){
         //We're done with the current sequence, so we move to an off position to prevent segfault
         fsm_ctx->init = false;
         return StateMachine::make_state<Off>(fsm_ctx); 
