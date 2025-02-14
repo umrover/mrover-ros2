@@ -4,6 +4,7 @@
 #include <mrover/msg/can.hpp>
 
 #include <messaging_science.hpp>
+#include <sys/types.h>
 #include <units.hpp>
 
 namespace mrover {
@@ -25,12 +26,28 @@ namespace mrover {
             scienceBPub = create_publisher<msg::CAN>("can/science_b/in", 10);
         }
 
-        void publishCanData() {
+        void publishSensorData(uint8_t id, float data) {
+            OutBoundScienceMessage scienceMessage = SensorData{id, data};
+            publishCanData(&scienceMessage);
+        }
+
+        void publishThermistorData(std::array<float, 6> temps) {
+            OutBoundScienceMessage scienceMessage = ThermistorData{temps};
+            publishCanData(&scienceMessage);
+        }
+
+        void publishHeaterData(std::array<bool, 6> on) {
+            HeaterStateData heaterStateData;
+            for (uint8_t i = 0; i < 6; i++) {
+                SET_BIT_AT_INDEX(heaterStateData.heater_state_info.on, i, on[i]);
+            }
+            OutBoundScienceMessage scienceMessage = heaterStateData;
+            publishCanData(&scienceMessage);
+        }
+
+        void publishCanData(OutBoundScienceMessage* testMessage) {
             msg::CAN msgA;
             msg::CAN msgB;
-
-            msgA.data.resize(1);
-            msgB.data.resize(1);
 
             msgA.source = "science_a";
             msgA.destination = "jetson";
@@ -40,18 +57,16 @@ namespace mrover {
             msgB.destination = "jetson";
             msgB.reply_required = false;
 
-            TestUnion test_union{};
+            auto bytePtr = reinterpret_cast<uint8_t*>(testMessage);
+            std::array<uint8_t, sizeof(OutBoundScienceMessage)> byteArray;
+            std::copy(bytePtr, bytePtr + sizeof(OutBoundScienceMessage), byteArray.begin());
 
-            SET_BIT_AT_INDEX(test_union.on, 0, 1);
-            SET_BIT_AT_INDEX(test_union.on, 1, 0);
-            SET_BIT_AT_INDEX(test_union.on, 2, 1);
-            SET_BIT_AT_INDEX(test_union.on, 3, 0);
-            SET_BIT_AT_INDEX(test_union.on, 4, 1);
-            SET_BIT_AT_INDEX(test_union.on, 5, 0);
+            msgA.data.resize(byteArray.size());
+            msgB.data.resize(byteArray.size());
 
-            for (uint8_t i = 0; i < 1; i++) {
-                msgA.data.at(i) = test_union.data_bytes[i];
-                msgB.data.at(i) = test_union.data_bytes[i];
+            for (uint8_t i = 0; i < byteArray.size(); i++) {
+                msgA.data.at(i) = byteArray[i];
+                msgB.data.at(i) = byteArray[i];
             }
 
             scienceAPub->publish(msgA);
@@ -66,7 +81,9 @@ auto main(int argc, char** argv) -> int {
     rclcpp::Rate rate(10);
     mrover::ScienceTestBridge test_bridge;
     while (rclcpp::ok()) {
-        test_bridge.publishCanData();
+        test_bridge.publishSensorData(1, 23.45);
+        test_bridge.publishThermistorData({1.1,2.2,3.3,4.4,5.5,6.6});
+        test_bridge.publishHeaterData({0,1,0,1,0,1});
         rate.sleep();
     }
     rclcpp::shutdown();

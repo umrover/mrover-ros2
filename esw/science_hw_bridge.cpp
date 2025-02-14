@@ -1,7 +1,8 @@
-#include <algorithm>
+#include "mrover/srv/detail/enable_bool__struct.hpp"
 #include <cstring>
 #include <memory>
 
+#include <rclcpp/node.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/relative_humidity.hpp>
 #include <sensor_msgs/msg/temperature.hpp>
@@ -40,6 +41,8 @@ namespace mrover {
 
         void processHeaterAutoShutoff(const std::shared_ptr<srv::EnableBool::Request> request, std::shared_ptr<srv::EnableBool::Response> response) {
             canDev.publish_message(InBoundScienceMessage{HeaterAutoShutOffCommand{.enable_auto_shutoff = request->enable}}); 
+            response->success = true;
+            response->message = "";
         }
 
         void processMessage(mrover::HeaterStateData const& message) {
@@ -106,26 +109,14 @@ namespace mrover {
             //     return;
             // }
 
-            if (msg->data.size() == sizeof(HeaterStateData)) {
-                HeaterStateData message;
-                memcpy(&message, msg->data.data(), sizeof(HeaterStateData));
-                processMessage(message);
-            } else if (msg->data.size() == sizeof(ThermistorData)) {
-                ThermistorData message;
-                memcpy(&message, msg->data.data(), sizeof(ThermistorData));
-                processMessage(message);
-            } else if (msg->data.size() == sizeof(SensorData)) {
-                SensorData message;
-                memcpy(&message, msg->data.data(), sizeof(SensorData));
-                processMessage(message);
-            }
-
-            // OutBoundScienceMessage const& message = *reinterpret_cast<OutBoundScienceMessage const*>(msg->data.data());
-            // std::visit([&](auto const& messageAlternative) { processMessage(messageAlternative); }, message);
+            OutBoundScienceMessage const& message = *reinterpret_cast<OutBoundScienceMessage const*>(msg->data.data());
+            std::visit([&](auto const& messageAlternative) { processMessage(messageAlternative); }, message);
         }
 
     public:
-        ScienceBridge() : Node{"science_hw_bridge"} {
+        ScienceBridge() : Node{"science_hw_bridge"} {}
+
+        void init() {
             tempPub = create_publisher<sensor_msgs::msg::Temperature>("science_temperature_data", 10);
             humidityPub = create_publisher<sensor_msgs::msg::RelativeHumidity>("science_humidity_data", 10);
             oxygenPub = create_publisher<msg::Oxygen>("science_oxygen_data", 10);
@@ -133,12 +124,13 @@ namespace mrover {
             thermistorsPub = create_publisher<msg::ScienceThermistors>("science_thermistors", 10);
             heaterPub = create_publisher<msg::HeaterData>("science_heater_state", 10);
 
-            heaterAutoShutoffSrv = create_service<srv::EnableBool>("science_change_heater_auto_shutoff_state", &ScienceBridge::processHeaterAutoShutoff);
+            heaterAutoShutoffSrv = create_service<srv::EnableBool>("science_change_heater_auto_shutoff_state", 
+                            [this](srv::EnableBool::Request::SharedPtr const req,srv::EnableBool::Response::SharedPtr res) {processHeaterAutoShutoff(req, res);});
 
             canSubA = create_subscription<msg::CAN>("/can/science_a/in", 10, [this](msg::CAN::ConstSharedPtr const& msg) { processCANData(msg); });
             canSubB = create_subscription<msg::CAN>("/can/science_b/in", 10, [this](msg::CAN::ConstSharedPtr const& msg) { processCANData(msg); });
 
-            canDev = CanDevice(rclcpp::Node::make_shared("science_hw_bridge"), "jetson", "science_b");
+            canDev = CanDevice(rclcpp::Node::shared_from_this(), "jetson", "science_b");
         }
     };
 
@@ -146,7 +138,9 @@ namespace mrover {
 
 auto main(int argc, char** argv) -> int {
     rclcpp::init(argc, argv);
-    rclcpp::spin(std::make_shared<mrover::ScienceBridge>());
+    auto scienceBridge = std::make_shared<mrover::ScienceBridge>();
+    scienceBridge->init();
+    rclcpp::spin(scienceBridge);
     rclcpp::shutdown();
     return EXIT_SUCCESS;
 }

@@ -22,9 +22,6 @@ namespace mrover {
         WHITE_LED_0,
         WHITE_LED_1,
         WHITE_LED_2,
-        UV_LED_0,
-        UV_LED_1,
-        UV_LED_2
     };
 
     struct EnableScienceDeviceCommand : BaseScienceMessage {
@@ -50,7 +47,7 @@ namespace mrover {
     };
 
     struct ThermistorData {
-        float temps[6];
+        std::array<float, 6> temps;
     };
 
     struct SensorData {

@@ -279,7 +279,7 @@ target_link_libraries(tag_detector lie opencv_core opencv_aruco opencv_imgproc l
 mrover_add_header_only_library(messaging esw/messaging)
 
 mrover_add_header_only_library(can_device esw/can_device)
-target_link_libraries(can_device INTERFACE ${rclcpp_LIBRARIES})
+target_link_libraries(can_device INTERFACE ${rclcpp_LIBRARIES} moteus)
 
 mrover_add_library(motor_library esw/motor_library/*.cpp esw/motor_library)
 ament_target_dependencies(motor_library rclcpp std_srvs)
