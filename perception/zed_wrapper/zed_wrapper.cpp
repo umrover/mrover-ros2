@@ -236,7 +236,7 @@ namespace mrover {
 
                 // TODO(quintin): May be bad to allocate every update, best case optimized by tcache
                 // Needed because publish directly shares the pointer to other nodelets running in this process
-                auto pointCloudMsg = std::make_shared<sensor_msgs::msg::PointCloud2>();
+                auto pointCloudMsg = std::make_unique<sensor_msgs::msg::PointCloud2>();
 
                 // Swap critical section
                 {
@@ -254,11 +254,11 @@ namespace mrover {
                     }
 
 
-                    sensor_msgs::msg::Image::SharedPtr leftImgMsg = std::make_shared<sensor_msgs::msg::Image>();
+                    auto leftImgMsg = std::make_unique<sensor_msgs::msg::Image>();
                     fillImageMessage(mPcMeasures.leftImage, leftImgMsg);
                     leftImgMsg->header.frame_id = "zed_left_camera_optical_frame";
                     leftImgMsg->header.stamp = mPcMeasures.time;
-                    mLeftImgPub->publish(leftImgMsg);
+                    mLeftImgPub->publish(std::move(leftImgMsg));
                     mLoopProfilerUpdate.measureEvent("pub_left");
 
                     auto rightImgMsg = std::make_unique<sensor_msgs::msg::Image>();
