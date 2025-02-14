@@ -95,7 +95,8 @@ export default defineComponent({
     },
 
     publish: function() {
-      this.sendMessage({
+      this.sendMessage(
+        {
         type: 'cache_keyboard',
         axes: [],
         buttons: this.keys

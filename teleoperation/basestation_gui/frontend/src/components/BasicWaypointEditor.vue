@@ -208,7 +208,7 @@ export default {
           }
         })
         this.setWaypointList(waypoints)
-        this.sendMessage({ type: 'save_basic_waypoint_list', data: newList })
+        this.sendMessage('general', { type: 'save_basic_waypoint_list', data: newList })
       },
       deep: true
     },
@@ -258,7 +258,7 @@ export default {
 
     window.setTimeout(() => {
       // Timeout so websocket will be initialized
-      this.sendMessage({ type: 'get_basic_waypoint_list', data: null })
+      this.sendMessage('general', { type: 'get_basic_waypoint_list', data: null })
     }, 250)
   },
 

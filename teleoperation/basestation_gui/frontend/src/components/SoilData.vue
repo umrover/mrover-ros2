@@ -90,7 +90,7 @@ export default {
     ...mapActions('websocket', ['sendMessage']),
 
     publishPolyfit: function(){
-      this.sendMessage({type: "poly_fit", temperatures: this.tempArray, timestamps: this.timestamps})
+      this.sendMessage('sa', {type: "poly_fit", temperatures: this.tempArray, timestamps: this.timestamps})
     },
 
     predictTemp: function(timestamp: any) {

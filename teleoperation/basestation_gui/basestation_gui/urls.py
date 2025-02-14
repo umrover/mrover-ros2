@@ -20,10 +20,16 @@ from django.urls import path, include
 from django.http import HttpResponse
 from django.shortcuts import render
 
-from backend.consumers import GUIConsumer
+from backend.teleop import GeneralConsumer
+from backend.teleop_auton import AutonConsumer
+from backend.teleop_ish import ISHConsumer
 
 urlpatterns = [
     path("admin/", admin.site.urls),
 ]
 
-websocket_urlpatterns = [path("ws/gui", GUIConsumer.as_asgi())]
+websocket_urlpatterns = [
+    path("ws/general", GeneralConsumer.as_asgi()),
+    path("ws/auton", AutonConsumer.as_asgi()),
+    path("ws/ish", ISHConsumer.as_asgi())
+]

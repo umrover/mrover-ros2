@@ -7,4 +7,3 @@ import './app.scss' //custom CSS override file
 
 const app: App<Element> = createApp(App)
 app.use(router).use(store).mount('#app')
-store.dispatch('websocket/setupWebSocket')

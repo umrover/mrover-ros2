@@ -56,7 +56,6 @@ import MastGimbalControls from './MastGimbalControls.vue'
 import ControllerDataTable from './ControllerDataTable.vue'
 import { defineComponent } from 'vue'
 
-let interval: number
 
 interface Odom {
   latitude_deg: number;
@@ -122,9 +121,18 @@ export default defineComponent({
     }
   },
 
+  mounted: function() {
+    this.$store.dispatch('websocket/setupWebSocket', 'auton')
+    this.$store.dispatch('websocket/setupWebSocket', 'general')
+  },
+
+  unmounted: function() {
+    this.$store.dispatch('websocket/closeWebSocket', 'auton')
+    this.$store.dispatch('websocket/closeWebSocket', 'general')
+  },
+
   beforeUnmount: function() {
     this.ledColor = 'bg-white'
-    window.clearInterval(interval)
   }
 })
 </script>

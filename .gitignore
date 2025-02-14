@@ -23,6 +23,8 @@ venv/
 
 # SQL file for Teleop
 *.sqlite3
+bun.lock
+bun.lockb
 
 # macOS
 .DS_Store

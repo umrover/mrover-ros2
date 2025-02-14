@@ -62,7 +62,9 @@ export default {
     },
 
     publish: function() {
-      this.sendMessage({
+      this.sendMessage(
+        'general',
+        {
         type: 'mast_keyboard',
         axes: [],
         buttons: this.keys

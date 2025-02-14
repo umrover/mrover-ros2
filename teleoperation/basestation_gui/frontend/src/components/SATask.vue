@@ -79,7 +79,17 @@ export default {
     updateOdom(odom: Odom) {
       this.odom = odom;
     }
-  }
+  },
+
+  mounted: function() {
+    this.$store.dispatch('websocket/setupWebSocket', 'general')
+    this.$store.dispatch('websocket/setupWebSocket', 'sa')
+  },
+
+  unmounted: function() {
+    this.$store.dispatch('websocket/closeWebSocket', 'general')
+    this.$store.dispatch('websocket/closeWebSocket', 'sa')
+  },
 
 }
 </script>

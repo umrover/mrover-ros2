@@ -24,7 +24,9 @@ export default {
 
       const inverse_axes = gamepad.axes.map((value, index) => index === 2 ? -value : value)
 
-      this.sendMessage({
+      this.sendMessage(
+        'general',
+        {
         type: 'joystick',
         // inverted controls, get rid of map after testing
         axes: inverse_axes,

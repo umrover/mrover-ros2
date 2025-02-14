@@ -65,13 +65,17 @@ export default defineComponent({
       const gamepad = gamepads.find(gamepad => gamepad && gamepad.id.includes('Microsoft'))
       if (!gamepad) return
 
-      this.sendMessage({
+      this.sendMessage(
+        'sa',
+        {
         type: 'sa_controller',
         axes: gamepad.axes,
         buttons: gamepad.buttons.map(button => button.value)
       })
 
-      this.sendMessage({
+      this.sendMessage(
+        'sa',
+        {
         type: 'sa_mode',
         mode: this.mode
       })
@@ -90,7 +94,7 @@ export default defineComponent({
     ...mapActions('websocket', ['sendMessage']),
 
     zero: function(name: string, value: number) {
-      this.sendMessage({type: "arm_adjust", name: name, value: value})
+      this.sendMessage('sa', {type: "arm_adjust", name: name, value: value})
     }
   }
 })

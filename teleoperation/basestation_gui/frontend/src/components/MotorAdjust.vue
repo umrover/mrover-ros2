@@ -70,7 +70,9 @@ export default defineComponent({
     ...mapActions('websocket', ['sendMessage']),
     publishAdjustmentMessage() {
       if (this.selectedMotor != '') {
-        this.sendMessage({
+        this.sendMessage(
+          'general',
+          {
           type: 'arm_adjust',
           name: this.selectedMotor,
           value: this.clamp(parseFloat(this.adjustmentAngle.toString()), -2 * Math.PI, 2 * Math.PI)

@@ -47,13 +47,17 @@ export default defineComponent({
       const gamepad = gamepads.find(gamepad => gamepad && gamepad.id.includes('Microsoft'))
       if (!gamepad) return
 
-      this.sendMessage({
+      this.sendMessage(
+        'general',
+        {
         type: 'ra_controller',
         axes: gamepad.axes,
         buttons: gamepad.buttons.map(button => button.value)
       })
 
-      this.sendMessage({
+      this.sendMessage(
+        'general',
+        {
         type: 'ra_mode',
         mode: this.mode
       })

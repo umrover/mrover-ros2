@@ -1,50 +1,66 @@
-let globalCommit = null
+const webSockets = {} // Store WebSocket instances dynamically
 
-let webSocket = null
-
-function setupWebsocket() {
-  webSocket = new WebSocket('ws://localhost:8000/ws/gui')
-
-  webSocket.onopen = () => {
-    console.log('WebSocket Client Connected')
+function setupWebsocket(id, commit) {
+  if (webSockets[id]) {
+    console.warn(`WebSocket with ID ${id} already exists.`)
+    return
   }
-  webSocket.onmessage = event => {
+
+  const socket = new WebSocket(`ws://localhost:8000/ws/${id}`)
+
+  socket.onopen = () => {
+    console.log(`WebSocket ${id} Connected`)
+  }
+
+  socket.onmessage = event => {
     const message = JSON.parse(event.data)
-    if (globalCommit) globalCommit('setMessage', message)
+    commit('setMessage', { id, message }) // Store messages per WebSocket ID
   }
-  webSocket.onclose = e => {
-    console.log('Socket is closed. Reconnect will be attempted in 1 second.', e.reason)
+
+  socket.onclose = e => {
+    console.log(`WebSocket ${id} closed. Reconnecting in 2 seconds...`, e.reason)
+    delete webSockets[id] // Remove reference before reconnecting
     setTimeout(() => {
-      setupWebsocket()
+      setupWebsocket(id, commit)
     }, 2000)
   }
-  webSocket.onerror = error => {
-    console.error('Socket encountered error', error)
-    webSocket.close()
+
+  socket.onerror = error => {
+    console.error(`WebSocket ${id} encountered error`, error)
+    socket.close()
   }
+
+  webSockets[id] = socket // Store reference
 }
 
-setupWebsocket()
-
 const state = {
-  message: null
+  messages: {} // Store messages per WebSocket ID
 }
 
 const mutations = {
-  setMessage(state, payload) {
-    state.message = payload
+  setMessage(state, { id, message }) {
+    state.messages[id] = message
   }
 }
 
 const actions = {
-  sendMessage({ commit }, message) {
-    if (webSocket.readyState !== WebSocket.OPEN) return
-
-    webSocket.send(JSON.stringify(message))
+  sendMessage({ commit }, { id, message }) {
+    console.log(webSockets, id)
+    const socket = webSockets[id]
+    console.log("sending message to ", socket)
+    if (!socket || socket.readyState !== WebSocket.OPEN) return
+    socket.send(JSON.stringify(message))
   },
 
-  setupWebSocket({ commit }) {
-    globalCommit = commit
+  setupWebSocket({ commit }, id) {
+    setupWebsocket(id, commit) // Pass unique ID
+  },
+
+  closeWebSocket({ commit }, id) {
+    if (webSockets[id]) {
+      webSockets[id].close()
+      delete webSockets[id] // Cleanup
+    }
   }
 }
 

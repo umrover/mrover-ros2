@@ -89,22 +89,15 @@ export default defineComponent({
     updateDroneOdom(odom: DroneOdom) {
       this.drone_odom = odom;
     }
-  }
+  },
 
-  // methods: {
-  //   ...mapActions('websocket', ['sendMessage']),
-  //   cancelIK: function() {
-  //     this.sendMessage({ type: 'cancel_click_ik' })
-  //   }
-  // },
+  mounted: function() {
+    this.$store.dispatch('websocket/setupWebSocket', 'general')
+  },
 
-  // created: function() {
-  //   window.addEventListener('keydown', (event: KeyboardEvent) => {
-  //     if (event.key !== ' ') return
-
-  //     this.cancelIK(event)
-  //   })
-  // }
+  unmounted: function() {
+    this.$store.dispatch('websocket/closeWebSocket', 'general')
+  },
 })
 </script>
 

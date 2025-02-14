@@ -60,12 +60,14 @@ cur_mode = "disabled"
 heater_names = ["a0", "a1", "b0", "b1"]
 
 
-class GUIConsumer(JsonWebsocketConsumer):
+class GeneralConsumer(JsonWebsocketConsumer):
     subscribers = []
     timers = []
 
     def connect(self) -> None:
         self.accept()
+
+        # Publishers
         self.thr_pub = node.create_publisher(Throttle, "arm_throttle_cmd", 1)
         self.ee_pos_pub = node.create_publisher(IK, "ee_pos_cmd", 1)
         self.ee_vel_pub = node.create_publisher(Vector3, "ee_vel_cmd", 1)
@@ -73,30 +75,12 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.controller_twist_pub = node.create_publisher(Twist, "/controller_cmd_vel", 1)
         self.mast_gimbal_pub = node.create_publisher(Throttle, "/mast_gimbal_throttle_cmd", 1)
 
+        # Subscribers
         self.forward_ros_topic("/drive_left_controller_data", ControllerState, "drive_left_state")
         self.forward_ros_topic("/drive_right_controller_data", ControllerState, "drive_right_state")
-        self.forward_ros_topic("/led", LED, "led")
-        self.forward_ros_topic("/nav_state", StateMachineStateUpdate, "nav_state")
         self.forward_ros_topic("/gps/fix", NavSatFix, "gps_fix")
-        self.forward_ros_topic("/science_thermistors", ScienceThermistors, "thermistors")
-        self.forward_ros_topic("/science_heater_state", HeaterData, "heater_states")
-        self.forward_ros_topic("/science_oxygen_data", Oxygen, "oxygen")
-        self.forward_ros_topic("/science_methane_data", Methane, "methane")
-        self.forward_ros_topic("/science_uv_data", UV, "uv")
-        self.forward_ros_topic("/science_temperature_data", Temperature, "temperature")
-        self.forward_ros_topic("/science_humidity_data", RelativeHumidity, "humidity")
 
         # Services
-        self.enable_teleop_srv = node.create_client(SetBool, "/enable_teleop")
-        self.enable_auton_srv = node.create_client(EnableAuton, "/enable_auton")
-        self.auto_shutoff_service = node.create_client(SetBool, "/science_change_heater_auto_shutoff_state")
-
-        self.heater_services = []
-        self.white_leds_services = []
-        for name in heater_names:
-            self.heater_services.append(node.create_client(SetBool, "/science_enable_heater_" + name))
-        for site in ["a0", "b0"]:
-            self.white_leds_services.append(node.create_client(SetBool, "/science_enable_white_led_" + site))
 
         self.buffer = Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.buffer, node)
@@ -142,22 +126,6 @@ class GUIConsumer(JsonWebsocketConsumer):
             )
         except Exception as e:
             node.get_logger().warn(f"Failed to get bearing: {e} Is localization running?")
-
-    def send_auton_command(self, waypoints: list[dict], enabled: bool) -> None:
-        self.enable_auton_srv.call(
-            EnableAuton.Request(
-                enable=enabled,
-                waypoints=[
-                    GPSWaypoint(
-                        tag_id=waypoint["tag_id"],
-                        latitude_degrees=waypoint["latitude_degrees"],
-                        longitude_degrees=waypoint["longitude_degrees"],
-                        type=WaypointType(val=int(waypoint["type"])),
-                    )
-                    for waypoint in waypoints
-                ],
-            )
-        )
 
     def receive(self, text_data=None, bytes_data=None, **kwargs) -> None:
         """
@@ -207,15 +175,6 @@ class GUIConsumer(JsonWebsocketConsumer):
                 }:
                     cur_mode = mode
                     node.get_logger().debug(f"publishing to {cur_mode}")
-                case {"type": "auton_enable", "enabled": enabled, "waypoints": waypoints}:
-                    self.send_auton_command(waypoints, enabled)
-                case {"type": "teleop_enable", "enabled": enabled}:
-                    self.enable_teleop_srv.call(SetBool.Request(data=enabled))
-                case {
-                    "type": "save_auton_waypoint_list",
-                    "data": waypoints,
-                }:
-                    save_auton_waypoint_list(waypoints)
                 case {
                     "type": "save_basic_waypoint_list",
                     "data": waypoints,
@@ -225,17 +184,6 @@ class GUIConsumer(JsonWebsocketConsumer):
                     "type": "get_basic_waypoint_list",
                 }:
                     self.send_message_as_json({"type": "get_basic_waypoint_list", "data": get_basic_waypoint_list()})
-                case {
-                    "type": "get_auton_waypoint_list",
-                }:
-                    self.send_message_as_json({"type": "get_auton_waypoint_list", "data": get_auton_waypoint_list()})
-                case {"type": "heater_enable", "enabled": enabled, "heater": heater}:
-                    self.heater_services[heater_names.index(heater)].call(SetBool.Request(data=enabled))
-
-                case {"type": "auto_shutoff", "shutoff": shutoff}:
-                    self.auto_shutoff_service.call(SetBool.Request(data=shutoff))
-                case {"type": "white_leds", "site": site, "enabled": enabled}:
-                    self.white_leds_services[site].call(SetBool.Request(data=enabled))
                 case _:
                     node.get_logger().warning(f"Unhandled message: {message}")
         except:

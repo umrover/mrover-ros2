@@ -50,7 +50,7 @@ export default {
 
         sendAutoShutdownCmd: function () {
             this.autoShutdownEnabled = !this.autoShutdownEnabled;
-            this.sendMessage({ type: "auto_shutoff", shutoff: this.autoShutdownEnabled });
+            this.sendMessage('ish', { type: "auto_shutoff", shutoff: this.autoShutdownEnabled });
         },
     },
 
