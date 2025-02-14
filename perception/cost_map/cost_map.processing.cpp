@@ -52,15 +52,20 @@ namespace mrover {
             // TIMING DEBUG
             // RCLCPP_INFO_STREAM(get_logger(), inputMsg->header.stamp.sec);
 
-            struct BinEntry {
-                R3f pointInCamera;
-                R3f pointInMap;
-                R3f normal;
-            };
+            // struct BinEntry {
+            //     R3f pointInCamera;
+            //     R3f pointInMap;
+            //     R3f normal;
+            // };
+
+            // struct Bin {
+            //     std::vector<BinEntry> points;
+            //     int32_t i;  // index (used for for_each)
+            // };
 
             struct Bin {
-                std::vector<BinEntry> points;
-                int32_t i;  // index (used for for_each)
+                int high_pts;
+                int total;
             };
 
             std::vector<Bin> bins;
@@ -97,13 +102,15 @@ namespace mrover {
                     int index = mapToGrid(pointInMap, mGlobalGridMsg);
                     if (index < 0 || index >= static_cast<int>(mGlobalGridMsg.data.size())) continue;
 
-
                     
                     // TODO REPLACE this 
+                    if(normal.z() <= mZThreshold) {
+                        ++bins[index].high_pts;
+                    }
+                    ++bins[index].total;
 
-                    
-                    bins[index].points.emplace_back(BinEntry{pointInCamera, pointInMap, normal});
-                    // bins[index].i = index;
+
+                    // 1[index].points.emplace_back(BinEntry{pointInCamera, pointInMap, normal});
                 }
             }
 			
@@ -114,17 +121,19 @@ namespace mrover {
 
             for (std::size_t i = 0; i < mGlobalGridMsg.data.size(); ++i) {
 				Bin& bin = bins[i];
-                if (bin.points.size() < 16){
+                if (bin.total < 16){
                     continue;
                 }
 
-                // Percentage Algorithm (acounts for angle changes (and outliers))
-                // Chose the percentage algorithm because it's less sensitive to angle changes (and outliers) and can accurately track
-                //     objects outside. Normal averaging too sensitive.
-                std::size_t pointsHigh = std::ranges::count_if(bin.points, [this, &roverSE3](BinEntry const& entry) {
-                    return (entry.normal.z()) <= mZThreshold;
-                });
-                double percent = static_cast<double>(pointsHigh) / static_cast<double>(bin.points.size());
+                // // Percentage Algorithm (acounts for angle changes (and outliers))
+                // // Chose the percentage algorithm because it's less sensitive to angle changes (and outliers) and can accurately track
+                // //     objects outside. Normal averaging too sensitive.
+                // std::size_t pointsHigh = std::ranges::count_if(bin.points, [this, &roverSE3](BinEntry const& entry) {
+                //     return (entry.normal.z()) <= mZThreshold;
+                // });
+
+
+                double percent = static_cast<double>(bin.high_pts) / static_cast<double>(bin.total);
 
                 std::int8_t cost = percent > mZPercent ? OCCUPIED_COST : FREE_COST;
 
