@@ -1,12 +1,15 @@
 #include "key_detector.hpp"
 #include "key_loc_server_placeholder.hpp"
 
+//How to launch KeyDetector: ros2 run mrover key_detector
+//Note: For simulator run, ensure the addition of the TF tree, otherwise the detector will crash upon execution
 auto main(int argc, char** argv) -> int {
     rclcpp::init(argc, argv);
 
     // DO NOT REMOVE OR ELSE REF COUNT WILL GO TO ZERO
     rclcpp::executors::SingleThreadedExecutor executor;
 
+    //How to send action to the KeyDetector: ros2 action send_goal /KeyAction mrover/action/KeyAction "code: '*input string*', simulator: *simulator state you want*" 
     auto actionServer = std::make_shared<mrover::KeyDetector>();
     rclcpp::executors::SingleThreadedExecutor server;
 
