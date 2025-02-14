@@ -218,7 +218,7 @@ namespace mrover {
             declare_parameter("port", rclcpp::ParameterType::PARAMETER_INTEGER);
             declare_parameter("bitrate", rclcpp::ParameterType::PARAMETER_INTEGER);
 
-            mDeviceDescriptor = get_parameter("dev_descriptor").as_string();
+            // mDeviceDescriptor = get_parameter("dev_descriptor").as_string();
             mDecodeJpegFromDevice = get_parameter("decode_jpeg_from_device").as_bool();
             mImageWidth = get_parameter("width").as_int();
             mImageHeight = get_parameter("height").as_int();
