@@ -57,7 +57,7 @@ void KeyDetector::execute(const std::shared_ptr<GoalHandleKeyAction> goal_handle
   if (rclcpp::ok()) {
     result->success = true;
     goal_handle->succeed(result);
-    if(fsm_ctx->fail)
+    if(!fsm_ctx->fail)
     {
       RCLCPP_INFO(this->get_logger(), "Goal succeeded");
     }
