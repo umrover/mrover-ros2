@@ -114,16 +114,16 @@ namespace mrover {
                 try {
                     std::string objectImmediateFrame = std::format("immediate{}", className);
                     // Push the immediate detections to the camera frame
-                    SE3Conversions::pushToTfTree(*mTfBroadcaster, objectImmediateFrame, mCameraFrame, objectInCamera.value(), get_clock()->now());
+                    SE3Conversions::pushToTfTree(mTfBroadcaster, objectImmediateFrame, mCameraFrame, objectInCamera.value(), get_clock()->now());
                     // Since the object is seen we need to increment the hit counter
-                    mModel.objectHitCounts[classId] = std::min(mObjMaxHitcount, mModel.objectHitCounts[classId] + mObjIncrementWeight);
+                    mModel.objectHitCounts[classId] = std::min(mHitMax, mModel.objectHitCounts[classId] + mHitIncrease);
 
                     // Only publish to permament if we are confident in the object
-                    if (mModel.objectHitCounts[classId] > mObjHitThreshold) {
+                    if (mModel.objectHitCounts[classId] > mPublishThreshold) {
                         std::string objectPermanentFrame = className;
                         // Grab the object inside of the camera frame and push it into the map frame
-                        SE3d objectInMap = SE3Conversions::fromTfTree(*mTfBuffer, objectImmediateFrame, mWorldFrame);
-                        SE3Conversions::pushToTfTree(*mTfBroadcaster, objectPermanentFrame, mWorldFrame, objectInMap, get_clock()->now());
+                        SE3d objectInMap = SE3Conversions::fromTfTree(mTfBuffer, objectImmediateFrame, mWorldFrame);
+                        SE3Conversions::pushToTfTree(mTfBroadcaster, objectPermanentFrame, mWorldFrame, objectInMap, get_clock()->now());
                     }
 
                 } catch (tf2::ExtrapolationException const&) {
@@ -140,7 +140,7 @@ namespace mrover {
             if (seenObjects[i]) continue;
 
             assert(i < mObjectHitCounts.size());
-            mModel.objectHitCounts[i] = std::max(0, mModel.objectHitCounts[i] - mObjDecrementWeight);
+            mModel.objectHitCounts[i] = std::max(0, mModel.objectHitCounts[i] - mHitDecrease);
         }
     }
 
