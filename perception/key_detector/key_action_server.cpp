@@ -62,6 +62,6 @@ void KeyDetector::execute(const std::shared_ptr<GoalHandleKeyAction> goal_handle
 void KeyDetector::handle_accepted(const std::shared_ptr<GoalHandleKeyAction> goal_handle)
 {
   using namespace std::placeholders;
-  // this needs to return quickly to avoid blocking the executor, so spin up a new thread
+  // remove
   std::thread{std::bind(&KeyDetector::execute, this, _1), goal_handle}.detach();
 }

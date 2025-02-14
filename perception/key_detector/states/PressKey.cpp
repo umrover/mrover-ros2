@@ -18,6 +18,8 @@ auto PressKey::onLoop() -> State*{
     {
         return StateMachine::make_state<Cancel>(fsm_ctx); //cancel if the goal is cancelled
     }
+
+    return StateMachine::make_state<Wait>(fsm_ctx);
     
 }
 }

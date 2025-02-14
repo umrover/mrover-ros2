@@ -27,8 +27,8 @@ auto TargetKey::onLoop() -> State*{
 
     // if we have pressed all the keys, end
 
-    if (fsm_ctx->curr_key_index > goal->code.size()){
-        return nullptr;
+    if (fsm_ctx->curr_key_index > static_cast<int>(goal->code.size())){
+        return StateMachine::make_state<Cancel>(fsm_ctx);
     }
 
     if(goal_handle->is_canceling())
@@ -39,8 +39,7 @@ auto TargetKey::onLoop() -> State*{
     //Replace With Service Start
     //arm_e_link
 
-    auto key_loc = mrover::SE3Conversions::fromTfTree(*fsm_ctx->mTfBuffer, "arm_base_link", std::format("{}_key_truth", goal->code[fsm_ctx->curr_key_index]));
-    auto arm_loc = mrover::SE3Conversions::fromTfTree(*fsm_ctx->mTfBuffer, "arm_base_link", "arm_e_link");
+    auto key_loc = mrover::SE3Conversions::fromTfTree(*fsm_ctx->mTfBuffer, std::format("{}_key_truth", goal->code[fsm_ctx->curr_key_index]), "arm_e_link");
 
     // auto key_loc_test = mrover::SE3Conversions::fromTfTree(buffer, "base_link", "q_key_truth" , node->get_clock()->now());
 
@@ -64,11 +63,12 @@ auto TargetKey::onLoop() -> State*{
 
     //move arm with ik
     geometry_msgs::msg::Vector3 ik;
-    ik.x = key_loc.x() - arm_loc.x();
-    ik.y = key_loc.y() - arm_loc.y();
-    ik.z = key_loc.z() - arm_loc.z();
+    ik.x = key_loc.x();
+    ik.y = key_loc.y();
+    ik.z = key_loc.z();
 
-
+    //print what key is being targeted
+    RCLCPP_INFO(node->get_logger(), "Targeting key: %s", std::string(1, goal->code[fsm_ctx->curr_key_index]).c_str());
     fsm_ctx->mIkTargetPub->publish(ik);
 
 
@@ -79,14 +79,11 @@ auto TargetKey::onLoop() -> State*{
     // subscribe to arm state
     // dist
 
-    auto thresholdCheck = mrover::SE3Conversions::fromTfTree(*fsm_ctx->mTfBuffer, "arm_base_link", std::format("{}_key_truth", goal->code[fsm_ctx->curr_key_index]));
+    auto thresholdCheck = mrover::SE3Conversions::fromTfTree(*fsm_ctx->mTfBuffer, std::format("{}_key_truth", goal->code[fsm_ctx->curr_key_index]), "arm_e_link");
 
     double magnitude = std::sqrt(thresholdCheck.x() * thresholdCheck.x() + thresholdCheck.y() * thresholdCheck.y() + thresholdCheck.z() * thresholdCheck.z());
 
-    std::cout << "Magnitude: " << magnitude << std::endl;
-
-
-    if(false){
+    if(magnitude < 0.1){
         fsm_ctx->curr_key_index++;
         return StateMachine::make_state<PressKey>(fsm_ctx);
     } else {
