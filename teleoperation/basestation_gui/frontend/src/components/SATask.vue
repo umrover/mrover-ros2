@@ -85,8 +85,7 @@ export default {
       this.odom = odom;
     },
     updateSite(selectedSite: number) {
-      this.siteSelect = selectedSite;
-      console.log('Selected site index:', selectedSite);
+      this.siteSelect = selectedSite; 
     },
   }
 }

@@ -92,6 +92,11 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.forward_ros_topic("/science_temperature_data", Temperature, "temperature")
         self.forward_ros_topic("/science_humidity_data", RelativeHumidity, "humidity")
 
+        self.forward_ros_topic("/arm_controller_state", ControllerState, "arm_state")
+        self.forward_ros_topic("/drive_controller_data", ControllerState, "drive_state")
+        self.forward_ros_topic("/sa_controller_state", ControllerState, "sa_state")
+        # check topic names above
+
         # Services
         self.enable_teleop_srv = node.create_client(SetBool, "/enable_teleop")
         self.enable_auton_srv = node.create_client(EnableAuton, "/enable_auton")
