@@ -30,7 +30,7 @@ auto TargetKey::onLoop() -> State*{
 
     // if we have pressed all the keys, end
 
-    if (fsm_ctx->curr_key_index >= goal->code.size()){
+    if (fsm_ctx->curr_key_index >= static_cast<int>(goal->code.size())){
         fsm_ctx->init = false;
         return StateMachine::make_state<Off>(fsm_ctx);
     }
@@ -77,18 +77,11 @@ auto TargetKey::onLoop() -> State*{
 
 
     //verify that the arm is within the threshold
-    bool within_threshold = false;
-    // sleepRate.sleep();
-
-    // subscribe to arm state
-    // dist
-
     auto thresholdCheck = mrover::SE3Conversions::fromTfTree(*fsm_ctx->mTfBuffer, std::format("{}_key_truth", goal->code[fsm_ctx->curr_key_index]), "arm_e_link");
 
     double magnitude = std::sqrt(thresholdCheck.x() * thresholdCheck.x() + thresholdCheck.y() * thresholdCheck.y() + thresholdCheck.z() * thresholdCheck.z());
     RCLCPP_INFO_STREAM(rclcpp::get_logger("rclcpp"), std::format("Magnitude: {}", magnitude));
-    if(magnitude < 0.1){
-        fsm_ctx->curr_key_index++;
+    if(magnitude < 0.15){
         return StateMachine::make_state<PressKey>(fsm_ctx);
     } else {
         return StateMachine::make_state<TargetKey>(fsm_ctx);
