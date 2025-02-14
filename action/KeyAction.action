@@ -1,4 +1,5 @@
 string code
+bool simulator
 ---
 bool success
 ---
