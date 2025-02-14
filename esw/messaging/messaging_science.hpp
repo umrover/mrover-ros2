@@ -13,15 +13,12 @@ namespace mrover {
     struct BaseScienceMessage {};
 
     enum struct ScienceDevice {
+        HEATER_A0,
         HEATER_B0,
-        HEATER_N0,
+        HEATER_A1,
         HEATER_B1,
-        HEATER_N1,
-        HEATER_B2,
-        HEATER_N2,
-        WHITE_LED_0,
-        WHITE_LED_1,
-        WHITE_LED_2,
+        WHITE_LED_A,
+        WHITE_LED_B,
     };
 
     struct EnableScienceDeviceCommand : BaseScienceMessage {

@@ -9,11 +9,6 @@
 
 namespace mrover {
 
-    union TestUnion {
-        uint8_t on : 6 {};
-        uint8_t data_bytes[1];
-    };
-
     class ScienceTestBridge final : public rclcpp::Node {
 
     private:
