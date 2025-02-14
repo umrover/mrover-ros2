@@ -16,6 +16,7 @@ namespace mrover{
 		fsm_ctx->mTfBuffer = mTfBuffer;
 		fsm_ctx->mIkTargetPub = mIkTargetPub;
 		fsm_ctx->init = false;
+		fsm_ctx->fail = false;
 
 		this->action_server_ = rclcpp_action::create_server<KeyAction>(
 			this,

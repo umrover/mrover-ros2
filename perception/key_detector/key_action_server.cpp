@@ -31,6 +31,7 @@ void KeyDetector::execute(const std::shared_ptr<GoalHandleKeyAction> goal_handle
   fsm_ctx->node = this->shared_from_this();
   fsm_ctx->curr_key_index = 0;
   fsm_ctx->init = true;
+  fsm_ctx->fail = false;
 
   // start state
   while (rclcpp::ok()){
@@ -43,6 +44,11 @@ void KeyDetector::execute(const std::shared_ptr<GoalHandleKeyAction> goal_handle
     RCLCPP_INFO(this->get_logger(), "Executed fsm");
 
     loop_rate.sleep();
+
+    if(!fsm_ctx->init)
+    {
+      break;
+    }
   }
 
 
@@ -51,11 +57,14 @@ void KeyDetector::execute(const std::shared_ptr<GoalHandleKeyAction> goal_handle
   if (rclcpp::ok()) {
     result->success = true;
     goal_handle->succeed(result);
-    RCLCPP_INFO(this->get_logger(), "Goal succeeded");
+    if(fsm_ctx->fail)
+    {
+      RCLCPP_INFO(this->get_logger(), "Goal succeeded");
+    }
+    else {
+      RCLCPP_INFO(this->get_logger(), "Goal cancelled");
+    }
   }
-
-
-
 }
 
 void KeyDetector::handle_accepted(const std::shared_ptr<GoalHandleKeyAction> goal_handle)

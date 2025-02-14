@@ -24,7 +24,6 @@ auto TargetKey::onLoop() -> State*{
         fsm_ctx->init = false;
         return StateMachine::make_state<Off>(fsm_ctx);
     }
- 
 
     auto goal = goal_handle->get_goal();
     auto node = fsm_ctx->node;
@@ -87,7 +86,7 @@ auto TargetKey::onLoop() -> State*{
     auto thresholdCheck = mrover::SE3Conversions::fromTfTree(*fsm_ctx->mTfBuffer, std::format("{}_key_truth", goal->code[fsm_ctx->curr_key_index]), "arm_e_link");
 
     double magnitude = std::sqrt(thresholdCheck.x() * thresholdCheck.x() + thresholdCheck.y() * thresholdCheck.y() + thresholdCheck.z() * thresholdCheck.z());
-
+    RCLCPP_INFO_STREAM(rclcpp::get_logger("rclcpp"), std::format("Magnitude: {}", magnitude));
     if(magnitude < 0.1){
         fsm_ctx->curr_key_index++;
         return StateMachine::make_state<PressKey>(fsm_ctx);
