@@ -6,6 +6,8 @@ namespace mrover {
         // TODO: pubs and subs and buffers(?)
     }
 
+
+    // I think this was copied from drift, all naming conventions and such are cooked
     auto IEKF::CorrectRightInvariant(const Eigen::MatrixXd& Z, const Eigen::MatrixXd& H,
                                 const Eigen::MatrixXd& N) -> void {
         
@@ -38,10 +40,10 @@ namespace mrover {
         // Compute Kalman Gain
         Eigen::MatrixXd PHT = P * H.transpose();
         Eigen::MatrixXd S = H * PHT + N;
-        Eigen::MatrixXd K = PHT * S.inverse();
+        Eigen::MatrixXd L = PHT * S.inverse();
         // std::cout << "Kalman gain: \n" << K;
         // Compute state correction vector
-        Eigen::VectorXd delta = K * Z;
+        Eigen::VectorXd delta = L * Z;
         Eigen::MatrixXd dX
             = delta.segment(0, delta.rows() - dimTheta).exp();
         Eigen::VectorXd dTheta = delta.segment(delta.rows() - dimTheta, dimTheta);
@@ -57,9 +59,9 @@ namespace mrover {
         state.set_theta(Theta_new);
 
         // Update Covariance
-        Eigen::MatrixXd IKH = Eigen::MatrixXd::Identity(dimP, dimP) - K * H;
+        Eigen::MatrixXd IKH = Eigen::MatrixXd::Identity(dimP, dimP) - L * H;
         Eigen::MatrixXd P_new = IKH * P * IKH.transpose()
-                                + K * N * K.transpose(); 
+                                + L * N * L.transpose(); 
 
         // Don't update yaw covariance
         /// TODO: Add a flag to enable yaw covariance update
@@ -148,8 +150,32 @@ namespace mrover {
 
     }
 
-    auto gpsCallback() -> void {
+    auto gpsCallback(geometry_msgs::msg::Vector3Stamped position, geometry_msgs::msg::Vector3Stamped V) -> void {
+        Matrix39d H = Matrix39d::Zero();
+        H[0,6] = -1;
+        H[1,7] = -1;
+        H[2,8] = -1;
+        
+        Vector5d observation = X.inverse().act(position.vector) + V.vector;
 
+        Matrix33d N = Matrix33d::Zero();
+        N[0][0] = V.vector.x * V.vector.x
+        N[1][1] = V.vector.y * V.vector.y
+        N[2][2] = V.vector.z * V.vector.z
+
+        Matrix33d E = H * obj.P * H.transpose();
+        Matrix33d S = E + N;
+        Matrix33d L = P * H.transpose() * S.inverse() // Kalman Gain
+
+        Eigen::Vector3d innov = X.act(observation) - position
+        
+        // Correction factor (delta)
+        Eigen::Vector3d dx = L * innovation;
+
+        // Update 
+        X = dx + X; // Overloaded lplus -- exp(dx) * X
+        Matrix99d cov_factor = Matrix99d::Identity() - L*H;
+        P = cov_factor * P * cov_factor.transpose() + L * N * L.tranpose();
     }
 
 }

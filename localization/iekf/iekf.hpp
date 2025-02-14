@@ -5,11 +5,16 @@
 
 // ROS Headers, ros namespace
 #include "pch.hpp"
+#include <manif/impl/se_2_3/SE_2_3.h>
 
 using manif::SO3d;
+// using manif::SE_2d;
+using manif::SE_2_3d;
 using Matrix33d = Eigen::Matrix<double, 3, 3>;
 using Matrix55d = Eigen::Matrix<double, 5, 5>;
 using Matrix99d = Eigen::Matrix<double, 9, 9>;
+using Matrix39d = Eigen::Matrix<double, 3, 9>;
+using Vector5d = Eigen::Matrix<double, 4, 1>;
 
 namespace mrover {
 
@@ -18,9 +23,12 @@ namespace mrover {
         private:
 
             // IEKF variables
-            Matrix55d X;
+            manif::SE_2_3<double> X;
             Matrix99d P;
             Matrix99d A;
+            Eigen::Vector3d g;
+            g << 0, 0, -9.80665;
+            const double dt = 0.01;
 
             rclcpp::Subscription<geometry_msgs::msg::Vector3Stamped>::SharedPtr pos_sub;
             rclcpp::Subscription<geometry_msgs::msg::Vector3Stamped>::SharedPtr gyro_sub;
@@ -47,7 +55,7 @@ namespace mrover {
 
             auto magCallback() -> void;
 
-            auto gpsCallback() -> void;
+            auto gpsCallback(geometry_msgs::msg::Vector3Stamped position, geometry_msgs::msg::Vector3Stamped V) -> void;
         public:
             IEFK();
     };

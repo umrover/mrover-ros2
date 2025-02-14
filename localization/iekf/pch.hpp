@@ -11,5 +11,6 @@
 #include <mrover/msg/heading.hpp>
 #include <lie.hpp>
 #include <manif/SO3.h>
+#include <manif/SE_2_3.h>
 
 
