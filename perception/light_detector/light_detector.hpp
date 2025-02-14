@@ -69,7 +69,7 @@ namespace mrover {
 		auto publishClosestLight(std::pair<double, double> &point) -> void;
 
 	public:
-		explicit LightDetector(rclcpp::NodeOptions const& options);
+		explicit LightDetector(rclcpp::NodeOptions const& options = rclcpp::NodeOptions()); //kjust edited
 		~LightDetector() override = default;
 	}; // LightDetector
 

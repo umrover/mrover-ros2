@@ -13,6 +13,15 @@ namespace mrover {
         std::shared_ptr<tf2_ros::TransformBroadcaster> mTfBroadcaster = std::make_shared<tf2_ros::TransformBroadcaster>(this);
         std::shared_ptr<tf2_ros::TransformListener> mTfListener = std::make_shared<tf2_ros::TransformListener>(*mTfBuffer);
 
+        struct Detection {
+            int classId{};
+            std::string className;
+            float confidence{};
+            cv::Rect box;
+
+            Detection(int _classId, std::string _className, float _confidence, cv::Rect _box) : classId{_classId}, className{_className}, confidence{_confidence}, box{_box} {}
+        };
+
         std::string mCameraFrame;
         std::string mWorldFrame;
 
