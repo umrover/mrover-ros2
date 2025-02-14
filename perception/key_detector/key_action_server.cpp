@@ -30,8 +30,7 @@ void KeyDetector::execute(const std::shared_ptr<GoalHandleKeyAction> goal_handle
   fsm_ctx->goal_handle = goal_handle;
   fsm_ctx->node = this->shared_from_this();
   fsm_ctx->curr_key_index = 0;
-  fsm_ctx->mTfBuffer = mTfBuffer;
-  fsm_ctx->mIkTargetPub = mIkTargetPub;
+  fsm_ctx->init = true;
 
   // start state
   while (rclcpp::ok()){
@@ -39,7 +38,7 @@ void KeyDetector::execute(const std::shared_ptr<GoalHandleKeyAction> goal_handle
     auto feedback = std::make_shared<KeyAction::Feedback>();
 
     //RCLCPP_INFO(this->get_logger(), "Executing fsm");
-    updateFSM();
+    //updateFSM();
 
     RCLCPP_INFO(this->get_logger(), "Executed fsm");
 

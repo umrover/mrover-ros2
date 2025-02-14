@@ -48,7 +48,6 @@ class KeyDetector : public rclcpp::Node{
     std::shared_ptr<tf2_ros::TransformBroadcaster> mTfBroadcaster = std::make_shared<tf2_ros::TransformBroadcaster>(this);
     std::shared_ptr<tf2_ros::TransformListener> mTfListener = std::make_shared<tf2_ros::TransformListener>(*mTfBuffer);
 
-
     void updateFSM();
 
     rclcpp::Publisher<geometry_msgs::msg::Vector3>::SharedPtr mIkTargetPub;
