@@ -136,7 +136,7 @@ namespace mrover {
             pose_in_map.asSO3() = uncorrected_orientation_rotm;
         }
         else {
-            RCLCPP_INFO_THROTTLE(get_logger(), *get_clock(), 1000, std::format("Heading corrected by: {}", curr_heading_correction->z()));
+            RCLCPP_INFO_THROTTLE(get_logger(), *get_clock(), 1000, "%s", std::format("Heading corrected by: {}", curr_heading_correction->z()).c_str());
             SO3d corrected_orientation = curr_heading_correction.value() * uncorrected_orientation_rotm;
             pose_in_map.asSO3() = corrected_orientation;
         }
