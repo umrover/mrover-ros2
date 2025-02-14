@@ -19,7 +19,7 @@ boom_streamer:
     width: 640
     height: 480
     framerate: 30
-    address: 127.0.0.1
+    address: 10.1.0.10
     bitrate: 2000000
     dev_path: ""
 
@@ -32,7 +32,7 @@ mobility_streamer:
     width: 640
     height: 480
     framerate: 30
-    address: 127.0.0.1
+    address: 10.1.0.10
     bitrate: 2000000
     dev_path: ""
 
