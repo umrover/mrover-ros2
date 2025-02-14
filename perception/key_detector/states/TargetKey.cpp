@@ -44,6 +44,7 @@ auto TargetKey::onLoop() -> State*{
     }
 
     geometry_msgs::msg::Vector3 ik;
+    double magnitude = 0.0;
 
     //Allows for two seperate paths, simulator for running in simulation, and the bottom for runnin in normal
     if(goal->simulator)
@@ -52,6 +53,9 @@ auto TargetKey::onLoop() -> State*{
         ik.x = key_loc.x();
         ik.y = key_loc.y();
         ik.z = key_loc.z();
+
+        auto thresholdCheck = mrover::SE3Conversions::fromTfTree(*fsm_ctx->mTfBuffer, std::format("{}_key_truth", goal->code[fsm_ctx->curr_key_index]), "arm_e_link");
+        magnitude = std::sqrt(thresholdCheck.x() * thresholdCheck.x() + thresholdCheck.y() * thresholdCheck.y() + thresholdCheck.z() * thresholdCheck.z());
     }
     else 
     {
@@ -66,40 +70,6 @@ auto TargetKey::onLoop() -> State*{
         {
             ik.x = result.get()->x;
             ik.y = result.get()->y;
-        }
-        else
-        {
-            //Timed out should cancel, as we assume the vision module is either dead or timed out
-            return StateMachine::make_state<Cancel>(fsm_ctx);
-        }
-    }
-    
-    //move arm with ik
-
-    //print what key is being targeted
-    RCLCPP_INFO(node->get_logger(), "Targeting key: %s", std::string(1, goal->code[fsm_ctx->curr_key_index]).c_str());
-    fsm_ctx->mIkTargetPub->publish(ik);
-
-    // subscribe to arm state
-    // dist
-    double magnitude = 0.0;
-
-    if(goal->simulator)
-    {
-        auto thresholdCheck = mrover::SE3Conversions::fromTfTree(*fsm_ctx->mTfBuffer, std::format("{}_key_truth", goal->code[fsm_ctx->curr_key_index]), "arm_e_link");
-        magnitude = std::sqrt(thresholdCheck.x() * thresholdCheck.x() + thresholdCheck.y() * thresholdCheck.y() + thresholdCheck.z() * thresholdCheck.z());
-    }
-    else
-    {
-        auto client = node->create_client<srv::GetKeyLoc>("GetKeyLoc");
-
-        auto request = std::make_shared<srv::GetKeyLoc::Request>();
-        request->key = goal->code[fsm_ctx->curr_key_index];
-        auto result = client->async_send_request(request);
-        
-        //Wait 1 second for promise at most (vision model runs at around 20 hertz, so this gives ample time)
-        if(result.wait_for(std::chrono::seconds(1)) == std::future_status::ready)
-        {
             magnitude = std::sqrt(result.get()->x * result.get()->x + result.get()->y * result.get()->y);
         }
         else
@@ -109,18 +79,21 @@ auto TargetKey::onLoop() -> State*{
         }
     }
 
+    // Check magnitude, and determine next steps
     RCLCPP_INFO_STREAM(rclcpp::get_logger("rclcpp"), std::format("Magnitude: {}", magnitude));
     if(magnitude < 0.15){
         return StateMachine::make_state<PressKey>(fsm_ctx);
-    } else {
-        return StateMachine::make_state<TargetKey>(fsm_ctx);
-    }      
-    //} else {
-     //   std::cout << "Check Cancel\n";
-     //   RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Failed to call service add_two_ints");
-     //   return StateMachine::make_state<TargetKey>(fsm_ctx);
-    //}    
+    }  
 
+    //print what key is being targeted
+    RCLCPP_INFO(node->get_logger(), "Targeting key: %s", std::string(1, goal->code[fsm_ctx->curr_key_index]).c_str());
+    
+    //move arm with ik
+    fsm_ctx->mIkTargetPub->publish(ik);
+
+    
+    // Loop
+    return StateMachine::make_state<TargetKey>(fsm_ctx);
 
 }
 }
