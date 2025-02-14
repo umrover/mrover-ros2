@@ -14,11 +14,9 @@ namespace mrover {
         std::uint8_t present : 2 {};
         std::uint8_t enabled : 2 {};
         std::uint8_t active_high : 2 {};
-        std::uint8_t limits_forward : 2 {};
-        std::uint8_t limit_max_forward_position : 1 {};
-        std::uint8_t limit_max_backward_position : 1 {};
+        std::uint8_t limits_forward : 2 {}; // limits backward if false
         std::uint8_t use_for_readjustment : 2 {};
-        [[maybe_unused]] std::uint8_t _padding_a : 4 {};
+        [[maybe_unused]] std::uint8_t _padding_a : 6 {};
         [[maybe_unused]] std::uint8_t _padding_b[2]{};
         std::array<Radians, 2> limit_readj_pos;
     };
@@ -70,8 +68,8 @@ namespace mrover {
         Percent max_pwm;
         Radians min_position, max_position;
         RadiansPerSecond min_velocity, max_velocity;
-        [[maybe_unused]] std::uint8_t _ignore : 7 {};
         std::uint8_t is_inverted : 1 {};
+        [[maybe_unused]] std::uint8_t _ignore : 7 {};
     };
 
     struct IdleCommand : BaseCommand {
