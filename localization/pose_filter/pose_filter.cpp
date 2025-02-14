@@ -110,7 +110,6 @@ namespace mrover {
             position_in_map.x(), position_in_map.y(), position_in_map.z(),
             corrected_quaternion.x(), corrected_quaternion.y(), corrected_quaternion.z(), corrected_quaternion.w()
         );
-
     }
 
         SE3d::Tangent twist;
