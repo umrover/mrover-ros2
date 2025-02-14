@@ -1,4 +1,5 @@
 #include "heading_filter.hpp"
+#include <rclcpp/logging.hpp>
 
 namespace mrover {
 
@@ -131,11 +132,11 @@ namespace mrover {
         SO3d uncorrected_orientation_rotm = uncorrected_orientation;
 
         if (!curr_heading_correction) {
-            RCLCPP_WARN(get_logger(), "No heading correction, publishing raw IMU");
+            RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1000, "No heading correction, publishing raw IMU");
             pose_in_map.asSO3() = uncorrected_orientation_rotm;
         }
         else {
-            RCLCPP_INFO_STREAM(get_logger(), std::format("Heading corrected by: {}", curr_heading_correction->z()));
+            RCLCPP_INFO_THROTTLE(get_logger(), *get_clock(), 1000, std::format("Heading corrected by: {}", curr_heading_correction->z()));
             SO3d corrected_orientation = curr_heading_correction.value() * uncorrected_orientation_rotm;
             pose_in_map.asSO3() = corrected_orientation;
         }
