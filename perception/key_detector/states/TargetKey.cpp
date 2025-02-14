@@ -31,7 +31,7 @@ auto TargetKey::onLoop() -> State*{
 
     // if we have pressed all the keys, end
 
-    if (fsm_ctx->curr_key_index > goal->code.size()){
+    if (fsm_ctx->curr_key_index >= goal->code.size()){
         fsm_ctx->init = false;
         return StateMachine::make_state<Off>(fsm_ctx);
     }
