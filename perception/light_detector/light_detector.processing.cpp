@@ -6,6 +6,7 @@
 #include <opencv2/core/types.hpp>
 #include <opencv2/imgproc.hpp>
 #include <optional>
+#include <sensor_msgs/msg/detail/point_cloud2__struct.hpp>
 
 namespace mrover {
     auto LightDetector::round_to(double value, double precision) -> double{
@@ -13,54 +14,13 @@ namespace mrover {
         return (floor((val*2)+0.5)/2);
     }
 
-    auto LightDetector::getHitCount(std::optional<SE3d> const& light) -> int {
-        if(light.has_value()){
-            SE3d cameraToMap = SE3Conversions::fromTfTree(mTfBuffer, mCameraFrame, mWorldFrame);
-
-            SE3d lightInMap = cameraToMap * light.value();
-
-            auto location = lightInMap.translation();
-            auto x = round_to(static_cast<double>(location.x()), 0.1);
-            auto y = round_to(static_cast<double>(location.y()), 0.1);
-
-            std::pair<double, double> key{x, y};
-
-            return mHitCounts[key];
-        }
-        return -1;
-    }
-
-    void LightDetector::increaseHitCount(std::optional<SE3d> const& light){
-        if(light.has_value()){
-            SE3d cameraToMap = SE3Conversions::fromTfTree(mTfBuffer, mCameraFrame, mWorldFrame);
-            
-            SE3d lightInMap = cameraToMap * light.value();
-
-            auto location = lightInMap.translation();
-            auto x = round_to(static_cast<double>(location.x()), 0.1);
-            auto y = round_to(static_cast<double>(location.y()), 0.1);
-
-            std::pair<double, double> key{x, y};
-            mHitCounts[key] = std::min(mHitCounts[key] + mHitIncrease, mHitMax);
-            //mHitCounts[key] += 2;
-        }
-    }
-
-    void LightDetector::decreaseHitCounts(){
-        for(auto& [_, hitCount] : mHitCounts){
-            hitCount = std::max(hitCount - mHitDecrease, 0);
-        }
-    }
-
     auto LightDetector::caching() -> std::pair<std::pair<double, double>, bool>{
         double shortest_distance = std::numeric_limits<double>::infinity();
         bool found = false;
         std::pair<double, double> closest;
-        //RCLCPP_INFO_STREAM(get_logger(),"num points: " << mHitCounts.size());
         for(auto const& [point, hc] : mHitCounts){
-            //RCLCPP_INFO_STREAM(get_logger(),"current point: " << point.first << ", " << point.second << ": " << hc);
             double distance;
-            if(hc >= mPublishThreshold){ //DANTODO: ASK appropriate hitcount requirement to be considered a light
+            if(hc >= mPublishThreshold){ 
                 found = true;
                 RCLCPP_INFO_STREAM(get_logger(),"Found a new point");
                 RCLCPP_INFO_STREAM(get_logger(),"This new point was at " << point.first << ", " << point.second);
@@ -70,45 +30,20 @@ namespace mrover {
                     closest = point;
                 }
             }
-            // if(found){
-            //     //RCLCPP_INFO_STREAM(get_logger(),"Finished with a new point!");
-            // } else{
-            //     //RCLCPP_INFO_STREAM(get_logger(),"Didn't find a new point :(");
-            // }
         }
         return std::pair<std::pair<double, double>, bool>(closest, found);
     }
-
-    // Dunno what to do with this
-    auto ColoredDetector::getPointFromPointCloud(sensor_msgs::msg::PointCloud2::ConstSharedPtr const& cloudPtr, std::pair<int, int> coordinates) -> std::optional<SE3d>{
-        Point const& p = reinterpret_cast<Point const*>(cloudPtr->data.data())[coordinates.second + coordinates.first * cloudPtr->width];
-        if (!std::isfinite(p.x) || !std::isfinite(p.y) || !std::isfinite(p.z)){
-            //RCLCPP_INFO_STREAM(get_logger(),"failed");
-            return std::nullopt;
-        }
-        RCLCPP_INFO_STREAM(get_logger(),"x: " << p.x << " y: " << p.y << " z: " << p.z);
-        return std::make_optional<SE3d>(R3d{p.x, p.y, p.z}, SO3d::Identity());
-    }
-
-    // TODO: (john) break this out into a utility so we dont have to copy all of this code
-	auto ColoredDetector::convertPointCloudToRGB(sensor_msgs::msg::PointCloud2::ConstSharedPtr const& msg, cv::Mat const& image) -> void {
-        auto* pixelPtr = reinterpret_cast<cv::Vec3b*>(image.data);
-        auto* pointPtr = reinterpret_cast<Point const*>(msg->data.data());
-        std::for_each(std::execution::par_unseq, pixelPtr, pixelPtr + image.total(), [&](cv::Vec3b& pixel) {
-            std::size_t const i = &pixel - pixelPtr;
-            pixel[0] = pointPtr[i].r;
-            pixel[1] = pointPtr[i].g;
-            pixel[2] = pointPtr[i].b;
-        });
-    }
     
     auto ColoredDetector::pointCloudCallback(sensor_msgs::msg::PointCloud2::ConstSharedPtr const& msg) -> void {
-        // resizing image is mImgRGB dimensions doesn't match msg dimensions
-        // initialize mThresholdedImg to grayscale image 
-        if(mImgRGB.rows != static_cast<int>(msg->height) || mImgRGB.cols != static_cast<int>(msg->width)) {
-			RCLCPP_INFO_STREAM(get_logger(),"Adjusting Image Size... " << msg->width << ", " << msg->height);
-		    mImgRGB = cv::Mat{cv::Size{static_cast<int>(msg->width), static_cast<int>(msg->height)}, CV_8UC3, {0, 0, 0}};
-			mThresholdedImg = cv::Mat{cv::Size{static_cast<int>(msg->width), static_cast<int>(msg->height)}, CV_8UC1, cv::Scalar{0}};
+        // Adjust the picture size to be in line with the expected img size from the Point Cloud
+        if (static_cast<int>(msg->height) != mImgRGB.rows || static_cast<int>(msg->width) != mImgRGB.cols) {
+            RCLCPP_INFO_STREAM(get_logger(), std::format("Image size changed from [{}, {}] to [{}, {}]", mImgRGB.cols, mImgRGB.rows, msg->width, msg->height));
+            mImgRGB = cv::Mat{static_cast<int>(msg->height), static_cast<int>(msg->width), CV_8UC3, cv::Scalar{0, 0, 0, 0}};
+        }
+
+        // if 0x0 image
+        if (!mImgRGB.total()) {
+            return;
         }
         
 		convertPointCloudToRGB(msg, mImgRGB);
@@ -120,7 +55,7 @@ namespace mrover {
         // Run the blob through the model
         std::vector<Detection> detections{};
         cv::Mat outputTensor;
-        mTensorRT.modelForwardPass(mImageBlob, detections, outputTensor);
+        mTensorRT.modelForwardPass(mImageBlob, outputTensor);
 
         mModel.outputTensorToDetections(mModel, outputTensor, detections);
 
@@ -134,6 +69,17 @@ namespace mrover {
             publishDetectedObjects(blobSizedImage);
         }
 	}
+
+    auto ColoredDetector::convertPointCloudToRGB(sensor_msgs::msg::PointCloud2::ConstSharedPtr const& msg, cv::Mat const& image) -> void {
+        auto* pixelPtr = reinterpret_cast<cv::Vec3b*>(image.data);
+        auto* pointPtr = reinterpret_cast<Point const*>(msg->data.data());
+        std::for_each(std::execution::par_unseq, pixelPtr, pixelPtr + image.total(), [&](cv::Vec3b& pixel) {
+            std::size_t const i = &pixel - pixelPtr;
+            pixel[0] = pointPtr[i].r;
+            pixel[1] = pointPtr[i].g;
+            pixel[2] = pointPtr[i].b;
+        });
+    }
 
     auto ColoredDetector::drawDetectionBoxes(cv::InputOutputArray image, std::span<Detection const> detections) -> void {
         // Draw the detected object's bounding boxes on the image for each of the objects detected
@@ -151,15 +97,141 @@ namespace mrover {
         }
     }
 
+    // Gonna implement latr, lazy...
+    auto ColoredDetector::updateHitsObject(sensor_msgs::msg::PointCloud2::ConstSharedPtr const& msg, std::span<Detection const> detections, cv::Size const& imageSize) -> void {
+        // Set of flags indicating if the given object has been seen
+        std::vector<bool> seenObjects(mModel.classes.size(), false);
+        for (auto const& [classId, className, confidence, box]: detections) {
+            // Resize from blob space to image space
+            cv::Point2f centerInBlob = cv::Point2f{box.tl()} + cv::Point2f{box.size()} / 2;
+            float xRatio = static_cast<float>(msg->width) / static_cast<float>(imageSize.width);
+            float yRatio = static_cast<float>(msg->height) / static_cast<float>(imageSize.height);
+            std::size_t centerXInImage = std::lround(centerInBlob.x * xRatio);
+            std::size_t centerYInImage = std::lround(centerInBlob.y * yRatio);
+
+            // Get the object's position in 3D from the point cloud and run this statement if the optional has a value
+            if (std::optional<SE3d> objectInCamera = spiralSearchForValidPoint(msg, centerXInImage, centerYInImage, box.width, box.height)) {
+                try {
+                    std::string objectImmediateFrame = std::format("immediate{}", className);
+                    // Push the immediate detections to the camera frame
+                    SE3Conversions::pushToTfTree(*mTfBroadcaster, objectImmediateFrame, mCameraFrame, objectInCamera.value(), get_clock()->now());
+                    // Since the object is seen we need to increment the hit counter
+                    mModel.objectHitCounts[classId] = std::min(mObjMaxHitcount, mModel.objectHitCounts[classId] + mObjIncrementWeight);
+
+                    // Only publish to permament if we are confident in the object
+                    if (mModel.objectHitCounts[classId] > mObjHitThreshold) {
+                        std::string objectPermanentFrame = className;
+                        // Grab the object inside of the camera frame and push it into the map frame
+                        SE3d objectInMap = SE3Conversions::fromTfTree(*mTfBuffer, objectImmediateFrame, mWorldFrame);
+                        SE3Conversions::pushToTfTree(*mTfBroadcaster, objectPermanentFrame, mWorldFrame, objectInMap, get_clock()->now());
+                    }
+
+                } catch (tf2::ExtrapolationException const&) {
+                    RCLCPP_INFO_STREAM(get_logger(), "Old data for immediate objects");
+                } catch (tf2::LookupException const&) {
+                    RCLCPP_INFO_STREAM(get_logger(), "Expected transform for immediate objects");
+                } catch (tf2::ConnectivityException const&) {
+                    RCLCPP_INFO_STREAM(get_logger(), "Expected connection to odom frame. Is visual odometry running?");
+                }
+            }
+        }
+
+        for (std::size_t i = 0; i < seenObjects.size(); i++) {
+            if (seenObjects[i]) continue;
+
+            assert(i < mObjectHitCounts.size());
+            mModel.objectHitCounts[i] = std::max(0, mModel.objectHitCounts[i] - mObjDecrementWeight);
+        }
+    }
+
+    auto ColoredDetector::publishDetectedObjects(cv::InputArray image) -> void {
+        mDetectionsImageMessage.header.stamp = get_clock()->now();
+        mDetectionsImageMessage.height = image.rows();
+        mDetectionsImageMessage.width = image.cols();
+        mDetectionsImageMessage.encoding = sensor_msgs::image_encodings::BGRA8;
+        mDetectionsImageMessage.is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
+        mDetectionsImageMessage.step = 4 * mDetectionsImageMessage.width;
+        mDetectionsImageMessage.data.resize(mDetectionsImageMessage.step * mDetectionsImageMessage.height);
+        cv::Mat debugImageWrapper{image.size(), CV_8UC4, mDetectionsImageMessage.data.data()};
+        cv::cvtColor(image, debugImageWrapper, cv::COLOR_RGB2BGRA);
+
+        imgPub->publish(mDetectionsImageMessage);
+    }
+
+    auto InfraredDetector::getPointFromPointCloud(sensor_msgs::msg::Image::ConstSharedPtr const& cloudPtr, std::pair<int, int> coordinates) -> std::optional<SE3d>{
+        Point const& p = reinterpret_cast<Point const*>(cloudPtr->data.data())[coordinates.second + coordinates.first * cloudPtr->width];
+        if (!std::isfinite(p.x) || !std::isfinite(p.y) || !std::isfinite(p.z)){
+            //RCLCPP_INFO_STREAM(get_logger(),"failed");
+            return std::nullopt;
+        }
+        RCLCPP_INFO_STREAM(get_logger(),"x: " << p.x << " y: " << p.y << " z: " << p.z);
+        return std::make_optional<SE3d>(R3d{p.x, p.y, p.z}, SO3d::Identity());
+    }
+
+    auto InfraredDetector::convertImageToMat(sensor_msgs::msg::Image::ConstSharedPtr const& msg, cv::Mat const& image) -> void {
+        auto* pixelPtr = reinterpret_cast<cv::Vec3b*>(image.data);
+        auto* pointPtr = reinterpret_cast<Point const*>(msg->data.data());
+        std::for_each(std::execution::par_unseq, pixelPtr, pixelPtr + image.total(), [&](cv::Vec3b& pixel) {
+            std::size_t const i = &pixel - pixelPtr;
+            pixel[0] = pointPtr[i].r;
+            pixel[1] = pointPtr[i].g;
+            pixel[2] = pointPtr[i].b;
+        });
+    }
+
+    // Ignore these hit count stuff for now, gonna change them completely
+    auto InfraredDetector::getHitCount(std::optional<SE3d> const& light) -> int {
+        if(light.has_value()){
+            SE3d cameraToMap = SE3Conversions::fromTfTree(mTfBuffer, mCameraFrame, mWorldFrame);
+
+            SE3d lightInMap = cameraToMap * light.value();
+
+            auto location = lightInMap.translation();
+            auto x = round_to(static_cast<double>(location.x()), 0.1);
+            auto y = round_to(static_cast<double>(location.y()), 0.1);
+
+            std::pair<double, double> key{x, y};
+
+            return mHitCounts[key];
+        }
+        return -1;
+    }
+
+    void InfraredDetector::increaseHitCount(std::optional<SE3d> const& light){
+        if(light.has_value()){
+            SE3d cameraToMap = SE3Conversions::fromTfTree(mTfBuffer, mCameraFrame, mWorldFrame);
+            
+            SE3d lightInMap = cameraToMap * light.value();
+
+            auto location = lightInMap.translation();
+            auto x = round_to(static_cast<double>(location.x()), 0.1);
+            auto y = round_to(static_cast<double>(location.y()), 0.1);
+
+            std::pair<double, double> key{x, y};
+            mHitCounts[key] = std::min(mHitCounts[key] + mHitIncrease, mHitMax);
+            //mHitCounts[key] += 2;
+        }
+    }
+
+    void InfraredDetector::decreaseHitCounts(){
+        for(auto& [_, hitCount] : mHitCounts){
+            hitCount = std::max(hitCount - mHitDecrease, 0);
+        }
+    }
+
     auto InfraredDetector::imageCallback(sensor_msgs::msg::Image::ConstSharedPtr const& msg) -> void {
-        // conversion to grayscale and storing in mGreyScale - (added)
-        cv::Mat mGreyScale;
-        cv::cvtColor(mImgRGB, mGreyScale, cv::COLOR_RGB2GRAY);
+        if(mImgRGB.rows != static_cast<int>(msg->height) || mImgRGB.cols != static_cast<int>(msg->width)) {
+			RCLCPP_INFO_STREAM(get_logger(),"Adjusting Image Size... " << msg->width << ", " << msg->height);
+		    mImgRGB = cv::Mat{cv::Size{static_cast<int>(msg->width), static_cast<int>(msg->height)}, CV_8UC3, {0, 0, 0}};
+			mThresholdedImg = cv::Mat{cv::Size{static_cast<int>(msg->width), static_cast<int>(msg->height)}, CV_8UC1, cv::Scalar{0}};
+        }
+        
+		convertImageToMat(msg, mImgRGB);
 
         //applies a gaussian blur and thresholding to mGreyScale
         cv::Mat mGBlur;
         cv::Mat mThresholdedImg;
-        cv::GaussianBlur(mGreyScale, mGBlur, cv::Size(5,5), 0);
+        cv::GaussianBlur(mImgRGB, mGBlur, cv::Size(5,5), 0);
         cv::threshold(mGBlur,mThresholdedImg,100,255,cv::THRESH_BINARY);
         // cv::threshold(mGBlur,mThresholdedImg,100,255,cv::THRESH_BINARY+cv::THRESH_OTSU);
 
@@ -240,12 +312,6 @@ namespace mrover {
 		publishDetectedObjects(mOutputImage, centroids);
 	}
 
-    static auto LightDetector::calculateDistance(const std::pair<double, double> &p) -> double{
-        double distance = sqrt(pow(p.first, 2) + pow(p.second, 2));
-        //RCLCPP_INFO_STREAM(get_logger(),"Calculating Distance..." << p.first << ", " << p.second << " DISTANCE: " << distance);
-        return distance;
-    }
-
     auto InfraredDetector::publishDetectedObjects(cv::InputArray image, std::vector<std::pair<int, int>> const& centroids) -> void {
         //if (!imgPub.getNumSubscribers()) return;
 
@@ -274,6 +340,7 @@ namespace mrover {
         imgPub->publish(imgMsg);
     }
 
+    // Might use for colored detector,
     auto LightDetector::publishClosestLight(std::pair<double, double> &point) -> void {
         geometry_msgs::msg::Vector3 pointMsg;
         pointMsg.x = point.first;
@@ -283,6 +350,11 @@ namespace mrover {
         pointPub->publish(pointMsg);
     }
 
+    auto LightDetector::calculateDistance(const std::pair<double, double> &p) -> double{
+        double distance = sqrt(pow(p.first, 2) + pow(p.second, 2));
+        //RCLCPP_INFO_STREAM(get_logger(),"Calculating Distance..." << p.first << ", " << p.second << " DISTANCE: " << distance);
+        return distance;
+    }
 
     auto LightDetector::spiralSearchForValidPoint(sensor_msgs::msg::PointCloud2::ConstSharedPtr const& cloudPtr, std::size_t u, std::size_t v, std::size_t width, std::size_t height)const -> std::optional<SE3d> {
         // See: https://stackoverflow.com/a/398302

@@ -10,7 +10,6 @@ namespace mrover{
 		std::string modelName;
 
 		std::vector<ParameterWrapper> params{
-                {"camera_frame", mCameraFrame, "zed_left_camera_frame"},
                 {"world_frame", mWorldFrame, "map"},
                 {"light_detector/spiral_search_radius", SPIRAL_SEARCH_DIM, 50},
                 {"light_detector/immediate_light_range", mImmediateLightRange, 5},
@@ -28,9 +27,10 @@ namespace mrover{
 	}
 
 	ColoredDetector::ColoredDetector(rclcpp::NodeOptions const& options) : LightDetector(options) {
-		
 		RCLCPP_INFO_STREAM(get_logger(), "Creating Colored Lights Detector...");
+
 		std::vector<ParameterWrapper> params{
+				{"camera_frame", mCameraFrame, "zed_left_camera_frame"},
 				{"light_detector/lmodel_name", modelName, "best"},
                 {"light_detector/model_score_threshold", mModelScoreThreshold, 0.75},
             	{"mlight_detector/odel_nms_threshold", mModelNMSThreshold, 0.5},
@@ -57,7 +57,13 @@ namespace mrover{
 
 	InfraredDetector::InfraredDetector(rclcpp::NodeOptions const& options) : LightDetector(options) {
 		RCLCPP_INFO_STREAM(get_logger(), "Creating Infrared Lights Detector...");
-
+		
+		std::vector<ParameterWrapper> params{
+			// CHANGE THIS TO BE CORRECT
+			{"infrared_frame", mCameraFrame, "zed_left_camera_frame"},
+		};
+		
+        ParameterWrapper::declareParameters(this, params);
 	}
 
 } // mrover

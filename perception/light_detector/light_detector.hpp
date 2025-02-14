@@ -1,6 +1,7 @@
 #pragma once
 #include "lie.hpp"
 #include "pch.hpp"
+#include <sensor_msgs/msg/detail/point_cloud2__struct.hpp>
 #include <unordered_map>
 
 class PairHash{
@@ -14,7 +15,7 @@ namespace mrover {
 	class LightDetector : public rclcpp::Node {
 
 	protected:
-		cv::Mat mImgRGB, mImageBlob;;
+		cv::Mat mImgRGB, mImageBlob;
 		cv::Mat mOutputImage;
 
 		std::unordered_map<std::pair<double, double>, int, PairHash> mHitCounts;
@@ -32,8 +33,18 @@ namespace mrover {
         tf2_ros::TransformBroadcaster mTfBroadcaster{this};
         tf2_ros::TransformListener mTfListener{mTfBuffer};
 
+		// World Frame
 		std::string mCameraFrame;
         std::string mWorldFrame;
+
+		// Thresholding Variables
+		cv::Mat mThresholdedImg;
+		cv::Vec3d mUpperBound;
+		cv::Vec3d mLowerBound;
+
+		// Temp Variables for Formatting Img
+		cv::Mat mErodedImg;
+		cv::Mat mDialtedImg;
 
 		// Pub Sub
 		rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr imgPub;
@@ -50,17 +61,10 @@ namespace mrover {
 
 		auto caching() -> std::pair<std::pair<double, double>, bool>;
 		
-		
 		// KEEP THE BELOW
 		auto static round_to(double value, double precision) -> double;
 
 		auto static calculateDistance(const std::pair<double, double> &p) -> double;
-
-		void increaseHitCount(std::optional<SE3d> const& light);
-
-		void decreaseHitCounts();
-
-		auto getHitCount(std::optional<SE3d> const& light) -> int;
 
 		auto publishClosestLight(std::pair<double, double> &point) -> void;
 
@@ -84,7 +88,16 @@ namespace mrover {
 			auto imageCallback(sensor_msgs::msg::Image::ConstSharedPtr const& msg) -> void;
 
 			auto publishDetectedObjects(cv::InputArray image, std::vector<std::pair<int, int>> const& centroids) -> void;
-		
+
+			void increaseHitCount(std::optional<SE3d> const& light);
+
+			void decreaseHitCounts();
+
+			auto getHitCount(std::optional<SE3d> const& light) -> int;
+
+			auto getPointFromPointCloud(sensor_msgs::msg::Image::ConstSharedPtr const& cloudPtr, std::pair<int, int> coordinates) -> std::optional<SE3d>;
+
+			auto static convertImageToMat(sensor_msgs::msg::Image::ConstSharedPtr const& msg, cv::Mat const& image) -> void;
 	};
 	
 	
@@ -98,28 +111,22 @@ namespace mrover {
 
 			// Model Detector
 			TensortRT mTensorRT;
-
-			// Thresholding Variables
-			cv::Mat mThresholdedImg;
-			cv::Vec3d mUpperBound;
-			cv::Vec3d mLowerBound;
-
-			// Temp Variables for Formatting Img
-			cv::Mat mErodedImg;
-			cv::Mat mDialtedImg;
+        	sensor_msgs::msg::Image mDetectionsImageMessage;
 
 			// Subscribers (ZED Camera)
 			rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr imgSub;
 
-			// struct Detection {
-			// 	int classId{};
-			// 	std::string className;
-			// 	float confidence{};
-			// 	cv::Rect box;
+			// Brought from Object Detector
+			struct Detection {
+				int classId{};
+				std::string className;
+				float confidence{};
+				cv::Rect box;
 	
-			// 	Detection(int _classId, std::string _className, float _confidence, cv::Rect _box) : classId{_classId}, className{_className}, confidence{_confidence}, box{_box} {}
-			// };
-	
+				Detection(int _classId, std::string _className, float _confidence, cv::Rect _box) : classId{_classId}, className{_className}, confidence{_confidence}, box{_box} {}
+			};
+
+			// Brought from Object Detector
 			struct Model {
 				std::string modelName;
 	
@@ -150,12 +157,8 @@ namespace mrover {
 
 			auto pointCloudCallback(sensor_msgs::msg::PointCloud2::ConstSharedPtr const& msg) -> void;
 
-			auto publishDetectedObjects(cv::InputArray image, std::vector<std::pair<int, int>> const& centroids) -> void;
+			auto publishDetectedObjects(cv::InputArray image) -> void;
 		
-			auto getPointFromPointCloud(sensor_msgs::msg::PointCloud2::ConstSharedPtr const& cloudPtr, std::pair<int, int> coordinates) -> std::optional<SE3d>;
-
-			auto static convertPointCloudToRGB(sensor_msgs::msg::PointCloud2::ConstSharedPtr const& msg, cv::Mat const& image) -> void;
-
 			auto static drawDetectionBoxes(cv::InputOutputArray image, std::span<Detection const> detections) -> void;
 
 			auto parseYOLOv8Output(Model const& model,
@@ -163,6 +166,8 @@ namespace mrover {
 				std::vector<Detection>& detections) const -> void;
 
 			static auto preprocessYOLOv8Input(Model const& model, cv::Mat const& rgbImage, cv::Mat& blobSizedImage, cv::Mat& blob) -> void;
+
+			auto static convertPointCloudToRGB(sensor_msgs::msg::PointCloud2::ConstSharedPtr const& msg, cv::Mat const& image) -> void;
 	
 			auto updateHitsObject(sensor_msgs::msg::PointCloud2::ConstSharedPtr const& msg,
 				std::span<Detection const> detections,
