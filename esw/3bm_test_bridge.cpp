@@ -24,13 +24,13 @@
 namespace mrover {
 
     constexpr static BrushedController::Config JOINT_B_CONFIG = {
-            .limitSwitchPresent = {true, false},
-            .limitSwitchEnabled = {true, false},
+            .limitSwitchPresent = {false, false},
+            .limitSwitchEnabled = {false, false},
             .limitSwitchLimitsFwd = {false, false},
             .limitSwitchActiveHigh = {false, false},
             .limitSwitchUsedForReadjustment = {false, false},
             // .limitSwitchReadjustPosition = {Radians{0.0}},
-            .limitMaxForwardPosition = true,
+            .limitMaxForwardPosition = false,
             .limitMaxBackwardPosition = false,
 
             .gearRatio = 1.0,
@@ -42,9 +42,9 @@ namespace mrover {
             .quadPresent = false,
             // .quadRatio = 1.0,
 
-            .absPresent = true,
-            .absRatio = -1.0,
-            .absOffset = 2.68_rad,
+            .absPresent = false,
+            // .absRatio = -1.0,
+            // .absOffset = 2.68_rad,
 
             .minVelocity = -1.0_rad_per_s,
             .maxVelocity = 1.0_rad_per_s,
@@ -57,8 +57,72 @@ namespace mrover {
             .calibrationThrottle = 0.5,
     };
 
-    constexpr static BrushedController::Config GRIPPER_CONFIG{};
-    constexpr static BrushedController::Config FINGER_CONFIG{};
+    constexpr static BrushedController::Config GRIPPER_CONFIG{
+        .limitSwitchPresent = {false, false},
+        .limitSwitchEnabled = {false, false},
+        .limitSwitchLimitsFwd = {false, false},
+        .limitSwitchActiveHigh = {false, false},
+        .limitSwitchUsedForReadjustment = {false, false},
+        // .limitSwitchReadjustPosition = {Radians{0.0}},
+        .limitMaxForwardPosition = false,
+        .limitMaxBackwardPosition = false,
+
+        .gearRatio = 1.0,
+        .isInverted = false,
+
+        .driverVoltage = 10.5,
+        .motorMaxVoltage = 12.0,
+
+        .quadPresent = false,
+        // .quadRatio = 1.0,
+
+        .absPresent = false,
+        // .absRatio = -1.0,
+        // .absOffset = 2.68_rad,
+
+        .minVelocity = -1.0_rad_per_s,
+        .maxVelocity = 1.0_rad_per_s,
+        .minPosition = -0.7853981633974483_rad,
+        .maxPosition = 0_rad,
+
+        .positionGains = {.p = 30.0},
+        // .velocityGains{},
+
+        .calibrationThrottle = 0.5,
+    };
+    constexpr static BrushedController::Config CAM_CONFIG{
+        .limitSwitchPresent = {false, false},
+        .limitSwitchEnabled = {false, false},
+        .limitSwitchLimitsFwd = {false, false},
+        .limitSwitchActiveHigh = {false, false},
+        .limitSwitchUsedForReadjustment = {false, false},
+        // .limitSwitchReadjustPosition = {Radians{0.0}},
+        .limitMaxForwardPosition = false,
+        .limitMaxBackwardPosition = false,
+
+        .gearRatio = 1.0,
+        .isInverted = false,
+
+        .driverVoltage = 10.5,
+        .motorMaxVoltage = 12.0,
+
+        .quadPresent = false,
+        // .quadRatio = 1.0,
+
+        .absPresent = false,
+        // .absRatio = -1.0,
+        // .absOffset = 2.68_rad,
+
+        .minVelocity = -1.0_rad_per_s,
+        .maxVelocity = 1.0_rad_per_s,
+        .minPosition = -0.7853981633974483_rad,
+        .maxPosition = 0_rad,
+
+        .positionGains = {.p = 30.0},
+        // .velocityGains{},
+
+        .calibrationThrottle = 0.5,
+    };
 
 } // namespace mrover
 
@@ -68,37 +132,37 @@ auto main(int argc, char** argv) -> int {
     auto node = rclcpp::Node::make_shared("bm_test_bridge");
     auto jointB = std::make_shared<mrover::BrushedController>(node, "jetson", "joint_b", mrover::JOINT_B_CONFIG);
     auto gripper = std::make_shared<mrover::BrushedController>(node, "jetson", "gripper", mrover::GRIPPER_CONFIG);
-    auto finger = std::make_shared<mrover::BrushedController>(node, "jetson", "finger", mrover::FINGER_CONFIG);
+    auto cam = std::make_shared<mrover::BrushedController>(node, "jetson", "cam", mrover::CAM_CONFIG);
 
     rclcpp::Rate loop_rate(10);
-    auto throttle = mrover::Percent{0.5};
-    auto rate = mrover::Percent{0.1};
+    // auto throttle = mrover::Percent{0.5};
+    // auto rate = mrover::Percent{0.1};
 
-    std::ofstream f_handle("data/motor_encoder_data.csv");
-    f_handle << "time,throttle,pos,vel" << std::endl;
+    // std::ofstream f_handle("data/motor_encoder_data.csv");
+    // f_handle << "time,throttle,pos,vel" << std::endl;
 
-    auto timer = node->create_wall_timer(std::chrono::seconds(2), [&]() {
-        if (throttle >= mrover::Percent{1.0} || throttle <= mrover::Percent{-1.0}) {
-            rate *= -1;
-        }
-        throttle += rate;
-        RCLCPP_INFO(node->get_logger(), "RATE UPDATED TO %f", throttle.get());
-    });
+    // auto timer = node->create_wall_timer(std::chrono::seconds(2), [&]() {
+    //     if (throttle >= mrover::Percent{1.0} || throttle <= mrover::Percent{-1.0}) {
+    //         rate *= -1;
+    //     }
+    //     throttle += rate;
+    //     RCLCPP_INFO(node->get_logger(), "RATE UPDATED TO %f", throttle.get());
+    // });
 
-    auto start = node->now();
+    // auto start = node->now();
 
     while (rclcpp::ok()) {
         jointB->setDesiredThrottle(0.5);
-        gripper->setDesiredThrottle(throttle);
-        finger->setDesiredThrottle(throttle);
+        gripper->setDesiredThrottle(0.5);
+        cam->setDesiredThrottle(0.5);
 
-        auto pos = jointB->getPosition().get();
-        auto vel = jointB->getVelocity().get();
-        RCLCPP_INFO(node->get_logger(), "joint_b    --- pos: %f | vel: %f", pos, vel);
+        // auto pos = jointB->getPosition().get();
+        // auto vel = jointB->getVelocity().get();
+        // RCLCPP_INFO(node->get_logger(), "joint_b    --- pos: %f | vel: %f", pos, vel);
 
-        auto now = node->now() - start;
+        // auto now = node->now() - start;
         // RCLCPP_INFO(node->get_logger(), "Uptime: %.2f seconds", now.seconds());
-        f_handle << now.seconds() << "," << throttle.get() << "," << pos << "," << vel << std::endl;
+        // f_handle << now.seconds() << "," << throttle.get() << "," << pos << "," << vel << std::endl;
 
         rclcpp::spin_some(node);
         loop_rate.sleep();
