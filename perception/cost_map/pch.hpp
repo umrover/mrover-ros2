@@ -30,3 +30,5 @@
 #include <parameter.hpp>
 #include <point.hpp>
 #include <rclcpp/logging.hpp>
+
+#include "../loop_profiler/loop_profiler.hpp"

@@ -1,4 +1,5 @@
 #include "cost_map.hpp"
+#include <algorithm>
 #include <rclcpp/logging.hpp>
 
 namespace mrover {
@@ -28,7 +29,7 @@ namespace mrover {
         assert(inputMsg->height > 0);
         assert(inputMsg->width > 0);
 
-        RCLCPP_INFO_STREAM(get_logger(), "Pointer is " << inputMsg.get());
+        // RCLCPP_INFO_STREAM(get_logger(), "Pointer is " << inputMsg.get());
 	
 		// Choose whether we are using a noisy pointcloud or a regular pointcloud
 		// TODO (john): change to shader
@@ -49,16 +50,18 @@ namespace mrover {
             SE3f roverSE3 = SE3Conversions::fromTfTree(mTfBuffer, "base_link", "map").cast<float>();
 
             // TIMING DEBUG
-            RCLCPP_INFO_STREAM(get_logger(), inputMsg->header.stamp.sec);
+            // RCLCPP_INFO_STREAM(get_logger(), inputMsg->header.stamp.sec);
 
             struct BinEntry {
                 R3f pointInCamera;
                 R3f pointInMap;
                 R3f normal;
-                double height;
             };
 
-            using Bin = std::vector<BinEntry>;
+            struct Bin {
+                std::vector<BinEntry> points;
+                int32_t i;  // index (used for for_each)
+            };
 
             std::vector<Bin> bins;
             bins.resize(mGlobalGridMsg.data.size());
@@ -94,7 +97,13 @@ namespace mrover {
                     int index = mapToGrid(pointInMap, mGlobalGridMsg);
                     if (index < 0 || index >= static_cast<int>(mGlobalGridMsg.data.size())) continue;
 
-                    bins[index].emplace_back(BinEntry{pointInCamera, pointInMap, normal, pointInMap.z() - roverSE3.z()});
+
+                    
+                    // TODO REPLACE this 
+
+                    
+                    bins[index].points.emplace_back(BinEntry{pointInCamera, pointInMap, normal});
+                    // bins[index].i = index;
                 }
             }
 			
@@ -105,36 +114,19 @@ namespace mrover {
 
             for (std::size_t i = 0; i < mGlobalGridMsg.data.size(); ++i) {
 				Bin& bin = bins[i];
-                if (bin.size() < 16){
+                if (bin.points.size() < 16){
                     continue;
-                    // mGlobalGridMsg.data[i] = UNKNOWN_COST;
                 }
 
-                // Percentage Algorithm
+                // Percentage Algorithm (acounts for angle changes (and outliers))
                 // Chose the percentage algorithm because it's less sensitive to angle changes (and outliers) and can accurately track
-                //     objects outside. Normal averaging too sensitive. Values still need to be tweaked (make z threshold less sensitive)
-                std::size_t pointsHigh = std::ranges::count_if(bin, [this, &roverSE3](BinEntry const& entry) {
+                //     objects outside. Normal averaging too sensitive.
+                std::size_t pointsHigh = std::ranges::count_if(bin.points, [this, &roverSE3](BinEntry const& entry) {
                     return (entry.normal.z()) <= mZThreshold;
                 });
-                double percent = static_cast<double>(pointsHigh) / static_cast<double>(bin.size());
+                double percent = static_cast<double>(pointsHigh) / static_cast<double>(bin.points.size());
 
                 std::int8_t cost = percent > mZPercent ? OCCUPIED_COST : FREE_COST;
-
-                // Normal Averaging Algorithm
-                // R3f avgNormal{};
-                // for(auto& point : bin){
-                //     avgNormal.x() += point.normal.x();
-                //     avgNormal.y() += point.normal.y();
-                //     // avgNormal.z() += abs(point.normal.z());  // this is what was working, but abs() seems to be pointless
-                //     avgNormal.z() += point.normal.z();
-                // }
-
-                // // roverSE3.rotation().;
-
-                // avgNormal.normalize();
-                // // RCLCPP_INFO_STREAM(get_logger(), std::format("Normal Z {}; Bin Size {}; One Point {}", avgNormal.z(), bin.size(), bin[0].normal.z()));
-                // // RCLCPP_INFO_STREAM(get_logger(), std::format("ROLL: {}", *(roverSE3.coeffs().data()+3)));
-                // std::int8_t cost = avgNormal.z() <= mZThreshold ? OCCUPIED_COST : FREE_COST;
 
                 // Update cell with EWMA acting as a low-pass filter
                 auto& cell = mGlobalGridMsg.data[i];
@@ -144,28 +136,30 @@ namespace mrover {
 
 			// Square Dilate operation
             nav_msgs::msg::OccupancyGrid postProcesed = mGlobalGridMsg;
-            // std::array<std::ptrdiff_t, 9> dis{0, 
-            //                                   -1, +1, -postProcesed.info.width, +postProcesed.info.width,
-            //                                   -1 - postProcesed.info.width, +1 - postProcesed.info.width,
-            //                                   -1 + postProcesed.info.width, +1 + postProcesed.info.width};
 
-            /*  Grid offsets
-                [-1,-1] [-1, 0] [-1, 1]
-                [ 0,-1] [ 0, 0] [ 0, 1]
-                [ 1,-1] [ 1, 0] [ 1, 1]
-
-            */
-            // Static dilation of width 1
-            // std::array<CostMapNode::Coordinate,9> dis{
-            //                                Coordinate{-1,-1}, {-1,0}, {-1,1}, 
-            //                                     {0,-1}, {0, 0}, {0,1},
-            //                                     {1,-1}, {1, 0}, {1,1}
-            //                                     };
-
-            // Variable dilation for any width
+            // Variable dilation for any width`
             std::array<CostMapNode::Coordinate,(2*dilation+1)*(2*dilation+1)> dis = diArray();
 
-            // RCLCPP_INFO_STREAM(get_logger(), std::format("Index: {}\tRow {}\tCol {}\tmWidth {}\tWidth2 {}", coordinateToIndex(dis[8]), dis[8].row, dis[8].col, mWidth, postProcesed.info.width));
+            // // RCLCPP_INFO_STREAM(get_logger(), std::format("Index: {}\tRow {}\tCol {}\tmWidth {}\tWidth2 {}", coordinateToIndex(dis[8]), dis[8].row, dis[8].col, mWidth, postProcesed.info.width));
+            // // for (int row = 0; row < mWidth; ++row) {
+            // //     for(int col = 0; col < mHeight; ++col) {
+            // //         int oned_index = coordinateToIndex({row, col});
+            // std::for_each(bins.begin(), bins.end(), [&](Bin& cell) {
+            //     auto coord = indexToCoordinate(cell.i);
+            //     // RCLCPP_INFO_STREAM(get_logger(), std::format("Testing Index: {}", oned_index));
+            //     if(std::ranges::any_of(dis, [&](CostMapNode::Coordinate di) {
+            //         // the coordinate of the cell we are checking + dis offset
+            //         Coordinate dcoord = {coord.row + di.row, coord.col + di.col};
+            //         if(dcoord.row < 0 || dcoord.row >= mHeight || dcoord.col < 0 || dcoord.col >= mWidth)
+            //             return false;
+
+            //         // RCLCPP_INFO_STREAM(get_logger(), std::format("Index: {}", coordinateToIndex(dcoord)));
+            //         return mGlobalGridMsg.data[coordinateToIndex(dcoord)] > FREE_COST;
+            //     })) postProcesed.data[cell.i] = OCCUPIED_COST;
+            //     // }
+            // });
+
+            // TODO: consider running the dilation 2x instead of using a 5x5 "kernel"
             for (int row = 0; row < mWidth; ++row) {
                 for(int col = 0; col < mHeight; ++col) {
                     int oned_index = coordinateToIndex({row, col});
@@ -181,17 +175,7 @@ namespace mrover {
                     })) postProcesed.data[oned_index] = OCCUPIED_COST;
                 }
             }
-            // std::array<std::ptrdiff_t, 9> dis{0, 
-            //                                   -1, +1, -postProcesed.info.width, +postProcesed.info.width,
-            //                                   -1 - postProcesed.info.width, +1 - postProcesed.info.width,
-            //                                   -1 + postProcesed.info.width, +1 + postProcesed.info.width};
-            // for (std::size_t i = 0; i < mGlobalGridMsg.data.size(); ++i) {
-            //     if (std::ranges::any_of(dis, [&](std::ptrdiff_t di) {
-                        
 
-            //             std::int64_t j = static_cast<int64_t>(i) + di;
-            //             return j < static_cast<int64_t>(mGlobalGridMsg.data.size()) && mGlobalGridMsg.data[j] > FREE_COST;
-            //         })) postProcesed.data[i] = OCCUPIED_COST;
             // }
             mCostMapPub->publish(postProcesed);
         } catch (tf2::TransformException const& e) {
@@ -240,33 +224,12 @@ namespace mrover {
         RCLCPP_INFO_STREAM(get_logger(), "Moved cost map");
     }
 
-    // // TODO: FINISH
-    // void CostMapNode::publishBinInfo(std::vector<Bin> const& bins){
-    //     struct BinInfo{
-    //         std::size_t binNum;
-    //         int binSize;
-    //         double normal;
-    //     };
-
-    //     std::vector<BinInfo> info;
-    //     for(std::size_t i = 0; i < bins.size(); i++){
-    //     }
-    // }
-
-    void CostMapNode::editThresholds(){
-        
-    }
-
     auto CostMapNode::indexToCoordinate(const int index) -> CostMapNode::Coordinate {
         return {index / mWidth, index % mWidth};
     }
 
     auto CostMapNode::coordinateToIndex(const Coordinate c) -> int{
         return c.row * mWidth + c.col;
-    }
-
-    auto CostMapNode::processHeight(mrover::srv::MoveCostMap::Request::ConstSharedPtr& req, mrover::srv::MoveCostMap::Response::SharedPtr& res, std::vector<Bin> bins) -> void{
-
     }
 
 } // namespace mrover
