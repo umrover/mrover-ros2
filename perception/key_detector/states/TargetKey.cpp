@@ -99,7 +99,7 @@ auto TargetKey::onLoop() -> State*{
         //Wait 1 second for promise at most (vision model runs at around 20 hertz, so this gives ample time)
         if(result.wait_for(std::chrono::seconds(1)) == std::future_status::ready)
         {
-            magnitude = std::sqrt(result.get()->x * result.get()->x + result.get()->y * result.get()->y)
+            magnitude = std::sqrt(result.get()->x * result.get()->x + result.get()->y * result.get()->y);
         }
         else
         {
