@@ -22,19 +22,15 @@ namespace mrover {
 
     using namespace std::chrono_literals;
 
-    constexpr static BrushlessController<Revolutions>::Config WHEEL_CONFIG = {
-            .minVelocity = RevolutionsPerSecond{-10.0},
-            .maxVelocity = RevolutionsPerSecond{10.0},
-            .maxTorque = 25.0,
-    };
-
     class DriveHardwareBridge final : public rclcpp::Node {
     public:
-        DriveHardwareBridge() : Node{"drive_hw_bridge"} {
+        DriveHardwareBridge() : Node{"drive_hw_bridge", rclcpp::NodeOptions{}
+                                                                .allow_undeclared_parameters(true)
+                                                                .automatically_declare_parameters_from_overrides(true)} {
             // all initialization is done in the init() function to allow for the usage of shared_from_this()
         }
 
-        auto init() {
+        auto init() -> void {
             // Create publishers and subscribers for left and right motor groups
             for (std::string const& group: mMotorGroups) {
                 // TODO (ali): does this actually emplace lol
@@ -49,7 +45,10 @@ namespace mrover {
                 }));
                 for (std::string const& motor: mMotors) {
                     std::string name = std::format("{}_{}", motor, group);
-                    mControllers.try_emplace(name, shared_from_this(), "jetson", name, WHEEL_CONFIG);
+                    set_parameter(rclcpp::Parameter(std::format("{}.min_velocity", name), -10.0));
+                    set_parameter(rclcpp::Parameter(std::format("{}.max_velocity", name), 10.0));
+                    set_parameter(rclcpp::Parameter(std::format("{}.max_torque", name), 25.0));
+                    mControllers.try_emplace(name, shared_from_this(), "jetson", name);
                     mJointState.name.push_back(name);
                 }
                 mJointState.position.resize(mControllers.size());

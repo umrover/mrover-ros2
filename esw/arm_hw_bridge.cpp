@@ -35,129 +35,25 @@ namespace mrover {
     // This corrects the HALL-effect motor source on the Moteus based on the absolute encoder readings
     std::chrono::seconds static constexpr DE_OFFSET_TIMER_PERIOD = std::chrono::seconds{1};
 
-    // TODO: ros params?
-    constexpr static BrushlessController<Meters>::Config JOINT_A_CONFIG = {
-            .minVelocity = MetersPerSecond{-0.05},
-            .maxVelocity = MetersPerSecond{0.05},
-            .minPosition = Meters{0.0},
-            .maxPosition = Meters{0.35}, // limit switch to limit switch is roughly 13.25in. joint a roller is roughly 4.5in
-            .maxTorque = 20.0,
-
-            .limitSwitch0Present = true,
-            .limitSwitch0Enabled = true,
-            .limitSwitch0LimitsFwd = true,
-            .limitSwitch0ActiveHigh = false,
-            .limitSwitch0UsedForReadjustment = true,
-            .limitSwitch0ReadjustPosition = Meters{0.4},
-
-            .limitSwitch1Present = true,
-            .limitSwitch1Enabled = true,
-            .limitSwitch1LimitsFwd = false,
-            .limitSwitch1ActiveHigh = false,
-            .limitSwitch1UsedForReadjustment = true,
-            .limitSwitch1ReadjustPosition = Meters{0.0},
-    };
-    constexpr static BrushedController::Config JOINT_B_CONFIG = {
-            .limitSwitchPresent = {true, false},
-            .limitSwitchEnabled = {true, false},
-            .limitSwitchLimitsFwd = {false, false},
-            .limitSwitchActiveHigh = {false, false},
-            .limitSwitchUsedForReadjustment = {false, false},
-            // .limitSwitchReadjustPosition = {Radians{0.0}},
-            .limitMaxForwardPosition = true,
-            .limitMaxBackwardPosition = false,
-
-            .gearRatio = 1.0,
-            .isInverted = false,
-
-            .driverVoltage = 10.5,
-            .motorMaxVoltage = 12.0,
-
-            .quadPresent = false,
-            // .quadRatio = 1.0,
-
-            .absPresent = true,
-            .absRatio = -1.0,
-            .absOffset = 0.995_rad,
-
-            .minVelocity = -1.0_rad_per_s,
-            .maxVelocity = 1.0_rad_per_s,
-            .minPosition = -0.9_rad,
-            .maxPosition = 0_rad,
-
-            .positionGains = {.p = 30.0},
-            // .velocityGains{},
-
-            .calibrationThrottle = 0.5,
-    };
-    constexpr static BrushlessController<Revolutions>::Config JOINT_C_CONFIG = {
-            .minVelocity = RevolutionsPerSecond{-0.03},
-            .maxVelocity = RevolutionsPerSecond{0.03},
-            .minPosition = Revolutions{-0.125},
-            .maxPosition = Revolutions{0.30},
-            .maxTorque = 200.0,
-    };
-    constexpr static BrushlessController<Revolutions>::Config JOINT_DE_0_CONFIG = {
-            .minVelocity = RevolutionsPerSecond{-5.0},
-            .maxVelocity = RevolutionsPerSecond{5.0},
-            .minPosition = Revolutions{-10000.0},
-            .maxPosition = Revolutions{10000.0},
-            .maxTorque = 20.0,
-    };
-    constexpr static BrushlessController<Revolutions>::Config JOINT_DE_1_CONFIG = {
-            .minVelocity = RevolutionsPerSecond{-5.0},
-            .maxVelocity = RevolutionsPerSecond{5.0},
-            .minPosition = Revolutions{-10000.0},
-            .maxPosition = Revolutions{10000.0},
-            .maxTorque = 20.0,
-    };
-    constexpr static BrushedController::Config GRIPPER_CONFIG = {
-            .gearRatio = 47.0,
-            .isInverted = false,
-            .driverVoltage = 10.5,
-            .motorMaxVoltage = 12.0,
-            .quadPresent = false,
-            .absPresent = false,
-            .calibrationThrottle = 0.5,
-    };
-
-    constexpr static BrushedController::Config CAM_CONFIG = {
-            .limitSwitchPresent = {true, true},
-            .limitSwitchEnabled = {true, true},
-            .limitSwitchLimitsFwd = {false, false},
-            .limitSwitchActiveHigh = {false, false},
-            .limitSwitchUsedForReadjustment = {false, false},
-            // .limitSwitchReadjustPosition = {Radians{0.0}},
-            .limitMaxForwardPosition = true,
-            .limitMaxBackwardPosition = true,
-
-            // TODO: (owen) ask for gear ratio
-            // .gearRatio = 1.0,
-            .isInverted = false,
-            .driverVoltage = 10.5,
-            .motorMaxVoltage = 12.0,
-            .quadPresent = false,
-            .absPresent = false,
-            .calibrationThrottle = 0.5,
-    };
-
     class ArmHWBridge : public rclcpp::Node {
 
         using Controller = std::variant<BrushedController, BrushlessController<Meters>, BrushlessController<Revolutions>>;
 
     public:
-        ArmHWBridge() : rclcpp::Node{"arm_hw_bridge"} {
+        ArmHWBridge() : rclcpp::Node{"arm_hw_bridge", rclcpp::NodeOptions{}
+                                                              .allow_undeclared_parameters(true)
+                                                              .automatically_declare_parameters_from_overrides(true)} {
             // all initialization is done in the init() function to allow for the usage of shared_from_this()
         }
 
         auto init() -> void {
-            mJointA = std::make_shared<BrushlessController<Meters>>(shared_from_this(), "jetson", "joint_a", JOINT_A_CONFIG);
-            mJointB = std::make_shared<BrushedController>(shared_from_this(), "jetson", "joint_b", JOINT_B_CONFIG);
-            mJointC = std::make_shared<BrushlessController<Revolutions>>(shared_from_this(), "jetson", "joint_c", JOINT_C_CONFIG);
-            mJointDe0 = std::make_shared<BrushlessController<Revolutions>>(shared_from_this(), "jetson", "joint_de_0", JOINT_DE_0_CONFIG);
-            mJointDe1 = std::make_shared<BrushlessController<Revolutions>>(shared_from_this(), "jetson", "joint_de_1", JOINT_DE_1_CONFIG);
-            mGripper = std::make_shared<BrushedController>(shared_from_this(), "jetson", "gripper", GRIPPER_CONFIG);
-            mCam = std::make_shared<BrushedController>(shared_from_this(), "jetson", "cam", CAM_CONFIG);
+            mJointA = std::make_shared<BrushlessController<Meters>>(shared_from_this(), "jetson", "joint_a");
+            mJointB = std::make_shared<BrushedController>(shared_from_this(), "jetson", "joint_b");
+            mJointC = std::make_shared<BrushlessController<Revolutions>>(shared_from_this(), "jetson", "joint_c");
+            mJointDe0 = std::make_shared<BrushlessController<Revolutions>>(shared_from_this(), "jetson", "joint_de_0");
+            mJointDe1 = std::make_shared<BrushlessController<Revolutions>>(shared_from_this(), "jetson", "joint_de_1");
+            mGripper = std::make_shared<BrushedController>(shared_from_this(), "jetson", "gripper");
+            mCam = std::make_shared<BrushedController>(shared_from_this(), "jetson", "cam");
 
             mArmThrottleSub = create_subscription<msg::Throttle>("arm_throttle_cmd", 1, [this](msg::Throttle::ConstSharedPtr const& msg) { processThrottleCmd(msg); });
             mArmVelocitySub = create_subscription<msg::Velocity>("arm_velocity_cmd", 1, [this](msg::Velocity::ConstSharedPtr const& msg) { processVelocityCmd(msg); });
@@ -173,19 +69,19 @@ namespace mrover {
             mJointDataPub = create_publisher<sensor_msgs::msg::JointState>("arm_joint_data", 1);
             mControllerStatePub = create_publisher<msg::ControllerState>("arm_controller_state", 1);
 
-            mJointData.name = mArmJointNames;
-            mJointData.position.resize(mArmJointNames.size());
-            mJointData.velocity.resize(mArmJointNames.size());
-            mJointData.effort.resize(mArmJointNames.size());
+            mJointData.name = mJointNames;
+            mJointData.position.resize(mJointNames.size());
+            mJointData.velocity.resize(mJointNames.size());
+            mJointData.effort.resize(mJointNames.size());
 
-            mControllerState.name = mArmJointNames;
-            mControllerState.state.resize(mArmJointNames.size());
-            mControllerState.error.resize(mArmJointNames.size());
-            mControllerState.limit_hit.resize(mArmJointNames.size());
+            mControllerState.name = mJointNames;
+            mControllerState.state.resize(mJointNames.size());
+            mControllerState.error.resize(mJointNames.size());
+            mControllerState.limit_hit.resize(mJointNames.size());
         }
 
     private:
-        std::vector<std::string> const mArmJointNames{"joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_roll", "allen_key", "gripper", "cam"};
+        std::vector<std::string> const mJointNames{"joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_roll", "allen_key", "gripper", "cam"};
 
         std::shared_ptr<BrushlessController<Meters>> mJointA;
         std::shared_ptr<BrushedController> mJointB;
