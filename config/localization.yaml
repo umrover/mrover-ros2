@@ -28,8 +28,3 @@ rover_gps_driver:
     baud_ublox: 38400
 
     frame_id: "base_link"
-
-heading_filter:
-  ros__parameters:
-    world_frame: "map"
-    rover_frame: "base_link"

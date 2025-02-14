@@ -1,5 +1,4 @@
 #include "rover_gps_driver.hpp"
-#include "mrover/msg/detail/fix_type__struct.hpp"
 
 namespace mrover {
 
@@ -121,8 +120,8 @@ namespace mrover {
                 fix_type.fix = mrover::msg::FixType::FIXED;
             }
             else {
-                RCLCPP_WARN(get_logger(), "Heading: no solution. Are both antennas plugged in?");
-                fix_type.fix = mrover::msg::FixType::NONE;
+                ////RCLCPP_WARN(get_logger(), "Heading: no solution. Are both antennas plugged in?");
+                return;
             }
 
             fix_status.fix_type = fix_type;
