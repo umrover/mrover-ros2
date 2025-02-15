@@ -35,7 +35,6 @@ namespace mrover {
     };
 
     struct HeaterStateInfo {
-        [[maybe_unused]] std::uint8_t _ignore : 2 {};
         std::uint8_t on : 6 {};
     };
 

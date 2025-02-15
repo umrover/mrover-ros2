@@ -117,11 +117,6 @@ namespace mrover {
 
         void processCANData(msg::CAN::ConstSharedPtr const& msg) {
             //RCLCPP_ERROR(get_logger(), "Source: %s Destination: %s", msg->source.c_str(), msg->destination.c_str());
-            // if (msg->data.size() < sizeof(OutBoundScienceMessage)) {
-            //     RCLCPP_ERROR(get_logger(), "Received CAN message is too small! Size: %zu, Expected: %zu", msg->data.size(), sizeof(OutBoundScienceMessage));
-            //     return;
-            // }
-
             OutBoundScienceMessage const& message = *reinterpret_cast<OutBoundScienceMessage const*>(msg->data.data());
             std::visit([&](auto const& messageAlternative) { processMessage(messageAlternative); }, message);
         }
