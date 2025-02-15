@@ -30,6 +30,7 @@ namespace mrover {
         assert(msg->width > 0);
 
         RCLCPP_INFO_STREAM(get_logger(), "COST MAP MESSAGE PTR: " << msg.get());
+        RCLCPP_INFO_STREAM(get_logger(), "COST MAP MESSAGE TIME: " << msg->header.stamp.sec);
 
 		mInliers.clear();
 
