@@ -202,24 +202,41 @@ import Chart from 'chart.js/auto';
     message(msg) {
       switch (msg.type) {
         case 'oxygen':
-            this.sensor_data.oxygen = msg.percent
-            this.sensor_data.oxygen_var = msg.varianace
+            this.sensor_data = {
+              ...this.sensor_data,
+              oxygen: msg.percent,
+              oxygen_var: msg.variance
+            }
+            // this.sensor_data.oxygen = msg.percent
+            // this.sensor_data.oxygen_var = msg.varianace
             break
         case 'methane':
-            this.sensor_data.methane_var = msg.ppm
-            this.sensor_data.methane_var = msg.varianace
+            this.sensor_data = {
+              ...this.sensor_data,
+              methane: msg.ppm,
+              methane_var: msg.variance
+            }
             break
         case 'uv':
-            this.sensor_data.uv = msg.uv_index
-            this.sensor_data.uv_var = msg.varianace
+            this.sensor_data = {
+              ...this.sensor_data,
+              uv: msg.uv_index,
+              uv_var: msg.variance
+            }
             break
         case 'temperature':
-            this.sensor_data.temp = msg.temperature
-            this.sensor_data.temp_var = msg.variance
+            this.sensor_data = {
+              ...this.sensor_data,
+              temp: msg.temperature,
+              temp_var: msg.variance
+            }
             break
         case 'humidity':
-            this.sensor_data.humidity = 100 * msg.relative_humidity
-            this.sensor_data.humidity_var = 100* msg.variance
+            this.sensor_data = {
+              ...this.sensor_data,
+              temp: 100 * msg.relative_humidity,
+              temp_var: 100 * msg.variance
+            }
             break
       }
     }
