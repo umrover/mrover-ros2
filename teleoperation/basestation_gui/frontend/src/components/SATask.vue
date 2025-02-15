@@ -1,7 +1,7 @@
 <template>
   <div class='wrapper'>
     <div class='shadow p-3 mb-5 header'>
-      <h1>SA Dashboard</h1>
+     <h1><a class='dashboard-title' href="/">SA Dashboard</a></h1>
       <a class='logo' href="/"><img src='/mrover.png' alt='MRover' title='MRover' width='200' /></a>
       <div class="network">
       <NetworkMonitor />
@@ -104,6 +104,15 @@ export default {
     'moteus moteus moteus';
   font-family: sans-serif;
   height: auto;
+}
+
+.dashboard-title {
+  color: black;
+  text-decoration: none;
+}
+
+.dashboard-title:hover {
+  color: darkgray;
 }
 
 .header {

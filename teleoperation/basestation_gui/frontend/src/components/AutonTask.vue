@@ -1,7 +1,7 @@
 <template>
   <div class='wrapper'>
     <div class='shadow p-3 mb-5 header'>
-      <h1>Auton Dashboard</h1>
+      <h1><a class='dashboard-title' href="/">Auton Dashboard</a></h1>
       <a href='/'>
         <img class='logo' src='/mrover.png' alt='MRover' title='MRover' width='200' style="cursor: pointer;" />
       </a>
@@ -144,6 +144,15 @@ export default defineComponent({
   font-family: sans-serif;
   height: auto;
   width: auto;
+}
+
+.dashboard-title {
+  color: black;
+  text-decoration: none;
+}
+
+.dashboard-title:hover {
+  color: darkgray;
 }
 
 .blink {

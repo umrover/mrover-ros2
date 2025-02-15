@@ -2,7 +2,7 @@
     <h3>HexHub Controls</h3>
       <div class="grid">
         <div v-for="name, index in siteList" :key="index" class="col-4">
-          <div class="form-check d-flex justify-content-center align-items-center">
+          <div class="form-check d-flex justify-content-center align-items-center" >
             <input
               v-model="currentSite"
               class="btn-check"
