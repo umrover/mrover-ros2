@@ -23,7 +23,7 @@ from backend.waypoints import (
     save_basic_waypoint_list,
 )
 from geometry_msgs.msg import Twist, Vector3
-from sensor_msgs.msg import NavSatFix #, Temperature, RelativeHumidity
+from sensor_msgs.msg import NavSatFix, Temperature, RelativeHumidity
 from mrover.msg import (
     Throttle,
     IK,

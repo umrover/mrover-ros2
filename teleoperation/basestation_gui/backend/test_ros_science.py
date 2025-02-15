@@ -31,18 +31,18 @@ class OxygenDataPublisher(Node):
         self.get_logger().info(f'Publishing Oxygen => Percent: {msg.percent}, Variance => {msg.variance}')
 
 
-# class UVPublisher(Node):
-#     def __init__(self):
-#         super().__init__('uv_publisher')
-#         self.publisher = self.create_publisher(UV, 'science_uv_data', 10)
-#         self.timer = self.create_timer(1.0, self.publish_data)  # Publishes every second
+class UVPublisher(Node):
+    def __init__(self):
+        super().__init__('uv_publisher')
+        self.publisher = self.create_publisher(UV, 'science_uv_data', 10)
+        self.timer = self.create_timer(1.0, self.publish_data)  # Publishes every second
 
-#     def publish_data(self):
-#         msg = UV() 
-#         msg.uv_index = 40.0 
-#         msg.variance = 10.0  # variance value
-#         self.publisher.publish(msg)
-#         self.get_logger().info(f'Publishing UV => Index: {msg.percent}, Variance: {msg.variance}')
+    def publish_data(self):
+        msg = UV() 
+        msg.uv_index = 40.0 
+        msg.variance = 10.0  # variance value
+        self.publisher.publish(msg)
+        self.get_logger().info(f'Publishing UV => Index: {msg.uv_index}, Variance: {msg.variance}')
 
 
 # class TempPublisher(Node):
@@ -76,13 +76,14 @@ class OxygenDataPublisher(Node):
 def main(args=None):
     rclpy.init(args=args)
     node = OxygenDataPublisher()
-    # node2= UVPublisher()
+    node2= UVPublisher()
     # node3 = TempPublisher()
     # node4 = HumidityPublisher()
     rclpy.spin(node)
-    # rclpy.spin(node2)
+    rclpy.spin(node2)
     # rclpy.spin(node3)
     # rclpy.spin(node4)
+    rclpy.shutdown()
     rclpy.shutdown()
 
 if __name__ == '__main__':
