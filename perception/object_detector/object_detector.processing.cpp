@@ -2,7 +2,7 @@
 
 namespace mrover {
 
-    auto StereoObjectDetector::pointCloudCallback(sensor_msgs::msg::PointCloud2::UniquePtr const& msg) -> void {
+    auto StereoObjectDetector::pointCloudCallback(sensor_msgs::msg::PointCloud2::ConstSharedPtr const& msg) -> void {
         assert(msg);
         assert(msg->height > 0);
         assert(msg->width > 0);
@@ -50,7 +50,7 @@ namespace mrover {
         mLoopProfiler.measureEvent("Publication");
     }
 
-    auto ObjectDetectorBase::updateHitsObject(sensor_msgs::msg::PointCloud2::UniquePtr const& msg, std::span<Detection const> detections, cv::Size const& imageSize) -> void {
+    auto ObjectDetectorBase::updateHitsObject(sensor_msgs::msg::PointCloud2::ConstSharedPtr const& msg, std::span<Detection const> detections, cv::Size const& imageSize) -> void {
         // Set of flags indicating if the given object has been seen
         std::vector<bool> seenObjects(mModel.classes.size(), false);
         for (auto const& [classId, className, confidence, box]: detections) {
@@ -102,7 +102,7 @@ namespace mrover {
         }
     }
 
-    auto ObjectDetectorBase::spiralSearchForValidPoint(sensor_msgs::msg::PointCloud2::UniquePtr const& cloudPtr, std::size_t u, std::size_t v, std::size_t width, std::size_t height) const -> std::optional<SE3d> {
+    auto ObjectDetectorBase::spiralSearchForValidPoint(sensor_msgs::msg::PointCloud2::ConstSharedPtr const& cloudPtr, std::size_t u, std::size_t v, std::size_t width, std::size_t height) const -> std::optional<SE3d> {
         // See: https://stackoverflow.com/a/398302
         auto xc = static_cast<int>(u), yc = static_cast<int>(v);
         auto sw = static_cast<int>(width), sh = static_cast<int>(height);
@@ -167,7 +167,7 @@ namespace mrover {
         mDebugImgPub->publish(mDetectionsImageMessage);
     }
 
-    auto StereoObjectDetector::convertPointCloudToRGB(sensor_msgs::msg::PointCloud2::UniquePtr const& msg, cv::Mat const& image) -> void {
+    auto StereoObjectDetector::convertPointCloudToRGB(sensor_msgs::msg::PointCloud2::ConstSharedPtr const& msg, cv::Mat const& image) -> void {
         auto* pixelPtr = reinterpret_cast<cv::Vec3b*>(image.data);
         auto* pointPtr = reinterpret_cast<Point const*>(msg->data.data());
         std::for_each(std::execution::par_unseq, pixelPtr, pixelPtr + image.total(), [&](cv::Vec3b& pixel) {
@@ -178,7 +178,7 @@ namespace mrover {
         });
     }
 
-    auto ImageObjectDetector::imageCallback(sensor_msgs::msg::Image::UniquePtr const& msg) -> void {
+    auto ImageObjectDetector::imageCallback(sensor_msgs::msg::Image::ConstSharedPtr const& msg) -> void {
         assert(msg);
         assert(msg->height > 0);
         assert(msg->width > 0);

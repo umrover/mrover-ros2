@@ -11,7 +11,7 @@ namespace mrover {
         std::optional<SE3d> tagInCam;
     };
 
-    class TagDetectorNodeletBase : public rclcpp::Node {
+    class TagDetectorBase : public rclcpp::Node {
 
     protected:
         rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr mDetectedImagePub;
@@ -45,12 +45,12 @@ namespace mrover {
         auto publishDetectedTags() -> void;
 
     public:
-        explicit TagDetectorNodeletBase(std::string const& name);
+        explicit TagDetectorBase(std::string const& name, rclcpp::NodeOptions const& options = rclcpp::NodeOptions());
 
-        ~TagDetectorNodeletBase() override = default;
+        ~TagDetectorBase() override = default;
     };
 
-    class StereoTagDetectorNodelet final : public TagDetectorNodeletBase {
+    class StereoTagDetector final : public TagDetectorBase {
 
         rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr mPointCloudSub;
 
@@ -61,10 +61,10 @@ namespace mrover {
                                        std::size_t width, std::size_t height) const -> std::optional<SE3d>;
 
     public:
-        StereoTagDetectorNodelet();
+        explicit StereoTagDetector(rclcpp::NodeOptions const& options = rclcpp::NodeOptions());
     };
 
-    class ImageTagDetectorNodelet final : public TagDetectorNodeletBase {
+    class ImageTagDetector final : public TagDetectorBase {
 
         float mCameraHorizontalFOV;
 
@@ -77,7 +77,7 @@ namespace mrover {
         auto imageCallback(sensor_msgs::msg::Image::ConstSharedPtr const& msg) -> void;
 
     public:
-        ImageTagDetectorNodelet();
+        explicit ImageTagDetector(rclcpp::NodeOptions const& options = rclcpp::NodeOptions());
     };
 
 } // namespace mrover

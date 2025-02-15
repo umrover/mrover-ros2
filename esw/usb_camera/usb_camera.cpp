@@ -10,7 +10,7 @@ namespace mrover {
 
     auto gstBusMessage(GstBus*, GstMessage* message, gpointer data) -> gboolean;
 
-    UsbCamera::UsbCamera() : Node{"usb_camera", rclcpp::NodeOptions{}.use_intra_process_comms(true)} {
+    UsbCamera::UsbCamera(rclcpp::NodeOptions const& options) : Node{"usb_camera", options} {
         try {
             /* Parameters */
             int framerate{};
