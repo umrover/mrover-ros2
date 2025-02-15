@@ -129,3 +129,37 @@ fn reproject(pixelInImage: vec2u, depth: f32) -> vec3f {
     points[flatIndex].normalXyz = normal.xyz;
     points[flatIndex].curvature = 0;
 }
+
+// skybox stuff
+struct SkyboxVSOutput {
+    @builtin(position) position: vec4f,
+    @location(0) pos: vec4f,
+};
+
+struct SkyboxUniforms {
+    clipToWorld: mat4x4f,
+};
+
+@group(0) @binding(0) var<uniform> uni: SkyboxUniforms;
+@group(0) @binding(1) var skyboxSampler: sampler;
+@group(0) @binding(2) var skyboxTexture: texture_cube<f32>;
+
+@vertex fn vs_skybox(@builtin(vertex_index) vNdx: u32) -> SkyboxVSOutput {
+    // one big triangle to cover the whole screen
+    let pos = array(
+        vec2f(-1, 3),
+        vec2f(-1,-1),
+        vec2f( 3,-1),
+    );
+    var vsOut: SkyboxVSOutput;
+    vsOut.position = vec4f(pos[vNdx], 1, 1);
+    vsOut.pos = vsOut.position;
+    return vsOut;
+}
+
+@fragment fn fs_skybox(vsOut: SkyboxVSOutput) -> OutFragment {
+    let t = uni.clipToWorld * vsOut.pos;
+    var out: OutFragment;
+    out.color = textureSample(skyboxTexture, skyboxSampler, normalize(t.xyz / t.w) * vec3f(1, 1, -1));
+    return out;
+}
