@@ -9,7 +9,7 @@ namespace mrover {
         rclcpp::Publisher<sensor_msgs::msg::CameraInfo>::SharedPtr mCamInfoPub;
         rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr mImgPub;
 
-        std::uint16_t mWidth{}, mHeight{};
+        int mWidth{}, mHeight{};
 
         GstElement *mStreamSink{}, *mPipeline{};
         GMainLoop* mMainLoop{};
@@ -17,7 +17,7 @@ namespace mrover {
         std::thread mMainLoopThread, mStreamSinkThread;
 
     public:
-        UsbCamera();
+        explicit UsbCamera(rclcpp::NodeOptions const& options = rclcpp::NodeOptions());
 
         ~UsbCamera() override;
 
