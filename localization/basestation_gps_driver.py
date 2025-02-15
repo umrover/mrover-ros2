@@ -41,7 +41,7 @@ class BaseStationDriverNode(Node):
         self.reader = UBXReader(self.serial, protfilter=UBX_PROTOCOL | RTCM3_PROTOCOL)
 
     def spin(self) -> None:
-
+        
         while rclpy.ok():
             if self.serial.in_waiting:
                 raw_msg, msg = self.reader.read()
@@ -71,25 +71,15 @@ class BaseStationDriverNode(Node):
                         if gnssId == 0:
                             self.satellite_signal_pub.publish(SatelliteSignal(constellation="GPS", signal_strength=cno))
                         elif gnssId == 1:
-                            self.satellite_signal_pub.publish(
-                                SatelliteSignal(constellation="SBAS", signal_strength=cno)
-                            )
+                            self.satellite_signal_pub.publish(SatelliteSignal(constellation="SBAS", signal_strength=cno))
                         elif gnssId == 2:
-                            self.satellite_signal_pub.publish(
-                                SatelliteSignal(constellation="Galileo", signal_strength=cno)
-                            )
+                            self.satellite_signal_pub.publish(SatelliteSignal(constellation="Galileo", signal_strength=cno))
                         elif gnssId == 3:
-                            self.satellite_signal_pub.publish(
-                                SatelliteSignal(constellation="BeiDou", signal_strength=cno)
-                            )
+                            self.satellite_signal_pub.publish(SatelliteSignal(constellation="BeiDou", signal_strength=cno))
                         elif gnssId == 5:
-                            self.satellite_signal_pub.publish(
-                                SatelliteSignal(constellation="QZSS", signal_strength=cno)
-                            )
+                            self.satellite_signal_pub.publish(SatelliteSignal(constellation="QZSS", signal_strength=cno))
                         elif gnssId == 6:
-                            self.satellite_signal_pub.publish(
-                                SatelliteSignal(constellation="GLONASS", signal_strength=cno)
-                            )
+                            self.satellite_signal_pub.publish(SatelliteSignal(constellation="GLONASS", signal_strength=cno))
 
             rclpy.spin_once(self, timeout_sec=0)
 

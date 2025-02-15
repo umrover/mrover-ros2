@@ -60,7 +60,6 @@ def generate_launch_description():
             image_object_detector_node,
             stereo_tag_detector_node,
             image_tag_detector_node,
-            zed_node,
             long_range_cam,
         ]
     )
