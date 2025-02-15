@@ -15,6 +15,7 @@ from lie import SE3
 from backend.drive_controls import send_joystick_twist, send_controller_twist
 from backend.input import DeviceInputs
 from backend.ra_controls import send_ra_controls
+from backend.sa_controls import send_sa_controls
 from backend.mast_controls import send_mast_controls
 from backend.waypoints import (
     get_auton_waypoint_list,
@@ -38,7 +39,10 @@ from mrover.msg import (
     Methane,
     UV,
 )
-from mrover.srv import EnableAuton
+from mrover.srv import (
+    EnableAuton, 
+    EnableBool, 
+)
 from std_srvs.srv import SetBool
 
 rclpy.init()
@@ -57,6 +61,7 @@ ros_thread.start()
 LOCALIZATION_INFO_HZ = 10
 
 cur_mode = "disabled"
+cur_sa_mode = "disabled"
 heater_names = ["a0", "a1", "b0", "b1"]
 
 
@@ -72,6 +77,7 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.joystick_twist_pub = node.create_publisher(Twist, "/joystick_cmd_vel", 1)
         self.controller_twist_pub = node.create_publisher(Twist, "/controller_cmd_vel", 1)
         self.mast_gimbal_pub = node.create_publisher(Throttle, "/mast_gimbal_throttle_cmd", 1)
+        self.sa_thr_pub = node.create_publisher(Throttle, "sa_throttle_cmd", 1)
 
         self.forward_ros_topic("/drive_left_controller_data", ControllerState, "drive_left_state")
         self.forward_ros_topic("/drive_right_controller_data", ControllerState, "drive_right_state")
@@ -86,17 +92,29 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.forward_ros_topic("/science_temperature_data", Temperature, "temperature")
         self.forward_ros_topic("/science_humidity_data", RelativeHumidity, "humidity")
 
+        self.forward_ros_topic("/arm_controller_state", ControllerState, "arm_state")
+        self.forward_ros_topic("/drive_controller_data", ControllerState, "drive_state")
+        self.forward_ros_topic("/sa_controller_state", ControllerState, "sa_state")
+        # check topic names above
+
         # Services
         self.enable_teleop_srv = node.create_client(SetBool, "/enable_teleop")
         self.enable_auton_srv = node.create_client(EnableAuton, "/enable_auton")
-        self.auto_shutoff_service = node.create_client(SetBool, "/science_change_heater_auto_shutoff_state")
+
+        # EnableBool Requests
+        self.auto_shutoff_service = node.create_client(EnableBool, "/science_change_heater_auto_shutoff_state")
+        self.sa_enable_pump_0_srv = node.create_client(EnableBool, "/sa_enable_pump_0")
+        self.sa_enable_pump_1_srv = node.create_client(EnableBool, "/sa_enable_pump_1")
+        self.sa_enable_switch_srv = node.create_client(EnableBool, "/sa_enable_limit_switch_sensor_actuator")
 
         self.heater_services = []
         self.white_leds_services = []
         for name in heater_names:
-            self.heater_services.append(node.create_client(SetBool, "/science_enable_heater_" + name))
+            self.heater_services.append(node.create_client(EnableBool, "/science_enable_heater_" + name))
         for site in ["a0", "b0"]:
-            self.white_leds_services.append(node.create_client(SetBool, "/science_enable_white_led_" + site))
+            self.white_leds_services.append(node.create_client(EnableBool, "/science_enable_white_led_" + site))
+
+
 
         self.buffer = Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.buffer, node)
@@ -167,6 +185,7 @@ class GUIConsumer(JsonWebsocketConsumer):
         """
 
         global cur_mode
+        global cur_sa_mode
 
         if text_data is None:
             node.get_logger().warning("Expecting text but received binary on GUI websocket...")
@@ -206,11 +225,28 @@ class GUIConsumer(JsonWebsocketConsumer):
                     "mode": mode,
                 }:
                     cur_mode = mode
-                    node.get_logger().debug(f"publishing to {cur_mode}")
+                case{
+                    "type": "sa_controller",
+                    "axes": axes,
+                    "buttons": buttons,
+                    "site": site
+                }:
+                    device_input = DeviceInputs(axes, buttons)
+                    if((site == 0) | (site == 1)):
+                        send_sa_controls(cur_sa_mode, 0, device_input, self.sa_thr_pub, self.sa_enable_pump_0_srv, self.sa_enable_pump_1_srv)
+                    elif((site == 2) | (site == 3)):
+                        send_sa_controls(cur_sa_mode, 1, device_input, self.sa_thr_pub, self.sa_enable_pump_0_srv, self.sa_enable_pump_1_srv)
+                    else:
+                        node.get_logger().warning(f"Unhandled Site: {site}")
+                case {
+                    "type": "sa_mode",
+                    "mode": mode,
+                }:
+                    cur_sa_mode = mode
                 case {"type": "auton_enable", "enabled": enabled, "waypoints": waypoints}:
                     self.send_auton_command(waypoints, enabled)
                 case {"type": "teleop_enable", "enabled": enabled}:
-                    self.enable_teleop_srv.call(SetBool.Request(data=enabled))
+                    self.enable_teleop_srv.call(SetBool.Request(data=enabled)) # SETBOOL NOT ENABLEBOOL
                 case {
                     "type": "save_auton_waypoint_list",
                     "data": waypoints,
@@ -229,13 +265,18 @@ class GUIConsumer(JsonWebsocketConsumer):
                     "type": "get_auton_waypoint_list",
                 }:
                     self.send_message_as_json({"type": "get_auton_waypoint_list", "data": get_auton_waypoint_list()})
-                case {"type": "heater_enable", "enabled": enabled, "heater": heater}:
-                    self.heater_services[heater_names.index(heater)].call(SetBool.Request(data=enabled))
+                case {"type": "heater_enable", "enabled": e, "heater": heater}:
+                    self.heater_services[heater_names.index(heater)].call(EnableBool.Request(enable=e))
 
                 case {"type": "auto_shutoff", "shutoff": shutoff}:
-                    self.auto_shutoff_service.call(SetBool.Request(data=shutoff))
-                case {"type": "white_leds", "site": site, "enabled": enabled}:
-                    self.white_leds_services[site].call(SetBool.Request(data=enabled))
+                    self.auto_shutoff_service.call(EnableBool.Request(enable=shutoff))
+
+                case {"type": "white_leds", "site": site, "enabled": e}:
+                    self.white_leds_services[site].call(EnableBool.Request(enable=e))
+
+                case {"type": "ls_toggle", "enable": e}:
+                    self.sa_enable_switch_srv.call(EnableBool.Request(enable=e))
+
                 case _:
                     node.get_logger().warning(f"Unhandled message: {message}")
         except:

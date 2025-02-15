@@ -108,7 +108,7 @@ import html2canvas from "html2canvas";
         a.click()
         canvas.remove()
       })
-      alert("Downloaded report!")
+      alert("Downloaded report!") //remove?
     }
   }
 }

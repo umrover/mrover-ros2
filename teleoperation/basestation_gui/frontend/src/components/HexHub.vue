@@ -1,57 +1,64 @@
 <template>
-  <div>
-    <!-- Creates the buttons for each site (A-F) -->
-    <div class="row">
-      <div v-for="index in 6" :key="index" class="col-sm">
-        <div class="form-check d-flex justify-content-center align-items-center">
-          <input
-            v-model="currentSite"
-            class="btn-check"
-            type="radio"
-            :id="'Site' + index"
-            :value="siteList[index]"
-          />
-          <label class="btn btn-outline-secondary" :for="'Site' + index">Site {{ siteList[index] }}</label>
+    <h3>HexHub Controls</h3>
+      <div class="grid">
+        <div v-for="name, index in siteList" :key="index" class="col-4">
+          <div class="form-check d-flex justify-content-center align-items-center" >
+            <input
+              v-model="currentSite"
+              class="btn-check"
+              type="radio"
+              :id="'Site' + index"
+              :value="index"
+              @change="emitSite"
+            />
+            <label class="btn btn-outline-secondary my-2" :for="'Site' + index">{{ name }}</label>
+          </div>
         </div>
       </div>
-    </div>
-  </div>
-</template>
+  </template>
 
-<script lang="ts">
-import { mapState, mapActions } from 'vuex';
-
-export default {
-  data() {
-    return {
-      missionType: [
-        "DM Mission", 
-        "ES Mission", 
-        "ISH GUI", 
-        "Sample Acquisition GUI", 
-        "Autonomy Mission"
-      ],
-      selectedMission: "DM Mission",
-      currentSite: 1, // Default site is 1 (Site A)
-      siteList: { 1: "Site 1", 2: "Site 2", 3: "Empty", 4: "Cache", 5: "Closed 1", 6: "Closed 2" },
-      camsEnabled: [],
-      camsStreaming: []
-    };
-  },
-  computed: {
-    ...mapState('websocket', ['message']),
-  },
-  methods: {
-    ...mapActions('websocket', ['sendMessage']),
-    
-    sendHexHubSite() {
-      // Send the selected site (A-F) to the backend
-      this.sendMessage({ type: 'hexHubSite', site: this.currentSite });
+  <script lang="ts">
+  import { mapState, mapActions } from 'vuex';
+  export default {
+    data() {
+      return {
+        currentSite: 0,
+        siteList: ["Sample A", "Sample B", "Sample Cache", "Empty Soil Deposit"],
+      };
     },
-  },
-};
-</script>
+    computed: {
+      ...mapState('websocket', ['message']),
+    },
+    methods: {
+      ...mapActions('websocket', ['sendMessage']),
+      emitSite() {
+        this.$emit('selectSite', this.currentSite); 
+      }
+    },
 
-<style scoped>
-/* Add your styles here */
-</style>
+    emits: ['selectSite'],
+  };
+  </script>
+
+  <style scoped>
+  .btn{
+    width: auto; 
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+
+  .btn:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 6px 10px rgba(0, 0, 0, 0.2);
+  }
+
+  .grid {
+  display: grid;
+  /* grid-gap: 0px; */
+  grid-template-columns: repeat(2, auto);
+  font-family: sans-serif;
+  height: auto;
+  align-items: center;
+  justify-items: center;
+}
+  </style>
+    
