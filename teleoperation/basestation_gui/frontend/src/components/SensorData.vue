@@ -234,8 +234,8 @@ import Chart from 'chart.js/auto';
         case 'humidity':
             this.sensor_data = {
               ...this.sensor_data,
-              temp: 100 * msg.relative_humidity,
-              temp_var: 100 * msg.variance
+              humidity: 100 * msg.relative_humidity,
+              humidity_var: 100 * msg.variance
             }
             break
       }
