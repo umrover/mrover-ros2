@@ -165,8 +165,8 @@ namespace mrover {
     }
 
     auto StereoTagDetector::spiralSearchForValidPoint(sensor_msgs::msg::PointCloud2::ConstSharedPtr const& cloudPtr,
-                                                             std::size_t u, std::size_t v,
-                                                             std::size_t width, std::size_t height) const -> std::optional<SE3d> {
+                                                      std::size_t u, std::size_t v,
+                                                      std::size_t width, std::size_t height) const -> std::optional<SE3d> {
         // See: https://stackoverflow.com/a/398302
         auto xc = static_cast<int>(u), yc = static_cast<int>(v);
         auto sw = static_cast<int>(width), sh = static_cast<int>(height);
