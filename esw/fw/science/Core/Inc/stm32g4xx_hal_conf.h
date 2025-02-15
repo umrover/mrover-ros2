@@ -36,18 +36,18 @@
 
 #define HAL_MODULE_ENABLED
 
-  #define HAL_ADC_MODULE_ENABLED
+  /*#define HAL_ADC_MODULE_ENABLED   */
 /*#define HAL_COMP_MODULE_ENABLED   */
 /*#define HAL_CORDIC_MODULE_ENABLED   */
 /*#define HAL_CRC_MODULE_ENABLED   */
 /*#define HAL_CRYP_MODULE_ENABLED   */
 /*#define HAL_DAC_MODULE_ENABLED   */
-#define HAL_FDCAN_MODULE_ENABLED
+/*#define HAL_FDCAN_MODULE_ENABLED   */
 /*#define HAL_FMAC_MODULE_ENABLED   */
 /*#define HAL_HRTIM_MODULE_ENABLED   */
 /*#define HAL_IRDA_MODULE_ENABLED   */
 /*#define HAL_IWDG_MODULE_ENABLED   */
-#define HAL_I2C_MODULE_ENABLED
+/*#define HAL_I2C_MODULE_ENABLED   */
 /*#define HAL_I2S_MODULE_ENABLED   */
 /*#define HAL_LPTIM_MODULE_ENABLED   */
 /*#define HAL_NAND_MODULE_ENABLED   */
@@ -62,8 +62,8 @@
 /*#define HAL_SMBUS_MODULE_ENABLED   */
 /*#define HAL_SPI_MODULE_ENABLED   */
 /*#define HAL_SRAM_MODULE_ENABLED   */
-#define HAL_TIM_MODULE_ENABLED
-#define HAL_UART_MODULE_ENABLED
+/*#define HAL_TIM_MODULE_ENABLED   */
+/*#define HAL_UART_MODULE_ENABLED   */
 /*#define HAL_USART_MODULE_ENABLED   */
 /*#define HAL_WWDG_MODULE_ENABLED   */
 #define HAL_GPIO_MODULE_ENABLED
@@ -115,7 +115,7 @@
   *        (when HSE is used as system clock source, directly or through the PLL).
   */
 #if !defined  (HSE_VALUE)
-  #define HSE_VALUE    (24000000UL) /*!< Value of the External oscillator in Hz */
+  #define HSE_VALUE    (8000000UL) /*!< Value of the External oscillator in Hz */
 #endif /* HSE_VALUE */
 
 #if !defined  (HSE_STARTUP_TIMEOUT)
@@ -181,7 +181,7 @@ The real value may vary depending on the variations in voltage and temperature.*
   */
 
 #define  VDD_VALUE                   (3300UL) /*!< Value of VDD in mv */
-#define  TICK_INT_PRIORITY           (0UL)    /*!< tick interrupt priority (lowest by default)  */
+#define  TICK_INT_PRIORITY           (15UL)    /*!< tick interrupt priority (lowest by default)  */
 #define  USE_RTOS                     0U
 #define  PREFETCH_ENABLE              0U
 #define  INSTRUCTION_CACHE_ENABLE     1U
