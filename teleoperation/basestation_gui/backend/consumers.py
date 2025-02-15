@@ -23,7 +23,7 @@ from backend.waypoints import (
     save_basic_waypoint_list,
 )
 from geometry_msgs.msg import Twist, Vector3
-from sensor_msgs.msg import NavSatFix, Temperature, RelativeHumidity
+from sensor_msgs.msg import NavSatFix #, Temperature, RelativeHumidity
 from mrover.msg import (
     Throttle,
     IK,
@@ -37,6 +37,8 @@ from mrover.msg import (
     Oxygen,
     Methane,
     UV,
+    # Temperature,
+    # RelativeHumidity
 )
 from mrover.srv import EnableAuton
 from std_srvs.srv import SetBool
@@ -121,6 +123,7 @@ class GUIConsumer(JsonWebsocketConsumer):
         def callback(ros_message: Any):
             # Formatting a ROS message as a string outputs YAML
             # Parse it back into a dictionary, so we can send it as JSON
+            print("Got something!!")
             self.send_message_as_json({"type": gui_msg_type, **message_to_ordereddict(ros_message)})
 
         self.subscribers.append(node.create_subscription(topic_type, topic_name, callback, qos_profile=1))
