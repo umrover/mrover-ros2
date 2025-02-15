@@ -60,7 +60,7 @@ namespace mrover {
 
         ~CostMapNode() override = default;
 
-        auto pointCloudCallback(sensor_msgs::msg::PointCloud2::UniquePtr const& inputMsg) -> void;
+        auto pointCloudCallback(sensor_msgs::msg::PointCloud2::ConstSharedPtr const& msg) -> void;
 
         auto moveCostMapCallback(mrover::srv::MoveCostMap::Request::ConstSharedPtr& req, mrover::srv::MoveCostMap::Response::SharedPtr& res) -> void;
 

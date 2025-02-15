@@ -24,30 +24,17 @@ namespace mrover {
         return gridY * static_cast<int>(grid.info.width) + gridX;
     }
 
-    auto CostMapNode::pointCloudCallback(sensor_msgs::msg::PointCloud2::UniquePtr const& inputMsg) -> void {
-        assert(inputMsg);
-        assert(inputMsg->height > 0);
-        assert(inputMsg->width > 0);
+    auto CostMapNode::pointCloudCallback(sensor_msgs::msg::PointCloud2::ConstSharedPtr const& msg) -> void {
+        assert(msg);
+        assert(msg->height > 0);
+        assert(msg->width > 0);
 
-        // RCLCPP_INFO_STREAM(get_logger(), "Pointer is " << inputMsg.get());
-	
-		// Choose whether we are using a noisy pointcloud or a regular pointcloud
-		// TODO (john): change to shader
-		//sensor_msgs::msg::PointCloud2::UniquePtr noisyMsg = createNoisyPointCloud(inputMsg);
+        RCLCPP_INFO_STREAM(get_logger(), "COST MAP MESSAGE PTR: " << msg.get());
 
 		mInliers.clear();
 
-		sensor_msgs::msg::PointCloud2::UniquePtr const& msg = inputMsg;/*[&]() -> sensor_msgs::msg::PointCloud2::UniquePtr const& {
-			if constexpr (useNoisyPointCloud){
-				return noisyMsg;
-			}else{
-				return inputMsg;
-			}
-		}();*/
-
         try {
             SE3f cameraToMap = SE3Conversions::fromTfTree(mTfBuffer, "zed_left_camera_frame", "map").cast<float>();
-            SE3f roverSE3 = SE3Conversions::fromTfTree(mTfBuffer, "base_link", "map").cast<float>();
 
             // TIMING DEBUG
             // RCLCPP_INFO_STREAM(get_logger(), inputMsg->header.stamp.sec);
