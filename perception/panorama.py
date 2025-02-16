@@ -6,11 +6,12 @@ from std_msgs.msg import Header
 import tf2_ros
 from lie import SE3
 from sensor_msgs.msg import Imu
-
+from mrover.srv import CapturePanorama
 
 import rclpy
 from rclpy.node import Node
 import sys
+from datetime import datetime
 
 import cv2
 import time
@@ -38,6 +39,15 @@ def get_quaternion_from_euler(roll, pitch, yaw):
 class Panorama(Node):
     def __init__(self):
         super().__init__('panorama')
+
+        # Pano Action Server
+        self.start_pano = self.create_service(CapturePanorama, '/panorama/start', self.start_callback)
+        self.end_pano = self.create_service(CapturePanorama, '/panorama/end', self.end_callback)
+
+        # Start the panorama
+        self.record_image = False
+        self.record_pc = False
+
         # PC Stitching Variables
         self.pc_sub = message_filters.Subscriber(self, PointCloud2, "/zed/left/points")
         self.imu_sub = message_filters.Subscriber(self, Imu, "/zed_imu/data_raw")
@@ -69,27 +79,62 @@ class Panorama(Node):
         # extract xyzrgb fields
         # get every tenth point to make the pc sparser
         # TODO: dtype hard-coded to float32
-        self.current_pc = pc_msg
-        self.arr_pc = np.frombuffer(bytearray(pc_msg.data), dtype=np.float32).reshape(
-            pc_msg.height * pc_msg.width, int(pc_msg.point_step / 4)
-        )[0::10, :]
+        if self.record_pc:
+            self.current_pc = pc_msg
+            self.arr_pc = np.frombuffer(bytearray(pc_msg.data), dtype=np.float32).reshape(
+                pc_msg.height * pc_msg.width, int(pc_msg.point_step / 4)
+            )[0::10, :]
 
-        orientation = np.array([imu_msg.orientation._x, imu_msg.orientation._y, imu_msg.orientation._z, imu_msg.orientation._w])
+            orientation = np.array([imu_msg.orientation._x, imu_msg.orientation._y, imu_msg.orientation._z, imu_msg.orientation._w])
 
-        orientation = orientation / np.linalg.norm(orientation)
+            orientation = orientation / np.linalg.norm(orientation)
 
-        # Create the SE3
-        x, y, z, w = orientation
-        rotation = np.array([
-            [1 - 2*y**2 - 2*z**2, 2*x*y - 2*z*w, 2*x*z + 2*y*w, 0],
-            [2*x*y + 2*z*w, 1 - 2*x**2 - 2*z**2, 2*y*z - 2*x*w, 0],
-            [2*x*z - 2*y*w, 2*y*z + 2*x*w, 1 - 2*x**2 - 2*y**2, 0],
-            [0, 0, 0, 0]
-        ]) 
+            # Create the SE3
+            x, y, z, w = orientation
+            rotation = np.array([
+                [1 - 2*y**2 - 2*z**2, 2*x*y - 2*z*w, 2*x*z + 2*y*w, 0],
+                [2*x*y + 2*z*w, 1 - 2*x**2 - 2*z**2, 2*y*z - 2*x*w, 0],
+                [2*x*z - 2*y*w, 2*y*z + 2*x*w, 1 - 2*x**2 - 2*y**2, 0],
+                [0, 0, 0, 0]
+            ]) 
 
+            rotated_pc = self.rotate_pc(rotation, self.arr_pc)
+            self.stitched_pc = np.vstack((self.stitched_pc, rotated_pc))
+        else:
+            # Clear the stitched pc
+            self.stitched_pc = np.empty((0, 8), dtype=np.float32)
 
-        rotated_pc = self.rotate_pc(rotation, self.arr_pc)
-        self.stitched_pc = np.vstack((self.stitched_pc, rotated_pc))
+    def image_callback(self, msg: Image):
+        if self.record_image:
+            self.get_logger().info("Image Callback...")
+            self.current_img = cv2.cvtColor(
+                np.frombuffer(msg.data, dtype=np.uint8).reshape(msg.height, msg.width, 4), cv2.COLOR_RGBA2RGB
+            )
+
+            if self.current_img is not None:
+                self.img_list.append(np.copy(self.current_img))
+        else:
+            # Clear the images
+            self.img_list = []
+            self.stitcher = cv2.Stitcher.create()
+
+    def start_callback(self, _, response):
+        self.get_logger().info('Starting Pano...')
+
+        self.record_image = True
+        self.record_pc = True
+
+        # START SPINNING THE MAST GIMBAL
+
+        return response
+
+    def end_callback(self, _, response):
+        self.get_logger().info('Ending Pano...')
+
+        self.record_image = False
+        self.record_pc = False
+
+        # STOP SPINNING THE MAST GIMBAL
 
         # construct pc from stitched
         try:
@@ -110,23 +155,20 @@ class Panorama(Node):
         except:
             # If image succeeds but pc fails, should we set action as succeeded?
             self.get_logger().info("Failed to create point cloud message")
-            return
-
-    def image_callback(self, msg: Image):
-        self.get_logger().info("Image Callback...")
-        self.current_img = cv2.cvtColor(
-            np.frombuffer(msg.data, dtype=np.uint8).reshape(msg.height, msg.width, 4), cv2.COLOR_RGBA2RGB
-        )
-
-        if self.current_img is not None:
-            self.img_list.append(np.copy(self.current_img))
-
 
         _, pano = self.stitcher.stitch(self.img_list)
 
+        # Construct Pano and Save
         if pano is not None:
             self.get_logger().info("Saving Pano...")
-            cv2.imwrite("data/pano.png", pano)
+            now = datetime.now()
+            date_string = now.strftime("%H:%M:%S.%f")[:-3];
+            cv2.imwrite(f"data/pano-{date_string}.png", pano)
+        else:
+            self.get_logger().info('Pano Failed...')
+
+        self.get_logger().info('Chill')
+        return response
 
 def main(args=None):
     rclpy.init(args=args)
