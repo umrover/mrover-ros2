@@ -44,17 +44,23 @@ namespace mrover {
         rclcpp::Subscription<msg::CAN>::ConstSharedPtr canSubA;
         rclcpp::Subscription<msg::CAN>::ConstSharedPtr canSubB;
 
-        mrover::CanDevice canDev;
+        mrover::CanDevice canDevA;
+        mrover::CanDevice canDevB;
 
         void processHeaterAutoShutoff(const std::shared_ptr<srv::EnableBool::Request> request, std::shared_ptr<srv::EnableBool::Response> response) {
-            canDev.publish_message(InBoundScienceMessage{HeaterAutoShutOffCommand{.enable_auto_shutoff = request->enable}}); 
+            canDevA.publish_message(InBoundScienceMessage{HeaterAutoShutOffCommand{.enable_auto_shutoff = request->enable}});
+            canDevB.publish_message(InBoundScienceMessage{HeaterAutoShutOffCommand{.enable_auto_shutoff = request->enable}}); 
             response->success = true;
             response->message = request->enable ? "Enabled" : "Disabled";
         }
 
         void processScienceEnable(const ScienceDevice dev, const std::shared_ptr<srv::EnableBool::Request> request, std::shared_ptr<srv::EnableBool::Response> response) {
-            canDev.publish_message(InBoundScienceMessage{EnableScienceDeviceCommand{.science_device = dev, .enable = request->enable}}); 
-            response->success = true;
+            if (dev == ScienceDevice::HEATER_A0 || dev == ScienceDevice::HEATER_A1 || dev == ScienceDevice::WHITE_LED_A)
+                canDevA.publish_message(InBoundScienceMessage{EnableScienceDeviceCommand{.science_device = dev, .enable = request->enable}});
+            else
+                canDevB.publish_message(InBoundScienceMessage{EnableScienceDeviceCommand{.science_device = dev, .enable = request->enable}});
+            
+                response->success = true;
             response->message = request->enable ? "Enabled" : "Disabled";
         }
 
@@ -117,11 +123,6 @@ namespace mrover {
 
         void processCANData(msg::CAN::ConstSharedPtr const& msg) {
             //RCLCPP_ERROR(get_logger(), "Source: %s Destination: %s", msg->source.c_str(), msg->destination.c_str());
-            // if (msg->data.size() < sizeof(OutBoundScienceMessage)) {
-            //     RCLCPP_ERROR(get_logger(), "Received CAN message is too small! Size: %zu, Expected: %zu", msg->data.size(), sizeof(OutBoundScienceMessage));
-            //     return;
-            // }
-
             OutBoundScienceMessage const& message = *reinterpret_cast<OutBoundScienceMessage const*>(msg->data.data());
             std::visit([&](auto const& messageAlternative) { processMessage(messageAlternative); }, message);
         }
@@ -161,7 +162,8 @@ namespace mrover {
             canSubA = create_subscription<msg::CAN>("/can/science_a/in", 10, [this](msg::CAN::ConstSharedPtr const& msg) { processCANData(msg); });
             canSubB = create_subscription<msg::CAN>("/can/science_b/in", 10, [this](msg::CAN::ConstSharedPtr const& msg) { processCANData(msg); });
 
-            canDev = CanDevice(rclcpp::Node::shared_from_this(), "jetson", "science_b");
+            canDevA = CanDevice(rclcpp::Node::shared_from_this(), "jetson", "science_a");
+            canDevB = CanDevice(rclcpp::Node::shared_from_this(), "jetson", "science_b");
         }
     };
 
