@@ -36,3 +36,29 @@ mobility_streamer:
     bitrate: 2000000
     dev_path: ""
 
+# TODO: Fix temp hardcoded video devices for science
+science_streamer_1:
+  ros__parameters:
+    port: 8083
+    dev_descriptor: ""
+    decode_jpeg_from_device: false
+    dev_node: "/dev/video4"
+    width:  640
+    height: 480
+    framerate: 30
+    address: 127.0.0.1
+    bitrate: 2000000
+    dev_path: ""
+
+science_streamer_2:
+  ros__parameters:
+    port: 8084
+    dev_descriptor: ""
+    decode_jpeg_from_device: false
+    dev_node: "/dev/video6"
+    width:  640
+    height: 480
+    framerate: 30
+    address: 127.0.0.1
+    bitrate: 2000000
+    dev_path: ""
