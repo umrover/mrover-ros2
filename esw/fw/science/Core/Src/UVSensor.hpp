@@ -15,16 +15,14 @@ namespace mrover {
 
         // update value of uv_index with blocking
         double update_uv_blocking() {
-            int y = adc_ptr->get_raw_channel_blocking();
-            float ratio = y / 4096.0;
-            uv_index = 33.0 * ratio;
+            uv_index = 33.0 * (adc_ptr->get_raw_channel_blocking() / 4095.0);
             return uv_index;
         }
 
         // update value of uv_index with non-blocking
         double update_uv_async() {
             adc_ptr->update();
-            uv_index = adc_ptr->get_raw_channel_value(channel) / 100.00;
+            uv_index = 33.0 * (adc_ptr->get_raw_channel_blocking() / 4095.0);
             return uv_index;
         }
 
