@@ -10,8 +10,8 @@
         :label-disable-text="'Heater ' + String.fromCharCode(65 + site)"
         @change="toggleHeater()"
       />
-      <p :style="{ color: heaters[site].color }">
-        Thermistor {{ String.fromCharCode(65 + site) }}: {{ (heaters[site].temp).toFixed(2) }} C°
+      <p :style="{ color: getHeaters[site].color }">
+        Thermistor {{ String.fromCharCode(65 + site) }}: {{ (getHeaters[site].temp).toFixed(2) }} C°
       </p>
     </div>
     <div class="comms heaterStatus">
@@ -44,6 +44,24 @@ export default {
       type: Boolean,
       required: true
     }
+  },
+
+  mounted() {
+    setInterval(()=>{
+      this.heaters = [
+        {
+          ...this.heaters[0],
+          temp: this.heaters[0].enabled ? Math.random() * 1 + 20 : 0,
+        },
+        {
+         ...this.heaters[1],
+         temp: this.heaters[1].enabled ? Math.random() * 1 + 20 : 0
+        },
+      ]
+      console.log("NEW ")
+      console.log(this.heaters)
+      this.$forceUpdate();
+    }, 1000);
   },
 
   data() {
@@ -88,7 +106,10 @@ export default {
   },
 
   computed: {
-    ...mapState('websocket', ['message'])
+    ...mapState('websocket', ['message']),
+    getHeaters() {
+      return this.heaters
+    },
   },
 
   methods: {

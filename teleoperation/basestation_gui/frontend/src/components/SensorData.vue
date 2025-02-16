@@ -125,18 +125,18 @@ import Chart from 'chart.js/auto';
       setInterval(() => {
         //Uncomment if you want random gen from frontend
           // console.log(Object.values(self.sensor_data).length)
-          // self.sensor_data = {
-          //   oxygen: 20 + Math.random() * 2,
-          //   oxygen_var: 0,
-          //   methane: 0,
-          //   methane_var: 0,
-          //   uv: 0.1 + Math.random() * 0.1,
-          //   uv_var: 0,
-          //   humidity: 40 + Math.random() * 20,
-          //   humidity_var: 0,
-          //   temp: 17 + Math.random() * 3,
-          //   temp_var: 0
-          // }
+          self.sensor_data = {
+            oxygen: 20 + Math.random() * 1,
+            oxygen_var: 0,
+            methane: 0,
+            methane_var: 0,
+            uv: 0.1 + Math.random() * 0.1,
+            uv_var: 0,
+            humidity: 40 + Math.random() * 20,
+            humidity_var: 0,
+            temp: 17 + Math.random() * 3,
+            temp_var: 0
+          }
           this.$forceUpdate();
           //{ ...this.sensor_data, temp: 40 + 17 + Math.random() * 3, humidity: 40 + Math.random() * 20};
           // this.sensor_data = { ...this.sensor_data, uv: 0.1 + Math.random() * 0.1};
