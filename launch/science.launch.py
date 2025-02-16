@@ -26,21 +26,6 @@ def generate_launch_description():
         )
     )
 
-
-    diff_drive_controller_node = Node(
-        package="mrover",
-        executable="differential_drive_controller",
-        name="differential_drive_controller",
-        parameters=[os.path.join(get_package_share_directory("mrover"), "config", "esw.yaml")],
-    )
-
-    superstructure_node = Node(
-        package="mrover",
-        executable="superstructure.py",
-        name="superstructure",
-        parameters=[os.path.join(get_package_share_directory("mrover"), "config", "superstructure.yaml")],
-    )
-
     science_node = Node(
         package="mrover",
         executable="science_hw_bridge",
