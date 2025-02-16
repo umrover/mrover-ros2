@@ -1,5 +1,4 @@
 #include "cost_map.hpp"
-#include "mrover/srv/detail/dilate_cost__struct.hpp"
 #include <cstddef>
 #include <nav_msgs/msg/detail/occupancy_grid__struct.hpp>
 
