@@ -17,7 +17,7 @@ namespace mrover {
         std::thread mMainLoopThread, mStreamSinkThread;
 
     public:
-        UsbCamera();
+        explicit UsbCamera(rclcpp::NodeOptions const& options = rclcpp::NodeOptions());
 
         ~UsbCamera() override;
 

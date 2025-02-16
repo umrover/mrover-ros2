@@ -1,6 +1,6 @@
 #include "cost_map.hpp"
 namespace mrover {
-    CostMapNode::CostMapNode(rclcpp::NodeOptions const& options) : Node("cost_map"), mLoopProfilerGrab{get_logger()}, mLoopProfilerUpdate{get_logger()}{
+    CostMapNode::CostMapNode(rclcpp::NodeOptions const& options) : Node("cost_map", options){
         std::vector<ParameterWrapper> params{
             {"resolution", mResolution, 0.5},
             {"size", mSize, 60.0},
@@ -25,7 +25,7 @@ namespace mrover {
                                                                                    mrover::srv::MoveCostMap::Response::SharedPtr response) {
             moveCostMapCallback(request, response);
         });
-        mPcSub = create_subscription<sensor_msgs::msg::PointCloud2>("/zed/left/points", 1, [this](sensor_msgs::msg::PointCloud2::UniquePtr const& msg) {
+        mPcSub = create_subscription<sensor_msgs::msg::PointCloud2>("/zed/left/points", 1, [this](sensor_msgs::msg::PointCloud2::ConstSharedPtr const& msg) {
             pointCloudCallback(msg);
         });
 

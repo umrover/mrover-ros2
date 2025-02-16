@@ -37,8 +37,8 @@ namespace mrover {
         std::string mMapFrame;
 
         // Loop timing stuff
-        LoopProfiler mLoopProfilerGrab;
-        LoopProfiler mLoopProfilerUpdate;
+        // LoopProfiler mLoopProfilerGrab;
+        // LoopProfiler mLoopProfilerUpdate;
 		
         tf2_ros::Buffer mTfBuffer{get_clock()};
         tf2_ros::TransformListener mTfListener{mTfBuffer};
@@ -60,7 +60,7 @@ namespace mrover {
 
         ~CostMapNode() override = default;
 
-        auto pointCloudCallback(sensor_msgs::msg::PointCloud2::UniquePtr const& inputMsg) -> void;
+        auto pointCloudCallback(sensor_msgs::msg::PointCloud2::ConstSharedPtr const& msg) -> void;
 
         auto moveCostMapCallback(mrover::srv::MoveCostMap::Request::ConstSharedPtr& req, mrover::srv::MoveCostMap::Response::SharedPtr& res) -> void;
 

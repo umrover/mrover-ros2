@@ -291,7 +291,7 @@ endif()
 
 # Tag Detector
 mrover_add_component(tag_detector perception/tag_detector/*.cpp perception/tag_detector/pch.hpp StereoTagDetector ImageTagDetector)
-mrover_ament_component(tag_detector rclcpp tf2 tf2_ros)
+mrover_ament_component(tag_detector rclcpp rclcpp_components tf2 tf2_ros)
 mrover_link_component(tag_detector lie opencv_core opencv_aruco opencv_imgproc loop_profiler parameter_utils)
 
 mrover_executable_from_component(stereo_tag_detector perception/executables/stereo_tag_detector.cpp tag_detector_component)

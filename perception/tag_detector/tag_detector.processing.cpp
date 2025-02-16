@@ -10,7 +10,7 @@ namespace mrover {
      *
      * @param msg   Point cloud message
      */
-    auto StereoTagDetectorNodelet::pointCloudCallback(sensor_msgs::msg::PointCloud2::ConstSharedPtr const& msg) -> void {
+    auto StereoTagDetector::pointCloudCallback(sensor_msgs::msg::PointCloud2::ConstSharedPtr const& msg) -> void {
         assert(msg);
         assert(msg->height > 0);
         assert(msg->width > 0);
@@ -94,7 +94,7 @@ namespace mrover {
         mProfiler.measureEvent("Publication");
     }
 
-    auto ImageTagDetectorNodelet::imageCallback(sensor_msgs::msg::Image::ConstSharedPtr const& msg) -> void {
+    auto ImageTagDetector::imageCallback(sensor_msgs::msg::Image::ConstSharedPtr const& msg) -> void {
         assert(msg);
         assert(msg->height > 0);
         assert(msg->width > 0);
@@ -121,7 +121,7 @@ namespace mrover {
         mProfiler.measureEvent("Publication");
     }
 
-    auto TagDetectorNodeletBase::publishDetectedTags() -> void {
+    auto TagDetectorBase::publishDetectedTags() -> void {
         if (mDetectedImagePub->get_subscription_count()) {
             cv::aruco::drawDetectedMarkers(mBgrImage, mImmediateCorners, mImmediateIds);
             // Max number of tags the hit counter can display = 10;
@@ -163,9 +163,9 @@ namespace mrover {
         }
     }
 
-    auto StereoTagDetectorNodelet::spiralSearchForValidPoint(sensor_msgs::msg::PointCloud2::ConstSharedPtr const& cloudPtr,
-                                                             std::size_t u, std::size_t v,
-                                                             std::size_t width, std::size_t height) const -> std::optional<SE3d> {
+    auto StereoTagDetector::spiralSearchForValidPoint(sensor_msgs::msg::PointCloud2::ConstSharedPtr const& cloudPtr,
+                                                      std::size_t u, std::size_t v,
+                                                      std::size_t width, std::size_t height) const -> std::optional<SE3d> {
         // See: https://stackoverflow.com/a/398302
         auto xc = static_cast<int>(u), yc = static_cast<int>(v);
         auto sw = static_cast<int>(width), sh = static_cast<int>(height);
@@ -200,7 +200,7 @@ namespace mrover {
         return std::nullopt;
     }
 
-    auto ImageTagDetectorNodelet::getTagBearing(cv::InputArray image, std::span<cv::Point2f const> tagCorners) const -> float {
+    auto ImageTagDetector::getTagBearing(cv::InputArray image, std::span<cv::Point2f const> tagCorners) const -> float {
         // Takes the average of the corners
         cv::Point2f center = std::reduce(tagCorners.begin(), tagCorners.end()) / static_cast<float>(tagCorners.size());
         float xNormalized = center.x / static_cast<float>(image.cols());
