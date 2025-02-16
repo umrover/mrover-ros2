@@ -57,6 +57,8 @@ import Chart from 'chart.js/auto';
     },
 
     mounted() {
+      console.log("HELLO!!")
+      console.log(import.meta.env);
       let self = this;
       let charts = [];
       function waitForElm(selector) {
