@@ -5,16 +5,17 @@
 
 // ROS Headers, ros namespace
 #include "pch.hpp"
+#include <manif/impl/se_2_3/SE_2_3Tangent.h>
 
 using SO3d = manif::SO3d;
 using SE_2_3d = manif::SE_2_3d;
+using SE_2_3Tangentd = manif::SE_2_3Tangentd;
 using Matrix33d = Eigen::Matrix<double, 3, 3>;
 using Matrix55d = Eigen::Matrix<double, 5, 5>;
 using Matrix99d = Eigen::Matrix<double, 9, 9>;
 using Matrix39d = Eigen::Matrix<double, 3, 9>;
 using Vector3d = Eigen::Vector3d;
-
-using Vector5d = Eigen::Matrix<double, 5, 1>;
+using Vector9d = Eigen::Matrix<double, 9, 1>;
 
 namespace mrover {
 
@@ -24,7 +25,6 @@ namespace mrover {
 
         // utils
         auto adjoint() -> Matrix99d;
-        static auto sup_x(const Vector3d& v) -> Matrix33d;
 
         // sensor callbacks
         void gyro_callback(const geometry_msgs::msg::Vector3& w, const Matrix33d& cov, double dt);
@@ -43,7 +43,6 @@ namespace mrover {
 
         // timekeeping
         std::optional<builtin_interfaces::msg::Time> last_imu_time;
-
        
         // state variables
         SE_2_3d X;
@@ -51,10 +50,9 @@ namespace mrover {
         Matrix99d A;
         Vector3d g{0, 0, 9.80665};
         
-        const double GYRO_DT = 0.02;
+        const double GYRO_DT = 0.016;
         const std::string ROVER_FRAME = "base_link";
         const std::string MAP_FRAME = "map";
-
 
         
         

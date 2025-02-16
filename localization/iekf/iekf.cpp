@@ -5,16 +5,18 @@
 namespace mrover {
     
     IEKF::IEKF() : Node{"iekf"} {
+
         // initialize state variables
         X.setIdentity();
         P = Matrix99d::Identity();
         A = Matrix99d::Zero();
 
-        A.block(3, 0, 3, 3) = sup_x(g);
+        A.block(3, 0, 3, 3) = manif::skew(g);
         A.block(6, 3, 3, 3) = Matrix33d::Identity();
 
         // subscribers
         imu_sub = this->create_subscription<sensor_msgs::msg::Imu>("/zed_imu/data_raw", 10, [&](const sensor_msgs::msg::Imu::ConstSharedPtr& imu_msg) {
+            
             geometry_msgs::msg::Vector3 w = imu_msg->angular_velocity;
             Matrix33d cov_w;
             cov_w << imu_msg->angular_velocity_covariance[0], imu_msg->angular_velocity_covariance[1], imu_msg->angular_velocity_covariance[2],
@@ -23,17 +25,15 @@ namespace mrover {
             
             double dt = GYRO_DT;
             if (last_imu_time) {
-                dt = (imu_msg->header.stamp.sec + imu_msg->header.stamp.nanosec * 10e-9) - (last_imu_time.value().sec + last_imu_time.value().nanosec * 10e-9);   
+                dt = (imu_msg->header.stamp.sec + imu_msg->header.stamp.nanosec * 1e-9) - (last_imu_time.value().sec + last_imu_time.value().nanosec * 1e-9);   
             }
             gyro_callback(w, cov_w, dt);
 
             R3d position(0, 0, 0);
-            // SO3d orientation
             SE3d pose_in_map(position, X.asSO3());
-
             SE3Conversions::pushToTfTree(tf_broadcaster, ROVER_FRAME, MAP_FRAME, pose_in_map, get_clock()->now());
 
-            // RCLCPP_INFO_STREAM(get_logger(), std::format("Heading: {} {} {}", X.rotation().x(), X.rotation().y(), X.rotation().z()));
+            last_imu_time = imu_msg->header.stamp;
             
         });
 
@@ -121,29 +121,14 @@ namespace mrover {
     //                             const Eigen::MatrixXd& N) -> void {
         
     // }
-
-    auto IEKF::sup_x(const Vector3d& v) -> Matrix33d {
-        Matrix33d result = Matrix33d::Zero();
-
-        result(0, 1) = -v(2);
-        result(0, 2) = v(1);
-        result(1, 0) = v(2);
-        result(1, 2) = -v(0);
-        result(2, 0) = -v(1);
-        result(2, 1) = v(0);
-
-        return result;
-    }
-
     
 
     auto IEKF::adjoint() -> Matrix99d {
 
         Matrix99d adj = Matrix99d::Zero();
 
-        Matrix33d v_skew = sup_x(X.translation());
-        Matrix33d p_skew = sup_x(X.linearVelocity());
-
+        Matrix33d v_skew = manif::skew(X.translation());
+        Matrix33d p_skew = manif::skew(X.linearVelocity());
 
         adj.block(0, 0, 3, 3) = X.rotation();
         adj.block(3, 0, 3, 3) = v_skew * X.rotation();
@@ -157,7 +142,6 @@ namespace mrover {
 
     void IEKF::gyro_callback(const geometry_msgs::msg::Vector3& w, const Matrix33d& cov, double dt) {
 
-        Matrix33d w_skew = sup_x(Vector3d{w.x, w.y, w.z});
         Matrix99d adj_x = adjoint();
         Matrix99d Q = Matrix99d::Zero();
         Matrix99d Q_d = Matrix99d::Zero();
@@ -166,27 +150,36 @@ namespace mrover {
         Q_d = (A * dt).exp() * Q * dt * ((A * dt).exp()).transpose();
 
         // propagate
-        X.rotation() = X.rotation() * (w_skew * dt).exp();
+        Vector9d u_vec;
+        u_vec << Vector3d::Zero(), Vector3d{w.x, w.y, w.z} * dt, Vector3d::Zero();
+        SE_2_3Tangentd u = u_vec;
+        X = X + u;
         P = (A * dt).exp() * P * ((A * dt).exp()).transpose() + adj_x * Q_d * adj_x.transpose();
+
+        // Matrix33d rotation_tracker = X.rotation();
+
+        // RCLCPP_INFO(get_logger(), "%f, %f, %f\n %f, %f, %f\n %f, %f, %f", rotation_tracker(0,0), rotation_tracker(0,1), rotation_tracker(0,2),
+        //                                                                     rotation_tracker(1,0), rotation_tracker(1,1), rotation_tracker(1,2),
+        //                                                                     rotation_tracker(2,0), rotation_tracker(2,1), rotation_tracker(2,2));
     }
 
-    void IEKF::accel_callback(const geometry_msgs::msg::Vector3Stamped& a, const Matrix33d& cov, double dt) {
+    // void IEKF::accel_callback(const geometry_msgs::msg::Vector3Stamped& a, const Matrix33d& cov, double dt) {
 
-        Matrix99d adj_x = adjoint();
-        Matrix99d Q = Matrix99d::Zero();
-        Matrix99d Q_d = Matrix99d::Zero();
+    //     Matrix99d adj_x = adjoint();
+    //     Matrix99d Q = Matrix99d::Zero();
+    //     Matrix99d Q_d = Matrix99d::Zero();
 
-        Q.block(3, 3, 3, 3) = cov.cwiseAbs();
-        Q.block(6, 6, 3, 3) = cov.cwiseAbs() * dt;
-        Q_d = (A * dt).exp() * Q * dt * ((A * dt).exp()).transpose();
+    //     Q.block(3, 3, 3, 3) = cov.cwiseAbs();
+    //     Q.block(6, 6, 3, 3) = cov.cwiseAbs() * dt;
+    //     Q_d = (A * dt).exp() * Q * dt * ((A * dt).exp()).transpose();
 
-        Vector3d a_vec{a.vector.x, a.vector.y, a.vector.z};
+    //     Vector3d a_vec{a.vector.x, a.vector.y, a.vector.z};
 
-        // propagate
-        X.translation() = X.translation() + X.linearVelocity() * dt + 0.5 * X.rotation() * a_vec * pow(dt, 2) + 0.5 * g * pow(dt, 2);
-        X.linearVelocity() = X.linearVelocity() + X.rotation() * a_vec * dt + g * dt;
+    //     // propagate
+    //     X.translation() = X.translation() + X.linearVelocity() * dt + 0.5 * X.rotation() * a_vec * pow(dt, 2) + 0.5 * g * pow(dt, 2);
+    //     X.linearVelocity() = X.linearVelocity() + X.rotation() * a_vec * dt + g * dt;
 
-    }
+    // }
     // auto IEKF::accelCallback(geometry_msgs::msg::Vector3Stamped accel) -> void {
         
     // }
