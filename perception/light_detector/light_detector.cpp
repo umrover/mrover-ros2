@@ -1,5 +1,6 @@
 #include "light_detector.hpp"
 #include <opencv2/core/matx.hpp>
+#include <rcl/graph.h>
 #include <rclcpp/node.hpp>
 
 namespace mrover{
@@ -22,7 +23,6 @@ namespace mrover{
         ParameterWrapper::declareParameters(this, params);
 
 		//Create Needed Subscribers and Publishers
-		imgPub = this->create_publisher<sensor_msgs::msg::Image>("/light_detector/img", 1);
 		pointPub = this->create_publisher<geometry_msgs::msg::Vector3>("/light_detector/light_poses", 1);
 	}
 
@@ -64,6 +64,11 @@ namespace mrover{
 		};
 		
         ParameterWrapper::declareParameters(this, params);
+
+		// CHANGE TOPIC NAME
+		imgSub = create_subscription<sensor_msgs::msg::Image>("/zed/left/points", 1, [this](sensor_msgs::msg::Image::ConstSharedPtr const& msg) {
+			InfraredDetector::imageCallback(msg);
+		});
 	}
 
 } // mrover

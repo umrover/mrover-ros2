@@ -18,6 +18,7 @@ namespace mrover {
 		cv::Mat mImgRGB, mImageBlob;
 		cv::Mat mOutputImage;
 
+		// Might not Need
 		std::unordered_map<std::pair<double, double>, int, PairHash> mHitCounts;
 
 		// Params
@@ -46,8 +47,7 @@ namespace mrover {
 		cv::Mat mErodedImg;
 		cv::Mat mDialtedImg;
 
-		// Pub Sub
-		rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr imgPub;
+		// Point Publisher
 		rclcpp::Publisher<geometry_msgs::msg::Vector3>::SharedPtr pointPub;
 
 		// The number of lights that we push into the TF
@@ -55,7 +55,6 @@ namespace mrover {
 
 		// Node Name
 		static constexpr char const* NODE_NAME = "light_detector";
-		
 
 		auto spiralSearchForValidPoint(sensor_msgs::msg::PointCloud2::ConstSharedPtr const& cloudPtr, std::size_t u, std::size_t v, std::size_t width, std::size_t height) const -> std::optional<SE3d>;
 
@@ -81,7 +80,9 @@ namespace mrover {
 		//just change and specify sensor subscriber and how to perform the callback
 		private:
 			// Subscribers (Infrared Camera)
-			rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr imgSub;
+			rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr imgSub;
+			// Image Pub for Debugging
+			rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr imgPub;
 		public:
 			explicit InfraredDetector(rclcpp::NodeOptions const& options = rclcpp::NodeOptions());
 
@@ -115,6 +116,8 @@ namespace mrover {
 
 			// Subscribers (ZED Camera)
 			rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr imgSub;
+			// Image Pub for Debugging
+			rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr imgPub;
 
 			// Brought from Object Detector
 			struct Detection {

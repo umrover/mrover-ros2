@@ -274,7 +274,7 @@ target_link_libraries(tag_detector lie opencv_core opencv_aruco opencv_imgproc l
 
 mrover_add_node(light_detector perception/light_detector/*.cpp perception/light_detector/pch.hpp)
 ament_target_dependencies(light_detector rclcpp tf2 tf2_ros)
-target_link_libraries(light_detector lie opencv_core opencv_aruco opencv_imgproc opencv_imgcodecs opencv_highgui loop_profiler parameter_utils tensorrt)
+target_link_libraries(light_detector lie opencv_core opencv_dnn opencv_aruco opencv_imgproc opencv_imgcodecs opencv_highgui loop_profiler parameter_utils tensorrt)
 
 # Embedded
 

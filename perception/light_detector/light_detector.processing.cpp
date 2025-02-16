@@ -68,6 +68,7 @@ namespace mrover {
         if (mDebug) {
             publishDetectedObjects(blobSizedImage);
         }
+        // NEED TO IMPLEMENT SOME SORT OF POINT PUB
 	}
 
     auto ColoredDetector::convertPointCloudToRGB(sensor_msgs::msg::PointCloud2::ConstSharedPtr const& msg, cv::Mat const& image) -> void {
@@ -97,7 +98,7 @@ namespace mrover {
         }
     }
 
-    // Gonna implement latr, lazy...
+    // Might Work Already, objectHitCounts stored in mModel instead of Hit Count Map
     auto ColoredDetector::updateHitsObject(sensor_msgs::msg::PointCloud2::ConstSharedPtr const& msg, std::span<Detection const> detections, cv::Size const& imageSize) -> void {
         // Set of flags indicating if the given object has been seen
         std::vector<bool> seenObjects(mModel.classes.size(), false);
@@ -109,6 +110,7 @@ namespace mrover {
             std::size_t centerXInImage = std::lround(centerInBlob.x * xRatio);
             std::size_t centerYInImage = std::lround(centerInBlob.y * yRatio);
 
+            // DO NOT KNOW IF THIS IS NEEDED
             // Get the object's position in 3D from the point cloud and run this statement if the optional has a value
             if (std::optional<SE3d> objectInCamera = spiralSearchForValidPoint(msg, centerXInImage, centerYInImage, box.width, box.height)) {
                 try {
@@ -144,7 +146,7 @@ namespace mrover {
         }
     }
 
-    auto ColoredDetector::publishDetectedObjects(cv::InputArray image) -> void {
+    auto ColoredDetector::publishDetectedObjects(cv::InputArray image) -> std::optional<std::pair<double,double>> {
         mDetectionsImageMessage.header.stamp = get_clock()->now();
         mDetectionsImageMessage.height = image.rows();
         mDetectionsImageMessage.width = image.cols();
@@ -156,6 +158,48 @@ namespace mrover {
         cv::cvtColor(image, debugImageWrapper, cv::COLOR_RGB2BGRA);
 
         imgPub->publish(mDetectionsImageMessage);
+
+        // Point Pub
+
+        std::vector<bool> seenObjects(mModel.classes.size(), false);
+        double shortest_distance = std::numeric_limits<double>::infinity();
+        bool found = false;
+        std::pair<double, double> closest;
+
+        for (int i = 0; i < seenObjects.size(); i++) {
+            if (seenObjects[i]) {
+                double distance;
+                if( >= mPublishThreshold){
+                    found = true;
+                    RCLCPP_INFO_STREAM(get_logger(),"Found a new point");
+                    RCLCPP_INFO_STREAM(get_logger(),"This new point was at " << point.first << ", " << point.second);
+                    distance = calculateDistance(point);
+                    if(distance <= shortest_distance){
+                        shortest_distance = distance;
+                        closest = point;
+                    }
+                }
+            }
+        }
+
+        geometry_msgs::msg::Vector3 pointMsg;
+        pointMsg.x = point.first;
+        pointMsg.y = point.second;
+        pointMsg.z = 0;
+        RCLCPP_INFO_STREAM(get_logger(),"Publishing " << point.first << " , " << point.second);
+        pointPub->publish(pointMsg);
+
+        double shortest_distance = std::numeric_limits<double>::infinity();
+        bool found = false;
+        std::pair<double, double> closest;
+        //RCLCPP_INFO_STREAM(get_logger(),"num points: " << mHitCounts.size());
+        for(auto const& [point, hc] : mHitCounts){
+            //RCLCPP_INFO_STREAM(get_logger(),"current point: " << point.first << ", " << point.second << ": " << hc);
+            
+        }
+        return std::pair<std::pair<double, double>, bool>(closest, found);
+
+
     }
 
     auto InfraredDetector::getPointFromPointCloud(sensor_msgs::msg::Image::ConstSharedPtr const& cloudPtr, std::pair<int, int> coordinates) -> std::optional<SE3d>{
