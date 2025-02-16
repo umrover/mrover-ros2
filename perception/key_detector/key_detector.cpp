@@ -12,6 +12,7 @@ namespace mrover{
 		using namespace std::placeholders;
 
 		mIkTargetPub = create_publisher<geometry_msgs::msg::Vector3>("ee_vel_cmd", 1);
+		mRVizPub = create_publisher<geometry_msgs::msg::PoseStamped>("key_press_vel", 1);
 
 		fsm_ctx->mTfBuffer = mTfBuffer;
 		fsm_ctx->mIkTargetPub = mIkTargetPub;

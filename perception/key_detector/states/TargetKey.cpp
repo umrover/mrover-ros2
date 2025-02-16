@@ -46,7 +46,7 @@ auto TargetKey::onLoop() -> State*{
     double magnitude = 0.0;
 
     //Allows for two seperate paths, simulator for running in simulation, and the bottom for runnin in normal
-    if(goal->simulator)
+    if(fsm_ctx->simulator)
     {
         auto key_loc = mrover::SE3Conversions::fromTfTree(*fsm_ctx->mTfBuffer, std::format("{}_key_truth", goal->code[fsm_ctx->curr_key_index]), "arm_e_link");
         ik.x = key_loc.x();
@@ -80,7 +80,7 @@ auto TargetKey::onLoop() -> State*{
 
     // Check magnitude, and determine next steps
     RCLCPP_INFO_STREAM(rclcpp::get_logger("rclcpp"), std::format("Magnitude: {}", magnitude));
-    if(magnitude < 0.15){
+    if(magnitude < 0.1){
         return StateMachine::make_state<PressKey>(fsm_ctx);
     }  
 
@@ -89,6 +89,13 @@ auto TargetKey::onLoop() -> State*{
     
     //move arm with ik
     fsm_ctx->mIkTargetPub->publish(ik);
+
+    geometry_msgs::msg::PoseStamped rviz;
+    // rviz.header.frame_id = "arm_e_link";
+    // rviz.pose.position.x = ik.x;
+    // rviz.pose.position.y = ik.y;
+    // rviz.pose.position.z = ik.z;
+    // fsm_ctx->mRVizPub->publish(rviz);
 
     
     // Loop

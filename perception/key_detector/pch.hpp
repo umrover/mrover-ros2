@@ -41,9 +41,12 @@ struct FSMCtx{
   std::shared_ptr<rclcpp::Node> node;
   bool init;
   bool fail;
+  bool simulator;
   int curr_key_index;
   std::shared_ptr<tf2_ros::Buffer> mTfBuffer;
   rclcpp::Publisher<geometry_msgs::msg::Vector3>::SharedPtr mIkTargetPub;
+  rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr mRVizPub;
+
 };
 
 // States

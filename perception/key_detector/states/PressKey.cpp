@@ -29,14 +29,14 @@ auto PressKey::onLoop() -> State*{
     press.y = key_loc.y();
     press.z = key_loc.z();
 
-    fsm_ctx->mIkTargetPub->publish(press);
+    // fsm_ctx->mIkTargetPub->publish(press);
 
     geometry_msgs::msg::Vector3 unpress;
     unpress.x = key_loc.x() + 0.5;
     unpress.y = key_loc.y();
     unpress.z = key_loc.z();
 
-    fsm_ctx->mIkTargetPub->publish(unpress);
+    // fsm_ctx->mIkTargetPub->publish(unpress);
 
 
     fsm_ctx->curr_key_index++;

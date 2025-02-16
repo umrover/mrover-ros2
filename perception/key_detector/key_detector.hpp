@@ -51,6 +51,7 @@ class KeyDetector : public rclcpp::Node{
     void updateFSM();
 
     rclcpp::Publisher<geometry_msgs::msg::Vector3>::SharedPtr mIkTargetPub;
+    rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr mRVizPub;
     
     rclcpp_action::Server<KeyAction>::SharedPtr action_server_;
 
