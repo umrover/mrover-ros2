@@ -48,18 +48,30 @@ export default {
 
   mounted() {
     setInterval(()=>{
+
+      let newVals = [this.heaters[0].temp, this.heaters[1].temp]
+      for (let i = 0; i < 2; ++i){
+        newVals[i] += this.heaters[i].enabled ? 4 + Math.random() : -1 - Math.random();
+        if (newVals[i] < 25){
+          newVals[i] = 22 + Math.random();
+        }
+        if (newVals[i] > 100){
+          newVals[i] = 99 + Math.random();
+        }
+      }
+
       this.heaters = [
         {
           ...this.heaters[0],
-          temp: this.heaters[0].enabled ? Math.random() * 1 + 20 : 0,
+          temp: newVals[0]
         },
         {
          ...this.heaters[1],
-         temp: this.heaters[1].enabled ? Math.random() * 1 + 20 : 0
+         temp: newVals[1]
         },
       ]
-      console.log("NEW ")
-      console.log(this.heaters)
+      // console.log("NEW ")
+      // console.log(this.heaters)
       this.$forceUpdate();
     }, 1000);
   },
@@ -117,6 +129,9 @@ export default {
 
     toggleHeater: function () {
       this.heaters[this.site].enabled = !this.heaters[this.site].enabled;
+      if (this.heaters[this.site].enabled){
+
+      }
       this.sendHeaterRequest();
     },
 

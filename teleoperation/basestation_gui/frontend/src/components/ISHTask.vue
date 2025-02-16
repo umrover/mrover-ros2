@@ -39,7 +39,7 @@
           @change="cameraB = $event" 
         />
       </div>
-      <div class="row gx-3 gy-3 justify-content-center">
+      <!-- <div class="row gx-3 gy-3 justify-content-center">
         <div v-if="cameraA" class="col-12">
           <CameraFeed
             :mission="'ish'"
@@ -54,7 +54,7 @@
             :name="'Sample B'"
           />
         </div>
-      </div>
+      </div> -->
     </div>
 
     <div class="shadow p-3 rounded sensors">
