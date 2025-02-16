@@ -11,7 +11,7 @@ namespace mrover {
         constexpr static double TAU = 2 * std::numbers::pi;
 
         // Dilation for map, set as number of bins away from object to dilate by (default 1)
-        constexpr static int dilation = 1;
+        constexpr static int dilation = 0;
 
 		// Noise/Debug Vars
 		constexpr static bool useNoisyPointCloud = false;
@@ -37,8 +37,8 @@ namespace mrover {
         std::string mMapFrame;
 
         // Loop timing stuff
-        // LoopProfiler mLoopProfilerGrab;
-        // LoopProfiler mLoopProfilerUpdate;
+        LoopProfiler mLoopProfilerGrab;
+        LoopProfiler mLoopProfilerUpdate;
 		
         tf2_ros::Buffer mTfBuffer{get_clock()};
         tf2_ros::TransformListener mTfListener{mTfBuffer};

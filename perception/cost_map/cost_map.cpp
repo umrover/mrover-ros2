@@ -1,6 +1,6 @@
 #include "cost_map.hpp"
 namespace mrover {
-    CostMapNode::CostMapNode(rclcpp::NodeOptions const& options) : Node("cost_map"){
+    CostMapNode::CostMapNode(rclcpp::NodeOptions const& options) : Node("cost_map"), mLoopProfilerGrab{get_logger()}, mLoopProfilerUpdate{get_logger()}{
         std::vector<ParameterWrapper> params{
             {"resolution", mResolution, 0.5},
             {"size", mSize, 60.0},
