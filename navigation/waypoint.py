@@ -121,7 +121,7 @@ class WaypointState(State):
 
             return self
 
-        if not hasattr(context.env.cost_map, "data"):
+        if not hasattr(context.env.cost_map, "data") and context.node.get_parameter("search.use_costmap").value:
             context.node.get_logger().warn(f"No costmap found, waiting...")
             self.start_time = context.node.get_clock().now()
             return self
