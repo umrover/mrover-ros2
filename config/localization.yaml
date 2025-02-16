@@ -6,7 +6,6 @@
 
 basestation_gps_driver:
   ros__parameters:
-    #TODO: change this
     port: /dev/ttyACM0
     baud: 38400
 
@@ -22,7 +21,10 @@ gps_linearization:
 
 rover_gps_driver:
   ros__parameters:
-    #TODO: change this
-    port: /dev/gps
-    baud: 115200
+    port_unicore: /dev/gps
+    baud_unicore: 115200
+
+    port_ublox: /dev/gps
+    baud_ublox: 38400
+
     frame_id: "base_link"

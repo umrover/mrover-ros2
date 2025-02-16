@@ -40,7 +40,7 @@ namespace mrover {
             .minVelocity = MetersPerSecond{-0.05},
             .maxVelocity = MetersPerSecond{0.05},
             .minPosition = Meters{0.0},
-            .maxPosition = Meters{0.4},
+            .maxPosition = Meters{0.35}, // limit switch to limit switch is roughly 13.25in. joint a roller is roughly 4.5in
             .maxTorque = 20.0,
 
             .limitSwitch0Present = true,
@@ -78,21 +78,21 @@ namespace mrover {
 
             .absPresent = true,
             .absRatio = -1.0,
-            .absOffset = 2.68_rad,
+            .absOffset = 0.995_rad,
 
             .minVelocity = -1.0_rad_per_s,
             .maxVelocity = 1.0_rad_per_s,
-            .minPosition = -0.7853981633974483_rad,
+            .minPosition = -0.9_rad,
             .maxPosition = 0_rad,
 
             .positionGains = {.p = 30.0},
-            // .velocityGains{},
+            .velocityGains = {.p = 30.0},
 
             .calibrationThrottle = 0.5,
     };
     constexpr static BrushlessController<Revolutions>::Config JOINT_C_CONFIG = {
-            .minVelocity = RevolutionsPerSecond{-0.03},
-            .maxVelocity = RevolutionsPerSecond{0.03},
+            .minVelocity = RevolutionsPerSecond{-0.05},
+            .maxVelocity = RevolutionsPerSecond{0.05},
             .minPosition = Revolutions{-0.125},
             .maxPosition = Revolutions{0.30},
             .maxTorque = 200.0,

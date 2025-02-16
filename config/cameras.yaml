@@ -1,0 +1,38 @@
+
+# All units are in SI
+# ===================
+# Time:     second, hz
+
+# zed_streamer:
+#   ros__parameters:
+#     port: 8081
+#     width: 1280
+#     height: 720
+#     image_topic: "/zed/left/image"
+
+boom_streamer:
+  ros__parameters:
+    port: 8081
+    dev_descriptor: ""
+    decode_jpeg_from_device: true
+    dev_node: "/dev/boomcam"
+    width: 640
+    height: 480
+    framerate: 30
+    address: 10.1.0.10
+    bitrate: 2000000
+    dev_path: ""
+
+mobility_streamer:
+  ros__parameters:
+    port: 8082
+    dev_descriptor: ""
+    decode_jpeg_from_device: true
+    dev_node: "/dev/mobcam"
+    width: 640
+    height: 480
+    framerate: 30
+    address: 10.1.0.10
+    bitrate: 2000000
+    dev_path: ""
+

@@ -71,7 +71,7 @@ class GPSLinearization(Node):
         )
         pose = SE3(position=np.array([x, y, 0]), quaternion=quaternion)
 
-        to_tf_tree(tf_broadcaster=self.tf_broadcaster, se3=pose, child_frame="base_link", parent_frame=self.world_frame)
+        to_tf_tree(tf_broadcaster=self.tf_broadcaster, se3=pose, child_frame="base_link", parent_frame=self.world_frame, stamp=self.get_clock().now().to_msg())
 
         self.get_logger().info(f"Published to TF Tree: Position({x}, {y}, {z}), Orientation({imu_msg.orientation})")
 
