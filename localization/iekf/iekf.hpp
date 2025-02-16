@@ -14,7 +14,7 @@ using Matrix99d = Eigen::Matrix<double, 9, 9>;
 using Matrix39d = Eigen::Matrix<double, 3, 9>;
 using Vector3d = Eigen::Vector3d;
 
-// using Vector5d = Eigen::Matrix<double, 4, 1>;
+using Vector5d = Eigen::Matrix<double, 5, 1>;
 
 namespace mrover {
 
@@ -27,23 +27,33 @@ namespace mrover {
         static auto sup_x(const Vector3d& v) -> Matrix33d;
 
         // sensor callbacks
-        void gyro_callback(const geometry_msgs::msg::Vector3Stamped& w, const Matrix33d& cov, double dt);
+        void gyro_callback(const geometry_msgs::msg::Vector3& w, const Matrix33d& cov, double dt);
         void accel_callback(const geometry_msgs::msg::Vector3Stamped& a, const Matrix33d& cov, double dt);
 
         // publishers and subscribers
         rclcpp::Subscription<geometry_msgs::msg::Vector3Stamped>::SharedPtr pos_sub;
-        rclcpp::Subscription<geometry_msgs::msg::Vector3Stamped>::SharedPtr gyro_sub;
-        rclcpp::Subscription<geometry_msgs::msg::Vector3Stamped>::SharedPtr accel_sub;
+        rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr imu_sub;
         rclcpp::Subscription<mrover::msg::Heading>::SharedPtr rtk_heading_sub;
         rclcpp::Subscription<mrover::msg::Heading>::SharedPtr mag_heading_sub;
 
+        // tf broadcaster
+        tf2_ros::Buffer tf_buffer{get_clock()};
+        tf2_ros::TransformListener tf_listener{tf_buffer};
+        tf2_ros::TransformBroadcaster tf_broadcaster{this};
+
+        // timekeeping
+        std::optional<builtin_interfaces::msg::Time> last_imu_time;
+
+       
         // state variables
         SE_2_3d X;
         Matrix99d P;
         Matrix99d A;
         Vector3d g{0, 0, 9.80665};
         
-        const double dt = 0.01;
+        const double GYRO_DT = 0.02;
+        const std::string ROVER_FRAME = "base_link";
+        const std::string MAP_FRAME = "map";
 
 
         
@@ -62,7 +72,7 @@ namespace mrover {
 
         // auto magCallback() -> void;
 
-        // auto gpsCallback(geometry_msgs::msg::Vector3Stamped position, geometry_msgs::msg::Vector3Stamped V) -> void;
+        auto gpsCallback(geometry_msgs::msg::Vector3Stamped position, geometry_msgs::msg::Vector3Stamped V) -> void;
 
     public:
     

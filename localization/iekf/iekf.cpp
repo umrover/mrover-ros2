@@ -1,11 +1,43 @@
 #include "iekf.hpp"
+#include <builtin_interfaces/msg/detail/duration__struct.hpp>
 #include <geometry_msgs/msg/detail/vector3_stamped__struct.hpp>
 
 namespace mrover {
     
     IEKF::IEKF() : Node{"iekf"} {
-        // TODO: pubs and subs and buffers(?)
+        // initialize state variables
+        X.setIdentity();
+        P = Matrix99d::Identity();
+        A = Matrix99d::Zero();
 
+        A.block(3, 0, 3, 3) = sup_x(g);
+        A.block(6, 3, 3, 3) = Matrix33d::Identity();
+
+        // subscribers
+        imu_sub = this->create_subscription<sensor_msgs::msg::Imu>("/zed_imu/data_raw", 10, [&](const sensor_msgs::msg::Imu::ConstSharedPtr& imu_msg) {
+            geometry_msgs::msg::Vector3 w = imu_msg->angular_velocity;
+            Matrix33d cov_w;
+            cov_w << imu_msg->angular_velocity_covariance[0], imu_msg->angular_velocity_covariance[1], imu_msg->angular_velocity_covariance[2],
+                     imu_msg->angular_velocity_covariance[3], imu_msg->angular_velocity_covariance[4], imu_msg->angular_velocity_covariance[5],
+                     imu_msg->angular_velocity_covariance[6], imu_msg->angular_velocity_covariance[7], imu_msg->angular_velocity_covariance[8];
+            
+            double dt = GYRO_DT;
+            if (last_imu_time) {
+                dt = (imu_msg->header.stamp.sec + imu_msg->header.stamp.nanosec * 10e-9) - (last_imu_time.value().sec + last_imu_time.value().nanosec * 10e-9);   
+            }
+            gyro_callback(w, cov_w, dt);
+
+            R3d position(0, 0, 0);
+            // SO3d orientation
+            SE3d pose_in_map(position, X.asSO3());
+
+            SE3Conversions::pushToTfTree(tf_broadcaster, ROVER_FRAME, MAP_FRAME, pose_in_map, get_clock()->now());
+
+            // RCLCPP_INFO_STREAM(get_logger(), std::format("Heading: {} {} {}", X.rotation().x(), X.rotation().y(), X.rotation().z()));
+            
+        });
+
+        
 
     }
 
@@ -123,9 +155,9 @@ namespace mrover {
 
     }
 
-    void IEKF::gyro_callback(const geometry_msgs::msg::Vector3Stamped& w, const Matrix33d& cov, double dt) {
+    void IEKF::gyro_callback(const geometry_msgs::msg::Vector3& w, const Matrix33d& cov, double dt) {
 
-        Matrix33d w_skew = sup_x(Vector3d{w.vector.x, w.vector.y, w.vector.z});
+        Matrix33d w_skew = sup_x(Vector3d{w.x, w.y, w.z});
         Matrix99d adj_x = adjoint();
         Matrix99d Q = Matrix99d::Zero();
         Matrix99d Q_d = Matrix99d::Zero();
@@ -151,7 +183,7 @@ namespace mrover {
         Vector3d a_vec{a.vector.x, a.vector.y, a.vector.z};
 
         // propagate
-        X.translation() = X.translation() + X.linearVelocity() * dt + 0.5 * X.rotation() * a * pow(dt, 2) + 0.5 * g * pow(dt, 2);
+        X.translation() = X.translation() + X.linearVelocity() * dt + 0.5 * X.rotation() * a_vec * pow(dt, 2) + 0.5 * g * pow(dt, 2);
         X.linearVelocity() = X.linearVelocity() + X.rotation() * a_vec * dt + g * dt;
 
     }
@@ -163,32 +195,36 @@ namespace mrover {
 
     // }
 
-    // auto gpsCallback(geometry_msgs::msg::Vector3Stamped position, geometry_msgs::msg::Vector3Stamped V) -> void {
+    // auto IEKF::gpsCallback(geometry_msgs::msg::Vector3Stamped position, geometry_msgs::msg::Vector3Stamped V) -> void {
     //     Matrix39d H = Matrix39d::Zero();
-    //     H[0,6] = -1;
-    //     H[1,7] = -1;
-    //     H[2,8] = -1;
+    //     H(0,6) = -1;
+    //     H(1,7) = -1;
+    //     H(2,8) = -1;
         
-    //     Vector5d observation = X.inverse().act(position.vector) + V.vector;
+    //     Vector5d position_affine;
+    //     position_affine << position.vector.x,  position.vector.y, position.vector.z, 0, 1; 
+    //     Vector5d V_affine;
+    //     V_affine << V.vector.x,  V.vector.y, V.vector.z, 0, 1; 
+    //     Vector5d observation = X.inverse().act(position_affine) + V_affine;
 
     //     Matrix33d N = Matrix33d::Zero();
-    //     N[0][0] = V.vector.x * V.vector.x
-    //     N[1][1] = V.vector.y * V.vector.y
-    //     N[2][2] = V.vector.z * V.vector.z
+    //     N(0,0) = V.vector.x * V.vector.x;
+    //     N(1,1) = V.vector.y * V.vector.y;
+    //     N(2,2)= V.vector.z * V.vector.z;
 
-    //     Matrix33d E = H * obj.P * H.transpose();
+    //     Matrix33d E = H * P * H.transpose();
     //     Matrix33d S = E + N;
-    //     Matrix33d L = P * H.transpose() * S.inverse() // Kalman Gain
+    //     Matrix33d L = P * H.transpose() * S.inverse(); // Kalman Gain
 
-    //     Eigen::Vector3d innov = X.act(observation) - position
+    //     Vector5d innov = X.act(observation) - position_affine;
         
     //     // Correction factor (delta)
-    //     Eigen::Vector3d dx = L * innovation;
+    //     Vector5d dx = L * innov;
 
     //     // Update 
     //     X = dx + X; // Overloaded lplus -- exp(dx) * X
     //     Matrix99d cov_factor = Matrix99d::Identity() - L*H;
-    //     P = cov_factor * P * cov_factor.transpose() + L * N * L.tranpose();
+    //     P = cov_factor * P * cov_factor.transpose() + L * N * L.transpose();
     // }
 
 }
