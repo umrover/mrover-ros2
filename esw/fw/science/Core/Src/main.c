@@ -36,7 +36,19 @@
 
 /* Private macro -------------------------------------------------------------*/
 /* USER CODE BEGIN PM */
+#define OXYGEN_DATA_LENGTH 8
 
+#define ADDRESS_0   0x70
+#define ADDRESS_1   0x71
+#define ADDRESS_2   0x72
+#define ADDRESS_3   0x73  ///< iic slave Address select
+#define OCOUNT      100   ///< oxygen Count Value
+#define OXYGEN_DATA_REGISTER 0x03   ///< register for oxygen data
+#define USER_SET_REGISTER    0x08   ///< register for users to configure key value manually
+#define AUTUAL_SET_REGISTER  0x09   ///< register that automatically configure key value
+#define GET_KEY_REGISTER     0x0A   ///< register for obtaining key value
+
+#define TEMP_HUM_ADDRESS 0x38
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
@@ -64,7 +76,13 @@ static void MX_TIM1_Init(void);
 static void MX_I2C3_Init(void);
 static void MX_ADC2_Init(void);
 /* USER CODE BEGIN PFP */
-
+#define CAN_MSG_REQUEST_I2C1    0x100
+#define CAN_MSG_REQUEST_I2C2    0x101
+#define CAN_MSG_REQUEST_I2C3    0x102
+#define CAN_MSG_REQUEST_ADC1    0x103
+#define CAN_MSG_REQUEST_ADC2    0x104
+#define CAN_MSG_RESPONSE_I2C    0x200
+#define CAN_MSG_RESPONSE_ADC    0x201
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -113,6 +131,7 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+  HAL_PostInit();
   while (1)
   {
     /* USER CODE END WHILE */
@@ -541,14 +560,6 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
-
-  /*Configure GPIO pins : PA13 PA14 */
-  GPIO_InitStruct.Pin = GPIO_PIN_13|GPIO_PIN_14;
-  GPIO_InitStruct.Mode = GPIO_MODE_AF_OD;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  GPIO_InitStruct.Alternate = GPIO_AF4_I2C1;
-  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
 /* USER CODE BEGIN MX_GPIO_Init_2 */
 /* USER CODE END MX_GPIO_Init_2 */

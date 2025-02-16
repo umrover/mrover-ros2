@@ -53,10 +53,12 @@ extern "C" {
 void Error_Handler(void);
 
 /* USER CODE BEGIN EFP */
-
+void HAL_PostInit(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
+
+/* USER CODE BEGIN Private defines */
 #define THERM_1_Pin GPIO_PIN_13
 #define THERM_1_GPIO_Port GPIOB
 #define THERM_2_Pin GPIO_PIN_14
@@ -67,8 +69,6 @@ void Error_Handler(void);
 #define HEATER_1_GPIO_Port GPIOA
 #define HEATER_2_Pin GPIO_PIN_0
 #define HEATER_2_GPIO_Port GPIOA
-/* USER CODE BEGIN Private defines */
-
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus

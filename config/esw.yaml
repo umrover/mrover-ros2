@@ -62,7 +62,7 @@ can_bridge_3:
         id: 0x25
 can_bridge_4:
   ros__parameters:
-    interface: can3
+    interface: can0
     is_extended_frame: true
     devices:
       jetson:

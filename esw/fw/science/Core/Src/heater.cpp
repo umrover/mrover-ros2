@@ -44,7 +44,7 @@ namespace mrover {
     }
 
     void Heater::update_temp_and_auto_shutoff_if_applicable() {
-    	m_diag_temp_sensor.update_temp();
+    	m_diag_temp_sensor.update_science_temp();
     	if (m_state && m_auto_shutoff_enabled && (get_temp() >= m_max_heater_temp)) {
 			m_state = false;
 			m_heater_pin.write(GPIO_PIN_RESET);

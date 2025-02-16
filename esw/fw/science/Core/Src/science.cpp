@@ -84,8 +84,8 @@ namespace mrover {
         m_white_leds.at(0) = white_leds.at(0);
         m_white_leds.at(1) = white_leds.at(0);
 
-        for (int i = 0; i < 6; ++i) {
-        	m_heaters.at(i) = Heater(diag_temp_sensors[i], heater_pins[i]);
+        for (int i = 0; i < 4; ++i) {
+        	m_heaters.at(i) = Heater(diag_temp_sensors[i%2], heater_pins[i%2]);
         }
 
         fdcan_bus.start();

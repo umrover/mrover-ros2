@@ -1,15 +1,13 @@
 #pragma once
 
-#include "hardware_adc.hpp"
 #include "stm32g4xx_hal.h"
 
 #include <stdint.h>
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
+#include "hardware_adc.hpp"
 #include <memory>
-
-// TMP6431DECR
 
 namespace mrover {
 
@@ -20,6 +18,8 @@ namespace mrover {
     	DiagTempSensor(std::shared_ptr<ADCSensor> adc_sensor, uint8_t channel);
 
         void update_temp();
+
+        void update_science_temp();
 
         float get_temp();
 
