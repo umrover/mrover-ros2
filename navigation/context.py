@@ -456,3 +456,4 @@ class Context:
         req = DilateCostMap.Request()
         req.inflation_radius = new_radius
         future = client.call_async(req)
+        #rclpy.spin_until_future_complete(self.node, future)        

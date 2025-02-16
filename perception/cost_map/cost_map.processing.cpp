@@ -192,7 +192,7 @@ namespace mrover {
         RCLCPP_INFO_STREAM(get_logger(), "Incoming request: Dilating cost map to " << req->inflation_radius);
         inflation_radius = req->inflation_radius;
         res->success = true;
-        std::ranges::fill(mGlobalGridMsg.data, UNKNOWN_COST);    
+        //std::ranges::fill(mGlobalGridMsg.data, UNKNOWN_COST);    
         }
 
 } // namespace mrover
