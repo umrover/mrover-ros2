@@ -4,10 +4,11 @@ from dataclasses import dataclass
 
 import numpy as np
 import pymap3d
+import rclpy
 
 import tf2_ros
 from geometry_msgs.msg import Twist
-from mrover.srv import MoveCostMap
+from mrover.srv import MoveCostMap, DilateCostMap
 from lie import SE3
 from mrover.msg import (
     Waypoint,
@@ -446,3 +447,13 @@ class Context:
         #     pass
         # if not future.result():
         #     context.node.get_logger().info("move_cost_map service call failed")
+
+    def dilate_cost(self, new_radius: float):
+        self.node.get_logger().info(f"Requesting to dilate cost to {new_radius}")
+        client = self.node.create_client(DilateCostMap, "dilate_cost_map")
+        while not client.wait_for_service(timeout_sec=1.0):
+            self.node.get_logger().info("waiting for dilate_cost service...")
+        req = DilateCostMap.Request()
+        req.inflation_radius = new_radius
+        future = client.call_async(req)
+        #rclpy.spin_until_future_complete(self.node, future)        
