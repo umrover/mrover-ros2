@@ -1,4 +1,5 @@
 import numpy as np
+import time
 
 from state_machine.state import State
 from . import search, costmap_search, waypoint, state, recovery
@@ -182,6 +183,11 @@ class ApproachTargetState(State):
                 self.calc_point(context=context)
                 return self.next_state(context=context, is_finished=False)
             self.display_markers(context=context)
+            #Make sure that if going to the nearest point, it's actually in the distance threshold; otherwise, dilate
+            if(self.goto_near_point and not self.point_in_distance_threshold(context, self.get_target_position(context))):
+                self.dilate_costmap(context)
+                self.calc_point(context)
+                return self.next_state(context=context, is_finished=False)
 
         # If there are no more points in the current a_star path or we are past the update delay, then create a new one
         if (
@@ -215,7 +221,7 @@ class ApproachTargetState(State):
                 context.node.get_logger().info(f"Arrived at segment point")
                 if self.traj.increment_point():
                     self.goto_near_point = False
-                    if (self.in_distance_threshold(context)):
+                    if (self.self_in_distance_threshold(context)):
                         return self.next_state(context=context, is_finished=True)
                     else:
                         self.dilate_costmap(context=context)
@@ -235,13 +241,19 @@ class ApproachTargetState(State):
             self.marker_pub.publish(gen_marker(context=context, point=coord, color=[1.0, 0.0, 1.0], id=i, lifetime=100))
         self.marker_pub.publish(gen_marker(context=context, point = self.target_position, color = [1.0, 1.0, 0.0], id = 15, lifetime=100, size=0.5))
 
-    def in_distance_threshold(self, context: Context):
+    def self_in_distance_threshold(self, context: Context):
         rover_SE3 = context.rover.get_pose_in_map()
         assert rover_SE3 is not None
         rover_translation = rover_SE3.translation()[0:2]     
         distance_to_target = d_calc(rover_translation, self.get_target_position(context))
         context.node.get_logger().info(f"Distance: {distance_to_target}")
         return distance_to_target < self.DISTANCE_THRESHOLD
+    
+    def point_in_distance_threshold(self, context: Context, point):
+        assert point is not None
+        distance = d_calc(point, context.env.current_target_pos())
+        context.node.get_logger().info(f"Distance: {distance}")
+        return distance < self.DISTANCE_THRESHOLD
     
     def dilate_costmap(self, context: Context):
         context.node.get_logger().info("Too far from target! Dilating cost map.")
