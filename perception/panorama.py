@@ -36,6 +36,29 @@ def get_quaternion_from_euler(roll, pitch, yaw):
  
   return [qx, qy, qz, qw]
 
+# Controls execution rate to be at a given hz
+class PanoRate():
+    def __init__(self, rate, node):
+        self.rate = rate
+        self.node = node
+        self.curr_time = self.node.get_clock().now()
+
+    def sleep(self):
+        self.prev_time = self.curr_time
+        self.curr_time = self.node.get_clock().now()
+
+        # If this is the first loop through don't block
+        if self.prev_time is None:
+            return
+
+        # Spin until rate has been met
+        end_timestamp = (self.prev_time.nanoseconds + ((1.0 / self.rate) * 1e9))
+        begin_timestamp = self.node.get_clock().now().nanoseconds
+        duration_nanoseconds = end_timestamp - begin_timestamp
+        duration_seconds = duration_nanoseconds * 1e-9
+        if(duration_seconds > 0):
+            time.sleep(duration_seconds)
+
 class Panorama(Node):
     def __init__(self):
         super().__init__('panorama')
@@ -52,6 +75,7 @@ class Panorama(Node):
         self.pc_sub = message_filters.Subscriber(self, PointCloud2, "/zed/left/points")
         self.imu_sub = message_filters.Subscriber(self, Imu, "/zed_imu/data_raw")
         self.pc_publisher = self.create_publisher(PointCloud2, "/stitched_pc", 1)
+        self.pc_rate = PanoRate(2, self)
 
         self.stitched_pc = np.empty((0, 8), dtype=np.float32)
         self.sync = message_filters.ApproximateTimeSynchronizer([self.pc_sub, self.imu_sub], 10, 1)
@@ -61,6 +85,8 @@ class Panorama(Node):
         self.img_sub = self.create_subscription(Image, "/zed/left/image", self.image_callback, 1);
         self.img_list = []
         self.stitcher = cv2.Stitcher.create()
+        self.img_rate = PanoRate(2, self)
+
 
     def rotate_pc(self, trans_mat: np.ndarray, pc: np.ndarray):
         # rotate the provided point cloud's x, y points by the se3_pose
@@ -100,23 +126,25 @@ class Panorama(Node):
 
             rotated_pc = self.rotate_pc(rotation, self.arr_pc)
             self.stitched_pc = np.vstack((self.stitched_pc, rotated_pc))
+            self.pc_rate.sleep()
         else:
             # Clear the stitched pc
             self.stitched_pc = np.empty((0, 8), dtype=np.float32)
 
     def image_callback(self, msg: Image):
+        self.get_logger().info("Image Callback...")
         if self.record_image:
-            self.get_logger().info("Image Callback...")
             self.current_img = cv2.cvtColor(
                 np.frombuffer(msg.data, dtype=np.uint8).reshape(msg.height, msg.width, 4), cv2.COLOR_RGBA2RGB
             )
 
             if self.current_img is not None:
                 self.img_list.append(np.copy(self.current_img))
+            self.img_rate.sleep()
         else:
             # Clear the images
             self.img_list = []
-            self.stitcher = cv2.Stitcher.create()
+            self.stitcher = cv2.Stitcher.create(cv2.Stitcher_PANORAMA)
 
     def start_callback(self, _, response):
         self.get_logger().info('Starting Pano...')
@@ -156,6 +184,7 @@ class Panorama(Node):
             # If image succeeds but pc fails, should we set action as succeeded?
             self.get_logger().info("Failed to create point cloud message")
 
+        self.get_logger().info(f"Stitching {len(self.img_list)} images...")
         _, pano = self.stitcher.stitch(self.img_list)
 
         # Construct Pano and Save
