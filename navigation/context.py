@@ -75,7 +75,7 @@ class Environment:
     arrived_at_target: bool = False
     arrived_at_waypoint: bool = False
     last_target_location: np.ndarray | None = None
-
+    previous_locations = set()  #all the points that are low cost will be added
     def get_target_position(self, frame: str) -> np.ndarray | None:
         """
         :param frame:   Target frame name. Could be for a tag, the hammer, or the water bottle.

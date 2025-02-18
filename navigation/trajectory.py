@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 import numpy as np
-
+from navigation.context import Context
 
 @dataclass
 class Trajectory:
@@ -8,8 +8,9 @@ class Trajectory:
     coordinates: np.ndarray
     # Currently tracked coordinate index along trajectory
     cur_pt: int = field(default=0, init=False)
-
+#WOuld need to add a specific instance of context. Not just call the name of object. 
     def get_current_point(self) -> np.ndarray:
+        Context.env.previous_locations.add((self.coordinates[self.cur_pt][0],self.coordinates[self.cur_pt][1]))
         return self.coordinates[self.cur_pt]
 
     def increment_point(self) -> bool:
