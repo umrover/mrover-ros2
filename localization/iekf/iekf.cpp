@@ -145,27 +145,27 @@ namespace mrover {
         P = (A * dt).exp() * P * ((A * dt).exp()).transpose() + adj_x * Q_d * adj_x.transpose();
     }
 
-    void IEKF::correct(const Vector5d& Y, const Vector5d& b, const Matrix33d& n) {
+    void IEKF::correct(const Vector5d& Y, const Vector5d& b, const Matrix33d& n, const Matrix39d& H) {
         // TODO: implement
     }
 
     void IEKF::imu_callback(const sensor_msgs::msg::Imu& imu_msg) {
 
-        geometry_msgs::msg::Vector3 w = imu_msg->angular_velocity;
+        geometry_msgs::msg::Vector3 w = imu_msg.angular_velocity;
         Matrix33d cov_w;
-        cov_w << imu_msg->angular_velocity_covariance[0], imu_msg->angular_velocity_covariance[1], imu_msg->angular_velocity_covariance[2],
-                 imu_msg->angular_velocity_covariance[3], imu_msg->angular_velocity_covariance[4], imu_msg->angular_velocity_covariance[5],
-                 imu_msg->angular_velocity_covariance[6], imu_msg->angular_velocity_covariance[7], imu_msg->angular_velocity_covariance[8];
+        cov_w << imu_msg.angular_velocity_covariance[0], imu_msg.angular_velocity_covariance[1], imu_msg.angular_velocity_covariance[2],
+                 imu_msg.angular_velocity_covariance[3], imu_msg.angular_velocity_covariance[4], imu_msg.angular_velocity_covariance[5],
+                 imu_msg.angular_velocity_covariance[6], imu_msg.angular_velocity_covariance[7], imu_msg.angular_velocity_covariance[8];
 
-        geometry_msgs::msg::Vector3d a = imu_msg->linear_acceleration;
+        geometry_msgs::msg::Vector3 a = imu_msg.linear_acceleration;
         Matrix33d cov_a;
-        cov_a << imu_msg->linear_acceleration_covarianceariance[0], imu_msg->linear_acceleration_covarianceariance[1], imu_msg->linear_acceleration_covarianceariance[2],
-                 imu_msg->linear_acceleration_covarianceariance[3], imu_msg->linear_acceleration_covarianceariance[4], imu_msg->linear_acceleration_covarianceariance[5],
-                 imu_msg->linear_acceleration_covarianceariance[6], imu_msg->linear_acceleration_covarianceariance[7], imu_msg->linear_acceleration_covarianceariance[8];
+        cov_a << imu_msg.linear_acceleration_covariance[0], imu_msg.linear_acceleration_covariance[1], imu_msg.linear_acceleration_covariance[2],
+                 imu_msg.linear_acceleration_covariance[3], imu_msg.linear_acceleration_covariance[4], imu_msg.linear_acceleration_covariance[5],
+                 imu_msg.linear_acceleration_covariance[6], imu_msg.linear_acceleration_covariance[7], imu_msg.linear_acceleration_covariance[8];
         
         double dt = IMU_DT;
         if (last_imu_time) {
-            dt = (imu_msg->header.stamp.sec + imu_msg->header.stamp.nanosec * 1e-9) - (last_imu_time.value().sec + last_imu_time.value().nanosec * 1e-9);   
+            dt = (imu_msg.header.stamp.sec + imu_msg.header.stamp.nanosec * 1e-9) - (last_imu_time.value().sec + last_imu_time.value().nanosec * 1e-9);   
         }
 
         predict(w, cov_w, a, cov_a, dt);
@@ -174,7 +174,7 @@ namespace mrover {
         SE3d pose_in_map(position, X.asSO3());
         SE3Conversions::pushToTfTree(tf_broadcaster, ROVER_FRAME, MAP_FRAME, pose_in_map, get_clock()->now());
 
-        last_imu_time = imu_msg->header.stamp;
+        last_imu_time = imu_msg.header.stamp;
 
     }
 

@@ -5,7 +5,6 @@
 
 // ROS Headers, ros namespace
 #include "pch.hpp"
-#include <geometry_msgs/msg/detail/vector3_stamped__struct.hpp>
 
 using SO3d = manif::SO3d;
 using SE_2_3d = manif::SE_2_3d;
@@ -28,12 +27,12 @@ namespace mrover {
         auto adjoint() -> Matrix99d;
 
         // sensor callbacks
-        void imu_callback(sensor_msgs::msg::Imu& imu_msg);
-        void pos_callback(geometry_msgs::msg::Vector3Stamped& pos_msg);
+        void imu_callback(const sensor_msgs::msg::Imu& imu_msg);
+        void pos_callback(const geometry_msgs::msg::Vector3Stamped& pos_msg);
 
         // InEKF functions
         void predict(const geometry_msgs::msg::Vector3& w, const Matrix33d& cov_w, const geometry_msgs::msg::Vector3& a, const Matrix33d& cov_a, double dt);
-        void correct(const Vector5d& Y, const Vector5d& b, const Matrix33d& n);
+        void correct(const Vector5d& Y, const Vector5d& b, const Matrix33d& n, const Matrix39d& H);
 
         // publishers and subscribers
         rclcpp::Subscription<geometry_msgs::msg::Vector3Stamped>::SharedPtr pos_sub;
