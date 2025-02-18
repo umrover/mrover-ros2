@@ -1,4 +1,5 @@
 #include "rover_gps_driver.hpp"
+#include "mrover/msg/detail/fix_type__struct.hpp"
 
 namespace mrover {
 
