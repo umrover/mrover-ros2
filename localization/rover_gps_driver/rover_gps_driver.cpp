@@ -18,7 +18,7 @@ namespace mrover {
         std::string port_string = std::to_string(baud);
         serial.set_option(boost::asio::serial_port_base::baud_rate(baud));
 
-        //RCLCPP_INFO(get_logger(), "Connected to GPS via serial!");
+        RCLCPP_INFO(get_logger(), "Connected to GPS via serial!");
         
         // publishers and subscribers
         gps_pub = this->create_publisher<sensor_msgs::msg::NavSatFix>("/gps/fix", 10);
@@ -53,11 +53,11 @@ namespace mrover {
             mrover::msg::FixType fix_type;
 
             if (stoi(tokens[GNGGA_QUAL_POS]) == 0) {
-                //RCLCPP_WARN(get_logger(), "Invalid fix. Are we inside?");
+                RCLCPP_WARN(get_logger(), "Invalid fix. Are we inside?");
                 return;
             }
             else {
-                //RCLCPP_INFO(get_logger(), "Valid fix, %s satellites in use.", tokens[GNGGA_SATELLITES_POS].c_str());
+                RCLCPP_INFO(get_logger(), "Valid fix, %s satellites in use.", tokens[GNGGA_SATELLITES_POS].c_str());
             }
             
             uint16_t lat_deg = stoi(tokens[GNGGA_LAT_POS].substr(0, 2));
@@ -96,7 +96,7 @@ namespace mrover {
                 fix_type.fix = mrover::msg::FixType::FIXED;
             }
             else {
-                //RCLCPP_WARN(get_logger(), "Position: No RTK fix. Has the basestation finished survey-in?");
+                RCLCPP_WARN(get_logger(), "Position: No RTK fix. Has the basestation finished survey-in?");
                 fix_type.fix = mrover::msg::FixType::NONE;
             }
 
