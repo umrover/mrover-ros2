@@ -596,6 +596,38 @@ namespace mrover {
         }
     }
 
+    auto Simulator::renderSkybox(wgpu::RenderPassEncoder& pass) -> void {
+        mSkyboxTexture.enqueWriteIfUnitialized(mDevice);
+        pass.setPipeline(mSkyboxPipeline);
+
+        if (!mSkyboxUniforms.buffer) {
+            mSkyboxUniforms.init(mDevice);
+        }
+
+        mSkyboxUniforms.value.clipToWorld = (mCameraInWorld.transform().cast<float>() * mSceneUniforms.value.cameraToClip.inverse().cast<float>());
+        mSkyboxUniforms.enqueueWrite();
+
+        std::array<wgpu::BindGroupEntry, 3> skyboxEntries{};
+        skyboxEntries[0].binding = 0;
+        skyboxEntries[0].buffer = mSkyboxUniforms.buffer;
+        skyboxEntries[0].size = sizeof(SkyboxUniforms);
+        skyboxEntries[1].binding = 1;
+        skyboxEntries[1].sampler = mSkyboxTexture.sampler;
+        skyboxEntries[2].binding = 2;
+        skyboxEntries[2].textureView = mSkyboxTexture.view;
+
+        wgpu::BindGroupDescriptor skyboxDescriptor;
+        skyboxDescriptor.layout = mSkyboxPipeline.getBindGroupLayout(0);
+        skyboxDescriptor.entryCount = skyboxEntries.size();
+        skyboxDescriptor.entries = skyboxEntries.data();
+
+        wgpu::BindGroup skyboxBindGroup = mDevice.createBindGroup(skyboxDescriptor);
+        pass.setBindGroup(0, skyboxBindGroup, 0, nullptr);
+        pass.draw(3, 1, 0, 0);
+
+        skyboxBindGroup.release();
+    }
+
     // template<typename T>
     // struct Pool {
     //     boost::container::static_vector<T*, 32> container;
@@ -856,36 +888,7 @@ namespace mrover {
             if (mRenderModels) renderModels(pass);
             if (mRenderWireframeColliders) renderWireframeColliders(pass);
 
-            // skybox stuff
-            mSkyboxTexture.enqueWriteIfUnitialized(mDevice);
-            pass.setPipeline(mSkyboxPipeline);
-
-            if (!mSkyboxUniforms.buffer) {
-                mSkyboxUniforms.init(mDevice);
-            }
-
-            mSkyboxUniforms.value.clipToWorld = (mCameraInWorld.transform().cast<float>() * computeCameraToClip(mFovDegrees * DEG_TO_RAD, aspect, NEAR, FAR).inverse().cast<float>());
-            mSkyboxUniforms.enqueueWrite();
-
-            std::array<wgpu::BindGroupEntry, 3> skyboxEntries{};
-            skyboxEntries[0].binding = 0;
-            skyboxEntries[0].buffer = mSkyboxUniforms.buffer;
-            skyboxEntries[0].size = sizeof(SkyboxUniforms);
-            skyboxEntries[1].binding = 1;
-            skyboxEntries[1].sampler = mSkyboxTexture.sampler;
-            skyboxEntries[2].binding = 2;
-            skyboxEntries[2].textureView = mSkyboxTexture.view;
-
-            wgpu::BindGroupDescriptor skyboxDescriptor;
-            skyboxDescriptor.layout = mSkyboxPipeline.getBindGroupLayout(0);
-            skyboxDescriptor.entryCount = skyboxEntries.size();
-            skyboxDescriptor.entries = skyboxEntries.data();
-
-            wgpu::BindGroup skyboxBindGroup = mDevice.createBindGroup(skyboxDescriptor);
-            pass.setBindGroup(0, skyboxBindGroup, 0, nullptr);
-            pass.draw(3, 1, 0, 0);
-
-            skyboxBindGroup.release();
+            renderSkybox(pass);
 
             guiUpdate(pass);
 

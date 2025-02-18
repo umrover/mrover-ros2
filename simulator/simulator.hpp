@@ -296,7 +296,7 @@ namespace mrover {
 
         CubeMapTexture mSkyboxTexture;
         wgpu::BindGroupLayout mSkyboxBGLayout;
-        std::array<std::filesystem::path, 6> mSkyboxTexturePaths = {"skybox_px.jpg", "skybox_nx.jpg", "skybox_py.jpg", "skybox_ny.jpg", "skybox_nz.jpg", "skybox_pz.jpg"};
+        std::array<std::filesystem::path, 6> mSkyboxTexturePaths = {"skybox_px.jpg", "skybox_nx.jpg", "skybox_py.jpg", "skybox_ny.jpg", "skybox_pz.jpg", "skybox_nz.jpg"};
 
         std::unordered_map<std::string, Model> mUriToModel;
 
@@ -462,6 +462,8 @@ namespace mrover {
         auto renderModels(wgpu::RenderPassEncoder& pass) -> void;
 
         auto renderWireframeColliders(wgpu::RenderPassEncoder& pass) -> void;
+
+        auto renderSkybox(wgpu::RenderPassEncoder& pass) -> void;
 
         auto renderUpdate() -> void;
 

@@ -173,7 +173,8 @@ namespace mrover {
         wgpu::Sampler sampler;
 
         auto enqueWriteIfUnitialized(wgpu::Device& device) -> bool {
-            if (data[0].empty()) return false;
+            for (auto& d : data)
+                if (d.empty()) return false;
             if (texture != nullptr) return false;
 
 

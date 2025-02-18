@@ -132,8 +132,8 @@ fn reproject(pixelInImage: vec2u, depth: f32) -> vec3f {
 
 // skybox stuff
 struct SkyboxVSOutput {
-    @builtin(position) position: vec4f,
-    @location(0) pos: vec4f,
+    @builtin(position) positionInClip: vec4f, // used for the gpu to draw our triangle
+    @location(0) posInClip: vec4f, // interpolated for each pixel that's rendered (used to sample texture)
 };
 
 struct SkyboxUniforms {
@@ -146,20 +146,22 @@ struct SkyboxUniforms {
 
 @vertex fn vs_skybox(@builtin(vertex_index) vNdx: u32) -> SkyboxVSOutput {
     // one big triangle to cover the whole screen
+    // clip space is is a square with vertices (-1,-1), (-1,1), (1,1), and (1,-1)
+    // so this triangle extends above and to the right of clip space to cover all of it
     let pos = array(
         vec2f(-1, 3),
         vec2f(-1,-1),
         vec2f( 3,-1),
     );
     var vsOut: SkyboxVSOutput;
-    vsOut.position = vec4f(pos[vNdx], 1, 1);
-    vsOut.pos = vsOut.position;
+    vsOut.positionInClip = vec4f(pos[vNdx], 1, 1);
+    vsOut.posInClip = vsOut.positionInClip;
     return vsOut;
 }
 
 @fragment fn fs_skybox(vsOut: SkyboxVSOutput) -> OutFragment {
-    let t = uni.clipToWorld * vsOut.pos;
+    let positionInWorld = uni.clipToWorld * vsOut.posInClip;
     var out: OutFragment;
-    out.color = textureSample(skyboxTexture, skyboxSampler, normalize(t.xyz / t.w) * vec3f(1, 1, -1));
+    out.color = textureSample(skyboxTexture, skyboxSampler, normalize(positionInWorld.xyz / positionInWorld.w));
     return out;
 }
