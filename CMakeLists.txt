@@ -240,7 +240,10 @@ target_link_libraries(pose_filter lie parameter_utils)
 ament_target_dependencies(pose_filter rclcpp geometry_msgs nav_msgs sensor_msgs tf2 tf2_ros)
 
 mrover_add_node(rover_gps_driver localization/rover_gps_driver.cpp)
+mrover_add_node(heading_filter localization/heading_filter.cpp)
 ament_target_dependencies(rover_gps_driver rclcpp sensor_msgs rtcm_msgs)
+ament_target_dependencies(heading_filter rclcpp rcutils sensor_msgs builtin_interfaces message_filters)
+target_link_libraries(heading_filter lie)
 
 # Perception
 

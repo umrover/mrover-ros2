@@ -1,5 +1,6 @@
 #pragma once
 
+#include "mrover/msg/detail/fix_status__struct.hpp"
 #include "pch.hpp"
 
 namespace mrover {
@@ -68,6 +69,8 @@ namespace mrover {
         rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr mPcPub;
         rclcpp::Publisher<sensor_msgs::msg::CameraInfo>::SharedPtr mLeftCamInfoPub;
         rclcpp::Publisher<sensor_msgs::msg::CameraInfo>::SharedPtr mRightCamInfoPub;
+        rclcpp::Publisher<mrover::msg::Heading>::SharedPtr mMagHeadingPub;
+        rclcpp::Publisher<mrover::msg::FixStatus>::SharedPtr mMagHeadingStatusPub;
 
         // Thread
 
@@ -90,7 +93,7 @@ namespace mrover {
 
     auto fillImuMessage(rclcpp::Node* node, sl::SensorsData::IMUData& imuData, sensor_msgs::msg::Imu& msg) -> void;
 
-    auto fillMagMessage(sl::SensorsData::MagnetometerData const& magData, sensor_msgs::msg::MagneticField& msg) -> void;
+    auto fillMagMessage(sl::SensorsData::MagnetometerData const& magData, sensor_msgs::msg::MagneticField& magMsg, mrover::msg::Heading &headingMsg, mrover::msg::FixStatus &headingStatusMsg) -> void;
 
     auto checkCudaError(cudaError_t error) -> void;
 
