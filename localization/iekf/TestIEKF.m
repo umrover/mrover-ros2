@@ -1,91 +1,151 @@
-addpath('/MATLAB Drive/mrover-ros2/localization/iekf');
-
+%% 
 filter = InvariantEKF();
 
 num_samples = 500;
 rng("shuffle");
 
-reading_raw = zeros(num_samples, 1);
+gyro_raw = zeros(num_samples, 1);
+euler_dead_reckoning = zeros(num_samples, 3);
+euler_filtered = zeros(num_samples, 3);
+
+position_dead_reckoning = zeros(num_samples, 3);
 position_filtered = zeros(num_samples, 3);
 
 dt = 0.02;
 t  = 0:dt:num_samples*dt-dt;
 
-% filter.position_update([5; 5; 5], [1.1; 1.1; 1.1]);
-% disp(filter.X);
-% disp(filter.P)
-% filter.position_update([10; 10; 10], [0.1; 0.1; 0.1]);
-% disp(filter.X);
-% disp(filter.P)
-% filter.position_update([5; 5; 5], [1.2; 1.2; 1.8]);
-% disp(filter.X);
-% disp(filter.P);
-% filter.accel_predict([0; 0; -9.81], [0.2, 0, 0; 0, 0.2, 0; 0, 0, 0.2], dt);
-% disp(filter.X);
-% disp(filter.P);
 
-covariance = eye(3) * 0.1;
-%obj.accel_predict([0.0901; -0.2976; 30], covariance, 0.01);
-% filter.gyro_predict([0.0; 2.0; 2.0], covariance, 0.2);
-% disp(filter.X);
-disp(filter.P);
-disp(filter.X);
-% filter.accel_predict([0; 0; -9.81],  [0.01, 0, 0; 0, 0.01, 0; 0, 0, 0.01], dt);
+gyro_covariance = eye(3) * 0.1;
+accel_covariance = eye(3) * 0.000001;
+mag_covariance = eye(3) * 0.00001;
+
+
+% dead reckoning run
 for i = 1:num_samples
 
-    if (mod(i, 4) == 1)
+    orientation = filter.X(1:3,1:3);
+    euler_angles = rotm2eul(orientation);
+    euler_dead_reckoning(i,:) = flip(euler_angles);
+
+    position_dead_reckoning(i,:) = filter.X(1:3,5)';
+
+    a = -5;
+    b = 5;
+
+    gyro_noise_x = a + (b-a).*rand(1,1);
+    gyro_noise_y = a + (b-a).*rand(1,1);
+    gyro_noise_z = a + (b-a).*rand(1,1);
+
+    filter.gyro_predict([0 + gyro_noise_x; 0 + gyro_noise_y; 0 + gyro_noise_z], gyro_covariance, dt);
+   
+
+    accel_noise_x = a + (b-a).*rand(1,1);
+    accel_noise_y = a + (b-a).*rand(1,1);
+    accel_noise_z = a + (b-a).*rand(1,1);
+
+    filter.accel_predict([2 + accel_noise_x; 0 + accel_noise_y; -9.81 + accel_noise_z],  [accel_noise_x, 0, 0; 0, accel_noise_y, 0; 0, 0, accel_noise_z], dt);
+    
+
+end
+
+filter = InvariantEKF();
+
+
+% filter run
+for i = 1:num_samples
+
+    orientation = filter.X(1:3,1:3);
+    euler_angles = rotm2eul(orientation);
+    euler_filtered(i,:) = flip(euler_angles);
+
+    position_filtered(i,:) = filter.X(1:3,5)';
+
+
+    if (mod(i, 1) == 0)
+
+
         a = -5;
         b = 5;
+
+        gyro_noise_x = a + (b-a).*rand(1,1);
+        gyro_noise_y = a + (b-a).*rand(1,1);
+        gyro_noise_z = a + (b-a).*rand(1,1);
+
+        filter.gyro_predict([0 + gyro_noise_x; 0 + gyro_noise_y; 0 + gyro_noise_z], gyro_covariance, dt);
+
         accel_noise_x = a + (b-a).*rand(1,1);
         accel_noise_y = a + (b-a).*rand(1,1);
         accel_noise_z = a + (b-a).*rand(1,1);
+    
+        filter.accel_predict([2 + accel_noise_x; 0 + accel_noise_y; -9.81 + accel_noise_z],  [accel_noise_x, 0, 0; 0, accel_noise_y, 0; 0, 0, accel_noise_z], dt);
 
-        % accel_noise_x = accel_noise_x * 0.5;
-        % accel_noise_y = accel_noise_y * 0.5;
-        % accel_noise_z = accel_noise_z * 0.5;
 
-        % filter.gyro_predict([0.0, 0.0, 0.0], covariance, dt * 4);
-        filter.accel_predict([2 + accel_noise_x; 0 + accel_noise_y; -9.81 + accel_noise_z],  [accel_noise_x, 0, 0; 0, accel_noise_y, 0; 0, 0, accel_noise_z], dt * 4);
-        disp(filter.X);
     end
+
+
+
+    a = -0.01;
+    b = 0.01;
+
+    accel_noise_x = a + (b-a).*rand(1,1);
+    accel_noise_y = a + (b-a).*rand(1,1);
+    accel_noise_z = a + (b-a).*rand(1,1);
+
+
+    filter.accel_update([0.0 + accel_noise_x; 0 + accel_noise_y; -1 + accel_noise_z], accel_covariance);
+
+    a = -0.01;
+    b = 0.01;
+
+    mag_noise_x = a + (b-a).*rand(1,1);
+    mag_noise_y = a + (b-a).*rand(1,1);
+    mag_noise_z = a + (b-a).*rand(1,1);
+
+    filter.mag_update([0 + mag_noise_x; -1 + mag_noise_y; 0 + mag_noise_z], mag_covariance);
 
     a = -10;
     b = 10;
-    n = 3;
 
-    x = a + (b-a).*rand(1,1);
-    y = a + (b-a).*rand(1,1);
-    % x = 0;
-    % y = 0;
-    % z = GetSonar();
-    z = a + (b-a).*rand(1,1);
+    pos_noise_x = a + (b-a).*rand(1,1);
+    pos_noise_y = a + (b-a).*rand(1,1);
+    pos_noise_z = a + (b-a).*rand(1,1);
 
-    V = [x; y; z];
+    V = [pos_noise_x; pos_noise_y; pos_noise_z];
 
-    % a_new = -1;
-    % b_new = 1;
-    % 
-    % V_noise_sim = a_new + (b_new-a_new).*rand(3,1); 
-    % V = [-x; -y; -z] + V_noise_sim;
-
-    ground_x = t(i).^2;
-
-    p = [ground_x + x; y; z];
-
+    p = [0 + pos_noise_x; (t(i)).^2 + pos_noise_y; 0 + pos_noise_z];
 
     filter.position_update(p, V);
 
-    reading_raw(i,:) = ground_x + x;
-    position_filtered(i,:) = filter.X(1:3,5)';
-
-    disp("X:")
     disp(filter.X);
-    disp("P:");
-    disp(filter.P);
+
+
+
 end
 
-% disp(position_filtered(:,1))
-scatter(t, reading_raw, 1);
+% disp(euler_dead_reckoning);
+% disp(euler_filtered);
+
+clf;
 hold on;
+% plot(t, euler_dead_reckoning(:,1));
+% plot(t, euler_dead_reckoning(:,2));
+% plot(t, euler_dead_reckoning(:,3));
+% plot(t, euler_filtered(:,1));
+% plot(t, euler_filtered(:,2));
+% plot(t, euler_filtered(:,3));
+% xlabel("t");
+% ylabel("radians");
+% legend("dead reckoning roll", "dead reckoning pitch", "dead reckoning yaw", "filtered roll", "filtered pitch", "filtered yaw");
+
+plot(t, position_dead_reckoning(:,1));
+plot(t, position_dead_reckoning(:,2));
+plot(t, position_dead_reckoning(:,3));
 plot(t, position_filtered(:,1));
+plot(t, position_filtered(:,2));
+plot(t, position_filtered(:,3));
+xlabel("t");
+ylabel("meters");
+legend("dead reckoning x pos", "dead reckoning y pos", "dead reckoning z pos", ...
+       "filtered x pos", "filtered y pos", "filtered z pos");
+
 hold off;

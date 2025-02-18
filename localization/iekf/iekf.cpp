@@ -16,25 +16,7 @@ namespace mrover {
 
         // subscribers
         imu_sub = this->create_subscription<sensor_msgs::msg::Imu>("/zed_imu/data_raw", 10, [&](const sensor_msgs::msg::Imu::ConstSharedPtr& imu_msg) {
-            
-            geometry_msgs::msg::Vector3 w = imu_msg->angular_velocity;
-            Matrix33d cov_w;
-            cov_w << imu_msg->angular_velocity_covariance[0], imu_msg->angular_velocity_covariance[1], imu_msg->angular_velocity_covariance[2],
-                     imu_msg->angular_velocity_covariance[3], imu_msg->angular_velocity_covariance[4], imu_msg->angular_velocity_covariance[5],
-                     imu_msg->angular_velocity_covariance[6], imu_msg->angular_velocity_covariance[7], imu_msg->angular_velocity_covariance[8];
-            
-            double dt = GYRO_DT;
-            if (last_imu_time) {
-                dt = (imu_msg->header.stamp.sec + imu_msg->header.stamp.nanosec * 1e-9) - (last_imu_time.value().sec + last_imu_time.value().nanosec * 1e-9);   
-            }
-            gyro_callback(w, cov_w, dt);
-
-            R3d position(0, 0, 0);
-            SE3d pose_in_map(position, X.asSO3());
-            SE3Conversions::pushToTfTree(tf_broadcaster, ROVER_FRAME, MAP_FRAME, pose_in_map, get_clock()->now());
-
-            last_imu_time = imu_msg->header.stamp;
-            
+            imu_callback(*imu_msg);
         });
 
         
@@ -140,54 +122,63 @@ namespace mrover {
 
     }
 
-    void IEKF::gyro_callback(const geometry_msgs::msg::Vector3& w, const Matrix33d& cov, double dt) {
+    void IEKF::predict(const geometry_msgs::msg::Vector3& w, const Matrix33d& cov_w, const geometry_msgs::msg::Vector3& a, const Matrix33d& cov_a, double dt) {
 
         Matrix99d adj_x = adjoint();
         Matrix99d Q = Matrix99d::Zero();
         Matrix99d Q_d = Matrix99d::Zero();
 
-        Q.block(0, 0, 3, 3) = cov.cwiseAbs();
+        // process noise
+        Q.block(0, 0, 3, 3) = cov_w.cwiseAbs();
+        Q.block(3, 3, 3, 3) = cov_a.cwiseAbs();
+        Q.block(6, 6, 3, 3) = cov_a.cwiseAbs() * dt;
         Q_d = (A * dt).exp() * Q * dt * ((A * dt).exp()).transpose();
+
+        // get linear acceleration in world frame
+        Vector3d a_lin = X.rotation() * Vector3d{a.x, a.y, a.z} - g;
 
         // propagate
         Vector9d u_vec;
-        u_vec << Vector3d::Zero(), Vector3d{w.x, w.y, w.z} * dt, Vector3d::Zero();
+        u_vec << (X.linearVelocity() * dt + 0.5 * a_lin * pow(dt, 2)), Vector3d{w.x, w.y, w.z} * dt, a_lin * dt;
         SE_2_3Tangentd u = u_vec;
         X = X + u;
         P = (A * dt).exp() * P * ((A * dt).exp()).transpose() + adj_x * Q_d * adj_x.transpose();
-
-        // Matrix33d rotation_tracker = X.rotation();
-
-        // RCLCPP_INFO(get_logger(), "%f, %f, %f\n %f, %f, %f\n %f, %f, %f", rotation_tracker(0,0), rotation_tracker(0,1), rotation_tracker(0,2),
-        //                                                                     rotation_tracker(1,0), rotation_tracker(1,1), rotation_tracker(1,2),
-        //                                                                     rotation_tracker(2,0), rotation_tracker(2,1), rotation_tracker(2,2));
     }
 
-    // void IEKF::accel_callback(const geometry_msgs::msg::Vector3Stamped& a, const Matrix33d& cov, double dt) {
+    void IEKF::correct(const Vector5d& Y, const Vector5d& b, const Matrix33d& n) {
+        // TODO: implement
+    }
 
-    //     Matrix99d adj_x = adjoint();
-    //     Matrix99d Q = Matrix99d::Zero();
-    //     Matrix99d Q_d = Matrix99d::Zero();
+    void IEKF::imu_callback(const sensor_msgs::msg::Imu& imu_msg) {
 
-    //     Q.block(3, 3, 3, 3) = cov.cwiseAbs();
-    //     Q.block(6, 6, 3, 3) = cov.cwiseAbs() * dt;
-    //     Q_d = (A * dt).exp() * Q * dt * ((A * dt).exp()).transpose();
+        geometry_msgs::msg::Vector3 w = imu_msg->angular_velocity;
+        Matrix33d cov_w;
+        cov_w << imu_msg->angular_velocity_covariance[0], imu_msg->angular_velocity_covariance[1], imu_msg->angular_velocity_covariance[2],
+                 imu_msg->angular_velocity_covariance[3], imu_msg->angular_velocity_covariance[4], imu_msg->angular_velocity_covariance[5],
+                 imu_msg->angular_velocity_covariance[6], imu_msg->angular_velocity_covariance[7], imu_msg->angular_velocity_covariance[8];
 
-    //     Vector3d a_vec{a.vector.x, a.vector.y, a.vector.z};
-
-    //     // propagate
-    //     X.translation() = X.translation() + X.linearVelocity() * dt + 0.5 * X.rotation() * a_vec * pow(dt, 2) + 0.5 * g * pow(dt, 2);
-    //     X.linearVelocity() = X.linearVelocity() + X.rotation() * a_vec * dt + g * dt;
-
-    // }
-    // auto IEKF::accelCallback(geometry_msgs::msg::Vector3Stamped accel) -> void {
+        geometry_msgs::msg::Vector3d a = imu_msg->linear_acceleration;
+        Matrix33d cov_a;
+        cov_a << imu_msg->linear_acceleration_covarianceariance[0], imu_msg->linear_acceleration_covarianceariance[1], imu_msg->linear_acceleration_covarianceariance[2],
+                 imu_msg->linear_acceleration_covarianceariance[3], imu_msg->linear_acceleration_covarianceariance[4], imu_msg->linear_acceleration_covarianceariance[5],
+                 imu_msg->linear_acceleration_covarianceariance[6], imu_msg->linear_acceleration_covarianceariance[7], imu_msg->linear_acceleration_covarianceariance[8];
         
-    // }
+        double dt = IMU_DT;
+        if (last_imu_time) {
+            dt = (imu_msg->header.stamp.sec + imu_msg->header.stamp.nanosec * 1e-9) - (last_imu_time.value().sec + last_imu_time.value().nanosec * 1e-9);   
+        }
 
-    // auto magCallback() -> void {
+        predict(w, cov_w, a, cov_a, dt);
 
-    // }
+        R3d position(0, 0, 0);
+        SE3d pose_in_map(position, X.asSO3());
+        SE3Conversions::pushToTfTree(tf_broadcaster, ROVER_FRAME, MAP_FRAME, pose_in_map, get_clock()->now());
 
+        last_imu_time = imu_msg->header.stamp;
+
+    }
+
+    
     // auto IEKF::gpsCallback(geometry_msgs::msg::Vector3Stamped position, geometry_msgs::msg::Vector3Stamped V) -> void {
     //     Matrix39d H = Matrix39d::Zero();
     //     H(0,6) = -1;

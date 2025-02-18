@@ -5,7 +5,7 @@
 
 // ROS Headers, ros namespace
 #include "pch.hpp"
-#include <manif/impl/se_2_3/SE_2_3Tangent.h>
+#include <geometry_msgs/msg/detail/vector3_stamped__struct.hpp>
 
 using SO3d = manif::SO3d;
 using SE_2_3d = manif::SE_2_3d;
@@ -15,6 +15,7 @@ using Matrix55d = Eigen::Matrix<double, 5, 5>;
 using Matrix99d = Eigen::Matrix<double, 9, 9>;
 using Matrix39d = Eigen::Matrix<double, 3, 9>;
 using Vector3d = Eigen::Vector3d;
+using Vector5d = Eigen::Matrix<double, 5, 1>;
 using Vector9d = Eigen::Matrix<double, 9, 1>;
 
 namespace mrover {
@@ -27,8 +28,12 @@ namespace mrover {
         auto adjoint() -> Matrix99d;
 
         // sensor callbacks
-        void gyro_callback(const geometry_msgs::msg::Vector3& w, const Matrix33d& cov, double dt);
-        void accel_callback(const geometry_msgs::msg::Vector3Stamped& a, const Matrix33d& cov, double dt);
+        void imu_callback(sensor_msgs::msg::Imu& imu_msg);
+        void pos_callback(geometry_msgs::msg::Vector3Stamped& pos_msg);
+
+        // InEKF functions
+        void predict(const geometry_msgs::msg::Vector3& w, const Matrix33d& cov_w, const geometry_msgs::msg::Vector3& a, const Matrix33d& cov_a, double dt);
+        void correct(const Vector5d& Y, const Vector5d& b, const Matrix33d& n);
 
         // publishers and subscribers
         rclcpp::Subscription<geometry_msgs::msg::Vector3Stamped>::SharedPtr pos_sub;
@@ -48,9 +53,9 @@ namespace mrover {
         SE_2_3d X;
         Matrix99d P;
         Matrix99d A;
-        Vector3d g{0, 0, 9.80665};
+        Vector3d g{0, 0, -9.80665};
         
-        const double GYRO_DT = 0.016;
+        const double IMU_DT = 0.016;
         const std::string ROVER_FRAME = "base_link";
         const std::string MAP_FRAME = "map";
 
