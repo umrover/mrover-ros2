@@ -7,7 +7,7 @@
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="package://mrover/urdf/meshes/lander_and_keyboard.fbx" />
+        <mesh filename="package://mrover/urdf/meshes/lander_and_keyboard_small.fbx" />
       </geometry>
     </visual>
     <collision>
