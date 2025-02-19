@@ -46,11 +46,10 @@ namespace mrover {
     [[nodiscard]] auto AbsoluteEncoderReader::read() -> std::optional<EncoderReading> {
     	Seconds elapsed_time;
         if (std::optional<std::uint16_t> counts = try_read_buffer()) {
-            std::uint16_t const timer_tick_current = __HAL_TIM_GET_COUNTER(m_elapsed_timer);
-            std::uint16_t const timer_diff = timer_tick_current - m_timer_tick_prev;
-            elapsed_time = (m_elapsed_timer->Instance->PSC / CLOCK_FREQ) * (timer_diff);
+            std::uint32_t const timer_tick_current = __HAL_TIM_GET_COUNTER(m_elapsed_timer);
+            std::uint32_t const tick_diff = timer_tick_current - m_timer_tick_prev;
+            Seconds elapsed_time = (1.0f / CLOCK_FREQ) * static_cast<float>(tick_diff);
             m_timer_tick_prev = timer_tick_current;
-
 
             // Absolute encoder returns [0, COUNTS_PER_REVOLUTION)
             // We need to convert this to [-𝜏/2, 𝜏/2)

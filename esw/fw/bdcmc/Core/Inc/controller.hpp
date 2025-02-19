@@ -144,6 +144,13 @@ namespace mrover {
             }
 
             Percent output_after_limit = output.value_or(0_percent);
+
+            if (output_after_limit == 0_percent) {
+                m_throttled_output = 0_percent;
+                m_motor_driver.write(m_throttled_output);
+                return;
+            }
+
             Percent delta = output_after_limit - m_throttled_output;
 
             Seconds dt = m_throttle_elapsed_timer.get_time_since_last_read();
@@ -220,7 +227,8 @@ namespace mrover {
                 m_error = BDCMCErrorInfo::RECEIVING_COMMANDS_WHEN_NOT_CONFIGURED;
                 return;
             }
-
+            m_throttle_elapsed_timer.make_next_read_first_read();
+            m_pidf_elapsed_timer.make_next_read_first_read();
             m_desired_output = 0_percent;
             m_error = BDCMCErrorInfo::NO_ERROR;
         }

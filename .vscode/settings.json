@@ -51,4 +51,9 @@
         "deps": true,
         "venv": true,
     },
+    "python.autoComplete.extraPaths": [
+        "/home/edurso/dev/rover/install/mrover/lib/python3.10/site-packages",
+        "/opt/ros/humble/lib/python3.10/site-packages",
+        "/opt/ros/humble/local/lib/python3.10/dist-packages"
+    ],
 }
