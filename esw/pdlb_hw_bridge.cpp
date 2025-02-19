@@ -5,7 +5,7 @@
 
 #include <rclcpp/rclcpp.hpp>
 #include <memory>
-#include <mrover/msg/PDLB.hpp>
+#include <mrover/msg/pdlb.hpp>
 
 namespace mrover {
 
@@ -43,7 +43,7 @@ namespace mrover {
             pdlbPublisher_->publish(msgToSend);
         }
         void processCANMessage(msg::CAN::ConstSharedPtr msg){
-            OutBoundPDLBMessage const& message = *reinterpret_cast<OutBoundPDLBMessage const*>(msg->data);
+            OutBoundPDLBMessage const& message = *reinterpret_cast<OutBoundPDLBMessage const*>(msg->data.data());
             std::visit([this](auto&& arg) { processMessage(arg); }, message);
         }
     private:
