@@ -21,118 +21,14 @@
 #include "motor_library/brushed.hpp"
 #include "motor_library/brushless.hpp"
 
-namespace mrover {
-
-    constexpr static BrushedController::Config JOINT_B_CONFIG = {
-            .limitSwitchPresent = {false, false},
-            .limitSwitchEnabled = {false, false},
-            .limitSwitchLimitsFwd = {false, false},
-            .limitSwitchActiveHigh = {false, false},
-            .limitSwitchUsedForReadjustment = {false, false},
-            // .limitSwitchReadjustPosition = {Radians{0.0}},
-            .limitMaxForwardPosition = false,
-            .limitMaxBackwardPosition = false,
-
-            .gearRatio = 1.0,
-            .isInverted = false,
-
-            .driverVoltage = 10.5,
-            .motorMaxVoltage = 12.0,
-
-            .quadPresent = false,
-            // .quadRatio = 1.0,
-
-            .absPresent = false,
-            // .absRatio = -1.0,
-            // .absOffset = 2.68_rad,
-
-            .minVelocity = -1.0_rad_per_s,
-            .maxVelocity = 1.0_rad_per_s,
-            .minPosition = -0.7853981633974483_rad,
-            .maxPosition = 0_rad,
-
-            .positionGains = {.p = 30.0},
-            // .velocityGains{},
-
-            .calibrationThrottle = 0.5,
-    };
-
-    constexpr static BrushedController::Config GRIPPER_CONFIG{
-        .limitSwitchPresent = {false, false},
-        .limitSwitchEnabled = {false, false},
-        .limitSwitchLimitsFwd = {false, false},
-        .limitSwitchActiveHigh = {false, false},
-        .limitSwitchUsedForReadjustment = {false, false},
-        // .limitSwitchReadjustPosition = {Radians{0.0}},
-        .limitMaxForwardPosition = false,
-        .limitMaxBackwardPosition = false,
-
-        .gearRatio = 1.0,
-        .isInverted = false,
-
-        .driverVoltage = 10.5,
-        .motorMaxVoltage = 12.0,
-
-        .quadPresent = false,
-        // .quadRatio = 1.0,
-
-        .absPresent = false,
-        // .absRatio = -1.0,
-        // .absOffset = 2.68_rad,
-
-        .minVelocity = -1.0_rad_per_s,
-        .maxVelocity = 1.0_rad_per_s,
-        .minPosition = -0.7853981633974483_rad,
-        .maxPosition = 0_rad,
-
-        .positionGains = {.p = 30.0},
-        // .velocityGains{},
-
-        .calibrationThrottle = 0.5,
-    };
-    constexpr static BrushedController::Config CAM_CONFIG{
-        .limitSwitchPresent = {false, false},
-        .limitSwitchEnabled = {false, false},
-        .limitSwitchLimitsFwd = {false, false},
-        .limitSwitchActiveHigh = {false, false},
-        .limitSwitchUsedForReadjustment = {false, false},
-        // .limitSwitchReadjustPosition = {Radians{0.0}},
-        .limitMaxForwardPosition = false,
-        .limitMaxBackwardPosition = false,
-
-        .gearRatio = 1.0,
-        .isInverted = false,
-
-        .driverVoltage = 10.5,
-        .motorMaxVoltage = 12.0,
-
-        .quadPresent = false,
-        // .quadRatio = 1.0,
-
-        .absPresent = false,
-        // .absRatio = -1.0,
-        // .absOffset = 2.68_rad,
-
-        .minVelocity = -1.0_rad_per_s,
-        .maxVelocity = 1.0_rad_per_s,
-        .minPosition = -0.7853981633974483_rad,
-        .maxPosition = 0_rad,
-
-        .positionGains = {.p = 30.0},
-        // .velocityGains{},
-
-        .calibrationThrottle = 0.5,
-    };
-
-} // namespace mrover
 
 auto main(int argc, char** argv) -> int {
     rclcpp::init(argc, argv);
 
     auto node = rclcpp::Node::make_shared("bm_test_bridge");
-    auto jointB = std::make_shared<mrover::BrushedController>(node, "jetson", "joint_b", mrover::JOINT_B_CONFIG);
-    auto gripper = std::make_shared<mrover::BrushedController>(node, "jetson", "gripper", mrover::GRIPPER_CONFIG);
-    auto cam = std::make_shared<mrover::BrushedController>(node, "jetson", "cam", mrover::CAM_CONFIG);
+    auto jointB = std::make_shared<mrover::BrushedController>(node, "jetson", "joint_b");
+    auto gripper = std::make_shared<mrover::BrushedController>(node, "jetson", "gripper");
+    auto cam = std::make_shared<mrover::BrushedController>(node, "jetson", "cam");
 
     rclcpp::Rate loop_rate(10);
     // auto throttle = mrover::Percent{0.5};
