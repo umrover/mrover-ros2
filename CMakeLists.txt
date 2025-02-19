@@ -309,6 +309,7 @@ endmacro()
 
 mrover_add_esw_motor_bridge_node(drive_hw_bridge esw/drive_hw_bridge.cpp)
 mrover_add_esw_motor_bridge_node(arm_hw_bridge esw/arm_hw_bridge.cpp)
+mrover_add_esw_motor_bridge_node(sa_hw_bridge esw/sa_hw_bridge.cpp)
 # mrover_add_esw_motor_bridge_node(3bm_test_bridge esw/3bm_test_bridge.cpp)
 # mrover_add_esw_motor_bridge_node(dev_board_test_bridge esw/dev_board_test_bridge.cpp)
 # mrover_add_esw_motor_bridge_node(bdcmc_test_bridge esw/bdcmc_test_bridge.cpp)
