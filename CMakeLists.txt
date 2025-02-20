@@ -328,6 +328,7 @@ install(PROGRAMS
         localization/rover_gps_driver.py
         localization/gps_linearization.py
         localization/basestation_gps_driver.py
+        perception/key_detector/detector.py
         superstructure/superstructure.py
         scripts/debug_course_publisher.py
 		scripts/visualizer.py

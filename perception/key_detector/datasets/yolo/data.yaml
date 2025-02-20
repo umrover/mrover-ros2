@@ -1,0 +1,6 @@
+path: yolo
+train: ./train/images
+val: ./valid/images
+
+names:
+  0: key
