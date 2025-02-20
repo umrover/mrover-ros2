@@ -121,21 +121,21 @@ namespace mrover {
         BrushlessController(rclcpp::Node::SharedPtr node, std::string masterName, std::string controllerName)
             : Base{std::move(node), std::move(masterName), std::move(controllerName)} {
 
-            mMinVelocity = OutputVelocity{mNode->get_parameter_or(std::format("{}.min_velocity", mMasterName), -1.0)};
-            mMaxVelocity = OutputVelocity{mNode->get_parameter_or(std::format("{}.max_velocity", mMasterName), 1.0)};
-            mMinPosition = OutputPosition{mNode->get_parameter_or(std::format("{}.min_position", mMasterName), -1.0)};
-            mMaxPosition = OutputPosition{mNode->get_parameter_or(std::format("{}.max_position", mMasterName), 1.0)};
-            mMaxTorque = mNode->get_parameter_or(std::format("{}.max_torque", mMasterName), 0.3);
-            mWatchdogTimeout = mNode->get_parameter_or(std::format("{}.watchdog_timeout", mMasterName), 0.25);
+            mMinVelocity = OutputVelocity{mNode->get_parameter_or(std::format("{}.min_velocity", mControllerName), -1.0)};
+            mMaxVelocity = OutputVelocity{mNode->get_parameter_or(std::format("{}.max_velocity", mControllerName), 1.0)};
+            mMinPosition = OutputPosition{mNode->get_parameter_or(std::format("{}.min_position", mControllerName), -1.0)};
+            mMaxPosition = OutputPosition{mNode->get_parameter_or(std::format("{}.max_position", mControllerName), 1.0)};
+            mMaxTorque = mNode->get_parameter_or(std::format("{}.max_torque", mControllerName), 0.3);
+            mWatchdogTimeout = mNode->get_parameter_or(std::format("{}.watchdog_timeout", mControllerName), 0.25);
             for (std::size_t i = 0; i < MAX_NUM_LIMIT_SWITCHES; ++i) {
-                mLimitSwitchesInfo[i].present = mNode->get_parameter_or(std::format("{}.limit_switch_{}_present", mMasterName, i), false);
-                mLimitSwitchesInfo[i].enabled = mNode->get_parameter_or(std::format("{}.limit_switch_{}_enabled", mMasterName, i), true);
-                mLimitSwitchesInfo[i].limitsFwd = mNode->get_parameter_or(std::format("{}.limit_switch_{}_limits_fwd", mMasterName, i), false);
-                mLimitSwitchesInfo[i].activeHigh = mNode->get_parameter_or(std::format("{}.limit_switch_{}_active_high", mMasterName, i), true);
-                mLimitSwitchesInfo[i].usedForReadjustment = mNode->get_parameter_or(std::format("{}.limit_switch_{}_used_for_readjustment", mMasterName, i), false);
-                mLimitSwitchesInfo[i].readjustPosition = OutputPosition{mNode->get_parameter_or(std::format("{}.limit_switch_{}_readjust_position", mMasterName, i), 0.0)};
-                mLimitSwitchesInfo[i].auxNumber = static_cast<MoteusAuxNumber>(mNode->get_parameter_or(std::format("{}.limit_switch_{}_aux_number", mMasterName, i), 1));
-                mLimitSwitchesInfo[i].auxPinNumber = static_cast<MoteusAuxPinNumber>(mNode->get_parameter_or(std::format("{}.limit_switch_{}_aux_pin_number", mMasterName, i), 0));
+                mLimitSwitchesInfo[i].present = mNode->get_parameter_or(std::format("{}.limit_switch_{}_present", mControllerName, i), false);
+                mLimitSwitchesInfo[i].enabled = mNode->get_parameter_or(std::format("{}.limit_switch_{}_enabled", mControllerName, i), true);
+                mLimitSwitchesInfo[i].limitsFwd = mNode->get_parameter_or(std::format("{}.limit_switch_{}_limits_fwd", mControllerName, i), false);
+                mLimitSwitchesInfo[i].activeHigh = mNode->get_parameter_or(std::format("{}.limit_switch_{}_active_high", mControllerName, i), true);
+                mLimitSwitchesInfo[i].usedForReadjustment = mNode->get_parameter_or(std::format("{}.limit_switch_{}_used_for_readjustment", mControllerName, i), false);
+                mLimitSwitchesInfo[i].readjustPosition = OutputPosition{mNode->get_parameter_or(std::format("{}.limit_switch_{}_readjust_position", mControllerName, i), 0.0)};
+                mLimitSwitchesInfo[i].auxNumber = static_cast<MoteusAuxNumber>(mNode->get_parameter_or(std::format("{}.limit_switch_{}_aux_number", mControllerName, i), 1));
+                mLimitSwitchesInfo[i].auxPinNumber = static_cast<MoteusAuxPinNumber>(mNode->get_parameter_or(std::format("{}.limit_switch_{}_aux_pin_number", mControllerName, i), 0));
                 if (mLimitSwitchesInfo[i].present && mLimitSwitchesInfo[i].enabled) {
                     mHasLimit = true;
                 }

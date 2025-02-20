@@ -5,55 +5,55 @@
 namespace mrover {
     auto BrushedController::updateConfigFromParameters() -> void {
         for (std::size_t i = 0; i < MAX_NUM_LIMIT_SWITCHES; ++i) {
-            SET_BIT_AT_INDEX(mConfigCommand.limit_switch_info.present, i, mNode->get_parameter_or(std::format("{}.limit_switch_{}_present", mMasterName, i), false));
-            SET_BIT_AT_INDEX(mConfigCommand.limit_switch_info.enabled, i, mNode->get_parameter_or(std::format("{}.limit_switch_{}_enabled", mMasterName, i), false));
-            SET_BIT_AT_INDEX(mConfigCommand.limit_switch_info.limits_forward, i, mNode->get_parameter_or(std::format("{}.limit_switch_{}_limits_forward", mMasterName, i), true));
-            SET_BIT_AT_INDEX(mConfigCommand.limit_switch_info.active_high, i, mNode->get_parameter_or(std::format("{}.limit_switch_{}_active_high", mMasterName, i), true));
-            SET_BIT_AT_INDEX(mConfigCommand.limit_switch_info.use_for_readjustment, i, mNode->get_parameter_or(std::format("{}.limit_switch_{}_used_for_readjustment", mMasterName, i), false));
-            mConfigCommand.limit_switch_info.limit_readj_pos.at(i) = OutputPosition{mNode->get_parameter_or(std::format("{}.limit_switch_{}_readjust_position", mMasterName, i), 0.0)};
+            SET_BIT_AT_INDEX(mConfigCommand.limit_switch_info.present, i, mNode->get_parameter_or(std::format("{}.limit_switch_{}_present", mControllerName, i), false));
+            SET_BIT_AT_INDEX(mConfigCommand.limit_switch_info.enabled, i, mNode->get_parameter_or(std::format("{}.limit_switch_{}_enabled", mControllerName, i), false));
+            SET_BIT_AT_INDEX(mConfigCommand.limit_switch_info.limits_forward, i, mNode->get_parameter_or(std::format("{}.limit_switch_{}_limits_forward", mControllerName, i), true));
+            SET_BIT_AT_INDEX(mConfigCommand.limit_switch_info.active_high, i, mNode->get_parameter_or(std::format("{}.limit_switch_{}_active_high", mControllerName, i), true));
+            SET_BIT_AT_INDEX(mConfigCommand.limit_switch_info.use_for_readjustment, i, mNode->get_parameter_or(std::format("{}.limit_switch_{}_used_for_readjustment", mControllerName, i), false));
+            mConfigCommand.limit_switch_info.limit_readj_pos.at(i) = OutputPosition{mNode->get_parameter_or(std::format("{}.limit_switch_{}_readjust_position", mControllerName, i), 0.0)};
             mHasLimit |= GET_BIT_AT_INDEX(mConfigCommand.limit_switch_info.present, i);
         }
 
-        mConfigCommand.is_inverted = mNode->get_parameter_or(std::format("{}.is_inverted", mMasterName), false);
-        mConfigCommand.gear_ratio = mNode->get_parameter_or(std::format("{}.gear_ratio", mMasterName), 1.0);
+        mConfigCommand.is_inverted = mNode->get_parameter_or(std::format("{}.is_inverted", mControllerName), false);
+        mConfigCommand.gear_ratio = mNode->get_parameter_or(std::format("{}.gear_ratio", mControllerName), 1.0);
 
         // TODO (ali): put this jawn back and figure out why it fails
         // assert(config.driverVoltage > 0);
         // assert(0 < config.motorMaxVoltage && config.motorMaxVoltage >= config.driverVoltage);
-        double const driver_voltage = mNode->get_parameter_or(std::format("{}.driver_voltage", mMasterName), 0.0);
-        double const motor_max_voltage = mNode->get_parameter_or(std::format("{}.motor_max_voltage", mMasterName), 12.0);
+        double const driver_voltage = mNode->get_parameter_or(std::format("{}.driver_voltage", mControllerName), 0.0);
+        double const motor_max_voltage = mNode->get_parameter_or(std::format("{}.motor_max_voltage", mControllerName), 12.0);
         assert(driver_voltage > 0);
         assert(motor_max_voltage > 0);
         assert(motor_max_voltage >= driver_voltage);
         mConfigCommand.max_pwm = driver_voltage / motor_max_voltage;
 
-        mConfigCommand.enc_info.quad_present = mNode->get_parameter_or(std::format("{}.quad_present", mMasterName), false);
-        mConfigCommand.enc_info.quad_ratio = Ratio{mNode->get_parameter_or(std::format("{}.quad_ratio", mMasterName), 1.0)};
+        mConfigCommand.enc_info.quad_present = mNode->get_parameter_or(std::format("{}.quad_present", mControllerName), false);
+        mConfigCommand.enc_info.quad_ratio = Ratio{mNode->get_parameter_or(std::format("{}.quad_ratio", mControllerName), 1.0)};
 
-        mConfigCommand.enc_info.abs_present = mNode->get_parameter_or(std::format("{}.abs_present", mMasterName), false);
-        mConfigCommand.enc_info.abs_ratio = Ratio{mNode->get_parameter_or(std::format("{}.abs_ratio", mMasterName), 1.0)};
-        mConfigCommand.enc_info.abs_offset = OutputPosition{mNode->get_parameter_or(std::format("{}.abs_offset", mMasterName), 0.0)};
+        mConfigCommand.enc_info.abs_present = mNode->get_parameter_or(std::format("{}.abs_present", mControllerName), false);
+        mConfigCommand.enc_info.abs_ratio = Ratio{mNode->get_parameter_or(std::format("{}.abs_ratio", mControllerName), 1.0)};
+        mConfigCommand.enc_info.abs_offset = OutputPosition{mNode->get_parameter_or(std::format("{}.abs_offset", mControllerName), 0.0)};
 
-        mConfigCommand.min_position = OutputPosition{mNode->get_parameter_or(std::format("{}.min_position", mMasterName), -std::numeric_limits<double>::infinity())};
-        mConfigCommand.max_position = OutputPosition{mNode->get_parameter_or(std::format("{}.max_position", mMasterName), std::numeric_limits<double>::infinity())};
+        mConfigCommand.min_position = OutputPosition{mNode->get_parameter_or(std::format("{}.min_position", mControllerName), -std::numeric_limits<double>::infinity())};
+        mConfigCommand.max_position = OutputPosition{mNode->get_parameter_or(std::format("{}.max_position", mControllerName), std::numeric_limits<double>::infinity())};
 
-        mConfigCommand.min_velocity = OutputVelocity{mNode->get_parameter_or(std::format("{}.min_velocity", mMasterName), -std::numeric_limits<double>::infinity())};
-        mConfigCommand.max_velocity = OutputVelocity{mNode->get_parameter_or(std::format("{}.max_velocity", mMasterName), std::numeric_limits<double>::infinity())};
+        mConfigCommand.min_velocity = OutputVelocity{mNode->get_parameter_or(std::format("{}.min_velocity", mControllerName), -std::numeric_limits<double>::infinity())};
+        mConfigCommand.max_velocity = OutputVelocity{mNode->get_parameter_or(std::format("{}.max_velocity", mControllerName), std::numeric_limits<double>::infinity())};
 
         mPositionGains = Gains{
-                .p = mNode->get_parameter_or(std::format("{}.position_p", mMasterName), 0.0),
-                .i = mNode->get_parameter_or(std::format("{}.position_i", mMasterName), 0.0),
-                .d = mNode->get_parameter_or(std::format("{}.position_d", mMasterName), 0.0),
-                .ff = mNode->get_parameter_or(std::format("{}.position_ff", mMasterName), 0.0),
+                .p = mNode->get_parameter_or(std::format("{}.position_p", mControllerName), 0.0),
+                .i = mNode->get_parameter_or(std::format("{}.position_i", mControllerName), 0.0),
+                .d = mNode->get_parameter_or(std::format("{}.position_d", mControllerName), 0.0),
+                .ff = mNode->get_parameter_or(std::format("{}.position_ff", mControllerName), 0.0),
         };
         mVelocityGains = Gains{
-                .p = mNode->get_parameter_or(std::format("{}.velocity_p", mMasterName), 0.0),
-                .i = mNode->get_parameter_or(std::format("{}.velocity_i", mMasterName), 0.0),
-                .d = mNode->get_parameter_or(std::format("{}.velocity_d", mMasterName), 0.0),
-                .ff = mNode->get_parameter_or(std::format("{}.velocity_ff", mMasterName), 0.0),
+                .p = mNode->get_parameter_or(std::format("{}.velocity_p", mControllerName), 0.0),
+                .i = mNode->get_parameter_or(std::format("{}.velocity_i", mControllerName), 0.0),
+                .d = mNode->get_parameter_or(std::format("{}.velocity_d", mControllerName), 0.0),
+                .ff = mNode->get_parameter_or(std::format("{}.velocity_ff", mControllerName), 0.0),
         };
 
-        mCalibrationThrottle = mNode->get_parameter_or(std::format("{}.calibration_throttle", mMasterName), 0.0);
+        mCalibrationThrottle = mNode->get_parameter_or(std::format("{}.calibration_throttle", mControllerName), 0.0);
     }
 
     BrushedController::BrushedController(rclcpp::Node::SharedPtr node, std::string masterName, std::string controllerName)
