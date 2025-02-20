@@ -5,6 +5,8 @@ from rclpy.node import Node
 from sensor_msgs.msg import Image as ROSImage
 
 import pickle
+import cv2
+import numpy as np
 from ultralytics import YOLO
 
 from keyrover import *
@@ -20,26 +22,42 @@ import matplotlib.pyplot as plt
 
 
 SIZE = (256, 256)
+dataset = "v4-nodistort"
+CORNER_REGRESSION_MODEL = "magic-wave-28.pt"
+YOLO_MODEL = f"{MODELS_PATH}/yolo/train4/weights/best.pt"
 
 class KeyDetector(Node):
     def __init__(self):
         super().__init__('key_detector')
-        dataset = "v4-nodistort"
-        test_dataset = KeyboardCornersDataset([], size=SIZE, version=dataset)
 
-        model = CornersRegressionModel.load("magic-wave-28.pt")
-        model.to(device)
-        model.eval()
+        self.get_logger().info("Starting Key Detector Node...")
 
-        yolo = YOLO(f"{MODELS_PATH}/yolo/train4/weights/best.pt")
 
-        path = f"{DATASETS}/test/image/f52.png"
-        img = test_dataset.load_image(path)
+        self.test_dataset = KeyboardCornersDataset([], size=SIZE, version=dataset)
+
+        self.corner_regression_model = CornersRegressionModel.load(CORNER_REGRESSION_MODEL)
+        self.corner_regression_model.to(device)
+        self.corner_regression_model.eval()
+
+        self.yolo_segmentation_model = YOLO(YOLO_MODEL)
+
+
+        self.subscription = self.create_subscription(
+            ROSImage,
+            '/long_range_cam/image',
+            self.imageCallback,
+            1)
+        self.subscription
+
+    def imageCallback(self, msg):
+        self.get_logger().info("Image Callback...")
+
+        img = torch.from_numpy(np.frombuffer(msg.data, dtype=np.uint8).reshape(msg.height, msg.width, -1))
 
         # TODO yolo & model to use same input image size
 
-        bboxes = yolo.predict(path, conf=0.3, iou=0.3)[0]
-        mask = model.predict(img)
+        bboxes = self.yolo_segmentation_model.predict(img, conf=0.3, iou=0.3)[0]
+        mask = self.corner_regression_model.predict(img)
         mask = cv2.resize(mask, bboxes.orig_shape[::-1])
 
         out = plot_yolo(bboxes, draw_text=False, plot=False)
@@ -145,16 +163,6 @@ class KeyDetector(Node):
         plot_bboxes(img, boxes)
 
         plt.show()
-
-        self.subscription = self.create_subscription(
-            ROSImage,
-            '/long_range_cam/image',
-            self.imageCallback,
-            1)
-        self.subscription
-
-    def imageCallback(self, msg):
-        self.get_logger().info("Image Callback...")
         
         
 def main(args=None):
