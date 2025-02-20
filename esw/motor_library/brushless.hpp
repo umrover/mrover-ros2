@@ -211,9 +211,15 @@ namespace mrover {
                         .maximum_torque = mMaxTorque,
                         .watchdog_timeout = mWatchdogTimeout,
                 };
+                static constexpr moteus::PositionMode::Format format{
+                        .position = moteus::kFloat,
+                        .velocity = moteus::kFloat,
+                        .maximum_torque = moteus::kInt16,
+                        .watchdog_timeout = moteus::kFloat,
+                };
 
-                moteus::CanFdFrame positionFrame = mMoteus->MakePosition(command);
-                mDevice.publish_moteus_frame(positionFrame);
+                moteus::CanFdFrame velocityFrame = mMoteus->MakePosition(command, &format);
+                mDevice.publish_moteus_frame(velocityFrame);
             }
 
 #ifdef DEBUG_BUILD
@@ -246,7 +252,14 @@ namespace mrover {
                     .maximum_torque = mMaxTorque,
                     .watchdog_timeout = mWatchdogTimeout,
             };
-            moteus::CanFdFrame positionFrame = mMoteus->MakePosition(command);
+            static constexpr moteus::PositionMode::Format format{
+                    .position = moteus::kFloat,
+                    .velocity = moteus::kFloat,
+                    .maximum_torque = moteus::kInt16,
+                    .watchdog_timeout = moteus::kFloat,
+            };
+
+            moteus::CanFdFrame positionFrame = mMoteus->MakePosition(command, &format);
             mDevice.publish_moteus_frame(positionFrame);
 
 #ifdef DEBUG_BUILD
