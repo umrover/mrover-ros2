@@ -101,6 +101,10 @@ class KeyboardDataset(Dataset):
         img = self._resize((to_tensor(img)))
         return self._input_augmentations(img)
 
+    def cvt_image(self, img):
+        img = self._resize((to_tensor(img)))
+        return self._input_augmentations(img)
+
 
 class KeyboardImageDataset(KeyboardDataset):
     def _target_to_tensor(self, arr: ImageType) -> torch.Tensor:

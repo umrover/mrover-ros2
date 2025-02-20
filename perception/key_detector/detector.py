@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 
+from logging import debug
 import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import Image as ROSImage
 
 import pickle
 import cv2
+import sys
 import numpy as np
 from ultralytics import YOLO
 
@@ -47,21 +49,28 @@ class KeyDetector(Node):
             '/long_range_cam/image',
             self.imageCallback,
             1)
-        self.subscription
+
+        self.debug_img_pub = self.create_publisher(ROSImage, '/key_detector/img', 1)
 
     def imageCallback(self, msg):
         self.get_logger().info("Image Callback...")
 
-        img = torch.from_numpy(np.frombuffer(msg.data, dtype=np.uint8).reshape(msg.height, msg.width, -1))
+        # Convert from ROS msg to np array/torch tensor
+        img = np.frombuffer(msg.data, dtype=np.uint8).reshape(msg.height, msg.width, -1)
+        img = cv2.cvtColor(img, cv2.COLOR_BGRA2BGR)
+        img_cv = cv2.resize(img, (640, 480), interpolation = cv2.INTER_LINEAR)
+        img = self.test_dataset.cvt_image(img_cv)
 
         # TODO yolo & model to use same input image size
 
-        bboxes = self.yolo_segmentation_model.predict(img, conf=0.3, iou=0.3)[0]
+        bboxes = self.yolo_segmentation_model.predict(img_cv, conf=0.3, iou=0.3)[0]
+        print(f'bboxes {bboxes}')
         mask = self.corner_regression_model.predict(img)
         mask = cv2.resize(mask, bboxes.orig_shape[::-1])
+        print(f'mask {mask}')
 
         out = plot_yolo(bboxes, draw_text=False, plot=False)
-        imshow(out, mask)
+        #imshow(out, mask)
 
         describe(mask)
 
@@ -74,7 +83,6 @@ class KeyDetector(Node):
         palette.colors
 
         source = np.array(list(texcoords.texcoords.values()))
-        source
 
         def create_distance_matrix(A, B):
             A = np.repeat(A[:, None, :], len(B), axis=1)
@@ -87,13 +95,11 @@ class KeyDetector(Node):
         # palette (m, 2)-vector of points in 2D
         # dist_matrix (n, m) matrix of pairwise distance between source & palette
         distance_matrix = create_distance_matrix(source, palette.colors)
-        distance_matrix
 
         # ith row is the ith source point
         # jth column is weight between source and jth target point
 
         distance_cost_matrix = 1e6 / (distance_matrix ** 3)
-        distance_cost_matrix
 
         # 0 - weight between 1st source & 1st target (W11)
         # 1 - weight between 1st source & 2nd target (W12)
@@ -103,13 +109,11 @@ class KeyDetector(Node):
         W = np.tile(W, 2)
 
         print(W.shape)
-        W
 
         targets = np.tile(palette.colors, (n, 1))
         targets = targets.flatten(order="F") * W
 
         print(targets.shape)
-        targets
 
         ones = np.ones((n * m, 1))
         zeros = np.zeros((n * m, 1))
@@ -119,39 +123,36 @@ class KeyDetector(Node):
         P1 = np.hstack([repeated_source, zeros, zeros, ones, zeros])
         P2 = np.hstack([zeros, zeros, repeated_source, zeros, ones])
         P = np.vstack([P1, P2]) * W[:, None]
-        P
 
         (a, b, c, d, tx, ty), _, _, _ = np.linalg.lstsq(P, targets, rcond=-1)
         A = np.array([[a, b, tx], [c, d, ty], [0, 0, 1]])
-        A
 
         ones = np.ones((n, 1))
         result = np.einsum('ij, bj -> bi', A, np.hstack([source, ones]))
         result = result[:, :2]
-        result
 
         cost_matrix = create_distance_matrix(result, palette.colors)
-        cost_matrix
 
         from scipy.optimize import linear_sum_assignment
 
         row_ind, col_ind = linear_sum_assignment(cost_matrix)
-        row_ind, col_ind
 
         keys = np.array(list(palette.colors_to_name.values()))
         keys = keys[col_ind]
 
-        ax = texcoords.scatter()
-        scatter(palette.colors, ax=ax, color="black")
-        scatter(result, ax=ax, color="red")
-
-        for (u, v), cls in palette.colors_to_name.items():
-            ax.text(u - 2, v + 5, cls, c="black", fontsize=5)
-            
-        for (u, v), cls in zip(result, keys):
-            ax.text(u - 2, v - 7, cls, c="red", fontsize=5)
-
         scale = 3
+        def plot_prediction():
+            ax = texcoords.scatter()
+            scatter(palette.colors, ax=ax, color="black")
+            scatter(result, ax=ax, color="red")
+
+            for (u, v), cls in palette.colors_to_name.items():
+                ax.text(u - 2, v + 5, cls, c="black", fontsize=5)
+                
+            for (u, v), cls in zip(result, keys):
+                ax.text(u - 2, v - 7, cls, c="red", fontsize=5)
+
+        #plot_prediction()
 
         img = bboxes.orig_img.copy()
         width, height, _ = img.shape
@@ -162,7 +163,22 @@ class KeyDetector(Node):
 
         plot_bboxes(img, boxes)
 
-        plt.show()
+        img = to_numpy(img)
+        for box in boxes:
+            draw_textbox(img, box)
+
+        print('pre pub')
+        debug_img = ROSImage()
+        debug_img.height = img.shape[0]
+        debug_img.width = img.shape[1]
+        debug_img.encoding = 'bgr8'
+        debug_img.is_bigendian = sys.byteorder == 'big'
+        debug_img.step = 3 * debug_img.width;
+        debug_img.data = np.reshape(img, (debug_img.width * debug_img.height * 3)).data
+
+        self.debug_img_pub.publish(debug_img)
+
+        #plt.show()
         
         
 def main(args=None):

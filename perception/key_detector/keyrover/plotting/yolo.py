@@ -38,7 +38,6 @@ def plot_bboxes(img: np.ndarray, boxes: list[LabeledBBox], plot: bool = True, **
     plt.figure()
     imshow(img, ax=plt.gca())
 
-
 def plot_yolo(results: "ultralytics.engine.results.Results", **kwargs) -> np.ndarray | None:
     bboxes = [LabeledBBox(*box.xywh[0], f"{box.cls} {box.conf}%") for box in results.boxes]
     return plot_bboxes(results.orig_img, bboxes, **kwargs)

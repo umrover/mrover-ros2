@@ -5,6 +5,7 @@ project(mrover VERSION 2025.0.0 LANGUAGES C CXX)
 cmake_policy(SET CMP0148 OLD)
 
 set(CMAKE_CXX_STANDARD 23)
+set(CXX_STANDARD_REQUIRED ON)
 
 # Generate compile_commands.json for clangd language server.
 # Can be used by VSCode, CLion, VIM, etc.
@@ -13,6 +14,9 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 option(MROVER_CI "Enable CI options" OFF)
 option(MROVER_CLANG_TIDY "Enable static analysis with Clang tidy" ${MROVER_CI})
 option(MROVER_WARNINGS_AS_ERRORS "Treat warnings as errors" ${MROVER_CI})
+
+set(node_plugins "")
+
 
 if (APPLE)
     # Ensures that homebrew packages are never used over miniforge packages.
@@ -163,7 +167,7 @@ message(STATUS "Found action files: ${MROVER_ACTION_FILE_PATHS}")
 message(STATUS "PROJ NAME: ${PROJECT_NAME}")
 
 set(MROVER_CMAKE_INCLUDES
-        starter_project/autonomy/AutonomyStarterProject.cmake
+    starter_project/autonomy/AutonomyStarterProject.cmake
 )
 
 foreach (MROVER_CMAKE_INCLUDE ${MROVER_CMAKE_INCLUDES})
@@ -173,10 +177,10 @@ endforeach ()
 message(STATUS "Found message files: ${MROVER_MESSAGE_FILE_PATHS}")
 
 rosidl_generate_interfaces(${PROJECT_NAME}
-        ${MROVER_MESSAGE_FILE_PATHS}
-        ${MROVER_SERVICE_FILE_PATHS}
-        ${MROVER_ACTION_FILE_PATHS}
-        DEPENDENCIES nav_msgs sensor_msgs geometry_msgs
+    ${MROVER_MESSAGE_FILE_PATHS}
+    ${MROVER_SERVICE_FILE_PATHS}
+    ${MROVER_ACTION_FILE_PATHS}
+    DEPENDENCIES nav_msgs sensor_msgs geometry_msgs
 )
 
 # Starter project 
@@ -189,10 +193,10 @@ ament_target_dependencies(starter_project_perception rclcpp std_msgs sensor_msgs
 # Install our executable so that ROS knows about it
 # This allows us to launch it with ros2 run
 install(PROGRAMS
-        starter_project/autonomy/src/localization.py
-        starter_project/autonomy/src/navigation/navigation_starter_project.py
-        DESTINATION
-        lib/${PROJECT_NAME}
+    starter_project/autonomy/src/localization.py
+    starter_project/autonomy/src/navigation/navigation_starter_project.py
+    DESTINATION
+    lib/${PROJECT_NAME}
 )
 
 install(DIRECTORY starter_project/autonomy/launch DESTINATION share/${PROJECT_NAME})
@@ -223,11 +227,11 @@ mrover_add_header_only_library(state_machine state_machine)
 mrover_add_node(simulator simulator/*.cpp simulator simulator/pch.hpp)
 ament_target_dependencies(simulator rclcpp rclcpp_components nav_msgs sensor_msgs geometry_msgs tf2 tf2_ros urdf)
 target_link_libraries(simulator
-        assimp::assimp glfw3webgpu webgpu glfw webgpu_hpp imgui
-        ${BULLET_LIBRARIES}
-        lie Eigen3::Eigen
-        opencv_core opencv_imgcodecs opencv_imgproc
-        loop_profiler
+    assimp::assimp glfw3webgpu webgpu glfw webgpu_hpp imgui
+    ${BULLET_LIBRARIES}
+    lie Eigen3::Eigen
+    opencv_core opencv_imgcodecs opencv_imgproc
+    loop_profiler
 )
 target_include_directories(simulator SYSTEM PRIVATE ${BULLET_INCLUDE_DIRS} ${OPENCV_INCLUDE_DIRS})
 
@@ -237,51 +241,54 @@ find_package(ZED QUIET)
 find_package(CUDA QUIET)
 find_package(OpenCV REQUIRED)
 if(ZED_FOUND AND CUDA_FOUND)
-	enable_language(CUDA)
-	# CUDA Compile Options
-	add_library(cuda_compiler_flags INTERFACE)
-	target_compile_options(cuda_compiler_flags INTERFACE 
-		-Wno-pedantic 
-		-Wno-deprecated 
-		-Wno-unused-parameter 
-		-diag-suppress=815 
-		-diag-suppress=780 
-		-Wno-deprecated-copy 
-		-Wno-unused-command-line-argument 
-		-Wno-ignored-qualifiers 
-		-Wno-sometimes-uninitialized
-	)
+    enable_language(CUDA)
+    # CUDA Compile Options
+    add_library(cuda_compiler_flags INTERFACE)
+    target_compile_options(cuda_compiler_flags INTERFACE 
+        -Wno-pedantic 
+        -Wno-deprecated 
+        -Wno-unused-parameter 
+        -diag-suppress=815 
+        -diag-suppress=780 
+        -Wno-deprecated-copy 
+        -Wno-unused-command-line-argument 
+        -Wno-ignored-qualifiers 
+        -Wno-sometimes-uninitialized
+    )
 
-	# ZED Wrapper
-	mrover_add_node(zed perception/zed_wrapper/*.c* perception/zed_wrapper/pch.hpp)
-	target_compile_options(zed PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-std=c++20>)
-	target_link_libraries(zed parameter_utils lie MANIF::manif ${CUDA_LIBRARIES} loop_profiler cuda_compiler_flags)
-	ament_target_dependencies(zed rclcpp sensor_msgs ZED CUDA tf2 tf2_ros)
+    # ZED Wrapper
+    mrover_add_component(zed perception/zed_wrapper/*.c* perception/zed_wrapper/pch.hpp ZedWrapper)
+    target_compile_options(zed_component PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-std=c++20>)
+    mrover_link_component(zed parameter_utils lie MANIF::manif ${CUDA_LIBRARIES} loop_profiler cuda_compiler_flags)
+    mrover_ament_component(zed rclcpp rclcpp_components sensor_msgs ZED CUDA tf2 tf2_ros)
 
-	# Learning Library
+    mrover_executable_from_component(zed perception/executables/zed.cpp zed_component)
+
+    # Learning Library
     # TODO(john): Update to use the new API
-	mrover_add_library(tensorrt tensorrt/*.c* tensorrt)
-	target_compile_options(tensorrt PRIVATE -Wno-deprecated-declarations $<$<COMPILE_LANGUAGE:CUDA>:-std=c++17>)
-	target_include_directories(tensorrt PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
-	target_link_libraries(tensorrt PRIVATE opencv_core opencv_dnn opencv_imgproc lie nvinfer nvonnxparser tbb cuda_compiler_flags)
+    mrover_add_library(tensorrt tensorrt/*.c* tensorrt)
+    target_compile_options(tensorrt PRIVATE -Wno-deprecated-declarations $<$<COMPILE_LANGUAGE:CUDA>:-std=c++17>)
+    target_include_directories(tensorrt PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
+    target_link_libraries(tensorrt PRIVATE opencv_core opencv_dnn opencv_imgproc lie nvinfer nvonnxparser tbb cuda_compiler_flags)
 
-	# Object Detector
-	mrover_add_node(object_detector perception/object_detector/*.c* src/perception/object_detector/pch.hpp)
-    target_link_libraries(object_detector opencv_core opencv_dnn opencv_imgproc lie tbb tensorrt opencv_imgcodecs opencv_highgui loop_profiler parameter_utils cuda_compiler_flags)
-	ament_target_dependencies(object_detector rclcpp sensor_msgs CUDA tf2 tf2_ros)
+    # Object Detector
+    mrover_add_component(object_detector perception/object_detector/*.c* perception/object_detector/pch.hpp StereoObjectDetector ImageObjectDetector)
+    mrover_link_component(object_detector opencv_core opencv_dnn opencv_imgproc lie tbb tensorrt opencv_imgcodecs opencv_highgui loop_profiler parameter_utils cuda_compiler_flags)
+    mrover_ament_component(object_detector rclcpp sensor_msgs rclcpp_components CUDA tf2 tf2_ros)
 
+    mrover_executable_from_component(stereo_object_detector perception/executables/stereo_object_detector.cpp object_detector_component)
+    mrover_executable_from_component(image_object_detector perception/executables/image_object_detector.cpp object_detector_component)
 else()
-	message("ZED not found...")
+    message("ZED not found...")
 endif()
 
-# Key Detector
-mrover_add_node(key_detector perception/key_detector/*.c* src/perception/key_detector/pch.hpp)
-target_link_libraries(key_detector lie loop_profiler parameter_utils state_machine)
-ament_target_dependencies(key_detector rclcpp rclcpp_action sensor_msgs tf2 tf2_ros)
+# Tag Detector
+mrover_add_component(tag_detector perception/tag_detector/*.cpp perception/tag_detector/pch.hpp StereoTagDetector ImageTagDetector)
+mrover_ament_component(tag_detector rclcpp rclcpp_components tf2 tf2_ros)
+mrover_link_component(tag_detector lie opencv_core opencv_aruco opencv_imgproc loop_profiler parameter_utils)
 
-mrover_add_node(tag_detector perception/tag_detector/*.cpp perception/tag_detector/pch.hpp)
-ament_target_dependencies(tag_detector rclcpp tf2 tf2_ros)
-target_link_libraries(tag_detector lie opencv_core opencv_aruco opencv_imgproc loop_profiler)
+mrover_executable_from_component(stereo_tag_detector perception/executables/stereo_tag_detector.cpp tag_detector_component)
+mrover_executable_from_component(image_tag_detector perception/executables/image_tag_detector.cpp tag_detector_component)
 
 # Embedded
 
@@ -295,7 +302,7 @@ ament_target_dependencies(arm_controller rclcpp)
 
 if (Gst_FOUND AND GstApp_FOUND)
     mrover_add_node(usb_camera esw/usb_camera/*.cpp esw/usb_camera/pch.hpp)
-    target_link_libraries(usb_camera PkgConfig::Gst PkgConfig::GstApp opencv_core opencv_imgcodecs)
+    target_link_libraries(usb_camera PkgConfig::Gst PkgConfig::GstApp opencv_core opencv_imgcodecs parameter_utils)
     ament_target_dependencies(usb_camera rclcpp)
 
     if (LibUdev_FOUND)
@@ -303,13 +310,9 @@ if (Gst_FOUND AND GstApp_FOUND)
         target_compile_definitions(websocket_server PUBLIC BOOST_ASIO_NO_DEPRECATED)
         ament_target_dependencies(websocket_server rclcpp)
 
-        mrover_add_component(gst_websocket_streamer esw/gst_websocket_streamer/*.c* esw/gst_websocket_streamer/pch.hpp)
-        target_link_libraries(gst_websocket_streamer PkgConfig::Gst PkgConfig::GstApp PkgConfig::LibUdev opencv_core opencv_imgcodecs websocket_server)
-        ament_target_dependencies(gst_websocket_streamer rclcpp rclcpp_components sensor_msgs)
-
-        rclcpp_components_register_nodes(gst_websocket_streamer "mrover::GstWebsocketStreamer")
-        set(node_plugins "${node_plugins}mrover::GstWebsocketStreamer;$<TARGET_FILE:gst_websocket_streamer>\n")
-        
+        mrover_add_component(gst_websocket_streamer esw/gst_websocket_streamer/*.c* esw/gst_websocket_streamer/pch.hpp GstWebsocketStreamer)
+        mrover_link_component(gst_websocket_streamer PkgConfig::Gst PkgConfig::GstApp PkgConfig::LibUdev opencv_core opencv_imgcodecs websocket_server)
+        mrover_ament_component(gst_websocket_streamer rclcpp rclcpp_components sensor_msgs)
     endif ()
 endif ()
 
@@ -323,21 +326,22 @@ endif ()
 
 # You must add Python scripts here to be able to "ros2 launch" them in terminal
 install(PROGRAMS
-        navigation/nav.py
-        navigation/stuck_detector/stuck_detector.py
-        localization/rover_gps_driver.py
-        localization/gps_linearization.py
-        localization/basestation_gps_driver.py
-        perception/key_detector/detector.py
-        superstructure/superstructure.py
-        scripts/debug_course_publisher.py
-		scripts/visualizer.py
+    navigation/nav.py
+    navigation/stuck_detector/stuck_detector.py
+    localization/rover_gps_driver.py
+    localization/gps_linearization.py
+    localization/basestation_gps_driver.py
+    superstructure/superstructure.py
+    perception/key_detector/detector.py
+    scripts/debug_course_publisher.py
+    scripts/visualizer.py
+    scripts/image_capture.py
 
-        # starter project sources
-        starter_project/autonomy/src/localization.py
-        starter_project/autonomy/src/navigation/navigation_starter_project.py
-        DESTINATION
-        lib/${PROJECT_NAME}
+    # starter project sources
+    starter_project/autonomy/src/localization.py
+    starter_project/autonomy/src/navigation/navigation_starter_project.py
+    DESTINATION
+    lib/${PROJECT_NAME}
 )
 
 install(DIRECTORY launch DESTINATION share/${PROJECT_NAME})
