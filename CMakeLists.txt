@@ -344,6 +344,7 @@ install(PROGRAMS
     scripts/visualizer.py
     scripts/image_capture.py
     scripts/convert_onnx.py
+    scripts/label_video.py
 
     # starter project sources
     starter_project/autonomy/src/localization.py
