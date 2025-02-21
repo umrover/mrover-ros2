@@ -24,7 +24,7 @@ from backend.waypoints import (
     save_basic_waypoint_list,
 )
 from geometry_msgs.msg import Twist, Vector3
-from sensor_msgs.msg import NavSatFix, Temperature, RelativeHumidity
+from sensor_msgs.msg import NavSatFix, Temperature, RelativeHumidity, JointState
 from mrover.msg import (
     Throttle,
     IK,
@@ -93,6 +93,7 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.forward_ros_topic("/science_humidity_data", RelativeHumidity, "humidity")
 
         self.forward_ros_topic("/arm_controller_state", ControllerState, "arm_state")
+        self.forward_ros_topic("/arm_joint_data", JointState, "fk")
         self.forward_ros_topic("/drive_controller_data", ControllerState, "drive_state")
         self.forward_ros_topic("/sa_controller_state", ControllerState, "sa_state")
         # check topic names above
