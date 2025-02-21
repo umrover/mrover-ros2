@@ -64,10 +64,10 @@ class KeyDetector(Node):
             # TODO yolo & model to use same input image size
 
             bboxes = self.yolo_segmentation_model.predict(img_cv, conf=0.3, iou=0.3)[0]
-            print(f'bboxes {bboxes}')
+            #print(f'bboxes {bboxes}')
             mask = self.corner_regression_model.predict(img)
             mask = cv2.resize(mask, bboxes.orig_shape[::-1])
-            print(f'mask {mask}')
+            #print(f'mask {mask}')
 
             out = plot_yolo(bboxes, draw_text=False, plot=False)
         #imshow(out, mask)
@@ -108,12 +108,12 @@ class KeyDetector(Node):
         W = distance_cost_matrix.flatten()
         W = np.tile(W, 2)
 
-        print(W.shape)
+        #print(W.shape)
 
         targets = np.tile(palette.colors, (n, 1))
         targets = targets.flatten(order="F") * W
 
-        print(targets.shape)
+        #print(targets.shape)
 
         ones = np.ones((n * m, 1))
         zeros = np.zeros((n * m, 1))
@@ -159,7 +159,7 @@ class KeyDetector(Node):
         img = cv2.resize(img, (height * scale, width * scale))
         boxes = [LabeledBBox(*box.xywh[0], label).scale(scale) for box, label in zip(bboxes.boxes, keys)]
 
-        print(boxes)
+        #print(boxes)
 
         plot_bboxes(img, boxes)
 
@@ -167,7 +167,7 @@ class KeyDetector(Node):
         for box in boxes:
             draw_textbox(img, box)
 
-        print('pre pub')
+        #print('pre pub')
         debug_img = ROSImage()
         debug_img.height = img.shape[0]
         debug_img.width = img.shape[1]
