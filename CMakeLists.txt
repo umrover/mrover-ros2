@@ -383,6 +383,7 @@ install(PROGRAMS
         scripts/debug_course_publisher.py
         scripts/debug_service.py
         scripts/astar_debug.py
+        scripts/custom_costmap.py
 		scripts/visualizer.py
         teleoperation/basestation_gui/gui_frontend.sh
         teleoperation/basestation_gui/gui_backend.sh

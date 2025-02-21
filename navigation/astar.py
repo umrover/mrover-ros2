@@ -229,7 +229,8 @@ class AStar:
 
         # Move the costmap if we are outside of the threshold
         if not (threshold[0] <= rover_ij[0] <= threshold[1] and threshold[0] <= rover_ij[1] <= threshold[1]):
-            context.move_costmap()
+            if not context.node.get_parameter("custom_costmap").value:
+                context.move_costmap()
 
         trajectory = Trajectory(np.array([]))
         context.rover.send_drive_command(Twist())  # Stop while planning

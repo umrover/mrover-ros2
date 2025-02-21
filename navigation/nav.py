@@ -36,6 +36,7 @@ class Navigation(Node):
             "",
             [
                 ("update_rate", Parameter.Type.DOUBLE),
+                ("custom_costmap", Parameter.Type.BOOL),
                 ("pub_path_rate", Parameter.Type.DOUBLE),
                 ("world_frame", Parameter.Type.STRING),
                 ("rover_frame", Parameter.Type.STRING),

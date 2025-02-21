@@ -385,9 +385,14 @@ class Context:
         node.create_subscription(Bool, "nav_stuck", self.stuck_callback, 1)
         node.create_subscription(ImageTargets, "tags", self.image_targets_callback, 1)
         node.create_subscription(ImageTargets, "objects", self.image_targets_callback, 1)
-        node.create_subscription(OccupancyGrid, "costmap", self.costmap_callback, 1)
+        
+        if node.get_parameter("custom_costmap").value:
+            node.create_subscription(OccupancyGrid, "custom_costmap", self.costmap_callback, 1)
+        else:
+            node.create_subscription(OccupancyGrid, "costmap", self.costmap_callback, 1)
         self.tf_buffer = tf2_ros.Buffer()
         tf2_ros.TransformListener(self.tf_buffer, node)
+
 
     def enable_auton(self, request: EnableAuton.Request, response: EnableAuton.Response) -> EnableAuton.Response:
         self.node.get_logger().info("Received new course to navigate!")
@@ -425,6 +430,8 @@ class Context:
         self.env.cost_map.width = msg.info.width  # cells
         self.env.cost_map.data = cost_map_data.astype(np.float32)
 
+        self.node.get_logger().info(f"{self.env.cost_map.origin}")
+
         # change all unidentified points to have a slight cost
         self.env.cost_map.data[cost_map_data == -1] = 10.0  # TODO: find optimal value
         # normalize to [0, 1]
@@ -433,7 +440,8 @@ class Context:
     def move_costmap(self, course_name="center_gps"):
         # TODO(neven): add service to move costmap if going to watter bottle search
         self.node.get_logger().info(f"Requesting to move cost map to {course_name}")
-        client = self.node.create_client(MoveCostMap, "move_cost_map")
+        srv_name = "move_custom_cost_map" if self.node.get_parameter("custom_costmap").value else "move_cost_map"
+        client = self.node.create_client(MoveCostMap, srv_name=srv_name)
         while not client.wait_for_service(timeout_sec=1.0):
             self.node.get_logger().info("waiting for move_cost_map service...")
         req = MoveCostMap.Request()
