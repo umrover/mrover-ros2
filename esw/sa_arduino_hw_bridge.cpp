@@ -2,6 +2,8 @@
 #include <sensor_msgs/msg/relative_humidity.hpp>
 #include <sensor_msgs/msg/temperature.hpp>
 
+#include <mrover/srv/servo_set_pos.hpp>
+
 #include <messaging_sa_arduino.hpp>
 
 //spa bridge takes info from serial and 
@@ -31,7 +33,7 @@ namespace mrover{
                 //[TO-DO] read serial data in 
                 // Read from serial_port and print out the HEADER_BYTE, message_id, Servo ID, present position
                 ServoPositionData posData;
-                TemperatureandHumidityData tempHumidityData;
+                TemperatureAndHumidityData tempHumidityData;
 
                 uint8_t read_buffer[2 + 8];
                 ssize_t bytes_read = read(serial_port, &read_buffer, sizeof(read_buffer)); // temp/humidity double check the -1
