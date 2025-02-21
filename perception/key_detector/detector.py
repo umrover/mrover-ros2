@@ -54,22 +54,22 @@ class KeyDetector(Node):
 
     def imageCallback(self, msg):
         self.get_logger().info("Image Callback...")
+        with torch.no_grad():
+            # Convert from ROS msg to np array/torch tensor
+            img = np.frombuffer(msg.data, dtype=np.uint8).reshape(msg.height, msg.width, -1)
+            img = cv2.cvtColor(img, cv2.COLOR_BGRA2BGR)
+            img_cv = cv2.resize(img, (640, 480), interpolation = cv2.INTER_LINEAR)
+            img = self.test_dataset.cvt_image(img_cv)
 
-        # Convert from ROS msg to np array/torch tensor
-        img = np.frombuffer(msg.data, dtype=np.uint8).reshape(msg.height, msg.width, -1)
-        img = cv2.cvtColor(img, cv2.COLOR_BGRA2BGR)
-        img_cv = cv2.resize(img, (640, 480), interpolation = cv2.INTER_LINEAR)
-        img = self.test_dataset.cvt_image(img_cv)
+            # TODO yolo & model to use same input image size
 
-        # TODO yolo & model to use same input image size
+            bboxes = self.yolo_segmentation_model.predict(img_cv, conf=0.3, iou=0.3)[0]
+            print(f'bboxes {bboxes}')
+            mask = self.corner_regression_model.predict(img)
+            mask = cv2.resize(mask, bboxes.orig_shape[::-1])
+            print(f'mask {mask}')
 
-        bboxes = self.yolo_segmentation_model.predict(img_cv, conf=0.3, iou=0.3)[0]
-        print(f'bboxes {bboxes}')
-        mask = self.corner_regression_model.predict(img)
-        mask = cv2.resize(mask, bboxes.orig_shape[::-1])
-        print(f'mask {mask}')
-
-        out = plot_yolo(bboxes, draw_text=False, plot=False)
+            out = plot_yolo(bboxes, draw_text=False, plot=False)
         #imshow(out, mask)
 
         describe(mask)
