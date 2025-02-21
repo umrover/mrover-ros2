@@ -22,18 +22,30 @@ namespace mrover {
     public:
         // assumes the timer is started outside the scope of this class
         ElapsedTimer() = default;
-        ElapsedTimer(TIM_HandleTypeDef* htim, Hertz const frequency) : m_tim(htim), m_period(1 / frequency) {};
+        ElapsedTimer(TIM_HandleTypeDef* htim, Hertz const frequency) : m_tim(htim), m_period(1.0f / frequency) {};
 
         auto get_time_since_last_read() -> Seconds {
+            Seconds result;
             CountType const current_tick = __HAL_TIM_GET_COUNTER(m_tim);
-            Seconds const time = m_period * (current_tick - m_tick_prev);
+            if (m_is_first_read) {
+                m_is_first_read = false;
+                result = Seconds{0.0f};
+            } else {
+                result = m_period * (current_tick - m_tick_prev);
+            }
             m_tick_prev = current_tick;
-            return time;
+            return result;
+        }
+
+        auto make_next_read_first_read() -> void {
+            m_is_first_read = true;
         }
 
     private:
         TIM_HandleTypeDef* m_tim{};
         Seconds m_period{};
+
+        bool m_is_first_read = true;
 
         CountType m_tick_prev{};
     };

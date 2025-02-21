@@ -41,7 +41,7 @@ namespace mrover {
                     device_slave_address_both_high = 0x43;
         };
         TIM_HandleTypeDef* m_elapsed_timer{};
-        std::uint16_t m_timer_tick_prev{};
+        std::uint32_t m_timer_tick_prev{};
 
         std::uint16_t m_address = I2CAddress::device_slave_address_none_high;
         AS5048B_Bus m_i2cBus;

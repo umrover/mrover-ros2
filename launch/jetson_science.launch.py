@@ -20,14 +20,14 @@ def generate_launch_description():
         )
     )
 
-    arm_hw_bridge_node = Node(
+    sa_hw_bridge_node = Node(
         package="mrover",
-        executable="arm_hw_bridge",
-        name="arm_hw_bridge",
+        executable="sa_hw_bridge",
+        name="sa_hw_bridge",
         parameters=[
             Path(get_package_share_directory("mrover"), "config", "esw.yaml"),
-            Path(get_package_share_directory("mrover"), "config", "arm_params.yaml"),
+            Path(get_package_share_directory("mrover"), "config", "sa_params.yaml"),
         ],
     )
 
-    return LaunchDescription([launch_include_jetson_base, arm_hw_bridge_node])
+    return LaunchDescription([launch_include_jetson_base, sa_hw_bridge_node])
