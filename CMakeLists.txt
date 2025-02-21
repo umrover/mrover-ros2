@@ -323,6 +323,7 @@ install(PROGRAMS
         superstructure/superstructure.py
         scripts/debug_course_publisher.py
         scripts/astar_debug.py
+        scripts/custom_costmap.py
 		scripts/visualizer.py
 
         # starter project sources

@@ -18,6 +18,8 @@ navigation:
     # a certain bearing leading to false pathing
     target_expiration_duration: 2.0
 
+    custom_costmap: true
+
     image_targets:
       increment_weight: 5
       decrement_weight: 1
@@ -94,3 +96,8 @@ debug_course_publisher:
     ref_lat: 38.4225202
     ref_lon: -110.7844653
     ref_alt: 0.0
+
+custom_costmap:
+  ros__parameters:
+    size: 40
+    resolution: 1.0
