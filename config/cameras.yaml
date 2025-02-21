@@ -10,12 +10,13 @@
 #     height: 720
 #     image_topic: "/zed/left/image"
 
+# TODO: switch this back to boomcam
 boom_streamer:
   ros__parameters:
     port: 8081
     dev_descriptor: ""
     decode_jpeg_from_device: true
-    dev_node: "/dev/boomcam"
+    dev_node: "/dev/long_range_cam"
     width: 640
     height: 480
     framerate: 30
