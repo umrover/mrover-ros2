@@ -8,6 +8,8 @@ namespace mrover {
         uint8_t channel;
 
     public:
+        UVSensor() = default;
+
         // adc_in is a pointer to the desired ADCSensor and channel_in is the channel that the UVsensor is on
         UVSensor(ADCSensor* adc_in, uint8_t channel_in)
             : adc_ptr(adc_in), uv_index(0), channel(channel_in) {

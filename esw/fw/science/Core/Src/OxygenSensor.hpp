@@ -15,6 +15,8 @@ namespace mrover {
         double percent;
 
     public:
+        OxygenSensor() = default;
+
         OxygenSensor(I2C_HandleTypeDef* i2c_in)
             : dev_addr(ADDRESS_3), key_addr(OXYGEN_KEY_REGISTER), mem_addr(OXYGEN_DATA_REGISTER), i2c(i2c_in), percent(0) {
             calibration_multiplier = (20.9 / 120.0); //default reasonable multiplier if calibration fails

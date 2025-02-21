@@ -11,6 +11,8 @@ namespace mrover {
         I2C_HandleTypeDef* i2c;
 
     public:
+        TempHumiditySensor() = default;
+
         TempHumiditySensor(I2C_HandleTypeDef* i2c_in)
             : temp(0), humidity(0), dev_addr(TEMP_HUM_ADDRESS), i2c(i2c_in) {
               };

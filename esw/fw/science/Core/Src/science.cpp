@@ -24,10 +24,10 @@ namespace mrover {
     std::shared_ptr<ADCSensor> adc_sensor1 = std::make_shared<ADCSensor>(&hadc1, 6);
     ADCSensor adc_sensor2 = ADCSensor(&hadc2, 0);
 
-    UVSensor uv_sensor = mrover::UVSensor(&adc_sensor2, 0);
-    OxygenSensor oxygen_sensor = mrover::OxygenSensor(&hi2c2);
-    TempHumiditySensor th_sensor = mrover::TempHumiditySensor(&hi2c3);
-    FDCAN<InBoundScienceMessage> fdcan_bus(&hfdcan1);
+    UVSensor uv_sensor;
+    OxygenSensor oxygen_sensor;
+    TempHumiditySensor th_sensor;
+    FDCAN<InBoundScienceMessage> fdcan_bus;
     OutBoundScienceMessage science_out;
 
     std::array<Heater, 4> m_heaters;
@@ -62,8 +62,13 @@ namespace mrover {
     }
 
     void init() {
-        HAL_FDCAN_ConfigTxDelayCompensation(&hfdcan1, 13, 1);
-        HAL_FDCAN_EnableTxDelayCompensation(&hfdcan1);
+    	uv_sensor = UVSensor(&adc_sensor2, 0);
+		oxygen_sensor = OxygenSensor(&hi2c2);
+		th_sensor = TempHumiditySensor(&hi2c3);
+		fdcan_bus = FDCAN<InBoundScienceMessage>(&hfdcan1);
+
+//        HAL_FDCAN_ConfigTxDelayCompensation(&hfdcan1, 13, 1);
+//        HAL_FDCAN_EnableTxDelayCompensation(&hfdcan1);
 
         std::array<DiagTempSensor, 2> diag_temp_sensors =
 		{
@@ -88,6 +93,7 @@ namespace mrover {
         	m_heaters.at(i) = Heater(diag_temp_sensors[i%2], heater_pins[i%2]);
         }
 
+        HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_RESET);
         fdcan_bus.start();
         event_loop();
     }

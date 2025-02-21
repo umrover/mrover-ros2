@@ -10,6 +10,8 @@ namespace mrover {
         I2C_HandleTypeDef* i2c;
 
     public:
+        UVSensor() = default;
+
         UVSensor(I2C_HandleTypeDef* i2c_in)
             : uv_index(0), dev_addr(UV_ADDRESS << 1), i2c(i2c_in) {
             };
