@@ -81,7 +81,7 @@ namespace mrover {
         }
 
     private:
-        std::vector<std::string> const mJointNames{"joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_roll", "allen_key", "gripper", "cam"};
+        std::vector<std::string> const mJointNames{"joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_roll", "gripper", "cam"};
 
         std::shared_ptr<BrushlessController<Meters>> mJointA;
         std::shared_ptr<BrushedController> mJointB;

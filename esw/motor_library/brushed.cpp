@@ -20,7 +20,7 @@ namespace mrover {
         // TODO (ali): put this jawn back and figure out why it fails
         // assert(config.driverVoltage > 0);
         // assert(0 < config.motorMaxVoltage && config.motorMaxVoltage >= config.driverVoltage);
-        double const driver_voltage = mNode->get_parameter_or(std::format("{}.driver_voltage", mControllerName), 0.0);
+        double const driver_voltage = mNode->get_parameter_or(std::format("{}.driver_voltage", mControllerName), 10.5);
         double const motor_max_voltage = mNode->get_parameter_or(std::format("{}.motor_max_voltage", mControllerName), 12.0);
         assert(driver_voltage > 0);
         assert(motor_max_voltage > 0);

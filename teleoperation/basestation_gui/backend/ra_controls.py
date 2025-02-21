@@ -26,8 +26,8 @@ class Joint(Enum):
     C = 2
     DE_PITCH = 3
     DE_ROLL = 4
-    ALLEN_KEY = 5
-    GRIPPER = 6
+    GRIPPER = 5
+    CAM = 6
 
 
 # The following are indexed with the values of the enum
@@ -38,8 +38,8 @@ JOINT_NAMES = [
     "joint_c",
     "joint_de_pitch",
     "joint_de_roll",
-    "allen_key",
     "gripper",
+    "cam",
 ]
 
 JOINT_SCALES = [
@@ -103,12 +103,12 @@ def compute_manual_joint_controls(controller: DeviceInputs) -> list[float]:
             scale=JOINT_SCALES[Joint.DE_ROLL.value],
         ),
         filter_input(
-            simulated_axis(controller.buttons, ControllerButton.Y, ControllerButton.A),
-            scale=JOINT_SCALES[Joint.ALLEN_KEY.value],
-        ),
-        filter_input(
             simulated_axis(controller.buttons, ControllerButton.B, ControllerButton.X),
             scale=JOINT_SCALES[Joint.GRIPPER.value],
+        ),
+        filter_input(
+            simulated_axis(controller.buttons, ControllerButton.Y, ControllerButton.A),
+            scale=JOINT_SCALES[Joint.CAM.value],
         ),
     ]
 
