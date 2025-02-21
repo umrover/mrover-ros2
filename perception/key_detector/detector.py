@@ -4,6 +4,8 @@ from logging import debug
 import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import Image as ROSImage
+import time
+
 
 import pickle
 import cv2
@@ -54,6 +56,8 @@ class KeyDetector(Node):
 
     def imageCallback(self, msg):
         self.get_logger().info("Image Callback...")
+        start = time.process_time()
+
         with torch.no_grad():
             # Convert from ROS msg to np array/torch tensor
             img = np.frombuffer(msg.data, dtype=np.uint8).reshape(msg.height, msg.width, -1)
@@ -72,6 +76,8 @@ class KeyDetector(Node):
             out = plot_yolo(bboxes, draw_text=False, plot=False)
         #imshow(out, mask)
 
+        print("Time to complete torch model: ",time.process_time-start)
+        start = time.process_time()
         describe(mask)
 
         keys = keys_from_yolo(bboxes)
@@ -177,6 +183,9 @@ class KeyDetector(Node):
         debug_img.data = np.reshape(img, (debug_img.width * debug_img.height * 3)).data
 
         self.debug_img_pub.publish(debug_img)
+
+        print("Time time to publish: ",time.process_time-start)
+        start = time.process_time()
 
         #plt.show()
         
