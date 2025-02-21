@@ -4,6 +4,7 @@
 #include <optional>
 #include <string>
 #include <unordered_map>
+#include <deque>
 
 #include <rclcpp/node.hpp>
 #include <rclcpp/rclcpp.hpp>
@@ -16,6 +17,7 @@
 
 #include <Eigen/Core>
 #include <Eigen/Dense>
+#include <Eigen/src/Geometry/Quaternion.h>
 #include <unsupported/Eigen/MatrixFunctions>
 #include <lie.hpp>
 #include <manif/SO3.h>

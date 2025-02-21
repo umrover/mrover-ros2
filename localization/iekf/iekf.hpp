@@ -13,9 +13,11 @@ using Matrix33d = Eigen::Matrix<double, 3, 3>;
 using Matrix55d = Eigen::Matrix<double, 5, 5>;
 using Matrix99d = Eigen::Matrix<double, 9, 9>;
 using Matrix39d = Eigen::Matrix<double, 3, 9>;
+using Matrix93d = Eigen::Matrix<double, 9, 3>;
 using Vector3d = Eigen::Vector3d;
 using Vector5d = Eigen::Matrix<double, 5, 1>;
 using Vector9d = Eigen::Matrix<double, 9, 1>;
+using Quaterniond = Eigen::Quaterniond;
 
 namespace mrover {
 
@@ -32,7 +34,9 @@ namespace mrover {
 
         // InEKF functions
         void predict(const geometry_msgs::msg::Vector3& w, const Matrix33d& cov_w, const geometry_msgs::msg::Vector3& a, const Matrix33d& cov_a, double dt);
-        void correct(const Vector5d& Y, const Vector5d& b, const Matrix33d& n, const Matrix39d& H);
+        // void correct(const Vector3d& Y, const Vector3d& b, const Matrix33d& N, const Matrix39d& H);
+
+        void correct(const Vector5d& Y, const Vector5d& b, const Matrix33d& N, const Matrix39d& H);
 
         // publishers and subscribers
         rclcpp::Subscription<geometry_msgs::msg::Vector3Stamped>::SharedPtr pos_sub;
@@ -49,14 +53,29 @@ namespace mrover {
         std::optional<builtin_interfaces::msg::Time> last_imu_time;
        
         // state variables
-        SE_2_3d X;
+
+        // SE_2_3d X;
+
+        Matrix55d X;
         Matrix99d P;
         Matrix99d A;
-        Vector3d g{0, 0, -9.80665};
         
         const double IMU_DT = 0.016;
         const std::string ROVER_FRAME = "base_link";
         const std::string MAP_FRAME = "map";
+        const Vector3d g{0.0, 0.0, -9.81};
+
+        std::deque<Vector3d> accel_bias_estimator;
+        Vector3d accel_bias{0.0, 0.0, 0.0};
+        constexpr static int BIAS_WINDOW = 20;
+        constexpr static float BIAS_THRESHOLD = 0.05;
+        bool bias_calibrated = false;
+
+
+        Vector3d velocity_temp{0.0, 0.0, 0.0};
+        Vector3d position_temp{0.0, 0.0, 0.0};
+
+        int fake_gps = 0;
 
         
         
