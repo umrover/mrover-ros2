@@ -2,7 +2,7 @@
   <div class="wrapper">
     <div class="shadow p-3 mb-5 header">
       <a class='logo' href="/"><img src='/mrover.png' alt='MRover' title='MRover' width='200' /></a>
-      <h1>ISH Dashboard</h1>
+      <h1><a class='dashboard-title' href="/">ISH Dashboard</a></h1>
       <div class="network">
         <NetworkMonitor/>
       </div>
@@ -12,7 +12,7 @@
         <SelectSite @site="onSiteChange" />
       </div>
       <div class="col-4">
-          <WhiteLEDs :site="site" />
+        <WhiteLEDs :site="site" />
       </div>
       <div class="col-4">
         <AutoShutdown />
@@ -115,13 +115,19 @@ export default {
   height: auto;
 }
 
-<<<<<<< HEAD
-=======
+.dashboard-title {
+  color: black;
+  text-decoration: none;
+}
+
+.dashboard-title:hover {
+  color: darkgray;
+}
+
 .comms {
   margin-right: 5px;
 }
 
->>>>>>> 8cc53aa7d4415428dc70c5696d5031eef9c20d67
 .header {
   grid-area: header;
   display: flex;
