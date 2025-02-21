@@ -1,7 +1,7 @@
 <template>
   <div class='wrapper'>
     <div class='shadow p-3 mb-5 header'>
-      <h1>SA Dashboard</h1>
+     <h1><a class='dashboard-title' href="/">SA Dashboard</a></h1>
       <a class='logo' href="/"><img src='/mrover.png' alt='MRover' title='MRover' width='200' /></a>
       <div class="network">
       <NetworkMonitor />
@@ -20,20 +20,23 @@
       <DriveControls />
     </div>
     <div class='shadow p-3 rounded arm'>
-      <SAArmControls />
+      <SAArmControls :currentSite="siteSelect" /> 
     </div>
     <div class='shadow p-3 rounded moteus'>
       <ControllerDataTable msg-type='drive_state' header='Drive States' />
-    </div>
-    <div class='shadow p-3 rounded joints'>
-      <JointStateDataTable msg-type='sa_joint' header='SA Joints' />
-      <JointStateDataTable msg-type='plunger' header='Plunger (w/o offset)' />
+      <ControllerDataTable msg-type='sa_state' header='SA States' />
     </div>
     <div v-show='false'>
       <MastGimbalControls />
     </div>
     <div class='shadow p-3 rounded odom'>
-      <OdometryReading @odom='updateOdom' />
+      <OdometryReading @odom='updateOdom'/>
+    </div>
+    <div class="shadow p-3 rounded hexHub">
+      <HexHub @selectSite="updateSite" />
+    </div>
+    <div class="shadow p-3 rounded lsActuator">
+      <LSActuator />
     </div>
   </div>
 </template>
@@ -47,8 +50,9 @@ import MastGimbalControls from './MastGimbalControls.vue'
 import OdometryReading from './OdometryReading.vue'
 import ControllerDataTable from './ControllerDataTable.vue'
 import SAArmControls from './SAArmControls.vue'
-import JointStateDataTable from './JointStateDataTable.vue'
-import NetworkMonitor from "./NetworkMonitor.vue";
+import NetworkMonitor from "./NetworkMonitor.vue"
+import HexHub from './HexHub.vue'
+import LSActuator from './LSActuator.vue'
 
 interface Odom {
   latitude_deg: number;
@@ -67,20 +71,23 @@ export default {
     SAArmControls,
     NetworkMonitor,
     OdometryReading,
-    JointStateDataTable
+    HexHub,
+    LSActuator
   },
   data() {
     return {
-      odom: null as Odom | null
+      odom:  null as Odom | null,
+      siteSelect: 0,
     }
   },
-
   methods: {
     updateOdom(odom: Odom) {
       this.odom = odom;
-    }
+    },
+    updateSite(selectedSite: number) {
+      this.siteSelect = selectedSite; 
+    },
   }
-
 }
 </script>
 
@@ -88,15 +95,24 @@ export default {
 .wrapper {
   display: grid;
   grid-gap: 10px;
-  grid-template-columns: 50% 50%;
+  grid-template-columns: 50% repeat(2, auto);
   grid-template-areas:
-    'header header'
-    'arm soilData'
-    'map waypoints'
-    'map odom'
-    'moteus joints';
+    'header header header'
+    'arm lsActuator soilData'
+    'map hexHub waypoints'
+    'map odom odom'
+    'moteus moteus moteus';
   font-family: sans-serif;
   height: auto;
+}
+
+.dashboard-title {
+  color: black;
+  text-decoration: none;
+}
+
+.dashboard-title:hover {
+  color: darkgray;
 }
 
 .header {
@@ -123,20 +139,8 @@ export default {
   grid-area: arm;
 }
 
-.motorData {
-  grid-area: motorData;
-}
-
 .moteus {
   grid-area: moteus;
-}
-
-.joints {
-  grid-area: joints;
-}
-
-.limit {
-  grid-area: limit;
 }
 
 .odom {
@@ -147,19 +151,11 @@ export default {
   grid-area: soilData;
 }
 
-.calibration {
-  grid-area: calibration;
-  display: flex;
-  flex-direction: column;
+.hexHub {
+  grid-area: hexHub;
 }
 
-.calibration-checkboxes {
-  margin: -4% 0 1% 0;
-}
-
-ul#vitals li {
-  display: inline;
-  float: left;
-  padding: 0 10px 0 0;
+.lsActuator {
+  grid-area: lsActuator;
 }
 </style>

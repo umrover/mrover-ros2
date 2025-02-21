@@ -24,7 +24,7 @@
         </td>
       </tr>
       <tr>
-        <th class='table-secondary'>Limit Hits</th>
+        <th class='table-secondary'>Limit Hit</th>
         <td v-for='(limits, i) in limits' :key='i'>
           {{ limits }}
         </td>

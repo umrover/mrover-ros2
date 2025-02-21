@@ -31,5 +31,23 @@ def generate_launch_description():
         ],
     )
 
+    science_streamer_1_node = Node(
+        package="mrover",
+        executable="gst_websocket_streamer",
+        name="science_streamer_1",
+        output="screen",
+        parameters=[
+            Path(get_package_share_directory("mrover"), "config", "cameras.yaml"),
+        ],
+    )
 
-    return LaunchDescription([boom_streamer_node, mob_streamer_node])
+    science_streamer_2_node = Node(
+        package="mrover",
+        executable="gst_websocket_streamer",
+        name="science_streamer_2",
+        output="screen",
+        parameters=[
+            Path(get_package_share_directory("mrover"), "config", "cameras.yaml"),
+        ],
+    )
+    return LaunchDescription([science_streamer_1_node, science_streamer_2_node])

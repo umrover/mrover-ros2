@@ -16,4 +16,8 @@ export default {
 #app {
   font-family: 'Avenir', Helvetica, Arial, sans-serif;
 }
+.dashboard-title {
+  text-decoration: none;
+  color: black;
+}
 </style>
