@@ -48,7 +48,7 @@
       >
         <CameraFeed
           :mission="selectedMission"
-          :id="index"
+          :id="CAMERA_PORTS[cameras[selectedMission][index]]"
           :name="cameras[selectedMission][index]"
         ></CameraFeed>
       </div>
@@ -60,7 +60,18 @@
 import CameraFeed from './CameraFeed.vue'
 import ToggleButton from "../components/ToggleButton.vue";
 import { mapActions, mapState } from 'vuex'
-import { reactive } from 'vue'
+
+const CAMERA_PORTS = {
+  "Cam1" : 8081,
+  "Cam2" : 8082,
+  "Cam3" : 8083,
+  "Cam4" : 8084,
+  "Cam5" : 8085,
+  "Cam6" : 8086,
+  "Cam7" : 8087,
+  "Cam8" : 8088,
+  "ZED" : 8089,
+}
 
 export default {
   components: {

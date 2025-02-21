@@ -1,16 +1,14 @@
 <template>
   <div class="wrap">
-    <canvas :id="'' + id" v-on:click="handleClick"></canvas>
-    <div v-if="mission != 'ZED'">
-      <p>{{ name }} • ID: {{ id }}</p>
-      <Checkbox v-if="mission === 'ik'" :name="'IK Camera'" v-on:toggle="toggleIKMode" />
+    <canvas :id="'stream-' + port"></canvas>
+    <div>
+      <p>{{ name }}</p>
     </div>
   </div>
 </template>
 <script lang="ts">
 import {defineComponent} from 'vue'
 import {mapActions} from 'vuex'
-import Checkbox from './Checkbox.vue'
 
 export default defineComponent({
   props: {
@@ -18,56 +16,33 @@ export default defineComponent({
       type: String,
       required: true
     },
-    id: {
+    port: {
       type: Number,
       required: true
     },
-    mission: {
-      type: String, // // {'ish', 'ik', 'sa', 'auton', 'ZED'}
-      required: true
-    }
-  },
-  components: {
-    Checkbox
   },
 
   data() {
     return {
       ws: null as WebSocket | null,
-      isUnmounted: false,
-
-      // IK Mode
-      IKCam: false,
+      reconnectTimeout: undefined as number | undefined
     }
   },
 
-  beforeUnmount: function () {
+  unmounted: function () {
     if (this.ws) this.ws.close()
-    this.isUnmounted = true
+    if (this.reconnectTimeout) clearTimeout(this.reconnectTimeout)
   },
 
   mounted: function () {
-    this.startStream(this.id)
+    this.startStream(this.port)
   },
 
   methods: {
     ...mapActions('websocket', ['sendMessage']),
 
-    handleClick: function (event: MouseEvent) {
-      if (this.IKCam && this.mission === 'ik') {
-        this.sendMessage({type: 'start_click_ik', data: {x: event.offsetX, y: event.offsetY}})
-      }
-    },
-    
-    toggleIKMode: function () {
-      this.IKCam = !this.IKCam
-    },
-
-    startStream(number: Number, attempt: Number = 0) {
+    startStream(number: number, attempt: number = 0) {
       // This function is called as a retry when the websocket closes
-      // If our component goes away (unmounts) we should stop trying to reconnect
-      // Otherwise it may preempt a new stream that already connected
-      if (this.isUnmounted) return
 
       // Corresponds to H.265
       // I can't figure out what the other values are for... obtained via guess and check
@@ -189,7 +164,7 @@ export default defineComponent({
       // TODO(quintin): Set IP too
       const ip = attempt % 2 === 0 ? '10.1.0.10' : 'localhost'
       console.log(`Attempting to connect to server for stream ${number} at ${ip}...`)
-      this.ws = new WebSocket(`ws://${ip}:808${1 + this.id}`)
+      this.ws = new WebSocket(`ws://${ip}:${number}`)
       const timeoutId = setTimeout(() => {
         if (this.ws && this.ws.readyState !== WebSocket.OPEN) {
           console.log(`Timed out waiting for stream ${number}`)
@@ -205,7 +180,7 @@ export default defineComponent({
         console.log(`Closed socket for stream ${number}`)
         decoder.close()
         // This recursive-ness stops after the canvas element is removed
-        setTimeout(() => this.startStream(number, attempt + 1), RECONNECT_TIMEOUT_MS * (attempt + 1))
+        this.reconnectTimeout = setTimeout(this.startStream(number, attempt + 1), RECONNECT_TIMEOUT_MS * (attempt + 1))
       }
       this.ws.onerror = () => {
         if (this.ws) this.ws.close()
