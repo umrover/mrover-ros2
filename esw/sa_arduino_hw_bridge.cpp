@@ -26,7 +26,6 @@ namespace mrover{
             int serial_port;
 
                         
-
             void readSerialData(){
 
                 //[TO-DO] read serial data in 
