@@ -44,8 +44,8 @@ arm_hw_bridge:
       limit_switch_0_active_high: false
       limit_switch_0_used_for_readjustment: false
     joint_c:
-      min_velocity: -0.03
-      max_velocity: 0.03
+      min_velocity: -0.06
+      max_velocity: 0.06
       min_position: -0.125
       max_position: 0.30
       max_torque: 200.0
