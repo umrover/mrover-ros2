@@ -21,9 +21,6 @@ namespace mrover{
 		};
 
         ParameterWrapper::declareParameters(this, params);
-
-		//Create Needed Subscribers and Publishers
-		pointPub = this->create_publisher<geometry_msgs::msg::Vector3>("/light_detector/light_poses", 1);
 	}
 
 	ColoredDetector::ColoredDetector(rclcpp::NodeOptions const& options) : LightDetector(options) {
@@ -33,7 +30,7 @@ namespace mrover{
 				{"camera_frame", mCameraFrame, "zed_left_camera_frame"},
 				{"light_detector/lmodel_name", modelName, "best"},
                 {"light_detector/model_score_threshold", mModelScoreThreshold, 0.75},
-            	{"mlight_detector/odel_nms_threshold", mModelNMSThreshold, 0.5},
+            	{"light_detector/odel_nms_threshold", mModelNMSThreshold, 0.5},
             	{"light_detector/debug", mDebug, true}
 		};
 		
@@ -53,6 +50,8 @@ namespace mrover{
 		imgSub = create_subscription<sensor_msgs::msg::PointCloud2>("/zed/left/points", 1, [this](sensor_msgs::msg::PointCloud2::ConstSharedPtr const& msg) {
 			ColoredDetector::pointCloudCallback(msg);
 		});
+
+		imgPub = this->create_publisher<sensor_msgs::msg::Image>("/light_detector/img", 1);
 	}
 
 	InfraredDetector::InfraredDetector(rclcpp::NodeOptions const& options) : LightDetector(options) {
@@ -60,13 +59,13 @@ namespace mrover{
 		
 		std::vector<ParameterWrapper> params{
 			// CHANGE THIS TO BE CORRECT
-			{"infrared_frame", mCameraFrame, "zed_left_camera_frame"},
+			{"infrared_frame", mCameraFrame, ""},
 		};
 		
         ParameterWrapper::declareParameters(this, params);
 
 		// CHANGE TOPIC NAME
-		imgSub = create_subscription<sensor_msgs::msg::Image>("/zed/left/points", 1, [this](sensor_msgs::msg::Image::ConstSharedPtr const& msg) {
+		imgSub = create_subscription<sensor_msgs::msg::Image>("/infrared/points", 1, [this](sensor_msgs::msg::Image::ConstSharedPtr const& msg) {
 			InfraredDetector::imageCallback(msg);
 		});
 	}

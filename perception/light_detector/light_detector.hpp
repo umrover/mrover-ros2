@@ -1,6 +1,7 @@
 #pragma once
 #include "lie.hpp"
 #include "pch.hpp"
+#include <optional>
 #include <sensor_msgs/msg/detail/point_cloud2__struct.hpp>
 #include <unordered_map>
 
@@ -66,6 +67,8 @@ namespace mrover {
 		auto static calculateDistance(const std::pair<double, double> &p) -> double;
 
 		auto publishClosestLight(std::pair<double, double> &point) -> void;
+
+		auto static calculateSE3Distance(std::optional<SE3d> point) -> double;
 
 	public:
 		explicit LightDetector(rclcpp::NodeOptions const& options = rclcpp::NodeOptions()); //kjust edited
