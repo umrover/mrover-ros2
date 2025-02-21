@@ -278,6 +278,13 @@ if(ZED_FOUND AND CUDA_FOUND)
 
     mrover_executable_from_component(stereo_object_detector perception/executables/stereo_object_detector.cpp object_detector_component)
     mrover_executable_from_component(image_object_detector perception/executables/image_object_detector.cpp object_detector_component)
+
+    # Key Detector
+    mrover_add_component(key_model perception/key_model/*.c* perception/key_model/pch.hpp ImageKeyDetector)
+    mrover_link_component(key_model opencv_core opencv_dnn opencv_imgproc lie tbb tensorrt opencv_imgcodecs opencv_highgui loop_profiler parameter_utils cuda_compiler_flags)
+    mrover_ament_component(key_model rclcpp sensor_msgs rclcpp_components CUDA tf2 tf2_ros)
+
+    mrover_executable_from_component(image_key_detector perception/executables/image_key_detector.cpp key_model_component)
 else()
     message("ZED not found...")
 endif()
@@ -336,6 +343,7 @@ install(PROGRAMS
     scripts/debug_course_publisher.py
     scripts/visualizer.py
     scripts/image_capture.py
+    scripts/convert_onnx.py
 
     # starter project sources
     starter_project/autonomy/src/localization.py
