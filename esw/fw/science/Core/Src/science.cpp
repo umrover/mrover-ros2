@@ -16,8 +16,7 @@ extern I2C_HandleTypeDef hi2c3;
 extern FDCAN_HandleTypeDef hfdcan1;
 
 #define JETSON_ADDRESS 0x10
-#define SCIENCE_A 0x50
-#define SCIENCE_B 0x51
+#define SCIENCE_BOARD_ID 0x50
 
 namespace mrover {
 
@@ -30,8 +29,8 @@ namespace mrover {
     FDCAN<InBoundScienceMessage> fdcan_bus;
     OutBoundScienceMessage science_out;
 
-    std::array<Heater, 4> m_heaters;
-	std::array<Pin, 2> m_white_leds;
+    std::array<Heater, 2> m_heaters;
+	std::array<Pin, 1> m_white_leds;
 
     void event_loop() {
         SensorData temp_data = {.id = static_cast<std::uint8_t>(ScienceDataID::TEMPERATURE), .data = 0};
@@ -47,16 +46,16 @@ namespace mrover {
             uv_data.data = uv_sensor.update_uv_blocking();
 
             science_out = temp_data;
-			fdcan_bus.broadcast(science_out, SCIENCE_A, JETSON_ADDRESS);
+			fdcan_bus.broadcast(science_out, SCIENCE_BOARD_ID, JETSON_ADDRESS);
 			HAL_Delay(50);
 			science_out = humidity_data;
-			fdcan_bus.broadcast(science_out, SCIENCE_A, JETSON_ADDRESS);
+			fdcan_bus.broadcast(science_out, SCIENCE_BOARD_ID, JETSON_ADDRESS);
 			HAL_Delay(50);
 			science_out = oxygen_data;
-			fdcan_bus.broadcast(science_out, SCIENCE_A, JETSON_ADDRESS);
+			fdcan_bus.broadcast(science_out, SCIENCE_BOARD_ID, JETSON_ADDRESS);
 			HAL_Delay(50);
 			science_out = uv_data;
-			fdcan_bus.broadcast(science_out, SCIENCE_A, JETSON_ADDRESS);
+			fdcan_bus.broadcast(science_out, SCIENCE_BOARD_ID, JETSON_ADDRESS);
 			HAL_Delay(50);
         }
     }
@@ -66,9 +65,6 @@ namespace mrover {
 		oxygen_sensor = OxygenSensor(&hi2c2);
 		th_sensor = TempHumiditySensor(&hi2c3);
 		fdcan_bus = FDCAN<InBoundScienceMessage>(&hfdcan1);
-
-//        HAL_FDCAN_ConfigTxDelayCompensation(&hfdcan1, 13, 1);
-//        HAL_FDCAN_EnableTxDelayCompensation(&hfdcan1);
 
         std::array<DiagTempSensor, 2> diag_temp_sensors =
 		{
@@ -87,10 +83,9 @@ namespace mrover {
 		};
 
         m_white_leds.at(0) = white_leds.at(0);
-        m_white_leds.at(1) = white_leds.at(0);
 
-        for (int i = 0; i < 4; ++i) {
-        	m_heaters.at(i) = Heater(diag_temp_sensors[i%2], heater_pins[i%2]);
+        for (int i = 0; i < 2; ++i) {
+        	m_heaters.at(i) = Heater(diag_temp_sensors[i], heater_pins[i]);
         }
 
         HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_RESET);
@@ -100,35 +95,26 @@ namespace mrover {
 
     void feed(EnableScienceDeviceCommand const& message) {
         switch (message.science_device) {
-            case ScienceDevice::HEATER_A0:
+            case ScienceDevice::HEATER_0:
                 m_heaters.at(0).enable_if_possible(message.enable);
                 break;
-            case ScienceDevice::HEATER_B0:
-                m_heaters.at(1).enable_if_possible(message.enable);
+            case ScienceDevice::HEATER_1:
+            	m_heaters.at(1).enable_if_possible(message.enable);
                 break;
-            case ScienceDevice::HEATER_A1:
-                m_heaters.at(2).enable_if_possible(message.enable);
-                break;
-            case ScienceDevice::HEATER_B1:
-                m_heaters.at(3).enable_if_possible(message.enable);
-                break;
-            case ScienceDevice::WHITE_LED_A:
+            case ScienceDevice::WHITE_LED:
                 m_white_leds.at(0).write(message.enable ? GPIO_PIN_SET : GPIO_PIN_RESET);
-                break;
-            case ScienceDevice::WHITE_LED_B:
-                m_white_leds.at(1).write(message.enable ? GPIO_PIN_SET : GPIO_PIN_RESET);
                 break;
         }
     }
 
     void feed(HeaterAutoShutOffCommand const& message) {
-        for (int i = 0; i < 6; ++i) {
+        for (int i = 0; i < 2; ++i) {
             m_heaters.at(i).set_auto_shutoff(message.enable_auto_shutoff);
         }
     }
 
     void feed(ConfigThermistorAutoShutOffCommand const& message) {
-        for (int i = 0; i < 6; ++i) {
+        for (int i = 0; i < 2; ++i) {
             m_heaters.at(i).change_shutoff_temp(message.shutoff_temp);
         }
     }
@@ -141,19 +127,17 @@ namespace mrover {
 
 		auto messageId = std::bit_cast<FDCAN<InBoundScienceMessage>::MessageId>(header.Identifier);
 
-		if (messageId.destination == SCIENCE_A || messageId.destination == SCIENCE_B) {
+		if (messageId.destination == SCIENCE_BOARD_ID) {
 			std::visit([&](auto const& command) { feed(command); }, message);
 		}
 	}
 } // namespace mrover
 
-void receive_message() {
-	mrover::receive_message();
-}
+extern "C" {
 
 void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef* hfdcan, uint32_t RxFifo0ITs) {
     if (RxFifo0ITs & FDCAN_IT_RX_FIFO0_NEW_MESSAGE) {
-        receive_message();
+        mrover::receive_message();
     } else {
         // Mailbox is full OR we lost a frame
         Error_Handler();
@@ -162,4 +146,6 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef* hfdcan, uint32_t RxFifo0ITs)
 
 void HAL_PostInit() {
     mrover::init();
+}
+
 }

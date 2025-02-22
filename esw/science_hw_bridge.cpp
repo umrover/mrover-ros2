@@ -22,6 +22,11 @@
 
 namespace mrover {
 
+    enum ScienceBoard {
+        A = 0,
+        B = 1,
+    };
+
     class ScienceBridge final : public rclcpp::Node {
 
     private:
@@ -54,13 +59,13 @@ namespace mrover {
             response->message = request->enable ? "Enabled" : "Disabled";
         }
 
-        void processScienceEnable(const ScienceDevice dev, const std::shared_ptr<srv::EnableBool::Request> request, std::shared_ptr<srv::EnableBool::Response> response) {
-            if (dev == ScienceDevice::HEATER_A0 || dev == ScienceDevice::HEATER_A1 || dev == ScienceDevice::WHITE_LED_A)
+        void processScienceEnable(ScienceBoard scienceBoard, const ScienceDevice dev, const std::shared_ptr<srv::EnableBool::Request> request, std::shared_ptr<srv::EnableBool::Response> response) {
+            if (scienceBoard == ScienceBoard::A)
                 canDevA.publish_message(InBoundScienceMessage{EnableScienceDeviceCommand{.science_device = dev, .enable = request->enable}});
             else
                 canDevB.publish_message(InBoundScienceMessage{EnableScienceDeviceCommand{.science_device = dev, .enable = request->enable}});
             
-                response->success = true;
+            response->success = true;
             response->message = request->enable ? "Enabled" : "Disabled";
         }
 
@@ -142,22 +147,22 @@ namespace mrover {
                             [this](srv::EnableBool::Request::SharedPtr const req,srv::EnableBool::Response::SharedPtr res) {processHeaterAutoShutoff(req, res);});
             
             scienceEnableSrvHA0 = create_service<srv::EnableBool>("science_enable_heater_a0", 
-                            [this](srv::EnableBool::Request::SharedPtr const req,srv::EnableBool::Response::SharedPtr res) {processScienceEnable(ScienceDevice::HEATER_A0, req, res);});
+                            [this](srv::EnableBool::Request::SharedPtr const req,srv::EnableBool::Response::SharedPtr res) {processScienceEnable(ScienceBoard::A, ScienceDevice::HEATER_0, req, res);});
                 
             scienceEnableSrvHB0 = create_service<srv::EnableBool>("science_enable_heater_b0", 
-                            [this](srv::EnableBool::Request::SharedPtr const req,srv::EnableBool::Response::SharedPtr res) {processScienceEnable(ScienceDevice::HEATER_B0, req, res);});
+                            [this](srv::EnableBool::Request::SharedPtr const req,srv::EnableBool::Response::SharedPtr res) {processScienceEnable(ScienceBoard::B, ScienceDevice::HEATER_0, req, res);});
 
             scienceEnableSrvHA1 = create_service<srv::EnableBool>("science_enable_heater_a1", 
-                            [this](srv::EnableBool::Request::SharedPtr const req,srv::EnableBool::Response::SharedPtr res) {processScienceEnable(ScienceDevice::HEATER_A1, req, res);});
+                            [this](srv::EnableBool::Request::SharedPtr const req,srv::EnableBool::Response::SharedPtr res) {processScienceEnable(ScienceBoard::A, ScienceDevice::HEATER_1, req, res);});
 
             scienceEnableSrvHB1 = create_service<srv::EnableBool>("science_enable_heater_b1", 
-                            [this](srv::EnableBool::Request::SharedPtr const req,srv::EnableBool::Response::SharedPtr res) {processScienceEnable(ScienceDevice::HEATER_B1, req, res);});
+                            [this](srv::EnableBool::Request::SharedPtr const req,srv::EnableBool::Response::SharedPtr res) {processScienceEnable(ScienceBoard::B, ScienceDevice::HEATER_1, req, res);});
 
             scienceEnableSrvWLA = create_service<srv::EnableBool>("science_enable_white_led_a", 
-                            [this](srv::EnableBool::Request::SharedPtr const req,srv::EnableBool::Response::SharedPtr res) {processScienceEnable(ScienceDevice::WHITE_LED_A, req, res);});
+                            [this](srv::EnableBool::Request::SharedPtr const req,srv::EnableBool::Response::SharedPtr res) {processScienceEnable(ScienceBoard::A, ScienceDevice::WHITE_LED, req, res);});
 
             scienceEnableSrvWLB = create_service<srv::EnableBool>("science_enable_white_led_b", 
-                            [this](srv::EnableBool::Request::SharedPtr const req,srv::EnableBool::Response::SharedPtr res) {processScienceEnable(ScienceDevice::WHITE_LED_B, req, res);});
+                            [this](srv::EnableBool::Request::SharedPtr const req,srv::EnableBool::Response::SharedPtr res) {processScienceEnable(ScienceBoard::B, ScienceDevice::WHITE_LED, req, res);});
                         
             canSubA = create_subscription<msg::CAN>("/can/science_a/in", 10, [this](msg::CAN::ConstSharedPtr const& msg) { processCANData(msg); });
             canSubB = create_subscription<msg::CAN>("/can/science_b/in", 10, [this](msg::CAN::ConstSharedPtr const& msg) { processCANData(msg); });
