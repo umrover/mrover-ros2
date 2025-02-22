@@ -30,4 +30,13 @@ def generate_launch_description():
         ],
     )
 
-    return LaunchDescription([launch_include_jetson_base, sa_hw_bridge_node])
+    sa_arduino_hw_bridge_node = Node(
+        package="mrover",
+        executable="sa_arduino_hw_bridge",
+        name="sa_arduino_hw_bridge",
+        parameters=[
+            Path(get_package_share_directory("mrover"), "config", "esw.yaml"),
+        ],
+    )
+
+    return LaunchDescription([launch_include_jetson_base, sa_hw_bridge_node, sa_arduino_hw_bridge_node])

@@ -2,44 +2,52 @@
 
 #include <array>
 #include <cstdint>
-#include <variant>
 
-namespace mrover {
-
+namespace mrover::messaging {
+    namespace arduino {
 #pragma pack(push, 1)
 
-    static constexpr std::uint8_t HEADER_BYTE = 0xA5;
+        static constexpr std::uint8_t HEADER_BYTE = 0xA5;
+        static constexpr std::uint8_t SERVO_SET_POSITION = 0x00;
+        static constexpr std::uint8_t SERVO_POSITION_DATA = 0x01;
+        static constexpr std::uint8_t TEMPERATURE_HUMIDITY_DATA = 0x02;
+
+        struct ServoSetPosition {
+            std::uint8_t header = HEADER_BYTE;
+            std::uint8_t messageID = SERVO_SET_POSITION;
+
+            std::uint8_t _unused : 3 {};
+            std::uint8_t id : 4 {}; // internal id of servo
+            std::uint8_t isCounterClockwise : 1 {};
+
+            float radians{};
+        };
+
+        struct ServoPositionData {
+            std::uint8_t header = HEADER_BYTE;
+            std::uint8_t messageID = SERVO_POSITION_DATA;
+
+            std::uint8_t _unused : 4 {};
+            std::uint8_t id : 4 {}; // internal id of servo
+
+            float radians{};
+        };
+
+        struct TemperatureAndHumidityData {
+            std::uint8_t header = HEADER_BYTE;                  // 1B
+            std::uint8_t messageID = TEMPERATURE_HUMIDITY_DATA; // 1B
+
+            float temperature{}; // 4B in degrees Celciues
+            float humidity{};    // 4B
+        };
 
 
-    struct ServoSetPosition {
-        static constexpr std::uint8_t header = HEADER_BYTE;
-        static std::uint8_t  message_id = 0x00;
+#pragma pack(pop)
 
-        std::uint8_t _unused: 3{};
-        std::uint8_t id : 4 {}; // internal id of servo
-        std::uint8_t is_counterclockwise : 1 {};
+    } // namespace arduino
 
-        float radians{}; 
-    };
 
-    struct ServoPositionData {
-        static constexpr std::uint8_t header = HEADER_BYTE;
-        static std::uint8_t  message_id = 0x01;
-
-        std::uint8_t _unused: 4{};
-        std::uint8_t id : 4 {}; // internal id of servo
-
-        float radians{};
-    };
-
-    struct TemperatureAndHumidityData {
-        static constexpr std::uint8_t header = HEADER_BYTE; // 1B 
-        static std::uint8_t  message_id = 0x02; // 1B
-
-        float temperature{}; // 4B
-        float humidity{}; // 4B
-    };
-}
+} // namespace mrover::messaging
 
 // Macros needed to operate on bitfields
 #define SET_BIT_AT_INDEX(x, index, value) ((x) = ((x) & ~(1 << (index))) | ((value) << (index)))
