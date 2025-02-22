@@ -235,12 +235,16 @@ namespace mrover {
         Coordinate transformCoord = {deltaRow, deltaCol}; 
 
         for(size_t i = 0; i < mGlobalGridMsg.data.size(); i++){
+            // Calculate which bin we are at in (row,col) form
             Coordinate coord = indexToCoordinate(static_cast<int>(i));
+
+            // transform to see which bin this is in the new map (possibly out of bounds)
             Coordinate newPos = coord - transformCoord;
 
-            // Bounds check
+            // Bounds check, if it is in bounds, means there is overlap
             if(newPos.row < 0 || newPos.col < 0 || newPos.row >= mHeight || newPos.col >= mWidth){ continue; }
 
+            // Grab data from overlapping bin and put it in whatever that bin will become in new map
             newGrid[i] = mGlobalGridMsg.data[static_cast<size_t>(coordinateToIndex(newPos))];
         }
 
