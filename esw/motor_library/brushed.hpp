@@ -17,43 +17,19 @@ namespace mrover {
 
     // For now only revolute joints are supported => hardcode to Radians
     class BrushedController final : public ControllerBase<Radians, BrushedController> {
+        static constexpr std::size_t MAX_NUM_LIMIT_SWITCHES = 2;
+        static_assert(MAX_NUM_LIMIT_SWITCHES <= 2, "Only 2 limit switches are supported");
+
+        Gains mPositionGains{};
+        Gains mVelocityGains{};
+
+        Percent mCalibrationThrottle = 0.0;
+
+        bool mIsConfigured{false};
+        ConfigCommand mConfigCommand;
+
     public:
-        struct Config {
-            static constexpr std::size_t MAX_NUM_LIMIT_SWITCHES = 2;
-            std::array<bool, MAX_NUM_LIMIT_SWITCHES> limitSwitchPresent = {false};
-            std::array<bool, MAX_NUM_LIMIT_SWITCHES> limitSwitchEnabled = {false};
-            std::array<bool, MAX_NUM_LIMIT_SWITCHES> limitSwitchLimitsFwd = {false};
-            std::array<bool, MAX_NUM_LIMIT_SWITCHES> limitSwitchActiveHigh = {false};
-            std::array<bool, MAX_NUM_LIMIT_SWITCHES> limitSwitchUsedForReadjustment = {false};
-            std::array<Radians, MAX_NUM_LIMIT_SWITCHES> limitSwitchReadjustPosition = {0.0_rad};
-            bool limitMaxForwardPosition = false;
-            bool limitMaxBackwardPosition = false;
-
-            double gearRatio = 0.0;
-            bool isInverted = false;
-
-            double driverVoltage = 0.0;
-            double motorMaxVoltage = 0.0;
-
-            bool quadPresent = false;
-            Ratio quadRatio = 1.0;
-
-            bool absPresent = false;
-            Ratio absRatio = 1.0;
-            Radians absOffset = 0.0_rad;
-
-            RadiansPerSecond minVelocity = std::numeric_limits<RadiansPerSecond>::infinity();
-            RadiansPerSecond maxVelocity = std::numeric_limits<RadiansPerSecond>::infinity();
-            Radians minPosition = -std::numeric_limits<Radians>::infinity();
-            Radians maxPosition = std::numeric_limits<Radians>::infinity();
-
-            Gains positionGains{};
-            Gains velocityGains{};
-
-            Percent calibrationThrottle = 0.0;
-        };
-
-        BrushedController(rclcpp::Node::SharedPtr node, std::string masterName, std::string controllerName, Config config);
+        BrushedController(rclcpp::Node::SharedPtr node, std::string masterName, std::string controllerName);
 
         auto setDesiredThrottle(Percent throttle) -> void; // from -1.0 to 1.0
 
@@ -76,11 +52,7 @@ namespace mrover {
     private:
         static auto errorToString(BDCMCErrorInfo errorCode) -> std::string;
 
-        bool mIsConfigured{false};
-        ConfigCommand mConfigCommand;
-
-        Gains mPositionGains;
-        Gains mVelocityGains;
+        auto updateConfigFromParameters() -> void;
     };
 
 } // namespace mrover

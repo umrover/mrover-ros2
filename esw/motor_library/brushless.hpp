@@ -78,41 +78,81 @@ namespace mrover {
         using Base::mNode;
         using Base::mState;
 
-    public:
-        struct Config {
-            OutputVelocity minVelocity = OutputVelocity{-1.0};
-            OutputVelocity maxVelocity = OutputVelocity{1.0};
-            OutputPosition minPosition = OutputPosition{-1.0};
-            OutputPosition maxPosition = OutputPosition{1.0};
-            double maxTorque = 0.3;
-            double watchdogTimeout = 0.25;
-
-            bool limitSwitch0Present = false;
-            bool limitSwitch0Enabled = true;
-            bool limitSwitch0LimitsFwd = false;
-            bool limitSwitch0ActiveHigh = true;
-            bool limitSwitch0UsedForReadjustment = false;
-            OutputPosition limitSwitch0ReadjustPosition = OutputPosition{0.0};
-            bool limitSwitch1Present = false;
-            bool limitSwitch1Enabled = true;
-            bool limitSwitch1LimitsFwd = false;
-            bool limitSwitch1ActiveHigh = true;
-            bool limitSwitch1UsedForReadjustment = false;
-            OutputPosition limitSwitch1ReadjustPosition = OutputPosition{0.0};
+        enum class MoteusAuxNumber {
+            AUX1 = 1,
+            AUX2 = 2,
         };
 
-        BrushlessController(rclcpp::Node::SharedPtr node, std::string masterName, std::string controllerName, Config config)
-            : Base{std::move(node), std::move(masterName), std::move(controllerName)}, mConfig{config} {
+        enum class MoteusAuxPinNumber {
+            PIN0 = 0,
+            PIN1 = 1,
+            PIN2 = 2,
+            PIN3 = 3,
+            PIN4 = 4,
+        };
+
+        struct LimitSwitchInfo {
+            bool present = false;
+            bool enabled = true;
+            bool limitsForward = false;
+            bool activeHigh = true;
+            bool usedForReadjustment = false;
+            OutputPosition readjustPosition = OutputPosition{0.0};
+            MoteusAuxNumber auxNumber = MoteusAuxNumber::AUX1;
+            MoteusAuxPinNumber auxPinNumber = MoteusAuxPinNumber::PIN0;
+        };
+
+        constexpr static std::size_t MAX_NUM_LIMIT_SWITCHES = 2;
+        static_assert(MAX_NUM_LIMIT_SWITCHES <= 2, "Only 2 limit switches are supported");
+
+        OutputVelocity mMinVelocity = OutputVelocity{-1.0};
+        OutputVelocity mMaxVelocity = OutputVelocity{1.0};
+        OutputPosition mMinPosition = OutputPosition{-1.0};
+        OutputPosition mMaxPosition = OutputPosition{1.0};
+        double mMaxTorque = 0.3;
+        double mWatchdogTimeout = 0.25;
+        std::array<LimitSwitchInfo, MAX_NUM_LIMIT_SWITCHES> mLimitSwitchesInfo{};
+
+        std::optional<moteus::Controller> mMoteus;
+        std::int8_t mMoteusAux1Info{}, mMoteusAux2Info{};
+        bool mHasLimit{};
+
+    public:
+        BrushlessController(rclcpp::Node::SharedPtr node, std::string masterName, std::string controllerName)
+            : Base{std::move(node), std::move(masterName), std::move(controllerName)} {
+
+            mMinVelocity = OutputVelocity{mNode->get_parameter_or(std::format("{}.min_velocity", mControllerName), -1.0)};
+            mMaxVelocity = OutputVelocity{mNode->get_parameter_or(std::format("{}.max_velocity", mControllerName), 1.0)};
+            mMinPosition = OutputPosition{mNode->get_parameter_or(std::format("{}.min_position", mControllerName), -1.0)};
+            mMaxPosition = OutputPosition{mNode->get_parameter_or(std::format("{}.max_position", mControllerName), 1.0)};
+            mMaxTorque = mNode->get_parameter_or(std::format("{}.max_torque", mControllerName), 0.3);
+            mWatchdogTimeout = mNode->get_parameter_or(std::format("{}.watchdog_timeout", mControllerName), 0.25);
+            for (std::size_t i = 0; i < MAX_NUM_LIMIT_SWITCHES; ++i) {
+                mLimitSwitchesInfo[i].present = mNode->get_parameter_or(std::format("{}.limit_switch_{}_present", mControllerName, i), false);
+                mLimitSwitchesInfo[i].enabled = mNode->get_parameter_or(std::format("{}.limit_switch_{}_enabled", mControllerName, i), true);
+                mLimitSwitchesInfo[i].limitsForward = mNode->get_parameter_or(std::format("{}.limit_switch_{}_limits_forward", mControllerName, i), false);
+                mLimitSwitchesInfo[i].activeHigh = mNode->get_parameter_or(std::format("{}.limit_switch_{}_active_high", mControllerName, i), true);
+                mLimitSwitchesInfo[i].usedForReadjustment = mNode->get_parameter_or(std::format("{}.limit_switch_{}_used_for_readjustment", mControllerName, i), false);
+                mLimitSwitchesInfo[i].readjustPosition = OutputPosition{mNode->get_parameter_or(std::format("{}.limit_switch_{}_readjust_position", mControllerName, i), 0.0)};
+                mLimitSwitchesInfo[i].auxNumber = static_cast<MoteusAuxNumber>(mNode->get_parameter_or(std::format("{}.limit_switch_{}_aux_number", mControllerName, i), 1));
+                mLimitSwitchesInfo[i].auxPinNumber = static_cast<MoteusAuxPinNumber>(mNode->get_parameter_or(std::format("{}.limit_switch_{}_aux_pin_number", mControllerName, i), 0));
+                if (mLimitSwitchesInfo[i].present && mLimitSwitchesInfo[i].enabled) {
+                    mHasLimit = true;
+                }
+            }
 
             // if active low, we want to make the default value make it believe that
             // the limit switch is NOT pressed.
             // This is because we may not receive the newest query message from the moteus
             // as a result of either testing or startup.
-            if (mConfig.limitSwitch0Present && !mConfig.limitSwitch0ActiveHigh) {
-                mMoteusAux2Info |= 0b01;
-            }
-            if (mConfig.limitSwitch1Present) {
-                mMoteusAux2Info |= 0b10;
+            for (std::size_t i = 0; i < MAX_NUM_LIMIT_SWITCHES; ++i) {
+                if (mLimitSwitchesInfo[i].present && mLimitSwitchesInfo[i].enabled && !mLimitSwitchesInfo[i].activeHigh) {
+                    if (mLimitSwitchesInfo[i].auxNumber == MoteusAuxNumber::AUX1) {
+                        mMoteusAux1Info |= (1 << static_cast<std::size_t>(mLimitSwitchesInfo[i].auxPinNumber));
+                    } else if (mLimitSwitchesInfo[i].auxNumber == MoteusAuxNumber::AUX2) {
+                        mMoteusAux2Info |= (1 << static_cast<std::size_t>(mLimitSwitchesInfo[i].auxPinNumber));
+                    }
+                }
             }
 
             moteus::Controller::Options options;
@@ -146,7 +186,7 @@ namespace mrover {
 
         auto setDesiredVelocity(OutputVelocity velocity) -> void {
             // Only check for limit switches if at least one limit switch exists and is enabled
-            if ((mConfig.limitSwitch0Enabled && mConfig.limitSwitch0Present) || (mConfig.limitSwitch1Enabled && mConfig.limitSwitch0Present)) {
+            if (mHasLimit) {
                 sendQuery();
 
                 if (auto [isFwdPressed, isBwdPressed] = getPressedLimitSwitchInfo();
@@ -160,7 +200,7 @@ namespace mrover {
                 }
             }
 
-            velocity = std::clamp(velocity, mConfig.minVelocity, mConfig.maxVelocity);
+            velocity = std::clamp(velocity, mMinVelocity, mMaxVelocity);
 
             if (abs(velocity) < OutputVelocity{1e-5}) {
                 setBrake();
@@ -168,12 +208,18 @@ namespace mrover {
                 moteus::PositionMode::Command command{
                         .position = std::numeric_limits<double>::quiet_NaN(),
                         .velocity = velocity.get(),
-                        .maximum_torque = mConfig.maxTorque,
-                        .watchdog_timeout = mConfig.watchdogTimeout,
+                        .maximum_torque = mMaxTorque,
+                        .watchdog_timeout = mWatchdogTimeout,
+                };
+                static constexpr moteus::PositionMode::Format format{
+                        .position = moteus::kFloat,
+                        .velocity = moteus::kFloat,
+                        .maximum_torque = moteus::kInt16,
+                        .watchdog_timeout = moteus::kFloat,
                 };
 
-                moteus::CanFdFrame positionFrame = mMoteus->MakePosition(command);
-                mDevice.publish_moteus_frame(positionFrame);
+                moteus::CanFdFrame velocityFrame = mMoteus->MakePosition(command, &format);
+                mDevice.publish_moteus_frame(velocityFrame);
             }
 
 #ifdef DEBUG_BUILD
@@ -184,7 +230,7 @@ namespace mrover {
 
         auto setDesiredPosition(OutputPosition position) -> void {
             // Only check for limit switches if at least one limit switch exists and is enabled
-            if ((mConfig.limitSwitch0Enabled && mConfig.limitSwitch0Present) || (mConfig.limitSwitch1Enabled && mConfig.limitSwitch0Present)) {
+            if (mHasLimit) {
                 sendQuery();
 
                 if (auto [isFwdPressed, isBwdPressed] = getPressedLimitSwitchInfo();
@@ -198,15 +244,22 @@ namespace mrover {
                 }
             }
 
-            position = std::clamp(position, mConfig.minPosition, mConfig.maxPosition);
+            position = std::clamp(position, mMinPosition, mMaxPosition);
 
             moteus::PositionMode::Command command{
                     .position = position.get(),
                     .velocity = 0.0,
-                    .maximum_torque = mConfig.maxTorque,
-                    .watchdog_timeout = mConfig.watchdogTimeout,
+                    .maximum_torque = mMaxTorque,
+                    .watchdog_timeout = mWatchdogTimeout,
             };
-            moteus::CanFdFrame positionFrame = mMoteus->MakePosition(command);
+            static constexpr moteus::PositionMode::Format format{
+                    .position = moteus::kFloat,
+                    .velocity = moteus::kFloat,
+                    .maximum_torque = moteus::kInt16,
+                    .watchdog_timeout = moteus::kFloat,
+            };
+
+            moteus::CanFdFrame positionFrame = mMoteus->MakePosition(command, &format);
             mDevice.publish_moteus_frame(positionFrame);
 
 #ifdef DEBUG_BUILD
@@ -251,31 +304,31 @@ namespace mrover {
         }
 
         auto getPressedLimitSwitchInfo() -> MoteusLimitSwitchInfo {
-            if (mConfig.limitSwitch0Present && mConfig.limitSwitch0Enabled) {
-                bool gpioState = 0b01 & mMoteusAux2Info;
-                mLimitHit[0] = gpioState == mConfig.limitSwitch0ActiveHigh;
-            }
-            if (mConfig.limitSwitch1Present && mConfig.limitSwitch1Enabled) {
-                bool gpioState = 0b10 & mMoteusAux2Info;
-                mLimitHit[1] = gpioState == mConfig.limitSwitch1ActiveHigh;
-            }
+            MoteusLimitSwitchInfo result{};
 
-            MoteusLimitSwitchInfo result{
-                    .isForwardPressed = (mLimitHit[0] && mConfig.limitSwitch0LimitsFwd) || (mLimitHit[1] && mConfig.limitSwitch1LimitsFwd),
-                    .isBackwardPressed = (mLimitHit[0] && !mConfig.limitSwitch0LimitsFwd) || (mLimitHit[1] && !mConfig.limitSwitch1LimitsFwd),
-            };
-
-            if (result.isForwardPressed) {
-                adjust(mConfig.limitSwitch0ReadjustPosition);
-            } else if (result.isBackwardPressed) {
-                adjust(mConfig.limitSwitch1ReadjustPosition);
+            for (std::size_t i = 0; i < MAX_NUM_LIMIT_SWITCHES; ++i) {
+                if (mLimitSwitchesInfo[i].present && mLimitSwitchesInfo[i].enabled) {
+                    std::uint8_t auxInfo = 0;
+                    if (mLimitSwitchesInfo[i].auxNumber == MoteusAuxNumber::AUX1) {
+                        auxInfo = mMoteusAux1Info;
+                    } else if (mLimitSwitchesInfo[i].auxNumber == MoteusAuxNumber::AUX2) {
+                        auxInfo = mMoteusAux2Info;
+                    }
+                    bool gpioState = auxInfo & (1 << static_cast<std::size_t>(mLimitSwitchesInfo[i].auxPinNumber));
+                    mLimitHit[i] = gpioState == mLimitSwitchesInfo[i].activeHigh;
+                }
+                result.isForwardPressed = (mLimitHit[i] && mLimitSwitchesInfo[i].limitsForward) || result.isForwardPressed;
+                result.isBackwardPressed = (mLimitHit[i] && !mLimitSwitchesInfo[i].limitsForward) || result.isBackwardPressed;
+                if (mLimitSwitchesInfo[i].usedForReadjustment && mLimitHit[i]) {
+                    adjust(mLimitSwitchesInfo[i].readjustPosition);
+                }
             }
 
             return result;
         }
 
         auto adjust(OutputPosition position) -> void {
-            position = std::clamp(position, mConfig.minPosition, mConfig.maxPosition);
+            position = std::clamp(position, mMinPosition, mMaxPosition);
             moteus::OutputExact::Command command{
                     .position = position.get(),
             };
@@ -290,13 +343,9 @@ namespace mrover {
         }
 
     private:
-        std::optional<moteus::Controller> mMoteus;
-        Config mConfig;
-        std::int8_t mMoteusAux1Info{}, mMoteusAux2Info{};
-
         [[nodiscard]] auto mapThrottleToVelocity(Percent throttle) const -> OutputVelocity {
             throttle = std::clamp(throttle, -1_percent, 1_percent);
-            return abs(throttle) * (throttle > 0_percent ? mConfig.maxVelocity : mConfig.minVelocity);
+            return abs(throttle) * (throttle > 0_percent ? mMaxVelocity : mMinVelocity);
         }
 
         // Converts moteus error codes and mode codes to std::string descriptions

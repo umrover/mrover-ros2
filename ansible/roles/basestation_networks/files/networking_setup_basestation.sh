@@ -1,4 +1,3 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 
-export ROS_MASTER_URI=http://10.1.0.10:11311
-export ROS_IP=10.1.0.2
+export ROS_DOMAIN_ID=1

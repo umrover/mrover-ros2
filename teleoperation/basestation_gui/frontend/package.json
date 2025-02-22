@@ -1,46 +1,52 @@
 {
-  "name": "frontend",
-  "version": "0.1.0",
+  "name": "frontend1",
+  "version": "0.0.0",
   "private": true,
+  "type": "module",
   "scripts": {
-    "serve": "vue-cli-service serve",
-    "build": "vue-cli-service build",
-    "lint": "vue-cli-service lint",
-    "watch": "vue-cli-service build --watch --mode development"
+    "dev": "vite",
+    "build": "run-p type-check \"build-only {@}\" --",
+    "preview": "vite preview",
+    "build-only": "vite build",
+    "type-check": "vue-tsc --build --force",
+    "lint": "eslint . --fix",
+    "format": "prettier --write src/"
   },
   "dependencies": {
-    "core-js": "^3.8.3",
-    "vue": "^3.2.13",
-    "vue-router": "^4.2.4",
+    "@popperjs/core": "^2.11.8",
+    "@vue-leaflet/vue-leaflet": "^0.10.1",
+    "bootstrap": "^5.3.3",
+    "bootstrap-vue": "^2.23.1",
+    "html2canvas": "^1.4.1",
+    "leaflet": "^1.9.4",
+    "quaternion-to-euler": "^0.5.0",
+    "three": "^0.164.1",
+    "vue": "^3.5.13",
+    "vue-flight-indicators": "^0.1.1",
+    "vue-router": "^4.5.0",
     "vuex": "^4.1.0"
   },
   "devDependencies": {
-    "@babel/core": "^7.12.16",
-    "@babel/eslint-parser": "^7.12.16",
-    "@vue/cli-plugin-babel": "~5.0.0",
-    "@vue/cli-plugin-eslint": "~5.0.0",
-    "@vue/cli-service": "~5.0.0",
-    "eslint": "^7.32.0",
-    "eslint-plugin-vue": "^8.0.3"
-  },
-  "eslintConfig": {
-    "root": true,
-    "env": {
-      "node": true
-    },
-    "extends": [
-      "plugin:vue/vue3-essential",
-      "eslint:recommended"
-    ],
-    "parserOptions": {
-      "parser": "@babel/eslint-parser"
-    },
-    "rules": {}
-  },
-  "browserslist": [
-    "> 1%",
-    "last 2 versions",
-    "not dead",
-    "not ie 11"
-  ]
+    "@tsconfig/node20": "^20.1.4",
+    "@types/node": "^20.17.14",
+    "@vitejs/plugin-vue": "^5.2.1",
+    "@vue/eslint-config-prettier": "^10.1.0",
+    "@vue/eslint-config-typescript": "^14.3.0",
+    "@vue/tsconfig": "^0.5.1",
+    "eslint": "^9.18.0",
+    "eslint-plugin-vue": "^9.32.0",
+    "npm-run-all2": "^6.2.6",
+    "prettier": "^3.4.2",
+    "typescript": "~5.5.4",
+    "vite": "^5.4.11",
+    "vue-tsc": "^2.2.0",
+    "@types/bootstrap": "^5.2.10",
+    "@types/jsdom": "^21.1.7",
+    "@types/html2canvas": "^1.0.0",
+    "@vue/test-utils": "^2.4.6",
+    "jsdom": "^22.1.0",
+    "npm-run-all": "^4.1.5",
+    "sass": "1.77.6",
+    "vitest": "^1.6.0"
+  }
 }

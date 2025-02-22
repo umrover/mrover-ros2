@@ -1,0 +1,27 @@
+arm_hw_bridge:
+  ros__parameters:
+    linear_actuator:
+      # gear_ratio: 1.0
+      is_inverted: false
+      driver_voltage: 10.5
+      motor_max_voltage: 12.0
+    auger:
+      # gear_ratio: 1.0
+      is_inverted: false
+      driver_voltage: 10.5
+      motor_max_voltage: 12.0
+    pump_a:
+      # gear_ratio: 1.0
+      is_inverted: false
+      driver_voltage: 10.5
+      motor_max_voltage: 12.0
+    pump_b:
+      # gear_ratio: 1.0
+      is_inverted: false
+      driver_voltage: 10.5
+      motor_max_voltage: 12.0
+    sensor_actuator:
+      # gear_ratio: 1.0
+      is_inverted: false
+      driver_voltage: 10.5
+      motor_max_voltage: 12.0

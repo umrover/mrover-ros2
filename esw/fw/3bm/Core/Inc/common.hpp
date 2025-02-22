@@ -17,11 +17,14 @@ namespace mrover {
     constexpr auto ABSOLUTE_CPR = CountsPerRad{(1 << 14) / TAU_F}; // Corresponds to the AS5048B
 
     // NOTE: Change This For Each Motor Controller
-    constexpr static std::uint8_t DEVICE_ID_0 = 0x21; // currently set for joint_b
-    constexpr static std::uint8_t DEVICE_ID_1 = 0x22;
-    constexpr static std::uint8_t DEVICE_ID_2 = 0x23;
+    constexpr static std::uint8_t DEVICE_ID_0 = 0x40; // joint_a
+    constexpr static std::uint8_t DEVICE_ID_1 = 0x41; // jointl_c
+    constexpr static std::uint8_t DEVICE_ID_2 = 0x45; // finger
+//    constexpr static std::uint8_t DEVICE_ID_0 = 0x31; // joint_b
+//    constexpr static std::uint8_t DEVICE_ID_1 = 0x35; // gripper
+//    constexpr static std::uint8_t DEVICE_ID_2 = 0x36; // finger
 
-    constexpr static std::uint8_t A2_A1_0 = 0b11;
+    constexpr static std::uint8_t A2_A1_0 = 0b00;
     constexpr static std::uint8_t A2_A1_1 = 0b11;
     constexpr static std::uint8_t A2_A1_2 = 0b11;
 
