@@ -240,7 +240,10 @@ target_link_libraries(pose_filter lie parameter_utils)
 ament_target_dependencies(pose_filter rclcpp geometry_msgs nav_msgs sensor_msgs tf2 tf2_ros)
 
 mrover_add_node(rover_gps_driver localization/rover_gps_driver.cpp)
+mrover_add_node(heading_filter localization/heading_filter.cpp)
 ament_target_dependencies(rover_gps_driver rclcpp sensor_msgs rtcm_msgs)
+ament_target_dependencies(heading_filter rclcpp rcutils sensor_msgs builtin_interfaces message_filters)
+target_link_libraries(heading_filter lie)
 
 # Perception
 
@@ -322,7 +325,7 @@ target_link_libraries(motor_library can_device moteus units messaging)
 macro(mrover_add_esw_bridge_node name sources)
     mrover_add_node(${name} ${sources})
     ament_target_dependencies(${name} rclcpp std_srvs)
-    target_link_libraries(${name} can_device units messaging)
+    target_link_libraries(${name} can_device units messaging moteus)
 endmacro()
 
 macro(mrover_add_esw_motor_bridge_node name sources)
@@ -330,6 +333,8 @@ macro(mrover_add_esw_motor_bridge_node name sources)
     target_link_libraries(${name} motor_library)
 endmacro()
 
+mrover_add_node(led esw/led.cpp)
+ament_target_dependencies(led rclcpp std_srvs)
 
 mrover_add_esw_motor_bridge_node(drive_hw_bridge esw/drive_hw_bridge.cpp)
 mrover_add_esw_motor_bridge_node(arm_hw_bridge esw/arm_hw_bridge.cpp)
@@ -338,6 +343,8 @@ mrover_add_esw_bridge_node(differential_drive_controller esw/differential_drive_
 mrover_add_esw_bridge_node(science_hw_bridge esw/science_hw_bridge.cpp)
 ament_target_dependencies(science_hw_bridge sensor_msgs)
 # mrover_add_esw_motor_bridge_node(science_test_bridge esw/science_test_bridge.cpp)
+mrover_add_esw_bridge_node(pdlb_hw_bridge esw/pdlb_hw_bridge.cpp)
+
 
 mrover_add_node(arm_controller teleoperation/arm_controller/arm_controller.cpp teleoperation/arm_controller/pch.hpp)
 target_link_libraries(arm_controller lie)
@@ -353,9 +360,13 @@ if (Gst_FOUND AND GstApp_FOUND)
         target_compile_definitions(websocket_server PUBLIC BOOST_ASIO_NO_DEPRECATED)
         ament_target_dependencies(websocket_server rclcpp)
 
-        mrover_add_component(gst_websocket_streamer esw/gst_websocket_streamer/*.c* esw/gst_websocket_streamer/pch.hpp GstWebsocketStreamer)
-        mrover_link_component(gst_websocket_streamer PkgConfig::Gst PkgConfig::GstApp PkgConfig::LibUdev opencv_core opencv_imgcodecs websocket_server)
-        mrover_ament_component(gst_websocket_streamer rclcpp rclcpp_components sensor_msgs)
+        mrover_add_node(gst_websocket_streamer esw/gst_websocket_streamer/*.c* esw/gst_websocket_streamer/pch.hpp)
+        target_link_libraries(gst_websocket_streamer PkgConfig::Gst PkgConfig::GstApp PkgConfig::LibUdev opencv_core opencv_imgcodecs websocket_server)
+        ament_target_dependencies(gst_websocket_streamer rclcpp rclcpp_components sensor_msgs)
+
+        # rclcpp_components_register_nodes(gst_websocket_streamer "mrover::GstWebsocketStreamer")
+        # set(node_plugins "${node_plugins}mrover::GstWebsocketStreamer;$<TARGET_FILE:gst_websocket_streamer>\n")
+        
     endif ()
 endif ()
 
