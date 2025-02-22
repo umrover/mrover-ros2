@@ -366,6 +366,8 @@ namespace mrover {
 
         boost::bimap<std::string, std::string> mMsgToUrdf;
 
+        rclcpp::Time mPrevKeyboardPubStamp;
+
         template<typename F, typename N, typename V>
         auto forEachMotor(N const& names, V const& values, F&& function) -> void {
             if (names.size() != values.size()) {
