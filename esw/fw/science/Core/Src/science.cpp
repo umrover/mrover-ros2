@@ -14,6 +14,8 @@ extern ADC_HandleTypeDef hadc2;
 extern I2C_HandleTypeDef hi2c2;
 extern I2C_HandleTypeDef hi2c3;
 extern FDCAN_HandleTypeDef hfdcan1;
+extern TIM_HandleTypeDef htim2;
+extern TIM_HandleTypeDef htim3;
 
 #define JETSON_ADDRESS 0x10
 #define SCIENCE_BOARD_ID 0x50
@@ -33,31 +35,7 @@ namespace mrover {
 	std::array<Pin, 1> m_white_leds;
 
     void event_loop() {
-        SensorData temp_data = {.id = static_cast<std::uint8_t>(ScienceDataID::TEMPERATURE), .data = 0};
-        SensorData humidity_data = {.id = static_cast<std::uint8_t>(ScienceDataID::HUMIDITY), .data = 0};
-        SensorData oxygen_data = {.id = static_cast<std::uint8_t>(ScienceDataID::OXYGEN), .data = 0};
-        SensorData uv_data = {.id = static_cast<std::uint8_t>(ScienceDataID::UV), .data = 0};
-
-        while (true) {
-            th_sensor.update_temp_humidity();
-            temp_data.data = th_sensor.get_current_temp();
-            humidity_data.data = th_sensor.get_current_humidity();
-            oxygen_data.data = oxygen_sensor.update_oxygen();
-            uv_data.data = uv_sensor.update_uv_blocking();
-
-            science_out = temp_data;
-			fdcan_bus.broadcast(science_out, SCIENCE_BOARD_ID, JETSON_ADDRESS);
-			HAL_Delay(50);
-			science_out = humidity_data;
-			fdcan_bus.broadcast(science_out, SCIENCE_BOARD_ID, JETSON_ADDRESS);
-			HAL_Delay(50);
-			science_out = oxygen_data;
-			fdcan_bus.broadcast(science_out, SCIENCE_BOARD_ID, JETSON_ADDRESS);
-			HAL_Delay(50);
-			science_out = uv_data;
-			fdcan_bus.broadcast(science_out, SCIENCE_BOARD_ID, JETSON_ADDRESS);
-			HAL_Delay(50);
-        }
+        while (true) {}
     }
 
     void init() {
@@ -90,7 +68,37 @@ namespace mrover {
 
         HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_RESET);
         fdcan_bus.start();
+        HAL_TIM_Base_Start_IT(&htim2);
+        HAL_TIM_Base_Start_IT(&htim3);
         event_loop();
+    }
+
+    void handleSensors() {
+    	SensorData temp_data = {.id = static_cast<std::uint8_t>(ScienceDataID::TEMPERATURE), .data = 0};
+		SensorData humidity_data = {.id = static_cast<std::uint8_t>(ScienceDataID::HUMIDITY), .data = 0};
+		SensorData oxygen_data = {.id = static_cast<std::uint8_t>(ScienceDataID::OXYGEN), .data = 0};
+		SensorData uv_data = {.id = static_cast<std::uint8_t>(ScienceDataID::UV), .data = 0};
+
+		th_sensor.update_temp_humidity();
+		temp_data.data = th_sensor.get_current_temp();
+		humidity_data.data = th_sensor.get_current_humidity();
+		oxygen_data.data = oxygen_sensor.update_oxygen();
+		uv_data.data = uv_sensor.update_uv_blocking();
+
+		science_out = temp_data;
+		fdcan_bus.broadcast(science_out, SCIENCE_BOARD_ID, JETSON_ADDRESS);
+		science_out = humidity_data;
+		fdcan_bus.broadcast(science_out, SCIENCE_BOARD_ID, JETSON_ADDRESS);
+		science_out = oxygen_data;
+		fdcan_bus.broadcast(science_out, SCIENCE_BOARD_ID, JETSON_ADDRESS);
+		science_out = uv_data;
+		fdcan_bus.broadcast(science_out, SCIENCE_BOARD_ID, JETSON_ADDRESS);
+    }
+
+    void handleHeaterTemps() {
+    	for (size_t i = 0; i < m_heaters.size(); i++) {
+			m_heaters.at(i).update_temp_and_auto_shutoff_if_applicable();
+		}
     }
 
     void feed(EnableScienceDeviceCommand const& message) {
@@ -108,13 +116,13 @@ namespace mrover {
     }
 
     void feed(HeaterAutoShutOffCommand const& message) {
-        for (int i = 0; i < 2; ++i) {
+        for (int i = 0; i < m_heaters.size(); ++i) {
             m_heaters.at(i).set_auto_shutoff(message.enable_auto_shutoff);
         }
     }
 
     void feed(ConfigThermistorAutoShutOffCommand const& message) {
-        for (int i = 0; i < 2; ++i) {
+        for (int i = 0; i < m_heaters.size(); ++i) {
             m_heaters.at(i).change_shutoff_temp(message.shutoff_temp);
         }
     }
@@ -134,6 +142,15 @@ namespace mrover {
 } // namespace mrover
 
 extern "C" {
+
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim)
+{
+	if (htim == &htim2) {
+		mrover::handleSensors(); // gets stuck here
+	} else if (htim == &htim3){
+		mrover::handleHeaterTemps();
+	}
+}
 
 void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef* hfdcan, uint32_t RxFifo0ITs) {
     if (RxFifo0ITs & FDCAN_IT_RX_FIFO0_NEW_MESSAGE) {

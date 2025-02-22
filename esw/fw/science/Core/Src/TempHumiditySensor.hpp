@@ -28,7 +28,7 @@ namespace mrover {
                 return;
             }
 
-            HAL_Delay(100);
+            HAL_Delay(10);
 
             status = HAL_I2C_Master_Receive(i2c, (dev_addr << 1) | 0x01, buf, 6, 100);
             if (status != HAL_OK) {
@@ -37,7 +37,7 @@ namespace mrover {
                 return;
             }
 
-            HAL_Delay(100);
+            HAL_Delay(10);
 
             uint32_t SH = (buf[1] << 12) + (buf[2] << 4) + (buf[3] & 0b11110000);
             uint32_t ST = ((buf[3] & 0b00001111) << 16) + (buf[4] << 8) + buf[5];
