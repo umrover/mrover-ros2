@@ -46,6 +46,7 @@ namespace mrover {
         magMsg.magnetic_field_covariance[8] = 0.047e-6;
 
         headingMsg.heading = magData.magnetic_heading;
+        headingMsg.heading_accuracy = magData.magnetic_heading_accuracy;
         if (magData.magnetic_heading_state == sl::SensorsData::MagnetometerData::HEADING_STATE::GOOD) {
             headingStatusMsg.fix_type.fix = mrover::msg::FixType::FIXED;
         }

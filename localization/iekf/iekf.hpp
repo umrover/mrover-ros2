@@ -31,6 +31,7 @@ namespace mrover {
         // sensor callbacks
         void imu_callback(const sensor_msgs::msg::Imu& imu_msg);
         void pos_callback(const geometry_msgs::msg::Vector3Stamped& pos_msg);
+        void mag_heading_callback(const mrover::msg::Heading& mag_heading_msg);
 
         // InEKF functions
         void predict(const geometry_msgs::msg::Vector3& w, const Matrix33d& cov_w, const geometry_msgs::msg::Vector3& a, const Matrix33d& cov_a, double dt);
@@ -93,7 +94,7 @@ namespace mrover {
 
         // auto magCallback() -> void;
 
-        auto gpsCallback(geometry_msgs::msg::Vector3Stamped position, geometry_msgs::msg::Vector3Stamped V) -> void;
+        // auto gpsCallback(geometry_msgs::msg::Vector3Stamped position, geometry_msgs::msg::Vector3Stamped V) -> void;
 
     public:
     

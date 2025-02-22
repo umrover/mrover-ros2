@@ -19,6 +19,10 @@ namespace mrover {
             imu_callback(*imu_msg);
         });
 
+        mag_heading_sub = this->create_subscription<mrover::msg::Heading>("/zed_imu/mag_heading", 10, [&](const mrover::msg::Heading::ConstSharedPtr& mag_heading_msg) {
+            mag_heading_callback(*mag_heading_msg);
+        });
+
     }
 
 
@@ -241,6 +245,11 @@ namespace mrover {
         
         P = (A * dt).exp() * P * ((A * dt).exp()).transpose() + adj_x * Q_d * adj_x.transpose();
 
+        Matrix33d rot_m = X.block<3, 3>(0, 0);
+        RCLCPP_INFO(get_logger(), "\n%f, %f, %f\n%f, %f, %f\n %f, %f, %f", rot_m(0,0), rot_m(0,1), rot_m(0,2),
+                                                                                 rot_m(1,0), rot_m(1,1), rot_m(1,2),
+                                                                                 rot_m(2,0), rot_m(2,1), rot_m(2,2));
+
        
     //     // RCLCPP_INFO(get_logger(), "bias: %f, %f, %f", accel_bias(0), accel_bias(1), accel_bias(2));
     //     // RCLCPP_INFO(get_logger(), "a_lin: %f, %f, %f", a_lin(0), a_lin(1), a_lin(2));
@@ -275,7 +284,10 @@ namespace mrover {
 
     void IEKF::correct(const Vector5d& Y, const Vector5d& b, const Matrix33d& N, const Matrix39d& H) {
 
+        // RCLCPP_INFO(get_logger(), "Y: %f, %f, %f", Y(0), Y(1), Y(2));
         Vector5d innov = X * Y - b;
+        Vector5d temp = X * Y;
+        RCLCPP_INFO(get_logger(), "X * Y: %f, %f, %f, %f, %f", temp(0), temp(1), temp(2), temp(3), temp(4));
         RCLCPP_INFO(get_logger(), "innov: %f, %f, %f", innov(0), innov(1), innov(2));
         Matrix33d S = H * P * H.transpose() + N;
         Matrix93d L = P * H.transpose() * S.inverse();
@@ -284,8 +296,14 @@ namespace mrover {
         Vector9d delta = L * innov.head(3);
         RCLCPP_INFO(get_logger(), "delta: %f, %f, %f, %f, %f, %f, %f, %f, %f", delta(0), delta(1), delta(2), delta(3), delta(4), delta(5), delta(6), delta(7), delta(8));
         X = dx.exp() * X;
-        // P = (Matrix99d::Identity() - L * H) * P * (Matrix99d::Identity() - L * H).transpose() + L * N * L.transpose();
-
+        P = (Matrix99d::Identity() - L * H) * P * (Matrix99d::Identity() - L * H).transpose() + L * N * L.transpose();
+        
+        Matrix33d rot_m = X.block<3, 3>(0, 0);
+        RCLCPP_INFO(get_logger(), "\n%f, %f, %f\n%f, %f, %f\n %f, %f, %f", rot_m(0,0), rot_m(0,1), rot_m(0,2),
+                                                                                 rot_m(1,0), rot_m(1,1), rot_m(1,2),
+                                                                                 rot_m(2,0), rot_m(2,1), rot_m(2,2));
+        // Vector3d translation_temp = X.block<3, 1>(0, 4);
+        // RCLCPP_INFO(get_logger(), "translation temp: %f, %f, %f", translation_temp(0), translation_temp(1), translation_temp(2));
     }
 
 
@@ -310,7 +328,7 @@ namespace mrover {
 
         predict(w, cov_w, a, cov_a, dt);
 
-        R3d translation = X.block<3, 1>(0, 3);
+        R3d translation = X.block<3, 1>(0, 4);
         SO3d rotation = Eigen::Quaterniond(X.block<3, 3>(0, 0));
 
         // R3d translation = X.translation();
@@ -326,7 +344,7 @@ namespace mrover {
         if (fake_gps == 50) {
             geometry_msgs::msg::Vector3Stamped msg;
             msg.header.stamp = now();
-            msg.vector.x = 0;
+            msg.vector.x = 1;
             msg.vector.y = 0;
             msg.vector.z = 0;
             pos_callback(msg);
@@ -357,7 +375,7 @@ namespace mrover {
         Matrix33d N;
 
         H << Matrix33d::Zero(), Matrix33d::Zero(), -1 * Matrix33d::Identity();
-        Y << 1 * X.block<3, 3>(0, 0).transpose() * Vector3d{pos_msg.vector.x, pos_msg.vector.y, pos_msg.vector.z}, 0, 1;
+        Y << -1 * X.block<3, 3>(0, 0).transpose() * Vector3d{pos_msg.vector.x, pos_msg.vector.y, pos_msg.vector.z}, 0, 1;
         b << 0, 0, 0, 0, 1;
         N << X.block<3, 3>(0, 0) * 0.01 * Matrix33d::Identity() * X.block<3, 3>(0, 0).transpose();
 
@@ -365,8 +383,35 @@ namespace mrover {
 
     }
 
-    
+    void IEKF::mag_heading_callback(const mrover::msg::Heading& mag_heading_msg) {
 
+        Matrix39d H;
+        Vector5d Y;
+        Vector5d b;
+        Matrix33d N;
+
+        Vector3d mag_ref{1, 0, 0};
+
+        double heading = 90 - mag_heading_msg.heading;
+
+        if (heading < -180) {
+            heading = 360 + heading;
+        }
+
+        heading = heading * (M_PI / 180);
+
+        H << -1 * manif::skew(mag_ref), Matrix33d::Zero(), Matrix33d::Zero();
+        Y << -1 * mag_ref, 0, 0;
+        b << -1 * Vector3d{std::cos(heading), std::sin(heading), 0}, 0, 0;
+        N << X.block<3, 3>(0, 0) * mag_heading_msg.heading_accuracy * Matrix33d::Identity() * X.block<3, 3>(0, 0).transpose();
+
+        RCLCPP_INFO(get_logger(), "heading: %f", heading);
+        // RCLCPP_INFO(get_logger(), "heading accuracy: %f", mag_heading_msg.heading_accuracy);
+        correct(Y, b, N, H);
+
+    }
+
+    
 
     
     // auto IEKF::gpsCallback(geometry_msgs::msg::Vector3Stamped position, geometry_msgs::msg::Vector3Stamped V) -> void {
