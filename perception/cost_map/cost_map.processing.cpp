@@ -1,6 +1,8 @@
 #include "cost_map.hpp"
 #include <algorithm>
+#include <nav_msgs/msg/detail/occupancy_grid__struct.hpp>
 #include <rclcpp/logging.hpp>
+#include <utility>
 
 namespace mrover {
     auto remap(double x, double inMin, double inMax, double outMin, double outMax) -> double {
@@ -29,8 +31,8 @@ namespace mrover {
         assert(msg->height > 0);
         assert(msg->width > 0);
 
-        RCLCPP_INFO_STREAM(get_logger(), "COST MAP MESSAGE PTR: " << msg.get());
-        RCLCPP_INFO_STREAM(get_logger(), "COST MAP MESSAGE TIME: " << msg->header.stamp.sec);
+        // RCLCPP_INFO_STREAM(get_logger(), "COST MAP MESSAGE PTR: " << msg.get());
+        // RCLCPP_INFO_STREAM(get_logger(), "COST MAP MESSAGE TIME: " << msg->header.stamp.sec);
 
 		mInliers.clear();
 
@@ -211,12 +213,42 @@ namespace mrover {
     	mPCDebugPub->publish(std::move(debugPointCloudPtr));
     }
 
+    // REQ THE CENTER WE MUST PASS THE TOP LEFT
     auto CostMapNode::moveCostMapCallback(mrover::srv::MoveCostMap::Request::ConstSharedPtr& req, mrover::srv::MoveCostMap::Response::SharedPtr& res) -> void {
         RCLCPP_INFO_STREAM(get_logger(), "Incoming request: " + req->course);
         SE3d centerInMap = SE3Conversions::fromTfTree(mTfBuffer, req->course, mMapFrame);
-        std::ranges::fill(mGlobalGridMsg.data, UNKNOWN_COST);
-        mGlobalGridMsg.info.origin.position.x = centerInMap.x() - mSize / 2;
-        mGlobalGridMsg.info.origin.position.y = centerInMap.y() - mSize / 2;
+
+        // Calculate new center for costmap, will be at nearest bin location
+        double newTopLeftX = std::ceil(centerInMap.x() - mSize/2.0) - mResolution;
+        double newTopLeftY = std::ceil(centerInMap.y() - mSize/2.0) - mResolution;
+        double oldTopLeftX = mGlobalGridMsg.info.origin.position.x; // top left
+        double oldTopLeftY = mGlobalGridMsg.info.origin.position.y; // top left
+
+        // One of the directions will cause overlap
+        RCLCPP_INFO_STREAM(get_logger(), "Size " << mGlobalGridMsg.data.size());
+
+        std::vector<int8_t> newGrid(mGlobalGridMsg.data.size(), UNKNOWN_COST);
+
+        // Calculate delta row and delta col, subtract this transform to get from the new map back into the old one
+        int deltaCol = static_cast<int>((oldTopLeftX - newTopLeftX) / mResolution);
+        int deltaRow = static_cast<int>((oldTopLeftY - newTopLeftY) / mResolution);
+        Coordinate transformCoord = {deltaRow, deltaCol}; 
+
+        for(size_t i = 0; i < mGlobalGridMsg.data.size(); i++){
+            Coordinate coord = indexToCoordinate(static_cast<int>(i));
+            Coordinate newPos = coord - transformCoord;
+
+            // Bounds check
+            if(newPos.row < 0 || newPos.col < 0 || newPos.row >= mHeight || newPos.col >= mWidth){ continue; }
+
+            newGrid[i] = mGlobalGridMsg.data[static_cast<size_t>(coordinateToIndex(newPos))];
+        }
+
+        std::swap(mGlobalGridMsg.data, newGrid);
+
+        mGlobalGridMsg.info.origin.position.x = newTopLeftX;
+        mGlobalGridMsg.info.origin.position.y = newTopLeftY;
+
         res->success = true;
         RCLCPP_INFO_STREAM(get_logger(), "Moved cost map");
     }
