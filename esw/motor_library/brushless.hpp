@@ -94,7 +94,7 @@ namespace mrover {
         struct LimitSwitchInfo {
             bool present = false;
             bool enabled = true;
-            bool limitsFwd = false;
+            bool limitsForward = false;
             bool activeHigh = true;
             bool usedForReadjustment = false;
             OutputPosition readjustPosition = OutputPosition{0.0};
@@ -130,7 +130,7 @@ namespace mrover {
             for (std::size_t i = 0; i < MAX_NUM_LIMIT_SWITCHES; ++i) {
                 mLimitSwitchesInfo[i].present = mNode->get_parameter_or(std::format("{}.limit_switch_{}_present", mControllerName, i), false);
                 mLimitSwitchesInfo[i].enabled = mNode->get_parameter_or(std::format("{}.limit_switch_{}_enabled", mControllerName, i), true);
-                mLimitSwitchesInfo[i].limitsFwd = mNode->get_parameter_or(std::format("{}.limit_switch_{}_limits_fwd", mControllerName, i), false);
+                mLimitSwitchesInfo[i].limitsForward = mNode->get_parameter_or(std::format("{}.limit_switch_{}_limits_forward", mControllerName, i), false);
                 mLimitSwitchesInfo[i].activeHigh = mNode->get_parameter_or(std::format("{}.limit_switch_{}_active_high", mControllerName, i), true);
                 mLimitSwitchesInfo[i].usedForReadjustment = mNode->get_parameter_or(std::format("{}.limit_switch_{}_used_for_readjustment", mControllerName, i), false);
                 mLimitSwitchesInfo[i].readjustPosition = OutputPosition{mNode->get_parameter_or(std::format("{}.limit_switch_{}_readjust_position", mControllerName, i), 0.0)};
@@ -148,9 +148,9 @@ namespace mrover {
             for (std::size_t i = 0; i < MAX_NUM_LIMIT_SWITCHES; ++i) {
                 if (mLimitSwitchesInfo[i].present && mLimitSwitchesInfo[i].enabled && !mLimitSwitchesInfo[i].activeHigh) {
                     if (mLimitSwitchesInfo[i].auxNumber == MoteusAuxNumber::AUX1) {
-                        mMoteusAux1Info |= 1 << static_cast<std::size_t>(mLimitSwitchesInfo[i].auxPinNumber);
-                    } else {
-                        mMoteusAux2Info |= 1 << static_cast<std::size_t>(mLimitSwitchesInfo[i].auxPinNumber);
+                        mMoteusAux1Info |= (1 << static_cast<std::size_t>(mLimitSwitchesInfo[i].auxPinNumber));
+                    } else if (mLimitSwitchesInfo[i].auxNumber == MoteusAuxNumber::AUX2) {
+                        mMoteusAux2Info |= (1 << static_cast<std::size_t>(mLimitSwitchesInfo[i].auxPinNumber));
                     }
                 }
             }
@@ -311,14 +311,14 @@ namespace mrover {
                     std::uint8_t auxInfo = 0;
                     if (mLimitSwitchesInfo[i].auxNumber == MoteusAuxNumber::AUX1) {
                         auxInfo = mMoteusAux1Info;
-                    } else {
+                    } else if (mLimitSwitchesInfo[i].auxNumber == MoteusAuxNumber::AUX2) {
                         auxInfo = mMoteusAux2Info;
                     }
                     bool gpioState = auxInfo & (1 << static_cast<std::size_t>(mLimitSwitchesInfo[i].auxPinNumber));
                     mLimitHit[i] = gpioState == mLimitSwitchesInfo[i].activeHigh;
                 }
-                result.isForwardPressed = (mLimitHit[i] && mLimitSwitchesInfo[i].limitsFwd) || result.isForwardPressed;
-                result.isBackwardPressed = (mLimitHit[i] && !mLimitSwitchesInfo[i].limitsFwd) || result.isBackwardPressed;
+                result.isForwardPressed = (mLimitHit[i] && mLimitSwitchesInfo[i].limitsForward) || result.isForwardPressed;
+                result.isBackwardPressed = (mLimitHit[i] && !mLimitSwitchesInfo[i].limitsForward) || result.isBackwardPressed;
                 if (mLimitSwitchesInfo[i].usedForReadjustment && mLimitHit[i]) {
                     adjust(mLimitSwitchesInfo[i].readjustPosition);
                 }
