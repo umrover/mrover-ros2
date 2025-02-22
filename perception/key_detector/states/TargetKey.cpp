@@ -20,14 +20,21 @@ namespace mrover {
         // Publish feedback
         std::shared_ptr<action::KeyAction::Feedback> feedback = std::make_shared<action::KeyAction::Feedback>();
         feedback->key = key;
+        feedback->code_typed = mFSMContext->goal_handle->get_goal()->code.substr(0, mFSMContext->curr_key_index);
         feedback->state = "Target Key";
         mFSMContext->goal_handle->publish_feedback(feedback);
 
         // Generate the vector
         SE3d keyInArmFrame = SE3Conversions::fromTfTree(mFSMContext->buffer, std::format("{}_key_truth", key), "arm_e_link");
         geometry_msgs::msg::Vector3 vec;
-        vec.y = keyInArmFrame.translation().y();
+        vec.x = keyInArmFrame.translation().x() - KEYBOARD_TYPING_HEIGHT;
+        vec.y = keyInArmFrame.translation().y() - FINGER_OFFSET;
         vec.z = keyInArmFrame.translation().z();
+
+        vec.x *= SPEED;
+        vec.y *= SPEED;
+        vec.z *= SPEED;
+
         mFSMContext->armVelocityPub->publish(vec);
 
         // Update hitcount

@@ -3,4 +3,5 @@ string code
 bool success
 ---
 char key
+string code_typed
 string state

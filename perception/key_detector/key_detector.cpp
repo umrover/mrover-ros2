@@ -1,7 +1,7 @@
 #include "key_detector.hpp"
 #include "states/TargetKey.hpp"
 namespace mrover {
-    KeyDetector::KeyDetector(rclcpp::NodeOptions const& options) : rclcpp::Node(NODE_NAME, options), mFSMTimer{create_wall_timer(std::chrono::milliseconds(1000), [&](){execute();})}, mFSMContext(std::make_shared<FSMContext>(mTfBuffer)), mStateMachine{"Key Detector FSM", StateMachine::make_state<Off>(mFSMContext)}, mStatePublisher{this, mStateMachine, "key_detector_fsm_structure", 10, "key_detector_fsm_state", 10} {
+    KeyDetector::KeyDetector(rclcpp::NodeOptions const& options) : rclcpp::Node(NODE_NAME, options), mFSMTimer{create_wall_timer(std::chrono::milliseconds(10), [&](){execute();})}, mFSMContext(std::make_shared<FSMContext>(mTfBuffer)), mStateMachine{"Key Detector FSM", StateMachine::make_state<Off>(mFSMContext)}, mStatePublisher{this, mStateMachine, "key_detector_fsm_structure", 10, "key_detector_fsm_state", 10} {
         RCLCPP_INFO_STREAM(get_logger(), "Creating KeyDetector Node...");
 
         mArmVelocityPub = create_publisher<geometry_msgs::msg::Vector3>("/ee_vel_cmd", 1);

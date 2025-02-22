@@ -22,15 +22,10 @@ void KeyDetector::execute() {
         mFSMContext->node = this->shared_from_this(); // THIS IS COOKED BC std::bad_weak_ptr is called in init list
     }
 
-    if (rclcpp::ok()) {
-        rclcpp::Rate loop_rate(1);
-        auto feedback = std::make_shared<KeyAction::Feedback>();
+    auto feedback = std::make_shared<KeyAction::Feedback>();
 
-        // Perform loop for the state machine
-        mStateMachine.update();
-
-        loop_rate.sleep();
-    }
+    // Perform loop for the state machine
+    mStateMachine.update();
 }
 
 void KeyDetector::handle_accepted(std::shared_ptr<GoalHandleKeyAction> const goal_handle) {
