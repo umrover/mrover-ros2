@@ -118,11 +118,11 @@ namespace mrover {
                 if (name == "lander" && get_clock()->now().seconds() > (mPrevKeyboardPubStamp.seconds() + 1/hz)) {
                     mPrevKeyboardPubStamp = get_clock()->now();
                     using KeyMapping = std::pair<std::string, SE3d>;
-                    constexpr static double KEY_SPACING = 0.01725;
+                    constexpr static double KEY_SPACING = 0.0133;
                     constexpr static double TOP_ROW_START = 0.5475;
-                    constexpr static double FIRST_ROW_START = -0.10625;
-                    constexpr static double SECOND_ROW_START = -0.0995;
-                    constexpr static double THIRD_ROW_START = -0.09125;
+                    constexpr static double FIRST_ROW_START = -0.09;
+                    constexpr static double SECOND_ROW_START = -0.086;
+                    constexpr static double THIRD_ROW_START = -0.08;
 
                     static std::array<KeyMapping, 26> keyMappings{
                             KeyMapping{std::string{"q_key"}, SE3d{R3d{FIRST_ROW_START + 0 * KEY_SPACING, -0.3, TOP_ROW_START}, Eigen::Quaterniond{0, 0, 0, 1}.normalized()}},
