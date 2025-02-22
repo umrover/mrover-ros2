@@ -22,6 +22,8 @@ namespace mrover {
             
             mIkModeClient = create_client<srv::IkMode>("ik_mode");
 
+            mMotorTimeoutMs = get_parameter("motor_timeout").as_int();
+
             mIsHeadless = get_parameter("headless").as_bool();
             mEnablePhysics = mIsHeadless;
             {
@@ -99,7 +101,7 @@ namespace mrover {
         if (!mIsHeadless) {
             glfwPollEvents();
             // Comments this out while debugging segfaults, otherwise it captures your cursor
-            // glfwSetInputMode(mWindow.get(), GLFW_CURSOR, mInGui ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_DISABLED);
+            glfwSetInputMode(mWindow.get(), GLFW_CURSOR, mInGui ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_DISABLED);
         }
         mLoopProfiler.measureEvent("GLFW Events");
 

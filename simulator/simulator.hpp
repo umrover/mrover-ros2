@@ -56,6 +56,12 @@ namespace mrover {
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     };
 
+    struct SkyboxUniforms {
+        Eigen::Matrix4f clipToWorld{};
+
+        EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+    };
+
     struct Model {
         struct Mesh {
             SharedBuffer<Eigen::Vector3f> vertices;
@@ -275,6 +281,8 @@ namespace mrover {
 
         bool mIsHeadless{};
 
+        int64_t mMotorTimeoutMs{};
+
         // Rendering
 
         GlfwInstance mGlfwInstance;
@@ -293,8 +301,13 @@ namespace mrover {
         wgpu::ShaderModule mShaderModule;
         wgpu::RenderPipeline mPbrPipeline;
         wgpu::RenderPipeline mWireframePipeline;
+        wgpu::RenderPipeline mSkyboxPipeline;
 
         wgpu::ComputePipeline mPointCloudPipeline;
+
+        CubeMapTexture mSkyboxTexture;
+        wgpu::BindGroupLayout mSkyboxBGLayout;
+        std::array<std::filesystem::path, 6> mSkyboxTexturePaths = {"skybox_px.jpg", "skybox_nx.jpg", "skybox_py.jpg", "skybox_ny.jpg", "skybox_pz.jpg", "skybox_nz.jpg"};
 
         std::unordered_map<std::string, Model> mUriToModel;
 
@@ -302,6 +315,7 @@ namespace mrover {
         bool mInGui = false;
 
         Uniform<SceneUniforms> mSceneUniforms;
+        Uniform<SkyboxUniforms> mSkyboxUniforms;
 
         Eigen::Vector4f mSkyColor{0.05f, 0.8f, 0.92f, 1.0f};
 
@@ -461,6 +475,8 @@ namespace mrover {
         auto renderModels(wgpu::RenderPassEncoder& pass) -> void;
 
         auto renderWireframeColliders(wgpu::RenderPassEncoder& pass) -> void;
+
+        auto renderSkybox(wgpu::RenderPassEncoder& pass) -> void;
 
         auto renderUpdate() -> void;
 

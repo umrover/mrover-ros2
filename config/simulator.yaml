@@ -9,6 +9,7 @@ simulator:
     save_rate: 1.0
     save_history: 4096
     headless: false
+    motor_timeout: 100
 
     ref_heading: 90.0  # For the GPS sensor to work
 
@@ -19,7 +20,7 @@ simulator:
         position: [ 0.0, 0.0, 0.5 ]
       world:
         type: urdf
-        uri: package://mrover/urdf/world/world.urdf.xacro
+        uri: package://mrover/urdf/world/mars.urdf.xacro
       tag_0:
         type: urdf
         uri: package://mrover/urdf/world/tag_0.urdf.xacro
