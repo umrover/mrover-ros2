@@ -11,6 +11,8 @@ import sys
 import numpy as np
 from ultralytics import YOLO
 
+sys.path.append('/home/john/ros2_ws/src/mrover/perception/key_detector')
+
 from keyrover import *
 from keyrover.vision import *
 from keyrover.images.texcoord import *
@@ -23,8 +25,8 @@ import torch
 import matplotlib.pyplot as plt
 
 # Define video properties
-FRAME_WIDTH = 1920
-FRAME_HEIGHT = 1440
+FRAME_WIDTH = 1280
+FRAME_HEIGHT = 720
 FPS = 30
 OUTPUT_FILE = 'data/ffmpeg/output.mp4'
 
@@ -60,9 +62,8 @@ def read_frames(video_path, output_folder):
     frame_count = 0
     success, image = video_capture.read()
     while success:
-        output_path = f"{output_folder}/frame_{frame_count:04d}.jpg"
-        cv2.imwrite(output_path, image)
         success, image = video_capture.read()
+        print(f'IMAGE SHAPE: {image.shape}')
         frame_count += 1
         try:
             img = test_dataset.cvt_image(image)
@@ -70,10 +71,10 @@ def read_frames(video_path, output_folder):
             # TODO yolo & model to use same input image size
 
             bboxes = yolo_segmentation_model.predict(image, conf=0.3, iou=0.3)[0]
-            print(f'bboxes {bboxes}')
+            #print(f'bboxes {bboxes}')
             mask = corner_regression_model.predict(img)
             mask = cv2.resize(mask, bboxes.orig_shape[::-1])
-            print(f'mask {mask}')
+            #print(f'mask {mask}')
 
             out = plot_yolo(bboxes, draw_text=False, plot=False)
             #imshow(out, mask)
@@ -114,12 +115,12 @@ def read_frames(video_path, output_folder):
             W = distance_cost_matrix.flatten()
             W = np.tile(W, 2)
 
-            print(W.shape)
+            #print(W.shape)
 
             targets = np.tile(palette.colors, (n, 1))
             targets = targets.flatten(order="F") * W
 
-            print(targets.shape)
+            #print(targets.shape)
 
             ones = np.ones((n * m, 1))
             zeros = np.zeros((n * m, 1))
@@ -165,7 +166,7 @@ def read_frames(video_path, output_folder):
             img = cv2.resize(img, (height * scale, width * scale))
             boxes = [LabeledBBox(*box.xywh[0], label).scale(scale) for box, label in zip(bboxes.boxes, keys)]
 
-            print(boxes)
+            #print(boxes)
 
             plot_bboxes(img, boxes)
 
@@ -173,7 +174,8 @@ def read_frames(video_path, output_folder):
             for box in boxes:
                 draw_textbox(img, box)
 
-            print(f'img size {img.shape}')
+            output_path = f"{output_folder}/frame_{frame_count:04d}.jpg"
+            cv2.imwrite(output_path, image)
 
             WRITER.write(img)
 
@@ -185,7 +187,7 @@ def read_frames(video_path, output_folder):
     print(f"Extracted {frame_count} frames.")
 
 if __name__ == "__main__":
-    video_path = "/home/john/ros2_ws/src/mrover/output.mp4" # Replace with your video path
+    video_path = "/home/john/ros2_ws/src/mrover/out.mp4" # Replace with your video path
     output_folder = "/home/john/ros2_ws/src/mrover/data/ffmpeg" # Replace with your desired output folder
     read_frames(video_path, output_folder)
 

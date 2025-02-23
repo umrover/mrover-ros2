@@ -13,12 +13,7 @@ namespace mrover {
     }
 
     auto KeyDetectorBase::parseYOLOv8Output(Model const& model, cv::Mat& output, std::vector<Detection>& detections) const -> void {
-        std::cout << "yooo" << std::endl;
-        for(int r = 0; r < output.rows; ++r){
-            for(int c = 0; c < output.cols; ++c){
-                std::cout << "Parse" << output.at<float>(r, c) << std::endl;
-            }
-        }
+        
     }
 
 }; // namespace mrover
