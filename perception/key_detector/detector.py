@@ -74,11 +74,11 @@ class KeyDetector(Node):
 
         imageTime = (time.process_time() - start) * 1000
         start = time.process_time()
-        with torch.no_grad():
-            # TODO yolo & model to use same input image size
+        
+        # TODO yolo & model to use same input image size
 
-            bboxes = self.yolo_segmentation_model.predict(img_cv, conf=0.3, iou=0.3)[0]
-            mask = self.corner_regression_model.predict(img)
+        bboxes = self.yolo_segmentation_model.predict(img_cv, conf=0.3, iou=0.3)[0]
+        mask = self.corner_regression_model.predict(img)
 
         torchTime = (time.process_time() -start) * 1000
         start = time.process_time()
