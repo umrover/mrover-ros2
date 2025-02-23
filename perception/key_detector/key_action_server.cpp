@@ -30,6 +30,10 @@ void KeyDetector::execute(const std::shared_ptr<GoalHandleKeyAction> goal_handle
   fsm_ctx->goal_handle = goal_handle;
   fsm_ctx->node = this->shared_from_this();
   fsm_ctx->curr_key_index = 0;
+  fsm_ctx->init = true;
+  fsm_ctx->fail = false;
+  fsm_ctx->simulator = true;
+
 
   // start state
   while (rclcpp::ok()){
@@ -37,11 +41,16 @@ void KeyDetector::execute(const std::shared_ptr<GoalHandleKeyAction> goal_handle
     auto feedback = std::make_shared<KeyAction::Feedback>();
 
     //RCLCPP_INFO(this->get_logger(), "Executing fsm");
-    updateFSM();
+    //updateFSM();
 
     RCLCPP_INFO(this->get_logger(), "Executed fsm");
 
     loop_rate.sleep();
+
+    if(!fsm_ctx->init)
+    {
+      break;
+    }
   }
 
 
@@ -50,16 +59,19 @@ void KeyDetector::execute(const std::shared_ptr<GoalHandleKeyAction> goal_handle
   if (rclcpp::ok()) {
     result->success = true;
     goal_handle->succeed(result);
-    RCLCPP_INFO(this->get_logger(), "Goal succeeded");
+    if(!fsm_ctx->fail)
+    {
+      RCLCPP_INFO(this->get_logger(), "Goal succeeded");
+    }
+    else {
+      RCLCPP_INFO(this->get_logger(), "Goal cancelled");
+    }
   }
-
-
-
 }
 
 void KeyDetector::handle_accepted(const std::shared_ptr<GoalHandleKeyAction> goal_handle)
 {
   using namespace std::placeholders;
-  // this needs to return quickly to avoid blocking the executor, so spin up a new thread
+  // remove
   std::thread{std::bind(&KeyDetector::execute, this, _1), goal_handle}.detach();
 }

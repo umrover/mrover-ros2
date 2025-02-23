@@ -6,16 +6,23 @@ namespace mrover {
 
     struct Tag {
         int id = -1;
-        std::int64_t hitCount = 0;
+        int hitCount = 0;
         cv::Point2f imageCenter{};
         std::optional<SE3d> tagInCam;
     };
 
-    class TagDetectorNodeletBase : public rclcpp::Node {
+    class TagDetectorBase : public rclcpp::Node {
 
     protected:
         rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr mDetectedImagePub;
         std::unordered_map<int, rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr> mThreshImagePubs; // Map from threshold scale to publisher
+
+        std::string mMapFrameId;
+        std::string mCameraFrameId;
+        int mMinTagHitCountBeforePublish;
+        int mMaxTagHitCount;
+        int mTagIncrementWeight;
+        int mTagDecrementWeight;
 
         tf2_ros::Buffer mTfBuffer{get_clock()};
         tf2_ros::TransformListener mTfListener{mTfBuffer};
@@ -38,12 +45,12 @@ namespace mrover {
         auto publishDetectedTags() -> void;
 
     public:
-        explicit TagDetectorNodeletBase(std::string const& name);
+        explicit TagDetectorBase(std::string const& name, rclcpp::NodeOptions const& options = rclcpp::NodeOptions());
 
-        ~TagDetectorNodeletBase() override = default;
+        ~TagDetectorBase() override = default;
     };
 
-    class StereoTagDetectorNodelet final : public TagDetectorNodeletBase {
+    class StereoTagDetector final : public TagDetectorBase {
 
         rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr mPointCloudSub;
 
@@ -54,10 +61,12 @@ namespace mrover {
                                        std::size_t width, std::size_t height) const -> std::optional<SE3d>;
 
     public:
-        StereoTagDetectorNodelet();
+        explicit StereoTagDetector(rclcpp::NodeOptions const& options = rclcpp::NodeOptions());
     };
 
-    class ImageTagDetectorNodelet final : public TagDetectorNodeletBase {
+    class ImageTagDetector final : public TagDetectorBase {
+
+        float mCameraHorizontalFOV;
 
         rclcpp::Publisher<msg::ImageTargets>::SharedPtr mTargetsPub;
 
@@ -68,7 +77,7 @@ namespace mrover {
         auto imageCallback(sensor_msgs::msg::Image::ConstSharedPtr const& msg) -> void;
 
     public:
-        ImageTagDetectorNodelet();
+        explicit ImageTagDetector(rclcpp::NodeOptions const& options = rclcpp::NodeOptions());
     };
 
 } // namespace mrover

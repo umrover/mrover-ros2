@@ -5,6 +5,7 @@
 #include <rclcpp/rclcpp.hpp>
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2_ros/transform_listener.h>
+#include "mrover/msg/detail/position__struct.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "rclcpp_action/rclcpp_action.hpp"
 
@@ -38,7 +39,14 @@ using GoalHandleKeyAction = rclcpp_action::ServerGoalHandle<KeyAction>;
 struct FSMCtx{
   std::shared_ptr<GoalHandleKeyAction> goal_handle;
   std::shared_ptr<rclcpp::Node> node;
+  bool init;
+  bool fail;
+  bool simulator;
   int curr_key_index;
+  std::shared_ptr<tf2_ros::Buffer> mTfBuffer;
+  rclcpp::Publisher<geometry_msgs::msg::Vector3>::SharedPtr mIkTargetPub;
+  rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr mRVizPub;
+
 };
 
 // States
@@ -47,3 +55,5 @@ struct FSMCtx{
 #include "states/Wait.hpp"
 #include "states/TargetKey.hpp"
 #include "states/PressKey.hpp"
+#include "states/Off.hpp"
+#include <rclcpp/logging.hpp>

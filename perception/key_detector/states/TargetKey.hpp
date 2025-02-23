@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../pch.hpp"
+#include "mrover/msg/detail/position__struct.hpp"
 namespace mrover{
 	class TargetKey : public State {
 	public:
@@ -13,7 +14,6 @@ namespace mrover{
 		auto onLoop() -> State* override;
 
 	private:
-		rclcpp::Publisher<msg::IK>::SharedPtr mIkTargetPub;
 		const std::shared_ptr<FSMCtx> fsm_ctx;
 		rclcpp::Rate sleepRate;
 	};

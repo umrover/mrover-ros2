@@ -1,9 +1,10 @@
 #pragma once
 
 #include "TargetKey.hpp"
+#include "key_detector/states/Cancel.hpp"
 #include "lie.hpp"
+#include <geometry_msgs/msg/detail/vector3__struct.hpp>
 #include <rclcpp/client.hpp>
-#include <tf2_ros/buffer.h>
 
 namespace mrover{
 TargetKey::TargetKey(const std::shared_ptr<FSMCtx> fsm_ctx) : fsm_ctx(fsm_ctx), sleepRate(0.2)
@@ -16,22 +17,24 @@ auto TargetKey::onLoop() -> State*{
         // get the location of the key by querying model
         // use ik to move to the location
         // transition to press key state
-    
-    if(mIkTargetPub == nullptr)
-        mIkTargetPub = fsm_ctx->node->create_publisher<msg::IK>("arm_ik", 1);
 
     auto goal_handle = fsm_ctx->goal_handle;
 
     if (goal_handle == nullptr)
-        return StateMachine::make_state<TargetKey>(fsm_ctx);
+    {
+        //Improper intialization, immediate stop should be initiated
+        return StateMachine::make_state<Cancel>(fsm_ctx);
+    }
 
     auto goal = goal_handle->get_goal();
     auto node = fsm_ctx->node;
 
     // if we have pressed all the keys, end
 
-    if (fsm_ctx->curr_key_index > goal->code.size()){
-        return nullptr;
+    if (fsm_ctx->curr_key_index >= static_cast<int>(goal->code.size())){
+        //We're done with the current sequence, so we move to an off position to prevent segfault
+        fsm_ctx->init = false;
+        return StateMachine::make_state<Off>(fsm_ctx); 
     }
 
     if(goal_handle->is_canceling())
@@ -39,69 +42,64 @@ auto TargetKey::onLoop() -> State*{
         return StateMachine::make_state<Cancel>(fsm_ctx); //cancel if the goal is cancelled
     }
 
-    //Replace With Service Start
-    //arm_e_link
-    // auto buffer = tf2_ros::Buffer(node->get_clock());
-    // tf2_ros::TransformBroadcaster mTfBroadcaster{node};
-    // auto tf = mrover::SE3Conversions::fromTfTree(buffer, std::format("{}_truth", goal->code[fsm_ctx->curr_key_index]), "lander_truth", node->get_clock()->now());
-    // auto origin = mrover::SE3Conversions::fromTfTree(buffer, "map", "arm_e_link", node->get_clock()->now());
+    geometry_msgs::msg::Vector3 ik;
+    double magnitude = 0.0;
 
-    // auto target = SE3d(tf.translation());
+    //Allows for two seperate paths, simulator for running in simulation, and the bottom for runnin in normal
+    if(fsm_ctx->simulator)
+    {
+        auto key_loc = mrover::SE3Conversions::fromTfTree(*fsm_ctx->mTfBuffer, std::format("{}_key_truth", goal->code[fsm_ctx->curr_key_index]), "arm_e_link");
+        ik.x = key_loc.x();
+        ik.y = key_loc.y();
+        ik.z = key_loc.z();
 
-    // SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_e_link", "map", target, node->get_clock()->now());
+        auto thresholdCheck = mrover::SE3Conversions::fromTfTree(*fsm_ctx->mTfBuffer, std::format("{}_key_truth", goal->code[fsm_ctx->curr_key_index]), "arm_e_link");
+        magnitude = std::sqrt(thresholdCheck.x() * thresholdCheck.x() + thresholdCheck.y() * thresholdCheck.y() + thresholdCheck.z() * thresholdCheck.z());
+    }
+    else 
+    {
+        auto client = node->create_client<srv::GetKeyLoc>("GetKeyLoc");
 
+        auto request = std::make_shared<srv::GetKeyLoc::Request>();
+        request->key = goal->code[fsm_ctx->curr_key_index];
+        auto result = client->async_send_request(request);
+        
+        //Wait 1 second for promise at most (vision model runs at around 20 hertz, so this gives ample time)
+        if(result.wait_for(std::chrono::seconds(1)) == std::future_status::ready)
+        {
+            ik.x = result.get()->x;
+            ik.y = result.get()->y;
+            magnitude = std::sqrt(result.get()->x * result.get()->x + result.get()->y * result.get()->y);
+        }
+        else
+        {
+            //Timed out should cancel, as we assume the vision module is either dead or timed out
+            return StateMachine::make_state<Cancel>(fsm_ctx);
+        }
+    }
 
-    //Replace with Service End
-    /*
-    auto client = node->create_client<srv::GetKeyLoc>("GetKeyLoc");
+    // Check magnitude, and determine next steps
+    RCLCPP_INFO_STREAM(rclcpp::get_logger("rclcpp"), std::format("Magnitude: {}", magnitude));
+    if(magnitude < 0.1){
+        return StateMachine::make_state<PressKey>(fsm_ctx);
+    }  
 
-    auto request = std::make_shared<srv::GetKeyLoc::Request>();
-    request->key = goal->code[fsm_ctx->curr_key_index];
-    auto result = client->async_send_request(request);
-
-    result.wait_for(std::chrono::seconds(1));
+    //print what key is being targeted
+    RCLCPP_INFO(node->get_logger(), "Targeting key: %s", std::string(1, goal->code[fsm_ctx->curr_key_index]).c_str());
     
-    // Wait for the result. 
-    //if (rclcpp::spin_until_future_complete(node->get_node_base_interface(), result) ==
-     //   rclcpp::FutureReturnCode::SUCCESS)
-    //{
-    std::cout << "Success" << result.get()->x << "," << result.get()->y << '\n';
-        int64_t x = result.get()->x;
-        int64_t y = result.get()->y;
+    //move arm with ik
+    fsm_ctx->mIkTargetPub->publish(ik);
 
-        //move arm with ik
-        msg::IK ik;
-        ik.target.header.stamp = node->get_clock()->now();
-        ik.target.header.frame_id = "arm_base_link"; // TODO: fix
-        ik.target.pose.position.x = x;
-        ik.target.pose.position.y = y;
-        ik.target.pose.position.z = 0;
-        mIkTargetPub->publish(ik);
+    geometry_msgs::msg::PoseStamped rviz;
+    // rviz.header.frame_id = "arm_e_link";
+    // rviz.pose.position.x = ik.x;
+    // rviz.pose.position.y = ik.y;
+    // rviz.pose.position.z = ik.z;
+    // fsm_ctx->mRVizPub->publish(rviz);
 
-
-        //verify that the arm is within the threshold
-        bool within_threshold = false;
-        sleepRate.sleep();
-
-        // subscribe to arm state
-        // dist
-
-
-
-        if(within_threshold){
-            fsm_ctx->curr_key_index++;
-            return StateMachine::make_state<PressKey>(fsm_ctx);
-        } else {
-            return StateMachine::make_state<TargetKey>(fsm_ctx);
-        }        */
-
-
-    //} else {
-     //   std::cout << "Check Cancel\n";
-     //   RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Failed to call service add_two_ints");
-     //   return StateMachine::make_state<TargetKey>(fsm_ctx);
-    //}    
-
+    
+    // Loop
+    return StateMachine::make_state<TargetKey>(fsm_ctx);
 
 }
 }

@@ -213,6 +213,12 @@ namespace mrover {
         int mToggleRenderModelsKey = GLFW_KEY_M;
         int mToggleRenderWireframeCollidersKey = GLFW_KEY_C;
         int mToggleCameraLockKey = GLFW_KEY_O;
+        int mArmForwardKey = GLFW_KEY_UP;
+        int mArmBackwardKey = GLFW_KEY_DOWN;
+        int mArmLeftKey = GLFW_KEY_LEFT;
+        int mArmRightKey = GLFW_KEY_RIGHT;
+        int mArmUpKey = GLFW_KEY_SLASH;
+        int mArmDownKey = GLFW_KEY_PERIOD;
 
         float mFlySpeed = 5.0f;
         float mRoverLinearSpeed = 1.0f;
@@ -242,8 +248,13 @@ namespace mrover {
         tf2_ros::TransformBroadcaster mTfBroadcaster{this};
 
         bool mPublishIk = true;
+        bool mIkMode = true; // true = position control, false = velocity control
         Eigen::Vector3f mIkTarget{0.382, 0.01, -0.217};
+        Eigen::Vector3f mIkVel{0, 0, 0};
+        float mArmSpeed = 1;
         rclcpp::Publisher<msg::IK>::SharedPtr mIkTargetPub;
+        rclcpp::Publisher<geometry_msgs::msg::Vector3>::SharedPtr mIkVelPub;
+        rclcpp::Client<srv::IkMode>::SharedPtr mIkModeClient;
 
         R3d mGpsLinearizationReferencePoint{};
         double mGpsLinerizationReferenceHeading{};

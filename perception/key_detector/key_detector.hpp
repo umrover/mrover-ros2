@@ -44,10 +44,15 @@ class KeyDetector : public rclcpp::Node{
 
     StatePublisher mStatePublisher;
 
+    std::shared_ptr<tf2_ros::Buffer> mTfBuffer = std::make_unique<tf2_ros::Buffer>(get_clock());
+    std::shared_ptr<tf2_ros::TransformBroadcaster> mTfBroadcaster = std::make_shared<tf2_ros::TransformBroadcaster>(this);
+    std::shared_ptr<tf2_ros::TransformListener> mTfListener = std::make_shared<tf2_ros::TransformListener>(*mTfBuffer);
 
     void updateFSM();
 
-
+    rclcpp::Publisher<geometry_msgs::msg::Vector3>::SharedPtr mIkTargetPub;
+    rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr mRVizPub;
+    
     rclcpp_action::Server<KeyAction>::SharedPtr action_server_;
 
     rclcpp_action::GoalResponse handle_goal(
