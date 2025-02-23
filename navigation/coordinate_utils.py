@@ -139,8 +139,8 @@ def segment_path(context: Context, dest: np.ndarray, seg_len: float = 0.5):
         direction = (dest - rover_translation) / num_segments
 
         # Create the segments by adding the direction vector to the rover's position
-        traj_path = np.array([rover_translation + i * direction for i in range(0, num_segments)])
-        np.append(traj_path, dest)
+        temp = np.array([rover_translation + i * direction for i in range(0, num_segments)])
+        traj_path = np.concatenate((temp, np.array([dest])), axis=0)  #
 
     # Create a Trajectory object from the segmented path
     segmented_trajectory = Trajectory(np.hstack((traj_path, np.zeros((traj_path.shape[0], 1)))))
