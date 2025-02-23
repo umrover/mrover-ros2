@@ -1,21 +1,16 @@
 #!/usr/bin/env python3
 
-from logging import debug
 import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import Image as ROSImage
 import time
 
+from keyrover import LabeledBBox, plot_bboxes, draw_textbox
+from keyrover.images.texcoord import TexcoordImage
 
-
-
-
-
-from keyrover import *
-from keyrover.images.texcoord import *
-
-
-
+import os
+from typing import Final
+from typing import Literal
 from keyrover.color import NamedPalette
 from keyrover.vision.models import CornersRegressionModel
 import pickle
@@ -25,7 +20,9 @@ from ultralytics import YOLO
 from torchvision.transforms import v2 as transforms
 import torch
 
-
+ROOT_PATH: Final[str] = f"{os.path.dirname(os.path.abspath(__file__))}/.."
+DATASETS: Final[str] = f"{ROOT_PATH}/datasets"
+MODELS_PATH: Final[str] = f"{ROOT_PATH}/models"
 SIZE = (256, 256)
 dataset = "v4-nodistort"
 CORNER_REGRESSION_MODEL = "magic-wave-28.pt"
