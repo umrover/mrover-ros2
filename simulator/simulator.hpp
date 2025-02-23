@@ -284,6 +284,8 @@ namespace mrover {
 
         bool mIsHeadless{};
 
+        int64_t mMotorTimeoutMs{};
+
         // Rendering
 
         GlfwInstance mGlfwInstance;

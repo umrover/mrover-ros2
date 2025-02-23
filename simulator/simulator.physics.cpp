@@ -58,9 +58,8 @@ namespace mrover {
             // check if arm motor commands have expired
             // TODO: fix hard-coded names?
             for (auto const& name: {"arm_a_link", "arm_b_link", "arm_c_link", "arm_d_link", "arm_e_link"}) {
-                bool expired = std::chrono::duration_cast<std::chrono::milliseconds>(Clock::now() - rover.linkNameToMeta.at(name).lastUpdate).count() > MOTOR_TIMEOUT_MS;
+                bool expired = std::chrono::duration_cast<std::chrono::milliseconds>(Clock::now() - rover.linkNameToMeta.at(name).lastUpdate).count() > mMotorTimeoutMs;
                 if (expired) {
-                    RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 500, std::format("Joint {} timed out", name));
                     int linkIndex = rover.linkNameToMeta.at(name).index;
                     auto* motor = std::bit_cast<btMultiBodyJointMotor*>(rover.physics->getLink(linkIndex).m_userPtr);
                     assert(motor);

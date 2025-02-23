@@ -22,6 +22,8 @@ namespace mrover {
             
             mIkModeClient = create_client<srv::IkMode>("ik_mode");
 
+            mMotorTimeoutMs = get_parameter("motor_timeout").as_int();
+
             mIsHeadless = get_parameter("headless").as_bool();
             mEnablePhysics = mIsHeadless;
             {
