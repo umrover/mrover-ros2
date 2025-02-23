@@ -71,6 +71,8 @@ class Navigation(Node):
                 ("search.a_star_thresh", Parameter.Type.DOUBLE),
                 ("search.costmap_thresh", Parameter.Type.DOUBLE),
                 ("search.angle_thresh", Parameter.Type.DOUBLE),
+                ("search.distance_threshold", Parameter.Type.DOUBLE),
+                ("search.initial_inflation_radius", Parameter.Type.DOUBLE),
                 ("single_tag.stop_threshold", Parameter.Type.DOUBLE),
                 ("single_tag.tag_stop_threshold", Parameter.Type.DOUBLE),
                 ("single_tag.post_avoidance_multiplier", Parameter.Type.DOUBLE),

@@ -110,7 +110,7 @@ def gen_marker(context: Context, point=[0.0, 0.0], color=[1.0, 1.0, 1.0], size=0
     return marker
 
 
-def segment_path(context: Context, dest: np.ndarray, seg_len: float = 1):
+def segment_path(context: Context, dest: np.ndarray, seg_len: float = 0.5):
     """
     Segment the path from the rover's current position to the current waypoint into equally spaced points
 
@@ -140,9 +140,7 @@ def segment_path(context: Context, dest: np.ndarray, seg_len: float = 1):
 
         # Create the segments by adding the direction vector to the rover's position
         temp = np.array([rover_translation + i * direction for i in range(0, num_segments)])
-        traj_path = np.concatenate((temp, np.array([dest])), axis=0)
-        context.node.get_logger().info(f"Destination: {dest}")
-        np.vstack((traj_path, dest))
+        traj_path = np.concatenate((temp, np.array([dest])), axis=0)  #
 
     # Create a Trajectory object from the segmented path
     segmented_trajectory = Trajectory(np.hstack((traj_path, np.zeros((traj_path.shape[0], 1)))))
@@ -152,6 +150,8 @@ def segment_path(context: Context, dest: np.ndarray, seg_len: float = 1):
 
 
 def is_high_cost_point(point: np.ndarray, context: Context, min_cost=0.2) -> bool:
+    if not context.node.get_parameter("search.use_costmap").value:
+        return False
     cost_map = context.env.cost_map.data
 
     point_ij = cartesian_to_ij(context=context, cart_coord=point)

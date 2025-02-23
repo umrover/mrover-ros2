@@ -24,6 +24,7 @@ simulator:
         type: urdf
         uri: package://mrover/urdf/world/bottle.urdf.xacro
         position: [9.0, 10.0, 0.5]
+        position: [9.0, 10.0, 0.5]
 
       # Auto-generated rocks from the grid
       rock_1:
