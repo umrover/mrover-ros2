@@ -130,9 +130,9 @@ Visualization Manager:
       Enabled: true
       Name: Marker
       Namespaces:
-        single_point: true
+        {}
       Topic:
-        Depth: 10
+        Depth: 100
         Durability Policy: Volatile
         Filter size: 10
         History Policy: Keep Last
