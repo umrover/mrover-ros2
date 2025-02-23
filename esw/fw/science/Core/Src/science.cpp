@@ -16,6 +16,7 @@ extern I2C_HandleTypeDef hi2c3;
 extern FDCAN_HandleTypeDef hfdcan1;
 extern TIM_HandleTypeDef htim2;
 extern TIM_HandleTypeDef htim3;
+extern TIM_HandleTypeDef htim4;
 
 #define JETSON_ADDRESS 0x10
 #define SCIENCE_BOARD_ID 0x50
@@ -70,20 +71,20 @@ namespace mrover {
         fdcan_bus.start();
         HAL_TIM_Base_Start_IT(&htim2);
         HAL_TIM_Base_Start_IT(&htim3);
+        HAL_TIM_Base_Start_IT(&htim4);
         event_loop();
     }
 
-    void handleSensors() {
+    void handleI2CSensors() {
     	SensorData temp_data = {.id = static_cast<std::uint8_t>(ScienceDataID::TEMPERATURE), .data = 0};
 		SensorData humidity_data = {.id = static_cast<std::uint8_t>(ScienceDataID::HUMIDITY), .data = 0};
 		SensorData oxygen_data = {.id = static_cast<std::uint8_t>(ScienceDataID::OXYGEN), .data = 0};
-		SensorData uv_data = {.id = static_cast<std::uint8_t>(ScienceDataID::UV), .data = 0};
 
 		th_sensor.update_temp_humidity();
 		temp_data.data = th_sensor.get_current_temp();
 		humidity_data.data = th_sensor.get_current_humidity();
-		oxygen_data.data = oxygen_sensor.update_oxygen();
-		uv_data.data = uv_sensor.update_uv_blocking();
+		oxygen_sensor.update_oxygen();
+		oxygen_data.data = oxygen_sensor.get_oxygen();
 
 		science_out = temp_data;
 		fdcan_bus.broadcast(science_out, SCIENCE_BOARD_ID, JETSON_ADDRESS);
@@ -91,9 +92,16 @@ namespace mrover {
 		fdcan_bus.broadcast(science_out, SCIENCE_BOARD_ID, JETSON_ADDRESS);
 		science_out = oxygen_data;
 		fdcan_bus.broadcast(science_out, SCIENCE_BOARD_ID, JETSON_ADDRESS);
-		science_out = uv_data;
-		fdcan_bus.broadcast(science_out, SCIENCE_BOARD_ID, JETSON_ADDRESS);
     }
+
+    void handleAnalogSensors() {
+    		SensorData uv_data = {.id = static_cast<std::uint8_t>(ScienceDataID::UV), .data = 0};
+
+    		uv_data.data = uv_sensor.update_uv_blocking();
+
+    		science_out = uv_data;
+    		fdcan_bus.broadcast(science_out, SCIENCE_BOARD_ID, JETSON_ADDRESS);
+        }
 
     void handleHeaterTemps() {
     	for (size_t i = 0; i < m_heaters.size(); i++) {
@@ -143,13 +151,24 @@ namespace mrover {
 
 extern "C" {
 
-void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim)
-{
-	if (htim == &htim2) {
-		mrover::handleSensors(); // gets stuck here
-	} else if (htim == &htim3){
-		mrover::handleHeaterTemps();
+void HAL_I2C_MemRxCpltCallback (I2C_HandleTypeDef* hi2c) {
+	if (hi2c == &hi2c2 && mrover::oxygen_state == 0) {
+		mrover::oxygen_state = 1;
+		mrover::oxygen_sensor.calibrate_oxygen();
+	} else if (hi2c == &hi2c2 && mrover::oxygen_state == 1) {
+		mrover::oxygen_state = 0;
+		mrover::oxygen_sensor.set_oxygen();
 	}
+}
+
+void HAL_I2C_MasterTxCpltCallback (I2C_HandleTypeDef* hi2c) {
+	if (hi2c == &hi2c3)
+		mrover::th_sensor.receive_buf();
+}
+
+void HAL_I2C_MasterRxCpltCallback (I2C_HandleTypeDef* hi2c) {
+	if (hi2c == &hi2c3)
+		mrover::th_sensor.calculate_th();
 }
 
 void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef* hfdcan, uint32_t RxFifo0ITs) {
@@ -159,6 +178,17 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef* hfdcan, uint32_t RxFifo0ITs)
         // Mailbox is full OR we lost a frame
         Error_Handler();
     }
+}
+
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim)
+{
+	if (htim == &htim2) {
+		mrover::handleI2CSensors();
+	} else if (htim == &htim3){
+		mrover::handleHeaterTemps();
+	} else if (htim == &htim4) {
+		mrover::handleAnalogSensors();
+	}
 }
 
 void HAL_PostInit() {
