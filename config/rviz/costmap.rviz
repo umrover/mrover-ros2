@@ -131,7 +131,7 @@ Visualization Manager:
       Namespaces:
         {}
       Topic:
-        Depth: 10
+        Depth: 100
         Durability Policy: Volatile
         Filter size: 10
         History Policy: Keep Last
