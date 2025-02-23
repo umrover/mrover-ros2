@@ -13,8 +13,6 @@ namespace mrover {
 
     constexpr double TAU = 2 * std::numbers::pi;
 
-    constexpr int MOTOR_TIMEOUT_MS = 100;
-
     auto btTransformToSe3(btTransform const& transform) -> SE3d {
         btVector3 const& p = transform.getOrigin();
         btQuaternion const& q = transform.getRotation();
