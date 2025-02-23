@@ -195,7 +195,7 @@ namespace mrover {
 
             if (jointDePitchVelocity.has_value() && jointDeRollVelocity.has_value()) {
                 Vector2<RadiansPerSecond> const pitchRollVelocities{jointDePitchVelocity.value(), jointDeRollVelocity.value()};
-                Vector2<RadiansPerSecond> const motorVelocities = PITCH_ROLL_TO_0_1 * pitchRollVelocities;
+                Vector2<RadiansPerSecond> const motorVelocities = PITCH_ROLL_TO_01_SCALE * PITCH_ROLL_TO_0_1 * pitchRollVelocities;
 
                 mJointDe0->setDesiredVelocity(motorVelocities[0]);
                 mJointDe1->setDesiredVelocity(motorVelocities[1]);

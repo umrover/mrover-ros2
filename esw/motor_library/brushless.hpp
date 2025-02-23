@@ -135,7 +135,7 @@ namespace mrover {
                 mLimitSwitchesInfo[i].usedForReadjustment = mNode->get_parameter_or(std::format("{}.limit_switch_{}_used_for_readjustment", mControllerName, i), false);
                 mLimitSwitchesInfo[i].readjustPosition = OutputPosition{mNode->get_parameter_or(std::format("{}.limit_switch_{}_readjust_position", mControllerName, i), 0.0)};
                 mLimitSwitchesInfo[i].auxNumber = static_cast<MoteusAuxNumber>(mNode->get_parameter_or(std::format("{}.limit_switch_{}_aux_number", mControllerName, i), 1));
-                mLimitSwitchesInfo[i].auxPinNumber = static_cast<MoteusAuxPinNumber>(mNode->get_parameter_or(std::format("{}.limit_switch_{}_aux_pin_number", mControllerName, i), 0));
+                mLimitSwitchesInfo[i].auxPinNumber = static_cast<MoteusAuxPinNumber>(mNode->get_parameter_or(std::format("{}.limit_switch_{}_aux_pin", mControllerName, i), 0));
                 if (mLimitSwitchesInfo[i].present && mLimitSwitchesInfo[i].enabled) {
                     mHasLimit = true;
                 }
