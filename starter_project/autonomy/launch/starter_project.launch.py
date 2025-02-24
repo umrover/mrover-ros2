@@ -23,18 +23,9 @@ def generate_launch_description():
 
     localization_node = Node(package="mrover", executable="localization.py", name="localization")
 
-    rviz_node = Node(
-        package="rviz2",
-        executable="rviz2",
-        name="rviz2",
-        arguments=["-d", [os.path.join(get_package_share_directory("mrover"), "config/rviz", "auton_sim.rviz")]],
-        condition=LaunchConfigurationEquals("rviz", "true"),
-    )
-
     return LaunchDescription(
         [
             launch_include_sim,
-            rviz_node,
             # ==========
             # Perception
             # ==========

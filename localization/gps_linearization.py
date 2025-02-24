@@ -36,6 +36,7 @@ class GPSLinearization(Node):
                 ("world_frame", Parameter.Type.STRING),
             ],
         )
+
         self.ref_lat = self.get_parameter("ref_lat").value
         self.ref_lon = self.get_parameter("ref_lon").value
         self.ref_alt = self.get_parameter("ref_alt").value
@@ -43,9 +44,9 @@ class GPSLinearization(Node):
 
         self.pos_pub = self.create_publisher(Vector3Stamped, "linearized_position", 10)
 
-        self.fix_sub = self.create_subscription(NavSatFix, "gps/fix", self.single_gps_callback, 10)
+        self.gps_sub = self.create_subscription(NavSatFix, "gps/fix", self.gps_callback, 10)
 
-    def single_gps_callback(self, msg: NavSatFix):
+    def gps_callback(self, msg: NavSatFix):
         if np.isnan([msg.latitude, msg.longitude, msg.altitude]).any():
             self.get_logger().warn("Received NaN GPS data, ignoring")
             return

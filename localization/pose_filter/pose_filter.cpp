@@ -23,17 +23,18 @@ namespace mrover {
             current_imu = *imu;
         });
 
-        heading_sub_ = std::make_shared<message_filters::Subscriber<mrover::msg::Heading>>(this, "/heading/fix");
+        heading_sub.subscribe(this, "/heading/fix");
+        heading_status_sub.subscribe(this, "/heading_fix_status");
 
-        heading_fix_sub_ = std::make_shared<message_filters::Subscriber<mrover::msg::FixStatus>>(this, "/heading_fix_status");
-
-        sync_ = std::make_shared<message_filters::Synchronizer<SyncPolicy>>(
-            SyncPolicy(10), *heading_sub_, *heading_fix_sub_
+        sync = std::make_shared<message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<mrover::msg::Heading, mrover::msg::FixStatus>>>(
+            message_filters::sync_policies::ApproximateTime<mrover::msg::Heading, mrover::msg::FixStatus>(10),
+            heading_sub,
+            heading_status_sub
         );
 
-        sync_->registerCallback(std::bind(&PoseFilter::heading_callback, this, std::placeholders::_1, std::placeholders::_2));
+        sync->registerCallback(&PoseFilter::heading_callback, this);
 
-        pose_sub = this->create_subscription<geometry_msgs::msg::Vector3Stamped>("/linearized_position", 1, [this](geometry_msgs::msg::Vector3Stamped::ConstSharedPtr const& msg) -> void {
+        pose_sub = this->create_subscription<geometry_msgs::msg::Vector3Stamped>("/linearized_position", 1, [this](const geometry_msgs::msg::Vector3Stamped::ConstSharedPtr& linearized_pos_msg) -> void {
             pose_sub_callback(linearized_pos_msg);
         });
 
@@ -42,12 +43,10 @@ namespace mrover {
 
         rover_frame = get_parameter("rover_frame").as_string();
         world_frame = get_parameter("world_frame").as_string();
-
-        tf_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(this);
     }
 
-    void PoseFilter::heading_callback(const mrover::msg::Heading::ConstSharedPtr const& heading_msg, const mrover::msg::FixStatus::ConstSharedPtr const& fix_status_msg) {
-        current_heading = *heading;
+    void PoseFilter::heading_callback(const mrover::msg::Heading::ConstSharedPtr& heading_msg, const mrover::msg::FixStatus::ConstSharedPtr& fix_status_msg) {
+        current_heading = *heading_msg;
         current_heading_fix_status = *fix_status_msg;
     }
 

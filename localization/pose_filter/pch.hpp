@@ -15,6 +15,8 @@
 #include <nav_msgs/msg/odometry.hpp>
 #include <sensor_msgs/msg/imu.hpp>
 #include <mrover/msg/calibration_status.hpp>
+#include <mrover/msg/heading.hpp>
+#include <mrover/msg/fix_status.hpp>
 #include <builtin_interfaces/msg/time.hpp>
 
 #include <boost/circular_buffer.hpp>
