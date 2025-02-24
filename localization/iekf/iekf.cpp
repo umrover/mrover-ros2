@@ -403,12 +403,32 @@ namespace mrover {
         H << -1 * manif::skew(mag_ref), Matrix33d::Zero(), Matrix33d::Zero();
         Y << -1 * Vector3d{std::cos(heading), -std::sin(heading), 0}, 0, 0;
         b << -1 * mag_ref, 0, 0;
-        N << X.block<3, 3>(0, 0) * mag_heading_msg.heading_accuracy * Matrix33d::Identity() * X.block<3, 3>(0, 0).transpose();
+        N << X.block<3, 3>(0, 0) * mag_heading_msg.heading_accuracy * X.block<3, 3>(0, 0).transpose();
 
         RCLCPP_INFO(get_logger(), "heading: %f", heading);
         // RCLCPP_INFO(get_logger(), "heading accuracy: %f", mag_heading_msg.heading_accuracy);
         correct(Y, b, N, H);
+    
+    }
 
+    void IEKF::accel_callback(const geometry_msgs::msg::Vector3 &a, const Matrix33d &cov_a) {
+
+        Matrix39d H;
+        Vector5d Y;
+        Vector5d b;
+        Matrix33d N;
+
+        Vector3d accel_ref{0, 0, -1};
+
+        Vector3d accel_meas{a.x, a.y, a.z};
+        accel_meas.normalize();
+
+        H << -1 * manif::skew(accel_ref), Matrix33d::Zero(), Matrix33d::Zero();
+        Y << -1 * accel_meas, 0, 0;
+        b << -1 * accel_ref, 0, 0;
+        N << X.block<3, 3>(0, 0) * cov_a * X.block<3, 3>(0, 0).transpose();
+
+        correct(Y, b, N, H);
     }
 
     

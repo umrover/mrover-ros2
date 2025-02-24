@@ -38,6 +38,7 @@ namespace mrover {
         // void correct(const Vector3d& Y, const Vector3d& b, const Matrix33d& N, const Matrix39d& H);
 
         void correct(const Vector5d& Y, const Vector5d& b, const Matrix33d& N, const Matrix39d& H);
+        void accel_callback(const geometry_msgs::msg::Vector3 &a, const Matrix33d &cov_a);
 
         // publishers and subscribers
         rclcpp::Subscription<geometry_msgs::msg::Vector3Stamped>::SharedPtr pos_sub;
@@ -79,7 +80,7 @@ namespace mrover {
         int fake_gps = 0;
 
         
-        
+
 
         // auto CorrectRightInvariant(const Eigen::MatrixXd& Z, const Eigen::MatrixXd& H,
         //                         const Eigen::MatrixXd& N) -> void; // ErrorType error_type
