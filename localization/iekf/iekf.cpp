@@ -401,8 +401,8 @@ namespace mrover {
         heading = heading * (M_PI / 180);
 
         H << -1 * manif::skew(mag_ref), Matrix33d::Zero(), Matrix33d::Zero();
-        Y << -1 * mag_ref, 0, 0;
-        b << -1 * Vector3d{std::cos(heading), std::sin(heading), 0}, 0, 0;
+        Y << -1 * Vector3d{std::cos(heading), -std::sin(heading), 0}, 0, 0;
+        b << -1 * mag_ref, 0, 0;
         N << X.block<3, 3>(0, 0) * mag_heading_msg.heading_accuracy * Matrix33d::Identity() * X.block<3, 3>(0, 0).transpose();
 
         RCLCPP_INFO(get_logger(), "heading: %f", heading);

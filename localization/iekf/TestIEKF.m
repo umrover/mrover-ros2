@@ -101,10 +101,14 @@ for i = 1:num_samples
     mag_noise_y = a + (b-a).*rand(1,1);
     mag_noise_z = a + (b-a).*rand(1,1);
 
-    filter.mag_update([0 + mag_noise_x; -1 + mag_noise_y; 0 + mag_noise_z], mag_covariance);
+    % mag_radians = 0 + mag_noise_x;
 
-    a = -10;
-    b = 10;
+    mag_radians = pi / 2;
+
+    filter.mag_update([cos(mag_radians); -sin(mag_radians); 0 + mag_noise_z], mag_covariance);
+
+    a = -1;
+    b = 1;
 
     pos_noise_x = a + (b-a).*rand(1,1);
     pos_noise_y = a + (b-a).*rand(1,1);
@@ -112,7 +116,7 @@ for i = 1:num_samples
 
     V = [pos_noise_x; pos_noise_y; pos_noise_z];
 
-    p = [0 + pos_noise_x; (t(i)).^2 + pos_noise_y; 0 + pos_noise_z];
+    p = [0 + pos_noise_x; t(i).^2 + pos_noise_y; 0 + pos_noise_z];
 
     filter.position_update(p, V);
 
