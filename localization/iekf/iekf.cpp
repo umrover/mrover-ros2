@@ -1,6 +1,4 @@
 #include "iekf.hpp"
-#include <Eigen/src/Geometry/Quaternion.h>
-#include <tf2/LinearMath/Quaternion.h>
 
 namespace mrover {
     
@@ -22,6 +20,10 @@ namespace mrover {
         mag_heading_sub = this->create_subscription<mrover::msg::Heading>("/zed_imu/mag_heading", 10, [&](const mrover::msg::Heading::ConstSharedPtr& mag_heading_msg) {
             mag_heading_callback(*mag_heading_msg);
         });
+
+        // imu_sub = this->create_subscription<sensor_msgs::msg::Imu>("/zed_imu/data_raw", 10, [&](const sensor_msgs::msg::Imu::ConstSharedPtr& imu_msg) {
+        //     imu_callback(*imu_msg);
+        // });
 
     }
 
@@ -249,20 +251,35 @@ namespace mrover {
         RCLCPP_INFO(get_logger(), "\n%f, %f, %f\n%f, %f, %f\n %f, %f, %f", rot_m(0,0), rot_m(0,1), rot_m(0,2),
                                                                                  rot_m(1,0), rot_m(1,1), rot_m(1,2),
                                                                                  rot_m(2,0), rot_m(2,1), rot_m(2,2));
-
-       
-    //     // RCLCPP_INFO(get_logger(), "bias: %f, %f, %f", accel_bias(0), accel_bias(1), accel_bias(2));
-    //     // RCLCPP_INFO(get_logger(), "a_lin: %f, %f, %f", a_lin(0), a_lin(1), a_lin(2));
-    //     position_temp = position_temp + velocity_temp * dt + 0.5 * a_lin * pow(dt, 2);
-    //     velocity_temp = velocity_temp + a_lin * dt;
-        
-    //     // RCLCPP_INFO(get_logger(), "velocity temp: %f, %f, %f", velocity_temp(0), velocity_temp(1), velocity_temp(2));
-    //     RCLCPP_INFO(get_logger(), "position temp: %f, %f, %f", position_temp(0), position_temp(1), position_temp(2));
-    //     // RCLCPP_INFO(get_logger(), "accel measurement: %f, %f, %f", a.x, a.y, a.z);
-    //     // RCLCPP_INFO(get_logger(), "\n%f, %f, %f\n%f, %f, %f\n %f, %f, %f", rot_m(0,0), rot_m(0,1), rot_m(0,2),
-    //     //                                                                          rot_m(1,0), rot_m(1,1), rot_m(1,2),
-    //     //                                                                          rot_m(2,0), rot_m(2,1), rot_m(2,2));
     }
+
+    // void IEKF::predict_sim(const geometry_msgs::msg::Vector3& w, const Matrix33d& cov_w, const geometry_msgs::msg::Vector3& a, const Matrix33d& cov_a, double dt) {
+    //     Matrix99d adj_x = adjoint();
+    //     Matrix99d Q = Matrix99d::Zero();
+    //     Matrix99d Q_d = Matrix99d::Zero();
+
+    //     // process noise
+    //     Q.block(0, 0, 3, 3) = cov_w.cwiseAbs();
+    //     Q.block(3, 3, 3, 3) = cov_a.cwiseAbs();
+    //     Q.block(6, 6, 3, 3) = cov_a.cwiseAbs() * dt;
+    //     Q_d = (A * dt).exp() * Q * dt * ((A * dt).exp()).transpose();
+
+    //     Vector3d a_lin{a.x, a.y, a.z};
+
+    //     // propagate
+    //     X.block<3, 3>(0, 0) = X.block<3, 3>(0, 0) * (manif::skew(Vector3d{w.x, w.y, w.z}) * dt).exp();
+    //     X.block<3, 1>(0, 4) = X.block<3, 1>(0, 4) + X.block<3, 1>(0, 3) * dt + 0.5 * a_lin * pow(dt, 2);
+    //     X.block<3, 1>(0, 3) = X.block<3, 1>(0, 3) + a_lin * dt;
+        
+    //     P = (A * dt).exp() * P * ((A * dt).exp()).transpose() + adj_x * Q_d * adj_x.transpose();
+
+    //     Matrix33d rot_m = X.block<3, 3>(0, 0);
+    //     RCLCPP_INFO(get_logger(), "\n%f, %f, %f\n%f, %f, %f\n %f, %f, %f", rot_m(0,0), rot_m(0,1), rot_m(0,2),
+    //                                                                              rot_m(1,0), rot_m(1,1), rot_m(1,2),
+    //                                                                              rot_m(2,0), rot_m(2,1), rot_m(2,2));
+
+
+    // }
 
     // void IEKF::correct(const Vector3d& Y, const Vector3d& b, const Matrix33d& N, const Matrix39d& H) {
         
@@ -327,6 +344,8 @@ namespace mrover {
         }
 
         predict(w, cov_w, a, cov_a, dt);
+        
+        accel_callback(a, cov_a);
 
         R3d translation = X.block<3, 1>(0, 4);
         SO3d rotation = Eigen::Quaterniond(X.block<3, 3>(0, 0));
@@ -418,10 +437,12 @@ namespace mrover {
         Vector5d b;
         Matrix33d N;
 
-        Vector3d accel_ref{0, 0, -1};
+        Vector3d accel_ref{0, 0, 1};
 
         Vector3d accel_meas{a.x, a.y, a.z};
         accel_meas.normalize();
+
+        RCLCPP_INFO(get_logger(), "accel measured: %f, %f, %f", accel_meas(0), accel_meas(1), accel_meas(2));
 
         H << -1 * manif::skew(accel_ref), Matrix33d::Zero(), Matrix33d::Zero();
         Y << -1 * accel_meas, 0, 0;

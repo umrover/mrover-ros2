@@ -220,7 +220,7 @@ namespace mrover {
                 imu.link = &multiBody->getLink(linkIndex);
                 imu.updateTask = PeriodicTask{50};
                 imu.imuPub = simulator.create_publisher<sensor_msgs::msg::Imu>("imu/data", 1);
-                imu.magPub = simulator.create_publisher<sensor_msgs::msg::MagneticField>("imu/mag", 1);
+                imu.magPub = simulator.create_publisher<mrover::msg::Heading>("imu/mag", 1);
                 imu.uncalibPub = simulator.create_publisher<sensor_msgs::msg::Imu>("imu/data_raw", 1);
                 imu.calibStatusPub = simulator.create_publisher<mrover::msg::CalibrationStatus>("imu/calibration", 1);
             } else if (link->name.contains("gps"sv)) {

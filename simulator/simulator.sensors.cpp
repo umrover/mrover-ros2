@@ -1,4 +1,5 @@
 #include "simulator.hpp"
+#include <cmath>
 
 namespace mrover {
 
@@ -192,6 +193,7 @@ namespace mrover {
                 R3d roverLinearAcceleration = (roverLinearVelocity - mRoverLinearVelocity) / dtS;
                 mRoverLinearVelocity = roverLinearVelocity;
                 SO3d imuInMap = btTransformToSe3(imu.link->m_cachedWorldTransform).asSO3();
+
                 R3d roverMagVector = imuInMap.inverse().rotation().col(1);
 
                 R3d
@@ -218,13 +220,23 @@ namespace mrover {
                 calibrationStatus.magnetometer_calibration = 3;
                 imu.calibStatusPub->publish(calibrationStatus);
 
-                sensor_msgs::msg::MagneticField field;
-                field.header.stamp = get_clock()->now();
-                field.header.frame_id = "base_link";
-                field.magnetic_field.x = roverMagVector.x();
-                field.magnetic_field.y = roverMagVector.y();
-                field.magnetic_field.z = roverMagVector.z();
-                imu.magPub->publish(field);
+                Eigen::Vector3d imu_rot_m = imuInMap.rotation().col(1);
+                double mag_heading = std::atan2(imu_rot_m(1), imu_rot_m(0));
+                double mag_heading_accuracy = 0.5;
+
+                mrover::msg::Heading heading_msg;
+                heading_msg.heading = mag_heading;
+                heading_msg.heading_accuracy = mag_heading_accuracy;
+                heading_msg.header.stamp = get_clock()->now();
+                heading_msg.header.frame_id = "base_link";
+
+                // sensor_msgs::msg::MagneticField field;
+                // field.header.stamp = get_clock()->now();
+                // field.header.frame_id = "base_link";
+                // field.magnetic_field.x = roverMagVector.x();
+                // field.magnetic_field.y = roverMagVector.y();
+                // field.magnetic_field.z = roverMagVector.z();
+                imu.magPub->publish(heading_msg);
             }
         }
     }
