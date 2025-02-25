@@ -68,7 +68,7 @@ namespace mrover {
             // It is possible for another node to request an invalid combination of linear and angular velocities that the rover can not realize
             // Instead of clipping, scale down based on the maximal speed to preserve the ratio
 
-            RadiansPerSecond MAX_SPEED{50.0};
+            RadiansPerSecond MAX_SPEED{70.0};
 
             if (RadiansPerSecond maximal = std::max(abs(leftOuter), abs(rightOuter)); maximal > MAX_SPEED) {
                 Dimensionless changeRatio = MAX_SPEED / maximal;
