@@ -12,6 +12,9 @@ template<class... Ts> overload(Ts...) -> overload<Ts...>;
 
 
 namespace mrover {
+	template<typename T>
+	concept IsIntEnum = std::is_enum_v<T> && std::is_same_v<std::underlying_type_t<T>, int>;
+
 	class ParameterWrapper {
 	private:
 		static inline std::shared_ptr<rclcpp::ParameterCallbackHandle> cbHande;
@@ -34,6 +37,9 @@ namespace mrover {
 		ParameterWrapper(std::string paramDescriptor, double& variable, double defaultValue = 0.0) : mType{rclcpp::ParameterType::PARAMETER_DOUBLE}, mParamDescriptor{std::move(paramDescriptor)}, mData{&variable}, mDefaultValue{defaultValue}{}
 
 		ParameterWrapper(std::string paramDescriptor, float& variable, float defaultValue = 0.0) : mType{rclcpp::ParameterType::PARAMETER_DOUBLE}, mParamDescriptor{std::move(paramDescriptor)}, mData{&variable}, mDefaultValue{defaultValue}{}
+
+        template<IsIntEnum T>
+        ParameterWrapper(std::string paramDescriptor, T& variable, T defaultValue) : mType{rclcpp::ParameterType::PARAMETER_INTEGER}, mParamDescriptor{std::move(paramDescriptor)}, mData{reinterpret_cast<int*>(&variable)}, mDefaultValue{static_cast<int>(defaultValue)} {}
 
 		void visit(rclcpp::Node* node){
 			std::visit(overload{
