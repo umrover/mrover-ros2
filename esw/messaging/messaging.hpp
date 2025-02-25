@@ -14,11 +14,9 @@ namespace mrover {
         std::uint8_t present : 2 {};
         std::uint8_t enabled : 2 {};
         std::uint8_t active_high : 2 {};
-        std::uint8_t limits_forward : 2 {};
-        std::uint8_t limit_max_forward_position : 1 {};
-        std::uint8_t limit_max_backward_position : 1 {};
+        std::uint8_t limits_forward : 2 {}; // limits backward if false
         std::uint8_t use_for_readjustment : 2 {};
-        [[maybe_unused]] std::uint8_t _padding_a : 4 {};
+        [[maybe_unused]] std::uint8_t _padding_a : 6 {};
         [[maybe_unused]] std::uint8_t _padding_b[2]{};
         std::array<Radians, 2> limit_readj_pos;
     };
@@ -70,8 +68,8 @@ namespace mrover {
         Percent max_pwm;
         Radians min_position, max_position;
         RadiansPerSecond min_velocity, max_velocity;
-        [[maybe_unused]] std::uint8_t _ignore : 7 {};
         std::uint8_t is_inverted : 1 {};
+        [[maybe_unused]] std::uint8_t _ignore : 7 {};
     };
 
     struct IdleCommand : BaseCommand {
@@ -138,64 +136,6 @@ namespace mrover {
 
     using OutBoundPDLBMessage = std::variant<
             PDBData>;
-
-    enum struct ScienceDevice {
-        HEATER_B0,
-        HEATER_N0,
-        HEATER_B1,
-        HEATER_N1,
-        HEATER_B2,
-        HEATER_N2,
-        WHITE_LED_0,
-        WHITE_LED_1,
-        WHITE_LED_2,
-        UV_LED_0,
-        UV_LED_1,
-        UV_LED_2
-    };
-
-    struct EnableScienceDeviceCommand : BaseCommand {
-        ScienceDevice science_device{};
-        bool enable{};
-    };
-
-    struct HeaterAutoShutOffCommand : BaseCommand {
-        bool enable_auto_shutoff{};
-    };
-
-    struct ConfigThermistorAutoShutOffCommand : BaseCommand {
-        float shutoff_temp{};
-    };
-
-    struct HeaterStateInfo {
-        [[maybe_unused]] std::uint8_t _ignore : 2 {};
-        std::uint8_t on : 6 {};
-    };
-
-    struct HeaterStateData : BaseCommand {
-        HeaterStateInfo heater_state_info;
-    };
-
-    struct SpectralInfo {
-        std::array<float, 6> data{};
-        bool error{};
-    };
-
-    struct SpectralData : BaseCommand {
-        std::array<float, 6> data{};
-        std::uint8_t site;
-        bool error{};
-    };
-
-    struct ThermistorData : BaseCommand {
-        std::array<float, 6> temps{};
-    };
-
-    using InBoundScienceMessage = std::variant<
-            EnableScienceDeviceCommand, HeaterAutoShutOffCommand, ConfigThermistorAutoShutOffCommand>;
-
-    using OutBoundScienceMessage = std::variant<
-            HeaterStateData, SpectralData, ThermistorData>;
 
 #pragma pack(pop)
 
