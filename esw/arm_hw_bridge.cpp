@@ -38,7 +38,9 @@ namespace mrover {
     class ArmHWBridge : public rclcpp::Node {
 
     public:
-        ArmHWBridge() : rclcpp::Node{"arm_hw_bridge"} {
+        ArmHWBridge() : rclcpp::Node{"arm_hw_bridge", rclcpp::NodeOptions{}
+                                                              .allow_undeclared_parameters(true)
+                                                              .automatically_declare_parameters_from_overrides(true)} {
             // all initialization is done in the init() function to allow for the usage of shared_from_this()
         }
 
