@@ -283,7 +283,7 @@ target_link_libraries(can_device INTERFACE ${rclcpp_LIBRARIES})
 
 mrover_add_library(motor_library esw/motor_library/*.cpp esw/motor_library)
 ament_target_dependencies(motor_library rclcpp std_srvs)
-target_link_libraries(motor_library can_device moteus units messaging)
+target_link_libraries(motor_library can_device moteus units messaging parameter_utils)
 
 macro(mrover_add_esw_bridge_node name sources)
     mrover_add_node(${name} ${sources})

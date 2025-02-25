@@ -40,9 +40,7 @@ namespace mrover {
         using Controller = std::variant<BrushedController, BrushlessController<Meters>, BrushlessController<Revolutions>>;
 
     public:
-        ArmHWBridge() : rclcpp::Node{"arm_hw_bridge", rclcpp::NodeOptions{}
-                                                              .allow_undeclared_parameters(true)
-                                                              .automatically_declare_parameters_from_overrides(true)} {
+        ArmHWBridge() : rclcpp::Node{"arm_hw_bridge"} {
             // all initialization is done in the init() function to allow for the usage of shared_from_this()
         }
 
