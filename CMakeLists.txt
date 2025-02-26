@@ -319,6 +319,7 @@ install(PROGRAMS
         localization/basestation_gps_driver.py
         superstructure/superstructure.py
         scripts/debug_course_publisher.py
+        scripts/ik_testing.py
 		scripts/visualizer.py
 		scripts/image_capture.py
 

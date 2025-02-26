@@ -145,6 +145,8 @@ namespace mrover {
         }
 
         // scale down all velocities so that we don't exceed motor velocity limits
+        if (scaleFactor > 1)
+            RCLCPP_INFO_STREAM_THROTTLE(get_logger(), *get_clock(), 500, "Commanded velocity too high. Scaling down by factor of " << scaleFactor);
         for (auto& v : velocities.velocities)
             v = static_cast<float>(v / scaleFactor);
 
