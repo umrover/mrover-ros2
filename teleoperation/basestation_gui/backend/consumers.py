@@ -73,7 +73,7 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.accept()
         self.thr_pub = node.create_publisher(Throttle, "arm_throttle_cmd", 1)
         self.ee_pos_pub = node.create_publisher(IK, "ee_pos_cmd", 1)
-        self.ee_vel_pub = node.create_publisher(Vector3, "ee_vel_cmd", 1)
+        self.ee_vel_pub = node.create_publisher(Twist, "ee_vel_cmd", 1)
         self.joystick_twist_pub = node.create_publisher(Twist, "/joystick_cmd_vel", 1)
         self.controller_twist_pub = node.create_publisher(Twist, "/controller_cmd_vel", 1)
         self.mast_gimbal_pub = node.create_publisher(Throttle, "/mast_gimbal_throttle_cmd", 1)
