@@ -99,6 +99,7 @@ namespace mrover {
         static constexpr double END_EFFECTOR_LENGTH = 0.20482814; // from CAD
         static constexpr double JOINT_C_OFFSET = 0.1608485915;
         static constexpr double JOINT_VEL_THRESH = 0.05;
+        static constexpr double MAX_SPEED = 0.1; // in m/s, this is just an estimate
 
         ArmController();
 

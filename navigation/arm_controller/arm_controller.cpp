@@ -2,7 +2,7 @@
 #include <rclcpp/logging.hpp>
 
 namespace mrover {
-    const rclcpp::Duration ArmController::TIMEOUT = rclcpp::Duration(1, 0); // one second
+    const rclcpp::Duration ArmController::TIMEOUT = rclcpp::Duration(0, 0.3 * 1e9); // 0.3 seconds
 
     ArmController::ArmController() : Node{"arm_controller"}, mLastUpdate{get_clock()->now() - TIMEOUT} {
         mPosPub = create_publisher<msg::Position>("arm_position_cmd", 10);
@@ -153,6 +153,9 @@ namespace mrover {
 
     void ArmController::velCallback(geometry_msgs::msg::Twist::ConstSharedPtr const& ik_vel) {
         mVelTarget = *ik_vel;
+        mVelTarget.linear.x *= MAX_SPEED;
+        mVelTarget.linear.y *= MAX_SPEED;
+        mVelTarget.linear.z *= MAX_SPEED;
         if (mArmMode == ArmMode::VELOCITY_CONTROL)
             mLastUpdate = get_clock()->now();
         else
