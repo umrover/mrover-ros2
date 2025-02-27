@@ -596,20 +596,19 @@ namespace mrover {
         }
     }
 
-    auto Simulator::renderSkybox(wgpu::RenderPassEncoder& pass) -> void {
+    auto Simulator::renderSkybox(wgpu::RenderPassEncoder& pass, Eigen::Matrix4f& clipToWorld, Uniform<SkyboxUniforms>& uniforms) -> void {
         mSkyboxTexture.enqueWriteIfUnitialized(mDevice);
         pass.setPipeline(mSkyboxPipeline);
 
-        if (!mSkyboxUniforms.buffer) {
-            mSkyboxUniforms.init(mDevice);
-        }
+        if (!uniforms.buffer)
+            uniforms.init(mDevice);
 
-        mSkyboxUniforms.value.clipToWorld = (mCameraInWorld.transform().cast<float>() * mSceneUniforms.value.cameraToClip.inverse().cast<float>());
-        mSkyboxUniforms.enqueueWrite();
+        uniforms.value.clipToWorld = clipToWorld;
+        uniforms.enqueueWrite();
 
         std::array<wgpu::BindGroupEntry, 3> skyboxEntries{};
         skyboxEntries[0].binding = 0;
-        skyboxEntries[0].buffer = mSkyboxUniforms.buffer;
+        skyboxEntries[0].buffer = uniforms.buffer;
         skyboxEntries[0].size = sizeof(SkyboxUniforms);
         skyboxEntries[1].binding = 1;
         skyboxEntries[1].sampler = mSkyboxTexture.sampler;
@@ -888,7 +887,8 @@ namespace mrover {
             if (mRenderModels) renderModels(pass);
             if (mRenderWireframeColliders) renderWireframeColliders(pass);
 
-            renderSkybox(pass);
+            Eigen::Matrix4f clipToWorld = mCameraInWorld.transform().cast<float>() * mSceneUniforms.value.cameraToClip.inverse().cast<float>();
+            renderSkybox(pass, clipToWorld, mSkyboxUniforms);
 
             guiUpdate(pass);
 

@@ -148,6 +148,7 @@ namespace mrover {
         wgpu::TextureView normalTextureView;
 
         Uniform<SceneUniforms> sceneUniforms{};
+        Uniform<SkyboxUniforms> skyboxUniforms{};
         wgpu::BindGroup sceneBindGroup;
 
         wgpu::Buffer stagingBuffer;
@@ -463,7 +464,7 @@ namespace mrover {
 
         auto renderWireframeColliders(wgpu::RenderPassEncoder& pass) -> void;
 
-        auto renderSkybox(wgpu::RenderPassEncoder& pass) -> void;
+        auto renderSkybox(wgpu::RenderPassEncoder& pass, Eigen::Matrix4f& clipToWorld, Uniform<SkyboxUniforms>& uniforms) -> void;
 
         auto renderUpdate() -> void;
 
