@@ -26,7 +26,7 @@ class Joint(Enum):
     C = 2
     DE_PITCH = 3
     DE_ROLL = 4
-    ALLEN_KEY = 5
+    CAM = 5
     GRIPPER = 6
 
 
@@ -38,7 +38,7 @@ JOINT_NAMES = [
     "joint_c",
     "joint_de_pitch",
     "joint_de_roll",
-    "allen_key",
+    "cam",
     "gripper",
 ]
 
@@ -104,7 +104,7 @@ def compute_manual_joint_controls(controller: DeviceInputs) -> list[float]:
         ),
         filter_input(
             simulated_axis(controller.buttons, ControllerButton.Y, ControllerButton.A),
-            scale=JOINT_SCALES[Joint.ALLEN_KEY.value],
+            scale=JOINT_SCALES[Joint.CAM.value],
         ),
         filter_input(
             simulated_axis(controller.buttons, ControllerButton.B, ControllerButton.X),
@@ -114,6 +114,8 @@ def compute_manual_joint_controls(controller: DeviceInputs) -> list[float]:
 
 
 def subset(names: list[str], values: list[float], joints: set[Joint]) -> tuple[list[str], list[float]]:
+    for i in joints:
+        print(i)
     return [names[i.value] for i in joints], [values[i.value] for i in joints]
 
 
@@ -168,6 +170,14 @@ def send_ra_controls(ra_mode: str, inputs: DeviceInputs, node: Node, thr_pub: Pu
                         ik_vel_msg.angular.y = 1.0 * simulated_axis(inputs.buttons, ControllerButton.RIGHT_BUMPER, ControllerButton.LEFT_BUMPER)
                         ik_vel_msg.angular.x = 1.0 * simulated_axis(inputs.buttons, ControllerButton.RIGHT_TRIGGER, ControllerButton.LEFT_TRIGGER)
                         ee_vel_pub.publish(ik_vel_msg)
+
+                        manual_controls = compute_manual_joint_controls(inputs)
+                        throttle_msg = Throttle()
+                        joint_names, throttle_values = subset(JOINT_NAMES, manual_controls, set(Joint))
+                        throttle_msg.names = ["cam"]
+                        throttle_msg.throttles = [throttle_values[joint_names.index("cam")]]
+                        thr_pub.publish(throttle_msg)
+
 
             else:
                 if joint_positions:
