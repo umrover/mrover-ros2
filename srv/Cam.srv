@@ -1,0 +1,6 @@
+uint8 OUT=0
+uint8 IN=0
+uint8 PULSE=0
+uint8 action
+---
+bool success
