@@ -74,6 +74,12 @@ def generate_launch_description():
         parameters=[os.path.join(get_package_share_directory("mrover"), "config", "localization.yaml")],
     )
 
+    iekf_node = Node(
+        package="mrover",
+        executable="iekf",
+        name="iekf"
+    )
+
     return LaunchDescription(
         [
             headless_arg,
@@ -84,8 +90,9 @@ def generate_launch_description():
             # gst_websocket_streamer_node,
             # launch_include_base,
             simulator_node,
-            arm_controller_node,
+            # arm_controller_node,
             rviz_node,
-            gps_linearization_node
+            gps_linearization_node,
+            iekf_node
         ]
     )

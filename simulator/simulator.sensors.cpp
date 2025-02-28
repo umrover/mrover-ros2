@@ -138,6 +138,7 @@ namespace mrover {
         imuMessage.linear_acceleration.x = linearAcceleration.x();
         imuMessage.linear_acceleration.y = linearAcceleration.y();
         imuMessage.linear_acceleration.z = linearAcceleration.z();
+        imuMessage.linear_acceleration_covariance = {0.05, 0, 0, 0, 0.5, 0, 0, 0, 0.5};
         return imuMessage;
     }
 

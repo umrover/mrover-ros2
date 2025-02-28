@@ -1,4 +1,5 @@
 #include "iekf.hpp"
+#include <geometry_msgs/msg/detail/vector3_stamped__struct.hpp>
 
 namespace mrover {
     
@@ -6,6 +7,8 @@ namespace mrover {
 
         // initialize state variables
         X.setIdentity();
+        // X(0,4) = -2277321;
+        // X(1,4) = -60508;
         P = Matrix99d::Identity();
         A = Matrix99d::Zero();
 
@@ -13,17 +16,35 @@ namespace mrover {
         A.block(6, 3, 3, 3) = Matrix33d::Identity();
 
         // subscribers
-        imu_sub = this->create_subscription<sensor_msgs::msg::Imu>("/zed_imu/data_raw", 10, [&](const sensor_msgs::msg::Imu::ConstSharedPtr& imu_msg) {
-            imu_callback(*imu_msg);
-        });
-
-        mag_heading_sub = this->create_subscription<mrover::msg::Heading>("/zed_imu/mag_heading", 10, [&](const mrover::msg::Heading::ConstSharedPtr& mag_heading_msg) {
-            mag_heading_callback(*mag_heading_msg);
-        });
-
+        //not sim
         // imu_sub = this->create_subscription<sensor_msgs::msg::Imu>("/zed_imu/data_raw", 10, [&](const sensor_msgs::msg::Imu::ConstSharedPtr& imu_msg) {
         //     imu_callback(*imu_msg);
         // });
+
+        //sim11262456
+        imu_sub = this->create_subscription<sensor_msgs::msg::Imu>("/imu/data", 10, [&](const sensor_msgs::msg::Imu::ConstSharedPtr& imu_msg) {
+            imu_callback_sim(*imu_msg);
+        });
+
+
+        //not sim
+        // mag_heading_sub = this->create_subscription<mrover::msg::Heading>("/zed_imu/mag_heading", 10, [&](const mrover::msg::Heading::ConstSharedPtr& mag_heading_msg) {
+        //     mag_heading_callback(*mag_heading_msg);
+        // });
+        
+        //sim
+        mag_heading_sub = this->create_subscription<mrover::msg::Heading>("/imu/mag", 10, [&](const mrover::msg::Heading::ConstSharedPtr& mag_heading_msg) {
+            mag_heading_callback_sim(*mag_heading_msg);
+        });
+
+        
+        // imu_sub = this->create_subscription<sensor_msgs::msg::Imu>("/zed_imu/data_raw", 10, [&](const sensor_msgs::msg::Imu::ConstSharedPtr& imu_msg) {
+        //     imu_callback(*imu_msg);
+        // });
+
+        pos_sub = this->create_subscription<geometry_msgs::msg::Vector3Stamped>("/linearized_position", 10, [&](const geometry_msgs::msg::Vector3Stamped::ConstSharedPtr& pos_msg) {
+            pos_callback_sim(*pos_msg);
+        });
 
     }
 
@@ -210,50 +231,8 @@ namespace mrover {
                                                                     
     // }
 
-    void IEKF::predict(const geometry_msgs::msg::Vector3& w, const Matrix33d& cov_w, const geometry_msgs::msg::Vector3& a, const Matrix33d& cov_a, double dt) {
+    // void IEKF::predict(const geometry_msgs::msg::Vector3& w, const Matrix33d& cov_w, const geometry_msgs::msg::Vector3& a, const Matrix33d& cov_a, double dt) {
 
-        Matrix99d adj_x = adjoint();
-        Matrix99d Q = Matrix99d::Zero();
-        Matrix99d Q_d = Matrix99d::Zero();
-
-        // process noise
-        Q.block(0, 0, 3, 3) = cov_w.cwiseAbs();
-        Q.block(3, 3, 3, 3) = cov_a.cwiseAbs();
-        Q.block(6, 6, 3, 3) = cov_a.cwiseAbs() * dt;
-        Q_d = (A * dt).exp() * Q * dt * ((A * dt).exp()).transpose();
-
-        // get linear acceleration in world frame
-        Vector3d a_lin = X.block<3, 3>(0, 0) * Vector3d{a.x, a.y, a.z} + g;
-
-        // simple bias estimator
-        if ((a_lin - accel_bias).norm() < BIAS_THRESHOLD) {
-            accel_bias_estimator.push_back(a_lin);
-            accel_bias = accel_bias + (a_lin - accel_bias) / accel_bias_estimator.size();
-
-            if (accel_bias_estimator.size() > BIAS_WINDOW) {
-                Vector3d old_value = accel_bias_estimator.front();
-                accel_bias_estimator.pop_front();
-                accel_bias = accel_bias + (accel_bias - old_value) / accel_bias_estimator.size();
-            }
-
-        }
-
-        a_lin = a_lin - accel_bias;
-
-        // propagate
-        X.block<3, 3>(0, 0) = X.block<3, 3>(0, 0) * (manif::skew(Vector3d{w.x, w.y, w.z}) * dt).exp();
-        X.block<3, 1>(0, 4) = X.block<3, 1>(0, 4) + X.block<3, 1>(0, 3) * dt + 0.5 * a_lin * pow(dt, 2);
-        X.block<3, 1>(0, 3) = X.block<3, 1>(0, 3) + a_lin * dt;
-        
-        P = (A * dt).exp() * P * ((A * dt).exp()).transpose() + adj_x * Q_d * adj_x.transpose();
-
-        Matrix33d rot_m = X.block<3, 3>(0, 0);
-        RCLCPP_INFO(get_logger(), "\n%f, %f, %f\n%f, %f, %f\n %f, %f, %f", rot_m(0,0), rot_m(0,1), rot_m(0,2),
-                                                                                 rot_m(1,0), rot_m(1,1), rot_m(1,2),
-                                                                                 rot_m(2,0), rot_m(2,1), rot_m(2,2));
-    }
-
-    // void IEKF::predict_sim(const geometry_msgs::msg::Vector3& w, const Matrix33d& cov_w, const geometry_msgs::msg::Vector3& a, const Matrix33d& cov_a, double dt) {
     //     Matrix99d adj_x = adjoint();
     //     Matrix99d Q = Matrix99d::Zero();
     //     Matrix99d Q_d = Matrix99d::Zero();
@@ -264,7 +243,23 @@ namespace mrover {
     //     Q.block(6, 6, 3, 3) = cov_a.cwiseAbs() * dt;
     //     Q_d = (A * dt).exp() * Q * dt * ((A * dt).exp()).transpose();
 
-    //     Vector3d a_lin{a.x, a.y, a.z};
+    //     // get linear acceleration in world frame
+    //     Vector3d a_lin = X.block<3, 3>(0, 0) * Vector3d{a.x, a.y, a.z} + g;
+
+    //     // simple bias estimator
+    //     if ((a_lin - accel_bias).norm() < BIAS_THRESHOLD) {
+    //         accel_bias_estimator.push_back(a_lin);
+    //         accel_bias = accel_bias + (a_lin - accel_bias) / accel_bias_estimator.size();
+
+    //         if (accel_bias_estimator.size() > BIAS_WINDOW) {
+    //             Vector3d old_value = accel_bias_estimator.front();
+    //             accel_bias_estimator.pop_front();
+    //             accel_bias = accel_bias + (accel_bias - old_value) / accel_bias_estimator.size();
+    //         }
+
+    //     }
+
+    //     a_lin = a_lin - accel_bias;
 
     //     // propagate
     //     X.block<3, 3>(0, 0) = X.block<3, 3>(0, 0) * (manif::skew(Vector3d{w.x, w.y, w.z}) * dt).exp();
@@ -277,9 +272,35 @@ namespace mrover {
     //     RCLCPP_INFO(get_logger(), "\n%f, %f, %f\n%f, %f, %f\n %f, %f, %f", rot_m(0,0), rot_m(0,1), rot_m(0,2),
     //                                                                              rot_m(1,0), rot_m(1,1), rot_m(1,2),
     //                                                                              rot_m(2,0), rot_m(2,1), rot_m(2,2));
-
-
     // }
+
+    void IEKF::predict_sim(const geometry_msgs::msg::Vector3& w, const Matrix33d& cov_w, const geometry_msgs::msg::Vector3& a, const Matrix33d& cov_a, double dt) {
+        Matrix99d adj_x = adjoint();
+        Matrix99d Q = Matrix99d::Zero();
+        Matrix99d Q_d = Matrix99d::Zero();
+
+        // process noise
+        Q.block(0, 0, 3, 3) = cov_w.cwiseAbs();
+        Q.block(3, 3, 3, 3) = cov_a.cwiseAbs();
+        Q.block(6, 6, 3, 3) = cov_a.cwiseAbs() * dt;
+        Q_d = (A * dt).exp() * Q * dt * ((A * dt).exp()).transpose();
+
+        Vector3d a_lin{a.x, a.y, a.z};
+
+        // propagate
+        X.block<3, 3>(0, 0) = X.block<3, 3>(0, 0) * (manif::skew(Vector3d{w.x, w.y, w.z}) * dt).exp();
+        X.block<3, 1>(0, 4) = X.block<3, 1>(0, 4) + X.block<3, 1>(0, 3) * dt + 0.5 * a_lin * pow(dt, 2);
+        X.block<3, 1>(0, 3) = X.block<3, 1>(0, 3) + a_lin * dt;
+        
+        P = (A * dt).exp() * P * ((A * dt).exp()).transpose() + adj_x * Q_d * adj_x.transpose();
+
+        Matrix33d rot_m = X.block<3, 3>(0, 0);
+        RCLCPP_INFO(get_logger(), "\n%f, %f, %f\n%f, %f, %f\n %f, %f, %f", rot_m(0,0), rot_m(0,1), rot_m(0,2),
+                                                                                 rot_m(1,0), rot_m(1,1), rot_m(1,2),
+                                                                                 rot_m(2,0), rot_m(2,1), rot_m(2,2));
+
+
+    }
 
     // void IEKF::correct(const Vector3d& Y, const Vector3d& b, const Matrix33d& N, const Matrix39d& H) {
         
@@ -304,7 +325,7 @@ namespace mrover {
         // RCLCPP_INFO(get_logger(), "Y: %f, %f, %f", Y(0), Y(1), Y(2));
         Vector5d innov = X * Y - b;
         Vector5d temp = X * Y;
-        RCLCPP_INFO(get_logger(), "X * Y: %f, %f, %f, %f, %f", temp(0), temp(1), temp(2), temp(3), temp(4));
+        // RCLCPP_INFO(get_logger(), "X * Y: %f, %f, %f, %f, %f", temp(0), temp(1), temp(2), temp(3), temp(4));
         RCLCPP_INFO(get_logger(), "innov: %f, %f, %f", innov(0), innov(1), innov(2));
         Matrix33d S = H * P * H.transpose() + N;
         Matrix93d L = P * H.transpose() * S.inverse();
@@ -324,7 +345,57 @@ namespace mrover {
     }
 
 
-    void IEKF::imu_callback(const sensor_msgs::msg::Imu& imu_msg) {
+
+
+    // void IEKF::imu_callback(const sensor_msgs::msg::Imu& imu_msg) {
+
+    //     geometry_msgs::msg::Vector3 w = imu_msg.angular_velocity;
+    //     Matrix33d cov_w;
+    //     cov_w << imu_msg.angular_velocity_covariance[0], imu_msg.angular_velocity_covariance[1], imu_msg.angular_velocity_covariance[2],
+    //              imu_msg.angular_velocity_covariance[3], imu_msg.angular_velocity_covariance[4], imu_msg.angular_velocity_covariance[5],
+    //              imu_msg.angular_velocity_covariance[6], imu_msg.angular_velocity_covariance[7], imu_msg.angular_velocity_covariance[8];
+
+    //     geometry_msgs::msg::Vector3 a = imu_msg.linear_acceleration;
+    //     Matrix33d cov_a;
+    //     cov_a << imu_msg.linear_acceleration_covariance[0], imu_msg.linear_acceleration_covariance[1], imu_msg.linear_acceleration_covariance[2],
+    //              imu_msg.linear_acceleration_covariance[3], imu_msg.linear_acceleration_covariance[4], imu_msg.linear_acceleration_covariance[5],
+    //              imu_msg.linear_acceleration_covariance[6], imu_msg.linear_acceleration_covariance[7], imu_msg.linear_acceleration_covariance[8];
+        
+    //     double dt = IMU_DT;
+    //     if (last_imu_time) {
+    //         dt = (imu_msg.header.stamp.sec + imu_msg.header.stamp.nanosec * 1e-9) - (last_imu_time.value().sec + last_imu_time.value().nanosec * 1e-9);   
+    //     }
+
+    //     predict(w, cov_w, a, cov_a, dt);
+        
+    //     accel_callback(a, cov_a);
+
+    //     R3d translation = X.block<3, 1>(0, 4);
+    //     SO3d rotation = Eigen::Quaterniond(X.block<3, 3>(0, 0));
+
+    //     // R3d translation = X.translation();
+    //     // SO3d rotation = X.asSO3();
+
+    //     SE3d pose_in_map(translation, rotation);
+    //     SE3Conversions::pushToTfTree(tf_broadcaster, ROVER_FRAME, MAP_FRAME, pose_in_map, get_clock()->now());
+
+    //     last_imu_time = imu_msg.header.stamp;
+
+    //     fake_gps++;
+
+    //     if (fake_gps == 50) {
+    //         geometry_msgs::msg::Vector3Stamped msg;
+    //         msg.header.stamp = now();
+    //         msg.vector.x = 1;
+    //         msg.vector.y = 0;
+    //         msg.vector.z = 0;
+    //         pos_callback(msg);
+    //         fake_gps = 0;
+    //     }
+
+    // }
+
+    void IEKF::imu_callback_sim(const sensor_msgs::msg::Imu& imu_msg) {
 
         geometry_msgs::msg::Vector3 w = imu_msg.angular_velocity;
         Matrix33d cov_w;
@@ -343,9 +414,9 @@ namespace mrover {
             dt = (imu_msg.header.stamp.sec + imu_msg.header.stamp.nanosec * 1e-9) - (last_imu_time.value().sec + last_imu_time.value().nanosec * 1e-9);   
         }
 
-        predict(w, cov_w, a, cov_a, dt);
+        predict_sim(w, cov_w, a, cov_a, dt);
         
-        accel_callback(a, cov_a);
+        // accel_callback(a, cov_a);
 
         R3d translation = X.block<3, 1>(0, 4);
         SO3d rotation = Eigen::Quaterniond(X.block<3, 3>(0, 0));
@@ -358,17 +429,19 @@ namespace mrover {
 
         last_imu_time = imu_msg.header.stamp;
 
-        fake_gps++;
+        // fake_gps++;
 
-        if (fake_gps == 50) {
-            geometry_msgs::msg::Vector3Stamped msg;
-            msg.header.stamp = now();
-            msg.vector.x = 1;
-            msg.vector.y = 0;
-            msg.vector.z = 0;
-            pos_callback(msg);
-            fake_gps = 0;
-        }
+        // if (fake_gps == 50) {
+        //     geometry_msgs::msg::Vector3Stamped msg;
+        //     msg.header.stamp = now();
+        //     msg.vector.x = 1;
+        //     msg.vector.y = 0;
+        //     msg.vector.z = 0;
+        //     pos_callback(msg);
+        //     fake_gps = 0;
+        // }
+
+        RCLCPP_INFO(get_logger(), "imu callback");
 
     }
 
@@ -386,7 +459,9 @@ namespace mrover {
 
     // }
 
-    void IEKF::pos_callback(const geometry_msgs::msg::Vector3Stamped& pos_msg) {
+    void IEKF::pos_callback_sim(const geometry_msgs::msg::Vector3Stamped& pos_msg) {
+
+        RCLCPP_INFO(get_logger(), "pos callback");
 
         Matrix39d H;
         Vector5d Y;
@@ -402,7 +477,35 @@ namespace mrover {
 
     }
 
-    void IEKF::mag_heading_callback(const mrover::msg::Heading& mag_heading_msg) {
+    // void IEKF::mag_heading_callback(const mrover::msg::Headi_sim mag_heading_msg) {
+
+    //     Matrix39d H;
+    //     Vector5d Y;
+    //     Vector5d b;
+    //     Matrix33d N;
+
+    //     Vector3d mag_ref{1, 0, 0};
+
+    //     double heading = 90 - mag_heading_msg.heading;
+
+    //     if (heading < -180) {
+    //         heading = 360 + heading;
+    //     }
+
+    //     heading = heading * (M_PI / 180);
+
+    //     H << -1 * manif::skew(mag_ref), Matrix33d::Zero(), Matrix33d::Zero();
+    //     Y << -1 * Vector3d{std::cos(heading), -std::sin(heading), 0}, 0, 0;
+    //     b << -1 * mag_ref, 0, 0;
+    //     N << X.block<3, 3>(0, 0) * mag_heading_msg.heading_accuracy * X.block<3, 3>(0, 0).transpose();
+
+    //     RCLCPP_INFO(get_logger(), "heading: %f", heading);
+    //     // RCLCPP_INFO(get_logger(), "heading accuracy: %f", mag_heading_msg.heading_accuracy);
+    //     correct(Y, b, N, H);
+    
+    // }
+
+    void IEKF::mag_heading_callback_sim(const mrover::msg::Heading& mag_heading_msg) {
 
         Matrix39d H;
         Vector5d Y;
@@ -411,13 +514,15 @@ namespace mrover {
 
         Vector3d mag_ref{1, 0, 0};
 
-        double heading = 90 - mag_heading_msg.heading;
+        double heading = mag_heading_msg.heading;
 
-        if (heading < -180) {
-            heading = 360 + heading;
-        }
+        // double heading = 90 - mag_heading_msg.heading;
 
-        heading = heading * (M_PI / 180);
+        // if (heading < -180) {
+        //     heading = 360 + heading;
+        // }
+
+        // heading = heading * (M_PI / 180);
 
         H << -1 * manif::skew(mag_ref), Matrix33d::Zero(), Matrix33d::Zero();
         Y << -1 * Vector3d{std::cos(heading), -std::sin(heading), 0}, 0, 0;
@@ -429,6 +534,8 @@ namespace mrover {
         correct(Y, b, N, H);
     
     }
+
+    
 
     void IEKF::accel_callback(const geometry_msgs::msg::Vector3 &a, const Matrix33d &cov_a) {
 
