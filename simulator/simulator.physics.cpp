@@ -124,17 +124,17 @@ namespace mrover {
                     double angleToModel = std::acos(roverDotModel);
                     angleToModel = std::copysign(angleToModel, roverForward.cross(roverToModel).z());
 
-                    if (angleToModel < TAU / 8 && angleToModel > -TAU / 8) {
+                    if ((angleToModel < TAU / 8 && angleToModel > -TAU / 8) || true) {
 
                         if (roverDistanceToModel < threshold) {
                             SE3Conversions::pushToTfTree(mTfBroadcaster, modelName, "map", modelInMap, get_clock()->now());
                         }
 
-                        if (roverDistanceToModel < threshold * 2) {
+                        if (roverDistanceToModel < threshold * 2 || true) {
                             msg::ImageTarget target;
                             target.name = modelName;
                             target.bearing = static_cast<float>(angleToModel); // TODO: make bearing negative if needed
-                            if (angleToModel < TAU / 8 && angleToModel > -TAU / 8) {
+                            if ((angleToModel < TAU / 8 && angleToModel > -TAU / 8) || true) {
                                 targets.targets.push_back(target);
                             }
                         }

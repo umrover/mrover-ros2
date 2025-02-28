@@ -5,6 +5,7 @@ from state_machine.state import State
 from . import recovery
 from .approach_target import ApproachTargetState
 from .context import Context
+from coordinate_utils import is_high_cost_point
 
 
 class LongRangeState(ApproachTargetState):
@@ -47,7 +48,10 @@ class LongRangeState(ApproachTargetState):
 
         distance = context.node.get_parameter("long_range.distance_ahead").value
         direction_to_tag = np.array([direction_to_tag[0], direction_to_tag[1], 0.0])
+
         tag_position = rover_position + direction_to_tag * distance
+        while is_high_cost_point(point=tag_position, context=context):
+            tag_position += direction_to_tag * distance
         context.node.get_logger().info(f"Long range target: {str(tag_position)}")
         return tag_position
 

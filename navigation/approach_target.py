@@ -219,7 +219,7 @@ class ApproachTargetState(State):
                 return self.next_state(context=context, is_finished=False)
             self.display_markers(context=context)
             #Make sure that if going to the nearest point, it's actually in the distance threshold; otherwise, dilate
-            if(self.goto_near_point and not self.point_in_distance_threshold(context, self.get_target_position(context))):
+            if(not isinstance(self, LongRangeState) and self.goto_near_point and not self.point_in_distance_threshold(context, self.get_target_position(context))):
                 self.dilate_costmap(context)
                 self.calc_point(context)
                 return self.next_state(context=context, is_finished=False)
@@ -260,7 +260,13 @@ class ApproachTargetState(State):
                     if (self.self_in_distance_threshold(context)):
                         return self.next_state(context=context, is_finished=True)
                     else:
-                        self.dilate_costmap(context=context)
+                        if isinstance(self, LongRangeState):
+                            new_targ_pos = self.get_target_position(context)
+                            assert new_targ_pos is not None
+                            self.target_position = new_targ_pos
+                            self.traj = Trajectory(np.array([]))
+                        else:
+                            self.dilate_costmap(context=context)
                         return self.next_state(context=context, is_finished=False)
                 self.display_markers(context=context)
         else:

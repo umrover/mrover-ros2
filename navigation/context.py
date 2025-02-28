@@ -184,7 +184,7 @@ class ImageTargetsStore:
         if name not in self._data:
             return None
         if self._context.node.get_clock().now() - self._data[name].time >= Duration(
-            seconds=self._context.node.get_parameter("target_expiration_duration").value
+            seconds=self._context.node.get_parameter("long_range.bearing_expiration_duration").value
         ):
             return None
         return self._data[name]
@@ -428,8 +428,6 @@ class Context:
         self.env.cost_map.height = msg.info.height  # cells
         self.env.cost_map.width = msg.info.width  # cells
         self.env.cost_map.data = cost_map_data.astype(np.float32)
-
-        self.node.get_logger().info(f"{self.env.cost_map.origin}")
 
         # change all unidentified points to have a slight cost
         self.env.cost_map.data[cost_map_data == -1] = 10.0  # TODO: find optimal value

@@ -56,6 +56,7 @@ class Navigation(Node):
                 ("drive.driving_p", Parameter.Type.DOUBLE),
                 ("drive.lookahead_distance", Parameter.Type.DOUBLE),
                 ("long_range.distance_ahead", Parameter.Type.DOUBLE),
+                ("long_range.bearing_expiration_duration", Parameter.Type.DOUBLE),
                 ("waypoint.stop_threshold", Parameter.Type.DOUBLE),
                 ("waypoint.drive_forward_threshold", Parameter.Type.DOUBLE),
                 ("search.use_costmap", Parameter.Type.BOOL),

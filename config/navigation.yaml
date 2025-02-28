@@ -14,9 +14,7 @@ navigation:
     # Useful if the rover turns away from the target for a brief moment
     # Or if there was an ephemeral false positive detection
 
-    # Problems with this in the long range, if it turns quickly, it will still think the target is at
-    # a certain bearing leading to false pathing
-    target_expiration_duration: 2.0
+    target_expiration_duration: 60.0
 
     custom_costmap: true
 
@@ -36,7 +34,8 @@ navigation:
       lookahead_distance: 1.0
     
     long_range:
-      distance_ahead: 5.0
+      distance_ahead: 2.5
+      bearing_expiration_duration: 0.5
 
     waypoint:
       stop_threshold: 0.5
@@ -53,7 +52,7 @@ navigation:
       traversable_cost: 0.2
       update_delay: 3.0
       safe_approach_distance: 5.0
-      a_star_thresh: 0.01
+      a_star_thresh: 0.075
       costmap_thresh: 0.25
       angle_thresh: 0.0872665 #pi/36 radians / 5 degrees
       distance_threshold: 2.0
