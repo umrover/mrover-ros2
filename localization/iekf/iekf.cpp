@@ -33,9 +33,9 @@ namespace mrover {
         // });
         
         //sim
-        mag_heading_sub = this->create_subscription<mrover::msg::Heading>("/imu/mag", 10, [&](const mrover::msg::Heading::ConstSharedPtr& mag_heading_msg) {
-            mag_heading_callback_sim(*mag_heading_msg);
-        });
+        // mag_heading_sub = this->create_subscription<mrover::msg::Heading>("/imu/mag", 10, [&](const mrover::msg::Heading::ConstSharedPtr& mag_heading_msg) {
+        //     mag_heading_callback_sim(*mag_heading_msg);
+        // });
 
         
         // imu_sub = this->create_subscription<sensor_msgs::msg::Imu>("/zed_imu/data_raw", 10, [&](const sensor_msgs::msg::Imu::ConstSharedPtr& imu_msg) {
@@ -324,7 +324,7 @@ namespace mrover {
 
         // RCLCPP_INFO(get_logger(), "Y: %f, %f, %f", Y(0), Y(1), Y(2));
         Vector5d innov = X * Y - b;
-        Vector5d temp = X * Y;
+        // Vector5d temp = X * Y;
         // RCLCPP_INFO(get_logger(), "X * Y: %f, %f, %f, %f, %f", temp(0), temp(1), temp(2), temp(3), temp(4));
         RCLCPP_INFO(get_logger(), "innov: %f, %f, %f", innov(0), innov(1), innov(2));
         Matrix33d S = H * P * H.transpose() + N;
@@ -337,9 +337,27 @@ namespace mrover {
         P = (Matrix99d::Identity() - L * H) * P * (Matrix99d::Identity() - L * H).transpose() + L * N * L.transpose();
         
         Matrix33d rot_m = X.block<3, 3>(0, 0);
-        RCLCPP_INFO(get_logger(), "\n%f, %f, %f\n%f, %f, %f\n %f, %f, %f", rot_m(0,0), rot_m(0,1), rot_m(0,2),
+        Matrix55d exp_m = dx.exp();
+        RCLCPP_INFO(get_logger(), "rot_m:\n%f, %f, %f\n%f, %f, %f\n %f, %f, %f", rot_m(0,0), rot_m(0,1), rot_m(0,2),
                                                                                  rot_m(1,0), rot_m(1,1), rot_m(1,2),
                                                                                  rot_m(2,0), rot_m(2,1), rot_m(2,2));
+
+        RCLCPP_INFO(get_logger(), "expm:\n%f, %f, %f\n%f, %f, %f\n %f, %f, %f", exp_m(0,0), exp_m(0,1), exp_m(0,2),
+                                                                                 exp_m(1,0), exp_m(1,1), exp_m(1,2),
+                                                                                 exp_m(2,0), exp_m(2,1), exp_m(2,2));
+
+        RCLCPP_INFO(get_logger(), "L:\n%f, %f, %f\n%f, %f, %f\n %f, %f, %f\n%f, %f, %f\n%f, %f, %f\n%f, %f, %f\n%f, %f, %f\n%f, %f, %f\n%f, %f, %f", L(0,0), L(0,1), L(0,2),
+                                                                                 L(1,0), L(1,1), L(1,2),
+                                                                                 L(2,0), L(2,1), L(2,2),
+                                                                                 L(3,0), L(3,1), L(3,2),
+                                                                                 L(4,0), L(4,1), L(4,2),
+                                                                                 L(5,0), L(5,1), L(5,2),
+                                                                                 L(6,0), L(6,1), L(6,2),
+                                                                                 L(7,0), L(7,1), L(7,2),
+                                                                                 L(8,0), L(8,1), L(8,2));
+
+        Vector3d translation = X.block<3, 1>(0, 4);
+        RCLCPP_INFO(get_logger(), "\n%f, %f, %f", translation(0), translation(1), translation(2));
         // Vector3d translation_temp = X.block<3, 1>(0, 4);
         // RCLCPP_INFO(get_logger(), "translation temp: %f, %f, %f", translation_temp(0), translation_temp(1), translation_temp(2));
     }
@@ -473,7 +491,7 @@ namespace mrover {
         b << 0, 0, 0, 0, 1;
         N << X.block<3, 3>(0, 0) * 0.01 * Matrix33d::Identity() * X.block<3, 3>(0, 0).transpose();
 
-        correct(Y, b, N, H);
+        // correct(Y, b, N, H);
 
     }
 
