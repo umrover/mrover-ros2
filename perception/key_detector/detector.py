@@ -5,7 +5,7 @@ from rclpy.node import Node
 from sensor_msgs.msg import Image as ROSImage
 import time
 
-from keyrover import LabeledBBox, plot_bboxes, draw_textbox
+from keyrover import LabeledBBox, plot_bboxes, draw_textbox, ROOT_PATH
 from keyrover.images.texcoord import TexcoordImage
 
 import os
@@ -20,7 +20,6 @@ from ultralytics import YOLO
 from torchvision.transforms import v2 as transforms
 import torch
 
-ROOT_PATH: Final[str] = f"{os.path.dirname(os.path.abspath(__file__))}/.."
 DATASETS: Final[str] = f"{ROOT_PATH}/datasets"
 MODELS_PATH: Final[str] = f"{ROOT_PATH}/models"
 SIZE = (256, 256)
@@ -190,10 +189,7 @@ class KeyDetector(Node):
         #img= np.reshape(img, (img.shape[1] * img.shape[0] * 3))
         reshapeTime = (time.process_time() - start) * 1000
         start = time.process_time()
-
-        from cv_bridge import CvBridge
-
-        bridge = CvBridge()
+        
         #debug_img = bridge.cv2_to_imgmsg(img, encoding="bgr8")
 
         #self.videoWriter.write(img)
