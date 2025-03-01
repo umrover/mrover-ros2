@@ -61,8 +61,8 @@ def generate_launch_description():
 
     return LaunchDescription([
         zed_node,
-        quat_iekf_node,
-        # iekf_node,
+        # quat_iekf_node,
+        iekf_node,
     ])
 
     # return LaunchDescription([zed_node])

@@ -6,15 +6,15 @@ namespace mrover {
 
         q.setIdentity();
         B.setZero();
-        q_err.setIdentity();
-        B_err.setZero();
+        // q_err.setIdentity();
+        // B_err.setZero();
         P.setIdentity();
 
-        imu_sub = this->create_subscription<sensor_msgs::msg::Imu>("/imu/data", 10, [&](const sensor_msgs::msg::Imu::ConstSharedPtr& imu_msg) {
+        imu_sub = this->create_subscription<sensor_msgs::msg::Imu>("/zed_imu/data_raw", 10, [&](const sensor_msgs::msg::Imu::ConstSharedPtr& imu_msg) {
             imu_callback(*imu_msg);
         });
 
-        mag_heading_sub = this->create_subscription<mrover::msg::Heading>("/imu/mag", 10, [&](const mrover::msg::Heading::ConstSharedPtr& mag_heading_msg) {
+        mag_heading_sub = this->create_subscription<mrover::msg::Heading>("/zed_imu/mag_heading", 10, [&](const mrover::msg::Heading::ConstSharedPtr& mag_heading_msg) {
             mag_heading_callback(*mag_heading_msg);
         });
 
@@ -38,22 +38,22 @@ namespace mrover {
 
         Vector3d w_meas = w - B;
 
-        Quaterniond n_v_est = q * Quaterniond{0, n_v(0), n_v(1), n_v(2)} * q.conjugate();
+        // Quaterniond n_v_est = q * Quaterniond{0, n_v(0), n_v(1), n_v(2)} * q.conjugate();
         Quaterniond I_w_est = q * Quaterniond{0, w_meas(0), w_meas(1), w_meas(2)} * q.conjugate();
-        Quaterniond n_u_est = q * Quaterniond{0, n_u(0), n_u(1), n_u(2)} * q.conjugate();
+        // Quaterniond n_u_est = q * Quaterniond{0, n_u(0), n_u(1), n_u(2)} * q.conjugate();
 
         // propagate error terms
-        Vector4d q_err_vec = quat_to_vec(q_err);
+        // Vector4d q_err_vec = quat_to_vec(q_err);
         
-        q_err_vec = q_err_vec + quat_to_vec(Quaterniond(-0.5 * q_err_vec) * Quaterniond(0, B_err.x(), B_err.y(), B_err.z())) * dt + 
-                                quat_to_vec(Quaterniond(0.5 * quat_to_vec(n_v_est)) * q_err) * dt;
+        // q_err_vec = q_err_vec + quat_to_vec(Quaterniond(-0.5 * q_err_vec) * Quaterniond(0, B_err.x(), B_err.y(), B_err.z())) * dt + 
+        //                         quat_to_vec(Quaterniond(0.5 * quat_to_vec(n_v_est)) * q_err) * dt;
 
-        Vector3d B_err_intermediary = q_err.toRotationMatrix() * (I_w_est.vec() - n_u_est.vec());
+        // Vector3d B_err_intermediary = q_err.toRotationMatrix() * (I_w_est.vec() - n_u_est.vec());
 
-        B_err = B_err + B_err_intermediary.cross(B_err) * dt - q_err.toRotationMatrix() * n_u_est.vec() * dt;
+        // B_err = B_err + B_err_intermediary.cross(B_err) * dt - q_err.toRotationMatrix() * n_u_est.vec() * dt;
 
-        q_err = Quaterniond(q_err_vec);
-        q_err.normalize();
+        // q_err = Quaterniond(q_err_vec);
+        // q_err.normalize();
 
         Matrix66d F;
         Matrix66d G;
@@ -73,6 +73,7 @@ namespace mrover {
         q.normalize();
 
         RCLCPP_INFO(get_logger(), "Quat: %f, %f, %f, %f", q.x(), q.y(), q.z(), q.w());
+        RCLCPP_INFO(get_logger(), "Bias: %f, %f, %f", B(0), B(1), B(2));
         Matrix33d rot_m = q.toRotationMatrix();
         RCLCPP_INFO(get_logger(), "rot_m:\n%f, %f, %f\n%f, %f, %f\n %f, %f, %f", rot_m(0,0), rot_m(0,1), rot_m(0,2),
                                                                                  rot_m(1,0), rot_m(1,1), rot_m(1,2),
@@ -114,6 +115,8 @@ namespace mrover {
             dt = (imu_msg.header.stamp.sec + imu_msg.header.stamp.nanosec * 1e-9) - (last_imu_time.value().sec + last_imu_time.value().nanosec * 1e-9);   
         }
 
+        n_u = n_u * 100;
+
         predict(w, n_v, n_u, dt);
 
         accel_callback(a, cov_a);
@@ -129,14 +132,22 @@ namespace mrover {
         Vector3d observation;
         Vector3d predicted;
 
-        double heading = mag_heading_msg.heading;
+        double heading = 90 - mag_heading_msg.heading;
+
+        if (heading < -180) {
+            heading = 360 + heading;
+        }
+
+        heading = heading * (M_PI / 180);
+
+
         Vector3d mag_ref{1, 0, 0};
         Quaterniond observation_q = q * Quaterniond{0, std::cos(heading), -std::sin(heading), 0} * q.conjugate();
         // Quaterniond observation_q = q * Quaterniond{0, std::cos(heading), std::sin(heading), 0} * q.conjugate();
         RCLCPP_INFO(get_logger(), "mag observation: %f, %f, %f", observation_q.x(), observation_q.y(), observation_q.z());
 
         H << manif::skew(mag_ref), Matrix33d::Zero();
-        R << q.toRotationMatrix().transpose() * mag_heading_msg.heading_accuracy * Matrix33d::Identity() * q.toRotationMatrix();
+        R << q.toRotationMatrix().transpose() * 0.1 * Matrix33d::Identity() * q.toRotationMatrix();
         observation << observation_q.x(), observation_q.y(), observation_q.z();
         predicted << mag_ref;
 
@@ -152,10 +163,12 @@ namespace mrover {
         Vector3d observation;
         Vector3d predicted;
 
-        Vector3d accel_meas{accel_msg.x, accel_msg.y, -9.81 + accel_msg.z};
+        Vector3d accel_meas{accel_msg.x, accel_msg.y, accel_msg.z};
+        // RCLCPP_INFO(get_logger(), "accel meas: %f, %f, %f", accel_meas(0), accel_meas(1), accel_meas(2));
         accel_meas.normalize();
+        
 
-        Vector3d accel_ref{0, 0, -1};
+        Vector3d accel_ref{0, 0, 1};
         Quaterniond observation_q = q * Quaterniond{0, accel_meas(0), accel_meas(1), accel_meas(2)} * q.conjugate();
         RCLCPP_INFO(get_logger(), "accel observation: %f, %f, %f", observation_q.x(), observation_q.y(), observation_q.z());
 
@@ -166,8 +179,6 @@ namespace mrover {
 
         correct(H, R, observation, predicted);
         
-        
-
 
     }
 

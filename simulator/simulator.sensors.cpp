@@ -135,10 +135,11 @@ namespace mrover {
         imuMessage.angular_velocity.x = imuAngularVelocity.x();
         imuMessage.angular_velocity.y = imuAngularVelocity.y();
         imuMessage.angular_velocity.z = imuAngularVelocity.z();
+        imuMessage.angular_velocity_covariance = {0.01, 0, 0, 0, 0.01, 0, 0, 0, 0.01};
         imuMessage.linear_acceleration.x = linearAcceleration.x();
         imuMessage.linear_acceleration.y = linearAcceleration.y();
         imuMessage.linear_acceleration.z = linearAcceleration.z();
-        imuMessage.linear_acceleration_covariance = {0.05, 0, 0, 0, 0.5, 0, 0, 0, 0.5};
+        imuMessage.linear_acceleration_covariance = {0.01, 0, 0, 0, 0.01, 0, 0, 0, 0.01};
         return imuMessage;
     }
 

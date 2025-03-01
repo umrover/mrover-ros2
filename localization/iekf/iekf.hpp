@@ -39,15 +39,11 @@ namespace mrover {
         void pos_callback_sim(const geometry_msgs::msg::Vector3Stamped& pos_msg);
         void mag_heading_callback_sim(const mrover::msg::Heading& mag_heading_msg);
         void accel_callback_sim(const geometry_msgs::msg::Vector3& accel_msg, const Matrix33d& cov_a);
-        // void accel_callback(const geometry_msgs::msg::Vector3 &a, const Matrix33d &cov_a);
 
 
         // InEKF functions
         void predict(const Vector3d& w, const Matrix33d& cov_w, const Vector3d& a, const Matrix33d& cov_a, double dt);
-        // void correct(const Vector3d& Y, const Vector3d& b, const Matrix33d& N, const Matrix39d& H);
-
         void correct(const Vector5d& Y, const Vector5d& b, const Matrix33d& N, const Matrix39d& H);
-        
 
         void predict_sim(const Vector3d& w, const Matrix33d& cov_w, const Vector3d& a, const Matrix33d& cov_a, double dt);
 

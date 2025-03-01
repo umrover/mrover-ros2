@@ -7,8 +7,8 @@ namespace mrover {
 
         // initialize state variables
         X.setIdentity();
-        // X(0,4) = -2277321;
-        // X(1,4) = -60508;
+        X(0,4) = 247;
+        X(1,4) = 333;
         P = Matrix99d::Identity();
         A = Matrix99d::Zero();
 
@@ -17,25 +17,25 @@ namespace mrover {
 
         // subscribers
         //not sim
-        // imu_sub = this->create_subscription<sensor_msgs::msg::Imu>("/zed_imu/data_raw", 10, [&](const sensor_msgs::msg::Imu::ConstSharedPtr& imu_msg) {
-        //     imu_callback(*imu_msg);
-        // });
+        imu_sub = this->create_subscription<sensor_msgs::msg::Imu>("/zed_imu/data_raw", 10, [&](const sensor_msgs::msg::Imu::ConstSharedPtr& imu_msg) {
+            imu_callback(*imu_msg);
+        });
 
         //sim11262456
-        imu_sub = this->create_subscription<sensor_msgs::msg::Imu>("/imu/data", 10, [&](const sensor_msgs::msg::Imu::ConstSharedPtr& imu_msg) {
-            imu_callback_sim(*imu_msg);
-        });
+        // imu_sub = this->create_subscription<sensor_msgs::msg::Imu>("/imu/data", 10, [&](const sensor_msgs::msg::Imu::ConstSharedPtr& imu_msg) {
+        //     imu_callback_sim(*imu_msg);
+        // });
 
 
         //not sim
-        // mag_heading_sub = this->create_subscription<mrover::msg::Heading>("/zed_imu/mag_heading", 10, [&](const mrover::msg::Heading::ConstSharedPtr& mag_heading_msg) {
-        //     mag_heading_callback(*mag_heading_msg);
-        // });
+        mag_heading_sub = this->create_subscription<mrover::msg::Heading>("/zed_imu/mag_heading", 10, [&](const mrover::msg::Heading::ConstSharedPtr& mag_heading_msg) {
+            mag_heading_callback(*mag_heading_msg);
+        });
         
         //sim
-        mag_heading_sub = this->create_subscription<mrover::msg::Heading>("/imu/mag", 10, [&](const mrover::msg::Heading::ConstSharedPtr& mag_heading_msg) {
-            mag_heading_callback_sim(*mag_heading_msg);
-        });
+        // mag_heading_sub = this->create_subscription<mrover::msg::Heading>("/imu/mag", 10, [&](const mrover::msg::Heading::ConstSharedPtr& mag_heading_msg) {
+        //     mag_heading_callback_sim(*mag_heading_msg);
+        // });
 
         
         // imu_sub = this->create_subscription<sensor_msgs::msg::Imu>("/zed_imu/data_raw", 10, [&](const sensor_msgs::msg::Imu::ConstSharedPtr& imu_msg) {
@@ -48,104 +48,6 @@ namespace mrover {
 
     }
 
-
-    // I think this was copied from drift, all naming conventions and such are cooked
-    // auto IEKF::CorrectRightInvariant(const Eigen::MatrixXd& Z, const Eigen::MatrixXd& H,
-    //                             const Eigen::MatrixXd& N) -> void {
-        
-        
-    //     Eigen::VectorXd Theta = state.get_theta();
-    //     Eigen::MatrixXd P = state.get_P();
-    //     int dimX = state.dimX();
-    //     int dimTheta = state.dimTheta();
-    //     int dimP = state.dimP();
-
-    //     // Remove bias
-    //     // bool enable_imu_bias_update = state.get_enable_imu_bias_update();
-    //     // if (!enable_imu_bias_update) {
-    //     //     P.block<6, 6>(dimP - dimTheta, dimP - dimTheta)
-    //     //         = 0.0001 * Eigen::Matrix<double, 6, 6>::Identity();
-    //     //     P.block(0, dimP - dimTheta, dimP - dimTheta, dimTheta)
-    //     //         = Eigen::MatrixXd::Zero(dimP - dimTheta, dimTheta);
-    //     //     P.block(dimP - dimTheta, 0, dimTheta, dimP - dimTheta)
-    //     //         = Eigen::MatrixXd::Zero(dimTheta, dimP - dimTheta);
-    //     // }
-
-    //     // // Map from left invariant to right invariant error temporarily
-    //     // if (error_type == ErrorType::LeftInvariant) {
-    //     //     Eigen::MatrixXd Adj = Eigen::MatrixXd::Identity(dimP, dimP);
-    //     //     Adj.block(0, 0, dimP - dimTheta, dimP - dimTheta)
-    //     //         = lie_group::Adjoint_SEK3(X);
-    //     //     P = (Adj * P * Adj.transpose()).eval();
-    //     // }
-
-    //     // Compute Kalman Gain
-    //     Eigen::MatrixXd PHT = P * H.transpose();
-    //     Eigen::MatrixXd S = H * PHT + N;
-    //     Eigen::MatrixXd L = PHT * S.inverse();
-    //     // std::cout << "Kalman gain: \n" << K;
-    //     // Compute state correction vector
-    //     Eigen::VectorXd delta = L * Z;
-    //     Eigen::MatrixXd dX
-    //         = delta.segment(0, delta.rows() - dimTheta).exp();
-    //     Eigen::VectorXd dTheta = delta.segment(delta.rows() - dimTheta, dimTheta);
-
-    //     // Update state
-    //     Eigen::MatrixXd X_new = dX * X;    // Right-Invariant Update
-    //     /// REMARK: set yaw bias derivative estimation to 0
-    //     dTheta(2) = 0;
-    //     Eigen::VectorXd Theta_new = Theta + dTheta;
-
-    //     // Set new state
-    //     state.set_X(X_new);
-    //     state.set_theta(Theta_new);
-
-    //     // Update Covariance
-    //     Eigen::MatrixXd IKH = Eigen::MatrixXd::Identity(dimP, dimP) - L * H;
-    //     Eigen::MatrixXd P_new = IKH * P * IKH.transpose()
-    //                             + L * N * L.transpose(); 
-
-    //     // Don't update yaw covariance
-    //     /// TODO: Add a flag to enable yaw covariance update
-    //     P_new.row(dimP - dimTheta + 2).setZero();
-    //     P_new.col(dimP - dimTheta + 2).setZero();
-    //     P_new(dimP - dimTheta + 2, dimP - dimTheta + 2) = 0.0001 * 1;
-    //     // Map from right invariant back to left invariant error
-    //     if (error_type == ErrorType::LeftInvariant) {
-    //         Eigen::MatrixXd AdjInv = Eigen::MatrixXd::Identity(dimP, dimP);
-    //         AdjInv.block(0, 0, dimP - dimTheta, dimP - dimTheta)
-    //             = lie_group::Adjoint_SEK3(state.get_Xinv());
-    //         P_new = (AdjInv * P_new * AdjInv.transpose()).eval();
-    //     }
-
-    //     // Set new covariance
-    //     state.set_P(P_new);
-    //     // std::cout << "Covariance P: \n" << P_new;
-        
-    // }
-
-    // auto IEKF::CorrectLeftInvariant(const Eigen::MatrixXd& Z, const Eigen::MatrixXd& H,
-    //                             const Eigen::MatrixXd& N) -> void {
-        
-    // }
-    
-
-    // auto IEKF::adjoint() -> Matrix99d {
-
-    //     Matrix99d adj = Matrix99d::Zero();
-
-    //     Matrix33d v_skew = manif::skew(X.linearVelocity());
-    //     Matrix33d p_skew = manif::skew(X.translation());
-
-    //     adj.block(0, 0, 3, 3) = X.rotation();
-    //     adj.block(3, 0, 3, 3) = v_skew * X.rotation();
-    //     adj.block(3, 3, 3, 3) = X.rotation();
-    //     adj.block(6, 0, 3, 3) = p_skew * X.rotation();
-    //     adj.block(6, 6, 3, 3) = X.rotation();
-
-    //     return adj;
-
-    // }
 
     auto IEKF::adjoint() -> Matrix99d {
 
@@ -179,57 +81,6 @@ namespace mrover {
 
     }
 
-    // void IEKF::predict(const geometry_msgs::msg::Vector3& w, const Matrix33d& cov_w, const geometry_msgs::msg::Vector3& a, const Matrix33d& cov_a, double dt) {
-
-    //     Matrix99d Q = Matrix99d::Zero();
-    //     Matrix99d Q_d = Matrix99d::Zero();
-
-    //     // process noise
-    //     Q.block(0, 0, 3, 3) = cov_w.cwiseAbs();
-    //     Q.block(3, 3, 3, 3) = cov_a.cwiseAbs();
-    //     Q.block(6, 6, 3, 3) = cov_a.cwiseAbs() * dt;
-    //     Q_d = (A * dt).exp() * Q * dt * ((A * dt).exp()).transpose();
-
-    //     // get linear acceleration in world frame
-    //     Vector3d a_lin = X.rotation() * Vector3d{a.x, a.y, a.z} + g;
-
-    //     // simple bias estimator
-    //     if ((a_lin - accel_bias).norm() < BIAS_THRESHOLD) {
-    //         accel_bias_estimator.push_back(a_lin);
-    //         accel_bias = accel_bias + (a_lin - accel_bias) / accel_bias_estimator.size();
-
-    //         if (accel_bias_estimator.size() > BIAS_WINDOW) {
-    //             Vector3d old_value = accel_bias_estimator.front();
-    //             accel_bias_estimator.pop_front();
-    //             accel_bias = accel_bias + (accel_bias - old_value) / accel_bias_estimator.size();
-    //         }
-
-    //     }
-
-    //     a_lin = a_lin - accel_bias;
-
-    //     // propagate
-    //     Vector9d u_vec;
-    //     u_vec << (X.linearVelocity() * dt + 0.5 * a_lin * pow(dt, 2)), Vector3d{w.x, w.y, w.z} * dt, a_lin * dt;
-    //     SE_2_3Tangentd u = u_vec;
-    //     X = X + u;
-    //     P = (A * dt).exp() * P * ((A * dt).exp()).transpose() + X.adj() * Q_d * X.adj().transpose();
-
-       
-    //     // RCLCPP_INFO(get_logger(), "bias: %f, %f, %f", accel_bias(0), accel_bias(1), accel_bias(2));
-    //     // RCLCPP_INFO(get_logger(), "a_lin: %f, %f, %f", a_lin(0), a_lin(1), a_lin(2));
-    //     position_temp = position_temp + velocity_temp * dt + 0.5 * a_lin * pow(dt, 2);
-    //     velocity_temp = velocity_temp + a_lin * dt;
-        
-    //     // RCLCPP_INFO(get_logger(), "velocity temp: %f, %f, %f", velocity_temp(0), velocity_temp(1), velocity_temp(2));
-    //     RCLCPP_INFO(get_logger(), "position temp: %f, %f, %f", position_temp(0), position_temp(1), position_temp(2));
-    //     // RCLCPP_INFO(get_logger(), "accel measurement: %f, %f, %f", a.x, a.y, a.z);
-    //     // RCLCPP_INFO(get_logger(), "\n%f, %f, %f\n%f, %f, %f\n %f, %f, %f", rot_m(0,0), rot_m(0,1), rot_m(0,2),
-    //     //                                                                          rot_m(1,0), rot_m(1,1), rot_m(1,2),
-    //     //                                                                          rot_m(2,0), rot_m(2,1), rot_m(2,2));
-
-                                                                    
-    // }
 
     void IEKF::predict(const Vector3d& w, const Matrix33d& cov_w, const Vector3d& a, const Matrix33d& cov_a, double dt) {
 
@@ -291,32 +142,26 @@ namespace mrover {
         X.block<3, 1>(0, 3) = X.block<3, 1>(0, 3) + a * dt;
         
         P = (A * dt).exp() * P * ((A * dt).exp()).transpose() + adj_x * Q_d * adj_x.transpose();
+        // RCLCPP_INFO(get_logger(), "P:\n%f, %f, %f, %f, %f, %f, %f, %f, %f\n%f, %f, %f, %f, %f, %f, %f, %f, %f\n%f, %f, %f, %f, %f, %f, %f, %f, %f\n%f, %f, %f, %f, %f, %f, %f, %f, %f\n%f, %f, %f, %f, %f, %f, %f, %f, %f\n%f, %f, %f, %f, %f, %f, %f, %f, %f\n%f, %f, %f, %f, %f, %f, %f, %f, %f\n%f, %f, %f, %f, %f, %f, %f, %f, %f\n%f, %f, %f, %f, %f, %f, %f, %f, %f", 
+        //                                     P(0,0), P(0,1), P(0,2), P(0, 3), P(0, 4), P(0, 5), P(0, 6), P(0, 7), P(0, 8),
+        //                                     P(1,0), P(1,1), P(1,2), P(1, 3), P(1, 4), P(1, 5), P(1, 6), P(1, 7), P(1, 8),
+        //                                     P(2,0), P(2,1), P(2,2), P(2, 3), P(2, 4), P(2, 5), P(2, 6), P(2, 7), P(2, 8),
+        //                                     P(3,0), P(3,1), P(3,2), P(3, 3), P(3, 4), P(3, 5), P(3, 6), P(3, 7), P(3, 8),
+        //                                     P(4,0), P(4,1), P(4,2), P(4, 3), P(4, 4), P(4, 5), P(4, 6), P(4, 7), P(4, 8),
+        //                                     P(5,0), P(5,1), P(5,2), P(5, 3), P(5, 4), P(5, 5), P(5, 6), P(5, 7), P(5, 8),
+        //                                     P(6,0), P(6,1), P(6,2), P(6, 3), P(6, 4), P(6, 5), P(6, 6), P(6, 7), P(6, 8),
+        //                                     P(7,0), P(7,1), P(7,2), P(7, 3), P(7, 4), P(7, 5), P(7, 6), P(7, 7), P(7, 8),
+        //                                     P(8,0), P(8,1), P(8,2), P(8, 3), P(8, 4), P(8, 5), P(8, 6), P(8, 7), P(8, 8));
+                                                                                 
 
         Matrix33d rot_m = X.block<3, 3>(0, 0);
-        RCLCPP_INFO(get_logger(), "\n%f, %f, %f\n%f, %f, %f\n %f, %f, %f", rot_m(0,0), rot_m(0,1), rot_m(0,2),
-                                                                                 rot_m(1,0), rot_m(1,1), rot_m(1,2),
-                                                                                 rot_m(2,0), rot_m(2,1), rot_m(2,2));
+        // RCLCPP_INFO(get_logger(), "\n%f, %f, %f\n%f, %f, %f\n %f, %f, %f", rot_m(0,0), rot_m(0,1), rot_m(0,2),
+        //                                                                          rot_m(1,0), rot_m(1,1), rot_m(1,2),
+        //                                                                          rot_m(2,0), rot_m(2,1), rot_m(2,2));
 
 
     }
 
-    // void IEKF::correct(const Vector3d& Y, const Vector3d& b, const Matrix33d& N, const Matrix39d& H) {
-        
-    //     Vector3d innov = X.act(Y) - b;
-    //     // Vector3d temp = X.act(Y);
-    //     // RCLCPP_INFO(get_logger(), "temp: %f, %f, %f", temp(0), temp(1), temp(2));
-    //     Matrix33d S = H * P * H.transpose() + N;
-    //     Matrix93d L = P * H.transpose() * S.inverse();
-    //     Vector9d delta = L * innov;
-    //     RCLCPP_INFO(get_logger(), "delta:, %f, %f, %f, %f, %f, %f, %f, %f, %f", delta(0), delta(1), delta(2), delta(3), delta(4), delta(5), delta(6), delta(7), delta(8));
-    //     Vector9d dx_vec;
-    //     dx_vec << delta(6, 9), delta(0, 3), delta(3, 6);
-    //     SE_2_3Tangentd dx = dx_vec;
-
-    //     X = dx + X;
-    //     Vector3d pos_after = X.translation();
-    //     RCLCPP_INFO(get_logger(), "corrected: %f, %f, %f", pos_after(0), pos_after(1), pos_after(2));
-    //     P = (Matrix99d::Identity() - L * H) * P * (Matrix99d::Identity() - L * H).transpose() + L * N * L.transpose();
 
     void IEKF::correct(const Vector5d& Y, const Vector5d& b, const Matrix33d& N, const Matrix39d& H) {
 
@@ -330,29 +175,40 @@ namespace mrover {
         Matrix55d dx = lift(L * innov.head(3));
 
         Vector9d delta = L * innov.head(3);
-        RCLCPP_INFO(get_logger(), "delta: %f, %f, %f, %f, %f, %f, %f, %f, %f", delta(0), delta(1), delta(2), delta(3), delta(4), delta(5), delta(6), delta(7), delta(8));
+        Matrix55d exp_m = dx.exp();
+        // RCLCPP_INFO(get_logger(), "delta: %f, %f, %f, %f, %f, %f, %f, %f, %f", delta(0), delta(1), delta(2), delta(3), delta(4), delta(5), delta(6), delta(7), delta(8));
+        // RCLCPP_INFO(get_logger(), "L:\n%f, %f, %f\n%f, %f, %f\n %f, %f, %f\n%f, %f, %f\n%f, %f, %f\n%f, %f, %f\n%f, %f, %f\n%f, %f, %f\n%f, %f, %f", L(0,0), L(0,1), L(0,2),
+        //                                                                          L(1,0), L(1,1), L(1,2),
+        //                                                                          L(2,0), L(2,1), L(2,2),
+        //                                                                          L(3,0), L(3,1), L(3,2),
+        //                                                                          L(4,0), L(4,1), L(4,2),
+        //                                                                          L(5,0), L(5,1), L(5,2),
+        //                                                                          L(6,0), L(6,1), L(6,2),
+        //                                                                          L(7,0), L(7,1), L(7,2),
+        //                                                                          L(8,0), L(8,1), L(8,2));
+
+
+        // RCLCPP_INFO(get_logger(), "expm:\n%f, %f, %f, %f, %f\n%f, %f, %f, %f, %f\n %f, %f, %f, %f, %f\n%f, %f, %f, %f, %f\n%f, %f, %f, %f, %f", exp_m(0,0), exp_m(0,1), exp_m(0,2), exp_m(0, 3), exp_m(0, 4),
+        //                                                                          exp_m(1,0), exp_m(1,1), exp_m(1,2), exp_m(1, 3), exp_m(1, 4),
+        //                                                                          exp_m(2,0), exp_m(2,1), exp_m(2,2), exp_m(2, 3), exp_m(2, 4),
+        //                                                                          exp_m(3,0), exp_m(3,1), exp_m(3,2), exp_m(3, 3), exp_m(3, 4),
+        //                                                                          exp_m(4,0), exp_m(4,1), exp_m(4,2), exp_m(4, 3), exp_m(4, 4));
+
+        // RCLCPP_INFO(get_logger(), "X before:\n%f, %f, %f, %f, %f\n%f, %f, %f, %f, %f\n %f, %f, %f, %f, %f\n%f, %f, %f, %f, %f\n%f, %f, %f, %f, %f", X(0,0), X(0,1), X(0,2), X(0, 3), X(0, 4),
+        //                                                                          X(1,0), X(1,1), X(1,2), X(1, 3), X(1, 4),
+        //                                                                          X(2,0), X(2,1), X(2,2), X(2, 3), X(2, 4),
+        //                                                                          X(3,0), X(3,1), X(3,2), X(3, 3), X(3, 4),
+        //                                                                          X(4,0), X(4,1), X(4,2), X(4, 3), X(4, 4));
         X = dx.exp() * X;
         P = (Matrix99d::Identity() - L * H) * P * (Matrix99d::Identity() - L * H).transpose() + L * N * L.transpose();
         
         Matrix33d rot_m = X.block<3, 3>(0, 0);
-        Matrix55d exp_m = dx.exp();
-        RCLCPP_INFO(get_logger(), "rot_m:\n%f, %f, %f\n%f, %f, %f\n %f, %f, %f", rot_m(0,0), rot_m(0,1), rot_m(0,2),
-                                                                                 rot_m(1,0), rot_m(1,1), rot_m(1,2),
-                                                                                 rot_m(2,0), rot_m(2,1), rot_m(2,2));
-
-        RCLCPP_INFO(get_logger(), "expm:\n%f, %f, %f\n%f, %f, %f\n %f, %f, %f", exp_m(0,0), exp_m(0,1), exp_m(0,2),
-                                                                                 exp_m(1,0), exp_m(1,1), exp_m(1,2),
-                                                                                 exp_m(2,0), exp_m(2,1), exp_m(2,2));
-
-        RCLCPP_INFO(get_logger(), "L:\n%f, %f, %f\n%f, %f, %f\n %f, %f, %f\n%f, %f, %f\n%f, %f, %f\n%f, %f, %f\n%f, %f, %f\n%f, %f, %f\n%f, %f, %f", L(0,0), L(0,1), L(0,2),
-                                                                                 L(1,0), L(1,1), L(1,2),
-                                                                                 L(2,0), L(2,1), L(2,2),
-                                                                                 L(3,0), L(3,1), L(3,2),
-                                                                                 L(4,0), L(4,1), L(4,2),
-                                                                                 L(5,0), L(5,1), L(5,2),
-                                                                                 L(6,0), L(6,1), L(6,2),
-                                                                                 L(7,0), L(7,1), L(7,2),
-                                                                                 L(8,0), L(8,1), L(8,2));
+        RCLCPP_INFO(get_logger(), "X after:\n%f, %f, %f, %f, %f\n%f, %f, %f, %f, %f\n %f, %f, %f, %f, %f\n%f, %f, %f, %f, %f\n%f, %f, %f, %f, %f", X(0,0), X(0,1), X(0,2), X(0, 3), X(0, 4),
+                                                                                 X(1,0), X(1,1), X(1,2), X(1, 3), X(1, 4),
+                                                                                 X(2,0), X(2,1), X(2,2), X(2, 3), X(2, 4),
+                                                                                 X(3,0), X(3,1), X(3,2), X(3, 3), X(3, 4),
+                                                                                 X(4,0), X(4,1), X(4,2), X(4, 3), X(4, 4));
+       
 
         Vector3d translation = X.block<3, 1>(0, 4);
         RCLCPP_INFO(get_logger(), "\n%f, %f, %f", translation(0), translation(1), translation(2));
@@ -363,53 +219,50 @@ namespace mrover {
 
 
 
-    // void IEKF::imu_callback(const sensor_msgs::msg::Imu& imu_msg) {
+    void IEKF::imu_callback(const sensor_msgs::msg::Imu& imu_msg) {
 
-    //     geometry_msgs::msg::Vector3 w = imu_msg.angular_velocity;
-    //     Matrix33d cov_w;
-    //     cov_w << imu_msg.angular_velocity_covariance[0], imu_msg.angular_velocity_covariance[1], imu_msg.angular_velocity_covariance[2],
-    //              imu_msg.angular_velocity_covariance[3], imu_msg.angular_velocity_covariance[4], imu_msg.angular_velocity_covariance[5],
-    //              imu_msg.angular_velocity_covariance[6], imu_msg.angular_velocity_covariance[7], imu_msg.angular_velocity_covariance[8];
+        geometry_msgs::msg::Vector3 w = imu_msg.angular_velocity;
+        Matrix33d cov_w;
+        cov_w << imu_msg.angular_velocity_covariance[0], imu_msg.angular_velocity_covariance[1], imu_msg.angular_velocity_covariance[2],
+                 imu_msg.angular_velocity_covariance[3], imu_msg.angular_velocity_covariance[4], imu_msg.angular_velocity_covariance[5],
+                 imu_msg.angular_velocity_covariance[6], imu_msg.angular_velocity_covariance[7], imu_msg.angular_velocity_covariance[8];
 
-    //     geometry_msgs::msg::Vector3 a = imu_msg.linear_acceleration;
-    //     Matrix33d cov_a;
-    //     cov_a << imu_msg.linear_acceleration_covariance[0], imu_msg.linear_acceleration_covariance[1], imu_msg.linear_acceleration_covariance[2],
-    //              imu_msg.linear_acceleration_covariance[3], imu_msg.linear_acceleration_covariance[4], imu_msg.linear_acceleration_covariance[5],
-    //              imu_msg.linear_acceleration_covariance[6], imu_msg.linear_acceleration_covariance[7], imu_msg.linear_acceleration_covariance[8];
+        geometry_msgs::msg::Vector3 a = imu_msg.linear_acceleration;
+        Matrix33d cov_a;
+        cov_a << imu_msg.linear_acceleration_covariance[0], imu_msg.linear_acceleration_covariance[1], imu_msg.linear_acceleration_covariance[2],
+                 imu_msg.linear_acceleration_covariance[3], imu_msg.linear_acceleration_covariance[4], imu_msg.linear_acceleration_covariance[5],
+                 imu_msg.linear_acceleration_covariance[6], imu_msg.linear_acceleration_covariance[7], imu_msg.linear_acceleration_covariance[8];
         
-    //     double dt = IMU_DT;
-    //     if (last_imu_time) {
-    //         dt = (imu_msg.header.stamp.sec + imu_msg.header.stamp.nanosec * 1e-9) - (last_imu_time.value().sec + last_imu_time.value().nanosec * 1e-9);   
-    //     }
+        double dt = IMU_DT;
+        if (last_imu_time) {
+            dt = (imu_msg.header.stamp.sec + imu_msg.header.stamp.nanosec * 1e-9) - (last_imu_time.value().sec + last_imu_time.value().nanosec * 1e-9);   
+        }
 
-    //     predict(w, cov_w, a, cov_a, dt);
+        predict(Vector3d{w.x, w.y, w.z}, cov_w, Vector3d{a.x, a.y, a.z}, cov_a, dt);
         
-    //     accel_callback(a, cov_a);
+        accel_callback(a, cov_a);
 
-    //     R3d translation = X.block<3, 1>(0, 4);
-    //     SO3d rotation = Eigen::Quaterniond(X.block<3, 3>(0, 0));
+        R3d translation = X.block<3, 1>(0, 4);
+        SO3d rotation = Eigen::Quaterniond(X.block<3, 3>(0, 0));
 
-    //     // R3d translation = X.translation();
-    //     // SO3d rotation = X.asSO3();
+        SE3d pose_in_map(translation, rotation);
+        SE3Conversions::pushToTfTree(tf_broadcaster, ROVER_FRAME, MAP_FRAME, pose_in_map, get_clock()->now());
 
-    //     SE3d pose_in_map(translation, rotation);
-    //     SE3Conversions::pushToTfTree(tf_broadcaster, ROVER_FRAME, MAP_FRAME, pose_in_map, get_clock()->now());
+        last_imu_time = imu_msg.header.stamp;
 
-    //     last_imu_time = imu_msg.header.stamp;
+        fake_gps++;
 
-    //     fake_gps++;
+        if (fake_gps == 50) {
+            geometry_msgs::msg::Vector3Stamped msg;
+            msg.header.stamp = now();
+            msg.vector.x = 500;
+            msg.vector.y = 500;
+            msg.vector.z = 0;
+            pos_callback(msg);
+            fake_gps = 0;
+        }
 
-    //     if (fake_gps == 50) {
-    //         geometry_msgs::msg::Vector3Stamped msg;
-    //         msg.header.stamp = now();
-    //         msg.vector.x = 1;
-    //         msg.vector.y = 0;
-    //         msg.vector.z = 0;
-    //         pos_callback(msg);
-    //         fake_gps = 0;
-    //     }
-
-    // }
+    }
 
     void IEKF::imu_callback_sim(const sensor_msgs::msg::Imu& imu_msg) {
 
@@ -437,9 +290,6 @@ namespace mrover {
         R3d translation = X.block<3, 1>(0, 4);
         SO3d rotation = Eigen::Quaterniond(X.block<3, 3>(0, 0));
 
-        // R3d translation = X.translation();
-        // SO3d rotation = X.asSO3();
-
         SE3d pose_in_map(translation, rotation);
         SE3Conversions::pushToTfTree(tf_broadcaster, ROVER_FRAME, MAP_FRAME, pose_in_map, get_clock()->now());
 
@@ -461,19 +311,23 @@ namespace mrover {
 
     }
 
-    // void IEKF::pos_callback(const geometry_msgs::msg::Vector3Stamped& pos_msg) {
+    void IEKF::pos_callback(const geometry_msgs::msg::Vector3Stamped& pos_msg) {
 
-    //     Matrix39d H;
-    //     Vector3d Y = -1 * X.rotation().transpose() * Vector3d{pos_msg.vector.x, pos_msg.vector.y, pos_msg.vector.z};
-    //     Vector3d b = Vector3d::Zero();
-    //     Matrix33d N;
+        RCLCPP_INFO(get_logger(), "pos callback");
 
-    //     H << Matrix33d::Zero(), Matrix33d::Zero(), -1 * Matrix33d::Identity();
-    //     N << X.rotation() * 0.01 * Matrix33d::Identity() * X.rotation().transpose();
+        Matrix39d H;
+        Vector5d Y;
+        Vector5d b;
+        Matrix33d N;
 
-    //     correct(Y, b, N, H);
+        H << Matrix33d::Zero(), Matrix33d::Zero(), -1 * Matrix33d::Identity();
+        Y << -1 * X.block<3, 3>(0, 0).transpose() * Vector3d{pos_msg.vector.x, pos_msg.vector.y, pos_msg.vector.z}, 0, 1;
+        b << 0, 0, 0, 0, 1;
+        N << X.block<3, 3>(0, 0) * 0.01 * Matrix33d::Identity() * X.block<3, 3>(0, 0).transpose();
 
-    // }
+        correct(Y, b, N, H);
+
+    }
 
     void IEKF::pos_callback_sim(const geometry_msgs::msg::Vector3Stamped& pos_msg) {
 
@@ -493,33 +347,35 @@ namespace mrover {
 
     }
 
-    // void IEKF::mag_heading_callback(const mrover::msg::Headi_sim mag_heading_msg) {
-
-    //     Matrix39d H;
-    //     Vector5d Y;
-    //     Vector5d b;
-    //     Matrix33d N;
-
-    //     Vector3d mag_ref{1, 0, 0};
-
-    //     double heading = 90 - mag_heading_msg.heading;
-
-    //     if (heading < -180) {
-    //         heading = 360 + heading;
-    //     }
-
-    //     heading = heading * (M_PI / 180);
-
-    //     H << -1 * manif::skew(mag_ref), Matrix33d::Zero(), Matrix33d::Zero();
-    //     Y << -1 * Vector3d{std::cos(heading), -std::sin(heading), 0}, 0, 0;
-    //     b << -1 * mag_ref, 0, 0;
-    //     N << X.block<3, 3>(0, 0) * mag_heading_msg.heading_accuracy * X.block<3, 3>(0, 0).transpose();
-
-    //     RCLCPP_INFO(get_logger(), "heading: %f", heading);
-    //     // RCLCPP_INFO(get_logger(), "heading accuracy: %f", mag_heading_msg.heading_accuracy);
-    //     correct(Y, b, N, H);
     
-    // }
+
+    void IEKF::mag_heading_callback(const mrover::msg::Heading& mag_heading_msg) {
+
+        Matrix39d H;
+        Vector5d Y;
+        Vector5d b;
+        Matrix33d N;
+
+        Vector3d mag_ref{1, 0, 0};
+
+        double heading = 90 - mag_heading_msg.heading;
+
+        if (heading < -180) {
+            heading = 360 + heading;
+        }
+
+        heading = heading * (M_PI / 180);
+
+        H << -1 * manif::skew(mag_ref), Matrix33d::Zero(), Matrix33d::Zero();
+        Y << -1 * Vector3d{std::cos(heading), -std::sin(heading), 0}, 0, 0;
+        b << -1 * mag_ref, 0, 0;
+        N << X.block<3, 3>(0, 0) * mag_heading_msg.heading_accuracy * X.block<3, 3>(0, 0).transpose();
+
+        RCLCPP_INFO(get_logger(), "heading: %f", heading);
+        // RCLCPP_INFO(get_logger(), "heading accuracy: %f", mag_heading_msg.heading_accuracy);
+        correct(Y, b, N, H);
+    
+    }
 
     void IEKF::mag_heading_callback_sim(const mrover::msg::Heading& mag_heading_msg) {
 

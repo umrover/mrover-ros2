@@ -99,7 +99,7 @@ def generate_launch_description():
             # arm_controller_node,
             rviz_node,
             gps_linearization_node,
-            iekf_node,
-            # quat_iekf_node
+            # iekf_node,
+            quat_iekf_node
         ]
     )

@@ -51,8 +51,8 @@ namespace mrover {
 
         Quaterniond q;
         Vector3d B;
-        Quaterniond q_err;
-        Vector3d B_err;
+        // Quaterniond q_err;
+        // Vector3d B_err;
         Matrix66d P;
 
 
