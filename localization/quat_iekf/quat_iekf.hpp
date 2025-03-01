@@ -7,6 +7,7 @@ using Quaterniond = Eigen::Quaterniond;
 using Matrix33d = Eigen::Matrix<double, 3, 3>;
 using Matrix66d = Eigen::Matrix<double, 6, 6>;
 using Matrix36d = Eigen::Matrix<double, 3, 6>;
+using Matrix63d = Eigen::Matrix<double, 6, 3>;
 using Vector3d = Eigen::Vector3d;
 using Vector4d = Eigen::Matrix<double, 4, 1>;
 using Vector6d = Eigen::Matrix<double, 6, 1>;
@@ -24,14 +25,16 @@ namespace mrover {
 
         // Quat IEKF functions
         void predict(const Vector3d& w, const Vector3d& n_v, const Vector3d& n_u, double dt);
-        void correct(const Matrix36d& H, const Matrix33d& N, const Vector3d& observation, const Vector3d& predicted);
+        void correct(const Matrix36d& H, const Matrix33d& R, const Vector3d& observation, const Vector3d& predicted);
 
         // sensor callbacks
         void imu_callback(const sensor_msgs::msg::Imu& imu_msg);
         void mag_heading_callback(const mrover::msg::Heading& mag_heading_msg);
+        void accel_callback(const geometry_msgs::msg::Vector3& accel_msg, const Matrix33d& cov_a);
 
         // subscribers
         rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr imu_sub;
+        rclcpp::Subscription<mrover::msg::Heading>::SharedPtr mag_heading_sub;
 
         // tf broadcaster
         tf2_ros::Buffer tf_buffer{get_clock()};

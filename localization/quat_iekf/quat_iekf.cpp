@@ -14,6 +14,10 @@ namespace mrover {
             imu_callback(*imu_msg);
         });
 
+        mag_heading_sub = this->create_subscription<mrover::msg::Heading>("/imu/mag", 10, [&](const mrover::msg::Heading::ConstSharedPtr& mag_heading_msg) {
+            mag_heading_callback(*mag_heading_msg);
+        });
+
 
     }
 
@@ -76,9 +80,21 @@ namespace mrover {
 
     }
 
-    void correct(const Matrix36d& H, const Matrix33d& N, const Vector3d& observation, const Vector3d& predicted) {
+    void QuatIEKF::correct(const Matrix36d& H, const Matrix33d& R, const Vector3d& observation, const Vector3d& predicted) {
 
-        
+        Vector3d innovation = predicted - observation;
+        Matrix63d K = P * H.transpose() * (H * P * H.transpose() + R).inverse();
+        Vector6d correction = K * innovation;
+
+        RCLCPP_INFO(get_logger(), "innov: %f, %f, %f", innovation(0), innovation(1), innovation(2));
+        RCLCPP_INFO(get_logger(), "correction: %f, %f, %f", correction(0), correction(1), correction(2));
+
+        q = lift_q(Vector3d{-correction(0), -correction(1), -correction(2)}) * q;
+        q.normalize();
+        Quaterniond B_update = q.conjugate() * Quaterniond{0, correction(3), correction(4), correction(5)} * q;
+        B = B - Vector3d{B_update.x(), B_update.y(), B_update.z()};
+        P = (Matrix66d::Identity() - K * H) * P;
+
     }
 
     void QuatIEKF::imu_callback(const sensor_msgs::msg::Imu& imu_msg) {
@@ -87,16 +103,11 @@ namespace mrover {
         Vector3d n_v{imu_msg.angular_velocity_covariance[0], imu_msg.angular_velocity_covariance[4], imu_msg.angular_velocity_covariance[8]};
         Vector3d n_u{0, 0, 0};
 
-        // Matrix33d cov_w;
-        // cov_w << imu_msg.angular_velocity_covariance[0], imu_msg.angular_velocity_covariance[1], imu_msg.angular_velocity_covariance[2],
-        //          imu_msg.angular_velocity_covariance[3], imu_msg.angular_velocity_covariance[4], imu_msg.angular_velocity_covariance[5],
-        //          imu_msg.angular_velocity_covariance[6], imu_msg.angular_velocity_covariance[7], imu_msg.angular_velocity_covariance[8];
-
-        // geometry_msgs::msg::Vector3 a = imu_msg.linear_acceleration;
-        // Matrix33d cov_a;
-        // cov_a << imu_msg.linear_acceleration_covariance[0], imu_msg.linear_acceleration_covariance[1], imu_msg.linear_acceleration_covariance[2],
-        //          imu_msg.linear_acceleration_covariance[3], imu_msg.linear_acceleration_covariance[4], imu_msg.linear_acceleration_covariance[5],
-        //          imu_msg.linear_acceleration_covariance[6], imu_msg.linear_acceleration_covariance[7], imu_msg.linear_acceleration_covariance[8];
+        geometry_msgs::msg::Vector3 a = imu_msg.linear_acceleration;
+        Matrix33d cov_a;
+        cov_a << imu_msg.linear_acceleration_covariance[0], imu_msg.linear_acceleration_covariance[1], imu_msg.linear_acceleration_covariance[2],
+                 imu_msg.linear_acceleration_covariance[3], imu_msg.linear_acceleration_covariance[4], imu_msg.linear_acceleration_covariance[5],
+                 imu_msg.linear_acceleration_covariance[6], imu_msg.linear_acceleration_covariance[7], imu_msg.linear_acceleration_covariance[8];
         
         double dt = IMU_DT;
         if (last_imu_time) {
@@ -105,7 +116,58 @@ namespace mrover {
 
         predict(w, n_v, n_u, dt);
 
+        accel_callback(a, cov_a);
+
         last_imu_time = imu_msg.header.stamp;
+
+    }
+
+    void QuatIEKF::mag_heading_callback(const mrover::msg::Heading& mag_heading_msg) {
+
+        Matrix36d H;
+        Matrix33d R;
+        Vector3d observation;
+        Vector3d predicted;
+
+        double heading = mag_heading_msg.heading;
+        Vector3d mag_ref{1, 0, 0};
+        Quaterniond observation_q = q * Quaterniond{0, std::cos(heading), -std::sin(heading), 0} * q.conjugate();
+        // Quaterniond observation_q = q * Quaterniond{0, std::cos(heading), std::sin(heading), 0} * q.conjugate();
+        RCLCPP_INFO(get_logger(), "mag observation: %f, %f, %f", observation_q.x(), observation_q.y(), observation_q.z());
+
+        H << manif::skew(mag_ref), Matrix33d::Zero();
+        R << q.toRotationMatrix().transpose() * mag_heading_msg.heading_accuracy * Matrix33d::Identity() * q.toRotationMatrix();
+        observation << observation_q.x(), observation_q.y(), observation_q.z();
+        predicted << mag_ref;
+
+        RCLCPP_INFO(get_logger(), "heading: %f", heading);
+        correct(H, R, observation, predicted);
+
+    }
+
+    void QuatIEKF::accel_callback(const geometry_msgs::msg::Vector3& accel_msg, const Matrix33d& cov_a) {
+
+        Matrix36d H;
+        Matrix33d R;
+        Vector3d observation;
+        Vector3d predicted;
+
+        Vector3d accel_meas{accel_msg.x, accel_msg.y, -9.81 + accel_msg.z};
+        accel_meas.normalize();
+
+        Vector3d accel_ref{0, 0, -1};
+        Quaterniond observation_q = q * Quaterniond{0, accel_meas(0), accel_meas(1), accel_meas(2)} * q.conjugate();
+        RCLCPP_INFO(get_logger(), "accel observation: %f, %f, %f", observation_q.x(), observation_q.y(), observation_q.z());
+
+        H << manif::skew(accel_ref), Matrix33d::Zero();
+        R << q.toRotationMatrix().transpose() * cov_a * q.toRotationMatrix();
+        observation << observation_q.x(), observation_q.y(), observation_q.z();
+        predicted << accel_ref;
+
+        correct(H, R, observation, predicted);
+        
+        
+
 
     }
 

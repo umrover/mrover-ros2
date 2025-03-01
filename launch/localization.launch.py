@@ -46,6 +46,12 @@ def generate_launch_description():
         name="iekf"
     )
 
+    quat_iekf_node = Node(
+        package="mrover",
+        executable="quat_iekf",
+        name="quat_iekf"
+    )
+
     # heading_filter_node = Node(
     #     package="mrover",
     #     executable="heading_filter",
@@ -53,6 +59,10 @@ def generate_launch_description():
     #     parameters=[os.path.join(get_package_share_directory("mrover"), "config", "localization.yaml")],
     # )
 
-    return LaunchDescription([zed_node, iekf_node])
+    return LaunchDescription([
+        zed_node,
+        quat_iekf_node,
+        # iekf_node,
+    ])
 
     # return LaunchDescription([zed_node])
