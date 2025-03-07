@@ -27,6 +27,7 @@ SIZE = (256, 256)
 dataset = "v4-nodistort"
 CORNER_REGRESSION_MODEL = "magic-wave-28.pt"
 YOLO_MODEL = f"{MODELS_PATH}/yolo/train4/weights/best.pt"
+print(YOLO_MODEL)
 
 class KeyDetector(Node):
     def __init__(self):

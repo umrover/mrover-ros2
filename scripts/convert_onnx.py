@@ -1,10 +1,14 @@
 #!/usr/bin/env python3
 
-import torch
+from ultralytics import YOLO
 import sys
-device = torch.device('cpu')
 
-sys.path.insert(0, '/home/john/ros2_ws/src/mrover')
+if len(sys.argv) != 2:
+    print('usage python3 convert.py [path to pytorch file]')
+    exit(1)
 
-model = torch.load('/home/john/ros2_ws/src/mrover/data/text.pt', map_location=device, weights_only=False)['model'].float()
-torch.onnx.export(model, torch.zeros((1, 3, 640, 640)), 'magic.onnx', opset_version=12)
+# Load the YOLO model
+model = YOLO(sys.argv[1])
+
+# Export the model to ONNX format
+model.export(format="onnx", imgsz=[640, 640], opset=12)

@@ -144,13 +144,6 @@ namespace mrover {
 
         mLoopProfiler.measureEvent("Execution");
 
-        std::cout << "yooo " << outputTensor.rows << " " << outputTensor.cols << std::endl;
-        for(int r = 0; r < outputTensor.rows; ++r){
-            for(int c = 0; c < outputTensor.cols; ++c){
-                std::cout << "Parse" << outputTensor.at<float>(r, c) << std::endl;
-            }
-        }
-
         mrover::msg::ImageTargets targets{};
         for (auto const& [classId, className, confidence, box]: detections) {
             mrover::msg::ImageTarget target;

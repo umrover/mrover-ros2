@@ -89,6 +89,7 @@ class KeyboardDataset(Dataset):
             val.append(transforms.Normalize(norm_params["mean"], norm_params["std"]))
 
         self._input_augmentations = transforms.Compose(val)
+        print(f'Transforms being used {self._input_augmentations}')
 
     def set_target_augmentations(self, val: Sequence[transforms.Transform]) -> None:
         self._target_augmentations = transforms.Compose(val)
