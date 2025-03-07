@@ -25,8 +25,8 @@ import torch
 import matplotlib.pyplot as plt
 
 # Define video properties
-FRAME_WIDTH = 2160
-FRAME_HEIGHT = 3840
+FRAME_WIDTH = 1920
+FRAME_HEIGHT = 1440
 FPS = 30
 OUTPUT_FILE = 'data/ffmpeg/output.mp4'
 
@@ -63,7 +63,6 @@ def read_frames(video_path, output_folder):
     success, image = video_capture.read()
     while success:
         success, image = video_capture.read()
-        image = cv2.rotate(image, cv2.ROTATE_90_COUNTERCLOCKWISE)
         try:
             print(f'IMAGE SHAPE: {image.shape}')
             frame_count += 1
@@ -176,6 +175,7 @@ def read_frames(video_path, output_folder):
                 draw_textbox(img, box)
 
             output_path = f"{output_folder}/frame_{frame_count:04d}.jpg"
+            print(f'img shape {img.shape} *************')
             cv2.imwrite(output_path, img)
 
             WRITER.write(img)
@@ -188,7 +188,7 @@ def read_frames(video_path, output_folder):
     print(f"Extracted {frame_count} frames.")
 
 if __name__ == "__main__":
-    video_path = "/home/john/Downloads/typing_cut.mp4" # Replace with your video path
+    video_path = "/home/john/ros2_ws/src/mrover/data/keyboard_light.mp4" # Replace with your video path
     output_folder = "/home/john/ros2_ws/src/mrover/data/ffmpeg" # Replace with your desired output folder
     read_frames(video_path, output_folder)
 
