@@ -27,24 +27,25 @@ namespace mrover {
             std::vector<int64_t> outputTensorSize;
 
             // Converts an rgb image to a blob
-            std::function<void(Model const&, cv::Mat&, cv::Mat&, cv::Mat&)> rgbImageToBlob;
+            std::function<void(Model const&, cv::Mat&, cv::Mat&, cv::Mat&)> preprocess;
 
             // Converts an output tensor into a vector of detections
-            std::function<void(Model const&, cv::Mat&, std::vector<Detection>&)> outputTensorToDetections;
+            std::function<void(Model const&, cv::Mat&, std::vector<Detection>&)> postprocess;
 
             Model() = default;
 
-            Model(std::string _modelName, std::vector<int> _objectHitCounts, std::vector<std::string> _classes, std::vector<int64_t> _inputTensorSize, std::vector<int64_t> _outputTensorSize, std::function<void(Model const&, cv::Mat&, cv::Mat&, cv::Mat&)> _rbgImageToBlob, std::function<void(Model const&, cv::Mat&, std::vector<Detection>&)> _outputTensorToDetections) : modelName{std::move(_modelName)}, objectHitCounts(std::move(_objectHitCounts)), classes(std::move(_classes)), inputTensorSize(std::move(_inputTensorSize)), outputTensorSize(std::move(_outputTensorSize)), rgbImageToBlob{std::move(_rbgImageToBlob)}, outputTensorToDetections{std::move(_outputTensorToDetections)} {}
+            Model(std::string _modelName, std::vector<int> _objectHitCounts, std::vector<std::string> _classes, std::vector<int64_t> _inputTensorSize, std::vector<int64_t> _outputTensorSize, std::function<void(Model const&, cv::Mat&, cv::Mat&, cv::Mat&)> _rbgImageToBlob, std::function<void(Model const&, cv::Mat&, std::vector<Detection>&)> _outputTensorToDetections) : modelName{std::move(_modelName)}, objectHitCounts(std::move(_objectHitCounts)), classes(std::move(_classes)), inputTensorSize(std::move(_inputTensorSize)), outputTensorSize(std::move(_outputTensorSize)), preprocess{std::move(_rbgImageToBlob)}, postprocess{std::move(_outputTensorToDetections)} {}
         };
 
 
-        static constexpr char const* NODE_NAME = "object_detector";
+        static constexpr char const* NODE_NAME = "image_key_detector";
 
         std::unique_ptr<tf2_ros::Buffer> mTfBuffer = std::make_unique<tf2_ros::Buffer>(get_clock());
         std::shared_ptr<tf2_ros::TransformBroadcaster> mTfBroadcaster = std::make_shared<tf2_ros::TransformBroadcaster>(this);
         std::shared_ptr<tf2_ros::TransformListener> mTfListener = std::make_shared<tf2_ros::TransformListener>(*mTfBuffer);
 
-        Model mModel;
+        Model mKeyDetectionModel;
+        Model mTextCoordModel;
 
         std::string mCameraFrame;
         std::string mWorldFrame;
@@ -53,7 +54,8 @@ namespace mrover {
 
         LoopProfiler mLoopProfiler;
 
-        TensortRT mTensorRT;
+        TensortRT mKeyDetectionTensorRT;
+        TensortRT mTextCoordsTensorRT;
 
         sensor_msgs::msg::Image mDetectionsImageMessage;
 

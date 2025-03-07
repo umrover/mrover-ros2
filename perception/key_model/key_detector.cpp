@@ -4,7 +4,8 @@
 namespace mrover {
 
     KeyDetectorBase::KeyDetectorBase(rclcpp::NodeOptions const& options) : rclcpp::Node(NODE_NAME, options), mLoopProfiler{get_logger()} {
-        std::string modelName;
+        std::string keyDetectionModelName;
+        std::string textCoordsModelName;
 
         std::vector<ParameterWrapper> params{
                 {"camera_frame", mCameraFrame, "zed_left_camera_frame"},
@@ -13,9 +14,10 @@ namespace mrover {
                 {"decrement_weight", mObjDecrementWeight, 1},
                 {"hitcount_threshold", mObjHitThreshold, 5},
                 {"hitcount_max", mObjMaxHitcount, 10},
-                {"model_name", modelName, "yolo-key-detection"},
-                {"model_score_threshold", mModelScoreThreshold, 0.75},
-                {"model_nms_threshold", mModelNMSThreshold, 0.5},
+                {"key_detection_model_name", keyDetectionModelName, "yolo-key-detection"},
+                {"text_coords_model_name", textCoordsModelName, "magic"},
+                {"yolo_model_score_threshold", mModelScoreThreshold, 0.75},
+                {"yolo_model_nms_threshold", mModelNMSThreshold, 0.5},
                 {"object_detector_debug", mDebug, true}};
 
         ParameterWrapper::declareParameters(this, params);
@@ -24,18 +26,17 @@ namespace mrover {
 
         std::filesystem::path packagePath = std::filesystem::path{ament_index_cpp::get_package_prefix("mrover")} / ".." / ".." / "src" / "mrover";
 
-        RCLCPP_INFO_STREAM(get_logger(), "Opening Model " << modelName);
-
-        RCLCPP_INFO_STREAM(get_logger(), "Found package path " << packagePath);
-
         // Initialize TensorRT Inference Object and Get Important Output Information
-        mTensorRT = TensortRT{modelName, packagePath.string()};
+        mKeyDetectionTensorRT = TensortRT{keyDetectionModelName, packagePath.string()};
+        mTextCoordsTensorRT = TensortRT{textCoordsModelName, packagePath.string()};
 
         using namespace std::placeholders;
 
-        mModel = Model(modelName, {0}, {"key"}, mTensorRT.getInputTensorSize(), mTensorRT.getOutputTensorSize(), [](Model const& model, cv::Mat& rgbImage, cv::Mat& blobSizedImage, cv::Mat& blob) { preprocessYOLOv8Input(model, rgbImage, blobSizedImage, blob); }, [this](Model const& model, cv::Mat& output, std::vector<Detection>& detections) { parseYOLOv8Output(model, output, detections); });
+        mKeyDetectionModel = Model(keyDetectionModelName, {0}, {"key"}, mKeyDetectionTensorRT.getInputTensorSize(), mKeyDetectionTensorRT.getOutputTensorSize(), [](Model const& model, cv::Mat& rgbImage, cv::Mat& blobSizedImage, cv::Mat& blob) { preprocessYOLOv8Input(model, rgbImage, blobSizedImage, blob); }, [this](Model const& model, cv::Mat& output, std::vector<Detection>& detections) { parseYOLOv8Output(model, output, detections); });
 
-        RCLCPP_INFO_STREAM(get_logger(), std::format("Object detector initialized with model: {} and thresholds: {} and {}", mModel.modelName, mModelScoreThreshold, mModelNMSThreshold));
+        mTextCoordModel = Model(textCoordsModelName, {}, {}, mKeyDetectionTensorRT.getInputTensorSize(), mKeyDetectionTensorRT.getOutputTensorSize(), [](Model const& model, cv::Mat& rgbImage, cv::Mat& blobSizedImage, cv::Mat& blob) { preprocessYOLOv8Input(model, rgbImage, blobSizedImage, blob); }, [this](Model const& model, cv::Mat& output, std::vector<Detection>& detections) { parseYOLOv8Output(model, output, detections); });
+
+        RCLCPP_INFO_STREAM(get_logger(), std::format("Object detector initialized with model: {} and thresholds: {} and {}", mKeyDetectionModel.modelName, mModelScoreThreshold, mModelNMSThreshold));
     }
 
     ImageKeyDetector::ImageKeyDetector(rclcpp::NodeOptions const& options) : KeyDetectorBase(options) {
