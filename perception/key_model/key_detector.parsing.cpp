@@ -1,6 +1,11 @@
 #include "key_detector.hpp"
 namespace mrover {
-    auto KeyDetectorBase::preprocessYOLOv8Input(Model const& model, cv::Mat const& rgbImage, cv::Mat& blobSizedImage, cv::Mat& blob) -> void {
+    auto KeyDetectorBase::preprocessYOLOv8Input(Model const& model, cv::Mat const& input, cv::Mat& output) -> void {
+        static cv::Mat rgbImage;
+        static cv::Mat blobSizedImage;
+
+        cv::cvtColor(input, rgbImage, cv::COLOR_BGRA2RGB);
+
         if (model.inputTensorSize.size() != 4) {
             throw std::runtime_error("Expected Blob Size to be of size 4, are you using the correct model type?");
         }
@@ -9,7 +14,19 @@ namespace mrover {
 
         cv::Size blobSize{static_cast<int32_t>(model.inputTensorSize[2]), static_cast<int32_t>(model.inputTensorSize[3])};
         cv::resize(rgbImage, blobSizedImage, blobSize);
-        cv::dnn::blobFromImage(blobSizedImage, blob, UCHAR_TO_DOUBLE, blobSize, cv::Scalar{}, false, false);
+        cv::dnn::blobFromImage(blobSizedImage, output, UCHAR_TO_DOUBLE, blobSize, cv::Scalar{}, false, false);
+    }
+
+    auto KeyDetectorBase::postprocessYOLOv8Output(Model const& model, cv::Mat& output) -> void {
+        // All processing should be done in parseYOLOv8Output
+    }
+
+    auto KeyDetectorBase::preprocessTextCoordsInput(Model const& model, cv::Mat const& input, cv::Mat& output) -> void {
+        // TODO: fill in
+    }
+
+    auto KeyDetectorBase::postprocessTextCoordsOutput(Model const& model, cv::Mat& output) -> void {
+        // TODO: fill in
     }
 
     auto KeyDetectorBase::parseYOLOv8Output(Model const& model, cv::Mat& output, std::vector<Detection>& detections) const -> void {

@@ -32,9 +32,9 @@ namespace mrover {
 
         using namespace std::placeholders;
 
-        mKeyDetectionModel = Model(keyDetectionModelName, {0}, {"key"}, mKeyDetectionTensorRT.getInputTensorSize(), mKeyDetectionTensorRT.getOutputTensorSize(), [](Model const& model, cv::Mat& rgbImage, cv::Mat& blobSizedImage, cv::Mat& blob) { preprocessYOLOv8Input(model, rgbImage, blobSizedImage, blob); }, [this](Model const& model, cv::Mat& output, std::vector<Detection>& detections) { parseYOLOv8Output(model, output, detections); });
+        mKeyDetectionModel = Model(keyDetectionModelName, {0}, {"key"}, mKeyDetectionTensorRT.getInputTensorSize(), mKeyDetectionTensorRT.getOutputTensorSize(), [](Model const& model, cv::Mat const& input, cv::Mat& output) { preprocessYOLOv8Input(model, input, output); }, [](Model const& model, cv::Mat& input) { postprocessYOLOv8Output(model, input); });
 
-        mTextCoordModel = Model(textCoordsModelName, {}, {}, mKeyDetectionTensorRT.getInputTensorSize(), mKeyDetectionTensorRT.getOutputTensorSize(), [](Model const& model, cv::Mat& rgbImage, cv::Mat& blobSizedImage, cv::Mat& blob) { preprocessYOLOv8Input(model, rgbImage, blobSizedImage, blob); }, [this](Model const& model, cv::Mat& output, std::vector<Detection>& detections) { parseYOLOv8Output(model, output, detections); });
+        mTextCoordModel = Model(textCoordsModelName, {}, {}, mTextCoordsTensorRT.getInputTensorSize(), mTextCoordsTensorRT.getOutputTensorSize(), [](Model const& model, cv::Mat const& input, cv::Mat& output) { preprocessTextCoordsInput(model, input, output); }, [](Model const& model, cv::Mat& input) { postprocessTextCoordsOutput(model, input); });
 
         RCLCPP_INFO_STREAM(get_logger(), std::format("Object detector initialized with model: {} and thresholds: {} and {}", mKeyDetectionModel.modelName, mModelScoreThreshold, mModelNMSThreshold));
     }

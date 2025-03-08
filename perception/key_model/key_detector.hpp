@@ -15,6 +15,12 @@ namespace mrover {
             Detection(int _classId, std::string _className, float _confidence, cv::Rect _box) : classId{_classId}, className{_className}, confidence{_confidence}, box{_box} {}
         };
 
+        struct Model;
+
+        // model processing functions
+        using model_preprocess_t = std::function<void(Model const&, cv::Mat const&, cv::Mat&)>;
+        using model_postprocess_t = std::function<void(Model const&, cv::Mat&)>;
+
         struct Model {
             std::string modelName;
 
@@ -27,14 +33,14 @@ namespace mrover {
             std::vector<int64_t> outputTensorSize;
 
             // Converts an rgb image to a blob
-            std::function<void(Model const&, cv::Mat&, cv::Mat&, cv::Mat&)> preprocess;
+            model_preprocess_t preprocess;
 
             // Converts an output tensor into a vector of detections
-            std::function<void(Model const&, cv::Mat&, std::vector<Detection>&)> postprocess;
+            model_postprocess_t postprocess;
 
             Model() = default;
 
-            Model(std::string _modelName, std::vector<int> _objectHitCounts, std::vector<std::string> _classes, std::vector<int64_t> _inputTensorSize, std::vector<int64_t> _outputTensorSize, std::function<void(Model const&, cv::Mat&, cv::Mat&, cv::Mat&)> _rbgImageToBlob, std::function<void(Model const&, cv::Mat&, std::vector<Detection>&)> _outputTensorToDetections) : modelName{std::move(_modelName)}, objectHitCounts(std::move(_objectHitCounts)), classes(std::move(_classes)), inputTensorSize(std::move(_inputTensorSize)), outputTensorSize(std::move(_outputTensorSize)), preprocess{std::move(_rbgImageToBlob)}, postprocess{std::move(_outputTensorToDetections)} {}
+            Model(std::string _modelName, std::vector<int> _objectHitCounts, std::vector<std::string> _classes, std::vector<int64_t> _inputTensorSize, std::vector<int64_t> _outputTensorSize, model_preprocess_t _preprocess, model_postprocess_t _postprocess) : modelName{std::move(_modelName)}, objectHitCounts(std::move(_objectHitCounts)), classes(std::move(_classes)), inputTensorSize(std::move(_inputTensorSize)), outputTensorSize(std::move(_outputTensorSize)), preprocess{std::move(_preprocess)}, postprocess{std::move(_postprocess)} {}
         };
 
 
@@ -79,13 +85,19 @@ namespace mrover {
 
         auto publishDetectedObjects(cv::InputArray const& image) -> void;
 
-        static auto drawDetectionBoxes(cv::InputOutputArray& image, std::span<Detection const> detections) -> void;
+        auto drawDetectionBoxes(cv::InputOutputArray& image, std::span<Detection const> detections) const -> void;
 
-        auto parseYOLOv8Output(Model const& model,
-                               cv::Mat& output,
-                               std::vector<Detection>& detections) const -> void;
+        auto parseYOLOv8Output(Model const& model, cv::Mat& output, std::vector<Detection>& detections) const -> void;
 
-        static auto preprocessYOLOv8Input(Model const& model, cv::Mat const& rgbImage, cv::Mat& blobSizedImage, cv::Mat& blob) -> void;
+        // Pre and Post Process for YOLO
+        static auto preprocessYOLOv8Input(Model const& model, cv::Mat const& input, cv::Mat& output) -> void;
+
+        static auto postprocessYOLOv8Output(Model const& model, cv::Mat& output) -> void;
+
+        // Pre and Post Process for Text Coords
+        static auto preprocessTextCoordsInput(Model const& model, cv::Mat const& input, cv::Mat& output) -> void;
+
+        static auto postprocessTextCoordsOutput(Model const& model, cv::Mat& output) -> void;
 
     public:
         explicit KeyDetectorBase(rclcpp::NodeOptions const& options = rclcpp::NodeOptions());
@@ -104,7 +116,7 @@ namespace mrover {
     public:
         explicit ImageKeyDetector(rclcpp::NodeOptions const& options = rclcpp::NodeOptions());
 
-        auto getObjectBearing(cv::InputArray const& image, cv::Rect const& box) const -> float;
+        auto getObjectBearing(std::size_t imageWidth, cv::Rect const& box) const -> float;
 
         auto imageCallback(sensor_msgs::msg::Image::ConstSharedPtr const& msg) -> void;
     };
