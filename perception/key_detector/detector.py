@@ -67,6 +67,7 @@ class KeyDetector(Node):
 
             bboxes = self.yolo_segmentation_model.predict(img_cv, conf=0.3, iou=0.3)[0]
             print(f'bboxes {bboxes}')
+            print(f'imgmigmigimmgigigi {img}')
             mask = self.corner_regression_model.predict(img)
 
             print(f'mask {mask}')

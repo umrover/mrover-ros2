@@ -100,7 +100,7 @@ namespace mrover {
         mTextCoordsTensorRT.modelForwardPass(mTextCoordsBlob, outputTensor);
 
         for(int i = 0; i < 8; ++i){
-            RCLCPP_INFO_STREAM(get_logger(), i << " " << reinterpret_cast<float*>(mTextCoordsBlob.data)[i]);
+            RCLCPP_INFO_STREAM(get_logger(), i << " " << reinterpret_cast<float*>(outputTensor.data)[i]);
         }
 
         mLoopProfiler.measureEvent("Execution");
