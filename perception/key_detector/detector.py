@@ -63,14 +63,14 @@ class KeyDetector(Node):
             img_cv = cv2.resize(img, SIZE, interpolation = cv2.INTER_LINEAR)
             img = self.test_dataset.cvt_image(img_cv)
             
-            print(f'******** {img.shape}')
-            print(f'imag ***** {img}')
-
             # TODO yolo & model to use same input image size
 
             bboxes = self.yolo_segmentation_model.predict(img_cv, conf=0.3, iou=0.3)[0]
             print(f'bboxes {bboxes}')
             mask = self.corner_regression_model.predict(img)
+
+            print(f'mask {mask}')
+
             mask = cv2.resize(mask, bboxes.orig_shape[::-1])
             print(f'mask {mask}')
 

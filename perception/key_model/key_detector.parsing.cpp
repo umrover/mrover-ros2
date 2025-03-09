@@ -34,7 +34,7 @@ namespace mrover {
         static constexpr float SCALE_FACTOR = 1.0f;
         static constexpr std::size_t CHANNELS = 3;
         cv::Size blobSize{static_cast<int32_t>(model.inputTensorSize[2]), static_cast<int32_t>(model.inputTensorSize[3])};
-        cv::dnn::blobFromImage(bgrImage, output, 1.0f, blobSize, cv::Scalar{}, false, false);
+        cv::dnn::blobFromImage(bgrImage, output, SCALE_FACTOR, blobSize, cv::Scalar{}, false, false);
 
         // Normalize based on these values
         const cv::Vec3f targetMeans{100.34723, 100.90665, 95.4391};
@@ -48,10 +48,6 @@ namespace mrover {
                 float& v = reinterpret_cast<float*>(output.data)[offset + elt];
                 v = (v - targetMeans.val[channel]) / targetStdDevs.val[channel];
             }
-        }
-
-        for(int i = 0; i < 10; ++i){
-            RCLCPP_INFO_STREAM(model.ptr->get_logger(), i << " piz " << reinterpret_cast<float*>(output.data)[i]);
         }
     }
 

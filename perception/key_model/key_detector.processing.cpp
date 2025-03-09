@@ -96,6 +96,13 @@ namespace mrover {
 
         parseYOLOv8Output(mKeyDetectionModel, outputTensor, detections);
 
+        // Text Coords Inference
+        mTextCoordsTensorRT.modelForwardPass(mTextCoordsBlob, outputTensor);
+
+        for(int i = 0; i < 8; ++i){
+            RCLCPP_INFO_STREAM(get_logger(), i << " " << reinterpret_cast<float*>(mTextCoordsBlob.data)[i]);
+        }
+
         mLoopProfiler.measureEvent("Execution");
 
         mrover::msg::ImageTargets targets{};
