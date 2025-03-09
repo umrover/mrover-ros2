@@ -99,9 +99,12 @@ namespace mrover {
         // Text Coords Inference
         mTextCoordsTensorRT.modelForwardPass(mTextCoordsBlob, outputTensor);
 
-        for(int i = 0; i < 8; ++i){
-            RCLCPP_INFO_STREAM(get_logger(), i << " " << reinterpret_cast<float*>(outputTensor.data)[i]);
-        }
+        mTextCoordModel.postprocess(mTextCoordModel, outputTensor);
+
+        publishDetectedObjects(outputTensor);
+
+        //cv::imshow("YOO", outputTensor);
+        //cv::waitKey();
 
         mLoopProfiler.measureEvent("Execution");
 
@@ -117,7 +120,7 @@ namespace mrover {
 
         drawDetectionBoxes(bgraImage, detections);
         if (mDebug) {
-            publishDetectedObjects(bgraImage);
+            //publishDetectedObjects(bgraImage);
         }
 
         mLoopProfiler.measureEvent("Publication");

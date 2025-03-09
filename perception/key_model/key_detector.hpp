@@ -92,6 +92,8 @@ namespace mrover {
 
         auto parseYOLOv8Output(Model const& model, cv::Mat& output, std::vector<Detection>& detections) const -> void;
 
+        static auto changeOfBasis(R2f const& p1, R2f const& p2, R2f const& p3, R2f const& p4) -> Eigen::Matrix3f;
+
         // Pre and Post Process for YOLO
         static auto preprocessYOLOv8Input(Model const& model, cv::Mat const& input, cv::Mat& output) -> void;
 

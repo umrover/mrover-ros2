@@ -70,13 +70,13 @@ class KeyDetector(Node):
             print(f'imgmigmigimmgigigi {img}')
             mask = self.corner_regression_model.predict(img)
 
-            print(f'mask {mask}')
 
             mask = cv2.resize(mask, bboxes.orig_shape[::-1])
             print(f'mask {mask}')
+            print(f'mask shape {mask.shape}')
 
             out = plot_yolo(bboxes, draw_text=False, plot=False)
-            #imshow(out, mask)
+            imshow(out, mask)
 
             describe(mask)
 

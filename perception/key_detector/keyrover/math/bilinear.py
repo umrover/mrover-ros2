@@ -50,7 +50,10 @@ class InterpolateQuad(BatchedLinearAlgebra):
             p4 = arg[6:]
 
         XY_basis = self.change_of_basis(p1, p2, p3, p4)
+        print(f'xy basis {XY_basis}')
         C = self.UV_basis @ torch.inverse(XY_basis)
+
+        print(f'C C CCCCC {C}')
 
         """
         [u, v, z] = C @ [x, y, 1]
@@ -58,6 +61,7 @@ class InterpolateQuad(BatchedLinearAlgebra):
          """
         result = torch.einsum('bij, yxj -> byxi', C, self.coordinates)
         result = result[:, :, :, :3] / result[:, :, :, -1:]
+        print(f'result result {result}')
 
         # filter any points outside the valid range
         #result[(result.max(dim=-1)[0] > 1)] = 0

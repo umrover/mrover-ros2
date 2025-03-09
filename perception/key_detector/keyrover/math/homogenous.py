@@ -32,14 +32,17 @@ class HomogenousChangeOfBasis(BatchedLinearAlgebra):
         M2 = torch.stack([p1[1], p2[1], p3[1]], dim=1)
         M3 = torch.stack([self.ones, self.ones, self.ones], dim=1)
         M = torch.stack((M1, M2, M3), dim=1)
+        print(f'M {M}')
 
         M_inv = torch.inverse(M)
+        print(f'M_INV {M_inv}')
 
         """
         H = M @ X = [λ, μ, τ]
         """
         H = M_inv @ X
         H = H.squeeze(dim=-1)
+        print(f'H {H}')
 
         """
         A = [[λ * x1, μ * x2, τ * x3],
@@ -47,6 +50,8 @@ class HomogenousChangeOfBasis(BatchedLinearAlgebra):
              [     λ,      μ,     τ]]
         """
         A = torch.einsum('bij, bj -> bij', M, H)
+
+        print(f'A {A}')
         return A
 
 
