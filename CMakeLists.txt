@@ -308,9 +308,11 @@ target_link_libraries(arm_controller lie)
 ament_target_dependencies(arm_controller rclcpp)
 
 if (Gst_FOUND AND GstApp_FOUND)
-    mrover_add_node(usb_camera esw/usb_camera/*.cpp esw/usb_camera/pch.hpp)
-    target_link_libraries(usb_camera PkgConfig::Gst PkgConfig::GstApp opencv_core opencv_imgcodecs parameter_utils)
-    ament_target_dependencies(usb_camera rclcpp)
+    mrover_add_component(usb_camera esw/usb_camera/*.cpp esw/usb_camera/pch.hpp UsbCamera)
+    mrover_ament_component(usb_camera rclcpp rclcpp_components tf2 tf2_ros)
+    mrover_link_component(usb_camera PkgConfig::Gst PkgConfig::GstApp opencv_core opencv_imgcodecs parameter_utils)
+
+    mrover_executable_from_component(usb_camera esw/usb_camera/exec.cpp usb_camera_component)
 
     if (LibUdev_FOUND)
         mrover_add_library(websocket_server esw/websocket_server/*.cpp esw/websocket_server)
