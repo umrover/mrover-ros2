@@ -1,10 +1,10 @@
 #include "key_detector.hpp"
 namespace mrover {
     auto KeyDetectorBase::preprocessYOLOv8Input(Model const& model, cv::Mat const& input, cv::Mat& output) -> void {
-        static cv::Mat rgbImage;
+        static cv::Mat bgrImage;
         static cv::Mat blobSizedImage;
 
-        cv::cvtColor(input, rgbImage, cv::COLOR_BGRA2RGB);
+        cv::cvtColor(input, bgrImage, cv::COLOR_BGRA2BGR);
 
         if (model.inputTensorSize.size() != 4) {
             throw std::runtime_error("Expected Blob Size to be of size 4, are you using the correct model type?");
@@ -13,7 +13,7 @@ namespace mrover {
         static constexpr double UCHAR_TO_DOUBLE = 1.0 / 255.0;
 
         cv::Size blobSize{static_cast<int32_t>(model.inputTensorSize[2]), static_cast<int32_t>(model.inputTensorSize[3])};
-        cv::resize(rgbImage, blobSizedImage, blobSize);
+        cv::resize(bgrImage, blobSizedImage, blobSize);
         cv::dnn::blobFromImage(blobSizedImage, output, UCHAR_TO_DOUBLE, blobSize, cv::Scalar{}, false, false);
     }
 
@@ -22,7 +22,37 @@ namespace mrover {
     }
 
     auto KeyDetectorBase::preprocessTextCoordsInput(Model const& model, cv::Mat const& input, cv::Mat& output) -> void {
-        // TODO: fill in
+        assert(output.type() == CV_32F);
+
+        static cv::Mat bgrImage;
+        
+        // Convert to correct color scheme
+        cv::cvtColor(input, bgrImage, cv::COLOR_BGRA2BGR);
+
+        bgrImage = cv::imread("/home/john/ros2_ws/src/mrover/perception/key_detector/keyrover/../datasets/test/image/f52.png", cv::IMREAD_COLOR);
+
+        static constexpr float SCALE_FACTOR = 1.0f;
+        static constexpr std::size_t CHANNELS = 3;
+        cv::Size blobSize{static_cast<int32_t>(model.inputTensorSize[2]), static_cast<int32_t>(model.inputTensorSize[3])};
+        cv::dnn::blobFromImage(bgrImage, output, 1.0f, blobSize, cv::Scalar{}, false, false);
+
+        // Normalize based on these values
+        const cv::Vec3f targetMeans{100.34723, 100.90665, 95.4391};
+        const cv::Vec3f targetStdDevs{78.34715, 76.304565, 77.18236};
+
+        for(std::size_t channel = 0; channel < CHANNELS; ++channel){
+            std::size_t numElts = static_cast<std::size_t>(blobSize.height * blobSize.width);
+            std::size_t offset = channel * numElts;
+
+            for(std::size_t elt = 0; elt < numElts; ++elt){
+                float& v = reinterpret_cast<float*>(output.data)[offset + elt];
+                v = (v - targetMeans.val[channel]) / targetStdDevs.val[channel];
+            }
+        }
+
+        for(int i = 0; i < 10; ++i){
+            RCLCPP_INFO_STREAM(model.ptr->get_logger(), i << " piz " << reinterpret_cast<float*>(output.data)[i]);
+        }
     }
 
     auto KeyDetectorBase::postprocessTextCoordsOutput(Model const& model, cv::Mat& output) -> void {

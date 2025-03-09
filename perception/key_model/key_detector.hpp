@@ -22,6 +22,9 @@ namespace mrover {
         using model_postprocess_t = std::function<void(Model const&, cv::Mat&)>;
 
         struct Model {
+            // TODO: remove
+            rclcpp::Node* ptr;
+
             std::string modelName;
 
             std::vector<int> objectHitCounts;
@@ -40,7 +43,7 @@ namespace mrover {
 
             Model() = default;
 
-            Model(std::string _modelName, std::vector<int> _objectHitCounts, std::vector<std::string> _classes, std::vector<int64_t> _inputTensorSize, std::vector<int64_t> _outputTensorSize, model_preprocess_t _preprocess, model_postprocess_t _postprocess) : modelName{std::move(_modelName)}, objectHitCounts(std::move(_objectHitCounts)), classes(std::move(_classes)), inputTensorSize(std::move(_inputTensorSize)), outputTensorSize(std::move(_outputTensorSize)), preprocess{std::move(_preprocess)}, postprocess{std::move(_postprocess)} {}
+            Model(rclcpp::Node* _ptr, std::string _modelName, std::vector<int> _objectHitCounts, std::vector<std::string> _classes, std::vector<int64_t> _inputTensorSize, std::vector<int64_t> _outputTensorSize, model_preprocess_t _preprocess, model_postprocess_t _postprocess) : ptr{_ptr}, modelName{std::move(_modelName)}, objectHitCounts(std::move(_objectHitCounts)), classes(std::move(_classes)), inputTensorSize(std::move(_inputTensorSize)), outputTensorSize(std::move(_outputTensorSize)), preprocess{std::move(_preprocess)}, postprocess{std::move(_postprocess)} {}
         };
 
 
@@ -56,7 +59,7 @@ namespace mrover {
         std::string mCameraFrame;
         std::string mWorldFrame;
 
-        cv::Mat mRgbImage, mImageBlob;
+        cv::Mat mRgbImage, mImageBlob, mTextCoordsBlob;
 
         LoopProfiler mLoopProfiler;
 

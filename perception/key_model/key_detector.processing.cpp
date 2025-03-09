@@ -83,6 +83,8 @@ namespace mrover {
         // Convert the RGB Image into the blob Image format
         mKeyDetectionModel.preprocess(mKeyDetectionModel, bgraImage, mImageBlob);
 
+        mTextCoordModel.preprocess(mTextCoordModel, bgraImage, mTextCoordsBlob);
+
         mLoopProfiler.measureEvent("Conversion");
 
         // Run the blob through the model
@@ -95,8 +97,6 @@ namespace mrover {
         parseYOLOv8Output(mKeyDetectionModel, outputTensor, detections);
 
         mLoopProfiler.measureEvent("Execution");
-
-        RCLCPP_INFO_STREAM(get_logger(), "Detections " << detections.size());
 
         mrover::msg::ImageTargets targets{};
         for (auto const& [classId, className, confidence, box]: detections) {

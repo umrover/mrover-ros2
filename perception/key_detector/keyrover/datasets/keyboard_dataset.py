@@ -104,6 +104,12 @@ class KeyboardDataset(Dataset):
 
     def cvt_image(self, img):
         img = self._resize((to_tensor(img)))
+        yo = []
+        yo.insert(0, transforms.ToDtype(torch.float32, scale=True))
+        yo2 = transforms.Compose(yo)
+        print(yo2)
+        img2 = yo2(img)
+        print(f"hduahidwuha {img2}")
         return self._input_augmentations(img)
 
 

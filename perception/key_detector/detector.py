@@ -59,8 +59,12 @@ class KeyDetector(Node):
             # Convert from ROS msg to np array/torch tensor
             img = np.frombuffer(msg.data, dtype=np.uint8).reshape(msg.height, msg.width, -1)
             img = cv2.cvtColor(img, cv2.COLOR_BGRA2BGR)
-            img_cv = cv2.resize(img, (640, 480), interpolation = cv2.INTER_LINEAR)
+            img = cv2.imread("/home/john/ros2_ws/src/mrover/perception/key_detector/keyrover/../datasets/test/image/f52.png");
+            img_cv = cv2.resize(img, SIZE, interpolation = cv2.INTER_LINEAR)
             img = self.test_dataset.cvt_image(img_cv)
+            
+            print(f'******** {img.shape}')
+            print(f'imag ***** {img}')
 
             # TODO yolo & model to use same input image size
 
