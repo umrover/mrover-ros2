@@ -29,7 +29,7 @@ namespace mrover {
         // Convert to correct color scheme
         cv::cvtColor(input, bgrImage, cv::COLOR_BGRA2BGR);
 
-        //bgrImage = cv::imread("/home/john/ros2_ws/src/mrover/perception/key_detector/keyrover/../datasets/test/image/f52.png", cv::IMREAD_COLOR);
+        bgrImage = cv::imread("/home/john/ros2_ws/src/mrover/perception/key_detector/keyrover/../datasets/test/image/f52.png", cv::IMREAD_COLOR);
 
         static constexpr float SCALE_FACTOR = 1.0f;
         static constexpr std::size_t CHANNELS = 3;
@@ -54,16 +54,12 @@ namespace mrover {
     auto KeyDetectorBase::postprocessTextCoordsOutput(Model const& model, cv::Mat& output) -> void {
         assert(output.total == 8);
 
-        for(int i = 0; i < 8; ++i){
-            RCLCPP_INFO_STREAM(model.ptr->get_logger(), i << " " << reinterpret_cast<float*>(output.data)[i]);
-        }
-
         // De-Normalize the output
 
         static constexpr std::array<float, 8> means{121.73, 304.18, 521.91, 321.19, 518.25, 182.49, 135.07, 166.05};
         static constexpr std::array<float, 8> stdDevs{295.45, 322.01, 291.26, 333.85, 291.21, 329.92, 298.24, 317.73};
 
-        float* data = reinterpret_cast<float*>(output.data);
+        auto* data = reinterpret_cast<float*>(output.data);
 
         for(std::size_t i = 0; i < 8; ++i){
             float& v = data[i];
@@ -87,38 +83,20 @@ namespace mrover {
 
         auto C = uvBasis * xyBasis.inverse();
 
-        RCLCPP_INFO_STREAM(model.ptr->get_logger(), "determ " << xyBasis.determinant());
-        for(int ii = 0; ii < 3; ++ii){
-            for(int iii = 0; iii < 3; ++iii){
-                RCLCPP_INFO_STREAM(model.ptr->get_logger(), ii << " " << xyBasis(ii, iii) << " ");
-            }
-        }
-
-        for(int ii = 0; ii < 3; ++ii){
-            for(int iii = 0; iii < 3; ++iii){
-                RCLCPP_INFO_STREAM(model.ptr->get_logger(), ii << " " << uvBasis(ii, iii) << " ");
-            }
-        }
-
-        for(int ii = 0; ii < 3; ++ii){
-            for(int iii = 0; iii < 3; ++iii){
-                RCLCPP_INFO_STREAM(model.ptr->get_logger(), ii << " " << C(ii, iii) << " ");
-            }
-        }
-
         static constexpr float RESOLUTION = 2.0f;
         static constexpr float WIDTH = 640;
         static constexpr float HEIGHT = 480;
 
-        std::vector<R3f> mask;
+        if(output.cols != static_cast<int>(WIDTH/RESOLUTION) || output.rows != static_cast<int>(HEIGHT/RESOLUTION))
+            output.create(static_cast<int>(HEIGHT/RESOLUTION), static_cast<int>(WIDTH/RESOLUTION), CV_32FC3);
+        auto* coords = reinterpret_cast<R3f*>(output.data);
         std::size_t index = 0;
-        mask.resize(static_cast<int>(WIDTH/RESOLUTION) * static_cast<int>((HEIGHT/RESOLUTION)));
 
         for(float y = 0.0f; y < HEIGHT;){
             y += RESOLUTION; 
             for(float x = 0.0f; x < WIDTH;){
                 x += RESOLUTION;
-                R3f& coord = mask[index];
+                R3f& coord = coords[index];
 
                 coord << x, y, 1.0f;
 
@@ -127,21 +105,12 @@ namespace mrover {
                 coord.y() /= coord.z();
                 coord.z() /= coord.z();
 
-                if(index < 10){
-                    RCLCPP_INFO_STREAM(model.ptr->get_logger(), index << " " << coord.x() << " " << coord.y() << " " << coord.z());
-                }
-
                 ++index;
             }
         }
 
 
-        output.create(static_cast<int>(HEIGHT/RESOLUTION), static_cast<int>(WIDTH/RESOLUTION), CV_32FC3);
-        RCLCPP_INFO_STREAM(model.ptr->get_logger(), "first " << output.rows * output.cols * output.depth() * sizeof(float) << " second " << mask.size() * sizeof(R3f));
-        RCLCPP_INFO_STREAM(model.ptr->get_logger(), "stupid " << output.rows << " " << static_cast<int>(HEIGHT/RESOLUTION));
-        RCLCPP_INFO_STREAM(model.ptr->get_logger(), "stupid " << output.cols);
-        RCLCPP_INFO_STREAM(model.ptr->get_logger(), "stupid " << output.channels());
-        std::memcpy(reinterpret_cast<void*>(output.data), reinterpret_cast<void*>(mask.data()), output.rows * output.cols * output.channels() * sizeof(float));
+        // Create an image from the keyboard gradient
         cv::Mat temp;
         output.convertTo(temp, CV_8UC3, 255.0);
         cv::cvtColor(temp, output, cv::COLOR_BGR2BGRA);
@@ -216,6 +185,70 @@ namespace mrover {
         }
     }
 
+    auto KeyDetectorBase::updateMedians(std::priority_queue<float>& left, std::priority_queue<float, std::vector<float>, std::greater<>>& right, float val) -> void{
+            // Insert new element into max heap
+            left.push(val);
+            
+            // Move the top of max heap to min heap to maintain order
+            float temp = left.top();
+            left.pop();
+            right.push(temp);
+          
+            // Balance heaps if min heap has more elements
+            if (right.size() > left.size()) {
+                temp = right.top();
+                right.pop();
+                left.push(temp);
+            }
+    }
+
+    auto KeyDetectorBase::matchKeyDetections(cv::Mat const& gradient, std::vector<Detection> const& detections) -> void{
+        // For each of the bounding boxes, find the median red and blue
+        int index = 0;
+        for(auto const& detect : detections){
+            int x = detect.box.x;
+            int y = detect.box.y;
+            int width = detect.box.width;
+            int height = detect.box.height;
+
+            std::priority_queue<float> blueMaxHeap;
+            std::priority_queue<float, std::vector<float>, std::greater<>> blueMinHeap;
+
+            std::priority_queue<float> greenMaxHeap;
+            std::priority_queue<float, std::vector<float>, std::greater<>> greenMinHeap;
+
+            std::priority_queue<float> redMaxHeap;
+            std::priority_queue<float, std::vector<float>, std::greater<>> redMinHeap;
+            
+            // Streaming Median Algorithm: See https://www.geeksforgeeks.org/median-of-stream-of-integers-running-integers/
+            for(int h = 0; h < height; ++h){
+                for(int w = 0; w < width; ++w){
+                    auto const& v = gradient.at<cv::Vec3f>(y + h, x + w);
+                    
+                    // Update each pq
+                    updateMedians(blueMaxHeap, blueMinHeap, v.val[0]);
+                    updateMedians(greenMaxHeap, greenMinHeap, v.val[1]);
+                    updateMedians(redMaxHeap, redMinHeap, v.val[2]);
+                }
+            }
+
+            auto findMedian = [](std::priority_queue<float>& left, std::priority_queue<float, std::vector<float>, std::greater<>>& right){
+                float median;
+                if (left.size() != right.size())
+                    median = left.top();
+                else
+                    median = static_cast<float>((left.top() + right.top()) / 2);
+                return median;
+            };
+
+            float blueMedian = findMedian(blueMaxHeap, blueMinHeap);
+            float greenMedian = findMedian(greenMaxHeap, greenMinHeap);
+            float redMedian = findMedian(redMaxHeap, redMinHeap);
+
+            RCLCPP_INFO_STREAM(get_logger(), ++index << " BRO " << blueMedian << " " << greenMedian << " " << redMedian);
+        }
+    }
+
     auto KeyDetectorBase::changeOfBasis(R2f const& p1, R2f const& p2, R2f const& p3, R2f const& p4) -> Eigen::Matrix3f{
         // See https://math.stackexchange.com/questions/296794/finding-the-transform-matrix-from-4-projected-points-with-javascript
 
@@ -225,7 +258,6 @@ namespace mrover {
 
         R3f X;
         X << p4.x(), p4.y(), 1;
-        RCLCPP_INFO_STREAM(rclcpp::get_logger("BRUH"), "YOOOO " << p4.x() << " " << p4.y());
 
         /*
          * M = [[x1, x2, x3],
@@ -237,26 +269,13 @@ namespace mrover {
              p1.y(), p2.y(), p3.y(),
              1.0f,   1.0f,   1.0f;
 
-        for(int ii = 0; ii < 3; ++ii){
-            for(int iii = 0; iii < 3; ++iii){
-                RCLCPP_INFO_STREAM(rclcpp::get_logger("BRUH"), ii << " MMMMMM " << M(ii, iii) << " ");
-            }
-        }
-
         Eigen::Matrix3f invM = M.inverse();
-
-        for(int ii = 0; ii < 3; ++ii){
-            for(int iii = 0; iii < 3; ++iii){
-                RCLCPP_INFO_STREAM(rclcpp::get_logger("BRUH"), ii << " awdawawa " << invM(ii, iii) << " ");
-            }
-        }
 
         /*
          * H = M @ X = [λ, μ, τ]
          */
 
         R3f H = invM * X;
-        RCLCPP_INFO_STREAM(rclcpp::get_logger("BRUH"), "HHHHHH " << H.x() << " " << H.y() << " " << H.z());
 
         /*
          * A = [[λ * x1, μ * x2, τ * x3],
@@ -268,12 +287,6 @@ namespace mrover {
         A <<    H(0) * p1.x(), H(1) * p2.x(), H(2) * p3.x(),
                 H(0) * p1.y(), H(1) * p2.y(), H(2) * p3.y(),
                 H(0),          H(1),          H(2);
-
-        for(int ii = 0; ii < 3; ++ii){
-            for(int iii = 0; iii < 3; ++iii){
-                RCLCPP_INFO_STREAM(rclcpp::get_logger("BRUH"), ii << " AAAAAAAAA " << A(ii, iii) << " ");
-            }
-        }
 
         return A;
     }

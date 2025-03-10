@@ -80,6 +80,11 @@ namespace mrover {
 
         cv::Mat bgraImage{static_cast<int>(msg->height), static_cast<int>(msg->width), CV_8UC4, const_cast<uint8_t*>(msg->data.data())};
 
+        cv::Mat temp;
+        temp = cv::imread("/home/john/ros2_ws/src/mrover/perception/key_detector/keyrover/../datasets/test/image/f91.png", cv::IMREAD_COLOR);
+
+        cv::cvtColor(temp, bgraImage, cv::COLOR_BGR2BGRA);
+
         // Convert the RGB Image into the blob Image format
         mKeyDetectionModel.preprocess(mKeyDetectionModel, bgraImage, mImageBlob);
 
@@ -101,10 +106,9 @@ namespace mrover {
 
         mTextCoordModel.postprocess(mTextCoordModel, outputTensor);
 
-        publishDetectedObjects(outputTensor);
+        matchKeyDetections(outputTensor, detections);
 
-        //cv::imshow("YOO", outputTensor);
-        //cv::waitKey();
+        publishDetectedObjects(outputTensor);
 
         mLoopProfiler.measureEvent("Execution");
 

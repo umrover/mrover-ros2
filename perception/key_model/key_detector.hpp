@@ -94,6 +94,10 @@ namespace mrover {
 
         static auto changeOfBasis(R2f const& p1, R2f const& p2, R2f const& p3, R2f const& p4) -> Eigen::Matrix3f;
 
+        static auto updateMedians(std::priority_queue<float>& left, std::priority_queue<float, std::vector<float>, std::greater<>>& right, float val) -> void;
+
+        auto matchKeyDetections(cv::Mat const& gradient, std::vector<Detection> const& detections) -> void;
+
         // Pre and Post Process for YOLO
         static auto preprocessYOLOv8Input(Model const& model, cv::Mat const& input, cv::Mat& output) -> void;
 

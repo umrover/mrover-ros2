@@ -23,6 +23,7 @@
 #include <string>
 #include <type_traits>
 #include <unordered_map>
+#include <queue>
 
 #include <opencv2/core.hpp>
 #include <opencv2/dnn.hpp>

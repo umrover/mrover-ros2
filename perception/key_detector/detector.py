@@ -59,14 +59,14 @@ class KeyDetector(Node):
             # Convert from ROS msg to np array/torch tensor
             img = np.frombuffer(msg.data, dtype=np.uint8).reshape(msg.height, msg.width, -1)
             img = cv2.cvtColor(img, cv2.COLOR_BGRA2BGR)
-            img = cv2.imread("/home/john/ros2_ws/src/mrover/perception/key_detector/keyrover/../datasets/test/image/f52.png");
+            img = cv2.imread("/home/john/ros2_ws/src/mrover/perception/key_detector/keyrover/../datasets/test/image/f91.png");
             img_cv = cv2.resize(img, SIZE, interpolation = cv2.INTER_LINEAR)
             img = self.test_dataset.cvt_image(img_cv)
             
             # TODO yolo & model to use same input image size
 
             bboxes = self.yolo_segmentation_model.predict(img_cv, conf=0.3, iou=0.3)[0]
-            print(f'bboxes {bboxes}')
+            print(f'bboxes {bboxes.boxes.xywh}')
             print(f'imgmigmigimmgigigi {img}')
             mask = self.corner_regression_model.predict(img)
 
@@ -89,6 +89,8 @@ class KeyDetector(Node):
             palette.colors
 
             source = np.array(list(texcoords.texcoords.values()))
+
+            print(f'source {source}')
 
             def create_distance_matrix(A, B):
                 A = np.repeat(A[:, None, :], len(B), axis=1)

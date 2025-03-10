@@ -16,8 +16,8 @@ namespace mrover {
                 {"hitcount_max", mObjMaxHitcount, 10},
                 {"key_detection_model_name", keyDetectionModelName, "yolo-key-detection"},
                 {"text_coords_model_name", textCoordsModelName, "magic"},
-                {"yolo_model_score_threshold", mModelScoreThreshold, 0.75},
-                {"yolo_model_nms_threshold", mModelNMSThreshold, 0.5},
+                {"yolo_model_score_threshold", mModelScoreThreshold, 0.3},
+                {"yolo_model_nms_threshold", mModelNMSThreshold, 0.3},
                 {"object_detector_debug", mDebug, true}};
 
         ParameterWrapper::declareParameters(this, params);
