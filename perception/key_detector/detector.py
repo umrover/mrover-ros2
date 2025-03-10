@@ -5,7 +5,8 @@ from rclpy.node import Node
 from sensor_msgs.msg import Image as ROSImage
 import time
 
-from keyrover import LabeledBBox, plot_bboxes, draw_textbox, ROOT_PATH
+from keyrover import LabeledBBox, plot_bboxes, draw_textbox, ROOT_PATH, plot_yolo
+from keyrover.images.key_mask import keys_from_yolo
 from keyrover.images.texcoord import TexcoordImage
 
 import os
@@ -68,12 +69,10 @@ class KeyDetector(Node):
         img = np.frombuffer(msg.data, dtype=np.uint8).reshape(msg.height, msg.width, -1)
         img = cv2.cvtColor(img, cv2.COLOR_BGRA2BGR)
         img_cv = cv2.resize(img, (640, 480), interpolation = cv2.INTER_LINEAR)
-
-        img = self.resize(torch.Tensor(img_cv).permute(2, 0, 1))
+        img = self.test_dataset.cvt_image(img_cv)
 
         imageTime = (time.process_time() - start) * 1000
         start = time.process_time()
-        
         # TODO yolo & model to use same input image size
 
         bboxes = self.yolo_segmentation_model.predict(img_cv, conf=0.3, iou=0.3)[0]
@@ -84,7 +83,7 @@ class KeyDetector(Node):
 
         mask = cv2.resize(mask, bboxes.orig_shape[::-1])
 
-        keys = [LabeledBBox(*box.xywh[0], i) for i, box in enumerate(bboxes.boxes)]
+        keys = keys_from_yolo(bboxes)
         texcoords = TexcoordImage(mask * 255, keys)
 
         with open(f"{DATASETS}/texcoords/{dataset}/texcoords_palette.bin", "rb") as file:
@@ -94,33 +93,20 @@ class KeyDetector(Node):
 
         n = len(source)
         m = len(palette.colors)
-
         def create_distance_matrix(A, B):
             if len(A.shape) == 1:
                 return None
-            return np.linalg.norm(A[:, None, :] - B[None, :, :], axis=-1)
+            A = np.repeat(A[:, None, :], len(B), axis=1)
+            return np.linalg.norm(A - B, axis=-1)
 
         
+
+        # source (n, 2)-vector of points in 2D
+        # palette (m, 2)-vector of points in 2D
+        # dist_matrix (n, m) matrix of pairwise distance between source & palette
         distance_matrix = create_distance_matrix(source, palette.colors)
 
         if(distance_matrix is None):
-            '''
-            scale=3
-            img = bboxes.orig_img.copy()
-            width, height, _ = img.shape
-            img = cv2.resize(img, (height * scale, width * scale))
-            boxes = [LabeledBBox(*box.xywh[0], label).scale(scale) for box, label in zip(bboxes.boxes, keys)]
-
-            img = to_numpy(img)
-            debug_img = ROSImage()
-            debug_img.height = img.shape[0]
-            debug_img.width = img.shape[1]
-            debug_img.encoding = 'bgr8'
-            debug_img.is_bigendian = sys.byteorder == 'big'
-            debug_img.step = 3 * debug_img.width
-            debug_img.data = np.reshape(img, (debug_img.width * debug_img.height * 3)).data
-
-            self.debug_img_pub.publish(debug_img)'''
             return
 
         # ith row is the ith source point
@@ -166,10 +152,7 @@ class KeyDetector(Node):
         keys = np.array(list(palette.colors_to_name.values()))
         keys = keys[col_ind]
 
-
-
         scale = 3
-
 
         #img = bboxes.orig_img #.copy()
         width, height, _ = img_cv.shape
@@ -189,7 +172,6 @@ class KeyDetector(Node):
         #img= np.reshape(img, (img.shape[1] * img.shape[0] * 3))
         reshapeTime = (time.process_time() - start) * 1000
         start = time.process_time()
-        
         #debug_img = bridge.cv2_to_imgmsg(img, encoding="bgr8")
 
         #self.videoWriter.write(img)
@@ -217,9 +199,6 @@ class KeyDetector(Node):
         print("Total time: ", imageTime + torchTime + cost_matrixTime + reshapeTime + publishTime + createTime + convertTime, " ms")
 
         #plt.show()
-    def destroy_node(self):
-        self.videoWriter.release()
-        super().destroy_node()
         
 def main(args=None):
     # Init ROS2
