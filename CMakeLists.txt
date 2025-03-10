@@ -278,6 +278,13 @@ if(ZED_FOUND AND CUDA_FOUND)
 
     mrover_executable_from_component(stereo_object_detector perception/executables/stereo_object_detector.cpp object_detector_component)
     mrover_executable_from_component(image_object_detector perception/executables/image_object_detector.cpp object_detector_component)
+
+    # Key Detector
+    mrover_add_component(key_model perception/key_model/*.c* perception/key_model/pch.hpp ImageKeyDetector)
+    mrover_link_component(key_model opencv_core opencv_dnn opencv_imgproc lie tbb tensorrt opencv_imgcodecs opencv_highgui loop_profiler parameter_utils cuda_compiler_flags)
+    mrover_ament_component(key_model rclcpp sensor_msgs rclcpp_components CUDA tf2 tf2_ros)
+
+    mrover_executable_from_component(image_key_detector perception/executables/image_key_detector.cpp key_model_component)
 else()
     message("ZED not found...")
 endif()
@@ -301,9 +308,11 @@ target_link_libraries(arm_controller lie)
 ament_target_dependencies(arm_controller rclcpp)
 
 if (Gst_FOUND AND GstApp_FOUND)
-    mrover_add_node(usb_camera esw/usb_camera/*.cpp esw/usb_camera/pch.hpp)
-    target_link_libraries(usb_camera PkgConfig::Gst PkgConfig::GstApp opencv_core opencv_imgcodecs parameter_utils)
-    ament_target_dependencies(usb_camera rclcpp)
+    mrover_add_component(usb_camera esw/usb_camera/*.cpp esw/usb_camera/pch.hpp UsbCamera)
+    mrover_ament_component(usb_camera rclcpp rclcpp_components tf2 tf2_ros)
+    mrover_link_component(usb_camera PkgConfig::Gst PkgConfig::GstApp opencv_core opencv_imgcodecs parameter_utils)
+
+    mrover_executable_from_component(usb_camera esw/usb_camera/exec.cpp usb_camera_component)
 
     if (LibUdev_FOUND)
         mrover_add_library(websocket_server esw/websocket_server/*.cpp esw/websocket_server)
