@@ -161,6 +161,10 @@ class CostmapSearchState(State):
         )
 
         if not arrived:
+            # can add the set insert here. 
+            current_point_set = self.traj.get_current_point()
+            #context.env.previous_locations.add(current_point_set[0],current_point_set[1])
+            #Context.env.previous_locations.add((self.coordinates[self.cur_pt][0],self.coordinates[self.cur_pt][1]))
             context.rover.send_drive_command(cmd_vel)
         else:
             self.prev_target_pos_in_map = target_position_in_map

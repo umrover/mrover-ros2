@@ -75,6 +75,7 @@ class Environment:
     arrived_at_target: bool = False
     arrived_at_waypoint: bool = False
     last_target_location: np.ndarray | None = None
+    #keep in cartesian. Then convert to ij when adding to costmap. If does not exist then delete tuple. 
     previous_locations = set()  #all the points that are low cost will be added
     def get_target_position(self, frame: str) -> np.ndarray | None:
         """
@@ -424,7 +425,8 @@ class Context:
         self.env.cost_map.height = msg.info.height  # cells
         self.env.cost_map.width = msg.info.width  # cells
         self.env.cost_map.data = cost_map_data.astype(np.float32)
-
+        for prevLocation in self.env.previous_locations:
+            self.env.cost_map[prevLocation[0],prevLocation[1]] = 0 
         # change all unidentified points to have a slight cost
         self.env.cost_map.data[cost_map_data == -1] = 10.0  # TODO: find optimal value
         # normalize to [0, 1]
