@@ -1,5 +1,4 @@
 #include "heading_filter.hpp"
-#include <rclcpp/logging.hpp>
 
 namespace mrover {
 
