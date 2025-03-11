@@ -53,9 +53,9 @@ class GPSLinearization(Node):
         self.synchronizer.registerCallback(self.gps_callback)
 
     def gps_callback(self, gps_msg: NavSatFix, gps_status_msg: FixStatus):
-        if (gps_status_msg.fix_type.fix == FixType.NO_SOL):
-            self.get_logger().warn("Received invalid GPS data, ignoring")
-            return
+        # if (gps_status_msg.fix_type.fix == FixType.NO_SOL):
+        #     self.get_logger().warn("Received invalid GPS data, ignoring")
+        #     return
 
         x, y, _ = geodetic2enu(gps_msg.latitude, gps_msg.longitude, 0.0, self.ref_lat, self.ref_lon, self.ref_alt, deg=True)
         self.pos_pub.publish(Vector3Stamped(header=gps_msg.header, vector=Vector3(x=x, y=y)))
