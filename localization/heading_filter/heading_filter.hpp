@@ -9,6 +9,7 @@ namespace mrover {
     private:
 
         void correct(double heading_correction_delta_meas, double heading_correction_delta_noise);
+        void predict(double process_noise);
 
         // callbacks
         void sync_rtk_heading_callback(const mrover::msg::Heading::ConstSharedPtr &heading, const mrover::msg::FixStatus::ConstSharedPtr &heading_status);

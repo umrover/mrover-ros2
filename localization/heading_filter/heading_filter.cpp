@@ -1,4 +1,5 @@
 #include "heading_filter.hpp"
+#include <rclcpp/parameter_value.hpp>
 
 namespace mrover {
 
@@ -7,9 +8,9 @@ namespace mrover {
         declare_parameter("world_frame", rclcpp::ParameterType::PARAMETER_STRING);
         declare_parameter("rover_frame", rclcpp::ParameterType::PARAMETER_STRING);
         declare_parameter("imu_watchdog_timeout", rclcpp::ParameterType::PARAMETER_DOUBLE);
-        declare_parameter("estimate_variance", rclcpp::ParameterType::PARAMETER_DOUBLE);
         declare_parameter("mag_heading_noise", rclcpp::ParameterType::PARAMETER_DOUBLE);
         declare_parameter("rtk_heading_noise", rclcpp::ParameterType::PARAMETER_DOUBLE);
+        declare_parameter("process_noise", rclcpp::ParameterType::PARAMETER_DOUBLE);
 
         // subscribers
         linearized_position_sub = this->create_subscription<geometry_msgs::msg::Vector3Stamped>("/linearized_position", 1, [&](const geometry_msgs::msg::Vector3Stamped::ConstSharedPtr &position) {
@@ -53,6 +54,12 @@ namespace mrover {
 
     }
 
+    void HeadingFilter::predict(double process_noise) {
+
+        P = P + process_noise;
+
+    }
+
 
     void HeadingFilter::correct(double heading_correction_delta_meas, double heading_correction_delta_noise) {
 
@@ -85,6 +92,7 @@ namespace mrover {
 
             double heading_correction_delta = measured_heading - uncorrected_heading;
             heading_correction_delta = fmod((heading_correction_delta + 4 * M_PI), 2 * M_PI) - M_PI;
+            predict(get_parameter("process_noise").as_double());
             correct(heading_correction_delta, get_parameter("rtk_heading_noise").as_double());
         }
 
@@ -118,6 +126,7 @@ namespace mrover {
 
         double heading_correction_delta = measured_heading - uncorrected_heading;
         heading_correction_delta = fmod((heading_correction_delta + 4 * M_PI), 2 * M_PI) - M_PI;
+        predict(get_parameter("process_noise").as_double());
         correct(heading_correction_delta, get_parameter("mag_heading_noise").as_double());
 
         // apply correction and publish

@@ -35,5 +35,6 @@ heading_filter:
     rover_frame: "base_link"
 
     imu_watchdog_timeout: 1.0
-    mag_heading_noise: 0.000001
+    mag_heading_noise: 0.1
     rtk_heading_noise: 0.01
+    process_noise: 0.01
