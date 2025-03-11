@@ -84,7 +84,7 @@ namespace mrover {
             measured_heading = measured_heading * (M_PI / 180);
 
             double heading_correction_delta = measured_heading - uncorrected_heading;
-
+            heading_correction_delta = fmod((heading_correction_delta + 4 * M_PI), 2 * M_PI) - M_PI;
             correct(heading_correction_delta, get_parameter("rtk_heading_noise").as_double());
         }
 
@@ -117,7 +117,7 @@ namespace mrover {
         measured_heading = measured_heading * (M_PI / 180);
 
         double heading_correction_delta = measured_heading - uncorrected_heading;
-        
+        heading_correction_delta = fmod((heading_correction_delta + 4 * M_PI), 2 * M_PI) - M_PI;
         correct(heading_correction_delta, get_parameter("mag_heading_noise").as_double());
 
         // apply correction and publish
