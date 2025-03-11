@@ -9,7 +9,6 @@ namespace mrover {
     private:
 
         // callbacks
-        void correct_and_publish(const geometry_msgs::msg::Vector3Stamped::ConstSharedPtr &position);
         void sync_rtk_heading_callback(const mrover::msg::Heading::ConstSharedPtr &heading, const mrover::msg::FixStatus::ConstSharedPtr &heading_status);
         void sync_imu_and_mag_callback(const sensor_msgs::msg::Imu::ConstSharedPtr &imu, const mrover::msg::Heading::ConstSharedPtr &mag_heading);
 
@@ -38,6 +37,7 @@ namespace mrover {
         std::optional<SO3d> curr_heading_correction;
         std::optional<sensor_msgs::msg::Imu> last_imu;
         std::optional<mrover::msg::Heading> last_mag_heading;
+        std::optional<geometry_msgs::msg::Vector3Stamped> last_position;
 
         // thresholding for data
         const rclcpp::Duration IMU_AND_MAG_WATCHDOG_TIMEOUT = rclcpp::Duration::from_seconds(1.0);

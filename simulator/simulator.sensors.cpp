@@ -224,11 +224,9 @@ namespace mrover {
 
                 Eigen::Vector3d imu_rot_m = imuInMap.rotation().col(1);
                 double mag_heading = std::atan2(imu_rot_m(1), imu_rot_m(0));
-                double mag_heading_accuracy = 0.01;
 
                 mrover::msg::Heading heading_msg;
                 heading_msg.heading = mag_heading;
-                heading_msg.heading_accuracy = mag_heading_accuracy;
                 heading_msg.header.stamp = get_clock()->now();
                 heading_msg.header.frame_id = "base_link";
 

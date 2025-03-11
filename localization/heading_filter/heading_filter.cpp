@@ -1,6 +1,4 @@
 #include "heading_filter.hpp"
-#include <Eigen/src/Geometry/AngleAxis.h>
-#include <rclcpp/logging.hpp>
 
 namespace mrover {
 
@@ -8,7 +6,7 @@ namespace mrover {
 
         // subscribers
         linearized_position_sub = this->create_subscription<geometry_msgs::msg::Vector3Stamped>("/linearized_position", 1, [&](const geometry_msgs::msg::Vector3Stamped::ConstSharedPtr &position) {
-            correct_and_publish(position);
+            last_position = *position;
         });
         rtk_heading_sub.subscribe(this, "/heading/fix");
         rtk_heading_status_sub.subscribe(this, "/heading_fix_status");
@@ -55,7 +53,7 @@ namespace mrover {
 
     void HeadingFilter::sync_rtk_heading_callback(const mrover::msg::Heading::ConstSharedPtr &heading, const mrover::msg::FixStatus::ConstSharedPtr &heading_status) {
 
-        if (!last_imu) {
+        if (!last_imu || !last_mag_heading) {
             RCLCPP_WARN(get_logger(), "No IMU data!");
             return;
         }
@@ -80,12 +78,12 @@ namespace mrover {
 
         // magnetometer when correction already exists
         else if (curr_heading_correction) {
-            
-            double measured_heading = last_mag_heading->heading;
-            if (measured_heading > 270) {
-                measured_heading = measured_heading - 360;
+
+            double measured_heading = 90 - last_mag_heading->heading;
+            if (measured_heading < -180) {
+                measured_heading = 360 + measured_heading;
             }
-            measured_heading = (90 - measured_heading) * (M_PI / 180);
+            measured_heading = measured_heading * (M_PI / 180);
 
             double heading_correction_delta = measured_heading - uncorrected_heading;
 
@@ -101,11 +99,11 @@ namespace mrover {
         // magnetometer when correction does not exist
         else {
 
-            double measured_heading = last_mag_heading->heading;
-            if (measured_heading > 270) {
-                measured_heading = measured_heading - 360;
+            double measured_heading = 90 - last_mag_heading->heading;
+            if (measured_heading < -180) {
+                measured_heading = 360 + measured_heading;
             }
-            measured_heading = (90 - measured_heading) * (M_PI / 180);
+            measured_heading = measured_heading * (M_PI / 180);
 
             double heading_correction_delta = measured_heading - uncorrected_heading;
             curr_heading_correction = Eigen::AngleAxisd(heading_correction_delta, R3d::UnitZ());
@@ -117,30 +115,32 @@ namespace mrover {
 
     void HeadingFilter::sync_imu_and_mag_callback(const sensor_msgs::msg::Imu::ConstSharedPtr &imu, const mrover::msg::Heading::ConstSharedPtr &mag_heading) {
         imu_and_mag_watchdog.reset();
+
         last_imu = *imu;
         last_mag_heading = *mag_heading;
-    }
 
-    void HeadingFilter::correct_and_publish(const geometry_msgs::msg::Vector3Stamped::ConstSharedPtr &position) {
-
-        if (!last_imu) {
-            RCLCPP_WARN(get_logger(), "No IMU data!");
+        if (!last_position) {
+            RCLCPP_WARN(get_logger(), "No position data!");
             return;
         }
 
-        R3d position_in_map(position->vector.x, position->vector.y, position->vector.z);
+        R3d position_in_map(last_position->vector.x, last_position->vector.y, last_position->vector.z);
         SE3d pose_in_map(position_in_map, SO3d::Identity());
 
         Eigen::Quaterniond uncorrected_orientation(last_imu->orientation.w, last_imu->orientation.x, last_imu->orientation.y, last_imu->orientation.z);
         SO3d uncorrected_orientation_rotm = uncorrected_orientation;
-        SO3d corrected_orientation = curr_heading_correction.value() * uncorrected_orientation_rotm;
 
-        pose_in_map.asSO3() = corrected_orientation;
-        
+        if (!curr_heading_correction) {
+            RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1000, "No heading correction, publishing raw IMU");
+            pose_in_map.asSO3() = uncorrected_orientation_rotm;
+        }
+        else {
+            RCLCPP_INFO_THROTTLE(get_logger(), *get_clock(), 1000, "%s", std::format("Heading corrected by: {}", curr_heading_correction->z()).c_str());
+            SO3d corrected_orientation = curr_heading_correction.value() * uncorrected_orientation_rotm;
+            pose_in_map.asSO3() = corrected_orientation;
+        }
+
         SE3Conversions::pushToTfTree(tf_broadcaster, rover_frame, world_frame, pose_in_map, get_clock()->now());
-
-        RCLCPP_INFO_STREAM(get_logger(), std::format("Heading corrected by: {}", curr_heading_correction->z()));
-        
     }
 
 }

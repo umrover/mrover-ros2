@@ -1,2 +1,2 @@
 std_msgs/Header header
-float32 heading
+float32 horizontal_vel

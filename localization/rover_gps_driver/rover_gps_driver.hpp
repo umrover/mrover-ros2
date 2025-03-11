@@ -1,5 +1,6 @@
 #pragma once
 
+#include "mrover/msg/detail/gps_velocity__struct.hpp"
 #include "pch.hpp"
 
 namespace mrover {
@@ -14,6 +15,8 @@ namespace mrover {
         rclcpp::Publisher<mrover::msg::FixStatus>::SharedPtr gps_status_pub;
         rclcpp::Publisher<mrover::msg::Heading>::SharedPtr heading_pub;
         rclcpp::Publisher<mrover::msg::FixStatus>::SharedPtr heading_status_pub;
+        rclcpp::Publisher<mrover::msg::GPSVelocity>::SharedPtr velocity_pub;
+        rclcpp::Publisher<mrover::msg::FixStatus>::SharedPtr velocity_status_pub;
         rclcpp::Publisher<mrover::msg::SatelliteSignal>::SharedPtr satellite_signal_pub;
         rclcpp::Subscription<rtcm_msgs::msg::Message>::SharedPtr rtcm_sub;
 
@@ -26,6 +29,7 @@ namespace mrover {
 
         constexpr static std::string GNGGA_HEADER = "$GNGGA";
         constexpr static std::string UNIHEADING_HEADER = "#UNIHEADINGA";
+        constexpr static std::string BESTNAV_HEADER = "#BESTNAVA";
 
         constexpr static std::string GPS_HEADER = "$GPGSV";
         constexpr static std::string GLONASS_HEADER = "$GLGSV";
@@ -43,6 +47,10 @@ namespace mrover {
 
         constexpr static uint8_t UNIHEADING_STATUS_POS = 11;
         constexpr static uint8_t UNIHEADING_HEADING_POS = 13;
+
+        constexpr static uint8_t VEL_STATUS_POS = 32;
+        constexpr static uint8_t VEL_POS = 35;
+
 
         constexpr static uint8_t CNO_POS = 7;
         

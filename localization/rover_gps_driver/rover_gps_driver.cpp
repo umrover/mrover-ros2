@@ -1,5 +1,4 @@
 #include "rover_gps_driver.hpp"
-#include "mrover/msg/detail/fix_type__struct.hpp"
 
 namespace mrover {
 
@@ -25,6 +24,8 @@ namespace mrover {
         gps_status_pub = this->create_publisher<mrover::msg::FixStatus>("/gps_fix_status", 10);
         heading_pub = this->create_publisher<mrover::msg::Heading>("/heading/fix", 10);
         heading_status_pub = this->create_publisher<mrover::msg::FixStatus>("/heading_fix_status", 10);
+        velocity_pub = this->create_publisher<mrover::msg::GPSVelocity>("/velocity/fix", 10);
+        velocity_status_pub = this->create_publisher<mrover::msg::FixStatus>("/velocity_fix_status", 10);
         satellite_signal_pub = this->create_publisher<mrover::msg::SatelliteSignal>("/gps/satellite_signal", 10);
         rtcm_sub = this->create_subscription<rtcm_msgs::msg::Message>("/rtcm", 10, [&](rtcm_msgs::msg::Message::ConstSharedPtr const& rtcm_message) {
             process_rtcm(rtcm_message);
@@ -54,6 +55,18 @@ namespace mrover {
 
             if (stoi(tokens[GNGGA_QUAL_POS]) == 0) {
                 RCLCPP_WARN(get_logger(), "Invalid fix. Are we inside?");
+
+                fix_type.fix = mrover::msg::FixType::NO_SOL;
+                fix_status.fix_type = fix_type;
+                fix_status.header = header;
+
+                nav_sat_fix.header = header;
+                nav_sat_fix.latitude = 42.293195;
+                nav_sat_fix.longitude = -83.7096706;
+                nav_sat_fix.altitude = 0;
+
+                gps_pub->publish(nav_sat_fix);
+                gps_status_pub->publish(fix_status);
                 return;
             }
             else {
@@ -80,14 +93,10 @@ namespace mrover {
                 lon = -lon;
             }
 
-            // TODO: get real covariance
-            std::array<double, 9> cov = {1, 0, 0, 0, 1, 0, 0, 0, 1};
-
             nav_sat_fix.header = header;
             nav_sat_fix.latitude = lat;
             nav_sat_fix.longitude = lon;
             nav_sat_fix.altitude = alt;
-            nav_sat_fix.position_covariance = cov;
 
             if (stoi(tokens[GNGGA_QUAL_POS]) == 5) {
                 fix_type.fix = mrover::msg::FixType::FLOAT;
@@ -103,8 +112,8 @@ namespace mrover {
             fix_status.fix_type = fix_type;
             fix_status.header = header;
             
-            gps_status_pub->publish(fix_status);
             gps_pub->publish(nav_sat_fix);
+            gps_status_pub->publish(fix_status);
 
         }
 
@@ -122,7 +131,17 @@ namespace mrover {
             }
             else {
                 RCLCPP_WARN(get_logger(), "Heading: no solution. Are both antennas plugged in?");
-                fix_type.fix = mrover::msg::FixType::NONE;
+
+                fix_type.fix = mrover::msg::FixType::NO_SOL;
+                fix_status.fix_type = fix_type;
+                fix_status.header = header;
+
+                heading.header = header;
+                heading.heading = 0;
+
+                heading_pub->publish(heading);
+                heading_status_pub->publish(fix_status);
+                return;
             }
 
             fix_status.fix_type = fix_type;
@@ -136,6 +155,51 @@ namespace mrover {
 
             heading_pub->publish(heading);
             heading_status_pub->publish(fix_status);
+
+        }
+
+        if (msg_header == BESTNAV_HEADER) {
+
+            mrover::msg::GPSVelocity velocity;
+            mrover::msg::FixStatus fix_status;
+            mrover::msg::FixType fix_type;
+
+            if (tokens[VEL_STATUS_POS] == "NARROW_FLOAT") {
+                fix_type.fix = mrover::msg::FixType::FLOAT;
+            }
+            else if (tokens[UNIHEADING_STATUS_POS] == "NARROW_INT") {
+                fix_type.fix = mrover::msg::FixType::FIXED;
+            }
+            else if (tokens[UNIHEADING_STATUS_POS] == "DOPPLER_VELOCITY") {
+                fix_type.fix = mrover::msg::FixType::NONE;
+            }
+            else {
+                RCLCPP_WARN(get_logger(), "Velocity: no solution. Are we inside?");
+
+                fix_type.fix = mrover::msg::FixType::NO_SOL;
+                fix_status.fix_type = fix_type;
+                fix_status.header = header;
+
+                velocity.horizontal_vel = 0;
+                velocity.header = header;
+
+                velocity_pub->publish(velocity);
+                velocity_status_pub->publish(fix_status);
+                return;
+            }
+
+            fix_status.fix_type = fix_type;
+
+            float gps_velocity = stof(tokens[VEL_POS]);
+
+            velocity.header = header;
+            velocity.horizontal_vel = gps_velocity;
+
+            fix_status.header = header;
+
+            velocity_pub->publish(velocity);
+            velocity_status_pub->publish(fix_status);
+
 
         }
 
@@ -198,8 +262,6 @@ int main(int argc, char**argv) {
 
     node->spin();
     rclcpp::shutdown();
-
-    // TODO: graceful keyboard interrupt
     
     return 0;
 
