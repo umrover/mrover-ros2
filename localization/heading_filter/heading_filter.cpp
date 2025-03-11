@@ -79,12 +79,12 @@ namespace mrover {
 
         // magnetometer when correction already exists
         else if (curr_heading_correction) {
-            
-            double measured_heading = last_mag_heading->heading;
-            if (measured_heading > 270) {
-                measured_heading = measured_heading - 360;
+
+            double measured_heading = 90 - last_mag_heading->heading;
+            if (measured_heading < -180) {
+                measured_heading = 360 + measured_heading;
             }
-            measured_heading = (90 - measured_heading) * (M_PI / 180);
+            measured_heading = measured_heading * (M_PI / 180);
 
             double heading_correction_delta = measured_heading - uncorrected_heading;
 
@@ -100,11 +100,11 @@ namespace mrover {
         // magnetometer when correction does not exist
         else {
 
-            double measured_heading = last_mag_heading->heading;
-            if (measured_heading > 270) {
-                measured_heading = measured_heading - 360;
+            double measured_heading = 90 - last_mag_heading->heading;
+            if (measured_heading < -180) {
+                measured_heading = 360 + measured_heading;
             }
-            measured_heading = (90 - measured_heading) * (M_PI / 180);
+            measured_heading = measured_heading * (M_PI / 180);
 
             double heading_correction_delta = measured_heading - uncorrected_heading;
             curr_heading_correction = Eigen::AngleAxisd(heading_correction_delta, R3d::UnitZ());
