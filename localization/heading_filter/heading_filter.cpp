@@ -126,7 +126,6 @@ namespace mrover {
 
         double heading_correction_delta = measured_heading - uncorrected_heading;
         heading_correction_delta = fmod((heading_correction_delta + 3 * M_PI), 2 * M_PI) - M_PI;
-        RCLCPP_INFO(get_logger(), "%f, %f, %f", measured_heading, uncorrected_heading, heading_correction_delta);
         predict(get_parameter("process_noise").as_double());
         correct(heading_correction_delta, get_parameter("mag_heading_noise").as_double());
 
