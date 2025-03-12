@@ -1,4 +1,5 @@
 #include "rover_gps_driver.hpp"
+#include <geometry_msgs/msg/detail/vector3_stamped__struct.hpp>
 
 namespace mrover {
 
@@ -24,7 +25,7 @@ namespace mrover {
         gps_status_pub = this->create_publisher<mrover::msg::FixStatus>("/gps_fix_status", 10);
         heading_pub = this->create_publisher<mrover::msg::Heading>("/heading/fix", 10);
         heading_status_pub = this->create_publisher<mrover::msg::FixStatus>("/heading_fix_status", 10);
-        velocity_pub = this->create_publisher<mrover::msg::GPSVelocity>("/velocity/fix", 10);
+        velocity_pub = this->create_publisher<geometry_msgs::msg::Vector3Stamped>("/velocity/fix", 10);
         velocity_status_pub = this->create_publisher<mrover::msg::FixStatus>("/velocity_fix_status", 10);
         satellite_signal_pub = this->create_publisher<mrover::msg::SatelliteSignal>("/gps/satellite_signal", 10);
         rtcm_sub = this->create_subscription<rtcm_msgs::msg::Message>("/rtcm", 10, [&](rtcm_msgs::msg::Message::ConstSharedPtr const& rtcm_message) {
@@ -160,7 +161,7 @@ namespace mrover {
 
         if (msg_header == BESTNAV_HEADER) {
 
-            mrover::msg::GPSVelocity velocity;
+            geometry_msgs::msg::Vector3Stamped velocity;
             mrover::msg::FixStatus fix_status;
             mrover::msg::FixType fix_type;
 
@@ -180,8 +181,10 @@ namespace mrover {
                 fix_status.fix_type = fix_type;
                 fix_status.header = header;
 
-                velocity.horizontal_vel = 0;
                 velocity.header = header;
+                velocity.vector.x = 0;
+                velocity.vector.y = 0;
+                velocity.vector.z = 0;
 
                 velocity_pub->publish(velocity);
                 velocity_status_pub->publish(fix_status);
@@ -191,15 +194,17 @@ namespace mrover {
             fix_status.fix_type = fix_type;
 
             float gps_velocity = stof(tokens[VEL_POS]);
+            float gps_dir = stof(tokens[VEL_DIR_POS]);
 
             velocity.header = header;
-            velocity.horizontal_vel = gps_velocity;
+            velocity.vector.x = std::sin(gps_dir) * gps_velocity;
+            velocity.vector.y = std::cos(gps_dir) * gps_velocity;
+            velocity.vector.z = 0;
 
             fix_status.header = header;
 
             velocity_pub->publish(velocity);
             velocity_status_pub->publish(fix_status);
-
 
         }
 

@@ -2,6 +2,7 @@
 
 #include "mrover/msg/detail/gps_velocity__struct.hpp"
 #include "pch.hpp"
+#include <geometry_msgs/msg/detail/vector3_stamped__struct.hpp>
 
 namespace mrover {
 
@@ -15,7 +16,7 @@ namespace mrover {
         rclcpp::Publisher<mrover::msg::FixStatus>::SharedPtr gps_status_pub;
         rclcpp::Publisher<mrover::msg::Heading>::SharedPtr heading_pub;
         rclcpp::Publisher<mrover::msg::FixStatus>::SharedPtr heading_status_pub;
-        rclcpp::Publisher<mrover::msg::GPSVelocity>::SharedPtr velocity_pub;
+        rclcpp::Publisher<geometry_msgs::msg::Vector3Stamped>::SharedPtr velocity_pub;
         rclcpp::Publisher<mrover::msg::FixStatus>::SharedPtr velocity_status_pub;
         rclcpp::Publisher<mrover::msg::SatelliteSignal>::SharedPtr satellite_signal_pub;
         rclcpp::Subscription<rtcm_msgs::msg::Message>::SharedPtr rtcm_sub;
@@ -50,6 +51,7 @@ namespace mrover {
 
         constexpr static uint8_t VEL_STATUS_POS = 32;
         constexpr static uint8_t VEL_POS = 35;
+        constexpr static uint8_t VEL_DIR_POS = 36;
 
 
         constexpr static uint8_t CNO_POS = 7;

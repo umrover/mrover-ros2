@@ -31,7 +31,7 @@ namespace mrover {
 
         // sensor callbacks
         void imu_callback(const sensor_msgs::msg::Imu& imu_msg);
-        void pos_callback(const geometry_msgs::msg::Vector3Stamped& pos_msg);
+        void pos_callback(const geometry_msgs::msg::Vector3& pos_msg);
         void mag_heading_callback(const mrover::msg::Heading& mag_heading_msg);
         void accel_callback(const geometry_msgs::msg::Vector3 &a, const Matrix33d &cov_a);
         void vel_callback(const geometry_msgs::msg::Vector3& vel_msg);
@@ -55,7 +55,7 @@ namespace mrover {
         rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr imu_sub;
         rclcpp::Subscription<mrover::msg::Heading>::SharedPtr rtk_heading_sub;
         rclcpp::Subscription<mrover::msg::Heading>::SharedPtr mag_heading_sub;
-        rclcpp::Subscription<mrover::msg::GPSVelocity>::SharedPtr velocity_sub;
+        rclcpp::Subscription<geometry_msgs::msg::Vector3Stamped>::SharedPtr velocity_sub;
 
         // tf broadcaster
         tf2_ros::Buffer tf_buffer{get_clock()};

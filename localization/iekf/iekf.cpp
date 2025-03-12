@@ -1,4 +1,5 @@
 #include "iekf.hpp"
+#include <geometry_msgs/msg/detail/vector3_stamped__struct.hpp>
 
 namespace mrover {
     
@@ -22,7 +23,11 @@ namespace mrover {
         });
 
         pos_sub = this->create_subscription<geometry_msgs::msg::Vector3Stamped>("/linearized_position", 10, [&](const geometry_msgs::msg::Vector3Stamped::ConstSharedPtr& pos_msg) {
-            pos_callback(*pos_msg);
+            pos_callback(pos_msg->vector);
+        });
+
+        vel_sub = this->create_subscription<geometry_msgs::msg::Vector3Stamped>("/velocity/fix", 10, [&](const geometry_msgs::msg::Vector3Stamped::ConstSharedPtr& vel_msg) {
+            vel_callback(vel_msg->vector);
         });
 
         // subscribers sim
@@ -198,7 +203,7 @@ namespace mrover {
 
     }
 
-    void IEKF::pos_callback(const geometry_msgs::msg::Vector3Stamped& pos_msg) {
+    void IEKF::pos_callback(const geometry_msgs::msg::Vector3& pos_msg) {
 
         RCLCPP_INFO(get_logger(), "pos callback");
 
@@ -208,17 +213,17 @@ namespace mrover {
         Matrix33d N;
 
         H << Matrix33d::Zero(), Matrix33d::Zero(), -1 * Matrix33d::Identity();
-        Y << -1 * X.block<3, 3>(0, 0).transpose() * Vector3d{pos_msg.vector.x, pos_msg.vector.y, pos_msg.vector.z}, 0, 1;
+        Y << -1 * X.block<3, 3>(0, 0).transpose() * Vector3d{pos_msg.x, pos_msg.y, pos_msg.z}, 0, 1;
         b << 0, 0, 0, 0, 1;
         N << X.block<3, 3>(0, 0) * 0.01 * Matrix33d::Identity() * X.block<3, 3>(0, 0).transpose();
 
         correct(Y, b, N, H);
 
-        geometry_msgs::msg::Vector3 vel_msg;
-        vel_msg.x = 0;
-        vel_msg.y = 0;
-        vel_msg.z = 0;
-        vel_callback(vel_msg);
+        // geometry_msgs::msg::Vector3 vel_msg;
+        // vel_msg.x = 0;
+        // vel_msg.y = 0;
+        // vel_msg.z = 0;
+        // vel_callback(vel_msg);
         
 
     }
