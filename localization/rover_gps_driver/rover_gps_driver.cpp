@@ -1,5 +1,4 @@
 #include "rover_gps_driver.hpp"
-#include <geometry_msgs/msg/detail/vector3_stamped__struct.hpp>
 
 namespace mrover {
 
@@ -168,10 +167,10 @@ namespace mrover {
             if (tokens[VEL_STATUS_POS] == "NARROW_FLOAT") {
                 fix_type.fix = mrover::msg::FixType::FLOAT;
             }
-            else if (tokens[UNIHEADING_STATUS_POS] == "NARROW_INT") {
+            else if (tokens[VEL_STATUS_POS] == "NARROW_INT") {
                 fix_type.fix = mrover::msg::FixType::FIXED;
             }
-            else if (tokens[UNIHEADING_STATUS_POS] == "DOPPLER_VELOCITY") {
+            else if (tokens[VEL_STATUS_POS] == "DOPPLER_VELOCITY") {
                 fix_type.fix = mrover::msg::FixType::NONE;
             }
             else {

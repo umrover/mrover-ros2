@@ -43,7 +43,8 @@ def generate_launch_description():
     iekf_node = Node(
         package="mrover",
         executable="iekf",
-        name="iekf"
+        name="iekf",
+        parameters=[os.path.join(get_package_share_directory("mrover"), "config", "localization.yaml")],
     )
 
     quat_iekf_node = Node(

@@ -1,6 +1,5 @@
 #pragma once
 
-#include "mrover/msg/detail/gps_velocity__struct.hpp"
 #include "pch.hpp"
 #include <geometry_msgs/msg/detail/vector3_stamped__struct.hpp>
 

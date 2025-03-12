@@ -47,7 +47,7 @@ namespace mrover {
             pos_callback(pos_msg->vector);
         });
 
-        vel_sub = this->create_subscription<geometry_msgs::msg::Vector3Stamped>("/velocity/fix", 10, [&](const geometry_msgs::msg::Vector3Stamped::ConstSharedPtr& vel_msg) {
+        velocity_sub = this->create_subscription<geometry_msgs::msg::Vector3Stamped>("/velocity/fix", 10, [&](const geometry_msgs::msg::Vector3Stamped::ConstSharedPtr& vel_msg) {
             vel_callback(vel_msg->vector);
         });
 

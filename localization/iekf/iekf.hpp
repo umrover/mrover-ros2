@@ -4,7 +4,6 @@
 
 
 // ROS Headers, ros namespace
-#include "mrover/msg/detail/gps_velocity__struct.hpp"
 #include "pch.hpp"
 
 using SO3d = manif::SO3d;
