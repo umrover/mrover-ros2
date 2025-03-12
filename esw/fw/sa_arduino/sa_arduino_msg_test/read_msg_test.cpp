@@ -10,7 +10,7 @@
 
 #define PI 3.1415926535897932384626433832795
 #define HEADER_BYTE 0xA5
-
+ 
 // Define message IDs
 #define MSG_SERVO_SET_POSITION     0x00
 #define MSG_SERVO_POSITION_DATA    0x01

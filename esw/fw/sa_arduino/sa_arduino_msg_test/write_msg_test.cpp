@@ -11,7 +11,7 @@
 #define MSG_SERVO_SET_POSITION 0x00  // Message ID for ServoSetPosition
 
 void sendServoSetPositionMessage(int serial_port, uint8_t id, float radians, bool is_counterclockwise);
-
+ 
 int main() {
     const char *device = "/dev/ttyACM0"; // Replace with the appropriate device
     int baudrate = B115200;               // Match the Arduino's0 baud rate

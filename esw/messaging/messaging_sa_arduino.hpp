@@ -25,7 +25,7 @@ namespace mrover::messaging {
 
         struct ServoPositionData {
             std::uint8_t header = HEADER_BYTE;
-            std::uint8_t messageID = SERVO_POSITION_DATA;
+            std::uint8_t messageID = SERVO_POSITIOclN_DATA;
 
             std::uint8_t _unused : 4 {};
             std::uint8_t id : 4 {}; // internal id of servo
