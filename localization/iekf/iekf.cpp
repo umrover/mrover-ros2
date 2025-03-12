@@ -1,9 +1,30 @@
 #include "iekf.hpp"
 #include <geometry_msgs/msg/detail/vector3_stamped__struct.hpp>
+#include <rclcpp/parameter_value.hpp>
 
 namespace mrover {
     
     IEKF::IEKF() : Node{"iekf"} {
+
+        // declare ros params
+        declare_parameter("world_frame", rclcpp::ParameterType::PARAMETER_STRING);
+        declare_parameter("rover_frame", rclcpp::ParameterType::PARAMETER_STRING);
+        declare_parameter("scale_cov_a", rclcpp::ParameterType::PARAMETER_DOUBLE);
+        declare_parameter("scale_cov_w", rclcpp::ParameterType::PARAMETER_DOUBLE);
+        declare_parameter("pos_noise_fixed", rclcpp::ParameterType::PARAMETER_DOUBLE);
+        declare_parameter("pos_noise_float", rclcpp::ParameterType::PARAMETER_DOUBLE);
+        declare_parameter("pos_noise_none", rclcpp::ParameterType::PARAMETER_DOUBLE);
+        declare_parameter("vel_noise_fixed", rclcpp::ParameterType::PARAMETER_DOUBLE);
+        declare_parameter("vel_noise_float", rclcpp::ParameterType::PARAMETER_DOUBLE);
+        declare_parameter("vel_noise_none", rclcpp::ParameterType::PARAMETER_DOUBLE);
+        declare_parameter("mag_heading_noise", rclcpp::ParameterType::PARAMETER_DOUBLE);
+        declare_parameter("rtk_heading_noise", rclcpp::ParameterType::PARAMETER_DOUBLE);
+
+        scale_cov_a = get_parameter("scale_cov_a").as_double();
+        scale_cov_w = get_parameter("scale_cov_w").as_double();
+        pos_noise_fixed = get_parameter("pos_noise_fixed").as_double();
+        vel_noise_fixed = get_parameter("vel_noise_fixed").as_double();
+        mag_heading_noise = get_parameter("mag_heading_noise").as_double();
 
         // initialize state variables
         X.setIdentity();
@@ -84,8 +105,8 @@ namespace mrover {
 
         // process noise
         Q.block(0, 0, 3, 3) = cov_w.cwiseAbs();
-        Q.block(3, 3, 3, 3) = cov_a.cwiseAbs() * 100;
-        Q.block(6, 6, 3, 3) = cov_a.cwiseAbs() * 100 * dt;
+        Q.block(3, 3, 3, 3) = cov_a.cwiseAbs();
+        Q.block(6, 6, 3, 3) = cov_a.cwiseAbs() * dt;
         Q_d = (A * dt).exp() * Q * dt * ((A * dt).exp()).transpose();
 
         // get linear acceleration in world frame
@@ -189,15 +210,15 @@ namespace mrover {
             dt = (imu_msg.header.stamp.sec + imu_msg.header.stamp.nanosec * 1e-9) - (last_imu_time.value().sec + last_imu_time.value().nanosec * 1e-9);   
         }
 
-        predict(Vector3d{w.x, w.y, w.z}, cov_w, Vector3d{a.x, a.y, a.z}, cov_a, dt);
+        predict(Vector3d{w.x, w.y, w.z}, scale_cov_w * cov_w, Vector3d{a.x, a.y, a.z}, scale_cov_a * cov_a, dt);
         
-        accel_callback(a, cov_a);
+        accel_callback(a, scale_cov_a * cov_a);
 
         R3d translation = X.block<3, 1>(0, 4);
         SO3d rotation = Eigen::Quaterniond(X.block<3, 3>(0, 0));
 
         SE3d pose_in_map(translation, rotation);
-        SE3Conversions::pushToTfTree(tf_broadcaster, get_parameter("rover_frame").as_string(), get_parameter("map_frame").as_string(), pose_in_map, get_clock()->now());
+        SE3Conversions::pushToTfTree(tf_broadcaster, get_parameter("rover_frame").as_string(), get_parameter("world_frame").as_string(), pose_in_map, get_clock()->now());
 
         last_imu_time = imu_msg.header.stamp;
 
@@ -215,7 +236,7 @@ namespace mrover {
         H << Matrix33d::Zero(), Matrix33d::Zero(), -1 * Matrix33d::Identity();
         Y << -1 * X.block<3, 3>(0, 0).transpose() * Vector3d{pos_msg.x, pos_msg.y, pos_msg.z}, 0, 1;
         b << 0, 0, 0, 0, 1;
-        N << X.block<3, 3>(0, 0) * 0.01 * Matrix33d::Identity() * X.block<3, 3>(0, 0).transpose();
+        N << X.block<3, 3>(0, 0) * pos_noise_fixed * Matrix33d::Identity() * X.block<3, 3>(0, 0).transpose();
 
         correct(Y, b, N, H);
 
@@ -240,7 +261,7 @@ namespace mrover {
         H << Matrix33d::Zero(), -1 * Matrix33d::Identity(), Matrix33d::Zero();
         Y << -1 * X.block<3, 3>(0, 0).transpose() * Vector3d{vel_msg.x, vel_msg.y, vel_msg.z}, 1, 0;
         b << 0, 0, 0, 1, 0;
-        N << X.block<3, 3>(0, 0) * 0.01 * Matrix33d::Identity() * X.block<3, 3>(0, 0).transpose();
+        N << X.block<3, 3>(0, 0) * vel_noise_fixed * Matrix33d::Identity() * X.block<3, 3>(0, 0).transpose();
 
         correct(Y, b, N, H);
     }
@@ -267,7 +288,7 @@ namespace mrover {
         H << -1 * manif::skew(mag_ref), Matrix33d::Zero(), Matrix33d::Zero();
         Y << -1 * Vector3d{std::cos(heading), -std::sin(heading), 0}, 0, 0;
         b << -1 * mag_ref, 0, 0;
-        N << X.block<3, 3>(0, 0) * 0.1 * X.block<3, 3>(0, 0).transpose();
+        N << X.block<3, 3>(0, 0) * mag_heading_noise * Matrix33d::Identity() * X.block<3, 3>(0, 0).transpose();
 
         RCLCPP_INFO(get_logger(), "heading: %f", heading);
         correct(Y, b, N, H);

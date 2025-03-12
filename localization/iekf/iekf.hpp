@@ -78,6 +78,13 @@ namespace mrover {
         Vector3d accel_bias{0.0, 0.0, 0.0};
         constexpr static int BIAS_WINDOW = 20;
         constexpr static float BIAS_THRESHOLD = 0.05;
+
+        // parameters
+        double scale_cov_a;
+        double scale_cov_w;
+        double pos_noise_fixed;
+        double vel_noise_fixed;
+        double mag_heading_noise;
     
 
     public:
