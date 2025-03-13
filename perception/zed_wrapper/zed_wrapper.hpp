@@ -84,7 +84,7 @@ namespace mrover {
         auto pointCloudUpdateThread() -> void;
 
     public:
-        explicit ZedWrapper(rclcpp::NodeOptions const& options = rclcpp::NodeOptions());
+        ZedWrapper();
 
         ~ZedWrapper() override;
     };

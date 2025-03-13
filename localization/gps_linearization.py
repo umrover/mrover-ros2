@@ -16,7 +16,7 @@ import numpy as np
 from pymap3d.enu import geodetic2enu
 
 import rclpy
-from geometry_msgs.msg import Vector3Stamped
+from geometry_msgs.msg import Vector3Stamped, Vector3
 from rclpy import Parameter
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
@@ -26,7 +26,6 @@ from message_filters import TimeSynchronizer, Subscriber
 
 
 class GPSLinearization(Node):
-
     def __init__(self) -> None:
         super().__init__("gps_linearization")
 
@@ -45,8 +44,7 @@ class GPSLinearization(Node):
         self.ref_alt = self.get_parameter("ref_alt").value
         self.world_frame = self.get_parameter("world_frame").value
 
-        self.gps_sub = message_filters.Subscriber(self, NavSatFix, "gps/fix")
-        self.orientation_sub = message_filters.Subscriber(self, Imu, "zed_imu/data_raw")
+        self.pos_pub = self.create_publisher(Vector3Stamped, "linearized_position", 10)
 
         self.gps_sub = Subscriber(self, NavSatFix, "/gps/fix")
         self.gps_status_sub = Subscriber(self, FixStatus, "/gps_fix_status")
