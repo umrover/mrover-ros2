@@ -36,7 +36,8 @@ arm_hw_bridge:
       abs_ratio: -1.0
       abs_offset: 0.995
       position_p: 30.0
-      velocity_p: 5.0
+      velocity_p: 30.0
+      velocity_d: 10.0
       calibration_throttle: 0.5
       limit_switch_0_present: true
       limit_switch_0_enabled: true
