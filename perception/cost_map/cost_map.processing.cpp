@@ -39,20 +39,6 @@ namespace mrover {
         try {
             SE3f cameraToMap = SE3Conversions::fromTfTree(mTfBuffer, "zed_left_camera_frame", "map").cast<float>();
 
-            // TIMING DEBUG
-            // RCLCPP_INFO_STREAM(get_logger(), inputMsg->header.stamp.sec);
-
-            // struct BinEntry {
-            //     R3f pointInCamera;
-            //     R3f pointInMap;
-            //     R3f normal;
-            // };
-
-            // struct Bin {
-            //     std::vector<BinEntry> points;
-            //     int32_t i;  // index (used for for_each)
-            // };
-
             struct Bin {
                 int high_pts;
                 int total;
@@ -98,9 +84,6 @@ namespace mrover {
                         ++bins[index].high_pts;
                     }
                     ++bins[index].total;
-
-
-                    // 1[index].points.emplace_back(BinEntry{pointInCamera, pointInMap, normal});
                 }
             }
 			
@@ -115,12 +98,9 @@ namespace mrover {
                     continue;
                 }
 
-                // // Percentage Algorithm (acounts for angle changes (and outliers))
+                // Percentage Algorithm (acounts for angle changes (and outliers))
                 // // Chose the percentage algorithm because it's less sensitive to angle changes (and outliers) and can accurately track
                 // //     objects outside. Normal averaging too sensitive.
-                // std::size_t pointsHigh = std::ranges::count_if(bin.points, [this, &roverSE3](BinEntry const& entry) {
-                //     return (entry.normal.z()) <= mZThreshold;
-                // });
 
 
                 double percent = static_cast<double>(bin.high_pts) / static_cast<double>(bin.total);
@@ -138,25 +118,6 @@ namespace mrover {
 
             // Variable dilation for any width`
             std::array<CostMapNode::Coordinate,(2*dilation+1)*(2*dilation+1)> dis = diArray();
-
-            // // RCLCPP_INFO_STREAM(get_logger(), std::format("Index: {}\tRow {}\tCol {}\tmWidth {}\tWidth2 {}", coordinateToIndex(dis[8]), dis[8].row, dis[8].col, mWidth, postProcesed.info.width));
-            // // for (int row = 0; row < mWidth; ++row) {
-            // //     for(int col = 0; col < mHeight; ++col) {
-            // //         int oned_index = coordinateToIndex({row, col});
-            // std::for_each(bins.begin(), bins.end(), [&](Bin& cell) {
-            //     auto coord = indexToCoordinate(cell.i);
-            //     // RCLCPP_INFO_STREAM(get_logger(), std::format("Testing Index: {}", oned_index));
-            //     if(std::ranges::any_of(dis, [&](CostMapNode::Coordinate di) {
-            //         // the coordinate of the cell we are checking + dis offset
-            //         Coordinate dcoord = {coord.row + di.row, coord.col + di.col};
-            //         if(dcoord.row < 0 || dcoord.row >= mHeight || dcoord.col < 0 || dcoord.col >= mWidth)
-            //             return false;
-
-            //         // RCLCPP_INFO_STREAM(get_logger(), std::format("Index: {}", coordinateToIndex(dcoord)));
-            //         return mGlobalGridMsg.data[coordinateToIndex(dcoord)] > FREE_COST;
-            //     })) postProcesed.data[cell.i] = OCCUPIED_COST;
-            //     // }
-            // });
 
             // TODO: consider running the dilation 2x instead of using a 5x5 "kernel"
             for (int row = 0; row < mWidth; ++row) {
@@ -184,7 +145,7 @@ namespace mrover {
 
     // Resolved at compile time, returns dilation kernel
     constexpr auto CostMapNode::diArray()->std::array<CostMapNode::Coordinate,(2*dilation+1)*(2*dilation+1)>{
-        std::array<CostMapNode::Coordinate, (2*dilation+1)*(2*dilation+1)> di;
+        std::array<CostMapNode::Coordinate, (2*dilation+1)*(2*dilation+1)> di{};
         int pos = 0;
 
         for(int r = -dilation; r <= dilation; r++){
@@ -218,11 +179,15 @@ namespace mrover {
         RCLCPP_INFO_STREAM(get_logger(), "Incoming request: " + req->course);
         SE3d centerInMap = SE3Conversions::fromTfTree(mTfBuffer, req->course, mMapFrame);
 
-        // Calculate new center for costmap, will be at nearest bin location
-        double newTopLeftX = std::ceil(centerInMap.x() - mSize/2.0) - mResolution;
-        double newTopLeftY = std::ceil(centerInMap.y() - mSize/2.0) - mResolution;
-        double oldTopLeftX = mGlobalGridMsg.info.origin.position.x; // top left
-        double oldTopLeftY = mGlobalGridMsg.info.origin.position.y; // top left
+        // Calculate new center for costmap, will be at nearest bin location. First round down to nearest int then use fmod to 
+        //    add so that we effectively round to nearest multiple of mResolution
+        int newLeftX = std::floor(centerInMap.x() - mSize/2.0);
+        int newLeftY = std::floor(centerInMap.y() - mSize/2.0);
+        double newTopLeftX = newLeftX + std::fmod(newLeftX, mResolution);
+        double newTopLeftY = newLeftY + std::fmod(newLeftY, mResolution);
+
+        double oldTopLeftX = mGlobalGridMsg.info.origin.position.x; // old top left X
+        double oldTopLeftY = mGlobalGridMsg.info.origin.position.y; // old top left Y
 
         // One of the directions will cause overlap
         RCLCPP_INFO_STREAM(get_logger(), "Size " << mGlobalGridMsg.data.size());
@@ -257,11 +222,11 @@ namespace mrover {
         RCLCPP_INFO_STREAM(get_logger(), "Moved cost map");
     }
 
-    auto CostMapNode::indexToCoordinate(const int index) -> CostMapNode::Coordinate {
+    auto CostMapNode::indexToCoordinate(const int index) const -> CostMapNode::Coordinate {
         return {index / mWidth, index % mWidth};
     }
 
-    auto CostMapNode::coordinateToIndex(const Coordinate c) -> int{
+    auto CostMapNode::coordinateToIndex(const Coordinate c) const -> int{
         return c.row * mWidth + c.col;
     }
 
