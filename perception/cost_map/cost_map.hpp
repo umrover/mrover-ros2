@@ -71,19 +71,19 @@ namespace mrover {
             int row;
             int col;
 
-            auto operator-(Coordinate& other)->Coordinate{
+            auto operator-(Coordinate& other) const->Coordinate{
                 return {row - other.row, col - other.col};
             }
 
-            auto operator+(Coordinate& other)->Coordinate{
+            auto operator+(Coordinate& other) const->Coordinate{
                 return {row + other.row, col + other.col};
             }
         };
 
         constexpr auto diArray()->std::array<CostMapNode::Coordinate,(2*dilation+1)*(2*dilation+1)>;
 
-        auto indexToCoordinate(int index) -> Coordinate;
-        auto coordinateToIndex(Coordinate c) -> int;
+        auto indexToCoordinate(int index) const -> Coordinate;
+        auto coordinateToIndex(Coordinate c) const -> int;
     };
 
 } // namespace mrover
