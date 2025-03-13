@@ -1,5 +1,4 @@
 #include "rover_gps_driver.hpp"
-#include "mrover/msg/detail/fix_type__struct.hpp"
 
 namespace mrover {
 
@@ -18,13 +17,14 @@ namespace mrover {
         std::string port_string = std::to_string(baud);
         serial.set_option(boost::asio::serial_port_base::baud_rate(baud));
 
-        //RCLCPP_INFO(get_logger(), "Connected to GPS via serial!");
+        RCLCPP_INFO(get_logger(), "Connected to GPS via serial!");
         
         // publishers and subscribers
         gps_pub = this->create_publisher<sensor_msgs::msg::NavSatFix>("/gps/fix", 10);
         gps_status_pub = this->create_publisher<mrover::msg::FixStatus>("/gps_fix_status", 10);
         heading_pub = this->create_publisher<mrover::msg::Heading>("/heading/fix", 10);
         heading_status_pub = this->create_publisher<mrover::msg::FixStatus>("/heading_fix_status", 10);
+
         satellite_signal_pub = this->create_publisher<mrover::msg::SatelliteSignal>("/gps/satellite_signal", 10);
         rtcm_sub = this->create_subscription<rtcm_msgs::msg::Message>("/rtcm", 10, [&](rtcm_msgs::msg::Message::ConstSharedPtr const& rtcm_message) {
             process_rtcm(rtcm_message);
@@ -53,11 +53,23 @@ namespace mrover {
             mrover::msg::FixType fix_type;
 
             if (stoi(tokens[GNGGA_QUAL_POS]) == 0) {
-                //RCLCPP_WARN(get_logger(), "Invalid fix. Are we inside?");
+                RCLCPP_WARN(get_logger(), "Invalid fix. Are we inside?");
+
+                fix_type.fix = mrover::msg::FixType::NO_SOL;
+                fix_status.fix_type = fix_type;
+                fix_status.header = header;
+
+                nav_sat_fix.header = header;
+                nav_sat_fix.latitude = 0;
+                nav_sat_fix.longitude = 0;
+                nav_sat_fix.altitude = 0;
+
+                gps_pub->publish(nav_sat_fix);
+                gps_status_pub->publish(fix_status);
                 return;
             }
             else {
-                //RCLCPP_INFO(get_logger(), "Valid fix, %s satellites in use.", tokens[GNGGA_SATELLITES_POS].c_str());
+                RCLCPP_INFO(get_logger(), "Valid fix, %s satellites in use.", tokens[GNGGA_SATELLITES_POS].c_str());
             }
             
             uint16_t lat_deg = stoi(tokens[GNGGA_LAT_POS].substr(0, 2));
@@ -80,14 +92,10 @@ namespace mrover {
                 lon = -lon;
             }
 
-            // TODO: get real covariance
-            std::array<double, 9> cov = {1, 0, 0, 0, 1, 0, 0, 0, 1};
-
             nav_sat_fix.header = header;
             nav_sat_fix.latitude = lat;
             nav_sat_fix.longitude = lon;
             nav_sat_fix.altitude = alt;
-            nav_sat_fix.position_covariance = cov;
 
             if (stoi(tokens[GNGGA_QUAL_POS]) == 5) {
                 fix_type.fix = mrover::msg::FixType::FLOAT;
@@ -96,15 +104,15 @@ namespace mrover {
                 fix_type.fix = mrover::msg::FixType::FIXED;
             }
             else {
-                //RCLCPP_WARN(get_logger(), "Position: No RTK fix. Has the basestation finished survey-in?");
+                RCLCPP_WARN(get_logger(), "Position: No RTK fix. Has the basestation finished survey-in?");
                 fix_type.fix = mrover::msg::FixType::NONE;
             }
 
             fix_status.fix_type = fix_type;
             fix_status.header = header;
             
-            gps_status_pub->publish(fix_status);
             gps_pub->publish(nav_sat_fix);
+            gps_status_pub->publish(fix_status);
 
         }
 
@@ -122,7 +130,17 @@ namespace mrover {
             }
             else {
                 RCLCPP_WARN(get_logger(), "Heading: no solution. Are both antennas plugged in?");
-                fix_type.fix = mrover::msg::FixType::NONE;
+
+                fix_type.fix = mrover::msg::FixType::NO_SOL;
+                fix_status.fix_type = fix_type;
+                fix_status.header = header;
+
+                heading.header = header;
+                heading.heading = 0;
+
+                heading_pub->publish(heading);
+                heading_status_pub->publish(fix_status);
+                return;
             }
 
             fix_status.fix_type = fix_type;
@@ -198,8 +216,6 @@ int main(int argc, char**argv) {
 
     node->spin();
     rclcpp::shutdown();
-
-    // TODO: graceful keyboard interrupt
     
     return 0;
 

@@ -21,10 +21,10 @@ gps_linearization:
 
 rover_gps_driver:
   ros__parameters:
-    port_unicore: /dev/gps
+    port_unicore: /dev/unicore_gps
     baud_unicore: 115200
 
-    port_ublox: /dev/gps
+    port_ublox: /dev/ublox_gps
     baud_ublox: 38400
 
     frame_id: "base_link"
@@ -33,3 +33,8 @@ heading_filter:
   ros__parameters:
     world_frame: "map"
     rover_frame: "base_link"
+
+    imu_watchdog_timeout: 1.0
+    mag_heading_noise: 0.5
+    rtk_heading_noise: 0.01
+    process_noise: 0.000001
