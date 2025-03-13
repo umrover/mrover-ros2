@@ -33,13 +33,6 @@ def generate_launch_description():
         parameters=[os.path.join(get_package_share_directory("mrover"), "config", "localization.yaml")],
     )
 
-    zed_node = Node(
-        package="mrover",
-        executable="zed",
-        name="zed_wrapper",
-        parameters=[os.path.join(get_package_share_directory("mrover"), "config", "zed.yaml")],
-    )
-
     heading_filter_node = Node(
         package="mrover",
         executable="heading_filter",
@@ -47,6 +40,4 @@ def generate_launch_description():
         parameters=[os.path.join(get_package_share_directory("mrover"), "config", "localization.yaml")],
     )
 
-    return LaunchDescription([rover_gps_driver_node, gps_linearization_node, zed_node, heading_filter_node])
-
-    # return LaunchDescription([zed_node])
+    return LaunchDescription([rover_gps_driver_node, gps_linearization_node, heading_filter_node])

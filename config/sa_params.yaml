@@ -1,0 +1,22 @@
+sa_hw_bridge:
+  ros__parameters:
+    linear_actuator:
+      is_inverted: false
+      driver_voltage: 10.5
+      motor_max_voltage: 12.0
+    auger:
+      is_inverted: false
+      driver_voltage: 10.5
+      motor_max_voltage: 12.0
+    pump_a:
+      is_inverted: false
+      driver_voltage: 10.5
+      motor_max_voltage: 12.0
+    pump_b:
+      is_inverted: false
+      driver_voltage: 10.5
+      motor_max_voltage: 12.0
+    sensor_actuator:
+      is_inverted: false
+      driver_voltage: 10.5
+      motor_max_voltage: 12.0

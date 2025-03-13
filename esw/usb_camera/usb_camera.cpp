@@ -25,7 +25,7 @@ namespace mrover {
                     {"width", mWidth, 640},
                     {"height", mHeight, 480},
                     {"framerate", framerate, 30},
-                    {"device", deviceName, "video0"},
+                    {"device", deviceName, "long_range_cam"},
                     {"watchdog_timeout", watchdogTimeout, 1.0},
                     {"decode_jpeg_from_device", decodeJpegFromDevice, false}};
 
