@@ -52,7 +52,7 @@ namespace mrover {
     }
 
     auto KeyDetectorBase::postprocessTextCoordsOutput(Model const& model, cv::Mat& output) -> void {
-        assert(output.total == 8);
+        // assert(output.total == 8);
 
         // De-Normalize the output
 

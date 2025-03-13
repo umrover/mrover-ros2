@@ -23,7 +23,7 @@
     // Below we are just putting directly where those symlinks go
     "python.analysis.extraPaths": [
         "/opt/ros/humble/lib/python3/dist-packages",
-        "../../install/mrover/local/lib/python3.10/dist-packages",
+        "../../install/mrover/lib/python3.10/dist-packages",
     ],
     "[python]": {
         "editor.defaultFormatter": "ms-python.black-formatter",
