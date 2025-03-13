@@ -1,11 +1,10 @@
 #include "cost_map.hpp"
-#include <cstddef>
+#include <algorithm>
 #include <nav_msgs/msg/detail/occupancy_grid__struct.hpp>
+#include <rclcpp/logging.hpp>
+#include <utility>
 
 namespace mrover {
-
-    constexpr static double IMU_WATCHDOG_TIMEOUT = 0.1;
-
     auto remap(double x, double inMin, double inMax, double outMin, double outMax) -> double {
         return (x - inMin) * (outMax - outMin) / (inMax - inMin) + outMin;
     }
@@ -14,7 +13,14 @@ namespace mrover {
 
     auto mapToGrid(Eigen::Vector3f const& positionInMap, nav_msgs::msg::OccupancyGrid const& grid) -> int {
         Eigen::Vector2f origin{grid.info.origin.position.x, grid.info.origin.position.y};
-        Eigen::Vector2f gridFloat = (positionInMap.head<2>() - origin) / grid.info.resolution;
+        Eigen::Vector2f gridFloat = (positionInMap.head<2>() - origin);
+
+        // checking for out of bounds points
+        // TODO: replace the width [or height] * resolution with mSize
+        if(gridFloat.x() < 0 || gridFloat.x() > static_cast<float>(grid.info.width) * grid.info.resolution || 
+            gridFloat.y() < 0 || gridFloat.y() > static_cast<float>(grid.info.height) * grid.info.resolution) return -1;        
+
+        gridFloat /= grid.info.resolution;
         int gridX = std::floor(gridFloat.x());
         int gridY = std::floor(gridFloat.y());
         return gridY * static_cast<int>(grid.info.width) + gridX;
@@ -25,49 +31,99 @@ namespace mrover {
         assert(msg->height > 0);
         assert(msg->width > 0);
 
-        // if (!mLastImuTime || ros::Time::now() - mLastImuTime.value() > ros::Duration{IMU_WATCHDOG_TIMEOUT}) return;
+        //RCLCPP_INFO_STREAM(get_logger(), "COST MAP MESSAGE POINTER: " << msg.get());
+        //RCLCPP_INFO_STREAM(get_logger(), "COST MAP MESSAGE TIME: " << msg->header.stamp.sec);
+
+		mInliers.clear();
 
         try {
             SE3f cameraToMap = SE3Conversions::fromTfTree(mTfBuffer, "zed_left_camera_frame", "map").cast<float>();
 
-            struct BinEntry {
-                R3f pointInCamera;
-                R3f pointInMap;
+            // TIMING DEBUG
+            // RCLCPP_INFO_STREAM(get_logger(), inputMsg->header.stamp.sec);
+
+            // struct BinEntry {
+            //     R3f pointInCamera;
+            //     R3f pointInMap;
+            //     R3f normal;
+            // };
+
+            // struct Bin {
+            //     std::vector<BinEntry> points;
+            //     int32_t i;  // index (used for for_each)
+            // };
+
+            struct Bin {
+                int high_pts;
+                int total;
             };
-            using Bin = std::vector<BinEntry>;
 
             std::vector<Bin> bins;
             bins.resize(mGlobalGridMsg.data.size());
 
+			// Clips the point cloud and fills bins the points
             auto* points = reinterpret_cast<Point const*>(msg->data.data());
             for (std::size_t r = 0; r < msg->height; r += mDownSamplingFactor) {
                 for (std::size_t c = 0; c < msg->width; c += mDownSamplingFactor) {
                     Point const& point = points[r * msg->width + c];
+
                     R3f pointInCamera{point.x, point.y, point.z};
+                    R3f normal{point.normal_x, point.normal_y, point.normal_z};
 
                     // Points with no stereo correspondence are NaN's, so ignore them
                     if (pointInCamera.hasNaN()) continue;
+                    if(normal.hasNaN()) continue;
+                    
 
-                    if (double distanceSquared = pointInCamera.squaredNorm();
-                        distanceSquared < square(mNearClip) || distanceSquared > square(mFarClip)) continue;
+                    if (pointInCamera.y() > mRightClip &&
+						pointInCamera.y() < mLeftClip &&
+						pointInCamera.x() < mFarClip &&
+						pointInCamera.x() > mNearClip &&
+                        pointInCamera.z() < mTopClip){
+						if constexpr (uploadDebugPointCloud){
+							mInliers.push_back(point);
+						}	
+					}else{
+						continue;
+					}
 
                     R3f pointInMap = cameraToMap.act(pointInCamera);
 
                     int index = mapToGrid(pointInMap, mGlobalGridMsg);
                     if (index < 0 || index >= static_cast<int>(mGlobalGridMsg.data.size())) continue;
 
-                    bins[index].emplace_back(BinEntry{pointInCamera, pointInMap});
+                    
+                    // TODO REPLACE this 
+                    if(normal.z() <= mZThreshold) {
+                        ++bins[index].high_pts;
+                    }
+                    ++bins[index].total;
+
+
+                    // 1[index].points.emplace_back(BinEntry{pointInCamera, pointInMap, normal});
                 }
             }
+			
+			// If we are using the debug point cloud publish it
+			if constexpr (uploadDebugPointCloud){
+				uploadPC();
+			}
 
             for (std::size_t i = 0; i < mGlobalGridMsg.data.size(); ++i) {
-                Bin& bin = bins[i];
-                if (bin.size() < 16) continue;
+				Bin& bin = bins[i];
+                if (bin.total < 16){
+                    continue;
+                }
 
-                std::size_t pointsHigh = std::ranges::count_if(bin, [this](BinEntry const& entry) {
-                    return entry.pointInCamera.z() > mZThreshold;
-                });
-                double percent = static_cast<double>(pointsHigh) / static_cast<double>(bin.size());
+                // // Percentage Algorithm (acounts for angle changes (and outliers))
+                // // Chose the percentage algorithm because it's less sensitive to angle changes (and outliers) and can accurately track
+                // //     objects outside. Normal averaging too sensitive.
+                // std::size_t pointsHigh = std::ranges::count_if(bin.points, [this, &roverSE3](BinEntry const& entry) {
+                //     return (entry.normal.z()) <= mZThreshold;
+                // });
+
+
+                double percent = static_cast<double>(bin.high_pts) / static_cast<double>(bin.total);
 
                 std::int8_t cost = percent > mZPercent ? OCCUPIED_COST : FREE_COST;
 
@@ -77,114 +133,136 @@ namespace mrover {
             }
 
 
-            constexpr double MAX_COST_RADIUS = 2;
-            constexpr double INFLATION_RADIUS = 3;
+			// Square Dilate operation
+            nav_msgs::msg::OccupancyGrid postProcesed = mGlobalGridMsg;
 
-            nav_msgs::msg::OccupancyGrid postProcessed = mGlobalGridMsg;
-            std::ptrdiff_t width = postProcessed.info.width;
-            std::ptrdiff_t height = postProcessed.info.height;
-            double resolution = postProcessed.info.resolution;
+            // Variable dilation for any width`
+            std::array<CostMapNode::Coordinate,(2*dilation+1)*(2*dilation+1)> dis = diArray();
 
-            int maxInflationCells = static_cast<int>(INFLATION_RADIUS / resolution);
+            // // RCLCPP_INFO_STREAM(get_logger(), std::format("Index: {}\tRow {}\tCol {}\tmWidth {}\tWidth2 {}", coordinateToIndex(dis[8]), dis[8].row, dis[8].col, mWidth, postProcesed.info.width));
+            // // for (int row = 0; row < mWidth; ++row) {
+            // //     for(int col = 0; col < mHeight; ++col) {
+            // //         int oned_index = coordinateToIndex({row, col});
+            // std::for_each(bins.begin(), bins.end(), [&](Bin& cell) {
+            //     auto coord = indexToCoordinate(cell.i);
+            //     // RCLCPP_INFO_STREAM(get_logger(), std::format("Testing Index: {}", oned_index));
+            //     if(std::ranges::any_of(dis, [&](CostMapNode::Coordinate di) {
+            //         // the coordinate of the cell we are checking + dis offset
+            //         Coordinate dcoord = {coord.row + di.row, coord.col + di.col};
+            //         if(dcoord.row < 0 || dcoord.row >= mHeight || dcoord.col < 0 || dcoord.col >= mWidth)
+            //             return false;
 
-            std::array<std::ptrdiff_t, 11> dis{0,
-                                               -1,
-                                               +1,
-                                               -width,
-                                               -1 - width,
-                                               +1 - width,
-                                               +width,
-                                               -1 + width,
-                                               +1 + width};
+            //         // RCLCPP_INFO_STREAM(get_logger(), std::format("Index: {}", coordinateToIndex(dcoord)));
+            //         return mGlobalGridMsg.data[coordinateToIndex(dcoord)] > FREE_COST;
+            //     })) postProcesed.data[cell.i] = OCCUPIED_COST;
+            //     // }
+            // });
 
-            for (std::ptrdiff_t& di: dis) {
-                mGlobalGridMsg.data[mapToGrid(cameraToMap.translation(), mGlobalGridMsg) + di] = FREE_COST;
-            }
+            // TODO: consider running the dilation 2x instead of using a 5x5 "kernel"
+            for (int row = 0; row < mWidth; ++row) {
+                for(int col = 0; col < mHeight; ++col) {
+                    int oned_index = coordinateToIndex({row, col});
+                    // RCLCPP_INFO_STREAM(get_logger(), std::format("Testing Index: {}", oned_index));
+                    if(std::ranges::any_of(dis, [&](CostMapNode::Coordinate di) {
+                        // the coordinate of the cell we are checking + dis offset
+                        Coordinate dcoord = {row + di.row, col + di.col};
+                        if(dcoord.row < 0 || dcoord.row >= mHeight || dcoord.col < 0 || dcoord.col >= mWidth)
+                            return false;
 
-            // Inflate cost map
-            auto temp = postProcessed;
-            for (std::size_t i = 0; i < postProcessed.data.size(); ++i) {
-
-
-                if (temp.data[i] > FREE_COST) {
-                    int centerX = i % width;
-                    int centerY = i / width;
-
-                    for (int dx = -maxInflationCells; dx <= maxInflationCells; ++dx) {
-                        for (int dy = -maxInflationCells; dy <= maxInflationCells; ++dy) {
-                            if (centerX + dx < 0 || centerX + dx >= width || centerY + dy < 0 || centerY + dy >= height) {
-                                continue;
-                            }
-
-                            double distance = std::sqrt(dx * dx + dy * dy);
-
-                            if (distance <= INFLATION_RADIUS) {
-                                std::ptrdiff_t neighborIndex = (centerY + dy) * width + (centerX + dx);
-
-                                if (distance <= MAX_COST_RADIUS) {
-                                    postProcessed.data[neighborIndex] = OCCUPIED_COST;
-                                } else {
-                                    double factor = (INFLATION_RADIUS - distance) / (INFLATION_RADIUS - MAX_COST_RADIUS);
-                                    postProcessed.data[neighborIndex] = std::max(postProcessed.data[neighborIndex],
-                                                                                 static_cast<std::int8_t>(/*factor * */ OCCUPIED_COST));
-                                }
-                            }
-                        }
-                    }
+                        // RCLCPP_INFO_STREAM(get_logger(), std::format("Index: {}", coordinateToIndex(dcoord)));
+                        return mGlobalGridMsg.data[coordinateToIndex(dcoord)] > FREE_COST;
+                    })) postProcesed.data[oned_index] = OCCUPIED_COST;
                 }
             }
 
-            mCostMapPub->publish(postProcessed);
-
-            // nav_msgs::msg::OccupancyGrid postProcessed = mGlobalGridMsg;
-            // std::ptrdiff_t width = postProcessed.info.width;
-
-            // std::array<std::ptrdiff_t, 11> dis
-            //                             {0,
-            //                             -1,
-            //                             +1,
-            //                             -width,
-            //                             -1 -width,
-            //                             +1 -width,
-            //                             +width,
-            //                             -1 +width,
-            //                             +1 +width};
-
-            // for (std::ptrdiff_t &di : dis) {
-            //     mGlobalGridMsg.data[mapToGrid(cameraToMap.translation(), mGlobalGridMsg)+di] = FREE_COST;
             // }
-
-            // // TODO: Find optimal value of di_n
-            // for(std::size_t di_n = 0; di_n < 3; di_n++) {
-            //     auto temp = postProcessed;
-            //     for (std::size_t i = 0; i < postProcessed.data.size(); ++i) {
-            //         // If the current cell has any cost, then give it and all its neighbors high cost
-            //         std::size_t j;
-            //         if (temp.data[i] > FREE_COST) {
-            //             for (std::ptrdiff_t &di : dis) {
-            //                 j = i + di;
-            //                 if ((j / width >= 0 && j / width < std::size_t(postProcessed.info.height)) &&
-            //                     (j % width >= 0 && j % width < std::size_t(width))) {
-            //                         postProcessed.data[j] = OCCUPIED_COST;
-            //                     }
-            //             }
-            //         }
-            //     }
-            // }
-            // mCostMapPub->publish(postProcessed);
+            mCostMapPub->publish(postProcesed);
         } catch (tf2::TransformException const& e) {
             RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, std::format("TF tree error processing point cloud: {}", e.what()));
         }
     }
 
+    // Resolved at compile time, returns dilation kernel
+    constexpr auto CostMapNode::diArray()->std::array<CostMapNode::Coordinate,(2*dilation+1)*(2*dilation+1)>{
+        std::array<CostMapNode::Coordinate, (2*dilation+1)*(2*dilation+1)> di;
+        int pos = 0;
+
+        for(int r = -dilation; r <= dilation; r++){
+            for(int c = -dilation; c <= dilation; c++){
+                di[pos] = {r, c};
+                pos++;
+            }
+        }
+
+        return di;
+    }
+
+	void CostMapNode::uploadPC() {
+        auto debugPointCloudPtr = std::make_unique<sensor_msgs::msg::PointCloud2>();
+        fillPointCloudMessageHeader(debugPointCloudPtr);
+        debugPointCloudPtr->is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
+        debugPointCloudPtr->is_dense = true;
+        debugPointCloudPtr->height = 1;
+        debugPointCloudPtr->width = mInliers.size();
+        debugPointCloudPtr->header.stamp = get_clock()->now();
+        debugPointCloudPtr->header.frame_id = "zed_left_camera_frame";
+        debugPointCloudPtr->data.resize(mInliers.size() * sizeof(Point));
+
+		std::memcpy(debugPointCloudPtr->data.data(), mInliers.data(), mInliers.size() * sizeof(Point));
+
+    	mPCDebugPub->publish(std::move(debugPointCloudPtr));
+    }
+
+    // REQ THE CENTER WE MUST PASS THE TOP LEFT
     auto CostMapNode::moveCostMapCallback(mrover::srv::MoveCostMap::Request::ConstSharedPtr& req, mrover::srv::MoveCostMap::Response::SharedPtr& res) -> void {
         RCLCPP_INFO_STREAM(get_logger(), "Incoming request: " + req->course);
         SE3d centerInMap = SE3Conversions::fromTfTree(mTfBuffer, req->course, mMapFrame);
-        std::ranges::fill(mGlobalGridMsg.data, UNKNOWN_COST);
-        mGlobalGridMsg.info.origin.position.x = centerInMap.x() - mSize / 2;
-        mGlobalGridMsg.info.origin.position.y = centerInMap.y() - mSize / 2;
+
+        // Calculate new center for costmap, will be at nearest bin location
+        double newTopLeftX = std::ceil(centerInMap.x() - mSize/2.0) - mResolution;
+        double newTopLeftY = std::ceil(centerInMap.y() - mSize/2.0) - mResolution;
+        double oldTopLeftX = mGlobalGridMsg.info.origin.position.x; // top left
+        double oldTopLeftY = mGlobalGridMsg.info.origin.position.y; // top left
+
+        // One of the directions will cause overlap
+        RCLCPP_INFO_STREAM(get_logger(), "Size " << mGlobalGridMsg.data.size());
+
+        std::vector<int8_t> newGrid(mGlobalGridMsg.data.size(), UNKNOWN_COST);
+
+        // Calculate delta row and delta col, subtract this transform to get from the new map back into the old one
+        int deltaCol = static_cast<int>((oldTopLeftX - newTopLeftX) / mResolution);
+        int deltaRow = static_cast<int>((oldTopLeftY - newTopLeftY) / mResolution);
+        Coordinate transformCoord = {deltaRow, deltaCol}; 
+
+        for(size_t i = 0; i < mGlobalGridMsg.data.size(); i++){
+            // Calculate which bin we are at in (row,col) form
+            Coordinate coord = indexToCoordinate(static_cast<int>(i));
+
+            // transform to see which bin this is in the new map (possibly out of bounds)
+            Coordinate newPos = coord - transformCoord;
+
+            // Bounds check, if it is in bounds, means there is overlap
+            if(newPos.row < 0 || newPos.col < 0 || newPos.row >= mHeight || newPos.col >= mWidth){ continue; }
+
+            // Grab data from overlapping bin and put it in whatever that bin will become in new map
+            newGrid[i] = mGlobalGridMsg.data[static_cast<size_t>(coordinateToIndex(newPos))];
+        }
+
+        std::swap(mGlobalGridMsg.data, newGrid);
+
+        mGlobalGridMsg.info.origin.position.x = newTopLeftX;
+        mGlobalGridMsg.info.origin.position.y = newTopLeftY;
+
         res->success = true;
         RCLCPP_INFO_STREAM(get_logger(), "Moved cost map");
+    }
+
+    auto CostMapNode::indexToCoordinate(const int index) -> CostMapNode::Coordinate {
+        return {index / mWidth, index % mWidth};
+    }
+
+    auto CostMapNode::coordinateToIndex(const Coordinate c) -> int{
+        return c.row * mWidth + c.col;
     }
 
 } // namespace mrover

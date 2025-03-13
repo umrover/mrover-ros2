@@ -289,15 +289,17 @@ endif()
 
 # Tag Detector
 mrover_add_component(tag_detector perception/tag_detector/*.cpp perception/tag_detector/pch.hpp StereoTagDetector ImageTagDetector)
-mrover_ament_component(tag_detector rclcpp tf2 tf2_ros)
+mrover_ament_component(tag_detector rclcpp rclcpp_components tf2 tf2_ros)
 mrover_link_component(tag_detector lie opencv_core opencv_aruco opencv_imgproc loop_profiler parameter_utils)
 
 mrover_executable_from_component(stereo_tag_detector perception/executables/stereo_tag_detector.cpp tag_detector_component)
 mrover_executable_from_component(image_tag_detector perception/executables/image_tag_detector.cpp tag_detector_component)
 
-mrover_add_node(cost_map perception/cost_map/*.cpp perception/cost_map/pch.hpp)
-ament_target_dependencies(cost_map rclcpp tf2 tf2_ros)
-target_link_libraries(cost_map lie parameter_utils)
+mrover_add_component(cost_map perception/cost_map/*.cpp perception/cost_map/pch.hpp CostMapNode)
+mrover_ament_component(cost_map rclcpp rclcpp_components tf2 tf2_ros)
+mrover_link_component(cost_map lie parameter_utils)
+
+mrover_executable_from_component(cost_map perception/executables/cost_map.cpp cost_map_component)
 
 # Embedded
 

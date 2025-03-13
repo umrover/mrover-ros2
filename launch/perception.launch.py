@@ -54,6 +54,13 @@ def generate_launch_description():
         parameters=[Path(get_package_share_directory("mrover"), "config", "perception.yaml")],
     )
 
+    cost_map_node = Node(
+        package="mrover",
+        executable="cost_map",
+        name="cost_map",
+        parameters=[Path(get_package_share_directory("mrover"), "config", "perception.yaml")],
+    )
+
     return launch.LaunchDescription(
         [
             stereo_object_detector_node,
