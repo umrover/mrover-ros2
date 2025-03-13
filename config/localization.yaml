@@ -50,4 +50,7 @@ iekf:
     mag_heading_noise: 0.1
     rtk_heading_noise: 0.01
     
+    moving_window_sz: 20
+    near_zero_threshold: 0.1
+    
 

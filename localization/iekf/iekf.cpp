@@ -19,12 +19,16 @@ namespace mrover {
         declare_parameter("vel_noise_none", rclcpp::ParameterType::PARAMETER_DOUBLE);
         declare_parameter("mag_heading_noise", rclcpp::ParameterType::PARAMETER_DOUBLE);
         declare_parameter("rtk_heading_noise", rclcpp::ParameterType::PARAMETER_DOUBLE);
+        declare_parameter("near_zero_threshold", rclcpp::ParameterType::PARAMETER_DOUBLE);
+        declare_parameter("moving_window_sz", rclcpp::ParameterType::PARAMETER_INTEGER);
 
         scale_cov_a = get_parameter("scale_cov_a").as_double();
         scale_cov_w = get_parameter("scale_cov_w").as_double();
         pos_noise_fixed = get_parameter("pos_noise_fixed").as_double();
         vel_noise_fixed = get_parameter("vel_noise_fixed").as_double();
         mag_heading_noise = get_parameter("mag_heading_noise").as_double();
+        near_zero_threshold = get_parameter("near_zero_threshold").as_double();
+        moving_window_sz = get_parameter("moving_window_sz").as_int();
 
         // initialize state variables
         X.setIdentity();
@@ -112,21 +116,33 @@ namespace mrover {
         // get linear acceleration in world frame
         Vector3d a_lin = X.block<3, 3>(0, 0) * a + g;
 
-        // simple bias estimator
-        if ((a_lin - accel_bias).norm() < BIAS_THRESHOLD) {
-            accel_bias_estimator.push_back(a_lin);
-            accel_bias = accel_bias + (a_lin - accel_bias) / accel_bias_estimator.size();
+        // // simple bias estimator
+        // if ((a_lin - accel_bias).norm() < BIAS_THRESHOLD) {
+        //     accel_bias_estimator.push_back(a_lin);
+        //     accel_bias = accel_bias + (a_lin - accel_bias) / accel_bias_estimator.size();
 
-            if (accel_bias_estimator.size() > BIAS_WINDOW) {
-                Vector3d old_value = accel_bias_estimator.front();
-                accel_bias_estimator.pop_front();
-                accel_bias = accel_bias + (accel_bias - old_value) / accel_bias_estimator.size();
-            }
+        //     if (accel_bias_estimator.size() > BIAS_WINDOW) {
+        //         Vector3d old_value = accel_bias_estimator.front();
+        //         accel_bias_estimator.pop_front();
+        //         accel_bias = accel_bias + (accel_bias - old_value) / accel_bias_estimator.size();
+        //     }
 
+        // }
+
+        // a_lin = a_lin - accel_bias;
+
+        // discrimination window for accelerometer
+        if (abs(a_lin(0)) < near_zero_threshold) {
+            a_lin(0) = 0;
+        }
+        if (abs(a_lin(1)) < near_zero_threshold) {
+            a_lin(1) = 0;
+        }
+        if (abs(a_lin(2)) < near_zero_threshold) {
+            a_lin(2) = 0;
         }
 
-        a_lin = a_lin - accel_bias;
-
+        
         // propagate
         X.block<3, 3>(0, 0) = X.block<3, 3>(0, 0) * (manif::skew(w) * dt).exp();
         X.block<3, 1>(0, 4) = X.block<3, 1>(0, 4) + X.block<3, 1>(0, 3) * dt + 0.5 * a_lin * pow(dt, 2);
@@ -210,7 +226,21 @@ namespace mrover {
             dt = (imu_msg.header.stamp.sec + imu_msg.header.stamp.nanosec * 1e-9) - (last_imu_time.value().sec + last_imu_time.value().nanosec * 1e-9);   
         }
 
-        predict(Vector3d{w.x, w.y, w.z}, scale_cov_w * cov_w, Vector3d{a.x, a.y, a.z}, scale_cov_a * cov_a, dt);
+
+
+        Vector3d a_vec = Vector3d{a.x, a.y, a.z};
+        moving_window.push_back(a_vec);
+
+
+        accel_avg = accel_avg + (a_vec - accel_avg) / moving_window.size();
+
+        if (moving_window.size() > moving_window_sz) {
+            Vector3d old_value = moving_window.front();
+            moving_window.pop_front();
+            accel_avg = accel_avg + (accel_avg - old_value) / moving_window.size();
+        }
+
+        predict(Vector3d{w.x, w.y, w.z}, scale_cov_w * cov_w, accel_avg, scale_cov_a * cov_a, dt);
         
         accel_callback(a, scale_cov_a * cov_a);
 

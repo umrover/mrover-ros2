@@ -73,10 +73,10 @@ namespace mrover {
         const Vector3d g{0.0, 0.0, -9.81};
 
         // accel bias estimator
-        std::deque<Vector3d> accel_bias_estimator;
-        Vector3d accel_bias{0.0, 0.0, 0.0};
-        constexpr static int BIAS_WINDOW = 20;
-        constexpr static float BIAS_THRESHOLD = 0.05;
+        // std::deque<Vector3d> accel_bias_estimator;
+        // Vector3d accel_bias{0.0, 0.0, 0.0};
+        // constexpr static int BIAS_WINDOW = 20;
+        // constexpr static float BIAS_THRESHOLD = 0.05;
 
         // parameters
         double scale_cov_a;
@@ -84,7 +84,11 @@ namespace mrover {
         double pos_noise_fixed;
         double vel_noise_fixed;
         double mag_heading_noise;
-    
+        double near_zero_threshold;
+        size_t moving_window_sz;
+
+        std::deque<Vector3d> moving_window;
+        Vector3d accel_avg{0.0, 0.0, 0.0};
 
     public:
     
