@@ -12,7 +12,6 @@ TargetKey::TargetKey(const std::shared_ptr<FSMCtx> fsm_ctx) : fsm_ctx(fsm_ctx), 
 }
 
 auto TargetKey::onLoop() -> State*{
-
     //while not cancelled and code_index < goal->get_goal()->code.size()
         // get the location of the key by querying model
         // use ik to move to the location
@@ -86,6 +85,12 @@ auto TargetKey::onLoop() -> State*{
 
     //print what key is being targeted
     RCLCPP_INFO(node->get_logger(), "Targeting key: %s", std::string(1, goal->code[fsm_ctx->curr_key_index]).c_str());
+
+    // Publish feedback
+    std::shared_ptr<action::KeyAction::Feedback> feedback = std::make_shared<action::KeyAction::Feedback>();
+    feedback->key = goal->code[fsm_ctx->curr_key_index];
+    feedback->state = "Target Key";
+    fsm_ctx->goal_handle->publish_feedback(feedback);
     
     //move arm with ik
     fsm_ctx->mIkTargetPub->publish(ik);

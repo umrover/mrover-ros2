@@ -1,5 +1,7 @@
 #pragma once
 
+inline static constexpr bool isDebug = true;
+
 // Ros Client Library
 #include <ament_index_cpp/get_package_prefix.hpp>
 #include <rclcpp/rclcpp.hpp>

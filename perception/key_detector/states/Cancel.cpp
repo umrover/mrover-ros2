@@ -9,7 +9,6 @@ Cancel::Cancel(const std::shared_ptr<FSMCtx> fsm_ctx) : fsm_ctx(fsm_ctx)
 }
 
 auto Cancel::onLoop() -> State*{
-
     fsm_ctx->init = false;
     fsm_ctx->fail = true;
 
