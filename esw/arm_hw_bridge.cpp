@@ -152,6 +152,7 @@ namespace mrover {
                         mJointA->setDesiredThrottle(throttle);
                         break;
                     case 'j' + 'b':
+                        mLastJointBThrottle = throttle;
                         mJointB->setDesiredThrottle(throttle);
                         break;
                     case 'j' + 'c':
