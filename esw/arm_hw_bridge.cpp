@@ -81,12 +81,12 @@ namespace mrover {
             mControllerState.error.resize(mJointNames.size());
             mControllerState.limit_hit.resize(mJointNames.size());
 
-            mJointBDebugTimer = create_wall_timer(std::chrono::milliseconds{20}, [this]() { logJointB(); });
+            mJointBDebugTimer = create_wall_timer(std::chrono::milliseconds{100}, [this]() { logJointB(); });
             mJointBLog.open(std::format("joint_b_{}.csv", std::chrono::system_clock::now().time_since_epoch().count()));
             if (!mJointBLog.is_open()) {
                 RCLCPP_ERROR(get_logger(), "Failed to open joint_b log file");
             }
-            mJointBLog << "throttle_cmd,position,velocity\n";
+            mJointBLog << "epoch_time,throttle_cmd,position,velocity\n";
         }
 
     private:
@@ -121,11 +121,10 @@ namespace mrover {
         std::ofstream mJointBLog;
 
         auto logJointB() -> void {
-            if (mJointBLog.is_open()) {
-                mJointBLog << mLastJointBThrottle.get() << ',';
-                mJointBLog << mJointB->getPosition().get() << ',';
-                mJointBLog << mJointB->getVelocity().get() << '\n';
-            }
+            mJointBLog << std::chrono::system_clock::now().time_since_epoch().count() << ',';
+            mJointBLog << mLastJointBThrottle.get() << ',';
+            mJointBLog << mJointB->getPosition().get() << ',';
+            mJointBLog << mJointB->getVelocity().get() << '\n';
         }
 
         auto processThrottleCmd(msg::Throttle::ConstSharedPtr const& msg) -> void {
