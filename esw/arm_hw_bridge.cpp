@@ -18,6 +18,8 @@
 #include "motor_library/brushed.hpp"
 #include "motor_library/brushless.hpp"
 
+#include <fstream>
+
 namespace mrover {
     template<typename E>
     using Vector2 = Eigen::Matrix<E, 2, 1>;
@@ -78,6 +80,13 @@ namespace mrover {
             mControllerState.state.resize(mJointNames.size());
             mControllerState.error.resize(mJointNames.size());
             mControllerState.limit_hit.resize(mJointNames.size());
+
+            mJointBDebugTimer = create_wall_timer(std::chrono::milliseconds{20}, [this]() { logJointB(); });
+            mJointBLog.open(std::format("joint_b_{}.csv", std::chrono::system_clock::now().time_since_epoch().count()));
+            if (!mJointBLog.is_open()) {
+                RCLCPP_ERROR(get_logger(), "Failed to open joint_b log file");
+            }
+            mJointBLog << "throttle_cmd,position,velocity\n";
         }
 
     private:
@@ -107,6 +116,17 @@ namespace mrover {
         sensor_msgs::msg::JointState mJointData;
         msg::ControllerState mControllerState;
 
+        rclcpp::TimerBase::SharedPtr mJointBDebugTimer;
+        Dimensionless mLastJointBThrottle;
+        std::ofstream mJointBLog;
+
+        auto logJointB() -> void {
+            if (mJointBLog.is_open()) {
+                mJointBLog << mLastJointBThrottle.get() << ',';
+                mJointBLog << mJointB->getPosition().get() << ',';
+                mJointBLog << mJointB->getVelocity().get() << '\n';
+            }
+        }
 
         auto processThrottleCmd(msg::Throttle::ConstSharedPtr const& msg) -> void {
             if (msg->names.size() != msg->throttles.size()) {
