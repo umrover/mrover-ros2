@@ -35,10 +35,11 @@ def main():
 
     # Convert epoch times to seconds relative to the start time
     start_time = epoch_times[0]
-    x_axis = [t - start_time for t in epoch_times]
+    x_axis = [(t - start_time) / 1e9 for t in epoch_times]
 
     # Create the first axis for throttle command
     fig, ax1 = plt.subplots(figsize=(10, 5))
+    fig.subplots_adjust(right=0.8)
     color1 = 'tab:blue'
     ax1.plot(x_axis, throttle, label="Throttle Cmd", color=color1)
     ax1.set_xlabel("Time (seconds)")
@@ -48,7 +49,7 @@ def main():
     # Create a twin axis for position
     ax2 = ax1.twinx()
     color2 = 'tab:green'
-    ax2.plot(x_axis, position, label="Position", color=color2)
+    ax2.plot(x_axis, position, label="Position (rad)", color=color2)
     ax2.set_ylabel("Position", color=color2)
     ax2.tick_params(axis='y', labelcolor=color2)
 
@@ -56,7 +57,7 @@ def main():
     ax3 = ax1.twinx()
     color3 = 'tab:red'
     ax3.spines["right"].set_position(("outward", 60))  # Offset axis by 60 points
-    ax3.plot(x_axis, velocity, label="Velocity", color=color3)
+    ax3.plot(x_axis, velocity, label="Velocity (rad/s)", color=color3)
     ax3.set_ylabel("Velocity", color=color3)
     ax3.tick_params(axis='y', labelcolor=color3)
 
@@ -68,6 +69,7 @@ def main():
 
     plt.title("Throttle Cmd, Position, and Velocity over Time")
     plt.grid(True)
+    plt.savefig("joint_b_log.png")
     plt.show()
 
 if __name__ == "__main__":
