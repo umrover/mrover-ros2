@@ -58,7 +58,7 @@ namespace mrover{
 		RCLCPP_INFO_STREAM(get_logger(), "Creating Infrared Lights Detector...");
 		
 		std::vector<ParameterWrapper> params{
-			// CHANGE THIS TO BE CORRECT
+			// CHANGE THIS TO BE CORRECT (Dunno what the infared publishes to)
 			{"infrared_frame", mCameraFrame, ""},
 		};
 		
