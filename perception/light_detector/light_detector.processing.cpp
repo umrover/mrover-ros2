@@ -119,6 +119,7 @@ namespace mrover {
 
         // Increment Object hit counts if theyre seen
         // Decrement Object hit counts if they're not seen
+        // Push to tf tree closest point
         updateHitsObject(msg, detections);
 
         // Draw the bounding boxes on the image
@@ -199,6 +200,7 @@ namespace mrover {
         }
 
         if (closestPoint.has_value()) {
+            std::cout << "Pushing to TF TREE\n";
             SE3Conversions::pushToTfTree(mTfBroadcaster, closestLightPoint, mCameraFrame, closestPoint.value(), get_clock()->now());
         }
 
