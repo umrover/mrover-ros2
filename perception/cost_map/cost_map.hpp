@@ -10,8 +10,9 @@ namespace mrover {
 
         constexpr static double TAU = 2 * std::numbers::pi;
 
-        // Dilation for map, set as number of bins away from object to dilate by (default 1)
-        constexpr static int dilation = 1;
+        // Dilation for map, set as number of bins away from object to dilate by (default 2)
+        //     Only change this for initial default, variable dilation handled by dilate service
+        constexpr static int dilation = 2;
 
 		// Noise/Debug Vars
 		constexpr static bool useNoisyPointCloud = false;
@@ -67,6 +68,7 @@ namespace mrover {
 
         auto moveCostMapCallback(mrover::srv::MoveCostMap::Request::ConstSharedPtr& req, mrover::srv::MoveCostMap::Response::SharedPtr& res) -> void;
 
+        // To Test (CLI): ros2 service call /dilate_cost_map mrover/srv/DilateCostMap "{d_amt: [enter here]}"
         auto dilateCostMapCallback(mrover::srv::DilateCostMap::Request::ConstSharedPtr& req, mrover::srv::DilateCostMap::Response::SharedPtr& res) -> void;
 
 		void uploadPC();
