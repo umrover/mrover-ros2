@@ -35,6 +35,7 @@ namespace mrover {
         int mHeight{};        // Number of cells on the grid vertically 
         int mDownSamplingFactor = 4;
         std::string mMapFrame;
+        int mDilateAmt = 1;
 
         // Loop timing stuff
         // LoopProfiler mLoopProfilerGrab;
@@ -47,6 +48,8 @@ namespace mrover {
         nav_msgs::msg::OccupancyGrid mGlobalGridMsg;
 
         rclcpp::Service<mrover::srv::MoveCostMap>::SharedPtr mServer;
+
+        rclcpp::Service<mrover::srv::DilateCostMap>::SharedPtr mCostServer;
 
         struct BinEntry {
                 R3f pointInCamera;
@@ -63,6 +66,8 @@ namespace mrover {
         auto pointCloudCallback(sensor_msgs::msg::PointCloud2::ConstSharedPtr const& msg) -> void;
 
         auto moveCostMapCallback(mrover::srv::MoveCostMap::Request::ConstSharedPtr& req, mrover::srv::MoveCostMap::Response::SharedPtr& res) -> void;
+
+        auto dilateCostMapCallback(mrover::srv::DilateCostMap::Request::ConstSharedPtr& req, mrover::srv::DilateCostMap::Response::SharedPtr& res) -> void;
 
 		void uploadPC();
 

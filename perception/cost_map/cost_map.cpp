@@ -29,6 +29,10 @@ namespace mrover {
             pointCloudCallback(msg);
         });
 
+        mCostServer = create_service<srv::DilateCostMap>("dilate_cost_map", [this](mrover::srv::DilateCostMap::Request::ConstSharedPtr req, mrover::srv::DilateCostMap::Response::SharedPtr res) {
+            dilateCostMapCallback(req, res);
+        });
+
         mPCDebugPub = create_publisher<sensor_msgs::msg::PointCloud2>("cost_map/debug_pc", 1);
         // mImuSub = mNh.subscribe<sensor_msgs::Imu>("imu/data", 1, [this](sensor_msgs::ImuConstPtr const&) {
         //     mLastImuTime = ros::Time::now();
