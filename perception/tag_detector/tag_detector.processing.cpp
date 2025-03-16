@@ -15,6 +15,7 @@ namespace mrover {
         assert(msg->height > 0);
         assert(msg->width > 0);
 
+
         // OpenCV needs a dense BGR image |BGR|...| but out point cloud is
         // |BGRAXYZ...|...| So we need to copy the data into the correct format
         if (static_cast<int>(msg->height) != mBgrImage.rows || static_cast<int>(msg->width) != mBgrImage.cols) {
