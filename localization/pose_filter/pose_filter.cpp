@@ -8,34 +8,37 @@ namespace mrover {
     }
 
     PoseFilter::PoseFilter() : Node("pose_filter") {
-        
-        correction_timer = this->create_wall_timer(WINDOW.to_chrono<std::chrono::milliseconds>(), [this]() -> void {
-            correction_timer_callback();
+
+        linearized_position_sub = this->create_subscription<geometry_msgs::msg::Vector3Stamped>("/linearized_position", 1, [&](const geometry_msgs::msg::Vector3Stamped::ConstSharedPtr &position) {
+            last_position = *position;
         });
+        imu_sub_.subscribe(this, "/zed_imu/data_raw");
+        mag_heading_sub_.subscribe(this, "/zed_imu/mag_heading");
+        rtk_heading_sub_.subscribe(this, "/heading/fix");
+        rtk_heading_fix_status_sub_.subscribe(this, "/heading_fix_status");
 
-        odometry_pub = this->create_publisher<nav_msgs::msg::Odometry>("/odometry", 1);
-
-        twist_sub = this->create_subscription<geometry_msgs::msg::Twist>("/cmd_vel", 1, [&](geometry_msgs::msg::Twist::ConstSharedPtr const& twist) {
+        odometry_pub_ = this->create_publisher<nav_msgs::msg::Odometry>("/odometry", 1);
+        twist_sub_ = this->create_subscription<geometry_msgs::msg::Twist>("/cmd_vel", 1, [&](geometry_msgs::msg::Twist::ConstSharedPtr const& twist) {
             twists.push_back(*twist);
         });
 
-        zed_imu_sub = this->create_subscription<sensor_msgs::msg::Imu>("/zed_imu/data_raw", 1, [&](sensor_msgs::msg::Imu::ConstSharedPtr const& imu) {
-            current_imu = *imu;
-        });
+        imu_watchdog_timeout = this->create_wall_timer(IMU_WATCHDOG_TIMEOUT.to_chrono<std::chrono::milliseconds>(), [&]() {
+            RCLCPP_WARN(get_logger(), "ZED IMU data timed out!");
+            last_imu.reset();
+        })
 
-        heading_sub.subscribe(this, "/heading/fix");
-        heading_status_sub.subscribe(this, "/heading_fix_status");
+        rtk_sync_ = std::make_shared<message_filters::Synchronizer<RTKSyncPolicy>>(
+            RTKSyncPolicy(10), rtk_heading_sub_, rtk_fix_status_sub_);
+        rtk_sync_->setAgePenalty(0.5); 
+        rtk_sync_->registerCallback(&PoseFilter::rtk_heading_callback, this);
 
-        sync = std::make_shared<message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<mrover::msg::Heading, mrover::msg::FixStatus>>>(
-            message_filters::sync_policies::ApproximateTime<mrover::msg::Heading, mrover::msg::FixStatus>(10),
-            heading_sub,
-            heading_status_sub
-        );
-
-        sync->registerCallback(&PoseFilter::heading_callback, this);
-
-        pose_sub = this->create_subscription<geometry_msgs::msg::Vector3Stamped>("/linearized_position", 1, [this](const geometry_msgs::msg::Vector3Stamped::ConstSharedPtr& linearized_pos_msg) -> void {
-            pose_sub_callback(linearized_pos_msg);
+        imu_and_mag_sync_ = std::make_shared<message_filters::Synchronizer<ImuMagSyncPolicy>>(
+            ImuMagSyncPolicy(10), imu_sub_, mag_heading_sub_);
+        imu_and_mag_sync_->setAgePenalty(0.5);  // Match original configuration
+        imu_and_mag_sync_->registerCallback(&PoseFilter::imu_and_mag_callback, this);
+    
+        correction_timer = this->create_wall_timer(WINDOW.to_chrono<std::chrono::milliseconds>(), [this]() -> void {
+            correction_timer_callback();
         });
 
         declare_parameter("rover_frame", rclcpp::ParameterType::PARAMETER_STRING);
@@ -43,75 +46,104 @@ namespace mrover {
 
         rover_frame = get_parameter("rover_frame").as_string();
         world_frame = get_parameter("world_frame").as_string();
+
+        tf_broadcaster = std::make_unique<tf2_ros::TransformBroadcaster>(this);
     }
 
-    void PoseFilter::heading_callback(const mrover::msg::Heading::ConstSharedPtr& heading_msg, const mrover::msg::FixStatus::ConstSharedPtr& fix_status_msg) {
-        current_heading = *heading_msg;
-        current_heading_fix_status = *fix_status_msg;
+    void PoseFilter::rtk_heading_callback(const mrover::msg::Heading::ConstSharedPtr const& rtk_heading_msg, const mrover::msg::FixStatus::ConstSharedPtr const& rtk_fix_status_msg) {
+        last_rtk_heading = *rtk_heading_msg;
+        last_rtk_fix_status = *rtk_fix_status_msg;
     }
 
-    void PoseFilter::compare_and_select_heading() {
-        if (!pose_callback_heading_ || !correction_timer_heading_) {
-            RCLCPP_WARN(get_logger(), "Missing heading values");
-            return;
-        }
-
-        double heading_difference = std::abs(pose_callback_heading_.value() - correction_timer_heading_.value());
-        
-        if (heading_difference > HEADING_THRESHOLD) {
-            RCLCPP_WARN(get_logger(), fmt::format("Heading difference {} is too large, skipping averaged heading calculation", heading_difference));
-            return;
-        } else {
-            averaged_heading_ = ((pose_callback_heading.value()) + (correction_timer_heading_.value())) / 2.0;
-        }
-       
-        RCLCPP_INFO(get_logger(), "Computer Average Heading: %f", averaged_heading_.value());
-
-        }
+    void PoseFilter::imu_and_mag_callback(const mrover::msg::Imu::ConstSharedPtr const& imu_msg, const mrover::msg::Heading::ConstSharedPtr &mag_heading) {
+        imu_watchdog_timeout->reset();
+        last_imu = *imu_msg;
+        last_mag_heading = *mag_heading;
     }
 
     void PoseFilter::pose_sub_callback(geometry_msgs::msg::Vector3Stamped::ConstSharedPtr const& linearized_pos_msg) {
-       if ((!current_imu.has_value()) || (!current_heading.has_value()) || (!current_heading_fix_status.has_value())) {
-            RCLCPP_WARN(get_logger(), "Missing IMU, heading or heading fix status data. Ignoring pose correction via DA-RTK Heading");
+       
+        if ((!last_position.has_value()) || (!last_imu.has_value()) || (!last_rtk_heading.has_value()) || (!last_rtk_fix_status.has_value())) {
+            RCLCPP_WARN(get_logger(), "Missing Last position, IMU, rtk heading or rtk heading fix status data. Ignoring pose correction via RTK heading.");
             return;
         }
-
-        if ((current_heading_fix_status->fix_status.fix != mrover::msg::FixType::FIXED)) {
+ 
+        if ((last_rtk_fix_status->fix_type.fix != mrover::msg::FixType::FIXED)) { 
             RCLCPP_WARN(get_logger(), "Invalid heading fix status. Ignoring pose correction via DA-RTK Heading");
             return;
+         }
+ 
+        Eigen::Vector3d position_in_map(last_position->vector.x, last_position->vector.y, last_position->vector.z);
+        Eigen::Quaterniond uncorrected_quaternion = ros_quat_to_eigen_quat(last_imu->orientation);
+        R2d uncorrected_forward = uncorrected_quaternion.toRotationMatrix().col(0).head<2>();
+        double uncorrected_heading = std::atan2(uncorrected_forward.y(), uncorrected_forward.x());
+
+        if (last_rtk_fix_status->fix_type.fix == mrover::msg::FixType::FIXED) {
+            double measured_rtk_heading_deg = fmod(last_rtk_heading->heading + 90.0, 360.0);
+            if (measured_rtk_heading_deg > 270) {
+                measured_rtk_heading_deg -= 360;
+            }
+            double measured_rtk_heading = (90.0 - measured_rtk_heading_deg) * (M_PI / 180.0);
+            double rtk_heading_correction_delta = measured_rtk_heading - uncorrected_heading; //heading difference: rtk heading + IMU
+            curr_heading_correction = Eigen::AngleAxisd(rtk_heading_correction_delta, Eigen::Vector3d::UnitZ());
+        } else if (last_mag_heading && curr_heading_correction) {
+            double measured_mag_heading_deg = last_mag_heading->heading;
+            measured_mag_heading_deg = 90.0 - measured_mag_heading_deg;
+            if (measured_mag_heading_deg < -180.0) {
+                measured_mag_heading_deg = 360 + measured_mag_heading_deg;
+            }
+            double measured_mag_heading = measured_mag_heading_deg * (M_PI / 180);
+
+            double curr_mag_correction_delta = measured_mag_heading - uncorrected_heading; //heading difference: magnetometer + IMU
+            double prev_rtk_heading_correction_delta = curr_heading_correction->angle(); 
+
+            if (std::abs(prev_rtk_heading_correction_delta - curr_mag_correction_delta) < HEADING_THRESHOLD) {
+                curr_heading_correction = Eigen::AngleAxisd(curr_mag_correction_delta, Eigen::Vector3d::UnitZ());
+            }
         }
 
-        Eigen::Vector3d position_in_map(linearized_pos_msg->vector.x, linearized_pos_msg->vector.y, linearized_pos_msg->vector.z);
-
-        auto const& imu_msg = current_imu.value();
-        Eigen::Quaterniond quaternion(imu_msg.orientation.w, imu_msg.orientation.x, imu_msg.orientation.y, imu_msg.orientation.z);
-        quaternion.normalize();
-
-        pose_callback_heading_ = current_heading->heading * (M_PI / 180);
+        pose_callback_heading = curr_heading_correction.value();
+        R2d pose_heading_correction_forward = curr_heading_correction.toRotationMatrix().col(0).head(2);
+        pose_heading_correction_delta = std::atan2(pose_heading_correction_forward.y(). pose_heading_correction_forward.x());
 
         compare_and_select_heading();
 
-        double final_heading_value = averaged_heading_value.value() ? averaged_heading_value.value() : pose_callback_heading_.value();
+        double final_heading_value = averaged_pose_and_correction_heading_.value_or(curr_heading_correction_.value());
 
-        Eigen::Quaterniond desired_yaw_quaternion(Eigen::AngleAxisd(final_heading_value, Eigen::Vector3d::UnitZ()));
-        Eigen::Vector3d euler_angles = quaternion.toRotationMatrix().eulerAngles(2, 1, 0);
-        double roll = euler_angles[2];
-        double pitch = euler_angles[1];
-        Eigen::Quaterniond roll_pitch_quaternion = (Eigen::AngleAxisd(roll, Eigen::Vector3d::UnitX())) * (Eigen::AngleAxisd(pitch, Eigen::Vector3d::UnitY()));
-        Eigen::Quaterniond corrected_quaternion = roll_pitch_quaternion * desired_yaw_quaternion;
-        corrected_quaternion.normalize();
+        R3d position_in_map(last_position->vector.x, last_position->vector.y, last_position->vector.z);
+        SE3d pose_in_map(position_in_map, SO3d::Identity());
 
-        SE3d pose_in_map(position_in_map, corrected_quaternion);
-
+        Eigen::Quaterniond uncorrected_orientation = ros_quat_to_eigen_quat(last_imu->orientation);
+        SO3d uncorrected_orientation_rotm = uncorrected_orientation;
+        SO3d corrected_orientation = Eigen::AngleAxisd(final_heading_value, Eigen::Vector3d::UnitZ()) * uncorrected_orientation_rotm;
+        pose_in_map.so3() = corrected_orientation;
         SE3Conversion::pushToTfTree(tf_broadcaster, rover_frame, world_frame, pose_in_map, getClock()->now());
-
+ 
         RCLCPP_INFO(get_logger(), "Published to TF Tree: Position (%f, %f, %f), Orientation (%f, %f, %f, %f)",
-            position_in_map.x(), position_in_map.y(), position_in_map.z(),
-            corrected_quaternion.x(), corrected_quaternion.y(), corrected_quaternion.z(), corrected_quaternion.w()
-        );
+             position_in_map.x(), position_in_map.y(), position_in_map.z(),
+             corrected_orientation.x(), corrected_orientation.y(), corrected_orientation.z(), corrected_orientation.w()
+         );
+     }
+
+    void PoseFilter::compare_and_select_heading() {
+
+        if ((!correcton_timer_heading.has_value()) || (!pose_callback_heading.has_value()) || (!pose_heading_correction_delta.has_value()) || (!correction_timer_heading_delta.has_value())) {
+            RCLCPP_WARN(get_logger(), "Missing heading values");
+            return;
+        }
+        
+        if ((std::abs(pose_heading_correction_delta.value() - correction_timer_heading_delta.value())) < HEADING_THRESHOLD) {
+            RCLCPP_DEBUG(get_logger(), "Heading deltas are within acceptable range (%.3f < %.3f). No averaging needed.", pose_heading_correction_delta.value() - correction_timer_heading_delta.value(), HEADING_THRESHOLD)
+            return;
+        } else {
+            RCLCPP_WARN(get_logger(), "Heading delta's exceeds threshold. Now calculating the averaged heading.");
+            averaged_pose_and_correction_heading = ((pose_callback_heading.value()) + (corection_timer_heading.value())) / 2.0;
+            return;
+        }
+        }
     }
 
-        SE3d::Tangent twist;
+        SE3d::Tangent twist; 
         if (last_pose_in_map && last_pose_time) {
             twist = (pose_in_map - last_pose_in_map.value()) / ((linearized_pos_msg->header.stamp.sec + linearized_pos_msg->header.stamp.nanosec * 10e-9) - (last_pose_time->sec + last_pose_time->nanosec * 10e-9));
         }
@@ -136,7 +168,6 @@ namespace mrover {
         last_pose_in_map = pose_in_map;
         last_pose_time = linearized_pos_msg->header.stamp;
 
-    }
 
     void PoseFilter::correction_timer_callback() {
 
@@ -197,10 +228,8 @@ namespace mrover {
         }
 
         double corrected_heading_in_map = std::atan2(rover_velocity_sum.y(), rover_velocity_sum.x());
-        
-        correction_timer_heading_ = corrected_heading_in_map;
 
-        compare_and_select_heading();
+        correction_timer_heading = corrected_heading_in_map;
 
         SO3d uncorrected_orientation = ros_quat_to_eigen_quat(current_imu->orientation);
         R2d uncorrected_forward = uncorrected_orientation.rotation().col(0).head<2>();
@@ -208,11 +237,15 @@ namespace mrover {
 
         double heading_correction_delta = corrected_heading_in_map - estimated_heading_in_map; 
 
+        correction_timer_heading_delta = heading_correction_delta;
+
+        compare_and_select_heading();
+
         correction_rotation = Eigen::AngleAxisd{heading_correction_delta, R3d::UnitZ()};
 
         RCLCPP_INFO_STREAM(get_logger(), std::format("Correcting heading by: {}", correction_rotation->z()));
     }
-} // namespace mrover
+  // namespace mrover
 
 
 int main(int argc, char** argv) {
