@@ -30,5 +30,6 @@
 #include <parameter.hpp>
 #include <point.hpp>
 #include <rclcpp/logging.hpp>
+#include<mrover/srv/dilate_cost_map.hpp>
 
 #include "../loop_profiler/loop_profiler.hpp"

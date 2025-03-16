@@ -1,4 +1,5 @@
 #include "cost_map.hpp"
+#include "mrover/srv/detail/dilate_cost_map__builder.hpp"
 #include <algorithm>
 #include <nav_msgs/msg/detail/occupancy_grid__struct.hpp>
 #include <rclcpp/logging.hpp>
@@ -115,25 +116,32 @@ namespace mrover {
 
 			// Square Dilate operation
             nav_msgs::msg::OccupancyGrid postProcesed = mGlobalGridMsg;
+            nav_msgs::msg::OccupancyGrid temp;
 
             // Variable dilation for any width`
             std::array<CostMapNode::Coordinate,(2*dilation+1)*(2*dilation+1)> dis = diArray();
 
-            // TODO: consider running the dilation 2x instead of using a 5x5 "kernel"
-            for (int row = 0; row < mWidth; ++row) {
-                for(int col = 0; col < mHeight; ++col) {
-                    int oned_index = coordinateToIndex({row, col});
-                    // RCLCPP_INFO_STREAM(get_logger(), std::format("Testing Index: {}", oned_index));
-                    if(std::ranges::any_of(dis, [&](CostMapNode::Coordinate di) {
-                        // the coordinate of the cell we are checking + dis offset
-                        Coordinate dcoord = {row + di.row, col + di.col};
-                        if(dcoord.row < 0 || dcoord.row >= mHeight || dcoord.col < 0 || dcoord.col >= mWidth)
-                            return false;
-
-                        // RCLCPP_INFO_STREAM(get_logger(), std::format("Index: {}", coordinateToIndex(dcoord)));
-                        return mGlobalGridMsg.data[coordinateToIndex(dcoord)] > FREE_COST;
-                    })) postProcesed.data[oned_index] = OCCUPIED_COST;
+            // TODO: running 2x dilation, but consider swapping which one is copying/being used to copy data to reduce time
+            //       can do by swapping which one is being used at each times % 2 pass
+            for(int times = 0; times < mDilateAmt; times++){
+                for (int row = 0; row < mWidth; ++row) {
+                    for(int col = 0; col < mHeight; ++col) {
+                        int oned_index = coordinateToIndex({row, col});
+                        // RCLCPP_INFO_STREAM(get_logger(), std::format("Testing Index: {}", oned_index));
+                        if(std::ranges::any_of(dis, [&](CostMapNode::Coordinate di) {
+                            // the coordinate of the cell we are checking + dis offset
+                            Coordinate dcoord = {row + di.row, col + di.col};
+                            if(dcoord.row < 0 || dcoord.row >= mHeight || dcoord.col < 0 || dcoord.col >= mWidth)
+                                return false;
+    
+                            // RCLCPP_INFO_STREAM(get_logger(), std::format("Index: {}", coordinateToIndex(dcoord)));
+                            if(times == 0){ return mGlobalGridMsg.data[coordinateToIndex(dcoord)] > FREE_COST; }
+                            return temp.data[coordinateToIndex(dcoord)] > FREE_COST;
+                        })) postProcesed.data[oned_index] = OCCUPIED_COST;
+                    }
                 }
+
+                temp = postProcesed;
             }
 
             // }
@@ -220,6 +228,12 @@ namespace mrover {
 
         res->success = true;
         RCLCPP_INFO_STREAM(get_logger(), "Moved cost map");
+    }
+
+    auto CostMapNode::dilateCostMapCallback(mrover::srv::DilateCostMap::Request::ConstSharedPtr& req, mrover::srv::DilateCostMap::Response::SharedPtr& res) -> void{
+        // TODO: consider floor vs ceil here, currently rounds down to nearest cell dilation amt
+        mDilateAmt = static_cast<int>(floor(static_cast<double>(req->d_amt/mResolution)));
+        res->success = true;
     }
 
     auto CostMapNode::indexToCoordinate(const int index) const -> CostMapNode::Coordinate {
