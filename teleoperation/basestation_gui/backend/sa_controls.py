@@ -64,16 +64,18 @@ def compute_manual_joint_controls(controller: DeviceInputs) -> list[float]:
     ]
 
 
-def send_sa_controls(sa_mode: str, pump: int, inputs: DeviceInputs, sa_thr_pub: Publisher, pump_0_srv: Client, pump_1_srv: Client) -> None:
+def send_sa_controls(sa_mode: str, site: int, inputs: DeviceInputs, sa_thr_pub: Publisher, pump_0_srv: Client, pump_1_srv: Client) -> None:
     if(sa_mode == "disabled"):
         return
+    site_to_pump = [0, 0, 1, 1]
     throttle_msg = Throttle()
     manual_controls = compute_manual_joint_controls(inputs)
     joint_names, throttle_values = subset(JOINT_NAMES, manual_controls, set(Joint))
     throttle_msg.names = joint_names
     throttle_msg.throttles = throttle_values
-    send_pump_controls(inputs, pump, pump_0_srv, pump_1_srv)
-    sa_thr_pub.publish(throttle_msg)
+    if 0 <= site < len(site_to_pump):
+        send_pump_controls(inputs, site_to_pump[site], pump_0_srv, pump_1_srv)
+        sa_thr_pub.publish(throttle_msg)
     
 def send_pump_controls(inputs: DeviceInputs, pump: int, pump_0_srv: Client, pump_1_srv: Client) -> None:
     sim_axis = filter_input(

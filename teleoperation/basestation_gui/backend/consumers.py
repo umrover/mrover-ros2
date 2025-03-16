@@ -232,18 +232,17 @@ class GUIConsumer(JsonWebsocketConsumer):
                     "site": site
                 }:
                     device_input = DeviceInputs(axes, buttons)
-                    if((site == 0) | (site == 1)):
-                        send_sa_controls(cur_sa_mode, 0, device_input, self.sa_thr_pub, self.sa_enable_pump_0_srv, self.sa_enable_pump_1_srv)
-                    elif((site == 2) | (site == 3)):
-                        send_sa_controls(cur_sa_mode, 1, device_input, self.sa_thr_pub, self.sa_enable_pump_0_srv, self.sa_enable_pump_1_srv)
-                    else:
-                        node.get_logger().warning(f"Unhandled Site: {site}")
+                    send_sa_controls(cur_sa_mode, site, device_input, self.sa_thr_pub, self.sa_enable_pump_0_srv, self.sa_enable_pump_1_srv)
                 case {
                     "type": "sa_mode",
                     "mode": mode,
                 }:
                     cur_sa_mode = mode
-                case {"type": "auton_enable", "enabled": enabled, "waypoints": waypoints}:
+                case {
+                    "type": "auton_enable", 
+                    "enabled": enabled, 
+                    "waypoints": waypoints
+                }:
                     self.send_auton_command(waypoints, enabled)
                 case {"type": "teleop_enable", "enabled": enabled}:
                     self.enable_teleop_srv.call(SetBool.Request(data=enabled)) # SETBOOL NOT ENABLEBOOL
