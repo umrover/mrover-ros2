@@ -11,7 +11,7 @@ export CXX=clang++
 
 # Set CUDA compilers
 export CUDAHOSTCXX=g++-9
-export CUDACXX=/usr/local/cuda-12.2/bin/nvcc
+export CUDACXX=/usr/local/cuda-12.3/bin/nvcc
 
 # TODO (ali): add build configs for debug vs release
 colcon build \
