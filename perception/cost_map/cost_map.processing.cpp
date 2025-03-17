@@ -1,9 +1,5 @@
 #include "cost_map.hpp"
-#include "mrover/srv/detail/dilate_cost_map__builder.hpp"
-#include <algorithm>
-#include <nav_msgs/msg/detail/occupancy_grid__struct.hpp>
-#include <rclcpp/logging.hpp>
-#include <utility>
+#include <cstdlib>
 
 namespace mrover {
     auto remap(double x, double inMin, double inMax, double outMin, double outMax) -> double {
@@ -121,6 +117,16 @@ namespace mrover {
             // Variable dilation for any width`
             std::array<CostMapNode::Coordinate,(2*dilation+1)*(2*dilation+1)> dis = diArray();
 
+            // Do one initial pass to generate post-process for 0 cell dilation (raw data); no actual dilation happening here
+            //     Done so there is no grey scaling for 0 cell dilation
+            for(int row = 0; row < mWidth; row++){
+                for(int col = 0; col < mHeight; col++){
+                    int oned_index = coordinateToIndex({row, col});
+                    postProcesed.data[oned_index] = mGlobalGridMsg.data[oned_index] > FREE_COST ? OCCUPIED_COST : postProcesed.data[oned_index];
+                }
+            }
+
+            // Repeatedly apply 3x3 kernel (1 cell dilation)
             // TODO: running 2x dilation, but consider swapping which one is copying/being used to copy data to reduce time
             //       can do by swapping which one is being used at each times % 2 pass
             for(int times = 0; times < mDilateAmt; times++){

@@ -1,4 +1,5 @@
 #include "cost_map.hpp"
+
 namespace mrover {
     CostMapNode::CostMapNode(rclcpp::NodeOptions const& options) : Node("cost_map", options){
         std::vector<ParameterWrapper> params{

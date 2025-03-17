@@ -9,6 +9,7 @@
 #include <random>
 #include <cstddef>
 #include <vector>
+#include <utility>
 
 #include <Eigen/Core>
 #include <Eigen/src/Core/Matrix.h>
@@ -31,5 +32,6 @@
 #include <point.hpp>
 #include <rclcpp/logging.hpp>
 #include<mrover/srv/dilate_cost_map.hpp>
+#include <nav_msgs/msg/detail/occupancy_grid__struct.hpp>
 
 #include "../loop_profiler/loop_profiler.hpp"
