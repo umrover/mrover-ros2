@@ -81,7 +81,10 @@ namespace mrover {
         cv::Mat bgraImage{static_cast<int>(msg->height), static_cast<int>(msg->width), CV_8UC4, const_cast<uint8_t*>(msg->data.data())};
 
         cv::Mat temp;
-        temp = cv::imread("/home/alison/ros2_ws/src/mrover/perception/key_detector/datasets/test/image/f91.png", cv::IMREAD_COLOR);
+
+        std::filesystem::path packagePath = std::filesystem::path{ament_index_cpp::get_package_prefix("mrover")} / ".." / ".." / "src" / "mrover" / "perception" / "key_detector" / "datasets" / "test" / "image" / "f91.png" ;
+
+        temp = cv::imread(packagePath.c_str(), cv::IMREAD_COLOR);
 
         cv::cvtColor(temp, bgraImage, cv::COLOR_BGR2BGRA);
 

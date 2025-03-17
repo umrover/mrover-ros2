@@ -27,7 +27,9 @@ namespace mrover {
         // Convert to correct color scheme
         cv::cvtColor(input, bgrImage, cv::COLOR_BGRA2BGR);
 
-        bgrImage = cv::imread("/home/alison/ros2_ws/src/mrover/perception/key_detector/datasets/test/image/f52.png", cv::IMREAD_COLOR);
+        std::filesystem::path packagePath = std::filesystem::path{ament_index_cpp::get_package_prefix("mrover")} / ".." / ".." / "src" / "mrover" / "perception" / "key_detector" / "datasets" / "test" / "image" / "f52.png" ;
+
+        bgrImage = cv::imread(packagePath.c_str(), cv::IMREAD_COLOR);
 
         static constexpr float SCALE_FACTOR = 1.0f;
         static constexpr std::size_t CHANNELS = 3;
