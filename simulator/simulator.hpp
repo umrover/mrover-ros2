@@ -222,8 +222,8 @@ namespace mrover {
         bool mEnablePhysics{};
         bool mRenderModels = true;
         bool mRenderWireframeColliders = false;
-        double mPublishHammerDistanceThreshold = 8;
-        double mPublishBottleDistanceThreshold = 8;
+        double mPublishHammerDistanceThreshold = 3;
+        double mPublishBottleDistanceThreshold = 3;
         float mCameraLockSlerp = 0.02;
 
         float mFloat = 0.0f;

@@ -185,7 +185,7 @@ class ImageTargetsStore:
         if name not in self._data:
             return None
         if self._context.node.get_clock().now() - self._data[name].time >= Duration(
-            seconds=self._context.node.get_parameter("target_expiration_duration").value
+            seconds=self._context.node.get_parameter("long_range.bearing_expiration_duration").value
         ):
             return None
         return self._data[name]
@@ -272,16 +272,15 @@ class Course:
                  if we are looking for a post or object, and we see it in one of the cameras (ZED or long range)
         """
         from . import long_range, approach_target
-
         # If we see the target in the ZED, go to ApproachTargetState
         if self.ctx.env.current_target_pos() is not None:
             return approach_target.ApproachTargetState()
         # If we see the target in the long range camera, go to LongRangeState
         assert self.ctx.course is not None
         if (
-            self.ctx.course.image_target_name() != "bottle"
-            and self.ctx.env.image_targets.query(self.ctx.course.image_target_name()) is not None
+            self.ctx.env.image_targets.query(self.ctx.course.image_target_name()) is not None
         ):
+            self.ctx.node.get_logger().info("Tried to transition to long range")
             return long_range.LongRangeState()
         return None
 
@@ -386,9 +385,14 @@ class Context:
         node.create_subscription(Bool, "nav_stuck", self.stuck_callback, 1)
         node.create_subscription(ImageTargets, "tags", self.image_targets_callback, 1)
         node.create_subscription(ImageTargets, "objects", self.image_targets_callback, 1)
-        node.create_subscription(OccupancyGrid, "costmap", self.costmap_callback, 1)
+        
+        if node.get_parameter("custom_costmap").value:
+            node.create_subscription(OccupancyGrid, "custom_costmap", self.costmap_callback, 1)
+        else:
+            node.create_subscription(OccupancyGrid, "costmap", self.costmap_callback, 1)
         self.tf_buffer = tf2_ros.Buffer()
         tf2_ros.TransformListener(self.tf_buffer, node)
+
 
     def enable_auton(self, request: EnableAuton.Request, response: EnableAuton.Response) -> EnableAuton.Response:
         self.node.get_logger().info("Received new course to navigate!")
@@ -435,7 +439,8 @@ class Context:
     def move_costmap(self, course_name="center_gps"):
         # TODO(neven): add service to move costmap if going to watter bottle search
         self.node.get_logger().info(f"Requesting to move cost map to {course_name}")
-        client = self.node.create_client(MoveCostMap, "move_cost_map")
+        srv_name = "move_custom_cost_map" if self.node.get_parameter("custom_costmap").value else "move_cost_map"
+        client = self.node.create_client(MoveCostMap, srv_name=srv_name)
         while not client.wait_for_service(timeout_sec=1.0):
             self.node.get_logger().info("waiting for move_cost_map service...")
         req = MoveCostMap.Request()
