@@ -49,8 +49,13 @@ iekf:
     vel_noise_none: 1.0
     mag_heading_noise: 0.1
     rtk_heading_noise: 0.01
-    
     moving_window_sz: 20
     near_zero_threshold: 0.0001
+    max_angular_vel_change_threshold: 0.2
+    minumum_linear_speed: 0.2
+    maximum_angular_speed: 0.1
+    bufferSize: 10
+
+
     
 

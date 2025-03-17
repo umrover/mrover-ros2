@@ -20,15 +20,23 @@ namespace mrover {
         declare_parameter("mag_heading_noise", rclcpp::ParameterType::PARAMETER_DOUBLE);
         declare_parameter("rtk_heading_noise", rclcpp::ParameterType::PARAMETER_DOUBLE);
         declare_parameter("near_zero_threshold", rclcpp::ParameterType::PARAMETER_DOUBLE);
+        declare_parameter("max_angular_vel_change_threshold", rclcpp::ParamaterType::PARAMETER_DOUBLE);
+        declare_paramater("minimum_linear_speed", rclcpp::ParameterType::PARAMETER_DOUBLE);
+        declare_parameter("maximum_angular_speed", rclcpp::ParameterType::PARAMETER_DOUBLE);
         declare_parameter("moving_window_sz", rclcpp::ParameterType::PARAMETER_INTEGER);
+        declare_parameter("bufferSize", rclcpp::ParameterType::PARAMETER_INTEGER);
 
         scale_cov_a = get_parameter("scale_cov_a").as_double();
         scale_cov_w = get_parameter("scale_cov_w").as_double();
         pos_noise_fixed = get_parameter("pos_noise_fixed").as_double();
         vel_noise_fixed = get_parameter("vel_noise_fixed").as_double();
         mag_heading_noise = get_parameter("mag_heading_noise").as_double();
+        max_angular_vel_change_threshold = get_parameter("max_angular_vel_change_threshold").as_double();
+        minimum_linear_speed = get_parameter("minimum_linear_speed").as_double();
+        maximum_angular_speed = get_parameter("maximum_angular_speed").as_double();
         near_zero_threshold = get_parameter("near_zero_threshold").as_double();
         moving_window_sz = get_parameter("moving_window_sz").as_int();
+        bufferSize = get_parameter("bufferSize").as_int();
 
         // initialize state variables
         X.setIdentity();
@@ -54,6 +62,18 @@ namespace mrover {
         velocity_sub = this->create_subscription<geometry_msgs::msg::Vector3Stamped>("/velocity/fix", 10, [&](const geometry_msgs::msg::Vector3Stamped::ConstSharedPtr& vel_msg) {
             vel_callback(vel_msg->vector);
         });
+
+        //synchronizers 
+        pos_and_imu_sync_ = std::make_shared<message_filters::Synchronizer<PosImuSyncPolicy>>(
+            PosImuSyncPolicy(1), pos_sub, imu_sub);
+        pos_and_imu_sync_->setAgePenalty(0.5);
+        pose_and_imu_sync->registerCallback(&IEKF::drive_forward_callback, this);
+
+        //watchdog timout
+        imu_watchdog_timeout = this->create_wall_timer(IMU_WATCHDOG_TIMEOUT.to_chrono<std::chrono::milliseconds>(), [&]() {
+            RCLCPP_WARN(get_logger(), "ZED IMU data timed out");
+            last_imu_value.reset();
+        })
 
         // subscribers sim
         // imu_sub = this->create_subscription<sensor_msgs::msg::Imu>("/imu/data", 10, [&](const sensor_msgs::msg::Imu::ConstSharedPtr& imu_msg) {
@@ -346,6 +366,51 @@ namespace mrover {
         N << X.block<3, 3>(0, 0) * cov_a * X.block<3, 3>(0, 0).transpose();
 
         correct(Y, b, N, H);
+    }
+
+    void IEKF::drive_forward_callback(const geometry_msgs::msg::Vector3& pos_msg, const sensor_msgs::msg::Imu& imu_msg) {
+        
+        if (pos_buffer.size() < bufferSize || imu_buffer.size() < bufferSize) (
+            pos_buffer.push_back(Eigen::Vector3d(pos_msg.x, pos_msg.y, pos_msg.z));
+            orientation_buffer.push_back(Eigen::Quaterniond(
+                imu_msg.orientation.w, 
+                imu_msg.orientation.x, 
+                imu_msg.orientation.y, 
+                imu_msg_orientation.z
+            ));
+            return;
+        )
+
+        Eigen::Vector3d old_position_in_map = pos_buffer.front();
+        pos_buffer.pop_front();
+        Eigen::Quaterniond old_orientation_in_map = orientation_buffer.front();
+        orientation_buffer.pop_front();
+
+        Eigen::Vector3d new_position_in_map(pos_msg.x, pos_msg.y, pos_msg.x);
+        Eigen::Quaterniond new_orientation_in_map(imu_msg.orientation.w, imu_msg.orientation.x, imu_msg.orientation.y, imu_msg_orientation.z);
+        pos_buffer.push_back(new_position_in_map);
+        orientation_buffer.push_back(new_orientation_in_map);
+
+        double deltaY = new_position_in_map.y() - old_position_in_map.y();
+        double deltaX = new_position_in_map.x() - old_position_in_map.x();
+        double delta_angular_velocity = new_orientation_in_map.z() - old_orientation_in_map.z();
+        double rover_vel_x = deltaX / STEP.seconds();
+        double rover_vel_y = deltaY / STEP.seconds();
+        double rover_velocity = sqrt(rover_vel_x * rover_vel_x + rover_vel_y * rover_vel_y);
+
+        if (rover_velocity < minimum_linear_speed) {
+            RCLCPP_WARN(this->get_logger(), "Rover stationary - insufficient speed: %.3f m/s", rover_velocity);
+            return;
+        } else {
+            drive_forward_heading = atan2(deltaY, deltaX);
+        }
+        
+        if (delta_angular_velocity > maximum_angular_speed) (
+            RCLCPP_WARN(this->get_logger(), "Rover changing heading too fast - cannot compute heading");
+            return;
+        ) else {
+            drive_forward_heading = atan2(deltaY, deltaX);
+        }
     }
 
 
