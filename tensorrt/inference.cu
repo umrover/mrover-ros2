@@ -18,8 +18,8 @@ Inference::Inference(std::string modelName, std::string packagePathString) :  mM
 	//Create ONNX and engine file paths
 	mLogger.log(ILogger::Severity::kINFO, mModelName.c_str());
 	mLogger.log(ILogger::Severity::kINFO, mPackagePath.c_str());
-	mONNXModelPath = std::filesystem::path{packagePathString} / "data" / std::string(mModelName + ".onnx");
-	mEngineModelPath = std::filesystem::path{packagePathString} / "data" / std::string("tensorrt-engine-" + mModelName + ".engine");;
+	mONNXModelPath = std::filesystem::path{mPackagePath} / "data" / std::string(mModelName + ".onnx");
+	mEngineModelPath = std::filesystem::path{mPackagePath} / "data" / std::string("tensorrt-engine-" + mModelName + ".engine");;
 
 	std::array<char, 150> message{};
 	std::snprintf(message.data(), message.size(), "Reading from ONNX model at %s and creating TensorRT engine at %s", mONNXModelPath.c_str(), mEngineModelPath.c_str());
@@ -185,14 +185,13 @@ auto Inference::prepTensors() -> void {
 	auto const [nbDims, d] = mEngine->getTensorShape(mOutputTensorName.c_str());
 	for (int i = 0; i < nbDims; i++) {
 		std::array<char, 512> message{};
-		std::snprintf(message.data(), message.size(), "Size %d %d", i, d[i]);
+		std::snprintf(message.data(), message.size(), "Output Size %d %d", i, d[i]);
 		mLogger.log(ILogger::Severity::kINFO, message.data());
 	}
 
 	// Create the mat wrapper around the output matrix for ease of use
-	assert(nbDims == 3);
-	assert(d[0] == 1);
-	mOutputTensor = cv::Mat::zeros(d[1], d[2], CV_32FC1);
+	assert(d[0] == 1); // TODO: This is cooked       vvvvvv
+	mOutputTensor = cv::Mat::zeros(d[1], (!d[2]) ? 1 : d[2], CV_32FC1);
 }
 
 auto Inference::getBindingInputIndex(IExecutionContext const* context) -> int {

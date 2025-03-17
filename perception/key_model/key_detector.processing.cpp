@@ -81,20 +81,20 @@ namespace mrover {
         cv::Mat bgraImage{static_cast<int>(msg->height), static_cast<int>(msg->width), CV_8UC4, const_cast<uint8_t*>(msg->data.data())};
 
         cv::Mat temp;
-        temp = cv::imread("/home/john/ros2_ws/src/mrover/perception/key_detector/keyrover/../datasets/test/image/f91.png", cv::IMREAD_COLOR);
+        temp = cv::imread("/home/alison/ros2_ws/src/mrover/perception/key_detector/datasets/test/image/f91.png", cv::IMREAD_COLOR);
 
         cv::cvtColor(temp, bgraImage, cv::COLOR_BGR2BGRA);
 
         // Convert the RGB Image into the blob Image format
-        //mKeyDetectionModel.preprocess(mKeyDetectionModel, bgraImage, mImageBlob);
+        mKeyDetectionModel.preprocess(mKeyDetectionModel, bgraImage, mImageBlob);
 
         //Read in image in data set in lieu of camera
-        mKeyDetectionModel.preprocess(mKeyDetectionModel, temp, mImageBlob);
+        //mKeyDetectionModel.preprocess(mKeyDetectionModel, temp, mImageBlob);
 
 
-        // mTextCoordModel.preprocess(mTextCoordModel, bgraImage, mTextCoordsBlob);
+         mTextCoordModel.preprocess(mTextCoordModel, bgraImage, mTextCoordsBlob);
 
-        mTextCoordModel.preprocess(mTextCoordModel, temp, mTextCoordsBlob);
+        //mTextCoordModel.preprocess(mTextCoordModel, temp, mTextCoordsBlob);
 
 
         mLoopProfiler.measureEvent("Conversion");
@@ -115,7 +115,7 @@ namespace mrover {
 
         matchKeyDetections(outputTensor, detections);
 
-        publishDetectedObjects(outputTensor);
+        // publishDetectedObjects(outputTensor);
 
         mLoopProfiler.measureEvent("Execution");
 
@@ -129,13 +129,10 @@ namespace mrover {
 
         mTargetsPub->publish(targets);
 
-        // drawDetectionBoxes(bgraImage, detections);
-
-        drawDetectionBoxes(temp, detections);
-
+        drawDetectionBoxes(bgraImage, detections);
 
         if (mDebug) {
-            //publishDetectedObjects(bgraImage);
+            publishDetectedObjects(bgraImage);
         }
 
         mLoopProfiler.measureEvent("Publication");
