@@ -429,8 +429,17 @@ class Context:
         self.env.cost_map.height = msg.info.height  # cells
         self.env.cost_map.width = msg.info.width  # cells
         self.env.cost_map.data = cost_map_data.astype(np.float32)
+        
         for prevLocation in self.env.previous_locations:
-            self.env.cost_map[prevLocation[0],prevLocation[1]] = 0 
+            
+            #self.env.cost_map[prevLocation[0],prevLocation[1]] = 0 
+            point_ij = np.array(prevLocation[0],prevLocation[1])
+            if  (0 <= int(point_ij[0]) < self.env.cost_map.width and 0 <= int(point_ij[1])  < self.env.cost_map.height):
+                self.env.cost_map[point_ij] = 0
+
+       #cost_map = context.env.cost_map.data
+
+    #point_ij = cartesian_to_ij(context=context, cart_coord=point)
         # change all unidentified points to have a slight cost
         self.env.cost_map.data[cost_map_data == -1] = 10.0  # TODO: find optimal value
         # normalize to [0, 1]

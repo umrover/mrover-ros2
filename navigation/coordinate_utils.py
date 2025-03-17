@@ -159,7 +159,6 @@ def is_high_cost_point(point: np.ndarray, context: Context, min_cost=0.2) -> boo
     if not (0 <= int(point_ij[0]) < cost_map.shape[0] and 0 <= int(point_ij[1]) < cost_map.shape[1]):
         context.node.get_logger().warn("Point is out of bounds in the costmap")
         return False
-    if(cost_map[int(point_ij[0])][int(point_ij[1])] > min_cost):
-        return not ((point[0],point[1]) in context.env.previous_locations)
-    #return cost_map[int(point_ij[0])][int(point_ij[1])] > min_cost
-    return False; 
+    
+    return cost_map[int(point_ij[0])][int(point_ij[1])] > min_cost
+    
