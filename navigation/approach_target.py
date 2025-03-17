@@ -150,6 +150,9 @@ class ApproachTargetState(State):
         from .long_range import LongRangeState
         assert context.course is not None
 
+        if context.env.cost_map.data is None:
+            return self
+
         if self.target_position is None:
             
             # If we lose sight of the target and we have not reached the waypoint yet are we are in the long range state,
@@ -165,12 +168,6 @@ class ApproachTargetState(State):
         # Establish rover's position in the world
         rover_in_map = context.rover.get_pose_in_map()
         assert rover_in_map is not None
-
-        # Assert costmap exists
-        if not hasattr(context.env.cost_map, "data"):
-            context.node.get_logger().warn(f"No costmap found, waiting...")
-            self.time_begin = context.node.get_clock().now()
-            return self
 
         # Wait before starting state
         if context.node.get_clock().now() - Duration(nanoseconds=1000000000) < self.time_begin:

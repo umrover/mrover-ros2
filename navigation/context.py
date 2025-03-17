@@ -432,6 +432,8 @@ class Context:
         # change all unidentified points to have a slight cost
         self.env.cost_map.data[cost_map_data == -1] = 10.0  # TODO: find optimal value
         # normalize to [0, 1]
+
+        #array: known_free_cost
         self.env.cost_map.data /= 100.0
 
     def move_costmap(self, course_name="center_gps"):

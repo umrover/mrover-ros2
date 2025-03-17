@@ -16,14 +16,55 @@ simulator:
       rover:
         type: urdf
         uri: package://mrover/urdf/rover/rover.urdf.xacro
-        position: [ -18.0, -18.0, 0.1 ]
+        position: [ 0.0, 0.0, 0.1 ]
       world:
         type: urdf
         uri: package://mrover/urdf/world/world.urdf.xacro
       bottle:
         type: urdf
         uri: package://mrover/urdf/world/bottle.urdf.xacro
-        position: [18.0, 18.0, 0.2]
+        position: [9.0, 10.0, 0.5]
+
+      # Auto-generated rocks from the grid
+      rock_1:
+        type: urdf
+        uri: package://mrover/urdf/world/medium_rock.urdf.xacro
+        position: [ -6.00, 4.00, 1.0 ]
+
+      rock_2:
+        type: urdf
+        uri: package://mrover/urdf/world/medium_rock.urdf.xacro
+        position: [ -2.00, 4.00, 1.0 ]
+
+      rock_3:
+        type: urdf
+        uri: package://mrover/urdf/world/medium_rock.urdf.xacro
+        position: [ 0.00, 4.00, 1.0 ]
+
+      rock_4:
+        type: urdf
+        uri: package://mrover/urdf/world/small_rock.urdf.xacro
+        position: [ 3.00, 3.00, 0.5 ]
+
+      rock_5:
+        type: urdf
+        uri: package://mrover/urdf/world/medium_rock.urdf.xacro
+        position: [ -7.00, -1.00, 1.0 ]
+
+      rock_6:
+        type: urdf
+        uri: package://mrover/urdf/world/small_rock.urdf.xacro
+        position: [ 8.00, -1.00, 0.5 ]
+
+      rock_7:
+        type: urdf
+        uri: package://mrover/urdf/world/small_rock.urdf.xacro
+        position: [ -3.00, -4.00, 0.5 ]
+
+      rock_8:
+        type: urdf
+        uri: package://mrover/urdf/world/small_rock.urdf.xacro
+        position: [ 1.00, -5.00, 0.5 ]
 
     ref_lat: 38.4225202
     ref_lon: -110.7844653

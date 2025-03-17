@@ -16,7 +16,7 @@ navigation:
 
     target_expiration_duration: 60.0
 
-    custom_costmap: true
+    custom_costmap: false
 
     image_targets:
       increment_weight: 5
@@ -34,7 +34,7 @@ navigation:
       lookahead_distance: 1.0
     
     long_range:
-      distance_ahead: 2.5
+      distance_ahead: 10.0
       bearing_expiration_duration: 0.5
 
     waypoint:
@@ -45,7 +45,7 @@ navigation:
       use_costmap: true
       stop_threshold: 0.5
       drive_forward_threshold: 0.34
-      coverage_radius: 20.0
+      coverage_radius: 5.0
       segments_per_rotation: 16
       distance_between_spirals: 3.0
       max_segment_length: 1.0
