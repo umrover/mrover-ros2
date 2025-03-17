@@ -86,9 +86,16 @@ namespace mrover {
         cv::cvtColor(temp, bgraImage, cv::COLOR_BGR2BGRA);
 
         // Convert the RGB Image into the blob Image format
-        mKeyDetectionModel.preprocess(mKeyDetectionModel, bgraImage, mImageBlob);
+        //mKeyDetectionModel.preprocess(mKeyDetectionModel, bgraImage, mImageBlob);
 
-        mTextCoordModel.preprocess(mTextCoordModel, bgraImage, mTextCoordsBlob);
+        //Read in image in data set in lieu of camera
+        mKeyDetectionModel.preprocess(mKeyDetectionModel, temp, mImageBlob);
+
+
+        // mTextCoordModel.preprocess(mTextCoordModel, bgraImage, mTextCoordsBlob);
+
+        mTextCoordModel.preprocess(mTextCoordModel, temp, mTextCoordsBlob);
+
 
         mLoopProfiler.measureEvent("Conversion");
 
@@ -122,7 +129,11 @@ namespace mrover {
 
         mTargetsPub->publish(targets);
 
-        drawDetectionBoxes(bgraImage, detections);
+        // drawDetectionBoxes(bgraImage, detections);
+
+        drawDetectionBoxes(temp, detections);
+
+
         if (mDebug) {
             //publishDetectedObjects(bgraImage);
         }
