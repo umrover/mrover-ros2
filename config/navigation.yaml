@@ -45,7 +45,7 @@ navigation:
       use_costmap: true
       stop_threshold: 0.5
       drive_forward_threshold: 0.34
-      coverage_radius: 5.0
+      coverage_radius: 20.0
       segments_per_rotation: 16
       distance_between_spirals: 3.0
       max_segment_length: 1.0
