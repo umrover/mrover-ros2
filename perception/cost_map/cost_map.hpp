@@ -1,6 +1,7 @@
 #pragma once
 
 #include "pch.hpp"
+#include <sensor_msgs/msg/detail/point_cloud2__struct.hpp>
 
 namespace mrover {
 
@@ -10,9 +11,8 @@ namespace mrover {
 
         constexpr static double TAU = 2 * std::numbers::pi;
 
-        // Dilation for map, set as number of bins away from object to dilate by (default 2)
-        //     Only change this for initial default, variable dilation handled by dilate service
-        constexpr static int dilation = 2;
+        // Dilation for map, set as number of bins away from object to dilate by (default 1)
+        constexpr static int dilation = 1;
 
 		// Noise/Debug Vars
 		constexpr static bool useNoisyPointCloud = false;
@@ -36,7 +36,7 @@ namespace mrover {
         int mHeight{};        // Number of cells on the grid vertically 
         int mDownSamplingFactor = 4;
         std::string mMapFrame;
-        int mDilateAmt = 1;
+        int mDilateAmt = 2;
 
         // Loop timing stuff
         // LoopProfiler mLoopProfilerGrab;
@@ -72,6 +72,10 @@ namespace mrover {
         auto dilateCostMapCallback(mrover::srv::DilateCostMap::Request::ConstSharedPtr& req, mrover::srv::DilateCostMap::Response::SharedPtr& res) -> void;
 
 		void uploadPC();
+
+        // CUDA functions
+        // auto fillBinsGPU(sensor_msgs::msg::PointCloud2::ConstSharedPtr const& msg) -> void;
+        // auto checkCudaError(cudaError_t err) -> void;
 
         // Bin vector coordinate
         struct Coordinate{
