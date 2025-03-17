@@ -22,14 +22,12 @@ namespace mrover {
     }
 
     auto KeyDetectorBase::preprocessTextCoordsInput(Model const& model, cv::Mat const& input, cv::Mat& output) -> void {
-        assert(output.type() == CV_32F);
-
         static cv::Mat bgrImage;
         
         // Convert to correct color scheme
         cv::cvtColor(input, bgrImage, cv::COLOR_BGRA2BGR);
 
-        bgrImage = cv::imread("/home/john/ros2_ws/src/mrover/perception/key_detector/keyrover/../datasets/test/image/f52.png", cv::IMREAD_COLOR);
+        bgrImage = cv::imread("/home/alison/ros2_ws/src/mrover/perception/key_detector/datasets/test/image/f52.png", cv::IMREAD_COLOR);
 
         static constexpr float SCALE_FACTOR = 1.0f;
         static constexpr std::size_t CHANNELS = 3;
@@ -52,7 +50,7 @@ namespace mrover {
     }
 
     auto KeyDetectorBase::postprocessTextCoordsOutput(Model const& model, cv::Mat& output) -> void {
-        assert(output.total == 8);
+        assert(output.total() == 8);
 
         // De-Normalize the output
 
@@ -109,6 +107,8 @@ namespace mrover {
             }
         }
 
+
+        // AT THIS POINT IT IS CORRECT
 
         // Create an image from the keyboard gradient
         cv::Mat temp;

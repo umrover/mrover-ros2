@@ -78,6 +78,8 @@ class KeyDetector(Node):
         bboxes = self.yolo_segmentation_model.predict(img_cv, conf=0.3, iou=0.3)[0]
         mask = self.corner_regression_model.predict(img)
 
+        # START HERE
+
         torchTime = (time.process_time() -start) * 1000
         start = time.process_time()
 
