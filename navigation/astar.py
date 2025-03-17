@@ -204,7 +204,7 @@ class AStar:
             follow_astar = abs(astar_dist - min_astar) / min_astar > self.A_STAR_THRESH
         else:
             # If min_astar is 0, it might mean start/end are the same
-            follow_astar = False
+            follow_astar = True
 
         # context.node.get_logger().info("Following A* path" if follow_astar else "Not following A* path")
         return follow_astar
@@ -220,13 +220,17 @@ class AStar:
         assert rover_SE3 is not None
         rover_position_in_map = rover_SE3.translation()[:2]
 
+        if not context.node.get_parameter("search.use_costmap").value:
+            return Trajectory(np.array([dest]))
+
         costmap_length = self.context.env.cost_map.data.shape[0]
         threshold = (costmap_length * self.COSTMAP_THRESH, costmap_length * (1 - self.COSTMAP_THRESH))
         rover_ij = cartesian_to_ij(context, rover_position_in_map)
 
         # Move the costmap if we are outside of the threshold
         if not (threshold[0] <= rover_ij[0] <= threshold[1] and threshold[0] <= rover_ij[1] <= threshold[1]):
-            context.move_costmap()
+            if not context.node.get_parameter("custom_costmap").value:
+                context.move_costmap()
 
         trajectory = Trajectory(np.array([]))
         context.rover.send_drive_command(Twist())  # Stop while planning
