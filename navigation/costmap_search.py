@@ -42,6 +42,7 @@ class CostmapSearchState(State):
     UPDATE_DELAY: float
 
     def on_enter(self, context: Context) -> None:
+        context.node.get_logger().info("In costmap search spiral state")
 
         # Parameter initialization
         self.prev_pos = np.array([0, 0])
@@ -173,7 +174,7 @@ class CostmapSearchState(State):
         if (context.env.current_target_pos()) is not None:
             total_time = context.node.get_clock().now() - self.time_begin
             context.node.get_logger().info(
-                f"Transitioning to approach target state. Total search time: {total_time.nanoseconds // 1000000000}"
+                f"Total search time: {total_time.nanoseconds // 1000000000}"
             )
             return approach_target.ApproachTargetState()
 

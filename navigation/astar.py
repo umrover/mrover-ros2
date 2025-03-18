@@ -204,7 +204,7 @@ class AStar:
             follow_astar = abs(astar_dist - min_astar) / min_astar > self.A_STAR_THRESH
         else:
             # If min_astar is 0, it might mean start/end are the same
-            follow_astar = False
+            follow_astar = True
 
         # context.node.get_logger().info("Following A* path" if follow_astar else "Not following A* path")
         return follow_astar

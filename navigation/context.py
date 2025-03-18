@@ -184,7 +184,7 @@ class ImageTargetsStore:
         if name not in self._data:
             return None
         if self._context.node.get_clock().now() - self._data[name].time >= Duration(
-            seconds=self._context.node.get_parameter("target_expiration_duration").value
+            seconds=self._context.node.get_parameter("long_range.bearing_expiration_duration").value
         ):
             return None
         return self._data[name]
@@ -271,16 +271,15 @@ class Course:
                  if we are looking for a post or object, and we see it in one of the cameras (ZED or long range)
         """
         from . import long_range, approach_target
-
         # If we see the target in the ZED, go to ApproachTargetState
         if self.ctx.env.current_target_pos() is not None:
             return approach_target.ApproachTargetState()
         # If we see the target in the long range camera, go to LongRangeState
         assert self.ctx.course is not None
         if (
-            self.ctx.course.image_target_name() != "bottle"
-            and self.ctx.env.image_targets.query(self.ctx.course.image_target_name()) is not None
+            self.ctx.env.image_targets.query(self.ctx.course.image_target_name()) is not None
         ):
+            self.ctx.node.get_logger().info("Tried to transition to long range")
             return long_range.LongRangeState()
         return None
 
@@ -430,11 +429,11 @@ class Context:
         self.env.cost_map.width = msg.info.width  # cells
         self.env.cost_map.data = cost_map_data.astype(np.float32)
 
-        self.node.get_logger().info(f"{self.env.cost_map.origin}")
-
         # change all unidentified points to have a slight cost
         self.env.cost_map.data[cost_map_data == -1] = 10.0  # TODO: find optimal value
         # normalize to [0, 1]
+
+        #array: known_free_cost
         self.env.cost_map.data /= 100.0
 
     def move_costmap(self, course_name="center_gps"):

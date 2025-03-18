@@ -99,7 +99,8 @@ class GridUI:
         Free cells are 0 and painted cells are 100.
         """
         flat = []
-        for row in self.grid:
+        transposed = [[self.grid[j][i] for j in range(len(self.grid))] for i in range(len(self.grid[0]))]
+        for row in transposed:
             for cell in row:
                 flat.append(100 if cell == 1 else 0)
         return flat
@@ -150,7 +151,6 @@ class CustomCostmapNode(Node):
         msg.data = self.ui.get_flat_grid()
 
         self.publisher_.publish(msg)
-        self.get_logger().info('Published custom occupancy grid.')
 
 def main(args=None):
     rclpy.init(args=sys.argv)

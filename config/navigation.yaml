@@ -13,9 +13,10 @@ navigation:
     # How long it takes to forget about a target
     # Useful if the rover turns away from the target for a brief moment
     # Or if there was an ephemeral false positive detection
+
     target_expiration_duration: 60.0
 
-    custom_costmap: true
+    custom_costmap: false
 
     image_targets:
       increment_weight: 5
@@ -31,15 +32,10 @@ navigation:
       turning_p: 3.0
       driving_p: 20.0
       lookahead_distance: 1.0
-
+    
     long_range:
-      distance_ahead: 20.0
-      time_threshold: 5.0
-      increment_weight: 5.0
-      decrement_weight: 1.0
-      min_hits: 3.0
-      max_hits: 10.0
-
+      distance_ahead: 10.0
+      bearing_expiration_duration: 0.5
 
     waypoint:
       stop_threshold: 0.5
@@ -56,7 +52,7 @@ navigation:
       traversable_cost: 0.2
       update_delay: 3.0
       safe_approach_distance: 5.0
-      a_star_thresh: 0.01
+      a_star_thresh: 0.075
       costmap_thresh: 0.25
       angle_thresh: 0.0872665 #pi/36 radians / 5 degrees
       distance_threshold: 2.0

@@ -45,7 +45,8 @@ class WaypointState(State):
 
     def on_enter(self, context: Context) -> None:
         assert context.course is not None
-        self.marker_pub = context.node.create_publisher(Marker, "spiral_points", 10)
+        context.node.get_logger().info("In waypoint state")
+        self.marker_pub = context.node.create_publisher(Marker, "waypoint_trajectory", 10)
         self.astar = AStar(context)
         self.UPDATE_DELAY = context.node.get_parameter("search.update_delay").value
         self.time_last_updated = context.node.get_clock().now() - Duration(seconds=self.UPDATE_DELAY)
@@ -90,7 +91,6 @@ class WaypointState(State):
         # Returns either ApproachTargetState, LongRangeState, or None
         approach_state = context.course.get_approach_state()
         if approach_state is not None:
-            context.node.get_logger().info("Transitioning to approach target state")
             return approach_state
 
         rover_in_map = context.rover.get_pose_in_map()
@@ -201,4 +201,4 @@ class WaypointState(State):
         start_pt = self.waypoint_traj.cur_pt
         end_pt = len(self.waypoint_traj.coordinates)
         for i, coord in enumerate(self.waypoint_traj.coordinates[start_pt:end_pt]):
-            self.marker_pub.publish(gen_marker(context=context, point=coord, color=[1.0, 0.0, 1.0], id=i, lifetime=100))
+            self.marker_pub.publish(gen_marker(context=context, point=coord, color=[1.0, 0.0, 1.0], id=i, lifetime=2))

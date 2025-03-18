@@ -6,7 +6,12 @@ Panels:
       Expanded:
         - /Global Options1
         - /Status1
+        - /Marker1
         - /Marker1/Topic1
+        - /Marker2
+        - /Marker3
+        - /Marker3/Topic1
+        - /Marker3/Namespaces1
       Splitter Ratio: 0.5
     Tree Height: 631
   - Class: rviz_common/Selection
@@ -129,7 +134,7 @@ Visualization Manager:
       Enabled: true
       Name: Marker
       Namespaces:
-        {}
+        single_point: true
       Topic:
         Depth: 100
         Durability Policy: Volatile
@@ -157,7 +162,7 @@ Visualization Manager:
       Namespaces:
         single_point: true
       Topic:
-        Depth: 5
+        Depth: 100
         Durability Policy: Volatile
         Filter size: 10
         History Policy: Keep Last
@@ -231,7 +236,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/Orbit
-      Distance: 54.16411590576172
+      Distance: 34.75343704223633
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -249,7 +254,7 @@ Visualization Manager:
       Pitch: 1.5697963237762451
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 1.6053987741470337
+      Yaw: 6.260410308837891
     Saved:
       - Class: rviz_default_plugins/Orbit
         Distance: 39.42396545410156
