@@ -8,7 +8,7 @@
 namespace mrover {
 
     constexpr static float DIAG_TEMP_COEFFICIENT = 0.0064f;
-    constexpr static float DIAG_TEMP_25_DEGREE_RESISTANCE = 47000.0;
+    constexpr static float DIAG_TEMP_25_DEGREE_RESISTANCE = 8550.0;
     constexpr static float THRM_A0 = -5.160732E+02;
     constexpr static float THRM_A1 = 6.831122E+02;
     constexpr static float THRM_A2 = -3.774928E+02;
@@ -25,13 +25,13 @@ namespace mrover {
     	: m_adc_sensor(adc_sensor), m_channel(channel) {}
 
     void DiagTempSensor::update_temp() {
+    	m_adc_sensor->update();
     	float measured_voltage = m_adc_sensor->get_raw_channel_value(m_channel) * 3.3f / 4096.0f;
     	m_temp = (THRM_A4 * powf(measured_voltage,4)) + (THRM_A3 * powf(measured_voltage,3)) + (THRM_A2 * powf(measured_voltage,2)) + (THRM_A1 *  measured_voltage) + THRM_A0;
     }
 
     void DiagTempSensor::update_science_temp() {
-    		// Magic number used to calibrate thermistor temperature
-    		float adc_cnt = m_adc_sensor->get_raw_channel_value(m_channel);
+    		m_adc_sensor->update();
     		float measured_voltage = m_adc_sensor->get_raw_channel_value(m_channel) * 3.3f / 4096.0f;
         	float measured_resistance = (measured_voltage * RESISTANCE_25)/(3.3f - measured_voltage);
         	m_temp = 1/(THRM_A + THRM_B*log(measured_resistance/RESISTANCE_25) + THRM_C*log((measured_resistance/RESISTANCE_25)*(measured_resistance/RESISTANCE_25)) + THRM_D*(((measured_resistance/RESISTANCE_25)*(measured_resistance/RESISTANCE_25)*(measured_resistance/RESISTANCE_25))));

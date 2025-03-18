@@ -32,7 +32,7 @@ namespace mrover {
     };
 
     struct HeaterStateInfo {
-        std::uint8_t on : 6 {};
+        std::uint8_t on : 2 {};
     };
 
     struct HeaterStateData {
@@ -40,7 +40,7 @@ namespace mrover {
     };
 
     struct ThermistorData {
-        std::array<float, 6> temps;
+        std::array<float, 2> temps;
     };
 
     struct SensorData {

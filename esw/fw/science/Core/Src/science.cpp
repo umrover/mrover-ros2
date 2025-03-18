@@ -47,8 +47,8 @@ namespace mrover {
 
         std::array<DiagTempSensor, 2> diag_temp_sensors =
 		{
-				DiagTempSensor{adc_sensor1, 0},
-				DiagTempSensor{adc_sensor1, 1},
+				DiagTempSensor{adc_sensor1, 4},
+				DiagTempSensor{adc_sensor1, 5},
 
 		};
         std::array<Pin, 2> heater_pins =
@@ -104,9 +104,17 @@ namespace mrover {
         }
 
     void handleHeaterTemps() {
+        HeaterStateData heater_msg;
+        ThermistorData thermistor_msg;
     	for (size_t i = 0; i < m_heaters.size(); i++) {
 			m_heaters.at(i).update_temp_and_auto_shutoff_if_applicable();
+            thermistor_msg.temps.at(i) = m_heaters.at(i).get_temp();
+            SET_BIT_AT_INDEX(heater_msg.heater_state_info.on, i, m_heaters.at(i).get_state());
 		}
+        science_out = heater_msg;
+        fdcan_bus.broadcast(science_out, SCIENCE_BOARD_ID, JETSON_ADDRESS);
+        science_out = thermistor_msg;
+        fdcan_bus.broadcast(science_out, SCIENCE_BOARD_ID, JETSON_ADDRESS);
     }
 
     void feed(EnableScienceDeviceCommand const& message) {
@@ -121,6 +129,12 @@ namespace mrover {
                 m_white_leds.at(0).write(message.enable ? GPIO_PIN_SET : GPIO_PIN_RESET);
                 break;
         }
+
+        HeaterStateData heater_msg;
+        SET_BIT_AT_INDEX(heater_msg.heater_state_info.on, 0, m_heaters.at(0).get_state());
+        SET_BIT_AT_INDEX(heater_msg.heater_state_info.on, 1, m_heaters.at(1).get_state());
+        science_out = heater_msg;
+        fdcan_bus.broadcast(science_out, SCIENCE_BOARD_ID, JETSON_ADDRESS);
     }
 
     void feed(HeaterAutoShutOffCommand const& message) {

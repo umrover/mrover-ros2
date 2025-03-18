@@ -49,8 +49,10 @@ namespace mrover {
         rclcpp::Subscription<msg::CAN>::ConstSharedPtr canSubA;
         rclcpp::Subscription<msg::CAN>::ConstSharedPtr canSubB;
 
-        mrover::CanDevice canDevA;
-        mrover::CanDevice canDevB;
+        CanDevice canDevA;
+        CanDevice canDevB;
+
+        ScienceBoard prevScienceMessage;
 
         void processHeaterAutoShutoff(const std::shared_ptr<srv::EnableBool::Request> request, std::shared_ptr<srv::EnableBool::Response> response) {
             canDevA.publish_message(InBoundScienceMessage{HeaterAutoShutOffCommand{.enable_auto_shutoff = request->enable}});
@@ -72,9 +74,10 @@ namespace mrover {
         void processMessage(mrover::HeaterStateData const& message) {
             // RCLCPP_ERROR(get_logger(), "Heaters!");
             msg::HeaterData heaterData;
-            heaterData.state.resize(6);
-            for (int i = 0; i < 6; ++i) {
-                heaterData.state.at(i) = GET_BIT_AT_INDEX(message.heater_state_info.on, i);
+            heaterData.state.resize(4);
+            for (int i = 0; i < 2; ++i) {
+                int h = prevScienceMessage == ScienceBoard::A ? i : i + 2;
+                heaterData.state.at(h) = GET_BIT_AT_INDEX(message.heater_state_info.on, i);
             }
             heaterPub->publish(heaterData);
         }
@@ -82,9 +85,10 @@ namespace mrover {
         void processMessage(mrover::ThermistorData const& message) {
             //RCLCPP_ERROR(get_logger(), "Thermistor data!");
             msg::ScienceThermistors scienceThermistors;
-            scienceThermistors.temps.resize(6);
-            for (int i = 0; i < 6; ++i) {
-                scienceThermistors.temps.at(i).temperature = message.temps[i];
+            scienceThermistors.temps.resize(4);
+            for (int i = 0; i < 2; ++i) {
+                int t = prevScienceMessage == ScienceBoard::A ? i : i + 2;
+                scienceThermistors.temps.at(t).temperature = message.temps[i];
             }
             thermistorsPub->publish(scienceThermistors);
         }
@@ -128,6 +132,11 @@ namespace mrover {
 
         void processCANData(msg::CAN::ConstSharedPtr const& msg) {
             //RCLCPP_ERROR(get_logger(), "Source: %s Destination: %s", msg->source.c_str(), msg->destination.c_str());
+            if (msg->source == "science_a")
+                prevScienceMessage = ScienceBoard::A;
+            else if (msg->source == "science_b")
+                prevScienceMessage = ScienceBoard::B;
+            
             OutBoundScienceMessage const& message = *reinterpret_cast<OutBoundScienceMessage const*>(msg->data.data());
             std::visit([&](auto const& messageAlternative) { processMessage(messageAlternative); }, message);
         }

@@ -26,14 +26,14 @@ namespace mrover {
             publishCanData(&scienceMessage);
         }
 
-        void publishThermistorData(std::array<float, 6> temps) {
+        void publishThermistorData(std::array<float, 2> temps) {
             OutBoundScienceMessage scienceMessage = ThermistorData{temps};
             publishCanData(&scienceMessage);
         }
 
-        void publishHeaterData(std::array<bool, 6> on) {
+        void publishHeaterData(std::array<bool, 2> on) {
             HeaterStateData heaterStateData;
-            for (uint8_t i = 0; i < 6; i++) {
+            for (uint8_t i = 0; i < 2; i++) {
                 SET_BIT_AT_INDEX(heaterStateData.heater_state_info.on, i, on[i]);
             }
             OutBoundScienceMessage scienceMessage = heaterStateData;
@@ -65,7 +65,7 @@ namespace mrover {
             }
 
             scienceAPub->publish(msgA);
-            scienceBPub->publish(msgB);
+            // scienceBPub->publish(msgB);
         }
     };
 
@@ -77,8 +77,8 @@ auto main(int argc, char** argv) -> int {
     mrover::ScienceTestBridge test_bridge;
     while (rclcpp::ok()) {
         test_bridge.publishSensorData(1, 23.45);
-        test_bridge.publishThermistorData({1.1,2.2,3.3,4.4,5.5,6.6});
-        test_bridge.publishHeaterData({0,1,0,1,0,1});
+        test_bridge.publishThermistorData({1.1,2.2});
+        test_bridge.publishHeaterData({0,1});
         rate.sleep();
     }
     rclcpp::shutdown();
