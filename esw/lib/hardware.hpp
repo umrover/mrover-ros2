@@ -51,6 +51,14 @@ namespace mrover {
             HAL_GPIO_WritePin(m_port, m_pin, val);
         }
 
+        auto reset() const -> void {
+            HAL_GPIO_WritePin(m_port, m_pin, GPIO_PIN_RESET);
+        }
+
+        auto set() const -> void {
+            HAL_GPIO_WritePin(m_port, m_pin, GPIO_PIN_SET);
+        }
+
     private:
         GPIO_TypeDef* m_port{};
         std::uint16_t m_pin{};
@@ -154,7 +162,7 @@ namespace mrover {
          * By default CAN is a broadcast protocol, meaning that all devices on the bus receive all messages.
          * We have limited queue space, so we want to filter out messages that are not intended for us.
          */
-        auto configure_filter(std::uint8_t source) const -> void {
+        auto add_filter(std::uint8_t source) const -> void {
             static std::uint8_t filter_index = 0;
 
             std::bitset<8> filter{source};

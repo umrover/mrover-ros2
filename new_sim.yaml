@@ -1,0 +1,93 @@
+# All units are in SI
+# ===================
+# Time:     second, hz
+# Angle:    radian
+# Distance: meter
+
+simulator:
+  ros__parameters:
+    save_rate: 1.0
+    save_history: 4096
+    headless: false
+
+    ref_heading: 90.0  # For the GPS sensor to work
+
+    objects:
+      rover:
+        type: urdf
+        uri: package://mrover/urdf/rover/rover.urdf.xacro
+        position: [ 0.0, 0.0, 0.1 ]
+      world:
+        type: urdf
+        uri: package://mrover/urdf/world/world.urdf.xacro
+      bottle:
+        type: urdf
+        uri: package://mrover/urdf/world/bottle.urdf.xacro
+        position: [ -6.0, 6.0, 0.5 ]
+
+      # Auto-generated rocks from the grid
+      rock_1:
+        type: urdf
+        uri: package://mrover/urdf/world/small_rock.urdf.xacro
+        position: [ 0.00, 9.00, 0.5 ]
+
+      rock_2:
+        type: urdf
+        uri: package://mrover/urdf/world/small_rock.urdf.xacro
+        position: [ 7.00, 7.00, 0.5 ]
+
+      rock_3:
+        type: urdf
+        uri: package://mrover/urdf/world/small_rock.urdf.xacro
+        position: [ -8.00, 6.00, 0.5 ]
+
+      rock_4:
+        type: urdf
+        uri: package://mrover/urdf/world/small_rock.urdf.xacro
+        position: [ 0.00, 6.00, 0.5 ]
+
+      rock_5:
+        type: urdf
+        uri: package://mrover/urdf/world/small_rock.urdf.xacro
+        position: [ -4.00, 3.00, 0.5 ]
+
+      rock_6:
+        type: urdf
+        uri: package://mrover/urdf/world/small_rock.urdf.xacro
+        position: [ 3.00, 3.00, 0.5 ]
+
+      rock_7:
+        type: urdf
+        uri: package://mrover/urdf/world/small_rock.urdf.xacro
+        position: [ -10.00, 0.00, 0.5 ]
+
+      rock_8:
+        type: urdf
+        uri: package://mrover/urdf/world/small_rock.urdf.xacro
+        position: [ -6.00, -1.00, 0.5 ]
+
+      rock_9:
+        type: urdf
+        uri: package://mrover/urdf/world/small_rock.urdf.xacro
+        position: [ 4.00, -2.00, 0.5 ]
+
+      rock_10:
+        type: urdf
+        uri: package://mrover/urdf/world/small_rock.urdf.xacro
+        position: [ -1.00, -4.00, 0.5 ]
+
+      rock_11:
+        type: urdf
+        uri: package://mrover/urdf/world/small_rock.urdf.xacro
+        position: [ 9.00, -6.00, 0.5 ]
+
+      rock_12:
+        type: urdf
+        uri: package://mrover/urdf/world/small_rock.urdf.xacro
+        position: [ -7.00, -8.00, 0.5 ]
+
+    ref_lat: 38.4225202
+    ref_lon: -110.7844653
+    ref_alt: 0.0
+    world_frame: "map"
+    rover_frame: "sim_base_link"
