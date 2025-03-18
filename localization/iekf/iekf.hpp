@@ -60,11 +60,7 @@ namespace mrover {
         using PosImuSyncPolicy = message_filters::sync_policies::ApproximateTime<
             geometry_msgs::msg::Vector3Stamped,
             sensor_msgs::msg::Imu>;
-        std::shared_ptr<message_filters::Synchronizer<PosImuSyncPolicy> pos_and_imu_sync_;
-
-        //timeout definitions 
-        rclcpp::TimerBase::SharedPtr imu_watchdog_timeout;
-        const rclcpp:Duration IMU_WATCHDOG_TIMEOUT = rclcpp::Duration::from_seconds(1.0);
+        std::shared_ptr<message_filters::Synchronizer<PosImuSyncPolicy>> pos_and_imu_sync_;        
 
         // tf broadcaster
         tf2_ros::Buffer tf_buffer{get_clock()};
@@ -72,8 +68,10 @@ namespace mrover {
         tf2_ros::TransformBroadcaster tf_broadcaster{this};
 
         // timekeeping
+        rclcpp::TimerBase::SharedPtr imu_watchdog_timeout;
+        const rclcpp::Duration IMU_WATCHDOG_TIMEOUT = rclcpp::Duration::from_seconds(1.0);
         std::optional<builtin_interfaces::msg::Time> last_imu_time;
-        std::optional<double> drive_forward_heading;
+        std::optional<double> drive_forward_heading = std::nullopt;
         std::deque<Quaterniond> orientation_buffer;
         std::deque<Vector3d> pos_buffer;
         const rclcpp::Duration STEP = rclcpp::Duration::from_seconds(0.5);

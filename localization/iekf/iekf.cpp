@@ -370,7 +370,7 @@ namespace mrover {
 
     void IEKF::drive_forward_callback(const geometry_msgs::msg::Vector3& pos_msg, const sensor_msgs::msg::Imu& imu_msg) {
         
-        if (pos_buffer.size() < bufferSize || imu_buffer.size() < bufferSize) (
+        if (pos_buffer.size() < bufferSize || imu_buffer.size() < bufferSize) {
             pos_buffer.push_back(Eigen::Vector3d(pos_msg.x, pos_msg.y, pos_msg.z));
             orientation_buffer.push_back(Eigen::Quaterniond(
                 imu_msg.orientation.w, 
@@ -379,21 +379,22 @@ namespace mrover {
                 imu_msg_orientation.z
             ));
             return;
-        )
+        }
 
         Eigen::Vector3d old_position_in_map = pos_buffer.front();
         pos_buffer.pop_front();
         Eigen::Quaterniond old_orientation_in_map = orientation_buffer.front();
         orientation_buffer.pop_front();
 
-        Eigen::Vector3d new_position_in_map(pos_msg.x, pos_msg.y, pos_msg.x);
-        Eigen::Quaterniond new_orientation_in_map(imu_msg.orientation.w, imu_msg.orientation.x, imu_msg.orientation.y, imu_msg_orientation.z);
+        Eigen::Vector3d new_position_in_map(pos_msg.x, pos_msg.y, pos_msg.z);
+        Eigen::Quaterniond new_orientation_in_map(imu_msg.orientation.w, imu_msg.orientation.x, imu_msg.orientation.y, imu_msg.orientation.z);
         pos_buffer.push_back(new_position_in_map);
         orientation_buffer.push_back(new_orientation_in_map);
 
         double deltaY = new_position_in_map.y() - old_position_in_map.y();
         double deltaX = new_position_in_map.x() - old_position_in_map.x();
-        double delta_angular_velocity = new_orientation_in_map.z() - old_orientation_in_map.z();
+        double angular_velocity = imu_msg.angular_velocity.z;
+
         double rover_vel_x = deltaX / STEP.seconds();
         double rover_vel_y = deltaY / STEP.seconds();
         double rover_velocity = sqrt(rover_vel_x * rover_vel_x + rover_vel_y * rover_vel_y);
@@ -405,10 +406,10 @@ namespace mrover {
             drive_forward_heading = atan2(deltaY, deltaX);
         }
         
-        if (delta_angular_velocity > maximum_angular_speed) (
+        if (angular_velocity > maximum_angular_speed) {
             RCLCPP_WARN(this->get_logger(), "Rover changing heading too fast - cannot compute heading");
             return;
-        ) else {
+        } else {
             drive_forward_heading = atan2(deltaY, deltaX);
         }
     }
