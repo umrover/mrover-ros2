@@ -225,7 +225,7 @@ namespace mrover {
         if (rover_heading_change > MAX_ANGULAR_CHANGE) {
             RCLCPP_INFO_STREAM(get_logger(), std::format("Rover is not moving straight enough: heading change = {} rad", rover_heading_change));
             return;
-        }
+        }  
 
         double corrected_heading_in_map = std::atan2(rover_velocity_sum.y(), rover_velocity_sum.x());
 

@@ -20,7 +20,7 @@ namespace mrover {
         declare_parameter("mag_heading_noise", rclcpp::ParameterType::PARAMETER_DOUBLE);
         declare_parameter("rtk_heading_noise", rclcpp::ParameterType::PARAMETER_DOUBLE);
         declare_parameter("near_zero_threshold", rclcpp::ParameterType::PARAMETER_DOUBLE);
-        declare_parameter("max_angular_vel_change_threshold", rclcpp::ParamaterType::PARAMETER_DOUBLE);
+        declare_parameter("max_angular_change", rclcpp::ParamaterType::PARAMETER_DOUBLE);
         declare_paramater("minimum_linear_speed", rclcpp::ParameterType::PARAMETER_DOUBLE);
         declare_parameter("maximum_angular_speed", rclcpp::ParameterType::PARAMETER_DOUBLE);
         declare_parameter("moving_window_sz", rclcpp::ParameterType::PARAMETER_INTEGER);
@@ -31,7 +31,7 @@ namespace mrover {
         pos_noise_fixed = get_parameter("pos_noise_fixed").as_double();
         vel_noise_fixed = get_parameter("vel_noise_fixed").as_double();
         mag_heading_noise = get_parameter("mag_heading_noise").as_double();
-        max_angular_vel_change_threshold = get_parameter("max_angular_vel_change_threshold").as_double();
+        max_angular_change = get_parameter("max_angular_vel_change_threshold").as_double();
         minimum_linear_speed = get_parameter("minimum_linear_speed").as_double();
         maximum_angular_speed = get_parameter("maximum_angular_speed").as_double();
         near_zero_threshold = get_parameter("near_zero_threshold").as_double();
@@ -393,7 +393,7 @@ namespace mrover {
 
         double deltaY = new_position_in_map.y() - old_position_in_map.y();
         double deltaX = new_position_in_map.x() - old_position_in_map.x();
-        double angular_velocity = imu_msg.angular_velocity.z;
+        double rover_heading_change += std::fabs(imu_msg.angular_velocity.z);
 
         double rover_vel_x = deltaX / STEP.seconds();
         double rover_vel_y = deltaY / STEP.seconds();
@@ -406,8 +406,8 @@ namespace mrover {
             drive_forward_heading = atan2(deltaY, deltaX);
         }
         
-        if (angular_velocity > maximum_angular_speed) {
-            RCLCPP_WARN(this->get_logger(), "Rover changing heading too fast, angular velocity: %.3f m/s", angular_velocity);
+        if (angular_velocity > maximum_angular_change) {
+            RCLCPP_WARN(this->get_logger(), "Rover is not moving straight enough: Heading change = {} rad", rover_heading_change);
             return;
         } else {
             drive_forward_heading = atan2(deltaY, deltaX);
