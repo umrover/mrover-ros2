@@ -407,7 +407,7 @@ namespace mrover {
         }
         
         if (angular_velocity > maximum_angular_speed) {
-            RCLCPP_WARN(this->get_logger(), "Rover changing heading too fast - cannot compute heading");
+            RCLCPP_WARN(this->get_logger(), "Rover changing heading too fast, angular velocity: %.3f m/s", angular_velocity);
             return;
         } else {
             drive_forward_heading = atan2(deltaY, deltaX);
