@@ -256,5 +256,5 @@ class ApproachTargetState(State):
     
     def dilate_costmap(self, context: Context):
         context.node.get_logger().info("Too far from target! Dilating cost map.")
-        self.cost_inflation_radius -= 0.2
+        self.cost_inflation_radius -= 0.5
         context.dilate_cost(self.cost_inflation_radius)
