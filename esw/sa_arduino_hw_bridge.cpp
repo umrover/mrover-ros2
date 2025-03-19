@@ -125,23 +125,72 @@ namespace mrover {
             // SERIAL END
         }
 
-        void readSerialData(){
-            //read from serial port and print out H
-            boost::asio::read()
+        void readSerialData(std::string serial_msg){
+            //Read from serial_port and print out the HEADER_BYTE, message_id, Servo ID, present position
+            ServoPositionData posData;
+            TemperatureAndHumidityData tempHumidityData;
+
+            std::vector<std::string> tokens;
+            boost::split(tokens, serial_msg, boost::is_any_of(",;"));
+
+            std::string msg_header = tokens[0];
+
+            std_msgs::msg::Header header;
+            //header.stamp = get_clock()->now(); // no? idt we need a stamp
+            header.frame_id = frame_id;
+
+
+
+            if(msg_header == HEADER_BYTE){
+                if(tokens[1] == SERVO_POSITION_DATA){
+                    posData.header = HEADER_BYTE;
+                    posData.messageID = SERVO_POSITION_DATA;
+                    posData.id = read_buffer[2];
+                    
+                    float radians;
+                    memcpy(&radians, &read_buffer[3], sizeof(float));
+                    ServoPositionData posData = {.radians = radians};
+                }
+
+                else if (tokens[1] == TEMPERATURE_HUMIDITY_DATA) {
+                    tempHumidityData.header = HEADER_BYTE;
+                    tempHumidityData.messageID = TEMPERATURE_HUMIDITY_DATA;
+                    
+                    float temperature;
+                    memcpy(&temperature, &read_buffer[2], sizeof(float));
+                    tempHumidityData.temperature = temperature;
+
+                    float humidity;
+                    memcpy(&humidity, &read_buffer[6], sizeof(float));
+                    tempHumidityData.humidity = humidity;
+                }
+            }
+            
+            // split temp and humidity
+            sensor_msgs::msg::Temperature temp;
+            sensor_msgs::msg::RelativeHumidity humidity;
+            float radians = posData.radians;
+
+            temp.temperature = tempHumidityData.temperature;
+            humidity.relative_humidity = tempHumidityData.humidity;
+
+            //publish data
+            temperaturePub->publish(temp);
+            humidityPub->publish(humidity);
+
         }
 
         void ArduinoBridge::spin(){
             while (rclcpp::ok()) {
                 boost::asio::read_until(serial, read_buffer, '\n');
                 std::istream buffer(&read_buffer);
-                std::string unicore_msg;
-                std::getline(buffer, unicore_msg);
-                process_unicore(unicore_msg);
+                std::string serial_msg;
+                std::getline(buffer, serial_msg);
+                readSerialData(serial_msg);
+
                 rclcpp::spin_some(this->get_node_base_interface());
             }
         }
-
-
 
     }; // namespace mrover
 } //namespace mrover
