@@ -14,18 +14,37 @@
         <tbody>
             <tr>
             <th class='table-secondary'>Site {{ String.fromCharCode(site+65) }}</th>
-            <td v-for="val in Object.values(sensor_data)" :key="val">{{ val.toFixed(2) }}</td>
+            <td v-for="(val, index) in sensorValues" :key="index">{{ val.toFixed(2) }}</td>
             </tr>
         </tbody>  
         </table>
 
         <button class="btn btn-secondary" @click="download()">Save Data to CSV</button>
     </div>
+
+    <div style="display: flex; flex-direction: row; gap: 10px;">
+      <div style="width: 50%; overflow-x: scroll;">
+        <canvas id="chart0" style="width: 100%; height: 200px; background-color: white;"></canvas>
+      </div>
+      <div style="width: 50%; overflow-x: scroll; margin-top: 5px;">
+        <canvas id="chart1" style="width: 100%; height: 200px; background-color: white;"></canvas>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: row; gap: 10px; margin-top: 5px;">
+      <div style="width: 50%; overflow-x: scroll;">
+        <canvas id="chart2" style="width: 100%; height: 200px; background-color: white;"></canvas>
+      </div>
+      <div style="width: 50%; overflow-x: scroll;">
+        <canvas id="chart3" style="width: 100%; height: 200px; background-color: white;"></canvas>
+      </div>
+    </div>
 </template>
   
 <script lang="ts">
 import { mapState } from 'vuex';
 import html2canvas from "html2canvas";
+import Chart from 'chart.js/auto';
   
   export default {
 
@@ -34,6 +53,101 @@ import html2canvas from "html2canvas";
             type: Number,
             required: true
         }
+    },
+
+    mounted() {
+      let self = this;
+      let charts = [];
+      function waitForElm(selector) {
+        return new Promise(resolve => {
+            if (document.querySelector(selector)) {
+                return resolve(document.querySelector(selector));
+            }
+
+            const observer = new MutationObserver(mutations => {
+                if (document.querySelector(selector)) {
+                    observer.disconnect();
+                    resolve(document.querySelector(selector));
+                }
+            });
+
+            // If you get "parameter 1 is not of type 'Node'" error, see https://stackoverflow.com/a/77855838/492336
+            observer.observe(document.body, {
+                childList: true,
+                subtree: true
+            });
+        });
+      }
+
+      let titles = ["Oxygen Percentage Over Time (s)", "Relative Humidity Over Time (s)", "Temperature (C) Over Time (s)", "UV Index Over Time (s)"];
+
+      let sensor_history = [[], [], [], []]
+
+      let lineColors = ["#4D9DE0", "#E15554", "#3BB273", "#7768AE"]
+
+      for (let i = 0; i < 4; ++ i){
+        waitForElm(`#chart${i}`).then((el) => {
+            console.log("HERE NOW.")
+
+            // const labels = Array.from({ length: o2data.length + 1 }, (_, i) => i);
+            const data = {
+              labels: [],
+              datasets: [{
+                label: titles[i],
+                data: sensor_history[i],
+                fill: false,
+                borderColor: lineColors[i],
+                tension: 0.1
+              }]
+            };
+            charts[i] = new Chart(
+              document.getElementById(`chart${i}`),
+                {
+                  type: 'line',
+                  data: data,
+                  labels: [],
+                  options: {
+                    responsive: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                  }
+                }
+            );
+        });
+
+        
+      }
+
+      setInterval(() => {
+          // console.log(Object.values(self.sensor_data).length)
+          self.sensor_data = {
+            oxygen: 20 + Math.random() * 2,
+            oxygen_var: 0,
+            uv: 0.1 + Math.random() * 0.1,
+            uv_var: 0,
+            humidity: 40 + Math.random() * 20,
+            humidity_var: 0,
+            temp: 17 + Math.random() * 3,
+            temp_var: 0
+          }
+          this.$forceUpdate();
+          sensor_history[0].push(self.sensor_data.oxygen);
+          sensor_history[1].push(self.sensor_data.humidity);
+          sensor_history[2].push(self.sensor_data.temp);
+          sensor_history[3].push(self.sensor_data.uv);
+
+          for (let x = 0; x < 4; ++x){
+            if (charts[x] != null){
+              charts[x].data.labels = Array.from({ length: sensor_history[x].length + 1 }, (_, i) => i);
+              charts[x].update();
+            }
+          }
+        }, 1000);
+
+      
     },
   
     data() {
@@ -53,13 +167,25 @@ import html2canvas from "html2canvas";
     },
   
     computed: {
-    ...mapState('websocket', ['message'])
+    ...mapState('websocket', ['message']),
+    sensorValues() {
+      return [
+        this.sensor_data.oxygen,
+        this.sensor_data.oxygen_var,
+        this.sensor_data.uv,
+        this.sensor_data.uv_var,
+        this.sensor_data.humidity,
+        this.sensor_data.humidity_var,
+        this.sensor_data.temp,
+        this.sensor_data.temp_var
+      ];
+    }
   },
   created() {
-      window.setInterval();
-      this.interval = window.setInterval(() => {
-        this.randomizeSensorData();
-      })
+      // window.setInterval();
+      // this.interval = window.setInterval(() => {
+      //   this.randomizeSensorData();
+      // })
   },
   watch: {
     message(msg) {
@@ -112,6 +238,8 @@ import html2canvas from "html2canvas";
     }
   }
 }
+
+
 </script>
 
 <style scoped>
