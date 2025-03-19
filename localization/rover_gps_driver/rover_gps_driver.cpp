@@ -52,15 +52,15 @@ namespace mrover {
             sensor_msgs::msg::NavSatFix nav_sat_fix;
             mrover::msg::FixStatus fix_status;
             mrover::msg::FixType fix_type;
+            nav_sat_fix.header = header;
+            fix_status.header = header;
 
             if (stoi(tokens[GNGGA_QUAL_POS]) == 0) {
                 RCLCPP_WARN(get_logger(), "Invalid fix. Are we inside?");
 
                 fix_type.fix = mrover::msg::FixType::NO_SOL;
                 fix_status.fix_type = fix_type;
-                fix_status.header = header;
 
-                nav_sat_fix.header = header;
                 nav_sat_fix.latitude = 42.293195;
                 nav_sat_fix.longitude = -83.7096706;
                 nav_sat_fix.altitude = 0;
@@ -93,7 +93,6 @@ namespace mrover {
                 lon = -lon;
             }
 
-            nav_sat_fix.header = header;
             nav_sat_fix.latitude = lat;
             nav_sat_fix.longitude = lon;
             nav_sat_fix.altitude = alt;
@@ -110,7 +109,6 @@ namespace mrover {
             }
 
             fix_status.fix_type = fix_type;
-            fix_status.header = header;
             
             gps_pub->publish(nav_sat_fix);
             gps_status_pub->publish(fix_status);
@@ -122,6 +120,8 @@ namespace mrover {
             mrover::msg::Heading heading;
             mrover::msg::FixStatus fix_status;
             mrover::msg::FixType fix_type;
+            heading.header = header;
+            fix_status.header = header;
 
             if (tokens[UNIHEADING_STATUS_POS] == "NARROW_FLOAT") {
                 fix_type.fix = mrover::msg::FixType::FLOAT;
@@ -134,9 +134,7 @@ namespace mrover {
 
                 fix_type.fix = mrover::msg::FixType::NO_SOL;
                 fix_status.fix_type = fix_type;
-                fix_status.header = header;
 
-                heading.header = header;
                 heading.heading = 0;
 
                 heading_pub->publish(heading);
@@ -147,11 +145,7 @@ namespace mrover {
             fix_status.fix_type = fix_type;
 
             float uniheading = stof(tokens[UNIHEADING_HEADING_POS]);
-
-            heading.header = header;
             heading.heading = uniheading;
-
-            fix_status.header = header;
 
             heading_pub->publish(heading);
             heading_status_pub->publish(fix_status);
@@ -163,14 +157,10 @@ namespace mrover {
             geometry_msgs::msg::Vector3Stamped velocity;
             mrover::msg::FixStatus fix_status;
             mrover::msg::FixType fix_type;
+            velocity.header = header;
+            fix_status.header = header;
 
-            if (tokens[VEL_STATUS_POS] == "NARROW_FLOAT") {
-                fix_type.fix = mrover::msg::FixType::FLOAT;
-            }
-            else if (tokens[VEL_STATUS_POS] == "NARROW_INT") {
-                fix_type.fix = mrover::msg::FixType::FIXED;
-            }
-            else if (tokens[VEL_STATUS_POS] == "DOPPLER_VELOCITY") {
+            if (tokens[VEL_STATUS_POS] == "DOPPLER_VELOCITY") {
                 fix_type.fix = mrover::msg::FixType::NONE;
             }
             else {
@@ -178,9 +168,7 @@ namespace mrover {
 
                 fix_type.fix = mrover::msg::FixType::NO_SOL;
                 fix_status.fix_type = fix_type;
-                fix_status.header = header;
 
-                velocity.header = header;
                 velocity.vector.x = 0;
                 velocity.vector.y = 0;
                 velocity.vector.z = 0;
@@ -195,12 +183,9 @@ namespace mrover {
             float gps_velocity = stof(tokens[VEL_POS]);
             float gps_dir = stof(tokens[VEL_DIR_POS]);
 
-            velocity.header = header;
             velocity.vector.x = std::sin(gps_dir) * gps_velocity;
             velocity.vector.y = std::cos(gps_dir) * gps_velocity;
             velocity.vector.z = 0;
-
-            fix_status.header = header;
 
             velocity_pub->publish(velocity);
             velocity_status_pub->publish(fix_status);

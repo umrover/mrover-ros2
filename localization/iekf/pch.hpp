@@ -15,6 +15,10 @@
 #include <sensor_msgs/msg/imu.hpp>
 #include <mrover/msg/heading.hpp>
 
+#include <message_filters/subscriber.h>
+#include <message_filters//synchronizer.h>
+#include <message_filters/sync_policies/approximate_time.h>
+
 #include <Eigen/Core>
 #include <Eigen/Dense>
 #include <Eigen/src/Geometry/Quaternion.h>

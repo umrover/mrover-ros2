@@ -1,6 +1,4 @@
 #include "iekf.hpp"
-#include <geometry_msgs/msg/detail/vector3_stamped__struct.hpp>
-#include <rclcpp/parameter_value.hpp>
 
 namespace mrover {
     
@@ -14,29 +12,30 @@ namespace mrover {
         declare_parameter("pos_noise_fixed", rclcpp::ParameterType::PARAMETER_DOUBLE);
         declare_parameter("pos_noise_float", rclcpp::ParameterType::PARAMETER_DOUBLE);
         declare_parameter("pos_noise_none", rclcpp::ParameterType::PARAMETER_DOUBLE);
-        declare_parameter("vel_noise_fixed", rclcpp::ParameterType::PARAMETER_DOUBLE);
-        declare_parameter("vel_noise_float", rclcpp::ParameterType::PARAMETER_DOUBLE);
-        declare_parameter("vel_noise_none", rclcpp::ParameterType::PARAMETER_DOUBLE);
+        declare_parameter("vel_noise", rclcpp::ParameterType::PARAMETER_DOUBLE);
         declare_parameter("mag_heading_noise", rclcpp::ParameterType::PARAMETER_DOUBLE);
         declare_parameter("rtk_heading_noise", rclcpp::ParameterType::PARAMETER_DOUBLE);
-        declare_parameter("near_zero_threshold", rclcpp::ParameterType::PARAMETER_DOUBLE);
-        declare_parameter("max_angular_change", rclcpp::ParamaterType::PARAMETER_DOUBLE);
-        declare_paramater("minimum_linear_speed", rclcpp::ParameterType::PARAMETER_DOUBLE);
-        declare_parameter("maximum_angular_speed", rclcpp::ParameterType::PARAMETER_DOUBLE);
-        declare_parameter("moving_window_sz", rclcpp::ParameterType::PARAMETER_INTEGER);
-        declare_parameter("bufferSize", rclcpp::ParameterType::PARAMETER_INTEGER);
 
+        declare_parameter("near_zero_threshold", rclcpp::ParameterType::PARAMETER_DOUBLE);
+        declare_parameter("moving_window_sz", rclcpp::ParameterType::PARAMETER_INTEGER);
+
+        declare_parameter("rover_heading_change_threshold", rclcpp::ParameterType::PARAMETER_DOUBLE);
+        declare_parameter("minimum_linear_speed", rclcpp::ParameterType::PARAMETER_DOUBLE);
+
+    
+        world_frame = get_parameter("world_frame").as_string();
+        rover_frame = get_parameter("rover_frame").as_string();
         scale_cov_a = get_parameter("scale_cov_a").as_double();
         scale_cov_w = get_parameter("scale_cov_w").as_double();
         pos_noise_fixed = get_parameter("pos_noise_fixed").as_double();
-        vel_noise_fixed = get_parameter("vel_noise_fixed").as_double();
+        vel_noise = get_parameter("vel_noise").as_double();
         mag_heading_noise = get_parameter("mag_heading_noise").as_double();
-        max_angular_change = get_parameter("max_angular_vel_change_threshold").as_double();
-        minimum_linear_speed = get_parameter("minimum_linear_speed").as_double();
-        maximum_angular_speed = get_parameter("maximum_angular_speed").as_double();
+
         near_zero_threshold = get_parameter("near_zero_threshold").as_double();
         moving_window_sz = get_parameter("moving_window_sz").as_int();
-        bufferSize = get_parameter("bufferSize").as_int();
+
+        rover_heading_change_threshold = get_parameter("rover_heading_change_threshold").as_double();
+        minimum_linear_speed = get_parameter("minimum_linear_speed_threshold").as_double();
 
         // initialize state variables
         X.setIdentity();
@@ -63,17 +62,9 @@ namespace mrover {
             vel_callback(vel_msg->vector);
         });
 
-        //synchronizers 
-        pos_and_imu_sync_ = std::make_shared<message_filters::Synchronizer<PosImuSyncPolicy>>(
-            PosImuSyncPolicy(1), pos_sub, imu_sub);
-        pos_and_imu_sync_->setAgePenalty(0.5);
-        pose_and_imu_sync->registerCallback(&IEKF::drive_forward_callback, this);
-
-        //watchdog timout
-        imu_watchdog_timeout = this->create_wall_timer(IMU_WATCHDOG_TIMEOUT.to_chrono<std::chrono::milliseconds>(), [&]() {
-            RCLCPP_WARN(get_logger(), "ZED IMU data timed out");
-            last_imu_value.reset();
-        })
+        correction_timer = this->create_wall_timer(WINDOW.to_chrono<std::chrono::milliseconds>(), [this]() -> void {
+            drive_forward_callback();
+        });
 
         // subscribers sim
         // imu_sub = this->create_subscription<sensor_msgs::msg::Imu>("/imu/data", 10, [&](const sensor_msgs::msg::Imu::ConstSharedPtr& imu_msg) {
@@ -246,11 +237,8 @@ namespace mrover {
             dt = (imu_msg.header.stamp.sec + imu_msg.header.stamp.nanosec * 1e-9) - (last_imu_time.value().sec + last_imu_time.value().nanosec * 1e-9);   
         }
 
-
-
         Vector3d a_vec = Vector3d{a.x, a.y, a.z};
         moving_window.push_back(a_vec);
-
 
         accel_avg = accel_avg + (a_vec - accel_avg) / moving_window.size();
 
@@ -268,7 +256,7 @@ namespace mrover {
         SO3d rotation = Eigen::Quaterniond(X.block<3, 3>(0, 0));
 
         SE3d pose_in_map(translation, rotation);
-        SE3Conversions::pushToTfTree(tf_broadcaster, get_parameter("rover_frame").as_string(), get_parameter("world_frame").as_string(), pose_in_map, get_clock()->now());
+        SE3Conversions::pushToTfTree(tf_broadcaster, rover_frame, world_frame, pose_in_map, get_clock()->now());
 
         last_imu_time = imu_msg.header.stamp;
 
@@ -311,7 +299,7 @@ namespace mrover {
         H << Matrix33d::Zero(), -1 * Matrix33d::Identity(), Matrix33d::Zero();
         Y << -1 * X.block<3, 3>(0, 0).transpose() * Vector3d{vel_msg.x, vel_msg.y, vel_msg.z}, 1, 0;
         b << 0, 0, 0, 1, 0;
-        N << X.block<3, 3>(0, 0) * vel_noise_fixed * Matrix33d::Identity() * X.block<3, 3>(0, 0).transpose();
+        N << X.block<3, 3>(0, 0) * vel_noise * Matrix33d::Identity() * X.block<3, 3>(0, 0).transpose();
 
         correct(Y, b, N, H);
     }
@@ -368,50 +356,50 @@ namespace mrover {
         correct(Y, b, N, H);
     }
 
-    void IEKF::drive_forward_callback(const geometry_msgs::msg::Vector3& pos_msg, const sensor_msgs::msg::Imu& imu_msg) {
+    void IEKF::drive_forward_callback() {
+
+        R2d rover_velocity_sum = R2d::Zero();
+        double rover_heading_change = 0.0;
+        std::size_t readings = 0;
+
+        rclcpp::Time end = get_clock()->now();
+        rclcpp::Time start = end - WINDOW;
+
+        for (rclcpp::Time t = start; t < end; t += STEP) {
+
+            try {
+                auto rover_in_map_old = SE3Conversions::fromTfTree(tf_buffer, rover_frame, world_frame, t - STEP);
+                auto rover_in_map_new = SE3Conversions::fromTfTree(tf_buffer, rover_frame, world_frame, t);
+                R3d rover_velocity_in_map = (rover_in_map_new.translation() - rover_in_map_old.translation()) / STEP.seconds();
+                R3d rover_angular_velocity_in_map = (rover_in_map_new.asSO3() - rover_in_map_old.asSO3()).coeffs();
+                rover_velocity_sum += rover_velocity_in_map.head<2>();
+                rover_heading_change += std::fabs(rover_angular_velocity_in_map.z());
+                ++readings;
+            } catch (tf2::ConnectivityException const& e) {
+                RCLCPP_WARN_STREAM(get_logger(), e.what());
+                return;
+            } catch (tf2::LookupException const& e) {
+                RCLCPP_WARN_STREAM(get_logger(), e.what());
+                return;
+            } catch (tf2::ExtrapolationException const&) { }
+        }
+
+
+        if (rover_heading_change > rover_heading_change_threshold) {
+            RCLCPP_WARN(get_logger(), "Rover is not moving straight enough: Heading change = {%f} rad", rover_heading_change);
+            return;
+        }
+
+        R2d mean_velocity = rover_velocity_sum / static_cast<double>(readings);
+        if (mean_velocity.norm() < minimum_linear_speed) {
+            RCLCPP_WARN(this->get_logger(), "Rover stationary - insufficient speed: %.3f m/s", mean_velocity.norm());
+            return;
+        }
         
-        if (pos_buffer.size() < bufferSize || imu_buffer.size() < bufferSize) {
-            pos_buffer.push_back(Eigen::Vector3d(pos_msg.x, pos_msg.y, pos_msg.z));
-            orientation_buffer.push_back(Eigen::Quaterniond(
-                imu_msg.orientation.w, 
-                imu_msg.orientation.x, 
-                imu_msg.orientation.y, 
-                imu_msg_orientation.z
-            ));
-            return;
-        }
+        double drive_forward_heading = atan2(rover_velocity_sum.y(), rover_velocity_sum.x());
 
-        Eigen::Vector3d old_position_in_map = pos_buffer.front();
-        pos_buffer.pop_front();
-        Eigen::Quaterniond old_orientation_in_map = orientation_buffer.front();
-        orientation_buffer.pop_front();
-
-        Eigen::Vector3d new_position_in_map(pos_msg.x, pos_msg.y, pos_msg.z);
-        Eigen::Quaterniond new_orientation_in_map(imu_msg.orientation.w, imu_msg.orientation.x, imu_msg.orientation.y, imu_msg.orientation.z);
-        pos_buffer.push_back(new_position_in_map);
-        orientation_buffer.push_back(new_orientation_in_map);
-
-        double deltaY = new_position_in_map.y() - old_position_in_map.y();
-        double deltaX = new_position_in_map.x() - old_position_in_map.x();
-        double rover_heading_change += std::fabs(imu_msg.angular_velocity.z);
-
-        double rover_vel_x = deltaX / STEP.seconds();
-        double rover_vel_y = deltaY / STEP.seconds();
-        double rover_velocity = sqrt(rover_vel_x * rover_vel_x + rover_vel_y * rover_vel_y);
-
-        if (rover_velocity < minimum_linear_speed) {
-            RCLCPP_WARN(this->get_logger(), "Rover stationary - insufficient speed: %.3f m/s", rover_velocity);
-            return;
-        } else {
-            drive_forward_heading = atan2(deltaY, deltaX);
-        }
+        RCLCPP_INFO(get_logger(), "Drive forward heading: %f", drive_forward_heading);
         
-        if (angular_velocity > maximum_angular_change) {
-            RCLCPP_WARN(this->get_logger(), "Rover is not moving straight enough: Heading change = {} rad", rover_heading_change);
-            return;
-        } else {
-            drive_forward_heading = atan2(deltaY, deltaX);
-        }
     }
 
 

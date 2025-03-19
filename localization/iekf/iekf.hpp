@@ -5,6 +5,9 @@
 
 // ROS Headers, ros namespace
 #include "pch.hpp"
+#include <geometry_msgs/msg/detail/vector3_stamped__struct.hpp>
+#include <message_filters/subscriber.h>
+#include <rclcpp/timer.hpp>
 
 using SO3d = manif::SO3d;
 using SE_2_3d = manif::SE_2_3d;
@@ -34,6 +37,7 @@ namespace mrover {
         void mag_heading_callback(const mrover::msg::Heading& mag_heading_msg);
         void accel_callback(const geometry_msgs::msg::Vector3 &a, const Matrix33d &cov_a);
         void vel_callback(const geometry_msgs::msg::Vector3& vel_msg);
+        void drive_forward_callback();
 
         // InEKF functions
         void predict(const Vector3d& w, const Matrix33d& cov_w, const Vector3d& a, const Matrix33d& cov_a, double dt);
@@ -56,52 +60,48 @@ namespace mrover {
         rclcpp::Subscription<mrover::msg::Heading>::SharedPtr mag_heading_sub;
         rclcpp::Subscription<geometry_msgs::msg::Vector3Stamped>::SharedPtr velocity_sub;
 
-        //time synchronisers
-        using PosImuSyncPolicy = message_filters::sync_policies::ApproximateTime<
-            geometry_msgs::msg::Vector3Stamped,
-            sensor_msgs::msg::Imu>;
-        std::shared_ptr<message_filters::Synchronizer<PosImuSyncPolicy>> pos_and_imu_sync_;        
-
         // tf broadcaster
         tf2_ros::Buffer tf_buffer{get_clock()};
         tf2_ros::TransformListener tf_listener{tf_buffer};
         tf2_ros::TransformBroadcaster tf_broadcaster{this};
 
         // timekeeping
-        rclcpp::TimerBase::SharedPtr imu_watchdog_timeout;
-        const rclcpp::Duration IMU_WATCHDOG_TIMEOUT = rclcpp::Duration::from_seconds(1.0);
         std::optional<builtin_interfaces::msg::Time> last_imu_time;
-        std::optional<double> drive_forward_heading = std::nullopt;
-        std::deque<Quaterniond> orientation_buffer;
-        std::deque<Vector3d> pos_buffer;
-        const rclcpp::Duration STEP = rclcpp::Duration::from_seconds(0.5);
-
+        rclcpp::TimerBase::SharedPtr correction_timer;
        
         // state variables
         Matrix55d X;
         Matrix99d P;
         Matrix99d A;
         
+        // constants
         const double IMU_DT = 0.016;
         const Vector3d g{0.0, 0.0, -9.81};
+        const rclcpp::Duration STEP = rclcpp::Duration::from_seconds(0.5);
+        const rclcpp::Duration WINDOW{STEP * 2.5};
 
         // accel bias estimator
         // std::deque<Vector3d> accel_bias_estimator;
         // Vector3d accel_bias{0.0, 0.0, 0.0};
         // constexpr static int BIAS_WINDOW = 20;
         // constexpr static float BIAS_THRESHOLD = 0.05;
+        std::deque<Vector3d> moving_window;
+        Vector3d accel_avg{0.0, 0.0, 0.0};
 
         // parameters
+        std::string world_frame;
+        std::string rover_frame;
         double scale_cov_a;
         double scale_cov_w;
         double pos_noise_fixed;
-        double vel_noise_fixed;
+        double vel_noise;
         double mag_heading_noise;
+
         double near_zero_threshold;
         size_t moving_window_sz;
 
-        std::deque<Vector3d> moving_window;
-        Vector3d accel_avg{0.0, 0.0, 0.0};
+        double rover_heading_change_threshold;
+        double minimum_linear_speed;
 
     public:
     
