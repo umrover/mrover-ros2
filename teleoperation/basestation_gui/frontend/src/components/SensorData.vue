@@ -14,7 +14,7 @@
         <tbody>
             <tr>
             <th class='table-secondary'>Site {{ String.fromCharCode(site+65) }}</th>
-            <td v-for="(val, index) in sensorValues" :key="index">{{ val.toFixed(2) }}</td>
+            <td v-for="(val, index) in sensor_data" :key="index">{{ val.toFixed(2) }}</td>
             </tr>
         </tbody>  
         </table>
@@ -123,17 +123,17 @@ import Chart from 'chart.js/auto';
 
       setInterval(() => {
           // console.log(Object.values(self.sensor_data).length)
-          self.sensor_data = {
-            oxygen: 20 + Math.random() * 2,
-            oxygen_var: 0,
-            uv: 0.1 + Math.random() * 0.1,
-            uv_var: 0,
-            humidity: 40 + Math.random() * 20,
-            humidity_var: 0,
-            temp: 17 + Math.random() * 3,
-            temp_var: 0
-          }
-          this.$forceUpdate();
+          // self.sensor_data = {
+          //   oxygen: 20 + Math.random() * 2,
+          //   oxygen_var: 0,
+          //   uv: 0.1 + Math.random() * 0.1,
+          //   uv_var: 0,
+          //   humidity: 40 + Math.random() * 20,
+          //   humidity_var: 0,
+          //   temp: 17 + Math.random() * 3,
+          //   temp_var: 0
+          // }
+          // this.$forceUpdate();
           sensor_history[0].push(self.sensor_data.oxygen);
           sensor_history[1].push(self.sensor_data.humidity);
           sensor_history[2].push(self.sensor_data.temp);
@@ -192,31 +192,31 @@ import Chart from 'chart.js/auto';
       switch (msg.type) {
         case 'oxygen':
             this.sensor_data.oxygen = msg.percent
-            this.sensor_data.oxygen_var = msg.varianace
+            // this.sensor_data.oxygen_var = msg.varianace
             break
         case 'uv':
             this.sensor_data.uv = msg.uv_index
-            this.sensor_data.uv_var = msg.varianace
+            // this.sensor_data.uv_var = msg.varianace
             break
         case 'temperature':
             this.sensor_data.temp = msg.temperature
-            this.sensor_data.temp_var = msg.variance
+            // this.sensor_data.temp_var = msg.variance
             break
         case 'humidity':
-            this.sensor_data.humidity = 100 * msg.relative_humidity
-            this.sensor_data.humidity_var = 100* msg.variance
+            this.sensor_data.humidity = msg.relative_humidity
+            // this.sensor_data.humidity_var = 100* msg.variance
             break
       }
     }
   },
 
   methods: {
-    randomizeSensorData() {
-          this.sensor_data.oxygen = (19.5 + Math.random() * 4);
-          this.sensor_data.uv = (1.5 + Math.random() * 0.5);
-          this.sensor_data.humidity = (68 + Math.random() * 4);
-          this.sensor_data.temp = (-2.8 + Math.random() * 2.8);
-    },
+    // randomizeSensorData() {
+    //       this.sensor_data.oxygen = (19.5 + Math.random() * 4);
+    //       this.sensor_data.uv = (1.5 + Math.random() * 0.5);
+    //       this.sensor_data.humidity = (68 + Math.random() * 4);
+    //       this.sensor_data.temp = (-2.8 + Math.random() * 2.8);
+    // },
     download() {
         // downloads screenshot of table
       const table = document.querySelector("#capture") as HTMLElement;
