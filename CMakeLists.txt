@@ -252,9 +252,15 @@ if(ZED_FOUND AND CUDA_FOUND)
     )
 
     # ZED Wrapper
-    mrover_add_component(zed perception/zed_wrapper/*.c* perception/zed_wrapper/pch.hpp ZedWrapper)
+    file(GLOB_RECURSE ZED_CUDA_SOURCES CONFIGURE_DEPENDS perception/zed_wrapper/*.cu)
+    add_library(zed_cuda_objects OBJECT ${ZED_CUDA_SOURCES})
+    target_compile_options(zed_cuda_objects PRIVATE -fPIC)
+    target_link_libraries(zed_cuda_objects cuda_compiler_flags)
+	ament_target_dependencies(zed_cuda_objects rclcpp rclcpp_components sensor_msgs ZED CUDA tf2 tf2_ros)
+    
+    mrover_add_component(zed perception/zed_wrapper/*.cpp perception/zed_wrapper/pch.hpp ZedWrapper)
     target_compile_options(zed_component PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-std=c++20>)
-    mrover_link_component(zed parameter_utils lie MANIF::manif ${CUDA_LIBRARIES} loop_profiler cuda_compiler_flags)
+    mrover_link_component(zed parameter_utils lie MANIF::manif ${CUDA_LIBRARIES} loop_profiler zed_cuda_objects cuda_compiler_flags)
     mrover_ament_component(zed rclcpp rclcpp_components sensor_msgs ZED CUDA tf2 tf2_ros)
 
     mrover_executable_from_component(zed perception/executables/zed.cpp zed_component)
