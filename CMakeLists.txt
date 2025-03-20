@@ -243,6 +243,10 @@ mrover_add_node(quat_iekf localization/quat_iekf/*.cpp)
 ament_target_dependencies(quat_iekf rclcpp tf2 tf2_ros geometry_msgs)
 target_link_libraries(quat_iekf lie Eigen3::Eigen)
 
+mrover_add_node(iekf_se3 localization/iekf_se3/*.cpp)
+ament_target_dependencies(iekf_se3 rclcpp tf2 tf2_ros geometry_msgs)
+target_link_libraries(iekf_se3 lie Eigen3::Eigen)
+
 # Perception
 
 find_package(ZED QUIET)
