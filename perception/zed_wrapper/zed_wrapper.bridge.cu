@@ -1,5 +1,6 @@
 // Be careful what you include in this file, it is compiled with nvcc (NVIDIA CUDA compiler)
 
+#include "zed_wrapper.hpp"
 #include "point.hpp"
 
 #include <sensor_msgs/distortion_models.hpp>
@@ -51,7 +52,7 @@ namespace mrover {
      * @param pcGpu     Point cloud buffer on the GPU (@see Point)
      * @param msg       Point cloud message with buffer on the CPU
      */
-    void fillPointCloudMessageFromGpu(sl::Mat& xyzGpu, sl::Mat& bgraGpu, sl::Mat& normalsGpu, PointCloudGpu& pcGpu, sensor_msgs::msg::PointCloud2::UniquePtr const& msg) {
+    void ZedWrapper::fillPointCloudMessageFromGpu(sl::Mat& xyzGpu, sl::Mat& bgraGpu, sl::Mat& normalsGpu, PointCloudGpu& pcGpu, sensor_msgs::msg::PointCloud2::UniquePtr const& msg) {
         assert(bgraGpu.getWidth() >= xyzGpu.getWidth());
         assert(bgraGpu.getHeight() >= xyzGpu.getHeight());
         assert(bgraGpu.getChannels() == 4);
