@@ -10,7 +10,7 @@ export CC=clang
 export CXX=clang++
 
 # Set CUDA compilers
-export CUDAHOSTCXX=g++-13
+export CUDAHOSTCXX=g++-9
 export CUDACXX=/usr/local/cuda-12/bin/nvcc
 
 # TODO (ali): add build configs for debug vs release

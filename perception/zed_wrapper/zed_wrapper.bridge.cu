@@ -1,6 +1,5 @@
 // Be careful what you include in this file, it is compiled with nvcc (NVIDIA CUDA compiler)
 
-#include "zed_wrapper.hpp"
 #include "point.hpp"
 
 #include <sensor_msgs/distortion_models.hpp>

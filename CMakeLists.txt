@@ -264,8 +264,7 @@ if(ZED_FOUND AND CUDA_FOUND)
     mrover_link_component(zed parameter_utils lie MANIF::manif ${CUDA_LIBRARIES} loop_profiler cuda_compiler_flags)
     mrover_ament_component(zed rclcpp rclcpp_components sensor_msgs ZED CUDA tf2 tf2_ros)
 
-    add_executable(zed perception/executables/zed.cpp)
-    target_link_libraries(zed zed_component)
+    mrover_executable_from_component(zed perception/executables/zed.cpp zed_component)
 
     # Learning Library
     # TODO(john): Update to use the new API
