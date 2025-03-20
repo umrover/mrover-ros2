@@ -269,6 +269,13 @@ if(ZED_FOUND AND CUDA_FOUND)
 	)
 
 	# ZED Wrapper
+
+	set(THRUST_WRAPPED_NAMESPACE wrapped_thrust)
+	set(CUB_WRAPPED_NAMESPACE wrapped_cub)
+
+	add_definitions(-DTHRUST_WRAPPED_NAMESPACE=${THRUST_WRAPPED_NAMESPACE})
+	add_definitions(-DCUB_WRAPPED_NAMESPACE=${CUB_WRAPPED_NAMESPACE})
+
 	mrover_add_node(zed perception/zed_wrapper/*.c* perception/zed_wrapper/pch.hpp)
 	target_compile_options(zed PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-std=c++20>)
 	target_link_libraries(zed parameter_utils lie MANIF::manif ${CUDA_LIBRARIES} loop_profiler cuda_compiler_flags)

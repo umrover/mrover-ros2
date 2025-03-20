@@ -28,7 +28,7 @@ namespace mrover {
         mag_heading_noise = get_parameter("mag_heading_noise").as_double();
 
         rover_heading_change_threshold = get_parameter("rover_heading_change_threshold").as_double();
-        minimum_linear_speed = get_parameter("minimum_linear_speed_threshold").as_double();
+        minimum_linear_speed = get_parameter("minimum_linear_speed").as_double();
 
         // initialize state variables
         X.setIdentity();
@@ -139,6 +139,11 @@ namespace mrover {
                                           
         X = dx.exp() * X;
         P = (Matrix66d::Identity() - L * H) * P * (Matrix66d::Identity() - L * H).transpose() + L * N * L.transpose();
+
+        RCLCPP_INFO(get_logger(), "X after:\n%f, %f, %f, %f\n%f, %f, %f, %f\n %f, %f, %f, %f\n%f, %f, %f, %f", X(0,0), X(0,1), X(0,2), X(0, 3),
+                                                                                 X(1,0), X(1,1), X(1,2), X(1, 3),
+                                                                                 X(2,0), X(2,1), X(2,2), X(2, 3),
+                                                                                 X(3,0), X(3,1), X(3,2), X(3, 3));
        
     }
 

@@ -53,6 +53,13 @@ def generate_launch_description():
         name="quat_iekf"
     )
 
+    iekf_se3_node = Node(
+        package="mrover",
+        executable="iekf_se3",
+        name="iekf_se3",
+        parameters=[os.path.join(get_package_share_directory("mrover"), "config", "localization.yaml")],
+    )
+
     # heading_filter_node = Node(
     #     package="mrover",
     #     executable="heading_filter",
@@ -65,7 +72,7 @@ def generate_launch_description():
         zed_node,
         rover_gps_driver_node,
         gps_linearization_node,
-        iekf_node,
+        iekf_se3_node
 
     ])
 
