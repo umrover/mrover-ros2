@@ -12,7 +12,7 @@
 
 namespace mrover {
 
-    using PointCloudGpu = thrust::device_vector<Point>;
+    using PointCloudGpu = wrapped_thrust::thrust::device_vector<Point>;
 
     // Optimal for the Jetson Xavier NX - this is max threads per block and each block has a max of 2048 threads
     constexpr uint BLOCK_SIZE = 1024;
