@@ -1,5 +1,4 @@
 #include "cost_map.hpp"
-#include <cstdlib>
 
 namespace mrover {
     auto remap(double x, double inMin, double inMax, double outMin, double outMax) -> double {
@@ -122,13 +121,15 @@ namespace mrover {
             for(int row = 0; row < mWidth; row++){
                 for(int col = 0; col < mHeight; col++){
                     int oned_index = coordinateToIndex({row, col});
+
+                    // If cell is greater than free cost, mark is occupied otherwise copy over data that was there
                     postProcesed.data[oned_index] = mGlobalGridMsg.data[oned_index] > FREE_COST ? OCCUPIED_COST : postProcesed.data[oned_index];
                 }
             }
 
             // Repeatedly apply 3x3 kernel (1 cell dilation)
-            // TODO: running 2x dilation, but consider swapping which one is copying/being used to copy data to reduce time
-            //       can do by swapping which one is being used at each times % 2 pass
+            // TODO: Consider running 2x dilation, but consider swapping which one is copying/being used to copy data to
+            //       reduce time can do by swapping which one is being used at each times % 2 pass
             for(int times = 0; times < mDilateAmt; times++){
                 for (int row = 0; row < mWidth; ++row) {
                     for(int col = 0; col < mHeight; ++col) {
@@ -147,7 +148,7 @@ namespace mrover {
                     }
                 }
 
-                temp = postProcesed;
+                std::swap(postProcesed.data, temp.data);
             }
 
             // }
@@ -237,8 +238,12 @@ namespace mrover {
     }
 
     auto CostMapNode::dilateCostMapCallback(mrover::srv::DilateCostMap::Request::ConstSharedPtr& req, mrover::srv::DilateCostMap::Response::SharedPtr& res) -> void{
-        // TODO: consider floor vs ceil here, currently rounds down to nearest cell dilation amt
-        mDilateAmt = static_cast<int>(floor(static_cast<double>(req->d_amt/mResolution)));
+        if (req->d_amt > 50) {mDilateAmt = 3;}
+        else {
+            // TODO: consider floor vs ceil here, currently rounds down to nearest cell dilation amt
+            mDilateAmt = static_cast<int>(floor(static_cast<double>(req->d_amt/mResolution)));
+        }
+
         res->success = true;
     }
 

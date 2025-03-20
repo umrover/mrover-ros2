@@ -1,7 +1,6 @@
 #pragma once
 
 #include "pch.hpp"
-#include <sensor_msgs/msg/detail/point_cloud2__struct.hpp>
 
 namespace mrover {
 
@@ -12,6 +11,7 @@ namespace mrover {
         constexpr static double TAU = 2 * std::numbers::pi;
 
         // Dilation for map, set as number of bins away from object to dilate by (default 1)
+        //     Every dilation pass dilates an additional [dilation] number of cells
         constexpr static int dilation = 1;
 
 		// Noise/Debug Vars
@@ -37,10 +37,6 @@ namespace mrover {
         int mDownSamplingFactor = 4;
         std::string mMapFrame;
         int mDilateAmt = 2;
-
-        // Loop timing stuff
-        // LoopProfiler mLoopProfilerGrab;
-        // LoopProfiler mLoopProfilerUpdate;
 		
         tf2_ros::Buffer mTfBuffer{get_clock()};
         tf2_ros::TransformListener mTfListener{mTfBuffer};
