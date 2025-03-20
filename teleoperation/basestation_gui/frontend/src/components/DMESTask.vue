@@ -174,7 +174,7 @@ export default defineComponent({
   grid-template-columns: repeat(2, auto);
   grid-template-areas:
     'header header'
-    'arm-controls arm-controls'
+    'arm-controls rover-3d'
     'controller_state rover-3d';
   font-family: sans-serif;
   height: auto;
