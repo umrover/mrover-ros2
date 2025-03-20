@@ -8,3 +8,4 @@
     - dev
     - jetson_networks
     - jetson_services
+    - jetson_can
