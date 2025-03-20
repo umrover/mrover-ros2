@@ -111,7 +111,7 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.white_leds_services = []
         for name in heater_names:
             self.heater_services.append(node.create_client(EnableBool, "/science_enable_heater_" + name))
-        for site in ["a0", "b0"]:
+        for site in ["a", "b"]:
             self.white_leds_services.append(node.create_client(EnableBool, "/science_enable_white_led_" + site))
 
 
@@ -265,13 +265,13 @@ class GUIConsumer(JsonWebsocketConsumer):
                     "type": "get_auton_waypoint_list",
                 }:
                     self.send_message_as_json({"type": "get_auton_waypoint_list", "data": get_auton_waypoint_list()})
-                case {"type": "heater_enable", "enabled": e, "heater": heater}:
+                case {"type": "heater_enable", "enable": e, "heater": heater}:
                     self.heater_services[heater_names.index(heater)].call(EnableBool.Request(enable=e))
 
                 case {"type": "auto_shutoff", "shutoff": shutoff}:
                     self.auto_shutoff_service.call(EnableBool.Request(enable=shutoff))
 
-                case {"type": "white_leds", "site": site, "enabled": e}:
+                case {"type": "white_leds", "site": site, "enable": e}:
                     self.white_leds_services[site].call(EnableBool.Request(enable=e))
 
                 case {"type": "ls_toggle", "enable": e}:
