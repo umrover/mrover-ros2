@@ -18,13 +18,9 @@
 #include <geometry_msgs/msg/twist.hpp>
 #include <geometry_msgs/msg/vector3.hpp>
 
-// Actions
-#include <mrover/action/lander_align.hpp>
-
 // MRover
 #include "lie.hpp"
 #include "point.hpp"
-#include "parameter.hpp"
 
 // STD
 #include <iostream>

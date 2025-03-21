@@ -276,7 +276,7 @@ mrover_add_node(tag_detector perception/tag_detector/*.cpp perception/tag_detect
 ament_target_dependencies(tag_detector rclcpp tf2 tf2_ros)
 target_link_libraries(tag_detector lie opencv_core opencv_aruco opencv_imgproc loop_profiler)
 
-mrover_add_node(lander_align teleoperation/lander_align/*.c* teleoperation/lander_align/pch.hpp)
+mrover_add_node(lander_align teleoperation/lander_align/lander_align.new.cpp teleoperation/lander_align/pch.hpp)
 target_link_libraries(lander_align lie parameter_utils)
 ament_target_dependencies(lander_align rclcpp tf2 tf2_ros rclcpp_action rclcpp_components geometry_msgs)
 

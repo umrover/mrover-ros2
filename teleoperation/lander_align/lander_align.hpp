@@ -5,9 +5,6 @@
 #include <rclcpp/wait_set.hpp>
 
 namespace mrover {
-
-    using Server = rclcpp_action::Server<action::LanderAlign>::SharedPtr;
-
     // {x, y, omega, dVelocity, dOmega}
     using Vector5d = Eigen::Matrix<double, 5, 1>;
 
@@ -80,7 +77,7 @@ namespace mrover {
         //Action Server Variables
         std::optional<sensor_msgs::msg::PointCloud2::ConstSharedPtr> mCloud;
 
-        std::optional<Server> mActionServer;
+        rclcpp::Service<mrover::srv::AlignLander>::SharedPtr mAction;
 
         //TF Member Variables
         std::unique_ptr<tf2_ros::Buffer> mTfBuffer = std::make_unique<tf2_ros::Buffer>(get_clock());
