@@ -4,6 +4,26 @@
 
 namespace mrover {
     auto BrushedController::updateConfigFromParameters() -> void {
+        bool isInverted;
+        double gearRatio, driverVoltage, motorMaxVoltage;
+        std::vector<ParameterWrapper> parameters = {
+                {std::format("{}.is_inverted", mControllerName), isInverted, false},
+                {std::format("{}.gear_ratio", mControllerName), gearRatio, 1.0},
+                {std::format("{}.driver_voltage", mControllerName), driverVoltage, 0.0},
+                {std::format("{}.motor_max_voltage", mControllerName), motorMaxVoltage, 12.0},
+        };
+
+        for (std::size_t i = 0; i < MAX_NUM_LIMIT_SWITCHES; ++i) {
+            parameters.emplace_back(std::format("{}.limit_switch_{}_present", mControllerName, i), mLimitSwitchesInfo[i].present, false);
+            parameters.emplace_back(std::format("{}.limit_switch_{}_enabled", mControllerName, i), mLimitSwitchesInfo[i].enabled, true);
+            parameters.emplace_back(std::format("{}.limit_switch_{}_limits_forward", mControllerName, i), mLimitSwitchesInfo[i].limitsForward, false);
+            parameters.emplace_back(std::format("{}.limit_switch_{}_active_high", mControllerName, i), mLimitSwitchesInfo[i].activeHigh, true);
+            parameters.emplace_back(std::format("{}.limit_switch_{}_used_for_readjustment", mControllerName, i), mLimitSwitchesInfo[i].usedForReadjustment, false);
+            parameters.emplace_back(std::format("{}.limit_switch_{}_readjust_position", mControllerName, i), mLimitSwitchesInfo[i].readjustPosition.rep, 0.0);
+            parameters.emplace_back(std::format("{}.limit_switch_{}_aux_number", mControllerName, i), mLimitSwitchesInfo[i].auxNumber, MoteusAuxNumber::AUX1);
+            parameters.emplace_back(std::format("{}.limit_switch_{}_aux_pin", mControllerName, i), mLimitSwitchesInfo[i].auxPin, MoteusAuxPin::PIN0);
+        }
+
         for (std::size_t i = 0; i < MAX_NUM_LIMIT_SWITCHES; ++i) {
             SET_BIT_AT_INDEX(mConfigCommand.limit_switch_info.present, i, mNode->get_parameter_or(std::format("{}.limit_switch_{}_present", mControllerName, i), false));
             SET_BIT_AT_INDEX(mConfigCommand.limit_switch_info.enabled, i, mNode->get_parameter_or(std::format("{}.limit_switch_{}_enabled", mControllerName, i), false));
