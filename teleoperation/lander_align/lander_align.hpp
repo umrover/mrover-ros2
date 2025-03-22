@@ -71,7 +71,7 @@ namespace mrover {
         double const mAngleP = 1;
         double const mAngleFloor = 0.05;
         double const mLinearP = 0.3;
-        
+
         rclcpp::Publisher<geometry_msgs::msg::Vector3>::SharedPtr mDebugVectorPub;
 
         //Action Server Variables
