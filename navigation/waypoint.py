@@ -191,7 +191,7 @@ class WaypointState(State):
             # We finished a regular waypoint, go onto the next one
             context.course.increment_waypoint()
             self.astar_traj = Trajectory(np.array([]))
-            self.traj = Trajectory(np.array([]))
+            self.waypoint_traj = Trajectory(np.array([]))
             return self
 
     def display_markers(self, context: Context):

@@ -8,6 +8,8 @@ from nav_msgs.msg import OccupancyGrid
 from nav_msgs.msg import MapMetaData
 from std_msgs.msg import Header
 from geometry_msgs.msg import Pose
+import numpy as np
+
 
 class GridUI:
     """
@@ -16,6 +18,7 @@ class GridUI:
     The middle cell (origin) is marked blue.
     Press the spacebar to cycle brush size (1x1, 2x2, 3x3).
     """
+
     def __init__(self, master, n=32, cell_size=20):
         self.master = master
         self.n = n
@@ -25,14 +28,14 @@ class GridUI:
         self.origin = (n // 2, n // 2)  # Mark the center cell as the origin
 
         # Create canvas and clear button
-        self.canvas = tk.Canvas(master, width=self.canvas_size, height=self.canvas_size, bg='white')
+        self.canvas = tk.Canvas(master, width=self.canvas_size, height=self.canvas_size, bg="white")
         self.canvas.pack(pady=10)
         self.clear_button = tk.Button(master, text="Clear", command=self.clear_grid)
         self.clear_button.pack(pady=5)
 
         # Initialize grid state (0: free, 1: painted)
         self.grid = [[0 for _ in range(n)] for _ in range(n)]
-        self.rectangles = [[None for _ in range(n)] for _ in range(n)]
+        self.rectangles = np.array([[None for _ in range(n)] for _ in range(n)])
         for i in range(n):
             for j in range(n):
                 x1 = j * cell_size
@@ -105,19 +108,21 @@ class GridUI:
                 flat.append(100 if cell == 1 else 0)
         return flat
 
+
 class CustomCostmapNode(Node):
     """
     ROS 2 node that publishes a costmap as an OccupancyGrid message.
     """
+
     def __init__(self, ui, n):
-        super().__init__('custom_costmap')
+        super().__init__("custom_costmap")
         # Declare parameters with provided default values
         self.declare_parameter("size", n)
         self.declare_parameter("resolution", 0.5)
-        self.publisher_ = self.create_publisher(OccupancyGrid, 'custom_costmap', 10)
+        self.publisher_ = self.create_publisher(OccupancyGrid, "custom_costmap", 10)
         self.timer = self.create_timer(1.0, self.timer_callback)
         self.ui = ui
-        
+
         # Read parameters
         self.n = self.get_parameter("size").value
         self.resolution = self.get_parameter("resolution").value
@@ -152,11 +157,12 @@ class CustomCostmapNode(Node):
 
         self.publisher_.publish(msg)
 
+
 def main(args=None):
     rclpy.init(args=sys.argv)
 
     # Create a temporary node to get the parameter values before creating the UI.
-    temp_node = Node('temp_node')
+    temp_node = Node("temp_node")
     temp_node.declare_parameter("size", 32)
     temp_node.declare_parameter("resolution", 0.5)
     grid_size = temp_node.get_parameter("size").value
@@ -180,5 +186,6 @@ def main(args=None):
         node.destroy_node()
         rclpy.shutdown()
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

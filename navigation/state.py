@@ -5,7 +5,7 @@ from .context import Context
 
 
 class DoneState(State):
-    def on_enter(self, context:Context) -> None:
+    def on_enter(self, context: Context) -> None:
         context.node.get_logger().info("Entered done state!")
         pass
 
