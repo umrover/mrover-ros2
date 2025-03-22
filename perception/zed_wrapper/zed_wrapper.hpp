@@ -5,7 +5,7 @@
 
 namespace mrover {
 
-    using PointCloudGpu = thrust::device_vector<Point>;
+    using PointCloudGpu = wrapped_thrust::thrust::device_vector<Point>;
 
     class ZedWrapper : public rclcpp::Node {
     private:

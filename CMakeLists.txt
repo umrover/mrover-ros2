@@ -46,7 +46,7 @@ if (CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
         find_program(LLD_PROGRAM lld)
         if (LLD_PROGRAM)
             message(STATUS "Using lld linker")
-            add_link_options(-fuse-ld=lld-18)
+	    #add_link_options(-fuse-ld=lld-18)
         endif()
     endif ()
 endif ()
@@ -262,6 +262,13 @@ if(ZED_FOUND AND CUDA_FOUND)
     )
 
     # ZED Wrapper
+
+    set(THRUST_WRAPPED_NAMESPACE wrapped_thrust)
+    set(CUB_WRAPPED_NAMESPACE wrapped_cub)
+
+    add_definitions(-DTHRUST_WRAPPED_NAMESPACE=${THRUST_WRAPPED_NAMESPACE})
+    add_definitions(-DCUB_WRAPPED_NAMESPACE=${CUB_WRAPPED_NAMESPACE})
+
     mrover_add_component(zed perception/zed_wrapper/*.c* perception/zed_wrapper/pch.hpp ZedWrapper)
     target_compile_options(zed_component PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-std=c++20>)
     mrover_link_component(zed parameter_utils lie MANIF::manif ${CUDA_LIBRARIES} loop_profiler cuda_compiler_flags)

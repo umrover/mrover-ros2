@@ -67,11 +67,11 @@ namespace mrover {
         float mModelNMSThreshold{};
         bool mDebug{};
 
-        auto spiralSearchForValidPoint(sensor_msgs::msg::PointCloud2::UniquePtr const& cloudPtr,
+        auto spiralSearchForValidPoint(sensor_msgs::msg::PointCloud2::ConstSharedPtr const& cloudPtr,
                                        std::size_t u, std::size_t v,
                                        std::size_t width, std::size_t height) const -> std::optional<SE3d>;
 
-        auto updateHitsObject(sensor_msgs::msg::PointCloud2::UniquePtr const& msg,
+        auto updateHitsObject(sensor_msgs::msg::PointCloud2::ConstSharedPtr const& msg,
                               std::span<Detection const> detections,
                               cv::Size const& imageSize = {640, 640}) -> void;
 
@@ -98,9 +98,9 @@ namespace mrover {
     public:
         explicit StereoObjectDetector(rclcpp::NodeOptions const& options = rclcpp::NodeOptions());
 
-        static auto convertPointCloudToRGB(sensor_msgs::msg::PointCloud2::UniquePtr const& msg, cv::Mat const& image) -> void;
+        static auto convertPointCloudToRGB(sensor_msgs::msg::PointCloud2::ConstSharedPtr const& msg, cv::Mat const& image) -> void;
 
-        auto pointCloudCallback(sensor_msgs::msg::PointCloud2::UniquePtr const& msg) -> void;
+        auto pointCloudCallback(sensor_msgs::msg::PointCloud2::ConstSharedPtr const& msg) -> void;
     };
 
     class ImageObjectDetector final : public ObjectDetectorBase {
@@ -116,6 +116,6 @@ namespace mrover {
 
         auto getObjectBearing(cv::InputArray const& image, cv::Rect const& box) const -> float;
 
-        auto imageCallback(sensor_msgs::msg::Image::UniquePtr const& msg) -> void;
+        auto imageCallback(sensor_msgs::msg::Image::ConstSharedPtr const& msg) -> void;
     };
 } // namespace mrover
