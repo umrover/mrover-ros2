@@ -48,4 +48,10 @@ namespace mrover{
             RCLCPP_INFO(this->get_logger(), "Goal succeeded");
         }
     }
+
+    
+}
+
+int main(void) {
+    return 0;
 }
