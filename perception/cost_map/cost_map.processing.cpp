@@ -122,7 +122,7 @@ namespace mrover {
             for(int row = 0; row < mWidth; row++){
                 for(int col = 0; col < mHeight; col++){
                     int oned_index = coordinateToIndex({row, col});
-                    postProcesed.data[oned_index] = mGlobalGridMsg.data[oned_index] > FREE_COST ? OCCUPIED_COST : postProcesed.data[oned_index];
+                    postProcesed.data[oned_index] = postProcesed.data[oned_index] > THRESHOLD_COST ? OCCUPIED_COST : (postProcesed.data[oned_index] == UNKNOWN_COST) ? UNKNOWN_COST : FREE_COST;
                 }
             }
 
@@ -130,6 +130,7 @@ namespace mrover {
             // TODO: running 2x dilation, but consider swapping which one is copying/being used to copy data to reduce time
             //       can do by swapping which one is being used at each times % 2 pass
             for(int times = 0; times < mDilateAmt; times++){
+                temp = postProcesed;
                 for (int row = 0; row < mWidth; ++row) {
                     for(int col = 0; col < mHeight; ++col) {
                         int oned_index = coordinateToIndex({row, col});
@@ -141,16 +142,13 @@ namespace mrover {
                                 return false;
     
                             // RCLCPP_INFO_STREAM(get_logger(), std::format("Index: {}", coordinateToIndex(dcoord)));
-                            if(times == 0){ return mGlobalGridMsg.data[coordinateToIndex(dcoord)] > FREE_COST; }
                             return temp.data[coordinateToIndex(dcoord)] > FREE_COST;
                         })) postProcesed.data[oned_index] = OCCUPIED_COST;
                     }
                 }
-
-                temp = postProcesed;
             }
 
-            // }
+
             mCostMapPub->publish(postProcesed);
         } catch (tf2::TransformException const& e) {
             RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, std::format("TF tree error processing point cloud: {}", e.what()));

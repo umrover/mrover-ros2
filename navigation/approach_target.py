@@ -93,7 +93,7 @@ class ApproachTargetState(State):
         target_position = self.target_position
 
         # Check if the target is in a high-cost area
-        if target_position and not is_high_cost_point(point=target_position, context=context) and not check_astar:
+        if target_position.all() and not is_high_cost_point(point=target_position, context=context) and not check_astar:
             # If not in a high-cost area, return success (no need to find a new point)
             return
 
@@ -298,7 +298,7 @@ class ApproachTargetState(State):
         assert rover_SE3 is not None
 
         target_pos = context.env.current_target_pos()
-        if not target_pos:
+        if not target_pos.all():
             return False
 
         rover_translation = rover_SE3.translation()[0:2]
@@ -310,7 +310,7 @@ class ApproachTargetState(State):
         assert point is not None
 
         target_pos = context.env.current_target_pos()
-        if not target_pos:
+        if not target_pos.all():
             return False
 
         distance = d_calc(point, tuple(target_pos))

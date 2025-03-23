@@ -7,7 +7,7 @@ namespace mrover {
 
     class CostMapNode final : public rclcpp::Node {
 
-        constexpr static std::int8_t UNKNOWN_COST = -1, FREE_COST = 0, OCCUPIED_COST = 100;
+        constexpr static std::int8_t UNKNOWN_COST = -1, FREE_COST = 0, OCCUPIED_COST = 100, THRESHOLD_COST = 20;
 
         constexpr static double TAU = 2 * std::numbers::pi;
 
@@ -36,7 +36,7 @@ namespace mrover {
         int mHeight{};        // Number of cells on the grid vertically 
         int mDownSamplingFactor = 4;
         std::string mMapFrame;
-        int mDilateAmt = 2;
+        int mDilateAmt = 1;
 
         // Loop timing stuff
         // LoopProfiler mLoopProfilerGrab;
