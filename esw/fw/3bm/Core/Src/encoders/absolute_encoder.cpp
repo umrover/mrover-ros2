@@ -12,7 +12,7 @@ namespace mrover {
     5. Update controller
     */
 
-    AbsoluteEncoderReader::AbsoluteEncoderReader(AS5048B_Bus i2c_bus, uint8_t a2_a1, Radians offset, Ratio multiplier, TIM_HandleTypeDef* elapsed_timer)
+    AbsoluteEncoderReader::AbsoluteEncoderReader(AS5048B_Bus i2c_bus, uint8_t a2_a1, Radians offset, Ratio multiplier, ElapsedTimer elapsed_timer)
         : m_elapsed_timer(elapsed_timer), m_i2cBus{i2c_bus}, m_offset{offset}, m_multiplier{multiplier} {
         // A1/A2 is 1 if pin connected to power, 0 if pin connected to ground
         // This is used for address selection per
@@ -30,11 +30,6 @@ namespace mrover {
         } else {
             m_address = I2CAddress::device_slave_address_none_high;
         }
-
-        __HAL_TIM_SET_PRESCALER(m_elapsed_timer, ELAPSED_TIMER_CONFIG.psc);
-        __HAL_TIM_SET_AUTORELOAD(m_elapsed_timer, ELAPSED_TIMER_CONFIG.arr);
-
-        check(HAL_TIM_Base_Start_IT(m_elapsed_timer) == HAL_OK, Error_Handler);
     }
 
     auto AbsoluteEncoderReader::request_raw_angle() -> void {
@@ -70,8 +65,7 @@ namespace mrover {
 
     [[nodiscard]] auto AbsoluteEncoderReader::read() -> std::optional<EncoderReading> {
         if (std::optional<std::uint16_t> counts = try_read_buffer()) {
-            std::uint16_t const timer_tick_current = __HAL_TIM_GET_COUNTER(m_elapsed_timer);
-            Seconds elapsed_time = (ELAPSED_TIMER_CONFIG.psc / CLOCK_FREQ) * (timer_tick_current - m_timer_tick_prev);
+            Seconds const elapsed_time = m_elapsed_timer.get_time_since_last_read();
 
             // Absolute encoder returns [0, COUNTS_PER_REVOLUTION)
             // We need to convert this to [-𝜏/2, 𝜏/2)

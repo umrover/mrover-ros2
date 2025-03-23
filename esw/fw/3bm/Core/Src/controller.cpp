@@ -24,7 +24,7 @@ extern I2C_HandleTypeDef hi2c1;
  */
 
 extern TIM_HandleTypeDef htim1;
-// extern TIM_HandleTypeDef htim2;
+extern TIM_HandleTypeDef htim2;
 // extern TIM_HandleTypeDef htim3;
 extern TIM_HandleTypeDef htim4;
 extern TIM_HandleTypeDef htim6;
@@ -48,14 +48,15 @@ extern TIM_HandleTypeDef htim17;
 // #define QUADRATURE_TICK_TIMER_1 &htim3
 // #define QUADRATURE_TICK_TIMER_2 &htim2
 
+// Measures time since the last relative tick reading
+#define RELATIVE_ENCODER_ELAPSED_TIMER &htim7
+
 // 20 Hz global timer for: FDCAN send, I2C transaction (absolute encoders)
 #define GLOBAL_UPDATE_TIMER &htim6
 
-// Measures time since the last quadrature tick reading or the last absolute encoder reading
-#define ENCODER_ELAPSED_TIMER &htim7
-
-// Measures time since the last PIDF update, used for the "D" term
-#define PIDF_TIMER &htim8
+// Measures time since the last absolute encoder reading and PIDF update ("D" term)
+#define GENERIC_ELAPSED_TIMER &htim2
+constexpr auto GENERIC_ELAPSED_FREQUENCY = mrover::Hertz{1000000};
 
 // FDCAN watchdog timer that needs to be reset every time a message is received
 #define RECEIVE_WATCHDOG_TIMER_0 &htim15 // Motor 0
@@ -68,16 +69,8 @@ namespace mrover {
     FDCAN<InBoundMessage> fdcan_bus;
     std::array<Motor, NUM_MOTORS> motors;
     Pin can_tx_led, can_rx_led;
-    MotorIterator motor_with_encoder;
-
-    auto get_motor_with_encoder() -> MotorIterator {
-        for (auto motor_it = motors.begin(); motor_it != motors.end(); ++motor_it) {
-            if (motor_it->has_quadrature_encoder_configured()) {
-                return motor_it;
-            }
-        }
-        return motors.end();
-    }
+    MotorIterator motor_with_absolute_encoder;
+    MotorIterator motor_with_relative_encoder;
 
     constexpr auto create_motor(std::size_t index) -> Motor {
         switch (index) {
@@ -91,11 +84,11 @@ namespace mrover {
 #endif
                         RECEIVE_WATCHDOG_TIMER_0,
                         {LimitSwitch{Pin{LIMIT_0_A_GPIO_Port, LIMIT_0_A_Pin}}, LimitSwitch{Pin{LIMIT_0_B_GPIO_Port, LIMIT_0_B_Pin}}},
-                        ENCODER_ELAPSED_TIMER,
+                        GENERIC_ELAPSED_TIMER, GENERIC_ELAPSED_FREQUENCY,
+                        RELATIVE_ENCODER_ELAPSED_TIMER,
                         QUADRATURE_TICK_TIMER,
                         ABSOLUTE_I2C,
-                        A2_A1_0,
-                        PIDF_TIMER);
+                        A2_A1_0);
             case 1:
                 return Motor(
                         DEVICE_ID_1,
@@ -106,11 +99,11 @@ namespace mrover {
 #endif
                         RECEIVE_WATCHDOG_TIMER_1,
                         {LimitSwitch{Pin{LIMIT_1_A_GPIO_Port, LIMIT_1_A_Pin}}, LimitSwitch{Pin{LIMIT_1_B_GPIO_Port, LIMIT_1_B_Pin}}},
-                        ENCODER_ELAPSED_TIMER,
+                        GENERIC_ELAPSED_TIMER, GENERIC_ELAPSED_FREQUENCY,
+                        RELATIVE_ENCODER_ELAPSED_TIMER,
                         QUADRATURE_TICK_TIMER,
                         ABSOLUTE_I2C,
-                        A2_A1_1,
-                        PIDF_TIMER);
+                        A2_A1_1);
             case 2:
                 return Motor(
                         DEVICE_ID_2,
@@ -121,11 +114,11 @@ namespace mrover {
 #endif
                         RECEIVE_WATCHDOG_TIMER_2,
                         {LimitSwitch{Pin{LIMIT_2_A_GPIO_Port, LIMIT_2_A_Pin}}, LimitSwitch{Pin{LIMIT_2_B_GPIO_Port, LIMIT_2_B_Pin}}},
-                        ENCODER_ELAPSED_TIMER,
+                        GENERIC_ELAPSED_TIMER, GENERIC_ELAPSED_FREQUENCY,
+                        RELATIVE_ENCODER_ELAPSED_TIMER,
                         QUADRATURE_TICK_TIMER,
                         ABSOLUTE_I2C,
-                        A2_A1_2,
-                        PIDF_TIMER);
+                        A2_A1_2);
             default:
                 return {};
         }
@@ -147,7 +140,8 @@ namespace mrover {
         can_tx_led = Pin{CAN_TX_LED_GPIO_Port, CAN_TX_LED_Pin};
         can_rx_led = Pin{CAN_RX_LED_GPIO_Port, CAN_RX_LED_Pin};
 
-        motor_with_encoder = motors.end();
+        motor_with_absolute_encoder = motors.end();
+        motor_with_relative_encoder = motors.end();
 
         fdcan_bus.add_filter(DEVICE_ID_0);
         fdcan_bus.add_filter(DEVICE_ID_1);
@@ -156,7 +150,7 @@ namespace mrover {
         fdcan_bus.start();
 
         check(HAL_TIM_Base_Start_IT(GLOBAL_UPDATE_TIMER) == HAL_OK, Error_Handler);
-        check(HAL_TIM_Base_Start(PIDF_TIMER) == HAL_OK, Error_Handler);
+        check(HAL_TIM_Base_Start(GENERIC_ELAPSED_TIMER) == HAL_OK, Error_Handler);
     }
 
     /**
@@ -175,9 +169,14 @@ namespace mrover {
                 can_rx_led.write(GPIO_PIN_SET);
                 motors[i].receive(message);
                 motors[i].update();
-                if (motor_with_encoder == motors.end()) {
-                    if (motors[i].has_quadrature_encoder_configured() || motors[i].has_absolute_encoder_configured()) {
-                        motor_with_encoder = motors.begin() + i;
+                if (motor_with_absolute_encoder == motors.end()) {
+                    if (motors[i].has_absolute_encoder_configured()) {
+                        motor_with_absolute_encoder = motors.begin() + i;
+                    }
+                }
+                if (motor_with_relative_encoder == motors.end()) {
+                    if (motors[i].has_relative_encoder_configured()) {
+                        motor_with_relative_encoder = motors.begin() + i;
                     }
                 }
                 can_rx_led.write(GPIO_PIN_RESET);
@@ -201,29 +200,29 @@ namespace mrover {
         }
     }
 
-    auto encoder_elapsed_expired_callback() -> void {
-        if (motor_with_encoder != motors.end()) {
-            motor_with_encoder->encoder_elapsed_expired();
+    auto relative_encoder_elapsed_expired_callback() -> void {
+        if (motor_with_relative_encoder != motors.end()) {
+            motor_with_relative_encoder->relative_encoder_elapsed_expired();
         }
     }
 
     auto request_absolute_encoder_data_callback() -> void {
-        if (motor_with_encoder != motors.end()) {
-            motor_with_encoder->request_absolute_encoder_data();
+        if (motor_with_absolute_encoder != motors.end()) {
+            motor_with_absolute_encoder->request_absolute_encoder_data();
         }
     }
 
     auto read_absolute_encoder_data_callback() -> void {
-        motor_with_encoder->read_absolute_encoder_data();
+        motor_with_absolute_encoder->read_absolute_encoder_data();
     }
 
     auto update_absolute_encoder_callback() -> void {
-        motor_with_encoder->update_absolute_encoder();
+        motor_with_absolute_encoder->update_absolute_encoder();
     }
 
     auto update_quadrature_encoder_callback() -> void {
-        if (motor_with_encoder != motors.end()) {
-            motor_with_encoder->update_quadrature_encoder();
+        if (motor_with_relative_encoder != motors.end()) {
+            motor_with_relative_encoder->update_quadrature_encoder();
         }
     }
 
@@ -267,8 +266,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim) {
         mrover::receive_watchdog_timer_expired<1>();
     } else if (htim == RECEIVE_WATCHDOG_TIMER_2) {
         mrover::receive_watchdog_timer_expired<2>();
-    } else if (htim == ENCODER_ELAPSED_TIMER) {
-        mrover::encoder_elapsed_expired_callback();
+    } else if (htim == RELATIVE_ENCODER_ELAPSED_TIMER) {
+        mrover::relative_encoder_elapsed_expired_callback();
     }
 }
 

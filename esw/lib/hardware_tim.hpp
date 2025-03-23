@@ -14,11 +14,7 @@
 
 namespace mrover {
 
-    template<typename CountType>
     class ElapsedTimer {
-        static_assert(std::is_unsigned_v<CountType>, "Template parameter CountType must be an unsigned integer type");
-        static_assert(sizeof(CountType) <= 4, "Template parameter CountType must be less than or equal to 32 bits");
-
     public:
         // assumes the timer is started outside the scope of this class
         ElapsedTimer() = default;
@@ -26,7 +22,7 @@ namespace mrover {
 
         auto get_time_since_last_read() -> Seconds {
             Seconds result;
-            CountType const current_tick = __HAL_TIM_GET_COUNTER(m_tim);
+            std::uint32_t const current_tick = __HAL_TIM_GET_COUNTER(m_tim);
             if (m_is_first_read) {
                 m_is_first_read = false;
                 result = Seconds{0.0f};
@@ -47,7 +43,7 @@ namespace mrover {
 
         bool m_is_first_read = true;
 
-        CountType m_tick_prev{};
+        std::uint32_t m_tick_prev{};
     };
 
 

@@ -43,13 +43,15 @@ namespace mrover {
         TIM_HandleTypeDef* m_receive_watchdog_timer{};
         bool m_receive_watchdog_enabled{};
         std::array<LimitSwitch, 2> m_limit_switches;
-        TIM_HandleTypeDef* m_encoder_elapsed_timer{};
+        TIM_HandleTypeDef* m_generic_elapsed_timer{};
+        Hertz m_generic_elapsed_frequency{};
+        TIM_HandleTypeDef* m_relative_encoder_elapsed_timer{};
         TIM_HandleTypeDef* m_relative_encoder_tick_timer{};
         std::optional<QuadratureEncoderReader> m_relative_encoder;
         I2C_HandleTypeDef* m_absolute_encoder_i2c{};
         std::uint8_t m_absolute_encoder_a2_a1;
         std::optional<AbsoluteEncoderReader> m_absolute_encoder;
-        TIM_HandleTypeDef* m_pidf_timer{};
+        ElapsedTimer m_pidf_elapsed_timer{};
 
         /* ==================== Internal State ==================== */
         Mode m_mode;
@@ -141,12 +143,19 @@ namespace mrover {
             StateAfterConfig config{.gear_ratio = message.gear_ratio};
 
             if (message.enc_info.quad_present) {
-                if (!m_relative_encoder) m_relative_encoder.emplace(m_relative_encoder_tick_timer, m_encoder_elapsed_timer, message.enc_info.quad_ratio);
+                if (!m_relative_encoder) m_relative_encoder.emplace(m_relative_encoder_tick_timer, m_relative_encoder_elapsed_timer, message.enc_info.quad_ratio);
                 EncoderReading enc_read = m_relative_encoder->read().value();
                 m_uncalib_position = enc_read.position; // usually but not always 0
             }
             if (message.enc_info.abs_present) {
-                if (!m_absolute_encoder) m_absolute_encoder.emplace(AbsoluteEncoderReader::AS5048B_Bus{m_absolute_encoder_i2c}, m_absolute_encoder_a2_a1, message.enc_info.abs_offset, message.enc_info.abs_ratio, m_encoder_elapsed_timer);
+                if (!m_absolute_encoder) {
+                    m_absolute_encoder.emplace(
+                            AbsoluteEncoderReader::AS5048B_Bus{m_absolute_encoder_i2c},
+                            m_absolute_encoder_a2_a1,
+                            message.enc_info.abs_offset,
+                            message.enc_info.abs_ratio,
+                            ElapsedTimer{m_generic_elapsed_timer, m_generic_elapsed_frequency});
+                }
             }
 
             m_motor_driver.change_max_pwm(message.max_pwm);
@@ -159,11 +168,11 @@ namespace mrover {
 
             for (std::size_t i = 0; i < m_limit_switches.size(); ++i) {
                 if (GET_BIT_AT_INDEX(message.limit_switch_info.present, i)) {
-                    const bool enabled = GET_BIT_AT_INDEX(message.limit_switch_info.enabled, i);
-                    const bool active_high = GET_BIT_AT_INDEX(message.limit_switch_info.active_high, i);
-                    const bool used_for_readjustment = GET_BIT_AT_INDEX(message.limit_switch_info.use_for_readjustment, i);
-                    const bool limits_forward = GET_BIT_AT_INDEX(message.limit_switch_info.limits_forward, i);
-                    const auto associated_position = Radians{message.limit_switch_info.limit_readj_pos[i]};
+                    bool const enabled = GET_BIT_AT_INDEX(message.limit_switch_info.enabled, i);
+                    bool const active_high = GET_BIT_AT_INDEX(message.limit_switch_info.active_high, i);
+                    bool const used_for_readjustment = GET_BIT_AT_INDEX(message.limit_switch_info.use_for_readjustment, i);
+                    bool const limits_forward = GET_BIT_AT_INDEX(message.limit_switch_info.limits_forward, i);
+                    auto const associated_position = Radians{message.limit_switch_info.limit_readj_pos[i]};
 
                     m_limit_switches[i].initialize(enabled, active_high, used_for_readjustment, limits_forward, associated_position);
                 }
@@ -182,6 +191,7 @@ namespace mrover {
                 m_error = BDCMCErrorInfo::RECEIVING_COMMANDS_WHEN_NOT_CONFIGURED;
                 return;
             }
+            m_pidf_elapsed_timer.make_next_read_first_read();
 
             m_desired_output = 0_percent;
             m_error = BDCMCErrorInfo::NO_ERROR;
@@ -215,7 +225,7 @@ namespace mrover {
             mode.pidf.with_d(message.d);
             mode.pidf.with_ff(message.ff);
             mode.pidf.with_output_bound(-1.0, 1.0);
-            m_desired_output = mode.pidf.calculate(input, target, cycle_time(m_pidf_timer, CLOCK_FREQ));
+            m_desired_output = mode.pidf.calculate(input, target, m_pidf_elapsed_timer.get_time_since_last_read());
             m_error = BDCMCErrorInfo::NO_ERROR;
 
             // m_fdcan.broadcast(OutBoundMessage{DebugState{
@@ -245,7 +255,7 @@ namespace mrover {
             // mode.pidf.with_i(message.i);
             mode.pidf.with_d(message.d);
             mode.pidf.with_output_bound(-1.0, 1.0);
-            m_desired_output = mode.pidf.calculate(input, target, cycle_time(m_pidf_timer, CLOCK_FREQ));
+            m_desired_output = mode.pidf.calculate(input, target, m_pidf_elapsed_timer.get_time_since_last_read());
             m_error = BDCMCErrorInfo::NO_ERROR;
         }
 
@@ -274,18 +284,22 @@ namespace mrover {
         Motor() = default;
 
         Motor(std::uint8_t id, HBridge const& motor_driver, TIM_HandleTypeDef* receive_watchdog_timer,
-              std::array<LimitSwitch, 2> const& limit_switches, TIM_HandleTypeDef* encoder_elapsed_timer, TIM_HandleTypeDef* relative_encoder_tick_timer,
-			  I2C_HandleTypeDef* absolute_encoder_i2c,
-              std::uint8_t absolute_encoder_a2_a1, TIM_HandleTypeDef* pidf_timer)
+              std::array<LimitSwitch, 2> const& limit_switches,
+              TIM_HandleTypeDef* generic_elapsed_timer, Hertz generic_elapsed_frequency,
+              TIM_HandleTypeDef* relative_encoder_elapsed_timer, TIM_HandleTypeDef* relative_encoder_tick_timer,
+              I2C_HandleTypeDef* absolute_encoder_i2c,
+              std::uint8_t absolute_encoder_a2_a1)
             : m_id(id),
               m_motor_driver(motor_driver),
               m_receive_watchdog_timer(receive_watchdog_timer),
               m_limit_switches(limit_switches),
-              m_encoder_elapsed_timer(encoder_elapsed_timer),
+              m_generic_elapsed_timer(generic_elapsed_timer),
+              m_generic_elapsed_frequency(generic_elapsed_frequency),
+              m_relative_encoder_elapsed_timer(relative_encoder_elapsed_timer),
               m_relative_encoder_tick_timer(relative_encoder_tick_timer),
-			  m_absolute_encoder_i2c(absolute_encoder_i2c),
+              m_absolute_encoder_i2c(absolute_encoder_i2c),
               m_absolute_encoder_a2_a1(absolute_encoder_a2_a1),
-              m_pidf_timer(pidf_timer) {
+              m_pidf_elapsed_timer(ElapsedTimer{generic_elapsed_timer, generic_elapsed_frequency}) {
         }
 
         [[nodiscard]] auto get_id() const -> std::uint8_t {
@@ -402,7 +416,7 @@ namespace mrover {
             update_outbound();
         }
 
-        auto encoder_elapsed_expired() -> void {
+        auto relative_encoder_elapsed_expired() -> void {
             if (m_relative_encoder) {
                 m_relative_encoder->expired();
                 update_quadrature_encoder();
@@ -416,7 +430,7 @@ namespace mrover {
             }
         }
 
-        [[nodiscard]] auto has_quadrature_encoder_configured() const -> bool {
+        [[nodiscard]] auto has_relative_encoder_configured() const -> bool {
             return m_relative_encoder.has_value();
         }
 
