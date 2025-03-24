@@ -29,7 +29,7 @@ namespace mrover{
 		std::vector<ParameterWrapper> params{
 				{"camera_frame", mCameraFrame, "zed_left_camera_frame"},
 				{"light_detector/lmodel_name", modelName, "best"},
-                {"light_detector/model_score_threshold", mModelScoreThreshold, 0.75},
+                {"light_detector/model_score_threshold", mModelScoreThreshold, 0.3},
             	{"light_detector/odel_nms_threshold", mModelNMSThreshold, 0.5},
             	{"light_detector/debug", mDebug, true}
 		};
@@ -43,7 +43,7 @@ namespace mrover{
 		
 		using namespace std::placeholders;
 
-        mModel = Model(modelName, {0, 0}, {"red", "blue"}, mTensorRT.getInputTensorSize(), mTensorRT.getOutputTensorSize(), [](Model const& model, cv::Mat& rgbImage, cv::Mat& blobSizedImage, cv::Mat& blob) { preprocessYOLOv8Input(model, rgbImage, blobSizedImage, blob); }, [this](Model const& model, cv::Mat& output, std::vector<Detection>& detections) { parseYOLOv8Output(model, output, detections); });
+        mModel = Model(modelName, {0, 0}, {"blue", "red"}, mTensorRT.getInputTensorSize(), mTensorRT.getOutputTensorSize(), [](Model const& model, cv::Mat& rgbImage, cv::Mat& blobSizedImage, cv::Mat& blob) { preprocessYOLOv8Input(model, rgbImage, blobSizedImage, blob); }, [this](Model const& model, cv::Mat& output, std::vector<Detection>& detections) { parseYOLOv8Output(model, output, detections); });
 
         RCLCPP_INFO_STREAM(get_logger(), std::format("Object detector initialized with model: {} and thresholds: {} and {}", mModel.modelName, mModelScoreThreshold, mModelNMSThreshold));
 		
