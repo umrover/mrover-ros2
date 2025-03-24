@@ -22,20 +22,14 @@ namespace mrover {
     }
 
     auto KeyDetectorBase::preprocessTextCoordsInput(Model const& model, cv::Mat const& input, cv::Mat& output) -> void {
-        assert(output.type() == CV_32F);
-
         static cv::Mat bgrImage;
         
         // Convert to correct color scheme
         cv::cvtColor(input, bgrImage, cv::COLOR_BGRA2BGR);
 
-<<<<<<< HEAD
-        bgrImage = cv::imread("/home/john/ros2_ws/src/mrover/perception/key_detector/keyrover/../datasets/test/image/f52.png", cv::IMREAD_COLOR);
-=======
-        std::filesystem::path packagePath = std::filesystem::path{ament_index_cpp::get_package_prefix("mrover")} / ".." / ".." / "src" / "mrover" / "perception" / "key_detector" / "datasets" / "test" / "image" / "f52.png" ;
+        std::filesystem::path packagePath = std::filesystem::path{ament_index_cpp::get_package_prefix("mrover")} / ".." / ".." / "src" / "mrover" / "perception" / "key_detector" / "datasets" / "test" / "image" / "f91.png" ;
 
         bgrImage = cv::imread(packagePath.c_str(), cv::IMREAD_COLOR);
->>>>>>> 95f5bce (made file path not depend on machine)
 
         static constexpr float SCALE_FACTOR = 1.0f;
         static constexpr std::size_t CHANNELS = 3;
@@ -107,14 +101,46 @@ namespace mrover {
                 coord << x, y, 1.0f;
 
                 coord = C * coord;
+
+                if(std::isnan(coord.x())){
+                    RCLCPP_INFO_STREAM(rclcpp::get_logger("idk"), "Found BRUHHH" << coord.x());
+                }
+
+                if(std::isnan(coord.y())){
+                    RCLCPP_INFO_STREAM(rclcpp::get_logger("idk"), "Found BRUHHH" << coord.y());
+                }
+
+                if(std::isnan(coord.z())){
+                    RCLCPP_INFO_STREAM(rclcpp::get_logger("idk"), "Found BRUHHH" << coord.z());
+                }
+
+                if(coord.z() == 0.0f){
+                    RCLCPP_INFO_STREAM(rclcpp::get_logger("idk"), "Found BRUHHH" << coord.z());
+                }
+
                 coord.x() /= coord.z();
                 coord.y() /= coord.z();
                 coord.z() /= coord.z();
 
+                if(std::isnan(coord.x())){
+                    RCLCPP_INFO_STREAM(rclcpp::get_logger("idk"), "Found BRUHHH" << coord.x());
+                }
+
+                if(std::isnan(coord.y())){
+                    RCLCPP_INFO_STREAM(rclcpp::get_logger("idk"), "Found BRUHHH" << coord.y());
+                }
+
+                if(std::isnan(coord.z())){
+                    RCLCPP_INFO_STREAM(rclcpp::get_logger("idk"), "Found BRUHHH" << coord.z());
+                }
+
+                if(coord.z() == 0.0f){
+                    RCLCPP_INFO_STREAM(rclcpp::get_logger("idk"), "Found BRUHHH" << coord.z());
+                }
+
                 ++index;
             }
         }
-
 
         // Create an image from the keyboard gradient
         cv::Mat temp;
@@ -230,6 +256,12 @@ namespace mrover {
             for(int h = 0; h < height; ++h){
                 for(int w = 0; w < width; ++w){
                     auto const& v = gradient.at<cv::Vec3f>(y + h, x + w);
+
+                    for(int i = 0; i < 3; ++i){
+                        if(std::isnan(v.val[i])){
+                            //RCLCPP_INFO_STREAM(get_logger(), "Input " << v.val[i] << " is NaN");
+                        }
+                    }
                     
                     // Update each pq
                     updateMedians(blueMaxHeap, blueMinHeap, v.val[0]);

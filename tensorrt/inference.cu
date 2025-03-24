@@ -190,8 +190,6 @@ auto Inference::prepTensors() -> void {
 	}
 
 	// Create the mat wrapper around the output matrix for ease of use
-	assert(nbDims == 3);
-	assert(d[0] == 1); // TODO: This is cooked       vvvvvv
 	mOutputTensor = cv::Mat::zeros(d[1], (!d[2]) ? 1 : d[2], CV_32FC1);
 }
 

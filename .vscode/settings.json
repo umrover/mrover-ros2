@@ -46,4 +46,5 @@
         "deps": true,
         "venv": true,
     },
+    "cmake.loggingLevel": "debug"
 }

@@ -81,14 +81,10 @@ namespace mrover {
         cv::Mat bgraImage{static_cast<int>(msg->height), static_cast<int>(msg->width), CV_8UC4, const_cast<uint8_t*>(msg->data.data())};
 
         cv::Mat temp;
-<<<<<<< HEAD
-        temp = cv::imread("/home/john/ros2_ws/src/mrover/perception/key_detector/keyrover/../datasets/test/image/f91.png", cv::IMREAD_COLOR);
-=======
 
         std::filesystem::path packagePath = std::filesystem::path{ament_index_cpp::get_package_prefix("mrover")} / ".." / ".." / "src" / "mrover" / "perception" / "key_detector" / "datasets" / "test" / "image" / "f91.png" ;
 
         temp = cv::imread(packagePath.c_str(), cv::IMREAD_COLOR);
->>>>>>> 95f5bce (made file path not depend on machine)
 
         cv::cvtColor(temp, bgraImage, cv::COLOR_BGR2BGRA);
 
@@ -107,6 +103,10 @@ namespace mrover {
         mKeyDetectionModel.postprocess(mKeyDetectionModel, outputTensor);
 
         parseYOLOv8Output(mKeyDetectionModel, outputTensor, detections);
+
+        for(auto const& det : detections){
+            RCLCPP_INFO_STREAM(get_logger(), "Detection X: " << det.box.x << " Y: " << det.box.y << " W: " << det.box.width << " H: " << det.box.height);
+        }
 
         // Text Coords Inference
         mTextCoordsTensorRT.modelForwardPass(mTextCoordsBlob, outputTensor);
