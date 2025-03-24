@@ -66,6 +66,9 @@ class KeyDetector(Node):
             # TODO yolo & model to use same input image size
 
             bboxes = self.yolo_segmentation_model.predict(img_cv, conf=0.3, iou=0.3)[0]
+
+            bboxes.boxes.xywh = torch.from_numpy(np.array([[111, 222, 20, 30], [222, 111, 32, 12]]))
+
             print(f'bboxes {bboxes.boxes.xywh}')
             print(f'imgmigmigimmgigigi {img}')
             mask = self.corner_regression_model.predict(img)
