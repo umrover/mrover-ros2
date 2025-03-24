@@ -22,17 +22,37 @@ navigation:
       max_hits: 10
 
     drive:
-      max_driving_effort: 1.1
-      min_driving_effort: -1.1
-      max_turning_effort: 2.1
-      min_turning_effort: -2.1
+      max_driving_effort: 0.35
+      min_driving_effort: -0.35
+      max_turning_effort: 0.5
+      min_turning_effort: -0.5
       turning_p: 3.0
       driving_p: 20.0
       lookahead_distance: 1.0
 
+    long_range:
+      distance_ahead: 20.0
+      time_threshold: 5.0
+      increment_weight: 5.0
+      decrement_weight: 1.0
+      min_hits: 3.0
+      max_hits: 10.0
+
+
     waypoint:
       stop_threshold: 0.5
       drive_forward_threshold: 0.34
+
+    water_bottle_search:
+      use_costmap: false
+      stop_threshold: 0.5
+      drive_forward_threshold: 0.34
+      coverage_radius: 10.0
+      segments_per_rotation: 8
+      distance_between_spirals: 3.0
+      traversable_cost: 0.2
+      update_delay: 2.0
+      safe_approach_distance: 1.5
 
     search:
       stop_threshold: 0.5
@@ -41,15 +61,25 @@ navigation:
       segments_per_rotation: 8
       distance_between_spirals: 3.0
 
+    object_search:
+      coverage_radius: 10.0
+      distance_between_spirals: 3.0
+
     single_tag:
       stop_threshold: 1.0
       tag_stop_threshold: 1.75
       post_avoidance_multiplier: 1.42
       post_radius: 0.7
 
+    recovery:
+      stop_threshold: 0.2
+      drive_forward_threshold: 0.34
+      recovery_distance: 2.0 # Distance the rover moves back in each leg of j-turn
+      give_up_time: 10.0
+
     # TODO(quintin): Avoid storing these in multiple config files
-    ref_lat: 38.4225202
-    ref_lon: -110.7844653
+    ref_lat: 42.293195
+    ref_lon: -83.7096706
     ref_alt: 0.0
     world_frame: "map"
     rover_frame: "base_link"
@@ -71,6 +101,6 @@ stuck_detector:
 debug_course_publisher:
   ros__parameters:
     # TODO(quintin): Avoid storing these in multiple config files
-    ref_lat: 38.4225202
-    ref_lon: -110.7844653
+    ref_lat: 42.293195
+    ref_lon: -83.7096706
     ref_alt: 0.0

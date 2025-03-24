@@ -4,8 +4,12 @@ from . import (
     recovery,
     post_backup,
     state,
+    water_bottle_search,
 )
+from mrover.msg import WaypointType
+from mrover.srv import MoveCostMap
 from .context import Context
+import rclpy
 
 
 class WaypointState(State):
@@ -21,6 +25,26 @@ class WaypointState(State):
         assert current_waypoint is not None
 
         context.env.arrived_at_waypoint = False
+
+        # TODO(neven): add service to move costmap if going to watter bottle search
+        if current_waypoint.type.val == WaypointType.WATER_BOTTLE and context.node.get_parameter("water_bottle_search.use_costmap").value:
+            context.node.get_logger().info("Moving cost map")
+            client = context.node.create_client(MoveCostMap, "move_cost_map")
+            while not client.wait_for_service(timeout_sec=1.0):
+                context.node.get_logger().info("waiting for move_cost_map service...")
+            req = MoveCostMap.Request()
+
+            req.course = f"course{context.course.waypoint_index}"
+            future = client.call_async(req)
+            # TODO(neven): make this actually wait for the service to finish
+            #context.node.get_logger().info("called thing")
+            # rclpy.spin_until_future_complete(context.node, future)
+            # while not future.done():
+            #     pass
+            # if not future.result():
+                # context.node.get_logger().info("move_cost_map service call failed")
+            context.node.get_logger().info("Moved cost map")
+            
 
     def on_exit(self, context: Context) -> None:
         pass
@@ -63,7 +87,12 @@ class WaypointState(State):
         )
         if arrived:
             context.env.arrived_at_waypoint = True
-            if context.course.look_for_post() or context.course.look_for_object():
+            if current_waypoint.type.val == WaypointType.WATER_BOTTLE and context.node.get_parameter("water_bottle_search.use_costmap").value:
+                # We finished a waypoint associated with the water bottle, but we have not seen it yet and are using the costmap to search
+                water_bottle_search_state = water_bottle_search.WaterBottleSearchState()
+                # water_bottle_search_state.new_trajectory(context)
+                return water_bottle_search_state
+            elif context.course.look_for_post() or context.course.look_for_object():
                 # We finished a waypoint associated with a post, mallet, or water bottle, but we have not seen it yet
                 search_state = search.SearchState()
                 search_state.new_trajectory(context)  # reset trajectory
