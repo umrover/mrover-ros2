@@ -29,7 +29,7 @@ namespace mrover{
 		std::vector<ParameterWrapper> params{
 				{"camera_frame", mCameraFrame, "zed_left_camera_frame"},
 				{"light_detector/lmodel_name", modelName, "best"},
-                {"light_detector/model_score_threshold", mModelScoreThreshold, 0.3},
+                {"light_detector/model_score_threshold", mModelScoreThreshold, 0.75},
             	{"light_detector/odel_nms_threshold", mModelNMSThreshold, 0.5},
             	{"light_detector/debug", mDebug, true}
 		};
@@ -51,15 +51,15 @@ namespace mrover{
 			ColoredDetector::pointCloudCallback(msg);
 		});
 
-		imgPub = this->create_publisher<sensor_msgs::msg::Image>("/light_detector/img", 1);
+		imgPub = this->create_publisher<sensor_msgs::msg::Image>("/light_detector/colored_img", 1);
 	}
 
 	InfraredDetector::InfraredDetector(rclcpp::NodeOptions const& options) : LightDetector(options) {
 		RCLCPP_INFO_STREAM(get_logger(), "Creating Infrared Lights Detector...");
 		
 		std::vector<ParameterWrapper> params{
-			// CHANGE THIS TO BE CORRECT (Dunno what the infared publishes to)
-			{"infrared_frame", mCameraFrame, ""},
+			// Infrared_frame is the same as the zed
+			{"infrared_frame", mCameraFrame, "zed_left_camera_frame"},
 		};
 		
         ParameterWrapper::declareParameters(this, params);
@@ -68,6 +68,8 @@ namespace mrover{
 		imgSub = create_subscription<sensor_msgs::msg::Image>("/infrared/points", 1, [this](sensor_msgs::msg::Image::ConstSharedPtr const& msg) {
 			InfraredDetector::imageCallback(msg);
 		});
+
+		imgPub = this->create_publisher<sensor_msgs::msg::Image>("/light_detector/infrared_img", 1);
 	}
 
 } // mrover

@@ -18,8 +18,6 @@ namespace mrover {
 	protected:
 		cv::Mat mImgRGB, mImageBlob;
 		cv::Mat mOutputImage;
-
-		// Might not Need
 		std::unordered_map<std::pair<double, double>, int, PairHash> mHitCounts;
 
 		// Params
@@ -61,7 +59,6 @@ namespace mrover {
 
 		auto caching() -> std::pair<std::pair<double, double>, bool>;
 		
-		// KEEP THE BELOW
 		auto static round_to(double value, double precision) -> double;
 
 		auto static calculateDistance(const std::pair<double, double> &p) -> double;
