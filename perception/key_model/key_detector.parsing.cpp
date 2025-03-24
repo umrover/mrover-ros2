@@ -1,4 +1,7 @@
 #include "key_detector.hpp"
+#include <opencv2/core/mat.hpp>
+#include <opencv2/core/matx.hpp>
+#include <opencv2/imgproc.hpp>
 namespace mrover {
     auto KeyDetectorBase::preprocessYOLOv8Input(Model const& model, cv::Mat const& input, cv::Mat& output) -> void {
         static cv::Mat bgrImage;
@@ -102,50 +105,18 @@ namespace mrover {
 
                 coord = C * coord;
 
-                if(std::isnan(coord.x())){
-                    RCLCPP_INFO_STREAM(rclcpp::get_logger("idk"), "Found BRUHHH" << coord.x());
-                }
-
-                if(std::isnan(coord.y())){
-                    RCLCPP_INFO_STREAM(rclcpp::get_logger("idk"), "Found BRUHHH" << coord.y());
-                }
-
-                if(std::isnan(coord.z())){
-                    RCLCPP_INFO_STREAM(rclcpp::get_logger("idk"), "Found BRUHHH" << coord.z());
-                }
-
-                if(coord.z() == 0.0f){
-                    RCLCPP_INFO_STREAM(rclcpp::get_logger("idk"), "Found BRUHHH" << coord.z());
-                }
-
                 coord.x() /= coord.z();
                 coord.y() /= coord.z();
                 coord.z() /= coord.z();
-
-                if(std::isnan(coord.x())){
-                    RCLCPP_INFO_STREAM(rclcpp::get_logger("idk"), "Found BRUHHH" << coord.x());
-                }
-
-                if(std::isnan(coord.y())){
-                    RCLCPP_INFO_STREAM(rclcpp::get_logger("idk"), "Found BRUHHH" << coord.y());
-                }
-
-                if(std::isnan(coord.z())){
-                    RCLCPP_INFO_STREAM(rclcpp::get_logger("idk"), "Found BRUHHH" << coord.z());
-                }
-
-                if(coord.z() == 0.0f){
-                    RCLCPP_INFO_STREAM(rclcpp::get_logger("idk"), "Found BRUHHH" << coord.z());
-                }
 
                 ++index;
             }
         }
 
         // Create an image from the keyboard gradient
-        cv::Mat temp;
-        output.convertTo(temp, CV_8UC3, 255.0);
-        cv::cvtColor(temp, output, cv::COLOR_BGR2BGRA);
+        // cv::Mat temp;
+        // output.convertTo(temp, CV_8UC3, 255.0);
+        // cv::cvtColor(temp, output, cv::COLOR_BGR2BGRA);
     }
 
     auto KeyDetectorBase::parseYOLOv8Output(Model const& model, cv::Mat& output, std::vector<Detection>& detections) const -> void {
@@ -235,6 +206,13 @@ namespace mrover {
     }
 
     auto KeyDetectorBase::matchKeyDetections(cv::Mat const& gradient, std::vector<Detection> const& detections) -> void{
+        // resize the mask to be 640 by 640
+        static cv::Mat resizedGradient;
+        cv::resize(gradient, resizedGradient, cv::Size{640, 640});
+        RCLCPP_INFO_STREAM(get_logger(), "Type: " << resizedGradient.type());
+        RCLCPP_INFO_STREAM(get_logger(), "Type: " << gradient.type());
+
+
         // For each of the bounding boxes, find the median red and blue
         int index = 0;
         for(auto const& detect : detections){
@@ -255,7 +233,7 @@ namespace mrover {
             // Streaming Median Algorithm: See https://www.geeksforgeeks.org/median-of-stream-of-integers-running-integers/
             for(int h = 0; h < height; ++h){
                 for(int w = 0; w < width; ++w){
-                    auto const& v = gradient.at<cv::Vec3f>(y + h, x + w);
+                    auto const& v = resizedGradient.at<cv::Vec3f>(y + h, x + w);
 
                     for(int i = 0; i < 3; ++i){
                         if(std::isnan(v.val[i])){
@@ -279,9 +257,9 @@ namespace mrover {
                 return median;
             };
 
-            float blueMedian = findMedian(blueMaxHeap, blueMinHeap);
-            float greenMedian = findMedian(greenMaxHeap, greenMinHeap);
-            float redMedian = findMedian(redMaxHeap, redMinHeap);
+            float blueMedian = 255 * findMedian(blueMaxHeap, blueMinHeap);
+            float greenMedian = 255 * findMedian(greenMaxHeap, greenMinHeap);
+            float redMedian = 255 * findMedian(redMaxHeap, redMinHeap);
 
             RCLCPP_INFO_STREAM(get_logger(), ++index << " BRO " << blueMedian << " " << greenMedian << " " << redMedian);
         }
