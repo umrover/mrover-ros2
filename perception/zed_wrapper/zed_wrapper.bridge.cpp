@@ -33,7 +33,7 @@ namespace mrover {
                 msg.linear_acceleration_covariance[i * 3 + j] = imuData.linear_acceleration_covariance(i, j);
     }
 
-    auto fillMagMessage(sl::SensorsData::MagnetometerData const& magData, sensor_msgs::msg::MagneticField& magMsg, mrover::msg::Heading &headingMsg, mrover::msg::FixStatus &headingStatusMsg) -> void {
+    auto fillMagMessage(sl::SensorsData::MagnetometerData const& magData, sensor_msgs::msg::MagneticField& magMsg, mrover::msg::Heading &headingMsg) -> void {
         magMsg.magnetic_field.x = magData.magnetic_field_calibrated.x;
         magMsg.magnetic_field.y = magData.magnetic_field_calibrated.y;
         magMsg.magnetic_field.z = magData.magnetic_field_calibrated.z;
@@ -44,15 +44,6 @@ namespace mrover {
         magMsg.magnetic_field_covariance[8] = 0.047e-6;
 
         headingMsg.heading = magData.magnetic_heading;
-        if (magData.magnetic_heading_state == sl::SensorsData::MagnetometerData::HEADING_STATE::GOOD) {
-            headingStatusMsg.fix_type.fix = mrover::msg::FixType::FIXED;
-        }
-        else if (magData.magnetic_heading_state == sl::SensorsData::MagnetometerData::HEADING_STATE::OK) {
-            headingStatusMsg.fix_type.fix = mrover::msg::FixType::FLOAT;
-        }
-        else {
-            headingStatusMsg.fix_type.fix = mrover::msg::FixType::NONE;
-        }
     }
 
     auto fillImageMessage(sl::Mat const& bgra, sensor_msgs::msg::Image::UniquePtr const& msg) -> void {

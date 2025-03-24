@@ -92,7 +92,7 @@ namespace mrover {
 
     auto fillImuMessage(rclcpp::Node* node, sl::SensorsData::IMUData& imuData, sensor_msgs::msg::Imu& msg) -> void;
 
-    auto fillMagMessage(sl::SensorsData::MagnetometerData const& magData, sensor_msgs::msg::MagneticField& magMsg, mrover::msg::Heading &headingMsg, mrover::msg::FixStatus &headingStatusMsg) -> void;
+    auto fillMagMessage(sl::SensorsData::MagnetometerData const& magData, sensor_msgs::msg::MagneticField& magMsg, mrover::msg::Heading &headingMsg) -> void;
 
     auto checkCudaError(cudaError_t error) -> void;
 

@@ -19,13 +19,6 @@ def generate_launch_description():
         parameters=[os.path.join(get_package_share_directory("mrover"), "config", "localization.yaml")],
     )
 
-    # rover_gps_driver_node = Node(
-    #     package="mrover",
-    #     executable="rover_gps_driver.py",
-    #     name="rover_gps_driver",
-    #     parameters=[os.path.join(get_package_share_directory("mrover"), "config", "localization.yaml")],
-    # )
-
     gps_linearization_node = Node(
         package="mrover",
         executable="gps_linearization.py",
@@ -40,19 +33,6 @@ def generate_launch_description():
         parameters=[os.path.join(get_package_share_directory("mrover"), "config", "zed.yaml")],
     )
 
-    iekf_node = Node(
-        package="mrover",
-        executable="iekf",
-        name="iekf",
-        parameters=[os.path.join(get_package_share_directory("mrover"), "config", "localization.yaml")],
-    )
-
-    quat_iekf_node = Node(
-        package="mrover",
-        executable="quat_iekf",
-        name="quat_iekf"
-    )
-
     iekf_se3_node = Node(
         package="mrover",
         executable="iekf_se3",
@@ -60,15 +40,7 @@ def generate_launch_description():
         parameters=[os.path.join(get_package_share_directory("mrover"), "config", "localization.yaml")],
     )
 
-    # heading_filter_node = Node(
-    #     package="mrover",
-    #     executable="heading_filter",
-    #     name="heading_filter",
-    #     parameters=[os.path.join(get_package_share_directory("mrover"), "config", "localization.yaml")],
-    # )
-
     return LaunchDescription([
-        # quat_iekf_node,
         zed_node,
         rover_gps_driver_node,
         gps_linearization_node,
