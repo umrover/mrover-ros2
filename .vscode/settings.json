@@ -10,11 +10,6 @@
     "cmake.automaticReconfigure": false,
     "cmake.debugConfig": {
         "miDebuggerPath": "/usr/bin/gdb",
-        "args": [
-            "--ros-args",
-            "--params-file",
-            "~/ros2_ws/src/mrover/config/esw.yaml"
-        ]
     },
     //// Microsoft C++
     // Disable since clangd is used instead

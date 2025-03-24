@@ -84,7 +84,6 @@ namespace mrover {
             int index{};
             boost::container::small_vector<Uniform<ModelUniforms>, 2> visualUniforms;
             boost::container::small_vector<Uniform<ModelUniforms>, 2> collisionUniforms;
-            Clock::time_point lastUpdate = Clock::now();
         };
 
         urdf::Model model;
@@ -223,8 +222,8 @@ namespace mrover {
         bool mEnablePhysics{};
         bool mRenderModels = true;
         bool mRenderWireframeColliders = false;
-        double mPublishHammerDistanceThreshold = 8;
-        double mPublishBottleDistanceThreshold = 8;
+        double mPublishHammerDistanceThreshold = 4;
+        double mPublishBottleDistanceThreshold = 4;
         float mCameraLockSlerp = 0.02;
 
         float mFloat = 0.0f;
@@ -263,8 +262,6 @@ namespace mrover {
         R3d mOrientationDrift = R3d::Zero();
 
         bool mIsHeadless{};
-
-        int64_t mMotorTimeoutMs{};
 
         // Rendering
 
@@ -365,7 +362,7 @@ namespace mrover {
             }
 
             if (auto it = mUrdfs.find("rover"); it != mUrdfs.end()) {
-                URDF& rover = it->second;
+                URDF const& rover = it->second;
 
                 for (std::size_t i = 0; i < names.size(); ++i) {
                     std::string const& name = names[i];
@@ -378,8 +375,7 @@ namespace mrover {
                     }
 
                     std::string const& urdfName = it->second;
-                    URDF::LinkMeta& linkMeta = rover.linkNameToMeta.at(urdfName);
-                    linkMeta.lastUpdate = Clock::now();
+                    URDF::LinkMeta const& linkMeta = rover.linkNameToMeta.at(urdfName);
 
                     auto* motor = std::bit_cast<btMultiBodyJointMotor*>(rover.physics->getLink(linkMeta.index).m_userPtr);
                     assert(motor);

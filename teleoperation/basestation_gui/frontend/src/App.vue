@@ -4,7 +4,7 @@
   </div>
 </template>
 
-<script lang="ts">
+<script>
 
 export default {
   name: 'App',
@@ -15,9 +15,5 @@ export default {
 <style scoped>
 #app {
   font-family: 'Avenir', Helvetica, Arial, sans-serif;
-}
-.dashboard-title {
-  text-decoration: none;
-  color: black;
 }
 </style>

@@ -49,7 +49,7 @@ namespace mrover {
 
     public:
         // __attribute__ ((visibility("default")))
-        explicit GstWebsocketStreamer();
+        explicit GstWebsocketStreamer(rclcpp::NodeOptions const& options = rclcpp::NodeOptions());
 
         ~GstWebsocketStreamer() override;
     };

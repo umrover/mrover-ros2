@@ -1,2 +1,0 @@
-float64 uv_index
-float64 variance

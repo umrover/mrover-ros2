@@ -1,8 +1,10 @@
 ---
 - hosts: all
   vars:
-    ros_distro: humble
-    ubuntu_release: jammy
+    ros_distro: noetic
+    ubuntu_release: focal
   roles:
+    - jetson_build
+    - dev
     - jetson_networks
-    - jetson_can
+    - jetson_services

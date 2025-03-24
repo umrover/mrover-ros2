@@ -1,2 +1,2 @@
-int8 tag_id
+uint8 tag_id
 WaypointType type

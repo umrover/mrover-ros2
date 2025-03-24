@@ -1,5 +1,4 @@
 #include "zed_wrapper.hpp"
-#include "mrover/msg/detail/fix_status__struct.hpp"
 
 namespace mrover {
     template<typename TEnum>
@@ -26,8 +25,6 @@ namespace mrover {
             mPcPub = create_publisher<sensor_msgs::msg::PointCloud2>("zed/left/points", 1);
             mRightCamInfoPub = create_publisher<sensor_msgs::msg::CameraInfo>("zed/right/camera_info", 1);
             mLeftCamInfoPub = create_publisher<sensor_msgs::msg::CameraInfo>("zed/left/camera_info", 1);
-            mMagHeadingPub = create_publisher<mrover::msg::Heading>("zed_imu/mag_heading", 1);
-            mMagHeadingStatusPub = create_publisher<mrover::msg::FixStatus>("zed_imu/mag_heading_status", 1);
 
             // Declare and set Params
             int imageWidth{};
@@ -209,18 +206,10 @@ namespace mrover {
 
                     if (mZedInfo.camera_model != sl::MODEL::ZED_M) {
                         sensor_msgs::msg::MagneticField magMsg;
-                        mrover::msg::Heading headingMsg;
-                        mrover::msg::FixStatus headingStatusMsg;
-                        fillMagMessage(sensorData.magnetometer, magMsg, headingMsg, headingStatusMsg);
+                        fillMagMessage(sensorData.magnetometer, magMsg);
                         magMsg.header.frame_id = "zed_mag_frame";
                         magMsg.header.stamp = now();
                         mMagPub->publish(magMsg);
-                        headingMsg.header.frame_id = "zed_mag_frame";
-                        headingMsg.header.stamp = now();
-                        mMagHeadingPub->publish(headingMsg);
-                        headingStatusMsg.header.frame_id = "zed)mag_frame";
-                        headingStatusMsg.header.stamp = now();
-                        mMagHeadingStatusPub->publish(headingStatusMsg);
                     }
                 }
 
