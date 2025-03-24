@@ -45,7 +45,6 @@ namespace mrover {
         std::array<LimitSwitch, 2> m_limit_switches;
         TIM_HandleTypeDef* m_generic_elapsed_timer{};
         Hertz m_generic_elapsed_frequency{};
-        TIM_HandleTypeDef* m_relative_encoder_elapsed_timer{};
         TIM_HandleTypeDef* m_relative_encoder_tick_timer{};
         std::optional<QuadratureEncoderReader> m_relative_encoder;
         I2C_HandleTypeDef* m_absolute_encoder_i2c{};
@@ -143,7 +142,12 @@ namespace mrover {
             StateAfterConfig config{.gear_ratio = message.gear_ratio};
 
             if (message.enc_info.quad_present) {
-                if (!m_relative_encoder) m_relative_encoder.emplace(m_relative_encoder_tick_timer, m_relative_encoder_elapsed_timer, message.enc_info.quad_ratio);
+                if (!m_relative_encoder) {
+                    m_relative_encoder.emplace(
+                            m_relative_encoder_tick_timer,
+                            ElapsedTimer{m_generic_elapsed_timer, m_generic_elapsed_frequency},
+                            message.enc_info.quad_ratio);
+                }
                 EncoderReading enc_read = m_relative_encoder->read().value();
                 m_uncalib_position = enc_read.position; // usually but not always 0
             }
@@ -286,7 +290,7 @@ namespace mrover {
         Motor(std::uint8_t id, HBridge const& motor_driver, TIM_HandleTypeDef* receive_watchdog_timer,
               std::array<LimitSwitch, 2> const& limit_switches,
               TIM_HandleTypeDef* generic_elapsed_timer, Hertz generic_elapsed_frequency,
-              TIM_HandleTypeDef* relative_encoder_elapsed_timer, TIM_HandleTypeDef* relative_encoder_tick_timer,
+              TIM_HandleTypeDef* relative_encoder_tick_timer,
               I2C_HandleTypeDef* absolute_encoder_i2c,
               std::uint8_t absolute_encoder_a2_a1)
             : m_id(id),
@@ -295,7 +299,6 @@ namespace mrover {
               m_limit_switches(limit_switches),
               m_generic_elapsed_timer(generic_elapsed_timer),
               m_generic_elapsed_frequency(generic_elapsed_frequency),
-              m_relative_encoder_elapsed_timer(relative_encoder_elapsed_timer),
               m_relative_encoder_tick_timer(relative_encoder_tick_timer),
               m_absolute_encoder_i2c(absolute_encoder_i2c),
               m_absolute_encoder_a2_a1(absolute_encoder_a2_a1),
@@ -414,13 +417,6 @@ namespace mrover {
         auto update() -> void {
             process_command();
             update_outbound();
-        }
-
-        auto relative_encoder_elapsed_expired() -> void {
-            if (m_relative_encoder) {
-                m_relative_encoder->expired();
-                update_quadrature_encoder();
-            }
         }
 
         auto update_quadrature_encoder() -> void {

@@ -60,7 +60,7 @@ namespace mrover {
     public:
         QuadratureEncoderReader() = default;
 
-        QuadratureEncoderReader(TIM_HandleTypeDef* tick_timer, TIM_HandleTypeDef* elapsed_timer, Ratio multiplier);
+        QuadratureEncoderReader(TIM_HandleTypeDef* tick_timer, ElapsedTimer elapsed_timer, Ratio multiplier);
 
         [[nodiscard]] auto read() const -> std::optional<EncoderReading>;
 
@@ -72,7 +72,7 @@ namespace mrover {
 
     private:
         TIM_HandleTypeDef* m_tick_timer{};
-        TIM_HandleTypeDef* m_elapsed_timer{};
+        ElapsedTimer m_elapsed_timer;
 
         std::int64_t m_counts_unwrapped_prev{};
         Ratio m_multiplier;
