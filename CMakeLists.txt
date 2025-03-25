@@ -10,10 +10,6 @@ set(CMAKE_CXX_STANDARD 23)
 # Can be used by VSCode, CLion, VIM, etc.
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-# if(CMAKE_BUILD_TYPE STREQUAL "Debug" OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
-#    add_compile_definitions(DEBUG_BUILD)
-# endif()
-
 option(MROVER_CI "Enable CI options" OFF)
 option(MROVER_CLANG_TIDY "Enable static analysis with Clang tidy" ${MROVER_CI})
 option(MROVER_WARNINGS_AS_ERRORS "Treat warnings as errors" ${MROVER_CI})
@@ -108,7 +104,7 @@ else ()
     endif ()
 endif ()
 
-find_package(MANIF::manif QUIET)
+find_package(manif QUIET)
 if (NOT manif_FOUND)
     if (EXISTS ${CMAKE_CURRENT_LIST_DIR}/deps/manif/include/manif)
         set(BUILD_TESTING_OLD ${BUILD_TESTING})
@@ -170,7 +166,9 @@ set(MROVER_CMAKE_INCLUDE
 foreach (MROVER_CMAKE_INCLUDE ${MROVER_CMAKE_INCLUDES})
     include(${MROVER_CMAKE_INCLUDE})
 endforeach ()
- 
+
+message(STATUS "Found message files: ${MROVER_MESSAGE_FILE_PATHS}")
+
 rosidl_generate_interfaces(${PROJECT_NAME}
         ${MROVER_MESSAGE_FILE_PATHS}
         ${MROVER_SERVICE_FILE_PATHS}
@@ -179,9 +177,9 @@ rosidl_generate_interfaces(${PROJECT_NAME}
 
 # Starter project 
 # TODO (ali): delete once AutonomyStarterProject.cmake is fixed
-# mrover_add_node(starter_project_perception ${CMAKE_CURRENT_LIST_DIR}/starter_project/autonomy/src/*.cpp)
-# target_link_libraries(starter_project_perception ${OpenCV_LIBS})
-# ament_target_dependencies(starter_project_perception rclcpp std_msgs sensor_msgs)
+mrover_add_node(starter_project_perception ${CMAKE_CURRENT_LIST_DIR}/starter_project/autonomy/src/*.cpp)
+target_link_libraries(starter_project_perception ${OpenCV_LIBS})
+ament_target_dependencies(starter_project_perception rclcpp std_msgs sensor_msgs)
 
 
 # Install our executable so that ROS knows about it
@@ -275,7 +273,6 @@ ament_target_dependencies(tag_detector rclcpp tf2 tf2_ros)
 target_link_libraries(tag_detector lie opencv_core opencv_aruco opencv_imgproc loop_profiler)
 
 # Embedded
-
 mrover_add_header_only_library(messaging esw/messaging)
 
 mrover_add_header_only_library(can_device esw/can_device)
