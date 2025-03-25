@@ -46,13 +46,13 @@ namespace mrover {
                     mControllers.try_emplace(name, shared_from_this(), "jetson", name);
                     mJointState.name.push_back(name);
                 }
-                mJointState.position.resize(mControllers.size());
-                mJointState.velocity.resize(mControllers.size());
-                mJointState.effort.resize(mControllers.size());
 
                 mJointStatePubs.emplace_back(create_publisher<sensor_msgs::msg::JointState>(std::format("drive_{}_joint_data", group), 1));
                 mControllerStatePubs.emplace_back(create_publisher<msg::ControllerState>(std::format("drive_{}_controller_state", group), 1));
             }
+            mJointState.position.resize(mControllers.size());
+            mJointState.velocity.resize(mControllers.size());
+            mJointState.effort.resize(mControllers.size());
 
             mControllerState.state.resize(mControllers.size());
             mControllerState.error.resize(mControllers.size());
