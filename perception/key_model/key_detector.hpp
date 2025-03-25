@@ -12,6 +12,8 @@ namespace mrover {
             float confidence{};
             cv::Rect box;
 
+            
+
             Detection(int _classId, std::string _className, float _confidence, cv::Rect _box) : classId{_classId}, className{_className}, confidence{_confidence}, box{_box} {}
         };
 

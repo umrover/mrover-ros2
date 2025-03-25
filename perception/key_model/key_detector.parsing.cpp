@@ -1,7 +1,9 @@
 #include "key_detector.hpp"
 #include <opencv2/core/mat.hpp>
 #include <opencv2/core/matx.hpp>
+#include <opencv2/core/types.hpp>
 #include <opencv2/imgproc.hpp>
+#include <rclcpp/logging.hpp>
 namespace mrover {
     auto KeyDetectorBase::preprocessYOLOv8Input(Model const& model, cv::Mat const& input, cv::Mat& output) -> void {
         static cv::Mat bgrImage;
@@ -205,12 +207,26 @@ namespace mrover {
             }
     }
 
-    auto KeyDetectorBase::matchKeyDetections(cv::Mat const& gradient, std::vector<Detection> const& detections) -> void{
+    auto KeyDetectorBase::matchKeyDetections(cv::Mat const& gradient, std::vector<Detection> const& _detections) -> void{
+        std::vector<Detection> detections;
+        detections.emplace_back(0, "test0", 0.4 ,cv::Rect(111, 222, 20, 30));
+        detections.emplace_back(0, "test1", 0.2 ,cv::Rect(222, 111, 32, 12));
+
+        
+        
         // resize the mask to be 640 by 640
         static cv::Mat resizedGradient;
-        cv::resize(gradient, resizedGradient, cv::Size{640, 640});
+        cv::resize(gradient, resizedGradient, cv::Size{256, 256});
         RCLCPP_INFO_STREAM(get_logger(), "Type: " << resizedGradient.type());
         RCLCPP_INFO_STREAM(get_logger(), "Type: " << gradient.type());
+
+        for(int row = 0; row < 10; ++row){
+            for(int col = 0; col < 10; ++col){
+                auto const& v = resizedGradient.at<cv::Vec3f>(row, col);
+
+                RCLCPP_INFO_STREAM(get_logger(), "yoo: " << row << " , " << col << " " << v.val[0] << " " << v.val[1] << " " << v.val[2]) ;
+            }
+        }
 
 
         // For each of the bounding boxes, find the median red and blue
@@ -235,11 +251,8 @@ namespace mrover {
                 for(int w = 0; w < width; ++w){
                     auto const& v = resizedGradient.at<cv::Vec3f>(y + h, x + w);
 
-                    for(int i = 0; i < 3; ++i){
-                        if(std::isnan(v.val[i])){
-                            //RCLCPP_INFO_STREAM(get_logger(), "Input " << v.val[i] << " is NaN");
-                        }
-                    }
+                    RCLCPP_INFO_STREAM(get_logger(), "Cropppp: " << v.val[0] << " " << v.val[1] << " " << v.val[2]) ;
+
                     
                     // Update each pq
                     updateMedians(blueMaxHeap, blueMinHeap, v.val[0]);
