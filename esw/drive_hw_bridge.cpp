@@ -24,9 +24,7 @@ namespace mrover {
 
     class DriveHardwareBridge final : public rclcpp::Node {
     public:
-        DriveHardwareBridge() : Node{"drive_hw_bridge", rclcpp::NodeOptions{}
-                                                                .allow_undeclared_parameters(true)
-                                                                .automatically_declare_parameters_from_overrides(true)} {
+        DriveHardwareBridge() : Node{"drive_hw_bridge"} {
             // all initialization is done in the init() function to allow for the usage of shared_from_this()
         }
 
