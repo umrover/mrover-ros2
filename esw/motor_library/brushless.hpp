@@ -122,11 +122,13 @@ namespace mrover {
         BrushlessController(rclcpp::Node::SharedPtr node, std::string masterName, std::string controllerName)
             : Base{std::move(node), std::move(masterName), std::move(controllerName)} {
 
+            double minVelocity, maxVelocity;
+            double minPosition, maxPosition;
             std::vector<ParameterWrapper> parameters = {
-                    {std::format("{}.min_velocity", mControllerName), mMinVelocity.rep, -1.0},
-                    {std::format("{}.max_velocity", mControllerName), mMaxVelocity.rep, 1.0},
-                    {std::format("{}.min_position", mControllerName), mMinPosition.rep, -1.0},
-                    {std::format("{}.max_position", mControllerName), mMaxPosition.rep, 1.0},
+                    {std::format("{}.min_velocity", mControllerName), minVelocity, -1.0},
+                    {std::format("{}.max_velocity", mControllerName), maxVelocity, 1.0},
+                    {std::format("{}.min_position", mControllerName), minPosition, -1.0},
+                    {std::format("{}.max_position", mControllerName), maxPosition, 1.0},
                     {std::format("{}.max_torque", mControllerName), mMaxTorque, 0.3},
                     {std::format("{}.watchdog_timeout", mControllerName), mWatchdogTimeout, 0.25},
             };
@@ -143,6 +145,11 @@ namespace mrover {
             }
 
             ParameterWrapper::declareParameters(mNode.get(), parameters);
+
+            mMinVelocity = OutputVelocity{minVelocity};
+            mMaxVelocity = OutputVelocity{maxVelocity};
+            mMinPosition = OutputPosition{minPosition};
+            mMaxPosition = OutputPosition{maxPosition};
 
             // if active low, we want to make the default value make it believe that
             // the limit switch is NOT pressed.
