@@ -1,6 +1,6 @@
 [submodule "deps/manif"]
 	path = deps/manif
-	url = https://github.com/artivis/manif.git
+	url = git@github.com:artivis/manif.git
 [submodule "deps/dawn"]
 	path = deps/dawn
 	url = https://dawn.googlesource.com/dawn
