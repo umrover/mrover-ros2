@@ -2,7 +2,6 @@
 
 #include <std_srvs/srv/trigger.hpp>
 
-#include <can_device.hpp>
 #include <messaging.hpp>
 #include <parameter.hpp>
 #include <units.hpp>

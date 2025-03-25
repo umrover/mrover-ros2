@@ -6,7 +6,6 @@
 #include <moteus/moteus.h>
 #include <moteus/moteus_multiplex.h>
 
-#include <can_device.hpp>
 #include <controller.hpp>
 #include <parameter.hpp>
 
