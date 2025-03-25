@@ -44,7 +44,6 @@ class Superstructure(Node):
         self.create_timer(1 / self.get_parameter("rate").value, self.timer_callback)
 
     def velocity_callback(self, topic: str, msg: Twist) -> None:
-        print("vel callback called")
         self.subs[topic].twist = msg
         self.subs[topic].last_time = self.get_clock().now()
 
