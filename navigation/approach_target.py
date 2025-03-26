@@ -142,7 +142,8 @@ class ApproachTargetState(State):
             search_radius += radius_increment
 
         # If no low-cost point is found within the maximum radius, raise error
-        raise RuntimeError("Couldn't find a better point.")
+        context.node.get_logger().warn("Couldn't find a better point.")
+        return
 
     def on_loop(self, context: Context) -> State:
         """
