@@ -60,6 +60,7 @@ class Navigation(Node):
                 ("waypoint.stop_threshold", Parameter.Type.DOUBLE),
                 ("waypoint.drive_forward_threshold", Parameter.Type.DOUBLE),
                 ("search.use_costmap", Parameter.Type.BOOL),
+                ("search.display_markers", Parameter.Type.BOOL),
                 ("search.stop_threshold", Parameter.Type.DOUBLE),
                 ("search.drive_forward_threshold", Parameter.Type.DOUBLE),
                 ("search.coverage_radius", Parameter.Type.DOUBLE),

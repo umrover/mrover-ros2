@@ -9,6 +9,7 @@ Panels:
         - /Marker1
         - /Marker1/Topic1
         - /Marker2
+        - /Marker2/Topic1
         - /Marker3
         - /Marker3/Topic1
         - /Marker3/Namespaces1
@@ -134,7 +135,7 @@ Visualization Manager:
       Enabled: true
       Name: Marker
       Namespaces:
-        single_point: true
+        {}
       Topic:
         Depth: 100
         Durability Policy: Volatile
@@ -149,7 +150,7 @@ Visualization Manager:
       Namespaces:
         {}
       Topic:
-        Depth: 5
+        Depth: 100
         Durability Policy: Volatile
         Filter size: 10
         History Policy: Keep Last

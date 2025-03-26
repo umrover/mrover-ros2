@@ -42,6 +42,7 @@ navigation:
       drive_forward_threshold: 0.34
 
     search:
+      display_markers: false
       use_costmap: true
       stop_threshold: 0.5
       drive_forward_threshold: 0.34
@@ -52,7 +53,7 @@ navigation:
       traversable_cost: 0.2
       update_delay: 3.0
       safe_approach_distance: 5.0
-      a_star_thresh: 0.075
+      a_star_thresh: 0.05
       costmap_thresh: 0.25
       angle_thresh: 0.0872665 #pi/36 radians / 5 degrees
       distance_threshold: 2.0

@@ -69,6 +69,7 @@ class ApproachTargetState(State):
             total_time = context.node.get_clock().now() - self.time_begin
             context.course.increment_waypoint()
             context.node.get_logger().info(f"Total approach time: {total_time.nanoseconds // 1000000000}")
+            self.display_markers(context=context)
             return state.DoneState()
 
         if context.rover.stuck:
@@ -275,17 +276,21 @@ class ApproachTargetState(State):
         return self
 
     def display_markers(self, context: Context):
-        start_pt = self.traj.cur_pt
-        end_pt = (
-            self.traj.cur_pt + 7 if self.traj.cur_pt + 7 < len(self.traj.coordinates) else len(self.traj.coordinates)
-        )
-        for i, coord in enumerate(self.traj.coordinates[start_pt:end_pt]):
-            self.marker_pub.publish(gen_marker(context=context, point=coord, color=[1.0, 0.0, 1.0], id=i, lifetime=100))
-        self.marker_pub.publish(
-            gen_marker(
-                context=context, point=self.target_position, color=[1.0, 1.0, 0.0], id=15, lifetime=100, size=0.5
+        if context.node.get_parameter("search.display_markers").value:
+            delete = Marker()
+            delete.action = Marker.DELETEALL
+            self.marker_pub.publish(delete)
+            start_pt = self.traj.cur_pt - 2 if self.traj.cur_pt - 2 >= 0 else 0
+            end_pt = (
+                self.traj.cur_pt + 7 if self.traj.cur_pt + 7 < len(self.traj.coordinates) else len(self.traj.coordinates)
             )
-        )
+            for i, coord in enumerate(self.traj.coordinates[start_pt:end_pt]):
+                self.marker_pub.publish(gen_marker(context=context, point=coord, color=[1.0, 0.0, 1.0], id=i, lifetime=100))
+            self.marker_pub.publish(
+                gen_marker(
+                    context=context, point=self.target_position, color=[1.0, 1.0, 0.0], id=15, lifetime=100, size=0.5
+                )
+            )
 
     def self_in_distance_threshold(self, context: Context):
         rover_SE3 = context.rover.get_pose_in_map()

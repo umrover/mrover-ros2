@@ -111,10 +111,11 @@ class CostmapSearchState(State):
                 if self.traj.cur_pt + 3 < len(self.traj.coordinates)
                 else len(self.traj.coordinates)
             )
-            for i, coord in enumerate(self.traj.coordinates[start_pt:end_pt]):
-                self.marker_pub.publish(
-                    gen_marker(context=context, point=coord, color=[1.0, 0.0, 0.0], id=i, lifetime=100)
-                )
+            if context.node.get_parameter("search.display_markers").value:
+                for i, coord in enumerate(self.traj.coordinates[start_pt:end_pt]):
+                    self.marker_pub.publish(
+                        gen_marker(context=context, point=coord, color=[1.0, 0.0, 0.0], id=i, lifetime=100)
+                    )
             self.star_traj = Trajectory(np.array([]))
 
         # If there are no more points in the current a_star path or we are past the update delay, then create a new one
@@ -130,10 +131,11 @@ class CostmapSearchState(State):
                 if self.traj.cur_pt + 3 < len(self.traj.coordinates)
                 else len(self.traj.coordinates)
             )
-            for i, coord in enumerate(self.traj.coordinates[start_pt:end_pt]):
-                self.marker_pub.publish(
-                    gen_marker(context=context, point=coord, color=[1.0, 0.0, 0.0], id=i, lifetime=100)
-                )
+            if context.node.get_parameter("search.display_markers").value:
+                for i, coord in enumerate(self.traj.coordinates[start_pt:end_pt]):
+                    self.marker_pub.publish(
+                        gen_marker(context=context, point=coord, color=[1.0, 0.0, 0.0], id=i, lifetime=100)
+                    )
 
             total_time = (context.node.get_clock().now() - self.time_begin).nanoseconds / 1e9
             # context.node.get_logger().info(f"Total Distance Traveled: {self.total_distance}m\nTotal Time: {total_time}s\nAverage Speed: {self.total_distance/total_time}m/s")
