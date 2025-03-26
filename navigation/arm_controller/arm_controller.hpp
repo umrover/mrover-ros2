@@ -6,7 +6,7 @@ namespace mrover {
 
     class ArmController final : public rclcpp::Node {
         struct ArmPos {
-            double x{0}, y{0}, z{0}, pitch{0}, roll{0};
+            double x{0}, y{0}, z{0}, pitch{0}, roll{0}, gripper{0};
             [[nodiscard]] auto toSE3() const -> SE3d {
                 return SE3d{{x, y, z,}, SO3d{Eigen::Quaterniond{Eigen::AngleAxisd{pitch, R3d::UnitY()} * Eigen::AngleAxisd{roll, R3d::UnitX()}}}};
             }
@@ -59,6 +59,10 @@ namespace mrover {
                 .limits = {.minPos = -2.36, .maxPos = 1.44, .minVel = -1, .maxVel = 1},
                 .pos = 0
             }},
+            {"gripper", {
+                .limits = {.minPos = 0, .maxPos = 0.1, .minVel = -1, .maxVel = 1},
+                .pos = 0
+            }},
         };
 
         [[maybe_unused]] rclcpp::Subscription<msg::IK>::SharedPtr mIkSub;
@@ -77,14 +81,14 @@ namespace mrover {
         auto ikVelCalc(geometry_msgs::msg::Twist) -> std::optional<msg::Velocity>;
         auto timerCallback() -> void;
 
-        ArmPos mArmPos;
-        ArmPos mPosTarget;
+        ArmPos mArmPos, mTypingOrigin, mPosTarget;
         geometry_msgs::msg::Twist mVelTarget;
         rclcpp::Time mLastUpdate;
 
-        enum class ArmMode : bool {
+        enum class ArmMode : char {
             VELOCITY_CONTROL,
-            POSITION_CONTROL
+            POSITION_CONTROL,
+            TYPING
         };
         ArmMode mArmMode = ArmMode::POSITION_CONTROL;
         static const rclcpp::Duration TIMEOUT;

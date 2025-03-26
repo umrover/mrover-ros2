@@ -161,7 +161,7 @@ namespace mrover {
         if (mArmMode == ArmMode::VELOCITY_CONTROL)
             mLastUpdate = get_clock()->now();
         else
-            RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 100, "Received velocity command in posiition mode!");
+            RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 100, "Received velocity command in position mode!");
     }
 
     void ArmController::fkCallback(sensor_msgs::msg::JointState::ConstSharedPtr const& joint_state) {
@@ -188,14 +188,14 @@ namespace mrover {
         angle -= joint_state->position[3] + JOINT_C_OFFSET;
         x += END_EFFECTOR_LENGTH * std::cos(angle);
         z += END_EFFECTOR_LENGTH * std::sin(angle);
-        mArmPos = {x, y, z, -angle, joint_state->position[4]};
+        mArmPos = {x, y, z, -angle, joint_state->position[4], std::max(joint_state->position[5], 0.0)};
 	SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_fk", "arm_base_link", mArmPos.toSE3(), get_clock()->now());
     }
 
     void ArmController::posCallback(msg::IK::ConstSharedPtr const& ik_target) {
         mPosTarget = *ik_target;
         SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_target", "arm_base_link", mPosTarget.toSE3(), get_clock()->now());
-        if (mArmMode == ArmMode::POSITION_CONTROL)
+        if (mArmMode == ArmMode::POSITION_CONTROL || mArmMode == ArmMode::TYPING)
                 mLastUpdate = get_clock()->now();
         else
                 RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 100, "Received position command in velocity mode!");
@@ -215,25 +215,53 @@ namespace mrover {
             } else {
                 RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1000, "Position IK failed!");
             }
-        } else { // velocity control
+        } else if (mArmMode == ArmMode::VELOCITY_CONTROL) {
             auto velocities = ikVelCalc(mVelTarget);
             if (velocities) {
                 mVelPub->publish(velocities.value());
             } else {
                 RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1000, "Velocity IK failed!");
             }
+        } else { // typing mode
+            msg::Position positions;
+            positions.names = {"joint_a", "gripper"};
+            positions.positions = {
+                static_cast<float>(mPosTarget.y + mTypingOrigin.y),
+                static_cast<float>(mPosTarget.z + mTypingOrigin.gripper),
+            };
+
+            // bounds checking and such
+            for (size_t i = 0; i < positions.names.size(); ++i) {
+                auto it = joints.find(positions.names[i]);
+                // hopefully this will never happen, but just in case
+                if (it == joints.end()) {
+                    RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, "Unknown joint \"" << positions.names[i] << "\"");
+                    return;
+                }
+
+                if (!it->second.limits.posInBounds(positions.positions[i])) {
+                    RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, "Position for joint " << positions.names[i] << " not within limits! (" << positions.positions[i] << ")");
+                    RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, "Typing IK failed");
+                    return;
+                }
+            }
+
+            mPosPub->publish(positions);
         }
     }
 
     auto ArmController::modeCallback(srv::IkMode::Request::ConstSharedPtr const& req, srv::IkMode::Response::SharedPtr const& resp) -> void {
-        if (req->mode == req->POSITION_CONTROL) {
+        if (req->mode == srv::IkMode::Request::POSITION_CONTROL) {
             mArmMode = ArmMode::POSITION_CONTROL;
             RCLCPP_INFO(get_logger(), "IK Switching to Position Control Mode");
-        } else {
+        } else if (req->mode == srv::IkMode::Request::VELOCITY_CONTROL) {
             mArmMode = ArmMode::VELOCITY_CONTROL;
             RCLCPP_INFO(get_logger(), "IK Switching to Velocity Control Mode");
-            // when we switch to velocity control mode, set the target to the current position
-            mPosTarget = mArmPos;
+        } else { // typing mode
+            mArmMode = ArmMode::TYPING;
+            RCLCPP_INFO(get_logger(), "IK Switching to Typing (position) Mode");
+            // set reference point for typing
+            mTypingOrigin = mArmPos;
         }
         resp->success = true;
     }
