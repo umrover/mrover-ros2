@@ -27,6 +27,9 @@ class LongRangeState(ApproachTargetState):
         current_waypoint = context.course.current_waypoint()
         assert current_waypoint is not None
 
+        if context.env.cost_map is None or not hasattr(context.env.cost_map, "data"):
+            return None
+
         target = context.env.image_targets.query(context.course.image_target_name())
         if target is None:
             context.node.get_logger().info("Target not found in long range camera")

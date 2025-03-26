@@ -210,10 +210,9 @@ class Course:
     waypoints: list[tuple[Waypoint, SE3]]
     waypoint_index: int = 0
 
-    def increment_waypoint(self) -> None:
-        self.waypoint_index += 1
-        if self.waypoint_index > len(self.waypoints):
-            raise IndexError
+    def increment_waypoint(self) -> int:
+        self.waypoint_index = min(self.waypoint_index + 1, len(self.waypoints))
+        return self.waypoint_index >= len(self.waypoints)
 
     def waypoint_pose(self, index: int) -> SE3:
         return self.waypoints[index][1]

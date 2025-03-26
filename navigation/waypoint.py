@@ -135,7 +135,6 @@ class WaypointState(State):
             context.rover.send_drive_command(Twist())
             if self.waypoint_traj.increment_point():
                 return self.next_state(context=context)
-            self.display_markers(context=context)
             self.astar_traj = Trajectory(np.array([]))
             return self
 
@@ -144,6 +143,7 @@ class WaypointState(State):
             context.node.get_clock().now() - self.time_last_updated > Duration(seconds=self.UPDATE_DELAY)
             or len(self.astar_traj.coordinates) - self.astar_traj.cur_pt == 0
         ):
+            self.display_markers(context=context)
             self.time_last_updated = context.node.get_clock().now()
             # Generate a path
             self.astar_traj = self.astar.generate_trajectory(context, self.waypoint_traj.get_current_point())
@@ -182,23 +182,26 @@ class WaypointState(State):
         context.rover.send_drive_command(Twist())
         current_wp = context.course.current_waypoint()
         assert current_wp is not None
-        if not current_wp.type.val == WaypointType.NO_SEARCH:
+        if current_wp.type.val != WaypointType.NO_SEARCH:
             if context.node.get_parameter("search.use_costmap").value:
                 return costmap_search.CostmapSearchState()
             else:
                 return search.SearchState()
         else:
             # We finished a regular waypoint, go onto the next one
-            context.course.increment_waypoint()
-            self.astar_traj = Trajectory(np.array([]))
-            self.waypoint_traj = Trajectory(np.array([]))
-            return self
+            if context.course.increment_waypoint():
+                return state.DoneState()
+            else:
+                self.astar_traj = Trajectory(np.array([]))
+                self.waypoint_traj = Trajectory(np.array([]))
+                return self
 
     def display_markers(self, context: Context):
-        delete = Marker()
-        delete.action = Marker.DELETEALL
-        self.marker_pub.publish(delete)
-        start_pt = self.waypoint_traj.cur_pt
-        end_pt = len(self.waypoint_traj.coordinates)
-        for i, coord in enumerate(self.waypoint_traj.coordinates[start_pt:end_pt]):
-            self.marker_pub.publish(gen_marker(context=context, point=coord, color=[1.0, 0.0, 1.0], id=i, lifetime=2))
+        if context.node.get_parameter("search.display_markers").value:
+            delete = Marker()
+            delete.action = Marker.DELETEALL
+            self.marker_pub.publish(delete)
+            start_pt = self.waypoint_traj.cur_pt - 2 if self.waypoint_traj.cur_pt - 2 >= 0 else 0
+            end_pt = min(self.waypoint_traj.cur_pt + 8, len(self.waypoint_traj.coordinates))
+            for i, coord in enumerate(self.waypoint_traj.coordinates[start_pt:end_pt]):
+                self.marker_pub.publish(gen_marker(context=context, point=coord, color=[1.0, 0.0, 1.0], id=i, lifetime=2))
