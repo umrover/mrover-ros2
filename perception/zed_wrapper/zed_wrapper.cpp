@@ -1,5 +1,4 @@
 #include "zed_wrapper.hpp"
-#include "mrover/msg/detail/fix_status__struct.hpp"
 
 namespace mrover {
     template<typename TEnum>
