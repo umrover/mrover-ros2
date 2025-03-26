@@ -54,7 +54,13 @@ namespace mrover {
             m_direction_pin_1.write(negative_state);
         }
 #else
-        GPIO_PinState const pin_state = (duty_cycle > 0_percent && !m_is_inverted) ? GPIO_PIN_SET : GPIO_PIN_RESET;
+        GPIO_PinState pin_state;
+        if (!m_is_inverted) {
+            pin_state = (duty_cycle > 0_percent) ? GPIO_PIN_SET : GPIO_PIN_RESET;
+        } else {
+            pin_state = (duty_cycle > 0_percent) ? GPIO_PIN_RESET : GPIO_PIN_SET;
+        }
+
         m_direction_pin.write(pin_state);
 #endif
     }
