@@ -1,4 +1,5 @@
 #include "key_detector.hpp"
+#include <Eigen/src/Core/Matrix.h>
 #include <opencv2/core/mat.hpp>
 #include <opencv2/core/matx.hpp>
 #include <opencv2/core/types.hpp>
@@ -208,28 +209,19 @@ namespace mrover {
     }
 
     auto KeyDetectorBase::matchKeyDetections(cv::Mat const& gradient, std::vector<Detection> const& _detections) -> void{
+        // fake data
+        // TODO: remove
         std::vector<Detection> detections;
         detections.emplace_back(0, "test0", 0.4 ,cv::Rect(111, 222, 20, 30));
         detections.emplace_back(0, "test1", 0.2 ,cv::Rect(222, 111, 32, 12));
 
-        
-        
         // resize the mask to be 640 by 640
         static cv::Mat resizedGradient;
         cv::resize(gradient, resizedGradient, cv::Size{256, 256});
-        RCLCPP_INFO_STREAM(get_logger(), "Type: " << resizedGradient.type());
-        RCLCPP_INFO_STREAM(get_logger(), "Type: " << gradient.type());
-
-        for(int row = 0; row < 10; ++row){
-            for(int col = 0; col < 10; ++col){
-                auto const& v = resizedGradient.at<cv::Vec3f>(row, col);
-
-                RCLCPP_INFO_STREAM(get_logger(), "yoo: " << row << " , " << col << " " << v.val[0] << " " << v.val[1] << " " << v.val[2]) ;
-            }
-        }
-
 
         // For each of the bounding boxes, find the median red and blue
+        std::vector<cv::Vec2f> medians;
+        medians.reserve(detections.size());
         int index = 0;
         for(auto const& detect : detections){
             int x = detect.box.x;
@@ -243,21 +235,14 @@ namespace mrover {
             std::priority_queue<float> greenMaxHeap;
             std::priority_queue<float, std::vector<float>, std::greater<>> greenMinHeap;
 
-            std::priority_queue<float> redMaxHeap;
-            std::priority_queue<float, std::vector<float>, std::greater<>> redMinHeap;
-            
             // Streaming Median Algorithm: See https://www.geeksforgeeks.org/median-of-stream-of-integers-running-integers/
             for(int h = 0; h < height; ++h){
                 for(int w = 0; w < width; ++w){
                     auto const& v = resizedGradient.at<cv::Vec3f>(y + h, x + w);
 
-                    RCLCPP_INFO_STREAM(get_logger(), "Cropppp: " << v.val[0] << " " << v.val[1] << " " << v.val[2]) ;
-
-                    
                     // Update each pq
                     updateMedians(blueMaxHeap, blueMinHeap, v.val[0]);
                     updateMedians(greenMaxHeap, greenMinHeap, v.val[1]);
-                    updateMedians(redMaxHeap, redMinHeap, v.val[2]);
                 }
             }
 
@@ -272,9 +257,197 @@ namespace mrover {
 
             float blueMedian = 255 * findMedian(blueMaxHeap, blueMinHeap);
             float greenMedian = 255 * findMedian(greenMaxHeap, greenMinHeap);
-            float redMedian = 255 * findMedian(redMaxHeap, redMinHeap);
 
-            RCLCPP_INFO_STREAM(get_logger(), ++index << " BRO " << blueMedian << " " << greenMedian << " " << redMedian);
+            RCLCPP_INFO_STREAM(get_logger(), ++index << " BRO " << blueMedian << " " << greenMedian);
+
+            medians.emplace_back(blueMedian, greenMedian);
+        }
+
+        static const std::array<cv::Vec2f, 87> colors {
+            cv::Vec2f(43, 27),
+            cv::Vec2f(91, 32),
+            cv::Vec2f(139, 27),
+            cv::Vec2f(157, 27),
+            cv::Vec2f(175, 27),
+            cv::Vec2f(193, 27),
+            cv::Vec2f(215, 27),
+            cv::Vec2f(48, 66),
+            cv::Vec2f(62, 66),
+            cv::Vec2f(228, 27),
+            cv::Vec2f(75, 66),
+            cv::Vec2f(241, 27),
+            cv::Vec2f(89, 66),
+            cv::Vec2f(103, 66),
+            cv::Vec2f(117, 66),
+            cv::Vec2f(130, 66),
+            cv::Vec2f(144, 66),
+            cv::Vec2f(158, 66),
+            cv::Vec2f(41, 107),
+            cv::Vec2f(183, 67),
+            cv::Vec2f(54, 107),
+            cv::Vec2f(229, 66),
+            cv::Vec2f(68, 107),
+            cv::Vec2f(82, 107),
+            cv::Vec2f(96, 107),
+            cv::Vec2f(110, 107),
+            cv::Vec2f(124, 107),
+            cv::Vec2f(137, 107),
+            cv::Vec2f(151, 107),
+            cv::Vec2f(37, 148),
+            cv::Vec2f(165, 107),
+            cv::Vec2f(51, 148),
+            cv::Vec2f(65, 148),
+            cv::Vec2f(186, 107),
+            cv::Vec2f(78, 148),
+            cv::Vec2f(92, 148),
+            cv::Vec2f(106, 148),
+            cv::Vec2f(120, 148),
+            cv::Vec2f(134, 148),
+            cv::Vec2f(46, 187),
+            cv::Vec2f(147, 148),
+            cv::Vec2f(161, 148),
+            cv::Vec2f(60, 187),
+            cv::Vec2f(175, 148),
+            cv::Vec2f(73, 187),
+            cv::Vec2f(192, 148),
+            cv::Vec2f(87, 187),
+            cv::Vec2f(228, 151),
+            cv::Vec2f(214, 151),
+            cv::Vec2f(241, 151),
+            cv::Vec2f(101, 187),
+            cv::Vec2f(115, 187),
+            cv::Vec2f(128, 188),
+            cv::Vec2f(32, 231),
+            cv::Vec2f(142, 188),
+            cv::Vec2f(45, 231),
+            cv::Vec2f(156, 187),
+            cv::Vec2f(59, 231),
+            cv::Vec2f(169, 187),
+            cv::Vec2f(73, 231),
+            cv::Vec2f(189, 187),
+            cv::Vec2f(241, 188),
+            cv::Vec2f(228, 188),
+            cv::Vec2f(215, 188),
+            cv::Vec2f(94, 231),
+            cv::Vec2f(107, 231),
+            cv::Vec2f(120, 231),
+            cv::Vec2f(133, 231),
+            cv::Vec2f(155, 231),
+            cv::Vec2f(168, 231),
+            cv::Vec2f(182, 231),
+            cv::Vec2f(195, 230),
+            cv::Vec2f(241, 231),
+            cv::Vec2f(214, 231),
+            cv::Vec2f(228, 231),
+            cv::Vec2f(7, 27),
+            cv::Vec2f(24, 27),
+            cv::Vec2f(13, 66),
+            cv::Vec2f(34, 66),
+            cv::Vec2f(9, 107),
+            cv::Vec2f(28, 107),
+            cv::Vec2f(23, 148),
+            cv::Vec2f(32, 187),
+            cv::Vec2f(7, 148),
+            cv::Vec2f(18, 187),
+            cv::Vec2f(5, 187),
+            cv::Vec2f(5, 230)
+        };
+
+        // create distance matrix between each of the detection and every known key
+        // 0 - weight between 1st source & 1st target (W11)
+        // 1 - weight between 1st source & 2nd target (W12)
+        // m - weight between 1st source & mth target (W1m)
+        // ...
+        Eigen::VectorXf weights(2 * medians.size() * colors.size());
+        for(std::size_t n = 0; n < medians.size(); ++n){
+            for(std::size_t m = 0; m < colors.size(); ++m){
+                auto norm = [](cv::Vec2f const& lhs, cv::Vec2f const& rhs) -> float{
+                    return static_cast<float>(std::sqrt(std::pow(lhs.val[0] - rhs.val[0], 2) + std::pow(lhs.val[1] - rhs.val[1], 2)));
+                };
+
+                float val = static_cast<float>(1e6 / std::pow(norm(medians[n], colors[m]), 3));
+
+                weights(static_cast<int>(n * colors.size() + m)) = val;
+                weights(static_cast<int>(colors.size() * medians.size() + n * colors.size() + m)) = val;
+            }
+        }
+
+        static Eigen::VectorXf prevWeights = weights;
+
+        RCLCPP_INFO_STREAM(get_logger(), "Weights equality " << (prevWeights == weights));
+
+        prevWeights = weights;
+
+        // create targets vector
+        // flat array of n of the colors vectors augmented together
+        Eigen::VectorXf targets(2 * medians.size() * colors.size());
+
+        //                                vvv num indices into vec2f
+        for(std::size_t index = 0; index < 2; ++index){
+            for(std::size_t i = 0; i < medians.size(); ++i){
+                for(std::size_t ii = 0; ii < colors.size(); ++ii){
+                    targets(static_cast<int>(index * medians.size() * colors.size() + i * colors.size() + ii)) = weights(static_cast<int>(index * medians.size() * colors.size() + i * colors.size() + ii)) * colors[ii].val[index];
+                }
+            }
+        }
+
+        static Eigen::VectorXf prevTargets = targets;
+
+        RCLCPP_INFO_STREAM(get_logger(), "Targets equality " << (prevTargets == targets));
+
+        prevTargets = targets;
+
+        // create the P matrix
+        Eigen::MatrixXf P(2 * colors.size() * medians.size(), 6);
+        for(std::size_t n = 0; n < medians.size(); ++n){
+            for(std::size_t m = 0; m < colors.size(); ++m){
+                int offset = static_cast<int>(n * colors.size() + m);
+                P(offset, 0) = medians[n].val[0] * weights(offset);
+                P(offset, 1) = medians[n].val[1] * weights(offset);
+                P(offset, 2) = 0.0f;
+                P(offset, 3) = 0.0f;
+                P(offset, 4) = 1.0f * weights(offset);
+                P(offset, 5) = 0.0f;
+            }
+        }
+
+        for(std::size_t n = 0; n < medians.size(); ++n){
+            for(std::size_t m = 0; m < colors.size(); ++m){
+                int offset = static_cast<int>(colors.size() * medians.size() + n * colors.size() + m);
+                P(offset, 0) = 0.0f;
+                P(offset, 1) = 0.0f;
+                P(offset, 2) = medians[n].val[0] * weights(offset);
+                P(offset, 3) = medians[n].val[1] * weights(offset);
+                P(offset, 4) = 0.0f;
+                P(offset, 5) = 1.0f * weights(offset);
+            }
+        }
+
+        static Eigen::MatrixXf prevP = P;
+
+        RCLCPP_INFO_STREAM(get_logger(), "P equality " << (prevP == P));
+
+        prevP = P;
+
+        // find the least sqaures solution
+
+        Eigen::MatrixXd A(3, 2);
+        Eigen::VectorXd b(3);
+        
+        // Fixed input for testing
+        A << 1, 2,
+             3, 4,
+             5, 6;
+        b << 7, 8, 9;
+        
+        for (int i = 0; i < 10; ++i) {
+            // Ensure that A and b are not modified unexpectedly between iterations
+            Eigen::VectorXd x = A.colPivHouseholderQr().solve(b);
+            Eigen::VectorXf y = P.colPivHouseholderQr().solve(targets);
+
+            RCLCPP_INFO_STREAM(get_logger(), "Iteration " << i << " solution: " << y.transpose());
+            // Print the solution for each iteration
+            RCLCPP_INFO_STREAM(get_logger(), "Iteration " << i << " solution: " << x.transpose());
         }
     }
 
