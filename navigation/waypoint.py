@@ -182,17 +182,19 @@ class WaypointState(State):
         context.rover.send_drive_command(Twist())
         current_wp = context.course.current_waypoint()
         assert current_wp is not None
-        if not current_wp.type.val == WaypointType.NO_SEARCH:
+        if current_wp.type.val != WaypointType.NO_SEARCH:
             if context.node.get_parameter("search.use_costmap").value:
                 return costmap_search.CostmapSearchState()
             else:
                 return search.SearchState()
         else:
             # We finished a regular waypoint, go onto the next one
-            context.course.increment_waypoint()
-            self.astar_traj = Trajectory(np.array([]))
-            self.waypoint_traj = Trajectory(np.array([]))
-            return self
+            if context.course.increment_waypoint():
+                return state.DoneState()
+            else:
+                self.astar_traj = Trajectory(np.array([]))
+                self.waypoint_traj = Trajectory(np.array([]))
+                return self
 
     def display_markers(self, context: Context):
         if context.node.get_parameter("search.display_markers").value:

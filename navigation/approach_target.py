@@ -67,10 +67,11 @@ class ApproachTargetState(State):
         assert context.course is not None
         if is_finished:
             total_time = context.node.get_clock().now() - self.time_begin
-            context.course.increment_waypoint()
             context.node.get_logger().info(f"Total approach time: {total_time.nanoseconds // 1000000000}")
             self.display_markers(context=context)
-            return state.DoneState()
+            if context.course.increment_waypoint():
+                return state.DoneState()
+            return waypoint.WaypointState()
 
         if context.rover.stuck:
             context.rover.previous_state = self
@@ -267,7 +268,10 @@ class ApproachTargetState(State):
                             self.target_position = new_targ_pos
                             self.traj = Trajectory(np.array([]))
                         else:
-                            self.dilate_costmap(context=context)
+                            self.traj = Trajectory(np.array([]))
+                            if not self.dilate_costmap(context=context):
+                                # Fully dilated and still failed, go to next state
+                                return self.next_state(context=context, is_finished=True)
                         return self.next_state(context=context, is_finished=False)
                 self.display_markers(context=context)
         else:
@@ -316,7 +320,8 @@ class ApproachTargetState(State):
         context.node.get_logger().info(f"Distance: {distance}")
         return distance < self.DISTANCE_THRESHOLD
 
-    def dilate_costmap(self, context: Context):
+    def dilate_costmap(self, context: Context) -> bool:
         context.node.get_logger().info("Too far from target! Dilating cost map.")
         self.cost_inflation_radius -= 0.2
         context.dilate_cost(self.cost_inflation_radius)
+        return self.cost_inflation_radius > 0
