@@ -63,13 +63,15 @@ arm_hw_bridge:
       max_torque: 20.0
     gripper:
       gear_ratio: 47.0
-      is_inverted: false
+      is_inverted: true
       driver_voltage: 10.5
       motor_max_voltage: 12.0
       quad_present: true
       quad_ratio: 1.0
       abs_present: false
       calibration_throttle: 0.5
+      position_p: 30.0
+      velocity_p: 5.0
       limit_switch_0_present: true
       limit_switch_0_enabled: true
       limit_switch_0_limits_forward: false
