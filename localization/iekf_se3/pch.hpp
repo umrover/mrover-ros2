@@ -3,8 +3,6 @@
 #include <functional>
 #include <optional>
 #include <string>
-#include <unordered_map>
-#include <deque>
 
 #include <rclcpp/node.hpp>
 #include <rclcpp/rclcpp.hpp>
@@ -25,6 +23,5 @@
 #include <unsupported/Eigen/MatrixFunctions>
 #include <lie.hpp>
 #include <manif/SO3.h>
-#include <manif/SE_2_3.h>
 #include <tf2_ros/transform_listener.h>
 #include <tf2_ros/transform_broadcaster.h>
