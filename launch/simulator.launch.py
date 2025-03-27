@@ -20,8 +20,7 @@ def generate_launch_description():
     cost_map_arg = DeclareLaunchArgument("cost_map", default_value="True")
 
     launch_include_base = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(Path(get_package_share_directory("mrover"), "launch/base.launch.py").__str__()
-        )
+        PythonLaunchDescriptionSource(Path(get_package_share_directory("mrover"), "launch/base.launch.py").__str__())
     )
 
     # TODO (ali): make gst streamer a composed node

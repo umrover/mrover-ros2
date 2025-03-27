@@ -14,8 +14,7 @@ from launch.conditions import LaunchConfigurationEquals
 def generate_launch_description():
 
     launch_include_base = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(Path(get_package_share_directory("mrover"), "launch/base.launch.py").__str__()
-        )
+        PythonLaunchDescriptionSource(Path(get_package_share_directory("mrover"), "launch/base.launch.py").__str__())
     )
 
     launch_include_can = IncludeLaunchDescription(
