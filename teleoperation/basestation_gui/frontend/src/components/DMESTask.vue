@@ -27,17 +27,12 @@
     </div>
 
     <div class='shadow p-3 rounded controller_state'>
+      <div v-if="type === 'ES'" class="auton-typing">
+        <AutonTyping mission="'auton"/>
+      </div>
       <ControllerDataTable msg-type='arm_state' header='Arm States' />
       <ControllerDataTable msg-type='drive_left_state' header='Left Drive States' />
       <ControllerDataTable msg-type='drive_right_state' header='Right Drive States' />
-
-      <div v-if="type === 'ES'" class="auton-typing">
-        <AutonTyping mission="'auton"/>
-        <div class="alignment-section">
-          <h4>Planar Alignment</h4>
-          <p><!--{{ alignmentDegrees }}--> 0 degrees</p>
-        </div>
-      </div>
       <ControllerDataTable msg-type='drive_state' header='Drive States' />
     </div>
     <div v-show='false'>
@@ -171,7 +166,8 @@ export default defineComponent({
 .wrapper-es {
   display: grid;
   gap: 10px;
-  grid-template-columns: repeat(2, auto);
+  /* grid-template-columns: repeat(2, auto); */
+  grid-template-columns: 50% 50%;
   grid-template-areas:
     'header header'
     'arm-controls rover-3d'

@@ -7,51 +7,67 @@ make an autonTyping rosaction
 create instance of rosaction in callback area -->
 
 <template>
-  <div class="auton-typing-input">
-    <h4>Autonomous Typing Task</h4>
-    <form>
-      <div class="form-group col-md-4">
-            <input 
-              v-model="typingMessage"
-              type="text"
-              class="form-control"
-              id="autonTyping"
-              placeholder="Message"
-              maxlength="6"
-              required
-            />
-            <small id="autonTypingMission" class="form-text text-muted"></small>
-          </div>
-      <div class="col-auto">
-        <span id="typingHelp" class="form-text">
-          Must be 3-6 characters long.
-        </span>
-      </div>
-      <button v-if="codeSent === false" class="btn btn-primary custom-btn" :disabled="typingMessage.length < 3" @click.prevent="submitMessage()">Submit</button>
-      <!-- TODO: add a separate function to cancel current message -->
-      <button v-if="codeSent === true" class="btn btn-primary custom-btn bg-danger" @click.prevent="submitMessage()">Cancel</button>
-    </form>
-  </div>
-  <div class="feedback-section">
-    <h4>Feedback</h4>
-    <table>
-      <thead>
-        <tr>
-          <th>Key</th>
-          <th>State</th>
-        </tr>
-      </thead>
-      <tbody>
-        <!-- add this back into the tr tag underneath: v-for="(state, key) in feedback" :key="key" -->
-        <tr>
-          <!-- <td>{{ key }}</td>
-          <td>{{ state }}</td> -->
-          <!-- TODO: Remove this (only used for example purposes) -->
-          <td>{{currentKey}}</td>
-          <td>{{currentState}}</td>
-        </tr>
-      </tbody>
-    </table>
+  <div class="auton-typing-container">
+    <!-- left col -->
+    <div class="column left">
+      <h4>Typing Input</h4>
+      <form>
+        <div class="form-group">
+          <input 
+            v-model="typingMessage"
+            type="text"
+            class="form-control"
+            id="autonTyping"
+            placeholder="Message"
+            maxlength="6"
+            required
+            :disabled="codeSent"
+          />
+        </div>
+        <span class="form-text">Must be 3-6 characters long.</span>
+        
+        <div class="button-group">
+          <button 
+            v-if="!codeSent" 
+            class="btn btn-primary custom-btn" 
+            :disabled="typingMessage.length < 3" 
+            @click.prevent="submitMessage()">
+            Submit
+          </button>
+          <button 
+            v-if="codeSent" 
+            class="btn btn-danger custom-btn" 
+            @click.prevent="submitMessage()">
+            Cancel
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- middle col -->
+    <div class="column middle">
+      <h4>Feedback</h4>
+      <table class="feedback-table">
+        <tbody>
+          <tr>
+            <td 
+              v-for="index in 6" 
+              :key="index"
+              :class="getLetterClass(letterStates[index - 1] ?? 'grey')"
+            >
+              {{ typingMessage[index - 1] ?? '_' }}
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- right col, needs implementation, ask for specifics -->
+    <div class="column right">
+      <h4>Planar Alignment</h4>
+      <p><!--{{ alignmentDegrees }}--> 0 degrees</p>
+    </div>
+
   </div>
 </template>
 
@@ -75,14 +91,17 @@ export default {
       codeSent: false,
       currentKey: '',
       currentState: '',
+      letterStates: Array<string>(6).fill('notTyped'),
     }
   },
 
   watch: {
     message(msg) {
       if (msg.type == 'keyAction') { // TODO: where message needs to be assigned?
+        console.log('yeet');
         this.currentKey = msg.currentKey;
         this.currentState = msg.currentState;
+        this.updateLetterStates();
       }
     },
 
@@ -101,31 +120,71 @@ export default {
 
     submitMessage: function() {
       console.log("sending a message")
-      //TODO: send the code via ROS action
-      if (!this.codeSent) {
+      if (!this.codeSent) { // sending message
         this.sendMessage({
           type: 'code',
           code: this.typingMessage
         })
         this.codeSent = !this.codeSent;
+        this.letterStates = new Array(this.typingMessage.length).fill('notTyped');
       } 
-      else {
-      // Canceling the current message
-      this.sendMessage({
-        type: 'code',
-        code: 'cancel'
-      });
-      console.log("sending cancel message")
-      this.codeSent = false;  // Reset the button to "Submit"
-      this.typingMessage = ''; // Optionally, clear the input field
-    }
-
+      else { // cancel
+        this.sendMessage({
+          type: 'code',
+          code: 'cancel'
+        });
+        this.codeSent = false;
+        this.typingMessage = ''; // clear field
+        this.letterStates = Array(6).fill('notTyped'); // reset 6 empty cells
+      }
     },
+
+    updateLetterStates() {
+      if (!this.typingMessage) return;
+      for (let i = 0; i < this.typingMessage.length; i++) {
+        if (i < this.currentKey.length) {
+          this.letterStates[i] = 'typed'; // green
+        } else if (i === this.currentKey.length) {
+          this.letterStates[i] = 'inProgress'; // orange
+        } else {
+          this.letterStates[i] = 'notTyped'; // red
+        }
+      }
+    },
+
+    getLetterClass(state) {
+      if (!this.codeSent) return 'grey-cell'; // grey when not sent
+
+      return {
+        'grey-cell': state === 'grey',
+        'typed-cell': state === 'typed',
+        'in-progress-cell': state === 'inProgress',
+        'not-typed-cell': state === 'notTyped'
+      };
+    }
   }
 }
 </script>
 
 <style scoped>
+.auton-typing-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 20px;
+  justify-content: center;
+  align-items: start;
+  text-align: center;
+  width: 100%;
+}
+
+.column {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  width: 100%;
+}
+
 .custom-btn {
   width: 150px;
   height: 50px;
@@ -139,4 +198,38 @@ export default {
 .percent {
   font-size: large;
 }
+.feedback-table {
+  border-collapse: collapse;
+  margin-top: 10px;
+}
+
+.feedback-table td {
+  width: 40px;
+  height: 40px;
+  text-align: center;
+  font-size: 24px;
+  font-weight: bold;
+  border: 1px solid #ccc;
+}
+
+.grey-cell {
+  background-color: #d3d3d3;
+  color: black;
+}
+
+.typed-cell {
+  background-color: green;
+  color: white;
+}
+
+.in-progress-cell {
+  background-color: orange;
+  color: white;
+}
+
+.not-typed-cell {
+  background-color: red;
+  color: white;
+}
+
 </style>

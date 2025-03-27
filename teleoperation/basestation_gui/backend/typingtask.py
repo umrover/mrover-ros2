@@ -11,28 +11,27 @@ class TypingTaskActionClient(Node):
         super().__init__('typing_task_action_client')
         self.node = node
         self.websocket = websocket  # Instance of GUIConsumer
-        self._action_client = ActionClient(node, KeyAction, 'key_action')
+        self._action_client = ActionClient(node, KeyAction, 'KeyAction')
 
     def send_code(self, code):
-        # Delay importing GUIConsumer to avoid circular dependency
         from backend.consumers import GUIConsumer
         # self.get_logger().info(f"code in typingtask client: {code}")
         if isinstance(self.websocket, GUIConsumer):
             goal_msg = KeyAction.Goal()
             goal_msg.code = code
-            self.node.get_logger().info(f"websocket found! Sending code")
+            self.node.get_logger    
 
-        # self._action_client.wait_for_server()
+        self._action_client.wait_for_server()
 
         return self._action_client.send_goal_async(goal_msg, feedback_callback=self.feedback_callback)
     
     def feedback_callback(self, feedback_msg):
         current_key = feedback_msg.key
         current_state = feedback_msg.state
-        # self.get_logger().info('Received feedback: {0}'.format(feedback.partial_sequence))
+        self.get_logger().info('Received feedback')
         self.websocket.send_message_as_json(
             {'currentKey': current_key, 
-                 'currentState': current_state}
+            'currentState': current_state}
         )
 
     def shutdown(self):
