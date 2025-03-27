@@ -60,7 +60,7 @@ namespace mrover {
 
     }
 
-    auto lift(const Vector6d& dx) -> Matrix44d {
+    auto IEKF_SE3::lift(const Vector6d& dx) -> Matrix44d {
         
         Matrix44d result = Matrix44d::Zero();
         result.block<3, 3>(0, 0) = manif::skew(dx.head(3));

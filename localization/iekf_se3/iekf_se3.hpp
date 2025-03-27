@@ -23,6 +23,7 @@ namespace mrover {
 
         // utils
         auto adjoint() -> Matrix66d;
+        static auto lift(const Vector6d& dx) -> Matrix44d;
 
         // sensor callbacks
         void imu_callback(const sensor_msgs::msg::Imu& imu_msg);
