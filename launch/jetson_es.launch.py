@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 
 from ament_index_python import get_package_share_directory
@@ -16,7 +15,7 @@ def generate_launch_description():
 
     launch_include_jetson_base = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
-            os.path.join(get_package_share_directory("mrover"), "launch/jetson_base.launch.py")
+            Path(get_package_share_directory("mrover"), "launch/jetson_base.launch.py").__str__()
         )
     )
 

@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 
 from ament_index_python import get_package_share_directory
@@ -15,12 +14,13 @@ from launch.conditions import LaunchConfigurationEquals
 def generate_launch_description():
 
     launch_include_base = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(os.path.join(get_package_share_directory("mrover"), "launch/base.launch.py"))
+        PythonLaunchDescriptionSource(Path(get_package_share_directory("mrover"), "launch/base.launch.py").__str__()
+        )
     )
 
     launch_include_can = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
-            os.path.join(get_package_share_directory("mrover"), "launch/jetson_can.launch.py")
+            Path(get_package_share_directory("mrover"), "launch/jetson_can.launch.py").__str__()
         )
     )
 
