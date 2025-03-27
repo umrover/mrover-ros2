@@ -12,6 +12,9 @@ namespace mrover {
         declare_parameter("pos_noise_fixed", rclcpp::ParameterType::PARAMETER_DOUBLE);
         declare_parameter("vel_noise", rclcpp::ParameterType::PARAMETER_DOUBLE);
         declare_parameter("mag_heading_noise", rclcpp::ParameterType::PARAMETER_DOUBLE);
+
+        declare_parameter("rover_heading_change_threshold", rclcpp::ParameterType::PARAMETER_DOUBLE);
+        declare_parameter("minimum_linear_speed", rclcpp::ParameterType::PARAMETER_DOUBLE);
     
         world_frame = get_parameter("world_frame").as_string();
         rover_frame = get_parameter("rover_frame").as_string();
@@ -20,6 +23,9 @@ namespace mrover {
         pos_noise_fixed = get_parameter("pos_noise_fixed").as_double();
         vel_noise = get_parameter("vel_noise").as_double();
         mag_heading_noise = get_parameter("mag_heading_noise").as_double();
+
+        rover_heading_change_threshold = get_parameter("rover_heading_change_threshold").as_double();
+        minimum_linear_speed = get_parameter("minimum_linear_speed").as_double();
 
         // initialize state variables
         X.setIdentity();
@@ -231,6 +237,52 @@ namespace mrover {
         N << X.block<3, 3>(0, 0) * cov_a * X.block<3, 3>(0, 0).transpose();
 
         correct(Y, b, N, H);
+    }
+
+    void IEKF_SE3::drive_forward_callback() {
+
+        R2d rover_velocity_sum = R2d::Zero();
+        double rover_heading_change = 0.0;
+        std::size_t readings = 0;
+
+        rclcpp::Time end = get_clock()->now();
+        rclcpp::Time start = end - WINDOW;
+
+        for (rclcpp::Time t = start; t < end; t += STEP) {
+
+            try {
+                auto rover_in_map_old = SE3Conversions::fromTfTree(tf_buffer, rover_frame, world_frame, t - STEP);
+                auto rover_in_map_new = SE3Conversions::fromTfTree(tf_buffer, rover_frame, world_frame, t);
+                R3d rover_velocity_in_map = (rover_in_map_new.translation() - rover_in_map_old.translation()) / STEP.seconds();
+                R3d rover_angular_velocity_in_map = (rover_in_map_new.asSO3() - rover_in_map_old.asSO3()).coeffs();
+                rover_velocity_sum += rover_velocity_in_map.head<2>();
+                rover_heading_change += std::fabs(rover_angular_velocity_in_map.z());
+                ++readings;
+            } catch (tf2::ConnectivityException const& e) {
+                RCLCPP_WARN_STREAM(get_logger(), e.what());
+                return;
+            } catch (tf2::LookupException const& e) {
+                RCLCPP_WARN_STREAM(get_logger(), e.what());
+                return;
+            } catch (tf2::ExtrapolationException const&) { }
+        }
+
+
+        if (rover_heading_change > rover_heading_change_threshold) {
+            RCLCPP_WARN(get_logger(), "Rover is not moving straight enough: Heading change = {%f} rad", rover_heading_change);
+            return;
+        }
+
+        R2d mean_velocity = rover_velocity_sum / static_cast<double>(readings);
+        if (mean_velocity.norm() < minimum_linear_speed) {
+            RCLCPP_WARN(this->get_logger(), "Rover stationary - insufficient speed: %.3f m/s", mean_velocity.norm());
+            return;
+        }
+        
+        double drive_forward_heading = atan2(rover_velocity_sum.y(), rover_velocity_sum.x());
+
+        RCLCPP_INFO(get_logger(), "Drive forward heading: %f", drive_forward_heading);
+        
     }
 
 

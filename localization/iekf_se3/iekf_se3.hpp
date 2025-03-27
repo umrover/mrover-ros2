@@ -30,6 +30,7 @@ namespace mrover {
         void mag_heading_callback(const mrover::msg::Heading& mag_heading_msg);
         void accel_callback(const geometry_msgs::msg::Vector3 &a, const Matrix33d &cov_a);
         void vel_callback(const geometry_msgs::msg::Vector3Stamped& vel_msg);
+        void drive_forward_callback();
 
         // InEKF functions
         void predict_imu(const Vector3d& w, const Matrix33d& cov_w, double dt);
@@ -50,6 +51,7 @@ namespace mrover {
         // timekeeping
         std::optional<builtin_interfaces::msg::Time> last_imu_time;
         std::optional<builtin_interfaces::msg::Time> last_vel_time;
+        rclcpp::TimerBase::SharedPtr correction_timer;
        
         // state variables
         Matrix44d X;
@@ -60,6 +62,8 @@ namespace mrover {
         const double IMU_DT = 0.016;
         const double VEL_DT = 1.0;
         const Vector3d g{0.0, 0.0, -9.81};
+        const rclcpp::Duration STEP = rclcpp::Duration::from_seconds(0.5);
+        const rclcpp::Duration WINDOW{STEP * 2.5};
 
         // parameters
         std::string world_frame;
@@ -69,6 +73,9 @@ namespace mrover {
         double pos_noise_fixed;
         double vel_noise;
         double mag_heading_noise;
+
+        double rover_heading_change_threshold;
+        double minimum_linear_speed;
 
     public:
     
