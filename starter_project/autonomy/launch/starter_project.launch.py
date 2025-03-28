@@ -1,6 +1,6 @@
 # starter_project.launch.py
 
-from pathlib import Path
+import os
 
 from ament_index_python import get_package_share_directory
 
@@ -14,8 +14,7 @@ from launch.conditions import LaunchConfigurationEquals
 def generate_launch_description():
 
     launch_include_sim = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(Path(get_package_share_directory("mrover"), "launch/simulator.launch.py").__str__()
-        )
+        PythonLaunchDescriptionSource(os.path.join(get_package_share_directory("mrover"), "launch/simulator.launch.py"))
     )
 
     perception_node = Node(package="mrover", executable="starter_project_perception", name="perception")

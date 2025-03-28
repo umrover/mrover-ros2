@@ -405,14 +405,8 @@ namespace mrover {
     constexpr auto operator""_rad(unsigned long long int n) {
         return Radians{n};
     }
-    constexpr auto operator""_rad(long double n) {
-        return Radians{n};
-    }
 
     constexpr auto operator""_rad_per_s(unsigned long long int n) {
-        return RadiansPerSecond{n};
-    }
-    constexpr auto operator""_rad_per_s(long double n) {
         return RadiansPerSecond{n};
     }
 

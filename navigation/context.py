@@ -269,7 +269,13 @@ def setup_course(ctx: Context, waypoints: list[tuple[Waypoint, SE3]]) -> Course:
     all_waypoint_info = []
     for index, (waypoint_info, waypoint_in_world) in enumerate(waypoints):
         all_waypoint_info.append(waypoint_info)
-        SE3.to_tf_tree(ctx.tf_broadcaster, waypoint_in_world, f"course{index}", ctx.world_frame)
+        SE3.to_tf_tree(
+            ctx.tf_broadcaster,
+            waypoint_in_world,
+            f"course{index}",
+            ctx.world_frame,
+            ctx.node.get_clock().now().to_msg(),
+        )
     # Make the course out of just the pure waypoint objects which is the 0th element in the tuple
     return Course(
         ctx=ctx,

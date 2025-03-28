@@ -1,6 +1,6 @@
 # simulator.launch.py
 
-from pathlib import Path
+import os
 
 from ament_index_python import get_package_share_directory
 
@@ -20,7 +20,7 @@ def generate_launch_description():
     cost_map_arg = DeclareLaunchArgument("cost_map", default_value="True")
 
     launch_include_base = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(Path(get_package_share_directory("mrover"), "launch/base.launch.py").__str__())
+        PythonLaunchDescriptionSource(os.path.join(get_package_share_directory("mrover"), "launch/base.launch.py"))
     )
 
     # TODO (ali): make gst streamer a composed node
@@ -52,7 +52,7 @@ def generate_launch_description():
         executable="simulator",
         name="simulator",
         parameters=[
-            Path(get_package_share_directory("mrover"), "config", "simulator.yaml"),
+            os.path.join(get_package_share_directory("mrover"), "config", "simulator.yaml"),
             {"headless": LaunchConfiguration("headless")},
         ],
     )
@@ -63,7 +63,7 @@ def generate_launch_description():
         package="rviz2",
         executable="rviz2",
         name="rviz2",
-        arguments=["-d", [Path(get_package_share_directory("mrover"), "config/rviz", "auton_sim.rviz").__str__()]],
+        arguments=["-d", [os.path.join(get_package_share_directory("mrover"), "config/rviz", "auton_sim.rviz")]],
         condition=LaunchConfigurationEquals("rviz", "true"),
     )
 

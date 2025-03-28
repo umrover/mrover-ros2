@@ -10,15 +10,6 @@
     "cmake.automaticReconfigure": false,
     "cmake.debugConfig": {
         "miDebuggerPath": "/usr/bin/gdb",
-        "args": [
-            "--ros-args",
-            "--params-file",
-            "${workspaceFolder}/config/esw.yaml",
-            "--params-file",
-            "${workspaceFolder}/config/arm.yaml",
-            "--params-file",
-            "${workspaceFolder}/config/drive.yaml"
-        ]
     },
     //// Microsoft C++
     // Disable since clangd is used instead
