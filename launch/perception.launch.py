@@ -30,7 +30,7 @@ def generate_launch_description():
     key_detector_component = ComposableNode(
             package="mrover",
             plugin="mrover::ImageKeyDetector",
-            name="image_key_detector",
+            name="key_detector",
             parameters=[Path(get_package_share_directory("mrover"), "config", "perception.yaml")],
             extra_arguments=[{"use_intra_process_comms": True}],
             )

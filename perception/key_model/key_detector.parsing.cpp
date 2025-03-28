@@ -1,5 +1,6 @@
 #include "key_detector.hpp"
 #include <Eigen/src/Core/Matrix.h>
+#include <cassert>
 #include <opencv2/core/mat.hpp>
 #include <opencv2/core/matx.hpp>
 #include <opencv2/core/types.hpp>
@@ -33,9 +34,9 @@ namespace mrover {
         // Convert to correct color scheme
         cv::cvtColor(input, bgrImage, cv::COLOR_BGRA2BGR);
 
-        std::filesystem::path packagePath = std::filesystem::path{ament_index_cpp::get_package_prefix("mrover")} / ".." / ".." / "src" / "mrover" / "perception" / "key_detector" / "datasets" / "test" / "image" / "f91.png" ;
+        // std::filesystem::path packagePath = std::filesystem::path{ament_index_cpp::get_package_prefix("mrover")} / ".." / ".." / "src" / "mrover" / "perception" / "key_detector" / "datasets" / "test" / "image" / "f91.png" ;
 
-        bgrImage = cv::imread(packagePath.c_str(), cv::IMREAD_COLOR);
+        // bgrImage = cv::imread(packagePath.c_str(), cv::IMREAD_COLOR);
 
         static constexpr float SCALE_FACTOR = 1.0f;
         static constexpr std::size_t CHANNELS = 3;
@@ -89,7 +90,7 @@ namespace mrover {
 
         auto C = uvBasis * xyBasis.inverse();
 
-        static constexpr float RESOLUTION = 2.0f;
+        static constexpr float RESOLUTION = 1.0f;
         static constexpr float WIDTH = 640;
         static constexpr float HEIGHT = 480;
 
@@ -160,9 +161,6 @@ namespace mrover {
             // Determine if the class is an acceptable confidence level, otherwise disregard
             if (maxClassScore <= mModelScoreThreshold) continue;
 
-            confidences.push_back(static_cast<float>(maxClassScore));
-            classIds.push_back(classId.x);
-
             // Get the bounding box data
             cv::Mat box = output.row(r).colRange(0, 4);
             auto x = box.at<float>(0);
@@ -171,13 +169,19 @@ namespace mrover {
             auto h = box.at<float>(3);
 
             // Cast the corners into integers to be used on pixels
-            auto left = static_cast<int>((x - 0.5 * w) * xFactor);
-            auto top = static_cast<int>((y - 0.5 * h) * yFactor);
-            auto width = static_cast<int>(w * xFactor);
-            auto height = static_cast<int>(h * yFactor);
+            auto left = std::min(std::max(static_cast<int>((x - 0.5 * w) * xFactor), 0), 640 - 1);
+            auto top = std::min(std::max(static_cast<int>((y - 0.5 * h) * yFactor), 0), 480 - 1);
+            auto width = std::min(static_cast<int>(w * xFactor), (640 - 1) - left);
+            auto height = std::min(static_cast<int>(h * yFactor), (480 - 1) - top);
+            
+            // only push back if there is a width and height
+            if(!width || !height)
+                continue;
 
             // Push abck the box into storage
             boxes.emplace_back(left, top, width, height);
+            confidences.push_back(static_cast<float>(maxClassScore));
+            classIds.push_back(classId.x);
         }
 
         //Coalesce the boxes into a smaller number of distinct boxes
@@ -208,21 +212,25 @@ namespace mrover {
             }
     }
 
-    auto KeyDetectorBase::matchKeyDetections(cv::Mat const& gradient, std::vector<Detection> const& _detections) -> void{
-        // fake data
-        // TODO: remove
-        std::vector<Detection> detections;
-        detections.emplace_back(0, "test0", 0.4 ,cv::Rect(111, 222, 20, 30));
-        detections.emplace_back(0, "test1", 0.2 ,cv::Rect(222, 111, 32, 12));
+    auto KeyDetectorBase::matchKeyDetections(cv::Mat const& gradient, std::vector<Detection>& detections) -> void{
+        // assert that all bounding boxes are inside the image
+        for(auto const& det : detections){
+            RCLCPP_INFO_STREAM(get_logger(), "Detection X: " << det.box.x << " Y: " << det.box.y << " W: " << det.box.width << " H: " << det.box.height);
+            assert(det.box.tl().x >= 0);
+            assert(det.box.tl().y >= 0);
+            assert(det.box.br().x < mParsingSize.width);
+            assert(det.box.br().y < mParsingSize.height);
+            assert(det.box.width);
+            assert(det.box.height);
+        }
 
-        // resize the mask to be 640 by 640
-        static cv::Mat resizedGradient;
-        cv::resize(gradient, resizedGradient, cv::Size{256, 256});
+        // assert the gradient is the expected size
+        assert(gradient.rows == 480);
+        assert(gradient.cols == 640);
 
         // For each of the bounding boxes, find the median red and blue
         std::vector<cv::Vec2f> medians;
         medians.reserve(detections.size());
-        int index = 0;
         for(auto const& detect : detections){
             int x = detect.box.x;
             int y = detect.box.y;
@@ -238,7 +246,7 @@ namespace mrover {
             // Streaming Median Algorithm: See https://www.geeksforgeeks.org/median-of-stream-of-integers-running-integers/
             for(int h = 0; h < height; ++h){
                 for(int w = 0; w < width; ++w){
-                    auto const& v = resizedGradient.at<cv::Vec3f>(y + h, x + w);
+                    auto const& v = gradient.at<cv::Vec3f>(y + h, x + w);
 
                     // Update each pq
                     updateMedians(blueMaxHeap, blueMinHeap, v.val[0]);
@@ -257,8 +265,6 @@ namespace mrover {
 
             float blueMedian = 255 * findMedian(blueMaxHeap, blueMinHeap);
             float greenMedian = 255 * findMedian(greenMaxHeap, greenMinHeap);
-
-            RCLCPP_INFO_STREAM(get_logger(), ++index << " BRO " << blueMedian << " " << greenMedian);
 
             medians.emplace_back(blueMedian, greenMedian);
         }
@@ -353,6 +359,96 @@ namespace mrover {
             cv::Vec2f(5, 230)
         };
 
+        static const std::array<std::string, 87> keyNames {
+            "lalt",
+            "space",
+            "ralt",
+            "fn",
+            "menu",
+            "rctrl",
+            "left",
+            "X",
+            "C",
+            "down",
+            "V",
+            "right",
+            "B",
+            "N",
+            "M",
+            "<",
+            ">",
+            "?",
+            "S",
+            "rshift",
+            "D",
+            "up",
+            "F",
+            "G",
+            "H",
+            "J",
+            "K",
+            "L",
+            ";",
+            "W",
+            "\"",
+            "E",
+            "R",
+            "enter",
+            "T",
+            "Y",
+            "U",
+            "I",
+            "O",
+            "3",
+            "P",
+            "[",
+            "4",
+            "]",
+            "5",
+            "|",
+            "6",
+            "end",
+            "del",
+            "pg dn",
+            "7",
+            "8",
+            "9",
+            "f1",
+            "0",
+            "f2",
+            "-",
+            "f3",
+            "+",
+            "f4",
+            "back",
+            "pg up",
+            "home",
+            "insert",
+            "f5",
+            "f6",
+            "f7",
+            "f8",
+            "f9",
+            "f10",
+            "f11",
+            "f12",
+            "pause",
+            "print",
+            "lock",
+            "lctrl",
+            "windows",
+            "lshift",
+            "Z",
+            "caps",
+            "A",
+            "Q",
+            "2",
+            "ltab",
+            "1",
+            "`",
+            "esc"
+        };
+
         // create distance matrix between each of the detection and every known key
         // 0 - weight between 1st source & 1st target (W11)
         // 1 - weight between 1st source & 2nd target (W12)
@@ -372,12 +468,6 @@ namespace mrover {
             }
         }
 
-        static Eigen::VectorXf prevWeights = weights;
-
-        RCLCPP_INFO_STREAM(get_logger(), "Weights equality " << (prevWeights == weights));
-
-        prevWeights = weights;
-
         // create targets vector
         // flat array of n of the colors vectors augmented together
         Eigen::VectorXf targets(2 * medians.size() * colors.size());
@@ -390,12 +480,6 @@ namespace mrover {
                 }
             }
         }
-
-        static Eigen::VectorXf prevTargets = targets;
-
-        RCLCPP_INFO_STREAM(get_logger(), "Targets equality " << (prevTargets == targets));
-
-        prevTargets = targets;
 
         // create the P matrix
         Eigen::MatrixXf P(2 * colors.size() * medians.size(), 6);
@@ -423,32 +507,93 @@ namespace mrover {
             }
         }
 
-        static Eigen::MatrixXf prevP = P;
+        Eigen::VectorXf y = P.colPivHouseholderQr().solve(targets);
+        float a = y(0), b = y(1), c = y(2), d = y(3), tx = y(4), ty = y(5);
 
-        RCLCPP_INFO_STREAM(get_logger(), "P equality " << (prevP == P));
+        Eigen::Matrix3f A;
+        A <<    a, b, tx,
+                c, d, ty,
+                0.0f, 0.0f, 1.0f;
 
-        prevP = P;
-
-        // find the least sqaures solution
-
-        Eigen::MatrixXd A(3, 2);
-        Eigen::VectorXd b(3);
-        
-        // Fixed input for testing
-        A << 1, 2,
-             3, 4,
-             5, 6;
-        b << 7, 8, 9;
-        
-        for (int i = 0; i < 10; ++i) {
-            // Ensure that A and b are not modified unexpectedly between iterations
-            Eigen::VectorXd x = A.colPivHouseholderQr().solve(b);
-            Eigen::VectorXf y = P.colPivHouseholderQr().solve(targets);
-
-            RCLCPP_INFO_STREAM(get_logger(), "Iteration " << i << " solution: " << y.transpose());
-            // Print the solution for each iteration
-            RCLCPP_INFO_STREAM(get_logger(), "Iteration " << i << " solution: " << x.transpose());
+        //                                        vvv this is dim(point) + 1
+        Eigen::MatrixXf results(medians.size(), 3);
+        for(std::size_t r = 0; r < medians.size(); ++r){
+            Eigen::Vector3f v{medians[r].val[0], medians[r].val[1], 1.0f};
+            Eigen::Vector3f row = A * v;
+            for(std::size_t c = 0; c < 3; ++c){
+                results(static_cast<int>(r), static_cast<int>(c)) = row(static_cast<int>(c));
+            }
         }
+
+        // create a cost matrix between all transformed points and the colors
+        Eigen::MatrixXf cost(medians.size(), colors.size());
+        for(std::size_t r = 0; r < medians.size(); ++r){
+            for(std::size_t c = 0; c < colors.size(); ++c){
+                cost(static_cast<int>(r), static_cast<int>(c)) = static_cast<float>(std::sqrt(std::pow(results(static_cast<int>(r), 0) - colors[c].val[0], 2) + std::pow(results(static_cast<int>(r), 1) - colors[c].val[1], 2)));
+            }
+        }
+
+        auto keyAssignments = hungarian(cost);
+
+        std::size_t index = 0;
+        for(auto const& key : keyAssignments){
+            RCLCPP_INFO_STREAM(get_logger(), "first " << key.first << " second " << key.second);
+            if(key.first != -1){
+                detections[index].className = keyNames[key.second];
+                RCLCPP_INFO_STREAM(get_logger(), "Key " << keyNames[key.second]);
+                ++index;
+            }
+        }
+    }
+
+    template <class T>
+    auto ckmin(T &a, const T &b) -> bool {
+        return b < a ? a = b, 1 : 0;
+    }
+
+    auto KeyDetectorBase::hungarian(const Eigen::MatrixXf &C) -> std::vector<std::pair<int, int>> {
+        const int J = static_cast<int>(C.rows()), W = static_cast<int>(C.cols());
+        assert(J <= W);
+
+        std::vector<int> job(W + 1, -1);
+        std::vector<float> ys(J), yt(W + 1);  // potentials
+        const float inf = std::numeric_limits<float>::max();
+        for (int j_cur = 0; j_cur < J; ++j_cur) {  // assign j_cur-th job
+            int w_cur = W;
+            job[w_cur] = j_cur;
+
+            std::vector<float> min_to(W + 1, inf);
+            std::vector<int> prv(W + 1, -1);
+            std::vector<bool> in_Z(W + 1);
+
+            while (job[w_cur] != -1) {   // runs at most j_cur + 1 times
+                in_Z[w_cur] = true;
+                const int j = job[w_cur];
+                float delta = inf;
+                int w_next;
+                for (int w = 0; w < W; ++w) {
+                    if (!in_Z[w]) {
+                        if (ckmin(min_to[w], C(j, w) - ys[j] - yt[w]))
+                            prv[w] = w_cur;
+                        if (ckmin(delta, min_to[w])) w_next = w;
+                    }
+                }
+                for (int w = 0; w <= W; ++w) {
+                    if (in_Z[w]) ys[job[w]] += delta, yt[w] -= delta;
+                    else min_to[w] -= delta;
+                }
+                w_cur = w_next;
+            }
+
+            for (int w; w_cur != W; w_cur = w) job[w_cur] = job[w = prv[w_cur]];
+        }
+
+        std::vector<std::pair<int, int>> result;
+        for (size_t i = 0; i < job.size() - 1; ++i) {
+            result.emplace_back(job[i], i);
+        }
+
+        return result;
     }
 
     auto KeyDetectorBase::changeOfBasis(R2f const& p1, R2f const& p2, R2f const& p3, R2f const& p4) -> Eigen::Matrix3f{

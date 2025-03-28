@@ -54,3 +54,8 @@ cost_map:
     z_percent: 0.1
     alpha: 0.05
     z_threshold: 0.0
+
+key_detector:
+  ros__parameters:
+    yolo_model_score_threshold: 0.1
+    yolo_model_nms_threshold: 0.1

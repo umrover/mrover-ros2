@@ -49,13 +49,11 @@ namespace mrover {
 
         ParameterWrapper::declareParameters(this, params);
 
-        mDebugImgPub = create_publisher<sensor_msgs::msg::Image>("/long_range_object_detector/debug_img", 1);
+        mDebugImgPub = create_publisher<sensor_msgs::msg::Image>("/key_detector/debug_img", 1);
 
         mSensorSub = create_subscription<sensor_msgs::msg::Image>("/long_range_cam/image", 1, [this](sensor_msgs::msg::Image::ConstSharedPtr const& msg) {
             ImageKeyDetector::imageCallback(msg);
         });
-
-        mTargetsPub = create_publisher<mrover::msg::ImageTargets>("objects", 1);
     }
 } // namespace mrover
 
