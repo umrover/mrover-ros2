@@ -13,7 +13,7 @@ namespace mrover {
     // Counts (ticks) per radian (NOT per rotation)
     using CountsPerRad = compound_unit<Ticks, inverse<Radians>>;
 
-    constexpr auto RELATIVE_CPR = CountsPerRad{3355 / TAU_F};      // Measured empirically from the devboard
+    constexpr auto RELATIVE_CPR = CountsPerRad{46.85f / TAU_F};    // Corresponds to the Pololu 4865
     constexpr auto ABSOLUTE_CPR = CountsPerRad{(1 << 14) / TAU_F}; // Corresponds to the AS5048B
 
     // NOTE: Change This For Each Motor Controller

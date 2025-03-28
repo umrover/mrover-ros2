@@ -56,6 +56,7 @@ namespace mrover {
         RunningMeanFilter<RadiansPerSecond, 16> m_velocity_filter;
     };
 
+
     class QuadratureEncoderReader {
     public:
         QuadratureEncoderReader() = default;
@@ -74,7 +75,7 @@ namespace mrover {
         TIM_HandleTypeDef* m_tick_timer{};
         ElapsedTimer m_elapsed_timer;
 
-        std::int64_t m_counts_unwrapped_prev{};
+        std::uint16_t m_counts_unwrapped_prev{};
         Ratio m_multiplier;
 
         Radians m_position;
