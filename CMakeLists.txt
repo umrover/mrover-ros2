@@ -42,7 +42,7 @@ if (CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
         find_program(LLD_PROGRAM lld)
         if (LLD_PROGRAM)
             message(STATUS "Using lld linker")
-            add_link_options(-fuse-ld=lld-18)
+	    #add_link_options(-fuse-ld=lld-18)
         endif()
     endif ()
 endif ()
@@ -119,7 +119,7 @@ if (NOT manif_FOUND)
 
         set(manif_FOUND TRUE)
     else()
-        message(FATAL_ERROR "Manif not found. If on Ubuntu install with 'sudo apt install -f ./pkg/libmanif-dev.deb'. Or build from source with 'git submodule update --init deps/manif' and make sure it is non-empty")
+        message(FATAL_ERROR "Manif not found. If on Ubuntu install with 'sudo apt install -f ./pkg/libmanif-dev.deb'. Or build from source with 'submodule update --init deps/manif' and make sure it is non-empty")
     endif()
 endif()
 
@@ -271,7 +271,7 @@ if(ZED_FOUND AND CUDA_FOUND)
     mrover_add_library(tensorrt tensorrt/*.c* tensorrt)
     target_compile_options(tensorrt PRIVATE -Wno-deprecated-declarations $<$<COMPILE_LANGUAGE:CUDA>:-std=c++17>)
     target_include_directories(tensorrt PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
-    target_link_libraries(tensorrt PRIVATE opencv_core opencv_dnn opencv_imgproc lie nvinfer nvonnxparser tbb cuda_compiler_flags)
+    target_link_libraries(tensorrt opencv_core opencv_dnn opencv_imgproc lie nvinfer nvonnxparser tbb cuda_compiler_flags)
 
     # Object Detector
     mrover_add_component(object_detector perception/object_detector/*.c* perception/object_detector/pch.hpp StereoObjectDetector ImageObjectDetector)
@@ -293,10 +293,30 @@ mrover_executable_from_component(stereo_tag_detector perception/executables/ster
 mrover_executable_from_component(image_tag_detector perception/executables/image_tag_detector.cpp tag_detector_component)
 
 # Embedded
+mrover_add_header_only_library(messaging esw/messaging)
 
-mrover_add_node(differential_drive_controller esw/differential_drive_controller.cpp)
-target_link_libraries(differential_drive_controller units)
-ament_target_dependencies(differential_drive_controller rclcpp)
+mrover_add_header_only_library(can_device esw/can_device)
+target_link_libraries(can_device INTERFACE ${rclcpp_LIBRARIES})
+
+mrover_add_library(motor_library esw/motor_library/*.cpp esw/motor_library)
+ament_target_dependencies(motor_library rclcpp std_srvs)
+target_link_libraries(motor_library can_device moteus units messaging parameter_utils)
+
+macro(mrover_add_esw_bridge_node name sources)
+    mrover_add_node(${name} ${sources})
+    ament_target_dependencies(${name} rclcpp std_srvs)
+    target_link_libraries(${name} can_device units messaging)
+endmacro()
+
+macro(mrover_add_esw_motor_bridge_node name sources)
+    mrover_add_esw_bridge_node(${name} ${sources})
+    target_link_libraries(${name} motor_library)
+endmacro()
+
+
+mrover_add_esw_motor_bridge_node(drive_hw_bridge esw/drive_hw_bridge.cpp)
+mrover_add_esw_motor_bridge_node(arm_hw_bridge esw/arm_hw_bridge.cpp)
+mrover_add_esw_bridge_node(differential_drive_controller esw/differential_drive_controller.cpp)
 
 mrover_add_node(arm_controller teleoperation/arm_controller/arm_controller.cpp teleoperation/arm_controller/pch.hpp)
 target_link_libraries(arm_controller lie)

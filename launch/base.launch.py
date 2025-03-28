@@ -1,4 +1,4 @@
-import os
+from pathlib import Path
 
 from ament_index_python import get_package_share_directory
 
@@ -18,14 +18,14 @@ def generate_launch_description():
         package="mrover",
         executable="differential_drive_controller",
         name="differential_drive_controller",
-        parameters=[os.path.join(get_package_share_directory("mrover"), "config", "esw.yaml")],
+        parameters=[Path(get_package_share_directory("mrover"), "config", "esw.yaml")],
     )
 
     superstructure_node = Node(
         package="mrover",
         executable="superstructure.py",
         name="superstructure",
-        parameters=[os.path.join(get_package_share_directory("mrover"), "config", "superstructure.yaml")],
+        parameters=[Path(get_package_share_directory("mrover"), "config", "superstructure.yaml")],
     )
 
     # TODO (ali): add LED

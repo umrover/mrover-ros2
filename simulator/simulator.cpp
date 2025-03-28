@@ -18,8 +18,6 @@ namespace mrover {
 
             mIkTargetPub = create_publisher<msg::IK>("arm_ik", 1);
 
-            mMotorTimeoutMs = get_parameter("motor_timeout").as_int();
-
             mIsHeadless = get_parameter("headless").as_bool();
             mEnablePhysics = mIsHeadless;
             {
