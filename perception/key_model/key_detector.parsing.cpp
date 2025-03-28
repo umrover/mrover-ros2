@@ -117,10 +117,6 @@ namespace mrover {
             }
         }
 
-        // Create an image from the keyboard gradient
-        // cv::Mat temp;
-        // output.convertTo(temp, CV_8UC3, 255.0);
-        // cv::cvtColor(temp, output, cv::COLOR_BGR2BGRA);
     }
 
     auto KeyDetectorBase::parseYOLOv8Output(Model const& model, cv::Mat& output, std::vector<Detection>& detections) const -> void {
@@ -536,11 +532,12 @@ namespace mrover {
         auto keyAssignments = hungarian(cost);
 
         std::size_t index = 0;
-        for(auto const& key : keyAssignments){
+        for(std::size_t k = 0; k < keyAssignments.size(); ++k){
+            auto key = keyAssignments[k];
             RCLCPP_INFO_STREAM(get_logger(), "first " << key.first << " second " << key.second);
             if(key.first != -1){
-                detections[index].className = keyNames[key.second];
-                RCLCPP_INFO_STREAM(get_logger(), "Key " << keyNames[key.second]);
+                detections[key.first].className = keyNames[key.second];
+                RCLCPP_INFO_STREAM(get_logger(), "Key " << detections[key.first].className);
                 ++index;
             }
         }
@@ -592,6 +589,11 @@ namespace mrover {
         for (size_t i = 0; i < job.size() - 1; ++i) {
             result.emplace_back(job[i], i);
         }
+        auto pairLess = [&](std::pair<int, int> const& lhs, std::pair<int, int> const& rhs){
+            return lhs.first < rhs.first;
+        };
+
+        std::sort(std::begin(result), std::end(result), pairLess);
 
         return result;
     }

@@ -69,6 +69,7 @@ namespace mrover {
         sensor_msgs::msg::Image mDetectionsImageMessage;
 
         rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr mDebugImgPub;
+        rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr mDebugGradientPub;
 
         int mObjIncrementWeight{};
         int mObjDecrementWeight{};
@@ -87,7 +88,7 @@ namespace mrover {
                               std::span<Detection const> detections,
                               cv::Size const& imageSize = {640, 640}) -> void;
 
-        auto publishDetectedObjects(cv::InputArray const& image) -> void;
+        auto publishDetectedObjects(cv::InputArray const& image, rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr& pub) -> void;
 
         auto drawDetectionBoxes(cv::InputOutputArray& image, std::span<Detection const> detections) const -> void;
 

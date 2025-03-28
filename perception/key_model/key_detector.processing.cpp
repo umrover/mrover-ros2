@@ -59,7 +59,7 @@ namespace mrover {
         }
     }
 
-    auto KeyDetectorBase::publishDetectedObjects(cv::InputArray const& image) -> void {
+    auto KeyDetectorBase::publishDetectedObjects(cv::InputArray const& image, rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr& pub) -> void {
         mDetectionsImageMessage.header.stamp = get_clock()->now();
         mDetectionsImageMessage.height = image.rows();
         mDetectionsImageMessage.width = image.cols();
@@ -69,7 +69,7 @@ namespace mrover {
         mDetectionsImageMessage.data.resize(mDetectionsImageMessage.step * mDetectionsImageMessage.height);
         std::memcpy(mDetectionsImageMessage.data.data(), image.getMat().data, mDetectionsImageMessage.data.size());
 
-        mDebugImgPub->publish(mDetectionsImageMessage);
+        pub->publish(mDetectionsImageMessage);
     }
 
     auto ImageKeyDetector::imageCallback(sensor_msgs::msg::Image::ConstSharedPtr const& msg) -> void {
@@ -82,13 +82,13 @@ namespace mrover {
 
         cv::Mat bgraImage{static_cast<int>(msg->height), static_cast<int>(msg->width), CV_8UC4, const_cast<uint8_t*>(msg->data.data())};
 
-        // cv::Mat temp;
+        //cv::Mat temp;
 
-        // std::filesystem::path packagePath = std::filesystem::path{ament_index_cpp::get_package_prefix("mrover")} / ".." / ".." / "src" / "mrover" / "perception" / "key_detector" / "datasets" / "test" / "image" / "f91.png" ;
+        //std::filesystem::path packagePath = std::filesystem::path{ament_index_cpp::get_package_prefix("mrover")} / ".." / ".." / "src" / "mrover" / "perception" / "key_detector" / "datasets" / "test" / "image" / "f91.png" ;
 
-        // temp = cv::imread(packagePath.c_str(), cv::IMREAD_COLOR);
+        //temp = cv::imread(packagePath.c_str(), cv::IMREAD_COLOR);
 
-        // cv::cvtColor(temp, bgraImage, cv::COLOR_BGR2BGRA);
+        //cv::cvtColor(temp, bgraImage, cv::COLOR_BGR2BGRA);
 
         // Convert the RGB Image into the blob Image format
         mKeyDetectionModel.preprocess(mKeyDetectionModel, bgraImage, mImageBlob);
@@ -106,7 +106,10 @@ namespace mrover {
 
         parseYOLOv8Output(mKeyDetectionModel, outputTensor, detections);
 
-        
+        // TODO: remove this
+        for(auto const& det : detections){
+            RCLCPP_INFO_STREAM(get_logger(), "[" << det.box.tl().x << ", " << det.box.tl().y << ", " << det.box.width << ", " << det.box.height << "]");
+        }
 
         // Text Coords Inference
         mTextCoordsTensorRT.modelForwardPass(mTextCoordsBlob, outputTensor);
@@ -115,7 +118,15 @@ namespace mrover {
 
         matchKeyDetections(outputTensor, detections);
 
-        //publishDetectedObjects(outputTensor);
+        {
+            // Create an image from the keyboard gradient
+            cv::Mat temp;
+            cv::Mat temp2;
+            outputTensor.convertTo(temp, CV_8UC3, 255.0);
+            cv::cvtColor(temp, temp2, cv::COLOR_BGR2BGRA);
+
+            publishDetectedObjects(temp2, mDebugGradientPub);
+        }
 
         mLoopProfiler.measureEvent("Execution");
 
@@ -129,7 +140,7 @@ namespace mrover {
 
         drawDetectionBoxes(bgraImage, detections);
         if (mDebug) {
-            publishDetectedObjects(bgraImage);
+            publishDetectedObjects(bgraImage, mDebugImgPub);
         }
 
         mLoopProfiler.measureEvent("Publication");

@@ -50,6 +50,7 @@ namespace mrover {
         ParameterWrapper::declareParameters(this, params);
 
         mDebugImgPub = create_publisher<sensor_msgs::msg::Image>("/key_detector/debug_img", 1);
+        mDebugGradientPub = create_publisher<sensor_msgs::msg::Image>("/key_detector/gradient_img", 1);
 
         mSensorSub = create_subscription<sensor_msgs::msg::Image>("/long_range_cam/image", 1, [this](sensor_msgs::msg::Image::ConstSharedPtr const& msg) {
             ImageKeyDetector::imageCallback(msg);
