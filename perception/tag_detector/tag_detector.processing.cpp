@@ -125,6 +125,15 @@ namespace mrover {
     auto TagDetectorBase::publishDetectedTags() -> void {
         if (mDetectedImagePub->get_subscription_count()) {
             cv::aruco::drawDetectedMarkers(mBgrImage, mImmediateCorners, mImmediateIds);
+
+            for (size_t i = 0; i < mImmediateCorners.size(); ++i) {
+                for (size_t j = 0; j < 4; ++j) {
+                    cv::line(mBgrImage, mImmediateCorners[i][j], mImmediateCorners[i][(j + 1) % 4], cv::Scalar(0, 255, 0), 5);
+                }
+            }
+
+            cv::aruco::drawDetectedMarkers(mBgrImage, mImmediateCorners, mImmediateIds);
+
             // Max number of tags the hit counter can display = 10;
             if (!mTags.empty()) {
                 // TODO: remove some magic numbers in this block

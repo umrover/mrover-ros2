@@ -14,5 +14,5 @@
     hitcount_threshold: 5
     hitcount_max: 10
     model_name: "Large-Dataset"
-    model_score_threshold: 0.75
-    model_nms_threshold: 0.5
+    model_score_threshold: 0.2
+    model_nms_threshold: 0.3

@@ -76,7 +76,7 @@ namespace mrover {
 
         mTargetsPub = create_publisher<msg::ImageTargets>("/tags", 1);
 
-        mImageSub = create_subscription<sensor_msgs::msg::Image>("/long_range_cam/image", 1, [this](sensor_msgs::msg::Image::ConstSharedPtr const& msg) {
+        mImageSub = create_subscription<sensor_msgs::msg::Image>("/stereo_object_detector/debug_img", 1, [this](sensor_msgs::msg::Image::ConstSharedPtr const& msg) {
             imageCallback(msg);
         });
     }

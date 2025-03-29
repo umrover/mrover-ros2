@@ -35,20 +35,6 @@ def generate_launch_description():
             ),
             ComposableNode(
                 package="mrover",
-                plugin="mrover::StereoTagDetector",
-                name="stereo_tag_detector",
-                parameters=[Path(get_package_share_directory("mrover"), "config", "perception.yaml")],
-                extra_arguments=[{"use_intra_process_comms": True}],
-            ),
-            ComposableNode(
-                package="mrover",
-                plugin="mrover::ImageObjectDetector",
-                name="image_object_detector",
-                parameters=[Path(get_package_share_directory("mrover"), "config", "perception.yaml")],
-                extra_arguments=[{"use_intra_process_comms": True}],
-            ),
-            ComposableNode(
-                package="mrover",
                 plugin="mrover::StereoObjectDetector",
                 name="stereo_object_detector",
                 parameters=[Path(get_package_share_directory("mrover"), "config", "perception.yaml")],

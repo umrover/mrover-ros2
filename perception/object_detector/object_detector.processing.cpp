@@ -61,7 +61,7 @@ namespace mrover {
             std::size_t centerXInImage = std::lround(centerInBlob.x * xRatio);
             std::size_t centerYInImage = std::lround(centerInBlob.y * yRatio);
 
-            assert(static_cast<std::size_t>(classId) < mObjectHitCounts.size());
+            // assert(static_cast<std::size_t>(classId) < mObjectHitCounts.size());
 
             if (seenObjects[classId]) return;
 
@@ -97,7 +97,7 @@ namespace mrover {
         for (std::size_t i = 0; i < seenObjects.size(); i++) {
             if (seenObjects[i]) continue;
 
-            assert(i < mObjectHitCounts.size());
+            // assert(i < mObjectHitCounts.size());
             mModel.objectHitCounts[i] = std::max(0, mModel.objectHitCounts[i] - mObjDecrementWeight);
         }
     }
@@ -137,16 +137,22 @@ namespace mrover {
         return std::nullopt;
     }
 
-    auto ObjectDetectorBase::drawDetectionBoxes(cv::InputOutputArray image, std::span<Detection const> detections) -> void {
+    auto ObjectDetectorBase::drawDetectionBoxes(cv::InputOutputArray &image, std::span<Detection const> detections) -> void {
         // Draw the detected object's bounding boxes on the image for each of the objects detected
+        float scale = 1280.0/720;
+        cv::resize(image, image, cv::Size(), scale, 1);
+
         std::array const fontColors{cv::Scalar{0, 4, 227}, cv::Scalar{232, 115, 5}};
         for (std::size_t i = 0; i < detections.size(); i++) {
             // Font color will change for each different detection
             cv::Scalar const& fontColor = fontColors.at(detections[i].classId);
-            cv::rectangle(image, detections[i].box, fontColor, 1, cv::LINE_8, 0);
+            cv::Rect box = detections[i].box;
+            box.width *= scale;
+            box.x *= scale;
+            cv::rectangle(image, box, fontColor, 5, cv::LINE_8, 0);
 
             // Put the text on the image
-            cv::Point textPosition(80, static_cast<int>(80 * (i + 1)));
+            cv::Point textPosition(box.x, box.y - 10);
             constexpr int fontSize = 1;
             constexpr int fontWeight = 2;
             putText(image, detections[i].className, textPosition, cv::FONT_HERSHEY_COMPLEX, fontSize, fontColor, fontWeight); // Putting the text in the matrix
