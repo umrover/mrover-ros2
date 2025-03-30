@@ -18,6 +18,12 @@ def generate_launch_description():
         PythonLaunchDescriptionSource(os.path.join(get_package_share_directory("mrover"), "launch/base.launch.py"))
     )
 
+    launch_include_cameras = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            os.path.join(get_package_share_directory("mrover"), "launch/jetson_base_cameras.launch.py")
+        )
+    )
+
     launch_include_can = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             os.path.join(get_package_share_directory("mrover"), "launch/jetson_can.launch.py")
@@ -34,4 +40,4 @@ def generate_launch_description():
         ],
     )
 
-    return LaunchDescription([launch_include_base, launch_include_can, drive_hw_bridge_node])
+    return LaunchDescription([launch_include_base, launch_include_cameras, launch_include_can, drive_hw_bridge_node])
