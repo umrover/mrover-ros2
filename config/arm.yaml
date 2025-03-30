@@ -28,7 +28,7 @@ arm_hw_bridge:
       min_position: -0.9
       max_position: 0.0
       gear_ratio: 1.0
-      is_inverted: false
+      is_inverted: true
       driver_voltage: 12.0
       motor_max_voltage: 12.0
       quad_present: false
@@ -63,7 +63,7 @@ arm_hw_bridge:
       max_torque: 20.0
     gripper:
       gear_ratio: 47.0
-      is_inverted: true
+      is_inverted: false
       driver_voltage: 10.5
       motor_max_voltage: 12.0
       quad_present: true
