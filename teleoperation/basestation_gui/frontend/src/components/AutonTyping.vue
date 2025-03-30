@@ -96,11 +96,11 @@ export default {
   },
 
   watch: {
-    message(msg) {
-      if (msg.type == 'keyAction') { // TODO: where message needs to be assigned?
+    message: function(msg) {
+      if (msg.type == 'typing_feedback') {
         console.log('yeet');
-        this.currentKey = msg.currentKey;
-        this.currentState = msg.currentState;
+        this.currentKey = msg.current_key;
+        this.currentState = msg.current_state;
         this.updateLetterStates();
       }
     },
@@ -152,7 +152,7 @@ export default {
       }
     },
 
-    getLetterClass(state) {
+    getLetterClass(state: string) {
       if (!this.codeSent) return 'grey-cell'; // grey when not sent
 
       return {

@@ -15,23 +15,35 @@ class TypingTaskActionClient(Node):
 
     def send_code(self, code):
         from backend.consumers import GUIConsumer
-        # self.get_logger().info(f"code in typingtask client: {code}")
         if isinstance(self.websocket, GUIConsumer):
             goal_msg = KeyAction.Goal()
             goal_msg.code = code
-            self.node.get_logger    
 
-        self._action_client.wait_for_server()
+            # self._action_client.wait_for_server()
 
-        return self._action_client.send_goal_async(goal_msg, feedback_callback=self.feedback_callback)
+            send_goal_future = self._action_client.send_goal_async(goal_msg, feedback_callback=self.feedback_callback)
+            send_goal_future.add_done_callback(self.goal_response_callback)
+            
+            return send_goal_future
+        
+    def goal_response_callback(self, future):
+        goal_handle = future.result()
+        if not goal_handle.accepted:
+            self.get_logger().warn("goal rejected")
+            return
+        self.get_logger().info("goal accepted")
     
     def feedback_callback(self, feedback_msg):
-        current_key = feedback_msg.key
-        current_state = feedback_msg.state
-        self.get_logger().info('Received feedback')
+        feedback = feedback_msg.feedback
+        current_key = feedback.key
+        current_state = feedback.state
+        self.get_logger().info(message=f'Received feedback: {current_key}, {current_state}')
         self.websocket.send_message_as_json(
-            {'currentKey': current_key, 
-            'currentState': current_state}
+            {
+                'type': 'typing_feedback',
+                'current_key': current_key, 
+                'current_state': current_state,
+            }
         )
 
     def shutdown(self):
