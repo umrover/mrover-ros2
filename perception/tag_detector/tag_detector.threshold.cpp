@@ -9,7 +9,7 @@ namespace mrover {
         cv::adaptiveThreshold(in, out, 255, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV, windowSize, constant);
     }
 
-    auto TagDetectorNodeletBase::publishThresholdedImage() -> void {
+    auto TagDetectorBase::publishThresholdedImage() -> void {
         cvtColor(mBgrImage, mGrayImage, cv::COLOR_BGR2GRAY);
 
         // Number of window sizes (scales) to apply adaptive thresholding

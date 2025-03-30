@@ -12,6 +12,23 @@ from launch.conditions import LaunchConfigurationEquals
 
 def generate_launch_description():
 
+    container = ComposableNodeContainer(
+        name="perception",
+        namespace="",
+        package="rclcpp_components",
+        executable="component_container_mt",
+        composable_node_descriptions=[
+            ComposableNode(
+                package="mrover",
+                plugin="mrover::ZedWrapper",
+                name="zed_component",
+                parameters=[Path(get_package_share_directory("mrover"), "config", "zed.yaml")],
+                extra_arguments=[{"use_intra_process_comms": True}],
+            ),
+        ],
+        output="screen",
+    )
+
     rover_gps_driver_node = Node(
         package="mrover",
         executable="rover_gps_driver",
@@ -26,13 +43,6 @@ def generate_launch_description():
         parameters=[os.path.join(get_package_share_directory("mrover"), "config", "localization.yaml")],
     )
 
-    zed_node = Node(
-        package="mrover",
-        executable="zed",
-        name="zed_wrapper",
-        parameters=[os.path.join(get_package_share_directory("mrover"), "config", "zed.yaml")],
-    )
-
     iekf_se3_node = Node(
         package="mrover",
         executable="iekf_se3",
@@ -41,11 +51,9 @@ def generate_launch_description():
     )
 
     return LaunchDescription([
-        zed_node,
+        container,
         rover_gps_driver_node,
         gps_linearization_node,
         iekf_se3_node
 
     ])
-
-    # return LaunchDescription([zed_node])

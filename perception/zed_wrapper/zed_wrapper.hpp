@@ -69,7 +69,6 @@ namespace mrover {
         rclcpp::Publisher<sensor_msgs::msg::CameraInfo>::SharedPtr mLeftCamInfoPub;
         rclcpp::Publisher<sensor_msgs::msg::CameraInfo>::SharedPtr mRightCamInfoPub;
         rclcpp::Publisher<mrover::msg::Heading>::SharedPtr mMagHeadingPub;
-        rclcpp::Publisher<mrover::msg::FixStatus>::SharedPtr mMagHeadingStatusPub;
 
         // Thread
 
@@ -83,7 +82,7 @@ namespace mrover {
         auto pointCloudUpdateThread() -> void;
 
     public:
-        ZedWrapper();
+        explicit ZedWrapper(rclcpp::NodeOptions const& options = rclcpp::NodeOptions());
 
         ~ZedWrapper() override;
     };
