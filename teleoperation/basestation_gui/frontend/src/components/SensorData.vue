@@ -14,7 +14,7 @@
         <tbody>
             <tr>
             <th class='table-secondary'>Site {{ String.fromCharCode(site+65) }}</th>
-            <td v-for="val in Object.values(sensor_data)" :key="val">{{ val.toFixed(2) }}</td>
+            <td v-for="(val, index) in Object.values(sensor_data)" :key="index">{{val.toFixed(2)}}</td>
             </tr>
         </tbody>  
         </table>
@@ -56,10 +56,9 @@ import html2canvas from "html2canvas";
     ...mapState('websocket', ['message'])
   },
   created() {
-      window.setInterval();
-      this.interval = window.setInterval(() => {
-        this.randomizeSensorData();
-      })
+      // this.interval = window.setInterval(() => {
+      //   this.randomizeSensorData();
+      // }, 1000)
   },
   watch: {
     message(msg) {
@@ -85,12 +84,12 @@ import html2canvas from "html2canvas";
   },
 
   methods: {
-    randomizeSensorData() {
-          this.sensor_data.oxygen = (19.5 + Math.random() * 4);
-          this.sensor_data.uv = (1.5 + Math.random() * 0.5);
-          this.sensor_data.humidity = (68 + Math.random() * 4);
-          this.sensor_data.temp = (-2.8 + Math.random() * 2.8);
-    },
+    // randomizeSensorData() {
+    //       this.sensor_data.oxygen = (19.5 + Math.random() * 4);
+    //       this.sensor_data.uv = (1.5 + Math.random() * 0.5);
+    //       this.sensor_data.humidity = (68 + Math.random() * 4);
+    //       this.sensor_data.temp = (-2.8 + Math.random() * 2.8);
+    // },
     download() {
         // downloads screenshot of table
       const table = document.querySelector("#capture") as HTMLElement;

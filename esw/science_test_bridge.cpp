@@ -1,16 +1,13 @@
+#include <cstdint>
 #include <rclcpp/rclcpp.hpp>
 
 #include <mrover/msg/can.hpp>
 
-#include <messaging.hpp>
+#include <messaging_science.hpp>
+#include <sys/types.h>
 #include <units.hpp>
 
 namespace mrover {
-
-    union TestUnion {
-        double data;
-        char data_bytes[8];
-    };
 
     class ScienceTestBridge final : public rclcpp::Node {
 
@@ -19,12 +16,31 @@ namespace mrover {
         rclcpp::Publisher<msg::CAN>::SharedPtr scienceBPub;
 
     public:
-        ScienceTestBridge() : Node{"science_hw_bridge"} {
+        ScienceTestBridge() : Node{"science_test_bridge"} {
             scienceAPub = create_publisher<msg::CAN>("can/science_a/in", 10);
             scienceBPub = create_publisher<msg::CAN>("can/science_b/in", 10);
         }
 
-        void publishCanData() {
+        void publishSensorData(uint8_t id, float data) {
+            OutBoundScienceMessage scienceMessage = SensorData{id, data};
+            publishCanData(&scienceMessage);
+        }
+
+        void publishThermistorData(std::array<float, 2> temps) {
+            OutBoundScienceMessage scienceMessage = ThermistorData{temps};
+            publishCanData(&scienceMessage);
+        }
+
+        void publishHeaterData(std::array<bool, 2> on) {
+            HeaterStateData heaterStateData;
+            for (uint8_t i = 0; i < 2; i++) {
+                SET_BIT_AT_INDEX(heaterStateData.heater_state_info.on, i, on[i]);
+            }
+            OutBoundScienceMessage scienceMessage = heaterStateData;
+            publishCanData(&scienceMessage);
+        }
+
+        void publishCanData(OutBoundScienceMessage* testMessage) {
             msg::CAN msgA;
             msg::CAN msgB;
 
@@ -36,19 +52,20 @@ namespace mrover {
             msgB.destination = "jetson";
             msgB.reply_required = false;
 
-            TestUnion test_union;
-            test_union.data = 23.45;
+            auto bytePtr = reinterpret_cast<uint8_t*>(testMessage);
+            std::array<uint8_t, sizeof(OutBoundScienceMessage)> byteArray;
+            std::copy(bytePtr, bytePtr + sizeof(OutBoundScienceMessage), byteArray.begin());
 
-            msgA.data.push_back(1);
-            msgB.data.push_back(1);
+            msgA.data.resize(byteArray.size());
+            msgB.data.resize(byteArray.size());
 
-            for (uint8_t i = 0; i < 8; i++) {
-                msgA.data.push_back(test_union.data_bytes[i]);
-                msgB.data.push_back(test_union.data_bytes[i]);
+            for (uint8_t i = 0; i < byteArray.size(); i++) {
+                msgA.data.at(i) = byteArray[i];
+                msgB.data.at(i) = byteArray[i];
             }
 
             scienceAPub->publish(msgA);
-            scienceBPub->publish(msgB);
+            // scienceBPub->publish(msgB);
         }
     };
 
@@ -59,7 +76,9 @@ auto main(int argc, char** argv) -> int {
     rclcpp::Rate rate(10);
     mrover::ScienceTestBridge test_bridge;
     while (rclcpp::ok()) {
-        test_bridge.publishCanData();
+        test_bridge.publishSensorData(1, 23.45);
+        test_bridge.publishThermistorData({1.1,2.2});
+        test_bridge.publishHeaterData({0,1});
         rate.sleep();
     }
     rclcpp::shutdown();

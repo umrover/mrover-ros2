@@ -7,6 +7,8 @@
 #include <type_traits>
 #include <vector>
 
+#include "stm32g4xx_hal.h"
+
 #include "main.h"
 
 namespace mrover {
