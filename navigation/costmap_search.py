@@ -82,6 +82,12 @@ class CostmapSearchState(State):
         assert context.course is not None
         assert self.prev_pos is not None
 
+        approach_state = context.course.get_approach_state()
+        if approach_state is not None:
+            total_time = context.node.get_clock().now() - self.time_begin
+            context.node.get_logger().info(f"Total search time: {total_time.nanoseconds // 1000000000}")
+            return approach_state
+
         rover_in_map = context.rover.get_pose_in_map()
         assert rover_in_map is not None
 
@@ -111,7 +117,7 @@ class CostmapSearchState(State):
                 if self.traj.cur_pt + 3 < len(self.traj.coordinates)
                 else len(self.traj.coordinates)
             )
-            if context.node.get_parameter("search.display_markers").value:
+            if context.node.get_parameter("display_markers").value:
                 for i, coord in enumerate(self.traj.coordinates[start_pt:end_pt]):
                     self.marker_pub.publish(
                         gen_marker(context=context, point=coord, color=[1.0, 0.0, 0.0], id=i, lifetime=100)
@@ -131,7 +137,7 @@ class CostmapSearchState(State):
                 if self.traj.cur_pt + 3 < len(self.traj.coordinates)
                 else len(self.traj.coordinates)
             )
-            if context.node.get_parameter("search.display_markers").value:
+            if context.node.get_parameter("display_markers").value:
                 for i, coord in enumerate(self.traj.coordinates[start_pt:end_pt]):
                     self.marker_pub.publish(
                         gen_marker(context=context, point=coord, color=[1.0, 0.0, 0.0], id=i, lifetime=100)
@@ -171,12 +177,6 @@ class CostmapSearchState(State):
                 if self.traj.increment_point():
                     context.node.get_logger().info(f"Reached end of search spiral")
                     return waypoint.WaypointState()
-
-        # If our target object has been detected, approach it
-        if (context.env.current_target_pos()) is not None:
-            total_time = context.node.get_clock().now() - self.time_begin
-            context.node.get_logger().info(f"Total search time: {total_time.nanoseconds // 1000000000}")
-            return approach_target.ApproachTargetState()
 
         return self
 

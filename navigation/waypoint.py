@@ -197,11 +197,13 @@ class WaypointState(State):
                 return self
 
     def display_markers(self, context: Context):
-        if context.node.get_parameter("search.display_markers").value:
+        if context.node.get_parameter("display_markers").value:
             delete = Marker()
             delete.action = Marker.DELETEALL
             self.marker_pub.publish(delete)
             start_pt = self.waypoint_traj.cur_pt - 2 if self.waypoint_traj.cur_pt - 2 >= 0 else 0
             end_pt = min(self.waypoint_traj.cur_pt + 8, len(self.waypoint_traj.coordinates))
             for i, coord in enumerate(self.waypoint_traj.coordinates[start_pt:end_pt]):
-                self.marker_pub.publish(gen_marker(context=context, point=coord, color=[1.0, 0.0, 1.0], id=i, lifetime=2))
+                self.marker_pub.publish(
+                    gen_marker(context=context, point=coord, color=[1.0, 0.0, 1.0], id=i, lifetime=2)
+                )
