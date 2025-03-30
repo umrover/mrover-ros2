@@ -275,7 +275,11 @@ class GUIConsumer(JsonWebsocketConsumer):
 
                 case {"type": "ls_toggle", "enable": e}:
                     self.sa_enable_switch_srv.call(EnableBool.Request(enable=e))
-
+                # case {"type": "pano", "action": a}:
+                #     if(a == "start"):
+                #         # stuff
+                #     else:
+                #         # more stuff
                 case _:
                     node.get_logger().warning(f"Unhandled message: {message}")
         except:
