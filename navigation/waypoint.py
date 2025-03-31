@@ -198,14 +198,17 @@ class WaypointState(State):
         else:
             if self.time_no_search_wait is None:
                 self.time_no_search_wait = context.node.get_clock().now()
-            
+
             rover_pose = context.rover.get_pose_in_map()
             assert rover_pose is not None
             rover_position = rover_pose.translation()[:2]
 
             waypoint_position = context.course.current_waypoint_pose_in_map().translation()[:2]
-            if context.node.get_clock().now() - self.time_no_search_wait > Duration(seconds=self.NO_SEARCH_WAIT_TIME) \
-                or d_calc(rover_position, waypoint_position) < context.node.get_parameter("waypoint.stop_threshold").value*2:
+            if (
+                context.node.get_clock().now() - self.time_no_search_wait > Duration(seconds=self.NO_SEARCH_WAIT_TIME)
+                or d_calc(rover_position, waypoint_position)
+                < context.node.get_parameter("waypoint.stop_threshold").value * 2
+            ):
                 # We finished a regular waypoint, go onto the next one
                 if context.course.increment_waypoint():
                     return state.DoneState()
@@ -217,12 +220,11 @@ class WaypointState(State):
                 self.astar_traj = Trajectory(np.array([]))
                 self.waypoint_traj = Trajectory(np.array([]))
                 return self
-            
 
     def display_markers(self, context: Context):
         if context.node.get_parameter("display_markers").value:
             start_pt = self.waypoint_traj.cur_pt
-            end_pt = min(start_pt+5, len(self.waypoint_traj.coordinates))
+            end_pt = min(start_pt + 5, len(self.waypoint_traj.coordinates))
             for i, coord in enumerate(self.waypoint_traj.coordinates[:end_pt]):
                 if i >= start_pt:
                     self.marker_pub.publish(
