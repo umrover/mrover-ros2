@@ -39,7 +39,7 @@ long_range_cam:
   ros__parameters:
     width: 640
     height: 480
-    framerate: 30
+    framerate: 60
     device: "long_range_cam"
     watchdog_timeout: 1.0
     decode_jpeg_from_device: false

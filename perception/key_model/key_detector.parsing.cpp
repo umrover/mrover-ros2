@@ -205,10 +205,15 @@ namespace mrover {
     }
 
     auto KeyDetectorBase::matchKeyDetections(cv::Mat const& gradient, std::vector<Detection> const& detections) -> void{
-        /*
+        
         // For each of the bounding boxes, find the median red and blue
         int index = 0;
-        for(auto const& detect : detections){
+        //std::vector<cv::Point2d> source;
+
+        cv::Mat source(detections.size(), 2, 1);
+        //source.reserve(detections.size());
+        for(int i  = 0; i < detections.size(); i++){
+            auto detect = detections[i];
             int x = detect.box.x;
             int y = detect.box.y;
             int width = detect.box.width;
@@ -248,9 +253,51 @@ namespace mrover {
             float greenMedian = findMedian(greenMaxHeap, greenMinHeap);
             float redMedian = findMedian(redMaxHeap, redMinHeap);
 
+            source.at<double>(i, 0) = redMedian;
+            source.at<double>(i, 1) = greenMedian;
+
             RCLCPP_INFO_STREAM(get_logger(), ++index << " BRO " << blueMedian << " " << greenMedian << " " << redMedian);
         }
-            */
+
+        //int n = source.size();
+        //int m = cv_palette.size();
+
+        auto create_distance_matrix = [](cv::Mat source, cv::Mat palette) -> auto {
+            if (source.rows == 1)
+            {
+                return cv::Mat();
+            }
+
+            cv::Mat output = cv::Mat_(source.rows, palette.rows, 1);
+
+            for (int i = 0; i < source.rows; ++i)
+            {
+                for (int j = 0; j < palette.rows; ++j)
+                {
+                    auto diff = source.at<double>(i) - palette.at<double>(j);
+
+                    auto norm = cv::norm(diff, cv::NORM_L2);
+
+                    output.at<double>(i,j) = norm;
+                }
+            }
+
+            return output;
+        };
+
+        auto distance_matrix = create_distance_matrix(source, cv_palette);
+
+        std::cout << cv::norm(distance_matrix, cv::NORM_L2) << '\n';
+
+        
+
+        if(distance_matrix.empty())
+        {
+            return;
+        }
+
+
+        
     }
 
     auto KeyDetectorBase::changeOfBasis(R2f const& p1, R2f const& p2, R2f const& p3, R2f const& p4) -> Eigen::Matrix3f{

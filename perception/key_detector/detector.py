@@ -8,6 +8,7 @@ import time
 from keyrover import LabeledBBox, plot_bboxes, draw_textbox, ROOT_PATH, plot_yolo
 from keyrover.images.key_mask import keys_from_yolo
 from keyrover.images.texcoord import TexcoordImage
+from keyrover.datasets import KeyboardCornersDataset
 
 import os
 from typing import Final
@@ -56,10 +57,12 @@ class KeyDetector(Node):
             '/long_range_cam/image',
             self.imageCallback,
             1)
-
+    
         self.debug_img_pub = self.create_publisher(ROSImage, '/key_detector/img', 1)
 
         self.resize = transforms.Resize((256, 256))
+
+        self.test_dataset = KeyboardCornersDataset([], size=SIZE, version=dataset)
 
     def imageCallback(self, msg):
         self.get_logger().info("Image Callback...")
@@ -78,8 +81,6 @@ class KeyDetector(Node):
         bboxes = self.yolo_segmentation_model.predict(img_cv, conf=0.3, iou=0.3)[0]
         mask = self.corner_regression_model.predict(img)
 
-        # START HERE
-
         torchTime = (time.process_time() -start) * 1000
         start = time.process_time()
 
@@ -93,23 +94,35 @@ class KeyDetector(Node):
 
         source = np.array(list(texcoords.texcoords.values()))
 
+
+
         n = len(source)
         m = len(palette.colors)
         def create_distance_matrix(A, B):
             if len(A.shape) == 1:
                 return None
+            
+
+
             A = np.repeat(A[:, None, :], len(B), axis=1)
+            print("A's shape: ", A.shape)
+            print("B's shape: ", B.shape)
+
             return np.linalg.norm(A - B, axis=-1)
 
-        
+        # START HERE
 
         # source (n, 2)-vector of points in 2D
         # palette (m, 2)-vector of points in 2D
         # dist_matrix (n, m) matrix of pairwise distance between source & palette
         distance_matrix = create_distance_matrix(source, palette.colors)
 
+
         if(distance_matrix is None):
             return
+        
+
+        print("distance matrix:",  np.linalg.norm(distance_matrix))
 
         # ith row is the ith source point
         # jth column is weight between source and jth target point

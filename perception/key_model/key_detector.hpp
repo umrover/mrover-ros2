@@ -77,6 +77,14 @@ namespace mrover {
         float mModelScoreThreshold{};
         float mModelNMSThreshold{};
         bool mDebug{};
+        struct hashingFunction {
+            double operator()(const std::pair<double, double>& obj) const {
+                std::hash<int> double_hash;
+                return (53.0 + double_hash(obj.first)) * 53.0 + double_hash(obj.second);
+            }
+        };
+        std::unordered_map<std::pair<double, double>, std::string, hashingFunction> palette;
+        cv::Mat cv_palette;
 
         auto spiralSearchForValidPoint(sensor_msgs::msg::PointCloud2::ConstSharedPtr const& cloudPtr,
                                        std::size_t u, std::size_t v,
@@ -129,4 +137,6 @@ namespace mrover {
 
         auto imageCallback(sensor_msgs::msg::Image::ConstSharedPtr const& msg) -> void;
     };
+
+
 } // namespace mrover

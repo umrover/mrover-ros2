@@ -347,6 +347,7 @@ install(PROGRAMS
     localization/basestation_gps_driver.py
     superstructure/superstructure.py
     perception/key_detector/detector.py
+    perception/key_detector/fixed_image_topic.py
     scripts/debug_course_publisher.py
     scripts/visualizer.py
     scripts/image_capture.py
