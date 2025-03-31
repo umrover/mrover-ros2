@@ -16,10 +16,11 @@ from rclpy.executors import ExternalShutdownException
 
 
 class ImageCapture(Node):
-    def __init__(self) -> None:
+    def __init__(self, topic) -> None:
         super().__init__("image_capture")
 
-        self.image_sub = self.create_subscription(Image, "/zed/left/image", self.save_image, 1)
+        self.image_sub = self.create_subscription(Image, topic, self.save_image, 1)
+        self.get_logger().info(f"Creating a subscriber on {topic}")
 
     def save_image(self, msg: Image):
         img = np.frombuffer(msg.data, dtype=np.uint8).reshape(msg.height, msg.width, -1)
@@ -49,11 +50,23 @@ class ImageCapture(Node):
 
 
 def main() -> None:
+    args = sys.argv
+    argc = len(sys.argv)
+    
+    if argc != 2:
+        print(f'Usage: ros2 run mrover image_capture.py [ros2 image topic]')
+        sys.exit(1)
+
+    topic = sys.argv[1]
+    print(f'Recieved topic as {topic}')
+
     try:
         rclpy.init(args=sys.argv)
         while True:
             input()
-            rclpy.spin_once(ImageCapture())
+            node = ImageCapture(topic)
+            rclpy.spin_once(node)
+            node.destroy_node()
         rclpy.shutdown()
     except KeyboardInterrupt:
         pass
