@@ -173,7 +173,7 @@ namespace mrover {
         wgpu::Sampler sampler;
 
         auto enqueWriteIfUnitialized(wgpu::Device& device) -> bool {
-            for (auto& d: data)
+            for (cv::Mat const& d: data)
                 if (d.empty()) return false;
             if (texture != nullptr) return false;
 
@@ -181,6 +181,7 @@ namespace mrover {
             std::array<cv::Mat, 6> dataToWrite;
             for (size_t i = 0; i < data.size(); ++i) {
                 cvtColor(data[i], dataToWrite[i], cv::COLOR_BGR2RGBA);
+                assert(dataToWrite[i].cols == dataToWrite[0].cols && dataToWrite[i].rows == dataToWrite[0].rows);
             }
 
             // assume all images are the same size
@@ -214,7 +215,6 @@ namespace mrover {
             samplerDescriptor.addressModeW = wgpu::AddressMode::Repeat;
             samplerDescriptor.minFilter = wgpu::FilterMode::Linear;
             samplerDescriptor.magFilter = wgpu::FilterMode::Linear;
-            samplerDescriptor.mipmapFilter = wgpu::MipmapFilterMode::Linear; // TODO: is this needed?
             samplerDescriptor.lodMaxClamp = static_cast<float>(descriptor.mipLevelCount);
             samplerDescriptor.maxAnisotropy = 1;
             sampler = device.createSampler(samplerDescriptor);
