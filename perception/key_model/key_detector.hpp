@@ -47,7 +47,7 @@ namespace mrover {
         };
 
 
-        static constexpr char const* NODE_NAME = "image_key_detector";
+        static constexpr char const* NODE_NAME = "key_detector";
 
         std::unique_ptr<tf2_ros::Buffer> mTfBuffer = std::make_unique<tf2_ros::Buffer>(get_clock());
         std::shared_ptr<tf2_ros::TransformBroadcaster> mTfBroadcaster = std::make_shared<tf2_ros::TransformBroadcaster>(this);
@@ -69,6 +69,7 @@ namespace mrover {
         sensor_msgs::msg::Image mDetectionsImageMessage;
 
         rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr mDebugImgPub;
+        rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr mDebugGradientPub;
 
         int mObjIncrementWeight{};
         int mObjDecrementWeight{};
@@ -77,6 +78,7 @@ namespace mrover {
         float mModelScoreThreshold{};
         float mModelNMSThreshold{};
         bool mDebug{};
+        cv::Size mParsingSize{640, 480};
 
         auto spiralSearchForValidPoint(sensor_msgs::msg::PointCloud2::ConstSharedPtr const& cloudPtr,
                                        std::size_t u, std::size_t v,
@@ -86,7 +88,7 @@ namespace mrover {
                               std::span<Detection const> detections,
                               cv::Size const& imageSize = {640, 640}) -> void;
 
-        auto publishDetectedObjects(cv::InputArray const& image) -> void;
+        auto publishDetectedObjects(cv::InputArray const& image, rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr& pub) -> void;
 
         auto drawDetectionBoxes(cv::InputOutputArray& image, std::span<Detection const> detections) const -> void;
 
@@ -96,7 +98,7 @@ namespace mrover {
 
         static auto updateMedians(std::priority_queue<float>& left, std::priority_queue<float, std::vector<float>, std::greater<>>& right, float val) -> void;
 
-        auto matchKeyDetections(cv::Mat const& gradient, std::vector<Detection> const& detections) -> void;
+        auto matchKeyDetections(cv::Mat const& gradient, std::vector<Detection>& detections) -> void;
 
         // Pre and Post Process for YOLO
         static auto preprocessYOLOv8Input(Model const& model, cv::Mat const& input, cv::Mat& output) -> void;
@@ -108,6 +110,7 @@ namespace mrover {
 
         static auto postprocessTextCoordsOutput(Model const& model, cv::Mat& output) -> void;
 
+        static auto hungarian(const Eigen::MatrixXf &C) -> std::vector<std::pair<int, int>>;
     public:
         explicit KeyDetectorBase(rclcpp::NodeOptions const& options = rclcpp::NodeOptions());
 
@@ -116,8 +119,6 @@ namespace mrover {
 
     class ImageKeyDetector final : public KeyDetectorBase {
     private:
-        rclcpp::Publisher<mrover::msg::ImageTargets>::SharedPtr mTargetsPub;
-
         rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr mSensorSub;
 
         float mCameraHorizontalFov{};

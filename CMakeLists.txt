@@ -352,6 +352,8 @@ install(PROGRAMS
     scripts/image_capture.py
     teleoperation/basestation_gui/gui_frontend.sh
     teleoperation/basestation_gui/gui_backend.sh
+    scripts/convert_onnx.py
+    scripts/label_video.py
 
     # starter project sources
     starter_project/autonomy/src/localization.py

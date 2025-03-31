@@ -16,15 +16,20 @@ def _imshow(img: ImageType, ax: plt.Axes | None) -> plt.Axes:
     """
     img = to_numpy(img)
 
+    print(f"img 0 {img}")
+    print(f"img 0 shape {img.shape}")
+
     # if the image's data is out of bounds for matplotlib plotting:
     #   - any negative values
     #   - values > 255 and dtype is an integer
     #   - values > 1 and dtype is a float
     if img.min() < 0 or (img.max() > 255 and img.dtype.kind in {"i", "u"}) or (img.max() > 1 and img.dtype.kind == "f"):
+        print(f'yoo1')
         img = normalize(img.astype("float"))
 
     # matplotlib cannot plot bools, so we convert to uint8
     if img.dtype == bool:
+        print(f'yoo2')
         img = img.astype("uint8")
 
     # in some cases, the channel comes as the first axis, i.e. (c, w, h)
@@ -35,6 +40,9 @@ def _imshow(img: ImageType, ax: plt.Axes | None) -> plt.Axes:
         r, g = cv2.split(img)
         black = np.zeros(r.shape, dtype=img.dtype)
         img = cv2.merge([r, black, g])
+
+    print(f"img {img}")
+    print(f"img shape {img.shape}")
 
     ax.axis("off")
     ax.imshow(img, interpolation="nearest")
@@ -62,7 +70,7 @@ def imshow(img: ImageType,
         return _imshow(img, ax)
 
     _, (ax1, ax2) = plt.subplots(ncols=2, **kwargs)
-    _imshow(img, ax1)
+    #_imshow(img, ax1)
     _imshow(mask, ax2)
     return ax1, ax2
 

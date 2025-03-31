@@ -35,10 +35,14 @@ class CornersRegressionModel(KeyboardModel):
     def predict(self, image: torch.Tensor, mask: bool = True) -> np.ndarray:
         image = image.to(self.device)
         if len(image.shape) == 3:
+            print(f'AWOIDOWIJDOIAWOIDJOAWIJDOIJAWOIDJWOAIJDOIWJA*WD*WDU*AWD*UAW*DUA*WU')
             image = image.unsqueeze(0)
+        print(f'image shape {image.shape}')
 
         with torch.no_grad():
             pred = self.forward(image, mask=mask)
+
+        print(f'pred {pred}')
         pred = KeyboardCornersDataset.denormalize(pred)
 
         transform = InterpolateQuad(len(image), width=640, height=480, device=self.device)

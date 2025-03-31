@@ -1,4 +1,5 @@
 #include "key_detector.hpp"
+#include <cassert>
 
 namespace mrover {
     auto KeyDetectorBase::spiralSearchForValidPoint(sensor_msgs::msg::PointCloud2::ConstSharedPtr const& cloudPtr, std::size_t u, std::size_t v, std::size_t width, std::size_t height) const -> std::optional<SE3d> {
@@ -50,14 +51,15 @@ namespace mrover {
             cv::rectangle(image, box, fontColor, 1, cv::LINE_8, 0);
 
             // Put the text on the image
-            cv::Point textPosition(80, static_cast<int>(80 * (i + 1)));
+            cv::Point textPosition = box.tl();
+            textPosition.y += box.height;
             constexpr int fontSize = 1;
             constexpr int fontWeight = 2;
             putText(image, detections[i].className, textPosition, cv::FONT_HERSHEY_COMPLEX, fontSize, fontColor, fontWeight); // Putting the text in the matrix
         }
     }
 
-    auto KeyDetectorBase::publishDetectedObjects(cv::InputArray const& image) -> void {
+    auto KeyDetectorBase::publishDetectedObjects(cv::InputArray const& image, rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr& pub) -> void {
         mDetectionsImageMessage.header.stamp = get_clock()->now();
         mDetectionsImageMessage.height = image.rows();
         mDetectionsImageMessage.width = image.cols();
@@ -67,7 +69,7 @@ namespace mrover {
         mDetectionsImageMessage.data.resize(mDetectionsImageMessage.step * mDetectionsImageMessage.height);
         std::memcpy(mDetectionsImageMessage.data.data(), image.getMat().data, mDetectionsImageMessage.data.size());
 
-        mDebugImgPub->publish(mDetectionsImageMessage);
+        pub->publish(mDetectionsImageMessage);
     }
 
     auto ImageKeyDetector::imageCallback(sensor_msgs::msg::Image::ConstSharedPtr const& msg) -> void {
@@ -80,10 +82,13 @@ namespace mrover {
 
         cv::Mat bgraImage{static_cast<int>(msg->height), static_cast<int>(msg->width), CV_8UC4, const_cast<uint8_t*>(msg->data.data())};
 
-        cv::Mat temp;
-        temp = cv::imread("/home/john/ros2_ws/src/mrover/perception/key_detector/keyrover/../datasets/test/image/f91.png", cv::IMREAD_COLOR);
+        //cv::Mat temp;
 
-        cv::cvtColor(temp, bgraImage, cv::COLOR_BGR2BGRA);
+        //std::filesystem::path packagePath = std::filesystem::path{ament_index_cpp::get_package_prefix("mrover")} / ".." / ".." / "src" / "mrover" / "perception" / "key_detector" / "datasets" / "test" / "image" / "f91.png" ;
+
+        //temp = cv::imread(packagePath.c_str(), cv::IMREAD_COLOR);
+
+        //cv::cvtColor(temp, bgraImage, cv::COLOR_BGR2BGRA);
 
         // Convert the RGB Image into the blob Image format
         mKeyDetectionModel.preprocess(mKeyDetectionModel, bgraImage, mImageBlob);
@@ -101,6 +106,11 @@ namespace mrover {
 
         parseYOLOv8Output(mKeyDetectionModel, outputTensor, detections);
 
+        // TODO: remove this
+        for(auto const& det : detections){
+            RCLCPP_INFO_STREAM(get_logger(), "[" << det.box.tl().x << ", " << det.box.tl().y << ", " << det.box.width << ", " << det.box.height << "]");
+        }
+
         // Text Coords Inference
         mTextCoordsTensorRT.modelForwardPass(mTextCoordsBlob, outputTensor);
 
@@ -108,7 +118,15 @@ namespace mrover {
 
         matchKeyDetections(outputTensor, detections);
 
-        publishDetectedObjects(outputTensor);
+        {
+            // Create an image from the keyboard gradient
+            cv::Mat temp;
+            cv::Mat temp2;
+            outputTensor.convertTo(temp, CV_8UC3, 255.0);
+            cv::cvtColor(temp, temp2, cv::COLOR_BGR2BGRA);
+
+            publishDetectedObjects(temp2, mDebugGradientPub);
+        }
 
         mLoopProfiler.measureEvent("Execution");
 
@@ -120,11 +138,9 @@ namespace mrover {
             targets.targets.emplace_back(target);
         }
 
-        mTargetsPub->publish(targets);
-
         drawDetectionBoxes(bgraImage, detections);
         if (mDebug) {
-            //publishDetectedObjects(bgraImage);
+            publishDetectedObjects(bgraImage, mDebugImgPub);
         }
 
         mLoopProfiler.measureEvent("Publication");
