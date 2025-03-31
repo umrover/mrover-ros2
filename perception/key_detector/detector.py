@@ -110,7 +110,7 @@ class KeyDetector(Node):
 
             return np.linalg.norm(A - B, axis=-1)
 
-        # START HERE
+
 
         # source (n, 2)-vector of points in 2D
         # palette (m, 2)-vector of points in 2D
@@ -121,7 +121,6 @@ class KeyDetector(Node):
         if(distance_matrix is None):
             return
         
-
         print("distance matrix:",  np.linalg.norm(distance_matrix))
 
         # ith row is the ith source point
@@ -160,6 +159,7 @@ class KeyDetector(Node):
 
         cost_matrixTime = (time.process_time() -start) * 1000
 
+        # START HERE
         from scipy.optimize import linear_sum_assignment
         #Hungarian Algorithm
         row_ind, col_ind = linear_sum_assignment(cost_matrix)

@@ -154,6 +154,10 @@ namespace mrover {
             cv_palette.at<double>(index, 1) = (i.first.second);
             index++;
         }
+
+        for (const auto& entry : palette) {
+            keys.push_back(entry.second); // Add the value to the vector
+        }
     }
 } // namespace mrover
 

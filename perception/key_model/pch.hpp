@@ -30,6 +30,7 @@
 #include <opencv2/imgproc.hpp>
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/highgui.hpp>
+#include <opencv2/dnn/all_layers.hpp>
 
 // Ros Client Library
 #include <ament_index_cpp/get_package_prefix.hpp>

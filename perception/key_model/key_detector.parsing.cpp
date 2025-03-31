@@ -204,7 +204,7 @@ namespace mrover {
             }
     }
 
-    auto KeyDetectorBase::matchKeyDetections(cv::Mat const& gradient, std::vector<Detection> const& detections) -> void{
+    auto KeyDetectorBase::matchKeyDetections(cv::Mat const& gradient, std::vector<Detection> detections) -> void{
         
         // For each of the bounding boxes, find the median red and blue
         int index = 0;
@@ -259,8 +259,8 @@ namespace mrover {
             RCLCPP_INFO_STREAM(get_logger(), ++index << " BRO " << blueMedian << " " << greenMedian << " " << redMedian);
         }
 
-        //int n = source.size();
-        //int m = cv_palette.size();
+        auto n = source.rows;
+        auto m = cv_palette.rows;
 
         auto create_distance_matrix = [](cv::Mat source, cv::Mat palette) -> auto {
             if (source.rows == 1)
@@ -289,15 +289,95 @@ namespace mrover {
 
         std::cout << cv::norm(distance_matrix, cv::NORM_L2) << '\n';
 
-        
-
         if(distance_matrix.empty())
         {
             return;
         }
 
-
+        cv::Mat tmp;
+        pow(distance_matrix,1.5,tmp);
         
+        cv::Mat distance_cost_matrix =  1e6 / tmp;
+
+        cv::Mat W = distance_cost_matrix.reshape(1, distance_cost_matrix.total());
+
+        W = cv::repeat(W, 1, 2);
+
+        cv::Mat targets = cv::repeat(cv_palette, n, 1);
+        
+        // This badness is for Fortran style column based flattening
+        cv::Mat targets_flat;
+        cv::transpose(targets, targets_flat);
+        targets_flat = targets_flat.reshape(1, targets_flat.total());
+
+        targets = targets_flat * W;
+
+
+        cv::Mat repeated_source = cv::repeat(source, 1, m);
+        
+        cv::Mat ones(n * m, 1, CV_32F, cv::Scalar(1));
+        cv::Mat zeros(n * m, 1, CV_32F, cv::Scalar(0));
+
+        cv::Mat p1;
+
+        cv::hconcat(repeated_source, zeros, p1);
+        cv::hconcat(p1, zeros, p1);
+        cv::hconcat(p1, ones, p1);
+        cv::hconcat(p1, zeros, p1);
+
+        cv::Mat p2;
+
+        cv::hconcat(zeros, zeros, p2);
+        cv::hconcat(p2, repeated_source, p2);
+        cv::hconcat(p2, zeros, p2);
+        cv::hconcat(p2, ones, p2);
+
+        cv::Mat p;
+
+        cv::vconcat(p1, p2, p);
+
+        cv::Mat W_column = W.reshape(1, W.total());
+
+        p = p * W_column;
+
+        cv::Mat output; 
+        
+        bool success = cv::solve(p, targets, output, cv::DECOMP_SVD);
+
+        if (!success)
+            return;
+
+        std::vector<std::vector<float>> data = {
+            {output.at<float>(0), output.at<float>(1), output.at<float>(2)},
+            {output.at<float>(3), output.at<float>(4), output.at<float>(5)},
+            {0, 0, 1}
+        };
+        cv::Mat A = cv::Mat(data);
+
+        cv::Mat stacked;
+        cv::hconcat(source, ones, stacked);
+
+        cv::Mat result(A.rows, stacked.rows, CV_32F);
+
+        for (int i = 0; i < A.rows; i++)
+        {
+            for (int j = 0; j < stacked.rows; j++)
+            {
+                result.at<float>(i,j) = A.row(i).dot(stacked.row(j));
+            }
+        }
+
+        cv::Mat cost_matrix = create_distance_matrix(result, cv_palette);
+        
+        std::vector<int> col_ind;
+
+        std::vector<std::string> key_results;
+
+        for (int i = 0; i < detections.size(); i++)
+        {
+           detections[i].classId = col_ind[i];
+           detections[i].className = keys[col_ind[i]];
+        }   
     }
 
     auto KeyDetectorBase::changeOfBasis(R2f const& p1, R2f const& p2, R2f const& p3, R2f const& p4) -> Eigen::Matrix3f{

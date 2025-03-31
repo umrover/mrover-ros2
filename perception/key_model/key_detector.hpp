@@ -85,6 +85,7 @@ namespace mrover {
         };
         std::unordered_map<std::pair<double, double>, std::string, hashingFunction> palette;
         cv::Mat cv_palette;
+        std::vector<std::string> keys;
 
         auto spiralSearchForValidPoint(sensor_msgs::msg::PointCloud2::ConstSharedPtr const& cloudPtr,
                                        std::size_t u, std::size_t v,
@@ -104,7 +105,7 @@ namespace mrover {
 
         static auto updateMedians(std::priority_queue<float>& left, std::priority_queue<float, std::vector<float>, std::greater<>>& right, float val) -> void;
 
-        auto matchKeyDetections(cv::Mat const& gradient, std::vector<Detection> const& detections) -> void;
+        auto matchKeyDetections(cv::Mat const& gradient, std::vector<Detection> detections) -> void;
 
         // Pre and Post Process for YOLO
         static auto preprocessYOLOv8Input(Model const& model, cv::Mat const& input, cv::Mat& output) -> void;
