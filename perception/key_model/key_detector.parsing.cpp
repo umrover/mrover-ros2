@@ -608,6 +608,7 @@ namespace mrover {
         };
 
         // create a set of the points in image space for each of the present detections in each row
+        bool useHistogramming = true;
         std::vector<float> ms;
         for(auto const& row : rows){
             std::vector<cv::Rect> rowBoxes;
@@ -621,7 +622,7 @@ namespace mrover {
                 }
             }
             
-            if(rowBoxes.size() > 4){
+            if(rowBoxes.size() > 4 && !useHistogramming){
                 Eigen::MatrixXf A(rowBoxes.size(), 2);
                 Eigen::VectorXf X(rowBoxes.size());
                 for(std::size_t i = 0; i < rowBoxes.size(); ++i){
@@ -636,9 +637,49 @@ namespace mrover {
 
                 ms.push_back(m);
             }
+
+            if(rowBoxes.size() > 4 && useHistogramming){
+                for(std::size_t left = 0; left < rowBoxes.size(); ++left){
+                    for(std::size_t right = left + 1; right < rowBoxes.size(); ++ right){
+                        auto const& lhs = rowBoxes[left];
+                        auto const& rhs = rowBoxes[right];
+
+                        // calc slope
+                        float dx = static_cast<float>((rhs.tl().x + rhs.width) - (lhs.tl().x + lhs.width));
+                        float dy = static_cast<float>((rhs.tl().y + rhs.height) - (lhs.tl().y + lhs.height));
+
+                        float slope = dy / dx;
+
+                        ms.push_back(slope);
+                    }
+                }
+
+            }
         }
 
-        float mean = std::reduce(std::begin(ms), std::end(ms)) / static_cast<float>(ms.size());
+        float mean = 0.0f;
+        if(!useHistogramming){
+            mean = std::reduce(std::begin(ms), std::end(ms)) / static_cast<float>(ms.size());
+        }else{
+            std::priority_queue<float> maxHeap;
+            std::priority_queue<float, std::vector<float>, std::greater<>> minHeap;
+
+            for(float f : ms){
+                updateMedians(maxHeap, minHeap, f);
+            }
+
+            auto findMedian = [](std::priority_queue<float>& left, std::priority_queue<float, std::vector<float>, std::greater<>>& right){
+                float median;
+                if (left.size() != right.size())
+                    median = left.top();
+                else
+                    median = static_cast<float>((left.top() + right.top()) / 2);
+                return median;
+            };
+
+            if(ms.size())
+                mean = findMedian(maxHeap, minHeap);
+        }
 
         if(!std::isnan(mean))
             mAngleFilter.update(mean);
