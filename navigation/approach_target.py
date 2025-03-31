@@ -94,7 +94,11 @@ class ApproachTargetState(State):
 
         # Check if the target is in a high-cost area.
         # Now using an explicit check against None.
-        if target_position is not None and not is_high_cost_point(point=target_position, context=context) and not check_astar:
+        if (
+            target_position is not None
+            and not is_high_cost_point(point=target_position, context=context)
+            and not check_astar
+        ):
             # If not in a high-cost area, return success (no need to find a new point)
             return
 
@@ -114,7 +118,9 @@ class ApproachTargetState(State):
                 for dy in np.arange(-search_radius, search_radius + resolution, resolution):
                     candidate = target_position + np.array([dx, dy, 0.0])
                     if not is_high_cost_point(point=candidate, context=context):
-                        if check_astar:  # If we need to consider A* (astar), generate a trajectory to see if it's reachable
+                        if (
+                            check_astar
+                        ):  # If we need to consider A* (astar), generate a trajectory to see if it's reachable
                             candidate_astar_traj = self.astar.generate_trajectory(context, candidate)
                             if len(candidate_astar_traj.coordinates) != 0:
                                 candidates.append(candidate)
@@ -156,6 +162,9 @@ class ApproachTargetState(State):
 
         if context.env.cost_map is None or not hasattr(context.env.cost_map, "data"):
             return self
+        
+        if isinstance(self, LongRangeState) and context.env.current_target_pos() is not None:
+                return ApproachTargetState()
 
         if self.target_position is None:
             # If we lose sight of the target and we have not reached the waypoint yet and are in the long range state,
@@ -181,14 +190,23 @@ class ApproachTargetState(State):
             or self.target_position is None
         ):
             # Update the time last updated and update the position of the target.
-            self.time_last_updated = context.node.get_clock().now()
-            self.target_position = self.get_target_position(context)
+            if self.get_target_position(context) is None:
+                if (
+                    context.node.get_clock().now() - self.time_last_updated
+                    > Duration(seconds=self.UPDATE_DELAY)
+                    > Duration(seconds=context.node.get_parameter("target_expiration_duration").value)
+                ):
+                    self.target_position = None
+            else:
+                self.target_position = self.get_target_position(context)
+
             if self.target_position is not None:
                 context.node.get_logger().info(f"Current target position {self.target_position}")
             else:
-                context.node.get_logger().info("No target position, should be transitioning to waypoint/search state soon")
+                context.node.get_logger().info("No target position, should be transitioning to waypoint/search state")
             self.traj = Trajectory(np.array([]))
 
+            self.time_last_updated = context.node.get_clock().now()
             # Check if the object is in the ZED, and if so, transition to the regular approach target state
             if isinstance(self, LongRangeState):
                 return self.next_state(context, False)
@@ -263,9 +281,7 @@ class ApproachTargetState(State):
                         return self.next_state(context=context, is_finished=True)
                     else:
                         if isinstance(self, LongRangeState):
-                            new_targ_pos = self.get_target_position(context)
-                            assert new_targ_pos is not None
-                            self.target_position = new_targ_pos
+                            self.target_position = self.get_target_position(context)
                             self.traj = Trajectory(np.array([]))
                         else:
                             self.traj = Trajectory(np.array([]))
@@ -280,16 +296,20 @@ class ApproachTargetState(State):
         return self
 
     def display_markers(self, context: Context):
-        if context.node.get_parameter("search.display_markers").value:
+        if context.node.get_parameter("display_markers").value:
             delete = Marker()
             delete.action = Marker.DELETEALL
             self.marker_pub.publish(delete)
             start_pt = self.traj.cur_pt - 2 if self.traj.cur_pt - 2 >= 0 else 0
             end_pt = (
-                self.traj.cur_pt + 7 if self.traj.cur_pt + 7 < len(self.traj.coordinates) else len(self.traj.coordinates)
+                self.traj.cur_pt + 7
+                if self.traj.cur_pt + 7 < len(self.traj.coordinates)
+                else len(self.traj.coordinates)
             )
             for i, coord in enumerate(self.traj.coordinates[start_pt:end_pt]):
-                self.marker_pub.publish(gen_marker(context=context, point=coord, color=[1.0, 0.0, 1.0], id=i, lifetime=100))
+                self.marker_pub.publish(
+                    gen_marker(context=context, point=coord, color=[1.0, 0.0, 1.0], id=i, lifetime=100)
+                )
             self.marker_pub.publish(
                 gen_marker(
                     context=context, point=self.target_position, color=[1.0, 1.0, 0.0], id=15, lifetime=100, size=0.5

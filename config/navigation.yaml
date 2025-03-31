@@ -15,7 +15,7 @@ navigation:
     # Or if there was an ephemeral false positive detection
 
     target_expiration_duration: 60.0
-
+    display_markers: true
     custom_costmap: false
 
     image_targets:
@@ -40,9 +40,9 @@ navigation:
     waypoint:
       stop_threshold: 0.5
       drive_forward_threshold: 0.34
+      no_search_wait_time: 10.0
 
     search:
-      display_markers: false
       use_costmap: true
       stop_threshold: 0.5
       drive_forward_threshold: 0.34
