@@ -60,6 +60,7 @@ class Navigation(Node):
                 ("long_range.bearing_expiration_duration", Parameter.Type.DOUBLE),
                 ("waypoint.stop_threshold", Parameter.Type.DOUBLE),
                 ("waypoint.drive_forward_threshold", Parameter.Type.DOUBLE),
+                ("waypoint.no_search_wait_time", Parameter.Type.DOUBLE),
                 ("search.use_costmap", Parameter.Type.BOOL),
                 ("search.stop_threshold", Parameter.Type.DOUBLE),
                 ("search.drive_forward_threshold", Parameter.Type.DOUBLE),

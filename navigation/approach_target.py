@@ -162,6 +162,9 @@ class ApproachTargetState(State):
 
         if context.env.cost_map is None or not hasattr(context.env.cost_map, "data"):
             return self
+        
+        if isinstance(self, LongRangeState) and context.env.current_target_pos() is not None:
+                return ApproachTargetState()
 
         if self.target_position is None:
             # If we lose sight of the target and we have not reached the waypoint yet and are in the long range state,

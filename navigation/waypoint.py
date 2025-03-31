@@ -12,7 +12,7 @@ from .context import Context
 import rclpy
 from .context import Context
 from navigation.astar import AStar, SpiralEnd, NoPath
-from navigation.coordinate_utils import gen_marker, segment_path, is_high_cost_point
+from navigation.coordinate_utils import gen_marker, segment_path, is_high_cost_point, d_calc
 from navigation.trajectory import Trajectory, SearchTrajectory
 from typing import Optional
 from rclpy.publisher import Publisher
@@ -36,12 +36,14 @@ class WaypointState(State):
     prev_target_pos_in_map: Optional[np.ndarray] = None
     is_recovering: bool = False
     time_last_updated: Time
-    start_time = Time
+    time_no_search_wait: Optional[Time] = None
+    start_time: Time
     path_pub: Publisher
     astar: AStar
     marker_pub: Publisher
 
     UPDATE_DELAY: float
+    NO_SEARCH_WAIT_TIME: float
 
     def on_enter(self, context: Context) -> None:
         assert context.course is not None
@@ -49,7 +51,9 @@ class WaypointState(State):
         self.marker_pub = context.node.create_publisher(Marker, "waypoint_trajectory", 10)
         self.astar = AStar(context)
         self.UPDATE_DELAY = context.node.get_parameter("search.update_delay").value
+        self.NO_SEARCH_WAIT_TIME = context.node.get_parameter("waypoint.no_search_wait_time").value
         self.time_last_updated = context.node.get_clock().now() - Duration(seconds=self.UPDATE_DELAY)
+        self.time_no_search_wait = None
         self.start_time = context.node.get_clock().now()
         self.astar_traj = Trajectory(np.array([]))
         self.waypoint_traj = Trajectory(np.array([]))
@@ -147,7 +151,11 @@ class WaypointState(State):
             self.time_last_updated = context.node.get_clock().now()
             # Generate a path
             self.astar_traj = self.astar.generate_trajectory(context, self.waypoint_traj.get_current_point())
-            return self
+            while len(self.astar_traj.coordinates) == 0:
+                context.node.get_logger().info("Skipping unreachable point")
+                if self.waypoint_traj.increment_point():
+                    return self.next_state(context=context)
+                self.astar_traj = self.astar.generate_trajectory(context, self.waypoint_traj.get_current_point())
 
         arrived = False
         cmd_vel = Twist()
@@ -188,22 +196,35 @@ class WaypointState(State):
             else:
                 return search.SearchState()
         else:
-            # We finished a regular waypoint, go onto the next one
-            if context.course.increment_waypoint():
-                return state.DoneState()
+            if self.time_no_search_wait is None:
+                self.time_no_search_wait = context.node.get_clock().now()
+            
+            rover_pose = context.rover.get_pose_in_map()
+            assert rover_pose is not None
+            rover_position = rover_pose.translation()[:2]
+
+            waypoint_position = context.course.current_waypoint_pose_in_map().translation()[:2]
+            if context.node.get_clock().now() - self.time_no_search_wait > Duration(seconds=self.NO_SEARCH_WAIT_TIME) \
+                or d_calc(rover_position, waypoint_position) < context.node.get_parameter("waypoint.stop_threshold").value*2:
+                # We finished a regular waypoint, go onto the next one
+                if context.course.increment_waypoint():
+                    return state.DoneState()
+                else:
+                    self.on_enter(context=context)
+                    return self
             else:
+                context.node.get_logger().info("Attempting to get closer to the no search waypoint")
                 self.astar_traj = Trajectory(np.array([]))
                 self.waypoint_traj = Trajectory(np.array([]))
                 return self
+            
 
     def display_markers(self, context: Context):
         if context.node.get_parameter("display_markers").value:
-            delete = Marker()
-            delete.action = Marker.DELETEALL
-            self.marker_pub.publish(delete)
-            start_pt = self.waypoint_traj.cur_pt - 2 if self.waypoint_traj.cur_pt - 2 >= 0 else 0
-            end_pt = min(self.waypoint_traj.cur_pt + 8, len(self.waypoint_traj.coordinates))
-            for i, coord in enumerate(self.waypoint_traj.coordinates[start_pt:end_pt]):
-                self.marker_pub.publish(
-                    gen_marker(context=context, point=coord, color=[1.0, 0.0, 1.0], id=i, lifetime=2)
-                )
+            start_pt = self.waypoint_traj.cur_pt
+            end_pt = min(start_pt+5, len(self.waypoint_traj.coordinates))
+            for i, coord in enumerate(self.waypoint_traj.coordinates[:end_pt]):
+                if i >= start_pt:
+                    self.marker_pub.publish(
+                        gen_marker(context=context, point=coord, color=[1.0, 0.0, 1.0], id=i, lifetime=100)
+                    )
