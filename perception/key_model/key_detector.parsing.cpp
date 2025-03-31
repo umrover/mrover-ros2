@@ -90,24 +90,22 @@ namespace mrover {
 
         auto C = uvBasis * xyBasis.inverse();
 
-        static constexpr float XRESOLUTION = 1.0f;
-        static constexpr float YRESOLUTION = 0.66f;
+        static constexpr float RESOLUTION = 1.0f;
         static constexpr float WIDTH = 640;
         static constexpr float HEIGHT = 480;
 
-        if(output.cols != static_cast<int>(WIDTH/XRESOLUTION) || output.rows != static_cast<int>(HEIGHT/XRESOLUTION))
-            output.create(static_cast<int>(HEIGHT/XRESOLUTION), static_cast<int>(WIDTH/XRESOLUTION), CV_32FC3);
+        if(output.cols != static_cast<int>(WIDTH/RESOLUTION) || output.rows != static_cast<int>(HEIGHT/RESOLUTION))
+            output.create(static_cast<int>(HEIGHT/RESOLUTION), static_cast<int>(WIDTH/RESOLUTION), CV_32FC3);
         auto* coords = reinterpret_cast<R3f*>(output.data);
         std::size_t index = 0;
 
-
         for(float y = 0.0f; y < HEIGHT;){
-            y += XRESOLUTION; 
+            y += RESOLUTION; 
             for(float x = 0.0f; x < WIDTH;){
-                x += XRESOLUTION;
+                x += RESOLUTION;
                 R3f& coord = coords[index];
 
-                coord << x, YRESOLUTION * y, 1.0f;
+                coord << x, y, 1.0f;
 
                 coord = C * coord;
 
@@ -189,8 +187,7 @@ namespace mrover {
         // Fill in the output Detections Vector
         for (int i: nmsResult) {
             //Push back the detection into the for storage vector
-            if(detections.size() < 87)
-                detections.emplace_back(classIds[i], model.classes[classIds[i]], confidences[i], boxes[i]);
+            detections.emplace_back(classIds[i], model.classes[classIds[i]], confidences[i], boxes[i]);
         }
     }
 
@@ -214,7 +211,6 @@ namespace mrover {
     auto KeyDetectorBase::matchKeyDetections(cv::Mat const& gradient, std::vector<Detection>& detections) -> void{
         // assert that all bounding boxes are inside the image
         for(auto const& det : detections){
-            RCLCPP_INFO_STREAM(get_logger(), "Detection X: " << det.box.x << " Y: " << det.box.y << " W: " << det.box.width << " H: " << det.box.height);
             assert(det.box.tl().x >= 0);
             assert(det.box.tl().y >= 0);
             assert(det.box.br().x < mParsingSize.width);
@@ -460,7 +456,7 @@ namespace mrover {
                     return static_cast<float>(std::sqrt(std::pow(lhs.val[0] - rhs.val[0], 2) + std::pow(lhs.val[1] - rhs.val[1], 2)));
                 };
 
-                float val = static_cast<float>(1e6 / std::pow(norm(medians[n], colors[m]), 3));
+                auto val = static_cast<float>(1e6 / std::pow(norm(medians[n], colors[m]), 3));
 
                 weights(static_cast<int>(n * colors.size() + m)) = val;
                 weights(static_cast<int>(colors.size() * medians.size() + n * colors.size() + m)) = val;
@@ -534,16 +530,120 @@ namespace mrover {
 
         auto keyAssignments = hungarian(cost);
 
-        std::size_t index = 0;
-        for(std::size_t k = 0; k < keyAssignments.size(); ++k){
-            auto key = keyAssignments[k];
-            RCLCPP_INFO_STREAM(get_logger(), "first " << key.first << " second " << key.second);
+        for(auto key : keyAssignments){
             if(key.first != -1){
                 detections[key.first].className = keyNames[key.second];
-                RCLCPP_INFO_STREAM(get_logger(), "Key " << detections[key.first].className);
-                ++index;
             }
         }
+
+        // designate which letters are in each row
+        std::vector<std::vector<std::string>> rows {
+            {
+                "`",
+                "1",
+                "2",
+                "3",
+                "4",
+                "5",
+                "6",
+                "7",
+                "8",
+                "9",
+                "0",
+                "-",
+                "+",
+                "back",
+                "insert",
+                "home",
+                "pg up"
+            },
+            {
+                "ltab",
+                "q",
+                "w",
+                "e",
+                "r",
+                "t",
+                "y",
+                "u",
+                "i",
+                "o",
+                "p",
+                "[",
+                "]",
+                "|",
+                "del",
+                "end",
+                "pg dn"
+            },
+            {
+                "caps",
+                "A",
+                "S",
+                "D",
+                "F",
+                "G",
+                "H",
+                "J",
+                "K",
+                "L",
+                ";",
+                "\"",
+                "enter",
+            },
+            {
+                "lshift",
+                "Z",
+                "X",
+                "C",
+                "V",
+                "B",
+                "N",
+                "M",
+                "<",
+                ">",
+                "?",
+                "rshift"
+            }
+        };
+
+        // create a set of the points in image space for each of the present detections in each row
+        std::vector<float> ms;
+        for(auto const& row : rows){
+            std::vector<cv::Rect> rowBoxes;
+
+            for(auto const& key : row){
+                auto it = std::find_if(std::begin(detections), std::end(detections), [&key](Detection const& elt){
+                            return key == elt.className;
+                        });
+                if(it != std::end(detections)){
+                    rowBoxes.push_back((*it).box);
+                }
+            }
+            
+            if(rowBoxes.size() > 4){
+                Eigen::MatrixXf A(rowBoxes.size(), 2);
+                Eigen::VectorXf X(rowBoxes.size());
+                for(std::size_t i = 0; i < rowBoxes.size(); ++i){
+                    auto const& box = rowBoxes[i];
+                    A(static_cast<int>(i), 0) = static_cast<float>(box.tl().x) + (static_cast<float>(box.width) / 2.0f); // add the x center to the box
+                    A(static_cast<int>(i), 1) = 1.0f;
+
+                    X(static_cast<int>(i)) = static_cast<float>(box.tl().y) + (static_cast<float>(box.height) / 2.0f);
+                }
+
+                float m = A.householderQr().solve(X)(0);
+
+                ms.push_back(m);
+            }
+        }
+
+        float mean = std::reduce(std::begin(ms), std::end(ms)) / static_cast<float>(ms.size());
+
+        if(!std::isnan(mean))
+            mAngleFilter.update(mean);
+
+        RCLCPP_INFO_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, "M: " << mAngleFilter.getValue());
     }
 
     template <class T>
@@ -592,11 +692,6 @@ namespace mrover {
         for (size_t i = 0; i < job.size() - 1; ++i) {
             result.emplace_back(job[i], i);
         }
-        auto pairLess = [&](std::pair<int, int> const& lhs, std::pair<int, int> const& rhs){
-            return lhs.first < rhs.first;
-        };
-
-        std::sort(std::begin(result), std::end(result), pairLess);
 
         return result;
     }

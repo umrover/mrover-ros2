@@ -3,7 +3,7 @@
 
 namespace mrover {
 
-    KeyDetectorBase::KeyDetectorBase(rclcpp::NodeOptions const& options) : rclcpp::Node(NODE_NAME, options), mLoopProfiler{get_logger()} {
+    KeyDetectorBase::KeyDetectorBase(rclcpp::NodeOptions const& options) : rclcpp::Node(NODE_NAME, options), mAngleFilter{0, 0.05, 0.05}, mLoopProfiler{get_logger()} {
         std::string keyDetectionModelName;
         std::string textCoordsModelName;
 

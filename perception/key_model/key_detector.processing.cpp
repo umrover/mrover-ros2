@@ -82,13 +82,20 @@ namespace mrover {
 
         cv::Mat bgraImage{static_cast<int>(msg->height), static_cast<int>(msg->width), CV_8UC4, const_cast<uint8_t*>(msg->data.data())};
 
-        //cv::Mat temp;
+        cv::Mat temp;
 
-        //std::filesystem::path packagePath = std::filesystem::path{ament_index_cpp::get_package_prefix("mrover")} / ".." / ".." / "src" / "mrover" / "perception" / "key_detector" / "datasets" / "test" / "image" / "f91.png" ;
+        /*
+         * test1: (46, 103) (550, 123) -2.272 degrees : -0.928
+         * test2: (300, 302) (331, 307) -9.16 degrees : -38.83
+         * test3: (327, 255) (346, 246) 25.34 degrees : 20.455
+         * test4: (322, 230) (347, 234) -9.09 degrees : 9.87
+         * test5: (268, 231) (294, 232) 2.202 degrees : 2.702
+         */
+        std::filesystem::path packagePath = std::filesystem::path{ament_index_cpp::get_package_prefix("mrover")} / ".." / ".." / "src" / "mrover" / "data" / "images" / "test5.jpg";
 
-        //temp = cv::imread(packagePath.c_str(), cv::IMREAD_COLOR);
+        temp = cv::imread(packagePath.c_str(), cv::IMREAD_COLOR);
 
-        //cv::cvtColor(temp, bgraImage, cv::COLOR_BGR2BGRA);
+        cv::cvtColor(temp, bgraImage, cv::COLOR_BGR2BGRA);
 
         // Convert the RGB Image into the blob Image format
         mKeyDetectionModel.preprocess(mKeyDetectionModel, bgraImage, mImageBlob);
@@ -105,11 +112,6 @@ namespace mrover {
         mKeyDetectionModel.postprocess(mKeyDetectionModel, outputTensor);
 
         parseYOLOv8Output(mKeyDetectionModel, outputTensor, detections);
-
-        // TODO: remove this
-        for(auto const& det : detections){
-            RCLCPP_INFO_STREAM(get_logger(), "[" << det.box.tl().x << ", " << det.box.tl().y << ", " << det.box.width << ", " << det.box.height << "]");
-        }
 
         // Text Coords Inference
         mTextCoordsTensorRT.modelForwardPass(mTextCoordsBlob, outputTensor);

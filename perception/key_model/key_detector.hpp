@@ -46,6 +46,45 @@ namespace mrover {
             Model(rclcpp::Node* _ptr, std::string _modelName, std::vector<int> _objectHitCounts, std::vector<std::string> _classes, std::vector<int64_t> _inputTensorSize, std::vector<int64_t> _outputTensorSize, model_preprocess_t _preprocess, model_postprocess_t _postprocess) : ptr{_ptr}, modelName{std::move(_modelName)}, objectHitCounts(std::move(_objectHitCounts)), classes(std::move(_classes)), inputTensorSize(std::move(_inputTensorSize)), outputTensorSize(std::move(_outputTensorSize)), preprocess{std::move(_preprocess)}, postprocess{std::move(_postprocess)} {}
         };
 
+        class KalmanFilter {
+        public:
+            KalmanFilter(float initial_value, float process_noise, float measurement_noise) :
+                value_(initial_value),
+                process_noise_(process_noise),
+                measurement_noise_(measurement_noise),
+                error_covariance_(1) // Initialize with some uncertainty
+            {}
+
+            float update(float measurement) {
+
+                value_ = (1 - process_noise_) * value_ + process_noise_ * measurement;
+
+                return value_;
+
+                // Prediction step
+                float predicted_value = value_;
+                float predicted_error_covariance = error_covariance_ + process_noise_;
+
+                // Update step
+                float kalman_gain = predicted_error_covariance / (predicted_error_covariance + measurement_noise_);
+                value_ = predicted_value + kalman_gain * (measurement - predicted_value);
+                error_covariance_ = (1 - kalman_gain) * predicted_error_covariance;
+
+                return value_;
+            }
+
+            float getValue() const {
+                return value_;
+            }
+
+        private:
+            float value_; // Estimated value
+            float process_noise_; // Process noise variance
+            float measurement_noise_; // Measurement noise variance
+            float error_covariance_; // Estimation error covariance
+        };
+
+        KalmanFilter mAngleFilter;
 
         static constexpr char const* NODE_NAME = "key_detector";
 
