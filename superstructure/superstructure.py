@@ -53,6 +53,7 @@ class Superstructure(Node):
         final = Twist()
         for sub in self.subs.values():
             if sub.last_time is None or (self.get_clock().now() - sub.last_time) > timeout:
+                print("ERROR IN CLOCK TIME")
                 continue
 
             final.linear.x += sub.twist.linear.x
