@@ -94,7 +94,7 @@ namespace mrover {
         auto coordinateToIndex(Coordinate c) const -> int;
 
         // Function for calculating bin-boundary intersections for ray tracing
-        auto calcIntersection(const R3d& startSeg, const R3d& endSeg, double binCenterX) -> double;
+        auto isRayIntersection(const R3d& startSeg, const R3d& endSeg, double binCenterX, double binCenterY) -> std::int8_t;
     };
 
 } // namespace mrover

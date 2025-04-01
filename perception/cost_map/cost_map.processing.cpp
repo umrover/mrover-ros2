@@ -125,48 +125,34 @@ namespace mrover {
             double maxX = std::max(leftTop.x(), std::max(leftBot.x(), std::max(rightTop.x(), rightBot.x())));
             for (std::size_t i = 0; i < mGlobalGridMsg.data.size(); ++i) {
 				Bin& bin = bins[i];
+                
+                // Skip if there are not enough points
+                if (bin.total < 16){
+                    continue;
+                }
 
                 // If any part of the bin is outside of the clips, do not update it
                 Coordinate binCoord = indexToCoordinate(i);
-                double binX = mGlobalGridMsg.info.origin.position.x + (mResolution * binCoord.col)/2.0;
-                double binY = mGlobalGridMsg.info.origin.position.y + (mResolution * binCoord.row)/2.0;
-
-                if (bin.total < 16 || binX < minX || binX > maxX || binY < minY || binY > maxY){
-                    // RCLCPP_INFO_STREAM(get_logger(), "DELETED BIN!");
-                    continue;
-                }
-
-                RCLCPP_INFO_STREAM(get_logger(), "IN HERE!");
+                RCLCPP_INFO_STREAM(get_logger(), "ROW " << binCoord.row << " COL " << binCoord.col);
+                double binCenterX = mGlobalGridMsg.info.origin.position.x + (mResolution * binCoord.col)  + mResolution/2.0;
+                double binCenterY = mGlobalGridMsg.info.origin.position.y + (mResolution * binCoord.row)  + mResolution/2.0;
 
                 // Calculate intersection point from bin center to each boundary (ray in the positive
                 //         y-direction), we know the x-coordinate
-                std::vector<double> ys(4);
-                ys[0] = calcIntersection(leftTop.translation(), leftBot.translation(), binX);
-                ys[1] = calcIntersection(leftBot.translation(), rightBot.translation(), binX);
-                ys[2] = calcIntersection(rightBot.translation(), rightTop.translation(), binX);
-                ys[3] = calcIntersection(rightTop.translation(), leftTop.translation(), binX);
+                std::int8_t numIntersection = 0;
+                numIntersection += isRayIntersection(leftTop.translation(), leftBot.translation(), binCenterX, binCenterY);
+                numIntersection += isRayIntersection(leftBot.translation(), rightBot.translation(), binCenterX, binCenterY);
+                numIntersection += isRayIntersection(rightBot.translation(), rightTop.translation(), binCenterX, binCenterY);
+                numIntersection += isRayIntersection(rightTop.translation(), leftTop.translation(), binCenterX, binCenterY);
 
-                // count the number of valid intersections (ones that are in height bounds and in
-                //        width bounds, and are above center Y)
-                int validIntersections = 0;
-                for(double y : ys){
-                    // If the intersection point is not within the bin boundaries, or it is lower than
-                    //         the bin, the intersection is not valid
-                    if(y > maxY || y < minY || y < binY){ 
-                        RCLCPP_INFO_STREAM(get_logger(), "INVALID Y!: " << y);
-                        continue; 
-                    }
-                    validIntersections++;
-                }
+                // if the number of intersections is 
 
                 // If the number of intersections are even, the bin is not valid
-                if(validIntersections % 2 == 0){
-                    RCLCPP_INFO_STREAM(get_logger(), "NUM INTERSECTIONS: " << validIntersections);
+                if(numIntersection % 2 == 0){
                     continue;
+                }else{
+                    RCLCPP_INFO_STREAM(get_logger(), "NUM INTERSECTIONS: " << static_cast<int>(numIntersection));
                 }
-                
-
-
 
                 double percent = static_cast<double>(bin.high_pts) / static_cast<double>(bin.total);
 
@@ -184,12 +170,6 @@ namespace mrover {
 
             // Variable dilation for any width`
             std::array<CostMapNode::Coordinate,(2*dilation+1)*(2*dilation+1)> dis = diArray();
-
-            // std::array<CostMapNode::Coordinate, 5> crossDilation = {{{-1,0}}, 
-            //                                                         {{0,-1}},
-            //                                                         {{0,0}},
-            //                                                         {{0,1}},
-            //                                                         {{1,0}}};
 
             // Do one initial pass to generate post-process for 0 cell dilation (raw data); no actual dilation happening here
             //     Done so there is no grey scaling for 0 cell dilation
@@ -249,12 +229,32 @@ namespace mrover {
         return di;
     }
 
-    auto CostMapNode::calcIntersection(const R3d& startSeg, const R3d& endSeg, double binCenterX) -> double{
-        R3d seg = endSeg - startSeg;
-        if(seg.x() == 0){ return std::numeric_limits<double>::max(); }
+    auto CostMapNode::isRayIntersection(const R3d& startSeg, const R3d& endSeg, double binCenterX, double binCenterY) -> std::int8_t{
+        // if the point is not inside the bounds of the segment's x axis
+        double lowerX = (startSeg.x() < endSeg.x()) ? startSeg.x() : endSeg.x();
+        double higherX = (startSeg.x() < endSeg.x()) ? endSeg.x() : startSeg.x();
+        if(binCenterX <= lowerX || binCenterX >= higherX){
+            return 0;
+        }
 
-        double t = (binCenterX - startSeg.x()) / seg.x();
-        return seg.y() * t + startSeg.y();
+        R3d seg = endSeg - startSeg;
+
+        // handle the case where the slope is undefined
+        if(seg.x() == 0){
+            return 0;
+        }
+
+        // calc the y value of the intersection point to see if it is in boundary
+        double m = seg.y() / seg.x();
+        double y = m * (binCenterX - startSeg.x()) + startSeg.y();
+
+        double lowerY = (startSeg.y() < endSeg.y()) ? startSeg.y() : endSeg.y();
+        double higherY = (startSeg.y() < endSeg.y()) ? endSeg.y() : startSeg.y();
+        if(y <= lowerY || y >= higherY || higherY <= binCenterY){
+            return 0;
+        }
+
+        return 1;
     }
 
 	void CostMapNode::uploadPC() {
