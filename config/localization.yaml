@@ -45,7 +45,7 @@ iekf:
     pos_noise_float: 0.1
     pos_noise_none: 1.0
     vel_noise: 1.0
-    mag_heading_noise: 0.1
+    mag_heading_noise: 1.0
     rtk_heading_noise: 0.01
 
     rover_heading_change_threshold: 0.2
@@ -62,7 +62,7 @@ iekf_se3:
     pos_noise_float: 0.1
     pos_noise_none: 1.0
     vel_noise: 1.0
-    mag_heading_noise: 0.1
+    mag_heading_noise: 1.0
     rtk_heading_noise: 0.01
 
     rover_heading_change_threshold: 0.2

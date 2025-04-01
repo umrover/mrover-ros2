@@ -12,6 +12,7 @@ namespace mrover {
         declare_parameter("pos_noise_fixed", rclcpp::ParameterType::PARAMETER_DOUBLE);
         declare_parameter("vel_noise", rclcpp::ParameterType::PARAMETER_DOUBLE);
         declare_parameter("mag_heading_noise", rclcpp::ParameterType::PARAMETER_DOUBLE);
+        declare_parameter("rtk_heading_noise", rclcpp::ParameterType::PARAMETER_DOUBLE);
 
         declare_parameter("rover_heading_change_threshold", rclcpp::ParameterType::PARAMETER_DOUBLE);
         declare_parameter("minimum_linear_speed", rclcpp::ParameterType::PARAMETER_DOUBLE);
@@ -23,6 +24,7 @@ namespace mrover {
         pos_noise_fixed = get_parameter("pos_noise_fixed").as_double();
         vel_noise = get_parameter("vel_noise").as_double();
         mag_heading_noise = get_parameter("mag_heading_noise").as_double();
+        rtk_heading_noise = get_parameter("rtk_heading_noise").as_double();
 
         rover_heading_change_threshold = get_parameter("rover_heading_change_threshold").as_double();
         minimum_linear_speed = get_parameter("minimum_linear_speed").as_double();
@@ -47,6 +49,10 @@ namespace mrover {
 
         velocity_sub = this->create_subscription<geometry_msgs::msg::Vector3Stamped>("/velocity/fix", 10, [&](const geometry_msgs::msg::Vector3Stamped::ConstSharedPtr& vel_msg) {
             vel_callback(*vel_msg);
+        });
+
+        rtk_heading_sub = this->create_subscription<mrover::msg::Heading>("/heading/fix", 10, [&](const mrover::msg::Heading::ConstSharedPtr& rtk_heading_msg) {
+            rtk_heading_callback(*rtk_heading_msg);
         });
 
     }
@@ -237,6 +243,32 @@ namespace mrover {
         N << X.block<3, 3>(0, 0) * cov_a * X.block<3, 3>(0, 0).transpose();
 
         correct(Y, b, N, H);
+    }
+
+    void IEKF_SE3::rtk_heading_callback(const mrover::msg::Heading &rtk_heading) {
+
+        Matrix36d H;
+        Vector4d Y;
+        Vector4d b;
+        Matrix33d N;
+
+        Vector3d rtk_heading_ref{1, 0, 0};
+
+        double heading = 90 - fmod(rtk_heading.heading + 90, 360);
+
+        if (heading < -180) {
+            heading = 360 + heading;
+        }
+
+        heading = heading * (M_PI / 180);
+
+        H << -1 * manif::skew(rtk_heading_ref), Matrix33d::Zero();
+        Y << -1 * Vector3d{std::cos(heading), -std::sin(heading), 0}, 0;
+        b << -1 * rtk_heading_ref, 0;
+        N << X.block<3, 3>(0, 0) * rtk_heading_noise * Matrix33d::Identity() * X.block<3, 3>(0, 0).transpose();
+
+        correct(Y, b, N, H);
+
     }
 
     void IEKF_SE3::drive_forward_callback() {
