@@ -1,4 +1,8 @@
 #include "cost_map.hpp"
+#include "lie.hpp"
+#include <cstdlib>
+#include <limits>
+#include <manif/impl/se3/SE3.h>
 
 namespace mrover {
     auto remap(double x, double inMin, double inMax, double outMin, double outMax) -> double {
@@ -27,8 +31,25 @@ namespace mrover {
         assert(msg->height > 0);
         assert(msg->width > 0);
 
-        //RCLCPP_INFO_STREAM(get_logger(), "COST MAP MESSAGE POINTER: " << msg.get());
-        //RCLCPP_INFO_STREAM(get_logger(), "COST MAP MESSAGE TIME: " << msg->header.stamp.sec);
+        // Push transforms b/w clip box and map frame to tf tree
+        // SE3d rightBot(R3d{mRightClip, mNearClip, 0}, SO3d::Identity());
+        // SE3d rightTop(R3d{mRightClip, mFarClip, 0}, SO3d::Identity());
+        // SE3d leftBot(R3d{mLeftClip, mNearClip, 0}, SO3d::Identity());
+        // SE3d leftTop(R3d{mLeftClip, mFarClip, 0}, SO3d::Identity());
+
+        SE3d rightBot(R3d{mNearClip, mRightClip, 0}, SO3d::Identity());
+        SE3d rightTop(R3d{mFarClip, mRightClip, 0}, SO3d::Identity());
+        SE3d leftBot(R3d{mNearClip, mLeftClip, 0}, SO3d::Identity());
+        SE3d leftTop(R3d{mFarClip, mLeftClip, 0}, SO3d::Identity());
+
+        SE3Conversions::pushToTfTree(mTfBroadcaster, "bin_bot_left", "zed_left_camera_frame", leftBot, get_clock()->now());
+        SE3Conversions::pushToTfTree(mTfBroadcaster, "bin_top_left", "zed_left_camera_frame", leftTop, get_clock()->now());
+        SE3Conversions::pushToTfTree(mTfBroadcaster, "bin_bot_right", "zed_left_camera_frame", rightBot, get_clock()->now());
+        SE3Conversions::pushToTfTree(mTfBroadcaster, "bin_top_right", "zed_left_camera_frame", rightTop, get_clock()->now());
+                
+
+        // RCLCPP_INFO_STREAM(get_logger(), "COST MAP MESSAGE PTR: " << msg.get());
+        // RCLCPP_INFO_STREAM(get_logger(), "COST MAP MESSAGE TIME: " << msg->header.stamp.sec);
 
 		mInliers.clear();
 
@@ -88,15 +109,63 @@ namespace mrover {
 				uploadPC();
 			}
 
+            // Percentage Algorithm (acounts for angle changes (and outliers))
+                // // Chose the percentage algorithm because it's less sensitive to angle changes (and outliers) and can accurately track
+                // //     objects outside. Normal averaging too sensitive.
+
+            // Boundary points
+            leftBot = SE3Conversions::fromTfTree(mTfBuffer, "bin_bot_left", "map");
+            leftTop = SE3Conversions::fromTfTree(mTfBuffer, "bin_top_left", "map");
+            rightBot = SE3Conversions::fromTfTree(mTfBuffer, "bin_bot_right", "map");
+            rightTop = SE3Conversions::fromTfTree(mTfBuffer, "bin_top_right", "map");
+
+            double maxY = std::max(leftTop.y(), std::max(leftBot.y(), std::max(rightTop.y(), rightBot.y())));
+            double minY = std::min(leftTop.y(), std::min(leftBot.y(), std::min(rightTop.y(), rightBot.y())));
+            double minX = std::min(leftTop.x(), std::min(leftBot.x(), std::min(rightTop.x(), rightBot.x())));
+            double maxX = std::max(leftTop.x(), std::max(leftBot.x(), std::max(rightTop.x(), rightBot.x())));
             for (std::size_t i = 0; i < mGlobalGridMsg.data.size(); ++i) {
 				Bin& bin = bins[i];
-                if (bin.total < 16){
+
+                // If any part of the bin is outside of the clips, do not update it
+                Coordinate binCoord = indexToCoordinate(i);
+                double binX = mGlobalGridMsg.info.origin.position.x + (mResolution * binCoord.col)/2.0;
+                double binY = mGlobalGridMsg.info.origin.position.y + (mResolution * binCoord.row)/2.0;
+
+                if (bin.total < 16 || binX < minX || binX > maxX || binY < minY || binY > maxY){
+                    // RCLCPP_INFO_STREAM(get_logger(), "DELETED BIN!");
                     continue;
                 }
 
-                // Percentage Algorithm (acounts for angle changes (and outliers))
-                // // Chose the percentage algorithm because it's less sensitive to angle changes (and outliers) and can accurately track
-                // //     objects outside. Normal averaging too sensitive.
+                RCLCPP_INFO_STREAM(get_logger(), "IN HERE!");
+
+                // Calculate intersection point from bin center to each boundary (ray in the positive
+                //         y-direction), we know the x-coordinate
+                std::vector<double> ys(4);
+                ys[0] = calcIntersection(leftTop.translation(), leftBot.translation(), binX);
+                ys[1] = calcIntersection(leftBot.translation(), rightBot.translation(), binX);
+                ys[2] = calcIntersection(rightBot.translation(), rightTop.translation(), binX);
+                ys[3] = calcIntersection(rightTop.translation(), leftTop.translation(), binX);
+
+                // count the number of valid intersections (ones that are in height bounds and in
+                //        width bounds, and are above center Y)
+                int validIntersections = 0;
+                for(double y : ys){
+                    // If the intersection point is not within the bin boundaries, or it is lower than
+                    //         the bin, the intersection is not valid
+                    if(y > maxY || y < minY || y < binY){ 
+                        RCLCPP_INFO_STREAM(get_logger(), "INVALID Y!: " << y);
+                        continue; 
+                    }
+                    validIntersections++;
+                }
+
+                // If the number of intersections are even, the bin is not valid
+                if(validIntersections % 2 == 0){
+                    RCLCPP_INFO_STREAM(get_logger(), "NUM INTERSECTIONS: " << validIntersections);
+                    continue;
+                }
+                
+
 
 
                 double percent = static_cast<double>(bin.high_pts) / static_cast<double>(bin.total);
@@ -116,21 +185,23 @@ namespace mrover {
             // Variable dilation for any width`
             std::array<CostMapNode::Coordinate,(2*dilation+1)*(2*dilation+1)> dis = diArray();
 
+            // std::array<CostMapNode::Coordinate, 5> crossDilation = {{{-1,0}}, 
+            //                                                         {{0,-1}},
+            //                                                         {{0,0}},
+            //                                                         {{0,1}},
+            //                                                         {{1,0}}};
+
             // Do one initial pass to generate post-process for 0 cell dilation (raw data); no actual dilation happening here
             //     Done so there is no grey scaling for 0 cell dilation
-            for(int row = 0; row < mWidth; row++){
-                for(int col = 0; col < mHeight; col++){
-                    int oned_index = coordinateToIndex({row, col});
-
-                    // If cell is greater than free cost, mark is occupied otherwise copy over data that was there
-                    postProcesed.data[oned_index] = mGlobalGridMsg.data[oned_index] > FREE_COST ? OCCUPIED_COST : postProcesed.data[oned_index];
-                }
+            for(auto& b : postProcesed.data){
+                b = b > THRESHOLD_COST ? OCCUPIED_COST : (b == UNKNOWN_COST) ? UNKNOWN_COST : FREE_COST;
             }
 
             // Repeatedly apply 3x3 kernel (1 cell dilation)
-            // TODO: Consider running 2x dilation, but consider swapping which one is copying/being used to copy data to
-            //       reduce time can do by swapping which one is being used at each times % 2 pass
+            // TODO: running 2x dilation, but consider swapping which one is copying/being used to copy data to reduce time
+            //       can do by swapping which one is being used at each times % 2 pass
             for(int times = 0; times < mDilateAmt; times++){
+                temp = postProcesed;
                 for (int row = 0; row < mWidth; ++row) {
                     for(int col = 0; col < mHeight; ++col) {
                         int oned_index = coordinateToIndex({row, col});
@@ -142,16 +213,13 @@ namespace mrover {
                                 return false;
     
                             // RCLCPP_INFO_STREAM(get_logger(), std::format("Index: {}", coordinateToIndex(dcoord)));
-                            if(times == 0){ return mGlobalGridMsg.data[coordinateToIndex(dcoord)] > FREE_COST; }
                             return temp.data[coordinateToIndex(dcoord)] > FREE_COST;
                         })) postProcesed.data[oned_index] = OCCUPIED_COST;
                     }
                 }
-
-                std::swap(postProcesed.data, temp.data);
             }
 
-            // }
+
             mCostMapPub->publish(postProcesed);
         } catch (tf2::TransformException const& e) {
             RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, std::format("TF tree error processing point cloud: {}", e.what()));
@@ -165,12 +233,28 @@ namespace mrover {
 
         for(int r = -dilation; r <= dilation; r++){
             for(int c = -dilation; c <= dilation; c++){
+                // Do not dilate the corners
+                if((r == -dilation && c == -dilation) || 
+                   (r == dilation && c == -dilation) || 
+                   (r == -dilation && c == dilation) || 
+                   (r == dilation && c == dilation)){ 
+                    continue; 
+                }
+
                 di[pos] = {r, c};
                 pos++;
             }
         }
 
         return di;
+    }
+
+    auto CostMapNode::calcIntersection(const R3d& startSeg, const R3d& endSeg, double binCenterX) -> double{
+        R3d seg = endSeg - startSeg;
+        if(seg.x() == 0){ return std::numeric_limits<double>::max(); }
+
+        double t = (binCenterX - startSeg.x()) / seg.x();
+        return seg.y() * t + startSeg.y();
     }
 
 	void CostMapNode::uploadPC() {
@@ -238,12 +322,8 @@ namespace mrover {
     }
 
     auto CostMapNode::dilateCostMapCallback(mrover::srv::DilateCostMap::Request::ConstSharedPtr& req, mrover::srv::DilateCostMap::Response::SharedPtr& res) -> void{
-        if (req->d_amt > 50) {mDilateAmt = 3;}
-        else {
-            // TODO: consider floor vs ceil here, currently rounds down to nearest cell dilation amt
-            mDilateAmt = static_cast<int>(floor(static_cast<double>(req->d_amt/mResolution)));
-        }
-
+        // TODO: consider floor vs ceil here, currently rounds down to nearest cell dilation amt
+        mDilateAmt = static_cast<int>(floor(static_cast<double>(req->d_amt/mResolution)));
         res->success = true;
     }
 

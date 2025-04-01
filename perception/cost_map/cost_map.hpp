@@ -6,7 +6,7 @@ namespace mrover {
 
     class CostMapNode final : public rclcpp::Node {
 
-        constexpr static std::int8_t UNKNOWN_COST = -1, FREE_COST = 0, OCCUPIED_COST = 100;
+        constexpr static std::int8_t UNKNOWN_COST = -1, FREE_COST = 0, OCCUPIED_COST = 100, THRESHOLD_COST = 20;
 
         constexpr static double TAU = 2 * std::numbers::pi;
 
@@ -40,6 +40,7 @@ namespace mrover {
 		
         tf2_ros::Buffer mTfBuffer{get_clock()};
         tf2_ros::TransformListener mTfListener{mTfBuffer};
+        tf2_ros::TransformBroadcaster mTfBroadcaster{this};
 
         std::optional<SE3d> mPreviousPose;
         nav_msgs::msg::OccupancyGrid mGlobalGridMsg;
@@ -91,6 +92,9 @@ namespace mrover {
 
         auto indexToCoordinate(int index) const -> Coordinate;
         auto coordinateToIndex(Coordinate c) const -> int;
+
+        // Function for calculating bin-boundary intersections for ray tracing
+        auto calcIntersection(const R3d& startSeg, const R3d& endSeg, double binCenterX) -> double;
     };
 
 } // namespace mrover
