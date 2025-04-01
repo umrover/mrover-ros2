@@ -16,6 +16,8 @@ namespace mrover {
 
         declare_parameter("rover_heading_change_threshold", rclcpp::ParameterType::PARAMETER_DOUBLE);
         declare_parameter("minimum_linear_speed", rclcpp::ParameterType::PARAMETER_DOUBLE);
+        
+        declare_parameter("use_mag", rclcpp::ParameterType::PARAMETER_BOOL);
     
         world_frame = get_parameter("world_frame").as_string();
         rover_frame = get_parameter("rover_frame").as_string();
@@ -28,6 +30,8 @@ namespace mrover {
 
         rover_heading_change_threshold = get_parameter("rover_heading_change_threshold").as_double();
         minimum_linear_speed = get_parameter("minimum_linear_speed").as_double();
+
+        use_mag = get_parameter("use_mag").as_bool();
 
         // initialize state variables
         X.setIdentity();
@@ -220,7 +224,9 @@ namespace mrover {
         b << -1 * mag_ref, 0;
         N << X.block<3, 3>(0, 0) * mag_heading_noise * Matrix33d::Identity() * X.block<3, 3>(0, 0).transpose();
 
-        correct(Y, b, N, H);
+        if (use_mag) {
+            correct(Y, b, N, H);
+        }
     
     }
     

@@ -81,6 +81,8 @@ namespace mrover {
         double rover_heading_change_threshold;
         double minimum_linear_speed;
 
+        bool use_mag;
+
     public:
     
         IEKF_SE3();
