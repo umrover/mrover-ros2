@@ -13,27 +13,67 @@ namespace mrover {
         RCLCPP_INFO_STREAM(get_logger(), "Running PC Callback");
 
         // find the means for the point cloud
-        Point const* points = reinterpret_cast<Point const*>(msg->data.data());
+        Point const* pts = reinterpret_cast<Point const*>(msg->data.data());
 
-        std::size_t numPoints = msg->width * msg->height;
+        static constexpr float PLANAR_Z_THRESHOLD = 0.5;
+
+        // calculate how many inliers there will be
         std::size_t numInliers = 0;
-        R3f means;
-        means.x() = 0.0f;
-        means.y() = 0.0f;
-        means.z() = 0.0f;
-        for(std::size_t i = 0; i < numPoints; ++i){
-            Point const& point = points[i];
+        for(std::size_t i = 0; i < msg->width * msg->height; ++i){
+            Point const& point = pts[i];
 
-            if(point.normal_z < 0.5) { // TODO: make this not hardcoded
-                means.x() = point.x;
-                means.y() = point.y;
-                means.z() = point.z;
+            if  (
+                    std::isfinite(point.x) && 
+                    std::isfinite(point.y) && 
+                    std::isfinite(point.z) &&
+                    std::isfinite(point.normal_x) &&
+                    std::isfinite(point.normal_y) &&
+                    std::isfinite(point.normal_z) &&
+                    point.normal_z < PLANAR_Z_THRESHOLD
+                ) { 
                 ++numInliers;
             }
         }
 
-        RCLCPP_INFO_STREAM(get_logger(), "Means " << means << " inliers " << numInliers);
+        Eigen::MatrixXf points(numInliers, 3);
 
+        
+        std::size_t row = 0;
+        for(std::size_t i = 0; i < msg->width * msg->height; ++i){
+            Point const& point = pts[i];
+
+            if  (
+                    std::isfinite(point.x) && 
+                    std::isfinite(point.y) && 
+                    std::isfinite(point.z) &&
+                    std::isfinite(point.normal_x) &&
+                    std::isfinite(point.normal_y) &&
+                    std::isfinite(point.normal_z) &&
+                    point.normal_z < PLANAR_Z_THRESHOLD
+                ) { 
+                points(static_cast<int>(row), 0) = point.x;
+                points(static_cast<int>(row), 1) = point.y;
+                points(static_cast<int>(row), 2) = point.z;
+            }
+        }
+
+        // mean
+        Eigen::Vector3f mean = points.colwise().mean();
+
+        // find covariance matrix
+        Eigen::MatrixXf normalized(numInliers, 3);
+        normalized = points.rowwise() - mean.transpose();
+        Eigen::Matrix3f covariance = (normalized.transpose() * normalized) / (numInliers - 1);
+
+        RCLCPP_INFO_STREAM(get_logger(), "Covariance " << covariance);
+
+        // find the eigen vectors and eigen values
+        Eigen::EigenSolver<Eigen::Matrix3f> solver(covariance);
+
+        Eigen::Vector3f vals = solver.eigenvalues().real();
+        Eigen::Matrix3f vecs = solver.eigenvectors().real();
+
+        RCLCPP_INFO_STREAM(get_logger(), "Vals " << vals << " Vecs " << vecs);
     }
 };
 
