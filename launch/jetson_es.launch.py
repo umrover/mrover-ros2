@@ -26,7 +26,7 @@ def generate_launch_description():
         name="arm_hw_bridge",
         parameters=[
             Path(get_package_share_directory("mrover"), "config", "esw.yaml"),
-            Path(get_package_share_directory("mrover"), "config", "arm.yaml"),
+            Path(get_package_share_directory("mrover"), "config", "arm_params.yaml"),
         ],
     )
 

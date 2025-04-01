@@ -35,17 +35,14 @@ namespace mrover {
     // This corrects the HALL-effect motor source on the Moteus based on the absolute encoder readings
     std::chrono::seconds static constexpr DE_OFFSET_TIMER_PERIOD = std::chrono::seconds{1};
 
-    // using MetersPerRadian = compound_unit<Meters, inverse<Radians>>;
-    // using RadiansPerMeter = compound_unit<Radians, inverse<Meters>>;
-    float static constexpr GRIPPER_METERS_PER_RADIAN{0.00001727579};
-    float static constexpr GRIPPER_RADIANS_PER_METER{1 / 0.00001727579};
-
     class ArmHWBridge : public rclcpp::Node {
 
         using Controller = std::variant<BrushedController, BrushlessController<Meters>, BrushlessController<Revolutions>>;
 
     public:
-        ArmHWBridge() : rclcpp::Node{"arm_hw_bridge"} {
+        ArmHWBridge() : rclcpp::Node{"arm_hw_bridge", rclcpp::NodeOptions{}
+                                                              .allow_undeclared_parameters(true)
+                                                              .automatically_declare_parameters_from_overrides(true)} {
             // all initialization is done in the init() function to allow for the usage of shared_from_this()
         }
 
@@ -188,7 +185,7 @@ namespace mrover {
                         mJointC->setDesiredVelocity(RadiansPerSecond{velocity});
                         break;
                     case 'g' + 'r':
-                        mGripper->setDesiredVelocity(RadiansPerSecond{velocity * GRIPPER_RADIANS_PER_METER});
+                        mGripper->setDesiredVelocity(RadiansPerSecond{velocity});
                         break;
                     case 'c' + 'm':
                         mCam->setDesiredVelocity(RadiansPerSecond{velocity});
@@ -235,7 +232,7 @@ namespace mrover {
                         mJointC->setDesiredPosition(Radians{position});
                         break;
                     case 'g' + 'r':
-                        mGripper->setDesiredPosition(Radians{position * GRIPPER_RADIANS_PER_METER});
+                        mGripper->setDesiredPosition(Radians{position});
                         break;
                     case 'c' + 'm':
                         mCam->setDesiredPosition(Radians{position});
@@ -284,8 +281,8 @@ namespace mrover {
             mJointData.velocity[4] = {RadiansPerSecond{mJointDe1->getVelocity()}.get()};
             mJointData.effort[4] = {mJointDe1->getEffort()};
 
-            mJointData.position[5] = {mGripper->getPosition().get() * GRIPPER_METERS_PER_RADIAN};
-            mJointData.velocity[5] = {mGripper->getVelocity().get() * GRIPPER_METERS_PER_RADIAN};
+            mJointData.position[5] = {mGripper->getPosition().get()};
+            mJointData.velocity[5] = {mGripper->getVelocity().get()};
             mJointData.effort[5] = {mGripper->getEffort()};
 
             mJointData.position[6] = {mCam->getPosition().get()};

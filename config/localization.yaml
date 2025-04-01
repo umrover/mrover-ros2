@@ -4,12 +4,7 @@
 # Angle:    radian
 # Distance: meter
 
-basestation_gps_driver:
-  ros__parameters:
-    port: /dev/ttyACM0
-    baud: 38400
-
-gps_linearization:
+/**:
   ros__parameters:
     world_frame: "map"
     rover_frame: "base_link"
@@ -18,6 +13,11 @@ gps_linearization:
     ref_lat: 42.293195
     ref_lon: -83.7096706
     ref_alt: 0.0
+
+basestation_gps_driver:
+  ros__parameters:
+    port: /dev/ttyACM0
+    baud: 38400
 
 rover_gps_driver:
   ros__parameters:
@@ -31,14 +31,13 @@ rover_gps_driver:
 
 heading_filter:
   ros__parameters:
-    world_frame: "map"
-    rover_frame: "base_link"
+    imu_watchdog_timeout: 1.0
+    mag_heading_noise: 1.0
+    rtk_heading_noise: 0.01
+    process_noise: 0.000001
 
 iekf:
   ros__parameters:
-    world_frame: "map"
-    rover_frame: "base_link"
-
     scale_cov_a: 1.0
     scale_cov_w: 1.0
     pos_noise_fixed: 0.01
@@ -53,9 +52,6 @@ iekf:
 
 iekf_se3:
   ros__parameters:
-    world_frame: "map"
-    rover_frame: "base_link"
-
     scale_cov_a: 1.0
     scale_cov_w: 1.0
     pos_noise_fixed: 0.01
@@ -67,7 +63,4 @@ iekf_se3:
 
     rover_heading_change_threshold: 0.2
     minimum_linear_speed: 0.2
-
-
-    
 

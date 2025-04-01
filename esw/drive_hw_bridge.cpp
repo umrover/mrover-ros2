@@ -24,7 +24,9 @@ namespace mrover {
 
     class DriveHardwareBridge final : public rclcpp::Node {
     public:
-        DriveHardwareBridge() : Node{"drive_hw_bridge"} {
+        DriveHardwareBridge() : Node{"drive_hw_bridge", rclcpp::NodeOptions{}
+                                                                .allow_undeclared_parameters(true)
+                                                                .automatically_declare_parameters_from_overrides(true)} {
             // all initialization is done in the init() function to allow for the usage of shared_from_this()
         }
 
@@ -43,16 +45,19 @@ namespace mrover {
                 }));
                 for (std::string const& motor: mMotors) {
                     std::string name = std::format("{}_{}", motor, group);
+                    set_parameter(rclcpp::Parameter(std::format("{}.min_velocity", name), -10.0));
+                    set_parameter(rclcpp::Parameter(std::format("{}.max_velocity", name), 10.0));
+                    set_parameter(rclcpp::Parameter(std::format("{}.max_torque", name), 25.0));
                     mControllers.try_emplace(name, shared_from_this(), "jetson", name);
                     mJointState.name.push_back(name);
                 }
+                mJointState.position.resize(mControllers.size());
+                mJointState.velocity.resize(mControllers.size());
+                mJointState.effort.resize(mControllers.size());
 
                 mJointStatePubs.emplace_back(create_publisher<sensor_msgs::msg::JointState>(std::format("drive_{}_joint_data", group), 1));
                 mControllerStatePubs.emplace_back(create_publisher<msg::ControllerState>(std::format("drive_{}_controller_state", group), 1));
             }
-            mJointState.position.resize(mControllers.size());
-            mJointState.velocity.resize(mControllers.size());
-            mJointState.effort.resize(mControllers.size());
 
             mControllerState.state.resize(mControllers.size());
             mControllerState.error.resize(mControllers.size());

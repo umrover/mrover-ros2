@@ -38,25 +38,25 @@ macro(mrover_add_node name sources)
     rosidl_get_typesupport_target(cpp_typesupport_target ${PROJECT_NAME} rosidl_typesupport_cpp)
     target_link_libraries(${name} ${cpp_typesupport_target})
     install(
-        TARGETS ${name}
-        DESTINATION lib/${PROJECT_NAME}
+            TARGETS ${name}
+            DESTINATION lib/${PROJECT_NAME}
     )
 endmacro()
 
 macro(mrover_add_component name sources includes)
-    # Create Composition Library
-    mrover_add_library(${name}_component ${sources} ${includes} SHARED)
-    rosidl_target_interfaces(${name}_component ${PROJECT_NAME} "rosidl_typesupport_cpp")
+	# Create Composition Library
+	mrover_add_library(${name}_component ${sources} ${includes} SHARED)
+	rosidl_target_interfaces(${name}_component ${PROJECT_NAME} "rosidl_typesupport_cpp")
     foreach(node ${ARGN})
         rclcpp_components_register_nodes(${name}_component "mrover::${node}")
     endforeach()
     target_compile_definitions(${name}_component PRIVATE "COMPOSITION_BUILDING_DLL")
     install(CODE "execute_process( \
-    COMMAND ${CMAKE_COMMAND} -E create_symlink \
-    ${CMAKE_CURRENT_LIST_DIR}/../../build/${PROJECT_NAME}/lib${name}_component.so \
-    ${CMAKE_CURRENT_LIST_DIR}/../../install/${PROJECT_NAME}/lib/lib${name}_component.so \
-    )"
-)
+            COMMAND ${CMAKE_COMMAND} -E create_symlink \
+            ${CMAKE_CURRENT_LIST_DIR}/../../build/${PROJECT_NAME}/lib${name}_component.so \
+            ${CMAKE_CURRENT_LIST_DIR}/../../install/${PROJECT_NAME}/lib/lib${name}_component.so \
+        )"
+    )
 endmacro()  
 
 macro(mrover_executable_from_component name main_file)
@@ -65,9 +65,9 @@ macro(mrover_executable_from_component name main_file)
 endmacro()
 
 macro(mrover_link_component name)
-    target_link_libraries(${name}_component ${ARGN})
+	target_link_libraries(${name}_component ${ARGN})
 endmacro()
 
 macro(mrover_ament_component name)
-    ament_target_dependencies(${name}_component ${ARGN})
+	ament_target_dependencies(${name}_component ${ARGN})
 endmacro()

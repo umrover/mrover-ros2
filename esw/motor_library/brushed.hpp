@@ -1,9 +1,10 @@
 #pragma once
 
+#include <can_device.hpp>
+#include <messaging.hpp>
+// #include <params_utils.hpp>
 #include <std_srvs/srv/trigger.hpp>
 
-#include <messaging.hpp>
-#include <parameter.hpp>
 #include <units.hpp>
 
 #include "controller.hpp"

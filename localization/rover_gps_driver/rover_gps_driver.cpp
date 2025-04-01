@@ -1,5 +1,4 @@
 #include "rover_gps_driver.hpp"
-
 namespace mrover {
 
     RoverGPSDriver::RoverGPSDriver(boost::asio::io_context& io) : Node("rover_gps_driver"), serial(io) {
@@ -8,6 +7,9 @@ namespace mrover {
         declare_parameter("port_unicore", rclcpp::ParameterType::PARAMETER_STRING);
         declare_parameter("baud_unicore", rclcpp::ParameterType::PARAMETER_INTEGER);
         declare_parameter("frame_id", rclcpp::ParameterType::PARAMETER_STRING);
+        declare_parameter("ref_lat", rclcpp::ParameterType::PARAMETER_DOUBLE);
+        declare_parameter("ref_lon", rclcpp::ParameterType::PARAMETER_DOUBLE);
+        declare_parameter("ref_alt", rclcpp::ParameterType::PARAMETER_DOUBLE);
 
         port = get_parameter("port_unicore").as_string();
         baud = get_parameter("baud_unicore").as_int();
@@ -61,9 +63,9 @@ namespace mrover {
                 fix_type.fix = mrover::msg::FixType::NO_SOL;
                 fix_status.fix_type = fix_type;
 
-                nav_sat_fix.latitude = 42.293195;
-                nav_sat_fix.longitude = -83.7096706;
-                nav_sat_fix.altitude = 0;
+                nav_sat_fix.latitude = get_parameter("ref_lat").as_double();
+                nav_sat_fix.longitude = get_parameter("ref_lon").as_double();
+                nav_sat_fix.altitude = get_parameter("ref_alt").as_double();
 
                 gps_pub->publish(nav_sat_fix);
                 gps_status_pub->publish(fix_status);
@@ -134,7 +136,6 @@ namespace mrover {
 
                 fix_type.fix = mrover::msg::FixType::NO_SOL;
                 fix_status.fix_type = fix_type;
-
                 heading.heading = 0;
 
                 heading_pub->publish(heading);

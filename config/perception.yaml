@@ -46,7 +46,7 @@ long_range_cam:
 
 cost_map:
   ros__parameters:
-    resolution: 0.5
+    resolution: 1.0
     size: 32.0
     map_frame: "map"
     near_clip: 0.5

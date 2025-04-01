@@ -1,10 +1,12 @@
 from geometry_msgs.msg import Twist
 from state_machine.state import State
 from . import waypoint
+from .context import Context
 
 
 class DoneState(State):
-    def on_enter(self, context) -> None:
+    def on_enter(self, context: Context) -> None:
+        context.node.get_logger().info("Entered done state!")
         pass
 
     def on_exit(self, context) -> None:
@@ -13,6 +15,7 @@ class DoneState(State):
     def on_loop(self, context) -> State:
         # Check if we have a course to traverse
         if context.course and not context.course.is_complete():
+            context.node.get_logger().info("More waypoints to search, transitioning back to waypoint state")
             return waypoint.WaypointState()
 
         # Stop rover
@@ -43,6 +46,6 @@ def off_check(context) -> bool:
         context.disable_requested = False
         context.course = None
         context.rover.stuck = False
-        context.rover.driver.reset()
+        context.drive.reset()
         return True
     return False
