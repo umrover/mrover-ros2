@@ -292,6 +292,13 @@ mrover_link_component(tag_detector lie opencv_core opencv_aruco opencv_imgproc l
 mrover_executable_from_component(stereo_tag_detector perception/executables/stereo_tag_detector.cpp tag_detector_component)
 mrover_executable_from_component(image_tag_detector perception/executables/image_tag_detector.cpp tag_detector_component)
 
+# Lander Analysis
+mrover_add_component(lander_analysis perception/lander_analysis/*.cpp perception/lander_analysis/pch.hpp LanderAnalysis)
+mrover_ament_component(lander_analysis rclcpp rclcpp_components tf2 tf2_ros)
+mrover_link_component(lander_analysis lie opencv_core opencv_aruco opencv_imgproc loop_profiler parameter_utils)
+
+mrover_executable_from_component(lander_analysis perception/executables/lander_analysis.cpp lander_analysis_component)
+
 # Embedded
 mrover_add_header_only_library(messaging esw/messaging)
 
