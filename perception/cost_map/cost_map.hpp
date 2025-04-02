@@ -33,7 +33,8 @@ namespace mrover {
         double mResolution{}; // Meters per cell
         double mSize{};       // Size of the square costmap in meters
         int mWidth{};         // Number of cells on the grid horizontally
-        int mHeight{};        // Number of cells on the grid vertically 
+        int mHeight{};        // Number of cells on the grid vertically
+        int mNumDivisions{}; 
         int mDownSamplingFactor = 4;
         std::string mMapFrame;
         int mDilateAmt = 2;
@@ -92,6 +93,7 @@ namespace mrover {
 
         auto indexToCoordinate(int index) const -> Coordinate;
         auto coordinateToIndex(Coordinate c) const -> int;
+        auto coordinateToIndex(Coordinate c, int width) const -> int;
 
         // Function for calculating bin-boundary intersections for ray tracing
         auto isRayIntersection(const R3d& startSeg, const R3d& endSeg, double binCenterX, double binCenterY) -> std::int8_t;

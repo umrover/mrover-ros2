@@ -1,8 +1,12 @@
 #include "cost_map.hpp"
 #include "lie.hpp"
+#include <cstdint>
 #include <cstdlib>
 #include <limits>
 #include <manif/impl/se3/SE3.h>
+#include <nav_msgs/msg/detail/map_meta_data__struct.hpp>
+#include <nav_msgs/msg/detail/occupancy_grid__struct.hpp>
+#include <vector>
 
 namespace mrover {
     auto remap(double x, double inMin, double inMax, double outMin, double outMax) -> double {
@@ -46,10 +50,6 @@ namespace mrover {
         SE3Conversions::pushToTfTree(mTfBroadcaster, "bin_top_left", "zed_left_camera_frame", leftTop, get_clock()->now());
         SE3Conversions::pushToTfTree(mTfBroadcaster, "bin_bot_right", "zed_left_camera_frame", rightBot, get_clock()->now());
         SE3Conversions::pushToTfTree(mTfBroadcaster, "bin_top_right", "zed_left_camera_frame", rightTop, get_clock()->now());
-                
-
-        // RCLCPP_INFO_STREAM(get_logger(), "COST MAP MESSAGE PTR: " << msg.get());
-        // RCLCPP_INFO_STREAM(get_logger(), "COST MAP MESSAGE TIME: " << msg->header.stamp.sec);
 
 		mInliers.clear();
 
@@ -119,10 +119,6 @@ namespace mrover {
             rightBot = SE3Conversions::fromTfTree(mTfBuffer, "bin_bot_right", "map");
             rightTop = SE3Conversions::fromTfTree(mTfBuffer, "bin_top_right", "map");
 
-            double maxY = std::max(leftTop.y(), std::max(leftBot.y(), std::max(rightTop.y(), rightBot.y())));
-            double minY = std::min(leftTop.y(), std::min(leftBot.y(), std::min(rightTop.y(), rightBot.y())));
-            double minX = std::min(leftTop.x(), std::min(leftBot.x(), std::min(rightTop.x(), rightBot.x())));
-            double maxX = std::max(leftTop.x(), std::max(leftBot.x(), std::max(rightTop.x(), rightBot.x())));
             for (std::size_t i = 0; i < mGlobalGridMsg.data.size(); ++i) {
 				Bin& bin = bins[i];
                 
@@ -133,7 +129,6 @@ namespace mrover {
 
                 // If any part of the bin is outside of the clips, do not update it
                 Coordinate binCoord = indexToCoordinate(i);
-                RCLCPP_INFO_STREAM(get_logger(), "ROW " << binCoord.row << " COL " << binCoord.col);
                 double binCenterX = mGlobalGridMsg.info.origin.position.x + (mResolution * binCoord.col)  + mResolution/2.0;
                 double binCenterY = mGlobalGridMsg.info.origin.position.y + (mResolution * binCoord.row)  + mResolution/2.0;
 
@@ -151,7 +146,7 @@ namespace mrover {
                 if(numIntersection % 2 == 0){
                     continue;
                 }else{
-                    RCLCPP_INFO_STREAM(get_logger(), "NUM INTERSECTIONS: " << static_cast<int>(numIntersection));
+                    // RCLCPP_INFO_STREAM(get_logger(), "NUM INTERSECTIONS: " << static_cast<int>(numIntersection));
                 }
 
                 double percent = static_cast<double>(bin.high_pts) / static_cast<double>(bin.total);
@@ -164,43 +159,74 @@ namespace mrover {
             }
 
 
-			// Square Dilate operation
-            nav_msgs::msg::OccupancyGrid postProcesed = mGlobalGridMsg;
-            nav_msgs::msg::OccupancyGrid temp;
 
-            // Variable dilation for any width`
-            std::array<CostMapNode::Coordinate,(2*dilation+1)*(2*dilation+1)> dis = diArray();
+            // Make a new occupancy grid that's mNumDivisions^2 times the size of the original
+            nav_msgs::msg::OccupancyGrid postProcessed;
+            postProcessed.info = mGlobalGridMsg.info;
+            postProcessed.info.resolution = mResolution/mNumDivisions;
+            postProcessed.info.height = mGlobalGridMsg.info.height * mNumDivisions;
+            postProcessed.info.width = mGlobalGridMsg.info.width * mNumDivisions;
+            postProcessed.data.resize(mNumDivisions * mNumDivisions * mGlobalGridMsg.data.size(), UNKNOWN_COST);
 
-            // Do one initial pass to generate post-process for 0 cell dilation (raw data); no actual dilation happening here
-            //     Done so there is no grey scaling for 0 cell dilation
-            for(auto& b : postProcesed.data){
-                b = b > THRESHOLD_COST ? OCCUPIED_COST : (b == UNKNOWN_COST) ? UNKNOWN_COST : FREE_COST;
-            }
+            // Fill each new cell in the new map with data from the old cell (each old cell will populate numDivisions^2 worth of data)
+            for(int row = 0; row < mHeight; ++row){
+                for(int col = 0; col < mWidth; ++col){
+                    // Get current cell info, and make it either high, free, or unknown cost to remove grey scaling
+                    int8_t cell = mGlobalGridMsg.data[coordinateToIndex({row, col})];
+                    cell = cell > THRESHOLD_COST ? OCCUPIED_COST : (cell == UNKNOWN_COST) ? UNKNOWN_COST : FREE_COST;
 
-            // Repeatedly apply 3x3 kernel (1 cell dilation)
-            // TODO: running 2x dilation, but consider swapping which one is copying/being used to copy data to reduce time
-            //       can do by swapping which one is being used at each times % 2 pass
-            for(int times = 0; times < mDilateAmt; times++){
-                temp = postProcesed;
-                for (int row = 0; row < mWidth; ++row) {
-                    for(int col = 0; col < mHeight; ++col) {
-                        int oned_index = coordinateToIndex({row, col});
-                        // RCLCPP_INFO_STREAM(get_logger(), std::format("Testing Index: {}", oned_index));
-                        if(std::ranges::any_of(dis, [&](CostMapNode::Coordinate di) {
-                            // the coordinate of the cell we are checking + dis offset
-                            Coordinate dcoord = {row + di.row, col + di.col};
-                            if(dcoord.row < 0 || dcoord.row >= mHeight || dcoord.col < 0 || dcoord.col >= mWidth)
-                                return false;
-    
-                            // RCLCPP_INFO_STREAM(get_logger(), std::format("Index: {}", coordinateToIndex(dcoord)));
-                            return temp.data[coordinateToIndex(dcoord)] > FREE_COST;
-                        })) postProcesed.data[oned_index] = OCCUPIED_COST;
+                    // For each new cell, update it with the old cell info
+                    for(int subRow = 0; subRow < mNumDivisions; ++subRow){
+                        for(int subCol = 0; subCol < mNumDivisions; ++subCol){
+                            int atRow = row * mNumDivisions + subRow;
+                            int atCol = col * mNumDivisions + subCol;
+                            postProcessed.data[atRow * postProcessed.info.width + atCol] = cell;
+                        }
                     }
                 }
             }
 
 
-            mCostMapPub->publish(postProcesed);
+
+			// Square Dilate operation
+            nav_msgs::msg::OccupancyGrid temp;
+
+            // Variable dilation for any width
+            std::array<CostMapNode::Coordinate,(2*dilation+1)*(2*dilation+1)> dis = diArray();
+
+            // // Do one initial pass to generate post-process for 0 cell dilation (raw data); no actual dilation happening here
+            // //     Done so there is no grey scaling for 0 cell dilation
+            // for(auto& b : postProcessed.data){
+            //     b = b > THRESHOLD_COST ? OCCUPIED_COST : (b == UNKNOWN_COST) ? UNKNOWN_COST : FREE_COST;
+            // }
+
+            // Repeatedly apply 3x3 kernel (1 cell dilation)
+            // TODO: running 2x dilation, but consider swapping which one is copying/being used to copy data to reduce time
+            //       can do by swapping which one is being used at each times % 2 pass
+            // for(int times = 0; times < mDilateAmt; times++){
+            int width = mWidth * mNumDivisions;
+            int height = mHeight * mNumDivisions;
+            for(int times = 0; times < 2; times++){
+                temp = postProcessed;
+                for (int row = 0; row < width; ++row) {
+                    for(int col = 0; col < height; ++col) {
+                        int oned_index = coordinateToIndex({row, col}, width);
+                        // RCLCPP_INFO_STREAM(get_logger(), std::format("Testing Index: {}", oned_index));
+                        if(std::ranges::any_of(dis, [&](CostMapNode::Coordinate di) {
+                            // the coordinate of the cell we are checking + dis offset
+                            Coordinate dcoord = {row + di.row, col + di.col};
+                            if(dcoord.row < 0 || dcoord.row >= height || dcoord.col < 0 || dcoord.col >= width)
+                                return false;
+    
+                            // RCLCPP_INFO_STREAM(get_logger(), std::format("Index: {}", coordinateToIndex(dcoord)));
+                            return temp.data[coordinateToIndex(dcoord, width)] > FREE_COST;
+                        })) postProcessed.data[oned_index] = OCCUPIED_COST;
+                    }
+                }
+            }
+
+
+            mCostMapPub->publish(postProcessed);
         } catch (tf2::TransformException const& e) {
             RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, std::format("TF tree error processing point cloud: {}", e.what()));
         }
@@ -289,8 +315,6 @@ namespace mrover {
         double oldTopLeftY = mGlobalGridMsg.info.origin.position.y; // old top left Y
 
         // One of the directions will cause overlap
-        RCLCPP_INFO_STREAM(get_logger(), "Size " << mGlobalGridMsg.data.size());
-
         std::vector<int8_t> newGrid(mGlobalGridMsg.data.size(), UNKNOWN_COST);
 
         // Calculate delta row and delta col, subtract this transform to get from the new map back into the old one
@@ -323,7 +347,7 @@ namespace mrover {
 
     auto CostMapNode::dilateCostMapCallback(mrover::srv::DilateCostMap::Request::ConstSharedPtr& req, mrover::srv::DilateCostMap::Response::SharedPtr& res) -> void{
         // TODO: consider floor vs ceil here, currently rounds down to nearest cell dilation amt
-        mDilateAmt = static_cast<int>(floor(static_cast<double>(req->d_amt/mResolution)));
+        mDilateAmt = static_cast<int>(floor(static_cast<double>(req->d_amt/mResolution) / 2.0));
         res->success = true;
     }
 
@@ -333,6 +357,10 @@ namespace mrover {
 
     auto CostMapNode::coordinateToIndex(const Coordinate c) const -> int{
         return c.row * mWidth + c.col;
+    }
+
+    auto CostMapNode::coordinateToIndex(const Coordinate c, int width) const -> int{
+        return c.row * width + c.col;
     }
 
 } // namespace mrover
