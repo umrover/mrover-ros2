@@ -37,6 +37,7 @@ class Navigation(Node):
             [
                 ("update_rate", Parameter.Type.DOUBLE),
                 ("custom_costmap", Parameter.Type.BOOL),
+                ("display_markers", Parameter.Type.BOOL),
                 ("pub_path_rate", Parameter.Type.DOUBLE),
                 ("world_frame", Parameter.Type.STRING),
                 ("rover_frame", Parameter.Type.STRING),
@@ -59,8 +60,8 @@ class Navigation(Node):
                 ("long_range.bearing_expiration_duration", Parameter.Type.DOUBLE),
                 ("waypoint.stop_threshold", Parameter.Type.DOUBLE),
                 ("waypoint.drive_forward_threshold", Parameter.Type.DOUBLE),
+                ("waypoint.no_search_wait_time", Parameter.Type.DOUBLE),
                 ("search.use_costmap", Parameter.Type.BOOL),
-                ("search.display_markers", Parameter.Type.BOOL),
                 ("search.stop_threshold", Parameter.Type.DOUBLE),
                 ("search.drive_forward_threshold", Parameter.Type.DOUBLE),
                 ("search.coverage_radius", Parameter.Type.DOUBLE),
