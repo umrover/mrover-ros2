@@ -37,7 +37,7 @@ namespace mrover {
         int mNumDivisions{}; 
         int mDownSamplingFactor = 4;
         std::string mMapFrame;
-        int mDilateAmt = 2;
+        int mDilateAmt = 1;
 		
         tf2_ros::Buffer mTfBuffer{get_clock()};
         tf2_ros::TransformListener mTfListener{mTfBuffer};

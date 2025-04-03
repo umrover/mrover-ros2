@@ -3,7 +3,7 @@
 namespace mrover {
     CostMapNode::CostMapNode(rclcpp::NodeOptions const& options) : Node("cost_map", options){
         std::vector<ParameterWrapper> params{
-            {"resolution", mResolution, 0.4}, // Base cell size
+            {"resolution", mResolution, 0.8}, // Base cell size
             {"size", mSize, 60.0},
             {"width", mWidth, static_cast<int>(mSize / mResolution)},   // THIS DECLARATION DOES NOT WORK
             {"height", mHeight, static_cast<int>(mSize / mResolution)},

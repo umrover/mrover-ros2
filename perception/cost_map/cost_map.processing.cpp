@@ -1,13 +1,4 @@
 #include "cost_map.hpp"
-#include "lie.hpp"
-#include <array>
-#include <cstdint>
-#include <cstdlib>
-#include <limits>
-#include <manif/impl/se3/SE3.h>
-#include <nav_msgs/msg/detail/map_meta_data__struct.hpp>
-#include <nav_msgs/msg/detail/occupancy_grid__struct.hpp>
-#include <vector>
 
 namespace mrover {
     auto remap(double x, double inMin, double inMax, double outMin, double outMax) -> double {
@@ -189,24 +180,10 @@ namespace mrover {
             }
 
 
-
 			// Square Dilate operation
             nav_msgs::msg::OccupancyGrid temp;
 
-            // Variable dilation for any width
-            std::array<CostMapNode::Coordinate,(2*dilation+1)*(2*dilation+1)> dis = diArray();
-
-            // // Do one initial pass to generate post-process for 0 cell dilation (raw data); no actual dilation happening here
-            // //     Done so there is no grey scaling for 0 cell dilation
-            // for(auto& b : postProcessed.data){
-            //     b = b > THRESHOLD_COST ? OCCUPIED_COST : (b == UNKNOWN_COST) ? UNKNOWN_COST : FREE_COST;
-            // }
-
-            // Repeatedly apply 3x3 kernel (1 cell dilation)
-            // TODO: running 2x dilation, but consider swapping which one is copying/being used to copy data to reduce time
-            //       can do by swapping which one is being used at each times % 2 pass
-
-
+            // Repeatedly apply combination of kernels defined below to get a circular looking dilation
             static constexpr std::array<std::array<CostMapNode::Coordinate, 9>, 2> kernels = {
                 std::array<CostMapNode::Coordinate, 9>{Coordinate{0,0}, {-1,0}, {0,0}, 
                  {0,-1}, {0,0}, {0,1},
@@ -246,29 +223,6 @@ namespace mrover {
         } catch (tf2::TransformException const& e) {
             RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, std::format("TF tree error processing point cloud: {}", e.what()));
         }
-    }
-
-    // Resolved at compile time, returns dilation kernel
-    constexpr auto CostMapNode::diArray()->std::array<CostMapNode::Coordinate,(2*dilation+1)*(2*dilation+1)>{
-        std::array<CostMapNode::Coordinate, (2*dilation+1)*(2*dilation+1)> di{};
-        int pos = 0;
-
-        for(int r = -dilation; r <= dilation; r++){
-            for(int c = -dilation; c <= dilation; c++){
-                // Do not dilate the corners
-                if((r == -dilation && c == -dilation) || 
-                   (r == dilation && c == -dilation) || 
-                   (r == -dilation && c == dilation) || 
-                   (r == dilation && c == dilation)){ 
-                    continue; 
-                }
-
-                di[pos] = {r, c};
-                pos++;
-            }
-        }
-
-        return di;
     }
 
     auto CostMapNode::isRayIntersection(const R3d& startSeg, const R3d& endSeg, double binCenterX, double binCenterY) -> std::int8_t{

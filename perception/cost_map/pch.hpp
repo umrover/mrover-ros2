@@ -12,6 +12,7 @@
 #include <vector>
 #include <utility>
 #include <cstdlib>
+#include <array>
 
 // Eigen
 #include <Eigen/Core>
@@ -29,6 +30,7 @@
 #include <parameter.hpp>
 #include <point.hpp>
 #include <rclcpp/logging.hpp>
+#include <manif/impl/se3/SE3.h>
 
 // Message types
 #include <nav_msgs/msg/detail/occupancy_grid__struct.hpp>
