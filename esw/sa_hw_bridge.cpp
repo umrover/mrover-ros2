@@ -26,15 +26,13 @@ namespace mrover {
         // using Controller = std::variant<BrushedController, BrushlessController<Meters>, BrushlessController<Revolutions>>;
 
     public:
-        SAHWBridge() : rclcpp::Node{"sa_hw_bridge", rclcpp::NodeOptions{}
-                                                              .allow_undeclared_parameters(true)
-                                                              .automatically_declare_parameters_from_overrides(true)} {
+        SAHWBridge() : rclcpp::Node{"sa_hw_bridge"} {
             // all initialization is done in the init() function to allow for the usage of shared_from_this()
         }
 
         auto init() -> void {
 
-            for (const auto& name : mMotorNames) {
+            for (auto const& name: mMotorNames) {
                 mMotors[name] = std::make_shared<BrushedController>(shared_from_this(), "jetson", name);
             }
 
@@ -58,7 +56,7 @@ namespace mrover {
         }
 
     private:
-        const std::vector<std::string> mMotorNames = {"linear_actuator", "auger", "pump_a", "pump_b", "sensor_actuator"};
+        std::vector<std::string> const mMotorNames = {"linear_actuator", "auger", "pump_a", "pump_b", "sensor_actuator"};
         std::unordered_map<std::string, std::shared_ptr<BrushedController>> mMotors;
 
         rclcpp::Subscription<msg::Throttle>::SharedPtr mSAThrottleSub;
@@ -87,9 +85,9 @@ namespace mrover {
         auto publishDataCallback() -> void {
             mJointData.header.stamp = get_clock()->now();
 
-            for (size_t i = 0 ; i < mMotorNames.size() ; ++i) {
-                const auto& name = mMotorNames[i];
-                const auto& motor = mMotors[name];
+            for (size_t i = 0; i < mMotorNames.size(); ++i) {
+                auto const& name = mMotorNames[i];
+                auto const& motor = mMotors[name];
 
                 mJointData.position[i] = {motor->getPosition().get()};
                 mJointData.velocity[i] = {motor->getVelocity().get()};
@@ -103,7 +101,6 @@ namespace mrover {
             mJointDataPub->publish(mJointData);
             mControllerStatePub->publish(mControllerState);
         }
-
     };
 } // namespace mrover
 

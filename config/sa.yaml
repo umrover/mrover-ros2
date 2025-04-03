@@ -1,4 +1,4 @@
-arm_hw_bridge:
+sa_hw_bridge:
   ros__parameters:
     linear_actuator:
       # gear_ratio: 1.0
