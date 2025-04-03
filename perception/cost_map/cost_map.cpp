@@ -3,7 +3,7 @@
 namespace mrover {
     CostMapNode::CostMapNode(rclcpp::NodeOptions const& options) : Node("cost_map", options){
         std::vector<ParameterWrapper> params{
-            {"resolution", mResolution, 0.5},
+            {"resolution", mResolution, 0.8}, // Base cell size
             {"size", mSize, 60.0},
             {"width", mWidth, static_cast<int>(mSize / mResolution)},   // THIS DECLARATION DOES NOT WORK
             {"height", mHeight, static_cast<int>(mSize / mResolution)},
@@ -16,6 +16,7 @@ namespace mrover {
             {"z_percent", mZPercent, 0.34}, // Tested on static visualizer
             {"alpha", mAlpha, 0.05},
             {"z_threshold", mZThreshold, 0.51}, // Tested on static visualizer
+            {"cell_division_size", mNumDivisions, 2}, // Number of subdivisions per cell (one side this number will be squared)
         };
 
         ParameterWrapper::declareParameters(this, params);

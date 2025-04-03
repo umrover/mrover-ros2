@@ -1,7 +1,6 @@
 #pragma once
 
 #include "pch.hpp"
-#include <sensor_msgs/msg/detail/point_cloud2__struct.hpp>
 
 namespace mrover {
 
@@ -12,6 +11,7 @@ namespace mrover {
         constexpr static double TAU = 2 * std::numbers::pi;
 
         // Dilation for map, set as number of bins away from object to dilate by (default 1)
+        //     Every dilation pass dilates an additional [dilation] number of cells
         constexpr static int dilation = 1;
 
 		// Noise/Debug Vars
@@ -33,17 +33,15 @@ namespace mrover {
         double mResolution{}; // Meters per cell
         double mSize{};       // Size of the square costmap in meters
         int mWidth{};         // Number of cells on the grid horizontally
-        int mHeight{};        // Number of cells on the grid vertically 
+        int mHeight{};        // Number of cells on the grid vertically
+        int mNumDivisions{}; 
         int mDownSamplingFactor = 4;
         std::string mMapFrame;
         int mDilateAmt = 1;
-
-        // Loop timing stuff
-        // LoopProfiler mLoopProfilerGrab;
-        // LoopProfiler mLoopProfilerUpdate;
 		
         tf2_ros::Buffer mTfBuffer{get_clock()};
         tf2_ros::TransformListener mTfListener{mTfBuffer};
+        tf2_ros::TransformBroadcaster mTfBroadcaster{this};
 
         std::optional<SE3d> mPreviousPose;
         nav_msgs::msg::OccupancyGrid mGlobalGridMsg;
@@ -95,6 +93,10 @@ namespace mrover {
 
         auto indexToCoordinate(int index) const -> Coordinate;
         auto coordinateToIndex(Coordinate c) const -> int;
+        auto coordinateToIndex(Coordinate c, int width) const -> int;
+
+        // Function for calculating bin-boundary intersections for ray tracing
+        auto isRayIntersection(const R3d& startSeg, const R3d& endSeg, double binCenterX, double binCenterY) -> std::int8_t;
     };
 
 } // namespace mrover
