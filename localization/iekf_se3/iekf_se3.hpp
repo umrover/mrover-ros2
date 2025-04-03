@@ -27,10 +27,10 @@ namespace mrover {
 
         // sensor callbacks
         void imu_callback(const sensor_msgs::msg::Imu& imu_msg);
-        void pos_callback(const geometry_msgs::msg::Vector3& pos_msg);
+        void pos_callback(const geometry_msgs::msg::Vector3Stamped::ConstSharedPtr& pos_msg, const mrover::msg::FixStatus::ConstSharedPtr& pos_status_msg);
         void mag_heading_callback(const mrover::msg::Heading& mag_heading_msg);
         void accel_callback(const geometry_msgs::msg::Vector3 &a, const Matrix33d &cov_a);
-        void vel_callback(const geometry_msgs::msg::Vector3Stamped& vel_msg);
+        void vel_callback(const geometry_msgs::msg::Vector3Stamped::ConstSharedPtr& vel_msg, const mrover::msg::FixStatus::ConstSharedPtr& vel_status_msg);
         void drive_forward_callback();
         void rtk_heading_callback(const mrover::msg::Heading::ConstSharedPtr& rtk_heading, const mrover::msg::FixStatus::ConstSharedPtr& rtk_heading_status);
 
@@ -40,13 +40,21 @@ namespace mrover {
         void correct(const Vector4d& Y, const Vector4d& b, const Matrix33d& N, const Matrix36d& H);
 
         // publishers and subscribers
-        rclcpp::Subscription<geometry_msgs::msg::Vector3Stamped>::SharedPtr pos_sub;
         rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr imu_sub;
         rclcpp::Subscription<mrover::msg::Heading>::SharedPtr mag_heading_sub;
-        rclcpp::Subscription<geometry_msgs::msg::Vector3Stamped>::SharedPtr velocity_sub;
 
+        message_filters::Subscriber<geometry_msgs::msg::Vector3Stamped> pos_sub;
+        message_filters::Subscriber<mrover::msg::FixStatus> pos_status_sub;
+        message_filters::Subscriber<geometry_msgs::msg::Vector3Stamped> velocity_sub;
+        message_filters::Subscriber<mrover::msg::FixStatus> velocity_status_sub;
         message_filters::Subscriber<mrover::msg::Heading> rtk_heading_sub;
         message_filters::Subscriber<mrover::msg::FixStatus> rtk_heading_status_sub;
+
+        std::shared_ptr<message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime
+            <geometry_msgs::msg::Vector3Stamped, mrover::msg::FixStatus>>> pos_sync;
+
+        std::shared_ptr<message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime
+            <geometry_msgs::msg::Vector3Stamped, mrover::msg::FixStatus>>> velocity_sync;
 
         std::shared_ptr<message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime
             <mrover::msg::Heading, mrover::msg::FixStatus>>> rtk_heading_sync;
@@ -87,6 +95,7 @@ namespace mrover {
         double minimum_linear_speed;
 
         bool use_mag;
+        bool use_drive_forward;
 
     public:
     

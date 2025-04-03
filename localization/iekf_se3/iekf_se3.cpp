@@ -18,6 +18,7 @@ namespace mrover {
         declare_parameter("minimum_linear_speed", rclcpp::ParameterType::PARAMETER_DOUBLE);
         
         declare_parameter("use_mag", rclcpp::ParameterType::PARAMETER_BOOL);
+        declare_parameter("use_drive_forward", rclcpp::ParameterType::PARAMETER_BOOL);
     
         world_frame = get_parameter("world_frame").as_string();
         rover_frame = get_parameter("rover_frame").as_string();
@@ -32,6 +33,7 @@ namespace mrover {
         minimum_linear_speed = get_parameter("minimum_linear_speed").as_double();
 
         use_mag = get_parameter("use_mag").as_bool();
+        use_drive_forward = get_parameter("use_drive_forward").as_bool();
 
         // initialize state variables
         X.setIdentity();
@@ -47,13 +49,31 @@ namespace mrover {
             mag_heading_callback(*mag_heading_msg);
         });
 
-        pos_sub = this->create_subscription<geometry_msgs::msg::Vector3Stamped>("/linearized_position", 10, [&](const geometry_msgs::msg::Vector3Stamped::ConstSharedPtr& pos_msg) {
-            pos_callback(pos_msg->vector);
-        });
+        pos_sub.subscribe(this, "/linearized_position");
+        pos_status_sub.subscribe(this, "gps_fix_status");
 
-        velocity_sub = this->create_subscription<geometry_msgs::msg::Vector3Stamped>("/velocity/fix", 10, [&](const geometry_msgs::msg::Vector3Stamped::ConstSharedPtr& vel_msg) {
-            vel_callback(*vel_msg);
-        });
+        pos_sync = std::make_shared<message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<geometry_msgs::msg::Vector3Stamped, mrover::msg::FixStatus>>>(
+            message_filters::sync_policies::ApproximateTime<geometry_msgs::msg::Vector3Stamped, mrover::msg::FixStatus>(10),
+            pos_sub,
+            pos_status_sub
+        );
+
+        pos_sync->setAgePenalty(0.5);
+        pos_sync->registerCallback(&IEKF_SE3::pos_callback, this);
+
+
+        velocity_sub.subscribe(this, "/velocity/fix");
+        velocity_status_sub.subscribe(this, "/velocity_fix_status");
+
+        velocity_sync = std::make_shared<message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<geometry_msgs::msg::Vector3Stamped, mrover::msg::FixStatus>>>(
+            message_filters::sync_policies::ApproximateTime<geometry_msgs::msg::Vector3Stamped, mrover::msg::FixStatus>(10),
+            velocity_sub,
+            velocity_status_sub
+        );
+
+        velocity_sync->setAgePenalty(0.5);
+        velocity_sync->registerCallback(&IEKF_SE3::vel_callback, this);
+
 
         rtk_heading_sub.subscribe(this, "/heading/fix");
         rtk_heading_status_sub.subscribe(this, "/heading_fix_status");
@@ -66,6 +86,10 @@ namespace mrover {
 
         rtk_heading_sync->setAgePenalty(0.5);
         rtk_heading_sync->registerCallback(&IEKF_SE3::rtk_heading_callback, this);
+
+        correction_timer = this->create_wall_timer(WINDOW.to_chrono<std::chrono::milliseconds>(), [this]() -> void {
+            drive_forward_callback();
+        });
 
     }
 
@@ -173,27 +197,37 @@ namespace mrover {
         SE3d pose_in_map(translation, rotation);
         SE3Conversions::pushToTfTree(tf_broadcaster, rover_frame, world_frame, pose_in_map, get_clock()->now());
 
+        RCLCPP_INFO_THROTTLE(get_logger(), *get_clock(), 1000, "Published SE3 to TF tree: translation (%f, %f, %f) orientation (%f, %f, %f, %f)", translation.x(), translation.y(), translation.z(), pose_in_map.quat().x(), pose_in_map.quat().y(), pose_in_map.quat().z(), pose_in_map.quat().w());
+
         last_imu_time = imu_msg.header.stamp;
 
     }
 
-    void IEKF_SE3::vel_callback(const geometry_msgs::msg::Vector3Stamped& vel_msg) {
+    void IEKF_SE3::vel_callback(const geometry_msgs::msg::Vector3Stamped::ConstSharedPtr& vel_msg, const mrover::msg::FixStatus::ConstSharedPtr& vel_status_msg) {
+
+        if (vel_status_msg->fix_type.fix == mrover::msg::FixType::NO_SOL) {
+            return;
+        }
 
         Matrix33d cov_v = vel_noise * Matrix33d::Identity();
 
         double dt = VEL_DT;
         if (last_vel_time) {
-            dt = (vel_msg.header.stamp.sec + vel_msg.header.stamp.nanosec * 1e-9) - (last_vel_time.value().sec + last_vel_time.value().nanosec * 1e-9);
+            dt = (vel_msg->header.stamp.sec + vel_msg->header.stamp.nanosec * 1e-9) - (last_vel_time.value().sec + last_vel_time.value().nanosec * 1e-9);
         }
-        predict_vel(Vector3d{vel_msg.vector.x, vel_msg.vector.y, vel_msg.vector.z}, cov_v, dt);
+        predict_vel(Vector3d{vel_msg->vector.x, vel_msg->vector.y, vel_msg->vector.z}, cov_v, dt);
         
-        last_vel_time = vel_msg.header.stamp;
+        last_vel_time = vel_msg->header.stamp;
 
        
     }
 
 
-    void IEKF_SE3::pos_callback(const geometry_msgs::msg::Vector3& pos_msg) {
+    void IEKF_SE3::pos_callback(const geometry_msgs::msg::Vector3Stamped::ConstSharedPtr& pos_msg, const mrover::msg::FixStatus::ConstSharedPtr& pos_status_msg) {
+
+        if (pos_status_msg->fix_type.fix == mrover::msg::FixType::NO_SOL) {
+            return;
+        }
 
         Matrix36d H;
         Vector4d Y;
@@ -201,7 +235,7 @@ namespace mrover {
         Matrix33d N;
 
         H << Matrix33d::Zero(), -1 * Matrix33d::Identity();
-        Y << -1 * X.block<3, 3>(0, 0).transpose() * Vector3d{pos_msg.x, pos_msg.y, pos_msg.z}, 1;
+        Y << -1 * X.block<3, 3>(0, 0).transpose() * Vector3d{pos_msg->vector.x, pos_msg->vector.y, pos_msg->vector.z}, 1;
         b << 0, 0, 0, 1;
         N << pos_noise_fixed * Matrix33d::Identity();
 
@@ -332,6 +366,32 @@ namespace mrover {
         double drive_forward_heading = atan2(rover_velocity_sum.y(), rover_velocity_sum.x());
 
         RCLCPP_INFO(get_logger(), "Drive forward heading: %f", drive_forward_heading);
+
+        Matrix36d H;
+        Vector4d Y;
+        Vector4d b;
+        Matrix33d N;
+
+        Vector3d drive_forward_ref{1, 0, 0};
+
+        double heading = 90 - fmod(drive_forward_heading + 90, 360);
+
+        if (heading < -180) {
+            heading = 360 + heading;
+        }
+
+        heading = heading * (M_PI / 180);
+
+        H << -1 * manif::skew(drive_forward_ref), Matrix33d::Zero();
+        Y << -1 * Vector3d{std::cos(heading), -std::sin(heading), 0}, 0;
+        b << -1 * drive_forward_ref, 0;
+        N << X.block<3, 3>(0, 0) * rtk_heading_noise * Matrix33d::Identity() * X.block<3, 3>(0, 0).transpose();
+
+        if (use_drive_forward) {
+            correct(Y, b, N, H);
+        }
+
+        
         
     }
 
