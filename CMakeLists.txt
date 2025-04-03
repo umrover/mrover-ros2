@@ -240,6 +240,11 @@ mrover_add_node(heading_filter localization/heading_filter.cpp)
 ament_target_dependencies(rover_gps_driver rclcpp sensor_msgs rtcm_msgs)
 ament_target_dependencies(heading_filter rclcpp rcutils sensor_msgs builtin_interfaces message_filters)
 target_link_libraries(heading_filter lie)
+
+mrover_add_node(iekf_se3 localization/iekf_se3/*.cpp)
+ament_target_dependencies(iekf_se3 rclcpp tf2 tf2_ros geometry_msgs)
+target_link_libraries(iekf_se3 lie Eigen3::Eigen)
+
 # Perception
 
 find_package(ZED QUIET)
@@ -309,7 +314,6 @@ mrover_link_component(cost_map lie parameter_utils)
 mrover_executable_from_component(cost_map perception/executables/cost_map.cpp cost_map_component)
 
 # Embedded
-
 mrover_add_header_only_library(messaging esw/messaging)
 
 mrover_add_header_only_library(can_device esw/can_device)

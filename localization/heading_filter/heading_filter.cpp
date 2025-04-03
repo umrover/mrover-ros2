@@ -1,5 +1,4 @@
 #include "heading_filter.hpp"
-#include <rclcpp/parameter_value.hpp>
 
 namespace mrover {
 

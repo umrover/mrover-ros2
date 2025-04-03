@@ -14,6 +14,7 @@
 #include <rtcm_msgs/msg/message.hpp>
 #include <mrover/msg/satellite_signal.hpp>
 #include <builtin_interfaces/msg/time.hpp>
+#include <geometry_msgs/msg/vector3_stamped.hpp>
 
 #include <boost/asio.hpp>
 #include <boost/algorithm/string.hpp>

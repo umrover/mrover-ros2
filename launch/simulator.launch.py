@@ -67,6 +67,25 @@ def generate_launch_description():
         condition=LaunchConfigurationEquals("rviz", "true"),
     )
 
+    gps_linearization_node = Node(
+        package="mrover",
+        executable="gps_linearization.py",
+        name="gps_linearization",
+        parameters=[os.path.join(get_package_share_directory("mrover"), "config", "localization.yaml")],
+    )
+
+    iekf_node = Node(
+        package="mrover",
+        executable="iekf",
+        name="iekf"
+    )
+
+    quat_iekf_node = Node(
+        package="mrover",
+        executable="quat_iekf",
+        name="quat_iekf"
+    )
+
     return LaunchDescription(
         [
             headless_arg,
@@ -77,7 +96,10 @@ def generate_launch_description():
             # gst_websocket_streamer_node,
             # launch_include_base,
             simulator_node,
-            arm_controller_node,
+            # arm_controller_node,
             rviz_node,
+            gps_linearization_node,
+            # iekf_node,
+            quat_iekf_node
         ]
     )
