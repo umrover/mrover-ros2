@@ -32,7 +32,7 @@ namespace mrover {
         void accel_callback(const geometry_msgs::msg::Vector3 &a, const Matrix33d &cov_a);
         void vel_callback(const geometry_msgs::msg::Vector3Stamped& vel_msg);
         void drive_forward_callback();
-        void rtk_heading_callback(const mrover::msg::Heading& rtk_heading);
+        void rtk_heading_callback(const mrover::msg::Heading::ConstSharedPtr& rtk_heading, const mrover::msg::FixStatus::ConstSharedPtr& rtk_heading_status);
 
         // InEKF functions
         void predict_imu(const Vector3d& w, const Matrix33d& cov_w, double dt);
@@ -44,7 +44,12 @@ namespace mrover {
         rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr imu_sub;
         rclcpp::Subscription<mrover::msg::Heading>::SharedPtr mag_heading_sub;
         rclcpp::Subscription<geometry_msgs::msg::Vector3Stamped>::SharedPtr velocity_sub;
-        rclcpp::Subscription<mrover::msg::Heading>::SharedPtr rtk_heading_sub;
+
+        message_filters::Subscriber<mrover::msg::Heading> rtk_heading_sub;
+        message_filters::Subscriber<mrover::msg::FixStatus> rtk_heading_status_sub;
+
+        std::shared_ptr<message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime
+            <mrover::msg::Heading, mrover::msg::FixStatus>>> rtk_heading_sync;
 
         // tf broadcaster
         tf2_ros::Buffer tf_buffer{get_clock()};

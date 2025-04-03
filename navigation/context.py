@@ -433,7 +433,7 @@ class Context:
         # array: known_free_cost
         self.env.cost_map.data /= 100.0
 
-    def move_costmap(self, course_name="center_gps"):
+    def move_costmap(self, course_name="base_link"):
         # TODO(neven): add service to move costmap if going to watter bottle search
         self.node.get_logger().info(f"Requesting to move cost map to {course_name}")
         srv_name = "move_custom_cost_map" if self.node.get_parameter("custom_costmap").value else "move_cost_map"

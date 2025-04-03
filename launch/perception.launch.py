@@ -38,43 +38,51 @@ def generate_launch_description():
                     parameters=[Path(get_package_share_directory("mrover"), "config", "zed.yaml")],
                     extra_arguments=[{"use_intra_process_comms": True}],
                     ),
-                # ComposableNode(
-                #     package="mrover",
-                #     plugin="mrover::ImageTagDetector",
-                #     name="image_tag_detector",
-                #     parameters=[Path(get_package_share_directory("mrover"), "config", "perception.yaml")],
-                #     extra_arguments=[{"use_intra_process_comms": True}],
-                #     ),
-                # ComposableNode(
-                #     package="mrover",
-                #     plugin="mrover::StereoTagDetector",
-                #     name="stereo_tag_detector",
-                #     parameters=[Path(get_package_share_directory("mrover"), "config", "perception.yaml")],
-                #     extra_arguments=[{"use_intra_process_comms": True}],
-                #     ),
-                # ComposableNode(
-                #     package="mrover",
-                #     plugin="mrover::ImageObjectDetector",
-                #     name="image_object_detector",
-                #     parameters=[Path(get_package_share_directory("mrover"), "config", "perception.yaml")],
-                #     extra_arguments=[{"use_intra_process_comms": True}],
-                #     ),
-                # ComposableNode(
-                #     package="mrover",
-                #     plugin="mrover::StereoObjectDetector",
-                #     name="stereo_object_detector",
-                #     parameters=[Path(get_package_share_directory("mrover"), "config", "perception.yaml")],
-                #     extra_arguments=[{"use_intra_process_comms": True}],
-                #     ),
-                # ComposableNode(
-                #     package="mrover",
-                #     plugin="mrover::CostMapNode",
-                #     name="cost_map",
-                #     parameters=[Path(get_package_share_directory("mrover"), "config", "perception.yaml")],
-                #     extra_arguments=[{'use_intra_process_comms': True}],
-                #     ),
+                 ComposableNode(
+                     package="mrover",
+                     plugin="mrover::ImageTagDetector",
+                     name="image_tag_detector",
+                     parameters=[Path(get_package_share_directory("mrover"), "config", "perception.yaml")],
+                     extra_arguments=[{"use_intra_process_comms": True}],
+                     ),
+                 ComposableNode(
+                     package="mrover",
+                     plugin="mrover::StereoTagDetector",
+                     name="stereo_tag_detector",
+                     parameters=[Path(get_package_share_directory("mrover"), "config", "perception.yaml")],
+                     extra_arguments=[{"use_intra_process_comms": True}],
+                     ),
+                 ComposableNode(
+                     package="mrover",
+                     plugin="mrover::ImageObjectDetector",
+                     name="image_object_detector",
+                     parameters=[Path(get_package_share_directory("mrover"), "config", "perception.yaml")],
+                     extra_arguments=[{"use_intra_process_comms": True}],
+                     ),
+                 ComposableNode(
+                     package="mrover",
+                     plugin="mrover::StereoObjectDetector",
+                     name="stereo_object_detector",
+                     parameters=[Path(get_package_share_directory("mrover"), "config", "perception.yaml")],
+                     extra_arguments=[{"use_intra_process_comms": True}],
+                     ),
+                 ComposableNode(
+                     package="mrover",
+                     plugin="mrover::CostMapNode",
+                     name="cost_map",
+                     parameters=[Path(get_package_share_directory("mrover"), "config", "perception.yaml")],
+                     extra_arguments=[{'use_intra_process_comms': True}],
+                     ),
                 ],
             output="screen",
             )
 
-    return launch.LaunchDescription([container])
+    usb_cam = Node(
+        package="mrover",
+        executable="usb_camera",
+        name="long_range_cam",
+        parameters=[Path(get_package_share_directory("mrover"), "config", "perception.yaml")],
+    )
+
+
+    return launch.LaunchDescription([container, usb_cam])

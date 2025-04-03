@@ -39,7 +39,7 @@ heading_filter:
 iekf_se3:
   ros__parameters:
     scale_cov_a: 1.0
-    scale_cov_w: 100
+    scale_cov_w: 100.0
     pos_noise_fixed: 0.01
     pos_noise_float: 0.1
     pos_noise_none: 1.0

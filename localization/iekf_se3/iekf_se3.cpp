@@ -55,9 +55,17 @@ namespace mrover {
             vel_callback(*vel_msg);
         });
 
-        rtk_heading_sub = this->create_subscription<mrover::msg::Heading>("/heading/fix", 10, [&](const mrover::msg::Heading::ConstSharedPtr& rtk_heading_msg) {
-            rtk_heading_callback(*rtk_heading_msg);
-        });
+        rtk_heading_sub.subscribe(this, "/heading/fix");
+        rtk_heading_status_sub.subscribe(this, "/heading_fix_status");
+
+        rtk_heading_sync = std::make_shared<message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<mrover::msg::Heading, mrover::msg::FixStatus>>>(
+            message_filters::sync_policies::ApproximateTime<mrover::msg::Heading, mrover::msg::FixStatus>(10),
+            rtk_heading_sub,
+            rtk_heading_status_sub
+        );
+
+        rtk_heading_sync->setAgePenalty(0.5);
+        rtk_heading_sync->registerCallback(&IEKF_SE3::rtk_heading_callback, this);
 
     }
 
@@ -251,7 +259,11 @@ namespace mrover {
         correct(Y, b, N, H);
     }
 
-    void IEKF_SE3::rtk_heading_callback(const mrover::msg::Heading &rtk_heading) {
+    void IEKF_SE3::rtk_heading_callback(const mrover::msg::Heading::ConstSharedPtr &rtk_heading, const mrover::msg::FixStatus::ConstSharedPtr &rtk_heading_status) {
+
+        if (rtk_heading_status->fix_type.fix == mrover::msg::FixType::NO_SOL) {
+            return;
+        }
 
         Matrix36d H;
         Vector4d Y;
@@ -260,7 +272,7 @@ namespace mrover {
 
         Vector3d rtk_heading_ref{1, 0, 0};
 
-        double heading = 90 - fmod(rtk_heading.heading + 90, 360);
+        double heading = 90 - fmod(rtk_heading->heading + 90, 360);
 
         if (heading < -180) {
             heading = 360 + heading;

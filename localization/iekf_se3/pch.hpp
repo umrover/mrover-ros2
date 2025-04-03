@@ -12,6 +12,8 @@
 #include <builtin_interfaces/msg/time.hpp>
 #include <sensor_msgs/msg/imu.hpp>
 #include <mrover/msg/heading.hpp>
+#include <mrover/msg/fix_status.hpp>
+#include <mrover/msg/fix_type.hpp>
 
 #include <message_filters/subscriber.h>
 #include <message_filters//synchronizer.h>
