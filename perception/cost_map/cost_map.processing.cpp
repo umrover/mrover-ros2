@@ -1,5 +1,6 @@
 #include "cost_map.hpp"
 #include "lie.hpp"
+#include <array>
 #include <cstdint>
 #include <cstdlib>
 #include <limits>
@@ -162,10 +163,11 @@ namespace mrover {
 
             // Make a new occupancy grid that's mNumDivisions^2 times the size of the original
             nav_msgs::msg::OccupancyGrid postProcessed;
-            postProcessed.info = mGlobalGridMsg.info;
             postProcessed.info.resolution = mResolution/mNumDivisions;
             postProcessed.info.height = mGlobalGridMsg.info.height * mNumDivisions;
             postProcessed.info.width = mGlobalGridMsg.info.width * mNumDivisions;
+            postProcessed.info.origin = mGlobalGridMsg.info.origin;
+            postProcessed.header.frame_id = mMapFrame;
             postProcessed.data.resize(mNumDivisions * mNumDivisions * mGlobalGridMsg.data.size(), UNKNOWN_COST);
 
             // Fill each new cell in the new map with data from the old cell (each old cell will populate numDivisions^2 worth of data)
@@ -203,24 +205,38 @@ namespace mrover {
             // Repeatedly apply 3x3 kernel (1 cell dilation)
             // TODO: running 2x dilation, but consider swapping which one is copying/being used to copy data to reduce time
             //       can do by swapping which one is being used at each times % 2 pass
-            // for(int times = 0; times < mDilateAmt; times++){
+
+
+            static constexpr std::array<std::array<CostMapNode::Coordinate, 9>, 2> kernels = {
+                std::array<CostMapNode::Coordinate, 9>{Coordinate{0,0}, {-1,0}, {0,0}, 
+                 {0,-1}, {0,0}, {0,1},
+                 {0,0}, {1,0}, {0,0}},
+
+                {Coordinate{-1,-1}, {-1,0}, {-1,1},
+                 {0,-1}, {0,0}, {0,1},
+                 {1,-1}, {1,0}, {1,1}}
+            };
+
+
             int width = mWidth * mNumDivisions;
             int height = mHeight * mNumDivisions;
-            for(int times = 0; times < 2; times++){
-                temp = postProcessed;
-                for (int row = 0; row < width; ++row) {
-                    for(int col = 0; col < height; ++col) {
-                        int oned_index = coordinateToIndex({row, col}, width);
-                        // RCLCPP_INFO_STREAM(get_logger(), std::format("Testing Index: {}", oned_index));
-                        if(std::ranges::any_of(dis, [&](CostMapNode::Coordinate di) {
-                            // the coordinate of the cell we are checking + dis offset
-                            Coordinate dcoord = {row + di.row, col + di.col};
-                            if(dcoord.row < 0 || dcoord.row >= height || dcoord.col < 0 || dcoord.col >= width)
-                                return false;
-    
-                            // RCLCPP_INFO_STREAM(get_logger(), std::format("Index: {}", coordinateToIndex(dcoord)));
-                            return temp.data[coordinateToIndex(dcoord, width)] > FREE_COST;
-                        })) postProcessed.data[oned_index] = OCCUPIED_COST;
+            for(int times = 0; times < mDilateAmt; times++){
+                for(auto& ker : kernels){
+                    temp = postProcessed;
+                    for (int row = 0; row < width; ++row) {
+                        for(int col = 0; col < height; ++col) {
+                            int oned_index = coordinateToIndex({row, col}, width);
+                            // RCLCPP_INFO_STREAM(get_logger(), std::format("Testing Index: {}", oned_index));
+                            if(std::ranges::any_of(ker, [&](CostMapNode::Coordinate di) {
+                                // the coordinate of the cell we are checking + dis offset
+                                Coordinate dcoord = {row + di.row, col + di.col};
+                                if(dcoord.row < 0 || dcoord.row >= height || dcoord.col < 0 || dcoord.col >= width)
+                                    return false;
+        
+                                // RCLCPP_INFO_STREAM(get_logger(), std::format("Index: {}", coordinateToIndex(dcoord)));
+                                return temp.data[coordinateToIndex(dcoord, width)] > FREE_COST;
+                            })) postProcessed.data[oned_index] = OCCUPIED_COST;
+                        }
                     }
                 }
             }
