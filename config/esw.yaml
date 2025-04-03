@@ -66,15 +66,15 @@ can_bridge_2:
         id: 0x35
       cam:
         id: 0x36
-      linear_actuator:
-        id: 0x40
       auger:
-        id: 0x41
-      pump_a:
-        id: 0x42
-      pump_b:
-        id: 0x43
+        id: 0x40
       sensor_actuator:
+        id: 0x41
+      linear_actuator:
+        id: 0x42
+      pump_a:
+        id: 0x43
+      pump_b:
         id: 0x44
 can_bridge_3:
   ros__parameters:
