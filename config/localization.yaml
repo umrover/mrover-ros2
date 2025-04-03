@@ -7,7 +7,7 @@
 /**:
   ros__parameters:
     world_frame: "map"
-    rover_frame: "base_link"
+    rover_frame: "right_gps_frame"
 
     # Exception, these are in degrees
     ref_lat: 42.293195
@@ -27,7 +27,7 @@ rover_gps_driver:
     port_ublox: /dev/ublox_gps
     baud_ublox: 38400
 
-    frame_id: "base_link"
+    frame_id: "right_gps_frame"
 
 heading_filter:
   ros__parameters:
@@ -35,20 +35,6 @@ heading_filter:
     mag_heading_noise: 1.0
     rtk_heading_noise: 0.01
     process_noise: 0.000001
-
-iekf:
-  ros__parameters:
-    scale_cov_a: 1.0
-    scale_cov_w: 1.0
-    pos_noise_fixed: 0.01
-    pos_noise_float: 0.1
-    pos_noise_none: 1.0
-    vel_noise: 1.0
-    mag_heading_noise: 1.0
-    rtk_heading_noise: 0.01
-
-    rover_heading_change_threshold: 0.2
-    minimum_linear_speed: 0.2
 
 iekf_se3:
   ros__parameters:

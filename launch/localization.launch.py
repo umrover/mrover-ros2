@@ -35,6 +35,7 @@ def generate_launch_description():
         executable="rover_gps_driver",
         name="rover_gps_driver",
         parameters=[os.path.join(get_package_share_directory("mrover"), "config", "localization.yaml")],
+        output="screen"
     )
 
     gps_linearization_node = Node(
@@ -56,6 +57,7 @@ def generate_launch_description():
         executable="iekf_se3",
         name="iekf_se3",
         parameters=[os.path.join(get_package_share_directory("mrover"), "config", "localization.yaml")],
+        output="screen"
     )
 
     return LaunchDescription([rover_gps_driver_node, gps_linearization_node, iekf_se3_node])
