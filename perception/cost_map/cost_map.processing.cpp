@@ -1,5 +1,4 @@
 #include "cost_map.hpp"
-#include <cstdlib>
 
 namespace mrover {
     auto remap(double x, double inMin, double inMax, double outMin, double outMax) -> double {
@@ -28,8 +27,21 @@ namespace mrover {
         assert(msg->height > 0);
         assert(msg->width > 0);
 
-        // RCLCPP_INFO_STREAM(get_logger(), "COST MAP MESSAGE PTR: " << msg.get());
-        // RCLCPP_INFO_STREAM(get_logger(), "COST MAP MESSAGE TIME: " << msg->header.stamp.sec);
+        // Push transforms b/w clip box and map frame to tf tree
+        // SE3d rightBot(R3d{mRightClip, mNearClip, 0}, SO3d::Identity());
+        // SE3d rightTop(R3d{mRightClip, mFarClip, 0}, SO3d::Identity());
+        // SE3d leftBot(R3d{mLeftClip, mNearClip, 0}, SO3d::Identity());
+        // SE3d leftTop(R3d{mLeftClip, mFarClip, 0}, SO3d::Identity());
+
+        SE3d rightBot(R3d{mNearClip, mRightClip, 0}, SO3d::Identity());
+        SE3d rightTop(R3d{mFarClip, mRightClip, 0}, SO3d::Identity());
+        SE3d leftBot(R3d{mNearClip, mLeftClip, 0}, SO3d::Identity());
+        SE3d leftTop(R3d{mFarClip, mLeftClip, 0}, SO3d::Identity());
+
+        SE3Conversions::pushToTfTree(mTfBroadcaster, "bin_bot_left", "zed_left_camera_frame", leftBot, get_clock()->now());
+        SE3Conversions::pushToTfTree(mTfBroadcaster, "bin_top_left", "zed_left_camera_frame", leftTop, get_clock()->now());
+        SE3Conversions::pushToTfTree(mTfBroadcaster, "bin_bot_right", "zed_left_camera_frame", rightBot, get_clock()->now());
+        SE3Conversions::pushToTfTree(mTfBroadcaster, "bin_top_right", "zed_left_camera_frame", rightTop, get_clock()->now());
 
 		mInliers.clear();
 
@@ -89,16 +101,45 @@ namespace mrover {
 				uploadPC();
 			}
 
+            // Percentage Algorithm (acounts for angle changes (and outliers))
+                // // Chose the percentage algorithm because it's less sensitive to angle changes (and outliers) and can accurately track
+                // //     objects outside. Normal averaging too sensitive.
+
+            // Boundary points
+            leftBot = SE3Conversions::fromTfTree(mTfBuffer, "bin_bot_left", "map");
+            leftTop = SE3Conversions::fromTfTree(mTfBuffer, "bin_top_left", "map");
+            rightBot = SE3Conversions::fromTfTree(mTfBuffer, "bin_bot_right", "map");
+            rightTop = SE3Conversions::fromTfTree(mTfBuffer, "bin_top_right", "map");
+
             for (std::size_t i = 0; i < mGlobalGridMsg.data.size(); ++i) {
 				Bin& bin = bins[i];
+                
+                // Skip if there are not enough points
                 if (bin.total < 16){
                     continue;
                 }
 
-                // Percentage Algorithm (acounts for angle changes (and outliers))
-                // // Chose the percentage algorithm because it's less sensitive to angle changes (and outliers) and can accurately track
-                // //     objects outside. Normal averaging too sensitive.
+                // If any part of the bin is outside of the clips, do not update it
+                Coordinate binCoord = indexToCoordinate(i);
+                double binCenterX = mGlobalGridMsg.info.origin.position.x + (mResolution * binCoord.col)  + mResolution/2.0;
+                double binCenterY = mGlobalGridMsg.info.origin.position.y + (mResolution * binCoord.row)  + mResolution/2.0;
 
+                // Calculate intersection point from bin center to each boundary (ray in the positive
+                //         y-direction), we know the x-coordinate
+                std::int8_t numIntersection = 0;
+                numIntersection += isRayIntersection(leftTop.translation(), leftBot.translation(), binCenterX, binCenterY);
+                numIntersection += isRayIntersection(leftBot.translation(), rightBot.translation(), binCenterX, binCenterY);
+                numIntersection += isRayIntersection(rightBot.translation(), rightTop.translation(), binCenterX, binCenterY);
+                numIntersection += isRayIntersection(rightTop.translation(), leftTop.translation(), binCenterX, binCenterY);
+
+                // if the number of intersections is 
+
+                // If the number of intersections are even, the bin is not valid
+                if(numIntersection % 2 == 0){
+                    continue;
+                }else{
+                    // RCLCPP_INFO_STREAM(get_logger(), "NUM INTERSECTIONS: " << static_cast<int>(numIntersection));
+                }
 
                 double percent = static_cast<double>(bin.high_pts) / static_cast<double>(bin.total);
 
@@ -110,64 +151,106 @@ namespace mrover {
             }
 
 
-			// Square Dilate operation
-            nav_msgs::msg::OccupancyGrid postProcesed = mGlobalGridMsg;
-            nav_msgs::msg::OccupancyGrid temp;
 
-            // Variable dilation for any width`
-            std::array<CostMapNode::Coordinate,(2*dilation+1)*(2*dilation+1)> dis = diArray();
+            // Make a new occupancy grid that's mNumDivisions^2 times the size of the original
+            nav_msgs::msg::OccupancyGrid postProcessed;
+            postProcessed.info.resolution = mResolution/mNumDivisions;
+            postProcessed.info.height = mGlobalGridMsg.info.height * mNumDivisions;
+            postProcessed.info.width = mGlobalGridMsg.info.width * mNumDivisions;
+            postProcessed.info.origin = mGlobalGridMsg.info.origin;
+            postProcessed.header.frame_id = mMapFrame;
+            postProcessed.data.resize(mNumDivisions * mNumDivisions * mGlobalGridMsg.data.size(), UNKNOWN_COST);
 
-            // Do one initial pass to generate post-process for 0 cell dilation (raw data); no actual dilation happening here
-            //     Done so there is no grey scaling for 0 cell dilation
-            for(int row = 0; row < mWidth; row++){
-                for(int col = 0; col < mHeight; col++){
-                    int oned_index = coordinateToIndex({row, col});
-                    postProcesed.data[oned_index] = postProcesed.data[oned_index] > THRESHOLD_COST ? OCCUPIED_COST : (postProcesed.data[oned_index] == UNKNOWN_COST) ? UNKNOWN_COST : FREE_COST;
-                }
-            }
+            // Fill each new cell in the new map with data from the old cell (each old cell will populate numDivisions^2 worth of data)
+            for(int row = 0; row < mHeight; ++row){
+                for(int col = 0; col < mWidth; ++col){
+                    // Get current cell info, and make it either high, free, or unknown cost to remove grey scaling
+                    int8_t cell = mGlobalGridMsg.data[coordinateToIndex({row, col})];
+                    cell = cell > THRESHOLD_COST ? OCCUPIED_COST : (cell == UNKNOWN_COST) ? UNKNOWN_COST : FREE_COST;
 
-            // Repeatedly apply 3x3 kernel (1 cell dilation)
-            // TODO: running 2x dilation, but consider swapping which one is copying/being used to copy data to reduce time
-            //       can do by swapping which one is being used at each times % 2 pass
-            for(int times = 0; times < mDilateAmt; times++){
-                temp = postProcesed;
-                for (int row = 0; row < mWidth; ++row) {
-                    for(int col = 0; col < mHeight; ++col) {
-                        int oned_index = coordinateToIndex({row, col});
-                        // RCLCPP_INFO_STREAM(get_logger(), std::format("Testing Index: {}", oned_index));
-                        if(std::ranges::any_of(dis, [&](CostMapNode::Coordinate di) {
-                            // the coordinate of the cell we are checking + dis offset
-                            Coordinate dcoord = {row + di.row, col + di.col};
-                            if(dcoord.row < 0 || dcoord.row >= mHeight || dcoord.col < 0 || dcoord.col >= mWidth)
-                                return false;
-    
-                            // RCLCPP_INFO_STREAM(get_logger(), std::format("Index: {}", coordinateToIndex(dcoord)));
-                            return temp.data[coordinateToIndex(dcoord)] > FREE_COST;
-                        })) postProcesed.data[oned_index] = OCCUPIED_COST;
+                    // For each new cell, update it with the old cell info
+                    for(int subRow = 0; subRow < mNumDivisions; ++subRow){
+                        for(int subCol = 0; subCol < mNumDivisions; ++subCol){
+                            int atRow = row * mNumDivisions + subRow;
+                            int atCol = col * mNumDivisions + subCol;
+                            postProcessed.data[atRow * postProcessed.info.width + atCol] = cell;
+                        }
                     }
                 }
             }
 
 
-            mCostMapPub->publish(postProcesed);
+			// Square Dilate operation
+            nav_msgs::msg::OccupancyGrid temp;
+
+            // Repeatedly apply combination of kernels defined below to get a circular looking dilation
+            static constexpr std::array<std::array<CostMapNode::Coordinate, 9>, 2> kernels = {
+                std::array<CostMapNode::Coordinate, 9>{Coordinate{0,0}, {-1,0}, {0,0}, 
+                 {0,-1}, {0,0}, {0,1},
+                 {0,0}, {1,0}, {0,0}},
+
+                {Coordinate{-1,-1}, {-1,0}, {-1,1},
+                 {0,-1}, {0,0}, {0,1},
+                 {1,-1}, {1,0}, {1,1}}
+            };
+
+
+            int width = mWidth * mNumDivisions;
+            int height = mHeight * mNumDivisions;
+            for(int times = 0; times < mDilateAmt; times++){
+                for(auto& ker : kernels){
+                    temp = postProcessed;
+                    for (int row = 0; row < width; ++row) {
+                        for(int col = 0; col < height; ++col) {
+                            int oned_index = coordinateToIndex({row, col}, width);
+                            // RCLCPP_INFO_STREAM(get_logger(), std::format("Testing Index: {}", oned_index));
+                            if(std::ranges::any_of(ker, [&](CostMapNode::Coordinate di) {
+                                // the coordinate of the cell we are checking + dis offset
+                                Coordinate dcoord = {row + di.row, col + di.col};
+                                if(dcoord.row < 0 || dcoord.row >= height || dcoord.col < 0 || dcoord.col >= width)
+                                    return false;
+        
+                                // RCLCPP_INFO_STREAM(get_logger(), std::format("Index: {}", coordinateToIndex(dcoord)));
+                                return temp.data[coordinateToIndex(dcoord, width)] > FREE_COST;
+                            })) postProcessed.data[oned_index] = OCCUPIED_COST;
+                        }
+                    }
+                }
+            }
+
+
+            mCostMapPub->publish(postProcessed);
         } catch (tf2::TransformException const& e) {
             RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, std::format("TF tree error processing point cloud: {}", e.what()));
         }
     }
 
-    // Resolved at compile time, returns dilation kernel
-    constexpr auto CostMapNode::diArray()->std::array<CostMapNode::Coordinate,(2*dilation+1)*(2*dilation+1)>{
-        std::array<CostMapNode::Coordinate, (2*dilation+1)*(2*dilation+1)> di{};
-        int pos = 0;
-
-        for(int r = -dilation; r <= dilation; r++){
-            for(int c = -dilation; c <= dilation; c++){
-                di[pos] = {r, c};
-                pos++;
-            }
+    auto CostMapNode::isRayIntersection(const R3d& startSeg, const R3d& endSeg, double binCenterX, double binCenterY) -> std::int8_t{
+        // if the point is not inside the bounds of the segment's x axis
+        double lowerX = (startSeg.x() < endSeg.x()) ? startSeg.x() : endSeg.x();
+        double higherX = (startSeg.x() < endSeg.x()) ? endSeg.x() : startSeg.x();
+        if(binCenterX <= lowerX || binCenterX >= higherX){
+            return 0;
         }
 
-        return di;
+        R3d seg = endSeg - startSeg;
+
+        // handle the case where the slope is undefined
+        if(seg.x() == 0){
+            return 0;
+        }
+
+        // calc the y value of the intersection point to see if it is in boundary
+        double m = seg.y() / seg.x();
+        double y = m * (binCenterX - startSeg.x()) + startSeg.y();
+
+        double lowerY = (startSeg.y() < endSeg.y()) ? startSeg.y() : endSeg.y();
+        double higherY = (startSeg.y() < endSeg.y()) ? endSeg.y() : startSeg.y();
+        if(y <= lowerY || y >= higherY || higherY <= binCenterY){
+            return 0;
+        }
+
+        return 1;
     }
 
 	void CostMapNode::uploadPC() {
@@ -202,8 +285,6 @@ namespace mrover {
         double oldTopLeftY = mGlobalGridMsg.info.origin.position.y; // old top left Y
 
         // One of the directions will cause overlap
-        RCLCPP_INFO_STREAM(get_logger(), "Size " << mGlobalGridMsg.data.size());
-
         std::vector<int8_t> newGrid(mGlobalGridMsg.data.size(), UNKNOWN_COST);
 
         // Calculate delta row and delta col, subtract this transform to get from the new map back into the old one
@@ -236,7 +317,7 @@ namespace mrover {
 
     auto CostMapNode::dilateCostMapCallback(mrover::srv::DilateCostMap::Request::ConstSharedPtr& req, mrover::srv::DilateCostMap::Response::SharedPtr& res) -> void{
         // TODO: consider floor vs ceil here, currently rounds down to nearest cell dilation amt
-        mDilateAmt = static_cast<int>(floor(static_cast<double>(req->d_amt/mResolution)));
+        mDilateAmt = static_cast<int>(floor(static_cast<double>(req->d_amt/mResolution) / 2.0));
         res->success = true;
     }
 
@@ -246,6 +327,10 @@ namespace mrover {
 
     auto CostMapNode::coordinateToIndex(const Coordinate c) const -> int{
         return c.row * mWidth + c.col;
+    }
+
+    auto CostMapNode::coordinateToIndex(const Coordinate c, int width) const -> int{
+        return c.row * width + c.col;
     }
 
 } // namespace mrover

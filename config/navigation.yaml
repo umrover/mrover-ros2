@@ -34,7 +34,7 @@ navigation:
       lookahead_distance: 1.0
     
     long_range:
-      distance_ahead: 10.0
+      distance_ahead: 3.0
       bearing_expiration_duration: 0.5
 
     waypoint:

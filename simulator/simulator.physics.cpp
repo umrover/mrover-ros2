@@ -16,7 +16,7 @@ namespace mrover {
     auto btTransformToSe3(btTransform const& transform) -> SE3d {
         btVector3 const& p = transform.getOrigin();
         btQuaternion const& q = transform.getRotation();
-        // Note: Must convert the Bullet quaternion (floats) to a normalized Eigen quaternion (doubles).
+        // Note: Must convert the Bullet ftquaternion (floats) to a normalized Eigen quaternion (doubles).
         //       Otherwise the normality check will fail in the SO3 constructor.
         return SE3d{R3d{p.x(), p.y(), p.z()}, Eigen::Quaterniond{q.w(), q.x(), q.y(), q.z()}.normalized()};
     }
@@ -101,13 +101,13 @@ namespace mrover {
                     btTransform parentToChild{urdf.physics->getParentToLocalRot(index), -urdf.physics->getRVector(index)};
                     SE3d childInParent = btTransformToSe3(parentToChild.inverse());
 
-                    SE3Conversions::pushToTfTree(mTfBroadcaster, link->name, link->getParent()->name, childInParent, get_clock()->now());
+                    // SE3Conversions::pushToTfTree(mTfBroadcaster, link->name, link->getParent()->name, childInParent, get_clock()->now());
                 }
 
                 SE3d modelInMap = btTransformToSe3(urdf.physics->getBaseWorldTransform());
-                SE3Conversions::pushToTfTree(mTfBroadcaster, std::format("{}_truth", name), "map", modelInMap, get_clock()->now());
+                // SE3Conversions::pushToTfTree(mTfBroadcaster, std::format("{}_truth", name), "map", modelInMap, get_clock()->now());
 
-                if (name == "rover") SE3Conversions::pushToTfTree(mTfBroadcaster, "base_link", "map", modelInMap, get_clock()->now());
+                // if (name == "rover") SE3Conversions::pushToTfTree(mTfBroadcaster, "base_link", "map", modelInMap, get_clock()->now());
 
                 for (urdf::JointSharedPtr const& child_joint: link->child_joints) {
                     self(self, urdf.model.getLink(child_joint->child_link_name));

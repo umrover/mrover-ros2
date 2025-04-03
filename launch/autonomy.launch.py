@@ -33,6 +33,11 @@ def generate_launch_description():
             Path(get_package_share_directory("mrover"), "launch/localization.launch.py").__str__()
         )
     )
+    base_link_to_right_gps = Node(
+        package="tf2_ros",
+        executable="static_transform_publisher",
+        arguments=["-0.5", "0", "0", "0", "0", "0", "1", "base_link", "right_gps_frame"]
+    )
 
     # Run Navigation
     launch_navigation = IncludeLaunchDescription(
@@ -47,5 +52,5 @@ def generate_launch_description():
     )
 
     return LaunchDescription(
-        [launch_jetson_base, launch_perception, launch_localization, launch_navigation, base_link_to_zed]
+        [launch_jetson_base, launch_perception, launch_localization, launch_navigation, base_link_to_zed, base_link_to_right_gps]
     )

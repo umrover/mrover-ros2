@@ -41,6 +41,7 @@
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2_ros/transform_listener.h>
 #include <urdf/model.h>
+#include <mrover/msg/heading.hpp>
 
 #include <glfw3webgpu.h>
 

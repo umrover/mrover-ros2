@@ -1,5 +1,4 @@
 #include "rover_gps_driver.hpp"
-
 namespace mrover {
 
     RoverGPSDriver::RoverGPSDriver(boost::asio::io_context& io) : Node("rover_gps_driver"), serial(io) {
@@ -8,6 +7,9 @@ namespace mrover {
         declare_parameter("port_unicore", rclcpp::ParameterType::PARAMETER_STRING);
         declare_parameter("baud_unicore", rclcpp::ParameterType::PARAMETER_INTEGER);
         declare_parameter("frame_id", rclcpp::ParameterType::PARAMETER_STRING);
+        declare_parameter("ref_lat", rclcpp::ParameterType::PARAMETER_DOUBLE);
+        declare_parameter("ref_lon", rclcpp::ParameterType::PARAMETER_DOUBLE);
+        declare_parameter("ref_alt", rclcpp::ParameterType::PARAMETER_DOUBLE);
 
         port = get_parameter("port_unicore").as_string();
         baud = get_parameter("baud_unicore").as_int();
@@ -24,7 +26,8 @@ namespace mrover {
         gps_status_pub = this->create_publisher<mrover::msg::FixStatus>("/gps_fix_status", 10);
         heading_pub = this->create_publisher<mrover::msg::Heading>("/heading/fix", 10);
         heading_status_pub = this->create_publisher<mrover::msg::FixStatus>("/heading_fix_status", 10);
-
+        velocity_pub = this->create_publisher<geometry_msgs::msg::Vector3Stamped>("/velocity/fix", 10);
+        velocity_status_pub = this->create_publisher<mrover::msg::FixStatus>("/velocity_fix_status", 10);
         satellite_signal_pub = this->create_publisher<mrover::msg::SatelliteSignal>("/gps/satellite_signal", 10);
         rtcm_sub = this->create_subscription<rtcm_msgs::msg::Message>("/rtcm", 10, [&](rtcm_msgs::msg::Message::ConstSharedPtr const& rtcm_message) {
             process_rtcm(rtcm_message);
@@ -51,18 +54,18 @@ namespace mrover {
             sensor_msgs::msg::NavSatFix nav_sat_fix;
             mrover::msg::FixStatus fix_status;
             mrover::msg::FixType fix_type;
+            nav_sat_fix.header = header;
+            fix_status.header = header;
 
             if (stoi(tokens[GNGGA_QUAL_POS]) == 0) {
                 RCLCPP_WARN(get_logger(), "Invalid fix. Are we inside?");
 
                 fix_type.fix = mrover::msg::FixType::NO_SOL;
                 fix_status.fix_type = fix_type;
-                fix_status.header = header;
 
-                nav_sat_fix.header = header;
-                nav_sat_fix.latitude = 0;
-                nav_sat_fix.longitude = 0;
-                nav_sat_fix.altitude = 0;
+                nav_sat_fix.latitude = get_parameter("ref_lat").as_double();
+                nav_sat_fix.longitude = get_parameter("ref_lon").as_double();
+                nav_sat_fix.altitude = get_parameter("ref_alt").as_double();
 
                 gps_pub->publish(nav_sat_fix);
                 gps_status_pub->publish(fix_status);
@@ -92,7 +95,6 @@ namespace mrover {
                 lon = -lon;
             }
 
-            nav_sat_fix.header = header;
             nav_sat_fix.latitude = lat;
             nav_sat_fix.longitude = lon;
             nav_sat_fix.altitude = alt;
@@ -109,7 +111,6 @@ namespace mrover {
             }
 
             fix_status.fix_type = fix_type;
-            fix_status.header = header;
             
             gps_pub->publish(nav_sat_fix);
             gps_status_pub->publish(fix_status);
@@ -121,6 +122,8 @@ namespace mrover {
             mrover::msg::Heading heading;
             mrover::msg::FixStatus fix_status;
             mrover::msg::FixType fix_type;
+            heading.header = header;
+            fix_status.header = header;
 
             if (tokens[UNIHEADING_STATUS_POS] == "NARROW_FLOAT") {
                 fix_type.fix = mrover::msg::FixType::FLOAT;
@@ -133,9 +136,6 @@ namespace mrover {
 
                 fix_type.fix = mrover::msg::FixType::NO_SOL;
                 fix_status.fix_type = fix_type;
-                fix_status.header = header;
-
-                heading.header = header;
                 heading.heading = 0;
 
                 heading_pub->publish(heading);
@@ -146,14 +146,50 @@ namespace mrover {
             fix_status.fix_type = fix_type;
 
             float uniheading = stof(tokens[UNIHEADING_HEADING_POS]);
-
-            heading.header = header;
             heading.heading = uniheading;
-
-            fix_status.header = header;
 
             heading_pub->publish(heading);
             heading_status_pub->publish(fix_status);
+
+        }
+
+        if (msg_header == BESTNAV_HEADER) {
+
+            geometry_msgs::msg::Vector3Stamped velocity;
+            mrover::msg::FixStatus fix_status;
+            mrover::msg::FixType fix_type;
+            velocity.header = header;
+            fix_status.header = header;
+
+            if (tokens[VEL_STATUS_POS] == "DOPPLER_VELOCITY") {
+                fix_type.fix = mrover::msg::FixType::NONE;
+            }
+            else {
+                RCLCPP_WARN(get_logger(), "Velocity: no solution. Are we inside?");
+
+                fix_type.fix = mrover::msg::FixType::NO_SOL;
+                fix_status.fix_type = fix_type;
+
+                velocity.vector.x = 0;
+                velocity.vector.y = 0;
+                velocity.vector.z = 0;
+
+                velocity_pub->publish(velocity);
+                velocity_status_pub->publish(fix_status);
+                return;
+            }
+
+            fix_status.fix_type = fix_type;
+
+            float gps_velocity = stof(tokens[VEL_POS]);
+            float gps_dir = stof(tokens[VEL_DIR_POS]);
+
+            velocity.vector.x = std::sin(gps_dir) * gps_velocity;
+            velocity.vector.y = std::cos(gps_dir) * gps_velocity;
+            velocity.vector.z = 0;
+
+            velocity_pub->publish(velocity);
+            velocity_status_pub->publish(fix_status);
 
         }
 

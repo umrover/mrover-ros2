@@ -56,7 +56,7 @@ readonly MYPY_PATH=$(find_executable mypy 1.11.2)
 
 # Add new directories with C++ code here:
 readonly CPP_FILES=(
-  ./{perception,lie,esw,simulator}/**/*.{cpp,hpp,h,cu,cuh}
+  ./{perception,lie,esw,simulator,parameter_utils}/**/*.{cpp,hpp,h,cu,cuh}
 )
 echo "Style checking C++ ..."
 "${CLANG_FORMAT_PATH}" "${CLANG_FORMAT_ARGS[@]}" -i "${CPP_FILES[@]}"
