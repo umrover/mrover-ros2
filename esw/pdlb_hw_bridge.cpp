@@ -6,6 +6,8 @@
 #include <rclcpp/rclcpp.hpp>
 #include <memory>
 #include <mrover/msg/pdlb.hpp>
+// #include <std_srvs/srv/detail/set_bool__struct.hpp>
+#include <std_srvs/srv/set_bool.hpp>
 
 namespace mrover {
 
@@ -16,6 +18,11 @@ namespace mrover {
                 "led", 10, std::bind(&PDLBBridge::changeLED, this, std::placeholders::_1));
             PDLCANSubscriber_ = create_subscription<msg::CAN>(
                 "can/pdlb/in", 10, [this](const msg::CAN::SharedPtr msg) { processCANMessage(msg); });
+            
+            enableArmLaserService_ = this->create_service<std_srvs::srv::SetBool>(
+                "enable_arm_laser",
+                std::bind(&PDLBBridge::handleEnableArmLaser, this, std::placeholders::_1, std::placeholders::_2));
+            
         }
 
         void initialize() {
@@ -35,6 +42,24 @@ namespace mrover {
             ledInfo.blinking = msg->is_blinking;
             ledCanDevice->publish_message(mrover::InBoundPDLBMessage{mrover::LEDCommand{.led_info = ledInfo}});
         }
+
+        void handleEnableArmLaser(
+            const std::shared_ptr<std_srvs::srv::SetBool::Request> request,
+            std::shared_ptr<std_srvs::srv::SetBool::Response> response)
+        {
+          if (request->data) {
+            // Code to enable the arm laser
+            response->message = "Arm laser enabled";
+            ledCanDevice->publish_message(mrover::InBoundPDLBMessage{mrover::ArmLaserCommand{.enable = true}});
+            response->success = true;
+          } else {
+            // Code to disable the arm laser
+            response->message = "Arm laser disabled";
+            ledCanDevice->publish_message(mrover::InBoundPDLBMessage{mrover::ArmLaserCommand{.enable = false}});
+            response->success = true;
+          }
+        }
+
         void processMessage(const mrover::PDBData msg) {
             mrover::msg::PDLB msgToSend;
             msgToSend.temperatures = msg.temperatures;
@@ -51,6 +76,7 @@ namespace mrover {
         rclcpp::Subscription<msg::CAN>::ConstSharedPtr PDLCANSubscriber_;
         std::unique_ptr<mrover::CanDevice> ledCanDevice;
         rclcpp::Publisher<mrover::msg::PDLB>::SharedPtr pdlbPublisher_;
+        rclcpp::Service<std_srvs::srv::SetBool>::SharedPtr enableArmLaserService_;
     };
 
 } // namespace mrover
