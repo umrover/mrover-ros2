@@ -466,26 +466,15 @@ static void MX_GPIO_Init(void)
 /* USER CODE END MX_GPIO_Init_1 */
 
   /* GPIO Ports Clock Enable */
-  __HAL_RCC_GPIOC_CLK_ENABLE();
   __HAL_RCC_GPIOF_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(ARM_LASER_GPIO_Port, ARM_LASER_Pin, GPIO_PIN_RESET);
-
-  /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOA, CAN_RX_LED_Pin|CAN_TX_LED_Pin|CAN_STANDBY_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, AUTON_LED_B_Pin|AUTON_LED_G_Pin|AUTON_LED_R_Pin, GPIO_PIN_RESET);
-
-  /*Configure GPIO pin : ARM_LASER_Pin */
-  GPIO_InitStruct.Pin = ARM_LASER_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(ARM_LASER_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_WritePin(GPIOB, ARM_LASER_Pin|AUTON_LED_B_Pin|AUTON_LED_G_Pin|AUTON_LED_R_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pins : CAN_RX_LED_Pin CAN_TX_LED_Pin CAN_STANDBY_Pin */
   GPIO_InitStruct.Pin = CAN_RX_LED_Pin|CAN_TX_LED_Pin|CAN_STANDBY_Pin;
@@ -494,8 +483,8 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : AUTON_LED_B_Pin AUTON_LED_G_Pin AUTON_LED_R_Pin */
-  GPIO_InitStruct.Pin = AUTON_LED_B_Pin|AUTON_LED_G_Pin|AUTON_LED_R_Pin;
+  /*Configure GPIO pins : ARM_LASER_Pin AUTON_LED_B_Pin AUTON_LED_G_Pin AUTON_LED_R_Pin */
+  GPIO_InitStruct.Pin = ARM_LASER_Pin|AUTON_LED_B_Pin|AUTON_LED_G_Pin|AUTON_LED_R_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
@@ -506,16 +495,6 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs) {
-  if((RxFifo0ITs & FDCAN_IT_RX_FIFO0_NEW_MESSAGE) != RESET)
-  {
-//    mrover::receive_message();
-  }
-  else {
-        // Mailbox is full OR we lost a frame
-        Error_Handler();
-    }
-}
 /* USER CODE END 4 */
 
 /**
