@@ -45,7 +45,6 @@ namespace mrover {
         static constexpr int SERIAL_POLL_FREQ = 10;
         static constexpr int SERIAL_INPUT_MSG_SIZE = 14;
 
-        std::uint8_t const mServoID = 0;
         std::vector<std::string> const mMotorNames = {"linear_actuator", "auger", "pump_a", "pump_b", "sensor_actuator"};
         std::unordered_map<std::string, std::shared_ptr<BrushedController>> mMotors;
 
@@ -70,6 +69,7 @@ namespace mrover {
         std::vector<unsigned char> mBuffer;
         std::deque<std::vector<unsigned char>> mWriteQueue;
         unsigned long mSerialBaudRate{};
+        std::uint8_t mServoID{};
         std::string mSerialPort;
 
         auto processThrottleCmd(msg::Throttle::ConstSharedPtr const& msg) -> void {
@@ -133,10 +133,6 @@ namespace mrover {
                                         } else if (len != SERIAL_INPUT_MSG_SIZE) {
                                             RCLCPP_ERROR(this->get_logger(), "Failed to read whole serial buffer");
                                         } else {
-                                            // RCLCPP_INFO(this->get_logger(), "data:");
-                                            // for (auto val : mBuffer) {
-                                            //     RCLCPP_INFO(this->get_logger(), "\t%x", val);
-                                            // }
                                             parseAndPublishBuffer(mBuffer);
                                         }
                                         // continue reads
@@ -149,10 +145,6 @@ namespace mrover {
                 if (ec) {
                     RCLCPP_ERROR(this->get_logger(), "Serial write failed: %s", ec.message().c_str());
                 }
-                // RCLCPP_INFO(this->get_logger(), "size of set_pos: %lu", mWriteQueue.front().size());
-                // for (auto val : mWriteQueue.front()) {
-                //     RCLCPP_INFO(this->get_logger(), "\t%x", val);
-                // }
                 mWriteQueue.pop_front();
                 if (!mWriteQueue.empty()) {
                     startAsyncWrite();
@@ -205,8 +197,9 @@ namespace mrover {
         auto init() -> void {
 
             // parse port and baud parameters
-            mSerialPort = this->declare_parameter<std::string>("port_unicore", "/dev/ttyACM0");
+            mSerialPort = this->declare_parameter<std::string>("port_unicore", "/dev/arduino");
             mSerialBaudRate = this->declare_parameter<int>("baud_unicore", 115200);
+            mServoID = this->declare_parameter<std::uint8_t>("servo_id", 0);
 
             // configure inputs
             mSAThrottleSub = create_subscription<msg::Throttle>("sa_throttle_cmd", 1, [this](msg::Throttle::ConstSharedPtr const& msg) { processThrottleCmd(msg); });

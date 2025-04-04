@@ -1,7 +1,8 @@
 sa_hw_bridge:
   ros__parameters:
-    port_unicore: /dev/ttyACM1
+    port_unicore: /dev/arduino
     baud_unicore: 115200
+    servo_id: 4
     linear_actuator:
       # gear_ratio: 1.0
       is_inverted: false
