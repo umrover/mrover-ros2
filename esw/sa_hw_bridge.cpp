@@ -1,3 +1,4 @@
+#include <boost/asio/io_service.hpp>
 #include <cstring>
 #include <fcntl.h>
 #include <chrono>
@@ -51,7 +52,6 @@ namespace mrover {
         std::unordered_map<std::string, std::shared_ptr<BrushedController>> mMotors;
 
         rclcpp::TimerBase::SharedPtr mPublishDataTimer;
-        rclcpp::TimerBase::SharedPtr mSerialPollTimer;
 
         rclcpp::Subscription<msg::Throttle>::SharedPtr mSAThrottleSub;
 
@@ -67,7 +67,9 @@ namespace mrover {
         msg::ControllerState mControllerState;
 
         boost::asio::serial_port mSerial;
+        boost::asio::io_service& io;
         boost::asio::streambuf mInputBuffer;
+        std::vector<unsigned char> mBuffer;
         unsigned long mSerialBaudRate{};
         std::string mSerialPort;
 
@@ -128,22 +130,26 @@ namespace mrover {
             }
         }
 
-        auto readSerial() -> void {
-            std::vector<unsigned char> buffer(SERIAL_INPUT_MSG_SIZE);
-            boost::system::error_code ec;
-            const auto bytes_read = boost::asio::read(mSerial, boost::asio::buffer(buffer), boost::asio::transfer_exactly(SERIAL_INPUT_MSG_SIZE), ec);
-
-            if (ec) {
-                RCLCPP_ERROR(this->get_logger(), "Serial read failed: %s", ec.message().c_str());
-            } else if (bytes_read != SERIAL_INPUT_MSG_SIZE) {
-                RCLCPP_ERROR(this->get_logger(), "Failed to read whole serial buffer");
-            } else {
-                // RCLCPP_INFO(this->get_logger(), "data:");
-                // for (auto val : buffer) {
-                //     RCLCPP_INFO(this->get_logger(), "\t%x", val);
-                // }
-                parseAndPublishBuffer(buffer);
-            }
+        auto startAsyncRead() -> void {
+            RCLCPP_INFO(this->get_logger(), "starting async read");
+            boost::asio::async_read(mSerial, boost::asio::buffer(mBuffer), boost::asio::transfer_exactly(SERIAL_INPUT_MSG_SIZE),
+            [this](const boost::system::error_code& ec, std::size_t len) {
+                RCLCPP_INFO(this->get_logger(), "async read handler");
+                if (ec) {
+                    RCLCPP_ERROR(this->get_logger(), "Serial read failed: %s", ec.message().c_str());
+                } else if (len != SERIAL_INPUT_MSG_SIZE) {
+                    RCLCPP_ERROR(this->get_logger(), "Failed to read whole serial buffer");
+                } else {
+                    // RCLCPP_INFO(this->get_logger(), "data:");
+                    // for (auto val : mBuffer) {
+                    //     RCLCPP_INFO(this->get_logger(), "\t%x", val);
+                    // }
+                    parseAndPublishBuffer(mBuffer);
+                }
+                // continue reads
+                startAsyncRead();
+            });
+            RCLCPP_INFO(this->get_logger(), "return from start async read");
         }
 
         auto parseAndPublishBuffer(std::vector<unsigned char>& buffer) const -> void {
@@ -184,7 +190,7 @@ namespace mrover {
         }
 
     public:
-        explicit SAHWBridge(boost::asio::io_context& io) : rclcpp::Node{"sa_hw_bridge"}, mSerial(io) {
+        explicit SAHWBridge(boost::asio::io_service& io) : rclcpp::Node{"sa_hw_bridge"}, mSerial(io), io(io), mBuffer(SERIAL_INPUT_MSG_SIZE) {
             // all initialization is done in the init() function to allow for the usage of shared_from_this()
         }
 
@@ -217,15 +223,11 @@ namespace mrover {
                     std::chrono::milliseconds(100),
                     [this]() { publishDataCallback(); });
 
-            mSerialPollTimer = create_wall_timer(
-                    std::chrono::milliseconds(SERIAL_POLL_FREQ),
-                    [this]() { readSerial(); });
-
             // configure serial io
             boost::system::error_code ec;
             mSerial.open(mSerialPort, ec);
             if (ec) {
-                RCLCPP_FATAL(this->get_logger(), "couldn't open serial port: %s", ec.message().c_str());
+                RCLCPP_FATAL(this->get_logger(), "Couldn't open serial port: %s", ec.message().c_str());
                 rclcpp::shutdown();
                 return;
             }
@@ -246,6 +248,10 @@ namespace mrover {
             mControllerState.state.resize(mMotorNames.size());
             mControllerState.error.resize(mMotorNames.size());
             mControllerState.limit_hit.resize(mMotorNames.size());
+
+            // begin serial reads
+            startAsyncRead();
+            io.run();
         }
 
         auto stop() -> void {
@@ -263,7 +269,7 @@ namespace mrover {
 auto main(const int argc, char** argv) -> int {
     rclcpp::init(argc, argv);
 
-    boost::asio::io_context io;
+    boost::asio::io_service io;
     auto sa_hw_bridge = std::make_shared<mrover::SAHWBridge>(io);
 
     sa_hw_bridge->init();
