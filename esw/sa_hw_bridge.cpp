@@ -1,53 +1,51 @@
-#include <boost/asio/io_service.hpp>
-#include <cstring>
-#include <fcntl.h>
 #include <chrono>
+#include <cstring>
 #include <memory>
 #include <string>
 #include <unordered_map>
 #include <vector>
 
-#include <rclcpp/rclcpp.hpp>
+#include <fcntl.h>
 
-#include <units.hpp>
-#include <units_eigen.hpp>
-
-#include <boost/asio.hpp>
 #include <boost/algorithm/string.hpp>
+#include <boost/asio.hpp>
+#include <boost/asio/io_service.hpp>
+
+#include <rclcpp/rclcpp.hpp>
 
 #include <mrover/msg/controller_state.hpp>
 #include <mrover/msg/position.hpp>
 #include <mrover/msg/throttle.hpp>
 #include <mrover/msg/velocity.hpp>
 #include <mrover/srv/adjust_motor.hpp>
-#include <mrover/msg/position.hpp>
 #include <mrover/srv/servo_set_pos.hpp>
 #include <sensor_msgs/msg/joint_state.hpp>
 #include <sensor_msgs/msg/relative_humidity.hpp>
 #include <sensor_msgs/msg/temperature.hpp>
 
 #include "motor_library/brushed.hpp"
+#include <units.hpp>
 
 namespace mrover {
 
 #pragma pack(push, 1)
-        static constexpr std::uint8_t HEADER_BYTE = 0xA6;
-        static constexpr std::uint8_t SERVO_SET_POSITION = 0x00;
+    static constexpr std::uint8_t HEADER_BYTE = 0xA6;
+    static constexpr std::uint8_t SERVO_SET_POSITION = 0x00;
 
-        struct ServoSetPosition {
-            std::uint8_t header = HEADER_BYTE;
-            std::uint8_t messageID = SERVO_SET_POSITION;
-            std::uint8_t id{}; // internal id of servo
-            std::uint8_t isCounterClockwise{};
-            float radians{};
-        };
+    struct ServoSetPosition {
+        std::uint8_t header = HEADER_BYTE;
+        std::uint8_t messageID = SERVO_SET_POSITION;
+        std::uint8_t id{}; // internal id of servo
+        std::uint8_t isCounterClockwise{};
+        float radians{};
+    };
 #pragma pack(pop)
 
     class SAHWBridge : public rclcpp::Node {
         static constexpr int SERIAL_POLL_FREQ = 10;
         static constexpr int SERIAL_INPUT_MSG_SIZE = 14;
 
-        const std::uint8_t mServoID = 0;
+        std::uint8_t const mServoID = 0;
         std::vector<std::string> const mMotorNames = {"linear_actuator", "auger", "pump_a", "pump_b", "sensor_actuator"};
         std::unordered_map<std::string, std::shared_ptr<BrushedController>> mMotors;
 
@@ -62,7 +60,7 @@ namespace mrover {
         rclcpp::Publisher<msg::Position>::SharedPtr mServoPositionPub;
 
         rclcpp::Service<srv::ServoSetPos>::SharedPtr mSetServoPositionSrv;
-        
+
         sensor_msgs::msg::JointState mJointData;
         msg::ControllerState mControllerState;
 
@@ -107,12 +105,11 @@ namespace mrover {
             mControllerStatePub->publish(mControllerState);
         }
 
-        auto setServoPositionServiceCallback(srv::ServoSetPos::Request::ConstSharedPtr const req, const srv::ServoSetPos::Response::SharedPtr res) -> void {
-            ServoSetPosition set_pos {
-                .id = mServoID,
-                .isCounterClockwise = req->is_counterclockwise,
-                .radians = req->position
-            };
+        auto setServoPositionServiceCallback(srv::ServoSetPos::Request::ConstSharedPtr const req, srv::ServoSetPos::Response::SharedPtr const res) -> void {
+            ServoSetPosition set_pos{
+                    .id = mServoID,
+                    .isCounterClockwise = req->is_counterclockwise,
+                    .radians = req->position};
 
             // parse set pos into a vector of bytes
             std::vector<unsigned char> bytes(sizeof(set_pos));
@@ -130,25 +127,25 @@ namespace mrover {
 
         auto startAsyncRead() -> void {
             boost::asio::async_read(mSerial, boost::asio::buffer(mBuffer), boost::asio::transfer_exactly(SERIAL_INPUT_MSG_SIZE),
-            [this](const boost::system::error_code& ec, std::size_t len) {
-                if (ec) {
-                    RCLCPP_ERROR(this->get_logger(), "Serial read failed: %s", ec.message().c_str());
-                } else if (len != SERIAL_INPUT_MSG_SIZE) {
-                    RCLCPP_ERROR(this->get_logger(), "Failed to read whole serial buffer");
-                } else {
-                    // RCLCPP_INFO(this->get_logger(), "data:");
-                    // for (auto val : mBuffer) {
-                    //     RCLCPP_INFO(this->get_logger(), "\t%x", val);
-                    // }
-                    parseAndPublishBuffer(mBuffer);
-                }
-                // continue reads
-                startAsyncRead();
-            });
+                                    [this](boost::system::error_code const& ec, std::size_t len) {
+                                        if (ec) {
+                                            RCLCPP_ERROR(this->get_logger(), "Serial read failed: %s", ec.message().c_str());
+                                        } else if (len != SERIAL_INPUT_MSG_SIZE) {
+                                            RCLCPP_ERROR(this->get_logger(), "Failed to read whole serial buffer");
+                                        } else {
+                                            // RCLCPP_INFO(this->get_logger(), "data:");
+                                            // for (auto val : mBuffer) {
+                                            //     RCLCPP_INFO(this->get_logger(), "\t%x", val);
+                                            // }
+                                            parseAndPublishBuffer(mBuffer);
+                                        }
+                                        // continue reads
+                                        startAsyncRead();
+                                    });
         }
 
         void startAsyncWrite() {
-            boost::asio::async_write(mSerial, boost::asio::buffer(mWriteQueue.front()), [this](const boost::system::error_code& ec, std::size_t) {
+            boost::asio::async_write(mSerial, boost::asio::buffer(mWriteQueue.front()), [this](boost::system::error_code const& ec, std::size_t) {
                 if (ec) {
                     RCLCPP_ERROR(this->get_logger(), "Serial write failed: %s", ec.message().c_str());
                 }
@@ -173,7 +170,7 @@ namespace mrover {
 
             if (*data == HEADER_BYTE) {
                 ++data; // points to DXL_ID
-                const auto dxl_id = static_cast<uint8_t>(*data);
+                auto const dxl_id = static_cast<uint8_t>(*data);
                 RCLCPP_DEBUG(this->get_logger(), "Using serial device %u", dxl_id);
                 ++data;
                 std::memcpy(&raw_pos_rad, data, sizeof(float));
@@ -192,8 +189,8 @@ namespace mrover {
 
             temp_msg.temperature = raw_temp;
             humidity_msg.relative_humidity = raw_hum;
-            position_msg.names = { "gear_diff" };
-            position_msg.positions = { raw_pos_rad };
+            position_msg.names = {"gear_diff"};
+            position_msg.positions = {raw_pos_rad};
 
             mServoPositionPub->publish(position_msg);
             mTemperatureDataPub->publish(temp_msg);
@@ -220,14 +217,13 @@ namespace mrover {
             mTemperatureDataPub = create_publisher<sensor_msgs::msg::Temperature>("sa_temp_data", SERIAL_POLL_FREQ);
             mHumidityDataPub = create_publisher<sensor_msgs::msg::RelativeHumidity>("sa_humidity_data", SERIAL_POLL_FREQ);
             mServoPositionPub = create_publisher<msg::Position>("sa_gear_diff_position", SERIAL_POLL_FREQ);
-            
+
             // configure services
             mSetServoPositionSrv = create_service<srv::ServoSetPos>(
-                "sa_gear_diff_set_position",
-                [this](srv::ServoSetPos::Request::ConstSharedPtr const req, srv::ServoSetPos::Response::SharedPtr res) {
-                    setServoPositionServiceCallback(req, res);
-                }
-            );
+                    "sa_gear_diff_set_position",
+                    [this](srv::ServoSetPos::Request::ConstSharedPtr const req, srv::ServoSetPos::Response::SharedPtr res) {
+                        setServoPositionServiceCallback(req, res);
+                    });
 
             // define periodic publishing
             mPublishDataTimer = create_wall_timer(
@@ -272,12 +268,11 @@ namespace mrover {
                 RCLCPP_WARN(this->get_logger(), "Failed to close serial port: %s", ec.message().c_str());
             }
         }
-        
     };
 } // namespace mrover
 
 
-auto main(const int argc, char** argv) -> int {
+auto main(int const argc, char** argv) -> int {
     rclcpp::init(argc, argv);
 
     boost::asio::io_service io;
