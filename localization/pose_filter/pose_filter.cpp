@@ -71,7 +71,7 @@ namespace mrover {
             pose_in_map.asSO3() = uncorrected_orientation_rotm;
         }
         else {
-            RCLCPP_INFO_THROTTLE(get_logger(), *get_clock(), 1000, "%s", std::format("Heading corrected by: {}", curr_heading_correction->z()).c_str());
+            RCLCPP_INFO_THROTTLE(get_logger(), *get_clock(), 1000, "Heading corrected by: {%f}", curr_heading_correction->z());
             SO3d corrected_orientation = curr_heading_correction.value() * uncorrected_orientation_rotm;
             pose_in_map.asSO3() = corrected_orientation;
         }
@@ -109,12 +109,14 @@ namespace mrover {
             } catch (tf2::LookupException const& e) {
                 RCLCPP_WARN_STREAM(get_logger(), e.what());
                 return;
-            } catch (tf2::ExtrapolationException const&) { }
+            } catch (tf2::ExtrapolationException const& e) {
+                RCLCPP_WARN_STREAM(get_logger(), e.what());
+                return;
+            }
         }
 
-
         if (rover_heading_change > rover_heading_change_threshold) {
-            RCLCPP_WARN(get_logger(), "Rover is not moving straight enough: Heading change = {%f} rad", rover_heading_change);
+            RCLCPP_WARN(get_logger(), "Rover is not moving straight enough: Heading change = {%f} deg", rover_heading_change * (180 / M_PI));
             return;
         }
 
@@ -126,14 +128,14 @@ namespace mrover {
         
         double drive_forward_heading = atan2(rover_velocity_sum.y(), rover_velocity_sum.x());
 
+        RCLCPP_INFO(get_logger(), "Drive forward heading: %f deg", drive_forward_heading * (180 / M_PI));
+
         Eigen::Quaterniond uncorrected_orientation(last_imu.value().orientation.w, last_imu.value().orientation.x, last_imu.value().orientation.y, last_imu.value().orientation.z);
         R2d uncorrected_forward = uncorrected_orientation.toRotationMatrix().col(0).head(2);
         double uncorrected_heading = std::atan2(uncorrected_forward.y(), uncorrected_forward.x());
 
         double heading_correction_delta = drive_forward_heading - uncorrected_heading;
         curr_heading_correction = Eigen::AngleAxisd(heading_correction_delta, R3d::UnitZ());
-
-        RCLCPP_INFO(get_logger(), "Drive forward correction successful!");
 
 
     }
