@@ -70,6 +70,7 @@ namespace mrover {
         boost::asio::io_service& io;
         boost::asio::streambuf mInputBuffer;
         std::vector<unsigned char> mBuffer;
+        std::deque<std::vector<unsigned char>> mWriteQueue;
         unsigned long mSerialBaudRate{};
         std::string mSerialPort;
 
@@ -113,28 +114,23 @@ namespace mrover {
                 .radians = req->position
             };
 
-            // RCLCPP_INFO(this->get_logger(), "size of set_pos: %lu", sizeof(set_pos));
-            // const auto data = reinterpret_cast<unsigned char*>(&set_pos);
-            // for (auto i = 0 ; i < 8 ; ++i) {
-            //     RCLCPP_INFO(this->get_logger(), "\t%x", data[i]);
-            // }
+            // parse set pos into a vector of bytes
+            std::vector<unsigned char> bytes(sizeof(set_pos));
+            std::memcpy(bytes.data(), &set_pos, sizeof(set_pos));
 
-            boost::system::error_code ec;
-            const auto num_transferred = boost::asio::write(mSerial, boost::asio::buffer(&set_pos, sizeof(set_pos)), ec);
+            bool is_writing = !mWriteQueue.empty();
+            mWriteQueue.push_back(bytes);
 
-            if (ec) {
-                RCLCPP_ERROR(this->get_logger(), "Serial write error: %s", ec.message().c_str());
-                res->success = false;
-            } else {
-                res->success = num_transferred == sizeof(set_pos);
+            if (!is_writing) {
+                startAsyncWrite();
             }
+
+            res->success = true; // TODO: what is fail condition here? service no longer performs serial write
         }
 
         auto startAsyncRead() -> void {
-            RCLCPP_INFO(this->get_logger(), "starting async read");
             boost::asio::async_read(mSerial, boost::asio::buffer(mBuffer), boost::asio::transfer_exactly(SERIAL_INPUT_MSG_SIZE),
             [this](const boost::system::error_code& ec, std::size_t len) {
-                RCLCPP_INFO(this->get_logger(), "async read handler");
                 if (ec) {
                     RCLCPP_ERROR(this->get_logger(), "Serial read failed: %s", ec.message().c_str());
                 } else if (len != SERIAL_INPUT_MSG_SIZE) {
@@ -149,7 +145,22 @@ namespace mrover {
                 // continue reads
                 startAsyncRead();
             });
-            RCLCPP_INFO(this->get_logger(), "return from start async read");
+        }
+
+        void startAsyncWrite() {
+            boost::asio::async_write(mSerial, boost::asio::buffer(mWriteQueue.front()), [this](const boost::system::error_code& ec, std::size_t) {
+                if (ec) {
+                    RCLCPP_ERROR(this->get_logger(), "Serial write failed: %s", ec.message().c_str());
+                }
+                // RCLCPP_INFO(this->get_logger(), "size of set_pos: %lu", mWriteQueue.front().size());
+                // for (auto val : mWriteQueue.front()) {
+                //     RCLCPP_INFO(this->get_logger(), "\t%x", val);
+                // }
+                mWriteQueue.pop_front();
+                if (!mWriteQueue.empty()) {
+                    startAsyncWrite();
+                }
+            });
         }
 
         auto parseAndPublishBuffer(std::vector<unsigned char>& buffer) const -> void {
