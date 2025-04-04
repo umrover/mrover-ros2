@@ -16,7 +16,12 @@ namespace mrover {
         // subscribers
         rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr mPcSub;
 
+        // publishers
+        rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr mPCDebugPub;
+
         auto pointCloudCallback(sensor_msgs::msg::PointCloud2::ConstSharedPtr const& msg) -> void;
+
+        void uploadPC(Eigen::MatrixXd const& points);
 
     public:
         explicit LanderAnalysis(rclcpp::NodeOptions const& options = rclcpp::NodeOptions());
