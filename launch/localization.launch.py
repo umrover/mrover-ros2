@@ -60,4 +60,11 @@ def generate_launch_description():
         output="screen"
     )
 
+    pose_filter_node = Node(
+        package="mrover",
+        executable="pose_filter",
+        name="pose_filter",
+        parameters=[os.path.join(get_package_share_directory("mrover"), "config", "localization.yaml")],
+    )
+
     return LaunchDescription([container, rover_gps_driver_node, gps_linearization_node, iekf_se3_node])
