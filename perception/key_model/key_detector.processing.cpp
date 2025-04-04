@@ -85,11 +85,12 @@ namespace mrover {
         cv::Mat temp;
 
         /*
-         * test1: (46, 103) (550, 123) -2.272 degrees : -0.928 : 1.83
+         * test1: (46, 103) (550, 123) -2.272 degrees : -0.928 : -1.83
          * test2: (300, 302) (331, 307) -9.16 degrees : -38.83 : SHOULD FAIL
          * test3: (327, 255) (346, 246) 25.34 degrees : 20.455 : 19.187
-         * test4: (322, 230) (347, 234) -9.09 degrees : 9.87 : 7.96
+         * test4: (322, 230) (347, 234) -9.09 degrees : -9.87 : -7.96
          * test5: (268, 231) (294, 232) 2.202 degrees : 2.702 : 0.744
+         * we need to be within arctan(0.25 / 4.5) = 3.68 degrees
          */
         std::filesystem::path packagePath = std::filesystem::path{ament_index_cpp::get_package_prefix("mrover")} / ".." / ".." / "src" / "mrover" / "data" / "images" / "test2.jpg";
 
