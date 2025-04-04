@@ -1,3 +1,5 @@
+#include <cstring>
+#include <fcntl.h>
 #include <chrono>
 #include <memory>
 #include <string>
@@ -9,64 +11,65 @@
 #include <units.hpp>
 #include <units_eigen.hpp>
 
+#include <boost/asio.hpp>
+#include <boost/algorithm/string.hpp>
+
 #include <mrover/msg/controller_state.hpp>
 #include <mrover/msg/position.hpp>
 #include <mrover/msg/throttle.hpp>
 #include <mrover/msg/velocity.hpp>
 #include <mrover/srv/adjust_motor.hpp>
+#include <mrover/msg/position.hpp>
+#include <mrover/srv/servo_set_pos.hpp>
 #include <sensor_msgs/msg/joint_state.hpp>
+#include <sensor_msgs/msg/relative_humidity.hpp>
+#include <sensor_msgs/msg/temperature.hpp>
 
 #include "motor_library/brushed.hpp"
-#include "motor_library/brushless.hpp"
 
 namespace mrover {
 
+#pragma pack(push, 1)
+        static constexpr std::uint8_t HEADER_BYTE = 0xA6;
+        static constexpr std::uint8_t SERVO_SET_POSITION = 0x00;
+
+        struct ServoSetPosition {
+            std::uint8_t header = HEADER_BYTE;
+            std::uint8_t messageID = SERVO_SET_POSITION;
+            std::uint8_t id{}; // internal id of servo
+            std::uint8_t isCounterClockwise{};
+            float radians{};
+        };
+#pragma pack(pop)
+
     class SAHWBridge : public rclcpp::Node {
+        static constexpr int SERIAL_POLL_FREQ = 10;
+        static constexpr int SERIAL_INPUT_MSG_SIZE = 14;
 
-        // using Controller = std::variant<BrushedController, BrushlessController<Meters>, BrushlessController<Revolutions>>;
-
-    public:
-        SAHWBridge() : rclcpp::Node{"sa_hw_bridge"} {
-            // all initialization is done in the init() function to allow for the usage of shared_from_this()
-        }
-
-        auto init() -> void {
-
-            for (auto const& name: mMotorNames) {
-                mMotors[name] = std::make_shared<BrushedController>(shared_from_this(), "jetson", name);
-            }
-
-            mSAThrottleSub = create_subscription<msg::Throttle>("sa_throttle_cmd", 1, [this](msg::Throttle::ConstSharedPtr const& msg) { processThrottleCmd(msg); });
-
-            mPublishDataTimer = create_wall_timer(
-                    std::chrono::milliseconds(100),
-                    [this]() { publishDataCallback(); });
-            mJointDataPub = create_publisher<sensor_msgs::msg::JointState>("sa_joint_data", 1);
-            mControllerStatePub = create_publisher<msg::ControllerState>("sa_controller_state", 1);
-
-            mJointData.name = mMotorNames;
-            mJointData.position.resize(mMotorNames.size());
-            mJointData.velocity.resize(mMotorNames.size());
-            mJointData.effort.resize(mMotorNames.size());
-
-            mControllerState.name = mMotorNames;
-            mControllerState.state.resize(mMotorNames.size());
-            mControllerState.error.resize(mMotorNames.size());
-            mControllerState.limit_hit.resize(mMotorNames.size());
-        }
-
-    private:
+        const std::uint8_t mServoID = 0;
         std::vector<std::string> const mMotorNames = {"linear_actuator", "auger", "pump_a", "pump_b", "sensor_actuator"};
         std::unordered_map<std::string, std::shared_ptr<BrushedController>> mMotors;
 
+        rclcpp::TimerBase::SharedPtr mPublishDataTimer;
+        rclcpp::TimerBase::SharedPtr mSerialPollTimer;
+
         rclcpp::Subscription<msg::Throttle>::SharedPtr mSAThrottleSub;
 
-        rclcpp::TimerBase::SharedPtr mPublishDataTimer;
         rclcpp::Publisher<sensor_msgs::msg::JointState>::SharedPtr mJointDataPub;
         rclcpp::Publisher<msg::ControllerState>::SharedPtr mControllerStatePub;
+        rclcpp::Publisher<sensor_msgs::msg::Temperature>::SharedPtr mTemperatureDataPub;
+        rclcpp::Publisher<sensor_msgs::msg::RelativeHumidity>::SharedPtr mHumidityDataPub;
+        rclcpp::Publisher<msg::Position>::SharedPtr mServoPositionPub;
+
+        rclcpp::Service<srv::ServoSetPos>::SharedPtr mSetServoPositionSrv;
+        
         sensor_msgs::msg::JointState mJointData;
         msg::ControllerState mControllerState;
 
+        boost::asio::serial_port mSerial;
+        boost::asio::streambuf mInputBuffer;
+        unsigned long mSerialBaudRate{};
+        std::string mSerialPort;
 
         auto processThrottleCmd(msg::Throttle::ConstSharedPtr const& msg) -> void {
             if (msg->names.size() != msg->throttles.size()) {
@@ -80,7 +83,6 @@ namespace mrover {
                 mMotors[name]->setDesiredThrottle(throttle);
             }
         }
-
 
         auto publishDataCallback() -> void {
             mJointData.header.stamp = get_clock()->now();
@@ -101,14 +103,173 @@ namespace mrover {
             mJointDataPub->publish(mJointData);
             mControllerStatePub->publish(mControllerState);
         }
+
+        auto setServoPositionServiceCallback(srv::ServoSetPos::Request::ConstSharedPtr const req, const srv::ServoSetPos::Response::SharedPtr res) -> void {
+            ServoSetPosition set_pos {
+                .id = mServoID,
+                .isCounterClockwise = req->is_counterclockwise,
+                .radians = req->position
+            };
+
+            // RCLCPP_INFO(this->get_logger(), "size of set_pos: %lu", sizeof(set_pos));
+            // const auto data = reinterpret_cast<unsigned char*>(&set_pos);
+            // for (auto i = 0 ; i < 8 ; ++i) {
+            //     RCLCPP_INFO(this->get_logger(), "\t%x", data[i]);
+            // }
+
+            boost::system::error_code ec;
+            const auto num_transferred = boost::asio::write(mSerial, boost::asio::buffer(&set_pos, sizeof(set_pos)), ec);
+
+            if (ec) {
+                RCLCPP_ERROR(this->get_logger(), "Serial write error: %s", ec.message().c_str());
+                res->success = false;
+            } else {
+                res->success = num_transferred == sizeof(set_pos);
+            }
+        }
+
+        auto readSerial() -> void {
+            std::vector<unsigned char> buffer(SERIAL_INPUT_MSG_SIZE);
+            boost::system::error_code ec;
+            const auto bytes_read = boost::asio::read(mSerial, boost::asio::buffer(buffer), boost::asio::transfer_exactly(SERIAL_INPUT_MSG_SIZE), ec);
+
+            if (ec) {
+                RCLCPP_ERROR(this->get_logger(), "Serial read failed: %s", ec.message().c_str());
+            } else if (bytes_read != SERIAL_INPUT_MSG_SIZE) {
+                RCLCPP_ERROR(this->get_logger(), "Failed to read whole serial buffer");
+            } else {
+                // RCLCPP_INFO(this->get_logger(), "data:");
+                // for (auto val : buffer) {
+                //     RCLCPP_INFO(this->get_logger(), "\t%x", val);
+                // }
+                parseAndPublishBuffer(buffer);
+            }
+        }
+
+        auto parseAndPublishBuffer(std::vector<unsigned char>& buffer) const -> void {
+            // read from serial port and parse data
+            float raw_pos_rad{};
+            float raw_temp{};
+            float raw_hum{};
+
+            auto data = buffer.data();
+
+            if (*data == HEADER_BYTE) {
+                ++data; // points to DXL_ID
+                const auto dxl_id = static_cast<uint8_t>(*data);
+                RCLCPP_DEBUG(this->get_logger(), "Using serial device %u", dxl_id);
+                ++data;
+                std::memcpy(&raw_pos_rad, data, sizeof(float));
+                data += 4;
+                std::memcpy(&raw_temp, data, sizeof(float));
+                data += 4;
+                std::memcpy(&raw_hum, data, sizeof(float));
+            } else {
+                RCLCPP_WARN(this->get_logger(), "The first byte in serial message was not the header byte");
+            }
+
+            // send data to pubs
+            sensor_msgs::msg::Temperature temp_msg;
+            sensor_msgs::msg::RelativeHumidity humidity_msg;
+            msg::Position position_msg;
+
+            temp_msg.temperature = raw_temp;
+            humidity_msg.relative_humidity = raw_hum;
+            position_msg.names = { "gear_diff" };
+            position_msg.positions = { raw_pos_rad };
+
+            mServoPositionPub->publish(position_msg);
+            mTemperatureDataPub->publish(temp_msg);
+            mHumidityDataPub->publish(humidity_msg);
+        }
+
+    public:
+        explicit SAHWBridge(boost::asio::io_context& io) : rclcpp::Node{"sa_hw_bridge"}, mSerial(io) {
+            // all initialization is done in the init() function to allow for the usage of shared_from_this()
+        }
+
+        auto init() -> void {
+
+            // parse port and baud parameters
+            mSerialPort = this->declare_parameter<std::string>("port_unicore", "/dev/ttyACM0");
+            mSerialBaudRate = this->declare_parameter<int>("baud_unicore", 115200);
+
+            // configure inputs
+            mSAThrottleSub = create_subscription<msg::Throttle>("sa_throttle_cmd", 1, [this](msg::Throttle::ConstSharedPtr const& msg) { processThrottleCmd(msg); });
+
+            // configure outputs
+            mJointDataPub = create_publisher<sensor_msgs::msg::JointState>("sa_joint_data", 1);
+            mControllerStatePub = create_publisher<msg::ControllerState>("sa_controller_state", 1);
+            mTemperatureDataPub = create_publisher<sensor_msgs::msg::Temperature>("sa_temp_data", SERIAL_POLL_FREQ);
+            mHumidityDataPub = create_publisher<sensor_msgs::msg::RelativeHumidity>("sa_humidity_data", SERIAL_POLL_FREQ);
+            mServoPositionPub = create_publisher<msg::Position>("sa_gear_diff_position", SERIAL_POLL_FREQ);
+            
+            // configure services
+            mSetServoPositionSrv = create_service<srv::ServoSetPos>(
+                "sa_gear_diff_set_position",
+                [this](srv::ServoSetPos::Request::ConstSharedPtr const req, srv::ServoSetPos::Response::SharedPtr res) {
+                    setServoPositionServiceCallback(req, res);
+                }
+            );
+
+            // define periodic publishing
+            mPublishDataTimer = create_wall_timer(
+                    std::chrono::milliseconds(100),
+                    [this]() { publishDataCallback(); });
+
+            mSerialPollTimer = create_wall_timer(
+                    std::chrono::milliseconds(SERIAL_POLL_FREQ),
+                    [this]() { readSerial(); });
+
+            // configure serial io
+            boost::system::error_code ec;
+            mSerial.open(mSerialPort, ec);
+            if (ec) {
+                RCLCPP_FATAL(this->get_logger(), "couldn't open serial port: %s", ec.message().c_str());
+                rclcpp::shutdown();
+                return;
+            }
+            mSerial.set_option(boost::asio::serial_port_base::baud_rate(mSerialBaudRate));
+
+            // configure motor controllers
+            for (auto const& name: mMotorNames) {
+                mMotors[name] = std::make_shared<BrushedController>(shared_from_this(), "jetson", name);
+            }
+
+            // configure 3bm data message
+            mJointData.name = mMotorNames;
+            mJointData.position.resize(mMotorNames.size());
+            mJointData.velocity.resize(mMotorNames.size());
+            mJointData.effort.resize(mMotorNames.size());
+
+            mControllerState.name = mMotorNames;
+            mControllerState.state.resize(mMotorNames.size());
+            mControllerState.error.resize(mMotorNames.size());
+            mControllerState.limit_hit.resize(mMotorNames.size());
+        }
+
+        auto stop() -> void {
+            boost::system::error_code ec;
+            mSerial.close(ec);
+            if (ec) {
+                RCLCPP_WARN(this->get_logger(), "Failed to close serial port: %s", ec.message().c_str());
+            }
+        }
+        
     };
 } // namespace mrover
 
-auto main(int argc, char** argv) -> int {
+
+auto main(const int argc, char** argv) -> int {
     rclcpp::init(argc, argv);
-    auto sa_hw_bridge = std::make_shared<mrover::SAHWBridge>();
+
+    boost::asio::io_context io;
+    auto sa_hw_bridge = std::make_shared<mrover::SAHWBridge>(io);
+
     sa_hw_bridge->init();
     rclcpp::spin(sa_hw_bridge);
+
+    sa_hw_bridge->stop();
     rclcpp::shutdown();
     return EXIT_SUCCESS;
 }
