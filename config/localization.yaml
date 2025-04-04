@@ -36,6 +36,11 @@ heading_filter:
     rtk_heading_noise: 0.01
     process_noise: 0.000001
 
+pose_filter:
+  ros__parameters:
+    rover_heading_change_threshold: 0.2
+    minimum_linear_speed: 0.2
+
 iekf_se3:
   ros__parameters:
     scale_cov_a: 1.0

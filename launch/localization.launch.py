@@ -60,4 +60,4 @@ def generate_launch_description():
         output="screen"
     )
 
-    return LaunchDescription([rover_gps_driver_node, gps_linearization_node, iekf_se3_node])
+    return LaunchDescription([container, rover_gps_driver_node, gps_linearization_node, iekf_se3_node])

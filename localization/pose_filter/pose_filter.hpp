@@ -14,14 +14,14 @@ namespace mrover {
         std::shared_ptr<message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime
             <geometry_msgs::msg::Vector3Stamped, mrover::msg::FixStatus>>> pos_sync;
 
-        void imu_callback(const mrover::msg::Imu::ConstSharedPtr &imu);
-        void pos_callback(const geometry_msgs::msg::Vector3Stamped::ConstSharedPtr &linearized_pos_msg);
-        void position_status_callback(const mrover::msg::FixStatus::ConstSharedPtr &position_status_msg);
+        void imu_callback(const sensor_msgs::msg::Imu &imu);
+        void pos_callback(const geometry_msgs::msg::Vector3Stamped::ConstSharedPtr &pos_msg, const mrover::msg::FixStatus::ConstSharedPtr &pos_status_msg);
+        void drive_forward_callback();
 
         // data store
         std::optional<SO3d> curr_heading_correction;
         std::optional<sensor_msgs::msg::Imu> last_imu;
-        std::optional<geometry_msgs::msg::Vector3Stamped> last_pos;
+        std::optional<geometry_msgs::msg::Vector3> last_pos;
 
         // transform utilities
         tf2_ros::Buffer tf_buffer{get_clock()};
@@ -33,8 +33,18 @@ namespace mrover {
         rclcpp::TimerBase::SharedPtr correction_timer;
 
         // constants
-        const rclcpp::Duration IMU_AND_MAG_WATCHDOG_TIMEOUT = rclcpp::Duration::from_seconds(1.0);
-        const rclcpp::Duration STEP = rclcpp::Duration::from_seconds(seconds=0.5);
+        const rclcpp::Duration IMU_WATCHDOG_TIMEOUT = rclcpp::Duration::from_seconds(1.0);
+        const rclcpp::Duration STEP = rclcpp::Duration::from_seconds(0.5);
+        const rclcpp::Duration WINDOW{STEP * 2.5};
+
+        // parameters
+        std::string world_frame;
+        std::string rover_frame;
+        double rover_heading_change_threshold;
+        double minimum_linear_speed;
+
+    public:
+        PoseFilter();
         
         
     };
