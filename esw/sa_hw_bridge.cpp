@@ -256,9 +256,11 @@ namespace mrover {
             mControllerState.error.resize(mMotorNames.size());
             mControllerState.limit_hit.resize(mMotorNames.size());
 
-            // begin serial reads
-            startAsyncRead();
-            io.run();
+            // begin serial reads on a separate thread
+            std::thread([this]() {
+                startAsyncRead();
+                io.run();
+            }).detach();
         }
 
         auto stop() -> void {
