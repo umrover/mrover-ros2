@@ -49,6 +49,10 @@ namespace mrover {
             mag_heading_callback(*mag_heading_msg);
         });
 
+        cmd_vel_sub = this->create_subscription<geometry_msgs::msg::Twist>("/cmd_vel", 1, [&](const geometry_msgs::msg::Twist::ConstSharedPtr& cmd_vel_msg) {
+            twists.push_back(*cmd_vel_msg);
+        });
+
         pos_sub.subscribe(this, "/linearized_position");
         pos_status_sub.subscribe(this, "gps_fix_status");
 
@@ -325,6 +329,16 @@ namespace mrover {
 
     void IEKF_SE3::drive_forward_callback() {
 
+        double mean_cmd_vel = 0;
+        for (auto & twist : twists) {
+            mean_cmd_vel += twist.linear.x / static_cast<double>(twists.size());
+        }
+        twists.clear();
+        if (mean_cmd_vel < minimum_linear_speed) {
+            RCLCPP_WARN(get_logger(), "Rover is not being commanded forward!");
+            return;
+        }
+
         R2d rover_velocity_sum = R2d::Zero();
         double rover_heading_change = 0.0;
         std::size_t readings = 0;
@@ -348,24 +362,26 @@ namespace mrover {
             } catch (tf2::LookupException const& e) {
                 RCLCPP_WARN_STREAM(get_logger(), e.what());
                 return;
-            } catch (tf2::ExtrapolationException const&) { }
+            } catch (tf2::ExtrapolationException const& e) {
+                RCLCPP_WARN_STREAM(get_logger(), e.what());
+                return;
+            }
         }
 
-
         if (rover_heading_change > rover_heading_change_threshold) {
-            RCLCPP_WARN(get_logger(), "Rover is not moving straight enough: Heading change = {%f} rad", rover_heading_change);
+            RCLCPP_WARN(get_logger(), "Rover is not moving straight enough: Heading change = {%f} deg", rover_heading_change * (180 / M_PI));
             return;
         }
 
         R2d mean_velocity = rover_velocity_sum / static_cast<double>(readings);
         if (mean_velocity.norm() < minimum_linear_speed) {
-            RCLCPP_WARN(this->get_logger(), "Rover stationary - insufficient speed: %.3f m/s", mean_velocity.norm());
+            RCLCPP_WARN(get_logger(), "Rover stationary - insufficient speed: %.3f m/s", mean_velocity.norm());
             return;
         }
         
         double drive_forward_heading = atan2(rover_velocity_sum.y(), rover_velocity_sum.x());
 
-        RCLCPP_INFO(get_logger(), "Drive forward heading: %f", drive_forward_heading);
+        RCLCPP_INFO(get_logger(), "Drive forward heading: %f deg", drive_forward_heading * (180 / M_PI));
 
         Matrix36d H;
         Vector4d Y;
@@ -374,24 +390,14 @@ namespace mrover {
 
         Vector3d drive_forward_ref{1, 0, 0};
 
-        double heading = 90 - fmod(drive_forward_heading + 90, 360);
-
-        if (heading < -180) {
-            heading = 360 + heading;
-        }
-
-        heading = heading * (M_PI / 180);
-
         H << -1 * manif::skew(drive_forward_ref), Matrix33d::Zero();
-        Y << -1 * Vector3d{std::cos(heading), -std::sin(heading), 0}, 0;
+        Y << -1 * Vector3d{std::cos(drive_forward_heading), -std::sin(drive_forward_heading), 0}, 0;
         b << -1 * drive_forward_ref, 0;
         N << X.block<3, 3>(0, 0) * rtk_heading_noise * Matrix33d::Identity() * X.block<3, 3>(0, 0).transpose();
 
         if (use_drive_forward) {
             correct(Y, b, N, H);
         }
-
-        
         
     }
 

@@ -42,6 +42,7 @@ namespace mrover {
         // publishers and subscribers
         rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr imu_sub;
         rclcpp::Subscription<mrover::msg::Heading>::SharedPtr mag_heading_sub;
+        rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_sub;
 
         message_filters::Subscriber<geometry_msgs::msg::Vector3Stamped> pos_sub;
         message_filters::Subscriber<mrover::msg::FixStatus> pos_status_sub;
@@ -68,6 +69,9 @@ namespace mrover {
         std::optional<builtin_interfaces::msg::Time> last_imu_time;
         std::optional<builtin_interfaces::msg::Time> last_vel_time;
         rclcpp::TimerBase::SharedPtr correction_timer;
+
+        // data store
+        std::vector<geometry_msgs::msg::Twist> twists;
        
         // state variables
         Matrix44d X;

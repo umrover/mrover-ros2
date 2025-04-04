@@ -9,6 +9,7 @@
 
 #include <geometry_msgs/msg/vector3_stamped.hpp>
 #include <geometry_msgs/msg/vector3.hpp>
+#include <geometry_msgs/msg/twist.hpp>
 #include <builtin_interfaces/msg/time.hpp>
 #include <sensor_msgs/msg/imu.hpp>
 #include <mrover/msg/heading.hpp>

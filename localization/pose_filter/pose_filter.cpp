@@ -94,7 +94,8 @@ namespace mrover {
         for (auto & twist : twists) {
             mean_cmd_vel += twist.linear.x / static_cast<double>(twists.size());
         }
-        if (mean_cmd_vel < 0 || mean_cmd_vel < minimum_linear_speed) {
+        twists.clear();
+        if (mean_cmd_vel < minimum_linear_speed) {
             RCLCPP_WARN(get_logger(), "Rover is not being commanded forward!");
             return;
         }
