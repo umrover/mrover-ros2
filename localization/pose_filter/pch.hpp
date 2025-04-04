@@ -7,6 +7,7 @@
 #include <sensor_msgs/msg/imu.hpp>
 #include <geometry_msgs/msg/vector3.hpp>
 #include <geometry_msgs/msg/vector3_stamped.hpp>
+#include <geometry_msgs/msg/twist.hpp>
 #include <mrover/msg/fix_status.hpp>
 #include <mrover/msg/fix_type.hpp>
 

@@ -10,6 +10,7 @@ namespace mrover {
         rclcpp::Subscription<sensor_msgs::msg::Imu>::ConstSharedPtr imu_sub;
         message_filters::Subscriber<geometry_msgs::msg::Vector3Stamped> pos_sub;
         message_filters::Subscriber<mrover::msg::FixStatus> pos_status_sub;
+        rclcpp::Subscription<geometry_msgs::msg::Twist>::ConstSharedPtr cmd_vel_sub;
 
         std::shared_ptr<message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime
             <geometry_msgs::msg::Vector3Stamped, mrover::msg::FixStatus>>> pos_sync;
@@ -22,6 +23,7 @@ namespace mrover {
         std::optional<SO3d> curr_heading_correction;
         std::optional<sensor_msgs::msg::Imu> last_imu;
         std::optional<geometry_msgs::msg::Vector3> last_pos;
+        std::vector<geometry_msgs::msg::Twist> twists;
 
         // transform utilities
         tf2_ros::Buffer tf_buffer{get_clock()};

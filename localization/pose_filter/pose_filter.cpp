@@ -19,6 +19,10 @@ namespace mrover {
             imu_callback(*imu_msg);
         });
 
+        cmd_vel_sub = this->create_subscription<geometry_msgs::msg::Twist>("cmd_vel", 1, [&](const geometry_msgs::msg::Twist::ConstSharedPtr& twist_msg) {
+            twists.push_back(*twist_msg);
+        });
+
         pos_sub.subscribe(this, "/linearized_position");
         pos_status_sub.subscribe(this, "/heading_fix_status");
         
@@ -86,6 +90,15 @@ namespace mrover {
             return;
         }
 
+        double mean_cmd_vel = 0;
+        for (auto & twist : twists) {
+            mean_cmd_vel += twist.linear.x / static_cast<double>(twists.size());
+        }
+        if (mean_cmd_vel < 0 || mean_cmd_vel < minimum_linear_speed) {
+            RCLCPP_WARN(get_logger(), "Rover is not being commanded forward!");
+            return;
+        }
+        
         R2d rover_velocity_sum = R2d::Zero();
         double rover_heading_change = 0.0;
         std::size_t readings = 0;
