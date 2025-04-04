@@ -34,4 +34,16 @@ def generate_launch_description():
         ],
     )
 
+    mast_gimbal_hw_bridge_node = Node(
+        package="mrover",
+        executable="mast_gimbal_hw_bridge",
+        name="mast_gimbal_hw_bridge",
+        parameters=[
+            Path(get_package_share_directory("mrover"), "config", "esw.yaml"),
+            Path(get_package_share_directory("mrover"), "config", "mast_gimbal.yaml"),
+        ],
+    )
+
+
+
     return LaunchDescription([launch_include_base, launch_include_can, drive_hw_bridge_node])
