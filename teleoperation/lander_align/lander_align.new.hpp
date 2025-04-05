@@ -18,6 +18,9 @@ namespace mrover {
         void filterNormals();
 
         private:
+        sensor_msgs::msg::PointCloud2::ConstSharedPtr mSavedPc;
+        std::mutex mSavedPcMutex;
+
         rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr mCostMapPub;
         rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr mPcSub;
         rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr mPCDebugPub;
@@ -37,6 +40,11 @@ namespace mrover {
 
         //all further processing and updates are done in the execute method in the new thread
         void execute(const std::shared_ptr<GoalHandleLanderAlign> goal_handle);
+
+        //subscription
+        rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr mSensorSub;
+
+        void pointCloudCallback(sensor_msgs::msg::PointCloud2::ConstSharedPtr & msg);
 
         /*
         Using PCA to calculate plane:

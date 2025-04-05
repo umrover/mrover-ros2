@@ -5,7 +5,7 @@ namespace mrover{
 
     using LanderAlign = action::LanderAlign;
     using GoalHandleLanderAlign = rclcpp_action::ServerGoalHandle<LanderAlign>;
-
+    
     LanderAlignNode::LanderAlignNode(const rclcpp::NodeOptions& options) 
         : Node("lander_align", options) {
         //The constructor also instantiates a new action server
@@ -15,6 +15,11 @@ namespace mrover{
             std::bind(&LanderAlignNode::handle_goal, this, std::placeholders::_1, std::placeholders::_2),
             std::bind(&LanderAlignNode::handle_cancel, this, std::placeholders::_1),
             std::bind(&LanderAlignNode::handle_accepted, this, std::placeholders::_1));
+
+            mSensorSub = create_subscription<sensor_msgs::msg::PointCloud2>("/zed/left/points", 1, [this](sensor_msgs::msg::PointCloud2::ConstSharedPtr & msg) {
+                LanderAlignNode::pointCloudCallback(msg);
+            });
+
     }
 
     //the callback for handling new goals (this implementation just accepts all goals)
@@ -41,6 +46,7 @@ namespace mrover{
     //all further processing and updates are done in the execute method in the new thread
     void LanderAlignNode::execute(const std::shared_ptr<GoalHandleLanderAlign> goal_handle) {
         RCLCPP_INFO(this->get_logger(), "Executing goal");
+
         auto result = std::make_shared<LanderAlign::Result>();
         // Check if goal is done
         if (rclcpp::ok()) {
@@ -49,7 +55,11 @@ namespace mrover{
         }
     }
 
-    
+    void LanderAlignNode::pointCloudCallback(sensor_msgs::msg::PointCloud2::ConstSharedPtr & msg) {
+        const std::lock_guard<std::mutex> lock(mSavedPcMutex);
+        mSavedPc = msg;
+    }
+
 }
 
 int main(void) {

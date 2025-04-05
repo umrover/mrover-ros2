@@ -34,7 +34,9 @@ namespace mrover {
         mSensorSub = create_subscription<sensor_msgs::msg::PointCloud2>("/zed/left/points", 1, [this](sensor_msgs::msg::PointCloud2::UniquePtr const& msg) {
             StereoObjectDetector::pointCloudCallback(msg);
         });
-    }
+    }mSensorSub = create_subscription<sensor_msgs::msg::PointCloud2>("/zed/left/points", 1, [this](sensor_msgs::msg::PointCloud2::UniquePtr const& msg) {
+        StereoObjectDetector::pointCloudCallback(msg);
+    });
 } // namespace mrover
 
 
