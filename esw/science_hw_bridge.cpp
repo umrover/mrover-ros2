@@ -1,4 +1,6 @@
 #include "mrover/srv/detail/enable_bool__struct.hpp"
+#include <cstddef>
+#include <cstdint>
 #include <cstring>
 #include <memory>
 
@@ -9,6 +11,8 @@
 
 #include <can_device.hpp>
 #include <messaging_science.hpp>
+#include <parameter.hpp>
+#include <sys/types.h>
 #include <units.hpp>
 
 #include <mrover/msg/can.hpp>
@@ -30,6 +34,13 @@ namespace mrover {
     class ScienceBridge final : public rclcpp::Node {
 
     private:
+        const uint8_t NUMHEATERS = 4;
+        bool uvSensorOnA;
+        bool tempHumiditySensorOnA;
+        bool oxygenSensorOnA;
+        uint8_t heaterStates[4];
+        float thermistorTemps[4];
+        
         rclcpp::Publisher<sensor_msgs::msg::Temperature>::SharedPtr tempPub;
         rclcpp::Publisher<sensor_msgs::msg::RelativeHumidity>::SharedPtr humidityPub;
         rclcpp::Publisher<msg::Oxygen>::SharedPtr oxygenPub;
@@ -72,66 +83,84 @@ namespace mrover {
         }
 
         void processMessage(mrover::HeaterStateData const& message) {
-            // RCLCPP_ERROR(get_logger(), "Heaters!");
             msg::HeaterData heaterData;
-            heaterData.state.resize(4);
-            for (int i = 0; i < 2; ++i) {
-                int h = prevScienceMessage == ScienceBoard::A ? i : i + 2;
-                heaterData.state.at(h) = GET_BIT_AT_INDEX(message.heater_state_info.on, i);
+            heaterData.state.resize(NUMHEATERS);
+
+            for (int i = 0; i < NUMHEATERS; i++) {
+                heaterData.state.at(i) = heaterStates[i];
             }
+
+            for (int i = 0; i < NUMHEATERS / 2; ++i) {
+                int h = prevScienceMessage == ScienceBoard::A ? i : i + (NUMHEATERS / 2);
+                heaterData.state.at(h) = GET_BIT_AT_INDEX(message.heater_state_info.on, i);
+                heaterStates[h] = GET_BIT_AT_INDEX(message.heater_state_info.on, i);
+            }
+
             heaterPub->publish(heaterData);
         }
 
         void processMessage(mrover::ThermistorData const& message) {
-            //RCLCPP_ERROR(get_logger(), "Thermistor data!");
             msg::ScienceThermistors scienceThermistors;
-            scienceThermistors.temps.resize(4);
-            for (int i = 0; i < 2; ++i) {
-                int t = prevScienceMessage == ScienceBoard::A ? i : i + 2;
-                scienceThermistors.temps.at(t).temperature = message.temps[i];
+            scienceThermistors.temps.resize(NUMHEATERS);
+
+            for (int i = 0; i < NUMHEATERS; i++) {
+                scienceThermistors.temps.at(i).temperature = thermistorTemps[i];
             }
+
+            for (int i = 0; i < NUMHEATERS / 2; ++i) {
+                int t = prevScienceMessage == ScienceBoard::A ? i : i + (NUMHEATERS / 2);
+                scienceThermistors.temps.at(t).temperature = message.temps[i];
+                thermistorTemps[t] = message.temps[i];
+            }
+
             thermistorsPub->publish(scienceThermistors);
         }
 
         void processMessage(mrover::SensorData const& message) {
-            // RCLCPP_ERROR(get_logger(), "Sensor data!");
             switch (static_cast<ScienceDataID>(message.id)) {
                 case ScienceDataID::TEMPERATURE: {
-                    sensor_msgs::msg::Temperature msg;
-                    msg.temperature = message.data;
-                    msg.variance = 0;
-                    tempPub->publish(msg);
-                    break;
+                    if ((prevScienceMessage == ScienceBoard::A && tempHumiditySensorOnA) || (prevScienceMessage == ScienceBoard::B && !tempHumiditySensorOnA)) {
+                        sensor_msgs::msg::Temperature msg;
+                        msg.temperature = message.data;
+                        msg.variance = 0;
+                        tempPub->publish(msg);
+                        break;
+                    }
                 }
 
                 case ScienceDataID::HUMIDITY: {
-                    sensor_msgs::msg::RelativeHumidity msg;
-                    msg.relative_humidity = message.data;
-                    msg.variance = 0;
-                    humidityPub->publish(msg);
-                    break;
+                    if ((prevScienceMessage == ScienceBoard::A && tempHumiditySensorOnA) || (prevScienceMessage == ScienceBoard::B && !tempHumiditySensorOnA)) {
+                        sensor_msgs::msg::RelativeHumidity msg;
+                        msg.relative_humidity = message.data;
+                        msg.variance = 0;
+                        humidityPub->publish(msg);
+                        break;
+                    }
                 }
 
                 case ScienceDataID::OXYGEN: {
-                    msg::Oxygen msg;
-                    msg.percent = message.data;
-                    msg.variance = 0;
-                    oxygenPub->publish(msg);
-                    break;
+                    if ((prevScienceMessage == ScienceBoard::A && oxygenSensorOnA) || (prevScienceMessage == ScienceBoard::B && !tempHumiditySensorOnA)) {
+                        msg::Oxygen msg;
+                        msg.percent = message.data;
+                        msg.variance = 0;
+                        oxygenPub->publish(msg);
+                        break;
+                    }
                 }
 
                 case ScienceDataID::UV: {
-                    msg::UV msg;
-                    msg.uv_index = message.data;
-                    msg.variance = 0;
-                    uvPub->publish(msg);
-                    break;
+                    if ((prevScienceMessage == ScienceBoard::A && uvSensorOnA) || (prevScienceMessage == ScienceBoard::B && !tempHumiditySensorOnA)) {
+                        msg::UV msg;
+                        msg.uv_index = message.data;
+                        msg.variance = 0;
+                        uvPub->publish(msg);
+                        break;
+                    }
                 }
             }
         }
 
         void processCANData(msg::CAN::ConstSharedPtr const& msg) {
-            //RCLCPP_ERROR(get_logger(), "Source: %s Destination: %s", msg->source.c_str(), msg->destination.c_str());
             if (msg->source == "science_a")
                 prevScienceMessage = ScienceBoard::A;
             else if (msg->source == "science_b")
@@ -145,6 +174,17 @@ namespace mrover {
         ScienceBridge() : Node{"science_hw_bridge"} {}
 
         void init() {
+            std::vector<ParameterWrapper> parameters = {{"uv_sensor_on_a", uvSensorOnA, true},
+                                                        {"temperature_humidity_sensor_on_a",tempHumiditySensorOnA, true},
+                                                        {"oxygen_sensor_on_a", oxygenSensorOnA, true}};
+
+            ParameterWrapper::declareParameters(rclcpp::Node::shared_from_this().get(), parameters);
+
+            for (int i = 0; i < NUMHEATERS; i++) {
+                heaterStates[i] = 0;
+                thermistorTemps[i] = 0;
+            }
+
             tempPub = create_publisher<sensor_msgs::msg::Temperature>("science_temperature_data", 10);
             humidityPub = create_publisher<sensor_msgs::msg::RelativeHumidity>("science_humidity_data", 10);
             oxygenPub = create_publisher<msg::Oxygen>("science_oxygen_data", 10);

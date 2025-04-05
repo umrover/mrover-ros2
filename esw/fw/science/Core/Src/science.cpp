@@ -19,7 +19,7 @@ extern TIM_HandleTypeDef htim3;
 extern TIM_HandleTypeDef htim4;
 
 #define JETSON_ADDRESS 0x10
-#define SCIENCE_BOARD_ID 0x50
+#define SCIENCE_BOARD_ID 0x51
 
 namespace mrover {
 

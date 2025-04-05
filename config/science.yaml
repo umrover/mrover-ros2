@@ -1,0 +1,5 @@
+science_hw_bridge:
+  ros__parameters:
+    uv_sensor_on_a: true
+    temperature_humidity_sensor_on_a: true
+    oxygen_sensor_on_a: true

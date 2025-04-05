@@ -1,15 +1,19 @@
 #MicroXplorer Configuration settings - do not modify
 ADC1.Channel-0\#ChannelRegularConversion=ADC_CHANNEL_4
 ADC1.Channel-1\#ChannelRegularConversion=ADC_CHANNEL_5
+ADC1.ClockPrescaler=ADC_CLOCK_SYNC_PCLK_DIV4
 ADC1.CommonPathInternal=null|null|null|null
 ADC1.ContinuousConvMode=ENABLE
+ADC1.DMAContinuousRequests=DISABLE
+ADC1.DataAlign=ADC_DATAALIGN_RIGHT
 ADC1.EOCSelection=ADC_EOC_SEQ_CONV
-ADC1.IPParameters=NbrOfConversionFlag,master,Channel-0\#ChannelRegularConversion,Rank-1\#ChannelRegularConversion,Channel-1\#ChannelRegularConversion,SamplingTime-1\#ChannelRegularConversion,OffsetNumber-1\#ChannelRegularConversion,NbrOfConversion,ContinuousConvMode,EOCSelection,CommonPathInternal
+ADC1.IPParameters=NbrOfConversionFlag,master,Channel-0\#ChannelRegularConversion,Rank-1\#ChannelRegularConversion,Channel-1\#ChannelRegularConversion,SamplingTime-1\#ChannelRegularConversion,OffsetNumber-1\#ChannelRegularConversion,NbrOfConversion,ContinuousConvMode,EOCSelection,DataAlign,DMAContinuousRequests,SamplingTime-0\#ChannelRegularConversion,ClockPrescaler,CommonPathInternal
 ADC1.NbrOfConversion=2
 ADC1.NbrOfConversionFlag=1
 ADC1.OffsetNumber-1\#ChannelRegularConversion=ADC_OFFSET_NONE
 ADC1.Rank-1\#ChannelRegularConversion=2
-ADC1.SamplingTime-1\#ChannelRegularConversion=ADC_SAMPLETIME_2CYCLES_5
+ADC1.SamplingTime-0\#ChannelRegularConversion=ADC_SAMPLETIME_24CYCLES_5
+ADC1.SamplingTime-1\#ChannelRegularConversion=ADC_SAMPLETIME_24CYCLES_5
 ADC1.master=1
 ADC2.Channel-0\#ChannelRegularConversion=ADC_CHANNEL_3
 ADC2.CommonPathInternal=null|null|null|null
