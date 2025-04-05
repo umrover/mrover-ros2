@@ -110,7 +110,7 @@ def gen_marker(context: Context, point=[0.0, 0.0], color=[1.0, 1.0, 1.0], size=0
     return marker
 
 
-def segment_path(context: Context, dest: np.ndarray, seg_len: float = 0.5):
+def segment_path(context: Context, dest: np.ndarray, seg_len: float = 2.0):
     """
     Segment the path from the rover's current position to the current waypoint into equally spaced points
 
@@ -144,8 +144,6 @@ def segment_path(context: Context, dest: np.ndarray, seg_len: float = 0.5):
 
     # Create a Trajectory object from the segmented path
     segmented_trajectory = Trajectory(np.hstack((traj_path, np.zeros((traj_path.shape[0], 1)))))
-
-    context.node.get_logger().info(f"Segmented path: {segmented_trajectory.coordinates}")
     return segmented_trajectory
 
 

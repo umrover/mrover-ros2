@@ -79,6 +79,9 @@ class CostmapSearchState(State):
             time.sleep(1.0)
             return self
 
+        if context.move_costmap_future and not context.move_costmap_future.done():
+            return self
+
         assert context.course is not None
         assert self.prev_pos is not None
 

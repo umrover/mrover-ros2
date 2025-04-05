@@ -1,66 +1,54 @@
 import numpy as np
-
-from state_machine.state import State
-from . import search, costmap_search, waypoint, state, recovery
+from typing import Any
+from navigation.trajectory import Trajectory
+from navigation.astar import AStar, NoPath
+from . import costmap_search, waypoint, state, recovery
 from .context import Context
-from navigation.trajectory import Trajectory, SearchTrajectory
-from navigation.astar import AStar
+from state_machine.state import State
 from geometry_msgs.msg import Twist
 from nav_msgs.msg import Path
 from visualization_msgs.msg import Marker
 from rclpy.publisher import Publisher
 from rclpy.time import Time
 from rclpy.duration import Duration
-from typing import Any
 from navigation.coordinate_utils import gen_marker, is_high_cost_point, d_calc, segment_path
 
 
 class ApproachTargetState(State):
+    UPDATE_DELAY: float
+    USE_COSTMAP: bool
+    DISTANCE_THRESHOLD: float
+    COST_INFLATION_RADIUS: float
+    time_begin: Time
     astar_traj: Trajectory
     traj: Trajectory
     astar: AStar
     marker_pub: Publisher
-    follow_astar: bool
     time_last_updated: Time
-    UPDATE_DELAY: float
-    USE_COSTMAP: bool
     target_position: np.ndarray | None
-    goto_near_point: bool
-    near_point: np.ndarray
-    cost_inflation_radius: float
 
     def on_enter(self, context: Context) -> None:
         from .long_range import LongRangeState
 
-        if isinstance(self, LongRangeState):
-            context.node.get_logger().info("In long range state")
-        else:
-            context.node.get_logger().info("In approach target state")
-        self.marker_pub = context.node.create_publisher(Marker, "target_trajectory", 10)
-        self.time_begin = context.node.get_clock().now()
-        self.astar_traj = Trajectory(np.array([]))
-        self.traj = Trajectory(np.array([]))
-        self.astar = AStar(context=context)
-        self.follow_astar = False
-        self.goto_near_point = False
-        self.near_point = np.array([])
-        temp = self.get_target_position(context)
-        if temp is not None:
-            self.target_position = temp
-        else:
-            self.target_position = np.array([0, 0])
-        self.time_last_updated = context.node.get_clock().now()
+        state = "Long Range State" if isinstance(self, LongRangeState) else "Approach Target State"
+        context.node.get_logger().info(f"Entered {state}")
+
         self.UPDATE_DELAY = context.node.get_parameter("search.update_delay").value
         self.USE_COSTMAP = context.node.get_parameter("search.use_costmap").value
         self.DISTANCE_THRESHOLD = context.node.get_parameter("search.distance_threshold").value
-        self.cost_inflation_radius = context.node.get_parameter("search.initial_inflation_radius").value
+        self.COST_INFLATION_RADIUS = context.node.get_parameter("search.initial_inflation_radius").value
+        self.marker_pub = context.node.create_publisher(Marker, "target_trajectory", 10)
+        self.astar_traj = Trajectory(np.array([]))
+        self.target_traj = Trajectory(np.array([]))
+        self.astar = AStar(context=context)
+        self.target_position = self.get_target_position(context)
+        self.time_last_updated = context.node.get_clock().now()
+        self.time_begin = context.node.get_clock().now()
 
     def on_exit(self, context: Context) -> None:
         pass
 
     def get_target_position(self, context: Context) -> np.ndarray | None:
-        if self.goto_near_point:
-            return self.near_point
         return context.env.current_target_pos()
 
     def next_state(self, context: Context, is_finished: bool) -> State:
@@ -80,7 +68,7 @@ class ApproachTargetState(State):
         context.node.get_logger().info("Found closest point to target")
         return self
 
-    def calc_point(self, context: Context, check_astar=False):
+    def low_cost_point(self, context: Context, check_astar=False) -> bool:
         """
         Calculate the nearest low-cost point to the target.
         Should only run if the target is in a high-cost area.
@@ -100,7 +88,7 @@ class ApproachTargetState(State):
             and not check_astar
         ):
             # If not in a high-cost area, return success (no need to find a new point)
-            return
+            return True
 
         # Define initial search parameters
         search_radius = 1.0  # Adjust based on the scale of your environment
@@ -130,39 +118,46 @@ class ApproachTargetState(State):
             if candidates:
                 # Find the nearest low-cost point to the target position
                 nearest_low_cost_point = min(candidates, key=lambda p: np.linalg.norm(p - target_position))
-                self.near_point = nearest_low_cost_point
 
                 # Update internal state (if necessary) or transition to the new point
                 self.target_position = nearest_low_cost_point
-                self.traj = segment_path(context=context, dest=nearest_low_cost_point[0:2])
-                context.node.get_logger().info("Switching target to nearest low-cost point")
-                self.astar_traj = Trajectory(np.array([]))
-                self.display_markers(context=context)
-                self.goto_near_point = True
-
-                context.node.get_logger().info(f"Nearest low cost point: {self.near_point}")
-
-                return
+                self.target_traj.clear()
+                self.astar_traj.clear()
+                return True
 
             # Expand the search radius
             search_radius += radius_increment
 
         # If no low-cost point is found within the maximum radius, raise error
-        raise RuntimeError("Couldn't find a better point.")
+        context.node.get_logger().warn("Could not find a low-cost point within radius")
+        return False
 
     def on_loop(self, context: Context) -> State:
+        from .long_range import LongRangeState
+
         """
         Drive towards a target based on what gets returned from get_target_position().
         Return to search if there is no target position.
         :return: Next state
         """
-        from .long_range import LongRangeState
-
         assert context.course is not None
 
         if context.env.cost_map is None or not hasattr(context.env.cost_map, "data"):
             return self
 
+        if context.move_costmap_future and not context.move_costmap_future.done():
+            return self
+
+        # Establish rover's position in the world
+        rover_in_map = context.rover.get_pose_in_map()
+        if rover_in_map is None:
+            return self
+
+        if context.rover.stuck:
+            context.rover.previous_state = self
+            return recovery.RecoveryState()
+
+        # If we see the target in the ZED, transition from long range to approach target
         if isinstance(self, LongRangeState) and context.env.current_target_pos() is not None:
             return ApproachTargetState()
 
@@ -176,20 +171,10 @@ class ApproachTargetState(State):
             # close so we should just return to spiral searching
             return costmap_search.CostmapSearchState()
 
-        # Establish rover's position in the world
-        rover_in_map = context.rover.get_pose_in_map()
-        if rover_in_map is None:
-            return self
-
-        # Wait before starting state
-        if context.node.get_clock().now() - Duration(nanoseconds=1000000000) < self.time_begin:
-            return self
-
-        if (
-            context.node.get_clock().now() - self.time_last_updated > Duration(seconds=self.UPDATE_DELAY)
-            or self.target_position is None
-        ):
-            # Update the time last updated and update the position of the target.
+        # Logic for every update
+        if context.node.get_clock().now() - self.time_last_updated > Duration(seconds=self.UPDATE_DELAY):
+            # Update the target's position if we still see it, otherwise only "forget" the target position after
+            # the expiration duration
             if self.get_target_position(context) is None:
                 if (
                     context.node.get_clock().now() - self.time_last_updated
@@ -197,68 +182,69 @@ class ApproachTargetState(State):
                     > Duration(seconds=context.node.get_parameter("target_expiration_duration").value)
                 ):
                     self.target_position = None
+                    context.node.get_logger().info("Lost target position, transitioning states")
+                    return self
             else:
                 self.target_position = self.get_target_position(context)
+                context.node.get_logger().info(f"Updated target position to {self.target_position}")
 
-            if self.target_position is not None:
-                context.node.get_logger().info(f"Current target position {self.target_position}")
-            else:
-                context.node.get_logger().info("No target position, should be transitioning to waypoint/search state")
-            self.traj = Trajectory(np.array([]))
+            # Reset the trajectory for the new target position
+            self.target_traj.clear()
+            self.astar_traj.clear()
 
             self.time_last_updated = context.node.get_clock().now()
-            # Check if the object is in the ZED, and if so, transition to the regular approach target state
-            if isinstance(self, LongRangeState):
-                return self.next_state(context, False)
 
-            # Make sure to return self in case get_target_position returned None
-            return self
-
-        # Target position must exist
-        assert self.target_position is not None
-
-        # If there are no more coordinates left in the trajectory to the target, redevelop the trajectory with segmentation
-        if len(self.traj.coordinates) == 0:
+        # If the target trajectory is empty, develop a new path to it and display its markers
+        if len(self.target_traj.coordinates) == 0:
             context.node.get_logger().info("Generating approach segmented path")
-            self.traj = segment_path(context=context, dest=self.target_position[0:2])
-            self.astar_traj = Trajectory(np.array([]))
+
+            # Appease the mypy gods
+            assert self.target_position is not None
+            self.target_traj = segment_path(context=context, dest=self.target_position[0:2])
+
             self.display_markers(context=context)
 
         # Check the current point in the trajectory; if it's high cost, move to the next point and check again
-        while self.traj.get_current_point() is not None and is_high_cost_point(
-            context=context, point=self.traj.get_current_point()
+        while self.target_traj.get_current_point() is not None and is_high_cost_point(
+            context=context, point=self.target_traj.get_current_point()
         ):
-            context.node.get_logger().info(f"Too high cost point: {self.traj.get_current_point()}")
-            if self.traj.increment_point():
-                # TODO: What do we do if we skip high cost points and reach the end of the trajectory
-                self.calc_point(context=context)
-                return self.next_state(context=context, is_finished=False)
-            self.display_markers(context=context)
-            # Make sure that if going to the nearest point, it's actually in the distance threshold; otherwise, dilate
-            if (
-                not isinstance(self, LongRangeState)
-                and self.goto_near_point
-                and not self.point_in_distance_threshold(context, self.get_target_position(context))
-            ):
-                self.dilate_costmap(context)
-                self.calc_point(context)
-                return self.next_state(context=context, is_finished=False)
+            context.node.get_logger().info(f"Skipped high cost point")
+            self.target_traj.increment_point()
 
-        # If there are no more points in the current A* path or we are past the update delay, then create a new one
-        if (
-            context.node.get_clock().now() - self.time_last_updated > Duration(seconds=self.UPDATE_DELAY)
-            or len(self.astar_traj.coordinates) - self.astar_traj.cur_pt == 0
-        ):
-            self.time_last_updated = context.node.get_clock().now()
-            # Generate A* trajectory between segmented points
-            self.astar_traj = self.astar.generate_trajectory(context, self.traj.get_current_point())
-            if len(self.astar_traj.coordinates) == 0:
-                context.node.get_logger().info("Calculating nearest point that can be astared to:")
-                self.calc_point(context, True)
+            if self.target_traj.done():
+                break
+
+        # If the a-star trajectory is empty and there is a segment to pathfind to, generate a new trajectory there
+        if self.astar_traj.empty() and not self.target_traj.done():
+            try:
+                self.astar_traj = self.astar.generate_trajectory(context, self.target_traj.get_current_point())
+                if self.astar_traj.empty():
+                    self.target_traj.increment_point()
+            except NoPath:
+                # Segment point unreachable, skipping it
+                self.target_traj.increment_point()
+
+        if self.target_traj.done():
+            self.target_traj.clear()
+            context.node.get_logger().info("Target unreachable, calculating nearest low-cost point")
+            if self.low_cost_point(context=context):
+                # If we are approaching a target and it is not within the distance threshold, dilate the cost map and
+                # recalculate for a low-cost point
+                while not isinstance(self, LongRangeState) and not self.point_in_distance_threshold(
+                    context, self.target_position
+                ):
+                    self.dilate_costmap(context)
+                    self.low_cost_point(context)
+                context.node.get_logger().info("Found low-cost point")
+                return self
+
+            # If we fail to find a low-cost point, consider the target unreachable and give up
+            context.node.get_logger().info("Low-cost point not found, giving up")
+            return self.next_state(context=context, is_finished=True)
 
         arrived = False
         cmd_vel = Twist()
-        if len(self.astar_traj.coordinates) - self.astar_traj.cur_pt != 0:
+        if not self.astar_traj.done():
             curr_point = self.astar_traj.get_current_point()
             cmd_vel, arrived = context.drive.get_drive_command(
                 curr_point,
@@ -267,24 +253,29 @@ class ApproachTargetState(State):
                 context.node.get_parameter("waypoint.drive_forward_threshold").value,
             )
 
-        if context.rover.stuck:
-            context.rover.previous_state = self
-            return recovery.RecoveryState()
-
-        # If we have arrived and reached the end of both the A* trajectory and target trajectory, we have finished
+        # If we have arrived increment the a-star trajectory
         if arrived:
-            if self.astar_traj.increment_point():
+            self.astar_traj.increment_point()
+
+            # If we finished an astar trajectory, increment the target_trajectory
+            if self.astar_traj.done():
+                self.astar_traj.clear()
                 context.node.get_logger().info("Arrived at segment point")
-                if self.traj.increment_point():
-                    self.goto_near_point = False
+                self.target_traj.increment_point()
+
+                # If we finished the target trajectory
+                if self.target_traj.done():
+                    self.target_traj.clear()
+                    # If we are within the distance threshold of the target we have finished
                     if self.self_in_distance_threshold(context):
                         return self.next_state(context=context, is_finished=True)
+
+                    # Otherwise we need to dilate to get closer
                     else:
                         if isinstance(self, LongRangeState):
                             self.target_position = self.get_target_position(context)
-                            self.traj = Trajectory(np.array([]))
                         else:
-                            self.traj = Trajectory(np.array([]))
+                            context.node.get_logger().info("Too far from target, dilating costmap")
                             if not self.dilate_costmap(context=context):
                                 # Fully dilated and still failed, go to next state
                                 return self.next_state(context=context, is_finished=True)
@@ -300,13 +291,13 @@ class ApproachTargetState(State):
             delete = Marker()
             delete.action = Marker.DELETEALL
             self.marker_pub.publish(delete)
-            start_pt = self.traj.cur_pt - 2 if self.traj.cur_pt - 2 >= 0 else 0
+            start_pt = self.target_traj.cur_pt - 2 if self.target_traj.cur_pt - 2 >= 0 else 0
             end_pt = (
-                self.traj.cur_pt + 7
-                if self.traj.cur_pt + 7 < len(self.traj.coordinates)
-                else len(self.traj.coordinates)
+                self.target_traj.cur_pt + 7
+                if self.target_traj.cur_pt + 7 < len(self.target_traj.coordinates)
+                else len(self.target_traj.coordinates)
             )
-            for i, coord in enumerate(self.traj.coordinates[start_pt:end_pt]):
+            for i, coord in enumerate(self.target_traj.coordinates[start_pt:end_pt]):
                 self.marker_pub.publish(
                     gen_marker(context=context, point=coord, color=[1.0, 0.0, 1.0], id=i, lifetime=100)
                 )
@@ -326,7 +317,6 @@ class ApproachTargetState(State):
 
         rover_translation = rover_SE3.translation()[0:2]
         distance_to_target = d_calc(rover_translation, tuple(target_pos))
-        context.node.get_logger().info(f"Distance: {distance_to_target}")
         return distance_to_target < self.DISTANCE_THRESHOLD
 
     def point_in_distance_threshold(self, context: Context, point):
@@ -337,11 +327,9 @@ class ApproachTargetState(State):
             return False
 
         distance = d_calc(point, tuple(target_pos))
-        context.node.get_logger().info(f"Distance: {distance}")
         return distance < self.DISTANCE_THRESHOLD
 
     def dilate_costmap(self, context: Context) -> bool:
-        context.node.get_logger().info("Too far from target! Dilating cost map.")
-        self.cost_inflation_radius -= 0.2
-        context.dilate_cost(self.cost_inflation_radius)
-        return self.cost_inflation_radius > 0
+        self.COST_INFLATION_RADIUS -= 0.2
+        context.dilate_cost(self.COST_INFLATION_RADIUS)
+        return self.COST_INFLATION_RADIUS > 0

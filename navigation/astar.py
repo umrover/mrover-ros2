@@ -244,6 +244,7 @@ class AStar:
             context.node.get_logger().info("No path found")
             trajectory.reset()
             return Trajectory(np.array([]))
+            # raise NoPath
 
         if occupancy_list is not None:
             cartesian_coords = ij_to_cartesian(context, np.array(occupancy_list))

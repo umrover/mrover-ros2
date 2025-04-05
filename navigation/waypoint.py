@@ -83,6 +83,9 @@ class WaypointState(State):
 
         assert context.course is not None
 
+        if context.move_costmap_future and not context.move_costmap_future.done():
+            return self
+
         current_waypoint = context.course.current_waypoint()
         if current_waypoint is None:
             return state.DoneState()
@@ -179,6 +182,7 @@ class WaypointState(State):
                     return self.next_state(context=context)
                 self.display_markers(context=context)
         else:
+            self.time_no_search_wait = None
             context.rover.send_drive_command(cmd_vel)
 
         return self

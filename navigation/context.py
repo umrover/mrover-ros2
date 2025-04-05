@@ -27,6 +27,7 @@ from rclpy.node import Node
 from rclpy.publisher import Publisher
 from rclpy.subscription import Subscription
 from rclpy.time import Time
+from rclpy.task import Future
 from state_machine.state import State
 from std_msgs.msg import Bool, Header
 from .drive import DriveController
@@ -359,6 +360,8 @@ class Context:
     world_frame: str
     rover_frame: str
 
+    move_costmap_future: Future
+
     def setup(self, node: Node):
         from .state import OffState
 
@@ -371,6 +374,8 @@ class Context:
         self.rover = Rover(self, False, OffState(), Path(header=Header(frame_id=self.world_frame)))
         self.env = Environment(self, image_targets=ImageTargetsStore(self), cost_map=CostMap())
         self.disable_requested = False
+
+        self.move_costmap_future = None
 
         node.create_service(EnableAuton, "enable_auton", self.enable_auton)
 
@@ -433,24 +438,23 @@ class Context:
         # array: known_free_cost
         self.env.cost_map.data /= 100.0
 
-    def move_costmap(self, course_name="center_gps"):
-        # TODO(neven): add service to move costmap if going to watter bottle search
+    def move_costmap(self, course_name="base_link"):
         self.node.get_logger().info(f"Requesting to move cost map to {course_name}")
-        srv_name = "move_custom_cost_map" if self.node.get_parameter("custom_costmap").value else "move_cost_map"
+        srv_name = "move_cost_map"
+
         client = self.node.create_client(MoveCostMap, srv_name=srv_name)
         while not client.wait_for_service(timeout_sec=1.0):
-            self.node.get_logger().info("waiting for move_cost_map service...")
+            self.node.get_logger().info("Waiting for move_cost_map service...")
         req = MoveCostMap.Request()
 
         req.course = course_name
-        future = client.call_async(req)
-        # TODO(neven): make this actually wait for the service to finish
-        # context.node.get_logger().info("called thing")
-        # rclpy.spin_until_future_complete(context.node, future)
-        # while not future.done():
-        #     pass
-        # if not future.result():
-        #     context.node.get_logger().info("move_cost_map service call failed")
+        self.move_costmap_future = client.call_async(req)
+
+        self.node.get_logger().info("move_cost_map service call initiated")
+
+        self.move_costmap_future.add_done_callback(
+            lambda f: self.node.get_logger().info("move_cost_map service finished!")
+        )
 
     def dilate_cost(self, new_radius: float):
         self.node.get_logger().info(f"Requesting to dilate cost to {new_radius}")
