@@ -44,7 +44,7 @@ namespace mrover {
     class SAHWBridge : public rclcpp::Node {
         static constexpr int SERIAL_INPUT_MSG_SIZE = 14;
 
-        std::vector<std::string> const mMotorNames = {"linear_actuator", "auger", "pump_a", "pump_b", "sensor_actuator"};
+        std::vector<std::string> const mMotorNames = {"linear_actuator", "auger", "pump_0", "pump_1", "sensor_actuator"};
         std::unordered_map<std::string, std::shared_ptr<BrushedController>> mMotors;
 
         rclcpp::TimerBase::SharedPtr mPublishDataTimer;

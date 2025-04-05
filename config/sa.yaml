@@ -13,12 +13,12 @@ sa_hw_bridge:
       is_inverted: false
       driver_voltage: 10.5
       motor_max_voltage: 12.0
-    pump_a:
+    pump_0:
       # gear_ratio: 1.0
       is_inverted: false
       driver_voltage: 10.5
       motor_max_voltage: 12.0
-    pump_b:
+    pump_1:
       # gear_ratio: 1.0
       is_inverted: false
       driver_voltage: 10.5
