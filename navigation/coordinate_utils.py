@@ -143,7 +143,7 @@ def segment_path(context: Context, dest: np.ndarray, seg_len: float = 2.0):
         traj_path = np.concatenate((temp, np.array([dest])), axis=0)  #
 
     # Create a Trajectory object from the segmented path
-    segmented_trajectory = Trajectory(np.hstack((traj_path, np.zeros((traj_path.shape[0], 1)))))
+    segmented_trajectory = Trajectory(np.hstack((traj_path, np.zeros((traj_path.shape[0], 1))))[1:])
     return segmented_trajectory
 
 
