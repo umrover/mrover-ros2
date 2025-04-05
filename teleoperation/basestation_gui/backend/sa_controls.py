@@ -52,7 +52,7 @@ def subset(names: list[str], values: list[float], joints: set[Joint]) -> tuple[l
 def compute_manual_joint_controls(controller: DeviceInputs, pump: int) -> list[float]:
     pump_controls = compute_pump_controls(controller, pump)
 
-    controls = ([
+    return [
         filter_input(
             safe_index(controller.axes, ControllerAxis.LEFT_Y), 
             quadratic=True, 
@@ -69,10 +69,7 @@ def compute_manual_joint_controls(controller: DeviceInputs, pump: int) -> list[f
             simulated_axis(controller.buttons, ControllerButton.RIGHT_TRIGGER, ControllerButton.LEFT_TRIGGER),
             scale=JOINT_SCALES[Joint.AUGER.value],
         ),
-    ] + pump_controls)
-    
-    print("Controls: ", controls)
-    return controls
+    ] + pump_controls
 
 
 def send_sa_controls(sa_mode: str, pump: int, inputs: DeviceInputs, sa_thr_pub: Publisher) -> None:
