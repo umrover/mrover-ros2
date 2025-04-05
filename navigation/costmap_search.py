@@ -7,8 +7,8 @@ from rclpy.time import Time
 from rclpy.duration import Duration
 import time
 from navigation import approach_target, recovery, waypoint
-from navigation.astar import AStar, SpiralEnd, NoPath
-from navigation.coordinate_utils import d_calc, gen_marker, is_high_cost_point
+from navigation.astar import AStar, SpiralEnd, NoPath, OutOfBounds
+from navigation.coordinate_utils import d_calc, gen_marker, is_high_cost_point, cartesian_to_ij
 from navigation.context import Context
 from navigation.trajectory import Trajectory, SearchTrajectory
 from visualization_msgs.msg import Marker
@@ -24,12 +24,10 @@ class CostmapSearchState(State):
     Intended to be implemented over the current search state
     """
 
-    prev_pos: np.ndarray
-    time_begin: Optional[Time]
-    total_distance: float
+    time_begin: Time
 
-    traj: SearchTrajectory
-    star_traj: Trajectory  # returned by astar
+    spiral_traj: SearchTrajectory
+    astar_traj: Trajectory  # returned by astar
     prev_target_pos_in_map: Optional[np.ndarray] = None
     is_recovering: bool = False
     time_last_updated: Time
@@ -42,54 +40,38 @@ class CostmapSearchState(State):
     UPDATE_DELAY: float
 
     def on_enter(self, context: Context) -> None:
-        context.node.get_logger().info("In costmap search spiral state")
+        context.node.get_logger().info("Entered Costmap Search State")
 
-        # Parameter initialization
-        self.prev_pos = np.array([0, 0])
-        self.time_begin = None
-        self.total_distance = 0.0
-        self.marker_pub = context.node.create_publisher(Marker, "spiral_points", 10)
         self.STOP_THRESH = context.node.get_parameter("search.stop_threshold").value
         self.DRIVE_FWD_THRESH = context.node.get_parameter("search.drive_forward_threshold").value
         self.UPDATE_DELAY = context.node.get_parameter("search.update_delay").value
-        self.A_STAR_THRESH = context.node.get_parameter("search.a_star_thresh").value
 
-        # Creates spiral traj to follow
+        self.time_begin = context.node.get_clock().now()
+        self.marker_pub = context.node.create_publisher(Marker, "spiral_points", 10)
+        
         self.new_traj(context)
 
         if not self.is_recovering:
             self.prev_target_pos_in_map = None
 
-        # Gets a-star ready
         self.astar = AStar(context)
-        self.star_traj = Trajectory(np.array([]))
+        self.astar_traj = Trajectory(np.array([]))
         self.time_last_updated = context.node.get_clock().now()
-        self.follow_astar = False
-
-        # Initialize stopwatch
-        self.time_begin = None
+        self.time_begin = context.node.get_clock().now()
 
     def on_exit(self, context: Context) -> None:
         pass
 
     def on_loop(self, context: Context) -> State:
         # Wait until the costmap is ready
-        if not hasattr(context.env.cost_map, "data"):
+        if not hasattr(context.env.cost_map, "data") and context.node.get_parameter("costmap.use_costmap").value:
             context.node.get_logger().warn(f"No costmap found, waiting...")
-            time.sleep(1.0)
             return self
 
         if context.move_costmap_future and not context.move_costmap_future.done():
             return self
 
         assert context.course is not None
-        assert self.prev_pos is not None
-
-        approach_state = context.course.get_approach_state()
-        if approach_state is not None:
-            total_time = context.node.get_clock().now() - self.time_begin
-            context.node.get_logger().info(f"Total search time: {total_time.nanoseconds // 1000000000}")
-            return approach_state
 
         rover_in_map = context.rover.get_pose_in_map()
         assert rover_in_map is not None
@@ -101,68 +83,68 @@ class CostmapSearchState(State):
         else:
             self.is_recovering = False
 
-        if not self.time_begin:
-            self.time_begin = context.node.get_clock().now()
-            self.prev_pos = rover_in_map.translation()[0:2]
+        # Check if we belong in any other state
+        approach_state = context.course.get_approach_state()
+        if approach_state is not None:
+            total_time = context.node.get_clock().now() - self.time_begin
+            context.node.get_logger().info(f"Total search time: {total_time.nanoseconds // 1000000000}")
+            return approach_state
 
-        else:
-            self.total_distance += d_calc(rover_in_map.translation()[0:2], tuple(self.prev_pos))
-            self.prev_pos = rover_in_map.translation()[0:2]
-
-        while is_high_cost_point(context=context, point=self.traj.get_current_point()):
+        # Skip spiral points until we find one that is not high cost
+        while is_high_cost_point(context=context, point=self.spiral_traj.get_current_point()):
             context.node.get_logger().info(f"Skipping high cost spiral point")
-            if self.traj.increment_point():
+            self.spiral_traj.increment_point()
+            
+            # If we reach the end of the spiral trajectory via skipping high cost points, go back into the waypoint state
+            if self.spiral_traj.done():
+                self.spiral_traj.clear()
                 context.node.get_logger().info(f"Reached end of search spiral")
                 return waypoint.WaypointState()
-            start_pt = self.traj.cur_pt
-            end_pt = (
-                self.traj.cur_pt + 6
-                if self.traj.cur_pt + 3 < len(self.traj.coordinates)
-                else len(self.traj.coordinates)
-            )
-            if context.node.get_parameter("display_markers").value:
-                for i, coord in enumerate(self.traj.coordinates[start_pt:end_pt]):
-                    self.marker_pub.publish(
-                        gen_marker(context=context, point=coord, color=[1.0, 0.0, 0.0], id=i, lifetime=100)
-                    )
-            self.star_traj = Trajectory(np.array([]))
+            
+            self.astar_traj.clear()
 
         # If there are no more points in the current a_star path or we are past the update delay, then create a new one
-        if len(
-            self.star_traj.coordinates
-        ) - self.star_traj.cur_pt == 0 or context.node.get_clock().now() - self.time_last_updated > Duration(
+        if self.astar_traj.empty() or context.node.get_clock().now() - self.time_last_updated > Duration(
             seconds=self.UPDATE_DELAY
         ):
 
-            start_pt = self.traj.cur_pt
+            start_pt = self.spiral_traj.cur_pt
             end_pt = (
-                self.traj.cur_pt + 6
-                if self.traj.cur_pt + 3 < len(self.traj.coordinates)
-                else len(self.traj.coordinates)
+                self.spiral_traj.cur_pt + 6
+                if self.spiral_traj.cur_pt + 3 < len(self.spiral_traj.coordinates)
+                else len(self.spiral_traj.coordinates)
             )
             if context.node.get_parameter("display_markers").value:
-                for i, coord in enumerate(self.traj.coordinates[start_pt:end_pt]):
+                for i, coord in enumerate(self.spiral_traj.coordinates[start_pt:end_pt]):
                     self.marker_pub.publish(
                         gen_marker(context=context, point=coord, color=[1.0, 0.0, 0.0], id=i, lifetime=100)
                     )
-
-            total_time = (context.node.get_clock().now() - self.time_begin).nanoseconds / 1e9
-            # context.node.get_logger().info(f"Total Distance Traveled: {self.total_distance}m\nTotal Time: {total_time}s\nAverage Speed: {self.total_distance/total_time}m/s")
-
-            # Generate a path
-            self.star_traj = self.astar.generate_trajectory(context, self.traj.get_current_point())
-
-            # edge case, if for some reason we cannot astar, skip the point and attempt to astar to the next
-            while len(self.star_traj.coordinates) == 0:
-                context.node.get_logger().info(f"Skipping spiral point")
-                if self.traj.increment_point():
-                    context.node.get_logger().info(f"Reached end of search spiral")
-                    return waypoint.WaypointState()
-                self.star_traj = self.astar.generate_trajectory(context, self.traj.get_current_point())
-
+                
             self.time_last_updated = context.node.get_clock().now()
 
-        target_position_in_map = self.star_traj.get_current_point()
+            # Generate a path
+            try:
+                self.astar_traj = self.astar.generate_trajectory(context, self.spiral_traj.get_current_point())
+            except OutOfBounds:
+                context.node.get_logger().warn("Attempted to generate a trajectory for the rover when it was out of bounds of the costmap")
+                dest_ij = cartesian_to_ij(context, self.spiral_traj.get_current_point())
+                costmap_length = context.env.cost_map.data.shape[0]
+                while not (0 <= int(dest_ij[0]) < costmap_length and 0 <= int(dest_ij[1]) < costmap_length):
+                    # a lil boof ngl
+                    self.spiral_traj.decerement_point()
+                    self.spiral_traj.decerement_point()
+                    dest_ij = cartesian_to_ij(context, self.spiral_traj.get_current_point())
+                return self
+            # If a spiral point is unreachable, then skip it and generate a new trajectory
+            if self.astar_traj.empty():
+                context.node.get_logger().info(f"Skipping unreachable spiral point")
+                if self.spiral_traj.increment_point():
+                    context.node.get_logger().info(f"Reached end of search spiral")
+                    return waypoint.WaypointState()
+                return self
+            
+
+        target_position_in_map = self.astar_traj.get_current_point()
 
         cmd_vel, arrived = context.drive.get_drive_command(
             target_position_in_map,
@@ -176,20 +158,21 @@ class CostmapSearchState(State):
             context.rover.send_drive_command(cmd_vel)
         else:
             self.prev_target_pos_in_map = target_position_in_map
-            if self.star_traj.increment_point():
-                if self.traj.increment_point():
+            if self.astar_traj.increment_point():
+                self.astar_traj.clear()
+                if self.spiral_traj.increment_point():
                     context.node.get_logger().info(f"Reached end of search spiral")
                     return waypoint.WaypointState()
 
         return self
 
-    def new_traj(self, context) -> None:
+    def new_traj(self, context: Context) -> None:
         assert context.course is not None
         search_center = context.course.current_waypoint()
         assert search_center is not None
 
         if not self.is_recovering:
-            self.traj = SearchTrajectory.spiral_traj(
+            self.spiral_traj = SearchTrajectory.spiral_traj(
                 center=context.course.current_waypoint_pose_in_map().translation()[0:2],
                 coverage_radius=context.node.get_parameter("search.coverage_radius").value,
                 distance_between_spirals=context.node.get_parameter("search.distance_between_spirals").value,

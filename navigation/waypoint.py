@@ -11,7 +11,7 @@ from mrover.srv import MoveCostMap
 from .context import Context
 import rclpy
 from .context import Context
-from navigation.astar import AStar, SpiralEnd, NoPath
+from navigation.astar import AStar, SpiralEnd, NoPath, OutOfBounds
 from navigation.coordinate_utils import gen_marker, segment_path, is_high_cost_point, d_calc
 from navigation.trajectory import Trajectory, SearchTrajectory
 from typing import Optional
@@ -47,16 +47,19 @@ class WaypointState(State):
 
     def on_enter(self, context: Context) -> None:
         assert context.course is not None
-        context.node.get_logger().info("In waypoint state")
-        self.marker_pub = context.node.create_publisher(Marker, "waypoint_trajectory", 10)
-        self.astar = AStar(context)
+        context.node.get_logger().info("Entered Waypoint State")
+
         self.UPDATE_DELAY = context.node.get_parameter("search.update_delay").value
         self.NO_SEARCH_WAIT_TIME = context.node.get_parameter("waypoint.no_search_wait_time").value
+        self.marker_pub = context.node.create_publisher(Marker, "waypoint_trajectory", 10)
+        self.astar = AStar(context)
+        self.astar_traj = Trajectory(np.array([]))
+        self.waypoint_traj = Trajectory(np.array([]))
+
         self.time_last_updated = context.node.get_clock().now() - Duration(seconds=self.UPDATE_DELAY)
         self.time_no_search_wait = None
         self.start_time = context.node.get_clock().now()
-        self.astar_traj = Trajectory(np.array([]))
-        self.waypoint_traj = Trajectory(np.array([]))
+        
         context.env.arrived_at_waypoint = False
         self.marker_pub.publish(
             gen_marker(
@@ -103,62 +106,60 @@ class WaypointState(State):
         rover_in_map = context.rover.get_pose_in_map()
         if rover_in_map is None:
             return self
+        
+        if context.rover.stuck:
+            context.rover.previous_state = self
+            return recovery.RecoveryState()
 
-        self.marker_pub.publish(
-            gen_marker(
-                context=context,
-                point=context.course.current_waypoint_pose_in_map().translation()[0:2],
-                color=[0.0, 0.0, 1.0],
-                size=0.5,
-                id=-1,
-                lifetime=10000,
-            )
-        )
 
-        if len(self.waypoint_traj.coordinates) == 0:
-            if context.rover.get_pose_in_map() is None:
-                return self
-
+        if self.waypoint_traj.empty():
             context.node.get_logger().info("Generating segmented path")
             self.waypoint_traj = segment_path(
                 context=context, dest=context.course.current_waypoint_pose_in_map().translation()[0:2]
             )
-
             self.display_markers(context=context)
-
             return self
 
-        if not hasattr(context.env.cost_map, "data") and context.node.get_parameter("search.use_costmap").value:
+        if not hasattr(context.env.cost_map, "data") and context.node.get_parameter("costmap.use_costmap").value:
             context.node.get_logger().warn(f"No costmap found, waiting...")
             self.start_time = context.node.get_clock().now()
             return self
 
-        if context.node.get_clock().now() - Duration(nanoseconds=1000000000) < self.start_time:
-            return self
-
         # BEGINNING OF LOGIC
 
-        if is_high_cost_point(context=context, point=self.waypoint_traj.get_current_point()):
+        while is_high_cost_point(context=context, point=self.waypoint_traj.get_current_point()):
             context.rover.send_drive_command(Twist())
-            if self.waypoint_traj.increment_point():
+            self.waypoint_traj.increment_point()
+            if self.waypoint_traj.done():
                 return self.next_state(context=context)
-            self.astar_traj = Trajectory(np.array([]))
+            self.astar_traj.clear()
             return self
 
-        # If there are no more points in the current a_star path or we are past the update delay, then create a new one
+        # Clear the waypoint trajectory so a new path can be redeveloped every update
         if (
             context.node.get_clock().now() - self.time_last_updated > Duration(seconds=self.UPDATE_DELAY)
-            or len(self.astar_traj.coordinates) - self.astar_traj.cur_pt == 0
         ):
+           self.waypoint_traj.clear()
+           self.astar_traj.clear()
+           self.time_last_updated = context.node.get_clock().now()
+           return self
+        
+        if self.astar_traj.empty():
             self.display_markers(context=context)
-            self.time_last_updated = context.node.get_clock().now()
-            # Generate a path
-            self.astar_traj = self.astar.generate_trajectory(context, self.waypoint_traj.get_current_point())
-            while len(self.astar_traj.coordinates) == 0:
-                context.node.get_logger().info("Skipping unreachable point")
-                if self.waypoint_traj.increment_point():
-                    return self.next_state(context=context)
+            try:
                 self.astar_traj = self.astar.generate_trajectory(context, self.waypoint_traj.get_current_point())
+            except OutOfBounds:
+                context.node.get_logger().warn("Attempted to generate a trajectory for the rover when it was out of bounds of the costmap")
+                self.waypoint_traj.clear()
+                return self
+            
+            if self.astar_traj.empty():
+                context.node.get_logger().info("Skipping unreachable point")
+                self.waypoint_traj.increment_point()
+                if self.waypoint_traj.done():
+                    return self.next_state(context=context)
+            return self
+
 
         arrived = False
         cmd_vel = Twist()
@@ -170,15 +171,14 @@ class WaypointState(State):
                 context.node.get_parameter("waypoint.stop_threshold").value,
                 context.node.get_parameter("waypoint.drive_forward_threshold").value,
             )
-        if context.rover.stuck:
-            context.rover.previous_state = self
-            return recovery.RecoveryState()
 
         if arrived:
-            if self.astar_traj.increment_point():
-                self.astar_traj = Trajectory(np.array([]))
+            self.astar_traj.increment_point()
+            if self.astar_traj.done():
+                self.astar_traj.clear()
                 context.node.get_logger().info(f"Arrived at segment point")
-                if self.waypoint_traj.increment_point():
+                self.waypoint_traj.increment_point()
+                if self.waypoint_traj.done():
                     return self.next_state(context=context)
                 self.display_markers(context=context)
         else:
@@ -195,7 +195,7 @@ class WaypointState(State):
         current_wp = context.course.current_waypoint()
         assert current_wp is not None
         if current_wp.type.val != WaypointType.NO_SEARCH:
-            if context.node.get_parameter("search.use_costmap").value:
+            if context.node.get_parameter("costmap.use_costmap").value:
                 return costmap_search.CostmapSearchState()
             else:
                 return search.SearchState()
@@ -220,9 +220,9 @@ class WaypointState(State):
                     self.on_enter(context=context)
                     return self
             else:
-                context.node.get_logger().info("Attempting to get closer to the no search waypoint")
-                self.astar_traj = Trajectory(np.array([]))
-                self.waypoint_traj = Trajectory(np.array([]))
+                context.node.get_logger().info("Waiting to get closer to the no search waypoint")
+                self.astar_traj.clear()
+                self.waypoint_traj.clear()
                 return self
 
     def display_markers(self, context: Context):

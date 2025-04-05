@@ -16,7 +16,14 @@ navigation:
 
     target_expiration_duration: 60.0
     display_markers: true
-    custom_costmap: false
+    
+
+    costmap:
+      custom_costmap: false
+      use_costmap: true
+      a_star_thresh: 0.05
+      costmap_thresh: 0.4
+      
 
     image_targets:
       increment_weight: 5
@@ -43,7 +50,6 @@ navigation:
       no_search_wait_time: 10.0
 
     search:
-      use_costmap: true
       stop_threshold: 0.5
       drive_forward_threshold: 0.34
       coverage_radius: 20.0
@@ -51,13 +57,11 @@ navigation:
       distance_between_spirals: 3.0
       max_segment_length: 1.0
       traversable_cost: 0.2
-      update_delay: 3.0
       safe_approach_distance: 5.0
-      a_star_thresh: 0.05
-      costmap_thresh: 0.25
       angle_thresh: 0.0872665 #pi/36 radians / 5 degrees
       distance_threshold: 2.0
       initial_inflation_radius: 3.0
+      update_delay: 3.0
       
     single_tag:
       stop_threshold: 1.0

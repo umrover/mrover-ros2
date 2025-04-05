@@ -148,7 +148,7 @@ def segment_path(context: Context, dest: np.ndarray, seg_len: float = 2.0):
 
 
 def is_high_cost_point(point: np.ndarray, context: Context, min_cost=0.2) -> bool:
-    if not context.node.get_parameter("search.use_costmap").value:
+    if not context.node.get_parameter("costmap.use_costmap").value:
         return False
     cost_map = context.env.cost_map.data
 

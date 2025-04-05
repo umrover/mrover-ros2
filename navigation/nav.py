@@ -35,20 +35,24 @@ class Navigation(Node):
         self.declare_parameters(
             "",
             [
+                # General
                 ("update_rate", Parameter.Type.DOUBLE),
-                ("custom_costmap", Parameter.Type.BOOL),
-                ("display_markers", Parameter.Type.BOOL),
                 ("pub_path_rate", Parameter.Type.DOUBLE),
+                ("display_markers", Parameter.Type.BOOL),
                 ("world_frame", Parameter.Type.STRING),
                 ("rover_frame", Parameter.Type.STRING),
                 ("ref_lat", Parameter.Type.DOUBLE),
                 ("ref_lon", Parameter.Type.DOUBLE),
                 ("ref_alt", Parameter.Type.DOUBLE),
                 ("target_expiration_duration", Parameter.Type.DOUBLE),
-                ("image_targets.increment_weight", Parameter.Type.INTEGER),
-                ("image_targets.decrement_weight", Parameter.Type.INTEGER),
-                ("image_targets.min_hits", Parameter.Type.INTEGER),
-                ("image_targets.max_hits", Parameter.Type.INTEGER),
+
+                # Costmap
+                ("costmap.custom_costmap", Parameter.Type.BOOL),
+                ("costmap.use_costmap", Parameter.Type.BOOL),
+                ("costmap.a_star_thresh", Parameter.Type.DOUBLE),
+                ("costmap.costmap_thresh", Parameter.Type.DOUBLE),
+
+                # Drive
                 ("drive.max_driving_effort", Parameter.Type.DOUBLE),
                 ("drive.min_driving_effort", Parameter.Type.DOUBLE),
                 ("drive.max_turning_effort", Parameter.Type.DOUBLE),
@@ -56,12 +60,17 @@ class Navigation(Node):
                 ("drive.turning_p", Parameter.Type.DOUBLE),
                 ("drive.driving_p", Parameter.Type.DOUBLE),
                 ("drive.lookahead_distance", Parameter.Type.DOUBLE),
-                ("long_range.distance_ahead", Parameter.Type.DOUBLE),
-                ("long_range.bearing_expiration_duration", Parameter.Type.DOUBLE),
+
+                # Waypoint
                 ("waypoint.stop_threshold", Parameter.Type.DOUBLE),
                 ("waypoint.drive_forward_threshold", Parameter.Type.DOUBLE),
                 ("waypoint.no_search_wait_time", Parameter.Type.DOUBLE),
-                ("search.use_costmap", Parameter.Type.BOOL),
+
+                # Long Range
+                ("long_range.distance_ahead", Parameter.Type.DOUBLE),
+                ("long_range.bearing_expiration_duration", Parameter.Type.DOUBLE),
+
+                # Search
                 ("search.stop_threshold", Parameter.Type.DOUBLE),
                 ("search.drive_forward_threshold", Parameter.Type.DOUBLE),
                 ("search.coverage_radius", Parameter.Type.DOUBLE),
@@ -71,21 +80,30 @@ class Navigation(Node):
                 ("search.traversable_cost", Parameter.Type.DOUBLE),
                 ("search.update_delay", Parameter.Type.DOUBLE),
                 ("search.safe_approach_distance", Parameter.Type.DOUBLE),
-                ("search.a_star_thresh", Parameter.Type.DOUBLE),
-                ("search.costmap_thresh", Parameter.Type.DOUBLE),
                 ("search.angle_thresh", Parameter.Type.DOUBLE),
                 ("search.distance_threshold", Parameter.Type.DOUBLE),
                 ("search.initial_inflation_radius", Parameter.Type.DOUBLE),
+
+                # Image Targets
+                ("image_targets.increment_weight", Parameter.Type.INTEGER),
+                ("image_targets.decrement_weight", Parameter.Type.INTEGER),
+                ("image_targets.min_hits", Parameter.Type.INTEGER),
+                ("image_targets.max_hits", Parameter.Type.INTEGER),
+
+                # Single Tag
                 ("single_tag.stop_threshold", Parameter.Type.DOUBLE),
                 ("single_tag.tag_stop_threshold", Parameter.Type.DOUBLE),
                 ("single_tag.post_avoidance_multiplier", Parameter.Type.DOUBLE),
                 ("single_tag.post_radius", Parameter.Type.DOUBLE),
+
+                # Recovery
                 ("recovery.stop_threshold", Parameter.Type.DOUBLE),
                 ("recovery.drive_forward_threshold", Parameter.Type.DOUBLE),
                 ("recovery.recovery_distance", Parameter.Type.DOUBLE),
                 ("recovery.give_up_time", Parameter.Type.DOUBLE),
             ],
         )
+
 
         self.state_machine = StateMachine[Context](OffState(), "NavigationStateMachine", ctx, self.get_logger())
         self.state_machine.add_transitions(

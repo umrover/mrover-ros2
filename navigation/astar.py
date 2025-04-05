@@ -27,6 +27,13 @@ class NoPath(Exception):
 
     pass
 
+class OutOfBounds(Exception):
+    """
+    Raised when the rover is out of bounds of the costmap
+    """
+
+    pass
+
 
 class AStar:
     context: Context
@@ -37,25 +44,18 @@ class AStar:
     A_STAR_THRESH: float
     COSTMAP_THRESH: float
     ANGLE_THRESH: float
+    USE_COSTMAP: bool
 
     def __init__(self, context: Context) -> None:
         self.context = context
         self.costmap_lock = Lock()
 
-        # Attempt to retrieve parameters. If they don't exist, set them to None or skip.
-        try:
-            self.path_pub = self.context.node.create_publisher(Path, "astar_path", 10)
-            self.TRAVERSABLE_COST = self.context.node.get_parameter("search.traversable_cost").value
-            self.A_STAR_THRESH = self.context.node.get_parameter("search.a_star_thresh").value
-            self.COSTMAP_THRESH = self.context.node.get_parameter("search.costmap_thresh").value
-            self.ANGLE_THRESH = self.context.node.get_parameter("search.angle_thresh").value
-        except Exception as e:
-            self.path_pub = None
-            self.TRAVERSABLE_COST = 0.0
-            self.A_STAR_THRESH = 0.0
-            self.COSTMAP_THRESH = 0.0
-            self.ANGLE_THRESH = 0.0
-            self.context.node.get_logger().info(f"Parameter retrieval failed: {e}. Setting to default values")
+        self.path_pub = self.context.node.create_publisher(Path, "astar_path", 10)
+        self.TRAVERSABLE_COST = self.context.node.get_parameter("search.traversable_cost").value
+        self.A_STAR_THRESH = self.context.node.get_parameter("costmap.a_star_thresh").value
+        self.COSTMAP_THRESH = self.context.node.get_parameter("costmap.costmap_thresh").value
+        self.ANGLE_THRESH = self.context.node.get_parameter("search.angle_thresh").value
+        self.USE_COSTMAP = context.node.get_parameter("costmap.use_costmap").value
 
     def return_path(self, came_from: dict[tuple, tuple], current_pos: tuple):
         """
@@ -174,7 +174,7 @@ class AStar:
         if (
             rover_in_map is None
             or len(star_traj.coordinates) < 1
-            or not self.context.node.get_parameter("search.use_costmap").value
+            or not self.USE_COSTMAP
         ):
             return False
 
@@ -220,18 +220,23 @@ class AStar:
         assert rover_SE3 is not None
         rover_position_in_map = rover_SE3.translation()[:2]
 
-        if not context.node.get_parameter("search.use_costmap").value:
+        if not self.USE_COSTMAP:
             return Trajectory(np.array([dest]))
 
         costmap_length = self.context.env.cost_map.data.shape[0]
         threshold = (costmap_length * self.COSTMAP_THRESH, costmap_length * (1 - self.COSTMAP_THRESH))
         rover_ij = cartesian_to_ij(context, rover_position_in_map)
+        dest_ij = cartesian_to_ij(context, dest)
 
         # Move the costmap if we are outside of the threshold
         if not (threshold[0] <= rover_ij[0] <= threshold[1] and threshold[0] <= rover_ij[1] <= threshold[1]):
-            if not context.node.get_parameter("custom_costmap").value:
+            if not context.node.get_parameter("costmap.custom_costmap").value:
                 context.move_costmap()
-
+                
+        if not (0 <= int(dest_ij[0]) < costmap_length and 0 <= int(dest_ij[1]) < costmap_length) or \
+            not (0 <= int(rover_ij[0]) < costmap_length and 0 <= int(rover_ij[1]) < costmap_length):
+            raise OutOfBounds
+        
         trajectory = Trajectory(np.array([]))
         context.rover.send_drive_command(Twist())  # Stop while planning
 

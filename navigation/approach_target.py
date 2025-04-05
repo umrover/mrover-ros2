@@ -1,7 +1,7 @@
 import numpy as np
 from typing import Any
 from navigation.trajectory import Trajectory
-from navigation.astar import AStar, NoPath
+from navigation.astar import AStar, NoPath, OutOfBounds
 from . import costmap_search, waypoint, state, recovery
 from .context import Context
 from state_machine.state import State
@@ -21,7 +21,7 @@ class ApproachTargetState(State):
     COST_INFLATION_RADIUS: float
     time_begin: Time
     astar_traj: Trajectory
-    traj: Trajectory
+    target_traj: Trajectory
     astar: AStar
     marker_pub: Publisher
     time_last_updated: Time
@@ -34,7 +34,7 @@ class ApproachTargetState(State):
         context.node.get_logger().info(f"Entered {state}")
 
         self.UPDATE_DELAY = context.node.get_parameter("search.update_delay").value
-        self.USE_COSTMAP = context.node.get_parameter("search.use_costmap").value
+        self.USE_COSTMAP = context.node.get_parameter("costmap.use_costmap").value
         self.DISTANCE_THRESHOLD = context.node.get_parameter("search.distance_threshold").value
         self.COST_INFLATION_RADIUS = context.node.get_parameter("search.initial_inflation_radius").value
         self.marker_pub = context.node.create_publisher(Marker, "target_trajectory", 10)
@@ -142,7 +142,7 @@ class ApproachTargetState(State):
         """
         assert context.course is not None
 
-        if context.env.cost_map is None or not hasattr(context.env.cost_map, "data"):
+        if context.env.cost_map is None or not hasattr(context.env.cost_map, "data") and context.node.get_parameter("costmap.use_costmap").value:
             return self
 
         if context.move_costmap_future and not context.move_costmap_future.done():
@@ -218,11 +218,12 @@ class ApproachTargetState(State):
         if self.astar_traj.empty() and not self.target_traj.done():
             try:
                 self.astar_traj = self.astar.generate_trajectory(context, self.target_traj.get_current_point())
-                if self.astar_traj.empty():
+            except OutOfBounds:
+                context.node.get_logger().warn("Attempted to generate a trajectory for the rover when it was out of bounds of the costmap")
+                self.target_traj.clear()
+                return self
+            if self.astar_traj.empty():
                     self.target_traj.increment_point()
-            except NoPath:
-                # Segment point unreachable, skipping it
-                self.target_traj.increment_point()
 
         if self.target_traj.done():
             self.target_traj.clear()

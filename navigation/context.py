@@ -388,7 +388,7 @@ class Context:
         node.create_subscription(ImageTargets, "tags", self.image_targets_callback, 1)
         node.create_subscription(ImageTargets, "objects", self.image_targets_callback, 1)
 
-        if node.get_parameter("custom_costmap").value:
+        if node.get_parameter("costmap.custom_costmap").value:
             node.create_subscription(OccupancyGrid, "custom_costmap", self.costmap_callback, 1)
         else:
             node.create_subscription(OccupancyGrid, "costmap", self.costmap_callback, 1)
@@ -452,8 +452,12 @@ class Context:
 
         self.node.get_logger().info("move_cost_map service call initiated")
 
+        def done_callback(*args):
+            self.node.get_logger().info("move_cost_map service finished!")
+            self.move_costmap_future = None
+
         self.move_costmap_future.add_done_callback(
-            lambda f: self.node.get_logger().info("move_cost_map service finished!")
+            done_callback
         )
 
     def dilate_cost(self, new_radius: float):
