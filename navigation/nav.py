@@ -45,13 +45,11 @@ class Navigation(Node):
                 ("ref_lon", Parameter.Type.DOUBLE),
                 ("ref_alt", Parameter.Type.DOUBLE),
                 ("target_expiration_duration", Parameter.Type.DOUBLE),
-
                 # Costmap
                 ("costmap.custom_costmap", Parameter.Type.BOOL),
                 ("costmap.use_costmap", Parameter.Type.BOOL),
                 ("costmap.a_star_thresh", Parameter.Type.DOUBLE),
                 ("costmap.costmap_thresh", Parameter.Type.DOUBLE),
-
                 # Drive
                 ("drive.max_driving_effort", Parameter.Type.DOUBLE),
                 ("drive.min_driving_effort", Parameter.Type.DOUBLE),
@@ -60,16 +58,13 @@ class Navigation(Node):
                 ("drive.turning_p", Parameter.Type.DOUBLE),
                 ("drive.driving_p", Parameter.Type.DOUBLE),
                 ("drive.lookahead_distance", Parameter.Type.DOUBLE),
-
                 # Waypoint
                 ("waypoint.stop_threshold", Parameter.Type.DOUBLE),
                 ("waypoint.drive_forward_threshold", Parameter.Type.DOUBLE),
                 ("waypoint.no_search_wait_time", Parameter.Type.DOUBLE),
-
                 # Long Range
                 ("long_range.distance_ahead", Parameter.Type.DOUBLE),
                 ("long_range.bearing_expiration_duration", Parameter.Type.DOUBLE),
-
                 # Search
                 ("search.stop_threshold", Parameter.Type.DOUBLE),
                 ("search.drive_forward_threshold", Parameter.Type.DOUBLE),
@@ -83,19 +78,16 @@ class Navigation(Node):
                 ("search.angle_thresh", Parameter.Type.DOUBLE),
                 ("search.distance_threshold", Parameter.Type.DOUBLE),
                 ("search.initial_inflation_radius", Parameter.Type.DOUBLE),
-
                 # Image Targets
                 ("image_targets.increment_weight", Parameter.Type.INTEGER),
                 ("image_targets.decrement_weight", Parameter.Type.INTEGER),
                 ("image_targets.min_hits", Parameter.Type.INTEGER),
                 ("image_targets.max_hits", Parameter.Type.INTEGER),
-
                 # Single Tag
                 ("single_tag.stop_threshold", Parameter.Type.DOUBLE),
                 ("single_tag.tag_stop_threshold", Parameter.Type.DOUBLE),
                 ("single_tag.post_avoidance_multiplier", Parameter.Type.DOUBLE),
                 ("single_tag.post_radius", Parameter.Type.DOUBLE),
-
                 # Recovery
                 ("recovery.stop_threshold", Parameter.Type.DOUBLE),
                 ("recovery.drive_forward_threshold", Parameter.Type.DOUBLE),
@@ -103,7 +95,6 @@ class Navigation(Node):
                 ("recovery.give_up_time", Parameter.Type.DOUBLE),
             ],
         )
-
 
         self.state_machine = StateMachine[Context](OffState(), "NavigationStateMachine", ctx, self.get_logger())
         self.state_machine.add_transitions(

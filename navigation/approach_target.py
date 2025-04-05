@@ -142,7 +142,11 @@ class ApproachTargetState(State):
         """
         assert context.course is not None
 
-        if context.env.cost_map is None or not hasattr(context.env.cost_map, "data") and context.node.get_parameter("costmap.use_costmap").value:
+        if (
+            context.env.cost_map is None
+            or not hasattr(context.env.cost_map, "data")
+            and context.node.get_parameter("costmap.use_costmap").value
+        ):
             return self
 
         if context.move_costmap_future and not context.move_costmap_future.done():
@@ -219,11 +223,13 @@ class ApproachTargetState(State):
             try:
                 self.astar_traj = self.astar.generate_trajectory(context, self.target_traj.get_current_point())
             except OutOfBounds:
-                context.node.get_logger().warn("Attempted to generate a trajectory for the rover when it was out of bounds of the costmap")
+                context.node.get_logger().warn(
+                    "Attempted to generate a trajectory for the rover when it was out of bounds of the costmap"
+                )
                 self.target_traj.clear()
                 return self
             if self.astar_traj.empty():
-                    self.target_traj.increment_point()
+                self.target_traj.increment_point()
 
         if self.target_traj.done():
             self.target_traj.clear()

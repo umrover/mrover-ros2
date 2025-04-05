@@ -48,7 +48,7 @@ class CostmapSearchState(State):
 
         self.time_begin = context.node.get_clock().now()
         self.marker_pub = context.node.create_publisher(Marker, "spiral_points", 10)
-        
+
         self.new_traj(context)
 
         if not self.is_recovering:
@@ -94,13 +94,13 @@ class CostmapSearchState(State):
         while is_high_cost_point(context=context, point=self.spiral_traj.get_current_point()):
             context.node.get_logger().info(f"Skipping high cost spiral point")
             self.spiral_traj.increment_point()
-            
+
             # If we reach the end of the spiral trajectory via skipping high cost points, go back into the waypoint state
             if self.spiral_traj.done():
                 self.spiral_traj.clear()
                 context.node.get_logger().info(f"Reached end of search spiral")
                 return waypoint.WaypointState()
-            
+
             self.astar_traj.clear()
 
         # If there are no more points in the current a_star path or we are past the update delay, then create a new one
@@ -119,14 +119,16 @@ class CostmapSearchState(State):
                     self.marker_pub.publish(
                         gen_marker(context=context, point=coord, color=[1.0, 0.0, 0.0], id=i, lifetime=100)
                     )
-                
+
             self.time_last_updated = context.node.get_clock().now()
 
             # Generate a path
             try:
                 self.astar_traj = self.astar.generate_trajectory(context, self.spiral_traj.get_current_point())
             except OutOfBounds:
-                context.node.get_logger().warn("Attempted to generate a trajectory for the rover when it was out of bounds of the costmap")
+                context.node.get_logger().warn(
+                    "Attempted to generate a trajectory for the rover when it was out of bounds of the costmap"
+                )
                 dest_ij = cartesian_to_ij(context, self.spiral_traj.get_current_point())
                 costmap_length = context.env.cost_map.data.shape[0]
                 while not (0 <= int(dest_ij[0]) < costmap_length and 0 <= int(dest_ij[1]) < costmap_length):
@@ -142,7 +144,6 @@ class CostmapSearchState(State):
                     context.node.get_logger().info(f"Reached end of search spiral")
                     return waypoint.WaypointState()
                 return self
-            
 
         target_position_in_map = self.astar_traj.get_current_point()
 

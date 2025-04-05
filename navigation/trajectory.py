@@ -19,13 +19,13 @@ class Trajectory:
         """
         self.cur_pt = min(self.cur_pt + 1, len(self.coordinates))
         return self.cur_pt >= len(self.coordinates)
-    
+
     def decerement_point(self) -> bool:
         """
         Increments the tracked point in the trajectory, returns true if
         the trajectory is finished
         """
-        self.cur_pt = max(0, self.cur_pt-1)
+        self.cur_pt = max(0, self.cur_pt - 1)
         return self.cur_pt <= 0
 
     def done(self) -> bool:

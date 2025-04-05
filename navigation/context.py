@@ -456,9 +456,7 @@ class Context:
             self.node.get_logger().info("move_cost_map service finished!")
             self.move_costmap_future = None
 
-        self.move_costmap_future.add_done_callback(
-            done_callback
-        )
+        self.move_costmap_future.add_done_callback(done_callback)
 
     def dilate_cost(self, new_radius: float):
         self.node.get_logger().info(f"Requesting to dilate cost to {new_radius}")

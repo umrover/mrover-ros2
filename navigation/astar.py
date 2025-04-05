@@ -27,6 +27,7 @@ class NoPath(Exception):
 
     pass
 
+
 class OutOfBounds(Exception):
     """
     Raised when the rover is out of bounds of the costmap
@@ -171,11 +172,7 @@ class AStar:
         follow_astar = True
 
         # If no rover pose, no trajectory, or not enough points in star_traj, skip
-        if (
-            rover_in_map is None
-            or len(star_traj.coordinates) < 1
-            or not self.USE_COSTMAP
-        ):
+        if rover_in_map is None or len(star_traj.coordinates) < 1 or not self.USE_COSTMAP:
             return False
 
         # Calculate actual A* distance
@@ -232,11 +229,12 @@ class AStar:
         if not (threshold[0] <= rover_ij[0] <= threshold[1] and threshold[0] <= rover_ij[1] <= threshold[1]):
             if not context.node.get_parameter("costmap.custom_costmap").value:
                 context.move_costmap()
-                
-        if not (0 <= int(dest_ij[0]) < costmap_length and 0 <= int(dest_ij[1]) < costmap_length) or \
-            not (0 <= int(rover_ij[0]) < costmap_length and 0 <= int(rover_ij[1]) < costmap_length):
+
+        if not (0 <= int(dest_ij[0]) < costmap_length and 0 <= int(dest_ij[1]) < costmap_length) or not (
+            0 <= int(rover_ij[0]) < costmap_length and 0 <= int(rover_ij[1]) < costmap_length
+        ):
             raise OutOfBounds
-        
+
         trajectory = Trajectory(np.array([]))
         context.rover.send_drive_command(Twist())  # Stop while planning
 

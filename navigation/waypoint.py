@@ -59,7 +59,7 @@ class WaypointState(State):
         self.time_last_updated = context.node.get_clock().now() - Duration(seconds=self.UPDATE_DELAY)
         self.time_no_search_wait = None
         self.start_time = context.node.get_clock().now()
-        
+
         context.env.arrived_at_waypoint = False
         self.marker_pub.publish(
             gen_marker(
@@ -106,11 +106,10 @@ class WaypointState(State):
         rover_in_map = context.rover.get_pose_in_map()
         if rover_in_map is None:
             return self
-        
+
         if context.rover.stuck:
             context.rover.previous_state = self
             return recovery.RecoveryState()
-
 
         if self.waypoint_traj.empty():
             context.node.get_logger().info("Generating segmented path")
@@ -136,30 +135,29 @@ class WaypointState(State):
             return self
 
         # Clear the waypoint trajectory so a new path can be redeveloped every update
-        if (
-            context.node.get_clock().now() - self.time_last_updated > Duration(seconds=self.UPDATE_DELAY)
-        ):
-           self.waypoint_traj.clear()
-           self.astar_traj.clear()
-           self.time_last_updated = context.node.get_clock().now()
-           return self
-        
+        if context.node.get_clock().now() - self.time_last_updated > Duration(seconds=self.UPDATE_DELAY):
+            self.waypoint_traj.clear()
+            self.astar_traj.clear()
+            self.time_last_updated = context.node.get_clock().now()
+            return self
+
         if self.astar_traj.empty():
             self.display_markers(context=context)
             try:
                 self.astar_traj = self.astar.generate_trajectory(context, self.waypoint_traj.get_current_point())
             except OutOfBounds:
-                context.node.get_logger().warn("Attempted to generate a trajectory for the rover when it was out of bounds of the costmap")
+                context.node.get_logger().warn(
+                    "Attempted to generate a trajectory for the rover when it was out of bounds of the costmap"
+                )
                 self.waypoint_traj.clear()
                 return self
-            
+
             if self.astar_traj.empty():
                 context.node.get_logger().info("Skipping unreachable point")
                 self.waypoint_traj.increment_point()
                 if self.waypoint_traj.done():
                     return self.next_state(context=context)
             return self
-
 
         arrived = False
         cmd_vel = Twist()
