@@ -27,6 +27,7 @@ from rclpy.node import Node
 from rclpy.publisher import Publisher
 from rclpy.subscription import Subscription
 from rclpy.time import Time
+from rclpy.task import Future
 from state_machine.state import State
 from std_msgs.msg import Bool, Header
 from .drive import DriveController
@@ -359,6 +360,8 @@ class Context:
     world_frame: str
     rover_frame: str
 
+    move_costmap_future: Future
+
     def setup(self, node: Node):
         from .state import OffState
 
@@ -372,6 +375,8 @@ class Context:
         self.env = Environment(self, image_targets=ImageTargetsStore(self), cost_map=CostMap())
         self.disable_requested = False
 
+        self.move_costmap_future = None
+
         node.create_service(EnableAuton, "enable_auton", self.enable_auton)
 
         self.command_publisher = node.create_publisher(Twist, "nav_cmd_vel", 1)
@@ -383,7 +388,7 @@ class Context:
         node.create_subscription(ImageTargets, "tags", self.image_targets_callback, 1)
         node.create_subscription(ImageTargets, "objects", self.image_targets_callback, 1)
 
-        if node.get_parameter("custom_costmap").value:
+        if node.get_parameter("costmap.custom_costmap").value:
             node.create_subscription(OccupancyGrid, "custom_costmap", self.costmap_callback, 1)
         else:
             node.create_subscription(OccupancyGrid, "costmap", self.costmap_callback, 1)
@@ -434,23 +439,24 @@ class Context:
         self.env.cost_map.data /= 100.0
 
     def move_costmap(self, course_name="base_link"):
-        # TODO(neven): add service to move costmap if going to watter bottle search
         self.node.get_logger().info(f"Requesting to move cost map to {course_name}")
-        srv_name = "move_custom_cost_map" if self.node.get_parameter("custom_costmap").value else "move_cost_map"
+        srv_name = "move_cost_map"
+
         client = self.node.create_client(MoveCostMap, srv_name=srv_name)
         while not client.wait_for_service(timeout_sec=1.0):
-            self.node.get_logger().info("waiting for move_cost_map service...")
+            self.node.get_logger().info("Waiting for move_cost_map service...")
         req = MoveCostMap.Request()
 
         req.course = course_name
-        future = client.call_async(req)
-        # TODO(neven): make this actually wait for the service to finish
-        # context.node.get_logger().info("called thing")
-        # rclpy.spin_until_future_complete(context.node, future)
-        # while not future.done():
-        #     pass
-        # if not future.result():
-        #     context.node.get_logger().info("move_cost_map service call failed")
+        self.move_costmap_future = client.call_async(req)
+
+        self.node.get_logger().info("move_cost_map service call initiated")
+
+        def done_callback(*args):
+            self.node.get_logger().info("move_cost_map service finished!")
+            self.move_costmap_future = None
+
+        self.move_costmap_future.add_done_callback(done_callback)
 
     def dilate_cost(self, new_radius: float):
         self.node.get_logger().info(f"Requesting to dilate cost to {new_radius}")
