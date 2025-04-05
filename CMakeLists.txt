@@ -336,9 +336,9 @@ if (Gst_FOUND AND GstApp_FOUND)
         target_compile_definitions(websocket_server PUBLIC BOOST_ASIO_NO_DEPRECATED)
         ament_target_dependencies(websocket_server rclcpp)
 
-        mrover_add_component(gst_websocket_streamer esw/gst_websocket_streamer/*.c* esw/gst_websocket_streamer/pch.hpp GstWebsocketStreamer)
-        mrover_link_component(gst_websocket_streamer PkgConfig::Gst PkgConfig::GstApp PkgConfig::LibUdev opencv_core opencv_imgcodecs websocket_server)
-        mrover_ament_component(gst_websocket_streamer rclcpp rclcpp_components sensor_msgs)
+        mrover_add_node(gst_websocket_streamer esw/gst_websocket_streamer/*.c* esw/gst_websocket_streamer/pch.hpp)
+        target_link_libraries(gst_websocket_streamer PkgConfig::Gst PkgConfig::GstApp PkgConfig::LibUdev opencv_core opencv_imgcodecs websocket_server)
+        ament_target_dependencies(gst_websocket_streamer rclcpp rclcpp_components sensor_msgs)
     endif ()
 endif ()
 
