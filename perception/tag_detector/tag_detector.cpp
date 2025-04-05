@@ -2,7 +2,7 @@
 
 namespace mrover {
 
-    TagDetectorNodeletBase::TagDetectorNodeletBase(std::string const& name) : Node{name, rclcpp::NodeOptions{}.use_intra_process_comms(true)}, mMinTagHitCountBeforePublish{}, mMaxTagHitCount{}, mTagIncrementWeight{}, mTagDecrementWeight{} {
+    TagDetectorBase::TagDetectorBase(std::string const& name, rclcpp::NodeOptions const& options) : Node{name, options}, mMinTagHitCountBeforePublish{}, mMaxTagHitCount{}, mTagIncrementWeight{}, mTagDecrementWeight{} {
 
         int dictionaryNumber{};
         bool doCornerRefinement{};
@@ -58,7 +58,7 @@ namespace mrover {
         RCLCPP_INFO(get_logger(), "Tag detection ready!");
     }
 
-    StereoTagDetectorNodelet::StereoTagDetectorNodelet() : TagDetectorNodeletBase{"stereo_tag_detector"} {
+    StereoTagDetector::StereoTagDetector(rclcpp::NodeOptions const& options) : TagDetectorBase{"stereo_tag_detector", options} {
         mDetectedImagePub = create_publisher<sensor_msgs::msg::Image>("stereo_tag_detection", 1);
 
         mPointCloudSub = create_subscription<sensor_msgs::msg::PointCloud2>("/zed/left/points", 1, [this](sensor_msgs::msg::PointCloud2::ConstSharedPtr const& msg) {
@@ -66,7 +66,7 @@ namespace mrover {
         });
     }
 
-    ImageTagDetectorNodelet::ImageTagDetectorNodelet() : TagDetectorNodeletBase{"image_tag_detector"}, mCameraHorizontalFOV{} {
+    ImageTagDetector::ImageTagDetector(rclcpp::NodeOptions const& options) : TagDetectorBase{"image_tag_detector", options}, mCameraHorizontalFOV{} {
         std::vector<ParameterWrapper> params{
                 {"camera_horizontal_fov", mCameraHorizontalFOV, 80.0}};
 
@@ -81,3 +81,7 @@ namespace mrover {
         });
     }
 } // namespace mrover
+
+#include "rclcpp_components/register_node_macro.hpp"
+RCLCPP_COMPONENTS_REGISTER_NODE(mrover::StereoTagDetector)
+RCLCPP_COMPONENTS_REGISTER_NODE(mrover::ImageTagDetector)

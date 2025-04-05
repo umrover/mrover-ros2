@@ -263,6 +263,13 @@ if(ZED_FOUND AND CUDA_FOUND)
     )
 
     # ZED Wrapper
+
+    set(THRUST_WRAPPED_NAMESPACE wrapped_thrust)
+    set(CUB_WRAPPED_NAMESPACE wrapped_cub)
+
+    add_definitions(-DTHRUST_WRAPPED_NAMESPACE=${THRUST_WRAPPED_NAMESPACE})
+    add_definitions(-DCUB_WRAPPED_NAMESPACE=${CUB_WRAPPED_NAMESPACE})
+
     mrover_add_component(zed perception/zed_wrapper/*.c* perception/zed_wrapper/pch.hpp ZedWrapper)
     target_compile_options(zed_component PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-std=c++20>)
     mrover_link_component(zed parameter_utils lie MANIF::manif ${CUDA_LIBRARIES} loop_profiler cuda_compiler_flags)
@@ -290,15 +297,11 @@ endif()
 
 # Tag Detector
 mrover_add_component(tag_detector perception/tag_detector/*.cpp perception/tag_detector/pch.hpp StereoTagDetector ImageTagDetector)
-mrover_ament_component(tag_detector rclcpp tf2 tf2_ros)
+mrover_ament_component(tag_detector rclcpp rclcpp_components tf2 tf2_ros)
 mrover_link_component(tag_detector lie opencv_core opencv_aruco opencv_imgproc loop_profiler parameter_utils)
 
 mrover_executable_from_component(stereo_tag_detector perception/executables/stereo_tag_detector.cpp tag_detector_component)
 mrover_executable_from_component(image_tag_detector perception/executables/image_tag_detector.cpp tag_detector_component)
-
-mrover_add_node(cost_map perception/cost_map/*.cpp perception/cost_map/pch.hpp)
-ament_target_dependencies(cost_map rclcpp tf2 tf2_ros)
-target_link_libraries(cost_map lie parameter_utils)
 
 # Embedded
 
@@ -369,18 +372,15 @@ endif ()
 
 # You must add Python scripts here to be able to "ros2 launch" them in terminal
 install(PROGRAMS
-        navigation/nav.py
-        navigation/stuck_detector/stuck_detector.py
-        localization/gps_linearization.py
-        localization/basestation_gps_driver.py
-        localization/rover_gps_driver.py
-        superstructure/superstructure.py
-        scripts/debug_course_publisher.py
-        scripts/debug_service.py
-        scripts/astar_debug.py
-		scripts/visualizer.py
-        teleoperation/basestation_gui/gui_frontend.sh
-        teleoperation/basestation_gui/gui_backend.sh
+    navigation/nav.py
+    navigation/stuck_detector/stuck_detector.py
+    localization/rover_gps_driver.py
+    localization/gps_linearization.py
+    localization/basestation_gps_driver.py
+    superstructure/superstructure.py
+    scripts/debug_course_publisher.py
+    scripts/visualizer.py
+    scripts/image_capture.py
 
     # starter project sources
     starter_project/autonomy/src/localization.py

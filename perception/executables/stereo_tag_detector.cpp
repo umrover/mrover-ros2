@@ -2,7 +2,7 @@
 
 auto main(int argc, char** argv) -> int {
     rclcpp::init(argc, argv);
-    auto stereoTD = std::make_shared<mrover::StereoTagDetectorNodelet>();
+    auto stereoTD = std::make_shared<mrover::StereoTagDetector>();
     rclcpp::executors::SingleThreadedExecutor executor;
     executor.add_node(stereoTD);
     executor.spin();
