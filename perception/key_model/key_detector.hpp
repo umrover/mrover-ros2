@@ -117,6 +117,8 @@ namespace mrover {
 
         static auto postprocessTextCoordsOutput(Model const& model, cv::Mat& output) -> void;
 
+        auto hungarian(const cv::Mat &C) -> std::vector<std::pair<int, int>>;
+
     public:
         explicit KeyDetectorBase(rclcpp::NodeOptions const& options = rclcpp::NodeOptions());
 

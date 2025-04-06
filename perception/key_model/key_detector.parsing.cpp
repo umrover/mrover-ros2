@@ -377,7 +377,78 @@ namespace mrover {
         {
            detections[i].classId = col_ind[i];
            detections[i].className = keys[col_ind[i]];
-        }   
+        }
+    }
+
+
+    template <class T>
+    auto ckmin(T &a, const T &b) -> bool {
+        return b < a ? a = b, 1 : 0;
+    }
+
+    auto KeyDetectorBase::hungarian(const cv::Mat &C) -> std::vector<std::pair<int, int>> {
+        const int J = static_cast<int>(C.rows), W = static_cast<int>(C.cols);
+        assert(J <= W);
+        std::vector<int> job(W + 1, -1);
+        std::vector<float> ys(J), yt(W + 1);  // potentials
+        const float inf = std::numeric_limits<float>::max();
+        for (int j_cur = 0; j_cur < J; ++j_cur) {  // assign j_cur-th job
+            int w_cur = W;
+            job[w_cur] = j_cur;
+
+            std::vector<float> min_to(W + 1, inf);
+            std::vector<int> prv(W + 1, -1);
+            std::vector<bool> in_Z(W + 1);
+            int count = W + 1;
+
+            while (job[w_cur] != -1 && count > 0) {   // runs at most j_cur + 1 times
+                if (in_Z[w_cur] == false)
+                {
+                    count -= 1;
+                }
+                in_Z[w_cur] = true;
+                const int j = job[w_cur];
+                float delta = inf;
+                int w_next;
+                for (int w = 0; w < W; ++w) {
+                    if (!in_Z[w]) {
+                        if (ckmin(min_to[w], C.at<int>(j, w) - ys[j] - yt[w]))
+                            prv[w] = w_cur;
+                        if (ckmin(delta, min_to[w])) w_next = w;
+                    }
+                }
+                for (int w = 0; w <= W; ++w) {
+                    if (in_Z[w]) ys[job[w]] += delta, yt[w] -= delta;
+                    else min_to[w] -= delta;
+                }
+                w_cur = w_next;
+            }
+
+            if (count == 0)
+            {
+                throw std::runtime_error("Count of true blocks reached 0, could not properly match. Too many keys detected?");
+            }
+
+            int loopRuns = 0;
+
+            for (int w; w_cur != W; w_cur = w)
+            {
+                job[w_cur] = job[w = prv[w_cur]];
+                if (loopRuns++ > 100)
+                {
+                    break;
+                }
+            }
+        }
+
+        std::cout << "Exit" << std::endl;
+
+        std::vector<std::pair<int, int>> result;
+        for (size_t i = 0; i < job.size() - 1; ++i) {
+            result.emplace_back(job[i], i);
+        }
+
+        return result;
     }
 
     auto KeyDetectorBase::changeOfBasis(R2f const& p1, R2f const& p2, R2f const& p3, R2f const& p4) -> Eigen::Matrix3f{

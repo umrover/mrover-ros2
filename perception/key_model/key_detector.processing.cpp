@@ -75,21 +75,23 @@ namespace mrover {
         assert(msg->height > 0);
         assert(msg->width > 0);
         assert(msg->encoding == sensor_msgs::image_encodings::BGRA8);
-
+        RCLCPP_INFO_STREAM(get_logger(), std::format("Begin"));
         mLoopProfiler.beginLoop();
 
         cv::Mat bgraImage{static_cast<int>(msg->height), static_cast<int>(msg->width), CV_8UC4, const_cast<uint8_t*>(msg->data.data())};
-
+        
         cv::Mat temp;
 
         std::filesystem::path packagePath = std::filesystem::path{ament_index_cpp::get_package_prefix("mrover")} / ".." / ".." / "src" / "mrover" / "perception" / "key_detector" / "datasets" / "test" / "image" / "f91.png" ;
 
         temp = cv::imread(packagePath.c_str(), cv::IMREAD_COLOR);
 
-        cv::cvtColor(temp, bgraImage, cv::COLOR_BGR2BGRA);
+        cv::cvtColor(bgraImage, bgraImage, cv::COLOR_BGR2BGRA);
 
         // Convert the RGB Image into the blob Image format
+        RCLCPP_INFO_STREAM(get_logger(), std::format("Before Key Detect Preprocess"));
         mKeyDetectionModel.preprocess(mKeyDetectionModel, bgraImage, mImageBlob);
+        RCLCPP_INFO_STREAM(get_logger(), std::format("Before Text Preprocess"));
 
         //Read in image in data set in lieu of camera
         //mKeyDetectionModel.preprocess(mKeyDetectionModel, temp, mImageBlob);
@@ -105,22 +107,34 @@ namespace mrover {
         // Run the blob through the model
         std::vector<Detection> detections{};
         cv::Mat outputTensor;
+
+        RCLCPP_INFO_STREAM(get_logger(), std::format("Before Key Detect Forward Pass"));
         mKeyDetectionTensorRT.modelForwardPass(mImageBlob, outputTensor);
 
+        RCLCPP_INFO_STREAM(get_logger(), std::format("Before Key Detect Post Process Pass"));
+
         mKeyDetectionModel.postprocess(mKeyDetectionModel, outputTensor);
+
+        RCLCPP_INFO_STREAM(get_logger(), std::format("Before Key Detect Post Process Pass"));
 
         parseYOLOv8Output(mKeyDetectionModel, outputTensor, detections);
 
         // Text Coords Inference
+
+        RCLCPP_INFO_STREAM(get_logger(), std::format("Before Text Coord Forward Pass"));
         mTextCoordsTensorRT.modelForwardPass(mTextCoordsBlob, outputTensor);
 
         mTextCoordModel.postprocess(mTextCoordModel, outputTensor);
+
+        RCLCPP_INFO_STREAM(get_logger(), std::format("Before Match Key Pass"));
 
         matchKeyDetections(outputTensor, detections);
 
         // publishDetectedObjects(outputTensor);
 
         mLoopProfiler.measureEvent("Execution");
+
+        RCLCPP_INFO_STREAM(get_logger(), std::format("Before Image Targets Pass"));
 
         mrover::msg::ImageTargets targets{};
         for (auto const& [classId, className, confidence, box]: detections) {
