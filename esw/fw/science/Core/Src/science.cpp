@@ -19,7 +19,7 @@ extern TIM_HandleTypeDef htim3;
 extern TIM_HandleTypeDef htim4;
 
 #define JETSON_ADDRESS 0x10
-#define SCIENCE_BOARD_ID 0x51
+#define SCIENCE_BOARD_ID 0x50
 
 namespace mrover {
 
@@ -32,8 +32,8 @@ namespace mrover {
     FDCAN<InBoundScienceMessage> fdcan_bus;
     OutBoundScienceMessage science_out;
 
-    std::array<Heater, 2> m_heaters;
-	std::array<Pin, 1> m_white_leds;
+    std::array<Heater, 2> heaters;
+	std::array<Pin, 1> white_leds;
 
     void event_loop() {
         while (true) {}
@@ -61,10 +61,10 @@ namespace mrover {
 				Pin{WHITE_LED_GPIO_Port, WHITE_LED_Pin}
 		};
 
-        m_white_leds.at(0) = white_leds.at(0);
+        white_leds.at(0) = white_leds.at(0);
 
         for (int i = 0; i < 2; ++i) {
-        	m_heaters.at(i) = Heater(diag_temp_sensors[i], heater_pins[i]);
+        	heaters.at(i) = Heater(diag_temp_sensors[i], heater_pins[i]);
         }
 
         HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_RESET);
@@ -106,10 +106,10 @@ namespace mrover {
     void handleHeaterTemps() {
         HeaterStateData heater_msg;
         ThermistorData thermistor_msg;
-    	for (size_t i = 0; i < m_heaters.size(); i++) {
-			m_heaters.at(i).update_temp_and_auto_shutoff_if_applicable();
-            thermistor_msg.temps.at(i) = m_heaters.at(i).get_temp();
-            SET_BIT_AT_INDEX(heater_msg.heater_state_info.on, i, m_heaters.at(i).get_state());
+    	for (size_t i = 0; i < heaters.size(); i++) {
+			heaters.at(i).update_temp_and_auto_shutoff_if_applicable();
+            thermistor_msg.temps.at(i) = heaters.at(i).get_temp();
+            SET_BIT_AT_INDEX(heater_msg.heater_state_info.on, i, heaters.at(i).get_state());
 		}
         science_out = heater_msg;
         fdcan_bus.broadcast(science_out, SCIENCE_BOARD_ID, JETSON_ADDRESS);
@@ -120,32 +120,32 @@ namespace mrover {
     void feed(EnableScienceDeviceCommand const& message) {
         switch (message.science_device) {
             case ScienceDevice::HEATER_0:
-                m_heaters.at(0).enable_if_possible(message.enable);
+                heaters.at(0).enable_if_possible(message.enable);
                 break;
             case ScienceDevice::HEATER_1:
-            	m_heaters.at(1).enable_if_possible(message.enable);
+            	heaters.at(1).enable_if_possible(message.enable);
                 break;
             case ScienceDevice::WHITE_LED:
-                m_white_leds.at(0).write(message.enable ? GPIO_PIN_SET : GPIO_PIN_RESET);
+                white_leds.at(0).write(message.enable ? GPIO_PIN_SET : GPIO_PIN_RESET);
                 break;
         }
 
         HeaterStateData heater_msg;
-        SET_BIT_AT_INDEX(heater_msg.heater_state_info.on, 0, m_heaters.at(0).get_state());
-        SET_BIT_AT_INDEX(heater_msg.heater_state_info.on, 1, m_heaters.at(1).get_state());
+        SET_BIT_AT_INDEX(heater_msg.heater_state_info.on, 0, heaters.at(0).get_state());
+        SET_BIT_AT_INDEX(heater_msg.heater_state_info.on, 1, heaters.at(1).get_state());
         science_out = heater_msg;
         fdcan_bus.broadcast(science_out, SCIENCE_BOARD_ID, JETSON_ADDRESS);
     }
 
     void feed(HeaterAutoShutOffCommand const& message) {
-        for (int i = 0; i < m_heaters.size(); ++i) {
-            m_heaters.at(i).set_auto_shutoff(message.enable_auto_shutoff);
+        for (int i = 0; i < heaters.size(); ++i) {
+            heaters.at(i).set_auto_shutoff(message.enable_auto_shutoff);
         }
     }
 
     void feed(ConfigThermistorAutoShutOffCommand const& message) {
-        for (int i = 0; i < m_heaters.size(); ++i) {
-            m_heaters.at(i).change_shutoff_temp(message.shutoff_temp);
+        for (int i = 0; i < heaters.size(); ++i) {
+            heaters.at(i).change_shutoff_temp(message.shutoff_temp);
         }
     }
 
@@ -202,6 +202,15 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim)
 		mrover::handleHeaterTemps();
 	} else if (htim == &htim4) {
 		mrover::handleAnalogSensors();
+	}
+}
+
+void HAL_FDCAN_ErrorStatusCallback(FDCAN_HandleTypeDef *hfdcan, uint32_t ErrorStatusITs)
+{
+	FDCAN_ProtocolStatusTypeDef protocolStatus = {};
+	HAL_FDCAN_GetProtocolStatus(hfdcan, &protocolStatus);
+	if (protocolStatus.BusOff) {
+		CLEAR_BIT(hfdcan->Instance->CCCR, FDCAN_CCCR_INIT);
 	}
 }
 

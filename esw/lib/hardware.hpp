@@ -156,6 +156,7 @@ namespace mrover {
             check(HAL_FDCAN_EnableTxDelayCompensation(m_fdcan) == HAL_OK, Error_Handler);
             check(HAL_FDCAN_ActivateNotification(m_fdcan, FDCAN_IT_RX_FIFO0_NEW_MESSAGE, 0) == HAL_OK, Error_Handler);
             check(HAL_FDCAN_Start(m_fdcan) == HAL_OK, Error_Handler);
+            check(HAL_FDCAN_ActivateNotification(m_fdcan, FDCAN_IT_BUS_OFF, 0) == HAL_OK, Error_Handler);
         }
 
         /**
