@@ -157,7 +157,7 @@ export default {
   grid-template-rows: auto auto;
   grid-template-areas:
     'odom flightIndicator'
-    'imu flightIndicator';
+    'imu imu';
   height: auto;
   width: auto;
 }

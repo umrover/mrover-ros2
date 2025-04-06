@@ -81,7 +81,7 @@
     <div class="box">
       <div class="all-waypoints">
         <h4 class="waypoint-headers">Waypoints</h4>
-        <button class="btn btn-primary" @click="clearWaypoint">Clear Waypoints</button>
+        <button class="btn btn-primary" @click="clearWaypoint">Clear</button>
       </div>
       <div class="waypoints">
         <WaypointItem
@@ -317,6 +317,7 @@ export default {
 .all-waypoints {
   display: inline-flex;
   align-items: center;
+  gap: 15px;
 }
 
 .all-waypoints button {

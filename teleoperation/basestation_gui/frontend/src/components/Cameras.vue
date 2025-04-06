@@ -50,7 +50,7 @@
           :mission="selectedMission"
           :id="index"
           :name="cameras[selectedMission][index]"
-        ></CameraFeed>
+        />
       </div>
     </div>
   </div> 

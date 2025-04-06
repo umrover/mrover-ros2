@@ -26,10 +26,14 @@
       </div>
     </div> -->
     <div class="controls-flex">
-      <button class="btn btn-primary" @click="zero('sa_z', 0)">Zero Ground</button>
-      <p>Corer Position: {{ corer_position }} inches</p>
-      <button class="btn btn-primary" @click="zero('sa_z', corer_position+sensor_height)">Zero Sensor</button>
-      <p>Plunger Position: {{ plunger_position-plunger_height }} inches</p>
+      <div>
+        <button class="btn btn-primary" @click="zero('sa_z', 0)">Zero Ground</button>
+        <p>Corer Position: {{ corer_position }} inches</p>
+      </div>
+      <div>
+        <button class="btn btn-primary" @click="zero('sa_z', corer_position+sensor_height)">Zero Sensor</button>
+        <p>Plunger Position: {{ plunger_position-plunger_height }} inches</p>
+      </div>
       
       <!--      <MotorAdjust-->
       <!--        v-if="mode == 'position'"-->
@@ -120,6 +124,7 @@ export default defineComponent({
   justify-items: center;
   width: 100%;
   height: auto;
+  gap: 15px;
 }
 
 .wrap h2 h4 {
