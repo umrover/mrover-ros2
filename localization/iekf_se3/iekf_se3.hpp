@@ -94,6 +94,7 @@ namespace mrover {
         double vel_noise;
         double mag_heading_noise;
         double rtk_heading_noise;
+        double drive_forward_heading_noise;
 
         double rover_heading_change_threshold;
         double minimum_linear_speed;

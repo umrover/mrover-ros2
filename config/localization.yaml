@@ -38,8 +38,8 @@ heading_filter:
 
 pose_filter:
   ros__parameters:
-    rover_heading_change_threshold: 0.1
-    minimum_linear_speed: 0.75
+    rover_heading_change_threshold: 0.05
+    minimum_linear_speed: 0.4
 
 iekf_se3:
   ros__parameters:
@@ -48,11 +48,12 @@ iekf_se3:
     pos_noise_fixed: 0.01
     vel_noise: 1.0
     mag_heading_noise: 1.0
-    rtk_heading_noise: 0.001
+    rtk_heading_noise: 0.0001
+    drive_forward_heading_noise: 0.1
 
-    rover_heading_change_threshold: 0.1
-    minimum_linear_speed: 1.0
+    rover_heading_change_threshold: 0.05
+    minimum_linear_speed: 0.4
 
     use_mag: false
-    use_drive_forward: false
+    use_drive_forward: true
 

@@ -13,6 +13,7 @@ namespace mrover {
         declare_parameter("vel_noise", rclcpp::ParameterType::PARAMETER_DOUBLE);
         declare_parameter("mag_heading_noise", rclcpp::ParameterType::PARAMETER_DOUBLE);
         declare_parameter("rtk_heading_noise", rclcpp::ParameterType::PARAMETER_DOUBLE);
+        declare_parameter("drive_forward_heading_noise", rclcpp::ParameterType::PARAMETER_DOUBLE);
 
         declare_parameter("rover_heading_change_threshold", rclcpp::ParameterType::PARAMETER_DOUBLE);
         declare_parameter("minimum_linear_speed", rclcpp::ParameterType::PARAMETER_DOUBLE);
@@ -28,6 +29,7 @@ namespace mrover {
         vel_noise = get_parameter("vel_noise").as_double();
         mag_heading_noise = get_parameter("mag_heading_noise").as_double();
         rtk_heading_noise = get_parameter("rtk_heading_noise").as_double();
+        drive_forward_heading_noise = get_parameter("drive_forward_heading_noise").as_double();
 
         rover_heading_change_threshold = get_parameter("rover_heading_change_threshold").as_double();
         minimum_linear_speed = get_parameter("minimum_linear_speed").as_double();
@@ -393,7 +395,7 @@ namespace mrover {
         H << -1 * manif::skew(drive_forward_ref), Matrix33d::Zero();
         Y << -1 * Vector3d{std::cos(drive_forward_heading), -std::sin(drive_forward_heading), 0}, 0;
         b << -1 * drive_forward_ref, 0;
-        N << X.block<3, 3>(0, 0) * rtk_heading_noise * Matrix33d::Identity() * X.block<3, 3>(0, 0).transpose();
+        N << X.block<3, 3>(0, 0) * drive_forward_heading_noise * Matrix33d::Identity() * X.block<3, 3>(0, 0).transpose();
 
         if (use_drive_forward) {
             correct(Y, b, N, H);
