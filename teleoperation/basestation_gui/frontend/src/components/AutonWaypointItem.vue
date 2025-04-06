@@ -4,6 +4,15 @@
       <p>{{ waypoint.name }} | ID: {{ waypoint.id }}</p>
     </div>
     <div class="row">
+      <div class ="col text-center">
+        <ToggleButton
+          :id="1"
+          :labelEnableText="'Turn Costmap On'"
+          :labelDisableText="'Turn Costmap Off'"
+          :currentState="currentState"
+          @change="updateState"
+        />
+      </div>
       <div class="col text-center">
         <button
           class="btn btn-danger"
@@ -25,13 +34,25 @@
 <script lang="ts">
 import { mapGetters } from 'vuex'
 import { convertDMS } from '../utils'
+import ToggleButton from "../components/ToggleButton.vue";
 
 export default {
+  components:{
+    ToggleButton
+  },
+  data() {
+    return {
+      currentState: false,
+    }
+  },
   props: {
     waypoint: {
       type: Object,
       required: true
     },
+    globalCostmap: {
+      required: true
+    }
   },
 
   computed: {
@@ -57,6 +78,17 @@ export default {
         lon: convertDMS({ d: this.waypoint.lon, m: 0, s: 0 }, this.odom_format)
       }
     }
+  },
+  methods: {
+    updateState(newState: boolean) {
+      this.currentState = newState
+    }
+  },
+  watch: {
+    globalCostmap(newValue) {
+    console.log(newValue);
+    this.currentState = newValue;
+  }
   }
 }
 </script>
