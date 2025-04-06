@@ -7,7 +7,9 @@ TODO(quintin): Document
 import sys
 
 from pyubx2 import UBXReader, UBX_PROTOCOL, RTCM3_PROTOCOL, protocol
+from pyrtcm import RTCMReader
 from serial import Serial
+from pymap3d.ecef import ecef2geodetic
 
 import rclpy
 from rclpy import Parameter
@@ -15,7 +17,8 @@ from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 from rtcm_msgs.msg import Message as RTCMMessage
 from mrover.msg import SatelliteSignal
-
+from sensor_msgs.msg import NavSatFix
+from std_msgs.msg import Header
 
 class BaseStationDriverNode(Node):
     def __init__(self) -> None:
@@ -33,6 +36,7 @@ class BaseStationDriverNode(Node):
 
         self.rtcm_pub = self.create_publisher(RTCMMessage, "rtcm", 10)
         self.satellite_signal_pub = self.create_publisher(SatelliteSignal, "basestation/satellite_signal", 10)
+        self.position_pub = self.create_publisher(NavSatFix, "basestation/position", 10)
 
         self.svin_started = False
         self.svin_complete = False
@@ -50,6 +54,19 @@ class BaseStationDriverNode(Node):
                     continue
 
                 if protocol(raw_msg) == RTCM3_PROTOCOL:
+                    rtcm_msg = RTCMReader.parse(raw_msg)
+
+                    # publish basestation reference position
+                    if rtcm_msg.identity == "1005":
+                        lat, lon, alt = ecef2geodetic(rtcm_msg.DF025, rtcm_msg.DF026, rtcm_msg.DF027)
+                        self.position_pub.publish(
+                            NavSatFix(
+                                header=Header(stamp=self.get_clock().now().to_msg()), 
+                                latitude=lat,
+                                longitude=lon,
+                                altitude=alt)
+                        )
+                        
                     self.rtcm_pub.publish(RTCMMessage(message=raw_msg))
                 elif msg.identity == "NAV-SVIN":
                     if not self.svin_started and msg.active:
