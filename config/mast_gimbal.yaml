@@ -13,7 +13,7 @@ mast_gimbal_hw_bridge:
       driver_voltage: 10.5
       motor_max_voltage: 12.0
       quad_present: true
-      quad_ratio: 1.0
+      quad_ratio: 0.001013780932  # approx. 1000:1 per https://www.pololu.com/file/0J1487/pololu-micro-metal-gearmotors-rev-6-1.pdf
       abs_present: false
       calibration_throttle: 0.5
       limit_switch_0_present: true
