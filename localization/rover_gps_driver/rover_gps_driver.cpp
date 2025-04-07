@@ -236,7 +236,7 @@ namespace mrover {
             return;
         }
         catch(...) {
-            RCLCPP_WARN(get_logger(), "Error: %s", e.what());
+            RCLCPP_WARN(get_logger(), "Exception caught.");
             return;
         }
         
