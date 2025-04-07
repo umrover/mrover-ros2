@@ -318,6 +318,9 @@ class ApproachTargetState(State):
         if self.target_position is None:
             self.update_target_position(context=context)
 
+        if context.node.get_clock().now() < self.time_begin + Duration(seconds=self.UPDATE_DELAY):
+            return self
+
         # If we see the target in the ZED, transition from long range to approach target
         if isinstance(self, LongRangeState) and context.env.current_target_pos() is not None:
             self.marker_timer.cancel()

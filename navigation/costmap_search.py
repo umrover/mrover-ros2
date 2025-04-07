@@ -215,6 +215,9 @@ class CostmapSearchState(State):
         else:
             self.is_recovering = False
 
+        if context.node.get_clock().now() < self.time_begin + Duration(seconds=self.UPDATE_DELAY):
+            return self
+
         # Check if we belong in any other state
         approach_state = context.course.get_approach_state()
         if approach_state is not None:

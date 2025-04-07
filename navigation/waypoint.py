@@ -37,6 +37,7 @@ class WaypointState(State):
     prev_target_pos_in_map: Optional[np.ndarray] = None
     is_recovering: bool = False
     time_no_search_wait: Optional[Time] = None
+    time_begin: Time
     start_time: Time
     marker_timer: Timer
     waypoint_timer: Timer
@@ -61,6 +62,7 @@ class WaypointState(State):
         self.waypoint_traj = Trajectory(np.array([]))
 
         self.time_no_search_wait = None
+        self.time_begin = context.node.get_clock().now()
         self.start_time = context.node.get_clock().now()
 
         context.env.arrived_at_waypoint = False
@@ -201,6 +203,9 @@ class WaypointState(State):
         rover_in_map = context.rover.get_pose_in_map()
         if rover_in_map is None:
             return self
+        
+        if context.node.get_clock().now() < self.time_begin + Duration(seconds=self.UPDATE_DELAY):
+            return self
 
         if context.rover.stuck:
             context.rover.previous_state = self
@@ -259,6 +264,9 @@ class WaypointState(State):
                     self.marker_pub.publish(
                         gen_marker(context=context, point=coord, color=[1.0, 0.0, 1.0], id=i, lifetime=100)
                     )
+
+            if context.course.current_waypoint() is None:
+                return
 
             self.marker_pub.publish(
             gen_marker(

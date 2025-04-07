@@ -30,7 +30,14 @@ class NoPath(Exception):
 
 class OutOfBounds(Exception):
     """
-    Raised when the rover is out of bounds of the costmap
+    Raised when the rover or its destination is out of bounds of the costmap
+    """
+
+    pass
+
+class InHighCost(Exception):
+    """
+    Raised when the rover is stuck in high cost
     """
 
     pass
