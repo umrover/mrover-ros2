@@ -14,7 +14,7 @@ from navigation.costmap_search import CostmapSearchState
 from navigation.state import DoneState, OffState, off_check
 from navigation.waypoint import WaypointState
 from rclpy import Parameter
-from rclpy.executors import ExternalShutdownException
+from rclpy.executors import ExternalShutdownException, MultiThreadedExecutor
 from rclpy.node import Node
 from state_machine.state_machine import StateMachine
 from state_machine.state_publisher_server import StatePublisher
@@ -181,7 +181,10 @@ if __name__ == "__main__":
         node = Navigation(context)
         context.setup(node)
 
-        rclpy.spin(node)
+        exec = MultiThreadedExecutor(num_threads=2)
+        exec.add_node(node)
+        exec.spin()
+
         rclpy.shutdown()
     except KeyboardInterrupt:
         pass
