@@ -116,6 +116,6 @@ namespace mrover {
 
         auto getObjectBearing(cv::InputArray const& image, cv::Rect const& box) const -> float;
 
-        auto imageCallback(sensor_msgs::msg::Image::ConstSharedPtr const& msg) -> void;
+        //auto imageCallback(sensor_msgs::msg::Image::ConstSharedPtr const& msg) -> void;
     };
 } // namespace mrover

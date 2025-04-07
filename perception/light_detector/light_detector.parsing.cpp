@@ -1,19 +1,20 @@
-#include "object_detector.hpp"
+#include "light_detector.hpp"
 namespace mrover {
-    auto ObjectDetectorBase::preprocessYOLOv8Input(Model const& model, cv::Mat const& rgbImage, cv::Mat& blobSizedImage, cv::Mat& blob) -> void {
+    auto LightDetector::preprocessYOLOv8Input(Model const& model, cv::Mat const& rgbImage, cv::Mat& blobSizedImage, cv::Mat& blob) -> void {
         if (model.inputTensorSize.size() != 4) {
             throw std::runtime_error("Expected Blob Size to be of size 4, are you using the correct model type?");
         }
 
         static constexpr double UCHAR_TO_DOUBLE = 1.0 / 255.0;
-
+        //inputTensor: 1,3,640,640
         cv::Size blobSize{static_cast<int32_t>(model.inputTensorSize[2]), static_cast<int32_t>(model.inputTensorSize[3])};
+        //RCLCPP_INFO_STREAM(rclcpp::get_logger("rclcpp"),"BEFORE RESIZE");
         RCLCPP_INFO_STREAM(rclcpp::get_logger("rclcpp"),"RGB SIZE: " << rgbImage.rows << ", " << rgbImage.cols);
         cv::resize(rgbImage, blobSizedImage, blobSize);
         cv::dnn::blobFromImage(blobSizedImage, blob, UCHAR_TO_DOUBLE, blobSize, cv::Scalar{}, false, false);
     }
 
-    auto ObjectDetectorBase::parseYOLOv8Output(Model const& model, cv::Mat& output, std::vector<Detection>& detections) const -> void {
+    auto LightDetector::parseYOLOv8Output(Model const& model, cv::Mat& output, std::vector<Detection>& detections) const -> void {
         // Parse model specific dimensioning from the output
 
         // The input to this function is expecting a YOLOv8 style model, thus the dimensions should be > rows

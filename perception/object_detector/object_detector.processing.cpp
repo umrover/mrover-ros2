@@ -24,6 +24,7 @@ namespace mrover {
 
         // Convert the RGB Image into the blob Image format
         cv::Mat blobSizedImage;
+        RCLCPP_INFO_STREAM(get_logger(),"CALLING RESIZE WITH RGB SIZE" << mRgbImage.cols << "," << mRgbImage.rows);
         mModel.rgbImageToBlob(mModel, mRgbImage, blobSizedImage, mImageBlob);
 
         mLoopProfiler.measureEvent("Conversion");
@@ -177,7 +178,7 @@ namespace mrover {
             pixel[2] = pointPtr[i].b;
         });
     }
-
+/* 
     auto ImageObjectDetector::imageCallback(sensor_msgs::msg::Image::ConstSharedPtr const& msg) -> void {
         assert(msg);
         assert(msg->height > 0);
@@ -191,6 +192,7 @@ namespace mrover {
 
         // Convert the RGB Image into the blob Image format
         cv::Mat blobSizedImage;
+        RCLCPP_INFO_STREAM(get_logger(),"CALLING RESIZE WITH RGB SIZE" << mRgbImage.cols << "," << mRgbImage.rows);
         mModel.rgbImageToBlob(mModel, mRgbImage, blobSizedImage, mImageBlob);
 
         mLoopProfiler.measureEvent("Conversion");
@@ -221,7 +223,7 @@ namespace mrover {
 
         mLoopProfiler.measureEvent("Publication");
     }
-
+ */
     auto ImageObjectDetector::getObjectBearing(cv::InputArray const& image, cv::Rect const& box) const -> float {
         cv::Point2f center = cv::Point2f{box.tl()} + cv::Point2f{box.size()} / 2;
         float xNormalized = center.x / static_cast<float>(image.cols());
