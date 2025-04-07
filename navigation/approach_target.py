@@ -149,9 +149,6 @@ class ApproachTargetState(State):
             context.node.get_logger().warn("Costmap is enabled but costmap has no data")
             return self
 
-        if context.move_costmap_future and not context.move_costmap_future.done():
-            return self
-
         # If the target trajectory is empty, develop a new path to it
         if len(self.target_traj.coordinates) == 0:
             context.node.get_logger().info("Generating approach segmented path")

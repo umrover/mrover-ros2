@@ -123,9 +123,6 @@ class CostmapSearchState(State):
             context.node.get_logger().warn("Costmap is enabled but costmap has no data")
             return self
 
-        if context.move_costmap_future and not context.move_costmap_future.done():
-            return self
-
         # Skip spiral points until we find one that is not high cost
         while is_high_cost_point(context=context, point=self.spiral_traj.get_current_point()):
             context.node.get_logger().info(f"Skipping high cost spiral point")
