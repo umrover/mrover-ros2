@@ -416,6 +416,21 @@ class Context:
     def image_targets_callback(self, tags: ImageTargets) -> None:
         self.env.image_targets.push_frame(tags.targets)
 
+# Helper function to help convert the cordinates from cartesian to ij 
+    def cartesian_to_ij_env_helper(self, cart_coord: np.ndarray) -> np.ndarray:
+        """
+        Convert real world cartesian coordinates (x, y) to coordinates in the occupancy grid (i, j)
+        using formula floor(v - (WP + [-W/2, H/2]) / r) * [1, -1]
+        v: (x,y) coordinate
+        WP: origin
+        W, H: grid width, height (meters)
+        r: resolution (meters/cell)
+        :param cart_coord: array of x and y cartesian coordinates
+        :return: array of i and j coordinates for the occupancy grid
+        """
+        return np.floor((cart_coord[0:2] - self.env.cost_map.origin) / self.env.cost_map.resolution).astype(np.int8)
+
+
     def costmap_callback(self, msg: OccupancyGrid) -> None:
         """
         Callback function for the occupancy grid perception sends
@@ -433,7 +448,9 @@ class Context:
         for prevLocation in self.env.previous_locations:
             
             #self.env.cost_map[prevLocation[0],prevLocation[1]] = 0 
-            point_ij = np.array(prevLocation[0],prevLocation[1])
+            point_cartesian = np.array(prevLocation[0],prevLocation[1])
+            point_ij = self.cartesian_to_ij_env_helper(self, point_cartesian)
+            #point_ij = np.array(prevLocation[0],prevLocation[1])
             if  (0 <= int(point_ij[0]) < self.env.cost_map.width and 0 <= int(point_ij[1])  < self.env.cost_map.height):
                 self.env.cost_map[point_ij] = 0
 
@@ -444,6 +461,7 @@ class Context:
         self.env.cost_map.data[cost_map_data == -1] = 10.0  # TODO: find optimal value
         # normalize to [0, 1]
         self.env.cost_map.data /= 100.0
+    # helper function to turn the starter 
 
     def move_costmap(self, course_name="center_gps"):
         # TODO(neven): add service to move costmap if going to watter bottle search
