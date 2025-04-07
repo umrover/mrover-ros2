@@ -32,7 +32,7 @@ namespace mrover{
 				{"light_detector/lower_bound_h", lowerBoundH, 0},
 				{"light_detector/lower_bound_s", lowerBoundS, 0},
 				{"light_detector/lower_bound_v", lowerBoundV, 0},
-				{"light_detector/lmodel_name", modelName, "GreenWaterBottle"},
+				{"light_detector/lmodel_name", modelName, "GreenWaterBottleTest"},
                 {"light_detector/model_score_threshold", mModelScoreThreshold, 0.75},
             	{"light_detector/model_nms_threshold", mModelNMSThreshold, 0.5},
             	{"light_detector/debug", mDebug, true}};
