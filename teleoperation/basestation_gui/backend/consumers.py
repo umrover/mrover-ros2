@@ -105,8 +105,6 @@ class GUIConsumer(JsonWebsocketConsumer):
 
         # EnableBool Requests
         self.auto_shutoff_service = node.create_client(EnableBool, "/science_change_heater_auto_shutoff_state")
-        self.sa_enable_pump_0_srv = node.create_client(EnableBool, "/sa_enable_pump_0")
-        self.sa_enable_pump_1_srv = node.create_client(EnableBool, "/sa_enable_pump_1")
         self.sa_enable_switch_srv = node.create_client(EnableBool, "/sa_enable_limit_switch_sensor_actuator")
 
         self.heater_services = []
@@ -235,9 +233,9 @@ class GUIConsumer(JsonWebsocketConsumer):
                 }:
                     device_input = DeviceInputs(axes, buttons)
                     if((site == 0) | (site == 1)):
-                        send_sa_controls(cur_sa_mode, 0, device_input, self.sa_thr_pub, self.sa_enable_pump_0_srv, self.sa_enable_pump_1_srv)
+                        send_sa_controls(cur_sa_mode, 0, device_input, self.sa_thr_pub)
                     elif((site == 2) | (site == 3)):
-                        send_sa_controls(cur_sa_mode, 1, device_input, self.sa_thr_pub, self.sa_enable_pump_0_srv, self.sa_enable_pump_1_srv)
+                        send_sa_controls(cur_sa_mode, 1, device_input, self.sa_thr_pub)
                     else:
                         node.get_logger().warning(f"Unhandled Site: {site}")
                 case {
