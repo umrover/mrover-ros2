@@ -3,10 +3,11 @@
 import numpy as np
 from sensor_msgs.msg import PointCloud2, Image
 from std_msgs.msg import Header
+import sensor_msgs
 import tf2_ros
 from lie import SE3
 from sensor_msgs.msg import Imu
-from mrover.srv import CapturePanorama
+from mrover.srv import PanoramaStart, PanoramaEnd
 
 import rclpy
 from rclpy.node import Node
@@ -64,8 +65,8 @@ class Panorama(Node):
         super().__init__('panorama')
 
         # Pano Action Server
-        self.start_pano = self.create_service(CapturePanorama, '/panorama/start', self.start_callback)
-        self.end_pano = self.create_service(CapturePanorama, '/panorama/end', self.end_callback)
+        self.start_pano = self.create_service(PanoramaStart, '/panorama/start', self.start_callback)
+        self.end_pano = self.create_service(PanoramaEnd, '/panorama/end', self.end_callback)
 
         # Start the panorama
         self.record_image = False
@@ -75,6 +76,7 @@ class Panorama(Node):
         self.pc_sub = message_filters.Subscriber(self, PointCloud2, "/zed/left/points")
         self.imu_sub = message_filters.Subscriber(self, Imu, "/zed_imu/data_raw")
         self.pc_publisher = self.create_publisher(PointCloud2, "/stitched_pc", 1)
+        self.yo_publisher = self.create_publisher(Image, "/debug_pano", 1)
         self.pc_rate = PanoRate(2, self)
 
         self.stitched_pc = np.empty((0, 8), dtype=np.float32)
@@ -186,13 +188,22 @@ class Panorama(Node):
 
         self.get_logger().info(f"Stitching {len(self.img_list)} images...")
         _, pano = self.stitcher.stitch(self.img_list)
+        bgra_pano = cv2.cvtColor(pano, cv2.COLOR_BGR2BGRA)
+        
+        self.get_logger().info(f"Pano {pano.flatten().astype(int)}...")
 
         # Construct Pano and Save
         if pano is not None:
-            self.get_logger().info("Saving Pano...")
-            now = datetime.now()
-            date_string = now.strftime("%H:%M:%S.%f")[:-3];
-            cv2.imwrite(f"data/pano-{date_string}.png", pano)
+            response.img.header = Header()
+            response.img.width = bgra_pano.shape[1]
+            response.img.height = bgra_pano.shape[0]
+            response.img.encoding = 'bgra8'
+            response.img.is_bigendian = 0
+            response.img.step = bgra_pano.shape[1] * 4
+            np.clip(bgra_pano, 0, 255)
+            response.img.data = bgra_pano.astype(np.uint8).tobytes()
+            while(True):
+                self.yo_publisher.publish(response.img)
         else:
             self.get_logger().info('Pano Failed...')
 
