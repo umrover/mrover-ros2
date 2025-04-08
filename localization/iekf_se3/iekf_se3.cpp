@@ -13,6 +13,7 @@ namespace mrover {
         declare_parameter("vel_noise", rclcpp::ParameterType::PARAMETER_DOUBLE);
         declare_parameter("mag_heading_noise", rclcpp::ParameterType::PARAMETER_DOUBLE);
         declare_parameter("rtk_heading_noise", rclcpp::ParameterType::PARAMETER_DOUBLE);
+        declare_parameter("drive_forward_heading_noise", rclcpp::ParameterType::PARAMETER_DOUBLE);
 
         declare_parameter("rover_heading_change_threshold", rclcpp::ParameterType::PARAMETER_DOUBLE);
         declare_parameter("minimum_linear_speed", rclcpp::ParameterType::PARAMETER_DOUBLE);
@@ -28,6 +29,7 @@ namespace mrover {
         vel_noise = get_parameter("vel_noise").as_double();
         mag_heading_noise = get_parameter("mag_heading_noise").as_double();
         rtk_heading_noise = get_parameter("rtk_heading_noise").as_double();
+        drive_forward_heading_noise = get_parameter("drive_forward_heading_noise").as_double();
 
         rover_heading_change_threshold = get_parameter("rover_heading_change_threshold").as_double();
         minimum_linear_speed = get_parameter("minimum_linear_speed").as_double();
@@ -54,7 +56,7 @@ namespace mrover {
         });
 
         pos_sub.subscribe(this, "/linearized_position");
-        pos_status_sub.subscribe(this, "gps_fix_status");
+        pos_status_sub.subscribe(this, "/gps_fix_status");
 
         pos_sync = std::make_shared<message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<geometry_msgs::msg::Vector3Stamped, mrover::msg::FixStatus>>>(
             message_filters::sync_policies::ApproximateTime<geometry_msgs::msg::Vector3Stamped, mrover::msg::FixStatus>(10),
@@ -340,6 +342,8 @@ namespace mrover {
         }
 
         R2d rover_velocity_sum = R2d::Zero();
+        double rover_heading_old = 0.0;
+        double rover_heading_new = 0.0;
         double rover_heading_change = 0.0;
         std::size_t readings = 0;
 
@@ -352,9 +356,18 @@ namespace mrover {
                 auto rover_in_map_old = SE3Conversions::fromTfTree(tf_buffer, rover_frame, world_frame, t - STEP);
                 auto rover_in_map_new = SE3Conversions::fromTfTree(tf_buffer, rover_frame, world_frame, t);
                 R3d rover_velocity_in_map = (rover_in_map_new.translation() - rover_in_map_old.translation()) / STEP.seconds();
-                R3d rover_angular_velocity_in_map = (rover_in_map_new.asSO3() - rover_in_map_old.asSO3()).coeffs();
+
+                if (t == start) {
+                    rover_heading_old = std::atan2(rover_velocity_in_map(1), rover_velocity_in_map(0));
+                    rover_heading_new = rover_heading_old;
+                }
+                else {
+                    rover_heading_new = std::atan2(rover_velocity_in_map(1), rover_velocity_in_map(0));
+                }
+
                 rover_velocity_sum += rover_velocity_in_map.head<2>();
-                rover_heading_change += std::fabs(rover_angular_velocity_in_map.z());
+                rover_heading_change += std::fabs(rover_heading_new - rover_heading_old);
+                rover_heading_old = rover_heading_new;
                 ++readings;
             } catch (tf2::ConnectivityException const& e) {
                 RCLCPP_WARN_STREAM(get_logger(), e.what());
@@ -393,7 +406,7 @@ namespace mrover {
         H << -1 * manif::skew(drive_forward_ref), Matrix33d::Zero();
         Y << -1 * Vector3d{std::cos(drive_forward_heading), -std::sin(drive_forward_heading), 0}, 0;
         b << -1 * drive_forward_ref, 0;
-        N << X.block<3, 3>(0, 0) * rtk_heading_noise * Matrix33d::Identity() * X.block<3, 3>(0, 0).transpose();
+        N << X.block<3, 3>(0, 0) * drive_forward_heading_noise * Matrix33d::Identity() * X.block<3, 3>(0, 0).transpose();
 
         if (use_drive_forward) {
             correct(Y, b, N, H);

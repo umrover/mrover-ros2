@@ -1,4 +1,5 @@
 #include "rover_gps_driver.hpp"
+
 namespace mrover {
 
     RoverGPSDriver::RoverGPSDriver(boost::asio::io_context& io) : Node("rover_gps_driver"), serial(io) {
@@ -49,184 +50,196 @@ namespace mrover {
         header.stamp = get_clock()->now();
         header.frame_id = frame_id;
 
-        if (msg_header == GNGGA_HEADER) {
+        try {
 
-            sensor_msgs::msg::NavSatFix nav_sat_fix;
-            mrover::msg::FixStatus fix_status;
-            mrover::msg::FixType fix_type;
-            nav_sat_fix.header = header;
-            fix_status.header = header;
+            if (msg_header == GNGGA_HEADER) {
 
-            if (stoi(tokens[GNGGA_QUAL_POS]) == 0) {
-                RCLCPP_WARN(get_logger(), "Invalid fix. Are we inside?");
+                sensor_msgs::msg::NavSatFix nav_sat_fix;
+                mrover::msg::FixStatus fix_status;
+                mrover::msg::FixType fix_type;
+                nav_sat_fix.header = header;
+                fix_status.header = header;
 
-                fix_type.fix = mrover::msg::FixType::NO_SOL;
+                if (stoi(tokens[GNGGA_QUAL_POS]) == 0) {
+                    RCLCPP_WARN(get_logger(), "Invalid fix. Are we inside?");
+
+                    fix_type.fix = mrover::msg::FixType::NO_SOL;
+                    fix_status.fix_type = fix_type;
+
+                    nav_sat_fix.latitude = get_parameter("ref_lat").as_double();
+                    nav_sat_fix.longitude = get_parameter("ref_lon").as_double();
+                    nav_sat_fix.altitude = get_parameter("ref_alt").as_double();
+
+                    gps_pub->publish(nav_sat_fix);
+                    gps_status_pub->publish(fix_status);
+                    return;
+                }
+                else {
+                    RCLCPP_INFO(get_logger(), "Valid fix, %s satellites in use.", tokens[GNGGA_SATELLITES_POS].c_str());
+                }
+                
+                uint16_t lat_deg = stoi(tokens[GNGGA_LAT_POS].substr(0, 2));
+                double lat_min = stod(tokens[GNGGA_LAT_POS].substr(2, 13));
+                uint16_t lon_deg = stoi(tokens[GNGGA_LON_POS].substr(0, 3));
+                double lon_min = stod(tokens[GNGGA_LON_POS].substr(3, 14));
+                double alt = stod(tokens[GNGGA_ALT_POS]);
+
+                // 60 minutes = 1 degree
+                double lat = lat_deg + lat_min / 60;
+                double lon = lon_deg + lon_min / 60;
+
+                char lat_dir = tokens[GNGGA_LAT_DIR_POS][0];
+                char lon_dir = tokens[GNGGA_LON_DIR_POS][0];
+
+                if (lat_dir == 'S') {
+                    lat = -lat;
+                }
+                if (lon_dir == 'W') {
+                    lon = -lon;
+                }
+
+                nav_sat_fix.latitude = lat;
+                nav_sat_fix.longitude = lon;
+                nav_sat_fix.altitude = alt;
+
+                if (stoi(tokens[GNGGA_QUAL_POS]) == 5) {
+                    fix_type.fix = mrover::msg::FixType::FLOAT;
+                }
+                else if (stoi(tokens[GNGGA_QUAL_POS]) == 4) {
+                    fix_type.fix = mrover::msg::FixType::FIXED;
+                }
+                else {
+                    RCLCPP_WARN(get_logger(), "Position: No RTK fix. Has the basestation finished survey-in?");
+                    fix_type.fix = mrover::msg::FixType::NONE;
+                }
+
                 fix_status.fix_type = fix_type;
-
-                nav_sat_fix.latitude = get_parameter("ref_lat").as_double();
-                nav_sat_fix.longitude = get_parameter("ref_lon").as_double();
-                nav_sat_fix.altitude = get_parameter("ref_alt").as_double();
-
+                
                 gps_pub->publish(nav_sat_fix);
                 gps_status_pub->publish(fix_status);
-                return;
-            }
-            else {
-                RCLCPP_INFO(get_logger(), "Valid fix, %s satellites in use.", tokens[GNGGA_SATELLITES_POS].c_str());
-            }
-            
-            uint16_t lat_deg = stoi(tokens[GNGGA_LAT_POS].substr(0, 2));
-            double lat_min = stod(tokens[GNGGA_LAT_POS].substr(2, 13));
-            uint16_t lon_deg = stoi(tokens[GNGGA_LON_POS].substr(0, 3));
-            double lon_min = stod(tokens[GNGGA_LON_POS].substr(3, 14));
-            double alt = stod(tokens[GNGGA_ALT_POS]);
 
-            // 60 minutes = 1 degree
-            double lat = lat_deg + lat_min / 60;
-            double lon = lon_deg + lon_min / 60;
-
-            char lat_dir = tokens[GNGGA_LAT_DIR_POS][0];
-            char lon_dir = tokens[GNGGA_LON_DIR_POS][0];
-
-            if (lat_dir == 'S') {
-                lat = -lat;
-            }
-            if (lon_dir == 'W') {
-                lon = -lon;
             }
 
-            nav_sat_fix.latitude = lat;
-            nav_sat_fix.longitude = lon;
-            nav_sat_fix.altitude = alt;
+            if (msg_header == UNIHEADING_HEADER) {
 
-            if (stoi(tokens[GNGGA_QUAL_POS]) == 5) {
-                fix_type.fix = mrover::msg::FixType::FLOAT;
-            }
-            else if (stoi(tokens[GNGGA_QUAL_POS]) == 4) {
-                fix_type.fix = mrover::msg::FixType::FIXED;
-            }
-            else {
-                RCLCPP_WARN(get_logger(), "Position: No RTK fix. Has the basestation finished survey-in?");
-                fix_type.fix = mrover::msg::FixType::NONE;
-            }
+                mrover::msg::Heading heading;
+                mrover::msg::FixStatus fix_status;
+                mrover::msg::FixType fix_type;
+                heading.header = header;
+                fix_status.header = header;
 
-            fix_status.fix_type = fix_type;
-            
-            gps_pub->publish(nav_sat_fix);
-            gps_status_pub->publish(fix_status);
+                if (tokens[UNIHEADING_STATUS_POS] == "NARROW_FLOAT") {
+                    fix_type.fix = mrover::msg::FixType::FLOAT;
+                }
+                else if (tokens[UNIHEADING_STATUS_POS] == "NARROW_INT") {
+                    fix_type.fix = mrover::msg::FixType::FIXED;
+                }
+                else {
+                    RCLCPP_WARN(get_logger(), "Heading: no solution. Are both antennas plugged in?");
 
-        }
+                    fix_type.fix = mrover::msg::FixType::NO_SOL;
+                    fix_status.fix_type = fix_type;
+                    heading.heading = 0;
 
-        if (msg_header == UNIHEADING_HEADER) {
+                    heading_pub->publish(heading);
+                    heading_status_pub->publish(fix_status);
+                    return;
+                }
 
-            mrover::msg::Heading heading;
-            mrover::msg::FixStatus fix_status;
-            mrover::msg::FixType fix_type;
-            heading.header = header;
-            fix_status.header = header;
-
-            if (tokens[UNIHEADING_STATUS_POS] == "NARROW_FLOAT") {
-                fix_type.fix = mrover::msg::FixType::FLOAT;
-            }
-            else if (tokens[UNIHEADING_STATUS_POS] == "NARROW_INT") {
-                fix_type.fix = mrover::msg::FixType::FIXED;
-            }
-            else {
-                RCLCPP_WARN(get_logger(), "Heading: no solution. Are both antennas plugged in?");
-
-                fix_type.fix = mrover::msg::FixType::NO_SOL;
                 fix_status.fix_type = fix_type;
-                heading.heading = 0;
+
+                float uniheading = stof(tokens[UNIHEADING_HEADING_POS]);
+                heading.heading = uniheading;
 
                 heading_pub->publish(heading);
                 heading_status_pub->publish(fix_status);
-                return;
+
             }
 
-            fix_status.fix_type = fix_type;
+            if (msg_header == BESTNAV_HEADER) {
 
-            float uniheading = stof(tokens[UNIHEADING_HEADING_POS]);
-            heading.heading = uniheading;
+                geometry_msgs::msg::Vector3Stamped velocity;
+                mrover::msg::FixStatus fix_status;
+                mrover::msg::FixType fix_type;
+                velocity.header = header;
+                fix_status.header = header;
 
-            heading_pub->publish(heading);
-            heading_status_pub->publish(fix_status);
+                if (tokens[VEL_STATUS_POS] == "DOPPLER_VELOCITY") {
+                    fix_type.fix = mrover::msg::FixType::NONE;
+                }
+                else {
+                    RCLCPP_WARN(get_logger(), "Velocity: no solution. Are we inside?");
 
-        }
+                    fix_type.fix = mrover::msg::FixType::NO_SOL;
+                    fix_status.fix_type = fix_type;
 
-        if (msg_header == BESTNAV_HEADER) {
+                    velocity.vector.x = 0;
+                    velocity.vector.y = 0;
+                    velocity.vector.z = 0;
 
-            geometry_msgs::msg::Vector3Stamped velocity;
-            mrover::msg::FixStatus fix_status;
-            mrover::msg::FixType fix_type;
-            velocity.header = header;
-            fix_status.header = header;
+                    velocity_pub->publish(velocity);
+                    velocity_status_pub->publish(fix_status);
+                    return;
+                }
 
-            if (tokens[VEL_STATUS_POS] == "DOPPLER_VELOCITY") {
-                fix_type.fix = mrover::msg::FixType::NONE;
-            }
-            else {
-                RCLCPP_WARN(get_logger(), "Velocity: no solution. Are we inside?");
-
-                fix_type.fix = mrover::msg::FixType::NO_SOL;
                 fix_status.fix_type = fix_type;
 
-                velocity.vector.x = 0;
-                velocity.vector.y = 0;
+                float gps_velocity = stof(tokens[VEL_POS]);
+                float gps_dir = stof(tokens[VEL_DIR_POS]);
+
+                velocity.vector.x = std::sin(gps_dir) * gps_velocity;
+                velocity.vector.y = std::cos(gps_dir) * gps_velocity;
                 velocity.vector.z = 0;
 
                 velocity_pub->publish(velocity);
                 velocity_status_pub->publish(fix_status);
-                return;
+
             }
 
-            fix_status.fix_type = fix_type;
+            if (msg_header == GPS_HEADER) {
+                mrover::msg::SatelliteSignal signal;
+                signal.constellation = "GPS";
+                signal.signal_strength = tokens[CNO_POS] == "" ? 0 : std::stoi(tokens[CNO_POS]);
+                satellite_signal_pub->publish(signal);
+            }
 
-            float gps_velocity = stof(tokens[VEL_POS]);
-            float gps_dir = stof(tokens[VEL_DIR_POS]);
+            if (msg_header == GLONASS_HEADER) {
+                mrover::msg::SatelliteSignal signal;
+                signal.constellation = "GLONASS";
+                signal.signal_strength = tokens[CNO_POS] == "" ? 0 : std::stoi(tokens[CNO_POS]);
+                satellite_signal_pub->publish(signal);
+            }
 
-            velocity.vector.x = std::sin(gps_dir) * gps_velocity;
-            velocity.vector.y = std::cos(gps_dir) * gps_velocity;
-            velocity.vector.z = 0;
+            if (msg_header == BEIDOU_HEADER) {
+                mrover::msg::SatelliteSignal signal;
+                signal.constellation = "BeiDou";
+                signal.signal_strength = tokens[CNO_POS] == "" ? 0 : std::stoi(tokens[CNO_POS]);
+                satellite_signal_pub->publish(signal);
+            }
 
-            velocity_pub->publish(velocity);
-            velocity_status_pub->publish(fix_status);
+            if (msg_header == GALILEO_HEADER) {
+                mrover::msg::SatelliteSignal signal;
+                signal.constellation = "Galileo";
+                signal.signal_strength = tokens[CNO_POS] == "" ? 0 : std::stoi(tokens[CNO_POS]);
+                satellite_signal_pub->publish(signal);
+            }
 
+            if (msg_header == QZSS_HEADER) {
+                mrover::msg::SatelliteSignal signal;
+                signal.constellation = "QZSS";
+                signal.signal_strength = tokens[CNO_POS] == "" ? 0 : std::stoi(tokens[CNO_POS]);
+                satellite_signal_pub->publish(signal);
+            }
         }
-
-        if (msg_header == GPS_HEADER) {
-            mrover::msg::SatelliteSignal signal;
-            signal.constellation = "GPS";
-            signal.signal_strength = tokens[CNO_POS] == "" ? 0 : std::stoi(tokens[CNO_POS]);
-            satellite_signal_pub->publish(signal);
+        catch(const std::invalid_argument& e) {
+            RCLCPP_WARN(get_logger(), "Invalid argument: %s", e.what());
+            return;
         }
-
-        if (msg_header == GLONASS_HEADER) {
-            mrover::msg::SatelliteSignal signal;
-            signal.constellation = "GLONASS";
-            signal.signal_strength = tokens[CNO_POS] == "" ? 0 : std::stoi(tokens[CNO_POS]);
-            satellite_signal_pub->publish(signal);
+        catch(...) {
+            RCLCPP_WARN(get_logger(), "Exception caught.");
+            return;
         }
-
-        if (msg_header == BEIDOU_HEADER) {
-            mrover::msg::SatelliteSignal signal;
-            signal.constellation = "BeiDou";
-            signal.signal_strength = tokens[CNO_POS] == "" ? 0 : std::stoi(tokens[CNO_POS]);
-            satellite_signal_pub->publish(signal);
-        }
-
-        if (msg_header == GALILEO_HEADER) {
-            mrover::msg::SatelliteSignal signal;
-            signal.constellation = "Galileo";
-            signal.signal_strength = tokens[CNO_POS] == "" ? 0 : std::stoi(tokens[CNO_POS]);
-            satellite_signal_pub->publish(signal);
-        }
-
-        if (msg_header == QZSS_HEADER) {
-            mrover::msg::SatelliteSignal signal;
-            signal.constellation = "QZSS";
-            signal.signal_strength = tokens[CNO_POS] == "" ? 0 : std::stoi(tokens[CNO_POS]);
-            satellite_signal_pub->publish(signal);
-        }
+        
     }
 
 
