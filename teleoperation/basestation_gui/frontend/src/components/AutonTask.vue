@@ -8,7 +8,7 @@
     </div>
     <div :class="['shadow p-3 rounded data', ledColor]">
       <h2>Nav State: {{ navState }}</h2>
-      <OdometryReading @odom='updateOdom' />
+      <OdometryReading @odom='updateOdom' @basestation_odom='updateBasestationOdom'/>
     </div>
     <div class='shadow p-3 rounded feed'> <!-- meant to be cost mapb -->
       <button @click="toggleFeed" class="btn btn-primary mb-2">
@@ -20,7 +20,7 @@
       </div>
     </div>
     <div class='shadow p-3 rounded map'>
-      <AutonRoverMap :odom='odom' />  
+      <AutonRoverMap :odom='odom' :basestation="basestationOdom"/>  
     </div>
     <div class='shadow p-3 rounded waypoints'>
       <AutonWaypointEditor @toggleTeleop='teleopEnabledCheck = $event' />
@@ -79,6 +79,8 @@ export default defineComponent({
     return {
       odom: null as Odom | null,
 
+      basestationOdom: null as Odom | null,
+
       teleopEnabledCheck: false,
 
       ledColor: 'bg-danger', //red
@@ -119,6 +121,9 @@ export default defineComponent({
     },
     updateOdom(odom: Odom) {
       this.odom = odom;
+    },
+    updateBasestationOdom(odom: Odom) {
+      this.basestationOdom = odom;
     }
   },
 
