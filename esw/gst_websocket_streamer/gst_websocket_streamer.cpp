@@ -360,11 +360,3 @@ namespace mrover {
 // This acts as a sort of entry point, allowing the component to be discoverable when its library
 // is being loaded into a running process.
 RCLCPP_COMPONENTS_REGISTER_NODE(mrover::GstWebsocketStreamer)
-
-
-// auto main(int argc, char** argv) -> int {
-//     rclcpp::init(argc, argv);
-//     rclcpp::spin(std::make_shared<mrover::GstWebsocketStreamer>());
-//     rclcpp::shutdown();
-//     return EXIT_SUCCESS;
-// }
