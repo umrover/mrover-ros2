@@ -94,8 +94,10 @@ namespace mrover {
          */
         std::filesystem::path packagePath = std::filesystem::path{ament_index_cpp::get_package_prefix("mrover")} / ".." / ".." / "src" / "mrover" / "data" / "images" / "test2.jpg";
 
+        // Remember to remove this for actual working production
         temp = cv::imread(packagePath.c_str(), cv::IMREAD_COLOR);
 
+        // Need to replace this later on
         cv::cvtColor(temp, bgraImage, cv::COLOR_BGR2BGRA);
 
         // Convert the RGB Image into the blob Image format
@@ -113,14 +115,10 @@ namespace mrover {
         mKeyDetectionModel.postprocess(mKeyDetectionModel, outputTensor);
 
         parseYOLOv8Output(mKeyDetectionModel, outputTensor, detections);
-
         // Text Coords Inference
         mTextCoordsTensorRT.modelForwardPass(mTextCoordsBlob, outputTensor);
-
         mTextCoordModel.postprocess(mTextCoordModel, outputTensor);
-
         matchKeyDetections(outputTensor, detections);
-
         {
             // Create an image from the keyboard gradient
             cv::Mat temp;

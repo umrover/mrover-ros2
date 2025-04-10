@@ -183,11 +183,19 @@ namespace mrover {
         //Coalesce the boxes into a smaller number of distinct boxes
         std::vector<int> nmsResult;
         cv::dnn::NMSBoxes(boxes, confidences, mModelScoreThreshold, mModelNMSThreshold, nmsResult);
-
+        std::sort(nmsResult.begin(), nmsResult.end(), [&confidences](int a, int b)
+        {
+            return confidences[a] > confidences[b];
+        });
         // Fill in the output Detections Vector
         for (int i: nmsResult) {
             //Push back the detection into the for storage vector
             detections.emplace_back(classIds[i], model.classes[classIds[i]], confidences[i], boxes[i]);
+            //Make sure detections is 87 at most, otherwise hungarian breaks
+            if (detections.size() == 87)
+            {
+                break;
+            }
         }
     }
 

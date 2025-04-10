@@ -59,7 +59,7 @@ class KeyDetector(Node):
             # Convert from ROS msg to np array/torch tensor
             img = np.frombuffer(msg.data, dtype=np.uint8).reshape(msg.height, msg.width, -1)
             img = cv2.cvtColor(img, cv2.COLOR_BGRA2BGR)
-            img = cv2.imread("/home/john/ros2_ws/src/mrover/perception/key_detector/keyrover/../datasets/test/image/f91.png");
+            img = cv2.imread("/home/henrycheng/ros2_ws/src/mrover/perception/key_detector/keyrover/../datasets/test/image/f80.png")
             img_cv = cv2.resize(img, SIZE, interpolation = cv2.INTER_LINEAR)
             img = self.test_dataset.cvt_image(img_cv)
             
@@ -83,7 +83,7 @@ class KeyDetector(Node):
 
             describe(mask)
 
-            keys = keys_from_yolo(bboxes)
+            keys: list[LabeledBBox] = keys_from_yolo(bboxes)
             texcoords = TexcoordImage(mask * 255, keys)
 
             with open(f"{DATASETS}/texcoords/{dataset}/texcoords_palette.bin", "rb") as file:
@@ -187,7 +187,7 @@ class KeyDetector(Node):
             debug_img.step = 3 * debug_img.width;
             debug_img.data = np.reshape(img, (debug_img.width * debug_img.height * 3)).data
 
-            self.debug_img_pub.publish(debug_img)
+            #self.debug_img_pub.publish(debug_img)
 
             #plt.show()
         except:
