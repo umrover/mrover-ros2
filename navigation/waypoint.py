@@ -17,6 +17,7 @@ from navigation.trajectory import Trajectory, SearchTrajectory
 from typing import Optional
 from rclpy.publisher import Publisher
 from rclpy.time import Time
+from rclpy.timer import Timer
 import time
 from rclpy.duration import Duration
 from geometry_msgs.msg import Pose, PoseStamped, Point, Quaternion, Twist
@@ -35,15 +36,18 @@ class WaypointState(State):
     waypoint_traj: Trajectory
     prev_target_pos_in_map: Optional[np.ndarray] = None
     is_recovering: bool = False
-    time_last_updated: Time
     time_no_search_wait: Optional[Time] = None
+    time_begin: Time
     start_time: Time
+    marker_timer: Timer
+    waypoint_timer: Timer
     path_pub: Publisher
     astar: AStar
     marker_pub: Publisher
 
     UPDATE_DELAY: float
     NO_SEARCH_WAIT_TIME: float
+    USE_COSTMAP: bool
 
     def on_enter(self, context: Context) -> None:
         assert context.course is not None
@@ -51,65 +55,40 @@ class WaypointState(State):
 
         self.UPDATE_DELAY = context.node.get_parameter("search.update_delay").value
         self.NO_SEARCH_WAIT_TIME = context.node.get_parameter("waypoint.no_search_wait_time").value
+        
+        current_waypoint = context.course.current_waypoint()
+        assert current_waypoint is not None
+
+        self.USE_COSTMAP = context.node.get_parameter("costmap.use_costmap").value or \
+                            current_waypoint.enable_costmap
+        
+        context.node.get_logger().info(f"enable_costmap: {current_waypoint.enable_costmap}")
+
         self.marker_pub = context.node.create_publisher(Marker, "waypoint_trajectory", 10)
         self.astar = AStar(context)
         self.astar_traj = Trajectory(np.array([]))
         self.waypoint_traj = Trajectory(np.array([]))
 
-        self.time_last_updated = context.node.get_clock().now() - Duration(seconds=self.UPDATE_DELAY)
         self.time_no_search_wait = None
+        self.time_begin = context.node.get_clock().now()
         self.start_time = context.node.get_clock().now()
 
         context.env.arrived_at_waypoint = False
-        self.marker_pub.publish(
-            gen_marker(
-                context=context,
-                point=context.course.current_waypoint_pose_in_map().translation()[0:2],
-                color=[0.0, 0.0, 1.0],
-                size=0.5,
-                id=-1,
-                lifetime=10000,
-            )
-        )
+        
+        self.marker_timer = context.node.create_timer(1.0, lambda: self.display_markers(context))
+        self.waypoint_timer = context.node.create_timer(self.UPDATE_DELAY, lambda: self.update_waypoint(context))
 
     def on_exit(self, context: Context) -> None:
-        pass
+        self.marker_timer.cancel()
+        self.waypoint_timer.cancel()
 
-    def on_loop(self, context: Context) -> State:
-        """
-        Handle driving to a waypoint defined by a linearized cartesian position.
-        If the waypoint is associated with a tag id, go into that state early if we see it,
-        otherwise wait until we get there to conduct a more thorough search.
-        :param context: Context object
-        :return:        Next state
-        """
+    def update_waypoint(self, context: Context) -> None:
+        self.waypoint_traj.clear()
+        self.astar_traj.clear()
 
+    def on_loop_costmap_enabled(self, context: Context) -> State:
+        assert self.USE_COSTMAP
         assert context.course is not None
-
-        if context.move_costmap_future and not context.move_costmap_future.done():
-            return self
-
-        current_waypoint = context.course.current_waypoint()
-        if current_waypoint is None:
-            return state.DoneState()
-
-        # If we are at a post currently (from a previous leg), backup to avoid collision
-        if context.env.arrived_at_target:
-            context.env.arrived_at_target = False
-            return post_backup.PostBackupState()
-
-        # Returns either ApproachTargetState, LongRangeState, or None
-        approach_state = context.course.get_approach_state()
-        if approach_state is not None:
-            return approach_state
-
-        rover_in_map = context.rover.get_pose_in_map()
-        if rover_in_map is None:
-            return self
-
-        if context.rover.stuck:
-            context.rover.previous_state = self
-            return recovery.RecoveryState()
 
         if self.waypoint_traj.empty():
             context.node.get_logger().info("Generating segmented path")
@@ -134,12 +113,6 @@ class WaypointState(State):
             self.astar_traj.clear()
             return self
 
-        # Clear the waypoint trajectory so a new path can be redeveloped every update
-        if context.node.get_clock().now() - self.time_last_updated > Duration(seconds=self.UPDATE_DELAY):
-            self.waypoint_traj.clear()
-            self.astar_traj.clear()
-            self.time_last_updated = context.node.get_clock().now()
-            return self
 
         if self.astar_traj.empty():
             self.display_markers(context=context)
@@ -165,7 +138,7 @@ class WaypointState(State):
             waypoint_position_in_map = self.astar_traj.get_current_point()
             cmd_vel, arrived = context.drive.get_drive_command(
                 waypoint_position_in_map,
-                rover_in_map,
+                context.rover.get_pose_in_map(),
                 context.node.get_parameter("waypoint.stop_threshold").value,
                 context.node.get_parameter("waypoint.drive_forward_threshold").value,
             )
@@ -184,6 +157,72 @@ class WaypointState(State):
             context.rover.send_drive_command(cmd_vel)
 
         return self
+    
+    def on_loop_costmap_disabled(self, context: Context):
+        assert not self.USE_COSTMAP
+        assert context.course is not None
+        if context.course.current_waypoint_pose_in_map() is None:
+            return self
+        
+        arrived = False
+        cmd_vel = Twist()
+        cmd_vel, arrived = context.drive.get_drive_command(
+            context.course.current_waypoint_pose_in_map().translation(),
+            context.rover.get_pose_in_map(),
+            context.node.get_parameter("single_tag.stop_threshold").value,
+            context.node.get_parameter("waypoint.drive_forward_threshold").value,
+        )
+
+        if arrived:
+            return self.next_state(context=context)
+        else:
+            context.rover.send_drive_command(cmd_vel)
+
+        return self
+
+    def on_loop(self, context: Context) -> State:
+        """
+        Handle driving to a waypoint defined by a linearized cartesian position.
+        If the waypoint is associated with a tag id, go into that state early if we see it,
+        otherwise wait until we get there to conduct a more thorough search.
+        :param context: Context object
+        :return:        Next state
+        """
+
+        assert context.course is not None
+
+        current_waypoint = context.course.current_waypoint()
+        if current_waypoint is None:
+            return state.DoneState()
+
+        # If we are at a post currently (from a previous leg), backup to avoid collision
+        if context.env.arrived_at_target:
+            context.env.arrived_at_target = False
+            return post_backup.PostBackupState()
+
+        # Returns either ApproachTargetState, LongRangeState, or None
+        approach_state = context.course.get_approach_state()
+        if approach_state is not None:
+            return approach_state
+
+        rover_in_map = context.rover.get_pose_in_map()
+        if rover_in_map is None:
+            return self
+        
+        if context.node.get_clock().now() < self.time_begin + Duration(seconds=self.UPDATE_DELAY):
+            return self
+
+        if context.rover.stuck:
+            context.rover.previous_state = self
+            return recovery.RecoveryState()
+        
+        if self.USE_COSTMAP:
+            return self.on_loop_costmap_enabled(context)
+        
+        else:
+            return self.on_loop_costmap_disabled(context)
+
+        
 
     def next_state(self, context: Context) -> State:
         assert context.course is not None
@@ -193,10 +232,7 @@ class WaypointState(State):
         current_wp = context.course.current_waypoint()
         assert current_wp is not None
         if current_wp.type.val != WaypointType.NO_SEARCH:
-            if context.node.get_parameter("costmap.use_costmap").value:
-                return costmap_search.CostmapSearchState()
-            else:
-                return search.SearchState()
+            return costmap_search.CostmapSearchState()
         else:
             if self.time_no_search_wait is None:
                 self.time_no_search_wait = context.node.get_clock().now()
@@ -224,6 +260,7 @@ class WaypointState(State):
                 return self
 
     def display_markers(self, context: Context):
+        assert context.course is not None
         if context.node.get_parameter("display_markers").value:
             start_pt = self.waypoint_traj.cur_pt
             end_pt = min(start_pt + 5, len(self.waypoint_traj.coordinates))
@@ -232,3 +269,17 @@ class WaypointState(State):
                     self.marker_pub.publish(
                         gen_marker(context=context, point=coord, color=[1.0, 0.0, 1.0], id=i, lifetime=100)
                     )
+
+            if context.course.current_waypoint() is None:
+                return
+
+            self.marker_pub.publish(
+            gen_marker(
+                context=context,
+                point=context.course.current_waypoint_pose_in_map().translation()[0:2],
+                color=[0.0, 0.0, 1.0],
+                size=0.5,
+                id=-1,
+                lifetime=10000,
+            )
+        )

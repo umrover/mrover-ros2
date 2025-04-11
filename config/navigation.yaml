@@ -20,7 +20,7 @@ navigation:
 
     costmap:
       custom_costmap: false
-      use_costmap: true
+      use_costmap: false
       a_star_thresh: 0.05
       costmap_thresh: 0.4
       

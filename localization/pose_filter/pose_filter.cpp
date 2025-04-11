@@ -24,7 +24,7 @@ namespace mrover {
         });
 
         pos_sub.subscribe(this, "/linearized_position");
-        pos_status_sub.subscribe(this, "/heading_fix_status");
+        pos_status_sub.subscribe(this, "/gps_fix_status");
         
         // synchronise measurements 
         pos_sync = std::make_shared<message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<geometry_msgs::msg::Vector3Stamped, mrover::msg::FixStatus>>>(
