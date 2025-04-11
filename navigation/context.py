@@ -316,7 +316,7 @@ def convert_gps_to_cartesian(reference_point: np.ndarray, waypoint: GPSWaypoint)
     # Zero the z-coordinate because even though the altitudes are set to zero,
     # Two points on a sphere are not going to have the same z-coordinate.
     # Navigation algorithms currently require all coordinates to have zero as the z-coordinate.
-    return Waypoint(tag_id=waypoint.tag_id, type=waypoint.type), SE3.from_position_orientation(x, y)
+    return Waypoint(tag_id=waypoint.tag_id, type=waypoint.type, enable_costmap=waypoint.enable_costmap), SE3.from_position_orientation(x, y)
 
 
 def convert_cartesian_to_gps(reference_point: np.ndarray, coordinate: np.ndarray) -> GPSWaypoint:
@@ -394,13 +394,14 @@ class Context:
 
         client_callback_group = MutuallyExclusiveCallbackGroup()
 
-        self.move_cli = node.create_client(MoveCostMap, "move_cost_map", callback_group=client_callback_group)
-        while not self.move_cli.wait_for_service(timeout_sec=1.0):
-            node.get_logger().info("Waiting for move_cost_map service...")
+        if not node.get_parameter("costmap.custom_costmap").value:
+            self.move_cli = node.create_client(MoveCostMap, "move_cost_map", callback_group=client_callback_group)
+            while not self.move_cli.wait_for_service(timeout_sec=1.0):
+                node.get_logger().info("Waiting for move_cost_map service...")
 
-        self.dilate_cli = node.create_client(DilateCostMap, "dilate_cost_map", callback_group=client_callback_group)
-        while not self.dilate_cli.wait_for_service(timeout_sec=1.0):
-            node.get_logger().info("Waiting for dilate_cost service...")
+            self.dilate_cli = node.create_client(DilateCostMap, "dilate_cost_map", callback_group=client_callback_group)
+            while not self.dilate_cli.wait_for_service(timeout_sec=1.0):
+                node.get_logger().info("Waiting for dilate_cost service...")
 
     def enable_auton(self, request: EnableAuton.Request, response: EnableAuton.Response) -> EnableAuton.Response:
         self.node.get_logger().info("Received new course to navigate!")

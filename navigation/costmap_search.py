@@ -46,7 +46,14 @@ class CostmapSearchState(State):
     def on_enter(self, context: Context) -> None:
         context.node.get_logger().info("Entered Costmap Search State")
 
-        self.USE_COSTMAP = context.node.get_parameter("costmap.use_costmap").value
+        assert context.course is not None
+
+        current_waypoint = context.course.current_waypoint()
+        assert current_waypoint is not None
+
+        self.USE_COSTMAP = context.node.get_parameter("costmap.use_costmap").value or \
+                            current_waypoint.enable_costmap
+
         self.STOP_THRESH = context.node.get_parameter("search.stop_threshold").value
         self.DRIVE_FWD_THRESH = context.node.get_parameter("search.drive_forward_threshold").value
         self.UPDATE_DELAY = context.node.get_parameter("search.update_delay").value

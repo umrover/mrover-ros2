@@ -55,7 +55,15 @@ class WaypointState(State):
 
         self.UPDATE_DELAY = context.node.get_parameter("search.update_delay").value
         self.NO_SEARCH_WAIT_TIME = context.node.get_parameter("waypoint.no_search_wait_time").value
-        self.USE_COSTMAP = context.node.get_parameter("costmap.use_costmap").value
+        
+        current_waypoint = context.course.current_waypoint()
+        assert current_waypoint is not None
+
+        self.USE_COSTMAP = context.node.get_parameter("costmap.use_costmap").value or \
+                            current_waypoint.enable_costmap
+        
+        context.node.get_logger().info(f"enable_costmap: {current_waypoint.enable_costmap}")
+
         self.marker_pub = context.node.create_publisher(Marker, "waypoint_trajectory", 10)
         self.astar = AStar(context)
         self.astar_traj = Trajectory(np.array([]))

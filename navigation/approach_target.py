@@ -32,12 +32,17 @@ class ApproachTargetState(State):
 
     def on_enter(self, context: Context) -> None:
         from .long_range import LongRangeState
-
+        assert context.course is not None
         state = "Long Range State" if isinstance(self, LongRangeState) else "Approach Target State"
         context.node.get_logger().info(f"Entered {state}")
 
         self.UPDATE_DELAY = context.node.get_parameter("search.update_delay").value
-        self.USE_COSTMAP = context.node.get_parameter("costmap.use_costmap").value
+
+        current_waypoint = context.course.current_waypoint()
+        assert current_waypoint is not None
+
+        self.USE_COSTMAP = context.node.get_parameter("costmap.use_costmap").value or \
+                            current_waypoint.enable_costmap
         self.DISTANCE_THRESHOLD = context.node.get_parameter("search.distance_threshold").value
         self.COST_INFLATION_RADIUS = context.node.get_parameter("search.initial_inflation_radius").value
         self.marker_pub = context.node.create_publisher(Marker, "target_trajectory", 10)
@@ -65,6 +70,7 @@ class ApproachTargetState(State):
             context.node.get_logger().info(f"Total approach time: {total_time.nanoseconds // 1000000000}")
             if context.course.increment_waypoint():
                 return state.DoneState()
+            context.env.arrived_at_target = True
             return waypoint.WaypointState()
 
         if context.rover.stuck:
@@ -190,7 +196,8 @@ class ApproachTargetState(State):
                 while not isinstance(self, LongRangeState) and not self.point_in_distance_threshold(
                     context, self.target_position
                 ):
-                    self.dilate_costmap(context)
+                    if self.dilate_costmap(context):
+                        break
                     self.low_cost_point(context)
                 context.node.get_logger().info("Found low-cost point")
                 return self
@@ -390,7 +397,8 @@ class ApproachTargetState(State):
         distance = d_calc(point, tuple(target_pos))
         return distance < self.DISTANCE_THRESHOLD
 
-    def dilate_costmap(self, context: Context) -> bool:
-        self.COST_INFLATION_RADIUS -= 0.2
+    def dilate_costmap(self, context: Context, dilation_difference=0.5) -> bool:
+        temp = self.COST_INFLATION_RADIUS
+        self.COST_INFLATION_RADIUS = min(self.COST_INFLATION_RADIUS-dilation_difference, 0)
         context.dilate_cost(self.COST_INFLATION_RADIUS)
-        return self.COST_INFLATION_RADIUS > 0
+        return temp == 0

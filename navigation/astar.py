@@ -63,7 +63,13 @@ class AStar:
         self.A_STAR_THRESH = self.context.node.get_parameter("costmap.a_star_thresh").value
         self.COSTMAP_THRESH = self.context.node.get_parameter("costmap.costmap_thresh").value
         self.ANGLE_THRESH = self.context.node.get_parameter("search.angle_thresh").value
-        self.USE_COSTMAP = context.node.get_parameter("costmap.use_costmap").value
+        assert context.course is not None
+
+        current_waypoint = context.course.current_waypoint()
+        assert current_waypoint is not None
+
+        self.USE_COSTMAP = context.node.get_parameter("costmap.use_costmap").value or \
+                            current_waypoint.enable_costmap
 
     def return_path(self, came_from: dict[tuple, tuple], current_pos: tuple):
         """
@@ -237,6 +243,9 @@ class AStar:
             if not context.node.get_parameter("costmap.custom_costmap").value:
                 context.move_costmap()
 
+        if self.context.env.cost_map.data[rover_ij[0], rover_ij[1]] >= self.TRAVERSABLE_COST:
+            raise InHighCost
+
         if not (0 <= int(dest_ij[0]) < costmap_length and 0 <= int(dest_ij[1]) < costmap_length) or not (
             0 <= int(rover_ij[0]) < costmap_length and 0 <= int(rover_ij[1]) < costmap_length
         ):
@@ -258,8 +267,9 @@ class AStar:
 
         if occupancy_list is not None:
             cartesian_coords = ij_to_cartesian(context, np.array(occupancy_list))
-            # Z=0 for all points in the path
-            trajectory = Trajectory(np.hstack((cartesian_coords, np.zeros((cartesian_coords.shape[0], 1)))))
+            # Exclude the first point since it should be the rover's starting position
+            if len(cartesian_coords) >= 1:
+                trajectory = Trajectory(np.hstack((cartesian_coords, np.zeros((cartesian_coords.shape[0], 1))))[1:])
 
             # Publish the path for visualization in RViz
             path_msg = Path()
