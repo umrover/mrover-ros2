@@ -18,6 +18,8 @@ namespace mrover {
         void filterNormals();
 
         private:
+        bool enabled;
+
         sensor_msgs::msg::PointCloud2::ConstSharedPtr mSavedPc;
         std::mutex mSavedPcMutex;
 
@@ -27,24 +29,12 @@ namespace mrover {
 
         geometry_msgs::msg::Pose mFinalAngle;
 
-        rclcpp_action::Server<LanderAlign>::SharedPtr action_server_;
-
-        //the callback for handling new goals (this implementation just accepts all goals)
-        rclcpp_action::GoalResponse handle_goal(const rclcpp_action::GoalUUID & uuid, std::shared_ptr<const LanderAlign::Goal> goal);
-
-        //the callback for dealing with cancellation (this implementation just tells the client that it accepted the cancellation)
-        rclcpp_action::CancelResponse handle_cancel(const std::shared_ptr<GoalHandleLanderAlign> goal_handle);
-
-        //the callback for accepting a new goal and processing it
-        void handle_accepted(const std::shared_ptr<GoalHandleLanderAlign> goal_handle);
-
-        //all further processing and updates are done in the execute method in the new thread
-        void execute(const std::shared_ptr<GoalHandleLanderAlign> goal_handle);
-
         //subscription
         rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr mSensorSub;
 
         void pointCloudCallback(sensor_msgs::msg::PointCloud2::ConstSharedPtr & msg);
+
+
 
         /*
         Using PCA to calculate plane:

@@ -1,4 +1,5 @@
 #include "lander_align.new.hpp"
+#include <rclcpp/logging.hpp>
 
 //LanderAlignActionServer member functions:
 namespace mrover{
@@ -8,56 +9,28 @@ namespace mrover{
     
     LanderAlignNode::LanderAlignNode(const rclcpp::NodeOptions& options) 
         : Node("lander_align", options) {
-        //The constructor also instantiates a new action server
-        action_server_ = rclcpp_action::create_server<LanderAlign>(
-            this,
-            "lander_align_action",
-            std::bind(&LanderAlignNode::handle_goal, this, std::placeholders::_1, std::placeholders::_2),
-            std::bind(&LanderAlignNode::handle_cancel, this, std::placeholders::_1),
-            std::bind(&LanderAlignNode::handle_accepted, this, std::placeholders::_1));
 
-            mSensorSub = create_subscription<sensor_msgs::msg::PointCloud2>("/zed/left/points", 1, [this](sensor_msgs::msg::PointCloud2::ConstSharedPtr & msg) {
-                LanderAlignNode::pointCloudCallback(msg);
-            });
+        rclcpp::Service<mrover::srv::AlignLander>::SharedPtr start =
+            create_service<mrover::srv::AlignLander>("align_lander", &startCallBack);
 
-    }
+        mSensorSub = create_subscription<sensor_msgs::msg::PointCloud2>("/zed/left/points", 1, [this](sensor_msgs::msg::PointCloud2::ConstSharedPtr & msg) {
+            LanderAlignNode::pointCloudCallback(msg);
+        });
 
-    //the callback for handling new goals (this implementation just accepts all goals)
-    rclcpp_action::GoalResponse LanderAlignNode::handle_goal(const rclcpp_action::GoalUUID & uuid, std::shared_ptr<const LanderAlign::Goal> goal) {
-        RCLCPP_INFO(get_logger(), "Received goal request with order %d", goal->num);
-        (void)uuid;
-        return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
-    }
-
-    //the callback for dealing with cancellation (this implementation just tells the client that it accepted the cancellation)
-    rclcpp_action::CancelResponse LanderAlignNode::handle_cancel(const std::shared_ptr<GoalHandleLanderAlign> goal_handle) {
-        RCLCPP_INFO(get_logger(), "Received request to cancel goal");
-        (void)goal_handle;
-        return rclcpp_action::CancelResponse::ACCEPT;
-    }
-
-    //the callback for accepting a new goal and processing it
-    void LanderAlignNode::handle_accepted(const std::shared_ptr<GoalHandleLanderAlign> goal_handle) {
-        using namespace std::placeholders;
-        // this needs to return quickly to avoid blocking the executor, so spin up a new thread
-        std::thread{std::bind(&LanderAlignNode::execute, this, _1), goal_handle}.detach();
-    }
-
-    //all further processing and updates are done in the execute method in the new thread
-    void LanderAlignNode::execute(const std::shared_ptr<GoalHandleLanderAlign> goal_handle) {
-        RCLCPP_INFO(this->get_logger(), "Executing goal");
-
-        auto result = std::make_shared<LanderAlign::Result>();
-        // Check if goal is done
-        if (rclcpp::ok()) {
-            goal_handle->succeed(result);
-            RCLCPP_INFO(this->get_logger(), "Goal succeeded");
-        }
     }
 
     void LanderAlignNode::pointCloudCallback(sensor_msgs::msg::PointCloud2::ConstSharedPtr & msg) {
-        const std::lock_guard<std::mutex> lock(mSavedPcMutex);
-        mSavedPc = msg;
+        if (enabled) RCLCPP_INFO_STREAM(get_logger(), "PCA ALG HERE");
+    }
+
+    void LanderAlignNode::startCallBack(const std::shared_ptr<mrover::srv::AlignLander::Request> request, 
+                                        std::shared_ptr<mrover::srv::AlignLander::Response>      response) {
+        if (request->is_start == true) {
+            enabled = true;
+        }
+        else {
+            enabled = false;
+        }
     }
 
 }
