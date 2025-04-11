@@ -8,7 +8,7 @@ from nav_msgs.msg import Path
 from std_msgs.msg import Header
 from navigation.context import Context
 from navigation.trajectory import Trajectory
-from navigation.coordinate_utils import ij_to_cartesian, cartesian_to_ij, d_calc
+from navigation.coordinate_utils import ij_to_cartesian, cartesian_to_ij, d_calc, segment_path, is_high_cost_point
 from rclpy.publisher import Publisher
 
 
@@ -172,7 +172,7 @@ class AStar:
 
             raise NoPath("No path could be found to the destination.")
 
-    def use_astar(self, context: Context, star_traj: Trajectory, dest: np.ndarray | None) -> bool:
+    def use_astar(self, context: Context, star_traj: Trajectory, dest: np.ndarray) -> bool:
         """
         Decide whether to follow the A* path based on the difference between the A* path distance
         and a lower-bound distance (Chebyshev-based or Euclidean).
@@ -187,6 +187,12 @@ class AStar:
         # If no rover pose, no trajectory, or not enough points in star_traj, skip
         if rover_in_map is None or len(star_traj.coordinates) < 1 or not self.USE_COSTMAP:
             return False
+        
+        straight_path = segment_path(context=context, dest=dest[:2], seg_len=context.env.cost_map.resolution)
+        for point in straight_path.coordinates:
+            if is_high_cost_point(point=point, context=context):
+                return True
+        return False
 
         # Calculate actual A* distance
         astar_dist = 0.0
@@ -294,6 +300,7 @@ class AStar:
             trajectory = Trajectory(np.array([]))
 
         if self.use_astar(context=context, star_traj=trajectory, dest=dest):
-            return trajectory
+            # ts a lil boof
+            return Trajectory(trajectory.coordinates[1:]) if len(trajectory.coordinates) > 1 else trajectory
         else:
             return Trajectory(np.array([dest]))
