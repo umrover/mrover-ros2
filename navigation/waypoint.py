@@ -112,6 +112,10 @@ class WaypointState(State):
         # BEGINNING OF LOGIC
         while is_high_cost_point(context=context, point=self.waypoint_traj.get_current_point()):
             self.waypoint_traj.increment_point()
+            
+            if self.waypoint_traj.done():
+                return self.next_state(context=context)
+            self.astar_traj.clear()
 
             segment_point_ij = cartesian_to_ij(context, self.waypoint_traj.get_current_point())
             costmap_length = context.env.cost_map.data.shape[0]
@@ -121,9 +125,7 @@ class WaypointState(State):
                 self.waypoint_traj.reset()
                 break
 
-            if self.waypoint_traj.done():
-                return self.next_state(context=context)
-            self.astar_traj.clear()
+            
             return self
 
 
