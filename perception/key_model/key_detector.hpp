@@ -87,6 +87,7 @@ namespace mrover {
         KalmanFilter mAngleFilter;
 
         static constexpr char const* NODE_NAME = "key_detector";
+        static constexpr size_t KEY_AMOUNT = 87;
 
         std::unique_ptr<tf2_ros::Buffer> mTfBuffer = std::make_unique<tf2_ros::Buffer>(get_clock());
         std::shared_ptr<tf2_ros::TransformBroadcaster> mTfBroadcaster = std::make_shared<tf2_ros::TransformBroadcaster>(this);

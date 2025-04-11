@@ -95,10 +95,10 @@ namespace mrover {
         std::filesystem::path packagePath = std::filesystem::path{ament_index_cpp::get_package_prefix("mrover")} / ".." / ".." / "src" / "mrover" / "data" / "images" / "test2.jpg";
 
         // Remember to remove this for actual working production
-        temp = cv::imread(packagePath.c_str(), cv::IMREAD_COLOR);
+        // temp = cv::imread(packagePath.c_str(), cv::IMREAD_COLOR);
 
         // Need to replace this later on
-        cv::cvtColor(temp, bgraImage, cv::COLOR_BGR2BGRA);
+        // cv::cvtColor(bgraImage, bgraImage, cv::COLOR_BGR2BGRA);
 
         // Convert the RGB Image into the blob Image format
         mKeyDetectionModel.preprocess(mKeyDetectionModel, bgraImage, mImageBlob);

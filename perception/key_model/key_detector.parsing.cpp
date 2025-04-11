@@ -34,7 +34,7 @@ namespace mrover {
         // Convert to correct color scheme
         cv::cvtColor(input, bgrImage, cv::COLOR_BGRA2BGR);
 
-        // std::filesystem::path packagePath = std::filesystem::path{ament_index_cpp::get_package_prefix("mrover")} / ".." / ".." / "src" / "mrover" / "perception" / "key_detector" / "datasets" / "test" / "image" / "f91.png" ;
+        // std::filesystempackagePath::path packagePath = std::filesystem::path{ament_index_cpp::get_package_prefix("mrover")} / ".." / ".." / "src" / "mrover" / "perception" / "key_detector" / "datasets" / "test" / "image" / "f91.png" ;
 
         // bgrImage = cv::imread(packagePath.c_str(), cv::IMREAD_COLOR);
 
@@ -90,22 +90,24 @@ namespace mrover {
 
         auto C = uvBasis * xyBasis.inverse();
 
-        static constexpr float RESOLUTION = 1.0f;
+        // static constexpr float RESOLUTION = 1.0f;
+        static constexpr float XRESOLUTION = 1.0f;
+        static constexpr float YRESOLUTION = 0.66f;
         static constexpr float WIDTH = 640;
         static constexpr float HEIGHT = 480;
 
-        if(output.cols != static_cast<int>(WIDTH/RESOLUTION) || output.rows != static_cast<int>(HEIGHT/RESOLUTION))
-            output.create(static_cast<int>(HEIGHT/RESOLUTION), static_cast<int>(WIDTH/RESOLUTION), CV_32FC3);
+        if(output.cols != static_cast<int>(WIDTH/XRESOLUTION) || output.rows != static_cast<int>(HEIGHT/XRESOLUTION))
+            output.create(static_cast<int>(HEIGHT/XRESOLUTION), static_cast<int>(WIDTH/XRESOLUTION), CV_32FC3);
         auto* coords = reinterpret_cast<R3f*>(output.data);
         std::size_t index = 0;
 
         for(float y = 0.0f; y < HEIGHT;){
-            y += RESOLUTION; 
+            y += XRESOLUTION; 
             for(float x = 0.0f; x < WIDTH;){
-                x += RESOLUTION;
+                x += XRESOLUTION;
                 R3f& coord = coords[index];
 
-                coord << x, y, 1.0f;
+                coord << x, YRESOLUTION * y, 1.0f;
 
                 coord = C * coord;
 
@@ -192,7 +194,7 @@ namespace mrover {
             //Push back the detection into the for storage vector
             detections.emplace_back(classIds[i], model.classes[classIds[i]], confidences[i], boxes[i]);
             //Make sure detections is 87 at most, otherwise hungarian breaks
-            if (detections.size() == 87)
+            if (detections.size() == KEY_AMOUNT)
             {
                 break;
             }
@@ -272,7 +274,7 @@ namespace mrover {
             medians.emplace_back(blueMedian, greenMedian);
         }
 
-        static const std::array<cv::Vec2f, 87> colors {
+        static const std::array<cv::Vec2f, KEY_AMOUNT> colors {
             cv::Vec2f(43, 27),
             cv::Vec2f(91, 32),
             cv::Vec2f(139, 27),
@@ -362,7 +364,7 @@ namespace mrover {
             cv::Vec2f(5, 230)
         };
 
-        static const std::array<std::string, 87> keyNames {
+        static const std::array<std::string, KEY_AMOUNT> keyNames {
             "lalt",
             "space",
             "ralt",
