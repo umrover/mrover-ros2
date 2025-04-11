@@ -53,6 +53,7 @@ class WaypointState(State):
     def on_enter(self, context: Context) -> None:
         assert context.course is not None
         context.node.get_logger().info("Entered Waypoint State")
+        context.dilate_cost(2.0)
         context.rover.previous_state = WaypointState()
 
         self.UPDATE_DELAY = context.node.get_parameter("search.update_delay").value

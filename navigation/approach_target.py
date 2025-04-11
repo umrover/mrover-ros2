@@ -250,7 +250,7 @@ class ApproachTargetState(State):
                         if not self.dilate_costmap(context=context):
                             # Fully dilated and still failed, go to next state
                             return self.next_state(context=context, is_finished=True)
-                        return self.next_state(context=context, is_finished=False)
+                        return self
 
         else:
             context.rover.send_drive_command(cmd_vel)
@@ -402,6 +402,6 @@ class ApproachTargetState(State):
 
     def dilate_costmap(self, context: Context, dilation_difference=0.5) -> bool:
         temp = self.COST_INFLATION_RADIUS
-        self.COST_INFLATION_RADIUS = min(self.COST_INFLATION_RADIUS-dilation_difference, 0)
+        self.COST_INFLATION_RADIUS = min(self.COST_INFLATION_RADIUS-dilation_difference, 0.0)
         context.dilate_cost(self.COST_INFLATION_RADIUS)
-        return temp == 0
+        return temp == 0.0
