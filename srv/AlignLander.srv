@@ -1,3 +1,2 @@
-bool start
+bool is_start
 ---
-bool success
