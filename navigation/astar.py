@@ -269,7 +269,7 @@ class AStar:
             cartesian_coords = ij_to_cartesian(context, np.array(occupancy_list))
             # Exclude the first point since it should be the rover's starting position
             if len(cartesian_coords) >= 1:
-                trajectory = Trajectory(np.hstack((cartesian_coords, np.zeros((cartesian_coords.shape[0], 1))))[1:])
+                trajectory = Trajectory(np.hstack((cartesian_coords, np.zeros((cartesian_coords.shape[0], 1)))))
 
             # Publish the path for visualization in RViz
             path_msg = Path()
