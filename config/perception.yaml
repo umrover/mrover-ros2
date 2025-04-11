@@ -49,8 +49,8 @@ cost_map:
     resolution: 1.0
     size: 32.0
     map_frame: "map"
-    near_clip: 0.5
-    far_clip: 10.0
-    z_percent: 0.1
+    near_clip: 1.25
+    far_clip: 5.0
+    z_percent: 0.34
     alpha: 0.05
-    z_threshold: 0.0
+    z_threshold: 0.51
