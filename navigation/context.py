@@ -28,6 +28,7 @@ from rclpy.publisher import Publisher
 from rclpy.subscription import Subscription
 from rclpy.time import Time
 from rclpy.task import Future
+from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
 from state_machine.state import State
 from std_msgs.msg import Bool, Header
 from .drive import DriveController
@@ -315,7 +316,7 @@ def convert_gps_to_cartesian(reference_point: np.ndarray, waypoint: GPSWaypoint)
     # Zero the z-coordinate because even though the altitudes are set to zero,
     # Two points on a sphere are not going to have the same z-coordinate.
     # Navigation algorithms currently require all coordinates to have zero as the z-coordinate.
-    return Waypoint(tag_id=waypoint.tag_id, type=waypoint.type), SE3.from_position_orientation(x, y)
+    return Waypoint(tag_id=waypoint.tag_id, type=waypoint.type, enable_costmap=waypoint.enable_costmap), SE3.from_position_orientation(x, y)
 
 
 def convert_cartesian_to_gps(reference_point: np.ndarray, coordinate: np.ndarray) -> GPSWaypoint:
@@ -360,8 +361,6 @@ class Context:
     world_frame: str
     rover_frame: str
 
-    move_costmap_future: Future
-
     def setup(self, node: Node):
         from .state import OffState
 
@@ -374,8 +373,6 @@ class Context:
         self.rover = Rover(self, False, OffState(), Path(header=Header(frame_id=self.world_frame)))
         self.env = Environment(self, image_targets=ImageTargetsStore(self), cost_map=CostMap())
         self.disable_requested = False
-
-        self.move_costmap_future = None
 
         node.create_service(EnableAuton, "enable_auton", self.enable_auton)
 
@@ -394,6 +391,17 @@ class Context:
             node.create_subscription(OccupancyGrid, "costmap", self.costmap_callback, 1)
         self.tf_buffer = tf2_ros.Buffer()
         tf2_ros.TransformListener(self.tf_buffer, node)
+
+        client_callback_group = MutuallyExclusiveCallbackGroup()
+
+        if not node.get_parameter("costmap.custom_costmap").value:
+            self.move_cli = node.create_client(MoveCostMap, "move_cost_map", callback_group=client_callback_group)
+            while not self.move_cli.wait_for_service(timeout_sec=1.0):
+                node.get_logger().info("Waiting for move_cost_map service...")
+
+            self.dilate_cli = node.create_client(DilateCostMap, "dilate_cost_map", callback_group=client_callback_group)
+            while not self.dilate_cli.wait_for_service(timeout_sec=1.0):
+                node.get_logger().info("Waiting for dilate_cost service...")
 
     def enable_auton(self, request: EnableAuton.Request, response: EnableAuton.Response) -> EnableAuton.Response:
         self.node.get_logger().info("Received new course to navigate!")
@@ -440,30 +448,26 @@ class Context:
 
     def move_costmap(self, course_name="base_link"):
         self.node.get_logger().info(f"Requesting to move cost map to {course_name}")
-        srv_name = "move_cost_map"
 
-        client = self.node.create_client(MoveCostMap, srv_name=srv_name)
-        while not client.wait_for_service(timeout_sec=1.0):
-            self.node.get_logger().info("Waiting for move_cost_map service...")
         req = MoveCostMap.Request()
-
         req.course = course_name
-        self.move_costmap_future = client.call_async(req)
+        res: MoveCostMap.Response
+        res = self.move_cli.call(req)
 
-        self.node.get_logger().info("move_cost_map service call initiated")
-
-        def done_callback(*args):
-            self.node.get_logger().info("move_cost_map service finished!")
-            self.move_costmap_future = None
-
-        self.move_costmap_future.add_done_callback(done_callback)
+        if not res.success:
+            self.node.get_logger().info("Move cost map failed")
+        else:
+            self.node.get_logger().info("Finished moving cost map")
 
     def dilate_cost(self, new_radius: float):
         self.node.get_logger().info(f"Requesting to dilate cost to {new_radius}")
-        client = self.node.create_client(DilateCostMap, "dilate_cost_map")
-        while not client.wait_for_service(timeout_sec=1.0):
-            self.node.get_logger().info("waiting for dilate_cost service...")
+
         req = DilateCostMap.Request()
         req.d_amt = new_radius
-        future = client.call_async(req)
-        # rclpy.spin_until_future_complete(self.node, future)
+        res: DilateCostMap.Response
+        res = self.dilate_cli.call(req)
+
+        if not res.success:
+            self.node.get_logger().info("Dilate cost map failed")
+        else:
+            self.node.get_logger().info("Finished dilating cost map")

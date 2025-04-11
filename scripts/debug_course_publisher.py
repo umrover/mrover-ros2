@@ -34,7 +34,7 @@ def convert_waypoint_to_gps(reference_point: np.ndarray, waypoint_pose_pair: tup
     ref_lat, ref_lon, _ = reference_point
     x, y, z = pose.translation()
     lat, lon, _ = pymap3d.enu2geodetic(x, y, z, ref_lat, ref_lon, 0.0)
-    return GPSWaypoint(tag_id=waypoint.tag_id, latitude_degrees=lat, longitude_degrees=lon, type=waypoint.type)
+    return GPSWaypoint(tag_id=waypoint.tag_id, latitude_degrees=lat, longitude_degrees=lon, type=waypoint.type, enable_costmap=waypoint.enable_costmap)
 
 
 class DebugCoursePublisher(Node):
@@ -57,25 +57,23 @@ class DebugCoursePublisher(Node):
             ]
         )
 
-        future = publish_waypoints(
-            self,
-            [
+        gps_waypoints = [
                 convert_waypoint_to_gps(ref_point, waypoint)
                 for waypoint in [
                     (
-                        Waypoint(type=WaypointType(val=WaypointType.WATER_BOTTLE)),
+                        Waypoint(type=WaypointType(val=WaypointType.WATER_BOTTLE), enable_costmap=True),
                         SE3.from_position_orientation(0.0, 0.0),
                     ),
                     (
-                        Waypoint(type=WaypointType(val=WaypointType.NO_SEARCH)),
+                        Waypoint(type=WaypointType(val=WaypointType.NO_SEARCH), enable_costmap=False),
                         SE3.from_position_orientation(-10.0, 0.0),
                     ),
                     (
-                        Waypoint(type=WaypointType(val=WaypointType.WATER_BOTTLE)),
+                        Waypoint(type=WaypointType(val=WaypointType.WATER_BOTTLE), enable_costmap=False),
                         SE3.from_position_orientation(0.0, 0.0),
                     ),
                     (
-                        Waypoint(type=WaypointType(val=WaypointType.NO_SEARCH)),
+                        Waypoint(type=WaypointType(val=WaypointType.NO_SEARCH), enable_costmap=True),
                         SE3.from_position_orientation(-3.0, -12.0),
                     ),
                     # (
@@ -91,7 +89,13 @@ class DebugCoursePublisher(Node):
                     #     SE3.from_position_orientation(5, 1),
                     # ),
                 ]
-            ],
+            ]
+        
+        
+
+        future = publish_waypoints(
+            self,
+            gps_waypoints
         )
 
         rclpy.spin_until_future_complete(self, future)
