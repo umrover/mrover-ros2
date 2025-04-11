@@ -7,8 +7,9 @@ from geometry_msgs.msg import Pose, PoseStamped, Point
 from navigation.approach_target import ApproachTargetState
 from navigation.context import Context
 from navigation.long_range import LongRangeState
-from navigation.post_backup import PostBackupState
-from navigation.recovery import RecoveryState
+from navigation.backup import BackupState
+from navigation.stuck_recovery import StuckRecoveryState
+from navigation.high_cost_recovery import HighCostRecoveryState
 from navigation.search import SearchState
 from navigation.costmap_search import CostmapSearchState
 from navigation.state import DoneState, OffState, off_check
@@ -103,36 +104,38 @@ class Navigation(Node):
                 WaypointState(),
                 SearchState(),
                 CostmapSearchState(),
-                RecoveryState(),
+                StuckRecoveryState(),
+                HighCostRecoveryState(),
                 DoneState(),
             ],
         )
-        self.state_machine.add_transitions(PostBackupState(), [WaypointState(), RecoveryState()])
+        self.state_machine.add_transitions(BackupState(), [WaypointState(), StuckRecoveryState()])
         self.state_machine.add_transitions(
-            RecoveryState(),
+            StuckRecoveryState(),
             [
                 WaypointState(),
                 SearchState(),
                 CostmapSearchState(),
-                PostBackupState(),
+                BackupState(),
                 ApproachTargetState(),
                 LongRangeState(),
             ],
         )
         self.state_machine.add_transitions(  # To be deleted eventually
             SearchState(),
-            [ApproachTargetState(), LongRangeState(), WaypointState(), RecoveryState()],
+            [ApproachTargetState(), LongRangeState(), WaypointState(), StuckRecoveryState()],
         )
         self.state_machine.add_transitions(DoneState(), [WaypointState()])
         self.state_machine.add_transitions(
             WaypointState(),
             [
-                PostBackupState(),
+                BackupState(),
                 ApproachTargetState(),
                 LongRangeState(),
                 SearchState(),
                 CostmapSearchState(),
-                RecoveryState(),
+                StuckRecoveryState(),
+                HighCostRecoveryState(),
                 DoneState(),
             ],
         )
@@ -143,11 +146,27 @@ class Navigation(Node):
                 SearchState(),
                 CostmapSearchState(),
                 WaypointState(),
-                RecoveryState(),
+                StuckRecoveryState(),
+                HighCostRecoveryState(),
             ],
         )
         self.state_machine.add_transitions(
-            CostmapSearchState(), [WaypointState(), RecoveryState(), ApproachTargetState(), LongRangeState()]
+            CostmapSearchState(), 
+            [WaypointState(), 
+             StuckRecoveryState(), 
+             HighCostRecoveryState(),
+             ApproachTargetState(), 
+             LongRangeState()]
+        )
+
+        self.state_machine.add_transitions(
+            HighCostRecoveryState(),
+            [
+                ApproachTargetState(),
+                CostmapSearchState(),
+                LongRangeState(),
+                WaypointState(),
+            ]
         )
         self.state_machine.add_transitions(OffState(), [WaypointState(), DoneState()])
         self.state_machine.configure_off_switch(OffState(), off_check)

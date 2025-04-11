@@ -2,7 +2,7 @@ import numpy as np
 from typing import Any
 from navigation.trajectory import Trajectory
 from navigation.astar import AStar, NoPath, OutOfBounds
-from . import costmap_search, waypoint, state, recovery
+from . import costmap_search, stuck_recovery, high_cost_recovery, waypoint, state
 from .context import Context
 from state_machine.state import State
 from geometry_msgs.msg import Twist
@@ -35,6 +35,7 @@ class ApproachTargetState(State):
         assert context.course is not None
         state = "Long Range State" if isinstance(self, LongRangeState) else "Approach Target State"
         context.node.get_logger().info(f"Entered {state}")
+        context.rover.previous_state = LongRangeState() if isinstance(self, LongRangeState) else ApproachTargetState()
 
         self.UPDATE_DELAY = context.node.get_parameter("search.update_delay").value
 
@@ -53,7 +54,7 @@ class ApproachTargetState(State):
         self.time_last_updated = context.node.get_clock().now()
         self.time_begin = context.node.get_clock().now()
 
-        self.marker_timer = context.node.create_timer(1.0,lambda: self.display_markers(context=context))
+        self.marker_timer = context.node.create_timer(0.25,lambda: self.display_markers(context=context))
         self.update_timer = context.node.create_timer(self.UPDATE_DELAY, lambda: self.update_target_position(context=context))
 
     def on_exit(self, context: Context) -> None:
@@ -71,11 +72,8 @@ class ApproachTargetState(State):
             if context.course.increment_waypoint():
                 return state.DoneState()
             context.env.arrived_at_target = True
+            context.node.get_logger().info("set arrived at target to true")
             return waypoint.WaypointState()
-
-        if context.rover.stuck:
-            context.rover.previous_state = self
-            return recovery.RecoveryState()
 
         return self
 
@@ -154,6 +152,13 @@ class ApproachTargetState(State):
         ):
             context.node.get_logger().warn("Costmap is enabled but costmap has no data")
             return self
+        
+        rover_pose = context.rover.get_pose_in_map()
+        assert rover_pose is not None
+
+        # Check if we are in high cost
+        if is_high_cost_point(point=rover_pose.translation(), context=context):
+            return high_cost_recovery.HighCostRecoveryState()
 
         # If the target trajectory is empty, develop a new path to it
         if len(self.target_traj.coordinates) == 0:
@@ -193,18 +198,17 @@ class ApproachTargetState(State):
             if self.low_cost_point(context=context):
                 # If we are approaching a target and it is not within the distance threshold, dilate the cost map and
                 # recalculate for a low-cost point
-                while not isinstance(self, LongRangeState) and not self.point_in_distance_threshold(
+                if not isinstance(self, LongRangeState) and not self.point_in_distance_threshold(
                     context, self.target_position
                 ):
+                    # If we fail to find a low-cost point, consider the target unreachable and give up
                     if self.dilate_costmap(context):
-                        break
-                    self.low_cost_point(context)
-                context.node.get_logger().info("Found low-cost point")
-                return self
-
-            # If we fail to find a low-cost point, consider the target unreachable and give up
-            context.node.get_logger().info("Low-cost point not found, giving up")
-            return self.next_state(context=context, is_finished=True)
+                        context.node.get_logger().info("Low-cost point not found, giving up")
+                        return self.next_state(context=context, is_finished=True)
+                    
+                    else:
+                        context.node.get_logger().info("Found low-cost point")
+                        return self
 
         arrived = False
         cmd_vel = Twist()
@@ -212,7 +216,7 @@ class ApproachTargetState(State):
             curr_point = self.astar_traj.get_current_point()
             cmd_vel, arrived = context.drive.get_drive_command(
                 curr_point,
-                context.rover.get_pose_in_map(),
+                rover_pose,
                 context.node.get_parameter("single_tag.stop_threshold").value,
                 context.node.get_parameter("waypoint.drive_forward_threshold").value,
             )
@@ -316,13 +320,12 @@ class ApproachTargetState(State):
             return self
 
         if context.rover.stuck:
-            context.rover.previous_state = self
-            return recovery.RecoveryState()
+            return stuck_recovery.StuckRecoveryState()
         
         if self.target_position is None:
             self.update_target_position(context=context)
 
-        if context.node.get_clock().now() < self.time_begin + Duration(seconds=self.UPDATE_DELAY):
+        if context.node.get_clock().now() < self.time_begin + Duration(seconds=self.UPDATE_DELAY//2):
             return self
 
         # If we see the target in the ZED, transition from long range to approach target

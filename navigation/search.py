@@ -3,7 +3,7 @@ from typing import Optional
 from navigation.coordinate_utils import d_calc
 from mrover.msg import GPSPointList, WaypointType
 from state_machine.state import State
-from . import recovery, waypoint
+from . import stuck_recovery, waypoint
 from navigation.coordinate_utils import gen_marker
 from .context import convert_cartesian_to_gps, Context
 from .trajectory import SearchTrajectory
@@ -94,7 +94,7 @@ class SearchState(State):
         if context.rover.stuck:
             context.rover.previous_state = self
             self.is_recovering = True
-            return recovery.RecoveryState()
+            return stuck_recovery.RecoveryState()
         else:
             self.is_recovering = False
 

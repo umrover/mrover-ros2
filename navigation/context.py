@@ -77,6 +77,7 @@ class Environment:
     arrived_at_target: bool = False
     arrived_at_waypoint: bool = False
     last_target_location: np.ndarray | None = None
+    last_spiral_point: int | None = None
 
     def get_target_position(self, frame: str) -> np.ndarray | None:
         """

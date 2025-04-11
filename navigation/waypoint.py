@@ -1,18 +1,19 @@
 from state_machine.state import State
 from . import (
+    backup,
     search,
-    recovery,
-    post_backup,
     state,
     costmap_search,
+    stuck_recovery,
+    high_cost_recovery,
 )
 from mrover.msg import WaypointType
 from mrover.srv import MoveCostMap
 from .context import Context
 import rclpy
 from .context import Context
-from navigation.astar import AStar, SpiralEnd, NoPath, OutOfBounds
-from navigation.coordinate_utils import gen_marker, segment_path, is_high_cost_point, d_calc
+from navigation.astar import AStar, SpiralEnd, NoPath, OutOfBounds, InHighCost
+from navigation.coordinate_utils import gen_marker, segment_path, is_high_cost_point, d_calc, cartesian_to_ij
 from navigation.trajectory import Trajectory, SearchTrajectory
 from typing import Optional
 from rclpy.publisher import Publisher
@@ -52,6 +53,7 @@ class WaypointState(State):
     def on_enter(self, context: Context) -> None:
         assert context.course is not None
         context.node.get_logger().info("Entered Waypoint State")
+        context.rover.previous_state = WaypointState()
 
         self.UPDATE_DELAY = context.node.get_parameter("search.update_delay").value
         self.NO_SEARCH_WAIT_TIME = context.node.get_parameter("waypoint.no_search_wait_time").value
@@ -61,8 +63,6 @@ class WaypointState(State):
 
         self.USE_COSTMAP = context.node.get_parameter("costmap.use_costmap").value or \
                             current_waypoint.enable_costmap
-        
-        context.node.get_logger().info(f"enable_costmap: {current_waypoint.enable_costmap}")
 
         self.marker_pub = context.node.create_publisher(Marker, "waypoint_trajectory", 10)
         self.astar = AStar(context)
@@ -72,10 +72,8 @@ class WaypointState(State):
         self.time_no_search_wait = None
         self.time_begin = context.node.get_clock().now()
         self.start_time = context.node.get_clock().now()
-
-        context.env.arrived_at_waypoint = False
         
-        self.marker_timer = context.node.create_timer(1.0, lambda: self.display_markers(context))
+        self.marker_timer = context.node.create_timer(0.25, lambda: self.display_markers(context))
         self.waypoint_timer = context.node.create_timer(self.UPDATE_DELAY, lambda: self.update_waypoint(context))
 
     def on_exit(self, context: Context) -> None:
@@ -90,6 +88,18 @@ class WaypointState(State):
         assert self.USE_COSTMAP
         assert context.course is not None
 
+        if not hasattr(context.env.cost_map, "data") and context.node.get_parameter("costmap.use_costmap").value:
+            context.node.get_logger().warn(f"No costmap found, waiting...")
+            self.start_time = context.node.get_clock().now()
+            return self
+
+        rover_pose = context.rover.get_pose_in_map()
+        assert rover_pose is not None
+
+        # Check if we are in high cost
+        if is_high_cost_point(point=rover_pose.translation(), context=context):
+            return high_cost_recovery.HighCostRecoveryState()
+
         if self.waypoint_traj.empty():
             context.node.get_logger().info("Generating segmented path")
             self.waypoint_traj = segment_path(
@@ -97,17 +107,20 @@ class WaypointState(State):
             )
             self.display_markers(context=context)
             return self
-
-        if not hasattr(context.env.cost_map, "data") and context.node.get_parameter("costmap.use_costmap").value:
-            context.node.get_logger().warn(f"No costmap found, waiting...")
-            self.start_time = context.node.get_clock().now()
-            return self
+        
 
         # BEGINNING OF LOGIC
-
         while is_high_cost_point(context=context, point=self.waypoint_traj.get_current_point()):
-            context.rover.send_drive_command(Twist())
             self.waypoint_traj.increment_point()
+
+            segment_point_ij = cartesian_to_ij(context, self.waypoint_traj.get_current_point())
+            costmap_length = context.env.cost_map.data.shape[0]
+            # If we skipped to a point outside the costmap, begin the spiral again
+            # TODO: Behavior should probably to be to go towards the closest point within the costmap
+            if not (0 <= int(segment_point_ij[0]) < costmap_length and 0 <= int(segment_point_ij[1]) < costmap_length):
+                self.waypoint_traj.reset()
+                break
+
             if self.waypoint_traj.done():
                 return self.next_state(context=context)
             self.astar_traj.clear()
@@ -123,6 +136,8 @@ class WaypointState(State):
                     "Attempted to generate a trajectory for the rover when it was out of bounds of the costmap"
                 )
                 self.waypoint_traj.clear()
+                return self
+            except InHighCost:
                 return self
 
             if self.astar_traj.empty():
@@ -198,7 +213,7 @@ class WaypointState(State):
         # If we are at a post currently (from a previous leg), backup to avoid collision
         if context.env.arrived_at_target:
             context.env.arrived_at_target = False
-            return post_backup.PostBackupState()
+            return backup.BackupState()
 
         # Returns either ApproachTargetState, LongRangeState, or None
         approach_state = context.course.get_approach_state()
@@ -209,12 +224,12 @@ class WaypointState(State):
         if rover_in_map is None:
             return self
         
-        if context.node.get_clock().now() < self.time_begin + Duration(seconds=self.UPDATE_DELAY):
+        if context.node.get_clock().now() < self.time_begin + Duration(seconds=self.UPDATE_DELAY//2):
             return self
 
         if context.rover.stuck:
             context.rover.previous_state = self
-            return recovery.RecoveryState()
+            return stuck_recovery.StuckRecoveryState()
         
         if self.USE_COSTMAP:
             return self.on_loop_costmap_enabled(context)
