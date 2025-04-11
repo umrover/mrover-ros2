@@ -235,7 +235,10 @@ namespace mrover {
             RCLCPP_WARN(get_logger(), "Invalid argument: %s", e.what());
             return;
         }
-
+        catch(...) {
+            RCLCPP_WARN(get_logger(), "Exception caught.");
+            return;
+        }
         
     }
 
