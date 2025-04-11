@@ -65,6 +65,6 @@ class LongRangeState(ApproachTargetState):
 
         if context.rover.stuck:
             context.rover.previous_state = self
-            return stuck_recovery.RecoveryState()
+            return stuck_recovery.StuckRecoveryState()
 
         return ApproachTargetState()
