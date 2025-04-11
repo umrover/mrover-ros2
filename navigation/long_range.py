@@ -2,7 +2,7 @@ import numpy as np
 
 from lie import SO2
 from state_machine.state import State
-from . import recovery
+from . import stuck_recovery
 from .approach_target import ApproachTargetState
 from .context import Context
 from coordinate_utils import is_high_cost_point
@@ -65,6 +65,6 @@ class LongRangeState(ApproachTargetState):
 
         if context.rover.stuck:
             context.rover.previous_state = self
-            return recovery.RecoveryState()
+            return stuck_recovery.RecoveryState()
 
         return ApproachTargetState()
