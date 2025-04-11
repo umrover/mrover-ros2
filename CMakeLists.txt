@@ -346,7 +346,9 @@ install(PROGRAMS
         scripts/astar_debug.py
 		scripts/visualizer.py
         scripts/image_capture.py
-        teleoperation/basestation_gui/gui_frontend.sh
+        teleoperation/basestation_gui/gui_chromium.sh
+        teleoperation/basestation_gui/gui_chromium_menu.sh
+        teleoperation/basestation_gui/gui_chromium_cameras.sh
         teleoperation/basestation_gui/gui_backend.sh
 
     # starter project sources
