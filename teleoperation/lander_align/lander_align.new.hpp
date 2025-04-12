@@ -1,15 +1,24 @@
+#pragma once
+#include "mrover/srv/detail/align_lander__struct.hpp"
 #include "pch.hpp"
 #include <geometry_msgs/msg/detail/pose__struct.hpp>
 #include <rclcpp/node.hpp>
+#include <rclcpp/service.hpp>
 #include <std_msgs/msg/detail/float32__struct.hpp>
 #include <std_msgs/msg/float32.hpp>
 #include <rclcpp/logging.hpp>
 #include <mrover/action/lander_align.hpp>
+#include <mrover/srv/align_lander.hpp>
 namespace mrover {
     class LanderAlignNode final : public rclcpp::Node{
         public:
         using LanderAlign = action::LanderAlign;
         using GoalHandleLanderAlign = rclcpp_action::ServerGoalHandle<LanderAlign>;
+
+        // Statics
+        static constexpr float Z_NORM_MAX = 0.15;
+        static constexpr float FAR_CLIP = 10;
+        static constexpr float NEAR_CLIP = 0.5;
 
         explicit LanderAlignNode(rclcpp::NodeOptions const& options = rclcpp::NodeOptions());
 
@@ -18,33 +27,24 @@ namespace mrover {
         void filterNormals();
 
         private:
-        sensor_msgs::msg::PointCloud2::ConstSharedPtr mSavedPc;
-        std::mutex mSavedPcMutex;
+        tf2_ros::Buffer mTfBuffer{get_clock()};
+        std::shared_ptr<tf2_ros::TransformBroadcaster> mTfBroadcaster = std::make_shared<tf2_ros::TransformBroadcaster>(this);
 
+        // Service stuff
+        rclcpp::Service<mrover::srv::AlignLander>::SharedPtr mLanderService;
+        auto startAlignCallback(mrover::srv::AlignLander::Request::ConstSharedPtr& req, mrover::srv::AlignLander::Response::SharedPtr& res) -> void;
+
+        geometry_msgs::msg::Pose mFinalAngle;
+
+        // subscribers/publishers
         rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr mCostMapPub;
         rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr mPcSub;
         rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr mPCDebugPub;
 
-        geometry_msgs::msg::Pose mFinalAngle;
-
-        rclcpp_action::Server<LanderAlign>::SharedPtr action_server_;
-
-        //the callback for handling new goals (this implementation just accepts all goals)
-        rclcpp_action::GoalResponse handle_goal(const rclcpp_action::GoalUUID & uuid, std::shared_ptr<const LanderAlign::Goal> goal);
-
-        //the callback for dealing with cancellation (this implementation just tells the client that it accepted the cancellation)
-        rclcpp_action::CancelResponse handle_cancel(const std::shared_ptr<GoalHandleLanderAlign> goal_handle);
-
-        //the callback for accepting a new goal and processing it
-        void handle_accepted(const std::shared_ptr<GoalHandleLanderAlign> goal_handle);
-
-        //all further processing and updates are done in the execute method in the new thread
-        void execute(const std::shared_ptr<GoalHandleLanderAlign> goal_handle);
-
-        //subscription
-        rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr mSensorSub;
-
         void pointCloudCallback(sensor_msgs::msg::PointCloud2::ConstSharedPtr & msg);
+
+        // Callback vars
+        bool mRunCallback = false;
 
         /*
         Using PCA to calculate plane:

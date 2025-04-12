@@ -1,4 +1,12 @@
 #include "lander_align.new.hpp"
+#include "lie.hpp"
+#include "mrover/srv/detail/align_lander__struct.hpp"
+#include <Eigen/src/Eigenvalues/EigenSolver.h>
+#include <Eigen/src/Geometry/Quaternion.h>
+#include <cmath>
+#include <parameter.hpp>
+#include <Eigen/src/Core/Matrix.h>
+#include <cstddef>
 
 //LanderAlignActionServer member functions:
 namespace mrover{
@@ -6,58 +14,102 @@ namespace mrover{
     using LanderAlign = action::LanderAlign;
     using GoalHandleLanderAlign = rclcpp_action::ServerGoalHandle<LanderAlign>;
     
-    LanderAlignNode::LanderAlignNode(const rclcpp::NodeOptions& options) 
-        : Node("lander_align", options) {
-        //The constructor also instantiates a new action server
-        action_server_ = rclcpp_action::create_server<LanderAlign>(
-            this,
-            "lander_align_action",
-            std::bind(&LanderAlignNode::handle_goal, this, std::placeholders::_1, std::placeholders::_2),
-            std::bind(&LanderAlignNode::handle_cancel, this, std::placeholders::_1),
-            std::bind(&LanderAlignNode::handle_accepted, this, std::placeholders::_1));
+    LanderAlignNode::LanderAlignNode(const rclcpp::NodeOptions& options) : Node("lander_align", options) {
+        mPcSub = create_subscription<sensor_msgs::msg::PointCloud2>("/zed/left/points", 1, [this](sensor_msgs::msg::PointCloud2::ConstSharedPtr & msg) {
+            LanderAlignNode::pointCloudCallback(msg);
+        });
 
-            mSensorSub = create_subscription<sensor_msgs::msg::PointCloud2>("/zed/left/points", 1, [this](sensor_msgs::msg::PointCloud2::ConstSharedPtr & msg) {
-                LanderAlignNode::pointCloudCallback(msg);
-            });
-
-    }
-
-    //the callback for handling new goals (this implementation just accepts all goals)
-    rclcpp_action::GoalResponse LanderAlignNode::handle_goal(const rclcpp_action::GoalUUID & uuid, std::shared_ptr<const LanderAlign::Goal> goal) {
-        RCLCPP_INFO(get_logger(), "Received goal request with order %d", goal->num);
-        (void)uuid;
-        return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
-    }
-
-    //the callback for dealing with cancellation (this implementation just tells the client that it accepted the cancellation)
-    rclcpp_action::CancelResponse LanderAlignNode::handle_cancel(const std::shared_ptr<GoalHandleLanderAlign> goal_handle) {
-        RCLCPP_INFO(get_logger(), "Received request to cancel goal");
-        (void)goal_handle;
-        return rclcpp_action::CancelResponse::ACCEPT;
-    }
-
-    //the callback for accepting a new goal and processing it
-    void LanderAlignNode::handle_accepted(const std::shared_ptr<GoalHandleLanderAlign> goal_handle) {
-        using namespace std::placeholders;
-        // this needs to return quickly to avoid blocking the executor, so spin up a new thread
-        std::thread{std::bind(&LanderAlignNode::execute, this, _1), goal_handle}.detach();
-    }
-
-    //all further processing and updates are done in the execute method in the new thread
-    void LanderAlignNode::execute(const std::shared_ptr<GoalHandleLanderAlign> goal_handle) {
-        RCLCPP_INFO(this->get_logger(), "Executing goal");
-
-        auto result = std::make_shared<LanderAlign::Result>();
-        // Check if goal is done
-        if (rclcpp::ok()) {
-            goal_handle->succeed(result);
-            RCLCPP_INFO(this->get_logger(), "Goal succeeded");
-        }
+        mLanderService = create_service<mrover::srv::AlignLander>("align_lander", [this](mrover::srv::AlignLander::Request::ConstSharedPtr request,
+                                                                                                                mrover::srv::AlignLander::Response::SharedPtr response){
+           LanderAlignNode::startAlignCallback(request, response); 
+        });
     }
 
     void LanderAlignNode::pointCloudCallback(sensor_msgs::msg::PointCloud2::ConstSharedPtr & msg) {
-        const std::lock_guard<std::mutex> lock(mSavedPcMutex);
-        mSavedPc = msg;
+        if(!mRunCallback){ return; }
+
+        // Filter normals
+        SE3f mapToCamera = SE3Conversions::fromTfTree(mTfBuffer, "map", "zed_left_camera_frame");
+        auto* points = reinterpret_cast<Point const*>(msg->data.data());
+        int numRows = 0;
+
+        // Count how many rows the point matrix will have
+        R3f unitZ(0.0, 0.0, 1.0);
+        R3f zNormalInCamera = mapToCamera.act(unitZ).normalized();
+        for(size_t i = 0; i < msg->height * msg->width; i++){
+            Point const& point = points[i];
+
+            if(
+                std::isfinite(point.x) &&
+                std::isfinite(point.y) &&
+                std::isfinite(point.z) &&
+                std::isfinite(point.normal_x) &&
+                std::isfinite(point.normal_y) && 
+                std::isfinite(point.normal_z) &&
+                abs(zNormalInCamera.dot(R3f{point.normal_x, point.normal_y, point.normal_z})) < Z_NORM_MAX &&
+                R3d(point.x, point.y, point.z).norm() < FAR_CLIP &&
+                R3d(point.x, point.y, point.z).norm() > NEAR_CLIP
+            ){
+             numRows++;   
+            }
+        }
+
+        // Fill the matrix of points
+        Eigen::MatrixXd rows(numRows, 3);
+        int rowNum = 0;
+        for(size_t p = 0; p < msg->height * msg->width; p++){
+            Point const& point = points[p];
+
+            if(
+                std::isfinite(point.x) &&
+                std::isfinite(point.y) &&
+                std::isfinite(point.z) &&
+                std::isfinite(point.normal_x) &&
+                std::isfinite(point.normal_y) && 
+                std::isfinite(point.normal_z) &&
+                abs(zNormalInCamera.dot(R3f{point.normal_x, point.normal_y, point.normal_z})) < Z_NORM_MAX &&
+                R3d(point.x, point.y, point.z).norm() < FAR_CLIP &&
+                R3d(point.x, point.y, point.z).norm() > NEAR_CLIP
+            ){
+
+                rows(rowNum, 0) = point.x;
+                rows(rowNum, 1) = point.y;
+                rows(rowNum, 2) = point.z;
+                rowNum++;
+            }
+        }
+
+        // Subtract off mean of each column from each column
+        Eigen::Vector3d means = rows.colwise().mean();
+        rows = rows.rowwise() - means.transpose();
+
+        // Calculate covariance matrix and eigenvalues
+        Eigen::Matrix3d covariance = rows.transpose() * rows;
+        Eigen::EigenSolver<Eigen::Matrix3d> eigenvals(covariance);
+
+        // Find the min eigenvalue (the associated eigenvector will be the plane normal)
+        Eigen::Vector3d values = eigenvals.eigenvalues().real();
+        Eigen::Matrix3d vecs = eigenvals.eigenvectors().real();
+
+        int min = 0;
+        for(int i = 0; i < 3; i++){
+            if(abs(values[min]) > abs(values[i])){ min = i; }
+        }
+
+        // Get plane normal
+        auto planeNormal = vecs.col(min);
+
+        // publish normal
+        SE3d plane{means, Eigen::Quaterniond::Identity()};
+        SE3d normal{means + planeNormal, Eigen::Quaterniond::Identity()};
+        SE3Conversions::pushToTfTree(*mTfBroadcaster, "lander_plane", "zed_left_camera_frame", plane, get_clock()->now());
+        SE3Conversions::pushToTfTree(*mTfBroadcaster, "lander_normal", "zed_left_camera_frame", normal, get_clock()->now());
+        mRunCallback = false;
+    }
+
+    auto LanderAlignNode::startAlignCallback(mrover::srv::AlignLander::Request::ConstSharedPtr& req, mrover::srv::AlignLander::Response::SharedPtr& res) -> void{
+        mRunCallback = true;
+        res->success = true;
     }
 
 }
