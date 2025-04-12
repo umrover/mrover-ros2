@@ -14,8 +14,13 @@ namespace mrover{
     using LanderAlign = action::LanderAlign;
     using GoalHandleLanderAlign = rclcpp_action::ServerGoalHandle<LanderAlign>;
     
-    LanderAlignNode::LanderAlignNode(const rclcpp::NodeOptions& options) : Node("lander_align", options) {
-        mPcSub = create_subscription<sensor_msgs::msg::PointCloud2>("/zed/left/points", 1, [this](sensor_msgs::msg::PointCloud2::ConstSharedPtr & msg) {
+    LanderAlignNode::LanderAlignNode(const rclcpp::NodeOptions& options) 
+        : Node("lander_align", options) {
+
+        rclcpp::Service<mrover::srv::AlignLander>::SharedPtr start =
+            create_service<mrover::srv::AlignLander>("align_lander", &startCallBack);
+
+        mSensorSub = create_subscription<sensor_msgs::msg::PointCloud2>("/zed/left/points", 1, [this](sensor_msgs::msg::PointCloud2::ConstSharedPtr & msg) {
             LanderAlignNode::pointCloudCallback(msg);
         });
 

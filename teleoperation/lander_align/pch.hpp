@@ -47,3 +47,6 @@
 #include <manif/impl/se3/SE3.h>
 #include <manif/impl/so3/SO3.h>
 
+// Services
+#include "mrover/srv/AlignLander.hpp"
+
