@@ -1,7 +1,6 @@
 #pragma once
 
 #include "pch.hpp"
-#include <geometry_msgs/msg/detail/vector3_stamped__struct.hpp>
 
 namespace mrover {
 
@@ -26,34 +25,15 @@ namespace mrover {
         unsigned long baud;
         std::string port;
         std::string frame_id;
+        
+        // data store
+        std::vector<uint8_t> gps_satellite_signals;
+        std::vector<uint8_t> glonass_satellite_signals;
+        std::vector<uint8_t> beidou_satellite_signals;
+        std::vector<uint8_t> galileo_satellite_signals;
+        std::vector<uint8_t> qzss_satellite_signals;
 
-        constexpr static std::string GNGGA_HEADER = "$GNGGA";
-        constexpr static std::string UNIHEADING_HEADER = "#UNIHEADINGA";
-        constexpr static std::string BESTNAV_HEADER = "#BESTNAVA";
-
-        constexpr static std::string GPS_HEADER = "$GPGSV";
-        constexpr static std::string GLONASS_HEADER = "$GLGSV";
-        constexpr static std::string BEIDOU_HEADER = "$GBGSV";
-        constexpr static std::string GALILEO_HEADER = "$GAGSV";
-        constexpr static std::string QZSS_HEADER = "$GQGSV";
-
-        constexpr static uint8_t GNGGA_LAT_POS = 2;
-        constexpr static uint8_t GNGGA_LAT_DIR_POS = 3;
-        constexpr static uint8_t GNGGA_LON_POS = 4;
-        constexpr static uint8_t GNGGA_LON_DIR_POS = 5;
-        constexpr static uint8_t GNGGA_QUAL_POS = 6;
-        constexpr static uint8_t GNGGA_SATELLITES_POS = 7;
-        constexpr static uint8_t GNGGA_ALT_POS = 9;
-
-        constexpr static uint8_t UNIHEADING_STATUS_POS = 11;
-        constexpr static uint8_t UNIHEADING_HEADING_POS = 13;
-
-        constexpr static uint8_t VEL_STATUS_POS = 32;
-        constexpr static uint8_t VEL_POS = 35;
-        constexpr static uint8_t VEL_DIR_POS = 36;
-
-
-        constexpr static uint8_t CNO_POS = 7;
+        const uint8_t MAX_SATELLITE_SIGNAL_SIZE = 36;
         
 
     public:
