@@ -8,10 +8,10 @@ namespace mrover {
             {"width", mWidth, static_cast<int>(mSize / mResolution)},   // THIS DECLARATION DOES NOT WORK
             {"height", mHeight, static_cast<int>(mSize / mResolution)},
             {"map_frame", mMapFrame, "map"},
-            {"near_clip", mNearClip, 1.0},
+            {"near_clip", mNearClip, 2.0},
             {"far_clip", mFarClip, 7.0},
-            {"left_clip", mRightClip, -2.0},
-            {"right_clip", mLeftClip, 2.0},
+            {"near_width", mNearWidth, 1.0},
+            {"far_width", mFarWidth, 3.0},
             {"top_clip", mTopClip, 3.0},
             {"z_percent", mZPercent, 0.34}, // Tested on static visualizer
             {"alpha", mAlpha, 0.05},

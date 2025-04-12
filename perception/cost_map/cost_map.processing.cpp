@@ -33,10 +33,10 @@ namespace mrover {
         // SE3d leftBot(R3d{mLeftClip, mNearClip, 0}, SO3d::Identity());
         // SE3d leftTop(R3d{mLeftClip, mFarClip, 0}, SO3d::Identity());
 
-        SE3d rightBot(R3d{mNearClip, mRightClip, 0}, SO3d::Identity());
-        SE3d rightTop(R3d{mFarClip, mRightClip, 0}, SO3d::Identity());
-        SE3d leftBot(R3d{mNearClip, mLeftClip, 0}, SO3d::Identity());
-        SE3d leftTop(R3d{mFarClip, mLeftClip, 0}, SO3d::Identity());
+        SE3d rightBot(R3d{mNearClip, -mNearWidth, 0}, SO3d::Identity());
+        SE3d rightTop(R3d{mFarClip, -mFarWidth, 0}, SO3d::Identity());
+        SE3d leftBot(R3d{mNearClip, mNearWidth, 0}, SO3d::Identity());
+        SE3d leftTop(R3d{mFarClip, mFarWidth, 0}, SO3d::Identity());
 
         SE3Conversions::pushToTfTree(mTfBroadcaster, "bin_bot_left", "zed_left_camera_frame", leftBot, get_clock()->now());
         SE3Conversions::pushToTfTree(mTfBroadcaster, "bin_top_left", "zed_left_camera_frame", leftTop, get_clock()->now());
@@ -53,7 +53,13 @@ namespace mrover {
                 int total;
             };
 
+            struct DebugBin{
+                std::vector<Point> points;
+            };
+
             std::vector<Bin> bins;
+            std::vector<DebugBin> debugBins;
+            debugBins.resize((mGlobalGridMsg.data.size()));
             bins.resize(mGlobalGridMsg.data.size());
 
 			// Clips the point cloud and fills bins the points
@@ -68,25 +74,17 @@ namespace mrover {
                     // Points with no stereo correspondence are NaN's, so ignore them
                     if (pointInCamera.hasNaN()) continue;
                     if(normal.hasNaN()) continue;
-                    
-
-                    if (pointInCamera.y() > mRightClip &&
-						pointInCamera.y() < mLeftClip &&
-						pointInCamera.x() < mFarClip &&
-						pointInCamera.x() > mNearClip &&
-                        pointInCamera.z() < mTopClip){
-						if constexpr (uploadDebugPointCloud){
-							mInliers.push_back(point);
-						}	
-					}else{
-						continue;
-					}
 
                     R3f pointInMap = cameraToMap.act(pointInCamera);
 
                     int index = mapToGrid(pointInMap, mGlobalGridMsg);
                     if (index < 0 || index >= static_cast<int>(mGlobalGridMsg.data.size())) continue;
+                    
 
+                    if constexpr(uploadDebugPointCloud){
+                        // add point to corresponding bin
+                        debugBins[index].points.push_back(point);
+                    }
                     
                     // TODO REPLACE this 
                     if(normal.z() <= mZThreshold) {
@@ -96,10 +94,7 @@ namespace mrover {
                 }
             }
 			
-			// If we are using the debug point cloud publish it
-			if constexpr (uploadDebugPointCloud){
-				uploadPC();
-			}
+			
 
             // Percentage Algorithm (acounts for angle changes (and outliers))
                 // // Chose the percentage algorithm because it's less sensitive to angle changes (and outliers) and can accurately track
@@ -137,8 +132,12 @@ namespace mrover {
                 // If the number of intersections are even, the bin is not valid
                 if(numIntersection % 2 == 0){
                     continue;
-                }else{
-                    // RCLCPP_INFO_STREAM(get_logger(), "NUM INTERSECTIONS: " << static_cast<int>(numIntersection));
+                }
+
+                if constexpr (uploadDebugPointCloud){
+                    for(Point& p : debugBins[i].points){
+                        mInliers.push_back(p);
+                    }
                 }
 
                 double percent = static_cast<double>(bin.high_pts) / static_cast<double>(bin.total);
@@ -150,7 +149,10 @@ namespace mrover {
                 cell = static_cast<std::int8_t>(mAlpha * cost + (1 - mAlpha) * cell);
             }
 
-
+            // If we are using the debug point cloud publish it
+			if constexpr (uploadDebugPointCloud){
+				uploadPC();
+			}
 
             // Make a new occupancy grid that's mNumDivisions^2 times the size of the original
             nav_msgs::msg::OccupancyGrid postProcessed;
@@ -203,6 +205,12 @@ namespace mrover {
                     for (int row = 0; row < width; ++row) {
                         for(int col = 0; col < height; ++col) {
                             int oned_index = coordinateToIndex({row, col}, width);
+
+                            if(temp.data[oned_index] == OCCUPIED_COST){ // if we are currently looking at a bin which is OCCUPIED COST skip so it doesnt get set to DILATION_COST
+                                postProcessed.data[oned_index] = OCCUPIED_COST;
+                                continue;
+                            }
+
                             // RCLCPP_INFO_STREAM(get_logger(), std::format("Testing Index: {}", oned_index));
                             if(std::ranges::any_of(ker, [&](CostMapNode::Coordinate di) {
                                 // the coordinate of the cell we are checking + dis offset
@@ -212,7 +220,7 @@ namespace mrover {
         
                                 // RCLCPP_INFO_STREAM(get_logger(), std::format("Index: {}", coordinateToIndex(dcoord)));
                                 return temp.data[coordinateToIndex(dcoord, width)] > FREE_COST;
-                            })) postProcessed.data[oned_index] = OCCUPIED_COST;
+                            })) postProcessed.data[oned_index] = DILATED_COST;
                         }
                     }
                 }
@@ -246,7 +254,8 @@ namespace mrover {
 
         double lowerY = (startSeg.y() < endSeg.y()) ? startSeg.y() : endSeg.y();
         double higherY = (startSeg.y() < endSeg.y()) ? endSeg.y() : startSeg.y();
-        if(y <= lowerY || y >= higherY || higherY <= binCenterY){
+        
+        if(y <= lowerY || y >= higherY || y <= binCenterY){
             return 0;
         }
 
