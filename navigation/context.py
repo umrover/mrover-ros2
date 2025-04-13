@@ -77,7 +77,6 @@ class Environment:
     arrived_at_target: bool = False
     arrived_at_waypoint: bool = False
     last_target_location: np.ndarray | None = None
-    last_spiral_point: int | None = None
 
     def get_target_position(self, frame: str) -> np.ndarray | None:
         """
@@ -317,7 +316,9 @@ def convert_gps_to_cartesian(reference_point: np.ndarray, waypoint: GPSWaypoint)
     # Zero the z-coordinate because even though the altitudes are set to zero,
     # Two points on a sphere are not going to have the same z-coordinate.
     # Navigation algorithms currently require all coordinates to have zero as the z-coordinate.
-    return Waypoint(tag_id=waypoint.tag_id, type=waypoint.type, enable_costmap=waypoint.enable_costmap), SE3.from_position_orientation(x, y)
+    return Waypoint(
+        tag_id=waypoint.tag_id, type=waypoint.type, enable_costmap=waypoint.enable_costmap
+    ), SE3.from_position_orientation(x, y)
 
 
 def convert_cartesian_to_gps(reference_point: np.ndarray, coordinate: np.ndarray) -> GPSWaypoint:
@@ -395,12 +396,14 @@ class Context:
 
         client_callback_group = MutuallyExclusiveCallbackGroup()
 
+        self.move_cli = node.create_client(MoveCostMap, "move_cost_map", callback_group=client_callback_group)
+        self.dilate_cli = node.create_client(DilateCostMap, "dilate_cost_map", callback_group=client_callback_group)
+
         if not node.get_parameter("costmap.custom_costmap").value:
-            self.move_cli = node.create_client(MoveCostMap, "move_cost_map", callback_group=client_callback_group)
+
             while not self.move_cli.wait_for_service(timeout_sec=1.0):
                 node.get_logger().info("Waiting for move_cost_map service...")
 
-            self.dilate_cli = node.create_client(DilateCostMap, "dilate_cost_map", callback_group=client_callback_group)
             while not self.dilate_cli.wait_for_service(timeout_sec=1.0):
                 node.get_logger().info("Waiting for dilate_cost service...")
 
@@ -445,9 +448,11 @@ class Context:
         # normalize to [0, 1]
 
         # array: known_free_cost
-        self.env.cost_map.data /= 100.0
+        # self.env.cost_map.data /= 100.0
 
     def move_costmap(self, course_name="base_link"):
+        if self.node.get_parameter("costmap.custom_costmap").value:
+            return
         self.node.get_logger().info(f"Requesting to move cost map to {course_name}")
 
         req = MoveCostMap.Request()
@@ -461,6 +466,8 @@ class Context:
             self.node.get_logger().info("Finished moving cost map")
 
     def dilate_cost(self, new_radius: float):
+        if self.node.get_parameter("costmap.custom_costmap").value:
+            return
         self.node.get_logger().info(f"Requesting to dilate cost to {new_radius}")
 
         req = DilateCostMap.Request()

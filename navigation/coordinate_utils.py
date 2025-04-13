@@ -67,7 +67,9 @@ def vec_angle(self, v1: tuple, v2: tuple) -> float:
     return abs(angle_rad)
 
 
-def gen_marker(context: Context, point=[0.0, 0.0], color=[1.0, 1.0, 1.0], size=0.2, lifetime=5, id=0) -> Marker:
+def gen_marker(
+    context: Context, point=[0.0, 0.0], color=[1.0, 1.0, 1.0], size=0.2, lifetime=5, id=0, delete=False
+) -> Marker:
     """
     Creates and publishes a single spherical marker at the specified (x, y, z) coordinates.
 
@@ -86,6 +88,11 @@ def gen_marker(context: Context, point=[0.0, 0.0], color=[1.0, 1.0, 1.0], size=0
     marker.ns = "single_point"
     marker.id = id
     marker.type = Marker.SPHERE
+
+    if delete:
+        marker.action = Marker.DELETEALL
+        return marker
+
     marker.action = Marker.ADD
 
     # Set the scale (size) of the sphere

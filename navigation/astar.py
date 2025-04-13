@@ -35,9 +35,10 @@ class OutOfBounds(Exception):
 
     pass
 
-class InHighCost(Exception):
+
+class DestinationInHighCost(Exception):
     """
-    Raised when the rover is stuck in high cost
+    Raised when the destination is in high cost
     """
 
     pass
@@ -68,8 +69,7 @@ class AStar:
         current_waypoint = context.course.current_waypoint()
         assert current_waypoint is not None
 
-        self.USE_COSTMAP = context.node.get_parameter("costmap.use_costmap").value or \
-                            current_waypoint.enable_costmap
+        self.USE_COSTMAP = context.node.get_parameter("costmap.use_costmap").value or current_waypoint.enable_costmap
 
     def return_path(self, came_from: dict[tuple, tuple], current_pos: tuple):
         """
@@ -87,27 +87,23 @@ class AStar:
             pos = came_from[pos]
         return path[::-1]  # Reverse the path
 
-    def vec_angle(self, v1: tuple, v2: tuple) -> float:
-        """
-        Calculate the angle between two vectors (v1, v2).
-        :param v1: Tuple (x1, y1).
-        :param v2: Tuple (x2, y2).
-        :return: Absolute angle (in radians) between the two vectors.
-        """
-        dot_product = np.dot(v1, v2)
-        magnitude_v1 = np.linalg.norm(v1)
-        magnitude_v2 = np.linalg.norm(v2)
+    def chebyshev_calc(self, start: tuple, end: tuple) -> float:
+        min_diag = min(
+            abs(start[0] - end[0]),
+            abs(start[1] - end[1]),
+        ) * math.sqrt(2)
+        straight_line = (
+            max(
+                abs(start[0] - end[0]),
+                abs(start[1] - end[1]),
+            )
+            - min_diag
+        )
+        return min_diag + straight_line
 
-        if magnitude_v1 == 0 or magnitude_v2 == 0:
-            return 0.0
-
-        cos_theta = dot_product / (magnitude_v1 * magnitude_v2)
-        cos_theta = np.clip(cos_theta, -1.0, 1.0)
-        angle_rad = np.arccos(cos_theta)
-
-        return abs(angle_rad)
-
-    def a_star(self, start: np.ndarray, end: np.ndarray, debug: bool = False) -> list | None:
+    def a_star(
+        self, start: np.ndarray, end: np.ndarray, context: Context | None = None, debug: bool = False
+    ) -> list | None:
         """
         A* Algorithm: Find a path from start to end in the costmap using f(n) = g(n) + h(n).
         :param start: Rover pose in cartesian coordinates.
@@ -150,16 +146,12 @@ class AStar:
                     neighbor_pos = tuple(np.array(current) + rel_pos)
 
                     # Ensure within grid bounds
-                    if not (
-                        1 <= neighbor_pos[0] < costmap2d.shape[0] - 1 and 1 <= neighbor_pos[1] < costmap2d.shape[1] - 1
-                    ):
+                    if not (0 <= neighbor_pos[0] < costmap2d.shape[0] and 0 <= neighbor_pos[1] < costmap2d.shape[1]):
                         continue
 
-                    # Check if terrain is traversable
-                    if costmap2d[neighbor_pos[0], neighbor_pos[1]] >= self.TRAVERSABLE_COST:
-                        continue
-
-                    tentative_g_score = g_scores[current] + d_calc(current, neighbor_pos)
+                    d = 1.0 if rel_pos[0] == 0 or rel_pos[1] == 0 else np.sqrt(2)
+                    cost = max(costmap2d[neighbor_pos[0], neighbor_pos[1]], 1)
+                    tentative_g_score = g_scores[current] + d * cost
 
                     if neighbor_pos not in g_scores or tentative_g_score < g_scores[neighbor_pos]:
                         came_from[neighbor_pos] = current
@@ -173,57 +165,17 @@ class AStar:
             raise NoPath("No path could be found to the destination.")
 
     def use_astar(self, context: Context, star_traj: Trajectory, dest: np.ndarray) -> bool:
-        """
-        Decide whether to follow the A* path based on the difference between the A* path distance
-        and a lower-bound distance (Chebyshev-based or Euclidean).
-        :param context: Context object containing rover and node information.
-        :param star_traj: A* trajectory to be evaluated.
-        :param trajectory: Current point in the trajectory (destination).
-        :return: True if the A* path should be followed, False otherwise.
-        """
         rover_in_map = context.rover.get_pose_in_map()
-        follow_astar = True
 
         # If no rover pose, no trajectory, or not enough points in star_traj, skip
         if rover_in_map is None or len(star_traj.coordinates) < 1 or not self.USE_COSTMAP:
             return False
-        
+
         straight_path = segment_path(context=context, dest=dest[:2], seg_len=context.env.cost_map.resolution)
         for point in straight_path.coordinates:
             if is_high_cost_point(point=point, context=context):
                 return True
         return False
-
-        # Calculate actual A* distance
-        astar_dist = 0.0
-        for i in range(len(star_traj.coordinates) - 1):
-            astar_dist += d_calc(star_traj.coordinates[i], star_traj.coordinates[i + 1])
-
-        # Calculate a minimal possible path (a diagonal-first approach).
-        min_diag = min(
-            abs(star_traj.coordinates[0][0] - star_traj.coordinates[-1][0]),
-            abs(star_traj.coordinates[0][1] - star_traj.coordinates[-1][1]),
-        ) * math.sqrt(2)
-        straight_line = max(
-            abs(star_traj.coordinates[0][0] - star_traj.coordinates[-1][0]),
-            abs(star_traj.coordinates[0][1] - star_traj.coordinates[-1][1]),
-        ) - min(
-            abs(star_traj.coordinates[0][0] - star_traj.coordinates[-1][0]),
-            abs(star_traj.coordinates[0][1] - star_traj.coordinates[-1][1]),
-        )
-        min_astar = min_diag + straight_line
-
-        # context.node.get_logger().info(f"minastar: {min_astar} act_astar: {astar_dist}")
-
-        # Compare relative difference
-        if min_astar > 0:
-            follow_astar = abs(astar_dist - min_astar) / min_astar > self.A_STAR_THRESH
-        else:
-            # If min_astar is 0, it might mean start/end are the same
-            follow_astar = True
-
-        # context.node.get_logger().info("Following A* path" if follow_astar else "Not following A* path")
-        return follow_astar
 
     def generate_trajectory(self, context: Context, dest: np.ndarray) -> Trajectory:
         """
@@ -249,8 +201,8 @@ class AStar:
             if not context.node.get_parameter("costmap.custom_costmap").value:
                 context.move_costmap()
 
-        if self.context.env.cost_map.data[rover_ij[0], rover_ij[1]] >= self.TRAVERSABLE_COST:
-            raise InHighCost
+        if self.context.env.cost_map.data[dest_ij[0], dest_ij[1]] >= self.TRAVERSABLE_COST:
+            raise DestinationInHighCost
 
         if not (0 <= int(dest_ij[0]) < costmap_length and 0 <= int(dest_ij[1]) < costmap_length) or not (
             0 <= int(rover_ij[0]) < costmap_length and 0 <= int(rover_ij[1]) < costmap_length

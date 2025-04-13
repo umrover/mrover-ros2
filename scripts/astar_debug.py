@@ -83,7 +83,7 @@ class SimWindow:
             self.ctx.env = Environment(self.ctx, image_targets=ImageTargetsStore(self.ctx), cost_map=costmap)
             # self.ctx.node.get_logger().info(costmap.data)
         astar = AStar(self.ctx)
-        self.path_history = astar.a_star(self.start[::-1], self.end[::-1], debug=True)
+        self.path_history = astar.a_star(self.start[::-1], self.end[::-1], context=self.ctx, debug=True)
         if self.path_history:
             self.pause = False
             if self.path_history:
@@ -141,7 +141,7 @@ class SimWindow:
 
         for row in range(self.rows):
             for col in range(self.cols):
-                if self.grid[row][col] == 1:  # Path cells
+                if self.grid[row][col] == 10000:  # Path cells
                     self.fill_cell(row, col, "gray")
 
         if self.start is not None:
@@ -186,7 +186,7 @@ class SimWindow:
         col = min(max((event.x - self.number_padding) // self.cell_size, 0), self.cols - 1)
         row = min(max((event.y - self.number_padding) // self.cell_size, 0), self.rows - 1)
 
-        self.grid[row][col] = 1 - self.grid[row][col]
+        self.grid[row][col] = 10000 - self.grid[row][col]
         self.curr_cell = (row, col)
         self.draw_grid()
 
@@ -196,7 +196,7 @@ class SimWindow:
             row = min(max((event.y - self.number_padding) // self.cell_size, 0), self.rows - 1)
 
             if (row, col) != self.curr_cell:
-                self.grid[row][col] = 1 - self.grid[row][col]
+                self.grid[row][col] = 10000 - self.grid[row][col]
                 self.curr_cell = (row, col)
                 self.draw_grid()
 
@@ -220,17 +220,22 @@ class AStarDebug(Node):
         self.declare_parameters("", [("search.traversable_cost", Parameter.Type.DOUBLE)])
         self.set_parameters([Parameter("search.traversable_cost", Parameter.Type.DOUBLE, 0.2)])
 
+        self.declare_parameters("", [("search.angle_thresh", Parameter.Type.DOUBLE)])
+        self.set_parameters([Parameter("search.angle_thresh", Parameter.Type.DOUBLE, 0.0872665)])
+
+        self.declare_parameters("", [("costmap.a_star_thresh", Parameter.Type.DOUBLE)])
+        self.set_parameters([Parameter("costmap.a_star_thresh", Parameter.Type.DOUBLE, 0.05)])
+
+        self.declare_parameters("", [("costmap.costmap_thresh", Parameter.Type.DOUBLE)])
+        self.set_parameters([Parameter("costmap.costmap_thresh", Parameter.Type.DOUBLE, 0.4)])
+
         start = np.array([0, 1])
         end = np.array([25, 18])
 
         sim = SimWindow(self.ctx, rows=30, cols=30, cell_size=30, start=start, end=end, speed=10)
         path_history = sim.run()
 
-        for path in path_history:
-            temp = ""
-            for coord in path:
-                temp += str(coord) + " "
-            self.get_logger().info(temp)
+        self.get_logger().info(f"{sim.grid}")
         self.get_logger().info(f"Total iterations: {len(path_history)}")
 
 
