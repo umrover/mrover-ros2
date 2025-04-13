@@ -102,7 +102,11 @@ class CostmapSearchState(State):
 
     def update_astar_traj(self, context: Context):
         context.rover.send_drive_command(Twist())
-        self.astar_traj = self.astar.generate_trajectory(context, self.spiral_traj.get_current_point())
+        try:
+            self.astar_traj = self.astar.generate_trajectory(context, self.spiral_traj.get_current_point())
+        except Exception as e:
+                context.node.get_logger().info(str(e))
+                return self
         # If a spiral point is unreachable, then skip it and generate a new trajectory
         if self.astar_traj.empty():
             context.node.get_logger().info(f"Skipping unreachable spiral point")
@@ -153,7 +157,7 @@ class CostmapSearchState(State):
         curr_point = cartesian_to_ij(context, self.spiral_traj.get_current_point())
         if not 0 <= int(curr_point[0]) < costmap_length and 0 <= int(curr_point[1]) < costmap_length:
             context.node.get_logger().warn(
-                "Trajectory point out of the map. Going back to last point in costmap and trying again..."
+                f"Cart Point: {self.spiral_traj.get_current_point()} IJ Point: {curr_point} and cost: {context.env.cost_map.data[curr_point[0]][curr_point[1]]} \n Trajectory point out of the map. Going back to last point in costmap and trying again..."
             )
             dest_ij = cartesian_to_ij(context, self.spiral_traj.get_current_point())
             while not (0 <= int(dest_ij[0]) < costmap_length and 0 <= int(dest_ij[1]) < costmap_length):

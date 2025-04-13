@@ -134,9 +134,12 @@ class WaypointState(State):
 
         if self.astar_traj.empty():
             self.display_markers(context=context)
-
-            self.astar_traj = self.astar.generate_trajectory(context, self.waypoint_traj.get_current_point())
-
+            try:
+                self.astar_traj = self.astar.generate_trajectory(context, self.waypoint_traj.get_current_point())
+            except Exception as e:
+                context.node.get_logger().info(str(e))
+                return self
+                
             if self.astar_traj.empty():
                 context.node.get_logger().info("Skipping unreachable point")
                 self.waypoint_traj.increment_point()
@@ -221,7 +224,7 @@ class WaypointState(State):
         if rover_in_map is None:
             return self
 
-        if context.node.get_clock().now() < self.time_begin + Duration(seconds=self.UPDATE_DELAY // 2):
+        if context.node.get_clock().now() < self.time_begin + Duration(seconds=self.UPDATE_DELAY):
             return self
 
         if context.rover.stuck:

@@ -119,14 +119,7 @@ class ApproachTargetState(State):
                 for dy in np.arange(-search_radius, search_radius + resolution, resolution):
                     candidate = target_position + np.array([dx, dy, 0.0])
                     if not is_high_cost_point(point=candidate, context=context):
-                        if (
-                            check_astar
-                        ):  # If we need to consider A* (astar), generate a trajectory to see if it's reachable
-                            candidate_astar_traj = self.astar.generate_trajectory(context, candidate)
-                            if len(candidate_astar_traj.coordinates) != 0:
-                                candidates.append(candidate)
-                        else:
-                            candidates.append(candidate)
+                        candidates.append(candidate)
 
             if candidates:
                 # Find the nearest low-cost point to the target position
@@ -175,17 +168,21 @@ class ApproachTargetState(State):
             if self.target_traj.done():
                 break
 
-        costmap_length = context.env.cost_map.data.shape[0]
-        curr_point = cartesian_to_ij(context, self.target_traj.get_current_point())
-        if not 0 <= int(curr_point[0]) < costmap_length and 0 <= int(curr_point[1]) < costmap_length:
-            context.node.get_logger().warn("Trajectory point out of the map. Clearing trajectory and trying again...")
-            self.target_traj.clear()
-            return self
+        if not self.target_traj.done():
+            costmap_length = context.env.cost_map.data.shape[0]
+            curr_point = cartesian_to_ij(context, self.target_traj.get_current_point())
+            if not 0 <= int(curr_point[0]) < costmap_length and 0 <= int(curr_point[1]) < costmap_length:
+                context.node.get_logger().warn("Trajectory point out of the map. Clearing trajectory and trying again...")
+                self.target_traj.clear()
+                return self
 
         # If the a-star trajectory is empty and there is a segment to pathfind to, generate a new trajectory there
         if self.astar_traj.empty() and not self.target_traj.done():
-
-            self.astar_traj = self.astar.generate_trajectory(context, self.target_traj.get_current_point())
+            try:
+                self.astar_traj = self.astar.generate_trajectory(context, self.target_traj.get_current_point())
+            except Exception as e:
+                context.node.get_logger().info(str(e))
+                return self
 
             if self.astar_traj.empty():
                 self.target_traj.increment_point()
@@ -404,6 +401,6 @@ class ApproachTargetState(State):
 
     def dilate_costmap(self, context: Context, dilation_difference=0.5) -> bool:
         temp = self.COST_INFLATION_RADIUS
-        self.COST_INFLATION_RADIUS = min(self.COST_INFLATION_RADIUS - dilation_difference, 0)
+        self.COST_INFLATION_RADIUS = max(self.COST_INFLATION_RADIUS - dilation_difference, 0.0)
         context.dilate_cost(self.COST_INFLATION_RADIUS)
         return temp == 0

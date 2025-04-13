@@ -19,7 +19,7 @@ def cartesian_to_ij(context: Context, cart_coord: np.ndarray) -> np.ndarray:
     :param cart_coord: array of x and y cartesian coordinates
     :return: array of i and j coordinates for the occupancy grid
     """
-    return np.floor((cart_coord[0:2] - context.env.cost_map.origin) / context.env.cost_map.resolution).astype(np.int8)
+    return np.floor((cart_coord[0:2] - context.env.cost_map.origin) / context.env.cost_map.resolution).astype(np.int32)
 
 
 def ij_to_cartesian(context: Context, ij_coords: np.ndarray) -> np.ndarray:
@@ -154,7 +154,7 @@ def segment_path(context: Context, dest: np.ndarray, seg_len: float = 2.0):
     return segmented_trajectory
 
 
-def is_high_cost_point(point: np.ndarray, context: Context, min_cost=0.2) -> bool:
+def is_high_cost_point(point: np.ndarray, context: Context) -> bool:
     cost_map = context.env.cost_map.data
 
     point_ij = cartesian_to_ij(context=context, cart_coord=point)
@@ -162,4 +162,4 @@ def is_high_cost_point(point: np.ndarray, context: Context, min_cost=0.2) -> boo
     if not (0 <= int(point_ij[0]) < cost_map.shape[0] and 0 <= int(point_ij[1]) < cost_map.shape[1]):
         context.node.get_logger().warn("Point is out of bounds in the costmap")
         return False
-    return cost_map[int(point_ij[0])][int(point_ij[1])] > min_cost
+    return cost_map[int(point_ij[0])][int(point_ij[1])] > context.node.get_parameter("search.traversable_cost").value

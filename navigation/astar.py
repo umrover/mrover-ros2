@@ -64,12 +64,11 @@ class AStar:
         self.A_STAR_THRESH = self.context.node.get_parameter("costmap.a_star_thresh").value
         self.COSTMAP_THRESH = self.context.node.get_parameter("costmap.costmap_thresh").value
         self.ANGLE_THRESH = self.context.node.get_parameter("search.angle_thresh").value
-        assert context.course is not None
 
-        current_waypoint = context.course.current_waypoint()
-        assert current_waypoint is not None
-
-        self.USE_COSTMAP = context.node.get_parameter("costmap.use_costmap").value or current_waypoint.enable_costmap
+        if hasattr(context, 'course') and context.course is not None:
+            current_waypoint = context.course.current_waypoint()
+            assert current_waypoint is not None
+            self.USE_COSTMAP = context.node.get_parameter("costmap.use_costmap").value or current_waypoint.enable_costmap
 
     def return_path(self, came_from: dict[tuple, tuple], current_pos: tuple):
         """
@@ -151,6 +150,17 @@ class AStar:
 
                     d = 1.0 if rel_pos[0] == 0 or rel_pos[1] == 0 else np.sqrt(2)
                     cost = max(costmap2d[neighbor_pos[0], neighbor_pos[1]], 1)
+
+
+                    # TODO: Decide if we want to perform a mean filter here or in the callback. Probably best to do so in the callback
+                    # for rel_pos2 in adjacent_squares:
+                    #     dilate_pos = tuple(np.array(neighbor_pos) + rel_pos2)
+                    #     if not (0 <= dilate_pos[0] < costmap2d.shape[0] and 0 <= dilate_pos[1] < costmap2d.shape[1]):
+                    #         cost += costmap2d[neighbor_pos[0], neighbor_pos[1]] // 8
+
+                    #     else:
+                    #         cost += costmap2d[dilate_pos[0], dilate_pos[1]] // 8
+
                     tentative_g_score = g_scores[current] + d * cost
 
                     if neighbor_pos not in g_scores or tentative_g_score < g_scores[neighbor_pos]:
@@ -201,13 +211,13 @@ class AStar:
             if not context.node.get_parameter("costmap.custom_costmap").value:
                 context.move_costmap()
 
-        if self.context.env.cost_map.data[dest_ij[0], dest_ij[1]] >= self.TRAVERSABLE_COST:
-            raise DestinationInHighCost
+        if self.context.env.cost_map.data[dest_ij[0], dest_ij[1]] > self.TRAVERSABLE_COST:
+            raise DestinationInHighCost("Destination in high cost")
 
         if not (0 <= int(dest_ij[0]) < costmap_length and 0 <= int(dest_ij[1]) < costmap_length) or not (
             0 <= int(rover_ij[0]) < costmap_length and 0 <= int(rover_ij[1]) < costmap_length
         ):
-            raise OutOfBounds
+            raise OutOfBounds("Rover/destination outside of costmap")
 
         trajectory = Trajectory(np.array([]))
         context.rover.send_drive_command(Twist())  # Stop while planning

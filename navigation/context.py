@@ -5,6 +5,7 @@ from dataclasses import dataclass
 import numpy as np
 import pymap3d
 import rclpy
+from scipy import ndimage
 
 import tf2_ros
 from geometry_msgs.msg import Twist
@@ -434,18 +435,24 @@ class Context:
         Callback function for the occupancy grid perception sends
         :param msg: Occupancy Grid representative of a 32m x 32m square area with origin at GNSS waypoint. Values are 0, 1, -1
         """
+        unknown_cost = 10.0
+        upsample_factor = 2
+        filter_size = 3
 
-        cost_map_data = np.array(msg.data).reshape((msg.info.height, msg.info.width)).T
+        cost_map_data = np.array(msg.data).reshape((msg.info.height, msg.info.width)).T.astype(np.float32)
+        cost_map_data[cost_map_data == -1] = unknown_cost
 
         self.env.cost_map.origin = np.array([msg.info.origin.position.x, msg.info.origin.position.y])
-        self.env.cost_map.resolution = msg.info.resolution  # meters/cell
-        self.env.cost_map.height = msg.info.height  # cells
-        self.env.cost_map.width = msg.info.width  # cells
-        self.env.cost_map.data = cost_map_data.astype(np.float32)
+        self.env.cost_map.resolution = msg.info.resolution / upsample_factor # meters/cell
+        self.env.cost_map.height = msg.info.height * upsample_factor # cells
+        self.env.cost_map.width = msg.info.width * upsample_factor # cells
 
-        # change all unidentified points to have a slight cost
-        self.env.cost_map.data[cost_map_data == -1] = 10.0  # TODO: find optimal value
-        # normalize to [0, 1]
+        upsampled_cost_map = np.kron(cost_map_data, np.ones((upsample_factor,upsample_factor), np.float32))
+        filtered_cost_map = ndimage.uniform_filter(upsampled_cost_map, filter_size, mode='nearest')
+
+
+        self.env.cost_map.data = filtered_cost_map
+
 
         # array: known_free_cost
         # self.env.cost_map.data /= 100.0
