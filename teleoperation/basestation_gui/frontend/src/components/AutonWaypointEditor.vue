@@ -39,8 +39,17 @@
           @toggle="toggleTeleopMode($event)" />
       </div>
       <h4 class="waypoint-headers my-3">Current Course</h4>
+      <div>
+        <ToggleButton
+          :id="'1'"
+          :labelEnableText="'Turn All Costmap On'"
+          :labelDisableText="'Turn All Costmap Off'"
+          :currentState="currentState"
+          @change="updateState"
+        />
+      </div>
       <div class="route">
-        <WaypointItem v-for="waypoint in route" :key="waypoint" :waypoint="waypoint" @delete="deleteItem(waypoint)" />
+        <WaypointItem v-for="waypoint in route" :key="waypoint" :waypoint="waypoint" :globalCostmap="currentState" @delete="deleteItem(waypoint)" />
       </div>
     </div>
   </div>
@@ -86,6 +95,8 @@ import _ from 'lodash'
 import L from 'leaflet'
 import { reactive } from 'vue'
 import { Modal } from 'bootstrap'
+import ToggleButton from "../components/ToggleButton.vue";
+
 
 let stuck_interval: number, auton_publish_interval: number
 
@@ -94,7 +105,8 @@ export default {
     WaypointItem,
     AutonModeCheckbox,
     Checkbox,
-    VelocityCommand
+    VelocityCommand,
+    ToggleButton
   },
 
   emits: ['toggleTeleop'],
@@ -162,6 +174,8 @@ export default {
         },
 
       teleopEnabledCheck: false,
+
+      currentState: false,
 
       route: reactive([]),
 
@@ -269,6 +283,9 @@ export default {
       setAutonMode: 'setAutonMode',
       setTeleopMode: 'setTeleopMode'
     }),
+    updateState(newState: boolean) {
+      this.currentState = newState
+    },
 
     sendAutonCommand() {
       if (this.autonEnabled) {
