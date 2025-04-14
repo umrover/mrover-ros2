@@ -19,7 +19,7 @@
 import { defineComponent } from 'vue'
 import { mapActions, mapState } from 'vuex'
 
-const UPDATE_HZ = 20
+const UPDATE_HZ = 30
 
 export default defineComponent({
   components: {
