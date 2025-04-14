@@ -326,7 +326,7 @@ namespace mrover {
 
     auto CostMapNode::dilateCostMapCallback(mrover::srv::DilateCostMap::Request::ConstSharedPtr& req, mrover::srv::DilateCostMap::Response::SharedPtr& res) -> void{
         // TODO: consider floor vs ceil here, currently rounds down to nearest cell dilation amt
-        mDilateAmt = static_cast<int>(floor(static_cast<double>(req->d_amt/mResolution) / 2.0));
+        mDilateAmt = static_cast<int>(floor(static_cast<double>(req->d_amt/mResolution)));
         res->success = true;
     }
 
