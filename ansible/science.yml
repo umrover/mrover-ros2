@@ -1,7 +1,7 @@
 ---
 - hosts: all
   vars:
-    ubuntu_release: jammy
+    ubuntu_release: focal
   roles:
     # - dev
     - science_networks

@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
 
-export ROS_DOMAIN_ID=1
+export ROS_IP=10.1.0.10

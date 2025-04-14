@@ -10,15 +10,3 @@
     gw4: 10.1.0.2
     dns4: [10.1.0.2]
     method6: disabled
-- name: Wired Connection (USB C)
-  become: True
-  nmcli:
-    conn_name: MRover (USB C)
-    state: present
-    type: ethernet
-    ifname: eth1
-    autoconnect: yes
-    ip4: 10.1.0.10/8
-    gw4: 10.1.0.2
-    dns4: [10.1.0.2]
-    method6: disabled
