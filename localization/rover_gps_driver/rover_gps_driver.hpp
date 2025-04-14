@@ -25,13 +25,10 @@ namespace mrover {
         unsigned long baud;
         std::string port;
         std::string frame_id;
-        
+
         // data store
-        std::vector<uint8_t> gps_satellite_signals;
-        std::vector<uint8_t> glonass_satellite_signals;
-        std::vector<uint8_t> beidou_satellite_signals;
-        std::vector<uint8_t> galileo_satellite_signals;
-        std::vector<uint8_t> qzss_satellite_signals;
+        std::map<std::string, std::string> headers_to_constellations;
+        std::map<std::string, std::vector<uint8_t> > satellite_signals;
 
         const uint8_t MAX_SATELLITE_SIGNAL_SIZE = 36;
         

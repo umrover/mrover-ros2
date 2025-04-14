@@ -33,6 +33,18 @@ namespace mrover {
         rtcm_sub = this->create_subscription<rtcm_msgs::msg::Message>("/rtcm", 10, [&](rtcm_msgs::msg::Message::ConstSharedPtr const& rtcm_message) {
             process_rtcm(rtcm_message);
         });
+
+        satellite_signals.insert({"GPS", std::vector<uint8_t>()});
+        satellite_signals.insert({"GLONASS", std::vector<uint8_t>()});
+        satellite_signals.insert({"BeiDou", std::vector<uint8_t>()});
+        satellite_signals.insert({"Galileo", std::vector<uint8_t>()});
+        satellite_signals.insert({"QZSS", std::vector<uint8_t>()});
+
+        headers_to_constellations.insert({"$GPGSV", "GPS"});
+        headers_to_constellations.insert({"$GLGSV", "GLONASS"});
+        headers_to_constellations.insert({"$GBGSV", "BeiDou"});
+        headers_to_constellations.insert({"$GAGSV", "Galileo"});
+        headers_to_constellations.insert({"$GQGSV", "QZSS"});
     }
 
     void RoverGPSDriver::process_rtcm(const rtcm_msgs::msg::Message::ConstSharedPtr &rtcm_msg) {
@@ -54,7 +66,7 @@ namespace mrover {
 
             if (msg_header == "$GNGGA") {
 
-                if (tokens.size() != 15) { return; }
+                if (tokens.size() != 16) { return; }
 
                 sensor_msgs::msg::NavSatFix nav_sat_fix;
                 mrover::msg::FixStatus fix_status;
@@ -204,59 +216,19 @@ namespace mrover {
 
             if (msg_header == "$GPGSV" || msg_header == "$GLGSV" || msg_header == "$GBGSV" || msg_header == "$GAGSV" || msg_header == "$GQGSV") {
 
-                if (tokens.size() < 10 || (tokens.size() - 10) % 4 != 0) { return; }
+                if (tokens.size() < 10 || (tokens.size() - 10) % 4 != 0 || tokens.size() > 26) { return; }
 
                 mrover::msg::SatelliteSignal signal;
-                if (msg_header == "$GPGSV") {
-                    signal.constellation = "GPS";
-                    for (size_t i = 7; i < tokens.size(); i += 4) {
-                        gps_satellite_signals.push_back(stoi(tokens[i]));
-                    }
-                    if (stoi(tokens[1]) == stoi(tokens[2]) || gps_satellite_signals.size() > MAX_SATELLITE_SIGNAL_SIZE) {
-                        signal.signal_strengths = gps_satellite_signals;
-                        gps_satellite_signals.clear();
-                    }
+                signal.constellation = headers_to_constellations[msg_header];
+                for (size_t i = 7; i < tokens.size(); i += 4) {
+                    satellite_signals[signal.constellation].push_back(stoi(tokens[i]));
                 }
-                if (msg_header == "$GLGSV") {
-                    signal.constellation = "GLONASS";
-                    for (size_t i = 7; i < tokens.size(); i += 4) {
-                        glonass_satellite_signals.push_back(stoi(tokens[i]));
-                    }
-                    if (stoi(tokens[1]) == stoi(tokens[2]) || glonass_satellite_signals.size() > MAX_SATELLITE_SIGNAL_SIZE) {
-                        signal.signal_strengths = glonass_satellite_signals;
-                        glonass_satellite_signals.clear();
-                    }
+                if (stoi(tokens[1]) == stoi(tokens[2]) || satellite_signals[signal.constellation].size() > MAX_SATELLITE_SIGNAL_SIZE) {
+                    signal.signal_strengths = satellite_signals[signal.constellation];
+                    satellite_signal_pub->publish(signal);
+                    satellite_signals[signal.constellation].clear();
                 }
-                if (msg_header == "$GBGSV") {
-                    signal.constellation = "BeiDou";
-                    for (size_t i = 7; i < tokens.size(); i += 4) {
-                        beidou_satellite_signals.push_back(stoi(tokens[i]));
-                    }
-                    if (stoi(tokens[1]) == stoi(tokens[2]) || beidou_satellite_signals.size() > MAX_SATELLITE_SIGNAL_SIZE) {
-                        signal.signal_strengths = beidou_satellite_signals;
-                        beidou_satellite_signals.clear();
-                    }
-                }
-                if (msg_header == "GAGSV") {
-                    signal.constellation = "Galileo";
-                    for (size_t i = 7; i < tokens.size(); i += 4) {
-                        galileo_satellite_signals.push_back(stoi(tokens[i]));
-                    }
-                    if (stoi(tokens[1]) == stoi(tokens[2]) || galileo_satellite_signals.size() > MAX_SATELLITE_SIGNAL_SIZE) {
-                        signal.signal_strengths = galileo_satellite_signals;
-                        galileo_satellite_signals.clear();
-                    }
-                }
-                if (msg_header == "GQGSV") {
-                    signal.constellation = "QZSS";
-                    for (size_t i = 7; i < tokens.size(); i += 4) {
-                        qzss_satellite_signals.push_back(stoi(tokens[i]));
-                    }
-                    if (stoi(tokens[1]) == stoi(tokens[2]) || qzss_satellite_signals.size() > MAX_SATELLITE_SIGNAL_SIZE) {
-                        signal.signal_strengths = qzss_satellite_signals;
-                        qzss_satellite_signals.clear();
-                    }
-                }
+                
             }
 
         }
