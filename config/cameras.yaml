@@ -14,7 +14,7 @@ boom_streamer:
   ros__parameters:
     port: 8082
     decode_jpeg_from_device: true
-    # dev_node: "/dev/boomcam"
+    dev_node: "/dev/boomcam"
     width: 640
     height: 480
     framerate: 15
@@ -26,7 +26,7 @@ mobility_streamer:
   ros__parameters:
     port: 8083
     decode_jpeg_from_device: true
-    # dev_node: "/dev/mobcam"
+    dev_node: "/dev/mobcam"
     width: 640
     height: 480
     framerate: 10
@@ -37,7 +37,7 @@ static_streamer:
   ros__parameters:
     port: 8081
     decode_jpeg_from_device: true
-    # dev_node: "/dev/static_cam"
+    dev_node: "/dev/static_cam"
     width: 640
     height: 480
     framerate: 15

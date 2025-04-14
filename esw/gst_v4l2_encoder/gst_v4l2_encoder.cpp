@@ -97,9 +97,10 @@ namespace mrover {
         gst_bus_add_watch(bus, gstBusMessage, this);
         gst_object_unref(bus);
 
-        if (gst_element_set_state(mPipeline, GST_STATE_PAUSED) == GST_STATE_CHANGE_FAILURE) {
-            throw std::runtime_error{"Failed initial pause on GStreamer pipeline"};
+        if (gst_element_set_state(mPipeline, GST_STATE_PLAYING) == GST_STATE_CHANGE_FAILURE){
+            throw std::runtime_error{"Failed to play GStreamer pipeline"};
         }
+
 
         mMainLoopThread = std::thread{[this] {
             RCLCPP_INFO_STREAM(get_logger(), "Entering GStreamer main loop");
@@ -179,13 +180,13 @@ namespace mrover {
             // 4) Run "udevadm info -q path -n /dev/video0" to get the sys path
             std::string devicePath = get_parameter("dev_path").as_string();
 
-            if (deviceNode.empty() && !devicePath.empty()) {
-                // deviceNode = findDeviceNode(devicePath);
+            if (!devicePath.empty()) {
+                deviceNode = findDeviceNode(devicePath);
             }
 
             gst_init(nullptr, nullptr);
 
-            initPipeline("");
+            initPipeline(deviceNode);
 
 
         } catch (std::exception const& e) {
