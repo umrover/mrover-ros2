@@ -1,34 +1,28 @@
 <template>
   <div class="wrap flex flex-col items-center justify-center p-4">
-    <div class="d-flex">
+    <div class="flex">
       <h3 class="m-0 me-3">Pano Cam</h3>
       <div class="button-group">
         <button 
           v-if="!panoActive" 
-          class="btn btn-success" @click="togglePano">
+          class="btn btn-success pano-btn" @click="togglePano">
           Start
         </button>
         <button 
           v-if="panoActive" 
-          class="btn btn-danger" @click="togglePano">
+          class="btn btn-danger pano-btn" @click="togglePano">
           Stop
         </button>
       </div>
     </div>
-    <div class="camera-feed-container mt-3">
-      <CameraFeed mission="pano" id="pano" name="Pano Camera" />
-    </div>
-
   </div>
 </template>
 
 <script lang="ts">
 import { mapActions } from 'vuex';
-import CameraFeed from './CameraFeed.vue';
 
 export default {
   components: {
-    CameraFeed
   },
 
   data() {
@@ -61,13 +55,8 @@ export default {
   text-align: center;
 }
 
-.camera-feed-container {
-  display: flex;
-  width: 100%;
-}
-
 .pano-btn {
   padding: 10px 20px;
-  color: white;
+  font-size: 20px;
 }
 </style>

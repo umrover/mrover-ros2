@@ -9,6 +9,9 @@ import rclpy
 import tf2_ros
 import asyncio
 import threading
+import numpy as np
+import cv2
+# from cv_bridge import CvBridge
 
 from tf2_ros.buffer import Buffer
 from lie import SE3
@@ -24,7 +27,7 @@ from backend.waypoints import (
     save_basic_waypoint_list,
 )
 from geometry_msgs.msg import Twist, Vector3
-from sensor_msgs.msg import NavSatFix, Temperature, RelativeHumidity
+from sensor_msgs.msg import NavSatFix, Temperature, RelativeHumidity, Image
 from mrover.msg import (
     Throttle,
     IK,
@@ -41,7 +44,9 @@ from mrover.msg import (
 )
 from mrover.srv import (
     EnableAuton, 
-    EnableBool, 
+    EnableBool,
+    PanoramaStart,
+    PanoramaEnd
 )
 from std_srvs.srv import SetBool
 
@@ -100,6 +105,8 @@ class GUIConsumer(JsonWebsocketConsumer):
         # Services
         self.enable_teleop_srv = node.create_client(SetBool, "/enable_teleop")
         self.enable_auton_srv = node.create_client(EnableAuton, "/enable_auton")
+        self.pano_start_srv = node.create_client(PanoramaStart, "/panorama/start")
+        self.pano_end_srv = node.create_client(PanoramaEnd, "/panorama/end")
 
         # EnableBool Requests
         self.auto_shutoff_service = node.create_client(EnableBool, "/science_change_heater_auto_shutoff_state")
@@ -176,6 +183,23 @@ class GUIConsumer(JsonWebsocketConsumer):
                 ],
             )
         )
+
+    def start_stop_pano(self, action: str) -> None:
+        if(action == "start"):
+            node.get_logger().info("Pano start")
+            self.pano_start_srv.call_async(PanoramaStart.Request())
+        else:
+            node.get_logger().info("Pano stop")
+            future = self.pano_end_srv.call_async(PanoramaEnd.Request())
+            if future.result():
+                img_msg: Image = future.result().img
+                img_np = np.frombuffer(img_msg.data, dtype=np.uint8).reshape(
+                    img_msg.height, img_msg.width, 4
+                )
+                cv2.imwrite("panorama.png", img_np)
+                node.get_logger().info('Image saved to panorama.png')
+            else:
+                node.get_logger().info('no response from pano service')
 
     def receive(self, text_data=None, bytes_data=None, **kwargs) -> None:
         """
@@ -275,11 +299,8 @@ class GUIConsumer(JsonWebsocketConsumer):
 
                 case {"type": "ls_toggle", "enable": e}:
                     self.sa_enable_switch_srv.call(EnableBool.Request(enable=e))
-                # case {"type": "pano", "action": a}:
-                #     if(a == "start"):
-                #         # stuff
-                #     else:
-                #         # more stuff
+                case {"type": "pano", "action": a}:
+                    self.start_stop_pano(a)
                 case _:
                     node.get_logger().warning(f"Unhandled message: {message}")
         except:

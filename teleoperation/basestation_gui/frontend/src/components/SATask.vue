@@ -100,14 +100,15 @@ export default {
 .wrapper {
   display: grid;
   grid-gap: 10px;
-  /* grid-template-columns: 50% repeat(2, auto); */
-  grid-template-columns: 20% 10% 15% 25% 30%;
+  grid-template-columns: 50% repeat(2, auto);
+  /* grid-template-columns: auto auto auto;  */
   grid-template-areas:
-    'header header header header header'
-    'arm lsActuator hexHub soilData waypoints'
-    'map map map odom waypoints'
-    'map map map pano pano'
-    'moteus moteus moteus moteus moteus';
+     'header header header'
+     'arm lsActuator soilData'
+     'map hexHub waypoints'
+     'map pano waypoints'
+     'map odom odom'
+     'moteus moteus moteus';
   font-family: sans-serif;
   height: auto;
 }
