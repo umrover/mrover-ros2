@@ -217,6 +217,7 @@ namespace mrover {
             if (msg_header == "$GPGSV" || msg_header == "$GLGSV" || msg_header == "$GBGSV" || msg_header == "$GAGSV" || msg_header == "$GQGSV") {
 
                 if (tokens.size() < 10 || (tokens.size() - 10) % 4 != 0 || tokens.size() > 26) { return; }
+                if (stoi(tokens[3]) == 0) { return; }
 
                 mrover::msg::SatelliteSignal signal;
                 signal.constellation = headers_to_constellations[msg_header];
