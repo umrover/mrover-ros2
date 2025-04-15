@@ -31,6 +31,8 @@ namespace mrover {
         	HAL_StatusTypeDef status;
 			status = HAL_I2C_Mem_Read_IT(i2c, dev_addr << 1, key_addr, 1, oxygen_buf, 1);
 			if (status != HAL_OK) {
+				HAL_I2C_DeInit(i2c);
+				HAL_I2C_Init(i2c);
 				calibration_multiplier = std::numeric_limits<double>::quiet_NaN();
 			}
         }
@@ -40,6 +42,8 @@ namespace mrover {
         	HAL_StatusTypeDef status;
 			status = HAL_I2C_Mem_Read_IT(i2c, dev_addr << 1, mem_addr, 1, oxygen_buf, 3);
 			if (status != HAL_OK) {
+				HAL_I2C_DeInit(i2c);
+				HAL_I2C_Init(i2c);
 				calibration_multiplier = std::numeric_limits<double>::quiet_NaN();
 				percent = std::numeric_limits<double>::quiet_NaN();
 			}

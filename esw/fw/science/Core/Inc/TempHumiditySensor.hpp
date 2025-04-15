@@ -26,6 +26,8 @@ namespace mrover {
             uint8_t command[3] = {0xAC, 0x33, 0x00};
             status = HAL_I2C_Master_Transmit_IT(i2c, (dev_addr << 1), command, 3);
             if (status != HAL_OK) {
+            	HAL_I2C_DeInit(i2c);
+				HAL_I2C_Init(i2c);
                 temp = std::numeric_limits<double>::quiet_NaN();
                 humidity = std::numeric_limits<double>::quiet_NaN();
                 return;
@@ -36,6 +38,8 @@ namespace mrover {
         	HAL_StatusTypeDef status;
         	status = HAL_I2C_Master_Receive_IT(i2c, (dev_addr << 1) | 0x01, th_buf, 6);
 			if (status != HAL_OK) {
+				HAL_I2C_DeInit(i2c);
+				HAL_I2C_Init(i2c);
 				temp = std::numeric_limits<double>::quiet_NaN();
 				humidity = std::numeric_limits<double>::quiet_NaN();
 				return;

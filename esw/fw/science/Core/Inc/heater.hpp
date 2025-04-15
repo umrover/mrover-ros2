@@ -11,7 +11,7 @@
 
 namespace mrover {
 
-	constexpr static float DEFAULT_MAX_HEATER_TEMP = 50.0f;
+	constexpr static float DEFAULT_MAX_HEATER_TEMP = 150.0f;
 
     class Heater {
     public:

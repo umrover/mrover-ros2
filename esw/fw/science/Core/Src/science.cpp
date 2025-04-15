@@ -45,9 +45,8 @@ namespace mrover {
 		th_sensor = TempHumiditySensor(&hi2c3);
 		fdcan_bus = FDCAN<InBoundScienceMessage>(&hfdcan1);
 
-        std::array<DiagTempSensor, 2> diag_temp_sensors =
+        std::array<DiagTempSensor, 1> diag_temp_sensors =
 		{
-				DiagTempSensor{adc_sensor1, 4},
 				DiagTempSensor{adc_sensor1, 5},
 
 		};
@@ -64,7 +63,8 @@ namespace mrover {
         white_leds.at(0) = white_leds.at(0);
 
         for (int i = 0; i < 2; ++i) {
-        	heaters.at(i) = Heater(diag_temp_sensors[i], heater_pins[i]);
+        	heaters.at(i) = Heater(diag_temp_sensors[0], heater_pins[i]);
+            heaters.at(i).set_auto_shutoff(false);
         }
 
         HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_RESET);
@@ -120,10 +120,20 @@ namespace mrover {
     void feed(EnableScienceDeviceCommand const& message) {
         switch (message.science_device) {
             case ScienceDevice::HEATER_0:
-                heaters.at(0).enable_if_possible(message.enable);
+                if (message.enable) {
+                    heaters.at(0).enable_if_possible(message.enable);
+                    heaters.at(1).enable_if_possible(message.enable);
+                } else {
+                    heaters.at(0).enable_if_possible(message.enable);
+                }
                 break;
             case ScienceDevice::HEATER_1:
-            	heaters.at(1).enable_if_possible(message.enable);
+                if (message.enable) {
+                    heaters.at(0).enable_if_possible(message.enable);
+                    heaters.at(1).enable_if_possible(message.enable);
+                } else {
+                    heaters.at(1).enable_if_possible(message.enable);
+                }
                 break;
             case ScienceDevice::WHITE_LED:
                 white_leds.at(0).write(message.enable ? GPIO_PIN_SET : GPIO_PIN_RESET);

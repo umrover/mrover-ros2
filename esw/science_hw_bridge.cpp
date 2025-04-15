@@ -31,11 +31,12 @@ namespace mrover {
 
     private:
         static constexpr std::uint8_t NUM_HEATERS = 4;
+        static constexpr std::uint8_t NUM_THERMISTORS = 2;
         bool mUVSensorOnA;
         bool mTempHumiditySensorOnA;
         bool mOxygenSensorOnA;
-        std::array<std::uint8_t, 4> mHeaterStates;
-        std::array<float, 4> mThermistorTemps;
+        std::array<std::uint8_t, NUM_HEATERS> mHeaterStates;
+        std::array<float, NUM_THERMISTORS> mThermistorTemps;
 
         rclcpp::Publisher<sensor_msgs::msg::Temperature>::SharedPtr mTemperaturePub;
         rclcpp::Publisher<sensor_msgs::msg::RelativeHumidity>::SharedPtr mHumidityPub;
@@ -86,7 +87,7 @@ namespace mrover {
                 heaterData.state.at(i) = mHeaterStates[i];
             }
 
-            for (int i = 0; i < NUM_HEATERS / 2; ++i) {
+            for (int i = 0; i < NUM_HEATERS / 2; i++) {
                 int h = prevScienceMessage == ScienceBoard::A ? i : i + (NUM_HEATERS / 2);
                 heaterData.state.at(h) = GET_BIT_AT_INDEX(message.heater_state_info.on, i);
                 mHeaterStates[h] = GET_BIT_AT_INDEX(message.heater_state_info.on, i);
@@ -100,13 +101,13 @@ namespace mrover {
             scienceThermistors.temps.resize(NUM_HEATERS);
 
             for (int i = 0; i < NUM_HEATERS; i++) {
-                scienceThermistors.temps.at(i).temperature = mThermistorTemps[i];
+                scienceThermistors.temps.at(i).temperature = mThermistorTemps[i / 2];
             }
 
-            for (int i = 0; i < NUM_HEATERS / 2; ++i) {
-                int t = prevScienceMessage == ScienceBoard::A ? i : i + (NUM_HEATERS / 2);
+            for (int i = 0; i < NUM_THERMISTORS; i++) {
+                int t = prevScienceMessage == ScienceBoard::A ? i : i + NUM_THERMISTORS;
                 scienceThermistors.temps.at(t).temperature = message.temps[i];
-                mThermistorTemps[t] = message.temps[i];
+                mThermistorTemps[i] = message.temps[i];
             }
 
             mThermistorsPub->publish(scienceThermistors);
