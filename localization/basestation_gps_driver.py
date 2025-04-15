@@ -44,6 +44,23 @@ class BaseStationDriverNode(Node):
         self.serial = Serial(port, baud, timeout=1)
         self.reader = UBXReader(self.serial, protfilter=UBX_PROTOCOL | RTCM3_PROTOCOL)
 
+        self.satellite_signals = dict()
+        self.satellite_signals["GPS"] = list()
+        self.satellite_signals["SBAS"] = list()
+        self.satellite_signals["Galileo"] = list()
+        self.satellite_signals["BeiDou"] = list()
+        self.satellite_signals["QZSS"] = list()
+        self.satellite_signals["GLONASS"] = list()
+
+        self.gnssId_to_constellation = {
+            0: "GPS",
+            1: "SBAS",
+            2: "Galileo",
+            3: "BeiDou",
+            5: "QZSS",
+            6: "GLONASS",
+        }
+
     def spin(self) -> None:
         
         while rclpy.ok():
@@ -85,18 +102,14 @@ class BaseStationDriverNode(Node):
                     for i in range(msg.numSvs):
                         gnssId = getattr(msg, f"gnssId_{i+1:02d}")
                         cno = getattr(msg, f"cno_{i+1:02d}")
-                        if gnssId == 0:
-                            self.satellite_signal_pub.publish(SatelliteSignal(constellation="GPS", signal_strength=cno))
-                        elif gnssId == 1:
-                            self.satellite_signal_pub.publish(SatelliteSignal(constellation="SBAS", signal_strength=cno))
-                        elif gnssId == 2:
-                            self.satellite_signal_pub.publish(SatelliteSignal(constellation="Galileo", signal_strength=cno))
-                        elif gnssId == 3:
-                            self.satellite_signal_pub.publish(SatelliteSignal(constellation="BeiDou", signal_strength=cno))
-                        elif gnssId == 5:
-                            self.satellite_signal_pub.publish(SatelliteSignal(constellation="QZSS", signal_strength=cno))
-                        elif gnssId == 6:
-                            self.satellite_signal_pub.publish(SatelliteSignal(constellation="GLONASS", signal_strength=cno))
+
+                        if gnssId in self.gnssId_to_constellation:
+                            self.satellite_signals[self.gnssId_to_constellation[gnssId]].append(cno)
+
+                    for constellation in self.satellite_signals:
+                        if self.satellite_signals[constellation]:
+                            self.satellite_signal_pub.publish(SatelliteSignal(constellation=constellation, signal_strengths=self.satellite_signals[constellation]))
+                            self.satellite_signals[constellation].clear()
 
             rclpy.spin_once(self, timeout_sec=0)
 
