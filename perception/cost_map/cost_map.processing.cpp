@@ -5,6 +5,7 @@
 namespace mrover {
 
     constexpr static double IMU_WATCHDOG_TIMEOUT = 0.1;
+    double CostMapNode::inflation_radius = 3.0;
 
     auto remap(double x, double inMin, double inMax, double outMin, double outMax) -> double {
         return (x - inMin) * (outMax - outMin) / (inMax - inMin) + outMin;
@@ -78,14 +79,13 @@ namespace mrover {
 
 
             constexpr double MAX_COST_RADIUS = 2;
-            constexpr double INFLATION_RADIUS = 3;
 
             nav_msgs::msg::OccupancyGrid postProcessed = mGlobalGridMsg;
             std::ptrdiff_t width = postProcessed.info.width;
             std::ptrdiff_t height = postProcessed.info.height;
             double resolution = postProcessed.info.resolution;
 
-            int maxInflationCells = static_cast<int>(INFLATION_RADIUS / resolution);
+            int maxInflationCells = static_cast<int>(inflation_radius / resolution);
 
             std::array<std::ptrdiff_t, 11> dis{0,
                                                -1,
@@ -118,13 +118,13 @@ namespace mrover {
 
                             double distance = std::sqrt(dx * dx + dy * dy);
 
-                            if (distance <= INFLATION_RADIUS) {
+                            if (distance <= inflation_radius) {
                                 std::ptrdiff_t neighborIndex = (centerY + dy) * width + (centerX + dx);
 
                                 if (distance <= MAX_COST_RADIUS) {
                                     postProcessed.data[neighborIndex] = OCCUPIED_COST;
                                 } else {
-                                    double factor = (INFLATION_RADIUS - distance) / (INFLATION_RADIUS - MAX_COST_RADIUS);
+                                    double factor = (inflation_radius - distance) / (inflation_radius - MAX_COST_RADIUS);
                                     postProcessed.data[neighborIndex] = std::max(postProcessed.data[neighborIndex],
                                                                                  static_cast<std::int8_t>(/*factor * */ OCCUPIED_COST));
                                 }
@@ -185,6 +185,13 @@ namespace mrover {
         mGlobalGridMsg.info.origin.position.y = centerInMap.y() - mSize / 2;
         res->success = true;
         RCLCPP_INFO_STREAM(get_logger(), "Moved cost map");
+    }
+
+    auto CostMapNode::dilateCostMapCallback(mrover::srv::DilateCostMap_Request::ConstSharedPtr& req, mrover::srv::DilateCostMap_Response::SharedPtr& res) -> void {
+        RCLCPP_INFO_STREAM(get_logger(), "Incoming request: Dilating cost map to " << req->inflation_radius);
+        inflation_radius = req->inflation_radius;
+        res->success = true;
+        //std::ranges::fill(mGlobalGridMsg.data, UNKNOWN_COST);
     }
 
 } // namespace mrover

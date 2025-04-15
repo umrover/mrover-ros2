@@ -19,7 +19,7 @@ def cartesian_to_ij(context: Context, cart_coord: np.ndarray) -> np.ndarray:
     :param cart_coord: array of x and y cartesian coordinates
     :return: array of i and j coordinates for the occupancy grid
     """
-    return np.floor((cart_coord[0:2] - context.env.cost_map.origin) / context.env.cost_map.resolution).astype(np.int8)
+    return np.floor((cart_coord[0:2] - context.env.cost_map.origin) / context.env.cost_map.resolution).astype(np.int32)
 
 
 def ij_to_cartesian(context: Context, ij_coords: np.ndarray) -> np.ndarray:
@@ -67,7 +67,9 @@ def vec_angle(self, v1: tuple, v2: tuple) -> float:
     return abs(angle_rad)
 
 
-def gen_marker(context: Context, point=[0.0, 0.0], color=[1.0, 1.0, 1.0], size=0.2, lifetime=5, id=0) -> Marker:
+def gen_marker(
+    context: Context, point=[0.0, 0.0], color=[1.0, 1.0, 1.0], size=0.2, lifetime=5, id=0, delete=False
+) -> Marker:
     """
     Creates and publishes a single spherical marker at the specified (x, y, z) coordinates.
 
@@ -86,6 +88,11 @@ def gen_marker(context: Context, point=[0.0, 0.0], color=[1.0, 1.0, 1.0], size=0
     marker.ns = "single_point"
     marker.id = id
     marker.type = Marker.SPHERE
+
+    if delete:
+        marker.action = Marker.DELETEALL
+        return marker
+
     marker.action = Marker.ADD
 
     # Set the scale (size) of the sphere
@@ -110,7 +117,7 @@ def gen_marker(context: Context, point=[0.0, 0.0], color=[1.0, 1.0, 1.0], size=0
     return marker
 
 
-def segment_path(context: Context, dest: np.ndarray, seg_len: float = 1):
+def segment_path(context: Context, dest: np.ndarray, seg_len: float = 2.0):
     """
     Segment the path from the rover's current position to the current waypoint into equally spaced points
 
@@ -139,17 +146,15 @@ def segment_path(context: Context, dest: np.ndarray, seg_len: float = 1):
         direction = (dest - rover_translation) / num_segments
 
         # Create the segments by adding the direction vector to the rover's position
-        traj_path = np.array([rover_translation + i * direction for i in range(0, num_segments)])
-        np.append(traj_path, dest)
+        temp = np.array([rover_translation + i * direction for i in range(0, num_segments)])
+        traj_path = np.concatenate((temp, np.array([dest])), axis=0)  #
 
     # Create a Trajectory object from the segmented path
-    segmented_trajectory = Trajectory(np.hstack((traj_path, np.zeros((traj_path.shape[0], 1)))))
-
-    context.node.get_logger().info(f"Segmented path: {segmented_trajectory.coordinates}")
+    segmented_trajectory = Trajectory(np.hstack((traj_path, np.zeros((traj_path.shape[0], 1))))[1:])
     return segmented_trajectory
 
 
-def is_high_cost_point(point: np.ndarray, context: Context, min_cost=0.2) -> bool:
+def is_high_cost_point(point: np.ndarray, context: Context) -> bool:
     cost_map = context.env.cost_map.data
 
     point_ij = cartesian_to_ij(context=context, cart_coord=point)
@@ -157,4 +162,4 @@ def is_high_cost_point(point: np.ndarray, context: Context, min_cost=0.2) -> boo
     if not (0 <= int(point_ij[0]) < cost_map.shape[0] and 0 <= int(point_ij[1]) < cost_map.shape[1]):
         context.node.get_logger().warn("Point is out of bounds in the costmap")
         return False
-    return cost_map[int(point_ij[0])][int(point_ij[1])] > min_cost
+    return cost_map[int(point_ij[0])][int(point_ij[1])] > context.node.get_parameter("search.traversable_cost").value

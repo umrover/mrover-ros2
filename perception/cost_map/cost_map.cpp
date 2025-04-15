@@ -23,6 +23,11 @@ namespace mrover {
                                                                                    mrover::srv::MoveCostMap::Response::SharedPtr response) {
             moveCostMapCallback(request, response);
         });
+
+        dCostServer = create_service<srv::DilateCostMap>("dilate_cost_map", [this](mrover::srv::DilateCostMap_Request::ConstSharedPtr req, mrover::srv::DilateCostMap_Response::SharedPtr res) {
+            dilateCostMapCallback(req, res);
+        });
+
         mPcSub = create_subscription<sensor_msgs::msg::PointCloud2>("/zed/left/points", 1, [this](sensor_msgs::msg::PointCloud2::ConstSharedPtr const& msg) {
             pointCloudCallback(msg);
         });

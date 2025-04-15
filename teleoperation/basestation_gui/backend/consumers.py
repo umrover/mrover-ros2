@@ -168,6 +168,7 @@ class GUIConsumer(JsonWebsocketConsumer):
                 waypoints=[
                     GPSWaypoint(
                         tag_id=waypoint["tag_id"],
+                        enable_costmap=waypoint["enable_costmap"],
                         latitude_degrees=waypoint["latitude_degrees"],
                         longitude_degrees=waypoint["longitude_degrees"],
                         type=WaypointType(val=int(waypoint["type"])),

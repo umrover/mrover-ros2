@@ -6,8 +6,22 @@
     <div class="row">
       <div class="col text-center">
         <button
+          v-if="!enable_costmap"
           class="btn btn-danger"
-          @click="$emit('delete', { waypoint })"
+          @click="toggleCostmap"
+        >
+          Costmap
+        </button>
+        <button
+          v-if="enable_costmap"
+          class="btn btn-success"
+          @click="toggleCostmap"
+        >
+          Costmap
+        </button>
+        <button
+          class="btn btn-danger"
+          @click="deleteWaypoint"
         >
           Delete
         </button>
@@ -32,6 +46,23 @@ export default {
       type: Object,
       required: true
     },
+  },
+
+  data() {
+    return {
+      enable_costmap: true
+    }
+  },
+
+  methods: {
+    toggleCostmap() {
+      this.enable_costmap = !this.enable_costmap
+      this.$emit('toggleCostmap', { waypoint: this.waypoint, enable_costmap: this.enable_costmap })
+    },
+
+    deleteWaypoint() {
+      this.$emit('delete', { waypoint: this.waypoint })
+    }
   },
 
   computed: {
@@ -68,6 +99,6 @@ export default {
 }
 
 button {
-  margin: 0px 2px 0px 2px;
+  margin: 0px 4px 0px 4px;
 }
 </style>

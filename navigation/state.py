@@ -1,10 +1,12 @@
 from geometry_msgs.msg import Twist
 from state_machine.state import State
 from . import waypoint
+from .context import Context
 
 
 class DoneState(State):
-    def on_enter(self, context) -> None:
+    def on_enter(self, context: Context) -> None:
+        context.node.get_logger().info("Entered done state!")
         pass
 
     def on_exit(self, context) -> None:
