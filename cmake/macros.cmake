@@ -21,6 +21,20 @@ endmacro()
 
 macro(mrover_add_library name sources includes)
     file(GLOB_RECURSE LIBRARY_SOURCES CONFIGURE_DEPENDS ${sources})
+    list(FILTER LIBRARY_SOURCES EXCLUDE REGEX ".*/main.*\.cpp")
+
+    ### VARIABLES FOR COMPONENTS ###
+
+    # there must be at least one source
+    message("Sources ${LIBRARY_SOURCES}")
+    list(GET LIBRARY_SOURCES 0 ${name}_first_source)
+    message("First source ${${name}_first_source}")
+    # gets the parent directory of this executable
+    cmake_path(GET ${name}_first_source PARENT_PATH ${name}_main_dir)
+    message("${name}_main_dir source directory ${${name}_main_dir}")
+
+    ### VARIABLES FOR COMPONENTS ###
+
     add_library(${name} ${ARGV3} ${LIBRARY_SOURCES})
     mrover_target(${name})
     target_include_directories(${name} PUBLIC ${includes})
@@ -44,8 +58,9 @@ macro(mrover_add_node name sources)
 endmacro()
 
 macro(mrover_add_component name sources includes)
-    # Create Composition Library
+    # create composition library
     mrover_add_library(${name}_component ${sources} ${includes} SHARED)
+    # creates the variable for the main file
     rosidl_target_interfaces(${name}_component ${PROJECT_NAME} "rosidl_typesupport_cpp")
     foreach(node ${ARGN})
         rclcpp_components_register_nodes(${name}_component "mrover::${node}")
@@ -59,9 +74,20 @@ macro(mrover_add_component name sources includes)
 )
 endmacro()  
 
-macro(mrover_executable_from_component name main_file)
-    mrover_add_node(${name} ${main_file})
-    target_link_libraries(${name} ${ARGN})
+macro(mrover_executable_from_component name library)
+    if(EXISTS "${${library}_main_dir}/main.cpp")
+        message("${${library}_main_dir}/main.cpp exists...")
+        mrover_add_node(${name} ${${library}_main_dir}/main.cpp)
+    else()
+        message("${${library}_main_dir}/main.cpp does not exist...")
+        if(EXISTS "${${library}_main_dir}/main.${name}.cpp")
+            message("${${library}_main_dir}/main.${name}.cpp exists...")
+            mrover_add_node(${name} ${${library}_main_dir}/main.${name}.cpp)
+        else()
+            message(FATAL_ERROR "${${library}_main_dir}/main.${name}.cpp does not exist...")
+        endif()
+    endif()
+    target_link_libraries(${name} ${library})
 endmacro()
 
 macro(mrover_link_component name)

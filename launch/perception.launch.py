@@ -28,6 +28,13 @@ def generate_launch_description():
             ),
             ComposableNode(
                 package="mrover",
+                plugin="mrover::UsbCamera",
+                name="long_range_cam",
+                parameters=[Path(get_package_share_directory("mrover"), "config", "perception.yaml")],
+                extra_arguments=[{"use_intra_process_comms": True}],
+            ),
+            ComposableNode(
+                package="mrover",
                 plugin="mrover::ImageTagDetector",
                 name="image_tag_detector",
                 parameters=[Path(get_package_share_directory("mrover"), "config", "perception.yaml")],

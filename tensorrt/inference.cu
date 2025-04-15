@@ -18,8 +18,8 @@ Inference::Inference(std::string modelName, std::string packagePathString) :  mM
 	//Create ONNX and engine file paths
 	mLogger.log(ILogger::Severity::kINFO, mModelName.c_str());
 	mLogger.log(ILogger::Severity::kINFO, mPackagePath.c_str());
-	mONNXModelPath = std::filesystem::path{packagePathString} / "data" / std::string(mModelName + ".onnx");
-	mEngineModelPath = std::filesystem::path{packagePathString} / "data" / std::string("tensorrt-engine-" + mModelName + ".engine");;
+	mONNXModelPath = std::filesystem::path{mPackagePath} / "data" / std::string(mModelName + ".onnx");
+	mEngineModelPath = std::filesystem::path{mPackagePath} / "data" / std::string("tensorrt-engine-" + mModelName + ".engine");;
 
 	std::array<char, 150> message{};
 	std::snprintf(message.data(), message.size(), "Reading from ONNX model at %s and creating TensorRT engine at %s", mONNXModelPath.c_str(), mEngineModelPath.c_str());

@@ -264,7 +264,7 @@ if(ZED_FOUND AND CUDA_FOUND)
     mrover_link_component(zed parameter_utils lie MANIF::manif ${CUDA_LIBRARIES} loop_profiler cuda_compiler_flags)
     mrover_ament_component(zed rclcpp rclcpp_components sensor_msgs ZED CUDA tf2 tf2_ros)
 
-    mrover_executable_from_component(zed perception/executables/zed.cpp zed_component)
+    mrover_executable_from_component(zed zed_component)
 
     # Learning Library
     # TODO(john): Update to use the new API
@@ -278,8 +278,8 @@ if(ZED_FOUND AND CUDA_FOUND)
     mrover_link_component(object_detector opencv_core opencv_dnn opencv_imgproc lie tbb tensorrt opencv_imgcodecs opencv_highgui loop_profiler parameter_utils cuda_compiler_flags)
     mrover_ament_component(object_detector rclcpp sensor_msgs rclcpp_components CUDA tf2 tf2_ros)
 
-    mrover_executable_from_component(stereo_object_detector perception/executables/stereo_object_detector.cpp object_detector_component)
-    mrover_executable_from_component(image_object_detector perception/executables/image_object_detector.cpp object_detector_component)
+    mrover_executable_from_component(stereo_object_detector object_detector_component)
+    mrover_executable_from_component(image_object_detector object_detector_component)
 else()
     message("ZED not found...")
 endif()
@@ -289,8 +289,8 @@ mrover_add_component(tag_detector perception/tag_detector/*.cpp perception/tag_d
 mrover_ament_component(tag_detector rclcpp rclcpp_components tf2 tf2_ros)
 mrover_link_component(tag_detector lie opencv_core opencv_aruco opencv_imgproc loop_profiler parameter_utils)
 
-mrover_executable_from_component(stereo_tag_detector perception/executables/stereo_tag_detector.cpp tag_detector_component)
-mrover_executable_from_component(image_tag_detector perception/executables/image_tag_detector.cpp tag_detector_component)
+mrover_executable_from_component(stereo_tag_detector tag_detector_component)
+mrover_executable_from_component(image_tag_detector tag_detector_component)
 
 # Embedded
 mrover_add_header_only_library(messaging esw/messaging)
@@ -323,10 +323,11 @@ target_link_libraries(arm_controller lie)
 ament_target_dependencies(arm_controller rclcpp)
 
 if (Gst_FOUND AND GstApp_FOUND)
-    mrover_add_node(usb_camera esw/usb_camera/*.cpp esw/usb_camera/pch.hpp)
-    target_link_libraries(usb_camera PkgConfig::Gst PkgConfig::GstApp opencv_core opencv_imgcodecs parameter_utils)
-    ament_target_dependencies(usb_camera rclcpp)
+    mrover_add_component(usb_camera esw/usb_camera/*.cpp esw/usb_camera/pch.hpp UsbCamera)
+    mrover_ament_component(usb_camera rclcpp rclcpp_components tf2 tf2_ros)
+    mrover_link_component(usb_camera PkgConfig::Gst PkgConfig::GstApp opencv_core opencv_imgcodecs parameter_utils)
 
+    mrover_executable_from_component(usb_camera usb_camera_component)
     if (LibUdev_FOUND)
         mrover_add_library(websocket_server esw/websocket_server/*.cpp esw/websocket_server)
         target_compile_definitions(websocket_server PUBLIC BOOST_ASIO_NO_DEPRECATED)
