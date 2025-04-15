@@ -40,7 +40,7 @@
       </div>
       <h4 class="waypoint-headers my-3">Current Course</h4>
       <div class="route">
-        <WaypointItem v-for="waypoint in route" :key="waypoint" :waypoint="waypoint" @delete="deleteItem(waypoint)" />
+        <WaypointItem v-for="waypoint in currentRoute" :key="waypoint" :waypoint="waypoint" :globalCostmap="currentState" @delete="deleteItem(waypoint)" />
       </div>
     </div>
   </div>
@@ -165,6 +165,8 @@ export default {
 
       route: reactive([]),
 
+      currentRoute: [],
+
       autonButtonColor: 'btn-danger',
 
       roverStuck: false,
@@ -208,6 +210,9 @@ export default {
           return { latLng: L.latLng(lat, lon), name: waypoint.name }
         })
         this.setRoute(waypoints)
+        console.log("here1", this.currentRoute)
+        // no need to use newRoute as we have pushed the new waypoint already in the addItem function, so we just save currentRoute to db
+        this.sendMessage({ type: "save_current_auton_course", data: this.currentRoute })
       },
       deep: true
     },
@@ -226,6 +231,7 @@ export default {
         this.autonButtonColor = this.autonEnabled ? 'btn-success' : 'btn-danger'
       } else if (msg.type == 'get_auton_waypoint_list') {
         // Get waypoints from server on page load
+        console.log(msg)
         if(msg.data.length > 0) this.waypoints = msg.data 
         const waypoints = msg.data.map((waypoint: { lat: any; lon: any; name: any }) => {
           const lat = waypoint.lat
@@ -233,6 +239,11 @@ export default {
           return { latLng: L.latLng(lat, lon), name: waypoint.name }
         })
         this.setWaypointList(waypoints)
+      } 
+      if (msg.type == 'get_current_auton_course') {
+        console.log("here2 before", this.currentRoute)
+        this.currentRoute = msg.data 
+        console.log("here2", this.currentRoute)
       }
     },
   },
@@ -257,6 +268,7 @@ export default {
     window.setTimeout(() => {
       // Timeout so websocket will be initialized
       this.sendMessage({ type: 'get_auton_waypoint_list' })
+      this.sendMessage({ type: 'get_current_auton_course' })
     }, 250)
   },
 
@@ -300,12 +312,16 @@ export default {
       waypoint.in_route = false
       const index = this.route.indexOf(waypoint)
       this.route.splice(index, 1)
+      this.currentRoute.splice(this.currentRoute.indexOf(waypoint), 1)
+      this.sendMessage({ type: 'delete_auton_waypoint_from_course', data: waypoint })
     },
 
     // Add item from all waypoints div to current waypoints div
     addItem: function (waypoint) {
       if (!waypoint.in_route) {
         this.route.push(waypoint)
+        // this is where the new waypoint is added into current route
+        this.currentRoute.push(waypoint)
         waypoint.in_route = true
       }
     },
