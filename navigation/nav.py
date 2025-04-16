@@ -9,8 +9,6 @@ from navigation.context import Context
 from navigation.long_range import LongRangeState
 from navigation.backup import BackupState
 from navigation.stuck_recovery import StuckRecoveryState
-from navigation.high_cost_recovery import HighCostRecoveryState
-from navigation.search import SearchState
 from navigation.costmap_search import CostmapSearchState
 from navigation.state import DoneState, OffState, off_check
 from navigation.waypoint import WaypointState
@@ -51,6 +49,7 @@ class Navigation(Node):
                 ("costmap.use_costmap", Parameter.Type.BOOL),
                 ("costmap.a_star_thresh", Parameter.Type.DOUBLE),
                 ("costmap.costmap_thresh", Parameter.Type.DOUBLE),
+                ("costmap.initial_inflation_radius", Parameter.Type.DOUBLE),
                 # Drive
                 ("drive.max_driving_effort", Parameter.Type.DOUBLE),
                 ("drive.min_driving_effort", Parameter.Type.DOUBLE),
@@ -78,7 +77,6 @@ class Navigation(Node):
                 ("search.safe_approach_distance", Parameter.Type.DOUBLE),
                 ("search.angle_thresh", Parameter.Type.DOUBLE),
                 ("search.distance_threshold", Parameter.Type.DOUBLE),
-                ("search.initial_inflation_radius", Parameter.Type.DOUBLE),
                 # Image Targets
                 ("image_targets.increment_weight", Parameter.Type.INTEGER),
                 ("image_targets.decrement_weight", Parameter.Type.INTEGER),
@@ -102,10 +100,8 @@ class Navigation(Node):
             ApproachTargetState(),
             [
                 WaypointState(),
-                SearchState(),
                 CostmapSearchState(),
                 StuckRecoveryState(),
-                HighCostRecoveryState(),
                 DoneState(),
             ],
         )
@@ -114,16 +110,11 @@ class Navigation(Node):
             StuckRecoveryState(),
             [
                 WaypointState(),
-                SearchState(),
                 CostmapSearchState(),
                 BackupState(),
                 ApproachTargetState(),
                 LongRangeState(),
             ],
-        )
-        self.state_machine.add_transitions(  # To be deleted eventually
-            SearchState(),
-            [ApproachTargetState(), LongRangeState(), WaypointState(), StuckRecoveryState()],
         )
         self.state_machine.add_transitions(DoneState(), [WaypointState()])
         self.state_machine.add_transitions(
@@ -132,10 +123,8 @@ class Navigation(Node):
                 BackupState(),
                 ApproachTargetState(),
                 LongRangeState(),
-                SearchState(),
                 CostmapSearchState(),
                 StuckRecoveryState(),
-                HighCostRecoveryState(),
                 DoneState(),
             ],
         )
@@ -143,31 +132,15 @@ class Navigation(Node):
             LongRangeState(),
             [
                 ApproachTargetState(),
-                SearchState(),
                 CostmapSearchState(),
                 WaypointState(),
                 StuckRecoveryState(),
-                HighCostRecoveryState(),
             ],
         )
         self.state_machine.add_transitions(
-            CostmapSearchState(), 
-            [WaypointState(), 
-             StuckRecoveryState(), 
-             HighCostRecoveryState(),
-             ApproachTargetState(), 
-             LongRangeState()]
+            CostmapSearchState(), [WaypointState(), StuckRecoveryState(), ApproachTargetState(), LongRangeState()]
         )
 
-        self.state_machine.add_transitions(
-            HighCostRecoveryState(),
-            [
-                ApproachTargetState(),
-                CostmapSearchState(),
-                LongRangeState(),
-                WaypointState(),
-            ]
-        )
         self.state_machine.add_transitions(OffState(), [WaypointState(), DoneState()])
         self.state_machine.configure_off_switch(OffState(), off_check)
         # TODO(quintin): Make the rates configurable as parameters

@@ -29,7 +29,7 @@ class StuckRecoveryState(State):
 
     def on_enter(self, context: Context) -> None:
         self.reset(context)
-        
+
         self.start_time = context.node.get_clock().now()
 
     def on_exit(self, context: Context) -> None:

@@ -15,7 +15,6 @@ class DoneState(State):
     def on_loop(self, context) -> State:
         # Check if we have a course to traverse
         if context.course and not context.course.is_complete():
-            context.node.get_logger().info("More waypoints to search, transitioning back to waypoint state")
             return waypoint.WaypointState()
 
         # Stop rover

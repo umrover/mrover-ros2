@@ -23,6 +23,7 @@ navigation:
       use_costmap: false
       a_star_thresh: 0.05
       costmap_thresh: 0.4
+      initial_inflation_radius: 3.0
       
 
     image_targets:
@@ -56,11 +57,10 @@ navigation:
       segments_per_rotation: 16
       distance_between_spirals: 3.0
       max_segment_length: 1.0
-      traversable_cost: 0.2
+      traversable_cost: 5.0
       safe_approach_distance: 5.0
       angle_thresh: 0.0872665 #pi/36 radians / 5 degrees
       distance_threshold: 2.0
-      initial_inflation_radius: 3.0
       update_delay: 3.0
       
     single_tag:

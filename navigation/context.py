@@ -5,6 +5,7 @@ from dataclasses import dataclass
 import numpy as np
 import pymap3d
 import rclpy
+from scipy import ndimage
 
 import tf2_ros
 from geometry_msgs.msg import Twist
@@ -77,7 +78,6 @@ class Environment:
     arrived_at_target: bool = False
     arrived_at_waypoint: bool = False
     last_target_location: np.ndarray | None = None
-    last_spiral_point: int | None = None
 
     def get_target_position(self, frame: str) -> np.ndarray | None:
         """
@@ -317,7 +317,9 @@ def convert_gps_to_cartesian(reference_point: np.ndarray, waypoint: GPSWaypoint)
     # Zero the z-coordinate because even though the altitudes are set to zero,
     # Two points on a sphere are not going to have the same z-coordinate.
     # Navigation algorithms currently require all coordinates to have zero as the z-coordinate.
-    return Waypoint(tag_id=waypoint.tag_id, type=waypoint.type, enable_costmap=waypoint.enable_costmap), SE3.from_position_orientation(x, y)
+    return Waypoint(
+        tag_id=waypoint.tag_id, type=waypoint.type, enable_costmap=waypoint.enable_costmap
+    ), SE3.from_position_orientation(x, y)
 
 
 def convert_cartesian_to_gps(reference_point: np.ndarray, coordinate: np.ndarray) -> GPSWaypoint:
@@ -395,12 +397,14 @@ class Context:
 
         client_callback_group = MutuallyExclusiveCallbackGroup()
 
+        self.move_cli = node.create_client(MoveCostMap, "move_cost_map", callback_group=client_callback_group)
+        self.dilate_cli = node.create_client(DilateCostMap, "dilate_cost_map", callback_group=client_callback_group)
+
         if not node.get_parameter("costmap.custom_costmap").value:
-            self.move_cli = node.create_client(MoveCostMap, "move_cost_map", callback_group=client_callback_group)
+
             while not self.move_cli.wait_for_service(timeout_sec=1.0):
                 node.get_logger().info("Waiting for move_cost_map service...")
 
-            self.dilate_cli = node.create_client(DilateCostMap, "dilate_cost_map", callback_group=client_callback_group)
             while not self.dilate_cli.wait_for_service(timeout_sec=1.0):
                 node.get_logger().info("Waiting for dilate_cost service...")
 
@@ -431,23 +435,31 @@ class Context:
         Callback function for the occupancy grid perception sends
         :param msg: Occupancy Grid representative of a 32m x 32m square area with origin at GNSS waypoint. Values are 0, 1, -1
         """
+        unknown_cost = self.node.get_parameter("search.traversable_cost").value
+        upsample_factor = 2
+        filter_size = 5
 
-        cost_map_data = np.array(msg.data).reshape((msg.info.height, msg.info.width)).T
+        cost_map_data = np.array(msg.data).reshape((msg.info.height, msg.info.width)).T.astype(np.float32)
+        cost_map_data[cost_map_data == -1] = unknown_cost
 
         self.env.cost_map.origin = np.array([msg.info.origin.position.x, msg.info.origin.position.y])
-        self.env.cost_map.resolution = msg.info.resolution  # meters/cell
-        self.env.cost_map.height = msg.info.height  # cells
-        self.env.cost_map.width = msg.info.width  # cells
-        self.env.cost_map.data = cost_map_data.astype(np.float32)
+        self.env.cost_map.resolution = msg.info.resolution / upsample_factor # meters/cell
+        self.env.cost_map.height = msg.info.height * upsample_factor # cells
+        self.env.cost_map.width = msg.info.width * upsample_factor # cells
 
-        # change all unidentified points to have a slight cost
-        self.env.cost_map.data[cost_map_data == -1] = 10.0  # TODO: find optimal value
-        # normalize to [0, 1]
+        upsampled_cost_map = np.kron(cost_map_data, np.ones((upsample_factor,upsample_factor), np.float32))
+        filtered_cost_map = ndimage.uniform_filter(upsampled_cost_map, filter_size, mode='nearest')
+
+
+        self.env.cost_map.data = filtered_cost_map
+
 
         # array: known_free_cost
-        self.env.cost_map.data /= 100.0
+        # self.env.cost_map.data /= 100.0
 
     def move_costmap(self, course_name="base_link"):
+        if self.node.get_parameter("costmap.custom_costmap").value:
+            return
         self.node.get_logger().info(f"Requesting to move cost map to {course_name}")
 
         req = MoveCostMap.Request()
@@ -461,6 +473,8 @@ class Context:
             self.node.get_logger().info("Finished moving cost map")
 
     def dilate_cost(self, new_radius: float):
+        if self.node.get_parameter("costmap.custom_costmap").value:
+            return
         self.node.get_logger().info(f"Requesting to dilate cost to {new_radius}")
 
         req = DilateCostMap.Request()
