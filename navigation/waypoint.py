@@ -89,10 +89,13 @@ class WaypointState(State):
         assert self.USE_COSTMAP
         assert context.course is not None
 
-        if not hasattr(context.env.cost_map, "data") and context.node.get_parameter("costmap.use_costmap").value:
+        # charlie beck helped me debug this
+        if not hasattr(context.env.cost_map, "data") and self.USE_COSTMAP:
             context.node.get_logger().warn(f"No costmap found, waiting...")
             self.start_time = context.node.get_clock().now()
             return self
+
+        assert hasattr(context.env.cost_map, "data")
 
         rover_pose = context.rover.get_pose_in_map()
         assert rover_pose is not None

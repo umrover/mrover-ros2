@@ -435,9 +435,9 @@ class Context:
         Callback function for the occupancy grid perception sends
         :param msg: Occupancy Grid representative of a 32m x 32m square area with origin at GNSS waypoint. Values are 0, 1, -1
         """
-        unknown_cost = 10.0
+        unknown_cost = self.node.get_parameter("search.traversable_cost").value
         upsample_factor = 2
-        filter_size = 3
+        filter_size = 5
 
         cost_map_data = np.array(msg.data).reshape((msg.info.height, msg.info.width)).T.astype(np.float32)
         cost_map_data[cost_map_data == -1] = unknown_cost
