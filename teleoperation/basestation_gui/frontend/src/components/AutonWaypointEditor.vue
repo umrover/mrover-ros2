@@ -37,8 +37,8 @@
         </div>
         <Checkbox ref="teleopCheckbox" class="teleop-checkbox" :name="'Teleop Controls'"
           @toggle="toggleTeleopMode($event)" />
-        <Checkbox ref="costmapCheckbox" class="costmap-checkbox" :name="'Costmap Enable NEEDS IMPL'"
-          @toggle="console.log('a')" />
+        <Checkbox ref="costmapCheckbox" class="costmap-checkbox" :name="'Disable All Costmaps'"
+          @toggle="toggleAllCostmaps" />
       </div>
       <h4 class="waypoint-headers my-3">Current Course</h4>
       <div class="route">
@@ -178,6 +178,7 @@ export default {
         },
 
       teleopEnabledCheck: false,
+      allCostmapToggle: true,
 
       route: reactive([]),
 
@@ -323,6 +324,14 @@ export default {
       waypoint.enable_costmap = enable_costmap;
     },
 
+    toggleAllCostmaps() {
+      this.allCostmapToggle = !this.allCostmapToggle;
+      this.waypoints.forEach(wp => {
+        wp.enable_costmap = this.allCostmapToggle;
+        console.log(wp.id);
+      });
+      console.log(this.allCostmapToggle);
+    },
 
     // Add item from all waypoints div to current waypoints div
     addItem: function (waypoint) {

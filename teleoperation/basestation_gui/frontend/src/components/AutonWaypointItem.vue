@@ -65,6 +65,16 @@ export default {
     }
   },
 
+  watch: {
+    'waypoint.enable_costmap': {
+      immediate: true,
+      handler(newVal) {
+        this.enable_costmap = newVal
+      }
+    }
+  },
+
+
   computed: {
     ...mapGetters('map', {
       odom_format: 'odomFormat'
