@@ -6,7 +6,7 @@ namespace mrover {
 
     class CostMapNode final : public rclcpp::Node {
 
-        constexpr static std::int8_t UNKNOWN_COST = -1, FREE_COST = 0, OCCUPIED_COST = 100, THRESHOLD_COST = 20;
+        constexpr static std::int8_t UNKNOWN_COST = -1, FREE_COST = 0, OCCUPIED_COST = 100, THRESHOLD_COST = 20, DILATED_COST = 10;
 
         constexpr static double TAU = 2 * std::numbers::pi;
 
@@ -29,13 +29,13 @@ namespace mrover {
 
         double mZPercent{}, mZThreshold{};
         double mAlpha{};
-        double mNearClip{}, mFarClip{}, mLeftClip{}, mRightClip{}, mTopClip{};
+        double mNearClip{}, mFarClip{}, mNearWidth{}, mFarWidth{}, mTopClip{};
         double mResolution{}; // Meters per cell
         double mSize{};       // Size of the square costmap in meters
         int mWidth{};         // Number of cells on the grid horizontally
         int mHeight{};        // Number of cells on the grid vertically
         int mNumDivisions{}; 
-        int mDownSamplingFactor = 4;
+        int mDownSamplingFactor = 1;
         std::string mMapFrame;
         int mDilateAmt = 1;
 		
