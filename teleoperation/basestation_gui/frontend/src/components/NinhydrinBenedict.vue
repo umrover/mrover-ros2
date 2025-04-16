@@ -79,9 +79,13 @@ export default {
       else if(msg.type == 'heater_states') {
         if (this.isNinhydrin) {
           this.heaters[this.site].state = msg.state[this.site*2+1];
+          this.heaters[this.site].enabled = this.heaters[this.site].state;
+          // console.log("State update ")
+          // console.log(this.heaters[this.site].state)
         }
         else {
           this.heaters[this.site].state = msg.state[this.site*2];
+          this.heaters[this.site].enabled = this.heaters[this.site].state;
         }
       }
     },

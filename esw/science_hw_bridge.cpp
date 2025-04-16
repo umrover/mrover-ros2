@@ -87,8 +87,8 @@ namespace mrover {
                 heaterData.state.at(i) = mHeaterStates[i];
             }
 
-            for (int i = 0; i < NUM_HEATERS / 2; i++) {
-                int h = prevScienceMessage == ScienceBoard::A ? i : i + (NUM_HEATERS / 2);
+            for (int i = 0; i < NUM_THERMISTORS; i++) {
+                int h = prevScienceMessage == ScienceBoard::A ? i : i + NUM_THERMISTORS;
                 heaterData.state.at(h) = GET_BIT_AT_INDEX(message.heater_state_info.on, i);
                 mHeaterStates[h] = GET_BIT_AT_INDEX(message.heater_state_info.on, i);
             }

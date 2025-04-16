@@ -20,6 +20,9 @@ extern TIM_HandleTypeDef htim4;
 
 #define JETSON_ADDRESS 0x10
 #define SCIENCE_BOARD_ID 0x50
+#define NUM_HEATERS 2
+#define NUM_THERM 1
+#define NUM_WL 1
 
 namespace mrover {
 
@@ -32,8 +35,8 @@ namespace mrover {
     FDCAN<InBoundScienceMessage> fdcan_bus;
     OutBoundScienceMessage science_out;
 
-    std::array<Heater, 2> heaters;
-	std::array<Pin, 1> white_leds;
+    std::array<Heater, NUM_HEATERS> heaters;
+	std::array<Pin, NUM_WL> white_leds;
 
     void event_loop() {
         while (true) {}
@@ -45,24 +48,24 @@ namespace mrover {
 		th_sensor = TempHumiditySensor(&hi2c3);
 		fdcan_bus = FDCAN<InBoundScienceMessage>(&hfdcan1);
 
-        std::array<DiagTempSensor, 1> diag_temp_sensors =
+        std::array<DiagTempSensor, NUM_THERM> diag_temp_sensors =
 		{
 				DiagTempSensor{adc_sensor1, 5},
 
 		};
-        std::array<Pin, 2> heater_pins =
+        std::array<Pin, NUM_HEATERS> heater_pins =
         {
         		Pin{HEATER_1_GPIO_Port, HEATER_1_Pin},
 				Pin{HEATER_2_GPIO_Port, HEATER_2_Pin},
         };
-        std::array<Pin, 1> white_leds =
+        std::array<Pin, NUM_WL> white_leds =
 		{
 				Pin{WHITE_LED_GPIO_Port, WHITE_LED_Pin}
 		};
 
         white_leds.at(0) = white_leds.at(0);
 
-        for (int i = 0; i < 2; ++i) {
+        for (int i = 0; i < NUM_HEATERS; ++i) {
         	heaters.at(i) = Heater(diag_temp_sensors[0], heater_pins[i]);
             heaters.at(i).set_auto_shutoff(false);
         }
@@ -121,16 +124,20 @@ namespace mrover {
         switch (message.science_device) {
             case ScienceDevice::HEATER_0:
                 if (message.enable) {
-                    heaters.at(0).enable_if_possible(message.enable);
-                    heaters.at(1).enable_if_possible(message.enable);
+                    for (size_t i = 0; i < heaters.size(); i++) {
+                        heaters.at(i).enable_if_possible(message.enable);
+                        heaters.at(i).enable_if_possible(message.enable);
+                    }
                 } else {
                     heaters.at(0).enable_if_possible(message.enable);
                 }
                 break;
             case ScienceDevice::HEATER_1:
                 if (message.enable) {
-                    heaters.at(0).enable_if_possible(message.enable);
-                    heaters.at(1).enable_if_possible(message.enable);
+                    for (size_t i = 0; i < heaters.size(); i++) {
+                        heaters.at(i).enable_if_possible(message.enable);
+                        heaters.at(i).enable_if_possible(message.enable);
+                    }
                 } else {
                     heaters.at(1).enable_if_possible(message.enable);
                 }
