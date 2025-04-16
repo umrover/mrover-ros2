@@ -105,6 +105,6 @@ namespace mrover {
     public:
     
         IEKF_SE3();
-    }; // class IEKF
+    }; // css IEKF
 
 } // namespace mrover
