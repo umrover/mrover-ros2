@@ -3,6 +3,7 @@ import traceback
 from typing import Any, Type
 
 from channels.generic.websocket import JsonWebsocketConsumer
+from numpy import float32
 from rosidl_runtime_py.convert import message_to_ordereddict
 
 import rclpy
@@ -46,7 +47,8 @@ from mrover.msg import (
 )
 from mrover.srv import (
     EnableAuton, 
-    EnableBool, 
+    EnableBool,
+    SetGearDiffPosition 
 )
 from std_srvs.srv import SetBool
 
@@ -101,12 +103,15 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.forward_ros_topic("/arm_joint_data", JointState, "fk")
         self.forward_ros_topic("/drive_controller_data", ControllerState, "drive_state")
         self.forward_ros_topic("/sa_controller_state", ControllerState, "sa_state")
+        self.forward_ros_topic("/sa_gear_diff_position", float32, "hexhub_site")
         self.forward_ros_topic("basestation/position", NavSatFix, "basestation_position")
         # check topic names above
 
         # Services
         self.enable_teleop_srv = node.create_client(SetBool, "/enable_teleop")
         self.enable_auton_srv = node.create_client(EnableAuton, "/enable_auton")
+        # might need to change service type
+        self.gear_diff_set_pos_srv = node.create_client(SetGearDiffPosition, "/sa_gear_diff_set_position")
 
         # EnableBool Requests
         self.auto_shutoff_service = node.create_client(EnableBool, "/science_change_heater_auto_shutoff_state")
@@ -299,6 +304,13 @@ class GUIConsumer(JsonWebsocketConsumer):
                     self.send_message_as_json({"type": "get_current_auton_course", "data": get_current_auton_course()})
                 case {"type": "heater_enable", "enabled": e, "heater": heater}:
                     self.heater_services[heater_names.index(heater)].call(EnableBool.Request(enable=e))
+
+                case {
+                    "type": "set_gear_diff_pos",
+                    "position": position,
+                    "orientation": isCCW,
+                }:
+                    self.gear_diff_set_pos_srv.call(SetGearDiffPosition.Request(position=float32(position), is_counterclockwise=isCCW))
 
                 case {"type": "auto_shutoff", "shutoff": shutoff}:
                     self.auto_shutoff_service.call(EnableBool.Request(enable=shutoff))

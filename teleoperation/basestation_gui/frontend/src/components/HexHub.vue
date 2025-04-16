@@ -1,5 +1,39 @@
 <template>
-    <h3>HexHub Controls</h3>
+    <h3 class="text-center">HexHub Controls</h3>
+    <!-- CW / CCW toggle -->
+    <div class="d-flex justify-content-center align-items-center my-3 gap-2">
+      <input
+        type="radio"
+        class="btn-check"
+        id="cw"
+        value="true"
+        v-model="isClockwise"
+        autocomplete="off"
+        @change="emitOrientation"
+      />
+      <label
+        class="btn"
+        :class="isClockwise === 'true' ? 'btn-primary' : 'btn-outline-primary'"
+        for="cw"
+      >Clockwise</label>
+
+      <input
+        type="radio"
+        class="btn-check"
+        id="ccw"
+        value="false"
+        v-model="isClockwise"
+        autocomplete="off"
+        @change="emitOrientation"
+      />
+      <label
+        class="btn"
+        :class="isClockwise === 'false' ? 'btn-primary' : 'btn-outline-primary'"
+        for="ccw"
+      >Counter-Clockwise</label>
+    </div>
+
+      <!-- site selection -->
       <div class="grid">
         <div v-for="name, index in siteList" :key="index" class="col-4">
           <div class="form-check d-flex justify-content-center align-items-center" >
@@ -24,6 +58,7 @@
       return {
         currentSite: 0,
         siteList: ["Sample A", "Sample B", "Sample Cache", "Empty Soil Deposit"],
+        isClockwise: true, // hexhub will rotate clockwise by default
       };
     },
     computed: {
@@ -33,6 +68,10 @@
       ...mapActions('websocket', ['sendMessage']),
       emitSite() {
         this.$emit('selectSite', this.currentSite); 
+      },
+      emitOrientation() {
+        const isCCW = this.isClockwise === 'false'; // If not clockwise, it’s counterclockwise
+        this.$emit('orientation', isCCW);
       }
     },
 
