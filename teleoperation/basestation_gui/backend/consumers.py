@@ -20,8 +20,13 @@ from backend.mast_controls import send_mast_controls
 from backend.waypoints import (
     get_auton_waypoint_list,
     get_basic_waypoint_list,
+    get_current_auton_course,
+    get_current_basic_course,
     save_auton_waypoint_list,
     save_basic_waypoint_list,
+    save_current_auton_course,
+    save_current_basic_course,
+    delete_auton_waypoint_from_course
 )
 from geometry_msgs.msg import Twist, Vector3
 from sensor_msgs.msg import NavSatFix, Temperature, RelativeHumidity, JointState
@@ -159,7 +164,8 @@ class GUIConsumer(JsonWebsocketConsumer):
                 }
             )
         except Exception as e:
-            node.get_logger().warn(f"Failed to get bearing: {e} Is localization running?")
+            pass
+            # node.get_logger().warn(f"Failed to get bearing: {e} Is localization running?")
 
     def send_auton_command(self, waypoints: list[dict], enabled: bool) -> None:
         self.enable_auton_srv.call(
@@ -258,6 +264,23 @@ class GUIConsumer(JsonWebsocketConsumer):
                 }:
                     save_basic_waypoint_list(waypoints)
                 case {
+                    "type": "save_current_auton_course",
+                    "data": waypoints
+                }:
+                    node.get_logger().info(f"saving waypoints in course: {waypoints}")
+                    save_current_auton_course(waypoints)
+                case {
+                    "type": "save_current_basic_course",
+                    "data": waypoints                  
+                }:
+                    save_current_basic_course(waypoints)
+                case {
+                    "type": "delete_auton_waypoint_from_course",
+                    "data": waypoint
+                }:
+                    node.get_logger().info(f"deleting waypoint in course: {waypoint}")
+                    delete_auton_waypoint_from_course(waypoint)
+                case {
                     "type": "get_basic_waypoint_list",
                 }:
                     self.send_message_as_json({"type": "get_basic_waypoint_list", "data": get_basic_waypoint_list()})
@@ -265,6 +288,15 @@ class GUIConsumer(JsonWebsocketConsumer):
                     "type": "get_auton_waypoint_list",
                 }:
                     self.send_message_as_json({"type": "get_auton_waypoint_list", "data": get_auton_waypoint_list()})
+                case {
+                    "type": "get_current_basic_course"
+                }:
+                    self.send_message_as_json({"type": "get_auton_waypoint_list", "data": get_current_basic_course()})
+                case {
+                    "type": "get_current_auton_course"
+                }:
+                    node.get_logger().info(f"current waypoints in course: {get_current_auton_course()}")
+                    self.send_message_as_json({"type": "get_current_auton_course", "data": get_current_auton_course()})
                 case {"type": "heater_enable", "enabled": e, "heater": heater}:
                     self.heater_services[heater_names.index(heater)].call(EnableBool.Request(enable=e))
 

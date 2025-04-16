@@ -4,6 +4,15 @@
       <p>{{ waypoint.name }} | ID: {{ waypoint.id }}</p>
     </div>
     <div class="row">
+      <div class ="col text-center">
+        <ToggleButton
+          :id="'1'"
+          :labelEnableText="'Turn Costmap On'"
+          :labelDisableText="'Turn Costmap Off'"
+          :currentState="currentState"
+          @change="updateState"
+        />
+      </div>
       <div class="col text-center">
         <button
           class="btn btn-danger"

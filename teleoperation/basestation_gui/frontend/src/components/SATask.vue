@@ -104,6 +104,7 @@ export default {
     'moteus moteus moteus';
   font-family: sans-serif;
   height: auto;
+  width: 97%;
 }
 
 .dashboard-title {
