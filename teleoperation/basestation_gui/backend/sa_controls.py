@@ -10,7 +10,6 @@ from rclpy.client import Client
 from backend.input import filter_input, simulated_axis, safe_index, DeviceInputs
 from backend.mappings import ControllerAxis, ControllerButton
 from mrover.msg import Throttle
-from mrover.srv import EnableBool
 
 import logging
 logger = logging.getLogger('django')

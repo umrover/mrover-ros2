@@ -63,7 +63,7 @@ def generate_launch_description():
         package="rviz2",
         executable="rviz2",
         name="rviz2",
-        arguments=["-d", [os.path.join(get_package_share_directory("mrover"), "config/rviz", "costmap.rviz")]],
+        arguments=["-d", [os.path.join(get_package_share_directory("mrover"), "config/rviz", "auton_sim.rviz")]],
         condition=LaunchConfigurationEquals("rviz", "true"),
     )
 

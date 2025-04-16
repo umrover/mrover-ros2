@@ -320,10 +320,6 @@ namespace mrover {
         return u1.rep <=> u2.rep;
     }
 
-    constexpr auto operator==(IsUnit auto const& u1, IsUnit auto const& u2) {
-        return u1.rep == u2.rep;
-    }
-
     template<IsUnit U>
     constexpr auto sqrt(U const& u) {
         return make_no_conversion<root<U>>(std::sqrt(u.rep));

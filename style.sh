@@ -5,7 +5,6 @@ set -Eeuo pipefail
 
 shopt -s nullglob globstar
 GLOBIGNORE="./venv/**"
-GLOBIGNORE="$GLOBIGNORE:./esw/fw/**"
 
 readonly RED='\033[0;31m'
 readonly NC='\033[0m'

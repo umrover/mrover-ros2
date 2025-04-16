@@ -1,2 +1,0 @@
-string constellation
-uint8 signal_strength
