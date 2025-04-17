@@ -12,7 +12,7 @@ namespace mrover {
             {"far_clip", mFarClip, 7.0},
             {"near_width", mNearWidth, 1.0},
             {"far_width", mFarWidth, 3.0},
-            {"top_clip", mTopClip, 3.0},
+            {"top_clip", mTopClip, 1.0},
             {"z_percent", mZPercent, 0.34}, // Tested on static visualizer
             {"alpha", mAlpha, 0.05},
             {"z_threshold", mZThreshold, 0.51}, // Tested on static visualizer

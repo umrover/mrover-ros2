@@ -74,6 +74,7 @@ namespace mrover {
                     // Points with no stereo correspondence are NaN's, so ignore them
                     if (pointInCamera.hasNaN()) continue;
                     if(normal.hasNaN()) continue;
+                    if(pointInCamera.z() > mTopClip) continue;
 
                     R3f pointInMap = cameraToMap.act(pointInCamera);
 
@@ -220,7 +221,7 @@ namespace mrover {
         
                                 // RCLCPP_INFO_STREAM(get_logger(), std::format("Index: {}", coordinateToIndex(dcoord)));
                                 return temp.data[coordinateToIndex(dcoord, width)] > FREE_COST;
-                            })) postProcessed.data[oned_index] = DILATED_COST;
+                            })) postProcessed.data[oned_index] = DILATED_COST; // TODO: Additive cost: the more high cost you're near, the higher your dilated cost becomes
                         }
                     }
                 }
