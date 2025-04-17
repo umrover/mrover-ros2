@@ -2,7 +2,7 @@ import numpy as np
 from typing import Any
 from navigation.trajectory import Trajectory
 from navigation.astar import AStar, NoPath, OutOfBounds
-from . import costmap_search, stuck_recovery, waypoint, state
+from . import costmap_search, stuck_recovery, waypoint, backup, state
 from .context import Context
 from state_machine.state import State
 from geometry_msgs.msg import Twist
@@ -77,12 +77,11 @@ class ApproachTargetState(State):
             return state.DoneState()
         if is_finished:
             total_time = context.node.get_clock().now() - self.time_begin
-            context.node.get_logger().info(f"Total approach time: {total_time.nanoseconds // 1000000000}")
-            if context.course.increment_waypoint():
-                return state.DoneState()
+            context.node.get_logger().info(f"Total approach time: {total_time.nanoseconds / 1000000000} seconds")
+            context.course.increment_waypoint()
             context.env.arrived_at_target = True
-            context.node.get_logger().info("set arrived at target to true")
-            return waypoint.WaypointState()
+            return backup.BackupState()
+            
 
         return self
 

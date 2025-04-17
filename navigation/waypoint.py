@@ -52,7 +52,6 @@ class WaypointState(State):
         if context.course is None:
             return
         context.node.get_logger().info("Entered Waypoint State")
-        context.dilate_cost(2.0)
         context.rover.previous_state = WaypointState()
 
         context.dilate_cost(context.node.get_parameter("costmap.initial_inflation_radius").value)
@@ -218,11 +217,6 @@ class WaypointState(State):
         current_waypoint = context.course.current_waypoint()
         if current_waypoint is None:
             return state.DoneState()
-
-        # If we are at a post currently (from a previous leg), backup to avoid collision
-        if context.env.arrived_at_target:
-            context.env.arrived_at_target = False
-            return backup.BackupState()
 
         # Returns either ApproachTargetState, LongRangeState, or None
         approach_state = context.course.get_approach_state()

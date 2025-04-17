@@ -50,7 +50,6 @@ class AStar:
 
     path_pub: Publisher
     TRAVERSABLE_COST: float
-    A_STAR_THRESH: float
     COSTMAP_THRESH: float
     ANGLE_THRESH: float
     USE_COSTMAP: bool
@@ -61,14 +60,15 @@ class AStar:
 
         self.path_pub = self.context.node.create_publisher(Path, "astar_path", 10)
         self.TRAVERSABLE_COST = self.context.node.get_parameter("search.traversable_cost").value
-        self.A_STAR_THRESH = self.context.node.get_parameter("costmap.a_star_thresh").value
         self.COSTMAP_THRESH = self.context.node.get_parameter("costmap.costmap_thresh").value
         self.ANGLE_THRESH = self.context.node.get_parameter("search.angle_thresh").value
 
         if hasattr(context, 'course') and context.course is not None:
             current_waypoint = context.course.current_waypoint()
-            assert current_waypoint is not None
-            self.USE_COSTMAP = context.node.get_parameter("costmap.use_costmap").value or current_waypoint.enable_costmap
+            if current_waypoint is None:
+                self.USE_COSTMAP = context.node.get_parameter("costmap.use_costmap").value
+            else: 
+                self.USE_COSTMAP = context.node.get_parameter("costmap.use_costmap").value or current_waypoint.enable_costmap
 
     def return_path(self, came_from: dict[tuple, tuple], current_pos: tuple):
         """
@@ -174,11 +174,11 @@ class AStar:
 
             raise NoPath("No path could be found to the destination.")
 
-    def use_astar(self, context: Context, star_traj: Trajectory, dest: np.ndarray) -> bool:
+    def use_astar(self, context: Context, dest: np.ndarray) -> bool:
         rover_in_map = context.rover.get_pose_in_map()
 
         # If no rover pose, no trajectory, or not enough points in star_traj, skip
-        if rover_in_map is None or len(star_traj.coordinates) < 1 or not self.USE_COSTMAP:
+        if rover_in_map is None or not self.USE_COSTMAP:
             return False
 
         straight_path = segment_path(context=context, dest=dest[:2], seg_len=context.env.cost_map.resolution)
@@ -194,11 +194,12 @@ class AStar:
         :param dest: Destination point in cartesian coordinates.
         :return: Trajectory object.
         """
+        start_time = context.node.get_clock().now()
         rover_SE3 = context.rover.get_pose_in_map()
         assert rover_SE3 is not None
         rover_position_in_map = rover_SE3.translation()[:2]
 
-        if not self.USE_COSTMAP:
+        if not self.USE_COSTMAP or not self.use_astar(context=context, dest=dest):
             return Trajectory(np.array([dest]))
 
         costmap_length = self.context.env.cost_map.data.shape[0]
@@ -261,8 +262,5 @@ class AStar:
             # If occupancy_list is None, no path is needed (start == end).
             trajectory = Trajectory(np.array([]))
 
-        if self.use_astar(context=context, star_traj=trajectory, dest=dest):
-            # ts a lil boof
-            return Trajectory(trajectory.coordinates[1:]) if len(trajectory.coordinates) > 1 else trajectory
-        else:
-            return Trajectory(np.array([dest]))
+        context.node.get_logger().info(f"A-Star pathplanning took {(context.node.get_clock().now() - start_time).nanoseconds / 10e9} seconds")
+        return Trajectory(trajectory.coordinates[1:]) if len(trajectory.coordinates) > 1 else trajectory

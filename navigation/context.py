@@ -216,6 +216,9 @@ class Course:
     def increment_waypoint(self) -> int:
         self.waypoint_index = min(self.waypoint_index + 1, len(self.waypoints))
         return self.waypoint_index >= len(self.waypoints)
+    
+    def done(self) -> bool:
+        return self.waypoint_index >= len(self.waypoints)
 
     def waypoint_pose(self, index: int) -> SE3:
         return self.waypoints[index][1]
@@ -291,7 +294,7 @@ def setup_course(ctx: Context, waypoints: list[tuple[Waypoint, SE3]]) -> Course:
         all_waypoint_info.append(waypoint_info)
 
         # Either this or the lookup transform is broken
-        SE3.to_tf_tree(ctx.tf_broadcaster, waypoint_in_world, f"course{index}", ctx.world_frame, ctx.node.get_clock().now().to_msg())
+        SE3.to_tf_tree(ctx.tf_broadcaster, waypoint_in_world, f"course{index}", ctx.world_frame)
     # Make the course out of just the pure waypoint objects which is the 0th element in the tuple
     return Course(
         ctx=ctx,
@@ -478,7 +481,7 @@ class Context:
         self.node.get_logger().info(f"Requesting to dilate cost to {new_radius}")
 
         req = DilateCostMap.Request()
-        req.d_amt = new_radius
+        req.inflation_radius = new_radius
         res: DilateCostMap.Response
         res = self.dilate_cli.call(req)
 

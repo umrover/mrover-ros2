@@ -21,9 +21,14 @@ navigation:
     costmap:
       custom_costmap: false
       use_costmap: false
-      a_star_thresh: 0.05
       costmap_thresh: 0.4
       initial_inflation_radius: 3.0
+
+    backup:
+      stop_threshold: 0.2
+      drive_forward_threshold: 0.34
+      backup_distance: 3.5
+      wait_time: 3.0
       
 
     image_targets:

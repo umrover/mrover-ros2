@@ -223,8 +223,6 @@ class AStarDebug(Node):
         self.declare_parameters("", [("search.angle_thresh", Parameter.Type.DOUBLE)])
         self.set_parameters([Parameter("search.angle_thresh", Parameter.Type.DOUBLE, 0.0872665)])
 
-        self.declare_parameters("", [("costmap.a_star_thresh", Parameter.Type.DOUBLE)])
-        self.set_parameters([Parameter("costmap.a_star_thresh", Parameter.Type.DOUBLE, 0.05)])
 
         self.declare_parameters("", [("costmap.costmap_thresh", Parameter.Type.DOUBLE)])
         self.set_parameters([Parameter("costmap.costmap_thresh", Parameter.Type.DOUBLE, 0.4)])
