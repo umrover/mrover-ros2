@@ -197,10 +197,6 @@ install(PROGRAMS
     starter_project/autonomy/src/navigation/navigation_starter_project.py
     DESTINATION
     lib/${PROJECT_NAME}
-    starter_project/autonomy/src/localization.py
-    starter_project/autonomy/src/navigation/navigation_starter_project.py
-    DESTINATION
-    lib/${PROJECT_NAME}
 )
 
 install(DIRECTORY starter_project/autonomy/launch DESTINATION share/${PROJECT_NAME})
