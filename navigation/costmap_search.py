@@ -7,7 +7,7 @@ from rclpy.time import Time
 from rclpy.timer import Timer
 from rclpy.duration import Duration
 import time
-from navigation import approach_target, stuck_recovery, waypoint
+from navigation import approach_target, stuck_recovery, waypoint, state
 from navigation.astar import AStar, SpiralEnd, NoPath, OutOfBounds
 from navigation.coordinate_utils import d_calc, gen_marker, is_high_cost_point, cartesian_to_ij
 from navigation.context import Context
@@ -47,10 +47,12 @@ class CostmapSearchState(State):
         context.node.get_logger().info("Entered Costmap Search State")
         context.rover.previous_state = CostmapSearchState()
 
-        assert context.course is not None
+        if context.course is None:
+            return
 
         current_waypoint = context.course.current_waypoint()
-        assert current_waypoint is not None
+        if current_waypoint is None:
+            return
 
         self.USE_COSTMAP = context.node.get_parameter("costmap.use_costmap").value or current_waypoint.enable_costmap
 
@@ -117,7 +119,8 @@ class CostmapSearchState(State):
             return
 
     def on_loop_costmap_enabled(self, context: Context) -> State:
-        assert self.USE_COSTMAP
+        if not self.USE_COSTMAP:
+            return self
 
         if self.update_astar_timer is None:
             self.update_astar_timer = context.node.create_timer(
@@ -200,7 +203,8 @@ class CostmapSearchState(State):
         return self
 
     def on_loop_costmap_disabled(self, context: Context):
-        assert not self.USE_COSTMAP
+        if self.USE_COSTMAP:
+            return self
         curr_spiral_point = self.spiral_traj.get_current_point()
         cmd_vel, arrived = context.drive.get_drive_command(
             curr_spiral_point,
@@ -231,7 +235,8 @@ class CostmapSearchState(State):
             context.node.get_logger().warn(f"No costmap found, waiting...")
             return self
 
-        assert context.course is not None
+        if context.course is None:
+            return state.DoneState()
 
         rover_in_map = context.rover.get_pose_in_map()
         assert rover_in_map is not None
@@ -259,9 +264,12 @@ class CostmapSearchState(State):
             return self.on_loop_costmap_disabled(context=context)
 
     def new_traj(self, context: Context) -> None:
-        assert context.course is not None
+        if context.course is None:
+            return
+        
         search_center = context.course.current_waypoint()
-        assert search_center is not None
+        if search_center is None:
+            return
 
         if not self.is_recovering:
             self.spiral_traj = SearchTrajectory.spiral_traj(

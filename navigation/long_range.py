@@ -22,10 +22,12 @@ class LongRangeState(ApproachTargetState):
         pass
 
     def get_target_position(self, context: Context) -> np.ndarray | None:
-        assert context.course is not None
+        if context.course is None:
+            return None
 
         current_waypoint = context.course.current_waypoint()
-        assert current_waypoint is not None
+        if current_waypoint is None:
+            return None
 
         if context.env.cost_map is None or not hasattr(context.env.cost_map, "data"):
             return None

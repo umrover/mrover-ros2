@@ -49,8 +49,10 @@ class WaypointState(State):
     USE_COSTMAP: bool
 
     def on_enter(self, context: Context) -> None:
-        assert context.course is not None
+        if context.course is None:
+            return
         context.node.get_logger().info("Entered Waypoint State")
+        context.dilate_cost(2.0)
         context.rover.previous_state = WaypointState()
 
         context.dilate_cost(context.node.get_parameter("costmap.initial_inflation_radius").value)
@@ -59,7 +61,8 @@ class WaypointState(State):
         self.NO_SEARCH_WAIT_TIME = context.node.get_parameter("waypoint.no_search_wait_time").value
 
         current_waypoint = context.course.current_waypoint()
-        assert current_waypoint is not None
+        if current_waypoint is None:
+            return
 
         self.USE_COSTMAP = context.node.get_parameter("costmap.use_costmap").value or current_waypoint.enable_costmap
 
@@ -86,16 +89,16 @@ class WaypointState(State):
         self.astar_traj.clear()
 
     def on_loop_costmap_enabled(self, context: Context) -> State:
-        assert self.USE_COSTMAP
-        assert context.course is not None
+        if not self.USE_COSTMAP:
+            return self
+        if context.course is None:
+            return state.DoneState()
 
         # charlie beck helped me debug this
         if not hasattr(context.env.cost_map, "data") and self.USE_COSTMAP:
             context.node.get_logger().warn(f"No costmap found, waiting...")
             self.start_time = context.node.get_clock().now()
             return self
-
-        assert hasattr(context.env.cost_map, "data")
 
         rover_pose = context.rover.get_pose_in_map()
         assert rover_pose is not None
@@ -177,8 +180,10 @@ class WaypointState(State):
         return self
 
     def on_loop_costmap_disabled(self, context: Context):
-        assert not self.USE_COSTMAP
-        assert context.course is not None
+        if self.USE_COSTMAP:
+            return self
+        if context.course is None:
+            return state.DoneState()
         if context.course.current_waypoint_pose_in_map() is None:
             return self
 
@@ -207,7 +212,8 @@ class WaypointState(State):
         :return:        Next state
         """
 
-        assert context.course is not None
+        if context.course is None:
+            return state.DoneState()
 
         current_waypoint = context.course.current_waypoint()
         if current_waypoint is None:
@@ -241,12 +247,14 @@ class WaypointState(State):
             return self.on_loop_costmap_disabled(context)
 
     def next_state(self, context: Context) -> State:
-        assert context.course is not None
+        if context.course is None:
+            return state.DoneState()
         context.env.arrived_at_waypoint = True
         context.node.get_logger().info("Arrived at waypoint")
         context.rover.send_drive_command(Twist())
         current_wp = context.course.current_waypoint()
-        assert current_wp is not None
+        if current_wp is None:
+            return state.DoneState()
         if current_wp.type.val != WaypointType.NO_SEARCH:
             return costmap_search.CostmapSearchState()
         else:
@@ -276,7 +284,8 @@ class WaypointState(State):
                 return self
 
     def display_markers(self, context: Context):
-        assert context.course is not None
+        if context.course is None:
+            return
         if context.node.get_parameter("display_markers").value:
             start_pt = self.waypoint_traj.cur_pt
             end_pt = min(start_pt + 5, len(self.waypoint_traj.coordinates))
