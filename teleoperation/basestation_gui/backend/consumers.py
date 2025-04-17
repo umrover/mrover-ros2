@@ -96,6 +96,7 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.forward_ros_topic("/arm_joint_data", JointState, "fk")
         self.forward_ros_topic("/drive_controller_data", ControllerState, "drive_state")
         self.forward_ros_topic("/sa_controller_state", ControllerState, "sa_state")
+        self.forward_ros_topic("basestation/position", NavSatFix, "basestation_position")
         # check topic names above
 
         # Services

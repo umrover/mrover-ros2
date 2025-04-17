@@ -10,6 +10,9 @@
       <!-- Markers for rover location -->
       <l-marker ref="rover" :lat-lng="odomLatLng" :icon="locationIcon" />
 
+      <!-- Markers for basestation location -->
+      <l-marker ref="basestation" :lat-lng="basestationLatLng" :icon="basestationIcon" />
+
       <!-- Waypoint Icons -->
       <l-marker v-for="(waypoint, index) in waypointList" :key="index" :lat-lng="waypoint.latLng" :icon="waypointIcon">
         <l-tooltip :options="{ permanent: 'true', direction: 'top' }">
@@ -73,6 +76,10 @@ export default {
       type: Object,
       default: () => ({latitude_deg: 0, longitude_deg: 0, bearing_deg: 0})
     },
+    basestation: {
+      type: Object,
+      default: () => ({ latitude_deg: 0, longitude_deg: 0 })
+    }
   },
   data() {
     return {
@@ -109,6 +116,14 @@ export default {
         // Handle the case where odom is not yet ready
         console.warn('odom data not ready yet');
         return L.latLng(0,0); // or default value or return null
+      }
+    },
+
+    basestationLatLng: function () {
+      if (this.basestation && typeof this.basestation === 'object' && this.basestation.latitude_deg !== undefined && this.basestation.longitude_deg !== undefined ) {
+        return L.latLng(this.basestation.latitude_deg, this.basestation.longitude_deg)
+      } else {
+        return L.latLng(0, 0)
       }
     },
 
@@ -160,6 +175,11 @@ export default {
     // Get Icons for Map
     this.locationIcon = L.icon({
       iconUrl: 'location_marker_icon.png',
+      iconSize: [40, 40],
+      iconAnchor: [20, 20]
+    })
+    this.basestationIcon = L.icon({
+      iconUrl: 'basestation_marker_icon.png',
       iconSize: [40, 40],
       iconAnchor: [20, 20]
     })
