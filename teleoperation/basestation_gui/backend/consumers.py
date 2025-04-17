@@ -48,7 +48,7 @@ from mrover.msg import (
 from mrover.srv import (
     EnableAuton, 
     EnableBool,
-    SetGearDiffPosition 
+    ServoSetPos 
 )
 from std_srvs.srv import SetBool
 
@@ -111,7 +111,7 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.enable_teleop_srv = node.create_client(SetBool, "/enable_teleop")
         self.enable_auton_srv = node.create_client(EnableAuton, "/enable_auton")
         # might need to change service type
-        self.gear_diff_set_pos_srv = node.create_client(SetGearDiffPosition, "/sa_gear_diff_set_position")
+        self.gear_diff_set_pos_srv = node.create_client(ServoSetPos, "/sa_gear_diff_set_position")
 
         # EnableBool Requests
         self.auto_shutoff_service = node.create_client(EnableBool, "/science_change_heater_auto_shutoff_state")
@@ -311,7 +311,7 @@ class GUIConsumer(JsonWebsocketConsumer):
                     "position": position,
                     "orientation": isCCW,
                 }:
-                    self.gear_diff_set_pos_srv.call(SetGearDiffPosition.Request(position=float32(position), is_counterclockwise=isCCW))
+                    self.gear_diff_set_pos_srv.call(ServoSetPos.Request(position=float32(position), is_counterclockwise=isCCW))
 
                 case {"type": "auto_shutoff", "shutoff": shutoff}:
                     self.auto_shutoff_service.call(EnableBool.Request(enable=shutoff))
