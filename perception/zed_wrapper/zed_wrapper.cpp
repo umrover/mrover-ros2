@@ -13,18 +13,18 @@ namespace mrover {
     }
 
 
-    ZedWrapper::ZedWrapper() : Node(NODE_NAME, rclcpp::NodeOptions().use_intra_process_comms(true)), mLoopProfilerGrab{get_logger()}, mLoopProfilerUpdate{get_logger()} {
+    ZedWrapper::ZedWrapper(rclcpp::NodeOptions const& options) : Node(NODE_NAME, options), mLoopProfilerGrab{get_logger()}, mLoopProfilerUpdate{get_logger()} {
         try {
             RCLCPP_INFO(this->get_logger(), "Created Zed Wrapper Node, %s", NODE_NAME);
 
             // Publishers
-            mRightImgPub = create_publisher<sensor_msgs::msg::Image>("right/image", 1);
-            mLeftImgPub = create_publisher<sensor_msgs::msg::Image>("left/image", 1);
+            mRightImgPub = create_publisher<sensor_msgs::msg::Image>("zed/right/image", 1);
+            mLeftImgPub = create_publisher<sensor_msgs::msg::Image>("zed/left/image", 1);
             mImuPub = create_publisher<sensor_msgs::msg::Imu>("zed_imu/data_raw", 1);
             mMagPub = create_publisher<sensor_msgs::msg::MagneticField>("zed_imu/mag", 1);
-            mPcPub = create_publisher<sensor_msgs::msg::PointCloud2>("camera/left/points", 1);
-            mRightCamInfoPub = create_publisher<sensor_msgs::msg::CameraInfo>("camera/right/camera_info", 1);
-            mLeftCamInfoPub = create_publisher<sensor_msgs::msg::CameraInfo>("camera/left/camera_info", 1);
+            mPcPub = create_publisher<sensor_msgs::msg::PointCloud2>("zed/left/points", 1);
+            mRightCamInfoPub = create_publisher<sensor_msgs::msg::CameraInfo>("zed/right/camera_info", 1);
+            mLeftCamInfoPub = create_publisher<sensor_msgs::msg::CameraInfo>("zed/left/camera_info", 1);
 
             // Declare and set Params
             int imageWidth{};
@@ -127,7 +127,7 @@ namespace mrover {
         try {
             RCLCPP_INFO(this->get_logger(), "Starting grab thread");
             while (rclcpp::ok()) {
-                //mLoopProfilerGrab.beginLoop();
+                mLoopProfilerGrab.beginLoop();
 
                 sl::RuntimeParameters runtimeParameters;
                 runtimeParameters.confidence_threshold = mDepthConfidence;
@@ -232,7 +232,7 @@ namespace mrover {
             RCLCPP_INFO(get_logger(), "Starting point cloud thread");
 
             while (rclcpp::ok()) {
-                //mLoopProfilerUpdate.beginLoop();
+                mLoopProfilerUpdate.beginLoop();
 
                 // TODO(quintin): May be bad to allocate every update, best case optimized by tcache
                 // Needed because publish directly shares the pointer to other nodelets running in this process
@@ -315,9 +315,5 @@ namespace mrover {
     }
 }; // namespace mrover
 
-auto main(int argc, char* argv[]) -> int {
-    rclcpp::init(argc, argv);
-    rclcpp::spin(std::make_shared<mrover::ZedWrapper>());
-    rclcpp::shutdown();
-    return 0;
-}
+#include "rclcpp_components/register_node_macro.hpp"
+RCLCPP_COMPONENTS_REGISTER_NODE(mrover::ZedWrapper)

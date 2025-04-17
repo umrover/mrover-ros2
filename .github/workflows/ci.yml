@@ -27,6 +27,7 @@ jobs:
       - name: Style Check
         run: . /home/mrover/ros2_ws/src/mrover/venv/bin/activate && cd $GITHUB_WORKSPACE/src/mrover/ && ./style.sh
       - name: Compiler Cache
+        if: github.event.pull_request.draft == false
         uses: hendrikmuhs/ccache-action@v1.2
       - name: manif Submodule Update
         if: github.event.pull_request.draft == false

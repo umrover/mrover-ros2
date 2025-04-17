@@ -3,6 +3,9 @@
 # See: https://vaneyckt.io/posts/safer_bash_scripts_with_set_euxo_pipefail/
 set -Eeuo pipefail
 
+shopt -s nullglob globstar
+GLOBIGNORE="./venv/**"
+
 readonly RED='\033[0;31m'
 readonly NC='\033[0m'
 readonly YELLOW_BOLD='\033[1;33m'
@@ -19,7 +22,7 @@ CLANG_FORMAT_ARGS=(
 if [ $# -eq 0 ] || [ "$1" != "--fix" ]; then
   BLACK_ARGS+=("--diff") # Show difference
   BLACK_ARGS+=("--check") # Exit with non-zero code if changes are required (for CI)
-  CLANG_FORMAT_ARGS+=("--dry-run")
+  CLANG_FORMAT_ARGS+=("--dry-run" "--Werror") # Don't modify, exit with non-zero code if changes are required
 fi
 
 function print_update_error() {
@@ -51,18 +54,11 @@ readonly MYPY_PATH=$(find_executable mypy 1.11.2)
 ## Run checks
 
 # Add new directories with C++ code here:
-readonly CPP_DIRS=(
-  ./perception
-  ./lie
-  ./esw
-  ./simulator
+readonly CPP_FILES=(
+  ./{perception,lie,esw,simulator,parameter_utils}/**/*.{cpp,hpp,h,cu,cuh}
 )
-
 echo "Style checking C++ ..."
-readonly CPP_FILES=$(find "${CPP_DIRS[@]}" -name "*.cpp" -o -name "*.hpp" -o -name "*.h" -o -name "*.cu")
-for file in $CPP_FILES; do
-  "${CLANG_FORMAT_PATH}" "${CLANG_FORMAT_ARGS[@]}" -i "${file}"
-done
+"${CLANG_FORMAT_PATH}" "${CLANG_FORMAT_ARGS[@]}" -i "${CPP_FILES[@]}"
 echo "Done"
 
 # Add new directories with Python code here:
@@ -90,11 +86,12 @@ echo "Linting Python with mypy ..."
 if command -v shellcheck &> /dev/null; then
   echo
   echo "Linting bash scripts with shellcheck ..."
-  readonly SHELL_FILES=$(find . -depth 1 -name "*.sh")
-  for file in $SHELL_FILES; do
-    # SC2155 is separate declaration and command.
-    shellcheck "${file}" --exclude=SC2155
-  done
+  readonly SHELL_FILES=(
+    ./**/*.sh
+  )
+  # SC2155 is separate declaration and command.
+  shellcheck --exclude=SC2155 "${SHELL_FILES[@]}"
+  echo "Done"
 fi
 
 if [ $# -eq 0 ] || [ "$1" != "--fix" ]; then
