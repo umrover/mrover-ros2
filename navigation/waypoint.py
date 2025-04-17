@@ -52,7 +52,7 @@ class WaypointState(State):
         if context.course is None:
             return
         context.node.get_logger().info("Entered Waypoint State")
-        context.dilate_cost(2.0)
+        context.dilate_cost(1.0)
         context.rover.previous_state = WaypointState()
 
         context.dilate_cost(context.node.get_parameter("costmap.initial_inflation_radius").value)

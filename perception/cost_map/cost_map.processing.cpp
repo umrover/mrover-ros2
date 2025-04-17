@@ -74,6 +74,7 @@ namespace mrover {
                     // Points with no stereo correspondence are NaN's, so ignore them
                     if (pointInCamera.hasNaN()) continue;
                     if(normal.hasNaN()) continue;
+		    if(pointInCamera.z() > mTopClip) continue; 
 
                     R3f pointInMap = cameraToMap.act(pointInCamera);
 
@@ -281,8 +282,15 @@ namespace mrover {
     // REQ THE CENTER WE MUST PASS THE TOP LEFT
     auto CostMapNode::moveCostMapCallback(mrover::srv::MoveCostMap::Request::ConstSharedPtr& req, mrover::srv::MoveCostMap::Response::SharedPtr& res) -> void {
         RCLCPP_INFO_STREAM(get_logger(), "Incoming request: " + req->course);
-        SE3d centerInMap = SE3Conversions::fromTfTree(mTfBuffer, req->course, mMapFrame);
-
+        SE3d centerInMap;
+        while (true) {
+            try{
+                centerInMap = SE3Conversions::fromTfTree(mTfBuffer, req->course, mMapFrame, get_clock()->now() - rclcpp::Duration(0, 5e8));
+                break;
+            } catch (tf2::TransformException const& e) {
+                RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, std::format("TF tree error processing point cloud: {}", e.what()));
+            }
+        }
         // Calculate new center for costmap, will be at nearest bin location. First round down to nearest int then use fmod to 
         //    add so that we effectively round to nearest multiple of mResolution
         int newLeftX = std::floor(centerInMap.x() - mSize/2.0);
@@ -326,8 +334,10 @@ namespace mrover {
 
     auto CostMapNode::dilateCostMapCallback(mrover::srv::DilateCostMap::Request::ConstSharedPtr& req, mrover::srv::DilateCostMap::Response::SharedPtr& res) -> void{
         // TODO: consider floor vs ceil here, currently rounds down to nearest cell dilation amt
+        RCLCPP_INFO_STREAM(get_logger(), "Incoming dilation request: " << req->d_amt);
         mDilateAmt = static_cast<int>(floor(static_cast<double>(req->d_amt/mResolution)));
         res->success = true;
+        RCLCPP_INFO_STREAM(get_logger(), "Done changing dilation");
     }
 
     auto CostMapNode::indexToCoordinate(const int index) const -> CostMapNode::Coordinate {

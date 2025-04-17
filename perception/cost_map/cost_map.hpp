@@ -35,7 +35,7 @@ namespace mrover {
         int mWidth{};         // Number of cells on the grid horizontally
         int mHeight{};        // Number of cells on the grid vertically
         int mNumDivisions{}; 
-        int mDownSamplingFactor = 1;
+        int mDownSamplingFactor = 2;
         std::string mMapFrame;
         int mDilateAmt = 1;
 		

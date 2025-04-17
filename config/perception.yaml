@@ -54,7 +54,7 @@ cost_map:
     near_width: 1.0
     far_width: 2.0
     alpha: 0.05
-    top_clip: 3.0
+    top_clip: 1.0
     z_percent: 0.34
     alpha: 0.05
     z_threshold: 0.51
