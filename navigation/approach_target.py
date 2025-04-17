@@ -2,7 +2,7 @@ import numpy as np
 from typing import Any
 from navigation.trajectory import Trajectory
 from navigation.astar import AStar, NoPath, OutOfBounds
-from . import costmap_search, stuck_recovery, waypoint, state
+from . import costmap_search, stuck_recovery, waypoint, backup, state
 from .context import Context
 from state_machine.state import State
 from geometry_msgs.msg import Twist
@@ -77,12 +77,11 @@ class ApproachTargetState(State):
             return state.DoneState()
         if is_finished:
             total_time = context.node.get_clock().now() - self.time_begin
-            context.node.get_logger().info(f"Total approach time: {total_time.nanoseconds // 1000000000}")
-            if context.course.increment_waypoint():
-                return state.DoneState()
+            context.node.get_logger().info(f"Total approach time: {total_time.nanoseconds / 10e9} seconds")
+            context.course.increment_waypoint()
             context.env.arrived_at_target = True
-            context.node.get_logger().info("set arrived at target to true")
-            return waypoint.WaypointState()
+            return state.DoneState()
+            
 
         return self
 
@@ -154,7 +153,10 @@ class ApproachTargetState(State):
             return self
 
         rover_pose = context.rover.get_pose_in_map()
-        assert rover_pose is not None
+        if rover_pose is None:
+            context.node.get_logger().warn("Rover has no pose, waiting...")
+            context.rover.send_drive_command(Twist())
+            return self
 
         # If the target trajectory is empty, develop a new path to it
         if len(self.target_traj.coordinates) == 0:

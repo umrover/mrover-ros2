@@ -6,6 +6,7 @@ cmake_policy(SET CMP0148 OLD)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CXX_STANDARD_REQUIRED ON)
+set(CXX_STANDARD_REQUIRED ON)
 
 # Generate compile_commands.json for clangd language server.
 # Can be used by VSCode, CLion, VIM, etc.
@@ -18,6 +19,9 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 option(MROVER_CI "Enable CI options" OFF)
 option(MROVER_CLANG_TIDY "Enable static analysis with Clang tidy" ${MROVER_CI})
 option(MROVER_WARNINGS_AS_ERRORS "Treat warnings as errors" ${MROVER_CI})
+
+set(node_plugins "")
+
 
 set(node_plugins "")
 
@@ -124,7 +128,7 @@ if (NOT manif_FOUND)
 
         set(manif_FOUND TRUE)
     else()
-        message(FATAL_ERROR "Manif not found. If on Ubuntu install with 'sudo apt install -f ./pkg/libmanif-dev.deb'. Or build from source with 'git submodule update --init deps/manif' and make sure it is non-empty")
+        message(FATAL_ERROR "Manif not found. If on Ubuntu install with 'sudo apt install -f ./pkg/libmanif-dev.deb'. Or build from source with 'submodule update --init deps/manif' and make sure it is non-empty")
     endif()
 endif()
 

@@ -216,6 +216,9 @@ class Course:
     def increment_waypoint(self) -> int:
         self.waypoint_index = min(self.waypoint_index + 1, len(self.waypoints))
         return self.waypoint_index >= len(self.waypoints)
+    
+    def done(self) -> bool:
+        return self.waypoint_index >= len(self.waypoints)
 
     def waypoint_pose(self, index: int) -> SE3:
         return self.waypoints[index][1]

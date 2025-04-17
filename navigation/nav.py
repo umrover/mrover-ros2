@@ -47,9 +47,13 @@ class Navigation(Node):
                 # Costmap
                 ("costmap.custom_costmap", Parameter.Type.BOOL),
                 ("costmap.use_costmap", Parameter.Type.BOOL),
-                ("costmap.a_star_thresh", Parameter.Type.DOUBLE),
                 ("costmap.costmap_thresh", Parameter.Type.DOUBLE),
                 ("costmap.initial_inflation_radius", Parameter.Type.DOUBLE),
+                # Backup
+                ("backup.stop_threshold", Parameter.Type.DOUBLE),
+                ("backup.drive_forward_threshold", Parameter.Type.DOUBLE),
+                ("backup.backup_distance", Parameter.Type.DOUBLE),
+                ("backup.wait_time", Parameter.Type.DOUBLE),
                 # Drive
                 ("drive.max_driving_effort", Parameter.Type.DOUBLE),
                 ("drive.min_driving_effort", Parameter.Type.DOUBLE),
@@ -102,10 +106,11 @@ class Navigation(Node):
                 WaypointState(),
                 CostmapSearchState(),
                 StuckRecoveryState(),
+                BackupState(),
                 DoneState(),
             ],
         )
-        self.state_machine.add_transitions(BackupState(), [WaypointState(), StuckRecoveryState()])
+        self.state_machine.add_transitions(BackupState(), [WaypointState(), DoneState()])
         self.state_machine.add_transitions(
             StuckRecoveryState(),
             [

@@ -7,7 +7,7 @@ from rclpy.duration import Duration
 from rclpy.time import Time
 from state_machine.state import State
 from .context import Context
-
+from geometry_msgs.msg import Twist
 
 class JTurnAction(Enum):
     MOVING_BACK = 0
@@ -46,7 +46,10 @@ class StuckRecoveryState(State):
 
         # Making waypoint behind the rover to go backwards
         rover_in_map = context.rover.get_pose_in_map()
-        assert rover_in_map is not None
+        if rover_in_map is None:
+            context.node.get_logger().warn("Rover has no pose, waiting...")
+            context.rover.send_drive_command(Twist())
+            return self
 
         # If first round, set a waypoint directly behind the rover and command it to
         # drive backwards toward it until it arrives at that point.
