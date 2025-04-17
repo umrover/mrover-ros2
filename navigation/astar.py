@@ -196,7 +196,11 @@ class AStar:
         """
         start_time = context.node.get_clock().now()
         rover_SE3 = context.rover.get_pose_in_map()
-        assert rover_SE3 is not None
+        if rover_SE3 is None:
+            context.node.get_logger().warn("Rover has no pose, cannot astar...")
+            context.rover.send_drive_command(Twist())
+            return Trajectory(np.array([]))
+        
         rover_position_in_map = rover_SE3.translation()[:2]
 
         if not self.USE_COSTMAP or not self.use_astar(context=context, dest=dest):

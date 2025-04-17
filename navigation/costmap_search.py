@@ -133,7 +133,10 @@ class CostmapSearchState(State):
             return self
 
         rover_pose = context.rover.get_pose_in_map()
-        assert rover_pose is not None
+        if rover_pose is None:
+            context.node.get_logger().warn("Rover has no pose, waiting...")
+            context.rover.send_drive_command(Twist())
+            return self
 
         costmap_length = context.env.cost_map.data.shape[0]
 
@@ -239,7 +242,10 @@ class CostmapSearchState(State):
             return state.DoneState()
 
         rover_in_map = context.rover.get_pose_in_map()
-        assert rover_in_map is not None
+        if rover_in_map is None:
+            context.node.get_logger().warn("Rover has no pose, waiting...")
+            context.rover.send_drive_command(Twist())
+            return self
 
         if context.rover.stuck:
             context.rover.previous_state = self

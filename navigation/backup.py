@@ -8,6 +8,7 @@ from . import state, waypoint
 from .context import Context
 from .trajectory import Trajectory
 from .coordinate_utils import is_high_cost_point
+from geometry_msgs.msg import Twist
 
 
 class BackupState(State):
@@ -32,7 +33,8 @@ class BackupState(State):
         self.start_time = context.node.get_clock().now()
 
         rover_pose = context.rover.get_pose_in_map()
-        assert rover_pose is not None
+        if rover_pose is None:
+            return
         self.prev_pos = rover_pose.translation()[0:2]
 
         self.STOP_THRESH = context.node.get_parameter("backup.stop_threshold").value
@@ -57,7 +59,12 @@ class BackupState(State):
             return self
         
         rover_pose = context.rover.get_pose_in_map()
-        assert rover_pose is not None
+
+        if rover_pose is None:
+            context.node.get_logger().warn("Rover has no pose, waiting...")
+            context.rover.send_drive_command(Twist())
+            return self
+        
         rover_position = rover_pose.translation()[0:2]
 
         self.dist_traveled += float(np.linalg.norm(rover_position-self.prev_pos))

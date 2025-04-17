@@ -77,10 +77,10 @@ class ApproachTargetState(State):
             return state.DoneState()
         if is_finished:
             total_time = context.node.get_clock().now() - self.time_begin
-            context.node.get_logger().info(f"Total approach time: {total_time.nanoseconds / 1000000000} seconds")
+            context.node.get_logger().info(f"Total approach time: {total_time.nanoseconds / 10e9} seconds")
             context.course.increment_waypoint()
             context.env.arrived_at_target = True
-            return backup.BackupState()
+            return state.DoneState()
             
 
         return self
@@ -153,7 +153,10 @@ class ApproachTargetState(State):
             return self
 
         rover_pose = context.rover.get_pose_in_map()
-        assert rover_pose is not None
+        if rover_pose is None:
+            context.node.get_logger().warn("Rover has no pose, waiting...")
+            context.rover.send_drive_command(Twist())
+            return self
 
         # If the target trajectory is empty, develop a new path to it
         if len(self.target_traj.coordinates) == 0:

@@ -6,6 +6,7 @@ from . import stuck_recovery
 from .approach_target import ApproachTargetState
 from .context import Context
 from coordinate_utils import is_high_cost_point
+from geometry_msgs.msg import Twist
 
 
 class LongRangeState(ApproachTargetState):
@@ -38,7 +39,10 @@ class LongRangeState(ApproachTargetState):
             return None
 
         rover_in_map = context.rover.get_pose_in_map()
-        assert rover_in_map is not None
+        if rover_in_map is None:
+            context.node.get_logger().warn("Rover has no pose, cannot project a long range target")
+            context.rover.send_drive_command(Twist())
+            return None
 
         rover_position = rover_in_map.translation()
         rover_direction = rover_in_map.rotation()[:, 0]

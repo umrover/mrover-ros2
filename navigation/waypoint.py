@@ -100,7 +100,10 @@ class WaypointState(State):
             return self
 
         rover_pose = context.rover.get_pose_in_map()
-        assert rover_pose is not None
+        if rover_pose is None:
+            context.node.get_logger().warn("Rover has no pose, waiting...")
+            context.rover.send_drive_command(Twist())
+            return self
 
         if self.waypoint_traj.empty():
             context.node.get_logger().info("Generating segmented path")
@@ -218,6 +221,11 @@ class WaypointState(State):
         if current_waypoint is None:
             return state.DoneState()
 
+        # If we are at a target currently (from a previous leg), backup to avoid collision
+        if context.env.arrived_at_target:
+            context.env.arrived_at_target = False
+            return backup.BackupState()
+
         # Returns either ApproachTargetState, LongRangeState, or None
         approach_state = context.course.get_approach_state()
         if approach_state is not None:
@@ -256,7 +264,11 @@ class WaypointState(State):
                 self.time_no_search_wait = context.node.get_clock().now()
 
             rover_pose = context.rover.get_pose_in_map()
-            assert rover_pose is not None
+            if rover_pose is None:
+                context.node.get_logger().warn("Rover has no pose, waiting...")
+                context.rover.send_drive_command(Twist())
+                return self
+
             rover_position = rover_pose.translation()[:2]
 
             waypoint_position = context.course.current_waypoint_pose_in_map().translation()[:2]
