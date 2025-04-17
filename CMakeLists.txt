@@ -6,6 +6,7 @@ cmake_policy(SET CMP0148 OLD)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CXX_STANDARD_REQUIRED ON)
+set(CXX_STANDARD_REQUIRED ON)
 
 # Generate compile_commands.json for clangd language server.
 # Can be used by VSCode, CLion, VIM, etc.
@@ -14,6 +15,9 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 option(MROVER_CI "Enable CI options" OFF)
 option(MROVER_CLANG_TIDY "Enable static analysis with Clang tidy" ${MROVER_CI})
 option(MROVER_WARNINGS_AS_ERRORS "Treat warnings as errors" ${MROVER_CI})
+
+set(node_plugins "")
+
 
 set(node_plugins "")
 
@@ -193,6 +197,10 @@ install(PROGRAMS
     starter_project/autonomy/src/navigation/navigation_starter_project.py
     DESTINATION
     lib/${PROJECT_NAME}
+    starter_project/autonomy/src/localization.py
+    starter_project/autonomy/src/navigation/navigation_starter_project.py
+    DESTINATION
+    lib/${PROJECT_NAME}
 )
 
 install(DIRECTORY starter_project/autonomy/launch DESTINATION share/${PROJECT_NAME})
@@ -268,10 +276,10 @@ if(ZED_FOUND AND CUDA_FOUND)
 
     # Learning Library
     # TODO(john): Update to use the new API
-    mrover_add_library(tensorrt tensorrt/*.c* tensorrt)
-    target_compile_options(tensorrt PRIVATE -Wno-deprecated-declarations $<$<COMPILE_LANGUAGE:CUDA>:-std=c++17>)
-    target_include_directories(tensorrt PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
-    target_link_libraries(tensorrt PRIVATE opencv_core opencv_dnn opencv_imgproc lie nvinfer nvonnxparser tbb cuda_compiler_flags)
+	mrover_add_library(tensorrt tensorrt/*.c* tensorrt)
+	target_compile_options(tensorrt PRIVATE -Wno-deprecated-declarations $<$<COMPILE_LANGUAGE:CUDA>:-std=c++17>)
+	target_include_directories(tensorrt PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
+	target_link_libraries(tensorrt opencv_core opencv_dnn opencv_imgproc lie nvinfer nvonnxparser tbb cuda_compiler_flags)
 
     # Object Detector
     mrover_add_component(object_detector perception/object_detector/*.c* perception/object_detector/pch.hpp StereoObjectDetector ImageObjectDetector)
@@ -297,10 +305,30 @@ ament_target_dependencies(cost_map rclcpp tf2 tf2_ros)
 target_link_libraries(cost_map lie parameter_utils)
 
 # Embedded
+mrover_add_header_only_library(messaging esw/messaging)
 
-mrover_add_node(differential_drive_controller esw/differential_drive_controller.cpp)
-target_link_libraries(differential_drive_controller units)
-ament_target_dependencies(differential_drive_controller rclcpp)
+mrover_add_header_only_library(can_device esw/can_device)
+target_link_libraries(can_device INTERFACE ${rclcpp_LIBRARIES})
+
+mrover_add_library(motor_library esw/motor_library/*.cpp esw/motor_library)
+ament_target_dependencies(motor_library rclcpp std_srvs)
+target_link_libraries(motor_library can_device moteus units messaging parameter_utils)
+
+macro(mrover_add_esw_bridge_node name sources)
+    mrover_add_node(${name} ${sources})
+    ament_target_dependencies(${name} rclcpp std_srvs)
+    target_link_libraries(${name} can_device units messaging)
+endmacro()
+
+macro(mrover_add_esw_motor_bridge_node name sources)
+    mrover_add_esw_bridge_node(${name} ${sources})
+    target_link_libraries(${name} motor_library)
+endmacro()
+
+
+mrover_add_esw_motor_bridge_node(drive_hw_bridge esw/drive_hw_bridge.cpp)
+mrover_add_esw_motor_bridge_node(arm_hw_bridge esw/arm_hw_bridge.cpp)
+mrover_add_esw_bridge_node(differential_drive_controller esw/differential_drive_controller.cpp)
 
 mrover_add_node(arm_controller teleoperation/arm_controller/arm_controller.cpp teleoperation/arm_controller/pch.hpp)
 target_link_libraries(arm_controller lie)
