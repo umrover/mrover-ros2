@@ -14,7 +14,7 @@ class JTurnAction(Enum):
     J_TURNING = 1
 
 
-class RecoveryState(State):
+class StuckRecoveryState(State):
     waypoint_behind: np.ndarray | None
     current_action: JTurnAction
     start_time: Time | None = None
@@ -29,6 +29,7 @@ class RecoveryState(State):
 
     def on_enter(self, context: Context) -> None:
         self.reset(context)
+
         self.start_time = context.node.get_clock().now()
 
     def on_exit(self, context: Context) -> None:

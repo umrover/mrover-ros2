@@ -37,10 +37,18 @@
         </div>
         <Checkbox ref="teleopCheckbox" class="teleop-checkbox" :name="'Teleop Controls'"
           @toggle="toggleTeleopMode($event)" />
+        <Checkbox ref="costmapCheckbox" class="costmap-checkbox" :name="'Disable All Costmaps'"
+          @toggle="toggleAllCostmaps" />
       </div>
       <h4 class="waypoint-headers my-3">Current Course</h4>
       <div class="route">
-        <WaypointItem v-for="waypoint in currentRoute" :key="waypoint" :waypoint="waypoint" :globalCostmap="currentState" @delete="deleteItem(waypoint)" />
+        <WaypointItem 
+          v-for="waypoint in route" 
+          :key="waypoint" 
+          :waypoint="waypoint" 
+          @delete="deleteItem(waypoint)"
+          @toggleCostmap="toggleCostmap"
+        />
       </div>
     </div>
   </div>
@@ -108,6 +116,7 @@ export default {
           type: 0, 
           lat: 0,
           lon: 0,
+          enable_costmap: true,
         },
         { 
           name: 'No Search 2',
@@ -115,6 +124,7 @@ export default {
           type: 0, 
           lat: 0,
           lon: 0,
+          enable_costmap: true,
         },
         {
           name: 'Post 1',
@@ -122,6 +132,7 @@ export default {
           type: 1,
           lat: 0,
           lon: 0,
+          enable_costmap: true,
         },
         {
           name: 'Post 2',
@@ -129,6 +140,7 @@ export default {
           type: 1,
           lat: 0,
           lon: 0,
+          enable_costmap: true,
         },
         {
           name: 'Post 3',
@@ -136,6 +148,7 @@ export default {
           type: 1,
           lat: 0,
           lon: 0,
+          enable_costmap: true,
         },
         {
           name: 'Mallet',
@@ -143,6 +156,7 @@ export default {
           type: 2,
           lat: 0,
           lon: 0,
+          enable_costmap: true,
         },
         {
           name: 'Water Bottle',
@@ -150,6 +164,7 @@ export default {
           type: 3,
           lat: 0,
           lon: 0,
+          enable_costmap: true,
         }],
       
       modal: null,
@@ -159,9 +174,11 @@ export default {
           type: 0,
           lat: 0,
           lon: 0,
+          enable_costmap: true,
         },
 
       teleopEnabledCheck: false,
+      allCostmapToggle: true,
 
       route: reactive([]),
 
@@ -297,7 +314,8 @@ export default {
                 latitude_degrees: lat,
                 longitude_degrees: lon,
                 tag_id: waypoint.id,
-                type: waypoint.type
+                type: waypoint.type,
+                enable_costmap: waypoint.enable_costmap
               }
             }
           )
@@ -312,8 +330,19 @@ export default {
       waypoint.in_route = false
       const index = this.route.indexOf(waypoint)
       this.route.splice(index, 1)
-      this.currentRoute.splice(this.currentRoute.indexOf(waypoint), 1)
-      this.sendMessage({ type: 'delete_auton_waypoint_from_course', data: waypoint })
+    },
+
+    toggleCostmap({ waypoint, enable_costmap }) {
+      waypoint.enable_costmap = enable_costmap;
+    },
+
+    toggleAllCostmaps() {
+      this.allCostmapToggle = !this.allCostmapToggle;
+      this.waypoints.forEach(wp => {
+        wp.enable_costmap = this.allCostmapToggle;
+        console.log(wp.id);
+      });
+      console.log(this.allCostmapToggle);
     },
 
     // Add item from all waypoints div to current waypoints div
@@ -340,6 +369,7 @@ export default {
         type: 0,
         lat: 0,
         lon: 0,
+        enable_costmap: true,
       }
       this.modal.hide()
     },
@@ -389,8 +419,10 @@ export default {
   grid-template-rows: auto auto;
   grid-template-areas:
     'auton-check stats'
-    'teleop-check stats';
+    'teleop-check stats'
+    'costmap-check stats';
   font-family: sans-serif;
+  padding-bottom: 10px;
 }
 
 .waypoint-header {
@@ -423,6 +455,11 @@ export default {
 /* Grid Area Definitions */
 .teleop-checkbox {
   grid-area: teleop-check;
+  width: 100%;
+}
+
+.costmap-checkbox {
+  grid-area: costmap-check;
   width: 100%;
 }
 
