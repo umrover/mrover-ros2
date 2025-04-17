@@ -1,7 +1,8 @@
 #pragma once
 
+#include <QDockWidget>
 #include <QMainWindow>
-#include <QtWidgets>
+#include <QScrollArea>
 
 #include "GstRtpVideoCreatorWidget.hpp"
 #include "GstVideoGridWidget.hpp"

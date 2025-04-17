@@ -15,8 +15,7 @@
  *
  * This widget allows the user to create a new RTP video source by specifying the name, port, and codec.
  * It emits a createRequested signal when the user clicks the submit button, which provides the name they
- * assigned the video source and the gstreamer pipeline which generally follows the structure
- * (udpsrc --> rtpjitterbuffer --> rtpdepay --> decoder).
+ * assigned the video source and the gstreamer pipeline which generally follows the structure (udpsrc --> rtpjitterbuffer --> rtpdepay --> decoder).
  */
 class GstRtpVideoCreatorWidget : public QWidget {
     Q_OBJECT
@@ -70,6 +69,28 @@ public:
 signals:
     void createRequested(std::string name, std::string pipeline);
 
+public slots:
+    void onCreateResult(bool success, QString const& errorMsg = {}) {
+        if (success) {
+            mNameLineEdit->clear();
+            mPortLineEdit->clear();
+            mErrorLabel->setVisible(false);
+        } else {
+            mErrorLabel->setText(errorMsg);
+            mErrorLabel->setVisible(true);
+        }
+        setWaiting(false);
+    }
+
+private:
+    void setWaiting(bool waiting) {
+        mSubmitButton->setEnabled(!waiting);
+        mNameLineEdit->setEnabled(!waiting);
+        mPortLineEdit->setEnabled(!waiting);
+        mVideoCodecComboBox->setEnabled(!waiting);
+        mSubmitButton->setText(waiting ? tr("...") : tr("Submit"));
+    }
+
 private slots:
     void onSubmitClicked() {
         bool ok;
@@ -88,10 +109,14 @@ private slots:
         Gst::VideoCodec const codec = Gst::getVideoCodecFromString(mVideoCodecComboBox->currentText().toStdString());
         std::string const pipeline = Gst::PipelineStrings::createRtpToRawString(static_cast<std::uint16_t>(port), codec);
 
-        emit createRequested(mNameLineEdit->text().toStdString(), pipeline);
+        if (mNameLineEdit->text().isEmpty()) {
+            mErrorLabel->setText(tr("Name cannot be empty"));
+            mErrorLabel->setVisible(true);
+            return;
+        }
 
-        mNameLineEdit->clear();
-        mPortLineEdit->clear();
-        mErrorLabel->setVisible(false);
+        setWaiting(true);
+
+        emit createRequested(mNameLineEdit->text().toStdString(), pipeline);
     }
 };

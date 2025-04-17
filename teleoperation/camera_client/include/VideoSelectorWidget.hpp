@@ -26,6 +26,7 @@ public:
         connect(checkbox, &QCheckBox::toggled, targetWidget, [targetWidget](bool isUnchecked) {
             targetWidget->setVisible(isUnchecked);
         });
+
         // remove the spacer at the end of the layout, add the checkbox, and add the spacer again (to keep the checkboxes at the top)
         mCheckBoxesLayout->takeAt(mCheckBoxesLayout->count() - 1);
         mCheckBoxesLayout->addWidget(checkbox);
