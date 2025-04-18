@@ -1,14 +1,10 @@
 #pragma once
 
-#include <QDockWidget>
-#include <QMainWindow>
-#include <QScrollArea>
-
 #include "GstRtpVideoCreatorWidget.hpp"
-#include "GstVideoGridWidget.hpp"
+#include "GstVideoWidgets.hpp"
 #include "VideoSelectorWidget.hpp"
 
-class MainWindow : public QMainWindow {
+class CameraClientMainWindow : public QMainWindow {
     Q_OBJECT
 
     QScrollArea* mCentralScrollArea;
@@ -21,5 +17,11 @@ class MainWindow : public QMainWindow {
     GstRtpVideoCreatorWidget* mGstRtpVideoCreatorWidget;
 
 public:
-    explicit MainWindow(QWidget* parent = nullptr);
+    explicit CameraClientMainWindow(QWidget* parent = nullptr);
+
+signals:
+    void closed();
+
+protected:
+    void closeEvent(QCloseEvent* event) override;
 };

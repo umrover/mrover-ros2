@@ -1,6 +1,6 @@
-#include "MainWindow.hpp"
+#include "CameraClientMainWindow.hpp"
 
-MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
+CameraClientMainWindow::CameraClientMainWindow(QWidget* parent) : QMainWindow(parent) {
     mCameraGridWidget = new GstVideoGridWidget(this);
     mCentralScrollArea = new QScrollArea(this);
 
@@ -40,21 +40,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
             });
 }
 
-
-/*
-struct CameraInfo {
-    std::string name;
-    std::string pipeline;
-};
-static std::vector<CameraInfo> const CAMERA_INFOS{
-        {"Camera 1", "videotestsrc ! video/x-raw,width=1280,height=720,framerate=30/1"},
-        {"Camera 2", "videotestsrc ! video/x-raw,width=1280,height=720,framerate=30/1"},
-        {"Camera 3", "videotestsrc ! video/x-raw,width=1280,height=720,framerate=30/1"},
-        {"Camera 4", "videotestsrc ! video/x-raw,width=1280,height=720,framerate=30/1"},
-        {"Camera 5", "videotestsrc ! video/x-raw,width=1280,height=720,framerate=30/1"},
-};
-for (auto const& cameraInfo: CAMERA_INFOS) {
-    mCameraGridWidget->addGstVideoWidget(cameraInfo.name, cameraInfo.pipeline);
-    mCameraSelectorWidget->addSelector(cameraInfo.name, mCameraGridWidget->getGstVideoWidget(cameraInfo.name));
+void CameraClientMainWindow::closeEvent(QCloseEvent* event) {
+    emit closed();
+    QMainWindow::closeEvent(event);
 }
-*/
