@@ -18,6 +18,9 @@
 #include "motor_library/brushed.hpp"
 #include "motor_library/brushless.hpp"
 
+//listens for a throttle command
+//send the throttle command to 1BM
+
 namespace mrover {
 
     class AntennaBridge : public rclcpp::Node {
@@ -31,10 +34,34 @@ namespace mrover {
 
         auto init() -> void {
             // mArmThrottleSub = create_subscription<msg::Throttle>("arm_throttle_cmd", 1, [this](msg::Throttle::ConstSharedPtr const& msg) { processThrottleCmd(msg); });
+            mAntennaThrottleSub = create_subscription<msg::Throttle>("antenna_throttle_cmd", 1, [this](msg::Throttle::ConstSharedPtr const& msg) { processThrottleCmd(msg); });
+            
         }
 
     private:
         // rclcpp::Subscription<msg::Throttle>::SharedPtr mArmThrottleSub;
+        const std::string antenna_name = "antenna";
+        std::shared_ptr<BrushedController> mAntennaMotor; 
+
+        rclcpp::Subscription<msg::Throttle>::SharedPtr mAntennaThrottleSub;
+
+
+        auto processThrottleCmd(msg::Throttle::ConstSharedPtr const& msg) -> void {
+            if(msg->names.size() != msg->throttles.size()) {
+                RCLCPP_ERROR(get_logger(), "Name count and value count mismatched");
+                return;
+            }
+
+            for(std::size_t i = 0; i < msg->names.size(); ++i){
+                std::string const& name = msg->name[i];
+
+                if(name == antenna_name){
+                    Dimensionless const& throttle = msg->throttles[i];
+                    mAntenna->setDesiredThrottle(throttle);
+                }
+
+            }
+        }
     
     };
 } // namespace mrover
