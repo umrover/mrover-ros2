@@ -53,11 +53,11 @@ namespace mrover {
             }
 
             for(std::size_t i = 0; i < msg->names.size(); ++i){
-                std::string const& name = msg->name[i];
+                std::string const& name = msg->names[i];
 
                 if(name == antenna_name){
                     Dimensionless const& throttle = msg->throttles[i];
-                    mAntenna->setDesiredThrottle(throttle);
+                    mAntennaMotor->setDesiredThrottle(throttle);
                 }
 
             }
