@@ -51,6 +51,7 @@ from mrover.srv import (
     ServoSetPos 
 )
 from std_srvs.srv import SetBool
+from std_msgs.msg import Float32
 
 rclpy.init()
 node = rclpy.create_node("teleoperation")
@@ -103,7 +104,7 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.forward_ros_topic("/arm_joint_data", JointState, "fk")
         self.forward_ros_topic("/drive_controller_data", ControllerState, "drive_state")
         self.forward_ros_topic("/sa_controller_state", ControllerState, "sa_state")
-        self.forward_ros_topic("/sa_gear_diff_position", float32, "hexhub_site")
+        self.forward_ros_topic("/sa_gear_diff_position", Float32, "hexhub_site")
         self.forward_ros_topic("basestation/position", NavSatFix, "basestation_position")
         # check topic names above
 
@@ -151,7 +152,14 @@ class GUIConsumer(JsonWebsocketConsumer):
             # Parse it back into a dictionary, so we can send it as JSON
             self.send_message_as_json({"type": gui_msg_type, **message_to_ordereddict(ros_message)})
 
-        self.subscribers.append(node.create_subscription(topic_type, topic_name, callback, qos_profile=1))
+        self.subscribers.append(node.create_subscription(topic_type, topic_name, callback, 1))
+            # subscription = node.create_subscription(
+            #     topic_type,
+            #     topic_name,
+            #     callback,
+            #     qos_profile
+            # )
+
 
     def send_message_as_json(self, msg: dict):
         try:
@@ -309,9 +317,10 @@ class GUIConsumer(JsonWebsocketConsumer):
                 case {
                     "type": "set_gear_diff_pos",
                     "position": position,
-                    "orientation": isCCW,
+                    "isCCW": isCCW,
                 }:
-                    self.gear_diff_set_pos_srv.call(ServoSetPos.Request(position=float32(position), is_counterclockwise=isCCW))
+                    node.get_logger().info(f"{isCCW}")
+                    self.gear_diff_set_pos_srv.call(ServoSetPos.Request(position=float(position), is_counterclockwise=isCCW))
 
                 case {"type": "auto_shutoff", "shutoff": shutoff}:
                     self.auto_shutoff_service.call(EnableBool.Request(enable=shutoff))

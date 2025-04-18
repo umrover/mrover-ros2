@@ -82,7 +82,7 @@ export default {
       orientation: true,
       site_to_radians: 
       {
-        0: 0,
+        0: 0.0,
         1: Math.PI/2,
         2: Math.PI,
         3: (3*Math.PI)/2,

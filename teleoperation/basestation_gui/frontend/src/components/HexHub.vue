@@ -12,8 +12,13 @@
         @change="emitOrientation"
       />
       <label
-        class="btn"
-        :class="isClockwise === 'true' ? 'btn-primary' : 'btn-outline-primary'"
+        v-if="isClockwise !== 'false'"
+        class="btn btn-outline-primary"
+        for="cw"
+      >Clockwise</label>
+      <label
+        v-if="isClockwise === 'false'"
+        class="btn btn-primary"
         for="cw"
       >Clockwise</label>
 
@@ -27,11 +32,18 @@
         @change="emitOrientation"
       />
       <label
-        class="btn"
-        :class="isClockwise === 'false' ? 'btn-primary' : 'btn-outline-primary'"
+        v-if="isClockwise === 'false'"
+        class="btn btn-primary"
+        for="ccw"
+      >Counter-Clockwise</label>
+      <label
+        v-if="isClockwise !== 'false'"
+        class="btn btn-outline-primary"
         for="ccw"
       >Counter-Clockwise</label>
     </div>
+
+
 
       <!-- site selection -->
       <div class="grid">
@@ -58,7 +70,7 @@
       return {
         currentSite: 0,
         siteList: ["Sample A", "Sample B", "Sample Cache", "Empty Soil Deposit"],
-        isClockwise: true, // hexhub will rotate clockwise by default
+        isClockwise: false, // bad idea, change name later
       };
     },
     computed: {
@@ -75,7 +87,7 @@
       }
     },
 
-    emits: ['selectSite'],
+    emits: ['selectSite', 'orientation'],
   };
   </script>
 
