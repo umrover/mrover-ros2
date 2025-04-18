@@ -347,7 +347,7 @@ endif ()
 # Teleop Qt5 Camera Client
 find_package(Qt5 5.15 REQUIRED COMPONENTS Widgets Multimedia MultimediaWidgets)
 
-mrover_add_node(camera_client teleoperation/camera_client/*.cpp teleoperation/camera_client/*.hpp)
+mrover_add_node(camera_client teleoperation/camera_client/*.*pp)
 # add_executable(camera_client
 #     teleoperation/camera_client/include/Gst.hpp
 #     teleoperation/camera_client/include/GstRtpVideoCreatorWidget.hpp
