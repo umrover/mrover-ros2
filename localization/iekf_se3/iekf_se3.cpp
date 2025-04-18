@@ -366,7 +366,7 @@ namespace mrover {
                 }
 
                 rover_velocity_sum += rover_velocity_in_map.head<2>();
-                rover_heading_change += std::fabs(rover_heading_new - rover_heading_old);
+                rover_heading_change += (rover_heading_new - rover_heading_old);
                 rover_heading_old = rover_heading_new;
                 ++readings;
             } catch (tf2::ConnectivityException const& e) {
