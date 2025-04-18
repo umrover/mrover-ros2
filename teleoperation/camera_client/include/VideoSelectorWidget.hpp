@@ -11,5 +11,8 @@ class VideoSelectorWidget : public QWidget {
 public:
     explicit VideoSelectorWidget(QWidget* parent = nullptr);
 
-    auto addSelector(std::string const& name, QWidget* targetWidget) -> void;
+    auto addSelector(std::string const& name) -> void;
+
+signals:
+    void selectionChanged(std::string const& name, bool isChecked);
 };

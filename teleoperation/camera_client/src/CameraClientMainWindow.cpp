@@ -23,21 +23,36 @@ CameraClientMainWindow::CameraClientMainWindow(QWidget* parent) : QMainWindow(pa
             this, [this](std::string const& name, std::string const& pipeline) {
                 qDebug() << "Creating camera with name:" << QString::fromStdString(name) << "and pipeline:" << QString::fromStdString(pipeline);
 
-                QWidget* addedCameraWidget = mCameraGridWidget->addGstVideoWidget(name, pipeline);
-                if (mCameraGridWidget->isError()) {
+                if (bool success = createCamera(name, pipeline); !success) {
                     QMetaObject::invokeMethod(mGstRtpVideoCreatorWidget, "onCreateResult",
                                               Qt::QueuedConnection,
                                               Q_ARG(bool, false),
                                               Q_ARG(QString, mCameraGridWidget->errorString()));
-                    return;
+                } else {
+                    QMetaObject::invokeMethod(mGstRtpVideoCreatorWidget, "onCreateResult",
+                                              Qt::QueuedConnection,
+                                              Q_ARG(bool, true));
                 }
-
-                mCameraSelectorWidget->addSelector(name, addedCameraWidget);
-
-                QMetaObject::invokeMethod(mGstRtpVideoCreatorWidget, "onCreateResult",
-                                          Qt::QueuedConnection,
-                                          Q_ARG(bool, true));
             });
+}
+
+auto CameraClientMainWindow::createCamera(std::string const& name, std::string const& pipeline) -> bool {
+    mCameraGridWidget->addGstVideoWidget(name, pipeline);
+    if (mCameraGridWidget->isError()) {
+        return false;
+    }
+    mCameraSelectorWidget->addSelector(name);
+    connect(mCameraSelectorWidget, &VideoSelectorWidget::selectionChanged,
+            this, [this, name](std::string const& selectedName, bool isChecked) {
+                if (isChecked) {
+                    mCameraGridWidget->showGstVideoWidget(selectedName);
+                    mCameraGridWidget->getGstVideoWidget(selectedName)->play();
+                } else {
+                    mCameraGridWidget->hideGstVideoWidget(selectedName);
+                    mCameraGridWidget->getGstVideoWidget(selectedName)->stop();
+                }
+            });
+    return true;
 }
 
 void CameraClientMainWindow::closeEvent(QCloseEvent* event) {

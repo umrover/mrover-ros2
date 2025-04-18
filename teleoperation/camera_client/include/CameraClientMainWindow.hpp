@@ -19,6 +19,8 @@ class CameraClientMainWindow : public QMainWindow {
 public:
     explicit CameraClientMainWindow(QWidget* parent = nullptr);
 
+    auto createCamera(std::string const& name, std::string const& pipeline) -> bool;
+
 signals:
     void closed();
 

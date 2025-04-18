@@ -15,12 +15,21 @@ namespace mrover {
 
             declare_parameter("cameras", rclcpp::ParameterType::PARAMETER_STRING_ARRAY);
 
-            rclcpp::Parameter camera_params;
-            this->get_parameter("cameras", camera_params);
+            rclcpp::Parameter cameraNameParams;
+            this->get_parameter("cameras", cameraNameParams);
 
-            auto cameras = camera_params.as_string_array();
-            for (auto const& camera: cameras) {
-                RCLCPP_INFO(get_logger(), "Camera: %s", camera.c_str());
+            auto cameraNames = cameraNameParams.as_string_array();
+            for (auto const& cameraName: cameraNames) {
+                RCLCPP_INFO(get_logger(), "cameraName: %s", cameraName.c_str());
+                declare_parameter(std::format("{}.port", cameraName), rclcpp::ParameterType::PARAMETER_INTEGER);
+                declare_parameter(std::format("{}.codec", cameraName), rclcpp::ParameterType::PARAMETER_STRING);
+
+                std::uint16_t const port = static_cast<std::uint16_t>(this->get_parameter(std::format("{}.port", cameraName)).as_int());
+                std::string const codec = this->get_parameter(std::format("{}.codec", cameraName)).as_string();
+
+                std::string const pipeline = Gst::PipelineStrings::createRtpToRawString(port, Gst::getVideoCodecFromString(codec));
+
+                mQtGui->createCamera(cameraName, pipeline);
             }
         }
     };

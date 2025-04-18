@@ -1,4 +1,5 @@
 #include "GstRtpVideoCreatorWidget.hpp"
+#include "Gst.hpp"
 
 GstRtpVideoCreatorWidget::GstRtpVideoCreatorWidget(QWidget* parent) : QWidget(parent) {
     mMainLayout = new QVBoxLayout(this);
@@ -9,7 +10,7 @@ GstRtpVideoCreatorWidget::GstRtpVideoCreatorWidget(QWidget* parent) : QWidget(pa
     mNameLineEdit = new QLineEdit(mFormWidget);
     mPortLineEdit = new QLineEdit(mFormWidget);
     mVideoCodecComboBox = new QComboBox(mFormWidget);
-    for (auto const& codec: Gst::getAvailableCodecs()) {
+    for (auto const& codec: Gst::getVideoCodecs()) {
         mVideoCodecComboBox->addItem(QString::fromStdString(Gst::getVideoCodecString(codec)));
     }
     mFormLayout->addRow(tr("&Name"), mNameLineEdit);
@@ -69,12 +70,13 @@ void GstRtpVideoCreatorWidget::onSubmitClicked() {
     Gst::VideoCodec const codec = Gst::getVideoCodecFromString(mVideoCodecComboBox->currentText().toStdString());
     std::string const pipeline = Gst::PipelineStrings::createRtpToRawString(static_cast<std::uint16_t>(port), codec);
 
+    std::string name;
     if (mNameLineEdit->text().isEmpty()) {
-        mErrorLabel->setText(tr("Name cannot be empty"));
-        mErrorLabel->setVisible(true);
-        return;
+        name = "camera:" + std::to_string(port);
+    } else {
+        name = mNameLineEdit->text().toStdString();
     }
 
     setWaiting(true);
-    emit createRequested(mNameLineEdit->text().toStdString(), pipeline);
+    emit createRequested(name, pipeline);
 }

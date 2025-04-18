@@ -56,8 +56,8 @@ private:
 public:
     explicit GstVideoGridWidget(QWidget* parent = nullptr);
 
-    auto addGstVideoWidget(std::string const& name, std::string const& pipeline) -> QWidget*;
-    auto getGstVideoWidget(std::string const& name) -> QWidget*;
+    auto addGstVideoWidget(std::string const& name, std::string const& pipeline) -> bool;
+    auto getGstVideoWidget(std::string const& name) -> GstVideoWidget*;
     auto hideGstVideoWidget(std::string const& name) -> bool;
     auto showGstVideoWidget(std::string const& name) -> bool;
 

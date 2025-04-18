@@ -8,12 +8,12 @@ VideoSelectorWidget::VideoSelectorWidget(QWidget* parent)
     setLayout(mCheckBoxesLayout);
 }
 
-auto VideoSelectorWidget::addSelector(std::string const& name, QWidget* targetWidget) -> void {
+auto VideoSelectorWidget::addSelector(std::string const& name) -> void {
     auto* checkbox = new QCheckBox(QString::fromStdString(name), this);
     checkbox->setChecked(true);
 
-    connect(checkbox, &QCheckBox::toggled, targetWidget, [targetWidget](bool isChecked) {
-        targetWidget->setVisible(isChecked);
+    connect(checkbox, &QCheckBox::toggled, this, [this, name](bool isChecked) {
+        emit selectionChanged(name, isChecked);
     });
 
     // Maintain bottom stretch to keep checkboxes top-aligned

@@ -20,7 +20,7 @@ namespace Gst {
 #undef DECL_ENUMS
     };
 
-    inline auto getAvailableCodecs() -> std::vector<VideoCodec> {
+    inline auto getVideoCodecs() -> std::vector<VideoCodec> {
         return {
 #define DECL_ENUMS_VECTOR(uc, str, i) VideoCodec::uc,
                 VIDEO_CODECS_ITER(DECL_ENUMS_VECTOR)};
@@ -52,51 +52,42 @@ namespace Gst {
     }
 
     namespace PipelineStrings {
-        constexpr auto DEFAULT_RTP_JITTER = std::chrono::milliseconds(200);
+        constexpr auto DEFAULT_RTP_JITTER = std::chrono::milliseconds(500);
 
         inline auto createRtpToRawString(std::uint16_t port, VideoCodec codec, std::chrono::milliseconds rtpJitter = DEFAULT_RTP_JITTER) -> std::string {
             char const* depay = nullptr;
-            char const* decoder = nullptr;
 
             switch (codec) {
                 case VideoCodec::H264: {
                     depay = "rtph264depay";
-                    decoder = "avdec_h264";
                     break;
                 }
                 case VideoCodec::H265: {
                     depay = "rtph265depay";
-                    decoder = "avdec_h265";
                     break;
                 }
                 case VideoCodec::VP8: {
                     depay = "rtpvp8depay";
-                    decoder = "avdec_vp8";
                     break;
                 }
                 case VideoCodec::VP9: {
                     depay = "rtpvp9depay";
-                    decoder = "avdec_vp9";
                     break;
                 }
                 case VideoCodec::MPEG1: {
                     depay = "rtpmp1sdepay";
-                    decoder = "avdec_mpegvideo";
                     break;
                 }
                 case VideoCodec::MPEG2: {
                     depay = "rtpmp2tdepay";
-                    decoder = "avdec_mpeg2video";
                     break;
                 }
                 case VideoCodec::MPEG4: {
                     depay = "rtpmp4vdepay";
-                    decoder = "avdec_mpeg4";
                     break;
                 }
                 case VideoCodec::MJPEG: {
                     depay = "rtpjpegdepay";
-                    decoder = "avdec_mjpeg";
                     break;
                 }
                 default: {
@@ -104,7 +95,7 @@ namespace Gst {
                 }
             }
 
-            return std::format("udpsrc port={} ! application/x-rtp,media=video ! rtpjitterbuffer latency={} ! {} ! {}", port, rtpJitter.count(), depay, decoder);
+            return std::format("udpsrc port={} ! application/x-rtp,media=video ! rtpjitterbuffer latency={} ! {} ! decodebin", port, rtpJitter.count(), depay);
         }
     } // namespace PipelineStrings
 

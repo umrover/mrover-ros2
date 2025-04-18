@@ -29,7 +29,7 @@ mobility_streamer:
     dev_node: "/dev/mobcam"
     width: 640
     height: 480
-    framerate: 10
+    framerate: 15
     address: 10.1.0.2
     bitrate: 2000000
     dev_path: ""
@@ -81,3 +81,47 @@ ra_streamer:
     address: 127.0.0.1
     bitrate: 2000000
     dev_path: ""
+
+/**:
+  ros__parameters:
+    boom_cam:
+      port: 8082
+      codec: H265
+      decode_jpeg_from_device: true
+      dev_node: "/dev/boomcam"
+      width: 640
+      height: 480
+      framerate: 15
+      address: 10.1.0.2
+      bitrate: 2000000
+      dev_path: ""
+    mob_cam:
+      port: 8083
+      codec: H265
+      decode_jpeg_from_device: true
+      dev_node: "/dev/mobcam"
+      width: 640
+      height: 480
+      framerate: 15
+      address: 10.1.0.2
+      bitrate: 2000000
+      dev_path: ""
+    static_cam:
+      port: 8081
+      codec: H265
+      decode_jpeg_from_device: true
+      dev_node: "/dev/static_cam"
+      width: 640
+      height: 480
+      framerate: 15
+      address: 10.1.0.2
+      bitrate: 2000000
+      dev_path: ""
+
+camera_client:
+  ros__parameters:
+    test: 10
+    cameras:
+      - "boom_cam"
+      - "mob_cam"
+      - "static_cam"
