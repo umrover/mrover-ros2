@@ -48,5 +48,5 @@
 #include <manif/impl/so3/SO3.h>
 
 // Services
-#include "mrover/srv/AlignLander.hpp"
+#include "mrover/srv/align_lander.hpp"
 

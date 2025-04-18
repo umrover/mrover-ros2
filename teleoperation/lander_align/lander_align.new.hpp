@@ -7,14 +7,10 @@
 #include <std_msgs/msg/detail/float32__struct.hpp>
 #include <std_msgs/msg/float32.hpp>
 #include <rclcpp/logging.hpp>
-#include <mrover/action/lander_align.hpp>
 #include <mrover/srv/align_lander.hpp>
 namespace mrover {
     class LanderAlignNode final : public rclcpp::Node{
         public:
-        using LanderAlign = action::LanderAlign;
-        using GoalHandleLanderAlign = rclcpp_action::ServerGoalHandle<LanderAlign>;
-
         // Statics
         static constexpr float Z_NORM_MAX = 0.15;
         static constexpr float FAR_CLIP = 10;
@@ -28,6 +24,7 @@ namespace mrover {
 
         private:
         tf2_ros::Buffer mTfBuffer{get_clock()};
+        tf2_ros::TransformListener mTfListener{mTfBuffer};
         std::shared_ptr<tf2_ros::TransformBroadcaster> mTfBroadcaster = std::make_shared<tf2_ros::TransformBroadcaster>(this);
 
         // Service stuff
@@ -41,10 +38,10 @@ namespace mrover {
         rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr mPcSub;
         rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr mPCDebugPub;
 
-        void pointCloudCallback(sensor_msgs::msg::PointCloud2::ConstSharedPtr & msg);
+        void pointCloudCallback(sensor_msgs::msg::PointCloud2::ConstSharedPtr const& msg);
 
         // Callback vars
-        bool mRunCallback = false;
+        bool mRunCallback = true;
 
         /*
         Using PCA to calculate plane:

@@ -9,18 +9,11 @@
 #include <cstddef>
 
 //LanderAlignActionServer member functions:
-namespace mrover{
-
-    using LanderAlign = action::LanderAlign;
-    using GoalHandleLanderAlign = rclcpp_action::ServerGoalHandle<LanderAlign>;
-    
+namespace mrover{    
     LanderAlignNode::LanderAlignNode(const rclcpp::NodeOptions& options) 
         : Node("lander_align", options) {
 
-        rclcpp::Service<mrover::srv::AlignLander>::SharedPtr start =
-            create_service<mrover::srv::AlignLander>("align_lander", &startCallBack);
-
-        mSensorSub = create_subscription<sensor_msgs::msg::PointCloud2>("/zed/left/points", 1, [this](sensor_msgs::msg::PointCloud2::ConstSharedPtr & msg) {
+        mPcSub = create_subscription<sensor_msgs::msg::PointCloud2>("/zed/left/points", 1, [this](sensor_msgs::msg::PointCloud2::ConstSharedPtr const& msg) {
             LanderAlignNode::pointCloudCallback(msg);
         });
 
@@ -30,17 +23,18 @@ namespace mrover{
         });
     }
 
-    void LanderAlignNode::pointCloudCallback(sensor_msgs::msg::PointCloud2::ConstSharedPtr & msg) {
+    void LanderAlignNode::pointCloudCallback(sensor_msgs::msg::PointCloud2::ConstSharedPtr const& msg) {
         if(!mRunCallback){ return; }
 
         // Filter normals
-        SE3f mapToCamera = SE3Conversions::fromTfTree(mTfBuffer, "map", "zed_left_camera_frame");
+        SE3d mapToCamera = SE3Conversions::fromTfTree(mTfBuffer, "map", "zed_left_camera_frame");
         auto* points = reinterpret_cast<Point const*>(msg->data.data());
         int numRows = 0;
 
         // Count how many rows the point matrix will have
-        R3f unitZ(0.0, 0.0, 1.0);
-        R3f zNormalInCamera = mapToCamera.act(unitZ).normalized();
+        R3d unitZ(0.0, 0.0, 1.0);
+        R3d zNormalInCamera = mapToCamera.rotation() * unitZ;
+        zNormalInCamera.normalize();
         for(size_t i = 0; i < msg->height * msg->width; i++){
             Point const& point = points[i];
 
@@ -51,7 +45,7 @@ namespace mrover{
                 std::isfinite(point.normal_x) &&
                 std::isfinite(point.normal_y) && 
                 std::isfinite(point.normal_z) &&
-                abs(zNormalInCamera.dot(R3f{point.normal_x, point.normal_y, point.normal_z})) < Z_NORM_MAX &&
+                abs(zNormalInCamera.dot(R3d{point.normal_x, point.normal_y, point.normal_z})) < Z_NORM_MAX &&
                 R3d(point.x, point.y, point.z).norm() < FAR_CLIP &&
                 R3d(point.x, point.y, point.z).norm() > NEAR_CLIP
             ){
@@ -72,7 +66,7 @@ namespace mrover{
                 std::isfinite(point.normal_x) &&
                 std::isfinite(point.normal_y) && 
                 std::isfinite(point.normal_z) &&
-                abs(zNormalInCamera.dot(R3f{point.normal_x, point.normal_y, point.normal_z})) < Z_NORM_MAX &&
+                abs(zNormalInCamera.dot(R3d{point.normal_x, point.normal_y, point.normal_z})) < Z_NORM_MAX &&
                 R3d(point.x, point.y, point.z).norm() < FAR_CLIP &&
                 R3d(point.x, point.y, point.z).norm() > NEAR_CLIP
             ){
@@ -109,16 +103,20 @@ namespace mrover{
         SE3d normal{means + planeNormal, Eigen::Quaterniond::Identity()};
         SE3Conversions::pushToTfTree(*mTfBroadcaster, "lander_plane", "zed_left_camera_frame", plane, get_clock()->now());
         SE3Conversions::pushToTfTree(*mTfBroadcaster, "lander_normal", "zed_left_camera_frame", normal, get_clock()->now());
-        mRunCallback = false;
+        mRunCallback = true;
     }
 
     auto LanderAlignNode::startAlignCallback(mrover::srv::AlignLander::Request::ConstSharedPtr& req, mrover::srv::AlignLander::Response::SharedPtr& res) -> void{
+        mRunCallback = req->is_start;
         mRunCallback = true;
         res->success = true;
     }
 
 }
 
-int main(void) {
-    return 0;
+auto main(int argc, char** argv) -> int {
+    rclcpp::init(argc, argv);
+    rclcpp::spin(std::make_shared<mrover::LanderAlignNode>());
+    rclcpp::shutdown();
+    return EXIT_SUCCESS;
 }
