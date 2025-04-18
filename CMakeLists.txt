@@ -344,6 +344,28 @@ if (NetLink_FOUND AND NetLinkRoute_FOUND)
     ament_target_dependencies(can_bridge rclcpp)
 endif ()
 
+# Teleop Qt5 Camera Client
+find_package(Qt5 5.15 REQUIRED COMPONENTS Widgets Multimedia MultimediaWidgets)
+
+mrover_add_node(camera_client teleoperation/camera_client/*.cpp teleoperation/camera_client/*.hpp)
+# add_executable(camera_client
+#     teleoperation/camera_client/include/Gst.hpp
+#     teleoperation/camera_client/include/GstRtpVideoCreatorWidget.hpp
+#     teleoperation/camera_client/include/GstVideoGridWidget.hpp
+#     teleoperation/camera_client/include/VideoSelectorWidget.hpp
+#     teleoperation/camera_client/include/MainWindow.hpp
+#     teleoperation/camera_client/src/MainWindow.cpp
+#     teleoperation/camera_client/src/main.cpp
+# )
+
+# target_include_directories(camera_client teleoperation/camera_client/include)
+target_link_libraries(camera_client Qt::Widgets Qt::Multimedia Qt::MultimediaWidgets)
+set_target_properties(camera_client PROPERTIES
+    AUTOMOC ON
+    AUTORCC ON
+    AUTOUIC ON
+)
+
 ## Install
 
 # You must add Python scripts here to be able to "ros2 launch" them in terminal
