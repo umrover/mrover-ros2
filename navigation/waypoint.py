@@ -54,7 +54,8 @@ class WaypointState(State):
         context.node.get_logger().info("Entered Waypoint State")
         context.rover.previous_state = WaypointState()
 
-        context.dilate_cost(context.node.get_parameter("costmap.initial_inflation_radius").value)
+        while not context.dilate_cost(context.node.get_parameter("costmap.initial_inflation_radius").value):
+            context.node.get_logger().info("Retrying cost map dilation")
 
         self.UPDATE_DELAY = context.node.get_parameter("search.update_delay").value
         self.NO_SEARCH_WAIT_TIME = context.node.get_parameter("waypoint.no_search_wait_time").value

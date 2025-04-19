@@ -30,6 +30,7 @@ from rclpy.subscription import Subscription
 from rclpy.time import Time
 from rclpy.task import Future
 from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
+from rclpy.executors import MultiThreadedExecutor
 from state_machine.state import State
 from std_msgs.msg import Bool, Header
 from .drive import DriveController
@@ -355,6 +356,7 @@ class Context:
     stuck_listener: Subscription
     costmap_listener: Subscription
     path_history_publisher: Publisher
+    exec: MultiThreadedExecutor
 
     # Use these as the primary interfaces in states
     course: Course | None
@@ -483,9 +485,15 @@ class Context:
         req = DilateCostMap.Request()
         req.inflation_radius = new_radius
         res: DilateCostMap.Response
-        res = self.dilate_cli.call(req)
+        # res = self.dilate_cli.call(req)
+        future = self.dilate_cli.call_async(req)
+        
+        self.exec.spin_until_future_complete(future, timeout_sec=3.0)
+        res = future.result()
 
-        if not res.success:
+        if res is None or not res.success:
             self.node.get_logger().info("Dilate cost map failed")
+            return False;
         else:
             self.node.get_logger().info("Finished dilating cost map")
+            return True;

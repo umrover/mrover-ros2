@@ -179,6 +179,7 @@ if __name__ == "__main__":
         context.setup(node)
 
         exec = MultiThreadedExecutor(num_threads=2)
+        context.exec = exec
         exec.add_node(node)
         exec.spin()
 
