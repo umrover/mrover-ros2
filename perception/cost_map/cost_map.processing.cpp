@@ -285,7 +285,7 @@ namespace mrover {
         SE3d centerInMap;
         while (true) {
             try{
-                centerInMap = SE3Conversions::fromTfTree(mTfBuffer, req->course, mMapFrame, get_clock()->now() - rclcpp::Duration(0, 5e8));
+                centerInMap = SE3Conversions::fromTfTree(mTfBuffer, req->course, mMapFrame, get_clock()->now());
                 break;
             } catch (tf2::TransformException const& e) {
                 RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, std::format("TF tree error processing point cloud: {}", e.what()));
