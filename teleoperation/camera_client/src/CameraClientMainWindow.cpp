@@ -45,10 +45,10 @@ auto CameraClientMainWindow::createCamera(std::string const& name, std::string c
     connect(mCameraSelectorWidget, &VideoSelectorWidget::selectionChanged,
             this, [this, name](std::string const& selectedName, bool isChecked) {
                 if (isChecked) {
-                    mCameraGridWidget->showGstVideoWidget(selectedName);
+                    mCameraGridWidget->showVideo(selectedName);
                     mCameraGridWidget->getGstVideoWidget(selectedName)->play();
                 } else {
-                    mCameraGridWidget->hideGstVideoWidget(selectedName);
+                    mCameraGridWidget->hideVideo(selectedName);
                     mCameraGridWidget->getGstVideoWidget(selectedName)->stop();
                 }
             });

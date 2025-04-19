@@ -36,33 +36,6 @@ auto GstVideoWidget::stop() -> void {
 
 // --------------------------------------------
 
-GstVideoBoxWidget::GstVideoBoxWidget(std::string const& name, QWidget* parent)
-    : QWidget(parent) {
-    mLayout = new QVBoxLayout(this);
-    mLabel = new QLabel(QString::fromStdString(name), this);
-    mGstVideoWidget = new GstVideoWidget(this);
-    mGstVideoWidget->setMinimumSize(640, 360);
-
-    mLayout->addWidget(mLabel, 0);
-    mLayout->addWidget(mGstVideoWidget, 1);
-
-    setLayout(mLayout);
-}
-
-auto GstVideoBoxWidget::getGstVideoWidget() -> GstVideoWidget* {
-    return mGstVideoWidget;
-}
-
-auto GstVideoBoxWidget::getLabel() -> QLabel* {
-    return mLabel;
-}
-
-auto GstVideoBoxWidget::setTitle(std::string const& title) -> void {
-    mLabel->setText(QString::fromStdString(title));
-}
-
-// --------------------------------------------
-
 GstVideoGridWidget::GstVideoGridWidget(QWidget* parent)
     : QWidget(parent), mError(NoError) {
     mMainLayout = new QGridLayout(this);
@@ -78,48 +51,97 @@ auto GstVideoGridWidget::addGstVideoWidget(std::string const& name, std::string 
         return false;
     }
 
-    auto* gstVideoBoxWidget = new GstVideoBoxWidget(name, this);
-    GstVideoWidget* gstVideoWidget = gstVideoBoxWidget->getGstVideoWidget();
-    gstVideoWidget->setGstPipeline(pipeline);
+    auto* gstVideoBoxWidget = new QWidget(this);
+    auto* gstVideoBoxLayout = new QVBoxLayout(gstVideoBoxWidget);
+    auto* gstVideoBoxLabel = new QLabel(QString::fromStdString(name), gstVideoBoxWidget);
+    auto* gstVideoBoxGstVideoWidget = new GstVideoWidget(gstVideoBoxWidget);
 
-    if (gstVideoWidget->isError()) {
+    gstVideoBoxWidget->setFixedSize(640, 360);
+    gstVideoBoxGstVideoWidget->setMinimumSize(640, 360);
+
+    gstVideoBoxGstVideoWidget->setGstPipeline(pipeline);
+    if (gstVideoBoxGstVideoWidget->isError()) {
         mError = MediaPlayerError;
-        mErrorString = gstVideoWidget->errorString();
+        mErrorString = gstVideoBoxGstVideoWidget->errorString();
         delete gstVideoBoxWidget;
         return false;
     }
 
-    gstVideoBoxWidget->setFixedSize(640, 360);
+    gstVideoBoxLayout->addWidget(gstVideoBoxLabel, 0);
+    gstVideoBoxLayout->addWidget(gstVideoBoxGstVideoWidget, 1);
+    gstVideoBoxWidget->setLayout(gstVideoBoxLayout);
+
 
     int const index = static_cast<int>(mGstVideoBoxes.size());
     mMainLayout->addWidget(gstVideoBoxWidget, index / 2, index % 2, Qt::AlignCenter);
 
-    mGstVideoBoxes.emplace(name, gstVideoBoxWidget);
-    mError = NoError;
-
-    return false;
+    mGstVideoBoxes.emplace(name, GstVideoBox{.widget = gstVideoBoxWidget,
+                                             .layout = gstVideoBoxLayout,
+                                             .label = gstVideoBoxLabel,
+                                             .gstVideoWidget = gstVideoBoxGstVideoWidget});
+    clearError();
+    return true;
 }
 
 auto GstVideoGridWidget::getGstVideoWidget(std::string const& name) -> GstVideoWidget* {
     if (!mGstVideoBoxes.contains(name)) {
         return nullptr;
     }
-    return mGstVideoBoxes.at(name)->getGstVideoWidget();
+    return mGstVideoBoxes.at(name).gstVideoWidget;
 }
 
-auto GstVideoGridWidget::hideGstVideoWidget(std::string const& name) -> bool {
+auto GstVideoGridWidget::playVideo(std::string const& name) -> bool {
     if (!mGstVideoBoxes.contains(name)) {
+        setError(NonExistsError, "Camera name does not exist");
         return false;
     }
-    mGstVideoBoxes.at(name)->setVisible(false);
+    mGstVideoBoxes.at(name).gstVideoWidget->play();
+
+    clearError();
     return true;
 }
 
-auto GstVideoGridWidget::showGstVideoWidget(std::string const& name) -> bool {
+auto GstVideoGridWidget::pauseVideo(std::string const& name) -> bool {
     if (!mGstVideoBoxes.contains(name)) {
+        setError(NonExistsError, "Camera name does not exist");
         return false;
     }
-    mGstVideoBoxes.at(name)->setVisible(true);
+    mGstVideoBoxes.at(name).gstVideoWidget->pause();
+
+    clearError();
+    return true;
+}
+
+auto GstVideoGridWidget::stopVideo(std::string const& name) -> bool {
+    if (!mGstVideoBoxes.contains(name)) {
+        setError(NonExistsError, "Camera name does not exist");
+        return false;
+    }
+    mGstVideoBoxes.at(name).gstVideoWidget->stop();
+
+    clearError();
+    return true;
+}
+
+auto GstVideoGridWidget::hideVideo(std::string const& name) -> bool {
+    if (!mGstVideoBoxes.contains(name)) {
+        setError(NonExistsError, "Camera name does not exist");
+        return false;
+    }
+    mGstVideoBoxes.at(name).widget->setVisible(false);
+
+    clearError();
+    return true;
+}
+
+auto GstVideoGridWidget::showVideo(std::string const& name) -> bool {
+    if (!mGstVideoBoxes.contains(name)) {
+        setError(NonExistsError, "Camera name does not exist");
+        return false;
+    }
+    mGstVideoBoxes.at(name).widget->setVisible(true);
+
+    clearError();
     return true;
 }
 
@@ -133,4 +155,14 @@ auto GstVideoGridWidget::errorString() const -> QString {
 
 auto GstVideoGridWidget::isError() const -> bool {
     return mError != NoError;
+}
+
+auto GstVideoGridWidget::clearError() -> void {
+    mError = NoError;
+    mErrorString.clear();
+}
+
+auto GstVideoGridWidget::setError(Error error, std::string const& errorString) -> void {
+    mError = error;
+    mErrorString = QString::fromStdString(errorString);
 }

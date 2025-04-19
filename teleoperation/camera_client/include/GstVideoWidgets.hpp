@@ -21,45 +21,44 @@ public:
     auto stop() -> void;
 };
 
-class GstVideoBoxWidget : public QWidget {
-    Q_OBJECT
-
-    QVBoxLayout* mLayout;
-    QLabel* mLabel;
-    GstVideoWidget* mGstVideoWidget;
-
-public:
-    explicit GstVideoBoxWidget(std::string const& name, QWidget* parent = nullptr);
-
-    [[nodiscard]] auto getGstVideoWidget() -> GstVideoWidget*;
-    [[nodiscard]] auto getLabel() -> QLabel*;
-
-    auto setTitle(std::string const& title) -> void;
-};
-
 class GstVideoGridWidget : public QWidget {
     Q_OBJECT
 public:
     enum Error {
         NoError,
+        NonExistsError,
         ExistsError,
         MediaPlayerError,
     };
 
 private:
+    struct GstVideoBox {
+        QWidget* widget;
+        QVBoxLayout* layout;
+
+        QLabel* label;
+        GstVideoWidget* gstVideoWidget;
+    };
+
     QGridLayout* mMainLayout;
-    std::unordered_map<std::string, GstVideoBoxWidget*> mGstVideoBoxes;
+    std::unordered_map<std::string, GstVideoBox> mGstVideoBoxes;
 
     GstVideoGridWidget::Error mError;
     QString mErrorString;
+
+    auto clearError() -> void;
+    auto setError(Error error, std::string const& errorString) -> void;
 
 public:
     explicit GstVideoGridWidget(QWidget* parent = nullptr);
 
     auto addGstVideoWidget(std::string const& name, std::string const& pipeline) -> bool;
     auto getGstVideoWidget(std::string const& name) -> GstVideoWidget*;
-    auto hideGstVideoWidget(std::string const& name) -> bool;
-    auto showGstVideoWidget(std::string const& name) -> bool;
+    auto playVideo(std::string const& name) -> bool;
+    auto pauseVideo(std::string const& name) -> bool;
+    auto stopVideo(std::string const& name) -> bool;
+    auto hideVideo(std::string const& name) -> bool;
+    auto showVideo(std::string const& name) -> bool;
 
     [[nodiscard]] auto error() const -> GstVideoGridWidget::Error;
     [[nodiscard]] auto errorString() const -> QString;
