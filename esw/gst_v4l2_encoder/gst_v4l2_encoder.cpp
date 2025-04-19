@@ -21,7 +21,7 @@ namespace mrover {
     }
 
     auto makeRTPH265SinkString(std::string_view host, std::uint16_t port) -> std::string {
-        return std::format("! rtph265pay ! udpsink host={} port={}", host, port);
+        return std::format("! rtph265pay config-interval=1 ! udpsink host={} port={}", host, port);
     }
 
     auto GstV4L2Encoder::initPipeline(std::string_view deviceNode) -> void {
@@ -97,7 +97,7 @@ namespace mrover {
         gst_bus_add_watch(bus, gstBusMessage, this);
         gst_object_unref(bus);
 
-        if (gst_element_set_state(mPipeline, GST_STATE_PLAYING) == GST_STATE_CHANGE_FAILURE){
+        if (gst_element_set_state(mPipeline, GST_STATE_PLAYING) == GST_STATE_CHANGE_FAILURE) {
             throw std::runtime_error{"Failed to play GStreamer pipeline"};
         }
 
