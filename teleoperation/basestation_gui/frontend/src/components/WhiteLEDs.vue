@@ -56,7 +56,7 @@ export default {
 
         toggleLEDs: function () {
             this.siteEnabled[this.site] = !this.siteEnabled[this.site];
-            this.sendMessage({ type: "white_leds", site: this.site, enabled: this.siteEnabled[this.site] });
+            this.sendMessage({ type: "white_leds", site: this.site, enable: this.siteEnabled[this.site] });
         },
     }
 };

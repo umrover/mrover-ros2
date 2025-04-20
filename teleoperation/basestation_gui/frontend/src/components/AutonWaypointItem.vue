@@ -4,33 +4,10 @@
       <p>{{ waypoint.name }} | ID: {{ waypoint.id }}</p>
     </div>
     <div class="row">
-      <div class ="col text-center">
-        <ToggleButton
-          :id="'1'"
-          :labelEnableText="'Turn Costmap On'"
-          :labelDisableText="'Turn Costmap Off'"
-          :currentState="currentState"
-          @change="updateState"
-        />
-      </div>
       <div class="col text-center">
         <button
-          v-if="!enable_costmap"
           class="btn btn-danger"
-          @click="toggleCostmap"
-        >
-          Costmap
-        </button>
-        <button
-          v-if="enable_costmap"
-          class="btn btn-success"
-          @click="toggleCostmap"
-        >
-          Costmap
-        </button>
-        <button
-          class="btn btn-danger"
-          @click="deleteWaypoint"
+          @click="$emit('delete', { waypoint })"
         >
           Delete
         </button>
@@ -56,33 +33,6 @@ export default {
       required: true
     },
   },
-
-  data() {
-    return {
-      enable_costmap: true
-    }
-  },
-
-  methods: {
-    toggleCostmap() {
-      this.enable_costmap = !this.enable_costmap
-      this.$emit('toggleCostmap', { waypoint: this.waypoint, enable_costmap: this.enable_costmap })
-    },
-
-    deleteWaypoint() {
-      this.$emit('delete', { waypoint: this.waypoint })
-    }
-  },
-
-  watch: {
-    'waypoint.enable_costmap': {
-      immediate: true,
-      handler(newVal) {
-        this.enable_costmap = newVal
-      }
-    }
-  },
-
 
   computed: {
     ...mapGetters('map', {
@@ -118,6 +68,6 @@ export default {
 }
 
 button {
-  margin: 0px 4px 0px 4px;
+  margin: 0px 2px 0px 2px;
 }
 </style>

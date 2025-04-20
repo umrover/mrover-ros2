@@ -14,7 +14,7 @@
         <tbody>
             <tr>
             <th class='table-secondary'>Site {{ String.fromCharCode(site+65) }}</th>
-            <td v-for="(val, index) in sensorValues" :key="index">{{ val.toFixed(2) }}</td>
+            <td v-for="(val, index) in sensor_data" :key="index">{{ val.toFixed(2) }}</td>
             </tr>
         </tbody>  
         </table>
@@ -80,7 +80,9 @@ import Chart from 'chart.js/auto';
       }
 
       let titles = ["Oxygen Percentage Over Time (s)", "Relative Humidity Over Time (s)", "Temperature (C) Over Time (s)", "UV Index Over Time (s)"];
-      let sensor_history: number[][] = [[], [], [], []];
+
+      let sensor_history = [[], [], [], []]
+
       let lineColors = ["#4D9DE0", "#E15554", "#3BB273", "#7768AE"]
 
       for (let i = 0; i < 4; ++ i){
@@ -121,7 +123,17 @@ import Chart from 'chart.js/auto';
 
       setInterval(() => {
           // console.log(Object.values(self.sensor_data).length)
-          this.$forceUpdate();
+          // self.sensor_data = {
+          //   oxygen: 20 + Math.random() * 2,
+          //   oxygen_var: 0,
+          //   uv: 0.1 + Math.random() * 0.1,
+          //   uv_var: 0,
+          //   humidity: 40 + Math.random() * 20,
+          //   humidity_var: 0,
+          //   temp: 17 + Math.random() * 3,
+          //   temp_var: 0
+          // }
+          // this.$forceUpdate();
           sensor_history[0].push(self.sensor_data.oxygen);
           sensor_history[1].push(self.sensor_data.humidity);
           sensor_history[2].push(self.sensor_data.temp);
@@ -180,19 +192,19 @@ import Chart from 'chart.js/auto';
       switch (msg.type) {
         case 'oxygen':
             this.sensor_data.oxygen = msg.percent
-            this.sensor_data.oxygen_var = msg.varianace
+            // this.sensor_data.oxygen_var = msg.varianace
             break
         case 'uv':
             this.sensor_data.uv = msg.uv_index
-            this.sensor_data.uv_var = msg.varianace
+            // this.sensor_data.uv_var = msg.varianace
             break
         case 'temperature':
             this.sensor_data.temp = msg.temperature
-            this.sensor_data.temp_var = msg.variance
+            // this.sensor_data.temp_var = msg.variance
             break
         case 'humidity':
             this.sensor_data.humidity = msg.relative_humidity
-            this.sensor_data.humidity_var = msg.variance
+            // this.sensor_data.humidity_var = 100* msg.variance
             break
       }
     }
