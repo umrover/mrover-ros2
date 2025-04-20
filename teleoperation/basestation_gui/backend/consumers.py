@@ -124,7 +124,7 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.white_leds_services = []
         for name in heater_names:
             self.heater_services.append(node.create_client(EnableBool, "/science_enable_heater_" + name))
-        for site in ["a0", "b0"]:
+        for site in ["a", "b"]:
             self.white_leds_services.append(node.create_client(EnableBool, "/science_enable_white_led_" + site))
 
 
