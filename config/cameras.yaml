@@ -27,7 +27,29 @@
       port: 8083
       codec: H265
       decode_jpeg_from_device: true
-      dev_node: "/dev/mobcam"
+      dev_node: "/dev/mobcam_right"
+      width: 640
+      height: 480
+      framerate: 15
+      bitrate: 2000000
+      dev_path: ""
+    sa_cam:
+      address: 10.1.0.2
+      port: 8084
+      codec: H265
+      decode_jpeg_from_device: true
+      dev_node: "/dev/sa_cam"
+      width: 640
+      height: 480
+      framerate: 15
+      bitrate: 2000000
+      dev_path: ""
+    ish_cam1:
+      address: 10.1.0.2
+      port: 8085
+      codec: H265
+      decode_jpeg_from_device: true
+      dev_node: "/dev/ish_cam1"
       width: 640
       height: 480
       framerate: 15
@@ -46,6 +68,14 @@ static_streamer:
   ros__parameters:
     camera: "static_cam"
 
+science_streamer_1:
+  ros__parameters:
+    camera: "ish_cam1"
+
+sa_streamer:
+  ros__parameters:
+    camera: "sa_cam"
+
 camera_client:
   ros__parameters:
     test: 10
@@ -53,6 +83,8 @@ camera_client:
       - "boom_cam"
       - "mob_cam"
       - "static_cam"
+      - "sa_cam"
+      - "ish_cam1"
     rtp_jitter_ms: 50
 
 zed_streamer:

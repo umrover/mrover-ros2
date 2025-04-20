@@ -33,6 +33,16 @@ def generate_launch_description():
         ],
     )
 
+    sa_streamer_node = Node(
+        package="mrover",
+        executable="gst_v4l2_encoder",
+        name="sa_streamer",
+        output="screen",
+        parameters=[
+            Path(get_package_share_directory("mrover"), "config", "cameras.yaml"),
+        ],
+    )
+
     static_streamer_node = Node(
         package="mrover",
         executable="gst_v4l2_encoder",
@@ -73,4 +83,4 @@ def generate_launch_description():
         ],
     )
 
-    return LaunchDescription([boom_streamer_node, mob_streamer_node, static_streamer_node])
+    return LaunchDescription([science_streamer_1_node, mob_streamer_node, static_streamer_node, sa_streamer_node])
