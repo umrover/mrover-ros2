@@ -72,6 +72,7 @@ find_package(geometry_msgs REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(tf2_ros REQUIRED)
+find_package(rtcm_msgs REQUIRED)
 find_package(urdf REQUIRED)
 find_package(std_srvs REQUIRED)
 
@@ -291,6 +292,9 @@ mrover_link_component(tag_detector lie opencv_core opencv_aruco opencv_imgproc l
 
 mrover_executable_from_component(stereo_tag_detector perception/executables/stereo_tag_detector.cpp tag_detector_component)
 mrover_executable_from_component(image_tag_detector perception/executables/image_tag_detector.cpp tag_detector_component)
+
+mrover_add_node(rover_gps_driver localization/rover_gps_driver.cpp)
+ament_target_dependencies(rover_gps_driver rclcpp sensor_msgs rtcm_msgs)
 
 # Embedded
 mrover_add_header_only_library(messaging esw/messaging)

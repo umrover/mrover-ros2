@@ -37,4 +37,12 @@ def generate_launch_description():
         parameters=[os.path.join(get_package_share_directory("mrover"), "config", "esw.yaml")],
     )
 
-    return LaunchDescription([launch_include_jetson_base, sa_hw_bridge_node, science_hw_bridge_node])
+    rover_gps_driver_node = Node(
+        package="mrover",
+        executable="rover_gps_driver",
+        name="rover_gps_driver",
+        parameters=[os.path.join(get_package_share_directory("mrover"), "config", "localization.yaml")],
+        output="screen"
+    )
+
+    return LaunchDescription([launch_include_jetson_base, sa_hw_bridge_node, science_hw_bridge_node, rover_gps_driver_node])
