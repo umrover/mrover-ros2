@@ -3,6 +3,7 @@
 #include "pch.hpp"
 #include <geometry_msgs/msg/detail/pose__struct.hpp>
 #include <rclcpp/node.hpp>
+#include <rclcpp/publisher.hpp>
 #include <rclcpp/service.hpp>
 #include <std_msgs/msg/detail/float32__struct.hpp>
 #include <std_msgs/msg/float32.hpp>
@@ -15,6 +16,7 @@ namespace mrover {
         static constexpr float Z_NORM_MAX = 0.15;
         static constexpr float FAR_CLIP = 10;
         static constexpr float NEAR_CLIP = 0.5;
+        static constexpr bool DEBUG_PC = true;
 
         explicit LanderAlignNode(rclcpp::NodeOptions const& options = rclcpp::NodeOptions());
 
@@ -22,10 +24,15 @@ namespace mrover {
 
         void filterNormals();
 
+        void uploadDebugPC();
+
         private:
         tf2_ros::Buffer mTfBuffer{get_clock()};
         tf2_ros::TransformListener mTfListener{mTfBuffer};
         std::shared_ptr<tf2_ros::TransformBroadcaster> mTfBroadcaster = std::make_shared<tf2_ros::TransformBroadcaster>(this);
+        std::vector<Point> mDebugPC;
+        rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr mDebugPub;
+
 
         // Service stuff
         rclcpp::Service<mrover::srv::AlignLander>::SharedPtr mLanderService;
@@ -36,7 +43,6 @@ namespace mrover {
         // subscribers/publishers
         rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr mCostMapPub;
         rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr mPcSub;
-        rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr mPCDebugPub;
 
         void pointCloudCallback(sensor_msgs::msg::PointCloud2::ConstSharedPtr const& msg);
 
