@@ -2,17 +2,19 @@
 
 #include "pch.hpp"
 
-class VideoSelectorWidget : public QWidget {
-    Q_OBJECT
+namespace mrover {
+    class VideoSelectorWidget : public QWidget {
+        Q_OBJECT
 
-    std::unordered_map<std::string, QCheckBox*> mCheckBoxes;
-    QVBoxLayout* mCheckBoxesLayout;
+        std::unordered_map<std::string, QCheckBox*> mCheckBoxes;
+        QVBoxLayout* mCheckBoxesLayout;
 
-public:
-    explicit VideoSelectorWidget(QWidget* parent = nullptr);
+    public:
+        explicit VideoSelectorWidget(QWidget* parent = nullptr);
 
-    auto addSelector(std::string const& name) -> void;
+        auto addSelector(std::string const& name) -> void;
 
-signals:
-    void selectionChanged(std::string const& name, bool isChecked);
-};
+    signals:
+        void selectionChanged(std::string const& name, bool isChecked);
+    };
+} // namespace mrover

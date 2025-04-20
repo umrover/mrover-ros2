@@ -1,5 +1,7 @@
 #include "GstVideoWidgets.hpp"
 
+using namespace mrover;
+
 GstVideoWidget::GstVideoWidget(QWidget* parent) : QVideoWidget(parent) {
     mPlayer = new QMediaPlayer(this);
     mPlayer->setVideoOutput(this);

@@ -14,11 +14,11 @@ namespace mrover {
             RCLCPP_INFO(get_logger(), "Camera client initialized");
 
             declare_parameter("cameras", rclcpp::ParameterType::PARAMETER_STRING_ARRAY);
+            auto cameraNames = get_parameter("cameras").as_string_array();
 
-            rclcpp::Parameter cameraNameParams;
-            this->get_parameter("cameras", cameraNameParams);
+            declare_parameter("rtp_jitter_ms", 100);
+            auto rtpJitterMs = std::chrono::milliseconds(get_parameter("rtp_jitter_ms").as_int());
 
-            auto cameraNames = cameraNameParams.as_string_array();
             for (auto const& cameraName: cameraNames) {
                 RCLCPP_INFO(get_logger(), "cameraName: %s", cameraName.c_str());
                 declare_parameter(std::format("{}.port", cameraName), rclcpp::ParameterType::PARAMETER_INTEGER);
@@ -27,7 +27,7 @@ namespace mrover {
                 std::uint16_t const port = static_cast<std::uint16_t>(this->get_parameter(std::format("{}.port", cameraName)).as_int());
                 std::string const codec = this->get_parameter(std::format("{}.codec", cameraName)).as_string();
 
-                std::string const pipeline = Gst::PipelineStrings::createRtpToRawString(port, Gst::getVideoCodecFromString(codec));
+                std::string const pipeline = gst::createRtpToRawString(port, gst::getVideoCodecFromString(codec), rtpJitterMs);
 
                 mQtGui->createCamera(cameraName, pipeline);
             }
@@ -37,7 +37,7 @@ namespace mrover {
 
 auto main(int argc, char** argv) -> int {
     QApplication app(argc, argv);
-    auto qtGui = std::make_shared<CameraClientMainWindow>();
+    auto qtGui = std::make_shared<mrover::CameraClientMainWindow>();
     qtGui->setWindowTitle("MRover Cameras");
     qtGui->setMinimumSize(1280, 720);
     qtGui->show();
@@ -48,7 +48,7 @@ auto main(int argc, char** argv) -> int {
     rclcpp::executors::MultiThreadedExecutor exec;
     exec.add_node(node);
 
-    QObject::connect(qtGui.get(), &CameraClientMainWindow::closed, [&]() {
+    QObject::connect(qtGui.get(), &mrover::CameraClientMainWindow::closed, [&]() {
         rclcpp::shutdown();
     });
 

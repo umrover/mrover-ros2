@@ -1,3 +1,60 @@
+/**:
+  ros__parameters:
+    static_cam:
+      address: 10.1.0.2 # if using RTP, should be set to IP of basestation
+      port: 8081
+      codec: H265
+      decode_jpeg_from_device: true
+      dev_node: "/dev/static_cam"
+      width: 640
+      height: 480
+      framerate: 15
+      bitrate: 2000000
+      dev_path: ""
+    boom_cam:
+      address: 10.1.0.2
+      port: 8082
+      codec: H265
+      decode_jpeg_from_device: true
+      dev_node: "/dev/boomcam"
+      width: 640
+      height: 480
+      framerate: 15
+      bitrate: 2000000
+      dev_path: ""
+    mob_cam:
+      address: 10.1.0.2
+      port: 8083
+      codec: H265
+      decode_jpeg_from_device: true
+      dev_node: "/dev/mobcam"
+      width: 640
+      height: 480
+      framerate: 15
+      bitrate: 2000000
+      dev_path: ""
+
+boom_streamer:
+  ros__parameters:
+    camera: "boom_cam"
+
+mobility_streamer:
+  ros__parameters:
+    camera: "mob_cam"
+
+static_streamer:
+  ros__parameters:
+    camera: "static_cam"
+
+camera_client:
+  ros__parameters:
+    test: 10
+    cameras:
+      - "boom_cam"
+      - "mob_cam"
+      - "static_cam"
+    rtp_jitter_ms: 50
+
 zed_streamer:
   ros__parameters:
     port: 8084
@@ -6,42 +63,7 @@ zed_streamer:
     height: 720
     framerate: 5
     image_topic: "/zed/left/image"
-    address: 10.1.0.2
-    bitrate: 2000000
-    dev_path: ""
-
-boom_streamer:
-  ros__parameters:
-    port: 8082
-    decode_jpeg_from_device: true
-    dev_node: "/dev/boomcam"
-    width: 640
-    height: 480
-    framerate: 15
-    address: 10.1.0.2
-    bitrate: 2000000
-    dev_path: ""
-
-mobility_streamer:
-  ros__parameters:
-    port: 8083
-    decode_jpeg_from_device: true
-    dev_node: "/dev/mobcam"
-    width: 640
-    height: 480
-    framerate: 15
-    address: 10.1.0.2
-    bitrate: 2000000
-    dev_path: ""
-static_streamer:
-  ros__parameters:
-    port: 8081
-    decode_jpeg_from_device: true
-    dev_node: "/dev/static_cam"
-    width: 640
-    height: 480
-    framerate: 15
-    address: 10.1.0.2
+    address: 0.0.0.0
     bitrate: 2000000
     dev_path: ""
 
@@ -82,46 +104,3 @@ ra_streamer:
     bitrate: 2000000
     dev_path: ""
 
-/**:
-  ros__parameters:
-    boom_cam:
-      port: 8082
-      codec: H265
-      decode_jpeg_from_device: true
-      dev_node: "/dev/boomcam"
-      width: 640
-      height: 480
-      framerate: 15
-      address: 10.1.0.2
-      bitrate: 2000000
-      dev_path: ""
-    mob_cam:
-      port: 8083
-      codec: H265
-      decode_jpeg_from_device: true
-      dev_node: "/dev/mobcam"
-      width: 640
-      height: 480
-      framerate: 15
-      address: 10.1.0.2
-      bitrate: 2000000
-      dev_path: ""
-    static_cam:
-      port: 8081
-      codec: H265
-      decode_jpeg_from_device: true
-      dev_node: "/dev/static_cam"
-      width: 640
-      height: 480
-      framerate: 15
-      address: 10.1.0.2
-      bitrate: 2000000
-      dev_path: ""
-
-camera_client:
-  ros__parameters:
-    test: 10
-    cameras:
-      - "boom_cam"
-      - "mob_cam"
-      - "static_cam"

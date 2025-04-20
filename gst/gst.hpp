@@ -1,8 +1,14 @@
 #pragma once
 
-#include "pch.hpp"
+#include <chrono>
+#include <cstdint>
+#include <format>
+#include <string>
+#include <vector>
 
-namespace Gst {
+namespace mrover {
+
+    namespace gst {
 
 #define VIDEO_CODECS_ITER(_F) \
     _F(H264, "H264", 0)       \
@@ -14,45 +20,45 @@ namespace Gst {
     _F(MPEG4, "MPEG4", 6)     \
     _F(MJPEG, "MJPEG", 7)
 
-    enum VideoCodec : uint {
+        enum VideoCodec : uint {
 #define DECL_ENUMS(uc, str, i) uc = (i),
-        VIDEO_CODECS_ITER(DECL_ENUMS)
+            VIDEO_CODECS_ITER(DECL_ENUMS)
 #undef DECL_ENUMS
-    };
+        };
 
-    inline auto getVideoCodecs() -> std::vector<VideoCodec> {
-        return {
+        inline auto getVideoCodecs() -> std::vector<VideoCodec> {
+            return {
 #define DECL_ENUMS_VECTOR(uc, str, i) VideoCodec::uc,
-                VIDEO_CODECS_ITER(DECL_ENUMS_VECTOR)};
-    }
+                    VIDEO_CODECS_ITER(DECL_ENUMS_VECTOR)};
+        }
 
-    inline auto getVideoCodecString(VideoCodec codec) -> std::string {
+        inline auto getVideoCodecString(VideoCodec codec) -> std::string {
 #define DECL_STRINGS(uc, str, i) \
     case VideoCodec::uc: {       \
         return (str);            \
     }
-        switch (codec) {
-            VIDEO_CODECS_ITER(DECL_STRINGS)
-            default: {
-                throw std::invalid_argument("Unsupported codec");
+            switch (codec) {
+                VIDEO_CODECS_ITER(DECL_STRINGS)
+                default: {
+                    throw std::invalid_argument("Unsupported codec");
+                }
             }
-        }
 #undef DECL_STRINGS
-    }
+        }
 
-    inline auto getVideoCodecFromString(std::string const& codec) -> VideoCodec {
+        inline auto getVideoCodecFromString(std::string const& codec) -> VideoCodec {
 #define DECL_CODEC_FROM_STRINGS(uc, str, i) \
     if (codec == (str)) {                   \
         return VideoCodec::uc;              \
     }
-        VIDEO_CODECS_ITER(DECL_CODEC_FROM_STRINGS)
+            VIDEO_CODECS_ITER(DECL_CODEC_FROM_STRINGS)
 #undef DECL_CODEC_FROM_STRINGS
 
-        throw std::invalid_argument("Unsupported codec");
-    }
+            throw std::invalid_argument("Unsupported codec");
+        }
 
-    namespace PipelineStrings {
         constexpr auto DEFAULT_RTP_JITTER = std::chrono::milliseconds(500);
+
 
         inline auto createRtpToRawString(std::uint16_t port, VideoCodec codec, std::chrono::milliseconds rtpJitter = DEFAULT_RTP_JITTER) -> std::string {
             char const* depay = nullptr;
@@ -97,6 +103,7 @@ namespace Gst {
 
             return std::format("udpsrc port={} ! application/x-rtp,media=video ! rtpjitterbuffer latency={} ! {} ! decodebin", port, rtpJitter.count(), depay);
         }
-    } // namespace PipelineStrings
 
-}; // namespace Gst
+    } // namespace gst
+
+} // namespace mrover

@@ -150,35 +150,55 @@ namespace mrover {
 
     GstV4L2Encoder::GstV4L2Encoder([[maybe_unused]] rclcpp::NodeOptions const& options) : Node{"gst_v4l2_encoder", rclcpp::NodeOptions{}.use_intra_process_comms(true)} {
         try {
-            declare_parameter("dev_node", "");
-            declare_parameter("dev_path", "");
-            declare_parameter("decode_jpeg_from_device", rclcpp::ParameterType::PARAMETER_BOOL);
-            declare_parameter("disable_auto_white_balance", rclcpp::ParameterType::PARAMETER_BOOL);
-            declare_parameter("width", rclcpp::ParameterType::PARAMETER_INTEGER);
-            declare_parameter("height", rclcpp::ParameterType::PARAMETER_INTEGER);
-            declare_parameter("framerate", rclcpp::ParameterType::PARAMETER_INTEGER);
-            declare_parameter("address", rclcpp::ParameterType::PARAMETER_STRING);
-            declare_parameter("port", rclcpp::ParameterType::PARAMETER_INTEGER);
-            declare_parameter("bitrate", rclcpp::ParameterType::PARAMETER_INTEGER);
+            declare_parameter("camera", rclcpp::ParameterType::PARAMETER_STRING);
+            std::string const cameraName = get_parameter("camera").as_string();
 
-            mDecodeJpegFromDevice = get_parameter("decode_jpeg_from_device").as_bool();
-            mImageWidth = get_parameter("width").as_int();
-            mImageHeight = get_parameter("height").as_int();
-            mImageFramerate = get_parameter("framerate").as_int();
-            mAddress = get_parameter("address").as_string();
-            mPort = static_cast<std::uint16_t>(get_parameter("port").as_int());
-            mBitrate = get_parameter("bitrate").as_int();
+            std::string const addressParamName = std::format("{}.address", cameraName);
+            declare_parameter(addressParamName, rclcpp::ParameterType::PARAMETER_STRING);
+            mAddress = get_parameter(addressParamName).as_string();
+
+            std::string const portParamName = std::format("{}.port", cameraName);
+            declare_parameter(portParamName, rclcpp::ParameterType::PARAMETER_INTEGER);
+            mPort = static_cast<std::uint16_t>(get_parameter(portParamName).as_int());
+
             // For example, /dev/video0
             // These device paths are not garunteed to stay the same between reboots
             // Prefer sys path for non-debugging purposes
-            std::string deviceNode = get_parameter("dev_node").as_string();
+            std::string const deviceNodeParamName = std::format("{}.dev_node", cameraName);
+            declare_parameter(deviceNodeParamName, "");
+            std::string deviceNode = get_parameter(deviceNodeParamName).as_string();
+
             // To find the sys path:
             // 1) Disconnect all cameras
             // 2) Confirm there are no /dev/video* devices
             // 2) Connect the camera you want to use
             // 3) Run "ls /dev/video*" to verify the device is connected
             // 4) Run "udevadm info -q path -n /dev/video0" to get the sys path
-            std::string devicePath = get_parameter("dev_path").as_string();
+            std::string const devicePathParamName = std::format("{}.dev_path", cameraName);
+            declare_parameter(devicePathParamName, "");
+            std::string devicePath = get_parameter(devicePathParamName).as_string();
+
+            std::string const decodeJpegFromDeviceParamName = std::format("{}.decode_jpeg_from_device", cameraName);
+            declare_parameter(decodeJpegFromDeviceParamName, rclcpp::ParameterType::PARAMETER_BOOL);
+            mDecodeJpegFromDevice = get_parameter(decodeJpegFromDeviceParamName).as_bool();
+
+            declare_parameter("disable_auto_white_balance", rclcpp::ParameterType::PARAMETER_BOOL);
+
+            std::string const widthParamName = std::format("{}.width", cameraName);
+            declare_parameter(widthParamName, rclcpp::ParameterType::PARAMETER_INTEGER);
+            mImageWidth = get_parameter(widthParamName).as_int();
+
+            std::string const heightParamName = std::format("{}.height", cameraName);
+            declare_parameter(heightParamName, rclcpp::ParameterType::PARAMETER_INTEGER);
+            mImageHeight = get_parameter(heightParamName).as_int();
+
+            std::string const framerateParamName = std::format("{}.framerate", cameraName);
+            declare_parameter(framerateParamName, rclcpp::ParameterType::PARAMETER_INTEGER);
+            mImageFramerate = get_parameter(framerateParamName).as_int();
+
+            std::string const bitrateParamName = std::format("{}.bitrate", cameraName);
+            declare_parameter(bitrateParamName, rclcpp::ParameterType::PARAMETER_INTEGER);
+            mBitrate = get_parameter(bitrateParamName).as_int();
 
             if (!devicePath.empty()) {
                 deviceNode = findDeviceNode(devicePath);

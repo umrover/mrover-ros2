@@ -1,5 +1,7 @@
 #include "VideoSelectorWidget.hpp"
 
+using namespace mrover;
+
 VideoSelectorWidget::VideoSelectorWidget(QWidget* parent)
     : QWidget(parent) {
     mCheckBoxesLayout = new QVBoxLayout(this);

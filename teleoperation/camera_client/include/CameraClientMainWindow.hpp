@@ -4,26 +4,28 @@
 #include "GstVideoWidgets.hpp"
 #include "VideoSelectorWidget.hpp"
 
-class CameraClientMainWindow : public QMainWindow {
-    Q_OBJECT
+namespace mrover {
+    class CameraClientMainWindow : public QMainWindow {
+        Q_OBJECT
 
-    QScrollArea* mCentralScrollArea;
-    GstVideoGridWidget* mCameraGridWidget;
+        QScrollArea* mCentralScrollArea;
+        GstVideoGridWidget* mCameraGridWidget;
 
-    QDockWidget* mCameraSelectorDock;
-    VideoSelectorWidget* mCameraSelectorWidget;
+        QDockWidget* mCameraSelectorDock;
+        VideoSelectorWidget* mCameraSelectorWidget;
 
-    QDockWidget* mGstRtpVideoCreatorDock;
-    GstRtpVideoCreatorWidget* mGstRtpVideoCreatorWidget;
+        QDockWidget* mGstRtpVideoCreatorDock;
+        GstRtpVideoCreatorWidget* mGstRtpVideoCreatorWidget;
 
-public:
-    explicit CameraClientMainWindow(QWidget* parent = nullptr);
+    public:
+        explicit CameraClientMainWindow(QWidget* parent = nullptr);
 
-    auto createCamera(std::string const& name, std::string const& pipeline) -> bool;
+        auto createCamera(std::string const& name, std::string const& pipeline) -> bool;
 
-signals:
-    void closed();
+    signals:
+        void closed();
 
-protected:
-    void closeEvent(QCloseEvent* event) override;
-};
+    protected:
+        void closeEvent(QCloseEvent* event) override;
+    };
+}; // namespace mrover

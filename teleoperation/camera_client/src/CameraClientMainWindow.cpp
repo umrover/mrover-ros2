@@ -1,5 +1,7 @@
 #include "CameraClientMainWindow.hpp"
 
+using namespace mrover;
+
 CameraClientMainWindow::CameraClientMainWindow(QWidget* parent) : QMainWindow(parent) {
     mCameraGridWidget = new GstVideoGridWidget(this);
     mCentralScrollArea = new QScrollArea(this);
