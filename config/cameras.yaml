@@ -1,0 +1,106 @@
+/**:
+  ros__parameters:
+    static_cam:
+      address: 10.1.0.2 # if using RTP, should be set to IP of basestation
+      port: 8081
+      codec: H265
+      decode_jpeg_from_device: true
+      dev_node: "/dev/static_cam"
+      width: 640
+      height: 480
+      framerate: 15
+      bitrate: 2000000
+      dev_path: ""
+    boom_cam:
+      address: 10.1.0.2
+      port: 8082
+      codec: H265
+      decode_jpeg_from_device: true
+      dev_node: "/dev/boomcam"
+      width: 640
+      height: 480
+      framerate: 15
+      bitrate: 2000000
+      dev_path: ""
+    mob_cam:
+      address: 10.1.0.2
+      port: 8083
+      codec: H265
+      decode_jpeg_from_device: true
+      dev_node: "/dev/mobcam"
+      width: 640
+      height: 480
+      framerate: 15
+      bitrate: 2000000
+      dev_path: ""
+
+boom_streamer:
+  ros__parameters:
+    camera: "boom_cam"
+
+mobility_streamer:
+  ros__parameters:
+    camera: "mob_cam"
+
+static_streamer:
+  ros__parameters:
+    camera: "static_cam"
+
+camera_client:
+  ros__parameters:
+    test: 10
+    cameras:
+      - "boom_cam"
+      - "mob_cam"
+      - "static_cam"
+    rtp_jitter_ms: 50
+
+zed_streamer:
+  ros__parameters:
+    port: 8084
+    decode_jpeg_from_device: true
+    width: 1280
+    height: 720
+    framerate: 5
+    image_topic: "/zed/left/image"
+    address: 0.0.0.0
+    bitrate: 2000000
+    dev_path: ""
+
+# TODO: Fix temp hardcoded video devices for science
+science_streamer_1:
+  ros__parameters:
+    port: 8083
+    decode_jpeg_from_device: false
+    dev_node: "/dev/ish_cam1"
+    width:  640
+    height: 480
+    framerate: 30
+    address: 127.0.0.1
+    bitrate: 2000000
+    dev_path: ""
+
+science_streamer_2:
+  ros__parameters:
+    port: 8084
+    decode_jpeg_from_device: false
+    dev_node: "/dev/ish_cam2"
+    width:  640
+    height: 480
+    framerate: 30
+    address: 127.0.0.1
+    bitrate: 2000000
+    dev_path: ""
+
+ra_streamer:
+  ros__parameters:
+    port: 8085
+    decode_jpeg_from_device: false
+    dev_node: "/dev/ra_cam"
+    width:  640
+    height: 480
+    framerate: 30
+    address: 127.0.0.1
+    bitrate: 2000000
+    dev_path: ""
+

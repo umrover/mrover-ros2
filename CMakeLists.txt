@@ -217,6 +217,7 @@ ament_target_dependencies(lie rclcpp geometry_msgs tf2 tf2_ros)
 mrover_add_header_only_library(units units)
 mrover_add_header_only_library(loop_profiler loop_profiler)
 mrover_add_header_only_library(parameter_utils parameter_utils)
+mrover_add_header_only_library(gst gst)
 
 # Simulator
 
@@ -343,9 +344,9 @@ if (Gst_FOUND AND GstApp_FOUND)
         target_compile_definitions(websocket_server PUBLIC BOOST_ASIO_NO_DEPRECATED)
         ament_target_dependencies(websocket_server rclcpp)
 
-        mrover_add_component(gst_websocket_streamer esw/gst_websocket_streamer/*.c* esw/gst_websocket_streamer/pch.hpp GstWebsocketStreamer)
-        mrover_link_component(gst_websocket_streamer PkgConfig::Gst PkgConfig::GstApp PkgConfig::LibUdev opencv_core opencv_imgcodecs websocket_server)
-        mrover_ament_component(gst_websocket_streamer rclcpp rclcpp_components sensor_msgs)
+        mrover_add_node(gst_v4l2_encoder esw/gst_v4l2_encoder/*.c* esw/gst_v4l2_encoder/pch.hpp)
+        target_link_libraries(gst_v4l2_encoder PkgConfig::Gst PkgConfig::GstApp PkgConfig::LibUdev opencv_core opencv_imgcodecs websocket_server)
+        ament_target_dependencies(gst_v4l2_encoder rclcpp rclcpp_components sensor_msgs)
     endif ()
 endif ()
 
@@ -354,6 +355,19 @@ if (NetLink_FOUND AND NetLinkRoute_FOUND)
     target_link_libraries(can_bridge PkgConfig::NetLink PkgConfig::NetLinkRoute)
     ament_target_dependencies(can_bridge rclcpp)
 endif ()
+
+# Teleop Qt5 Camera Client
+find_package(Qt5 5.15 REQUIRED COMPONENTS Widgets Multimedia MultimediaWidgets)
+
+mrover_add_node(camera_client teleoperation/camera_client/*.*pp teleoperation/camera_client/include/pch.hpp)
+target_include_directories(camera_client PRIVATE teleoperation/camera_client/include)
+target_link_libraries(camera_client gst Qt::Widgets Qt::Multimedia Qt::MultimediaWidgets)
+ament_target_dependencies(camera_client rclcpp)
+set_target_properties(camera_client PROPERTIES
+    AUTOMOC ON
+    AUTORCC ON
+    AUTOUIC ON
+)
 
 ## Install
 
