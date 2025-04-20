@@ -1,6 +1,8 @@
-#include "MainWindow.hpp"
+#include "CameraClientMainWindow.hpp"
 
-MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
+using namespace mrover;
+
+CameraClientMainWindow::CameraClientMainWindow(QWidget* parent) : QMainWindow(parent) {
     mCameraGridWidget = new GstVideoGridWidget(this);
     mCentralScrollArea = new QScrollArea(this);
 
@@ -23,38 +25,39 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
             this, [this](std::string const& name, std::string const& pipeline) {
                 qDebug() << "Creating camera with name:" << QString::fromStdString(name) << "and pipeline:" << QString::fromStdString(pipeline);
 
-                QWidget* addedCameraWidget = mCameraGridWidget->addGstVideoWidget(name, pipeline);
-                if (mCameraGridWidget->isError()) {
+                if (bool success = createCamera(name, pipeline); !success) {
                     QMetaObject::invokeMethod(mGstRtpVideoCreatorWidget, "onCreateResult",
                                               Qt::QueuedConnection,
                                               Q_ARG(bool, false),
                                               Q_ARG(QString, mCameraGridWidget->errorString()));
-                    return;
+                } else {
+                    QMetaObject::invokeMethod(mGstRtpVideoCreatorWidget, "onCreateResult",
+                                              Qt::QueuedConnection,
+                                              Q_ARG(bool, true));
                 }
-
-                mCameraSelectorWidget->addSelector(name, addedCameraWidget);
-
-                QMetaObject::invokeMethod(mGstRtpVideoCreatorWidget, "onCreateResult",
-                                          Qt::QueuedConnection,
-                                          Q_ARG(bool, true));
             });
 }
 
-
-/*
-struct CameraInfo {
-    std::string name;
-    std::string pipeline;
-};
-static std::vector<CameraInfo> const CAMERA_INFOS{
-        {"Camera 1", "videotestsrc ! video/x-raw,width=1280,height=720,framerate=30/1"},
-        {"Camera 2", "videotestsrc ! video/x-raw,width=1280,height=720,framerate=30/1"},
-        {"Camera 3", "videotestsrc ! video/x-raw,width=1280,height=720,framerate=30/1"},
-        {"Camera 4", "videotestsrc ! video/x-raw,width=1280,height=720,framerate=30/1"},
-        {"Camera 5", "videotestsrc ! video/x-raw,width=1280,height=720,framerate=30/1"},
-};
-for (auto const& cameraInfo: CAMERA_INFOS) {
-    mCameraGridWidget->addGstVideoWidget(cameraInfo.name, cameraInfo.pipeline);
-    mCameraSelectorWidget->addSelector(cameraInfo.name, mCameraGridWidget->getGstVideoWidget(cameraInfo.name));
+auto CameraClientMainWindow::createCamera(std::string const& name, std::string const& pipeline) -> bool {
+    mCameraGridWidget->addGstVideoWidget(name, pipeline);
+    if (mCameraGridWidget->isError()) {
+        return false;
+    }
+    mCameraSelectorWidget->addSelector(name);
+    connect(mCameraSelectorWidget, &VideoSelectorWidget::selectionChanged,
+            this, [this, name](std::string const& selectedName, bool isChecked) {
+                if (isChecked) {
+                    mCameraGridWidget->showVideo(selectedName);
+                    mCameraGridWidget->getGstVideoWidget(selectedName)->play();
+                } else {
+                    mCameraGridWidget->hideVideo(selectedName);
+                    mCameraGridWidget->getGstVideoWidget(selectedName)->stop();
+                }
+            });
+    return true;
 }
-*/
+
+void CameraClientMainWindow::closeEvent(QCloseEvent* event) {
+    emit closed();
+    QMainWindow::closeEvent(event);
+}
