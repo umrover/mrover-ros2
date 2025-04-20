@@ -319,7 +319,7 @@ class GUIConsumer(JsonWebsocketConsumer):
                     "position": position,
                     "isCCW": isCCW,
                 }:
-                    node.get_logger().info(f"{isCCW}")
+                    # node.get_logger().info(f"{isCCW}")
                     self.gear_diff_set_pos_srv.call(ServoSetPos.Request(position=float(position), is_counterclockwise=isCCW))
 
                 case {"type": "auto_shutoff", "shutoff": shutoff}:

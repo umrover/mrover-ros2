@@ -43,6 +43,7 @@ def save_current_auton_course(waypoints: list[dict]) -> None:
                 latitude=w["lat"],
                 longitude=w["lon"],
                 name=w["name"],
+                enable_costmap=w['enable_costmap']
             )
             for w in waypoints
         ]
@@ -51,7 +52,7 @@ def save_current_auton_course(waypoints: list[dict]) -> None:
 
 def get_current_auton_course() -> None:
     return [
-        {"name": w.name, "id": w.tag_id, "lat": w.latitude, "lon": w.longitude, "type": w.type}
+        {"name": w.name, "id": w.tag_id, "lat": w.latitude, "lon": w.longitude, "type": w.type, "enable_costmap": w.enable_costmap}
         for w in CurrentAutonWaypoints.objects.all()
     ]
 

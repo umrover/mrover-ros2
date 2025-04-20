@@ -43,7 +43,7 @@
       <h4 class="waypoint-headers my-3">Current Course</h4>
       <div class="route">
         <WaypointItem 
-          v-for="waypoint in route" 
+          v-for="waypoint in currentRoute" 
           :key="waypoint" 
           :waypoint="waypoint" 
           @delete="deleteItem(waypoint)"
@@ -227,7 +227,7 @@ export default {
           return { latLng: L.latLng(lat, lon), name: waypoint.name }
         })
         this.setRoute(waypoints)
-        console.log("here1", this.currentRoute)
+        // console.log("here1", this.currentRoute)
         // no need to use newRoute as we have pushed the new waypoint already in the addItem function, so we just save currentRoute to db
         this.sendMessage({ type: "save_current_auton_course", data: this.currentRoute })
       },
@@ -258,9 +258,9 @@ export default {
         this.setWaypointList(waypoints)
       } 
       if (msg.type == 'get_current_auton_course') {
-        console.log("here2 before", this.currentRoute)
+        // console.log("here2 before", this.currentRoute)
         this.currentRoute = msg.data 
-        console.log("here2", this.currentRoute)
+        // console.log("here2", this.currentRoute)
       }
     },
   },
@@ -348,8 +348,10 @@ export default {
     // Add item from all waypoints div to current waypoints div
     addItem: function (waypoint) {
       if (!waypoint.in_route) {
+        waypoint['enable_costmap'] = waypoint.enable_costmap ?? false
         this.route.push(waypoint)
         // this is where the new waypoint is added into current route
+        // console.log(waypoint.enable_costmap)
         this.currentRoute.push(waypoint)
         waypoint.in_route = true
       }

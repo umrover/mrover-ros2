@@ -29,7 +29,6 @@ class CurrentBasicWaypoints(models.Model):
     longitude = models.FloatField()
     name = models.CharField(max_length=100)
 
-
 class CurrentAutonWaypoints(models.Model):
     id = models.AutoField(unique=True, primary_key=True)
     tag_id = models.IntegerField()
@@ -37,3 +36,4 @@ class CurrentAutonWaypoints(models.Model):
     latitude = models.FloatField()
     longitude = models.FloatField()
     name = models.CharField(max_length=100)
+    enable_costmap = models.BooleanField(default=True)
