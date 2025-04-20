@@ -219,7 +219,7 @@ export default {
       deep: true
     },
 
-    route: {
+    currentRoute: {
       handler: function (newRoute) {
           const waypoints = newRoute.map((waypoint) => {
           const lat = waypoint.lat
@@ -330,6 +330,8 @@ export default {
       waypoint.in_route = false
       const index = this.route.indexOf(waypoint)
       this.route.splice(index, 1)
+      this.currentRoute.splice(this.currentRoute.indexOf(waypoint), 1)
+      this.sendMessage({ type: 'delete_auton_waypoint_from_course', data: waypoint })
     },
 
     toggleCostmap({ waypoint, enable_costmap }) {

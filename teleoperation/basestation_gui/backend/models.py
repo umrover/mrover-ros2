@@ -36,4 +36,4 @@ class CurrentAutonWaypoints(models.Model):
     latitude = models.FloatField()
     longitude = models.FloatField()
     name = models.CharField(max_length=100)
-    enable_costmap = models.BooleanField(default=True)
+    enable_costmap = models.BooleanField(default=False)

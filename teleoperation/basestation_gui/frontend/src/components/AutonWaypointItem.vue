@@ -57,6 +57,7 @@ export default {
   methods: {
     toggleCostmap() {
       this.enable_costmap = !this.enable_costmap
+      // console.log({ waypoint: this.waypoint, enable_costmap: this.enable_costmap })
       this.$emit('toggleCostmap', { waypoint: this.waypoint, enable_costmap: this.enable_costmap })
     },
 
