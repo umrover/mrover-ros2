@@ -49,6 +49,7 @@ namespace mrover {
             mCanPublisher = mNode->create_publisher<msg::CAN>(std::format("can/{}/out", mToDevice), 1);
         }
 
+        CanDevice() = default;
 
         template<typename... Variants>
             requires(IsCanFdSerializable<std::variant<Variants...>>)

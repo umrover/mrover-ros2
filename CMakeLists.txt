@@ -296,7 +296,7 @@ mrover_executable_from_component(image_tag_detector perception/executables/image
 mrover_add_header_only_library(messaging esw/messaging)
 
 mrover_add_header_only_library(can_device esw/can_device)
-target_link_libraries(can_device INTERFACE ${rclcpp_LIBRARIES})
+target_link_libraries(can_device INTERFACE ${rclcpp_LIBRARIES} moteus)
 
 mrover_add_library(motor_library esw/motor_library/*.cpp esw/motor_library)
 ament_target_dependencies(motor_library rclcpp std_srvs)
@@ -317,6 +317,9 @@ endmacro()
 mrover_add_esw_motor_bridge_node(drive_hw_bridge esw/drive_hw_bridge.cpp)
 mrover_add_esw_motor_bridge_node(arm_hw_bridge esw/arm_hw_bridge.cpp)
 mrover_add_esw_motor_bridge_node(sa_hw_bridge esw/sa_hw_bridge.cpp)
+mrover_add_esw_bridge_node(science_hw_bridge esw/science_hw_bridge.cpp)
+ament_target_dependencies(science_hw_bridge sensor_msgs)
+target_link_libraries(science_hw_bridge parameter_utils)
 # mrover_add_esw_motor_bridge_node(3bm_test_bridge esw/3bm_test_bridge.cpp)
 # mrover_add_esw_motor_bridge_node(dev_board_test_bridge esw/dev_board_test_bridge.cpp)
 # mrover_add_esw_motor_bridge_node(bdcmc_test_bridge esw/bdcmc_test_bridge.cpp)
