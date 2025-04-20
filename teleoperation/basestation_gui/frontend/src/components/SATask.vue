@@ -33,7 +33,7 @@
       <OdometryReading @odom='updateOdom'/>
     </div>
     <div class="shadow p-3 rounded hexHub">
-      <HexHub @selectSite="updateSite" />
+      <HexHub @selectSite="updateSite" @orientation="updateOrientation"/>
     </div>
     <div class="shadow p-3 rounded lsActuator">
       <LSActuator />
@@ -53,6 +53,7 @@ import SAArmControls from './SAArmControls.vue'
 import NetworkMonitor from "./NetworkMonitor.vue"
 import HexHub from './HexHub.vue'
 import LSActuator from './LSActuator.vue'
+import { mapState, mapActions } from 'vuex';
 
 interface Odom {
   latitude_deg: number;
@@ -78,15 +79,45 @@ export default {
     return {
       odom:  null as Odom | null,
       siteSelect: 0,
+      orientation: true,
+      site_to_radians: 
+      {
+        0: 5.88,
+        1: 4.31,
+        2: 2.73,
+        3: 1.13,
+      }
     }
   },
+  computed: {
+      ...mapState('websocket', ['message']),
+    },
   methods: {
+    ...mapActions('websocket', ['sendMessage']),
     updateOdom(odom: Odom) {
       this.odom = odom;
     },
     updateSite(selectedSite: number) {
+      // !!! MAY NEED TO CHANGE HOW CURRENT SITE IS CONVERTED TO RADIANS
       this.siteSelect = selectedSite; 
+      this.sendMessage(
+        {
+          type: "set_gear_diff_pos",
+          position: this.site_to_radians[this.siteSelect],
+          isCCW: this.orientation
+        }
+      )
     },
+    updateOrientation(orientation: boolean) {
+      this.orientation = orientation
+      this.sendMessage(
+        {
+          type: "set_gear_diff_pos",
+          position: this.site_to_radians[this.siteSelect],
+          isCCW: this.orientation
+        }
+      )
+    }
   }
 }
 </script>
@@ -104,6 +135,7 @@ export default {
     'moteus moteus moteus';
   font-family: sans-serif;
   height: auto;
+  width: 97%;
 }
 
 .dashboard-title {

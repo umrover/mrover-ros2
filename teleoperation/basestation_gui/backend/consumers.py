@@ -44,6 +44,7 @@ from mrover.msg import (
     Oxygen,
     Methane,
     UV,
+    Position
 )
 from mrover.srv import (
     EnableAuton, 
@@ -104,7 +105,7 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.forward_ros_topic("/arm_joint_data", JointState, "fk")
         self.forward_ros_topic("/drive_controller_data", ControllerState, "drive_state")
         self.forward_ros_topic("/sa_controller_state", ControllerState, "sa_state")
-        self.forward_ros_topic("/sa_gear_diff_position", Float32, "hexhub_site")
+        self.forward_ros_topic("/sa_gear_diff_position", Position, "hexhub_site")
         self.forward_ros_topic("basestation/position", NavSatFix, "basestation_position")
         self.forward_ros_topic("/drone_odometry", NavSatFix, "drone_waypoint")
         # check topic names above
