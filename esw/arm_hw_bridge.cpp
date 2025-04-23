@@ -63,8 +63,17 @@ namespace mrover {
             mArmPositionSub = create_subscription<msg::Position>("arm_position_cmd", 1, [this](msg::Position::ConstSharedPtr const& msg) { processPositionCmd(msg); });
 
             mDeOffsetTimer = create_wall_timer(DE_OFFSET_TIMER_PERIOD, [this]() { updateDeOffsets(); });
-            mJointDe0AdjustClient = create_client<srv::AdjustMotor>("joint_de_0_adjust");
-            mJointDe1AdjustClient = create_client<srv::AdjustMotor>("joint_de_1_adjust");
+
+            std::vector<ParameterWrapper> parameters = {
+                    {"joint_de_pitch_offset", mJointDePitchRollOffset[0].rep, 0.0},
+                    {"joint_de_roll_offset", mJointDePitchRollOffset[1].rep, 0.0},
+                    {"joint_de_pitch_max_position", mJointDePitchMaxPosition.rep, std::numeric_limits<float>::infinity()},
+                    {"joint_de_pitch_min_position", mJointDePitchMinPosition.rep, -std::numeric_limits<float>::infinity()},
+                    {"joint_de_roll_max_position", mJointDeRollMaxPosition.rep, std::numeric_limits<float>::infinity()},
+                    {"joint_de_roll_min_position", mJointDeRollMinPosition.rep, -std::numeric_limits<float>::infinity()},
+            };
+            ParameterWrapper::declareParameters(shared_from_this().get(), parameters);
+
 
             mPublishDataTimer = create_wall_timer(
                     std::chrono::milliseconds(100),
@@ -100,9 +109,11 @@ namespace mrover {
         rclcpp::Subscription<msg::Position>::SharedPtr mArmPositionSub;
 
         rclcpp::TimerBase::SharedPtr mDeOffsetTimer;
-        rclcpp::Client<srv::AdjustMotor>::SharedPtr mJointDe0AdjustClient;
-        rclcpp::Client<srv::AdjustMotor>::SharedPtr mJointDe1AdjustClient;
-        std::optional<Vector2<Radians>> mJointDePitchRoll;
+        Vector2<Radians> mJointDePitchRollOffset;
+        std::optional<Vector2<Radians>> mJointDePitchRoll; // position after offset is applied (raw - offset)
+
+        Radians mJointDePitchMaxPosition, mJointDePitchMinPosition;
+        Radians mJointDeRollMaxPosition, mJointDeRollMinPosition;
 
         rclcpp::TimerBase::SharedPtr mPublishDataTimer;
         rclcpp::Publisher<sensor_msgs::msg::JointState>::SharedPtr mJointDataPub;
@@ -149,7 +160,24 @@ namespace mrover {
                 }
             }
 
-            if (jointDePitchThrottle.has_value() && jointDeRollThrottle.has_value()) {
+            if ((jointDePitchThrottle.has_value() || jointDeRollThrottle.has_value()) && mJointDePitchRoll.has_value()) {
+                if (!jointDePitchThrottle.has_value()) {
+                    jointDePitchThrottle = Dimensionless{0};
+                } else if (!jointDeRollThrottle.has_value()) {
+                    jointDeRollThrottle = Dimensionless{0};
+                }
+
+                if ((*jointDePitchThrottle > Dimensionless{0} && (*mJointDePitchRoll)[0] >= mJointDePitchMaxPosition) ||
+                    (*jointDePitchThrottle < Dimensionless{0} && (*mJointDePitchRoll)[0] <= mJointDePitchMinPosition)) {
+                    RCLCPP_INFO(get_logger(), "Joint DE Pitch limit hit!");
+                    jointDePitchThrottle = Dimensionless{0};
+                }
+                if ((*jointDeRollThrottle > Dimensionless{0} && (*mJointDePitchRoll)[1] >= mJointDeRollMaxPosition) ||
+                    (*jointDeRollThrottle < Dimensionless{0} && (*mJointDePitchRoll)[1] <= mJointDeRollMinPosition)) {
+                    RCLCPP_INFO(get_logger(), "Joint DE Roll limit hit!");
+                    jointDeRollThrottle = Dimensionless{0};
+                }
+
                 Vector2<Dimensionless> const pitchRollThrottles{jointDePitchThrottle.value(), jointDeRollThrottle.value()};
                 Vector2<Dimensionless> const motorThrottles = PITCH_ROLL_TO_0_1 * pitchRollThrottles;
 
@@ -272,8 +300,8 @@ namespace mrover {
             mJointData.velocity[2] = {RadiansPerSecond{mJointC->getVelocity()}.get()};
             mJointData.effort[2] = {mJointC->getEffort()};
 
-            auto const pitchWrapped = wrapAngle(Radians{mJointDe0->getPosition()}.get());
-            auto const rollWrapped = wrapAngle(Radians{mJointDe1->getPosition()}.get());
+            auto const pitchWrapped = wrapAngle((Radians{mJointDe0->getPosition()} - mJointDePitchRollOffset[0]).get());
+            auto const rollWrapped = wrapAngle((Radians{mJointDe1->getPosition()} - mJointDePitchRollOffset[1]).get());
             mJointDePitchRoll = {pitchWrapped, rollWrapped};
 
             mJointData.position[3] = pitchWrapped;
@@ -329,18 +357,8 @@ namespace mrover {
             if (!mJointDePitchRoll) return;
 
             Vector2<Radians> motorPositions = PITCH_ROLL_TO_01_SCALE * PITCH_ROLL_TO_0_1 * mJointDePitchRoll.value();
-            {
-                auto adjust = std::make_shared<srv::AdjustMotor::Request>();
-                adjust->name = "joint_de_0";
-                adjust->value = {motorPositions[0].get()};
-                mJointDe0AdjustClient->async_send_request(adjust);
-            }
-            {
-                auto adjust = std::make_shared<srv::AdjustMotor::Request>();
-                adjust->name = "joint_de_1";
-                adjust->value = {motorPositions[1].get()};
-                mJointDe1AdjustClient->async_send_request(adjust);
-            }
+            mJointDe0->adjust(motorPositions[0]);
+            mJointDe1->adjust(motorPositions[1]);
         }
     };
 } // namespace mrover

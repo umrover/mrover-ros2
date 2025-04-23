@@ -1,5 +1,11 @@
 arm_hw_bridge:
   ros__parameters:
+    joint_de_pitch_offset: -0.15
+    joint_de_roll_offset: 3.02
+    joint_de_pitch_max_position: 1.3
+    joint_de_pitch_min_position: -1.2
+    joint_de_roll_max_position: 1.57
+    joint_de_roll_min_position: -1.57
     joint_a:
       min_velocity: -0.05
       max_velocity: 0.05
