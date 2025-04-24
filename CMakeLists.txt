@@ -296,16 +296,16 @@ mrover_executable_from_component(image_tag_detector perception/executables/image
 mrover_add_header_only_library(messaging esw/messaging)
 
 mrover_add_header_only_library(can_device esw/can_device)
-target_link_libraries(can_device INTERFACE ${rclcpp_LIBRARIES})
+target_link_libraries(can_device INTERFACE ${rclcpp_LIBRARIES} moteus)
 
 mrover_add_library(motor_library esw/motor_library/*.cpp esw/motor_library)
 ament_target_dependencies(motor_library rclcpp std_srvs)
-target_link_libraries(motor_library can_device moteus units messaging parameter_utils)
+target_link_libraries(motor_library can_device units messaging parameter_utils)
 
 macro(mrover_add_esw_bridge_node name sources)
     mrover_add_node(${name} ${sources})
     ament_target_dependencies(${name} rclcpp std_srvs)
-    target_link_libraries(${name} can_device units messaging moteus)
+    target_link_libraries(${name} can_device units messaging)
 endmacro()
 
 macro(mrover_add_esw_motor_bridge_node name sources)
