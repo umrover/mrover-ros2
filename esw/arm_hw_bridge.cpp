@@ -33,7 +33,7 @@ namespace mrover {
 
     // How often we send an adjust command to the DE motors
     // This corrects the HALL-effect motor source on the Moteus based on the absolute encoder readings
-    std::chrono::seconds static constexpr DE_OFFSET_TIMER_PERIOD = std::chrono::seconds{1};
+    std::chrono::seconds static constexpr DE_OFFSET_TIMER_PERIOD = std::chrono::seconds{5};
 
     // using MetersPerRadian = compound_unit<Meters, inverse<Radians>>;
     // using RadiansPerMeter = compound_unit<Radians, inverse<Meters>>;
@@ -224,7 +224,24 @@ namespace mrover {
                 }
             }
 
-            if (jointDePitchVelocity.has_value() && jointDeRollVelocity.has_value()) {
+            if (jointDePitchVelocity.has_value() || jointDeRollVelocity.has_value()) {
+                if (!jointDePitchVelocity.has_value()) {
+                    jointDePitchVelocity = RadiansPerSecond{0};
+                } else if (!jointDeRollVelocity.has_value()) {
+                    jointDeRollVelocity = RadiansPerSecond{0};
+                }
+
+                if ((*jointDePitchVelocity > RadiansPerSecond{0} && (*mJointDePitchRoll)[0] >= mJointDePitchMaxPosition) ||
+                    (*jointDePitchVelocity < RadiansPerSecond{0} && (*mJointDePitchRoll)[0] <= mJointDePitchMinPosition)) {
+                    RCLCPP_INFO(get_logger(), "Joint DE Pitch limit hit!");
+                    jointDePitchVelocity = RadiansPerSecond{0};
+                }
+                if ((*jointDeRollVelocity > RadiansPerSecond{0} && (*mJointDePitchRoll)[1] >= mJointDeRollMaxPosition) ||
+                    (*jointDeRollVelocity < RadiansPerSecond{0} && (*mJointDePitchRoll)[1] <= mJointDeRollMinPosition)) {
+                    RCLCPP_INFO(get_logger(), "Joint DE Roll limit hit!");
+                    jointDeRollVelocity = RadiansPerSecond{0};
+                }
+
                 Vector2<RadiansPerSecond> const pitchRollVelocities{jointDePitchVelocity.value(), jointDeRollVelocity.value()};
                 Vector2<RadiansPerSecond> const motorVelocities = PITCH_ROLL_TO_01_SCALE * PITCH_ROLL_TO_0_1 * pitchRollVelocities;
 
@@ -271,6 +288,25 @@ namespace mrover {
                 }
 
                 if (jointDePitchPosition.has_value() && jointDeRollPosition.has_value()) {
+                    if (!jointDePitchPosition.has_value()) {
+                        if (!mJointDePitchRoll.has_value()) return;
+
+                        jointDePitchPosition = (*mJointDePitchRoll)[0];
+                    } else if (!jointDeRollPosition.has_value()) {
+                        if (!mJointDePitchRoll.has_value()) return;
+
+                        jointDeRollPosition = (*mJointDePitchRoll)[1];
+                    }
+
+                    if ((*jointDePitchPosition <= mJointDePitchMaxPosition) || (*jointDePitchPosition >= mJointDePitchMinPosition)) {
+                        RCLCPP_INFO(get_logger(), "Joint DE Pitch limit hit!");
+                        jointDePitchPosition = Radians{0};
+                    }
+                    if ((*jointDeRollPosition <= mJointDeRollMaxPosition) || (*jointDeRollPosition >= mJointDePitchMinPosition)) {
+                        RCLCPP_INFO(get_logger(), "Joint DE Roll limit hit!");
+                        jointDeRollPosition = Radians{0};
+                    }
+
                     Vector2<Radians> const pitchRollPositions{jointDePitchPosition.value(), jointDeRollPosition.value()};
                     Vector2<Radians> motorPositions = PITCH_ROLL_TO_01_SCALE * PITCH_ROLL_TO_0_1 * pitchRollPositions;
 
