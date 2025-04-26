@@ -1,4 +1,3 @@
-#include "mrover/msg/detail/state_machine_state_update__struct.hpp"
 #include <memory>
 #include <rclcpp/create_subscription.hpp>
 #include <rclcpp/logger.hpp>

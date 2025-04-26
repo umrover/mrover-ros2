@@ -313,10 +313,6 @@ macro(mrover_add_esw_motor_bridge_node name sources)
     target_link_libraries(${name} motor_library)
 endmacro()
 
-mrover_add_node(led esw/led.cpp)
-ament_target_dependencies(led rclcpp std_srvs)
-
-
 mrover_add_esw_motor_bridge_node(drive_hw_bridge esw/drive_hw_bridge.cpp)
 mrover_add_esw_motor_bridge_node(arm_hw_bridge esw/arm_hw_bridge.cpp)
 mrover_add_esw_bridge_node(differential_drive_controller esw/differential_drive_controller.cpp)
@@ -325,6 +321,9 @@ mrover_add_esw_bridge_node(pdlb_hw_bridge esw/pdlb_hw_bridge.cpp)
 mrover_add_node(arm_controller teleoperation/arm_controller/arm_controller.cpp teleoperation/arm_controller/pch.hpp)
 target_link_libraries(arm_controller lie)
 ament_target_dependencies(arm_controller rclcpp)
+
+mrover_add_node(led esw/led.cpp)
+ament_target_dependencies(led rclcpp std_srvs)
 
 if (Gst_FOUND AND GstApp_FOUND)
     mrover_add_node(usb_camera esw/usb_camera/*.cpp esw/usb_camera/pch.hpp)
