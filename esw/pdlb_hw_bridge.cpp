@@ -21,8 +21,8 @@ namespace mrover {
             });
 
             enableArmLaserService = this->create_service<std_srvs::srv::SetBool>("enable_arm_laser", [this] (
-                std::shared_ptr<std_srvs::srv::SetBool::Request> const& request,
-                std::shared_ptr<std_srvs::srv::SetBool::Response> &response) {
+                std_srvs::srv::SetBool::Request::SharedPtr const& request,
+                std_srvs::srv::SetBool::Response::SharedPtr response) {
                     PDLBBridge::handleEnableArmLaser(request, response);
                 });
         }
