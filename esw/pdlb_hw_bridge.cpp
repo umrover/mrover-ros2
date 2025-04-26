@@ -16,15 +16,15 @@ namespace mrover {
             changeLEDSubscriber = create_subscription<mrover::msg::LED>("led", 10, [this](mrover::msg::LED::ConstSharedPtr const& msg) {
                 PDLBBridge::changeLED(msg);
             });
-            PDLCANSubscriber = create_subscription<msg::CAN>( "can/pdlb/in", 10, [this](msg::CAN::ConstSharedPtr const& msg) {
+            PDLCANSubscriber = create_subscription<msg::CAN>("can/pdlb/in", 10, [this](msg::CAN::ConstSharedPtr const& msg) {
                 PDLBBridge::processCANMessage(msg);
             });
 
-            enableArmLaserService = this->create_service<std_srvs::srv::SetBool>("enable_arm_laser", [this] (
-                std_srvs::srv::SetBool::Request::SharedPtr const& request,
-                std_srvs::srv::SetBool::Response::SharedPtr response) {
-                    PDLBBridge::handleEnableArmLaser(request, response);
-                });
+            enableArmLaserService = this->create_service<std_srvs::srv::SetBool>("enable_arm_laser", [this](
+                                                                                                             std_srvs::srv::SetBool::Request::SharedPtr const& request,
+                                                                                                             std_srvs::srv::SetBool::Response::SharedPtr response) {
+                PDLBBridge::handleEnableArmLaser(request, response);
+            });
         }
 
         void initialize() {
@@ -47,7 +47,7 @@ namespace mrover {
 
         void handleEnableArmLaser(
                 std::shared_ptr<std_srvs::srv::SetBool::Request> const& request,
-                std::shared_ptr<std_srvs::srv::SetBool::Response> &response) {
+                std::shared_ptr<std_srvs::srv::SetBool::Response>& response) {
             if (request->data) {
                 // Code to enable the arm laser
                 response->message = "Arm laser enabled";
