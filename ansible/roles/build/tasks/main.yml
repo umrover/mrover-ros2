@@ -102,6 +102,9 @@
       - ros-humble-xacro
       # TODO (ali): why does this need to be installed manually
       - libboost-dev
+      - qtbase5-dev
+      - qtmultimedia5-dev
+      - libqt5multimedia5-plugins
 
 - name: Install Local APT Packages
   become: True
