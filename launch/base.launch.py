@@ -34,11 +34,6 @@ def generate_launch_description():
         parameters=[Path(get_package_share_directory("mrover"), "config", "superstructure.yaml")],
     )
 
-    led_node = Node(
-        package="mrover",
-        executable="led",
-        name="led",
-        parameters=[Path(get_package_share_directory("mrover"), "config", "esw.yaml")],
-    )
+    led_node = Node(package="mrover", executable="led", name="led")
 
-    return LaunchDescription([launch_jetson_cameras, diff_drive_controller_node, superstructure_node, led_node])
+    return LaunchDescription([diff_drive_controller_node, superstructure_node, led_node])
