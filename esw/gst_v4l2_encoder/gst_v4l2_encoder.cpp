@@ -63,6 +63,7 @@ namespace mrover {
                           "! nvvidconv " // Upload to GPU memory for the encoder
                           "! video/x-raw(memory:NVMM),format=I420 ";
             }
+            launch += std::format("! videocrop left={} right={} top={} bottom={} ", mCropLeft, mCropRight, mCropTop, mCropBottom);
             launch += std::format("! nvv4l2h265enc name=encoder bitrate={} iframeinterval=300 vbv-size=33333 insert-sps-pps=true control-rate=constant_bitrate profile=Main num-B-Frames=0 ratecontrol-enable=true preset-level=UltraFastPreset EnableTwopassCBR=false maxperf-enable=true ",
                                   mBitrate);
         } else if (gst_element_factory_find("nvh265enc")) {
@@ -199,6 +200,17 @@ namespace mrover {
             std::string const bitrateParamName = std::format("{}.bitrate", cameraName);
             declare_parameter(bitrateParamName, rclcpp::ParameterType::PARAMETER_INTEGER);
             mBitrate = get_parameter(bitrateParamName).as_int();
+
+            declare_parameter(std::format("{}.crop_left", cameraName), 0);
+            declare_parameter(std::format("{}.crop_right", cameraName), 0);
+            declare_parameter(std::format("{}.crop_top", cameraName), 0);
+            declare_parameter(std::format("{}.crop_bottom", cameraName), 0);
+            mCropLeft = static_cast<int>(get_parameter(std::format("{}.crop_left", cameraName)).as_int());
+            mCropRight = static_cast<int>(get_parameter(std::format("{}.crop_right", cameraName)).as_int());
+            mCropTop = static_cast<int>(get_parameter(std::format("{}.crop_top", cameraName)).as_int());
+            mCropBottom = static_cast<int>(get_parameter(std::format("{}.crop_bottom", cameraName)).as_int());
+
+            mCropEnabled = mCropLeft != 0 || mCropRight != 0 || mCropTop != 0 || mCropBottom != 0;
 
             if (!devicePath.empty()) {
                 deviceNode = findDeviceNode(devicePath);

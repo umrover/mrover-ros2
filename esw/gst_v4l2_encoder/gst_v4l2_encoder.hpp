@@ -19,6 +19,9 @@ namespace mrover {
         std::string mAddress;
         std::uint16_t mPort;
 
+        bool mCropEnabled{};
+        int mCropLeft{}, mCropRight{}, mCropTop{}, mCropBottom{};
+
         GstElement* mPipeline{};
         GMainLoop* mMainLoop{};
         std::thread mMainLoopThread;
