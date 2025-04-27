@@ -108,7 +108,7 @@ else ()
     endif ()
 endif ()
 
-find_package(manif QUIET)
+find_package(MANIF::manif QUIET)
 if (NOT manif_FOUND)
     if (EXISTS ${CMAKE_CURRENT_LIST_DIR}/deps/manif/include/manif)
         set(BUILD_TESTING_OLD ${BUILD_TESTING})
@@ -358,8 +358,11 @@ install(PROGRAMS
     localization/basestation_gps_driver.py
     superstructure/superstructure.py
     scripts/debug_course_publisher.py
+    scripts/debug_service.py
     scripts/visualizer.py
     scripts/image_capture.py
+    teleoperation/basestation_gui/gui_frontend.sh
+    teleoperation/basestation_gui/gui_backend.sh
 
     # starter project sources
     starter_project/autonomy/src/localization.py
