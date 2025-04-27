@@ -64,7 +64,7 @@ arm_hw_bridge:
     gripper:
       gear_ratio: 47.0
       is_inverted: true
-      driver_voltage: 10.5
+      driver_voltage: 12.0
       motor_max_voltage: 12.0
       quad_present: true
       quad_ratio: 1.0
@@ -78,6 +78,8 @@ arm_hw_bridge:
       limit_switch_0_active_high: false
       limit_switch_0_used_for_readjustment: true
       limit_switch_0_readjust_position: 0.0
+    cam_control_duration: 800 # milliseconds
+    cam_control_period: 50 # milliseconds
     cam:
       gear_ratio: 1.0
       is_inverted: false
