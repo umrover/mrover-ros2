@@ -41,8 +41,8 @@ auto GstVideoWidget::stop() -> void {
 GstVideoGridWidget::GstVideoGridWidget(QWidget* parent)
     : QWidget(parent), mError(NoError) {
     mMainLayout = new QGridLayout(this);
-    mMainLayout->setContentsMargins(10, -1, 10, -1);
-    mMainLayout->setSpacing(20);
+    mMainLayout->setContentsMargins(5, -1, 5, -1);
+    mMainLayout->setSpacing(10);
     setLayout(mMainLayout);
 }
 
@@ -58,8 +58,7 @@ auto GstVideoGridWidget::addGstVideoWidget(std::string const& name, std::string 
     auto* gstVideoBoxLabel = new QLabel(QString::fromStdString(name), gstVideoBoxWidget);
     auto* gstVideoBoxGstVideoWidget = new GstVideoWidget(gstVideoBoxWidget);
 
-    gstVideoBoxWidget->setFixedSize(640, 360);
-    gstVideoBoxGstVideoWidget->setMinimumSize(640, 360);
+    gstVideoBoxWidget->setMinimumSize(640, 360);
 
     gstVideoBoxGstVideoWidget->setGstPipeline(pipeline);
     if (gstVideoBoxGstVideoWidget->isError()) {
