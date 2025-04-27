@@ -4,17 +4,56 @@
 # Angle:    radian
 # Distance: meter
 
-basestation_gps_driver:
-  ros__parameters:
-    port: /dev/gps
-    baudrate: 38400
-
-gps_linearization:
+/**:
   ros__parameters:
     world_frame: "map"
-    rover_frame: "base_link"
+    rover_frame: "right_gps_frame"
 
     # Exception, these are in degrees
     ref_lat: 42.293195
     ref_lon: -83.7096706
     ref_alt: 0.0
+
+basestation_gps_driver:
+  ros__parameters:
+    port: /dev/ttyACM0
+    baud: 38400
+
+rover_gps_driver:
+  ros__parameters:
+    port_unicore: /dev/unicore_gps
+    baud_unicore: 115200
+
+    port_ublox: /dev/ublox_gps
+    baud_ublox: 38400
+
+    frame_id: "right_gps_frame"
+
+heading_filter:
+  ros__parameters:
+    imu_watchdog_timeout: 1.0
+    mag_heading_noise: 1.0
+    rtk_heading_noise: 0.01
+    process_noise: 0.000001
+
+pose_filter:
+  ros__parameters:
+    rover_heading_change_threshold: 0.05
+    minimum_linear_speed: 0.4
+
+iekf_se3:
+  ros__parameters:
+    scale_cov_a: 1.0
+    scale_cov_w: 100.0
+    pos_noise_fixed: 0.01
+    vel_noise: 1.0
+    mag_heading_noise: 1.0
+    rtk_heading_noise: 0.0001
+    drive_forward_heading_noise: 0.1
+
+    rover_heading_change_threshold: 0.05
+    minimum_linear_speed: 0.4
+
+    use_mag: false
+    use_drive_forward: true
+
