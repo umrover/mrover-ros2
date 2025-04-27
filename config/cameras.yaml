@@ -33,6 +33,17 @@
       framerate: 15
       bitrate: 2000000
       dev_path: ""
+    zed_mini:
+      address: 10.1.0.2
+      port: 8084
+      codec: H265
+      decode_jpeg_from_device: false
+      dev_node: "/dev/zed_mini"
+      width: 1344
+      height: 376
+      framerate: 15
+      bitrate: 2000000
+      dev_path: ""
 
 boom_streamer:
   ros__parameters:
@@ -46,6 +57,10 @@ static_streamer:
   ros__parameters:
     camera: "static_cam"
 
+zed_mini_streamer:
+  ros__parameters:
+    camera: "zed_mini"
+
 camera_client:
   ros__parameters:
     test: 10
@@ -53,19 +68,8 @@ camera_client:
       - "boom_cam"
       - "mob_cam"
       - "static_cam"
+      - "zed_mini"
     rtp_jitter_ms: 50
-
-zed_streamer:
-  ros__parameters:
-    port: 8084
-    decode_jpeg_from_device: true
-    width: 1280
-    height: 720
-    framerate: 5
-    image_topic: "/zed/left/image"
-    address: 0.0.0.0
-    bitrate: 2000000
-    dev_path: ""
 
 # TODO: Fix temp hardcoded video devices for science
 science_streamer_1:

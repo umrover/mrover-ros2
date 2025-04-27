@@ -13,6 +13,16 @@ from launch_ros.actions import Node
 
 def generate_launch_description():
 
+    zed_mini_streamer_node = Node(
+        package="mrover",
+        executable="gst_v4l2_encoder",
+        name="zed_mini_streamer",
+        output="screen",
+        parameters=[
+            Path(get_package_share_directory("mrover"), "config", "cameras.yaml"),
+        ],
+    )
+
     boom_streamer_node = Node(
         package="mrover",
         executable="gst_v4l2_encoder",
@@ -73,4 +83,4 @@ def generate_launch_description():
         ],
     )
 
-    return LaunchDescription([boom_streamer_node, mob_streamer_node, static_streamer_node])
+    return LaunchDescription([zed_mini_streamer_node, static_streamer_node])
