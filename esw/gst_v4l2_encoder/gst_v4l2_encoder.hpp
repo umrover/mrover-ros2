@@ -11,7 +11,9 @@ namespace mrover {
 
     class GstV4L2Encoder final : public rclcpp::Node {
 
-        bool mDecodeJpegFromDevice{};    // Uses less USB hub bandwidth, which is limited since we are using 2.0
+        gst::Video::V4L2::Format mCaptureFormat{};
+        gst::Video::Codec mStreamCodec{};
+
         bool mDisableAutoWhiteBalance{}; // Useful for science, the UV LEDs can mess with the white balance
         std::string mDeviceDescriptor;
         std::uint64_t mBitrate{};

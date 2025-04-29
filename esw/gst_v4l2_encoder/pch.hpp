@@ -24,3 +24,4 @@
 
 #include <gst.hpp>
 #include <gst_v4l2.hpp>
+#include <parameter.hpp>

@@ -71,9 +71,6 @@ namespace mrover::gst::Video {
         }
         throw std::invalid_argument("Unsupported codec");
     }
-    constexpr auto getCodecFromString(std::string const& name) -> Codec {
-        return getCodecFromStringView(name);
-    }
 
     constexpr auto getAvailableCodecs() -> std::array<Codec, magic_enum::enum_count<Codec>()> {
         return magic_enum::enum_values<Codec>();

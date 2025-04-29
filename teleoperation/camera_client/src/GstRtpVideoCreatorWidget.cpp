@@ -72,7 +72,7 @@ void GstRtpVideoCreatorWidget::onSubmitClicked() {
         return;
     }
 
-    gst::Video::Codec const codec = gst::Video::getCodecFromString(mVideoCodecComboBox->currentText().toStdString());
+    gst::Video::Codec const codec = gst::Video::getCodecFromStringView(mVideoCodecComboBox->currentText().toStdString());
     std::string const pipeline = gst::Video::createRtpToRawSrc(static_cast<std::uint16_t>(port), codec);
 
     std::string name;

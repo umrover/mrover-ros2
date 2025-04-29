@@ -30,6 +30,13 @@ namespace mrover::gst::Video::V4L2 {
         throw std::invalid_argument("Unsupported V4L2 format");
     }
 
+    constexpr auto getFormatFromStringView(std::string_view name) -> Format {
+        if (auto format = magic_enum::enum_cast<Format>(name); format.has_value()) {
+            return format.value();
+        }
+        throw std::invalid_argument("Unsupported V4L2 format");
+    }
+
     constexpr auto isRawFormat(Format format) -> bool {
         switch (format) {
 #define F(name, gstType) \

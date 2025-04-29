@@ -1,4 +1,5 @@
 #include "gst_v4l2_encoder.hpp"
+#include "gst_v4l2.hpp"
 
 namespace mrover {
 
@@ -23,14 +24,11 @@ namespace mrover {
 
         // Source
         std::string launch;
-        std::string captureFormat;
         if (deviceNode.empty()) {
-            launch += "videotestsrc ! video/x-raw";
-            launch += std::format(" ! {},width={},height={},framerate={}/1", captureFormat, mImageWidth, mImageHeight, mImageFramerate);
+            mCaptureFormat = gst::Video::V4L2::Format::YUYV;
+            launch += std::format("videotestsrc ! video/x-raw,format=YUY2,width={},height={},framerate={}/1", mImageWidth, mImageHeight, mImageFramerate);
         } else {
-            launch += gst::Video::V4L2::createSrc(deviceNode,
-                                                  mDecodeJpegFromDevice ? gst::Video::V4L2::Format::MJPG : gst::Video::V4L2::Format::YUYV,
-                                                  mImageWidth, mImageHeight, mImageFramerate);
+            launch += gst::Video::V4L2::createSrc(deviceNode, mCaptureFormat, mImageWidth, mImageHeight, mImageFramerate);
 
             // gst::Video::V4L2::addProperty("extra-controls", "\"c,white_balance_temperature_auto=0,white_balance_temperature=4000\"")
             // if (mDisableAutoWhiteBalance) launch += "extra-controls=\"c,white_balance_temperature_auto=0,white_balance_temperature=4000\" ";
@@ -40,7 +38,7 @@ namespace mrover {
         // Source decoder and H265 encoder
         if (gst_element_factory_find("nvv4l2h265enc")) {
             // Most likely on the Jetson
-            if (captureFormat.contains("jpeg")) {
+            if (mCaptureFormat == gst::Video::V4L2::Format::MJPG) {
                 // Mostly used with USB cameras, MPEG capture uses way less USB bandwidth
                 launch +=
                         // TODO(quintin): I had to apply this patch: https://forums.developer.nvidia.com/t/macrosilicon-usb/157777/4
@@ -62,7 +60,7 @@ namespace mrover {
                                   mBitrate);
         } else if (gst_element_factory_find("nvh265enc")) {
             // For desktop/laptops with the custom NVIDIA bad gstreamer plugins built (a massive pain to do!)
-            if (captureFormat.contains("jpeg")) {
+            if (mCaptureFormat == gst::Video::V4L2::Format::MJPG) {
                 launch += "! jpegdec ";
             } else {
                 launch += "! videoconvert ";
@@ -70,20 +68,14 @@ namespace mrover {
             launch += "! nvh265enc name=encoder ";
         } else {
             // For desktop/laptops with no hardware encoder
-            if (captureFormat.contains("jpeg")) {
+            if (mCaptureFormat == gst::Video::V4L2::Format::MJPG) {
                 launch += "! jpegdec ";
             } else {
                 launch += "! videoconvert ";
             }
             launch += std::format("! x264enc tune=zerolatency bitrate={} name=encoder ", mBitrate);
         }
-        if (launch.contains("264")) {
-            launch += gst::Video::createRtpSink(mAddress, mPort, gst::Video::Codec::H264);
-        } else if (launch.contains("265")) {
-            launch += gst::Video::createRtpSink(mAddress, mPort, gst::Video::Codec::H265);
-        } else {
-            throw std::runtime_error{"Unsupported codec"};
-        }
+        launch += gst::Video::createRtpSink(mAddress, mPort, mStreamCodec);
 
         RCLCPP_INFO_STREAM(get_logger(), std::format("GStreamer launch string: {}", launch));
         mPipeline = gstCheck(gst_parse_launch(launch.c_str(), nullptr));
@@ -148,63 +140,51 @@ namespace mrover {
             declare_parameter("camera", rclcpp::ParameterType::PARAMETER_STRING);
             std::string const cameraName = get_parameter("camera").as_string();
 
-            std::string const addressParamName = std::format("{}.address", cameraName);
-            declare_parameter(addressParamName, rclcpp::ParameterType::PARAMETER_STRING);
-            mAddress = get_parameter(addressParamName).as_string();
-
-            std::string const portParamName = std::format("{}.port", cameraName);
-            declare_parameter(portParamName, rclcpp::ParameterType::PARAMETER_INTEGER);
-            mPort = static_cast<std::uint16_t>(get_parameter(portParamName).as_int());
-
+            int port;
+            std::string captureFormat, codec;
             // For example, /dev/video0
             // These device paths are not garunteed to stay the same between reboots
             // Prefer sys path for non-debugging purposes
-            std::string const deviceNodeParamName = std::format("{}.dev_node", cameraName);
-            declare_parameter(deviceNodeParamName, "");
-            std::string deviceNode = get_parameter(deviceNodeParamName).as_string();
-
+            std::string deviceNode;
             // To find the sys path:
             // 1) Disconnect all cameras
             // 2) Confirm there are no /dev/video* devices
             // 2) Connect the camera you want to use
             // 3) Run "ls /dev/video*" to verify the device is connected
             // 4) Run "udevadm info -q path -n /dev/video0" to get the sys path
-            std::string const devicePathParamName = std::format("{}.dev_path", cameraName);
-            declare_parameter(devicePathParamName, "");
-            std::string devicePath = get_parameter(devicePathParamName).as_string();
+            std::string devicePath;
+            int imageWidth, imageHeight, imageFramerate, bitrate;
 
-            std::string const decodeJpegFromDeviceParamName = std::format("{}.decode_jpeg_from_device", cameraName);
-            declare_parameter(decodeJpegFromDeviceParamName, rclcpp::ParameterType::PARAMETER_BOOL);
-            mDecodeJpegFromDevice = get_parameter(decodeJpegFromDeviceParamName).as_bool();
+            std::vector<ParameterWrapper> parameters = {
+                    {std::format("{}.address", cameraName), mAddress, "0.0.0.0"},
+                    {std::format("{}.port", cameraName), port, 0},
+                    {std::format("{}.capture_format", cameraName), captureFormat, "MJPG"},
+                    {std::format("{}.codec", cameraName), codec, "H265"},
+                    {std::format("{}.dev_node", cameraName), deviceNode, ""},
+                    {std::format("{}.dev_path", cameraName), devicePath, ""},
+                    {std::format("{}.width", cameraName), imageWidth, 0},
+                    {std::format("{}.height", cameraName), imageHeight, 0},
+                    {std::format("{}.framerate", cameraName), imageFramerate, 0},
+                    {std::format("{}.bitrate", cameraName), bitrate, 0},
+                    {std::format("{}.crop_left", cameraName), mCropLeft, 0},
+                    {std::format("{}.crop_right", cameraName), mCropRight, 0},
+                    {std::format("{}.crop_top", cameraName), mCropTop, 0},
+                    {std::format("{}.crop_bottom", cameraName), mCropBottom, 0},
 
-            declare_parameter("disable_auto_white_balance", rclcpp::ParameterType::PARAMETER_BOOL);
+            };
 
-            std::string const widthParamName = std::format("{}.width", cameraName);
-            declare_parameter(widthParamName, rclcpp::ParameterType::PARAMETER_INTEGER);
-            mImageWidth = get_parameter(widthParamName).as_int();
+            ParameterWrapper::declareParameters(this, parameters);
 
-            std::string const heightParamName = std::format("{}.height", cameraName);
-            declare_parameter(heightParamName, rclcpp::ParameterType::PARAMETER_INTEGER);
-            mImageHeight = get_parameter(heightParamName).as_int();
-
-            std::string const framerateParamName = std::format("{}.framerate", cameraName);
-            declare_parameter(framerateParamName, rclcpp::ParameterType::PARAMETER_INTEGER);
-            mImageFramerate = get_parameter(framerateParamName).as_int();
-
-            std::string const bitrateParamName = std::format("{}.bitrate", cameraName);
-            declare_parameter(bitrateParamName, rclcpp::ParameterType::PARAMETER_INTEGER);
-            mBitrate = get_parameter(bitrateParamName).as_int();
-
-            declare_parameter(std::format("{}.crop_left", cameraName), 0);
-            declare_parameter(std::format("{}.crop_right", cameraName), 0);
-            declare_parameter(std::format("{}.crop_top", cameraName), 0);
-            declare_parameter(std::format("{}.crop_bottom", cameraName), 0);
-            mCropLeft = static_cast<int>(get_parameter(std::format("{}.crop_left", cameraName)).as_int());
-            mCropRight = static_cast<int>(get_parameter(std::format("{}.crop_right", cameraName)).as_int());
-            mCropTop = static_cast<int>(get_parameter(std::format("{}.crop_top", cameraName)).as_int());
-            mCropBottom = static_cast<int>(get_parameter(std::format("{}.crop_bottom", cameraName)).as_int());
-
+            mPort = static_cast<std::uint16_t>(port);
+            mCaptureFormat = gst::Video::V4L2::getFormatFromStringView(captureFormat);
+            mStreamCodec = gst::Video::getCodecFromStringView(codec);
+            mImageWidth = static_cast<std::uint16_t>(imageWidth);
+            mImageHeight = static_cast<std::uint16_t>(imageHeight);
+            mImageFramerate = static_cast<std::uint16_t>(imageFramerate);
+            mBitrate = static_cast<std::uint64_t>(bitrate);
             mCropEnabled = mCropLeft != 0 || mCropRight != 0 || mCropTop != 0 || mCropBottom != 0;
+
+            // declare_parameter("disable_auto_white_balance", rclcpp::ParameterType::PARAMETER_BOOL);
 
             if (!devicePath.empty()) {
                 deviceNode = findDeviceNode(devicePath);
