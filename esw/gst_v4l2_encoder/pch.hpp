@@ -21,3 +21,6 @@
 #include <opencv2/imgproc.hpp>
 
 #include <websocket_server.hpp>
+
+#include <gst.hpp>
+#include <gst_v4l2.hpp>

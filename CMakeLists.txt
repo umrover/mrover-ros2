@@ -217,8 +217,8 @@ ament_target_dependencies(lie rclcpp geometry_msgs tf2 tf2_ros)
 mrover_add_header_only_library(units units)
 mrover_add_header_only_library(loop_profiler loop_profiler)
 mrover_add_header_only_library(parameter_utils parameter_utils)
-mrover_add_header_only_library(gst gst)
-target_link_libraries(gst INTERFACE magic_enum::magic_enum)
+mrover_add_header_only_library(gst_utils gst_utils)
+target_link_libraries(gst_utils INTERFACE magic_enum::magic_enum)
 
 # Simulator
 
@@ -336,7 +336,7 @@ if (Gst_FOUND AND GstApp_FOUND)
         ament_target_dependencies(websocket_server rclcpp)
 
         mrover_add_node(gst_v4l2_encoder esw/gst_v4l2_encoder/*.c* esw/gst_v4l2_encoder/pch.hpp)
-        target_link_libraries(gst_v4l2_encoder PkgConfig::Gst PkgConfig::GstApp PkgConfig::LibUdev opencv_core opencv_imgcodecs websocket_server)
+        target_link_libraries(gst_v4l2_encoder PkgConfig::Gst PkgConfig::GstApp PkgConfig::LibUdev opencv_core opencv_imgcodecs websocket_server gst_utils parameter_utils)
         ament_target_dependencies(gst_v4l2_encoder rclcpp rclcpp_components sensor_msgs)
     endif ()
 endif ()
@@ -352,7 +352,7 @@ find_package(Qt5 5.15 REQUIRED COMPONENTS Widgets Multimedia MultimediaWidgets)
 
 mrover_add_node(camera_client teleoperation/camera_client/*.*pp teleoperation/camera_client/include/pch.hpp)
 target_include_directories(camera_client PRIVATE teleoperation/camera_client/include)
-target_link_libraries(camera_client gst Qt::Widgets Qt::Multimedia Qt::MultimediaWidgets)
+target_link_libraries(camera_client gst_utils Qt::Widgets Qt::Multimedia Qt::MultimediaWidgets)
 ament_target_dependencies(camera_client rclcpp)
 set_target_properties(camera_client PROPERTIES
     AUTOMOC ON

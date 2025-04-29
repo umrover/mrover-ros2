@@ -16,14 +16,6 @@ namespace mrover {
 
     auto gstBusMessage(GstBus*, GstMessage* message, gpointer data) -> gboolean;
 
-    auto makeRTPH264SinkString(std::string_view host, std::uint16_t port) -> std::string {
-        return std::format("! rtph264pay ! udpsink host={} port={}", host, port);
-    }
-
-    auto makeRTPH265SinkString(std::string_view host, std::uint16_t port) -> std::string {
-        return std::format("! rtph265pay config-interval=1 ! udpsink host={} port={}", host, port);
-    }
-
     auto GstV4L2Encoder::initPipeline(std::string_view deviceNode) -> void {
         RCLCPP_INFO_STREAM(get_logger(), "Initializing and starting GStreamer pipeline...");
 
@@ -33,15 +25,17 @@ namespace mrover {
         std::string launch;
         std::string captureFormat;
         if (deviceNode.empty()) {
-            launch += "videotestsrc ";
-            captureFormat = "video/x-raw";
+            launch += "videotestsrc ! video/x-raw";
+            launch += std::format(" ! {},width={},height={},framerate={}/1", captureFormat, mImageWidth, mImageHeight, mImageFramerate);
         } else {
-            launch += std::format("v4l2src device={} ", deviceNode);
-            captureFormat = mDecodeJpegFromDevice ? "image/jpeg" : "video/x-raw,format=YUY2";
-            if (mDisableAutoWhiteBalance) launch += "extra-controls=\"c,white_balance_temperature_auto=0,white_balance_temperature=4000\" ";
+            launch += gst::Video::V4L2::createSrc(deviceNode,
+                                                  mDecodeJpegFromDevice ? gst::Video::V4L2::Format::MJPG : gst::Video::V4L2::Format::YUYV,
+                                                  mImageWidth, mImageHeight, mImageFramerate);
+
+            // gst::Video::V4L2::addProperty("extra-controls", "\"c,white_balance_temperature_auto=0,white_balance_temperature=4000\"")
+            // if (mDisableAutoWhiteBalance) launch += "extra-controls=\"c,white_balance_temperature_auto=0,white_balance_temperature=4000\" ";
         }
         // Source format
-        launch += std::format("! {},width={},height={},framerate={}/1 ", captureFormat, mImageWidth, mImageHeight, mImageFramerate);
 
         // Source decoder and H265 encoder
         if (gst_element_factory_find("nvv4l2h265enc")) {
@@ -84,9 +78,9 @@ namespace mrover {
             launch += std::format("! x264enc tune=zerolatency bitrate={} name=encoder ", mBitrate);
         }
         if (launch.contains("264")) {
-            launch += makeRTPH264SinkString(mAddress, mPort);
+            launch += gst::Video::createRtpSink(mAddress, mPort, gst::Video::Codec::H264);
         } else if (launch.contains("265")) {
-            launch += makeRTPH265SinkString(mAddress, mPort);
+            launch += gst::Video::createRtpSink(mAddress, mPort, gst::Video::Codec::H265);
         } else {
             throw std::runtime_error{"Unsupported codec"};
         }

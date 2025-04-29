@@ -1,20 +1,47 @@
 #pragma once
 
+#include <chrono>
+#include <cstdint>
+#include <format>
 #include <stdexcept>
+#include <string>
 #include <string_view>
 
 #include <magic_enum.hpp>
 
 namespace mrover::gst::Video {
+    enum class RawFormat : unsigned int {
+        YUY2,
+        NV12,
+        I420,
+    };
+
+    constexpr auto toString(RawFormat format) -> std::string_view {
+        if (auto name = magic_enum::enum_name(format); !name.empty()) {
+            return name;
+        }
+        throw std::invalid_argument("Unsupported raw format");
+    }
+
+    constexpr auto getRawFormatFromStringView(std::string_view name) -> RawFormat {
+        if (auto format = magic_enum::enum_cast<RawFormat>(name); format.has_value()) {
+            return format.value();
+        }
+        throw std::invalid_argument("Unsupported raw format");
+    }
+
+    constexpr auto getMediaType(RawFormat) -> std::string_view {
+        return "video/x-raw";
+    }
 
     // TODO:(owen) I don't like the config-interval=1 for H265. Should be configurable somehow
 #define CODEC_ITER(_F)                                                                                \
     _F(H264, "video/x-h264", "x264enc", "avdec_h264", "rtph264pay", "rtph264depay")                   \
-    _F(H265, "video/x-h265", "x265enc", "avdec_h265", "rtph265pay", "rtph265depay config-interval=1") \
+    _F(H265, "video/x-h265", "x265enc", "avdec_h265", "rtph265pay config-interval=1", "rtph265depay") \
     _F(VP8, "video/x-vp8", "vp8enc", "vp8dec", "rtpvp8pay", "rtpvp8depay")                            \
     _F(VP9, "video/x-vp9", "vp9enc", "vp9dec", "rtpvp9pay", "rtpvp9depay")                            \
-    _F(MPEG4, "video/mpeg4", "avenc_mpeg4", "avdec_mpeg4", "rtpmpeg4pay", "rtpmpeg4depay")            \
-    _F(MJPEG, "image/jpeg", "jpegenc", "jpegdec", "rtpjpegpay", "rtpjpegdepay")
+    _F(MPEG4, "video/mpeg4", "avenc_mpeg4", "avdec_mpeg4", "rtpmp4vpay", "rtpmp4vdepay")              \
+    _F(JPEG, "image/jpeg", "jpegenc", "jpegdec", "rtpjpegpay", "rtpjpegdepay")
 
     enum class Codec : unsigned int {
 #define F(name, ...) name,
@@ -90,6 +117,17 @@ namespace mrover::gst::Video {
         return getCodecInfo(codec, [](CodecInfo const& info) { return info.rtpDepayloader; });
     }
 
-#undef COEC_ITER
+#undef CODEC_ITER
+
+
+    inline auto createRtpSink(std::string const& host, std::uint16_t port, Video::Codec codec) {
+        return std::format("{} ! udpsink host={} port={}", getRtpPayloader(codec), host, port);
+    }
+
+    constexpr auto DEFAULT_RTP_JITTER = std::chrono::milliseconds(500);
+
+    inline auto createRtpToRawSrc(std::uint16_t port, Video::Codec codec, std::chrono::milliseconds rtpJitter = DEFAULT_RTP_JITTER) -> std::string {
+        return std::format("udpsrc port={} ! application/x-rtp,media=video ! rtpjitterbuffer latency={} ! {} ! decodebin", port, rtpJitter.count(), getRtpDepayloader(codec));
+    }
 
 } // namespace mrover::gst::Video
