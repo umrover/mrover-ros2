@@ -14,7 +14,8 @@
         <tbody>
             <tr>
             <th class='table-secondary'>Site {{ String.fromCharCode(site+65) }}</th>
-            <td v-for="(val, index) in sensorValues" :key="index">{{ val.toFixed(2) }}</td>
+            <!-- entries assumes string, any type pair -->
+            <td v-for="([key, val], index) in Object.entries(sensor_data)" :key="index">{{ val.toFixed(2) }}</td>
             </tr>
         </tbody>  
         </table>
@@ -56,8 +57,7 @@ import Chart from 'chart.js/auto';
     },
 
     mounted() {
-      let self = this;
-      let charts = [];
+      const charts: Chart[] = [];
       function waitForElm(selector) {
         return new Promise(resolve => {
             if (document.querySelector(selector)) {
@@ -80,7 +80,9 @@ import Chart from 'chart.js/auto';
       }
 
       let titles = ["Oxygen Percentage Over Time (s)", "Relative Humidity Over Time (s)", "Temperature (C) Over Time (s)", "UV Index Over Time (s)"];
-      let sensor_history: number[][] = [[], [], [], []];
+
+      const sensor_history:number[][] = [[], [], [], []]
+
       let lineColors = ["#4D9DE0", "#E15554", "#3BB273", "#7768AE"]
 
       for (let i = 0; i < 4; ++ i){
@@ -120,12 +122,12 @@ import Chart from 'chart.js/auto';
       }
 
       setInterval(() => {
-          // console.log(Object.values(self.sensor_data).length)
-          this.$forceUpdate();
-          sensor_history[0].push(self.sensor_data.oxygen);
-          sensor_history[1].push(self.sensor_data.humidity);
-          sensor_history[2].push(self.sensor_data.temp);
-          sensor_history[3].push(self.sensor_data.uv);
+          // console.log(Object.values(this.sensor_data).length)
+          // this.$forceUpdate();
+          sensor_history[0].push(this.sensor_data.oxygen);
+          sensor_history[1].push(this.sensor_data.humidity);
+          sensor_history[2].push(this.sensor_data.temp);
+          sensor_history[3].push(this.sensor_data.uv);
 
           for (let x = 0; x < 4; ++x){
             if (charts[x] != null){
@@ -180,19 +182,19 @@ import Chart from 'chart.js/auto';
       switch (msg.type) {
         case 'oxygen':
             this.sensor_data.oxygen = msg.percent
-            this.sensor_data.oxygen_var = msg.varianace
+            // this.sensor_data.oxygen_var = msg.varianace
             break
         case 'uv':
             this.sensor_data.uv = msg.uv_index
-            this.sensor_data.uv_var = msg.varianace
+            // this.sensor_data.uv_var = msg.varianace
             break
         case 'temperature':
             this.sensor_data.temp = msg.temperature
-            this.sensor_data.temp_var = msg.variance
+            // this.sensor_data.temp_var = msg.variance
             break
         case 'humidity':
             this.sensor_data.humidity = msg.relative_humidity
-            this.sensor_data.humidity_var = msg.variance
+            // this.sensor_data.humidity_var = 100* msg.variance
             break
       }
     }
