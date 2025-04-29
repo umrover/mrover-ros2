@@ -22,4 +22,4 @@
 #include <QVideoWidget>
 #include <QWidget>
 
-#include "gst.hpp"
+#include <gst.hpp>
