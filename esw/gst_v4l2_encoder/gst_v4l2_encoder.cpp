@@ -75,7 +75,7 @@ namespace mrover {
             }
             launch += std::format("! x264enc tune=zerolatency bitrate={} name=encoder ", mBitrate);
         }
-        launch += gst::Video::createRtpSink(mAddress, mPort, mStreamCodec);
+        launch += "! " + gst::Video::createRtpSink(mAddress, mPort, mStreamCodec);
 
         RCLCPP_INFO_STREAM(get_logger(), std::format("GStreamer launch string: {}", launch));
         mPipeline = gstCheck(gst_parse_launch(launch.c_str(), nullptr));
