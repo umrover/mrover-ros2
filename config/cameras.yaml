@@ -38,7 +38,7 @@
       port: 8084
       codec: H265
       dev_node: "/dev/zed_mini"
-      capture_format: YUY2
+      capture_format: YUYV
       crop_right: 700
       width: 1344
       height: 376

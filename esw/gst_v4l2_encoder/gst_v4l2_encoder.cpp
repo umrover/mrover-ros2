@@ -29,11 +29,13 @@ namespace mrover {
             launch += std::format("videotestsrc ! video/x-raw,format=YUY2,width={},height={},framerate={}/1", mImageWidth, mImageHeight, mImageFramerate);
         } else {
             launch += gst::Video::V4L2::createSrc(deviceNode, mCaptureFormat, mImageWidth, mImageHeight, mImageFramerate);
-
             // gst::Video::V4L2::addProperty("extra-controls", "\"c,white_balance_temperature_auto=0,white_balance_temperature=4000\"")
             // if (mDisableAutoWhiteBalance) launch += "extra-controls=\"c,white_balance_temperature_auto=0,white_balance_temperature=4000\" ";
         }
-        // Source format
+
+        if (gst::Video::V4L2::isRawFormat(mCaptureFormat)) {
+            launch += std::format(" ! videocrop left={} right={} top={} bottom={} ", mCropLeft, mCropRight, mCropTop, mCropBottom);
+        }
 
         // Source decoder and H265 encoder
         if (gst_element_factory_find("nvv4l2h265enc")) {
@@ -55,7 +57,6 @@ namespace mrover {
                           "! nvvidconv " // Upload to GPU memory for the encoder
                           "! video/x-raw(memory:NVMM),format=I420 ";
             }
-            launch += std::format("! videocrop left={} right={} top={} bottom={} ", mCropLeft, mCropRight, mCropTop, mCropBottom);
             launch += std::format("! nvv4l2h265enc name=encoder bitrate={} iframeinterval=300 vbv-size=33333 insert-sps-pps=true control-rate=constant_bitrate profile=Main num-B-Frames=0 ratecontrol-enable=true preset-level=UltraFastPreset EnableTwopassCBR=false maxperf-enable=true ",
                                   mBitrate);
         } else if (gst_element_factory_find("nvh265enc")) {
