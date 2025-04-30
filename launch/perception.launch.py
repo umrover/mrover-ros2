@@ -12,6 +12,61 @@ from launch.conditions import LaunchConfigurationEquals
 
 
 def generate_launch_description():
+    # zed camera
+    zed_component = ComposableNode(
+        package="mrover",
+        plugin="mrover::ZedWrapper",
+        name="zed_component",
+        parameters=[Path(get_package_share_directory("mrover"), "config", "zed.yaml")],
+        extra_arguments=[{"use_intra_process_comms": True}],
+    )
+
+    # usb camera
+    usb_component = ComposableNode(
+        package="mrover",
+        plugin="mrover::UsbCamera",
+        name="long_range_cam",
+        parameters=[Path(get_package_share_directory("mrover"), "config", "perception.yaml")],
+        extra_arguments=[{"use_intra_process_comms": True}],
+    )
+
+    # image tag detector
+    image_tag_detector_component = ComposableNode(
+        package="mrover",
+        plugin="mrover::ImageTagDetector",
+        name="image_tag_detector",
+        parameters=[Path(get_package_share_directory("mrover"), "config", "perception.yaml")],
+        extra_arguments=[{"use_intra_process_comms": True}],
+    )
+
+    # stereo tag detector
+    stereo_tag_detector_component = ComposableNode(
+        package="mrover",
+        plugin="mrover::StereoTagDetector",
+        name="stereo_tag_detector",
+        parameters=[Path(get_package_share_directory("mrover"), "config", "perception.yaml")],
+        extra_arguments=[{"use_intra_process_comms": True}],
+    )
+
+    # image object detector
+    image_object_detector_component = ComposableNode(
+        package="mrover",
+        plugin="mrover::ImageObjectDetector",
+        name="image_object_detector",
+        parameters=[Path(get_package_share_directory("mrover"), "config", "perception.yaml")],
+        extra_arguments=[{"use_intra_process_comms": True}],
+    )
+
+    # stereo object detector
+    stereo_object_detector_component = ComposableNode(
+        package="mrover",
+        plugin="mrover::StereoObjectDetector",
+        name="stereo_object_detector",
+        parameters=[Path(get_package_share_directory("mrover"), "config", "perception.yaml")],
+        extra_arguments=[{"use_intra_process_comms": True}],
+    )
+
+    # Component Container #
 
     container = ComposableNodeContainer(
         name="perception",
@@ -19,48 +74,12 @@ def generate_launch_description():
         package="rclcpp_components",
         executable="component_container_mt",
         composable_node_descriptions=[
-            ComposableNode(
-                package="mrover",
-                plugin="mrover::ZedWrapper",
-                name="zed_component",
-                parameters=[Path(get_package_share_directory("mrover"), "config", "zed.yaml")],
-                extra_arguments=[{"use_intra_process_comms": True}],
-            ),
-            ComposableNode(
-                package="mrover",
-                plugin="mrover::UsbCamera",
-                name="long_range_cam",
-                parameters=[Path(get_package_share_directory("mrover"), "config", "perception.yaml")],
-                extra_arguments=[{"use_intra_process_comms": True}],
-            ),
-            ComposableNode(
-                package="mrover",
-                plugin="mrover::ImageTagDetector",
-                name="image_tag_detector",
-                parameters=[Path(get_package_share_directory("mrover"), "config", "perception.yaml")],
-                extra_arguments=[{"use_intra_process_comms": True}],
-            ),
-            ComposableNode(
-                package="mrover",
-                plugin="mrover::StereoTagDetector",
-                name="stereo_tag_detector",
-                parameters=[Path(get_package_share_directory("mrover"), "config", "perception.yaml")],
-                extra_arguments=[{"use_intra_process_comms": True}],
-            ),
-            ComposableNode(
-                package="mrover",
-                plugin="mrover::ImageObjectDetector",
-                name="image_object_detector",
-                parameters=[Path(get_package_share_directory("mrover"), "config", "perception.yaml")],
-                extra_arguments=[{"use_intra_process_comms": True}],
-            ),
-            ComposableNode(
-                package="mrover",
-                plugin="mrover::StereoObjectDetector",
-                name="stereo_object_detector",
-                parameters=[Path(get_package_share_directory("mrover"), "config", "perception.yaml")],
-                extra_arguments=[{"use_intra_process_comms": True}],
-            ),
+            zed_component,
+            usb_component,
+            stereo_tag_detector_component,
+            image_tag_detector_component,
+            stereo_object_detector_component,
+            image_object_detector_component
         ],
         output="screen",
     )
