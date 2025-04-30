@@ -51,20 +51,17 @@ class WaypointState(State):
     def on_enter(self, context: Context) -> None:
         if context.course is None:
             return
+        
+        self.time_begin = context.node.get_clock().now()
+        self.start_time = context.node.get_clock().now()
+
         context.node.get_logger().info("Entered Waypoint State")
         context.rover.previous_state = WaypointState()
 
-        while not context.dilate_cost(context.node.get_parameter("costmap.initial_inflation_radius").value):
-            context.node.get_logger().info("Retrying cost map dilation")
+        context.course.last_spiral_point = 0
 
         self.UPDATE_DELAY = context.node.get_parameter("search.update_delay").value
         self.NO_SEARCH_WAIT_TIME = context.node.get_parameter("waypoint.no_search_wait_time").value
-
-        current_waypoint = context.course.current_waypoint()
-        if current_waypoint is None:
-            return
-
-        self.USE_COSTMAP = context.node.get_parameter("costmap.use_costmap").value or current_waypoint.enable_costmap
 
         self.marker_pub = context.node.create_publisher(Marker, "waypoint_trajectory", 10)
         self.astar = AStar(context)
@@ -72,13 +69,22 @@ class WaypointState(State):
         self.waypoint_traj = Trajectory(np.array([]))
 
         self.time_no_search_wait = None
-        self.time_begin = context.node.get_clock().now()
-        self.start_time = context.node.get_clock().now()
 
         self.marker_timer = context.node.create_timer(
             context.node.get_parameter("pub_path_rate").value, lambda: self.display_markers(context)
         )
         self.waypoint_timer = context.node.create_timer(self.UPDATE_DELAY, lambda: self.update_waypoint(context))
+
+        current_waypoint = context.course.current_waypoint()
+        if current_waypoint is None:
+            return
+
+        self.USE_COSTMAP = context.node.get_parameter("costmap.use_costmap").value or current_waypoint.enable_costmap
+        if self.USE_COSTMAP:
+            context.node.get_logger().info("Resetting costmap dilation")
+            context.reset_dilation()
+
+        context.node.get_logger().info("On Enter finished")
 
     def on_exit(self, context: Context) -> None:
         self.marker_timer.cancel()
@@ -89,6 +95,10 @@ class WaypointState(State):
         self.astar_traj.clear()
 
     def on_loop_costmap_enabled(self, context: Context) -> State:
+        if not context.dilation_done(): 
+            context.node.get_logger().info("Awaiting dilation future to complete")
+            return self
+
         if not self.USE_COSTMAP:
             return self
         if context.course is None:

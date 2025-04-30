@@ -103,6 +103,8 @@ class CostmapSearchState(State):
                 )
 
     def update_astar_traj(self, context: Context):
+        if context.course is None:
+            return
         context.rover.send_drive_command(Twist())
         try:
             self.astar_traj = self.astar.generate_trajectory(context, self.spiral_traj.get_current_point())
@@ -113,6 +115,7 @@ class CostmapSearchState(State):
         if self.astar_traj.empty():
             context.node.get_logger().info(f"Skipping unreachable spiral point")
             self.spiral_traj.increment_point()
+            context.course.last_spiral_point = self.spiral_traj.cur_pt
             if self.spiral_traj.done():
                 context.node.get_logger().info(f"Reached end of search spiral")
                 return
@@ -120,6 +123,10 @@ class CostmapSearchState(State):
 
     def on_loop_costmap_enabled(self, context: Context) -> State:
         if not self.USE_COSTMAP:
+            return self
+        
+        if not context.dilation_done():
+            context.node.get_logger().info("Awaiting dilation future to complete")
             return self
 
         if self.update_astar_timer is None:
@@ -144,6 +151,9 @@ class CostmapSearchState(State):
         while is_high_cost_point(context=context, point=self.spiral_traj.get_current_point()):
             context.node.get_logger().info(f"Skipping high cost spiral point")
             self.spiral_traj.increment_point()
+            if context.course is None:
+                return self
+            context.course.last_spiral_point = self.spiral_traj.cur_pt
 
             # If we reach the end of the spiral trajectory via skipping high cost points, go back into the waypoint state
             if self.spiral_traj.done():
@@ -199,7 +209,11 @@ class CostmapSearchState(State):
             self.prev_target_pos_in_map = target_position_in_map
             if self.astar_traj.increment_point():
                 self.astar_traj.clear()
-                if self.spiral_traj.increment_point():
+                self.spiral_traj.increment_point()
+                if context.course is None:
+                    return self
+                context.course.last_spiral_point = self.spiral_traj.cur_pt
+                if self.spiral_traj.done():
                     context.node.get_logger().info(f"Reached end of search spiral")
                     return waypoint.WaypointState()
 
@@ -208,6 +222,10 @@ class CostmapSearchState(State):
     def on_loop_costmap_disabled(self, context: Context):
         if self.USE_COSTMAP:
             return self
+    
+        if context.course is None:
+            return self 
+        
         curr_spiral_point = self.spiral_traj.get_current_point()
         cmd_vel, arrived = context.drive.get_drive_command(
             curr_spiral_point,
@@ -219,7 +237,9 @@ class CostmapSearchState(State):
         if arrived:
             self.prev_target_pos_in_map = curr_spiral_point
             # If we finish the spiral without seeing the tag, return back to waypoint state to try again
-            if self.spiral_traj.increment_point():
+            self.spiral_traj.increment_point()
+            context.course.last_spiral_point = self.spiral_traj.cur_pt
+            if self.spiral_traj.done():
                 return waypoint.WaypointState()
 
         if context.rover.stuck:
@@ -287,3 +307,5 @@ class CostmapSearchState(State):
                 tag_id=search_center.tag_id,
                 insert_extra=True,
             )
+        
+        self.spiral_traj.cur_pt = context.course.last_spiral_point

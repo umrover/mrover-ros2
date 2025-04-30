@@ -29,6 +29,7 @@ from rclpy.publisher import Publisher
 from rclpy.subscription import Subscription
 from rclpy.time import Time
 from rclpy.task import Future
+from rclpy.client import Client
 from state_machine.state import State
 from std_msgs.msg import Bool, Header
 from .drive import DriveController
@@ -209,8 +210,10 @@ class Course:
     ctx: Context
     course_data: CourseMsg
     # Currently active waypoint
+    last_spiral_point: int
     waypoints: list[tuple[Waypoint, SE3]]
     waypoint_index: int = 0
+    
 
     def increment_waypoint(self) -> int:
         self.waypoint_index = min(self.waypoint_index + 1, len(self.waypoints))
@@ -299,6 +302,7 @@ def setup_course(ctx: Context, waypoints: list[tuple[Waypoint, SE3]]) -> Course:
         ctx=ctx,
         waypoints=waypoints,
         course_data=CourseMsg(waypoints=[waypoint for waypoint, _ in waypoints]),
+        last_spiral_point=0
     )
 
 
@@ -354,8 +358,8 @@ class Context:
     stuck_listener: Subscription
     costmap_listener: Subscription
     path_history_publisher: Publisher
-    move_future: Future | None
     COSTMAP_THRESH: float
+    current_dilation_radius: float
 
     # Use these as the primary interfaces in states
     course: Course | None
@@ -367,6 +371,13 @@ class Context:
     # ROS parameters
     world_frame: str
     rover_frame: str
+
+    # Costmap Clients and Futures
+    move_cli: Client
+    dilate_cli: Client
+    move_future: Future | None
+    dilate_future: Future | None
+
 
     def setup(self, node: Node):
         from .state import OffState
@@ -402,8 +413,12 @@ class Context:
         self.COSTMAP_THRESH = node.get_parameter("costmap.costmap_thresh").value
         self.move_future = None
 
+        self.current_dilation = node.get_parameter("costmap.initial_inflation_radius")
+
         self.move_cli = node.create_client(MoveCostMap, "move_cost_map")
         self.dilate_cli = node.create_client(DilateCostMap, "dilate_cost_map")
+        self.move_future = None
+        self.dilate_future = None
 
         if not node.get_parameter("costmap.custom_costmap").value:
             while not self.move_cli.wait_for_service(timeout_sec=1.0):
@@ -500,14 +515,39 @@ class Context:
         req.inflation_radius = new_radius
         res: DilateCostMap.Response
         # res = self.dilate_cli.call(req)
-        future = self.dilate_cli.call_async(req)
+        if self.dilate_future is None:
+            self.node.get_logger().info(f"Requesting to dilate the costmap to {new_radius}")
+            self.dilate_future = self.dilate_cli.call_async(req)
+        elif self.dilate_future.done():
+            res = self.dilate_future.result()
+            self.dilate_future = None
+            if res.success:
+                self.node.get_logger().info("Dilated costmap successfully")
+            else:
+                self.node.get_logger().info("Failed to dilate costmap")
         
-        self.exec.spin_until_future_complete(future, timeout_sec=3.0)
-        res = future.result()
+    def shrink_dilation(self, shrink_factor=0.5) -> bool:
+        self.current_dilation_radius -= shrink_factor
+        if self.current_dilation_radius < 0:
+            return False
+        self.dilate_cost(self.current_dilation_radius)
+        return True
+    
+    def reset_dilation(self):
+        self.current_dilation = self.node.get_parameter("costmap.initial_inflation_radius")
+        self.dilate_cost(self.current_dilation_radius)
 
-        if res is None or not res.success:
-            self.node.get_logger().info("Dilate cost map failed")
-            return False;
-        else:
-            self.node.get_logger().info("Finished dilating cost map")
-            return True;
+    def dilation_done(self) -> bool:
+        if self.dilate_future is None:
+            return True
+        if self.dilate_future.done():
+            dilate_res = self.dilate_future.result()
+            self.dilate_future = None
+            if dilate_res.success:
+                self.node.get_logger().info("Dilated costmap successfully")
+            else:
+                self.node.get_logger().info("Failed to dilate costmap, calling again")
+                self.dilate_cost(self.current_dilation_radius)
+            return True
+        return False
+
