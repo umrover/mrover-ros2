@@ -265,8 +265,15 @@ namespace mrover::gst {
 
         constexpr auto DEFAULT_RTP_JITTER = std::chrono::milliseconds(500);
 
-        inline auto createRtpToRawSrc(std::uint16_t port, video::Codec codec, std::chrono::milliseconds rtpJitter = DEFAULT_RTP_JITTER) -> std::string {
-            return std::format("udpsrc port={} ! application/x-rtp,media=video ! rtpjitterbuffer latency={} ! {} ! decodebin", port, rtpJitter.count(), getRtpDepayloader(codec));
+        inline auto createRtpToRawSrc(std::uint16_t port, Codec codec, std::chrono::milliseconds rtpJitter = DEFAULT_RTP_JITTER) -> std::string {
+            std::string parser;
+            if (codec == Codec::H265) {
+                parser = "! h265parse";
+            } else if (codec == Codec::H264) {
+                parser = "! h264parse";
+            }
+
+            return std::format("udpsrc port={} ! application/x-rtp,media=video ! rtpjitterbuffer latency={} ! {} {} ! decodebin", port, rtpJitter.count(), getRtpDepayloader(codec), parser);
         }
 
         namespace v4l2 {
@@ -346,6 +353,7 @@ namespace mrover::gst {
                         throw std::invalid_argument("Unsupported V4L2 format");
                 }
             }
+#undef FORMAT_ITER
 
             //     Only in GStreamer >1.22 sadge
             //     inline auto addCropProperty(std::uint16_t left, std::uint16_t right, std::uint16_t top, std::uint16_t bottom) -> std::string {
@@ -370,10 +378,6 @@ namespace mrover::gst {
 
                 return oss.str();
             }
-
-#undef FORMAT_ITER
-
         } // namespace v4l2
-
     } // namespace video
 } // namespace mrover::gst
