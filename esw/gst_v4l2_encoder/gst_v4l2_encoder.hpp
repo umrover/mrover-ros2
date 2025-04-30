@@ -11,8 +11,10 @@ namespace mrover {
 
     class GstV4L2Encoder final : public rclcpp::Node {
 
-        gst::Video::V4L2::Format mCaptureFormat{};
-        gst::Video::Codec mStreamCodec{};
+        // rclcpp::Service<std_srvs::srv::SetBool>::SharedPtr mPlaybackServer;
+
+        gst::video::v4l2::Format mCaptureFormat{};
+        gst::video::Codec mStreamCodec{};
 
         bool mDisableAutoWhiteBalance{}; // Useful for science, the UV LEDs can mess with the white balance
         std::string mDeviceDescriptor;
@@ -24,11 +26,16 @@ namespace mrover {
         bool mCropEnabled{};
         int mCropLeft{}, mCropRight{}, mCropTop{}, mCropBottom{};
 
+        std::string mLaunch;
+
         GstElement* mPipeline{};
         GMainLoop* mMainLoop{};
         std::thread mMainLoopThread;
 
-        auto initPipeline(std::string_view deviceNode) -> void;
+        auto createLaunchString(std::string_view deviceNode) -> void;
+        auto initPipeline() -> void;
+        auto playPipeline() -> void;
+        auto pausePipeline() -> void;
 
     public:
         // __attribute__ ((visibility("default")))

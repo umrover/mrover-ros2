@@ -218,7 +218,7 @@ mrover_add_header_only_library(units units)
 mrover_add_header_only_library(loop_profiler loop_profiler)
 mrover_add_header_only_library(parameter_utils parameter_utils)
 mrover_add_header_only_library(gst_utils gst_utils)
-target_link_libraries(gst_utils INTERFACE magic_enum::magic_enum)
+target_link_libraries(gst_utils INTERFACE magic_enum::magic_enum PkgConfig::Gst PkgConfig::GstApp)
 
 # Simulator
 
@@ -337,7 +337,7 @@ if (Gst_FOUND AND GstApp_FOUND)
 
         mrover_add_node(gst_v4l2_encoder esw/gst_v4l2_encoder/*.c* esw/gst_v4l2_encoder/pch.hpp)
         target_link_libraries(gst_v4l2_encoder PkgConfig::Gst PkgConfig::GstApp PkgConfig::LibUdev opencv_core opencv_imgcodecs websocket_server gst_utils parameter_utils)
-        ament_target_dependencies(gst_v4l2_encoder rclcpp rclcpp_components sensor_msgs)
+        ament_target_dependencies(gst_v4l2_encoder rclcpp rclcpp_components sensor_msgs std_srvs)
     endif ()
 endif ()
 

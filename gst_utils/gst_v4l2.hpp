@@ -1,6 +1,5 @@
 #pragma once
 
-#include <format>
 #include <stdexcept>
 #include <string>
 #include <string_view>
@@ -10,9 +9,9 @@
 
 #include "gst.hpp"
 
-namespace mrover::gst::Video::V4L2 {
+namespace mrover::gst::video::v4l2 {
 
-    // Based on names given by v4l2-ctl --list-formats-ext
+    // Based on FOURCC names given by v4l2-ctl --list-formats-ext
 #define FORMAT_ITER(_F)       \
     _F(YUYV, RawFormat::YUY2) \
     _F(MJPG, Codec::JPEG)
@@ -89,35 +88,30 @@ namespace mrover::gst::Video::V4L2 {
         }
     }
 
-    inline auto addProperty(std::string_view key, auto value) -> std::string {
-        return std::format("{}={}", key, value);
-    }
-
     //     Only in GStreamer >1.22 sadge
     //     inline auto addCropProperty(std::uint16_t left, std::uint16_t right, std::uint16_t top, std::uint16_t bottom) -> std::string {
     //         return std::format("crop-left={} crop-right={} crop-top={} crop-bottom={}", left, right, top, bottom);
     //     }
 
     template<typename... Args>
-    auto createSrc(std::string_view device, Format format,
-                   std::uint16_t width, std::uint16_t height, std::uint16_t framerate,
-                   Args&&... extraProps) -> std::string {
+    inline auto createSrc(std::string_view device, Format format,
+                          std::uint16_t width, std::uint16_t height, std::uint16_t framerate,
+                          Args&&... extraProps) -> std::string
+        requires(std::convertible_to<std::remove_cvref_t<Args>, std::string_view> && ...)
+    {
+        std::ostringstream oss;
 
-        std::string v4l2src = std::format("v4l2src device={}", device);
+        oss << "v4l2src device=" << device;
+        ((oss << ' ' << std::forward<Args>(extraProps)), ...);
 
-        ((v4l2src += std::format(" {}", std::forward<Args>(extraProps))), ...);
-
-        auto base = std::format("{} ! {},width={},height={},framerate={}/1",
-                                v4l2src, getMediaType(format), width, height, framerate);
-
+        oss << " ! " << getMediaType(format) << ",width=" << width << ",height=" << height << ",framerate=" << framerate << "/1";
         if (isRawFormat(format)) {
-            return std::format("{},format={}", base, toStringGstType(format));
+            oss << ",format=" << toStringGstType(format);
         }
 
-        return base;
+        return oss.str();
     }
-
 
 #undef FORMAT_ITER
 
-} // namespace mrover::gst::Video::V4L2
+} // namespace mrover::gst::video::v4l2

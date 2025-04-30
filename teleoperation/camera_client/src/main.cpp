@@ -27,7 +27,7 @@ namespace mrover {
                 std::uint16_t const port = static_cast<std::uint16_t>(this->get_parameter(std::format("{}.port", cameraName)).as_int());
                 std::string const codec = this->get_parameter(std::format("{}.codec", cameraName)).as_string();
 
-                std::string const pipeline = gst::Video::createRtpToRawSrc(port, gst::Video::getCodecFromStringView(codec), rtpJitterMs);
+                std::string const pipeline = gst::video::createRtpToRawSrc(port, gst::video::getCodecFromStringView(codec), rtpJitterMs);
 
                 mQtGui->createCamera(cameraName, pipeline);
             }

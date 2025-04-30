@@ -15,7 +15,7 @@ GstRtpVideoCreatorWidget::GstRtpVideoCreatorWidget(QWidget* parent) : QWidget(pa
     mNameLineEdit = new QLineEdit(mFormWidget);
     mPortLineEdit = new QLineEdit(mFormWidget);
     mVideoCodecComboBox = new QComboBox(mFormWidget);
-    for (auto const& codecName: gst::Video::getAvailableCodecNames()) {
+    for (auto const& codecName: gst::video::getAvailableCodecNames()) {
         mVideoCodecComboBox->addItem(fromStringView(codecName));
     }
     mFormLayout->addRow(tr("&Name"), mNameLineEdit);
@@ -72,8 +72,8 @@ void GstRtpVideoCreatorWidget::onSubmitClicked() {
         return;
     }
 
-    gst::Video::Codec const codec = gst::Video::getCodecFromStringView(mVideoCodecComboBox->currentText().toStdString());
-    std::string const pipeline = gst::Video::createRtpToRawSrc(static_cast<std::uint16_t>(port), codec);
+    gst::video::Codec const codec = gst::video::getCodecFromStringView(mVideoCodecComboBox->currentText().toStdString());
+    std::string const pipeline = gst::video::createRtpToRawSrc(static_cast<std::uint16_t>(port), codec);
 
     std::string name;
     if (mNameLineEdit->text().isEmpty()) {
