@@ -207,14 +207,8 @@ class AStar:
             return Trajectory(np.array([dest]))
 
         costmap_length = self.context.env.cost_map.data.shape[0]
-        threshold = (costmap_length * self.COSTMAP_THRESH, costmap_length * (1 - self.COSTMAP_THRESH))
         rover_ij = cartesian_to_ij(context, rover_position_in_map)
         dest_ij = cartesian_to_ij(context, dest)
-
-        # Move the costmap if we are outside of the threshold
-        if not (threshold[0] <= rover_ij[0] <= threshold[1] and threshold[0] <= rover_ij[1] <= threshold[1]):
-            if not context.node.get_parameter("costmap.custom_costmap").value:
-                context.move_costmap()
 
         if self.context.env.cost_map.data[dest_ij[0], dest_ij[1]] > self.TRAVERSABLE_COST:
             raise DestinationInHighCost("Destination in high cost")
