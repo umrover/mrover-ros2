@@ -29,8 +29,6 @@ from rclpy.publisher import Publisher
 from rclpy.subscription import Subscription
 from rclpy.time import Time
 from rclpy.task import Future
-from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
-from rclpy.executors import MultiThreadedExecutor
 from state_machine.state import State
 from std_msgs.msg import Bool, Header
 from .drive import DriveController
@@ -356,7 +354,8 @@ class Context:
     stuck_listener: Subscription
     costmap_listener: Subscription
     path_history_publisher: Publisher
-    exec: MultiThreadedExecutor
+    move_future: Future | None
+    COSTMAP_THRESH: float
 
     # Use these as the primary interfaces in states
     course: Course | None
@@ -400,13 +399,13 @@ class Context:
         self.tf_buffer = tf2_ros.Buffer()
         tf2_ros.TransformListener(self.tf_buffer, node)
 
-        client_callback_group = MutuallyExclusiveCallbackGroup()
+        self.COSTMAP_THRESH = node.get_parameter("costmap.costmap_thresh").value
+        self.move_future = None
 
-        self.move_cli = node.create_client(MoveCostMap, "move_cost_map", callback_group=client_callback_group)
-        self.dilate_cli = node.create_client(DilateCostMap, "dilate_cost_map", callback_group=client_callback_group)
+        self.move_cli = node.create_client(MoveCostMap, "move_cost_map")
+        self.dilate_cli = node.create_client(DilateCostMap, "dilate_cost_map")
 
         if not node.get_parameter("costmap.custom_costmap").value:
-
             while not self.move_cli.wait_for_service(timeout_sec=1.0):
                 node.get_logger().info("Waiting for move_cost_map service...")
 
@@ -452,6 +451,19 @@ class Context:
         self.env.cost_map.height = msg.info.height * upsample_factor # cells
         self.env.cost_map.width = msg.info.width * upsample_factor # cells
 
+        rover_pos = self.rover.get_pose_in_map()
+        if (rover_pos is not None):
+            rover_x_in_costmap = rover_pos.translation()[0] - msg.info.origin.position.x
+            rover_y_in_costmap = rover_pos.translation()[1] - msg.info.origin.position.y
+            cost_map_width_meters = msg.info.resolution * msg.info.width
+            cost_map_height_meters = msg.info.resolution * msg.info.height
+            if (not (self.COSTMAP_THRESH * cost_map_width_meters <= rover_x_in_costmap <= (1 - self.COSTMAP_THRESH) * cost_map_width_meters) or not (self.COSTMAP_THRESH * cost_map_height_meters <= rover_y_in_costmap <= (1 - self.COSTMAP_THRESH) *  cost_map_height_meters)):
+                self.node.get_logger().info(f"Rover (at {rover_pos.translation()}) not centered in map, moving...")
+                self.move_costmap()
+            elif self.move_future is not None and self.move_future.done():
+                self.node.get_logger().info("Move costmap request done")
+                self.move_future = None
+
         upsampled_cost_map = np.kron(cost_map_data, np.ones((upsample_factor,upsample_factor), np.float32))
         filtered_cost_map = ndimage.uniform_filter(upsampled_cost_map, filter_size, mode='nearest')
 
@@ -465,17 +477,19 @@ class Context:
     def move_costmap(self, course_name="base_link"):
         if self.node.get_parameter("costmap.custom_costmap").value:
             return
-        self.node.get_logger().info(f"Requesting to move cost map to {course_name}")
-
+        self.node.get_logger().info("move_costmap called")
         req = MoveCostMap.Request()
         req.course = course_name
-        res: MoveCostMap.Response
-        res = self.move_cli.call(req)
-
-        if not res.success:
-            self.node.get_logger().info("Move cost map failed")
-        else:
-            self.node.get_logger().info("Finished moving cost map")
+        if self.move_future is None:
+            self.node.get_logger().info(f"Requesting to move cost map to {course_name}")
+            self.move_future = self.move_cli.call_async(req)
+        elif self.move_future.done():
+            res = self.move_future.result()
+            self.move_future = None
+            if res.success:
+                self.node.get_logger().info("Moved costmap successfully")
+            else:
+                self.node.get_logger().info("Failed to move costmap")
 
     def dilate_cost(self, new_radius: float):
         if self.node.get_parameter("costmap.custom_costmap").value:

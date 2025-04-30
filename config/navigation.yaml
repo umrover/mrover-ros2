@@ -21,7 +21,7 @@ navigation:
     costmap:
       custom_costmap: false
       use_costmap: false
-      costmap_thresh: 0.4
+      costmap_thresh: 0.25
       initial_inflation_radius: 3.0
 
     backup:
