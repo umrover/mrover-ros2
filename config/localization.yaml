@@ -49,10 +49,10 @@ iekf_se3:
     vel_noise: 1.0
     mag_heading_noise: 1.0
     rtk_heading_noise: 0.0001
-    drive_forward_heading_noise: 0.1
+    drive_forward_heading_noise: 0.00001
 
     rover_heading_change_threshold: 0.05
-    minimum_linear_speed: 0.4
+    minimum_linear_speed: 0.8
 
     use_mag: false
     use_drive_forward: true
