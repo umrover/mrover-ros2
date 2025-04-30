@@ -148,6 +148,10 @@ class ApproachTargetState(State):
         if not self.USE_COSTMAP:
             return self
 
+        if not context.dilation_done():
+            context.node.get_logger().info("Awaiting dilation future to complete")
+            return self
+
         if context.env.cost_map is None or not hasattr(context.env.cost_map, "data"):
             context.node.get_logger().warn("Costmap is enabled but costmap has no data")
             return self
@@ -206,7 +210,7 @@ class ApproachTargetState(State):
                     context, self.target_position
                 ):
                     # If we fail to find a low-cost point, consider the target unreachable and give up
-                    if self.dilate_costmap(context):
+                    if not context.shrink_dilation():
                         context.node.get_logger().info("Low-cost point not found, giving up")
                         return self.next_state(context=context, is_finished=True)
 
@@ -251,7 +255,7 @@ class ApproachTargetState(State):
                     # Otherwise we need to dilate to get closer
                     else:
                         context.node.get_logger().info("Too far from target, dilating costmap")
-                        if not self.dilate_costmap(context=context):
+                        if not context.shrink_dilation():
                             # Fully dilated and still failed, go to next state
                             return self.next_state(context=context, is_finished=True)
                         return self
@@ -410,9 +414,3 @@ class ApproachTargetState(State):
 
         distance = d_calc(point, tuple(target_pos))
         return distance < self.DISTANCE_THRESHOLD
-
-    def dilate_costmap(self, context: Context, dilation_difference=0.5) -> bool:
-        temp = self.COST_INFLATION_RADIUS
-        self.COST_INFLATION_RADIUS = max(self.COST_INFLATION_RADIUS - dilation_difference, 0.0)
-        context.dilate_cost(self.COST_INFLATION_RADIUS)
-        return temp == 0.0

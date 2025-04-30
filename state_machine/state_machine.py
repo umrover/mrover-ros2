@@ -53,10 +53,12 @@ class StateMachine(Generic[ContextType]):
             next_state = self.off_state
         else:
             # TODO: Make sure no exceptions
+            next_state = current_state.on_loop(self.context)
             try:
                 next_state = current_state.on_loop(self.context)
             except Exception as e:
-                self.logger.debug(f"Error in {str(current_state)}: {e}")
+                self.logger.warn(f"Error in {str(current_state)}: {e}")
+                return self
 
         if type(next_state) not in self.state_transitions[type(current_state)]:
             raise Exception(f"Invalid transition from {current_state} to {next_state}")
