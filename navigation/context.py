@@ -413,7 +413,7 @@ class Context:
         self.COSTMAP_THRESH = node.get_parameter("costmap.costmap_thresh").value
         self.move_future = None
 
-        self.current_dilation = node.get_parameter("costmap.initial_inflation_radius")
+        self.current_dilation_radius = node.get_parameter("costmap.initial_inflation_radius").value
 
         self.move_cli = node.create_client(MoveCostMap, "move_cost_map")
         self.dilate_cli = node.create_client(DilateCostMap, "dilate_cost_map")
@@ -527,14 +527,14 @@ class Context:
                 self.node.get_logger().info("Failed to dilate costmap")
         
     def shrink_dilation(self, shrink_factor=0.5) -> bool:
-        self.current_dilation_radius -= shrink_factor
+        self.current_dilation_radius = self.current_dilation_radius - shrink_factor
         if self.current_dilation_radius < 0:
             return False
         self.dilate_cost(self.current_dilation_radius)
         return True
     
     def reset_dilation(self):
-        self.current_dilation = self.node.get_parameter("costmap.initial_inflation_radius")
+        self.current_dilation_radius = self.node.get_parameter("costmap.initial_inflation_radius").value
         self.dilate_cost(self.current_dilation_radius)
 
     def dilation_done(self) -> bool:
