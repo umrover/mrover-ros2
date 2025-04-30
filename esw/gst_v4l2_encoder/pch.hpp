@@ -23,7 +23,5 @@
 
 #include <websocket_server.hpp>
 
-#include <gst.hpp>
-#include <gst_pipeline.hpp>
-#include <gst_v4l2.hpp>
+#include <gst_utils.hpp>
 #include <parameter.hpp>

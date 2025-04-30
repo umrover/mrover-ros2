@@ -11,6 +11,7 @@
 #include <gst/app/gstappsink.h>
 #include <gst/app/gstappsrc.h>
 #include <gst/gst.h>
+
 #include <magic_enum.hpp>
 
 namespace mrover::gst {
@@ -26,6 +27,96 @@ namespace mrover::gst {
 
         return std::format("{}={}", key, value);
     }
+
+    class PipelineBuilder {
+        std::vector<std::string> mElements;
+
+    public:
+        PipelineBuilder() = default;
+
+        auto pushBack(std::string_view elem) -> PipelineBuilder& {
+            mElements.emplace_back(elem);
+            return *this;
+        }
+
+        template<typename... Args>
+        auto pushBack(std::string_view elem, Args&&... props) -> PipelineBuilder&
+            requires AllConvertibleToStringView<Args...>
+        {
+            std::ostringstream oss;
+            oss << elem;
+            ((oss << ' ' << std::forward<Args>(props)), ...);
+            mElements.emplace_back(oss.str());
+            return *this;
+        }
+
+        auto popBack() -> PipelineBuilder& {
+            if (!mElements.empty()) {
+                mElements.pop_back();
+            }
+            return *this;
+        }
+
+        auto insert(std::size_t index, std::string_view elem) -> PipelineBuilder& {
+            if (index <= mElements.size()) {
+                mElements.insert(mElements.begin() + static_cast<std::ptrdiff_t>(index), std::string(elem));
+            }
+            return *this;
+        }
+
+        template<typename... Args>
+        auto insert(std::size_t index, std::string_view elem, Args&&... props) -> PipelineBuilder&
+            requires AllConvertibleToStringView<Args...>
+        {
+            if (index <= mElements.size()) {
+                std::ostringstream oss;
+                oss << elem;
+                ((oss << ' ' << std::forward<Args>(props)), ...);
+                mElements.insert(mElements.begin() + static_cast<std::ptrdiff_t>(index), oss.str());
+            }
+            return *this;
+        }
+
+        auto remove(std::size_t index) -> PipelineBuilder& {
+            if (index < mElements.size()) {
+                mElements.erase(mElements.begin() + static_cast<std::ptrdiff_t>(index));
+            }
+            return *this;
+        }
+
+        auto clear() -> PipelineBuilder& {
+            mElements.clear();
+            return *this;
+        }
+
+        [[nodiscard]] auto size() const -> std::size_t {
+            return mElements.size();
+        }
+
+        template<typename... Args>
+        auto addPropsToElement(std::size_t index, Args&&... props) -> PipelineBuilder&
+            requires AllConvertibleToStringView<Args...>
+        {
+            if (index < mElements.size()) {
+                std::ostringstream oss;
+                oss << mElements[index];
+                ((oss << ' ' << std::forward<Args>(props)), ...);
+                mElements[index] = oss.str();
+            }
+            return *this;
+        }
+
+        [[nodiscard]] auto str() const -> std::string {
+            std::ostringstream oss;
+            for (std::size_t i = 0; i < mElements.size(); ++i) {
+                oss << mElements[i];
+                if (i != mElements.size() - 1) {
+                    oss << " ! ";
+                }
+            }
+            return oss.str();
+        }
+    };
 
     namespace video {
         enum class RawFormat : unsigned int {
@@ -177,6 +268,112 @@ namespace mrover::gst {
         inline auto createRtpToRawSrc(std::uint16_t port, video::Codec codec, std::chrono::milliseconds rtpJitter = DEFAULT_RTP_JITTER) -> std::string {
             return std::format("udpsrc port={} ! application/x-rtp,media=video ! rtpjitterbuffer latency={} ! {} ! decodebin", port, rtpJitter.count(), getRtpDepayloader(codec));
         }
+
+        namespace v4l2 {
+            // Based on FOURCC names given by v4l2-ctl --list-formats-ext
+#define FORMAT_ITER(_F)       \
+    _F(YUYV, RawFormat::YUY2) \
+    _F(MJPG, Codec::JPEG)
+
+            enum class Format : unsigned int {
+#define F(name, ...) name,
+                FORMAT_ITER(F)
+#undef F
+            };
+
+            constexpr auto toString(Format format) -> std::string_view {
+                if (auto name = magic_enum::enum_name(format); !name.empty()) {
+                    return name;
+                }
+                throw std::invalid_argument("Unsupported V4L2 format");
+            }
+
+            constexpr auto toStringGstType(Format format) -> std::string_view {
+                switch (format) {
+#define F(name, gstType) \
+    case Format::name:   \
+        return toString(gstType);
+
+                    FORMAT_ITER(F)
+#undef F
+                    default:
+                        throw std::invalid_argument("Unsupported V4L2 format");
+                }
+            }
+
+            constexpr auto getFormatFromStringView(std::string_view name) -> Format {
+                if (auto format = magic_enum::enum_cast<Format>(name); format.has_value()) {
+                    return format.value();
+                }
+                throw std::invalid_argument("Unsupported V4L2 format");
+            }
+
+            constexpr auto isRawFormat(Format format) -> bool {
+                switch (format) {
+#define F(name, gstType) \
+    case Format::name:   \
+        return std::is_same_v<decltype(gstType), RawFormat>;
+
+                    FORMAT_ITER(F)
+#undef F
+                    default:
+                        throw std::invalid_argument("Unsupported V4L2 format");
+                }
+            }
+
+            constexpr auto isCompressedFormat(Format format) -> bool {
+                switch (format) {
+#define F(name, gstType) \
+    case Format::name:   \
+        return std::is_same_v<decltype(gstType), Codec>;
+
+                    FORMAT_ITER(F)
+#undef F
+                    default:
+                        throw std::invalid_argument("Unsupported V4L2 format");
+                }
+            }
+
+            constexpr auto getMediaType(Format format) -> std::string_view {
+                switch (format) {
+#define F(name, gstType) \
+    case Format::name:   \
+        return getMediaType(gstType);
+
+                    FORMAT_ITER(F)
+#undef F
+                    default:
+                        throw std::invalid_argument("Unsupported V4L2 format");
+                }
+            }
+
+            //     Only in GStreamer >1.22 sadge
+            //     inline auto addCropProperty(std::uint16_t left, std::uint16_t right, std::uint16_t top, std::uint16_t bottom) -> std::string {
+            //         return std::format("crop-left={} crop-right={} crop-top={} crop-bottom={}", left, right, top, bottom);
+            //     }
+
+            template<typename... Args>
+            inline auto createSrc(std::string_view device, Format format,
+                                  std::uint16_t width, std::uint16_t height, std::uint16_t framerate,
+                                  Args&&... extraProps) -> std::string
+                requires(std::convertible_to<std::remove_cvref_t<Args>, std::string_view> && ...)
+            {
+                std::ostringstream oss;
+
+                oss << "v4l2src device=" << device;
+                ((oss << ' ' << std::forward<Args>(extraProps)), ...);
+
+                oss << " ! " << getMediaType(format) << ",width=" << width << ",height=" << height << ",framerate=" << framerate << "/1";
+                if (isRawFormat(format)) {
+                    oss << ",format=" << toStringGstType(format);
+                }
+
+                return oss.str();
+            }
+
+#undef FORMAT_ITER
+
+        } // namespace v4l2
 
     } // namespace video
 } // namespace mrover::gst

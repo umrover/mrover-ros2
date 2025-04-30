@@ -1,5 +1,4 @@
 #include "gst_v4l2_encoder.hpp"
-#include "gst.hpp"
 
 namespace mrover {
 
@@ -83,6 +82,12 @@ namespace mrover {
                                            gst::addProperty("bitrate", mBitrate),
                                            gst::addProperty("name", "encoder"));
             }
+        }
+
+        if (mStreamCodec == gst::video::Codec::H265) {
+            pipeline.pushBack("h265parse");
+        } else if (mStreamCodec == gst::video::Codec::H264) {
+            pipeline.pushBack("h264parse");
         }
 
         pipeline.pushBack(gst::video::createRtpSink(mAddress, mPort, mStreamCodec));
