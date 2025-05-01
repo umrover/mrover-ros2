@@ -11,7 +11,7 @@ namespace mrover {
 
     class GstV4L2Encoder final : public rclcpp::Node {
 
-        // rclcpp::Service<std_srvs::srv::SetBool>::SharedPtr mPlaybackServer;
+        rclcpp::Service<srv::MediaControl>::SharedPtr mMediaControlServer;
 
         gst::video::v4l2::Format mCaptureFormat{};
         gst::video::Codec mStreamCodec{};
@@ -34,8 +34,12 @@ namespace mrover {
 
         auto createLaunchString(std::string_view deviceNode) -> void;
         auto initPipeline() -> void;
-        auto playPipeline() -> void;
+
+        auto stopPipeline() -> void;
         auto pausePipeline() -> void;
+        auto playPipeline() -> void;
+
+        auto mediaControlServerCallback(srv::MediaControl::Request::SharedPtr req, srv::MediaControl::Response::SharedPtr res) -> void;
 
     public:
         // __attribute__ ((visibility("default")))

@@ -115,16 +115,59 @@ namespace mrover {
         RCLCPP_INFO_STREAM(get_logger(), "Initialized and started GStreamer pipeline");
     }
 
-    auto GstV4L2Encoder::playPipeline() -> void {
-        if (gst_element_set_state(mPipeline, GST_STATE_PLAYING) == GST_STATE_CHANGE_FAILURE) {
-            throw std::runtime_error{"Failed to play GStreamer pipeline"};
+    auto GstV4L2Encoder::stopPipeline() -> void {
+        if (gst_element_set_state(mPipeline, GST_STATE_NULL) == GST_STATE_CHANGE_FAILURE) {
+            throw std::runtime_error{"gst_element_set_state to GST_STATE_NULL failed"};
         }
     }
 
     auto GstV4L2Encoder::pausePipeline() -> void {
         if (gst_element_set_state(mPipeline, GST_STATE_PAUSED) == GST_STATE_CHANGE_FAILURE) {
-            throw std::runtime_error{"Failed to pause GStreamer pipeline"};
+            throw std::runtime_error{"gst_element_set_state to GST_STATE_PAUSED failed"};
         }
+    }
+
+    auto GstV4L2Encoder::playPipeline() -> void {
+        if (gst_element_set_state(mPipeline, GST_STATE_PLAYING) == GST_STATE_CHANGE_FAILURE) {
+            throw std::runtime_error{"gst_element_set_state to GST_STATE_PLAYING failed"};
+        }
+    }
+
+
+    auto GstV4L2Encoder::mediaControlServerCallback(srv::MediaControl::Request::SharedPtr const req, srv::MediaControl::Response::SharedPtr res) -> void {
+        if (req->command == srv::MediaControl::Request::STOP) {
+            RCLCPP_INFO_STREAM(get_logger(), "Stopping GStreamer pipeline");
+            try {
+                stopPipeline();
+            } catch (std::runtime_error const& e) {
+                RCLCPP_ERROR_STREAM(get_logger(), std::format("Failed to stop GStreamer pipeline: {}", e.what()));
+                res->success = false;
+                return;
+            }
+        } else if (req->command == srv::MediaControl::Request::PAUSE) {
+            RCLCPP_INFO_STREAM(get_logger(), "Pausing GStreamer pipeline");
+            try {
+                pausePipeline();
+            } catch (std::runtime_error const& e) {
+                RCLCPP_ERROR_STREAM(get_logger(), std::format("Failed to pause GStreamer pipeline: {}", e.what()));
+                res->success = false;
+                return;
+            }
+        } else if (req->command == srv::MediaControl::Request::PLAY) {
+            RCLCPP_INFO_STREAM(get_logger(), "Playing GStreamer pipeline");
+            try {
+                playPipeline();
+            } catch (std::runtime_error const& e) {
+                RCLCPP_ERROR_STREAM(get_logger(), std::format("Failed to play GStreamer pipeline: {}", e.what()));
+                res->success = false;
+                return;
+            }
+        } else {
+            RCLCPP_ERROR_STREAM(get_logger(), std::format("Unknown command: {}", req->command));
+            res->success = false;
+            return;
+        }
+        res->success = true;
     }
 
     auto findDeviceNode(std::string_view devicePath) -> std::string {
@@ -214,6 +257,13 @@ namespace mrover {
             mCropEnabled = mCropLeft != 0 || mCropRight != 0 || mCropTop != 0 || mCropBottom != 0;
 
             // declare_parameter("disable_auto_white_balance", rclcpp::ParameterType::PARAMETER_BOOL);
+
+            mMediaControlServer = create_service<srv::MediaControl>(
+                    std::format("{}_media_control", cameraName),
+                    [this](srv::MediaControl::Request::SharedPtr const req,
+                           srv::MediaControl::Response::SharedPtr res) {
+                        mediaControlServerCallback(req, res);
+                    });
 
             if (!devicePath.empty()) {
                 deviceNode = findDeviceNode(devicePath);
