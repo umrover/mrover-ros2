@@ -1,5 +1,6 @@
 #pragma once
 
+#include "CallbackCheckBox.hpp"
 #include "GstRtpVideoCreatorWidget.hpp"
 #include "GstVideoWidgets.hpp"
 #include "VideoSelectorWidget.hpp"
@@ -21,6 +22,8 @@ namespace mrover {
         explicit CameraClientMainWindow(QWidget* parent = nullptr);
 
         auto createCamera(std::string const& name, std::string const& pipeline) -> bool;
+        auto getCameraSelectorWidget() -> VideoSelectorWidget*;
+
 
     signals:
         void closed();

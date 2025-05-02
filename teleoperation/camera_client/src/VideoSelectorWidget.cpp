@@ -4,24 +4,87 @@ using namespace mrover;
 
 VideoSelectorWidget::VideoSelectorWidget(QWidget* parent)
     : QWidget(parent) {
-    mCheckBoxesLayout = new QVBoxLayout(this);
-    mCheckBoxesLayout->setSpacing(10);
-    mCheckBoxesLayout->addStretch();
-    setLayout(mCheckBoxesLayout);
+    mSelectorsLayout = new QVBoxLayout(this);
+    mSelectorsLayout->setSpacing(10);
+    mSelectorsLayout->addStretch();
+    setLayout(mSelectorsLayout);
+
+    mUsingIcons = (QIcon::hasThemeIcon("pause-symbolic") &&
+                   QIcon::hasThemeIcon("play-symbolic") &&
+                   QIcon::hasThemeIcon("stop-symbolic") &&
+                   QIcon::hasThemeIcon("camera-photo-symbolic"));
 }
 
-auto VideoSelectorWidget::addSelector(std::string const& name) -> void {
-    auto* checkbox = new QCheckBox(QString::fromStdString(name), this);
-    checkbox->setChecked(true);
+auto VideoSelectorWidget::addCamera(std::string const& name) -> void {
+    if (mSelectors.contains(name)) {
+        qDebug() << "Selector with name" << QString::fromStdString(name) << "already exists.";
+        return;
+    }
+    Selector selector{};
+    selector.widget = new QWidget(this);
+    selector.layout = new QHBoxLayout(selector.widget);
+    selector.widget->setLayout(selector.layout);
 
-    connect(checkbox, &QCheckBox::toggled, this, [this, name](bool isChecked) {
-        emit selectionChanged(name, isChecked);
-    });
+    selector.nameLabel = new QLabel(QString::fromStdString(name), selector.widget);
+    selector.layout->addWidget(selector.nameLabel);
+    selector.layout->addStretch();
+
+    mSelectors.emplace(name, selector);
 
     // Maintain bottom stretch to keep checkboxes top-aligned
-    mCheckBoxesLayout->takeAt(mCheckBoxesLayout->count() - 1);
-    mCheckBoxesLayout->addWidget(checkbox);
-    mCheckBoxesLayout->addStretch();
+    mSelectorsLayout->takeAt(mSelectorsLayout->count() - 1);
+    mSelectorsLayout->addWidget(selector.widget);
+    mSelectorsLayout->addStretch();
+}
 
-    mCheckBoxes.emplace(name, checkbox);
+auto VideoSelectorWidget::addVisibilitySelector(std::string const& name, RequestCallback hideRequest, RequestCallback showRequest) -> void {
+    if (!mSelectors.contains(name)) {
+        qDebug() << "Selector with name" << QString::fromStdString(name) << "does not exist.";
+        return;
+    }
+    Selector& selector = mSelectors.at(name);
+
+    if (mUsingIcons) {
+        selector.visibilityCheckBox = new CallbackCheckBox(QIcon::fromTheme("view-reveal-symbolic"), QIcon::fromTheme("view-conceal-symbolic"), selector.widget);
+    } else {
+        selector.visibilityCheckBox = new CallbackCheckBox("Show", "Hide", selector.widget);
+    }
+
+    selector.visibilityCheckBox->setOnCheckCallback(std::move(showRequest));
+    selector.visibilityCheckBox->setOnUncheckCallback(std::move(hideRequest));
+    selector.visibilityCheckBox->setChecked(true);
+
+    selector.layout->insertWidget(2, selector.visibilityCheckBox);
+}
+
+auto VideoSelectorWidget::addMediaControls(std::string const& cameraName, RequestCallback pauseRequest, RequestCallback playRequest, RequestCallback stopRequest, RequestCallback screenshotRequest) -> void {
+    if (!mSelectors.contains(cameraName)) {
+        qDebug() << "Selector with name" << QString::fromStdString(cameraName) << "does not exist.";
+        return;
+    }
+    Selector& selector = mSelectors.at(cameraName);
+
+    if (mUsingIcons) {
+        selector.playPauseCheckBox = new CallbackCheckBox(QIcon::fromTheme("media-playback-start-symbolic"), QIcon::fromTheme("media-playback-pause-symbolic"), selector.widget);
+        selector.stopButton = new QPushButton(QIcon{QIcon::fromTheme("stop-symbolic")}, QString(), selector.widget);
+        selector.screenshotButton = new QPushButton(QIcon{QIcon::fromTheme("camera-photo-symbolic")}, QString(), selector.widget);
+    } else {
+        selector.playPauseCheckBox = new CallbackCheckBox("Play", "Pause", selector.widget);
+        selector.stopButton = new QPushButton("Stop", selector.widget);
+        selector.screenshotButton = new QPushButton("Screenshot", selector.widget);
+    }
+    selector.playPauseCheckBox->setOnCheckCallback(std::move(playRequest));
+    selector.playPauseCheckBox->setOnUncheckCallback(std::move(pauseRequest));
+    selector.playPauseCheckBox->setChecked(true);
+
+    connect(selector.stopButton, &QPushButton::clicked, this, [this, cameraName, stopRequest]() {
+        if (this->mSelectors.contains(cameraName)) {
+            mSelectors.at(cameraName).playPauseCheckBox->setChecked(false);
+            stopRequest();
+        }
+    });
+
+    selector.layout->addWidget(selector.playPauseCheckBox);
+    selector.layout->addWidget(selector.stopButton);
+    selector.layout->addWidget(selector.screenshotButton);
 }

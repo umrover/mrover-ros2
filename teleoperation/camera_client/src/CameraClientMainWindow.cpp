@@ -43,18 +43,27 @@ auto CameraClientMainWindow::createCamera(std::string const& name, std::string c
     if (mCameraGridWidget->isError()) {
         return false;
     }
-    mCameraSelectorWidget->addSelector(name);
-    connect(mCameraSelectorWidget, &VideoSelectorWidget::selectionChanged,
-            this, [this, name](std::string const& selectedName, bool isChecked) {
-                if (isChecked) {
-                    mCameraGridWidget->showVideo(selectedName);
-                    mCameraGridWidget->getGstVideoWidget(selectedName)->play();
-                } else {
-                    mCameraGridWidget->hideVideo(selectedName);
-                    mCameraGridWidget->getGstVideoWidget(selectedName)->stop();
-                }
-            });
+    mCameraSelectorWidget->addCamera(name);
+
+    // clang-format off
+    mCameraSelectorWidget->addVisibilitySelector(name, 
+                                                 [this, name]() {
+                                                     mCameraGridWidget->hideVideo(name);
+                                                     mCameraGridWidget->getGstVideoWidget(name)->stop();
+                                                    return true;
+                                                 },
+                                                 [this, name]() {
+                                                     mCameraGridWidget->showVideo(name);
+                                                     mCameraGridWidget->getGstVideoWidget(name)->play();
+                                                 return true;
+                                                 });
+    // clang-format on
+
     return true;
+}
+
+auto CameraClientMainWindow::getCameraSelectorWidget() -> VideoSelectorWidget* {
+    return mCameraSelectorWidget;
 }
 
 void CameraClientMainWindow::closeEvent(QCloseEvent* event) {

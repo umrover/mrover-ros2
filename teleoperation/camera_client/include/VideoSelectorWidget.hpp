@@ -2,19 +2,36 @@
 
 #include "pch.hpp"
 
+#include "CallbackCheckBox.hpp"
+
 namespace mrover {
     class VideoSelectorWidget : public QWidget {
         Q_OBJECT
 
-        std::unordered_map<std::string, QCheckBox*> mCheckBoxes;
-        QVBoxLayout* mCheckBoxesLayout;
+        struct Selector {
+            QWidget* widget;
+            QHBoxLayout* layout;
+
+            QLabel* nameLabel;
+            CallbackCheckBox* visibilityCheckBox;
+            CallbackCheckBox* playPauseCheckBox;
+            QPushButton* stopButton;
+            QPushButton* screenshotButton;
+        };
+
+        bool mUsingIcons;
+        std::unordered_map<std::string, Selector> mSelectors;
+        QVBoxLayout* mSelectorsLayout;
 
     public:
         explicit VideoSelectorWidget(QWidget* parent = nullptr);
 
-        auto addSelector(std::string const& name) -> void;
+        auto addCamera(std::string const& name) -> void;
+        auto addVisibilitySelector(std::string const& name, RequestCallback hideRequest, RequestCallback showRequest) -> void;
+        auto addMediaControls(std::string const& cameraName, RequestCallback pauseRequest, RequestCallback playRequest, RequestCallback stopRequest, RequestCallback screenshotRequest) -> void;
 
     signals:
-        void selectionChanged(std::string const& name, bool isChecked);
+        void stopClicked(std::string const& name);
+        void screenshotClicked(std::string const& name);
     };
 } // namespace mrover

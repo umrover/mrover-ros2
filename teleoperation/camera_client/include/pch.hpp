@@ -22,4 +22,6 @@
 #include <QVideoWidget>
 #include <QWidget>
 
+#include <mrover/srv/media_control.hpp>
+
 #include <gst_utils.hpp>
