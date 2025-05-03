@@ -63,6 +63,7 @@ namespace mrover {
                     auto request = std::make_shared<srv::MediaControl::Request>();
                     request->command = srv::MediaControl::Request::PLAY;
                     auto result = client->second->async_send_request(request);
+
                     // TODO:(owen) check result success
                     return true;
                 };
@@ -77,6 +78,8 @@ namespace mrover {
                     auto request = std::make_shared<srv::MediaControl::Request>();
                     request->command = srv::MediaControl::Request::STOP;
                     auto result = client->second->async_send_request(request);
+
+                    // TODO:(owen) check result success
                     return true;
                 };
 

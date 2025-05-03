@@ -32,17 +32,20 @@ namespace mrover {
             mOnUncheckCallback = DEFAULT_REQUEST_CALLBACK;
 
             connect(this, &QPushButton::clicked, this, [this]() {
+                this->setDisabled(true);
                 if (mChecked) {
                     if (!mOnUncheckCallback()) {
-                        return;
+                        goto end;
                     }
                 } else {
                     if (!mOnCheckCallback()) {
-                        return;
+                        goto end;
                     }
                 }
                 mChecked = !mChecked;
                 setText(mChecked ? mCheckedText : mUncheckedText);
+            end:
+                this->setDisabled(false);
             });
         }
         explicit CallbackCheckBox(QIcon const& uncheckedIcon, QIcon const& checkedIcon, QWidget* parent = nullptr)
@@ -57,17 +60,20 @@ namespace mrover {
             mOnUncheckCallback = DEFAULT_REQUEST_CALLBACK;
 
             connect(this, &QPushButton::clicked, this, [this]() {
+                this->setDisabled(true);
                 if (mChecked) {
                     if (!mOnUncheckCallback()) {
-                        return;
+                        goto end;
                     }
                 } else {
                     if (!mOnCheckCallback()) {
-                        return;
+                        goto end;
                     }
                 }
                 mChecked = !mChecked;
                 setIcon(mChecked ? mCheckedIcon : mUncheckedIcon);
+            end:
+                this->setDisabled(false);
             });
         }
 
@@ -82,35 +88,9 @@ namespace mrover {
 
         void setOnCheckCallback(RequestCallback callback) {
             mOnCheckCallback = std::move(callback);
-            connect(this, &QPushButton::clicked, this, [this]() {
-                if (mChecked) {
-                    if (!mOnUncheckCallback()) {
-                        return;
-                    }
-                } else {
-                    if (!mOnCheckCallback()) {
-                        return;
-                    }
-                }
-                mChecked = !mChecked;
-                setIcon(mChecked ? mCheckedIcon : mUncheckedIcon);
-            });
         }
         void setOnUncheckCallback(RequestCallback callback) {
             mOnUncheckCallback = std::move(callback);
-            connect(this, &QPushButton::clicked, this, [this]() {
-                if (mChecked) {
-                    if (!mOnUncheckCallback()) {
-                        return;
-                    }
-                } else {
-                    if (!mOnCheckCallback()) {
-                        return;
-                    }
-                }
-                mChecked = !mChecked;
-                setIcon(mChecked ? mCheckedIcon : mUncheckedIcon);
-            });
         }
     };
 
