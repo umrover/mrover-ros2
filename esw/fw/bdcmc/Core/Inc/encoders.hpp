@@ -5,6 +5,7 @@
 
 #include <common.hpp>
 #include <hardware_i2c.hpp>
+#include <hardware_tim.hpp>
 #include <units.hpp>
 
 #include "filtering.hpp"
@@ -22,7 +23,7 @@ namespace mrover {
 
         AbsoluteEncoderReader() = default;
 
-        AbsoluteEncoderReader(AS5048B_Bus i2c_bus, TIM_HandleTypeDef* elapsed_timer, Radians offset, Ratio multiplier);
+        AbsoluteEncoderReader(AS5048B_Bus i2c_bus, uint8_t a2_a1, Radians offset, Ratio multiplier, ElapsedTimer elapsed_timer);
 
         auto request_raw_angle() -> void;
         auto read_raw_angle_into_buffer() -> void;
@@ -40,8 +41,7 @@ namespace mrover {
                     device_slave_address_a2_high = 0x42,
                     device_slave_address_both_high = 0x43;
         };
-        TIM_HandleTypeDef* m_elapsed_timer{};
-        std::uint32_t m_timer_tick_prev{};
+        ElapsedTimer m_elapsed_timer;
 
         std::uint16_t m_address = I2CAddress::device_slave_address_none_high;
         AS5048B_Bus m_i2cBus;
@@ -56,11 +56,12 @@ namespace mrover {
         RunningMeanFilter<RadiansPerSecond, 16> m_velocity_filter;
     };
 
+
     class QuadratureEncoderReader {
     public:
         QuadratureEncoderReader() = default;
 
-        QuadratureEncoderReader(TIM_HandleTypeDef* tick_timer, TIM_HandleTypeDef* elapsed_timer, Ratio multiplier);
+        QuadratureEncoderReader(TIM_HandleTypeDef* tick_timer, ElapsedTimer elapsed_timer, Ratio multiplier);
 
         [[nodiscard]] auto read() const -> std::optional<EncoderReading>;
 
@@ -72,9 +73,9 @@ namespace mrover {
 
     private:
         TIM_HandleTypeDef* m_tick_timer{};
-        TIM_HandleTypeDef* m_elapsed_timer{};
+        ElapsedTimer m_elapsed_timer;
 
-        std::int64_t m_counts_unwrapped_prev{};
+        std::uint16_t m_counts_unwrapped_prev{};
         Ratio m_multiplier;
 
         Radians m_position;

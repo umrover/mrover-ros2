@@ -1,10 +1,7 @@
 #pragma once
 
 #include <array>
-#include <concepts>
 #include <optional>
-#include <type_traits>
-#include <variant>
 
 #include <hardware.hpp>
 #include <messaging.hpp>
@@ -12,12 +9,12 @@
 #include <units.hpp>
 
 #include "encoders.hpp"
-#include "hardware_tim.hpp"
 #include "hbridge.hpp"
 
 namespace mrover {
 
-    class Controller {
+    class Motor {
+        /* ==================== State Representations ==================== */
         struct PositionMode {
             PIDF<Radians, Percent> pidf;
         };
@@ -28,52 +25,11 @@ namespace mrover {
 
         using Mode = std::variant<std::monostate, PositionMode, VelocityMode>;
 
-        std::uint8_t m_device_id{};
-        std::uint8_t m_destination_device_id{};
-        /* ==================== Hardware ==================== */
-        FDCAN<InBoundMessage> m_fdcan;
-        HBridge m_motor_driver;
-        TIM_HandleTypeDef* m_watchdog_timer{};
-        bool m_watchdog_enabled{};
-        TIM_HandleTypeDef* m_generic_elapsed_timer{};
-        Hertz m_generic_elapsed_timer_freq{};
-        TIM_HandleTypeDef* m_relative_encoder_tick_timer{};
-        TIM_HandleTypeDef* m_relative_encoder_elapsed_timer{};
-        I2C_HandleTypeDef* m_absolute_encoder_i2c{};
-        std::optional<QuadratureEncoderReader> m_relative_encoder;
-        std::optional<AbsoluteEncoderReader> m_absolute_encoder;
-        std::array<LimitSwitch, 4> m_limit_switches;
-
-        ElapsedTimer<std::uint32_t> m_throttle_elapsed_timer{};
-        ElapsedTimer<std::uint32_t> m_pidf_elapsed_timer{};
-
-        /* ==================== Internal State ==================== */
-        Mode m_mode;
-        // "Desired" since it may be overridden.
-        // For example if we are trying to drive into a limit switch it will be overriden to zero.
-        Percent m_desired_output;
-        // Actual output after throttling.
-        // Changing the output quickly can result in back-EMF which can damage the board.
-        // This is a temporary fix until EHW adds TVS diodes.
-        Percent m_throttled_output;
-        using PercentPerSecond = compound_unit<Percent, inverse<Seconds>>;
-        PercentPerSecond m_throttle_rate{100};
-
-
-        std::optional<Radians> m_uncalib_position;
-        std::optional<RadiansPerSecond> m_velocity;
-        BDCMCErrorInfo m_error = BDCMCErrorInfo::DEFAULT_START_UP_NOT_CONFIGURED;
-        std::size_t m_missed_absolute_encoder_reads{0};
-
         struct StateAfterConfig {
             Dimensionless gear_ratio;
             Radians min_position;
             Radians max_position;
         };
-
-        // Present if and only if we are configured
-        // Configuration messages are sent over the CAN bus
-        std::optional<StateAfterConfig> m_state_after_config;
 
         struct StateAfterCalib {
             // Ex: If the encoder reads in 6 Radians and offset is 4 Radians,
@@ -81,19 +37,47 @@ namespace mrover {
             Radians offset_position;
         };
 
+        std::uint8_t m_id;
+        /* ==================== Hardware ==================== */
+        HBridge m_motor_driver;
+        TIM_HandleTypeDef* m_receive_watchdog_timer{};
+        bool m_receive_watchdog_enabled{};
+        std::array<LimitSwitch, 2> m_limit_switches;
+        TIM_HandleTypeDef* m_generic_elapsed_timer{};
+        Hertz m_generic_elapsed_frequency{};
+        TIM_HandleTypeDef* m_relative_encoder_tick_timer{};
+        std::optional<QuadratureEncoderReader> m_relative_encoder;
+        I2C_HandleTypeDef* m_absolute_encoder_i2c{};
+        std::uint8_t m_absolute_encoder_a2_a1;
+        std::optional<AbsoluteEncoderReader> m_absolute_encoder;
+        ElapsedTimer m_pidf_elapsed_timer{};
+
+        /* ==================== Internal State ==================== */
+        Mode m_mode;
+        BDCMCErrorInfo m_error = BDCMCErrorInfo::DEFAULT_START_UP_NOT_CONFIGURED;
+        // "Desired" since it may be overridden.
+        // For example if we are trying to drive into a limit switch it will be overridden to zero.
+        Percent m_desired_output;
+        std::optional<Radians> m_uncalib_position;
+        std::optional<RadiansPerSecond> m_velocity;
+        std::size_t m_missed_absolute_encoder_reads{0};
+        // Present if and only if we are configured
+        // Configuration messages are sent over the CAN bus
+        std::optional<StateAfterConfig> m_state_after_config;
         // Present if and only if we are calibrated
         // Calibrated means we know where we are absolutely
         // This gets set if we hit a limit switch, get an absolute encoder reading, or get a manual adjust command from teleoperation
         std::optional<StateAfterCalib> m_state_after_calib;
 
-        // Messaging
+        /* ==================== Messaging ==================== */
         InBoundMessage m_inbound = IdleCommand{};
         OutBoundMessage m_outbound = ControllerDataState{.config_calib_error_data = {.error = m_error}};
+
 
         /**
          * \brief Updates \link m_uncalib_position \endlink and \link m_velocity \endlink based on the hardware
          */
-        auto update_relative_encoder() -> void {
+        auto update_based_on_relative_encoder_reading() -> void {
             if (!m_relative_encoder) return;
 
             if (std::optional<EncoderReading> reading = m_relative_encoder->read()) {
@@ -143,35 +127,7 @@ namespace mrover {
                 }
             }
 
-            Percent output_after_limit = output.value_or(0_percent);
-
-            if (output_after_limit == 0_percent) {
-                m_throttled_output = 0_percent;
-                m_motor_driver.write(m_throttled_output);
-                return;
-            }
-
-            Percent delta = output_after_limit - m_throttled_output;
-
-            Seconds dt = m_throttle_elapsed_timer.get_time_since_last_read();
-
-            Percent applied_delta = m_throttle_rate * dt;
-
-            if (signum(output_after_limit) != signum(m_throttled_output) && signum(m_throttled_output) != 0) {
-                // If we are changing directions, go straight to zero
-                // This also includes when going to zero from a non-zero value (since signum(0) == 0), helpful for when you want to stop moving quickly on input release
-                m_throttled_output = 0_percent;
-            } else {
-                if (abs(delta) < applied_delta) {
-                    // We are very close to the desired output, just set it
-                    m_throttled_output = output_after_limit;
-                } else {
-                    m_throttled_output += applied_delta * signum(delta);
-                }
-            }
-
-
-            m_motor_driver.write(m_throttled_output);
+            m_motor_driver.write(output.value_or(0_percent));
         }
 
         auto process_command(AdjustCommand const& message) -> void {
@@ -186,12 +142,24 @@ namespace mrover {
             StateAfterConfig config{.gear_ratio = message.gear_ratio};
 
             if (message.enc_info.quad_present) {
-                if (!m_relative_encoder) m_relative_encoder.emplace(m_relative_encoder_tick_timer, m_relative_encoder_elapsed_timer, message.enc_info.quad_ratio);
+                if (!m_relative_encoder) {
+                    m_relative_encoder.emplace(
+                            m_relative_encoder_tick_timer,
+                            ElapsedTimer{m_generic_elapsed_timer, m_generic_elapsed_frequency},
+                            message.enc_info.quad_ratio);
+                }
                 EncoderReading enc_read = m_relative_encoder->read().value();
                 m_uncalib_position = enc_read.position; // usually but not always 0
             }
             if (message.enc_info.abs_present) {
-                if (!m_absolute_encoder) m_absolute_encoder.emplace(AbsoluteEncoderReader::AS5048B_Bus{m_absolute_encoder_i2c}, m_generic_elapsed_timer, message.enc_info.abs_offset, message.enc_info.abs_ratio);
+                if (!m_absolute_encoder) {
+                    m_absolute_encoder.emplace(
+                            AbsoluteEncoderReader::AS5048B_Bus{m_absolute_encoder_i2c},
+                            m_absolute_encoder_a2_a1,
+                            message.enc_info.abs_offset,
+                            message.enc_info.abs_ratio,
+                            ElapsedTimer{m_generic_elapsed_timer, m_generic_elapsed_frequency});
+                }
             }
 
             m_motor_driver.change_max_pwm(message.max_pwm);
@@ -204,11 +172,11 @@ namespace mrover {
 
             for (std::size_t i = 0; i < m_limit_switches.size(); ++i) {
                 if (GET_BIT_AT_INDEX(message.limit_switch_info.present, i)) {
-                    bool enabled = GET_BIT_AT_INDEX(message.limit_switch_info.enabled, i);
-                    bool active_high = GET_BIT_AT_INDEX(message.limit_switch_info.active_high, i);
-                    bool used_for_readjustment = GET_BIT_AT_INDEX(message.limit_switch_info.use_for_readjustment, i);
-                    bool limits_forward = GET_BIT_AT_INDEX(message.limit_switch_info.limits_forward, i);
-                    auto associated_position = Radians{message.limit_switch_info.limit_readj_pos[i]};
+                    bool const enabled = GET_BIT_AT_INDEX(message.limit_switch_info.enabled, i);
+                    bool const active_high = GET_BIT_AT_INDEX(message.limit_switch_info.active_high, i);
+                    bool const used_for_readjustment = GET_BIT_AT_INDEX(message.limit_switch_info.use_for_readjustment, i);
+                    bool const limits_forward = GET_BIT_AT_INDEX(message.limit_switch_info.limits_forward, i);
+                    auto const associated_position = Radians{message.limit_switch_info.limit_readj_pos[i]};
 
                     m_limit_switches[i].initialize(enabled, active_high, used_for_readjustment, limits_forward, associated_position);
                 }
@@ -227,8 +195,8 @@ namespace mrover {
                 m_error = BDCMCErrorInfo::RECEIVING_COMMANDS_WHEN_NOT_CONFIGURED;
                 return;
             }
-            m_throttle_elapsed_timer.make_next_read_first_read();
             m_pidf_elapsed_timer.make_next_read_first_read();
+
             m_desired_output = 0_percent;
             m_error = BDCMCErrorInfo::NO_ERROR;
         }
@@ -302,7 +270,7 @@ namespace mrover {
             template<typename Command, typename ModeHead, typename... Modes>
             struct command_to_mode<Command, std::variant<ModeHead, Modes...>> {
                 // Linear search to find corresponding mode
-                using type = std::conditional_t<requires(Controller controller, Command command, ModeHead mode) { controller.process_command(command, mode); },
+                using type = std::conditional_t<requires(Motor motor, Command command, ModeHead mode) { motor.process_command(command, mode); },
                                                 ModeHead,
                                                 typename command_to_mode<Command, std::variant<Modes...>>::type>; // Recursive call
             };
@@ -317,31 +285,29 @@ namespace mrover {
         using command_to_mode_t = typename detail::command_to_mode<Command, T>::type;
 
     public:
-        Controller() = default;
+        Motor() = default;
 
-        Controller(std::uint8_t device_id,
-                   std::uint8_t destination_device_id,
-                   TIM_HandleTypeDef* hbridge_pwm_timer, std::uint32_t hbridge_pwm_channel, Pin hbridge_direction_pin,
-                   FDCAN<InBoundMessage> const& fdcan, TIM_HandleTypeDef* watchdog_timer,
-                   TIM_HandleTypeDef* generic_elapsed_timer,
-                   Hertz generic_elapsed_timer_freq,
-                   TIM_HandleTypeDef* relative_encoder_tick_timer,
-                   TIM_HandleTypeDef* relative_encoder_elapsed_timer,
-                   I2C_HandleTypeDef* absolute_encoder_i2c,
-                   std::array<LimitSwitch, 4> const& limit_switches)
-            : m_device_id{device_id},
-              m_destination_device_id{destination_device_id},
-              m_fdcan{fdcan},
-              m_motor_driver{HBridge(hbridge_pwm_timer, hbridge_pwm_channel, hbridge_direction_pin)},
-              m_watchdog_timer{watchdog_timer},
-              m_generic_elapsed_timer{generic_elapsed_timer},
-              m_generic_elapsed_timer_freq(generic_elapsed_timer_freq),
-              m_relative_encoder_tick_timer{relative_encoder_tick_timer},
-              m_relative_encoder_elapsed_timer{relative_encoder_elapsed_timer},
-              m_absolute_encoder_i2c{absolute_encoder_i2c},
-              m_limit_switches{limit_switches},
-              m_throttle_elapsed_timer{generic_elapsed_timer, generic_elapsed_timer_freq},
-              m_pidf_elapsed_timer{generic_elapsed_timer, generic_elapsed_timer_freq} {}
+        Motor(std::uint8_t id, HBridge const& motor_driver, TIM_HandleTypeDef* receive_watchdog_timer,
+              std::array<LimitSwitch, 2> const& limit_switches,
+              TIM_HandleTypeDef* generic_elapsed_timer, Hertz generic_elapsed_frequency,
+              TIM_HandleTypeDef* relative_encoder_tick_timer,
+              I2C_HandleTypeDef* absolute_encoder_i2c,
+              std::uint8_t absolute_encoder_a2_a1)
+            : m_id(id),
+              m_motor_driver(motor_driver),
+              m_receive_watchdog_timer(receive_watchdog_timer),
+              m_limit_switches(limit_switches),
+              m_generic_elapsed_timer(generic_elapsed_timer),
+              m_generic_elapsed_frequency(generic_elapsed_frequency),
+              m_relative_encoder_tick_timer(relative_encoder_tick_timer),
+              m_absolute_encoder_i2c(absolute_encoder_i2c),
+              m_absolute_encoder_a2_a1(absolute_encoder_a2_a1),
+              m_pidf_elapsed_timer(ElapsedTimer{generic_elapsed_timer, generic_elapsed_frequency}) {
+        }
+
+        [[nodiscard]] auto get_id() const -> std::uint8_t {
+            return m_id;
+        }
 
         template<typename Command>
         auto process_command(Command const& command) -> void {
@@ -358,6 +324,7 @@ namespace mrover {
             }
         }
 
+        // TODO: Abstract the CAN parsing layer to a layer above Motor
         /**
          * \brief           Called from the FDCAN interrupt handler when a new message is received, updating \link m_inbound \endlink and processing it.
          * \param message   Command message to process.
@@ -366,14 +333,13 @@ namespace mrover {
          */
         auto receive(InBoundMessage const& message) -> void {
             // Ensure watchdog timer is reset and enabled now that we are receiving messages
-            __HAL_TIM_SetCounter(m_watchdog_timer, 0);
-            if (!m_watchdog_enabled) {
-                HAL_TIM_Base_Start_IT(m_watchdog_timer);
-                m_watchdog_enabled = true;
+            __HAL_TIM_SetCounter(m_receive_watchdog_timer, 0);
+            if (!m_receive_watchdog_enabled) {
+                HAL_TIM_Base_Start_IT(m_receive_watchdog_timer);
+                m_receive_watchdog_enabled = true;
             }
 
             m_inbound = message;
-            update();
         }
 
         /**
@@ -383,7 +349,7 @@ namespace mrover {
          */
         auto process_command() -> void {
             update_limit_switches();
-            update_relative_encoder();
+            update_based_on_relative_encoder_reading();
             std::visit([&](auto const& command) { process_command(command); }, m_inbound);
             drive_motor();
         }
@@ -394,8 +360,8 @@ namespace mrover {
          * This disables the watchdog timer until we receive another message.
          */
         auto receive_watchdog_expired() -> void {
-            HAL_TIM_Base_Stop_IT(m_watchdog_timer);
-            m_watchdog_enabled = false;
+            HAL_TIM_Base_Stop_IT(m_receive_watchdog_timer);
+            m_receive_watchdog_enabled = false;
 
             // We lost connection or some other error happened
             // Make sure the motor stops
@@ -403,21 +369,14 @@ namespace mrover {
             process_command();
         }
 
-        auto quadrature_elapsed_timer_expired() -> void {
-            if (m_relative_encoder) {
-                m_relative_encoder->expired();
-                update_relative_encoder();
-            }
+        /**
+         * \brief Get the outbound status message of the controller
+         *
+         * \return the outbound status message
+         */
+        [[nodiscard]] auto get_outbound() const -> OutBoundMessage {
+            return m_outbound;
         }
-
-        // /**
-        //  * \brief Update the quadrature velocity measurement.
-        //  *
-        //  * \note Called more frequently than update position.
-        //  */
-        // auto calc_quadrature_velocity() -> void {
-        //     m_relative_encoder->update();
-        // }
 
         /**
          * \brief Serialize our internal state into an outbound status message
@@ -460,24 +419,19 @@ namespace mrover {
             update_outbound();
         }
 
-        /**
-         * \brief Send out the current outbound status message.
-         *
-         * The update rate should be limited to avoid hammering the FDCAN bus.
-         */
-        auto send() -> void {
-            update();
-            if (bool success = m_fdcan.broadcast(m_outbound, m_device_id, m_destination_device_id); !success) {
-                m_fdcan.reset();
-            }
-        }
-
-
         auto update_quadrature_encoder() -> void {
             if (m_relative_encoder) {
                 m_relative_encoder->update();
+                update();
             }
-            update();
+        }
+
+        [[nodiscard]] auto has_relative_encoder_configured() const -> bool {
+            return m_relative_encoder.has_value();
+        }
+
+        [[nodiscard]] auto has_absolute_encoder_configured() const -> bool {
+            return m_absolute_encoder.has_value();
         }
 
         // Max hits before we remove the calibration state

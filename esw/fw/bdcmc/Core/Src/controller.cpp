@@ -1,4 +1,4 @@
-#include "controller.hpp"
+#include "motor.hpp"
 
 #include <cstdint>
 
@@ -16,75 +16,56 @@ extern I2C_HandleTypeDef hi2c1;
  * For each repeating timer, the update rate is determined by the .ioc file.
  *
  * Specifically the ARR value. You can use the following equation: ARR = (MCU Clock Speed) / (Update Rate) / (Prescaler + 1) - 1
- * For the STM32G4 we have a 140 MHz clock speed configured.
+ * For the STM32G4 we have a 170 MHz clock speed configured.
  *
  * You must also set auto reload to true so the interrupt gets called on a cycle.
  */
 
 extern TIM_HandleTypeDef htim2;
-extern TIM_HandleTypeDef htim3;
 extern TIM_HandleTypeDef htim4;
-extern TIM_HandleTypeDef htim6;
 extern TIM_HandleTypeDef htim7;
-extern TIM_HandleTypeDef htim8;
 extern TIM_HandleTypeDef htim15;
 extern TIM_HandleTypeDef htim16;
-extern TIM_HandleTypeDef htim17;
 // extern WWDG_HandleTypeDef hwwdg;
 
-#define QUADRATURE_ELAPSED_TIMER &htim3 // Measures time since the last quadrature tick
 #define QUADRATURE_TICK_TIMER &htim4    // Special encoder timer which externally reads quadrature encoder ticks
 
 // Measures time since:
-// The last absolute encoder reading
+// The last absolute/quad encoder reading
 // The last throttle command
 // The last PIDF update
 #define GENERIC_ELAPSED_TIMER &htim2
-
-#define ABSOLUTE_ENCODER_TIMER &htim17 // 20 Hz repeating timer to kick off I2C transactions with the absolute encoder
+constexpr auto GENERIC_ELAPSED_FREQUENCY = mrover::Hertz{1000000};
 
 #define PWM_TIMER &htim15 // H-Bridge PWM
-#define PWM_CHANNEL TIM_CHANNEL_1
+#define PWM_TIMER_CHANNEL TIM_CHANNEL_1
 
-#define SEND_TIMER &htim7            // 20 Hz FDCAN repeating timer
+#define GLOBAL_UPDATE_TIMER &htim7   // 20 Hz global timer for: FDCAN send, I2C transaction (absolute encoders), read quad encoder
 #define FDCAN_WATCHDOG_TIMER &htim16 // FDCAN watchdog timer that needs to be reset every time a message is received
 
 namespace mrover {
 
     FDCAN<InBoundMessage> fdcan_bus;
-    Controller controller;
+    Motor motor;
 
     auto init() -> void {
         fdcan_bus = FDCAN<InBoundMessage>{&hfdcan1};
-        controller = Controller{
+        motor = Motor{
                 DEVICE_ID,
-                DESTINATION_DEVICE_ID,
-                PWM_TIMER,
-                PWM_CHANNEL,
-                Pin{MOTOR_DIR_GPIO_Port, MOTOR_DIR_Pin},
-                fdcan_bus,
-                FDCAN_WATCHDOG_TIMER,
-                GENERIC_ELAPSED_TIMER,
-                CLOCK_FREQ,
+                HBridge{PWM_TIMER, PWM_TIMER_CHANNEL, Pin{MOTOR_DIR_GPIO_Port, MOTOR_DIR_Pin}},
+				FDCAN_WATCHDOG_TIMER,
+                {LimitSwitch{Pin{LIMIT_0_GPIO_Port, LIMIT_0_Pin}}, LimitSwitch{Pin{LIMIT_1_GPIO_Port, LIMIT_1_Pin}}},
+                GENERIC_ELAPSED_TIMER, GENERIC_ELAPSED_FREQUENCY,
                 QUADRATURE_TICK_TIMER,
-                QUADRATURE_ELAPSED_TIMER,
                 ABSOLUTE_I2C,
-                {
-                        LimitSwitch{Pin{LIMIT_0_GPIO_Port, LIMIT_0_Pin}},
-                        LimitSwitch{Pin{LIMIT_1_GPIO_Port, LIMIT_1_Pin}},
-                        LimitSwitch{Pin{LIMIT_2_GPIO_Port, LIMIT_2_Pin}},
-                        LimitSwitch{Pin{LIMIT_3_GPIO_Port, LIMIT_3_Pin}},
-                },
+                A2_A1
         };
 
-        fdcan_bus.add_filter(DEVICE_ID);
+        // fdcan_bus.add_filter(DEVICE_ID);
         fdcan_bus.start();
 
-        // TODO: these should probably be in the controller / encoders themselves
-        // Necessary for the timer interrupt to work
         check(HAL_TIM_Base_Start(GENERIC_ELAPSED_TIMER) == HAL_OK, Error_Handler);
-        check(HAL_TIM_Base_Start_IT(SEND_TIMER) == HAL_OK, Error_Handler);
-        check(HAL_TIM_Base_Start_IT(ABSOLUTE_ENCODER_TIMER) == HAL_OK, Error_Handler);
+        check(HAL_TIM_Base_Start_IT(GLOBAL_UPDATE_TIMER) == HAL_OK, Error_Handler);
     }
 
     auto fdcan_received_callback() -> void {
@@ -96,45 +77,48 @@ namespace mrover {
         auto messageId = std::bit_cast<FDCAN<InBoundMessage>::MessageId>(header.Identifier);
 
         if (messageId.destination == DEVICE_ID) {
-            controller.receive(message);
+            motor.receive(message);
+            motor.update();
         }
     }
 
-    auto update_callback() -> void {
-        controller.update();
+    auto send_motor_status() -> void {
+		if (bool success = fdcan_bus.broadcast(motor.get_outbound(), motor.get_id(), DESTINATION_DEVICE_ID); !success) {
+			fdcan_bus.reset();
+		}
     }
 
-    auto request_absolute_encoder_data_callback() -> void {
-        controller.request_absolute_encoder_data();
-    }
+	auto update_relative_encoder_callback() -> void {
+		motor.update_quadrature_encoder();
+	}
 
-    auto read_absolute_encoder_data_callback() -> void {
-        controller.read_absolute_encoder_data();
-    }
+	auto request_absolute_encoder_data_callback() -> void {
+		motor.request_absolute_encoder_data();
+	}
 
-    auto update_absolute_encoder_callback() -> void {
-        controller.update_absolute_encoder();
-    }
+	auto read_absolute_encoder_data_callback() -> void {
+		motor.read_absolute_encoder_data();
+	}
 
-    auto update_quadrature_encoder_callback() -> void {
-        controller.update_quadrature_encoder();
-    }
+	auto update_absolute_encoder_callback() -> void {
+		motor.update_absolute_encoder();
+	}
 
-    auto quadrature_elapsed_timer_expired() -> void {
-        controller.quadrature_elapsed_timer_expired();
-    }
+	auto update_quadrature_encoder_callback() -> void {
+		motor.update_quadrature_encoder();
+	}
 
-    auto send_callback() -> void {
-        controller.send();
-    }
+
+	auto global_update_callback() -> void {
+		send_motor_status();
+		request_absolute_encoder_data_callback();
+		update_relative_encoder_callback();
+	}
 
     auto fdcan_watchdog_expired() -> void {
-        controller.receive_watchdog_expired();
+        motor.receive_watchdog_expired();
     }
 
-    // void calc_velocity() {
-    //     controller.calc_quadrature_velocity();
-    // }
 
 } // namespace mrover
 
@@ -158,20 +142,10 @@ void HAL_PostInit() {
  */
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim) {
     // HAL_WWDG_Refresh(&hwwdg);
-    if (htim == SEND_TIMER) {
-        mrover::send_callback();
+    if (htim == GLOBAL_UPDATE_TIMER) {
+        mrover::global_update_callback();
     } else if (htim == FDCAN_WATCHDOG_TIMER) {
         mrover::fdcan_watchdog_expired();
-    } else if (htim == QUADRATURE_ELAPSED_TIMER) {
-        mrover::quadrature_elapsed_timer_expired();
-    } else if (htim == ABSOLUTE_ENCODER_TIMER) {
-        mrover::request_absolute_encoder_data_callback();
-    }
-}
-
-void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef* htim) {
-    if (htim == QUADRATURE_TICK_TIMER) {
-        mrover::update_quadrature_encoder_callback();
     }
 }
 

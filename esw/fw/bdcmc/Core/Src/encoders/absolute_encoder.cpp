@@ -12,8 +12,24 @@ namespace mrover {
     5. Update controller
     */
 
-    AbsoluteEncoderReader::AbsoluteEncoderReader(AS5048B_Bus i2c_bus, TIM_HandleTypeDef* elapsed_timer, Radians offset, Ratio multiplier)
+    AbsoluteEncoderReader::AbsoluteEncoderReader(AS5048B_Bus i2c_bus, uint8_t a2_a1, Radians offset, Ratio multiplier, ElapsedTimer elapsed_timer)
         : m_elapsed_timer(elapsed_timer), m_i2cBus{i2c_bus}, m_offset{offset}, m_multiplier{multiplier} {
+        // A1/A2 is 1 if pin connected to power, 0 if pin connected to ground
+        // This is used for address selection per
+        // [datasheet](https://www.mouser.com/datasheet/2/588/AS5048_DS000298_4-00-1100510.pdf?srsltid=AfmBOorG94PYEL0t30_O-gjnl7_jXUCsNwnBYo8pr5MZHPaUmn4QbLmg)
+        // I2C Address = 0b10000{a2}{a1}
+        uint8_t const a1 = a2_a1 & 0x01;
+        uint8_t const a2 = (a2_a1 >> 1) & 0x01;
+
+        if (a1 && a2) {
+            m_address = I2CAddress::device_slave_address_both_high;
+        } else if (a1) {
+            m_address = I2CAddress::device_slave_address_a1_high;
+        } else if (a2) {
+            m_address = I2CAddress::device_slave_address_a2_high;
+        } else {
+            m_address = I2CAddress::device_slave_address_none_high;
+        }
     }
 
     auto AbsoluteEncoderReader::request_raw_angle() -> void {
@@ -40,15 +56,16 @@ namespace mrover {
      */
     auto wrap_angle(Radians angle) -> Radians {
         constexpr Radians PI_F{std::numbers::pi};
-        return fmod(angle + PI_F, TAU_F) - PI_F;
+        angle += PI_F;
+        angle = fmod(angle, TAU_F);
+        if (angle < 0_rad)
+            angle += Radians{TAU_F};
+        return angle - PI_F;
     }
 
     [[nodiscard]] auto AbsoluteEncoderReader::read() -> std::optional<EncoderReading> {
         if (std::optional<std::uint16_t> counts = try_read_buffer()) {
-            std::uint32_t const timer_tick_current = __HAL_TIM_GET_COUNTER(m_elapsed_timer);
-            std::uint32_t const tick_diff = timer_tick_current - m_timer_tick_prev;
-            Seconds elapsed_time = (1.0f / CLOCK_FREQ) * static_cast<float>(tick_diff);
-            m_timer_tick_prev = timer_tick_current;
+            Seconds const elapsed_time = m_elapsed_timer.get_time_since_last_read();
 
             // Absolute encoder returns [0, COUNTS_PER_REVOLUTION)
             // We need to convert this to [-𝜏/2, 𝜏/2)
