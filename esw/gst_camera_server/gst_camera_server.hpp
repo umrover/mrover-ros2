@@ -1,6 +1,5 @@
 #pragma once
 
-#include "gst_utils.hpp"
 #include "pch.hpp"
 
 // Uses gstreamer to encode
@@ -10,7 +9,7 @@
 
 namespace mrover {
 
-    class GstV4L2Encoder final : public rclcpp::Node {
+    class GstCameraServer final : public rclcpp::Node {
 
         rclcpp::Service<srv::MediaControl>::SharedPtr mMediaControlServer;
 
@@ -45,16 +44,16 @@ namespace mrover {
         auto createStreamPipeline() -> void;
         auto createImageCapturePipeline() -> void;
 
-        auto initStreamPipeline() -> void;
+        auto initStreamPipelines() -> void;
 
         auto mediaControlServerCallback(srv::MediaControl::Request::SharedPtr req, srv::MediaControl::Response::SharedPtr res) -> void;
         auto imageCaptureServerCallback(std_srvs::srv::Trigger::Request::SharedPtr req, std_srvs::srv::Trigger::Response::SharedPtr res) -> void;
 
     public:
         // __attribute__ ((visibility("default")))
-        explicit GstV4L2Encoder(rclcpp::NodeOptions const& options = rclcpp::NodeOptions());
+        explicit GstCameraServer(rclcpp::NodeOptions const& options = rclcpp::NodeOptions());
 
-        ~GstV4L2Encoder() override;
+        ~GstCameraServer() override;
     };
 
 } // namespace mrover

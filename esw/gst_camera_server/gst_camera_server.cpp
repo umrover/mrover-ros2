@@ -1,5 +1,4 @@
-#include "gst_v4l2_encoder.hpp"
-#include "gst_utils.hpp"
+#include "gst_camera_server.hpp"
 
 namespace mrover {
 
@@ -17,7 +16,7 @@ namespace mrover {
 
     auto gstBusMessage(GstBus*, GstMessage* message, gpointer data) -> gboolean;
 
-    auto GstV4L2Encoder::createStreamPipeline() -> void {
+    auto GstCameraServer::createStreamPipeline() -> void {
         gst::PipelineBuilder pipeline;
 
         auto& [pixelFormat, imageWidth, imageHeight, imageFramerate] = mStreamCaptureFormat;
@@ -107,7 +106,7 @@ namespace mrover {
         mStreamPipelineWrapper = gst::PipelineWrapper(pipeline.str());
     }
 
-    auto GstV4L2Encoder::createImageCapturePipeline() -> void {
+    auto GstCameraServer::createImageCapturePipeline() -> void {
         gst::PipelineBuilder pipeline;
 
         if (mDeviceNode.empty()) {
@@ -137,7 +136,7 @@ namespace mrover {
         mImageCapturePipelineLaunch = pipeline.str();
     }
 
-    auto GstV4L2Encoder::initStreamPipeline() -> void {
+    auto GstCameraServer::initStreamPipelines() -> void {
         RCLCPP_INFO_STREAM(get_logger(), "Initializing GStreamer stream pipeline...");
 
         mMainLoop = gstCheck(g_main_loop_new(nullptr, FALSE));
@@ -154,7 +153,7 @@ namespace mrover {
         RCLCPP_INFO_STREAM(get_logger(), "Initialized GStreamer stream pipeline");
     }
 
-    auto GstV4L2Encoder::mediaControlServerCallback(srv::MediaControl::Request::SharedPtr const req, srv::MediaControl::Response::SharedPtr res) -> void {
+    auto GstCameraServer::mediaControlServerCallback(srv::MediaControl::Request::SharedPtr const req, srv::MediaControl::Response::SharedPtr res) -> void {
         if (req->command == srv::MediaControl::Request::STOP) {
             RCLCPP_INFO_STREAM(get_logger(), "Stopping GStreamer pipeline");
             try {
@@ -190,7 +189,7 @@ namespace mrover {
         res->success = true;
     }
 
-    auto GstV4L2Encoder::imageCaptureServerCallback(std_srvs::srv::Trigger::Request::SharedPtr const req, std_srvs::srv::Trigger::Response::SharedPtr res) -> void {
+    auto GstCameraServer::imageCaptureServerCallback(std_srvs::srv::Trigger::Request::SharedPtr const req, std_srvs::srv::Trigger::Response::SharedPtr res) -> void {
         RCLCPP_INFO_STREAM(get_logger(), "Capture image request received");
         if (!mImagePublisher || !mImageCaptureEnabled) {
             res->success = false;
@@ -208,14 +207,14 @@ namespace mrover {
 
             cv::Mat img;
             if (!cap.read(img)) {
-                RCLCPP_ERROR(this->get_logger(), "Failed to capture frame");
+                RCLCPP_ERROR(this->get_logger(), "Failed to capture image");
                 return;
             }
 
             auto msg = cv_bridge::CvImage(std_msgs::msg::Header(), "bgr8", img).toImageMsg();
             msg->header.stamp = this->get_clock()->now();
             mImagePublisher->publish(*msg);
-            RCLCPP_INFO(this->get_logger(), "Published one frame");
+            RCLCPP_INFO(this->get_logger(), "Published image");
         }
 
         mStreamPipelineWrapper.play();
@@ -260,7 +259,7 @@ namespace mrover {
         return deviceNode;
     }
 
-    GstV4L2Encoder::GstV4L2Encoder([[maybe_unused]] rclcpp::NodeOptions const& options) : Node{"gst_v4l2_encoder", rclcpp::NodeOptions{}.use_intra_process_comms(true)} {
+    GstCameraServer::GstCameraServer([[maybe_unused]] rclcpp::NodeOptions const& options) : Node{"gst_camera_server"} {
         try {
             declare_parameter("camera", rclcpp::ParameterType::PARAMETER_STRING);
             std::string const cameraName = get_parameter("camera").as_string();
@@ -354,7 +353,7 @@ namespace mrover {
 
             createStreamPipeline();
             createImageCapturePipeline();
-            initStreamPipeline();
+            initStreamPipelines();
             mStreamPipelineWrapper.play();
 
         } catch (std::exception const& e) {
@@ -363,7 +362,7 @@ namespace mrover {
         }
     }
 
-    GstV4L2Encoder::~GstV4L2Encoder() {
+    GstCameraServer::~GstCameraServer() {
         if (mMainLoop) {
             g_main_loop_quit(mMainLoop);
             mMainLoopThread.join();
@@ -372,7 +371,7 @@ namespace mrover {
     }
 
     auto gstBusMessage(GstBus*, GstMessage* message, gpointer data) -> gboolean {
-        auto node = static_cast<GstV4L2Encoder*>(data);
+        auto node = static_cast<GstCameraServer*>(data);
         switch (message->type) {
             case GST_MESSAGE_INFO:
             case GST_MESSAGE_WARNING:
@@ -413,11 +412,3 @@ namespace mrover {
     }
 
 } // namespace mrover
-
-
-#include "rclcpp_components/register_node_macro.hpp"
-
-// Register the component with class_loader.
-// This acts as a sort of entry point, allowing the component to be discoverable when its library
-// is being loaded into a running process.
-RCLCPP_COMPONENTS_REGISTER_NODE(mrover::GstV4L2Encoder)
