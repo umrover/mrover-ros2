@@ -68,6 +68,7 @@ namespace mrover {
 
             mDeOffsetTimer = create_wall_timer(DE_OFFSET_TIMER_PERIOD, [this]() { updateDeOffsets(); });
 
+            int camControlDuration, camControlPeriod;
             std::vector<ParameterWrapper> parameters = {
                     {"joint_de_pitch_offset", mJointDePitchOffset.rep, 0.0},
                     {"joint_de_roll_offset", mJointDeRollOffset.rep, 0.0},
@@ -75,12 +76,6 @@ namespace mrover {
                     {"joint_de_pitch_min_position", mJointDePitchMinPosition.rep, -std::numeric_limits<float>::infinity()},
                     {"joint_de_roll_max_position", mJointDeRollMaxPosition.rep, std::numeric_limits<float>::infinity()},
                     {"joint_de_roll_min_position", mJointDeRollMinPosition.rep, -std::numeric_limits<float>::infinity()},
-            };
-            ParameterWrapper::declareParameters(shared_from_this().get(), parameters);
-
-
-            int camControlDuration, camControlPeriod;
-            std::vector<ParameterWrapper> parameters = {
                     {"cam_control_duration", camControlDuration, 0},
                     {"cam_control_period", camControlPeriod, 50},
             };
