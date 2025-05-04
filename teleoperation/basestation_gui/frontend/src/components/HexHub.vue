@@ -69,7 +69,7 @@
     data() {
       return {
         currentSite: 0,
-        siteList: ["Sample A", "Sample B", "Sample Cache", "Empty Soil Deposit"],
+        siteList: ["Site A", "Site B", "Sample Cache", "Empty Soil Deposit", "Blocked"],
         isClockwise: false, // bad idea, change name later
       };
     },

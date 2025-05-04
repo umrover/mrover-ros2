@@ -253,9 +253,11 @@ class GUIConsumer(JsonWebsocketConsumer):
                     "site": site
                 }:
                     device_input = DeviceInputs(axes, buttons)
-                    if((site == 0) | (site == 1)):
+                    if(site == 0):
+                        # node.get_logger().info("here", site)
                         send_sa_controls(cur_sa_mode, 0, device_input, self.sa_thr_pub)
-                    elif((site == 2) | (site == 3)):
+                    elif(site == 1):
+                        # node.get_logger().info("here1", site)
                         send_sa_controls(cur_sa_mode, 1, device_input, self.sa_thr_pub)
                     else:
                         node.get_logger().warning(f"Unhandled Site: {site}")

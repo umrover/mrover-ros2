@@ -83,9 +83,10 @@ export default {
       site_to_radians: 
       {
         0: 0.0,
-        1: Math.PI/2,
-        2: Math.PI,
-        3: (3*Math.PI)/2,
+        1: (2*Math.PI)/5,
+        2: (4*Math.PI)/5,
+        3: (6*Math.PI)/5,
+        4: (8*Math.PI)/5
       }
     }
   },
@@ -98,7 +99,6 @@ export default {
       this.odom = odom;
     },
     updateSite(selectedSite: number) {
-      // !!! MAY NEED TO CHANGE HOW CURRENT SITE IS CONVERTED TO RADIANS
       this.siteSelect = selectedSite; 
       this.sendMessage(
         {

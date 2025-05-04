@@ -81,7 +81,7 @@ import Chart from 'chart.js/auto';
 
       let titles = ["Oxygen Percentage Over Time (s)", "Relative Humidity Over Time (s)", "Temperature (C) Over Time (s)", "UV Index Over Time (s)"];
 
-      const sensor_history:number[][] = [[], [], [], []]
+      // const sensor_history:number[][] = [[], [], [], []]
 
       let lineColors = ["#4D9DE0", "#E15554", "#3BB273", "#7768AE"]
 
@@ -94,7 +94,7 @@ import Chart from 'chart.js/auto';
               labels: [],
               datasets: [{
                 label: titles[i],
-                data: sensor_history[i],
+                data: this.sensor_history[i],
                 fill: false,
                 borderColor: lineColors[i],
                 tension: 0.1
@@ -124,14 +124,14 @@ import Chart from 'chart.js/auto';
       setInterval(() => {
           // console.log(Object.values(this.sensor_data).length)
           // this.$forceUpdate();
-          sensor_history[0].push(this.sensor_data.oxygen);
-          sensor_history[1].push(this.sensor_data.humidity);
-          sensor_history[2].push(this.sensor_data.temp);
-          sensor_history[3].push(this.sensor_data.uv);
+          this.sensor_history[0].push(this.sensor_data.oxygen);
+          this.sensor_history[1].push(this.sensor_data.humidity);
+          this.sensor_history[2].push(this.sensor_data.temp);
+          this.sensor_history[3].push(this.sensor_data.uv);
 
           for (let x = 0; x < 4; ++x){
             if (charts[x] != null){
-              charts[x].data.labels = Array.from({ length: sensor_history[x].length + 1 }, (_, i) => i);
+              charts[x].data.labels = Array.from({ length: this.sensor_history[x].length + 1 }, (_, i) => i);
               charts[x].update();
             }
           }
@@ -152,6 +152,12 @@ import Chart from 'chart.js/auto';
             humidity_var: 0,
             temp: 0,
             temp_var: 0
+          },
+          sensor_history: {
+            oxygen: [],
+            humidity: [],
+            temp: [],
+            uv: []
           }
       }
     },
@@ -208,23 +214,37 @@ import Chart from 'chart.js/auto';
     //       this.sensor_data.temp = (-2.8 + Math.random() * 2.8);
     // },
     download() {
+      // downloads csv of table
+      let csv = "Oxygen, UV (index), Humidity, Temperature (C)\n"
+
+      const numRows = this.sensor_history[0].length; // transpose (flip) array
+      for (let i = 0; i < numRows; ++i) {
+        const row = this.sensor_history.map(sensor => sensor[i]);
+        csv += row.join(",") + "\n";
+      }
+
+      const anchor = document.createElement("a");
+      anchor.href = "data:text/csv;charset=utf-8," + encodeURIComponent(csv);
+      anchor.download = "sensor_data.csv";
+      anchor.click();
+
         // downloads screenshot of table
-      const table = document.querySelector("#capture") as HTMLElement;
-      html2canvas(table)
-      .then(canvas => {
-        canvas.style.display = 'none'
-        document.body.appendChild(canvas)
-        return canvas
-      })
-      .then(canvas => {
-        const image = canvas.toDataURL('image/png')
-        const a = document.createElement('a')
-        a.setAttribute('download', 'sensor_data_site_' + String.fromCharCode(this.site+65) + '_' + new Date(Date.now()).toString() + '.png')
-        a.setAttribute('href', image)
-        a.click()
-        canvas.remove()
-      })
-      alert("Downloaded report!") //remove?
+      // const table = document.querySelector("#capture") as HTMLElement;
+      // html2canvas(table)
+      // .then(canvas => {
+      //   canvas.style.display = 'none'
+      //   document.body.appendChild(canvas)
+      //   return canvas
+      // })
+      // .then(canvas => {
+      //   const image = canvas.toDataURL('image/png')
+      //   const a = document.createElement('a')
+      //   a.setAttribute('download', 'sensor_data_site_' + String.fromCharCode(this.site+65) + '_' + new Date(Date.now()).toString() + '.png')
+      //   a.setAttribute('href', image)
+      //   a.click()
+      //   canvas.remove()
+      // })
+      // alert("Downloaded report!") //remove?
     }
   }
 }
