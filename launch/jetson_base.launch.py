@@ -44,6 +44,6 @@ def generate_launch_description():
         ],
     )
 
-
-
-    return LaunchDescription([launch_include_base, launch_include_can, drive_hw_bridge_node, mast_gimbal_hw_bridge_node])
+    return LaunchDescription(
+        [launch_include_base, launch_include_can, drive_hw_bridge_node, mast_gimbal_hw_bridge_node]
+    )
