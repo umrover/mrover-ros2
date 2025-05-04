@@ -3,48 +3,71 @@
     static_cam:
       address: 10.1.0.2 # if using RTP, should be set to IP of basestation
       port: 8081
-      codec: H265
       dev_node: "/dev/static_cam"
-      camera_format: MJPG # from v4l2-ctl --list-formats-ext
-      width: 640
-      height: 480
-      framerate: 15
-      bitrate: 2000000
       dev_path: ""
+      stream:
+        pixel_format: MJPG # from v4l2-ctl --list-formats-ext
+        width: 640
+        height: 480
+        framerate: 15
+        codec: H265
+        bitrate: 2000000
+      image_capture:
+        pixel_format: YUYV
+        width: 1920
+        height: 1080
+        framerate: 5
     boom_cam:
       address: 10.1.0.2 # if using RTP, should be set to IP of basestation
       port: 8082
-      codec: H265
       dev_node: "/dev/boomcam"
-      camera_format: MJPG # from v4l2-ctl --list-formats-ext
-      width: 640
-      height: 480
-      framerate: 15
-      bitrate: 2000000
       dev_path: ""
+      stream:
+        pixel_format: MJPG # from v4l2-ctl --list-formats-ext
+        width: 640
+        height: 480
+        framerate: 15
+        codec: H265
+        bitrate: 2000000
+      image_capture:
+        pixel_format: YUYV
+        width: 1920
+        height: 1080
+        framerate: 15
     mob_cam:
       address: 10.1.0.2
       port: 8083
-      codec: H265
       dev_node: "/dev/mobcam"
-      camera_format: MJPG
-      width: 640
-      height: 480
-      framerate: 15
-      bitrate: 2000000
       dev_path: ""
+      stream:
+        pixel_format: MJPG # from v4l2-ctl --list-formats-ext
+        width: 640
+        height: 480
+        framerate: 15
+        codec: H265
+        bitrate: 2000000
+      image_capture:
+        pixel_format: YUYV
+        width: 1920
+        height: 1080
+        framerate: 15
     zed_mini:
       address: 10.1.0.2
       port: 8084
-      codec: H265
       dev_node: "/dev/zed_mini"
-      capture_format: YUYV
-      crop_right: 700
-      width: 1344
-      height: 376
-      framerate: 15
-      bitrate: 2000000
       dev_path: ""
+      stream:
+        pixel_format: YUYV # from v4l2-ctl --list-formats-ext
+        width: 1344
+        height: 376
+        framerate: 15
+        codec: H265
+        bitrate: 2000000
+      image_capture:
+        pixel_format: YUYV
+        width: 1920
+        height: 1080
+        framerate: 15
 
 boom_streamer:
   ros__parameters:

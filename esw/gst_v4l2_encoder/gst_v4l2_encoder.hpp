@@ -1,5 +1,6 @@
 #pragma once
 
+#include "gst_utils.hpp"
 #include "pch.hpp"
 
 // Uses gstreamer to encode
@@ -13,33 +14,41 @@ namespace mrover {
 
         rclcpp::Service<srv::MediaControl>::SharedPtr mMediaControlServer;
 
-        gst::video::v4l2::Format mCaptureFormat{};
-        gst::video::Codec mStreamCodec{};
+        rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr mImageCaptureServer;
+        rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr mImagePublisher;
+
+        // For example, /dev/video0
+        // These device paths are not garunteed to stay the same between reboots
+        // Prefer sys path for non-debugging purposes
+        std::string mDeviceNode;
 
         bool mDisableAutoWhiteBalance{}; // Useful for science, the UV LEDs can mess with the white balance
-        std::string mDeviceDescriptor;
-        std::uint64_t mBitrate{};
-        std::uint16_t mImageWidth{}, mImageHeight{}, mImageFramerate{};
-        std::string mAddress;
-        std::uint16_t mPort;
 
         bool mCropEnabled{};
         int mCropLeft{}, mCropRight{}, mCropTop{}, mCropBottom{};
 
-        std::string mLaunch;
+        gst::video::v4l2::CaptureFormat mStreamCaptureFormat;
+        gst::video::Codec mCodec;
+        std::uint64_t mBitrate;
+        std::string mAddress;
+        std::uint16_t mPort;
+        gst::PipelineWrapper mStreamPipelineWrapper;
 
-        GstElement* mPipeline{};
+
+        bool mImageCaptureEnabled;
+        gst::video::v4l2::CaptureFormat mImageCaptureFormat;
+        std::string mImageCapturePipelineLaunch;
+
         GMainLoop* mMainLoop{};
         std::thread mMainLoopThread;
 
-        auto createLaunchString(std::string_view deviceNode) -> void;
-        auto initPipeline() -> void;
+        auto createStreamPipeline() -> void;
+        auto createImageCapturePipeline() -> void;
 
-        auto stopPipeline() -> void;
-        auto pausePipeline() -> void;
-        auto playPipeline() -> void;
+        auto initStreamPipeline() -> void;
 
         auto mediaControlServerCallback(srv::MediaControl::Request::SharedPtr req, srv::MediaControl::Response::SharedPtr res) -> void;
+        auto imageCaptureServerCallback(std_srvs::srv::Trigger::Request::SharedPtr req, std_srvs::srv::Trigger::Response::SharedPtr res) -> void;
 
     public:
         // __attribute__ ((visibility("default")))

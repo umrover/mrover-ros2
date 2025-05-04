@@ -37,12 +37,12 @@ auto VideoSelectorWidget::addCamera(std::string const& name) -> void {
     mSelectorsLayout->addStretch();
 }
 
-auto VideoSelectorWidget::addVisibilitySelector(std::string const& name, RequestCallback hideRequest, RequestCallback showRequest) -> void {
-    if (!mSelectors.contains(name)) {
-        qDebug() << "Selector with name" << QString::fromStdString(name) << "does not exist.";
+auto VideoSelectorWidget::addVisibilitySelector(std::string const& cameraName, RequestCallback hideRequest, RequestCallback showRequest) -> void {
+    if (!mSelectors.contains(cameraName)) {
+        qDebug() << "Selector with name" << QString::fromStdString(cameraName) << "does not exist.";
         return;
     }
-    Selector& selector = mSelectors.at(name);
+    Selector& selector = mSelectors.at(cameraName);
 
     if (mUsingIcons) {
         selector.visibilityCheckBox = new CallbackCheckBox(QIcon::fromTheme("view-reveal-symbolic"), QIcon::fromTheme("view-conceal-symbolic"), selector.widget);
@@ -57,7 +57,7 @@ auto VideoSelectorWidget::addVisibilitySelector(std::string const& name, Request
     selector.layout->insertWidget(2, selector.visibilityCheckBox);
 }
 
-auto VideoSelectorWidget::addMediaControls(std::string const& cameraName, RequestCallback pauseRequest, RequestCallback playRequest, RequestCallback stopRequest, RequestCallback screenshotRequest) -> void {
+auto VideoSelectorWidget::addMediaControls(std::string const& cameraName, RequestCallback pauseRequest, RequestCallback playRequest, RequestCallback stopRequest) -> void {
     if (!mSelectors.contains(cameraName)) {
         qDebug() << "Selector with name" << QString::fromStdString(cameraName) << "does not exist.";
         return;
@@ -67,11 +67,9 @@ auto VideoSelectorWidget::addMediaControls(std::string const& cameraName, Reques
     if (mUsingIcons) {
         selector.playPauseCheckBox = new CallbackCheckBox(QIcon::fromTheme("media-playback-start-symbolic"), QIcon::fromTheme("media-playback-pause-symbolic"), selector.widget);
         selector.stopButton = new QPushButton(QIcon{QIcon::fromTheme("stop-symbolic")}, QString(), selector.widget);
-        selector.screenshotButton = new QPushButton(QIcon{QIcon::fromTheme("camera-photo-symbolic")}, QString(), selector.widget);
     } else {
         selector.playPauseCheckBox = new CallbackCheckBox("Play", "Pause", selector.widget);
         selector.stopButton = new QPushButton("Stop", selector.widget);
-        selector.screenshotButton = new QPushButton("Screenshot", selector.widget);
     }
     selector.playPauseCheckBox->setOnCheckCallback(std::move(playRequest));
     selector.playPauseCheckBox->setOnUncheckCallback(std::move(pauseRequest));
@@ -86,5 +84,26 @@ auto VideoSelectorWidget::addMediaControls(std::string const& cameraName, Reques
 
     selector.layout->addWidget(selector.playPauseCheckBox);
     selector.layout->addWidget(selector.stopButton);
+}
+
+auto VideoSelectorWidget::addScreenshotButton(std::string const& cameraName, RequestCallback screenshotRequest) -> void {
+    if (!mSelectors.contains(cameraName)) {
+        qDebug() << "Selector with name" << QString::fromStdString(cameraName) << "does not exist.";
+        return;
+    }
+    Selector& selector = mSelectors.at(cameraName);
+
+    if (mUsingIcons) {
+        selector.screenshotButton = new QPushButton(QIcon{QIcon::fromTheme("camera-photo-symbolic")}, QString(), selector.widget);
+    } else {
+        selector.screenshotButton = new QPushButton("Screenshot", selector.widget);
+    }
+
+    connect(selector.screenshotButton, &QPushButton::clicked, this, [this, cameraName, screenshotRequest]() {
+        if (this->mSelectors.contains(cameraName)) {
+            screenshotRequest();
+        }
+    });
+
     selector.layout->addWidget(selector.screenshotButton);
 }

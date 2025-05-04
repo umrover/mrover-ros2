@@ -12,6 +12,7 @@
 #include <QDockWidget>
 #include <QFormLayout>
 #include <QGridLayout>
+#include <QImage>
 #include <QLabel>
 #include <QLineEdit>
 #include <QMainWindow>
@@ -22,6 +23,10 @@
 #include <QVideoWidget>
 #include <QWidget>
 
+#include <cv_bridge/cv_bridge.h>
+
 #include <mrover/srv/media_control.hpp>
+#include <sensor_msgs/msg/image.hpp>
+#include <std_srvs/srv/trigger.hpp>
 
 #include <gst_utils.hpp>

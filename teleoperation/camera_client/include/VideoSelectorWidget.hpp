@@ -27,8 +27,9 @@ namespace mrover {
         explicit VideoSelectorWidget(QWidget* parent = nullptr);
 
         auto addCamera(std::string const& name) -> void;
-        auto addVisibilitySelector(std::string const& name, RequestCallback hideRequest, RequestCallback showRequest) -> void;
-        auto addMediaControls(std::string const& cameraName, RequestCallback pauseRequest, RequestCallback playRequest, RequestCallback stopRequest, RequestCallback screenshotRequest) -> void;
+        auto addVisibilitySelector(std::string const& cameraName, RequestCallback hideRequest, RequestCallback showRequest) -> void;
+        auto addMediaControls(std::string const& cameraName, RequestCallback pauseRequest, RequestCallback playRequest, RequestCallback stopRequest) -> void;
+        auto addScreenshotButton(std::string const& cameraName, RequestCallback screenshotRequest) -> void;
 
     signals:
         void stopClicked(std::string const& name);

@@ -118,6 +118,69 @@ namespace mrover::gst {
         }
     };
 
+    class PipelineWrapper {
+        std::string mLaunch{};
+        GstElement* mPipeline{nullptr};
+
+    public:
+        PipelineWrapper() = default;
+
+        explicit PipelineWrapper(std::string launch)
+            : mLaunch(std::move(launch)) {
+        }
+
+        ~PipelineWrapper() {
+            if (mPipeline) {
+                gst_element_set_state(mPipeline, GST_STATE_NULL);
+                gst_object_unref(mPipeline);
+            }
+        }
+
+        auto init() -> void {
+            mPipeline = gst_parse_launch(mLaunch.c_str(), nullptr);
+            if (!mPipeline) {
+                throw std::runtime_error{"Failed to create pipeline"};
+            }
+        }
+
+        auto stop() -> void {
+            if (gst_element_set_state(mPipeline, GST_STATE_NULL) == GST_STATE_CHANGE_FAILURE) {
+                throw std::runtime_error{"gst_element_set_state to GST_STATE_NULL failed"};
+            }
+        }
+
+        auto pause() -> void {
+            if (gst_element_set_state(mPipeline, GST_STATE_PAUSED) == GST_STATE_CHANGE_FAILURE) {
+                throw std::runtime_error{"gst_element_set_state to GST_STATE_PAUSED failed"};
+            }
+        }
+
+        auto play() -> void {
+            if (gst_element_set_state(mPipeline, GST_STATE_PLAYING) == GST_STATE_CHANGE_FAILURE) {
+                throw std::runtime_error{"gst_element_set_state to GST_STATE_PLAYING failed"};
+            }
+        }
+
+        [[nodiscard]] auto getLaunchString() const -> std::string {
+            return mLaunch;
+        }
+
+        auto addBusWatcher(GstBusFunc func, gpointer user_data) -> guint {
+            if (!mPipeline) {
+                throw std::runtime_error{"Pipeline not initialized"};
+            }
+            GstBus* mBus = gst_element_get_bus(mPipeline);
+            if (!mBus) {
+                throw std::runtime_error{"Failed to get bus from pipeline"};
+            }
+            guint result = gst_bus_add_watch(mBus, func, user_data);
+
+            gst_object_unref(mBus);
+
+            return result;
+        }
+    };
+
     namespace video {
         enum class RawFormat : unsigned int {
             YUY2,
@@ -277,28 +340,36 @@ namespace mrover::gst {
         }
 
         namespace v4l2 {
+
             // Based on FOURCC names given by v4l2-ctl --list-formats-ext
 #define FORMAT_ITER(_F)       \
     _F(YUYV, RawFormat::YUY2) \
     _F(MJPG, Codec::JPEG)
 
-            enum class Format : unsigned int {
+            enum class PixelFormat : unsigned int {
 #define F(name, ...) name,
                 FORMAT_ITER(F)
 #undef F
             };
 
-            constexpr auto toString(Format format) -> std::string_view {
-                if (auto name = magic_enum::enum_name(format); !name.empty()) {
+            struct CaptureFormat {
+                PixelFormat pixelFormat;
+                std::uint16_t width;
+                std::uint16_t height;
+                std::uint16_t framerate;
+            };
+
+            constexpr auto toString(PixelFormat pixelFormat) -> std::string_view {
+                if (auto name = magic_enum::enum_name(pixelFormat); !name.empty()) {
                     return name;
                 }
                 throw std::invalid_argument("Unsupported V4L2 format");
             }
 
-            constexpr auto toStringGstType(Format format) -> std::string_view {
-                switch (format) {
-#define F(name, gstType) \
-    case Format::name:   \
+            constexpr auto toStringGstType(PixelFormat pixelFormat) -> std::string_view {
+                switch (pixelFormat) {
+#define F(name, gstType)    \
+    case PixelFormat::name: \
         return toString(gstType);
 
                     FORMAT_ITER(F)
@@ -308,17 +379,17 @@ namespace mrover::gst {
                 }
             }
 
-            constexpr auto getFormatFromStringView(std::string_view name) -> Format {
-                if (auto format = magic_enum::enum_cast<Format>(name); format.has_value()) {
-                    return format.value();
+            constexpr auto getPixelFormatFromStringView(std::string_view name) -> PixelFormat {
+                if (auto pixelFormat = magic_enum::enum_cast<PixelFormat>(name); pixelFormat.has_value()) {
+                    return pixelFormat.value();
                 }
                 throw std::invalid_argument("Unsupported V4L2 format");
             }
 
-            constexpr auto isRawFormat(Format format) -> bool {
-                switch (format) {
-#define F(name, gstType) \
-    case Format::name:   \
+            constexpr auto isRawPixelFormat(PixelFormat pixelFormat) -> bool {
+                switch (pixelFormat) {
+#define F(name, gstType)    \
+    case PixelFormat::name: \
         return std::is_same_v<decltype(gstType), RawFormat>;
 
                     FORMAT_ITER(F)
@@ -328,10 +399,10 @@ namespace mrover::gst {
                 }
             }
 
-            constexpr auto isCompressedFormat(Format format) -> bool {
-                switch (format) {
-#define F(name, gstType) \
-    case Format::name:   \
+            constexpr auto isCompressedPixelFormat(PixelFormat pixelFormat) -> bool {
+                switch (pixelFormat) {
+#define F(name, gstType)    \
+    case PixelFormat::name: \
         return std::is_same_v<decltype(gstType), Codec>;
 
                     FORMAT_ITER(F)
@@ -341,10 +412,10 @@ namespace mrover::gst {
                 }
             }
 
-            constexpr auto getMediaType(Format format) -> std::string_view {
-                switch (format) {
-#define F(name, gstType) \
-    case Format::name:   \
+            constexpr auto getMediaType(PixelFormat pixelFormat) -> std::string_view {
+                switch (pixelFormat) {
+#define F(name, gstType)    \
+    case PixelFormat::name: \
         return getMediaType(gstType);
 
                     FORMAT_ITER(F)
@@ -361,8 +432,7 @@ namespace mrover::gst {
             //     }
 
             template<typename... Args>
-            inline auto createSrc(std::string_view device, Format format,
-                                  std::uint16_t width, std::uint16_t height, std::uint16_t framerate,
+            inline auto createSrc(std::string_view device, CaptureFormat captureFormat,
                                   Args&&... extraProps) -> std::string
                 requires(std::convertible_to<std::remove_cvref_t<Args>, std::string_view> && ...)
             {
@@ -371,9 +441,13 @@ namespace mrover::gst {
                 oss << "v4l2src device=" << device;
                 ((oss << ' ' << std::forward<Args>(extraProps)), ...);
 
-                oss << " ! " << getMediaType(format) << ",width=" << width << ",height=" << height << ",framerate=" << framerate << "/1";
-                if (isRawFormat(format)) {
-                    oss << ",format=" << toStringGstType(format);
+                oss << " ! " << getMediaType(captureFormat.pixelFormat)
+                    << ",width=" << captureFormat.width
+                    << ",height=" << captureFormat.height
+                    << ",framerate=" << captureFormat.framerate << "/1";
+
+                if (isRawPixelFormat(captureFormat.pixelFormat)) {
+                    oss << ",format=" << toStringGstType(captureFormat.pixelFormat);
                 }
 
                 return oss.str();

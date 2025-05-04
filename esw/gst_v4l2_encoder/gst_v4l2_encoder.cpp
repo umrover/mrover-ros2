@@ -1,4 +1,5 @@
 #include "gst_v4l2_encoder.hpp"
+#include "gst_utils.hpp"
 
 namespace mrover {
 
@@ -16,27 +17,27 @@ namespace mrover {
 
     auto gstBusMessage(GstBus*, GstMessage* message, gpointer data) -> gboolean;
 
-    auto GstV4L2Encoder::createLaunchString(std::string_view deviceNode) -> void {
+    auto GstV4L2Encoder::createStreamPipeline() -> void {
         gst::PipelineBuilder pipeline;
+
+        auto& [pixelFormat, imageWidth, imageHeight, imageFramerate] = mStreamCaptureFormat;
+
         // Source
-        if (deviceNode.empty()) {
-            mCaptureFormat = gst::video::v4l2::Format::YUYV;
+        if (mDeviceNode.empty()) {
+            pixelFormat = gst::video::v4l2::PixelFormat::YUYV;
             pipeline.pushBack("videotestsrc");
-            pipeline.pushBack(std::format("video/x-raw,format={},width={},height={},framerate={}/1", gst::video::v4l2::toStringGstType(mCaptureFormat), mImageWidth, mImageHeight, mImageFramerate));
+            pipeline.pushBack(std::format("video/x-raw,format={},width={},height={},framerate={}/1", gst::video::v4l2::toStringGstType(pixelFormat), imageWidth, imageHeight, imageFramerate));
         } else {
-            pipeline.pushBack(gst::video::v4l2::createSrc(deviceNode, mCaptureFormat, mImageWidth, mImageHeight, mImageFramerate));
+            pipeline.pushBack(gst::video::v4l2::createSrc(mDeviceNode, mStreamCaptureFormat));
             // gst::video::v4l2::addProperty("extra-controls", "\"c,white_balance_temperature_auto=0,white_balance_temperature=4000\"")
-            // if (mDisableAutoWhiteBalance) mLaunch += "extra-controls=\"c,white_balance_temperature_auto=0,white_balance_temperature=4000\" ";
+            // if (mDisableAutoWhiteBalance) mStreamLaunch += "extra-controls=\"c,white_balance_temperature_auto=0,white_balance_temperature=4000\" ";
         }
 
-        if (gst::video::v4l2::isRawFormat(mCaptureFormat) && mCropEnabled) {
-            pipeline.pushBack(std::format("videocrop left={} right={} top={} bottom={}", mCropLeft, mCropRight, mCropTop, mCropBottom));
-        }
 
         // Source decoder and H265 encoder
         if (gst_element_factory_find("nvv4l2h265enc")) {
             // Most likely on the Jetson
-            if (mCaptureFormat == gst::video::v4l2::Format::MJPG) {
+            if (pixelFormat == gst::video::v4l2::PixelFormat::MJPG) {
                 // TODO(quintin): I had to apply this patch: https://forums.developer.nvidia.com/t/macrosilicon-usb/157777/4
                 //                nvv4l2camerasrc only supports UYUV by default, but our cameras are YUY2 (YUYV)
                 // "nvv4l2camerasrc device={} "
@@ -48,6 +49,11 @@ namespace mrover {
                 pipeline.pushBack("video/x-raw(memory:NVMM),format=NV12");
 
             } else {
+                if (mCropEnabled) {
+                    pipeline.pushBack(std::format("videocrop left={} right={} top={} bottom={}", mCropLeft, mCropRight, mCropTop, mCropBottom));
+                }
+                pipeline.pushBack("clockoverlay");
+
                 pipeline.pushBack("videoconvert");
                 pipeline.pushBack("video/x-raw,format=I420"); // Convert to I420 for the encoder, note we are still on the CPU
                 pipeline.pushBack("nvvidconv");               // Upload to GPU memory for the encoder
@@ -68,15 +74,20 @@ namespace mrover {
                               gst::addProperty("maxperf-enable", true));
         } else {
             // For desktop/laptops with no hardware encoder
-            if (gst::video::v4l2::isCompressedFormat(mCaptureFormat)) {
-                pipeline.pushBack(gst::video::createDefaultDecoder(toStringGstType(mCaptureFormat)));
+            if (gst::video::v4l2::isCompressedPixelFormat(pixelFormat)) {
+                pipeline.pushBack(gst::video::createDefaultDecoder(toStringGstType(pixelFormat)));
             } else {
                 pipeline.pushBack("videoconvert");
             }
 
-            pipeline.pushBack(gst::video::createDefaultEncoder(mStreamCodec));
+            if (mCropEnabled) {
+                pipeline.pushBack(std::format("videocrop left={} right={} top={} bottom={}", mCropLeft, mCropRight, mCropTop, mCropBottom));
+            }
+            pipeline.pushBack("clockoverlay");
 
-            if (mStreamCodec == gst::video::Codec::H264) {
+            pipeline.pushBack(gst::video::createDefaultEncoder(mCodec));
+
+            if (mCodec == gst::video::Codec::H264) {
                 pipeline.addPropsToElement(pipeline.size() - 1,
                                            gst::addProperty("tune", "zerolatency"),
                                            gst::addProperty("bitrate", mBitrate),
@@ -84,27 +95,55 @@ namespace mrover {
             }
         }
 
-        if (mStreamCodec == gst::video::Codec::H265) {
+        if (mCodec == gst::video::Codec::H265) {
             pipeline.pushBack("h265parse");
-        } else if (mStreamCodec == gst::video::Codec::H264) {
+        } else if (mCodec == gst::video::Codec::H264) {
             pipeline.pushBack("h264parse");
         }
 
-        pipeline.pushBack(gst::video::createRtpSink(mAddress, mPort, mStreamCodec));
+        pipeline.pushBack(gst::video::createRtpSink(mAddress, mPort, mCodec));
 
-        mLaunch = pipeline.str();
+        RCLCPP_INFO_STREAM(get_logger(), std::format("GStreamer stream launch string: {}", pipeline.str()));
+        mStreamPipelineWrapper = gst::PipelineWrapper(pipeline.str());
     }
 
-    auto GstV4L2Encoder::initPipeline() -> void {
-        RCLCPP_INFO_STREAM(get_logger(), "Initializing and starting GStreamer pipeline...");
+    auto GstV4L2Encoder::createImageCapturePipeline() -> void {
+        gst::PipelineBuilder pipeline;
+
+        if (mDeviceNode.empty()) {
+            mImageCaptureEnabled = false;
+            return;
+        }
+
+        pipeline.pushBack(gst::video::v4l2::createSrc(mDeviceNode, mImageCaptureFormat));
+
+        if (isCompressedPixelFormat(mImageCaptureFormat.pixelFormat)) {
+            pipeline.pushBack(gst::video::createDefaultDecoder(toStringGstType(mImageCaptureFormat.pixelFormat)));
+        } else {
+            pipeline.pushBack("videoconvert");
+        }
+        pipeline.pushBack("video/x-raw,format=BGR");
+        if (mCropEnabled) {
+            pipeline.pushBack("videocrop",
+                              gst::addProperty("left", mCropLeft),
+                              gst::addProperty("right", mCropRight),
+                              gst::addProperty("top", mCropTop),
+                              gst::addProperty("bottom", mCropBottom));
+        }
+        pipeline.pushBack("clockoverlay");
+        pipeline.pushBack("appsink");
+
+        RCLCPP_INFO_STREAM(get_logger(), std::format("GStreamer image capture launch string: {}", pipeline.str()));
+        mImageCapturePipelineLaunch = pipeline.str();
+    }
+
+    auto GstV4L2Encoder::initStreamPipeline() -> void {
+        RCLCPP_INFO_STREAM(get_logger(), "Initializing GStreamer stream pipeline...");
 
         mMainLoop = gstCheck(g_main_loop_new(nullptr, FALSE));
-        RCLCPP_INFO_STREAM(get_logger(), std::format("GStreamer launch string: {}", mLaunch));
-        mPipeline = gstCheck(gst_parse_launch(mLaunch.c_str(), nullptr));
 
-        GstBus* bus = gstCheck(gst_element_get_bus(mPipeline));
-        gst_bus_add_watch(bus, gstBusMessage, this);
-        gst_object_unref(bus);
+        mStreamPipelineWrapper.init();
+        mStreamPipelineWrapper.addBusWatcher(gstBusMessage, this);
 
         mMainLoopThread = std::thread{[this] {
             RCLCPP_INFO_STREAM(get_logger(), "Entering GStreamer main loop");
@@ -112,33 +151,14 @@ namespace mrover {
             RCLCPP_INFO_STREAM(get_logger(), "Leaving GStreamer main loop");
         }};
 
-        RCLCPP_INFO_STREAM(get_logger(), "Initialized and started GStreamer pipeline");
+        RCLCPP_INFO_STREAM(get_logger(), "Initialized GStreamer stream pipeline");
     }
-
-    auto GstV4L2Encoder::stopPipeline() -> void {
-        if (gst_element_set_state(mPipeline, GST_STATE_NULL) == GST_STATE_CHANGE_FAILURE) {
-            throw std::runtime_error{"gst_element_set_state to GST_STATE_NULL failed"};
-        }
-    }
-
-    auto GstV4L2Encoder::pausePipeline() -> void {
-        if (gst_element_set_state(mPipeline, GST_STATE_PAUSED) == GST_STATE_CHANGE_FAILURE) {
-            throw std::runtime_error{"gst_element_set_state to GST_STATE_PAUSED failed"};
-        }
-    }
-
-    auto GstV4L2Encoder::playPipeline() -> void {
-        if (gst_element_set_state(mPipeline, GST_STATE_PLAYING) == GST_STATE_CHANGE_FAILURE) {
-            throw std::runtime_error{"gst_element_set_state to GST_STATE_PLAYING failed"};
-        }
-    }
-
 
     auto GstV4L2Encoder::mediaControlServerCallback(srv::MediaControl::Request::SharedPtr const req, srv::MediaControl::Response::SharedPtr res) -> void {
         if (req->command == srv::MediaControl::Request::STOP) {
             RCLCPP_INFO_STREAM(get_logger(), "Stopping GStreamer pipeline");
             try {
-                stopPipeline();
+                mStreamPipelineWrapper.stop();
             } catch (std::runtime_error const& e) {
                 RCLCPP_ERROR_STREAM(get_logger(), std::format("Failed to stop GStreamer pipeline: {}", e.what()));
                 res->success = false;
@@ -147,7 +167,7 @@ namespace mrover {
         } else if (req->command == srv::MediaControl::Request::PAUSE) {
             RCLCPP_INFO_STREAM(get_logger(), "Pausing GStreamer pipeline");
             try {
-                pausePipeline();
+                mStreamPipelineWrapper.pause();
             } catch (std::runtime_error const& e) {
                 RCLCPP_ERROR_STREAM(get_logger(), std::format("Failed to pause GStreamer pipeline: {}", e.what()));
                 res->success = false;
@@ -156,7 +176,7 @@ namespace mrover {
         } else if (req->command == srv::MediaControl::Request::PLAY) {
             RCLCPP_INFO_STREAM(get_logger(), "Playing GStreamer pipeline");
             try {
-                playPipeline();
+                mStreamPipelineWrapper.play();
             } catch (std::runtime_error const& e) {
                 RCLCPP_ERROR_STREAM(get_logger(), std::format("Failed to play GStreamer pipeline: {}", e.what()));
                 res->success = false;
@@ -167,6 +187,39 @@ namespace mrover {
             res->success = false;
             return;
         }
+        res->success = true;
+    }
+
+    auto GstV4L2Encoder::imageCaptureServerCallback(std_srvs::srv::Trigger::Request::SharedPtr const req, std_srvs::srv::Trigger::Response::SharedPtr res) -> void {
+        RCLCPP_INFO_STREAM(get_logger(), "Capture image request received");
+        if (!mImagePublisher || !mImageCaptureEnabled) {
+            res->success = false;
+            return;
+        }
+
+        mStreamPipelineWrapper.stop();
+
+        {
+            cv::VideoCapture cap(mImageCapturePipelineLaunch, cv::CAP_GSTREAMER);
+            if (!cap.isOpened()) {
+                RCLCPP_ERROR(this->get_logger(), "Failed to open video stream");
+                return;
+            }
+
+            cv::Mat img;
+            if (!cap.read(img)) {
+                RCLCPP_ERROR(this->get_logger(), "Failed to capture frame");
+                return;
+            }
+
+            auto msg = cv_bridge::CvImage(std_msgs::msg::Header(), "bgr8", img).toImageMsg();
+            msg->header.stamp = this->get_clock()->now();
+            mImagePublisher->publish(*msg);
+            RCLCPP_INFO(this->get_logger(), "Published one frame");
+        }
+
+        mStreamPipelineWrapper.play();
+
         res->success = true;
     }
 
@@ -213,11 +266,7 @@ namespace mrover {
             std::string const cameraName = get_parameter("camera").as_string();
 
             int port;
-            std::string captureFormat, codec;
-            // For example, /dev/video0
-            // These device paths are not garunteed to stay the same between reboots
-            // Prefer sys path for non-debugging purposes
-            std::string deviceNode;
+
             // To find the sys path:
             // 1) Disconnect all cameras
             // 2) Confirm there are no /dev/video* devices
@@ -225,37 +274,60 @@ namespace mrover {
             // 3) Run "ls /dev/video*" to verify the device is connected
             // 4) Run "udevadm info -q path -n /dev/video0" to get the sys path
             std::string devicePath;
-            int imageWidth, imageHeight, imageFramerate, bitrate;
+
+            std::string streamPixelFormat, codec;
+            int streamImageWidth, streamImageHeight, streamImageFramerate, bitrate;
+
+            std::string imageCapturePixelFormat;
+            int imageCaptureImageWidth, imageCaptureImageHeight, imageCaptureImageFramerate;
 
             std::vector<ParameterWrapper> parameters = {
                     {std::format("{}.address", cameraName), mAddress, "0.0.0.0"},
                     {std::format("{}.port", cameraName), port, 0},
-                    {std::format("{}.capture_format", cameraName), captureFormat, "MJPG"},
-                    {std::format("{}.codec", cameraName), codec, "H265"},
-                    {std::format("{}.dev_node", cameraName), deviceNode, ""},
+                    {std::format("{}.dev_node", cameraName), mDeviceNode, ""},
                     {std::format("{}.dev_path", cameraName), devicePath, ""},
-                    {std::format("{}.width", cameraName), imageWidth, 0},
-                    {std::format("{}.height", cameraName), imageHeight, 0},
-                    {std::format("{}.framerate", cameraName), imageFramerate, 0},
-                    {std::format("{}.bitrate", cameraName), bitrate, 0},
                     {std::format("{}.crop_left", cameraName), mCropLeft, 0},
                     {std::format("{}.crop_right", cameraName), mCropRight, 0},
                     {std::format("{}.crop_top", cameraName), mCropTop, 0},
                     {std::format("{}.crop_bottom", cameraName), mCropBottom, 0},
-
+                    {std::format("{}.stream.pixel_format", cameraName), streamPixelFormat, "MJPG"},
+                    {std::format("{}.stream.width", cameraName), streamImageWidth, 0},
+                    {std::format("{}.stream.height", cameraName), streamImageHeight, 0},
+                    {std::format("{}.stream.framerate", cameraName), streamImageFramerate, 0},
+                    {std::format("{}.stream.codec", cameraName), codec, "H265"},
+                    {std::format("{}.stream.bitrate", cameraName), bitrate, 0},
+                    {std::format("{}.image_capture.pixel_format", cameraName), imageCapturePixelFormat, "MJPG"},
+                    {std::format("{}.image_capture.width", cameraName), imageCaptureImageWidth, 0},
+                    {std::format("{}.image_capture.height", cameraName), imageCaptureImageHeight, 0},
+                    {std::format("{}.image_capture.framerate", cameraName), imageCaptureImageFramerate, 0},
             };
 
             ParameterWrapper::declareParameters(this, parameters);
 
             mPort = static_cast<std::uint16_t>(port);
-            mCaptureFormat = gst::video::v4l2::getFormatFromStringView(captureFormat);
-            mStreamCodec = gst::video::getCodecFromStringView(codec);
-            mImageWidth = static_cast<std::uint16_t>(imageWidth);
-            mImageHeight = static_cast<std::uint16_t>(imageHeight);
-            mImageFramerate = static_cast<std::uint16_t>(imageFramerate);
+            mStreamCaptureFormat = gst::video::v4l2::CaptureFormat{
+                    .pixelFormat = gst::video::v4l2::getPixelFormatFromStringView(streamPixelFormat),
+                    .width = static_cast<std::uint16_t>(streamImageWidth),
+                    .height = static_cast<std::uint16_t>(streamImageHeight),
+                    .framerate = static_cast<std::uint16_t>(streamImageFramerate),
+            };
+            mCodec = gst::video::getCodecFromStringView(codec);
             mBitrate = static_cast<std::uint64_t>(bitrate);
-            mCropEnabled = mCropLeft != 0 || mCropRight != 0 || mCropTop != 0 || mCropBottom != 0;
 
+            if (imageCaptureImageWidth == 0 || imageCaptureImageHeight == 0 || imageCaptureImageFramerate == 0) {
+                mImageCaptureEnabled = false;
+            } else {
+                mImageCaptureEnabled = true;
+            }
+
+            mImageCaptureFormat = gst::video::v4l2::CaptureFormat{
+                    .pixelFormat = gst::video::v4l2::getPixelFormatFromStringView(imageCapturePixelFormat),
+                    .width = static_cast<std::uint16_t>(imageCaptureImageWidth),
+                    .height = static_cast<std::uint16_t>(imageCaptureImageHeight),
+                    .framerate = static_cast<std::uint16_t>(imageCaptureImageFramerate),
+            };
+
+            mCropEnabled = mCropLeft != 0 || mCropRight != 0 || mCropTop != 0 || mCropBottom != 0;
             // declare_parameter("disable_auto_white_balance", rclcpp::ParameterType::PARAMETER_BOOL);
 
             mMediaControlServer = create_service<srv::MediaControl>(
@@ -265,15 +337,25 @@ namespace mrover {
                         mediaControlServerCallback(req, res);
                     });
 
+            mImageCaptureServer = create_service<std_srvs::srv::Trigger>(
+                    std::format("{}_image_capture", cameraName),
+                    [this](std_srvs::srv::Trigger::Request::SharedPtr const req,
+                           std_srvs::srv::Trigger::Response::SharedPtr res) {
+                        imageCaptureServerCallback(req, res);
+                    });
+
+            mImagePublisher = create_publisher<sensor_msgs::msg::Image>(std::format("{}_image", cameraName), 1);
+
             if (!devicePath.empty()) {
-                deviceNode = findDeviceNode(devicePath);
+                mDeviceNode = findDeviceNode(devicePath);
             }
 
             gst_init(nullptr, nullptr);
 
-            createLaunchString(deviceNode);
-            initPipeline();
-            playPipeline();
+            createStreamPipeline();
+            createImageCapturePipeline();
+            initStreamPipeline();
+            mStreamPipelineWrapper.play();
 
         } catch (std::exception const& e) {
             RCLCPP_ERROR_STREAM(get_logger(), std::format("Exception initializing GStreamer V4L2 streamer: {}", e.what()));
@@ -286,11 +368,6 @@ namespace mrover {
             g_main_loop_quit(mMainLoop);
             mMainLoopThread.join();
             g_main_loop_unref(mMainLoop);
-        }
-
-        if (mPipeline) {
-            gst_element_set_state(mPipeline, GST_STATE_NULL);
-            gst_object_unref(mPipeline);
         }
     }
 

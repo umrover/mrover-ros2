@@ -9,6 +9,19 @@ namespace mrover {
 
         std::shared_ptr<CameraClientMainWindow> mQtGui;
         std::unordered_map<std::string, rclcpp::Client<srv::MediaControl>::SharedPtr> mMediaControlClients;
+        std::unordered_map<std::string, rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr> mImageCaptureClients;
+        std::unordered_map<std::string, rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr> mImageSubscribers;
+
+        auto imageCallback(sensor_msgs::msg::Image::ConstSharedPtr const& msg) {
+            RCLCPP_INFO(get_logger(), "Received image from camera");
+            try {
+                auto cvImg = cv_bridge::toCvShare(msg, "bgr8")->image;
+                QImage qImg(cvImg.data, cvImg.cols, cvImg.rows, static_cast<int>(cvImg.step), QImage::Format_BGR888);
+                mQtGui->showImagePopup(qImg);
+            } catch (cv_bridge::Exception const& e) {
+                RCLCPP_ERROR(this->get_logger(), "cv_bridge error: %s", e.what());
+            }
+        }
 
     public:
         explicit CameraClientNode(std::shared_ptr<CameraClientMainWindow> qtGui) : Node("camera_client"), mQtGui(std::move(qtGui)) {
@@ -29,14 +42,18 @@ namespace mrover {
                 }
 
                 declare_parameter(std::format("{}.port", cameraName), rclcpp::ParameterType::PARAMETER_INTEGER);
-                declare_parameter(std::format("{}.codec", cameraName), rclcpp::ParameterType::PARAMETER_STRING);
-
                 std::uint16_t const port = static_cast<std::uint16_t>(this->get_parameter(std::format("{}.port", cameraName)).as_int());
-                std::string const codec = this->get_parameter(std::format("{}.codec", cameraName)).as_string();
+
+                declare_parameter(std::format("{}.stream.codec", cameraName), rclcpp::ParameterType::PARAMETER_STRING);
+                std::string const codec = this->get_parameter(std::format("{}.stream.codec", cameraName)).as_string();
 
                 std::string const pipeline = gst::video::createRtpToRawSrc(port, gst::video::getCodecFromStringView(codec), rtpJitterMs);
 
                 mMediaControlClients.emplace(cameraName, create_client<srv::MediaControl>(std::format("{}_media_control", cameraName)));
+                mImageCaptureClients.emplace(cameraName, create_client<std_srvs::srv::Trigger>(std::format("{}_image_capture", cameraName)));
+                mImageSubscribers.emplace(cameraName, create_subscription<sensor_msgs::msg::Image>(std::format("{}_image", cameraName), 10, [this](sensor_msgs::msg::Image::ConstSharedPtr const& msg) {
+                                              imageCallback(msg);
+                                          }));
 
                 RequestCallback pipelinePauseRequest = [this, cameraName]() {
                     qDebug() << "Pause request for camera" << cameraName.c_str();
@@ -83,8 +100,23 @@ namespace mrover {
                     return true;
                 };
 
+                RequestCallback screenshotRequest = [this, cameraName]() {
+                    qDebug() << "Screenshot request for camera" << cameraName.c_str();
+                    auto client = mImageCaptureClients.find(cameraName);
+                    if (client == mImageCaptureClients.end()) {
+                        RCLCPP_ERROR(get_logger(), "Camera %s not found", cameraName.c_str());
+                        return false;
+                    }
+                    auto request = std::make_shared<std_srvs::srv::Trigger::Request>();
+                    auto result = client->second->async_send_request(request);
+
+                    // TODO:(owen) check result success
+                    return true;
+                };
+
                 mQtGui->createCamera(cameraName, pipeline);
-                mQtGui->getCameraSelectorWidget()->addMediaControls(cameraName, std::move(pipelinePauseRequest), std::move(pipelinePlayRequest), std::move(pipelineStopRequest), []() { return true; });
+                mQtGui->getCameraSelectorWidget()->addMediaControls(cameraName, std::move(pipelinePauseRequest), std::move(pipelinePlayRequest), std::move(pipelineStopRequest));
+                mQtGui->getCameraSelectorWidget()->addScreenshotButton(cameraName, std::move(screenshotRequest));
             }
         }
     };

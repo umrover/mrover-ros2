@@ -66,6 +66,16 @@ auto CameraClientMainWindow::getCameraSelectorWidget() -> VideoSelectorWidget* {
     return mCameraSelectorWidget;
 }
 
+auto CameraClientMainWindow::showImagePopup(QImage const& image) -> void {
+    auto imagePopup = new QLabel();
+    imagePopup->setWindowFlags(Qt::Window | Qt::WindowStaysOnTopHint);
+    imagePopup->setWindowTitle("Screenshot");
+    imagePopup->setPixmap(QPixmap::fromImage(image));
+    imagePopup->setScaledContents(true);
+    imagePopup->resize(image.width(), image.height());
+    imagePopup->show();
+}
+
 void CameraClientMainWindow::closeEvent(QCloseEvent* event) {
     emit closed();
     QMainWindow::closeEvent(event);
