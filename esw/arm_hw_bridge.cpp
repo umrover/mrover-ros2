@@ -309,11 +309,11 @@ namespace mrover {
 
                     if ((*jointDePitchPosition >= mJointDePitchMaxPosition) || (*jointDePitchPosition <= mJointDePitchMinPosition)) {
                         RCLCPP_INFO(get_logger(), "Joint DE Pitch limit hit!");
-                        jointDePitchPosition = Radians{0};
+                        jointDePitchPosition = (*mJointDePitchRoll)[0];
                     }
                     if ((*jointDeRollPosition >= mJointDeRollMaxPosition) || (*jointDeRollPosition <= mJointDeRollMinPosition)) {
                         RCLCPP_INFO(get_logger(), "Joint DE Roll limit hit!");
-                        jointDeRollPosition = Radians{0};
+                        jointDeRollPosition = (*mJointDePitchRoll)[1];
                     }
 
                     Vector2<Radians> const pitchRollPositions{jointDePitchPosition.value(), jointDeRollPosition.value()};
