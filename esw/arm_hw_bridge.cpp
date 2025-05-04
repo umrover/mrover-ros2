@@ -9,6 +9,8 @@
 #include <units.hpp>
 #include <units_eigen.hpp>
 
+#include <parameter.hpp>
+
 #include <mrover/msg/controller_state.hpp>
 #include <mrover/msg/position.hpp>
 #include <mrover/msg/throttle.hpp>
@@ -36,10 +38,6 @@ namespace mrover {
     // This corrects the HALL-effect motor source on the Moteus based on the absolute encoder readings
     std::chrono::seconds static constexpr DE_OFFSET_TIMER_PERIOD = std::chrono::seconds{1};
 
-    // The duration in which we command the cam to move in one direction
-    std::chrono::milliseconds static constexpr CAM_CONTROL_DURATION = std::chrono::milliseconds{950};
-    // The period in which we command the cam to move
-    std::chrono::milliseconds static constexpr CAM_CONTROL_PERIOD = std::chrono::milliseconds{50};
 
     // using MetersPerRadian = compound_unit<Meters, inverse<Radians>>;
     // using RadiansPerMeter = compound_unit<Radians, inverse<Meters>>;
@@ -71,6 +69,16 @@ namespace mrover {
             mDeOffsetTimer = create_wall_timer(DE_OFFSET_TIMER_PERIOD, [this]() { updateDeOffsets(); });
             mJointDe0AdjustClient = create_client<srv::AdjustMotor>("joint_de_0_adjust");
             mJointDe1AdjustClient = create_client<srv::AdjustMotor>("joint_de_1_adjust");
+
+            int camControlDuration, camControlPeriod;
+            std::vector<ParameterWrapper> parameters = {
+                    {"cam_control_duration", camControlDuration, 0},
+                    {"cam_control_period", camControlPeriod, 50},
+            };
+            ParameterWrapper::declareParameters(this, parameters);
+
+            mCamControlDuration = std::chrono::milliseconds{camControlDuration};
+            mCamControlPeriod = std::chrono::milliseconds{camControlPeriod};
 
             mCamControlCallbackGroup = create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
             mCamControlServer = create_service<srv::ControlCam>(
@@ -118,6 +126,12 @@ namespace mrover {
         rclcpp::Client<srv::AdjustMotor>::SharedPtr mJointDe0AdjustClient;
         rclcpp::Client<srv::AdjustMotor>::SharedPtr mJointDe1AdjustClient;
         std::optional<Vector2<Radians>> mJointDePitchRoll;
+
+
+        // The duration in which we command the cam to move in one direction
+        std::chrono::milliseconds mCamControlDuration;
+        // Defines the rate in which we send CAN messages to the cam
+        std::chrono::milliseconds mCamControlPeriod;
 
         rclcpp::CallbackGroup::SharedPtr mCamControlCallbackGroup;
         rclcpp::Service<srv::ControlCam>::SharedPtr mCamControlServer;
@@ -362,24 +376,24 @@ namespace mrover {
         }
 
         auto camIn() -> void {
-            auto endTime = get_clock()->now() + CAM_CONTROL_DURATION;
+            auto endTime = get_clock()->now() + mCamControlDuration;
             while (get_clock()->now() < endTime) {
                 mCam->setDesiredThrottle(-1.0);
-                std::this_thread::sleep_for(CAM_CONTROL_PERIOD);
+                std::this_thread::sleep_for(mCamControlPeriod);
             }
         }
 
         auto camOut() -> void {
-            auto endTime = get_clock()->now() + CAM_CONTROL_DURATION;
+            auto endTime = get_clock()->now() + mCamControlDuration;
             while (get_clock()->now() < endTime) {
                 mCam->setDesiredThrottle(1.0);
-                std::this_thread::sleep_for(CAM_CONTROL_PERIOD);
+                std::this_thread::sleep_for(mCamControlPeriod);
             }
         }
 
         auto camPulse() -> void {
             camOut();
-            std::this_thread::sleep_for(CAM_CONTROL_DURATION);
+            std::this_thread::sleep_for(mCamControlDuration);
             camIn();
         }
 
