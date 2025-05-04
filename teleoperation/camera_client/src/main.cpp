@@ -3,6 +3,7 @@
 #include "pch.hpp"
 
 #include "CameraClientMainWindow.hpp"
+#include "ImagePreview.hpp"
 
 namespace mrover {
     class CameraClientNode : public rclcpp::Node {
@@ -12,12 +13,18 @@ namespace mrover {
         std::unordered_map<std::string, rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr> mImageCaptureClients;
         std::unordered_map<std::string, rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr> mImageSubscribers;
 
-        auto imageCallback(sensor_msgs::msg::Image::ConstSharedPtr const& msg) {
+        auto imageCallback(std::string const& cameraName, sensor_msgs::msg::Image::ConstSharedPtr const& msg) {
             RCLCPP_INFO(get_logger(), "Received image from camera");
             try {
                 auto cvImg = cv_bridge::toCvShare(msg, "bgr8")->image;
                 QImage qImg(cvImg.data, cvImg.cols, cvImg.rows, static_cast<int>(cvImg.step), QImage::Format_BGR888);
-                mQtGui->showImagePopup(qImg);
+
+                auto* imagePreview = new ImagePreview();
+                imagePreview->updateImage(qImg);
+                imagePreview->setWindowTitle(QString::fromStdString(cameraName) + " - Screenshot");
+                imagePreview->setAttribute(Qt::WA_DeleteOnClose);
+                imagePreview->show();
+
             } catch (cv_bridge::Exception const& e) {
                 RCLCPP_ERROR(this->get_logger(), "cv_bridge error: %s", e.what());
             }
@@ -51,8 +58,8 @@ namespace mrover {
 
                 mMediaControlClients.emplace(cameraName, create_client<srv::MediaControl>(std::format("{}_media_control", cameraName)));
                 mImageCaptureClients.emplace(cameraName, create_client<std_srvs::srv::Trigger>(std::format("{}_image_capture", cameraName)));
-                mImageSubscribers.emplace(cameraName, create_subscription<sensor_msgs::msg::Image>(std::format("{}_image", cameraName), 10, [this](sensor_msgs::msg::Image::ConstSharedPtr const& msg) {
-                                              imageCallback(msg);
+                mImageSubscribers.emplace(cameraName, create_subscription<sensor_msgs::msg::Image>(std::format("{}_image", cameraName), 10, [this, cameraName](sensor_msgs::msg::Image::ConstSharedPtr const& msg) {
+                                              imageCallback(cameraName, msg);
                                           }));
 
                 RequestCallback pipelinePauseRequest = [this, cameraName]() {

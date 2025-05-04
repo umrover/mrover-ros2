@@ -9,7 +9,9 @@
 #include <QApplication>
 #include <QCheckBox>
 #include <QComboBox>
+#include <QDateTime>
 #include <QDockWidget>
+#include <QFileDialog>
 #include <QFormLayout>
 #include <QGridLayout>
 #include <QImage>
@@ -17,8 +19,13 @@
 #include <QLineEdit>
 #include <QMainWindow>
 #include <QMediaPlayer>
+#include <QMenu>
+#include <QMenuBar>
+#include <QPixmap>
 #include <QPushButton>
 #include <QScrollArea>
+#include <QStandardPaths>
+#include <QToolBar>
 #include <QVBoxLayout>
 #include <QVideoWidget>
 #include <QWidget>
