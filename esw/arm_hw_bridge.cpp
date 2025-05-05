@@ -4,16 +4,19 @@
 #include <vector>
 
 #include <rclcpp/rclcpp.hpp>
+#include <sensor_msgs/msg/joint_state.hpp>
 
 #include <units.hpp>
 #include <units_eigen.hpp>
+
+#include <parameter.hpp>
 
 #include <mrover/msg/controller_state.hpp>
 #include <mrover/msg/position.hpp>
 #include <mrover/msg/throttle.hpp>
 #include <mrover/msg/velocity.hpp>
 #include <mrover/srv/adjust_motor.hpp>
-#include <sensor_msgs/msg/joint_state.hpp>
+#include <mrover/srv/control_cam.hpp>
 
 #include "motor_library/brushed.hpp"
 #include "motor_library/brushless.hpp"
@@ -34,6 +37,7 @@ namespace mrover {
     // How often we send an adjust command to the DE motors
     // This corrects the HALL-effect motor source on the Moteus based on the absolute encoder readings
     std::chrono::seconds static constexpr DE_OFFSET_TIMER_PERIOD = std::chrono::seconds{5};
+
 
     // using MetersPerRadian = compound_unit<Meters, inverse<Radians>>;
     // using RadiansPerMeter = compound_unit<Radians, inverse<Meters>>;
@@ -64,6 +68,7 @@ namespace mrover {
 
             mDeOffsetTimer = create_wall_timer(DE_OFFSET_TIMER_PERIOD, [this]() { updateDeOffsets(); });
 
+            int camControlDuration, camControlPeriod;
             std::vector<ParameterWrapper> parameters = {
                     {"joint_de_pitch_offset", mJointDePitchOffset.rep, 0.0},
                     {"joint_de_roll_offset", mJointDeRollOffset.rep, 0.0},
@@ -71,9 +76,23 @@ namespace mrover {
                     {"joint_de_pitch_min_position", mJointDePitchMinPosition.rep, -std::numeric_limits<float>::infinity()},
                     {"joint_de_roll_max_position", mJointDeRollMaxPosition.rep, std::numeric_limits<float>::infinity()},
                     {"joint_de_roll_min_position", mJointDeRollMinPosition.rep, -std::numeric_limits<float>::infinity()},
+                    {"cam_control_duration", camControlDuration, 0},
+                    {"cam_control_period", camControlPeriod, 50},
             };
-            ParameterWrapper::declareParameters(shared_from_this().get(), parameters);
+            ParameterWrapper::declareParameters(this, parameters);
 
+            mCamControlDuration = std::chrono::milliseconds{camControlDuration};
+            mCamControlPeriod = std::chrono::milliseconds{camControlPeriod};
+
+            mCamControlCallbackGroup = create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
+            mCamControlServer = create_service<srv::ControlCam>(
+                    "cam_control",
+                    [this](srv::ControlCam::Request::ConstSharedPtr const& req,
+                           srv::ControlCam::Response::SharedPtr const& res) {
+                        camControlServiceCallback(req, res);
+                    },
+                    rmw_qos_profile_services_default,
+                    mCamControlCallbackGroup);
 
             mPublishDataTimer = create_wall_timer(
                     std::chrono::milliseconds(100),
@@ -101,8 +120,7 @@ namespace mrover {
         std::shared_ptr<BrushlessController<Revolutions>> mJointDe0;
         std::shared_ptr<BrushlessController<Revolutions>> mJointDe1;
         std::shared_ptr<BrushedController> mGripper;
-        std::shared_ptr<BrushedController> mCam; // rip the solenoid. tentative name until design finalized
-
+        std::shared_ptr<BrushedController> mCam;
 
         rclcpp::Subscription<msg::Throttle>::SharedPtr mArmThrottleSub;
         rclcpp::Subscription<msg::Velocity>::SharedPtr mArmVelocitySub;
@@ -114,6 +132,15 @@ namespace mrover {
 
         Radians mJointDePitchMaxPosition, mJointDePitchMinPosition;
         Radians mJointDeRollMaxPosition, mJointDeRollMinPosition;
+
+
+        // The duration in which we command the cam to move in one direction
+        std::chrono::milliseconds mCamControlDuration;
+        // Defines the rate in which we send CAN messages to the cam
+        std::chrono::milliseconds mCamControlPeriod;
+
+        rclcpp::CallbackGroup::SharedPtr mCamControlCallbackGroup;
+        rclcpp::Service<srv::ControlCam>::SharedPtr mCamControlServer;
 
         rclcpp::TimerBase::SharedPtr mPublishDataTimer;
         rclcpp::Publisher<sensor_msgs::msg::JointState>::SharedPtr mJointDataPub;
@@ -405,6 +432,52 @@ namespace mrover {
             mJointDe0->adjust(motorPositions[0]);
             mJointDe1->adjust(motorPositions[1]);
         }
+
+        auto camIn() -> void {
+            auto endTime = get_clock()->now() + mCamControlDuration;
+            while (get_clock()->now() < endTime) {
+                mCam->setDesiredThrottle(-1.0);
+                std::this_thread::sleep_for(mCamControlPeriod);
+            }
+        }
+
+        auto camOut() -> void {
+            auto endTime = get_clock()->now() + mCamControlDuration;
+            while (get_clock()->now() < endTime) {
+                mCam->setDesiredThrottle(1.0);
+                std::this_thread::sleep_for(mCamControlPeriod);
+            }
+        }
+
+        auto camPulse() -> void {
+            camOut();
+            std::this_thread::sleep_for(mCamControlDuration);
+            camIn();
+        }
+
+        auto camControlServiceCallback(srv::ControlCam::Request::ConstSharedPtr const& req, srv::ControlCam::Response::SharedPtr const& res) -> void {
+            switch (req->action) {
+                case srv::ControlCam::Request::CAM_IN: {
+                    camIn();
+                    res->success = true;
+                    break;
+                }
+                case srv::ControlCam::Request::CAM_OUT: {
+                    camOut();
+                    res->success = true;
+                    break;
+                }
+                case srv::ControlCam::Request::CAM_PULSE: {
+                    camPulse();
+                    res->success = true;
+                    break;
+                }
+                default: {
+                    res->success = false;
+                    break;
+                }
+            }
+        }
     };
 } // namespace mrover
 
@@ -412,7 +485,11 @@ auto main(int argc, char** argv) -> int {
     rclcpp::init(argc, argv);
     auto arm_hw_bridge = std::make_shared<mrover::ArmHWBridge>();
     arm_hw_bridge->init();
-    rclcpp::spin(arm_hw_bridge);
+
+    rclcpp::executors::MultiThreadedExecutor executor;
+    executor.add_node(arm_hw_bridge);
+    executor.spin();
+
     rclcpp::shutdown();
     return EXIT_SUCCESS;
 }
