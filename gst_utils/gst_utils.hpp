@@ -165,6 +165,10 @@ namespace mrover::gst {
             return mLaunch;
         }
 
+        [[nodiscard]] auto getPipelineElement() const -> GstElement* {
+            return mPipeline;
+        }
+
         auto addBusWatcher(GstBusFunc func, gpointer user_data) -> guint {
             if (!mPipeline) {
                 throw std::runtime_error{"Pipeline not initialized"};
@@ -186,6 +190,7 @@ namespace mrover::gst {
             YUY2,
             NV12,
             I420,
+            BGRA,
         };
 
         constexpr auto toString(RawFormat format) -> std::string_view {
@@ -344,7 +349,8 @@ namespace mrover::gst {
             // Based on FOURCC names given by v4l2-ctl --list-formats-ext
 #define FORMAT_ITER(_F)       \
     _F(YUYV, RawFormat::YUY2) \
-    _F(MJPG, Codec::JPEG)
+    _F(MJPG, Codec::JPEG)     \
+    _F(ABGR32, RawFormat::BGRA)
 
             enum class PixelFormat : unsigned int {
 #define F(name, ...) name,

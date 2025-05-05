@@ -11,23 +11,25 @@ namespace mrover {
         std::shared_ptr<CameraClientMainWindow> mQtGui;
         std::unordered_map<std::string, rclcpp::Client<srv::MediaControl>::SharedPtr> mMediaControlClients;
         std::unordered_map<std::string, rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr> mImageCaptureClients;
-        std::unordered_map<std::string, rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr> mImageSubscribers;
+        std::unordered_map<std::string, rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr> mImageCaptureSubscribers;
 
-        auto imageCallback(std::string const& cameraName, sensor_msgs::msg::Image::ConstSharedPtr const& msg) {
+        auto imageCaptureCallback(std::string const& cameraName, sensor_msgs::msg::Image::ConstSharedPtr const& msg) {
             RCLCPP_INFO(get_logger(), "Received image from camera");
-            try {
-                auto cvImg = cv_bridge::toCvShare(msg, "bgr8")->image;
-                QImage qImg(cvImg.data, cvImg.cols, cvImg.rows, static_cast<int>(cvImg.step), QImage::Format_BGR888);
-
-                auto* imagePreview = new ImagePreview();
-                imagePreview->updateImage(qImg);
-                imagePreview->setWindowTitle(QString::fromStdString(cameraName) + " - Screenshot");
-                imagePreview->setAttribute(Qt::WA_DeleteOnClose);
-                imagePreview->show();
-
-            } catch (cv_bridge::Exception const& e) {
-                RCLCPP_ERROR(this->get_logger(), "cv_bridge error: %s", e.what());
+            if (msg->encoding != sensor_msgs::image_encodings::BGR8) {
+                RCLCPP_ERROR(this->get_logger(), "Unsupported encoding - image capture must be BGR8");
+                return;
             }
+
+            cv::Size receivedSize{static_cast<int>(msg->width), static_cast<int>(msg->height)};
+            cv::Mat bgrFrame{receivedSize, CV_8UC3, const_cast<std::uint8_t*>(msg->data.data()), msg->step};
+
+            QImage qImg(bgrFrame.data, bgrFrame.cols, bgrFrame.rows, static_cast<int>(bgrFrame.step), QImage::Format_BGR888);
+
+            auto* imagePreview = new ImagePreview();
+            imagePreview->updateImage(qImg);
+            imagePreview->setWindowTitle(QString::fromStdString(cameraName) + " - Screenshot");
+            imagePreview->setAttribute(Qt::WA_DeleteOnClose);
+            imagePreview->show();
         }
 
     public:
@@ -58,9 +60,9 @@ namespace mrover {
 
                 mMediaControlClients.emplace(cameraName, create_client<srv::MediaControl>(std::format("{}_media_control", cameraName)));
                 mImageCaptureClients.emplace(cameraName, create_client<std_srvs::srv::Trigger>(std::format("{}_image_capture", cameraName)));
-                mImageSubscribers.emplace(cameraName, create_subscription<sensor_msgs::msg::Image>(std::format("{}_image", cameraName), 10, [this, cameraName](sensor_msgs::msg::Image::ConstSharedPtr const& msg) {
-                                              imageCallback(cameraName, msg);
-                                          }));
+                mImageCaptureSubscribers.emplace(cameraName, create_subscription<sensor_msgs::msg::Image>(std::format("{}_image", cameraName), 1, [this, cameraName](sensor_msgs::msg::Image::ConstSharedPtr const& msg) {
+                                                     imageCaptureCallback(cameraName, msg);
+                                                 }));
 
                 RequestCallback pipelinePauseRequest = [this, cameraName]() {
                     qDebug() << "Pause request for camera" << cameraName.c_str();

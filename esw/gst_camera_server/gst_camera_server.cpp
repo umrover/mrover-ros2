@@ -16,22 +16,53 @@ namespace mrover {
 
     auto gstBusMessage(GstBus*, GstMessage* message, gpointer data) -> gboolean;
 
+    auto GstCameraServer::deviceImageCallback(sensor_msgs::msg::Image::ConstSharedPtr const& msg) -> void {
+        try {
+            if (msg->encoding != sensor_msgs::image_encodings::BGRA8) throw std::runtime_error{"Unsupported encoding"};
+
+            cv::Size receivedSize{static_cast<int>(msg->width), static_cast<int>(msg->height)};
+            cv::Mat bgraFrame{receivedSize, CV_8UC4, const_cast<std::uint8_t*>(msg->data.data()), msg->step};
+
+            if (cv::Size targetSize{mImageCaptureFormat.width, mImageCaptureFormat.height};
+                receivedSize != targetSize) {
+                RCLCPP_WARN_ONCE(get_logger(), "Image size does not match pipeline app source size, will resize");
+                resize(bgraFrame, bgraFrame, targetSize);
+            }
+
+            // "step" is the number of bytes (NOT pixels) in an image row
+            std::size_t size = bgraFrame.step * bgraFrame.rows;
+            GstBuffer* buffer = gstCheck(gst_buffer_new_allocate(nullptr, size, nullptr));
+            GstMapInfo info;
+            gst_buffer_map(buffer, &info, GST_MAP_WRITE);
+            std::memcpy(info.data, bgraFrame.data, size);
+            gst_buffer_unmap(buffer, &info);
+
+            gst_app_src_push_buffer(GST_APP_SRC(mDeviceImageSource), buffer);
+        } catch (std::exception const& e) {
+            RCLCPP_ERROR_STREAM(get_logger(), std::format("Exception encoding frame: {}", e.what()));
+            rclcpp::shutdown();
+        }
+    }
+
+
     auto GstCameraServer::createStreamPipeline() -> void {
         gst::PipelineBuilder pipeline;
 
         auto& [pixelFormat, imageWidth, imageHeight, imageFramerate] = mStreamCaptureFormat;
 
         // Source
-        if (mDeviceNode.empty()) {
-            pixelFormat = gst::video::v4l2::PixelFormat::YUYV;
-            pipeline.pushBack("videotestsrc");
-            pipeline.pushBack(std::format("video/x-raw,format={},width={},height={},framerate={}/1", gst::video::v4l2::toStringGstType(pixelFormat), imageWidth, imageHeight, imageFramerate));
-        } else {
+        if (mDeviceImageSubscriber) {
+            pipeline.pushBack("appsrc name=imageSource is-live=true");
+            pipeline.pushBack(std::format("video/x-raw,format={},width={},height={},framerate={}/1", gst::video::toString(gst::video::RawFormat::BGRA), imageWidth, imageHeight, imageFramerate));
+        } else if (!mDeviceNode.empty()) {
             pipeline.pushBack(gst::video::v4l2::createSrc(mDeviceNode, mStreamCaptureFormat));
             // gst::video::v4l2::addProperty("extra-controls", "\"c,white_balance_temperature_auto=0,white_balance_temperature=4000\"")
             // if (mDisableAutoWhiteBalance) mStreamLaunch += "extra-controls=\"c,white_balance_temperature_auto=0,white_balance_temperature=4000\" ";
+        } else {
+            pixelFormat = gst::video::v4l2::PixelFormat::YUYV;
+            pipeline.pushBack("videotestsrc");
+            pipeline.pushBack(std::format("video/x-raw,format={},width={},height={},framerate={}/1", gst::video::v4l2::toStringGstType(pixelFormat), imageWidth, imageHeight, imageFramerate));
         }
-
 
         // Source decoder and H265 encoder
         if (gst_element_factory_find("nvv4l2h265enc")) {
@@ -143,6 +174,9 @@ namespace mrover {
 
         mStreamPipelineWrapper.init();
         mStreamPipelineWrapper.addBusWatcher(gstBusMessage, this);
+        if (mDeviceImageSubscriber) {
+            mDeviceImageSource = gstCheck(gst_bin_get_by_name(GST_BIN(mStreamPipelineWrapper.getPipelineElement()), "imageSource"));
+        }
 
         mMainLoopThread = std::thread{[this] {
             RCLCPP_INFO_STREAM(get_logger(), "Entering GStreamer main loop");
@@ -153,7 +187,7 @@ namespace mrover {
         RCLCPP_INFO_STREAM(get_logger(), "Initialized GStreamer stream pipeline");
     }
 
-    auto GstCameraServer::mediaControlServerCallback(srv::MediaControl::Request::SharedPtr const req, srv::MediaControl::Response::SharedPtr res) -> void {
+    auto GstCameraServer::mediaControlServerCallback(srv::MediaControl::Request::ConstSharedPtr const& req, srv::MediaControl::Response::SharedPtr const& res) -> void {
         if (req->command == srv::MediaControl::Request::STOP) {
             RCLCPP_INFO_STREAM(get_logger(), "Stopping GStreamer pipeline");
             try {
@@ -189,9 +223,9 @@ namespace mrover {
         res->success = true;
     }
 
-    auto GstCameraServer::imageCaptureServerCallback(std_srvs::srv::Trigger::Request::SharedPtr const req, std_srvs::srv::Trigger::Response::SharedPtr res) -> void {
+    auto GstCameraServer::imageCaptureServerCallback(std_srvs::srv::Trigger::Request::ConstSharedPtr const&, std_srvs::srv::Trigger::Response::SharedPtr const& res) -> void {
         RCLCPP_INFO_STREAM(get_logger(), "Capture image request received");
-        if (!mImagePublisher || !mImageCaptureEnabled) {
+        if (!mImageCapturePublisher || !mImageCaptureEnabled) {
             res->success = false;
             return;
         }
@@ -211,9 +245,15 @@ namespace mrover {
                 return;
             }
 
-            auto msg = cv_bridge::CvImage(std_msgs::msg::Header(), "bgr8", img).toImageMsg();
-            msg->header.stamp = this->get_clock()->now();
-            mImagePublisher->publish(*msg);
+            sensor_msgs::msg::Image msg;
+            msg.header.stamp = this->get_clock()->now();
+            msg.height = img.rows;
+            msg.width = img.cols;
+            msg.encoding = "bgr8";
+            msg.step = static_cast<sensor_msgs::msg::Image::_step_type>(img.step);
+            msg.data.assign(img.datastart, img.dataend);
+
+            mImageCapturePublisher->publish(msg);
             RCLCPP_INFO(this->get_logger(), "Published image");
         }
 
@@ -259,7 +299,7 @@ namespace mrover {
         return deviceNode;
     }
 
-    GstCameraServer::GstCameraServer([[maybe_unused]] rclcpp::NodeOptions const& options) : Node{"gst_camera_server"} {
+    GstCameraServer::GstCameraServer([[maybe_unused]] rclcpp::NodeOptions const& options) : Node{"gst_camera_server", rclcpp::NodeOptions{}.use_intra_process_comms(true)} {
         try {
             declare_parameter("camera", rclcpp::ParameterType::PARAMETER_STRING);
             std::string const cameraName = get_parameter("camera").as_string();
@@ -274,6 +314,8 @@ namespace mrover {
             // 4) Run "udevadm info -q path -n /dev/video0" to get the sys path
             std::string devicePath;
 
+            std::string imageTopicName;
+
             std::string streamPixelFormat, codec;
             int streamImageWidth, streamImageHeight, streamImageFramerate, bitrate;
 
@@ -285,6 +327,7 @@ namespace mrover {
                     {std::format("{}.port", cameraName), port, 0},
                     {std::format("{}.dev_node", cameraName), mDeviceNode, ""},
                     {std::format("{}.dev_path", cameraName), devicePath, ""},
+                    {std::format("{}.image_topic", cameraName), imageTopicName, ""},
                     {std::format("{}.crop_left", cameraName), mCropLeft, 0},
                     {std::format("{}.crop_right", cameraName), mCropRight, 0},
                     {std::format("{}.crop_top", cameraName), mCropTop, 0},
@@ -302,6 +345,19 @@ namespace mrover {
             };
 
             ParameterWrapper::declareParameters(this, parameters);
+
+            if (!imageTopicName.empty()) {
+                mDeviceImageSubscriber = create_subscription<sensor_msgs::msg::Image>(
+                        imageTopicName, 1,
+                        [this](sensor_msgs::msg::Image::ConstSharedPtr const& msg) {
+                            deviceImageCallback(msg);
+                        });
+            } else {
+                if (!devicePath.empty()) {
+                    mDeviceNode = findDeviceNode(devicePath);
+                }
+            }
+
 
             mPort = static_cast<std::uint16_t>(port);
             mStreamCaptureFormat = gst::video::v4l2::CaptureFormat{
@@ -331,8 +387,8 @@ namespace mrover {
 
             mMediaControlServer = create_service<srv::MediaControl>(
                     std::format("{}_media_control", cameraName),
-                    [this](srv::MediaControl::Request::SharedPtr const req,
-                           srv::MediaControl::Response::SharedPtr res) {
+                    [this](srv::MediaControl::Request::ConstSharedPtr const& req,
+                           srv::MediaControl::Response::SharedPtr const& res) {
                         mediaControlServerCallback(req, res);
                     });
 
@@ -342,12 +398,7 @@ namespace mrover {
                            std_srvs::srv::Trigger::Response::SharedPtr res) {
                         imageCaptureServerCallback(req, res);
                     });
-
-            mImagePublisher = create_publisher<sensor_msgs::msg::Image>(std::format("{}_image", cameraName), 1);
-
-            if (!devicePath.empty()) {
-                mDeviceNode = findDeviceNode(devicePath);
-            }
+            mImageCapturePublisher = create_publisher<sensor_msgs::msg::Image>(std::format("{}_image", cameraName), 1);
 
             gst_init(nullptr, nullptr);
 
@@ -412,3 +463,10 @@ namespace mrover {
     }
 
 } // namespace mrover
+
+#include "rclcpp_components/register_node_macro.hpp"
+
+// Register the component with class_loader.
+// This acts as a sort of entry point, allowing the component to be discoverable when its library
+// is being loaded into a running process.
+RCLCPP_COMPONENTS_REGISTER_NODE(mrover::GstCameraServer)

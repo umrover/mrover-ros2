@@ -13,13 +13,13 @@ namespace mrover {
 
         rclcpp::Service<srv::MediaControl>::SharedPtr mMediaControlServer;
 
-        rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr mImageCaptureServer;
-        rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr mImagePublisher;
-
         // For example, /dev/video0
         // These device paths are not garunteed to stay the same between reboots
         // Prefer sys path for non-debugging purposes
         std::string mDeviceNode;
+
+        rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr mDeviceImageSubscriber;
+        GstElement* mDeviceImageSource{};
 
         bool mDisableAutoWhiteBalance{}; // Useful for science, the UV LEDs can mess with the white balance
 
@@ -33,21 +33,23 @@ namespace mrover {
         std::uint16_t mPort;
         gst::PipelineWrapper mStreamPipelineWrapper;
 
-
         bool mImageCaptureEnabled;
         gst::video::v4l2::CaptureFormat mImageCaptureFormat;
         std::string mImageCapturePipelineLaunch;
+        rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr mImageCaptureServer;
+        rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr mImageCapturePublisher;
 
         GMainLoop* mMainLoop{};
         std::thread mMainLoopThread;
 
+        auto deviceImageCallback(sensor_msgs::msg::Image::ConstSharedPtr const& msg) -> void;
         auto createStreamPipeline() -> void;
         auto createImageCapturePipeline() -> void;
 
         auto initStreamPipelines() -> void;
 
-        auto mediaControlServerCallback(srv::MediaControl::Request::SharedPtr req, srv::MediaControl::Response::SharedPtr res) -> void;
-        auto imageCaptureServerCallback(std_srvs::srv::Trigger::Request::SharedPtr req, std_srvs::srv::Trigger::Response::SharedPtr res) -> void;
+        auto mediaControlServerCallback(srv::MediaControl::Request::ConstSharedPtr const& req, srv::MediaControl::Response::SharedPtr const& res) -> void;
+        auto imageCaptureServerCallback(std_srvs::srv::Trigger::Request::ConstSharedPtr const&, std_srvs::srv::Trigger::Response::SharedPtr const& res) -> void;
 
     public:
         // __attribute__ ((visibility("default")))

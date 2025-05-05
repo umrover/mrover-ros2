@@ -75,7 +75,6 @@ find_package(tf2_ros REQUIRED)
 find_package(urdf REQUIRED)
 find_package(std_srvs REQUIRED)
 find_package(magic_enum REQUIRED)
-find_package(cv_bridge REQUIRED)
 
 find_package(Assimp NAMES Assimp assimp REQUIRED)
 find_package(Bullet REQUIRED)
@@ -337,8 +336,8 @@ if (Gst_FOUND AND GstApp_FOUND)
         # ament_target_dependencies(websocket_server rclcpp)
 
         mrover_add_node(gst_camera_server esw/gst_camera_server/*.c* esw/gst_camera_server/pch.hpp)
-        target_link_libraries(gst_camera_server PkgConfig::Gst PkgConfig::GstApp PkgConfig::LibUdev opencv_core opencv_videoio gst_utils parameter_utils)
-        ament_target_dependencies(gst_camera_server rclcpp rclcpp_components sensor_msgs std_srvs cv_bridge)
+        target_link_libraries(gst_camera_server PkgConfig::Gst PkgConfig::GstApp PkgConfig::LibUdev opencv_core opencv_videoio opencv_imgcodecs opencv_imgproc gst_utils parameter_utils)
+        ament_target_dependencies(gst_camera_server rclcpp rclcpp_components sensor_msgs std_srvs)
     endif ()
 endif ()
 
@@ -353,8 +352,8 @@ find_package(Qt5 5.15 REQUIRED COMPONENTS Widgets Multimedia MultimediaWidgets)
 
 mrover_add_node(camera_client teleoperation/camera_client/*.*pp teleoperation/camera_client/include/pch.hpp)
 target_include_directories(camera_client PRIVATE teleoperation/camera_client/include)
-target_link_libraries(camera_client gst_utils Qt::Widgets Qt::Multimedia Qt::MultimediaWidgets)
-ament_target_dependencies(camera_client rclcpp std_srvs sensor_msgs cv_bridge)
+target_link_libraries(camera_client gst_utils Qt::Widgets Qt::Multimedia Qt::MultimediaWidgets opencv_core opencv_imgcodecs)
+ament_target_dependencies(camera_client rclcpp std_srvs sensor_msgs)
 set_target_properties(camera_client PROPERTIES
     AUTOMOC ON
     AUTORCC ON

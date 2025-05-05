@@ -30,9 +30,11 @@
 #include <QVideoWidget>
 #include <QWidget>
 
-#include <cv_bridge/cv_bridge.h>
+#include <opencv2/core.hpp>
+
 
 #include <mrover/srv/media_control.hpp>
+#include <sensor_msgs/image_encodings.hpp>
 #include <sensor_msgs/msg/image.hpp>
 #include <std_srvs/srv/trigger.hpp>
 
