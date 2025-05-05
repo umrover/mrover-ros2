@@ -23,7 +23,7 @@ namespace mrover {
             cv::Size receivedSize{static_cast<int>(msg->width), static_cast<int>(msg->height)};
             cv::Mat bgraFrame{receivedSize, CV_8UC4, const_cast<std::uint8_t*>(msg->data.data()), msg->step};
 
-            if (cv::Size targetSize{mImageCaptureFormat.width, mImageCaptureFormat.height};
+            if (cv::Size targetSize{mStreamCaptureFormat.width, mStreamCaptureFormat.height};
                 receivedSize != targetSize) {
                 RCLCPP_WARN_ONCE(get_logger(), "Image size does not match pipeline app source size, will resize");
                 resize(bgraFrame, bgraFrame, targetSize);

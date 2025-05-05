@@ -14,8 +14,8 @@
         bitrate: 2000000
       image_capture:
         pixel_format: YUYV
-        width: 1920
-        height: 1080
+        width: 1280
+        height: 720
         framerate: 5
     boom_cam:
       address: 10.1.0.2 # if using RTP, should be set to IP of basestation
@@ -31,9 +31,9 @@
         bitrate: 2000000
       image_capture:
         pixel_format: YUYV
-        width: 1920
-        height: 1080
-        framerate: 15
+        width: 1280
+        height: 720
+        framerate: 5
     mob_cam:
       address: 10.1.0.2
       port: 8083
@@ -48,9 +48,9 @@
         bitrate: 2000000
       image_capture:
         pixel_format: YUYV
-        width: 1920
-        height: 1080
-        framerate: 15
+        width: 1280
+        height: 720
+        framerate: 5
     zed_mini:
       address: 10.1.0.2
       port: 8084
