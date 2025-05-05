@@ -87,9 +87,9 @@ namespace mrover {
             mCamControlCallbackGroup = create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
             mCamControlServer = create_service<srv::ControlCam>(
                     "cam_control",
-                    [this](srv::ControlCam::Request::SharedPtr const req,
-                           srv::ControlCam::Response::SharedPtr res) {
-                        camControlServiceCallback(req, std::move(res));
+                    [this](srv::ControlCam::Request::ConstSharedPtr const& req,
+                           srv::ControlCam::Response::SharedPtr const& res) {
+                        camControlServiceCallback(req, res);
                     },
                     rmw_qos_profile_services_default,
                     mCamControlCallbackGroup);
@@ -455,7 +455,7 @@ namespace mrover {
             camIn();
         }
 
-        auto camControlServiceCallback(srv::ControlCam::Request::SharedPtr const req, srv::ControlCam::Response::SharedPtr res) -> void {
+        auto camControlServiceCallback(srv::ControlCam::Request::ConstSharedPtr const& req, srv::ControlCam::Response::SharedPtr const& res) -> void {
             switch (req->action) {
                 case srv::ControlCam::Request::CAM_IN: {
                     camIn();
