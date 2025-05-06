@@ -14,8 +14,7 @@
         <tbody>
             <tr>
             <th class='table-secondary'>Site {{ String.fromCharCode(site+65) }}</th>
-            <!-- entries assumes string, any type pair -->
-            <td v-for="([key, val], index) in Object.entries(sensor_data)" :key="index">{{ val.toFixed(2) }}</td>
+            <td v-for="(val, index) in sensor_data" :key="index">{{ val.toFixed(2) }}</td>
             </tr>
         </tbody>  
         </table>
@@ -57,7 +56,8 @@ import Chart from 'chart.js/auto';
     },
 
     mounted() {
-      const charts: Chart[] = [];
+      let self = this;
+      let charts = [];
       function waitForElm(selector) {
         return new Promise(resolve => {
             if (document.querySelector(selector)) {
@@ -81,7 +81,7 @@ import Chart from 'chart.js/auto';
 
       let titles = ["Oxygen Percentage Over Time (s)", "Relative Humidity Over Time (s)", "Temperature (C) Over Time (s)", "UV Index Over Time (s)"];
 
-      // const sensor_history:number[][] = [[], [], [], []]
+      this.sensor_history = [[], [], [], []]
 
       let lineColors = ["#4D9DE0", "#E15554", "#3BB273", "#7768AE"]
 
@@ -122,12 +122,22 @@ import Chart from 'chart.js/auto';
       }
 
       setInterval(() => {
-          // console.log(Object.values(this.sensor_data).length)
+          // console.log(Object.values(self.sensor_data).length)
+          // self.sensor_data = {
+          //   oxygen: 20 + Math.random() * 2,
+          //   oxygen_var: 0,
+          //   uv: 0.1 + Math.random() * 0.1,
+          //   uv_var: 0,
+          //   humidity: 40 + Math.random() * 20,
+          //   humidity_var: 0,
+          //   temp: 17 + Math.random() * 3,
+          //   temp_var: 0
+          // }
           // this.$forceUpdate();
-          this.sensor_history[0].push(this.sensor_data.oxygen);
-          this.sensor_history[1].push(this.sensor_data.humidity);
-          this.sensor_history[2].push(this.sensor_data.temp);
-          this.sensor_history[3].push(this.sensor_data.uv);
+          this.sensor_history[0].push(self.sensor_data.oxygen);
+          this.sensor_history[1].push(self.sensor_data.humidity);
+          this.sensor_history[2].push(self.sensor_data.temp);
+          this.sensor_history[3].push(self.sensor_data.uv);
 
           for (let x = 0; x < 4; ++x){
             if (charts[x] != null){
@@ -152,12 +162,6 @@ import Chart from 'chart.js/auto';
             humidity_var: 0,
             temp: 0,
             temp_var: 0
-          },
-          sensor_history: {
-            oxygen: [],
-            humidity: [],
-            temp: [],
-            uv: []
           }
       }
     },
@@ -216,7 +220,7 @@ import Chart from 'chart.js/auto';
     download() {
       // downloads csv of table
       let csv = "Oxygen, UV (index), Humidity, Temperature (C)\n"
-
+      console.log(this.sensor_history)
       const numRows = this.sensor_history[0].length; // transpose (flip) array
       for (let i = 0; i < numRows; ++i) {
         const row = this.sensor_history.map(sensor => sensor[i]);
