@@ -331,13 +331,11 @@ if (Gst_FOUND AND GstApp_FOUND)
     ament_target_dependencies(usb_camera rclcpp)
 
     if (LibUdev_FOUND)
-        # mrover_add_library(websocket_server esw/websocket_server/*.cpp esw/websocket_server)
-        # target_compile_definitions(websocket_server PUBLIC BOOST_ASIO_NO_DEPRECATED)
-        # ament_target_dependencies(websocket_server rclcpp)
+        mrover_add_component(gst_camera_server esw/gst_camera_server/*.c* esw/gst_camera_server/pch.hpp GstCameraServer)
+        mrover_link_component(gst_camera_server PkgConfig::Gst PkgConfig::GstApp PkgConfig::LibUdev opencv_core opencv_videoio opencv_imgcodecs opencv_imgproc gst_utils parameter_utils)
+        mrover_ament_component(gst_camera_server rclcpp sensor_msgs rclcpp_components std_srvs)
 
-        mrover_add_node(gst_camera_server esw/gst_camera_server/*.c* esw/gst_camera_server/pch.hpp)
-        target_link_libraries(gst_camera_server PkgConfig::Gst PkgConfig::GstApp PkgConfig::LibUdev opencv_core opencv_videoio opencv_imgcodecs opencv_imgproc gst_utils parameter_utils)
-        ament_target_dependencies(gst_camera_server rclcpp rclcpp_components sensor_msgs std_srvs)
+        mrover_executable_from_component(gst_camera_server esw/gst_camera_server/main.cpp gst_camera_server_component)
     endif ()
 endif ()
 
