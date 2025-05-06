@@ -37,7 +37,12 @@ namespace mrover {
             std::memcpy(info.data, bgraFrame.data, size);
             gst_buffer_unmap(buffer, &info);
 
-            gst_app_src_push_buffer(GST_APP_SRC(mDeviceImageSource), buffer);
+            if (mStreamPipelineWrapper.isPipelinePlaying()) {
+                gst_app_src_push_buffer(GST_APP_SRC(mStreamDeviceImageSource), buffer);
+            }
+            if (mImageCaptureEnabled) {
+                gst_app_src_push_buffer(GST_APP_SRC(mImageCaptureDeviceImageSource), buffer);
+            }
         } catch (std::exception const& e) {
             RCLCPP_ERROR_STREAM(get_logger(), std::format("Exception encoding frame: {}", e.what()));
             rclcpp::shutdown();
@@ -52,10 +57,13 @@ namespace mrover {
 
         // Source
         if (mDeviceImageSubscriber) {
-            pipeline.pushBack("appsrc name=imageSource is-live=true");
+            pipeline.pushBack("appsrc",
+                              gst::addProperty("name", "streamImageSource"),
+                              gst::addProperty("is-live", true));
             pipeline.pushBack(std::format("video/x-raw,format={},width={},height={},framerate={}/1", gst::video::toString(gst::video::RawFormat::BGRA), imageWidth, imageHeight, imageFramerate));
         } else if (!mDeviceNode.empty()) {
-            pipeline.pushBack(gst::video::v4l2::createSrc(mDeviceNode, mStreamCaptureFormat));
+            pipeline.pushBack(gst::video::v4l2::createSrc(mDeviceNode, mStreamCaptureFormat),
+                              gst::addProperty("is-live", true));
             // gst::video::v4l2::addProperty("extra-controls", "\"c,white_balance_temperature_auto=0,white_balance_temperature=4000\"")
             // if (mDisableAutoWhiteBalance) mStreamLaunch += "extra-controls=\"c,white_balance_temperature_auto=0,white_balance_temperature=4000\" ";
         } else {
@@ -82,7 +90,6 @@ namespace mrover {
                 if (mCropEnabled) {
                     pipeline.pushBack(std::format("videocrop left={} right={} top={} bottom={}", mCropLeft, mCropRight, mCropTop, mCropBottom));
                 }
-                pipeline.pushBack("clockoverlay");
 
                 pipeline.pushBack("videoconvert");
                 pipeline.pushBack("video/x-raw,format=I420"); // Convert to I420 for the encoder, note we are still on the CPU
@@ -113,7 +120,6 @@ namespace mrover {
             if (mCropEnabled) {
                 pipeline.pushBack(std::format("videocrop left={} right={} top={} bottom={}", mCropLeft, mCropRight, mCropTop, mCropBottom));
             }
-            pipeline.pushBack("clockoverlay");
 
             pipeline.pushBack(gst::video::createDefaultEncoder(mCodec));
 
@@ -140,12 +146,20 @@ namespace mrover {
     auto GstCameraServer::createImageCapturePipeline() -> void {
         gst::PipelineBuilder pipeline;
 
-        if (mDeviceNode.empty()) {
-            mImageCaptureEnabled = false;
-            return;
-        }
+        auto& [pixelFormat, imageWidth, imageHeight, imageFramerate] = mImageCaptureFormat;
 
-        pipeline.pushBack(gst::video::v4l2::createSrc(mDeviceNode, mImageCaptureFormat));
+        if (mDeviceImageSubscriber) {
+            pipeline.pushBack("appsrc",
+                              gst::addProperty("name", "imageCaptureImageSource"),
+                              gst::addProperty("is-live", true));
+            pipeline.pushBack(std::format("video/x-raw,format={},width={},height={},framerate={}/1", gst::video::toString(gst::video::RawFormat::BGRA), imageWidth, imageHeight, imageFramerate));
+        } else if (!mDeviceNode.empty()) {
+            pipeline.pushBack(gst::video::v4l2::createSrc(mDeviceNode, mImageCaptureFormat));
+        } else {
+            pixelFormat = gst::video::v4l2::PixelFormat::YUYV;
+            pipeline.pushBack("videotestsrc");
+            pipeline.pushBack(std::format("video/x-raw,format={},width={},height={},framerate={}/1", gst::video::v4l2::toStringGstType(pixelFormat), imageWidth, imageHeight, imageFramerate));
+        }
 
         if (isCompressedPixelFormat(mImageCaptureFormat.pixelFormat)) {
             pipeline.pushBack(gst::video::createDefaultDecoder(toStringGstType(mImageCaptureFormat.pixelFormat)));
@@ -175,7 +189,11 @@ namespace mrover {
         mStreamPipelineWrapper.init();
         mStreamPipelineWrapper.addBusWatcher(gstBusMessage, this);
         if (mDeviceImageSubscriber) {
-            mDeviceImageSource = gstCheck(gst_bin_get_by_name(GST_BIN(mStreamPipelineWrapper.getPipelineElement()), "imageSource"));
+            mStreamDeviceImageSource = gstCheck(gst_bin_get_by_name(GST_BIN(mStreamPipelineWrapper.getPipelineElement()), "streamImageSource"));
+
+            if (mImageCaptureEnabled) {
+                mImageCaptureDeviceImageSource = gstCheck(gst_bin_get_by_name(GST_BIN(mStreamPipelineWrapper.getPipelineElement()), "imageCaptureImageSource"));
+            }
         }
 
         mMainLoopThread = std::thread{[this] {
@@ -225,7 +243,8 @@ namespace mrover {
 
     auto GstCameraServer::imageCaptureServerCallback(std_srvs::srv::Trigger::Request::ConstSharedPtr const&, std_srvs::srv::Trigger::Response::SharedPtr const& res) -> void {
         RCLCPP_INFO_STREAM(get_logger(), "Capture image request received");
-        if (!mImageCapturePublisher || !mImageCaptureEnabled) {
+        if (!mImageCaptureEnabled) {
+            RCLCPP_ERROR_STREAM(get_logger(), "Image capture publisher not initialized or image capture not enabled");
             res->success = false;
             return;
         }
@@ -373,6 +392,14 @@ namespace mrover {
                 mImageCaptureEnabled = false;
             } else {
                 mImageCaptureEnabled = true;
+
+                mImageCaptureServer = create_service<std_srvs::srv::Trigger>(
+                        std::format("{}_image_capture", cameraName),
+                        [this](std_srvs::srv::Trigger::Request::ConstSharedPtr const& req,
+                               std_srvs::srv::Trigger::Response::SharedPtr const& res) {
+                            imageCaptureServerCallback(req, res);
+                        });
+                mImageCapturePublisher = create_publisher<sensor_msgs::msg::Image>(std::format("{}_image", cameraName), 1);
             }
 
             mImageCaptureFormat = gst::video::v4l2::CaptureFormat{
@@ -391,14 +418,6 @@ namespace mrover {
                            srv::MediaControl::Response::SharedPtr const& res) {
                         mediaControlServerCallback(req, res);
                     });
-
-            mImageCaptureServer = create_service<std_srvs::srv::Trigger>(
-                    std::format("{}_image_capture", cameraName),
-                    [this](std_srvs::srv::Trigger::Request::SharedPtr const req,
-                           std_srvs::srv::Trigger::Response::SharedPtr res) {
-                        imageCaptureServerCallback(req, res);
-                    });
-            mImageCapturePublisher = create_publisher<sensor_msgs::msg::Image>(std::format("{}_image", cameraName), 1);
 
             gst_init(nullptr, nullptr);
 

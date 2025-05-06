@@ -19,7 +19,6 @@ namespace mrover {
         std::string mDeviceNode;
 
         rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr mDeviceImageSubscriber;
-        GstElement* mDeviceImageSource{};
 
         bool mDisableAutoWhiteBalance{}; // Useful for science, the UV LEDs can mess with the white balance
 
@@ -32,12 +31,14 @@ namespace mrover {
         std::string mAddress;
         std::uint16_t mPort;
         gst::PipelineWrapper mStreamPipelineWrapper;
+        GstElement* mStreamDeviceImageSource;
 
         bool mImageCaptureEnabled;
         gst::video::v4l2::CaptureFormat mImageCaptureFormat;
         std::string mImageCapturePipelineLaunch;
         rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr mImageCaptureServer;
         rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr mImageCapturePublisher;
+        GstElement* mImageCaptureDeviceImageSource;
 
         GMainLoop* mMainLoop{};
         std::thread mMainLoopThread;

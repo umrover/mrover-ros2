@@ -169,6 +169,15 @@ namespace mrover::gst {
             return mPipeline;
         }
 
+        [[nodiscard]] auto isPipelinePlaying() const -> bool {
+            if (!mPipeline) {
+                return false;
+            }
+            GstState state;
+            gst_element_get_state(mPipeline, &state, nullptr, GST_CLOCK_TIME_NONE);
+            return state == GST_STATE_PLAYING;
+        }
+
         auto addBusWatcher(GstBusFunc func, gpointer user_data) -> guint {
             if (!mPipeline) {
                 throw std::runtime_error{"Pipeline not initialized"};
@@ -328,7 +337,7 @@ namespace mrover::gst {
         }
 
         inline auto createRtpSink(std::string const& host, std::uint16_t port, video::Codec codec) {
-            return std::format("{} ! udpsink host={} port={}", getRtpPayloader(codec), host, port);
+            return std::format("{} ! queue ! udpsink host={} port={}", getRtpPayloader(codec), host, port);
         }
 
         constexpr auto DEFAULT_RTP_JITTER = std::chrono::milliseconds(500);
