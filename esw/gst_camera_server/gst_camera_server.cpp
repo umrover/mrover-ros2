@@ -37,12 +37,15 @@ namespace mrover {
             std::memcpy(info.data, bgraFrame.data, size);
             gst_buffer_unmap(buffer, &info);
 
-            if (mStreamPipelineWrapper.isPipelinePlaying()) {
-                gst_app_src_push_buffer(GST_APP_SRC(mStreamDeviceImageSource), buffer);
-            }
-            if (mImageCaptureEnabled) {
-                gst_app_src_push_buffer(GST_APP_SRC(mImageCaptureDeviceImageSource), buffer);
-            }
+            gst_app_src_push_buffer(GST_APP_SRC(mStreamDeviceImageSource), buffer);
+
+            // TODO:(owen) Push to the image capture pipeline as well
+            // if (mStreamPipelineWrapper.isPipelinePlaying()) {
+            //     gst_app_src_push_buffer(GST_APP_SRC(mStreamDeviceImageSource), buffer);
+            // }
+            // if (mImageCaptureEnabled) {
+            //     gst_app_src_push_buffer(GST_APP_SRC(mImageCaptureDeviceImageSource), buffer);
+            // }
         } catch (std::exception const& e) {
             RCLCPP_ERROR_STREAM(get_logger(), std::format("Exception encoding frame: {}", e.what()));
             rclcpp::shutdown();
@@ -150,8 +153,7 @@ namespace mrover {
 
         if (mDeviceImageSubscriber) {
             pipeline.pushBack("appsrc",
-                              gst::addProperty("name", "imageCaptureImageSource"),
-                              gst::addProperty("is-live", true));
+                              gst::addProperty("name", "imageCaptureImageSource"));
             pipeline.pushBack(std::format("video/x-raw,format={},width={},height={},framerate={}/1", gst::video::toString(gst::video::RawFormat::BGRA), imageWidth, imageHeight, imageFramerate));
         } else if (!mDeviceNode.empty()) {
             pipeline.pushBack(gst::video::v4l2::createSrc(mDeviceNode, mImageCaptureFormat));
@@ -318,7 +320,7 @@ namespace mrover {
         return deviceNode;
     }
 
-    GstCameraServer::GstCameraServer([[maybe_unused]] rclcpp::NodeOptions const& options) : Node{"gst_camera_server", rclcpp::NodeOptions{}.use_intra_process_comms(true)} {
+    GstCameraServer::GstCameraServer(rclcpp::NodeOptions const& options) : Node{"gst_camera_server", options} {
         try {
             declare_parameter("camera", rclcpp::ParameterType::PARAMETER_STRING);
             std::string const cameraName = get_parameter("camera").as_string();

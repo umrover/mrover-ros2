@@ -174,7 +174,7 @@ namespace mrover::gst {
                 return false;
             }
             GstState state;
-            gst_element_get_state(mPipeline, &state, nullptr, GST_CLOCK_TIME_NONE);
+            gst_element_get_state(mPipeline, &state, nullptr, 0);
             return state == GST_STATE_PLAYING;
         }
 
