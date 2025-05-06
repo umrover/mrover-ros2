@@ -97,7 +97,7 @@ namespace mrover {
         if (!mIsHeadless) {
             glfwPollEvents();
             // Comments this out while debugging segfaults, otherwise it captures your cursor
-            // glfwSetInputMode(mWindow.get(), GLFW_CURSOR, mInGui ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_DISABLED);
+            glfwSetInputMode(mWindow.get(), GLFW_CURSOR, mInGui ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_DISABLED);
         }
         mLoopProfiler.measureEvent("GLFW Events");
 
