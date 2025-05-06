@@ -365,6 +365,7 @@ install(PROGRAMS
     scripts/image_capture.py
     teleoperation/basestation_gui/gui_frontend.sh
     teleoperation/basestation_gui/gui_backend.sh
+    teleoperation/basestation_gui/gui_chromium.sh
 
     # starter project sources
     starter_project/autonomy/src/localization.py
