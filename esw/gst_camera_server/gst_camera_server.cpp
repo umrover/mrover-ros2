@@ -62,8 +62,11 @@ namespace mrover {
         if (mDeviceImageSubscriber) {
             pipeline.pushBack("appsrc",
                               gst::addProperty("name", "streamImageSource"),
-                              gst::addProperty("is-live", true));
+                              gst::addProperty("is-live", true),
+                              gst::addProperty("format", "time"),
+                              gst::addProperty("do-timestamp", true));
             pipeline.pushBack(std::format("video/x-raw,format={},width={},height={},framerate={}/1", gst::video::toString(gst::video::RawFormat::BGRA), imageWidth, imageHeight, imageFramerate));
+            pipeline.pushBack("queue");
         } else if (!mDeviceNode.empty()) {
             pipeline.pushBack(gst::video::v4l2::createSrc(mDeviceNode, mStreamCaptureFormat),
                               gst::addProperty("is-live", true));
@@ -481,6 +484,24 @@ namespace mrover {
                 break;
         }
         return TRUE;
+    }
+
+    auto isIpAddressReachable(std::string const& address, int port) -> bool {
+        int sockfd = socket(AF_INET, SOCK_STREAM, 0);
+
+        struct sockaddr_in sin {};
+        sin.sin_family = AF_INET;
+        sin.sin_port = htons(port);
+        inet_pton(AF_INET, address.c_str(), &sin.sin_addr);
+
+        bool isReachable;
+        if (connect(sockfd, (struct sockaddr*) &sin, sizeof(sin)) == -1) {
+            isReachable = false;
+        } else {
+            isReachable = true;
+            close(sockfd);
+        }
+        return isReachable;
     }
 
 } // namespace mrover
