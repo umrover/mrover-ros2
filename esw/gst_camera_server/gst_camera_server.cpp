@@ -45,7 +45,8 @@ namespace mrover {
                 gst_buffer_unmap(buffer, &info);
 
                 gst_app_src_push_buffer(GST_APP_SRC(mStreamDeviceImageSource), buffer);
-            } else if (imageCaptureEnabled()) {
+            }
+            if (imageCaptureEnabled()) {
                 cv::cvtColor(bgraFrame, mImageCaptureFrame, cv::COLOR_BGRA2BGR);
             }
         } catch (std::exception const& e) {
@@ -249,26 +250,24 @@ namespace mrover {
 
         cv::Mat img;
 
+        mStreamPipelineWrapper.stop();
         if (captureIsTopic()) {
             img = mImageCaptureFrame;
         } else {
-            mStreamPipelineWrapper.stop();
-            {
-                cv::VideoCapture cap(mImageCapturePipelineLaunch, cv::CAP_GSTREAMER);
-                if (!cap.isOpened()) {
-                    RCLCPP_ERROR_STREAM(this->get_logger(), "Failed to open video stream");
-                    res->success = false;
-                    return;
-                }
-
-                if (!cap.read(img)) {
-                    RCLCPP_ERROR_STREAM(this->get_logger(), "Failed to capture image: could not read from stream");
-                    res->success = false;
-                    return;
-                }
+            cv::VideoCapture cap(mImageCapturePipelineLaunch, cv::CAP_GSTREAMER);
+            if (!cap.isOpened()) {
+                RCLCPP_ERROR_STREAM(this->get_logger(), "Failed to open video stream");
+                res->success = false;
+                return;
             }
-            mStreamPipelineWrapper.play();
+
+            if (!cap.read(img)) {
+                RCLCPP_ERROR_STREAM(this->get_logger(), "Failed to capture image: could not read from stream");
+                res->success = false;
+                return;
+            }
         }
+        mStreamPipelineWrapper.play();
 
         if (img.empty()) {
             RCLCPP_ERROR_STREAM(this->get_logger(), "Failed to capture image: image is empty");
