@@ -121,6 +121,7 @@ namespace mrover::gst {
     class PipelineWrapper {
         std::string mLaunch{};
         GstElement* mPipeline{nullptr};
+        bool mIsPlaying{false};
 
     public:
         PipelineWrapper() = default;
@@ -147,18 +148,21 @@ namespace mrover::gst {
             if (gst_element_set_state(mPipeline, GST_STATE_NULL) == GST_STATE_CHANGE_FAILURE) {
                 throw std::runtime_error{"gst_element_set_state to GST_STATE_NULL failed"};
             }
+            mIsPlaying = false;
         }
 
         auto pause() -> void {
             if (gst_element_set_state(mPipeline, GST_STATE_PAUSED) == GST_STATE_CHANGE_FAILURE) {
                 throw std::runtime_error{"gst_element_set_state to GST_STATE_PAUSED failed"};
             }
+            mIsPlaying = false;
         }
 
         auto play() -> void {
             if (gst_element_set_state(mPipeline, GST_STATE_PLAYING) == GST_STATE_CHANGE_FAILURE) {
                 throw std::runtime_error{"gst_element_set_state to GST_STATE_PLAYING failed"};
             }
+            mIsPlaying = true;
         }
 
         [[nodiscard]] auto getLaunchString() const -> std::string {
@@ -169,13 +173,8 @@ namespace mrover::gst {
             return mPipeline;
         }
 
-        [[nodiscard]] auto isPipelinePlaying() const -> bool {
-            if (!mPipeline) {
-                return false;
-            }
-            GstState state;
-            gst_element_get_state(mPipeline, &state, nullptr, 0);
-            return state == GST_STATE_PLAYING;
+        [[nodiscard]] auto isPlaying() const -> bool {
+            return mIsPlaying;
         }
 
         auto addBusWatcher(GstBusFunc func, gpointer user_data) -> guint {

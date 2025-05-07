@@ -10,6 +10,7 @@
 namespace mrover {
 
     class GstCameraServer final : public rclcpp::Node {
+        constexpr static std::string DEFAULT_IP_ADDRESS = "0.0.0.0";
 
         rclcpp::Service<srv::MediaControl>::SharedPtr mMediaControlServer;
 

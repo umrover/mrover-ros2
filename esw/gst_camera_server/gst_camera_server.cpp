@@ -16,6 +16,8 @@ namespace mrover {
 
     auto gstBusMessage(GstBus*, GstMessage* message, gpointer data) -> gboolean;
 
+    auto isIpAddressReachable(std::string const& address, int port) -> bool;
+
     auto GstCameraServer::deviceImageCallback(sensor_msgs::msg::Image::ConstSharedPtr const& msg) -> void {
         try {
             if (msg->encoding != sensor_msgs::image_encodings::BGRA8) throw std::runtime_error{"Unsupported encoding"};
@@ -39,13 +41,11 @@ namespace mrover {
 
             gst_app_src_push_buffer(GST_APP_SRC(mStreamDeviceImageSource), buffer);
 
-            // TODO:(owen) Push to the image capture pipeline as well
-            // if (mStreamPipelineWrapper.isPipelinePlaying()) {
-            //     gst_app_src_push_buffer(GST_APP_SRC(mStreamDeviceImageSource), buffer);
-            // }
-            // if (mImageCaptureEnabled) {
-            //     gst_app_src_push_buffer(GST_APP_SRC(mImageCaptureDeviceImageSource), buffer);
-            // }
+            if (mStreamPipelineWrapper.isPlaying()) {
+                gst_app_src_push_buffer(GST_APP_SRC(mStreamDeviceImageSource), buffer);
+            } else if (mImageCaptureEnabled) {
+                gst_app_src_push_buffer(GST_APP_SRC(mImageCaptureDeviceImageSource), buffer);
+            }
         } catch (std::exception const& e) {
             RCLCPP_ERROR_STREAM(get_logger(), std::format("Exception encoding frame: {}", e.what()));
             rclcpp::shutdown();
@@ -347,7 +347,7 @@ namespace mrover {
             int imageCaptureImageWidth, imageCaptureImageHeight, imageCaptureImageFramerate;
 
             std::vector<ParameterWrapper> parameters = {
-                    {std::format("{}.address", cameraName), mAddress, "0.0.0.0"},
+                    {std::format("{}.address", cameraName), mAddress, DEFAULT_IP_ADDRESS},
                     {std::format("{}.port", cameraName), port, 0},
                     {std::format("{}.dev_node", cameraName), mDeviceNode, ""},
                     {std::format("{}.dev_path", cameraName), devicePath, ""},
@@ -384,6 +384,13 @@ namespace mrover {
 
 
             mPort = static_cast<std::uint16_t>(port);
+            if (mAddress != DEFAULT_IP_ADDRESS) {
+                if (!isIpAddressReachable(mAddress, mPort)) {
+                    RCLCPP_ERROR_STREAM(get_logger(), std::format("IP address {} is not reachable. Using {} instead", mAddress, DEFAULT_IP_ADDRESS));
+                    mAddress = DEFAULT_IP_ADDRESS;
+                }
+            }
+
             mStreamCaptureFormat = gst::video::v4l2::CaptureFormat{
                     .pixelFormat = gst::video::v4l2::getPixelFormatFromStringView(streamPixelFormat),
                     .width = static_cast<std::uint16_t>(streamImageWidth),
