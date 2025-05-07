@@ -19,6 +19,10 @@ namespace mrover {
     auto isIpAddressReachable(std::string const& address, int port) -> bool;
 
     auto GstCameraServer::deviceImageCallback(sensor_msgs::msg::Image::ConstSharedPtr const& msg) -> void {
+        if (!mStreamPipelineWrapper.isPlaying() && !imageCaptureEnabled()) {
+            return;
+        }
+
         try {
             if (msg->encoding != sensor_msgs::image_encodings::BGRA8) throw std::runtime_error{"Unsupported encoding"};
 
@@ -31,20 +35,18 @@ namespace mrover {
                 resize(bgraFrame, bgraFrame, targetSize);
             }
 
-            // "step" is the number of bytes (NOT pixels) in an image row
-            std::size_t size = bgraFrame.step * bgraFrame.rows;
-            GstBuffer* buffer = gstCheck(gst_buffer_new_allocate(nullptr, size, nullptr));
-            GstMapInfo info;
-            gst_buffer_map(buffer, &info, GST_MAP_WRITE);
-            std::memcpy(info.data, bgraFrame.data, size);
-            gst_buffer_unmap(buffer, &info);
-
             if (mStreamPipelineWrapper.isPlaying()) {
+                // "step" is the number of bytes (NOT pixels) in an image row
+                std::size_t size = bgraFrame.step * bgraFrame.rows;
+                GstBuffer* buffer = gstCheck(gst_buffer_new_allocate(nullptr, size, nullptr));
+                GstMapInfo info;
+                gst_buffer_map(buffer, &info, GST_MAP_WRITE);
+                std::memcpy(info.data, bgraFrame.data, size);
+                gst_buffer_unmap(buffer, &info);
+
                 gst_app_src_push_buffer(GST_APP_SRC(mStreamDeviceImageSource), buffer);
-            } else if (mImageCaptureEnabled) {
-                gst_app_src_push_buffer(GST_APP_SRC(mImageCaptureDeviceImageSource), buffer);
-            } else {
-                gst_buffer_unref(buffer);
+            } else if (imageCaptureEnabled()) {
+                cv::cvtColor(bgraFrame, mImageCaptureFrame, cv::COLOR_BGRA2BGR);
             }
         } catch (std::exception const& e) {
             RCLCPP_ERROR_STREAM(get_logger(), std::format("Exception encoding frame: {}", e.what()));
@@ -59,7 +61,7 @@ namespace mrover {
         auto& [pixelFormat, imageWidth, imageHeight, imageFramerate] = mStreamCaptureFormat;
 
         // Source
-        if (mDeviceImageSubscriber) {
+        if (captureIsTopic()) {
             pipeline.pushBack("appsrc",
                               gst::addProperty("name", "streamImageSource"),
                               gst::addProperty("is-live", true),
@@ -67,7 +69,7 @@ namespace mrover {
                               gst::addProperty("do-timestamp", true));
             pipeline.pushBack(std::format("video/x-raw,format={},width={},height={},framerate={}/1", gst::video::toString(gst::video::RawFormat::BGRA), imageWidth, imageHeight, imageFramerate));
             pipeline.pushBack("queue");
-        } else if (!mDeviceNode.empty()) {
+        } else if (captureIsDev()) {
             pipeline.pushBack(gst::video::v4l2::createSrc(mDeviceNode, mStreamCaptureFormat),
                               gst::addProperty("is-live", true));
             // gst::video::v4l2::addProperty("extra-controls", "\"c,white_balance_temperature_auto=0,white_balance_temperature=4000\"")
@@ -93,7 +95,7 @@ namespace mrover {
                 pipeline.pushBack("video/x-raw(memory:NVMM),format=NV12");
 
             } else {
-                if (mCropEnabled) {
+                if (cropEnabled()) {
                     pipeline.pushBack(std::format("videocrop left={} right={} top={} bottom={}", mCropLeft, mCropRight, mCropTop, mCropBottom));
                 }
 
@@ -123,7 +125,7 @@ namespace mrover {
                 pipeline.pushBack("videoconvert");
             }
 
-            if (mCropEnabled) {
+            if (cropEnabled()) {
                 pipeline.pushBack(std::format("videocrop left={} right={} top={} bottom={}", mCropLeft, mCropRight, mCropTop, mCropBottom));
             }
 
@@ -150,15 +152,15 @@ namespace mrover {
     }
 
     auto GstCameraServer::createImageCapturePipeline() -> void {
+        if (captureIsTopic()) {
+            return;
+        }
+
         gst::PipelineBuilder pipeline;
 
         auto& [pixelFormat, imageWidth, imageHeight, imageFramerate] = mImageCaptureFormat;
 
-        if (mDeviceImageSubscriber) {
-            pipeline.pushBack("appsrc",
-                              gst::addProperty("name", "imageCaptureImageSource"));
-            pipeline.pushBack(std::format("video/x-raw,format={},width={},height={},framerate={}/1", gst::video::toString(gst::video::RawFormat::BGRA), imageWidth, imageHeight, imageFramerate));
-        } else if (!mDeviceNode.empty()) {
+        if (captureIsDev()) {
             pipeline.pushBack(gst::video::v4l2::createSrc(mDeviceNode, mImageCaptureFormat));
         } else {
             pixelFormat = gst::video::v4l2::PixelFormat::YUYV;
@@ -172,7 +174,7 @@ namespace mrover {
             pipeline.pushBack("videoconvert");
         }
         pipeline.pushBack("video/x-raw,format=BGR");
-        if (mCropEnabled) {
+        if (cropEnabled()) {
             pipeline.pushBack("videocrop",
                               gst::addProperty("left", mCropLeft),
                               gst::addProperty("right", mCropRight),
@@ -193,12 +195,8 @@ namespace mrover {
 
         mStreamPipelineWrapper.init();
         mStreamPipelineWrapper.addBusWatcher(gstBusMessage, this);
-        if (mDeviceImageSubscriber) {
+        if (captureIsTopic()) {
             mStreamDeviceImageSource = gstCheck(gst_bin_get_by_name(GST_BIN(mStreamPipelineWrapper.getPipelineElement()), "streamImageSource"));
-
-            if (mImageCaptureEnabled) {
-                mImageCaptureDeviceImageSource = gstCheck(gst_bin_get_by_name(GST_BIN(mStreamPipelineWrapper.getPipelineElement()), "imageCaptureImageSource"));
-            }
         }
 
         mMainLoopThread = std::thread{[this] {
@@ -248,41 +246,46 @@ namespace mrover {
 
     auto GstCameraServer::imageCaptureServerCallback(std_srvs::srv::Trigger::Request::ConstSharedPtr const&, std_srvs::srv::Trigger::Response::SharedPtr const& res) -> void {
         RCLCPP_INFO_STREAM(get_logger(), "Capture image request received");
-        if (!mImageCaptureEnabled) {
-            RCLCPP_ERROR_STREAM(get_logger(), "Image capture publisher not initialized or image capture not enabled");
+
+        cv::Mat img;
+
+        if (captureIsTopic()) {
+            img = mImageCaptureFrame;
+        } else {
+            mStreamPipelineWrapper.stop();
+            {
+                cv::VideoCapture cap(mImageCapturePipelineLaunch, cv::CAP_GSTREAMER);
+                if (!cap.isOpened()) {
+                    RCLCPP_ERROR_STREAM(this->get_logger(), "Failed to open video stream");
+                    res->success = false;
+                    return;
+                }
+
+                if (!cap.read(img)) {
+                    RCLCPP_ERROR_STREAM(this->get_logger(), "Failed to capture image: could not read from stream");
+                    res->success = false;
+                    return;
+                }
+            }
+            mStreamPipelineWrapper.play();
+        }
+
+        if (img.empty()) {
+            RCLCPP_ERROR_STREAM(this->get_logger(), "Failed to capture image: image is empty");
             res->success = false;
             return;
         }
 
-        mStreamPipelineWrapper.stop();
+        sensor_msgs::msg::Image msg;
+        msg.header.stamp = this->get_clock()->now();
+        msg.height = img.rows;
+        msg.width = img.cols;
+        msg.encoding = "bgr8";
+        msg.step = static_cast<sensor_msgs::msg::Image::_step_type>(img.step);
+        msg.data.assign(img.datastart, img.dataend);
 
-        {
-            cv::VideoCapture cap(mImageCapturePipelineLaunch, cv::CAP_GSTREAMER);
-            if (!cap.isOpened()) {
-                RCLCPP_ERROR(this->get_logger(), "Failed to open video stream");
-                return;
-            }
-
-            cv::Mat img;
-            if (!cap.read(img)) {
-                RCLCPP_ERROR(this->get_logger(), "Failed to capture image");
-                return;
-            }
-
-            sensor_msgs::msg::Image msg;
-            msg.header.stamp = this->get_clock()->now();
-            msg.height = img.rows;
-            msg.width = img.cols;
-            msg.encoding = "bgr8";
-            msg.step = static_cast<sensor_msgs::msg::Image::_step_type>(img.step);
-            msg.data.assign(img.datastart, img.dataend);
-
-            mImageCapturePublisher->publish(msg);
-            RCLCPP_INFO(this->get_logger(), "Published image");
-        }
-
-        mStreamPipelineWrapper.play();
-
+        mImageCapturePublisher->publish(msg);
+        RCLCPP_INFO(this->get_logger(), "Published image");
         res->success = true;
     }
 
@@ -321,6 +324,22 @@ namespace mrover {
         udev_unref(udevContext);
 
         return deviceNode;
+    }
+
+    [[nodiscard]] auto GstCameraServer::cropEnabled() const -> bool {
+        return mCropLeft != 0 || mCropRight != 0 || mCropTop != 0 || mCropBottom != 0;
+    }
+
+    [[nodiscard]] auto GstCameraServer::captureIsDev() const -> bool {
+        return !mDeviceNode.empty();
+    }
+
+    [[nodiscard]] auto GstCameraServer::captureIsTopic() const -> bool {
+        return mDeviceImageSubscriber != nullptr;
+    }
+
+    [[nodiscard]] auto GstCameraServer::imageCaptureEnabled() const -> bool {
+        return mImageCaptureServer != nullptr;
     }
 
     GstCameraServer::GstCameraServer(rclcpp::NodeOptions const& options) : Node{"gst_camera_server", options} {
@@ -401,11 +420,7 @@ namespace mrover {
             mCodec = gst::video::getCodecFromStringView(codec);
             mBitrate = static_cast<std::uint64_t>(bitrate);
 
-            if (imageCaptureImageWidth == 0 || imageCaptureImageHeight == 0 || imageCaptureImageFramerate == 0) {
-                mImageCaptureEnabled = false;
-            } else {
-                mImageCaptureEnabled = true;
-
+            if (imageCaptureImageWidth != 0 && imageCaptureImageHeight != 0 && imageCaptureImageFramerate != 0) {
                 mImageCaptureServer = create_service<std_srvs::srv::Trigger>(
                         std::format("{}_image_capture", cameraName),
                         [this](std_srvs::srv::Trigger::Request::ConstSharedPtr const& req,
@@ -422,7 +437,6 @@ namespace mrover {
                     .framerate = static_cast<std::uint16_t>(imageCaptureImageFramerate),
             };
 
-            mCropEnabled = mCropLeft != 0 || mCropRight != 0 || mCropTop != 0 || mCropBottom != 0;
             // declare_parameter("disable_auto_white_balance", rclcpp::ParameterType::PARAMETER_BOOL);
 
             mMediaControlServer = create_service<srv::MediaControl>(

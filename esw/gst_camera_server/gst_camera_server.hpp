@@ -17,13 +17,11 @@ namespace mrover {
         // For example, /dev/video0
         // These device paths are not garunteed to stay the same between reboots
         // Prefer sys path for non-debugging purposes
-        std::string mDeviceNode;
-
-        rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr mDeviceImageSubscriber;
+        std::string mDeviceNode;                                                         // Used if captureIsDev()
+        rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr mDeviceImageSubscriber; // Used if captureIsTopic()
 
         bool mDisableAutoWhiteBalance{}; // Useful for science, the UV LEDs can mess with the white balance
 
-        bool mCropEnabled{};
         int mCropLeft{}, mCropRight{}, mCropTop{}, mCropBottom{};
 
         gst::video::v4l2::CaptureFormat mStreamCaptureFormat;
@@ -34,15 +32,19 @@ namespace mrover {
         gst::PipelineWrapper mStreamPipelineWrapper;
         GstElement* mStreamDeviceImageSource;
 
-        bool mImageCaptureEnabled;
         gst::video::v4l2::CaptureFormat mImageCaptureFormat;
-        std::string mImageCapturePipelineLaunch;
         rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr mImageCaptureServer;
         rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr mImageCapturePublisher;
-        GstElement* mImageCaptureDeviceImageSource;
+        std::string mImageCapturePipelineLaunch; // Used if captureIsDev()
+        cv::Mat mImageCaptureFrame;              // Used if captureIsTopic() (BGR8)
 
         GMainLoop* mMainLoop{};
         std::thread mMainLoopThread;
+
+        [[nodiscard]] auto cropEnabled() const -> bool;
+        [[nodiscard]] auto captureIsDev() const -> bool;
+        [[nodiscard]] auto captureIsTopic() const -> bool;
+        [[nodiscard]] auto imageCaptureEnabled() const -> bool;
 
         auto deviceImageCallback(sensor_msgs::msg::Image::ConstSharedPtr const& msg) -> void;
         auto createStreamPipeline() -> void;
