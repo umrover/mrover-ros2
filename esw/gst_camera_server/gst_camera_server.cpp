@@ -39,12 +39,12 @@ namespace mrover {
             std::memcpy(info.data, bgraFrame.data, size);
             gst_buffer_unmap(buffer, &info);
 
-            gst_app_src_push_buffer(GST_APP_SRC(mStreamDeviceImageSource), buffer);
-
             if (mStreamPipelineWrapper.isPlaying()) {
                 gst_app_src_push_buffer(GST_APP_SRC(mStreamDeviceImageSource), buffer);
             } else if (mImageCaptureEnabled) {
                 gst_app_src_push_buffer(GST_APP_SRC(mImageCaptureDeviceImageSource), buffer);
+            } else {
+                gst_buffer_unref(buffer);
             }
         } catch (std::exception const& e) {
             RCLCPP_ERROR_STREAM(get_logger(), std::format("Exception encoding frame: {}", e.what()));
@@ -384,12 +384,13 @@ namespace mrover {
 
 
             mPort = static_cast<std::uint16_t>(port);
-            if (mAddress != DEFAULT_IP_ADDRESS) {
-                if (!isIpAddressReachable(mAddress, mPort)) {
-                    RCLCPP_ERROR_STREAM(get_logger(), std::format("IP address {} is not reachable. Using {} instead", mAddress, DEFAULT_IP_ADDRESS));
-                    mAddress = DEFAULT_IP_ADDRESS;
-                }
-            }
+            // TODO:(owen) none of this works
+            // if (mAddress != DEFAULT_IP_ADDRESS) {
+            //     if (!isIpAddressReachable(mAddress, mPort)) {
+            //         RCLCPP_ERROR_STREAM(get_logger(), std::format("IP address {} is not reachable. Using {} instead", mAddress, DEFAULT_IP_ADDRESS));
+            //         mAddress = DEFAULT_IP_ADDRESS;
+            //     }
+            // }
 
             mStreamCaptureFormat = gst::video::v4l2::CaptureFormat{
                     .pixelFormat = gst::video::v4l2::getPixelFormatFromStringView(streamPixelFormat),
