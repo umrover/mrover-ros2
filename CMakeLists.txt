@@ -69,6 +69,7 @@ find_package(ament_cmake_python REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
+find_package(rtcm_msgs REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(tf2_ros REQUIRED)
@@ -233,6 +234,24 @@ target_link_libraries(simulator
 )
 target_include_directories(simulator SYSTEM PRIVATE ${BULLET_INCLUDE_DIRS} ${OPENCV_INCLUDE_DIRS})
 
+
+# Localization
+
+mrover_add_node(rover_gps_driver localization/rover_gps_driver.cpp)
+ament_target_dependencies(rover_gps_driver rclcpp sensor_msgs rtcm_msgs)
+
+mrover_add_node(heading_filter localization/heading_filter.cpp)
+ament_target_dependencies(heading_filter rclcpp rcutils sensor_msgs builtin_interfaces message_filters)
+target_link_libraries(heading_filter lie)
+
+mrover_add_node(iekf_se3 localization/iekf_se3/*.cpp)
+ament_target_dependencies(iekf_se3 rclcpp tf2 tf2_ros geometry_msgs sensor_msgs)
+target_link_libraries(iekf_se3 lie Eigen3::Eigen)
+
+mrover_add_node(pose_filter localization/pose_filter/*.cpp)
+ament_target_dependencies(pose_filter rclcpp tf2 tf2_ros geometry_msgs sensor_msgs)
+target_link_libraries(pose_filter lie)
+
 # Perception
 
 find_package(ZED QUIET)
@@ -294,6 +313,10 @@ mrover_link_component(tag_detector lie opencv_core opencv_aruco opencv_imgproc l
 
 mrover_executable_from_component(stereo_tag_detector perception/executables/stereo_tag_detector.cpp tag_detector_component)
 mrover_executable_from_component(image_tag_detector perception/executables/image_tag_detector.cpp tag_detector_component)
+
+mrover_add_component(cost_map perception/cost_map/*.cpp perception/cost_map/pch.hpp CostMapNode)
+mrover_ament_component(cost_map rclcpp rclcpp_components tf2 tf2_ros)
+mrover_link_component(cost_map lie parameter_utils)
 
 # Embedded
 mrover_add_header_only_library(messaging esw/messaging)
@@ -376,6 +399,8 @@ install(PROGRAMS
     superstructure/superstructure.py
     scripts/debug_course_publisher.py
     scripts/debug_service.py
+    scripts/astar_debug.py
+    scripts/custom_costmap.py
     scripts/visualizer.py
     scripts/image_capture.py
     teleoperation/basestation_gui/gui_frontend.sh

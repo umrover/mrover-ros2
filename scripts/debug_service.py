@@ -7,6 +7,9 @@ from rclpy.node import Node
 from std_srvs.srv import SetBool
 from mrover.srv import EnableBool
 
+SERVICE_TYPE = SetBool
+SERVICE_NAME = "/science_enable_heater_b0"
+
 SERVICE_TYPE = EnableBool
 SERVICE_NAME = '/sa_enable_pump_0'
 
@@ -19,7 +22,7 @@ class Service(Node):
 
     def callback(self, request, response):
         response.success = True
-        self.get_logger().info(f'Incoming request: {request}' )
+        self.get_logger().info(f"Incoming request: {request}")
 
         return response
 
@@ -28,6 +31,7 @@ def main(args=None):
     rclpy.init(args=args)
     rclpy.spin(Service())
     rclpy.shutdown()
+
 
 if __name__ == "__main__":
     main()

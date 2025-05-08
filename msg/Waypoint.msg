@@ -1,3 +1,3 @@
-uint8 tag_id
-bool enable_costmap
+int8 tag_id
 WaypointType type
+bool enable_costmap
