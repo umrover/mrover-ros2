@@ -81,6 +81,11 @@
         framerate: 15
         codec: H265
         bitrate: 2000000
+      image_capture:
+        pixel_format: ABGR32
+        width: 1280
+        height: 720
+        framerate: 15
 
 boom_streamer:
   ros__parameters:
