@@ -5,6 +5,7 @@ from typing import Any, Type
 from channels.generic.websocket import JsonWebsocketConsumer
 from numpy import float32
 import rclpy.duration
+from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy, DurabilityPolicy
 from rosidl_runtime_py.convert import message_to_ordereddict
 
 import rclpy
@@ -110,7 +111,11 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.forward_ros_topic("/sa_controller_state", ControllerState, "sa_state")
         self.forward_ros_topic("/sa_gear_diff_position", Float32, "hexhub_site")
         self.forward_ros_topic("basestation/position", NavSatFix, "basestation_position")
-        self.forward_ros_topic("/drone_odometry", NavSatFix, "drone_waypoint")
+        self.forward_ros_topic("/drone_odom", NavSatFix, "drone_waypoint", qos_profile=QoSProfile(reliability=ReliabilityPolicy.BEST_EFFORT,
+                                                                                                                                     durability=DurabilityPolicy.VOLATILE,
+                                                                                                                                     history=HistoryPolicy.SYSTEM_DEFAULT,
+                                                                                                                                     depth=1
+                                                                                                                                    ))
         # check topic names above
 
         # Services
@@ -145,7 +150,7 @@ class GUIConsumer(JsonWebsocketConsumer):
         for timer in self.timers:
             node.destroy_timer(timer)
 
-    def forward_ros_topic(self, topic_name: str, topic_type: Type, gui_msg_type: str) -> None:
+    def forward_ros_topic(self, topic_name: str, topic_type: Type, gui_msg_type: str, qos_profile = 1) -> None:
         """
         Subscribes to a ROS topic and forwards messages to the GUI as JSON
 
@@ -158,8 +163,7 @@ class GUIConsumer(JsonWebsocketConsumer):
             # Formatting a ROS message as a string outputs YAML
             # Parse it back into a dictionary, so we can send it as JSON
             self.send_message_as_json({"type": gui_msg_type, **message_to_ordereddict(ros_message)})
-
-        self.subscribers.append(node.create_subscription(topic_type, topic_name, callback, 1))
+        self.subscribers.append(node.create_subscription(topic_type, topic_name, callback, qos_profile))
             # subscription = node.create_subscription(
             #     topic_type,
             #     topic_name,
