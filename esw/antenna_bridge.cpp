@@ -32,11 +32,17 @@ namespace mrover {
                     std::chrono::milliseconds(100),
                     [this]() { publishDataCallback(); });
             mJointDataPub = create_publisher<sensor_msgs::msg::JointState>("antenna_joint_data", 1);
+            mControllerStatePub = create_publisher<msg::ControllerState>("antenna_controller_state", 1);
 
             mJointData.name = {antennaName};
             mJointData.position = {std::numeric_limits<double>::quiet_NaN()};
             mJointData.velocity = {std::numeric_limits<double>::quiet_NaN()};
             mJointData.effort = {std::numeric_limits<double>::quiet_NaN()};
+
+            mControllerState.name = {antennaName};
+            mControllerState.state.resize(1);
+            mControllerState.error.resize(1);
+            mControllerState.limit_hit.resize(1);
         }
 
     private:
@@ -47,7 +53,9 @@ namespace mrover {
 
         rclcpp::TimerBase::SharedPtr mPublishDataTimer;
         rclcpp::Publisher<sensor_msgs::msg::JointState>::SharedPtr mJointDataPub;
+        rclcpp::Publisher<msg::ControllerState>::SharedPtr mControllerStatePub;
         sensor_msgs::msg::JointState mJointData;
+        msg::ControllerState mControllerState;
 
         auto processThrottleCmd(msg::Throttle::ConstSharedPtr const& msg) -> void {
             if (msg->names.size() != 1 || msg->throttles.size() != 1) {
@@ -70,6 +78,12 @@ namespace mrover {
             mJointData.effort[0] = {mController->getEffort()};
 
             mJointDataPub->publish(mJointData);
+
+            mControllerState.state[0] = {mController->getState()};
+            mControllerState.error[0] = {mController->getErrorState()};
+            mControllerState.limit_hit[0] = {mController->getLimitsHitBits()};
+
+            mControllerStatePub->publish(mControllerState);
         }
     };
 } // namespace mrover

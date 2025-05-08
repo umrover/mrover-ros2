@@ -6,6 +6,7 @@ antenna_bridge:
       driver_voltage: 12.0
       motor_max_voltage: 12.0
       quad_present: true
+      quad_ratio: 0.0625
       abs_present: false
 
 can_bridge_antenna:
