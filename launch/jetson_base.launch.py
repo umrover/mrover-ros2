@@ -94,11 +94,37 @@ def generate_launch_description():
         output="screen",
     )
 
-    return LaunchDescription([launch_include_base, 
+    zed_container = ComposableNodeContainer(
+        name="zed_container",
+        namespace="",
+        package="rclcpp_components",
+        executable="component_container_mt",
+        composable_node_descriptions=[
+            ComposableNode(
+                package="mrover",
+                plugin="mrover::ZedWrapper",
+                name="zed_wrapper",
+                parameters=[Path(get_package_share_directory("mrover"), "config", "zed.yaml")],
+                extra_arguments=[{"use_intra_process_comms": True}],
+            ),
+            ComposableNode(
+                package="mrover",
+                plugin="mrover::GstCameraServer",
+                name="zed_streamer",
+                parameters=[Path(get_package_share_directory("mrover"), "config", "cameras.yaml")],
+                extra_arguments=[{"use_intra_process_comms": True}],
+            )
+        ],
+        output="screen",
+    )
+
+    return LaunchDescription([
+                                                launch_include_base, 
                                                launch_include_can,
                                                drive_hw_bridge_node,
                                                pdlb_hw_bridge_node,
                                                mob_streamer_node,
                                                static_streamer_node,
                                                mast_gimbal_hw_bridge_node,
-                                               zed_mini_container])
+                                               zed_mini_container,
+                                               zed_container])
