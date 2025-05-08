@@ -30,4 +30,19 @@ def generate_launch_description():
         ],
     )
 
-    return LaunchDescription([launch_include_jetson_base, sa_hw_bridge_node])
+    panorama_node = Node(
+        package="mrover",
+        executable="panorama.py",
+        name="panorama",
+        respawn=True
+    )
+
+    panorama_rviz = Node(
+        package='rviz2',
+        namespace='',
+        executable='rviz2',
+        name='rviz2',
+        arguments=['-d', Path(get_package_share_directory('mrover'), 'rviz', 'panorama.rviz').__str__()]
+    )
+
+    return LaunchDescription([panorama_rviz])

@@ -38,6 +38,9 @@
     <div class="shadow p-3 rounded lsActuator">
       <LSActuator />
     </div>
+    <div class="shadow p-3 rounded pano">
+      <PanoCam />
+    </div>
   </div>
 </template>
 
@@ -53,6 +56,7 @@ import SAArmControls from './SAArmControls.vue'
 import NetworkMonitor from "./NetworkMonitor.vue"
 import HexHub from './HexHub.vue'
 import LSActuator from './LSActuator.vue'
+import PanoCam from './PanoCam.vue'
 import { mapState, mapActions } from 'vuex';
 
 interface Odom {
@@ -73,7 +77,8 @@ export default {
     NetworkMonitor,
     OdometryReading,
     HexHub,
-    LSActuator
+    LSActuator,
+    PanoCam
   },
   data() {
     return {
@@ -127,12 +132,13 @@ export default {
   display: grid;
   grid-gap: 10px;
   grid-template-columns: 50% repeat(2, auto);
+  /* grid-template-columns: 20% 10% 15% 25% 30%; */
   grid-template-areas:
     'header header header'
     'arm lsActuator soilData'
     'map hexHub waypoints'
-    'map odom odom'
-    'moteus moteus moteus';
+    'map pano waypoints'
+    'moteus odom odom';
   font-family: sans-serif;
   height: auto;
   width: 97%;
@@ -189,5 +195,9 @@ export default {
 
 .lsActuator {
   grid-area: lsActuator;
+}
+
+.pano {
+  grid-area: pano;
 }
 </style>

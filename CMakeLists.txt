@@ -353,6 +353,7 @@ endif ()
 
 # You must add Python scripts here to be able to "ros2 launch" them in terminal
 install(PROGRAMS
+    perception/panorama.py
     navigation/nav.py
     navigation/stuck_detector/stuck_detector.py
     localization/rover_gps_driver.py
@@ -377,6 +378,7 @@ install(PROGRAMS
 install(DIRECTORY launch DESTINATION share/${PROJECT_NAME})
 install(DIRECTORY urdf DESTINATION share/${PROJECT_NAME})
 install(DIRECTORY config DESTINATION share/${PROJECT_NAME})
+install(DIRECTORY rviz DESTINATION share/${PROJECT_NAME})
 # install (DIRECTORY ${} DESTINATION lib/${PROJECT_NAME})
 
 ament_package()

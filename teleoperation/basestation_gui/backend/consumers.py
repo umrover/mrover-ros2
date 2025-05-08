@@ -4,12 +4,16 @@ from typing import Any, Type
 
 from channels.generic.websocket import JsonWebsocketConsumer
 from numpy import float32
+import rclpy.duration
 from rosidl_runtime_py.convert import message_to_ordereddict
 
 import rclpy
 import tf2_ros
 import asyncio
 import threading
+import numpy as np
+import cv2
+from time import sleep
 
 from tf2_ros.buffer import Buffer
 from lie import SE3
@@ -30,7 +34,7 @@ from backend.waypoints import (
     delete_auton_waypoint_from_course
 )
 from geometry_msgs.msg import Twist, Vector3
-from sensor_msgs.msg import NavSatFix, Temperature, RelativeHumidity, JointState
+from sensor_msgs.msg import NavSatFix, Temperature, RelativeHumidity, Image, JointState
 from mrover.msg import (
     Throttle,
     IK,
@@ -47,6 +51,8 @@ from mrover.msg import (
 from mrover.srv import (
     EnableAuton, 
     EnableBool,
+    PanoramaStart,
+    PanoramaEnd,
     ServoSetPos 
 )
 from std_srvs.srv import SetBool
@@ -110,6 +116,8 @@ class GUIConsumer(JsonWebsocketConsumer):
         # Services
         self.enable_teleop_srv = node.create_client(SetBool, "/enable_teleop")
         self.enable_auton_srv = node.create_client(EnableAuton, "/enable_auton")
+        self.pano_start_srv = node.create_client(PanoramaStart, "/panorama/start")
+        self.pano_end_srv = node.create_client(PanoramaEnd, "/panorama/end")
         # might need to change service type
         self.gear_diff_set_pos_srv = node.create_client(ServoSetPos, "/sa_gear_diff_set_position")
 
@@ -195,6 +203,30 @@ class GUIConsumer(JsonWebsocketConsumer):
                 ],
             )
         )
+
+    def start_stop_pano(self, action: str) -> None:
+        if(action == "start"):
+            node.get_logger().info("Pano start")
+            self.pano_start_srv.call_async(PanoramaStart.Request())
+        else:
+            node.get_logger().info("Pano stop")
+            future = self.pano_end_srv.call_async(PanoramaEnd.Request())
+            curr_time = node.get_clock().now()
+            # wait for promise to finish
+            node.get_logger().warn("waiting 5 seconds for pano result...")
+            while not future.result() and node.get_clock().now() < curr_time + rclpy.duration.Duration(seconds=10.0):
+                sleep(0.5)
+                pass
+            if future.result():
+                img_msg: Image = future.result().img
+                img_np = np.frombuffer(img_msg.data, dtype=np.uint8).reshape(
+                    img_msg.height, img_msg.width, 4
+                )
+                timestamp = f"{node.get_clock().now().seconds_nanoseconds()[0]}_{node.get_clock().now().seconds_nanoseconds()[1]}"
+                cv2.imwrite(f"../../data/{timestamp}panorama.png", img_np)
+                node.get_logger().info(f'Image saved to {timestamp}panorama.png')
+            else:
+                node.get_logger().info('no response from pano service')
 
     def receive(self, text_data=None, bytes_data=None, **kwargs) -> None:
         """
@@ -329,7 +361,8 @@ class GUIConsumer(JsonWebsocketConsumer):
 
                 case {"type": "ls_toggle", "enable": e}:
                     self.sa_enable_switch_srv.call(EnableBool.Request(enable=e))
-
+                case {"type": "pano", "action": a}:
+                    self.start_stop_pano(a)
                 case _:
                     node.get_logger().warning(f"Unhandled message: {message}")
         except:
