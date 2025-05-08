@@ -36,7 +36,7 @@ def generate_launch_description():
     base_link_to_right_gps = Node(
         package="tf2_ros",
         executable="static_transform_publisher",
-        arguments=["0.0", "0.55", "0", "0", "0", "0", "1", "right_gps_frame", "base_link"]
+        arguments=["0.0", "0.55", "0", "0", "0", "0", "1", "right_gps_frame", "base_link"],
     )
 
     # Run Navigation

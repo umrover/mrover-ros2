@@ -3,24 +3,31 @@ from pathlib import Path
 from ament_index_python import get_package_share_directory
 
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
+from launch.actions import IncludeLaunchDescription
 from launch.launch_description_sources import PythonLaunchDescriptionSource
-from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node, ComposableNodeContainer
 from launch_ros.descriptions import ComposableNode
-from launch.conditions import LaunchConfigurationEquals
-
 
 def generate_launch_description():
-
-    launch_include_base = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(Path(get_package_share_directory("mrover"), "launch/base.launch.py").__str__())
-    )
 
     launch_include_can = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             Path(get_package_share_directory("mrover"), "launch/jetson_can.launch.py").__str__()
         )
+    )
+
+    diff_drive_controller_node = Node(
+        package="mrover",
+        executable="differential_drive_controller",
+        name="differential_drive_controller",
+        parameters=[Path(get_package_share_directory("mrover"), "config", "esw.yaml")],
+    )
+
+    superstructure_node = Node(
+        package="mrover",
+        executable="superstructure.py",
+        name="superstructure",
+        parameters=[Path(get_package_share_directory("mrover"), "config", "superstructure.yaml")],
     )
 
     drive_hw_bridge_node = Node(
@@ -32,6 +39,8 @@ def generate_launch_description():
             Path(get_package_share_directory("mrover"), "config", "drive.yaml"),
         ],
     )
+
+    led_node = Node(package="mrover", executable="led", name="led")
 
     pdlb_hw_bridge_node = Node(
         package="mrover",
@@ -70,30 +79,6 @@ def generate_launch_description():
         ],
     )
 
-    zed_mini_container = ComposableNodeContainer(
-        name="zed_mini_container",
-        namespace="",
-        package="rclcpp_components",
-        executable="component_container_mt",
-        composable_node_descriptions=[
-            ComposableNode(
-                package="mrover",
-                plugin="mrover::ZedWrapper",
-                name="zed_mini_wrapper",
-                parameters=[Path(get_package_share_directory("mrover"), "config", "zed_mini.yaml")],
-                extra_arguments=[{"use_intra_process_comms": True}],
-            ),
-            ComposableNode(
-                package="mrover",
-                plugin="mrover::GstCameraServer",
-                name="zed_mini_streamer",
-                parameters=[Path(get_package_share_directory("mrover"), "config", "cameras.yaml")],
-                extra_arguments=[{"use_intra_process_comms": True}],
-            )
-        ],
-        output="screen",
-    )
-
     zed_container = ComposableNodeContainer(
         name="zed_container",
         namespace="",
@@ -113,18 +98,22 @@ def generate_launch_description():
                 name="zed_streamer",
                 parameters=[Path(get_package_share_directory("mrover"), "config", "cameras.yaml")],
                 extra_arguments=[{"use_intra_process_comms": True}],
-            )
+            ),
         ],
         output="screen",
     )
 
-    return LaunchDescription([
-                                                launch_include_base, 
-                                               launch_include_can,
-                                               drive_hw_bridge_node,
-                                               pdlb_hw_bridge_node,
-                                               mob_streamer_node,
-                                               static_streamer_node,
-                                               mast_gimbal_hw_bridge_node,
-                                               zed_mini_container,
-                                               zed_container])
+    return LaunchDescription(
+        [
+            launch_include_can,
+            diff_drive_controller_node,
+            superstructure_node,
+            led_node,
+            drive_hw_bridge_node,
+            pdlb_hw_bridge_node,
+            mob_streamer_node,
+            static_streamer_node,
+            mast_gimbal_hw_bridge_node,
+            zed_container,
+        ]
+    )

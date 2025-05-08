@@ -11,10 +11,4 @@ def generate_launch_description():
 
     teleop_browser = Node(package="mrover", executable="gui_chromium.sh", name="teleop_chromium")
 
-    return LaunchDescription(
-        [
-            teleop_backend,
-            teleop_frontend,
-            teleop_browser
-        ]
-    )
+    return LaunchDescription([teleop_backend, teleop_frontend, teleop_browser])
