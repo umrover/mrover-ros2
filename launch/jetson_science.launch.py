@@ -44,5 +44,7 @@ def generate_launch_description():
         name='rviz2',
         arguments=['-d', Path(get_package_share_directory('mrover'), 'rviz', 'panorama.rviz').__str__()]
     )
+    
+    # TODO (ali): add 3 science cams
 
-    return LaunchDescription([panorama_rviz])
+    return LaunchDescription([launch_include_jetson_base, sa_hw_bridge_node, panorama_node, panorama_rviz])

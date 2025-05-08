@@ -50,6 +50,26 @@ def generate_launch_description():
         ],
     )
 
+    mob_streamer_node = Node(
+        package="mrover",
+        executable="gst_camera_server",
+        name="mobility_streamer",
+        output="screen",
+        parameters=[
+            Path(get_package_share_directory("mrover"), "config", "cameras.yaml"),
+        ],
+    )
+
+    static_streamer_node = Node(
+        package="mrover",
+        executable="gst_camera_server",
+        name="static_streamer",
+        output="screen",
+        parameters=[
+            Path(get_package_share_directory("mrover"), "config", "cameras.yaml"),
+        ],
+    )
+
     zed_mini_container = ComposableNodeContainer(
         name="zed_mini_container",
         namespace="",
@@ -63,9 +83,22 @@ def generate_launch_description():
                 parameters=[Path(get_package_share_directory("mrover"), "config", "zed_mini.yaml")],
                 extra_arguments=[{"use_intra_process_comms": True}],
             ),
-            # TODO (ali): Add zed mini streamer
+            ComposableNode(
+                package="mrover",
+                plugin="mrover::GstCameraServer",
+                name="zed_mini_streamer",
+                parameters=[Path(get_package_share_directory("mrover"), "config", "cameras.yaml")],
+                extra_arguments=[{"use_intra_process_comms": True}],
+            )
         ],
         output="screen",
     )
 
-    return LaunchDescription([launch_include_base, launch_include_can, drive_hw_bridge_node, pdlb_hw_bridge_node, mast_gimbal_hw_bridge_node, zed_mini_container])
+    return LaunchDescription([launch_include_base, 
+                                               launch_include_can,
+                                               drive_hw_bridge_node,
+                                               pdlb_hw_bridge_node,
+                                               mob_streamer_node,
+                                               static_streamer_node,
+                                               mast_gimbal_hw_bridge_node,
+                                               zed_mini_container])

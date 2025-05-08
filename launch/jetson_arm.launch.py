@@ -30,4 +30,14 @@ def generate_launch_description():
         ],
     )
 
-    return LaunchDescription([launch_include_jetson_base, arm_hw_bridge_node])
+    boom_streamer_node = Node(
+        package="mrover",
+        executable="gst_camera_server",
+        name="boom_streamer",
+        output="screen",
+        parameters=[
+            Path(get_package_share_directory("mrover"), "config", "cameras.yaml"),
+        ],
+    )
+
+    return LaunchDescription([launch_include_jetson_base, arm_hw_bridge_node, boom_streamer_node])
