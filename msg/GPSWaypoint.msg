@@ -1,4 +1,5 @@
 int8 tag_id
+bool enable_costmap
 float64 latitude_degrees
 float64 longitude_degrees
 WaypointType type

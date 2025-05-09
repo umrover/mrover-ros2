@@ -35,6 +35,7 @@ jobs:
       - name: Build
         if: github.event.pull_request.draft == false
         run: . /opt/ros/humble/setup.sh && . /home/mrover/ros2_ws/src/mrover/venv/bin/activate && cd $GITHUB_WORKSPACE/src/mrover/ && ./build.sh
+      
       # - name: Build Without Static Analysis
       #   if: github.event.pull_request.draft == false && github.event.pull_request.base.ref != 'refs/heads/main'
       #   run: . /opt/ros/humble/setup.sh && . /home/mrover/ros2_ws/src/mrover/venv/bin/activate && cd $GITHUB_WORKSPACE/src/mrover/ && ./build.sh

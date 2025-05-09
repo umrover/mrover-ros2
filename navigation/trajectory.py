@@ -1,5 +1,4 @@
 from dataclasses import dataclass, field
-
 import numpy as np
 
 
@@ -18,8 +17,26 @@ class Trajectory:
         Increments the tracked point in the trajectory, returns true if
         the trajectory is finished
         """
-        self.cur_pt += 1
+        self.cur_pt = min(self.cur_pt + 1, len(self.coordinates))
         return self.cur_pt >= len(self.coordinates)
+
+    def decerement_point(self) -> bool:
+        """
+        Increments the tracked point in the trajectory, returns true if
+        the trajectory is finished
+        """
+        self.cur_pt = max(0, self.cur_pt - 1)
+        return self.cur_pt <= 0
+
+    def done(self) -> bool:
+        return self.cur_pt >= len(self.coordinates)
+
+    def empty(self) -> bool:
+        return len(self.coordinates) == 0
+
+    def clear(self):
+        self.coordinates = np.array([])
+        self.cur_pt = 0
 
     def reset(self) -> None:
         """
@@ -40,41 +57,55 @@ class SearchTrajectory(Trajectory):
         distance_between_spirals: float,
         num_segments_per_rotation: int,
         insert_extra: bool,
+        max_segment_length: float,  # New parameter for max segment length
     ) -> np.ndarray:
         """
-        Generates a set of coordinates for a spiral search pattern centered at the origin
-        :param coverage_radius              radius of the spiral search pattern (float)
-        :param distance_between_spirals:    distance between each spiralradii = angles * (distance_between_spirals / (2*np.pi)) (float)
-        :param num_segments_per_rotation:   number of segments that the spiral has per rotation (int)
-        :return                             np.ndarray of coordinates
+        Generates a set of coordinates for a spiral search pattern centered at the origin.
+        If the distance between consecutive points exceeds the max_segment_length, extra points
+        are inserted to reduce the segment length.
+
+        :param coverage_radius: radius of the spiral search pattern (float)
+        :param distance_between_spirals: distance between each spiral (float)
+        :param num_segments_per_rotation: number of segments per spiral (int)
+        :param insert_extra: whether to insert extra points between spiral segments
+        :param max_segment_length: maximum allowable distance between consecutive points (float)
+        :return: np.ndarray of coordinates
         """
         # The number of spirals should ensure coverage of the entire radius.
-        # We add 1 to ensure that the last spiral covers the radius along the entire rotation,
-        # as otherwise we will just make the outermost point touch the radius
         num_spirals = np.ceil(coverage_radius / distance_between_spirals).astype("int") + 1
-        # The angles are evenly spaced between 0 and 2pi*num_segments_per_rotation (add one to the number of points because N+1 points make N segments)
+        # The angles are evenly spaced between 0 and 2pi*num_segments_per_rotation
         angles = np.linspace(0, 2 * np.pi * num_spirals, num_segments_per_rotation * num_spirals + 1)
+
         # Radii are computed via following polar formula.
-        # This is correct because you want the radius to increase by 'distance_between_spirals' every 2pi radians (one rotation)
         radii = angles * (distance_between_spirals / (2 * np.pi))
-        # convert to cartesian coordinates
+
+        # Convert polar to Cartesian coordinates
         x_coords = np.cos(angles) * radii
         y_coords = np.sin(angles) * radii
-        # we want to return as a 2D matrix where each row is a coordinate pair
-        # so we reshape x and y coordinates to be (n, 1) matricies then stack horizontally to get (n, 2) matrix
         vertices = np.hstack((x_coords.reshape(-1, 1), y_coords.reshape(-1, 1)))
-        all_points = []
-        if insert_extra:
-            for i in range(len(vertices) - 1):
-                all_points.append(vertices[i])
-                vector = vertices[i + 1] - vertices[i]
-                magnitude = np.linalg.norm(vector)
-                unit_vector = vector / magnitude
-                count = 0.0
-                while count < magnitude - 3.5:
-                    all_points.append(all_points[-1] + (unit_vector * 2.5))  # TODO: figure out how far apart to insert
-                    count += 2.5
+
+        # Function to insert intermediate points if the distance is too large
+        def insert_points_if_needed(vertices, max_segment_length):
+            all_points = [vertices[0]]
+            for i in range(1, len(vertices)):
+                p1 = vertices[i - 1]
+                p2 = vertices[i]
+                # Calculate the distance between consecutive points
+                dist = np.linalg.norm(p2 - p1)
+                if dist > max_segment_length:
+                    # Insert intermediate points along the line between p1 and p2
+                    num_insertions = int(np.ceil(dist / max_segment_length)) - 1
+                    vector = (p2 - p1) / (num_insertions + 1)
+                    for j in range(1, num_insertions + 1):
+                        all_points.append(p1 + j * vector)
+                all_points.append(p2)
             return np.array(all_points)
+
+        # If insert_extra is True and max_segment_length is set, insert intermediate points
+        # if insert_extra and max_segment_length is not None:
+        # TODO: fix the parameter declaration for max segment length should be below, temp fix by using 0.5
+        # vertices = insert_points_if_needed(vertices, max_segment_length)
+        vertices = insert_points_if_needed(vertices, max_segment_length)
 
         return vertices
 
@@ -87,15 +118,17 @@ class SearchTrajectory(Trajectory):
         segments_per_rotation: int,
         tag_id: int,
         insert_extra: bool,
+        max_segment_length: float,  # New parameter for max segment length
     ):
         """
-        Generates a square spiral search pattern around a center position, assumes rover is at the center position
+        Generates a spiral search pattern around a center position, assuming rover is at the center position
         :param center:                      position to center spiral on (np.ndarray)
         :param coverage_radius:             radius of the spiral search pattern (float)
         :param distance_between_spirals:    distance between each spiral (float)
         :param segments_per_rotation:       number of segments per spiral (int), for example, 4 segments per rotation would be a square spiral, 8 segments per rotation would be an octagonal spiral
         :param tag_id:                      tag id to associate with this trajectory (int)
-        :param insert_extra:
+        :param insert_extra:                whether to insert extra points
+        :param max_segment_length:          maximum length of a segment before extra points are inserted (float)
         :return:    SearchTrajectory object
         """
         zero_centered_spiral_r2 = cls.gen_spiral_coordinates(
@@ -103,6 +136,7 @@ class SearchTrajectory(Trajectory):
             distance_between_spirals,
             segments_per_rotation,
             insert_extra,
+            max_segment_length,
         )
 
         # numpy broadcasting magic to add center to each row of the spiral coordinates
@@ -118,3 +152,15 @@ class SearchTrajectory(Trajectory):
             spiral_coordinates_r3,
             tag_id,
         )
+
+
+# # Create a SearchTrajectory with a spiral pattern, inserting points if segment length is too large
+# spiral_trajectory = SearchTrajectory.spiral_traj(
+#     center=np.array([0, 0, 0]),
+#     coverage_radius=coverage_radius,
+#     distance_between_spirals=distance_between_spirals,
+#     segments_per_rotation=num_segments_per_rotation,
+#     tag_id=1,
+#     insert_extra=insert_extra,
+#     max_segment_length=max_segment_length
+# )
