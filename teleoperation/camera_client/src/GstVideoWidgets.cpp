@@ -8,7 +8,7 @@ GstVideoWidget::GstVideoWidget(QWidget* parent) : QVideoWidget(parent) {
 }
 
 auto GstVideoWidget::setGstPipeline(std::string const& pipeline) -> void {
-    mPlayer->setMedia(QUrl(std::format("gst-pipeline: {} ! videoconvert ! xvimagesink name=\"qtvideosink\"", pipeline).c_str()));
+    mPlayer->setMedia(QUrl(std::format("gst-pipeline: {} ! videoconvert ! xvimagesink name=\"qtvideosink\" sync=false", pipeline).c_str()));
     play();
 }
 

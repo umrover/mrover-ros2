@@ -3,7 +3,7 @@
     static_cam:
       address: 10.1.0.2 # if using RTP, should be set to IP of basestation
       port: 8081
-      dev_node: "/dev/long_range_cam"
+      dev_node: "/dev/static_cam"
       dev_path: ""
       stream:
         pixel_format: MJPG # from v4l2-ctl -d DEV_NODE --list-formats-ext
@@ -57,7 +57,7 @@
       dev_node: "/dev/zed_mini"
       dev_path: ""
       stream:
-        pixel_format: MJPG # from v4l2-ctl -d DEV_NODE --list-formats-ext
+        pixel_format: YUYV # from v4l2-ctl -d DEV_NODE --list-formats-ext
         width: 1344
         height: 376
         framerate: 15
@@ -65,8 +65,8 @@
         bitrate: 2000000
       image_capture:
         pixel_format: YUYV
-        width: 1920
-        height: 1080
+        width: 2560
+        height: 720
         framerate: 15
     zed:
       address: 10.1.0.2
