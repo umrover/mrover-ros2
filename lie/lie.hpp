@@ -43,28 +43,28 @@ namespace mrover {
         [[nodiscard]] static auto toTransformStamped(SE3d const& tf, std::string const& childFrame, std::string const& parentFrame, rclcpp::Time const& time) -> geometry_msgs::msg::TransformStamped;
 
         /**
-     * \brief           Pull the most recent transform or pose between two frames from the TF tree.
-     *                  The second and third parameters are named for the transform interpretation.
-     *                  Consider them named "a" and "b" respectively:
-     *                  For a transform this is a rotation and translation, i.e. aToB.
-     *                  For a pose this is a position and orientation, i.e. aInB.
-     * \param buffer    ROS TF Buffer, make sure a listener is attached
-     * \param fromFrame From (transform) or child (pose) frame
-     * \param toFrame   To (transform) or parent (pose) frame
-     * \param time      Time to query the transform at, default is the latest
-     * \return          The transform or pose represented by an SE3 lie group element
-     */
+		 * \brief           Pull the most recent transform or pose between two frames from the TF tree.
+		 *                  The second and third parameters are named for the transform interpretation.
+		 *                  Consider them named "a" and "b" respectively:
+		 *                  For a transform this is a rotation and translation, i.e. aToB.
+		 *                  For a pose this is a position and orientation, i.e. aInB.
+		 * \param buffer    ROS TF Buffer, make sure a listener is attached
+		 * \param fromFrame From (transform) or child (pose) frame
+		 * \param toFrame   To (transform) or parent (pose) frame
+		 * \param time      Time to query the transform at, default is the latest
+		 * \return          The transform or pose represented by an SE3 lie group element
+		 */
         [[nodiscard]] static auto fromTfTree(tf2_ros::Buffer const& buffer, std::string const& fromFrame, std::string const& toFrame, rclcpp::Time const& time = rclcpp::Time{}) -> SE3d;
 
         /**
-     * \brief             Push a transform to the TF tree between two frames
-     * \see               fromTfTree for more explanation of the frames
-     * \param broadcaster ROS TF Broadcaster
-     * \param fromFrame   From (transform) or child (pose) frame
-     * \param toFrame     To (transform) or parent (pose) frame
-     * \param transform   The transform or pose represented by an SE3 lie group element
-     * \param time
-     */
+		 * \brief             Push a transform to the TF tree between two frames
+		 * \see               fromTfTree for more explanation of the frames
+		 * \param broadcaster ROS TF Broadcaster
+		 * \param fromFrame   From (transform) or child (pose) frame
+		 * \param toFrame     To (transform) or parent (pose) frame
+		 * \param transform   The transform or pose represented by an SE3 lie group element
+		 * \param time
+		 */
         static auto pushToTfTree(tf2_ros::TransformBroadcaster& broadcaster, std::string const& fromFrame, std::string const& toFrame, SE3d const& transform, rclcpp::Time const& time) -> void;
     };
 
