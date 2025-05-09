@@ -11,6 +11,7 @@ from mrover.srv import PanoramaStart, PanoramaEnd
 
 import rclpy
 from rclpy.node import Node
+from rclpy.duration import Duration
 import sys
 from datetime import datetime
 
@@ -188,6 +189,11 @@ class Panorama(Node):
         _, pano = self.stitcher.stitch(self.img_list)
         bgra_pano = cv2.cvtColor(pano, cv2.COLOR_BGR2BGRA)
         
+        # wait 10 seconds for the pano to populate
+        ts = self.get_clock().now()
+        while (pano is None and self.get_clock().now() - ts < Duration(seconds=10.0)):
+            time.sleep(0.1)
+
         # Construct Pano and Save
         if pano is not None:
             response.img.header = Header()
