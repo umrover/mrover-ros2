@@ -73,8 +73,8 @@ class Panorama(Node):
         self.record_pc = False
 
         # PC Stitching Variables
-        self.pc_sub = message_filters.Subscriber(self, PointCloud2, "/zed/left/points")
-        self.imu_sub = message_filters.Subscriber(self, Imu, "/zed_imu/data_raw")
+        self.pc_sub = message_filters.Subscriber(self, PointCloud2, "/zed_mini/left/points")
+        self.imu_sub = message_filters.Subscriber(self, Imu, "/zed_mini_imu/data_raw")
         self.pc_publisher = self.create_publisher(PointCloud2, "/stitched_pc", 1)
         self.yo_publisher = self.create_publisher(Image, "/debug_pano", 1)
         self.pc_rate = PanoRate(2, self)
@@ -84,7 +84,7 @@ class Panorama(Node):
         self.sync.registerCallback(self.synced_gps_imu_callback)
 
         # Image Stitching Variables
-        self.img_sub = self.create_subscription(Image, "/zed/left/image", self.image_callback, 1);
+        self.img_sub = self.create_subscription(Image, "/zed_mini/left/image", self.image_callback, 1);
         self.img_list = []
         self.stitcher = cv2.Stitcher.create()
         self.img_rate = PanoRate(2, self)

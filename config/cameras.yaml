@@ -37,7 +37,7 @@
     mob_cam:
       address: 10.1.0.2
       port: 8083
-      dev_node: "/dev/mobcam"
+      dev_node: "/dev/mobcam_left"
       dev_path: ""
       stream:
         pixel_format: MJPG # from v4l2-ctl -d DEV_NODE --list-formats-ext
