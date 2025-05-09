@@ -56,6 +56,7 @@
       port: 8084
       dev_node: "/dev/zed_mini"
       dev_path: ""
+      crop_right: 672
       stream:
         pixel_format: YUYV # from v4l2-ctl -d DEV_NODE --list-formats-ext
         width: 1344

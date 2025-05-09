@@ -71,8 +71,7 @@ namespace mrover {
             pipeline.pushBack(std::format("video/x-raw,format={},width={},height={},framerate={}/1", gst::video::toString(gst::video::RawFormat::BGRA), imageWidth, imageHeight, imageFramerate));
             pipeline.pushBack("queue");
         } else if (captureIsDev()) {
-            pipeline.pushBack(gst::video::v4l2::createSrc(mDeviceNode, mStreamCaptureFormat),
-                              gst::addProperty("is-live", true));
+            pipeline.pushBack(gst::video::v4l2::createSrc(mDeviceNode, mStreamCaptureFormat, gst::addProperty("is-live", true)));
             // gst::video::v4l2::addProperty("extra-controls", "\"c,white_balance_temperature_auto=0,white_balance_temperature=4000\"")
             // if (mDisableAutoWhiteBalance) mStreamLaunch += "extra-controls=\"c,white_balance_temperature_auto=0,white_balance_temperature=4000\" ";
         } else {
