@@ -188,11 +188,6 @@ class Panorama(Node):
         self.get_logger().info(f"Stitching {len(self.img_list)} images...")
         _, pano = self.stitcher.stitch(self.img_list)
         bgra_pano = cv2.cvtColor(pano, cv2.COLOR_BGR2BGRA)
-        
-        # wait 10 seconds for the pano to populate
-        ts = self.get_clock().now()
-        while (pano is None and self.get_clock().now() - ts < Duration(seconds=10.0)):
-            time.sleep(0.1)
 
         # Construct Pano and Save
         if pano is not None:

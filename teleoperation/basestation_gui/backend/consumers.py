@@ -217,8 +217,8 @@ class GUIConsumer(JsonWebsocketConsumer):
             future = self.pano_end_srv.call_async(PanoramaEnd.Request())
             curr_time = node.get_clock().now()
             # wait for promise to finish
-            node.get_logger().warn("waiting 5 seconds for pano result...")
-            while not future.result() and node.get_clock().now() < curr_time + rclpy.duration.Duration(seconds=10.0):
+            node.get_logger().warn("waiting 15 seconds for pano result...")
+            while not future.result() and node.get_clock().now() < curr_time + rclpy.duration.Duration(seconds=20.0):
                 sleep(0.5)
                 pass
             if future.result():
