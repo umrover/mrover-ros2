@@ -83,7 +83,7 @@ def generate_launch_description():
         [
             launch_include_jetson_base,
             sa_hw_bridge_node,
-            panorama_node,
+            # panorama_node,
             panorama_rviz,
             zed_mini_container,
         ]
