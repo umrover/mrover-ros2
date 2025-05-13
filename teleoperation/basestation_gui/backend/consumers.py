@@ -209,28 +209,35 @@ class GUIConsumer(JsonWebsocketConsumer):
         )
 
     def start_stop_pano(self, action: str) -> None:
-        if(action == "start"):
+        if action == "start":
             node.get_logger().info("Pano start")
             self.pano_start_srv.call_async(PanoramaStart.Request())
         else:
             node.get_logger().info("Pano stop")
-            future = self.pano_end_srv.call_async(PanoramaEnd.Request())
-            curr_time = node.get_clock().now()
-            # wait for promise to finish
-            node.get_logger().warn("waiting 15 seconds for pano result...")
-            while not future.result() and node.get_clock().now() < curr_time + rclpy.duration.Duration(seconds=20.0):
-                sleep(0.5)
-                pass
-            if future.result():
-                img_msg: Image = future.result().img
+            self.future = self.pano_end_srv.call_async(PanoramaEnd.Request())
+            
+            self.future.add_done_callback(self.handle_pano_response)
+
+            node.get_logger().warn("Waiting for pano result...")
+
+    def handle_pano_response(self, future):
+        node.get_logger().warn("Callback run...")
+
+        if future.done():
+            result = future.result()
+            
+            if result is not None and result.success:
+                img_msg: Image = result.img
                 img_np = np.frombuffer(img_msg.data, dtype=np.uint8).reshape(
                     img_msg.height, img_msg.width, 4
                 )
                 timestamp = f"{node.get_clock().now().seconds_nanoseconds()[0]}_{node.get_clock().now().seconds_nanoseconds()[1]}"
                 cv2.imwrite(f"../../data/{timestamp}panorama.png", img_np)
-                node.get_logger().info(f'Image saved to {timestamp}panorama.png')
+                node.get_logger().info(f"Image saved to {timestamp}panorama.png")
             else:
-                node.get_logger().info('no response from pano service')
+                node.get_logger().info("No response...")
+        else:
+            node.get_logger().error("Service call failed...")
 
     def receive(self, text_data=None, bytes_data=None, **kwargs) -> None:
         """

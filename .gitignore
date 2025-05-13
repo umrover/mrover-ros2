@@ -28,3 +28,4 @@ venv/
 .DS_Store
 # nav state log
 state_machine/state_log.txt
+data/*.png
