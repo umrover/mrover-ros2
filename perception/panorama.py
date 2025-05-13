@@ -79,7 +79,7 @@ class Panorama(Node):
         self.pc_sub = message_filters.Subscriber(self, PointCloud2, "/zed_mini/left/points")
         self.imu_sub = message_filters.Subscriber(self, Imu, "/zed_mini_imu/data_raw")
         self.pc_publisher = self.create_publisher(PointCloud2, "/stitched_pc", 1)
-        self.yo_publisher = self.create_publisher(Image, "/debug_pano", 1)
+        self.pano_img_debug_publisher = self.create_publisher(Image, "/debug_pano", 1)
         self.pc_rate = PanoRate(2, self)
 
         self.stitched_pc = np.empty((0, 8), dtype=np.float32)
@@ -181,31 +181,35 @@ class Panorama(Node):
             pc_msg.height = 1
             pc_msg.point_step = int(len(pc_msg.data) / pc_msg.width)
             pc_msg.is_dense = self.current_pc.is_dense
-
             self.pc_publisher.publish(pc_msg)
         except:
-            # If image succeeds but pc fails, should we set action as succeeded?
-            self.get_logger().info("Failed to create point cloud message")
+            self.get_logger().info("Failed to create point cloud message...")
 
         # if we do not receive any images, then this will crash
         if len(self.img_list) == 0:
             response.success = False
             return response
 
-        self.get_logger().info(f"Stitching {len(self.img_list)} images...")
-
         # Save the images
         unique_id = "{date:%Y-%m-%d_%H:%M:%S}".format(date=datetime.datetime.now())
         new_path = f"data/raw-pano-images/{unique_id}"
         os.mkdir(new_path)
         for i, img in enumerate(self.img_list):
-            cv2.imwrite(f"{new_path}/{i}.png", img)                
+            cv2.imwrite(f"{new_path}/{i}.png", img)              
 
+        # stitch the pano together
+        self.get_logger().info(f"Stitching {len(self.img_list)} images...")
         _, pano = self.stitcher.stitch(self.img_list)
 
         # Construct Pano and Save
         if pano is not None:
+            # save the panorama if it succeeds
+            cv2.imwrite(f"{new_path}/pano.png", img)
+            
+            # convert the panorama to bgra for transport through ROS
             bgra_pano = cv2.cvtColor(pano, cv2.COLOR_BGR2BGRA)
+
+            # fill out the image message
             response.success = True
             response.img.header = Header()
             response.img.width = bgra_pano.shape[1]
@@ -213,14 +217,21 @@ class Panorama(Node):
             response.img.encoding = 'bgra8'
             response.img.is_bigendian = 0
             response.img.step = bgra_pano.shape[1] * 4
+
+            # ensure all values are between 0 and 255
             np.clip(bgra_pano, 0, 255)
+
+            # copy the panorama data into the message
             response.img.data = bgra_pano.astype(np.uint8).tobytes()
-            self.yo_publisher.publish(response.img)
+
+            # publish for debug viewing
+            self.pano_img_debug_publisher.publish(response.img)
         else:
+            # pano stitcher failed
             self.get_logger().info('Pano Failed...')
             response.success = False
             return response
-
+        
         self.get_logger().info('Pano response sent to frontend')
         return response
 
@@ -231,9 +242,6 @@ def main(args=None):
 
     rclpy.spin(pano)
 
-    # Destroy the node explicitly
-    # (optional - otherwise it will be done automatically
-    # when the garbage collector destroys the node object)
     pano.destroy_node()
     rclpy.shutdown()
 

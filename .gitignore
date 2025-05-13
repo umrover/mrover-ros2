@@ -29,3 +29,4 @@ venv/
 # nav state log
 state_machine/state_log.txt
 data/*.png
+data/raw-pano-images
