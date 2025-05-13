@@ -18,6 +18,8 @@ from datetime import datetime
 import cv2
 import time
 import message_filters
+import datetime
+import os
 
 def get_quaternion_from_euler(roll, pitch, yaw):
   """
@@ -185,12 +187,26 @@ class Panorama(Node):
             # If image succeeds but pc fails, should we set action as succeeded?
             self.get_logger().info("Failed to create point cloud message")
 
+        # if we do not receive any images, then this will crash
+        if len(self.img_list) == 0:
+            response.success = False
+            return response
+
         self.get_logger().info(f"Stitching {len(self.img_list)} images...")
+
+        # Save the images
+        unique_id = "{date:%Y-%m-%d_%H:%M:%S}".format(date=datetime.datetime.now())
+        new_path = f"data/raw-pano-images/{unique_id}"
+        os.mkdir(new_path)
+        for i, img in enumerate(self.img_list):
+            cv2.imwrite(f"{new_path}/{i}.png", img)                
+
         _, pano = self.stitcher.stitch(self.img_list)
-        bgra_pano = cv2.cvtColor(pano, cv2.COLOR_BGR2BGRA)
 
         # Construct Pano and Save
         if pano is not None:
+            bgra_pano = cv2.cvtColor(pano, cv2.COLOR_BGR2BGRA)
+            response.success = True
             response.img.header = Header()
             response.img.width = bgra_pano.shape[1]
             response.img.height = bgra_pano.shape[0]
@@ -199,10 +215,11 @@ class Panorama(Node):
             response.img.step = bgra_pano.shape[1] * 4
             np.clip(bgra_pano, 0, 255)
             response.img.data = bgra_pano.astype(np.uint8).tobytes()
-            # while(True):
             self.yo_publisher.publish(response.img)
         else:
             self.get_logger().info('Pano Failed...')
+            response.success = False
+            return response
 
         self.get_logger().info('Pano response sent to frontend')
         return response
