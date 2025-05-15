@@ -58,12 +58,12 @@ namespace mrover {
         		Pin{HEATER_1_GPIO_Port, HEATER_1_Pin},
 				Pin{HEATER_2_GPIO_Port, HEATER_2_Pin},
         };
-        std::array<Pin, NUM_WL> white_leds =
+        std::array<Pin, NUM_WL> white_led_pins =
 		{
 				Pin{WHITE_LED_GPIO_Port, WHITE_LED_Pin}
 		};
 
-        white_leds.at(0) = white_leds.at(0);
+        white_leds.at(0) = white_led_pins.at(0);
 
         for (int i = 0; i < NUM_HEATERS; ++i) {
         	heaters.at(i) = Heater(diag_temp_sensors[0], heater_pins[i]);
@@ -98,13 +98,13 @@ namespace mrover {
     }
 
     void handleAnalogSensors() {
-    		SensorData uv_data = {.id = static_cast<std::uint8_t>(ScienceDataID::UV), .data = 0};
+        SensorData uv_data = {.id = static_cast<std::uint8_t>(ScienceDataID::UV), .data = 0};
 
-    		uv_data.data = uv_sensor.update_uv_blocking();
+        uv_data.data = uv_sensor.update_uv_blocking();
 
-    		science_out = uv_data;
-    		fdcan_bus.broadcast(science_out, SCIENCE_BOARD_ID, JETSON_ADDRESS);
-        }
+        science_out = uv_data;
+        fdcan_bus.broadcast(science_out, SCIENCE_BOARD_ID, JETSON_ADDRESS);
+    }
 
     void handleHeaterTemps() {
         HeaterStateData heater_msg;
