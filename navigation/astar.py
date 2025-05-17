@@ -210,8 +210,6 @@ class AStar:
         rover_ij = cartesian_to_ij(context, rover_position_in_map)
         dest_ij = cartesian_to_ij(context, dest)
 
-        if self.context.env.cost_map.data[dest_ij[0], dest_ij[1]] > self.TRAVERSABLE_COST:
-            raise DestinationInHighCost("Destination in high cost")
 
         if not (0 <= int(dest_ij[0]) < costmap_length and 0 <= int(dest_ij[1]) < costmap_length) or not (
             0 <= int(rover_ij[0]) < costmap_length and 0 <= int(rover_ij[1]) < costmap_length
