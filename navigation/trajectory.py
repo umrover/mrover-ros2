@@ -34,6 +34,12 @@ class Trajectory:
     def empty(self) -> bool:
         return len(self.coordinates) == 0
 
+    def is_last(self) -> bool:
+        if len(self.coordinates) == 0:
+            return True
+        else:
+            return self.cur_pt == len(self.coordinates) - 1
+
     def clear(self):
         self.coordinates = np.array([])
         self.cur_pt = 0
