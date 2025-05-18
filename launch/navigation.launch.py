@@ -11,6 +11,7 @@ def generate_launch_description():
         executable="nav.py",
         name="navigation",
         parameters=[Path(get_package_share_directory("mrover"), "config", "navigation.yaml")],
+        respawn=True
     )
 
     return LaunchDescription([nav_node])
