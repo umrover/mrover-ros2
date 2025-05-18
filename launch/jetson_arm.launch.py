@@ -45,11 +45,18 @@ def generate_launch_description():
         ],
     )
 
+    launch_localization = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            Path(get_package_share_directory("mrover"), "launch/localization.launch.py").__str__()
+        )
+    )
+
     return LaunchDescription(
         [
             launch_include_jetson_base,
             arm_hw_bridge_node,
             boom_streamer_node,
             zed_mini_streamer_node,
+            launch_localization
         ]
     )
