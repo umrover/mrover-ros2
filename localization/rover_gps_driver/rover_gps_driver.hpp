@@ -12,10 +12,10 @@ namespace mrover {
 
         rclcpp::Publisher<sensor_msgs::msg::NavSatFix>::SharedPtr gps_pub;
         rclcpp::Publisher<mrover::msg::FixStatus>::SharedPtr gps_status_pub;
-        rclcpp::Publisher<mrover::msg::Heading>::SharedPtr heading_pub;
-        rclcpp::Publisher<mrover::msg::FixStatus>::SharedPtr heading_status_pub;
-        rclcpp::Publisher<geometry_msgs::msg::Vector3Stamped>::SharedPtr velocity_pub;
-        rclcpp::Publisher<mrover::msg::FixStatus>::SharedPtr velocity_status_pub;
+        // rclcpp::Publisher<mrover::msg::Heading>::SharedPtr heading_pub;
+        // rclcpp::Publisher<mrover::msg::FixStatus>::SharedPtr heading_status_pub;
+        // rclcpp::Publisher<geometry_msgs::msg::Vector3Stamped>::SharedPtr velocity_pub;
+        // rclcpp::Publisher<mrover::msg::FixStatus>::SharedPtr velocity_status_pub;
         rclcpp::Publisher<mrover::msg::SatelliteSignal>::SharedPtr satellite_signal_pub;
         rclcpp::Subscription<rtcm_msgs::msg::Message>::SharedPtr rtcm_sub;
 
