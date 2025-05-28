@@ -247,11 +247,17 @@ namespace mrover {
 
     void RoverGPSDriver::spin() {
         while (rclcpp::ok()) {
-            boost::asio::read_until(serial, read_buffer, '\n');
-            std::istream buffer(&read_buffer);
-            std::string unicore_msg;
-            std::getline(buffer, unicore_msg);
-            process_unicore(unicore_msg);
+            try{
+                boost::asio::read_until(serial, read_buffer, '\n');
+                std::istream buffer(&read_buffer);
+                std::string unicore_msg;
+                std::getline(buffer, unicore_msg);
+                process_unicore(unicore_msg);
+            }catch(...){
+                // Do nothing
+                RCLCPP_WARN(get_logger(), "Exception caught while reading from the serial port.");
+            }
+            
             rclcpp::spin_some(this->get_node_base_interface());
         }
     }
