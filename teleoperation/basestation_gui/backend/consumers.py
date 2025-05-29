@@ -48,6 +48,7 @@ from mrover.msg import (
     ScienceThermistors,
     Oxygen,
     UV,
+    Position,
 )
 from mrover.srv import (
     EnableAuton, 
@@ -57,7 +58,6 @@ from mrover.srv import (
     ServoSetPos 
 )
 from std_srvs.srv import SetBool
-from std_msgs.msg import Float32
 
 rclpy.init()
 node = rclpy.create_node("teleoperation")
@@ -109,7 +109,7 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.forward_ros_topic("/arm_joint_data", JointState, "fk")
         self.forward_ros_topic("/drive_controller_data", ControllerState, "drive_state")
         self.forward_ros_topic("/sa_controller_state", ControllerState, "sa_state")
-        self.forward_ros_topic("/sa_gear_diff_position", Float32, "hexhub_site")
+        self.forward_ros_topic("/sa_gear_diff_position", Position, "hexhub_site")
         self.forward_ros_topic("basestation/position", NavSatFix, "basestation_position")
         self.forward_ros_topic("/drone_odom", NavSatFix, "drone_waypoint", qos_profile=QoSProfile(reliability=ReliabilityPolicy.BEST_EFFORT,
                                                                                                                                      durability=DurabilityPolicy.VOLATILE,

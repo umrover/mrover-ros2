@@ -87,11 +87,11 @@ export default {
       orientation: true,
       site_to_radians: 
       {
-        0: 0.0,
-        1: (2*Math.PI)/5,
-        2: (4*Math.PI)/5,
-        3: (6*Math.PI)/5,
-        4: (8*Math.PI)/5
+        0: 2.368482,
+        1: 0.722008,
+        2: 5.048470,
+        3: 3.977954,
+        4: 4.474047
       }
     }
   },
