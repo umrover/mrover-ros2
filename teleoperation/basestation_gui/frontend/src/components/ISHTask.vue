@@ -24,7 +24,7 @@
     <div class="shadow p-3 rounded ninhydrin">
       <NinhydrinBenedict :site="site" :isNinhydrin="true" />
     </div>
-    <div class="shadow p-3 rounded container-fluid camera">
+    <!--<div class="shadow p-3 rounded container-fluid camera">
       <div class="d-flex justify-content-center">
         <ToggleButton 
           :current-state="true" 
@@ -55,7 +55,7 @@
           />
         </div>
       </div>
-    </div>
+    </div>-->
 
     <div class="shadow p-3 rounded sensors">
       <SensorData :site="site"/>
@@ -104,13 +104,14 @@ export default {
 <style scoped>
 .wrapper {
   display: grid;
+  overflow-x: hidden;
   grid-gap: 10px;
-  grid-template-columns: repeat(2, auto) 40%;
+  grid-template-columns: repeat(2, auto);
   grid-template-areas:
-    'header header header'
-    'siteSelect siteSelect camera'
-    'ninhydrin benedicts camera'
-    'sensors sensors camera';
+    'header header'
+    'siteSelect siteSelect'
+    'ninhydrin benedicts'
+    'sensors sensors';
   font-family: sans-serif;
   height: auto;
 }

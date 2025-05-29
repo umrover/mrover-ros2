@@ -23,19 +23,19 @@
     </div>
 
     <div style="display: flex; flex-direction: row; gap: 10px;">
-      <div style="width: 50%; overflow-x: scroll;">
+              <div style="width: 100%; overflow-x: scroll;">
         <canvas id="chart0" style="width: 100%; height: 200px; background-color: white;"></canvas>
       </div>
-      <div style="width: 50%; overflow-x: scroll; margin-top: 5px;">
+      <div style="width: 100%; overflow-x: scroll; margin-top: 5px;">
         <canvas id="chart1" style="width: 100%; height: 200px; background-color: white;"></canvas>
       </div>
     </div>
 
     <div style="display: flex; flex-direction: row; gap: 10px; margin-top: 5px;">
-      <div style="width: 50%; overflow-x: scroll;">
+    <div style="width: 100%; overflow-x: scroll;">
         <canvas id="chart2" style="width: 100%; height: 200px; background-color: white;"></canvas>
       </div>
-      <div style="width: 50%; overflow-x: scroll;">
+      <div style="width: 100%; overflow-x: scroll;">
         <canvas id="chart3" style="width: 100%; height: 200px; background-color: white;"></canvas>
       </div>
     </div>
@@ -219,12 +219,12 @@ import Chart from 'chart.js/auto';
     // },
     download() {
       // downloads csv of table
-      let csv = "Oxygen, UV (index), Humidity, Temperature (C)\n"
-      console.log(this.sensor_history)
+      let csv = "Time (s), Oxygen (%), UV index, Humidity (%), Temperature (C)\n"
+      // console.log(this.sensor_history)
       const numRows = this.sensor_history[0].length; // transpose (flip) array
       for (let i = 0; i < numRows; ++i) {
         const row = this.sensor_history.map(sensor => sensor[i]);
-        csv += row.join(",") + "\n";
+        csv += i + "," + row.join(",") + "\n";
       }
 
       const anchor = document.createElement("a");
