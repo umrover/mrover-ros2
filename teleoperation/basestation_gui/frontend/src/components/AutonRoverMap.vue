@@ -50,15 +50,16 @@ const MAX_ODOM_COUNT = 10
 const DRAW_FREQUENCY = 10
 // Options for the tilelayer object on the map
 const onlineUrl = 'http://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}'
-const offlineUrl = 'map/urc/{z}/{x}/{y}.jpg'
+const offlineUrl = 'map/URCMap2025/{z}/{x}/{y}.jpg'
 const onlineTileOptions = {
   maxNativeZoom: 22,
   maxZoom: 100,
   subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
 }
 const offlineTileOptions = {
-  minZoom: 16,
-  maxZoom: 20,
+  minZoom: 14,
+  maxNativeZoom: 19,
+  maxZoom: 100
 }
 
 export default {
@@ -83,9 +84,9 @@ export default {
   },
   data() {
     return {
-      center: L.latLng(38.4071654, -110.7923927),
+      center: L.latLng(38.3866643, -110.7709649),
       attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors',
-      online: true,
+      online: false,
       onlineUrl: onlineUrl,
       offlineUrl: offlineUrl,
       onlineTileOptions: onlineTileOptions,

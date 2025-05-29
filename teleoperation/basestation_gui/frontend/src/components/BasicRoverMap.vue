@@ -48,14 +48,15 @@
   const MAX_ODOM_COUNT = 1000
   const DRAW_FREQUENCY = 1
   const onlineUrl = 'http://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}'
-  const offlineUrl = 'map/{z}/{x}/{y}.png'
+  const offlineUrl = 'map/URCMap2025/{z}/{x}/{y}.jpg'
   const onlineTileOptions = {
       maxNativeZoom: 22,
       maxZoom: 100,
       subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
   }
   const offlineTileOptions = {
-      maxNativeZoom: 16,
+      minZoom: 14,
+      maxNativeZoom: 19,
       maxZoom: 100
   }
   
@@ -87,7 +88,7 @@
               // Default Center at MDRS
               center: L.latLng(38.4225202, -110.7844653,),
               attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors',
-              online: true,
+              online: false,
               onlineUrl: onlineUrl,
               offlineUrl: offlineUrl,
               onlineTileOptions: onlineTileOptions,
