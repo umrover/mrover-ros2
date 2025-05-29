@@ -272,7 +272,7 @@ class Course:
     def is_complete(self) -> bool:
         return self.waypoint_index == len(self.course_data.waypoints)
 
-    def get_approach_state(self) -> State | None:
+    def get_approach_state(self, use_long_range=True) -> State | None:
         """
         :return: One of the approach states (ApproachTargetState or LongRangeState)
                  if we are looking for a post or object, and we see it in one of the cameras (ZED or long range)
@@ -280,8 +280,15 @@ class Course:
         from . import long_range, approach_target
 
         # If we see the target in the ZED, go to ApproachTargetState
-        if self.ctx.env.current_target_pos() is not None:
+        zed_pos = self.ctx.env.current_target_pos()
+        waypoint_pos= self.current_waypoint_pose_in_map().translation()
+        distance_thresh = 12 if self.image_target_name()[:3] != "tag" else 22
+        if zed_pos is not None and ((zed_pos[0] - waypoint_pos[0]) ** 2 + (zed_pos[1] - waypoint_pos[1]) ** 2) ** 0.5 < distance_thresh:
             return approach_target.ApproachTargetState()
+
+        if not use_long_range:
+            return None
+
         # If we see the target in the long range camera, go to LongRangeState
         assert self.ctx.course is not None
         if self.ctx.env.image_targets.query(self.ctx.course.image_target_name()) is not None:

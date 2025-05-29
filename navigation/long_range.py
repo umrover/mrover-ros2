@@ -30,9 +30,6 @@ class LongRangeState(ApproachTargetState):
         if current_waypoint is None:
             return None
 
-        if context.env.cost_map is None or not hasattr(context.env.cost_map, "data"):
-            return None
-
         target = context.env.image_targets.query(context.course.image_target_name())
         if target is None:
             context.node.get_logger().info("Target not found in long range camera")
@@ -59,7 +56,7 @@ class LongRangeState(ApproachTargetState):
         direction_to_tag = np.array([direction_to_tag[0], direction_to_tag[1], 0.0])
 
         tag_position = rover_position + direction_to_tag * distance
-        while is_high_cost_point(point=tag_position, context=context):
+        while self.USE_COSTMAP and hasattr(context.env.cost_map, "data") and is_high_cost_point(point=tag_position, context=context):
             tag_position += direction_to_tag * distance
         context.node.get_logger().info(f"Long range target: {str(tag_position)}")
         return tag_position

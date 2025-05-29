@@ -239,7 +239,7 @@ class WaypointState(State):
             return backup.BackupState()
 
         # Returns either ApproachTargetState, LongRangeState, or None
-        approach_state = context.course.get_approach_state()
+        approach_state = context.course.get_approach_state(use_long_range=False)
         if approach_state is not None:
             return approach_state
 
