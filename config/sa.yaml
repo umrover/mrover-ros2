@@ -5,28 +5,28 @@ sa_hw_bridge:
     servo_id: 0
     linear_actuator:
       # gear_ratio: 1.0
-      is_inverted: false
-      driver_voltage: 10.5
+      is_inverted: true
+      driver_voltage: 11.5
       motor_max_voltage: 12.0
     auger:
       # gear_ratio: 1.0
       is_inverted: false
-      driver_voltage: 10.5
+      driver_voltage: 11.5
       motor_max_voltage: 12.0
     pump_0:
       # gear_ratio: 1.0
       is_inverted: false
-      driver_voltage: 10.5
+      driver_voltage: 11.5
       motor_max_voltage: 12.0
     pump_1:
       # gear_ratio: 1.0
       is_inverted: false
-      driver_voltage: 10.5
+      driver_voltage: 11.5
       motor_max_voltage: 12.0
     sensor_actuator:
       # gear_ratio: 1.0
       is_inverted: false
-      driver_voltage: 10.5
+      driver_voltage: 11.5
       motor_max_voltage: 12.0
       limit_switch_0_present: true
       limit_switch_0_enabled: true
