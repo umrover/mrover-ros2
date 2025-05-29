@@ -54,6 +54,7 @@ def generate_launch_description():
         executable="usb_camera",
         name="long_range_cam",
         parameters=[Path(get_package_share_directory("mrover"), "config", "perception.yaml")],
+        respawn=True
     )
 
     return launch.LaunchDescription([loaded_container, usb_cam])

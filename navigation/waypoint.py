@@ -126,7 +126,7 @@ class WaypointState(State):
             return self
 
         # BEGINNING OF LOGIC
-        while is_high_cost_point(context=context, point=self.waypoint_traj.get_current_point()):
+        while is_high_cost_point(context=context, point=self.waypoint_traj.get_current_point()) and not self.waypoint_traj.is_last():
             context.node.get_logger().info("Skipping high cost point")
             self.waypoint_traj.increment_point()
 

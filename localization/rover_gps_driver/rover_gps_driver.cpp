@@ -25,10 +25,10 @@ namespace mrover {
         // publishers and subscribers
         gps_pub = this->create_publisher<sensor_msgs::msg::NavSatFix>("/gps/fix", 10);
         gps_status_pub = this->create_publisher<mrover::msg::FixStatus>("/gps_fix_status", 10);
-        heading_pub = this->create_publisher<mrover::msg::Heading>("/heading/fix", 10);
-        heading_status_pub = this->create_publisher<mrover::msg::FixStatus>("/heading_fix_status", 10);
-        velocity_pub = this->create_publisher<geometry_msgs::msg::Vector3Stamped>("/velocity/fix", 10);
-        velocity_status_pub = this->create_publisher<mrover::msg::FixStatus>("/velocity_fix_status", 10);
+        // heading_pub = this->create_publisher<mrover::msg::Heading>("/heading/fix", 10);
+        // heading_status_pub = this->create_publisher<mrover::msg::FixStatus>("/heading_fix_status", 10);
+        // velocity_pub = this->create_publisher<geometry_msgs::msg::Vector3Stamped>("/velocity/fix", 10);
+        // velocity_status_pub = this->create_publisher<mrover::msg::FixStatus>("/velocity_fix_status", 10);
         satellite_signal_pub = this->create_publisher<mrover::msg::SatelliteSignal>("/gps/satellite_signal", 10);
         rtcm_sub = this->create_subscription<rtcm_msgs::msg::Message>("/rtcm", 10, [&](rtcm_msgs::msg::Message::ConstSharedPtr const& rtcm_message) {
             process_rtcm(rtcm_message);
@@ -134,85 +134,85 @@ namespace mrover {
 
             }
 
-            if (msg_header == "#UNIHEADINGA") {
+            // if (msg_header == "#UNIHEADINGA") {
 
-                if (tokens.size() != 28) { return; }
+            //     if (tokens.size() != 28) { return; }
 
-                mrover::msg::Heading heading;
-                mrover::msg::FixStatus fix_status;
-                mrover::msg::FixType fix_type;
-                heading.header = header;
-                fix_status.header = header;
+            //     mrover::msg::Heading heading;
+            //     mrover::msg::FixStatus fix_status;
+            //     mrover::msg::FixType fix_type;
+            //     heading.header = header;
+            //     fix_status.header = header;
 
-                if (tokens[11] == "NARROW_FLOAT") {
-                    fix_type.fix = mrover::msg::FixType::FLOAT;
-                }
-                else if (tokens[11] == "NARROW_INT") {
-                    fix_type.fix = mrover::msg::FixType::FIXED;
-                }
-                else {
-                    RCLCPP_WARN(get_logger(), "Heading: no solution. Are both antennas plugged in?");
+            //     if (tokens[11] == "NARROW_FLOAT") {
+            //         fix_type.fix = mrover::msg::FixType::FLOAT;
+            //     }
+            //     else if (tokens[11] == "NARROW_INT") {
+            //         fix_type.fix = mrover::msg::FixType::FIXED;
+            //     }
+            //     else {
+            //         RCLCPP_WARN(get_logger(), "Heading: no solution. Are both antennas plugged in?");
 
-                    fix_type.fix = mrover::msg::FixType::NO_SOL;
-                    fix_status.fix_type = fix_type;
-                    heading.heading = 0;
+            //         fix_type.fix = mrover::msg::FixType::NO_SOL;
+            //         fix_status.fix_type = fix_type;
+            //         heading.heading = 0;
 
-                    heading_pub->publish(heading);
-                    heading_status_pub->publish(fix_status);
-                    return;
-                }
+            //         heading_pub->publish(heading);
+            //         heading_status_pub->publish(fix_status);
+            //         return;
+            //     }
 
-                fix_status.fix_type = fix_type;
+            //     fix_status.fix_type = fix_type;
 
-                float uniheading = stof(tokens[13]);
-                heading.heading = uniheading;
+            //     float uniheading = stof(tokens[13]);
+            //     heading.heading = uniheading;
 
-                heading_pub->publish(heading);
-                heading_status_pub->publish(fix_status);
+            //     heading_pub->publish(heading);
+            //     heading_status_pub->publish(fix_status);
 
-            }
+            // }
 
-            if (msg_header == "#BESTNAVA") {
+            // if (msg_header == "#BESTNAVA") {
 
-                if (tokens.size() != 41) { return; }
+            //     if (tokens.size() != 41) { return; }
 
-                geometry_msgs::msg::Vector3Stamped velocity;
-                mrover::msg::FixStatus fix_status;
-                mrover::msg::FixType fix_type;
-                velocity.header = header;
-                fix_status.header = header;
+            //     geometry_msgs::msg::Vector3Stamped velocity;
+            //     mrover::msg::FixStatus fix_status;
+            //     mrover::msg::FixType fix_type;
+            //     velocity.header = header;
+            //     fix_status.header = header;
 
-                if (tokens[32] == "DOPPLER_VELOCITY") {
-                    fix_type.fix = mrover::msg::FixType::NONE;
-                }
-                else {
-                    RCLCPP_WARN(get_logger(), "Velocity: no solution. Are we inside?");
+            //     if (tokens[32] == "DOPPLER_VELOCITY") {
+            //         fix_type.fix = mrover::msg::FixType::NONE;
+            //     }
+            //     else {
+            //         RCLCPP_WARN(get_logger(), "Velocity: no solution. Are we inside?");
 
-                    fix_type.fix = mrover::msg::FixType::NO_SOL;
-                    fix_status.fix_type = fix_type;
+            //         fix_type.fix = mrover::msg::FixType::NO_SOL;
+            //         fix_status.fix_type = fix_type;
 
-                    velocity.vector.x = 0;
-                    velocity.vector.y = 0;
-                    velocity.vector.z = 0;
+            //         velocity.vector.x = 0;
+            //         velocity.vector.y = 0;
+            //         velocity.vector.z = 0;
 
-                    velocity_pub->publish(velocity);
-                    velocity_status_pub->publish(fix_status);
-                    return;
-                }
+            //         velocity_pub->publish(velocity);
+            //         velocity_status_pub->publish(fix_status);
+            //         return;
+            //     }
 
-                fix_status.fix_type = fix_type;
+            //     fix_status.fix_type = fix_type;
 
-                float gps_velocity = stof(tokens[35]);
-                float gps_dir = stof(tokens[36]);
+            //     float gps_velocity = stof(tokens[35]);
+            //     float gps_dir = stof(tokens[36]);
 
-                velocity.vector.x = std::sin(gps_dir) * gps_velocity;
-                velocity.vector.y = std::cos(gps_dir) * gps_velocity;
-                velocity.vector.z = 0;
+            //     velocity.vector.x = std::sin(gps_dir) * gps_velocity;
+            //     velocity.vector.y = std::cos(gps_dir) * gps_velocity;
+            //     velocity.vector.z = 0;
 
-                velocity_pub->publish(velocity);
-                velocity_status_pub->publish(fix_status);
+            //     velocity_pub->publish(velocity);
+            //     velocity_status_pub->publish(fix_status);
 
-            }
+            // }
 
             if (msg_header == "$GPGSV" || msg_header == "$GLGSV" || msg_header == "$GBGSV" || msg_header == "$GAGSV" || msg_header == "$GQGSV") {
 
@@ -247,11 +247,17 @@ namespace mrover {
 
     void RoverGPSDriver::spin() {
         while (rclcpp::ok()) {
-            boost::asio::read_until(serial, read_buffer, '\n');
-            std::istream buffer(&read_buffer);
-            std::string unicore_msg;
-            std::getline(buffer, unicore_msg);
-            process_unicore(unicore_msg);
+            try{
+                boost::asio::read_until(serial, read_buffer, '\n');
+                std::istream buffer(&read_buffer);
+                std::string unicore_msg;
+                std::getline(buffer, unicore_msg);
+                process_unicore(unicore_msg);
+            }catch(...){
+                // Do nothing
+                RCLCPP_WARN(get_logger(), "Exception caught while reading from the serial port.");
+            }
+            
             rclcpp::spin_some(this->get_node_base_interface());
         }
     }

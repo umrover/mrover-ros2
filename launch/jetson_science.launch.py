@@ -77,6 +77,12 @@ def generate_launch_description():
         output="screen",
     )
 
+    launch_localization = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            Path(get_package_share_directory("mrover"), "launch/localization.launch.py").__str__()
+        )
+    )
+
     # TODO (ali): add 3 science cams
 
     return LaunchDescription(
@@ -86,5 +92,6 @@ def generate_launch_description():
             panorama_node,
             panorama_rviz,
             zed_mini_container,
+            launch_localization
         ]
     )
