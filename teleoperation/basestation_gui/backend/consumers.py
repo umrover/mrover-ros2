@@ -93,8 +93,8 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.mast_gimbal_pub = node.create_publisher(Throttle, "/mast_gimbal_throttle_cmd", 1)
         self.sa_thr_pub = node.create_publisher(Throttle, "sa_throttle_cmd", 1)
 
-        self.forward_ros_topic("/drive_left_controller_data", ControllerState, "drive_left_state")
-        self.forward_ros_topic("/drive_right_controller_data", ControllerState, "drive_right_state")
+        self.forward_ros_topic("/drive_left_controller_state", ControllerState, "drive_left_state")
+        self.forward_ros_topic("/drive_right_controller_state", ControllerState, "drive_right_state")
         self.forward_ros_topic("/led", LED, "led")
         self.forward_ros_topic("/nav_state", StateMachineStateUpdate, "nav_state")
         self.forward_ros_topic("/gps/fix", NavSatFix, "gps_fix")
