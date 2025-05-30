@@ -28,7 +28,7 @@ def generate_launch_description():
 
     rover_gps_driver_node = Node(
         package="mrover",
-        executable="rover_gps_driver.py",
+        executable="rover_gps_driver",
         name="rover_gps_driver",
         parameters=[os.path.join(get_package_share_directory("mrover"), "config", "localization.yaml")],
         output="screen",

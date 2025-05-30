@@ -262,6 +262,14 @@ namespace mrover {
         }
     }
 
+    void RoverGPSDriver::stop() {
+        boost::system::error_code e;
+        serial.close(e);
+        if (e) {
+            RCLCPP_WARN(this->get_logger(), "Failed to close serial port: %s", e.message().c_str());
+        }
+    }
+
 }
 
 int main(int argc, char**argv) {
@@ -272,6 +280,8 @@ int main(int argc, char**argv) {
     auto node = std::make_shared<mrover::RoverGPSDriver>(io);
 
     node->spin();
+
+    node->stop();
     rclcpp::shutdown();
     
     return 0;
