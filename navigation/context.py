@@ -33,6 +33,7 @@ from rclpy.client import Client
 from state_machine.state import State
 from std_msgs.msg import Bool, Header
 from .drive import DriveController
+from collections import deque
 
 NO_TAG: int = -1
 
@@ -42,7 +43,7 @@ class Rover:
     ctx: Context
     stuck: bool
     previous_state: State
-    path_history: Path
+    path_history: deque
 
     def get_pose_in_map(self) -> SE3 | None:
         try:
@@ -395,7 +396,7 @@ class Context:
         self.world_frame = node.get_parameter("world_frame").value
         self.rover_frame = node.get_parameter("rover_frame").value
         self.course = None
-        self.rover = Rover(self, False, OffState(), Path(header=Header(frame_id=self.world_frame)))
+        self.rover = Rover(self, False, OffState(), deque())
         self.env = Environment(self, image_targets=ImageTargetsStore(self), cost_map=CostMap())
         self.disable_requested = False
 

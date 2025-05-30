@@ -24,10 +24,14 @@ class BackupState(State):
     def on_enter(self, context: Context) -> None:
         context.node.get_logger().info("Entered Backup State")
 
-        if context.rover.path_history is None:
+        if context.rover.path_history is None or len(context.rover.path_history) < 1:
             context.node.get_logger().warn("Cannot backup: no path history")
-            return 
-        reverse_path = np.array([[pose_stamped.pose.position.x, pose_stamped.pose.position.y, pose_stamped.pose.position.z] for pose_stamped in context.rover.path_history.poses])[::-1]
+            return
+
+        reverse_deque = context.rover.path_history.copy()
+        reverse_deque.reverse()
+        reverse_path = np.array(reverse_deque)
+
         self.backtrack_traj = Trajectory(reverse_path)
         self.dist_traveled = 0.0
         self.start_time = context.node.get_clock().now()
