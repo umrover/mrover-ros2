@@ -68,4 +68,4 @@ def generate_launch_description():
         respawn=True
     )
 
-    return LaunchDescription([rover_gps_driver_node, gps_linearization_node])
+    return LaunchDescription([rover_gps_driver_node, gps_linearization_node, pose_filter_node])

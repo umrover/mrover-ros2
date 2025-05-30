@@ -52,5 +52,5 @@ def generate_launch_description():
     )
 
     return LaunchDescription(
-        [launch_jetson_base, launch_perception, launch_navigation, base_link_to_zed, base_link_to_right_gps]
+        [launch_jetson_base, launch_perception, base_link_to_zed, base_link_to_right_gps]
     )
