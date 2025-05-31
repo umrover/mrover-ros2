@@ -11,7 +11,7 @@
         height: 480
         framerate: 15
         codec: H265
-        bitrate: 2000000
+        bitrate: 1000000
       image_capture:
         pixel_format: YUYV
         width: 1280
@@ -28,7 +28,7 @@
         height: 480
         framerate: 15
         codec: H265
-        bitrate: 2000000
+        bitrate: 1000000
       image_capture:
         pixel_format: YUYV
         width: 1280
@@ -45,7 +45,7 @@
         height: 480
         framerate: 15
         codec: H265
-        bitrate: 2000000
+        bitrate: 1000000
       image_capture:
         pixel_format: YUYV
         width: 1280
@@ -62,7 +62,7 @@
         height: 480
         framerate: 15
         codec: H265
-        bitrate: 2000000
+        bitrate: 1000000
       image_capture:
         pixel_format: YUYV
         width: 1280
@@ -80,7 +80,7 @@
         height: 480
         framerate: 30
         codec: H265
-        bitrate: 2000000
+        bitrate: 1000000
       image_capture:
         pixel_format: ABGR32
         width: 640
@@ -98,7 +98,7 @@
         height: 376
         framerate: 15
         codec: H265
-        bitrate: 2000000
+        bitrate: 1000000
       image_capture:
         pixel_format: YUYV
         width: 2560
@@ -116,7 +116,7 @@
         height: 720
         framerate: 15
         codec: H265
-        bitrate: 2000000
+        bitrate: 1000000
       image_capture:
         pixel_format: ABGR32
         width: 1280
