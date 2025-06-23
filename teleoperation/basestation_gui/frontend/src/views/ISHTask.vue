@@ -64,14 +64,14 @@
 </template>
 
 <script lang="ts">
-import SelectSite from './SelectSite.vue'
-import NinhydrinBenedict from './NinhydrinBenedict.vue'
-import NetworkMonitor from "./NetworkMonitor.vue";
-import CameraFeed from './CameraFeed.vue';
-import ToggleButton from './ToggleButton.vue';
-import AutoShutdown from './AutoShutdown.vue';
-import SensorData from './SensorData.vue';
-import WhiteLEDs from './WhiteLEDs.vue';
+import SelectSite from '../components/SelectSite.vue'
+import NinhydrinBenedict from '../components/NinhydrinBenedict.vue'
+import NetworkMonitor from "../components/NetworkMonitor.vue";
+import CameraFeed from '../components/CameraFeed.vue';
+import ToggleButton from '../components/ToggleButton.vue';
+import AutoShutdown from '../components/AutoShutdown.vue';
+import SensorData from '../components/SensorData.vue';
+import WhiteLEDs from '../components/WhiteLEDs.vue';
 
 export default {
   components: {

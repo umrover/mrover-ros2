@@ -1,4 +1,6 @@
-const convertDMS = function(coordinate, format: string) {
+import type { DMSCoordinate } from "./types/coordinates"
+
+const convertDMS = function(coordinate: DMSCoordinate, format: string) {
   const DEG_DECIMALS = 8
   const MIN_DECIMALS = 6
   const SEC_DECIMALS = 4

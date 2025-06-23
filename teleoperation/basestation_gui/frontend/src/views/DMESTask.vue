@@ -36,14 +36,14 @@
 
 <script lang='ts'>
 import { defineComponent } from 'vue'
-import ControllerDataTable from './ControllerDataTable.vue'
-import ArmControls from './ArmControls.vue'
-import BasicMap from './BasicRoverMap.vue'
-import BasicWaypointEditor from './BasicWaypointEditor.vue'
-import OdometryReading from './OdometryReading.vue'
-import DriveControls from './DriveControls.vue'
-import MastGimbalControls from './MastGimbalControls.vue'
-import Rover3D from './Rover3D.vue'
+import ControllerDataTable from '../components/ControllerDataTable.vue'
+import ArmControls from '../components/ArmControls.vue'
+import BasicMap from '../components/BasicRoverMap.vue'
+import BasicWaypointEditor from '../components/BasicWaypointEditor.vue'
+import OdometryReading from '../components/OdometryReading.vue'
+import DriveControls from '../components/DriveControls.vue'
+import MastGimbalControls from '../components/MastGimbalControls.vue'
+import Rover3D from '../components/Rover3D.vue'
 
 interface Odom {
   latitude_deg: number;

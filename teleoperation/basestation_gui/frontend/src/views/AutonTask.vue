@@ -47,13 +47,13 @@
 
 <script lang='ts'>
 import { mapActions, mapGetters, mapState } from 'vuex'
-import AutonRoverMap from './AutonRoverMap.vue'
-import AutonWaypointEditor from './AutonWaypointEditor.vue'
-import CameraFeed from './CameraFeed.vue'
-import OdometryReading from './OdometryReading.vue'
-import DriveControls from './DriveControls.vue'
-import MastGimbalControls from './MastGimbalControls.vue'
-import ControllerDataTable from './ControllerDataTable.vue'
+import AutonRoverMap from '../components/AutonRoverMap.vue'
+import AutonWaypointEditor from '../components/AutonWaypointEditor.vue'
+import CameraFeed from '../components/CameraFeed.vue'
+import OdometryReading from '../components/OdometryReading.vue'
+import DriveControls from '../components/DriveControls.vue'
+import MastGimbalControls from '../components/MastGimbalControls.vue'
+import ControllerDataTable from '../components/ControllerDataTable.vue'
 import { defineComponent } from 'vue'
 
 let interval: number

@@ -42,18 +42,18 @@
 </template>
 
 <script lang='ts'>
-import BasicMap from './BasicRoverMap.vue'
-import SoilData from './SoilData.vue'
-import BasicWaypointEditor from './BasicWaypointEditor.vue'
-import DriveControls from './DriveControls.vue'
-import MastGimbalControls from './MastGimbalControls.vue'
-import OdometryReading from './OdometryReading.vue'
-import ControllerDataTable from './ControllerDataTable.vue'
-import SAArmControls from './SAArmControls.vue'
-import NetworkMonitor from "./NetworkMonitor.vue"
-import HexHub from './HexHub.vue'
-import LSActuator from './LSActuator.vue'
 import { mapState, mapActions } from 'vuex';
+import BasicMap from '../components/BasicRoverMap.vue'
+import SoilData from '../components/SoilData.vue'
+import BasicWaypointEditor from '../components/BasicWaypointEditor.vue'
+import DriveControls from '../components/DriveControls.vue'
+import MastGimbalControls from '../components/MastGimbalControls.vue'
+import OdometryReading from '../components/OdometryReading.vue'
+import ControllerDataTable from '../components/ControllerDataTable.vue'
+import SAArmControls from '../components/SAArmControls.vue'
+import NetworkMonitor from "../components/NetworkMonitor.vue"
+import HexHub from '../components/HexHub.vue'
+import LSActuator from '../components/LSActuator.vue'
 
 interface Odom {
   latitude_deg: number;
