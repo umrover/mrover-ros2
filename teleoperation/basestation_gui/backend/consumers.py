@@ -68,9 +68,9 @@ ros_thread.start()
 
 LOCALIZATION_INFO_HZ = 10
 
-cur_mode = "disabled"
-cur_sa_mode = "disabled"
-heater_names = ["a0", "a1", "b0", "b1"]
+cur_ra_mode: str = "disabled"
+cur_sa_mode: str = "disabled"
+heater_names: list[str] = ["a0", "a1", "b0", "b1"]
 
 
 class GUIConsumer(JsonWebsocketConsumer):
@@ -87,6 +87,7 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.mast_gimbal_pub = node.create_publisher(Throttle, "/mast_gimbal_throttle_cmd", 1)
         self.sa_thr_pub = node.create_publisher(Throttle, "sa_throttle_cmd", 1)
 
+        # Forwards ROS topic to GUI
         self.forward_ros_topic("/drive_left_controller_data", ControllerState, "drive_left_state")
         self.forward_ros_topic("/drive_right_controller_data", ControllerState, "drive_right_state")
         self.forward_ros_topic("/led", LED, "led")
@@ -107,15 +108,11 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.forward_ros_topic("/sa_gear_diff_position", Float32, "hexhub_site")
         self.forward_ros_topic("basestation/position", NavSatFix, "basestation_position")
         self.forward_ros_topic("/drone_odometry", NavSatFix, "drone_waypoint")
-        # check topic names above
 
         # Services
         self.enable_teleop_srv = node.create_client(SetBool, "/enable_teleop")
         self.enable_auton_srv = node.create_client(EnableAuton, "/enable_auton")
-        # might need to change service type
         self.gear_diff_set_pos_srv = node.create_client(ServoSetPos, "/sa_gear_diff_set_position")
-
-        # EnableBool Requests
         self.auto_shutoff_service = node.create_client(EnableBool, "/science_change_heater_auto_shutoff_state")
         self.sa_enable_switch_srv = node.create_client(EnableBool, "/sa_enable_limit_switch_sensor_actuator")
 
@@ -205,7 +202,7 @@ class GUIConsumer(JsonWebsocketConsumer):
         @param text_data:   Stringfied JSON message
         """
 
-        global cur_mode
+        global cur_ra_mode
         global cur_sa_mode
 
         if text_data is None:
@@ -231,7 +228,7 @@ class GUIConsumer(JsonWebsocketConsumer):
                         case "ra_controller":
                             send_controller_twist(device_input, self.controller_twist_pub)
                             send_ra_controls(
-                                cur_mode,
+                                cur_ra_mode,
                                 device_input,
                                 node,
                                 self.thr_pub,
@@ -241,12 +238,14 @@ class GUIConsumer(JsonWebsocketConsumer):
                             )
                         case "mast_keyboard":
                             send_mast_controls(device_input, self.mast_gimbal_pub)
+                            
                 case {
                     "type": "ra_mode",
-                    "mode": mode,
+                    "mode": ra_mode,
                 }:
-                    cur_mode = mode
-                case{
+                    cur_ra_mode = ra_mode
+
+                case {
                     "type": "sa_controller",
                     "axes": axes,
                     "buttons": buttons,
@@ -261,59 +260,72 @@ class GUIConsumer(JsonWebsocketConsumer):
                         send_sa_controls(cur_sa_mode, 1, device_input, self.sa_thr_pub)
                     else:
                         node.get_logger().warning(f"Unhandled Site: {site}")
+
                 case {
                     "type": "sa_mode",
                     "mode": mode,
                 }:
                     cur_sa_mode = mode
+
                 case {"type": "auton_enable", "enabled": enabled, "waypoints": waypoints}:
                     self.send_auton_command(waypoints, enabled)
+
                 case {"type": "teleop_enable", "enabled": enabled}:
-                    self.enable_teleop_srv.call(SetBool.Request(data=enabled)) # SETBOOL NOT ENABLEBOOL
+                    self.enable_teleop_srv.call(SetBool.Request(data=enabled))
+
                 case {
                     "type": "save_auton_waypoint_list",
                     "data": waypoints,
                 }:
                     save_auton_waypoint_list(waypoints)
+
                 case {
                     "type": "save_basic_waypoint_list",
                     "data": waypoints,
                 }:
                     save_basic_waypoint_list(waypoints)
+
                 case {
                     "type": "save_current_auton_course",
                     "data": waypoints
                 }:
                     node.get_logger().info(f"saving waypoints in course: {waypoints}")
                     save_current_auton_course(waypoints)
+
                 case {
                     "type": "save_current_basic_course",
                     "data": waypoints                  
                 }:
                     save_current_basic_course(waypoints)
+
                 case {
                     "type": "delete_auton_waypoint_from_course",
                     "data": waypoint
                 }:
                     node.get_logger().info(f"deleting waypoint in course: {waypoint}")
                     delete_auton_waypoint_from_course(waypoint)
+
                 case {
                     "type": "get_basic_waypoint_list",
                 }:
                     self.send_message_as_json({"type": "get_basic_waypoint_list", "data": get_basic_waypoint_list()})
+
                 case {
                     "type": "get_auton_waypoint_list",
                 }:
                     self.send_message_as_json({"type": "get_auton_waypoint_list", "data": get_auton_waypoint_list()})
+
                 case {
                     "type": "get_current_basic_course"
                 }:
                     self.send_message_as_json({"type": "get_auton_waypoint_list", "data": get_current_basic_course()})
+
                 case {
                     "type": "get_current_auton_course"
                 }:
                     node.get_logger().info(f"current waypoints in course: {get_current_auton_course()}")
                     self.send_message_as_json({"type": "get_current_auton_course", "data": get_current_auton_course()})
+
                 case {
                     "type": "heater_enable", "enable": e, "heater": heater
                 }:
@@ -324,16 +336,25 @@ class GUIConsumer(JsonWebsocketConsumer):
                     "position": position,
                     "isCCW": isCCW,
                 }:
-                    # node.get_logger().info(f"{isCCW}")
                     self.gear_diff_set_pos_srv.call(ServoSetPos.Request(position=float(position), is_counterclockwise=isCCW))
 
-                case {"type": "auto_shutoff", "shutoff": shutoff}:
+                case {
+                    "type": "auto_shutoff", 
+                    "shutoff": shutoff
+                }:
                     self.auto_shutoff_service.call(EnableBool.Request(enable=shutoff))
 
-                case {"type": "white_leds", "site": site, "enable": e}:
+                case {
+                    "type": "white_leds", 
+                    "site": site, 
+                    "enable": e
+                }:
                     self.white_leds_services[site].call(EnableBool.Request(enable=e))
 
-                case {"type": "ls_toggle", "enable": e}:
+                case {
+                    "type": "ls_toggle", 
+                    "enable": e
+                }:
                     self.sa_enable_switch_srv.call(EnableBool.Request(enable=e))
 
                 case _:

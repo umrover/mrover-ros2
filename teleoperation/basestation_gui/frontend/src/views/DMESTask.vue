@@ -1,11 +1,5 @@
 <template>
   <div :class="type === 'ES' ? 'wrapper-es' : 'wrapper-dm'">
-    <div class='shadow p-3 mb-5 header' style="display: flex; align-items: center; justify-content: space-between;">
-      <h1 v-if="type === 'ES'"><a class='dashboard-title' href="/">ES Dashboard</a></h1>
-      <h1 v-else><a class='dashboard-title' href="/">DM Dashboard</a></h1>
-      <a class='logo' href="/"><img src='/mrover.png' alt='MRover' title='MRover' width='200' /></a>
-    </div>
-
     <div v-if="type === 'DM'" class='shadow p-3 rounded odom'>
       <OdometryReading @odom='updateOdom' @drone_odom="updateDroneOdom" />
     </div>

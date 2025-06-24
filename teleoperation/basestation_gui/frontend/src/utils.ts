@@ -1,6 +1,6 @@
-import type { DMSCoordinate } from "./types/coordinates"
+import type{ DMS } from "./types/coordinates"
 
-const convertDMS = function(coordinate: DMSCoordinate, format: string) {
+const convertDMS = function(coordinate: DMS, format: string): DMS {
   const DEG_DECIMALS = 8
   const MIN_DECIMALS = 6
   const SEC_DECIMALS = 4

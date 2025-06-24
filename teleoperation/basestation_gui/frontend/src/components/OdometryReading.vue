@@ -41,26 +41,12 @@
 
 <script lang="ts">
 import { convertDMS, quaternionToMapAngle } from '../utils.js'
-import { mapGetters, mapState } from 'vuex'
+import Vuex from 'vuex';
+const { mapGetters, mapState } = Vuex;
 import IMUCalibration from './IMUCalibration.vue'
 import FlightAttitudeIndicator from './FlightAttitudeIndicator.vue'
+import type { Odom, FormattedOdom } from "../types/coordinates"
 
-interface DMS {
-  d: number; // Degrees
-  m: number; // Minutes
-  s: number; // Seconds
-}
-
-interface FormattedOdom {
-  lat: DMS;
-  lon: DMS;
-}
-
-interface Odom {
-  latitude_deg: number;
-  longitude_deg: number;
-  bearing_deg: number;
-}
 
 export default {
   components: {
@@ -91,13 +77,13 @@ export default {
     ...mapGetters('map', {
       odom_format: 'odomFormat'
     }),
-    formatted_odom: function (): FormattedOdom {
+    formatted_odom(): FormattedOdom {
       return {
         lat: convertDMS({ d: this.rover_latitude_deg, m: 0, s: 0 }, this.odom_format as string),
         lon: convertDMS({ d: this.rover_longitude_deg, m: 0, s: 0 }, this.odom_format as string)
       }
     },
-    formatted_basestation_odom: function (): FormattedOdom {
+    formatted_basestation_odom(): FormattedOdom {
       return {
         lat: convertDMS({ d: this.basestation_latitude_deg, m: 0, s: 0 }, this.odom_format as string),
         lon: convertDMS({ d: this.basestation_longitude_deg, m: 0, s: 0 }, this.odom_format as string)

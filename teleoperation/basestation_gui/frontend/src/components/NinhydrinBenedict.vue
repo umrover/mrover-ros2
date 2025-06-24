@@ -27,7 +27,8 @@
 <script lang="ts">
 import ToggleButton from "./ToggleButton.vue";
 import LEDIndicator from "./LEDIndicator.vue";
-import { mapState, mapActions } from 'vuex';
+import Vuex from 'vuex';
+const { mapState, mapActions } = Vuex;
 
 export default {
   components: {

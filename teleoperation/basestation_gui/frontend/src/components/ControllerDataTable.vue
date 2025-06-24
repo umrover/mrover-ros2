@@ -36,7 +36,8 @@
 
 <script lang='ts'>
 import { defineComponent } from 'vue'
-import { mapState } from 'vuex'
+import Vuex from 'vuex';
+const { mapState } = Vuex;
 
 export default defineComponent({
   props: {

@@ -1,11 +1,5 @@
 <template>
   <div class='wrapper'>
-    <div class='shadow p-3 mb-5 header'>
-      <h1><a class='dashboard-title' href="/">Auton Dashboard</a></h1>
-      <a href='/'>
-        <img class='logo' src='/mrover.png' alt='MRover' title='MRover' width='200' style="cursor: pointer;" />
-      </a>
-    </div>
     <div :class="['shadow p-3 rounded data', ledColor]">
       <h2>Nav State: {{ navState }}</h2>
       <OdometryReading @odom='updateOdom' @basestation_odom='updateBasestationOdom'/>

@@ -1,12 +1,5 @@
 <template>
   <div class="wrapper">
-    <div class="shadow p-3 mb-5 header">
-      <a class='logo' href="/"><img src='/mrover.png' alt='MRover' title='MRover' width='200' /></a>
-      <h1><a class='dashboard-title' href="/">ISH Dashboard</a></h1>
-      <div class="network">
-        <NetworkMonitor/>
-      </div>
-    </div>
     <div class="shadow p-3 rounded row siteSelect">
       <div class="col-4">
         <SelectSite @site="onSiteChange" />
@@ -126,14 +119,6 @@ export default {
 
 .comms {
   margin-right: 5px;
-}
-
-.header {
-  grid-area: header;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 10px;
 }
 
 .network {

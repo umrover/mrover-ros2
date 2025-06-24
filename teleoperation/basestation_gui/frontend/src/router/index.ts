@@ -1,10 +1,10 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import Menu from '../components/Menu.vue'
+import Menu from '../views/HomeMenu.vue'
 import DMESTask from '../views/DMESTask.vue'
 import AutonTask from '../views/AutonTask.vue'
 import ISHTask from '../views/ISHTask.vue'
 import SATask from '../views/SATask.vue'
-import Cameras from '../components/Cameras.vue'
+import CameraView from '../views/CameraView.vue'
 import Rover3D from '../components/Rover3D.vue'
 
 const routes = [
@@ -47,7 +47,7 @@ const routes = [
   {
     path: '/Cameras',
     name: 'Cameras',
-    component: Cameras
+    component: CameraView
   },
   {
     path: '/Control',

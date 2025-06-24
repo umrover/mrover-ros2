@@ -121,7 +121,7 @@ def subset(names: list[str], values: list[float], joints: set[Joint]) -> tuple[l
 
 def send_ra_controls(ra_mode: str, inputs: DeviceInputs, node: Node, thr_pub: Publisher, ee_pos_pub: Publisher, ee_vel_pub: Publisher, buffer: Buffer) -> None: 
     match ra_mode:
-        case "throttle" | "ik-pos" | "ik-vel": #added filter for IK modes, hybrid removed
+        case "throttle" | "ik-pos" | "ik-vel":
             back_pressed = safe_index(inputs.buttons, ControllerButton.BACK) > 0.5
             forward_pressed = safe_index(inputs.buttons, ControllerButton.FORWARD) > 0.5
             home_pressed = safe_index(inputs.buttons, ControllerButton.HOME) > 0.5

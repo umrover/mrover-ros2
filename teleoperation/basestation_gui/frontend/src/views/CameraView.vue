@@ -1,10 +1,4 @@
 <template>
-
-  <div class="shadow p-3 mb-5 header">
-    <h1>Cameras Dashboard</h1>
-    <a class='logo' href = "/"><img src='/mrover.png' alt='MRover' title='MRover' width='200' /></a>
-  </div>
-
   <!-- creates the buttons for each mission -->
   <div class="row">
     <div v-for="(mission, index) in missionType" :key="index" class="col-sm">
@@ -57,10 +51,10 @@
 </template>
 
 <script lang="ts">
-import CameraFeed from './CameraFeed.vue'
+import CameraFeed from '../components/CameraFeed.vue'
 import ToggleButton from "../components/ToggleButton.vue";
-import { mapActions, mapState } from 'vuex'
-import { reactive } from 'vue'
+import Vuex from 'vuex'
+const { mapActions, mapState } = Vuex
 
 export default {
   components: {
