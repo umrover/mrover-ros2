@@ -1,41 +1,34 @@
 <template>
-  <div class='wrapper'>
-    <div class='shadow p-3 mb-5 header'>
-     <h1><a class='dashboard-title' href="/">SA Dashboard</a></h1>
-      <a class='logo' href="/"><img src='/mrover.png' alt='MRover' title='MRover' width='200' /></a>
-      <div class="network">
-      <NetworkMonitor />
-      </div>
-    </div>
-    <div class='shadow p-3 rounded map'>
+  <div class='wrapper view-wrapper'>
+    <div class='island p-3 rounded map'>
       <BasicMap :odom='odom' />
     </div>
-    <div class='shadow p-3 rounded waypoints'>
+    <div class='island p-3 rounded waypoints'>
       <BasicWaypointEditor :odom='odom' />
     </div>
-    <div class='shadow p-3 rounded soilData'>
+    <div class='island p-3 rounded soilData'>
       <SoilData />
     </div>
     <div>
       <DriveControls />
     </div>
-    <div class='shadow p-3 rounded arm'>
+    <div class='island p-3 rounded arm'>
       <SAArmControls :currentSite="siteSelect" /> 
     </div>
-    <div class='shadow p-3 rounded moteus'>
+    <div class='island p-3 rounded moteus'>
       <ControllerDataTable msg-type='drive_state' header='Drive States' />
       <ControllerDataTable msg-type='sa_state' header='SA States' />
     </div>
     <div v-show='false'>
       <MastGimbalControls />
     </div>
-    <div class='shadow p-3 rounded odom'>
+    <div class='island p-3 rounded odom'>
       <OdometryReading @odom='updateOdom'/>
     </div>
-    <div class="shadow p-3 rounded hexHub">
+    <div class="island p-3 rounded hexHub">
       <HexHub @selectSite="updateSite" @orientation="updateOrientation"/>
     </div>
-    <div class="shadow p-3 rounded lsActuator">
+    <div class="island p-3 rounded lsActuator">
       <LSActuator />
     </div>
   </div>
@@ -128,14 +121,13 @@ export default {
   grid-gap: 10px;
   grid-template-columns: 50% repeat(2, auto);
   grid-template-areas:
-    'header header header'
     'arm lsActuator soilData'
     'map hexHub waypoints'
     'map odom odom'
     'moteus moteus moteus';
   font-family: sans-serif;
   height: auto;
-  width: 97%;
+  width: 100%;
 }
 
 .dashboard-title {
@@ -145,14 +137,6 @@ export default {
 
 .dashboard-title:hover {
   color: darkgray;
-}
-
-.header {
-  grid-area: header;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 10px;
 }
 
 .network {

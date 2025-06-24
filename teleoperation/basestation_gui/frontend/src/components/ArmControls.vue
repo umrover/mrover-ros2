@@ -2,7 +2,6 @@
   <div class='wrap'>
     <h2>Arm Controls</h2>
     <div class='controls-flex'>
-      <h4>Mode</h4>
         <input v-model='mode' type="radio" class="btn-check" name="options-outlined" id="disabled" value='disabled' autocomplete="off" checked>
         <label class="btn btn-outline-danger" for="disabled">Disabled</label>
         <input v-model='mode' type="radio" class="btn-check" name="options-outlined" id="throttle" value='throttle' autocomplete="off">

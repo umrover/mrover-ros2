@@ -29,8 +29,14 @@ html, body {
   height: 100%;
 }
 
-.dashboard-title {
-  text-decoration: none;
-  color: black;
+.view-wrapper {
+  padding: 10px;
+  background-color: #dddddd;
 }
+
+.island {
+  background-color: #ffffff;
+  border-radius: 6px
+}
+
 </style>

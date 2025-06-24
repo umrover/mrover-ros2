@@ -1,6 +1,6 @@
 <template>
-  <div class="wrapper">
-    <div class="shadow p-3 rounded row siteSelect">
+  <div class="wrapper view-wrapper">
+    <div class="island p-3 rounded row siteSelect">
       <div class="col-4">
         <SelectSite @site="onSiteChange" />
       </div>
@@ -11,13 +11,13 @@
         <AutoShutdown />
       </div>
     </div>
-    <div class="shadow p-3 rounded benedicts">
+    <div class="island p-3 rounded benedicts">
       <NinhydrinBenedict :site="site" :isNinhydrin="false" />
     </div>
-    <div class="shadow p-3 rounded ninhydrin">
+    <div class="island p-3 rounded ninhydrin">
       <NinhydrinBenedict :site="site" :isNinhydrin="true" />
     </div>
-    <div class="shadow p-3 rounded container-fluid camera">
+    <div class="island p-3 rounded container-fluid camera">
       <div class="d-flex justify-content-center">
         <ToggleButton 
           :current-state="true" 
@@ -50,7 +50,7 @@
       </div>
     </div>
 
-    <div class="shadow p-3 rounded sensors">
+    <div class="island p-3 rounded sensors">
       <SensorData :site="site"/>
     </div>
   </div>
@@ -100,7 +100,6 @@ export default {
   grid-gap: 10px;
   grid-template-columns: repeat(2, auto) 40%;
   grid-template-areas:
-    'header header header'
     'siteSelect siteSelect camera'
     'ninhydrin benedicts camera'
     'sensors sensors camera';

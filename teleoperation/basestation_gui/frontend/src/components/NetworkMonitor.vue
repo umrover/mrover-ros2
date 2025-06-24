@@ -40,7 +40,7 @@ export default {
   font-weight: 800;
   font-size: 1.2rem;
   color: #333;
-  background: rgba(255, 255, 255, 0.85);
+  background: rgba(220, 220, 220, 1);
   padding: 8px 12px;
   border-radius: 8px;
   width: fit-content;

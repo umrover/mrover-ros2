@@ -1,7 +1,6 @@
 <template>
   <div class="wrapper">
     <fieldset class="row">
-      <legend><h1>Select Task</h1></legend>
       <MenuButton link="/DMTask" name="DM Mission" />
       <MenuButton link="/ESTask" name="ES Mission" />
       <MenuButton link="/ISHTask" name="ISH GUI" />
@@ -31,6 +30,9 @@ export default {
   overflow: hidden;
 }
 
+.wrapper {
+  background-color: rgba(230, 120, 60, 0.3);
+}
 
 .wrapper::before {
   content: '';

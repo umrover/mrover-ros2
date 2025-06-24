@@ -1,6 +1,6 @@
 <template>
 	<div class="wrapper">
-		<div class="shadow py-3 px-4 header">
+		<div class="py-3 px-4 header">
 			<a class="logo" href="/"><img src="/mrover.png" alt="MRover" title="MRover" width="200" /></a>
 			<h1>{{ getTitleForRoute($route.path) }}</h1>
 			<NetworkMonitor />
@@ -23,9 +23,9 @@ export default defineComponent({
         '/': 'Menu',
         '/AutonTask': 'Autonomy Mission',
         '/DMTask': 'Delivery Mission',
-        '/ESTask': 'Equipment Servicing Mission',
+        '/ESTask': 'Equipment Servicing',
         '/ISHTask': 'ISH Mission',
-        '/SATask': 'Sample Acquisition Mission',
+        '/SATask': 'Sample Acquisition',
         '/Cameras': 'Camera View',
       };
 
@@ -37,13 +37,18 @@ export default defineComponent({
 
 <style scoped>
 
-.wrapper {
-	background-color: #dddddd;
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: relative;
 }
 
 h1 {
+	font-family: 'Consolas', 'Courier New', 'DejaVu Sans Mono', monospace;
   font-weight: 400;
-  font-size: 3rem;
+  font-size: 2.5rem;
+	letter-spacing: -0.1rem;
   margin: 0;
   user-select: none;
 }

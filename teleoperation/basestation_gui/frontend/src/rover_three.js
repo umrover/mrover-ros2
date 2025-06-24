@@ -2,10 +2,8 @@ import * as THREE from 'three'
 import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader'
 import { TrackballControls } from 'three/addons/controls/TrackballControls.js'
 
-export function threeSetup(containerId) {
-  // Get the container where the scene should be placed
+export default function threeSetup(containerId) {
   const container = document.getElementById(containerId)
-
   const canvas = {
     width: container.clientWidth,
     height: container.clientHeight
@@ -21,11 +19,10 @@ export function threeSetup(containerId) {
 
   const renderer = new THREE.WebGLRenderer()
   renderer.setSize(canvas.width, canvas.height)
-  container.appendChild(renderer.domElement) // append it to your specific HTML element
+  container.appendChild(renderer.domElement)
 
-  scene.background = new THREE.Color(0xcccccc)
+  scene.background = new THREE.Color(0xeeeeee)
 
-  //controls to orbit around model
   let controls = new TrackballControls(camera, renderer.domElement)
   controls.rotateSpeed = 1.0
   controls.zoomSpeed = 1.2
@@ -36,70 +33,31 @@ export function threeSetup(containerId) {
   controls.dynamicDampingFactor = 0.3
 
   const joints = [
-    {
-      name: 'chassis',
-      file: 'rover_chassis.fbx',
-      translation: [0.164882, -0.200235, 0.051497],
-      rotation: [0, 0, 0]
-    },
-    {
-      name: 'a',
-      file: 'arm_a.fbx',
-      translation: [0.034346, 0, 0.049024],
-      rotation: [0, 0, 0]
-    },
-    {
-      name: 'b',
-      file: 'arm_b.fbx',
-      translation: [0.534365, 0, 0.009056],
-      rotation: [0, 0, 0]
-    },
-    {
-      name: 'c',
-      file: 'arm_c.fbx',
-      translation: [0.546033, 0, 0.088594],
-      rotation: [0, 0, 0]
-    },
-    {
-      name: 'd',
-      file: 'arm_d.fbx',
-      translation: [0.044886, 0, 0],
-      rotation: [0, 0, 0]
-    },
-    {
-      name: 'e',
-      file: 'arm_e.fbx',
-      translation: [0.044886, 0, 0],
-      rotation: [0, 0, 0]
-    }
+    { name: 'chassis', file: 'rover_chassis.fbx', translation: [0.164882, -0.200235, 0.051497], rotation: [0, 0, 0] },
+    { name: 'a', file: 'arm_a.fbx', translation: [0.034346, 0, 0.049024], rotation: [0, 0, 0] },
+    { name: 'b', file: 'arm_b.fbx', translation: [0.534365, 0, 0.009056], rotation: [0, 0, 0] },
+    { name: 'c', file: 'arm_c.fbx', translation: [0.546033, 0, 0.088594], rotation: [0, 0, 0] },
+    { name: 'd', file: 'arm_d.fbx', translation: [0.044886, 0, 0], rotation: [0, 0, 0] },
+    { name: 'e', file: 'arm_e.fbx', translation: [0.044886, 0, 0], rotation: [0, 0, 0] }
   ]
 
   const loader = new FBXLoader()
   for (let i = 0; i < joints.length; ++i) {
     loader.load('/meshes/' + joints[i].file, (fbx) => {
-        // Traverse the loaded scene to find meshes or objects
-        fbx.traverse((child) => {
-          if (child.isMesh) {
-            if (joints[i].name === 'd' || joints[i].name === 'e') {
-              child.material = new THREE.MeshStandardMaterial({ color: 0x00ff00 })
-            } else child.material = new THREE.MeshStandardMaterial({ color: 0xffffff })
-            scene.add(child)
-            child.scale.set(1, 1, 1)
-            child.position.set(0, 0, 0)
-          }
-        })
-      },
-      (xhr) => {
-        console.log((xhr.loaded / xhr.total) * 100 + '% loaded')
-      },
-      (error) => {
-        console.log(error)
+      fbx.name = joints[i].name
+      fbx.traverse((child) => {
+        if (child.isMesh) {
+          child.name = joints[i].name
+          child.material = new THREE.MeshStandardMaterial({ color: (joints[i].name === 'd' || joints[i].name === 'e') ? 0x00ff00 : 0xffffff })
+          child.scale.set(1, 1, 1)
+          child.position.set(0, 0, 0)
+          scene.add(child)
+        }
       })
+    })
   }
 
-  camera.position.x = 1.25
-  camera.position.y = 1.25
-  camera.position.z = 1.25
+  camera.position.set(1.25, 1.25, 1.25)
   camera.lookAt(new THREE.Vector3(0, 0, 0))
 
   const targetCube = new THREE.Mesh(
@@ -116,47 +74,43 @@ export function threeSetup(containerId) {
 
   animate()
 
-  function fk(positions) {
+  // return {
+  //   fk: (positions) => fk(positions, scene, joints),
+  //   ik: (target) => ik(target, targetCube)
+  // }
+}
 
-    let cumulativeMatrix = new THREE.Matrix4()
+export function fk(positions, scene, joints) {
+  let cumulativeMatrix = new THREE.Matrix4()
+  cumulativeMatrix.makeTranslation(new THREE.Vector3(0, 0, 0.439675)) // base_link offset
 
-    cumulativeMatrix.makeTranslation(new THREE.Vector3(0, 0, 0.439675)) //makes meshes relative to base_link
+  for (let i = 0; i < joints.length; ++i) {
+    let mesh = scene.getObjectByName(joints[i].name)
+    if (!mesh) continue
 
-    for (let i = 0; i < joints.length; ++i) {
-      let mesh = scene.getObjectByName(joints[i].name)
+    let localMatrix = new THREE.Matrix4()
+    let rotationAngle = positions[i]
 
-      if (!mesh) continue
-
-      let localMatrix = new THREE.Matrix4()
-
-      let rotationAngle = positions[i] // Angle for this joint
-      if (joints[i].name === 'chassis') {
-        localMatrix.makeTranslation(0, rotationAngle, 0)
-      } else {
-        localMatrix.makeRotationY(rotationAngle)
-      }
-
-      let offset = new THREE.Vector3().fromArray(joints[i].translation)
-
-      localMatrix.setPosition(
-        new THREE.Vector3().setFromMatrixPosition(localMatrix).add(offset)
-      )
-
-      mesh.matrixAutoUpdate = false
-      mesh.matrix = cumulativeMatrix.clone()
-
-      cumulativeMatrix.multiply(localMatrix)
+    if (joints[i].name === 'chassis') {
+      localMatrix.makeTranslation(0, rotationAngle, 0)
+    } else {
+      localMatrix.makeRotationY(rotationAngle)
     }
-  }
 
-  function ik(target) {
-    let quaternion = new THREE.Quaternion(...target.quaternion)
-    targetCube.position.set(...target.position)
-    targetCube.setRotationFromQuaternion(quaternion)
-  }
+    let offset = new THREE.Vector3().fromArray(joints[i].translation)
+    localMatrix.setPosition(
+      new THREE.Vector3().setFromMatrixPosition(localMatrix).add(offset)
+    )
 
-  // Return an object with the updateJointAngles() function
-  return {
-    fk, ik
+    mesh.matrixAutoUpdate = false
+    mesh.matrix = cumulativeMatrix.clone()
+
+    cumulativeMatrix.multiply(localMatrix)
   }
+}
+
+export function ik(target, targetCube) {
+  let quaternion = new THREE.Quaternion(...target.quaternion)
+  targetCube.position.set(...target.position)
+  targetCube.setRotationFromQuaternion(quaternion)
 }

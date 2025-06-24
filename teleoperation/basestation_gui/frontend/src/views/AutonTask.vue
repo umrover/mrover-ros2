@@ -1,10 +1,10 @@
 <template>
-  <div class='wrapper'>
-    <div :class="['shadow p-3 rounded data', ledColor]">
+  <div class='wrapper view-wrapper'>
+    <div :class="['island p-3 rounded data', ledColor]">
       <h2>Nav State: {{ navState }}</h2>
       <OdometryReading @odom='updateOdom' @basestation_odom='updateBasestationOdom'/>
     </div>
-    <div class='shadow p-3 rounded feed'> <!-- meant to be cost mapb -->
+    <div class='island p-3 rounded feed'> <!-- meant to be cost mapb -->
       <button @click="toggleFeed" class="btn btn-primary mb-2">
         {{ cameraFeedEnabled ? 'Disable' : 'Enable' }} Camera Feed
       </button>
@@ -13,10 +13,10 @@
         <p v-if="cameraFeedEnabled">Camera Feed On</p>
       </div>
     </div>
-    <div class='shadow p-3 rounded map'>
+    <div class='island p-3 rounded map'>
       <AutonRoverMap :odom='odom' :basestation="basestationOdom"/>  
     </div>
-    <div class='shadow p-3 rounded waypoints'>
+    <div class='island p-3 rounded waypoints'>
       <AutonWaypointEditor @toggleTeleop='teleopEnabledCheck = $event' />
     </div>
     <!--Enable the drive controls if auton is off-->
@@ -25,14 +25,14 @@
       <MastGimbalControls/>
     </div>
     <div class='conditions'>
-      <div v-if='!stuck_status' class='shadow p-3 rounded bg-success text-center'>
+      <div v-if='!stuck_status' class='island p-3 rounded bg-success text-center'>
         <h4>Nominal Conditions</h4>
       </div>
-      <div v-else class='shadow p-3 rounded bg-danger text-center'>
+      <div v-else class='island p-3 rounded bg-danger text-center'>
         <h4>Obstruction Detected</h4>
       </div>
     </div>
-    <div class='shadow p-3 rounded moteus'>
+    <div class='island p-3 rounded moteus'>
       <ControllerDataTable msg-type='drive_left_state' header='Drive Left States' />
       <ControllerDataTable msg-type='drive_right_state' header='Drive Right States' />
     </div>
@@ -134,7 +134,6 @@ export default defineComponent({
   grid-gap: 10px;
   grid-template-columns: auto 30% 30%;
   grid-template-areas:
-    'header header header'
     'feed map waypoints'
     'data data waypoints'
     'data data conditions'
@@ -168,14 +167,6 @@ export default defineComponent({
   50% {
     background-color: var(--bs-white);
   }
-}
-
-.header {
-  grid-area: header;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 10px;
 }
 
 .logo {

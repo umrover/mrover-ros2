@@ -1,29 +1,31 @@
 <template>
-  <div :class="type === 'ES' ? 'wrapper-es' : 'wrapper-dm'">
-    <div v-if="type === 'DM'" class='shadow p-3 rounded odom'>
-      <OdometryReading @odom='updateOdom' @drone_odom="updateDroneOdom" />
-    </div>
-    <div v-if="type === 'DM'" class='shadow p-3 rounded map'>
-      <BasicMap :odom='odom' :drone_odom="drone_odom" />
-    </div>
-    <div v-if="type === 'DM'" class='shadow p-3 rounded waypoint-editor'>
-      <BasicWaypointEditor :odom='odom' :droneWaypointButton='true'/>
-    </div>
-    <div>
-      <DriveControls />
-    </div>
-    <div class='shadow p-3 rounded arm-controls'>
-      <ArmControls />
-    </div>
-    <div class='shadow p-3 rounded rover-3d'>
-      <Rover3D />
-    </div>
-    <div class='shadow p-3 rounded controller_state'>
-      <ControllerDataTable msg-type='arm_state' header='Arm States' />
-      <ControllerDataTable msg-type='drive_state' header='Drive States' />
-    </div>
-    <div v-show='false'>
-      <MastGimbalControls />
+  <div class="view-wrapper">
+    <div :class="type === 'ES' ? 'wrapper-es' : 'wrapper-dm'">
+      <div v-if="type === 'DM'" class='island p-3 rounded odom'>
+        <OdometryReading @odom='updateOdom' @drone_odom="updateDroneOdom" />
+      </div>
+      <div v-if="type === 'DM'" class='island p-3 rounded map'>
+        <BasicMap :odom='odom' :drone_odom="drone_odom" />
+      </div>
+      <div v-if="type === 'DM'" class='island p-3 rounded waypoint-editor'>
+        <BasicWaypointEditor :odom='odom' :droneWaypointButton='true'/>
+      </div>
+      <div>
+        <DriveControls />
+      </div>
+      <div class='island p-3 rounded arm-controls'>
+        <ArmControls />
+      </div>
+      <div class='island rounded rover-3d'>
+        <Rover3D />
+      </div>
+      <div class='island p-3 rounded controller_state'>
+        <ControllerDataTable msg-type='arm_state' header='Arm States' />
+        <ControllerDataTable msg-type='drive_state' header='Drive States' />
+      </div>
+      <div v-show='false'>
+        <MastGimbalControls />
+      </div>
     </div>
   </div>
 </template>
@@ -108,7 +110,6 @@ export default defineComponent({
   gap: 10px;
   grid-template-columns: 50% 50%;
   grid-template-areas:
-    'header header'
     'arm-controls arm-controls'
     'map waypoint-editor'
     'map odom'
@@ -120,10 +121,9 @@ export default defineComponent({
 .wrapper-es {
   display: grid;
   gap: 10px;
-  grid-template-columns: repeat(2, auto);
+  grid-template-columns: minmax(30%, 1fr) minmax(auto, 70%);
   grid-template-areas:
-    'header header'
-    'arm-controls arm-controls'
+    'arm-controls rover-3d'
     'controller_state rover-3d';
   font-family: sans-serif;
   height: auto;
@@ -136,14 +136,6 @@ export default defineComponent({
 
 .dashboard-title:hover {
   color: darkgray;
-}
-
-.header {
-  grid-area: header;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 10px;
 }
 
 .logo {
@@ -173,5 +165,8 @@ export default defineComponent({
 
 .rover-3d {
   grid-area: rover-3d;
+  max-width: 70vw;
+  width: 100%;
+  box-sizing: border-box;
 }
 </style>
