@@ -1,6 +1,9 @@
 <template>
   <button :class="['btn', color]" @click="toggleAndEmit()">
-    <span class="white-text">{{ name }}: <br />{{ active ? '\u2611' : '\u2610' }}</span>
+    <span class="white-text d-inline-flex align-items-center">
+      <span>{{ name }}: </span>
+      <span class="checkbox">{{ active ? '\u2611' : '\u2610' }}</span>
+    </span>
   </button>
 </template>
 
@@ -9,16 +12,16 @@ export default {
   props: {
     name: {
       type: String,
-      required: true
+      required: true,
     },
     color: {
       type: String,
-      required: true
-    }
+      required: true,
+    },
   },
   data() {
     return {
-      active: false
+      active: false,
     }
   },
 
@@ -30,8 +33,8 @@ export default {
     toggleAndEmit: function () {
       this.toggle()
       this.$emit('toggle', this.active)
-    }
-  }
+    },
+  },
 }
 </script>
 
@@ -41,10 +44,5 @@ export default {
   align-items: center;
   justify-content: center;
   padding: 1px;
-}
-
-.white-text {
-  font-size: large;
-  color: white;
 }
 </style>

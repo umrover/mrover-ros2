@@ -1,11 +1,18 @@
 <template>
   <div v-if="!disabled" class="wrap-button">
-    <button :class="['btn', color]" @click="toggleAndEmit()">
+    <button
+      :class="['btn', color]"
+      :style="customStyles"
+      @click="toggleAndEmit()"
+    >
       <span>{{ name }}: {{ active ? '\u2611' : '\u2610' }}</span>
     </button>
   </div>
   <div v-else class="wrap-button button-disabled">
-    <button :class="['btn', color, 'disabled']">
+    <button
+      :class="['btn', color, 'disabled']"
+      :style="customStyles"
+    >
       <span>{{ name }}: {{ active ? '\u2611' : '\u2610' }}</span>
     </button>
   </div>
@@ -18,36 +25,53 @@ export default defineComponent({
   props: {
     name: {
       type: String,
-      required: true
+      required: true,
     },
     disabled: {
       type: Boolean,
       default: false,
-      required: false
-    }
+      required: false,
+    },
+    height: {
+      type: [String, Number],
+      default: '',
+    },
+    width: {
+      type: [String, Number],
+      default: '',
+    },
   },
   data() {
     return {
-      active: false
+      active: false,
     }
   },
 
   computed: {
-    color: function () {
+    color() {
       return this.active ? 'btn-success' : 'btn-danger'
-    }
+    },
+
+    customStyles() {
+      const styles: { [key: string]: string | number } = {}
+      
+      if (this.width) styles.width = `${this.width}px`
+      if (this.height) styles.height = `${this.height}px`
+      
+      return styles
+    },
   },
 
   methods: {
-    toggle: function () {
+    toggle() {
       this.active = !this.active
     },
 
-    toggleAndEmit: function () {
+    toggleAndEmit() {
       this.toggle()
       this.$emit('toggle', this.active)
-    }
-  }
+    },
+  },
 })
 </script>
 

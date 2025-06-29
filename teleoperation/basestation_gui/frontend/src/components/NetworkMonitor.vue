@@ -1,7 +1,7 @@
 <template>
 	<div class="wrapper">
-		<p class="stat">TX: {{ tx.toFixed(2) }} </p>
-		<p class="stat">RX: {{ rx.toFixed(2) }} </p>
+		<p class="stat px-2">TX: {{ tx.toFixed(2) }} </p>
+		<p class="stat px-2">RX: {{ rx.toFixed(2) }} </p>
 	</div>
 </template>
 
@@ -12,8 +12,8 @@ const { mapState } = Vuex;
 export default {
 	data() {
 		return {
-				tx: 0,
-				rx: 0
+			tx: 0,
+			rx: 0
 		};
 	},
 
@@ -35,13 +35,13 @@ export default {
 <style scoped>
 .wrapper {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   gap: 0;
   font-weight: 800;
   font-size: 1.2rem;
   color: #333;
   background: rgba(220, 220, 220, 1);
-  padding: 8px 12px;
+  padding: 4px 6px;
   border-radius: 8px;
   width: fit-content;
   box-shadow: 0 2px 5px rgba(0,0,0,0.1);

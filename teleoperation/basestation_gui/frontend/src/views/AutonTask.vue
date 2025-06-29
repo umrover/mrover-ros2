@@ -13,7 +13,7 @@
         <p v-if="cameraFeedEnabled">Camera Feed On</p>
       </div>
     </div>
-    <div class='island p-3 rounded map'>
+    <div class='island p-0 rounded map'>
       <AutonRoverMap :odom='odom' :basestation="basestationOdom"/>  
     </div>
     <div class='island p-3 rounded waypoints'>

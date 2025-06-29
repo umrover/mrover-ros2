@@ -1,9 +1,9 @@
 <template>
 	<div class="wrapper">
-		<div class="py-3 px-4 header">
+		<div class="py-3 px-3 header">
 			<a class="logo" href="/"><img src="/mrover.png" alt="MRover" title="MRover" width="200" /></a>
 			<h1>{{ getTitleForRoute($route.path) }}</h1>
-			<NetworkMonitor />
+      <NetworkMonitor v-if="showNetworkMonitor($route.path)" />
 		</div>
   </div>
 </template>
@@ -30,6 +30,9 @@ export default defineComponent({
       };
 
       return routeTitles[path] || 'Unknown Path';
+    },
+    showNetworkMonitor(path: string): boolean {
+      return path === '/SATask' || path === '/ISHTask';
     }
   }
 });

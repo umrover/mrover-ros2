@@ -2,13 +2,11 @@
 // $body-bg: #fff;
 // $body-color: #111;
 
-// $primary: #84a9e0;
-// $success: #84d633;
+$primary: #84a9e0;
+$success: #84d633;
 
 $body-bg: #ffffff;
-$body-color: #111111;
-$primary: #1f6feb;
-$success: #2ea043;
+$body-alt: #dddddd;
 
 // Then import Bootstrap SCSS files (order is important)
 @import 'node_modules/bootstrap/scss/bootstrap.scss';
