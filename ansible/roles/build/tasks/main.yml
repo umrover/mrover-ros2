@@ -145,22 +145,18 @@
 # - name: Install ROS Packages
 #   # command: rosdep install --from-paths {{ ros2_workspace }}/src --ignore-src -y --rosdistro={{ ros_distro }}
 
-# - name: Download Bun Installer
-#   get_url:
-#     url: https://bun.sh/install
-#     dest: /tmp/bun_installer.sh
-#     mode: 0755
+- name: Install or Upgrade Bun
+  shell: curl -fsSL https://bun.sh/install | bash
+  args:
+    executable: /bin/bash
+  environment:
+    BUN_INSTALL: "{{ ansible_env.HOME }}/.bun"
 
-# - name: Run Bun Installer
-#   command: /tmp/bun_installer.sh
-#   args:
-#     creates: ~/.bun/bin/bun
+- name: Install Bun Packages
+  command: ~/.bun/bin/bun install
+  args:
+    chdir: "{{ ansible_env.HOME }}/ros2_ws/src/mrover/teleoperation/basestation_gui/frontend"
 
-# - name: Upgrade Bun
-#   command: ~/.bun/bin/bun upgrade
-
-# - name: Install Bun Packages
-#   command: ~/.bun/bin/bun install --cwd {{ catkin_workspace }}/src/mrover/src/teleoperation/frontend
 
 - name: Set G++ 13 as Default
   become: True
