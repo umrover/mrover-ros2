@@ -31,26 +31,7 @@ export default {
 }
 
 .wrapper {
-  background-color: rgba(230, 120, 60, 0.3);
-}
-
-.wrapper::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-image: url('/menu_bg.jpg');
-  background-size: cover;
-  background-position: center;
-  opacity: 0.2;
-  z-index: 0;
-}
-
-.wrapper > * {
-  position: relative;
-  z-index: 1;
+  background-color: #dddddd;
 }
 
 .row {

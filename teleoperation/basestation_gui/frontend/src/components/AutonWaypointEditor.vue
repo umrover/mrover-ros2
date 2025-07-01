@@ -386,15 +386,12 @@ export default {
       this.allCostmapToggle = !this.allCostmapToggle
       this.waypoints.forEach(wp => {
         wp.enable_costmap = this.allCostmapToggle
-        console.log(wp.id)
       })
-      console.log(this.allCostmapToggle)
     },
 
-    // Add item from all waypoints div to current waypoints div
     addItem: function (waypoint: Waypoint) {
       if (!waypoint.in_route) {
-        waypoint['enable_costmap'] = waypoint.enable_costmap ?? false
+        waypoint['enable_costmap'] = waypoint.enable_costmap ?? false;
         this.route.push(waypoint)
         // this is where the new waypoint is added into current route
         // console.log(waypoint.enable_costmap)

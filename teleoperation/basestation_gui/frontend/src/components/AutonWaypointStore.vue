@@ -5,33 +5,33 @@
       <small class="text-muted">ID: {{ waypoint.id }}</small>
     </div>
     <div>
-			<div class="input-group mb-1">
-				<input
-					class="form-control"
-					v-model.number="waypoint.lat"
-					:id="'lat-' + waypoint.id"
-				/>
-				<span class="input-group-text">ºN</span>
-			</div>
-			<div class="input-group mb-1">
-				<input
-					class="form-control"
-					v-model.number="waypoint.lon"
-					:id="'lon-' + waypoint.id"
-				/>
-				<span class="input-group-text">ºW</span>
-			</div>
+      <div class="input-group mb-1">
+        <input
+          class="form-control"
+          v-model.number="waypoint.lat"
+          :id="'lat-' + waypoint.id"
+        />
+        <span class="input-group-text">ºN</span>
+      </div>
+      <div class="input-group mb-1">
+        <input
+          class="form-control"
+          v-model.number="waypoint.lon"
+          :id="'lon-' + waypoint.id"
+        />
+        <span class="input-group-text">ºW</span>
+      </div>
       <div class="waypoint-button-row">
         <button class="btn btn-success" @click="$emit('add', waypoint)">
           Add
         </button>
-				<button
-					class="btn btn-danger mx-1"
-					:disabled="index <= 6"
-					@click="$emit('delete', index)"
-				>
-					Delete
-				</button>
+        <button
+          class="btn btn-danger"
+          :disabled="index <= 6"
+          @click="$emit('delete', index)"
+        >
+          Delete
+        </button>
       </div>
     </div>
   </div>
@@ -71,12 +71,16 @@ export default {
 }
 
 .waypoint-button-row {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.waypoint-button-row .btn {
+  flex: 1;
 }
 
 .input-group-text {
-	min-width: 50px;
+  min-width: 50px;
 }
 </style>
