@@ -103,6 +103,25 @@
       # TODO (ali): why does this need to be installed manually
       - libboost-dev
 
+- name: Clone manif repository
+  become: false
+  git:
+    repo: https://github.com/artivis/manif.git
+    dest: "{{ ansible_env.HOME }}/manif"
+    update: no
+
+- name: Install manif Python module
+  become: false
+  pip:
+    chdir: "{{ ansible_env.HOME }}/manif"
+    editable: true
+
+- name: Initialize manif submodule in mrover
+  become: false
+  shell: git submodule update --init deps/manif
+  args:
+    chdir: "{{ ros2_workspace }}/src/mrover"
+
 - name: Install Local APT Packages
   become: True
   apt:
