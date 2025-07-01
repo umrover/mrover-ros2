@@ -229,123 +229,123 @@ target_link_libraries(simulator
 target_include_directories(simulator SYSTEM PRIVATE ${BULLET_INCLUDE_DIRS} ${OPENCV_INCLUDE_DIRS})
 
 
-# Perception
+# # Perception
 
-find_package(ZED QUIET)
-find_package(CUDA QUIET)
-find_package(OpenCV REQUIRED)
-if(ZED_FOUND AND CUDA_FOUND)
-    enable_language(CUDA)
-    # CUDA Compile Options
-    add_library(cuda_compiler_flags INTERFACE)
-    target_compile_options(cuda_compiler_flags INTERFACE 
-        -Wno-pedantic 
-        -Wno-deprecated 
-        -Wno-unused-parameter 
-        -diag-suppress=815 
-        -diag-suppress=780 
-        -Wno-deprecated-copy 
-        -Wno-unused-command-line-argument 
-        -Wno-ignored-qualifiers 
-        -Wno-sometimes-uninitialized
-    )
+# find_package(ZED QUIET)
+# find_package(CUDA QUIET)
+# find_package(OpenCV REQUIRED)
+# if(ZED_FOUND AND CUDA_FOUND)
+#     enable_language(CUDA)
+#     # CUDA Compile Options
+#     add_library(cuda_compiler_flags INTERFACE)
+#     target_compile_options(cuda_compiler_flags INTERFACE 
+#         -Wno-pedantic 
+#         -Wno-deprecated 
+#         -Wno-unused-parameter 
+#         -diag-suppress=815 
+#         -diag-suppress=780 
+#         -Wno-deprecated-copy 
+#         -Wno-unused-command-line-argument 
+#         -Wno-ignored-qualifiers 
+#         -Wno-sometimes-uninitialized
+#     )
 
-    # ZED Wrapper
+#     # ZED Wrapper
 
-    set(THRUST_WRAPPED_NAMESPACE wrapped_thrust)
-    set(CUB_WRAPPED_NAMESPACE wrapped_cub)
+#     set(THRUST_WRAPPED_NAMESPACE wrapped_thrust)
+#     set(CUB_WRAPPED_NAMESPACE wrapped_cub)
 
-    add_definitions(-DTHRUST_WRAPPED_NAMESPACE=${THRUST_WRAPPED_NAMESPACE})
-    add_definitions(-DCUB_WRAPPED_NAMESPACE=${CUB_WRAPPED_NAMESPACE})
+#     add_definitions(-DTHRUST_WRAPPED_NAMESPACE=${THRUST_WRAPPED_NAMESPACE})
+#     add_definitions(-DCUB_WRAPPED_NAMESPACE=${CUB_WRAPPED_NAMESPACE})
 
-    mrover_add_component(zed perception/zed_wrapper/*.c* perception/zed_wrapper/pch.hpp ZedWrapper)
-    target_compile_options(zed_component PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-std=c++20>)
-    mrover_link_component(zed parameter_utils lie MANIF::manif ${CUDA_LIBRARIES} loop_profiler cuda_compiler_flags)
-    mrover_ament_component(zed rclcpp rclcpp_components sensor_msgs ZED CUDA tf2 tf2_ros)
+#     mrover_add_component(zed perception/zed_wrapper/*.c* perception/zed_wrapper/pch.hpp ZedWrapper)
+#     target_compile_options(zed_component PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-std=c++20>)
+#     mrover_link_component(zed parameter_utils lie MANIF::manif ${CUDA_LIBRARIES} loop_profiler cuda_compiler_flags)
+#     mrover_ament_component(zed rclcpp rclcpp_components sensor_msgs ZED CUDA tf2 tf2_ros)
 
-    mrover_executable_from_component(zed perception/executables/zed.cpp zed_component)
+#     mrover_executable_from_component(zed perception/executables/zed.cpp zed_component)
 
-    # Learning Library
-    # TODO(john): Update to use the new API
-	mrover_add_library(tensorrt tensorrt/*.c* tensorrt)
-	target_compile_options(tensorrt PRIVATE -Wno-deprecated-declarations $<$<COMPILE_LANGUAGE:CUDA>:-std=c++17>)
-	target_include_directories(tensorrt PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
-	target_link_libraries(tensorrt opencv_core opencv_dnn opencv_imgproc lie nvinfer nvonnxparser tbb cuda_compiler_flags)
+#     # Learning Library
+#     # TODO(john): Update to use the new API
+# 	mrover_add_library(tensorrt tensorrt/*.c* tensorrt)
+# 	target_compile_options(tensorrt PRIVATE -Wno-deprecated-declarations $<$<COMPILE_LANGUAGE:CUDA>:-std=c++17>)
+# 	target_include_directories(tensorrt PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
+# 	target_link_libraries(tensorrt opencv_core opencv_dnn opencv_imgproc lie nvinfer nvonnxparser tbb cuda_compiler_flags)
 
-    # Object Detector
-    mrover_add_component(object_detector perception/object_detector/*.c* perception/object_detector/pch.hpp StereoObjectDetector ImageObjectDetector)
-    mrover_link_component(object_detector opencv_core opencv_dnn opencv_imgproc lie tbb tensorrt opencv_imgcodecs opencv_highgui loop_profiler parameter_utils cuda_compiler_flags)
-    mrover_ament_component(object_detector rclcpp sensor_msgs rclcpp_components CUDA tf2 tf2_ros)
+#     # Object Detector
+#     mrover_add_component(object_detector perception/object_detector/*.c* perception/object_detector/pch.hpp StereoObjectDetector ImageObjectDetector)
+#     mrover_link_component(object_detector opencv_core opencv_dnn opencv_imgproc lie tbb tensorrt opencv_imgcodecs opencv_highgui loop_profiler parameter_utils cuda_compiler_flags)
+#     mrover_ament_component(object_detector rclcpp sensor_msgs rclcpp_components CUDA tf2 tf2_ros)
 
-    mrover_executable_from_component(stereo_object_detector perception/executables/stereo_object_detector.cpp object_detector_component)
-    mrover_executable_from_component(image_object_detector perception/executables/image_object_detector.cpp object_detector_component)
-else()
-    message("ZED not found...")
-endif()
+#     mrover_executable_from_component(stereo_object_detector perception/executables/stereo_object_detector.cpp object_detector_component)
+#     mrover_executable_from_component(image_object_detector perception/executables/image_object_detector.cpp object_detector_component)
+# else()
+#     message("ZED not found...")
+# endif()
 
-# Tag Detector
-mrover_add_component(tag_detector perception/tag_detector/*.cpp perception/tag_detector/pch.hpp StereoTagDetector ImageTagDetector)
-mrover_ament_component(tag_detector rclcpp rclcpp_components tf2 tf2_ros)
-mrover_link_component(tag_detector lie opencv_core opencv_aruco opencv_imgproc loop_profiler parameter_utils)
+# # Tag Detector
+# mrover_add_component(tag_detector perception/tag_detector/*.cpp perception/tag_detector/pch.hpp StereoTagDetector ImageTagDetector)
+# mrover_ament_component(tag_detector rclcpp rclcpp_components tf2 tf2_ros)
+# mrover_link_component(tag_detector lie opencv_core opencv_aruco opencv_imgproc loop_profiler parameter_utils)
 
-mrover_executable_from_component(stereo_tag_detector perception/executables/stereo_tag_detector.cpp tag_detector_component)
-mrover_executable_from_component(image_tag_detector perception/executables/image_tag_detector.cpp tag_detector_component)
+# mrover_executable_from_component(stereo_tag_detector perception/executables/stereo_tag_detector.cpp tag_detector_component)
+# mrover_executable_from_component(image_tag_detector perception/executables/image_tag_detector.cpp tag_detector_component)
 
-# Embedded
-mrover_add_header_only_library(messaging esw/messaging)
+# # Embedded
+# mrover_add_header_only_library(messaging esw/messaging)
 
-mrover_add_header_only_library(can_device esw/can_device)
-target_link_libraries(can_device INTERFACE ${rclcpp_LIBRARIES} moteus)
+# mrover_add_header_only_library(can_device esw/can_device)
+# target_link_libraries(can_device INTERFACE ${rclcpp_LIBRARIES} moteus)
 
-mrover_add_library(motor_library esw/motor_library/*.cpp esw/motor_library)
-ament_target_dependencies(motor_library rclcpp std_srvs)
-target_link_libraries(motor_library can_device moteus units messaging parameter_utils)
+# mrover_add_library(motor_library esw/motor_library/*.cpp esw/motor_library)
+# ament_target_dependencies(motor_library rclcpp std_srvs)
+# target_link_libraries(motor_library can_device moteus units messaging parameter_utils)
 
-macro(mrover_add_esw_bridge_node name sources)
-    mrover_add_node(${name} ${sources})
-    ament_target_dependencies(${name} rclcpp std_srvs)
-    target_link_libraries(${name} can_device units messaging)
-endmacro()
+# macro(mrover_add_esw_bridge_node name sources)
+#     mrover_add_node(${name} ${sources})
+#     ament_target_dependencies(${name} rclcpp std_srvs)
+#     target_link_libraries(${name} can_device units messaging)
+# endmacro()
 
-macro(mrover_add_esw_motor_bridge_node name sources)
-    mrover_add_esw_bridge_node(${name} ${sources})
-    target_link_libraries(${name} motor_library)
-endmacro()
+# macro(mrover_add_esw_motor_bridge_node name sources)
+#     mrover_add_esw_bridge_node(${name} ${sources})
+#     target_link_libraries(${name} motor_library)
+# endmacro()
 
 
-mrover_add_esw_motor_bridge_node(drive_hw_bridge esw/drive_hw_bridge.cpp)
-mrover_add_esw_motor_bridge_node(arm_hw_bridge esw/arm_hw_bridge.cpp)
-mrover_add_esw_bridge_node(differential_drive_controller esw/differential_drive_controller.cpp)
-mrover_add_esw_bridge_node(science_hw_bridge esw/science_hw_bridge.cpp)
-ament_target_dependencies(science_hw_bridge sensor_msgs)
-target_link_libraries(science_hw_bridge parameter_utils)
-mrover_add_esw_bridge_node(science_test_bridge esw/science_test_bridge.cpp)
+# mrover_add_esw_motor_bridge_node(drive_hw_bridge esw/drive_hw_bridge.cpp)
+# mrover_add_esw_motor_bridge_node(arm_hw_bridge esw/arm_hw_bridge.cpp)
+# mrover_add_esw_bridge_node(differential_drive_controller esw/differential_drive_controller.cpp)
+# mrover_add_esw_bridge_node(science_hw_bridge esw/science_hw_bridge.cpp)
+# ament_target_dependencies(science_hw_bridge sensor_msgs)
+# target_link_libraries(science_hw_bridge parameter_utils)
+# mrover_add_esw_bridge_node(science_test_bridge esw/science_test_bridge.cpp)
 
-mrover_add_node(arm_controller teleoperation/arm_controller/arm_controller.cpp teleoperation/arm_controller/pch.hpp)
-target_link_libraries(arm_controller lie)
-ament_target_dependencies(arm_controller rclcpp)
+# mrover_add_node(arm_controller teleoperation/arm_controller/arm_controller.cpp teleoperation/arm_controller/pch.hpp)
+# target_link_libraries(arm_controller lie)
+# ament_target_dependencies(arm_controller rclcpp)
 
-if (Gst_FOUND AND GstApp_FOUND)
-    mrover_add_node(usb_camera esw/usb_camera/*.cpp esw/usb_camera/pch.hpp)
-    target_link_libraries(usb_camera PkgConfig::Gst PkgConfig::GstApp opencv_core opencv_imgcodecs parameter_utils)
-    ament_target_dependencies(usb_camera rclcpp)
+# if (Gst_FOUND AND GstApp_FOUND)
+#     mrover_add_node(usb_camera esw/usb_camera/*.cpp esw/usb_camera/pch.hpp)
+#     target_link_libraries(usb_camera PkgConfig::Gst PkgConfig::GstApp opencv_core opencv_imgcodecs parameter_utils)
+#     ament_target_dependencies(usb_camera rclcpp)
 
-    if (LibUdev_FOUND)
-        mrover_add_library(websocket_server esw/websocket_server/*.cpp esw/websocket_server)
-        target_compile_definitions(websocket_server PUBLIC BOOST_ASIO_NO_DEPRECATED)
-        ament_target_dependencies(websocket_server rclcpp)
+#     if (LibUdev_FOUND)
+#         mrover_add_library(websocket_server esw/websocket_server/*.cpp esw/websocket_server)
+#         target_compile_definitions(websocket_server PUBLIC BOOST_ASIO_NO_DEPRECATED)
+#         ament_target_dependencies(websocket_server rclcpp)
 
-        mrover_add_component(gst_websocket_streamer esw/gst_websocket_streamer/*.c* esw/gst_websocket_streamer/pch.hpp GstWebsocketStreamer)
-        mrover_link_component(gst_websocket_streamer PkgConfig::Gst PkgConfig::GstApp PkgConfig::LibUdev opencv_core opencv_imgcodecs websocket_server)
-        mrover_ament_component(gst_websocket_streamer rclcpp rclcpp_components sensor_msgs)
-    endif ()
-endif ()
+#         mrover_add_component(gst_websocket_streamer esw/gst_websocket_streamer/*.c* esw/gst_websocket_streamer/pch.hpp GstWebsocketStreamer)
+#         mrover_link_component(gst_websocket_streamer PkgConfig::Gst PkgConfig::GstApp PkgConfig::LibUdev opencv_core opencv_imgcodecs websocket_server)
+#         mrover_ament_component(gst_websocket_streamer rclcpp rclcpp_components sensor_msgs)
+#     endif ()
+# endif ()
 
-if (NetLink_FOUND AND NetLinkRoute_FOUND)
-    mrover_add_node(can_bridge esw/can_bridge/*.cpp esw/can_bridge/pch.hpp)
-    target_link_libraries(can_bridge PkgConfig::NetLink PkgConfig::NetLinkRoute)
-    ament_target_dependencies(can_bridge rclcpp)
-endif ()
+# if (NetLink_FOUND AND NetLinkRoute_FOUND)
+#     mrover_add_node(can_bridge esw/can_bridge/*.cpp esw/can_bridge/pch.hpp)
+#     target_link_libraries(can_bridge PkgConfig::NetLink PkgConfig::NetLinkRoute)
+#     ament_target_dependencies(can_bridge rclcpp)
+# endif ()
 
 ## Install
 

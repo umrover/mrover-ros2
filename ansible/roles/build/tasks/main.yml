@@ -115,6 +115,7 @@
   pip:
     chdir: "{{ ansible_env.HOME }}/manif"
     editable: true
+    name: .  # This specifies the current directory
 
 - name: Initialize manif submodule in mrover
   become: false
