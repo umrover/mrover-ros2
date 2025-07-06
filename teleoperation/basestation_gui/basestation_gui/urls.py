@@ -20,7 +20,7 @@ from django.urls import path, include
 from django.http import HttpResponse
 from django.shortcuts import render
 
-from backend.consumers import GUIConsumer
+from backend.gui_consumer import GUIConsumer
 
 urlpatterns = [
     path("admin/", admin.site.urls),
