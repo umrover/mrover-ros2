@@ -57,10 +57,7 @@ from std_msgs.msg import Float32
 
 LOCALIZATION_INFO_HZ = 10
 
-cur_ra_mode: str = "disabled"
-cur_sa_mode: str = "disabled"
-
-class ArmConsumer(JsonWebsocketConsumer):
+class MastConsumer(JsonWebsocketConsumer):
     subscribers = []
     timers = []
 
@@ -73,18 +70,12 @@ class ArmConsumer(JsonWebsocketConsumer):
         self.ros_thread = threading.Thread(target=self.ros_spin, daemon=True)
         self.ros_thread.start()
 
-        print("arm consumer started")
+        print("mast consumer started")
 
         # Topic Publishers
-        self.thr_pub = self.node.create_publisher(Throttle, "arm_throttle_cmd", 1)
-        self.ee_pos_pub = self.node.create_publisher(IK, "ee_pos_cmd", 1)
-        self.ee_vel_pub = self.node.create_publisher(Twist, "ee_vel_cmd", 1)
-        self.controller_twist_pub = self.node.create_publisher(Twist, "/controller_cmd_vel", 1)
-        self.sa_thr_pub = self.node.create_publisher(Throttle, "sa_throttle_cmd", 1)
+        self.mast_gimbal_pub = self.node.create_publisher(Throttle, "/mast_gimbal_throttle_cmd", 1)
 
         # Forwards ROS topic to GUI
-        self.forward_ros_topic("/arm_controller_state", ControllerState, "arm_state")
-        self.forward_ros_topic("/arm_joint_data", JointState, "fk")
 
         # Services
 
@@ -129,9 +120,6 @@ class ArmConsumer(JsonWebsocketConsumer):
         @param text_data:   Stringfied JSON message
         """
 
-        global cur_ra_mode
-        global cur_sa_mode
-
         if text_data is None:
             self.node.get_logger().warning("Expecting text but received binary on GUI websocket...")
 
@@ -143,47 +131,12 @@ class ArmConsumer(JsonWebsocketConsumer):
         try:
             match message:
                 case {
-                    "type": "ra_controller",
+                    "type": "mast_keyboard",
                     "axes": axes,
                     "buttons": buttons,
                 }:
                     device_input = DeviceInputs(axes, buttons)
-                    send_controller_twist(device_input, self.controller_twist_pub)
-                    send_ra_controls(
-                        cur_ra_mode,
-                        device_input,
-                        self.node,
-                        self.thr_pub,
-                        self.ee_pos_pub,
-                        self.ee_vel_pub,
-                        self.buffer,
-                    )
-                            
-                case {
-                    "type": "ra_mode",
-                    "mode": ra_mode,
-                }:
-                    cur_ra_mode = ra_mode
-
-                case {
-                    "type": "sa_controller",
-                    "axes": axes,
-                    "buttons": buttons,
-                    "site": site
-                }:
-                    device_input = DeviceInputs(axes, buttons)
-                    if(site == 0):
-                        send_sa_controls(cur_sa_mode, 0, device_input, self.sa_thr_pub)
-                    elif(site == 1):
-                        send_sa_controls(cur_sa_mode, 1, device_input, self.sa_thr_pub)
-                    else:
-                        self.node.get_logger().warning(f"Unhandled Site: {site}")
-
-                case {
-                    "type": "sa_mode",
-                    "mode": sa_mode,
-                }:
-                    cur_sa_mode = sa_mode
+                    send_mast_controls(device_input, self.mast_gimbal_pub)
 
                 case _:
                     self.node.get_logger().warning(f"Unhandled message: {message}")

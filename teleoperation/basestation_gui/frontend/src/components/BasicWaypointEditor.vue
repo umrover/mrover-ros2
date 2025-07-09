@@ -225,7 +225,7 @@ export default {
           id: 'waypoints',
           message: {
             type: 'save_basic_waypoint_list',
-          data: newList,
+            data: newList,
           },
         })
       },

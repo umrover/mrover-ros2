@@ -25,62 +25,17 @@
       />
       <label class="btn btn-outline-success" for="throttle">Throttle</label>
     </div>
-    <!-- <div class='controls-flex'>
-      <h4>Arm Mode</h4>
-      <div class='form-check'>
-        <input
-          v-model='mode'
-          class='form-check-input'
-          type='radio'
-          id='disabled'
-          value='disabled'
-        />
-        <label class='form-check-label' for='disabled'>Disabled</label>
-      </div>
-      <div class='form-check'>
-        <input v-model='mode' class='form-check-input' type='radio' id='thr' value='throttle' />
-        <label class='form-check-label' for='thr'>Throttle</label>
-      </div>
-    </div> -->
-    <div class="controls-flex">
-      <button class="btn btn-primary" @click="zero('sa_z', 0)">
-        Zero Ground
-      </button>
-      <p>Corer Position: {{ corer_position }} inches</p>
-      <button
-        class="btn btn-primary"
-        @click="zero('sa_z', corer_position + sensor_height)"
-      >
-        Zero Sensor
-      </button>
-      <p>Plunger Position: {{ plunger_position - plunger_height }} inches</p>
-
-      <!--      <MotorAdjust-->
-      <!--        v-if="mode == 'position'"-->
-      <!--        :options="[-->
-      <!--          { esw_name: 'sa_x', display_name: 'X' },-->
-      <!--          { esw_name: 'sa_y', display_name: 'Y' },-->
-      <!--          { esw_name: 'sa_z', display_name: 'Z' },-->
-      <!--          { esw_name: 'sampler', display_name: 'Sampler' },-->
-      <!--          { esw_name: 'sensor_actuator', display_name: 'Sensor Actuator' }-->
-      <!--        ]"-->
-      <!--      />-->
-    </div>
   </div>
 </template>
 
 <script lang="ts">
 import { defineComponent } from 'vue'
-import { mapActions, mapState } from 'vuex'
-// import MotorAdjust from './MotorAdjust.vue'
+import Vuex from 'vuex'
+const { mapActions, mapState } = Vuex
 
 const UPDATE_HZ = 20
 
 export default defineComponent({
-  components: {
-    // MotorAdjust
-  },
-
   props: {
     currentSite: {
       type: Number,
@@ -100,17 +55,17 @@ export default defineComponent({
 
   created: function () {
     this.interval = window.setInterval(() => {
-      // const gamepads = navigator.getGamepads()
-      // const gamepad = gamepads.find(gamepad => gamepad && gamepad.id.includes('Microsoft'))
-      // if (!gamepad) return
+      const gamepads = navigator.getGamepads()
+      const gamepad = gamepads.find(gamepad => gamepad && gamepad.id.includes('Microsoft'))
+      if (!gamepad) return
 
-      // this.sendMessage(
-      //   'sa',god dam
-      //   {
-      //   type: 'sa_controller',
-      //   axes: gamepad.axes,
-      //   buttons: gamepad.buttons.map(button => button.value)
-      // })
+      this.sendMessage(
+        'sa',
+        {
+        type: 'sa_controller',
+        axes: gamepad.axes,
+        buttons: gamepad.buttons.map(button => button.value)
+      })
 
       this.sendMessage('sa', {
         type: 'sa_mode',
@@ -129,18 +84,6 @@ export default defineComponent({
 
   methods: {
     ...mapActions('websocket', ['sendMessage']),
-
-    zero: function (name: string, value: number) {
-      this.$store.dispatch('websocket/sendMessage', {
-        id: 'arm',
-        message: {
-          type: 'arm_adjust',
-          name: name,
-          value: value,
-        },
-      })
-      // broken? arm_adjust missing
-    },
   },
 })
 </script>

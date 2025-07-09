@@ -132,33 +132,32 @@ export default {
         this.rover_longitude_deg = msg.longitude
         this.rover_altitude = msg.altitude
         this.rover_status = msg.status
-
         this.$emit('odom', {
           latitude_deg: this.rover_latitude_deg,
           longitude_deg: this.rover_longitude_deg,
           bearing_deg: this.rover_bearing_deg,
         } as Odom)
-      } else if (msg.type == 'drone_waypoint') {
+      } 
+      else if (msg.type == 'drone_waypoint') { // currently inactive
         this.drone_latitude_deg = msg.latitude
         this.drone_longitude_deg = msg.longitude
         this.drone_status = msg.status
-
         this.$emit('drone_odom', {
           latitude_deg: this.drone_latitude_deg,
           longitude_deg: this.drone_longitude_deg,
         })
-      } else if (msg.type == 'basestation_position') {
+      } 
+      else if (msg.type == 'basestation_position') {
         this.basestation_latitude_deg = msg.latitude
         this.basestation_longitude_deg = msg.longitude
         this.basestation_status = msg.status
-
         this.$emit('basestation_odom', {
           latitude_deg: this.basestation_latitude_deg,
           longitude_deg: this.basestation_longitude_deg,
         } as Odom)
-      } else if (msg.type == 'orientation') {
+      } 
+      else if (msg.type == 'orientation') { // currently inactive
         this.rover_bearing_deg = quaternionToMapAngle(msg.orientation)
-
         this.$emit('odom', {
           latitude_deg: this.rover_latitude_deg,
           longitude_deg: this.rover_longitude_deg,

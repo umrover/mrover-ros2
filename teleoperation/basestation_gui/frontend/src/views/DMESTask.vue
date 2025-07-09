@@ -73,8 +73,8 @@ export default defineComponent({
 
   data() {
     return {
-      odom:  null as Odom | null,
-      drone_odom:  null as DroneOdom | null
+      odom: null as Odom | null,
+      drone_odom: null as DroneOdom | null
     }
   },
 
@@ -92,6 +92,7 @@ export default defineComponent({
     this.$store.dispatch('websocket/setupWebSocket', 'drive')
     this.$store.dispatch('websocket/setupWebSocket', 'waypoints')
     this.$store.dispatch('websocket/setupWebSocket', 'nav')
+    this.$store.dispatch('websocket/setupWebSocket', 'mast')
   },
 
   unmounted: function() {
@@ -99,6 +100,7 @@ export default defineComponent({
     this.$store.dispatch('websocket/closeWebSocket', 'drive')
     this.$store.dispatch('websocket/closeWebSocket', 'waypoints')
     this.$store.dispatch('websocket/setupWebSocket', 'nav')
+    this.$store.dispatch('websocket/setupWebSocket', 'mast')
   },
 })
 </script>
