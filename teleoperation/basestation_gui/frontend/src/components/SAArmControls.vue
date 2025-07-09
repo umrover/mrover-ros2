@@ -61,17 +61,17 @@ export default defineComponent({
 
   created: function() {
     this.interval = window.setInterval(() => {
-      const gamepads = navigator.getGamepads()
-      const gamepad = gamepads.find(gamepad => gamepad && gamepad.id.includes('Microsoft'))
-      if (!gamepad) return
+      // const gamepads = navigator.getGamepads()
+      // const gamepad = gamepads.find(gamepad => gamepad && gamepad.id.includes('Microsoft'))
+      // if (!gamepad) return
 
-      this.sendMessage(
-        'sa',
-        {
-        type: 'sa_controller',
-        axes: gamepad.axes,
-        buttons: gamepad.buttons.map(button => button.value)
-      })
+      // this.sendMessage(
+      //   'sa',god dam
+      //   {
+      //   type: 'sa_controller',
+      //   axes: gamepad.axes,
+      //   buttons: gamepad.buttons.map(button => button.value)
+      // })
 
       this.sendMessage(
         'sa',

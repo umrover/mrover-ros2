@@ -1,6 +1,11 @@
 const webSockets = {} // Store WebSocket instances dynamically
 
 function setupWebsocket(id, commit) {
+  if (!id) {
+    console.error('Invalid WebSocket ID passed:', id)
+    return
+  }
+
   if (webSockets[id]) {
     console.warn(`WebSocket with ID ${id} already exists.`)
     return
@@ -18,7 +23,10 @@ function setupWebsocket(id, commit) {
   }
 
   socket.onclose = e => {
-    console.log(`WebSocket ${id} closed. Reconnecting in 2 seconds...`, e.reason)
+    console.log(
+      `WebSocket ${id} closed. Reconnecting in 2 seconds...`,
+      e.reason,
+    )
     delete webSockets[id] // Remove reference before reconnecting
     setTimeout(() => {
       setupWebsocket(id, commit)
@@ -34,22 +42,31 @@ function setupWebsocket(id, commit) {
 }
 
 const state = {
-  messages: {} // Store messages per WebSocket ID
+  messages: {}, // Store messages per WebSocket ID
 }
 
 const mutations = {
   setMessage(state, { id, message }) {
     state.messages[id] = message
-  }
+  },
 }
 
 const actions = {
   sendMessage({ commit }, { id, message }) {
-    console.log(webSockets, id)
+    console.log(webSockets, id, message)
     const socket = webSockets[id]
-    console.log("sending message to ", socket)
-    if (!socket || socket.readyState !== WebSocket.OPEN) return
+    console.log(socket)
+    console.log('sending message to ', id)
+    if(!socket){
+      console.log('websocket selection failed')
+      return
+    }
+    if (!socket.readyState) { //  !== WebSocket.OPEN
+      console.log('websocket ' + id + ' not ready')
+      return
+    }
     socket.send(JSON.stringify(message))
+    console.log('sent   ' + id)
   },
 
   setupWebSocket({ commit }, id) {
@@ -61,12 +78,12 @@ const actions = {
       webSockets[id].close()
       delete webSockets[id] // Cleanup
     }
-  }
+  },
 }
 
 export default {
   namespaced: true,
   state,
   mutations,
-  actions
+  actions,
 }

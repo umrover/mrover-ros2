@@ -74,6 +74,7 @@ class GeneralConsumer(JsonWebsocketConsumer):
         self.joystick_twist_pub = node.create_publisher(Twist, "/joystick_cmd_vel", 1)
         self.controller_twist_pub = node.create_publisher(Twist, "/controller_cmd_vel", 1)
         self.mast_gimbal_pub = node.create_publisher(Throttle, "/mast_gimbal_throttle_cmd", 1)
+        self.sa_thr_pub = node.create_publisher(Throttle, "sa_throttle_cmd", 1) # new
 
         # Subscribers
         self.forward_ros_topic("/drive_left_controller_data", ControllerState, "drive_left_state")

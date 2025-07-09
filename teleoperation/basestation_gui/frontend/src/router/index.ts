@@ -6,6 +6,7 @@ import ISHTask from '../components/ISHTask.vue'
 import SATask from '../components/SATask.vue'
 import Cameras from '../components/Cameras.vue'
 import Rover3D from '../components/Rover3D.vue'
+import DevView from '../views/DevView.vue'
 
 const routes = [
   {
@@ -53,6 +54,11 @@ const routes = [
     path: '/Control',
     name: 'Control',
     component: Rover3D
+  },
+  {
+    path: '/dev',
+    name: 'DevView',
+    component: DevView
   }
 ]
 const router = createRouter({

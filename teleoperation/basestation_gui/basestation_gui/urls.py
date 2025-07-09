@@ -20,9 +20,10 @@ from django.urls import path, include
 from django.http import HttpResponse
 from django.shortcuts import render
 
-from backend.teleop import GeneralConsumer
-from backend.teleop_auton import AutonConsumer
-from backend.teleop_ish import ISHConsumer
+from backend.consumers.teleop import GeneralConsumer
+from backend.consumers.teleop_auton import AutonConsumer
+from backend.consumers.teleop_ish import ISHConsumer
+from backend.consumers.teleop_sa import SAConsumer
 
 urlpatterns = [
     path("admin/", admin.site.urls),
@@ -31,5 +32,6 @@ urlpatterns = [
 websocket_urlpatterns = [
     path("ws/general", GeneralConsumer.as_asgi()),
     path("ws/auton", AutonConsumer.as_asgi()),
-    path("ws/ish", ISHConsumer.as_asgi())
+    path("ws/ish", ISHConsumer.as_asgi()),
+    path("ws/sa", SAConsumer.as_asgi())
 ]
