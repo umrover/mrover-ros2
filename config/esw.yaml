@@ -13,56 +13,72 @@ differential_drive_controller:
       max_linear_speed: 10.0
       max_angular_speed: 10.0
 
-can_bridge_1:
+can_bridge_0:
   ros__parameters:
-    interface: can2
+    interface: can0
     is_extended_frame: true
     devices:
       jetson:
         id: 0x10
-can_bridge_2:
+      pdlb:
+        id: 0x11
+      mast_gimbal_pitch:
+        id: 0x12
+      mast_gimbal_yaw:
+        id: 0x13
+can_bridge_1:
   ros__parameters:
     interface: can1
     is_extended_frame: true
     devices:
       jetson:
         id: 0x10
-      joint_a:
+      front_left:
         id: 0x20
-      joint_b:
+      middle_left:
         id: 0x21
-      joint_c:
+      back_left:
         id: 0x22
-      joint_de_0:
+      front_right:
         id: 0x23
-      joint_de_1:
+      middle_right:
         id: 0x24
-      finger:
+      back_right:
         id: 0x25
-      gripper:
-        id: 0x26
-can_bridge_3:
+can_bridge_2:
   ros__parameters:
     interface: can2
     is_extended_frame: true
     devices:
       jetson:
         id: 0x10
-      front_left:
-        id: 0x20
-      front_right:
-        id: 0x23
-      middle_left:
-        id: 0x21
-      middle_right:
-        id: 0x24
-      back_left:
-        id: 0x22
-      back_right:
-        id: 0x25
-can_bridge_4:
+      joint_a:
+        id: 0x30
+      joint_b:
+        id: 0x31
+      joint_c:
+        id: 0x32
+      joint_de_0:
+        id: 0x33
+      joint_de_1:
+        id: 0x34
+      gripper:
+        id: 0x35
+      cam:
+        id: 0x36
+      linear_actuator:
+        id: 0x40
+      auger:
+        id: 0x41
+      pump_a:
+        id: 0x42
+      pump_b:
+        id: 0x43
+      sensor_actuator:
+        id: 0x44
+can_bridge_3:
   ros__parameters:
-    interface: can3
+    interface: can0
     is_extended_frame: true
     devices:
       jetson:

@@ -2,7 +2,7 @@
   <div class='wrap box'>
     <h3>Soil Data</h3>
     <div class='table-responsive'>
-      <table class='table'>
+      <table class='table' id="capture">
         <thead>
         <tr class='table-primary'>
           <th scope='col'>Temperature</th>
@@ -16,10 +16,11 @@
         </tr>
         </tbody>
       </table>
-      <div>
+      <!-- <div>
         <p v-if="predictedTemp"> Predicted Temperature: {{ predictedTemp }}</p>
         <Checkbox :name="'Read Temp Data'" @toggle="readData = $event"></Checkbox>
-      </div>
+      </div> -->
+      <button class="btn btn-secondary" @click="download()">Save Data to CSV</button>
     </div>
   </div>
 </template>
@@ -28,6 +29,7 @@
 
 import { mapState, mapActions } from 'vuex'
 import Checkbox from './Checkbox.vue'
+import html2canvas from 'html2canvas';
 
 export default {
   components: {
@@ -96,6 +98,26 @@ export default {
     predictTemp: function(timestamp: any) {
       const val = this.exponents[0] * timestamp + this.exponents[1]
       return Math.exp(val)
+    },
+
+
+    download() {
+        // downloads screenshot of table
+      const table = document.querySelector("#capture") as HTMLElement;
+      html2canvas(table)
+      .then(canvas => {
+        canvas.style.display = 'none'
+        document.body.appendChild(canvas)
+        return canvas
+      })
+      .then(canvas => {
+        const image = canvas.toDataURL('image/png')
+        const a = document.createElement('a')
+        a.setAttribute('download', 'sensor_data_site_' + String.fromCharCode(this.site+65) + '_' + new Date(Date.now()).toString() + '.png')
+        a.setAttribute('href', image)
+        a.click()
+        canvas.remove()
+      })
     }
   }
 }

@@ -2,6 +2,13 @@
   <div class='wrap'>
     <h2>SA Arm Controls</h2>
     <div class='controls-flex'>
+      <h4>Mode</h4>
+        <input v-model='mode' type="radio" class="btn-check" name="options-outlined" id="disabled" value='disabled' autocomplete="off" checked>
+        <label class="btn btn-outline-danger" for="disabled">Disabled</label>
+        <input v-model='mode' type="radio" class="btn-check" name="options-outlined" id="throttle" value='throttle' autocomplete="off">
+        <label class="btn btn-outline-success" for="throttle">Throttle</label>
+    </div>
+    <!-- <div class='controls-flex'>
       <h4>Arm Mode</h4>
       <div class='form-check'>
         <input
@@ -17,7 +24,7 @@
         <input v-model='mode' class='form-check-input' type='radio' id='thr' value='throttle' />
         <label class='form-check-label' for='thr'>Throttle</label>
       </div>
-    </div>
+    </div> -->
     <div class="controls-flex">
       <button class="btn btn-primary" @click="zero('sa_z', 0)">Zero Ground</button>
       <p>Corer Position: {{ corer_position }} inches</p>
@@ -41,21 +48,29 @@
 <script lang='ts'>
 import { defineComponent } from 'vue'
 import { mapActions, mapState } from 'vuex'
-import MotorAdjust from './MotorAdjust.vue'
+// import MotorAdjust from './MotorAdjust.vue'
 
 const UPDATE_HZ = 20
 
 export default defineComponent({
   components: {
-    MotorAdjust
+    // MotorAdjust
   },
+
+  props: {
+    currentSite: {
+      type: Number, 
+      required: true
+    }
+  },
+
   data() {
     return {
       mode: 'disabled',
       corer_position: 0,
       plunger_position: 0,
       sensor_height: 5.36,
-      plunger_height: 5.5
+      plunger_height: 5.5,
     }
   },
 

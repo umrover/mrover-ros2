@@ -3,48 +3,95 @@
 #include <array>
 
 namespace mrover {
-    BrushedController::BrushedController(rclcpp::Node::SharedPtr node, std::string masterName, std::string controllerName, Config config)
+    auto BrushedController::updateConfigFromParameters() -> void {
+        bool isInverted;
+        double gearRatio, driverVoltage, motorMaxVoltage;
+        bool quadPresent, absPresent;
+        double quadRatio, absRatio, absOffset;
+        double minPosition, maxPosition;
+        double minVelocity, maxVelocity;
+        double calibrationThrottle;
+        std::array<bool, MAX_NUM_LIMIT_SWITCHES> limitSwitchesPresent{};
+        std::array<bool, MAX_NUM_LIMIT_SWITCHES> limitSwitchesEnabled{};
+        std::array<bool, MAX_NUM_LIMIT_SWITCHES> limitSwitchesLimitsForward{};
+        std::array<bool, MAX_NUM_LIMIT_SWITCHES> limitSwitchesActiveHigh{};
+        std::array<bool, MAX_NUM_LIMIT_SWITCHES> limitSwitchesUsedForReadjustment{};
+        std::array<double, MAX_NUM_LIMIT_SWITCHES> limitSwitchesReadjustPosition{};
+
+        std::vector<ParameterWrapper> parameters = {
+                {std::format("{}.is_inverted", mControllerName), isInverted, false},
+                {std::format("{}.gear_ratio", mControllerName), gearRatio, 1.0},
+                {std::format("{}.driver_voltage", mControllerName), driverVoltage, 0.0},
+                {std::format("{}.motor_max_voltage", mControllerName), motorMaxVoltage, 12.0},
+                {std::format("{}.quad_present", mControllerName), quadPresent, false},
+                {std::format("{}.quad_ratio", mControllerName), quadRatio, 1.0},
+                {std::format("{}.abs_present", mControllerName), absPresent, false},
+                {std::format("{}.abs_ratio", mControllerName), absRatio, 1.0},
+                {std::format("{}.abs_offset", mControllerName), absOffset, 0.0},
+                {std::format("{}.min_position", mControllerName), minPosition, -std::numeric_limits<double>::infinity()},
+                {std::format("{}.max_position", mControllerName), maxPosition, std::numeric_limits<double>::infinity()},
+                {std::format("{}.min_velocity", mControllerName), minVelocity, -std::numeric_limits<double>::infinity()},
+                {std::format("{}.max_velocity", mControllerName), maxVelocity, std::numeric_limits<double>::infinity()},
+                {std::format("{}.calibration_throttle", mControllerName), calibrationThrottle, 0.0},
+                {std::format("{}.position_p", mControllerName), mPositionGains.p, 0.0},
+                {std::format("{}.position_i", mControllerName), mPositionGains.i, 0.0},
+                {std::format("{}.position_d", mControllerName), mPositionGains.d, 0.0},
+                {std::format("{}.position_ff", mControllerName), mPositionGains.ff, 0.0},
+                {std::format("{}.velocity_p", mControllerName), mVelocityGains.p, 0.0},
+                {std::format("{}.velocity_i", mControllerName), mVelocityGains.i, 0.0},
+                {std::format("{}.velocity_d", mControllerName), mVelocityGains.d, 0.0},
+                {std::format("{}.velocity_ff", mControllerName), mVelocityGains.ff, 0.0},
+        };
+        for (std::size_t i = 0; i < MAX_NUM_LIMIT_SWITCHES; ++i) {
+            parameters.emplace_back(std::format("{}.limit_switch_{}_present", mControllerName, i), limitSwitchesPresent[i], false);
+            parameters.emplace_back(std::format("{}.limit_switch_{}_enabled", mControllerName, i), limitSwitchesEnabled[i], true);
+            parameters.emplace_back(std::format("{}.limit_switch_{}_limits_forward", mControllerName, i), limitSwitchesLimitsForward[i], false);
+            parameters.emplace_back(std::format("{}.limit_switch_{}_active_high", mControllerName, i), limitSwitchesActiveHigh[i], true);
+            parameters.emplace_back(std::format("{}.limit_switch_{}_used_for_readjustment", mControllerName, i), limitSwitchesUsedForReadjustment[i], false);
+            parameters.emplace_back(std::format("{}.limit_switch_{}_readjust_position", mControllerName, i), limitSwitchesReadjustPosition[i], 0.0);
+        }
+
+        ParameterWrapper::declareParameters(mNode.get(), parameters);
+
+        mConfigCommand.is_inverted = isInverted;
+        mConfigCommand.gear_ratio = gearRatio;
+
+        assert(driverVoltage > 0);
+        assert(motorMaxVoltage > 0);
+        assert(motorMaxVoltage >= driverVoltage);
+        mConfigCommand.max_pwm = driverVoltage / motorMaxVoltage;
+
+        mConfigCommand.enc_info.quad_present = quadPresent;
+        mConfigCommand.enc_info.quad_ratio = Ratio{quadRatio};
+
+        mConfigCommand.enc_info.abs_present = absPresent;
+        mConfigCommand.enc_info.abs_ratio = Ratio{absRatio};
+        mConfigCommand.enc_info.abs_offset = OutputPosition{absOffset};
+
+        mConfigCommand.min_position = OutputPosition{minPosition};
+        mConfigCommand.max_position = OutputPosition{maxPosition};
+
+        mConfigCommand.min_velocity = OutputVelocity{minVelocity};
+        mConfigCommand.max_velocity = OutputVelocity{maxVelocity};
+
+        mCalibrationThrottle = calibrationThrottle;
+
+        for (std::size_t i = 0; i < MAX_NUM_LIMIT_SWITCHES; ++i) {
+            SET_BIT_AT_INDEX(mConfigCommand.limit_switch_info.present, i, limitSwitchesPresent[i]);
+            SET_BIT_AT_INDEX(mConfigCommand.limit_switch_info.enabled, i, limitSwitchesEnabled[i]);
+            SET_BIT_AT_INDEX(mConfigCommand.limit_switch_info.limits_forward, i, limitSwitchesLimitsForward[i]);
+            SET_BIT_AT_INDEX(mConfigCommand.limit_switch_info.active_high, i, limitSwitchesActiveHigh[i]);
+            SET_BIT_AT_INDEX(mConfigCommand.limit_switch_info.use_for_readjustment, i, limitSwitchesUsedForReadjustment[i]);
+            mConfigCommand.limit_switch_info.limit_readj_pos.at(i) = OutputPosition{limitSwitchesReadjustPosition[i]};
+            mHasLimit |= GET_BIT_AT_INDEX(mConfigCommand.limit_switch_info.present, i);
+        }
+    }
+
+    BrushedController::BrushedController(rclcpp::Node::SharedPtr node, std::string masterName, std::string controllerName)
         : ControllerBase{std::move(node), std::move(masterName), std::move(controllerName)} {
 
-        for (std::size_t i = 0; i < Config::MAX_NUM_LIMIT_SWITCHES; ++i) {
-            SET_BIT_AT_INDEX(mConfigCommand.limit_switch_info.present, i, config.limitSwitchPresent[i]);
-            SET_BIT_AT_INDEX(mConfigCommand.limit_switch_info.enabled, i, config.limitSwitchEnabled[i]);
-            SET_BIT_AT_INDEX(mConfigCommand.limit_switch_info.limits_forward, i, config.limitSwitchLimitsFwd[i]);
-            SET_BIT_AT_INDEX(mConfigCommand.limit_switch_info.active_high, i, config.limitSwitchActiveHigh[i]); // might switch default value to false depending on wiring
-            SET_BIT_AT_INDEX(mConfigCommand.limit_switch_info.use_for_readjustment, i, config.limitSwitchUsedForReadjustment[i]);
-            mConfigCommand.limit_switch_info.limit_readj_pos.at(i) = config.limitSwitchReadjustPosition[i];
-        }
-        mConfigCommand.limit_switch_info.limit_max_forward_position = config.limitMaxForwardPosition;
-        mConfigCommand.limit_switch_info.limit_max_backward_position = config.limitMaxBackwardPosition;
+        updateConfigFromParameters();
 
-        mConfigCommand.is_inverted = config.isInverted;
-        mConfigCommand.gear_ratio = config.gearRatio;
-
-        // TODO (ali): put this jawn back and figure out why it fails
-        // assert(config.driverVoltage > 0);
-        // assert(0 < config.motorMaxVoltage && config.motorMaxVoltage >= config.driverVoltage);
-        mConfigCommand.max_pwm = config.motorMaxVoltage / config.driverVoltage;
-
-        mConfigCommand.enc_info.quad_present = config.quadPresent;
-        mConfigCommand.enc_info.quad_ratio = config.quadRatio;
-
-        mConfigCommand.enc_info.abs_present = config.absPresent;
-        mConfigCommand.enc_info.abs_ratio = config.absRatio;
-        mConfigCommand.enc_info.abs_offset = config.absOffset;
-
-        mConfigCommand.min_position = config.minPosition;
-        mConfigCommand.max_position = config.maxPosition;
-
-        mConfigCommand.min_velocity = config.minVelocity;
-        mConfigCommand.max_velocity = config.maxVelocity;
-
-        mPositionGains = config.positionGains;
-        mVelocityGains = config.velocityGains;
-
-        for (std::size_t i = 0; i < Config::MAX_NUM_LIMIT_SWITCHES; ++i) {
-            mHasLimit |= config.limitSwitchEnabled[i];
-        }
-        mCalibrationThrottle = config.calibrationThrottle;
         mErrorState = "Unknown";
         mState = "Unknown";
     }

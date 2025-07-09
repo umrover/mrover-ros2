@@ -7,5 +7,12 @@
     {
       "path": "./tsconfig.app.json"
     }
-  ]
+  ],
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "vuex": ["src/vuex.d.ts"],
+    },
+    "skipLibCheck": true
+  }
 }

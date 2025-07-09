@@ -1,4 +1,6 @@
-const convertDMS = function(coordinate, format: string) {
+import type{ DMS } from "./types/coordinates"
+
+const convertDMS = function(coordinate: DMS, format: string): DMS {
   const DEG_DECIMALS = 8
   const MIN_DECIMALS = 6
   const SEC_DECIMALS = 4
@@ -33,7 +35,7 @@ const convertDMS = function(coordinate, format: string) {
 const quaternionToMapAngle = function(quaternion: number[]): number {
   const [qx, qy, qz, qw] = quaternion
   const yaw = Math.atan2(2 * (qw * qz + qx * qy), 1 - 2 * (qy * qy + qz * qz))
-  return (yaw + Math.PI / 2) * (180 / Math.PI)
+  return (yaw) * (180 / Math.PI)
 }
 
 export { convertDMS, quaternionToMapAngle }

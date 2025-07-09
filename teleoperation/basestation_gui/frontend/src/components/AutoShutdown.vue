@@ -28,7 +28,7 @@ export default {
 
     data() {
         return {
-            autoShutdownEnabled: false,
+            autoShutdownEnabled: [false, false],
         };
     },
 

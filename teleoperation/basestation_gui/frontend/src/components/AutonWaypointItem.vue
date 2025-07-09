@@ -1,29 +1,43 @@
 <template>
-  <div class="shadow my-1 p-3 rounded waypoint-item">
-    <div class="identification">
-      <p>{{ waypoint.name }} | ID: {{ waypoint.id }}</p>
+  <div class="waypoints p-2 mb-2">
+    <div class="waypoint-header mb-1">
+      <h5 class="mb-0">{{ waypoint.name }}</h5>
+      <small class="text-muted">ID: {{ waypoint.id }}</small>
     </div>
-    <div class="row">
-      <div class="col text-center">
-        <button
-          class="btn btn-danger"
-          @click="$emit('delete', { waypoint })"
-        >
-          Delete
-        </button>
-      </div>
+    <div class="waypoint-button-row px-1">
+      <button
+        v-if="!enable_costmap"
+        class="btn btn-danger"
+        @click="toggleCostmap"
+      >
+        Costmap
+      </button>
+      <button
+        v-if="enable_costmap"
+        class="btn btn-success"
+        @click="toggleCostmap"
+      >
+        Costmap
+      </button>
+      <button
+        class="btn btn-danger"
+        @click="deleteWaypoint"
+      >
+        Delete
+      </button>
     </div>
-    <div class="location">
-      <p>{{ waypoint.lat }}º</p>
-      N <b>|</b>
-      <p>{{ waypoint.lon }}º</p>
-      W
+    <div class="coordinates">
+      <p class="coordinate m-0">{{ waypoint.lat.toFixed(7) }}ºN</p>
+      <span class="mx-2">|</span>
+      <p class="coordinate m-0">{{ waypoint.lon.toFixed(7) }}ºW</p>
     </div>
+
   </div>
 </template>
 
 <script lang="ts">
-import { mapGetters } from 'vuex'
+import Vuex from 'vuex';
+const { mapGetters } = Vuex;
 import { convertDMS } from '../utils'
 
 export default {
@@ -33,6 +47,33 @@ export default {
       required: true
     },
   },
+
+  data() {
+    return {
+      enable_costmap: true
+    }
+  },
+
+  methods: {
+    toggleCostmap() {
+      this.enable_costmap = !this.enable_costmap
+      this.$emit('toggleCostmap', { waypoint: this.waypoint, enable_costmap: this.enable_costmap })
+    },
+
+    deleteWaypoint() {
+      this.$emit('delete', { waypoint: this.waypoint })
+    }
+  },
+
+  watch: {
+    'waypoint.enable_costmap': {
+      immediate: true,
+      handler(newVal) {
+        this.enable_costmap = newVal
+      }
+    }
+  },
+
 
   computed: {
     ...mapGetters('map', {
@@ -62,12 +103,36 @@ export default {
 </script>
 
 <style scoped>
-.location p {
-  display: inline-block;
-  margin: 2px;
+.waypoints {
+  background-color: #ffffff;
+  border-radius: 6px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 }
 
-button {
-  margin: 0px 2px 0px 2px;
+.waypoint-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.waypoint-button-row {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+}
+
+.coordinates {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.coordinate {
+  text-align: center;
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 </style>

@@ -2,7 +2,6 @@
   <div class='wrap'>
     <h2>Arm Controls</h2>
     <div class='controls-flex'>
-      <h4>Mode</h4>
         <input v-model='mode' type="radio" class="btn-check" name="options-outlined" id="disabled" value='disabled' autocomplete="off" checked>
         <label class="btn btn-outline-danger" for="disabled">Disabled</label>
         <input v-model='mode' type="radio" class="btn-check" name="options-outlined" id="throttle" value='throttle' autocomplete="off">
@@ -18,13 +17,11 @@
 <script lang='ts'>
 import { defineComponent } from 'vue'
 import { mapActions, mapState } from 'vuex'
-import ToggleButton from './ToggleButton.vue'
 
-const UPDATE_HZ = 20
+const UPDATE_HZ = 30
 
 export default defineComponent({
   components: {
-    ToggleButton
   },
   data() {
     return {

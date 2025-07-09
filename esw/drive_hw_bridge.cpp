@@ -22,19 +22,13 @@ namespace mrover {
 
     using namespace std::chrono_literals;
 
-    constexpr static BrushlessController<Revolutions>::Config WHEEL_CONFIG = {
-            .minVelocity = RevolutionsPerSecond{-10.0},
-            .maxVelocity = RevolutionsPerSecond{10.0},
-            .maxTorque = 25.0,
-    };
-
     class DriveHardwareBridge final : public rclcpp::Node {
     public:
         DriveHardwareBridge() : Node{"drive_hw_bridge"} {
             // all initialization is done in the init() function to allow for the usage of shared_from_this()
         }
 
-        auto init() {
+        auto init() -> void {
             // Create publishers and subscribers for left and right motor groups
             for (std::string const& group: mMotorGroups) {
                 // TODO (ali): does this actually emplace lol
@@ -49,16 +43,16 @@ namespace mrover {
                 }));
                 for (std::string const& motor: mMotors) {
                     std::string name = std::format("{}_{}", motor, group);
-                    mControllers.try_emplace(name, shared_from_this(), "jetson", name, WHEEL_CONFIG);
+                    mControllers.try_emplace(name, shared_from_this(), "jetson", name);
                     mJointState.name.push_back(name);
                 }
-                mJointState.position.resize(mControllers.size());
-                mJointState.velocity.resize(mControllers.size());
-                mJointState.effort.resize(mControllers.size());
 
                 mJointStatePubs.emplace_back(create_publisher<sensor_msgs::msg::JointState>(std::format("drive_{}_joint_data", group), 1));
                 mControllerStatePubs.emplace_back(create_publisher<msg::ControllerState>(std::format("drive_{}_controller_state", group), 1));
             }
+            mJointState.position.resize(mControllers.size());
+            mJointState.velocity.resize(mControllers.size());
+            mJointState.effort.resize(mControllers.size());
 
             mControllerState.state.resize(mControllers.size());
             mControllerState.error.resize(mControllers.size());

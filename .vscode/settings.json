@@ -13,7 +13,11 @@
         "args": [
             "--ros-args",
             "--params-file",
-            "~/ros2_ws/src/mrover/config/esw.yaml"
+            "${workspaceFolder}/config/esw.yaml",
+            "--params-file",
+            "${workspaceFolder}/config/arm.yaml",
+            "--params-file",
+            "${workspaceFolder}/config/drive.yaml"
         ]
     },
     //// Microsoft C++

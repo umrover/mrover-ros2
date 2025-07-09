@@ -4,27 +4,18 @@
       <p>Current odometry reading:</p>
       <div>
         <p>{{ formatted_odom.lat.d }}º</p>
-        <p v-if="min_enabled">{{ formatted_odom.lat.m }}'</p>
-        <p v-if="sec_enabled">{{ formatted_odom.lat.s }}"</p>
-        N
+        <p v-if="min_enabled">{{ formatted_odom.lat.m }}' N</p>
+        <p v-if="sec_enabled">{{ formatted_odom.lat.s }}" N</p>
       </div>
       <div>
         <p>{{ formatted_odom.lon.d }}º</p>
-        <p v-if="min_enabled">{{ formatted_odom.lon.m }}'</p>
-        <p v-if="sec_enabled">{{ formatted_odom.lon.s }}"</p>
-        E
-        <br />
-        <p>Bearing: {{ rover_bearing_deg.toFixed(2) }}º</p>
+        <p v-if="min_enabled">{{ formatted_odom.lon.m }}' E</p>
+        <p v-if="sec_enabled">{{ formatted_odom.lon.s }}" E</p>
       </div>
-      <div>
-        <p>Altitude: {{ rover_altitude.toFixed(2) }}m</p>
-      </div>
-      <div>
-        <p>Odom Status: {{ get_odom_status }}</p>
-      </div>
-      <div>
-        <p>Drone Status: {{ get_drone_status }}</p>
-      </div>
+      <p>Bearing: {{ rover_bearing_deg.toFixed(2) }}º</p>
+      <p>Altitude: {{ rover_altitude.toFixed(2) }}m</p>
+      <p>Odom Status: {{ get_odom_status }}</p>
+      <p>Drone Status: {{ get_drone_status }}</p>
     </div>
     <div class="calibration imu">
       <IMUCalibration></IMUCalibration>
@@ -32,31 +23,30 @@
     <div class="flightindicator">
       <FlightAttitudeIndicator></FlightAttitudeIndicator>
     </div>
+    <div class="basestation-odom">
+      <p>Basestation Coordinates:</p>
+      <div>
+        <p>{{ formatted_basestation_odom.lat.d }}º</p>
+        <p v-if="min_enabled">{{ formatted_basestation_odom.lat.m }}' N</p>
+        <p v-if="sec_enabled">{{ formatted_basestation_odom.lat.s }}" N</p>
+      </div>
+      <div>
+        <p>{{ formatted_basestation_odom.lon.d }}º</p>
+        <p v-if="min_enabled">{{ formatted_basestation_odom.lon.m }}' E</p>
+        <p v-if="sec_enabled">{{ formatted_basestation_odom.lon.s }}" E</p>
+      </div>
+    </div>
   </div>
 </template>
 
 <script lang="ts">
 import { convertDMS, quaternionToMapAngle } from '../utils.js'
-import { mapGetters, mapState } from 'vuex'
+import Vuex from 'vuex';
+const { mapGetters, mapState } = Vuex;
 import IMUCalibration from './IMUCalibration.vue'
 import FlightAttitudeIndicator from './FlightAttitudeIndicator.vue'
+import type { Odom, FormattedOdom } from "../types/coordinates"
 
-interface DMS {
-  d: number; // Degrees
-  m: number; // Minutes
-  s: number; // Seconds
-}
-
-interface FormattedOdom {
-  lat: DMS;
-  lon: DMS;
-}
-
-interface Odom {
-  latitude_deg: number;
-  longitude_deg: number;
-  bearing_deg: number;
-}
 
 export default {
   components: {
@@ -64,7 +54,7 @@ export default {
     IMUCalibration
   },
 
-  emits: ['odom', 'drone_odom'],
+  emits: ['odom', 'drone_odom', 'basestation_odom'],
 
   data() {
     return {
@@ -73,9 +63,12 @@ export default {
       rover_bearing_deg: 0,
       rover_altitude: 0, 
       rover_status: false,
-      drone_latitude_deg:38.4071654,
+      drone_latitude_deg: 38.4071654,
       drone_longitude_deg: -110.7923927,
-      drone_status: false
+      drone_status: false,
+      basestation_latitude_deg: 38.4071654,
+      basestation_longitude_deg: -110.7923927,
+      basestation_status: false
     }
   },
   computed: {
@@ -84,10 +77,16 @@ export default {
     ...mapGetters('map', {
       odom_format: 'odomFormat'
     }),
-    formatted_odom: function (): FormattedOdom {
+    formatted_odom(): FormattedOdom {
       return {
         lat: convertDMS({ d: this.rover_latitude_deg, m: 0, s: 0 }, this.odom_format as string),
         lon: convertDMS({ d: this.rover_longitude_deg, m: 0, s: 0 }, this.odom_format as string)
+      }
+    },
+    formatted_basestation_odom(): FormattedOdom {
+      return {
+        lat: convertDMS({ d: this.basestation_latitude_deg, m: 0, s: 0 }, this.odom_format as string),
+        lon: convertDMS({ d: this.basestation_longitude_deg, m: 0, s: 0 }, this.odom_format as string)
       }
     },
     min_enabled: function () {
@@ -142,6 +141,16 @@ export default {
             longitude_deg: this.drone_longitude_deg,
           })
         }
+        else if (msg.type == 'basestation_position') {
+          this.basestation_latitude_deg = msg.latitude
+          this.basestation_longitude_deg = msg.longitude
+          this.basestation_status = msg.status
+
+          this.$emit('basestation_odom', {
+            latitude_deg: this.basestation_latitude_deg,
+            longitude_deg: this.basestation_longitude_deg,
+          } as Odom)
+        }
         else if (msg.type == 'orientation') {
           this.rover_bearing_deg = quaternionToMapAngle(msg.orientation)
 
@@ -160,22 +169,15 @@ export default {
 
 <style scoped>
 .odom-wrap {
-  padding-left: 10px;
-  padding-right: 0px;
-  margin-top: 0.5rem;
   display: grid;
   grid-gap: 10px;
   grid-template-columns: auto auto;
   grid-template-rows: auto auto;
-  gap: 10px;
   grid-template-areas:
-    'odom flightIndicator'
-    'imu flightIndicator';
+    'odom basestation-odom flightIndicator'
+    'imu imu flightIndicator';
   height: auto;
   width: auto;
-}
-.odom-wrap p {
-  display: inline;
 }
 
 .odom {
@@ -186,7 +188,16 @@ export default {
   grid-area: flightIndicator;
 }
 
+.basestation-odom {
+  grid-area: basestation-odom;
+}
+
 .imu {
   grid-area: imu;
+}
+
+p {
+  margin: 0px;
+
 }
 </style>

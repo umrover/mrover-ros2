@@ -3,6 +3,7 @@ import traceback
 from typing import Any, Type
 
 from channels.generic.websocket import JsonWebsocketConsumer
+from numpy import float32
 from rosidl_runtime_py.convert import message_to_ordereddict
 
 import rclpy
@@ -15,15 +16,21 @@ from lie import SE3
 from backend.drive_controls import send_joystick_twist, send_controller_twist
 from backend.input import DeviceInputs
 from backend.ra_controls import send_ra_controls
+from backend.sa_controls import send_sa_controls
 from backend.mast_controls import send_mast_controls
 from backend.waypoints import (
     get_auton_waypoint_list,
     get_basic_waypoint_list,
+    get_current_auton_course,
+    get_current_basic_course,
     save_auton_waypoint_list,
     save_basic_waypoint_list,
+    save_current_auton_course,
+    save_current_basic_course,
+    delete_auton_waypoint_from_course
 )
 from geometry_msgs.msg import Twist, Vector3
-from sensor_msgs.msg import NavSatFix, Temperature, RelativeHumidity
+from sensor_msgs.msg import NavSatFix, Temperature, RelativeHumidity, JointState
 from mrover.msg import (
     Throttle,
     IK,
@@ -38,8 +45,13 @@ from mrover.msg import (
     Methane,
     UV,
 )
-from mrover.srv import EnableAuton
+from mrover.srv import (
+    EnableAuton, 
+    EnableBool,
+    ServoSetPos 
+)
 from std_srvs.srv import SetBool
+from std_msgs.msg import Float32
 
 rclpy.init()
 node = rclpy.create_node("teleoperation")
@@ -56,8 +68,9 @@ ros_thread.start()
 
 LOCALIZATION_INFO_HZ = 10
 
-cur_mode = "disabled"
-heater_names = ["a0", "a1", "b0", "b1"]
+cur_ra_mode: str = "disabled"
+cur_sa_mode: str = "disabled"
+heater_names: list[str] = ["a0", "a1", "b0", "b1"]
 
 
 class GeneralConsumer(JsonWebsocketConsumer):
@@ -70,18 +83,40 @@ class GeneralConsumer(JsonWebsocketConsumer):
         # Publishers
         self.thr_pub = node.create_publisher(Throttle, "arm_throttle_cmd", 1)
         self.ee_pos_pub = node.create_publisher(IK, "ee_pos_cmd", 1)
-        self.ee_vel_pub = node.create_publisher(Vector3, "ee_vel_cmd", 1)
+        self.ee_vel_pub = node.create_publisher(Twist, "ee_vel_cmd", 1)
         self.joystick_twist_pub = node.create_publisher(Twist, "/joystick_cmd_vel", 1)
         self.controller_twist_pub = node.create_publisher(Twist, "/controller_cmd_vel", 1)
         self.mast_gimbal_pub = node.create_publisher(Throttle, "/mast_gimbal_throttle_cmd", 1)
-        self.sa_thr_pub = node.create_publisher(Throttle, "sa_throttle_cmd", 1) # new
+        self.sa_thr_pub = node.create_publisher(Throttle, "sa_throttle_cmd", 1)
 
-        # Subscribers
+        # Forwards ROS topic to GUI
         self.forward_ros_topic("/drive_left_controller_data", ControllerState, "drive_left_state")
         self.forward_ros_topic("/drive_right_controller_data", ControllerState, "drive_right_state")
         self.forward_ros_topic("/gps/fix", NavSatFix, "gps_fix")
 
+        self.forward_ros_topic("/arm_controller_state", ControllerState, "arm_state")
+        self.forward_ros_topic("/arm_joint_data", JointState, "fk")
+        self.forward_ros_topic("/drive_controller_data", ControllerState, "drive_state")
+        self.forward_ros_topic("/sa_controller_state", ControllerState, "sa_state")
+        self.forward_ros_topic("/sa_gear_diff_position", Float32, "hexhub_site")
+        self.forward_ros_topic("basestation/position", NavSatFix, "basestation_position")
+        self.forward_ros_topic("/drone_odometry", NavSatFix, "drone_waypoint")
+
         # Services
+        self.enable_teleop_srv = node.create_client(SetBool, "/enable_teleop")
+        self.enable_auton_srv = node.create_client(EnableAuton, "/enable_auton")
+        self.gear_diff_set_pos_srv = node.create_client(ServoSetPos, "/sa_gear_diff_set_position")
+        self.auto_shutoff_service = node.create_client(EnableBool, "/science_change_heater_auto_shutoff_state")
+        self.sa_enable_switch_srv = node.create_client(EnableBool, "/sa_enable_limit_switch_sensor_actuator")
+
+        self.heater_services = []
+        self.white_leds_services = []
+        for name in heater_names:
+            self.heater_services.append(node.create_client(EnableBool, "/science_enable_heater_" + name))
+        for site in ["a", "b"]:
+            self.white_leds_services.append(node.create_client(EnableBool, "/science_enable_white_led_" + site))
+
+
 
         self.buffer = Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.buffer, node)
@@ -108,7 +143,14 @@ class GeneralConsumer(JsonWebsocketConsumer):
             # Parse it back into a dictionary, so we can send it as JSON
             self.send_message_as_json({"type": gui_msg_type, **message_to_ordereddict(ros_message)})
 
-        self.subscribers.append(node.create_subscription(topic_type, topic_name, callback, qos_profile=1))
+        self.subscribers.append(node.create_subscription(topic_type, topic_name, callback, 1))
+            # subscription = node.create_subscription(
+            #     topic_type,
+            #     topic_name,
+            #     callback,
+            #     qos_profile
+            # )
+
 
     def send_message_as_json(self, msg: dict):
         try:
@@ -126,7 +168,8 @@ class GeneralConsumer(JsonWebsocketConsumer):
                 }
             )
         except Exception as e:
-            node.get_logger().warn(f"Failed to get bearing: {e} Is localization running?")
+            pass
+            # node.get_logger().warn(f"Failed to get bearing: {e} Is localization running?")
 
     def receive(self, text_data=None, bytes_data=None, **kwargs) -> None:
         """
@@ -135,7 +178,8 @@ class GeneralConsumer(JsonWebsocketConsumer):
         @param text_data:   Stringfied JSON message
         """
 
-        global cur_mode
+        global cur_ra_mode
+        global cur_sa_mode
 
         if text_data is None:
             node.get_logger().warning("Expecting text but received binary on GUI websocket...")
@@ -160,7 +204,7 @@ class GeneralConsumer(JsonWebsocketConsumer):
                         case "ra_controller":
                             send_controller_twist(device_input, self.controller_twist_pub)
                             send_ra_controls(
-                                cur_mode,
+                                cur_ra_mode,
                                 device_input,
                                 node,
                                 self.thr_pub,
@@ -170,8 +214,31 @@ class GeneralConsumer(JsonWebsocketConsumer):
                             )
                         case "mast_keyboard":
                             send_mast_controls(device_input, self.mast_gimbal_pub)
+                            
                 case {
                     "type": "ra_mode",
+                    "mode": ra_mode,
+                }:
+                    cur_ra_mode = ra_mode
+
+                case {
+                    "type": "sa_controller",
+                    "axes": axes,
+                    "buttons": buttons,
+                    "site": site
+                }:
+                    device_input = DeviceInputs(axes, buttons)
+                    if(site == 0):
+                        # node.get_logger().info("here", site)
+                        send_sa_controls(cur_sa_mode, 0, device_input, self.sa_thr_pub)
+                    elif(site == 1):
+                        # node.get_logger().info("here1", site)
+                        send_sa_controls(cur_sa_mode, 1, device_input, self.sa_thr_pub)
+                    else:
+                        node.get_logger().warning(f"Unhandled Site: {site}")
+
+                case {
+                    "type": "sa_mode",
                     "mode": mode,
                 }:
                     cur_mode = mode
@@ -181,6 +248,27 @@ class GeneralConsumer(JsonWebsocketConsumer):
                     "data": waypoints,
                 }:
                     save_basic_waypoint_list(waypoints)
+
+                case {
+                    "type": "save_current_auton_course",
+                    "data": waypoints
+                }:
+                    node.get_logger().info(f"saving waypoints in course: {waypoints}")
+                    save_current_auton_course(waypoints)
+
+                case {
+                    "type": "save_current_basic_course",
+                    "data": waypoints                  
+                }:
+                    save_current_basic_course(waypoints)
+
+                case {
+                    "type": "delete_auton_waypoint_from_course",
+                    "data": waypoint
+                }:
+                    node.get_logger().info(f"deleting waypoint in course: {waypoint}")
+                    delete_auton_waypoint_from_course(waypoint)
+
                 case {
                     "type": "get_basic_waypoint_list",
                 }:

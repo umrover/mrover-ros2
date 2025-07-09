@@ -10,6 +10,9 @@
       <!-- Markers for rover location -->
       <l-marker ref="rover" :lat-lng="odomLatLng" :icon="locationIcon" />
 
+      <!-- Markers for basestation location -->
+      <l-marker ref="basestation" :lat-lng="basestationLatLng" :icon="basestationIcon" />
+
       <!-- Waypoint Icons -->
       <l-marker v-for="(waypoint, index) in waypointList" :key="index" :lat-lng="waypoint.latLng" :icon="waypointIcon">
         <l-tooltip :options="{ permanent: 'true', direction: 'top' }">
@@ -21,11 +24,11 @@
       <l-polyline :lat-lngs="polylinePath" :color="'red'" :dash-array="'5, 5'" />
       <l-polyline :lat-lngs="odomPath" :color="'blue'" :dash-array="'5, 5'" />
     </l-map>
-    <!-- Controls that go directly under the map -->
-    <div class="controls">
-      <div class="online">
-        <label><input v-model="online" type="checkbox" />Online</label>
-      </div>
+    
+    <!-- Controls -->
+    <div class="controls px-2 py-1">
+      <input v-model="online" type="checkbox" />
+      <p>Online</p>
     </div>
   </div>
 </template>
@@ -73,6 +76,10 @@ export default {
       type: Object,
       default: () => ({latitude_deg: 0, longitude_deg: 0, bearing_deg: 0})
     },
+    basestation: {
+      type: Object,
+      default: () => ({ latitude_deg: 0, longitude_deg: 0 })
+    }
   },
   data() {
     return {
@@ -109,6 +116,14 @@ export default {
         // Handle the case where odom is not yet ready
         console.warn('odom data not ready yet');
         return L.latLng(0,0); // or default value or return null
+      }
+    },
+
+    basestationLatLng: function () {
+      if (this.basestation && typeof this.basestation === 'object' && this.basestation.latitude_deg !== undefined && this.basestation.longitude_deg !== undefined ) {
+        return L.latLng(this.basestation.latitude_deg, this.basestation.longitude_deg)
+      } else {
+        return L.latLng(0, 0)
       }
     },
 
@@ -163,6 +178,11 @@ export default {
       iconSize: [40, 40],
       iconAnchor: [20, 20]
     })
+    this.basestationIcon = L.icon({
+      iconUrl: 'basestation_marker_icon.png',
+      iconSize: [40, 40],
+      iconAnchor: [20, 20]
+    })
     this.waypointIcon = L.icon({
       iconUrl: 'map_marker.png',
       iconSize: [64, 64],
@@ -197,42 +217,40 @@ export default {
 </script>
 
 <style scoped>
-.controls label {
-  font-size: 12px;
-}
-
-.controls div {
-  display: inline-block;
-}
-
-.online {
-  float: right;
-}
-
 .wrap {
-  align-items: center;
+  position: relative; /* Set this to position controls over map */
   width: 100%;
   height: 100%;
-  display: grid;
-  overflow: hidden;
-  min-height: 40vh;
-  grid-gap: 3px;
-  grid-template-columns: auto;
-  grid-template-rows: 94% 6%;
-  grid-template-areas:
-    'map'
-    'controls';
 }
 
-/* Grid area declarations */
 .map {
   height: 100%;
   width: 100%;
-  grid-area: map;
 }
 
 .controls {
-  grid-area: controls;
-  display: inline;
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  top: 10px;
+  right: 10px;
+  background-color: rgba(255, 255, 255, 1);
+  border-radius: 3px;
+  z-index: 1000;
+  font-size: 14px;
+}
+
+.controls input[type="checkbox"] {
+  width: 14px;
+  height: 14px;
+  vertical-align: middle;
+}
+
+.controls p {
+  margin: 0;
+  font-size: 14px;
+  color: #333;
+  line-height: 18px;
 }
 </style>

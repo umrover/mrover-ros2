@@ -1,1 +1,0 @@
-../../../3bm/Core/Inc/motor.hpp
