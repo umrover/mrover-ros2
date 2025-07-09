@@ -20,18 +20,22 @@ from django.urls import path, include
 from django.http import HttpResponse
 from django.shortcuts import render
 
-from backend.consumers.teleop import GeneralConsumer
-from backend.consumers.teleop_auton import AutonConsumer
-from backend.consumers.teleop_ish import ISHConsumer
-from backend.consumers.teleop_sa import SAConsumer
+from backend.consumers.arm_consumer import ArmConsumer
+from backend.consumers.auton_consumer import AutonConsumer
+from backend.consumers.drive_consumer import DriveConsumer
+from backend.consumers.nav_consumer import NavConsumer
+from backend.consumers.science_consumer import ScienceConsumer
+from backend.consumers.waypoints_consumer import WaypointsConsumer
 
 urlpatterns = [
     path("admin/", admin.site.urls),
 ]
 
 websocket_urlpatterns = [
-    path("ws/general", GeneralConsumer.as_asgi()),
+    path("ws/arm", ArmConsumer.as_asgi()),
     path("ws/auton", AutonConsumer.as_asgi()),
-    path("ws/ish", ISHConsumer.as_asgi()),
-    path("ws/sa", SAConsumer.as_asgi())
+    path("ws/drive", DriveConsumer.as_asgi()),
+    path("ws/nav", NavConsumer.as_asgi()),
+    path("ws/science", ScienceConsumer.as_asgi()),
+    path("ws/waypoints", WaypointsConsumer.as_asgi()),
 ]

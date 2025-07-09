@@ -1,9 +1,10 @@
 <template>
-  <div class='drive' />
+  <div class='drive' ></div>
 </template>
 
 <script lang='ts'>
-import { mapActions } from 'vuex'
+import Vuex from 'vuex'
+const { mapActions } = Vuex;
 
 const UPDATE_HZ = 20
 

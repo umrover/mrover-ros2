@@ -19,50 +19,47 @@
       >
         Costmap
       </button>
-      <button
-        class="btn btn-danger"
-        @click="deleteWaypoint"
-      >
-        Delete
-      </button>
+      <button class="btn btn-danger" @click="deleteWaypoint">Delete</button>
     </div>
     <div class="coordinates">
       <p class="coordinate m-0">{{ waypoint.lat.toFixed(7) }}ºN</p>
       <span class="mx-2">|</span>
       <p class="coordinate m-0">{{ waypoint.lon.toFixed(7) }}ºW</p>
     </div>
-
   </div>
 </template>
 
 <script lang="ts">
-import Vuex from 'vuex';
-const { mapGetters } = Vuex;
-import { convertDMS } from '../utils'
+import Vuex from 'vuex'
+const { mapGetters } = Vuex
+import { convertDMS } from '../utils/map'
 
 export default {
   props: {
     waypoint: {
       type: Object,
-      required: true
+      required: true,
     },
   },
 
   data() {
     return {
-      enable_costmap: true
+      enable_costmap: true,
     }
   },
 
   methods: {
     toggleCostmap() {
       this.enable_costmap = !this.enable_costmap
-      this.$emit('toggleCostmap', { waypoint: this.waypoint, enable_costmap: this.enable_costmap })
+      this.$emit('toggleCostmap', {
+        waypoint: this.waypoint,
+        enable_costmap: this.enable_costmap,
+      })
     },
 
     deleteWaypoint() {
       this.$emit('delete', { waypoint: this.waypoint })
-    }
+    },
   },
 
   watch: {
@@ -70,18 +67,17 @@ export default {
       immediate: true,
       handler(newVal) {
         this.enable_costmap = newVal
-      }
-    }
+      },
+    },
   },
-
 
   computed: {
     ...mapGetters('map', {
-      odom_format: 'odomFormat'
+      odom_format: 'odomFormat',
     }),
 
     ...mapGetters('autonomy', {
-      highlightedWaypoint: 'highlightedWaypoint'
+      highlightedWaypoint: 'highlightedWaypoint',
     }),
 
     min_enabled: function () {
@@ -95,10 +91,10 @@ export default {
     output: function () {
       return {
         lat: convertDMS({ d: this.waypoint.lat, m: 0, s: 0 }, this.odom_format),
-        lon: convertDMS({ d: this.waypoint.lon, m: 0, s: 0 }, this.odom_format)
+        lon: convertDMS({ d: this.waypoint.lon, m: 0, s: 0 }, this.odom_format),
       }
-    }
-  }
+    },
+  },
 }
 </script>
 
@@ -116,9 +112,9 @@ export default {
 }
 
 .waypoint-button-row {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .coordinates {

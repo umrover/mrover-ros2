@@ -69,11 +69,20 @@
       </div>
 
       <div class="add-drop">
-        <button class="btn btn-primary" @click="addWaypoint(input, false)">Add Waypoint</button>
-        <button class="btn btn-primary" @click="addWaypoint(formatted_odom, false)">
+        <button class="btn btn-primary" @click="addWaypoint(input, false)">
+          Add Waypoint
+        </button>
+        <button
+          class="btn btn-primary"
+          @click="addWaypoint(formatted_odom, false)"
+        >
           Drop Waypoint
         </button>
-        <button v-if="droneWaypointButton" class="btn btn-primary" @click="addWaypoint(input, true)">
+        <button
+          v-if="droneWaypointButton"
+          class="btn btn-primary"
+          @click="addWaypoint(input, true)"
+        >
           Add Drone Position
         </button>
       </div>
@@ -81,7 +90,9 @@
     <div class="box">
       <div class="all-waypoints">
         <h4 class="waypoint-headers">Waypoints</h4>
-        <button class="btn btn-primary" @click="clearWaypoint">Clear Waypoints</button>
+        <button class="btn btn-primary" @click="clearWaypoint">
+          Clear Waypoints
+        </button>
       </div>
       <div class="waypoints">
         <WaypointItem
@@ -99,7 +110,7 @@
 </template>
 
 <script lang="ts">
-import { convertDMS } from '../utils.js'
+import { convertDMS } from '../utils/map.js'
 import WaypointItem from './BasicWaypointItem.vue'
 import { mapMutations, mapGetters, mapActions, mapState } from 'vuex'
 import _ from 'lodash'
@@ -109,12 +120,12 @@ export default {
   props: {
     odom: {
       type: Object,
-      default: () => ({latitude_deg: 0, longitude_deg: 0, bearing_deg: 0})
+      default: () => ({ latitude_deg: 0, longitude_deg: 0, bearing_deg: 0 }),
     },
     droneWaypointButton: {
       type: Boolean,
-      required: false
-    }
+      required: false,
+    },
   },
 
   data() {
@@ -125,16 +136,16 @@ export default {
         lat: {
           d: 0,
           m: 0,
-          s: 0
+          s: 0,
         },
         lon: {
           d: 0,
           m: 0,
-          s: 0
-        }
+          s: 0,
+        },
       },
 
-      storedWaypoints: []
+      storedWaypoints: [],
     }
   },
 
@@ -144,11 +155,11 @@ export default {
     ...mapMutations('erd', {
       setWaypointList: 'setWaypointList',
       setHighlightedWaypoint: 'setHighlightedWaypoint',
-      setSearchWaypoint: 'setSearchWaypoint'
+      setSearchWaypoint: 'setSearchWaypoint',
     }),
 
     ...mapMutations('map', {
-      setOdomFormat: 'setOdomFormat'
+      setOdomFormat: 'setOdomFormat',
     }),
 
     deleteItem: function (payload: { index: number }) {
@@ -166,13 +177,13 @@ export default {
         lat: { d: number; m: number; s: number }
         lon: { d: number; m: number; s: number }
       },
-      isDrone: boolean
+      isDrone: boolean,
     ) {
       this.storedWaypoints.push({
         name: this.name,
         lat: (coord.lat.d + coord.lat.m / 60 + coord.lat.s / 3600).toFixed(5),
         lon: (coord.lon.d + coord.lon.m / 60 + coord.lon.s / 3600).toFixed(5),
-        drone: isDrone
+        drone: isDrone,
       })
     },
 
@@ -194,23 +205,28 @@ export default {
 
     clearWaypoint: function () {
       this.storedWaypoints = []
-    }
+    },
   },
 
   watch: {
     storedWaypoints: {
       handler: function (newList) {
-        const waypoints = newList.map((waypoint: { lat: any; lon: any; name: any; drone: any }) => {
-          return {
-            latLng: L.latLng(waypoint.lat, waypoint.lon),
-            name: waypoint.name,
-            drone: waypoint.drone
-          }
-        })
+        const waypoints = newList.map(
+          (waypoint: { lat: any; lon: any; name: any; drone: any }) => {
+            return {
+              latLng: L.latLng(waypoint.lat, waypoint.lon),
+              name: waypoint.name,
+              drone: waypoint.drone,
+            }
+          },
+        )
         this.setWaypointList(waypoints)
-        this.sendMessage('general', { type: 'save_basic_waypoint_list', data: newList })
+        this.sendMessage('general', {
+          type: 'save_basic_waypoint_list',
+          data: newList,
+        })
       },
-      deep: true
+      deep: true,
     },
 
     message: {
@@ -218,15 +234,17 @@ export default {
         if (msg.type == 'get_basic_waypoint_list') {
           // Get waypoints from server on page load
           this.storedWaypoints = msg.data
-          const waypoints = msg.data.map((waypoint: { lat: any; lon: any; name: any }) => {
-            const lat = waypoint.lat
-            const lon = waypoint.lon
-            return { latLng: L.latLng(lat, lon), name: waypoint.name }
-          })
+          const waypoints = msg.data.map(
+            (waypoint: { lat: any; lon: any; name: any }) => {
+              const lat = waypoint.lat
+              const lon = waypoint.lon
+              return { latLng: L.latLng(lat, lon), name: waypoint.name }
+            },
+          )
           this.setWaypointList(waypoints)
         }
       },
-      deep: true
+      deep: true,
     },
 
     odom_format_in: function (newOdomFormat) {
@@ -244,7 +262,7 @@ export default {
       this.input.lon.s = 0
       this.input.lat = convertDMS(this.input.lat, this.odom_format_in)
       this.input.lon = convertDMS(this.input.lon, this.odom_format_in)
-    }
+    },
   },
 
   created: function () {
@@ -258,7 +276,10 @@ export default {
 
     window.setTimeout(() => {
       // Timeout so websocket will be initialized
-      this.sendMessage('general', { type: 'get_basic_waypoint_list', data: null })
+      this.sendMessage('general', {
+        type: 'get_basic_waypoint_list',
+        data: null,
+      })
     }, 250)
   },
 
@@ -267,11 +288,11 @@ export default {
     ...mapGetters('erd', {
       highlightedWaypoint: 'highlightedWaypoint',
       searchWaypoint: 'searchWaypoint',
-      clickPoint: 'clickPoint'
+      clickPoint: 'clickPoint',
     }),
 
     ...mapGetters('map', {
-      odom_format: 'odomFormat'
+      odom_format: 'odomFormat',
     }),
 
     min_enabled: function () {
@@ -284,15 +305,21 @@ export default {
 
     formatted_odom: function () {
       return {
-        lat: convertDMS({ d: this.odom.latitude_deg, m: 0, s: 0 }, this.odom_format),
-        lon: convertDMS({ d: this.odom.longitude_deg, m: 0, s: 0 }, this.odom_format)
+        lat: convertDMS(
+          { d: this.odom.latitude_deg, m: 0, s: 0 },
+          this.odom_format,
+        ),
+        lon: convertDMS(
+          { d: this.odom.longitude_deg, m: 0, s: 0 },
+          this.odom_format,
+        ),
       }
-    }
+    },
   },
 
   components: {
-    WaypointItem
-  }
+    WaypointItem,
+  },
 }
 </script>
 

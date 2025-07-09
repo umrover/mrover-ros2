@@ -1,67 +1,103 @@
 <template>
-  <div class='wrap'>
+  <div class="wrap">
     <h2>Arm Controls</h2>
-    <div class='controls-flex'>
-        <input v-model='mode' type="radio" class="btn-check" name="options-outlined" id="disabled" value='disabled' autocomplete="off" checked>
-        <label class="btn btn-outline-danger" for="disabled">Disabled</label>
-        <input v-model='mode' type="radio" class="btn-check" name="options-outlined" id="throttle" value='throttle' autocomplete="off">
-        <label class="btn btn-outline-success" for="throttle">Throttle</label>
-        <input v-model='mode' type="radio" class="btn-check" name="options-outlined" id="ik-pos" value='ik-pos' autocomplete="off">
-        <label class="btn btn-outline-success" for="ik-pos">IK Position</label>
-        <input v-model='mode' type="radio" class="btn-check" name="options-outlined" id="ik-vel" value='ik-vel' autocomplete="off">
-        <label class="btn btn-outline-success" for="ik-vel">IK Velocity</label>
+    <div class="controls-flex">
+      <input
+        v-model="mode"
+        type="radio"
+        class="btn-check"
+        name="options-outlined"
+        id="disabled"
+        value="disabled"
+        autocomplete="off"
+        checked
+      />
+      <label class="btn btn-outline-danger" for="disabled">Disabled</label>
+      <input
+        v-model="mode"
+        type="radio"
+        class="btn-check"
+        name="options-outlined"
+        id="throttle"
+        value="throttle"
+        autocomplete="off"
+      />
+      <label class="btn btn-outline-success" for="throttle">Throttle</label>
+      <input
+        v-model="mode"
+        type="radio"
+        class="btn-check"
+        name="options-outlined"
+        id="ik-pos"
+        value="ik-pos"
+        autocomplete="off"
+      />
+      <label class="btn btn-outline-success" for="ik-pos">IK Position</label>
+      <input
+        v-model="mode"
+        type="radio"
+        class="btn-check"
+        name="options-outlined"
+        id="ik-vel"
+        value="ik-vel"
+        autocomplete="off"
+      />
+      <label class="btn btn-outline-success" for="ik-vel">IK Velocity</label>
     </div>
   </div>
 </template>
 
-<script lang='ts'>
+<script lang="ts">
 import { defineComponent } from 'vue'
 import { mapActions, mapState } from 'vuex'
 
 const UPDATE_HZ = 30
 
 export default defineComponent({
-  components: {
-  },
+  components: {},
   data() {
     return {
-      mode: 'disabled'
+      mode: 'disabled',
     }
   },
 
   computed: {
-    ...mapState('websocket', ['message'])
+    ...mapState('websocket', ['message']),
   },
 
-  mounted: function() {
+  mounted: function () {
     document.addEventListener('keydown', this.keyDown)
   },
 
-  created: function() {
+  created: function () {
     this.interval = window.setInterval(() => {
       const gamepads = navigator.getGamepads()
       // may need to check for Xbox rather than Microsoft
-      const gamepad = gamepads.find(gamepad => gamepad && gamepad.id.includes('Microsoft'))
+      const gamepad = gamepads.find(
+        gamepad => gamepad && gamepad.id.includes('Microsoft'),
+      )
       if (!gamepad) return
 
-      this.sendMessage(
-        'general',
-        {
-        type: 'ra_controller',
-        axes: gamepad.axes,
-        buttons: gamepad.buttons.map(button => button.value)
+      this.$store.dispatch('websocket/sendMessage', {
+        id: 'general',
+        message: {
+          type: 'ra_controller',
+          axes: gamepad.axes,
+          buttons: gamepad.buttons.map(button => button.value),
+        },
       })
 
-      this.sendMessage(
-        'general',
-        {
-        type: 'ra_mode',
-        mode: this.mode
+      this.$store.dispatch('websocket/sendMessage', {
+        id: 'general',
+        message: {
+          type: 'ra_mode',
+          mode: this.mode,
+        },
       })
     }, 1000 / UPDATE_HZ)
   },
 
-  beforeUnmount: function() {
+  beforeUnmount: function () {
     window.clearInterval(this.interval)
     document.removeEventListener('keydown', this.keyDown)
   },
@@ -69,13 +105,13 @@ export default defineComponent({
   methods: {
     ...mapActions('websocket', ['sendMessage']),
 
-    keyDown: function(event: { key: string }) {
+    keyDown: function (event: { key: string }) {
       // Use the space bar as an e-stop
       if (event.key == ' ') {
         this.mode = 'disabled'
       }
-    }
-  }
+    },
+  },
 })
 </script>
 

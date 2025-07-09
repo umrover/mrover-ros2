@@ -35,7 +35,8 @@
 </template>
 
 <script lang='ts'>
-import { mapState, mapActions } from 'vuex';
+import Vuex from 'vuex';
+const { mapState, mapActions } = Vuex;
 import BasicMap from '../components/BasicRoverMap.vue'
 import SoilData from '../components/SoilData.vue'
 import BasicWaypointEditor from '../components/BasicWaypointEditor.vue'
@@ -44,7 +45,6 @@ import MastGimbalControls from '../components/MastGimbalControls.vue'
 import OdometryReading from '../components/OdometryReading.vue'
 import ControllerDataTable from '../components/ControllerDataTable.vue'
 import SAArmControls from '../components/SAArmControls.vue'
-import NetworkMonitor from "../components/NetworkMonitor.vue"
 import HexHub from '../components/HexHub.vue'
 import LSActuator from '../components/LSActuator.vue'
 
@@ -63,7 +63,6 @@ export default {
     DriveControls,
     MastGimbalControls,
     SAArmControls,
-    NetworkMonitor,
     OdometryReading,
     HexHub,
     LSActuator

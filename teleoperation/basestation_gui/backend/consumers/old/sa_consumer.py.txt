@@ -22,13 +22,13 @@ from backend.mast_controls import send_mast_controls
 from backend.waypoints import (
     get_auton_waypoint_list,
     get_basic_waypoint_list,
-    # get_current_auton_course,
-    # get_current_basic_course,
+    get_current_auton_course,
+    get_current_basic_course,
     save_auton_waypoint_list,
     save_basic_waypoint_list,
-    # save_current_auton_course,
-    # save_current_basic_course,
-    # delete_auton_waypoint_from_course
+    save_current_auton_course,
+    save_current_basic_course,
+    delete_auton_waypoint_from_course
 )
 from geometry_msgs.msg import Twist, Vector3
 from sensor_msgs.msg import NavSatFix, Temperature, RelativeHumidity, JointState
@@ -209,10 +209,8 @@ class SAConsumer(JsonWebsocketConsumer):
                 }:
                     device_input = DeviceInputs(axes, buttons)
                     if(site == 0):
-                        # node.get_logger().info("here", site)
                         send_sa_controls(cur_sa_mode, 0, device_input, self.sa_thr_pub)
                     elif(site == 1):
-                        # node.get_logger().info("here1", site)
                         send_sa_controls(cur_sa_mode, 1, device_input, self.sa_thr_pub)
                     else:
                         self.node.get_logger().warning(f"Unhandled Site: {site}")

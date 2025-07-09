@@ -250,7 +250,13 @@ export default {
           return { latLng: L.latLng(lat, lon), name: waypoint.name }
         })
         this.setWaypointList(waypoints)
-        this.sendMessage('auton', { type: 'save_auton_waypoint_list', data: newList })
+        this.$store.dispatch('websocket/sendMessage', {
+          id: 'auton',
+          message: {
+            type: 'save_auton_waypoint_list',
+            data: newList,
+          }
+        })
       },
       deep: true,
     },
@@ -267,6 +273,15 @@ export default {
         this.sendMessage({
           type: 'save_current_auton_course',
           data: this.currentRoute,
+        })
+
+        // MIGRATE CHANGES FIRST
+        this.$store.dispatch('websocket/sendMessage', {
+          id: 'general',
+          message: {
+            type: 'test',
+            timestamp: new Date().toISOString(),
+          },
         })
       },
       deep: true,

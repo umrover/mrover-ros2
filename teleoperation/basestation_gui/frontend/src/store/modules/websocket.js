@@ -52,7 +52,7 @@ const mutations = {
 }
 
 const actions = {
-  sendMessage({ commit }, { id, message }) {
+  sendMessage({  }, { id, message }) { // trashed "commit" to avoid ts warning
     console.log(webSockets, id, message)
     const socket = webSockets[id]
     console.log(socket)
@@ -61,19 +61,19 @@ const actions = {
       console.log('websocket selection failed')
       return
     }
-    if (!socket.readyState) { //  !== WebSocket.OPEN
+    if (!socket.readyState) {
       console.log('websocket ' + id + ' not ready')
       return
     }
     socket.send(JSON.stringify(message))
-    console.log('sent   ' + id)
+    console.log('sent ' + id)
   },
 
   setupWebSocket({ commit }, id) {
     setupWebsocket(id, commit) // Pass unique ID
   },
 
-  closeWebSocket({ commit }, id) {
+  closeWebSocket({  }, id) {
     if (webSockets[id]) {
       webSockets[id].close()
       delete webSockets[id] // Cleanup

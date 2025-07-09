@@ -1,6 +1,6 @@
 <template>
   <div
-    class="shadow my-1 p-3 rounded waypoint-item"
+    class="my-1 p-3 rounded waypoint-item"
     v-bind:class="{ 'drone-waypoint': waypoint.drone }"
   >
     <div class="name">
@@ -10,16 +10,17 @@
       <p>{{ waypoint.lat }}ºN, {{ waypoint.lon }}ºW</p>
     </div>
     <div class="text-center">
-      <button class="btn btn-danger" @click="$emit('delete', { index: index })">Delete</button>
-      <button class="btn btn-success" @click="$emit('find', { index: index })">Find</button>
-      <button class="btn btn-success" @click="$emit('search', {index: index})">Search</button>
+      <button class="btn btn-danger mx-2" @click="$emit('delete', { index: index })">Delete</button>
+      <button class="btn btn-success mx-2" @click="$emit('find', { index: index })">Find</button>
+      <button class="btn btn-success mx-2" @click="$emit('search', {index: index})">Search</button>
     </div>
   </div>
 </template>
 
 <script lang="ts">
 import { defineComponent } from 'vue'
-import { mapGetters } from 'vuex'
+import Vuex from 'vuex'
+const { mapGetters } = Vuex
 
 export default defineComponent({
   props: {
@@ -42,10 +43,6 @@ export default defineComponent({
 </script>
 
 <style scoped>
-button {
-  margin: 0px 2px 0px 2px;
-}
-
 .drone-waypoint {
   background-color: limegreen;
 }
