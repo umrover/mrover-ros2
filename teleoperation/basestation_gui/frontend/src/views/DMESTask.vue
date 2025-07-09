@@ -88,11 +88,17 @@ export default defineComponent({
   },
 
   mounted: function() {
-    this.$store.dispatch('websocket/setupWebSocket', 'general')
+    this.$store.dispatch('websocket/setupWebSocket', 'arm')
+    this.$store.dispatch('websocket/setupWebSocket', 'drive')
+    this.$store.dispatch('websocket/setupWebSocket', 'waypoints')
+    this.$store.dispatch('websocket/setupWebSocket', 'nav')
   },
 
   unmounted: function() {
-    this.$store.dispatch('websocket/closeWebSocket', 'general')
+    this.$store.dispatch('websocket/closeWebSocket', 'arm')
+    this.$store.dispatch('websocket/closeWebSocket', 'drive')
+    this.$store.dispatch('websocket/closeWebSocket', 'waypoints')
+    this.$store.dispatch('websocket/setupWebSocket', 'nav')
   },
 })
 </script>

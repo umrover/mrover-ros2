@@ -270,17 +270,11 @@ export default {
         })
         this.setRoute(waypoints)
 
-        this.sendMessage({
-          type: 'save_current_auton_course',
-          data: this.currentRoute,
-        })
-
-        // MIGRATE CHANGES FIRST
         this.$store.dispatch('websocket/sendMessage', {
-          id: 'general',
+          id: 'waypoints',
           message: {
-            type: 'test',
-            timestamp: new Date().toISOString(),
+            type: 'save_current_auton_course',
+            data: this.currentRoute,
           },
         })
       },

@@ -79,7 +79,7 @@ export default defineComponent({
       if (!gamepad) return
 
       this.$store.dispatch('websocket/sendMessage', {
-        id: 'general',
+        id: 'arm',
         message: {
           type: 'ra_controller',
           axes: gamepad.axes,
@@ -88,7 +88,7 @@ export default defineComponent({
       })
 
       this.$store.dispatch('websocket/sendMessage', {
-        id: 'general',
+        id: 'arm',
         message: {
           type: 'ra_mode',
           mode: this.mode,

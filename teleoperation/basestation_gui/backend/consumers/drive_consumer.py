@@ -11,6 +11,7 @@ import tf2_ros
 import asyncio
 import threading
 from rclpy.executors import MultiThreadedExecutor
+from backend.consumers.init_node import get_node, get_context
 
 from tf2_ros.buffer import Buffer
 from lie import SE3
@@ -56,20 +57,20 @@ from std_msgs.msg import Float32
 
 LOCALIZATION_INFO_HZ = 10
 
-
 class DriveConsumer(JsonWebsocketConsumer):
     subscribers = []
     timers = []
 
     def connect(self) -> None:
         self.accept()
-        # Initialize ROS node **before** spinning
-        self.ros_context = rclpy.Context()
-        self.ros_context.init()
-        self.node = rclpy.create_node("teleop_drive")
+
+        self.node = get_node()
+        self.ros_context = get_context()
 
         self.ros_thread = threading.Thread(target=self.ros_spin, daemon=True)
         self.ros_thread.start()
+
+        print("drive consumer started")
 
         # Forwards ROS topic to GUI
         self.forward_ros_topic("/drive_left_controller_data", ControllerState, "drive_left_state")
@@ -81,22 +82,16 @@ class DriveConsumer(JsonWebsocketConsumer):
     def disconnect(self, close_code) -> None:
         for subscriber in self.subscribers:
             self.node.destroy_subscription(subscriber)
-
-        if self.ros_context:
-            self.ros_context.shutdown()  # This unblocks rclpy.spin()
-        self.node.destroy_node()  # Clean up node
-        self.node = None  # Clear reference
+        self.subscribers.clear()
+        self.timers.clear()
 
     def ros_spin(self) -> None:
-        executor = MultiThreadedExecutor()
+        executor = MultiThreadedExecutor(context=self.ros_context)
         executor.add_node(self.node)
-
         try:
-            executor.spin()  # Allows multiple threads to handle ROS callbacks safely
+            executor.spin()
         except Exception as e:
             print(f"Exception in ROS spin: {e}")
-        finally:
-            self.node.destroy_node()
 
     def forward_ros_topic(self, topic_name: str, topic_type: Type, gui_msg_type: str) -> None:
         """
@@ -135,6 +130,13 @@ class DriveConsumer(JsonWebsocketConsumer):
 
         try:
             match message:
+                case{
+                    "type": "joystick",
+                    "axes": axes, 
+                    "buttons": buttons
+                }:
+                    device_input = DeviceInputs(axes, buttons)
+                    send_joystick_twist(device_input, self.joystick_twist_pub)
 
                 case _:
                     self.node.get_logger().warning(f"Unhandled message: {message}")

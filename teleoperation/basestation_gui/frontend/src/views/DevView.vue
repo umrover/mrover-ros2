@@ -12,8 +12,7 @@ export default defineComponent({
   },
 
   mounted() {
-    this.$store.dispatch('websocket/setupWebSocket', 'general')
-    this.$store.dispatch('websocket/setupWebSocket', 'sa')
+    this.$store.dispatch('websocket/setupWebSocket', 'waypoints')
 
     setTimeout(() => {
       this.spamTestMessages()
@@ -21,17 +20,16 @@ export default defineComponent({
   },
 
   unmounted() {
-    this.$store.dispatch('websocket/closeWebSocket', 'general')
-    this.$store.dispatch('websocket/closeWebSocket', 'sa')
+    this.$store.dispatch('websocket/closeWebSocket', 'waypoints')
   },
 
   methods: {
     spamTestMessages() {
       const interval = setInterval(() => {
         this.$store.dispatch('websocket/sendMessage', {
-          id: 'general',
+          id: 'waypoints',
           message: {
-            type: 'test',
+            type: 'debug',
             timestamp: new Date().toISOString(),
           },
         })

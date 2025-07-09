@@ -25,13 +25,14 @@ export default {
 
       const inverse_axes = gamepad.axes.map((value, index) => index === 1 ? -value : value)
 
-      this.sendMessage(
-        'general',
-        {
-        type: 'joystick',
-        // inverted controls, get rid of map after testing
-        axes: inverse_axes,
-        buttons: gamepad.buttons.map(button => button.value)
+      this.$store.dispatch('websocket/sendMessage', {
+        id: 'drive',
+        message: {
+          type: 'joystick',
+          // inverted controls, get rid of map after testing
+          axes: inverse_axes,
+          buttons: gamepad.buttons.map(button => button.value)
+        },
       })
     }, 1000 / UPDATE_HZ)
   }

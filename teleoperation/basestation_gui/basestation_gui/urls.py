@@ -15,6 +15,8 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 
+# FOR CONSUMER TOPICS/SERVICES LOOKUP, SEE https://github.com/umrover/mrover-ros2/wiki/Teleop-Consumers-Lookup
+
 from django.contrib import admin
 from django.urls import path, include
 from django.http import HttpResponse

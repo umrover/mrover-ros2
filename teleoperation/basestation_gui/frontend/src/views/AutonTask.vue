@@ -122,12 +122,12 @@ export default defineComponent({
 
   mounted: function() {
     this.$store.dispatch('websocket/setupWebSocket', 'auton')
-    this.$store.dispatch('websocket/setupWebSocket', 'general')
+    this.$store.dispatch('websocket/setupWebSocket', 'waypoints')
   },
 
   unmounted: function() {
     this.$store.dispatch('websocket/closeWebSocket', 'auton')
-    this.$store.dispatch('websocket/closeWebSocket', 'general')
+    this.$store.dispatch('websocket/closeWebSocket', 'waypoints')
   },
 
   beforeUnmount: function() {

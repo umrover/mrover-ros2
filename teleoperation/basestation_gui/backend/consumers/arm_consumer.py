@@ -11,6 +11,7 @@ import tf2_ros
 import asyncio
 import threading
 from rclpy.executors import MultiThreadedExecutor
+from backend.consumers.init_node import get_node, get_context
 
 from tf2_ros.buffer import Buffer
 from lie import SE3
@@ -59,26 +60,25 @@ LOCALIZATION_INFO_HZ = 10
 cur_ra_mode: str = "disabled"
 cur_sa_mode: str = "disabled"
 
-
 class ArmConsumer(JsonWebsocketConsumer):
     subscribers = []
     timers = []
 
     def connect(self) -> None:
         self.accept()
-        # Initialize ROS node **before** spinning
-        self.ros_context = rclpy.Context()
-        self.ros_context.init()
-        self.node = rclpy.create_node("teleop_arm")
+
+        self.node = get_node()
+        self.ros_context = get_context()
 
         self.ros_thread = threading.Thread(target=self.ros_spin, daemon=True)
         self.ros_thread.start()
+
+        print("arm consumer started")
 
         # Topic Publishers
         self.thr_pub = self.node.create_publisher(Throttle, "arm_throttle_cmd", 1)
         self.ee_pos_pub = self.node.create_publisher(IK, "ee_pos_cmd", 1)
         self.ee_vel_pub = self.node.create_publisher(Twist, "ee_vel_cmd", 1)
-        self.joystick_twist_pub = self.node.create_publisher(Twist, "/joystick_cmd_vel", 1)
         self.controller_twist_pub = self.node.create_publisher(Twist, "/controller_cmd_vel", 1)
         self.mast_gimbal_pub = self.node.create_publisher(Throttle, "/mast_gimbal_throttle_cmd", 1)
         self.sa_thr_pub = self.node.create_publisher(Throttle, "sa_throttle_cmd", 1)
@@ -92,22 +92,16 @@ class ArmConsumer(JsonWebsocketConsumer):
     def disconnect(self, close_code) -> None:
         for subscriber in self.subscribers:
             self.node.destroy_subscription(subscriber)
-
-        if self.ros_context:
-            self.ros_context.shutdown()  # This unblocks rclpy.spin()
-        self.node.destroy_node()  # Clean up node
-        self.node = None  # Clear reference
+        self.subscribers.clear()
+        self.timers.clear()
 
     def ros_spin(self) -> None:
-        executor = MultiThreadedExecutor()
+        executor = MultiThreadedExecutor(context=self.ros_context)
         executor.add_node(self.node)
-
         try:
-            executor.spin()  # Allows multiple threads to handle ROS callbacks safely
+            executor.spin()
         except Exception as e:
             print(f"Exception in ROS spin: {e}")
-        finally:
-            self.node.destroy_node()
 
     def forward_ros_topic(self, topic_name: str, topic_type: Type, gui_msg_type: str) -> None:
         """
@@ -150,14 +144,12 @@ class ArmConsumer(JsonWebsocketConsumer):
         try:
             match message:
                 case {
-                    "type": "joystick" | "mast_keyboard" | "ra_controller",
+                    "type": "mast_keyboard" | "ra_controller",
                     "axes": axes,
                     "buttons": buttons,
                 }:
                     device_input = DeviceInputs(axes, buttons)
                     match message["type"]:
-                        case "joystick":
-                            send_joystick_twist(device_input, self.joystick_twist_pub)
                         case "ra_controller":
                             send_controller_twist(device_input, self.controller_twist_pub)
                             send_ra_controls(

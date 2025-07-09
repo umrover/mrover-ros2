@@ -8,6 +8,7 @@ from rosidl_runtime_py.convert import message_to_ordereddict
 import rclpy
 import threading
 from rclpy.executors import MultiThreadedExecutor
+from backend.consumers.init_node import get_node, get_context
 
 from backend.waypoints import (
     get_auton_waypoint_list,
@@ -23,7 +24,6 @@ from backend.waypoints import (
 
 LOCALIZATION_INFO_HZ = 10
 
-
 class WaypointsConsumer(JsonWebsocketConsumer):
     subscribers = []
     timers = []
@@ -31,37 +31,27 @@ class WaypointsConsumer(JsonWebsocketConsumer):
     def connect(self) -> None:
         self.accept()
 
-        # Initialize ROS node **before** spinning
-        self.ros_context = rclpy.Context()
-        self.ros_context.init()
-        self.node = rclpy.create_node("teleop_waypoints")
+        self.node = get_node()
+        self.ros_context = get_context()
 
         self.ros_thread = threading.Thread(target=self.ros_spin, daemon=True)
         self.ros_thread.start()
 
-        # Forwards ROS topic to GUI
-
-        # Services
+        self.node.get_logger().info("waypoints consumer started")
 
     def disconnect(self, close_code) -> None:
         for subscriber in self.subscribers:
             self.node.destroy_subscription(subscriber)
-
-        if self.ros_context:
-            self.ros_context.shutdown()  # This unblocks rclpy.spin()
-        self.node.destroy_node()  # Clean up node
-        self.node = None  # Clear reference
+        self.subscribers.clear()
+        self.timers.clear()
 
     def ros_spin(self) -> None:
-        executor = MultiThreadedExecutor()
+        executor = MultiThreadedExecutor(context=self.ros_context)
         executor.add_node(self.node)
-
         try:
-            executor.spin()  # Allows multiple threads to handle ROS callbacks safely
+            executor.spin()
         except Exception as e:
             print(f"Exception in ROS spin: {e}")
-        finally:
-            self.node.destroy_node()
 
     def forward_ros_topic(self, topic_name: str, topic_type: Type, gui_msg_type: str) -> None:
         """
@@ -89,6 +79,8 @@ class WaypointsConsumer(JsonWebsocketConsumer):
 
         @param text_data:   Stringfied JSON message
         """
+
+        self.node.get_logger().info("waypoints receive func called")
 
         if text_data is None:
             self.node.get_logger().warning("Expecting text but received binary on GUI websocket...")
@@ -152,6 +144,11 @@ class WaypointsConsumer(JsonWebsocketConsumer):
                 }:
                     self.node.get_logger().info(f"current waypoints in course: {get_current_auton_course()}")
                     self.send_message_as_json({"type": "get_current_auton_course", "data": get_current_auton_course()})
+                case {
+                    "type": "debug",
+                    "timestamp": ts
+                }:
+                    self.node.get_logger().debug(f"debug message received by consumer, {ts}")
 
                 case _:
                     self.node.get_logger().warning(f"Unhandled message: {message}")

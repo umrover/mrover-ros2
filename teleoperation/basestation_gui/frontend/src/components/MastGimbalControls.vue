@@ -62,12 +62,13 @@ export default {
     },
 
     publish: function() {
-      this.sendMessage(
-        'general',
-        {
-        type: 'mast_keyboard',
-        axes: [],
-        buttons: this.keys
+      this.$store.dispatch('websocket/sendMessage', {
+        id: 'arm',
+        message: {
+          type: 'mast_keyboard',
+          axes: [],
+          buttons: this.keys
+        },
       })
     }
   }

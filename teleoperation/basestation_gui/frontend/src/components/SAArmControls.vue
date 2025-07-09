@@ -1,12 +1,29 @@
 <template>
-  <div class='wrap'>
+  <div class="wrap">
     <h2>SA Arm Controls</h2>
-    <div class='controls-flex'>
+    <div class="controls-flex">
       <h4>Mode</h4>
-        <input v-model='mode' type="radio" class="btn-check" name="options-outlined" id="disabled" value='disabled' autocomplete="off" checked>
-        <label class="btn btn-outline-danger" for="disabled">Disabled</label>
-        <input v-model='mode' type="radio" class="btn-check" name="options-outlined" id="throttle" value='throttle' autocomplete="off">
-        <label class="btn btn-outline-success" for="throttle">Throttle</label>
+      <input
+        v-model="mode"
+        type="radio"
+        class="btn-check"
+        name="options-outlined"
+        id="disabled"
+        value="disabled"
+        autocomplete="off"
+        checked
+      />
+      <label class="btn btn-outline-danger" for="disabled">Disabled</label>
+      <input
+        v-model="mode"
+        type="radio"
+        class="btn-check"
+        name="options-outlined"
+        id="throttle"
+        value="throttle"
+        autocomplete="off"
+      />
+      <label class="btn btn-outline-success" for="throttle">Throttle</label>
     </div>
     <!-- <div class='controls-flex'>
       <h4>Arm Mode</h4>
@@ -26,11 +43,18 @@
       </div>
     </div> -->
     <div class="controls-flex">
-      <button class="btn btn-primary" @click="zero('sa_z', 0)">Zero Ground</button>
+      <button class="btn btn-primary" @click="zero('sa_z', 0)">
+        Zero Ground
+      </button>
       <p>Corer Position: {{ corer_position }} inches</p>
-      <button class="btn btn-primary" @click="zero('sa_z', corer_position+sensor_height)">Zero Sensor</button>
-      <p>Plunger Position: {{ plunger_position-plunger_height }} inches</p>
-      
+      <button
+        class="btn btn-primary"
+        @click="zero('sa_z', corer_position + sensor_height)"
+      >
+        Zero Sensor
+      </button>
+      <p>Plunger Position: {{ plunger_position - plunger_height }} inches</p>
+
       <!--      <MotorAdjust-->
       <!--        v-if="mode == 'position'"-->
       <!--        :options="[-->
@@ -45,7 +69,7 @@
   </div>
 </template>
 
-<script lang='ts'>
+<script lang="ts">
 import { defineComponent } from 'vue'
 import { mapActions, mapState } from 'vuex'
 // import MotorAdjust from './MotorAdjust.vue'
@@ -59,9 +83,9 @@ export default defineComponent({
 
   props: {
     currentSite: {
-      type: Number, 
-      required: true
-    }
+      type: Number,
+      required: true,
+    },
   },
 
   data() {
@@ -74,7 +98,7 @@ export default defineComponent({
     }
   },
 
-  created: function() {
+  created: function () {
     this.interval = window.setInterval(() => {
       // const gamepads = navigator.getGamepads()
       // const gamepad = gamepads.find(gamepad => gamepad && gamepad.id.includes('Microsoft'))
@@ -88,11 +112,9 @@ export default defineComponent({
       //   buttons: gamepad.buttons.map(button => button.value)
       // })
 
-      this.sendMessage(
-        'sa',
-        {
+      this.sendMessage('sa', {
         type: 'sa_mode',
-        mode: this.mode
+        mode: this.mode,
       })
     }, 1000 / UPDATE_HZ)
   },
@@ -102,16 +124,24 @@ export default defineComponent({
   },
 
   computed: {
-    ...mapState('websocket', ['message'])
+    ...mapState('websocket', ['message']),
   },
 
   methods: {
     ...mapActions('websocket', ['sendMessage']),
 
-    zero: function(name: string, value: number) {
-      this.sendMessage('sa', {type: "arm_adjust", name: name, value: value})
-    }
-  }
+    zero: function (name: string, value: number) {
+      this.$store.dispatch('websocket/sendMessage', {
+        id: 'arm',
+        message: {
+          type: 'arm_adjust',
+          name: name,
+          value: value,
+        },
+      })
+      // broken? arm_adjust missing
+    },
+  },
 })
 </script>
 
@@ -144,5 +174,4 @@ export default defineComponent({
   margin-bottom: 5px;
   margin-top: 5px;
 }
-
 </style>
