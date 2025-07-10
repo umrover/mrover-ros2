@@ -1,46 +1,64 @@
 <template>
-  <div class='wrapper view-wrapper'>
+  <div class="wrapper view-wrapper">
     <div :class="['island p-3 rounded data', ledColor]">
       <h2>Nav State: {{ navState }}</h2>
-      <OdometryReading @odom='updateOdom' @basestation_odom='updateBasestationOdom'/>
+      <OdometryReading
+        @odom="updateOdom"
+        @basestation_odom="updateBasestationOdom"
+      />
     </div>
-    <div class='island p-3 rounded feed'> <!-- meant to be cost mapb -->
+    <div class="island p-3 rounded feed">
+      <!-- meant to be cost map -->
       <button @click="toggleFeed" class="btn btn-primary mb-2">
         {{ cameraFeedEnabled ? 'Disable' : 'Enable' }} Camera Feed
       </button>
-      <div v-if="cameraFeedEnabled" class='camera-container'>
-        <CameraFeed :mission="'ZED'" :id='0' :name="'ZED'"/>
+      <div v-if="cameraFeedEnabled" class="camera-container">
+        <CameraFeed :mission="'ZED'" :id="0" :name="'ZED'" />
         <p v-if="cameraFeedEnabled">Camera Feed On</p>
       </div>
     </div>
-    <div class='island p-0 rounded map'>
-      <AutonRoverMap :odom='odom' :basestation="basestationOdom"/>  
+    <div class="island p-0 rounded map">
+      <AutonRoverMap :odom="odom" :basestation="basestationOdom" />
     </div>
-    <div class='island p-3 rounded waypoints'>
-      <AutonWaypointEditor @toggleTeleop='teleopEnabledCheck = $event' />
+    <div class="island p-3 rounded waypoints">
+      <AutonWaypointEditor @toggleTeleop="teleopEnabledCheck = $event" />
     </div>
     <!--Enable the drive controls if auton is off-->
-    <div v-if='!autonEnabled && teleopEnabledCheck' v-show='false' class='driveControls'>
-      <DriveControls/>
-      <MastGimbalControls/>
+    <div
+      v-if="!autonEnabled && teleopEnabledCheck"
+      v-show="false"
+      class="driveControls"
+    >
+      <DriveControls />
+      <MastGimbalControls />
     </div>
-    <div class='conditions'>
-      <div v-if='!stuck_status' class='island p-3 rounded bg-success text-center'>
+    <div class="conditions">
+      <div
+        v-if="!stuck_status"
+        class="island p-3 rounded bg-success text-center"
+      >
         <h4>Nominal Conditions</h4>
       </div>
-      <div v-else class='island p-3 rounded bg-danger text-center'>
+      <div v-else class="island p-3 rounded bg-danger text-center">
         <h4>Obstruction Detected</h4>
       </div>
     </div>
-    <div class='island p-3 rounded moteus'>
-      <ControllerDataTable msg-type='drive_left_state' header='Drive Left States' />
-      <ControllerDataTable msg-type='drive_right_state' header='Drive Right States' />
+    <div class="island p-3 rounded moteus">
+      <ControllerDataTable
+        msg-type="drive_left_state"
+        header="Drive Left States"
+      />
+      <ControllerDataTable
+        msg-type="drive_right_state"
+        header="Drive Right States"
+      />
     </div>
   </div>
 </template>
 
-<script lang='ts'>
-import { mapActions, mapGetters, mapState } from 'vuex'
+<script lang="ts">
+import Vuex from 'vuex'
+const { mapActions, mapGetters, mapState } = Vuex
 import AutonRoverMap from '../components/AutonRoverMap.vue'
 import AutonWaypointEditor from '../components/AutonWaypointEditor.vue'
 import CameraFeed from '../components/CameraFeed.vue'
@@ -50,11 +68,10 @@ import MastGimbalControls from '../components/MastGimbalControls.vue'
 import ControllerDataTable from '../components/ControllerDataTable.vue'
 import { defineComponent } from 'vue'
 
-
 interface Odom {
-  latitude_deg: number;
-  longitude_deg: number;
-  bearing_deg: number;
+  latitude_deg: number
+  longitude_deg: number
+  bearing_deg: number
 }
 
 export default defineComponent({
@@ -65,7 +82,7 @@ export default defineComponent({
     CameraFeed,
     OdometryReading,
     DriveControls,
-    MastGimbalControls
+    MastGimbalControls,
   },
 
   data() {
@@ -82,7 +99,7 @@ export default defineComponent({
 
       navState: 'OffState',
 
-      cameraFeedEnabled: true
+      cameraFeedEnabled: true,
     }
   },
 
@@ -91,48 +108,50 @@ export default defineComponent({
 
     ...mapGetters('autonomy', {
       autonEnabled: 'autonEnabled',
-      teleopEnabled: 'teleopEnabled'
-    })
+      teleopEnabled: 'teleopEnabled',
+    }),
   },
 
   watch: {
     message(msg) {
       if (msg.type == 'led') {
-        if (msg.red) this.ledColor = 'bg-danger' //red
-        else if (msg.green) this.ledColor = 'blink' //blinking green
+        if (msg.red)
+          this.ledColor = 'bg-danger' //red
+        else if (msg.green)
+          this.ledColor = 'blink' //blinking green
         else if (msg.blue) this.ledColor = 'bg-primary' //blue
       } else if (msg.type == 'nav_state') {
         this.navState = msg.state
       }
-    }
+    },
   },
 
   methods: {
     ...mapActions('websocket', ['sendMessage']),
-    toggleFeed(){
+    toggleFeed() {
       this.cameraFeedEnabled = !this.cameraFeedEnabled
     },
     updateOdom(odom: Odom) {
-      this.odom = odom;
+      this.odom = odom
     },
     updateBasestationOdom(odom: Odom) {
-      this.basestationOdom = odom;
-    }
+      this.basestationOdom = odom
+    },
   },
 
-  mounted: function() {
+  mounted: function () {
     this.$store.dispatch('websocket/setupWebSocket', 'auton')
     this.$store.dispatch('websocket/setupWebSocket', 'waypoints')
   },
 
-  unmounted: function() {
+  unmounted: function () {
     this.$store.dispatch('websocket/closeWebSocket', 'auton')
     this.$store.dispatch('websocket/closeWebSocket', 'waypoints')
   },
 
-  beforeUnmount: function() {
+  beforeUnmount: function () {
     this.ledColor = 'bg-white'
-  }
+  },
 })
 </script>
 
@@ -152,15 +171,6 @@ export default defineComponent({
   width: auto;
 }
 
-.dashboard-title {
-  color: black;
-  text-decoration: none;
-}
-
-.dashboard-title:hover {
-  color: darkgray;
-}
-
 .blink {
   animation: blinkAnimation 1s infinite;
   /* Blinks green every second */
@@ -176,14 +186,6 @@ export default defineComponent({
     background-color: var(--bs-white);
   }
 }
-
-.logo {
-  position: absolute;
-  left: 44.45%;
-  transform: translateX(-50%);
-  transform: translateY(-50%);
-}
-
 h2 {
   padding: 2px;
   margin: 0px;
@@ -218,15 +220,14 @@ h2 {
   grid-area: feed;
 }
 
-.btn{
+.btn {
   display: block;
   margin: 10px auto;
 }
 
-.camera-container{
+.camera-container {
   display: flex;
   flex-direction: column;
   align-items: center;
 }
-
 </style>

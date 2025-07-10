@@ -21,7 +21,7 @@
       <IMUCalibration></IMUCalibration>
     </div>
     <div class="flightindicator">
-      <FlightAttitudeIndicator></FlightAttitudeIndicator>
+      <FlightAltitudeIndicator></FlightAltitudeIndicator>
     </div>
     <div class="basestation-odom">
       <p>Basestation Coordinates:</p>
@@ -44,12 +44,12 @@ import { convertDMS, quaternionToMapAngle } from '../utils/map.js'
 import Vuex from 'vuex'
 const { mapGetters, mapState } = Vuex
 import IMUCalibration from './IMUCalibration.vue'
-import FlightAttitudeIndicator from './FlightAttitudeIndicator.vue'
+import FlightAltitudeIndicator from './FlightAltitudeIndicator.vue'
 import type { Odom, FormattedOdom } from '../types/coordinates'
 
 export default {
   components: {
-    FlightAttitudeIndicator,
+    FlightAltitudeIndicator,
     IMUCalibration,
   },
 
@@ -137,8 +137,8 @@ export default {
           longitude_deg: this.rover_longitude_deg,
           bearing_deg: this.rover_bearing_deg,
         } as Odom)
-      } 
-      else if (msg.type == 'drone_waypoint') { // currently inactive
+      } else if (msg.type == 'drone_waypoint') {
+        // currently inactive
         this.drone_latitude_deg = msg.latitude
         this.drone_longitude_deg = msg.longitude
         this.drone_status = msg.status
@@ -146,8 +146,7 @@ export default {
           latitude_deg: this.drone_latitude_deg,
           longitude_deg: this.drone_longitude_deg,
         })
-      } 
-      else if (msg.type == 'basestation_position') {
+      } else if (msg.type == 'basestation_position') {
         this.basestation_latitude_deg = msg.latitude
         this.basestation_longitude_deg = msg.longitude
         this.basestation_status = msg.status
@@ -155,8 +154,8 @@ export default {
           latitude_deg: this.basestation_latitude_deg,
           longitude_deg: this.basestation_longitude_deg,
         } as Odom)
-      } 
-      else if (msg.type == 'orientation') { // currently inactive
+      } else if (msg.type == 'orientation') {
+        // currently inactive
         this.rover_bearing_deg = quaternionToMapAngle(msg.orientation)
         this.$emit('odom', {
           latitude_deg: this.rover_latitude_deg,

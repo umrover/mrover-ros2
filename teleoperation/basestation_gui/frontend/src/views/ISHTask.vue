@@ -59,7 +59,6 @@
 <script lang="ts">
 import SelectSite from '../components/SelectSite.vue'
 import NinhydrinBenedict from '../components/NinhydrinBenedict.vue'
-import NetworkMonitor from "../components/NetworkMonitor.vue";
 import CameraFeed from '../components/CameraFeed.vue';
 import ToggleButton from '../components/ToggleButton.vue';
 import AutoShutdown from '../components/AutoShutdown.vue';
@@ -70,7 +69,6 @@ export default {
   components: {
     SelectSite,
     NinhydrinBenedict,
-    NetworkMonitor,
     CameraFeed,
     ToggleButton,
     AutoShutdown,
@@ -93,11 +91,11 @@ export default {
   },
 
   mounted: function() {
-    this.$store.dispatch('websocket/setupWebSocket', 'ish')
+    this.$store.dispatch('websocket/setupWebSocket', 'science')
   },
 
   unmounted: function() {
-    this.$store.dispatch('websocket/closeWebSocket', 'ish')
+    this.$store.dispatch('websocket/closeWebSocket', 'science')
   },
 }
 </script>

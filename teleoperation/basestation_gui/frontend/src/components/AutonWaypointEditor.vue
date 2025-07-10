@@ -117,7 +117,7 @@
 
 <script lang="ts">
 import AutonModeCheckbox from './AutonModeCheckbox.vue'
-import Checkbox from './Checkbox.vue'
+import Checkbox from './BasicCheckbox.vue'
 import VelocityReading from './VelocityReading.vue'
 import WaypointItem from './AutonWaypointItem.vue'
 import WaypointStore from './AutonWaypointStore.vue'
@@ -255,7 +255,7 @@ export default {
           message: {
             type: 'save_auton_waypoint_list',
             data: newList,
-          }
+          },
         })
       },
       deep: true,
@@ -333,8 +333,18 @@ export default {
     }, 1000)
     window.setTimeout(() => {
       // Timeout so websocket will be initialized
-      this.sendMessage({ type: 'get_auton_waypoint_list' })
-      this.sendMessage({ type: 'get_current_auton_course' })
+      this.$store.dispatch('websocket/sendMessage', {
+        id: 'waypoints',
+        message: {
+          type: 'get_auton_waypoint_list',
+        },
+      })
+      this.$store.dispatch('websocket/sendMessage', {
+        id: 'waypoints',
+        message: {
+          type: 'get_current_auton_course',
+        },
+      })
     }, 250)
   },
 
@@ -350,30 +360,34 @@ export default {
 
     sendAutonCommand() {
       if (this.autonEnabled) {
-        this.sendMessage(
-          'auton',
-          {
-          type: 'auton_enable',
-          enabled: true,
-          waypoints: _.map(this.route, waypoint => {
-            const lat = waypoint.lat
-            const lon = waypoint.lon
-            // Return a GPSWaypoint.msg formatted object for each
-            return {
-              latitude_degrees: lat,
-              longitude_degrees: lon,
-              tag_id: waypoint.id,
-              type: waypoint.type,
-              enable_costmap: waypoint.enable_costmap,
-            }
-          }),
+        this.$store.dispatch('websocket/sendMessage', {
+          id: 'auton',
+          message: {
+            type: 'auton_enable',
+            enabled: true,
+            waypoints: _.map(this.route, waypoint => {
+              const lat = waypoint.lat
+              const lon = waypoint.lon
+              // Return a GPSWaypoint.msg formatted object for each
+              return {
+                latitude_degrees: lat,
+                longitude_degrees: lon,
+                tag_id: waypoint.id,
+                type: waypoint.type,
+                enable_costmap: waypoint.enable_costmap,
+              }
+            }),
+          },
         })
       } else {
         //if auton's not enabled, send an empty message
-        this.sendMessage({
-          type: 'auton_enable',
+        this.$store.dispatch('websocket/sendMessage', {
+          id: 'auton',
+          message: {
+            type: 'auton_enable',
           enabled: false,
           waypoints: [],
+          },
         })
       }
     },
@@ -383,9 +397,12 @@ export default {
       const index = this.route.indexOf(waypoint)
       this.route.splice(index, 1)
       this.currentRoute.splice(this.currentRoute.indexOf(waypoint), 1)
-      this.sendMessage({
-        type: 'delete_auton_waypoint_from_course',
-        data: waypoint,
+      this.$store.dispatch('websocket/sendMessage', {
+        id: 'waypoints',
+        message: {
+          type: 'delete_auton_waypoint_from_course',
+          data: waypoint,
+        },
       })
     },
 
@@ -402,7 +419,7 @@ export default {
 
     addItem: function (waypoint: Waypoint) {
       if (!waypoint.in_route) {
-        waypoint['enable_costmap'] = waypoint.enable_costmap ?? false;
+        waypoint['enable_costmap'] = waypoint.enable_costmap ?? false
         this.route.push(waypoint)
         // this is where the new waypoint is added into current route
         // console.log(waypoint.enable_costmap)
@@ -443,9 +460,12 @@ export default {
 
     toggleTeleopMode: function () {
       this.teleopEnabledCheck = !this.teleopEnabledCheck
-      this.sendMessage({
-        type: 'teleop_enable',
-        enabled: this.teleopEnabledCheck,
+      this.$store.dispatch('websocket/sendMessage', {
+        id: 'auton',
+        message: {
+          type: 'teleop_enable',
+          enabled: this.teleopEnabledCheck,
+        },
       })
       this.$emit('toggleTeleop', this.teleopEnabledCheck)
     },

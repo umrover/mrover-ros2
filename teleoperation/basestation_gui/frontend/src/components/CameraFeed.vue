@@ -3,32 +3,37 @@
     <canvas :id="'stream-' + id" v-on:click="handleClick"></canvas>
     <div v-if="mission != 'ZED'">
       <p>{{ name }} • ID: {{ id }}</p>
-      <Checkbox v-if="mission === 'ik'" :name="'IK Camera'" v-on:toggle="toggleIKMode" />
+      <Checkbox
+        v-if="mission === 'ik'"
+        :name="'IK Camera'"
+        v-on:toggle="toggleIKMode"
+      />
     </div>
   </div>
 </template>
 <script lang="ts">
-import {defineComponent} from 'vue'
-import {mapActions} from 'vuex'
-import Checkbox from './Checkbox.vue'
+import { defineComponent } from 'vue'
+import Vuex from 'vuex'
+const { mapActions } = Vuex
+import Checkbox from './BasicCheckbox.vue'
 
 export default defineComponent({
   props: {
     name: {
       type: String,
-      required: true
+      required: true,
     },
     id: {
       type: Number,
-      required: true
+      required: true,
     },
     mission: {
       type: String, // // {'ish', 'ik', 'sa', 'auton', 'ZED'}
-      required: true
-    }
+      required: true,
+    },
   },
   components: {
-    Checkbox
+    Checkbox,
   },
 
   data() {
@@ -58,7 +63,7 @@ export default defineComponent({
       //   this.sendMessage({type: 'start_click_ik', data: {x: event.offsetX, y: event.offsetY}})
       // }
     },
-    
+
     toggleIKMode: function () {
       this.IKCam = !this.IKCam
     },
@@ -106,7 +111,9 @@ export default defineComponent({
     }
     `
 
-      const canvas = document.getElementById(`stream-${number}`) as HTMLCanvasElement
+      const canvas = document.getElementById(
+        `stream-${number}`,
+      ) as HTMLCanvasElement
       if (!canvas) return
 
       // This WebGL stuff seems like a lot, but it's just setting up a shader that can render a texture
@@ -148,9 +155,9 @@ export default defineComponent({
       const vertexBuffer = gl.createBuffer()
       gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer)
       gl.bufferData(
-          gl.ARRAY_BUFFER,
-          new Float32Array([-1.0, -1.0, -1.0, +1.0, +1.0, +1.0, +1.0, -1.0]),
-          gl.STATIC_DRAW
+        gl.ARRAY_BUFFER,
+        new Float32Array([-1.0, -1.0, -1.0, +1.0, +1.0, +1.0, +1.0, -1.0]),
+        gl.STATIC_DRAW,
       )
 
       const xyLocation = gl.getAttribLocation(shaderProgram, 'xy')
@@ -169,7 +176,14 @@ export default defineComponent({
           canvas.width = frame.displayWidth
           canvas.height = frame.displayHeight
           // Upload the frame to the texture
-          gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, frame)
+          gl.texImage2D(
+            gl.TEXTURE_2D,
+            0,
+            gl.RGBA,
+            gl.RGBA,
+            gl.UNSIGNED_BYTE,
+            frame,
+          )
           // Close immediately to free up resources
           // Otherwise the stream will halt
           frame.close()
@@ -182,13 +196,15 @@ export default defineComponent({
         },
         error(e) {
           throw e
-        }
+        },
       })
       let isDecoderConfigured = false
 
       // TODO(quintin): Set IP too
       const ip = attempt % 2 === 0 ? '10.1.0.10' : 'localhost'
-      console.log(`Attempting to connect to server for stream ${number} at ${ip}...`)
+      console.log(
+        `Attempting to connect to server for stream ${number} at ${ip}...`,
+      )
       this.ws = new WebSocket(`ws://${ip}:808${1 + this.id}`)
       const timeoutId = setTimeout(() => {
         if (this.ws && this.ws.readyState !== WebSocket.OPEN) {
@@ -205,12 +221,15 @@ export default defineComponent({
         console.log(`Closed socket for stream ${number}`)
         decoder.close()
         // This recursive-ness stops after the canvas element is removed
-        setTimeout(() => this.startStream(number, attempt + 1), RECONNECT_TIMEOUT_MS * (attempt + 1))
+        setTimeout(
+          () => this.startStream(number, attempt + 1),
+          RECONNECT_TIMEOUT_MS * (attempt + 1),
+        )
       }
       this.ws.onerror = () => {
         if (this.ws) this.ws.close()
       }
-      this.ws.onmessage = (event) => {
+      this.ws.onmessage = event => {
         // TODO(quintin): Should the values besides "data" be set better? Parsed from the packet?
         const [resolutionId, codecId] = new Uint8Array(event.data.slice(0, 2))
         const [streamWidth, streamHeight] = STREAM_RESOLUTION_MAP[resolutionId]
@@ -220,20 +239,20 @@ export default defineComponent({
           decoder.configure({
             codec: codec,
             width: streamWidth,
-            height: streamHeight
+            height: streamHeight,
           })
         }
         decoder.decode(
-            new EncodedVideoChunk({
-              type: 'key',
-              timestamp: performance.now(),
-              duration: 1000 / STREAM_FPS,
-              data: event.data.slice(2, -1)
-            })
+          new EncodedVideoChunk({
+            type: 'key',
+            timestamp: performance.now(),
+            duration: 1000 / STREAM_FPS,
+            data: event.data.slice(2, -1),
+          }),
         )
       }
-    }
-  }
+    },
+  },
 })
 </script>
 <style>
@@ -250,4 +269,3 @@ canvas {
   background-color: black;
 }
 </style>
-

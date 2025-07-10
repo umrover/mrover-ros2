@@ -20,7 +20,7 @@ export default defineComponent({
   },
 
   unmounted() {
-    this.$store.dispatch('websocket/closeWebSocket', 'waypoints')
+    this.$store.dispatch('websocket/closeWebSocket', 'general')
   },
 
   methods: {

@@ -26,14 +26,15 @@
 </template>
 
 <script lang="ts">
-import { mapState } from 'vuex'
+import Vuex from 'vuex'
+const { mapState } = Vuex
 import LEDIndicator from './LEDIndicator.vue'
 
 const calibration_limit = 3
 
 export default {
   components: {
-    LEDIndicator
+    LEDIndicator,
   },
 
   data() {
@@ -41,12 +42,12 @@ export default {
       mag_calibration: 0,
       gyro_calibration: 0,
       accel_calibration: 0,
-      calibration_limit_master: calibration_limit
+      calibration_limit_master: calibration_limit,
     }
   },
 
   computed: {
-    ...mapState('websocket', ['message'])
+    ...mapState('websocket', ['message']),
   },
 
   watch: {
@@ -58,8 +59,8 @@ export default {
           this.accel_calibration = msg.acceleration_calibration
           break
       }
-    }
-  }
+    },
+  },
 }
 </script>
 <style scoped>

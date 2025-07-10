@@ -101,12 +101,12 @@ export default defineComponent({
         type: 'cache_keyboard',
         axes: [],
         buttons: this.keys
-      })
+      }) // not used
 
       this.sendMessage({
         type: 'cache_mode',
         mode: this.mode
-      })
+      }) // not used
     }
   }
 })

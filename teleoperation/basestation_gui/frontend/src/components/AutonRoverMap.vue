@@ -42,7 +42,8 @@ import {
   LTooltip,
   LControlScale
 } from '@vue-leaflet/vue-leaflet'
-import { mapGetters, mapMutations } from 'vuex'
+import Vuex from 'vuex'
+const { mapGetters, mapMutations } = Vuex
 import 'leaflet/dist/leaflet.css'
 import L from '../leaflet-rotatedmarker'
 

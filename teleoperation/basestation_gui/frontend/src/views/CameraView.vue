@@ -106,7 +106,12 @@ export default {
     ...mapActions('websocket', ['sendMessage']),
 
     takePanorama() {
-      this.sendMessage({ type: 'takePanorama' })
+      this.$store.dispatch('websocket/sendMessage', {
+        id: 'mast',
+        message: {
+          type: 'takePanorama',
+        },
+      }) // NOT IMPLEMENTED, PLACEHOLDER
     },
 
     toggleCamera(idx: number) {

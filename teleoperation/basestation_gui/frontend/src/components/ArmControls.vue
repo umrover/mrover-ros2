@@ -49,7 +49,8 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue'
-import { mapActions, mapState } from 'vuex'
+import Vuex from 'vuex'
+const { mapActions, mapState } = Vuex;
 
 const UPDATE_HZ = 30
 
