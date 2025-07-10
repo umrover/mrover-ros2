@@ -139,7 +139,7 @@ class DriveConsumer(JsonWebsocketConsumer):
                     send_joystick_twist(device_input, self.joystick_twist_pub)
 
                 case _:
-                    self.node.get_logger().warning(f"Unhandled message: {message}")
+                    self.node.get_logger().warning(f"Unhandled message on drive: {message}")
         except:
             self.node.get_logger().error(f"Failed to handle message: {message}")
             self.node.get_logger().error(traceback.format_exc())

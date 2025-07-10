@@ -186,7 +186,7 @@ class ArmConsumer(JsonWebsocketConsumer):
                     cur_sa_mode = sa_mode
 
                 case _:
-                    self.node.get_logger().warning(f"Unhandled message: {message}")
+                    self.node.get_logger().warning(f"Unhandled message on arm: {message}")
         except:
             self.node.get_logger().error(f"Failed to handle message: {message}")
             self.node.get_logger().error(traceback.format_exc())

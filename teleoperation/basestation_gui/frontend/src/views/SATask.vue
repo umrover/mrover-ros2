@@ -113,6 +113,22 @@ export default {
       })
     },
   },
+
+  mounted: function () {
+    this.$store.dispatch('websocket/setupWebSocket', 'arm')
+    this.$store.dispatch('websocket/setupWebSocket', 'mast')
+    this.$store.dispatch('websocket/setupWebSocket', 'nav')
+    this.$store.dispatch('websocket/setupWebSocket', 'science')
+    this.$store.dispatch('websocket/setupWebSocket', 'waypoints')
+  },
+
+  unmounted: function () {
+    this.$store.dispatch('websocket/closeWebSocket', 'arm')
+    this.$store.dispatch('websocket/closeWebSocket', 'mast')
+    this.$store.dispatch('websocket/closeWebSocket', 'nav')
+    this.$store.dispatch('websocket/closeWebSocket', 'science')
+    this.$store.dispatch('websocket/closeWebSocket', 'waypoints')
+  },
 }
 </script>
 

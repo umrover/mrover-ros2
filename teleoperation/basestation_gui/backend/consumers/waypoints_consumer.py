@@ -151,7 +151,7 @@ class WaypointsConsumer(JsonWebsocketConsumer):
                     self.node.get_logger().debug(f"debug message received by consumer, {ts}")
 
                 case _:
-                    self.node.get_logger().warning(f"Unhandled message: {message}")
+                    self.node.get_logger().warning(f"Unhandled message on on waypoints: {message}")
         except:
             self.node.get_logger().error(f"Failed to handle message: {message}")
             self.node.get_logger().error(traceback.format_exc())

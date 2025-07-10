@@ -251,7 +251,7 @@ export default {
         })
         this.setWaypointList(waypoints)
         this.$store.dispatch('websocket/sendMessage', {
-          id: 'auton',
+          id: 'waypoints',
           message: {
             type: 'save_auton_waypoint_list',
             data: newList,
@@ -345,7 +345,7 @@ export default {
           type: 'get_current_auton_course',
         },
       })
-    }, 250)
+    }, 1000)
   },
 
   methods: {

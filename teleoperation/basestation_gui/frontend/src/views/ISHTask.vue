@@ -19,39 +19,31 @@
     </div>
     <div class="island p-3 rounded container-fluid camera">
       <div class="d-flex justify-content-center">
-        <ToggleButton 
-          :current-state="true" 
-          label-enable-text="Camera A On" 
-          label-disable-text="Camera A Off" 
-          @change="cameraA = $event" 
+        <ToggleButton
+          :current-state="true"
+          label-enable-text="Camera A On"
+          label-disable-text="Camera A Off"
+          @change="cameraA = $event"
         />
-        <ToggleButton 
-          :current-state="true" 
-          label-enable-text="Camera B On" 
-          label-disable-text="Camera B Off" 
-          @change="cameraB = $event" 
+        <ToggleButton
+          :current-state="true"
+          label-enable-text="Camera B On"
+          label-disable-text="Camera B Off"
+          @change="cameraB = $event"
         />
       </div>
       <div class="row gx-3 gy-3 justify-content-center">
         <div v-if="cameraA" class="col-12">
-          <CameraFeed
-            :mission="'ish'"
-            :id="10"
-            :name="'Sample A'"
-          />
+          <CameraFeed :mission="'ish'" :id="10" :name="'Sample A'" />
         </div>
         <div v-if="cameraB" class="col-12">
-          <CameraFeed
-            :mission="'ish'"
-            :id="11"
-            :name="'Sample B'"
-          />
+          <CameraFeed :mission="'ish'" :id="11" :name="'Sample B'" />
         </div>
       </div>
     </div>
 
     <div class="island p-3 rounded sensors">
-      <SensorData :site="site"/>
+      <SensorData :site="site" />
     </div>
   </div>
 </template>
@@ -59,11 +51,13 @@
 <script lang="ts">
 import SelectSite from '../components/SelectSite.vue'
 import NinhydrinBenedict from '../components/NinhydrinBenedict.vue'
-import CameraFeed from '../components/CameraFeed.vue';
-import ToggleButton from '../components/ToggleButton.vue';
-import AutoShutdown from '../components/AutoShutdown.vue';
-import SensorData from '../components/SensorData.vue';
-import WhiteLEDs from '../components/WhiteLEDs.vue';
+import CameraFeed from '../components/CameraFeed.vue'
+import ToggleButton from '../components/ToggleButton.vue'
+import AutoShutdown from '../components/AutoShutdown.vue'
+import SensorData from '../components/SensorData.vue'
+import WhiteLEDs from '../components/WhiteLEDs.vue'
+import Vuex from 'vuex'
+const { mapState } = Vuex
 
 export default {
   components: {
@@ -73,7 +67,7 @@ export default {
     ToggleButton,
     AutoShutdown,
     SensorData,
-    WhiteLEDs
+    WhiteLEDs,
   },
 
   data() {
@@ -84,17 +78,26 @@ export default {
     }
   },
 
+  computed: {
+    ...mapState('websocket', ['message']),
+  },
+
   methods: {
     onSiteChange(value: string) {
       this.site = parseInt(value)
-    }
+    },
   },
 
-  mounted: function() {
-    this.$store.dispatch('websocket/setupWebSocket', 'science')
+  topics: ['science'],
+
+  mounted() {
+    window.setTimeout(() => {
+      for (const topic of this.$options.topics)
+        this.$store.dispatch('websocket/setupWebSocket', topic)
+    }, 0)
   },
 
-  unmounted: function() {
+  unmounte() {
     this.$store.dispatch('websocket/closeWebSocket', 'science')
   },
 }

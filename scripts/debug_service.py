@@ -8,7 +8,7 @@ from std_srvs.srv import SetBool
 from mrover.srv import EnableBool
 
 SERVICE_TYPE = EnableBool
-SERVICE_NAME = '/sa_enable_pump_0'
+SERVICE_NAME = '/science_enable_white_led_a'
 
 class Service(Node):
 

@@ -139,7 +139,7 @@ class MastConsumer(JsonWebsocketConsumer):
                     send_mast_controls(device_input, self.mast_gimbal_pub)
 
                 case _:
-                    self.node.get_logger().warning(f"Unhandled message: {message}")
+                    self.node.get_logger().warning(f"Unhandled message on mast: {message}")
         except:
             self.node.get_logger().error(f"Failed to handle message: {message}")
             self.node.get_logger().error(traceback.format_exc())

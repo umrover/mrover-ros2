@@ -72,8 +72,6 @@ class NavConsumer(JsonWebsocketConsumer):
         self.ros_thread = threading.Thread(target=self.ros_spin, daemon=True)
         self.ros_thread.start()
 
-        print("nav consumer started")
-
         # Forwards ROS topic to GUI
         self.forward_ros_topic("/nav_state", StateMachineStateUpdate, "nav_state")
         self.forward_ros_topic("/gps/fix", NavSatFix, "gps_fix")
@@ -135,7 +133,7 @@ class NavConsumer(JsonWebsocketConsumer):
             match message:
 
                 case _:
-                    self.node.get_logger().warning(f"Unhandled message: {message}")
+                    self.node.get_logger().warning(f"Unhandled message on nav: {message}")
         except:
             self.node.get_logger().error(f"Failed to handle message: {message}")
             self.node.get_logger().error(traceback.format_exc())

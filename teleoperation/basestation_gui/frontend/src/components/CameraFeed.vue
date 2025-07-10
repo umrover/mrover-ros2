@@ -205,7 +205,9 @@ export default defineComponent({
       console.log(
         `Attempting to connect to server for stream ${number} at ${ip}...`,
       )
-      this.ws = new WebSocket(`ws://${ip}:808${1 + this.id}`)
+      // this.ws = new WebSocket(`ws://${ip}:808${1 + this.id}`) // was throwing errors
+      this.ws = new WebSocket(`ws://${ip}:${8081 + this.id}`);
+
       const timeoutId = setTimeout(() => {
         if (this.ws && this.ws.readyState !== WebSocket.OPEN) {
           console.log(`Timed out waiting for stream ${number}`)

@@ -67,6 +67,7 @@
 import Vuex from 'vuex'
 const { mapState } = Vuex
 import Chart from 'chart.js/auto'
+import type { SensorData } from '../types/sensors'
 
 export default {
   props: {
@@ -74,6 +75,30 @@ export default {
       type: Number,
       required: true,
     },
+  },
+
+  data(): {
+    sensor_data: SensorData;
+    sensor_history: number[][];
+  } {
+    return {
+      sensor_data: {
+        oxygen: 0,
+        oxygen_var: 0,
+        uv: 0,
+        uv_var: 0,
+        humidity: 0,
+        humidity_var: 0,
+        temp: 0,
+        temp_var: 0,
+      },
+      sensor_history: [
+        [], // oxygen
+        [], // humidity
+        [], // temperature
+        [], // uv
+      ],
+    };
   },
 
   mounted() {
@@ -112,7 +137,6 @@ export default {
 
     for (let i = 0; i < 4; ++i) {
       waitForElm(`#chart${i}`).then(el => {
-        console.log('HERE NOW.')
 
         // const labels = Array.from({ length: o2data.length + 1 }, (_, i) => i);
         const data = {
@@ -143,45 +167,31 @@ export default {
       })
     }
 
+    const maxHistory = 10;
+
     setInterval(() => {
-      // console.log(Object.values(this.sensor_data).length)
-      // this.$forceUpdate();
-      this.sensor_history[0].push(this.sensor_data.oxygen)
-      this.sensor_history[1].push(this.sensor_data.humidity)
-      this.sensor_history[2].push(this.sensor_data.temp)
-      this.sensor_history[3].push(this.sensor_data.uv)
+      // Spread operator to avoid reactivity loops
+      this.sensor_history[0] = [...this.sensor_history[0], this.sensor_data.oxygen];
+      this.sensor_history[1] = [...this.sensor_history[1], this.sensor_data.humidity];
+      this.sensor_history[2] = [...this.sensor_history[2], this.sensor_data.temp];
+      this.sensor_history[3] = [...this.sensor_history[3], this.sensor_data.uv];
+
+      for (let x = 0; x < 4; ++x) {
+        if (this.sensor_history[x].length > maxHistory) {
+          this.sensor_history[x].shift(); 
+        }
+      }
 
       for (let x = 0; x < 4; ++x) {
         if (charts[x] != null) {
           charts[x].data.labels = Array.from(
-            { length: this.sensor_history[x].length + 1 },
-            (_, i) => i,
-          )
-          charts[x].update()
+            { length: this.sensor_history[x].length },
+            (_, i) => i
+          );
+          charts[x].update();
         }
       }
-    }, 1000)
-  },
-
-  data() {
-    return {
-      sensor_data: {
-        oxygen: 0,
-        oxygen_var: 0,
-        uv: 0,
-        uv_var: 0,
-        humidity: 0,
-        humidity_var: 0,
-        temp: 0,
-        temp_var: 0,
-      },
-      sensor_history: {
-        oxygen: [],
-        humidity: [],
-        temp: [],
-        uv: [],
-      },
-    }
+    }, 1000);
   },
 
   computed: {
@@ -249,24 +259,6 @@ export default {
       anchor.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv)
       anchor.download = 'sensor_data.csv'
       anchor.click()
-
-      // downloads screenshot of table
-      // const table = document.querySelector("#capture") as HTMLElement;
-      // html2canvas(table)
-      // .then(canvas => {
-      //   canvas.style.display = 'none'
-      //   document.body.appendChild(canvas)
-      //   return canvas
-      // })
-      // .then(canvas => {
-      //   const image = canvas.toDataURL('image/png')
-      //   const a = document.createElement('a')
-      //   a.setAttribute('download', 'sensor_data_site_' + String.fromCharCode(this.site+65) + '_' + new Date(Date.now()).toString() + '.png')
-      //   a.setAttribute('href', image)
-      //   a.click()
-      //   canvas.remove()
-      // })
-      // alert("Downloaded report!") //remove?
     },
   },
 }

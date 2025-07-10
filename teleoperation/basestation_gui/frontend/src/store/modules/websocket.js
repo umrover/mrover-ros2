@@ -19,7 +19,7 @@ function setupWebsocket(id, commit) {
 
   socket.onmessage = event => {
     const message = JSON.parse(event.data)
-    commit('setMessage', { id, message }) // Store messages per WebSocket ID
+    commit('setMessage', { id, message })
   }
 
   socket.onclose = e => {
@@ -47,18 +47,17 @@ const state = {
 
 const mutations = {
   setMessage(state, { id, message }) {
+    console.log("setMessage received: ", message)
     state.messages[id] = message
   },
 }
 
 const actions = {
   sendMessage({  }, { id, message }) { // trashed "commit" to avoid ts warning
-    console.log(webSockets, id, message)
+    console.log('webSockets:', webSockets, 'id:', id, 'message:', message);
     const socket = webSockets[id]
-    console.log(socket)
-    console.log('sending message to ', id)
     if(!socket){
-      console.log('websocket selection failed')
+      console.log('websocket selection failed with id "',id,'"')
       return
     }
     if (!socket.readyState) {

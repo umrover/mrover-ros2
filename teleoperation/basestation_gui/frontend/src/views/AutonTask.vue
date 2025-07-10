@@ -139,14 +139,18 @@ export default defineComponent({
     },
   },
 
-  mounted: function () {
-    this.$store.dispatch('websocket/setupWebSocket', 'auton')
-    this.$store.dispatch('websocket/setupWebSocket', 'waypoints')
+  topics: ['auton', 'drive', 'nav', 'science', 'waypoints'],
+
+  mounted: async function () {
+    window.setTimeout(() => {
+      for (const topic of this.$options.topics)
+        this.$store.dispatch('websocket/setupWebSocket', topic)
+    }, 500)
   },
 
   unmounted: function () {
-    this.$store.dispatch('websocket/closeWebSocket', 'auton')
-    this.$store.dispatch('websocket/closeWebSocket', 'waypoints')
+    for (const topic of this.$options.topics)
+      this.$store.dispatch('websocket/closeWebSocket', topic)
   },
 
   beforeUnmount: function () {

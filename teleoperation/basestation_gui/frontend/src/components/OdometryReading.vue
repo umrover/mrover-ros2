@@ -13,7 +13,7 @@
         <p v-if="sec_enabled">{{ formatted_odom.lon.s }}" E</p>
       </div>
       <p>Bearing: {{ rover_bearing_deg.toFixed(2) }}º</p>
-      <p>Altitude: {{ rover_altitude.toFixed(2) }}m</p>
+      <p>A: {{ rover_altitude.toFixed(2) }}m</p>
       <p>Odom Status: {{ get_odom_status }}</p>
       <p>Drone Status: {{ get_drone_status }}</p>
     </div>
@@ -21,7 +21,7 @@
       <IMUCalibration></IMUCalibration>
     </div>
     <div class="flightindicator">
-      <FlightAltitudeIndicator></FlightAltitudeIndicator>
+      <FlightAttitudeIndicator></FlightAttitudeIndicator>
     </div>
     <div class="basestation-odom">
       <p>Basestation Coordinates:</p>
@@ -44,12 +44,13 @@ import { convertDMS, quaternionToMapAngle } from '../utils/map.js'
 import Vuex from 'vuex'
 const { mapGetters, mapState } = Vuex
 import IMUCalibration from './IMUCalibration.vue'
-import FlightAltitudeIndicator from './FlightAltitudeIndicator.vue'
+import FlightAttitudeIndicator from './FlightAttitudeIndicator.vue'
 import type { Odom, FormattedOdom } from '../types/coordinates'
+import type { WebSocketState } from '../types/websocket.js'
 
 export default {
   components: {
-    FlightAltitudeIndicator,
+    FlightAttitudeIndicator,
     IMUCalibration,
   },
 
@@ -71,7 +72,9 @@ export default {
     }
   },
   computed: {
-    ...mapState('websocket', ['message']),
+    ...mapState('websocket', {
+      navMessage: (state: WebSocketState) => state.messages['nav']
+    }),
 
     ...mapGetters('map', {
       odom_format: 'odomFormat',
@@ -126,7 +129,8 @@ export default {
   },
 
   watch: {
-    message(msg) {
+    navMessage(msg) {
+      console.log("Received message in watch:", msg);
       if (msg.type == 'gps_fix') {
         this.rover_latitude_deg = msg.latitude
         this.rover_longitude_deg = msg.longitude
@@ -147,6 +151,7 @@ export default {
           longitude_deg: this.drone_longitude_deg,
         })
       } else if (msg.type == 'basestation_position') {
+        console.log('basestation position received')
         this.basestation_latitude_deg = msg.latitude
         this.basestation_longitude_deg = msg.longitude
         this.basestation_status = msg.status

@@ -1,17 +1,17 @@
 <template>
   <div>
-    <Altitude :size="200" :pitch="pitch" :roll="roll" />
+    <Attitude :size="200" :pitch="pitch" :roll="roll" />
   </div>
 </template>
 
 <script lang="ts">
-import { Altitude } from 'vue-flight-indicators'
+import { Attitude } from 'vue-flight-indicators'
 import Vuex from 'vuex'
 const { mapState } = Vuex
 
 export default {
   components: {
-    Altitude,
+    Attitude,
   },
   data() {
     return {
