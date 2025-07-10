@@ -38,6 +38,7 @@
 import { defineComponent } from 'vue'
 import Vuex from 'vuex';
 const { mapState } = Vuex;
+import type { WebSocketState } from '../types/websocket';
 
 export default defineComponent({
   props: {
@@ -61,18 +62,32 @@ export default defineComponent({
   },
 
   computed: {
-    ...mapState('websocket', ['message'])
+    ...mapState('websocket', {
+      armMessage: (state: WebSocketState) => state.messages['arm'],
+      driveMessage: (state: WebSocketState) => state.messages['drive']
+    })
   },
 
+  // arm_state, drive_state, sa_state, drive_left_state, drive_right_state
+  // arm, drive, 
+
   watch: {
-    message(msg) {
+    armMessage(msg) {
       if (msg.type == this.msgType) {
         this.name = msg.name
         this.state = msg.state
         this.error = msg.error
         this.limits = msg.limit_hit
       }
-    }
+    },
+    driveMessage(msg) {
+      if (msg.type == this.msgType) {
+        this.name = msg.name
+        this.state = msg.state
+        this.error = msg.error
+        this.limits = msg.limit_hit
+      }
+    },
   }
 })
 </script>

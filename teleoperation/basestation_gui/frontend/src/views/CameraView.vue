@@ -51,6 +51,7 @@
 </template>
 
 <script lang="ts">
+import type { WebSocketState } from '../types/websocket';
 import CameraFeed from '../components/CameraFeed.vue'
 import ToggleButton from "../components/ToggleButton.vue";
 import Vuex from 'vuex'
@@ -79,8 +80,15 @@ export default {
     }
   },
 
+  computed: {
+    ...mapState('websocket', {
+      mastMessage: (state: WebSocketState) => state.messages['mast']
+    }),
+  },
+
+
   watch: {
-    message(msg) {
+    mastMessage(msg) { // NOT YET IMPLEMENTED
       if (msg.type == 'pano_feedback') {
         this.percent = msg.percent;
       }
@@ -92,11 +100,6 @@ export default {
       this.camsStreaming = [...Array(this.camsEnabled.length).keys()];
     },
   },
-
-  computed: {
-    ...mapState('websocket', ['message']),
-  },
-
   created: function() {
     this.camsEnabled = new Array(this.cameras[this.selectedMission].length).fill(true);
     this.camsStreaming = [...Array(this.camsEnabled.length).keys()];

@@ -56,4 +56,8 @@ h1 {
   user-select: none;
 }
 
+.logo {
+  position: absolute;
+  left: 45%;
+}
 </style>

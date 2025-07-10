@@ -51,7 +51,7 @@ export default {
   },
 
   watch: {
-    message(msg) {
+    message(msg) { // DEPRECATED, not updating to new style
       switch (msg.type) {
         case 'calibration':
           this.mag_calibration = msg.magnetometer_calibration

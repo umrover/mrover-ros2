@@ -112,9 +112,11 @@
 <script lang="ts">
 import { convertDMS } from '../utils/map.js'
 import WaypointItem from './BasicWaypointItem.vue'
-import { mapMutations, mapGetters, mapActions, mapState } from 'vuex'
+import Vuex from 'vuex';
+const { mapMutations, mapGetters, mapActions, mapState } = Vuex
 import _ from 'lodash'
 import L from 'leaflet'
+import type { WebSocketState } from '../types/websocket.js';
 
 export default {
   props: {
@@ -232,7 +234,7 @@ export default {
       deep: true,
     },
 
-    message: {
+    navMessage: {
       handler: function (msg) {
         if (msg.type == 'get_basic_waypoint_list') {
           // Get waypoints from server on page load
@@ -289,7 +291,9 @@ export default {
   },
 
   computed: {
-    ...mapState('websocket', ['message']),
+    ...mapState('websocket', {
+      waypointsMessage: (state: WebSocketState) => state.messages['waypoints']
+    }),
     ...mapGetters('erd', {
       highlightedWaypoint: 'highlightedWaypoint',
       searchWaypoint: 'searchWaypoint',

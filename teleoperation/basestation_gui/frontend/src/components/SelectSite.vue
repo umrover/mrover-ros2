@@ -29,6 +29,10 @@
 </template>
 
 <script lang="ts">
+import type { WebSocketState } from '../types/websocket'
+import Vuex from 'vuex'
+const { mapState } = Vuex;
+
 export default {
   components: {},
   data() {
@@ -38,11 +42,17 @@ export default {
     }
   },
 
+  computed: {
+    ...mapState('websocket', {
+      scienceMessage: (state: WebSocketState) => state.messages['science']
+    })
+  },
+
   watch: {
     site(event) {
       this.$emit('site', event)
     },
-    message(msg) {
+    scienceMessage(msg) { // NOT YET IMPLEMENTED / MISSING IMPL, DOUBLE CHECK
       if (msg.type == 'auto_shutoff') {
         if (!msg.success) {
           this.autoShutdownEnabled = !this.autoShutdownEnabled
@@ -51,8 +61,6 @@ export default {
       }
     },
   },
-
-  computed: {},
 
   methods: {},
 }

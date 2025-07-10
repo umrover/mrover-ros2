@@ -29,6 +29,7 @@
 import ToggleButton from './ToggleButton.vue'
 import LEDIndicator from './LEDIndicator.vue'
 import Vuex from 'vuex'
+import type { WebSocketState } from '../types/websocket'
 const { mapState, mapActions } = Vuex
 
 export default {
@@ -68,8 +69,14 @@ export default {
     }
   },
 
+  computed: {
+    ...mapState('websocket', {
+      scienceMessage: (state: WebSocketState) => state.messages['science']
+    }),
+  },
+
   watch: {
-    message(msg) {
+    scienceMessage(msg) {
       if (msg.type == 'thermistors') {
         if (this.isNinhydrin) {
           this.heaters[this.site].temp =
@@ -87,10 +94,6 @@ export default {
         }
       }
     },
-  },
-
-  computed: {
-    ...mapState('websocket', ['message']),
   },
 
   methods: {

@@ -147,19 +147,6 @@ export default {
   width: 100%;
 }
 
-.dashboard-title {
-  color: black;
-  text-decoration: none;
-}
-
-.dashboard-title:hover {
-  color: darkgray;
-}
-
-.network {
-  float: right;
-}
-
 .map {
   grid-area: map;
 }

@@ -13,28 +13,31 @@
 </template>
 
 <script lang="ts">
-import Vuex from 'vuex';
-const { mapState } = Vuex;
+import type { WebSocketState } from '../types/websocket'
+import Vuex from 'vuex'
+const { mapState } = Vuex
 export default {
   data() {
     return {
       linear_x: 0,
-      angular_z: 0
+      angular_z: 0,
     }
   },
 
   computed: {
-    ...mapState('websocket', ['message'])
+    ...mapState('websocket', {
+      navMessage: (state: WebSocketState) => state.messages['nav']
+    }),
   },
 
   watch: {
-    message(msg) {
-      if(msg.type == 'cmd_vel') {
-        this.linear_x = msg.linear.x;
-        this.angular_z = msg.angular.z;
+    navMessage(msg) { // NOT YET IMPLEMENTED / MISSING IMPLEMENTATION
+      if (msg.type == 'cmd_vel') {
+        this.linear_x = msg.linear.x
+        this.angular_z = msg.angular.z
       }
-    }
-  }
+    },
+  },
 }
 </script>
 

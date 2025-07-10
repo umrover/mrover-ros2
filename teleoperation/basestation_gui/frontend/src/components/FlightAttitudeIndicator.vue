@@ -26,7 +26,7 @@ export default {
   },
 
   watch: {
-    message(msg) {
+    message(msg) { // DEPRECATED, not updating to new style
       if (msg.type == 'orientation') {
         const [qx, qy, qz, qw] = msg.orientation
         this.pitch = (Math.asin(2 * (qx * qz - qy * qw)) * 180) / Math.PI

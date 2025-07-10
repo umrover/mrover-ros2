@@ -84,6 +84,7 @@ class ArmConsumer(JsonWebsocketConsumer):
 
         # Forwards ROS topic to GUI
         self.forward_ros_topic("/arm_controller_state", ControllerState, "arm_state")
+        self.forward_ros_topic("/sa_controller_state", ControllerState, "sa_state")
         self.forward_ros_topic("/arm_joint_data", JointState, "fk")
 
         # Services

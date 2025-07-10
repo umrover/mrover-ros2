@@ -38,6 +38,10 @@ export default {
     }
   },
 
+  // computed: {
+  // ...mapState('websocket', ['message'])
+  // },
+
   // watch: {
   //     message(msg) {
   //         if (msg.type == 'white_leds' && !msg.success) {
@@ -45,10 +49,6 @@ export default {
   //             alert('Toggling Auto Shutdown failed.')
   //         }
   //     },
-  // },
-
-  // computed: {
-  // ...mapState('websocket', ['message'])
   // },
 
   methods: {

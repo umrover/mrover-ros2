@@ -83,7 +83,6 @@ class ScienceConsumer(JsonWebsocketConsumer):
         self.forward_ros_topic("/science_uv_data", UV, "uv")
         self.forward_ros_topic("/science_temperature_data", Temperature, "temperature")
         self.forward_ros_topic("/science_humidity_data", RelativeHumidity, "humidity")
-        self.forward_ros_topic("/sa_controller_state", ControllerState, "sa_state")
         self.forward_ros_topic("/sa_gear_diff_position", Float32, "hexhub_site")
 
 

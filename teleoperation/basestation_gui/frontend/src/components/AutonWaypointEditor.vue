@@ -128,6 +128,7 @@ import _ from 'lodash'
 import L from 'leaflet'
 import { reactive } from 'vue'
 import { Modal } from 'bootstrap'
+import type { WebSocketState } from '@/types/websocket'
 
 let stuck_interval: number, auton_publish_interval: number
 
@@ -227,7 +228,9 @@ export default {
     }
   },
   computed: {
-    ...mapState('websocket', ['message']),
+    ...mapState('websocket', {
+      navMessage: (state: WebSocketState) => state.messages['nav'],
+    }),
     ...mapGetters('autonomy', {
       autonEnabled: 'autonEnabled',
       teleopEnabled: 'teleopEnabled',
@@ -281,7 +284,7 @@ export default {
       deep: true,
     },
 
-    message: function (msg) {
+    message(msg) {
       if (msg.type == 'nav_state') {
         // If still waiting for nav...
         if (
@@ -385,8 +388,8 @@ export default {
           id: 'auton',
           message: {
             type: 'auton_enable',
-          enabled: false,
-          waypoints: [],
+            enabled: false,
+            waypoints: [],
           },
         })
       }

@@ -20,6 +20,7 @@
         <Rover3D />
       </div>
       <div class='island p-3 rounded controller_state'>
+        <!-- drive_state not found -->
         <ControllerDataTable msg-type='arm_state' header='Arm States' />
         <ControllerDataTable msg-type='drive_state' header='Drive States' />
       </div>
@@ -128,20 +129,6 @@ export default defineComponent({
     'controller_state rover-3d';
   font-family: sans-serif;
   height: auto;
-}
-
-.dashboard-title {
-  color: black;
-  text-decoration: none;
-}
-
-.dashboard-title:hover {
-  color: darkgray;
-}
-
-.logo {
-  position: absolute;
-  left: 45%;
 }
 
 .map {

@@ -130,7 +130,6 @@ export default {
 
   watch: {
     navMessage(msg) {
-      console.log("Received message in watch:", msg);
       if (msg.type == 'gps_fix') {
         this.rover_latitude_deg = msg.latitude
         this.rover_longitude_deg = msg.longitude
@@ -141,15 +140,6 @@ export default {
           longitude_deg: this.rover_longitude_deg,
           bearing_deg: this.rover_bearing_deg,
         } as Odom)
-      } else if (msg.type == 'drone_waypoint') {
-        // currently inactive
-        this.drone_latitude_deg = msg.latitude
-        this.drone_longitude_deg = msg.longitude
-        this.drone_status = msg.status
-        this.$emit('drone_odom', {
-          latitude_deg: this.drone_latitude_deg,
-          longitude_deg: this.drone_longitude_deg,
-        })
       } else if (msg.type == 'basestation_position') {
         console.log('basestation position received')
         this.basestation_latitude_deg = msg.latitude
@@ -159,8 +149,15 @@ export default {
           latitude_deg: this.basestation_latitude_deg,
           longitude_deg: this.basestation_longitude_deg,
         } as Odom)
-      } else if (msg.type == 'orientation') {
-        // currently inactive
+      } else if (msg.type == 'drone_waypoint') {
+        this.drone_latitude_deg = msg.latitude
+        this.drone_longitude_deg = msg.longitude
+        this.drone_status = msg.status
+        this.$emit('drone_odom', {
+          latitude_deg: this.drone_latitude_deg,
+          longitude_deg: this.drone_longitude_deg,
+        })
+      } else if (msg.type == 'orientation') { // currently inactive, DEPRECATED?
         this.rover_bearing_deg = quaternionToMapAngle(msg.orientation)
         this.$emit('odom', {
           latitude_deg: this.rover_latitude_deg,

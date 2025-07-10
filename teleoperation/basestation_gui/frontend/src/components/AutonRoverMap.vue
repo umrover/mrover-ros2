@@ -222,7 +222,7 @@ export default {
   position: relative; /* Set this to position controls over map */
   width: 100%;
   height: 100%;
-  min-height: 60vh;
+  min-height: 40vh;
 }
 
 .map {

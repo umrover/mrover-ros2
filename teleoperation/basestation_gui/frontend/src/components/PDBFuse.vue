@@ -64,7 +64,7 @@ export default {
   },
 
   watch: {
-    message(msg) {
+    message(msg) { // DEPRECATED
       if (msg.type == 'pdb') {
         for (let i = this.pdb_data.length - 1; i >= 0; i--) {
           this.updateVal(this.pdb_data[i].temp, msg.temperatures[i], pdb_temp_limit)

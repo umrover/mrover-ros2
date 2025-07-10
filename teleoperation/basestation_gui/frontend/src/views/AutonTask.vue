@@ -44,6 +44,7 @@
       </div>
     </div>
     <div class="island p-3 rounded moteus">
+      <!-- drive_left_state and drive_right_state not found -->
       <ControllerDataTable
         msg-type="drive_left_state"
         header="Drive Left States"
@@ -67,6 +68,7 @@ import DriveControls from '../components/DriveControls.vue'
 import MastGimbalControls from '../components/MastGimbalControls.vue'
 import ControllerDataTable from '../components/ControllerDataTable.vue'
 import { defineComponent } from 'vue'
+import type { WebSocketState } from '../types/websocket'
 
 interface Odom {
   latitude_deg: number
@@ -104,7 +106,10 @@ export default defineComponent({
   },
 
   computed: {
-    ...mapState('websocket', ['message']),
+    ...mapState('websocket', {
+      scienceMessage: (state: WebSocketState) => state.messages['science'],
+      navMessage: (state: WebSocketState) => state.messages['nav']
+    }),
 
     ...mapGetters('autonomy', {
       autonEnabled: 'autonEnabled',
@@ -113,17 +118,20 @@ export default defineComponent({
   },
 
   watch: {
-    message(msg) {
+    scienceMessage(msg) {
       if (msg.type == 'led') {
         if (msg.red)
           this.ledColor = 'bg-danger' //red
         else if (msg.green)
           this.ledColor = 'blink' //blinking green
         else if (msg.blue) this.ledColor = 'bg-primary' //blue
-      } else if (msg.type == 'nav_state') {
-        this.navState = msg.state
       }
     },
+    navMessage(msg) {
+      if (msg.type == 'nav_state') {
+        this.navState = msg.state
+      }
+    }
   },
 
   methods: {

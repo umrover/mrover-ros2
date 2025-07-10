@@ -68,6 +68,7 @@ import Vuex from 'vuex'
 const { mapState } = Vuex
 import Chart from 'chart.js/auto'
 import type { SensorData } from '../types/sensors'
+import type { WebSocketState } from '../types/websocket'
 
 export default {
   props: {
@@ -195,7 +196,9 @@ export default {
   },
 
   computed: {
-    ...mapState('websocket', ['message']),
+    ...mapState('websocket', {
+      scienceMessage: (state: WebSocketState) => state.messages['science']
+    }),
     sensorValues() {
       return [
         this.sensor_data.oxygen,
@@ -216,7 +219,7 @@ export default {
     // })
   },
   watch: {
-    message(msg) {
+    scienceMessage(msg) {
       switch (msg.type) {
         case 'oxygen':
           this.sensor_data.oxygen = msg.percent

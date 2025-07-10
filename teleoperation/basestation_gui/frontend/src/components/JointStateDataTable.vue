@@ -64,7 +64,7 @@
     },
   
     watch: {
-      message(msg) {
+      message(msg) { // COMPONENT NOT USED
         if (msg.type == this.msgType) {
           this.name = msg.name
           this.position = msg.position

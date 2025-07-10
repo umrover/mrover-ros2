@@ -27,6 +27,7 @@
 import Vuex from 'vuex'
 const { mapState, mapActions } = Vuex
 import html2canvas from 'html2canvas'
+import type { WebSocketState } from '../types/websocket'
 
 export default {
   data() {
@@ -43,11 +44,13 @@ export default {
   },
 
   computed: {
-    ...mapState('websocket', ['message']),
+    ...mapState('websocket', {
+      scienceMessage: (state: WebSocketState) => state.messages['science']
+    }),
   },
 
   watch: {
-    message(msg) {
+    scienceMessage(msg) {// NOT YET IMPLEMENTED / MISSING IMPL
       switch (msg.type) {
         case 'soil_temp':
           this.temp = msg.temperature
