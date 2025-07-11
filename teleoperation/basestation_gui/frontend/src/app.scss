@@ -9,4 +9,4 @@ $body-bg: #ffffff;
 $body-alt: #dddddd;
 
 // Then import Bootstrap SCSS files (order is important)
-// @import 'node_modules/bootstrap/scss/bootstrap.scss';
+@import '../node_modules/bootstrap/scss/bootstrap.scss';

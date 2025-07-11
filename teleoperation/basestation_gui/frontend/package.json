@@ -16,6 +16,7 @@
     "@popperjs/core": "^2.11.8",
     "@vue-leaflet/vue-leaflet": "^0.10.1",
     "bootstrap": "^5.3.7",
+    "bootstrap-scss": "^5.3.4",
     "chart.js": "^4.5.0",
     "html2canvas": "^1.4.1",
     "leaflet": "^1.9.4",
