@@ -125,23 +125,6 @@
 # - name: Install ROS Packages
 #   # command: rosdep install --from-paths {{ ros2_workspace }}/src --ignore-src -y --rosdistro={{ ros_distro }}
 
-# - name: Download Bun Installer
-#   get_url:
-#     url: https://bun.sh/install
-#     dest: /tmp/bun_installer.sh
-#     mode: 0755
-
-# - name: Run Bun Installer
-#   command: /tmp/bun_installer.sh
-#   args:
-#     creates: ~/.bun/bin/bun
-
-# - name: Upgrade Bun
-#   command: ~/.bun/bin/bun upgrade
-
-# - name: Install Bun Packages
-#   command: ~/.bun/bin/bun install --cwd {{ catkin_workspace }}/src/mrover/src/teleoperation/frontend
-
 - name: Set G++ 13 as Default
   become: True
   alternatives:
