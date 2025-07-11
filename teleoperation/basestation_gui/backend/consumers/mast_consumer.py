@@ -4,12 +4,17 @@ from typing import Any, Type
 
 from channels.generic.websocket import JsonWebsocketConsumer
 from numpy import float32
+import rclpy.duration
+from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy, DurabilityPolicy
 from rosidl_runtime_py.convert import message_to_ordereddict
 
 import rclpy
 import tf2_ros
 import asyncio
 import threading
+import numpy as np
+import cv2
+from time import sleep
 from rclpy.executors import MultiThreadedExecutor
 from backend.consumers.init_node import get_node, get_context
 
@@ -32,7 +37,7 @@ from backend.waypoints import (
     delete_auton_waypoint_from_course
 )
 from geometry_msgs.msg import Twist, Vector3
-from sensor_msgs.msg import NavSatFix, Temperature, RelativeHumidity, JointState
+from sensor_msgs.msg import NavSatFix, Temperature, RelativeHumidity, Image, JointState
 from mrover.msg import (
     Throttle,
     IK,
@@ -46,10 +51,13 @@ from mrover.msg import (
     Oxygen,
     Methane,
     UV,
+    Position,
 )
 from mrover.srv import (
     EnableAuton, 
     EnableBool,
+    PanoramaStart,
+    PanoramaEnd,
     ServoSetPos 
 )
 from std_srvs.srv import SetBool
@@ -78,6 +86,8 @@ class MastConsumer(JsonWebsocketConsumer):
         # Forwards ROS topic to GUI
 
         # Services
+        self.pano_start_srv = self.node.create_client(PanoramaStart, "/panorama/start")
+        self.pano_end_srv = self.node.create_client(PanoramaEnd, "/panorama/end")
 
     def disconnect(self, close_code) -> None:
         for subscriber in self.subscribers:
@@ -106,6 +116,38 @@ class MastConsumer(JsonWebsocketConsumer):
             self.send_message_as_json({"type": gui_msg_type, **message_to_ordereddict(ros_message)})
 
         self.subscribers.append(self.node.create_subscription(topic_type, topic_name, callback, qos_profile=1))
+
+
+    def start_stop_pano(self, action: str) -> None:
+        if action == "start":
+            self.node.get_logger().info("Pano start")
+            self.pano_start_srv.call_async(PanoramaStart.Request())
+        else:
+            self.node.get_logger().info("Pano stop")
+            self.future = self.pano_end_srv.call_async(PanoramaEnd.Request())
+            
+            self.future.add_done_callback(self.handle_pano_response)
+
+            self.node.get_logger().warn("Waiting for pano result...")
+
+    def handle_pano_response(self, future):
+        self.node.get_logger().warn("Callback run...")
+
+        if future.done():
+            result = future.result()
+            
+            if result is not None and result.success:
+                img_msg: Image = result.img
+                img_np = np.frombuffer(img_msg.data, dtype=np.uint8).reshape(
+                    img_msg.height, img_msg.width, 4
+                )
+                timestamp = f"{self.node.get_clock().now().seconds_nanoseconds()[0]}_{self.node.get_clock().now().seconds_nanoseconds()[1]}"
+                cv2.imwrite(f"../../data/{timestamp}panorama.png", img_np)
+                self.node.get_logger().info(f"Image saved to {timestamp}panorama.png")
+            else:
+                self.node.get_logger().info("No response...")
+        else:
+            self.node.get_logger().error("Service call failed...")
 
     def send_message_as_json(self, msg: dict):
         try:
@@ -137,7 +179,9 @@ class MastConsumer(JsonWebsocketConsumer):
                 }:
                     device_input = DeviceInputs(axes, buttons)
                     send_mast_controls(device_input, self.mast_gimbal_pub)
-
+                case {"type": "pano", "action": a}:
+                    self.start_stop_pano(a)
+                    
                 case _:
                     self.node.get_logger().warning(f"Unhandled message on mast: {message}")
         except:

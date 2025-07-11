@@ -124,7 +124,6 @@ import WaypointStore from './AutonWaypointStore.vue'
 import type { Waypoint } from '../types/waypoint'
 import Vuex from 'vuex'
 const { mapState, mapActions, mapMutations, mapGetters } = Vuex
-import _ from 'lodash'
 import L from 'leaflet'
 import { reactive } from 'vue'
 import { Modal } from 'bootstrap'

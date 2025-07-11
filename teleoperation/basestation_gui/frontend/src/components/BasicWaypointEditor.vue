@@ -114,7 +114,6 @@ import { convertDMS } from '../utils/map.js'
 import WaypointItem from './BasicWaypointItem.vue'
 import Vuex from 'vuex';
 const { mapMutations, mapGetters, mapActions, mapState } = Vuex
-import _ from 'lodash'
 import L from 'leaflet'
 import type { WebSocketState } from '../types/websocket.js';
 
@@ -214,7 +213,7 @@ export default {
     storedWaypoints: {
       handler: function (newList) {
         const waypoints = newList.map(
-          (waypoint: { lat: any; lon: any; name: any; drone: any }) => {
+          (waypoint: { lat: number; lon: number; name: string; drone: boolean }) => {
             return {
               latLng: L.latLng(waypoint.lat, waypoint.lon),
               name: waypoint.name,
@@ -240,7 +239,7 @@ export default {
           // Get waypoints from server on page load
           this.storedWaypoints = msg.data
           const waypoints = msg.data.map(
-            (waypoint: { lat: any; lon: any; name: any }) => {
+            (waypoint: { lat: number; lon: number; name: string }) => {
               const lat = waypoint.lat
               const lon = waypoint.lon
               return { latLng: L.latLng(lat, lon), name: waypoint.name }

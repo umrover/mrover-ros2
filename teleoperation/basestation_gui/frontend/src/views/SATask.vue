@@ -32,6 +32,9 @@
     <div class="island p-3 rounded lsActuator">
       <LSActuator />
     </div>
+    <div class="island p-3 rounded pano">
+      <PanoCam />
+    </div>
   </div>
 </template>
 
@@ -48,6 +51,7 @@ import ControllerDataTable from '../components/ControllerDataTable.vue'
 import SAArmControls from '../components/SAArmControls.vue'
 import HexHub from '../components/HexHub.vue'
 import LSActuator from '../components/LSActuator.vue'
+import PanoCam from '../components/PanoCam.vue'
 
 interface Odom {
   latitude_deg: number
@@ -67,6 +71,7 @@ export default {
     OdometryReading,
     HexHub,
     LSActuator,
+    PanoCam
   },
   data() {
     return {
@@ -138,10 +143,11 @@ export default {
   grid-gap: 10px;
   grid-template-columns: 50% repeat(2, auto);
   grid-template-areas:
+    'header header header'
     'arm lsActuator soilData'
     'map hexHub waypoints'
-    'map odom odom'
-    'moteus moteus moteus';
+    'map pano waypoints'
+    'moteus odom odom';
   font-family: sans-serif;
   height: auto;
   width: 100%;
@@ -177,5 +183,9 @@ export default {
 
 .lsActuator {
   grid-area: lsActuator;
+}
+
+.pano {
+  grid-area: pano;
 }
 </style>

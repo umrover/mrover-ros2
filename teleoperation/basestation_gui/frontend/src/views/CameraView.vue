@@ -51,11 +51,10 @@
 </template>
 
 <script lang="ts">
-import type { WebSocketState } from '../types/websocket';
 import CameraFeed from '../components/CameraFeed.vue'
 import ToggleButton from "../components/ToggleButton.vue";
 import Vuex from 'vuex'
-const { mapActions, mapState } = Vuex
+const { mapActions } = Vuex
 
 export default {
   components: {
@@ -80,19 +79,7 @@ export default {
     }
   },
 
-  computed: {
-    ...mapState('websocket', {
-      mastMessage: (state: WebSocketState) => state.messages['mast']
-    }),
-  },
-
-
   watch: {
-    mastMessage(msg) { // NOT YET IMPLEMENTED
-      if (msg.type == 'pano_feedback') {
-        this.percent = msg.percent;
-      }
-    },
     selectedMission(newMission: string) {
       // when another mission is selected, add true values based on the number of cameras for that mission
       this.camsEnabled = new Array(this.cameras[newMission].length).fill(true);
@@ -107,15 +94,6 @@ export default {
 
   methods: {
     ...mapActions('websocket', ['sendMessage']),
-
-    takePanorama() {
-      this.$store.dispatch('websocket/sendMessage', {
-        id: 'mast',
-        message: {
-          type: 'takePanorama',
-        },
-      }) // NOT IMPLEMENTED, PLACEHOLDER
-    },
 
     toggleCamera(idx: number) {
       this.camsEnabled[idx] = !this.camsEnabled[idx];
