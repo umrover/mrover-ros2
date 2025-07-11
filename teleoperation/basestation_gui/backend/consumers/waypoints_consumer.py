@@ -37,8 +37,6 @@ class WaypointsConsumer(JsonWebsocketConsumer):
         self.ros_thread = threading.Thread(target=self.ros_spin, daemon=True)
         self.ros_thread.start()
 
-        self.node.get_logger().info("waypoints consumer started")
-
     def disconnect(self, close_code) -> None:
         for subscriber in self.subscribers:
             self.node.destroy_subscription(subscriber)
