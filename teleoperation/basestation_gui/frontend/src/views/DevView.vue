@@ -1,14 +1,17 @@
 <template>
   <OdometryReading />
+  <WebsocketStatus />
 </template>
 
 <script lang="ts">
 import OdometryReading from '../components/OdometryReading.vue'
+import WebsocketStatus from '../components/WebsocketStatus.vue';
 import { defineComponent } from 'vue'
 
 export default defineComponent({
   components: {
     OdometryReading,
+    WebsocketStatus,
   },
 
   mounted() {
@@ -36,7 +39,7 @@ export default defineComponent({
       }, 1000)
 
       // Optional: stop after 10 seconds
-      setTimeout(() => clearInterval(interval), 10000)
+      setTimeout(() => clearInterval(interval), 5000)
     },
   },
 })

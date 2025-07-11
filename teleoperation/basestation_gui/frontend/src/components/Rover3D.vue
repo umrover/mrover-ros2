@@ -101,7 +101,7 @@ function threeSetup(containerId: string) {
 
   const resizeObserver = new ResizeObserver(() => {
     setSize()
-    console.log(`ResizeObserver: Canvas size updated to ${container.clientWidth}x${container.clientHeight}`)
+    // console.log(`ResizeObserver: Canvas size updated to ${container.clientWidth}x${container.clientHeight}`)
   })
   resizeObserver.observe(container)
 
