@@ -1,6 +1,6 @@
 <template>
 	<div class="wrapper">
-		<div class="px-3 py-2 header">
+		<div class="ps-3 pe-2 py-2 d-flex justify-content-between align-items-center position-relative">
 			<a class="logo" href="/"><img src="/mrover.png" alt="MRover" title="MRover" width="200" /></a>
 			<h1>{{ getTitleForRoute($route.path) }}</h1>
       <div class="d-flex gap-1">
@@ -44,14 +44,6 @@ export default defineComponent({
 </script>
 
 <style scoped>
-
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  position: relative;
-}
-
 h1 {
 	font-family: 'Consolas', 'Courier New', 'DejaVu Sans Mono', monospace;
   font-weight: 400;
@@ -63,6 +55,6 @@ h1 {
 
 .logo {
   position: absolute;
-  left: 45%;
+  left: 48%;
 }
 </style>

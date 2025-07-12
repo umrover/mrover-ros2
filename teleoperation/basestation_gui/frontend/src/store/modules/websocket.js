@@ -14,7 +14,7 @@ function debounceFlashClear(id, type, commit) {
       commit('clearFlashOut', id)
     }
     delete timers[id]
-  }, 200)
+  }, 100)
 }
 
 function setupWebsocket(id, commit) {
@@ -62,15 +62,17 @@ function setupWebsocket(id, commit) {
   }
 
   // Wrap send to track outgoing data activity
-  const originalSend = socket.send
+  const originalSend = socket.send;
   socket.send = function (data) {
-    commit('setLastOutgoingActivity', { id, timestamp: Date.now() })
-    commit('setFlashOut', { id, value: true })
-
-    debounceFlashClear(id, 'out', commit)
-
-    return originalSend.call(this, data)
-  }
+    if (this.readyState !== WebSocket.OPEN) {
+      console.warn(`WebSocket [${id}] is not open. Current state: ${this.readyState}`);
+      return;
+    }
+    commit('setLastOutgoingActivity', { id, timestamp: Date.now() });
+    commit('setFlashOut', { id, value: true });
+    debounceFlashClear(id, 'out', commit);
+    return originalSend.call(this, data);
+  };
 
   webSockets[id] = socket // Store reference
 }
@@ -126,7 +128,7 @@ const actions = {
       console.log('websocket selection failed with id', id)
       return
     }
-    if (!socket.readyState) {
+    if (socket.readyState === socket.CLOSED) {
       console.log('websocket ' + id + ' not ready')
       return
     }

@@ -112,7 +112,7 @@ export default defineComponent({
   gap: 10px;
   grid-template-columns: 50% 50%;
   grid-template-areas:
-    'arm-controls arm-controls'
+    'arm-controls waypoint-editor'
     'map waypoint-editor'
     'map odom'
     'controller_state rover-3d';

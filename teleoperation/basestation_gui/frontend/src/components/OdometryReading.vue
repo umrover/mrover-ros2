@@ -141,7 +141,6 @@ export default {
           bearing_deg: this.rover_bearing_deg,
         } as Odom)
       } else if (msg.type == 'basestation_position') {
-        console.log('basestation position received')
         this.basestation_latitude_deg = msg.latitude
         this.basestation_longitude_deg = msg.longitude
         this.basestation_status = msg.status

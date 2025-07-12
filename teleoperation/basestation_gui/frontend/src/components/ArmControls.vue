@@ -1,48 +1,39 @@
 <template>
   <div class="wrap">
     <h2>Arm Controls</h2>
-    <div class="controls-flex">
-      <input
-        v-model="mode"
-        type="radio"
-        class="btn-check"
-        name="options-outlined"
-        id="disabled"
-        value="disabled"
-        autocomplete="off"
-        checked
-      />
-      <label class="btn btn-outline-danger" for="disabled">Disabled</label>
-      <input
-        v-model="mode"
-        type="radio"
-        class="btn-check"
-        name="options-outlined"
-        id="throttle"
-        value="throttle"
-        autocomplete="off"
-      />
-      <label class="btn btn-outline-success" for="throttle">Throttle</label>
-      <input
-        v-model="mode"
-        type="radio"
-        class="btn-check"
-        name="options-outlined"
-        id="ik-pos"
-        value="ik-pos"
-        autocomplete="off"
-      />
-      <label class="btn btn-outline-success" for="ik-pos">IK Position</label>
-      <input
-        v-model="mode"
-        type="radio"
-        class="btn-check"
-        name="options-outlined"
-        id="ik-vel"
-        value="ik-vel"
-        autocomplete="off"
-      />
-      <label class="btn btn-outline-success" for="ik-vel">IK Velocity</label>
+    <div class="btn-group" role="group" aria-label="Arm mode selection">
+      <button
+        type="button"
+        class="btn"
+        :class="mode === 'disabled' ? 'btn-danger' : 'btn-outline-danger'"
+        @click="mode = 'disabled'"
+      >
+        Disabled
+      </button>
+      <button
+        type="button"
+        class="btn"
+        :class="mode === 'throttle' ? 'btn-success' : 'btn-outline-success'"
+        @click="mode = 'throttle'"
+      >
+        Throttle
+      </button>
+      <button
+        type="button"
+        class="btn"
+        :class="mode === 'ik-pos' ? 'btn-success' : 'btn-outline-success'"
+        @click="mode = 'ik-pos'"
+      >
+        IK Position
+      </button>
+      <button
+        type="button"
+        class="btn"
+        :class="mode === 'ik-vel' ? 'btn-success' : 'btn-outline-success'"
+        @click="mode = 'ik-vel'"
+      >
+        IK Velocity
+      </button>
     </div>
   </div>
 </template>

@@ -1,6 +1,6 @@
 <template>
   <div class="wrapper view-wrapper">
-    <div class="island p-3 rounded map">
+    <div class="island p-0 rounded map">
       <BasicMap :odom="odom" />
     </div>
     <div class="island p-3 rounded waypoints">
@@ -15,10 +15,10 @@
     <div class="island p-3 rounded arm">
       <SAArmControls :currentSite="siteSelect" />
     </div>
-    <div class="island p-3 rounded moteus">
+    <div class="island p-1 rounded moteus d-flex gap-2">
       <!-- drive_state and sa_state not found -->
-      <ControllerDataTable msg-type="drive_state" header="Drive States" />
-      <ControllerDataTable msg-type="sa_state" header="SA States" />
+      <ControllerDataTable msg-type="drive_state" header="Drive States" class="rounded border border-2 p-2"/>
+      <ControllerDataTable msg-type="sa_state" header="SA States" class="rounded border border-2 p-2"/>
     </div>
     <div v-show="false">
       <MastGimbalControls />
@@ -71,7 +71,7 @@ export default {
     OdometryReading,
     HexHub,
     LSActuator,
-    PanoCam
+    PanoCam,
   },
   data() {
     return {
@@ -143,7 +143,6 @@ export default {
   grid-gap: 10px;
   grid-template-columns: 50% repeat(2, auto);
   grid-template-areas:
-    'header header header'
     'arm lsActuator soilData'
     'map hexHub waypoints'
     'map pano waypoints'

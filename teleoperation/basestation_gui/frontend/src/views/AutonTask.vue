@@ -149,19 +149,17 @@ export default defineComponent({
 
   topics: ['auton', 'drive', 'nav', 'science', 'waypoints'],
 
-  mounted: async function () {
-    window.setTimeout(() => {
-      for (const topic of this.$options.topics)
-        this.$store.dispatch('websocket/setupWebSocket', topic)
-    }, 500)
+  mounted() {
+    for (const topic of this.$options.topics)
+      this.$store.dispatch('websocket/setupWebSocket', topic)
   },
 
-  unmounted: function () {
+  unmounted() {
     for (const topic of this.$options.topics)
       this.$store.dispatch('websocket/closeWebSocket', topic)
   },
 
-  beforeUnmount: function () {
+  beforeUnmount() {
     this.ledColor = 'bg-white'
   },
 })

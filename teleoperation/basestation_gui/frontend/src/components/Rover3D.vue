@@ -31,7 +31,7 @@ function threeSetup(containerId: string) {
     height: container.clientHeight
   }
 
-  console.log(`Canvas size: ${canvas.width}x${canvas.height}`)
+  // console.log(`Canvas size: ${canvas.width}x${canvas.height}`)
 
   const scene = new THREE.Scene()
   const camera = new THREE.PerspectiveCamera(75, canvas.width / canvas.height, 0.1, 1000)

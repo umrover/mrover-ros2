@@ -10,15 +10,15 @@ import os
 from channels.auth import AuthMiddlewareStack
 from channels.routing import ProtocolTypeRouter, URLRouter
 from django.core.asgi import get_asgi_application
-import basestation_gui.urls
+import basestation_gui.routing
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "basestation_gui.settings")
 
 application = ProtocolTypeRouter(
     {
-        # handle http/https requests
         "http": get_asgi_application(),
-        # handle ws/wss requests
-        "websocket": AuthMiddlewareStack(URLRouter(basestation_gui.urls.websocket_urlpatterns)),
+        "websocket": AuthMiddlewareStack(
+            URLRouter(basestation_gui.routing.websocket_urlpatterns)
+        ),
     }
 )

@@ -99,10 +99,16 @@ class ScienceConsumer(JsonWebsocketConsumer):
             self.white_leds_services.append(self.node.create_client(EnableBool, "/science_enable_white_led_" + site))
 
     def disconnect(self, close_code) -> None:
-        for subscriber in self.subscribers:
-            self.node.destroy_subscription(subscriber)
-        self.subscribers.clear()
-        self.timers.clear()
+        try:
+            for subscriber in self.subscribers:
+                self.node.destroy_subscription(subscriber)
+            self.subscribers.clear()
+            self.timers.clear()
+
+            if self.ros_thread.is_alive():
+                self.ros_thread.join(timeout=1)
+        except Exception as e:
+            print(f"Exception during disconnect cleanup: {e}")
 
     def ros_spin(self) -> None:
         executor = MultiThreadedExecutor(context=self.ros_context)

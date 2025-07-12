@@ -1,9 +1,9 @@
 <template>
-  <div class="wrap">
+  <div class="position-relative w-100 h-100 min-vh-40">
     <l-map
       @ready="onMapReady"
       ref="map"
-      class="map"
+      class="map z-0"
       :zoom="22"
       :center="center"
       @click="getClickedLatLon($event)"
@@ -33,7 +33,20 @@
       <l-polyline :lat-lngs="odomPath" :color="'blue'" />
       <l-polyline :lat-lngs="dronePath" :color="'green'" />
     </l-map>
-    <label><input v-model="online" type="checkbox" /> Online</label>
+    <div
+      class="controls px-2 py-1 position-absolute d-flex align-items-center gap-2 top-0 end-0 m-2 bg-white rounded"
+    >
+      <input
+        v-model="online"
+        type="checkbox"
+        class="form-check-input p-0"
+        style="width: 14px; height: 14px; vertical-align: middle"
+      />
+      <p class="mb-0 text-body" style="font-size: 14px; line-height: 18px">
+        Online
+      </p>
+    </div>
+
     <div class="odometry" v-if="odom">
       <p>
         Lat: {{ odom.latitude_deg.toFixed(6) }}º N, Lon:
@@ -313,17 +326,3 @@ export default {
   },
 }
 </script>
-
-<style scoped>
-.map {
-  height: 100%;
-  width: 100%;
-}
-
-.wrap {
-  display: flex;
-  align-items: center;
-  height: 100%;
-  width: 100%;
-}
-</style>
