@@ -2,10 +2,10 @@
 	<div class="wrapper">
 		<div class="ps-3 pe-2 py-2 d-flex justify-content-between align-items-center position-relative">
 			<a class="logo" href="/"><img src="/mrover.png" alt="MRover" title="MRover" width="200" /></a>
-			<h1>{{ getTitleForRoute($route.path) }}</h1>
+      <h1>{{ title }}</h1>
       <div class="d-flex gap-1">
         <WebsocketStatus />
-        <NetworkMonitor v-if="showNetworkMonitor($route.path)" />
+        <NetworkMonitor v-if="showMonitor" />
       </div>
 		</div>
   </div>
@@ -18,6 +18,16 @@ import WebsocketStatus from '../components/WebsocketStatus.vue';
 
 export default defineComponent({
   name: 'NavBar',
+  computed: {
+    title(): string {
+      // @ts-expect-error ts dumb
+      return this.getTitleForRoute(this.$route.path)
+    },
+    showMonitor(): boolean {
+      // @ts-expect-error ts dumb
+      return this.showNetworkMonitor(this.$route.path)
+    },
+  },
 	components: {
     NetworkMonitor,
     WebsocketStatus

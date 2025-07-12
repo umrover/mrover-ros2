@@ -78,8 +78,6 @@ class MastConsumer(JsonWebsocketConsumer):
         self.ros_thread = threading.Thread(target=self.ros_spin, daemon=True)
         self.ros_thread.start()
 
-        print("mast consumer started")
-
         # Topic Publishers
         self.mast_gimbal_pub = self.node.create_publisher(Throttle, "/mast_gimbal_throttle_cmd", 1)
 

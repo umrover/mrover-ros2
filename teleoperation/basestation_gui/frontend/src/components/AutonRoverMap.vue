@@ -1,5 +1,5 @@
 <template>
-  <div class="position-relative w-100 h-100 min-vh-40">
+  <div class="position-relative w-100 h-100">
     <l-map
       @ready="onMapReady"
       ref="map"

@@ -73,8 +73,6 @@ class ArmConsumer(JsonWebsocketConsumer):
         self.ros_thread = threading.Thread(target=self.ros_spin, daemon=True)
         self.ros_thread.start()
 
-        print("arm consumer started")
-
         # Topic Publishers
         self.thr_pub = self.node.create_publisher(Throttle, "arm_throttle_cmd", 1)
         self.ee_pos_pub = self.node.create_publisher(IK, "ee_pos_cmd", 1)

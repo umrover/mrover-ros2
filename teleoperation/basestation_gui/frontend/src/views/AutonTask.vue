@@ -7,15 +7,12 @@
         @basestation_odom="updateBasestationOdom"
       />
     </div>
-    <div class="island p-3 rounded feed">
-      <!-- meant to be cost map -->
+    <div class="island p-0 rounded feed">
       <button @click="toggleFeed" class="btn btn-primary mb-2">
         {{ cameraFeedEnabled ? 'Disable' : 'Enable' }} Camera Feed
       </button>
-      <div v-if="cameraFeedEnabled" class="camera-container">
-        <CameraFeed :mission="'ZED'" :id="0" :name="'ZED'" />
-        <p v-if="cameraFeedEnabled">Camera Feed On</p>
-      </div>
+      <CameraFeed v-if="cameraFeedEnabled" :mission="'ZED'" :id="0" :name="'ZED'" />
+      <img v-else src="/stream_placeholder.svg" alt="Camera Disabled" />
     </div>
     <div class="island p-0 rounded map">
       <AutonRoverMap :odom="odom" :basestation="basestationOdom" />
@@ -43,7 +40,7 @@
         <h4>Obstruction Detected</h4>
       </div>
     </div>
-    <div class="island p-3 rounded moteus">
+    <div class="island p-3 rounded moteus d-flex">
       <!-- drive_left_state and drive_right_state not found -->
       <ControllerDataTable
         msg-type="drive_left_state"
@@ -108,7 +105,7 @@ export default defineComponent({
   computed: {
     ...mapState('websocket', {
       scienceMessage: (state: WebSocketState) => state.messages['science'],
-      navMessage: (state: WebSocketState) => state.messages['nav']
+      navMessage: (state: WebSocketState) => state.messages['nav'],
     }),
 
     ...mapGetters('autonomy', {
@@ -131,7 +128,7 @@ export default defineComponent({
       if (msg.type == 'nav_state') {
         this.navState = msg.state
       }
-    }
+    },
   },
 
   methods: {
@@ -233,11 +230,5 @@ h2 {
 .btn {
   display: block;
   margin: 10px auto;
-}
-
-.camera-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
 }
 </style>

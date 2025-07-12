@@ -72,8 +72,6 @@ class AutonConsumer(JsonWebsocketConsumer):
         self.ros_thread = threading.Thread(target=self.ros_spin, daemon=True)
         self.ros_thread.start()
 
-        print("auton consumer started")
-
         # Forwards ROS topic to GUI
 
         # Services

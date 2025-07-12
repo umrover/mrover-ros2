@@ -72,8 +72,6 @@ class ScienceConsumer(JsonWebsocketConsumer):
         self.ros_thread = threading.Thread(target=self.ros_spin, daemon=True)
         self.ros_thread.start()
 
-        print("science consumer started")
-
         # Forwards ROS topic to GUI
         self.forward_ros_topic("/led", LED, "led")
         self.forward_ros_topic("/science_thermistors", ScienceThermistors, "thermistors")
@@ -84,8 +82,6 @@ class ScienceConsumer(JsonWebsocketConsumer):
         self.forward_ros_topic("/science_temperature_data", Temperature, "temperature")
         self.forward_ros_topic("/science_humidity_data", RelativeHumidity, "humidity")
         self.forward_ros_topic("/sa_gear_diff_position", Float32, "hexhub_site")
-
-
 
         # Services
         self.auto_shutoff_service = self.node.create_client(EnableBool, "/science_change_heater_auto_shutoff_state")

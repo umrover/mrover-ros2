@@ -2,7 +2,7 @@
   <div class="wrapper">
     <div class="col-wrap">
       <div class="waypoint-header pb-2">
-        <h3>Waypoints</h3>
+        <h3 class=" font-monospace m-0 p-0">Waypoints</h3>
         <button class="btn btn-success" @click="openModal()">
           Add from Map
         </button>
@@ -489,9 +489,6 @@ export default {
 }
 
 h3 {
-  margin: 0;
-  padding: 0;
-  font-family: monospace;
   letter-spacing: -0.1rem;
 }
 
