@@ -38,14 +38,3 @@ export default defineComponent({
   },
 })
 </script>
-
-<style scoped>
-.blinking {
-  animation: blink 0.1s linear;
-}
-@keyframes blink {
-  50% {
-    opacity: 0;
-  }
-}
-</style>
