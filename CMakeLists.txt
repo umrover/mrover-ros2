@@ -229,67 +229,67 @@ target_link_libraries(simulator
 target_include_directories(simulator SYSTEM PRIVATE ${BULLET_INCLUDE_DIRS} ${OPENCV_INCLUDE_DIRS})
 
 
-# # Perception
+# Perception
 
-# find_package(ZED QUIET)
-# find_package(CUDA QUIET)
-# find_package(OpenCV REQUIRED)
-# if(ZED_FOUND AND CUDA_FOUND)
-#     enable_language(CUDA)
-#     # CUDA Compile Options
-#     add_library(cuda_compiler_flags INTERFACE)
-#     target_compile_options(cuda_compiler_flags INTERFACE 
-#         -Wno-pedantic 
-#         -Wno-deprecated 
-#         -Wno-unused-parameter 
-#         -diag-suppress=815 
-#         -diag-suppress=780 
-#         -Wno-deprecated-copy 
-#         -Wno-unused-command-line-argument 
-#         -Wno-ignored-qualifiers 
-#         -Wno-sometimes-uninitialized
-#     )
+find_package(ZED QUIET)
+find_package(CUDA QUIET)
+find_package(OpenCV REQUIRED)
+if(ZED_FOUND AND CUDA_FOUND)
+    enable_language(CUDA)
+    # CUDA Compile Options
+    add_library(cuda_compiler_flags INTERFACE)
+    target_compile_options(cuda_compiler_flags INTERFACE 
+        -Wno-pedantic 
+        -Wno-deprecated 
+        -Wno-unused-parameter 
+        -diag-suppress=815 
+        -diag-suppress=780 
+        -Wno-deprecated-copy 
+        -Wno-unused-command-line-argument 
+        -Wno-ignored-qualifiers 
+        -Wno-sometimes-uninitialized
+    )
 
-#     # ZED Wrapper
+    # ZED Wrapper
 
-#     set(THRUST_WRAPPED_NAMESPACE wrapped_thrust)
-#     set(CUB_WRAPPED_NAMESPACE wrapped_cub)
+    set(THRUST_WRAPPED_NAMESPACE wrapped_thrust)
+    set(CUB_WRAPPED_NAMESPACE wrapped_cub)
 
-#     add_definitions(-DTHRUST_WRAPPED_NAMESPACE=${THRUST_WRAPPED_NAMESPACE})
-#     add_definitions(-DCUB_WRAPPED_NAMESPACE=${CUB_WRAPPED_NAMESPACE})
+    add_definitions(-DTHRUST_WRAPPED_NAMESPACE=${THRUST_WRAPPED_NAMESPACE})
+    add_definitions(-DCUB_WRAPPED_NAMESPACE=${CUB_WRAPPED_NAMESPACE})
 
-#     mrover_add_component(zed perception/zed_wrapper/*.c* perception/zed_wrapper/pch.hpp ZedWrapper)
-#     target_compile_options(zed_component PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-std=c++20>)
-#     mrover_link_component(zed parameter_utils lie MANIF::manif ${CUDA_LIBRARIES} loop_profiler cuda_compiler_flags)
-#     mrover_ament_component(zed rclcpp rclcpp_components sensor_msgs ZED CUDA tf2 tf2_ros)
+    mrover_add_component(zed perception/zed_wrapper/*.c* perception/zed_wrapper/pch.hpp ZedWrapper)
+    target_compile_options(zed_component PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-std=c++20>)
+    mrover_link_component(zed parameter_utils lie MANIF::manif ${CUDA_LIBRARIES} loop_profiler cuda_compiler_flags)
+    mrover_ament_component(zed rclcpp rclcpp_components sensor_msgs ZED CUDA tf2 tf2_ros)
 
-#     mrover_executable_from_component(zed perception/executables/zed.cpp zed_component)
+    mrover_executable_from_component(zed perception/executables/zed.cpp zed_component)
 
-#     # Learning Library
-#     # TODO(john): Update to use the new API
-# 	mrover_add_library(tensorrt tensorrt/*.c* tensorrt)
-# 	target_compile_options(tensorrt PRIVATE -Wno-deprecated-declarations $<$<COMPILE_LANGUAGE:CUDA>:-std=c++17>)
-# 	target_include_directories(tensorrt PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
-# 	target_link_libraries(tensorrt opencv_core opencv_dnn opencv_imgproc lie nvinfer nvonnxparser tbb cuda_compiler_flags)
+    # Learning Library
+    # TODO(john): Update to use the new API
+	mrover_add_library(tensorrt tensorrt/*.c* tensorrt)
+	target_compile_options(tensorrt PRIVATE -Wno-deprecated-declarations $<$<COMPILE_LANGUAGE:CUDA>:-std=c++17>)
+	target_include_directories(tensorrt PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
+	target_link_libraries(tensorrt opencv_core opencv_dnn opencv_imgproc lie nvinfer nvonnxparser tbb cuda_compiler_flags)
 
-#     # Object Detector
-#     mrover_add_component(object_detector perception/object_detector/*.c* perception/object_detector/pch.hpp StereoObjectDetector ImageObjectDetector)
-#     mrover_link_component(object_detector opencv_core opencv_dnn opencv_imgproc lie tbb tensorrt opencv_imgcodecs opencv_highgui loop_profiler parameter_utils cuda_compiler_flags)
-#     mrover_ament_component(object_detector rclcpp sensor_msgs rclcpp_components CUDA tf2 tf2_ros)
+    # Object Detector
+    mrover_add_component(object_detector perception/object_detector/*.c* perception/object_detector/pch.hpp StereoObjectDetector ImageObjectDetector)
+    mrover_link_component(object_detector opencv_core opencv_dnn opencv_imgproc lie tbb tensorrt opencv_imgcodecs opencv_highgui loop_profiler parameter_utils cuda_compiler_flags)
+    mrover_ament_component(object_detector rclcpp sensor_msgs rclcpp_components CUDA tf2 tf2_ros)
 
-#     mrover_executable_from_component(stereo_object_detector perception/executables/stereo_object_detector.cpp object_detector_component)
-#     mrover_executable_from_component(image_object_detector perception/executables/image_object_detector.cpp object_detector_component)
-# else()
-#     message("ZED not found...")
-# endif()
+    mrover_executable_from_component(stereo_object_detector perception/executables/stereo_object_detector.cpp object_detector_component)
+    mrover_executable_from_component(image_object_detector perception/executables/image_object_detector.cpp object_detector_component)
+else()
+    message("ZED not found...")
+endif()
 
-# # Tag Detector
-# mrover_add_component(tag_detector perception/tag_detector/*.cpp perception/tag_detector/pch.hpp StereoTagDetector ImageTagDetector)
-# mrover_ament_component(tag_detector rclcpp rclcpp_components tf2 tf2_ros)
-# mrover_link_component(tag_detector lie opencv_core opencv_aruco opencv_imgproc loop_profiler parameter_utils)
+# Tag Detector
+mrover_add_component(tag_detector perception/tag_detector/*.cpp perception/tag_detector/pch.hpp StereoTagDetector ImageTagDetector)
+mrover_ament_component(tag_detector rclcpp rclcpp_components tf2 tf2_ros)
+mrover_link_component(tag_detector lie opencv_core opencv_aruco opencv_imgproc loop_profiler parameter_utils)
 
-# mrover_executable_from_component(stereo_tag_detector perception/executables/stereo_tag_detector.cpp tag_detector_component)
-# mrover_executable_from_component(image_tag_detector perception/executables/image_tag_detector.cpp tag_detector_component)
+mrover_executable_from_component(stereo_tag_detector perception/executables/stereo_tag_detector.cpp tag_detector_component)
+mrover_executable_from_component(image_tag_detector perception/executables/image_tag_detector.cpp tag_detector_component)
 
 # # Embedded
 # mrover_add_header_only_library(messaging esw/messaging)
