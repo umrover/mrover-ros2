@@ -1,7 +1,7 @@
 <template>
-  <div class="wrapper">
-    <p class="stat px-2">TX: {{ tx.toFixed(2) }}</p>
-    <p class="stat px-2">RX: {{ rx.toFixed(2) }}</p>
+  <div class="d-flex gap-2 align-items-center px-1 py-1 rounded fw-bold fs-5 text-black border border-2">
+    <p class="mb-0 ps-2">TX: {{ tx.toFixed(2) }}</p>
+    <p class="mb-0 pe-2">RX: {{ rx.toFixed(2) }}</p>
   </div>
 </template>
 
@@ -31,24 +31,3 @@ export default {
   },
 }
 </script>
-
-<style scoped>
-.wrapper {
-  display: flex;
-  flex-direction: row;
-  gap: 0;
-  font-weight: 800;
-  font-size: 1.2rem;
-  color: #333;
-  background: rgba(220, 220, 220, 1);
-  padding: 4px 6px;
-  border-radius: 8px;
-  width: fit-content;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-  user-select: none;
-}
-
-.stat {
-  margin: 0;
-}
-</style>

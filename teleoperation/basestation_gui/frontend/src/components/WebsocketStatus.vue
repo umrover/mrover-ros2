@@ -1,17 +1,24 @@
 <template>
-  <div class="p-2 rounded border shadow bg-white text-body">
-    <h5 class="fw-bold mb-2">WebSocket Status</h5>
+  <div class="d-flex justify-content-center">
     <div
       v-for="(status, id) in connectionStatus"
       :key="id"
-      class="d-flex align-items-center gap-2 mb-1"
+      class="mx-1 d-flex flex-column align-items-center border border-2 rounded p-1"
     >
-      <span class="fw-bold">C</span>
-      <span>{{ id }}</span>
-      <span class="d-flex align-items-center gap-1">
-			<span :class="[isFlashingOut(id) ? 'text-success' : 'text-secondary']">⬤</span>
-			<span :class="[isFlashingIn(id) ? 'text-danger' : 'text-secondary']">⬤</span>
-      </span>
+      <p class="fw-bold m-0 p-0 text-center">{{ getAlias(id) }}</p>
+
+      <div class="d-flex justify-content-center align-items-center gap-2">
+        <div
+          class="rounded-circle"
+          :class="isFlashingOut(id) ? 'bg-success' : 'bg-secondary'"
+          style="width: 16px; height: 16px;"
+        ></div>
+        <div
+          class="rounded-circle"
+          :class="isFlashingIn(id) ? 'bg-danger' : 'bg-secondary'"
+          style="width: 16px; height: 16px;"
+        ></div>
+      </div>
     </div>
   </div>
 </template>
@@ -22,7 +29,20 @@ import Vuex from 'vuex'
 const { mapState } = Vuex
 
 export default defineComponent({
-  name: 'WebSocketStatus',
+
+  data() {
+    return {
+      aliasMap: {
+        'arm': 'arm',
+        'auton': 'auton',
+        'drive': 'drive',
+        'mast': 'mast',
+        'nav': 'nav',
+        'science': 'sci',
+        'waypoints': 'wypt',
+      } as Record<string, string>,
+    }
+  },
 
   computed: {
     ...mapState('websocket', ['connectionStatus']),
@@ -34,6 +54,9 @@ export default defineComponent({
     },
     isFlashingOut(id: string): boolean {
       return this.$store.getters['websocket/isFlashingOut'](id)
+    },
+    getAlias(id: string): string {
+      return this.aliasMap[id] || id
     },
   },
 })

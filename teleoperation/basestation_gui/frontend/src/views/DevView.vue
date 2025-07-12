@@ -16,14 +16,17 @@ export default defineComponent({
 
   mounted() {
     this.$store.dispatch('websocket/setupWebSocket', 'waypoints')
+    this.$store.dispatch('websocket/setupWebSocket', 'nav')
 
     setTimeout(() => {
+      this.$store.dispatch('websocket/closeWebSocket', 'nav')
       this.spamTestMessages()
     }, 1000)
   },
 
   unmounted() {
     this.$store.dispatch('websocket/closeWebSocket', 'waypoints')
+    this.$store.dispatch('websocket/closeWebSocket', 'nav')
   },
 
   methods: {

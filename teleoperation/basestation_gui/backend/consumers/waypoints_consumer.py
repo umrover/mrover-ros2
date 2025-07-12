@@ -78,8 +78,6 @@ class WaypointsConsumer(JsonWebsocketConsumer):
         @param text_data:   Stringfied JSON message
         """
 
-        self.node.get_logger().info("waypoints receive func called")
-
         if text_data is None:
             self.node.get_logger().warning("Expecting text but received binary on GUI websocket...")
 
@@ -106,7 +104,7 @@ class WaypointsConsumer(JsonWebsocketConsumer):
                     "type": "save_current_auton_course",
                     "data": waypoints
                 }:
-                    self.node.get_logger().info(f"saving waypoints in course: {waypoints}")
+                    # self.node.get_logger().info(f"saving waypoints in course: {waypoints}")
                     save_current_auton_course(waypoints)
 
                 case {
@@ -119,7 +117,7 @@ class WaypointsConsumer(JsonWebsocketConsumer):
                     "type": "delete_auton_waypoint_from_course",
                     "data": waypoint
                 }:
-                    self.node.get_logger().info(f"deleting waypoint in course: {waypoint}")
+                    # self.node.get_logger().info(f"deleting waypoint in course: {waypoint}")
                     delete_auton_waypoint_from_course(waypoint)
 
                 case {
@@ -140,7 +138,7 @@ class WaypointsConsumer(JsonWebsocketConsumer):
                 case {
                     "type": "get_current_auton_course"
                 }:
-                    self.node.get_logger().info(f"current waypoints in course: {get_current_auton_course()}")
+                    # self.node.get_logger().info(f"current waypoints in course: {get_current_auton_course()}")
                     self.send_message_as_json({"type": "get_current_auton_course", "data": get_current_auton_course()})
                 case {
                     "type": "debug",

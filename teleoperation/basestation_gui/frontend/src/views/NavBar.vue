@@ -1,9 +1,12 @@
 <template>
 	<div class="wrapper">
-		<div class="py-3 px-3 header">
+		<div class="px-3 py-2 header">
 			<a class="logo" href="/"><img src="/mrover.png" alt="MRover" title="MRover" width="200" /></a>
 			<h1>{{ getTitleForRoute($route.path) }}</h1>
-      <NetworkMonitor v-if="showNetworkMonitor($route.path)" />
+      <div class="d-flex gap-1">
+        <WebsocketStatus />
+        <NetworkMonitor v-if="showNetworkMonitor($route.path)" />
+      </div>
 		</div>
   </div>
 </template>
@@ -11,11 +14,13 @@
 <script lang="ts">
 import { defineComponent } from 'vue';
 import NetworkMonitor from '../components/NetworkMonitor.vue';
+import WebsocketStatus from '../components/WebsocketStatus.vue';
 
 export default defineComponent({
   name: 'NavBar',
 	components: {
     NetworkMonitor,
+    WebsocketStatus
 	},
   methods: {
     getTitleForRoute(path: string): string {

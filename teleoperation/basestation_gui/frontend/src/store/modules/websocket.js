@@ -1,4 +1,4 @@
-const webSockets = {} // Store WebSocket instances dynamicallyconst flashTimersIn = {}
+const webSockets = {} // Store WebSocket instances dynamically
 const flashTimersIn = {}
 const flashTimersOut = {}
 
@@ -119,11 +119,11 @@ const getters = {
 
 const actions = {
   sendMessage({}, { id, message }) {
-    console.log(id)
+    // console.log(id)
     // trashed "commit" to avoid ts warning
     const socket = webSockets[id]
     if (!socket) {
-      console.log('websocket selection failed with id "', id, '"')
+      console.log('websocket selection failed with id', id)
       return
     }
     if (!socket.readyState) {
