@@ -35,6 +35,7 @@
       - django
       - daphne
       - channels
+      - opencv-python
     state: present
     virtualenv: "{{ ansible_env.HOME }}/ros2_ws/src/mrover/venv"
     virtualenv_python: python3
