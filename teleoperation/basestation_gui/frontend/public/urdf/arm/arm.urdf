@@ -8,9 +8,9 @@
     <!-- y -10 not applied yet -->
     <parent link="base_link"/>
     <child link="a_link"/>
-    <axis xyz="0 1 0"/>
+    <axis xyz="0 -1 0"/>
     <!-- effort in N-m, velocity in rad/s -->
-    <limit effort="30" lower="-40" upper="0" velocity="1"/>
+    <limit effort="30" lower="0" upper="40" velocity="1"/>
     <!-- damping in N-m-s/rad -->
     <dynamics damping="1.0"/>
   </joint>
@@ -60,6 +60,14 @@
     <!-- effort in N-m, velocity in rad/s -->
     <limit effort="30" lower="-3.141592" upper="3.141592" velocity="1"/>
     <!-- damping in N-m-s/rad -->
+    <dynamics damping="1.0"/>
+  </joint>
+  <joint name="gripper_link" type="prismatic">
+    <origin rpy="1.570796 0 0" xyz="0.0875 0 0"/>
+    <parent link="e_link"/>
+    <child link="arm_gripper_link"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="0" upper="8" effort="0" velocity="0"/>
     <dynamics damping="1.0"/>
   </joint>
   <!-- Links -->
@@ -132,6 +140,18 @@
       <!-- <origin rpy="0 0 0" xyz="132.451 20.0235 63.7846"/> -->
       <geometry>
         <mesh filename="../meshes/arm_e_fix.dae"/>
+      </geometry>
+      <material name="blue">
+        <color rgba="0 0 1 1"/>
+      </material>
+    </visual>
+  </link>
+  <link name="arm_gripper_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <!-- <origin rpy="0 0 0" xyz="132.451 20.0235 63.7846"/> -->
+      <geometry>
+        <mesh filename="../meshes/arm_gripper_fix.dae"/>
       </geometry>
       <material name="blue">
         <color rgba="0 0 1 1"/>
