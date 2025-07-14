@@ -5,7 +5,6 @@ from typing import Any, Type
 from channels.generic.websocket import JsonWebsocketConsumer
 from rosidl_runtime_py.convert import message_to_ordereddict
 
-import rclpy
 import threading
 from rclpy.executors import MultiThreadedExecutor
 from backend.consumers.init_node import get_node, get_context

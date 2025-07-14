@@ -3,57 +3,14 @@ import traceback
 from typing import Any, Type
 
 from channels.generic.websocket import JsonWebsocketConsumer
-from numpy import float32
 from rosidl_runtime_py.convert import message_to_ordereddict
 
-import rclpy
-import tf2_ros
-import asyncio
 import threading
 from rclpy.executors import MultiThreadedExecutor
 from backend.consumers.init_node import get_node, get_context
 
-from tf2_ros.buffer import Buffer
-from lie import SE3
-from backend.drive_controls import send_joystick_twist, send_controller_twist
-from backend.input import DeviceInputs
-from backend.ra_controls import send_ra_controls
-from backend.sa_controls import send_sa_controls
-from backend.mast_controls import send_mast_controls
-from backend.waypoints import (
-    get_auton_waypoint_list,
-    get_basic_waypoint_list,
-    get_current_auton_course,
-    get_current_basic_course,
-    save_auton_waypoint_list,
-    save_basic_waypoint_list,
-    save_current_auton_course,
-    save_current_basic_course,
-    delete_auton_waypoint_from_course
-)
-from geometry_msgs.msg import Twist, Vector3
-from sensor_msgs.msg import NavSatFix, Temperature, RelativeHumidity, JointState
-from mrover.msg import (
-    Throttle,
-    IK,
-    ControllerState,
-    LED,
-    StateMachineStateUpdate,
-    GPSWaypoint,
-    WaypointType,
-    HeaterData,
-    ScienceThermistors,
-    Oxygen,
-    Methane,
-    UV,
-)
-from mrover.srv import (
-    EnableAuton, 
-    EnableBool,
-    ServoSetPos 
-)
+from mrover.srv import EnableAuton
 from std_srvs.srv import SetBool
-from std_msgs.msg import Float32
 
 LOCALIZATION_INFO_HZ = 10
 

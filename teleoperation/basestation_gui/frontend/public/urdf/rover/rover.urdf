@@ -1,0 +1,484 @@
+<?xml version="1.0" ?>
+<robot name="rover">
+  <!-- Constants -->
+  <!-- Inertial Macros-->
+  <!-- Joints/Links Macros -->
+  <!-- Joints/Links -->
+  <link name="base_link"/>
+  <link name="chassis_link">
+    <inertial>
+      <mass value="15"/>
+      <inertia ixx="0.53798625" ixy="0" ixz="0" iyy="0.32746625" iyz="0" izz="0.78173"/>
+    </inertial>
+    <visual>
+      <geometry>
+        <mesh filename="package://mrover/urdf/meshes/rover_chassis.fbx"/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin xyz="-0.085906 0 0"/>
+      <geometry>
+        <box size="0.277 0.63 0.183"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin xyz="0.163609 0 -0.049449"/>
+      <geometry>
+        <box size="0.167 0.63 0.0891 "/>
+      </geometry>
+    </collision>
+  </link>
+  <link name="arm_base_link"/>
+  <joint name="base_link_to_arm_base_link" type="fixed">
+    <origin xyz="0.199228 -0.200235 0.540196"/>
+    <parent link="base_link"/>
+    <child link="arm_base_link"/>
+  </joint>
+  <joint name="base_link_to_chassis_link" type="fixed">
+    <origin xyz="0 0 0.439675"/>
+    <parent link="base_link"/>
+    <child link="chassis_link"/>
+  </joint>
+  <link name="arm_a_link">
+    <inertial>
+      <mass value="1"/>
+      <inertia ixx="0.001666666666666667" ixy="0" ixz="0" iyy="0.001666666666666667" iyz="0" izz="0.001666666666666667"/>
+    </inertial>
+    <visual>
+      <geometry>
+        <mesh filename="package://mrover/urdf/meshes/arm_a.fbx"/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin xyz="0.05 0 0"/>
+      <geometry>
+        <box size="0.085 0.1 0.1"/>
+      </geometry>
+    </collision>
+  </link>
+  <link name="arm_b_link">
+    <inertial>
+      <mass value="1"/>
+      <inertia ixx="0.028166666666666663" ixy="0" ixz="0" iyy="0.0002666666666666667" iyz="0" izz="0.028166666666666663"/>
+    </inertial>
+    <visual>
+      <geometry>
+        <mesh filename="package://mrover/urdf/meshes/arm_b.fbx"/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin xyz="0.29 0 0"/>
+      <geometry>
+        <box size="0.49299999999999994 0.04 0.04"/>
+      </geometry>
+    </collision>
+  </link>
+  <link name="arm_c_link">
+    <inertial>
+      <mass value="1"/>
+      <inertia ixx="0.02534166666666667" ixy="0" ixz="0" iyy="0.0002666666666666667" iyz="0" izz="0.02534166666666667"/>
+    </inertial>
+    <visual>
+      <geometry>
+        <mesh filename="package://mrover/urdf/meshes/arm_c.fbx"/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin xyz="0.275 0 0.1"/>
+      <geometry>
+        <box size="0.4675 0.04 0.04"/>
+      </geometry>
+    </collision>
+  </link>
+  <link name="arm_d_link">
+    <inertial>
+      <mass value="1"/>
+      <inertia ixx="0.0007041666666666667" ixy="0" ixz="0" iyy="0.002227083333333333" iyz="0" izz="0.002227083333333333"/>
+    </inertial>
+    <visual>
+      <geometry>
+        <mesh filename="package://mrover/urdf/meshes/arm_d.fbx"/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin xyz="0.0325 0 0"/>
+      <geometry>
+        <box size="0.05525 0.15 0.065"/>
+      </geometry>
+    </collision>
+  </link>
+  <link name="arm_e_link">
+    <inertial>
+      <mass value="1"/>
+      <inertia ixx="0.001960333333333333" ixy="0" ixz="0" iyy="0.0020874166666666667" iyz="0" izz="0.003877083333333333"/>
+    </inertial>
+    <visual>
+      <geometry>
+        <mesh filename="package://mrover/urdf/meshes/arm_e.fbx"/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin xyz="0.075 0 0"/>
+      <geometry>
+        <box size="0.1275 0.155 0.032"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="chassis_link_to_arm_a_link" type="prismatic">
+    <origin xyz="0.164882 -0.200235 0.051497"/>
+    <parent link="chassis_link"/>
+    <child link="arm_a_link"/>
+    <axis xyz="0 1 0"/>
+    <limit effort="0" lower="0" upper="0.4" velocity="0"/>
+  </joint>
+  <joint name="arm_a_link_to_arm_b_link" type="revolute">
+    <origin xyz="0.034346 0 0.049024"/>
+    <parent link="arm_a_link"/>
+    <child link="arm_b_link"/>
+    <axis xyz="0 1 0"/>
+    <limit effort="0" lower="-0.7853981875" upper="0" velocity="0"/>
+  </joint>
+  <joint name="arm_b_link_to_arm_c_link" type="revolute">
+    <origin xyz="0.534365 0 0.009056"/>
+    <parent link="arm_b_link"/>
+    <child link="arm_c_link"/>
+    <axis xyz="0 1 0"/>
+    <limit effort="0" lower="-0.959931" upper="2.87979" velocity="0"/>
+  </joint>
+  <joint name="arm_c_link_to_arm_d_link" type="revolute">
+    <origin xyz="0.546033 0 0.088594"/>
+    <parent link="arm_c_link"/>
+    <child link="arm_d_link"/>
+    <axis xyz="0 1 0"/>
+    <limit effort="0" lower="-2.35619" upper="2.35619" velocity="0"/>
+  </joint>
+  <joint name="arm_d_link_to_arm_e_link" type="revolute">
+    <origin xyz="0.044886 0 0"/>
+    <parent link="arm_d_link"/>
+    <child link="arm_e_link"/>
+    <axis xyz="1 0 0"/>
+    <limit effort="0" lower="-2.35619" upper="2.35619" velocity="0"/>
+  </joint>
+  <link name="front_left_wheel_link">
+    <inertial>
+      <mass value="3"/>
+      <inertia ixx="0.014275000000000001" ixy="0" ixz="0" iyy="0.014275000000000001" iyz="0" izz="0.02535"/>
+    </inertial>
+    <visual>
+      <geometry>
+        <mesh filename="package://mrover/urdf/meshes/rover_left_wheel.fbx"/>
+      </geometry>
+    </visual>
+    <collision>
+      <geometry>
+        <cylinder length="0.08" radius="0.13"/>
+      </geometry>
+    </collision>
+  </link>
+  <link name="center_left_wheel_link">
+    <inertial>
+      <mass value="3"/>
+      <inertia ixx="0.014275000000000001" ixy="0" ixz="0" iyy="0.014275000000000001" iyz="0" izz="0.02535"/>
+    </inertial>
+    <visual>
+      <geometry>
+        <mesh filename="package://mrover/urdf/meshes/rover_left_wheel.fbx"/>
+      </geometry>
+    </visual>
+    <collision>
+      <geometry>
+        <cylinder length="0.08" radius="0.13"/>
+      </geometry>
+    </collision>
+  </link>
+  <link name="back_left_wheel_link">
+    <inertial>
+      <mass value="3"/>
+      <inertia ixx="0.014275000000000001" ixy="0" ixz="0" iyy="0.014275000000000001" iyz="0" izz="0.02535"/>
+    </inertial>
+    <visual>
+      <geometry>
+        <mesh filename="package://mrover/urdf/meshes/rover_left_wheel.fbx"/>
+      </geometry>
+    </visual>
+    <collision>
+      <geometry>
+        <cylinder length="0.08" radius="0.13"/>
+      </geometry>
+    </collision>
+  </link>
+  <link name="left_bogie_link">
+    <inertial>
+      <mass value="3"/>
+      <inertia ixx="0.125" ixy="0" ixz="0" iyy="0.125" iyz="0" izz="0.125"/>
+    </inertial>
+    <visual>
+      <geometry>
+        <mesh filename="package://mrover/urdf/meshes/rover_left_bogie.fbx"/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin rpy="0 0 -0.734" xyz="-0.14 0.1 0"/>
+      <geometry>
+        <box size="0.2 0.025 0.025"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0.734" xyz="0.1 0.088 0"/>
+      <geometry>
+        <box size="0.2 0.025 0.025"/>
+      </geometry>
+    </collision>
+  </link>
+  <link name="left_rocker_link">
+    <inertial>
+      <mass value="3"/>
+      <inertia ixx="0.125" ixy="0" ixz="0" iyy="0.125" iyz="0" izz="0.125"/>
+    </inertial>
+    <visual>
+      <geometry>
+        <mesh filename="package://mrover/urdf/meshes/rover_left_rocker.fbx"/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0.585" xyz="0.11 0.077 0"/>
+      <geometry>
+        <box size="0.2 0.025 0.025"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 -0.585" xyz="-0.22 0.15 0"/>
+      <geometry>
+        <box size="0.5 0.025 0.025"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="chassis_link_to_left_rocker_link" type="revolute">
+    <parent link="chassis_link"/>
+    <child link="left_rocker_link"/>
+    <origin rpy="-1.570796375 0 0" xyz="0.164665 0.365 0"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="0" lower="-0.122173" upper="0.523599" velocity="0"/>
+  </joint>
+  <joint name="left_rocker_link_to_back_left_wheel_link" type="continuous">
+    <parent link="left_rocker_link"/>
+    <child link="back_left_wheel_link"/>
+    <origin xyz="-0.417094 0.28513 0.09"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="2.68" velocity="0"/>
+  </joint>
+  <joint name="left_rocker_link_to_left_bogie_link" type="revolute">
+    <parent link="left_rocker_link"/>
+    <child link="left_bogie_link"/>
+    <origin xyz="0.198948 0.138674 0"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="0" lower="-0.349066" upper="0.349066" velocity="0"/>
+  </joint>
+  <joint name="left_bogie_link_to_front_left_wheel_link" type="continuous">
+    <parent link="left_bogie_link"/>
+    <child link="front_left_wheel_link"/>
+    <origin xyz="0.215233 0.147933 0.09"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="2.68" velocity="0"/>
+  </joint>
+  <joint name="left_bogie_link_to_center_left_wheel_link" type="continuous">
+    <parent link="left_bogie_link"/>
+    <child link="center_left_wheel_link"/>
+    <origin xyz="-0.173532 0.147659 0.09"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="2.68" velocity="0"/>
+  </joint>
+  <link name="front_right_wheel_link">
+    <inertial>
+      <mass value="3"/>
+      <inertia ixx="0.014275000000000001" ixy="0" ixz="0" iyy="0.014275000000000001" iyz="0" izz="0.02535"/>
+    </inertial>
+    <visual>
+      <geometry>
+        <mesh filename="package://mrover/urdf/meshes/rover_right_wheel.fbx"/>
+      </geometry>
+    </visual>
+    <collision>
+      <geometry>
+        <cylinder length="0.08" radius="0.13"/>
+      </geometry>
+    </collision>
+  </link>
+  <link name="center_right_wheel_link">
+    <inertial>
+      <mass value="3"/>
+      <inertia ixx="0.014275000000000001" ixy="0" ixz="0" iyy="0.014275000000000001" iyz="0" izz="0.02535"/>
+    </inertial>
+    <visual>
+      <geometry>
+        <mesh filename="package://mrover/urdf/meshes/rover_right_wheel.fbx"/>
+      </geometry>
+    </visual>
+    <collision>
+      <geometry>
+        <cylinder length="0.08" radius="0.13"/>
+      </geometry>
+    </collision>
+  </link>
+  <link name="back_right_wheel_link">
+    <inertial>
+      <mass value="3"/>
+      <inertia ixx="0.014275000000000001" ixy="0" ixz="0" iyy="0.014275000000000001" iyz="0" izz="0.02535"/>
+    </inertial>
+    <visual>
+      <geometry>
+        <mesh filename="package://mrover/urdf/meshes/rover_right_wheel.fbx"/>
+      </geometry>
+    </visual>
+    <collision>
+      <geometry>
+        <cylinder length="0.08" radius="0.13"/>
+      </geometry>
+    </collision>
+  </link>
+  <link name="right_bogie_link">
+    <inertial>
+      <mass value="3"/>
+      <inertia ixx="0.125" ixy="0" ixz="0" iyy="0.125" iyz="0" izz="0.125"/>
+    </inertial>
+    <visual>
+      <geometry>
+        <mesh filename="package://mrover/urdf/meshes/rover_right_bogie.fbx"/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin rpy="0 0 -0.734" xyz="-0.14 0.1 0"/>
+      <geometry>
+        <box size="0.2 0.025 0.025"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0.734" xyz="0.1 0.088 0"/>
+      <geometry>
+        <box size="0.2 0.025 0.025"/>
+      </geometry>
+    </collision>
+  </link>
+  <link name="right_rocker_link">
+    <inertial>
+      <mass value="3"/>
+      <inertia ixx="0.125" ixy="0" ixz="0" iyy="0.125" iyz="0" izz="0.125"/>
+    </inertial>
+    <visual>
+      <geometry>
+        <mesh filename="package://mrover/urdf/meshes/rover_right_rocker.fbx"/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0.585" xyz="0.11 0.077 0"/>
+      <geometry>
+        <box size="0.2 0.025 0.025"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 -0.585" xyz="-0.22 0.15 0"/>
+      <geometry>
+        <box size="0.5 0.025 0.025"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="chassis_link_to_right_rocker_link" type="revolute">
+    <parent link="chassis_link"/>
+    <child link="right_rocker_link"/>
+    <origin rpy="-1.570796375 0 0" xyz="0.164665 -0.365 0"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="0" lower="-0.122173" upper="0.523599" velocity="0"/>
+  </joint>
+  <joint name="right_rocker_link_to_back_right_wheel_link" type="continuous">
+    <parent link="right_rocker_link"/>
+    <child link="back_right_wheel_link"/>
+    <origin xyz="-0.417094 0.28513 -0.09"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="2.68" velocity="0"/>
+  </joint>
+  <joint name="right_rocker_link_to_right_bogie_link" type="revolute">
+    <parent link="right_rocker_link"/>
+    <child link="right_bogie_link"/>
+    <origin xyz="0.198948 0.138674 0"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="0" lower="-0.349066" upper="0.349066" velocity="0"/>
+  </joint>
+  <joint name="right_bogie_link_to_front_right_wheel_link" type="continuous">
+    <parent link="right_bogie_link"/>
+    <child link="front_right_wheel_link"/>
+    <origin xyz="0.215233 0.147933 -0.09"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="2.68" velocity="0"/>
+  </joint>
+  <joint name="right_bogie_link_to_center_right_wheel_link" type="continuous">
+    <parent link="right_bogie_link"/>
+    <child link="center_right_wheel_link"/>
+    <origin xyz="-0.173532 0.147659 -0.09"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="2.68" velocity="0"/>
+  </joint>
+  <joint name="chassis_link_to_left_gps" type="fixed">
+    <origin xyz="0 0.1 0"/>
+    <parent link="chassis_link"/>
+    <child link="left_gps"/>
+  </joint>
+  <link name="left_gps"/>
+  <joint name="chassis_link_to_right_gps" type="fixed">
+    <origin xyz="0 -0.1 0"/>
+    <parent link="chassis_link"/>
+    <child link="right_gps"/>
+  </joint>
+  <link name="right_gps"/>
+  <joint name="chassis_link_to_center_gps" type="fixed">
+    <origin xyz="0 0 1"/>
+    <parent link="chassis_link"/>
+    <child link="center_gps"/>
+  </joint>
+  <link name="center_gps"/>
+  <joint name="chassis_link_to_imu" type="fixed">
+    <origin xyz="0 0 0"/>
+    <parent link="chassis_link"/>
+    <child link="imu"/>
+  </joint>
+  <link name="imu"/>
+  <!-- TODO(quintin): Import the ZED URDF here -->
+  <joint name="chassis_link_to_zed_left_camera_frame" type="fixed">
+    <origin xyz="0.3 0 0"/>
+    <parent link="chassis_link"/>
+    <child link="zed_left_camera_frame"/>
+  </joint>
+  <link name="zed_left_camera_frame">
+    <collision>
+      <geometry>
+        <box size="0.01 0.1 0.01"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="chassis_link_to_long_range_camera_link" type="fixed">
+    <origin xyz="0.3 0 0"/>
+    <parent link="chassis_link"/>
+    <child link="long_range_camera_link"/>
+  </joint>
+  <link name="long_range_camera_link">
+    <collision>
+      <geometry>
+        <box size="0.01 0.01 0.01"/>
+      </geometry>
+    </collision>
+  </link>
+  <!-- TODO(quintin): I removed this for now, feel free to add it back when needed -->
+  <!--  <joint name="chassis_link_to_mast_link" type="fixed">-->
+  <!--    <origin xyz="0.0505 -0.086 0.558"/>-->
+  <!--    <parent link="chassis_link"/>-->
+  <!--    <child link="mast_link"/>-->
+  <!--  </joint>-->
+  <!--  <link name="mast_link"/>-->
+  <!--  <joint name="mast_link_to_zed_mini_camera" type="continuous">-->
+  <!--    <origin xyz="0.05 0 0.0"/>-->
+  <!--    <parent link="mast_link"/>-->
+  <!--    <child link="zed_mini_camera"/>-->
+  <!--    <axis xyz="0 0 1"/>-->
+  <!--    <limit effort="2.68" velocity="0"/>-->
+  <!--  </joint>-->
+  <!--  <link name="zed_mini_camera"/>-->
+</robot>

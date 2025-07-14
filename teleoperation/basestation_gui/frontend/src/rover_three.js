@@ -1,83 +1,143 @@
 import * as THREE from 'three'
-import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader'
-import { TrackballControls } from 'three/addons/controls/TrackballControls.js'
+import GUI from "lil-gui";
+import URDFLoader from "urdf-loader";
+import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
+// import { TrackballControls } from 'three/addons/controls/TrackballControls.js'
 
-export default function threeSetup(containerId) {
-  const container = document.getElementById(containerId)
-  const canvas = {
-    width: container.clientWidth,
-    height: container.clientHeight
-  }
+export default function threeSetup() {
+  // Canvas element
+  const canvas = document.querySelector("canvas.webgl");
+  // const gui = new GUI( { container: document.querySelector("canvas.webgl") } ); // ??
+  const gui = new GUI();
 
-  const scene = new THREE.Scene()
-  const camera = new THREE.PerspectiveCamera(75, canvas.width / canvas.height, 0.1, 1000)
-  camera.up.set(0, 0, 1)
+  // Scene setup
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x87ceeb);
+  // scene.background = new THREE.Color(0xbbbbbb);
 
-  const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5)
-  directionalLight.position.set(1, 2, 3)
-  scene.add(directionalLight)
+  // Lighting setup
+  // Ambient Light (soft light)
+  const ambientLight = new THREE.AmbientLight(0x808080, 1); // soft white light
+  scene.add(ambientLight);
 
-  const renderer = new THREE.WebGLRenderer()
-  renderer.setSize(canvas.width, canvas.height)
-  container.appendChild(renderer.domElement)
+  // Directional Light (main light source)
+  const directionalLight = new THREE.DirectionalLight(0xffffff, 1); // white light
+  directionalLight.position.set(2, 3, 2); // Position of light source
+  directionalLight.castShadow = true; // Enable shadows
+  scene.add(directionalLight);
 
-  scene.background = new THREE.Color(0xeeeeee)
+  const axesHelper = new THREE.AxesHelper(5);
+  scene.add(axesHelper);
 
-  let controls = new TrackballControls(camera, renderer.domElement)
-  controls.rotateSpeed = 1.0
-  controls.zoomSpeed = 1.2
-  controls.panSpeed = 0.8
-  controls.noZoom = false
-  controls.noPan = false
-  controls.staticMoving = true
-  controls.dynamicDampingFactor = 0.3
+  const manager = new THREE.LoadingManager();
+  const loader = new URDFLoader(manager);
+  loader.packages = {
+    mrover: '/urdf'
+  };
 
-  const joints = [
-    { name: 'chassis', file: 'rover_chassis.fbx', translation: [0.164882, -0.200235, 0.051497], rotation: [0, 0, 0] },
-    { name: 'a', file: 'arm_a.fbx', translation: [0.034346, 0, 0.049024], rotation: [0, 0, 0] },
-    { name: 'b', file: 'arm_b.fbx', translation: [0.534365, 0, 0.009056], rotation: [0, 0, 0] },
-    { name: 'c', file: 'arm_c.fbx', translation: [0.546033, 0, 0.088594], rotation: [0, 0, 0] },
-    { name: 'd', file: 'arm_d.fbx', translation: [0.044886, 0, 0], rotation: [0, 0, 0] },
-    { name: 'e', file: 'arm_e.fbx', translation: [0.044886, 0, 0], rotation: [0, 0, 0] }
-  ]
+  // Load using absolute path from web root
+  loader.load(
+    '/urdf/arm/arm.urdf',
+    robot => {
+      robot.position.set(0, -50, 0);
+      robot.rotation.x = -Math.PI / 2;
+      robot.updateMatrixWorld();
+      scene.add(robot);
 
-  const loader = new FBXLoader()
-  for (let i = 0; i < joints.length; ++i) {
-    loader.load('/meshes/' + joints[i].file, (fbx) => {
-      fbx.name = joints[i].name
-      fbx.traverse((child) => {
-        if (child.isMesh) {
-          child.name = joints[i].name
-          child.material = new THREE.MeshStandardMaterial({ color: (joints[i].name === 'd' || joints[i].name === 'e') ? 0x00ff00 : 0xffffff })
-          child.scale.set(1, 1, 1)
-          child.position.set(0, 0, 0)
-          scene.add(child)
+      // Add GUI controls for joint angles
+      robot.traverse(obj => {
+        if (
+          obj.jointType === 'revolute' ||
+          obj.jointType === 'continuous' ||
+          obj.jointType === 'prismatic'
+        ) {
+          const name = obj.name || 'unnamed_joint';
+          const initialValue = typeof obj.jointValue === 'number' ? obj.jointValue : 0;
+          const min = obj.limit?.lower ?? -Math.PI;
+          const max = obj.limit?.upper ?? Math.PI;
+
+          const folder = gui.addFolder(name);
+          const paramObj = { value: initialValue };
+
+          folder.add(paramObj, 'value', min, max, 0.01)
+            .name(`${name} (${obj.jointType})`)
+            .onChange(value => {
+              obj.setJointValue(value);
+            });
         }
-      })
-    })
-  }
+      });
+    },
+    undefined,
+    err => {
+      console.error('Failed to load URDF:', err);
+    }
+  );
 
-  camera.position.set(1.25, 1.25, 1.25)
-  camera.lookAt(new THREE.Vector3(0, 0, 0))
 
-  const targetCube = new THREE.Mesh(
-    new THREE.BoxGeometry(0.1, 0.1, 0.1),
-    new THREE.MeshBasicMaterial({ color: 0x00ff00 })
-  )
-  scene.add(targetCube)
+  // Sizes for window resizing
+  const sizes = {
+    width: window.innerWidth,
+    height: window.innerHeight,
+  };
 
-  function animate() {
-    requestAnimationFrame(animate)
-    controls.update()
-    renderer.render(scene, camera)
-  }
+  // Resize event listener
+  window.addEventListener("resize", () => {
+    sizes.width = window.innerWidth;
+    sizes.height = window.innerHeight;
+    // Update camera
+    camera.aspect = sizes.width / sizes.height;
+    camera.updateProjectionMatrix();
+    // Update renderer
+    renderer.setSize(sizes.width, sizes.height);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  });
 
-  animate()
+  // Camera setup
+  const camera = new THREE.PerspectiveCamera(
+    75,
+    sizes.width / sizes.height,
+    0.1,
+    1000,
+  );
+  camera.position.x = 100;
+  camera.position.y = 50;
+  camera.position.z = 100;
+  camera.lookAt(0, 0, 0);
+  scene.add(camera);
 
-  // return {
-  //   fk: (positions) => fk(positions, scene, joints),
-  //   ik: (target) => ik(target, targetCube)
-  // }
+  // OrbitControls for the camera
+  const controls = new OrbitControls(camera, canvas);
+  controls.enableDamping = true;
+
+  // Renderer setup
+  const renderer = new THREE.WebGLRenderer({
+    antialias: true,
+    canvas: canvas,
+  });
+  renderer.setSize(sizes.width, sizes.height);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.physicallyCorrectLights = true;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 2.5;
+
+  // Animation loop (tick)
+  const clock = new THREE.Clock();
+
+  const tick = () => {
+    const elapsedTime = clock.getElapsedTime();
+    // Update controls and render
+    // controls.update();
+    renderer.render(scene, camera);
+    window.requestAnimationFrame(tick);
+  };
+
+  tick(); // Start the animation loop
+
+  return () => {
+    renderer.dispose(); // Dispose renderer
+  };
 }
 
 export function fk(positions, scene, joints) {

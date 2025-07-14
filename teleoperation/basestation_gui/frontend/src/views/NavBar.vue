@@ -3,17 +3,13 @@
 		<div class="ps-3 pe-2 py-2 d-flex justify-content-between align-items-center position-relative">
 			<a class="logo" href="/"><img src="/mrover.png" alt="MRover" title="MRover" width="200" /></a>
       <h1>{{ title }}</h1>
-      <div class="d-flex gap-1">
-        <WebsocketStatus />
-        <NetworkMonitor v-if="showMonitor" />
-      </div>
+      <WebsocketStatus />
 		</div>
   </div>
 </template>
 
 <script lang="ts">
 import { defineComponent } from 'vue';
-import NetworkMonitor from '../components/NetworkMonitor.vue';
 import WebsocketStatus from '../components/WebsocketStatus.vue';
 
 export default defineComponent({
@@ -29,7 +25,6 @@ export default defineComponent({
     },
   },
 	components: {
-    NetworkMonitor,
     WebsocketStatus
 	},
   methods: {
