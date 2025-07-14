@@ -7,13 +7,36 @@
         @basestation_odom="updateBasestationOdom"
       />
     </div>
-    <div class="island p-0 rounded feed">
-      <button @click="toggleFeed" class="btn btn-primary mb-2">
-        {{ cameraFeedEnabled ? 'Disable' : 'Enable' }} Camera Feed
-      </button>
-      <CameraFeed v-if="cameraFeedEnabled" :mission="'ZED'" :id="0" :name="'ZED'" />
-      <img v-else src="/stream_placeholder.svg" alt="Camera Disabled" />
+    <div class="feed island p-0 rounded position-relative">
+      <CameraFeed
+        v-if="cameraFeedEnabled"
+        :mission="'ZED'"
+        :id="0"
+        :name="'ZED'"
+        class="z-0"
+      />
+      <img
+        v-else
+        src="/stream_placeholder.svg"
+        alt="Camera Disabled"
+        class="img-fluid h-100"
+      />
+      <div
+        class="controls px-2 py-1 position-absolute d-flex align-items-center gap-2 top-0 end-0 m-2 bg-white rounded z-1"
+      >
+        <input
+          type="checkbox"
+          class="form-check-input p-0"
+          style="width: 14px; height: 14px; vertical-align: middle"
+          :checked="cameraFeedEnabled"
+          @change="toggleFeed"
+        />
+        <p class="mb-0 text-body" style="font-size: 14px; line-height: 18px">
+          Enable
+        </p>
+      </div>
     </div>
+
     <div class="island p-0 rounded map">
       <AutonRoverMap :odom="odom" :basestation="basestationOdom" />
     </div>
@@ -178,21 +201,6 @@ export default defineComponent({
   width: auto;
 }
 
-.blink {
-  animation: blinkAnimation 1s infinite;
-  /* Blinks green every second */
-}
-
-@keyframes blinkAnimation {
-  0%,
-  100% {
-    background-color: var(--bs-success);
-  }
-
-  50% {
-    background-color: var(--bs-white);
-  }
-}
 h2 {
   padding: 2px;
   margin: 0px;

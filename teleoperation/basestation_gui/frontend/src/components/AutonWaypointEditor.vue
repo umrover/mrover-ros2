@@ -488,10 +488,6 @@ export default {
   /* max-height: 780px; */
 }
 
-h3 {
-  letter-spacing: -0.1rem;
-}
-
 .col-wrap {
   height: 100%;
   width: 100%;
