@@ -19,10 +19,6 @@ export default defineComponent({
       // @ts-expect-error ts dumb
       return this.getTitleForRoute(this.$route.path)
     },
-    showMonitor(): boolean {
-      // @ts-expect-error ts dumb
-      return this.showNetworkMonitor(this.$route.path)
-    },
   },
 	components: {
     WebsocketStatus
@@ -37,13 +33,11 @@ export default defineComponent({
         '/ISHTask': 'ISH Mission',
         '/SATask': 'Sample Acquisition',
         '/Cameras': 'Camera View',
+        '/dev': 'Development View'
       };
 
       return routeTitles[path] || 'Unknown Path';
     },
-    showNetworkMonitor(path: string): boolean {
-      return path === '/SATask' || path === '/ISHTask';
-    }
   }
 });
 </script>
@@ -52,7 +46,7 @@ export default defineComponent({
 h1 {
 	font-family: 'Consolas', 'Courier New', 'DejaVu Sans Mono', monospace;
   font-weight: 400;
-  font-size: 2.5rem;
+  font-size: 2.7rem;
 	letter-spacing: -0.1rem;
   margin: 0;
   user-select: none;

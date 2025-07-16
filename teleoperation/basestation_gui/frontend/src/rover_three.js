@@ -9,9 +9,11 @@ const defaultJointValues = {
   arm_a_to_arm_b: -0.785,
   arm_b_to_arm_c: 1.91,
   arm_c_to_arm_d: -1,
-  arm_d_to_arm_e: -1.6,
+  arm_d_to_arm_e: -1.57,
   gripper_link: 0,
 }
+
+let rover = null;
 
 export default function threeSetup() {
   // Canvas element
@@ -35,7 +37,7 @@ export default function threeSetup() {
   directionalLight.castShadow = true // Enable shadows
   scene.add(directionalLight)
 
-  const axesHelper = new THREE.AxesHelper(5)
+  const axesHelper = new THREE.AxesHelper(50)
   scene.add(axesHelper)
 
   const manager = new THREE.LoadingManager()
@@ -49,6 +51,7 @@ export default function threeSetup() {
     // '/urdf/arm/arm.urdf',
     '/urdf/rover/rover.urdf',
     robot => {
+      rover = robot
       robot.position.set(0, -50, 0)
       robot.rotation.x = -Math.PI / 2
       robot.updateMatrixWorld()
@@ -76,7 +79,7 @@ export default function threeSetup() {
           const folder = gui.addFolder(name)
           const paramObj = { value: initialValue }
 
-          obj.setJointValue(initialValue);
+          obj.setJointValue(initialValue)
 
           folder
             .add(paramObj, 'value', min, max, 0.01)
@@ -99,7 +102,7 @@ export default function threeSetup() {
     height: window.innerHeight,
   }
 
-  // Resize event listener
+  // Resize event listenerreb
   window.addEventListener('resize', () => {
     sizes.width = window.innerWidth
     sizes.height = window.innerHeight
@@ -159,37 +162,53 @@ export default function threeSetup() {
   }
 }
 
-export function fk(positions, scene, joints) {
-  let cumulativeMatrix = new THREE.Matrix4()
-  cumulativeMatrix.makeTranslation(new THREE.Vector3(0, 0, 0.439675)) // base_link offset
-
-  for (let i = 0; i < joints.length; ++i) {
-    let mesh = scene.getObjectByName(joints[i].name)
-    if (!mesh) continue
-
-    let localMatrix = new THREE.Matrix4()
-    let rotationAngle = positions[i]
-
-    if (joints[i].name === 'chassis') {
-      localMatrix.makeTranslation(0, rotationAngle, 0)
-    } else {
-      localMatrix.makeRotationY(rotationAngle)
+export function updatePose(joints) {
+  if (!rover) return
+  rover.traverse(obj => {
+    if (
+      obj.jointType === 'revolute' ||
+      obj.jointType === 'continuous' ||
+      obj.jointType === 'prismatic'
+    ) {
+      const joint = joints.find(j => j.name === obj.name)
+      if (joint) {
+        obj.setJointValue(joint.position)
+      }
     }
-
-    let offset = new THREE.Vector3().fromArray(joints[i].translation)
-    localMatrix.setPosition(
-      new THREE.Vector3().setFromMatrixPosition(localMatrix).add(offset),
-    )
-
-    mesh.matrixAutoUpdate = false
-    mesh.matrix = cumulativeMatrix.clone()
-
-    cumulativeMatrix.multiply(localMatrix)
-  }
+  })
 }
 
-export function ik(target, targetCube) {
-  let quaternion = new THREE.Quaternion(...target.quaternion)
-  targetCube.position.set(...target.position)
-  targetCube.setRotationFromQuaternion(quaternion)
-}
+// export function fk(positions, scene, joints) {
+//   let cumulativeMatrix = new THREE.Matrix4()
+//   cumulativeMatrix.makeTranslation(new THREE.Vector3(0, 0, 0.439675)) // base_link offset
+
+//   for (let i = 0; i < joints.length; ++i) {
+//     let mesh = scene.getObjectByName(joints[i].name)
+//     if (!mesh) continue
+
+//     let localMatrix = new THREE.Matrix4()
+//     let rotationAngle = positions[i]
+
+//     if (joints[i].name === 'chassis') {
+//       localMatrix.makeTranslation(0, rotationAngle, 0)
+//     } else {
+//       localMatrix.makeRotationY(rotationAngle)
+//     }
+
+//     let offset = new THREE.Vector3().fromArray(joints[i].translation)
+//     localMatrix.setPosition(
+//       new THREE.Vector3().setFromMatrixPosition(localMatrix).add(offset),
+//     )
+
+//     mesh.matrixAutoUpdate = false
+//     mesh.matrix = cumulativeMatrix.clone()
+
+//     cumulativeMatrix.multiply(localMatrix)
+//   }
+// }
+
+// export function ik(target, targetCube) {
+//   let quaternion = new THREE.Quaternion(...target.quaternion)
+//   targetCube.position.set(...target.position)
+//   targetCube.setRotationFromQuaternion(quaternion)
+// }

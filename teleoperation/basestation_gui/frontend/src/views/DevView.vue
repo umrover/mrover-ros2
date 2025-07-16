@@ -1,21 +1,24 @@
 <template>
-  <OdometryReading />
-  <WebsocketStatus />
+  <ArmControls />
+  <Rover3D />
 </template>
 
 <script lang="ts">
-import OdometryReading from '../components/OdometryReading.vue'
-import WebsocketStatus from '../components/WebsocketStatus.vue';
+import Rover3D from '../components/Rover3D.vue';
+import ArmControls from '../components/ArmControls.vue';
 import { defineComponent } from 'vue'
+import Vuex from 'vuex'
+const { mapState } = Vuex
+import type { WebSocketState } from '../types/websocket';
 
 export default defineComponent({
   components: {
-    OdometryReading,
-    WebsocketStatus,
+    Rover3D,
+    ArmControls
   },
 
   mounted() {
-    this.$store.dispatch('websocket/setupWebSocket', 'waypoints')
+    this.$store.dispatch('websocket/setupWebSocket', 'arm')
     this.$store.dispatch('websocket/setupWebSocket', 'nav')
 
     setTimeout(() => {
@@ -25,8 +28,14 @@ export default defineComponent({
   },
 
   unmounted() {
-    this.$store.dispatch('websocket/closeWebSocket', 'waypoints')
+    this.$store.dispatch('websocket/closeWebSocket', 'arm')
     this.$store.dispatch('websocket/closeWebSocket', 'nav')
+  },
+  
+  computed: { // correct websocket message receiver, specify websocket in []
+    ...mapState('websocket', {
+      waypointsMessage: (state: WebSocketState) => state.messages['waypoints']
+    }),
   },
 
   methods: {
@@ -40,8 +49,6 @@ export default defineComponent({
           },
         })
       }, 1000)
-
-      // Optional: stop after 10 seconds
       setTimeout(() => clearInterval(interval), 5000)
     },
   },

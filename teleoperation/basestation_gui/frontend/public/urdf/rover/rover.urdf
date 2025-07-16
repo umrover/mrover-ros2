@@ -119,8 +119,8 @@
     <origin rpy="0 0 0" xyz="16.4882 20.0235 49.1172"/>
     <parent link="chassis_link"/>
     <child link="arm_a_link"/>
-    <axis xyz="0 -1 0"/>
-    <limit effort="0" lower="0" upper="40" velocity="0"/>
+    <axis xyz="0 1 0"/>
+    <limit effort="0" lower="-40" upper="0" velocity="0"/>
   </joint>
   <joint name="arm_a_to_arm_b" type="revolute">
     <origin rpy="0 0 0" xyz="3.4348 -0.0005 4.9028"/>

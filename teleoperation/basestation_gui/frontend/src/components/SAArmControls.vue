@@ -31,7 +31,7 @@
 <script lang="ts">
 import { defineComponent } from 'vue'
 import Vuex from 'vuex'
-const { mapActions, mapState } = Vuex
+const { mapActions } = Vuex
 
 const UPDATE_HZ = 20
 
@@ -81,10 +81,6 @@ export default defineComponent({
 
   beforeUnmount() {
     window.clearInterval(this.interval)
-  },
-
-  computed: {
-    ...mapState('websocket', ['message']),
   },
 
   methods: {

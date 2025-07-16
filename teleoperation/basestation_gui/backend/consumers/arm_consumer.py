@@ -9,6 +9,9 @@ import threading
 from rclpy.executors import MultiThreadedExecutor
 from backend.consumers.init_node import get_node, get_context
 
+from tf2_ros.buffer import Buffer
+import tf2_ros
+
 from backend.drive_controls import send_controller_twist
 from backend.input import DeviceInputs
 from backend.ra_controls import send_ra_controls
@@ -49,9 +52,13 @@ class ArmConsumer(JsonWebsocketConsumer):
         # Forwards ROS topic to GUI
         self.forward_ros_topic("/arm_controller_state", ControllerState, "arm_state")
         self.forward_ros_topic("/sa_controller_state", ControllerState, "sa_state")
-        self.forward_ros_topic("/arm_joint_data", JointState, "fk")
+        self.forward_ros_topic("/arm_joint_data", JointState, "joint_data")
 
         # Services
+
+        # Buffer
+        self.buffer = Buffer()
+        self.tf_listener = tf2_ros.TransformListener(self.buffer, self.node)
 
     def disconnect(self, close_code) -> None:
         try:

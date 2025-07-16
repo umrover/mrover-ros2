@@ -291,39 +291,39 @@ mrover_link_component(tag_detector lie opencv_core opencv_aruco opencv_imgproc l
 mrover_executable_from_component(stereo_tag_detector perception/executables/stereo_tag_detector.cpp tag_detector_component)
 mrover_executable_from_component(image_tag_detector perception/executables/image_tag_detector.cpp tag_detector_component)
 
-# # Embedded
-# mrover_add_header_only_library(messaging esw/messaging)
+# Embedded
+mrover_add_header_only_library(messaging esw/messaging)
 
-# mrover_add_header_only_library(can_device esw/can_device)
-# target_link_libraries(can_device INTERFACE ${rclcpp_LIBRARIES} moteus)
+mrover_add_header_only_library(can_device esw/can_device)
+target_link_libraries(can_device INTERFACE ${rclcpp_LIBRARIES} moteus)
 
-# mrover_add_library(motor_library esw/motor_library/*.cpp esw/motor_library)
-# ament_target_dependencies(motor_library rclcpp std_srvs)
-# target_link_libraries(motor_library can_device moteus units messaging parameter_utils)
+mrover_add_library(motor_library esw/motor_library/*.cpp esw/motor_library)
+ament_target_dependencies(motor_library rclcpp std_srvs)
+target_link_libraries(motor_library can_device moteus units messaging parameter_utils)
 
-# macro(mrover_add_esw_bridge_node name sources)
-#     mrover_add_node(${name} ${sources})
-#     ament_target_dependencies(${name} rclcpp std_srvs)
-#     target_link_libraries(${name} can_device units messaging)
-# endmacro()
+macro(mrover_add_esw_bridge_node name sources)
+    mrover_add_node(${name} ${sources})
+    ament_target_dependencies(${name} rclcpp std_srvs)
+    target_link_libraries(${name} can_device units messaging)
+endmacro()
 
-# macro(mrover_add_esw_motor_bridge_node name sources)
-#     mrover_add_esw_bridge_node(${name} ${sources})
-#     target_link_libraries(${name} motor_library)
-# endmacro()
+macro(mrover_add_esw_motor_bridge_node name sources)
+    mrover_add_esw_bridge_node(${name} ${sources})
+    target_link_libraries(${name} motor_library)
+endmacro()
 
 
 # mrover_add_esw_motor_bridge_node(drive_hw_bridge esw/drive_hw_bridge.cpp)
 # mrover_add_esw_motor_bridge_node(arm_hw_bridge esw/arm_hw_bridge.cpp)
-# mrover_add_esw_bridge_node(differential_drive_controller esw/differential_drive_controller.cpp)
+mrover_add_esw_bridge_node(differential_drive_controller esw/differential_drive_controller.cpp)
 # mrover_add_esw_bridge_node(science_hw_bridge esw/science_hw_bridge.cpp)
 # ament_target_dependencies(science_hw_bridge sensor_msgs)
 # target_link_libraries(science_hw_bridge parameter_utils)
 # mrover_add_esw_bridge_node(science_test_bridge esw/science_test_bridge.cpp)
 
-# mrover_add_node(arm_controller teleoperation/arm_controller/arm_controller.cpp teleoperation/arm_controller/pch.hpp)
-# target_link_libraries(arm_controller lie)
-# ament_target_dependencies(arm_controller rclcpp)
+mrover_add_node(arm_controller teleoperation/arm_controller/arm_controller.cpp teleoperation/arm_controller/pch.hpp)
+target_link_libraries(arm_controller lie)
+ament_target_dependencies(arm_controller rclcpp)
 
 # if (Gst_FOUND AND GstApp_FOUND)
 #     mrover_add_node(usb_camera esw/usb_camera/*.cpp esw/usb_camera/pch.hpp)

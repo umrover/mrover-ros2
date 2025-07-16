@@ -1,5 +1,5 @@
 <template>
-  <div class="d-flex justify-content-center">
+  <div class="d-flex justify-content-center" style="user-select: none;">
     <div
       v-if="Object.keys(connectionStatus as Record<string, any>).length > 0"
       class="justify-content-center align-items-center border border-2 rounded px-1 me-1"

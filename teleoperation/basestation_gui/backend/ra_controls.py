@@ -114,9 +114,11 @@ def compute_manual_joint_controls(controller: DeviceInputs) -> list[float]:
 
 
 def subset(names: list[str], values: list[float], joints: set[Joint]) -> tuple[list[str], list[float]]:
-    for i in joints:
+    # filtered_joints = [j for j in joints if j.value < 5] # temporarily switch to this for sim testing
+    filtered_joints = [j for j in joints]
+    for i in filtered_joints:
         print(i)
-    return [names[i.value] for i in joints], [values[i.value] for i in joints]
+    return [names[i.value] for i in filtered_joints], [values[i.value] for i in filtered_joints]
 
 
 def send_ra_controls(ra_mode: str, inputs: DeviceInputs, node: Node, thr_pub: Publisher, ee_pos_pub: Publisher, ee_vel_pub: Publisher, buffer: Buffer) -> None: 
