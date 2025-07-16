@@ -1,6 +1,8 @@
 <template>
-  <ArmControls />
-  <Rover3D />
+  <div class="view-wrapper">
+    <ArmControls class="island p-2"/>
+    <!-- <Rover3D /> -->
+  </div>
 </template>
 
 <script lang="ts">
@@ -36,6 +38,12 @@ export default defineComponent({
     ...mapState('websocket', {
       waypointsMessage: (state: WebSocketState) => state.messages['waypoints']
     }),
+  },
+
+  watch: { // then watch for messages
+    waypointsMessage(msg) {
+      console.log(msg)
+    }
   },
 
   methods: {

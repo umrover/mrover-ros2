@@ -98,14 +98,14 @@ export default function threeSetup() {
 
   // Sizes for window resizing
   const sizes = {
-    width: window.innerWidth,
-    height: window.innerHeight,
+    width: canvas.clientWidth,
+    height: canvas.clientHeight,
   }
 
   // Resize event listenerreb
   window.addEventListener('resize', () => {
-    sizes.width = window.innerWidth
-    sizes.height = window.innerHeight
+    sizes.width = canvas.clientWidth
+    sizes.height = canvas.clientHeight
     // Update camera
     camera.aspect = sizes.width / sizes.height
     camera.updateProjectionMatrix()

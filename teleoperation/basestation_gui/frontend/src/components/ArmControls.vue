@@ -1,6 +1,15 @@
 <template>
   <div class="wrap">
-    <h2>Arm Controls</h2>
+    <div class="d-flex justify-content-between align-items-center">
+      <h2 class="m-0 me-5">Arm Controls</h2>
+      <span
+        class="px-2 py-2 rounded-2 text-black fw-semibold text-center"
+        style="width: 130px; display: inline-block; font-family: monospace;"
+        :class="controllerConnected ? 'bg-success' : 'bg-secondary'"
+      >
+        {{ controllerConnected ? 'Connected  ' : 'Disconnected' }}
+      </span>
+    </div>
     <div class="btn-group" role="group" aria-label="Arm mode selection">
       <button
         type="button"
@@ -39,35 +48,35 @@
 </template>
 
 <script lang="ts">
-import { defineComponent } from 'vue'
+import { defineComponent, reactive } from 'vue'
 import Vuex from 'vuex'
-const { mapActions, mapState } = Vuex;
+const { mapActions, mapState } = Vuex
 
 const UPDATE_HZ = 30
 
 export default defineComponent({
-  components: {},
   data() {
     return {
       mode: 'disabled',
+      gamepadConnected: false,
     }
   },
-
   computed: {
     ...mapState('websocket', ['message']),
+    controllerConnected(): boolean {
+      return this.gamepadConnected
+    },
   },
-
-  mounted: function () {
+  mounted() {
     document.addEventListener('keydown', this.keyDown)
   },
-
-  created: function () {
+  created() {
     this.interval = window.setInterval(() => {
       const gamepads = navigator.getGamepads()
-      // may need to check for Xbox rather than Microsoft
       const gamepad = gamepads.find(
         gamepad => gamepad && gamepad.id.includes('Microsoft'),
       )
+      this.gamepadConnected = !!gamepad
       if (!gamepad) return
 
       this.$store.dispatch('websocket/sendMessage', {
@@ -88,18 +97,14 @@ export default defineComponent({
       })
     }, 1000 / UPDATE_HZ)
   },
-
-  beforeUnmount: function () {
+  beforeUnmount() {
     window.clearInterval(this.interval)
     document.removeEventListener('keydown', this.keyDown)
   },
-
   methods: {
     ...mapActions('websocket', ['sendMessage']),
-
-    keyDown: function (event: { key: string }) {
-      // Use the space bar as an e-stop
-      if (event.key == ' ') {
+    keyDown(event: { key: string }) {
+      if (event.key === ' ') {
         this.mode = 'disabled'
       }
     },
@@ -112,28 +117,6 @@ export default defineComponent({
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-items: center;
   width: 100%;
-  height: auto;
-}
-
-.wrap h2 h4 {
-  margin: 0;
-  font-size: 1.5em;
-  font-weight: bold;
-  text-align: center;
-  width: 100%;
-  padding: 5px 0;
-}
-
-.controls-flex {
-  flex-wrap: wrap;
-  display: flex;
-  align-items: center;
-  width: 100%;
-  column-gap: 20px;
-  padding-left: 10px;
-  margin-bottom: 5px;
-  margin-top: 5px;
 }
 </style>
