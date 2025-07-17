@@ -1,17 +1,19 @@
 <template>
-  <h2>Heater Auto Shutdown</h2>
-  <ToggleButton
-    id="autoshutdown"
-    :current-state="autoShutdownEnabled"
-    :label-enable-text="'Auto Shutdown'"
-    :label-disable-text="'Auto Shutdown'"
-    @change="sendAutoShutdownCmd()"
-  />
-  <!-- <LEDIndicator
-        :connected="autoShutdownEnabled"
-        :name="'Auto Shutdown Status'"
-        :show_name="true"
-    /> -->
+  <div class="flex w-100">
+    <h2>Heater Auto Shutdown</h2>
+    <ToggleButton
+      id="autoshutdown"
+      :current-state="autoShutdownEnabled"
+      :label-enable-text="'Auto Shutdown'"
+      :label-disable-text="'Auto Shutdown'"
+      @change="sendAutoShutdownCmd()"
+    />
+    <!-- <LEDIndicator
+          :connected="autoShutdownEnabled"
+          :name="'Auto Shutdown Status'"
+          :show_name="true"
+      /> -->
+  </div>
 </template>
 
 <script lang="ts">
@@ -65,5 +67,3 @@ export default {
   },
 }
 </script>
-
-<style scoped></style>

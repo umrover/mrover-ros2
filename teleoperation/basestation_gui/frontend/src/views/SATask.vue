@@ -15,12 +15,10 @@
       <BasicWaypointEditor :odom="odom" />
     </div>
     <div class="island p-1 rounded data d-flex gap-2">
+      <OdometryReading @odom="updateOdom" class="rounded border border-2 p-2"/>
       <ControllerDataTable msg-type="drive_state" header="Drive States" class="rounded border border-2 p-2"/>
       <ControllerDataTable msg-type="sa_state" header="SA States" class="rounded border border-2 p-2"/>
       <SoilData class="rounded border border-2 p-2"/>
-    </div>
-    <div class="island p-3 rounded odom">
-      <OdometryReading @odom="updateOdom" />
     </div>
   </div>
 </template>
@@ -129,11 +127,11 @@ export default {
   display: grid;
   grid-gap: 10px;
   grid-template-columns: 55% auto; 
+  grid-template-rows: auto 1fr auto;
   grid-template-areas:
     'controls controls'
     'map waypoints'
-    'map waypoints'
-    'odom data';
+    'data data';
   font-family: sans-serif;
   height: auto;
   width: 100%;
@@ -149,10 +147,6 @@ export default {
 
 .data {
   grid-area: data;
-}
-
-.odom {
-  grid-area: odom;
 }
 
 .soilData {

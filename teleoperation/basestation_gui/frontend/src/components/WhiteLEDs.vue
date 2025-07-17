@@ -1,16 +1,18 @@
 <template>
-  <h2>White LED</h2>
-  <ToggleButton
-    :current-state="siteEnabled[site]"
-    :label-enable-text="'LED Site ' + String.fromCharCode(site + 65)"
-    :label-disable-text="'LED Site ' + String.fromCharCode(site + 65)"
-    @change="toggleLEDs()"
-  />
-  <!-- <LEDIndicator
-        :connected="siteEnabled[site]"
-        :name="'LED Status'"
-        :show_name="true"
-    /> -->
+  <div class="flex w-100">
+    <h2>White LED</h2>
+    <ToggleButton
+      :current-state="siteEnabled[site]"
+      :label-enable-text="'LED Site ' + String.fromCharCode(site + 65)"
+      :label-disable-text="'LED Site ' + String.fromCharCode(site + 65)"
+      @change="toggleLEDs()"
+    />
+    <!-- <LEDIndicator
+          :connected="siteEnabled[site]"
+          :name="'LED Status'"
+          :show_name="true"
+      /> -->
+  </div>
 </template>
 
 <script lang="ts">
@@ -68,5 +70,3 @@ export default {
   },
 }
 </script>
-
-<style scoped></style>

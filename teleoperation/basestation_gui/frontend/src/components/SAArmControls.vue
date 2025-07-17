@@ -1,11 +1,11 @@
 <template>
-  <div class="wrap p-2">
-    <h3 class="mb-2 text-center">Arm Controls</h3>
+  <div class="wrap p-2 flex-column justify-content-between">
+    <h3 class="m-0 p-0">Arm Controls</h3>
     <div class="btn-group m-0 p-0" role="group" aria-label="Arm Modes">
       <button
         type="button"
         class="btn"
-        :class="mode === 'disabled' ? 'btn-danger active' : 'btn-outline-danger'"
+        :class="mode === 'disabled' ? 'btn-danger' : 'btn-outline-danger'"
         @click="mode = 'disabled'"
       >
         Disabled
@@ -13,7 +13,7 @@
       <button
         type="button"
         class="btn"
-        :class="mode === 'throttle' ? 'btn-success active' : 'btn-outline-success'"
+        :class="mode === 'throttle' ? 'btn-success' : 'btn-outline-success'"
         @click="mode = 'throttle'"
       >
         Throttle

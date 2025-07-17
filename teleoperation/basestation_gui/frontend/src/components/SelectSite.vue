@@ -1,7 +1,7 @@
 <template>
   <!-- TODO: Add in conditonal buttons based on which buttons are clicked already -->
   <!-- we want to rotate the hex hub in one direction? -->
-  <div>
+  <div class="w-100">
     <h2>Select Site</h2>
     <div class="form-check form-check-inline">
       <input

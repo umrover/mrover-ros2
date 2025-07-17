@@ -1,7 +1,7 @@
 <template>
   <div id="app">
-    <NavBar/>
-    <router-view/>
+    <NavBar />
+    <router-view />
   </div>
 </template>
 
@@ -11,13 +11,14 @@ import NavBar from './views/NavBar.vue'
 export default {
   name: 'App',
   components: {
-    NavBar
+    NavBar,
   },
 }
 </script>
 
 <style>
-html, body {
+html,
+body {
   height: 100%;
   margin: 0;
 }
@@ -36,7 +37,26 @@ html, body {
 
 .island {
   background-color: #ffffff;
-  border-radius: 6px
+  border-radius: 6px;
 }
 
+/* rules below targets all button classes and ensures the text is black
+.btn {
+  color: #000 !important;
+}
+
+.btn-outline-primary:hover,
+.btn-outline-primary:focus,
+.btn-outline-secondary:hover,
+.btn-outline-secondary:focus 
+{
+  color: #000 !important;
+}
+
+.btn-primary.active,
+.btn-primary:active,
+.btn:is(.btn-primary, .btn-outline-primary):focus 
+{
+  color: #000 !important;
+} */
 </style>

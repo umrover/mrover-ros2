@@ -1,29 +1,29 @@
 <template>
   <div class="p-2 d-flex">
-    <div class="me-2">
-      <h3 class="text-center mb-2">HexHub</h3>
-      <div class="d-flex justify-content-center gap-2">
-        <button
-          class="btn"
-          :class="orientation === 'cw' ? 'btn-primary' : 'btn-outline-primary'"
-          @click="setOrientation('cw')"
-        >
-          CW
-        </button>
-        <button
-          class="btn"
-          :class="orientation === 'ccw' ? 'btn-primary' : 'btn-outline-primary'"
-          @click="setOrientation('ccw')"
-        >
-          CCW
-        </button>
+    <div class="me-2 d-flex flex-column justify-content-between">
+      <h3 class="m-0 p-0">HexHub</h3>
+      <div class="btn-group d-flex justify-content-center">
+          <button
+              class="btn"
+              :class="orientation === 'cw' ? 'btn-primary' : 'btn-outline-primary'"
+              @click="setOrientation('cw')"
+          >
+              CW
+          </button>
+          <button
+              class="btn"
+              :class="orientation === 'ccw' ? 'btn-primary' : 'btn-outline-primary'"
+              @click="setOrientation('ccw')"
+          >
+              CCW
+          </button>
       </div>
     </div>
-    <div class="btn-group w-100 d-flex " role="group">
+    <div class="btn-group d-flex" role="group">
       <label
         v-for="(name, i) in siteList"
         :key="i"
-        class="btn flex-fill align-items-center d-flex justify-content-center"
+        class="btn flex-fill align-items-center d-flex justify-content-center lh-1"
         :class="currentSite === i ? 'btn-primary text-white' : 'btn-outline-primary'"
       >
         <input

@@ -1,6 +1,6 @@
 <template>
-  <div class="wrap p-2">
-    <h3 class="mb-2">Panorama</h3>
+  <div class="wrap p-2 flex-column justify-content-between">
+    <h3 class="m-0 p-0">Panorama</h3>
     <div class="btn-group m-0 p-0" role="group" aria-label="Pano Controls">
       <button
         class="btn btn-success"

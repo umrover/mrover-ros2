@@ -19,7 +19,7 @@
       <div class='island rounded rover-3d'>
         <Rover3D />
       </div>
-      <div class='island p-3 rounded controller_state'>
+      <div class='island p-3 rounded controller_state d-flex'>
         <!-- drive_state not found -->
         <ControllerDataTable msg-type='arm_state' header='Arm States' />
         <ControllerDataTable msg-type='drive_state' header='Drive States' />
@@ -110,7 +110,7 @@ export default defineComponent({
 .wrapper-dm {
   display: grid;
   gap: 10px;
-  grid-template-columns: 50% 50%;
+  grid-template-columns: 50% auto;
   grid-template-areas:
     'arm-controls waypoint-editor'
     'map waypoint-editor'
@@ -123,7 +123,7 @@ export default defineComponent({
 .wrapper-es {
   display: grid;
   gap: 10px;
-  grid-template-columns: minmax(30%, 1fr) minmax(auto, 70%);
+  grid-template-columns: 50% auto;
   grid-template-areas:
     'arm-controls rover-3d'
     'controller_state rover-3d';

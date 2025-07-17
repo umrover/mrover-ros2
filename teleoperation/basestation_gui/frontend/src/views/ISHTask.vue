@@ -1,23 +1,17 @@
 <template>
   <div class="wrapper view-wrapper">
-    <div class="island p-3 rounded row siteSelect">
-      <div class="col-4">
-        <SelectSite @site="onSiteChange" />
-      </div>
-      <div class="col-4">
-        <WhiteLEDs :site="site" />
-      </div>
-      <div class="col-4">
-        <AutoShutdown />
-      </div>
+    <div class="island p-2 rounded controls d-flex gap-2">
+      <SelectSite @site="onSiteChange" class="border border-2 rounded p-2"/>
+      <AutoShutdown class="border border-2 rounded p-2"/>
+      <WhiteLEDs :site="site" class="border border-2 rounded p-2"/>
     </div>
-    <div class="island p-3 rounded benedicts">
+    <div class="island p-2 rounded benedicts">
       <NinhydrinBenedict :site="site" :isNinhydrin="false" />
     </div>
-    <div class="island p-3 rounded ninhydrin">
+    <div class="island p-2 rounded ninhydrin">
       <NinhydrinBenedict :site="site" :isNinhydrin="true" />
     </div>
-    <div class="island p-3 rounded container-fluid camera">
+    <div class="island p-2 rounded container-fluid camera">
       <div class="d-flex justify-content-center">
         <ToggleButton
           :current-state="true"
@@ -42,7 +36,7 @@
       </div>
     </div>
 
-    <div class="island p-3 rounded sensors">
+    <div class="island p-2 rounded sensors">
       <SensorData :site="site" />
     </div>
   </div>
@@ -109,36 +103,19 @@ export default {
   grid-gap: 10px;
   grid-template-columns: repeat(2, auto) 40%;
   grid-template-areas:
-    'siteSelect siteSelect camera'
+    'controls controls camera'
     'ninhydrin benedicts camera'
     'sensors sensors camera';
   font-family: sans-serif;
   height: auto;
 }
 
-.dashboard-title {
-  color: black;
-  text-decoration: none;
-}
-
-.dashboard-title:hover {
-  color: darkgray;
-}
-
-.comms {
-  margin-right: 5px;
-}
-
-.network {
-  float: right;
-}
-
 .benedicts {
   grid-area: benedicts;
 }
 
-.siteSelect {
-  grid-area: siteSelect;
+.controls {
+  grid-area: controls;
 }
 
 .ninhydrin {

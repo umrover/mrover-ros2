@@ -1,7 +1,7 @@
 <template>
   <div class="p-2">
-    <h3>Limit Switch Controls</h3>
-    <div>
+    <h3 class="m-0 p-0">Limit Switch</h3>
+    <div class="m-0 p-0">
       <ToggleButton
         id="ls"
         :current-state="lsstate"
