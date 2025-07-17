@@ -1,39 +1,26 @@
 <template>
-  <div class="wrapper view-wrapper">
+  <div class="wrapper view-wrapper overflow-x-hidden h-100">
+    <div class="island p-2 rounded controls d-flex gap-2">
+      <SAArmControls :currentSite="siteSelect" class="border boder-2 rounded"/>
+      <HexHub @selectSite="updateSite" @orientation="updateOrientation" class="border boder-2 rounded"/>
+      <LSActuator class="border boder-2 rounded"/>
+      <PanoCam class="border boder-2 rounded"/>
+      <DriveControls />
+      <MastGimbalControls />
+    </div>
     <div class="island p-0 rounded map">
       <BasicMap :odom="odom" />
     </div>
     <div class="island p-3 rounded waypoints">
       <BasicWaypointEditor :odom="odom" />
     </div>
-    <div class="island p-3 rounded soilData">
-      <SoilData />
-    </div>
-    <div>
-      <DriveControls />
-    </div>
-    <div class="island p-3 rounded arm">
-      <SAArmControls :currentSite="siteSelect" />
-    </div>
-    <div class="island p-1 rounded moteus d-flex gap-2">
-      <!-- drive_state and sa_state not found -->
+    <div class="island p-1 rounded data d-flex gap-2">
       <ControllerDataTable msg-type="drive_state" header="Drive States" class="rounded border border-2 p-2"/>
       <ControllerDataTable msg-type="sa_state" header="SA States" class="rounded border border-2 p-2"/>
-    </div>
-    <div v-show="false">
-      <MastGimbalControls />
+      <SoilData class="rounded border border-2 p-2"/>
     </div>
     <div class="island p-3 rounded odom">
       <OdometryReading @odom="updateOdom" />
-    </div>
-    <div class="island p-3 rounded hexHub">
-      <HexHub @selectSite="updateSite" @orientation="updateOrientation" />
-    </div>
-    <div class="island p-3 rounded lsActuator">
-      <LSActuator />
-    </div>
-    <div class="island p-3 rounded pano">
-      <PanoCam />
     </div>
   </div>
 </template>
@@ -141,12 +128,12 @@ export default {
 .wrapper {
   display: grid;
   grid-gap: 10px;
-  grid-template-columns: 50% repeat(2, auto);
+  grid-template-columns: 55% auto; 
   grid-template-areas:
-    'arm lsActuator soilData'
-    'map hexHub waypoints'
-    'map pano waypoints'
-    'moteus odom odom';
+    'controls controls'
+    'map waypoints'
+    'map waypoints'
+    'odom data';
   font-family: sans-serif;
   height: auto;
   width: 100%;
@@ -160,12 +147,8 @@ export default {
   grid-area: waypoints;
 }
 
-.arm {
-  grid-area: arm;
-}
-
-.moteus {
-  grid-area: moteus;
+.data {
+  grid-area: data;
 }
 
 .odom {
@@ -176,15 +159,7 @@ export default {
   grid-area: soilData;
 }
 
-.hexHub {
-  grid-area: hexHub;
-}
-
-.lsActuator {
-  grid-area: lsActuator;
-}
-
-.pano {
-  grid-area: pano;
+.controls {
+  grid-area: controls;
 }
 </style>

@@ -1,55 +1,45 @@
 <template>
-  <div>
-    <h3 class="text-center">HexHub Controls</h3>
-
-    <!-- Orientation toggle -->
-    <div class="d-flex justify-content-center align-items-center my-3">
-      <div class="btn-group" role="group" aria-label="Orientation Toggle">
+  <div class="p-2 d-flex">
+    <div class="me-2">
+      <h3 class="text-center mb-2">HexHub</h3>
+      <div class="d-flex justify-content-center gap-2">
         <button
-          type="button"
           class="btn"
           :class="orientation === 'cw' ? 'btn-primary' : 'btn-outline-primary'"
           @click="setOrientation('cw')"
         >
-          Clockwise
+          CW
         </button>
         <button
-          type="button"
           class="btn"
           :class="orientation === 'ccw' ? 'btn-primary' : 'btn-outline-primary'"
           @click="setOrientation('ccw')"
         >
-          Counter-Clockwise
+          CCW
         </button>
       </div>
     </div>
-
-    <!-- Site selection -->
-    <div class="btn-group-vertical w-100" role="group" aria-label="Site Selection">
-      <div
-        v-for="(name, index) in siteList"
-        :key="index"
-        class="px-2"
+    <div class="btn-group w-100 d-flex " role="group">
+      <label
+        v-for="(name, i) in siteList"
+        :key="i"
+        class="btn flex-fill align-items-center d-flex justify-content-center"
+        :class="currentSite === i ? 'btn-primary text-white' : 'btn-outline-primary'"
       >
         <input
-          v-model="currentSite"
           class="btn-check"
+          v-model="currentSite"
           type="radio"
-          :id="'Site' + index"
-          :value="index"
+          :value="i"
           @change="emitSite"
           autocomplete="off"
         />
-        <label
-          class="btn btn-outline-secondary w-100 my-1"
-          :for="'Site' + index"
-        >
-          {{ name }}
-        </label>
-      </div>
+        {{ name }}
+      </label>
     </div>
   </div>
 </template>
+
 
 <script lang="ts">
 import Vuex from 'vuex'
@@ -60,14 +50,8 @@ export default {
   data() {
     return {
       currentSite: 0,
-      siteList: [
-        'Site A',
-        'Site B',
-        'Sample Cache',
-        'Empty Soil Deposit',
-        'Blocked',
-      ],
-      orientation: 'cw', // 'cw' or 'ccw'
+      siteList: ['Site A', 'Site B', 'Sample Cache', 'Empty Soil Deposit', 'Blocked'],
+      orientation: 'cw',
     }
   },
   computed: {
@@ -81,20 +65,13 @@ export default {
     },
     emitSite() {
       this.$emit('selectSite', this.currentSite)
-      console.log(this.currentSite)
     },
   },
 }
 </script>
 
 <style scoped>
-
-.grid {
-  display: grid;
-  grid-template-columns: repeat(2, auto);
-  font-family: sans-serif;
-  height: auto;
-  align-items: center;
-  justify-items: center;
+.btn {
+  width: 80px;
 }
 </style>

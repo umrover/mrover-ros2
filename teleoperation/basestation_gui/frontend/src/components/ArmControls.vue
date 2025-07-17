@@ -48,7 +48,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, reactive } from 'vue'
+import { defineComponent } from 'vue'
 import Vuex from 'vuex'
 const { mapActions, mapState } = Vuex
 

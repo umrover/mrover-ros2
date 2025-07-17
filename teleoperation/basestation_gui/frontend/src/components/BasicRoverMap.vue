@@ -1,5 +1,5 @@
 <template>
-  <div class="position-relative w-100 h-100 min-vh-40">
+  <div class="position-relative w-100 h-100 map">
     <l-map
       @ready="onMapReady"
       ref="map"
@@ -326,3 +326,9 @@ export default {
   },
 }
 </script>
+
+<style scoped>
+.map {
+  min-height: 50vh;
+}
+</style>

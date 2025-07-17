@@ -1,15 +1,23 @@
 <template>
-  <div class="wrap flex flex-col items-center justify-center p-4">
-    <div class="d-flex">
-      <h3 class="m-0 me-3">Pano Cam</h3>
-      <div class="button-group">
-        <button v-if="!panoActive" class="btn btn-success" @click="togglePano">
-          Start
-        </button>
-        <button v-if="panoActive" class="btn btn-danger" @click="togglePano">
-          Stop
-        </button>
-      </div>
+  <div class="wrap p-2">
+    <h3 class="mb-2">Panorama</h3>
+    <div class="btn-group m-0 p-0" role="group" aria-label="Pano Controls">
+      <button
+        class="btn btn-success"
+        :disabled="panoActive"
+        :class="{ disabled: panoActive }"
+        @click="togglePano('start')"
+      >
+        Start
+      </button>
+      <button
+        class="btn btn-danger"
+        :disabled="!panoActive"
+        :class="{ disabled: !panoActive }"
+        @click="togglePano('stop')"
+      >
+        Stop
+      </button>
     </div>
   </div>
 </template>
@@ -24,35 +32,29 @@ export default {
       panoActive: false,
     }
   },
-
   methods: {
     ...mapActions('websocket', ['sendMessage']),
-
-    togglePano() {
-      this.$store.dispatch('websocket/sendMessage', {
+    togglePano(action: 'start' | 'stop') {
+      this.panoActive = action === 'start'
+      this.sendMessage({
         id: 'mast',
         message: {
           type: 'pano',
-          action: this.panoActive ? 'stop' : 'start',
+          action,
         },
       })
-      this.panoActive = !this.panoActive
     },
   },
 }
 </script>
 
 <style scoped>
-.wrap {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  width: 100%;
-  text-align: center;
+button:disabled {
+  cursor: not-allowed;
 }
-
-.pano-btn {
-  padding: 10px 20px;
-  color: white;
+.wrap {
+  display: inline-flex;
+  flex-direction: column;
+  width: auto;
 }
 </style>

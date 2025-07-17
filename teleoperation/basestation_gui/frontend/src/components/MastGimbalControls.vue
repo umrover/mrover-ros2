@@ -78,6 +78,6 @@ export default {
 
 <style scoped>
 .wrap {
-  display: inline-block;
+  display: none;
 }
 </style>

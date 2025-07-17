@@ -1,5 +1,5 @@
 <template>
-  <div class="wrap">
+  <div class="p-2">
     <h3>Limit Switch Controls</h3>
     <div>
       <ToggleButton
@@ -46,11 +46,3 @@ export default {
   },
 }
 </script>
-
-<style scoped>
-.wrap {
-  display: flex;
-  height: 100%;
-  width: 100%;
-}
-</style>

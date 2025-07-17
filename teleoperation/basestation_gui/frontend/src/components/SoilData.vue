@@ -1,24 +1,34 @@
 <template>
   <div class="wrap box">
-    <h3>Soil Data</h3>
+    <div class="d-flex justify-content-between align-middle">
+      <h3>Soil Data</h3>
+      <button class="btn btn-primary" @click="download()">
+        Save to CSV
+      </button>
+    </div>
     <div class="table-responsive">
       <table class="table" id="capture">
         <thead>
           <tr class="table-primary">
             <th scope="col">Temperature</th>
-            <th scope="col">Humidity</th>
           </tr>
         </thead>
         <tbody>
           <tr class="bold-border">
             <td>{{ temp.toFixed(2) }}ºC</td>
-            <td>{{ (humidity * 100).toFixed(2) }}%</td>
+          </tr>
+        </tbody>
+        <thead>
+          <tr class="table-primary">
+            <th scope="col">Temperature</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="bold-border">
+            <td>{{ temp.toFixed(2) }}ºC</td>
           </tr>
         </tbody>
       </table>
-      <button class="btn btn-secondary" @click="download()">
-        Save Data to CSV
-      </button>
     </div>
   </div>
 </template>
