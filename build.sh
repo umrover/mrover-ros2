@@ -19,3 +19,5 @@ colcon build \
 	--symlink-install \
 	--event-handlers console_direct+ \
 	"$@"
+
+rm -rf ../../build/mrover/.cmake/api
