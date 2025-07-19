@@ -1,105 +1,104 @@
-import json
 import traceback
 from typing import Any, Type
+import asyncio
 
-from channels.generic.websocket import JsonWebsocketConsumer
+from channels.generic.websocket import AsyncJsonWebsocketConsumer
+from asgiref.sync import sync_to_async
 from rosidl_runtime_py.convert import message_to_ordereddict
+from rclpy.qos import qos_profile_sensor_data
 
-import threading
-from rclpy.executors import MultiThreadedExecutor
-from backend.consumers.ros_manager import get_node, get_context
+from backend.consumers.ros_manager import get_node
 
 from mrover.srv import EnableAuton
+from mrover.msg import (
+    GPSWaypoint,
+    WaypointType,
+)
 from std_srvs.srv import SetBool
 
-LOCALIZATION_INFO_HZ = 10
 
-heater_names: list[str] = ["a0", "a1", "b0", "b1"]
-
-class AutonConsumer(JsonWebsocketConsumer):
-    subscribers = []
-    timers = []
-
-    def connect(self) -> None:
-        self.accept()
+class AutonConsumer(AsyncJsonWebsocketConsumer):
+    async def connect(self) -> None:
+        await self.accept()
 
         self.node = get_node()
-        self.ros_context = get_context()
+        self.subscribers = []
+        self.timers = []
 
-        self.ros_thread = threading.Thread(target=self.ros_spin, daemon=True)
-        self.ros_thread.start()
-
-        # Forwards ROS topic to GUI
-
-        # Services
         self.enable_teleop_srv = self.node.create_client(SetBool, "/enable_teleop")
         self.enable_auton_srv = self.node.create_client(EnableAuton, "/enable_auton")
 
-    def disconnect(self, close_code) -> None:
-        try:
-            for subscriber in self.subscribers:
-                self.node.destroy_subscription(subscriber)
+    async def disconnect(self, close_code) -> None:
+        """
+        Thread-safe disconnect method that schedules resource destruction
+        on the ROS executor thread to prevent race conditions.
+        """
+        print(f"Scheduling cleanup for disconnected client {self.channel_name}...")
+
+        def cleanup_ros_resources():
+            """This function will be executed safely by the ROS thread."""
+            # Clean up all ROS entities created in connect()
+            for sub in self.subscribers:
+                self.node.destroy_subscription(sub)
             self.subscribers.clear()
+
+            for timer in self.timers:
+                self.node.destroy_timer(timer)
             self.timers.clear()
 
-            if self.ros_thread.is_alive():
-                self.ros_thread.join(timeout=1)
-        except Exception as e:
-            print(f"Exception during disconnect cleanup: {e}")
+            print(f"ROS resources for {self.channel_name} have been cleaned up.")
 
-    def ros_spin(self) -> None:
-        executor = MultiThreadedExecutor(context=self.ros_context)
-        executor.add_node(self.node)
         try:
-            executor.spin()
+            # Add the entire cleanup function as a single callback to the executor
+            self.executor.add_callback(cleanup_ros_resources)
         except Exception as e:
-            print(f"Exception in ROS spin: {e}")
+            print(f"Exception while scheduling disconnect cleanup: {e}")
 
-    def forward_ros_topic(self, topic_name: str, topic_type: Type, gui_msg_type: str) -> None:
-        """
-        Subscribes to a ROS topic and forwards messages to the GUI as JSON
-
-        @param topic_name:      ROS topic name
-        @param topic_type:      ROS message type
-        @param gui_msg_type:    String to identify the message type in the GUI
-        """
+    async def forward_ros_topic(self, topic_name: str, topic_type: Type, gui_msg_type: str) -> None:
+        loop = asyncio.get_running_loop()
 
         def callback(ros_message: Any):
-            self.send_message_as_json({"type": gui_msg_type, **message_to_ordereddict(ros_message)})
+            data_to_send = {"type": gui_msg_type, **message_to_ordereddict(ros_message)}
+            asyncio.run_coroutine_threadsafe(self.send_json(data_to_send), loop)
 
-        self.subscribers.append(self.node.create_subscription(topic_type, topic_name, callback, qos_profile=1))
+        sub = await sync_to_async(self.node.create_subscription)(
+            topic_type, topic_name, callback, qos_profile=qos_profile_sensor_data
+        )
+        self.subscribers.append(sub)
 
-    def send_message_as_json(self, msg: dict):
+    async def send_auton_command(self, waypoints: list[dict], enabled: bool) -> None:
         try:
-            self.send(text_data=json.dumps(msg))
-        except Exception as e:
-            self.node.get_logger().warning(f"Failed to send message: {e}")
+            request = EnableAuton.Request(
+                enable=enabled,
+                waypoints=[
+                    GPSWaypoint(
+                        tag_id=waypoint.get("tag_id", -1),
+                        latitude_degrees=waypoint.get("latitude_degrees", 0.0),
+                        longitude_degrees=waypoint.get("longitude_degrees", 0.0),
+                        type=WaypointType(val=int(waypoint.get("type", 0))),
+                        enable_costmap=waypoint.get("enable_costmap", True),
+                    )
+                    for waypoint in waypoints
+                ],
+            )
+            await self.enable_auton_srv.call_async(request)
+        except Exception:
+            self.node.get_logger().error(f"Failed to send auton command: {traceback.format_exc()}")
 
-    def receive(self, text_data=None, bytes_data=None, **kwargs) -> None:
-        """
-        Callback function when a message is received in the Websocket
 
-        @param text_data:   Stringfied JSON message
-        """
-
-        if text_data is None:
-            self.node.get_logger().warning("Expecting text but received binary on GUI websocket...")
-
+    async def receive_json(self, content: dict, **kwargs) -> None:
         try:
-            message = json.loads(text_data)
-        except json.JSONDecodeError as e:
-            self.node.get_logger().warning(f"Failed to decode JSON: {e}")
-
-        try:
-            match message:
+            match content:
                 case {"type": "auton_enable", "enabled": enabled, "waypoints": waypoints}:
-                    self.send_auton_command(waypoints, enabled)
+                    await self.send_auton_command(waypoints, enabled)
 
                 case {"type": "teleop_enable", "enabled": enabled}:
-                    self.enable_teleop_srv.call(SetBool.Request(data=enabled))
+                    request = SetBool.Request()
+                    request.data = enabled
+                    await self.enable_teleop_srv.call_async(request)
 
                 case _:
-                    self.node.get_logger().warning(f"Unhandled message on auton: {message}")
-        except:
-            self.node.get_logger().error(f"Failed to handle message: {message}")
+                    self.node.get_logger().warning(f"Unhandled message on auton: {content}")
+        except Exception:
+            self.node.get_logger().error(f"Failed to handle message: {content}")
             self.node.get_logger().error(traceback.format_exc())

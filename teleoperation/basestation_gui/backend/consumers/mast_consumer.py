@@ -1,19 +1,17 @@
 import json
 import traceback
 from typing import Any, Type
+import asyncio
 
-from channels.generic.websocket import JsonWebsocketConsumer
+from channels.generic.websocket import AsyncJsonWebsocketConsumer
+from asgiref.sync import sync_to_async
 from rosidl_runtime_py.convert import message_to_ordereddict
-
-import threading
+from rclpy.qos import qos_profile_sensor_data
 import numpy as np
 import cv2
-from time import sleep
-from rclpy.executors import MultiThreadedExecutor
-from backend.consumers.ros_manager import get_node, get_context
 
+from backend.consumers.ros_manager import get_node
 from backend.input import DeviceInputs
-
 from backend.mast_controls import send_mast_controls
 from sensor_msgs.msg import Image
 from mrover.msg import Throttle
@@ -22,119 +20,93 @@ from mrover.srv import (
     PanoramaEnd,
 )
 
-LOCALIZATION_INFO_HZ = 10
 
-class MastConsumer(JsonWebsocketConsumer):
-    subscribers = []
-    timers = []
-
-    def connect(self) -> None:
-        self.accept()
+class MastConsumer(AsyncJsonWebsocketConsumer):
+    async def connect(self) -> None:
+        await self.accept()
 
         self.node = get_node()
-        self.ros_context = get_context()
+        self.subscribers = []
+        self.timers = []
 
-        self.ros_thread = threading.Thread(target=self.ros_spin, daemon=True)
-        self.ros_thread.start()
-
-        # Topic Publishers
         self.mast_gimbal_pub = self.node.create_publisher(Throttle, "/mast_gimbal_throttle_cmd", 1)
 
-        # Forwards ROS topic to GUI
-
-        # Services
         self.pano_start_srv = self.node.create_client(PanoramaStart, "/panorama/start")
         self.pano_end_srv = self.node.create_client(PanoramaEnd, "/panorama/end")
 
-    def disconnect(self, close_code) -> None:
-        try:
-            for subscriber in self.subscribers:
-                self.node.destroy_subscription(subscriber)
+    async def disconnect(self, close_code) -> None:
+        """
+        Thread-safe disconnect method that schedules resource destruction
+        on the ROS executor thread to prevent race conditions.
+        """
+        print(f"Scheduling cleanup for disconnected client {self.channel_name}...")
+
+        def cleanup_ros_resources():
+            """This function will be executed safely by the ROS thread."""
+            # Clean up all ROS entities created in connect()
+            for sub in self.subscribers:
+                self.node.destroy_subscription(sub)
             self.subscribers.clear()
+
+            for timer in self.timers:
+                self.node.destroy_timer(timer)
             self.timers.clear()
 
-            if self.ros_thread.is_alive():
-                self.ros_thread.join(timeout=1)
-        except Exception as e:
-            print(f"Exception during disconnect cleanup: {e}")
+            print(f"ROS resources for {self.channel_name} have been cleaned up.")
 
-    def ros_spin(self) -> None:
-        executor = MultiThreadedExecutor(context=self.ros_context)
-        executor.add_node(self.node)
         try:
-            executor.spin()
+            # Add the entire cleanup function as a single callback to the executor
+            self.executor.add_callback(cleanup_ros_resources)
         except Exception as e:
-            print(f"Exception in ROS spin: {e}")
+            print(f"Exception while scheduling disconnect cleanup: {e}")
 
-    def forward_ros_topic(self, topic_name: str, topic_type: Type, gui_msg_type: str) -> None:
-        """
-        Subscribes to a ROS topic and forwards messages to the GUI as JSON
-
-        @param topic_name:      ROS topic name
-        @param topic_type:      ROS message type
-        @param gui_msg_type:    String to identify the message type in the GUI
-        """
+    async def forward_ros_topic(self, topic_name: str, topic_type: Type, gui_msg_type: str) -> None:
+        loop = asyncio.get_running_loop()
 
         def callback(ros_message: Any):
-            self.send_message_as_json({"type": gui_msg_type, **message_to_ordereddict(ros_message)})
+            data_to_send = {"type": gui_msg_type, **message_to_ordereddict(ros_message)}
+            asyncio.run_coroutine_threadsafe(self.send_json(data_to_send), loop)
 
-        self.subscribers.append(self.node.create_subscription(topic_type, topic_name, callback, qos_profile=1))
+        sub = await sync_to_async(self.node.create_subscription)(
+            topic_type, topic_name, callback, qos_profile=qos_profile_sensor_data
+        )
+        self.subscribers.append(sub)
 
-
-    def start_stop_pano(self, action: str) -> None:
+    async def start_stop_pano(self, action: str) -> None:
         if action == "start":
-            self.node.get_logger().info("Pano start")
-            self.pano_start_srv.call_async(PanoramaStart.Request())
+            self.node.get_logger().info("Pano start service called.")
+            await self.pano_start_srv.call_async(PanoramaStart.Request())
         else:
-            self.node.get_logger().info("Pano stop")
-            self.future = self.pano_end_srv.call_async(PanoramaEnd.Request())
-            
-            self.future.add_done_callback(self.handle_pano_response)
+            self.node.get_logger().info("Pano end service called, awaiting result...")
+            try:
+                result = await self.pano_end_srv.call_async(PanoramaEnd.Request())
+                
+                if result is not None and result.success:
+                    self.node.get_logger().info("Panorama successful, processing image.")
+                    
+                    def save_image_sync(img_msg: Image):
+                        img_np = np.frombuffer(img_msg.data, dtype=np.uint8).reshape(
+                            img_msg.height, img_msg.width, -1 
+                        )
+                        # Ensure it's BGR for OpenCV if it's RGBA or BGRA
+                        if img_np.shape[2] == 4:
+                            img_np = cv2.cvtColor(img_np, cv2.COLOR_RGBA2BGR)
+                        
+                        timestamp = self.node.get_clock().now().nanoseconds
+                        filename = f"../../data/{timestamp}_panorama.png"
+                        cv2.imwrite(filename, img_np)
+                        self.node.get_logger().info(f"Image saved to {filename}")
 
-            self.node.get_logger().warn("Waiting for pano result...")
+                    await sync_to_async(save_image_sync)(result.img)
+                else:
+                    self.node.get_logger().warn("Panorama service reported no success or null result.")
 
-    def handle_pano_response(self, future):
-        self.node.get_logger().warn("Callback run...")
+            except Exception as e:
+                self.node.get_logger().error(f"Panorama service call failed: {e}")
 
-        if future.done():
-            result = future.result()
-            
-            if result is not None and result.success:
-                img_msg: Image = result.img
-                img_np = np.frombuffer(img_msg.data, dtype=np.uint8).reshape(
-                    img_msg.height, img_msg.width, 4
-                )
-                timestamp = f"{self.node.get_clock().now().seconds_nanoseconds()[0]}_{self.node.get_clock().now().seconds_nanoseconds()[1]}"
-                cv2.imwrite(f"../../data/{timestamp}panorama.png", img_np)
-                self.node.get_logger().info(f"Image saved to {timestamp}panorama.png")
-            else:
-                self.node.get_logger().info("No response...")
-        else:
-            self.node.get_logger().error("Service call failed...")
-
-    def send_message_as_json(self, msg: dict):
+    async def receive_json(self, content: dict, **kwargs) -> None:
         try:
-            self.send(text_data=json.dumps(msg))
-        except Exception as e:
-            self.node.get_logger().warning(f"Failed to send message: {e}")
-
-    def receive(self, text_data=None, bytes_data=None, **kwargs) -> None:
-        """
-        Callback function when a message is received in the Websocket
-
-        @param text_data:   Stringfied JSON message
-        """
-
-        if text_data is None:
-            self.node.get_logger().warning("Expecting text but received binary on GUI websocket...")
-
-        try:
-            message = json.loads(text_data)
-        except json.JSONDecodeError as e:
-            self.node.get_logger().warning(f"Failed to decode JSON: {e}")
-
-        try:
-            match message:
+            match content:
                 case {
                     "type": "mast_keyboard",
                     "axes": axes,
@@ -143,10 +115,10 @@ class MastConsumer(JsonWebsocketConsumer):
                     device_input = DeviceInputs(axes, buttons)
                     send_mast_controls(device_input, self.mast_gimbal_pub)
                 case {"type": "pano", "action": a}:
-                    self.start_stop_pano(a)
+                    await self.start_stop_pano(a)
                     
                 case _:
-                    self.node.get_logger().warning(f"Unhandled message on mast: {message}")
-        except:
-            self.node.get_logger().error(f"Failed to handle message: {message}")
+                    self.node.get_logger().warning(f"Unhandled message on mast: {content}")
+        except Exception:
+            self.node.get_logger().error(f"Failed to handle message: {content}")
             self.node.get_logger().error(traceback.format_exc())
