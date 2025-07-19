@@ -83,7 +83,5 @@ can_bridge_3:
     devices:
       jetson:
         id: 0x10
-      science_a:
+      science:
         id: 0x50
-      science_b:
-        id: 0x51
