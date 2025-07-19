@@ -8,7 +8,7 @@
       <DriveControls />
       <MastGimbalControls />
     </div>
-    <div class="island p-0 rounded map">
+    <div class="island p-0 rounded map overflow-hidden">
       <BasicMap :odom="odom" />
     </div>
     <div class="island p-3 rounded waypoints">

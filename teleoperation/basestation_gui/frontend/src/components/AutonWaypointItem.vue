@@ -1,30 +1,32 @@
 <template>
-  <div class="waypoints p-2 mb-2">
+  <div class="waypoints p-2">
     <div class="waypoint-header mb-1">
       <h5 class="mb-0">{{ waypoint.name }}</h5>
       <small class="text-muted">ID: {{ waypoint.id }}</small>
     </div>
-    <div class="waypoint-button-row px-1">
+
+    <div class="coordinates mb-1">
+      <p class="coordinate m-0">{{ waypoint.lat.toFixed(7) }}ºN</p>
+      <span class="mx-2">|</span>
+      <p class="coordinate m-0">{{ waypoint.lon.toFixed(7) }}ºW</p>
+    </div>
+
+    <div class="d-flex w-100 gap-2">
       <button
         v-if="!enable_costmap"
-        class="btn btn-danger"
+        class="btn btn-danger w-100"
         @click="toggleCostmap"
       >
         Costmap
       </button>
       <button
         v-if="enable_costmap"
-        class="btn btn-success"
+        class="btn btn-success w-100"
         @click="toggleCostmap"
       >
         Costmap
       </button>
-      <button class="btn btn-danger" @click="deleteWaypoint">Delete</button>
-    </div>
-    <div class="coordinates">
-      <p class="coordinate m-0">{{ waypoint.lat.toFixed(7) }}ºN</p>
-      <span class="mx-2">|</span>
-      <p class="coordinate m-0">{{ waypoint.lon.toFixed(7) }}ºW</p>
+      <button class="btn btn-danger w-100" @click="deleteWaypoint">Delete</button>
     </div>
   </div>
 </template>
@@ -106,12 +108,6 @@ export default {
 }
 
 .waypoint-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.waypoint-button-row {
   display: flex;
   justify-content: space-between;
   align-items: center;

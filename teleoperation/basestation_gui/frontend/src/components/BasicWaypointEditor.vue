@@ -1,100 +1,107 @@
 <template>
-  <div class="wrap">
-    <div class="box">
-      <div class="form-group">
-        <label for="waypointname">Name:</label>
+  <div class="wrapper d-flex m-0 p-2 justify-content-between gap-3 w-100 h-100">
+    <div class="d-flex flex-column w-100 gap-2">
+      <h3 class="m-0 p-0">Add Waypoint</h3>
+      <div class="form-group d-flex gap-2 align-items-center">
+        <label for="waypointname" class="form-label m-0 p-0">Name:</label>
         <input class="form-control" id="waypointname" v-model="name" />
       </div>
 
-      <div class="form-check form-check-inline">
+      <div class="btn-group" role="group" aria-label="Coordinate Format Selection">
         <input
-          v-model="odom_format_in"
-          class="form-check-input"
           type="radio"
+          class="btn-check"
+          v-model="odom_format_in"
           id="radioD"
           value="D"
+          autocomplete="off"
         />
-        <label class="form-check-label" for="radioD">D</label>
-      </div>
-      <div class="form-check form-check-inline">
+        <label class="btn btn-outline-primary" for="radioD">D</label>
         <input
-          v-model="odom_format_in"
-          class="form-check-input"
           type="radio"
+          class="btn-check"
+          v-model="odom_format_in"
           id="radioDM"
           value="DM"
+          autocomplete="off"
         />
-        <label class="form-check-label" for="radioDM">DM</label>
-      </div>
-      <div class="form-check form-check-inline">
+        <label class="btn btn-outline-primary" for="radioDM">DM</label>
         <input
-          v-model="odom_format_in"
-          class="form-check-input"
           type="radio"
+          class="btn-check"
+          v-model="odom_format_in"
           id="radioDMS"
           value="DMS"
+          autocomplete="off"
         />
-        <label class="form-check-label" for="radioDMS">DMS</label>
+        <label class="btn btn-outline-primary" for="radioDMS">DMS</label>
       </div>
 
-      <div class="row">
-        <div class="col input-group">
-          <input class="form-control" id="deg1" v-model.number="input.lat.d" />
-          <span for="deg1" class="input-group-text">º</span>
+      <div class="d-flex gap-2">
+        <div class="d-flex flex-column border border-2 rounded p-2">
+          <div class="d-flex justify-content-between">
+            <label class="form-label">Latitude:</label>
+            <div class="col-auto">N</div>
+          </div>
+          <div class="col input-group">
+            <input class="form-control" id="deg1" v-model.number="input.lat.d" />
+            <span class="input-group-text font-monospace">º</span>
+          </div>
+          <div v-if="min_enabled" class="col input-group">
+            <input class="form-control" id="min1" v-model.number="input.lat.m" />
+            <span class="input-group-text font-monospace">'</span>
+          </div>
+          <div v-if="sec_enabled" class="col input-group">
+            <input class="form-control" id="sec1" v-model.number="input.lat.s" />
+            <span class="input-group-text font-monospace">"</span>
+          </div>
         </div>
-        <div v-if="min_enabled" class="col input-group">
-          <input class="form-control" id="min1" v-model.number="input.lat.m" />
-          <span for="min1" class="input-group-text">'</span>
+        <div class="d-flex flex-column border border-2 rounded p-2">
+          <div class="d-flex justify-content-between">
+            <label class="form-label">Longitude:</label>
+            <div class="col-auto">W</div>
+          </div>
+          <div class="col input-group">
+            <input class="form-control" id="deg2" v-model.number="input.lon.d" />
+            <span class="input-group-text font-monospace">º</span>
+          </div>
+          <div v-if="min_enabled" class="col input-group">
+            <input class="form-control" id="min2" v-model.number="input.lon.m" />
+            <span class="input-group-text font-monospace">'</span>
+          </div>
+          <div v-if="sec_enabled" class="col input-group">
+            <input class="form-control" id="sec2" v-model.number="input.lon.s" />
+            <span class="input-group-text font-monospace">"</span>
+          </div>
         </div>
-        <div v-if="sec_enabled" class="col input-group">
-          <input class="form-control" id="sec1" v-model.number="input.lat.s" />
-          <span for="sec1" class="input-group-text">"</span>
-        </div>
-        N
       </div>
-      <div class="row">
-        <div class="col input-group">
-          <input class="form-control" id="deg2" v-model.number="input.lon.d" />
-          <span for="deg2" class="input-group-text">º</span>
-        </div>
-        <div v-if="min_enabled" class="col input-group">
-          <input class="form-control" id="min2" v-model.number="input.lon.m" />
-          <span for="min2" class="input-group-text">'</span>
-        </div>
-        <div v-if="sec_enabled" class="col input-group">
-          <input class="form-control" id="sec2" v-model.number="input.lon.s" />
-          <span for="sec2" class="input-group-text">"</span>
-        </div>
-        W
-      </div>
-
-      <div class="add-drop">
-        <button class="btn btn-primary" @click="addWaypoint(input, false)">
+      
+      <div class="d-flex flex-column gap-2">
+        <button class="btn btn-success" @click="addWaypoint(input, false)">
           Add Waypoint
         </button>
         <button
-          class="btn btn-primary"
+          class="btn btn-success"
           @click="addWaypoint(formatted_odom, false)"
         >
-          Drop Waypoint
+          Drop Waypoint at Rover
         </button>
         <button
           v-if="droneWaypointButton"
-          class="btn btn-primary"
+          class="btn btn-info"
           @click="addWaypoint(input, true)"
         >
           Add Drone Position
         </button>
       </div>
     </div>
-    <div class="box">
-      <div class="all-waypoints">
-        <h4 class="waypoint-headers">Waypoints</h4>
-        <button class="btn btn-primary" @click="clearWaypoint">
-          Clear Waypoints
-        </button>
+
+    <div class="d-flex flex-column w-100">
+      <div class="d-flex mb-2 align-items-center justify-content-between">
+        <h3 class="m-0 p-0">Current Course</h3>
+        <button class="btn btn-danger" @click="clearWaypoint">Clear</button>
       </div>
-      <div class="waypoints">
+      <div class="waypoint-wrapper overflow-y-scroll d-flex flex-column gap-2">
         <WaypointItem
           v-for="(waypoint, i) in storedWaypoints"
           :key="i"
@@ -112,10 +119,10 @@
 <script lang="ts">
 import { convertDMS } from '../utils/map.js'
 import WaypointItem from './BasicWaypointItem.vue'
-import Vuex from 'vuex';
+import Vuex from 'vuex'
 const { mapMutations, mapGetters, mapActions, mapState } = Vuex
 import L from 'leaflet'
-import type { WebSocketState } from '../types/websocket.js';
+import type { WebSocketState } from '../types/websocket.js'
 
 export default {
   props: {
@@ -213,7 +220,12 @@ export default {
     storedWaypoints: {
       handler: function (newList) {
         const waypoints = newList.map(
-          (waypoint: { lat: number; lon: number; name: string; drone: boolean }) => {
+          (waypoint: {
+            lat: number
+            lon: number
+            name: string
+            drone: boolean
+          }) => {
             return {
               latLng: L.latLng(waypoint.lat, waypoint.lon),
               name: waypoint.name,
@@ -236,7 +248,6 @@ export default {
     navMessage: {
       handler: function (msg) {
         if (msg.type == 'get_basic_waypoint_list') {
-          // Get waypoints from server on page load
           this.storedWaypoints = msg.data
           const waypoints = msg.data.map(
             (waypoint: { lat: number; lon: number; name: string }) => {
@@ -270,20 +281,17 @@ export default {
   },
 
   created: function () {
-    // Reset waypoint editors
     this.setHighlightedWaypoint(-1)
     this.setSearchWaypoint(-1)
     this.setWaypointList([])
 
-    // Set odometer format
     this.odom_format_in = this.odom_format
 
     window.setTimeout(() => {
-      // Timeout so websocket will be initialized
       this.$store.dispatch('websocket/sendMessage', {
         id: 'waypoints',
         message: {
-          type: 'get_basic_waypoint_list'
+          type: 'get_basic_waypoint_list',
         },
       })
     }, 250)
@@ -291,7 +299,7 @@ export default {
 
   computed: {
     ...mapState('websocket', {
-      waypointsMessage: (state: WebSocketState) => state.messages['waypoints']
+      waypointsMessage: (state: WebSocketState) => state.messages['waypoints'],
     }),
     ...mapGetters('erd', {
       highlightedWaypoint: 'highlightedWaypoint',
@@ -332,47 +340,15 @@ export default {
 </script>
 
 <style scoped>
-.wrap {
-  display: flex;
-  flex-direction: row;
-  height: 100%;
-  margin: auto;
-}
-
-.box {
-  width: 50%;
-  height: 100%;
-  margin-right: 20px;
-}
-
-.dragArea {
-  height: 100%;
-}
-
-.all-waypoints {
-  display: inline-flex;
-  align-items: center;
-}
-
-.all-waypoints button {
-  margin: 5px;
-}
-
-.waypoints {
-  height: 30vh;
+.waypoint-wrapper {
+  flex: 1;
   overflow-y: auto;
+  background-color: #dddddd;
+  padding: 8px;
+  border-radius: 8px;
 }
 
-.waypoint-headers {
-  margin: auto;
-}
-
-.add-drop {
-  display: flex;
-  text-align: center;
-}
-
-.add-drop button {
-  margin: 10px;
+.waypoint-col {
+  min-width: 300px;
 }
 </style>

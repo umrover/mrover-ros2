@@ -1,13 +1,28 @@
 <template>
   <div class="wrapper view-wrapper">
-    <div :class="['island p-3 rounded data', ledColor]">
-      <h2>Nav State: {{ navState }}</h2>
-      <OdometryReading
-        @odom="updateOdom"
-        @basestation_odom="updateBasestationOdom"
-      />
+    <div class="data island p-2 rounded">
+      <div :class="['rounded p-2 mb-2', ledColor]">
+        <h2 class="text-center">Nav State: {{ navState }}</h2>
+        <OdometryReading
+          @odom="updateOdom"
+          @basestation_odom="updateBasestationOdom"
+        />
+      </div>
+      <div>
+        <div
+          v-if="!stuck_status"
+          class="island p-2 rounded bg-success text-center"
+        >
+          <h4 class="m-0 p-0">Nominal Conditions</h4>
+        </div>
+        <div v-else class="island p-2 rounded bg-danger text-center">
+          <h4 class="m-0 p-0">Obstruction Detected</h4>
+        </div>
+      </div>
     </div>
-    <div class="feed island p-0 rounded position-relative">
+    <div
+      class="feed island p-0 rounded position-relative ratio ratio-16x9 bg-black overflow-hidden"
+    >
       <CameraFeed
         v-if="cameraFeedEnabled"
         :mission="'ZED'"
@@ -22,7 +37,8 @@
         class="img-fluid h-100"
       />
       <div
-        class="controls px-2 py-1 position-absolute d-flex align-items-center gap-2 top-0 end-0 m-2 bg-white rounded z-1"
+        class="controls position-absolute d-inline-flex align-items-center gap-2 top-0 end-0 m-2 p-1 bg-white rounded z-1"
+        style="max-width: max-content; max-height: max-content"
       >
         <input
           type="checkbox"
@@ -36,11 +52,10 @@
         </p>
       </div>
     </div>
-
-    <div class="island p-0 rounded map">
+    <div class="island p-0 rounded map overflow-hidden">
       <AutonRoverMap :odom="odom" :basestation="basestationOdom" />
     </div>
-    <div class="island p-3 rounded waypoints">
+    <div class="island p-2 rounded waypoints">
       <AutonWaypointEditor @toggleTeleop="teleopEnabledCheck = $event" />
     </div>
     <!--Enable the drive controls if auton is off-->
@@ -52,26 +67,16 @@
       <DriveControls />
       <MastGimbalControls />
     </div>
-    <div class="conditions">
-      <div
-        v-if="!stuck_status"
-        class="island p-3 rounded bg-success text-center"
-      >
-        <h4>Nominal Conditions</h4>
-      </div>
-      <div v-else class="island p-3 rounded bg-danger text-center">
-        <h4>Obstruction Detected</h4>
-      </div>
-    </div>
-    <div class="island p-3 rounded moteus d-flex">
-      <!-- drive_left_state and drive_right_state not found -->
+    <div class="island p-2 rounded moteus d-flex flex-column gap-2">
       <ControllerDataTable
         msg-type="drive_left_state"
         header="Drive Left States"
+        class="border border-2 rounded p-2"
       />
       <ControllerDataTable
         msg-type="drive_right_state"
         header="Drive Right States"
+        class="border border-2 rounded p-2"
       />
     </div>
   </div>
@@ -189,38 +194,23 @@ export default defineComponent({
 .wrapper {
   display: grid;
   grid-gap: 10px;
-  grid-template-columns: auto 30% 30%;
+  width: 100%;
+  height: 100%;
+  grid-template-columns: 50% 270px auto;
+  grid-template-rows: 45% 10% 1fr;
   grid-template-areas:
-    'feed map waypoints'
-    'data data waypoints'
-    'data data conditions'
-    'moteus moteus moteus';
-
+    'feed map map'
+    'feed moteus waypoints'
+    'data moteus waypoints';
   font-family: sans-serif;
-  height: auto;
-  width: auto;
 }
 
-h2 {
-  padding: 2px;
-  margin: 0px;
-}
-
-.comms {
-  margin-right: 5px;
-}
-
-/* Grid area declarations */
 .map {
   grid-area: map;
 }
 
 .waypoints {
   grid-area: waypoints;
-}
-
-.conditions {
-  grid-area: conditions;
 }
 
 .moteus {
@@ -233,10 +223,5 @@ h2 {
 
 .feed {
   grid-area: feed;
-}
-
-.btn {
-  display: block;
-  margin: 10px auto;
 }
 </style>

@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="d-flex justify-content-center">
     <Attitude :size="200" :pitch="pitch" :roll="roll" />
   </div>
 </template>

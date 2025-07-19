@@ -101,13 +101,14 @@ export default {
 .wrapper {
   display: grid;
   grid-gap: 10px;
+  width: 100%;
+  height: 100%;
   grid-template-columns: repeat(2, auto) 40%;
   grid-template-areas:
     'controls controls camera'
     'ninhydrin benedicts camera'
     'sensors sensors camera';
   font-family: sans-serif;
-  height: auto;
 }
 
 .benedicts {

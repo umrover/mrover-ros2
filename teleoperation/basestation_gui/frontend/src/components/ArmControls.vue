@@ -1,51 +1,58 @@
 <template>
-  <div class="wrap">
-    <div class="d-flex justify-content-between align-items-center">
-      <h2 class="m-0 me-5">Arm Controls</h2>
-      <span
-        class="px-2 py-2 rounded-2 text-black fw-semibold text-center"
-        style="width: 130px; display: inline-block; font-family: monospace;"
-        :class="controllerConnected ? 'bg-success' : 'bg-secondary'"
+  <div class="d-flex flex-column align-items-center w-100">
+    <div class="d-flex flex-column gap-2" style="width: 500px; max-width: 100%;">
+      <div class="d-flex justify-content-between align-items-center">
+        <h3 class="m-0">Arm Controls</h3>
+        <span
+          class="px-2 py-2 rounded-2 text-black fw-semibold text-center"
+          style="width: 130px; display: inline-block; font-family: monospace;"
+          :class="controllerConnected ? 'bg-success' : 'bg-secondary'"
+        >
+          {{ controllerConnected ? 'Connected  ' : 'Disconnected' }}
+        </span>
+      </div>
+      <div
+        class="btn-group d-flex justify-content-between"
+        role="group"
+        aria-label="Arm mode selection"
       >
-        {{ controllerConnected ? 'Connected  ' : 'Disconnected' }}
-      </span>
-    </div>
-    <div class="btn-group" role="group" aria-label="Arm mode selection">
-      <button
-        type="button"
-        class="btn"
-        :class="mode === 'disabled' ? 'btn-danger' : 'btn-outline-danger'"
-        @click="mode = 'disabled'"
-      >
-        Disabled
-      </button>
-      <button
-        type="button"
-        class="btn"
-        :class="mode === 'throttle' ? 'btn-success' : 'btn-outline-success'"
-        @click="mode = 'throttle'"
-      >
-        Throttle
-      </button>
-      <button
-        type="button"
-        class="btn"
-        :class="mode === 'ik-pos' ? 'btn-success' : 'btn-outline-success'"
-        @click="mode = 'ik-pos'"
-      >
-        IK Position
-      </button>
-      <button
-        type="button"
-        class="btn"
-        :class="mode === 'ik-vel' ? 'btn-success' : 'btn-outline-success'"
-        @click="mode = 'ik-vel'"
-      >
-        IK Velocity
-      </button>
+        <button
+          type="button"
+          class="btn flex-fill"
+          :class="mode === 'disabled' ? 'btn-danger' : 'btn-outline-danger'"
+          @click="mode = 'disabled'"
+        >
+          Disabled
+        </button>
+        <button
+          type="button"
+          class="btn flex-fill"
+          :class="mode === 'throttle' ? 'btn-success' : 'btn-outline-success'"
+          @click="mode = 'throttle'"
+        >
+          Throttle
+        </button>
+        <button
+          type="button"
+          class="btn flex-fill"
+          :class="mode === 'ik-pos' ? 'btn-success' : 'btn-outline-success'"
+          @click="mode = 'ik-pos'"
+        >
+          IK Position
+        </button>
+        <button
+          type="button"
+          class="btn flex-fill"
+          :class="mode === 'ik-vel' ? 'btn-success' : 'btn-outline-success'"
+          @click="mode = 'ik-vel'"
+        >
+          IK Velocity
+        </button>
+      </div>
     </div>
   </div>
 </template>
+
 
 <script lang="ts">
 import { defineComponent } from 'vue'
@@ -111,12 +118,3 @@ export default defineComponent({
   },
 })
 </script>
-
-<style scoped>
-.wrap {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  width: 100%;
-}
-</style>

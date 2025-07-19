@@ -1,9 +1,7 @@
 <template>
-  <div class='wrap'>
-    <div>
-      <h3>{{ header }}</h3>
-    </div>
-    <table class='table table-bordered' style='table-layout: fixed; width: auto'>
+  <div class='wrap border border-2 p-2 rounded'>
+    <h3 class="m-0 p-0 mb-1">{{ header }}</h3>
+    <table class='table table-bordered m-0 p-0 border' style='table-layout: fixed; width: auto'>
       <tbody>
       <tr>
         <th class='table-secondary'>Motor</th>

@@ -31,8 +31,12 @@ body {
 }
 
 .view-wrapper {
+  height: 100vh;
+  width: 100vw;
   padding: 10px;
   background-color: #dddddd;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
 .island {

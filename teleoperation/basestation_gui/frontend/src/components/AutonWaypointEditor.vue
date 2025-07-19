@@ -1,13 +1,13 @@
 <template>
-  <div class="wrapper">
-    <div class="col-wrap">
-      <div class="waypoint-header pb-2">
-        <h3 class=" font-monospace m-0 p-0">Waypoints</h3>
+  <div class="wrapper d-flex m-0 p-0 h-100 w-100 gap-2">
+    <div class="d-flex flex-column w-100">
+      <div class="waypoint-header p-1">
+        <h3 class="m-0 p-0">Waypoints</h3>
         <button class="btn btn-success" @click="openModal()">
           Add from Map
         </button>
       </div>
-      <div class="waypoint-wrapper left-wrapper">
+      <div class="waypoint-wrapper overflow-y-scroll">
         <WaypointStore
           v-for="(waypoint, index) in waypoints"
           :key="waypoint"
@@ -18,8 +18,8 @@
         />
       </div>
     </div>
-    <div class="col-wrap">
-      <div class="datagrid">
+    <div class="d-flex flex-column w-100">
+      <div class="datagrid m-0 p-0">
         <AutonModeCheckbox
           ref="autonCheckbox"
           class="auton-checkbox"
@@ -45,8 +45,8 @@
           @toggle="toggleAllCostmaps"
         />
       </div>
-      <h3 class="pb-2">Current Course</h3>
-      <div class="waypoint-wrapper right-wrapper">
+      <h3 class="m-0 p-0">Current Course</h3>
+      <div class="waypoint-wrapper overflow-y-scroll d-flex flex-column gap-2">
         <WaypointItem
           v-for="waypoint in currentRoute"
           :key="waypoint"
@@ -476,27 +476,10 @@ export default {
 </script>
 
 <style scoped>
-.wrapper {
-  display: grid;
-  grid-template-columns: 50% 46%;
-  gap: 1rem;
-  height: 100%;
-  width: 100%;
-  box-sizing: border-box;
-  overflow-x: hidden;
-  overflow-y: hidden;
-  /* max-height: 780px; */
-}
-
-.col-wrap {
-  height: 100%;
-  width: 100%;
-}
-
 .datagrid {
   display: grid;
-  grid-gap: 10px;
-  grid-template-columns: 65% 35%;
+  grid-gap: 6px;
+  grid-template-columns: 65% auto;
   grid-template-rows: auto auto;
   grid-template-areas:
     'auton-check stats'
@@ -507,21 +490,11 @@ export default {
 }
 
 .waypoint-wrapper {
-  height: 100%;
+  flex: 1;
   overflow-y: auto;
   background-color: #dddddd;
-  padding: 10px;
+  padding: 8px;
   border-radius: 8px;
-  border-top: 2px solid #dddddd;
-  border-bottom: 2px solid #dddddd;
-}
-
-.left-wrapper {
-  max-height: 730px;
-}
-
-.right-wrapper {
-  max-height: 570px;
 }
 
 .waypoint-header {
@@ -531,7 +504,6 @@ export default {
   align-items: center;
 }
 
-/* Grid Area Definitions */
 .teleop-checkbox {
   grid-area: teleop-check;
   width: 100%;
@@ -552,14 +524,5 @@ export default {
 
 .odom {
   grid-area: odom;
-}
-
-.add-drop {
-  display: flex;
-  text-align: center;
-}
-
-.add-drop button {
-  margin: 10px;
 }
 </style>

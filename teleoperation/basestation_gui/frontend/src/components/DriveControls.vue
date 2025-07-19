@@ -1,7 +1,3 @@
-<template>
-  <div class='drive' ></div>
-</template>
-
 <script lang='ts'>
 import Vuex from 'vuex'
 const { mapActions } = Vuex;

@@ -1,15 +1,13 @@
 import json
 import traceback
 from typing import Any, Type
-import asyncio
-import rclpy
 
-from channels.generic.websocket import AsyncJsonWebsocketConsumer
-from asgiref.sync import sync_to_async
+from channels.generic.websocket import JsonWebsocketConsumer
 from rosidl_runtime_py.convert import message_to_ordereddict
-from rclpy.executors import MultiThreadedExecutor, ExternalShutdownException
 
-from backend.consumers.init_node import get_node, get_context
+import threading
+from rclpy.executors import MultiThreadedExecutor
+from backend.consumers.ros_manager import get_node, get_context
 from sensor_msgs.msg import Temperature, RelativeHumidity
 from mrover.msg import (
     LED,
@@ -19,101 +17,142 @@ from mrover.msg import (
     Methane,
     UV,
 )
-from mrover.srv import EnableBool, ServoSetPos
+from mrover.srv import (
+    EnableBool,
+    ServoSetPos 
+)
 from std_msgs.msg import Float32
+
+LOCALIZATION_INFO_HZ = 10
 
 heater_names: list[str] = ["a0", "a1", "b0", "b1"]
 
+class ScienceConsumer(JsonWebsocketConsumer):
+    subscribers = []
+    timers = []
 
-class ScienceConsumer(AsyncJsonWebsocketConsumer):
-    async def connect(self) -> None:
-        await self.accept()
+    def connect(self) -> None:
+        self.accept()
 
         self.node = get_node()
         self.ros_context = get_context()
-        self.subscribers = []
 
-        await self.forward_ros_topic("/led", LED, "led")
-        await self.forward_ros_topic("/science_thermistors", ScienceThermistors, "thermistors")
-        await self.forward_ros_topic("/science_heater_state", HeaterData, "heater_states")
-        await self.forward_ros_topic("/science_oxygen_data", Oxygen, "oxygen")
-        await self.forward_ros_topic("/science_methane_data", Methane, "methane")
-        await self.forward_ros_topic("/science_uv_data", UV, "uv")
-        await self.forward_ros_topic("/science_temperature_data", Temperature, "temperature")
-        await self.forward_ros_topic("/science_humidity_data", RelativeHumidity, "humidity")
-        await self.forward_ros_topic("/sa_gear_diff_position", Float32, "hexhub_site")
+        self.ros_thread = threading.Thread(target=self.ros_spin, daemon=True)
+        self.ros_thread.start()
 
+        # Forwards ROS topic to GUI
+        self.forward_ros_topic("/led", LED, "led")
+        self.forward_ros_topic("/science_thermistors", ScienceThermistors, "thermistors")
+        self.forward_ros_topic("/science_heater_state", HeaterData, "heater_states")
+        self.forward_ros_topic("/science_oxygen_data", Oxygen, "oxygen")
+        self.forward_ros_topic("/science_methane_data", Methane, "methane")
+        self.forward_ros_topic("/science_uv_data", UV, "uv")
+        self.forward_ros_topic("/science_temperature_data", Temperature, "temperature")
+        self.forward_ros_topic("/science_humidity_data", RelativeHumidity, "humidity")
+        self.forward_ros_topic("/sa_gear_diff_position", Float32, "hexhub_site")
+
+        # Services
         self.auto_shutoff_service = self.node.create_client(EnableBool, "/science_change_heater_auto_shutoff_state")
         self.sa_enable_switch_srv = self.node.create_client(EnableBool, "/sa_enable_limit_switch_sensor_actuator")
         self.gear_diff_set_pos_srv = self.node.create_client(ServoSetPos, "/sa_gear_diff_set_position")
-        self.heater_services = [self.node.create_client(EnableBool, f"/science_enable_heater_{name}") for name in heater_names]
-        self.white_leds_services = [self.node.create_client(EnableBool, f"/science_enable_white_led_{site}") for site in ["a", "b"]]
+        self.heater_services = []
+        self.white_leds_services = []
+        for name in heater_names:
+            self.heater_services.append(self.node.create_client(EnableBool, "/science_enable_heater_" + name))
+        for site in ["a", "b"]:
+            self.white_leds_services.append(self.node.create_client(EnableBool, "/science_enable_white_led_" + site))
 
-        self.ros_task = asyncio.to_thread(self.ros_spin)
-
-    async def disconnect(self, close_code) -> None:
-        print("ScienceConsumer disconnecting...")
+    def disconnect(self, close_code) -> None:
         try:
             for subscriber in self.subscribers:
-                await sync_to_async(self.node.destroy_subscription)(subscriber)
+                self.node.destroy_subscription(subscriber)
             self.subscribers.clear()
+            self.timers.clear()
 
-            if self.ros_context.is_valid():
-                rclpy.shutdown(context=self.ros_context)
-
-            await self.ros_task
-            print("ROS spin task for ScienceConsumer finished.")
+            if self.ros_thread.is_alive():
+                self.ros_thread.join(timeout=1)
         except Exception as e:
-            print(f"Exception during ScienceConsumer disconnect: {e}")
+            print(f"Exception during disconnect cleanup: {e}")
 
     def ros_spin(self) -> None:
         executor = MultiThreadedExecutor(context=self.ros_context)
         executor.add_node(self.node)
         try:
-            executor.spin()
-        except (ExternalShutdownException, RuntimeError):
-            print("ROS executor for ScienceConsumer has been shut down.")
-        finally:
-            print("ROS spin loop for ScienceConsumer exited.")
+            executor.spin()  # Allows multiple threads to handle ROS callbacks safely
+        except Exception as e:
+            print(f"Exception in ROS spin: {e}")
 
-    async def forward_ros_topic(self, topic_name: str, topic_type: Type, gui_msg_type: str) -> None:
-        loop = asyncio.get_running_loop()
+    def forward_ros_topic(self, topic_name: str, topic_type: Type, gui_msg_type: str) -> None:
+        """
+        Subscribes to a ROS topic and forwards messages to the GUI as JSON
+
+        @param topic_name:      ROS topic name
+        @param topic_type:      ROS message type
+        @param gui_msg_type:    String to identify the message type in the GUI
+        """
 
         def callback(ros_message: Any):
-            data_to_send = {"type": gui_msg_type, **message_to_ordereddict(ros_message)}
-            asyncio.run_coroutine_threadsafe(self.send_json(data_to_send), loop)
+            self.send_message_as_json({"type": gui_msg_type, **message_to_ordereddict(ros_message)})
 
-        sub = await sync_to_async(self.node.create_subscription)(
-            topic_type, topic_name, callback, qos_profile=1
-        )
-        self.subscribers.append(sub)
+        self.subscribers.append(self.node.create_subscription(topic_type, topic_name, callback, qos_profile=1))
 
-    async def receive_json(self, content, **kwargs) -> None:
-        message = content
+    def send_message_as_json(self, msg: dict):
+        try:
+            self.send(text_data=json.dumps(msg))
+        except Exception as e:
+            self.node.get_logger().warning(f"Failed to send message: {e}")
+
+    def receive(self, text_data=None, bytes_data=None, **kwargs) -> None:
+        """
+        Callback function when a message is received in the Websocket
+
+        @param text_data:   Stringfied JSON message
+        """
+
+        if text_data is None:
+            self.node.get_logger().warning("Expecting text but received binary on GUI websocket...")
+
+        try:
+            message = json.loads(text_data)
+        except json.JSONDecodeError as e:
+            self.node.get_logger().warning(f"Failed to decode JSON: {e}")
+
         try:
             match message:
-                case {"type": "heater_enable", "enable": e, "heater": heater}:
-                    req = EnableBool.Request(enable=e)
-                    await self.heater_services[heater_names.index(heater)].call_async(req)
+                case {
+                    "type": "heater_enable", "enable": e, "heater": heater
+                }:
+                    self.heater_services[heater_names.index(heater)].call(EnableBool.Request(enable=e))
 
-                case {"type": "set_gear_diff_pos", "position": position, "isCCW": isCCW}:
-                    req = ServoSetPos.Request(position=float(position), is_counterclockwise=isCCW)
-                    await self.gear_diff_set_pos_srv.call_async(req)
+                case {
+                    "type": "set_gear_diff_pos",
+                    "position": position,
+                    "isCCW": isCCW,
+                }:
+                    self.gear_diff_set_pos_srv.call(ServoSetPos.Request(position=float(position), is_counterclockwise=isCCW))
 
-                case {"type": "auto_shutoff", "shutoff": shutoff}:
-                    req = EnableBool.Request(enable=shutoff)
-                    await self.auto_shutoff_service.call_async(req)
+                case {
+                    "type": "auto_shutoff", 
+                    "shutoff": shutoff
+                }:
+                    self.auto_shutoff_service.call(EnableBool.Request(enable=shutoff))
 
-                case {"type": "white_leds", "site": site, "enable": e}:
-                    req = EnableBool.Request(enable=e)
-                    await self.white_leds_services[site].call_async(req)
+                case {
+                    "type": "white_leds", 
+                    "site": site, 
+                    "enable": e
+                }:
+                    self.white_leds_services[site].call(EnableBool.Request(enable=e))
 
-                case {"type": "ls_toggle", "enable": e}:
-                    req = EnableBool.Request(enable=e)
-                    await self.sa_enable_switch_srv.call_async(req)
+                case {
+                    "type": "ls_toggle", 
+                    "enable": e
+                }:
+                    self.sa_enable_switch_srv.call(EnableBool.Request(enable=e))
+
 
                 case _:
                     self.node.get_logger().warning(f"Unhandled message on science: {message}")
-        except Exception:
+        except:
             self.node.get_logger().error(f"Failed to handle message: {message}")
             self.node.get_logger().error(traceback.format_exc())
