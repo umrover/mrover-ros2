@@ -13,7 +13,7 @@ uint8_t rx_byte;
 
 namespace mrover {
 
-FDCAN<SensorData> fdcan_bus;
+FDCAN<int> fdcan_bus;
 SensorData science_out;
 std::vector<char> data_vec;
 
@@ -22,6 +22,7 @@ void eventLoop() {
 }
 
 void init() {
+	fdcan_bus = FDCAN<int>(&hfdcan1);
 	fdcan_bus.start();
 	HAL_UART_Receive_IT(&huart1, &rx_byte, 1);
 	eventLoop();
@@ -57,7 +58,6 @@ extern "C" {
 //		mrover::handleAnalogSensors();
 //	}
 //}
-
 
 void HAL_FDCAN_ErrorStatusCallback(FDCAN_HandleTypeDef *hfdcan, uint32_t ErrorStatusITs)
 {
