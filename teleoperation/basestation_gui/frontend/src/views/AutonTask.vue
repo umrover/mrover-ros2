@@ -196,8 +196,8 @@ export default defineComponent({
   grid-gap: 10px;
   width: 100%;
   height: 100%;
-  grid-template-columns: 50% 270px auto;
-  grid-template-rows: 45% 10% 1fr;
+  grid-template-columns: 45% auto auto;
+  grid-template-rows: 40% 15% 1fr;
   grid-template-areas:
     'feed map map'
     'feed moteus waypoints'

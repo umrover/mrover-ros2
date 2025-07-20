@@ -5,7 +5,7 @@
       <tbody>
       <tr>
         <th class='table-secondary'>Motor</th>
-        <td v-for='(name, i) in name' :key='i'>
+        <td v-for='(name, i) in name' :key='i' class="m-0 px-1">
           {{ name }}
         </td>
       </tr>
@@ -94,5 +94,6 @@ export default defineComponent({
 .wrap {
   display: inline-block;
   align-content: center;
+  min-width: 350px;
 }
 </style>

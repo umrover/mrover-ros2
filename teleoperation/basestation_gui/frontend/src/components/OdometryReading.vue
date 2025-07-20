@@ -1,6 +1,6 @@
 <template>
-  <div class="d-flex flex-column w-100">
-    <div class="d-flex justify-content-center w-100 flex-wrap gap-4">
+  <div class="d-flex flex-column w-100 wrap">
+    <div class="d-flex justify-content-between w-100 flex-wrap gap-1">
       <div class="d-flex flex-column gap-2">
         <div class="border border-2 border-secondary rounded p-2">
           <h5 class="m-0 p-0 text-center">Rover Odom</h5>
@@ -220,5 +220,9 @@ export default defineComponent({
 <style scoped>
 .odomModule {
   width: 100px;
+}
+
+.wrap {
+  min-width: 700px;
 }
 </style>

@@ -108,7 +108,7 @@ export default defineComponent({
   gap: 10px;
   width: 100%;
   height: 100%;
-  grid-template-columns: 45% 250px auto;
+  grid-template-columns: 45% auto auto;
   grid-template-rows: 45% 1fr 1fr 1fr;
   grid-template-areas:
     'rover-3d map map'

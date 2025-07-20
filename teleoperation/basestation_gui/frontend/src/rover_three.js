@@ -144,15 +144,20 @@ export default function threeSetup() {
   renderer.toneMapping = THREE.ACESFilmicToneMapping
   renderer.toneMappingExposure = 2.5
 
-  // Animation loop (tick)
-  // const clock = new THREE.Clock();
+  const clock = new THREE.Clock()
+  let timeSinceLastFrame = 0
+  const fpsLimit = 60
+  const frameInterval = 1 / fpsLimit
 
   const tick = () => {
-    // const elapsedTime = clock.getElapsedTime();
-    // Update controls and render
-    // controls.update();
-    renderer.render(scene, camera)
     window.requestAnimationFrame(tick)
+    const delta = clock.getDelta()
+    timeSinceLastFrame += delta
+    if (timeSinceLastFrame > frameInterval) {
+      timeSinceLastFrame %= frameInterval
+      controls.update()
+      renderer.render(scene, camera)
+    }
   }
 
   tick() // Start the animation loop
