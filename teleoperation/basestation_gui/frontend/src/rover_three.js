@@ -19,7 +19,7 @@ export default function threeSetup() {
   // Canvas element
   const canvas = document.querySelector('canvas.webgl')
   // const gui = new GUI( { container: document.querySelector("canvas.webgl") } ); // ??
-  const gui = new GUI()
+  const gui = new GUI({width: 400})
 
   // Scene setup
   const scene = new THREE.Scene()
@@ -129,7 +129,7 @@ export default function threeSetup() {
 
   // OrbitControls for the camera
   const controls = new OrbitControls(camera, canvas)
-  controls.enableDamping = true
+  // controls.enableDamping = true
 
   // Renderer setup
   const renderer = new THREE.WebGLRenderer({
