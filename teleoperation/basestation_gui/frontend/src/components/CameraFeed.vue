@@ -68,7 +68,7 @@ export default defineComponent({
       this.IKCam = !this.IKCam
     },
 
-    startStream(number: Number, attempt: Number = 0) {
+    startStream(number: number, attempt: number = 0) {
       // This function is called as a retry when the websocket closes
       // If our component goes away (unmounts) we should stop trying to reconnect
       // Otherwise it may preempt a new stream that already connected

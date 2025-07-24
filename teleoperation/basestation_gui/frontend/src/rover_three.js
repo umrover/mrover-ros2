@@ -13,13 +13,14 @@ const defaultJointValues = {
   gripper_link: 0,
 }
 
-let rover = null;
+let rover = null
 
 export default function threeSetup() {
   // Canvas element
   const canvas = document.querySelector('canvas.webgl')
   // const gui = new GUI( { container: document.querySelector("canvas.webgl") } ); // ??
-  const gui = new GUI({width: 400})
+  const gui = new GUI({ width: 400 })
+  gui.hide()
 
   // Scene setup
   const scene = new THREE.Scene()

@@ -48,7 +48,7 @@ export default defineComponent({
         if (this.toggleEnabled) {
           if (Array.isArray(msg.result) && msg.result.length > 0) {
             this.toggleEnabled = false
-            for (var j = 0; j < msg.result.length; ++j) {
+            for (let j = 0; j < msg.result.length; ++j) {
               alert('ESW cannot calibrate motor ' + msg.result[j])
             }
           } else if (typeof msg.result === 'string') {
