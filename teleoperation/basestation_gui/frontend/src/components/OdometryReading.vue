@@ -98,7 +98,7 @@ import type {
   FormattedOdom,
   OdomData,
   NavMessage,
-} from '../types/coordinates'
+} from '../types/coordinates.js'
 
 export default defineComponent({
   components: {

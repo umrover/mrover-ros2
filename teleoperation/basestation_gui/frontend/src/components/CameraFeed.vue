@@ -59,6 +59,7 @@ export default defineComponent({
     ...mapActions('websocket', ['sendMessage']),
 
     handleClick: function (event: MouseEvent) {
+      console.log(event) // to stop warning
       // if (this.IKCam && this.mission === 'ik') {
       //   this.sendMessage({type: 'start_click_ik', data: {x: event.offsetX, y: event.offsetY}})
       // }

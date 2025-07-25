@@ -121,17 +121,17 @@ import Checkbox from './BasicCheckbox.vue'
 import VelocityReading from './VelocityReading.vue'
 import WaypointItem from './AutonWaypointItem.vue'
 import WaypointStore from './AutonWaypointStore.vue'
-import type { Waypoint } from '../types/waypoint'
 import Vuex from 'vuex'
 const { mapState, mapActions, mapMutations, mapGetters } = Vuex
 import L from 'leaflet'
-import { reactive } from 'vue'
+import { reactive, defineComponent } from 'vue'
 import { Modal } from 'bootstrap'
+import type { Waypoint } from '../types/waypoint'
 import type { WebSocketState } from '@/types/websocket'
 
-let stuck_interval: number, auton_publish_interval: number
+let auton_publish_interval: number
 
-export default {
+export default defineComponent({
   components: {
     WaypointItem,
     AutonModeCheckbox,
@@ -203,7 +203,7 @@ export default {
         },
       ] as Waypoint[],
 
-      modal: null,
+      modal: null as Modal | null,
       modalWypt: {
         name: '',
         id: -1,
@@ -245,7 +245,7 @@ export default {
 
   watch: {
     waypoints: {
-      handler(this: any, newList: Waypoint[]) {
+      handler(newList: Waypoint[]) {
         const waypoints = newList.map(waypoint => {
           const lat = waypoint.lat
           const lon = waypoint.lon
@@ -264,7 +264,7 @@ export default {
     },
 
     currentRoute: {
-      handler(this: any, newRoute: Waypoint[]) {
+      handler(newRoute: Waypoint[]) {
         const waypoints = newRoute.map(waypoint => {
           const lat = waypoint.lat
           const lon = waypoint.lon
@@ -283,7 +283,7 @@ export default {
       deep: true,
     },
 
-    message(msg) {
+    navMessage(msg) {
       if (msg.type == 'nav_state') {
         // If still waiting for nav...
         if (
@@ -300,7 +300,7 @@ export default {
         console.log(msg)
         if (msg.data.length > 0) this.waypoints = msg.data
         const waypoints = msg.data.map(
-          (waypoint: { lat: any; lon: any; name: any }) => {
+          (waypoint: { lat: number; lon: number; name: string }) => {
             const lat = waypoint.lat
             const lon = waypoint.lon
             return { latLng: L.latLng(lat, lon), name: waypoint.name }
@@ -321,7 +321,6 @@ export default {
   },
 
   beforeUnmount: function () {
-    window.clearInterval(stuck_interval)
     window.clearInterval(auton_publish_interval)
     this.autonEnabled = false
     this.sendAutonCommand()
@@ -367,7 +366,7 @@ export default {
           message: {
             type: 'auton_enable',
             enabled: true,
-            waypoints: _.map(this.route, waypoint => {
+            waypoints: this.currentRoute.map((waypoint: Waypoint) => {
               const lat = waypoint.lat
               const lon = waypoint.lon
               // Return a GPSWaypoint.msg formatted object for each
@@ -408,13 +407,13 @@ export default {
       })
     },
 
-    toggleCostmap({ waypoint, enable_costmap }) {
+    toggleCostmap({ waypoint, enable_costmap }: { waypoint: Waypoint; enable_costmap: boolean }) {
       waypoint.enable_costmap = enable_costmap
     },
 
     toggleAllCostmaps() {
       this.allCostmapToggle = !this.allCostmapToggle
-      this.waypoints.forEach(wp => {
+      this.waypoints.forEach((wp: Waypoint) => {
         wp.enable_costmap = this.allCostmapToggle
       })
     },
@@ -423,8 +422,6 @@ export default {
       if (!waypoint.in_route) {
         waypoint['enable_costmap'] = waypoint.enable_costmap ?? false
         this.route.push(waypoint)
-        // this is where the new waypoint is added into current route
-        // console.log(waypoint.enable_costmap)
         this.currentRoute.push(waypoint)
         waypoint.in_route = true
       }
@@ -472,7 +469,7 @@ export default {
       this.$emit('toggleTeleop', this.teleopEnabledCheck)
     },
   },
-}
+})
 </script>
 
 <style scoped>

@@ -66,6 +66,7 @@ import Vuex from 'vuex'
 const { mapGetters, mapMutations } = Vuex
 import 'leaflet/dist/leaflet.css'
 import L from '../leaflet-rotatedmarker'
+import type { LatLng } from '@/types/leaflet'
 
 const MAX_ODOM_COUNT = 10
 const DRAW_FREQUENCY = 10
@@ -165,7 +166,7 @@ export default {
     // Concat waypoints on course with rover marker at index 0 for polyline
     polylinePath: function () {
       return [this.odomLatLng].concat(
-        this.route.map((waypoint: { latLng: any }) => waypoint.latLng),
+        this.route.map((waypoint: { latLng: LatLng }) => waypoint.latLng),
       )
     },
   },
@@ -235,7 +236,7 @@ export default {
       })
     },
     // Event listener for setting store values to get data to waypoint Editor
-    getClickedLatLon: function (e: { latlng: { lat: any; lng: any } }) {
+    getClickedLatLon: function (e: { latlng: { lat: number; lng: number } }) {
       this.setClickPoint({
         lat: e.latlng.lat,
         lon: e.latlng.lng,

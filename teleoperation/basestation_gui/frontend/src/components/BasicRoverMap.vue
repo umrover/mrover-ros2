@@ -70,6 +70,8 @@ const { mapGetters, mapMutations, mapActions, mapState } = Vuex
 
 import 'leaflet/dist/leaflet.css'
 import L from '../leaflet-rotatedmarker.js'
+import type { LeafletMouseEvent } from 'leaflet';
+import type { Waypoint } from '@/types/basicWaypoint.js'
 
 const MAX_ODOM_COUNT = 1000
 const DRAW_FREQUENCY = 1
@@ -177,13 +179,14 @@ export default {
       })
     },
     // Event listener for setting store values to get data to waypoint Editor
-    getClickedLatLon: function (e: any) {
+    getClickedLatLon: function (e: LeafletMouseEvent) {
+      console.log(e)
       this.setClickPoint({
         lat: e.latlng.lat,
         lon: e.latlng.lng,
       })
     },
-    getWaypointIcon: function (waypoint: any, index: number) {
+    getWaypointIcon: function (waypoint: Waypoint, index: number) {
       if (index === this.highlightedWaypoint) {
         return this.highlightedWaypointIcon
       } else if (waypoint.drone) {
@@ -242,13 +245,13 @@ export default {
 
     polylinePath: function () {
       return [this.odomLatLng].concat(
-        this.route.map((waypoint: any) => waypoint.latLng),
+        this.route.map((waypoint: Waypoint) => waypoint.latLng),
       )
     },
 
     dronepolylinePath: function () {
       return [this.droneLatLng].concat(
-        this.route.map((waypoint: any) => waypoint.latLng),
+        this.route.map((waypoint: Waypoint) => waypoint.latLng),
       )
     },
   },

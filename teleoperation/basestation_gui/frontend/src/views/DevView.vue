@@ -6,7 +6,6 @@
 </template>
 
 <script lang="ts">
-import Rover3D from '../components/Rover3D.vue';
 import ArmControls from '../components/ArmControls.vue';
 import { defineComponent } from 'vue'
 import Vuex from 'vuex'
@@ -15,7 +14,6 @@ import type { WebSocketState } from '../types/websocket';
 
 export default defineComponent({
   components: {
-    Rover3D,
     ArmControls
   },
 

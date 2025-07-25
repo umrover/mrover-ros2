@@ -8,23 +8,19 @@
       <div class="input-group mb-1">
         <input
           class="form-control"
-          v-model.number="waypoint.lat"
-          :id="'lat-' + waypoint.id"
+          v-model.number="localLat" :id="'lat-' + waypoint.id"
         />
         <span class="input-group-text">ºN</span>
       </div>
       <div class="input-group mb-1">
         <input
           class="form-control"
-          v-model.number="waypoint.lon"
-          :id="'lon-' + waypoint.id"
+          v-model.number="localLon" :id="'lon-' + waypoint.id"
         />
         <span class="input-group-text">ºW</span>
       </div>
       <div class="waypoint-button-row">
-        <button class="btn btn-success" @click="$emit('add', waypoint)">
-          Add
-        </button>
+        <button class="btn btn-success" @click="addWaypoint">Add</button>
         <button
           class="btn btn-danger"
           :disabled="index <= 6"
@@ -38,10 +34,11 @@
 </template>
 
 <script lang="ts">
+import { defineComponent } from 'vue'
 import type { PropType } from 'vue'
 import type { Waypoint } from '../types/waypoint'
 
-export default {
+export default defineComponent({
   name: 'WaypointStore',
   props: {
     waypoint: {
@@ -54,7 +51,23 @@ export default {
     },
   },
   emits: ['add', 'delete'],
-}
+  data() {
+    return {
+      localLat: this.waypoint.lat,
+      localLon: this.waypoint.lon,
+    }
+  },
+  methods: {
+    addWaypoint() {
+      const updatedWaypoint = {
+        ...this.waypoint,
+        lat: this.localLat,
+        lon: this.localLon,
+      }
+      this.$emit('add', updatedWaypoint)
+    },
+  },
+})
 </script>
 
 <style scoped>

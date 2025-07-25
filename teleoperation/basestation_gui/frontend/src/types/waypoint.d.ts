@@ -1,4 +1,4 @@
-export interface Waypoint {
+export interface Waypoint { // for auton
   name: string
   id: number
   type: number
