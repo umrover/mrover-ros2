@@ -18,7 +18,7 @@
           </th>
           <!-- entries assumes string, any type pair -->
           <td
-            v-for="([key, val], index) in Object.entries(sensor_data)"
+            v-for="([, val], index) in Object.entries(sensor_data)"
             :key="index"
           >
             {{ val.toFixed(2) }}
@@ -103,26 +103,29 @@ export default {
   },
 
   mounted() {
-    const charts: Chart[] = []
-    function waitForElm(selector) {
+    const charts: Chart[] = [];
+
+    // This helper function waits for a DOM element to be available
+    function waitForElm(selector: string): Promise<Element | null> {
       return new Promise(resolve => {
-        if (document.querySelector(selector)) {
-          return resolve(document.querySelector(selector))
+        const elm = document.querySelector(selector);
+        if (elm) {
+          return resolve(elm);
         }
 
-        const observer = new MutationObserver(mutations => {
-          if (document.querySelector(selector)) {
-            observer.disconnect()
-            resolve(document.querySelector(selector))
+        const observer = new MutationObserver(() => {
+          const elm = document.querySelector(selector);
+          if (elm) {
+            observer.disconnect();
+            resolve(elm);
           }
-        })
+        });
 
-        // If you get "parameter 1 is not of type 'Node'" error, see https://stackoverflow.com/a/77855838/492336
         observer.observe(document.body, {
           childList: true,
           subtree: true,
-        })
-      })
+        });
+      });
     }
 
     const titles = [
@@ -130,66 +133,67 @@ export default {
       'Relative Humidity Over Time (s)',
       'Temperature (C) Over Time (s)',
       'UV Index Over Time (s)',
-    ]
+    ];
 
-    // const sensor_history:number[][] = [[], [], [], []]
-
-    const lineColors = ['#4D9DE0', '#E15554', '#3BB273', '#7768AE']
-
-    for (let i = 0; i < 4; ++i) {
-      waitForElm(`#chart${i}`).then(el => {
-
-        // const labels = Array.from({ length: o2data.length + 1 }, (_, i) => i);
-        const data = {
-          labels: [],
-          datasets: [
-            {
-              label: titles[i],
-              data: this.sensor_history[i],
-              fill: false,
-              borderColor: lineColors[i],
-              tension: 0.1,
-            },
-          ],
-        }
-        charts[i] = new Chart(document.getElementById(`chart${i}`), {
-          type: 'line',
-          data: data,
-          labels: [],
-          options: {
-            responsive: false,
-            scales: {
-              y: {
-                beginAtZero: true,
-              },
-            },
-          },
-        })
-      })
-    }
-
+    const lineColors = ['#4D9DE0', '#E15554', '#3BB273', '#7768AE'];
     const maxHistory = 10;
 
+    // Create the four charts
+    for (let i = 0; i < 4; ++i) {
+      waitForElm(`#chart${i}`).then(canvasElement => {
+        // Ensure the element exists and is a canvas before creating the chart
+        if (canvasElement instanceof HTMLCanvasElement) {
+          const data = {
+            labels: [] as number[], // Initialize labels array
+            datasets: [
+              {
+                label: titles[i],
+                data: this.sensor_history[i],
+                fill: false,
+                borderColor: lineColors[i],
+                tension: 0.1,
+              },
+            ],
+          };
+
+          charts[i] = new Chart(canvasElement, {
+            type: 'line',
+            data: data,
+            options: {
+              responsive: false,
+              scales: {
+                y: {
+                  beginAtZero: true,
+                },
+              },
+            },
+          });
+        }
+      });
+    }
+
+    // Set up the interval to update chart data
     setInterval(() => {
-      // Spread operator to avoid reactivity loops
-      this.sensor_history[0] = [...this.sensor_history[0], this.sensor_data.oxygen];
-      this.sensor_history[1] = [...this.sensor_history[1], this.sensor_data.humidity];
-      this.sensor_history[2] = [...this.sensor_history[2], this.sensor_data.temp];
-      this.sensor_history[3] = [...this.sensor_history[3], this.sensor_data.uv];
+      this.sensor_history[0].push(this.sensor_data.oxygen);
+      this.sensor_history[1].push(this.sensor_data.humidity);
+      this.sensor_history[2].push(this.sensor_data.temp);
+      this.sensor_history[3].push(this.sensor_data.uv);
 
       for (let x = 0; x < 4; ++x) {
         if (this.sensor_history[x].length > maxHistory) {
-          this.sensor_history[x].shift(); 
+          this.sensor_history[x].shift();
         }
       }
 
       for (let x = 0; x < 4; ++x) {
-        if (charts[x] != null) {
-          charts[x].data.labels = Array.from(
+        const chart = charts[x];
+        if (chart) {
+          // Update the labels to match the data length
+          chart.data.labels = Array.from(
             { length: this.sensor_history[x].length },
             (_, i) => i
           );
-          charts[x].update();
+          chart.update();
         }
       }
     }, 1000);

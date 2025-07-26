@@ -121,8 +121,6 @@ const getters = {
 
 const actions = {
   sendMessage({}, { id, message }) {
-    // console.log(id)
-    // trashed "commit" to avoid ts warning
     const socket = webSockets[id]
     if (!socket) {
       console.log('websocket selection failed with id', id)
@@ -133,7 +131,7 @@ const actions = {
       return
     }
     socket.send(JSON.stringify(message))
-    // console.log('sent ' + id)
+    console.log('sent ' + id)
   },
 
   setupWebSocket({ commit }, id) {

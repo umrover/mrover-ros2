@@ -1,8 +1,8 @@
 import { Store } from 'vuex'
-import { ComponentCustomProperties } from 'vue'
+import State from './store/types.ts'
 
 declare module '@vue/runtime-core' {
   interface ComponentCustomProperties {
-    $store: Store<any>
+    $store: Store<State>
   }
 }

@@ -113,7 +113,7 @@ export default {
         id: 'science',
         message: {
           type: 'heater_enable',
-          enabled: this.heaters[this.site].enabled,
+          enable: this.heaters[this.site].enabled,
           heater: heaterName,
         },
       })

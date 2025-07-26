@@ -106,7 +106,7 @@ export default {
       }) // can't find "poly fit"
     },
 
-    predictTemp: function (timestamp: any) {
+    predictTemp: function (timestamp: number) {
       const val = this.exponents[0] * timestamp + this.exponents[1]
       return Math.exp(val)
     },
