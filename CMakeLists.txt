@@ -367,6 +367,7 @@ install(PROGRAMS
     # starter project sources
     starter_project/autonomy/src/localization.py
     starter_project/autonomy/src/navigation/navigation_starter_project.py
+    starter_project/teleop//launch/teleop_starter.launch
     DESTINATION
     lib/${PROJECT_NAME}
 )
