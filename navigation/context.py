@@ -429,16 +429,14 @@ class Context:
         cost_map_data[cost_map_data == -1] = unknown_cost
 
         self.env.cost_map.origin = np.array([msg.info.origin.position.x, msg.info.origin.position.y])
-        self.env.cost_map.resolution = msg.info.resolution / upsample_factor # meters/cell
-        self.env.cost_map.height = msg.info.height * upsample_factor # cells
-        self.env.cost_map.width = msg.info.width * upsample_factor # cells
+        self.env.cost_map.resolution = msg.info.resolution / upsample_factor  # meters/cell
+        self.env.cost_map.height = msg.info.height * upsample_factor  # cells
+        self.env.cost_map.width = msg.info.width * upsample_factor  # cells
 
-        upsampled_cost_map = np.kron(cost_map_data, np.ones((upsample_factor,upsample_factor), np.float32))
-        filtered_cost_map = ndimage.uniform_filter(upsampled_cost_map, filter_size, mode='nearest')
-
+        upsampled_cost_map = np.kron(cost_map_data, np.ones((upsample_factor, upsample_factor), np.float32))
+        filtered_cost_map = ndimage.uniform_filter(upsampled_cost_map, filter_size, mode="nearest")
 
         self.env.cost_map.data = filtered_cost_map
-
 
         # array: known_free_cost
         # self.env.cost_map.data /= 100.0

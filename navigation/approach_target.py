@@ -171,7 +171,9 @@ class ApproachTargetState(State):
             costmap_length = context.env.cost_map.data.shape[0]
             curr_point = cartesian_to_ij(context, self.target_traj.get_current_point())
             if not 0 <= int(curr_point[0]) < costmap_length and 0 <= int(curr_point[1]) < costmap_length:
-                context.node.get_logger().warn("Trajectory point out of the map. Clearing trajectory and trying again...")
+                context.node.get_logger().warn(
+                    "Trajectory point out of the map. Clearing trajectory and trying again..."
+                )
                 self.target_traj.clear()
                 return self
 

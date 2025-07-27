@@ -139,7 +139,7 @@ class WaypointState(State):
             except Exception as e:
                 context.node.get_logger().info(str(e))
                 return self
-                
+
             if self.astar_traj.empty():
                 context.node.get_logger().info("Skipping unreachable point")
                 self.waypoint_traj.increment_point()
