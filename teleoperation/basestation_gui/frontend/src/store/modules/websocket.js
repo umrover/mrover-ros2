@@ -131,7 +131,6 @@ const actions = {
       return
     }
     socket.send(JSON.stringify(message))
-    console.log('sent ' + id)
   },
 
   setupWebSocket({ commit }, id) {

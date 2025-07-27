@@ -38,8 +38,8 @@ export default function threeSetup() {
   directionalLight.castShadow = true // Enable shadows
   scene.add(directionalLight)
 
-  const axesHelper = new THREE.AxesHelper(50)
-  scene.add(axesHelper)
+  // const axesHelper = new THREE.AxesHelper(50)
+  // scene.add(axesHelper)
 
   const manager = new THREE.LoadingManager()
   const loader = new URDFLoader(manager)

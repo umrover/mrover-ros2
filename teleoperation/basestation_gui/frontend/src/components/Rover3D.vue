@@ -44,7 +44,7 @@ export default defineComponent({
         let position = msg.position[index]
 
         if (urdfName === 'chassis_to_arm_a') {
-          position = position * 100 - 40 // scale from m to cm
+          position = position * -100 + 40 // scale from m to cm
         }
 
         return {
