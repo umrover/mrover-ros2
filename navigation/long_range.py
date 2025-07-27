@@ -6,6 +6,7 @@ from . import stuck_recovery
 from .approach_target import ApproachTargetState
 from .context import Context
 from coordinate_utils import is_high_cost_point
+from geometry_msgs.msg import Twist
 
 
 class LongRangeState(ApproachTargetState):
@@ -22,12 +23,11 @@ class LongRangeState(ApproachTargetState):
         pass
 
     def get_target_position(self, context: Context) -> np.ndarray | None:
-        assert context.course is not None
+        if context.course is None:
+            return None
 
         current_waypoint = context.course.current_waypoint()
-        assert current_waypoint is not None
-
-        if context.env.cost_map is None or not hasattr(context.env.cost_map, "data"):
+        if current_waypoint is None:
             return None
 
         target = context.env.image_targets.query(context.course.image_target_name())
@@ -36,7 +36,10 @@ class LongRangeState(ApproachTargetState):
             return None
 
         rover_in_map = context.rover.get_pose_in_map()
-        assert rover_in_map is not None
+        if rover_in_map is None:
+            context.node.get_logger().warn("Rover has no pose, cannot project a long range target")
+            context.rover.send_drive_command(Twist())
+            return None
 
         rover_position = rover_in_map.translation()
         rover_direction = rover_in_map.rotation()[:, 0]
@@ -53,7 +56,11 @@ class LongRangeState(ApproachTargetState):
         direction_to_tag = np.array([direction_to_tag[0], direction_to_tag[1], 0.0])
 
         tag_position = rover_position + direction_to_tag * distance
-        while is_high_cost_point(point=tag_position, context=context):
+        while (
+            self.USE_COSTMAP
+            and hasattr(context.env.cost_map, "data")
+            and is_high_cost_point(point=tag_position, context=context)
+        ):
             tag_position += direction_to_tag * distance
         context.node.get_logger().info(f"Long range target: {str(tag_position)}")
         return tag_position

@@ -13,7 +13,7 @@ from navigation.costmap_search import CostmapSearchState
 from navigation.state import DoneState, OffState, off_check
 from navigation.waypoint import WaypointState
 from rclpy import Parameter
-from rclpy.executors import ExternalShutdownException, MultiThreadedExecutor
+from rclpy.executors import ExternalShutdownException, MultiThreadedExecutor, SingleThreadedExecutor
 from rclpy.node import Node
 from state_machine.state_machine import StateMachine
 from state_machine.state_publisher_server import StatePublisher
@@ -37,6 +37,7 @@ class Navigation(Node):
                 # General
                 ("update_rate", Parameter.Type.DOUBLE),
                 ("pub_path_rate", Parameter.Type.DOUBLE),
+                ("path_hist_size", Parameter.Type.INTEGER),
                 ("display_markers", Parameter.Type.BOOL),
                 ("world_frame", Parameter.Type.STRING),
                 ("rover_frame", Parameter.Type.STRING),
@@ -47,9 +48,13 @@ class Navigation(Node):
                 # Costmap
                 ("costmap.custom_costmap", Parameter.Type.BOOL),
                 ("costmap.use_costmap", Parameter.Type.BOOL),
-                ("costmap.a_star_thresh", Parameter.Type.DOUBLE),
                 ("costmap.costmap_thresh", Parameter.Type.DOUBLE),
                 ("costmap.initial_inflation_radius", Parameter.Type.DOUBLE),
+                # Backup
+                ("backup.stop_threshold", Parameter.Type.DOUBLE),
+                ("backup.drive_forward_threshold", Parameter.Type.DOUBLE),
+                ("backup.backup_distance", Parameter.Type.DOUBLE),
+                ("backup.wait_time", Parameter.Type.DOUBLE),
                 # Drive
                 ("drive.max_driving_effort", Parameter.Type.DOUBLE),
                 ("drive.min_driving_effort", Parameter.Type.DOUBLE),
@@ -102,10 +107,11 @@ class Navigation(Node):
                 WaypointState(),
                 CostmapSearchState(),
                 StuckRecoveryState(),
+                BackupState(),
                 DoneState(),
             ],
         )
-        self.state_machine.add_transitions(BackupState(), [WaypointState(), StuckRecoveryState()])
+        self.state_machine.add_transitions(BackupState(), [WaypointState(), DoneState()])
         self.state_machine.add_transitions(
             StuckRecoveryState(),
             [
@@ -153,16 +159,29 @@ class Navigation(Node):
 
         self.get_logger().info("Ready!")
 
+        self.HIST_SIZE = self.get_parameter("path_hist_size").value
+
     def publish_path(self) -> None:
         if (rover_pose_in_map := self.ctx.rover.get_pose_in_map()) is not None:
             x, y, _ = rover_pose_in_map.translation()
-            self.ctx.rover.path_history.poses.append(
-                PoseStamped(
-                    header=self.ctx.rover.path_history.header,
-                    pose=Pose(position=Point(x=x, y=y)),
-                )
-            )
-            self.ctx.path_history_publisher.publish(self.ctx.rover.path_history)
+            if (
+                len(self.ctx.rover.path_history) >= 1
+                and ((x - self.ctx.rover.path_history[-1][0]) ** 2 + (y - self.ctx.rover.path_history[-1][1]) ** 2)
+                ** 0.5
+                > 0.15
+            ):
+                self.ctx.rover.path_history.append([x, y, 0])
+                if len(self.ctx.rover.path_history) > self.HIST_SIZE:
+                    self.ctx.rover.path_history.popleft()
+            else:
+                self.ctx.rover.path_history.append([x, y, 0])
+            # self.ctx.rover.path_history.poses.append(
+            #     PoseStamped(
+            #         header=self.ctx.rover.path_history.header,
+            #         pose=Pose(position=Point(x=x, y=y)),
+            #     )
+            # )
+            # self.ctx.path_history_publisher.publish(self.ctx.rover.path_history)
 
 
 if __name__ == "__main__":
@@ -173,7 +192,8 @@ if __name__ == "__main__":
         node = Navigation(context)
         context.setup(node)
 
-        exec = MultiThreadedExecutor(num_threads=2)
+        exec = SingleThreadedExecutor()
+        context.exec = exec
         exec.add_node(node)
         exec.spin()
 

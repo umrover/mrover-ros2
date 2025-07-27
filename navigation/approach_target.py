@@ -2,7 +2,7 @@ import numpy as np
 from typing import Any
 from navigation.trajectory import Trajectory
 from navigation.astar import AStar, NoPath, OutOfBounds
-from . import costmap_search, stuck_recovery, waypoint, state
+from . import costmap_search, stuck_recovery, waypoint, backup, state
 from .context import Context
 from state_machine.state import State
 from geometry_msgs.msg import Twist
@@ -33,7 +33,9 @@ class ApproachTargetState(State):
     def on_enter(self, context: Context) -> None:
         from .long_range import LongRangeState
 
-        assert context.course is not None
+        if context.course is None:
+            return
+
         state = "Long Range State" if isinstance(self, LongRangeState) else "Approach Target State"
         context.node.get_logger().info(f"Entered {state}")
         context.rover.previous_state = LongRangeState() if isinstance(self, LongRangeState) else ApproachTargetState()
@@ -41,7 +43,9 @@ class ApproachTargetState(State):
         self.UPDATE_DELAY = context.node.get_parameter("search.update_delay").value
 
         current_waypoint = context.course.current_waypoint()
-        assert current_waypoint is not None
+
+        if current_waypoint is None:
+            return
 
         self.USE_COSTMAP = context.node.get_parameter("costmap.use_costmap").value or current_waypoint.enable_costmap
         self.DISTANCE_THRESHOLD = context.node.get_parameter("search.distance_threshold").value
@@ -68,15 +72,15 @@ class ApproachTargetState(State):
     def get_target_position(self, context: Context) -> np.ndarray | None:
         return context.env.current_target_pos()
 
-    def determine_next(self, context: Context, is_finished: bool) -> State:
+    def next_state(self, context: Context, is_finished: bool) -> State:
+        if context.course is None:
+            return state.DoneState()
         if is_finished:
             total_time = context.node.get_clock().now() - self.time_begin
-            context.node.get_logger().info(f"Total approach time: {total_time.nanoseconds // 1000000000}")
-            if context.course.increment_waypoint():
-                return state.DoneState()
+            context.node.get_logger().info(f"Total approach time: {total_time.nanoseconds / 10e9} seconds")
+            context.course.increment_waypoint()
             context.env.arrived_at_target = True
-            context.node.get_logger().info("set arrived at target to true")
-            return waypoint.WaypointState()
+            return state.DoneState()
 
         return self
 
@@ -140,21 +144,30 @@ class ApproachTargetState(State):
     def on_loop_costmap_enabled(self, context: Context) -> State:
         from .long_range import LongRangeState
 
-        assert self.USE_COSTMAP
+        if not self.USE_COSTMAP:
+            return self
+
+        if not context.dilation_done():
+            context.node.get_logger().info("Awaiting dilation future to complete")
+            return self
 
         if context.env.cost_map is None or not hasattr(context.env.cost_map, "data"):
             context.node.get_logger().warn("Costmap is enabled but costmap has no data")
             return self
 
         rover_pose = context.rover.get_pose_in_map()
-        assert rover_pose is not None
+        if rover_pose is None:
+            context.node.get_logger().warn("Rover has no pose, waiting...")
+            context.rover.send_drive_command(Twist())
+            return self
 
         # If the target trajectory is empty, develop a new path to it
         if len(self.target_traj.coordinates) == 0:
             context.node.get_logger().info("Generating approach segmented path")
 
             # Appease the mypy gods
-            assert self.target_position is not None
+            if self.target_position is None:
+                return self
             self.target_traj = segment_path(context=context, dest=self.target_position[0:2])
 
         # Check the current point in the trajectory; if it's high cost, move to the next point and check again
@@ -198,7 +211,7 @@ class ApproachTargetState(State):
                     context, self.target_position
                 ):
                     # If we fail to find a low-cost point, consider the target unreachable and give up
-                    if self.dilate_costmap(context):
+                    if not context.shrink_dilation():
                         context.node.get_logger().info("Low-cost point not found, giving up")
                         return self.next_state(context=context, is_finished=True)
 
@@ -243,10 +256,10 @@ class ApproachTargetState(State):
                     # Otherwise we need to dilate to get closer
                     else:
                         context.node.get_logger().info("Too far from target, dilating costmap")
-                        if not self.dilate_costmap(context=context):
+                        if not context.shrink_dilation():
                             # Fully dilated and still failed, go to next state
                             return self.next_state(context=context, is_finished=True)
-                        return self.next_state(context=context, is_finished=False)
+                        return self
 
         else:
             context.rover.send_drive_command(cmd_vel)
@@ -256,7 +269,8 @@ class ApproachTargetState(State):
     def on_loop_costmap_disabled(self, context: Context) -> State:
         from .long_range import LongRangeState
 
-        assert not self.USE_COSTMAP
+        if self.USE_COSTMAP:
+            return self
 
         if self.target_position is None:
             return self
@@ -308,7 +322,8 @@ class ApproachTargetState(State):
         Return to search if there is no target position.
         :return: Next state
         """
-        assert context.course is not None
+        if context.course is None:
+            return state.DoneState()
 
         # Establish rover's position in the world
         rover_in_map = context.rover.get_pose_in_map()
@@ -380,7 +395,8 @@ class ApproachTargetState(State):
 
     def self_in_distance_threshold(self, context: Context):
         rover_SE3 = context.rover.get_pose_in_map()
-        assert rover_SE3 is not None
+        if rover_SE3 is None:
+            return False
 
         target_pos = context.env.current_target_pos()
         if target_pos is None:
@@ -391,17 +407,11 @@ class ApproachTargetState(State):
         return distance_to_target < self.DISTANCE_THRESHOLD
 
     def point_in_distance_threshold(self, context: Context, point):
-        assert point is not None
-
+        if point is None:
+            return False
         target_pos = context.env.current_target_pos()
         if target_pos is None:
             return False
 
         distance = d_calc(point, tuple(target_pos))
         return distance < self.DISTANCE_THRESHOLD
-
-    def dilate_costmap(self, context: Context, dilation_difference=0.5) -> bool:
-        temp = self.COST_INFLATION_RADIUS
-        self.COST_INFLATION_RADIUS = max(self.COST_INFLATION_RADIUS - dilation_difference, 0.0)
-        context.dilate_cost(self.COST_INFLATION_RADIUS)
-        return temp == 0
