@@ -1,18 +1,10 @@
 <template>
   <div class="view-wrapper">
-    <div class="d-flex flex-col gap-2 mb-2">
-      <button class="btn btn-primary" @click="spamTestMessages">
-        send websocket messages
-      </button>
-      <ArmControls class="island py-2" />
-    </div>
-    <Rover3D class="island m-0 p-0" style="max-height: 700px;" />
+		<h1> body </h1>
   </div>
 </template>
 
 <script lang="ts">
-import ArmControls from '../components/ArmControls.vue'
-import Rover3D from '../components/Rover3D.vue'
 import { defineComponent } from 'vue'
 import Vuex from 'vuex'
 const { mapState } = Vuex
@@ -20,19 +12,13 @@ import type { WebSocketState } from '../types/websocket'
 
 export default defineComponent({
   components: {
-    ArmControls,
-    Rover3D,
   },
 
   mounted() {
-    this.$store.dispatch('websocket/setupWebSocket', 'arm')
-    this.$store.dispatch('websocket/setupWebSocket', 'nav')
     this.$store.dispatch('websocket/setupWebSocket', 'waypoints')
   },
 
   unmounted() {
-    this.$store.dispatch('websocket/closeWebSocket', 'arm')
-    this.$store.dispatch('websocket/closeWebSocket', 'nav')
     this.$store.dispatch('websocket/closeWebSocket', 'waypoints')
   },
 
