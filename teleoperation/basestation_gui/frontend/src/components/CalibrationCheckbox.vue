@@ -7,11 +7,14 @@
   </div>
 </template>
 
+<!-- unused component -->
+
 <script lang="ts">
 import { defineComponent } from 'vue'
 import Checkbox from './BasicCheckbox.vue'
 import LEDIndicator from './LEDIndicator.vue'
-import { mapState, mapActions } from 'vuex'
+import Vuex from 'vuex'
+const { mapState, mapActions } = Vuex
 
 export default defineComponent({
   components: {
