@@ -7,6 +7,7 @@ import SATask from '../views/SATask.vue'
 import CameraView from '../views/CameraView.vue'
 import Rover3D from '../components/Rover3D.vue'
 import DevView from '../views/DevView.vue'
+import Starter from '../views/StarterProject.vue'
 
 const routes = [
   {
@@ -59,6 +60,11 @@ const routes = [
     path: '/dev',
     name: 'DevView',
     component: DevView
+  },
+  {
+    path: '/starter',
+    name: 'Starter Project',
+    component: Starter
   }
 ]
 const router = createRouter({

@@ -33,7 +33,8 @@ export default defineComponent({
         '/ISHTask': 'ISH Mission',
         '/SATask': 'Sample Acquisition',
         '/Cameras': 'Camera View',
-        '/dev': 'Development View'
+        '/dev': 'Development View',
+        '/starter': 'Starter Project'
       };
 
       return routeTitles[path] || 'Unknown Path';

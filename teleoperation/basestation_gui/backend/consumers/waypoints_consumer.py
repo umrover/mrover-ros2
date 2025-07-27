@@ -64,7 +64,7 @@ class WaypointsConsumer(AsyncJsonWebsocketConsumer):
                     await self.send_json({"type": "get_current_auton_course", "data": data})
 
                 case {"type": "debug", "timestamp": ts}:
-                    self.node.get_logger().debug(f"debug message received by consumer, {ts}")
+                    self.node.get_logger().warning(f"debug message received by consumer, {ts}")
 
                 case _:
                     self.node.get_logger().warning(f"Unhandled message on waypoints: {content}")

@@ -6,7 +6,6 @@
 import { defineComponent } from 'vue'
 import Vuex from 'vuex'
 const { mapState } = Vuex
-// @ts-expect-error shut up ts
 import threeSetup, { updatePose } from '../rover_three.js'
 import type { WebSocketState } from '../types/websocket.js'
 
@@ -28,7 +27,7 @@ export default defineComponent({
   },
 
   mounted() {
-    this.threeScene = threeSetup('threejs')
+    threeSetup()
   },
 
   computed: {
@@ -44,7 +43,8 @@ export default defineComponent({
         let position = msg.position[index]
 
         if (urdfName === 'chassis_to_arm_a') {
-          position = position * 100 - 40 // scale from m to cm
+          position = position * -100 + 40// scale from m to cm
+          console.log(position)
         }
 
         return {

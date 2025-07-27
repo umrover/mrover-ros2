@@ -1,47 +1,53 @@
 <template>
   <div class="view-wrapper">
-    <h1> body </h1>
-    <!-- TODO -->
+    <div class="d-flex flex-col gap-2 mb-2">
+      <button class="btn btn-primary" @click="spamTestMessages">
+        send websocket messages
+      </button>
+      <ArmControls class="island py-2" />
+    </div>
+    <Rover3D class="island m-0 p-0" style="max-height: 700px;" />
   </div>
 </template>
 
 <script lang="ts">
-import ArmControls from '../components/ArmControls.vue';
+import ArmControls from '../components/ArmControls.vue'
+import Rover3D from '../components/Rover3D.vue'
 import { defineComponent } from 'vue'
 import Vuex from 'vuex'
 const { mapState } = Vuex
-import type { WebSocketState } from '../types/websocket';
+import type { WebSocketState } from '../types/websocket'
 
 export default defineComponent({
   components: {
-    ArmControls
+    ArmControls,
+    Rover3D,
   },
 
   mounted() {
     this.$store.dispatch('websocket/setupWebSocket', 'arm')
     this.$store.dispatch('websocket/setupWebSocket', 'nav')
-
-    setTimeout(() => {
-      this.$store.dispatch('websocket/closeWebSocket', 'nav')
-      this.spamTestMessages()
-    }, 1000)
+    this.$store.dispatch('websocket/setupWebSocket', 'waypoints')
   },
 
   unmounted() {
     this.$store.dispatch('websocket/closeWebSocket', 'arm')
     this.$store.dispatch('websocket/closeWebSocket', 'nav')
+    this.$store.dispatch('websocket/closeWebSocket', 'waypoints')
   },
-  
-  computed: { // correct websocket message receiver, specify websocket in []
+
+  computed: {
+    // correct websocket message receiver, specify websocket in []
     ...mapState('websocket', {
-      waypointsMessage: (state: WebSocketState) => state.messages['waypoints']
+      waypointsMessage: (state: WebSocketState) => state.messages['waypoints'],
     }),
   },
 
-  watch: { // then watch for messages
+  watch: {
+    // then watch for messages
     waypointsMessage(msg) {
       console.log(msg)
-    }
+    },
   },
 
   methods: {

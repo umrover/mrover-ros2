@@ -114,8 +114,8 @@ def compute_manual_joint_controls(controller: DeviceInputs) -> list[float]:
 
 
 def subset(names: list[str], values: list[float], joints: set[Joint]) -> tuple[list[str], list[float]]:
-    # filtered_joints = [j for j in joints if j.value < 5] # temporarily switch to this for sim testing
-    filtered_joints = [j for j in joints]
+    filtered_joints = [j for j in joints if j.value < 5] # temporarily switch to this for sim testing
+    # filtered_joints = [j for j in joints]
     for i in filtered_joints:
         print(i)
     return [names[i.value] for i in filtered_joints], [values[i.value] for i in filtered_joints]
