@@ -27,4 +27,7 @@ def generate_launch_description():
         name="superstructure",
         parameters=[os.path.join(get_package_share_directory("mrover"), "config", "superstructure.yaml")],
     )
-    return LaunchDescription([diff_drive_controller_node, superstructure_node])
+
+    led_node = Node(package="mrover", executable="led", name="led")
+
+    return LaunchDescription([diff_drive_controller_node, superstructure_node, led_node])
