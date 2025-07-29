@@ -1,6 +1,6 @@
 <template>
   <div class="view-wrapper">
-		<h1> body </h1>
+    <!-- TODO -->
   </div>
 </template>
 
@@ -12,25 +12,26 @@ import type { WebSocketState } from '../types/websocket'
 
 export default defineComponent({
   components: {
-  },
+		// TODO
+	},
 
   mounted() {
     this.$store.dispatch('websocket/setupWebSocket', 'waypoints')
+		// TODO
   },
 
   unmounted() {
     this.$store.dispatch('websocket/closeWebSocket', 'waypoints')
+		// TODO
   },
 
   computed: {
-    // correct websocket message receiver, specify websocket in []
     ...mapState('websocket', {
       waypointsMessage: (state: WebSocketState) => state.messages['waypoints'],
     }),
   },
 
   watch: {
-    // then watch for messages
     waypointsMessage(msg) {
       console.log(msg)
     },
