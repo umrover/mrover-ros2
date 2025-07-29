@@ -6,8 +6,6 @@
       </div>
       <div
         class="btn-group d-flex justify-content-between"
-        role="group"
-        aria-label="Arm mode selection"
       >
         <button
           type="button"
@@ -40,7 +38,6 @@ export default defineComponent({
   data() {
     return {
       mode: 'disabled',
-      // State to track which keys are currently pressed
       keysPressed: {
         w: false,
         a: false,
@@ -51,13 +48,12 @@ export default defineComponent({
     }
   },
   mounted() {
-    // Add listeners for both keydown and keyup
     document.addEventListener('keydown', this.handleKeyDown)
     document.addEventListener('keyup', this.handleKeyUp)
   },
   created() {
     this.interval = window.setInterval(() => {
-      const axes = [0, 0, 0, 0] // Default axes state
+      const axes = [0, 0, 0, 0]
       const buttons: boolean[] = []
       axes[0] = (this.keysPressed.d ? 1 : 0) - (this.keysPressed.a ? 1 : 0)
       axes[1] = (this.keysPressed.s ? 1 : 0) - (this.keysPressed.w ? 1 : 0)
@@ -81,7 +77,6 @@ export default defineComponent({
   },
   beforeUnmount() {
     window.clearInterval(this.interval)
-    // Clean up listeners
     document.removeEventListener('keydown', this.handleKeyDown)
     document.removeEventListener('keyup', this.handleKeyUp)
   },

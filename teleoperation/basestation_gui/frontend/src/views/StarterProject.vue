@@ -26,25 +26,21 @@ export default defineComponent({
 
   mounted() {
     this.$store.dispatch('websocket/setupWebSocket', 'arm')
-    this.$store.dispatch('websocket/setupWebSocket', 'nav')
     this.$store.dispatch('websocket/setupWebSocket', 'waypoints')
   },
 
   unmounted() {
     this.$store.dispatch('websocket/closeWebSocket', 'arm')
-    this.$store.dispatch('websocket/closeWebSocket', 'nav')
     this.$store.dispatch('websocket/closeWebSocket', 'waypoints')
   },
 
   computed: {
-    // correct websocket message receiver, specify websocket in []
     ...mapState('websocket', {
       waypointsMessage: (state: WebSocketState) => state.messages['waypoints'],
     }),
   },
 
   watch: {
-    // then watch for messages
     waypointsMessage(msg) {
       console.log(msg)
     },
