@@ -4,7 +4,6 @@
       <div class="d-flex justify-content-between align-items-center">
         <h3 class="m-0">Arm Controls</h3>
       </div>
-      <h1>body</h1>
       <!-- TODO -->
     </div>
   </div>

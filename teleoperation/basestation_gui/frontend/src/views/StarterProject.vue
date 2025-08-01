@@ -1,6 +1,7 @@
 <template>
   <div class="view-wrapper">
     <!-- TODO -->
+    <h1>body</h1>
   </div>
 </template>
 
