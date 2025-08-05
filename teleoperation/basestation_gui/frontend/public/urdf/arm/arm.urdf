@@ -1,0 +1,161 @@
+<?xml version="1.0" ?>
+<robot name="arm">
+  <!-- Functions -->
+  <!-- Joints -->
+  <joint name="base_link_joint" type="prismatic">
+    <!-- <origin rpy="0 0 0" xyz="0 0 0"/> -->
+    <origin rpy="0 0 0" xyz="16.4882 20.0235 49.1172"/>
+    <!-- y -10 not applied yet -->
+    <parent link="base_link"/>
+    <child link="a_link"/>
+    <axis xyz="0 -1 0"/>
+    <!-- effort in N-m, velocity in rad/s -->
+    <limit effort="30" lower="0" upper="40" velocity="1"/>
+    <!-- damping in N-m-s/rad -->
+    <dynamics damping="1.0"/>
+  </joint>
+  <joint name="a_joint" type="revolute">
+    <!-- <origin rpy="0 0 0" xyz="0 0 0"/> -->
+    <origin rpy="0 0 0" xyz="3.4348 -0.0005 4.9028"/>
+    <!-- <origin rpy="0 0 0" xyz="19.923 20.023 54.02"/> -->
+    <parent link="a_link"/>
+    <child link="b_link"/>
+    <axis xyz="0 1 0"/>
+    <!-- effort in N-m, velocity in rad/s -->
+    <limit effort="30" lower="-1.570796" upper="0" velocity="1"/>
+    <!-- damping in N-m-s/rad -->
+    <dynamics damping="1.0"/>
+  </joint>
+  <joint name="b_joint" type="revolute">
+    <!-- <origin rpy="0 0 0" xyz="0 0 0"/> -->
+    <origin rpy="0 0 0" xyz="53.4363 0.0005 0.9052"/>
+    <!-- <origin rpy="0 0 0" xyz="73.3593 20.0235 54.9252"/> -->
+    <parent link="b_link"/>
+    <child link="c_link"/>
+    <axis xyz="0 1 0"/>
+    <!-- effort in N-m, velocity in rad/s -->
+    <limit effort="30" lower="0" upper="3.141592" velocity="1"/>
+    <!-- damping in N-m-s/rad -->
+    <dynamics damping="1.0"/>
+  </joint>
+  <joint name="c_joint" type="revolute">
+    <!-- <origin rpy="0 0 0" xyz="0 0 0"/> -->
+    <origin rpy="0 0 0" xyz="54.6037 0 8.8594"/>
+    <!-- <origin rpy="0 0 0" xyz="127.963 20.0235 63.7846"/> -->
+    <parent link="c_link"/>
+    <child link="d_link"/>
+    <axis xyz="0 1 0"/>
+    <!-- effort in N-m, velocity in rad/s -->
+    <limit effort="30" lower="-3.141592" upper="3.141592" velocity="1"/>
+    <!-- damping in N-m-s/rad -->
+    <dynamics damping="1.0"/>
+  </joint>
+  <joint name="d_joint" type="revolute">
+    <!-- <origin rpy="0 0 0" xyz="0 0 0"/> -->
+    <origin rpy="0 0 0" xyz="4.488 0 0"/>
+    <!-- <origin rpy="0 0 0" xyz="132.451 20.0235 63.7846"/> -->
+    <parent link="d_link"/>
+    <child link="e_link"/>
+    <axis xyz="1 0 0"/>
+    <!-- effort in N-m, velocity in rad/s -->
+    <limit effort="30" lower="-3.141592" upper="3.141592" velocity="1"/>
+    <!-- damping in N-m-s/rad -->
+    <dynamics damping="1.0"/>
+  </joint>
+  <joint name="gripper_link" type="prismatic">
+    <origin rpy="1.570796 0 0" xyz="0.0875 0 0"/>
+    <parent link="e_link"/>
+    <child link="arm_gripper_link"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="0" upper="8" effort="0" velocity="0"/>
+    <dynamics damping="1.0"/>
+  </joint>
+  <!-- Links -->
+  <link name="base_link">
+    <inertial>
+      <mass value="3.0"/>
+      <inertia ixx="102.5" ixy="0.0" ixz="0.0" iyy="24.5" iyz="0.0" izz="102.5"/>
+    </inertial>
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="../meshes/rover_chassis.dae"/>
+      </geometry>
+      <material name="red">
+        <color rgba="1 1 1 1"/>
+      </material>
+    </visual>
+  </link>
+  <link name="a_link">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <!-- <origin rpy="0 0 0" xyz="16.4882 20.0235 49.1172"/> -->
+      <geometry>
+        <mesh filename="../meshes/arm_a_fix.dae"/>
+      </geometry>
+      <material name="white">
+        <color rgba="1 1 1 1"/>
+      </material>
+    </visual>
+  </link>
+  <link name="b_link">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <!-- <origin rpy="0 0 0" xyz="19.923 20.023 54.02"/> -->
+      <geometry>
+        <mesh filename="../meshes/arm_b_fix.dae"/>
+      </geometry>
+      <material name="orange">
+        <color rgba="1 0.43 0 1"/>
+      </material>
+    </visual>
+  </link>
+  <link name="c_link">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <!-- <origin rpy="0 0 0" xyz="73.3593 20.0235 54.9252"/> -->
+      <geometry>
+        <mesh filename="../meshes/arm_c_fix.dae"/>
+      </geometry>
+      <material name="yellow">
+        <color rgba="1 1 0 1"/>
+      </material>
+    </visual>
+  </link>
+  <link name="d_link">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <!-- <origin rpy="0 0 0" xyz="127.963 20.0235 63.7846"/> -->
+      <geometry>
+        <mesh filename="../meshes/arm_d_fix.dae"/>
+      </geometry>
+      <material name="green">
+        <color rgba="0.43 1 0 1"/>
+      </material>
+    </visual>
+  </link>
+  <link name="e_link">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <!-- <origin rpy="0 0 0" xyz="132.451 20.0235 63.7846"/> -->
+      <geometry>
+        <mesh filename="../meshes/arm_e_fix.dae"/>
+      </geometry>
+      <material name="blue">
+        <color rgba="0 0 1 1"/>
+      </material>
+    </visual>
+  </link>
+  <link name="arm_gripper_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <!-- <origin rpy="0 0 0" xyz="132.451 20.0235 63.7846"/> -->
+      <geometry>
+        <mesh filename="../meshes/arm_gripper_fix.dae"/>
+      </geometry>
+      <material name="blue">
+        <color rgba="0 0 1 1"/>
+      </material>
+    </visual>
+  </link>
+</robot>

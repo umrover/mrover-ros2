@@ -108,7 +108,7 @@ else ()
     endif ()
 endif ()
 
-find_package(manif QUIET)
+find_package(MANIF::manif QUIET)
 if (NOT manif_FOUND)
     if (EXISTS ${CMAKE_CURRENT_LIST_DIR}/deps/manif/include/manif)
         set(BUILD_TESTING_OLD ${BUILD_TESTING})
