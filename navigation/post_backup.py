@@ -7,7 +7,7 @@ from shapely.geometry import Point, LineString
 
 from lie import SE3, perpendicular_2d
 from state_machine.state import State
-from . import stuck_recovery, waypoint
+from . import waypoint, recovery
 from .context import Context
 from .trajectory import Trajectory
 
@@ -83,7 +83,7 @@ class AvoidPostTrajectory(Trajectory):
         return AvoidPostTrajectory(coords)
 
 
-class BackupState(State):
+class PostBackupState(State):
     trajectory: AvoidPostTrajectory | None
 
     def on_exit(self, context: Context) -> None:
@@ -138,7 +138,7 @@ class BackupState(State):
         if context.rover.stuck:
             context.rover.previous_state = self
             self.trajectory = None
-            return stuck_recovery.StuckRecoveryState()
+            return recovery.RecoveryState()
 
         context.rover.send_drive_command(cmd_vel)
         return self

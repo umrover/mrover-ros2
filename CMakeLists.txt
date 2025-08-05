@@ -108,7 +108,7 @@ else ()
     endif ()
 endif ()
 
-find_package(MANIF::manif QUIET)
+find_package(manif QUIET)
 if (NOT manif_FOUND)
     if (EXISTS ${CMAKE_CURRENT_LIST_DIR}/deps/manif/include/manif)
         set(BUILD_TESTING_OLD ${BUILD_TESTING})
@@ -171,6 +171,8 @@ foreach (MROVER_CMAKE_INCLUDE ${MROVER_CMAKE_INCLUDES})
     include(${MROVER_CMAKE_INCLUDE})
 endforeach ()
 
+message(STATUS "Found message files: ${MROVER_MESSAGE_FILE_PATHS}")
+
 rosidl_generate_interfaces(${PROJECT_NAME}
     ${MROVER_MESSAGE_FILE_PATHS}
     ${MROVER_SERVICE_FILE_PATHS}
@@ -227,7 +229,6 @@ target_link_libraries(simulator
     loop_profiler
 )
 target_include_directories(simulator SYSTEM PRIVATE ${BULLET_INCLUDE_DIRS} ${OPENCV_INCLUDE_DIRS})
-
 
 # Perception
 
@@ -330,22 +331,22 @@ if (Gst_FOUND AND GstApp_FOUND)
     target_link_libraries(usb_camera PkgConfig::Gst PkgConfig::GstApp opencv_core opencv_imgcodecs parameter_utils)
     ament_target_dependencies(usb_camera rclcpp)
 
-#     if (LibUdev_FOUND)
-#         mrover_add_library(websocket_server esw/websocket_server/*.cpp esw/websocket_server)
-#         target_compile_definitions(websocket_server PUBLIC BOOST_ASIO_NO_DEPRECATED)
-#         ament_target_dependencies(websocket_server rclcpp)
+    if (LibUdev_FOUND)
+        mrover_add_library(websocket_server esw/websocket_server/*.cpp esw/websocket_server)
+        target_compile_definitions(websocket_server PUBLIC BOOST_ASIO_NO_DEPRECATED)
+        ament_target_dependencies(websocket_server rclcpp)
 
-#         mrover_add_component(gst_websocket_streamer esw/gst_websocket_streamer/*.c* esw/gst_websocket_streamer/pch.hpp GstWebsocketStreamer)
-#         mrover_link_component(gst_websocket_streamer PkgConfig::Gst PkgConfig::GstApp PkgConfig::LibUdev opencv_core opencv_imgcodecs websocket_server)
-#         mrover_ament_component(gst_websocket_streamer rclcpp rclcpp_components sensor_msgs)
-#     endif ()
-# endif ()
+        mrover_add_component(gst_websocket_streamer esw/gst_websocket_streamer/*.c* esw/gst_websocket_streamer/pch.hpp GstWebsocketStreamer)
+        mrover_link_component(gst_websocket_streamer PkgConfig::Gst PkgConfig::GstApp PkgConfig::LibUdev opencv_core opencv_imgcodecs websocket_server)
+        mrover_ament_component(gst_websocket_streamer rclcpp rclcpp_components sensor_msgs)
+    endif ()
+endif ()
 
-# if (NetLink_FOUND AND NetLinkRoute_FOUND)
-#     mrover_add_node(can_bridge esw/can_bridge/*.cpp esw/can_bridge/pch.hpp)
-#     target_link_libraries(can_bridge PkgConfig::NetLink PkgConfig::NetLinkRoute)
-#     ament_target_dependencies(can_bridge rclcpp)
-# endif ()
+if (NetLink_FOUND AND NetLinkRoute_FOUND)
+    mrover_add_node(can_bridge esw/can_bridge/*.cpp esw/can_bridge/pch.hpp)
+    target_link_libraries(can_bridge PkgConfig::NetLink PkgConfig::NetLinkRoute)
+    ament_target_dependencies(can_bridge rclcpp)
+endif ()
 
 ## Install
 
@@ -358,16 +359,12 @@ install(PROGRAMS
     localization/basestation_gps_driver.py
     superstructure/superstructure.py
     scripts/debug_course_publisher.py
-    scripts/debug_service.py
     scripts/visualizer.py
     scripts/image_capture.py
-    teleoperation/basestation_gui/gui_frontend.sh
-    teleoperation/basestation_gui/gui_backend.sh
 
     # starter project sources
     starter_project/autonomy/src/localization.py
     starter_project/autonomy/src/navigation/navigation_starter_project.py
-    starter_project/teleop//launch/teleop_starter.launch
     DESTINATION
     lib/${PROJECT_NAME}
 )

@@ -2,10 +2,9 @@ import numpy as np
 
 from lie import SO2
 from state_machine.state import State
-from . import stuck_recovery
+from . import recovery
 from .approach_target import ApproachTargetState
 from .context import Context
-from coordinate_utils import is_high_cost_point
 
 
 class LongRangeState(ApproachTargetState):
@@ -18,6 +17,9 @@ class LongRangeState(ApproachTargetState):
     -Stuck?
     """
 
+    def on_enter(self, context: Context) -> None:
+        pass
+
     def on_exit(self, context: Context) -> None:
         pass
 
@@ -27,12 +29,8 @@ class LongRangeState(ApproachTargetState):
         current_waypoint = context.course.current_waypoint()
         assert current_waypoint is not None
 
-        if context.env.cost_map is None or not hasattr(context.env.cost_map, "data"):
-            return None
-
         target = context.env.image_targets.query(context.course.image_target_name())
         if target is None:
-            context.node.get_logger().info("Target not found in long range camera")
             return None
 
         rover_in_map = context.rover.get_pose_in_map()
@@ -51,20 +49,16 @@ class LongRangeState(ApproachTargetState):
 
         distance = context.node.get_parameter("long_range.distance_ahead").value
         direction_to_tag = np.array([direction_to_tag[0], direction_to_tag[1], 0.0])
-
         tag_position = rover_position + direction_to_tag * distance
-        while is_high_cost_point(point=tag_position, context=context):
-            tag_position += direction_to_tag * distance
-        context.node.get_logger().info(f"Long range target: {str(tag_position)}")
         return tag_position
 
-    def next_state(self, context: Context, is_finished: bool) -> State:
+    def determine_next(self, context: Context, is_finished: bool) -> State:
         tag_position = context.env.current_target_pos()
         if tag_position is None:
             return self
 
         if context.rover.stuck:
             context.rover.previous_state = self
-            return stuck_recovery.StuckRecoveryState()
+            return recovery.RecoveryState()
 
         return ApproachTargetState()

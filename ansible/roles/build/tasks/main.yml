@@ -193,3 +193,23 @@
   become: True
   snap:
     name: chromium
+
+- name: Install or Upgrade Bun
+  shell: curl -fsSL https://bun.sh/install | bash
+  args:
+    executable: /bin/bash
+  environment:
+    BUN_INSTALL: "{{ ansible_env.HOME }}/.bun"
+
+- name: Install Bun Packages
+  command: ~/.bun/bin/bun install
+  args:
+    chdir: "{{ ansible_env.HOME }}/ros2_ws/src/mrover/teleoperation/basestation_gui/frontend"
+
+- name: Run Django migrations
+  shell: |
+    source {{ ansible_env.HOME }}/ros2_ws/src/mrover/venv/bin/activate
+    python teleoperation/basestation_gui/manage.py makemigrations
+    python teleoperation/basestation_gui/manage.py migrate
+  args:
+    chdir: "{{ ansible_env.HOME }}/ros2_ws/src/mrover"

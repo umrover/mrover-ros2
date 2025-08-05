@@ -4,12 +4,9 @@ from dataclasses import dataclass
 
 import numpy as np
 import pymap3d
-import rclpy
-from scipy import ndimage
 
 import tf2_ros
 from geometry_msgs.msg import Twist
-from mrover.srv import MoveCostMap, DilateCostMap
 from lie import SE3
 from mrover.msg import (
     Waypoint,
@@ -27,8 +24,6 @@ from rclpy.node import Node
 from rclpy.publisher import Publisher
 from rclpy.subscription import Subscription
 from rclpy.time import Time
-from rclpy.task import Future
-from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
 from state_machine.state import State
 from std_msgs.msg import Bool, Header
 from .drive import DriveController
@@ -184,7 +179,7 @@ class ImageTargetsStore:
         if name not in self._data:
             return None
         if self._context.node.get_clock().now() - self._data[name].time >= Duration(
-            seconds=self._context.node.get_parameter("long_range.bearing_expiration_duration").value
+            seconds=self._context.node.get_parameter("target_expiration_duration").value
         ):
             return None
         return self._data[name]
@@ -197,9 +192,8 @@ class Course:
     # Currently active waypoint
     waypoint_index: int = 0
 
-    def increment_waypoint(self) -> int:
-        self.waypoint_index = min(self.waypoint_index + 1, len(self.waypoints))
-        return self.waypoint_index >= len(self.waypoints)
+    def increment_waypoint(self) -> None:
+        self.waypoint_index += 1
 
     def waypoint_pose(self, index: int) -> SE3:
         return SE3.from_tf_tree(self.ctx.tf_buffer, f"course{index}", self.ctx.world_frame)
@@ -263,8 +257,10 @@ class Course:
             return approach_target.ApproachTargetState()
         # If we see the target in the long range camera, go to LongRangeState
         assert self.ctx.course is not None
-        if self.ctx.env.image_targets.query(self.ctx.course.image_target_name()) is not None:
-            self.ctx.node.get_logger().info("Tried to transition to long range")
+        if (
+            self.ctx.course.image_target_name() != "bottle"
+            and self.ctx.env.image_targets.query(self.ctx.course.image_target_name()) is not None
+        ):
             return long_range.LongRangeState()
         return None
 
@@ -304,9 +300,7 @@ def convert_gps_to_cartesian(reference_point: np.ndarray, waypoint: GPSWaypoint)
     # Zero the z-coordinate because even though the altitudes are set to zero,
     # Two points on a sphere are not going to have the same z-coordinate.
     # Navigation algorithms currently require all coordinates to have zero as the z-coordinate.
-    return Waypoint(
-        tag_id=waypoint.tag_id, type=waypoint.type, enable_costmap=waypoint.enable_costmap
-    ), SE3.from_position_orientation(x, y)
+    return Waypoint(tag_id=waypoint.tag_id, type=waypoint.type), SE3.from_position_orientation(x, y)
 
 
 def convert_cartesian_to_gps(reference_point: np.ndarray, coordinate: np.ndarray) -> GPSWaypoint:
@@ -373,26 +367,8 @@ class Context:
         node.create_subscription(Bool, "nav_stuck", self.stuck_callback, 1)
         node.create_subscription(ImageTargets, "tags", self.image_targets_callback, 1)
         node.create_subscription(ImageTargets, "objects", self.image_targets_callback, 1)
-
-        if node.get_parameter("costmap.custom_costmap").value:
-            node.create_subscription(OccupancyGrid, "custom_costmap", self.costmap_callback, 1)
-        else:
-            node.create_subscription(OccupancyGrid, "costmap", self.costmap_callback, 1)
         self.tf_buffer = tf2_ros.Buffer()
         tf2_ros.TransformListener(self.tf_buffer, node)
-
-        client_callback_group = MutuallyExclusiveCallbackGroup()
-
-        self.move_cli = node.create_client(MoveCostMap, "move_cost_map", callback_group=client_callback_group)
-        self.dilate_cli = node.create_client(DilateCostMap, "dilate_cost_map", callback_group=client_callback_group)
-
-        if not node.get_parameter("costmap.custom_costmap").value:
-
-            while not self.move_cli.wait_for_service(timeout_sec=1.0):
-                node.get_logger().info("Waiting for move_cost_map service...")
-
-            while not self.dilate_cli.wait_for_service(timeout_sec=1.0):
-                node.get_logger().info("Waiting for dilate_cost service...")
 
     def enable_auton(self, request: EnableAuton.Request, response: EnableAuton.Response) -> EnableAuton.Response:
         self.node.get_logger().info("Received new course to navigate!")
@@ -415,60 +391,3 @@ class Context:
 
     def image_targets_callback(self, tags: ImageTargets) -> None:
         self.env.image_targets.push_frame(tags.targets)
-
-    def costmap_callback(self, msg: OccupancyGrid) -> None:
-        """
-        Callback function for the occupancy grid perception sends
-        :param msg: Occupancy Grid representative of a 32m x 32m square area with origin at GNSS waypoint. Values are 0, 1, -1
-        """
-        unknown_cost = 10.0
-        upsample_factor = 2
-        filter_size = 3
-
-        cost_map_data = np.array(msg.data).reshape((msg.info.height, msg.info.width)).T.astype(np.float32)
-        cost_map_data[cost_map_data == -1] = unknown_cost
-
-        self.env.cost_map.origin = np.array([msg.info.origin.position.x, msg.info.origin.position.y])
-        self.env.cost_map.resolution = msg.info.resolution / upsample_factor # meters/cell
-        self.env.cost_map.height = msg.info.height * upsample_factor # cells
-        self.env.cost_map.width = msg.info.width * upsample_factor # cells
-
-        upsampled_cost_map = np.kron(cost_map_data, np.ones((upsample_factor,upsample_factor), np.float32))
-        filtered_cost_map = ndimage.uniform_filter(upsampled_cost_map, filter_size, mode='nearest')
-
-
-        self.env.cost_map.data = filtered_cost_map
-
-
-        # array: known_free_cost
-        # self.env.cost_map.data /= 100.0
-
-    def move_costmap(self, course_name="base_link"):
-        if self.node.get_parameter("costmap.custom_costmap").value:
-            return
-        self.node.get_logger().info(f"Requesting to move cost map to {course_name}")
-
-        req = MoveCostMap.Request()
-        req.course = course_name
-        res: MoveCostMap.Response
-        res = self.move_cli.call(req)
-
-        if not res.success:
-            self.node.get_logger().info("Move cost map failed")
-        else:
-            self.node.get_logger().info("Finished moving cost map")
-
-    def dilate_cost(self, new_radius: float):
-        if self.node.get_parameter("costmap.custom_costmap").value:
-            return
-        self.node.get_logger().info(f"Requesting to dilate cost to {new_radius}")
-
-        req = DilateCostMap.Request()
-        req.inflation_radius = new_radius
-        res: DilateCostMap.Response
-        res = self.dilate_cli.call(req)
-
-        if not res.success:
-            self.node.get_logger().info("Dilate cost map failed")
-        else:
-            self.node.get_logger().info("Finished dilating cost map")
