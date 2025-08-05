@@ -20,3 +20,6 @@ __pycache__/
 .mypy_cache/
 *.egg-info/
 venv/
+
+# nav state log
+state_machine/state_log.txt

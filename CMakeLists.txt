@@ -6,6 +6,7 @@ cmake_policy(SET CMP0148 OLD)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CXX_STANDARD_REQUIRED ON)
+set(CXX_STANDARD_REQUIRED ON)
 
 # Generate compile_commands.json for clangd language server.
 # Can be used by VSCode, CLion, VIM, etc.
@@ -14,6 +15,9 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 option(MROVER_CI "Enable CI options" OFF)
 option(MROVER_CLANG_TIDY "Enable static analysis with Clang tidy" ${MROVER_CI})
 option(MROVER_WARNINGS_AS_ERRORS "Treat warnings as errors" ${MROVER_CI})
+
+set(node_plugins "")
+
 
 set(node_plugins "")
 
@@ -42,7 +46,7 @@ if (CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
         find_program(LLD_PROGRAM lld)
         if (LLD_PROGRAM)
             message(STATUS "Using lld linker")
-            add_link_options(-fuse-ld=lld-18)
+	    #add_link_options(-fuse-ld=lld-18)
         endif()
     endif ()
 endif ()
@@ -119,7 +123,7 @@ if (NOT manif_FOUND)
 
         set(manif_FOUND TRUE)
     else()
-        message(FATAL_ERROR "Manif not found. If on Ubuntu install with 'sudo apt install -f ./pkg/libmanif-dev.deb'. Or build from source with 'git submodule update --init deps/manif' and make sure it is non-empty")
+        message(FATAL_ERROR "Manif not found. If on Ubuntu install with 'sudo apt install -f ./pkg/libmanif-dev.deb'. Or build from source with 'submodule update --init deps/manif' and make sure it is non-empty")
     endif()
 endif()
 
@@ -292,6 +296,10 @@ mrover_link_component(tag_detector lie opencv_core opencv_aruco opencv_imgproc l
 mrover_executable_from_component(stereo_tag_detector perception/executables/stereo_tag_detector.cpp tag_detector_component)
 mrover_executable_from_component(image_tag_detector perception/executables/image_tag_detector.cpp tag_detector_component)
 
+mrover_add_node(cost_map perception/cost_map/*.cpp perception/cost_map/pch.hpp)
+ament_target_dependencies(cost_map rclcpp tf2 tf2_ros)
+target_link_libraries(cost_map lie parameter_utils)
+
 # Embedded
 mrover_add_header_only_library(messaging esw/messaging)
 
@@ -359,6 +367,8 @@ install(PROGRAMS
     localization/basestation_gps_driver.py
     superstructure/superstructure.py
     scripts/debug_course_publisher.py
+    scripts/astar_debug.py
+    scripts/custom_costmap.py
     scripts/visualizer.py
     scripts/image_capture.py
 

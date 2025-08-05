@@ -52,15 +52,24 @@ class StateMachine(Generic[ContextType]):
         if self.off_lambda is not None and self.off_lambda(self.context) and self.off_state is not None:
             next_state = self.off_state
         else:
-            next_state = current_state.on_loop(self.context)
+            # TODO: Make sure no exceptions
+            try:
+                next_state = current_state.on_loop(self.context)
+            except Exception as e:
+                self.logger.debug(f"Error in {str(current_state)}: {e}")
+
         if type(next_state) not in self.state_transitions[type(current_state)]:
             raise Exception(f"Invalid transition from {current_state} to {next_state}")
         if type(next_state) is not type(current_state):
-            self.logger.debug(f"{self.name} state machine, transitioning to {str(next_state)}")
-            current_state.on_exit(self.context)
-            self.transition_log.append(TransitionRecord(time.time(), str(current_state), str(next_state)))
-            self.current_state = next_state
-            self.current_state.on_enter(self.context)
+            # TODO: Make sure no exceptions
+            try:
+                self.logger.debug(f"{self.name} state machine, transitioning to {str(next_state)}")
+                current_state.on_exit(self.context)
+                self.transition_log.append(TransitionRecord(time.time(), str(current_state), str(next_state)))
+                self.current_state = next_state
+                self.current_state.on_enter(self.context)
+            except Exception as e:
+                self.logger.debug(f"Error in {str(current_state)}: {e}")
 
     def add_transition(self, state_from: State, state_to: State) -> None:
         self.state_transitions[type(state_from)].add(type(state_to))
