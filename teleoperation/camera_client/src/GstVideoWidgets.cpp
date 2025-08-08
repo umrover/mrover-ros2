@@ -7,8 +7,16 @@ GstVideoWidget::GstVideoWidget(QWidget* parent) : QVideoWidget(parent) {
     mPlayer->setVideoOutput(this);
 }
 
-auto GstVideoWidget::setGstPipeline(std::string const& pipeline) -> void {
-    mPlayer->setMedia(QUrl(std::format("gst-pipeline: {} ! videoconvert ! xvimagesink name=\"qtvideosink\" sync=false", pipeline).c_str()));
+auto GstVideoWidget::setGstPipeline(std::string const& pipeline, bool enableAruco) -> void {
+    if (enableAruco)
+    {
+        mPlayer->setMedia(QUrl(std::format("gst-pipeline: {} videoconvert ! aruco ! videoconvert ! xvimagesink name=\"qtvideosink\" sync=false", pipeline).c_str()));
+    }
+    else 
+    {
+        mPlayer->setMedia(QUrl(std::format("gst-pipeline: {} ! videoconvert ! xvimagesink name=\"qtvideosink\" sync=false", pipeline).c_str()));
+    }
+    
     play();
 }
 
@@ -46,7 +54,7 @@ GstVideoGridWidget::GstVideoGridWidget(QWidget* parent)
     setLayout(mMainLayout);
 }
 
-auto GstVideoGridWidget::addGstVideoWidget(std::string const& name, std::string const& pipeline) -> bool {
+auto GstVideoGridWidget::addGstVideoWidget(std::string const& name, std::string const& pipeline, bool enableAruco) -> bool {
     if (mGstVideoBoxes.contains(name)) {
         mError = ExistsError;
         mErrorString = "Camera name already exists";
@@ -60,7 +68,7 @@ auto GstVideoGridWidget::addGstVideoWidget(std::string const& name, std::string 
 
     gstVideoBoxWidget->setMinimumSize(640, 360);
 
-    gstVideoBoxGstVideoWidget->setGstPipeline(pipeline);
+    gstVideoBoxGstVideoWidget->setGstPipeline(pipeline, enableAruco);
     if (gstVideoBoxGstVideoWidget->isError()) {
         mError = MediaPlayerError;
         mErrorString = gstVideoBoxGstVideoWidget->errorString();

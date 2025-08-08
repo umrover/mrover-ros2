@@ -83,5 +83,5 @@ void GstRtpVideoCreatorWidget::onSubmitClicked() {
     }
 
     setWaiting(true);
-    emit createRequested(name, pipeline);
+    emit createRequested(name, pipeline, false);
 }

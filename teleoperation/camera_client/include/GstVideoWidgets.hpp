@@ -11,7 +11,7 @@ namespace mrover {
     public:
         explicit GstVideoWidget(QWidget* parent = nullptr);
 
-        auto setGstPipeline(std::string const& pipeline) -> void;
+        auto setGstPipeline(std::string const& pipeline, bool enableAruco) -> void;
 
         [[nodiscard]] auto errorString() const -> QString;
         [[nodiscard]] auto error() const -> QMediaPlayer::Error;
@@ -53,7 +53,7 @@ namespace mrover {
     public:
         explicit GstVideoGridWidget(QWidget* parent = nullptr);
 
-        auto addGstVideoWidget(std::string const& name, std::string const& pipeline) -> bool;
+        auto addGstVideoWidget(std::string const& name, std::string const& pipeline, bool enableAruco) -> bool;
         auto getGstVideoWidget(std::string const& name) -> GstVideoWidget*;
         auto playVideo(std::string const& name) -> bool;
         auto pauseVideo(std::string const& name) -> bool;

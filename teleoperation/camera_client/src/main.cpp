@@ -33,7 +33,7 @@ namespace mrover {
         }
 
     public:
-        explicit CameraClientNode(std::shared_ptr<CameraClientMainWindow> qtGui) : Node("camera_client"), mQtGui(std::move(qtGui)) {
+        explicit CameraClientNode(std::shared_ptr<CameraClientMainWindow> qtGui, bool enableAruco) : Node("camera_client"), mQtGui(std::move(qtGui)) {
             RCLCPP_INFO(get_logger(), "Camera client initialized");
 
             declare_parameter("cameras", rclcpp::ParameterType::PARAMETER_STRING_ARRAY);
@@ -123,7 +123,7 @@ namespace mrover {
                     return true;
                 };
 
-                mQtGui->createCamera(cameraName, pipeline);
+                mQtGui->createCamera(cameraName, pipeline, enableAruco);
                 mQtGui->getCameraSelectorWidget()->addMediaControls(cameraName, std::move(pipelinePauseRequest), std::move(pipelinePlayRequest), std::move(pipelineStopRequest));
                 mQtGui->getCameraSelectorWidget()->addScreenshotButton(cameraName, std::move(screenshotRequest));
             }
@@ -139,7 +139,7 @@ auto main(int argc, char** argv) -> int {
     qtGui->show();
 
     rclcpp::init(argc, argv);
-    auto node = std::make_shared<mrover::CameraClientNode>(qtGui);
+    auto node = std::make_shared<mrover::CameraClientNode>(qtGui, false);
 
     rclcpp::executors::MultiThreadedExecutor exec;
     exec.add_node(node);
