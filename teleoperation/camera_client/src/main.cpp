@@ -139,7 +139,7 @@ auto main(int argc, char** argv) -> int {
     qtGui->show();
 
     rclcpp::init(argc, argv);
-    auto node = std::make_shared<mrover::CameraClientNode>(qtGui, false);
+    auto node = std::make_shared<mrover::CameraClientNode>(qtGui);
 
     rclcpp::executors::MultiThreadedExecutor exec;
     exec.add_node(node);
