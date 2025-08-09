@@ -21,7 +21,7 @@ namespace mrover {
     public:
         explicit CameraClientMainWindow(QWidget* parent = nullptr);
 
-        auto createCamera(std::string const& name, std::string const& pipeline, bool enableAruco) -> bool;
+        auto createCamera(std::string const& name, std::string const& pipeline) -> bool;
         auto getCameraSelectorWidget() -> VideoSelectorWidget*;
         static auto showImagePopup(QImage const& image) -> void;
 

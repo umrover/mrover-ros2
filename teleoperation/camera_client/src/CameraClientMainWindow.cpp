@@ -22,10 +22,10 @@ CameraClientMainWindow::CameraClientMainWindow(QWidget* parent) : QMainWindow(pa
     splitDockWidget(mCameraSelectorDock, mGstRtpVideoCreatorDock, Qt::Vertical);
 
     connect(mGstRtpVideoCreatorWidget, &GstRtpVideoCreatorWidget::createRequested,
-            this, [this](std::string const& name, std::string const& pipeline, bool enableAruco) {
+            this, [this](std::string const& name, std::string const& pipeline) {
                 qDebug() << "Creating camera with name:" << QString::fromStdString(name) << "and pipeline:" << QString::fromStdString(pipeline);
 
-                if (bool success = createCamera(name, pipeline, enableAruco); !success) {
+                if (bool success = createCamera(name, pipeline); !success) {
                     QMetaObject::invokeMethod(mGstRtpVideoCreatorWidget, "onCreateResult",
                                               Qt::QueuedConnection,
                                               Q_ARG(bool, false),
@@ -38,8 +38,8 @@ CameraClientMainWindow::CameraClientMainWindow(QWidget* parent) : QMainWindow(pa
             });
 }
 
-auto CameraClientMainWindow::createCamera(std::string const& name, std::string const& pipeline, bool enableAruco) -> bool {
-    mCameraGridWidget->addGstVideoWidget(name, pipeline, enableAruco);
+auto CameraClientMainWindow::createCamera(std::string const& name, std::string const& pipeline) -> bool {
+    mCameraGridWidget->addGstVideoWidget(name, pipeline);
     if (mCameraGridWidget->isError()) {
         return false;
     }

@@ -30,7 +30,7 @@ namespace mrover {
         explicit GstRtpVideoCreatorWidget(QWidget* parent = nullptr);
 
     signals:
-        void createRequested(std::string name, std::string pipeline, bool enableAruco);
+        void createRequested(std::string name, std::string pipeline);
 
     public slots:
         void onCreateResult(bool success, QString const& errorMsg = {});
