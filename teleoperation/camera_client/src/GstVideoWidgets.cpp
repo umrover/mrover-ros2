@@ -8,7 +8,15 @@ GstVideoWidget::GstVideoWidget(QWidget* parent) : QVideoWidget(parent) {
 }
 
 auto GstVideoWidget::setGstPipeline(std::string const& pipeline) -> void {
-    mPlayer->setMedia(QUrl(std::format("gst-pipeline: {} ! videoconvert ! xvimagesink name=\"qtvideosink\" sync=false", pipeline).c_str()));
+    bool enableAruco = false;
+    if (enableAruco)
+    {
+        mPlayer->setMedia(QUrl(std::format("gst-pipeline: {} videoconvert ! aruco ! videoconvert ! xvimagesink name=\"qtvideosink\" sync=false", pipeline).c_str()));
+    }
+    else 
+    {
+        mPlayer->setMedia(QUrl(std::format("gst-pipeline: {} ! videoconvert ! xvimagesink name=\"qtvideosink\" sync=false", pipeline).c_str()));
+    }
     play();
 }
 
