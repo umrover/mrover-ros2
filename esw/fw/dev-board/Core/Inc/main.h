@@ -63,6 +63,8 @@ void Error_Handler(void);
 #define RX_LED_GPIO_Port GPIOB
 #define RST_I2C_MUX_Pin GPIO_PIN_15
 #define RST_I2C_MUX_GPIO_Port GPIOB
+#define CAN_STB_Pin GPIO_PIN_15
+#define CAN_STB_GPIO_Port GPIOA
 #define LED0_Pin GPIO_PIN_5
 #define LED0_GPIO_Port GPIOB
 #define LED1_Pin GPIO_PIN_6
