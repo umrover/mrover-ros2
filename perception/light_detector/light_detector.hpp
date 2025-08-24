@@ -115,11 +115,13 @@ namespace mrover {
 
 		void decreaseHitCounts();
 
-		auto drawDetectionBoxes(cv::InputOutputArray image, std::span<Detection const> detections) -> void;
+		auto drawDetectionBoxes(cv::InputOutputArray image, std::span<Detection const> detections, std::vector<std::pair<int, int>> &centroids) -> void;
 
 		auto publishDebugObjects(cv::InputArray const& image) -> void;
 
-		auto caching() -> std::pair<std::pair<double, double>, bool>;
+		auto caching(const std::vector<std::pair<int,int>> &centroids) -> void;
+
+		auto convert(const std::vector<Detection> &detections) -> std::vector<std::pair<int, int>>;
 
 		auto calculateDistance(const std::pair<double, double> &p) -> double;
 

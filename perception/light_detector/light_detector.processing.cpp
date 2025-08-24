@@ -6,6 +6,8 @@
 #include <opencv2/core/types.hpp>
 #include <opencv2/imgproc.hpp>
 #include <optional>
+#include <rclcpp/logging.hpp>
+#include <string>
 
 namespace mrover {
     auto LightDetector::convertPointCloudToRGB(sensor_msgs::msg::PointCloud2::ConstSharedPtr const& msg, cv::Mat const& image) -> void {
@@ -52,46 +54,66 @@ namespace mrover {
         
         //Convert to blob
         cv::Mat blobSizedImage;
-        RCLCPP_INFO_STREAM(get_logger(),"CALLING RESIZE WITH RGB SIZE" << mImgRGB.cols << "," << mImgRGB.rows);
         mModel.rgbImageToBlob(mModel, mImgRGB, blobSizedImage, mImageBlob);
+        RCLCPP_INFO_STREAM(get_logger(),"BLOB DIMENSIONS" << blobSizedImage.cols << "," << blobSizedImage.rows);
 
 		std::vector<Detection> detections{};
         cv::Mat outputTensor;
         mTensorRT.modelForwardPass(mImageBlob, outputTensor);
         mModel.outputTensorToDetections(mModel, outputTensor, detections);
-        
-        drawDetectionBoxes(blobSizedImage, detections);
+        std::vector<std::pair<int, int>> centroids = convert(detections);
+        drawDetectionBoxes(blobSizedImage, detections, centroids);
+        //convert centroids to se3 here and put into unordered_map
+        for(auto centroid : centroids){
+            std::optional<SE3d> lightInCamera = getPointFromPointCloud(msg, centroid);
+
+        }
+        //caching(detections);
         if (mDebug) {
             publishDebugObjects(blobSizedImage);
         }
     }
 
-    auto LightDetector::drawDetectionBoxes(cv::InputOutputArray image, std::span<Detection const> detections) -> void {
+    auto LightDetector::drawDetectionBoxes(cv::InputOutputArray image, std::span<Detection const> detections, std::vector<std::pair<int, int>> &centroids) -> void {
         // Draw the detected object's bounding boxes on the image for each of the objects detected
         std::array const fontColors{cv::Scalar{0, 4, 227}, cv::Scalar{232, 115, 5}};
         for (std::size_t i = 0; i < detections.size(); i++) {
             // Font color will change for each different detection
             cv::Scalar const& fontColor = fontColors.at(detections[i].classId);
             cv::rectangle(image, detections[i].box, fontColor, 1, cv::LINE_8, 0);
-
+            RCLCPP_INFO_STREAM(get_logger(), "TOP LEFT X: " << detections[i].box.x << " TOP LEFT Y: " << detections[i].box.y << " WIDTH: " << detections[i].box.width << " HEIGHT: " << detections[i].box.height);
             // Put the text on the image
             cv::Point textPosition(80, static_cast<int>(80 * (i + 1)));
             constexpr int fontSize = 1;
             constexpr int fontWeight = 2;
-            putText(image, detections[i].className, textPosition, cv::FONT_HERSHEY_COMPLEX, fontSize, fontColor, fontWeight); // Putting the text in the matrix
+            putText(image, detections[i].className + "X: " + std::to_string(centroids[i].first) + "Y: " + std::to_string(centroids[i].second) , textPosition, cv::FONT_HERSHEY_COMPLEX, fontSize, fontColor, fontWeight); // Putting the text in the matrix
         }
     }
 
-    auto LightDetector::caching() -> std::pair<std::pair<double, double>, bool>{
+    auto LightDetector::convert(const std::vector<Detection> &detections) -> std::vector<std::pair<int, int>>{
+        std::vector<std::pair<int, int>> centroids;
+        for(auto &detection : detections){
+            int height = detection.box.height;
+            int width = detection.box.width;
+            int top_left_x = detection.box.x;
+            int top_left_y = detection.box.y;
+            int center_x = top_left_x+static_cast<int>(width/2);
+            int center_y = top_left_y+static_cast<int>(height/2);
+            std::pair<int, int> centroid = {center_x, center_y};
+            centroids.push_back(centroid);
+            RCLCPP_INFO_STREAM(get_logger(), "CENTROID X: " << center_x << " CENTROID Y: " << center_y);
+        }
+        return centroids;
+    }
+
+    auto LightDetector::caching(const std::vector<std::pair<int, int>> &centroids) -> void{
         double shortest_distance = std::numeric_limits<double>::infinity();
-        bool found = false;
         std::pair<double, double> closest;
         //RCLCPP_INFO_STREAM(get_logger(),"num points: " << mHitCounts.size());
         for(auto const& [point, hc] : mHitCounts){
             //RCLCPP_INFO_STREAM(get_logger(),"current point: " << point.first << ", " << point.second << ": " << hc);
             double distance;
-            if(hc >= mPublishThreshold){ //DANTODO: ASK appropriate hitcount requirement to be considered a light
-                found = true;
+            if(hc >= mPublishThreshold){
                 RCLCPP_INFO_STREAM(get_logger(),"Found a new point");
                 RCLCPP_INFO_STREAM(get_logger(),"This new point was at " << point.first << ", " << point.second);
                 distance = calculateDistance(point);
@@ -100,13 +122,7 @@ namespace mrover {
                     closest = point;
                 }
             }
-            // if(found){
-            //     //RCLCPP_INFO_STREAM(get_logger(),"Finished with a new point!");
-            // } else{
-            //     //RCLCPP_INFO_STREAM(get_logger(),"Didn't find a new point :(");
-            // }
         }
-        return std::pair<std::pair<double, double>, bool>(closest, found);
     }
 
     auto LightDetector::calculateDistance(const std::pair<double, double> &p) -> double{
@@ -135,12 +151,6 @@ namespace mrover {
     void LightDetector::increaseHitCount(std::optional<SE3d> const& light){
         if(light.has_value()){
             SE3d cameraToMap = SE3Conversions::fromTfTree(mTfBuffer, mCameraFrame, mWorldFrame);
-            
-            /* auto lightLocation = light.value().translation();
-            auto locx = static_cast<double>(lightLocation.x());
-            auto locy = static_cast<double>(lightLocation.y());
-            RCLCPP_INFO_STREAM(get_logger(),"current point: " << locx << ", " << locy);
-             */
             SE3d lightInMap = cameraToMap * light.value();
 
             auto location = lightInMap.translation();
