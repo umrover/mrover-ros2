@@ -29,7 +29,6 @@ class StatePublisher:
         self.state_publisher = node.create_publisher(StateMachineStateUpdate, state_pub_topic, 1)
         node.create_timer(1 / structure_update_rate_hz, self.publish_structure)
         node.create_timer(1 / state_update_rate_hz, self.publish_state)
-        self.state_log = open("./state_machine/state_log.txt", "w")
 
     def publish_structure(self) -> None:
         structure = StateMachineStructure()
@@ -44,7 +43,8 @@ class StatePublisher:
     def publish_state(self) -> None:
         current_state = self.state_machine.current_state
         if current_state != self.last_state:
-            self.state_log.write(str(current_state) + "\n")
+            with open("./state_machine/state_log.txt", "w") as state_log:
+                state_log.write(str(current_state) + "\n")
             self.last_state = current_state
         state = StateMachineStateUpdate(state=str(current_state), state_machine_name=self.state_machine.name)
         self.state_publisher.publish(state)

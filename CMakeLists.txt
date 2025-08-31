@@ -238,7 +238,7 @@ target_include_directories(simulator SYSTEM PRIVATE ${BULLET_INCLUDE_DIRS} ${OPE
 # Localization
 
 mrover_add_node(rover_gps_driver localization/rover_gps_driver.cpp)
-ament_target_dependencies(rover_gps_driver rclcpp sensor_msgs rtcm_msgs)
+ament_target_dependencies(rover_gps_driver rclcpp sensor_msgs rtcm_msgs parameter_utils)
 
 mrover_add_node(heading_filter localization/heading_filter.cpp)
 ament_target_dependencies(heading_filter rclcpp rcutils sensor_msgs builtin_interfaces message_filters)
@@ -396,7 +396,6 @@ install(PROGRAMS
     perception/panorama.py
     navigation/nav.py
     navigation/stuck_detector/stuck_detector.py
-    localization/rover_gps_driver.py
     localization/gps_linearization.py
     localization/basestation_gps_driver.py
     superstructure/superstructure.py

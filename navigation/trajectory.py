@@ -158,15 +158,3 @@ class SearchTrajectory(Trajectory):
             spiral_coordinates_r3,
             tag_id,
         )
-
-
-# # Create a SearchTrajectory with a spiral pattern, inserting points if segment length is too large
-# spiral_trajectory = SearchTrajectory.spiral_traj(
-#     center=np.array([0, 0, 0]),
-#     coverage_radius=coverage_radius,
-#     distance_between_spirals=distance_between_spirals,
-#     segments_per_rotation=num_segments_per_rotation,
-#     tag_id=1,
-#     insert_extra=insert_extra,
-#     max_segment_length=max_segment_length
-# )

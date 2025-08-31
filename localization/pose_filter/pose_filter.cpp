@@ -5,12 +5,12 @@ namespace mrover {
     PoseFilter::PoseFilter() : Node("pose_filter") {
 
         declare_parameter("world_frame", rclcpp::ParameterType::PARAMETER_STRING);
-        declare_parameter("rover_frame", rclcpp::ParameterType::PARAMETER_STRING);
+        declare_parameter("gps_frame", rclcpp::ParameterType::PARAMETER_STRING);
         declare_parameter("rover_heading_change_threshold", rclcpp::ParameterType::PARAMETER_DOUBLE);
         declare_parameter("minimum_linear_speed", rclcpp::ParameterType::PARAMETER_DOUBLE);
 
         world_frame = get_parameter("world_frame").as_string();
-        rover_frame = get_parameter("rover_frame").as_string();
+        gps_frame = get_parameter("gps_frame").as_string();
         rover_heading_change_threshold = get_parameter("rover_heading_change_threshold").as_double();
         minimum_linear_speed = get_parameter("minimum_linear_speed").as_double();
 
@@ -80,7 +80,7 @@ namespace mrover {
             pose_in_map.asSO3() = corrected_orientation;
         }
 
-        SE3Conversions::pushToTfTree(tf_broadcaster, rover_frame, world_frame, pose_in_map, get_clock()->now());
+        SE3Conversions::pushToTfTree(tf_broadcaster, gps_frame, world_frame, pose_in_map, get_clock()->now());
     }
 
     void PoseFilter::drive_forward_callback() {
@@ -110,8 +110,8 @@ namespace mrover {
         for (rclcpp::Time t = start; t < end; t += STEP) {
 
             try {
-                auto rover_in_map_old = SE3Conversions::fromTfTree(tf_buffer, rover_frame, world_frame, t - STEP);
-                auto rover_in_map_new = SE3Conversions::fromTfTree(tf_buffer, rover_frame, world_frame, t);
+                auto rover_in_map_old = SE3Conversions::fromTfTree(tf_buffer, gps_frame, world_frame, t - STEP);
+                auto rover_in_map_new = SE3Conversions::fromTfTree(tf_buffer, gps_frame, world_frame, t);
                 R3d rover_velocity_in_map = (rover_in_map_new.translation() - rover_in_map_old.translation()) / STEP.seconds();
                 R3d rover_angular_velocity_in_map = (rover_in_map_new.asSO3() - rover_in_map_old.asSO3()).coeffs();
                 rover_velocity_sum += rover_velocity_in_map.head<2>();

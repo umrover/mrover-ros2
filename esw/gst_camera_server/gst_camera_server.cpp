@@ -72,8 +72,6 @@ namespace mrover {
             pipeline.pushBack("queue");
         } else if (captureIsDev()) {
             pipeline.pushBack(gst::video::v4l2::createSrc(mDeviceNode, mStreamCaptureFormat, gst::addProperty("is-live", true)));
-            // gst::video::v4l2::addProperty("extra-controls", "\"c,white_balance_temperature_auto=0,white_balance_temperature=4000\"")
-            // if (mDisableAutoWhiteBalance) mStreamLaunch += "extra-controls=\"c,white_balance_temperature_auto=0,white_balance_temperature=4000\" ";
         } else {
             pixelFormat = gst::video::v4l2::PixelFormat::YUYV;
             pipeline.pushBack("videotestsrc");
@@ -86,9 +84,6 @@ namespace mrover {
             if (pixelFormat == gst::video::v4l2::PixelFormat::MJPG) {
                 // TODO(quintin): I had to apply this patch: https://forums.developer.nvidia.com/t/macrosilicon-usb/157777/4
                 //                nvv4l2camerasrc only supports UYUV by default, but our cameras are YUY2 (YUYV)
-                // "nvv4l2camerasrc device={} "
-                // "! video/x-raw(memory:NVMM),format=YUY2,width={},height={},framerate={}/1 "
-
                 // Mostly used with USB cameras, MPEG capture uses way less USB bandwidth
                 pipeline.pushBack("nvv4l2decoder", gst::addProperty("mjpeg", 1)); // Hardware-accelerated JPEG decoding, output is apparently some unknown proprietary format
                 pipeline.pushBack("nvvidconv");                                   // Convert from proprietary format to NV12 so the encoder understands it
@@ -434,8 +429,6 @@ namespace mrover {
                     .height = static_cast<std::uint16_t>(imageCaptureImageHeight),
                     .framerate = static_cast<std::uint16_t>(imageCaptureImageFramerate),
             };
-
-            // declare_parameter("disable_auto_white_balance", rclcpp::ParameterType::PARAMETER_BOOL);
 
             mMediaControlServer = create_service<srv::MediaControl>(
                     std::format("{}_media_control", cameraName),

@@ -36,11 +36,7 @@ namespace mrover {
         });
 
         mPCDebugPub = create_publisher<sensor_msgs::msg::PointCloud2>("cost_map/debug_pc", 1);
-        // mImuSub = mNh.subscribe<sensor_msgs::Imu>("imu/data", 1, [this](sensor_msgs::ImuConstPtr const&) {
-        //     mLastImuTime = ros::Time::now();
-        // });
-        // RCLCPP_INFO_STREAM(get_logger(), std::format("frame: {}", mMapFrame));
-        mGlobalGridMsg.info.resolution = mResolution;
+
         // Number of cells horizontally
         mGlobalGridMsg.info.width = static_cast<int>(mSize / mResolution);
         mWidth = static_cast<int>(mGlobalGridMsg.info.width);

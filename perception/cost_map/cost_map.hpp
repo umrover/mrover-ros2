@@ -23,10 +23,6 @@ namespace mrover {
         rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr mCostMapPub;
         rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr mPcSub;
 
-        // TODO(quintin): This is a hack
-        // ros::Subscriber mImuSub;
-        // std::optional<ros::Time> mLastImuTime;
-
         double mZPercent{}, mZThreshold{};
         double mAlpha{};
         double mNearClip{}, mFarClip{}, mNearWidth{}, mFarWidth{}, mTopClip{};
@@ -66,14 +62,10 @@ namespace mrover {
 
         auto moveCostMapCallback(mrover::srv::MoveCostMap::Request::ConstSharedPtr& req, mrover::srv::MoveCostMap::Response::SharedPtr& res) -> void;
 
-        // To Test (CLI): ros2 service call /dilate_cost_map mrover/srv/DilateCostMap "{d_amt: [enter here]}"
+        // To Test (CLI): ros2 service call /dilate_cost_map mrover/srv/DilateCostMap "{dilation_amount: [enter here]}"
         auto dilateCostMapCallback(mrover::srv::DilateCostMap::Request::ConstSharedPtr& req, mrover::srv::DilateCostMap::Response::SharedPtr& res) -> void;
 
 		void uploadPC();
-
-        // CUDA functions
-        // auto fillBinsGPU(sensor_msgs::msg::PointCloud2::ConstSharedPtr const& msg) -> void;
-        // auto checkCudaError(cudaError_t err) -> void;
 
         // Bin vector coordinate
         struct Coordinate{

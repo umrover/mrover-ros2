@@ -28,11 +28,6 @@ namespace mrover {
         assert(msg->width > 0);
 
         // Push transforms b/w clip box and map frame to tf tree
-        // SE3d rightBot(R3d{mRightClip, mNearClip, 0}, SO3d::Identity());
-        // SE3d rightTop(R3d{mRightClip, mFarClip, 0}, SO3d::Identity());
-        // SE3d leftBot(R3d{mLeftClip, mNearClip, 0}, SO3d::Identity());
-        // SE3d leftTop(R3d{mLeftClip, mFarClip, 0}, SO3d::Identity());
-
         SE3d rightBot(R3d{mNearClip, -mNearWidth, 0}, SO3d::Identity());
         SE3d rightTop(R3d{mFarClip, -mFarWidth, 0}, SO3d::Identity());
         SE3d leftBot(R3d{mNearClip, mNearWidth, 0}, SO3d::Identity());
@@ -334,8 +329,8 @@ namespace mrover {
 
     auto CostMapNode::dilateCostMapCallback(mrover::srv::DilateCostMap::Request::ConstSharedPtr& req, mrover::srv::DilateCostMap::Response::SharedPtr& res) -> void{
         // TODO: consider floor vs ceil here, currently rounds down to nearest cell dilation amt
-        RCLCPP_INFO_STREAM(get_logger(), "Incoming dilation request: " << req->d_amt);
-        mDilateAmt = static_cast<int>(floor(static_cast<double>(req->d_amt/mResolution)));
+        RCLCPP_INFO_STREAM(get_logger(), "Incoming dilation request: " << req->dilation_amount);
+        mDilateAmt = static_cast<int>(floor(static_cast<double>(req->dilation_amount/mResolution)));
         res->success = true;
         RCLCPP_INFO_STREAM(get_logger(), "Done changing dilation");
     }

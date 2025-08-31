@@ -84,7 +84,7 @@ class Panorama(Node):
 
         self.stitched_pc = np.empty((0, 8), dtype=np.float32)
         self.sync = message_filters.ApproximateTimeSynchronizer([self.pc_sub, self.imu_sub], 10, 1)
-        self.sync.registerCallback(self.synced_gps_imu_callback)
+        self.sync.registerCallback(self.synced_gps_pc_callback)
 
         # Image Stitching Variables
         self.img_sub = self.create_subscription(Image, "/zed_mini/left/image", self.image_callback, 1);
@@ -105,7 +105,7 @@ class Panorama(Node):
         pc[:, 0:3] = np.delete(rotated_points, 3, 1)
         return pc
 
-    def synced_gps_imu_callback(self, pc_msg: PointCloud2, imu_msg: Imu):
+    def synced_gps_pc_callback(self, pc_msg: PointCloud2, imu_msg: Imu):
         # extract xyzrgb fields
         # get every tenth point to make the pc sparser
         # TODO: dtype hard-coded to float32

@@ -83,8 +83,6 @@ def generate_launch_description():
         )
     )
 
-    # TODO (ali): add 3 science cams
-
     return LaunchDescription(
         [
             launch_include_jetson_base,

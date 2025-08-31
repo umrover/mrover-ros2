@@ -56,7 +56,6 @@ namespace mrover {
         auto imageCaptureServerCallback(std_srvs::srv::Trigger::Request::ConstSharedPtr const&, std_srvs::srv::Trigger::Response::SharedPtr const& res) -> void;
 
     public:
-        // __attribute__ ((visibility("default")))
         explicit GstCameraServer(rclcpp::NodeOptions const& options = rclcpp::NodeOptions());
 
         ~GstCameraServer() override;

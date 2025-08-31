@@ -12,10 +12,6 @@ namespace mrover {
 
         rclcpp::Publisher<sensor_msgs::msg::NavSatFix>::SharedPtr gps_pub;
         rclcpp::Publisher<mrover::msg::FixStatus>::SharedPtr gps_status_pub;
-        // rclcpp::Publisher<mrover::msg::Heading>::SharedPtr heading_pub;
-        // rclcpp::Publisher<mrover::msg::FixStatus>::SharedPtr heading_status_pub;
-        // rclcpp::Publisher<geometry_msgs::msg::Vector3Stamped>::SharedPtr velocity_pub;
-        // rclcpp::Publisher<mrover::msg::FixStatus>::SharedPtr velocity_status_pub;
         rclcpp::Publisher<mrover::msg::SatelliteSignal>::SharedPtr satellite_signal_pub;
         rclcpp::Subscription<rtcm_msgs::msg::Message>::SharedPtr rtcm_sub;
 
@@ -24,13 +20,18 @@ namespace mrover {
 
         unsigned long baud;
         std::string port;
-        std::string frame_id;
+        std::string gps_frame;
 
         // data store
         std::map<std::string, std::string> headers_to_constellations;
         std::map<std::string, std::vector<uint8_t> > satellite_signals;
 
         const uint8_t MAX_SATELLITE_SIGNAL_SIZE = 36;
+
+        // reference coordinates
+        double ref_lat;
+        double ref_lon;
+        double ref_alt;
         
 
     public:

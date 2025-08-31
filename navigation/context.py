@@ -493,10 +493,6 @@ class Context:
 
         self.env.cost_map.data = filtered_cost_map
 
-
-        # array: known_free_cost
-        # self.env.cost_map.data /= 100.0
-
     def move_costmap(self, course_name="base_link"):
         if self.node.get_parameter("costmap.custom_costmap").value:
             return
@@ -520,7 +516,7 @@ class Context:
         self.node.get_logger().info(f"Requesting to dilate cost to {new_radius}")
 
         req = DilateCostMap.Request()
-        req.d_amt = new_radius
+        req.dilation_amount = new_radius
         res: DilateCostMap.Response
         # res = self.dilate_cli.call(req)
         if self.dilate_future is None:

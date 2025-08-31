@@ -153,13 +153,6 @@ class AStar:
 
 
                     # TODO: Decide if we want to perform a mean filter here or in the callback. Probably best to do so in the callback
-                    # for rel_pos2 in adjacent_squares:
-                    #     dilate_pos = tuple(np.array(neighbor_pos) + rel_pos2)
-                    #     if not (0 <= dilate_pos[0] < costmap2d.shape[0] and 0 <= dilate_pos[1] < costmap2d.shape[1]):
-                    #         cost += costmap2d[neighbor_pos[0], neighbor_pos[1]] // 8
-
-                    #     else:
-                    #         cost += costmap2d[dilate_pos[0], dilate_pos[1]] // 8
 
                     tentative_g_score = g_scores[current] + d * cost
 
