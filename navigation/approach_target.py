@@ -35,7 +35,7 @@ class ApproachTargetState(State):
 
         if context.course is None:
             return
-        
+
         state = "Long Range State" if isinstance(self, LongRangeState) else "Approach Target State"
         context.node.get_logger().info(f"Entered {state}")
         context.rover.previous_state = LongRangeState() if isinstance(self, LongRangeState) else ApproachTargetState()
@@ -81,7 +81,6 @@ class ApproachTargetState(State):
             context.course.increment_waypoint()
             context.env.arrived_at_target = True
             return state.DoneState()
-            
 
         return self
 
@@ -127,7 +126,7 @@ class ApproachTargetState(State):
 
             if candidates:
                 # Find the nearest low-cost point to the target position
-                nearest_low_cost_point = min(candidates, key=lambda p: np.linalg.norm(p - target_position))
+                nearest_low_cost_point = min(candidates, key=lambda p: np.linalg.norm(p - target_position))  # type: ignore
 
                 # Update internal state (if necessary) or transition to the new point
                 self.target_position = nearest_low_cost_point
@@ -185,7 +184,9 @@ class ApproachTargetState(State):
             costmap_length = context.env.cost_map.data.shape[0]
             curr_point = cartesian_to_ij(context, self.target_traj.get_current_point())
             if not 0 <= int(curr_point[0]) < costmap_length and 0 <= int(curr_point[1]) < costmap_length:
-                context.node.get_logger().warn("Trajectory point out of the map. Clearing trajectory and trying again...")
+                context.node.get_logger().warn(
+                    "Trajectory point out of the map. Clearing trajectory and trying again..."
+                )
                 self.target_traj.clear()
                 return self
 

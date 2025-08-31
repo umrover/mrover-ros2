@@ -109,8 +109,8 @@ class CostmapSearchState(State):
         try:
             self.astar_traj = self.astar.generate_trajectory(context, self.spiral_traj.get_current_point())
         except Exception as e:
-                context.node.get_logger().info(str(e))
-                return self
+            context.node.get_logger().info(str(e))
+            return self
         # If a spiral point is unreachable, then skip it and generate a new trajectory
         if self.astar_traj.empty():
             context.node.get_logger().info(f"Skipping unreachable spiral point")
@@ -124,7 +124,7 @@ class CostmapSearchState(State):
     def on_loop_costmap_enabled(self, context: Context) -> State:
         if not self.USE_COSTMAP:
             return self
-        
+
         if not context.dilation_done():
             context.node.get_logger().info("Awaiting dilation future to complete")
             return self
@@ -222,10 +222,10 @@ class CostmapSearchState(State):
     def on_loop_costmap_disabled(self, context: Context):
         if self.USE_COSTMAP:
             return self
-    
+
         if context.course is None:
-            return self 
-        
+            return self
+
         curr_spiral_point = self.spiral_traj.get_current_point()
         cmd_vel, arrived = context.drive.get_drive_command(
             curr_spiral_point,
@@ -292,7 +292,7 @@ class CostmapSearchState(State):
     def new_traj(self, context: Context) -> None:
         if context.course is None:
             return
-        
+
         search_center = context.course.current_waypoint()
         if search_center is None:
             return
@@ -307,5 +307,5 @@ class CostmapSearchState(State):
                 tag_id=search_center.tag_id,
                 insert_extra=True,
             )
-        
+
         self.spiral_traj.cur_pt = context.course.last_spiral_point

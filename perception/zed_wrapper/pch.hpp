@@ -4,6 +4,9 @@
 #include <tf2_ros/transform_listener.h>
 
 // Messages
+#include <mrover/msg/fix_status.hpp>
+#include <mrover/msg/fix_type.hpp>
+#include <mrover/msg/heading.hpp>
 #include <sensor_msgs/distortion_models.hpp>
 #include <sensor_msgs/image_encodings.hpp>
 #include <sensor_msgs/msg/camera_info.hpp>
@@ -12,9 +15,6 @@
 #include <sensor_msgs/msg/magnetic_field.hpp>
 #include <sensor_msgs/msg/point_cloud2.hpp>
 #include <sensor_msgs/point_cloud2_iterator.hpp>
-#include <mrover/msg/heading.hpp>
-#include <mrover/msg/fix_status.hpp>
-#include <mrover/msg/fix_type.hpp>
 
 // ZED
 #include <sl/Camera.hpp>

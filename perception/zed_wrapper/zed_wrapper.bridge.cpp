@@ -33,7 +33,7 @@ namespace mrover {
                 msg.linear_acceleration_covariance[i * 3 + j] = imuData.linear_acceleration_covariance(i, j);
     }
 
-    auto fillMagMessage(sl::SensorsData::MagnetometerData const& magData, sensor_msgs::msg::MagneticField& magMsg, mrover::msg::Heading &headingMsg) -> void {
+    auto fillMagMessage(sl::SensorsData::MagnetometerData const& magData, sensor_msgs::msg::MagneticField& magMsg, mrover::msg::Heading& headingMsg) -> void {
         magMsg.magnetic_field.x = magData.magnetic_field_calibrated.x;
         magMsg.magnetic_field.y = magData.magnetic_field_calibrated.y;
         magMsg.magnetic_field.z = magData.magnetic_field_calibrated.z;

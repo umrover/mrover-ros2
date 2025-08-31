@@ -7,6 +7,7 @@ from launch.actions import IncludeLaunchDescription
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch_ros.actions import Node
 
+
 def generate_launch_description():
 
     launch_include_jetson_base = IncludeLaunchDescription(
@@ -57,6 +58,6 @@ def generate_launch_description():
             arm_hw_bridge_node,
             boom_streamer_node,
             zed_mini_streamer_node,
-            launch_localization
+            launch_localization,
         ]
     )

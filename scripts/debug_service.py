@@ -11,13 +11,14 @@ SERVICE_TYPE = SetBool
 SERVICE_NAME = "/science_enable_heater_b0"
 
 SERVICE_TYPE = EnableBool
-SERVICE_NAME = '/sa_enable_pump_0'
+SERVICE_NAME = "/sa_enable_pump_0"
+
 
 class Service(Node):
 
     def __init__(self):
-        super().__init__('debug_service')
-        self.get_logger().info(f'Debugging: {SERVICE_NAME}' )
+        super().__init__("debug_service")
+        self.get_logger().info(f"Debugging: {SERVICE_NAME}")
         self.srv = self.create_service(SERVICE_TYPE, SERVICE_NAME, self.callback)
 
     def callback(self, request, response):

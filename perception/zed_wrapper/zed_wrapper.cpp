@@ -13,7 +13,8 @@ namespace mrover {
     }
 
 
-    ZedWrapper::ZedWrapper(rclcpp::NodeOptions const& options) : Node(NODE_NAME, options), mLoopProfilerGrab{get_logger()}, mLoopProfilerUpdate{get_logger()} {        try {
+    ZedWrapper::ZedWrapper(rclcpp::NodeOptions const& options) : Node(NODE_NAME, options), mLoopProfilerGrab{get_logger()}, mLoopProfilerUpdate{get_logger()} {
+        try {
             RCLCPP_INFO(this->get_logger(), "Created Zed Wrapper Node, %s", NODE_NAME);
 
             // Publishers

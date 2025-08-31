@@ -9,6 +9,7 @@ from state_machine.state import State
 from .context import Context
 from geometry_msgs.msg import Twist
 
+
 class JTurnAction(Enum):
     MOVING_BACK = 0
     J_TURNING = 1

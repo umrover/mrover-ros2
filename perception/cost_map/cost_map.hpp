@@ -14,11 +14,11 @@ namespace mrover {
         //     Every dilation pass dilates an additional [dilation] number of cells
         constexpr static int dilation = 1;
 
-		// Noise/Debug Vars
-		constexpr static bool useNoisyPointCloud = false;
-		constexpr static bool uploadDebugPointCloud = true;
-		rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr mPCDebugPub;
-		std::vector<Point> mInliers;
+        // Noise/Debug Vars
+        constexpr static bool useNoisyPointCloud = false;
+        constexpr static bool uploadDebugPointCloud = true;
+        rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr mPCDebugPub;
+        std::vector<Point> mInliers;
 
         rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr mCostMapPub;
         rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr mPcSub;
@@ -30,11 +30,11 @@ namespace mrover {
         double mSize{};       // Size of the square costmap in meters
         int mWidth{};         // Number of cells on the grid horizontally
         int mHeight{};        // Number of cells on the grid vertically
-        int mNumDivisions{}; 
+        int mNumDivisions{};
         int mDownSamplingFactor = 2;
         std::string mMapFrame;
         int mDilateAmt = 1;
-		
+
         tf2_ros::Buffer mTfBuffer{get_clock()};
         tf2_ros::TransformListener mTfListener{mTfBuffer};
         tf2_ros::TransformBroadcaster mTfBroadcaster{this};
@@ -47,9 +47,9 @@ namespace mrover {
         rclcpp::Service<mrover::srv::DilateCostMap>::SharedPtr mCostServer;
 
         struct BinEntry {
-                R3f pointInCamera;
-                R3f pointInMap;
-            };
+            R3f pointInCamera;
+            R3f pointInMap;
+        };
 
         using Bin = std::vector<BinEntry>;
 
@@ -65,30 +65,30 @@ namespace mrover {
         // To Test (CLI): ros2 service call /dilate_cost_map mrover/srv/DilateCostMap "{dilation_amount: [enter here]}"
         auto dilateCostMapCallback(mrover::srv::DilateCostMap::Request::ConstSharedPtr& req, mrover::srv::DilateCostMap::Response::SharedPtr& res) -> void;
 
-		void uploadPC();
+        void uploadPC();
 
         // Bin vector coordinate
-        struct Coordinate{
+        struct Coordinate {
             int row;
             int col;
 
-            auto operator-(Coordinate& other) const->Coordinate{
+            auto operator-(Coordinate& other) const -> Coordinate {
                 return {row - other.row, col - other.col};
             }
 
-            auto operator+(Coordinate& other) const->Coordinate{
+            auto operator+(Coordinate& other) const -> Coordinate {
                 return {row + other.row, col + other.col};
             }
         };
 
-        constexpr auto diArray()->std::array<CostMapNode::Coordinate,(2*dilation+1)*(2*dilation+1)>;
+        constexpr auto diArray() -> std::array<CostMapNode::Coordinate, (2 * dilation + 1) * (2 * dilation + 1)>;
 
         auto indexToCoordinate(int index) const -> Coordinate;
         auto coordinateToIndex(Coordinate c) const -> int;
         auto coordinateToIndex(Coordinate c, int width) const -> int;
 
         // Function for calculating bin-boundary intersections for ray tracing
-        auto isRayIntersection(const R3d& startSeg, const R3d& endSeg, double binCenterX, double binCenterY) -> std::int8_t;
+        auto isRayIntersection(R3d const& startSeg, R3d const& endSeg, double binCenterX, double binCenterY) -> std::int8_t;
     };
 
 } // namespace mrover

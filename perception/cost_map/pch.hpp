@@ -2,17 +2,17 @@
 
 // STL
 #include <algorithm>
+#include <array>
+#include <cstddef>
 #include <cstdint>
+#include <cstdlib>
 #include <execution>
 #include <format>
 #include <memory>
 #include <numeric>
 #include <random>
-#include <cstddef>
-#include <vector>
 #include <utility>
-#include <cstdlib>
-#include <array>
+#include <vector>
 
 // Eigen
 #include <Eigen/Core>
@@ -27,19 +27,19 @@
 
 // Other
 #include <lie.hpp>
+#include <manif/impl/se3/SE3.h>
 #include <parameter.hpp>
 #include <point.hpp>
 #include <rclcpp/logging.hpp>
-#include <manif/impl/se3/SE3.h>
 
 // Message types
 #include <nav_msgs/msg/detail/occupancy_grid__struct.hpp>
-#include <sensor_msgs/msg/detail/point_cloud2__struct.hpp>
 #include <nav_msgs/msg/occupancy_grid.hpp>
+#include <sensor_msgs/msg/detail/point_cloud2__struct.hpp>
 #include <sensor_msgs/msg/point_cloud2.hpp>
 #include <sensor_msgs/point_cloud2_iterator.hpp>
 
 // Services
-#include <rclcpp/service.hpp>
-#include<mrover/srv/dilate_cost_map.hpp>
+#include <mrover/srv/dilate_cost_map.hpp>
 #include <mrover/srv/move_cost_map.hpp>
+#include <rclcpp/service.hpp>

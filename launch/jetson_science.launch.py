@@ -9,6 +9,7 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch_ros.actions import Node, ComposableNodeContainer
 from launch_ros.descriptions import ComposableNode
 
+
 def generate_launch_description():
 
     launch_include_jetson_base = IncludeLaunchDescription(
@@ -90,6 +91,6 @@ def generate_launch_description():
             panorama_node,
             panorama_rviz,
             zed_mini_container,
-            launch_localization
+            launch_localization,
         ]
     )

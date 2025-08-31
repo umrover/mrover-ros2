@@ -30,6 +30,7 @@ from rclpy.subscription import Subscription
 from rclpy.time import Time
 from rclpy.task import Future
 from rclpy.client import Client
+from rclpy.executors import SingleThreadedExecutor
 from state_machine.state import State
 from std_msgs.msg import Bool, Header
 from .drive import DriveController
@@ -214,12 +215,11 @@ class Course:
     last_spiral_point: int
     waypoints: list[tuple[Waypoint, SE3]]
     waypoint_index: int = 0
-    
 
     def increment_waypoint(self) -> int:
         self.waypoint_index = min(self.waypoint_index + 1, len(self.waypoints))
         return self.waypoint_index >= len(self.waypoints)
-    
+
     def done(self) -> bool:
         return self.waypoint_index >= len(self.waypoints)
 
@@ -282,9 +282,12 @@ class Course:
 
         # If we see the target in the ZED, go to ApproachTargetState
         zed_pos = self.ctx.env.current_target_pos()
-        waypoint_pos= self.current_waypoint_pose_in_map().translation()
+        waypoint_pos = self.current_waypoint_pose_in_map().translation()
         distance_thresh = 12 if self.image_target_name()[:3] != "tag" else 22
-        if zed_pos is not None and ((zed_pos[0] - waypoint_pos[0]) ** 2 + (zed_pos[1] - waypoint_pos[1]) ** 2) ** 0.5 < distance_thresh:
+        if (
+            zed_pos is not None
+            and ((zed_pos[0] - waypoint_pos[0]) ** 2 + (zed_pos[1] - waypoint_pos[1]) ** 2) ** 0.5 < distance_thresh
+        ):
             return approach_target.ApproachTargetState()
 
         if not use_long_range:
@@ -304,13 +307,19 @@ def setup_course(ctx: Context, waypoints: list[tuple[Waypoint, SE3]]) -> Course:
         all_waypoint_info.append(waypoint_info)
 
         # Either this or the lookup transform is broken
-        SE3.to_tf_tree(ctx.tf_broadcaster, waypoint_in_world, f"course{index}", ctx.world_frame, ctx.node.get_clock().now().to_msg())
+        SE3.to_tf_tree(
+            ctx.tf_broadcaster,
+            waypoint_in_world,
+            f"course{index}",
+            ctx.world_frame,
+            ctx.node.get_clock().now().to_msg(),
+        )
     # Make the course out of just the pure waypoint objects which is the 0th element in the tuple
     return Course(
         ctx=ctx,
         waypoints=waypoints,
         course_data=CourseMsg(waypoints=[waypoint for waypoint, _ in waypoints]),
-        last_spiral_point=0
+        last_spiral_point=0,
     )
 
 
@@ -368,6 +377,7 @@ class Context:
     path_history_publisher: Publisher
     COSTMAP_THRESH: float
     current_dilation_radius: float
+    exec: SingleThreadedExecutor
 
     # Use these as the primary interfaces in states
     course: Course | None
@@ -385,7 +395,6 @@ class Context:
     dilate_cli: Client
     move_future: Future | None
     dilate_future: Future | None
-
 
     def setup(self, node: Node):
         from .state import OffState
@@ -470,26 +479,33 @@ class Context:
         cost_map_data[cost_map_data == -1] = unknown_cost
 
         self.env.cost_map.origin = np.array([msg.info.origin.position.x, msg.info.origin.position.y])
-        self.env.cost_map.resolution = msg.info.resolution / upsample_factor # meters/cell
-        self.env.cost_map.height = msg.info.height * upsample_factor # cells
-        self.env.cost_map.width = msg.info.width * upsample_factor # cells
+        self.env.cost_map.resolution = msg.info.resolution / upsample_factor  # meters/cell
+        self.env.cost_map.height = msg.info.height * upsample_factor  # cells
+        self.env.cost_map.width = msg.info.width * upsample_factor  # cells
 
         rover_pos = self.rover.get_pose_in_map()
-        if (rover_pos is not None):
+        if rover_pos is not None:
             rover_x_in_costmap = rover_pos.translation()[0] - msg.info.origin.position.x
             rover_y_in_costmap = rover_pos.translation()[1] - msg.info.origin.position.y
             cost_map_width_meters = msg.info.resolution * msg.info.width
             cost_map_height_meters = msg.info.resolution * msg.info.height
-            if (not (self.COSTMAP_THRESH * cost_map_width_meters <= rover_x_in_costmap <= (1 - self.COSTMAP_THRESH) * cost_map_width_meters) or not (self.COSTMAP_THRESH * cost_map_height_meters <= rover_y_in_costmap <= (1 - self.COSTMAP_THRESH) *  cost_map_height_meters)):
+            if not (
+                self.COSTMAP_THRESH * cost_map_width_meters
+                <= rover_x_in_costmap
+                <= (1 - self.COSTMAP_THRESH) * cost_map_width_meters
+            ) or not (
+                self.COSTMAP_THRESH * cost_map_height_meters
+                <= rover_y_in_costmap
+                <= (1 - self.COSTMAP_THRESH) * cost_map_height_meters
+            ):
                 self.node.get_logger().info(f"Rover (at {rover_pos.translation()}) not centered in map, moving...")
                 self.move_costmap()
             elif self.move_future is not None and self.move_future.done():
                 self.node.get_logger().info("Move costmap request done")
                 self.move_future = None
 
-        upsampled_cost_map = np.kron(cost_map_data, np.ones((upsample_factor,upsample_factor), np.float32))
-        filtered_cost_map = ndimage.uniform_filter(upsampled_cost_map, filter_size, mode='nearest')
-
+        upsampled_cost_map = np.kron(cost_map_data, np.ones((upsample_factor, upsample_factor), np.float32))
+        filtered_cost_map = ndimage.uniform_filter(upsampled_cost_map, filter_size, mode="nearest")
 
         self.env.cost_map.data = filtered_cost_map
 
@@ -529,14 +545,14 @@ class Context:
                 self.node.get_logger().info("Dilated costmap successfully")
             else:
                 self.node.get_logger().info("Failed to dilate costmap")
-        
+
     def shrink_dilation(self, shrink_factor=0.5) -> bool:
         self.current_dilation_radius = self.current_dilation_radius - shrink_factor
         if self.current_dilation_radius < 0:
             return False
         self.dilate_cost(self.current_dilation_radius)
         return True
-    
+
     def reset_dilation(self):
         self.current_dilation_radius = self.node.get_parameter("costmap.initial_inflation_radius").value
         self.dilate_cost(self.current_dilation_radius)
@@ -554,4 +570,3 @@ class Context:
                 self.dilate_cost(self.current_dilation_radius)
             return True
         return False
-

@@ -164,19 +164,17 @@ class Navigation(Node):
     def publish_path(self) -> None:
         if (rover_pose_in_map := self.ctx.rover.get_pose_in_map()) is not None:
             x, y, _ = rover_pose_in_map.translation()
-            if len(self.ctx.rover.path_history) >= 1 and ((x - self.ctx.rover.path_history[-1][0]) ** 2 + (y - self.ctx.rover.path_history[-1][1]) ** 2) ** 0.5 > 0.15:
+            if (
+                len(self.ctx.rover.path_history) >= 1
+                and ((x - self.ctx.rover.path_history[-1][0]) ** 2 + (y - self.ctx.rover.path_history[-1][1]) ** 2)
+                ** 0.5
+                > 0.15
+            ):
                 self.ctx.rover.path_history.append([x, y, 0])
-                if (len(self.ctx.rover.path_history) > self.HIST_SIZE):
+                if len(self.ctx.rover.path_history) > self.HIST_SIZE:
                     self.ctx.rover.path_history.popleft()
             else:
                 self.ctx.rover.path_history.append([x, y, 0])
-            # self.ctx.rover.path_history.poses.append(
-            #     PoseStamped(
-            #         header=self.ctx.rover.path_history.header,
-            #         pose=Pose(position=Point(x=x, y=y)),
-            #     )
-            # )
-            # self.ctx.path_history_publisher.publish(self.ctx.rover.path_history)
 
 
 if __name__ == "__main__":

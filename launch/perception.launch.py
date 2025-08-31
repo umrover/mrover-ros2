@@ -6,10 +6,11 @@ import launch
 from launch_ros.actions import Node, LoadComposableNodes
 from launch_ros.descriptions import ComposableNode
 
+
 def generate_launch_description():
 
     # image tag detector composable node
-    
+
     img_tag_detector_composable_node = ComposableNode(
         package="mrover",
         plugin="mrover::ImageTagDetector",
@@ -62,7 +63,7 @@ def generate_launch_description():
             stereo_tag_detector_composable_node,
             img_object_detector_composable_node,
             stereo_object_detector_composable_node,
-            cost_map_composable_node
+            cost_map_composable_node,
         ],
     )
 
@@ -72,7 +73,7 @@ def generate_launch_description():
         executable="usb_camera",
         name="long_range_cam",
         parameters=[Path(get_package_share_directory("mrover"), "config", "perception.yaml")],
-        respawn=True
+        respawn=True,
     )
 
     return launch.LaunchDescription([loaded_container, usb_cam])

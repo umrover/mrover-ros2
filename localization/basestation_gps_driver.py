@@ -20,6 +20,7 @@ from mrover.msg import SatelliteSignal
 from sensor_msgs.msg import NavSatFix
 from std_msgs.msg import Header
 
+
 class BaseStationDriverNode(Node):
     def __init__(self) -> None:
         super().__init__("basestation_gps_driver")
@@ -44,7 +45,7 @@ class BaseStationDriverNode(Node):
         self.serial = Serial(port, baud, timeout=1)
         self.reader = UBXReader(self.serial, protfilter=UBX_PROTOCOL | RTCM3_PROTOCOL)
 
-        self.satellite_signals = dict()
+        self.satellite_signals = dict[str, list]()
         self.satellite_signals["GPS"] = list()
         self.satellite_signals["SBAS"] = list()
         self.satellite_signals["Galileo"] = list()
@@ -62,7 +63,7 @@ class BaseStationDriverNode(Node):
         }
 
     def spin(self) -> None:
-        
+
         while rclpy.ok():
             if self.serial.in_waiting:
                 raw_msg, msg = self.reader.read()
@@ -78,12 +79,13 @@ class BaseStationDriverNode(Node):
                         lat, lon, alt = ecef2geodetic(rtcm_msg.DF025, rtcm_msg.DF026, rtcm_msg.DF027)
                         self.position_pub.publish(
                             NavSatFix(
-                                header=Header(stamp=self.get_clock().now().to_msg()), 
+                                header=Header(stamp=self.get_clock().now().to_msg()),
                                 latitude=lat,
                                 longitude=lon,
-                                altitude=alt)
+                                altitude=alt,
+                            )
                         )
-                        
+
                     self.rtcm_pub.publish(RTCMMessage(message=raw_msg))
                 elif msg.identity == "NAV-SVIN":
                     if not self.svin_started and msg.active:
@@ -108,7 +110,11 @@ class BaseStationDriverNode(Node):
 
                     for constellation in self.satellite_signals:
                         if self.satellite_signals[constellation]:
-                            self.satellite_signal_pub.publish(SatelliteSignal(constellation=constellation, signal_strengths=self.satellite_signals[constellation]))
+                            self.satellite_signal_pub.publish(
+                                SatelliteSignal(
+                                    constellation=constellation, signal_strengths=self.satellite_signals[constellation]
+                                )
+                            )
                             self.satellite_signals[constellation].clear()
 
             rclpy.spin_once(self, timeout_sec=0)

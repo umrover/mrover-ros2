@@ -52,44 +52,43 @@ class BackupState(State):
     def next_state(self, context: Context) -> State:
         if context.course is None or context.course.done():
             return state.DoneState()
-        
+
         return waypoint.WaypointState()
 
     def on_loop(self, context: Context) -> State:
         if context.rover.path_history is None or self.backtrack_traj.done():
             return self.next_state(context)
-        
+
         if context.node.get_clock().now() - self.start_time < Duration(seconds=self.WAIT_TIME):
             return self
-        
+
         rover_pose = context.rover.get_pose_in_map()
 
         if rover_pose is None:
             context.node.get_logger().warn("Rover has no pose, waiting...")
             context.rover.send_drive_command(Twist())
             return self
-        
+
         rover_position = rover_pose.translation()[0:2]
 
-        self.dist_traveled += float(np.linalg.norm(rover_position-self.prev_pos))
+        self.dist_traveled += float(np.linalg.norm(rover_position - self.prev_pos))
         self.prev_pos = rover_position
         if self.dist_traveled > self.BACKUP_DIST:
             return self.next_state(context)
-        
 
         cmd_vel, arrived = context.drive.get_drive_command(
-            self.backtrack_traj.get_current_point(), 
-            rover_pose, 
-            self.STOP_THRESH, 
-            self.DRIVE_FWD_THRESH, 
-            drive_back=True
+            self.backtrack_traj.get_current_point(),
+            rover_pose,
+            self.STOP_THRESH,
+            self.DRIVE_FWD_THRESH,
+            drive_back=True,
         )
 
         if arrived:
             self.backtrack_traj.increment_point()
             if self.backtrack_traj.done():
                 return self.next_state(context)
-        else: 
+        else:
             context.rover.send_drive_command(cmd_vel)
 
         return self

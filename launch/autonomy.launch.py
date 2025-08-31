@@ -51,6 +51,4 @@ def generate_launch_description():
         arguments=["0", "0", "1", "0", "0", "0", "1", "base_link", "zed_left_camera_frame"],
     )
 
-    return LaunchDescription(
-        [launch_jetson_base, launch_perception, base_link_to_zed, base_link_to_right_gps]
-    )
+    return LaunchDescription([launch_jetson_base, launch_perception, base_link_to_zed, base_link_to_right_gps])

@@ -51,7 +51,7 @@ class WaypointState(State):
     def on_enter(self, context: Context) -> None:
         if context.course is None:
             return
-        
+
         self.time_begin = context.node.get_clock().now()
         self.start_time = context.node.get_clock().now()
 
@@ -96,7 +96,7 @@ class WaypointState(State):
         self.astar_traj.clear()
 
     def on_loop_costmap_enabled(self, context: Context) -> State:
-        if not context.dilation_done(): 
+        if not context.dilation_done():
             context.node.get_logger().info("Awaiting dilation future to complete")
             return self
 
@@ -126,7 +126,10 @@ class WaypointState(State):
             return self
 
         # BEGINNING OF LOGIC
-        while is_high_cost_point(context=context, point=self.waypoint_traj.get_current_point()) and not self.waypoint_traj.is_last():
+        while (
+            is_high_cost_point(context=context, point=self.waypoint_traj.get_current_point())
+            and not self.waypoint_traj.is_last()
+        ):
             context.node.get_logger().info("Skipping high cost point")
             self.waypoint_traj.increment_point()
 
@@ -159,7 +162,7 @@ class WaypointState(State):
             except Exception as e:
                 context.node.get_logger().info(str(e))
                 return self
-                
+
             if self.astar_traj.empty():
                 context.node.get_logger().info("Skipping unreachable point")
                 self.waypoint_traj.increment_point()

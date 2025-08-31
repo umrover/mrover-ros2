@@ -63,12 +63,14 @@ class AStar:
         self.COSTMAP_THRESH = self.context.node.get_parameter("costmap.costmap_thresh").value
         self.ANGLE_THRESH = self.context.node.get_parameter("search.angle_thresh").value
 
-        if hasattr(context, 'course') and context.course is not None:
+        if hasattr(context, "course") and context.course is not None:
             current_waypoint = context.course.current_waypoint()
             if current_waypoint is None:
                 self.USE_COSTMAP = context.node.get_parameter("costmap.use_costmap").value
-            else: 
-                self.USE_COSTMAP = context.node.get_parameter("costmap.use_costmap").value or current_waypoint.enable_costmap
+            else:
+                self.USE_COSTMAP = (
+                    context.node.get_parameter("costmap.use_costmap").value or current_waypoint.enable_costmap
+                )
 
     def return_path(self, came_from: dict[tuple, tuple], current_pos: tuple):
         """
@@ -151,7 +153,6 @@ class AStar:
                     d = 1.0 if rel_pos[0] == 0 or rel_pos[1] == 0 else np.sqrt(2)
                     cost = max(costmap2d[neighbor_pos[0], neighbor_pos[1]], 1)
 
-
                     # TODO: Decide if we want to perform a mean filter here or in the callback. Probably best to do so in the callback
 
                     tentative_g_score = g_scores[current] + d * cost
@@ -193,7 +194,7 @@ class AStar:
             context.node.get_logger().warn("Rover has no pose, cannot astar...")
             context.rover.send_drive_command(Twist())
             return Trajectory(np.array([]))
-        
+
         rover_position_in_map = rover_SE3.translation()[:2]
 
         if not self.USE_COSTMAP or not self.use_astar(context=context, dest=dest):
@@ -202,7 +203,6 @@ class AStar:
         costmap_length = self.context.env.cost_map.data.shape[0]
         rover_ij = cartesian_to_ij(context, rover_position_in_map)
         dest_ij = cartesian_to_ij(context, dest)
-
 
         if not (0 <= int(dest_ij[0]) < costmap_length and 0 <= int(dest_ij[1]) < costmap_length) or not (
             0 <= int(rover_ij[0]) < costmap_length and 0 <= int(rover_ij[1]) < costmap_length
@@ -251,5 +251,7 @@ class AStar:
             # If occupancy_list is None, no path is needed (start == end).
             trajectory = Trajectory(np.array([]))
 
-        context.node.get_logger().info(f"A-Star pathplanning took {(context.node.get_clock().now() - start_time).nanoseconds / 10e9} seconds")
+        context.node.get_logger().info(
+            f"A-Star pathplanning took {(context.node.get_clock().now() - start_time).nanoseconds / 10e9} seconds"
+        )
         return Trajectory(trajectory.coordinates[1:]) if len(trajectory.coordinates) > 1 else trajectory

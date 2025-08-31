@@ -1,22 +1,22 @@
 #include "cost_map.hpp"
 
 namespace mrover {
-    CostMapNode::CostMapNode(rclcpp::NodeOptions const& options) : Node("cost_map", options){
+    CostMapNode::CostMapNode(rclcpp::NodeOptions const& options) : Node("cost_map", options) {
         std::vector<ParameterWrapper> params{
-            {"resolution", mResolution, 1.0}, // Base cell size
-            {"size", mSize, 60.0},
-            {"width", mWidth, static_cast<int>(mSize / mResolution)},   // THIS DECLARATION DOES NOT WORK
-            {"height", mHeight, static_cast<int>(mSize / mResolution)},
-            {"map_frame", mMapFrame, "map"},
-            {"near_clip", mNearClip, 2.0},
-            {"far_clip", mFarClip, 7.0},
-            {"near_width", mNearWidth, 1.0},
-            {"far_width", mFarWidth, 3.0},
-            {"top_clip", mTopClip, 1.0},
-            {"z_percent", mZPercent, 0.34}, // Tested on static visualizer
-            {"alpha", mAlpha, 0.05},
-            {"z_threshold", mZThreshold, 0.51}, // Tested on static visualizer
-            {"cell_division_size", mNumDivisions, 2}, // Number of subdivisions per cell (one side this number will be squared)
+                {"resolution", mResolution, 1.0}, // Base cell size
+                {"size", mSize, 60.0},
+                {"width", mWidth, static_cast<int>(mSize / mResolution)}, // THIS DECLARATION DOES NOT WORK
+                {"height", mHeight, static_cast<int>(mSize / mResolution)},
+                {"map_frame", mMapFrame, "map"},
+                {"near_clip", mNearClip, 2.0},
+                {"far_clip", mFarClip, 7.0},
+                {"near_width", mNearWidth, 1.0},
+                {"far_width", mFarWidth, 3.0},
+                {"top_clip", mTopClip, 1.0},
+                {"z_percent", mZPercent, 0.34}, // Tested on static visualizer
+                {"alpha", mAlpha, 0.05},
+                {"z_threshold", mZThreshold, 0.51},       // Tested on static visualizer
+                {"cell_division_size", mNumDivisions, 2}, // Number of subdivisions per cell (one side this number will be squared)
         };
 
         ParameterWrapper::declareParameters(this, params);

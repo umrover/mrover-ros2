@@ -8,6 +8,7 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch_ros.actions import Node, ComposableNodeContainer
 from launch_ros.descriptions import ComposableNode
 
+
 def generate_launch_description():
 
     launch_include_can = IncludeLaunchDescription(

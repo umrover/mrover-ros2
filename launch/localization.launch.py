@@ -14,7 +14,7 @@ def generate_launch_description():
         name="rover_gps_driver",
         parameters=[os.path.join(get_package_share_directory("mrover"), "config", "localization.yaml")],
         output="screen",
-        respawn=True
+        respawn=True,
     )
 
     gps_linearization_node = Node(
@@ -22,7 +22,7 @@ def generate_launch_description():
         executable="gps_linearization.py",
         name="gps_linearization",
         parameters=[os.path.join(get_package_share_directory("mrover"), "config", "localization.yaml")],
-        respawn=True
+        respawn=True,
     )
 
     heading_filter_node = Node(
@@ -30,7 +30,7 @@ def generate_launch_description():
         executable="heading_filter",
         name="heading_filter",
         parameters=[os.path.join(get_package_share_directory("mrover"), "config", "localization.yaml")],
-        respawn=True
+        respawn=True,
     )
 
     iekf_se3_node = Node(
@@ -39,7 +39,7 @@ def generate_launch_description():
         name="iekf_se3",
         parameters=[os.path.join(get_package_share_directory("mrover"), "config", "localization.yaml")],
         output="screen",
-        respawn=True
+        respawn=True,
     )
 
     pose_filter_node = Node(
@@ -47,7 +47,7 @@ def generate_launch_description():
         executable="pose_filter",
         name="pose_filter",
         parameters=[os.path.join(get_package_share_directory("mrover"), "config", "localization.yaml")],
-        respawn=True
+        respawn=True,
     )
 
     return LaunchDescription([rover_gps_driver_node, gps_linearization_node, pose_filter_node])
