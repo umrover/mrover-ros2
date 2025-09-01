@@ -2,8 +2,7 @@
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="rover">
 
   <!-- Constants -->
-
-  <xacro:property name="base_width" value="0.63"/>
+  <xacro:property name="base_width" value="0.635"/>
   <xacro:property name="base_len" value="0.478"/>
   <xacro:property name="base_height" value="0.183"/>
   <xacro:property name="wheel_radius" value="0.13"/>
@@ -12,7 +11,21 @@
   <xacro:property name="chassis_mass" value="15"/>
   <xacro:property name="wheel_torque" value="2.68"/>
 
-  <xacro:property name="TAU" value="6.2831855"/>
+  <!-- Suspension link lengths (measured from blender) -->
+  <xacro:property name="rocker_front_length" value="0.44752"/>
+  <xacro:property name="rocker_front_angle" value="${39*pi/180}"/>
+  <xacro:property name="rocker_rear_length" value="0.281575"/>
+  <xacro:property name="rocker_rear_angle" value="${170*pi/180}"/>
+  <xacro:property name="double_lambda_base_length" value="0.14239"/>
+  <xacro:property name="double_lambda_base_angle" value="${pi/2}"/>
+  <xacro:property name="double_lambda_base_offset" value="-0.03810"/>
+  <xacro:property name="double_lambda_crank_length" value="0.09187"/>
+  <xacro:property name="double_lambda_crank_angle" value="${-39.603*pi/180}"/>
+  <xacro:property name="double_lambda_lower_length" value="0.16767"/>
+  <xacro:property name="double_lambda_lower_angle" value="${-20*pi/180}"/>
+  <xacro:property name="double_lambda_long_length" value="0.38313"/>
+  <xacro:property name="double_lambda_long_angle" value="${58.871*pi/180}"/>
+  <xacro:property name="double_lambda_long_shift" value="0.16767"/>
 
   <!-- Inertial Macros-->
 
@@ -88,31 +101,20 @@
     </link>
   </xacro:macro>
 
+  <!-- creates a collider that extends like a ray of some length at some angle (by default) -->
+  <xacro:macro name="suspension_collider" params="length width:=0.025 height:=0.025 angle dx:=0 dy:=0 dz:=0">
+    <collision>
+      <origin xyz="${length * cos(angle)/2 + dx} ${length * sin(angle)/2 + dy} ${dz}" rpy="0 0 ${angle}"/>
+      <geometry>
+        <box size="${length * 0.75} ${width} ${height}"/>
+      </geometry>
+    </collision>
+  </xacro:macro>
+
   <xacro:macro name="wheels" params="side reflect">
     <xacro:wheel pos="front" side="${side}" reflect="${reflect}"/>
     <xacro:wheel pos="center" side="${side}" reflect="${reflect}"/>
     <xacro:wheel pos="back" side="${side}" reflect="${reflect}"/>
-
-    <link name="${side}_bogie_link">
-      <xacro:box_inertia m="3" d="0.5" w="0.5" h="0.5"/>
-      <visual>
-        <geometry>
-          <mesh filename="package://mrover/urdf/meshes/rover_${side}_bogie.fbx"/>
-        </geometry>
-      </visual>
-      <collision>
-        <origin xyz="-0.14 0.1 0" rpy="0 0 -0.734"/>
-        <geometry>
-          <box size="0.2 0.025 0.025"/>
-        </geometry>
-      </collision>
-      <collision>
-        <origin xyz="0.1 0.088 0" rpy="0 0 0.734"/>
-        <geometry>
-          <box size="0.2 0.025 0.025"/>
-        </geometry>
-      </collision>
-    </link>
 
     <link name="${side}_rocker_link">
       <xacro:box_inertia m="3" d="0.5" w="0.5" h="0.5"/>
@@ -121,58 +123,158 @@
           <mesh filename="package://mrover/urdf/meshes/rover_${side}_rocker.fbx"/>
         </geometry>
       </visual>
-      <collision>
-        <origin xyz="0.11 0.077 0" rpy="0 0 0.585"/>
+      <xacro:suspension_collider length="${rocker_front_length}" angle="${rocker_front_angle}"/>
+      <xacro:suspension_collider length="${rocker_rear_length}" angle="${rocker_rear_angle}"/>
+      <xacro:suspension_collider length="${double_lambda_base_length}" angle="${double_lambda_base_angle}"
+                                 dx="${rocker_rear_length * cos(rocker_rear_angle)}"
+                                 dy="${rocker_rear_length * sin(rocker_rear_angle) + double_lambda_base_offset}"/>
+    </link>
+
+    <link name="${side}_lambda_crank_rear_link">
+      <xacro:box_inertia m="3" d="0.1" w="0.1" h="0.1"/>
+      <visual>
         <geometry>
-          <box size="0.2 0.025 0.025"/>
+          <mesh filename="package://mrover/urdf/meshes/rover_rear_lambda_crank.fbx"/>
         </geometry>
-      </collision>
-      <collision>
-        <origin xyz="-0.22 0.15 0" rpy="0 0 -0.585"/>
+      </visual>
+      <xacro:suspension_collider length="${double_lambda_crank_length}"
+                                 angle="${pi - double_lambda_crank_angle}"
+                                 height="0.008"/>
+    </link>
+
+    <link name="${side}_lambda_crank_front_link">
+      <xacro:box_inertia m="3" d="0.1" w="0.1" h="0.1"/>
+      <visual>
         <geometry>
-          <box size="0.5 0.025 0.025"/>
+          <mesh filename="package://mrover/urdf/meshes/rover_front_lambda_crank.fbx"/>
         </geometry>
-      </collision>
+      </visual>
+      <xacro:suspension_collider length="${double_lambda_crank_length}"
+                                 angle="${double_lambda_crank_angle}"
+                                 height="0.008"/>
+    </link>
+
+    <link name="${side}_lambda_lower_link">
+      <xacro:box_inertia m="2" d="0.5" w="0.5" h="0.5"/>
+      <visual>
+        <geometry>
+          <mesh filename="package://mrover/urdf/meshes/rover_${side}_lambda_lower.fbx"/>
+        </geometry>
+      </visual>
+      <xacro:suspension_collider length="${double_lambda_lower_length}" angle="${double_lambda_lower_angle}"/>
+      <xacro:suspension_collider length="${double_lambda_lower_length}" angle="${pi - double_lambda_lower_angle}"/>
+    </link>
+
+    <link name="${side}_lambda_front_link">
+      <xacro:box_inertia m="2" d="0.5" w="0.5" h="0.5"/>
+      <visual>
+        <geometry>
+          <mesh filename="package://mrover/urdf/meshes/rover_${side}_lambda_front.fbx"/>
+        </geometry>
+      </visual>
+      <xacro:suspension_collider length="${double_lambda_long_length}" angle="${double_lambda_long_angle}"
+                                 dx="${-double_lambda_long_shift * cos(double_lambda_long_angle)}"
+                                 dy="${-double_lambda_long_shift * sin(double_lambda_long_angle)}"/>
+    </link>
+
+    <link name="${side}_lambda_rear_link">
+      <xacro:box_inertia m="2" d="0.5" w="0.5" h="0.5"/>
+      <visual>
+        <geometry>
+          <mesh filename="package://mrover/urdf/meshes/rover_${side}_lambda_rear.fbx"/>
+        </geometry>
+      </visual>
+      <xacro:suspension_collider length="${double_lambda_long_length}" angle="${pi - double_lambda_long_angle}"
+                                 dx="${double_lambda_long_shift * cos(double_lambda_long_angle)}"
+                                 dy="${-double_lambda_long_shift * sin(double_lambda_long_angle)}"/>
     </link>
 
     <joint name="chassis_link_to_${side}_rocker_link" type="revolute">
       <parent link="chassis_link"/>
       <child link="${side}_rocker_link"/>
-      <origin xyz="0.164665 ${reflect * (base_width/2 + 0.05)} 0" rpy="${-TAU/4} 0 0"/>
+      <origin xyz="0.164665 ${reflect * (base_width/2 + 0.041)} 0" rpy="${-pi/2} 0 0"/>
       <axis xyz="0 0 1"/>
       <limit lower="-0.122173" upper="0.523599" effort="0" velocity="0"/>
     </joint>
 
-    <joint name="${side}_rocker_link_to_back_${side}_wheel_link" type="continuous">
+    <joint name="${side}_rocker_link_to_front_${side}_wheel_link" type="continuous">
       <parent link="${side}_rocker_link"/>
-      <child link="back_${side}_wheel_link"/>
-      <origin xyz="-0.417094 0.28513 ${reflect * 0.09}"/>
-      <axis xyz="0 0 1"/>
-      <limit effort="${wheel_torque}" velocity="0"/>
-    </joint>
-
-    <joint name="${side}_rocker_link_to_${side}_bogie_link" type="revolute">
-      <parent link="${side}_rocker_link"/>
-      <child link="${side}_bogie_link"/>
-      <origin xyz="0.198948 0.138674 0"/>
-      <axis xyz="0 0 1"/>
-      <limit lower="-0.349066" upper="0.349066" effort="0" velocity="0"/>
-    </joint>
-
-    <joint name="${side}_bogie_link_to_front_${side}_wheel_link" type="continuous">
-      <parent link="${side}_bogie_link"/>
       <child link="front_${side}_wheel_link"/>
-      <origin xyz="0.215233 0.147933 ${reflect * 0.09}"/>
+      <origin xyz="${rocker_front_length * cos(rocker_front_angle)}
+                   ${rocker_front_length * sin(rocker_front_angle)}
+                   ${reflect * 0.076}"/>
       <axis xyz="0 0 1"/>
       <limit effort="${wheel_torque}" velocity="0"/>
     </joint>
 
-    <joint name="${side}_bogie_link_to_center_${side}_wheel_link" type="continuous">
-      <parent link="${side}_bogie_link"/>
+    <joint name="${side}_lambda_front_link_to_center_${side}_wheel_link" type="continuous">
+      <parent link="${side}_lambda_front_link"/>
       <child link="center_${side}_wheel_link"/>
-      <origin xyz="-0.173532 0.147659 ${reflect * 0.09}"/>
+      <origin xyz="${(double_lambda_long_length - double_lambda_long_shift) * cos(double_lambda_long_angle)}
+                   ${(double_lambda_long_length - double_lambda_long_shift) * sin(double_lambda_long_angle)}
+                   ${reflect * 0.076}"/>
       <axis xyz="0 0 1"/>
       <limit effort="${wheel_torque}" velocity="0"/>
+    </joint>
+
+    <joint name="${side}_lambda_rear_link_to_back_${side}_wheel_link" type="continuous">
+      <parent link="${side}_lambda_rear_link"/>
+      <child link="back_${side}_wheel_link"/>
+      <origin xyz="${-(double_lambda_long_length - double_lambda_long_shift) * cos(double_lambda_long_angle)}
+                   ${(double_lambda_long_length - double_lambda_long_shift) * sin(double_lambda_long_angle)}
+                   ${reflect * 0.076}"/>
+      <axis xyz="0 0 1"/>
+      <limit effort="${wheel_torque}" velocity="0"/>
+    </joint>
+
+    <joint name="${side}_rocker_link_to_${side}_lambda_lower_link" type="continuous">
+      <parent link="${side}_rocker_link"/>
+      <child link="${side}_lambda_lower_link"/>
+      <origin xyz="${rocker_rear_length * cos(rocker_rear_angle)}
+                   ${rocker_rear_length * sin(rocker_rear_angle) + double_lambda_base_offset + double_lambda_base_length}
+                   ${reflect * 0.045}"/>
+      <axis xyz="0 0 1"/>
+      <limit effort="0" velocity="0"/>
+    </joint>
+
+    <joint name="${side}_rocker_link_to_${side}_lambda_crank_front_link" type="revolute">
+      <parent link="${side}_rocker_link"/>
+      <child link="${side}_lambda_crank_front_link"/>
+      <origin xyz="${rocker_rear_length * cos(rocker_rear_angle)}
+                   ${rocker_rear_length * sin(rocker_rear_angle) + double_lambda_base_offset}
+                   ${reflect * 0.04}"/>
+      <axis xyz="0 0 1"/>
+      <limit upper="${-double_lambda_crank_angle}" lower="${-pi/2-double_lambda_crank_angle}" effort="0" velocity="0"/>
+    </joint>
+
+    <joint name="${side}_rocker_link_to_${side}_lambda_crank_rear_link" type="revolute">
+      <parent link="${side}_rocker_link"/>
+      <child link="${side}_lambda_crank_rear_link"/>
+      <origin xyz="${rocker_rear_length * cos(rocker_rear_angle)}
+                   ${rocker_rear_length * sin(rocker_rear_angle) + double_lambda_base_offset}
+                   ${reflect * 0.05}"/>
+      <axis xyz="0 0 1"/>
+      <limit upper="${pi/2+double_lambda_crank_angle}" lower="${double_lambda_crank_angle}" effort="0" velocity="0"/>
+    </joint>
+
+    <joint name="${side}_lambda_lower_link_to_${side}_lambda_front_link" type="continuous">
+      <parent link="${side}_lambda_lower_link"/>
+      <child link="${side}_lambda_front_link"/>
+      <origin xyz="${double_lambda_lower_length * cos(double_lambda_lower_angle)}
+                   ${double_lambda_lower_length * sin(double_lambda_lower_angle)}
+                   0"/>
+      <axis xyz="0 0 1"/>
+      <limit effort="0" velocity="0"/>
+    </joint>
+
+    <joint name="${side}_lambda_lower_link_to_${side}_lambda_rear_link" type="continuous">
+      <parent link="${side}_lambda_lower_link"/>
+      <child link="${side}_lambda_rear_link"/>
+      <origin xyz="${-double_lambda_lower_length * cos(double_lambda_lower_angle)}
+                   ${double_lambda_lower_length * sin(double_lambda_lower_angle)}
+                   0"/>
+      <axis xyz="0 0 1"/>
+      <limit effort="0" velocity="0"/>
     </joint>
   </xacro:macro>
 
@@ -188,13 +290,13 @@
       </geometry>
     </visual>
     <collision>
-      <origin xyz="-0.085906 0 0"/>
+      <origin xyz="-0.085906 0 0.15"/>
       <geometry>
         <box size="0.277 ${base_width} ${base_height}"/>
       </geometry>
     </collision>
     <collision>
-      <origin xyz="0.163609 0 -0.049449"/>
+      <origin xyz="0.163609 0 0"/>
       <geometry>
         <box size="0.167 ${base_width} 0.0891 "/>
       </geometry>
@@ -231,7 +333,7 @@
 
   <xacro:arm_revolute_joint parent="arm_a" child="arm_b"
                             x="0.034346" y="0" z="0.049024"
-                            lower="${-TAU / 8}" upper="0"/>
+                            lower="${-pi / 8}" upper="0"/>
   <xacro:arm_revolute_joint parent="arm_b" child="arm_c"
                             x="0.534365" y="0" z="0.009056"
                             lower="-0.959931" upper="2.87979"/>

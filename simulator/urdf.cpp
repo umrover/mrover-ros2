@@ -342,6 +342,21 @@ namespace mrover {
 
         traverse(traverse, model.getRoot());
 
+        // Add point to point constraints to close suspension
+        // TODO(neven): make these constraints more rigid?
+        if (uri.find("rover.urdf.xacro") != std::string_view::npos) {
+            for (int i = 0; i < 4; ++i) {
+                std::string side = i % 2 ? "left" : "right";
+                std::string pos = i < 2 ? "rear" : "front";
+                float frontRearSign = i < 2 ? -1 : 1;
+                float inOutSign = i < 1 || i > 2 ? -1 : 1;
+                int crankLink = linkNameToMeta.at(std::format("{}_lambda_crank_{}_link", side, pos)).index;
+                int lambdaLink = linkNameToMeta.at(std::format("{}_lambda_{}_link", side, pos)).index;
+                auto* p2p = simulator.makeBulletObject<btMultiBodyPoint2Point>(simulator.mMultibodyConstraints, multiBody, crankLink, multiBody, lambdaLink, btVector3(frontRearSign * 0.07078f, -0.05856, 0), btVector3(frontRearSign * -0.08668f, -0.14353, inOutSign * 0.005f));
+                constraintsToFinalize.push_back(p2p);
+            }
+        }
+
         multiBody->finalizeMultiDof();
         btAlignedObjectArray<btQuaternion> q;
         btAlignedObjectArray<btVector3> m;
