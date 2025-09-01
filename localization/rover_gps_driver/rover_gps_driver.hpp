@@ -18,7 +18,7 @@ namespace mrover {
         boost::asio::basic_serial_port<boost::asio::io_context::executor_type> serial;
         boost::asio::streambuf read_buffer;
 
-        unsigned long baud;
+        int baud;
         std::string port;
         std::string gps_frame;
 

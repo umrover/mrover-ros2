@@ -102,6 +102,7 @@
       - ros-humble-rtcm-msgs
       # TODO (ali): why does this need to be installed manually
       - libboost-dev
+      - qtmultimedia5-dev
 
 - name: Install Local APT Packages
   become: True
