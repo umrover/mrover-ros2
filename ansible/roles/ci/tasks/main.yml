@@ -99,6 +99,7 @@
       - ros-humble-ros-base
       - ros-humble-rviz2
       - ros-humble-xacro
+      - ros-humble-rtcm-msgs
       # TODO (ali): why does this need to be installed manually
       - libboost-dev
 
