@@ -61,9 +61,9 @@
 #include <BulletDynamics/Featherstone/btMultiBodyGearConstraint.h>
 #include <BulletDynamics/Featherstone/btMultiBodyJointLimitConstraint.h>
 #include <BulletDynamics/Featherstone/btMultiBodyJointMotor.h>
-#include <BulletDynamics/Featherstone/btMultiBodyPoint2Point.h>
 #include <BulletDynamics/Featherstone/btMultiBodyLinkCollider.h>
 #include <BulletDynamics/Featherstone/btMultiBodyMLCPConstraintSolver.h>
+#include <BulletDynamics/Featherstone/btMultiBodyPoint2Point.h>
 #include <BulletDynamics/MLCPSolvers/btDantzigSolver.h>
 #include <BulletDynamics/MLCPSolvers/btMLCPSolver.h>
 #include <btBulletDynamicsCommon.h>
