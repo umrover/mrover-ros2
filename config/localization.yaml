@@ -16,7 +16,7 @@
 
 basestation_gps_driver:
   ros__parameters:
-    port: /dev/ttyACM0
+    port: /dev/ublox_gps
     baud: 38400
 
 rover_gps_driver:

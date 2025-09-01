@@ -17,3 +17,16 @@
     host: jetson
     hostname: 10.1.0.10
     remote_user: mrover
+
+- name: Create MRover Group
+  become: true
+  group:
+    name: "mrover"
+    state: present
+
+- name: Add User To MRover Group
+  become: true
+  ansible.builtin.user:
+    name: "{{ ansible_user_id }}"
+    groups: "mrover"
+    append: true
