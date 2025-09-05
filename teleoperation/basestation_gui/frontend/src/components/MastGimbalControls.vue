@@ -8,7 +8,8 @@
 </template>
 
 <script lang='ts'>
-import { mapActions } from 'vuex'
+import Vuex from 'vuex'
+const { mapActions } = Vuex;
 
 const UPDATE_HZ = 20
 
@@ -62,10 +63,13 @@ export default {
     },
 
     publish: function() {
-      this.sendMessage({
-        type: 'mast_keyboard',
-        axes: [],
-        buttons: this.keys
+      this.$store.dispatch('websocket/sendMessage', {
+        id: 'mast',
+        message: {
+          type: 'mast_keyboard',
+          axes: [],
+          buttons: this.keys
+        },
       })
     }
   }
@@ -74,6 +78,6 @@ export default {
 
 <style scoped>
 .wrap {
-  display: inline-block;
+  display: none;
 }
 </style>

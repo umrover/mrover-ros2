@@ -1,0 +1,258 @@
+<?xml version="1.0" ?>
+<robot name="rover">
+  <link name="base_link"/>
+  <link name="chassis_link">
+    <visual>
+      <geometry>
+        <mesh filename="../meshes/rover_chassis.dae"/>
+      </geometry>
+    </visual>
+  </link>
+  <link name="arm_base_link">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="../meshes/rover_chassis.dae"/>
+      </geometry>
+    </visual>
+  </link>
+  <link name="arm_a_link">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="../meshes/arm_a_fix.dae"/>
+      </geometry>
+    </visual>
+  </link>
+  <link name="arm_b_link">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="../meshes/arm_b_fix.dae"/>
+      </geometry>
+    </visual>
+  </link>
+  <link name="arm_c_link">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="../meshes/arm_c_fix.dae"/>
+      </geometry>
+    </visual>
+  </link>
+  <link name="arm_d_link">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="../meshes/arm_d_fix.dae"/>
+      </geometry>
+    </visual>
+  </link>
+  <link name="arm_e_link">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="../meshes/arm_e_fix.dae"/>
+      </geometry>
+    </visual>
+  </link>
+  <link name="arm_gripper_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../meshes/arm_gripper_fix.dae"/>
+      </geometry>
+    </visual>
+  </link>
+  <joint name="chassis_to_arm_a" type="prismatic">
+    <origin rpy="0 0 0" xyz="16.4882 20.0235 49.1172"/>
+    <parent link="chassis_link"/>
+    <child link="arm_a_link"/>
+    <axis xyz="0 -1 0"/>
+    <limit lower="0" upper="40"/>
+  </joint>
+  <joint name="arm_a_to_arm_b" type="revolute">
+    <origin rpy="0 0 0" xyz="3.4348 -0.0005 4.9028"/>
+    <parent link="arm_a_link"/>
+    <child link="arm_b_link"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-0.7853981875" upper="0"/>
+  </joint>
+  <joint name="arm_b_to_arm_c" type="revolute">
+    <origin rpy="0 0 0" xyz="53.4363 0.0005 0.9052"/>
+    <parent link="arm_b_link"/>
+    <child link="arm_c_link"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-0.959931" upper="2.87979"/>
+  </joint>
+  <joint name="arm_c_to_arm_d" type="revolute">
+    <origin rpy="0 0 0" xyz="54.6037 0 8.8594"/>
+    <parent link="arm_c_link"/>
+    <child link="arm_d_link"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-2.35619" upper="2.35619"/>
+  </joint>
+  <joint name="arm_d_to_arm_e" type="revolute">
+    <origin rpy="0 0 0" xyz="4.488 0 0"/>
+    <parent link="arm_d_link"/>
+    <child link="arm_e_link"/>
+    <axis xyz="1 0 0"/>
+    <limit lower="-2.35619" upper="2.35619"/>
+  </joint>
+  <joint name="gripper_link" type="prismatic">
+    <origin rpy="1.570796 0 0" xyz="0.0875 0 0"/>
+    <parent link="arm_e_link"/>
+    <child link="arm_gripper_link"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="0" upper="8"/>
+    <dynamics damping="1.0"/>
+  </joint>
+  <link name="front_left_wheel_link">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="../meshes/rover_left_wheel_fix.dae"/>
+      </geometry>
+    </visual>
+  </link>
+  <link name="center_left_wheel_link">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="../meshes/rover_left_wheel_fix.dae"/>
+      </geometry>
+    </visual>
+  </link>
+  <link name="back_left_wheel_link">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="../meshes/rover_left_wheel_fix.dae"/>
+      </geometry>
+    </visual>
+  </link>
+  <link name="left_rocker_link">
+    <visual>
+      <geometry>
+        <mesh filename="../meshes/rover_left_rocker_fix.dae"/>
+      </geometry>
+    </visual>
+  </link>
+  <link name="left_bogie_link">
+    <visual>
+      <geometry>
+        <mesh filename="../meshes/rover_left_bogie_fix.dae"/>
+      </geometry>
+    </visual>
+  </link>
+  <joint name="chassis_to_left_rocker" type="revolute">
+    <parent link="chassis_link"/>
+    <child link="left_rocker_link"/>
+    <origin rpy="0 0 0" xyz="16.4665 34.5164 41.3435"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-0.122173" upper="0.523599"/>
+  </joint>
+  <joint name="left_rocker_to_left_bogie" type="revolute">
+    <parent link="left_rocker_link"/>
+    <child link="left_bogie_link"/>
+    <origin rpy="0 0 0" xyz="19.8948 0.0226 -13.8674"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-0.349066" upper="0.349066"/>
+  </joint>
+  <joint name="left_bogie_to_front_left_wheel" type="continuous">
+    <parent link="left_bogie_link"/>
+    <child link="front_left_wheel_link"/>
+    <origin xyz="21.5233 9 -14.7933"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-10" upper="10"/>
+  </joint>
+  <joint name="left_bogie_to_center_left_wheel" type="continuous">
+    <parent link="left_bogie_link"/>
+    <child link="center_left_wheel_link"/>
+    <origin xyz="-17.3532 9 -14.7659"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-10" upper="10"/>
+  </joint>
+  <joint name="left_rocker_to_back_left_wheel" type="continuous">
+    <parent link="left_rocker_link"/>
+    <child link="back_left_wheel_link"/>
+    <origin xyz="-41.7094 9 -28.513 "/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-10" upper="10"/>
+  </joint>
+  <link name="front_right_wheel_link">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="../meshes/rover_right_wheel_fix.dae"/>
+      </geometry>
+    </visual>
+  </link>
+  <link name="center_right_wheel_link">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="../meshes/rover_right_wheel_fix.dae"/>
+      </geometry>
+    </visual>
+  </link>
+  <link name="back_right_wheel_link">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="../meshes/rover_right_wheel_fix.dae"/>
+      </geometry>
+    </visual>
+  </link>
+  <link name="right_rocker_link">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="../meshes/rover_right_rocker_fix.dae"/>
+      </geometry>
+    </visual>
+  </link>
+  <link name="right_bogie_link">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="../meshes/rover_right_bogie_fix.dae"/>
+      </geometry>
+    </visual>
+  </link>
+  <joint name="chassis_to_right_rocker" type="revolute">
+    <parent link="chassis_link"/>
+    <child link="right_rocker_link"/>
+    <origin rpy="0 0 0" xyz="16.4665 -34.5164 41.3435"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-0.122173" upper="0.523599"/>
+  </joint>
+  <joint name="right_rocker_to_right_bogie" type="revolute">
+    <parent link="right_rocker_link"/>
+    <child link="right_bogie_link"/>
+    <origin rpy="0 0 0" xyz="19.8948 0.0226 -13.8674"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-0.349066" upper="0.349066"/>
+  </joint>
+  <joint name="right_bogie_to_front_right_wheel" type="continuous">
+    <parent link="right_bogie_link"/>
+    <child link="front_right_wheel_link"/>
+    <origin rpy="0 0 0" xyz="21.5233 -9 -14.7933"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-10" upper="10"/>
+  </joint>
+  <joint name="right_bogie_to_center_right_wheel" type="continuous">
+    <parent link="right_bogie_link"/>
+    <child link="center_right_wheel_link"/>
+    <origin rpy="0 0 0" xyz="-17.3532 -9 -14.7659"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-10" upper="10"/>
+  </joint>
+  <joint name="right_rocker_to_back_right_wheel" type="continuous">
+    <parent link="right_rocker_link"/>
+    <child link="back_right_wheel_link"/>
+    <origin rpy="0 0 0" xyz="-41.7094 -9 -28.513"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-10" upper="10"/>
+  </joint>
+</robot>

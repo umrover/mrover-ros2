@@ -16,14 +16,8 @@ Including another URLconf
 """
 
 from django.contrib import admin
-from django.urls import path, include
-from django.http import HttpResponse
-from django.shortcuts import render
-
-from backend.consumers import GUIConsumer
+from django.urls import path
 
 urlpatterns = [
     path("admin/", admin.site.urls),
 ]
-
-websocket_urlpatterns = [path("ws/gui", GUIConsumer.as_asgi())]

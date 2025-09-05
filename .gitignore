@@ -23,10 +23,21 @@ venv/
 
 # SQL file for Teleop
 *.sqlite3
+<<<<<<< HEAD
+=======
+bun.lock
+bun.lockb
+>>>>>>> main
 
 # macOS
 .DS_Store
 # nav state log
 state_machine/state_log.txt
+<<<<<<< HEAD
 data/*.png
 data/raw-pano-images
+=======
+
+/teleoperation/basestation_gui/install/
+/teleoperation/basestation_gui/log/
+>>>>>>> main

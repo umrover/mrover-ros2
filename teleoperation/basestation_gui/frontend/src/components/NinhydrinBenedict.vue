@@ -11,7 +11,8 @@
         @change="toggleHeater()"
       />
       <p :style="{ color: heaters[site].color }">
-        Thermistor {{ String.fromCharCode(65 + site) }}: {{ (heaters[site].temp).toFixed(2) }} C°
+        Thermistor {{ String.fromCharCode(65 + site) }}:
+        {{ heaters[site].temp.toFixed(2) }} C°
       </p>
     </div>
     <div class="comms heaterStatus">
@@ -25,95 +26,100 @@
 </template>
 
 <script lang="ts">
-import ToggleButton from "./ToggleButton.vue";
-import LEDIndicator from "./LEDIndicator.vue";
-import { mapState, mapActions } from 'vuex';
+import ToggleButton from './ToggleButton.vue'
+import LEDIndicator from './LEDIndicator.vue'
+import Vuex from 'vuex'
+import type { WebSocketState } from '../types/websocket'
+const { mapState, mapActions } = Vuex
 
 export default {
   components: {
     ToggleButton,
-    LEDIndicator
+    LEDIndicator,
   },
 
   props: {
     site: {
       type: Number,
-      required: true
+      required: true,
     },
-    isNinhydrin: { //true = Ninhydrin, false = benedict's
+    isNinhydrin: {
+      //true = Ninhydrin, false = benedict's
       type: Boolean,
-      required: true
-    }
+      required: true,
+    },
   },
 
   data() {
     return {
-
       heaters: [
         {
           enabled: false,
           temp: 0,
           state: false,
-          color: "grey"
+          color: 'grey',
         },
         {
           enabled: false,
           temp: 0,
           state: false,
-          color: "grey"
+          color: 'grey',
         },
       ],
-    };
-  },
-
-  watch: {
-    message(msg) {
-      if (msg.type == 'thermistors') {
-        if (this.isNinhydrin) {
-          this.heaters[this.site].temp = msg.temps[this.site*2+1].temperature;
-        }
-        else {
-          this.heaters[this.site].temp = msg.temps[this.site*2].temperature;
-        }
-      }
-      else if(msg.type == 'heater_states') {
-        if (this.isNinhydrin) {
-          this.heaters[this.site].state = msg.state[this.site*2+1];
-          this.heaters[this.site].enabled = this.heaters[this.site].state;
-          // console.log("State update ")
-          // console.log(this.heaters[this.site].state)
-        }
-        else {
-          this.heaters[this.site].state = msg.state[this.site*2];
-          this.heaters[this.site].enabled = this.heaters[this.site].state;
-        }
-      }
-    },
+    }
   },
 
   computed: {
-    ...mapState('websocket', ['message'])
+    ...mapState('websocket', {
+      scienceMessage: (state: WebSocketState) => state.messages['science']
+    }),
+  },
+
+  watch: {
+    scienceMessage(msg) {
+      if (msg.type == 'thermistors') {
+        if (this.isNinhydrin) {
+          this.heaters[this.site].temp =
+            msg.temps[this.site * 2 + 1].temperature
+        } else {
+          this.heaters[this.site].temp = msg.temps[this.site * 2].temperature
+        }
+      } else if (msg.type == 'heater_states') {
+        if (this.isNinhydrin) {
+          this.heaters[this.site].state = msg.state[this.site * 2 + 1]
+          this.heaters[this.site].enabled = this.heaters[this.site].state
+        } else {
+          this.heaters[this.site].state = msg.state[this.site * 2]
+          this.heaters[this.site].enabled = this.heaters[this.site].state
+        }
+      }
+    },
   },
 
   methods: {
     ...mapActions('websocket', ['sendMessage']),
 
     toggleHeater: function () {
-      this.heaters[this.site].enabled = !this.heaters[this.site].enabled;
-      this.sendHeaterRequest();
+      this.heaters[this.site].enabled = !this.heaters[this.site].enabled
+      this.sendHeaterRequest()
     },
 
     sendHeaterRequest: function () {
-      let heaterName = String.fromCharCode(this.site+97);
+      let heaterName = String.fromCharCode(this.site + 97)
       if (this.isNinhydrin) {
-        heaterName += "1";
-      }
-      else heaterName += "0";
-      this.sendMessage({ type: "heater_enable", enable: this.heaters[this.site].enabled, heater: heaterName});
+        heaterName += '1'
+      } else heaterName += '0'
+      this.$store.dispatch('websocket/sendMessage', {
+        id: 'science',
+        message: {
+          type: 'heater_enable',
+          enable: this.heaters[this.site].enabled,
+          heater: heaterName,
+        },
+      })
     },
-  }
-};
+  },
+}
 </script>
 
-<style scoped>
-</style>
+<style scoped></style>

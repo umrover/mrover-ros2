@@ -9,11 +9,11 @@ export default defineConfig({
     vue(),
   ],
   publicDir: "public",
-  // resolve: {
-  //   alias: {
-  //     '@': fileURLToPath(new URL('./src', import.meta.url))
-  //   }
-  // },
+  resolve: {
+    alias: {
+      '@': fileURLToPath(new URL('./src', import.meta.url))
+    }
+  },
   server: {
     host: 'localhost',
     port: 8080

@@ -1,13 +1,11 @@
 <template>
-  <div class='wrap'>
-    <div>
-      <h3>{{ header }}</h3>
-    </div>
-    <table class='table table-bordered' style='table-layout: fixed; width: auto'>
+  <div class='wrap border border-2 p-2 rounded'>
+    <h3 class="m-0 p-0 mb-1">{{ header }}</h3>
+    <table class='table table-bordered m-0 p-0 border' style='table-layout: fixed; width: auto'>
       <tbody>
       <tr>
         <th class='table-secondary'>Motor</th>
-        <td v-for='(name, i) in name' :key='i'>
+        <td v-for='(name, i) in name' :key='i' class="m-0 px-1">
           {{ name }}
         </td>
       </tr>
@@ -36,7 +34,9 @@
 
 <script lang='ts'>
 import { defineComponent } from 'vue'
-import { mapState } from 'vuex'
+import Vuex from 'vuex';
+const { mapState } = Vuex;
+import type { WebSocketState } from '../types/websocket';
 
 export default defineComponent({
   props: {
@@ -60,18 +60,32 @@ export default defineComponent({
   },
 
   computed: {
-    ...mapState('websocket', ['message'])
+    ...mapState('websocket', {
+      armMessage: (state: WebSocketState) => state.messages['arm'],
+      driveMessage: (state: WebSocketState) => state.messages['drive']
+    })
   },
 
+  // arm_state, drive_state, sa_state, drive_left_state, drive_right_state
+  // arm, drive,
+
   watch: {
-    message(msg) {
+    armMessage(msg) {
       if (msg.type == this.msgType) {
         this.name = msg.name
         this.state = msg.state
         this.error = msg.error
         this.limits = msg.limit_hit
       }
-    }
+    },
+    driveMessage(msg) {
+      if (msg.type == this.msgType) {
+        this.name = msg.name
+        this.state = msg.state
+        this.error = msg.error
+        this.limits = msg.limit_hit
+      }
+    },
   }
 })
 </script>
@@ -80,5 +94,6 @@ export default defineComponent({
 .wrap {
   display: inline-block;
   align-content: center;
+  min-width: 350px;
 }
 </style>

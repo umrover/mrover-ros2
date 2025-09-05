@@ -1,108 +1,120 @@
 <template>
-  <div class='wrap'>
-    <h2>Arm Controls</h2>
-    <div class='controls-flex'>
-      <h4>Mode</h4>
-        <input v-model='mode' type="radio" class="btn-check" name="options-outlined" id="disabled" value='disabled' autocomplete="off" checked>
-        <label class="btn btn-outline-danger" for="disabled">Disabled</label>
-        <input v-model='mode' type="radio" class="btn-check" name="options-outlined" id="throttle" value='throttle' autocomplete="off">
-        <label class="btn btn-outline-success" for="throttle">Throttle</label>
-        <input v-model='mode' type="radio" class="btn-check" name="options-outlined" id="ik-pos" value='ik-pos' autocomplete="off">
-        <label class="btn btn-outline-success" for="ik-pos">IK Position</label>
-        <input v-model='mode' type="radio" class="btn-check" name="options-outlined" id="ik-vel" value='ik-vel' autocomplete="off">
-        <label class="btn btn-outline-success" for="ik-vel">IK Velocity</label>
+  <div class="d-flex flex-column align-items-center w-100">
+    <div class="d-flex flex-column gap-2" style="width: 500px; max-width: 100%;">
+      <div class="d-flex justify-content-between align-items-center">
+        <h3 class="m-0">Arm Controls</h3>
+        <span
+          class="px-2 py-2 rounded-2 text-black fw-semibold text-center"
+          style="width: 130px; display: inline-block; font-family: monospace;"
+          :class="controllerConnected ? 'bg-success' : 'bg-secondary'"
+        >
+          {{ controllerConnected ? 'Connected  ' : 'Disconnected' }}
+        </span>
+      </div>
+      <div
+        class="btn-group d-flex justify-content-between"
+        role="group"
+        aria-label="Arm mode selection"
+      >
+        <button
+          type="button"
+          class="btn flex-fill"
+          :class="mode === 'disabled' ? 'btn-danger' : 'btn-outline-danger'"
+          @click="mode = 'disabled'"
+        >
+          Disabled
+        </button>
+        <button
+          type="button"
+          class="btn flex-fill"
+          :class="mode === 'throttle' ? 'btn-success' : 'btn-outline-success'"
+          @click="mode = 'throttle'"
+        >
+          Throttle
+        </button>
+        <button
+          type="button"
+          class="btn flex-fill"
+          :class="mode === 'ik-pos' ? 'btn-success' : 'btn-outline-success'"
+          @click="mode = 'ik-pos'"
+        >
+          IK Position
+        </button>
+        <button
+          type="button"
+          class="btn flex-fill"
+          :class="mode === 'ik-vel' ? 'btn-success' : 'btn-outline-success'"
+          @click="mode = 'ik-vel'"
+        >
+          IK Velocity
+        </button>
+      </div>
     </div>
   </div>
 </template>
 
-<script lang='ts'>
+
+<script lang="ts">
 import { defineComponent } from 'vue'
-import { mapActions, mapState } from 'vuex'
+import Vuex from 'vuex'
+const { mapActions, mapState } = Vuex
 
 const UPDATE_HZ = 30
 
 export default defineComponent({
-  components: {
-  },
   data() {
     return {
-      mode: 'disabled'
+      mode: 'disabled',
+      gamepadConnected: false,
     }
   },
-
   computed: {
-    ...mapState('websocket', ['message'])
+    ...mapState('websocket', ['message']),
+    controllerConnected(): boolean {
+      return this.gamepadConnected
+    },
   },
-
-  mounted: function() {
+  mounted() {
     document.addEventListener('keydown', this.keyDown)
   },
-
-  created: function() {
+  created() {
     this.interval = window.setInterval(() => {
       const gamepads = navigator.getGamepads()
-      // may need to check for Xbox rather than Microsoft
-      const gamepad = gamepads.find(gamepad => gamepad && gamepad.id.includes('Microsoft'))
+      const gamepad = gamepads.find(
+        gamepad => gamepad && gamepad.id.includes('Microsoft'),
+      )
+      this.gamepadConnected = !!gamepad
       if (!gamepad) return
 
-      this.sendMessage({
-        type: 'ra_controller',
-        axes: gamepad.axes,
-        buttons: gamepad.buttons.map(button => button.value)
+      this.$store.dispatch('websocket/sendMessage', {
+        id: 'arm',
+        message: {
+          type: 'ra_controller',
+          axes: gamepad.axes,
+          buttons: gamepad.buttons.map(button => button.value),
+        },
       })
 
-      this.sendMessage({
-        type: 'ra_mode',
-        mode: this.mode
+      this.$store.dispatch('websocket/sendMessage', {
+        id: 'arm',
+        message: {
+          type: 'ra_mode',
+          mode: this.mode,
+        },
       })
     }, 1000 / UPDATE_HZ)
   },
-
-  beforeUnmount: function() {
+  beforeUnmount() {
     window.clearInterval(this.interval)
     document.removeEventListener('keydown', this.keyDown)
   },
-
   methods: {
     ...mapActions('websocket', ['sendMessage']),
-
-    keyDown: function(event: { key: string }) {
-      // Use the space bar as an e-stop
-      if (event.key == ' ') {
+    keyDown(event: { key: string }) {
+      if (event.key === ' ') {
         this.mode = 'disabled'
       }
-    }
-  }
+    },
+  },
 })
 </script>
-
-<style scoped>
-.wrap {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-items: center;
-  width: 100%;
-  height: auto;
-}
-
-.wrap h2 h4 {
-  margin: 0;
-  font-size: 1.5em;
-  font-weight: bold;
-  text-align: center;
-  width: 100%;
-  padding: 5px 0;
-}
-
-.controls-flex {
-  flex-wrap: wrap;
-  display: flex;
-  align-items: center;
-  width: 100%;
-  column-gap: 20px;
-  padding-left: 10px;
-  margin-bottom: 5px;
-  margin-top: 5px;
-}
-</style>

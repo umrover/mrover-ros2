@@ -1,217 +1,228 @@
 <template>
-  <div class="odom-wrap">
-    <div class="odom">
-      <p>Current odometry reading:</p>
-      <div>
-        <p>{{ formatted_odom.lat.d }}º</p>
-        <p v-if="min_enabled">{{ formatted_odom.lat.m }}' N</p>
-        <p v-if="sec_enabled">{{ formatted_odom.lat.s }}" N</p>
+  <div class="d-flex flex-column w-100 wrap">
+    <div class="d-flex justify-content-between w-100 flex-wrap gap-1">
+      <div class="d-flex flex-column gap-2">
+        <div class="border border-2 border-secondary rounded p-2">
+          <h5 class="m-0 p-0 text-center">Rover Odom</h5>
+          <div class="d-flex gap-3 justify-content-center">
+            <div class="odomModule">
+              <small class="text-muted">Latitude</small>
+              <p class="mb-0">{{ formatted_odom.lat.d }}º</p>
+              <p v-if="min_enabled" class="mb-0">
+                {{ formatted_odom.lat.m }}' N
+              </p>
+              <p v-if="sec_enabled" class="mb-0">
+                {{ formatted_odom.lat.s }}" N
+              </p>
+            </div>
+            <div class="odomModule">
+              <small class="text-muted">Longitude</small>
+              <p class="mb-0">{{ formatted_odom.lon.d }}º</p>
+              <p v-if="min_enabled" class="mb-0">
+                {{ formatted_odom.lon.m }}' E
+              </p>
+              <p v-if="sec_enabled" class="mb-0">
+                {{ formatted_odom.lon.s }}" E
+              </p>
+            </div>
+          </div>
+        </div>
+        <div class="d-flex justify-content-center gap-3">
+          <div class="odomModule">
+            <small class="text-muted">Bearing</small>
+            <p class="mb-0">{{ rover_bearing_deg.toFixed(2) }}º</p>
+          </div>
+          <div class="odomModule">
+            <small class="text-muted">Altitude</small>
+            <p class="mb-0">{{ rover_altitude.toFixed(2) }} m</p>
+          </div>
+        </div>
       </div>
-      <div>
-        <p>{{ formatted_odom.lon.d }}º</p>
-        <p v-if="min_enabled">{{ formatted_odom.lon.m }}' E</p>
-        <p v-if="sec_enabled">{{ formatted_odom.lon.s }}" E</p>
+      <div class="d-flex justify-content-center align-items-center p-0 m-0">
+        <FlightAttitudeIndicator />
       </div>
-      <p>Bearing: {{ rover_bearing_deg.toFixed(2) }}º</p>
-      <p>Altitude: {{ rover_altitude.toFixed(2) }}m</p>
-      <p>Odom Status: {{ get_odom_status }}</p>
-      <p>Drone Status: {{ get_drone_status }}</p>
+      <div class="d-flex flex-column gap-2">
+        <div class="border border-2 border-secondary rounded p-2">
+          <h5 class="m-0 p-0 font-monospace text-center">Basestation Odom</h5>
+          <div class="d-flex gap-3 justify-content-center">
+            <div class="odomModule">
+              <small class="text-muted">Latitude</small>
+              <p class="mb-0">{{ formatted_basestation_odom.lat.d }}º</p>
+              <p v-if="min_enabled" class="mb-0">
+                {{ formatted_basestation_odom.lat.m }}' N
+              </p>
+              <p v-if="sec_enabled" class="mb-0">
+                {{ formatted_basestation_odom.lat.s }}" N
+              </p>
+            </div>
+            <div class="odomModule">
+              <small class="text-muted">Longitude</small>
+              <p class="mb-0">{{ formatted_basestation_odom.lon.d }}º</p>
+              <p v-if="min_enabled" class="mb-0">
+                {{ formatted_basestation_odom.lon.m }}' E
+              </p>
+              <p v-if="sec_enabled" class="mb-0">
+                {{ formatted_basestation_odom.lon.s }}" E
+              </p>
+            </div>
+          </div>
+        </div>
+        <div class="d-flex justify-content-center gap-3">
+          <div class="odomModule">
+            <small class="text-muted">Odom Status</small>
+            <p class="mb-0">{{ get_odom_status }}</p>
+          </div>
+          <div class="odomModule">
+            <small class="text-muted">Drone Status</small>
+            <p class="mb-0">{{ get_drone_status }}</p>
+          </div>
+        </div>
+      </div>
     </div>
-    <div class="calibration imu">
-      <IMUCalibration></IMUCalibration>
-    </div>
-    <div class="flightindicator">
-      <FlightAttitudeIndicator></FlightAttitudeIndicator>
-    </div>
-    <div class="basestation-odom">
-      <p>Basestation Coordinates:</p>
-      <div>
-        <p>{{ formatted_basestation_odom.lat.d }}º</p>
-        <p v-if="min_enabled">{{ formatted_basestation_odom.lat.m }}' N</p>
-        <p v-if="sec_enabled">{{ formatted_basestation_odom.lat.s }}" N</p>
-      </div>
-      <div>
-        <p>{{ formatted_basestation_odom.lon.d }}º</p>
-        <p v-if="min_enabled">{{ formatted_basestation_odom.lon.m }}' E</p>
-        <p v-if="sec_enabled">{{ formatted_basestation_odom.lon.s }}" E</p>
-      </div>
+    <div class="d-flex justify-content-center">
+      <IMUCalibration />
     </div>
   </div>
 </template>
 
 <script lang="ts">
-import { convertDMS, quaternionToMapAngle } from '../utils.js'
-import { mapGetters, mapState } from 'vuex'
+import { defineComponent } from 'vue'
+import Vuex from 'vuex'
+const { mapState } = Vuex
+import { convertDMS, quaternionToMapAngle } from '../utils/map.js'
 import IMUCalibration from './IMUCalibration.vue'
 import FlightAttitudeIndicator from './FlightAttitudeIndicator.vue'
+import type { WebSocketState } from '../types/websocket.js'
+import type {
+  Odom,
+  FormattedOdom,
+  OdomData,
+  NavMessage,
+} from '../types/coordinates.js'
 
-interface DMS {
-  d: number; // Degrees
-  m: number; // Minutes
-  s: number; // Seconds
-}
-
-interface FormattedOdom {
-  lat: DMS;
-  lon: DMS;
-}
-
-interface Odom {
-  latitude_deg: number;
-  longitude_deg: number;
-  bearing_deg: number;
-}
-
-export default {
+export default defineComponent({
   components: {
     FlightAttitudeIndicator,
-    IMUCalibration
+    IMUCalibration,
   },
 
   emits: ['odom', 'drone_odom', 'basestation_odom'],
 
-  data() {
+  data(): OdomData {
     return {
       rover_latitude_deg: 38.4071654,
       rover_longitude_deg: -110.7923927,
       rover_bearing_deg: 0,
-      rover_altitude: 0, 
+      rover_altitude: 0,
       rover_status: false,
       drone_latitude_deg: 38.4071654,
       drone_longitude_deg: -110.7923927,
       drone_status: false,
       basestation_latitude_deg: 38.4071654,
       basestation_longitude_deg: -110.7923927,
-      basestation_status: false
+      basestation_status: false,
     }
   },
   computed: {
-    ...mapState('websocket', ['message']),
-
-    ...mapGetters('map', {
-      odom_format: 'odomFormat'
+    ...mapState('websocket', {
+      navMessage: (state: WebSocketState) => state.messages['nav'],
     }),
-    formatted_odom: function (): FormattedOdom {
+
+    odom_format(): string {
+      return this.$store.getters['map/odomFormat']
+    },
+
+    formatted_odom(): FormattedOdom {
       return {
-        lat: convertDMS({ d: this.rover_latitude_deg, m: 0, s: 0 }, this.odom_format as string),
-        lon: convertDMS({ d: this.rover_longitude_deg, m: 0, s: 0 }, this.odom_format as string)
+        lat: convertDMS(
+          { d: this.rover_latitude_deg, m: 0, s: 0 },
+          this.odom_format,
+        ),
+        lon: convertDMS(
+          { d: this.rover_longitude_deg, m: 0, s: 0 },
+          this.odom_format,
+        ),
       }
     },
-    formatted_basestation_odom: function (): FormattedOdom {
+    formatted_basestation_odom(): FormattedOdom {
       return {
-        lat: convertDMS({ d: this.basestation_latitude_deg, m: 0, s: 0 }, this.odom_format as string),
-        lon: convertDMS({ d: this.basestation_longitude_deg, m: 0, s: 0 }, this.odom_format as string)
+        lat: convertDMS(
+          { d: this.basestation_latitude_deg, m: 0, s: 0 },
+          this.odom_format,
+        ),
+        lon: convertDMS(
+          { d: this.basestation_longitude_deg, m: 0, s: 0 },
+          this.odom_format,
+        ),
       }
     },
-    min_enabled: function () {
-      return this.odom_format != 'D'
+    min_enabled(): boolean {
+      return this.odom_format !== 'D'
     },
-    sec_enabled: function () {
-      return this.odom_format == 'DMS'
+    sec_enabled(): boolean {
+      return this.odom_format === 'DMS'
     },
-    alt_available: function () {
+    alt_available(): boolean {
       return !isNaN(this.rover_altitude)
     },
-    get_odom_status: function () {
-      if(this.rover_status){
-        return "fixed"
-      }
-      else{
-        return "not fixed"
+    get_odom_status(): string {
+      return this.rover_status ? 'Fixed' : 'Not Fixed'
+    },
+    get_drone_status(): string {
+      return this.drone_status ? 'Fixed' : 'Not Fixed'
+    },
+  },
+
+  watch: {
+    // The watcher now correctly gets the type from the manual computed property.
+    navMessage(msg: NavMessage | undefined) {
+      if (!msg) return
+
+      if (msg.type === 'gps_fix') {
+        this.rover_latitude_deg = msg.latitude
+        this.rover_longitude_deg = msg.longitude
+        this.rover_altitude = msg.altitude
+        this.rover_status = msg.status
+        this.$emit('odom', {
+          latitude_deg: this.rover_latitude_deg,
+          longitude_deg: this.rover_longitude_deg,
+          bearing_deg: this.rover_bearing_deg,
+        } as Odom)
+      } else if (msg.type === 'basestation_position') {
+        this.basestation_latitude_deg = msg.latitude
+        this.basestation_longitude_deg = msg.longitude
+        this.basestation_status = msg.status
+        this.$emit('basestation_odom', {
+          latitude_deg: this.basestation_latitude_deg,
+          longitude_deg: this.basestation_longitude_deg,
+        } as Odom)
+      } else if (msg.type === 'drone_waypoint') {
+        this.drone_latitude_deg = msg.latitude
+        this.drone_longitude_deg = msg.longitude
+        this.drone_status = msg.status
+        this.$emit('drone_odom', {
+          latitude_deg: this.drone_latitude_deg,
+          longitude_deg: this.drone_longitude_deg,
+        })
+      } else if (msg.type === 'orientation') {
+        this.rover_bearing_deg = quaternionToMapAngle(msg.orientation)
+        this.$emit('odom', {
+          latitude_deg: this.rover_latitude_deg,
+          longitude_deg: this.rover_longitude_deg,
+          bearing_deg: this.rover_bearing_deg,
+        } as Odom)
       }
     },
-    get_drone_status: function () {
-      if(this.drone_status){
-        return "fixed"
-      }
-      else{
-        return "not fixed"
-      }
-    }
   },
-  
-
-  watch:{
-      message(msg){
-        if (msg.type == 'gps_fix') {
-          this.rover_latitude_deg = msg.latitude
-          this.rover_longitude_deg = msg.longitude
-          this.rover_altitude = msg.altitude
-          this.rover_status = msg.status
-
-          this.$emit('odom', {
-            latitude_deg: this.rover_latitude_deg,
-            longitude_deg: this.rover_longitude_deg,
-            bearing_deg: this.rover_bearing_deg
-          } as Odom)
-        }
-        else if (msg.type == 'drone_waypoint') {
-          this.drone_latitude_deg = msg.latitude
-          this.drone_longitude_deg = msg.longitude
-          this.drone_status = msg.status
-
-          this.$emit('drone_odom', {
-            latitude_deg: this.drone_latitude_deg,
-            longitude_deg: this.drone_longitude_deg,
-          })
-        }
-        else if (msg.type == 'basestation_position') {
-          this.basestation_latitude_deg = msg.latitude
-          this.basestation_longitude_deg = msg.longitude
-          this.basestation_status = msg.status
-
-          this.$emit('basestation_odom', {
-            latitude_deg: this.basestation_latitude_deg,
-            longitude_deg: this.basestation_longitude_deg,
-          } as Odom)
-        }
-        else if (msg.type == 'orientation') {
-          this.rover_bearing_deg = quaternionToMapAngle(msg.orientation)
-
-          this.$emit('odom', {
-            latitude_deg: this.rover_latitude_deg,
-            longitude_deg: this.rover_longitude_deg,
-            bearing_deg: this.rover_bearing_deg
-          } as Odom)
-        }
-      }
-  }
-}
-
- 
+})
 </script>
 
 <style scoped>
-.odom-wrap {
-  display: grid;
-  grid-gap: 10px;
-  grid-template-columns: auto auto;
-  grid-template-rows: auto auto;
-  grid-template-areas:
-    'odom basestation-odom flightIndicator'
-    'imu imu flightIndicator';
-  height: auto;
-  width: auto;
+.odomModule {
+  width: 100px;
 }
 
-.odom {
-  grid-area: odom;
-}
-
-.flightIndicator {
-  grid-area: flightIndicator;
-}
-
-.basestation-odom {
-  grid-area: basestation-odom;
-}
-
-.imu {
-  grid-area: imu;
-}
-
-p {
-  margin: 0px;
-
+.wrap {
+  min-width: 700px;
 }
 </style>

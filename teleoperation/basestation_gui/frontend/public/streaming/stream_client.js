@@ -1,6 +1,7 @@
 // Requires a canvas named "stream-{number}" to be present in the DOM
 // The port of the websocket is 8080 + number
-function startStream(number) {
+// function startStream(number) {
+export function startStream(number) {
     // Corresponds to H.265
     // I can't figure out what the other values are for... obtained via guess and check
     const STREAM_CODEC = 'hvc1.1.2.L90.90';

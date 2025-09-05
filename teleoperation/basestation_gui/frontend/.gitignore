@@ -13,6 +13,10 @@ dist
 dist-ssr
 coverage
 *.local
+<<<<<<< HEAD
+=======
+bun.lockb
+>>>>>>> main
 
 /cypress/videos/
 /cypress/screenshots/

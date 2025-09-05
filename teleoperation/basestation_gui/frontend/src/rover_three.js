@@ -1,162 +1,185 @@
 import * as THREE from 'three'
-import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader'
-import { TrackballControls } from 'three/addons/controls/TrackballControls.js'
+import GUI from 'lil-gui'
+import URDFLoader from 'urdf-loader'
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
+// import { TrackballControls } from 'three/addons/controls/TrackballControls.js'
 
-export function threeSetup(containerId) {
-  // Get the container where the scene should be placed
-  const container = document.getElementById(containerId)
+const defaultJointValues = {
+  chassis_to_arm_a: 24.14,
+  arm_a_to_arm_b: -0.785,
+  arm_b_to_arm_c: 1.91,
+  arm_c_to_arm_d: -1,
+  arm_d_to_arm_e: -1.57,
+  gripper_link: 0,
+}
 
-  const canvas = {
-    width: container.clientWidth,
-    height: container.clientHeight
-  }
+let rover = null
 
+export default function threeSetup() {
+  // Canvas element
+  const canvas = document.querySelector('canvas.webgl')
+  // const gui = new GUI( { container: document.querySelector("canvas.webgl") } ); // ??
+  const gui = new GUI({ width: 400 })
+  gui.hide()
+
+  // Scene setup
   const scene = new THREE.Scene()
-  const camera = new THREE.PerspectiveCamera(75, canvas.width / canvas.height, 0.1, 1000)
-  camera.up.set(0, 0, 1)
+  scene.background = new THREE.Color(0x87ceeb)
+  // scene.background = new THREE.Color(0xbbbbbb);
 
-  const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5)
-  directionalLight.position.set(1, 2, 3)
+  // Lighting setup
+  // Ambient Light (soft light)
+  const ambientLight = new THREE.AmbientLight(0x808080, 1) // soft white light
+  scene.add(ambientLight)
+
+  // Directional Light (main light source)
+  const directionalLight = new THREE.DirectionalLight(0xffffff, 1) // white light
+  directionalLight.position.set(2, 3, 2) // Position of light source
+  directionalLight.castShadow = true // Enable shadows
   scene.add(directionalLight)
 
-  const renderer = new THREE.WebGLRenderer()
-  renderer.setSize(canvas.width, canvas.height)
-  container.appendChild(renderer.domElement) // append it to your specific HTML element
+  // const axesHelper = new THREE.AxesHelper(50)
+  // scene.add(axesHelper)
 
-  scene.background = new THREE.Color(0xcccccc)
+  const manager = new THREE.LoadingManager()
+  const loader = new URDFLoader(manager)
+  loader.packages = {
+    mrover: '/urdf',
+  }
 
-  //controls to orbit around model
-  let controls = new TrackballControls(camera, renderer.domElement)
-  controls.rotateSpeed = 1.0
-  controls.zoomSpeed = 1.2
-  controls.panSpeed = 0.8
-  controls.noZoom = false
-  controls.noPan = false
-  controls.staticMoving = true
-  controls.dynamicDampingFactor = 0.3
+  // Load using absolute path from web root
+  loader.load(
+    // '/urdf/arm/arm.urdf',
+    '/urdf/rover/rover.urdf',
+    robot => {
+      rover = robot
+      robot.position.set(0, -50, 0)
+      robot.rotation.x = -Math.PI / 2
+      robot.updateMatrixWorld()
+      scene.add(robot)
 
-  const joints = [
-    {
-      name: 'chassis',
-      file: 'rover_chassis.fbx',
-      translation: [0.164882, -0.200235, 0.051497],
-      rotation: [0, 0, 0]
-    },
-    {
-      name: 'a',
-      file: 'arm_a.fbx',
-      translation: [0.034346, 0, 0.049024],
-      rotation: [0, 0, 0]
-    },
-    {
-      name: 'b',
-      file: 'arm_b.fbx',
-      translation: [0.534365, 0, 0.009056],
-      rotation: [0, 0, 0]
-    },
-    {
-      name: 'c',
-      file: 'arm_c.fbx',
-      translation: [0.546033, 0, 0.088594],
-      rotation: [0, 0, 0]
-    },
-    {
-      name: 'd',
-      file: 'arm_d.fbx',
-      translation: [0.044886, 0, 0],
-      rotation: [0, 0, 0]
-    },
-    {
-      name: 'e',
-      file: 'arm_e.fbx',
-      translation: [0.044886, 0, 0],
-      rotation: [0, 0, 0]
-    }
-  ]
+      // Add GUI controls for joint angles
+      robot.traverse(obj => {
+        if (
+          obj.jointType === 'revolute' ||
+          obj.jointType === 'continuous' ||
+          obj.jointType === 'prismatic'
+        ) {
+          const name = obj.name || 'unnamed_joint'
 
-  const loader = new FBXLoader()
-  for (let i = 0; i < joints.length; ++i) {
-    loader.load('/meshes/' + joints[i].file, (fbx) => {
-        // Traverse the loaded scene to find meshes or objects
-        fbx.traverse((child) => {
-          if (child.isMesh) {
-            if (joints[i].name === 'd' || joints[i].name === 'e') {
-              child.material = new THREE.MeshStandardMaterial({ color: 0x00ff00 })
-            } else child.material = new THREE.MeshStandardMaterial({ color: 0xffffff })
-            scene.add(child)
-            child.scale.set(1, 1, 1)
-            child.position.set(0, 0, 0)
-          }
-        })
-      },
-      (xhr) => {
-        console.log((xhr.loaded / xhr.total) * 100 + '% loaded')
-      },
-      (error) => {
-        console.log(error)
+          const initialValue =
+            typeof defaultJointValues[name] === 'number'
+              ? defaultJointValues[name]
+              : typeof obj.jointValue === 'number'
+                ? obj.jointValue
+                : 0
+
+          const min = obj.limit?.lower ?? -Math.PI
+          const max = obj.limit?.upper ?? Math.PI
+
+          const folder = gui.addFolder(name)
+          const paramObj = { value: initialValue }
+
+          obj.setJointValue(initialValue)
+
+          folder
+            .add(paramObj, 'value', min, max, 0.01)
+            .name(`${name} (${obj.jointType})`)
+            .onChange(value => {
+              obj.setJointValue(value)
+            })
+        }
       })
-  }
-
-  camera.position.x = 1.25
-  camera.position.y = 1.25
-  camera.position.z = 1.25
-  camera.lookAt(new THREE.Vector3(0, 0, 0))
-
-  const targetCube = new THREE.Mesh(
-    new THREE.BoxGeometry(0.1, 0.1, 0.1),
-    new THREE.MeshBasicMaterial({ color: 0x00ff00 })
+    },
+    undefined,
+    err => {
+      console.error('Failed to load URDF:', err)
+    },
   )
-  scene.add(targetCube)
 
-  function animate() {
-    requestAnimationFrame(animate)
-    controls.update()
-    renderer.render(scene, camera)
+  // Sizes for window resizing
+  const sizes = {
+    width: canvas.clientWidth,
+    height: canvas.clientHeight,
   }
 
-  animate()
+  // Resize event listenerreb
+  window.addEventListener('resize', () => {
+    sizes.width = canvas.clientWidth
+    sizes.height = canvas.clientHeight
+    // Update camera
+    camera.aspect = sizes.width / sizes.height
+    camera.updateProjectionMatrix()
+    // Update renderer
+    renderer.setSize(sizes.width, sizes.height)
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+  })
 
-  function fk(positions) {
+  // Camera setup
+  const camera = new THREE.PerspectiveCamera(
+    75,
+    sizes.width / sizes.height,
+    0.1,
+    1000,
+  )
+  camera.position.x = 100
+  camera.position.y = 50
+  camera.position.z = 100
+  camera.lookAt(0, 0, 0)
+  scene.add(camera)
 
-    let cumulativeMatrix = new THREE.Matrix4()
+  // OrbitControls for the camera
+  const controls = new OrbitControls(camera, canvas)
+  // controls.enableDamping = true
 
-    cumulativeMatrix.makeTranslation(new THREE.Vector3(0, 0, 0.439675)) //makes meshes relative to base_link
+  // Renderer setup
+  const renderer = new THREE.WebGLRenderer({
+    antialias: true,
+    canvas: canvas,
+  })
+  renderer.setSize(sizes.width, sizes.height)
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+  renderer.shadowMap.enabled = true
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap
+  renderer.physicallyCorrectLights = true
+  renderer.toneMapping = THREE.ACESFilmicToneMapping
+  renderer.toneMappingExposure = 2.5
 
-    for (let i = 0; i < joints.length; ++i) {
-      let mesh = scene.getObjectByName(joints[i].name)
+  const clock = new THREE.Clock()
+  let timeSinceLastFrame = 0
+  const fpsLimit = 60
+  const frameInterval = 1 / fpsLimit
 
-      if (!mesh) continue
-
-      let localMatrix = new THREE.Matrix4()
-
-      let rotationAngle = positions[i] // Angle for this joint
-      if (joints[i].name === 'chassis') {
-        localMatrix.makeTranslation(0, rotationAngle, 0)
-      } else {
-        localMatrix.makeRotationY(rotationAngle)
-      }
-
-      let offset = new THREE.Vector3().fromArray(joints[i].translation)
-
-      localMatrix.setPosition(
-        new THREE.Vector3().setFromMatrixPosition(localMatrix).add(offset)
-      )
-
-      mesh.matrixAutoUpdate = false
-      mesh.matrix = cumulativeMatrix.clone()
-
-      cumulativeMatrix.multiply(localMatrix)
+  const tick = () => {
+    window.requestAnimationFrame(tick)
+    const delta = clock.getDelta()
+    timeSinceLastFrame += delta
+    if (timeSinceLastFrame > frameInterval) {
+      timeSinceLastFrame %= frameInterval
+      controls.update()
+      renderer.render(scene, camera)
     }
   }
 
-  function ik(target) {
-    let quaternion = new THREE.Quaternion(...target.quaternion)
-    targetCube.position.set(...target.position)
-    targetCube.setRotationFromQuaternion(quaternion)
-  }
+  tick() // Start the animation loop
 
-  // Return an object with the updateJointAngles() function
-  return {
-    fk, ik
+  return () => {
+    renderer.dispose() // Dispose renderer
   }
+}
+
+export function updatePose(joints) {
+  if (!rover) return
+  rover.traverse(obj => {
+    if (
+      obj.jointType === 'revolute' ||
+      obj.jointType === 'continuous' ||
+      obj.jointType === 'prismatic'
+    ) {
+      const joint = joints.find(j => j.name === obj.name)
+      if (joint) {
+        obj.setJointValue(joint.position)
+      }
+    }
+  })
 }

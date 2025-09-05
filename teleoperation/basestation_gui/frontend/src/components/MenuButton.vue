@@ -4,6 +4,9 @@
 <script lang="ts">
 import { defineComponent } from 'vue'
 
+<script lang="ts">
+import { defineComponent } from 'vue'
+
 export default defineComponent({
   name: 'MenuButton',
 
@@ -33,7 +36,7 @@ a {
   text-decoration: none;
   color: #FFCB05;
   font-size: 2rem;
-  font-weight: bold;
+  font-weight: 900;
 
   background-color: #00274C;
   border-radius: 10px;
@@ -41,12 +44,10 @@ a {
   transition: transform 0.2s, box-shadow 0.2s;
 }
 
-
 a:hover {
   transform: translateY(-4px);
   box-shadow: 0 6px 10px rgba(0, 0, 0, 0.2);
 }
-
 
 a:active {
   transform: translateY(0);
