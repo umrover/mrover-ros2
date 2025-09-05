@@ -1,6 +1,8 @@
 <template>
   <a class="btn btn-primary" :href="link">{{ name }}</a>
 </template>
+<script lang="ts">
+import { defineComponent } from 'vue'
 
 <script lang="ts">
 import { defineComponent } from 'vue'

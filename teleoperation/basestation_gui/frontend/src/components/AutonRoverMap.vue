@@ -169,7 +169,6 @@ export default {
         this.route.map((waypoint: { latLng: LatLng }) => waypoint.latLng),
       )
     },
-  },
   watch: {
     odom: {
       handler: function (val) {

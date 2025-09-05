@@ -52,7 +52,7 @@ namespace mrover {
         RCLCPP_INFO_STREAM(get_logger(), "Creating Image Object Detector...");
 
         std::vector<ParameterWrapper> params{
-                {"long_range_camera/fov", mCameraHorizontalFov, 80.0}};
+                {"long_range_camera/fov", mCameraHorizontalFov, 10.0}};
 
         ParameterWrapper::declareParameters(this, params);
 
