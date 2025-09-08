@@ -75,7 +75,7 @@
           </div>
         </div>
       </div>
-
+      
       <div class="d-flex flex-column gap-2">
         <button class="btn btn-success" @click="addWaypoint(input, false)">
           Add Waypoint

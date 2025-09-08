@@ -67,7 +67,7 @@ export default defineComponent({
   },
 
   // arm_state, drive_state, sa_state, drive_left_state, drive_right_state
-  // arm, drive,
+  // arm, drive, 
 
   watch: {
     armMessage(msg) {

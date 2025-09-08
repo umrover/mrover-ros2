@@ -33,11 +33,11 @@
       </table>
     </div>
   </template>
-
+  
   <script lang='ts'>
   import { defineComponent } from 'vue'
   import { mapState } from 'vuex'
-
+  
   export default defineComponent({
     props: {
       header: {
@@ -49,7 +49,7 @@
         required: true,
       }
     },
-
+  
     data() {
       return {
         name: [] as string[],
@@ -58,11 +58,11 @@
         effort: [] as number[]
       }
     },
-
+  
     computed: {
       ...mapState('websocket', ['message'])
     },
-
+  
     watch: {
       message(msg) { // COMPONENT NOT USED
         if (msg.type == this.msgType) {
@@ -75,7 +75,7 @@
     }
   })
   </script>
-
+  
   <style scoped>
   .wrap {
     display: inline-block;

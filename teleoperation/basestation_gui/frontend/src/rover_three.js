@@ -183,3 +183,38 @@ export function updatePose(joints) {
     }
   })
 }
+
+// export function fk(positions, scene, joints) {
+//   let cumulativeMatrix = new THREE.Matrix4()
+//   cumulativeMatrix.makeTranslation(new THREE.Vector3(0, 0, 0.439675)) // base_link offset
+
+//   for (let i = 0; i < joints.length; ++i) {
+//     let mesh = scene.getObjectByName(joints[i].name)
+//     if (!mesh) continue
+
+//     let localMatrix = new THREE.Matrix4()
+//     let rotationAngle = positions[i]
+
+//     if (joints[i].name === 'chassis') {
+//       localMatrix.makeTranslation(0, rotationAngle, 0)
+//     } else {
+//       localMatrix.makeRotationY(rotationAngle)
+//     }
+
+//     let offset = new THREE.Vector3().fromArray(joints[i].translation)
+//     localMatrix.setPosition(
+//       new THREE.Vector3().setFromMatrixPosition(localMatrix).add(offset),
+//     )
+
+//     mesh.matrixAutoUpdate = false
+//     mesh.matrix = cumulativeMatrix.clone()
+
+//     cumulativeMatrix.multiply(localMatrix)
+//   }
+// }
+
+// export function ik(target, targetCube) {
+//   let quaternion = new THREE.Quaternion(...target.quaternion)
+//   targetCube.position.set(...target.position)
+//   targetCube.setRotationFromQuaternion(quaternion)
+// }

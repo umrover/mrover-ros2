@@ -7,6 +7,7 @@
 
 <script lang="ts">
 import NavBar from './views/NavBar.vue'
+
 export default {
   name: 'App',
   components: {
@@ -51,14 +52,14 @@ body {
 .btn-outline-primary:hover,
 .btn-outline-primary:focus,
 .btn-outline-secondary:hover,
-.btn-outline-secondary:focus
+.btn-outline-secondary:focus 
 {
   color: #000 !important;
 }
 
 .btn-primary.active,
 .btn-primary:active,
-.btn:is(.btn-primary, .btn-outline-primary):focus
+.btn:is(.btn-primary, .btn-outline-primary):focus 
 {
   color: #000 !important;
 } */
