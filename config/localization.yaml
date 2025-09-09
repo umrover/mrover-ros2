@@ -9,11 +9,6 @@
     world_frame: "map"
     gps_frame: "gps_frame"
 
-    # Exception, these are in degrees
-    ref_lat: 42.293195
-    ref_lon: -83.7096706
-    ref_alt: 0.0
-
 basestation_gps_driver:
   ros__parameters:
     port: /dev/ublox_gps

@@ -75,9 +75,6 @@ navigation:
       post_avoidance_multiplier: 1.42
       post_radius: 0.7
 
-    # TODO(quintin): Avoid storing these in multiple config files
-    ref_lat: 42.293195
-    ref_lon: -83.7096706
     ref_alt: 0.0
     world_frame: "map"
     rover_frame: "base_link"
@@ -101,13 +98,6 @@ stuck_detector:
     linear_vel_thresh: 0.16
     # Clear the window if the time since last data is greater than this
     data_watchdog_timeout: 1.0
-
-debug_course_publisher:
-  ros__parameters:
-    # TODO(quintin): Avoid storing these in multiple config files
-    ref_lat: 42.293195
-    ref_lon: -83.7096706
-    ref_alt: 0.0
 
 custom_costmap:
   ros__parameters:
