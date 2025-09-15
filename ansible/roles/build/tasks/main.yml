@@ -205,11 +205,3 @@
   command: ~/.bun/bin/bun install
   args:
     chdir: "{{ ansible_env.HOME }}/ros2_ws/src/mrover/teleoperation/basestation_gui/frontend"
-
-- name: Run Django migrations
-  shell: |
-    source ~/ros2_ws/src/mrover/venv/bin/activate
-    python teleoperation/basestation_gui/manage.py makemigrations
-    python teleoperation/basestation_gui/manage.py migrate
-  args:
-    chdir: "{{ ansible_env.HOME }}/ros2_ws/src/mrover"
