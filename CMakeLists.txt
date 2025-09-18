@@ -293,31 +293,36 @@ mrover_executable_from_component(stereo_tag_detector perception/executables/ster
 mrover_executable_from_component(image_tag_detector perception/executables/image_tag_detector.cpp tag_detector_component)
 
 # Embedded
+
 mrover_add_header_only_library(messaging esw/messaging)
 
-mrover_add_header_only_library(can_device esw/can_device)
-target_link_libraries(can_device INTERFACE ${rclcpp_LIBRARIES} moteus)
+if (NOT APPLE)
+    mrover_add_header_only_library(can_device esw/can_device)
+    target_link_libraries(can_device INTERFACE ${rclcpp_LIBRARIES} moteus)
 
-mrover_add_library(motor_library esw/motor_library/*.cpp esw/motor_library)
-ament_target_dependencies(motor_library rclcpp std_srvs)
-target_link_libraries(motor_library can_device units messaging parameter_utils)
+    mrover_add_library(motor_library esw/motor_library/*.cpp esw/motor_library)
+    ament_target_dependencies(motor_library rclcpp std_srvs)
+    target_link_libraries(motor_library can_device units messaging parameter_utils)
 
-macro(mrover_add_esw_bridge_node name sources)
-    mrover_add_node(${name} ${sources})
-    ament_target_dependencies(${name} rclcpp std_srvs)
-    target_link_libraries(${name} can_device units messaging)
-endmacro()
+    macro(mrover_add_esw_motor_bridge_node name sources)
+        mrover_add_node(${name} ${sources})
+        ament_target_dependencies(${name} rclcpp std_srvs)
+        target_link_libraries(${name} can_device units messaging)
+        target_link_libraries(${name} motor_library)
+    endmacro()
 
-macro(mrover_add_esw_motor_bridge_node name sources)
-    mrover_add_esw_bridge_node(${name} ${sources})
-    target_link_libraries(${name} motor_library)
-endmacro()
+    mrover_add_esw_motor_bridge_node(drive_hw_bridge esw/drive_hw_bridge.cpp)
+    mrover_add_esw_motor_bridge_node(arm_hw_bridge esw/arm_hw_bridge.cpp)
+    mrover_add_esw_motor_bridge_node(mast_gimbal_hw_bridge esw/mast_gimbal_hw_bridge.cpp)
 
-mrover_add_esw_motor_bridge_node(drive_hw_bridge esw/drive_hw_bridge.cpp)
-mrover_add_esw_motor_bridge_node(arm_hw_bridge esw/arm_hw_bridge.cpp)
-mrover_add_esw_motor_bridge_node(mast_gimbal_hw_bridge esw/mast_gimbal_hw_bridge.cpp)
-mrover_add_esw_bridge_node(differential_drive_controller esw/differential_drive_controller.cpp)
-mrover_add_esw_bridge_node(pdlb_hw_bridge esw/pdlb_hw_bridge.cpp)
+    mrover_add_node(pdlb_hw_bridge esw/pdlb_hw_bridge.cpp)
+    ament_target_dependencies(pdlb_hw_bridge rclcpp std_srvs)
+    target_link_libraries(pdlb_hw_bridge can_device units messaging)
+endif()
+
+mrover_add_node(differential_drive_controller esw/differential_drive_controller.cpp)
+ament_target_dependencies(differential_drive_controller rclcpp std_srvs)
+target_link_libraries(differential_drive_controller units messaging)
 
 mrover_add_node(arm_controller teleoperation/arm_controller/arm_controller.cpp teleoperation/arm_controller/pch.hpp)
 target_link_libraries(arm_controller lie)
