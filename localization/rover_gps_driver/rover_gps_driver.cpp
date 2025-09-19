@@ -6,7 +6,7 @@ namespace mrover {
         
         // connect to serial
         std::vector<ParameterWrapper> params{
-                {"port_unicode", port, "/dev/unicore_gps"},
+                {"port_unicore", port, "/dev/unicore_gps"},
                 {"baud_unicore", baud, 115200},
                 {"gps_frame", gps_frame, "gps_frame"},
                 {"ref_lat", ref_lat, 42.293195},
