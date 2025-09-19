@@ -1,0 +1,85 @@
+FROM ubuntu:jammy
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV ROS_VERSION=2
+ENV ROS_DISTRO=humble
+ENV ROS_PYTHON_VERSION=3
+ENV TZ=America/Detroit
+ENV HOSTNAME=mrover-ros
+
+RUN locale && apt-get update -y && apt-get install software-properties-common curl wget gnupg2 sudo locales git git-lfs iproute2 net-tools -y
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
+# add apt repositories
+RUN add-apt-repository universe
+RUN add-apt-repository ppa:deadsnakes/ppa
+RUN add-apt-repository ppa:ubuntu-toolchain-r/test
+
+# llvm apt key
+RUN wget -qO - https://apt.llvm.org/llvm-snapshot.gpg.key | tee /etc/apt/trusted.gpg.d/llvm.asc > /dev/null
+RUN echo "deb [arch=$(dpkg --print-architecture)] http://apt.llvm.org/jammy/ llvm-toolchain-jammy-18 main" | tee /etc/apt/sources.list.d/llvm.list > /dev/null
+
+# kitware apt key
+RUN wget -qO - https://apt.kitware.com/keys/kitware-archive-latest.asc | tee /etc/apt/trusted.gpg.d/kitware.asc > /dev/null
+RUN echo "deb [arch=$(dpkg --print-architecture)] https://apt.kitware.com/ubuntu/ $(. /etc/os-release && echo $UBUNTU_CODENAME) main" | tee /etc/apt/sources.list.d/kitware.list > /dev/null
+
+# ros2 apt key
+RUN curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg
+RUN echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main" | tee /etc/apt/sources.list.d/ros2.list > /dev/null
+
+# install packages
+RUN apt-get update && apt-get upgrade -y && apt-get install -y \ 
+    zsh neovim sudo cmake ccache ninja-build tmux htop curl \
+    unzip rsync shellcheck python3-pip python3-dev python3-venv \
+    python3-rosdep clang-18 clangd-18 clang-tidy-18 clang-format-18 \
+    lld-18 lldb-18 gcc-13 g++-13 libbullet-dev libglfw3-dev libx11-xcb-dev \
+    libnl-3-dev libnl-route-3-dev libtbb-dev libassimp-dev libeigen3-dev \
+    libopencv-dev libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev vainfo \
+    x264 ros-humble-ros-base ros-humble-rviz2 ros-humble-xacro libboost-dev \
+    ros-humble-rtcm-msgs ros-humble-magic-enum qtmultimedia5-dev \
+    && pip install virtualenvwrapper
+
+RUN update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-13 130 \
+    && update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-13 130 \
+    && update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-18 180 \
+    && update-alternatives --install /usr/bin/clang clang /usr/bin/clang-18 180 \
+    && update-alternatives --install /usr/bin/clangd clangd /usr/bin/clangd-18 180 \
+    && update-alternatives --install /usr/bin/lld lld /usr/bin/lld-18 180 \
+    && update-alternatives --install /usr/bin/clang-tidy clang-tidy /usr/bin/clang-tidy-18 180
+
+RUN mkdir -p /pkg
+ADD --chown=mrover:mrover pkg /pkg
+
+RUN apt-get install /pkg/libmanif-dev.deb /pkg/libdawn-dev.deb
+RUN rosdep init
+
+RUN useradd --create-home --groups sudo --shell /bin/zsh mrover
+RUN echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
+RUN chsh -s $(which zsh) mrover
+
+USER mrover
+WORKDIR /home/mrover
+RUN git clone --depth 1 https://github.com/ohmyzsh/ohmyzsh.git ~/.oh-my-zsh && \
+    git clone --depth 1 https://github.com/zsh-users/zsh-autosuggestions ~/.oh-my-zsh/custom/plugins/zsh-autosuggestions && \
+    git clone --depth 1 https://github.com/zsh-users/zsh-syntax-highlighting ~/.oh-my-zsh/custom/plugins/zsh-syntax-highlighting && \
+    git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf && \
+    ~/.fzf/install --all
+COPY --chown=mrover:mrover docker/dotfiles/ ./
+
+RUN mkdir -p /home/mrover/ros2_ws/src/mrover
+WORKDIR /home/mrover/ros2_ws/src/mrover
+
+ENV BUN_INSTALL=/home/mrover/.bun
+ENV PATH="${BUN_INSTALL}/bin:${PATH}"
+
+RUN curl -fsSL https://bun.sh/install | bash
+
+RUN rosdep update
+
+ADD --chown=mrover:mrover docker/entrypoint.sh /home/mrover/
+RUN chmod +x /home/mrover/entrypoint.sh
+
+USER mrover
+
+ENTRYPOINT [ "/home/mrover/entrypoint.sh" ]
+CMD [ "/bin/zsh" ]
