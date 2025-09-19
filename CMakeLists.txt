@@ -222,16 +222,16 @@ target_link_libraries(gst_utils INTERFACE magic_enum::magic_enum PkgConfig::Gst 
 
 # Simulator
 
-mrover_add_node(simulator simulator/*.cpp simulator simulator/pch.hpp)
-ament_target_dependencies(simulator rclcpp rclcpp_components nav_msgs sensor_msgs geometry_msgs tf2 tf2_ros urdf)
-target_link_libraries(simulator
-    assimp::assimp glfw3webgpu webgpu glfw webgpu_hpp imgui
-    ${BULLET_LIBRARIES}
-    lie Eigen3::Eigen
-    opencv_core opencv_imgcodecs opencv_imgproc
-    loop_profiler
-)
-target_include_directories(simulator SYSTEM PRIVATE ${BULLET_INCLUDE_DIRS} ${OPENCV_INCLUDE_DIRS})
+# mrover_add_node(simulator simulator/*.cpp simulator simulator/pch.hpp)
+# ament_target_dependencies(simulator rclcpp rclcpp_components nav_msgs sensor_msgs geometry_msgs tf2 tf2_ros urdf)
+# target_link_libraries(simulator
+#     assimp::assimp glfw3webgpu webgpu glfw webgpu_hpp imgui
+#     ${BULLET_LIBRARIES}
+#     lie Eigen3::Eigen
+#     opencv_core opencv_imgcodecs opencv_imgproc
+#     loop_profiler
+# )
+# target_include_directories(simulator SYSTEM PRIVATE ${BULLET_INCLUDE_DIRS} ${OPENCV_INCLUDE_DIRS})
 
 
 # Localization
@@ -344,13 +344,16 @@ mrover_add_esw_motor_bridge_node(mast_gimbal_hw_bridge esw/mast_gimbal_hw_bridge
 mrover_add_esw_motor_bridge_node(sa_hw_bridge esw/sa_hw_bridge.cpp)
 mrover_add_esw_bridge_node(science_hw_bridge esw/science_hw_bridge.cpp)
 ament_target_dependencies(science_hw_bridge sensor_msgs)
+
+# arm controller
+mrover_add_node(arm_controller navigation/arm_controller/arm_controller.cpp navigation/arm_controller/pch.hpp)
+target_link_libraries(arm_controller lie)
+ament_target_dependencies(arm_controller rclcpp)
+
 target_link_libraries(science_hw_bridge parameter_utils)
 mrover_add_esw_bridge_node(differential_drive_controller esw/differential_drive_controller.cpp)
 mrover_add_esw_bridge_node(pdlb_hw_bridge esw/pdlb_hw_bridge.cpp)
 
-mrover_add_node(arm_controller teleoperation/arm_controller/arm_controller.cpp teleoperation/arm_controller/pch.hpp)
-target_link_libraries(arm_controller lie)
-ament_target_dependencies(arm_controller rclcpp)
 
 mrover_add_node(led esw/led.cpp)
 ament_target_dependencies(led rclcpp std_srvs)

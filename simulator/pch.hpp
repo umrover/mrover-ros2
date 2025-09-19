@@ -79,7 +79,7 @@
 
 #include <mrover/msg/calibration_status.hpp>
 #include <mrover/msg/controller_state.hpp>
-#include <mrover/msg/ik.hpp>
+#include <mrover/msg/ik_sim.hpp>
 #include <mrover/msg/image_target.hpp>
 #include <mrover/msg/image_targets.hpp>
 #include <mrover/msg/position.hpp>
