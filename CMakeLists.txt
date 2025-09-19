@@ -216,6 +216,7 @@ ament_target_dependencies(lie rclcpp geometry_msgs tf2 tf2_ros)
 mrover_add_header_only_library(units units)
 mrover_add_header_only_library(loop_profiler loop_profiler)
 mrover_add_header_only_library(parameter_utils parameter_utils)
+mrover_add_header_only_library(state_machine state_machine)
 
 # Simulator
 

@@ -20,10 +20,7 @@ from threading import Lock
 from dataclasses import dataclass
 from typing import Optional, List, Dict
 import threading
-
-
-STRUCTURE_TOPIC = "nav_structure"
-STATUS_TOPIC = "nav_state"
+import sys
 
 
 @dataclass
@@ -85,7 +82,7 @@ class StateMachine:
 
 
 class GUI(QWidget):  # type: ignore
-    def __init__(self, state_machine_instance, *args, **kwargs):
+    def __init__(self, state_machine_instance, structure_topic, state_topic, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.label: QLabel = QLabel()  # type: ignore
         self.timer: QTimer = QTimer()  # type: ignore
@@ -98,11 +95,11 @@ class GUI(QWidget):  # type: ignore
         self.viz = Node("Visualizer")
 
         self.viz.create_subscription(
-            StateMachineStructure, STRUCTURE_TOPIC, self.state_machine.container_structure_callback, 1
+            StateMachineStructure, structure_topic, self.state_machine.container_structure_callback, 1
         )
 
         self.viz.create_subscription(
-            StateMachineStateUpdate, STATUS_TOPIC, self.state_machine.container_status_callback, 1
+            StateMachineStateUpdate, state_topic, self.state_machine.container_status_callback, 1
         )
 
     def paintEvent(self, event):
@@ -131,7 +128,7 @@ class GUI(QWidget):  # type: ignore
         self.repaint()
 
 
-def main():
+def main(structure_topic, state_topic):
     try:
         rclpy.init()
 
@@ -147,7 +144,7 @@ def main():
         print("Subscriptions Created...")
 
         app = QApplication([])  # type: ignore
-        g = GUI(state_machine)
+        g = GUI(state_machine, structure_topic, state_topic)
         g.show()
         app.exec_()
 
@@ -158,4 +155,9 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    argc = len(sys.argv)
+    if argc != 3:
+        print('Usage ros2 run mrover visualizer.py "[structure topic]" "[state topic]"')
+        sys.exit(1)
+
+    main(sys.argv[1], sys.argv[2])
