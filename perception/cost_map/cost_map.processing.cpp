@@ -76,7 +76,6 @@ namespace mrover {
                     int index = mapToGrid(pointInMap, mGlobalGridMsg);
                     if (index < 0 || index >= static_cast<int>(mGlobalGridMsg.data.size())) continue;
 
-
                     if constexpr (uploadDebugPointCloud) {
                         // add point to corresponding bin
                         debugBins[index].points.push_back(point);
@@ -151,7 +150,7 @@ namespace mrover {
 
             // Make a new occupancy grid that's mNumDivisions^2 times the size of the original
             nav_msgs::msg::OccupancyGrid postProcessed;
-            postProcessed.info.resolution = mResolution / mNumDivisions;
+            postProcessed.info.resolution = static_cast<float>(mResolution / mNumDivisions);
             postProcessed.info.height = mGlobalGridMsg.info.height * mNumDivisions;
             postProcessed.info.width = mGlobalGridMsg.info.width * mNumDivisions;
             postProcessed.info.origin = mGlobalGridMsg.info.origin;
@@ -343,5 +342,4 @@ namespace mrover {
     auto CostMapNode::coordinateToIndex(Coordinate const c, int width) const -> int {
         return c.row * width + c.col;
     }
-
 } // namespace mrover

@@ -37,6 +37,9 @@ namespace mrover {
 
         mPCDebugPub = create_publisher<sensor_msgs::msg::PointCloud2>("cost_map/debug_pc", 1);
 
+        // Fill in grid resolution
+        mGlobalGridMsg.info.resolution = static_cast<float>(mResolution);
+
         // Number of cells horizontally
         mGlobalGridMsg.info.width = static_cast<int>(mSize / mResolution);
         mWidth = static_cast<int>(mGlobalGridMsg.info.width);
