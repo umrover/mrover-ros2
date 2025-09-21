@@ -74,6 +74,8 @@ namespace mrover {
 
         mDetectedImagePub = create_publisher<sensor_msgs::msg::Image>("image_tag_detection", 1);
 
+        //mRawTargetsPub = create_publisher<msg::ImageTargets>("/raw_tags", 1);
+
         mTargetsPub = create_publisher<msg::ImageTargets>("/tags", 1);
 
         mImageSub = create_subscription<sensor_msgs::msg::Image>("/long_range_cam/image", 1, [this](sensor_msgs::msg::Image::ConstSharedPtr const& msg) {

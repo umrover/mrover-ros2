@@ -12,62 +12,18 @@ namespace mrover {
 
     struct BaseScienceMessage {};
 
-    enum struct ScienceDevice {
-        HEATER_0,
-        HEATER_1,
-        WHITE_LED,
-    };
-
-    struct EnableScienceDeviceCommand : BaseScienceMessage {
-        ScienceDevice science_device{};
-        bool enable{};
-    };
-
-    struct HeaterAutoShutOffCommand : BaseScienceMessage {
-        bool enable_auto_shutoff{};
-    };
-
-    struct ConfigThermistorAutoShutOffCommand : BaseScienceMessage {
-        float shutoff_temp{};
-    };
-
-    struct HeaterStateInfo {
-        std::uint8_t on : 2 {};
-    };
-
-    struct HeaterStateData {
-        HeaterStateInfo heater_state_info;
-    };
-
-    struct ThermistorData {
-        std::array<float, 2> temps;
-    };
-
     struct SensorData {
-        std::uint8_t id;
-        double data;
-    };
+		std::uint8_t id;
+		double data;
+	};
 
     enum class ScienceDataID : uint8_t {
-        TEMPERATURE = 1,
-        HUMIDITY = 2,
-        OXYGEN = 3,
-        UV = 4,
-    };
-
-    using InBoundScienceMessage = std::variant<
-            EnableScienceDeviceCommand, HeaterAutoShutOffCommand, ConfigThermistorAutoShutOffCommand>;
-
-    using OutBoundScienceMessage = std::variant<
-            SensorData, HeaterStateData, ThermistorData>;
+		GEIGER = 1,
+		HYDROGEN = 2,
+		OZONE = 3,
+	};
 
 #pragma pack(pop)
-
-    // Utility for std::visit with lambdas
-    template<class... Ts>
-    struct overloaded : Ts... {
-        using Ts::operator()...;
-    };
 
 } // namespace mrover
 

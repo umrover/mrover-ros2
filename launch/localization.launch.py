@@ -33,6 +33,7 @@ def generate_launch_description():
         respawn=True,
     )
 
+<<<<<<< Updated upstream
     iekf_se3_node = Node(
         package="mrover",
         executable="iekf_se3",
@@ -41,6 +42,16 @@ def generate_launch_description():
         output="screen",
         respawn=True,
     )
+=======
+    # iekf_se3_node = Node(
+    #     package="mrover",
+    #     executable="iekf_se3",
+    #     name="iekf_se3",
+    #     parameters=[os.path.join(get_package_share_directory("mrover"), "config", "localization.yaml")],
+    #     output="screen",
+    #     respawn=True
+    # )
+>>>>>>> Stashed changes
 
     pose_filter_node = Node(
         package="mrover",

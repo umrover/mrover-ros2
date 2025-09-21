@@ -70,6 +70,16 @@ def generate_launch_description():
         ],
     )
 
+    mob_right_streamer_node = Node(
+        package="mrover",
+        executable="gst_camera_server",
+        name="mob_right_streamer",
+        output="screen",
+        parameters=[
+            Path(get_package_share_directory("mrover"), "config", "cameras.yaml"),
+        ],
+    )
+
     static_streamer_node = Node(
         package="mrover",
         executable="gst_camera_server",
@@ -113,6 +123,7 @@ def generate_launch_description():
             drive_hw_bridge_node,
             pdlb_hw_bridge_node,
             mob_left_streamer_node,
+            mob_right_streamer_node,
             static_streamer_node,
             mast_gimbal_hw_bridge_node,
             zed_container,

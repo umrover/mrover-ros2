@@ -52,8 +52,16 @@ def generate_launch_description():
         )
     )
 
+    science_node = Node(
+        package="mrover",
+        executable="science_hw_bridge",
+        name="science_hw_bridge",
+        parameters=[Path(get_package_share_directory("mrover"), "config", "esw.yaml")],
+    )
+
     return LaunchDescription(
         [
+            science_node,
             launch_include_jetson_base,
             arm_hw_bridge_node,
             boom_streamer_node,

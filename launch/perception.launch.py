@@ -67,6 +67,7 @@ def generate_launch_description():
         ],
     )
 
+<<<<<<< Updated upstream
     # usb camera node
     usb_cam = Node(
         package="mrover",
@@ -75,5 +76,14 @@ def generate_launch_description():
         parameters=[Path(get_package_share_directory("mrover"), "config", "perception.yaml")],
         respawn=True,
     )
+=======
+    # usb_cam = Node(
+    #     package="mrover",
+    #     executable="usb_camera",
+    #     name="long_range_cam",
+    #     parameters=[Path(get_package_share_directory("mrover"), "config", "perception.yaml")],
+    #     respawn=True
+    # )
+>>>>>>> Stashed changes
 
-    return launch.LaunchDescription([loaded_container, usb_cam])
+    return launch.LaunchDescription([loaded_container])

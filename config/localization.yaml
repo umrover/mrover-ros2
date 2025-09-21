@@ -7,7 +7,16 @@
 /**:
   ros__parameters:
     world_frame: "map"
+<<<<<<< Updated upstream
     gps_frame: "gps_frame"
+=======
+    rover_frame: "right_gps_frame"
+
+    # Exception, these are in degrees
+    ref_lat: 51.4668369 #38.4227303 
+    ref_lon: -112.7051763 #-110.7847932
+    ref_alt: 0.0
+>>>>>>> Stashed changes
 
 basestation_gps_driver:
   ros__parameters:

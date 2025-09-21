@@ -70,6 +70,8 @@ namespace mrover {
 
         rclcpp::Publisher<msg::ImageTargets>::SharedPtr mTargetsPub;
 
+        //rclcpp::Publisher<msg::ImageTargets>::SharedPtr mRawTargetsPub;
+
         rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr mImageSub;
 
         auto getTagBearing(cv::InputArray image, std::span<cv::Point2f const> tagCorners) const -> float;

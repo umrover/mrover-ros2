@@ -109,6 +109,14 @@ namespace mrover {
         // {mImmediateCorneres, mImmediateIds} are the outputs from OpenCV
         cv::aruco::detectMarkers(mBgrImage, mDictionary, mImmediateCorners, mImmediateIds, mDetectorParams);
         mProfiler.measureEvent("Detection");
+/*
+        msg::ImageTargets rawTargets;
+        for (std::size_t i = 0; i < mImmediateIds.size(); ++i) {
+            msg::ImageTarget newTarget;
+            newTarget.name = std::format("tag{}", mImmediateIds[i]);
+            rawTargets.targets.push_back(newTarget);
+        }
+        mRawTargetsPub->publish(rawTargets);*/
 
         msg::ImageTargets targets;
         for (std::size_t i = 0; i < mImmediateIds.size(); ++i) {
@@ -118,6 +126,7 @@ namespace mrover {
             targets.targets.push_back(newTarget);
         }
         mTargetsPub->publish(targets);
+
         publishDetectedTags();
         mProfiler.measureEvent("Publication");
     }

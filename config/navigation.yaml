@@ -39,10 +39,10 @@ navigation:
       max_hits: 10
 
     drive:
-      max_driving_effort: 0.6
-      min_driving_effort: -0.6
-      max_turning_effort: 0.5
-      min_turning_effort: -0.5
+      max_driving_effort: 1.0
+      min_driving_effort: -1.0
+      max_turning_effort: 1.0
+      min_turning_effort: -1.0
       turning_p: 3.0
       driving_p: 20.0
       lookahead_distance: 1.0
@@ -75,6 +75,12 @@ navigation:
       post_avoidance_multiplier: 1.42
       post_radius: 0.7
 
+<<<<<<< Updated upstream
+=======
+    # TODO(quintin): Avoid storing these in multiple config files
+    ref_lat: 51.4668369 #38.4227303 
+    ref_lon: -112.7051763 #-110.7847932
+>>>>>>> Stashed changes
     ref_alt: 0.0
     world_frame: "map"
     rover_frame: "base_link"
@@ -99,6 +105,16 @@ stuck_detector:
     # Clear the window if the time since last data is greater than this
     data_watchdog_timeout: 1.0
 
+<<<<<<< Updated upstream
+=======
+debug_course_publisher:
+  ros__parameters:
+    # TODO(quintin): Avoid storing these in multiple config files
+    ref_lat: 51.4668369 #38.4227303 
+    ref_lon: -112.7051763 #-110.7847932
+    ref_alt: 0.0
+
+>>>>>>> Stashed changes
 custom_costmap:
   ros__parameters:
     size: 40
