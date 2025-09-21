@@ -1,0 +1,43 @@
+version: '2'
+services:
+  mrover:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    image: mrover_build:0.5.1
+    container_name: mrover_gui
+    environment:
+      - LIBGL_ALWAYS_SOFTWARE=1
+      - LIBGL_ALWAYS_INDIRECT=1
+      - QT_X11_NO_MITSHM=1
+      - DISPLAY=novnc:0.0
+    depends_on:
+      - novnc
+        # condition: service_healthy
+    volumes:
+      - .:/ros2_ws/src/mrover
+    networks:
+      - x11
+    entrypoint: ["bash", "/ros2_ws/src/mrover/entrypoint.sh"]
+    command: ["ros2", "launch", "mrover", "simulator.launch.py"]
+    tty: true
+    stdin_open: true
+    
+  novnc:
+    image: theasp/novnc
+    environment:
+      - DISPLAY=:0
+      - RESOLUTION=3456x2234
+      - RUN_XTERM=no
+    ports:
+      - "8080:8080"
+    networks:
+      - x11
+    # healthcheck:
+    #   test: ["CMD-SHELL", "ss -tlnp | grep :6080 || exit 1"]
+    #   interval: 2s
+    #   timeout: 3s
+    #   retries: 20
+    #   start_period: 10s
+networks:
+  x11:

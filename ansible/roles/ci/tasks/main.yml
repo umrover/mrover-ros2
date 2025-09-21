@@ -102,14 +102,14 @@
       # TODO (ali): why does this need to be installed manually
       - libboost-dev
 
-- name: Install Local APT Packages
-  become: True
-  apt:
-    state: present
-    deb: "{{ ros2_workspace }}/src/mrover/pkg/{{ item }}"
-  with_items:
-    - libmanif-dev.deb
-    - libdawn-dev.deb
+# - name: Install Local APT Packages
+#   become: True
+#   apt:
+#     state: present
+#     deb: "{{ ros2_workspace }}/src/mrover/pkg/{{ item }}"
+#   with_items:
+#     - libmanif-dev.deb
+#     - libdawn-dev.deb
 
 - name: Initialize rosdep
   become: True
