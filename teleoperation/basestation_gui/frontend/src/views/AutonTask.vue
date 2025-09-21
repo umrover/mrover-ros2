@@ -175,8 +175,15 @@ export default defineComponent({
   topics: ['auton', 'drive', 'nav', 'science', 'waypoints'],
 
   mounted() {
-    for (const topic of this.$options.topics)
+    for (const topic of this.$options.topics) {
       this.$store.dispatch('websocket/setupWebSocket', topic)
+    }
+    this.$store.dispatch('websocket/sendMessage', {
+      id: 'waypoints',
+      message: {
+        type: 'get_auton_waypoint_list',
+      },
+    })
   },
 
   unmounted() {
