@@ -2,6 +2,7 @@ import json
 import traceback
 from typing import Any, Type
 import asyncio
+import numpy as np
 
 # CONVERTED: Use the async version of the consumer
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
@@ -51,7 +52,7 @@ class ArmConsumer(AsyncJsonWebsocketConsumer):
         # Forwards ROS topic to GUI
         await self.forward_ros_topic("/arm_controller_state", ControllerState, "arm_state")
         await self.forward_ros_topic("/sa_controller_state", ControllerState, "sa_state")
-        await self.forward_ros_topic("/arm_joint_data", JointState, "fk")
+        await self.forward_sanitized_ros_topic("/arm_joint_data", JointState, "fk")
 
     async def disconnect(self, close_code) -> None:
         """
@@ -86,6 +87,32 @@ class ArmConsumer(AsyncJsonWebsocketConsumer):
         def callback(ros_message: Any):
             data_to_send = {"type": gui_msg_type, **message_to_ordereddict(ros_message)}
             asyncio.run_coroutine_threadsafe(self.send_json(data_to_send), loop)
+
+        # CONVERTED: Use sync_to_async for blocking rclpy calls
+        sub = await sync_to_async(self.node.create_subscription)(
+            topic_type, topic_name, callback, qos_profile=qos_profile_sensor_data
+        )
+        self.subscribers.append(sub)
+
+    async def forward_sanitized_ros_topic(self, topic_name: str, topic_type: Type, gui_msg_type: str) -> None:
+        loop = asyncio.get_running_loop()
+
+        # json cannot be parsed with NaN, remove it to not crash the frontend
+
+        def sanitize_data(data):
+            if isinstance(data, dict):
+                return {k: sanitize_data(v) for k, v in data.items()}
+            elif isinstance(data, list):
+                return [sanitize_data(item) for item in data]
+            elif isinstance(data, (int, float)):
+                return float(np.nan_to_num(data))
+            else:
+                return data
+
+        def callback(ros_message: Any):
+            raw_data = {"type": gui_msg_type, **message_to_ordereddict(ros_message)}
+            sanitized_data = sanitize_data(raw_data)
+            asyncio.run_coroutine_threadsafe(self.send_json(sanitized_data), loop)
 
         # CONVERTED: Use sync_to_async for blocking rclpy calls
         sub = await sync_to_async(self.node.create_subscription)(
