@@ -7,6 +7,8 @@ import numpy as np
 from lie import SE3, normalized, angle_to_rotate_2d
 from geometry_msgs.msg import Twist, Vector3
 from rclpy.node import Node
+from trajectory import Trajectory
+from typing import overload
 
 
 class DriveController:
@@ -47,10 +49,14 @@ class DriveController:
         """
         turning_p = self.node.get_parameter("drive.turning_p").value
         driving_p = self.node.get_parameter("drive.driving_p").value
-        min_turning_effort = self.node.get_parameter("drive.min_turning_effort").value
-        max_turning_effort = self.node.get_parameter("drive.max_turning_effort").value
-        min_driving_effort = self.node.get_parameter("drive.min_driving_effort").value
-        max_driving_effort = self.node.get_parameter("drive.max_driving_effort").value
+        min_turning_effort = self.node.get_parameter(
+            "drive.min_turning_effort").value
+        max_turning_effort = self.node.get_parameter(
+            "drive.max_turning_effort").value
+        min_driving_effort = self.node.get_parameter(
+            "drive.min_driving_effort").value
+        max_driving_effort = self.node.get_parameter(
+            "drive.max_driving_effort").value
 
         # if we are at the target position, reset the controller and return a zero command
         if abs(linear_error) < completion_thresh:
@@ -98,7 +104,8 @@ class DriveController:
             # check in the TURN_IN_PLACE state and cause oscillation, checking it this way makes it so that we only
             # switch back into the TURN_IN_PLACE state on the "rising edge" of the turn error
             last_angular_was_inside = (
-                self._last_angular_error is not None and abs(self._last_angular_error) < turn_in_place_thresh
+                self._last_angular_error is not None and abs(
+                    self._last_angular_error) < turn_in_place_thresh
             )
             cur_angular_is_outside = abs(angular_error) >= turn_in_place_thresh
             if cur_angular_is_outside and last_angular_was_inside:
@@ -148,7 +155,8 @@ class DriveController:
         # compute the vector from the previous target position to the rover position
         rover_vec = rover_pos - path_start
         # compute the projection of the rover vector onto the target vector
-        proj_vec = np.dot(rover_vec, path_vec) / np.dot(path_vec, path_vec) * path_vec
+        proj_vec = np.dot(rover_vec, path_vec) / \
+            np.dot(path_vec, path_vec) * path_vec
         lookahead_vec = lookahead_dist * normalized(path_vec)
         lookahead_point = proj_vec + lookahead_vec
         # if the lookahead point is further away than the target, just return the target
@@ -157,6 +165,16 @@ class DriveController:
         else:
             return path_start + lookahead_point
 
+    @staticmethod
+    def compute_intersection_point(
+        waypoints: Trajectory
+        rover_pos: np.ndarray
+        lookahead_dist: float,
+    ) -> np.ndarray:
+        #TODO: A helper function for pure pursuit. 
+        # Use this to compute the potential point we should be following!
+
+    @overload
     def get_drive_command(
         self: DriveController,
         target_pos: np.ndarray,
@@ -194,9 +212,11 @@ class DriveController:
             self.reset()
             return Twist(), True
 
-        lookahead_distance = self.node.get_parameter("drive.lookahead_distance").value
+        lookahead_distance = self.node.get_parameter(
+            "drive.lookahead_distance").value
         if path_start is not None and np.linalg.norm(path_start - target_pos) > lookahead_distance:
-            target_pos = self.compute_lookahead_point(path_start, target_pos, rover_pos, lookahead_distance)
+            target_pos = self.compute_lookahead_point(
+                path_start, target_pos, rover_pos, lookahead_distance)
 
         target_dir = target_pos - rover_pos
 
@@ -221,3 +241,20 @@ class DriveController:
         self._last_angular_error = angular_error
         self._last_target = target_pos
         return output
+
+    @overload
+    def get_drive_command(
+        self: DriveController,
+        waypoints: Trajectory,
+        rover_pose: SE3,
+        completion_thresh: float,
+        turn_in_place_thresh: float,
+        drive_back: bool = False,
+        path_start: np.ndarray | None = None,
+    ) -> tuple[Twist, bool]:
+        # TODO: Pure Pursuit Logic: Takes a series of waypoints and the rover's current position
+        # and returns a drive command and boolean. The drive command you return should utilize pure
+        # pursuit logic: https://wiki.purduesigbots.com/software/control-algorithms/basic-pure-pursuit
+        # There's a lot of code in the original get_drive_command that could be reused!
+        # Maybe put the reusable code in another function?
+        return
