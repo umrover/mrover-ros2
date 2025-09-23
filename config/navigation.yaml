@@ -46,6 +46,7 @@ navigation:
       turning_p: 3.0
       driving_p: 20.0
       lookahead_distance: 1.0
+      use_pure_pursuit: true
     
     long_range:
       distance_ahead: 3.0
