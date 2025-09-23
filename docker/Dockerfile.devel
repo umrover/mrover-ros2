@@ -50,7 +50,6 @@ RUN update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-13 130 \
 RUN mkdir -p /pkg
 ADD --chown=mrover:mrover pkg /pkg
 
-RUN apt-get install /pkg/libmanif-dev.deb /pkg/libdawn-dev.deb
 RUN rosdep init
 
 RUN useradd --create-home --groups sudo --shell /bin/zsh mrover

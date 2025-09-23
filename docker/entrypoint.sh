@@ -40,6 +40,10 @@ if [ -f "${PYPROJECT}" ]; then
         source "$VENV_DIR/bin/activate"
         run_step "Upgrade pip" pip install -U pip
         run_step "Install deps" pip install "${PACKAGE_PATH}[dev]"
+        # build dawn, manif, and manifpy on entry (depends on submodule being mounted)
+        run_step "Build dawn" zsh -c "${PACKAGE_PATH}/scripts/build_dawn.sh"
+        run_step "Build manif" zsh -c "${PACKAGE_PATH}/scripts/build_manif.sh"
+        run_step "Build manifpy" zsh -c "${PACKAGE_PATH}/scripts/build_manifpy.sh"
     else
         echo -e "${BLUE}Activating venv...${NC}"
         # shellcheck disable=SC1091
@@ -49,10 +53,6 @@ else
     echo -e "${RED}✗ Failed: pyproject.toml not found${NC}"
     exit 1
 fi
-
-# build manif and manifpy on entry (depends on submodule being mounted)
-run_step "Build manif" zsh -c "${PACKAGE_PATH}/scripts/build_manif.sh"
-run_step "Build manifpy" zsh -c "${PACKAGE_PATH}/scripts/build_manifpy.sh"
 
 # setup the bun deps
 if [ -f "${FRONTEND_PATH}/package.json" ]; then
