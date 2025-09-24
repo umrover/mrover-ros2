@@ -1,4 +1,4 @@
-FROM arm64v8/ros:humble-ros-base-jammy
+FROM osrf/ros:humble-desktop-full
 
 # Builds mrover source code and ROS2 in a separate mrover user on the image.
 
@@ -26,23 +26,23 @@ RUN apt-get update \
 RUN export XDG_RUNTIME_DIR=/tmp/runtime-root
 
 RUN --mount=type=bind,source=.,target=/ros2_ws/src/mrover,rw \
-    /ros2_ws/src/mrover/ansible.sh ci.yml && \
-    echo "source /ros_entrypoint.sh" >> /root/.zshrc && \
-    echo "export XDG_RUNTIME_DIR=/tmp/runtime-root" >> /root/.zshrc && \
-    echo "export ZSH=/root/.oh-my-zsh" >> /root/.zshrc
+    /ros2_ws/src/mrover/ansible.sh ci.yml
 
 RUN apt-get purge ansible -y && apt-get autoremove -y
 RUN apt-get clean && rm -rf /var/lib/apt/lists/*
 
+
+# COPY deps/dawn/ /ros2_ws/src/mrover/deps/dawn/
+# # COPY deps/manif/ /deps/manif/
+# RUN git clone https://github.com/artivis/manif.git /ros2_ws/src/mrover/deps/manif
+# COPY scripts/build_dawn.sh /ros2_ws/src/mrover/build_dawn.sh
+# COPY scripts/build_manifpy.sh /ros2_ws/src/mrover/build_manifpy.sh
+
 WORKDIR /ros2_ws/src/mrover
-RUN --mount=type=bind,source=.,target=.,rw \
-    ./scripts/build_dawn.sh && \
-    ./scripts/build_manifpy.sh
+# RUN chmod +x build_dawn.sh && ./build_dawn.sh
+# RUN chmod +x build_manifpy.sh && ./build_manifpy.sh
 
 RUN echo "source /opt/ros/humble/setup.bash" >> .bashrc && \
     echo "source /ros2_ws/install/setup.bash" >> .bashrc
-RUN /bin/bash -c "source /opt/ros/humble/setup.bash && ./build.sh"
-
-RUN chmod +x entrypoint.sh
 
 

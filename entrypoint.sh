@@ -1,8 +1,12 @@
 #!/bin/bash
 
+chmod +x "$0"
 
-echo "Delay for NoVNC"
-sleep 5
+sudo apt-get install lld
 source /opt/ros/humble/setup.bash
-source /home/mrover/ros2_ws/install/setup.bash
+
+cd /ros2_ws/src/mrover
+./build.sh
+
+source /ros2_ws/install/setup.bash
 exec "$@"  # runs whatever command is passed, keeps it as PID 1

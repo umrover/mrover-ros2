@@ -4,7 +4,7 @@ services:
     build: 
       context: .
       dockerfile: Dockerfile
-    image: mrover_build:0.5.1
+    image: mrover_mount:0.11
     container_name: mrover_gui
     environment:
       - LIBGL_ALWAYS_SOFTWARE=1
@@ -16,10 +16,13 @@ services:
         # condition: service_healthy
     volumes:
       - .:/ros2_ws/src/mrover
+      # - build-cache:/ros2_ws/build
+      # - install-cache:/ros2_ws/install
     networks:
       - x11
-    entrypoint: ["bash", "/ros2_ws/src/mrover/entrypoint.sh"]
-    command: ["ros2", "launch", "mrover", "simulator.launch.py"]
+    working_dir: /ros2_ws/src/mrover
+    entrypoint: ["/ros2_ws/src/mrover/entrypoint.sh"]
+    command: ["/bin/bash"]
     tty: true
     stdin_open: true
     
