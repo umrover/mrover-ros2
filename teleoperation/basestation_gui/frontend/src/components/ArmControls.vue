@@ -74,6 +74,27 @@ export default defineComponent({
       return this.gamepadConnected
     },
   },
+  watch: {
+    mode(newMode) {
+      if (newMode === 'ik-pos') {
+        this.$store.dispatch('websocket/sendMessage', {
+          id: 'arm',
+          message: {
+            type: 'ik_mode',
+            mode: 'position',
+          },
+        })
+      } else if (newMode === 'ik-vel') {
+        this.$store.dispatch('websocket/sendMessage', {
+          id: 'arm',
+          message: {
+            type: 'ik_mode',
+            mode: 'velocity',
+          },
+        })
+      }
+    },
+  },
   mounted() {
     document.addEventListener('keydown', this.keyDown)
   },

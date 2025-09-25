@@ -18,6 +18,9 @@ from backend.ra_controls import send_ra_controls
 from backend.sa_controls import send_sa_controls
 from geometry_msgs.msg import Twist
 from sensor_msgs.msg import JointState
+from mrover.srv import (
+    IkMode,
+)
 from mrover.msg import (
     Throttle,
     IK,
@@ -40,6 +43,9 @@ class ArmConsumer(AsyncJsonWebsocketConsumer):
         self.cur_ra_mode: str = "disabled"
         self.cur_sa_mode: str = "disabled"
         self.buffer = {} # Assuming this was intended to be an instance buffer
+
+        # services
+        self.ik_mode_srv = self.node.create_client(IkMode, "/ik_mode")
 
         # Topic Publishers are created once per connection
         self.thr_pub = self.node.create_publisher(Throttle, "arm_throttle_cmd", 1)
@@ -93,6 +99,34 @@ class ArmConsumer(AsyncJsonWebsocketConsumer):
         )
         self.subscribers.append(sub)
 
+    async def handle_ik_mode_change(self, mode: str) -> None:
+        """Handle IK mode change by calling the ik_mode service"""
+        try:
+            mode_mapping = {
+                "position": IkMode.Request.POSITION_CONTROL,
+                "velocity": IkMode.Request.VELOCITY_CONTROL,
+                "typing": IkMode.Request.TYPING
+            }
+            if mode not in mode_mapping:
+                self.node.get_logger().error(f"Invalid IK mode: {mode}")
+                return
+            if not self.ik_mode_srv.wait_for_service(timeout_sec=1.0):
+                self.node.get_logger().error("IK mode service not available")
+                return
+
+            request = IkMode.Request()
+            request.mode = mode_mapping[mode]
+
+            future = await sync_to_async(self.ik_mode_srv.call_async)(request)
+
+            if future.success:
+                self.node.get_logger().info(f"Successfully switched to IK mode: {mode}")
+            else:
+                self.node.get_logger().error(f"Failed to switch to IK mode: {mode}")
+
+        except Exception as e:
+            self.node.get_logger().error(f"Exception in handle_ik_mode_change: {e}")
+            self.node.get_logger().error(traceback.format_exc())
 
     async def receive_json(self, content: dict, **kwargs) -> None:
         # CONVERTED: Use `receive_json` which automatically decodes the JSON content
@@ -135,6 +169,9 @@ class ArmConsumer(AsyncJsonWebsocketConsumer):
 
                 case { "type": "sa_mode", "mode": sa_mode }:
                     self.cur_sa_mode = sa_mode # FIX: Use instance variable
+
+                case { "type": "ik_mode", "mode": ik_mode }:
+                    await self.handle_ik_mode_change(ik_mode)
 
                 case _:
                     self.node.get_logger().warning(f"Unhandled message on arm: {content}")
