@@ -38,6 +38,7 @@ namespace mrover {
         tf2_ros::Buffer mTfBuffer{get_clock()};
         tf2_ros::TransformListener mTfListener{mTfBuffer};
         tf2_ros::TransformBroadcaster mTfBroadcaster{this};
+        LoopProfiler mLoopProfiler;
 
         std::optional<SE3d> mPreviousPose;
         nav_msgs::msg::OccupancyGrid mGlobalGridMsg;

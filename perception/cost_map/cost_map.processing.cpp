@@ -27,6 +27,8 @@ namespace mrover {
         assert(msg->height > 0);
         assert(msg->width > 0);
 
+        mLoopProfiler.beginLoop();
+
         // Push transforms b/w clip box and map frame to tf tree
         SE3d rightBot(R3d{mNearClip, -mNearWidth, 0}, SO3d::Identity());
         SE3d rightTop(R3d{mFarClip, -mFarWidth, 0}, SO3d::Identity());
@@ -89,6 +91,8 @@ namespace mrover {
                 }
             }
 
+            mLoopProfiler.measureEvent("CMAP: Binned");
+
 
             // Percentage Algorithm (acounts for angle changes (and outliers))
             // // Chose the percentage algorithm because it's less sensitive to angle changes (and outliers) and can accurately track
@@ -142,6 +146,8 @@ namespace mrover {
                 auto& cell = mGlobalGridMsg.data[i];
                 cell = static_cast<std::int8_t>(mAlpha * cost + (1 - mAlpha) * cell);
             }
+
+            mLoopProfiler.measureEvent("CMAP: Ray Casting Done");
 
             // If we are using the debug point cloud publish it
             if constexpr (uploadDebugPointCloud) {
@@ -218,6 +224,7 @@ namespace mrover {
 
 
             mCostMapPub->publish(postProcessed);
+            mLoopProfiler.measureEvent("CMAP: Dilation + Publication");
         } catch (tf2::TransformException const& e) {
             RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, std::format("TF tree error processing point cloud: {}", e.what()));
         }

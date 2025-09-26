@@ -31,6 +31,7 @@
 #include <parameter.hpp>
 #include <point.hpp>
 #include <rclcpp/logging.hpp>
+#include <loop_profiler.hpp>
 
 // Message types
 #include <nav_msgs/msg/detail/occupancy_grid__struct.hpp>
