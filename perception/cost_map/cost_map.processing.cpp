@@ -1,4 +1,5 @@
 #include "cost_map.hpp"
+#include <rclcpp/logging.hpp>
 
 namespace mrover {
     auto remap(double x, double inMin, double inMax, double outMin, double outMax) -> double {
@@ -336,6 +337,13 @@ namespace mrover {
         mDilateAmt = static_cast<int>(floor(static_cast<double>(req->dilation_amount / mResolution)));
         res->success = true;
         RCLCPP_INFO_STREAM(get_logger(), "Done changing dilation");
+    }
+
+    auto CostMapNode::toggleCostMapCallback(mrover::srv::ToggleCostMap::Request::ConstSharedPtr& req, mrover::srv::ToggleCostMap::Response::SharedPtr& res) ->void {
+        std::string msg = "Toggling Cost Map ";
+        mEnableCostMap = mEnableCostMap ? false : true;
+        msg += (mEnableCostMap ? "ON" : "OFF");
+        res->enabled = mEnableCostMap;
     }
 
     auto CostMapNode::indexToCoordinate(int const index) const -> CostMapNode::Coordinate {

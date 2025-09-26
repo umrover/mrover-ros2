@@ -43,4 +43,5 @@
 // Services
 #include <mrover/srv/dilate_cost_map.hpp>
 #include <mrover/srv/move_cost_map.hpp>
+#include <mrover/srv/toggle_cost_map.hpp>
 #include <rclcpp/service.hpp>

@@ -313,7 +313,7 @@ mrover_executable_from_component(image_tag_detector perception/executables/image
 # Cost Map
 mrover_add_component(cost_map perception/cost_map/*.cpp perception/cost_map/pch.hpp CostMapNode)
 mrover_ament_component(cost_map rclcpp rclcpp_components tf2 tf2_ros)
-mrover_link_component(cost_map lie parameter_utils)
+mrover_link_component(cost_map lie parameter_utils loop_profiler)
 
 mrover_executable_from_component(cost_map perception/executables/cost_map.cpp cost_map_component)
 

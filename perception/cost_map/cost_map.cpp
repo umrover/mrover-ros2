@@ -28,11 +28,17 @@ namespace mrover {
             moveCostMapCallback(request, response);
         });
         mPcSub = create_subscription<sensor_msgs::msg::PointCloud2>("/zed/left/points", 1, [this](sensor_msgs::msg::PointCloud2::ConstSharedPtr const& msg) {
-            pointCloudCallback(msg);
+            if(mEnableCostMap){
+                pointCloudCallback(msg);
+            }
         });
 
         mCostServer = create_service<srv::DilateCostMap>("dilate_cost_map", [this](mrover::srv::DilateCostMap::Request::ConstSharedPtr req, mrover::srv::DilateCostMap::Response::SharedPtr res) {
             dilateCostMapCallback(req, res);
+        });
+
+        mToggleMapServer = create_service<srv::ToggleCostMap>("toggle_cost_map", [this](mrover::srv::ToggleCostMap::Request::ConstSharedPtr req, mrover::srv::ToggleCostMap::Response::SharedPtr res){
+            toggleCostMapCallback(req, res);
         });
 
         mPCDebugPub = create_publisher<sensor_msgs::msg::PointCloud2>("cost_map/debug_pc", 1);
