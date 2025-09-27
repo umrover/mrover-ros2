@@ -1,6 +1,8 @@
 #pragma once
 
+#include "mrover/srv/detail/toggle_object_detector__struct.hpp"
 #include "pch.hpp"
+#include <rclcpp/service.hpp>
 
 namespace mrover {
 
@@ -59,6 +61,8 @@ namespace mrover {
 
         rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr mDebugImgPub;
 
+        rclcpp::Service<mrover::srv::ToggleObjectDetector>::SharedPtr mToggleObjectDetectorServer;
+
         int mObjIncrementWeight{};
         int mObjDecrementWeight{};
         int mObjHitThreshold{};
@@ -66,6 +70,7 @@ namespace mrover {
         float mModelScoreThreshold{};
         float mModelNMSThreshold{};
         bool mDebug{};
+        bool mEnableObjectDetector{};
 
         auto spiralSearchForValidPoint(sensor_msgs::msg::PointCloud2::ConstSharedPtr const& cloudPtr,
                                        std::size_t u, std::size_t v,
@@ -87,6 +92,8 @@ namespace mrover {
 
     public:
         explicit ObjectDetectorBase(rclcpp::NodeOptions const& options = rclcpp::NodeOptions());
+
+        auto toggleObjectDetectorCallback(mrover::srv::ToggleObjectDetector::Request::ConstSharedPtr& req, mrover::srv::ToggleObjectDetector::Response::SharedPtr& res)->void;
 
         ~ObjectDetectorBase() override = default;
     };

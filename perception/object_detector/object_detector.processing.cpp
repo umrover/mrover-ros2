@@ -167,6 +167,12 @@ namespace mrover {
         mDebugImgPub->publish(mDetectionsImageMessage);
     }
 
+    auto ObjectDetectorBase::toggleObjectDetectorCallback(mrover::srv::ToggleObjectDetector::Request::ConstSharedPtr& req, mrover::srv::ToggleObjectDetector::Response::SharedPtr& res) -> void{
+        mEnableObjectDetector = req->enable;
+        RCLCPP_INFO(this->get_logger(), "Turning Object Detector %s", (mEnableObjectDetector ? "ON" : "OFF"));
+        res->enable_status = mEnableObjectDetector;
+    }
+
     auto StereoObjectDetector::convertPointCloudToRGB(sensor_msgs::msg::PointCloud2::ConstSharedPtr const& msg, cv::Mat const& image) -> void {
         auto* pixelPtr = reinterpret_cast<cv::Vec3b*>(image.data);
         auto* pointPtr = reinterpret_cast<Point const*>(msg->data.data());

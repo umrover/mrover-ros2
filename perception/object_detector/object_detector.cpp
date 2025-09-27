@@ -16,7 +16,9 @@ namespace mrover {
                 {"model_name", modelName, "Large-Dataset"},
                 {"model_score_threshold", mModelScoreThreshold, 0.75},
                 {"model_nms_threshold", mModelNMSThreshold, 0.5},
-                {"object_detector_debug", mDebug, true}};
+                {"object_detector_debug", mDebug, true},
+               {"enable_object_detector", mEnableObjectDetector, true}
+        };
 
         ParameterWrapper::declareParameters(this, params);
 
@@ -44,7 +46,9 @@ namespace mrover {
         mDebugImgPub = create_publisher<sensor_msgs::msg::Image>("/stereo_object_detector/debug_img", 1);
 
         mSensorSub = create_subscription<sensor_msgs::msg::PointCloud2>("/zed/left/points", 1, [this](sensor_msgs::msg::PointCloud2::ConstSharedPtr const& msg) {
-            StereoObjectDetector::pointCloudCallback(msg);
+            if(mEnableObjectDetector){
+                StereoObjectDetector::pointCloudCallback(msg);
+            }
         });
     }
 
@@ -59,7 +63,9 @@ namespace mrover {
         mDebugImgPub = create_publisher<sensor_msgs::msg::Image>("/long_range_object_detector/debug_img", 1);
 
         mSensorSub = create_subscription<sensor_msgs::msg::Image>("/long_range_cam/image", 1, [this](sensor_msgs::msg::Image::ConstSharedPtr const& msg) {
-            ImageObjectDetector::imageCallback(msg);
+            if(mEnableObjectDetector){
+                ImageObjectDetector::imageCallback(msg);
+            }
         });
 
         mTargetsPub = create_publisher<mrover::msg::ImageTargets>("objects", 1);
