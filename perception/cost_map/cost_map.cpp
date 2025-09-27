@@ -17,6 +17,7 @@ namespace mrover {
                 {"alpha", mAlpha, 0.05},
                 {"z_threshold", mZThreshold, 0.51},       // Tested on static visualizer
                 {"cell_division_size", mNumDivisions, 2}, // Number of subdivisions per cell (one side this number will be squared)
+                {"enable_cost_map", mEnableCostMap, true}, // Start cost map off enabled
         };
 
         ParameterWrapper::declareParameters(this, params);

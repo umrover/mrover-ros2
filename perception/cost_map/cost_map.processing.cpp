@@ -340,10 +340,9 @@ namespace mrover {
     }
 
     auto CostMapNode::toggleCostMapCallback(mrover::srv::ToggleCostMap::Request::ConstSharedPtr& req, mrover::srv::ToggleCostMap::Response::SharedPtr& res) ->void {
-        std::string msg = "Toggling Cost Map ";
-        mEnableCostMap = mEnableCostMap ? false : true;
-        msg += (mEnableCostMap ? "ON" : "OFF");
-        res->enabled = mEnableCostMap;
+        mEnableCostMap = req->enable;
+        RCLCPP_INFO(this->get_logger(), "Turning Cost Map %s", (mEnableCostMap ? "ON" : "OFF"));
+        res->enable_status = mEnableCostMap;
     }
 
     auto CostMapNode::indexToCoordinate(int const index) const -> CostMapNode::Coordinate {
