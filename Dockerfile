@@ -21,7 +21,7 @@ RUN sudo apt-get install    libxrandr-dev libxinerama-dev libxcursor-dev mesa-co
                             mesa-vulkan-drivers vulkan-tools -y
 RUN apt-get update \ 
     && python3 -m pip install --upgrade pip \
-    && python3 -m pip install -U colcon-common-extensions
+    && python3 -m pip install -U colcon-common-extensions transforms3d graphviz
 
 RUN export XDG_RUNTIME_DIR=/tmp/runtime-root
 

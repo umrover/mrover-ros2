@@ -2,7 +2,7 @@
 
 chmod +x "$0"
 
-sudo apt-get install lld
+# sudo apt-get install lld
 source /opt/ros/humble/setup.bash
 
 cd /ros2_ws/src/mrover
