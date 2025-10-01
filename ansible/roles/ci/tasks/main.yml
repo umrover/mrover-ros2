@@ -100,6 +100,7 @@
       - ros-humble-rviz2
       - ros-humble-xacro
       - ros-humble-rtcm-msgs
+      - ros-humble-magic-enum
       # TODO (ali): why does this need to be installed manually
       - libboost-dev
       - qtmultimedia5-dev
