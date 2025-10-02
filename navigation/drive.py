@@ -165,15 +165,6 @@ class DriveController:
         else:
             return path_start + lookahead_point
 
-    @staticmethod
-    def compute_intersection_point(
-        waypoints: Trajectory
-        rover_pos: np.ndarray
-        lookahead_dist: float,
-    ) -> np.ndarray:
-        #TODO: A helper function for pure pursuit. 
-        # Use this to compute the potential point we should be following!
-
     @overload
     def get_drive_command(
         self: DriveController,
@@ -257,4 +248,110 @@ class DriveController:
         # pursuit logic: https://wiki.purduesigbots.com/software/control-algorithms/basic-pure-pursuit
         # There's a lot of code in the original get_drive_command that could be reused!
         # Maybe put the reusable code in another function?
+
+        set_farthest_path_point()
+
+
         return
+
+    @staticmethod
+    def set_farthest_path_point(
+        waypoints: Trajectory,
+        rover_pos: np.ndarray,
+        lookahead_dist: float,
+    ):
+        #TODO: A helper function for pure pursuit
+        # Determines the current farthest waypoint found in the path
+
+        numIncrements = 0
+
+        # Random thinking
+        while(not waypoints.increment_point()) {
+            numIncrements += 1
+            if (lookahead_dist >= np.linalg.norm(waypoints.get_current_point, rover_pos)) {
+                break
+            }
+        }
+    
+    @staticmethod
+    def sign(
+        val : float
+    ) -> float:
+        # A helper function for compute_intersection_point
+        if val >= 0:
+            return 1
+        else:
+            return -1
+
+    @staticmethod
+    def compute_intersection_point(
+        waypoints: Trajectory,
+        rover_pos: np.ndarray,
+        lookahead_dist: float,
+    ) -> np.ndarray | None:
+        #TODO: A helper function for pure pursuit. 
+        # Use this to compute the potential point we should be following!
+
+        # Ensure a trajectory was passed through
+        if waypoints is None:
+            raise ValueError("Attempt to detect intersection with no waypoints")
+            return
+
+        x1 = waypoints.get_current_point()[0]
+        y1 = waypoints.get_current_point()[1]
+
+        # If the goal point is within our lookahead_dist, return the goal
+        if waypoints.increment_point():
+            return np.ndarray([x1,y1])
+
+        xPos = rover_pos[0]
+        yPos = rover_pos[1]
+        x2 = waypoints.get_current_point()[0]
+        y2 = waypoints.get_current_point()[1]
+
+        # Consider the rovers position as the origin
+        dx = (x2 - xPos) - (x1 - xPos)
+        dy = (y2 - yPos) - (y1 - yPos)
+
+
+        dr = np.sqrt((dx**2) + (dy**2))
+        Det = (x1 - xPos)*(y2 - yPos) - (x2 - xPos)*(y1 - yPos)
+
+        # Calculate the discriminate
+        discriminate = (lookahead_dist**2)*(dr**2) - (Det**2)
+
+        validIntersection1 = False
+        validIntersection2 = False
+
+        # Determine if there is an intersection
+        if (discriminate >= 0):
+            xSol1 = Det*dr + sign(dy)*dx*np.sqrt(discriminate)
+            xSol2 = Det*dr - sign(dy)*dx*np.sqrt(discriminate)
+            ySol1 = -Det*dx + abs(dy)*np.sqrt(discriminate)
+            ySol2 = -Det*dx - abs(dy)*np.sqrt(discriminate)
+
+            intersection1 = [xSol1 + xPos, ySol1 + yPos]
+            intersection2 = [xSol2 + xPos, ySol2 + ypos]
+
+            minX = min(x1, x2)
+            minY = min(y1, y2)
+            maxX = max(x1, x2)
+            maxY = max(y1, y2)
+
+            if (minX <= intersection1[0] <= maxX and minY <= intersection1[1] <= maxY):
+                validIntersection1 = True
+            if (minX <= intersection2[0] <= maxX and minY <= intersection2[1] <= maxY):
+                validIntersection2 = True
+        else:
+            return None
+
+        intersections = []
+
+        if (validIntersection1):
+            intersections.append(intersection1)
+        if (validIntersection2):
+            intersections.append(intersection2)
+
+        return intersections
+
+
