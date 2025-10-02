@@ -224,3 +224,15 @@ auto Inference::getOutputTensorSize() -> std::vector<int64_t>{
 
 	return inputBlobSize;
 }
+
+Inference::~Inference(){
+	for (int i = 0; i < mEngine->getNbIOTensors(); i++) {
+		// Create GPU memory for TensorRT to operate on
+		if(mBindings[i]){ // if the tensors were allocated (this was initially zero-initialized)
+			if (cudaError_t result = cudaFree(mBindings.data() + i); result != cudaSuccess){
+				std::string msg = "Failed to deallocate GPU memory: " + std::string{cudaGetErrorString(result)};
+				mLogger.log(ILogger::Severity::kINFO, msg.data());
+			}
+		}
+	}
+}
