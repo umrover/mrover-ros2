@@ -4,7 +4,7 @@ services:
     build: 
       context: .
       dockerfile: Dockerfile
-    image: mrover_mount:0.2
+    image: aaronchen25/mrover_mount:0.1
     container_name: mrover_gui
     environment:
       - LIBGL_ALWAYS_SOFTWARE=1
@@ -30,7 +30,7 @@ services:
     image: theasp/novnc
     environment:
       - DISPLAY=:0
-      - RESOLUTION=3456x2234
+      - RESOLUTION=1920x1080
       - RUN_XTERM=no
     ports:
       - "8080:8080"
