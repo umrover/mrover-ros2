@@ -15,7 +15,7 @@ namespace mrover {
     }
 
     auto SE3Conversions::fromTfTree(tf2_ros::Buffer const& buffer, std::string const& fromFrame, std::string const& toFrame, rclcpp::Time const& time) -> SE3d {
-        geometry_msgs::msg::TransformStamped transform = buffer.lookupTransform(toFrame, fromFrame, time);
+        geometry_msgs::msg::TransformStamped transform = buffer.lookupTransform(toFrame, fromFrame, time, rclcpp::Duration(0, 5e8));
         return fromTf(transform.transform);
     }
 

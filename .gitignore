@@ -30,6 +30,8 @@ bun.lockb
 .DS_Store
 # nav state log
 state_machine/state_log.txt
+data/*.png
+data/raw-pano-images
 
-/teleoperation/basestation_gui/install/
-/teleoperation/basestation_gui/log/
+teleoperation/basestation_gui/install/
+teleoperation/basestation_gui/log/
