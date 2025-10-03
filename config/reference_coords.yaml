@@ -1,0 +1,24 @@
+# All units are in SI
+# ===================
+# Time:     second, hz
+# Angle:    radian
+# Distance: meter
+
+/**:
+  ros__parameters:
+    # Exception, these are in degrees
+
+    # Ann Arbor
+    ref_lat: 42.293195
+    ref_lon: -83.7096706
+    ref_alt: 0.0
+
+    # Utah
+    # ref_lat: 38.4227303
+    # ref_lon: -110.7847932
+    # ref_alt: 0.0
+
+    # Sim
+    # ref_lat: 38.4227303
+    # ref_lon: -110.7847932
+    # ref_alt: 0.0

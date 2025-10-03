@@ -17,7 +17,7 @@ function debounceFlashClear(id, type, commit) {
   }, 100)
 }
 
-function setupWebsocket(id, commit) {
+function setupWebsocket(id, commit, dispatch) {
   if (!id) {
     console.error('Invalid WebSocket ID passed:', id)
     return
@@ -33,6 +33,10 @@ function setupWebsocket(id, commit) {
   socket.onopen = () => {
     console.log(`WebSocket ${id} Connected`)
     commit('setConnectionStatus', { id, status: 'connected' })
+    if( id == "waypoints") {
+      console.log("inside waypoint sendmessage")
+      dispatch("sendMessage", {id, message: {type:'get_auton_waypoint_list'}})
+    }
   }
 
   socket.onmessage = event => {
@@ -122,6 +126,7 @@ const getters = {
 const actions = {
   sendMessage({}, { id, message }) {
     const socket = webSockets[id]
+    console.log(message)
     if (!socket) {
       console.log('websocket selection failed with id', id)
       return
@@ -133,8 +138,8 @@ const actions = {
     socket.send(JSON.stringify(message))
   },
 
-  setupWebSocket({ commit }, id) {
-    setupWebsocket(id, commit) // Pass unique ID
+  setupWebSocket({ commit, dispatch }, id) {
+    setupWebsocket(id, commit, dispatch) // Pass unique ID
   },
 
   closeWebSocket({}, id) {

@@ -1,4 +1,6 @@
 #include "simulator.hpp"
+#include "lie.hpp"
+#include <Eigen/src/Geometry/Quaternion.h>
 
 namespace mrover {
 

@@ -61,7 +61,6 @@
     name:
       - zsh
       - fzf
-      - neovim
       - sudo
       - cmake
       - ccache # Caches intermediate build files, speeds up compilation over time
@@ -100,8 +99,13 @@
       - ros-humble-ros-base
       - ros-humble-rviz2
       - ros-humble-xacro
+      - ros-humble-magic-enum
+      - ros-humble-rtcm-msgs
       # TODO (ali): why does this need to be installed manually
       - libboost-dev
+      - qtbase5-dev
+      - qtmultimedia5-dev
+      - libqt5multimedia5-plugins
 
 - name: Install Local APT Packages
   become: True
@@ -205,11 +209,3 @@
   command: ~/.bun/bin/bun install
   args:
     chdir: "{{ ansible_env.HOME }}/ros2_ws/src/mrover/teleoperation/basestation_gui/frontend"
-
-- name: Run Django migrations
-  shell: |
-    source ~/ros2_ws/src/mrover/venv/bin/activate
-    python teleoperation/basestation_gui/manage.py makemigrations
-    python teleoperation/basestation_gui/manage.py migrate
-  args:
-    chdir: "{{ ansible_env.HOME }}/ros2_ws/src/mrover"
