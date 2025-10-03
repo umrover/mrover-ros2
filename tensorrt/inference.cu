@@ -92,7 +92,7 @@ auto Inference::createCudaEngine() -> ICudaEngine* {
 
 	// Define the engine file location relative to the mrover package
 	// Check if engine file exists
-	if (!exists(mEngineModelPath)) {
+	if (!std::filesystem::exists(mEngineModelPath)) {
 		std::cout << "Optimizing ONXX model for TensorRT. This make take a long time..." << std::endl;
 
 		// Create the Engine from onnx file

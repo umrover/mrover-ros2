@@ -61,7 +61,6 @@
     name:
       - zsh
       - fzf
-      - neovim
       - sudo
       - cmake
       - ccache # Caches intermediate build files, speeds up compilation over time

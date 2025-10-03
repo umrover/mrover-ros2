@@ -252,7 +252,6 @@ target_link_libraries(pose_filter lie)
 
 find_package(ZED QUIET)
 find_package(CUDA QUIET)
-find_package(OpenCV REQUIRED)
 if(ZED_FOUND AND CUDA_FOUND)
     enable_language(CUDA)
     # CUDA Compile Options

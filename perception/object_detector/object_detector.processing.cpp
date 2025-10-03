@@ -61,8 +61,6 @@ namespace mrover {
             std::size_t centerXInImage = std::lround(centerInBlob.x * xRatio);
             std::size_t centerYInImage = std::lround(centerInBlob.y * yRatio);
 
-            assert(static_cast<std::size_t>(classId) < mObjectHitCounts.size());
-
             if (seenObjects[classId]) return;
 
             seenObjects[classId] = true;
@@ -97,7 +95,6 @@ namespace mrover {
         for (std::size_t i = 0; i < seenObjects.size(); i++) {
             if (seenObjects[i]) continue;
 
-            assert(i < mObjectHitCounts.size());
             mModel.objectHitCounts[i] = std::max(0, mModel.objectHitCounts[i] - mObjDecrementWeight);
         }
     }
