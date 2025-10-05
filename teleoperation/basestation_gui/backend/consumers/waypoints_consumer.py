@@ -23,11 +23,8 @@ class WaypointsConsumer(AsyncJsonWebsocketConsumer):
         self.node = get_node()
 
     async def disconnect(self, close_code) -> None:
-        """
-        Thread-safe disconnect method that schedules resource destruction
-        on the ROS executor thread to prevent race conditions.
-        """
-        print(f"Scheduling cleanup for disconnected client {self.channel_name}...")
+        """Clean up on disconnect."""
+        print(f"Disconnected client {self.channel_name}")
 
     async def receive_json(self, content: dict, **kwargs) -> None:
         try:
