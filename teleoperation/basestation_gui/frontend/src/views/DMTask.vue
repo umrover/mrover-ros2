@@ -1,12 +1,12 @@
 <template>
-  <div class="view-wrapper" :class="type === 'ES' ? 'wrapper-es' : 'wrapper-dm'">
-    <div v-if="type === 'DM'" class='island p-2 rounded odom'>
+  <div class="view-wrapper wrapper-dm">
+    <div class='island p-2 rounded odom'>
       <OdometryReading @odom='updateOdom' @drone_odom="updateDroneOdom" />
     </div>
-    <div v-if="type === 'DM'" class='island p-0 rounded map overflow-hidden'>
+    <div class='island p-0 rounded map overflow-hidden'>
       <BasicMap :odom='odom' :drone_odom="drone_odom" />
     </div>
-    <div v-if="type === 'DM'" class='island p-2 rounded waypoint-editor'>
+    <div class='island p-2 rounded waypoint-editor'>
       <BasicWaypointEditor :odom='odom' :droneWaypointButton='true'/>
     </div>
     <div class='island p-2 rounded arm-controls'>
@@ -65,13 +65,6 @@ export default defineComponent({
     AutonTyping
   },
 
-  props: {
-    type: {
-      type: String,
-      required: true
-    }
-  },
-
   data() {
     return {
       odom: null as Odom | null,
@@ -107,7 +100,6 @@ export default defineComponent({
 </script>
 
 <style>
-
 .wrapper-dm {
   display: grid;
   gap: 10px;
@@ -120,20 +112,6 @@ export default defineComponent({
     'rover-3d controller_state waypoint-editor'
     'arm-controls controller_state waypoint-editor'
     'odom controller_state waypoint-editor';
-  font-family: sans-serif;
-}
-
-.wrapper-es {
-  display: grid;
-  gap: 10px;
-  width: 100%;
-  height: 100%;
-  grid-template-columns: 400px auto;
-  grid-template-rows: 20% 30% auto;
-  grid-template-areas:
-    'arm-controls rover-3d'
-    'auton-typing rover-3d'
-    'controller_state rover-3d';
   font-family: sans-serif;
 }
 
