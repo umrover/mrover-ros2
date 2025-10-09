@@ -1,26 +1,23 @@
 <template>
   <div class="view-wrapper wrapper-dm">
-    <div class='island p-2 rounded odom'>
-      <OdometryReading @odom='updateOdom' @drone_odom="updateDroneOdom" />
+    <div class="island p-2 rounded odom">
+      <OdometryReading @odom="updateOdom" @drone_odom="updateDroneOdom" />
     </div>
-    <div class='island p-0 rounded map overflow-hidden'>
-      <BasicMap :odom='odom' :drone_odom="drone_odom" />
+    <div class="island p-0 rounded map overflow-hidden">
+      <BasicMap :odom="odom" :drone_odom="drone_odom" />
     </div>
-    <div class='island p-2 rounded waypoint-editor'>
-      <BasicWaypointEditor :odom='odom' :droneWaypointButton='true'/>
+    <div class="island p-2 rounded waypoint-editor">
+      <BasicWaypointEditor :odom="odom" :droneWaypointButton="true" />
     </div>
-    <div class='island p-2 rounded arm-controls'>
+    <div class="island p-2 rounded arm-controls">
       <ArmControls />
     </div>
-    <div class='island rounded rover-3d overflow-hidden'>
-      <Rover3D class="w-100 h-100"/>
+    <div class="island rounded rover-3d overflow-hidden">
+      <Rover3D class="w-100 h-100" />
     </div>
-    <div class='island p-2 rounded controller_state d-flex flex-column gap-2'>
-      <ControllerDataTable msg-type='arm_state' header='Arm States' />
-      <ControllerDataTable msg-type='drive_state' header='Drive States' />
-    </div>
-    <div>
-      <AutonTyping />
+    <div class="island p-2 rounded controller_state d-flex flex-column gap-2">
+      <ControllerDataTable msg-type="arm_state" header="Arm States" />
+      <ControllerDataTable msg-type="drive_state" header="Drive States" />
     </div>
     <div>
       <MastGimbalControls />
@@ -29,7 +26,7 @@
   </div>
 </template>
 
-<script lang='ts'>
+<script lang="ts">
 import { defineComponent } from 'vue'
 import ControllerDataTable from '../components/ControllerDataTable.vue'
 import ArmControls from '../components/ArmControls.vue'
@@ -39,17 +36,16 @@ import OdometryReading from '../components/OdometryReading.vue'
 import DriveControls from '../components/DriveControls.vue'
 import MastGimbalControls from '../components/MastGimbalControls.vue'
 import Rover3D from '../components/Rover3D.vue'
-import AutonTyping from '../components/AutonTyping.vue'
 
 interface Odom {
-  latitude_deg: number;
-  longitude_deg: number;
-  bearing_deg: number;
+  latitude_deg: number
+  longitude_deg: number
+  bearing_deg: number
 }
 
 interface DroneOdom {
-  latitude_deg: number;
-  longitude_deg: number;
+  latitude_deg: number
+  longitude_deg: number
 }
 
 export default defineComponent({
@@ -62,26 +58,25 @@ export default defineComponent({
     DriveControls,
     MastGimbalControls,
     Rover3D,
-    AutonTyping
   },
 
   data() {
     return {
       odom: null as Odom | null,
-      drone_odom: null as DroneOdom | null
+      drone_odom: null as DroneOdom | null,
     }
   },
 
   methods: {
     updateOdom(odom: Odom) {
-      this.odom = odom;
+      this.odom = odom
     },
     updateDroneOdom(odom: DroneOdom) {
-      this.drone_odom = odom;
-    }
+      this.drone_odom = odom
+    },
   },
 
-  mounted: function() {
+  mounted: function () {
     this.$store.dispatch('websocket/setupWebSocket', 'arm')
     this.$store.dispatch('websocket/setupWebSocket', 'drive')
     this.$store.dispatch('websocket/setupWebSocket', 'mast')
@@ -89,7 +84,7 @@ export default defineComponent({
     this.$store.dispatch('websocket/setupWebSocket', 'waypoints')
   },
 
-  unmounted: function() {
+  unmounted: function () {
     this.$store.dispatch('websocket/closeWebSocket', 'arm')
     this.$store.dispatch('websocket/closeWebSocket', 'drive')
     this.$store.dispatch('websocket/closeWebSocket', 'waypoints')
