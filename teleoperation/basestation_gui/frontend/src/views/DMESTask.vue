@@ -20,6 +20,9 @@
       <ControllerDataTable msg-type='drive_state' header='Drive States' />
     </div>
     <div>
+      <AutonTyping />
+    </div>
+    <div>
       <MastGimbalControls />
       <DriveControls />
     </div>
@@ -36,6 +39,7 @@ import OdometryReading from '../components/OdometryReading.vue'
 import DriveControls from '../components/DriveControls.vue'
 import MastGimbalControls from '../components/MastGimbalControls.vue'
 import Rover3D from '../components/Rover3D.vue'
+import AutonTyping from '../components/AutonTyping.vue'
 
 interface Odom {
   latitude_deg: number;
@@ -57,7 +61,8 @@ export default defineComponent({
     OdometryReading,
     DriveControls,
     MastGimbalControls,
-    Rover3D
+    Rover3D,
+    AutonTyping
   },
 
   props: {
@@ -124,9 +129,10 @@ export default defineComponent({
   width: 100%;
   height: 100%;
   grid-template-columns: 400px auto;
-  grid-template-rows: 50% auto;
+  grid-template-rows: 20% 30% auto;
   grid-template-areas:
     'arm-controls rover-3d'
+    'auton-typing rover-3d'
     'controller_state rover-3d';
   font-family: sans-serif;
 }
