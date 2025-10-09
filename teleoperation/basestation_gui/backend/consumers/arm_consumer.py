@@ -16,7 +16,7 @@ from backend.drive_controls import send_controller_twist
 from backend.input import DeviceInputs
 from backend.ra_controls import send_ra_controls
 from backend.sa_controls import send_sa_controls
-from geometry_msgs.msg import Twist
+from geometry_msgs.msg import Twist, PoseStamped
 from sensor_msgs.msg import JointState
 from mrover.msg import (
     Throttle,
@@ -52,6 +52,7 @@ class ArmConsumer(AsyncJsonWebsocketConsumer):
         await self.forward_ros_topic("/arm_controller_state", ControllerState, "arm_state")
         await self.forward_ros_topic("/sa_controller_state", ControllerState, "sa_state")
         await self.forward_ros_topic("/arm_joint_data", JointState, "fk")
+        await self.forward_ros_topic("/arm_ik", IK, "ik_target")
 
     async def disconnect(self, close_code) -> None:
         """
