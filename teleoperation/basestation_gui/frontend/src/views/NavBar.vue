@@ -30,7 +30,7 @@ export default defineComponent({
         '/AutonTask': 'Autonomy Mission',
         '/DMTask': 'Delivery Mission',
         '/ESTask': 'Equipment Servicing',
-        '/ISHTask': 'ISH Mission',
+        '/SPITask': 'SPI Mission',
         '/SATask': 'Sample Acquisition',
         '/Cameras': 'Camera View',
         '/dev': 'Development View'

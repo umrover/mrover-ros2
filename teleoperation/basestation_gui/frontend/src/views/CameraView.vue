@@ -65,7 +65,7 @@ export default {
   data() {
     return {
       percent: 0,
-      missionType: ["DM Mission", "ES Mission", "ISH GUI", "Sample Acquisition GUI", "Autonomy Mission"],
+      missionType: ["DM Mission", "ES Mission", "SPI GUI", "Sample Acquisition GUI", "Autonomy Mission"],
       selectedMission: "DM Mission",
       cameras: {
         "DM Mission": ["Cam1","Cam2"],
