@@ -249,10 +249,147 @@ class DriveController:
         # There's a lot of code in the original get_drive_command that could be reused!
         # Maybe put the reusable code in another function?
 
-        set_farthest_path_point()
+        # Don't think that path_start is needed for get_drive_command based on the algorithm for pure pursuit
+        
+        # Get the direction vector of the rover and position,
+        # zero the Z components since our controller only assumes motion and control over the rover in the XY plane
+        rover_dir = rover_pose.rotation()[:, 0]
+        rover_dir[2] = 0
+        rover_pos = rover_pose.translation()
+        rover_pos[2] = 0
+
+        if drive_back:
+            rover_dir *= -1
+
+        # Obtain lookahead_distance
+        lookahead_dist = self.node.get_parameter("drive.lookahead_distance").value
+
+        # Check and set if there is a new farther found point in the path
+        set_farthest_path_point(waypoints, rover_pos, lookahead_dist)
+
+        # Compute intersection points with the path
+        intersection_points = compute_intersection_point(waypoints, rover_pos, lookahead_dist)
+
+        # Determine the target_pos given the intersection points
+        target_pos = determine_next_point(waypoints, intersection_points)
+
+        # Get target direction vector
+        target_dir = target_pos - rover_pos
+
+        # Compute errors
+        linear_error = float(np.linalg.norm(target_dir))
+        angular_error = angle_to_rotate_2d(rover_dir[:2], target_dir[:2])
+
+        # Determine linear and angular velocity
+        output = self.get_twist_for_arch(
+            angular_error,
+            linear_error,
+            completion_thresh,
+            lookahead_dist
+        )
+
+        if drive_back:
+            output[0].linear.x *= -1
+
+        self._last_angular_error = angular_error
+        self._last_target = target_pos
+        return output
+
+    @staticmethod
+    def get_twist_for_arch(
+        angular_error: float,
+        linear_error: float,
+        completion_thresh: float,
+        lookahead_dist : float,
+    ) -> tuple[Twist, bool]:
+        # A helper function for pure pursuit
+        # Determines the angular and linear velocity needed to follow the arch
+
+        turning_p = self.node.get_parameter("drive.turning_p").value
+        driving_p = self.node.get_parameter("drive.driving_p").value
+        min_turning_effort = self.node.get_parameter(
+            "drive.min_turning_effort").value
+        max_turning_effort = self.node.get_parameter(
+            "drive.max_turning_effort").value
+        min_driving_effort = self.node.get_parameter(
+            "drive.min_driving_effort").value
+        max_driving_effort = self.node.get_parameter(
+            "drive.max_driving_effort").value
+        
+        # If we are at the target position, return a zero command
+        if abs(linear_error) < completion_thresh:
+            self._last_angular_error = None
+            return Twist(), True
+
+        # Compute angular velocity
+        linear_vel = linear_error * driving_p
+
+        angular_vel = (np.sin(angular_error) / lookahead_dist) * linear_vel
+
+        # If we are outside are max_turning_effort, we will have no linear velocity
+        # This is because we don't want to go outside of the arch
+        # So we instead decide to prioritize turning to make the arch easier to follow
+        if (angular_vel > max_turning_effort):
+            cmd_vel = Twist(
+                angular=Vector3(
+                    z=np.clip(
+                        max_turning_effort,
+                        min_turning_effort,
+                        max_turning_effort,
+                    )
+                ),
+            )
+            return cmd_vel, False
+        else:
+            cmd_vel = Twist(
+                linear=Vector3(
+                    x=np.clip(
+                        linear_vel,
+                        min_driving_effort,
+                        max_driving_effort,
+                    )
+                ),
+                angular=Vector3(
+                    z=np.clip(
+                        angular_vel,
+                        min_turning_effort,
+                        max_turning_effort,
+                    )
+                ),
+            )
+            return cmd_vel, False
 
 
-        return
+    @staticmethod
+    def determine_next_point(
+        waypoints: Trajectory,
+        intersections: np.ndarry,
+    ) -> np.ndarray:
+        # A helper function for pure pursuit 
+        # Determines what intersection is the best to follow
+
+        waypoints.increment_point()
+
+        if waypoints.done() or len(intersections):
+            waypoints.decerement_point()
+            return intersections[0]
+        
+        path_point_x = waypoints.get_current_point()[0]
+        path_point_y = waypoints.get_current_point()[1]
+
+        dist_1 = np.sqrt((path_point_x - intersections[0][0])**2 + (path_point_y - intersections[0][1])**2)
+        dist_2 = np.sqrt((path_point_x - intersections[0][0])**2 + (path_point_y - intersections[0][1])**2)
+
+        target_pos = [0,0]
+
+        if dist_1 < dist_2:
+            target_pos[0] = intersections[0][0]
+            target_pos[1] = intersections[0][1]
+        else:
+            target_pos[0] = intersections[1][0]
+            target_pos[1] = intersections[1][1]
+
+        return target_pos
 
     @staticmethod
     def set_farthest_path_point(
@@ -260,18 +397,26 @@ class DriveController:
         rover_pos: np.ndarray,
         lookahead_dist: float,
     ):
-        #TODO: A helper function for pure pursuit
-        # Determines the current farthest waypoint found in the path
+        # A helper function for pure pursuit 
+        # Determines the farthest found waypoint in the path
+        # Ensures each point has to be found sequentially in the path
 
-        numIncrements = 0
+        new_point = false
+        stop_incrementing = false
 
-        # Random thinking
-        while(not waypoints.increment_point()) {
-            numIncrements += 1
-            if (lookahead_dist >= np.linalg.norm(waypoints.get_current_point, rover_pos)) {
-                break
+        # Determine next point
+        while(not waypoints.done() and not stop_incrementing) {
+            # Increment to the next point in the path
+            waypoints.increment_point()
+
+            # Check if the next point is valid
+            if (lookahead_dist < np.linalg.norm(waypoints.get_current_point, rover_pos)) {
+                stop_incrementing = true
             }
         }
+
+        if stop_incrementing or waypoints.done():
+            waypoints.decrement_point()
     
     @staticmethod
     def sign(
@@ -289,7 +434,7 @@ class DriveController:
         rover_pos: np.ndarray,
         lookahead_dist: float,
     ) -> np.ndarray | None:
-        #TODO: A helper function for pure pursuit. 
+        # A helper function for pure pursuit. 
         # Use this to compute the potential point we should be following!
 
         # Ensure a trajectory was passed through
@@ -297,60 +442,60 @@ class DriveController:
             raise ValueError("Attempt to detect intersection with no waypoints")
             return
 
-        x1 = waypoints.get_current_point()[0]
-        y1 = waypoints.get_current_point()[1]
+        x_1 = waypoints.get_current_point()[0]
+        y_1 = waypoints.get_current_point()[1]
 
         # If the goal point is within our lookahead_dist, return the goal
-        if waypoints.increment_point():
+        if waypoints.done():
             return np.ndarray([x1,y1])
 
-        xPos = rover_pos[0]
-        yPos = rover_pos[1]
-        x2 = waypoints.get_current_point()[0]
-        y2 = waypoints.get_current_point()[1]
+        x_pos = rover_pos[0]
+        y_pos = rover_pos[1]
+        x_2 = waypoints.get_current_point()[0]
+        y_2 = waypoints.get_current_point()[1]
 
         # Consider the rovers position as the origin
-        dx = (x2 - xPos) - (x1 - xPos)
-        dy = (y2 - yPos) - (y1 - yPos)
+        d_x = (x_2 - x_pos) - (x_1 - x_pos)
+        d_y = (y_2 - y_pos) - (y_1 - y_pos)
 
 
-        dr = np.sqrt((dx**2) + (dy**2))
-        Det = (x1 - xPos)*(y2 - yPos) - (x2 - xPos)*(y1 - yPos)
+        d_r = np.sqrt((d_x**2) + (d_y**2))
+        det = (x_1 - x_pos)*(y_2 - y_pos) - (x_2 - x_pos)*(y_1 - y_pos)
 
         # Calculate the discriminate
-        discriminate = (lookahead_dist**2)*(dr**2) - (Det**2)
+        discriminate = (lookahead_dist**2)*(d_r**2) - (det**2)
 
-        validIntersection1 = False
-        validIntersection2 = False
+        valid_intersection_1 = False
+        valid_intersection_2 = False
 
         # Determine if there is an intersection
         if (discriminate >= 0):
-            xSol1 = Det*dr + sign(dy)*dx*np.sqrt(discriminate)
-            xSol2 = Det*dr - sign(dy)*dx*np.sqrt(discriminate)
-            ySol1 = -Det*dx + abs(dy)*np.sqrt(discriminate)
-            ySol2 = -Det*dx - abs(dy)*np.sqrt(discriminate)
+            x_sol_1 = det*d_r + sign(d_y)*d_x*np.sqrt(discriminate)
+            x_sol_2 = det*d_r - sign(d_y)*d_x*np.sqrt(discriminate)
+            y_sol_1 = -det*d_x + abs(d_y)*np.sqrt(discriminate)
+            y_sol_2 = -det*d_x - abs(d_y)*np.sqrt(discriminate)
 
-            intersection1 = [xSol1 + xPos, ySol1 + yPos]
-            intersection2 = [xSol2 + xPos, ySol2 + ypos]
+            intersection_1 = [x_sol_1 + x_pos, y_sol_1 + y_pos]
+            intersection_2 = [x_sol_2 + x_pos, y_sol_2 + y_pos]
 
-            minX = min(x1, x2)
-            minY = min(y1, y2)
-            maxX = max(x1, x2)
-            maxY = max(y1, y2)
+            min_x = min(x_1, x_2)
+            min_y = min(y_1, y_2)
+            max_x = max(x_1, x_2)
+            max_y = max(y_1, y_2)
 
-            if (minX <= intersection1[0] <= maxX and minY <= intersection1[1] <= maxY):
-                validIntersection1 = True
-            if (minX <= intersection2[0] <= maxX and minY <= intersection2[1] <= maxY):
-                validIntersection2 = True
+            if (min_x <= intersection_1[0] <= max_x and min_y <= intersection_1[1] <= max_y):
+                valid_intersection_1 = True
+            if (min_x <= intersection_2[0] <= max_x and min_y <= intersection_2[1] <= max_y):
+                valid_intersection_2 = True
         else:
             return None
 
         intersections = []
 
-        if (validIntersection1):
-            intersections.append(intersection1)
-        if (validIntersection2):
-            intersections.append(intersection2)
+        if (valid_intersection_1):
+            intersections.append(intersection_1)
+        if (valid_intersection_2):
+            intersections.append(intersection_2)
 
         return intersections
 
