@@ -50,11 +50,16 @@ export default defineComponent({
   width: 100%;
   height: 100%;
   grid-template-columns: 400px auto;
-  grid-template-rows: 50% auto;
+  grid-template-rows: 20% 30% auto;
   grid-template-areas:
     'arm-controls rover-3d'
+    'auton-typing rover-3d'
     'controller_state rover-3d';
   font-family: sans-serif;
+}
+
+.auton-typing {
+  grid-area: auton-typing;
 }
 
 .arm-controls {
