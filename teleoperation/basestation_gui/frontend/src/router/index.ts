@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import Menu from '../views/HomeMenu.vue'
-import DMESTask from '../views/DMESTask.vue'
+import DMTask from '../views/DMTask.vue'
+import ESTask from '../views/ESTask.vue'
 import AutonTask from '../views/AutonTask.vue'
 import ISHTask from '../views/ISHTask.vue'
 import SATask from '../views/SATask.vue'
@@ -17,18 +18,12 @@ const routes = [
   {
     path: '/DMTask',
     name: 'DMTask',
-    component: DMESTask,
-    props: {
-      type: 'DM'
-    }
+    component: DMTask
   },
   {
     path: '/ESTask',
     name: 'ESTask',
-    component: DMESTask,
-    props: {
-      type: 'ES'
-    }
+    component: ESTask
   },
   {
     path: '/AutonTask',
