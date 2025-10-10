@@ -1,0 +1,40 @@
+sa_hw_bridge:
+  ros__parameters:
+    port_unicore: /dev/arduino
+    baud_unicore: 115200
+    servo_id: 0
+    linear_actuator:
+      # gear_ratio: 1.0
+      is_inverted: true
+      driver_voltage: 11.5
+      motor_max_voltage: 12.0
+    auger:
+      # gear_ratio: 1.0
+      is_inverted: false
+      driver_voltage: 11.5
+      motor_max_voltage: 12.0
+    pump_0:
+      # gear_ratio: 1.0
+      is_inverted: false
+      driver_voltage: 11.5
+      motor_max_voltage: 12.0
+    pump_1:
+      # gear_ratio: 1.0
+      is_inverted: false
+      driver_voltage: 11.5
+      motor_max_voltage: 12.0
+    sensor_actuator:
+      # gear_ratio: 1.0
+      is_inverted: false
+      driver_voltage: 11.5
+      motor_max_voltage: 12.0
+      limit_switch_0_present: true
+      limit_switch_0_enabled: true
+      limit_switch_0_limits_forward: false
+      limit_switch_0_active_high: false
+      limit_switch_0_used_for_readjustment: false
+      limit_switch_1_present: true
+      limit_switch_1_enabled: true
+      limit_switch_1_limits_forward: true
+      limit_switch_1_active_high: false
+      limit_switch_1_used_for_readjustment: false
