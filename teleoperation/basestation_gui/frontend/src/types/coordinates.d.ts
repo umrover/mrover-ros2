@@ -10,11 +10,11 @@ export interface DMS {
 }
 
 /**
- * Represents a full odometry object formatted as DMS.
+ * Represents a full odometry object formatted as D (degrees).
  */
 export interface FormattedOdom {
-  lat: DMS;
-  lon: DMS;
+  lat: number;
+  lon: number;
 }
 
 /**

@@ -7,23 +7,11 @@
           <div class="d-flex gap-3 justify-content-center">
             <div class="odomModule">
               <small class="text-muted">Latitude</small>
-              <p class="mb-0">{{ formatted_odom.lat.d }}º</p>
-              <p v-if="min_enabled" class="mb-0">
-                {{ formatted_odom.lat.m }}' N
-              </p>
-              <p v-if="sec_enabled" class="mb-0">
-                {{ formatted_odom.lat.s }}" N
-              </p>
+              <p class="mb-0">{{ formatted_odom.lat }}º</p>
             </div>
             <div class="odomModule">
               <small class="text-muted">Longitude</small>
-              <p class="mb-0">{{ formatted_odom.lon.d }}º</p>
-              <p v-if="min_enabled" class="mb-0">
-                {{ formatted_odom.lon.m }}' E
-              </p>
-              <p v-if="sec_enabled" class="mb-0">
-                {{ formatted_odom.lon.s }}" E
-              </p>
+              <p class="mb-0">{{ formatted_odom.lon }}º</p>
             </div>
           </div>
         </div>
@@ -47,23 +35,11 @@
           <div class="d-flex gap-3 justify-content-center">
             <div class="odomModule">
               <small class="text-muted">Latitude</small>
-              <p class="mb-0">{{ formatted_basestation_odom.lat.d }}º</p>
-              <p v-if="min_enabled" class="mb-0">
-                {{ formatted_basestation_odom.lat.m }}' N
-              </p>
-              <p v-if="sec_enabled" class="mb-0">
-                {{ formatted_basestation_odom.lat.s }}" N
-              </p>
+              <p class="mb-0">{{ formatted_basestation_odom.lat }}º</p>
             </div>
             <div class="odomModule">
               <small class="text-muted">Longitude</small>
-              <p class="mb-0">{{ formatted_basestation_odom.lon.d }}º</p>
-              <p v-if="min_enabled" class="mb-0">
-                {{ formatted_basestation_odom.lon.m }}' E
-              </p>
-              <p v-if="sec_enabled" class="mb-0">
-                {{ formatted_basestation_odom.lon.s }}" E
-              </p>
+              <p class="mb-0">{{ formatted_basestation_odom.lon }}º</p>
             </div>
           </div>
         </div>
@@ -89,7 +65,7 @@
 import { defineComponent } from 'vue'
 import Vuex from 'vuex'
 const { mapState } = Vuex
-import { convertDMS, quaternionToMapAngle } from '../utils/map.js'
+import {quaternionToMapAngle } from '../utils/map.ts'
 import IMUCalibration from './IMUCalibration.vue'
 import FlightAttitudeIndicator from './FlightAttitudeIndicator.vue'
 import type { WebSocketState } from '../types/websocket.js'
@@ -128,40 +104,19 @@ export default defineComponent({
       navMessage: (state: WebSocketState) => state.messages['nav'],
     }),
 
-    odom_format(): string {
-      return this.$store.getters['map/odomFormat']
-    },
-
     formatted_odom(): FormattedOdom {
       return {
-        lat: convertDMS(
-          { d: this.rover_latitude_deg, m: 0, s: 0 },
-          this.odom_format,
-        ),
-        lon: convertDMS(
-          { d: this.rover_longitude_deg, m: 0, s: 0 },
-          this.odom_format,
-        ),
+        lat: this.rover_latitude_deg,
+        lon: this.rover_longitude_deg,
       }
     },
     formatted_basestation_odom(): FormattedOdom {
       return {
-        lat: convertDMS(
-          { d: this.basestation_latitude_deg, m: 0, s: 0 },
-          this.odom_format,
-        ),
-        lon: convertDMS(
-          { d: this.basestation_longitude_deg, m: 0, s: 0 },
-          this.odom_format,
-        ),
+        lat: this.basestation_latitude_deg,
+        lon: this.basestation_longitude_deg,
       }
     },
-    min_enabled(): boolean {
-      return this.odom_format !== 'D'
-    },
-    sec_enabled(): boolean {
-      return this.odom_format === 'DMS'
-    },
+
     alt_available(): boolean {
       return !isNaN(this.rover_altitude)
     },

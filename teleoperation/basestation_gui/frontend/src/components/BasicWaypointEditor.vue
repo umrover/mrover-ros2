@@ -7,35 +7,6 @@
         <input class="form-control" id="waypointname" v-model="name" />
       </div>
 
-      <div class="btn-group" role="group" aria-label="Coordinate Format Selection">
-        <input
-          type="radio"
-          class="btn-check"
-          v-model="odom_format_in"
-          id="radioD"
-          value="D"
-          autocomplete="off"
-        />
-        <label class="btn btn-outline-primary" for="radioD">D</label>
-        <input
-          type="radio"
-          class="btn-check"
-          v-model="odom_format_in"
-          id="radioDM"
-          value="DM"
-          autocomplete="off"
-        />
-        <label class="btn btn-outline-primary" for="radioDM">DM</label>
-        <input
-          type="radio"
-          class="btn-check"
-          v-model="odom_format_in"
-          id="radioDMS"
-          value="DMS"
-          autocomplete="off"
-        />
-        <label class="btn btn-outline-primary" for="radioDMS">DMS</label>
-      </div>
 
       <div class="d-flex gap-2">
         <div class="d-flex flex-column border border-2 rounded p-2">
@@ -47,14 +18,6 @@
             <input class="form-control" id="deg1" v-model.number="input.lat.d" />
             <span class="input-group-text font-monospace">º</span>
           </div>
-          <div v-if="min_enabled" class="col input-group">
-            <input class="form-control" id="min1" v-model.number="input.lat.m" />
-            <span class="input-group-text font-monospace">'</span>
-          </div>
-          <div v-if="sec_enabled" class="col input-group">
-            <input class="form-control" id="sec1" v-model.number="input.lat.s" />
-            <span class="input-group-text font-monospace">"</span>
-          </div>
         </div>
         <div class="d-flex flex-column border border-2 rounded p-2">
           <div class="d-flex justify-content-between">
@@ -64,14 +27,6 @@
           <div class="col input-group">
             <input class="form-control" id="deg2" v-model.number="input.lon.d" />
             <span class="input-group-text font-monospace">º</span>
-          </div>
-          <div v-if="min_enabled" class="col input-group">
-            <input class="form-control" id="min2" v-model.number="input.lon.m" />
-            <span class="input-group-text font-monospace">'</span>
-          </div>
-          <div v-if="sec_enabled" class="col input-group">
-            <input class="form-control" id="sec2" v-model.number="input.lon.s" />
-            <span class="input-group-text font-monospace">"</span>
           </div>
         </div>
       </div>
@@ -117,7 +72,6 @@
 </template>
 
 <script lang="ts">
-import { convertDMS } from '../utils/map.js'
 import WaypointItem from './BasicWaypointItem.vue'
 import Vuex from 'vuex'
 const { mapMutations, mapGetters, mapActions, mapState } = Vuex
@@ -139,17 +93,12 @@ export default {
   data() {
     return {
       name: 'Waypoint',
-      odom_format_in: 'DM',
       input: {
         lat: {
           d: 0,
-          m: 0,
-          s: 0,
         },
         lon: {
           d: 0,
-          m: 0,
-          s: 0,
         },
       },
 
@@ -166,10 +115,6 @@ export default {
       setSearchWaypoint: 'setSearchWaypoint',
     }),
 
-    ...mapMutations('map', {
-      setOdomFormat: 'setOdomFormat',
-    }),
-
     deleteItem: function (payload: { index: number }) {
       if (this.highlightedWaypoint == payload.index) {
         this.setHighlightedWaypoint(-1)
@@ -182,15 +127,15 @@ export default {
 
     addWaypoint: function (
       coord: {
-        lat: { d: number; m: number; s: number }
-        lon: { d: number; m: number; s: number }
+        lat: { d: number}
+        lon: { d: number}
       },
       isDrone: boolean,
     ) {
       this.storedWaypoints.push({
         name: this.name,
-        lat: (coord.lat.d + coord.lat.m / 60 + coord.lat.s / 3600).toFixed(5),
-        lon: (coord.lon.d + coord.lon.m / 60 + coord.lon.s / 3600).toFixed(5),
+        lat: (coord.lat.d).toFixed(5),
+        lon: (coord.lon.d).toFixed(5),
         drone: isDrone,
       })
     },
@@ -262,21 +207,9 @@ export default {
       deep: true,
     },
 
-    odom_format_in: function (newOdomFormat) {
-      this.setOdomFormat(newOdomFormat)
-      this.input.lat = convertDMS(this.input.lat, newOdomFormat)
-      this.input.lon = convertDMS(this.input.lon, newOdomFormat)
-    },
-
     clickPoint: function (newClickPoint) {
       this.input.lat.d = newClickPoint.lat
       this.input.lon.d = newClickPoint.lon
-      this.input.lat.m = 0
-      this.input.lon.m = 0
-      this.input.lat.s = 0
-      this.input.lon.s = 0
-      this.input.lat = convertDMS(this.input.lat, this.odom_format_in)
-      this.input.lon = convertDMS(this.input.lon, this.odom_format_in)
     },
   },
 
@@ -284,8 +217,6 @@ export default {
     this.setHighlightedWaypoint(-1)
     this.setSearchWaypoint(-1)
     this.setWaypointList([])
-
-    this.odom_format_in = this.odom_format
 
     window.setTimeout(() => {
       this.$store.dispatch('websocket/sendMessage', {
@@ -307,28 +238,10 @@ export default {
       clickPoint: 'clickPoint',
     }),
 
-    ...mapGetters('map', {
-      odom_format: 'odomFormat',
-    }),
-
-    min_enabled: function () {
-      return this.odom_format != 'D'
-    },
-
-    sec_enabled: function () {
-      return this.odom_format == 'DMS'
-    },
-
     formatted_odom: function () {
       return {
-        lat: convertDMS(
-          { d: this.odom.latitude_deg, m: 0, s: 0 },
-          this.odom_format,
-        ),
-        lon: convertDMS(
-          { d: this.odom.longitude_deg, m: 0, s: 0 },
-          this.odom_format,
-        ),
+        lat: this.odom.latitude_deg,
+        lon: this.odom.longitude_deg,
       }
     },
   },
