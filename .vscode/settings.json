@@ -20,6 +20,9 @@
             "${workspaceFolder}/config/drive.yaml"
         ]
     },
+    "cmake.configureArgs": [
+        "-DCMAKE_TOOLCHAIN_FILE=${workspaceFolder}/cmake/toolchain.cmake"
+    ],
     //// Microsoft C++
     // Disable since clangd is used instead
     "C_Cpp.intelliSenseEngine": "disabled",
