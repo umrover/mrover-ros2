@@ -98,6 +98,7 @@
               <option value="1">Post</option>
               <option value="2">Mallet</option>
               <option value="3">Water Bottle</option>
+              <option value="4">Rock Pick</option>
             </select>
           </div>
         </div>
@@ -197,6 +198,14 @@ export default defineComponent({
           name: 'Water Bottle',
           id: -1,
           type: 3,
+          lat: 0,
+          lon: 0,
+          enable_costmap: true,
+        },
+        {
+          name: 'Rock Pick',
+          id: -1,
+          type: 4,
           lat: 0,
           lon: 0,
           enable_costmap: true,
@@ -407,7 +416,13 @@ export default defineComponent({
       })
     },
 
-    toggleCostmap({ waypoint, enable_costmap }: { waypoint: Waypoint; enable_costmap: boolean }) {
+    toggleCostmap({
+      waypoint,
+      enable_costmap,
+    }: {
+      waypoint: Waypoint
+      enable_costmap: boolean
+    }) {
       waypoint.enable_costmap = enable_costmap
     },
 
