@@ -265,13 +265,13 @@ class DriveController:
         lookahead_dist = self.node.get_parameter("drive.lookahead_distance").value
 
         # Check and set if there is a new farther found point in the path
-        set_farthest_path_point(waypoints, rover_pos, lookahead_dist)
+        self.set_farthest_path_point(waypoints, rover_pos, lookahead_dist)
 
         # Compute intersection points with the path
-        intersection_points = compute_intersection_point(waypoints, rover_pos, lookahead_dist)
+        intersection_points = self.compute_intersection_point(waypoints, rover_pos, lookahead_dist)
 
         # Determine the target_pos given the intersection points
-        target_pos = determine_next_point(waypoints, intersection_points)
+        target_pos = self.determine_next_point(waypoints, intersection_points)
 
         # Get target direction vector
         target_dir = target_pos - rover_pos
@@ -297,6 +297,7 @@ class DriveController:
 
     @staticmethod
     def get_twist_for_arch(
+        self,
         angular_error: float,
         linear_error: float,
         completion_thresh: float,
@@ -362,6 +363,7 @@ class DriveController:
 
     @staticmethod
     def determine_next_point(
+
         waypoints: Trajectory,
         intersections: np.ndarry,
     ) -> np.ndarray:
@@ -401,19 +403,17 @@ class DriveController:
         # Determines the farthest found waypoint in the path
         # Ensures each point has to be found sequentially in the path
 
-        new_point = false
-        stop_incrementing = false
+        new_point = False
+        stop_incrementing = False
 
         # Determine next point
-        while(not waypoints.done() and not stop_incrementing) {
+        while(not waypoints.done() and not stop_incrementing):
             # Increment to the next point in the path
             waypoints.increment_point()
 
             # Check if the next point is valid
-            if (lookahead_dist < np.linalg.norm(waypoints.get_current_point, rover_pos)) {
-                stop_incrementing = true
-            }
-        }
+            if (lookahead_dist < np.linalg.norm(waypoints.get_current_point, rover_pos)):
+                stop_incrementing = True
 
         if stop_incrementing or waypoints.done():
             waypoints.decrement_point()
