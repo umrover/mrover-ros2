@@ -363,7 +363,6 @@ class DriveController:
 
     @staticmethod
     def determine_next_point(
-
         waypoints: Trajectory,
         intersections: np.ndarry,
     ) -> np.ndarray:

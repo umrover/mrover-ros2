@@ -106,7 +106,7 @@ namespace mrover {
             mControllerStatePub->publish(mControllerState);
         }
 
-        auto setServoPositionServiceCallback(srv::ServoSetPos::Request::ConstSharedPtr const& req, srv::ServoSetPos::Response::SharedPtr const& res) -> void {
+        auto setServoPositionServiceCallback(srv::ServoSetPos::Request::ConstSharedPtr const req, srv::ServoSetPos::Response::SharedPtr const res) -> void {
             ServoSetPosition set_pos{
                     .id = mServoID,
                     .isCounterClockwise = req->is_counterclockwise,
