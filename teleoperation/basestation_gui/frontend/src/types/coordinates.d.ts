@@ -1,15 +1,6 @@
 // src/types/navigation.ts
 
 /**
- * Represents coordinates in Degrees, Minutes, Seconds format.
- */
-export interface DMS {
-  d: number; // Degrees
-  m: number; // Minutes
-  s: number; // Seconds
-}
-
-/**
  * Represents a full odometry object formatted as D (degrees).
  */
 export interface FormattedOdom {
