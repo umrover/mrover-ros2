@@ -18,12 +18,29 @@ BLACK_ARGS=(
 CLANG_FORMAT_ARGS=(
   "-style=file"
 )
+CLANG_TIDY_ARGS=(
+  "--use-color"
+)
 
-# Just do a dry run if the "fix" argument is not passed
-if [ $# -eq 0 ] || [ "$1" != "--fix" ]; then
+# detect fix and parallel
+is_fix="false"
+is_parallel="false"
+for arg in "$@"; do
+    if [[ "$arg" = "--fix" ]]; then
+        is_fix="true"
+    fi
+
+    if [[ "$arg" = "--parallel" ]]; then
+        is_parallel="true"
+    fi
+done
+
+if [[ "$is_fix" != "true" ]]; then
   BLACK_ARGS+=("--diff") # Show difference
   BLACK_ARGS+=("--check") # Exit with non-zero code if changes are required (for CI)
   CLANG_FORMAT_ARGS+=("--dry-run" "--Werror") # Don't modify, exit with non-zero code if changes are required
+else
+  CLANG_TIDY_ARGS+=("--fix") # Modify
 fi
 
 function print_update_error() {
@@ -49,6 +66,8 @@ function find_executable() {
 ## Check that all tools are installed
 
 readonly CLANG_FORMAT_PATH=$(find_executable clang-format-18 18.1)
+readonly CLANG_TIDY_PATH=$(find_executable clang-tidy-18 18.1)
+readonly GNU_PARALLEL_PATH=$(find_executable parallel 20210822)
 readonly BLACK_PATH=$(find_executable black 24.8.0)
 readonly MYPY_PATH=$(find_executable mypy 1.11.2)
 
@@ -60,6 +79,11 @@ readonly CPP_FILES=(
 )
 echo "Style checking C++ ..."
 "${CLANG_FORMAT_PATH}" "${CLANG_FORMAT_ARGS[@]}" -i "${CPP_FILES[@]}"
+if [[ "$is_parallel" = "true" ]]; then
+  "${GNU_PARALLEL_PATH}" --progress "${CLANG_TIDY_PATH}" "${CLANG_TIDY_ARGS[@]}" ::: "${CPP_FILES[@]}"
+else
+  "${CLANG_TIDY_PATH}" "${CLANG_TIDY_ARGS[@]}" "${CPP_FILES[@]}"
+fi
 echo "Done"
 
 # Add new directories with Python code here:

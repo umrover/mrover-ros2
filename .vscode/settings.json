@@ -20,6 +20,9 @@
             "${workspaceFolder}/config/drive.yaml"
         ]
     },
+    "cmake.configureArgs": [
+        "-DCMAKE_TOOLCHAIN_FILE=${workspaceFolder}/cmake/toolchain.cmake"
+    ],
     //// Microsoft C++
     // Disable since clangd is used instead
     "C_Cpp.intelliSenseEngine": "disabled",
@@ -55,4 +58,7 @@
         "deps": true,
         "venv": true,
     },
-}
+    "cmake.environment": {
+        "LD_LIBRARY_PATH": "/opt/ros/humble/opt/rviz_ogre_vendor/lib:/opt/ros/humble/lib/x86_64-linux-gnu:/opt/ros/humble/lib:${workspaceFolder}/../../build/mrover"
+    },
+}   

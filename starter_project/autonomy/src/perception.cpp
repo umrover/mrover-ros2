@@ -13,9 +13,15 @@
 #include <opencv2/core/types.hpp>
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgproc.hpp>
+#include <dlfcn.h>
 
 auto main(int argc, char** argv) -> int {
     rclcpp::init(argc, argv);
+
+    void* handle = dlopen("libmrover__rosidl_typesupport_fastrtps_cpp.so", RTLD_LAZY);
+if (!handle) {
+    std::cerr << "dlopen failed: " << dlerror() << std::endl;
+}   
 
     // "spin" blocks until our node dies
     rclcpp::spin(std::make_shared<mrover::Perception>());
@@ -37,7 +43,7 @@ namespace mrover {
         // Create a publisher for our tag topic
         // See: http://wiki.ros.org/ROS/Tutorials/WritingPublisherSubscriber%28c%2B%2B%29
         // TODO: uncomment me!
-        // mTagPublisher = create_publisher<msg::StarterProjectTag>("tag", 1);
+        mTagPublisher = create_publisher<msg::StarterProjectTag>("tag", 1);
 
         mTagDictionary = cv::makePtr<cv::aruco::Dictionary>(cv::aruco::getPredefinedDictionary(cv::aruco::DICT_4X4_50));
     }
