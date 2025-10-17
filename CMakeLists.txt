@@ -6,7 +6,7 @@ cmake_policy(SET CMP0148 OLD)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CXX_STANDARD_REQUIRED ON)
-set(CMAKE_BUILD_RPATH "${CMAKE_BINARY_DIR}/mrover")
+set(CMAKE_BUILD_RPATH "${CMAKE_BINARY_DIR}")
 
 # Generate compile_commands.json for clangd language server.
 # Can be used by VSCode, CLion, VIM, etc.
