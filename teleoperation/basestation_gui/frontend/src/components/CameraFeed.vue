@@ -13,8 +13,6 @@
 </template>
 <script lang="ts">
 import { defineComponent } from 'vue'
-import Vuex from 'vuex'
-const { mapActions } = Vuex
 import Checkbox from './BasicCheckbox.vue'
 
 export default defineComponent({
@@ -56,8 +54,6 @@ export default defineComponent({
   },
 
   methods: {
-    ...mapActions('websocket', ['sendMessage']),
-
     handleClick: function (event: MouseEvent) {
       console.log(event) // to stop warning
       // if (this.IKCam && this.mission === 'ik') {

@@ -17,8 +17,6 @@
 </template>
 
 <script lang="ts">
-import Vuex from 'vuex'
-const { mapActions } = Vuex
 import ToggleButton from './ToggleButton.vue'
 // import LEDIndicator from "./LEDIndicator.vue";
 
@@ -34,31 +32,18 @@ export default {
     }
   },
 
-  // watch: {
-  //     message(msg) {
-  //         if (msg.type == 'auto_shutoff' && !msg.success) {
-  //             this.autoShutdownEnabled = !this.autoShutdownEnabled;
-  //             alert('Toggling Auto Shutdown failed.')
-  //         }
-  //     },
-  // },
-
-  // computed: {
-  // ...mapState('websocket', ['message'])
-  // },
-
   methods: {
-    ...mapActions('websocket', ['sendMessage']),
-
-    sendAutoShutdownCmd: function () {
+    async sendAutoShutdownCmd() {
       this.autoShutdownEnabled = !this.autoShutdownEnabled
-      this.$store.dispatch('websocket/sendMessage', {
-        id: 'science',
-        message: {
-          type: 'auto_shutoff',
-          shutoff: this.autoShutdownEnabled,
-        },
-      })
+
+      try {
+        const { scienceAPI } = await import('../utils/api')
+        await scienceAPI.setAutoShutoff(this.autoShutdownEnabled)
+      } catch (error) {
+        console.error('Failed to toggle auto shutdown:', error)
+        // Revert state on error
+        this.autoShutdownEnabled = !this.autoShutdownEnabled
+      }
     },
   },
 

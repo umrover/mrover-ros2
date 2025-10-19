@@ -35,7 +35,7 @@
 
 <script lang="ts">
 import Vuex from 'vuex'
-const { mapState, mapActions } = Vuex
+const { mapState } = Vuex
 import html2canvas from 'html2canvas'
 import type { WebSocketState } from '../types/websocket'
 
@@ -82,7 +82,8 @@ export default {
 
     readData() {
       if (!this.readData) {
-        this.publishPolyfit()
+        // TODO: publishPolyfit - backend handler not implemented
+        // this.publishPolyfit()
       } else if (this.readData && this.readData != this.prevState) {
         this.exponents = []
         this.tempArray = []
@@ -93,18 +94,8 @@ export default {
   },
 
   methods: {
-    ...mapActions('websocket', ['sendMessage']),
-
-    publishPolyfit: function () {
-      this.$store.dispatch('websocket/sendMessage', {
-        id: 'science',
-        message: {
-          type: 'poly_fit',
-          temperatures: this.tempArray,
-          timestamps: this.timestamps,
-        },
-      }) // can't find "poly fit"
-    },
+    // NOTE: poly_fit WebSocket message removed - no backend handler exists
+    // If needed, implement REST API endpoint in backend/api/views/science.py
 
     predictTemp: function (timestamp: number) {
       const val = this.exponents[0] * timestamp + this.exponents[1]

@@ -74,9 +74,8 @@
 <script lang="ts">
 import WaypointItem from './BasicWaypointItem.vue'
 import Vuex from 'vuex'
-const { mapMutations, mapGetters, mapActions, mapState } = Vuex
+const { mapMutations, mapGetters } = Vuex
 import L from 'leaflet'
-import type { WebSocketState } from '../types/websocket.js'
 
 export default {
   props: {
@@ -107,13 +106,39 @@ export default {
   },
 
   methods: {
-    ...mapActions('websocket', ['sendMessage']),
-
     ...mapMutations('erd', {
       setWaypointList: 'setWaypointList',
       setHighlightedWaypoint: 'setHighlightedWaypoint',
       setSearchWaypoint: 'setSearchWaypoint',
     }),
+
+    async saveWaypoints(waypoints: any[]) {
+      try {
+        const { waypointsAPI } = await import('../utils/api')
+        await waypointsAPI.saveBasic(waypoints)
+      } catch (error) {
+        console.error('Failed to save waypoints:', error)
+      }
+    },
+
+    async loadWaypoints() {
+      try {
+        const { waypointsAPI } = await import('../utils/api')
+        const data = await waypointsAPI.getBasic()
+        if (data.status === 'success' && data.waypoints) {
+          this.storedWaypoints = data.waypoints
+          const waypoints = data.waypoints.map(
+            (waypoint: { lat: number; lon: number; name: string }) => ({
+              latLng: L.latLng(waypoint.lat, waypoint.lon),
+              name: waypoint.name
+            })
+          )
+          this.setWaypointList(waypoints)
+        }
+      } catch (error) {
+        console.error('Failed to load waypoints:', error)
+      }
+    },
 
     deleteItem: function (payload: { index: number }) {
       if (this.highlightedWaypoint == payload.index) {
@@ -179,30 +204,7 @@ export default {
           },
         )
         this.setWaypointList(waypoints)
-        this.$store.dispatch('websocket/sendMessage', {
-          id: 'waypoints',
-          message: {
-            type: 'save_basic_waypoint_list',
-            data: newList,
-          },
-        })
-      },
-      deep: true,
-    },
-
-    navMessage: {
-      handler: function (msg) {
-        if (msg.type == 'get_basic_waypoint_list') {
-          this.storedWaypoints = msg.data
-          const waypoints = msg.data.map(
-            (waypoint: { lat: number; lon: number; name: string }) => {
-              const lat = waypoint.lat
-              const lon = waypoint.lon
-              return { latLng: L.latLng(lat, lon), name: waypoint.name }
-            },
-          )
-          this.setWaypointList(waypoints)
-        }
+        this.saveWaypoints(newList)
       },
       deep: true,
     },
@@ -213,25 +215,17 @@ export default {
     },
   },
 
-  created: function () {
+  async created() {
     this.setHighlightedWaypoint(-1)
     this.setSearchWaypoint(-1)
     this.setWaypointList([])
 
-    window.setTimeout(() => {
-      this.$store.dispatch('websocket/sendMessage', {
-        id: 'waypoints',
-        message: {
-          type: 'get_basic_waypoint_list',
-        },
-      })
+    setTimeout(() => {
+      this.loadWaypoints()
     }, 250)
   },
 
   computed: {
-    ...mapState('websocket', {
-      waypointsMessage: (state: WebSocketState) => state.messages['waypoints'],
-    }),
     ...mapGetters('erd', {
       highlightedWaypoint: 'highlightedWaypoint',
       searchWaypoint: 'searchWaypoint',

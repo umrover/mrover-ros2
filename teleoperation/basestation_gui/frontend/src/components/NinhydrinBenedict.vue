@@ -30,7 +30,7 @@ import ToggleButton from './ToggleButton.vue'
 import LEDIndicator from './LEDIndicator.vue'
 import Vuex from 'vuex'
 import type { WebSocketState } from '../types/websocket'
-const { mapState, mapActions } = Vuex
+const { mapState } = Vuex
 
 export default {
   components: {
@@ -97,26 +97,25 @@ export default {
   },
 
   methods: {
-    ...mapActions('websocket', ['sendMessage']),
-
     toggleHeater: function () {
       this.heaters[this.site].enabled = !this.heaters[this.site].enabled
       this.sendHeaterRequest()
     },
 
-    sendHeaterRequest: function () {
+    async sendHeaterRequest() {
       let heaterName = String.fromCharCode(this.site + 97)
       if (this.isNinhydrin) {
         heaterName += '1'
       } else heaterName += '0'
-      this.$store.dispatch('websocket/sendMessage', {
-        id: 'science',
-        message: {
-          type: 'heater_enable',
-          enable: this.heaters[this.site].enabled,
-          heater: heaterName,
-        },
-      })
+
+      try {
+        const { scienceAPI } = await import('../utils/api')
+        await scienceAPI.setHeater(heaterName, this.heaters[this.site].enabled)
+      } catch (error) {
+        console.error('Failed to toggle heater:', error)
+        // Revert state on error
+        this.heaters[this.site].enabled = !this.heaters[this.site].enabled
+      }
     },
   },
 }

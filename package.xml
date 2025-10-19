@@ -16,6 +16,8 @@
     <depend>nav_msgs</depend>
     <depend>sensor_msgs</depend>
     <depend>geometry_msgs</depend>
+    <depend>action_msgs</depend>
+    <depend>unique_identifier_msgs</depend>
 
     <buildtool_depend>ament_cmake</buildtool_depend>
     <buildtool_depend>ament_cmake_python</buildtool_depend>

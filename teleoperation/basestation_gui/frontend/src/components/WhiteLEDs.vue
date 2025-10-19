@@ -54,18 +54,18 @@ export default {
   // },
 
   methods: {
-    ...mapActions('websocket', ['sendMessage']),
-
-    toggleLEDs: function () {
+    async toggleLEDs() {
       this.siteEnabled[this.site] = !this.siteEnabled[this.site]
-      this.$store.dispatch('websocket/sendMessage', {
-        id: 'science',
-        message: {
-          type: 'white_leds',
-          site: this.site,
-          enable: this.siteEnabled[this.site],
-        },
-      })
+
+      try {
+        const { scienceAPI } = await import('../utils/api')
+        const siteName = this.site === 0 ? 'a' : 'b'
+        await scienceAPI.setWhiteLEDs(siteName, this.siteEnabled[this.site])
+      } catch (error) {
+        console.error('Failed to toggle white LEDs:', error)
+        // Revert state on error
+        this.siteEnabled[this.site] = !this.siteEnabled[this.site]
+      }
     },
   },
 }

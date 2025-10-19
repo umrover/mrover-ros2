@@ -25,7 +25,7 @@
 
 <script lang="ts">
 import Vuex from 'vuex'
-const { mapState, mapActions } = Vuex
+const { mapState } = Vuex
 import BasicMap from '../components/BasicRoverMap.vue'
 import SoilData from '../components/SoilData.vue'
 import BasicWaypointEditor from '../components/BasicWaypointEditor.vue'
@@ -76,31 +76,34 @@ export default {
     ...mapState('websocket', ['message']),
   },
   methods: {
-    ...mapActions('websocket', ['sendMessage']),
     updateOdom(odom: Odom) {
       this.odom = odom
     },
-    updateSite(selectedSite: number) {
+    async updateSite(selectedSite: number) {
       this.siteSelect = selectedSite
-      this.$store.dispatch('websocket/sendMessage', {
-        id: 'science',
-        message: {
-          type: 'set_gear_diff_pos',
-          position: this.site_to_radians[this.siteSelect],
-          isCCW: this.orientation,
-        },
-      })
+
+      try {
+        const { scienceAPI } = await import('../utils/api')
+        await scienceAPI.setGearDiffPosition(
+          this.site_to_radians[this.siteSelect],
+          this.orientation
+        )
+      } catch (error) {
+        console.error('Failed to set gear differential position:', error)
+      }
     },
-    updateOrientation(orientation: boolean) {
+    async updateOrientation(orientation: boolean) {
       this.orientation = orientation
-      this.$store.dispatch('websocket/sendMessage', {
-        id: 'science',
-        message: {
-          type: 'set_gear_diff_pos',
-          position: this.site_to_radians[this.siteSelect],
-          isCCW: this.orientation,
-        },
-      })
+
+      try {
+        const { scienceAPI } = await import('../utils/api')
+        await scienceAPI.setGearDiffPosition(
+          this.site_to_radians[this.siteSelect],
+          this.orientation
+        )
+      } catch (error) {
+        console.error('Failed to set gear differential position:', error)
+      }
     },
   },
 
@@ -109,7 +112,6 @@ export default {
     this.$store.dispatch('websocket/setupWebSocket', 'mast')
     this.$store.dispatch('websocket/setupWebSocket', 'nav')
     this.$store.dispatch('websocket/setupWebSocket', 'science')
-    this.$store.dispatch('websocket/setupWebSocket', 'waypoints')
   },
 
   unmounted: function () {
@@ -117,7 +119,6 @@ export default {
     this.$store.dispatch('websocket/closeWebSocket', 'mast')
     this.$store.dispatch('websocket/closeWebSocket', 'nav')
     this.$store.dispatch('websocket/closeWebSocket', 'science')
-    this.$store.dispatch('websocket/closeWebSocket', 'waypoints')
   },
 }
 </script>

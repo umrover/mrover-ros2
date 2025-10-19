@@ -14,9 +14,8 @@
 </template>
 
 <script lang="ts">
-import Vuex from 'vuex'
-const { mapActions } = Vuex
 import ToggleButton from './ToggleButton.vue'
+
 export default {
   components: {
     ToggleButton,
@@ -28,16 +27,17 @@ export default {
   },
 
   methods: {
-    ...mapActions('websocket', ['sendMessage']),
-    togglels: function () {
+    async togglels() {
       this.lsstate = !this.lsstate
-      this.$store.dispatch('websocket/sendMessage', {
-        id: 'science',
-        message: {
-          type: 'ls_toggle',
-          enable: this.lsstate,
-        },
-      })
+
+      try {
+        const { scienceAPI } = await import('../utils/api')
+        await scienceAPI.setLimitSwitch(this.lsstate)
+      } catch (error) {
+        console.error('Failed to toggle limit switch:', error)
+        // Revert state on error
+        this.lsstate = !this.lsstate
+      }
     },
   },
 

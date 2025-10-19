@@ -172,7 +172,7 @@ export default defineComponent({
     },
   },
 
-  topics: ['auton', 'drive', 'nav', 'science', 'waypoints'],
+  topics: ['auton', 'drive', 'nav', 'science'],
 
   mounted() {
     for (const topic of this.$options.topics)

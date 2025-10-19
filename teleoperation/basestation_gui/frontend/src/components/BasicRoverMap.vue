@@ -66,7 +66,7 @@ import {
   LControlScale,
 } from '@vue-leaflet/vue-leaflet'
 import Vuex from 'vuex'
-const { mapGetters, mapMutations, mapActions, mapState } = Vuex
+const { mapGetters, mapMutations, mapState } = Vuex
 
 import 'leaflet/dist/leaflet.css'
 import L from '../leaflet-rotatedmarker.js'
@@ -169,7 +169,6 @@ export default {
   },
 
   methods: {
-    ...mapActions('websocket', ['sendMessage']),
     onMapReady: function () {
       // Pull objects from refs to be able to access data and change w functions
       this.$nextTick(() => {

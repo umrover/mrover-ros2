@@ -123,7 +123,7 @@ import VelocityReading from './VelocityReading.vue'
 import WaypointItem from './AutonWaypointItem.vue'
 import WaypointStore from './AutonWaypointStore.vue'
 import Vuex from 'vuex'
-const { mapState, mapActions, mapMutations, mapGetters } = Vuex
+const { mapState, mapMutations, mapGetters } = Vuex
 import L from 'leaflet'
 import { reactive, defineComponent } from 'vue'
 import { Modal } from 'bootstrap'
@@ -254,26 +254,26 @@ export default defineComponent({
 
   watch: {
     waypoints: {
-      handler(newList: Waypoint[]) {
+      async handler(newList: Waypoint[]) {
         const waypoints = newList.map(waypoint => {
           const lat = waypoint.lat
           const lon = waypoint.lon
           return { latLng: L.latLng(lat, lon), name: waypoint.name }
         })
         this.setWaypointList(waypoints)
-        this.$store.dispatch('websocket/sendMessage', {
-          id: 'waypoints',
-          message: {
-            type: 'save_auton_waypoint_list',
-            data: newList,
-          },
-        })
+
+        try {
+          const { waypointsAPI } = await import('../utils/api')
+          await waypointsAPI.saveAuton(newList)
+        } catch (error) {
+          console.error('Failed to save auton waypoints:', error)
+        }
       },
       deep: true,
     },
 
     currentRoute: {
-      handler(newRoute: Waypoint[]) {
+      async handler(newRoute: Waypoint[]) {
         const waypoints = newRoute.map(waypoint => {
           const lat = waypoint.lat
           const lon = waypoint.lon
@@ -281,13 +281,12 @@ export default defineComponent({
         })
         this.setRoute(waypoints)
 
-        this.$store.dispatch('websocket/sendMessage', {
-          id: 'waypoints',
-          message: {
-            type: 'save_current_auton_course',
-            data: this.currentRoute,
-          },
-        })
+        try {
+          const { waypointsAPI } = await import('../utils/api')
+          await waypointsAPI.saveCurrentAutonCourse(this.currentRoute)
+        } catch (error) {
+          console.error('Failed to save current auton course:', error)
+        }
       },
       deep: true,
     },
@@ -304,23 +303,6 @@ export default defineComponent({
         }
         this.waitingForNavResponse = false
         this.autonButtonColor = this.autonEnabled ? 'btn-success' : 'btn-danger'
-      } else if (msg.type == 'get_auton_waypoint_list') {
-        // Get waypoints from server on page load
-        console.log(msg)
-        if (msg.data.length > 0) this.waypoints = msg.data
-        const waypoints = msg.data.map(
-          (waypoint: { lat: number; lon: number; name: string }) => {
-            const lat = waypoint.lat
-            const lon = waypoint.lon
-            return { latLng: L.latLng(lat, lon), name: waypoint.name }
-          },
-        )
-        this.setWaypointList(waypoints)
-      }
-      if (msg.type == 'get_current_auton_course') {
-        // console.log("here2 before", this.currentRoute)
-        this.currentRoute = msg.data
-        // console.log("here2", this.currentRoute)
       }
     },
   },
@@ -335,32 +317,41 @@ export default defineComponent({
     this.sendAutonCommand()
   },
 
-  created: function () {
+  async created() {
     auton_publish_interval = window.setInterval(() => {
       if (this.waitingForNavResponse) {
         this.sendAutonCommand()
       }
     }, 1000)
-    window.setTimeout(() => {
-      // Timeout so websocket will be initialized
-      this.$store.dispatch('websocket/sendMessage', {
-        id: 'waypoints',
-        message: {
-          type: 'get_auton_waypoint_list',
-        },
-      })
-      this.$store.dispatch('websocket/sendMessage', {
-        id: 'waypoints',
-        message: {
-          type: 'get_current_auton_course',
-        },
-      })
-    }, 1000)
+
+    // Load waypoints from REST API
+    setTimeout(async () => {
+      try {
+        const { waypointsAPI } = await import('../utils/api')
+
+        const autonData = await waypointsAPI.getAuton()
+        if (autonData.status === 'success' && autonData.waypoints && autonData.waypoints.length > 0) {
+          this.waypoints = autonData.waypoints
+          const waypoints = autonData.waypoints.map(
+            (waypoint: { lat: number; lon: number; name: string }) => ({
+              latLng: L.latLng(waypoint.lat, waypoint.lon),
+              name: waypoint.name
+            })
+          )
+          this.setWaypointList(waypoints)
+        }
+
+        const courseData = await waypointsAPI.getCurrentAutonCourse()
+        if (courseData.status === 'success' && courseData.course) {
+          this.currentRoute = courseData.course
+        }
+      } catch (error) {
+        console.error('Failed to load auton waypoints:', error)
+      }
+    }, 250)
   },
 
   methods: {
-    ...mapActions('websocket', ['sendMessage']),
-
     ...mapMutations('autonomy', {
       setRoute: 'setRoute',
       setWaypointList: 'setWaypointList',
@@ -368,52 +359,38 @@ export default defineComponent({
       setTeleopMode: 'setTeleopMode',
     }),
 
-    sendAutonCommand() {
-      if (this.autonEnabled) {
-        this.$store.dispatch('websocket/sendMessage', {
-          id: 'auton',
-          message: {
-            type: 'auton_enable',
-            enabled: true,
-            waypoints: this.currentRoute.map((waypoint: Waypoint) => {
-              const lat = waypoint.lat
-              const lon = waypoint.lon
-              // Return a GPSWaypoint.msg formatted object for each
-              return {
-                latitude_degrees: lat,
-                longitude_degrees: lon,
-                tag_id: waypoint.id,
-                type: waypoint.type,
-                enable_costmap: waypoint.enable_costmap,
-              }
-            }),
-          },
-        })
-      } else {
-        //if auton's not enabled, send an empty message
-        this.$store.dispatch('websocket/sendMessage', {
-          id: 'auton',
-          message: {
-            type: 'auton_enable',
-            enabled: false,
-            waypoints: [],
-          },
-        })
+    async sendAutonCommand() {
+      try {
+        const { autonAPI } = await import('../utils/api')
+
+        const waypoints = this.autonEnabled
+          ? this.currentRoute.map((waypoint: Waypoint) => ({
+              latitude_degrees: waypoint.lat,
+              longitude_degrees: waypoint.lon,
+              tag_id: waypoint.id,
+              type: waypoint.type,
+              enable_costmap: waypoint.enable_costmap,
+            }))
+          : []
+
+        await autonAPI.enable(this.autonEnabled, waypoints)
+      } catch (error) {
+        console.error('Failed to send auton command:', error)
       }
     },
 
-    deleteItem: function (waypoint: Waypoint) {
+    async deleteItem(waypoint: Waypoint) {
       waypoint.in_route = false
       const index = this.route.indexOf(waypoint)
       this.route.splice(index, 1)
       this.currentRoute.splice(this.currentRoute.indexOf(waypoint), 1)
-      this.$store.dispatch('websocket/sendMessage', {
-        id: 'waypoints',
-        message: {
-          type: 'delete_auton_waypoint_from_course',
-          data: waypoint,
-        },
-      })
+
+      try {
+        const { waypointsAPI } = await import('../utils/api')
+        await waypointsAPI.deleteAutonWaypoint(waypoint)
+      } catch (error) {
+        console.error('Failed to delete auton waypoint:', error)
+      }
     },
 
     toggleCostmap({
@@ -472,15 +449,16 @@ export default defineComponent({
       this.waitingForNavResponse = true
     },
 
-    toggleTeleopMode: function () {
+    async toggleTeleopMode() {
       this.teleopEnabledCheck = !this.teleopEnabledCheck
-      this.$store.dispatch('websocket/sendMessage', {
-        id: 'auton',
-        message: {
-          type: 'teleop_enable',
-          enabled: this.teleopEnabledCheck,
-        },
-      })
+
+      try {
+        const { autonAPI } = await import('../utils/api')
+        await autonAPI.enableTeleop(this.teleopEnabledCheck)
+      } catch (error) {
+        console.error('Failed to toggle teleop mode:', error)
+      }
+
       this.$emit('toggleTeleop', this.teleopEnabledCheck)
     },
   },
