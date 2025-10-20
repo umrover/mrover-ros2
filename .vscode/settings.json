@@ -1,25 +1,4 @@
 {
-    //// CMake
-    "cmake.generator": "Ninja",
-    // Set to the catkin build directory
-    "cmake.buildDirectory": "${workspaceFolder}/../../build/mrover",
-    // We want catkin to configure
-    // VSCode will try to use its own toolchain and ignore the catkin profile
-    "cmake.configureOnOpen": false,
-    "cmake.configureOnEdit": false,
-    "cmake.automaticReconfigure": false,
-    "cmake.debugConfig": {
-        "miDebuggerPath": "/usr/bin/gdb",
-        "args": [
-            "--ros-args",
-            "--params-file",
-            "${workspaceFolder}/config/esw.yaml",
-            "--params-file",
-            "${workspaceFolder}/config/arm.yaml",
-            "--params-file",
-            "${workspaceFolder}/config/drive.yaml"
-        ]
-    },
     //// Microsoft C++
     // Disable since clangd is used instead
     "C_Cpp.intelliSenseEngine": "disabled",
@@ -54,8 +33,5 @@
         "**/*.code-search": true,
         "deps": true,
         "venv": true,
-    },
-    "cmake.environment": {
-        "LD_LIBRARY_PATH": "/opt/ros/humble/opt/rviz_ogre_vendor/lib:/opt/ros/humble/lib/aarch64-linux-gnu:/opt/ros/humble/lib/x86_64-linux-gnu:/opt/ros/humble/lib:${workspaceFolder}/../../build/mrover"
     },
 }
