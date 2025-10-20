@@ -119,3 +119,6 @@ export PATH="$BUN_INSTALL/bin:$PATH"
 # ros2 completions
 eval "$(register-python-argcomplete3 ros2)"
 eval "$(register-python-argcomplete3 colcon)"
+
+# ros domain id
+export ROS_DOMAIN_ID=5
