@@ -66,6 +66,12 @@ export const autonAPI = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ enabled, waypoints })
     })
+
+    // If HTTP error, return error status
+    if (!response.ok) {
+      return { status: 'error', message: `HTTP ${response.status}: ${response.statusText}` }
+    }
+
     return response.json()
   },
 
@@ -75,6 +81,12 @@ export const autonAPI = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ enabled })
     })
+
+    // If HTTP error, return error status
+    if (!response.ok) {
+      return { status: 'error', message: `HTTP ${response.status}: ${response.statusText}` }
+    }
+
     return response.json()
   }
 }

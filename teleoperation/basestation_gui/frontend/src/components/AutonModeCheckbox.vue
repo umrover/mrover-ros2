@@ -1,8 +1,8 @@
 <template>
-  <button :class="['btn', color]" @click="toggleAndEmit()">
+  <button :class="['btn', color]" @click="handleClick()">
     <span class="white-text d-inline-flex align-items-center">
       <span>{{ name }}: </span>
-      <span class="checkbox">{{ active ? '\u2611' : '\u2610' }}</span>
+      <span class="checkbox">{{ checked ? '\u2611' : '\u2610' }}</span>
     </span>
   </button>
 </template>
@@ -18,21 +18,15 @@ export default {
       type: String,
       required: true,
     },
-  },
-  data() {
-    return {
-      active: false,
-    }
+    checked: {
+      type: Boolean,
+      required: true,
+    },
   },
 
   methods: {
-    toggle: function () {
-      this.active = !this.active
-    },
-
-    toggleAndEmit: function () {
-      this.toggle()
-      this.$emit('toggle', this.active)
+    handleClick() {
+      this.$emit('toggle', !this.checked)
     },
   },
 }

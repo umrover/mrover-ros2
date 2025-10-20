@@ -18,6 +18,7 @@
 
 <script lang="ts">
 import ToggleButton from './ToggleButton.vue'
+import { scienceAPI } from '@/utils/api'
 // import LEDIndicator from "./LEDIndicator.vue";
 
 export default {
@@ -37,7 +38,6 @@ export default {
       this.autoShutdownEnabled = !this.autoShutdownEnabled
 
       try {
-        const { scienceAPI } = await import('../utils/api')
         await scienceAPI.setAutoShutoff(this.autoShutdownEnabled)
       } catch (error) {
         console.error('Failed to toggle auto shutdown:', error)

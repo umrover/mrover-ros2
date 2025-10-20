@@ -23,6 +23,8 @@
 </template>
 
 <script lang="ts">
+import { mastAPI } from '@/utils/api'
+
 export default {
   data() {
     return {
@@ -34,8 +36,6 @@ export default {
       this.panoActive = action === 'start'
 
       try {
-        const { mastAPI } = await import('../utils/api')
-
         if (action === 'start') {
           await mastAPI.startPanorama()
         } else {

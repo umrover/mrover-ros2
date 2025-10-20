@@ -11,7 +11,8 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "vuex": ["src/vuex.d.ts"],
+      "@/*": ["./src/*"],
+      "vuex": ["src/vuex.d.ts"]
     },
     "skipLibCheck": true
   }

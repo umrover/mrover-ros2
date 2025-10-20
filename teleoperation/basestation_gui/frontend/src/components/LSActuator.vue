@@ -15,6 +15,7 @@
 
 <script lang="ts">
 import ToggleButton from './ToggleButton.vue'
+import { scienceAPI } from '@/utils/api'
 
 export default {
   components: {
@@ -31,7 +32,6 @@ export default {
       this.lsstate = !this.lsstate
 
       try {
-        const { scienceAPI } = await import('../utils/api')
         await scienceAPI.setLimitSwitch(this.lsstate)
       } catch (error) {
         console.error('Failed to toggle limit switch:', error)

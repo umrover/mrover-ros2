@@ -13,6 +13,7 @@
           :key="waypoint"
           :waypoint="waypoint"
           :index="index"
+          :data-testid="`waypoint-store-${index}`"
           @add="addItem"
           @delete="deleteMapWaypoint"
         />
@@ -20,29 +21,32 @@
     </div>
     <div class="d-flex flex-column w-100">
       <div class="datagrid m-0 p-0">
-        <AutonModeCheckbox
+        <FeedbackButton
           ref="autonCheckbox"
           class="auton-checkbox"
-          :name="autonButtonText"
-          :color="autonButtonColor"
-          @toggle="toggleAutonMode($event)"
+          :name="'Autonomy Mode'"
+          :checked="autonEnabled"
+          :action="autonAction"
+          @toggle="handleAutonToggle"
         />
         <div class="stats">
           <VelocityReading />
         </div>
-        <Checkbox
+        <FeedbackButton
           ref="teleopCheckbox"
           class="teleop-checkbox"
           :name="'Teleop Controls'"
-          :width="220"
-          @toggle="toggleTeleopMode($event)"
+          :checked="teleopEnabled"
+          :action="teleopAction"
+          @toggle="handleTeleopToggle"
         />
-        <Checkbox
+        <FeedbackButton
           ref="costmapCheckbox"
           class="costmap-checkbox"
-          :name="'Kill All Costmaps'"
-          :width="220"
-          @toggle="toggleAllCostmaps"
+          data-testid="costmap-toggle"
+          :name="'All Costmaps'"
+          :checked="allCostmapToggle"
+          @toggle="handleCostmapToggle"
         />
       </div>
       <h3 class="m-0 p-0">Current Course</h3>
@@ -51,6 +55,7 @@
           v-for="waypoint in currentRoute"
           :key="waypoint"
           :waypoint="waypoint"
+          data-testid="waypoint-item"
           @delete="deleteItem(waypoint)"
           @toggleCostmap="toggleCostmap"
         />
@@ -117,26 +122,24 @@
 </template>
 
 <script lang="ts">
-import AutonModeCheckbox from './AutonModeCheckbox.vue'
-import Checkbox from './BasicCheckbox.vue'
+import FeedbackButton from './FeedbackButton.vue'
 import VelocityReading from './VelocityReading.vue'
 import WaypointItem from './AutonWaypointItem.vue'
 import WaypointStore from './AutonWaypointStore.vue'
 import Vuex from 'vuex'
 const { mapState, mapMutations, mapGetters } = Vuex
+//@ts-expect-error shut up ts
 import L from 'leaflet'
 import { reactive, defineComponent } from 'vue'
 import { Modal } from 'bootstrap'
-import type { Waypoint } from '../types/waypoint'
+import type { Waypoint } from '@/types/waypoint'
 import type { WebSocketState } from '@/types/websocket'
-
-let auton_publish_interval: number
+import { waypointsAPI, autonAPI } from '@/utils/api'
 
 export default defineComponent({
   components: {
     WaypointItem,
-    AutonModeCheckbox,
-    Checkbox,
+    FeedbackButton,
     VelocityReading,
     WaypointStore,
   },
@@ -222,17 +225,11 @@ export default defineComponent({
         enable_costmap: true,
       },
 
-      teleopEnabledCheck: false,
       allCostmapToggle: true,
 
       route: reactive([]),
 
       currentRoute: [],
-
-      autonButtonColor: 'btn-danger',
-
-      roverStuck: false,
-      waitingForNavResponse: false,
     }
   },
   computed: {
@@ -245,11 +242,6 @@ export default defineComponent({
       clickPoint: 'clickPoint',
     }),
 
-    autonButtonText: function () {
-      return this.autonButtonColor == 'btn-warning'
-        ? 'Setting to ' + this.autonEnabled
-        : 'Autonomy Mode'
-    },
   },
 
   watch: {
@@ -263,7 +255,6 @@ export default defineComponent({
         this.setWaypointList(waypoints)
 
         try {
-          const { waypointsAPI } = await import('../utils/api')
           await waypointsAPI.saveAuton(newList)
         } catch (error) {
           console.error('Failed to save auton waypoints:', error)
@@ -282,7 +273,6 @@ export default defineComponent({
         this.setRoute(waypoints)
 
         try {
-          const { waypointsAPI } = await import('../utils/api')
           await waypointsAPI.saveCurrentAutonCourse(this.currentRoute)
         } catch (error) {
           console.error('Failed to save current auton course:', error)
@@ -291,44 +281,15 @@ export default defineComponent({
       deep: true,
     },
 
-    navMessage(msg) {
-      if (msg.type == 'nav_state') {
-        // If still waiting for nav...
-        if (
-          (msg.state == 'OffState' && this.autonEnabled) ||
-          (msg.state !== 'OffState' && !this.autonEnabled) ||
-          (msg.state == 'DoneState' && !this.autonEnabled)
-        ) {
-          return
-        }
-        this.waitingForNavResponse = false
-        this.autonButtonColor = this.autonEnabled ? 'btn-success' : 'btn-danger'
-      }
-    },
   },
 
   mounted() {
     this.modal = new Modal('#modalWypt', {})
   },
 
-  beforeUnmount: function () {
-    window.clearInterval(auton_publish_interval)
-    this.autonEnabled = false
-    this.sendAutonCommand()
-  },
-
   async created() {
-    auton_publish_interval = window.setInterval(() => {
-      if (this.waitingForNavResponse) {
-        this.sendAutonCommand()
-      }
-    }, 1000)
-
-    // Load waypoints from REST API
     setTimeout(async () => {
       try {
-        const { waypointsAPI } = await import('../utils/api')
-
         const autonData = await waypointsAPI.getAuton()
         if (autonData.status === 'success' && autonData.waypoints && autonData.waypoints.length > 0) {
           this.waypoints = autonData.waypoints
@@ -359,24 +320,22 @@ export default defineComponent({
       setTeleopMode: 'setTeleopMode',
     }),
 
-    async sendAutonCommand() {
-      try {
-        const { autonAPI } = await import('../utils/api')
+    autonAction(newState: boolean) {
+      const waypoints = newState
+        ? this.currentRoute.map((waypoint: Waypoint) => ({
+            latitude_degrees: waypoint.lat,
+            longitude_degrees: waypoint.lon,
+            tag_id: waypoint.id,
+            type: waypoint.type,
+            enable_costmap: waypoint.enable_costmap,
+          }))
+        : []
 
-        const waypoints = this.autonEnabled
-          ? this.currentRoute.map((waypoint: Waypoint) => ({
-              latitude_degrees: waypoint.lat,
-              longitude_degrees: waypoint.lon,
-              tag_id: waypoint.id,
-              type: waypoint.type,
-              enable_costmap: waypoint.enable_costmap,
-            }))
-          : []
+      return autonAPI.enable(newState, waypoints)
+    },
 
-        await autonAPI.enable(this.autonEnabled, waypoints)
-      } catch (error) {
-        console.error('Failed to send auton command:', error)
-      }
+    handleAutonToggle(newState: boolean) {
+      this.setAutonMode(newState)
     },
 
     async deleteItem(waypoint: Waypoint) {
@@ -386,7 +345,6 @@ export default defineComponent({
       this.currentRoute.splice(this.currentRoute.indexOf(waypoint), 1)
 
       try {
-        const { waypointsAPI } = await import('../utils/api')
         await waypointsAPI.deleteAutonWaypoint(waypoint)
       } catch (error) {
         console.error('Failed to delete auton waypoint:', error)
@@ -403,16 +361,16 @@ export default defineComponent({
       waypoint.enable_costmap = enable_costmap
     },
 
-    toggleAllCostmaps() {
-      this.allCostmapToggle = !this.allCostmapToggle
-      this.waypoints.forEach((wp: Waypoint) => {
-        wp.enable_costmap = this.allCostmapToggle
+    handleCostmapToggle(newState: boolean) {
+      this.allCostmapToggle = newState
+      this.currentRoute.forEach((wp: Waypoint) => {
+        wp.enable_costmap = newState
       })
     },
 
     addItem: function (waypoint: Waypoint) {
       if (!waypoint.in_route) {
-        waypoint['enable_costmap'] = waypoint.enable_costmap ?? false
+        waypoint['enable_costmap'] = this.allCostmapToggle
         this.route.push(waypoint)
         this.currentRoute.push(waypoint)
         waypoint.in_route = true
@@ -442,24 +400,13 @@ export default defineComponent({
       this.waypoints.splice(index, 1)
     },
 
-    toggleAutonMode: function (val: boolean) {
-      this.setAutonMode(val)
-      // This will trigger the yellow "waiting for nav" state of the checkbox
-      this.autonButtonColor = 'btn-warning'
-      this.waitingForNavResponse = true
+    teleopAction(newState: boolean) {
+      return autonAPI.enableTeleop(newState)
     },
 
-    async toggleTeleopMode() {
-      this.teleopEnabledCheck = !this.teleopEnabledCheck
-
-      try {
-        const { autonAPI } = await import('../utils/api')
-        await autonAPI.enableTeleop(this.teleopEnabledCheck)
-      } catch (error) {
-        console.error('Failed to toggle teleop mode:', error)
-      }
-
-      this.$emit('toggleTeleop', this.teleopEnabledCheck)
+    handleTeleopToggle(newState: boolean) {
+      this.setTeleopMode(newState)
+      this.$emit('toggleTeleop', newState)
     },
   },
 })

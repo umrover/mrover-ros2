@@ -19,6 +19,10 @@ def get_node() -> Node:
                 _init_ros()
     return _node
 
+def get_logger():
+    """Returns the ROS2 logger from the singleton node."""
+    return get_node().get_logger()
+
 def get_context():
     """Returns the singleton ROS2 context."""
     if not _initialized.is_set():

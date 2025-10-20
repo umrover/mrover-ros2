@@ -29,7 +29,8 @@
 import ToggleButton from './ToggleButton.vue'
 import LEDIndicator from './LEDIndicator.vue'
 import Vuex from 'vuex'
-import type { WebSocketState } from '../types/websocket'
+import type { WebSocketState } from '@/types/websocket'
+import { scienceAPI } from '@/utils/api'
 const { mapState } = Vuex
 
 export default {
@@ -109,7 +110,6 @@ export default {
       } else heaterName += '0'
 
       try {
-        const { scienceAPI } = await import('../utils/api')
         await scienceAPI.setHeater(heaterName, this.heaters[this.site].enabled)
       } catch (error) {
         console.error('Failed to toggle heater:', error)

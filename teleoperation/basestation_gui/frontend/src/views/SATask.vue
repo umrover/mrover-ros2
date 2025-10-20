@@ -26,17 +26,18 @@
 <script lang="ts">
 import Vuex from 'vuex'
 const { mapState } = Vuex
-import BasicMap from '../components/BasicRoverMap.vue'
-import SoilData from '../components/SoilData.vue'
-import BasicWaypointEditor from '../components/BasicWaypointEditor.vue'
-import DriveControls from '../components/DriveControls.vue'
-import MastGimbalControls from '../components/MastGimbalControls.vue'
-import OdometryReading from '../components/OdometryReading.vue'
-import ControllerDataTable from '../components/ControllerDataTable.vue'
-import SAArmControls from '../components/SAArmControls.vue'
-import HexHub from '../components/HexHub.vue'
-import LSActuator from '../components/LSActuator.vue'
-import PanoCam from '../components/PanoCam.vue'
+import BasicMap from '@/components/BasicRoverMap.vue'
+import SoilData from '@/components/SoilData.vue'
+import BasicWaypointEditor from '@/components/BasicWaypointEditor.vue'
+import DriveControls from '@/components/DriveControls.vue'
+import MastGimbalControls from '@/components/MastGimbalControls.vue'
+import OdometryReading from '@/components/OdometryReading.vue'
+import ControllerDataTable from '@/components/ControllerDataTable.vue'
+import SAArmControls from '@/components/SAArmControls.vue'
+import HexHub from '@/components/HexHub.vue'
+import LSActuator from '@/components/LSActuator.vue'
+import PanoCam from '@/components/PanoCam.vue'
+import { scienceAPI } from '@/utils/api'
 
 interface Odom {
   latitude_deg: number
@@ -83,7 +84,6 @@ export default {
       this.siteSelect = selectedSite
 
       try {
-        const { scienceAPI } = await import('../utils/api')
         await scienceAPI.setGearDiffPosition(
           this.site_to_radians[this.siteSelect],
           this.orientation
@@ -96,7 +96,6 @@ export default {
       this.orientation = orientation
 
       try {
-        const { scienceAPI } = await import('../utils/api')
         await scienceAPI.setGearDiffPosition(
           this.site_to_radians[this.siteSelect],
           this.orientation

@@ -76,6 +76,7 @@ import WaypointItem from './BasicWaypointItem.vue'
 import Vuex from 'vuex'
 const { mapMutations, mapGetters } = Vuex
 import L from 'leaflet'
+import { waypointsAPI } from '@/utils/api'
 
 export default {
   props: {
@@ -114,7 +115,6 @@ export default {
 
     async saveWaypoints(waypoints: any[]) {
       try {
-        const { waypointsAPI } = await import('../utils/api')
         await waypointsAPI.saveBasic(waypoints)
       } catch (error) {
         console.error('Failed to save waypoints:', error)
@@ -123,7 +123,6 @@ export default {
 
     async loadWaypoints() {
       try {
-        const { waypointsAPI } = await import('../utils/api')
         const data = await waypointsAPI.getBasic()
         if (data.status === 'success' && data.waypoints) {
           this.storedWaypoints = data.waypoints

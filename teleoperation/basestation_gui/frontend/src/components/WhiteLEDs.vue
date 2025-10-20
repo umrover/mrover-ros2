@@ -19,6 +19,7 @@
 import Vuex from 'vuex'
 const { mapActions } = Vuex
 import ToggleButton from './ToggleButton.vue'
+import { scienceAPI } from '@/utils/api'
 // import LEDIndicator from "./LEDIndicator.vue";
 
 export default {
@@ -58,7 +59,6 @@ export default {
       this.siteEnabled[this.site] = !this.siteEnabled[this.site]
 
       try {
-        const { scienceAPI } = await import('../utils/api')
         const siteName = this.site === 0 ? 'a' : 'b'
         await scienceAPI.setWhiteLEDs(siteName, this.siteEnabled[this.site])
       } catch (error) {
