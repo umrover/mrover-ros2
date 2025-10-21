@@ -9,6 +9,7 @@ from std_msgs.msg import Header
 from navigation.context import Context
 from navigation.trajectory import Trajectory
 from navigation.coordinate_utils import ij_to_cartesian, cartesian_to_ij, d_calc, segment_path, is_high_cost_point
+from navigation.smoothing import Relaxation, SplineInterpolation
 from rclpy.publisher import Publisher
 
 
@@ -222,12 +223,24 @@ class AStar:
             trajectory.reset()
             return Trajectory(np.array([]))
             # raise NoPath
-
+            
         if occupancy_list is not None:
-            cartesian_coords = ij_to_cartesian(context, np.array(occupancy_list))
+            relaxed_path = Relaxation.relax(context, Trajectory(np.array(occupancy_list)))
+
+            cartesian_coords = ij_to_cartesian(context, relaxed_path.coordinates)
+            
+            spline_path = SplineInterpolation.interpolate(context, Trajectory(np.array(cartesian_coords)))
+
+            spline_cost = Relaxation.cost_full(context, spline_path)[0]
+            relaxed_cost = Relaxation.cost_full(context, relaxed_path)[0]
+
+            if (spline_cost - relaxed_cost) / (relaxed_cost + 1e-7) > 0.5:
+                context.node.get_logger().warning(f"Spline cost is much worse than relaxed cost {spline_cost} vs {relaxed_cost}. Using relaxed path instead!")
+                spline_path = relaxed_path # Overwrite spline_path with relaxed_path since spline_path is actually used
+            
             # Exclude the first point since it should be the rover's starting position
             if len(cartesian_coords) >= 1:
-                trajectory = Trajectory(np.hstack((cartesian_coords, np.zeros((cartesian_coords.shape[0], 1)))))
+                trajectory = Trajectory(np.hstack((spline_path.coordinates, np.zeros((spline_path.coordinates.shape[0], 1)))))
 
             # Publish the path for visualization in RViz
             path_msg = Path()
