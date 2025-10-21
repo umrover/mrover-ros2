@@ -28,7 +28,7 @@ export CUDAHOSTCXX=g++-9
 export CUDACXX=/usr/local/cuda-12/bin/nvcc
 
 # invoke colcon
-colcon build \
+COLCON_EXTENSION_BLOCKLIST=colcon_core.event_handler.desktop_notification colcon build \
 	--cmake-args -G Ninja -W no-dev -DCMAKE_BUILD_TYPE="$build_profile" \
 	--symlink-install \
 	--event-handlers console_direct+ \

@@ -18,7 +18,6 @@
                     "value": "${workspaceFolder}/../../install/Debug/mrover/lib:/opt/ros/humble/opt/rviz_ogre_vendor/lib:/opt/ros/humble/lib/aarch64-linux-gnu:/opt/ros/humble/lib/x86_64-linux-gnu:/opt/ros/humble/lib"
                 }
             ],
-            "preLaunchTask": "build_debug",
             "externalConsole": false,
             "MIMode": "gdb",
             "setupCommands": [
@@ -39,9 +38,10 @@
     "inputs": [
         {
             "id": "myStringInput",
-            "type": "promptString",
-            "description": "Enter the name of the program you would like to debug:",
-            "default": "starter_project_perception"
+            "type": "command",
+            "command": "file-selector.fileSelect",
+            // exclude the absolute prefix path here
+            "args": "../../install/Debug/mrover/lib/mrover"
         }
     ]
 }
