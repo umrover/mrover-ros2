@@ -61,7 +61,6 @@
     name:
       - zsh
       - fzf
-      - neovim
       - sudo
       - cmake
       - ccache # Caches intermediate build files, speeds up compilation over time
@@ -100,8 +99,13 @@
       - ros-humble-ros-base
       - ros-humble-rviz2
       - ros-humble-xacro
+      - ros-humble-magic-enum
+      - ros-humble-rtcm-msgs
       # TODO (ali): why does this need to be installed manually
       - libboost-dev
+      - qtbase5-dev
+      - qtmultimedia5-dev
+      - libqt5multimedia5-plugins
 
 - name: Install Local APT Packages
   become: True
@@ -124,23 +128,6 @@
 
 # - name: Install ROS Packages
 #   # command: rosdep install --from-paths {{ ros2_workspace }}/src --ignore-src -y --rosdistro={{ ros_distro }}
-
-# - name: Download Bun Installer
-#   get_url:
-#     url: https://bun.sh/install
-#     dest: /tmp/bun_installer.sh
-#     mode: 0755
-
-# - name: Run Bun Installer
-#   command: /tmp/bun_installer.sh
-#   args:
-#     creates: ~/.bun/bin/bun
-
-# - name: Upgrade Bun
-#   command: ~/.bun/bin/bun upgrade
-
-# - name: Install Bun Packages
-#   command: ~/.bun/bin/bun install --cwd {{ catkin_workspace }}/src/mrover/src/teleoperation/frontend
 
 - name: Set G++ 13 as Default
   become: True
@@ -210,3 +197,15 @@
   become: True
   snap:
     name: chromium
+
+- name: Install or Upgrade Bun
+  shell: curl -fsSL https://bun.sh/install | bash
+  args:
+    executable: /bin/bash
+  environment:
+    BUN_INSTALL: "{{ ansible_env.HOME }}/.bun"
+
+- name: Install Bun Packages
+  command: ~/.bun/bin/bun install
+  args:
+    chdir: "{{ ansible_env.HOME }}/ros2_ws/src/mrover/teleoperation/basestation_gui/frontend"

@@ -1,11 +1,11 @@
 arm_hw_bridge:
   ros__parameters:
     joint_a:
-      min_velocity: -0.05
-      max_velocity: 0.05
+      min_velocity: -0.08
+      max_velocity: 0.08
       min_position: 0.0
       max_position: 0.35
-      max_torque: 20.0
+      max_torque: 30.0
       limit_switch_0_present: true
       limit_switch_0_enabled: true
       limit_switch_0_limits_forward: true
@@ -28,7 +28,7 @@ arm_hw_bridge:
       min_position: -0.9
       max_position: 0.0
       gear_ratio: 1.0
-      is_inverted: false
+      is_inverted: true
       driver_voltage: 12.0
       motor_max_voltage: 12.0
       quad_present: false
@@ -49,6 +49,14 @@ arm_hw_bridge:
       min_position: -0.125
       max_position: 0.30
       max_torque: 200.0
+    # Offsets are substracted from the absolute encoder readings for pitch and roll
+    # In order to zero, move the joint to the zero position and read the unadjusted positions. These should be the set to the offsets
+    joint_de_pitch_offset: 0.018 # radians
+    joint_de_roll_offset: 3.02 # radians
+    joint_de_pitch_max_position: 1.3 # radians
+    joint_de_pitch_min_position: -1.1 # radians
+    joint_de_roll_max_position: 1.57 # radians
+    joint_de_roll_min_position: -1.57 # radians
     joint_de_0:
       min_velocity: -5.0
       max_velocity: 5.0
@@ -64,7 +72,7 @@ arm_hw_bridge:
     gripper:
       gear_ratio: 47.0
       is_inverted: false
-      driver_voltage: 10.5
+      driver_voltage: 12.0
       motor_max_voltage: 12.0
       quad_present: true
       quad_ratio: -1.0
@@ -74,10 +82,12 @@ arm_hw_bridge:
       velocity_p: 5.0
       limit_switch_0_present: true
       limit_switch_0_enabled: true
-      limit_switch_0_limits_forward: false
+      limit_switch_0_limits_forward: true
       limit_switch_0_active_high: false
       limit_switch_0_used_for_readjustment: true
       limit_switch_0_readjust_position: 0.0
+    cam_control_duration: 450 # milliseconds
+    cam_control_period: 50 # milliseconds
     cam:
       gear_ratio: 1.0
       is_inverted: false

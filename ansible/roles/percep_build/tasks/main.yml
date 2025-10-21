@@ -1,8 +1,8 @@
-- name: Install NVIDIA Drivers
-  become: True
-  apt:
-    name: nvidia-driver-{{driver_edition}}
-
+# - name: Install NVIDIA Drivers
+#   become: True
+#   apt:
+#     name: nvidia-driver-{{driver_edition}}
+#
 - name: Download CUDA Keyring
   get_url:
     url: https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-keyring_1.1-1_all.deb
