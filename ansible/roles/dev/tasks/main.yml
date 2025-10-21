@@ -59,3 +59,6 @@
     name:
       - gh
       - code
+
+- name: Install vscode debugger extension
+  command: code --install-extension pkg/file-selector-0.0.1.vsix
