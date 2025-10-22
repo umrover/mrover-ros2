@@ -1,12 +1,15 @@
 #include "arm_controller.hpp"
+#include "mrover/msg/detail/arm_status__struct.hpp"
 #include <rclcpp/logging.hpp>
+#include <std_msgs/msg/detail/bool__struct.hpp>
 
 namespace mrover {
-    const rclcpp::Duration ArmController::TIMEOUT = rclcpp::Duration(0, 0.3 * 1e9); // 0.3 seconds
+    rclcpp::Duration const ArmController::TIMEOUT = rclcpp::Duration(0, 0.3 * 1e9); // 0.3 seconds
 
     ArmController::ArmController() : Node{"arm_controller"}, mLastUpdate{get_clock()->now() - TIMEOUT} {
         mPosPub = create_publisher<msg::Position>("arm_position_cmd", 10);
         mVelPub = create_publisher<msg::Velocity>("arm_velocity_cmd", 10);
+        mStatusPub = create_publisher<msg::ArmStatus>("arm_cmd_status", 10);
 
         mIkSub = create_subscription<msg::IK>("ee_pos_cmd", 1, [this](msg::IK::ConstSharedPtr const& msg) {
             posCallback(msg);
@@ -58,11 +61,11 @@ namespace mrover {
         msg::Position positions;
         positions.names = {"joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_roll"};
         positions.positions = {
-            static_cast<float>(y),
-            static_cast<float>(q1),
-            static_cast<float>(q2),
-            static_cast<float>(q3),
-            static_cast<float>(target.roll),
+                static_cast<float>(y),
+                static_cast<float>(q1),
+                static_cast<float>(q2),
+                static_cast<float>(q3),
+                static_cast<float>(target.roll),
         };
 
         for (size_t i = 0; i < positions.names.size(); ++i) {
@@ -78,7 +81,7 @@ namespace mrover {
                 return std::nullopt;
             }
         }
-        
+
         return positions;
     }
 
@@ -121,11 +124,11 @@ namespace mrover {
         msg::Velocity velocities;
         velocities.names = {"joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_roll"};
         velocities.velocities = {
-            static_cast<float>(vel.linear.y),
-            static_cast<float>(joint_b_vel),
-            static_cast<float>(joint_c_vel),
-            static_cast<float>(joint_de_pitch_vel),
-            static_cast<float>(vel.angular.x),
+                static_cast<float>(vel.linear.y),
+                static_cast<float>(joint_b_vel),
+                static_cast<float>(joint_c_vel),
+                static_cast<float>(joint_de_pitch_vel),
+                static_cast<float>(vel.angular.x),
         };
 
         double scaleFactor = 1;
@@ -147,7 +150,7 @@ namespace mrover {
         // scale down all velocities so that we don't exceed motor velocity limits
         if (scaleFactor > 1)
             RCLCPP_INFO_STREAM_THROTTLE(get_logger(), *get_clock(), 500, "Commanded velocity too high. Scaling down by factor of " << scaleFactor);
-        for (auto& v : velocities.velocities)
+        for (auto& v: velocities.velocities)
             v = static_cast<float>(v / scaleFactor);
 
         return velocities;
@@ -189,16 +192,16 @@ namespace mrover {
         x += END_EFFECTOR_LENGTH * std::cos(angle);
         z += END_EFFECTOR_LENGTH * std::sin(angle);
         mArmPos = {x, y, z, -angle, joint_state->position[4], std::max(joint_state->position[5], 0.0)};
-	SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_fk", "arm_base_link", mArmPos.toSE3(), get_clock()->now());
+        SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_fk", "arm_base_link", mArmPos.toSE3(), get_clock()->now());
     }
 
     void ArmController::posCallback(msg::IK::ConstSharedPtr const& ik_target) {
         mPosTarget = *ik_target;
         SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_target", "arm_base_link", mPosTarget.toSE3(), get_clock()->now());
         if (mArmMode == ArmMode::POSITION_CONTROL || mArmMode == ArmMode::TYPING)
-                mLastUpdate = get_clock()->now();
+            mLastUpdate = get_clock()->now();
         else
-                RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 100, "Received position command in velocity mode!");
+            RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 100, "Received position command in velocity mode!");
     }
 
     auto ArmController::timerCallback() -> void {
@@ -226,8 +229,8 @@ namespace mrover {
             msg::Position positions;
             positions.names = {"joint_a", "gripper"};
             positions.positions = {
-                static_cast<float>(mPosTarget.y + mTypingOrigin.y),
-                static_cast<float>(mPosTarget.z + mTypingOrigin.gripper),
+                    static_cast<float>(mPosTarget.y + mTypingOrigin.y),
+                    static_cast<float>(mPosTarget.z + mTypingOrigin.gripper),
             };
 
             // bounds checking and such

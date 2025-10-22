@@ -161,6 +161,9 @@ message(STATUS "Found message files: ${MROVER_MESSAGE_FILE_PATHS}")
 file(GLOB_RECURSE MROVER_SERVICE_FILE_PATHS RELATIVE ${CMAKE_CURRENT_LIST_DIR} CONFIGURE_DEPENDS srv/*.srv)
 message(STATUS "Found service files: ${MROVER_SERVICE_FILE_PATHS}")
 
+file(GLOB_RECURSE MROVER_SERVICE_FILE_PATHS RELATIVE ${CMAKE_CURRENT_LIST_DIR} CONFIGURE_DEPENDS action/*.action)
+message(STATUS "Found action files: ${MROVER_SERVICE_FILE_PATHS}")
+
 # Starter Project
 message(STATUS "PROJ NAME: ${PROJECT_NAME}")
 
@@ -351,6 +354,11 @@ target_link_libraries(differential_drive_controller units messaging)
 mrover_add_node(arm_controller navigation/arm_controller/arm_controller.cpp navigation/arm_controller/pch.hpp)
 target_link_libraries(arm_controller lie)
 ament_target_dependencies(arm_controller rclcpp)
+
+# Click IK
+mrover_add_component(click_ik navigation/click_ik/*.cpp navigation/click_ik/pch.hpp ClickIK)
+mrover_ament_component(click_ik rclcpp rclcpp_components tf2 tf2_ros)
+mrover_link_component(click_ik lie parameter_utils)
 
 mrover_add_node(led esw/led.cpp)
 ament_target_dependencies(led rclcpp std_srvs)
