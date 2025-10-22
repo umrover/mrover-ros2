@@ -109,7 +109,7 @@
 
 - name: Install Bun Packages
   become: True
-  command: ../scripts/build_manif.sh && ../scripts/build_dawn.sh
+  command: cd .. && ./scripts/build_manif.sh && ./scripts/build_dawn.sh
 
 - name: Initialize rosdep
   become: True
