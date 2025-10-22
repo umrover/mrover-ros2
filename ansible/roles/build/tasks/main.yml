@@ -108,12 +108,17 @@
       - libqt5multimedia5-plugins
       - python3-pyqt5
 
-- name: Install Bun Packages
+- name: Build and Install Manif
   become: True
-  command: ./scripts/build_manif.sh && ./scripts/build_dawn.sh
+  command: ./scripts/build_manif.sh
   args:
     chdir: "{{ ansible_env.HOME }}/ros2_ws/src/mrover/"
 
+- name: Build and Install Dawn
+  become: True
+  command: ./scripts/build_dawn.sh
+  args:
+    chdir: "{{ ansible_env.HOME }}/ros2_ws/src/mrover/"
 
 - name: Initialize rosdep
   become: True
