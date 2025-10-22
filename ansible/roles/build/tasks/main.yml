@@ -106,6 +106,7 @@
       - qtbase5-dev
       - qtmultimedia5-dev
       - libqt5multimedia5-plugins
+      - python3-pyqt5
 
 - name: Install Bun Packages
   become: True
@@ -190,7 +191,6 @@
       - "{{ ros2_workspace }}/src/mrover[dev]"
     virtualenv: "{{ ros2_workspace }}/src/mrover/venv"
     virtualenv_command: /usr/bin/python3.10 -m venv
-  ignore_errors: yes
 
 - name: Install Chromium
   become: True
