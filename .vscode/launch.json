@@ -16,6 +16,10 @@
                 {
                     "name": "LD_LIBRARY_PATH",
                     "value": "${workspaceFolder}/../../install/Debug/mrover/lib:/opt/ros/humble/opt/rviz_ogre_vendor/lib:/opt/ros/humble/lib/aarch64-linux-gnu:/opt/ros/humble/lib/x86_64-linux-gnu:/opt/ros/humble/lib"
+                },
+                {
+                    "name": "ROS_DOMAIN_ID",
+                    "value": "5"
                 }
             ],
             "externalConsole": false,
