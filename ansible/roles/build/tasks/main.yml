@@ -107,14 +107,9 @@
       - qtmultimedia5-dev
       - libqt5multimedia5-plugins
 
-- name: Install Local APT Packages
+- name: Install Bun Packages
   become: True
-  apt:
-    state: present
-    deb: "{{ ros2_workspace }}/src/mrover/pkg/{{ item }}"
-  with_items:
-    - libmanif-dev.deb
-    - libdawn-dev.deb
+  command: ./scripts/build_manif.sh && ./scripts/build_dawn.sh
 
 - name: Initialize rosdep
   become: True
