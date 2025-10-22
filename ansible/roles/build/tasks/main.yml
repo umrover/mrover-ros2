@@ -109,7 +109,10 @@
 
 - name: Install Bun Packages
   become: True
-  command: cd .. && ./scripts/build_manif.sh && ./scripts/build_dawn.sh
+  command: ./scripts/build_manif.sh && ./scripts/build_dawn.sh
+  args:
+    chdir: "{{ ansible_env.HOME }}/ros2_ws/src/mrover/"
+
 
 - name: Initialize rosdep
   become: True
