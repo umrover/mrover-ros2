@@ -32,9 +32,11 @@ import DriveControls from '@/components/DriveControls.vue'
 import MastGimbalControls from '@/components/MastGimbalControls.vue'
 import OdometryReading from '@/components/OdometryReading.vue'
 import ControllerDataTable from '@/components/ControllerDataTable.vue'
-import SAArmControls from '@/components/SAArmControls.vue'
+
+
+
 import HexHub from '@/components/HexHub.vue'
-import LSActuator from '@/components/LSActuator.vue'
+
 import PanoCam from '@/components/PanoCam.vue'
 import { scienceAPI } from '@/utils/api'
 import { useWebsocketStore } from '@/stores/websocket'
@@ -50,7 +52,7 @@ const websocketStore = useWebsocketStore()
 const odom = ref<Odom | null>(null)
 const siteSelect = ref(0)
 const orientation = ref(true)
-const site_to_radians = {
+const site_to_radians: { [key: number]: number } = {
   0: 0.0,
   1: (2 * Math.PI) / 5,
   2: (4 * Math.PI) / 5,

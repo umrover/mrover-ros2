@@ -12,6 +12,7 @@ export type BasicWaypoint = APIBasicWaypoint
 export interface APIResponse {
   status: 'success' | 'error'
   message?: string
+  image_path?: string
 }
 
 export interface WaypointsResponse extends APIResponse {

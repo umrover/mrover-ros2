@@ -10,7 +10,7 @@
       <div class="waypoint-wrapper overflow-y-scroll">
         <WaypointStore
           v-for="(waypoint, index) in waypoints"
-          :key="waypoint"
+          :key="index"
           :waypoint="waypoint"
           :index="index"
           @add="addItem"
@@ -50,8 +50,8 @@
       <h3 class="m-0 p-0">Current Course</h3>
       <div class="waypoint-wrapper overflow-y-scroll d-flex flex-column gap-2">
         <WaypointItem
-          v-for="waypoint in currentRoute"
-          :key="waypoint"
+          v-for="(waypoint, index) in currentRoute"
+          :key="index"
           :waypoint="waypoint"
           @delete="deleteItem(waypoint)"
           @toggleCostmap="toggleCostmap"
@@ -123,7 +123,7 @@ import FeedbackButton from './FeedbackButton.vue'
 import VelocityReading from './VelocityReading.vue'
 import WaypointItem from './AutonWaypointItem.vue'
 import WaypointStore from './AutonWaypointStore.vue'
-//@ts-expect-error shut up ts
+
 import L from 'leaflet'
 import { reactive, defineComponent } from 'vue'
 import { Modal } from 'bootstrap'
@@ -229,9 +229,9 @@ export default defineComponent({
 
       allCostmapToggle: true,
 
-      route: reactive([]),
+      route: reactive([] as AutonWaypoint[]),
 
-      currentRoute: [],
+      currentRoute: [] as AutonWaypoint[],
     }
   },
   computed: {
@@ -333,7 +333,7 @@ export default defineComponent({
 
     autonAction(newState: boolean) {
       const waypoints = newState
-        ? this.currentRoute.map((waypoint: Waypoint) => ({
+        ? this.currentRoute.map((waypoint: AutonWaypoint) => ({
             latitude_degrees: waypoint.lat,
             longitude_degrees: waypoint.lon,
             tag_id: waypoint.id,
@@ -349,7 +349,7 @@ export default defineComponent({
       this.setAutonMode(newState)
     },
 
-    async deleteItem(waypoint: Waypoint) {
+    async deleteItem(waypoint: AutonWaypoint) {
       waypoint.in_route = false
       const index = this.route.indexOf(waypoint)
       this.route.splice(index, 1)
@@ -366,7 +366,7 @@ export default defineComponent({
       waypoint,
       enable_costmap,
     }: {
-      waypoint: Waypoint
+      waypoint: AutonWaypoint
       enable_costmap: boolean
     }) {
       waypoint.enable_costmap = enable_costmap
@@ -374,12 +374,12 @@ export default defineComponent({
 
     handleCostmapToggle(newState: boolean) {
       this.allCostmapToggle = newState
-      this.currentRoute.forEach((wp: Waypoint) => {
+      this.currentRoute.forEach((wp: AutonWaypoint) => {
         wp.enable_costmap = newState
       })
     },
 
-    addItem: function (waypoint: Waypoint) {
+    addItem: function (waypoint: AutonWaypoint) {
       if (!waypoint.in_route) {
         waypoint['enable_costmap'] = this.allCostmapToggle
         this.route.push(waypoint)
@@ -389,7 +389,9 @@ export default defineComponent({
     },
 
     openModal: function () {
-      this.modal.show()
+      if (this.modal) {
+        this.modal.show()
+      }
     },
 
     addMapWaypoint: function () {
@@ -404,7 +406,9 @@ export default defineComponent({
         lon: 0,
         enable_costmap: true,
       }
-      this.modal.hide()
+      if (this.modal) {
+        this.modal.hide()
+      }
     },
 
     deleteMapWaypoint: function (index: number) {

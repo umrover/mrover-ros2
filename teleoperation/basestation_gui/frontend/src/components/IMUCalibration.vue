@@ -33,6 +33,7 @@ import { ref, computed, watch } from 'vue'
 import { useWebsocketStore } from '@/stores/websocket'
 import { storeToRefs } from 'pinia'
 import LEDIndicator from './LEDIndicator.vue'
+import type { CalibrationMessage } from '@/types/websocket'
 
 const websocketStore = useWebsocketStore()
 const { messages } = storeToRefs(websocketStore)
@@ -45,10 +46,11 @@ const calibration_limit_master = 3
 const navMessage = computed(() => messages.value['nav'])
 
 watch(navMessage, (msg) => {
-  if (msg && msg.type === 'calibration') {
-    mag_calibration.value = msg.magnetometer_calibration
-    gyro_calibration.value = msg.gyroscope_calibration
-    accel_calibration.value = msg.acceleration_calibration
+  if (msg && (msg as CalibrationMessage).type === 'calibration') {
+    const calMsg = msg as CalibrationMessage;
+    mag_calibration.value = calMsg.magnetometer_calibration
+    gyro_calibration.value = calMsg.gyroscope_calibration
+    accel_calibration.value = calMsg.acceleration_calibration
   }
 })
 </script>

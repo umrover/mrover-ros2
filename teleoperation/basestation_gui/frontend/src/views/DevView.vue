@@ -7,7 +7,6 @@
 
 <script lang="ts" setup>
 import ArmControls from '../components/ArmControls.vue';
-import { defineComponent, onMounted, onUnmounted, watch, computed } from 'vue'
 import { useWebsocketStore } from '@/stores/websocket'
 import { storeToRefs } from 'pinia'
 

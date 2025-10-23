@@ -68,14 +68,17 @@ import {
 import { useErdStore } from '@/stores/erd'
 import { storeToRefs } from 'pinia'
 import 'leaflet/dist/leaflet.css'
-import L from '../leaflet-rotatedmarker.js'
+import L from 'leaflet'
+import '../leaflet-rotatedmarker.js'
 import type { LeafletMouseEvent } from 'leaflet';
-import type { Waypoint } from '@/types/basicWaypoint.js'
-import { ref, computed, watch, onMounted, nextTick } from 'vue'
+import type { StoreWaypoint } from '@/types/waypoints'
+import type { Odom } from '@/types/coordinates'
+import { ref, computed, watch, nextTick } from 'vue'
+import type { PropType } from 'vue'
 
 const props = defineProps({
   odom: {
-    type: Object,
+    type: Object as PropType<Odom | null>,
     default: () => ({ latitude_deg: 0, longitude_deg: 0, bearing_deg: 0 }),
   },
   drone_odom: {
@@ -102,21 +105,21 @@ const offlineTileOptions = {
   maxZoom: 100,
 }
 
-const center = ref(L.latLng(38.4225202, -110.7844653))
+const center = ref<[number, number]>([38.4225202, -110.7844653])
 const attribution = ref('&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors')
 const online = ref(true)
-const mapRef = ref(null)
-const roverRef = ref(null)
-const droneRef = ref(null)
-let map = null
-let roverMarker = null
-let droneMarker = null
+const mapRef = ref<{ leafletObject: L.Map } | null>(null)
+const roverRef = ref<{ leafletObject: L.Marker } | null>(null)
+const droneRef = ref<{ leafletObject: L.Marker } | null>(null)
+let map: L.Map | null = null
+let roverMarker: L.Marker | null = null
+let droneMarker: L.Marker | null = null
 const odomCount = ref(0)
 const droneCount = ref(0)
-const odomPath = ref([])
-const dronePath = ref([])
+const odomPath = ref<L.LatLng[]>([])
+const dronePath = ref<L.LatLng[]>([])
 const findRover = ref(false)
-const circle = ref(null)
+const circle = ref<L.Circle | null>(null)
 
 const locationIcon = L.icon({
   iconUrl: '/location_marker_icon.png',
@@ -149,9 +152,15 @@ const highlightedWaypointIcon = L.icon({
 
 const onMapReady = () => {
   nextTick(() => {
-    map = mapRef.value.leafletObject
-    roverMarker = roverRef.value.leafletObject
-    droneMarker = droneRef.value.leafletObject
+    if (mapRef.value) {
+      map = mapRef.value.leafletObject as L.Map
+    }
+    if (roverRef.value) {
+      roverMarker = roverRef.value.leafletObject as L.Marker
+    }
+    if (droneRef.value) {
+      droneMarker = droneRef.value.leafletObject as L.Marker
+    }
   })
 }
 
@@ -163,7 +172,7 @@ const getClickedLatLon = (e: LeafletMouseEvent) => {
   })
 }
 
-const getWaypointIcon = (waypoint: Waypoint, index: number) => {
+const getWaypointIcon = (waypoint: StoreWaypoint, index: number) => {
   if (index === highlightedWaypoint.value) {
     return highlightedWaypointIcon
   } else if (waypoint.drone) {
@@ -205,15 +214,16 @@ const droneLatLng = computed(() => {
 })
 
 watch(() => props.odom, (val) => {
+  if (!val) return;
   const lat = val.latitude_deg
   const lng = val.longitude_deg
-  const angle = val.bearing_deg
+  const angle = val.bearing_deg ?? 0
 
   const latLng = L.latLng(lat, lng)
 
   if (!findRover.value) {
     findRover.value = true
-    center.value = latLng
+    center.value = [lat, lng]
   }
 
   if (roverMarker) {
@@ -255,18 +265,22 @@ watch(() => props.drone_odom, (val) => {
 watch(searchWaypoint, (newIndex) => {
   if (newIndex === -1) {
     if (map && circle.value) {
-      map.removeLayer(circle.value)
+      map.removeLayer(circle.value as unknown as L.Layer)
     }
     circle.value = null
     return
   }
   const waypoint = waypointList.value[newIndex]
   if (!circle.value) {
+    if (map) {
     circle.value = L.circle(waypoint.latLng, { radius: 20 }).addTo(map)
+  }
   } else {
     circle.value.setLatLng(waypoint.latLng)
   }
-  circle.value.setStyle({ fillColor: 'purple', stroke: false })
+  if (circle.value) {
+    circle.value.setStyle({ fillColor: 'purple', stroke: false })
+  }
 })
 </script>
 

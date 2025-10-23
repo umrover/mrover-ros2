@@ -73,16 +73,18 @@
 
 <script lang="ts" setup>
 import { ref, computed, watch, onMounted } from 'vue'
+import type { PropType } from 'vue'
 import WaypointItem from './BasicWaypointItem.vue'
 import { useErdStore } from '@/stores/erd'
 import { storeToRefs } from 'pinia'
 import L from 'leaflet'
 import { waypointsAPI } from '@/utils/api'
 import type { StoreWaypoint, APIBasicWaypoint } from '@/types/waypoints'
+import type { Odom } from '@/types/coordinates'
 
 const props = defineProps({
   odom: {
-    type: Object,
+    type: Object as PropType<Odom | null>,
     default: () => ({ latitude_deg: 0, longitude_deg: 0, bearing_deg: 0 }),
   },
   droneWaypointButton: {
@@ -103,6 +105,7 @@ const input = ref({
 const storedWaypoints = ref<StoreWaypoint[]>([])
 
 const formatted_odom = computed(() => {
+  if (!props.odom) return { lat: { d: 0 }, lon: { d: 0 } };
   return {
     lat: { d: props.odom.latitude_deg },
     lon: { d: props.odom.longitude_deg },
@@ -111,7 +114,13 @@ const formatted_odom = computed(() => {
 
 const saveWaypoints = async (waypoints: StoreWaypoint[]) => {
   try {
-    await waypointsAPI.saveBasic(waypoints)
+    const apiWaypoints: APIBasicWaypoint[] = waypoints.map(wp => ({
+      name: wp.name,
+      lat: wp.latLng.lat,
+      lon: wp.latLng.lng,
+      drone: wp.drone,
+    }));
+    await waypointsAPI.saveBasic(apiWaypoints)
   } catch (error) {
     console.error('Failed to save waypoints:', error)
   }
@@ -121,14 +130,12 @@ const loadWaypoints = async () => {
   try {
     const data = await waypointsAPI.getBasic()
     if (data.status === 'success' && data.waypoints) {
-      storedWaypoints.value = data.waypoints
-      const waypoints = data.waypoints.map(
-        (waypoint: { lat: number; lon: number; name: string }) => ({
-          latLng: L.latLng(waypoint.lat, waypoint.lon),
-          name: waypoint.name
-        })
-      )
-      setWaypointList(waypoints)
+      storedWaypoints.value = data.waypoints.map((wp: APIBasicWaypoint) => ({
+        name: wp.name,
+        latLng: L.latLng(wp.lat, wp.lon),
+        drone: wp.drone,
+      }));
+      setWaypointList(storedWaypoints.value)
     }
   } catch (error) {
     console.error('Failed to load waypoints:', error)
@@ -154,8 +161,7 @@ const addWaypoint = (
 ) => {
   storedWaypoints.value.push({
     name: name.value,
-    lat: (coord.lat.d).toFixed(5),
-    lon: (coord.lon.d).toFixed(5),
+    latLng: L.latLng(coord.lat.d, coord.lon.d),
     drone: isDrone,
   })
 }
@@ -181,21 +187,7 @@ const clearWaypoint = () => {
 }
 
 watch(storedWaypoints, (newList) => {
-  const waypoints = newList.map(
-    (waypoint: {
-      lat: number
-      lon: number
-      name: string
-      drone: boolean
-    }) => {
-      return {
-        latLng: L.latLng(waypoint.lat, waypoint.lon),
-        name: waypoint.name,
-        drone: waypoint.drone,
-      }
-    },
-  )
-  setWaypointList(waypoints)
+  setWaypointList(newList)
   saveWaypoints(newList)
 }, { deep: true })
 

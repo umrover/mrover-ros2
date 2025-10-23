@@ -62,7 +62,7 @@
 </template>
 
 <script lang="ts" setup>
-import { defineComponent, ref, computed, watch } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useWebsocketStore } from '@/stores/websocket'
 import { storeToRefs } from 'pinia'
 import {quaternionToMapAngle } from '../utils/map.ts'
@@ -72,7 +72,7 @@ import type {
   Odom,
   FormattedOdom,
   NavMessage,
-} from '../types/coordinates.js'
+} from '../types/coordinates'
 
 const emit = defineEmits(['odom', 'drone_odom', 'basestation_odom'])
 
@@ -107,9 +107,7 @@ const formatted_basestation_odom = computed<FormattedOdom>(() => {
   }
 })
 
-const alt_available = computed<boolean>(() => {
-  return !isNaN(rover_altitude.value)
-})
+
 
 const get_odom_status = computed<string>(() => {
   return rover_status.value ? 'Fixed' : 'Not Fixed'
@@ -119,37 +117,37 @@ const get_drone_status = computed<string>(() => {
   return drone_status.value ? 'Fixed' : 'Not Fixed'
 })
 
-watch(navMessage, (msg: NavMessage | undefined) => {
+watch(navMessage, (msg) => {
   if (!msg) return
-
-  if (msg.type === 'gps_fix') {
-    rover_latitude_deg.value = msg.latitude
-    rover_longitude_deg.value = msg.longitude
-    rover_altitude.value = msg.altitude
-    rover_status.value = msg.status
+  const navMsg = msg as NavMessage;
+  if (navMsg.type === 'gps_fix') {
+    rover_latitude_deg.value = navMsg.latitude
+    rover_longitude_deg.value = navMsg.longitude
+    rover_altitude.value = navMsg.altitude
+    rover_status.value = navMsg.status
     emit('odom', {
       latitude_deg: rover_latitude_deg.value,
       longitude_deg: rover_longitude_deg.value,
       bearing_deg: rover_bearing_deg.value,
     } as Odom)
-  } else if (msg.type === 'basestation_position') {
-    basestation_latitude_deg.value = msg.latitude
-    basestation_longitude_deg.value = msg.longitude
-    basestation_status.value = msg.status
+  } else if (navMsg.type === 'basestation_position') {
+    basestation_latitude_deg.value = navMsg.latitude
+    basestation_longitude_deg.value = navMsg.longitude
+    basestation_status.value = navMsg.status
     emit('basestation_odom', {
       latitude_deg: basestation_latitude_deg.value,
       longitude_deg: basestation_longitude_deg.value,
     } as Odom)
-  } else if (msg.type === 'drone_waypoint') {
-    drone_latitude_deg.value = msg.latitude
-    drone_longitude_deg.value = msg.longitude
-    drone_status.value = msg.status
+  } else if (navMsg.type === 'drone_waypoint') {
+    drone_latitude_deg.value = navMsg.latitude
+    drone_longitude_deg.value = navMsg.longitude
+    drone_status.value = navMsg.status
     emit('drone_odom', {
       latitude_deg: drone_latitude_deg.value,
       longitude_deg: drone_longitude_deg.value,
     })
-  } else if (msg.type === 'orientation') {
-    rover_bearing_deg.value = quaternionToMapAngle(msg.orientation)
+  } else if (navMsg.type === 'orientation') {
+    rover_bearing_deg.value = quaternionToMapAngle(navMsg.orientation)
     emit('odom', {
       latitude_deg: rover_latitude_deg.value,
       longitude_deg: rover_longitude_deg.value,

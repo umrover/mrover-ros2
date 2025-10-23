@@ -69,13 +69,9 @@ import { useWebsocketStore } from '@/stores/websocket'
 import { storeToRefs } from 'pinia'
 import Chart from 'chart.js/auto'
 import type { SensorData } from '../types/sensors'
+import type { ScienceMessage } from '@/types/websocket'
 
-const props = defineProps({
-  site: {
-    type: Number,
-    required: true,
-  },
-})
+
 
 const websocketStore = useWebsocketStore()
 const { messages } = storeToRefs(websocketStore)
@@ -101,21 +97,22 @@ const scienceMessage = computed(() => messages.value['science'])
 
 watch(scienceMessage, (msg) => {
   if (!msg) return
-  switch (msg.type) {
+  const scienceMsg = msg as ScienceMessage;
+  switch (scienceMsg.type) {
     case 'oxygen':
-      sensor_data.value.oxygen = msg.percent
+      sensor_data.value.oxygen = scienceMsg.percent
       // sensor_data.value.oxygen_var = msg.varianace
       break
     case 'uv':
-      sensor_data.value.uv = msg.uv_index
+      sensor_data.value.uv = scienceMsg.uv_index
       // sensor_data.value.uv_var = msg.varianace
       break
     case 'temperature':
-      sensor_data.value.temp = msg.temperature
+      sensor_data.value.temp = scienceMsg.temperature
       // sensor_data.value.temp_var = msg.variance
       break
     case 'humidity':
-      sensor_data.value.humidity = msg.relative_humidity
+      sensor_data.value.humidity = scienceMsg.relative_humidity
       // sensor_data.value.humidity_var = 100* msg.variance
       break
   }

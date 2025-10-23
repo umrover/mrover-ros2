@@ -13,7 +13,7 @@ import { useWebsocketStore } from '@/stores/websocket'
 
 const websocketStore = useWebsocketStore()
 
-const mappings = {
+const mappings: { [key: string]: number } = {
   w: 0,
   a: 1,
   s: 2,

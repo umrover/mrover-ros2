@@ -33,9 +33,10 @@
 </template>
 
 <script lang='ts' setup>
-import { defineComponent, ref, computed, watch } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useWebsocketStore } from '@/stores/websocket'
 import { storeToRefs } from 'pinia'
+import type { ControllerStateMessage } from '@/types/websocket'
 
 const props = defineProps({
   header: {
@@ -60,20 +61,22 @@ const armMessage = computed(() => messages.value['arm'])
 const driveMessage = computed(() => messages.value['drive'])
 
 watch(armMessage, (msg) => {
-  if (msg && msg.type == props.msgType) {
-    name.value = msg.name
-    state.value = msg.state
-    error.value = msg.error
-    limits.value = msg.limit_hit
+  if (msg && (msg as ControllerStateMessage).type == props.msgType) {
+    const controllerMsg = msg as ControllerStateMessage;
+    name.value = controllerMsg.name
+    state.value = controllerMsg.state
+    error.value = controllerMsg.error
+    limits.value = controllerMsg.limit_hit
   }
 })
 
 watch(driveMessage, (msg) => {
-  if (msg && msg.type == props.msgType) {
-    name.value = msg.name
-    state.value = msg.state
-    error.value = msg.error
-    limits.value = msg.limit_hit
+  if (msg && (msg as ControllerStateMessage).type == props.msgType) {
+    const controllerMsg = msg as ControllerStateMessage;
+    name.value = controllerMsg.name
+    state.value = controllerMsg.state
+    error.value = controllerMsg.error
+    limits.value = controllerMsg.limit_hit
   }
 })
 </script>
