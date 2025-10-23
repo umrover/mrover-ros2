@@ -93,6 +93,13 @@
         >
           Add Drone Position
         </button>
+        <button
+          v-if = "droneWaypointButton"
+          class = "btn btn-info"
+          @click="toggleTracking"
+        >
+          {{ tracking ? 'Stop Tracking' : 'Track Drone Position' }}
+        </button>
       </div>
     </div>
 
@@ -154,6 +161,10 @@ export default {
       },
 
       storedWaypoints: [],
+      tracking: false,
+      _trackerInterval: undefined,
+      trackIntervalMs: 2000,
+      trackCounter: 0,
     }
   },
 
@@ -213,6 +224,69 @@ export default {
 
     clearWaypoint: function () {
       this.storedWaypoints = []
+    },
+
+    toggleTracking: function () {
+      if (this.tracking) {
+        this.stopTracking()
+      } else {
+        this.startTracking()
+      }
+    },
+
+    startTracking: function () {
+      if (this.tracking) return
+      this.tracking = true
+      // reset counter for this tracking session
+      this.trackCounter = 0
+      // send immediately then start interval
+      this.sendDroneTrack()
+      this._trackerInterval = window.setInterval(() => {
+        this.sendDroneTrack()
+      }, this.trackIntervalMs)
+    },
+
+    stopTracking: function () {
+      this.tracking = false
+      if (this._trackerInterval) {
+        clearInterval(this._trackerInterval)
+        this._trackerInterval = undefined
+      }
+    },
+
+    sendDroneTrack: function () {
+      // Prefer drone position from navMessage (drone_waypoint), fallback to formatted_odom
+      let lat = null
+      let lon = null
+      if (this.navMessage && this.navMessage.type === 'drone_waypoint') {
+        lat = this.navMessage.latitude
+        lon = this.navMessage.longitude
+      } else if (this.odom && this.odom.latitude_deg && this.odom.longitude_deg) {
+        lat = this.odom.latitude_deg
+        lon = this.odom.longitude_deg
+      }
+
+      if (lat == null || lon == null) return
+
+      const payload = {
+        type: 'drone_track',
+        timestamp_ms: Date.now(),
+        interval_index: this.trackCounter,
+        data: {
+          latitude: lat,
+          longitude: lon,
+          name: this.name || 'track',
+        },
+      }
+
+      // send over the 'science' socket which is used for telemetry/extra messages
+      this.$store.dispatch('websocket/sendMessage', {
+        id: 'science',
+        message: payload,
+      })
+
+      // increment counter for next interval
+      this.trackCounter++
     },
   },
 
@@ -297,9 +371,17 @@ export default {
     }, 250)
   },
 
+  beforeUnmount: function () {
+    if (this._trackerInterval) {
+      clearInterval(this._trackerInterval)
+      this._trackerInterval = undefined
+    }
+  },
+
   computed: {
     ...mapState('websocket', {
       waypointsMessage: (state: WebSocketState) => state.messages['waypoints'],
+      navMessage: (state: WebSocketState) => state.messages['nav'],
     }),
     ...mapGetters('erd', {
       highlightedWaypoint: 'highlightedWaypoint',
