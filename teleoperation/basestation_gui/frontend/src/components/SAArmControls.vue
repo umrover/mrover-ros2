@@ -61,6 +61,7 @@ export default defineComponent({
           type: 'sa_controller',
           axes: gamepad.axes,
           buttons: gamepad.buttons.map(button => button.value),
+          site: 1,
         },
       })
       this.$store.dispatch('websocket/sendMessage', {

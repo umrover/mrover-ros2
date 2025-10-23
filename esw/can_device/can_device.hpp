@@ -41,6 +41,8 @@ namespace mrover {
         }
 
     public:
+        CanDevice() = default;
+
         CanDevice(rclcpp::Node::SharedPtr node, std::string from_device, std::string to_device)
             : mNode{std::move(node)},
               mFromDevice{std::move(from_device)},

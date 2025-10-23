@@ -45,6 +45,7 @@ namespace mrover {
                     std::string name = std::format("{}_{}", motor, group);
                     mControllers.try_emplace(name, shared_from_this(), "jetson", name);
                     mJointState.name.push_back(name);
+                    mControllerState.name.push_back(name);
                 }
 
                 mJointStatePubs.emplace_back(create_publisher<sensor_msgs::msg::JointState>(std::format("drive_{}_joint_data", group), 1));

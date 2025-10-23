@@ -19,7 +19,7 @@ WORKDIR /home/mrover/ros2_ws/src/mrover
 ADD --chown=mrover:mrover ./package.xml .
 # Defines the Python packages that need to be installed
 # pip is called from Ansible to install them
-ADD --chown=mrover:mrover ./pyproject.toml ./README.md .
+ADD --chown=mrover:mrover ./pyproject.toml ./README.md ./LICENSE.md .
 ADD --chown=mrover:mrover ./mrover ./mrover
 # Copy over all Ansible files
 ADD --chown=mrover:mrover ./ansible ./ansible

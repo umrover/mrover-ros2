@@ -33,15 +33,17 @@ namespace mrover {
                 msg.linear_acceleration_covariance[i * 3 + j] = imuData.linear_acceleration_covariance(i, j);
     }
 
-    auto fillMagMessage(sl::SensorsData::MagnetometerData const& magData, sensor_msgs::msg::MagneticField& msg) -> void {
-        msg.magnetic_field.x = magData.magnetic_field_calibrated.x;
-        msg.magnetic_field.y = magData.magnetic_field_calibrated.y;
-        msg.magnetic_field.z = magData.magnetic_field_calibrated.z;
+    auto fillMagMessage(sl::SensorsData::MagnetometerData const& magData, sensor_msgs::msg::MagneticField& magMsg, mrover::msg::Heading& headingMsg) -> void {
+        magMsg.magnetic_field.x = magData.magnetic_field_calibrated.x;
+        magMsg.magnetic_field.y = magData.magnetic_field_calibrated.y;
+        magMsg.magnetic_field.z = magData.magnetic_field_calibrated.z;
 
-        msg.magnetic_field_covariance.fill(0.0f);
-        msg.magnetic_field_covariance[0] = 0.039e-6;
-        msg.magnetic_field_covariance[4] = 0.037e-6;
-        msg.magnetic_field_covariance[8] = 0.047e-6;
+        magMsg.magnetic_field_covariance.fill(0.0f);
+        magMsg.magnetic_field_covariance[0] = 0.039e-6;
+        magMsg.magnetic_field_covariance[4] = 0.037e-6;
+        magMsg.magnetic_field_covariance[8] = 0.047e-6;
+
+        headingMsg.heading = magData.magnetic_heading;
     }
 
     auto fillImageMessage(sl::Mat const& bgra, sensor_msgs::msg::Image::UniquePtr const& msg) -> void {

@@ -21,7 +21,8 @@ dependencies = [
     "django>=5.0",
     "daphne>=4.1",
     "channels>=4.1",
-    "opencv-python>=4.9"
+    "opencv-python>=4.9",
+    "graphviz>=0.21"
 ]
 
 [project.optional-dependencies]

@@ -92,7 +92,7 @@ auto Inference::createCudaEngine() -> ICudaEngine* {
 
 	// Define the engine file location relative to the mrover package
 	// Check if engine file exists
-	if (!exists(mEngineModelPath)) {
+	if (!std::filesystem::exists(mEngineModelPath)) {
 		std::cout << "Optimizing ONXX model for TensorRT. This make take a long time..." << std::endl;
 
 		// Create the Engine from onnx file
@@ -223,4 +223,16 @@ auto Inference::getOutputTensorSize() -> std::vector<int64_t>{
 	}
 
 	return inputBlobSize;
+}
+
+Inference::~Inference(){
+	for (int i = 0; i < mEngine->getNbIOTensors(); i++) {
+		// Create GPU memory for TensorRT to operate on
+		if(mBindings[i]){ // if the tensors were allocated (this was initially zero-initialized)
+			if (cudaError_t result = cudaFree(mBindings.data() + i); result != cudaSuccess){
+				std::string msg = "Failed to deallocate GPU memory: " + std::string{cudaGetErrorString(result)};
+				mLogger.log(ILogger::Severity::kINFO, msg.data());
+			}
+		}
+	}
 }

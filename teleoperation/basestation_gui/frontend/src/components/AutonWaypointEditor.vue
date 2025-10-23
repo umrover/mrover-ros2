@@ -229,6 +229,7 @@ export default defineComponent({
   computed: {
     ...mapState('websocket', {
       navMessage: (state: WebSocketState) => state.messages['nav'],
+      waypointMessage: (state: WebSocketState) => state.messages['waypoints'],
     }),
     ...mapGetters('autonomy', {
       autonEnabled: 'autonEnabled',
@@ -314,10 +315,40 @@ export default defineComponent({
         // console.log("here2", this.currentRoute)
       }
     },
+    waypointMessage(msg) {
+      if (msg.type == 'get_auton_waypoint_list') {
+        // Get waypoints from server on page load
+        console.log(msg)
+        if (msg.data.length > 0) this.waypoints = msg.data
+        const waypoints = msg.data.map(
+          (waypoint: { lat: number; lon: number; name: string }) => {
+            const lat = waypoint.lat
+            const lon = waypoint.lon
+            return { latLng: L.latLng(lat, lon), name: waypoint.name }
+          },
+        )
+        this.setWaypointList(waypoints)
+      }
+    }
   },
 
   mounted() {
     this.modal = new Modal('#modalWypt', {})
+    auton_publish_interval = window.setInterval(() => {
+      if (this.waitingForNavResponse) {
+        this.sendAutonCommand()
+      }
+    }, 1000)
+    // window.setTimeout(() => {
+      // Timeout so websocket will be initialized
+      
+      this.$store.dispatch('websocket/sendMessage', {
+        id: 'waypoints',
+        message: {
+          type: 'get_current_auton_course',
+        },
+      })
+    // }, 1000)
   },
 
   beforeUnmount: function () {
@@ -326,28 +357,6 @@ export default defineComponent({
     this.sendAutonCommand()
   },
 
-  created: function () {
-    auton_publish_interval = window.setInterval(() => {
-      if (this.waitingForNavResponse) {
-        this.sendAutonCommand()
-      }
-    }, 1000)
-    window.setTimeout(() => {
-      // Timeout so websocket will be initialized
-      this.$store.dispatch('websocket/sendMessage', {
-        id: 'waypoints',
-        message: {
-          type: 'get_auton_waypoint_list',
-        },
-      })
-      this.$store.dispatch('websocket/sendMessage', {
-        id: 'waypoints',
-        message: {
-          type: 'get_current_auton_course',
-        },
-      })
-    }, 1000)
-  },
 
   methods: {
     ...mapActions('websocket', ['sendMessage']),

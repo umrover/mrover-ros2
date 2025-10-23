@@ -100,15 +100,20 @@ source $ZSH/oh-my-zsh.sh
 # alias zshconfig="mate ~/.zshrc"
 # alias ohmyzsh="mate ~/.oh-my-zsh"
 
-alias mrover="cd ~/ros2_ws/src/mrover && source ~/ros2_ws/src/mrover/venv/bin/activate"
+alias mrover="cd ~/ros2_ws/src/mrover && source ~/ros2_ws/src/mrover/venv/bin/activate && source ../../install/Debug/setup.zsh"
 
 readonly ROS2_WS_PATH=~/ros2_ws
 source /opt/ros/humble/setup.zsh
-readonly CATKIN_SETUP_PATH=${ROS2_WS_PATH}/install/setup.zsh
-if [ -f ${CATKIN_SETUP_PATH} ]; then
-    source ${CATKIN_SETUP_PATH}
+readonly COLCON_RELWITHDEBINFO_SETUP_PATH=${ROS2_WS_PATH}/install/RelWithDebInfo/setup.zsh
+readonly COLCON_RELEASE_SETUP_PATH=${ROS2_WS_PATH}/install/Release/setup.zsh
+readonly COLCON_DEBUG_SETUP_PATH=${ROS2_WS_PATH}/install/Debug/setup.zsh
+if [ -f ${COLCON_DEBUG_SETUP_PATH} ]; then
+    source ${COLCON_DEBUG_SETUP_PATH}
+elif [ -f ${COLCON_RELWITHDEBINFO_SETUP_PATH} ]; then
+    source ${COLCON_RELWITHDEBINFO_SETUP_PATH}
+elif [ -f ${COLCON_RELEASE_SETUP_PATH} ]; then
+    source ${COLCON_RELEASE_SETUP_PATH}
 fi
-
 # bun completions
 [ -s "/home/mrover/.bun/_bun" ] && source "/home/mrover/.bun/_bun"
 
@@ -119,3 +124,6 @@ export PATH="$BUN_INSTALL/bin:$PATH"
 # ros2 completions
 eval "$(register-python-argcomplete3 ros2)"
 eval "$(register-python-argcomplete3 colcon)"
+
+# ros domain id
+export ROS_DOMAIN_ID=5

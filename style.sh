@@ -5,6 +5,7 @@ set -Eeuo pipefail
 
 shopt -s nullglob globstar
 GLOBIGNORE="./venv/**"
+GLOBIGNORE="$GLOBIGNORE:./esw/fw/**"
 
 readonly RED='\033[0;31m'
 readonly NC='\033[0m'
@@ -87,7 +88,11 @@ if command -v shellcheck &> /dev/null; then
   echo
   echo "Linting bash scripts with shellcheck ..."
   readonly SHELL_FILES=(
-    ./**/*.sh
+    ./ansible/**/*.sh
+    ./scripts/**/*.sh
+    ./starter_project/**/*.sh
+    ./teleoperation/**/*.sh
+    ./*.sh
   )
   # SC2155 is separate declaration and command.
   shellcheck --exclude=SC2155 "${SHELL_FILES[@]}"
