@@ -22,64 +22,51 @@
   </div>
 </template>
 
-<script lang="ts">
-import { defineComponent } from 'vue'
-import Vuex from 'vuex'
-const { mapActions } = Vuex
+<script lang="ts" setup>
+import { ref, onMounted, onBeforeUnmount, defineProps } from 'vue'
+import { useWebsocketStore } from '@/stores/websocket'
+
+const props = defineProps({
+  currentSite: {
+    type: Number,
+    required: true,
+  },
+})
+
+const websocketStore = useWebsocketStore()
+
+const mode = ref('disabled')
+const corer_position = ref(0)
+const plunger_position = ref(0)
+const sensor_height = ref(5.36)
+const plunger_height = ref(5.5)
+
+let interval: number | undefined = undefined
 
 const UPDATE_HZ = 20
 
-export default defineComponent({
-  props: {
-    currentSite: {
-      type: Number,
-      required: true,
-    },
-  },
+onMounted(() => {
+  interval = window.setInterval(() => {
+    const gamepads = navigator.getGamepads()
+    const gamepad = gamepads.find(
+      gamepad => gamepad && gamepad.id.includes('Microsoft')
+    )
+    if (!gamepad) return
 
-  data() {
-    return {
-      mode: 'disabled',
-      corer_position: 0,
-      plunger_position: 0,
-      sensor_height: 5.36,
-      plunger_height: 5.5,
-    }
-  },
+    websocketStore.sendMessage('arm', {
+      type: 'sa_controller',
+      axes: gamepad.axes,
+      buttons: gamepad.buttons.map(button => button.value),
+    })
+    websocketStore.sendMessage('arm', {
+      type: 'sa_mode',
+      mode: mode.value,
+    })
+  }, 1000 / UPDATE_HZ)
+})
 
-  created() {
-    this.interval = window.setInterval(() => {
-      const gamepads = navigator.getGamepads()
-      const gamepad = gamepads.find(
-        gamepad => gamepad && gamepad.id.includes('Microsoft')
-      )
-      if (!gamepad) return
-
-      this.$store.dispatch('websocket/sendMessage', {
-        id: 'arm',
-        message: {
-          type: 'sa_controller',
-          axes: gamepad.axes,
-          buttons: gamepad.buttons.map(button => button.value),
-        },
-      })
-      this.$store.dispatch('websocket/sendMessage', {
-        id: 'arm',
-        message: {
-          type: 'sa_mode',
-          mode: this.mode,
-        },
-      })
-    }, 1000 / UPDATE_HZ)
-  },
-
-  beforeUnmount() {
-    window.clearInterval(this.interval)
-  },
-
-  methods: {
-    ...mapActions('websocket', ['sendMessage']),
-  },
+onBeforeUnmount(() => {
+  window.clearInterval(interval)
 })
 </script>
 

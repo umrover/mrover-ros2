@@ -50,62 +50,42 @@
   </div> 
 </template>
 
-<script lang="ts">
+<script lang="ts" setup>
 import CameraFeed from '../components/CameraFeed.vue'
 import ToggleButton from "../components/ToggleButton.vue";
-import Vuex from 'vuex'
-const { mapActions } = Vuex
+import { ref, watch, onMounted } from 'vue';
 
-export default {
-  components: {
-    ToggleButton,
-    CameraFeed
-  },
+const percent = ref(0)
+const missionType = ref(["DM Mission", "ES Mission", "SPI GUI", "Sample Acquisition GUI", "Autonomy Mission"])
+const selectedMission = ref("DM Mission")
+const cameras = ref({
+  "DM Mission": ["Cam1","Cam2"],
+  "ES Mission": ["Cam3" ,"Cam4","Cam5"],
+  "ISH GUI": ["Cam2" ,"Cam3", "Cam6", "Cam7",],
+  "Sample Acquisition GUI": ["Cam8"],
+  "Autonomy Mission": ["Cam9" ,"Cam1"]
+})
+const camsEnabled = ref<boolean[]>([])
+const camsStreaming = ref<number[]>([])
 
-  data() {
-    return {
-      percent: 0,
-      missionType: ["DM Mission", "ES Mission", "SPI GUI", "Sample Acquisition GUI", "Autonomy Mission"],
-      selectedMission: "DM Mission",
-      cameras: {
-        "DM Mission": ["Cam1","Cam2"],
-        "ES Mission": ["Cam3" ,"Cam4","Cam5"],
-        "ISH GUI": ["Cam2" ,"Cam3", "Cam6", "Cam7",],
-        "Sample Acquisition GUI": ["Cam8"],
-        "Autonomy Mission": ["Cam9" ,"Cam1"]
-      },
-      camsEnabled: [], // stores cam enabled state for cameras in selected mission (default true)
-      camsStreaming: [] // stores the cameras that are currently in use
-    }
-  },
+watch(selectedMission, (newMission: string) => {
+  camsEnabled.value = new Array(cameras.value[newMission].length).fill(true);
+  camsStreaming.value = [...Array(camsEnabled.value.length).keys()];
+});
 
-  watch: {
-    selectedMission(newMission: string) {
-      // when another mission is selected, add true values based on the number of cameras for that mission
-      this.camsEnabled = new Array(this.cameras[newMission].length).fill(true);
-      // add in the cameras for that mission that have a value set to true
-      this.camsStreaming = [...Array(this.camsEnabled.length).keys()];
-    },
-  },
-  created: function() {
-    this.camsEnabled = new Array(this.cameras[this.selectedMission].length).fill(true);
-    this.camsStreaming = [...Array(this.camsEnabled.length).keys()];
-  },
+onMounted(() => {
+  camsEnabled.value = new Array(cameras.value[selectedMission.value].length).fill(true);
+  camsStreaming.value = [...Array(camsEnabled.value.length).keys()];
+});
 
-  methods: {
-    ...mapActions('websocket', ['sendMessage']),
+const toggleCamera = (idx: number) => {
+  camsEnabled.value[idx] = !camsEnabled.value[idx];
 
-    toggleCamera(idx: number) {
-      this.camsEnabled[idx] = !this.camsEnabled[idx];
-
-      if(this.camsEnabled[idx]) { //add camera feed
-        this.camsStreaming.push(idx);
-      }
-      else { // remove camera feed
-        this.camsStreaming = this.camsStreaming.filter((x: number) => x != idx);
-      }
-    }
-
+  if(camsEnabled.value[idx]) { //add camera feed
+    camsStreaming.value.push(idx);
+  }
+  else { // remove camera feed
+    camsStreaming.value = camsStreaming.value.filter((x: number) => x != idx);
   }
 }
 </script>

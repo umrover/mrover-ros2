@@ -42,7 +42,7 @@
   </div>
 </template>
 
-<script lang="ts">
+<script lang="ts" setup>
 import SelectSite from '../components/SelectSite.vue'
 import NinhydrinBenedict from '../components/NinhydrinBenedict.vue'
 import CameraFeed from '../components/CameraFeed.vue'
@@ -50,51 +50,30 @@ import ToggleButton from '../components/ToggleButton.vue'
 import AutoShutdown from '../components/AutoShutdown.vue'
 import SensorData from '../components/SensorData.vue'
 import WhiteLEDs from '../components/WhiteLEDs.vue'
-import Vuex from 'vuex'
-const { mapState } = Vuex
+import { ref, onMounted, onUnmounted } from 'vue'
+import { useWebsocketStore } from '@/stores/websocket'
 
-export default {
-  components: {
-    SelectSite,
-    NinhydrinBenedict,
-    CameraFeed,
-    ToggleButton,
-    AutoShutdown,
-    SensorData,
-    WhiteLEDs,
-  },
+const site = ref(0 as number)
+const cameraA = ref(true)
+const cameraB = ref(true)
 
-  data() {
-    return {
-      site: 0 as number,
-      cameraA: true,
-      cameraB: true,
-    }
-  },
-
-  computed: {
-    ...mapState('websocket', ['message']),
-  },
-
-  methods: {
-    onSiteChange(value: string) {
-      this.site = parseInt(value)
-    },
-  },
-
-  topics: ['science'],
-
-  mounted() {
-    window.setTimeout(() => {
-      for (const topic of this.$options.topics)
-        this.$store.dispatch('websocket/setupWebSocket', topic)
-    }, 0)
-  },
-
-  unmounte() {
-    this.$store.dispatch('websocket/closeWebSocket', 'science')
-  },
+const onSiteChange = (value: string) => {
+  site.value = parseInt(value)
 }
+
+const topics = ['science']
+const websocketStore = useWebsocketStore()
+
+onMounted(() => {
+  window.setTimeout(() => {
+    for (const topic of topics)
+      websocketStore.setupWebSocket(topic)
+  }, 0)
+})
+
+onUnmounted(() => {
+  websocketStore.closeWebSocket('science')
+})
 </script>
 
 <style scoped>

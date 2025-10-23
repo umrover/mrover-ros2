@@ -34,44 +34,42 @@
     </div>
   </template>
   
-  <script lang='ts'>
-  import { defineComponent } from 'vue'
-  import { mapState } from 'vuex'
+  <script lang='ts' setup>
+  import { defineComponent, ref, computed, watch } from 'vue'
+  import { useWebsocketStore } from '@/stores/websocket'
+  import { storeToRefs } from 'pinia'
   
-  export default defineComponent({
-    props: {
-      header: {
-        type: String,
-        required: true,
-      },
-      msgType: {
-        type: String,
-        required: true,
-      }
+  const props = defineProps({
+    header: {
+      type: String,
+      required: true,
     },
-  
-    data() {
-      return {
-        name: [] as string[],
-        position: [] as number[],
-        velocity: [] as number[],
-        effort: [] as number[]
-      }
+    msgType: {
+      type: String,
+      required: true,
     },
-  
-    computed: {
-      ...mapState('websocket', ['message'])
-    },
-  
-    watch: {
-      message(msg) { // COMPONENT NOT USED
-        if (msg.type == this.msgType) {
-          this.name = msg.name
-          this.position = msg.position
-          this.velocity = msg.velocity
-          this.effor = msg.effort
-        }
-      }
+    websocketId: {
+      type: String,
+      required: true,
+    }
+  })
+
+  const websocketStore = useWebsocketStore()
+  const { messages } = storeToRefs(websocketStore)
+
+  const name = ref<string[]>([])
+  const position = ref<number[]>([])
+  const velocity = ref<number[]>([])
+  const effort = ref<number[]>([])
+
+  const message = computed(() => messages.value[props.websocketId])
+
+  watch(message, (msg) => {
+    if (msg && msg.type == props.msgType) {
+      name.value = msg.name
+      position.value = msg.position
+      velocity.value = msg.velocity
+      effort.value = msg.effort
     }
   })
   </script>

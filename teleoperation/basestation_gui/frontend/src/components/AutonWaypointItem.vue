@@ -32,10 +32,14 @@
 </template>
 
 <script lang="ts">
-import Vuex from 'vuex'
-const { mapGetters } = Vuex
+import { useAutonomyStore } from '@/stores/autonomy'
 
 export default {
+  setup() {
+    const autonomyStore = useAutonomyStore()
+    return { autonomyStore }
+  },
+
   props: {
     waypoint: {
       type: Object,
@@ -73,9 +77,9 @@ export default {
   },
 
   computed: {
-    ...mapGetters('autonomy', {
-      highlightedWaypoint: 'highlightedWaypoint',
-    }),
+    highlightedWaypoint() {
+      return this.autonomyStore.highlightedWaypoint
+    },
 
     output: function () {
       return {

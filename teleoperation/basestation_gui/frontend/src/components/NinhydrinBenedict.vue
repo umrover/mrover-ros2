@@ -25,99 +25,83 @@
   </div>
 </template>
 
-<script lang="ts">
+<script lang="ts" setup>
+import { ref, computed, watch, defineProps } from 'vue'
 import ToggleButton from './ToggleButton.vue'
 import LEDIndicator from './LEDIndicator.vue'
-import Vuex from 'vuex'
-import type { WebSocketState } from '@/types/websocket'
+import { useWebsocketStore } from '@/stores/websocket'
+import { storeToRefs } from 'pinia'
 import { scienceAPI } from '@/utils/api'
-const { mapState } = Vuex
 
-export default {
-  components: {
-    ToggleButton,
-    LEDIndicator,
+const props = defineProps({
+  site: {
+    type: Number,
+    required: true,
   },
-
-  props: {
-    site: {
-      type: Number,
-      required: true,
-    },
-    isNinhydrin: {
-      //true = Ninhydrin, false = benedict's
-      type: Boolean,
-      required: true,
-    },
+  isNinhydrin: {
+    //true = Ninhydrin, false = benedict's
+    type: Boolean,
+    required: true,
   },
+})
 
-  data() {
-    return {
-      heaters: [
-        {
-          enabled: false,
-          temp: 0,
-          state: false,
-          color: 'grey',
-        },
-        {
-          enabled: false,
-          temp: 0,
-          state: false,
-          color: 'grey',
-        },
-      ],
+const websocketStore = useWebsocketStore()
+const { messages } = storeToRefs(websocketStore)
+
+const heaters = ref([
+  {
+    enabled: false,
+    temp: 0,
+    state: false,
+    color: 'grey',
+  },
+  {
+    enabled: false,
+    temp: 0,
+    state: false,
+    color: 'grey',
+  },
+])
+
+const scienceMessage = computed(() => messages.value['science'])
+
+watch(scienceMessage, (msg) => {
+  if (msg.type == 'thermistors') {
+    if (props.isNinhydrin) {
+      heaters.value[props.site].temp =
+        msg.temps[props.site * 2 + 1].temperature
+    } else {
+      heaters.value[props.site].temp = msg.temps[props.site * 2].temperature
     }
-  },
+  } else if (msg.type == 'heater_states') {
+    if (props.isNinhydrin) {
+      heaters.value[props.site].state = msg.state[props.site * 2 + 1]
+      heaters.value[props.site].enabled = heaters.value[props.site].state
+    } else {
+      heaters.value[props.site].state = msg.state[props.site * 2]
+      heaters.value[props.site].enabled = heaters.value[props.site].state
+    }
+  }
+})
 
-  computed: {
-    ...mapState('websocket', {
-      scienceMessage: (state: WebSocketState) => state.messages['science']
-    }),
-  },
+const toggleHeater = () => {
+  heaters.value[props.site].enabled = !heaters.value[props.site].enabled
+  sendHeaterRequest()
+}
 
-  watch: {
-    scienceMessage(msg) {
-      if (msg.type == 'thermistors') {
-        if (this.isNinhydrin) {
-          this.heaters[this.site].temp =
-            msg.temps[this.site * 2 + 1].temperature
-        } else {
-          this.heaters[this.site].temp = msg.temps[this.site * 2].temperature
-        }
-      } else if (msg.type == 'heater_states') {
-        if (this.isNinhydrin) {
-          this.heaters[this.site].state = msg.state[this.site * 2 + 1]
-          this.heaters[this.site].enabled = this.heaters[this.site].state
-        } else {
-          this.heaters[this.site].state = msg.state[this.site * 2]
-          this.heaters[this.site].enabled = this.heaters[this.site].state
-        }
-      }
-    },
-  },
+const sendHeaterRequest = async () => {
+  let heaterName = String.fromCharCode(props.site + 97)
+  if (props.isNinhydrin) {
+    heaterName += '1'
+  } else heaterName += '0'
 
-  methods: {
-    toggleHeater: function () {
-      this.heaters[this.site].enabled = !this.heaters[this.site].enabled
-      this.sendHeaterRequest()
-    },
-
-    async sendHeaterRequest() {
-      let heaterName = String.fromCharCode(this.site + 97)
-      if (this.isNinhydrin) {
-        heaterName += '1'
-      } else heaterName += '0'
-
-      try {
-        await scienceAPI.setHeater(heaterName, this.heaters[this.site].enabled)
-      } catch (error) {
-        console.error('Failed to toggle heater:', error)
-        // Revert state on error
-        this.heaters[this.site].enabled = !this.heaters[this.site].enabled
-      }
-    },
-  },
+  try {
+    await scienceAPI.setHeater(heaterName, heaters.value[props.site].enabled)
+  } catch (error) {
+    console.error('Failed to toggle heater:', error)
+    // Revert state on error
+    heaters.value[props.site].enabled = !heaters.value[props.site].enabled
+  }
 }
 </script>
 

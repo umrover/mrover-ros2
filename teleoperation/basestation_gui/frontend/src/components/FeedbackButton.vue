@@ -9,8 +9,13 @@
 
 <script lang="ts">
 import { defineComponent, type PropType } from 'vue'
+import { useNotificationsStore } from '@/stores/notifications'
 
 export default defineComponent({
+  setup() {
+    const notificationsStore = useNotificationsStore()
+    return { notificationsStore }
+  },
   props: {
     name: {
       type: String,
@@ -89,7 +94,7 @@ export default defineComponent({
           console.error(`${this.name} command failed:`, response.message)
 
           // Log to notification store
-          this.$store.commit('notifications/addNotification', {
+          this.notificationsStore.addNotification({
             component: this.name,
             errorType: 'API Error',
             message: response.message || 'Command failed',
@@ -104,7 +109,7 @@ export default defineComponent({
         console.error(`${this.name} command failed:`, error)
 
         // Log to notification store
-        this.$store.commit('notifications/addNotification', {
+        this.notificationsStore.addNotification({
           component: this.name,
           errorType: 'Exception',
           message: error instanceof Error ? error.message : String(error),

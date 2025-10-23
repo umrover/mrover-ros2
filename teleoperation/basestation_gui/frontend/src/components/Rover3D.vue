@@ -2,12 +2,16 @@
   <canvas class="webgl p-0 h-100 w-100"></canvas>
 </template>
 
-<script lang="ts">
-import { defineComponent } from 'vue'
-import Vuex from 'vuex'
-const { mapState } = Vuex
+<script lang="ts" setup>
+import { defineComponent, ref, computed, watch, onMounted } from 'vue'
+import { useWebsocketStore } from '@/stores/websocket'
+import { storeToRefs } from 'pinia'
 import threeSetup, { updatePose, updateIKTarget } from '../rover_three.js'
-import type { WebSocketState } from '../types/websocket.js'
+
+const websocketStore = useWebsocketStore()
+const { messages } = storeToRefs(websocketStore)
+
+const threeScene = ref(null)
 
 const jointNameMap: Record<string, string> = {
   joint_a: 'chassis_to_arm_a',
@@ -18,56 +22,42 @@ const jointNameMap: Record<string, string> = {
   gripper: 'gripper_link', // not implemented lol
 }
 
-export default defineComponent({
-  data() {
-    return {
-      threeScene: null,
-    }
-  },
+onMounted(() => {
+  threeScene.value = threeSetup('threejs')
+})
 
-  mounted() {
-    this.threeScene = threeSetup('threejs')
-  },
+const armMessage = computed(() => messages.value['arm'])
 
-  computed: {
-    ...mapState('websocket', {
-      armMessage: (state: WebSocketState) => state.messages['arm'],
-    }),
-  },
+watch(armMessage, (msg) => {
+  if (!msg) return
 
-  watch: {
-    armMessage(msg) {
-      if (!msg) return
+  if (msg.type === 'fk') {
+    const joints = msg.name.map((name: string, index: number) => {
+      const urdfName = jointNameMap[name] || name
+      let position = msg.position[index]
 
-      if (msg.type === 'fk') {
-        const joints = msg.name.map((name: string, index: number) => {
-          const urdfName = jointNameMap[name] || name
-          let position = msg.position[index]
-
-          if (urdfName === 'chassis_to_arm_a') {
-            position = position * -100 + 40 // scale from m to cm
-          }
-
-          return {
-            name: urdfName,
-            position,
-          }
-        })
-
-        updatePose(joints)
-      } else if (msg.type === 'ik_target') {
-        console.log(msg)
-        if (msg.target.pose && msg.target.pose.position) {
-          const position = {
-            x: msg.target.pose.position.x * 100,
-            y: msg.target.pose.position.z * 100,
-            z: msg.target.pose.position.y * -100 + 20,
-          }
-          console.log(position)
-          updateIKTarget(position)
-        }
+      if (urdfName === 'chassis_to_arm_a') {
+        position = position * -100 + 40 // scale from m to cm
       }
-    },
-  },
+
+      return {
+        name: urdfName,
+        position,
+      }
+    })
+
+    updatePose(joints)
+  } else if (msg.type === 'ik_target') {
+    console.log(msg)
+    if (msg.target.pose && msg.target.pose.position) {
+      const position = {
+        x: msg.target.pose.position.x * 100,
+        y: msg.target.pose.position.z * 100,
+        z: msg.target.pose.position.y * -100 + 20,
+      }
+      console.log(position)
+      updateIKTarget(position)
+    }
+  }
 })
 </script>

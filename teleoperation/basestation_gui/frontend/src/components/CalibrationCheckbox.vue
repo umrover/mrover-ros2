@@ -9,91 +9,77 @@
 
 <!-- unused component -->
 
-<script lang="ts">
-import { defineComponent } from 'vue'
+<script lang="ts" setup>
+import { defineComponent, ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import Checkbox from './BasicCheckbox.vue'
 import LEDIndicator from './LEDIndicator.vue'
-import Vuex from 'vuex'
-const { mapState, mapActions } = Vuex
+import { useWebsocketStore } from '@/stores/websocket'
+import { storeToRefs } from 'pinia'
 
-export default defineComponent({
-  components: {
-    Checkbox,
-    LEDIndicator,
+const props = defineProps({
+  name: {
+    type: String,
+    required: true,
   },
-
-  props: {
-    name: {
-      type: String,
-      required: true,
-    },
-    topic_name: {
-      type: String,
-      required: true,
-    },
-  },
-
-  data() {
-    return {
-      toggleEnabled: false,
-      calibrated: false,
-      interval: 0 as number,
-    }
-  },
-
-  computed: {
-    ...mapState('websocket', ['message']),
-  },
-
-  watch: {
-    message(msg) {
-      if (msg.type == 'calibrate_motors') {
-        if (this.toggleEnabled) {
-          if (Array.isArray(msg.result) && msg.result.length > 0) {
-            this.toggleEnabled = false
-            for (let j = 0; j < msg.result.length; ++j) {
-              alert('ESW cannot calibrate motor ' + msg.result[j])
-            }
-          } else if (typeof msg.result === 'string') {
-            this.toggleEnabled = false
-            alert('ESW cannot calibrate motor ' + msg.result)
-          } else this.calibrated = true
-        }
-      }
-    },
-
-    toggleEnabled: function (val) {
-      // When the checkbox is toggled, publish a single false request to the calibrate service
-      if (!val) {
-        this.publishCalibrationMessage()
-      }
-    },
-  },
-
-  beforeUnmount: function () {
-    clearInterval(this.interval)
-    this.toggleEnabled = false
-    this.publishCalibrationMessage()
-  },
-
-  created: function () {
-    this.interval = setInterval(() => {
-      if (!this.calibrated && this.toggleEnabled) {
-        this.publishCalibrationMessage()
-      }
-    }, 200)
-  },
-
-  methods: {
-    ...mapActions('websocket', ['sendMessage']),
-    toggleCalibration: function () {
-      this.toggleEnabled = !this.toggleEnabled
-    },
-    publishCalibrationMessage: function () {
-      this.sendMessage({ type: 'calibrate_motors', topic: this.topic_name })
-    },
+  topic_name: {
+    type: String,
+    required: true,
   },
 })
+
+const websocketStore = useWebsocketStore()
+const { messages } = storeToRefs(websocketStore)
+
+const toggleEnabled = ref(false)
+const calibrated = ref(false)
+let interval: number | undefined = undefined
+
+const message = computed(() => messages.value[props.topic_name])
+
+watch(message, (msg) => {
+  if (msg && msg.type == 'calibrate_motors') {
+    if (toggleEnabled.value) {
+      if (Array.isArray(msg.result) && msg.result.length > 0) {
+        toggleEnabled.value = false
+        for (let j = 0; j < msg.result.length; ++j) {
+          alert('ESW cannot calibrate motor ' + msg.result[j])
+        }
+      } else if (typeof msg.result === 'string') {
+        toggleEnabled.value = false
+        alert('ESW cannot calibrate motor ' + msg.result)
+      } else calibrated.value = true
+    }
+  }
+})
+
+watch(toggleEnabled, (val) => {
+  // When the checkbox is toggled, publish a single false request to the calibrate service
+  if (!val) {
+    publishCalibrationMessage()
+  }
+})
+
+onBeforeUnmount(() => {
+  clearInterval(interval)
+  toggleEnabled.value = false
+  publishCalibrationMessage()
+})
+
+onMounted(() => {
+  interval = setInterval(() => {
+    if (!calibrated.value && toggleEnabled.value) {
+      publishCalibrationMessage()
+    }
+  }, 200)
+})
+
+const toggleCalibration = () => {
+  toggleEnabled.value = !toggleEnabled.value
+}
+
+const publishCalibrationMessage = () => {
+  websocketStore.sendMessage(props.topic_name, { type: 'calibrate_motors' })
+}
 </script>
 
 <style>

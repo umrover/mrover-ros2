@@ -2,7 +2,7 @@
   <div class="position-relative w-100 h-100 map">
     <l-map
       @ready="onMapReady"
-      ref="map"
+      ref="mapRef"
       class="map z-0"
       :zoom="22"
       :center="center"
@@ -16,8 +16,8 @@
         :options="online ? onlineTileOptions : offlineTileOptions"
       />
 
-      <l-marker ref="rover" :lat-lng="odomLatLng" :icon="locationIcon" />
-      <l-marker ref="drone" :lat-lng="droneLatLng" :icon="droneIcon" />
+      <l-marker ref="roverRef" :lat-lng="odomLatLng" :icon="locationIcon" />
+      <l-marker ref="droneRef" :lat-lng="droneLatLng" :icon="droneIcon" />
 
       <div v-for="(waypoint, index) in waypointList" :key="index">
         <l-marker
@@ -56,7 +56,7 @@
   </div>
 </template>
 
-<script lang="ts">
+<script lang="ts" setup>
 import {
   LMap,
   LTileLayer,
@@ -65,13 +65,28 @@ import {
   LTooltip,
   LControlScale,
 } from '@vue-leaflet/vue-leaflet'
-import Vuex from 'vuex'
-const { mapGetters, mapMutations, mapState } = Vuex
-
+import { useErdStore } from '@/stores/erd'
+import { storeToRefs } from 'pinia'
 import 'leaflet/dist/leaflet.css'
 import L from '../leaflet-rotatedmarker.js'
 import type { LeafletMouseEvent } from 'leaflet';
 import type { Waypoint } from '@/types/basicWaypoint.js'
+import { ref, computed, watch, onMounted, defineProps, nextTick } from 'vue'
+
+const props = defineProps({
+  odom: {
+    type: Object,
+    default: () => ({ latitude_deg: 0, longitude_deg: 0, bearing_deg: 0 }),
+  },
+  drone_odom: {
+    type: Object,
+    default: () => ({ latitude_deg: 0, longitude_deg: 0, bearing_deg: 0 }),
+  },
+})
+
+const erdStore = useErdStore()
+const { waypointList, highlightedWaypoint, searchWaypoint } = storeToRefs(erdStore)
+const { setClickPoint } = erdStore
 
 const MAX_ODOM_COUNT = 1000
 const DRAW_FREQUENCY = 1
@@ -87,246 +102,172 @@ const offlineTileOptions = {
   maxZoom: 100,
 }
 
-export default {
-  name: 'RoverMap',
+const center = ref(L.latLng(38.4225202, -110.7844653))
+const attribution = ref('&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors')
+const online = ref(true)
+const mapRef = ref(null)
+const roverRef = ref(null)
+const droneRef = ref(null)
+let map = null
+let roverMarker = null
+let droneMarker = null
+const odomCount = ref(0)
+const droneCount = ref(0)
+const odomPath = ref([])
+const dronePath = ref([])
+const findRover = ref(false)
+const circle = ref(null)
 
-  components: {
-    LMap,
-    LTileLayer,
-    LMarker,
-    LPolyline,
-    LTooltip,
-    LControlScale,
-  },
+const locationIcon = L.icon({
+  iconUrl: '/location_marker_icon.png',
+  iconSize: [64, 64],
+  iconAnchor: [32, 32],
+})
+const droneIcon = L.icon({
+  iconUrl: '/drone_icon_1.png',
+  iconSize: [64, 64],
+  iconAnchor: [32, 32],
+})
+const waypointIcon = L.icon({
+  iconUrl: '/map_marker.png',
+  iconSize: [64, 64],
+  iconAnchor: [32, 64],
+  popupAnchor: [0, -32],
+})
+const droneWaypointIcon = L.icon({
+  iconUrl: '/map_marker_drone.png',
+  iconSize: [64, 64],
+  iconAnchor: [32, 64],
+  popupAnchor: [0, -32],
+})
+const highlightedWaypointIcon = L.icon({
+  iconUrl: '/map_marker_highlighted.png',
+  iconSize: [64, 64],
+  iconAnchor: [32, 64],
+  popupAnchor: [0, -32],
+})
 
-  props: {
-    odom: {
-      type: Object,
-      default: () => ({ latitude_deg: 0, longitude_deg: 0, bearing_deg: 0 }),
-    },
-    drone_odom: {
-      type: Object,
-      default: () => ({ latitude_deg: 0, longitude_deg: 0, bearing_deg: 0 }),
-    },
-  },
-
-  data() {
-    return {
-      // Default Center at MDRS
-      center: L.latLng(38.4225202, -110.7844653),
-      attribution:
-        '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors',
-      online: true,
-      onlineUrl: onlineUrl,
-      offlineUrl: offlineUrl,
-      onlineTileOptions: onlineTileOptions,
-      offlineTileOptions: offlineTileOptions,
-      roverMarker: null,
-      droneMarker: null,
-      waypointIcon: null,
-      highlightedWaypointIcon: null,
-      map: null,
-      odomCount: 0,
-      droneCount: 0,
-      locationIcon: null,
-      droneIcon: null,
-      odomPath: [],
-      dronePath: [],
-      findRover: false,
-      circle: null, //search radius
-    }
-  },
-
-  created: function () {
-    this.locationIcon = L.icon({
-      iconUrl: '/location_marker_icon.png',
-      iconSize: [64, 64],
-      iconAnchor: [32, 32],
-    })
-    this.droneIcon = L.icon({
-      iconUrl: '/drone_icon_1.png',
-      iconSize: [64, 64],
-      iconAnchor: [32, 32],
-    })
-    this.waypointIcon = L.icon({
-      iconUrl: '/map_marker.png',
-      iconSize: [64, 64],
-      iconAnchor: [32, 64],
-      popupAnchor: [0, -32],
-    })
-    this.droneWaypointIcon = L.icon({
-      iconUrl: '/map_marker_drone.png',
-      iconSize: [64, 64],
-      iconAnchor: [32, 64],
-      popupAnchor: [0, -32],
-    })
-    this.highlightedWaypointIcon = L.icon({
-      iconUrl: '/map_marker_highlighted.png',
-      iconSize: [64, 64],
-      iconAnchor: [32, 64],
-      popupAnchor: [0, -32],
-    })
-  },
-
-  methods: {
-    onMapReady: function () {
-      // Pull objects from refs to be able to access data and change w functions
-      this.$nextTick(() => {
-        this.map = this.$refs.map.leafletObject
-        this.roverMarker = this.$refs.rover.leafletObject
-        this.droneMarker = this.$refs.drone.leafletObject
-      })
-    },
-    // Event listener for setting store values to get data to waypoint Editor
-    getClickedLatLon: function (e: LeafletMouseEvent) {
-      console.log(e)
-      this.setClickPoint({
-        lat: e.latlng.lat,
-        lon: e.latlng.lng,
-      })
-    },
-    getWaypointIcon: function (waypoint: Waypoint, index: number) {
-      if (index === this.highlightedWaypoint) {
-        return this.highlightedWaypointIcon
-      } else if (waypoint.drone) {
-        return this.droneWaypointIcon
-      } else {
-        return this.waypointIcon
-      }
-    },
-    ...mapMutations('erd', {
-      setClickPoint: 'setClickPoint',
-      setWaypointList: 'setWaypointList',
-      setOdomFormat: 'setOdomFormat',
-    }),
-  },
-
-  computed: {
-    ...mapState('websocket', ['message']),
-
-    ...mapGetters('erd', {
-      waypointList: 'waypointList',
-      highlightedWaypoint: 'highlightedWaypoint',
-      searchWaypoint: 'searchWaypoint',
-    }),
-
-    // Convert to latLng object for Leaflet to use
-    odomLatLng: function () {
-      if (
-        this.odom &&
-        typeof this.odom === 'object' &&
-        this.odom.latitude_deg !== undefined &&
-        this.odom.longitude_deg !== undefined
-      ) {
-        return L.latLng(this.odom.latitude_deg, this.odom.longitude_deg)
-      } else {
-        console.warn('odom data not ready yet')
-        return L.latLng(0, 0)
-      }
-    },
-
-    droneLatLng: function () {
-      if (
-        this.drone_odom &&
-        typeof this.drone_odom === 'object' &&
-        this.drone_odom.latitude_deg !== undefined &&
-        this.drone_odom.longitude_deg !== undefined
-      ) {
-        return L.latLng(
-          this.drone_odom.latitude_deg,
-          this.drone_odom.longitude_deg,
-        )
-      } else {
-        console.warn('drone odom data not ready yet')
-        return L.latLng(0, 0)
-      }
-    },
-
-    polylinePath: function () {
-      return [this.odomLatLng].concat(
-        this.route.map((waypoint: Waypoint) => waypoint.latLng),
-      )
-    },
-
-    dronepolylinePath: function () {
-      return [this.droneLatLng].concat(
-        this.route.map((waypoint: Waypoint) => waypoint.latLng),
-      )
-    },
-  },
-
-  watch: {
-    odom: {
-      handler: function (val) {
-        // Trigger every time rover odom is changed
-
-        const lat = val.latitude_deg
-        const lng = val.longitude_deg
-        const angle = val.bearing_deg
-
-        const latLng = L.latLng(lat, lng)
-
-        // Move to rover on first odom message
-        if (!this.findRover) {
-          this.findRover = true
-          this.center = latLng
-        }
-
-        // Update the rover marker using bearing angle
-        this.roverMarker.setRotationAngle(angle)
-
-        this.roverMarker.setLatLng(latLng)
-
-        // Update the rover path
-        this.odomCount++
-        if (this.odomCount % DRAW_FREQUENCY === 0) {
-          if (this.odomPath.length > MAX_ODOM_COUNT) {
-            this.odomPath = [...this.odomPath.slice(1), latLng] //remove oldest element
-          }
-
-          this.odomPath = [...this.odomPath, latLng]
-          this.odomCount = 0
-        }
-      },
-      // Deep will watch for changes in children of an object
-      deep: true,
-    },
-
-    drone_odom: {
-      handler: function (val) {
-        const lat = val.latitude_deg
-        const lng = val.longitude_deg
-
-        const latLng = L.latLng(lat, lng)
-        this.droneMarker.setLatLng(latLng)
-        // Update the rover path
-        this.droneCount++
-        if (this.droneCount % DRAW_FREQUENCY === 0) {
-          if (this.dronePath.length > MAX_ODOM_COUNT) {
-            this.dronePath = [...this.dronePath.slice(1), latLng] //remove oldest element
-          }
-
-          this.dronePath = [...this.dronePath, latLng]
-          this.droneCount = 0
-        }
-      },
-      deep: true,
-    },
-
-    searchWaypoint(newIndex) {
-      if (newIndex === -1) {
-        this.map.removeLayer(this.circle)
-        this.circle = null
-        return
-      }
-      const waypoint = this.waypointList[newIndex]
-      if (!this.circle)
-        this.circle = L.circle(waypoint.latLng, { radius: 20 }).addTo(this.map)
-      else this.circle.setLatLng(waypoint.latLng)
-      this.circle.setStyle({ fillColor: 'purple', stroke: false })
-    },
-  },
+const onMapReady = () => {
+  nextTick(() => {
+    map = mapRef.value.leafletObject
+    roverMarker = roverRef.value.leafletObject
+    droneMarker = droneRef.value.leafletObject
+  })
 }
+
+const getClickedLatLon = (e: LeafletMouseEvent) => {
+  console.log(e)
+  setClickPoint({
+    lat: e.latlng.lat,
+    lon: e.latlng.lng,
+  })
+}
+
+const getWaypointIcon = (waypoint: Waypoint, index: number) => {
+  if (index === highlightedWaypoint.value) {
+    return highlightedWaypointIcon
+  } else if (waypoint.drone) {
+    return droneWaypointIcon
+  } else {
+    return waypointIcon
+  }
+}
+
+const odomLatLng = computed(() => {
+  if (
+    props.odom &&
+    typeof props.odom === 'object' &&
+    props.odom.latitude_deg !== undefined &&
+    props.odom.longitude_deg !== undefined
+  ) {
+    return L.latLng(props.odom.latitude_deg, props.odom.longitude_deg)
+  } else {
+    console.warn('odom data not ready yet')
+    return L.latLng(0, 0)
+  }
+})
+
+const droneLatLng = computed(() => {
+  if (
+    props.drone_odom &&
+    typeof props.drone_odom === 'object' &&
+    props.drone_odom.latitude_deg !== undefined &&
+    props.drone_odom.longitude_deg !== undefined
+  ) {
+    return L.latLng(
+      props.drone_odom.latitude_deg,
+      props.drone_odom.longitude_deg,
+    )
+  } else {
+    console.warn('drone odom data not ready yet')
+    return L.latLng(0, 0)
+  }
+})
+
+watch(() => props.odom, (val) => {
+  const lat = val.latitude_deg
+  const lng = val.longitude_deg
+  const angle = val.bearing_deg
+
+  const latLng = L.latLng(lat, lng)
+
+  if (!findRover.value) {
+    findRover.value = true
+    center.value = latLng
+  }
+
+  if (roverMarker) {
+    roverMarker.setRotationAngle(angle)
+    roverMarker.setLatLng(latLng)
+  }
+
+  odomCount.value++
+  if (odomCount.value % DRAW_FREQUENCY === 0) {
+    if (odomPath.value.length > MAX_ODOM_COUNT) {
+      odomPath.value = [...odomPath.value.slice(1), latLng]
+    } else {
+      odomPath.value = [...odomPath.value, latLng]
+    }
+    odomCount.value = 0
+  }
+}, { deep: true })
+
+watch(() => props.drone_odom, (val) => {
+  const lat = val.latitude_deg
+  const lng = val.longitude_deg
+
+  const latLng = L.latLng(lat, lng)
+  if (droneMarker) {
+    droneMarker.setLatLng(latLng)
+  }
+
+  droneCount.value++
+  if (droneCount.value % DRAW_FREQUENCY === 0) {
+    if (dronePath.value.length > MAX_ODOM_COUNT) {
+      dronePath.value = [...dronePath.value.slice(1), latLng]
+    } else {
+      dronePath.value = [...dronePath.value, latLng]
+    }
+    droneCount.value = 0
+  }
+}, { deep: true })
+
+watch(searchWaypoint, (newIndex) => {
+  if (newIndex === -1) {
+    if (map && circle.value) {
+      map.removeLayer(circle.value)
+    }
+    circle.value = null
+    return
+  }
+  const waypoint = waypointList.value[newIndex]
+  if (!circle.value) {
+    circle.value = L.circle(waypoint.latLng, { radius: 20 }).addTo(map)
+  } else {
+    circle.value.setLatLng(waypoint.latLng)
+  }
+  circle.value.setStyle({ fillColor: 'purple', stroke: false })
+})
 </script>
 
 <style scoped>

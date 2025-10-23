@@ -33,100 +33,95 @@
   </div>
 </template>
 
-<script lang="ts">
-import Vuex from 'vuex'
-const { mapState } = Vuex
+<script lang="ts" setup>
+import { ref, computed, watch, defineProps } from 'vue'
+import { useWebsocketStore } from '@/stores/websocket'
+import { storeToRefs } from 'pinia'
 import html2canvas from 'html2canvas'
-import type { WebSocketState } from '../types/websocket'
 
-export default {
-  data() {
-    return {
-      temp: 0,
-      humidity: 0,
-      tempArray: [] as number[],
-      timestamps: [] as number[],
-      readData: false,
-      prevState: false,
-      exponents: [],
-      predictedTemp: null,
-    }
+const props = defineProps({
+  site: {
+    type: Number,
+    required: true,
   },
+})
 
-  computed: {
-    ...mapState('websocket', {
-      scienceMessage: (state: WebSocketState) => state.messages['science']
-    }),
-  },
+const websocketStore = useWebsocketStore()
+const { messages } = storeToRefs(websocketStore)
 
-  watch: {
-    scienceMessage(msg) {// NOT YET IMPLEMENTED / MISSING IMPL
-      switch (msg.type) {
-        case 'soil_temp':
-          this.temp = msg.temperature
-          if (this.readData) {
-            this.tempArray.push(this.temp)
-            this.timestamps.push(Date.now())
-          } else {
-            this.predictedTemp = this.predictTemp(Date.now())
-          }
-          break
-        case 'soil_humidity':
-          this.humidity = msg.relative_humidity
-          break
-        case 'poly_fit':
-          this.exponents = msg.exponents
-          break
+const temp = ref(0)
+const humidity = ref(0)
+const tempArray = ref<number[]>([])
+const timestamps = ref<number[]>([])
+const readData = ref(false)
+const prevState = ref(false)
+const exponents = ref<number[]>([])
+const predictedTemp = ref<number | null>(null)
+
+const scienceMessage = computed(() => messages.value['science'])
+
+watch(scienceMessage, (msg) => {
+  if (!msg) return
+  switch (msg.type) {
+    case 'soil_temp':
+      temp.value = msg.temperature
+      if (readData.value) {
+        tempArray.value.push(temp.value)
+        timestamps.value.push(Date.now())
+      } else {
+        predictedTemp.value = predictTemp(Date.now())
       }
-    },
+      break
+    case 'soil_humidity':
+      humidity.value = msg.relative_humidity
+      break
+    case 'poly_fit':
+      exponents.value = msg.exponents
+      break
+  }
+})
 
-    readData() {
-      if (!this.readData) {
-        // TODO: publishPolyfit - backend handler not implemented
-        // this.publishPolyfit()
-      } else if (this.readData && this.readData != this.prevState) {
-        this.exponents = []
-        this.tempArray = []
-        this.timestamps = []
-      }
-      this.prevState = this.readData
-    },
-  },
+watch(readData, () => {
+  if (!readData.value) {
+    // TODO: publishPolyfit - backend handler not implemented
+    // publishPolyfit()
+  } else if (readData.value && readData.value != prevState.value) {
+    exponents.value = []
+    tempArray.value = []
+    timestamps.value = []
+  }
+  prevState.value = readData.value
+})
 
-  methods: {
-    // NOTE: poly_fit WebSocket message removed - no backend handler exists
-    // If needed, implement REST API endpoint in backend/api/views/science.py
+const predictTemp = (timestamp: number) => {
+  if (!exponents.value || exponents.value.length < 2) return 0
+  const val = exponents.value[0] * timestamp + exponents.value[1]
+  return Math.exp(val)
+}
 
-    predictTemp: function (timestamp: number) {
-      const val = this.exponents[0] * timestamp + this.exponents[1]
-      return Math.exp(val)
-    },
-
-    download() {
-      // downloads screenshot of table
-      const table = document.querySelector('#capture') as HTMLElement
-      html2canvas(table)
-        .then(canvas => {
-          canvas.style.display = 'none'
-          document.body.appendChild(canvas)
-          return canvas
-        })
-        .then(canvas => {
-          const image = canvas.toDataURL('image/png')
-          const a = document.createElement('a')
-          a.setAttribute(
-            'download',
-            'sensor_data_site_' +
-              String.fromCharCode(this.site + 65) +
-              '_' +
-              new Date(Date.now()).toString() +
-              '.png',
-          )
-          a.setAttribute('href', image)
-          a.click()
-          canvas.remove()
-        })
-    },
-  },
+const download = () => {
+  // downloads screenshot of table
+  const table = document.querySelector('#capture') as HTMLElement
+  html2canvas(table)
+    .then(canvas => {
+      canvas.style.display = 'none'
+      document.body.appendChild(canvas)
+      return canvas
+    })
+    .then(canvas => {
+      const image = canvas.toDataURL('image/png')
+      const a = document.createElement('a')
+      a.setAttribute(
+        'download',
+        'sensor_data_site_' +
+          String.fromCharCode(props.site + 65) +
+          '_' +
+          new Date(Date.now()).toString() +
+          '.png',
+      )
+      a.setAttribute('href', image)
+      a.click()
+      canvas.remove()
+    })
 }
 </script>

@@ -123,15 +123,14 @@ import FeedbackButton from './FeedbackButton.vue'
 import VelocityReading from './VelocityReading.vue'
 import WaypointItem from './AutonWaypointItem.vue'
 import WaypointStore from './AutonWaypointStore.vue'
-import Vuex from 'vuex'
-const { mapState, mapMutations, mapGetters } = Vuex
 //@ts-expect-error shut up ts
 import L from 'leaflet'
 import { reactive, defineComponent } from 'vue'
 import { Modal } from 'bootstrap'
 import type { Waypoint } from '@/types/waypoint'
-import type { WebSocketState } from '@/types/websocket'
 import { waypointsAPI, autonAPI } from '@/utils/api'
+import { useWebsocketStore } from '@/stores/websocket'
+import { useAutonomyStore } from '@/stores/autonomy'
 
 export default defineComponent({
   components: {
@@ -139,6 +138,12 @@ export default defineComponent({
     FeedbackButton,
     VelocityReading,
     WaypointStore,
+  },
+
+  setup() {
+    const websocketStore = useWebsocketStore()
+    const autonomyStore = useAutonomyStore()
+    return { websocketStore, autonomyStore }
   },
 
   emits: ['toggleTeleop'],
@@ -230,15 +235,18 @@ export default defineComponent({
     }
   },
   computed: {
-    ...mapState('websocket', {
-      navMessage: (state: WebSocketState) => state.messages['nav'],
-    }),
-    ...mapGetters('autonomy', {
-      autonEnabled: 'autonEnabled',
-      teleopEnabled: 'teleopEnabled',
-      clickPoint: 'clickPoint',
-    }),
-
+    navMessage() {
+      return this.websocketStore.messages['nav']
+    },
+    autonEnabled() {
+      return this.autonomyStore.autonEnabled
+    },
+    teleopEnabled() {
+      return this.autonomyStore.teleopEnabled
+    },
+    clickPoint() {
+      return this.autonomyStore.clickPoint
+    }
   },
 
   watch: {
@@ -310,12 +318,18 @@ export default defineComponent({
   },
 
   methods: {
-    ...mapMutations('autonomy', {
-      setRoute: 'setRoute',
-      setWaypointList: 'setWaypointList',
-      setAutonMode: 'setAutonMode',
-      setTeleopMode: 'setTeleopMode',
-    }),
+    setRoute(route: any[]) {
+      this.autonomyStore.setRoute(route)
+    },
+    setWaypointList(list: any[]) {
+      this.autonomyStore.setWaypointList(list)
+    },
+    setAutonMode(mode: boolean) {
+      this.autonomyStore.setAutonMode(mode)
+    },
+    setTeleopMode(mode: boolean) {
+      this.autonomyStore.setTeleopMode(mode)
+    },
 
     autonAction(newState: boolean) {
       const waypoints = newState

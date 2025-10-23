@@ -28,43 +28,29 @@
   </div>
 </template>
 
-<script lang="ts">
-import Vuex from 'vuex'
-const { mapState } = Vuex
+<script lang="ts" setup>
+import { ref, computed, watch } from 'vue'
+import { useWebsocketStore } from '@/stores/websocket'
+import { storeToRefs } from 'pinia'
 import LEDIndicator from './LEDIndicator.vue'
 
-const calibration_limit = 3
+const websocketStore = useWebsocketStore()
+const { messages } = storeToRefs(websocketStore)
 
-export default {
-  components: {
-    LEDIndicator,
-  },
+const mag_calibration = ref(0)
+const gyro_calibration = ref(0)
+const accel_calibration = ref(0)
+const calibration_limit_master = 3
 
-  data() {
-    return {
-      mag_calibration: 0,
-      gyro_calibration: 0,
-      accel_calibration: 0,
-      calibration_limit_master: calibration_limit,
-    }
-  },
+const navMessage = computed(() => messages.value['nav'])
 
-  computed: {
-    ...mapState('websocket', ['message']),
-  },
-
-  watch: {
-    message(msg) { // DEPRECATED, not updating to new style
-      switch (msg.type) {
-        case 'calibration':
-          this.mag_calibration = msg.magnetometer_calibration
-          this.gyro_calibration = msg.gyroscope_calibration
-          this.accel_calibration = msg.acceleration_calibration
-          break
-      }
-    },
-  },
-}
+watch(navMessage, (msg) => {
+  if (msg && msg.type === 'calibration') {
+    mag_calibration.value = msg.magnetometer_calibration
+    gyro_calibration.value = msg.gyroscope_calibration
+    accel_calibration.value = msg.acceleration_calibration
+  }
+})
 </script>
 <style scoped>
 .wrap {

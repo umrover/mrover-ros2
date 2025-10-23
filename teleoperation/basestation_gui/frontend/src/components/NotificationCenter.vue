@@ -106,10 +106,14 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue'
-import Vuex from 'vuex'
-const { mapGetters, mapMutations } = Vuex
+import { useNotificationsStore } from '@/stores/notifications'
 
 export default defineComponent({
+  setup() {
+    const notificationsStore = useNotificationsStore()
+    return { notificationsStore }
+  },
+
   data() {
     return {
       showPanel: false,
@@ -118,19 +122,27 @@ export default defineComponent({
   },
 
   computed: {
-    ...mapGetters('notifications', {
-      notifications: 'notifications',
-      unreadCount: 'unreadCount'
-    })
+    notifications() {
+      return this.notificationsStore.notifications
+    },
+    unreadCount() {
+      return this.notificationsStore.unreadCount
+    }
   },
 
   methods: {
-    ...mapMutations('notifications', {
-      markAsRead: 'markAsRead',
-      markAllAsRead: 'markAllAsRead',
-      removeNotification: 'removeNotification',
-      clearAll: 'clearAll'
-    }),
+    markAsRead(id: number) {
+      this.notificationsStore.markAsRead(id)
+    },
+    markAllAsRead() {
+      this.notificationsStore.markAllAsRead()
+    },
+    removeNotification(id: number) {
+      this.notificationsStore.removeNotification(id)
+    },
+    clearAll() {
+      this.notificationsStore.clearAll()
+    },
 
     togglePanel() {
       this.showPanel = !this.showPanel

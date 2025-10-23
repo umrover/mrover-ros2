@@ -23,9 +23,8 @@
   </div>
 </template>
 
-<script lang="ts">
-import Vuex from 'vuex'
-const { mapState } = Vuex
+<script lang="ts" setup>
+import { ref, onMounted, onUnmounted } from 'vue'
 import BasicMap from '@/components/BasicRoverMap.vue'
 import SoilData from '@/components/SoilData.vue'
 import BasicWaypointEditor from '@/components/BasicWaypointEditor.vue'
@@ -38,6 +37,7 @@ import HexHub from '@/components/HexHub.vue'
 import LSActuator from '@/components/LSActuator.vue'
 import PanoCam from '@/components/PanoCam.vue'
 import { scienceAPI } from '@/utils/api'
+import { useWebsocketStore } from '@/stores/websocket'
 
 interface Odom {
   latitude_deg: number
@@ -45,81 +45,62 @@ interface Odom {
   bearing_deg: number
 }
 
-export default {
-  components: {
-    ControllerDataTable,
-    BasicMap,
-    SoilData,
-    BasicWaypointEditor,
-    DriveControls,
-    MastGimbalControls,
-    SAArmControls,
-    OdometryReading,
-    HexHub,
-    LSActuator,
-    PanoCam,
-  },
-  data() {
-    return {
-      odom: null as Odom | null,
-      siteSelect: 0,
-      orientation: true,
-      site_to_radians: {
-        0: 0.0,
-        1: (2 * Math.PI) / 5,
-        2: (4 * Math.PI) / 5,
-        3: (6 * Math.PI) / 5,
-        4: (8 * Math.PI) / 5,
-      },
-    }
-  },
-  computed: {
-    ...mapState('websocket', ['message']),
-  },
-  methods: {
-    updateOdom(odom: Odom) {
-      this.odom = odom
-    },
-    async updateSite(selectedSite: number) {
-      this.siteSelect = selectedSite
+const websocketStore = useWebsocketStore()
 
-      try {
-        await scienceAPI.setGearDiffPosition(
-          this.site_to_radians[this.siteSelect],
-          this.orientation
-        )
-      } catch (error) {
-        console.error('Failed to set gear differential position:', error)
-      }
-    },
-    async updateOrientation(orientation: boolean) {
-      this.orientation = orientation
-
-      try {
-        await scienceAPI.setGearDiffPosition(
-          this.site_to_radians[this.siteSelect],
-          this.orientation
-        )
-      } catch (error) {
-        console.error('Failed to set gear differential position:', error)
-      }
-    },
-  },
-
-  mounted: function () {
-    this.$store.dispatch('websocket/setupWebSocket', 'arm')
-    this.$store.dispatch('websocket/setupWebSocket', 'mast')
-    this.$store.dispatch('websocket/setupWebSocket', 'nav')
-    this.$store.dispatch('websocket/setupWebSocket', 'science')
-  },
-
-  unmounted: function () {
-    this.$store.dispatch('websocket/closeWebSocket', 'arm')
-    this.$store.dispatch('websocket/closeWebSocket', 'mast')
-    this.$store.dispatch('websocket/closeWebSocket', 'nav')
-    this.$store.dispatch('websocket/closeWebSocket', 'science')
-  },
+const odom = ref<Odom | null>(null)
+const siteSelect = ref(0)
+const orientation = ref(true)
+const site_to_radians = {
+  0: 0.0,
+  1: (2 * Math.PI) / 5,
+  2: (4 * Math.PI) / 5,
+  3: (6 * Math.PI) / 5,
+  4: (8 * Math.PI) / 5,
 }
+
+const updateOdom = (newOdom: Odom) => {
+  odom.value = newOdom
+}
+
+const updateSite = async (selectedSite: number) => {
+  siteSelect.value = selectedSite
+
+  try {
+    await scienceAPI.setGearDiffPosition(
+      site_to_radians[siteSelect.value],
+      orientation.value
+    )
+  } catch (error) {
+    console.error('Failed to set gear differential position:', error)
+  }
+}
+
+const updateOrientation = async (newOrientation: boolean) => {
+  orientation.value = newOrientation
+
+  try {
+    await scienceAPI.setGearDiffPosition(
+      site_to_radians[siteSelect.value],
+      orientation.value
+    )
+  } catch (error) {
+    console.error('Failed to set gear differential position:', error)
+  }
+}
+
+onMounted(() => {
+  websocketStore.setupWebSocket('arm')
+  websocketStore.setupWebSocket('mast')
+  websocketStore.setupWebSocket('nav')
+  websocketStore.setupWebSocket('science')
+})
+
+onUnmounted(() => {
+  websocketStore.closeWebSocket('arm')
+  websocketStore.closeWebSocket('mast')
+  websocketStore.closeWebSocket('nav')
+  websocketStore.closeWebSocket('science')
+})
 </script>
 
 <style scoped>

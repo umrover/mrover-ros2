@@ -28,42 +28,33 @@
   </div>
 </template>
 
-<script lang="ts">
-import type { WebSocketState } from '../types/websocket'
-import Vuex from 'vuex'
-const { mapState } = Vuex;
+<script lang="ts" setup>
+import { ref, computed, watch, defineEmits } from 'vue'
+import { useWebsocketStore } from '@/stores/websocket'
+import { storeToRefs } from 'pinia'
 
-export default {
-  components: {},
-  data() {
-    return {
-      site: 0,
-      autoShutdownEnabled: true,
+const emit = defineEmits(['site'])
+
+const websocketStore = useWebsocketStore()
+const { messages } = storeToRefs(websocketStore)
+
+const site = ref(0)
+const autoShutdownEnabled = ref(true)
+
+const scienceMessage = computed(() => messages.value['science'])
+
+watch(site, (event) => {
+  emit('site', event)
+})
+
+watch(scienceMessage, (msg) => {
+  if (msg && msg.type == 'auto_shutoff') {
+    if (!msg.success) {
+      autoShutdownEnabled.value = !autoShutdownEnabled.value
+      alert('Toggling Auto Shutdown failed.')
     }
-  },
-
-  computed: {
-    ...mapState('websocket', {
-      scienceMessage: (state: WebSocketState) => state.messages['science']
-    })
-  },
-
-  watch: {
-    site(event) {
-      this.$emit('site', event)
-    },
-    scienceMessage(msg) { // NOT YET IMPLEMENTED / MISSING IMPL, DOUBLE CHECK
-      if (msg.type == 'auto_shutoff') {
-        if (!msg.success) {
-          this.autoShutdownEnabled = !this.autoShutdownEnabled
-          alert('Toggling Auto Shutdown failed.')
-        }
-      }
-    },
-  },
-
-  methods: {},
-}
+  }
+})
 </script>
 
 <style scoped></style>

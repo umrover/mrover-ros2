@@ -82,9 +82,8 @@
   </div>
 </template>
 
-<script lang="ts">
-import Vuex from 'vuex'
-const { mapActions, mapGetters, mapState } = Vuex
+<script lang="ts" setup>
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import AutonRoverMap from '../components/AutonRoverMap.vue'
 import AutonWaypointEditor from '../components/AutonWaypointEditor.vue'
 import CameraFeed from '../components/CameraFeed.vue'
@@ -92,8 +91,9 @@ import OdometryReading from '../components/OdometryReading.vue'
 import DriveControls from '../components/DriveControls.vue'
 import MastGimbalControls from '../components/MastGimbalControls.vue'
 import ControllerDataTable from '../components/ControllerDataTable.vue'
-import { defineComponent } from 'vue'
-import type { WebSocketState } from '../types/websocket'
+import { useWebsocketStore } from '@/stores/websocket'
+import { useAutonomyStore } from '@/stores/autonomy'
+import { storeToRefs } from 'pinia'
 
 interface Odom {
   latitude_deg: number
@@ -101,92 +101,64 @@ interface Odom {
   bearing_deg: number
 }
 
-export default defineComponent({
-  components: {
-    ControllerDataTable,
-    AutonRoverMap,
-    AutonWaypointEditor,
-    CameraFeed,
-    OdometryReading,
-    DriveControls,
-    MastGimbalControls,
-  },
+const websocketStore = useWebsocketStore()
+const { messages } = storeToRefs(websocketStore)
 
-  data() {
-    return {
-      odom: null as Odom | null,
+const autonomyStore = useAutonomyStore()
+const { autonEnabled, teleopEnabled } = storeToRefs(autonomyStore)
 
-      basestationOdom: null as Odom | null,
+const odom = ref<Odom | null>(null)
+const basestationOdom = ref<Odom | null>(null)
+const teleopEnabledCheck = ref(false)
+const ledColor = ref('bg-danger')
+const stuck_status = ref(false)
+const navState = ref('OffState')
+const cameraFeedEnabled = ref(true)
 
-      teleopEnabledCheck: false,
+const scienceMessage = computed(() => messages.value['science'])
+const navMessage = computed(() => messages.value['nav'])
 
-      ledColor: 'bg-danger', //red
+watch(scienceMessage, (msg) => {
+  if (msg.type == 'led') {
+    if (msg.red)
+      ledColor.value = 'bg-danger' //red
+    else if (msg.green)
+      ledColor.value = 'blink' //blinking green
+    else if (msg.blue) ledColor.value = 'bg-primary' //blue
+  }
+})
 
-      stuck_status: false,
+watch(navMessage, (msg) => {
+  if (msg.type == 'nav_state') {
+    navState.value = msg.state
+  }
+})
 
-      navState: 'OffState',
+const toggleFeed = () => {
+  cameraFeedEnabled.value = !cameraFeedEnabled.value
+}
 
-      cameraFeedEnabled: true,
-    }
-  },
+const updateOdom = (newOdom: Odom) => {
+  odom.value = newOdom
+}
 
-  computed: {
-    ...mapState('websocket', {
-      scienceMessage: (state: WebSocketState) => state.messages['science'],
-      navMessage: (state: WebSocketState) => state.messages['nav'],
-    }),
+const updateBasestationOdom = (newOdom: Odom) => {
+  basestationOdom.value = newOdom
+}
 
-    ...mapGetters('autonomy', {
-      autonEnabled: 'autonEnabled',
-      teleopEnabled: 'teleopEnabled',
-    }),
-  },
+const topics = ['auton', 'drive', 'nav', 'science']
 
-  watch: {
-    scienceMessage(msg) {
-      if (msg.type == 'led') {
-        if (msg.red)
-          this.ledColor = 'bg-danger' //red
-        else if (msg.green)
-          this.ledColor = 'blink' //blinking green
-        else if (msg.blue) this.ledColor = 'bg-primary' //blue
-      }
-    },
-    navMessage(msg) {
-      if (msg.type == 'nav_state') {
-        this.navState = msg.state
-      }
-    },
-  },
+onMounted(() => {
+  for (const topic of topics) {
+    websocketStore.setupWebSocket(topic)
+  }
+})
 
-  methods: {
-    ...mapActions('websocket', ['sendMessage']),
-    toggleFeed() {
-      this.cameraFeedEnabled = !this.cameraFeedEnabled
-    },
-    updateOdom(odom: Odom) {
-      this.odom = odom
-    },
-    updateBasestationOdom(odom: Odom) {
-      this.basestationOdom = odom
-    },
-  },
-
-  topics: ['auton', 'drive', 'nav', 'science'],
-
-  mounted() {
-    for (const topic of this.$options.topics)
-      this.$store.dispatch('websocket/setupWebSocket', topic)
-  },
-
-  unmounted() {
-    for (const topic of this.$options.topics)
-      this.$store.dispatch('websocket/closeWebSocket', topic)
-  },
-
-  beforeUnmount() {
-    this.ledColor = 'bg-white'
-  },
+onUnmounted(() => {
+  for (const topic of topics) {
+    websocketStore.closeWebSocket(topic)
+  }
+  ledColor.value = 'bg-white'
 })
 </script>
 

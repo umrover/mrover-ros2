@@ -15,58 +15,30 @@
   </div>
 </template>
 
-<script lang="ts">
-import Vuex from 'vuex'
-const { mapActions } = Vuex
+<script lang="ts" setup>
+import { ref, defineProps } from 'vue'
 import ToggleButton from './ToggleButton.vue'
 import { scienceAPI } from '@/utils/api'
-// import LEDIndicator from "./LEDIndicator.vue";
 
-export default {
-  components: {
-    ToggleButton,
-    // LEDIndicator
+const props = defineProps({
+  site: {
+    type: Number,
+    required: true,
   },
+})
 
-  props: {
-    site: {
-      type: Number,
-      required: true,
-    },
-  },
+const siteEnabled = ref([false, false])
 
-  data() {
-    return {
-      siteEnabled: [false, false],
-    }
-  },
+const toggleLEDs = async () => {
+  siteEnabled.value[props.site] = !siteEnabled.value[props.site]
 
-  // computed: {
-  // ...mapState('websocket', ['message'])
-  // },
-
-  // watch: {
-  //     message(msg) {
-  //         if (msg.type == 'white_leds' && !msg.success) {
-  //             this.siteEnabled[this.site] = !this.siteEnabled[this.site];
-  //             alert('Toggling Auto Shutdown failed.')
-  //         }
-  //     },
-  // },
-
-  methods: {
-    async toggleLEDs() {
-      this.siteEnabled[this.site] = !this.siteEnabled[this.site]
-
-      try {
-        const siteName = this.site === 0 ? 'a' : 'b'
-        await scienceAPI.setWhiteLEDs(siteName, this.siteEnabled[this.site])
-      } catch (error) {
-        console.error('Failed to toggle white LEDs:', error)
-        // Revert state on error
-        this.siteEnabled[this.site] = !this.siteEnabled[this.site]
-      }
-    },
-  },
+  try {
+    const siteName = props.site === 0 ? 'a' : 'b'
+    await scienceAPI.setWhiteLEDs(siteName, siteEnabled.value[props.site])
+  } catch (error) {
+    console.error('Failed to toggle white LEDs:', error)
+    // Revert state on error
+    siteEnabled.value[props.site] = !siteEnabled.value[props.site]
+  }
 }
 </script>

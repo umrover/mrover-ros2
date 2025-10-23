@@ -71,178 +71,147 @@
   </div>
 </template>
 
-<script lang="ts">
+<script lang="ts" setup>
+import { ref, computed, watch, onMounted, defineProps } from 'vue'
 import WaypointItem from './BasicWaypointItem.vue'
-import Vuex from 'vuex'
-const { mapMutations, mapGetters } = Vuex
+import { useErdStore } from '@/stores/erd'
+import { storeToRefs } from 'pinia'
 import L from 'leaflet'
 import { waypointsAPI } from '@/utils/api'
 
-export default {
-  props: {
-    odom: {
-      type: Object,
-      default: () => ({ latitude_deg: 0, longitude_deg: 0, bearing_deg: 0 }),
-    },
-    droneWaypointButton: {
-      type: Boolean,
-      required: false,
-    },
+const props = defineProps({
+  odom: {
+    type: Object,
+    default: () => ({ latitude_deg: 0, longitude_deg: 0, bearing_deg: 0 }),
   },
-
-  data() {
-    return {
-      name: 'Waypoint',
-      input: {
-        lat: {
-          d: 0,
-        },
-        lon: {
-          d: 0,
-        },
-      },
-
-      storedWaypoints: [],
-    }
+  droneWaypointButton: {
+    type: Boolean,
+    required: false,
   },
+})
 
-  methods: {
-    ...mapMutations('erd', {
-      setWaypointList: 'setWaypointList',
-      setHighlightedWaypoint: 'setHighlightedWaypoint',
-      setSearchWaypoint: 'setSearchWaypoint',
-    }),
+const erdStore = useErdStore()
+const { highlightedWaypoint, searchWaypoint, clickPoint } = storeToRefs(erdStore)
+const { setWaypointList, setHighlightedWaypoint, setSearchWaypoint } = erdStore
 
-    async saveWaypoints(waypoints: any[]) {
-      try {
-        await waypointsAPI.saveBasic(waypoints)
-      } catch (error) {
-        console.error('Failed to save waypoints:', error)
-      }
-    },
+const name = ref('Waypoint')
+const input = ref({
+  lat: { d: 0 },
+  lon: { d: 0 },
+})
+const storedWaypoints = ref<any[]>([])
 
-    async loadWaypoints() {
-      try {
-        const data = await waypointsAPI.getBasic()
-        if (data.status === 'success' && data.waypoints) {
-          this.storedWaypoints = data.waypoints
-          const waypoints = data.waypoints.map(
-            (waypoint: { lat: number; lon: number; name: string }) => ({
-              latLng: L.latLng(waypoint.lat, waypoint.lon),
-              name: waypoint.name
-            })
-          )
-          this.setWaypointList(waypoints)
-        }
-      } catch (error) {
-        console.error('Failed to load waypoints:', error)
-      }
-    },
+const formatted_odom = computed(() => {
+  return {
+    lat: { d: props.odom.latitude_deg },
+    lon: { d: props.odom.longitude_deg },
+  }
+})
 
-    deleteItem: function (payload: { index: number }) {
-      if (this.highlightedWaypoint == payload.index) {
-        this.setHighlightedWaypoint(-1)
-      }
-      if (this.searchWaypoint == payload.index) {
-        this.setSearchWaypoint(-1)
-      }
-      this.storedWaypoints.splice(payload.index, 1)
-    },
-
-    addWaypoint: function (
-      coord: {
-        lat: { d: number}
-        lon: { d: number}
-      },
-      isDrone: boolean,
-    ) {
-      this.storedWaypoints.push({
-        name: this.name,
-        lat: (coord.lat.d).toFixed(5),
-        lon: (coord.lon.d).toFixed(5),
-        drone: isDrone,
-      })
-    },
-
-    findWaypoint: function (payload: { index: number }) {
-      if (payload.index === this.highlightedWaypoint) {
-        this.setHighlightedWaypoint(-1)
-      } else {
-        this.setHighlightedWaypoint(payload.index)
-      }
-    },
-
-    searchForWaypoint: function (payload: { index: number }) {
-      if (payload.index === this.searchWaypoint) {
-        this.setSearchWaypoint(-1)
-      } else {
-        this.setSearchWaypoint(payload.index)
-      }
-    },
-
-    clearWaypoint: function () {
-      this.storedWaypoints = []
-    },
-  },
-
-  watch: {
-    storedWaypoints: {
-      handler: function (newList) {
-        const waypoints = newList.map(
-          (waypoint: {
-            lat: number
-            lon: number
-            name: string
-            drone: boolean
-          }) => {
-            return {
-              latLng: L.latLng(waypoint.lat, waypoint.lon),
-              name: waypoint.name,
-              drone: waypoint.drone,
-            }
-          },
-        )
-        this.setWaypointList(waypoints)
-        this.saveWaypoints(newList)
-      },
-      deep: true,
-    },
-
-    clickPoint: function (newClickPoint) {
-      this.input.lat.d = newClickPoint.lat
-      this.input.lon.d = newClickPoint.lon
-    },
-  },
-
-  async created() {
-    this.setHighlightedWaypoint(-1)
-    this.setSearchWaypoint(-1)
-    this.setWaypointList([])
-
-    setTimeout(() => {
-      this.loadWaypoints()
-    }, 250)
-  },
-
-  computed: {
-    ...mapGetters('erd', {
-      highlightedWaypoint: 'highlightedWaypoint',
-      searchWaypoint: 'searchWaypoint',
-      clickPoint: 'clickPoint',
-    }),
-
-    formatted_odom: function () {
-      return {
-        lat: this.odom.latitude_deg,
-        lon: this.odom.longitude_deg,
-      }
-    },
-  },
-
-  components: {
-    WaypointItem,
-  },
+const saveWaypoints = async (waypoints: any[]) => {
+  try {
+    await waypointsAPI.saveBasic(waypoints)
+  } catch (error) {
+    console.error('Failed to save waypoints:', error)
+  }
 }
+
+const loadWaypoints = async () => {
+  try {
+    const data = await waypointsAPI.getBasic()
+    if (data.status === 'success' && data.waypoints) {
+      storedWaypoints.value = data.waypoints
+      const waypoints = data.waypoints.map(
+        (waypoint: { lat: number; lon: number; name: string }) => ({
+          latLng: L.latLng(waypoint.lat, waypoint.lon),
+          name: waypoint.name
+        })
+      )
+      setWaypointList(waypoints)
+    }
+  } catch (error) {
+    console.error('Failed to load waypoints:', error)
+  }
+}
+
+const deleteItem = (payload: { index: number }) => {
+  if (highlightedWaypoint.value == payload.index) {
+    setHighlightedWaypoint(-1)
+  }
+  if (searchWaypoint.value == payload.index) {
+    setSearchWaypoint(-1)
+  }
+  storedWaypoints.value.splice(payload.index, 1)
+}
+
+const addWaypoint = (
+  coord: {
+    lat: { d: number }
+    lon: { d: number }
+  },
+  isDrone: boolean,
+) => {
+  storedWaypoints.value.push({
+    name: name.value,
+    lat: (coord.lat.d).toFixed(5),
+    lon: (coord.lon.d).toFixed(5),
+    drone: isDrone,
+  })
+}
+
+const findWaypoint = (payload: { index: number }) => {
+  if (payload.index === highlightedWaypoint.value) {
+    setHighlightedWaypoint(-1)
+  } else {
+    setHighlightedWaypoint(payload.index)
+  }
+}
+
+const searchForWaypoint = (payload: { index: number }) => {
+  if (payload.index === searchWaypoint.value) {
+    setSearchWaypoint(-1)
+  } else {
+    setSearchWaypoint(payload.index)
+  }
+}
+
+const clearWaypoint = () => {
+  storedWaypoints.value = []
+}
+
+watch(storedWaypoints, (newList) => {
+  const waypoints = newList.map(
+    (waypoint: {
+      lat: number
+      lon: number
+      name: string
+      drone: boolean
+    }) => {
+      return {
+        latLng: L.latLng(waypoint.lat, waypoint.lon),
+        name: waypoint.name,
+        drone: waypoint.drone,
+      }
+    },
+  )
+  setWaypointList(waypoints)
+  saveWaypoints(newList)
+}, { deep: true })
+
+watch(clickPoint, (newClickPoint) => {
+  input.value.lat.d = newClickPoint.lat
+  input.value.lon.d = newClickPoint.lon
+})
+
+onMounted(() => {
+  setHighlightedWaypoint(-1)
+  setSearchWaypoint(-1)
+  setWaypointList([])
+
+  setTimeout(() => {
+    loadWaypoints()
+  }, 250)
+})
 </script>
 
 <style scoped>

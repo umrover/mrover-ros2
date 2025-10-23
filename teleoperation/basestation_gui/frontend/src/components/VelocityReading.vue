@@ -12,33 +12,25 @@
   </div>
 </template>
 
-<script lang="ts">
-import type { WebSocketState } from '../types/websocket'
-import Vuex from 'vuex'
-const { mapState } = Vuex
-export default {
-  data() {
-    return {
-      linear_x: 0,
-      angular_z: 0,
-    }
-  },
+<script lang="ts" setup>
+import { ref, computed, watch } from 'vue'
+import { useWebsocketStore } from '@/stores/websocket'
+import { storeToRefs } from 'pinia'
 
-  computed: {
-    ...mapState('websocket', {
-      navMessage: (state: WebSocketState) => state.messages['nav']
-    }),
-  },
+const websocketStore = useWebsocketStore()
+const { messages } = storeToRefs(websocketStore)
 
-  watch: {
-    navMessage(msg) { // NOT YET IMPLEMENTED / MISSING IMPLEMENTATION
-      if (msg.type == 'cmd_vel') {
-        this.linear_x = msg.linear.x
-        this.angular_z = msg.angular.z
-      }
-    },
-  },
-}
+const linear_x = ref(0)
+const angular_z = ref(0)
+
+const navMessage = computed(() => messages.value['nav'])
+
+watch(navMessage, (msg) => {
+  if (msg && msg.type == 'cmd_vel') {
+    linear_x.value = msg.linear.x
+    angular_z.value = msg.angular.z
+  }
+})
 </script>
 
 <style scoped>

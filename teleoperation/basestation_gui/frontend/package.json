@@ -22,12 +22,13 @@
     "html2canvas": "^1.4.1",
     "leaflet": "^1.9.4",
     "lil-gui": "^0.20.0",
+    "pinia": "^3.0.3",
     "three": "^0.178.0",
     "urdf-loader": "^0.12.6",
     "vue": "^3.5.17",
     "vue-flight-indicators": "^0.1.1",
-    "vue-router": "^4.5.1",
-    "vuex": "^4.1.0"
+    "vue-router": "^4.5.1"
+
   },
   "devDependencies": {
     "@tsconfig/node20": "^20.1.6",
