@@ -15,7 +15,6 @@
       <button
         v-if="!enable_costmap"
         class="btn btn-danger w-100"
-        data-testid="waypoint-costmap-toggle"
         @click="toggleCostmap"
       >
         Costmap
@@ -23,7 +22,6 @@
       <button
         v-if="enable_costmap"
         class="btn btn-success w-100"
-        data-testid="waypoint-costmap-toggle"
         @click="toggleCostmap"
       >
         Costmap

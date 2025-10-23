@@ -13,7 +13,6 @@
           :key="waypoint"
           :waypoint="waypoint"
           :index="index"
-          :data-testid="`waypoint-store-${index}`"
           @add="addItem"
           @delete="deleteMapWaypoint"
         />
@@ -43,7 +42,6 @@
         <FeedbackButton
           ref="costmapCheckbox"
           class="costmap-checkbox"
-          data-testid="costmap-toggle"
           :name="'All Costmaps'"
           :checked="allCostmapToggle"
           @toggle="handleCostmapToggle"
@@ -55,7 +53,6 @@
           v-for="waypoint in currentRoute"
           :key="waypoint"
           :waypoint="waypoint"
-          data-testid="waypoint-item"
           @delete="deleteItem(waypoint)"
           @toggleCostmap="toggleCostmap"
         />
