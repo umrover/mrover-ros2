@@ -107,10 +107,10 @@ source /opt/ros/humble/setup.zsh
 readonly COLCON_RELWITHDEBINFO_SETUP_PATH=${ROS2_WS_PATH}/install/RelWithDebInfo/setup.zsh
 readonly COLCON_RELEASE_SETUP_PATH=${ROS2_WS_PATH}/install/Release/setup.zsh
 readonly COLCON_DEBUG_SETUP_PATH=${ROS2_WS_PATH}/install/Debug/setup.zsh
-if [ -f ${COLCON_RELWITHDEBINFO_SETUP_PATH} ]; then
-    source ${COLCON_RELWITHDEBINFO_SETUP_PATH}
-elif [ -f ${COLCON_DEBUG_SETUP_PATH} ]; then
+if [ -f ${COLCON_DEBUG_SETUP_PATH} ]; then
     source ${COLCON_DEBUG_SETUP_PATH}
+elif [ -f ${COLCON_RELWITHDEBINFO_SETUP_PATH} ]; then
+    source ${COLCON_RELWITHDEBINFO_SETUP_PATH}
 elif [ -f ${COLCON_RELEASE_SETUP_PATH} ]; then
     source ${COLCON_RELEASE_SETUP_PATH}
 fi
