@@ -36,6 +36,13 @@
                     "ignoreFailures": true
                 }
             ]
+        },
+        {
+            "name": "(pdb) Launch",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal"
         }
 
     ],
