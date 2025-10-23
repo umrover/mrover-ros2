@@ -10,7 +10,7 @@
       <ControllerDataTable msg-type="arm_state" header="Arm States" />
       <ControllerDataTable msg-type="drive_state" header="Drive States" />
     </div>
-    <div>
+    <div class="island p-2 rounded auton-typing">
       <AutonTyping />
     </div>
   </div>
@@ -49,8 +49,8 @@ export default defineComponent({
   gap: 10px;
   width: 100%;
   height: 100%;
-  grid-template-columns: 400px auto;
-  grid-template-rows: 20% 30% auto;
+  grid-template-columns: 25% auto; /* was formerly 400px auto */
+  grid-template-rows: auto 21% auto;
   grid-template-areas:
     'arm-controls rover-3d'
     'auton-typing rover-3d'
