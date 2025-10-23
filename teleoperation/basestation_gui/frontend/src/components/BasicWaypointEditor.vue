@@ -72,12 +72,13 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, watch, onMounted, defineProps } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import WaypointItem from './BasicWaypointItem.vue'
 import { useErdStore } from '@/stores/erd'
 import { storeToRefs } from 'pinia'
 import L from 'leaflet'
 import { waypointsAPI } from '@/utils/api'
+import type { StoreWaypoint, APIBasicWaypoint } from '@/types/waypoints'
 
 const props = defineProps({
   odom: {
@@ -99,7 +100,7 @@ const input = ref({
   lat: { d: 0 },
   lon: { d: 0 },
 })
-const storedWaypoints = ref<any[]>([])
+const storedWaypoints = ref<StoreWaypoint[]>([])
 
 const formatted_odom = computed(() => {
   return {
@@ -108,7 +109,7 @@ const formatted_odom = computed(() => {
   }
 })
 
-const saveWaypoints = async (waypoints: any[]) => {
+const saveWaypoints = async (waypoints: StoreWaypoint[]) => {
   try {
     await waypointsAPI.saveBasic(waypoints)
   } catch (error) {

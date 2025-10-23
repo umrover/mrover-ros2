@@ -7,7 +7,7 @@ export interface Notification {
   component: string
   errorType: string
   message: string
-  fullData: any
+  fullData: unknown
   read: boolean
 }
 
@@ -25,7 +25,7 @@ export const useNotificationsStore = defineStore('notifications', () => {
     component?: string
     errorType?: string
     message?: string
-    fullData?: any
+    fullData?: unknown
   }) {
     const notification: Notification = {
       id: nextId.value++,

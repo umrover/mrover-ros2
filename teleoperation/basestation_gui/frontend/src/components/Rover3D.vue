@@ -3,15 +3,34 @@
 </template>
 
 <script lang="ts" setup>
-import { defineComponent, ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useWebsocketStore } from '@/stores/websocket'
 import { storeToRefs } from 'pinia'
 import threeSetup, { updatePose, updateIKTarget } from '../rover_three.js'
 
+interface ArmFKMessage {
+  type: 'fk'
+  name: string[]
+  position: number[]
+}
+
+interface ArmIKMessage {
+  type: 'ik_target'
+  target: {
+    pose: {
+      position: {
+        x: number
+        y: number
+        z: number
+      }
+    }
+  }
+}
+
 const websocketStore = useWebsocketStore()
 const { messages } = storeToRefs(websocketStore)
 
-const threeScene = ref(null)
+const threeScene = ref<(() => void) | null>(null)
 
 const jointNameMap: Record<string, string> = {
   joint_a: 'chassis_to_arm_a',
@@ -23,18 +42,25 @@ const jointNameMap: Record<string, string> = {
 }
 
 onMounted(() => {
-  threeScene.value = threeSetup('threejs')
+  threeScene.value = threeSetup()
+})
+
+onBeforeUnmount(() => {
+  if (threeScene.value) {
+    threeScene.value()
+  }
 })
 
 const armMessage = computed(() => messages.value['arm'])
 
-watch(armMessage, (msg) => {
-  if (!msg) return
+watch(armMessage, (msg: unknown) => {
+  if (!msg || typeof msg !== 'object') return
 
-  if (msg.type === 'fk') {
-    const joints = msg.name.map((name: string, index: number) => {
+  if ('type' in msg && msg.type === 'fk') {
+    const typedMsg = msg as ArmFKMessage
+    const joints = typedMsg.name.map((name: string, index: number) => {
       const urdfName = jointNameMap[name] || name
-      let position = msg.position[index]
+      let position = typedMsg.position[index]
 
       if (urdfName === 'chassis_to_arm_a') {
         position = position * -100 + 40 // scale from m to cm
@@ -47,13 +73,14 @@ watch(armMessage, (msg) => {
     })
 
     updatePose(joints)
-  } else if (msg.type === 'ik_target') {
-    console.log(msg)
-    if (msg.target.pose && msg.target.pose.position) {
+  } else if ('type' in msg && msg.type === 'ik_target') {
+    const typedMsg = msg as ArmIKMessage
+    console.log(typedMsg)
+    if (typedMsg.target.pose && typedMsg.target.pose.position) {
       const position = {
-        x: msg.target.pose.position.x * 100,
-        y: msg.target.pose.position.z * 100,
-        z: msg.target.pose.position.y * -100 + 20,
+        x: typedMsg.target.pose.position.x * 100,
+        y: typedMsg.target.pose.position.z * 100,
+        z: typedMsg.target.pose.position.y * -100 + 20,
       }
       console.log(position)
       updateIKTarget(position)

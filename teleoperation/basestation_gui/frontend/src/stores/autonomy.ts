@@ -1,10 +1,11 @@
-import { defineStore } from 'pinia'
+  import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import type { StoreWaypoint } from '@/types/waypoints'
 
 export const useAutonomyStore = defineStore('autonomy', () => {
   // State
-  const route = ref<any[]>([])
-  const waypointList = ref<any[]>([])
+  const route = ref<StoreWaypoint[]>([])
+  const waypointList = ref<StoreWaypoint[]>([])
   const highlightedWaypoint = ref(-1)
   const autonEnabled = ref(false)
   const teleopEnabled = ref(false)
@@ -21,7 +22,7 @@ export const useAutonomyStore = defineStore('autonomy', () => {
   const getClickPoint = computed(() => clickPoint.value)
 
   // Actions
-  function setRoute(newRoute: any[]) {
+  function setRoute(newRoute: StoreWaypoint[]) {
     route.value = newRoute
   }
 
@@ -33,7 +34,7 @@ export const useAutonomyStore = defineStore('autonomy', () => {
     teleopEnabled.value = newTeleopEnabled
   }
 
-  function setWaypointList(newList: any[]) {
+  function setWaypointList(newList: StoreWaypoint[]) {
     waypointList.value = newList
   }
 

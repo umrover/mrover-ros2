@@ -55,7 +55,7 @@
 
 
 <script lang="ts" setup>
-import { defineComponent, ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useWebsocketStore } from '@/stores/websocket'
 
 const websocketStore = useWebsocketStore()

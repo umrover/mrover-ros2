@@ -6,7 +6,6 @@
       <MenuButton link="/SPITask" name="SPI GUI" />
       <MenuButton link="/SATask" name="SA GUI" />
       <MenuButton link="/AutonTask" name="Autonomy Mission" />
-      <MenuButton link="/Cameras" name="Cameras" />
     </fieldset>
   </div>
 </template>

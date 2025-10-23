@@ -64,7 +64,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, watch, onMounted, defineProps } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useWebsocketStore } from '@/stores/websocket'
 import { storeToRefs } from 'pinia'
 import Chart from 'chart.js/auto'

@@ -13,7 +13,7 @@ import type {
   TeleopEnableResponse,
   AutonEnableWaypoint,
   APIResponse
-} from './types'
+} from './apiTypes'
 
 const API_BASE = '/api'
 

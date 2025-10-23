@@ -127,7 +127,7 @@ import WaypointStore from './AutonWaypointStore.vue'
 import L from 'leaflet'
 import { reactive, defineComponent } from 'vue'
 import { Modal } from 'bootstrap'
-import type { Waypoint } from '@/types/waypoint'
+import type { AutonWaypoint, StoreWaypoint } from '@/types/waypoints'
 import { waypointsAPI, autonAPI } from '@/utils/api'
 import { useWebsocketStore } from '@/stores/websocket'
 import { useAutonomyStore } from '@/stores/autonomy'
@@ -215,7 +215,7 @@ export default defineComponent({
           lon: 0,
           enable_costmap: true,
         },
-      ] as Waypoint[],
+      ] as AutonWaypoint[],
 
       modal: null as Modal | null,
       modalWypt: {
@@ -251,7 +251,7 @@ export default defineComponent({
 
   watch: {
     waypoints: {
-      async handler(newList: Waypoint[]) {
+      async handler(newList: AutonWaypoint[]) {
         const waypoints = newList.map(waypoint => {
           const lat = waypoint.lat
           const lon = waypoint.lon
@@ -269,7 +269,7 @@ export default defineComponent({
     },
 
     currentRoute: {
-      async handler(newRoute: Waypoint[]) {
+      async handler(newRoute: AutonWaypoint[]) {
         const waypoints = newRoute.map(waypoint => {
           const lat = waypoint.lat
           const lon = waypoint.lon
@@ -318,10 +318,10 @@ export default defineComponent({
   },
 
   methods: {
-    setRoute(route: any[]) {
+    setRoute(route: StoreWaypoint[]) {
       this.autonomyStore.setRoute(route)
     },
-    setWaypointList(list: any[]) {
+    setWaypointList(list: StoreWaypoint[]) {
       this.autonomyStore.setWaypointList(list)
     },
     setAutonMode(mode: boolean) {

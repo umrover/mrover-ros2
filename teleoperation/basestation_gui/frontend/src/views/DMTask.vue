@@ -38,7 +38,7 @@ import MastGimbalControls from '@/components/MastGimbalControls.vue'
 import Rover3D from '@/components/Rover3D.vue'
 import { useWebsocketStore } from '@/stores/websocket'
 
-import type { Odom } from '@/types/index' // Import Odom from consolidated types
+import type { Odom } from '@/types/coordinates'
 
 const websocketStore = useWebsocketStore()
 

@@ -67,7 +67,7 @@ import { storeToRefs } from 'pinia'
 import 'leaflet/dist/leaflet.css'
 import L from '../leaflet-rotatedmarker'
 import type { LatLng } from '@/types/leaflet'
-import { ref, computed, watch, defineProps, nextTick } from 'vue'
+import { ref, computed, watch, nextTick } from 'vue'
 
 const props = defineProps({
   odom: {
@@ -81,7 +81,7 @@ const props = defineProps({
 })
 
 const autonomyStore = useAutonomyStore()
-const { route, waypointList, autonEnabled } = storeToRefs(autonomyStore)
+const { route, waypointList } = storeToRefs(autonomyStore)
 const { setClickPoint } = autonomyStore
 
 const MAX_ODOM_COUNT = 10
@@ -101,13 +101,12 @@ const offlineTileOptions = {
 const center = ref(L.latLng(38.4071654, -110.7923927))
 const attribution = ref('&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors')
 const online = ref(true)
-const mapRef = ref(null)
-const roverRef = ref(null)
+const mapRef = ref<{ leafletObject: L.Map } | null>(null)
+const roverRef = ref<{ leafletObject: L.Marker } | null>(null)
 const basestationRef = ref(null)
-let map = null
-let roverMarker = null
+let roverMarker: L.Marker | null = null
 const odomCount = ref(0)
-const odomPath = ref([])
+const odomPath = ref<L.LatLng[]>([])
 const findRover = ref(false)
 
 const locationIcon = L.icon({
@@ -129,8 +128,9 @@ const waypointIcon = L.icon({
 
 const onMapReady = () => {
   nextTick(() => {
-    map = mapRef.value.leafletObject
-    roverMarker = roverRef.value.leafletObject
+    if (roverRef.value) {
+      roverMarker = roverRef.value.leafletObject
+    }
   })
 }
 

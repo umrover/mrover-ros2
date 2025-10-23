@@ -2,10 +2,21 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 
 const webSockets: Record<string, WebSocket> = {}
-const flashTimersIn: Record<string, NodeJS.Timeout> = {}
-const flashTimersOut: Record<string, NodeJS.Timeout> = {}
+const flashTimersIn: Record<string, ReturnType<typeof setTimeout>> = {}
+const flashTimersOut: Record<string, ReturnType<typeof setTimeout>> = {}
 
-function debounceFlashClear(id: string, type: 'in' | 'out', store: any) {
+interface WebsocketStoreActions {
+  setMessage: (id: string, message: unknown) => void
+  setConnectionStatus: (id: string, status: string) => void
+  setLastIncomingActivity: (id: string, timestamp: number) => void
+  setLastOutgoingActivity: (id: string, timestamp: number) => void
+  setFlashIn: (id: string, value: boolean) => void
+  setFlashOut: (id: string, value: boolean) => void
+  clearFlashIn: (id: string) => void
+  clearFlashOut: (id: string) => void
+}
+
+function debounceFlashClear(id: string, type: 'in' | 'out', store: WebsocketStoreActions) {
   const timers = type === 'in' ? flashTimersIn : flashTimersOut
   if (timers[id]) {
     clearTimeout(timers[id])
@@ -20,7 +31,7 @@ function debounceFlashClear(id: string, type: 'in' | 'out', store: any) {
   }, 100)
 }
 
-function setupWebsocket(id: string, store: any) {
+function setupWebsocket(id: string, store: WebsocketStoreActions) {
   if (!id) {
     console.error('Invalid WebSocket ID passed:', id)
     return
@@ -82,7 +93,7 @@ function setupWebsocket(id: string, store: any) {
 
 export const useWebsocketStore = defineStore('websocket', () => {
   // State
-  const messages = ref<Record<string, any>>({})
+  const messages = ref<Record<string, unknown>>({})
   const connectionStatus = ref<Record<string, string>>({})
   const lastIncomingActivity = ref<Record<string, number>>({})
   const lastOutgoingActivity = ref<Record<string, number>>({})
@@ -94,7 +105,7 @@ export const useWebsocketStore = defineStore('websocket', () => {
   const isFlashingOut = computed(() => (id: string) => flashOut.value[id] || false)
 
   // Actions
-  function setMessage(id: string, message: any) {
+  function setMessage(id: string, message: unknown) {
     messages.value[id] = message
   }
 
@@ -126,7 +137,7 @@ export const useWebsocketStore = defineStore('websocket', () => {
     lastOutgoingActivity.value[id] = timestamp
   }
 
-  function sendMessage(id: string, message: any) {
+  function sendMessage(id: string, message: unknown) {
     const socket = webSockets[id]
     if (!socket) {
       console.log('websocket selection failed with id', id)

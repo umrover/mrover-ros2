@@ -21,7 +21,6 @@ export default defineComponent({
   name: 'NavBar',
   computed: {
     title(): string {
-      // @ts-expect-error ts dumb
       return this.getTitleForRoute(this.$route.path)
     },
   },

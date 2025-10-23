@@ -2,24 +2,11 @@
  * API Request and Response Types
  */
 
-// Waypoint type for auton waypoints
-export interface AutonWaypoint {
-  name: string
-  id: number
-  type: number
-  lat: number
-  lon: number
-  enable_costmap: boolean
-  in_route?: boolean
-}
+import type { AutonWaypoint, APIBasicWaypoint } from '@/types/waypoints'
 
-// Waypoint type for basic waypoints
-export interface BasicWaypoint {
-  name: string
-  lat: number
-  lon: number
-  drone?: boolean
-}
+// Re-export waypoint types for API usage
+export type { AutonWaypoint }
+export type BasicWaypoint = APIBasicWaypoint
 
 // API Response types
 export interface APIResponse {

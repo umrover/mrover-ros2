@@ -71,7 +71,7 @@ import 'leaflet/dist/leaflet.css'
 import L from '../leaflet-rotatedmarker.js'
 import type { LeafletMouseEvent } from 'leaflet';
 import type { Waypoint } from '@/types/basicWaypoint.js'
-import { ref, computed, watch, onMounted, defineProps, nextTick } from 'vue'
+import { ref, computed, watch, onMounted, nextTick } from 'vue'
 
 const props = defineProps({
   odom: {

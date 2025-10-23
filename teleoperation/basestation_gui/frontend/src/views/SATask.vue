@@ -1,9 +1,9 @@
 <template>
   <div class="wrapper view-wrapper overflow-x-hidden h-100">
     <div class="island p-2 rounded controls d-flex gap-2">
-      <SAArmControls :currentSite="siteSelect" class="border boder-2 rounded"/>
+      
       <HexHub @selectSite="updateSite" @orientation="updateOrientation" class="border boder-2 rounded"/>
-      <LSActuator class="border boder-2 rounded"/>
+      
       <PanoCam class="border boder-2 rounded"/>
       <DriveControls />
       <MastGimbalControls />
@@ -18,7 +18,7 @@
       <OdometryReading @odom="updateOdom" class="rounded border border-2 p-2"/>
       <ControllerDataTable msg-type="drive_state" header="Drive States" class="rounded border border-2 p-2"/>
       <ControllerDataTable msg-type="sa_state" header="SA States" class="rounded border border-2 p-2"/>
-      <SoilData class="rounded border border-2 p-2"/>
+      
     </div>
   </div>
 </template>
@@ -26,7 +26,7 @@
 <script lang="ts" setup>
 import { ref, onMounted, onUnmounted } from 'vue'
 import BasicMap from '@/components/BasicRoverMap.vue'
-import SoilData from '@/components/SoilData.vue'
+
 import BasicWaypointEditor from '@/components/BasicWaypointEditor.vue'
 import DriveControls from '@/components/DriveControls.vue'
 import MastGimbalControls from '@/components/MastGimbalControls.vue'
