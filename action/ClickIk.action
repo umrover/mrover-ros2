@@ -1,5 +1,5 @@
-uint32 pointInImageX
-uint32 pointInImageY
+uint32 point_in_image_x
+uint32 point_in_image_y
 ---
 bool success
 ---

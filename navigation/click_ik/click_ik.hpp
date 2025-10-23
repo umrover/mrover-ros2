@@ -1,14 +1,9 @@
 #pragma once
 
-#include "mrover/msg/detail/arm_status__struct.hpp"
-#include "mrover/msg/detail/ik__struct.hpp"
 #include "pch.hpp"
 #include <mrover/msg/arm_status.hpp>
 #include <mrover/msg/ik.hpp>
 #include <rclcpp/publisher.hpp>
-#include <sensor_msgs/msg/detail/point_cloud2__struct.hpp>
-#include <std_msgs/msg/detail/bool__struct.hpp>
-
 
 namespace mrover {
 
@@ -17,19 +12,17 @@ namespace mrover {
         rclcpp::Publisher<msg::IK>::SharedPtr mIKPub;
         rclcpp::Subscription<msg::ArmStatus>::SharedPtr mStatusSub;
 
-        // ros::Subscriber mPcSub;
-        // ros::Publisher mIkPub;
-        rclcpp_action::Server<mrover::ClickIkAction> server = rclcpp::SimpleActionServer<mrover::ClickIkAction>(mNh, "do_click_ik", false);
+        rclcpp_action::Server<mrover::action::ClickIk>::SharedPtr server;
 
-        IK message;
-        ros::Timer timer;
+        mrover::msg::IK message;
+        rclcpp::TimerBase::SharedPtr timer;
 
         Point const* mPoints{};
         std::size_t mNumPoints{};
         std::size_t mPointCloudWidth{};
         std::size_t mPointCloudHeight{};
 
-        tf2_ros::Buffer mTfBuffer{};
+        tf2_ros::Buffer mTfBuffer{get_clock()};
         tf2_ros::TransformListener mTfListener{mTfBuffer};
         tf2_ros::TransformBroadcaster mTfBroadcaster;
 

@@ -4,9 +4,15 @@
 
 namespace mrover {
 
-    void ClickIkNode::ClickIkNode(rclcpp::NodeOptions const& options) : Node("click_ik", options) {
-        mNh = getMTNodeHandle();
-        mPnh = getMTPrivateNodeHandle();
+    ClickIkNode::ClickIkNode(rclcpp::NodeOptions const& options) : Node("click_ik", options) {
+
+        server = rclcpp_action::create_server<mrover::action::ClickIk>(
+            this,
+            "click_ik",
+            std::bind(&ClickIkNode::handle_goal, this),
+            std::bind(&ClickIkNode::handle_cancel, this),
+            std::bind(&ClickIkNode::handle_accepted, this)
+        );
 
         mPcSub = mNh.subscribe("camera/left/points", 1, &ClickIkNodelet::pointCloudCallback, this);
         // IK Publisher
