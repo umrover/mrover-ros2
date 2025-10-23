@@ -26,69 +26,45 @@
   </div>
 </template>
 
-<script lang='ts'>
-import { defineComponent } from 'vue'
-import ControllerDataTable from '../components/ControllerDataTable.vue'
-import ArmControls from '../components/ArmControls.vue'
-import BasicMap from '../components/BasicRoverMap.vue'
-import BasicWaypointEditor from '../components/BasicWaypointEditor.vue'
-import OdometryReading from '../components/OdometryReading.vue'
-import DriveControls from '../components/DriveControls.vue'
-import MastGimbalControls from '../components/MastGimbalControls.vue'
-import Rover3D from '../components/Rover3D.vue'
+<script lang='ts' setup>
+import { ref, onMounted, onUnmounted } from 'vue'
+import ControllerDataTable from '@/components/ControllerDataTable.vue'
+import ArmControls from '@/components/ArmControls.vue'
+import BasicMap from '@/components/BasicRoverMap.vue'
+import BasicWaypointEditor from '@/components/BasicWaypointEditor.vue'
+import OdometryReading from '@/components/OdometryReading.vue'
+import DriveControls from '@/components/DriveControls.vue'
+import MastGimbalControls from '@/components/MastGimbalControls.vue'
+import Rover3D from '@/components/Rover3D.vue'
+import { useWebsocketStore } from '@/stores/websocket'
 
-interface Odom {
-  latitude_deg: number;
-  longitude_deg: number;
-  bearing_deg: number;
+import type { Odom } from '@/types/index' // Import Odom from consolidated types
+
+const websocketStore = useWebsocketStore()
+
+const odom = ref<Odom>({ latitude_deg: 0, longitude_deg: 0, bearing_deg: 0 })
+const drone_odom = ref<Odom>({ latitude_deg: 0, longitude_deg: 0 }) // Use Odom for drone_odom
+
+const updateOdom = (newOdom: Odom) => {
+  odom.value = newOdom;
 }
 
-interface DroneOdom {
-  latitude_deg: number;
-  longitude_deg: number;
+const updateDroneOdom = (newOdom: Odom) => { // newOdom can be Odom now
+  drone_odom.value = newOdom;
 }
 
-export default defineComponent({
-  components: {
-    ControllerDataTable,
-    ArmControls,
-    BasicMap,
-    BasicWaypointEditor,
-    OdometryReading,
-    DriveControls,
-    MastGimbalControls,
-    Rover3D
-  },
+onMounted(() => {
+  websocketStore.setupWebSocket('arm')
+  websocketStore.setupWebSocket('drive')
+  websocketStore.setupWebSocket('mast')
+  websocketStore.setupWebSocket('nav')
+})
 
-  data() {
-    return {
-      odom: null as Odom | null,
-      drone_odom: null as DroneOdom | null
-    }
-  },
-
-  methods: {
-    updateOdom(odom: Odom) {
-      this.odom = odom;
-    },
-    updateDroneOdom(odom: DroneOdom) {
-      this.drone_odom = odom;
-    }
-  },
-
-  mounted: function() {
-    this.$store.dispatch('websocket/setupWebSocket', 'arm')
-    this.$store.dispatch('websocket/setupWebSocket', 'drive')
-    this.$store.dispatch('websocket/setupWebSocket', 'mast')
-    this.$store.dispatch('websocket/setupWebSocket', 'nav')
-  },
-
-  unmounted: function() {
-    this.$store.dispatch('websocket/closeWebSocket', 'arm')
-    this.$store.dispatch('websocket/closeWebSocket', 'drive')
-    this.$store.dispatch('websocket/closeWebSocket', 'nav')
-    this.$store.dispatch('websocket/closeWebSocket', 'mast')
-  },
+onUnmounted(() => {
+  websocketStore.closeWebSocket('arm')
+  websocketStore.closeWebSocket('drive')
+  websocketStore.closeWebSocket('mast')
+  websocketStore.closeWebSocket('nav')
 })
 </script>
 
