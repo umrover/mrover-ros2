@@ -5,20 +5,41 @@
     <div class="box1 heaters">
       <ToggleButton
         id="heater"
-        :current-state="heaters[site].enabled"
-        :label-enable-text="'Heater ' + String.fromCharCode(65 + site)"
-        :label-disable-text="'Heater ' + String.fromCharCode(65 + site)"
-        @change="toggleHeater()"
+        :current-state="heaters[0].enabled"
+        :label-enable-text="'Heater A'"
+        :label-disable-text="'Heater A'"
+        @change="toggleHeater(0)"
       />
-      <p :style="{ color: heaters[site].color }">
-        Thermistor {{ String.fromCharCode(65 + site) }}:
-        {{ heaters[site].temp.toFixed(2) }} C°
+      <p :style="{ color: heaters[0].color }">
+        Thermistor {{ 'A' }}:
+        {{ heaters[0].temp.toFixed(2) }} C°
       </p>
     </div>
     <div class="comms heaterStatus">
       <LEDIndicator
-        :connected="heaters[site].state"
-        :name="'Heater ' + String.fromCharCode(65 + site) + ' Status'"
+        :connected="heaters[0].state"
+        :name="'Heater A Status'"
+        :show_name="true"
+      />
+    </div>
+
+    <div class="box1 heaters">
+      <ToggleButton
+        id="heater"
+        :current-state="heaters[1].enabled"
+        :label-enable-text="'Heater B'"
+        :label-disable-text="'Heater B'"
+        @change="toggleHeater(1)"
+      />
+      <p :style="{ color: heaters[1].color }">
+        Thermistor {{ 'B' }}:
+        {{ heaters[1].temp.toFixed(2) }} C°
+      </p>
+    </div>
+    <div class="comms heaterStatus">
+      <LEDIndicator
+        :connected="heaters[1].state"
+        :name="'Heater B Status'"
         :show_name="true"
       />
     </div>
@@ -79,18 +100,29 @@ export default {
     scienceMessage(msg) {
       if (msg.type == 'thermistors') {
         if (this.isNinhydrin) {
-          this.heaters[this.site].temp =
-            msg.temps[this.site * 2 + 1].temperature
+          this.heaters[0].temp =
+            msg.temps[0 * 2 + 1].temperature
+
+          this.heaters[1].temp =
+            msg.temps[1 * 2 + 1].temperature
         } else {
-          this.heaters[this.site].temp = msg.temps[this.site * 2].temperature
+          this.heaters[0].temp = msg.temps[0 * 2].temperature
+          
+          this.heaters[1].temp = msg.temps[1 * 2].temperature
         }
       } else if (msg.type == 'heater_states') {
         if (this.isNinhydrin) {
-          this.heaters[this.site].state = msg.state[this.site * 2 + 1]
-          this.heaters[this.site].enabled = this.heaters[this.site].state
+          this.heaters[0].state = msg.state[0 * 2 + 1]
+          this.heaters[0].enabled = this.heaters[0].state
+
+          this.heaters[1].state = msg.state[1 * 2 + 1]
+          this.heaters[1].enabled = this.heaters[1].state
         } else {
-          this.heaters[this.site].state = msg.state[this.site * 2]
-          this.heaters[this.site].enabled = this.heaters[this.site].state
+          this.heaters[0].state = msg.state[0 * 2]
+          this.heaters[0].enabled = this.heaters[0].state
+
+          this.heaters[1].state = msg.state[1 * 2]
+          this.heaters[1].enabled = this.heaters[1].state
         }
       }
     },
@@ -99,13 +131,13 @@ export default {
   methods: {
     ...mapActions('websocket', ['sendMessage']),
 
-    toggleHeater: function () {
-      this.heaters[this.site].enabled = !this.heaters[this.site].enabled
-      this.sendHeaterRequest()
+    toggleHeater: function (site_num: number) {
+      this.heaters[site_num].enabled = !this.heaters[site_num].enabled
+      this.sendHeaterRequest(site_num)
     },
 
-    sendHeaterRequest: function () {
-      let heaterName = String.fromCharCode(this.site + 97)
+    sendHeaterRequest: function (site_num: number) {
+      let heaterName = String.fromCharCode(site_num + 97)
       if (this.isNinhydrin) {
         heaterName += '1'
       } else heaterName += '0'
@@ -113,7 +145,7 @@ export default {
         id: 'science',
         message: {
           type: 'heater_enable',
-          enable: this.heaters[this.site].enabled,
+          enable: this.heaters[site_num].enabled,
           heater: heaterName,
         },
       })

@@ -1,42 +1,42 @@
 <template>
-  <div class="wrapper view-wrapper overflow-x-hidden h-100">
-    <div class="island p-2 rounded controls d-flex gap-2">
-      <SAArmControls :currentSite="siteSelect" class="border boder-2 rounded"/>
-      <HexHub @selectSite="updateSite" @orientation="updateOrientation" class="border boder-2 rounded"/>
-      <LSActuator class="border boder-2 rounded"/>
-      <PanoCam class="border boder-2 rounded"/>
-      <DriveControls />
-      <MastGimbalControls />
-    </div>
+  <div class="main-wrapper view-wrapper">
     <div class="island p-0 rounded map overflow-hidden">
       <BasicMap :odom="odom" />
+    </div>
+    <div class="island odom">
+      <OdometryReading @odom="updateOdom" class="rounded border border-2 p-2"/>
+    </div>
+    <div class='island p-2 rounded controller_state d-flex flex-column gap-2'>
+      <ControllerDataTable msg-type="drive_state" header="Drive States" class="rounded border border-2 p-2"/>
+      <ControllerDataTable msg-type="sa_state" header="SA States" class="rounded border border-2 p-2"/>
     </div>
     <div class="island p-3 rounded waypoints">
       <BasicWaypointEditor :odom="odom" />
     </div>
-    <div class="island p-1 rounded data d-flex gap-2">
-      <OdometryReading @odom="updateOdom" class="rounded border border-2 p-2"/>
-      <ControllerDataTable msg-type="drive_state" header="Drive States" class="rounded border border-2 p-2"/>
-      <ControllerDataTable msg-type="sa_state" header="SA States" class="rounded border border-2 p-2"/>
-      <SoilData class="rounded border border-2 p-2"/>
+    <div class="island p-2 rounded controls d-flex gap-2">
+      <HexHub @selectSite="updateSite" @orientation="updateOrientation" class="border boder-2 rounded"/>
+      <PanoCam class="border boder-2 rounded"/>
+      <DriveControls />
+      <MastGimbalControls />
+    </div>
+    <div class="island p-2 rounded sensors">
+        <SensorData :site="site" />
     </div>
   </div>
 </template>
 
 <script lang="ts">
-import Vuex from 'vuex'
-const { mapState, mapActions } = Vuex
+import SensorData from '../components/SensorData.vue'
 import BasicMap from '../components/BasicRoverMap.vue'
-import SoilData from '../components/SoilData.vue'
 import BasicWaypointEditor from '../components/BasicWaypointEditor.vue'
 import DriveControls from '../components/DriveControls.vue'
 import MastGimbalControls from '../components/MastGimbalControls.vue'
 import OdometryReading from '../components/OdometryReading.vue'
 import ControllerDataTable from '../components/ControllerDataTable.vue'
-import SAArmControls from '../components/SAArmControls.vue'
 import HexHub from '../components/HexHub.vue'
-import LSActuator from '../components/LSActuator.vue'
 import PanoCam from '../components/PanoCam.vue'
+import Vuex from 'vuex'
+const { mapState, mapActions} = Vuex
 
 interface Odom {
   latitude_deg: number
@@ -45,37 +45,41 @@ interface Odom {
 }
 
 export default {
-  components: {
-    ControllerDataTable,
-    BasicMap,
-    SoilData,
-    BasicWaypointEditor,
-    DriveControls,
-    MastGimbalControls,
-    SAArmControls,
-    OdometryReading,
-    HexHub,
-    LSActuator,
-    PanoCam,
-  },
-  data() {
-    return {
-      odom: null as Odom | null,
-      siteSelect: 0,
-      orientation: true,
-      site_to_radians: {
-        0: 0.0,
-        1: (2 * Math.PI) / 5,
-        2: (4 * Math.PI) / 5,
-        3: (6 * Math.PI) / 5,
-        4: (8 * Math.PI) / 5,
-      },
-    }
-  },
-  computed: {
+    components: {
+        SensorData,
+        BasicMap,
+        BasicWaypointEditor,
+        DriveControls,
+        MastGimbalControls,
+        OdometryReading,
+        ControllerDataTable,
+        HexHub,
+        PanoCam,
+    },
+
+    data() {
+        return {
+        site: 0 as number,
+        cameraA: true,
+        cameraB: true,
+        odom: null as Odom | null,
+        siteSelect: 0,
+        orientation: true,
+        site_to_radians: {
+          0: 0.0,
+          1: (2 * Math.PI) / 5,
+          2: (4 * Math.PI) / 5,
+          3: (6 * Math.PI) / 5,
+          4: (8 * Math.PI) / 5,
+        },
+        }
+    },
+
+    computed: {
     ...mapState('websocket', ['message']),
-  },
-  methods: {
+    },
+
+    methods: {
     ...mapActions('websocket', ['sendMessage']),
     updateOdom(odom: Odom) {
       this.odom = odom
@@ -123,18 +127,41 @@ export default {
 </script>
 
 <style scoped>
+.main-wrapper {
+  display: grid;
+  grid-gap: 10px;
+  width: 100%;
+  height: 100%;
+  grid-template-columns: 40%;
+  grid-template-areas:
+  'controls camera map map map'
+  'odom odom map map map'
+  'sensors sensors controller_state  controller_state waypoints'
+  'sensors sensors controller_state controller_state waypoints';
+  font-family: sans-serif;
+}
+
+.odometry-wrapper{
+  display: grid;
+  grid-gap: 10px;
+  width: 100%;
+  height: 100%;
+  grid-template-columns: 50%;
+  grid-template-areas:
+    'odom drive-state-table sa-state-table';
+}
+
 .wrapper {
   display: grid;
   grid-gap: 10px;
-  grid-template-columns: 55% auto; 
-  grid-template-rows: auto 1fr auto;
-  grid-template-areas:
-    'controls controls'
-    'map waypoints'
-    'data data';
-  font-family: sans-serif;
-  height: auto;
   width: 100%;
+  height: 100%;
+  grid-template-columns: repeat(2, auto) 40%;
+  grid-template-areas:
+    'controls controls camera'
+    'ninhydrin benedicts camera'
+    'sensors sensors camera';
+  font-family: sans-serif;
 }
 
 .map {
@@ -145,15 +172,31 @@ export default {
   grid-area: waypoints;
 }
 
+.controls {
+  grid-area: controls;
+}
+
 .data {
   grid-area: data;
 }
 
-.soilData {
-  grid-area: soilData;
+.sensors {
+  grid-area: sensors;
 }
 
-.controls {
-  grid-area: controls;
+.odom{
+  grid-area: odom;
+}
+
+.drive-state-table{
+  grid-area: drive-state-table;
+}
+
+.sa-state-table{
+  grid-area: sa-state-table;
+}
+
+.controller_state {
+  grid-area: controller_state;
 }
 </style>
