@@ -8,7 +8,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, PropType } from 'vue'
+import { defineComponent, type PropType } from 'vue'
 
 export default defineComponent({
   props: {
@@ -87,12 +87,30 @@ export default defineComponent({
 
         if (response.status === 'error') {
           console.error(`${this.name} command failed:`, response.message)
+
+          // Log to notification store
+          this.$store.commit('notifications/addNotification', {
+            component: this.name,
+            errorType: 'API Error',
+            message: response.message || 'Command failed',
+            fullData: response
+          })
+
           // Revert state on error
           this.$emit('toggle', !targetState)
         }
         // On success, state stays as is
       } catch (error) {
         console.error(`${this.name} command failed:`, error)
+
+        // Log to notification store
+        this.$store.commit('notifications/addNotification', {
+          component: this.name,
+          errorType: 'Exception',
+          message: error instanceof Error ? error.message : String(error),
+          fullData: error instanceof Error ? { message: error.message, stack: error.stack } : { error: String(error) }
+        })
+
         // Revert state on exception
         this.$emit('toggle', !targetState)
       } finally {
