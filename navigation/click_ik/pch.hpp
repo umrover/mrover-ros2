@@ -11,6 +11,7 @@
 #include <string>
 #include <type_traits>
 #include <unordered_map>
+#include <functional>
 
 #include <rclcpp/node.hpp>
 #include "rclcpp_action/rclcpp_action.hpp"

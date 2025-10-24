@@ -1,20 +1,24 @@
 #pragma once
 
+#include "mrover/action/detail/click_ik__struct.hpp"
 #include "pch.hpp"
 #include <mrover/msg/arm_status.hpp>
 #include <mrover/msg/ik.hpp>
 #include <rclcpp/publisher.hpp>
+#include <rclcpp_action/server.hpp>
+#include <rclcpp_action/types.hpp>
+#include <tf2_ros/transform_listener.h>
 
 namespace mrover {
 
     class ClickIkNode final : public rclcpp::Node {
-        rclcpp::Subscription<sensor_msgs::msg::PointCloud2::ConstSharedPtr>::SharedPtr mPcSub;
-        rclcpp::Publisher<msg::IK>::SharedPtr mIKPub;
-        rclcpp::Subscription<msg::ArmStatus>::SharedPtr mStatusSub;
+        rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::ConstSharedPtr mPcSub;
+        rclcpp::Publisher<msg::IK>::SharedPtr mIkPub;
+        rclcpp::Subscription<msg::ArmStatus>::ConstSharedPtr mStatusSub;
 
-        rclcpp_action::Server<mrover::action::ClickIk>::SharedPtr server;
+        rclcpp_action::Server<action::ClickIk>::SharedPtr server;
 
-        mrover::msg::IK message;
+        msg::IK message;
         rclcpp::TimerBase::SharedPtr timer;
 
         Point const* mPoints{};
@@ -22,17 +26,21 @@ namespace mrover {
         std::size_t mPointCloudWidth{};
         std::size_t mPointCloudHeight{};
 
-        tf2_ros::Buffer mTfBuffer{get_clock()};
-        tf2_ros::TransformListener mTfListener{mTfBuffer};
-        tf2_ros::TransformBroadcaster mTfBroadcaster;
-
+        std::unique_ptr<tf2_ros::Buffer> mTfBuffer = std::make_unique<tf2_ros::Buffer>(get_clock());
+        std::shared_ptr<tf2_ros::TransformListener> mTfListener = std::make_shared<tf2_ros::TransformListener>(*mTfBuffer);
+        std::shared_ptr<tf2_ros::TransformBroadcaster> mTfBroadcaster = std::make_shared<tf2_ros::TransformBroadcaster>(this);
     public:
+
+        auto startClickIk(const rclcpp_action::GoalUUID& uuid, action::ClickIk_Goal::ConstSharedPtr goal) -> rclcpp_action::GoalResponse;
+        rclcpp_action::CancelResponse handle_cancel();
+        void handle_accepted();
+        
         explicit ClickIkNode(rclcpp::NodeOptions const& options = rclcpp::NodeOptions());
 
         ~ClickIkNode() override = default;
 
         auto pointCloudCallback(sensor_msgs::msg::PointCloud2::ConstSharedPtr const& msg) -> void;
-        auto statusCallback(mrover::msg::ArmStatus const& msg) -> void;
+        auto statusCallback(msg::ArmStatus const& msg) -> void;
 
         auto startClickIk() -> void;
         auto cancelClickIk() -> void;

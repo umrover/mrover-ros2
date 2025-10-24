@@ -5,10 +5,11 @@
 
 namespace mrover {
     rclcpp::Duration const ArmController::TIMEOUT = rclcpp::Duration(0, 0.3 * 1e9); // 0.3 seconds
-
+    
     ArmController::ArmController() : Node{"arm_controller"}, mLastUpdate{get_clock()->now() - TIMEOUT} {
         mPosPub = create_publisher<msg::Position>("arm_position_cmd", 10);
         mVelPub = create_publisher<msg::Velocity>("arm_velocity_cmd", 10);
+        //TODO : send status updates
         mStatusPub = create_publisher<msg::ArmStatus>("arm_cmd_status", 10);
 
         mIkSub = create_subscription<msg::IK>("ee_pos_cmd", 1, [this](msg::IK::ConstSharedPtr const& msg) {
