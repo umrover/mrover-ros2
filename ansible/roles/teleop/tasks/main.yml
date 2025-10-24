@@ -28,7 +28,8 @@
   pip:
     name: .
     chdir: "{{ ansible_env.HOME }}/manif"
-    extra_args: "--target={{ ansible_env.HOME }}/ros2_ws/install/mrover/lib/python3.10/site-packages"
+    virtualenv: "{{ ansible_env.HOME }}/ros2_ws/src/mrover/venv"
+    virtualenv_site_packages: true
   when: manifpy_check.rc != 0
 
 - name: Initialize manif submodule in mrover
