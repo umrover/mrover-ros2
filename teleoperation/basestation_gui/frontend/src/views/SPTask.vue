@@ -1,42 +1,54 @@
 <template>
-  <div class="wrapper view-wrapper overflow-x-hidden h-100">
-    <div class="island p-2 rounded controls d-flex gap-2">
-      <SAArmControls :currentSite="siteSelect" class="border boder-2 rounded"/>
-      <HexHub @selectSite="updateSite" @orientation="updateOrientation" class="border boder-2 rounded"/>
-      <LSActuator class="border boder-2 rounded"/>
-      <PanoCam class="border boder-2 rounded"/>
-      <DriveControls />
-      <MastGimbalControls />
-    </div>
+  <div class="main-wrapper view-wrapper">
     <div class="island p-0 rounded map overflow-hidden">
       <BasicMap :odom="odom" />
+    </div>
+    <div class="island p-2 rounded odom">
+      <OdometryReading @odom="updateOdom" class="rounded border border-2 p-2" />
+    </div>
+    <div class="island p-2 rounded controller_state d-flex gap-2">
+      <ControllerDataTable
+        msg-type="drive_state"
+        header="Drive States"
+        class="rounded border border-2 p-2"
+      />
+      <ControllerDataTable
+        msg-type="sa_state"
+        header="SA States"
+        class="rounded border border-2 p-2"
+      />
     </div>
     <div class="island p-3 rounded waypoints">
       <BasicWaypointEditor :odom="odom" />
     </div>
-    <div class="island p-1 rounded data d-flex gap-2">
-      <OdometryReading @odom="updateOdom" class="rounded border border-2 p-2"/>
-      <ControllerDataTable msg-type="drive_state" header="Drive States" class="rounded border border-2 p-2"/>
-      <ControllerDataTable msg-type="sa_state" header="SA States" class="rounded border border-2 p-2"/>
-      <SoilData class="rounded border border-2 p-2"/>
+    <div class="island p-2 rounded controls d-flex gap-2">
+      <HexHub
+        @selectSite="updateSite"
+        @orientation="updateOrientation"
+        class="border border-2 rounded"
+      />
+      <PanoCam class="border border-2 rounded" />
+      <DriveControls />
+      <MastGimbalControls />
+    </div>
+    <div class="island p-2 rounded sensors">
+      <SensorData :site="siteSelect" />
     </div>
   </div>
 </template>
 
 <script lang="ts">
-import Vuex from 'vuex'
-const { mapState, mapActions } = Vuex
+import SensorData from '../components/SensorData.vue'
 import BasicMap from '../components/BasicRoverMap.vue'
-import SoilData from '../components/SoilData.vue'
 import BasicWaypointEditor from '../components/BasicWaypointEditor.vue'
 import DriveControls from '../components/DriveControls.vue'
 import MastGimbalControls from '../components/MastGimbalControls.vue'
 import OdometryReading from '../components/OdometryReading.vue'
 import ControllerDataTable from '../components/ControllerDataTable.vue'
-import SAArmControls from '../components/SAArmControls.vue'
 import HexHub from '../components/HexHub.vue'
-import LSActuator from '../components/LSActuator.vue'
 import PanoCam from '../components/PanoCam.vue'
+import Vuex from 'vuex'
+const { mapState, mapActions } = Vuex
 
 interface Odom {
   latitude_deg: number
@@ -46,18 +58,17 @@ interface Odom {
 
 export default {
   components: {
-    ControllerDataTable,
+    SensorData,
     BasicMap,
-    SoilData,
     BasicWaypointEditor,
     DriveControls,
     MastGimbalControls,
-    SAArmControls,
     OdometryReading,
+    ControllerDataTable,
     HexHub,
-    LSActuator,
     PanoCam,
   },
+
   data() {
     return {
       odom: null as Odom | null,
@@ -72,9 +83,11 @@ export default {
       },
     }
   },
+
   computed: {
     ...mapState('websocket', ['message']),
   },
+
   methods: {
     ...mapActions('websocket', ['sendMessage']),
     updateOdom(odom: Odom) {
@@ -123,18 +136,19 @@ export default {
 </script>
 
 <style scoped>
-.wrapper {
+.main-wrapper {
   display: grid;
   grid-gap: 10px;
-  grid-template-columns: 55% auto; 
-  grid-template-rows: auto 1fr auto;
-  grid-template-areas:
-    'controls controls'
-    'map waypoints'
-    'data data';
-  font-family: sans-serif;
-  height: auto;
   width: 100%;
+  height: 100%;
+  /* grid-template-columns: 40%; */
+  grid-template-rows: 120px;
+  grid-template-areas:
+    'controls map map'
+    'odom map map'
+    'sensors sensors waypoints'
+    'controller_state controller_state waypoints';
+  font-family: sans-serif;
 }
 
 .map {
@@ -145,15 +159,19 @@ export default {
   grid-area: waypoints;
 }
 
-.data {
-  grid-area: data;
-}
-
-.soilData {
-  grid-area: soilData;
-}
-
 .controls {
   grid-area: controls;
+}
+
+.sensors {
+  grid-area: sensors;
+}
+
+.odom {
+  grid-area: odom;
+}
+
+.controller_state {
+  grid-area: controller_state;
 }
 </style>

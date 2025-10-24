@@ -2,10 +2,17 @@
   <div class="flex w-100">
     <h2>White LED</h2>
     <ToggleButton
-      :current-state="siteEnabled[site]"
-      :label-enable-text="'LED Site ' + String.fromCharCode(site + 65)"
-      :label-disable-text="'LED Site ' + String.fromCharCode(site + 65)"
-      @change="toggleLEDs()"
+      :current-state="siteEnabled[0]"
+      :label-enable-text="'LED Site A'"
+      :label-disable-text="'LED Site A'"
+      @change="toggleLEDs(0)"
+    />
+
+    <ToggleButton
+      :current-state="siteEnabled[1]"
+      :label-enable-text="'LED Site B'"
+      :label-disable-text="'LED Site B'"
+      @change="toggleLEDs(1)"
     />
     <!-- <LEDIndicator
           :connected="siteEnabled[site]"
@@ -27,12 +34,12 @@ export default {
     // LEDIndicator
   },
 
-  props: {
+  /*props: {
     site: {
       type: Number,
       required: true,
     },
-  },
+  },*/
 
   data() {
     return {
@@ -56,14 +63,14 @@ export default {
   methods: {
     ...mapActions('websocket', ['sendMessage']),
 
-    toggleLEDs: function () {
-      this.siteEnabled[this.site] = !this.siteEnabled[this.site]
+    toggleLEDs: function (site_num: number) {
+      this.siteEnabled[site_num] = !this.siteEnabled[site_num]
       this.$store.dispatch('websocket/sendMessage', {
         id: 'science',
         message: {
           type: 'white_leds',
-          site: this.site,
-          enable: this.siteEnabled[this.site],
+          site: site_num,
+          enable: this.siteEnabled[site_num],
         },
       })
     },

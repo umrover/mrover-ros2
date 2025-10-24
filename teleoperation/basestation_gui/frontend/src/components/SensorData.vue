@@ -148,7 +148,7 @@ export default {
             datasets: [
               {
                 label: titles[i],
-                data: this.sensor_history[i],
+                data: [] as number[], // Use a plain array, not the reactive one
                 fill: false,
                 borderColor: lineColors[i],
                 tension: 0.1,
@@ -188,6 +188,8 @@ export default {
       for (let x = 0; x < 4; ++x) {
         const chart = charts[x];
         if (chart) {
+          // Copy data from reactive array to chart's plain array
+          chart.data.datasets[0].data = [...this.sensor_history[x]];
           // Update the labels to match the data length
           chart.data.labels = Array.from(
             { length: this.sensor_history[x].length },
