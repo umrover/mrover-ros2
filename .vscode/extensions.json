@@ -3,6 +3,7 @@
         "ms-vscode.cpptools",
         "ms-python.vscode-pylance",
         "ms-python.black-formatter",
+        "ms-python.debugpy",
         "dbaeumer.vscode-eslint",
         "redhat.vscode-xml",
         "redhat.vscode-yaml",
