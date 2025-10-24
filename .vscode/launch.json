@@ -36,6 +36,17 @@
                     "ignoreFailures": true
                 }
             ]
+        },
+        {
+            "name": "(pdb) Launch",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "env": {
+                "LD_LIBRARY_PATH": "${workspaceFolder}/../../install/Debug/mrover/lib:/opt/ros/humble/opt/rviz_ogre_vendor/lib:/opt/ros/humble/lib/aarch64-linux-gnu:/opt/ros/humble/lib/x86_64-linux-gnu:/opt/ros/humble/lib",
+                "ROS_DOMAIN_ID": "5"
+            }
         }
 
     ],
