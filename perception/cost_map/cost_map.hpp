@@ -34,12 +34,10 @@ namespace mrover {
         int mDownSamplingFactor = 2;
         std::string mMapFrame;
         int mDilateAmt = 1;
-        bool mEnableCostMap{};
 
         tf2_ros::Buffer mTfBuffer{get_clock()};
         tf2_ros::TransformListener mTfListener{mTfBuffer};
         tf2_ros::TransformBroadcaster mTfBroadcaster{this};
-        LoopProfiler mLoopProfiler;
 
         std::optional<SE3d> mPreviousPose;
         nav_msgs::msg::OccupancyGrid mGlobalGridMsg;
@@ -47,8 +45,6 @@ namespace mrover {
         rclcpp::Service<mrover::srv::MoveCostMap>::SharedPtr mServer;
 
         rclcpp::Service<mrover::srv::DilateCostMap>::SharedPtr mCostServer;
-
-        rclcpp::Service<mrover::srv::ToggleCostMap>::SharedPtr mToggleMapServer;
 
         struct BinEntry {
             R3f pointInCamera;
@@ -68,8 +64,6 @@ namespace mrover {
 
         // To Test (CLI): ros2 service call /dilate_cost_map mrover/srv/DilateCostMap "{dilation_amount: [enter here]}"
         auto dilateCostMapCallback(mrover::srv::DilateCostMap::Request::ConstSharedPtr& req, mrover::srv::DilateCostMap::Response::SharedPtr& res) -> void;
-
-        auto toggleCostMapCallback(mrover::srv::ToggleCostMap::Request::ConstSharedPtr& req, mrover::srv::ToggleCostMap::Response::SharedPtr& res) ->void;
 
         void uploadPC();
 

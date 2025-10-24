@@ -31,7 +31,6 @@
 #include <parameter.hpp>
 #include <point.hpp>
 #include <rclcpp/logging.hpp>
-#include <loop_profiler.hpp>
 
 // Message types
 #include <nav_msgs/msg/detail/occupancy_grid__struct.hpp>
@@ -43,5 +42,4 @@
 // Services
 #include <mrover/srv/dilate_cost_map.hpp>
 #include <mrover/srv/move_cost_map.hpp>
-#include <mrover/srv/toggle_cost_map.hpp>
 #include <rclcpp/service.hpp>

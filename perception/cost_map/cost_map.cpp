@@ -1,7 +1,7 @@
 #include "cost_map.hpp"
 
 namespace mrover {
-    CostMapNode::CostMapNode(rclcpp::NodeOptions const& options) : Node("cost_map", options), mLoopProfiler{get_logger()} {
+    CostMapNode::CostMapNode(rclcpp::NodeOptions const& options) : Node("cost_map", options) {
         std::vector<ParameterWrapper> params{
                 {"resolution", mResolution, 1.0}, // Base cell size
                 {"size", mSize, 60.0},
@@ -17,7 +17,6 @@ namespace mrover {
                 {"alpha", mAlpha, 0.05},
                 {"z_threshold", mZThreshold, 0.51},       // Tested on static visualizer
                 {"cell_division_size", mNumDivisions, 2}, // Number of subdivisions per cell (one side this number will be squared)
-                {"enable_cost_map", mEnableCostMap, true}, // Start cost map off enabled
         };
 
         ParameterWrapper::declareParameters(this, params);
@@ -29,17 +28,11 @@ namespace mrover {
             moveCostMapCallback(request, response);
         });
         mPcSub = create_subscription<sensor_msgs::msg::PointCloud2>("/zed/left/points", 1, [this](sensor_msgs::msg::PointCloud2::ConstSharedPtr const& msg) {
-            if(mEnableCostMap){
-                pointCloudCallback(msg);
-            }
+            pointCloudCallback(msg);
         });
 
         mCostServer = create_service<srv::DilateCostMap>("dilate_cost_map", [this](mrover::srv::DilateCostMap::Request::ConstSharedPtr req, mrover::srv::DilateCostMap::Response::SharedPtr res) {
             dilateCostMapCallback(req, res);
-        });
-
-        mToggleMapServer = create_service<srv::ToggleCostMap>("toggle_cost_map", [this](mrover::srv::ToggleCostMap::Request::ConstSharedPtr req, mrover::srv::ToggleCostMap::Response::SharedPtr res){
-            toggleCostMapCallback(req, res);
         });
 
         mPCDebugPub = create_publisher<sensor_msgs::msg::PointCloud2>("cost_map/debug_pc", 1);

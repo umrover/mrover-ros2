@@ -1,5 +1,4 @@
 #include "cost_map.hpp"
-#include <rclcpp/logging.hpp>
 
 namespace mrover {
     auto remap(double x, double inMin, double inMax, double outMin, double outMax) -> double {
@@ -27,8 +26,6 @@ namespace mrover {
         assert(msg);
         assert(msg->height > 0);
         assert(msg->width > 0);
-
-        mLoopProfiler.beginLoop();
 
         // Push transforms b/w clip box and map frame to tf tree
         SE3d rightBot(R3d{mNearClip, -mNearWidth, 0}, SO3d::Identity());
@@ -92,8 +89,6 @@ namespace mrover {
                 }
             }
 
-            mLoopProfiler.measureEvent("CMAP: Binned");
-
 
             // Percentage Algorithm (acounts for angle changes (and outliers))
             // // Chose the percentage algorithm because it's less sensitive to angle changes (and outliers) and can accurately track
@@ -147,8 +142,6 @@ namespace mrover {
                 auto& cell = mGlobalGridMsg.data[i];
                 cell = static_cast<std::int8_t>(mAlpha * cost + (1 - mAlpha) * cell);
             }
-
-            mLoopProfiler.measureEvent("CMAP: Ray Casting Done");
 
             // If we are using the debug point cloud publish it
             if constexpr (uploadDebugPointCloud) {
@@ -225,7 +218,6 @@ namespace mrover {
 
 
             mCostMapPub->publish(postProcessed);
-            mLoopProfiler.measureEvent("CMAP: Dilation + Publication");
         } catch (tf2::TransformException const& e) {
             RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, std::format("TF tree error processing point cloud: {}", e.what()));
         }
@@ -337,12 +329,6 @@ namespace mrover {
         mDilateAmt = static_cast<int>(floor(static_cast<double>(req->dilation_amount / mResolution)));
         res->success = true;
         RCLCPP_INFO_STREAM(get_logger(), "Done changing dilation");
-    }
-
-    auto CostMapNode::toggleCostMapCallback(mrover::srv::ToggleCostMap::Request::ConstSharedPtr& req, mrover::srv::ToggleCostMap::Response::SharedPtr& res) ->void {
-        mEnableCostMap = req->enable;
-        RCLCPP_INFO(this->get_logger(), "Turning Cost Map %s", (mEnableCostMap ? "ON" : "OFF"));
-        res->enable_status = mEnableCostMap;
     }
 
     auto CostMapNode::indexToCoordinate(int const index) const -> CostMapNode::Coordinate {
