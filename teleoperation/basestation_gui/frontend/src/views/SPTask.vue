@@ -3,24 +3,36 @@
     <div class="island p-0 rounded map overflow-hidden">
       <BasicMap :odom="odom" />
     </div>
-    <div class="island odom">
-      <OdometryReading @odom="updateOdom" class="rounded border border-2 p-2"/>
+    <div class="island p-2 rounded odom">
+      <OdometryReading @odom="updateOdom" class="rounded border border-2 p-2" />
     </div>
-    <div class='island p-2 rounded controller_state d-flex flex-column gap-2'>
-      <ControllerDataTable msg-type="drive_state" header="Drive States" class="rounded border border-2 p-2"/>
-      <ControllerDataTable msg-type="sa_state" header="SA States" class="rounded border border-2 p-2"/>
+    <div class="island p-2 rounded controller_state d-flex gap-2">
+      <ControllerDataTable
+        msg-type="drive_state"
+        header="Drive States"
+        class="rounded border border-2 p-2"
+      />
+      <ControllerDataTable
+        msg-type="sa_state"
+        header="SA States"
+        class="rounded border border-2 p-2"
+      />
     </div>
     <div class="island p-3 rounded waypoints">
       <BasicWaypointEditor :odom="odom" />
     </div>
     <div class="island p-2 rounded controls d-flex gap-2">
-      <HexHub @selectSite="updateSite" @orientation="updateOrientation" class="border boder-2 rounded"/>
-      <PanoCam class="border boder-2 rounded"/>
+      <HexHub
+        @selectSite="updateSite"
+        @orientation="updateOrientation"
+        class="border border-2 rounded"
+      />
+      <PanoCam class="border border-2 rounded" />
       <DriveControls />
       <MastGimbalControls />
     </div>
     <div class="island p-2 rounded sensors">
-        <SensorData :site="site" />
+      <SensorData :site="siteSelect" />
     </div>
   </div>
 </template>
@@ -36,7 +48,7 @@ import ControllerDataTable from '../components/ControllerDataTable.vue'
 import HexHub from '../components/HexHub.vue'
 import PanoCam from '../components/PanoCam.vue'
 import Vuex from 'vuex'
-const { mapState, mapActions} = Vuex
+const { mapState, mapActions } = Vuex
 
 interface Odom {
   latitude_deg: number
@@ -45,41 +57,38 @@ interface Odom {
 }
 
 export default {
-    components: {
-        SensorData,
-        BasicMap,
-        BasicWaypointEditor,
-        DriveControls,
-        MastGimbalControls,
-        OdometryReading,
-        ControllerDataTable,
-        HexHub,
-        PanoCam,
-    },
+  components: {
+    SensorData,
+    BasicMap,
+    BasicWaypointEditor,
+    DriveControls,
+    MastGimbalControls,
+    OdometryReading,
+    ControllerDataTable,
+    HexHub,
+    PanoCam,
+  },
 
-    data() {
-        return {
-        site: 0 as number,
-        cameraA: true,
-        cameraB: true,
-        odom: null as Odom | null,
-        siteSelect: 0,
-        orientation: true,
-        site_to_radians: {
-          0: 0.0,
-          1: (2 * Math.PI) / 5,
-          2: (4 * Math.PI) / 5,
-          3: (6 * Math.PI) / 5,
-          4: (8 * Math.PI) / 5,
-        },
-        }
-    },
+  data() {
+    return {
+      odom: null as Odom | null,
+      siteSelect: 0,
+      orientation: true,
+      site_to_radians: {
+        0: 0.0,
+        1: (2 * Math.PI) / 5,
+        2: (4 * Math.PI) / 5,
+        3: (6 * Math.PI) / 5,
+        4: (8 * Math.PI) / 5,
+      },
+    }
+  },
 
-    computed: {
+  computed: {
     ...mapState('websocket', ['message']),
-    },
+  },
 
-    methods: {
+  methods: {
     ...mapActions('websocket', ['sendMessage']),
     updateOdom(odom: Odom) {
       this.odom = odom
@@ -132,35 +141,13 @@ export default {
   grid-gap: 10px;
   width: 100%;
   height: 100%;
-  grid-template-columns: 40%;
+  /* grid-template-columns: 40%; */
+  grid-template-rows: 120px;
   grid-template-areas:
-  'controls camera map map map'
-  'odom odom map map map'
-  'sensors sensors controller_state  controller_state waypoints'
-  'sensors sensors controller_state controller_state waypoints';
-  font-family: sans-serif;
-}
-
-.odometry-wrapper{
-  display: grid;
-  grid-gap: 10px;
-  width: 100%;
-  height: 100%;
-  grid-template-columns: 50%;
-  grid-template-areas:
-    'odom drive-state-table sa-state-table';
-}
-
-.wrapper {
-  display: grid;
-  grid-gap: 10px;
-  width: 100%;
-  height: 100%;
-  grid-template-columns: repeat(2, auto) 40%;
-  grid-template-areas:
-    'controls controls camera'
-    'ninhydrin benedicts camera'
-    'sensors sensors camera';
+    'controls map map'
+    'odom map map'
+    'sensors sensors waypoints'
+    'controller_state controller_state waypoints';
   font-family: sans-serif;
 }
 
@@ -176,24 +163,12 @@ export default {
   grid-area: controls;
 }
 
-.data {
-  grid-area: data;
-}
-
 .sensors {
   grid-area: sensors;
 }
 
-.odom{
+.odom {
   grid-area: odom;
-}
-
-.drive-state-table{
-  grid-area: drive-state-table;
-}
-
-.sa-state-table{
-  grid-area: sa-state-table;
 }
 
 .controller_state {
