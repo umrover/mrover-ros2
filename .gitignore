@@ -33,3 +33,6 @@ state_machine/state_log.txt
 
 /teleoperation/basestation_gui/install/
 /teleoperation/basestation_gui/log/
+
+# dev
+.python-version
