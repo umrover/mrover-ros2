@@ -36,7 +36,7 @@
         :color="'red'"
         :dash-array="'5, 5'"
       />
-      <l-polyline :lat-lngs="odomPath" :color="'blue'" :dash-array="'5, 5'" />
+      <l-polyline :lat-lngs="[...odomPath]" :color="'blue'" :dash-array="'5, 5'" />
     </l-map>
 
     <!-- Controls -->

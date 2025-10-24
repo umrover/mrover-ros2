@@ -182,7 +182,7 @@ onMounted(() => {
           datasets: [
             {
               label: titles[i],
-              data: sensor_history.value[i],
+              data: [] as number[], // ✅ Plain array, not reactive
               fill: false,
               borderColor: lineColors[i],
               tension: 0.1,
@@ -222,6 +222,7 @@ onMounted(() => {
     for (let x = 0; x < 4; ++x) {
       const chart = charts[x];
       if (chart) {
+        chart.data.datasets[0].data = [...sensor_history.value[x]];
         // Update the labels to match the data length
         chart.data.labels = Array.from(
           { length: sensor_history.value[x].length },

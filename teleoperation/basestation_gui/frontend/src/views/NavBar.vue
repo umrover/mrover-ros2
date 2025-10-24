@@ -36,7 +36,7 @@ export default defineComponent({
         '/DMTask': 'Delivery Mission',
         '/ESTask': 'Equipment Servicing',
         '/Cameras': 'Camera View',
-        '/SPTask' : "Science Payload Mission",
+        '/SPTask' : "Science Payload",
         '/dev': 'Development View'
       };
 

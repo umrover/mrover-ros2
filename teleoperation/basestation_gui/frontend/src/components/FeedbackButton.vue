@@ -56,7 +56,7 @@ export default defineComponent({
 
     displayName(): string {
       if (this.isWaiting) {
-        return `Setting to ${!this.checked ? 'ON' : 'OFF'}`
+        return `Setting to ${this.checked ? 'ON' : 'OFF'}`
       }
       return this.name
     },

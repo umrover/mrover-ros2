@@ -35,16 +35,16 @@
       <DriveControls />
       <MastGimbalControls />
     </div>
-    <div class="island p-2 rounded moteus d-flex flex-column gap-2">
+    <div class='island p-2 rounded moteus d-flex gap-2'>
       <ControllerDataTable
         msg-type="drive_left_state"
         header="Drive Left States"
-        class="border border-2 rounded p-2"
+        class="border border-2 rounded p-2 flex-fill"
       />
       <ControllerDataTable
         msg-type="drive_right_state"
         header="Drive Right States"
-        class="border border-2 rounded p-2"
+        class="border border-2 rounded p-2 flex-fill"
       />
     </div>
   </div>
@@ -114,7 +114,7 @@ const updateBasestationOdom = (newOdom: Odom) => {
   basestationOdom.value = newOdom
 }
 
-const topics = ['auton', 'drive', 'nav', 'science']
+const topics = ['auton', 'drive', 'nav', 'science', 'mast']
 
 onMounted(() => {
   for (const topic of topics) {
@@ -133,16 +133,26 @@ onUnmounted(() => {
 <style scoped>
 .wrapper {
   display: grid;
-  grid-gap: 10px;
+  gap: 0.625rem;
   width: 100%;
   height: 100%;
-  grid-template-columns: 50% auto;
-  grid-template-rows: 35% 28% 1fr;
+  max-width: 100vw;
+  max-height: 100vh;
+  overflow: hidden;
+  box-sizing: border-box;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-rows: minmax(200px, 40%) auto auto;
   grid-template-areas:
     'map map'
     'data waypoints'
     'moteus waypoints';
   font-family: sans-serif;
+}
+
+.wrapper > * {
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
 }
 
 .map {

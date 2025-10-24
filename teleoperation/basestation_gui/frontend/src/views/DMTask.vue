@@ -15,9 +15,9 @@
     <div class='island rounded rover-3d overflow-hidden'>
       <Rover3D class="w-100 h-100"/>
     </div>
-    <div class='island p-2 rounded controller_state d-flex flex-column gap-2'>
-      <ControllerDataTable msg-type='arm_state' header='Arm States' />
-      <ControllerDataTable msg-type='drive_state' header='Drive States' />
+    <div class='island p-2 rounded controller_state d-flex gap-2'>
+      <ControllerDataTable class="flex-fill" msg-type='arm_state' header='Arm States' />
+      <ControllerDataTable class="flex-fill" msg-type='drive_state' header='Drive States' />
     </div>
     <div>
       <MastGimbalControls />
@@ -43,13 +43,13 @@ import type { Odom } from '@/types/coordinates'
 const websocketStore = useWebsocketStore()
 
 const odom = ref<Odom>({ latitude_deg: 0, longitude_deg: 0, bearing_deg: 0 })
-const drone_odom = ref<Odom>({ latitude_deg: 0, longitude_deg: 0 }) // Use Odom for drone_odom
+const drone_odom = ref<Odom>({ latitude_deg: 0, longitude_deg: 0 })
 
 const updateOdom = (newOdom: Odom) => {
   odom.value = newOdom;
 }
 
-const updateDroneOdom = (newOdom: Odom) => { // newOdom can be Odom now
+const updateDroneOdom = (newOdom: Odom) => {
   drone_odom.value = newOdom;
 }
 
@@ -71,17 +71,28 @@ onUnmounted(() => {
 <style>
 .wrapper-dm {
   display: grid;
-  gap: 10px;
+  gap: 0.625rem;
   width: 100%;
   height: 100%;
-  grid-template-columns: 45% auto auto;
-  grid-template-rows: 45% 1fr 1fr 1fr;
+  max-width: 100vw;
+  max-height: 100vh;
+  overflow: hidden;
+  box-sizing: border-box;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-rows: 40% auto auto auto;
   grid-template-areas:
-    'rover-3d map map'
-    'rover-3d controller_state waypoint-editor'
-    'arm-controls controller_state waypoint-editor'
-    'odom controller_state waypoint-editor';
+    'rover-3d map'
+    'rover-3d waypoint-editor'
+    'odom waypoint-editor'
+    'arm-controls waypoint-editor'
+    'controller_state waypoint-editor';
   font-family: sans-serif;
+}
+
+.wrapper-dm > * {
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
 }
 
 .map {

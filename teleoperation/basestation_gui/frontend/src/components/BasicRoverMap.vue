@@ -30,8 +30,8 @@
         </l-marker>
       </div>
 
-      <l-polyline :lat-lngs="odomPath" :color="'blue'" />
-      <l-polyline :lat-lngs="dronePath" :color="'green'" />
+      <l-polyline :lat-lngs="[...odomPath]" :color="'blue'" />
+      <l-polyline :lat-lngs="[...dronePath]" :color="'green'" />
     </l-map>
     <div
       class="controls px-2 py-1 position-absolute d-flex align-items-center gap-2 top-0 end-0 m-2 bg-white rounded"

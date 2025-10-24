@@ -21,6 +21,7 @@ html,
 body {
   height: 100%;
   margin: 0;
+  overflow: hidden;
 }
 
 #app {
@@ -28,12 +29,14 @@ body {
   display: flex;
   flex-direction: column;
   height: 100%;
+  overflow: hidden;
 }
 
 .view-wrapper {
-  height: 100vh;
-  width: 100vw;
-  padding: 10px;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  padding: 0.625rem;
   background-color: #dddddd;
   overflow: hidden;
   box-sizing: border-box;

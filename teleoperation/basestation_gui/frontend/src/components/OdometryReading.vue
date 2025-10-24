@@ -1,62 +1,85 @@
 <template>
-  <div class="d-flex flex-column w-100 wrap">
-    <div class="d-flex justify-content-between w-100 flex-wrap gap-1">
-      <div class="d-flex flex-column gap-2">
-        <div class="border border-2 border-secondary rounded p-2">
-          <h5 class="m-0 p-0 text-center">Rover Odom</h5>
-          <div class="d-flex gap-3 justify-content-center">
-            <div class="odomModule">
-              <small class="text-muted">Latitude</small>
-              <p class="mb-0">{{ formatted_odom.lat }}º</p>
-            </div>
-            <div class="odomModule">
-              <small class="text-muted">Longitude</small>
-              <p class="mb-0">{{ formatted_odom.lon }}º</p>
-            </div>
+  <div class="d-flex gap-2 w-100 h-100 overflow-hidden">
+    <div class="d-flex flex-row gap-2 flex-grow-1 min-h-0 align-items-center">
+      <div class="border rounded p-1 bg-light d-flex flex-column odom-section">
+        <div class="fw-semibold text-center text-uppercase odom-title text-secondary mb-1">Rover</div>
+        <div class="d-flex flex-column odom-rows flex-grow-1 justify-content-center">
+          <div class="d-flex justify-content-between">
+            <span class="text-muted odom-label">Lat:</span>
+            <span class="fw-semibold font-monospace odom-value">{{ formatted_odom.lat }}º</span>
           </div>
-        </div>
-        <div class="d-flex justify-content-center gap-3">
-          <div class="odomModule">
-            <small class="text-muted">Bearing</small>
-            <p class="mb-0">{{ rover_bearing_deg.toFixed(2) }}º</p>
+          <div class="d-flex justify-content-between">
+            <span class="text-muted odom-label">Lon:</span>
+            <span class="fw-semibold font-monospace odom-value">{{ formatted_odom.lon }}º</span>
           </div>
-          <div class="odomModule">
-            <small class="text-muted">Altitude</small>
-            <p class="mb-0">{{ rover_altitude.toFixed(2) }} m</p>
+          <div class="d-flex justify-content-between">
+            <span class="text-muted odom-label">Bearing:</span>
+            <span class="fw-semibold font-monospace odom-value">{{ rover_bearing_deg.toFixed(2) }}º</span>
+          </div>
+          <div class="d-flex justify-content-between">
+            <span class="text-muted odom-label">Alt:</span>
+            <span class="fw-semibold font-monospace odom-value">{{ rover_altitude.toFixed(2) }}m</span>
           </div>
         </div>
       </div>
-      <div class="d-flex justify-content-center align-items-center p-0 m-0">
-        <FlightAttitudeIndicator />
-      </div>
-      <div class="d-flex flex-column gap-2">
-        <div class="border border-2 border-secondary rounded p-2">
-          <h5 class="m-0 p-0 font-monospace text-center">Basestation Odom</h5>
-          <div class="d-flex gap-3 justify-content-center">
-            <div class="odomModule">
-              <small class="text-muted">Latitude</small>
-              <p class="mb-0">{{ formatted_basestation_odom.lat }}º</p>
-            </div>
-            <div class="odomModule">
-              <small class="text-muted">Longitude</small>
-              <p class="mb-0">{{ formatted_basestation_odom.lon }}º</p>
-            </div>
+
+      <div class="border rounded p-1 bg-light d-flex flex-column odom-section">
+        <div class="fw-semibold text-center text-uppercase odom-title text-secondary mb-1">Base</div>
+        <div class="d-flex flex-column odom-rows flex-grow-1 justify-content-center">
+          <div class="d-flex justify-content-between">
+            <span class="text-muted odom-label">Lat:</span>
+            <span class="fw-semibold font-monospace odom-value">{{ formatted_basestation_odom.lat }}º</span>
           </div>
-        </div>
-        <div class="d-flex justify-content-center gap-3">
-          <div class="odomModule">
-            <small class="text-muted">Odom Status</small>
-            <p class="mb-0">{{ get_odom_status }}</p>
+          <div class="d-flex justify-content-between">
+            <span class="text-muted odom-label">Lon:</span>
+            <span class="fw-semibold font-monospace odom-value">{{ formatted_basestation_odom.lon }}º</span>
           </div>
-          <div class="odomModule">
-            <small class="text-muted">Drone Status</small>
-            <p class="mb-0">{{ get_drone_status }}</p>
+          <div class="d-flex justify-content-between">
+            <span class="text-muted odom-label">GPS:</span>
+            <span class="fw-semibold font-monospace odom-value">{{ get_odom_status }}</span>
+          </div>
+          <div class="d-flex justify-content-between">
+            <span class="text-muted odom-label">Drone:</span>
+            <span class="fw-semibold font-monospace odom-value">{{ get_drone_status }}</span>
           </div>
         </div>
       </div>
     </div>
-    <div class="d-flex justify-content-center">
-      <IMUCalibration />
+
+    <div class="d-flex align-items-center justify-content-center h-100 attitude-container">
+      <FlightAttitudeIndicator />
+    </div>
+
+    <div class="d-flex align-items-center imu-container">
+      <div class="border rounded p-1 bg-light d-flex flex-column gap-1">
+        <div class="fw-semibold text-center text-uppercase odom-title text-secondary">IMU Cal</div>
+        <div class="d-flex flex-column gap-1">
+          <div class="d-flex justify-content-between align-items-center">
+            <span class="text-muted odom-label">Mag:</span>
+            <LEDIndicator
+              :name="mag_calibration.toString()"
+              :show_name="true"
+              :connected="mag_calibration == 3"
+            />
+          </div>
+          <div class="d-flex justify-content-between align-items-center">
+            <span class="text-muted odom-label">Gyro:</span>
+            <LEDIndicator
+              :name="gyro_calibration.toString()"
+              :show_name="true"
+              :connected="gyro_calibration == 3"
+            />
+          </div>
+          <div class="d-flex justify-content-between align-items-center">
+            <span class="text-muted odom-label">Accel:</span>
+            <LEDIndicator
+              :name="accel_calibration.toString()"
+              :show_name="true"
+              :connected="accel_calibration == 3"
+            />
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -66,12 +89,13 @@ import { ref, computed, watch } from 'vue'
 import { useWebsocketStore } from '@/stores/websocket'
 import { storeToRefs } from 'pinia'
 import {quaternionToMapAngle } from '../utils/map.ts'
-import IMUCalibration from './IMUCalibration.vue'
 import FlightAttitudeIndicator from './FlightAttitudeIndicator.vue'
+import LEDIndicator from './LEDIndicator.vue'
 import type {
   Odom,
   FormattedOdom,
   NavMessage,
+  CalibrationMessage,
 } from '../types/coordinates'
 
 const emit = defineEmits(['odom', 'drone_odom', 'basestation_odom'])
@@ -90,6 +114,10 @@ const drone_status = ref(false)
 const basestation_latitude_deg = ref(38.4071654)
 const basestation_longitude_deg = ref(-110.7923927)
 const basestation_status = ref(false)
+
+const mag_calibration = ref(0)
+const gyro_calibration = ref(0)
+const accel_calibration = ref(0)
 
 const navMessage = computed(() => messages.value['nav'])
 
@@ -153,16 +181,79 @@ watch(navMessage, (msg) => {
       longitude_deg: rover_longitude_deg.value,
       bearing_deg: rover_bearing_deg.value,
     } as Odom)
+  } else if (navMsg.type === 'calibration') {
+    const calMsg = msg as CalibrationMessage
+    mag_calibration.value = calMsg.magnetometer_calibration
+    gyro_calibration.value = calMsg.gyroscope_calibration
+    accel_calibration.value = calMsg.acceleration_calibration
   }
 })
 </script>
 
 <style scoped>
-.odomModule {
-  width: 100px;
+.odom-section {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 0;
+  width: 0;
 }
 
-.wrap {
-  min-width: 700px;
+.odom-title {
+  font-size: clamp(0.6rem, 1vw, 0.875rem);
+  line-height: 1.2;
+}
+
+.odom-rows {
+  gap: 0.25rem;
+}
+
+.odom-label {
+  font-size: clamp(0.65rem, 1vw, 0.875rem);
+  white-space: nowrap;
+  line-height: 1.3;
+}
+
+.odom-value {
+  font-size: clamp(0.65rem, 1vw, 0.875rem);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: right;
+  line-height: 1.3;
+}
+
+.attitude-container {
+  flex: 0 0 auto;
+  min-width: 0;
+  min-height: 0;
+  width: clamp(120px, 15vw, 200px);
+  height: 100%;
+}
+
+.attitude-container :deep(> div) {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.attitude-container :deep(canvas) {
+  max-width: 100%;
+  max-height: 100%;
+  width: auto !important;
+  height: auto !important;
+  object-fit: contain;
+}
+
+.imu-container {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  max-width: 100px;
+}
+
+.min-h-0 {
+  min-height: 0;
 }
 </style>

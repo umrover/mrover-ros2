@@ -1,3 +1,6 @@
+<template>
+  <div class="drivecontrols"></div>
+</template>
 
 <script lang='ts' setup>
 import { onMounted, onBeforeUnmount } from 'vue'

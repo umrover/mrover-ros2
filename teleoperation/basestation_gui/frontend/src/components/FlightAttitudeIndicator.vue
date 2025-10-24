@@ -1,6 +1,6 @@
 <template>
-  <div class="d-flex justify-content-center">
-    <Attitude :size="200" :pitch="pitch" :roll="roll" />
+  <div ref="wrapperRef" class="d-flex justify-content-center align-items-center w-100 h-100">
+    <Attitude :size="indicatorSize" :pitch="pitch" :roll="roll" />
   </div>
 </template>
 
@@ -16,6 +16,7 @@ const { messages } = storeToRefs(websocketStore)
 
 const pitch = ref(0)
 const roll = ref(0)
+const indicatorSize = ref(Math.min(window.innerHeight * 0.15, 180))
 
 const navMessage = computed(() => messages.value['nav'])
 
