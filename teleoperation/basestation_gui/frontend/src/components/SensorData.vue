@@ -63,214 +63,175 @@
   </div>
 </template>
 
-<script lang="ts">
-import Vuex from 'vuex'
-const { mapState } = Vuex
+<script lang="ts" setup>
+import { ref, computed, watch, onMounted } from 'vue'
+import { useWebsocketStore } from '@/stores/websocket'
+import { storeToRefs } from 'pinia'
 import Chart from 'chart.js/auto'
 import type { SensorData } from '../types/sensors'
-import type { WebSocketState } from '../types/websocket'
+import type { ScienceMessage } from '@/types/websocket'
 
-export default {
-  props: {
-    site: {
-      type: Number,
-      required: true,
-    },
-  },
+defineProps<{
+  site: number
+}>()
 
-  data(): {
-    sensor_data: SensorData;
-    sensor_history: number[][];
-  } {
-    return {
-      sensor_data: {
-        oxygen: 0,
-        oxygen_var: 0,
-        uv: 0,
-        uv_var: 0,
-        humidity: 0,
-        humidity_var: 0,
-        temp: 0,
-        temp_var: 0,
-      },
-      sensor_history: [
-        [], // oxygen
-        [], // humidity
-        [], // temperature
-        [], // uv
-      ],
-    };
-  },
+const websocketStore = useWebsocketStore()
+const { messages } = storeToRefs(websocketStore)
 
-  mounted() {
-    const charts: Chart[] = [];
+const sensor_data = ref<SensorData>({
+  oxygen: 0,
+  oxygen_var: 0,
+  uv: 0,
+  uv_var: 0,
+  humidity: 0,
+  humidity_var: 0,
+  temp: 0,
+  temp_var: 0,
+})
+const sensor_history = ref<number[][]>([
+  [], // oxygen
+  [], // humidity
+  [], // temperature
+  [], // uv
+])
 
-    // This helper function waits for a DOM element to be available
-    function waitForElm(selector: string): Promise<Element | null> {
-      return new Promise(resolve => {
+const scienceMessage = computed(() => messages.value['science'])
+
+watch(scienceMessage, (msg) => {
+  if (!msg) return
+  const scienceMsg = msg as ScienceMessage;
+  switch (scienceMsg.type) {
+    case 'oxygen':
+      sensor_data.value.oxygen = scienceMsg.percent
+      // sensor_data.value.oxygen_var = msg.varianace
+      break
+    case 'uv':
+      sensor_data.value.uv = scienceMsg.uv_index
+      // sensor_data.value.uv_var = msg.varianace
+      break
+    case 'temperature':
+      sensor_data.value.temp = scienceMsg.temperature
+      // sensor_data.value.temp_var = msg.variance
+      break
+    case 'humidity':
+      sensor_data.value.humidity = scienceMsg.relative_humidity
+      // sensor_data.value.humidity_var = 100* msg.variance
+      break
+  }
+})
+
+const download = () => {
+  // downloads csv of table
+  let csv = 'Oxygen, UV (index), Humidity, Temperature (C)\n'
+
+  const numRows = sensor_history.value[0].length // transpose (flip) array
+  for (let i = 0; i < numRows; ++i) {
+    const row = sensor_history.value.map(sensor => sensor[i])
+    csv += row.join(',') + '\n'
+  }
+
+  const anchor = document.createElement('a')
+  anchor.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv)
+  anchor.download = 'sensor_data.csv'
+  anchor.click()
+}
+
+onMounted(() => {
+  const charts: Chart[] = [];
+
+  // This helper function waits for a DOM element to be available
+  function waitForElm(selector: string): Promise<Element | null> {
+    return new Promise(resolve => {
+      const elm = document.querySelector(selector);
+      if (elm) {
+        return resolve(elm);
+      }
+
+      const observer = new MutationObserver(() => {
         const elm = document.querySelector(selector);
         if (elm) {
-          return resolve(elm);
+          observer.disconnect();
+          resolve(elm);
         }
-
-        const observer = new MutationObserver(() => {
-          const elm = document.querySelector(selector);
-          if (elm) {
-            observer.disconnect();
-            resolve(elm);
-          }
-        });
-
-        observer.observe(document.body, {
-          childList: true,
-          subtree: true,
-        });
       });
-    }
 
-    const titles = [
-      'Oxygen Percentage Over Time (s)',
-      'Relative Humidity Over Time (s)',
-      'Temperature (C) Over Time (s)',
-      'UV Index Over Time (s)',
-    ];
+      observer.observe(document.body, {
+        childList: true,
+        subtree: true,
+      });
+    });
+  }
 
-    const lineColors = ['#4D9DE0', '#E15554', '#3BB273', '#7768AE'];
-    const maxHistory = 10;
+  const titles = [
+    'Oxygen Percentage Over Time (s)',
+    'Relative Humidity Over Time (s)',
+    'Temperature (C) Over Time (s)',
+    'UV Index Over Time (s)',
+  ];
 
-    // Create the four charts
-    for (let i = 0; i < 4; ++i) {
-      waitForElm(`#chart${i}`).then(canvasElement => {
-        // Ensure the element exists and is a canvas before creating the chart
-        if (canvasElement instanceof HTMLCanvasElement) {
-          const data = {
-            labels: [] as number[], // Initialize labels array
-            datasets: [
-              {
-                label: titles[i],
-                data: [] as number[], // Use a plain array, not the reactive one
-                fill: false,
-                borderColor: lineColors[i],
-                tension: 0.1,
-              },
-            ],
-          };
+  const lineColors = ['#4D9DE0', '#E15554', '#3BB273', '#7768AE'];
+  const maxHistory = 10;
 
-          charts[i] = new Chart(canvasElement, {
-            type: 'line',
-            data: data,
-            options: {
-              responsive: false,
-              scales: {
-                y: {
-                  beginAtZero: true,
-                },
+  // Create the four charts
+  for (let i = 0; i < 4; ++i) {
+    waitForElm(`#chart${i}`).then(canvasElement => {
+      // Ensure the element exists and is a canvas before creating the chart
+      if (canvasElement instanceof HTMLCanvasElement) {
+        const data = {
+          labels: [] as number[], // Initialize labels array
+          datasets: [
+            {
+              label: titles[i],
+              data: sensor_history.value[i],
+              fill: false,
+              borderColor: lineColors[i],
+              tension: 0.1,
+            },
+          ],
+        };
+
+        charts[i] = new Chart(canvasElement, {
+          type: 'line',
+          data: data,
+          options: {
+            responsive: false,
+            scales: {
+              y: {
+                beginAtZero: true,
               },
             },
-          });
-        }
-      });
+          },
+        });
+      }
+    });
+  }
+
+  // Set up the interval to update chart data
+  setInterval(() => {
+    sensor_history.value[0].push(sensor_data.value.oxygen);
+    sensor_history.value[1].push(sensor_data.value.humidity);
+    sensor_history.value[2].push(sensor_data.value.temp);
+    sensor_history.value[3].push(sensor_data.value.uv);
+
+    for (let x = 0; x < 4; ++x) {
+      if (sensor_history.value[x].length > maxHistory) {
+        sensor_history.value[x].shift();
+      }
     }
 
-    // Set up the interval to update chart data
-    setInterval(() => {
-      this.sensor_history[0].push(this.sensor_data.oxygen);
-      this.sensor_history[1].push(this.sensor_data.humidity);
-      this.sensor_history[2].push(this.sensor_data.temp);
-      this.sensor_history[3].push(this.sensor_data.uv);
-
-      for (let x = 0; x < 4; ++x) {
-        if (this.sensor_history[x].length > maxHistory) {
-          this.sensor_history[x].shift();
-        }
+    for (let x = 0; x < 4; ++x) {
+      const chart = charts[x];
+      if (chart) {
+        // Update the labels to match the data length
+        chart.data.labels = Array.from(
+          { length: sensor_history.value[x].length },
+          (_, i) => i
+        );
+        chart.update();
       }
-
-      for (let x = 0; x < 4; ++x) {
-        const chart = charts[x];
-        if (chart) {
-          // Copy data from reactive array to chart's plain array
-          chart.data.datasets[0].data = [...this.sensor_history[x]];
-          // Update the labels to match the data length
-          chart.data.labels = Array.from(
-            { length: this.sensor_history[x].length },
-            (_, i) => i
-          );
-          chart.update();
-        }
-      }
-    }, 1000);
-  },
-
-  computed: {
-    ...mapState('websocket', {
-      scienceMessage: (state: WebSocketState) => state.messages['science']
-    }),
-    sensorValues() {
-      return [
-        this.sensor_data.oxygen,
-        this.sensor_data.oxygen_var,
-        this.sensor_data.uv,
-        this.sensor_data.uv_var,
-        this.sensor_data.humidity,
-        this.sensor_data.humidity_var,
-        this.sensor_data.temp,
-        this.sensor_data.temp_var,
-      ]
-    },
-  },
-  created() {
-    // window.setInterval();
-    // this.interval = window.setInterval(() => {
-    //   this.randomizeSensorData();
-    // })
-  },
-  watch: {
-    scienceMessage(msg) {
-      switch (msg.type) {
-        case 'oxygen':
-          this.sensor_data.oxygen = msg.percent
-          // this.sensor_data.oxygen_var = msg.varianace
-          break
-        case 'uv':
-          this.sensor_data.uv = msg.uv_index
-          // this.sensor_data.uv_var = msg.varianace
-          break
-        case 'temperature':
-          this.sensor_data.temp = msg.temperature
-          // this.sensor_data.temp_var = msg.variance
-          break
-        case 'humidity':
-          this.sensor_data.humidity = msg.relative_humidity
-          // this.sensor_data.humidity_var = 100* msg.variance
-          break
-      }
-    },
-  },
-
-  methods: {
-    // randomizeSensorData() {
-    //       this.sensor_data.oxygen = (19.5 + Math.random() * 4);
-    //       this.sensor_data.uv = (1.5 + Math.random() * 0.5);
-    //       this.sensor_data.humidity = (68 + Math.random() * 4);
-    //       this.sensor_data.temp = (-2.8 + Math.random() * 2.8);
-    // },
-    download() {
-      // downloads csv of table
-      let csv = 'Oxygen, UV (index), Humidity, Temperature (C)\n'
-
-      const numRows = this.sensor_history[0].length // transpose (flip) array
-      for (let i = 0; i < numRows; ++i) {
-        const row = this.sensor_history.map(sensor => sensor[i])
-        csv += row.join(',') + '\n'
-      }
-
-      const anchor = document.createElement('a')
-      anchor.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv)
-      anchor.download = 'sensor_data.csv'
-      anchor.click()
-    },
-  },
-}
+    }
+  }, 1000);
+})
 </script>
 
 <style scoped>

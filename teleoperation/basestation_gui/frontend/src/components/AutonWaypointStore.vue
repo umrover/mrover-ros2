@@ -36,13 +36,13 @@
 <script lang="ts">
 import { defineComponent } from 'vue'
 import type { PropType } from 'vue'
-import type { Waypoint } from '../types/waypoint'
+import type { AutonWaypoint } from '@/types/waypoints'
 
 export default defineComponent({
   name: 'WaypointStore',
   props: {
     waypoint: {
-      type: Object as PropType<Waypoint>,
+      type: Object as PropType<AutonWaypoint>,
       required: true,
     },
     index: {

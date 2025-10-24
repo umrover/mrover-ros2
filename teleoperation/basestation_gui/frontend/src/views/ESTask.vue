@@ -13,28 +13,23 @@
   </div>
 </template>
 
-<script lang='ts'>
-import { defineComponent } from 'vue'
-import ControllerDataTable from '../components/ControllerDataTable.vue'
-import ArmControls from '../components/ArmControls.vue'
-import Rover3D from '../components/Rover3D.vue'
+<script lang='ts' setup>
+import { onMounted, onUnmounted } from 'vue'
+import ControllerDataTable from '@/components/ControllerDataTable.vue'
+import ArmControls from '@/components/ArmControls.vue'
+import Rover3D from '@/components/Rover3D.vue'
+import { useWebsocketStore } from '@/stores/websocket'
 
-export default defineComponent({
-  components: {
-    ControllerDataTable,
-    ArmControls,
-    Rover3D
-  },
+const websocketStore = useWebsocketStore()
 
-  mounted: function() {
-    this.$store.dispatch('websocket/setupWebSocket', 'arm')
-    this.$store.dispatch('websocket/setupWebSocket', 'drive')
-  },
+onMounted(() => {
+  websocketStore.setupWebSocket('arm')
+  websocketStore.setupWebSocket('drive')
+})
 
-  unmounted: function() {
-    this.$store.dispatch('websocket/closeWebSocket', 'arm')
-    this.$store.dispatch('websocket/closeWebSocket', 'drive')
-  },
+onUnmounted(() => {
+  websocketStore.closeWebSocket('arm')
+  websocketStore.closeWebSocket('drive')
 })
 </script>
 
@@ -44,7 +39,7 @@ export default defineComponent({
   gap: 10px;
   width: 100%;
   height: 100%;
-  grid-template-columns: 400px auto;
+  grid-template-columns: 30% auto;
   grid-template-rows: 50% auto;
   grid-template-areas:
     'arm-controls rover-3d'

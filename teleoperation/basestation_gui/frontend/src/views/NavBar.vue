@@ -3,7 +3,11 @@
 		<div class="ps-3 pe-2 py-2 d-flex justify-content-between align-items-center position-relative">
 			<a class="logo" href="/"><img src="/mrover.png" alt="MRover" title="MRover" width="200" /></a>
       <h1>{{ title }}</h1>
-      <WebsocketStatus />
+      <div class="d-flex align-items-center gap-3">
+        <WebsocketStatus />
+        <div class="border-start border-2" style="height: 40px;"></div>
+        <NotificationCenter />
+      </div>
 		</div>
   </div>
 </template>
@@ -11,17 +15,18 @@
 <script lang="ts">
 import { defineComponent } from 'vue';
 import WebsocketStatus from '../components/WebsocketStatus.vue';
+import NotificationCenter from '../components/NotificationCenter.vue';
 
 export default defineComponent({
   name: 'NavBar',
   computed: {
     title(): string {
-      // @ts-expect-error ts dumb
       return this.getTitleForRoute(this.$route.path)
     },
   },
 	components: {
-    WebsocketStatus
+    WebsocketStatus,
+    NotificationCenter
 	},
   methods: {
     getTitleForRoute(path: string): string {

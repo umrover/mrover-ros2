@@ -4,7 +4,6 @@
       <MenuButton link="/DMTask" name="DM Mission" />
       <MenuButton link="/ESTask" name="ES Mission" />
       <MenuButton link="/AutonTask" name="Autonomy Mission" />
-      <MenuButton link="/Cameras" name="Cameras" />
       <MenuButton link="/SPTask" name="SP GUI" />
     </fieldset>
   </div>

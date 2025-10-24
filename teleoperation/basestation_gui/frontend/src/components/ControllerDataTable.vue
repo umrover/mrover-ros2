@@ -32,60 +32,51 @@
   </div>
 </template>
 
-<script lang='ts'>
-import { defineComponent } from 'vue'
-import Vuex from 'vuex';
-const { mapState } = Vuex;
-import type { WebSocketState } from '../types/websocket';
+<script lang='ts' setup>
+import { ref, computed, watch } from 'vue'
+import { useWebsocketStore } from '@/stores/websocket'
+import { storeToRefs } from 'pinia'
+import type { ControllerStateMessage } from '@/types/websocket'
 
-export default defineComponent({
-  props: {
-    header: {
-      type: String,
-      required: true,
-    },
-    msgType: {
-      type: String,
-      required: true,
-    }
+const props = defineProps({
+  header: {
+    type: String,
+    required: true,
   },
+  msgType: {
+    type: String,
+    required: true,
+  }
+})
 
-  data() {
-    return {
-      name: [] as string[],
-      state: [] as string[],
-      error: [] as string[],
-      limits: [] as boolean[]
-    }
-  },
+const websocketStore = useWebsocketStore()
+const { messages } = storeToRefs(websocketStore)
 
-  computed: {
-    ...mapState('websocket', {
-      armMessage: (state: WebSocketState) => state.messages['arm'],
-      driveMessage: (state: WebSocketState) => state.messages['drive']
-    })
-  },
+const name = ref<string[]>([])
+const state = ref<string[]>([])
+const error = ref<string[]>([])
+const limits = ref<boolean[]>([])
 
-  // arm_state, drive_state, sa_state, drive_left_state, drive_right_state
-  // arm, drive, 
+const armMessage = computed(() => messages.value['arm'])
+const driveMessage = computed(() => messages.value['drive'])
 
-  watch: {
-    armMessage(msg) {
-      if (msg.type == this.msgType) {
-        this.name = msg.name
-        this.state = msg.state
-        this.error = msg.error
-        this.limits = msg.limit_hit
-      }
-    },
-    driveMessage(msg) {
-      if (msg.type == this.msgType) {
-        this.name = msg.name
-        this.state = msg.state
-        this.error = msg.error
-        this.limits = msg.limit_hit
-      }
-    },
+watch(armMessage, (msg) => {
+  if (msg && (msg as ControllerStateMessage).type == props.msgType) {
+    const controllerMsg = msg as ControllerStateMessage;
+    name.value = controllerMsg.name
+    state.value = controllerMsg.state
+    error.value = controllerMsg.error
+    limits.value = controllerMsg.limit_hit
+  }
+})
+
+watch(driveMessage, (msg) => {
+  if (msg && (msg as ControllerStateMessage).type == props.msgType) {
+    const controllerMsg = msg as ControllerStateMessage;
+    name.value = controllerMsg.name
+    state.value = controllerMsg.state
+    error.value = controllerMsg.error
+    limits.value = controllerMsg.limit_hit
   }
 })
 </script>
