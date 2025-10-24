@@ -54,67 +54,52 @@
 </template>
 
 
-<script lang="ts">
-import { defineComponent } from 'vue'
-import Vuex from 'vuex'
-const { mapActions, mapState } = Vuex
+<script lang="ts" setup>
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { useWebsocketStore } from '@/stores/websocket'
+
+const websocketStore = useWebsocketStore()
+
+const mode = ref('disabled')
+const gamepadConnected = ref(false)
+
+const controllerConnected = computed(() => gamepadConnected.value)
+
+let interval: number | undefined = undefined
 
 const UPDATE_HZ = 30
 
-export default defineComponent({
-  data() {
-    return {
-      mode: 'disabled',
-      gamepadConnected: false,
-    }
-  },
-  computed: {
-    ...mapState('websocket', ['message']),
-    controllerConnected(): boolean {
-      return this.gamepadConnected
-    },
-  },
-  mounted() {
-    document.addEventListener('keydown', this.keyDown)
-  },
-  created() {
-    this.interval = window.setInterval(() => {
-      const gamepads = navigator.getGamepads()
-      const gamepad = gamepads.find(
-        gamepad => gamepad && gamepad.id.includes('Microsoft'),
-      )
-      this.gamepadConnected = !!gamepad
-      if (!gamepad) return
+const keyDown = (event: { key: string }) => {
+  if (event.key === ' ') {
+    mode.value = 'disabled'
+  }
+}
 
-      this.$store.dispatch('websocket/sendMessage', {
-        id: 'arm',
-        message: {
-          type: 'ra_controller',
-          axes: gamepad.axes,
-          buttons: gamepad.buttons.map(button => button.value),
-        },
-      })
+onMounted(() => {
+  document.addEventListener('keydown', keyDown)
+  interval = window.setInterval(() => {
+    const gamepads = navigator.getGamepads()
+    const gamepad = gamepads.find(
+      gamepad => gamepad && gamepad.id.includes('Microsoft')
+    )
+    gamepadConnected.value = !!gamepad
+    if (!gamepad) return
 
-      this.$store.dispatch('websocket/sendMessage', {
-        id: 'arm',
-        message: {
-          type: 'ra_mode',
-          mode: this.mode,
-        },
-      })
-    }, 1000 / UPDATE_HZ)
-  },
-  beforeUnmount() {
-    window.clearInterval(this.interval)
-    document.removeEventListener('keydown', this.keyDown)
-  },
-  methods: {
-    ...mapActions('websocket', ['sendMessage']),
-    keyDown(event: { key: string }) {
-      if (event.key === ' ') {
-        this.mode = 'disabled'
-      }
-    },
-  },
+    websocketStore.sendMessage('arm', {
+      type: 'ra_controller',
+      axes: gamepad.axes,
+      buttons: gamepad.buttons.map(button => button.value),
+    })
+
+    websocketStore.sendMessage('arm', {
+      type: 'ra_mode',
+      mode: mode.value,
+    })
+  }, 1000 / UPDATE_HZ)
+})
+
+onBeforeUnmount(() => {
+  window.clearInterval(interval)
+  document.removeEventListener('keydown', keyDown)
 })
 </script>
