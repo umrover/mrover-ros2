@@ -87,4 +87,9 @@ public:
 	  * @brief Retrives the expected input tensor size
 	  */
 	auto getOutputTensorSize() -> std::vector<int64_t>;
+
+    /**
+      * @brief Cleans up newly allocated resources
+      */
+    ~Inference();
 };
