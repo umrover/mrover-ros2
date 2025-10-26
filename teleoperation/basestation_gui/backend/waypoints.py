@@ -22,6 +22,7 @@ def save_auton_waypoint_list(waypoints: list[dict]) -> None:
                 latitude=w["lat"],
                 longitude=w["lon"],
                 name=w["name"],
+                enable_costmap=w.get("enable_costmap", True),
             )
             for w in waypoints
         ]
@@ -29,7 +30,7 @@ def save_auton_waypoint_list(waypoints: list[dict]) -> None:
 
 def get_auton_waypoint_list() -> None:
     return [
-        {"name": w.name, "id": w.tag_id, "lat": w.latitude, "lon": w.longitude, "type": w.type}
+        {"name": w.name, "id": w.tag_id, "lat": w.latitude, "lon": w.longitude, "type": w.type, "enable_costmap": w.enable_costmap}
         for w in AutonWaypoint.objects.all()
     ]
 

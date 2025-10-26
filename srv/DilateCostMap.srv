@@ -1,3 +1,3 @@
-float32 dilation_amount
+float32 inflation_radius
 ---
 bool success

@@ -23,7 +23,7 @@ dependencies = [
     "channels>=4.1",
     "opencv-python>=4.9",
     "graphviz>=0.21",
-    "PyQt5>=5.15.11"
+    "PyQt5>=5.15.11",
 ]
 
 [project.optional-dependencies]
