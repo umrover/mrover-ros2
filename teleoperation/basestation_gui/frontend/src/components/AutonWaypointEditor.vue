@@ -246,7 +246,7 @@ export default defineComponent({
     },
     clickPoint() {
       return this.autonomyStore.clickPoint
-    }
+    },
   },
 
   watch: {
@@ -285,7 +285,6 @@ export default defineComponent({
       },
       deep: true,
     },
-
   },
 
   mounted() {
@@ -296,13 +295,17 @@ export default defineComponent({
     setTimeout(async () => {
       try {
         const autonData = await waypointsAPI.getAuton()
-        if (autonData.status === 'success' && autonData.waypoints && autonData.waypoints.length > 0) {
+        if (
+          autonData.status === 'success' &&
+          autonData.waypoints &&
+          autonData.waypoints.length > 0
+        ) {
           this.waypoints = autonData.waypoints
           const waypoints = autonData.waypoints.map(
             (waypoint: { lat: number; lon: number; name: string }) => ({
               latLng: L.latLng(waypoint.lat, waypoint.lon),
-              name: waypoint.name
-            })
+              name: waypoint.name,
+            }),
           )
           this.setWaypointList(waypoints)
         }
@@ -380,6 +383,17 @@ export default defineComponent({
     },
 
     addItem: function (waypoint: AutonWaypoint) {
+      const index = this.waypoints.findIndex(
+        w =>
+          w.name === waypoint.name &&
+          w.id === waypoint.id &&
+          w.type === waypoint.type,
+      )
+      if (index !== -1) {
+        this.waypoints[index].lat = waypoint.lat
+        this.waypoints[index].lon = waypoint.lon
+      }
+
       if (!waypoint.in_route) {
         waypoint['enable_costmap'] = this.allCostmapToggle
         this.route.push(waypoint)
