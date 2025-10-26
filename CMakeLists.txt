@@ -33,17 +33,6 @@ if (CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
         message(STATUS "Treating warnings as errors")
         add_compile_options(-Werror)
     endif ()
-
-    if (NOT APPLE)
-        # Try to use LLD instead of the system linker (which is usually GNU ld).
-        # LLD is faster and uses less memory.
-        # Could look into using mold which should be even faster.
-        find_program(LLD_PROGRAM lld)
-        if (LLD_PROGRAM)
-            message(STATUS "Using lld linker")
-            add_link_options(-fuse-ld=lld-18)
-        endif()
-    endif ()
 endif ()
 
 # Ccache is a compiler cache.
