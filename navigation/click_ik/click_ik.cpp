@@ -19,12 +19,37 @@ namespace mrover {
 
     ClickIkNode::ClickIkNode(rclcpp::NodeOptions const& options) : Node("click_ik", options) {
 
+        auto handle_goal = [this](const rclcpp_action::GoalUUID& uuid, action::ClickIk_Goal::ConstSharedPtr const& goal) -> rclcpp_action::GoalResponse {
+            RCLCPP_INFO(this->get_logger(), "Click Ik request received for point: (%d, %d)", goal->point_in_image_x, goal->point_in_image_y);
+            (void) uuid;
+            return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
+        };
+
+
+        auto handle_cancel = [this](std::shared_ptr<rclcpp_action::ServerGoalHandle<action::ClickIk>> const& goal_handle) -> rclcpp_action::CancelResponse {
+            RCLCPP_INFO(this->get_logger(), "Cancelling ClickIk Action.");
+            (void) goal_handle;
+            return rclcpp_action::CancelResponse::ACCEPT;
+        };
+
+        auto handle_accepted = [this](std::shared_ptr<rclcpp_action::ServerGoalHandle<action::ClickIk>> const& goal_handle) -> void {
+            if(mCurrentGoalHandle){
+                action::ClickIk::Result::SharedPtr result_msg;
+                mCurrentGoalHandle->canceled(result_msg);
+            }
+            mCurrentGoalHandle = goal_handle;
+            auto thread_executor = [this, goal_handle]() {
+                return this->executeClickIk(goal_handle);
+            };
+            std::thread{thread_executor}.detach();
+        };
+        
         server = rclcpp_action::create_server<action::ClickIk>(
             this,
             "click_ik",
-            std::bind(&ClickIkNode::handle_goal, this, std::placeholders::_1, std::placeholders::_2),
-            std::bind(&ClickIkNode::handle_cancel, this, std::placeholders::_1),
-            std::bind(&ClickIkNode::handle_accepted, this, std::placeholders::_1)
+            handle_goal,
+            handle_cancel,
+            handle_accepted
         );
 
         mPcSub = create_subscription<sensor_msgs::msg::PointCloud2>("camera/left/points", 1, [this](sensor_msgs::msg::PointCloud2::ConstSharedPtr const& msg) {
@@ -41,27 +66,6 @@ namespace mrover {
 
         mCurrentGoalHandle = nullptr;
     }
-    
-    rclcpp_action::GoalResponse ClickIkNode::handle_goal(const rclcpp_action::GoalUUID& uuid, action::ClickIk_Goal::ConstSharedPtr goal){
-        RCLCPP_INFO(this->get_logger(), "Click Ik request received for point: (%d, %d)", goal->point_in_image_x, goal->point_in_image_y);
-        (void) uuid;
-        return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
-    }
-
-    rclcpp_action::CancelResponse ClickIkNode::handle_cancel(const std::shared_ptr<rclcpp_action::ServerGoalHandle<action::ClickIk>> goal_handle){
-        RCLCPP_INFO(this->get_logger(), "Cancelling ClickIk Action.");
-        (void) goal_handle;
-        return rclcpp_action::CancelResponse::ACCEPT;
-    };
-        
-    void ClickIkNode::handle_accepted(const std::shared_ptr<rclcpp_action::ServerGoalHandle<action::ClickIk>> goal_handle){
-        if(mCurrentGoalHandle){
-            action::ClickIk::Result::SharedPtr result_msg;
-            mCurrentGoalHandle->canceled(result_msg);
-        }
-        mCurrentGoalHandle = goal_handle;
-        std::thread{std::bind(&ClickIkNode::executeClickIk, this, std::placeholders::_1), goal_handle}.detach();
-    };
 
     void ClickIkNode::executeClickIk(std::shared_ptr<rclcpp_action::ServerGoalHandle<action::ClickIk>> goal_handle) {
         RCLCPP_INFO(get_logger(),"Executing goal");

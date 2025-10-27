@@ -33,11 +33,6 @@ namespace mrover {
         std::shared_ptr<tf2_ros::TransformBroadcaster> mTfBroadcaster = std::make_shared<tf2_ros::TransformBroadcaster>(this);
     public:
 
-        
-        auto handle_goal(const rclcpp_action::GoalUUID& uuid, action::ClickIk_Goal::ConstSharedPtr goal) -> rclcpp_action::GoalResponse;
-        rclcpp_action::CancelResponse handle_cancel(const std::shared_ptr<rclcpp_action::ServerGoalHandle<action::ClickIk>> goal_handle);
-        void handle_accepted(const std::shared_ptr<rclcpp_action::ServerGoalHandle<action::ClickIk>> goal_handle);
-
         void executeClickIk(std::shared_ptr<rclcpp_action::ServerGoalHandle<action::ClickIk>> goal_handle);
         
         explicit ClickIkNode(rclcpp::NodeOptions const& options = rclcpp::NodeOptions());
