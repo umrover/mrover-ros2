@@ -219,6 +219,7 @@ target_link_libraries(simulator
     lie Eigen3::Eigen
     opencv_core opencv_imgcodecs opencv_imgproc
     loop_profiler
+    parameter_utils
 )
 target_include_directories(simulator SYSTEM PRIVATE ${BULLET_INCLUDE_DIRS} ${OPENCV_INCLUDE_DIRS})
 

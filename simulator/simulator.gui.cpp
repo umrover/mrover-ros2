@@ -84,6 +84,22 @@ namespace mrover {
             ImGui::InputDouble("Publish Hammer Distance Threshold", &mPublishHammerDistanceThreshold);
             ImGui::InputDouble("Publish Bottle Distance Threshold", &mPublishBottleDistanceThreshold);
 
+            static ImGuiComboFlags flags = 0;
+            std::optional<std::string> selectedPath = std::nullopt;
+            std::filesystem::path configPath = std::filesystem::current_path() / "config" / "simulator";
+            if(ImGui::BeginCombo("Map Selection: ", "no path selected", flags)){
+                for(auto const& file : std::filesystem::directory_iterator{configPath}){
+                    if(ImGui::Selectable(file.path().stem().c_str())){
+                        selectedPath = std::make_optional<std::string>(file.path().stem());
+                    }
+                }
+                ImGui::EndCombo();
+            }
+
+            if(selectedPath.has_value()){
+                std::cout << "Selected: " << selectedPath.value() << '\n';
+            }
+
             ImGui::EndDisabled();
             ImGui::End();
         }
