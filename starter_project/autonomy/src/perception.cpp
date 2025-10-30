@@ -1,8 +1,10 @@
 #include "perception.hpp"
+#include "mrover/msg/detail/starter_project_tag__struct.hpp"
 
 // ROS Headers, ros namespace
 #include <cmath>
 #include <functional>
+#include <iostream>
 #include <iterator>
 #include <limits>
 #include <memory>
@@ -13,6 +15,8 @@
 #include <opencv2/core/types.hpp>
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgproc.hpp>
+#include <tuple>
+#include <utility>
 
 auto main(int argc, char** argv) -> int {
     rclcpp::init(argc, argv);
@@ -25,7 +29,7 @@ auto main(int argc, char** argv) -> int {
 }
 
 namespace mrover {
-
+    
     Perception::Perception() : Node("perception") {
         // Subscribe to camera image messages
         // Every time another node publishes to this topic we will be notified
@@ -37,9 +41,10 @@ namespace mrover {
         // Create a publisher for our tag topic
         // See: http://wiki.ros.org/ROS/Tutorials/WritingPublisherSubscriber%28c%2B%2B%29
         // TODO: uncomment me!
-        // mTagPublisher = create_publisher<msg::StarterProjectTag>("tag", 1);
+         mTagPublisher = create_publisher<msg::StarterProjectTag>("tag", 1);
 
         mTagDictionary = cv::makePtr<cv::aruco::Dictionary>(cv::aruco::getPredefinedDictionary(cv::aruco::DICT_4X4_50));
+
     }
 
     auto Perception::imageCallback(sensor_msgs::msg::Image::ConstSharedPtr const& imageMessage) -> void {
@@ -52,8 +57,10 @@ namespace mrover {
 
         cv::cvtColor(imageBGRA, image, cv::COLOR_BGRA2BGR);
 
-        // TODO: implement me!
-        // hint: think about the order in which these functions were implemented ;)
+        findTagsInImage(image,mTags);
+        msg::StarterProjectTag tag;
+        tag = selectTag(image,mTags);
+        publishTag(tag);
         (void)this;
     }
 
@@ -64,22 +71,52 @@ namespace mrover {
 
         tags.clear(); // Clear old tags in output vector
 
-        // TODO: implement me!
+        cv::aruco::detectMarkers(image, mTagDictionary, mTagCorners, mTagIds);
+
+        std::pair<float, float> centers;
+        float closeness = 0;
+
+        for(unsigned long i=0; i<mTagIds.size(); ++i) {
+            centers = getCenterFromTagCorners(mTagCorners[i]);
+            closeness = getClosenessMetricFromTagCorners(image, mTagCorners[i]);
+
+            tags[i].set__tag_id(mTagIds[i]);
+            tags[i].set__x_tag_center_pixel(centers.first);
+            tags[i].set__y_tag_center_pixel(centers.second);
+            tags[i].set__closeness_metric(closeness);
+        }
+
         (void)image;
 
     }
 
     auto Perception::selectTag(cv::Mat const& image, std::vector<msg::StarterProjectTag> const& tags) -> msg::StarterProjectTag { // NOLINT(*-convert-member-functions-to-static)
-        // TODO: implement me!
-        (void)image;
-        (void)tags;
-        return msg::StarterProjectTag{};
+        float max = tags[0].closeness_metric;
+        int max_index = 0;
+        msg::StarterProjectTag empty_tag;
+        empty_tag.closeness_metric = 0;
+        empty_tag.tag_id = 0;
+        empty_tag.x_tag_center_pixel = 0;
+        empty_tag.y_tag_center_pixel = 0;
+        if(tags.size() != 0) {
+            for(unsigned long i=0; i<tags.size(); ++i) {
+                if(tags[i].closeness_metric > max) {
+                    max_index = i;
+                }
+            }
+
+            (void)image;
+            (void)tags;
+            return msg::StarterProjectTag{tags[max_index]};
+        }
+        else {
+            return empty_tag;
+        }
     }
 
     auto Perception::publishTag(msg::StarterProjectTag const& tag) -> void {
-        // TODO: implement me!
+        mTagPublisher->publish(tag);
         (void)tag;
-
     }
 
     auto Perception::getClosenessMetricFromTagCorners(cv::Mat const& image, std::vector<cv::Point2f> const& tagCorners) -> float { // NOLINT(*-convert-member-functions-to-static)
@@ -87,16 +124,26 @@ namespace mrover {
         // hint: this is an approximation that will be used later by navigation to stop "close enough" to a tag.
         // hint: try not overthink, this metric does not have to be perfectly accurate, just correlated to distance away from a tag
 
-        // TODO: implement me!
+        float x_tag_range = tagCorners[1].x - tagCorners[0].x;
+
+        float image_width = image.cols;
+
         (void)image;
         (void)tagCorners;
-        return {};
+        return x_tag_range/image_width;
     }
 
     auto Perception::getCenterFromTagCorners(std::vector<cv::Point2f> const& tagCorners) -> std::pair<float, float> { // NOLINT(*-convert-member-functions-to-static)
-        // TODO: implement me!
+
+        float x_tag_center_pixel = ((tagCorners[1].x - tagCorners[0].x) / 2.0) + tagCorners[0].x;
+        float y_tag_center_pixel = ((tagCorners[2].y - tagCorners[1].y) / 2.0) + tagCorners[1].y;
+
         (void)tagCorners;
-        return {};
+        std::pair<float, float> centers = std::make_pair(x_tag_center_pixel,y_tag_center_pixel);
+        return {centers};
     }
 
 } // namespace mrover
+
+
+	
