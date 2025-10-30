@@ -37,17 +37,6 @@
   args:
     chdir: "{{ ros2_workspace }}/src/mrover"
 
-- name: Install Python packages
-  pip:
-    name:
-      - django
-      - daphne
-      - channels
-      - opencv-python
-    state: present
-    virtualenv: "{{ ansible_env.HOME }}/ros2_ws/src/mrover/venv"
-    virtualenv_python: python3
-
 - name: Run Django migrations
   shell: |
     source {{ ansible_env.HOME }}/ros2_ws/src/mrover/venv/bin/activate
@@ -55,3 +44,4 @@
     python teleoperation/basestation_gui/manage.py migrate
   args:
     chdir: "{{ ansible_env.HOME }}/ros2_ws/src/mrover"
+    executable: /bin/bash

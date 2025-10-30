@@ -77,6 +77,8 @@ class NavConsumer(AsyncJsonWebsocketConsumer):
     def send_localization_callback(self):
         try:
             base_link_in_map = SE3.from_tf_tree(self.buffer, "map", "base_link")
+            self.node.get_logger().info("here")
+            self.node.get_logger().info(base_link_in_map)
             data_to_send = {
                 "type": "orientation",
                 "orientation": base_link_in_map.quat().tolist(),

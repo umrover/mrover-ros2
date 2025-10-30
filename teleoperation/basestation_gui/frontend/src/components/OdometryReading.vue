@@ -175,6 +175,7 @@ watch(navMessage, (msg) => {
       longitude_deg: drone_longitude_deg.value,
     })
   } else if (navMsg.type === 'orientation') {
+    console.log(navMessage)
     rover_bearing_deg.value = quaternionToMapAngle(navMsg.orientation)
     emit('odom', {
       latitude_deg: rover_latitude_deg.value,
