@@ -64,6 +64,7 @@ find_package(tf2_ros REQUIRED)
 find_package(urdf REQUIRED)
 find_package(std_srvs REQUIRED)
 find_package(magic_enum REQUIRED)
+find_package(yaml_cpp_vendor REQUIRED)
 
 find_package(Assimp NAMES Assimp assimp REQUIRED)
 find_package(Bullet REQUIRED)
@@ -212,7 +213,7 @@ target_link_libraries(gst_utils INTERFACE magic_enum::magic_enum PkgConfig::Gst 
 # Simulator
 
 mrover_add_node(simulator simulator/*.cpp simulator simulator/pch.hpp)
-ament_target_dependencies(simulator rclcpp rclcpp_components nav_msgs sensor_msgs geometry_msgs tf2 tf2_ros urdf)
+ament_target_dependencies(simulator rclcpp rclcpp_components nav_msgs sensor_msgs geometry_msgs tf2 tf2_ros urdf yaml_cpp_vendor)
 target_link_libraries(simulator
     assimp::assimp glfw3webgpu webgpu glfw webgpu_hpp imgui
     ${BULLET_LIBRARIES}

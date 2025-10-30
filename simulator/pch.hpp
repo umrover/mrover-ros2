@@ -71,6 +71,8 @@
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
 
+#include <yaml-cpp/yaml.h>
+
 #include <lie.hpp>
 #include <loop_profiler.hpp>
 #include <manif/algorithms/interpolation.h>
