@@ -80,10 +80,14 @@ namespace mrover {
             centers = getCenterFromTagCorners(mTagCorners[i]);
             closeness = getClosenessMetricFromTagCorners(image, mTagCorners[i]);
 
-            tags[i].set__tag_id(mTagIds[i]);
-            tags[i].set__x_tag_center_pixel(centers.first);
-            tags[i].set__y_tag_center_pixel(centers.second);
-            tags[i].set__closeness_metric(closeness);
+            msg::StarterProjectTag tag;
+            
+            tag.set__tag_id(mTagIds[i]);
+            tag.set__x_tag_center_pixel(centers.first);
+            tag.set__y_tag_center_pixel(centers.second);
+            tag.set__closeness_metric(closeness);
+
+            tags.push_back(tag);
         }
 
         (void)image;
