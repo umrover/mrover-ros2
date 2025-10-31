@@ -46,6 +46,7 @@ namespace mrover {
             names.insert(obj.first.as<std::string>());
         }
 
+        // load in the new objects
         for (auto const& name: names) {
             std::string uri = objects[name]["uri"].as<std::string>();
             std::vector<double> position = objects[name]["position"].IsDefined() ? objects[name]["position"].as<std::vector<double>>() : std::vector<double>{0, 0, 0};
@@ -53,9 +54,23 @@ namespace mrover {
             if (position.size() != 3) throw std::invalid_argument{"Position must have 3 elements"};
             if (orientation.size() != 4) throw std::invalid_argument{"Orientation must have 4 elements"};
             btTransform transform{btQuaternion{static_cast<btScalar>(orientation[0]), static_cast<btScalar>(orientation[1]), static_cast<btScalar>(orientation[2]), static_cast<btScalar>(orientation[3])}, btVector3{static_cast<btScalar>(position[0]), static_cast<btScalar>(position[1]), static_cast<btScalar>(position[2])}};
-            if (auto [_, wasAdded] = mUrdfs.try_emplace(name, *this, uri, transform); !wasAdded) {
-                throw std::invalid_argument{std::format("Duplicate object name: {}", name)};
+            if (auto [it, wasAdded] = mUrdfs.try_emplace(name, *this, uri, transform); !wasAdded) {
+                // if the mesh wasn't added reset the position and orientation
+                if(it->second.physics){
+                    it->second.physics->setBaseWorldTransform(transform);
+                }
             }
+        }
+
+        // remove the old objects
+        std::set<std::string> remove;
+        for(auto const& [name, _] : mUrdfs){
+            if(!objects[name].IsDefined()){
+                remove.insert(name);
+            }
+        }
+        for(auto const& name : remove){
+            mUrdfs.erase(mUrdfs.find(name));
         }
     }
 

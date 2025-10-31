@@ -232,6 +232,8 @@ namespace mrover {
 
         float mFloat = 0.0f;
 
+        std::string configFilename = DEFAULT_MAP;
+
         // ROS
 
         rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr mGroundTruthPub;
