@@ -19,6 +19,7 @@ namespace mrover {
             {"ref_alt", mGpsLinearizationReferencePoint(2), 0.0},
             {"ref_heading", mGpsLinerizationReferenceHeading, 90.0}
         };
+        ParameterWrapper::declareParameters(this, params);
 
         try {
             mSaveTask = PeriodicTask{saveRate};
@@ -40,7 +41,7 @@ namespace mrover {
 
             initRender();
 
-            initUrdfsFromParams();
+            initUrdfsFromParams(DEFAULT_MAP);
 
             {
                 auto addGroup = [&](std::string_view groupName, std::vector<std::string> const& names) {

@@ -87,9 +87,8 @@ namespace mrover {
             // for the imgui combo: https://skia.googlesource.com/external/github.com/ocornut/imgui/+/refs/tags/v1.73/imgui_demo.cpp
             static ImGuiComboFlags flags = 0;
             std::optional<std::string> selectedPath = std::nullopt;
-            std::filesystem::path configPath = std::filesystem::current_path() / "config" / "simulator";
-            if(ImGui::BeginCombo("Map Selection: ", "default_map.yaml", flags)){
-                for(auto const& file : std::filesystem::directory_iterator{configPath}){
+            if(ImGui::BeginCombo("Map Selection: ", DEFAULT_MAP, flags)){
+                for(auto const& file : std::filesystem::directory_iterator{CONFIG_PATH}){
                     if(ImGui::Selectable(file.path().filename().c_str())){
                         selectedPath = std::make_optional<std::string>(file.path().filename());
                     }
@@ -99,15 +98,6 @@ namespace mrover {
 
             if(selectedPath.has_value()){
                 std::cout << "Selected: " << selectedPath.value() << '\n';
-                YAML::Node configuration = YAML::LoadFile(configPath / selectedPath.value());
-                YAML::Node objects = configuration["objects"];
-                if(objects.IsDefined()){
-                    for(auto const& obj : objects){
-                        std::cout << obj.first.as<std::string>() << '\n';
-                    }
-                }else{
-                    throw std::runtime_error("objects not defined in configuration file...");
-                }
             }
 
             ImGui::EndDisabled();
