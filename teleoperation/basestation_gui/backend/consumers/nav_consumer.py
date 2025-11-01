@@ -77,11 +77,15 @@ class NavConsumer(AsyncJsonWebsocketConsumer):
     def send_localization_callback(self):
         try:
             base_link_in_map = SE3.from_tf_tree(self.buffer, "map", "base_link")
-            self.node.get_logger().info("here")
-            self.node.get_logger().info(base_link_in_map)
+            quat = base_link_in_map.quat().tolist()
             data_to_send = {
                 "type": "orientation",
-                "orientation": base_link_in_map.quat().tolist(),
+                "orientation": {
+                    "x": quat[0],
+                    "y": quat[1],
+                    "z": quat[2],
+                    "w": quat[3],
+                },
             }
             asyncio.run_coroutine_threadsafe(self.send_json(data_to_send), self.loop)
         except Exception:

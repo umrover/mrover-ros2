@@ -66,30 +66,35 @@ import {
   LControlScale,
 } from '@vue-leaflet/vue-leaflet'
 import { useErdStore } from '@/stores/erd'
+import { useWebsocketStore } from '@/stores/websocket'
 import { storeToRefs } from 'pinia'
 import 'leaflet/dist/leaflet.css'
 import L from 'leaflet'
 import '../leaflet-rotatedmarker.js'
 import type { LeafletMouseEvent } from 'leaflet';
 import type { StoreWaypoint } from '@/types/waypoints'
-import type { Odom } from '@/types/coordinates'
+import type { Odom, NavMessage } from '@/types/coordinates'
 import { ref, computed, watch, nextTick } from 'vue'
-import type { PropType } from 'vue'
-
-const props = defineProps({
-  odom: {
-    type: Object as PropType<Odom | null>,
-    default: () => ({ latitude_deg: 0, longitude_deg: 0, bearing_deg: 0 }),
-  },
-  drone_odom: {
-    type: Object,
-    default: () => ({ latitude_deg: 0, longitude_deg: 0, bearing_deg: 0 }),
-  },
-})
+import { quaternionToMapAngle } from '../utils/map'
 
 const erdStore = useErdStore()
 const { waypointList, highlightedWaypoint, searchWaypoint } = storeToRefs(erdStore)
 const { setClickPoint } = erdStore
+
+const websocketStore = useWebsocketStore()
+const { messages } = storeToRefs(websocketStore)
+
+const rover_latitude_deg = ref(0)
+const rover_longitude_deg = ref(0)
+const rover_bearing_deg = ref(0)
+const drone_latitude_deg = ref(0)
+const drone_longitude_deg = ref(0)
+
+const odom = computed<Odom>(() => ({
+  latitude_deg: rover_latitude_deg.value,
+  longitude_deg: rover_longitude_deg.value,
+  bearing_deg: rover_bearing_deg.value,
+}))
 
 const MAX_ODOM_COUNT = 1000
 const DRAW_FREQUENCY = 1
@@ -183,41 +188,34 @@ const getWaypointIcon = (waypoint: StoreWaypoint, index: number) => {
 }
 
 const odomLatLng = computed(() => {
-  if (
-    props.odom &&
-    typeof props.odom === 'object' &&
-    props.odom.latitude_deg !== undefined &&
-    props.odom.longitude_deg !== undefined
-  ) {
-    return L.latLng(props.odom.latitude_deg, props.odom.longitude_deg)
-  } else {
-    console.warn('odom data not ready yet')
-    return L.latLng(0, 0)
-  }
+  return L.latLng(rover_latitude_deg.value, rover_longitude_deg.value)
 })
 
 const droneLatLng = computed(() => {
-  if (
-    props.drone_odom &&
-    typeof props.drone_odom === 'object' &&
-    props.drone_odom.latitude_deg !== undefined &&
-    props.drone_odom.longitude_deg !== undefined
-  ) {
-    return L.latLng(
-      props.drone_odom.latitude_deg,
-      props.drone_odom.longitude_deg,
-    )
-  } else {
-    console.warn('drone odom data not ready yet')
-    return L.latLng(0, 0)
+  return L.latLng(drone_latitude_deg.value, drone_longitude_deg.value)
+})
+
+const navMessage = computed(() => messages.value['nav'])
+
+watch(navMessage, (msg) => {
+  if (!msg) return
+  const navMsg = msg as NavMessage
+
+  if (navMsg.type === 'gps_fix') {
+    rover_latitude_deg.value = navMsg.latitude
+    rover_longitude_deg.value = navMsg.longitude
+  } else if (navMsg.type === 'drone_waypoint') {
+    drone_latitude_deg.value = navMsg.latitude
+    drone_longitude_deg.value = navMsg.longitude
+  } else if (navMsg.type === 'orientation') {
+    rover_bearing_deg.value = quaternionToMapAngle(navMsg.orientation)
   }
 })
 
-watch(() => props.odom, (val) => {
-  if (!val) return;
-  const lat = val.latitude_deg
-  const lng = val.longitude_deg
-  const angle = val.bearing_deg ?? 0
+watch([rover_latitude_deg, rover_longitude_deg, rover_bearing_deg], () => {
+  const lat = rover_latitude_deg.value
+  const lng = rover_longitude_deg.value
+  const angle = rover_bearing_deg.value
 
   const latLng = L.latLng(lat, lng)
 
@@ -240,11 +238,11 @@ watch(() => props.odom, (val) => {
     }
     odomCount.value = 0
   }
-}, { deep: true })
+})
 
-watch(() => props.drone_odom, (val) => {
-  const lat = val.latitude_deg
-  const lng = val.longitude_deg
+watch([drone_latitude_deg, drone_longitude_deg], () => {
+  const lat = drone_latitude_deg.value
+  const lng = drone_longitude_deg.value
 
   const latLng = L.latLng(lat, lng)
   if (droneMarker) {
@@ -260,7 +258,7 @@ watch(() => props.drone_odom, (val) => {
     }
     droneCount.value = 0
   }
-}, { deep: true })
+})
 
 watch(searchWaypoint, (newIndex) => {
   if (newIndex === -1) {

@@ -73,20 +73,16 @@
 
 <script lang="ts" setup>
 import { ref, computed, watch, onMounted } from 'vue'
-import type { PropType } from 'vue'
 import WaypointItem from './BasicWaypointItem.vue'
 import { useErdStore } from '@/stores/erd'
+import { useWebsocketStore } from '@/stores/websocket'
 import { storeToRefs } from 'pinia'
 import L from 'leaflet'
 import { waypointsAPI } from '@/utils/api'
 import type { StoreWaypoint, APIBasicWaypoint } from '@/types/waypoints'
-import type { Odom } from '@/types/coordinates'
+import type { NavMessage } from '@/types/coordinates'
 
-const props = defineProps({
-  odom: {
-    type: Object as PropType<Odom | null>,
-    default: () => ({ latitude_deg: 0, longitude_deg: 0, bearing_deg: 0 }),
-  },
+defineProps({
   droneWaypointButton: {
     type: Boolean,
     required: false,
@@ -97,6 +93,12 @@ const erdStore = useErdStore()
 const { highlightedWaypoint, searchWaypoint, clickPoint } = storeToRefs(erdStore)
 const { setWaypointList, setHighlightedWaypoint, setSearchWaypoint } = erdStore
 
+const websocketStore = useWebsocketStore()
+const { messages } = storeToRefs(websocketStore)
+
+const rover_latitude_deg = ref(0)
+const rover_longitude_deg = ref(0)
+
 const name = ref('Waypoint')
 const input = ref({
   lat: { d: 0 },
@@ -105,10 +107,21 @@ const input = ref({
 const storedWaypoints = ref<StoreWaypoint[]>([])
 
 const formatted_odom = computed(() => {
-  if (!props.odom) return { lat: { d: 0 }, lon: { d: 0 } };
   return {
-    lat: { d: props.odom.latitude_deg },
-    lon: { d: props.odom.longitude_deg },
+    lat: { d: rover_latitude_deg.value },
+    lon: { d: rover_longitude_deg.value },
+  }
+})
+
+const navMessage = computed(() => messages.value['nav'])
+
+watch(navMessage, (msg) => {
+  if (!msg) return
+  const navMsg = msg as NavMessage
+
+  if (navMsg.type === 'gps_fix') {
+    rover_latitude_deg.value = navMsg.latitude
+    rover_longitude_deg.value = navMsg.longitude
   }
 })
 

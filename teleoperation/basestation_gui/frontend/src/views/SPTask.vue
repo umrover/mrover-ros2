@@ -1,25 +1,25 @@
 <template>
   <div class="wrapper view-wrapper">
     <div class="island p-0 rounded map overflow-hidden">
-      <BasicMap :odom="odom" />
+      <BasicMap />
     </div>
     <div class="island p-2 rounded odom">
-      <OdometryReading @odom="updateOdom" class="rounded border border-2 p-2" />
+      <OdometryReading class="rounded border border-2 p-2" />
     </div>
     <div class="island p-2 rounded controller_state d-flex gap-2">
       <ControllerDataTable
         msg-type="drive_state"
         header="Drive States"
-        class="rounded border border-2 p-2"
+        class="rounded border border-2 p-2 flex-fill"
       />
       <ControllerDataTable
         msg-type="sa_state"
         header="SA States"
-        class="rounded border border-2 p-2"
+        class="rounded border border-2 p-2 flex-fill"
       />
     </div>
     <div class="island p-3 rounded waypoints">
-      <BasicWaypointEditor :odom="odom" />
+      <BasicWaypointEditor />
     </div>
     <div class="island p-2 rounded controls d-flex gap-2">
       <HexHub
@@ -51,15 +51,8 @@ import PanoCam from '../components/PanoCam.vue'
 import { scienceAPI } from '@/utils/api'
 import { useWebsocketStore } from '@/stores/websocket'
 
-interface Odom {
-  latitude_deg: number
-  longitude_deg: number
-  bearing_deg: number
-}
-
 const websocketStore = useWebsocketStore()
 
-const odom = ref<Odom | null>(null)
 const siteSelect = ref(0)
 const orientation = ref(true)
 const site_to_radians: { [key: number]: number } = {
@@ -67,11 +60,7 @@ const site_to_radians: { [key: number]: number } = {
   1: (2 * Math.PI) / 5,
   2: (4 * Math.PI) / 5,
   3: (6 * Math.PI) / 5,
-  4: (8 * Math.PI) / 5,
-}
-
-const updateOdom = (newOdom: Odom) => {
-  odom.value = newOdom
+  4: (8 * Math.PI) / 5, // TODO: update
 }
 
 const updateSite = async (selectedSite: number) => {
@@ -84,7 +73,7 @@ const updateSite = async (selectedSite: number) => {
     )
   } catch (error) {
     console.error('Failed to set gear differential position:', error)
-  }
+}
 }
 
 const updateOrientation = async (newOrientation: boolean) => {

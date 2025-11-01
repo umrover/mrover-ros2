@@ -92,13 +92,10 @@ import {quaternionToMapAngle } from '../utils/map.ts'
 import FlightAttitudeIndicator from './FlightAttitudeIndicator.vue'
 import LEDIndicator from './LEDIndicator.vue'
 import type {
-  Odom,
   FormattedOdom,
   NavMessage,
   CalibrationMessage,
 } from '../types/coordinates'
-
-const emit = defineEmits(['odom', 'drone_odom', 'basestation_odom'])
 
 const websocketStore = useWebsocketStore()
 const { messages } = storeToRefs(websocketStore)
@@ -153,35 +150,17 @@ watch(navMessage, (msg) => {
     rover_longitude_deg.value = navMsg.longitude
     rover_altitude.value = navMsg.altitude
     rover_status.value = navMsg.status
-    emit('odom', {
-      latitude_deg: rover_latitude_deg.value,
-      longitude_deg: rover_longitude_deg.value,
-      bearing_deg: rover_bearing_deg.value,
-    } as Odom)
   } else if (navMsg.type === 'basestation_position') {
     basestation_latitude_deg.value = navMsg.latitude
     basestation_longitude_deg.value = navMsg.longitude
     basestation_status.value = navMsg.status
-    emit('basestation_odom', {
-      latitude_deg: basestation_latitude_deg.value,
-      longitude_deg: basestation_longitude_deg.value,
-    } as Odom)
   } else if (navMsg.type === 'drone_waypoint') {
     drone_latitude_deg.value = navMsg.latitude
     drone_longitude_deg.value = navMsg.longitude
     drone_status.value = navMsg.status
-    emit('drone_odom', {
-      latitude_deg: drone_latitude_deg.value,
-      longitude_deg: drone_longitude_deg.value,
-    })
   } else if (navMsg.type === 'orientation') {
     console.log(navMessage)
     rover_bearing_deg.value = quaternionToMapAngle(navMsg.orientation)
-    emit('odom', {
-      latitude_deg: rover_latitude_deg.value,
-      longitude_deg: rover_longitude_deg.value,
-      bearing_deg: rover_bearing_deg.value,
-    } as Odom)
   } else if (navMsg.type === 'calibration') {
     const calMsg = msg as CalibrationMessage
     mag_calibration.value = calMsg.magnetometer_calibration
