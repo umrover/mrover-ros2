@@ -157,6 +157,7 @@ simulator:
     save_rate: 1.0
     save_history: 4096
     headless: false
+    motor_timeout: 100
 
     ref_heading: 90.0  # For the GPS sensor to work
 
@@ -210,10 +211,7 @@ simulator:
                     yaml_rocks.append("\n".join(lines))
 
         # 4) Add finishing lines
-        yaml_footer = """    ref_lat: 38.4225202
-    ref_lon: -110.7844653
-    ref_alt: 0.0
-    world_frame: "map"
+        yaml_footer = """    world_frame: "map"
     rover_frame: "sim_base_link"
 """
 
