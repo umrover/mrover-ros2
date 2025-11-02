@@ -12,3 +12,7 @@ objects:
   world:
     type: urdf
     uri: package://mrover/urdf/world/world.urdf.xacro
+  lander:
+    type: urdf
+    uri: package://mrover/urdf/world/lander.urdf.xacro
+    position: [ 1.0, 1.0, 0.1 ]
