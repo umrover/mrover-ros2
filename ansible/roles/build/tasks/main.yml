@@ -106,15 +106,19 @@
       - qtbase5-dev
       - qtmultimedia5-dev
       - libqt5multimedia5-plugins
+      - python3-pyqt5
 
-- name: Install Local APT Packages
+- name: Build and Install Manif
   become: True
-  apt:
-    state: present
-    deb: "{{ ros2_workspace }}/src/mrover/pkg/{{ item }}"
-  with_items:
-    - libmanif-dev.deb
-    - libdawn-dev.deb
+  command: ./scripts/build_manif.sh
+  args:
+    chdir: "{{ ansible_env.HOME }}/ros2_ws/src/mrover/"
+
+- name: Build and Install Dawn
+  become: True
+  command: ./scripts/build_dawn.sh
+  args:
+    chdir: "{{ ansible_env.HOME }}/ros2_ws/src/mrover/"
 
 - name: Initialize rosdep
   become: True
