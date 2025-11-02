@@ -13,7 +13,7 @@ class CirclePublisher(Node):
         self.vel_pub = self.create_publisher(Twist, "ee_vel_cmd", 10)
         self.dt = 0.1
         self.timer = self.create_timer(self.dt, self.timer_callback)
-        self.time = 0
+        self.time = 0.0
         self.radius = 0.2  # meters
         self.period = 5  # seconds
 
@@ -34,7 +34,7 @@ class MPublisher(Node):
         self.size = 0.4  # size of M in meters
         self.speed = 0.2
         self.timer = self.create_timer(self.dt, self.timer_callback)
-        self.time = 0
+        self.time = 0.0
 
     def timer_callback(self):
         msg = Twist()
