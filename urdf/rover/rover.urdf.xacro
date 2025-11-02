@@ -312,6 +312,14 @@
     </collision>
   </link>
 
+  <joint name="arm_e_link_to_finger_camera" type="fixed">
+    <origin xyz="0 0 0"/>
+    <parent link="arm_e_link"/>
+    <child link="finger_camera_frame"/>
+  </joint>
+
+  <link name="finger_camera_frame"/>
+
   <!-- TODO(quintin): I removed this for now, feel free to add it back when needed -->
 
   <!--  <joint name="chassis_link_to_mast_link" type="fixed">-->

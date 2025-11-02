@@ -224,7 +224,12 @@ namespace mrover {
                     stereoCamera.base = std::move(camera);
                     stereoCamera.pcPub = simulator.create_publisher<sensor_msgs::msg::PointCloud2>(pointCloudTopic, 1);
                     simulator.mStereoCameras.emplace_back(std::move(stereoCamera));
-                } else {
+                } else if(link->name.contains("finger"sv)) {
+                    camera.frameId = "finger_camera_frame";
+                    camera.imgPub = simulator.create_publisher<sensor_msgs::msg::Image>("finger_camera/image", 1);
+                    camera.fov = 75;
+                    simulator.mCameras.push_back(std::move(camera));
+                }else {
                     camera.frameId = "long_range_camera_link";
                     camera.imgPub = simulator.create_publisher<sensor_msgs::msg::Image>("long_range_cam/image", 1);
                     camera.fov = 15;
