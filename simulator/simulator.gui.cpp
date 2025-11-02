@@ -92,7 +92,7 @@ namespace mrover {
                     ImGui::SliderFloat("IK Pitch", &mIkPitch, -3.14f, 3.14f);
                     ImGui::SliderFloat("IK Roll", &mIkRoll, -3.14f, 3.14f);
                 } else
-                    ImGui::SliderFloat("Arm Speed", &mArmSpeed,  0, 1);
+                    ImGui::SliderFloat("Arm Speed", &mArmSpeed, 0, 1);
             }
 
             ImGui::InputDouble("Publish Hammer Distance Threshold", &mPublishHammerDistanceThreshold);
