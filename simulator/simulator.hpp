@@ -25,7 +25,7 @@ namespace mrover {
     static constexpr auto NORMAL_FORMAT = wgpu::TextureFormat::RGBA16Float;
 
     static constexpr char const* DEFAULT_MAP = "default_map.yaml";
-    static const std::filesystem::path CONFIG_PATH = std::filesystem::current_path() / "config" / "simulator";
+    static std::filesystem::path const CONFIG_PATH = std::filesystem::current_path() / "config" / "simulator";
 
     struct Camera;
     struct StereoCamera;

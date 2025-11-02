@@ -77,8 +77,8 @@
 #include <loop_profiler.hpp>
 #include <manif/algorithms/interpolation.h>
 #include <manif/manif.h>
-#include <point.hpp>
 #include <parameter.hpp>
+#include <point.hpp>
 
 #include <mrover/msg/calibration_status.hpp>
 #include <mrover/msg/controller_state.hpp>

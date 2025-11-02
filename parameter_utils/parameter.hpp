@@ -108,9 +108,9 @@ namespace mrover {
         static inline auto declareParameters(rclcpp::Node* node, std::vector<ParameterWrapper>& params) -> void {
             RCLCPP_INFO(rclcpp::get_logger("param_logger"), "Declaring %zu parameters...", params.size());
             for (auto& param: params) {
-                try{
+                try {
                     node->declare_parameter(param.mParamDescriptor, param.mType);
-                }catch(rclcpp::exceptions::ParameterAlreadyDeclaredException const& e){}
+                } catch (rclcpp::exceptions::ParameterAlreadyDeclaredException const& e) {}
                 param.visit(node);
             }
         }

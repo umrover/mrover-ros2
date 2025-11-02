@@ -10,15 +10,14 @@ namespace mrover {
         int saveHistory;
         int motorTimeoutMs;
         std::vector<ParameterWrapper> params = {
-            {"save_rate", saveRate, 1.0},
-            {"save_history", saveHistory, 4096},
-            {"motor_timeout", motorTimeoutMs, 100},
-            {"headless", mIsHeadless, false},
-            {"ref_lat", mGpsLinearizationReferencePoint(0), 42.293195},
-            {"ref_lon", mGpsLinearizationReferencePoint(1), -83.7096706},
-            {"ref_alt", mGpsLinearizationReferencePoint(2), 0.0},
-            {"ref_heading", mGpsLinerizationReferenceHeading, 90.0}
-        };
+                {"save_rate", saveRate, 1.0},
+                {"save_history", saveHistory, 4096},
+                {"motor_timeout", motorTimeoutMs, 100},
+                {"headless", mIsHeadless, false},
+                {"ref_lat", mGpsLinearizationReferencePoint(0), 42.293195},
+                {"ref_lon", mGpsLinearizationReferencePoint(1), -83.7096706},
+                {"ref_alt", mGpsLinearizationReferencePoint(2), 0.0},
+                {"ref_heading", mGpsLinerizationReferenceHeading, 90.0}};
         ParameterWrapper::declareParameters(this, params);
 
         try {

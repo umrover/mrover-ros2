@@ -36,13 +36,13 @@ namespace mrover {
 
         YAML::Node configuration = YAML::LoadFile(CONFIG_PATH / configFile);
         YAML::Node objects = configuration["objects"];
-        if(!objects.IsDefined()){
+        if (!objects.IsDefined()) {
             throw std::runtime_error("objects not defined in configuration file...");
         }
 
         // Extract the names of the objects, there will be multiple object_name.* keys that we consolidate into just object_name
         std::set<std::string> names;
-        for(auto const& obj : objects){
+        for (auto const& obj: objects) {
             names.insert(obj.first.as<std::string>());
         }
 
@@ -56,7 +56,7 @@ namespace mrover {
             btTransform transform{btQuaternion{static_cast<btScalar>(orientation[0]), static_cast<btScalar>(orientation[1]), static_cast<btScalar>(orientation[2]), static_cast<btScalar>(orientation[3])}, btVector3{static_cast<btScalar>(position[0]), static_cast<btScalar>(position[1]), static_cast<btScalar>(position[2])}};
             if (auto [it, wasAdded] = mUrdfs.try_emplace(name, *this, uri, transform); !wasAdded) {
                 // if the mesh wasn't added reset the position and orientation
-                if(it->second.physics){
+                if (it->second.physics) {
                     it->second.physics->setBaseWorldTransform(transform);
                 }
             }
@@ -64,12 +64,12 @@ namespace mrover {
 
         // remove the old objects
         std::set<std::string> remove;
-        for(auto const& [name, _] : mUrdfs){
-            if(!objects[name].IsDefined()){
+        for (auto const& [name, _]: mUrdfs) {
+            if (!objects[name].IsDefined()) {
                 remove.insert(name);
             }
         }
-        for(auto const& name : remove){
+        for (auto const& name: remove) {
             mUrdfs.erase(mUrdfs.find(name));
         }
     }
@@ -224,12 +224,12 @@ namespace mrover {
                     stereoCamera.base = std::move(camera);
                     stereoCamera.pcPub = simulator.create_publisher<sensor_msgs::msg::PointCloud2>(pointCloudTopic, 1);
                     simulator.mStereoCameras.emplace_back(std::move(stereoCamera));
-                } else if(link->name.contains("finger"sv)) {
+                } else if (link->name.contains("finger"sv)) {
                     camera.frameId = "finger_camera_frame";
                     camera.imgPub = simulator.create_publisher<sensor_msgs::msg::Image>("finger_camera/image", 1);
                     camera.fov = 75;
                     simulator.mCameras.push_back(std::move(camera));
-                }else {
+                } else {
                     camera.frameId = "long_range_camera_link";
                     camera.imgPub = simulator.create_publisher<sensor_msgs::msg::Image>("long_range_cam/image", 1);
                     camera.fov = 15;
