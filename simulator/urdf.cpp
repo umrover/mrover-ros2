@@ -30,31 +30,47 @@ namespace mrover {
         return btVector3{static_cast<btScalar>(inertia->ixx), static_cast<btScalar>(inertia->iyy), static_cast<btScalar>(inertia->izz)} * INERTIA_MULTIPLIER;
     }
 
-    auto Simulator::initUrdfsFromParams() -> void {
-        {
-            // As far as I can tell array of structs in YAML is not even supported by ROS 2 as compared to ROS 1
-            // See: https://robotics.stackexchange.com/questions/109909/reading-a-vector-of-structs-as-parameters-in-ros2
+    auto Simulator::initUrdfsFromParams(std::string const& configFile) -> void {
+        // As far as I can tell array of structs in YAML is not even supported by ROS 2 as compared to ROS 1
+        // See: https://robotics.stackexchange.com/questions/109909/reading-a-vector-of-structs-as-parameters-in-ros2
 
-            std::map<std::string, rclcpp::Parameter> objects;
-            get_parameters("objects", objects);
+        YAML::Node configuration = YAML::LoadFile(CONFIG_PATH / configFile);
+        YAML::Node objects = configuration["objects"];
+        if (!objects.IsDefined()) {
+            throw std::runtime_error("objects not defined in configuration file...");
+        }
 
-            // Extract the names of the objects, there will be multiple object_name.* keys that we consolidate into just object_name
-            std::set<std::string> names;
-            std::ranges::transform(objects | std::views::keys, std::inserter(names, names.end()), [](std::string const& fullName) {
-                return fullName.substr(0, fullName.find('.'));
-            });
+        // Extract the names of the objects, there will be multiple object_name.* keys that we consolidate into just object_name
+        std::set<std::string> names;
+        for (auto const& obj: objects) {
+            names.insert(obj.first.as<std::string>());
+        }
 
-            for (auto const& name: names) {
-                std::string uri = objects.at(std::format("{}.uri", name)).as_string();
-                std::vector<double> position = objects.contains(std::format("{}.position", name)) ? objects.at(std::format("{}.position", name)).as_double_array() : std::vector<double>{0, 0, 0};
-                std::vector<double> orientation = objects.contains(std::format("{}.orientation", name)) ? objects.at(std::format("{}.orientation", name)).as_double_array() : std::vector<double>{0, 0, 0, 1};
-                if (position.size() != 3) throw std::invalid_argument{"Position must have 3 elements"};
-                if (orientation.size() != 4) throw std::invalid_argument{"Orientation must have 4 elements"};
-                btTransform transform{btQuaternion{static_cast<btScalar>(orientation[0]), static_cast<btScalar>(orientation[1]), static_cast<btScalar>(orientation[2]), static_cast<btScalar>(orientation[3])}, btVector3{static_cast<btScalar>(position[0]), static_cast<btScalar>(position[1]), static_cast<btScalar>(position[2])}};
-                if (auto [_, wasAdded] = mUrdfs.try_emplace(name, *this, uri, transform); !wasAdded) {
-                    throw std::invalid_argument{std::format("Duplicate object name: {}", name)};
+        // load in the new objects
+        for (auto const& name: names) {
+            std::string uri = objects[name]["uri"].as<std::string>();
+            std::vector<double> position = objects[name]["position"].IsDefined() ? objects[name]["position"].as<std::vector<double>>() : std::vector<double>{0, 0, 0};
+            std::vector<double> orientation = objects[name]["orientation"].IsDefined() ? objects[name]["orientation"].as<std::vector<double>>() : std::vector<double>{0, 0, 0, 1};
+            if (position.size() != 3) throw std::invalid_argument{"Position must have 3 elements"};
+            if (orientation.size() != 4) throw std::invalid_argument{"Orientation must have 4 elements"};
+            btTransform transform{btQuaternion{static_cast<btScalar>(orientation[0]), static_cast<btScalar>(orientation[1]), static_cast<btScalar>(orientation[2]), static_cast<btScalar>(orientation[3])}, btVector3{static_cast<btScalar>(position[0]), static_cast<btScalar>(position[1]), static_cast<btScalar>(position[2])}};
+            if (auto [it, wasAdded] = mUrdfs.try_emplace(name, *this, uri, transform); !wasAdded) {
+                // if the mesh wasn't added reset the position and orientation
+                if (it->second.physics) {
+                    it->second.physics->setBaseWorldTransform(transform);
                 }
             }
+        }
+
+        // remove the old objects
+        std::set<std::string> remove;
+        for (auto const& [name, _]: mUrdfs) {
+            if (!objects[name].IsDefined()) {
+                remove.insert(name);
+            }
+        }
+        for (auto const& name: remove) {
+            mUrdfs.erase(mUrdfs.find(name));
         }
     }
 
@@ -208,6 +224,11 @@ namespace mrover {
                     stereoCamera.base = std::move(camera);
                     stereoCamera.pcPub = simulator.create_publisher<sensor_msgs::msg::PointCloud2>(pointCloudTopic, 1);
                     simulator.mStereoCameras.emplace_back(std::move(stereoCamera));
+                } else if (link->name.contains("finger"sv)) {
+                    camera.frameId = "finger_camera_frame";
+                    camera.imgPub = simulator.create_publisher<sensor_msgs::msg::Image>("finger_camera/image", 1);
+                    camera.fov = 75;
+                    simulator.mCameras.push_back(std::move(camera));
                 } else {
                     camera.frameId = "long_range_camera_link";
                     camera.imgPub = simulator.create_publisher<sensor_msgs::msg::Image>("long_range_cam/image", 1);

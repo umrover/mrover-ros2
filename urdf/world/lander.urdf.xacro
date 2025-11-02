@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<robot name="rover">
+  <link name="base_link">
+    <inertial>
+      <mass value="100" />
+      <inertia ixx="10" ixy="10" ixz="10" iyy="10" iyz="10" izz="10" />
+    </inertial>
+    <visual>
+      <geometry>
+        <mesh filename="package://mrover/urdf/meshes/lander.fbx" />
+      </geometry>
+    </visual>
+    <collision>
+      <geometry>
+        <mesh filename="package://mrover/urdf/meshes/lander.fbx"/>
+      </geometry>
+    </collision>
+  </link>
+</robot>

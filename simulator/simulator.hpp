@@ -24,6 +24,9 @@ namespace mrover {
     static constexpr auto DEPTH_FORMAT = wgpu::TextureFormat::Depth32Float;
     static constexpr auto NORMAL_FORMAT = wgpu::TextureFormat::RGBA16Float;
 
+    static constexpr char const* DEFAULT_MAP = "default_map.yaml";
+    static std::filesystem::path const CONFIG_PATH = std::filesystem::current_path() / "config" / "simulator";
+
     struct Camera;
     struct StereoCamera;
     class Simulator;
@@ -229,6 +232,8 @@ namespace mrover {
 
         float mFloat = 0.0f;
 
+        std::string configFilename = DEFAULT_MAP;
+
         // ROS
 
         rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr mGroundTruthPub;
@@ -433,7 +438,7 @@ namespace mrover {
 
         auto initPhysics() -> void;
 
-        auto initUrdfsFromParams() -> void;
+        auto initUrdfsFromParams(std::string const& configFile) -> void;
 
         auto tick() -> void;
 

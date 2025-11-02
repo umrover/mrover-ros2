@@ -84,6 +84,24 @@ namespace mrover {
             ImGui::InputDouble("Publish Hammer Distance Threshold", &mPublishHammerDistanceThreshold);
             ImGui::InputDouble("Publish Bottle Distance Threshold", &mPublishBottleDistanceThreshold);
 
+            // for the imgui combo: https://skia.googlesource.com/external/github.com/ocornut/imgui/+/refs/tags/v1.73/imgui_demo.cpp
+            static ImGuiComboFlags flags = 0;
+            std::optional<std::string> selectedPath = std::nullopt;
+            if (ImGui::BeginCombo("Map Selection: ", configFilename.c_str(), flags)) {
+                for (auto const& file: std::filesystem::directory_iterator{CONFIG_PATH}) {
+                    if (ImGui::Selectable(file.path().filename().c_str())) {
+                        selectedPath = std::make_optional<std::string>(file.path().filename());
+                    }
+                }
+                ImGui::EndCombo();
+            }
+
+            if (selectedPath.has_value()) {
+                std::cout << "Selected: " << selectedPath.value() << '\n';
+                configFilename = selectedPath.value();
+                initUrdfsFromParams(configFilename);
+            }
+
             ImGui::EndDisabled();
             ImGui::End();
         }

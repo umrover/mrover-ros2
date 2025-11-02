@@ -16,3 +16,4 @@ text=auto
 *.deb filter=lfs diff=lfs merge=lfs -text
 *.whl filter=lfs diff=lfs merge=lfs -text
 *.vsix filter=lfs diff=lfs merge=lfs -text
+urdf/textures/marker0.png filter=lfs diff=lfs merge=lfs -text

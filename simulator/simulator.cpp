@@ -6,9 +6,25 @@ namespace mrover {
                                                        .use_intra_process_comms(true)
                                                        .allow_undeclared_parameters(true)
                                                        .automatically_declare_parameters_from_overrides(true)} {
+        double saveRate;
+        int saveHistory;
+        int motorTimeoutMs;
+        std::vector<ParameterWrapper> params = {
+                {"save_rate", saveRate, 1.0},
+                {"save_history", saveHistory, 4096},
+                {"motor_timeout", motorTimeoutMs, 100},
+                {"headless", mIsHeadless, false},
+                {"ref_lat", mGpsLinearizationReferencePoint(0), 42.293195},
+                {"ref_lon", mGpsLinearizationReferencePoint(1), -83.7096706},
+                {"ref_alt", mGpsLinearizationReferencePoint(2), 0.0},
+                {"ref_heading", mGpsLinerizationReferenceHeading, 90.0}};
+        ParameterWrapper::declareParameters(this, params);
+
         try {
-            mSaveTask = PeriodicTask{get_parameter("save_rate").as_double()};
-            mSaveHistory = boost::circular_buffer<SaveData>{static_cast<std::size_t>(get_parameter("save_history").as_int())};
+            mSaveTask = PeriodicTask{saveRate};
+            mSaveHistory = boost::circular_buffer<SaveData>{static_cast<std::size_t>(saveHistory)};
+            mMotorTimeoutMs = motorTimeoutMs;
+            mEnablePhysics = mIsHeadless;
 
             mGroundTruthPub = create_publisher<nav_msgs::msg::Odometry>("ground_truth", 1);
 
@@ -18,26 +34,13 @@ namespace mrover {
 
             mIkTargetPub = create_publisher<msg::IK>("arm_ik", 1);
 
-            mMotorTimeoutMs = get_parameter("motor_timeout").as_int();
-
-            mIsHeadless = get_parameter("headless").as_bool();
-            mEnablePhysics = mIsHeadless;
-            {
-                mGpsLinearizationReferencePoint = {
-                        get_parameter("ref_lat").as_double(),
-                        get_parameter("ref_lon").as_double(),
-                        get_parameter("ref_alt").as_double(),
-                };
-                mGpsLinerizationReferenceHeading = get_parameter("ref_heading").as_double();
-            }
-
             if (!mIsHeadless) initWindow();
 
             initPhysics();
 
             initRender();
 
-            initUrdfsFromParams();
+            initUrdfsFromParams(DEFAULT_MAP);
 
             {
                 auto addGroup = [&](std::string_view groupName, std::vector<std::string> const& names) {
