@@ -1,19 +1,14 @@
 <template>
-  <div class="wrapper">
-    <div class="terminal-container">
-      <div class="terminal-header">
-        <span class="terminal-title">MRover Basestation</span>
-        <div class="terminal-controls">
-          <span class="control red"></span>
-          <span class="control yellow"></span>
-          <span class="control green"></span>
-        </div>
+  <div class="wrapper d-flex justify-content-center align-items-center p-4">
+    <div class="i3-window shadow">
+      <div class="i3-titlebar d-flex align-items-center px-1 pt-0">
+        <span class="i3-title">MRover Basestation</span>
       </div>
-      <div class="terminal-body">
+      <div class="i3-content p-4 d-flex flex-column justify-content-center">
         <div class="terminal-prompt mb-3">
           <span class="user">rover@basestation</span><span class="separator">:</span><span class="path">~</span><span class="prompt-symbol">$</span> <span class="command">./select_mission</span>
         </div>
-        <div class="menu-buttons">
+        <div class="d-flex flex-column gap-3">
           <MenuButton link="/DMTask" name="Delivery" />
           <MenuButton link="/ESTask" name="Equipment Servicing" />
           <MenuButton link="/SPTask" name="Science Payload" />
@@ -36,79 +31,48 @@ export default {
 <style scoped>
 .wrapper {
   flex: 1;
-  display: flex;
-  justify-content: center;
-  align-items: center;
   position: relative;
   overflow: hidden;
-  background: linear-gradient(135deg, #f0f4f8 0%, #e2e8f0 100%);
-  padding: 2rem;
+  background: #e8e8e8;
 }
 
-.terminal-container {
+.i3-window {
   width: 100%;
   max-width: 700px;
   background: #ffffff;
-  border-radius: 12px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+  border: 4px solid #4c7899;
   overflow: hidden;
-  animation: slideIn 0.5s ease-out;
-  border: 1px solid #e2e8f0;
+  animation: fadeIn 0.3s ease-out;
 }
 
-@keyframes slideIn {
+@keyframes fadeIn {
   from {
     opacity: 0;
-    transform: translateY(-20px);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
   }
 }
 
-.terminal-header {
-  background: #f8fafc;
-  padding: 0.75rem 1rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border-bottom: 1px solid #e2e8f0;
+.i3-titlebar {
+  background: linear-gradient(to bottom, #4c7899 0%, #4c7899 100%);
+  border-bottom: 1px solid #2f5373;
+  min-height: 24px;
+  padding-top: 0.25rem;
+  padding-bottom: 0.25rem;
 }
 
-.terminal-title {
-  color: #334155;
-  font-family: 'Courier New', monospace;
+.i3-title {
+  color: #ffffff;
+  font-family: monospace;
   font-size: 0.875rem;
-  font-weight: 600;
+  font-weight: normal;
+  letter-spacing: 0.5px;
 }
 
-.terminal-controls {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.control {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-}
-
-.control.red {
-  background: #ff5f56;
-}
-
-.control.yellow {
-  background: #ffbd2e;
-}
-
-.control.green {
-  background: #27c93f;
-}
-
-.terminal-body {
-  padding: 2rem;
-  background: #f1f5f9;
+.i3-content {
+  background: #ffffff;
+  min-height: 300px;
   font-family: 'Courier New', monospace;
 }
 
@@ -139,20 +103,5 @@ export default {
 
 .command {
   color: #92400e;
-}
-
-@keyframes blink {
-  0%, 50%, 100% {
-    opacity: 1;
-  }
-  25%, 75% {
-    opacity: 0.5;
-  }
-}
-
-.menu-buttons {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
 }
 </style>
