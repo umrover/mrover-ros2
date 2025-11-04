@@ -66,57 +66,6 @@ def vec_angle(self, v1: tuple, v2: tuple) -> float:
 
     return abs(angle_rad)
 
-
-def gen_marker(
-    context: Context, point=[0.0, 0.0], color=[1.0, 1.0, 1.0], size=0.2, lifetime=5, id=0, delete=False
-) -> Marker:
-    """
-    Creates and publishes a single spherical marker at the specified (x, y, z) coordinates.
-
-    :param point: A tuple or list containing the (x, y) coordinates of the marker.
-                The Z coordinate is set to 0.0 by default.
-    :param context: The context object providing necessary ROS utilities,
-                    such as the node clock for setting the timestamp.
-    :return: A Marker object representing the spherical marker with predefined size and color.
-    """
-
-    marker = Marker()
-    marker.lifetime = Duration(seconds=lifetime).to_msg()
-    marker.header = Header(frame_id="map")
-    marker.header.stamp = context.node.get_clock().now().to_msg()
-
-    marker.ns = "single_point"
-    marker.id = id
-    marker.type = Marker.SPHERE
-
-    if delete:
-        marker.action = Marker.DELETEALL
-        return marker
-
-    marker.action = Marker.ADD
-
-    # Set the scale (size) of the sphere
-    marker.scale.x = size
-    marker.scale.y = size
-    marker.scale.z = size
-
-    # Set the color (RGBA)
-    marker.color.r = color[0]
-    marker.color.g = color[1]
-    marker.color.b = color[2]
-    marker.color.a = 1.0  # fully opaque
-
-    # Define the position
-    marker.pose.position.x = point[0]
-    marker.pose.position.y = point[1]
-    marker.pose.position.z = 0.0
-
-    # Orientation is irrelevant for a sphere but must be valid
-    marker.pose.orientation.w = 1.0
-
-    return marker
-
-
 def segment_path(context: Context, dest: np.ndarray, seg_len: float = 2.0):
     """
     Segment the path from the rover's current position to the current waypoint into equally spaced points

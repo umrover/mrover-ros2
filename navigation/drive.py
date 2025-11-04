@@ -6,9 +6,10 @@ import numpy as np
 
 from lie import SE3, normalized, angle_to_rotate_2d
 from geometry_msgs.msg import Twist, Vector3
+from navigation.marker_utils import gen_marker, ring_marker
 from rclpy.node import Node
 from trajectory import Trajectory
-from typing import overload
+from visualization_msgs.msg import Marker
 
 
 class DriveController:
@@ -26,6 +27,10 @@ class DriveController:
         self._last_angular_error = None
         self._last_target = None
         self._driver_state = self.DriveMode.STOPPED
+        
+        # Rviz Markers
+        self.lookahead_pub = self.node.create_publisher(Marker, 'lookahead_circle', 10)
+        self.intersection_pub = self.node.create_publisher(Marker, 'intersection_points', 10)
 
     def reset(self) -> None:
         self._driver_state = self.DriveMode.STOPPED
@@ -165,8 +170,26 @@ class DriveController:
         else:
             return path_start + lookahead_point
 
-    @overload
+    # @overload
     def get_drive_command(
+        self: DriveController,
+        target_pos: np.ndarray | Trajectory,
+        rover_pose: SE3,
+        completion_thresh: float,
+        turn_in_place_thresh: float,
+        drive_back: bool = False,
+        path_start: np.ndarray | None = None,
+    ) -> tuple[Twist, bool]:
+        # If target_pos is a Trajectory we use pure pursuit instead of deafult_drive_command
+        if isinstance(target_pos, np.ndarray):
+            return self.get_default_drive_command(
+                target_pos, rover_pose, completion_thresh, turn_in_place_thresh, drive_back, path_start,
+            )
+        return self.get_pure_pursuit_drive_command(
+            target_pos, rover_pose, completion_thresh, turn_in_place_thresh, drive_back, path_start,
+        )
+
+    def get_default_drive_command(
         self: DriveController,
         target_pos: np.ndarray,
         rover_pose: SE3,
@@ -233,8 +256,7 @@ class DriveController:
         self._last_target = target_pos
         return output
 
-    @overload
-    def get_drive_command(
+    def get_pure_pursuit_drive_command(
         self: DriveController,
         waypoints: Trajectory,
         rover_pose: SE3,
@@ -270,6 +292,9 @@ class DriveController:
         # Compute intersection points with the path
         intersection_points = self.compute_intersection_point(waypoints, rover_pos, lookahead_dist)
 
+        # Display markers for intersection points and lookahead dist
+        self.display_markers(rover_pos, lookahead_dist, intersection_points)
+
         # Determine the target_pos given the intersection points
         target_pos = self.determine_next_point(waypoints, intersection_points)
 
@@ -295,7 +320,6 @@ class DriveController:
         self._last_target = target_pos
         return output
 
-    @staticmethod
     def get_twist_for_arch(
         self,
         angular_error: float,
@@ -360,15 +384,12 @@ class DriveController:
             )
             return cmd_vel, False
 
-
-    @staticmethod
     def determine_next_point(
         waypoints: Trajectory,
         intersections: np.ndarry,
     ) -> np.ndarray:
         # A helper function for pure pursuit 
         # Determines what intersection is the best to follow
-
         waypoints.increment_point()
 
         if waypoints.done() or len(intersections):
@@ -392,7 +413,6 @@ class DriveController:
 
         return target_pos
 
-    @staticmethod
     def set_farthest_path_point(
         waypoints: Trajectory,
         rover_pos: np.ndarray,
@@ -416,7 +436,7 @@ class DriveController:
 
         if stop_incrementing or waypoints.done():
             waypoints.decrement_point()
-    
+
     @staticmethod
     def sign(
         val : float
@@ -427,8 +447,8 @@ class DriveController:
         else:
             return -1
 
-    @staticmethod
     def compute_intersection_point(
+        self,
         waypoints: Trajectory,
         rover_pos: np.ndarray,
         lookahead_dist: float,
@@ -446,7 +466,7 @@ class DriveController:
 
         # If the goal point is within our lookahead_dist, return the goal
         if waypoints.done():
-            return np.ndarray([x1,y1])
+            return np.ndarray([x_1,y_1])
 
         x_pos = rover_pos[0]
         y_pos = rover_pos[1]
@@ -469,8 +489,8 @@ class DriveController:
 
         # Determine if there is an intersection
         if (discriminate >= 0):
-            x_sol_1 = det*d_r + sign(d_y)*d_x*np.sqrt(discriminate)
-            x_sol_2 = det*d_r - sign(d_y)*d_x*np.sqrt(discriminate)
+            x_sol_1 = det*d_r + self.sign(d_y)*d_x*np.sqrt(discriminate)
+            x_sol_2 = det*d_r - self.sign(d_y)*d_x*np.sqrt(discriminate)
             y_sol_1 = -det*d_x + abs(d_y)*np.sqrt(discriminate)
             y_sol_2 = -det*d_x - abs(d_y)*np.sqrt(discriminate)
 
@@ -498,4 +518,29 @@ class DriveController:
 
         return intersections
 
-
+    def display_markers(
+        self,
+        rover_pos: np.ndarray,
+        lookahead_dist: float,
+        intersection_points: np.ndarray,
+    ):
+        for i in len(intersection_points):
+            self.lookahead_pub.publish(
+                gen_marker(
+                    time=self.node.get_clock().now(),
+                    point=intersection_points[i],
+                    color=[0.0, 1.0, 0.0],
+                    id=i,
+                    lifetime=self.node.get_parameter("pub_lookahead_rate").value,
+                )
+            )
+        self.marker_pub.publish(
+            ring_marker(
+                time=self.node.get_clock().now(),
+                point=rover_pos,
+                color=[1.0, 0.0, 0.0],
+                id=0,
+                lifetime=self.node.get_parameter("pub_lookahead_rate").value,
+                radius=lookahead_dist,
+            )
+        )

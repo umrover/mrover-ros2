@@ -12,7 +12,8 @@ from rclpy.publisher import Publisher
 from rclpy.time import Time
 from rclpy.timer import Timer
 from rclpy.duration import Duration
-from navigation.coordinate_utils import gen_marker, is_high_cost_point, d_calc, segment_path, cartesian_to_ij
+from navigation.coordinate_utils import is_high_cost_point, d_calc, segment_path, cartesian_to_ij
+from navigation.marker_utils import gen_marker
 
 
 class ApproachTargetState(State):
@@ -379,7 +380,7 @@ class ApproachTargetState(State):
                 for i, coord in enumerate(self.target_traj.coordinates[start_pt:end_pt]):
                     self.marker_pub.publish(
                         gen_marker(
-                            context=context,
+                            time=context.node.get_clock().now(),
                             point=coord,
                             color=[1.0, 0.0, 1.0],
                             id=i + 1,
@@ -389,7 +390,7 @@ class ApproachTargetState(State):
 
             self.marker_pub.publish(
                 gen_marker(
-                    context=context, point=self.target_position, color=[1.0, 1.0, 0.0], id=0, lifetime=100, size=0.5
+                    time=context.node.get_clock().now(), point=self.target_position, color=[1.0, 1.0, 0.0], id=0, lifetime=100, size=0.5
                 )
             )
 

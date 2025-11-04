@@ -11,7 +11,8 @@ from .context import Context
 import rclpy
 from .context import Context
 from navigation.astar import AStar, SpiralEnd, NoPath, OutOfBounds, DestinationInHighCost
-from navigation.coordinate_utils import gen_marker, segment_path, is_high_cost_point, d_calc, cartesian_to_ij
+from navigation.coordinate_utils import segment_path, is_high_cost_point, d_calc, cartesian_to_ij
+from navigation.marker_utils import gen_marker
 from navigation.trajectory import Trajectory, SearchTrajectory
 from typing import Optional
 from rclpy.publisher import Publisher
@@ -314,7 +315,7 @@ class WaypointState(State):
                 if i >= start_pt:
                     self.marker_pub.publish(
                         gen_marker(
-                            context=context,
+                            time=context.node.get_clock().now(),
                             point=coord,
                             color=[1.0, 0.0, 1.0],
                             id=i,
@@ -327,7 +328,7 @@ class WaypointState(State):
 
             self.marker_pub.publish(
                 gen_marker(
-                    context=context,
+                    time=context.node.get_clock().now(),
                     point=context.course.current_waypoint_pose_in_map().translation()[0:2],
                     color=[0.0, 0.0, 1.0],
                     size=0.5,

@@ -9,7 +9,8 @@ from rclpy.duration import Duration
 import time
 from navigation import approach_target, stuck_recovery, waypoint, state
 from navigation.astar import AStar, SpiralEnd, NoPath, OutOfBounds
-from navigation.coordinate_utils import d_calc, gen_marker, is_high_cost_point, cartesian_to_ij
+from navigation.coordinate_utils import d_calc, is_high_cost_point, cartesian_to_ij
+from navigation.marker_utils import gen_marker
 from navigation.context import Context
 from navigation.trajectory import Trajectory, SearchTrajectory
 from visualization_msgs.msg import Marker
@@ -81,7 +82,7 @@ class CostmapSearchState(State):
         self.marker_timer.cancel()
         if self.update_astar_timer is not None:
             self.update_astar_timer.cancel()
-        self.marker_pub.publish(gen_marker(context, delete=True))
+        self.marker_pub.publish(gen_marker(time=context.node.get_clock().now(), delete=True))
 
     def display_markers(self, context: Context) -> None:
         start_pt = self.spiral_traj.cur_pt
@@ -94,7 +95,7 @@ class CostmapSearchState(State):
             for i, coord in enumerate(self.spiral_traj.coordinates[start_pt:end_pt]):
                 self.marker_pub.publish(
                     gen_marker(
-                        context=context,
+                        time=context.node.get_clock().now(),
                         point=coord,
                         color=[1.0, 0.0, 0.0],
                         id=i,
