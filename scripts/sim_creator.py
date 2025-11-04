@@ -5,43 +5,30 @@ def create_60x60_grid():
     root = tk.Tk()
     root.title("30×30 Grid with Toggleable Colors (including black)")
 
-    # -------------------
-    #   CONFIGURATION
-    # -------------------
-    GRID_SIZE = 35  # 30 cells in each dimension
-    CELL_SIZE = 25  # Each cell is 30×30 pixels
-    MARGIN = 30  # Extra space around the grid for the border
+    # CONFIG
+    GRID_SIZE = 35
+    CELL_SIZE = 25 
+    MARGIN = 30  
     TOTAL_PIXELS = GRID_SIZE * CELL_SIZE
 
-    # Now includes "black" to represent the rover's position
     color_modes = ["white", "green", "blue", "red"]
-    current_mode_index = 0  # Start with mode = "white"
+    current_mode_index = 0  
 
-    # 2D array to keep track of each cell's color (initially "white")
     grid_colors = [["white" for _ in range(GRID_SIZE)] for __ in range(GRID_SIZE)]
 
-    # Include black → 4
     color_key = {"white": 0, "green": 1, "blue": 2, "red": 3}
 
-    # -------------------
-    #   TK WIDGETS
-    # -------------------
     main_frame = tk.Frame(root)
     main_frame.pack()
-
-    # Increase the Canvas size to accommodate margins
     CANVAS_SIZE = TOTAL_PIXELS + 2 * MARGIN
 
-    # Left: Canvas for the 30×30 grid
     canvas = tk.Canvas(main_frame, width=CANVAS_SIZE, height=CANVAS_SIZE, bg="white")
     canvas.pack(side=tk.LEFT)
 
-    # Right: A small canvas (icon) to show current mode color
     icon_size = 50
     mode_canvas = tk.Canvas(main_frame, width=icon_size, height=icon_size, bg="white")
     mode_canvas.pack(side=tk.RIGHT, padx=10)
 
-    # Draw a rectangle showing the current mode color
     mode_rect = mode_canvas.create_rectangle(
         0, 0, icon_size, icon_size, fill=color_modes[current_mode_index], outline="black"
     )
@@ -50,10 +37,7 @@ def create_60x60_grid():
         """Update the color of the 'mode' icon."""
         mode_canvas.itemconfig(mode_rect, fill=color_modes[current_mode_index])
 
-    # -------------------
-    #   CREATE THE GRID
-    # -------------------
-    rect_ids = {}  # dict: (row, col) -> rectangle_id
+    rect_ids = {}  
 
     for row in range(GRID_SIZE):
         for col in range(GRID_SIZE):
@@ -65,9 +49,6 @@ def create_60x60_grid():
             rect_id = canvas.create_rectangle(x1, y1, x2, y2, fill="white", outline="black")
             rect_ids[(row, col)] = rect_id
 
-    # -------------------
-    #   EVENT HANDLERS
-    # -------------------
     def on_click(event):
         """
         When the user clicks on a cell, toggle it between white
@@ -138,14 +119,13 @@ def create_60x60_grid():
         Pressing 'q' prints the 2D array (using color_key), then creates new_sim.yaml,
         and closes the window.
         """
-        # 1) Print the 2D array
         numeric_grid = []
         for r in range(GRID_SIZE):
             numeric_row = [color_key[color] for color in grid_colors[r]]
             numeric_grid.append(numeric_row)
             print(numeric_row)
 
-        # 2) Prepare YAML header
+
         yaml_header = """# All units are in SI
 # ===================
 # Time:     second, hz
@@ -176,20 +156,17 @@ simulator:
 
 """
 
-        # 3) Generate objects for rocks, ignoring cells with value 0 (white or no rock).
         rock_counter = 1
         yaml_rocks = []
 
-        # URIs by value: 1 => small, 2 => medium, 3 => large
         uri_map = {
             1: "package://mrover/urdf/world/small_rock.urdf.xacro",
             2: "package://mrover/urdf/world/medium_rock.urdf.xacro",
             3: "package://mrover/urdf/world/large_rock.urdf.xacro",
         }
-        # For demonstration, different z's by size
         z_map = {1: "0.5", 2: "1.0", 3: "1.0"}
 
-        center_offset = GRID_SIZE // 2  # Center offset for coordinate transformation
+        center_offset = GRID_SIZE // 2  
 
         for row_i in range(GRID_SIZE):
             for col_i in range(GRID_SIZE):
@@ -211,7 +188,8 @@ simulator:
                     yaml_rocks.append("\n".join(lines))
 
         # 4) Add finishing lines
-        yaml_footer = """    world_frame: "map"
+        yaml_footer = """
+    world_frame: "map"
     rover_frame: "sim_base_link"
 """
 
@@ -232,15 +210,11 @@ simulator:
     root.bind("<space>", cycle_mode)
     root.bind("q", on_q_press)
 
-    # -------------------
-    #   LABEL IN CENTER
-    # -------------------
     center = GRID_SIZE // 2
     center_x = MARGIN + center * CELL_SIZE + (CELL_SIZE // 2)
     center_y = MARGIN + center * CELL_SIZE + (CELL_SIZE // 2)
     canvas.create_text(center_x, center_y, text="(0,0)", fill="black", anchor="center")
 
-    # Show the initial mode color in the icon
     update_mode_indicator()
     root.mainloop()
 
