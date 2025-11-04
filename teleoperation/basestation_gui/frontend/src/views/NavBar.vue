@@ -47,15 +47,6 @@ export default defineComponent({
 </script>
 
 <style scoped>
-h1 {
-	font-family: 'Consolas', 'Courier New', 'DejaVu Sans Mono', monospace;
-  font-weight: 400;
-  font-size: 2.7rem;
-	letter-spacing: -0.1rem;
-  margin: 0;
-  user-select: none;
-}
-
 .logo {
   position: absolute;
   left: 48%;

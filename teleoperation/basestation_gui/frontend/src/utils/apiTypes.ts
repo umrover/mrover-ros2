@@ -48,3 +48,31 @@ export interface AutonEnableWaypoint {
   type: number
   enable_costmap: boolean
 }
+
+export interface RecordedWaypoint {
+  id: number
+  lat: number
+  lon: number
+  timestamp: string
+  sequence: number
+}
+
+export interface Recording {
+  id: number
+  name: string
+  is_drone: boolean
+  created_at: string
+  waypoint_count: number
+}
+
+export interface RecordingCreateResponse extends APIResponse {
+  recording_id?: number
+}
+
+export interface RecordingsListResponse extends APIResponse {
+  recordings?: Recording[]
+}
+
+export interface RecordingWaypointsResponse extends APIResponse {
+  waypoints?: RecordedWaypoint[]
+}
