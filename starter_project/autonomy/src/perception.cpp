@@ -61,7 +61,6 @@ namespace mrover {
         msg::StarterProjectTag tag;
         tag = selectTag(image,mTags);
         publishTag(tag);
-        (void)this;
     }
 
     auto Perception::findTagsInImage(cv::Mat const& image, std::vector<msg::StarterProjectTag>& tags) -> void { // NOLINT(*-convert-member-functions-to-static)
@@ -88,8 +87,6 @@ namespace mrover {
             tags.push_back(detected_tag);
         }
 
-        (void)image;
-
     }
 
     auto Perception::selectTag(cv::Mat const& image, std::vector<msg::StarterProjectTag> const& tags) -> msg::StarterProjectTag { // NOLINT(*-convert-member-functions-to-static)
@@ -108,8 +105,6 @@ namespace mrover {
                 }
             }
 
-            (void)image;
-            (void)tags;
             return msg::StarterProjectTag{tags[max_index]};
         }
         else {
@@ -119,7 +114,6 @@ namespace mrover {
 
     auto Perception::publishTag(msg::StarterProjectTag const& tag) -> void {
         mTagPublisher->publish(tag);
-        (void)tag;
     }
 
     auto Perception::getClosenessMetricFromTagCorners(cv::Mat const& image, std::vector<cv::Point2f> const& tagCorners) -> float { // NOLINT(*-convert-member-functions-to-static)
@@ -131,8 +125,6 @@ namespace mrover {
 
         float image_width = image.cols;
 
-        (void)image;
-        (void)tagCorners;
         return x_tag_range / image_width;
     }
 
@@ -141,7 +133,6 @@ namespace mrover {
         float x_tag_center_pixel = ((tagCorners[1].x - tagCorners[0].x) / 2.0) + tagCorners[0].x;
         float y_tag_center_pixel = ((tagCorners[2].y - tagCorners[1].y) / 2.0) + tagCorners[1].y;
 
-        (void)tagCorners;
         std::pair<float, float> centers = std::make_pair(x_tag_center_pixel,y_tag_center_pixel);
         return {centers};
     }
