@@ -81,7 +81,7 @@ namespace mrover {
         auto ikVelCalc(geometry_msgs::msg::Twist) -> std::optional<msg::Velocity>;
         auto timerCallback() -> void;
 
-        ArmPos mArmPos, mTypingOrigin, mPosTarget;
+        ArmPos mArmPos, mTypingOrigin, mPosTarget, mLastValid;
         geometry_msgs::msg::Twist mVelTarget;
         rclcpp::Time mLastUpdate;
 

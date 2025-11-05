@@ -212,8 +212,11 @@ namespace mrover {
             SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_target", "arm_base_link", mPosTarget.toSE3(), get_clock()->now());
             if (positions) {
                 mPosPub->publish(positions.value());
+                mLastValid = mPosTarget;
             } else {
                 RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1000, "Position IK failed!");
+                auto positions = ikPosCalc(mLastValid);
+                mPosPub->publish(positions.value());
             }
         } else if (mArmMode == ArmMode::VELOCITY_CONTROL) {
             auto velocities = ikVelCalc(mVelTarget);
