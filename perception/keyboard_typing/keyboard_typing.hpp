@@ -2,6 +2,7 @@
 
 #include "pch.hpp"
 #include "constants.h"
+#include <geometry_msgs/msg/detail/pose__struct.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/image.hpp>
 #include <geometry_msgs/msg/quaternion.hpp>
@@ -14,9 +15,9 @@ class KeyboardTypingNode : public rclcpp::Node{
     // Can pub to any topic just make the name make sense
     rclcpp::Publisher<geometry_msgs::msg::Quaternion>::SharedPtr mCostMapPub;
 
-    auto poseEstimation(sensor_msgs::msg::Image::ConstSharedPtr const& msg) -> geometry_msgs::msg::Quaternion;
+    auto estimatePose(sensor_msgs::msg::Image::ConstSharedPtr const& msg) -> geometry_msgs::msg::Pose;
 
-    auto kalmanFilter(geometry_msgs::msg::Quaternion const& msg) -> geometry_msgs::msg::Quaternion;
+    auto kalmanFilter(cv::Vec3d &tvec, cv::Vec3d &rvecs) -> void;
 
     auto yawCallback(sensor_msgs::msg::Image::ConstSharedPtr const& msg) -> void;
 

@@ -29,7 +29,7 @@ auto const BOARD = cv::aruco::CharucoBoard::create(
         MARKER_LENGTH,
         DICTIONARY);
 auto const PARAMS = cv::aruco::DetectorParameters();
-auto const DETECTOR = cv::aruco::ArucoDetector(DICTIONARY, PARAMS);
+// auto const DETECTOR = cv::aruco::ArucoDetector(DICTIONARY, PARAMS);
 // ------------------------------
 
 #endif // KEYBOARD_TYPING_CONSTANTS_H
