@@ -228,15 +228,23 @@ namespace mrover {
                 mPosPub->publish(mPosFallback.value());
             }
         } else if (mArmMode == ArmMode::VELOCITY_CONTROL) {
+            // TODO: Determine joint velocities that cancels out arm sag
             auto velocities = ikVelCalc(mVelTarget);
-            if (velocities) {
+            if (velocities && 
+                !(
+                    velocities->velocities[0] == 0 &&
+                    velocities->velocities[1] == 0 &&
+                    velocities->velocities[2] == 0 &&
+                    velocities->velocities[3] == 0 &&
+                    velocities->velocities[4] == 0
+                )
+            ) {
                 mVelPub->publish(velocities.value());
+                mPosFallback = std::nullopt;
             } else {
-                msg::Velocity zeroVel;
-                zeroVel.names = {"joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_roll"};
-                zeroVel.velocities = {0.0, 0.0, 0.0, 0.0, 0.0};
-                mVelPub->publish(zeroVel);
-                RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1000, "Velocity IK failed!");
+                if(!velocities) RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1000, "Velocity IK failed!");
+                if(!mPosFallback) mPosFallback = mLastValid;
+                mPosPub->publish(mPosFallback.value());
             }
         } else { // typing mode
             msg::Position positions;
