@@ -1,5 +1,6 @@
 #pragma once
 
+#include "mrover/msg/detail/position__struct.hpp"
 #include "pch.hpp"
 
 namespace mrover {
@@ -81,7 +82,9 @@ namespace mrover {
         auto ikVelCalc(geometry_msgs::msg::Twist) -> std::optional<msg::Velocity>;
         auto timerCallback() -> void;
 
-        ArmPos mArmPos, mTypingOrigin, mPosTarget, mLastValid;
+        ArmPos mArmPos, mTypingOrigin, mPosTarget;
+        msg::Position mLastValid;
+        std::optional<msg::Position> mPosFallback;
         geometry_msgs::msg::Twist mVelTarget;
         rclcpp::Time mLastUpdate;
 

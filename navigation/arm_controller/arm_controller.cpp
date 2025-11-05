@@ -189,6 +189,12 @@ namespace mrover {
         x += END_EFFECTOR_LENGTH * std::cos(angle);
         z += END_EFFECTOR_LENGTH * std::sin(angle);
         mArmPos = {x, y, z, -angle, joint_state->position[4], std::max(joint_state->position[5], 0.0)};
+
+        auto positions = ikPosCalc(mArmPos);
+        if(!positions) RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, "Arm is currently in an invalid state for position IK");
+        else mLastValid = *positions;
+
+        
 	SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_fk", "arm_base_link", mArmPos.toSE3(), get_clock()->now());
     }
 
@@ -212,18 +218,20 @@ namespace mrover {
             SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_target", "arm_base_link", mPosTarget.toSE3(), get_clock()->now());
             if (positions) {
                 mPosPub->publish(positions.value());
-                mLastValid = mPosTarget;
+                mPosFallback = std::nullopt;
             } else {
                 RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1000, "Position IK failed!");
-                auto positions = ikPosCalc(mLastValid);
-                mPosPub->publish(positions.value());
+                if(!mPosFallback) mPosFallback = mLastValid;
+                mPosPub->publish(mPosFallback.value());
             }
         } else if (mArmMode == ArmMode::VELOCITY_CONTROL) {
             auto velocities = ikVelCalc(mVelTarget);
             if (velocities) {
                 mVelPub->publish(velocities.value());
             } else {
+                velocities->velocities = {0,0,0,0,0};
                 RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1000, "Velocity IK failed!");
+
             }
         } else { // typing mode
             msg::Position positions;
