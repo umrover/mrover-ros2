@@ -1,5 +1,4 @@
 #pragma once
-
 #include "pch.hpp"
 
 namespace mrover {
@@ -82,7 +81,6 @@ namespace mrover {
         auto timerCallback() -> void;
 
         ArmPos mArmPos, mTypingOrigin, mPosTarget;
-        msg::Position mLastValid;
         std::optional<msg::Position> mPosFallback;
         geometry_msgs::msg::Twist mVelTarget;
         rclcpp::Time mLastUpdate;

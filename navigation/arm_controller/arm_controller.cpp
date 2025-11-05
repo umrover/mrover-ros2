@@ -190,11 +190,6 @@ namespace mrover {
         z += END_EFFECTOR_LENGTH * std::sin(angle);
         mArmPos = {x, y, z, -angle, joint_state->position[4], std::max(joint_state->position[5], 0.0)};
 
-        auto positions = ikPosCalc(mArmPos);
-        if(!positions) RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, "Arm is currently in an invalid state for position IK");
-        else mLastValid = *positions;
-
-        
 	SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_fk", "arm_base_link", mArmPos.toSE3(), get_clock()->now());
     }
 
@@ -208,13 +203,22 @@ namespace mrover {
     }
 
     auto ArmController::timerCallback() -> void {
+        msg::Position mCurrPos;
+        mCurrPos.names = {"joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_roll"};
+        mCurrPos.positions = {
+            static_cast<float>(joints["joint_a"].pos),
+            static_cast<float>(joints["joint_b"].pos),
+            static_cast<float>(joints["joint_c"].pos),
+            static_cast<float>(joints["joint_de_pitch"].pos),
+            static_cast<float>(joints["joint_de_roll"].pos),
+        };
+
         if (get_clock()->now() - mLastUpdate > TIMEOUT) {
             RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 100, "IK Timed Out");
-            if(!mPosFallback) mPosFallback = mLastValid;
+            if(!mPosFallback) mPosFallback = mCurrPos;
             mPosPub->publish(mPosFallback.value());
             return;
         }
-        mPosFallback = std::nullopt;
 
         if (mArmMode == ArmMode::POSITION_CONTROL) {
             auto positions = ikPosCalc(mPosTarget);
@@ -224,7 +228,7 @@ namespace mrover {
                 mPosFallback = std::nullopt;
             } else {
                 RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1000, "Position IK failed!");
-                if(!mPosFallback) mPosFallback = mLastValid;
+                if(!mPosFallback) mPosFallback = mCurrPos;
                 mPosPub->publish(mPosFallback.value());
             }
         } else if (mArmMode == ArmMode::VELOCITY_CONTROL) {
@@ -243,7 +247,7 @@ namespace mrover {
                 mPosFallback = std::nullopt;
             } else {
                 if(!velocities) RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1000, "Velocity IK failed!");
-                if(!mPosFallback) mPosFallback = mLastValid;
+                if(!mPosFallback) mPosFallback = mCurrPos;
                 mPosPub->publish(mPosFallback.value());
             }
         } else { // typing mode
@@ -269,7 +273,7 @@ namespace mrover {
                     return;
                 }
             }
-
+            mPosFallback = std::nullopt;
             mPosPub->publish(positions);
         }
     }
