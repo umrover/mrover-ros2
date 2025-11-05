@@ -8,7 +8,6 @@
         "redhat.vscode-xml",
         "redhat.vscode-yaml",
         "llvm-vs-code-extensions.vscode-clangd",
-        "eamodio.gitlens",
-        "streetsidesoftware.code-spell-checker",
+        "eamodio.gitlens"
     ],
 }

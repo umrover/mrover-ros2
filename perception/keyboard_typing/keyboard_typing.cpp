@@ -2,8 +2,11 @@
 #include <functional>
 #include <geometry_msgs/msg/detail/pose__struct.hpp>
 #include <opencv2/calib3d.hpp>
+#include <opencv2/core.hpp>
+#include <opencv2/core/hal/interface.h>
 #include <opencv2/core/mat.hpp>
 #include <opencv2/core/matx.hpp>
+#include <opencv2/core/types.hpp>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/video/tracking.hpp>
 
@@ -130,24 +133,47 @@ auto KeyboardTypingNode::estimatePose(sensor_msgs::msg::Image::ConstSharedPtr co
 
 auto KeyboardTypingNode::kalmanFilter(cv::Vec3d &tvec, cv::Vec3d &rvecs) -> void {
     
+    static bool isInitialized = false;
+
     cv::KalmanFilter kf(12,6);
     float dt = 1.0;
-    kf.transitionMatrix = (cv::Mat_<float>(12, 12) <<
-    1, 0, 0, 0, 0, 0, dt, 0, 0, 0, 0, 0,
-    0, 1, 0, 0, 0, 0, 0, dt, 0, 0, 0, 0,
-    0, 0, 1, 0, 0, 0, 0, 0, dt, 0, 0, 0,
-    0, 0, 0, 1, 0, 0, 0, 0, 0, dt, 0, 0,
-    0, 0, 0, 0, 1, 0, 0, 0, 0, 0, dt, 0,
-    0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, dt,
-    0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-    );
 
-    kf.measurementMatrix = (cv::Mat_)
+    if(!isInitialized){
+        kf.transitionMatrix = (cv::Mat_<float>(12, 12) <<
+        1, 0, 0, dt, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 1, 0, 0, dt, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 1, 0, 0, dt, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 1, 0, 0, 0 , 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 1, 0, 0, dt, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 1, 0, 0, dt, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, dt,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
+        );
+
+        kf.measurementMatrix = (cv::Mat_<float>(6,12) <<
+        1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0
+        );
+    
+        cv::setIdentity(kf.processNoiseCov, cv::Scalar(1e-6));
+        cv::setIdentity(kf.measurementNoiseCov, cv::Scalar(1e-2));
+        cv::setIdentity(kf.errorCovPost, cv::Scalar(1));
+
+        kf.statePost = cv::Mat::zeros(12,1, CV_32F);
+        isInitialized = true;
+    }
+    
+    cv::Mat prediction;
+    cv::Mat estimated;
+    cv::Mat measurement(6,1,CV_32F);
 
     
 
