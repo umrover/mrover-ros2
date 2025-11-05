@@ -2,21 +2,22 @@
 
 #include "pch.hpp"
 // #include "constants.h"
+namespace mrover{
+    class KeyboardTypingNode : public rclcpp::Node{
+        private:
+        // Sub to /finger_camera/image topic
+        rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr mImageSub;
 
-class KeyboardTypingNode : public rclcpp::Node{
-    private:
-    // Sub to /finger_camera/image topic
-    rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr mImageSub;
+        // Can pub to any topic just make the name make sense
+        rclcpp::Publisher<geometry_msgs::msg::Quaternion>::SharedPtr mCostMapPub;
 
-    // Can pub to any topic just make the name make sense
-    rclcpp::Publisher<geometry_msgs::msg::Quaternion>::SharedPtr mCostMapPub;
+        auto estimatePose(sensor_msgs::msg::Image::ConstSharedPtr const& msg) -> geometry_msgs::msg::Pose;
 
-    auto estimatePose(sensor_msgs::msg::Image::ConstSharedPtr const& msg) -> geometry_msgs::msg::Pose;
+        auto kalmanFilter(cv::Vec3d &tvec, cv::Vec3d &rvecs) -> void;
 
-    auto kalmanFilter(cv::Vec3d &tvec, cv::Vec3d &rvecs) -> void;
+        auto yawCallback(sensor_msgs::msg::Image::ConstSharedPtr const& msg) -> void;
 
-    auto yawCallback(sensor_msgs::msg::Image::ConstSharedPtr const& msg) -> void;
-
-    public:
-    explicit KeyboardTypingNode(rclcpp::NodeOptions const& options = rclcpp::NodeOptions());
-};
+        public:
+        explicit KeyboardTypingNode(rclcpp::NodeOptions const& options = rclcpp::NodeOptions());
+    };
+}

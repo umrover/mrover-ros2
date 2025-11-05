@@ -302,7 +302,10 @@ mrover_executable_from_component(image_tag_detector perception/executables/image
 
 # Keyboard Typing
 mrover_add_component(keyboard_typing perception/keyboard_typing/*.cpp perception/keyboard_typing/pch.hpp KeyboardTypingNode)
-mrover_link_component(keyboard_typing lie opencv_core opencv_aruco opencv_imgproc rclcpp)
+mrover_ament_component(keyboard_typing rclcpp rclcpp_components tf2 tf2_ros geometry_msgs sensor_msgs)
+mrover_link_component(keyboard_typing lie opencv_core opencv_aruco opencv_imgproc opencv_highgui opencv_dnn opencv_calib3d opencv_imgcodecs opencv_video)
+
+mrover_executable_from_component(keyboard_typing perception/executables/keyboard_typing.cpp keyboard_typing_component)
 
 # Cost Map
 mrover_add_component(cost_map perception/cost_map/*.cpp perception/cost_map/pch.hpp CostMapNode)

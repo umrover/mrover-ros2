@@ -1,5 +1,6 @@
 #pragma once
 
+#include <rclcpp/node.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp/publisher.hpp>
 #include <geometry_msgs/msg/quaternion.hpp>
