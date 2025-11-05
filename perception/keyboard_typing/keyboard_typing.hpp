@@ -1,11 +1,7 @@
 #pragma once
 
 #include "pch.hpp"
-#include "constants.h"
-#include <geometry_msgs/msg/detail/pose__struct.hpp>
-#include <rclcpp/rclcpp.hpp>
-#include <sensor_msgs/msg/image.hpp>
-#include <geometry_msgs/msg/quaternion.hpp>
+// #include "constants.h"
 
 class KeyboardTypingNode : public rclcpp::Node{
     private:

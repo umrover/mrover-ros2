@@ -300,6 +300,10 @@ mrover_link_component(tag_detector lie opencv_core opencv_aruco opencv_imgproc l
 mrover_executable_from_component(stereo_tag_detector perception/executables/stereo_tag_detector.cpp tag_detector_component)
 mrover_executable_from_component(image_tag_detector perception/executables/image_tag_detector.cpp tag_detector_component)
 
+# Keyboard Typing
+mrover_add_component(keyboard_typing perception/keyboard_typing/*.cpp perception/keyboard_typing/pch.hpp KeyboardTypingNode)
+mrover_link_component(keyboard_typing lie opencv_core opencv_aruco opencv_imgproc rclcpp)
+
 # Cost Map
 mrover_add_component(cost_map perception/cost_map/*.cpp perception/cost_map/pch.hpp CostMapNode)
 mrover_ament_component(cost_map rclcpp rclcpp_components tf2 tf2_ros)

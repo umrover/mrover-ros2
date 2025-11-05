@@ -1,14 +1,5 @@
 #include "keyboard_typing.hpp"
 #include <functional>
-#include <geometry_msgs/msg/detail/pose__struct.hpp>
-#include <opencv2/calib3d.hpp>
-#include <opencv2/core.hpp>
-#include <opencv2/core/hal/interface.h>
-#include <opencv2/core/mat.hpp>
-#include <opencv2/core/matx.hpp>
-#include <opencv2/core/types.hpp>
-#include <opencv2/imgproc.hpp>
-#include <opencv2/video/tracking.hpp>
 
 KeyboardTypingNode::KeyboardTypingNode(rclcpp::NodeOptions const& options) : rclcpp::Node("keyboard_typing_node", options)
 {
@@ -131,7 +122,7 @@ auto KeyboardTypingNode::estimatePose(sensor_msgs::msg::Image::ConstSharedPtr co
 
 
 
-auto KeyboardTypingNode::kalmanFilter(cv::Vec3d &tvec, cv::Vec3d &rvecs) -> void {
+// auto KeyboardTypingNode::kalmanFilter(cv::Vec3d &tvec, cv::Vec3d &rvecs) -> void {
     
     static bool isInitialized = false;
 
@@ -177,7 +168,7 @@ auto KeyboardTypingNode::kalmanFilter(cv::Vec3d &tvec, cv::Vec3d &rvecs) -> void
 
     
 
-}
+// }
 
 
 /*
