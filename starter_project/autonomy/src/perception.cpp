@@ -80,14 +80,12 @@ namespace mrover {
             centers = getCenterFromTagCorners(mTagCorners[i]);
             closeness = getClosenessMetricFromTagCorners(image, mTagCorners[i]);
 
-            msg::StarterProjectTag tag;
-            
-            tag.set__tag_id(mTagIds[i]);
-            tag.set__x_tag_center_pixel(centers.first);
-            tag.set__y_tag_center_pixel(centers.second);
-            tag.set__closeness_metric(closeness);
-
-            tags.push_back(tag);
+            msg::StarterProjectTag detected_tag;
+            detected_tag.set__tag_id(mTagIds[i]);
+            detected_tag.set__x_tag_center_pixel(centers.first);
+            detected_tag.set__y_tag_center_pixel(centers.second);
+            detected_tag.set__closeness_metric(closeness);
+            tags.push_back(detected_tag);
         }
 
         (void)image;
@@ -95,14 +93,15 @@ namespace mrover {
     }
 
     auto Perception::selectTag(cv::Mat const& image, std::vector<msg::StarterProjectTag> const& tags) -> msg::StarterProjectTag { // NOLINT(*-convert-member-functions-to-static)
-        float max = tags[0].closeness_metric;
-        int max_index = 0;
-        msg::StarterProjectTag empty_tag;
-        empty_tag.closeness_metric = 0;
-        empty_tag.tag_id = 0;
-        empty_tag.x_tag_center_pixel = 0;
-        empty_tag.y_tag_center_pixel = 0;
+        float max = 0;
+        msg::StarterProjectTag default_tag;
+        default_tag.set__tag_id(0l);
+        default_tag.set__x_tag_center_pixel(0.0f);
+        default_tag.set__y_tag_center_pixel(0.0f);
+        default_tag.set__closeness_metric(0.0f);
         if(tags.size() != 0) {
+            max = tags[0].closeness_metric;
+            int max_index = 0;
             for(unsigned long i=0; i<tags.size(); ++i) {
                 if(tags[i].closeness_metric > max) {
                     max_index = i;
@@ -114,7 +113,7 @@ namespace mrover {
             return msg::StarterProjectTag{tags[max_index]};
         }
         else {
-            return empty_tag;
+            return default_tag;
         }
     }
 
@@ -134,7 +133,7 @@ namespace mrover {
 
         (void)image;
         (void)tagCorners;
-        return x_tag_range/image_width;
+        return x_tag_range / image_width;
     }
 
     auto Perception::getCenterFromTagCorners(std::vector<cv::Point2f> const& tagCorners) -> std::pair<float, float> { // NOLINT(*-convert-member-functions-to-static)
@@ -148,6 +147,3 @@ namespace mrover {
     }
 
 } // namespace mrover
-
-
-	
