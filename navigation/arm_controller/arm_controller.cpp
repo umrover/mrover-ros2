@@ -210,8 +210,11 @@ namespace mrover {
     auto ArmController::timerCallback() -> void {
         if (get_clock()->now() - mLastUpdate > TIMEOUT) {
             RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 100, "IK Timed Out");
+            if(!mPosFallback) mPosFallback = mLastValid;
+            mPosPub->publish(mPosFallback.value());
             return;
         }
+        mPosFallback = std::nullopt;
 
         if (mArmMode == ArmMode::POSITION_CONTROL) {
             auto positions = ikPosCalc(mPosTarget);
@@ -229,9 +232,11 @@ namespace mrover {
             if (velocities) {
                 mVelPub->publish(velocities.value());
             } else {
-                velocities->velocities = {0,0,0,0,0};
+                msg::Velocity zeroVel;
+                zeroVel.names = {"joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_roll"};
+                zeroVel.velocities = {0.0, 0.0, 0.0, 0.0, 0.0};
+                mVelPub->publish(zeroVel);
                 RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1000, "Velocity IK failed!");
-
             }
         } else { // typing mode
             msg::Position positions;
