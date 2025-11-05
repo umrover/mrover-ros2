@@ -1,6 +1,5 @@
 #pragma once
 
-#include "mrover/msg/detail/position__struct.hpp"
 #include "pch.hpp"
 
 namespace mrover {
