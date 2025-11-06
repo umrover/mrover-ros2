@@ -28,6 +28,7 @@ namespace mrover{
             0.0, 0.0, 0.0,
             0.0, 0.0, 0.0
         );
+        
         cv::Mat distCoeffs = (cv::Mat_<double>(5, 1) << 0.0, 0.0, 0.0, 0.0, 0.0);
 
         // Read in images
@@ -119,59 +120,52 @@ namespace mrover{
 
         return pose;
     }
-}
-
-
-
-
-// auto KeyboardTypingNode::kalmanFilter(cv::Vec3d &tvec, cv::Vec3d &rvecs) -> void {
     
-    static bool isInitialized = false;
+    auto KeyboardTypingNode::kalmanFilter(cv::Vec3d &tvec, cv::Vec3d &rvecs) -> void {
+        
+        static bool isInitialized = false;
 
-    cv::KalmanFilter kf(12,6);
-    float dt = 1.0;
+        cv::KalmanFilter kf(12,6);
+        float dt = 1.0;
 
-    if(!isInitialized){
-        kf.transitionMatrix = (cv::Mat_<float>(12, 12) <<
-        1, 0, 0, dt, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 1, 0, 0, dt, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 1, 0, 0, dt, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 1, 0, 0, 0 , 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 1, 0, 0, dt, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 1, 0, 0, dt, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, dt,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-        );
+        if(!isInitialized){
+            kf.transitionMatrix = (cv::Mat_<float>(12, 12) <<
+            1, 0, 0, dt, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 1, 0, 0, dt, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 1, 0, 0, dt, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 1, 0, 0, 0 , 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 1, 0, 0, dt, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 1, 0, 0, dt, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, dt,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
+            );
 
-        kf.measurementMatrix = (cv::Mat_<float>(6,12) <<
-        1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0
-        );
-    
-        cv::setIdentity(kf.processNoiseCov, cv::Scalar(1e-6));
-        cv::setIdentity(kf.measurementNoiseCov, cv::Scalar(1e-2));
-        cv::setIdentity(kf.errorCovPost, cv::Scalar(1));
+            kf.measurementMatrix = (cv::Mat_<float>(6,12) <<
+            1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0
+            );
+        
+            cv::setIdentity(kf.processNoiseCov, cv::Scalar(1e-6));
+            cv::setIdentity(kf.measurementNoiseCov, cv::Scalar(1e-2));
+            cv::setIdentity(kf.errorCovPost, cv::Scalar(1));
 
-        kf.statePost = cv::Mat::zeros(12,1, CV_32F);
-        isInitialized = true;
+            kf.statePost = cv::Mat::zeros(12,1, CV_32F);
+            isInitialized = true;
+        }
+        
+        cv::Mat prediction;
+        cv::Mat estimated;
+        cv::Mat measurement(6,1,CV_32F);
     }
-    
-    cv::Mat prediction;
-    cv::Mat estimated;
-    cv::Mat measurement(6,1,CV_32F);
-
-    
-
-// }
-
+}
 
 /*
 Steps
