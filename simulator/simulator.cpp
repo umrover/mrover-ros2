@@ -16,7 +16,11 @@ namespace mrover {
 
             mImageTargetsPub = create_publisher<msg::ImageTargets>("objects", 1);
 
-            mIkTargetPub = create_publisher<msg::IK>("arm_ik", 1);
+            mIkTargetPub = create_publisher<msg::IK>("ee_pos_cmd", 1);
+
+            mIkVelPub = create_publisher<geometry_msgs::msg::Twist>("ee_vel_cmd", 1);
+
+            mIkModeClient = create_client<srv::IkMode>("ik_mode");
 
             mMotorTimeoutMs = get_parameter("motor_timeout").as_int();
 
@@ -55,7 +59,7 @@ namespace mrover {
                         positionsCallback(msg);
                     });
                 };
-                addGroup("arm", {"joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_roll"});
+                addGroup("arm", {"joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_roll", "gripper"});
                 addGroup("drive_left", {"front_left", "middle_left", "back_left"});
                 addGroup("drive_right", {"front_right", "middle_right", "back_right"});
 
@@ -65,6 +69,7 @@ namespace mrover {
                         {"joint_c", "arm_c_link"},
                         {"joint_de_pitch", "arm_d_link"},
                         {"joint_de_roll", "arm_e_link"},
+                        {"gripper", "arm_gripper_link"},
                         {"front_left", "front_left_wheel_link"},
                         {"middle_left", "center_left_wheel_link"},
                         {"back_left", "back_left_wheel_link"},
