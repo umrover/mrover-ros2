@@ -313,8 +313,8 @@
   </link>
 
   <joint name="arm_e_link_to_finger_camera" type="fixed">
-    <origin xyz="0 0 0" rpy="0 -${TAU/4} 0"/>
-    <parent link="arm_c_link"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <parent link="arm_e_link"/>
     <child link="finger_camera_frame"/>
   </joint>
 
