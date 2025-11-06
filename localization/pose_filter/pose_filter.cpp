@@ -68,6 +68,7 @@ namespace mrover {
         SE3d pose_in_map(position_in_map, SO3d::Identity());
 
         Eigen::Quaterniond uncorrected_orientation(imu_msg.orientation.w, imu_msg.orientation.x, imu_msg.orientation.y, imu_msg.orientation.z);
+        uncorrected_orientation.normalize();
         SO3d uncorrected_orientation_rotm = uncorrected_orientation;
 
         if (!curr_heading_correction) {
