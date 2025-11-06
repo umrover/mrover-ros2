@@ -12,7 +12,8 @@ import type {
   AutonEnableResponse,
   TeleopEnableResponse,
   AutonEnableWaypoint,
-  APIResponse
+  APIResponse,
+  RAModeResponse
 } from './apiTypes'
 
 const API_BASE = '/api'
@@ -164,6 +165,17 @@ export const mastAPI = {
     const response = await fetch(`${API_BASE}/mast/panorama/stop/`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' }
+    })
+    return response.json()
+  }
+}
+
+export const armAPI = {
+  async setRAMode(mode: string): Promise<RAModeResponse> {
+    const response = await fetch(`${API_BASE}/arm_controls/ra_mode/set`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mode })
     })
     return response.json()
   }

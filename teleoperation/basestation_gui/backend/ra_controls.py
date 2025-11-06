@@ -17,6 +17,11 @@ from tf2_ros.buffer import Buffer
 import logging
 logger = logging.getLogger('django')
 
+ra_mode = 'disabled'
+
+def set_rac_ra_mode(new_ra_mode: str):
+    global ra_mode
+    ra_mode = new_ra_mode
 
 TAU = 2 * pi
 
@@ -121,7 +126,8 @@ def subset(names: list[str], values: list[float], joints: set[Joint]) -> tuple[l
     return [names[i.value] for i in filtered_joints], [values[i.value] for i in filtered_joints]
 
 
-def send_ra_controls(ra_mode: str, inputs: DeviceInputs, node: Node, thr_pub: Publisher, ee_pos_pub: Publisher, ee_vel_pub: Publisher, buffer: Buffer) -> None: 
+def send_ra_controls(inputs: DeviceInputs, node: Node, thr_pub: Publisher, ee_pos_pub: Publisher, ee_vel_pub: Publisher, buffer: Buffer) -> None: 
+    global ra_mode
     match ra_mode:
         case "throttle" | "ik-pos" | "ik-vel":
             back_pressed = safe_index(inputs.buttons, ControllerButton.BACK) > 0.5

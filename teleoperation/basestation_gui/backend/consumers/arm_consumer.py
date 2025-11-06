@@ -37,7 +37,7 @@ class ArmConsumer(AsyncJsonWebsocketConsumer):
         # FIX: Use instance variables instead of class or global variables
         self.subscribers = []
         self.timers = []
-        self.cur_ra_mode: str = "disabled"
+        #self.cur_ra_mode: str = "disabled"
         self.cur_sa_mode: str = "disabled"
         self.buffer = {} # Assuming this was intended to be an instance buffer
 
@@ -107,7 +107,7 @@ class ArmConsumer(AsyncJsonWebsocketConsumer):
                     device_input = DeviceInputs(axes, buttons)
                     send_controller_twist(device_input, self.controller_twist_pub)
                     send_ra_controls(
-                        self.cur_ra_mode, # FIX: Use instance variable
+                        #self.cur_ra_mode, # FIX: Use instance variable
                         device_input,
                         self.node,
                         self.thr_pub,
@@ -115,9 +115,6 @@ class ArmConsumer(AsyncJsonWebsocketConsumer):
                         self.ee_vel_pub,
                         self.buffer,
                     )
-
-                case { "type": "ra_mode", "mode": ra_mode }:
-                    self.cur_ra_mode = ra_mode # FIX: Use instance variable
 
                 case {
                     "type": "sa_controller",

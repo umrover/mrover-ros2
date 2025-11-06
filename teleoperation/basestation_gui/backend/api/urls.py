@@ -4,7 +4,7 @@ API URL Configuration
 This module defines all REST API endpoints for the teleoperation system.
 """
 from django.urls import path
-from .views import waypoints, auton, science, mast
+from .views import waypoints, auton, science, mast, arm_controls
 
 app_name = 'api'
 
@@ -34,4 +34,7 @@ urlpatterns = [
     # Mast endpoints
     path('mast/panorama/start/', mast.panorama_start, name='panorama_start'),
     path('mast/panorama/stop/', mast.panorama_stop, name='panorama_stop'),
+
+    # Arm Controls endpoints
+    path('arm_controls/ra_mode/set', arm_controls.set_ra_mode, name='set_ra_mode'),
 ]

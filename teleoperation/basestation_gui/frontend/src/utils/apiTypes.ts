@@ -48,3 +48,7 @@ export interface AutonEnableWaypoint {
   type: number
   enable_costmap: boolean
 }
+
+export interface RAModeResponse extends APIResponse {
+  mode: string
+}
