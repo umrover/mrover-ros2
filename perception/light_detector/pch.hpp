@@ -38,3 +38,4 @@
 // MRover
 #include "point.hpp"
 #include "mrover/msg/vector3_array.hpp"
+#include <mrover/srv/set_light_mode.hpp>

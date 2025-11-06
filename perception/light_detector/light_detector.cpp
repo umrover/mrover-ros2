@@ -1,4 +1,5 @@
 #include "light_detector.hpp"
+#include "mrover/srv/detail/set_light_mode__struct.hpp"
 #include <opencv2/core/matx.hpp>
 #include <rclcpp/node.hpp>
 
@@ -14,9 +15,16 @@ namespace mrover{
 		int lowerBoundS = 0;
 		int lowerBoundV = 0;
 
+		//Initialize light detector to recognize red with tolerance of 100
+		int redBound = 205;
+		int greenBound = 50;
+		int blueBound = 50;
+		
+		int colorTolerance = 50;
+
 		std::vector<ParameterWrapper> params{
                 {"camera_frame", mCameraFrame, "zed_left_camera_frame"},
-                {"world_frame", mWorldFrame, "map"},
+                {"map_frame", mMapFrame, "map"},
                 {"light_detector/spiral_search_radius", SPIRAL_SEARCH_DIM, 50},
                 {"light_detector/immediate_light_range", mImmediateLightRange, 5},
                 {"light_detector/hit_increase", mHitIncrease, 5},
@@ -28,12 +36,24 @@ namespace mrover{
 				{"light_detector/upper_bound_v", upperBoundV, 0},
 				{"light_detector/lower_bound_h", lowerBoundH, 0},
 				{"light_detector/lower_bound_s", lowerBoundS, 0},
-				{"light_detector/lower_bound_v", lowerBoundV, 0}};
+				{"light_detector/lower_bound_v", lowerBoundV, 0},
+				{"light_detector/red_bound", redBound, 205},
+				{"light_detector/blue_bound", blueBound, 50},
+				{"light_detector/green_bound", greenBound, 50},
+				{"light_detector/color_tolerance", colorTolerance, 50}
+			};
 
         ParameterWrapper::declareParameters(this, params);
 
+		mServer = create_service<mrover::srv::SetLightMode>("set_light_mode", [this](mrover::srv::SetLightMode::Request::ConstSharedPtr request,
+                                                                                   mrover::srv::SetLightMode::Response::SharedPtr response) {
+            setLightModeCallback(request, response);
+        });
+
 		mUpperBound = cv::Vec3d(upperBoundH, upperBoundS, upperBoundV);
 		mLowerBound = cv::Vec3d(lowerBoundH, lowerBoundS, lowerBoundV);
+
+		mColorBound = {redBound, greenBound, blueBound, colorTolerance};
 
 		// TODO: fix this next time! check wiki for what the message type should be
 		imgSub = create_subscription<sensor_msgs::msg::PointCloud2>("/zed/left/points", 1, [this](sensor_msgs::msg::PointCloud2::ConstSharedPtr const& msg) {

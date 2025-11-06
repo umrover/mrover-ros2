@@ -3,6 +3,8 @@
 #include <cmath>
 #include <execution>
 #include <manif/impl/se3/SE3.h>
+#include <opencv2/core/mat.hpp>
+#include <opencv2/core/matx.hpp>
 #include <opencv2/core/types.hpp>
 #include <opencv2/imgproc.hpp>
 #include <optional>
@@ -10,93 +12,126 @@
 namespace mrover {
     // TODO: (john) break this out into a utility so we dont have to copy all of this code
 	auto LightDetector::convertPointCloudToRGB(sensor_msgs::msg::PointCloud2::ConstSharedPtr const& msg, cv::Mat const& image) -> void {
+        //Outputs BGR image
         auto* pixelPtr = reinterpret_cast<cv::Vec3b*>(image.data);
         auto* pointPtr = reinterpret_cast<Point const*>(msg->data.data());
         std::for_each(std::execution::par_unseq, pixelPtr, pixelPtr + image.total(), [&](cv::Vec3b& pixel) {
             std::size_t const i = &pixel - pixelPtr;
-            pixel[0] = pointPtr[i].r;
+            //cv::Mat default is bgr
+            pixel[0] = pointPtr[i].b;
             pixel[1] = pointPtr[i].g;
-            pixel[2] = pointPtr[i].b;
+            pixel[2] = pointPtr[i].r;
         });
     }
 
-    auto LightDetector::round_to(double value, double precision) -> double{
+    /* auto LightDetector::round_to(double value, double precision) -> double{
         double val = std::round(value / precision) * precision;
         return (floor((val*2)+0.5)/2);
+    } */
+
+    //could use a short here maybe
+    auto withinRange(uint32_t value, uint32_t color, uint32_t tolerance) -> bool{
+        if((value <= color + tolerance) && (value >= color-tolerance)){
+            return true;
+        } else{
+            return false;
+        }
     }
 
+    auto LightDetector::setLightModeCallback(mrover::srv::SetLightMode::Request::ConstSharedPtr& request,
+         mrover::srv::SetLightMode::Response::SharedPtr& response) -> void{
+            RCLCPP_INFO_STREAM(get_logger(),"service callback");
+            if(request->color == "red"){
+                mColorBound[0] = 205; //r
+                mColorBound[1] = 50;  //g
+                mColorBound[2] = 50;  //b
+                response->color = "red";
+            } else if(request->color == "blue"){
+                mColorBound[0] = 50; //r
+                mColorBound[1] = 50;  //g
+                mColorBound[2] = 205;  //b
+                response->color = "blue";
+            } else{
+                response->color = "undef";
+            }
+         }
+
     auto LightDetector::getPointFromPointCloud(sensor_msgs::msg::PointCloud2::ConstSharedPtr const& cloudPtr, std::pair<int, int> coordinates) -> std::optional<SE3d>{
-        /* auto* pointPtr = reinterpret_cast<Point const*>(msg->data.data());
-        RCLCPP_INFO_STREAM(get_logger(),"SIZE: " << msg->data.size());
-        auto msgWidth = msg->width;
-        RCLCPP_INFO_STREAM(get_logger(),"WIDTH: " << msg->width);
-        RCLCPP_INFO_STREAM(get_logger(),"HEIGHT: " << msg->height);
-        RCLCPP_INFO_STREAM(get_logger(),"X: " << coordinates.second << " Y: " << coordinates.first);
-         */
         Point const& p = reinterpret_cast<Point const*>(cloudPtr->data.data())[coordinates.second + coordinates.first * cloudPtr->width];
         if (!std::isfinite(p.x) || !std::isfinite(p.y) || !std::isfinite(p.z)){
-            //RCLCPP_INFO_STREAM(get_logger(),"failed");
+            //pointcloud value at this location did not exist
             return std::nullopt;
         }
-        RCLCPP_INFO_STREAM(get_logger(),"x: " << p.x << " y: " << p.y << " z: " << p.z);
         return std::make_optional<SE3d>(R3d{p.x, p.y, p.z}, SO3d::Identity());
     }
     
     auto LightDetector::imageCallback(sensor_msgs::msg::PointCloud2::ConstSharedPtr const& msg) -> void {
-        // resizing image is mImgRGB dimensions doesn't match msg dimensions
-        // initialize mThresholdedImg to grayscale image 
+        
+        //Resize RGB image to msg if sizes aren't equal
         if(mImgRGB.rows != static_cast<int>(msg->height) || mImgRGB.cols != static_cast<int>(msg->width)) {
-			RCLCPP_INFO_STREAM(get_logger(),"Adjusting Image Size... " << msg->width << ", " << msg->height);
 		    mImgRGB = cv::Mat{cv::Size{static_cast<int>(msg->width), static_cast<int>(msg->height)}, CV_8UC3, {0, 0, 0}};
 			mThresholdedImg = cv::Mat{cv::Size{static_cast<int>(msg->width), static_cast<int>(msg->height)}, CV_8UC1, cv::Scalar{0}};
         }
-        
+             
 		convertPointCloudToRGB(msg, mImgRGB);
 
-        // conversion to grayscale and storing in mGreyScale - (added)
-        cv::Mat mGreyScale;
-        cv::cvtColor(mImgRGB, mGreyScale, cv::COLOR_RGB2GRAY);
+        if(!mImgRGB.empty()){
+            cv::imwrite("output.png", mImgRGB);
+        }
 
-        //applies a gaussian blur and thresholding to mGreyScale
+        // conversion to grayscale and storing in mGreyScale
+        cv::Mat mGreyScale;
+        cv::cvtColor(mImgRGB, mGreyScale, cv::COLOR_BGR2GRAY);
+        cv::imwrite("grey_output.png", mGreyScale);
+
+        // Applies gaussian blur and thresholding to mGreyScale
         cv::Mat mGBlur;
         cv::Mat mThresholdedImg;
-        cv::GaussianBlur(mGreyScale, mGBlur, cv::Size(5,5), 0);
+        cv::GaussianBlur(mGreyScale, mGBlur, cv::Size(15,15), 0);
+        cv::imwrite("gaussian_output.png", mGBlur);
+
         cv::threshold(mGBlur,mThresholdedImg,100,255,cv::THRESH_BINARY);
-        // cv::threshold(mGBlur,mThresholdedImg,100,255,cv::THRESH_BINARY+cv::THRESH_OTSU);
+        cv::imwrite("thresh_output.png", mThresholdedImg);
 
         // applies dilation, uses structuring element to expand highlighted regions
         // erodes, to refine shape of highlighted regions
         // dilates again to accentuate features
+        cv::Mat dilate;
+        cv::dilate(mThresholdedImg, dilate, cv::getStructuringElement(cv::MORPH_CROSS, cv::Size(2,2), cv::Point(-1,-1)), cv::Point(-1,-1), cv::BORDER_REFLECT_101, 0);
+        cv::imwrite("dilated_first_output.png", dilate);
+
         cv::Mat erode;
+        cv::erode(dilate, erode, cv::getStructuringElement(cv::MORPH_RECT, cv::Size(2,2), cv::Point(-1,-1)), cv::Point(-1,-1), cv::BORDER_REFLECT_101, 0);
+        cv::imwrite("eroded_first_output.png", erode);
 
-        cv::dilate(mThresholdedImg, erode, cv::getStructuringElement(cv::MORPH_CROSS, cv::Size(2,2), cv::Point(-1,-1)), cv::Point(-1,-1), cv::BORDER_REFLECT_101, 0);
+        cv::dilate(erode, dilate, cv::getStructuringElement(cv::MORPH_CROSS, cv::Size(3,3), cv::Point(-1,-1)), cv::Point(-1,-1), cv::BORDER_REFLECT_101, 0);
+        cv::imwrite("dilated_second_output.png", dilate);
 
-        cv::erode(erode, mThresholdedImg, cv::getStructuringElement(cv::MORPH_RECT, cv::Size(2,2), cv::Point(-1,-1)), cv::Point(-1,-1), cv::BORDER_REFLECT_101, 0);
-
-        cv::dilate(mThresholdedImg, erode, cv::getStructuringElement(cv::MORPH_CROSS, cv::Size(3,3), cv::Point(-1,-1)), cv::Point(-1,-1), cv::BORDER_REFLECT_101, 0);
-		
         // // converts erode into BGRA format and stores in mOutputImage
         cv::cvtColor(erode, mOutputImage, cv::COLOR_GRAY2BGRA);
+        cv::imwrite("eroded_stored.png", erode);        
 		
-        // finds contours in eroded image and stores in "contours"
-        // contour hierarchy information stored in hierarchy
-		std::vector<std::vector<cv::Point>> contours;
-		std::vector<cv::Vec4i> hierarchy;
-		cv::findContours(erode, contours, hierarchy, cv::RETR_TREE, cv::CHAIN_APPROX_SIMPLE);
+        // finds contours in eroded grayscale image and stores in "contours"
+        std::vector<std::vector<cv::Point>> contours;
 
-		// Find the centroids for all of the different contours
-        // quick question: why not store as cv::point? 
-		std::vector<std::pair<int, int>> centroids; // These are in image space
+        // Finds contours from eroded image. RETR_LIST does not store any hierarchy information. 
+        // cv::CHAIN_APPROX_SIMPLE stores only useful points on a contour. For example, a rectangle would only have four points.  
+        // daniel TODO: potentially flawed teardrop shape
+		cv::findContours(erode, contours, cv::RETR_LIST, cv::CHAIN_APPROX_SIMPLE);
+
+		// Find the centroids for all of the different contours 
+		std::vector<std::pair<int, int>> centroids;
 		centroids.resize(contours.size());
 
-        //RCLCPP_INFO_STREAM(get_logger(),"Number of contours " << contours.size());
+        RCLCPP_INFO_STREAM(get_logger(),"Number of contours " << contours.size());
     
 
 		for(std::size_t i = 0; i < contours.size(); ++i){
 			auto const& vec = contours[i];
-			auto& centroid = centroids[i]; // first = row, second = col
+            // first = row, second = col
+			auto& centroid = centroids[i]; 
 
-            // find avg of the contour for each contour for midpoint
+            // find avg of the contour for each contour for midpoint, not necessarily exactly what we want
 			for(auto const& point : vec){
 				centroid.first += point.y;
 				centroid.second += point.x;
@@ -106,79 +141,63 @@ namespace mrover {
 			centroid.first /= static_cast<int>(vec.size());
 			centroid.second /= static_cast<int>(vec.size());
 
-            // If the position of the light is defined, then push it into the TF tree
-            //std::optional<SE3d> lightInCamera = spiralSearchForValidPoint(msg, centroid.second, centroid.first, SPIRAL_SEARCH_DIM, SPIRAL_SEARCH_DIM);
+            // traverse ZED message in a spiral starting from the centroid in a 50x50 dimensional radius and returning the first point that actually has a ZED point cloud value 
+            std::optional<SE3d> lightInCamera = spiralSearchForValidPoint(msg, centroid.second, centroid.first, SPIRAL_SEARCH_DIM, SPIRAL_SEARCH_DIM);
             
-            std::optional<SE3d> lightInCamera = getPointFromPointCloud(msg, centroid);
-            if(lightInCamera.has_value()){
-                auto lightTranslation = lightInCamera.value().translation();
-                int x = static_cast<int>(lightTranslation.x());
-                int y = static_cast<int>(lightTranslation.y()); 
-                int z = static_cast<int>(lightTranslation.z()); 
-                //RCLCPP_INFO_STREAM(get_logger(),"X: " << x << " Y: " << y << " Z: " << z);  
-            }
-            
-            if(lightInCamera){ 
+            RCLCPP_INFO_STREAM(get_logger(), "centroid x: " << centroid.first << " centroid y: " << centroid.second);
+            RCLCPP_INFO_STREAM(get_logger(), "RGB dims x: " << mImgRGB.rows << " RGB dims y: " << mImgRGB.cols);
+            RCLCPP_INFO_STREAM(get_logger(), "tolerance: " << mColorBound.size());
+
+            if(lightInCamera.has_value() && withinRange(mImgRGB.at<cv::Vec3b>(centroid.first, centroid.second)[0], mColorBound[2], mColorBound[3])
+            && withinRange(mImgRGB.at<cv::Vec3b>(centroid.first, centroid.second)[1], mColorBound[1], mColorBound[3]) 
+            && withinRange(mImgRGB.at<cv::Vec3b>(centroid.first, centroid.second)[2], mColorBound[0], mColorBound[3])){ 
                 ++numLightsSeen;
-                std::string immediateLightFrame = std::format("immediateLight{}", numLightsSeen);
-                if(lightInCamera.value().translation().norm() < mImmediateLightRange && getHitCount(lightInCamera) > mPublishThreshold) {
-                    std::string lightFrame = std::format("light{}", numLightsSeen);
-                    SE3Conversions::pushToTfTree(mTfBroadcaster, lightFrame, mCameraFrame, lightInCamera.value(), this->get_clock()->now());
+                if(lightInCamera.value().translation().norm() < mImmediateLightRange) {
+                    increaseHitCount(lightInCamera.value());
                 }
-                increaseHitCount(lightInCamera);
-                //RCLCPP_INFO_STREAM(get_logger(),getHitCount(lightInCamera));
-                SE3Conversions::pushToTfTree(mTfBroadcaster, immediateLightFrame, mCameraFrame, lightInCamera.value(), this->get_clock()->now());
             }
 		}
 
-        //printHitCounts();
+        std::optional<std::pair<double, double>> foundPoint = getClosestPoint();
 
         decreaseHitCounts();
 
-        std::pair<std::pair<double, double>, bool> foundPoint = caching();
-        if(foundPoint.second){
-            publishClosestLight(foundPoint.first);
+        if(foundPoint.has_value()){
+            publishLight(foundPoint.value());
         }
-
-		publishDetectedObjects(mOutputImage, centroids);
+		//publishDetectedObjects(mOutputImage, centroids);
 	}
-    
-    auto LightDetector::caching() -> std::pair<std::pair<double, double>, bool>{
+
+    auto LightDetector::getClosestPoint() -> std::optional<std::pair<double, double>>{
         double shortest_distance = std::numeric_limits<double>::infinity();
-        bool found = false;
+        bool foundPoint = false;
         std::pair<double, double> closest;
-        //RCLCPP_INFO_STREAM(get_logger(),"num points: " << mHitCounts.size());
         for(auto const& [point, hc] : mHitCounts){
-            //RCLCPP_INFO_STREAM(get_logger(),"current point: " << point.first << ", " << point.second << ": " << hc);
-            double distance;
-            if(hc >= mPublishThreshold){ //DANTODO: ASK appropriate hitcount requirement to be considered a light
-                found = true;
-                RCLCPP_INFO_STREAM(get_logger(),"Found a new point");
-                RCLCPP_INFO_STREAM(get_logger(),"This new point was at " << point.first << ", " << point.second);
+            int distance;
+            if(hc >= mPublishThreshold){
                 distance = calculateDistance(point);
                 if(distance <= shortest_distance){
                     shortest_distance = distance;
                     closest = point;
+                    foundPoint = true;
                 }
             }
-            // if(found){
-            //     //RCLCPP_INFO_STREAM(get_logger(),"Finished with a new point!");
-            // } else{
-            //     //RCLCPP_INFO_STREAM(get_logger(),"Didn't find a new point :(");
-            // }
         }
-        return std::pair<std::pair<double, double>, bool>(closest, found);
+        if (foundPoint){
+            return closest;
+        } else{
+            return std::nullopt;
+        }
     }
 
     auto LightDetector::calculateDistance(const std::pair<double, double> &p) -> double{
         double distance = sqrt(pow(p.first, 2) + pow(p.second, 2));
-        //RCLCPP_INFO_STREAM(get_logger(),"Calculating Distance..." << p.first << ", " << p.second << " DISTANCE: " << distance);
         return distance;
     }
 
-    auto LightDetector::getHitCount(std::optional<SE3d> const& light) -> int {
+/*     auto LightDetector::getHitCount(std::optional<SE3d> const& light) -> int {
         if(light.has_value()){
-            SE3d cameraToMap = SE3Conversions::fromTfTree(mTfBuffer, mCameraFrame, mWorldFrame);
+            SE3d cameraToMap = SE3Conversions::fromTfTree(mTfBuffer, mCameraFrame, mMapFrame);
 
             SE3d lightInMap = cameraToMap * light.value();
 
@@ -191,49 +210,34 @@ namespace mrover {
             return mHitCounts[key];
         }
         return -1;
-    }
+    } */
 
-    void LightDetector::increaseHitCount(std::optional<SE3d> const& light){
-        if(light.has_value()){
-            SE3d cameraToMap = SE3Conversions::fromTfTree(mTfBuffer, mCameraFrame, mWorldFrame);
-            
-            /* auto lightLocation = light.value().translation();
-            auto locx = static_cast<double>(lightLocation.x());
-            auto locy = static_cast<double>(lightLocation.y());
-            RCLCPP_INFO_STREAM(get_logger(),"current point: " << locx << ", " << locy);
-             */
-            SE3d lightInMap = cameraToMap * light.value();
+    void LightDetector::increaseHitCount(SE3d const& light){
+            SE3d cameraToMap = SE3Conversions::fromTfTree(mTfBuffer, mCameraFrame, mMapFrame);
+            SE3d lightInMap = cameraToMap * light;
+            //RCLCPP_INFO_STREAM(get_logger(),"ORIGINAL SE3D " << light.translation().x() << " , " << light.translation().y());
+            RCLCPP_INFO_STREAM(get_logger(),"TRANSLATED SE3D " << lightInMap.translation().x() << " , " << lightInMap.translation().y());
+            //RCLCPP_INFO_STREAM(get_logger(),"CAMERATOMAP SE3D " << cameraToMap.translation().x() << " , " << cameraToMap.translation().y());
 
-            auto location = lightInMap.translation();
-            auto x = round_to(static_cast<double>(location.x()), 0.1);
-            auto y = round_to(static_cast<double>(location.y()), 0.1);
-
+            auto t = lightInMap.translation();
+            auto x = std::round(t.x());
+            auto y = std::round(t.y());
             std::pair<double, double> key{x, y};
             mHitCounts[key] = std::min(mHitCounts[key] + mHitIncrease, mHitMax);
-            //mHitCounts[key] += 2;
-        }
     }
 
-    //DANTODO: ASK
     void LightDetector::decreaseHitCounts(){
         for(auto& [_, hitCount] : mHitCounts){
-            hitCount = std::max(hitCount - mHitDecrease, 0);
-            //hitCount--; 
+            //daniel TODO: Does this have potential to fix see-saw problem?
+            hitCount = std::max(hitCount - mHitDecrease, 0); 
         }
-    }
-
-    void LightDetector::printHitCounts(){
-        // for(auto const& [key, val] : mHitCounts){
-        //     //RCLCPP_INFO_STREAM(get_logger(),"Key: ( " << key.first << ", " << key.second << ") Val: " << val);
-        // }
     }
 
     auto LightDetector::publishDetectedObjects(cv::InputArray image, std::vector<std::pair<int, int>> const& centroids) -> void {
-        //if (!imgPub.getNumSubscribers()) return;
 
 		sensor_msgs::msg::Image imgMsg;
 
-        imgMsg.header.stamp = this->get_clock()->now(); //ros origionally, but changed to this, not sure if it works.
+        imgMsg.header.stamp = this->get_clock()->now(); //ros originally, but changed to this, not sure if it works.
         imgMsg.height = image.rows();
         imgMsg.width = image.cols();
         imgMsg.encoding = sensor_msgs::image_encodings::BGRA8;
@@ -256,7 +260,7 @@ namespace mrover {
         imgPub->publish(imgMsg);
     }
 
-    auto LightDetector::publishClosestLight(std::pair<double, double> &point) -> void {
+    auto LightDetector::publishLight(std::pair<double, double> &point) -> void {
         geometry_msgs::msg::Vector3 pointMsg;
         pointMsg.x = point.first;
         pointMsg.y = point.second;
@@ -267,6 +271,7 @@ namespace mrover {
 
 
     auto LightDetector::spiralSearchForValidPoint(sensor_msgs::msg::PointCloud2::ConstSharedPtr const& cloudPtr, std::size_t u, std::size_t v, std::size_t width, std::size_t height)const -> std::optional<SE3d> {
+        // daniel TODO: figure out why this actually works
         // See: https://stackoverflow.com/a/398302
         int xc = static_cast<int>(u), yc = static_cast<int>(v);
         int sw = static_cast<int>(width), sh = static_cast<int>(height);

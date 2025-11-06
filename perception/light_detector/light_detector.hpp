@@ -1,7 +1,9 @@
 #pragma once
 #include "lie.hpp"
+#include "mrover/srv/detail/set_light_mode__struct.hpp"
 #include "pch.hpp"
 #include <unordered_map>
+#include <boost/functional/hash.hpp>
 
 class PairHash{
 	public:
@@ -35,12 +37,15 @@ namespace mrover {
         tf2_ros::TransformListener mTfListener{mTfBuffer};
 
 		std::string mCameraFrame;
-        std::string mWorldFrame;
+        std::string mMapFrame;
 
 		// Thresholding Variables
 		cv::Mat mThresholdedImg;
 		cv::Vec3d mUpperBound;
 		cv::Vec3d mLowerBound;
+
+		//4 element vector representing color bounds
+		std::vector<int> mColorBound;
 
 		cv::Mat mErodedImg;
 		cv::Mat mDialtedImg;
@@ -49,6 +54,8 @@ namespace mrover {
 		rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr imgSub;
 		rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr imgPub;
 		rclcpp::Publisher<geometry_msgs::msg::Vector3>::SharedPtr pointPub;
+
+		rclcpp::Service<mrover::srv::SetLightMode>::SharedPtr mServer;
 
 		// The number of lights that we push into the TF
         unsigned int numLightsSeen = 0;
@@ -61,25 +68,26 @@ namespace mrover {
 
 		auto publishDetectedObjects(cv::InputArray image, std::vector<std::pair<int, int>> const& centroids) -> void;
 		
-		auto publishClosestLight(std::pair<double, double> &point) -> void;
+		auto publishLight(std::pair<double, double> &point) -> void;
 
 		auto static rgb_to_hsv(cv::Vec3b const& rgb) -> cv::Vec3d;
+
+		auto setLightModeCallback(mrover::srv::SetLightMode::Request::ConstSharedPtr& request,
+        mrover::srv::SetLightMode::Response::SharedPtr& response) -> void;
 
 		auto spiralSearchForValidPoint(sensor_msgs::msg::PointCloud2::ConstSharedPtr const& cloudPtr, std::size_t u, std::size_t v, std::size_t width, std::size_t height) const -> std::optional<SE3d>;
 
 		auto getPointFromPointCloud(sensor_msgs::msg::PointCloud2::ConstSharedPtr const& cloudPtr, std::pair<int, int> coordinates) -> std::optional<SE3d>;
 
-		void increaseHitCount(std::optional<SE3d> const& light);
+		void increaseHitCount(SE3d const& light);
 
 		void decreaseHitCounts();
 
-		auto caching() -> std::pair<std::pair<double, double>, bool>;
+		auto getClosestPoint() -> std::optional<std::pair<double, double>>;
 
 		auto calculateDistance(const std::pair<double, double> &p) -> double;
 
 		auto getHitCount(std::optional<SE3d> const& light) -> int;
-
-		void printHitCounts();
 
 		auto round_to(double value, double precision) -> double;
 
