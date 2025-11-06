@@ -55,18 +55,18 @@
           Drop Waypoint at Rover
         </button>
       </div>
-      <div class="border border-2 rounded d-flex flex-column p-2 gap-2">
+      <div v-if="enableDrone" class="border border-2 rounded d-flex flex-column p-2 gap-2">
         <div class="d-flex justify-content-between align-items-center gap-2">
           <h4>Drone</h4>
           <button
-            v-if="enableDrone && !isRecordingDrone"
+            v-if="!isRecordingDrone"
             class="btn btn-success btn-sm"
             @click="startRecording(true)"
           >
             Start Recording
           </button>
           <button
-            v-if="enableDrone && isRecordingDrone"
+            v-if="isRecordingDrone"
             class="btn btn-danger btn-sm"
             @click="stopRecording"
           >
@@ -74,7 +74,6 @@
           </button>
         </div>
         <button
-          v-if="enableDrone"
           class="btn btn-info"
           @click="addWaypoint(input, true)"
         >
