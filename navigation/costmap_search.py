@@ -47,6 +47,9 @@ class CostmapSearchState(State):
         context.node.get_logger().info("Entered Costmap Search State")
         context.rover.previous_state = CostmapSearchState()
 
+        self.marker_timer = None
+        self.update_astar_timer = None
+
         if context.course is None:
             return
 
@@ -303,9 +306,12 @@ class CostmapSearchState(State):
                 coverage_radius=context.node.get_parameter("search.coverage_radius").value,
                 distance_between_spirals=context.node.get_parameter("search.distance_between_spirals").value,
                 segments_per_rotation=context.node.get_parameter("search.segments_per_rotation").value,
-                max_segment_length=context.node.get_parameter("search.max_segment_length").value,
+                #max_segment_length=context.node.get_parameter("search.max_segment_length").value,
                 tag_id=search_center.tag_id,
                 insert_extra=True,
+                rover_position=context.rover.get_pose_in_map().translation()[0:2],
             )
+            
+            
 
         self.spiral_traj.cur_pt = context.course.last_spiral_point

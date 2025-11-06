@@ -118,10 +118,32 @@ class WaypointState(State):
             return self
 
         if self.waypoint_traj.empty():
+
             context.node.get_logger().info("Generating segmented path")
-            self.waypoint_traj = segment_path(
-                context=context, dest=context.course.current_waypoint_pose_in_map().translation()[0:2]
-            )
+
+            # Here, we use center, coverage_radius, and rover_position to calculate
+            # distance_from_center, direction_from_center, and closest_radius_point
+            center=context.course.current_waypoint_pose_in_map().translation()[:2]
+            coverage_radius=context.node.get_parameter("search.coverage_radius").value
+            rover_position=context.rover.get_pose_in_map().translation()[0:2]
+            distance_from_center = np.linalg.norm(rover_position[:2]-center[:2])
+            direction_from_center = rover_position[:2]-center
+            closest_radius_point = center + (direction_from_center/np.linalg.norm(direction_from_center)) * coverage_radius
+
+            # This will set the rover's waypoint to the closest point on the coverage radius.
+            # INWARD SPIRAL
+            if distance_from_center > coverage_radius * 0.5:
+               self.waypoint_traj = segment_path(
+                   context = context, dest = closest_radius_point[:2]
+               )
+            
+            # This will set the rover's waypoint to the center of the coverage radius
+            # OUTWARD SPIRAL
+            else:
+                self.waypoint_traj = segment_path(
+                    context=context, dest=context.course.current_waypoint_pose_in_map().translation()[0:2]
+                )
+
             self.display_markers(context=context)
             return self
 
