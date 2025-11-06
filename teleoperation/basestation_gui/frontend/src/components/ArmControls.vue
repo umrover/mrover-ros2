@@ -104,7 +104,7 @@ const newRAMode = async (newMode: string) => {
     mode.value = newMode
     const data = await armAPI.setRAMode(mode.value)
     if (data.status === 'success' && data.mode) {
-        mode.value = String(data.mode)
+        mode.value = data.mode
       };
     }
      catch (error) {

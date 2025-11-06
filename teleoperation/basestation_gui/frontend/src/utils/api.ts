@@ -170,6 +170,8 @@ export const mastAPI = {
   }
 }
 
+// Arm API
+
 export const armAPI = {
   async setRAMode(mode: string): Promise<RAModeResponse> {
     const response = await fetch(`${API_BASE}/arm_controls/ra_mode/set`, {
