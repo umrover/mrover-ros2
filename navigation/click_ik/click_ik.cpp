@@ -1,23 +1,55 @@
 #include "click_ik.hpp"
+#include "mrover/action/detail/click_ik__struct.hpp"
 #include "mrover/msg/detail/arm_status__struct.hpp"
+#include <chrono>
+#include <cstddef>
 #include <geometry_msgs/msg/detail/vector3__struct.hpp>
+#include <memory>
 #include <rclcpp/create_timer.hpp>
 #include <rclcpp/logging.hpp>
 #include <rclcpp_action/server.hpp>
+#include <rclcpp_action/server_goal_handle.hpp>
 #include <sensor_msgs/msg/detail/point_cloud2__struct.hpp>
 #include <tf2/exceptions.h>
+#include <tf2/exceptions.hpp>
+#include <thread>
 
 
 namespace mrover {
 
     ClickIkNode::ClickIkNode(rclcpp::NodeOptions const& options) : Node("click_ik", options) {
 
+        auto handle_goal = [this](const rclcpp_action::GoalUUID& uuid, action::ClickIk_Goal::ConstSharedPtr const& goal) -> rclcpp_action::GoalResponse {
+            RCLCPP_INFO(this->get_logger(), "Click Ik request received for point: (%d, %d)", goal->point_in_image_x, goal->point_in_image_y);
+            (void) uuid;
+            return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
+        };
+
+
+        auto handle_cancel = [this](std::shared_ptr<rclcpp_action::ServerGoalHandle<action::ClickIk>> const& goal_handle) -> rclcpp_action::CancelResponse {
+            RCLCPP_INFO(this->get_logger(), "Cancelling ClickIk Action.");
+            (void) goal_handle;
+            return rclcpp_action::CancelResponse::ACCEPT;
+        };
+
+        auto handle_accepted = [this](std::shared_ptr<rclcpp_action::ServerGoalHandle<action::ClickIk>> const& goal_handle) -> void {
+            if(mCurrentGoalHandle){
+                action::ClickIk::Result::SharedPtr result_msg;
+                mCurrentGoalHandle->canceled(result_msg);
+            }
+            mCurrentGoalHandle = goal_handle;
+            auto thread_executor = [this, goal_handle]() {
+                return this->executeClickIk(goal_handle);
+            };
+            std::thread{thread_executor}.detach();
+        };
+        
         server = rclcpp_action::create_server<action::ClickIk>(
             this,
             "click_ik",
-            std::bind(&ClickIkNode::startClickIk, this, std::placeholders::_1, std::placeholders::_2),
-            std::bind(&ClickIkNode::handle_cancel, this),
-            std::bind(&ClickIkNode::handle_accepted, this)
+            handle_goal,
+            handle_cancel,
+            handle_accepted
         );
 
         mPcSub = create_subscription<sensor_msgs::msg::PointCloud2>("camera/left/points", 1, [this](sensor_msgs::msg::PointCloud2::ConstSharedPtr const& msg) {
@@ -32,28 +64,26 @@ namespace mrover {
             statusCallback(msg);
         });
 
-        RCLCPP_INFO(get_logger(), "Starting action server");
-        server.registerGoalCallback([this]() { startClickIk(); });
-        server.registerPreemptCallback([this] { cancelClickIk(); });
-        server.start();
-        RCLCPP_INFO(get_logger(), "Action server started");
+        mCurrentGoalHandle = nullptr;
     }
-    
-    rclcpp_action::CancelResponse ClickIkNode::handle_cancel(){
 
-    };
-        
-    void handle_accepted(){
-
-    };
-
-    auto ClickIkNode::startClickIk(const rclcpp_action::GoalUUID& uuid, action::ClickIk_Goal::ConstSharedPtr goal) -> rclcpp_action::GoalResponse {
+    void ClickIkNode::executeClickIk(std::shared_ptr<rclcpp_action::ServerGoalHandle<action::ClickIk>> goal_handle) {
         RCLCPP_INFO(get_logger(),"Executing goal");
+        if (!goal_handle) {
+            RCLCPP_WARN(get_logger(), "Invalid ClickIK goal handle");
+            return;
+        }
+        
+        const auto goal = goal_handle->get_goal();
+        auto feedback = std::make_shared<action::ClickIk::Feedback>();
+        auto result = std::make_shared<action::ClickIk::Result>();
         auto target_point = spiralSearchInImg(static_cast<size_t>(goal->point_in_image_x), static_cast<size_t>(goal->point_in_image_y));
         
         if(!target_point.has_value()) {
             RCLCPP_WARN(get_logger(), "Target point does not exist.");
-            return rclcpp_action::GoalResponse();// fix
+            result->success = false;
+            goal_handle->canceled(result);
+            return; // fix
         }
 
         geometry_msgs::msg::Vector3 pose;
@@ -61,100 +91,44 @@ namespace mrover {
         double offset = 0.1; // make sure we don't collide by moving back a little from the target
         pose.set__x(target_point.value().x - offset);
         pose.set__y(target_point.value().y);
-        pose.set__z(target_point.value().z);
+        pose.set__z(target_point.value().z);     
+        
 
-        
-        
         message.pos = pose;
         // message.target.header.frame_id = "zed_left_camera_frame";
-        timer = mNh.createTimer(ros::Duration(0.010), [&, pose](ros::TimerEvent const) {
-            if (server.isPreemptRequested()) {
-                timer.stop();
+        timer = this->create_wall_timer(std::chrono::milliseconds(10), [&, pose](){
+            if(goal_handle->is_canceling()){
+                timer->cancel();
                 return;
             }
-            // Check if done
-            float const tolerance = 0.02; // 2 cm
+
+            float const tolerance = 0.02;
             try {
-                SE3d arm_position = SE3Conversions::fromTfTree(mTfBuffer, "arm_e_link", "zed_left_camera_frame");
-                double distance = pow(pow(arm_position.x() + ArmController::END_EFFECTOR_LENGTH - pose.position.x, 2) + pow(arm_position.y() - pose.position.y, 2) + pow(arm_position.z() - pose.position.z, 2), 0.5);
-                RCLCPP_INFO("Distance to target: %f", distance);
-                mrover::ClickIkFeedback feedback;
-                feedback.distance = static_cast<float>(distance);
-                server.publishFeedback(feedback);
+                SE3d arm_position = SE3Conversions::fromTfTree(*mTfBuffer, "arm_e_link", "zed_left_camera_frame");
+                double distance = pow(pow(arm_position.x() + ArmController::END_EFFECTOR_LENGTH - pose.x, 2) + pow(arm_position.y() - pose.y, 2) + pow(arm_position.z() - pose.z, 2), 0.5);
+                RCLCPP_INFO(this->get_logger(), "Distance to target: %f", distance);
+                feedback->distance = static_cast<float>(distance);
+                goal_handle->publish_feedback(feedback);
 
                 if (distance < tolerance) {
-                    timer.stop();
-                    mrover::ClickIkResult result;
-                    result.success = true;
-                    server.setSucceeded(result);
+                    timer->cancel();
+                    result->success = true;
+                    goal_handle->succeed(result);
                     return;
                 }
-                // Otherwise publish message
-                mIkPub.publish(message);
             } catch (tf2::ExtrapolationException& e) {
-                ROS_WARN("ExtrapolationException (due to lag?): %s", e.what());
+                RCLCPP_WARN(this->get_logger(), "ExtrapolationException (due to lag?): %s", e.what());
             }
-        });
-        
+            
+        });        
     }
 
-    void ClickIkNode::startClickIk() {
-        // RCLCPP_INFO("Executing goal");
-
-        // mrover::ClickIkGoalConstPtr const& goal = server.acceptNewGoal();
-        // auto target_point = spiralSearchInImg(static_cast<size_t>(goal->pointInImageX), static_cast<size_t>(goal->pointInImageY));
-
-        //Check if optional has value
-        if (!target_point.has_value()) {
-            //Handle gracefully
-            RCLCPP_WARN(get_logger(),"Target point does not exist.");
-            return;
-        }
-
-        geometry_msgs::Pose pose;
-
-        double offset = 0.1; // make sure we don't collide by moving back a little from the target
-        pose.position.x = target_point.value().x - offset;
-        pose.position.y = target_point.value().y;
-        pose.position.z = target_point.value().z;
-
-        message.target.pose = pose;
-        message.target.header.frame_id = "zed_left_camera_frame";
-        timer = mNh.createTimer(ros::Duration(0.010), [&, pose](ros::TimerEvent const) {
-            if (server.isPreemptRequested()) {
-                timer.stop();
-                return;
-            }
-            // Check if done
-            float const tolerance = 0.02; // 2 cm
-            try {
-                SE3d arm_position = SE3Conversions::fromTfTree(mTfBuffer, "arm_e_link", "zed_left_camera_frame");
-                double distance = pow(pow(arm_position.x() + ArmController::END_EFFECTOR_LENGTH - pose.position.x, 2) + pow(arm_position.y() - pose.position.y, 2) + pow(arm_position.z() - pose.position.z, 2), 0.5);
-                RCLCPP_INFO("Distance to target: %f", distance);
-                mrover::ClickIkFeedback feedback;
-                feedback.distance = static_cast<float>(distance);
-                server.publishFeedback(feedback);
-
-                if (distance < tolerance) {
-                    timer.stop();
-                    mrover::ClickIkResult result;
-                    result.success = true;
-                    server.setSucceeded(result);
-                    return;
-                }
-                // Otherwise publish message
-                mIkPub.publish(message);
-            } catch (tf2::ExtrapolationException& e) {
-                ROS_WARN("ExtrapolationException (due to lag?): %s", e.what());
-            }
-        });
-    }
 
     void ClickIkNode::cancelClickIk() {
-        timer.stop();
+        timer->cancel();
     }
 
-    void ClickIkNode::pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const& msg) {
+    void ClickIkNode::pointCloudCallback(sensor_msgs::msg::PointCloud2::ConstSharedPtr const& msg) {
         // Update current pointer to pointcloud data
         mPoints = reinterpret_cast<Point const*>(msg->data.data());
         mNumPoints = msg->width * msg->height;
@@ -184,7 +158,7 @@ namespace mrover {
 
             isPointInvalid = !std::isfinite(point.x) || !std::isfinite(point.y) || !std::isfinite(point.z);
             if (isPointInvalid)
-                NODELET_WARN("Tag center point not finite: [%f %f %f]", point.x, point.y, point.z);
+                RCLCPP_WARN(this->get_logger(), "Tag center point not finite: [%f %f %f]", point.x, point.y, point.z);
 
             // After a full circle increase the radius
             if (t % numPts == 0) {
@@ -203,14 +177,15 @@ namespace mrover {
         return std::make_optional<Point>(point);
     }
 
-    auto ClickIkNode::statusCallback(ArmStatus const& status) -> void {
-        if (!status.status) {
+    auto ClickIkNode::statusCallback(msg::ArmStatus const& msg) -> void {
+        if (!msg.status) {
             cancelClickIk();
-            if (server.isActive()) {
-                mrover::ClickIkResult result;
-                result.success = false;
-                server.setAborted(result, "Arm position unreachable");
-                NODELET_WARN("Arm position unreachable");
+            if (mCurrentGoalHandle) {
+                auto result = std::make_shared<action::ClickIk::Result>();
+                result->success = false;
+                mCurrentGoalHandle->canceled(result);
+                mCurrentGoalHandle = nullptr;
+                RCLCPP_WARN(get_logger(), "Arm position unreachable");
             }
         }
     }

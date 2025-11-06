@@ -350,6 +350,8 @@ mrover_add_component(click_ik navigation/click_ik/*.cpp navigation/click_ik/pch.
 mrover_ament_component(click_ik rclcpp rclcpp_components tf2 tf2_ros)
 mrover_link_component(click_ik lie parameter_utils)
 
+mrover_executable_from_component(click_ik navigation/click_ik/main.cpp click_ik_component)
+
 mrover_add_node(led esw/led.cpp)
 ament_target_dependencies(led rclcpp std_srvs)
 
