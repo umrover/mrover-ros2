@@ -14,6 +14,13 @@ from backend.waypoints import (
     get_current_auton_course,
     save_current_auton_course,
     delete_auton_waypoint_from_course,
+    create_recording,
+    add_waypoint_to_recording,
+    get_all_recordings,
+    get_recording_waypoints,
+    delete_recording,
+    clear_all_basic_waypoints,
+    clear_all_recordings,
 )
 
 
@@ -141,6 +148,96 @@ def auton_waypoint_delete(request, waypoint_id):
 
         delete_auton_waypoint_from_course(waypoint)
         return Response({'status': 'success', 'deleted': waypoint_id})
+    except Exception as e:
+        return Response({'status': 'error', 'message': str(e)},
+                       status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@csrf_exempt
+@api_view(['POST'])
+def recording_create(request):
+    try:
+        name = request.data.get('name')
+        is_drone = request.data.get('is_drone', False)
+
+        if not name:
+            return Response({'status': 'error', 'message': 'name is required'},
+                           status=status.HTTP_400_BAD_REQUEST)
+
+        recording_id = create_recording(name, is_drone)
+        return Response({'status': 'success', 'recording_id': recording_id})
+    except Exception as e:
+        return Response({'status': 'error', 'message': str(e)},
+                       status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@csrf_exempt
+@api_view(['POST'])
+def recording_add_waypoint(request, recording_id):
+    try:
+        lat = request.data.get('lat')
+        lon = request.data.get('lon')
+        sequence = request.data.get('sequence')
+
+        if lat is None or lon is None or sequence is None:
+            return Response({'status': 'error', 'message': 'lat, lon, and sequence are required'},
+                           status=status.HTTP_400_BAD_REQUEST)
+
+        add_waypoint_to_recording(recording_id, lat, lon, sequence)
+        return Response({'status': 'success'})
+    except Exception as e:
+        return Response({'status': 'error', 'message': str(e)},
+                       status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+def recordings_list(request):
+    try:
+        recordings = get_all_recordings()
+        return Response({'status': 'success', 'recordings': recordings})
+    except Exception as e:
+        return Response({'status': 'error', 'message': str(e)},
+                       status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+def recording_waypoints(request, recording_id):
+    try:
+        waypoints = get_recording_waypoints(recording_id)
+        return Response({'status': 'success', 'waypoints': waypoints})
+    except Exception as e:
+        return Response({'status': 'error', 'message': str(e)},
+                       status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@csrf_exempt
+@api_view(['DELETE'])
+def recording_delete(request, recording_id):
+    try:
+        delete_recording(recording_id)
+        return Response({'status': 'success', 'deleted': recording_id})
+    except Exception as e:
+        return Response({'status': 'error', 'message': str(e)},
+                       status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@csrf_exempt
+@api_view(['DELETE'])
+def basic_waypoints_clear(request):
+    try:
+        clear_all_basic_waypoints()
+        return Response({'status': 'success'})
+    except Exception as e:
+        return Response({'status': 'error', 'message': str(e)},
+                       status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@csrf_exempt
+@api_view(['DELETE'])
+def recordings_clear(request):
+    try:
+        clear_all_recordings()
+        return Response({'status': 'success'})
     except Exception as e:
         return Response({'status': 'error', 'message': str(e)},
                        status=status.HTTP_500_INTERNAL_SERVER_ERROR)
