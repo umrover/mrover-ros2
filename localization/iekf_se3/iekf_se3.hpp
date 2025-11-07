@@ -87,7 +87,7 @@ namespace mrover {
 
         // parameters
         std::string world_frame;
-        std::string rover_frame;
+        std::string gps_frame;
         double scale_cov_a;
         double scale_cov_w;
         double pos_noise_fixed;

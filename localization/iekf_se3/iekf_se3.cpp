@@ -6,7 +6,7 @@ namespace mrover {
 
         // declare ros params
         declare_parameter("world_frame", rclcpp::ParameterType::PARAMETER_STRING);
-        declare_parameter("rover_frame", rclcpp::ParameterType::PARAMETER_STRING);
+        declare_parameter("gps_frame", rclcpp::ParameterType::PARAMETER_STRING);
         declare_parameter("scale_cov_a", rclcpp::ParameterType::PARAMETER_DOUBLE);
         declare_parameter("scale_cov_w", rclcpp::ParameterType::PARAMETER_DOUBLE);
         declare_parameter("pos_noise_fixed", rclcpp::ParameterType::PARAMETER_DOUBLE);
@@ -22,7 +22,7 @@ namespace mrover {
         declare_parameter("use_drive_forward", rclcpp::ParameterType::PARAMETER_BOOL);
     
         world_frame = get_parameter("world_frame").as_string();
-        rover_frame = get_parameter("rover_frame").as_string();
+        gps_frame = get_parameter("gps_frame").as_string();
         scale_cov_a = get_parameter("scale_cov_a").as_double();
         scale_cov_w = get_parameter("scale_cov_w").as_double();
         pos_noise_fixed = get_parameter("pos_noise_fixed").as_double();
@@ -201,7 +201,7 @@ namespace mrover {
         SO3d rotation = Eigen::Quaterniond(X.block<3, 3>(0, 0));
 
         SE3d pose_in_map(translation, rotation);
-        SE3Conversions::pushToTfTree(tf_broadcaster, rover_frame, world_frame, pose_in_map, get_clock()->now());
+        SE3Conversions::pushToTfTree(tf_broadcaster, gps_frame, world_frame, pose_in_map, get_clock()->now());
 
         RCLCPP_INFO_THROTTLE(get_logger(), *get_clock(), 1000, "Published SE3 to TF tree: translation (%f, %f, %f) orientation (%f, %f, %f, %f)", translation.x(), translation.y(), translation.z(), pose_in_map.quat().x(), pose_in_map.quat().y(), pose_in_map.quat().z(), pose_in_map.quat().w());
 
@@ -353,8 +353,8 @@ namespace mrover {
         for (rclcpp::Time t = start; t < end; t += STEP) {
 
             try {
-                auto rover_in_map_old = SE3Conversions::fromTfTree(tf_buffer, rover_frame, world_frame, t - STEP);
-                auto rover_in_map_new = SE3Conversions::fromTfTree(tf_buffer, rover_frame, world_frame, t);
+                auto rover_in_map_old = SE3Conversions::fromTfTree(tf_buffer, gps_frame, world_frame, t - STEP);
+                auto rover_in_map_new = SE3Conversions::fromTfTree(tf_buffer, gps_frame, world_frame, t);
                 R3d rover_velocity_in_map = (rover_in_map_new.translation() - rover_in_map_old.translation()) / STEP.seconds();
 
                 if (t == start) {

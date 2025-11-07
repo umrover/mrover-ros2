@@ -5,7 +5,7 @@ namespace mrover {
     HeadingFilter::HeadingFilter() : Node("heading_filter") {
 
         declare_parameter("world_frame", rclcpp::ParameterType::PARAMETER_STRING);
-        declare_parameter("rover_frame", rclcpp::ParameterType::PARAMETER_STRING);
+        declare_parameter("gps_frame", rclcpp::ParameterType::PARAMETER_STRING);
         declare_parameter("imu_watchdog_timeout", rclcpp::ParameterType::PARAMETER_DOUBLE);
         declare_parameter("mag_heading_noise", rclcpp::ParameterType::PARAMETER_DOUBLE);
         declare_parameter("rtk_heading_noise", rclcpp::ParameterType::PARAMETER_DOUBLE);
@@ -134,7 +134,7 @@ namespace mrover {
         SO3d corrected_orientation = curr_heading_correction * uncorrected_orientation_rotm;
         pose_in_map.asSO3() = corrected_orientation;
 
-        SE3Conversions::pushToTfTree(tf_broadcaster, get_parameter("rover_frame").as_string(), get_parameter("world_frame").as_string(), pose_in_map, get_clock()->now());
+        SE3Conversions::pushToTfTree(tf_broadcaster, get_parameter("gps_frame").as_string(), get_parameter("world_frame").as_string(), pose_in_map, get_clock()->now());
     }
 
 }
