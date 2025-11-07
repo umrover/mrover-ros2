@@ -10,7 +10,7 @@ _initialized = threading.Event()
 _context = None
 _node = None
 _ros_thread = None
-
+  
 def get_node() -> Node:
     """Returns the singleton ROS2 node, initializing it if necessary."""
     if not _initialized.is_set():
@@ -66,7 +66,7 @@ def _shutdown_ros():
     """
     global _context, _node
     print("Shutting down ROS Manager...")
-    if _context and _context.is_valid():
+    if _context and rclpy.ok(context=_context):
         if _node:
             _node.destroy_node()
         rclpy.shutdown(context=_context)

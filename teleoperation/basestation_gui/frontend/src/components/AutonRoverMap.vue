@@ -63,26 +63,27 @@ import {
   LControlScale,
 } from '@vue-leaflet/vue-leaflet'
 import { useAutonomyStore } from '@/stores/autonomy'
+import { useWebsocketStore } from '@/stores/websocket'
 import { storeToRefs } from 'pinia'
 import 'leaflet/dist/leaflet.css'
 import L from 'leaflet'
 import '../leaflet-rotatedmarker'
 import { ref, computed, watch, nextTick } from 'vue'
-
-const props = defineProps({
-  odom: {
-    type: Object,
-    default: () => ({ latitude_deg: 0, longitude_deg: 0, bearing_deg: 0 }),
-  },
-  basestation: {
-    type: Object,
-    default: () => ({ latitude_deg: 0, longitude_deg: 0 }),
-  },
-})
+import { quaternionToMapAngle } from '../utils/map'
+import type { NavMessage } from '../types/coordinates'
 
 const autonomyStore = useAutonomyStore()
 const { route, waypointList } = storeToRefs(autonomyStore)
 const { setClickPoint } = autonomyStore
+
+const websocketStore = useWebsocketStore()
+const { messages } = storeToRefs(websocketStore)
+
+const rover_latitude_deg = ref(0)
+const rover_longitude_deg = ref(0)
+const rover_bearing_deg = ref(0)
+const basestation_latitude_deg = ref(0)
+const basestation_longitude_deg = ref(0)
 
 const MAX_ODOM_COUNT = 10
 const DRAW_FREQUENCY = 10
@@ -142,33 +143,11 @@ const getClickedLatLon = (e: { latlng: { lat: number; lng: number } }) => {
 }
 
 const odomLatLng = computed(() => {
-  if (
-    props.odom &&
-    typeof props.odom === 'object' &&
-    props.odom.latitude_deg !== undefined &&
-    props.odom.longitude_deg !== undefined
-  ) {
-    return L.latLng(props.odom.latitude_deg, props.odom.longitude_deg)
-  } else {
-    console.warn('odom data not ready yet')
-    return L.latLng(0, 0)
-  }
+  return L.latLng(rover_latitude_deg.value, rover_longitude_deg.value)
 })
 
 const basestationLatLng = computed(() => {
-  if (
-    props.basestation &&
-    typeof props.basestation === 'object' &&
-    props.basestation.latitude_deg !== undefined &&
-    props.basestation.longitude_deg !== undefined
-  ) {
-    return L.latLng(
-      props.basestation.latitude_deg,
-      props.basestation.longitude_deg,
-    )
-  } else {
-    return L.latLng(0, 0)
-  }
+  return L.latLng(basestation_latitude_deg.value, basestation_longitude_deg.value)
 })
 
 const polylinePath = computed(() => {
@@ -177,10 +156,27 @@ const polylinePath = computed(() => {
   )
 })
 
-watch(() => props.odom, (val) => {
-  const lat = val.latitude_deg
-  const lng = val.longitude_deg
-  const angle = val.bearing_deg
+const navMessage = computed(() => messages.value['nav'])
+
+watch(navMessage, (msg) => {
+  if (!msg) return
+  const navMsg = msg as NavMessage
+
+  if (navMsg.type === 'gps_fix') {
+    rover_latitude_deg.value = navMsg.latitude
+    rover_longitude_deg.value = navMsg.longitude
+  } else if (navMsg.type === 'basestation_position') {
+    basestation_latitude_deg.value = navMsg.latitude
+    basestation_longitude_deg.value = navMsg.longitude
+  } else if (navMsg.type === 'orientation') {
+    rover_bearing_deg.value = quaternionToMapAngle(navMsg.orientation)
+  }
+})
+
+watch([rover_latitude_deg, rover_longitude_deg, rover_bearing_deg], () => {
+  const lat = rover_latitude_deg.value
+  const lng = rover_longitude_deg.value
+  const angle = rover_bearing_deg.value
 
   const latLng = L.latLng(lat, lng)
 
@@ -203,5 +199,5 @@ watch(() => props.odom, (val) => {
     }
     odomCount.value = 0
   }
-}, { deep: true })
+})
 </script>

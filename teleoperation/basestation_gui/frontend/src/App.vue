@@ -46,24 +46,4 @@ body {
   background-color: #ffffff;
   border-radius: 6px;
 }
-
-/* rules below targets all button classes and ensures the text is black
-.btn {
-  color: #000 !important;
-}
-
-.btn-outline-primary:hover,
-.btn-outline-primary:focus,
-.btn-outline-secondary:hover,
-.btn-outline-secondary:focus 
-{
-  color: #000 !important;
-}
-
-.btn-primary.active,
-.btn-primary:active,
-.btn:is(.btn-primary, .btn-outline-primary):focus 
-{
-  color: #000 !important;
-} */
 </style>

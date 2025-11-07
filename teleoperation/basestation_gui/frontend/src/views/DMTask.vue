@@ -1,13 +1,13 @@
 <template>
   <div class="view-wrapper wrapper-dm">
     <div class='island p-2 rounded odom'>
-      <OdometryReading @odom='updateOdom' @drone_odom="updateDroneOdom" />
+      <OdometryReading />
     </div>
     <div class='island p-0 rounded map overflow-hidden'>
-      <BasicMap :odom='odom' :drone_odom="drone_odom" />
+      <BasicMap />
     </div>
     <div class='island p-2 rounded waypoint-editor'>
-      <BasicWaypointEditor :odom='odom' :droneWaypointButton='true'/>
+      <BasicWaypointEditor :droneWaypointButton='true'/>
     </div>
     <div class='island p-2 rounded arm-controls'>
       <ArmControls />
@@ -27,7 +27,7 @@
 </template>
 
 <script lang='ts' setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { onMounted, onUnmounted } from 'vue'
 import ControllerDataTable from '@/components/ControllerDataTable.vue'
 import ArmControls from '@/components/ArmControls.vue'
 import BasicMap from '@/components/BasicRoverMap.vue'
@@ -38,20 +38,7 @@ import MastGimbalControls from '@/components/MastGimbalControls.vue'
 import Rover3D from '@/components/Rover3D.vue'
 import { useWebsocketStore } from '@/stores/websocket'
 
-import type { Odom } from '@/types/coordinates'
-
 const websocketStore = useWebsocketStore()
-
-const odom = ref<Odom>({ latitude_deg: 0, longitude_deg: 0, bearing_deg: 0 })
-const drone_odom = ref<Odom>({ latitude_deg: 0, longitude_deg: 0 })
-
-const updateOdom = (newOdom: Odom) => {
-  odom.value = newOdom;
-}
-
-const updateDroneOdom = (newOdom: Odom) => {
-  drone_odom.value = newOdom;
-}
 
 onMounted(() => {
   websocketStore.setupWebSocket('arm')

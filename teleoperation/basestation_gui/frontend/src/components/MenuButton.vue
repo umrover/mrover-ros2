@@ -35,7 +35,7 @@ export default defineComponent({
   font-family: 'Courier New', monospace;
   font-size: 1.125rem;
   font-weight: 600;
-  color: #0e7490;
+  color: #4c7899;
   background: transparent;
   border: 2px solid #94a3b8;
   border-radius: 6px;
@@ -85,7 +85,7 @@ export default defineComponent({
 }
 
 .menu-button:hover .button-text {
-  color: #164e63;
+  color: #2f5373;
   font-weight: 700;
 }
 

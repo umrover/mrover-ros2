@@ -3,10 +3,7 @@
     <div class="data island p-2 rounded">
       <div :class="['rounded p-2 mb-2', ledColor]">
         <h2 class="text-center">Nav State: {{ navState }}</h2>
-        <OdometryReading
-          @odom="updateOdom"
-          @basestation_odom="updateBasestationOdom"
-        />
+        <OdometryReading />
       </div>
       <div>
         <div
@@ -21,7 +18,7 @@
       </div>
     </div>
     <div class="island p-0 rounded map overflow-hidden">
-      <AutonRoverMap :odom="odom" :basestation="basestationOdom" />
+      <AutonRoverMap />
     </div>
     <div class="island p-2 rounded waypoints">
       <AutonWaypointEditor @toggleTeleop="teleopEnabledCheck = $event" />
@@ -62,20 +59,12 @@ import { useWebsocketStore } from '@/stores/websocket'
 import { useAutonomyStore } from '@/stores/autonomy'
 import { storeToRefs } from 'pinia'
 
-interface Odom {
-  latitude_deg: number
-  longitude_deg: number
-  bearing_deg: number
-}
-
 const websocketStore = useWebsocketStore()
 const { messages } = storeToRefs(websocketStore)
 
 const autonomyStore = useAutonomyStore()
 const { autonEnabled } = storeToRefs(autonomyStore)
 
-const odom = ref<Odom>({ latitude_deg: 0, longitude_deg: 0, bearing_deg: 0 })
-const basestationOdom = ref<Odom>({ latitude_deg: 0, longitude_deg: 0, bearing_deg: 0 })
 const teleopEnabledCheck = ref(false)
 const ledColor = ref('bg-danger')
 const stuck_status = ref(false)
@@ -105,14 +94,6 @@ watch(navMessage, (msg: unknown) => {
     }
   }
 })
-
-const updateOdom = (newOdom: Odom) => {
-  odom.value = newOdom
-}
-
-const updateBasestationOdom = (newOdom: Odom) => {
-  basestationOdom.value = newOdom
-}
 
 const topics = ['auton', 'drive', 'nav', 'science', 'mast']
 
