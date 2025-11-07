@@ -8,6 +8,8 @@ namespace mrover{
         // Sub to /finger_camera/image topic
         rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr mImageSub;
 
+        LoopProfiler mLoopProfiler;
+
         // Can pub to any topic just make the name make sense
         rclcpp::Publisher<geometry_msgs::msg::Quaternion>::SharedPtr mCostMapPub;
 

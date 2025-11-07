@@ -2,10 +2,12 @@
 #include <functional>
 
 namespace mrover{ 
-    KeyboardTypingNode::KeyboardTypingNode(rclcpp::NodeOptions const& options) : rclcpp::Node("keyboard_typing_node", options)
+    KeyboardTypingNode::KeyboardTypingNode(rclcpp::NodeOptions const& options) : rclcpp::Node("keyboard_typing_node", options),  mLoopProfiler{get_logger()}
     {
+        RCLCPP_INFO_STREAM(get_logger(), "KeyBoardTypingNode starting up");
+
         // subscribe to image stream
-        mImageSub = this->create_subscription<sensor_msgs::msg::Image>("/finger_camera/image", rclcpp::QoS(1), [this](sensor_msgs::msg::Image::ConstSharedPtr const& msg) {
+        mImageSub = create_subscription<sensor_msgs::msg::Image>("/finger_camera/image", rclcpp::QoS(1), [this](sensor_msgs::msg::Image::ConstSharedPtr const& msg) {
             yawCallback(msg);
         });
 
@@ -14,7 +16,7 @@ namespace mrover{
     }
 
     auto KeyboardTypingNode::yawCallback(sensor_msgs::msg::Image::ConstSharedPtr const& msg) -> void {
-        // geometry_msgs::msg::Pose pose = estimatePose(msg);
+        geometry_msgs::msg::Pose pose = estimatePose(msg);
 
         // extract yaw into a quarterian and then publish to mCostMapPub
         // mCostMapPub->publish(msg);
@@ -23,13 +25,13 @@ namespace mrover{
     auto KeyboardTypingNode::estimatePose(sensor_msgs::msg::Image::ConstSharedPtr const& msg) -> geometry_msgs::msg::Pose {
         // Read in camera constants
         std::string cameraConstants = "temp.json";
-        cv::Mat camMatrix = (cv::Mat_<double>(3,3) << 
-            0.0, 0.0, 0.0,
-            0.0, 0.0, 0.0,
-            0.0, 0.0, 0.0
+        cv::Mat camMatrix = (cv::Mat_<double>(3,3) <<
+            554.0, 0.0, 320.0,   // fx, 0, cx
+            0.0, 554.0, 240.0,   // 0, fy, cy
+            0.0, 0.0, 1.0
         );
         
-        cv::Mat distCoeffs = (cv::Mat_<double>(5, 1) << 0.0, 0.0, 0.0, 0.0, 0.0);
+        cv::Mat distCoeffs = cv::Mat::zeros(5,1,CV_64F);
 
         // Read in images
         cv::Mat bgraImage{static_cast<int>(msg->height), static_cast<int>(msg->width), CV_8UC4, const_cast<uint8_t*>(msg->data.data())};
@@ -71,6 +73,8 @@ namespace mrover{
         // Estimate pose
         if (!ids.empty()) {
             for (size_t i = 0; i < nMarkers; ++i) {
+                // RCLCPP_INFO_STREAM(get_logger(), "x: " << markerCorners[i][0].x);
+                // RCLCPP_INFO_STREAM(get_logger(), "y: " << markerCorners[i][0].y);
                 cv::solvePnP(objPoints, markerCorners.at(i), camMatrix, distCoeffs, rvecs.at(i), tvecs.at(i));
             }
         }
@@ -82,15 +86,15 @@ namespace mrover{
 
         // Print rotation and translation sanity check
         for (const cv::Vec3d &translation : tvecs) {
-            std::cout << "x vector : " << translation[0] << std::endl;
-            std::cout << "y vector : " << translation[1] << std::endl;
-            std::cout << "z vector : " << translation[2] << std::endl;
+            RCLCPP_INFO_STREAM(get_logger(), "x vector : " << translation[0] << "\n");
+            RCLCPP_INFO_STREAM(get_logger(), "y vector : " << translation[1] << "\n");
+            RCLCPP_INFO_STREAM(get_logger(), "z vector : " << translation[2] << "\n");
         }
 
         for (const cv::Vec3d &rotation : rvecs) {
-            std::cout << "roll vector : " << rotation[0] << std::endl;
-            std::cout << "pitch vector : " << rotation[1] << std::endl;
-            std::cout << "yaw vector : " << rotation[2] << std::endl;
+            RCLCPP_INFO_STREAM(get_logger(), "roll vector : " << rotation[0] << "\n");
+            RCLCPP_INFO_STREAM(get_logger(), "pitch vector : " << rotation[1] << "\n");
+            RCLCPP_INFO_STREAM(get_logger(), "yaw vector : " << rotation[2] << "\n");
         }
 
         // Convert rvecs to quarterion

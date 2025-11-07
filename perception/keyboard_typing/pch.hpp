@@ -1,5 +1,6 @@
 #pragma once
 
+#include <rclcpp/logging.hpp>
 #include <rclcpp/node.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp/publisher.hpp>
@@ -22,5 +23,6 @@
 #include <opencv2/core/mat.hpp>
 #include <opencv2/core/matx.hpp>
 #include <opencv2/video/tracking.hpp>
+#include <loop_profiler.hpp>
 // Commented this out for now since it was messing with linter
 // #include "constants.h"
