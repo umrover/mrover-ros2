@@ -26,6 +26,10 @@ namespace mrover {
         gps_pub = this->create_publisher<sensor_msgs::msg::NavSatFix>("/gps/fix", 10);
         gps_status_pub = this->create_publisher<mrover::msg::FixStatus>("/gps_fix_status", 10);
         satellite_signal_pub = this->create_publisher<mrover::msg::SatelliteSignal>("/gps/satellite_signal", 10);
+        heading_pub = this->create_publisher<mrover::msg::Heading>("/heading/fix", 10);
+        heading_status_pub = this->create_publisher<mrover::msg::FixStatus>("/heading_fix_status", 10);
+        velocity_pub = this->create_publisher<geometry_msgs::msg::Vector3Stamped>("/velocity/fix", 10);
+        velocity_status_pub = this->create_publisher<mrover::msg::FixStatus>("/velocity_fix_status", 10);
         rtcm_sub = this->create_subscription<rtcm_msgs::msg::Message>("/rtcm", 10, [&](rtcm_msgs::msg::Message::ConstSharedPtr const& rtcm_message) {
             process_rtcm(rtcm_message);
         });
