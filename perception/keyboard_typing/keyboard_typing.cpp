@@ -75,10 +75,10 @@ namespace mrover{
             }
         }
         
-        // Apply Kalman Fillter
-        // for (size_t i = 0; i < tvecs.size(); ++i) {
-        //     kalmanFilter(tvecs[i], rvecs[i]);
-        // }
+        // Apply Kalman Filter to smooth the pose estimation
+        for (size_t i = 0; i < tvecs.size(); ++i) {
+            kalmanFilter(tvecs[i], rvecs[i]);
+        }
 
         // Print rotation and translation sanity check
         for (const cv::Vec3d &translation : tvecs) {
@@ -121,49 +121,132 @@ namespace mrover{
         return pose;
     }
     
-    auto KeyboardTypingNode::kalmanFilter(cv::Vec3d &tvec, cv::Vec3d &rvecs) -> void {
-        
+    auto KeyboardTypingNode::kalmanFilter(cv::Vec3d &tvec, cv::Vec3d &rvec) -> void {
+        static cv::KalmanFilter kf;
         static bool isInitialized = false;
 
-        cv::KalmanFilter kf(12,6);
-        float dt = 1.0;
+        float dt = 1.0f / 30.0f;  // 30 FPS instead of once every second
 
-        if(!isInitialized){
+        // Initialize Kalman filter
+        if (!isInitialized) {
+            // State vector: [x, y, z, vx, vy, vz, roll, pitch, yaw, vroll, vpitch, vyaw]
+            // Measurement vector: [x, y, z, roll, pitch, yaw]
+            kf = cv::KalmanFilter(12, 6, 0, CV_32F);
+
+            // Transition matrix (state update model)
             kf.transitionMatrix = (cv::Mat_<float>(12, 12) <<
-            1, 0, 0, dt, 0, 0, 0, 0, 0, 0, 0, 0,
-            0, 1, 0, 0, dt, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 1, 0, 0, dt, 0, 0, 0, 0, 0, 0,
-            0, 0, 0, 1, 0, 0, 0 , 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 0, 1, 0, 0, dt, 0, 0,
-            0, 0, 0, 0, 0, 0, 0, 1, 0, 0, dt, 0,
-            0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, dt,
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0,
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0,
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
+                1, 0, 0, dt, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 1, 0, 0, dt, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 1, 0, 0, dt, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 1, 0, 0, dt, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 1, 0, 0, dt, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, dt,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
             );
 
-            kf.measurementMatrix = (cv::Mat_<float>(6,12) <<
-            1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0
+            // Measurement matrix (maps state to measurements)
+            kf.measurementMatrix = (cv::Mat_<float>(6, 12) <<
+                1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0
             );
         
-            cv::setIdentity(kf.processNoiseCov, cv::Scalar(1e-6));
+            // Process noise covariance (model uncertainty)
+            cv::setIdentity(kf.processNoiseCov, cv::Scalar(1e-4));
+            
+            // Measurement noise covariance (sensor uncertainty)
             cv::setIdentity(kf.measurementNoiseCov, cv::Scalar(1e-2));
+            
+            // Initial state covariance
             cv::setIdentity(kf.errorCovPost, cv::Scalar(1));
 
-            kf.statePost = cv::Mat::zeros(12,1, CV_32F);
+            // Initialize state to zeros
+            kf.statePost = cv::Mat::zeros(12, 1, CV_32F);
+            
             isInitialized = true;
         }
         
-        cv::Mat prediction;
-        cv::Mat estimated;
-        cv::Mat measurement(6,1,CV_32F);
+        // --- Convert rvec to roll, pitch, yaw (Euler angles) ---
+        cv::Mat rotation_matrix;
+        cv::Rodrigues(rvec, rotation_matrix);
+        
+        double sy = std::sqrt(rotation_matrix.at<double>(0, 0) * rotation_matrix.at<double>(0, 0) +
+                              rotation_matrix.at<double>(1, 0) * rotation_matrix.at<double>(1, 0));
+        
+        bool singular = sy < 1e-6;
+        
+        double roll, pitch, yaw;
+        if (!singular) {
+            roll = std::atan2(rotation_matrix.at<double>(2, 1), rotation_matrix.at<double>(2, 2));
+            pitch = std::atan2(-rotation_matrix.at<double>(2, 0), sy);
+            yaw = std::atan2(rotation_matrix.at<double>(1, 0), rotation_matrix.at<double>(0, 0));
+        } else {
+            roll = std::atan2(-rotation_matrix.at<double>(1, 2), rotation_matrix.at<double>(1, 1));
+            pitch = std::atan2(-rotation_matrix.at<double>(2, 0), sy);
+            yaw = 0;
+        }
+        
+        // --- Predict step ---
+        cv::Mat prediction = kf.predict();
+        
+        // --- Prepare measurement vector [x, y, z, roll, pitch, yaw] ---
+        cv::Mat measurement(6, 1, CV_32F);
+        measurement.at<float>(0) = static_cast<float>(tvec[0]);
+        measurement.at<float>(1) = static_cast<float>(tvec[1]);
+        measurement.at<float>(2) = static_cast<float>(tvec[2]);
+        measurement.at<float>(3) = static_cast<float>(roll);
+        measurement.at<float>(4) = static_cast<float>(pitch);
+        measurement.at<float>(5) = static_cast<float>(yaw);
+        
+        // --- Correction step ---
+        cv::Mat estimated = kf.correct(measurement);
+        
+        // --- Update the tvec and rvec with filtered values ---
+        // Update translation
+        tvec[0] = estimated.at<float>(0);
+        tvec[1] = estimated.at<float>(1);
+        tvec[2] = estimated.at<float>(2);
+        
+        // Update rotation (convert filtered Euler angles back to rvec)
+        double filtered_roll = estimated.at<float>(6);
+        double filtered_pitch = estimated.at<float>(7);
+        double filtered_yaw = estimated.at<float>(8);
+        
+        // Convert Euler angles back to rotation matrix
+        cv::Mat R_x = (cv::Mat_<double>(3, 3) <<
+            1, 0, 0,
+            0, std::cos(filtered_roll), -std::sin(filtered_roll),
+            0, std::sin(filtered_roll), std::cos(filtered_roll)
+        );
+        
+        cv::Mat R_y = (cv::Mat_<double>(3, 3) <<
+            std::cos(filtered_pitch), 0, std::sin(filtered_pitch),
+            0, 1, 0,
+            -std::sin(filtered_pitch), 0, std::cos(filtered_pitch)
+        );
+        
+        cv::Mat R_z = (cv::Mat_<double>(3, 3) <<
+            std::cos(filtered_yaw), -std::sin(filtered_yaw), 0,
+            std::sin(filtered_yaw), std::cos(filtered_yaw), 0,
+            0, 0, 1
+        );
+        
+        cv::Mat filtered_rotation_matrix = R_z * R_y * R_x;
+        cv::Rodrigues(filtered_rotation_matrix, rvec);
+        
+        // Log filtered values for debugging
+        RCLCPP_DEBUG(this->get_logger(), 
+            "Kalman Filter - Raw: (%.3f, %.3f, %.3f), Filtered: (%.3f, %.3f, %.3f)",
+            measurement.at<float>(0), measurement.at<float>(1), measurement.at<float>(2),
+            tvec[0], tvec[1], tvec[2]);
     }
 }
 
