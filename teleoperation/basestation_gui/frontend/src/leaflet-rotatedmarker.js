@@ -34,7 +34,7 @@ L.Marker.include({
   },
 
   _applyRotation: function () {
-    if (this.options.rotationAngle) {
+    if (this.options.rotationAngle !== undefined && this.options.rotationAngle !== null) {
       this._icon.style[L.DomUtil.TRANSFORM + 'Origin'] = this.options.rotationOrigin
 
       if (oldIE) {

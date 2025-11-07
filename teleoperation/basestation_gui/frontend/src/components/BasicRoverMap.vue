@@ -71,14 +71,15 @@ import { storeToRefs } from 'pinia'
 import 'leaflet/dist/leaflet.css'
 import L from 'leaflet'
 import '../leaflet-rotatedmarker.js'
-import type { LeafletMouseEvent } from 'leaflet';
+import type { LeafletMouseEvent } from 'leaflet'
 import type { StoreWaypoint } from '@/types/waypoints'
 import type { Odom, NavMessage } from '@/types/coordinates'
 import { ref, computed, watch, nextTick } from 'vue'
 import { quaternionToMapAngle } from '../utils/map'
 
 const erdStore = useErdStore()
-const { waypointList, highlightedWaypoint, searchWaypoint } = storeToRefs(erdStore)
+const { waypointList, highlightedWaypoint, searchWaypoint } =
+  storeToRefs(erdStore)
 const { setClickPoint } = erdStore
 
 const websocketStore = useWebsocketStore()
@@ -111,7 +112,9 @@ const offlineTileOptions = {
 }
 
 const center = ref<[number, number]>([38.4225202, -110.7844653])
-const attribution = ref('&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors')
+const attribution = ref(
+  '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors',
+)
 const online = ref(true)
 const mapRef = ref<{ leafletObject: L.Map } | null>(null)
 const roverRef = ref<{ leafletObject: L.Marker } | null>(null)
@@ -197,7 +200,7 @@ const droneLatLng = computed(() => {
 
 const navMessage = computed(() => messages.value['nav'])
 
-watch(navMessage, (msg) => {
+watch(navMessage, msg => {
   if (!msg) return
   const navMsg = msg as NavMessage
 
@@ -208,6 +211,7 @@ watch(navMessage, (msg) => {
     drone_latitude_deg.value = navMsg.latitude
     drone_longitude_deg.value = navMsg.longitude
   } else if (navMsg.type === 'orientation') {
+    console.log(navMsg.orientation)
     rover_bearing_deg.value = quaternionToMapAngle(navMsg.orientation)
   }
 })
@@ -260,7 +264,7 @@ watch([drone_latitude_deg, drone_longitude_deg], () => {
   }
 })
 
-watch(searchWaypoint, (newIndex) => {
+watch(searchWaypoint, newIndex => {
   if (newIndex === -1) {
     if (map && circle.value) {
       map.removeLayer(circle.value as unknown as L.Layer)
@@ -271,8 +275,8 @@ watch(searchWaypoint, (newIndex) => {
   const waypoint = waypointList.value[newIndex]
   if (!circle.value) {
     if (map) {
-    circle.value = L.circle(waypoint.latLng, { radius: 20 }).addTo(map)
-  }
+      circle.value = L.circle(waypoint.latLng, { radius: 20 }).addTo(map)
+    }
   } else {
     circle.value.setLatLng(waypoint.latLng)
   }

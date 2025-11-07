@@ -159,7 +159,6 @@ watch(navMessage, (msg) => {
     drone_longitude_deg.value = navMsg.longitude
     drone_status.value = navMsg.status
   } else if (navMsg.type === 'orientation') {
-    console.log(navMessage)
     rover_bearing_deg.value = quaternionToMapAngle(navMsg.orientation)
   } else if (navMsg.type === 'calibration') {
     const calMsg = msg as CalibrationMessage
