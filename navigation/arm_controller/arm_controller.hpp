@@ -72,9 +72,8 @@ namespace mrover {
 
         rclcpp_action::Server<action::TypingDeltas>::SharedPtr mTypingServer;
         auto handleTypingGoal(const rclcpp_action::GoalUUID & uuid, std::shared_ptr<const action::TypingDeltas_Goal> typingGoal) -> rclcpp_action::GoalResponse;
-        auto handleTypingCancel(const std::shared_ptr<rclcpp_action::ServerGoalHandle<action::TypingDeltas>> typingGoalHandle) -> rclcpp_action::CancelResponse;
-        auto handleTypingAccepted(const std::shared_ptr<rclcpp_action::ServerGoalHandle<action::TypingDeltas>> typingGoalHandle) -> void;
-        std::mutex mTypingMutex;
+        auto handleTypingCancel(std::shared_ptr<rclcpp_action::ServerGoalHandle<action::TypingDeltas>> typingGoalHandle) -> rclcpp_action::CancelResponse;
+        auto handleTypingAccepted(std::shared_ptr<rclcpp_action::ServerGoalHandle<action::TypingDeltas>> typingGoalHandle) -> void;
         std::optional<rclcpp_action::GoalUUID> mTypingGoalID;
 
         rclcpp::Publisher<msg::Position>::SharedPtr mPosPub;

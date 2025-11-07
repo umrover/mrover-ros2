@@ -217,7 +217,6 @@ namespace mrover {
         if(mArmMode != ArmMode::TYPING) 
             RCLCPP_WARN(get_logger(), "Rejecting goal: recieved typing goal while not in typing mode!");
         
-        std::lock_guard<std::mutex> lock(mTypingMutex);
         if(mTypingGoalID) {
             RCLCPP_WARN(get_logger(), "Rejecting goal: received new typing goal while there already exists an active goal!");
             return rclcpp_action::GoalResponse::REJECT;
@@ -240,8 +239,6 @@ namespace mrover {
     auto ArmController::handleTypingAccepted(const std::shared_ptr<rclcpp_action::ServerGoalHandle<action::TypingDeltas>> typingGoalHandle) -> void {
         std::thread([this, typingGoalHandle]() {
             auto result = std::make_shared<action::TypingDeltas::Result>();
-            mPosTarget.y = joints["joint_a"].pos + typingGoalHandle->get_goal()->x_delta;
-            mPosTarget.gripper = joints["gripper"].pos + typingGoalHandle->get_goal()->y_delta;
             result->success = false;
             auto feedback = std::make_shared<action::TypingDeltas::Feedback>();
             RCLCPP_INFO(get_logger(), "Joint A Current: %f, Gripper Current: %f", joints["joint_a"].pos, joints["gripper"].pos);
@@ -255,11 +252,12 @@ namespace mrover {
             rclcpp::Rate loopRate(3);
             while(get_clock()->now() - startTime < typingTimeout) {
                 mLastUpdate = get_clock()->now();
+                mPosTarget.y = joints["joint_a"].pos + typingGoalHandle->get_goal()->x_delta;
+                mPosTarget.gripper = joints["gripper"].pos + typingGoalHandle->get_goal()->y_delta;
                 if(typingGoalHandle->is_canceling()) {
                     result->success = false;
                     typingGoalHandle->canceled(result);
 
-                    std::lock_guard<std::mutex> lock(mTypingMutex);
                     mTypingGoalID = std::nullopt;
 
                     mLastValid = std::nullopt;
@@ -269,11 +267,10 @@ namespace mrover {
 
                 double distRemaining = sqrt(pow(joints["joint_a"].pos - mPosTarget.y, 2) + pow((joints["gripper"].pos - mPosTarget.gripper), 2));
                 // make param
-                if(distRemaining < 0.0001 && abs(joints["gripper"].pos - std::numbers::pi / 2.0) > 0.05) {
+                if(distRemaining < 0.0001) {
                     result->success = true;
                     typingGoalHandle->succeed(result);
 
-                    std::lock_guard<std::mutex> lock(mTypingMutex);
                     mTypingGoalID = std::nullopt;
 
                     mLastValid = std::nullopt;
@@ -288,7 +285,6 @@ namespace mrover {
             result->success = false;
             typingGoalHandle->abort(result);
 
-            std::lock_guard<std::mutex> lock(mTypingMutex);
             mTypingGoalID = std::nullopt;
             
             mLastValid = std::nullopt;
@@ -351,7 +347,6 @@ namespace mrover {
             if(!mLastValid) mLastValid = mCurrPos;
             msg::Position positions = mLastValid.value();
             positions.positions[0] = static_cast<float>(mPosTarget.y);
-            positions.positions[4] = static_cast<float>(-std::numbers::pi / 2.0);
             positions.positions[5] = static_cast<float>(mPosTarget.gripper);
 
             // bounds checking and such
