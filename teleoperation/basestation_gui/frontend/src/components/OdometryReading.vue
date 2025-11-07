@@ -1,5 +1,5 @@
 <template>
-  <div class="d-flex gap-2 w-100 h-100 overflow-hidden">
+  <div class="d-flex gap-2 w-100 h-100 overflow-hidden px-2 flex-grow-1">
     <div class="d-flex flex-row gap-2 flex-grow-1 min-h-0 align-items-center">
       <div class="border rounded p-1 bg-light d-flex flex-column odom-section">
         <div class="fw-semibold text-center text-uppercase odom-title text-secondary mb-1">Rover</div>
@@ -202,10 +202,10 @@ watch(navMessage, (msg) => {
 }
 
 .attitude-container {
-  flex: 0 0 auto;
-  min-width: 0;
+  flex: 1 1 auto;
+  min-width: 120px;
+  max-width: 200px;
   min-height: 0;
-  width: clamp(120px, 15vw, 200px);
   height: 100%;
 }
 
@@ -226,10 +226,10 @@ watch(navMessage, (msg) => {
 }
 
 .imu-container {
-  flex: 1;
-  min-width: 0;
+  flex: 0 1 auto;
+  min-width: 80px;
+  max-width: 120px;
   min-height: 0;
-  max-width: 100px;
 }
 
 .min-h-0 {

@@ -38,7 +38,6 @@ class ArmConsumer(AsyncJsonWebsocketConsumer):
         self.subscribers = []
         self.timers = []
         self.cur_ra_mode: str = "disabled"
-        self.cur_sa_mode: str = "disabled"
         self.buffer = {} # Assuming this was intended to be an instance buffer
 
         # Topic Publishers are created once per connection
@@ -123,19 +122,9 @@ class ArmConsumer(AsyncJsonWebsocketConsumer):
                     "type": "sa_controller",
                     "axes": axes,
                     "buttons": buttons,
-                    "site": site
                 }:
                     device_input = DeviceInputs(axes, buttons)
-                    # FIX: Use instance variable for mode
-                    if site == 0:
-                        send_sa_controls(self.cur_sa_mode, 0, device_input, self.sa_thr_pub)
-                    elif site == 1:
-                        send_sa_controls(self.cur_sa_mode, 1, device_input, self.sa_thr_pub)
-                    else:
-                        self.node.get_logger().warning(f"Unhandled Site: {site}")
-
-                case { "type": "sa_mode", "mode": sa_mode }:
-                    self.cur_sa_mode = sa_mode # FIX: Use instance variable
+                    send_sa_controls(device_input, self.sa_thr_pub)
 
                 case _:
                     self.node.get_logger().warning(f"Unhandled message on arm: {content}")

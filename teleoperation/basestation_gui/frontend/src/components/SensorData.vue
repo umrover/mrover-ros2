@@ -1,7 +1,7 @@
 <template>
   <h3>Sensor Data</h3>
   <div class="sensors align-items-center">
-    <table class="table table-bordered mx-3 mb-0" id="capture">
+    <table class="table table-bordered table-sm mx-3 mb-0" id="capture">
       <thead>
         <tr class="table-primary">
           <th></th>
@@ -36,13 +36,13 @@
     <div style="width: 50%; overflow-x: scroll">
       <canvas
         id="chart0"
-        style="width: 100%; height: 200px; background-color: white"
+        style="width: 100%; height: 150px; background-color: white"
       ></canvas>
     </div>
     <div style="width: 50%; overflow-x: scroll; margin-top: 5px">
       <canvas
         id="chart1"
-        style="width: 100%; height: 200px; background-color: white"
+        style="width: 100%; height: 150px; background-color: white"
       ></canvas>
     </div>
   </div>
@@ -51,13 +51,13 @@
     <div style="width: 50%; overflow-x: scroll">
       <canvas
         id="chart2"
-        style="width: 100%; height: 200px; background-color: white"
+        style="width: 100%; height: 150px; background-color: white"
       ></canvas>
     </div>
     <div style="width: 50%; overflow-x: scroll">
       <canvas
         id="chart3"
-        style="width: 100%; height: 200px; background-color: white"
+        style="width: 100%; height: 150px; background-color: white"
       ></canvas>
     </div>
   </div>
@@ -89,11 +89,12 @@ const sensor_data = ref<SensorData>({
   temp_var: 0,
 })
 const sensor_history = ref<number[][]>([
-  [], // oxygen
-  [], // humidity
-  [], // temperature
-  [], // uv
+  Array(10).fill(0), // oxygen
+  Array(10).fill(0), // humidity
+  Array(10).fill(0), // temperature
+  Array(10).fill(0), // uv
 ])
+const timeCounter = ref(0)
 
 const scienceMessage = computed(() => messages.value['science'])
 
@@ -178,11 +179,11 @@ onMounted(() => {
       // Ensure the element exists and is a canvas before creating the chart
       if (canvasElement instanceof HTMLCanvasElement) {
         const data = {
-          labels: [] as number[], // Initialize labels array
+          labels: Array.from({ length: 10 }, (_, i) => i), // Initialize with 0-9
           datasets: [
             {
               label: titles[i],
-              data: [] as number[], // ✅ Plain array, not reactive
+              data: Array(10).fill(0), // Initialize with 10 zeros
               fill: false,
               borderColor: lineColors[i],
               tension: 0.1,
@@ -195,6 +196,7 @@ onMounted(() => {
           data: data,
           options: {
             responsive: false,
+            animation: false,
             scales: {
               y: {
                 beginAtZero: true,
@@ -213,6 +215,8 @@ onMounted(() => {
     sensor_history.value[2].push(sensor_data.value.temp);
     sensor_history.value[3].push(sensor_data.value.uv);
 
+    timeCounter.value++;
+
     for (let x = 0; x < 4; ++x) {
       if (sensor_history.value[x].length > maxHistory) {
         sensor_history.value[x].shift();
@@ -223,10 +227,11 @@ onMounted(() => {
       const chart = charts[x];
       if (chart) {
         chart.data.datasets[0].data = [...sensor_history.value[x]];
-        // Update the labels to match the data length
+        // Create rolling time labels
+        const startTime = Math.max(0, timeCounter.value - sensor_history.value[x].length + 1);
         chart.data.labels = Array.from(
           { length: sensor_history.value[x].length },
-          (_, i) => i
+          (_, i) => startTime + i
         );
         chart.update();
       }
