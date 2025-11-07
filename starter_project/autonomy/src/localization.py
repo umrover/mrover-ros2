@@ -22,7 +22,8 @@ class Localization(Node):
     def __init__(self):
         super().__init__("localization")
         # create subscribers for GPS and IMU data, linking them to our callback functions
-        # TODO
+        self.create_subscription(NavSatFix, "/gps/fix", self.gps_callback, 1)
+        self.create_subscription(Imu, "/imu/data_raw", self.imu_callback, 1)
 
         # create a transform broadcaster for publishing to the TF tree
         self.tf_broadcaster = tf2_ros.TransformBroadcaster(self)
@@ -37,7 +38,14 @@ class Localization(Node):
         convert it to cartesian coordinates, store that value in `self.pose`, then publish
         that pose to the TF tree.
         """
-        # TODO
+        # Define coordinates to pass
+        ref_lat = 38.4225202
+        ref_lon = -110.7844653
+        reference_coords = np.array([ref_lat, ref_lon])
+        spherical_coords = np.array([msg.latitude, msg.longitude])
+        self.pose.position = Localization.spherical_to_cartesian(spherical_coords, reference_coords)
+        self.pose.publish_to_tf_tree(parent_frame="map", child_frame="rover_base_link")
+
 
     def imu_callback(self, msg: Imu):
         """
@@ -45,7 +53,9 @@ class Localization(Node):
         on the /imu topic. It should read the orientation data from the given Imu message,
         store that value in `self.pose`, then publish that pose to the TF tree.
         """
-        # TODO
+        # No conversion needed
+        self.pose.rotation = msg.orientation
+        self.pose.publish_to_tf_tree(parent_frame="map", child_frame="rover_base_link")
 
     @staticmethod
     def spherical_to_cartesian(spherical_coord: np.ndarray, reference_coord: np.ndarray) -> np.ndarray:
@@ -59,7 +69,23 @@ class Localization(Node):
                                 given as a numpy array [latitude, longitude]
         :returns: the approximated cartesian coordinates in meters, given as a numpy array [x, y, z]
         """
-        # TODO
+
+        ref_lat = reference_coord[0]
+        ref_lon = reference_coord[1]
+        R = 6371000
+        lat = spherical_coord[0]
+        lon = spherical_coord[1]
+
+        # Get x and y (non-rotated)
+        y = R * (lon - ref_lon) * np.cos(np.deg2rad(lat))
+        x = R * (lat - ref_lat)
+
+        # Rotate x and y by 90 degrees (pi/2 rad)
+        rotated_y = x
+        rotated_x = -y
+        z = 0
+
+        return np.array([rotated_x, rotated_y, z])
 
 
 def main():

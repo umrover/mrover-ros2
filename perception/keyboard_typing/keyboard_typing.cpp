@@ -1,36 +1,58 @@
 #include "keyboard_typing.hpp"
-#include <rclcpp/logging.hpp>
+#include "lie.hpp"
+#include <algorithm>
+#include <numeric>
 
-KeyboardTypingNode::KeyboardTypingNode(rclcpp::NodeOptions const& options) : rclcpp::Node("keyboard_typing_node", options)
-{
-    // subscribe to image stream
-    mImageSub = this->create_subscription<sensor_msgs::msg::Image>("/topic/name", 1, [this](sensor_msgs::msg::Image::ConstSharedPtr const& msg) {
-        yawCallback(msg);
-    });
-}
+namespace mrover{
+    KeyboardTypingNode::KeyboardTypingNode(rclcpp::NodeOptions const& options) : rclcpp::Node("keyboard_typing_node", options) {
+        // subscribe to image stream
+        mImageSub = create_subscription<sensor_msgs::msg::Image>("/finger_camera/image", 1, [this](sensor_msgs::msg::Image::ConstSharedPtr const& msg) {
+            yawCallback(msg);
+        });
+
+        mQuaternionPub = create_publisher<geometry_msgs::msg::Quaternion>("/keyboard/yaw", 1);
+
+        mTagDictionary = cv::makePtr<cv::aruco::Dictionary>(cv::aruco::getPredefinedDictionary(cv::aruco::DICT_4X4_100));
+    }
 
 
-auto KeyboardTypingNode::yawCallback(sensor_msgs::msg::Image::ConstSharedPtr const& msg) -> void {
-    return;
-}
+    auto KeyboardTypingNode::yawCallback(sensor_msgs::msg::Image::ConstSharedPtr const& msg) -> void {
+        return;
+    }
 
-auto KeyboardTypingNode::poseEstimation(sensor_msgs::msg::Image::ConstSharedPtr const& msg) -> geometry_msgs::msg::Quaternion {
-    std::string cameraConstants = "with_refinement.json";
-    // cv::Ptr<cv::aruco::Dictionary> dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_4X4_50);
-    
-    cv::Ptr<cv::aruco::CharucoBoard> board = cv::aruco::CharucoBoard::create(SQUARES_VERTICALLY, SQUARES_HORIZONTALLY, SQUARE_LENGTH, MARKER_LENGTH, ARUCO_DICT);
-    cv::Ptr<cv::aruco::DetectorParameters> params = cv::aruco::DetectorParameters::create();
+    auto KeyboardTypingNode::poseEstimation(sensor_msgs::msg::Image::ConstSharedPtr const& msg) -> geometry_msgs::msg::Quaternion {
+        return geometry_msgs::msg::Quaternion();
+    }
 
-    cv::Mat bgraImage{static_cast<int>(msg->height), static_cast<int>(msg->width), CV_8UC4, const_cast<uint8_t*>(msg->data.data())};
+    auto KeyboardTypingNode::kalmanFilter(geometry_msgs::msg::Quaternion const& msg) -> geometry_msgs::msg::Quaternion {
+        
+    }
 
-     cv::cvtColor(bgraImage, bgraImage, cv::COLOR_BGR2BGRA);
-    
+    // General tag finding algorithm:
+    // 1. Detect tags in image
+    // 2. Transform tags to world frame and select left-most and highest one as reference tag
+    // 3. Every five hits on tag of interest, publish yaw relative to that tag
+    auto KeyboardTypingNode::findTagsInImage(cv::Mat const& image) -> void {
+        // Outputs tagIDs and tagCorners in respective vectors, they will be the same size
+        cv::aruco::detectMarkers(image, mTagDictionary, mTagCorners, mTagIds);
 
-}
+        // Take detected tags and update tags map
+        for(int i = 0; i < mTagIds.size(); i++){
+            int tagId = mTagIds[i];
+            Tag& tag = mTagMap[tagId];
+            tag.id = mTagIds[i];
+            tag.hitCount = std::clamp(tag.hitCount + 1, 0, 5);
+            tag.center = std::reduce(mTagCorners[i].begin(), mTagCorners[i].end()) / static_cast<float>(mTagCorners[i].size());
 
-auto KeyboardTypingNode::kalmanFilter(geometry_msgs::msg::Quaternion const& msg) -> geometry_msgs::msg::Quaternion {
-    
-}
+            if(tag.id != mSelectedTag.id && (tag.center.x < mSelectedTag.center.x || tag.center.y < mSelectedTag.center.y)){
+                mSelectedTag = tag;
+            }
+        }
+
+        for(auto& tag : mTagMap){
+            
+        }
+    }
 
 
 /*
@@ -39,3 +61,4 @@ Steps
     a. Kalman filter the pose at the end of pose estimation
 2. Publish yaw to keyboard_yaw in yawCallback
 */
+}
