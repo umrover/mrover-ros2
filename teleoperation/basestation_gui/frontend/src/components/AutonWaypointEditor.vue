@@ -15,6 +15,7 @@
           :index="index"
           @add="addItem"
           @delete="deleteMapWaypoint"
+          @update="updateWaypoint"
         />
       </div>
     </div>
@@ -380,6 +381,13 @@ export default defineComponent({
       this.currentRoute.forEach((wp: AutonWaypoint) => {
         wp.enable_costmap = newState
       })
+    },
+
+    updateWaypoint: function (waypoint: AutonWaypoint, index: number) {
+      if (index >= 0 && index < this.waypoints.length) {
+        this.waypoints[index].lat = waypoint.lat
+        this.waypoints[index].lon = waypoint.lon
+      }
     },
 
     addItem: function (waypoint: AutonWaypoint) {

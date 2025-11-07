@@ -50,14 +50,30 @@ export default defineComponent({
       required: true,
     },
   },
-  emits: ['add', 'delete'],
+  emits: ['add', 'delete', 'update'],
   data() {
     return {
       localLat: this.waypoint.lat,
       localLon: this.waypoint.lon,
     }
   },
+  watch: {
+    localLat(newVal) {
+      this.emitUpdate(newVal, this.localLon)
+    },
+    localLon(newVal) {
+      this.emitUpdate(this.localLat, newVal)
+    },
+  },
   methods: {
+    emitUpdate(lat: number, lon: number) {
+      const updatedWaypoint = {
+        ...this.waypoint,
+        lat: lat,
+        lon: lon,
+      }
+      this.$emit('update', updatedWaypoint, this.index)
+    },
     addWaypoint() {
       const updatedWaypoint = {
         ...this.waypoint,
