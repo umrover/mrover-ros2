@@ -11,10 +11,7 @@ from backend.consumers.ros_manager import get_node
 from sensor_msgs.msg import Temperature, RelativeHumidity
 from mrover.msg import (
     LED,
-    HeaterData,
-    ScienceThermistors,
     Oxygen,
-    Methane,
     UV,
 )
 from std_msgs.msg import Float32
@@ -28,10 +25,7 @@ class ScienceConsumer(AsyncJsonWebsocketConsumer):
         self.timers = []
 
         await self.forward_ros_topic("/led", LED, "led")
-        await self.forward_ros_topic("/science_thermistors", ScienceThermistors, "thermistors")
-        await self.forward_ros_topic("/science_heater_state", HeaterData, "heater_states")
         await self.forward_ros_topic("/science_oxygen_data", Oxygen, "oxygen")
-        await self.forward_ros_topic("/science_methane_data", Methane, "methane")
         await self.forward_ros_topic("/science_uv_data", UV, "uv")
         await self.forward_ros_topic("/science_temperature_data", Temperature, "temperature")
         await self.forward_ros_topic("/science_humidity_data", RelativeHumidity, "humidity")
