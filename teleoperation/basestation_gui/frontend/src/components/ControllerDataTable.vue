@@ -1,34 +1,36 @@
 <template>
-  <div class='wrap border border-2 p-2 rounded'>
-    <h3 class="m-0 p-0 mb-1">{{ header }}</h3>
-    <table class='table table-bordered m-0 p-0 border' style='table-layout: fixed; width: auto'>
-      <tbody>
-      <tr>
-        <th class='table-secondary'>Motor</th>
-        <td v-for='(name, i) in name' :key='i' class="m-0 px-1">
-          {{ name }}
-        </td>
-      </tr>
-      <tr>
-        <th class='table-secondary'>State</th>
-        <td v-for='(state, i) in state' :key='i'>
-          {{ state }}
-        </td>
-      </tr>
-      <tr>
-        <th class='table-secondary'>Error</th>
-        <td v-for='(error, i) in error' :key='i'>
-          {{ error }}
-        </td>
-      </tr>
-      <tr>
-        <th class='table-secondary'>Limit Hit</th>
-        <td v-for='(limits, i) in limits' :key='i'>
-          {{ limits }}
-        </td>
-      </tr>
-      </tbody>
-    </table>
+  <div class='d-flex flex-column border border-2 p-2 rounded mw-100' style="flex: 1 0 auto; min-width: 0;">
+    <h4 class="mb-2">{{ header }}</h4>
+    <div class="overflow-x-auto">
+      <table class='table table-bordered table-sm m-0 w-auto text-nowrap compact-table'>
+        <tbody>
+        <tr>
+          <th class='table-secondary text-nowrap sticky-col px-2 py-1'>Motor</th>
+          <td v-for='(name, i) in name' :key='i' class="text-center small px-2 py-1">
+            {{ name }}
+          </td>
+        </tr>
+        <tr>
+          <th class='table-secondary text-nowrap sticky-col px-2 py-1'>State</th>
+          <td v-for='(state, i) in state' :key='i' class="text-center small px-2 py-1">
+            {{ state }}
+          </td>
+        </tr>
+        <tr>
+          <th class='table-secondary text-nowrap sticky-col px-2 py-1'>Error</th>
+          <td v-for='(error, i) in error' :key='i' class="text-center small px-2 py-1">
+            {{ error }}
+          </td>
+        </tr>
+        <tr>
+          <th class='table-secondary text-nowrap sticky-col px-2 py-1'>Limit Hit</th>
+          <td v-for='(limits, i) in limits' :key='i' class="text-center small px-2 py-1">
+            {{ limits }}
+          </td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 </template>
 
@@ -82,9 +84,19 @@ watch(driveMessage, (msg) => {
 </script>
 
 <style scoped>
-.wrap {
-  display: inline-block;
-  align-content: center;
-  min-width: 350px;
+.sticky-col {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+}
+
+.compact-table {
+  table-layout: auto;
+}
+
+.compact-table th,
+.compact-table td {
+  white-space: nowrap;
+  width: 1%;
 }
 </style>

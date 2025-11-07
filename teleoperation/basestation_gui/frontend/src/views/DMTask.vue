@@ -1,23 +1,27 @@
 <template>
-  <div class="view-wrapper wrapper-dm">
-    <div class='island p-2 rounded odom'>
-      <OdometryReading />
+  <div class="view-wrapper d-grid w-100 h-100 gap-2 wrapper-dm">
+    <div class="left-column d-flex flex-column gap-2">
+      <div class='island rounded overflow-hidden flex-grow-1'>
+        <Rover3D class="w-100 h-100"/>
+      </div>
+      <div class='island p-2 rounded'>
+        <OdometryReading />
+      </div>
+      <div class='island p-2 rounded'>
+        <ArmControls />
+      </div>
+      <div class='island p-2 rounded d-flex gap-2' style="flex: 0 0 auto;">
+        <ControllerDataTable class="flex-fill" msg-type='arm_state' header='Arm States' />
+        <ControllerDataTable class="flex-fill" msg-type='drive_state' header='Drive States' />
+      </div>
     </div>
-    <div class='island p-0 rounded map overflow-hidden'>
-      <BasicMap />
-    </div>
-    <div class='island p-2 rounded waypoint-editor'>
-      <BasicWaypointEditor :droneWaypointButton='true'/>
-    </div>
-    <div class='island p-2 rounded arm-controls'>
-      <ArmControls />
-    </div>
-    <div class='island rounded rover-3d overflow-hidden'>
-      <Rover3D class="w-100 h-100"/>
-    </div>
-    <div class='island p-2 rounded controller_state d-flex gap-2'>
-      <ControllerDataTable class="flex-fill" msg-type='arm_state' header='Arm States' />
-      <ControllerDataTable class="flex-fill" msg-type='drive_state' header='Drive States' />
+    <div class="right-column d-flex flex-column gap-2">
+      <div class='island p-0 rounded overflow-hidden' style="flex: 1; min-height: 0;">
+        <BasicMap />
+      </div>
+      <div class='island p-2 rounded' style="flex: 1; min-height: 0;">
+        <BasicWaypointEditor :enableDrone='true'/>
+      </div>
     </div>
     <div>
       <MastGimbalControls />
@@ -57,52 +61,12 @@ onUnmounted(() => {
 
 <style>
 .wrapper-dm {
-  display: grid;
-  gap: 0.625rem;
-  width: 100%;
-  height: 100%;
-  max-width: 100vw;
-  max-height: 100vh;
-  overflow: hidden;
-  box-sizing: border-box;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  grid-template-rows: 40% auto auto auto;
-  grid-template-areas:
-    'rover-3d map'
-    'rover-3d waypoint-editor'
-    'odom waypoint-editor'
-    'arm-controls waypoint-editor'
-    'controller_state waypoint-editor';
-  font-family: sans-serif;
+  grid-template-columns: 1fr 1fr;
 }
 
-.wrapper-dm > * {
-  min-width: 0;
+.left-column,
+.right-column {
   min-height: 0;
-  overflow: auto;
-}
-
-.map {
-  grid-area: map;
-}
-
-.odom {
-  grid-area: odom;
-}
-
-.waypoint-editor {
-  grid-area: waypoint-editor;
-}
-
-.arm-controls {
-  grid-area: arm-controls;
-}
-
-.controller_state {
-  grid-area: controller_state;
-}
-
-.rover-3d {
-  grid-area: rover-3d;
+  min-width: 0;
 }
 </style>

@@ -95,7 +95,7 @@ watch(navMessage, (msg: unknown) => {
   }
 })
 
-const topics = ['auton', 'drive', 'nav', 'science', 'mast']
+const topics = ['drive', 'nav', 'science', 'mast']
 
 onMounted(() => {
   for (const topic of topics) {

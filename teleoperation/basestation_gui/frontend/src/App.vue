@@ -46,4 +46,15 @@ body {
   background-color: #ffffff;
   border-radius: 6px;
 }
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', 'Monaco', monospace;
+  font-weight: 600;
+  color: #1a1a1a;
+  letter-spacing: -0.04em;
+  margin: 0;
+  padding: 0;
+  line-height: 1.2;
+}
+
 </style>

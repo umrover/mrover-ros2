@@ -3,13 +3,11 @@
     <div class="d-flex flex-column gap-2" style="width: 500px; max-width: 100%;">
       <div class="d-flex justify-content-between align-items-center">
         <h3 class="m-0">Arm Controls</h3>
-        <span
-          class="px-2 py-2 rounded-2 text-black fw-semibold text-center"
-          style="width: 130px; display: inline-block; font-family: monospace;"
-          :class="controllerConnected ? 'bg-success' : 'bg-secondary'"
-        >
-          {{ controllerConnected ? 'Connected  ' : 'Disconnected' }}
-        </span>
+        <div
+          class="rounded-circle me-2"
+          :class="controllerConnected ? 'bg-success' : 'bg-danger'"
+          style="width: 16px; height: 16px"
+        ></div>
       </div>
       <div
         class="btn-group d-flex justify-content-between"

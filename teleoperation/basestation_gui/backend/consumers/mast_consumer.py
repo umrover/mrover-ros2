@@ -7,18 +7,11 @@ from channels.generic.websocket import AsyncJsonWebsocketConsumer
 from asgiref.sync import sync_to_async
 from rosidl_runtime_py.convert import message_to_ordereddict
 from rclpy.qos import qos_profile_sensor_data
-import numpy as np
-import cv2
 
 from backend.consumers.ros_manager import get_node
 from backend.input import DeviceInputs
 from backend.mast_controls import send_mast_controls
-from sensor_msgs.msg import Image
 from mrover.msg import Throttle
-from mrover.srv import (
-    PanoramaStart,
-    PanoramaEnd,
-)
 
 
 class MastConsumer(AsyncJsonWebsocketConsumer):
@@ -30,9 +23,6 @@ class MastConsumer(AsyncJsonWebsocketConsumer):
         self.timers = []
 
         self.mast_gimbal_pub = self.node.create_publisher(Throttle, "/mast_gimbal_throttle_cmd", 1)
-
-        self.pano_start_srv = self.node.create_client(PanoramaStart, "/panorama/start")
-        self.pano_end_srv = self.node.create_client(PanoramaEnd, "/panorama/end")
 
     async def disconnect(self, close_code) -> None:
         """
@@ -72,38 +62,6 @@ class MastConsumer(AsyncJsonWebsocketConsumer):
         )
         self.subscribers.append(sub)
 
-    async def start_stop_pano(self, action: str) -> None:
-        if action == "start":
-            self.node.get_logger().info("Pano start service called.")
-            await self.pano_start_srv.call_async(PanoramaStart.Request())
-        else:
-            self.node.get_logger().info("Pano end service called, awaiting result...")
-            try:
-                result = await self.pano_end_srv.call_async(PanoramaEnd.Request())
-                
-                if result is not None and result.success:
-                    self.node.get_logger().info("Panorama successful, processing image.")
-                    
-                    def save_image_sync(img_msg: Image):
-                        img_np = np.frombuffer(img_msg.data, dtype=np.uint8).reshape(
-                            img_msg.height, img_msg.width, -1 
-                        )
-                        # Ensure it's BGR for OpenCV if it's RGBA or BGRA
-                        if img_np.shape[2] == 4:
-                            img_np = cv2.cvtColor(img_np, cv2.COLOR_RGBA2BGR)
-                        
-                        timestamp = self.node.get_clock().now().nanoseconds
-                        filename = f"../../data/{timestamp}_panorama.png"
-                        cv2.imwrite(filename, img_np)
-                        self.node.get_logger().info(f"Image saved to {filename}")
-
-                    await sync_to_async(save_image_sync)(result.img)
-                else:
-                    self.node.get_logger().warn("Panorama service reported no success or null result.")
-
-            except Exception as e:
-                self.node.get_logger().error(f"Panorama service call failed: {e}")
-
     async def receive_json(self, content: dict, **kwargs) -> None:
         try:
             match content:
@@ -114,10 +72,9 @@ class MastConsumer(AsyncJsonWebsocketConsumer):
                 }:
                     device_input = DeviceInputs(axes, buttons)
                     send_mast_controls(device_input, self.mast_gimbal_pub)
-                case {"type": "pano", "action": a}:
-                    await self.start_stop_pano(a)
-                    
+
                 case _:
+                    # Panorama service calls migrated to REST API (mast.py)
                     self.node.get_logger().warning(f"Unhandled message on mast: {content}")
         except Exception:
             self.node.get_logger().error(f"Failed to handle message: {content}")
