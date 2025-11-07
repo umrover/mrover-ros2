@@ -4,7 +4,7 @@
       <BasicMap />
     </div>
     <div class="island p-2 rounded odom">
-      <OdometryReading class="rounded border border-2 p-2" />
+      <OdometryReading class="rounded border border-2" />
     </div>
     <div class="island p-2 rounded controller_state d-flex gap-2">
       <ControllerDataTable
@@ -31,6 +31,9 @@
       <DriveControls />
       <MastGimbalControls />
     </div>
+    <div class="island p-2 rounded armcontrols">
+      <SPArmControls />
+    </div>
     <div class="island p-2 rounded sensors">
       <SensorData :site="siteSelect" />
     </div>
@@ -50,6 +53,7 @@ import HexHub from '../components/HexHub.vue'
 import PanoCam from '../components/PanoCam.vue'
 import { scienceAPI } from '@/utils/api'
 import { useWebsocketStore } from '@/stores/websocket'
+import SPArmControls from '@/components/SPArmControls.vue'
 
 const websocketStore = useWebsocketStore()
 
@@ -113,6 +117,7 @@ onUnmounted(() => {
   grid-template-rows: 120px;
   grid-template-areas:
     'controls map map'
+    'armcontrols map map'
     'odom map map'
     'sensors sensors waypoints'
     'controller_state controller_state waypoints';
@@ -141,5 +146,9 @@ onUnmounted(() => {
 
 .controller_state {
   grid-area: controller_state;
+}
+
+.armcontrols {
+  grid-area: armcontrols;
 }
 </style>
