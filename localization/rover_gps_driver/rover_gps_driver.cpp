@@ -130,6 +130,86 @@ namespace mrover {
 
             }
 
+            if (msg_header == "#UNIHEADINGA") {
+
+                if (tokens.size() != 28) { return; }
+
+                mrover::msg::Heading heading;
+                mrover::msg::FixStatus fix_status;
+                mrover::msg::FixType fix_type;
+                heading.header = header;
+                fix_status.header = header;
+
+                if (tokens[11] == "NARROW_FLOAT") {
+                    fix_type.fix = mrover::msg::FixType::FLOAT;
+                }
+                else if (tokens[11] == "NARROW_INT") {
+                    fix_type.fix = mrover::msg::FixType::FIXED;
+                }
+                else {
+                    RCLCPP_WARN(get_logger(), "Heading: no solution. Are both antennas plugged in?");
+
+                    fix_type.fix = mrover::msg::FixType::NO_SOL;
+                    fix_status.fix_type = fix_type;
+                    heading.heading = 0;
+
+                    heading_pub->publish(heading);
+                    heading_status_pub->publish(fix_status);
+                    return;
+                }
+
+                fix_status.fix_type = fix_type;
+
+                float uniheading = stof(tokens[13]);
+                heading.heading = uniheading;
+
+                heading_pub->publish(heading);
+                heading_status_pub->publish(fix_status);
+
+            }
+
+            if (msg_header == "#BESTNAVA") {
+
+                if (tokens.size() != 41) { return; }
+
+                geometry_msgs::msg::Vector3Stamped velocity;
+                mrover::msg::FixStatus fix_status;
+                mrover::msg::FixType fix_type;
+                velocity.header = header;
+                fix_status.header = header;
+
+                if (tokens[32] == "DOPPLER_VELOCITY") {
+                    fix_type.fix = mrover::msg::FixType::NONE;
+                }
+                else {
+                    RCLCPP_WARN(get_logger(), "Velocity: no solution. Are we inside?");
+
+                    fix_type.fix = mrover::msg::FixType::NO_SOL;
+                    fix_status.fix_type = fix_type;
+
+                    velocity.vector.x = 0;
+                    velocity.vector.y = 0;
+                    velocity.vector.z = 0;
+
+                    velocity_pub->publish(velocity);
+                    velocity_status_pub->publish(fix_status);
+                    return;
+                }
+
+                fix_status.fix_type = fix_type;
+
+                float gps_velocity = stof(tokens[35]);
+                float gps_dir = stof(tokens[36]);
+
+                velocity.vector.x = std::sin(gps_dir) * gps_velocity;
+                velocity.vector.y = std::cos(gps_dir) * gps_velocity;
+                velocity.vector.z = 0;
+
+                velocity_pub->publish(velocity);
+                velocity_status_pub->publish(fix_status);
+
+            }
+
             if (msg_header == "$GPGSV" || msg_header == "$GLGSV" || msg_header == "$GBGSV" || msg_header == "$GAGSV" || msg_header == "$GQGSV") {
 
                 if (tokens.size() < 10 || (tokens.size() - 10) % 4 != 0 || tokens.size() > 26) { return; }
