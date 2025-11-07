@@ -1,6 +1,7 @@
 #pragma once
 
 #include "mrover/msg/detail/position__struct.hpp"
+#include "mrover/action/typing_ik.hpp"
 #include "pch.hpp"
 
 namespace mrover {
@@ -69,6 +70,8 @@ namespace mrover {
         [[maybe_unused]] rclcpp::Subscription<msg::IK>::SharedPtr mIkSub;
         [[maybe_unused]] rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr mVelSub;
         [[maybe_unused]] rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr mJointSub;
+
+        //rclcpp_action::Server<
 
         rclcpp::Publisher<msg::Position>::SharedPtr mPosPub;
         rclcpp::Publisher<msg::Velocity>::SharedPtr mVelPub;

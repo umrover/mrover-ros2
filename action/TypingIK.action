@@ -1,0 +1,6 @@
+float32 x_delta
+float32 y_delta
+---
+bool success
+---
+float32 progress

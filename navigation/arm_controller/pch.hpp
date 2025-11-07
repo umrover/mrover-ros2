@@ -9,6 +9,7 @@
 
 #include <rclcpp/node.hpp>
 #include <rclcpp/publisher.hpp>
+#include <rclcpp_action/rclcpp_action.hpp>
 #include <tf2_ros/transform_listener.h>
 #include <geometry_msgs/msg/vector3.hpp>
 #include <geometry_msgs/msg/twist.hpp>
