@@ -60,7 +60,7 @@ namespace mrover {
 
         std_msgs::msg::Header header;
         header.stamp = get_clock()->now();
-        header.frame_id = frame_id;
+        header.frame_id = gps_frame;
 
         try {
 
