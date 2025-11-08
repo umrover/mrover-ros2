@@ -35,3 +35,5 @@ data/raw-pano-images
 
 teleoperation/basestation_gui/install/
 teleoperation/basestation_gui/log/
+
+compile_commands.json
