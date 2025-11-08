@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Teleoperation Views - Topics and Services</title>
+<style>
+body { font-family: Arial, sans-serif; padding: 20px; }
+table { border-collapse: collapse; width: auto; margin-bottom: 20px; font-size: 9px; table-layout: auto; }
+th { background-color: #1a73e8; color: white; padding: 2px 6px; text-align: left; border: 1px solid #ddd; white-space: nowrap; line-height: 1.1; }
+td { padding: 2px 6px; border: 1px solid #ddd; vertical-align: top; height: auto; line-height: 1.1; }
+tr { height: auto; }
+tr:nth-child(even) { background-color: #f2f2f2; }
+.table-title { background-color: #1a73e8; color: white; font-weight: bold; text-align: center; padding: 3px 6px; font-size: 10px; line-height: 1.1; }
+.view-header { background-color: #2196f3; color: white; font-weight: bold; padding: 8px; margin-top: 20px; margin-bottom: 10px; font-size: 14px; }
+.nav { background-color: #90EE90; color: black; font-weight: bold; }
+.localization { background-color: #87CEEB; color: black; font-weight: bold; }
+.perception { background-color: #FFB6C1; color: black; font-weight: bold; }
+.esw { background-color: #FFD700; color: black; font-weight: bold; }
+.drone { background-color: #FF8C00; color: black; font-weight: bold; }
+</style>
+</head>
+<body>
+<h1>Teleoperation Views - Topics and Services Reference</h1>
+
+{% for view in views %}
+<div class="view-header">{{ view.name }} - {{ view.description }} ({{ view.route }})</div>
+<p><strong>WebSockets:</strong> {{ view.websockets|join(', ') }}</p>
+
+{% if view.published_topics %}
+<table>
+<tr><th colspan="5" class="table-title">{{ view.name }} - Published Topics</th></tr>
+<tr><th>Topic</th><th>Type</th><th>Declaration</th><th>Component</th><th>Subteam</th></tr>
+{% for topic in view.published_topics %}
+<tr><td>{{ topic.name }}</td><td>{{ topic.type }}</td><td>{{ topic.declaration }}</td><td>{{ topic.component }}</td><td class="{{ topic.subteam_id }}">{{ topic.subteam }}</td></tr>
+{% endfor %}
+</table>
+{% endif %}
+
+{% if view.subscribed_topics %}
+<table>
+<tr><th colspan="5" class="table-title">{{ view.name }} - Subscribed Topics</th></tr>
+<tr><th>Topic</th><th>Type</th><th>Declaration</th><th>Component</th><th>Subteam</th></tr>
+{% for topic in view.subscribed_topics %}
+<tr><td>{{ topic.name }}</td><td>{{ topic.type }}</td><td>{{ topic.declaration }}</td><td>{{ topic.component }}</td><td class="{{ topic.subteam_id }}">{{ topic.subteam }}</td></tr>
+{% endfor %}
+</table>
+{% endif %}
+
+{% if view.computed_data %}
+<table>
+<tr><th colspan="4" class="table-title">{{ view.name }} - Computed Data</th></tr>
+<tr><th>Data</th><th>Source</th><th>Component</th><th>Subteam</th></tr>
+{% for data in view.computed_data %}
+<tr><td>{{ data.name }}</td><td>{{ data.source }}</td><td>{{ data.component }}</td><td class="{{ data.subteam_id }}">{{ data.subteam }}</td></tr>
+{% endfor %}
+</table>
+{% endif %}
+
+{% if view.services %}
+<table>
+<tr><th colspan="6" class="table-title">{{ view.name }} - Services (REST API)</th></tr>
+<tr><th>Service</th><th>Type</th><th>Request</th><th>Response</th><th>Component</th><th>Subteam</th></tr>
+{% for service in view.services %}
+<tr><td>{{ service.name }}</td><td>{{ service.type }}</td><td>{{ service.request }}</td><td>{{ service.response }}</td><td>{{ service.component }}</td><td class="{{ service.subteam_id }}">{{ service.subteam }}</td></tr>
+{% endfor %}
+</table>
+{% endif %}
+
+{% endfor %}
+
+<div class="view-header">Summary Statistics</div>
+
+<table>
+<tr><th colspan="6" class="table-title">Summary by View</th></tr>
+<tr><th>View</th><th>WebSockets</th><th>Published Topics</th><th>Subscribed Topics</th><th>Computed Data</th><th>REST Services</th></tr>
+{% for view in views %}
+<tr><td>{{ view.name }}</td><td>{{ view.websockets|length }}</td><td>{{ view.published_topics|length }}</td><td>{{ view.subscribed_topics|length }}</td><td>{{ view.computed_data|length }}</td><td>{{ view.services|length }}</td></tr>
+{% endfor %}
+</table>
+
+</body>
+</html>
