@@ -1,4 +1,4 @@
-- name: mjbots fdcanusb Rules
+- name: sync all udev Rules
   become: true
   synchronize:
     src: files/rules/

@@ -34,6 +34,9 @@ state_machine/state_log.txt
 /teleoperation/basestation_gui/install/
 /teleoperation/basestation_gui/log/
 
+data/*.png
+data/raw-pano-images
+
 # dev
 .python-version
 system_summary*

@@ -61,7 +61,6 @@
     name:
       - zsh
       - fzf
-      - neovim
       - sudo
       - cmake
       - ccache # Caches intermediate build files, speeds up compilation over time
@@ -100,17 +99,26 @@
       - ros-humble-ros-base
       - ros-humble-rviz2
       - ros-humble-xacro
+      - ros-humble-magic-enum
+      - ros-humble-rtcm-msgs
       # TODO (ali): why does this need to be installed manually
       - libboost-dev
+      - qtbase5-dev
+      - qtmultimedia5-dev
+      - libqt5multimedia5-plugins
+      - python3-pyqt5
 
-- name: Install Local APT Packages
+- name: Build and Install Manif
   become: True
-  apt:
-    state: present
-    deb: "{{ ros2_workspace }}/src/mrover/pkg/{{ item }}"
-  with_items:
-    - libmanif-dev.deb
-    - libdawn-dev.deb
+  command: ./scripts/build_manif.sh
+  args:
+    chdir: "{{ ansible_env.HOME }}/ros2_ws/src/mrover/"
+
+- name: Build and Install Dawn
+  become: True
+  command: ./scripts/build_dawn.sh
+  args:
+    chdir: "{{ ansible_env.HOME }}/ros2_ws/src/mrover/"
 
 - name: Initialize rosdep
   become: True
@@ -205,11 +213,3 @@
   command: ~/.bun/bin/bun install
   args:
     chdir: "{{ ansible_env.HOME }}/ros2_ws/src/mrover/teleoperation/basestation_gui/frontend"
-
-- name: Run Django migrations
-  shell: |
-    source {{ ansible_env.HOME }}/ros2_ws/src/mrover/venv/bin/activate
-    python teleoperation/basestation_gui/manage.py makemigrations
-    python teleoperation/basestation_gui/manage.py migrate
-  args:
-    chdir: "{{ ansible_env.HOME }}/ros2_ws/src/mrover"
