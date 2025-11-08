@@ -157,15 +157,4 @@ export default defineComponent({
 .menu-button:active .button-text {
   animation: glitch 0.3s;
 }
-
-a:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 6px 10px rgba(0, 0, 0, 0.2);
-}
-
-a:active {
-  transform: translateY(0);
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
-
 </style>
