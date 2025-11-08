@@ -33,11 +33,7 @@ urlpatterns = [
     path('teleop/enable/', auton.enable_teleop, name='enable_teleop'),
 
     # Science endpoints
-    path('science/heater/<str:heater_name>/', science.heater_control, name='heater_control'),
     path('science/gear-diff/position/', science.gear_diff_position, name='gear_diff_position'),
-    path('science/auto-shutoff/', science.auto_shutoff, name='auto_shutoff'),
-    path('science/white-leds/<str:site>/', science.white_leds, name='white_leds'),
-    path('science/limit-switch/', science.limit_switch, name='limit_switch'),
 
     # Mast endpoints
     path('mast/panorama/start/', mast.panorama_start, name='panorama_start'),
