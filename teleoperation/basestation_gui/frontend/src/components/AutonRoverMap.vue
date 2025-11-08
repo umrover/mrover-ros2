@@ -111,17 +111,17 @@ const odomPath = ref<L.LatLng[]>([])
 const findRover = ref(false)
 
 const locationIcon = L.icon({
-  iconUrl: 'location_marker_icon.png',
-  iconSize: [40, 40],
-  iconAnchor: [20, 20],
+  iconUrl: '/rover_marker.svg',
+  iconSize: [64, 64],
+  iconAnchor: [32, 32],
 })
 const basestationIcon = L.icon({
-  iconUrl: 'basestation_marker_icon.png',
-  iconSize: [40, 40],
-  iconAnchor: [20, 20],
+  iconUrl: '/basestation_marker.svg',
+  iconSize: [64, 64],
+  iconAnchor: [32, 56],
 })
 const waypointIcon = L.icon({
-  iconUrl: 'map_marker.png',
+  iconUrl: '/waypoint_marker.svg',
   iconSize: [64, 64],
   iconAnchor: [32, 64],
   popupAnchor: [0, -32],

@@ -130,29 +130,29 @@ const findRover = ref(false)
 const circle = ref<L.Circle | null>(null)
 
 const locationIcon = L.icon({
-  iconUrl: '/location_marker_icon.png',
+  iconUrl: '/rover_marker.svg',
   iconSize: [64, 64],
   iconAnchor: [32, 32],
 })
 const droneIcon = L.icon({
-  iconUrl: '/drone_icon_1.png',
+  iconUrl: '/drone_marker.svg',
   iconSize: [64, 64],
   iconAnchor: [32, 32],
 })
 const waypointIcon = L.icon({
-  iconUrl: '/map_marker.png',
+  iconUrl: '/waypoint_marker.svg',
   iconSize: [64, 64],
   iconAnchor: [32, 64],
   popupAnchor: [0, -32],
 })
 const droneWaypointIcon = L.icon({
-  iconUrl: '/map_marker_drone.png',
+  iconUrl: '/waypoint_marker_drone.svg',
   iconSize: [64, 64],
   iconAnchor: [32, 64],
   popupAnchor: [0, -32],
 })
 const highlightedWaypointIcon = L.icon({
-  iconUrl: '/map_marker_highlighted.png',
+  iconUrl: '/waypoint_marker_highlighted.svg',
   iconSize: [64, 64],
   iconAnchor: [32, 64],
   popupAnchor: [0, -32],

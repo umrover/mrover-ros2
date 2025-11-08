@@ -23,6 +23,7 @@ urlpatterns = [
 
     path('recordings/', waypoints.recordings_list, name='recordings_list'),
     path('recordings/create/', waypoints.recording_create, name='recording_create'),
+    path('recordings/stop/', waypoints.recording_stop, name='recording_stop'),
     path('recordings/clear/', waypoints.recordings_clear, name='recordings_clear'),
     path('recordings/<int:recording_id>/', waypoints.recording_delete, name='recording_delete'),
     path('recordings/<int:recording_id>/waypoints/', waypoints.recording_waypoints, name='recording_waypoints'),

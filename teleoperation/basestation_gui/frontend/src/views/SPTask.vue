@@ -18,7 +18,7 @@
         class="rounded border border-2 p-2 flex-fill"
       />
     </div>
-    <div class="island p-3 rounded waypoints">
+    <div class="island p-1 rounded waypoints">
       <BasicWaypointEditor />
     </div>
     <div class="island p-2 rounded controls d-flex gap-2">

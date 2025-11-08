@@ -6,8 +6,6 @@ from backend.consumers.mast_consumer import MastConsumer
 from backend.consumers.nav_consumer import NavConsumer
 from backend.consumers.science_consumer import ScienceConsumer
 
-# FOR CONSUMER TOPICS/SERVICES LOOKUP, SEE https://github.com/umrover/mrover-ros2/wiki/Teleop-Consumers-Lookup
-
 websocket_urlpatterns = [
     path("ws/arm", ArmConsumer.as_asgi()),
     path("ws/drive", DriveConsumer.as_asgi()),

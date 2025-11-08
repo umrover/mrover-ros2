@@ -22,6 +22,7 @@ from backend.waypoints import (
     clear_all_basic_waypoints,
     clear_all_recordings,
 )
+from backend.recording_manager import get_recording_manager
 
 
 @api_view(['GET'])
@@ -164,8 +165,31 @@ def recording_create(request):
             return Response({'status': 'error', 'message': 'name is required'},
                            status=status.HTTP_400_BAD_REQUEST)
 
-        recording_id = create_recording(name, is_drone)
+        manager = get_recording_manager()
+        recording_id = manager.start_recording(name, is_drone)
         return Response({'status': 'success', 'recording_id': recording_id})
+    except ValueError as e:
+        return Response({'status': 'error', 'message': str(e)},
+                       status=status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
+        return Response({'status': 'error', 'message': str(e)},
+                       status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@csrf_exempt
+@api_view(['POST'])
+def recording_stop(request):
+    try:
+        manager = get_recording_manager()
+        result = manager.stop_recording()
+        return Response({
+            'status': 'success',
+            'recording_id': result['recording_id'],
+            'waypoint_count': result['waypoint_count']
+        })
+    except ValueError as e:
+        return Response({'status': 'error', 'message': str(e)},
+                       status=status.HTTP_400_BAD_REQUEST)
     except Exception as e:
         return Response({'status': 'error', 'message': str(e)},
                        status=status.HTTP_500_INTERNAL_SERVER_ERROR)

@@ -65,6 +65,7 @@ export default defineComponent({
       nav: 'nav',
       science: 'sci',
       waypoints: 'wypt',
+      recording: 'rec',
     }
 
     const getAlias = (id: string): string => {
