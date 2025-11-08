@@ -64,6 +64,7 @@ class Navigation(Node):
                 ("drive.turning_p", Parameter.Type.DOUBLE),
                 ("drive.driving_p", Parameter.Type.DOUBLE),
                 ("drive.lookahead_distance", Parameter.Type.DOUBLE),
+                ("drive.use_pure_pursuit", Parameter.Type.BOOL),
                 # Waypoint
                 ("waypoint.stop_threshold", Parameter.Type.DOUBLE),
                 ("waypoint.drive_forward_threshold", Parameter.Type.DOUBLE),

@@ -292,6 +292,11 @@ class DriveController:
         # Compute intersection points with the path
         intersection_points = self.compute_intersection_point(waypoints, rover_pos, lookahead_dist)
 
+        # TODO(Brendan): What do you want to do if there are no intersection points
+        # Placeholder
+        if(intersection_points is None):
+            return (Twist(), False)
+
         # Display markers for intersection points and lookahead dist
         self.display_markers(rover_pos, lookahead_dist, intersection_points)
 
@@ -384,9 +389,10 @@ class DriveController:
             )
             return cmd_vel, False
 
+    @staticmethod
     def determine_next_point(
         waypoints: Trajectory,
-        intersections: np.ndarry,
+        intersections: np.ndarray,
     ) -> np.ndarray:
         # A helper function for pure pursuit 
         # Determines what intersection is the best to follow
@@ -411,8 +417,9 @@ class DriveController:
             target_pos[0] = intersections[1][0]
             target_pos[1] = intersections[1][1]
 
-        return target_pos
+        return np.array(target_pos)
 
+    @staticmethod
     def set_farthest_path_point(
         waypoints: Trajectory,
         rover_pos: np.ndarray,
@@ -431,7 +438,8 @@ class DriveController:
             waypoints.increment_point()
 
             # Check if the next point is valid
-            if (lookahead_dist < np.linalg.norm(waypoints.get_current_point, rover_pos)):
+            next_point: np.ndarray = waypoints.get_current_point();
+            if (lookahead_dist < np.linalg.norm(next_point - rover_pos)):
                 stop_incrementing = True
 
         if stop_incrementing or waypoints.done():
@@ -516,7 +524,7 @@ class DriveController:
         if (valid_intersection_2):
             intersections.append(intersection_2)
 
-        return intersections
+        return np.array(intersections)
 
     def display_markers(
         self,
@@ -524,22 +532,22 @@ class DriveController:
         lookahead_dist: float,
         intersection_points: np.ndarray,
     ):
-        for i in len(intersection_points):
-            self.lookahead_pub.publish(
+        for i, point in enumerate(intersection_points):
+            self.intersection_pub.publish(
                 gen_marker(
                     time=self.node.get_clock().now(),
-                    point=intersection_points[i],
+                    point=point,
                     color=[0.0, 1.0, 0.0],
                     id=i,
                     lifetime=self.node.get_parameter("pub_lookahead_rate").value,
                 )
             )
-        self.marker_pub.publish(
+        self.intersection_pub.publish(
             ring_marker(
                 time=self.node.get_clock().now(),
                 point=rover_pos,
                 color=[1.0, 0.0, 0.0],
-                id=0,
+                id=len(intersection_points) + 1,
                 lifetime=self.node.get_parameter("pub_lookahead_rate").value,
                 radius=lookahead_dist,
             )
