@@ -150,9 +150,6 @@ message(STATUS "Found message files: ${MROVER_MESSAGE_FILE_PATHS}")
 file(GLOB_RECURSE MROVER_SERVICE_FILE_PATHS RELATIVE ${CMAKE_CURRENT_LIST_DIR} CONFIGURE_DEPENDS srv/*.srv)
 message(STATUS "Found service files: ${MROVER_SERVICE_FILE_PATHS}")
 
-file(GLOB_RECURSE MROVER_ACTION_FILE_PATHS RELATIVE ${CMAKE_CURRENT_LIST_DIR} CONFIGURE_DEPENDS action/*.action)
-message(STATUS "Found action files: ${MROVER_ACTION_FILE_PATHS}")
-
 # Starter Project
 message(STATUS "PROJ NAME: ${PROJECT_NAME}")
 
@@ -169,7 +166,6 @@ message(STATUS "Found message files: ${MROVER_MESSAGE_FILE_PATHS}")
 rosidl_generate_interfaces(${PROJECT_NAME}
     ${MROVER_MESSAGE_FILE_PATHS}
     ${MROVER_SERVICE_FILE_PATHS}
-    ${MROVER_ACTION_FILE_PATHS}
     DEPENDENCIES nav_msgs sensor_msgs geometry_msgs
 )
 
@@ -397,9 +393,10 @@ install(PROGRAMS
     scripts/custom_costmap.py
     scripts/visualizer.py
     scripts/image_capture.py
+    scripts/ik_testing.py
     teleoperation/basestation_gui/gui_frontend.sh
     teleoperation/basestation_gui/gui_backend.sh
-    scripts/ik_testing.py
+    teleoperation/basestation_gui/gui_chromium.sh
 
     # starter project sources
     starter_project/autonomy/src/localization.py
