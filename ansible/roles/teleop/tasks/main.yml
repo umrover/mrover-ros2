@@ -1,0 +1,47 @@
+- name: Install or Upgrade Bun
+  shell: curl -fsSL https://bun.sh/install | bash
+  args:
+    executable: /bin/bash
+  environment:
+    BUN_INSTALL: "{{ ansible_env.HOME }}/.bun"
+
+- name: Install Bun Packages
+  command: ~/.bun/bin/bun install
+  args:
+    chdir: "{{ ansible_env.HOME }}/ros2_ws/src/mrover/teleoperation/basestation_gui/frontend"
+
+- name: Check if manifpy is installed
+  shell: python3 -c "import manifpy"
+  register: manifpy_check
+  failed_when: false
+  changed_when: false
+
+- name: Clone manif repository
+  become: false
+  git:
+    repo: https://github.com/artivis/manif.git
+    dest: "{{ ansible_env.HOME }}/manif"
+    update: no
+  when: manifpy_check.rc != 0
+
+- name: Install manifpy
+  pip:
+    name: .
+    chdir: "{{ ansible_env.HOME }}/manif"
+    extra_args: "--target={{ ansible_env.HOME }}/ros2_ws/install/mrover/lib/python3.10/site-packages"
+  when: manifpy_check.rc != 0
+
+- name: Initialize manif submodule in mrover
+  become: false
+  shell: git submodule update --init deps/manif
+  args:
+    chdir: "{{ ros2_workspace }}/src/mrover"
+
+- name: Run Django migrations
+  shell: |
+    source {{ ansible_env.HOME }}/ros2_ws/src/mrover/venv/bin/activate
+    python teleoperation/basestation_gui/manage.py makemigrations
+    python teleoperation/basestation_gui/manage.py migrate
+  args:
+    chdir: "{{ ansible_env.HOME }}/ros2_ws/src/mrover"
+    executable: /bin/bash
