@@ -8,11 +8,15 @@ from rosidl_runtime_py.convert import message_to_ordereddict
 from rclpy.qos import qos_profile_sensor_data
 
 from backend.consumers.ros_manager import get_node
-from sensor_msgs.msg import Temperature, RelativeHumidity
+from backend.sp_controls import send_sp_controls
+from backend.input import DeviceInputs
+from sensor_msgs.msg import Temperature, RelativeHumidity, JointState
 from mrover.msg import (
     LED,
     Oxygen,
     UV,
+    Throttle,
+    ControllerState,
 )
 from std_msgs.msg import Float32
 
@@ -24,12 +28,15 @@ class ScienceConsumer(AsyncJsonWebsocketConsumer):
         self.subscribers = []
         self.timers = []
 
+        self.sp_thr_pub = self.node.create_publisher(Throttle, "/sp_throttle_cmd", 1)
+
         await self.forward_ros_topic("/led", LED, "led")
         await self.forward_ros_topic("/science_oxygen_data", Oxygen, "oxygen")
         await self.forward_ros_topic("/science_uv_data", UV, "uv")
         await self.forward_ros_topic("/science_temperature_data", Temperature, "temperature")
         await self.forward_ros_topic("/science_humidity_data", RelativeHumidity, "humidity")
-        await self.forward_ros_topic("/sa_gear_diff_position", Float32, "hexhub_site")
+        await self.forward_ros_topic("/sp_joint_state", JointState, "sp_joint_state")
+        await self.forward_ros_topic("/sp_controller_state", ControllerState, "sp_state") # not used yet
 
     async def disconnect(self, close_code) -> None:
         """
@@ -70,6 +77,18 @@ class ScienceConsumer(AsyncJsonWebsocketConsumer):
         self.subscribers.append(sub)
 
     async def receive_json(self, content: dict, **kwargs) -> None:
-        # Science consumer now only subscribes to topics for data streaming
-        # All service calls have been migrated to REST API (science.py)
-        self.node.get_logger().warning(f"Science WebSocket received unexpected message: {content}")
+        try:
+            match content:
+                case {
+                    "type": "sp_controller",
+                    "axes": axes,
+                    "buttons": buttons,
+                }:
+                    device_input = DeviceInputs(axes, buttons)
+                    send_sp_controls(device_input, self.sp_thr_pub)
+
+                case _:
+                    self.node.get_logger().warning(f"Science WebSocket received unexpected message: {content}")
+        except Exception:
+            self.node.get_logger().error(f"Failed to handle message: {content}")
+            self.node.get_logger().error(traceback.format_exc())

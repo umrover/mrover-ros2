@@ -16,9 +16,15 @@ class FakeControllerStatePublisher(Node):
             10
         )
 
-        self.drive_publisher = self.create_publisher(
+        self.drive_left_publisher = self.create_publisher(
             ControllerState,
-            "/drive_controller_data",
+            "/drive_left_controller_data",
+            10
+        )
+
+        self.drive_right_publisher = self.create_publisher(
+            ControllerState,
+            "/drive_right_controller_data",
             10
         )
 
@@ -33,14 +39,21 @@ class FakeControllerStatePublisher(Node):
         arm_msg.error = ["", "", "", "Encoder fault"]
         arm_msg.limit_hit = [0, 1, 0, 3]
 
-        drive_msg = ControllerState()
-        drive_msg.name = ["FL", "FR", "ML", "MR", "BL", "BR"]
-        drive_msg.state = ["Armed", "Armed", "Armed", "Armed", "Armed", "Armed"]
-        drive_msg.error = ["", "", "", "", "", ""]
-        drive_msg.limit_hit = [0, 0, 0, 0, 0, 0]
+        drive_left_msg = ControllerState()
+        drive_left_msg.name = ["front_left", "middle_left", "back_left"]
+        drive_left_msg.state = ["Armed", "Armed", "Armed"]
+        drive_left_msg.error = ["", "", ""]
+        drive_left_msg.limit_hit = [0, 0, 0]
+
+        drive_right_msg = ControllerState()
+        drive_right_msg.name = ["front_right", "middle_right", "back_right"]
+        drive_right_msg.state = ["Armed", "Armed", "Armed"]
+        drive_right_msg.error = ["", "", ""]
+        drive_right_msg.limit_hit = [0, 0, 0]
 
         self.arm_publisher.publish(arm_msg)
-        self.drive_publisher.publish(drive_msg)
+        self.drive_left_publisher.publish(drive_left_msg)
+        self.drive_right_publisher.publish(drive_right_msg)
 
 
 def main(args=None):

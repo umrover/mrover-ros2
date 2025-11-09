@@ -83,15 +83,24 @@ onMounted(() => {
     gamepadConnected.value = !!gamepad
     if (!gamepad) return
 
+    const controllerData = {
+      axes: gamepad.axes,
+      buttons: gamepad.buttons.map(button => button.value)
+    }
+
     websocketStore.sendMessage('arm', {
       type: 'ra_controller',
-      axes: gamepad.axes,
-      buttons: gamepad.buttons.map(button => button.value),
+      ...controllerData
     })
 
     websocketStore.sendMessage('arm', {
       type: 'ra_mode',
       mode: mode.value,
+    })
+
+    websocketStore.sendMessage('drive', {
+      type: 'controller',
+      ...controllerData
     })
   }, 1000 / UPDATE_HZ)
 })

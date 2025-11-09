@@ -17,5 +17,14 @@ export const mastAPI = {
       headers: { 'Content-Type': 'application/json' }
     })
     return response.json()
+  },
+
+  async adjustGimbal(joint: 'pitch' | 'yaw', adjustment: number, absolute: boolean = false): Promise<APIResponse> {
+    const response = await fetch(`${API_BASE}/mast/gimbal/adjust/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ joint, adjustment, absolute })
+    })
+    return response.json()
   }
 }

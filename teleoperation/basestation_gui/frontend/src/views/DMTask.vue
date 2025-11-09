@@ -12,7 +12,8 @@
       </div>
       <div class='island p-2 rounded d-flex gap-2' style="flex: 0 0 auto;">
         <ControllerDataTable class="flex-fill" msg-type='arm_state' header='Arm States' />
-        <ControllerDataTable class="flex-fill" msg-type='drive_state' header='Drive States' />
+        <ControllerDataTable class="flex-fill" msg-type='drive_left_state' header='Drive Left' />
+        <ControllerDataTable class="flex-fill" msg-type='drive_right_state' header='Drive Right' />
       </div>
     </div>
     <div class="right-column d-flex flex-column gap-2">

@@ -61,6 +61,7 @@ const limits = ref<boolean[]>([])
 
 const armMessage = computed(() => messages.value['arm'])
 const driveMessage = computed(() => messages.value['drive'])
+const scienceMessage = computed(() => messages.value['science'])
 
 watch(armMessage, (msg) => {
   if (msg && (msg as ControllerStateMessage).type == props.msgType) {
@@ -73,6 +74,16 @@ watch(armMessage, (msg) => {
 })
 
 watch(driveMessage, (msg) => {
+  if (msg && (msg as ControllerStateMessage).type == props.msgType) {
+    const controllerMsg = msg as ControllerStateMessage;
+    name.value = controllerMsg.name
+    state.value = controllerMsg.state
+    error.value = controllerMsg.error
+    limits.value = controllerMsg.limit_hit
+  }
+})
+
+watch(scienceMessage, (msg) => {
   if (msg && (msg as ControllerStateMessage).type == props.msgType) {
     const controllerMsg = msg as ControllerStateMessage;
     name.value = controllerMsg.name

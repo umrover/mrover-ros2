@@ -5,10 +5,11 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
 from backend.consumers.ros_manager import get_node
-from mrover.srv import PanoramaStart, PanoramaEnd
+from mrover.srv import PanoramaStart, PanoramaEnd, ServoSetPos
 import numpy as np
 import cv2
 import time
+import math
 
 
 def _call_service_sync(client, request, timeout=10.0):
@@ -84,6 +85,53 @@ def panorama_stop(request):
             'status': 'success',
             'image_path': filename,
             'timestamp': timestamp
+        })
+
+    except Exception as e:
+        return Response({'status': 'error', 'message': str(e)},
+                       status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@csrf_exempt
+@api_view(['POST'])
+def gimbal_adjust(request):
+    """Adjust gimbal position by delta or set absolute position"""
+    try:
+        joint = request.data.get('joint')
+        adjustment = request.data.get('adjustment')
+        absolute = request.data.get('absolute', False)
+
+        if not joint or adjustment is None:
+            return Response({'status': 'error', 'message': 'Missing joint or adjustment parameter'},
+                           status=status.HTTP_400_BAD_REQUEST)
+
+        if joint not in ['pitch', 'yaw']:
+            return Response({'status': 'error', 'message': 'Joint must be pitch or yaw'},
+                           status=status.HTTP_400_BAD_REQUEST)
+
+        adjustment_rad = math.radians(float(adjustment))
+
+        node = get_node()
+        gimbal_srv = node.create_client(ServoSetPos, "/gimbal_set_position")
+
+        gimbal_request = ServoSetPos.Request()
+        gimbal_request.position = adjustment_rad
+        gimbal_request.is_counterclockwise = adjustment_rad < 0 if not absolute else False
+
+        result = _call_service_sync(gimbal_srv, gimbal_request)
+
+        if result is None:
+            return Response({'status': 'error', 'message': 'Service call failed'},
+                           status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        if not result.success:
+            return Response({'status': 'error', 'message': 'Gimbal adjustment failed'},
+                           status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        return Response({
+            'status': 'success',
+            'joint': joint,
+            'adjustment': adjustment
         })
 
     except Exception as e:

@@ -18,11 +18,19 @@ export interface RootState {
 }
 
 export interface ControllerStateMessage {
-  type: 'drive_state' | 'sa_state';
+  type: 'arm_state' | 'sp_state' | 'drive_left_state' | 'drive_right_state';
   name: string[];
   state: string[];
   error: string[];
   limit_hit: boolean[];
+}
+
+export interface JointStateMessage {
+  type: 'drive_left_joint_state' | 'drive_right_joint_state' | 'gimbal_joint_state';
+  name: string[];
+  position: number[];
+  velocity: number[];
+  effort: number[];
 }
 
 export interface OrientationMessage {

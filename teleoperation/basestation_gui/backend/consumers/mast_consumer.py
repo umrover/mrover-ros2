@@ -9,9 +9,7 @@ from rosidl_runtime_py.convert import message_to_ordereddict
 from rclpy.qos import qos_profile_sensor_data
 
 from backend.consumers.ros_manager import get_node
-from backend.input import DeviceInputs
-from backend.mast_controls import send_mast_controls
-from mrover.msg import Throttle
+from sensor_msgs.msg import JointState
 
 
 class MastConsumer(AsyncJsonWebsocketConsumer):
@@ -22,7 +20,7 @@ class MastConsumer(AsyncJsonWebsocketConsumer):
         self.subscribers = []
         self.timers = []
 
-        self.mast_gimbal_pub = self.node.create_publisher(Throttle, "/mast_gimbal_throttle_cmd", 1)
+        await self.forward_ros_topic("/gimbal_joint_state", JointState, "gimbal_joint_state")
 
     async def disconnect(self, close_code) -> None:
         """
@@ -63,19 +61,4 @@ class MastConsumer(AsyncJsonWebsocketConsumer):
         self.subscribers.append(sub)
 
     async def receive_json(self, content: dict, **kwargs) -> None:
-        try:
-            match content:
-                case {
-                    "type": "mast_keyboard",
-                    "axes": axes,
-                    "buttons": buttons,
-                }:
-                    device_input = DeviceInputs(axes, buttons)
-                    send_mast_controls(device_input, self.mast_gimbal_pub)
-
-                case _:
-                    # Panorama service calls migrated to REST API (mast.py)
-                    self.node.get_logger().warning(f"Unhandled message on mast: {content}")
-        except Exception:
-            self.node.get_logger().error(f"Failed to handle message: {content}")
-            self.node.get_logger().error(traceback.format_exc())
+        self.node.get_logger().warning(f"Mast consumer received unexpected message: {content}")

@@ -38,4 +38,5 @@ urlpatterns = [
     # Mast endpoints
     path('mast/panorama/start/', mast.panorama_start, name='panorama_start'),
     path('mast/panorama/stop/', mast.panorama_stop, name='panorama_stop'),
+    path('mast/gimbal/adjust/', mast.gimbal_adjust, name='gimbal_adjust'),
 ]

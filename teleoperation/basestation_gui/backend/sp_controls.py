@@ -64,10 +64,10 @@ def compute_manual_joint_controls(controller: DeviceInputs) -> list[float]:
     ]
 
 
-def send_sa_controls(inputs: DeviceInputs, sa_thr_pub: Publisher) -> None:
+def send_sp_controls(inputs: DeviceInputs, sp_thr_pub: Publisher) -> None:
     throttle_msg = Throttle()
     manual_controls = compute_manual_joint_controls(inputs)
     joint_names, throttle_values = subset(JOINT_NAMES, manual_controls, set(Joint))
     throttle_msg.names = joint_names
     throttle_msg.throttles = throttle_values
-    sa_thr_pub.publish(throttle_msg)
+    sp_thr_pub.publish(throttle_msg)

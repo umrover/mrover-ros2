@@ -8,10 +8,11 @@ from rosidl_runtime_py.convert import message_to_ordereddict
 from rclpy.qos import qos_profile_sensor_data
 
 from backend.consumers.ros_manager import get_node
-from backend.drive_controls import send_joystick_twist
+from backend.drive_controls import send_joystick_twist, send_controller_twist
 from backend.input import DeviceInputs
 from mrover.msg import ControllerState
 from geometry_msgs.msg import Twist
+from sensor_msgs.msg import JointState
 
 
 class DriveConsumer(AsyncJsonWebsocketConsumer):
@@ -23,10 +24,12 @@ class DriveConsumer(AsyncJsonWebsocketConsumer):
         self.timers = []
 
         self.joystick_twist_pub = self.node.create_publisher(Twist, "/joystick_cmd_vel", 1)
+        self.controller_twist_pub = self.node.create_publisher(Twist, "/controller_cmd_vel", 1)
 
         await self.forward_ros_topic("/drive_left_controller_data", ControllerState, "drive_left_state")
         await self.forward_ros_topic("/drive_right_controller_data", ControllerState, "drive_right_state")
-        await self.forward_ros_topic("/drive_controller_data", ControllerState, "drive_state")
+        await self.forward_ros_topic("/drive_left_joint_data", JointState, "drive_left_joint_state")
+        await self.forward_ros_topic("/drive_right_joint_data", JointState, "drive_right_joint_state")
 
     async def disconnect(self, close_code) -> None:
         """
@@ -76,6 +79,14 @@ class DriveConsumer(AsyncJsonWebsocketConsumer):
                 }:
                     device_input = DeviceInputs(axes, buttons)
                     send_joystick_twist(device_input, self.joystick_twist_pub)
+
+                case {
+                    "type": "controller",
+                    "axes": axes,
+                    "buttons": buttons
+                }:
+                    device_input = DeviceInputs(axes, buttons)
+                    send_controller_twist(device_input, self.controller_twist_pub)
 
                 case _:
                     self.node.get_logger().warning(f"Unhandled message on drive: {content}")

@@ -8,7 +8,8 @@
     </div>
     <div class="island p-2 rounded controller_state d-flex flex-column gap-2">
       <ControllerDataTable msg-type="arm_state" header="Arm States" />
-      <ControllerDataTable msg-type="drive_state" header="Drive States" />
+      <ControllerDataTable msg-type="drive_left_state" header="Drive Left" />
+      <ControllerDataTable msg-type="drive_right_state" header="Drive Right" />
     </div>
     <div class="island p-2 rounded auton-typing">
       <AutonTyping />

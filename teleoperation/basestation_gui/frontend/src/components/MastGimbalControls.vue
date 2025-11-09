@@ -1,69 +1,54 @@
 <template>
-  <div class='wrap'>
-    <div v-show='false' id='key'>
-      <input @keydown='keyMonitorDown' />
-      <input @keyup='keyMonitorUp' />
+  <div class='d-flex flex-column gap-2 p-2 border border-2 rounded'>
+    <h5 class="m-0">Gimbal Controls</h5>
+
+    <div class="d-flex flex-column gap-1">
+      <div class="fw-bold small">Pitch:</div>
+      <div class="btn-group btn-group-sm">
+        <button class="btn btn-outline-primary" @click="adjustGimbal('pitch', -10)">-10°</button>
+        <button class="btn btn-outline-primary" @click="adjustGimbal('pitch', -5)">-5°</button>
+        <button class="btn btn-outline-primary" @click="adjustGimbal('pitch', 5)">+5°</button>
+        <button class="btn btn-outline-primary" @click="adjustGimbal('pitch', 10)">+10°</button>
+      </div>
+    </div>
+
+    <div class="d-flex flex-column gap-1">
+      <div class="fw-bold small">Yaw:</div>
+      <div class="btn-group btn-group-sm">
+        <button class="btn btn-outline-primary" @click="adjustGimbal('yaw', -10)">-10°</button>
+        <button class="btn btn-outline-primary" @click="adjustGimbal('yaw', -5)">-5°</button>
+        <button class="btn btn-outline-primary" @click="adjustGimbal('yaw', 5)">+5°</button>
+        <button class="btn btn-outline-primary" @click="adjustGimbal('yaw', 10)">+10°</button>
+      </div>
+    </div>
+
+    <div class="d-flex flex-column gap-1">
+      <div class="fw-bold small">Pitch Presets:</div>
+      <div class="btn-group btn-group-sm">
+        <button class="btn btn-outline-success" @click="setAbsolute('pitch', -30)">Up</button>
+        <button class="btn btn-outline-success" @click="setAbsolute('pitch', 0)">Forward</button>
+        <button class="btn btn-outline-success" @click="setAbsolute('pitch', 45)">Down</button>
+      </div>
     </div>
   </div>
 </template>
 
 <script lang='ts' setup>
-import { ref, onMounted, onBeforeUnmount } from 'vue'
-import { useWebsocketStore } from '@/stores/websocket'
+import { mastAPI } from '@/utils/mastAPI'
 
-const websocketStore = useWebsocketStore()
-
-const mappings: { [key: string]: number } = {
-  w: 0,
-  a: 1,
-  s: 2,
-  d: 3
-}
-const keys = ref(Array(4).fill(0))
-
-let interval: number | undefined = undefined
-
-const UPDATE_HZ = 20
-
-const keyMonitorDown = (event: { key: string }) => {
-  const index = mappings[event.key.toLowerCase()]
-  if (index === undefined) return
-
-  keys.value[index] = 1
+const adjustGimbal = async (joint: 'pitch' | 'yaw', adjustment: number) => {
+  try {
+    await mastAPI.adjustGimbal(joint, adjustment, false)
+  } catch (error) {
+    console.error('Failed to adjust gimbal:', error)
+  }
 }
 
-const keyMonitorUp = (event: { key: string }) => {
-  const index = mappings[event.key.toLowerCase()]
-  if (index === undefined) return
-
-  keys.value[index] = 0
+const setAbsolute = async (joint: 'pitch' | 'yaw', position: number) => {
+  try {
+    await mastAPI.adjustGimbal(joint, position, true)
+  } catch (error) {
+    console.error('Failed to set gimbal position:', error)
+  }
 }
-
-const publish = () => {
-  websocketStore.sendMessage('mast', {
-    type: 'mast_keyboard',
-    axes: [],
-    buttons: keys.value
-  })
-}
-
-onMounted(() => {
-  document.addEventListener('keydown', keyMonitorDown)
-  document.addEventListener('keyup', keyMonitorUp)
-  interval = window.setInterval(() => {
-    publish()
-  }, 1000 / UPDATE_HZ)
-})
-
-onBeforeUnmount(() => {
-  window.clearInterval(interval)
-  document.removeEventListener('keyup', keyMonitorUp)
-  document.removeEventListener('keydown', keyMonitorDown)
-})
 </script>
-
-<style scoped>
-.wrap {
-  display: none;
-}
-</style>

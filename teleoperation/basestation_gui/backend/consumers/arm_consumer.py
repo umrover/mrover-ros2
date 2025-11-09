@@ -12,16 +12,16 @@ from rclpy.qos import qos_profile_sensor_data
 # Use the centralized ROS manager
 from backend.consumers.ros_manager import get_node
 
-from backend.drive_controls import send_controller_twist
 from backend.input import DeviceInputs
 from backend.ra_controls import send_ra_controls
-from backend.sa_controls import send_sa_controls
-from geometry_msgs.msg import Twist, PoseStamped
+from geometry_msgs.msg import PoseStamped
 from sensor_msgs.msg import JointState
 from mrover.msg import (
     Throttle,
     IK,
     ControllerState,
+    Position,
+    Velocity,
 )
 
 class ArmConsumer(AsyncJsonWebsocketConsumer):
@@ -41,15 +41,12 @@ class ArmConsumer(AsyncJsonWebsocketConsumer):
         self.buffer = {} # Assuming this was intended to be an instance buffer
 
         # Topic Publishers are created once per connection
-        self.thr_pub = self.node.create_publisher(Throttle, "arm_throttle_cmd", 1)
-        self.ee_pos_pub = self.node.create_publisher(IK, "ee_pos_cmd", 1)
-        self.ee_vel_pub = self.node.create_publisher(Twist, "ee_vel_cmd", 1)
-        self.controller_twist_pub = self.node.create_publisher(Twist, "/controller_cmd_vel", 1)
-        self.sa_thr_pub = self.node.create_publisher(Throttle, "sa_throttle_cmd", 1)
+        self.arm_thr_pub = self.node.create_publisher(Throttle, "arm_throttle_cmd", 1)
+        self.arm_pos_pub = self.node.create_publisher(Position, "/arm_position_cmd", 1)
+        self.arm_vel_pub = self.node.create_publisher(Velocity, "/arm_velocity_cmd", 1)
 
         # Forwards ROS topic to GUI
         await self.forward_ros_topic("/arm_controller_state", ControllerState, "arm_state")
-        await self.forward_ros_topic("/sa_controller_state", ControllerState, "sa_state")
         await self.forward_ros_topic("/arm_joint_data", JointState, "fk")
         await self.forward_ros_topic("/arm_ik", IK, "ik_target")
 
@@ -104,27 +101,18 @@ class ArmConsumer(AsyncJsonWebsocketConsumer):
                     "buttons": buttons,
                 }:
                     device_input = DeviceInputs(axes, buttons)
-                    send_controller_twist(device_input, self.controller_twist_pub)
                     send_ra_controls(
                         self.cur_ra_mode, # FIX: Use instance variable
                         device_input,
                         self.node,
-                        self.thr_pub,
-                        self.ee_pos_pub,
-                        self.ee_vel_pub,
+                        self.arm_thr_pub,
+                        self.arm_pos_pub,
+                        self.arm_vel_pub,
                         self.buffer,
                     )
 
                 case { "type": "ra_mode", "mode": ra_mode }:
                     self.cur_ra_mode = ra_mode # FIX: Use instance variable
-
-                case {
-                    "type": "sa_controller",
-                    "axes": axes,
-                    "buttons": buttons,
-                }:
-                    device_input = DeviceInputs(axes, buttons)
-                    send_sa_controls(device_input, self.sa_thr_pub)
 
                 case _:
                     self.node.get_logger().warning(f"Unhandled message on arm: {content}")

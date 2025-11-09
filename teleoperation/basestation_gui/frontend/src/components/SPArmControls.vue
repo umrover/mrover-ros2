@@ -1,7 +1,7 @@
 <template>
   <div class="wrap flex-column justify-content-between">
     <div class="d-flex justify-content-between align-items-center w-100">
-      <h3 class="m-0 p-0">SA Arm Controls</h3>
+      <h3 class="m-0 p-0">SP Arm Controls</h3>
       <div
         class="rounded-circle me-2"
         :class="controllerConnected ? 'bg-success' : 'bg-danger'"
@@ -33,8 +33,8 @@ onMounted(() => {
     gamepadConnected.value = !!gamepad
     if (!gamepad) return
 
-    websocketStore.sendMessage('arm', {
-      type: 'sa_controller',
+    websocketStore.sendMessage('science', {
+      type: 'sp_controller',
       axes: gamepad.axes,
       buttons: gamepad.buttons.map(button => button.value),
     })
