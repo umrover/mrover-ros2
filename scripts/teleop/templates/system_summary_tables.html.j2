@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Teleoperation System Tables</title>
+<style>
+body { font-family: Arial, sans-serif; padding: 20px; }
+table { border-collapse: collapse; width: auto; margin-bottom: 20px; font-size: 9px; table-layout: auto; }
+th { background-color: #1a73e8; color: white; padding: 2px 6px; text-align: left; border: 1px solid #ddd; white-space: nowrap; line-height: 1.1; }
+td { padding: 2px 6px; border: 1px solid #ddd; vertical-align: top; height: auto; line-height: 1.1; }
+tr { height: auto; }
+tr:nth-child(even) { background-color: #f2f2f2; }
+.table-title { background-color: #1a73e8; color: white; font-weight: bold; text-align: center; padding: 3px 6px; font-size: 10px; line-height: 1.1; }
+</style>
+</head>
+<body>
+<h1>Teleoperation ROS Stack System Summary</h1>
+
+<table>
+<tr><th colspan="4" class="table-title">System Status Overview</th></tr>
+<tr><th>System</th><th>Status</th><th>Consumer</th><th>REST API</th></tr>
+{% for name in ['arm', 'drive', 'science', 'mast', 'auton', 'nav', 'waypoints'] -%}
+{% if name in systems -%}
+{% set sys = systems[name] -%}
+<tr><td>{{ sys.name }}</td><td>{{ sys.status }}</td><td>{{ sys.consumer if sys.consumer else "-" }}</td><td>{{ sys.rest_api if sys.rest_api else "-" }}</td></tr>
+{% endif -%}
+{% endfor %}
+</table>
+
+{% for name in ['arm', 'drive', 'science', 'mast', 'auton', 'nav'] -%}
+{% if name in systems -%}
+{% set sys = systems[name] -%}
+
+{% if sys.published_topics %}
+<table>
+<tr><th colspan="3" class="table-title">{{ sys.name }} - Published Topics</th></tr>
+<tr><th>Topic</th><th>Type</th><th>Declaration</th></tr>
+{% for topic in sys.published_topics -%}
+<tr><td>{{ topic.name }}</td><td>{{ topic.msg_type }}</td><td>{{ topic.declaration }}</td></tr>
+{% endfor %}
+</table>
+{% endif %}
+
+{% if sys.subscribed_topics %}
+<table>
+<tr><th colspan="3" class="table-title">{{ sys.name }} - Subscribed Topics</th></tr>
+<tr><th>Topic</th><th>Type</th><th>Declaration</th></tr>
+{% for topic in sys.subscribed_topics -%}
+<tr><td>{{ topic.name }}</td><td>{{ topic.msg_type }}</td><td>{{ topic.declaration }}</td></tr>
+{% endfor %}
+</table>
+{% endif %}
+
+{% if sys.services %}
+<table>
+<tr><th colspan="4" class="table-title">{{ sys.name }} - Services (REST API)</th></tr>
+<tr><th>Service</th><th>Type</th><th>Request</th><th>Response</th></tr>
+{% for service in sys.services -%}
+<tr><td>{{ service.name }}</td><td>{{ service.srv_type }}</td><td>{{ service.request }}</td><td>{{ service.response }}</td></tr>
+{% endfor %}
+</table>
+{% endif %}
+
+{% endif -%}
+{% endfor %}
+</body>
+</html>
