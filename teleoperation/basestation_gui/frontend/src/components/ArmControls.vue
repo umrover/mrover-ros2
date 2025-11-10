@@ -1,8 +1,8 @@
 <template>
   <div class="d-flex flex-column align-items-center w-100">
-    <div class="d-flex flex-column gap-2" style="width: 500px; max-width: 100%;">
+    <div class="d-flex flex-column gap-2">
       <div class="d-flex justify-content-between align-items-center">
-        <h3 class="m-0">Arm Controls</h3>
+        <h4 class="m-0">Arm Controls</h4>
         <div
           class="rounded-circle me-2"
           :class="controllerConnected ? 'bg-success' : 'bg-danger'"

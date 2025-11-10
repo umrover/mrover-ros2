@@ -37,13 +37,13 @@ def gear_diff_position(request):
                            status=status.HTTP_400_BAD_REQUEST)
 
         node = get_node()
-        gear_diff_srv = node.create_client(ServoSetPos, "/sa_gear_diff_set_position")
+        sp_funnel_srv = node.create_client(ServoSetPos, "/sp_funnel_set_position")
 
-        gear_diff_request = ServoSetPos.Request()
-        gear_diff_request.position = float(position)
-        gear_diff_request.is_counterclockwise = is_ccw
+        sp_funnel_request = ServoSetPos.Request()
+        sp_funnel_request.position = float(position)
+        sp_funnel_request.is_counterclockwise = is_ccw
 
-        result = _call_service_sync(gear_diff_srv, gear_diff_request)
+        result = _call_service_sync(sp_funnel_srv, sp_funnel_request)
         if result is None:
             return Response({'status': 'error', 'message': 'Service call failed'},
                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
