@@ -346,7 +346,7 @@ mrover_add_node(differential_drive_controller esw/differential_drive_controller.
 ament_target_dependencies(differential_drive_controller rclcpp std_srvs)
 target_link_libraries(differential_drive_controller units messaging)
 
-mrover_add_node(arm_controller teleoperation/arm_controller/arm_controller.cpp teleoperation/arm_controller/pch.hpp)
+mrover_add_node(arm_controller navigation/arm_controller/arm_controller.cpp navigation/arm_controller/pch.hpp)
 target_link_libraries(arm_controller lie)
 ament_target_dependencies(arm_controller rclcpp)
 
@@ -402,6 +402,7 @@ install(PROGRAMS
     scripts/custom_costmap.py
     scripts/visualizer.py
     scripts/image_capture.py
+    scripts/ik_testing.py
     teleoperation/basestation_gui/gui_frontend.sh
     teleoperation/basestation_gui/gui_backend.sh
     teleoperation/basestation_gui/gui_chromium.sh
