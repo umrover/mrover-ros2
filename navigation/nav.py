@@ -19,7 +19,6 @@ from rclpy.node import Node
 from state_machine.state_machine import StateMachine
 from state_machine.state_publisher_server import StatePublisher
 
-
 class Navigation(Node):
     state_machine: StateMachine
     ctx: Context

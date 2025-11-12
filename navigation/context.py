@@ -22,6 +22,7 @@ from mrover.msg import (
 )
 from mrover.srv import EnableAuton
 from nav_msgs.msg import Path
+from visualization_msgs.msg import MarkerArray
 from nav_msgs.msg import OccupancyGrid
 from rclpy.duration import Duration
 from rclpy.node import Node
@@ -375,6 +376,9 @@ class Context:
     stuck_listener: Subscription
     costmap_listener: Subscription
     path_history_publisher: Publisher
+    relaxed_publisher: Publisher
+    interpolated_publisher: Publisher
+
     COSTMAP_THRESH: float
     current_dilation_radius: float
     exec: SingleThreadedExecutor
@@ -414,6 +418,10 @@ class Context:
         self.command_publisher = node.create_publisher(Twist, "nav_cmd_vel", 1)
         self.search_point_publisher = node.create_publisher(GPSPointList, "search_path", 1)
         self.path_history_publisher = node.create_publisher(Path, "ground_truth_path", 10)
+
+        self.relaxed_publisher = node.create_publisher(MarkerArray, "relax_path", 10)
+        self.interpolated_publisher = node.create_publisher(MarkerArray, "interpolated_path", 10)
+
         self.tf_broadcaster = tf2_ros.StaticTransformBroadcaster(node)
 
         node.create_subscription(Bool, "nav_stuck", self.stuck_callback, 1)
