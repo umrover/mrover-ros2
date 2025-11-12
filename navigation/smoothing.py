@@ -182,4 +182,4 @@ class SplineInterpolation:
 
         x_spaced, y_spaced = splev(u_spaced, spline)
 
-        return Trajectory(np.column_stack([x_spaced, y_spaced]))
+        return Trajectory(np.column_stack([x_spaced, y_spaced, np.zeros(x_spaced.shape[0])]))

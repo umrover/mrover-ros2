@@ -13,20 +13,17 @@ from rclpy.time import Time
 from rclpy.timer import Timer
 from rclpy.duration import Duration
 from navigation.coordinate_utils import gen_marker, is_high_cost_point, d_calc, segment_path, cartesian_to_ij, ij_to_cartesian, publish_trajectory
-from navigation.smoothing import Relaxation, SplineInterpolation
 
 
 class ApproachTargetState(State):
     UPDATE_DELAY: float
     USE_COSTMAP: bool
-    USE_RELAXATION: bool
-    USE_INTERPOLATION: bool
     
     DISTANCE_THRESHOLD: float
     COST_INFLATION_RADIUS: float
     time_begin: Time
 
-    local_traj: Trajectory
+    astar_traj: Trajectory
     target_traj: Trajectory
 
     astar: AStar
@@ -54,12 +51,10 @@ class ApproachTargetState(State):
             return
 
         self.USE_COSTMAP = context.node.get_parameter("costmap.use_costmap").value or current_waypoint.enable_costmap
-        self.USE_RELAXATION = True              # TODO make this proper
-        self.USE_INTERPOLATION = True           # TODO make this proper
         self.DISTANCE_THRESHOLD = context.node.get_parameter("search.distance_threshold").value
         self.COST_INFLATION_RADIUS = context.node.get_parameter("costmap.initial_inflation_radius").value
         self.marker_pub = context.node.create_publisher(Marker, "target_trajectory", 10)
-        self.local_traj = Trajectory(np.array([]))
+        self.astar_traj = Trajectory(np.array([]))
         self.target_traj = Trajectory(np.array([]))
         self.astar = AStar(context=context)
         self.target_position = None
@@ -139,7 +134,7 @@ class ApproachTargetState(State):
                 # Update internal state (if necessary) or transition to the new point
                 self.target_position = nearest_low_cost_point
                 self.target_traj.clear()
-                self.local_traj.clear()
+                self.astar_traj.clear()
                 return True
 
             # Expand the search radius
@@ -199,40 +194,15 @@ class ApproachTargetState(State):
                 return self
 
         # If the a-star trajectory is empty and there is a segment to pathfind to, generate a new trajectory there
-        if self.local_traj.empty() and not self.target_traj.done():
+        if self.astar_traj.empty() and not self.target_traj.done():
             try:
-                self.local_traj = self.astar.generate_trajectory(context, self.target_traj.get_current_point())
+                self.astar_traj = self.astar.generate_trajectory(context, self.target_traj.get_current_point())
 
-                if self.USE_RELAXATION:
-                    relaxed_path = Relaxation.relax(context, Trajectory(cartesian_to_ij(self.local_traj.coordinates)))
-
-                    cartesian_coords = ij_to_cartesian(context, relaxed_path.coordinates)
-                
-                else:
-                    cartesian_coords = self.local_traj.coordinates
-
-                self.local_traj = Trajectory(np.array(cartesian_coords))
-                    
-                if self.USE_INTERPOLATION:
-                    spline_path = SplineInterpolation.interpolate(context, self.local_traj)
-
-                    publish_trajectory(relaxed_traj, context, context.relaxed_publisher, [1.0, 0.0, 0.0])
-                    publish_trajectory(spline_path, context, context.interpolated_publisher, [0.0, 1.0, 0.0], size=0.05)
-
-                    spline_cost = Relaxation.cost_full(context, spline_path)[0]
-                    old_cost = Relaxation.cost_full(context, self.local_traj)[0]
-                    
-                    if (spline_cost - old_cost) / (old_cost + 1e-7) > 0.5:
-                        context.node.get_logger().warning(f"Spline cost is much worse than old cost {spline_cost} vs {old_cost}. Using relaxed path instead!")
-
-                    else:
-                        self.local_traj = spline_path
-                        
             except Exception as e:
                 context.node.get_logger().info(str(e))
                 return self
 
-            if self.local_traj.empty():
+            if self.astar_traj.empty():
                 self.target_traj.increment_point()
 
         if self.target_traj.done():
@@ -255,8 +225,8 @@ class ApproachTargetState(State):
 
         arrived = False
         cmd_vel = Twist()
-        if not self.local_traj.done():
-            curr_point = self.local_traj.get_current_point()
+        if not self.astar_traj.done():
+            curr_point = self.astar_traj.get_current_point()
             cmd_vel, arrived = context.drive.get_drive_command(
                 curr_point,
                 rover_pose,
@@ -266,11 +236,11 @@ class ApproachTargetState(State):
 
         # If we have arrived increment the a-star trajectory
         if arrived:
-            self.local_traj.increment_point()
+            self.astar_traj.increment_point()
 
             # If we finished an astar trajectory, increment the target_trajectory
-            if self.local_traj.done():
-                self.local_traj.clear()
+            if self.astar_traj.done():
+                self.astar_traj.clear()
                 context.node.get_logger().info("Arrived at segment point")
                 self.target_traj.increment_point()
 
@@ -346,7 +316,7 @@ class ApproachTargetState(State):
 
         # Reset the trajectory for the new target position
         self.target_traj.clear()
-        self.local_traj.clear()
+        self.astar_traj.clear()
 
     def on_loop(self, context: Context) -> State:
         from .long_range import LongRangeState

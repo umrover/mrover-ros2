@@ -11,7 +11,7 @@ from .context import Context
 import rclpy
 from .context import Context
 from navigation.astar import AStar, SpiralEnd, NoPath, OutOfBounds, DestinationInHighCost
-from navigation.coordinate_utils import gen_marker, segment_path, is_high_cost_point, d_calc, cartesian_to_ij
+from navigation.coordinate_utils import gen_marker, segment_path, is_high_cost_point, d_calc, cartesian_to_ij, ij_to_cartesian, publish_trajectory
 from navigation.trajectory import Trajectory, SearchTrajectory
 from typing import Optional
 from rclpy.publisher import Publisher
@@ -25,13 +25,16 @@ from std_msgs.msg import Header
 from visualization_msgs.msg import Marker
 import numpy as np
 
+from navigation.smoothing import Relaxation, SplineInterpolation
+
+
 
 class WaypointState(State):
     # STOP_THRESHOLD: float = rospy.get_param("waypoint/stop_threshold")
     # DRIVE_FORWARD_THRESHOLD: float = rospy.get_param("waypoint/drive_forward_threshold")
     # USE_COSTMAP: bool = rospy.get_param("water_bottle_search.use_costmap")
     # NO_TAG: int = -1
-    astar_traj: Trajectory
+    local_traj: Trajectory
     waypoint_traj: Trajectory
     prev_target_pos_in_map: Optional[np.ndarray] = None
     is_recovering: bool = False
@@ -47,10 +50,13 @@ class WaypointState(State):
     UPDATE_DELAY: float
     NO_SEARCH_WAIT_TIME: float
     USE_COSTMAP: bool
+    USE_RELAXATION: bool
+    USE_INTERPOLATION: bool
 
     def on_enter(self, context: Context) -> None:
         if context.course is None:
             return
+        
 
         self.time_begin = context.node.get_clock().now()
         self.start_time = context.node.get_clock().now()
@@ -66,7 +72,7 @@ class WaypointState(State):
 
         self.marker_pub = context.node.create_publisher(Marker, "waypoint_trajectory", 10)
         self.astar = AStar(context)
-        self.astar_traj = Trajectory(np.array([]))
+        self.local_traj = Trajectory(np.array([]))
         self.waypoint_traj = Trajectory(np.array([]))
 
         self.time_no_search_wait = None
@@ -85,6 +91,9 @@ class WaypointState(State):
             context.node.get_logger().info("Resetting costmap dilation")
             context.reset_dilation()
 
+        self.USE_INTERPOLATION = True # TODO set properly
+        self.USE_RELAXATION = True # TODO set properly
+
         context.node.get_logger().info("On Enter finished")
 
     def on_exit(self, context: Context) -> None:
@@ -93,7 +102,7 @@ class WaypointState(State):
 
     def update_waypoint(self, context: Context) -> None:
         self.waypoint_traj.clear()
-        self.astar_traj.clear()
+        self.local_traj.clear()
 
     def on_loop_costmap_enabled(self, context: Context) -> State:
         if not context.dilation_done():
@@ -145,7 +154,7 @@ class WaypointState(State):
                 self.waypoint_traj.reset()
                 break
 
-            self.astar_traj.clear()
+            self.local_traj.clear()
             return self
 
         costmap_length = context.env.cost_map.data.shape[0]
@@ -155,15 +164,40 @@ class WaypointState(State):
             self.waypoint_traj.clear()
             return self
 
-        if self.astar_traj.empty():
+        if self.local_traj.empty():
             self.display_markers(context=context)
-            try:
-                self.astar_traj = self.astar.generate_trajectory(context, self.waypoint_traj.get_current_point())
-            except Exception as e:
-                context.node.get_logger().info(str(e))
-                return self
+            # try:
+            self.local_traj = self.astar.generate_trajectory(context, self.waypoint_traj.get_current_point())
 
-            if self.astar_traj.empty():
+            if self.USE_RELAXATION:
+                relaxed_path = Relaxation.relax(context, Trajectory(np.apply_along_axis(lambda coord: cartesian_to_ij(context, coord), 1, self.local_traj.coordinates)))
+
+                cartesian_coords = np.apply_along_axis(lambda coord: ij_to_cartesian(context, coord), 1, relaxed_path.coordinates) 
+            
+            else:
+                cartesian_coords = self.local_traj.coordinates
+
+            self.local_traj = Trajectory(np.hstack((cartesian_coords, np.zeros((cartesian_coords.shape[0], 1)))))
+            publish_trajectory(self.local_traj, context, context.relaxed_publisher, [1.0, 0.0, 0.0])
+                
+            if self.USE_INTERPOLATION:
+                spline_path = SplineInterpolation.interpolate(context, self.local_traj)
+
+                publish_trajectory(spline_path, context, context.interpolated_publisher, [0.0, 1.0, 0.0], size=0.05)
+
+                spline_cost = Relaxation.cost_full(context, spline_path)[0]
+                old_cost = Relaxation.cost_full(context, self.local_traj)[0]
+                
+                if (spline_cost - old_cost) / (old_cost + 1e-7) > 0.5:
+                    context.node.get_logger().warning(f"Spline cost is much worse than old cost {spline_cost} vs {old_cost}. Using relaxed path instead!")
+
+                else:
+                    self.local_traj = spline_path
+            # except Exception as e:
+            #     context.node.get_logger().info(str(e))
+            #     return self
+
+            if self.local_traj.empty():
                 context.node.get_logger().info("Skipping unreachable point")
                 self.waypoint_traj.increment_point()
                 if self.waypoint_traj.done():
@@ -172,8 +206,8 @@ class WaypointState(State):
 
         arrived = False
         cmd_vel = Twist()
-        if len(self.astar_traj.coordinates) - self.astar_traj.cur_pt != 0:
-            waypoint_position_in_map = self.astar_traj.get_current_point()
+        if len(self.local_traj.coordinates) - self.local_traj.cur_pt != 0:
+            waypoint_position_in_map = self.local_traj.get_current_point()
             cmd_vel, arrived = context.drive.get_drive_command(
                 waypoint_position_in_map,
                 context.rover.get_pose_in_map(),
@@ -182,9 +216,9 @@ class WaypointState(State):
             )
 
         if arrived:
-            self.astar_traj.increment_point()
-            if self.astar_traj.done():
-                self.astar_traj.clear()
+            self.local_traj.increment_point()
+            if self.local_traj.done():
+                self.local_traj.clear()
                 context.node.get_logger().info(f"Arrived at segment point")
                 self.waypoint_traj.increment_point()
                 if self.waypoint_traj.done():
@@ -300,7 +334,7 @@ class WaypointState(State):
                     return self
             else:
                 context.node.get_logger().info("Waiting to get closer to the no search waypoint")
-                self.astar_traj.clear()
+                self.local_traj.clear()
                 self.waypoint_traj.clear()
                 return self
 
