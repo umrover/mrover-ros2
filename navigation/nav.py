@@ -38,6 +38,7 @@ class Navigation(Node):
                 # General
                 ("update_rate", Parameter.Type.DOUBLE),
                 ("pub_path_rate", Parameter.Type.DOUBLE),
+                ("pub_lookahead_rate", Parameter.Type.INTEGER),
                 ("path_hist_size", Parameter.Type.INTEGER),
                 ("display_markers", Parameter.Type.BOOL),
                 ("world_frame", Parameter.Type.STRING),

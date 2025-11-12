@@ -272,6 +272,8 @@ class DriveController:
         # Maybe put the reusable code in another function?
 
         # Don't think that path_start is needed for get_drive_command based on the algorithm for pure pursuit
+        if (waypoints is None):
+            return (Twist(), False)
         
         # Get the direction vector of the rover and position,
         # zero the Z components since our controller only assumes motion and control over the rover in the XY plane
@@ -294,11 +296,9 @@ class DriveController:
 
         # TODO(Brendan): What do you want to do if there are no intersection points
         # Placeholder
-        if(intersection_points is None):
-            return (Twist(), False)
-
-        # Display markers for intersection points and lookahead dist
-        self.display_markers(rover_pos, lookahead_dist, intersection_points)
+        if(intersection_points is not None):
+            # Display markers for intersection points and lookahead dist
+            self.display_markers(rover_pos, lookahead_dist, intersection_points)
 
         # Determine the target_pos given the intersection points
         target_pos = self.determine_next_point(waypoints, intersection_points)
@@ -359,7 +359,7 @@ class DriveController:
         # If we are outside are max_turning_effort, we will have no linear velocity
         # This is because we don't want to go outside of the arch
         # So we instead decide to prioritize turning to make the arch easier to follow
-        if (angular_vel > max_turning_effort):
+        if (angular_vel > max_turning_effort or angular_error > 90):
             cmd_vel = Twist(
                 angular=Vector3(
                     z=np.clip(
@@ -392,13 +392,26 @@ class DriveController:
     @staticmethod
     def determine_next_point(
         waypoints: Trajectory,
-        intersections: np.ndarray,
+        intersections: list,
     ) -> np.ndarray:
         # A helper function for pure pursuit 
         # Determines what intersection is the best to follow
         waypoints.increment_point()
 
-        if waypoints.done() or len(intersections):
+        # The end is in lookahead dist
+        if waypoints.done():
+            waypoints.decerement_point()
+            if not len(intersections):
+                return waypoints.get_current_point()
+        
+        # Intersections are empty (get back on to the path)
+        if not len(intersections):
+            # Get back to the path
+            waypoints.decerement_point()
+            return waypoints.get_current_point()
+        
+        # There is only one intersection
+        if len(intersections) == 1:
             waypoints.decerement_point()
             return intersections[0]
         
@@ -406,7 +419,7 @@ class DriveController:
         path_point_y = waypoints.get_current_point()[1]
 
         dist_1 = np.sqrt((path_point_x - intersections[0][0])**2 + (path_point_y - intersections[0][1])**2)
-        dist_2 = np.sqrt((path_point_x - intersections[0][0])**2 + (path_point_y - intersections[0][1])**2)
+        dist_2 = np.sqrt((path_point_x - intersections[1][0])**2 + (path_point_y - intersections[1][1])**2)
 
         target_pos = [0,0]
 
@@ -417,7 +430,8 @@ class DriveController:
             target_pos[0] = intersections[1][0]
             target_pos[1] = intersections[1][1]
 
-        return np.array(target_pos)
+        waypoints.decerement_point()
+        return target_pos
 
     @staticmethod
     def set_farthest_path_point(
@@ -437,13 +451,16 @@ class DriveController:
             # Increment to the next point in the path
             waypoints.increment_point()
 
+            if (waypoints.done()):
+                continue
+
             # Check if the next point is valid
-            next_point: np.ndarray = waypoints.get_current_point();
+            next_point: np.ndarray = waypoints.get_current_point()
             if (lookahead_dist < np.linalg.norm(next_point - rover_pos)):
                 stop_incrementing = True
 
         if stop_incrementing or waypoints.done():
-            waypoints.decrement_point()
+            waypoints.decerement_point()
 
     @staticmethod
     def sign(
@@ -460,7 +477,7 @@ class DriveController:
         waypoints: Trajectory,
         rover_pos: np.ndarray,
         lookahead_dist: float,
-    ) -> np.ndarray | None:
+    ) -> list | None:
         # A helper function for pure pursuit. 
         # Use this to compute the potential point we should be following!
 
@@ -474,7 +491,7 @@ class DriveController:
 
         # If the goal point is within our lookahead_dist, return the goal
         if waypoints.done():
-            return np.ndarray([x_1,y_1])
+            return np.ndarray([x_1, y_1])
 
         x_pos = rover_pos[0]
         y_pos = rover_pos[1]
@@ -524,7 +541,7 @@ class DriveController:
         if (valid_intersection_2):
             intersections.append(intersection_2)
 
-        return np.array(intersections)
+        return intersections
 
     def display_markers(
         self,
