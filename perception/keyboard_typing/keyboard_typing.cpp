@@ -1,5 +1,7 @@
 #include "keyboard_typing.hpp"
+#include <cmath>
 #include <functional>
+#include <rclcpp/logging.hpp>
 
 namespace mrover{ 
     KeyboardTypingNode::KeyboardTypingNode(rclcpp::NodeOptions const& options) : rclcpp::Node("keyboard_typing_node", options),  mLoopProfiler{get_logger()}
@@ -24,23 +26,19 @@ namespace mrover{
 
     auto KeyboardTypingNode::estimatePose(sensor_msgs::msg::Image::ConstSharedPtr const& msg) -> geometry_msgs::msg::Pose {
         // Read in camera constants
+        int hitcount = 0;
         std::string cameraConstants = "temp.json";
-        cv::Mat camMatrix = (cv::Mat_<double>(3,3) <<
-            554.0, 0.0, 320.0,   // fx, 0, cx
-            0.0, 554.0, 240.0,   // 0, fy, cy
-            0.0, 0.0, 1.0
-        );
-        
+        cv::Mat camMatrix = cv::Mat::eye(3, 3, CV_64F);
+
         cv::Mat distCoeffs = cv::Mat::zeros(5,1,CV_64F);
 
         // Read in images
         cv::Mat bgraImage{static_cast<int>(msg->height), static_cast<int>(msg->width), CV_8UC4, const_cast<uint8_t*>(msg->data.data())};
 
-        // Convert to grayscale
-        cv::cvtColor(bgraImage, bgraImage, cv::COLOR_BGRA2GRAY);
+        cv::Mat grayImage;
+        cv::cvtColor(bgraImage, grayImage, cv::COLOR_BGRA2GRAY);
 
         // Define variables
-        std::vector<int> markerIds;
 
         std::vector<std::vector<cv::Point2f>> markerCorners, rejectedCandidates;
         std::vector<int> ids;
@@ -49,22 +47,22 @@ namespace mrover{
 
         // Define coordinate system
         float markerLength = 0.02;  // meters
-        cv::Mat objPoints(4, 1, CV_32FC3);
-        objPoints.ptr<cv::Vec3f>(0)[0] = cv::Vec3f(-markerLength/2.f, markerLength/2.f, 0);
-        objPoints.ptr<cv::Vec3f>(0)[1] = cv::Vec3f(markerLength/2.f, markerLength/2.f, 0);
-        objPoints.ptr<cv::Vec3f>(0)[2] = cv::Vec3f(markerLength/2.f, -markerLength/2.f, 0);
-        objPoints.ptr<cv::Vec3f>(0)[3] = cv::Vec3f(-markerLength/2.f, -markerLength/2.f, 0);
+        cv::Mat objPoints(4, 3, CV_32F);
+        objPoints.at<float>(0, 0) = -markerLength/2.f; objPoints.at<float>(0, 1) = markerLength/2.f;  objPoints.at<float>(0, 2) = 0;
+        objPoints.at<float>(1, 0) = markerLength/2.f;  objPoints.at<float>(1, 1) = markerLength/2.f;  objPoints.at<float>(1, 2) = 0;
+        objPoints.at<float>(2, 0) = markerLength/2.f;  objPoints.at<float>(2, 1) = -markerLength/2.f; objPoints.at<float>(2, 2) = 0;
+        objPoints.at<float>(3, 0) = -markerLength/2.f; objPoints.at<float>(3, 1) = -markerLength/2.f; objPoints.at<float>(3, 2) = 0;
 
         // Detect Markers
-        cv::aruco::detectMarkers(bgraImage, dictionary, markerCorners, ids, detectorParams, rejectedCandidates);
+        cv::aruco::detectMarkers(grayImage, dictionary, markerCorners, ids, detectorParams, rejectedCandidates);
 
         // Corner refinement
-        cv::Size winSize = cv::Size( 5, 5 );
+        cv::Size winSize = cv::Size( 13, 13 );
         cv::Size zeroZone = cv::Size( -1, -1 ); 
         cv::TermCriteria criteria = cv::TermCriteria( cv::TermCriteria::EPS + cv::TermCriteria::COUNT, 40, 0.001 );
 
         for (std::vector<cv::Point2f> &corners : markerCorners) {
-            cv::cornerSubPix(bgraImage, corners, winSize, zeroZone, criteria);
+            cv::cornerSubPix(grayImage, corners, winSize, zeroZone, criteria);
         }
 
         size_t nMarkers = markerCorners.size();
@@ -80,21 +78,26 @@ namespace mrover{
         }
         
         // Apply Kalman Filter to smooth the pose estimation
-        for (size_t i = 0; i < tvecs.size(); ++i) {
-            kalmanFilter(tvecs[i], rvecs[i]);
-        }
+        // for (size_t i = 0; i < tvecs.size(); ++i) {
+        //     kalmanFilter(tvecs[i], rvecs[i]);
+        // }
 
         // Print rotation and translation sanity check
-        for (const cv::Vec3d &translation : tvecs) {
-            RCLCPP_INFO_STREAM(get_logger(), "x vector : " << translation[0] << "\n");
-            RCLCPP_INFO_STREAM(get_logger(), "y vector : " << translation[1] << "\n");
-            RCLCPP_INFO_STREAM(get_logger(), "z vector : " << translation[2] << "\n");
+        if (tvecs.size() > 0) {
+            auto x = tvecs[0][0];
+            auto y = tvecs[0][1];
+            auto z = tvecs[0][2];
+            RCLCPP_INFO_STREAM(get_logger(), "tag id" << ids[0] << "\n");
+            RCLCPP_INFO_STREAM(get_logger(), "x vector : " << x << "\n");
+            RCLCPP_INFO_STREAM(get_logger(), "y vector : " << y << "\n");
+            RCLCPP_INFO_STREAM(get_logger(), "z vector : " << z << "\n");
+            RCLCPP_INFO_STREAM(get_logger(), "distance : " << std::sqrt(x*x + y*y + z*z) << "\n");
         }
 
-        for (const cv::Vec3d &rotation : rvecs) {
-            RCLCPP_INFO_STREAM(get_logger(), "roll vector : " << rotation[0] << "\n");
-            RCLCPP_INFO_STREAM(get_logger(), "pitch vector : " << rotation[1] << "\n");
-            RCLCPP_INFO_STREAM(get_logger(), "yaw vector : " << rotation[2] << "\n");
+        if (rvecs.size() > 0) {
+            RCLCPP_INFO_STREAM(get_logger(), "roll vector : " << rvecs[0][0] << "\n");
+            RCLCPP_INFO_STREAM(get_logger(), "pitch vector : " << rvecs[0][1] << "\n");
+            RCLCPP_INFO_STREAM(get_logger(), "yaw vector : " << rvecs[0][2] << "\n");
         }
 
         // Convert rvecs to quarterion
@@ -102,7 +105,7 @@ namespace mrover{
         cv::Mat rotation_matrix;
         geometry_msgs::msg::Pose pose;
         if (markerCorners.size() > 0) {
-            cv::Rodrigues(rvecs, rotation_matrix);
+            cv::Rodrigues(rvecs[0], rotation_matrix);
 
             Eigen::Matrix3d eigen_rotation;     
             eigen_rotation << 
@@ -164,7 +167,7 @@ namespace mrover{
             );
         
             // Process noise covariance (model uncertainty)
-            cv::setIdentity(kf.processNoiseCov, cv::Scalar(1e-4));
+            cv::setIdentity(kf.processNoiseCov, cv::Scalar(1e-10));
             
             // Measurement noise covariance (sensor uncertainty)
             cv::setIdentity(kf.measurementNoiseCov, cv::Scalar(1e-2));
@@ -247,7 +250,7 @@ namespace mrover{
         cv::Rodrigues(filtered_rotation_matrix, rvec);
         
         // Log filtered values for debugging
-        RCLCPP_DEBUG(this->get_logger(), 
+        RCLCPP_DEBUG(get_logger(), 
             "Kalman Filter - Raw: (%.3f, %.3f, %.3f), Filtered: (%.3f, %.3f, %.3f)",
             measurement.at<float>(0), measurement.at<float>(1), measurement.at<float>(2),
             tvec[0], tvec[1], tvec[2]);
