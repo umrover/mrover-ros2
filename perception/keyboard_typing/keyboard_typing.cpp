@@ -28,7 +28,12 @@ namespace mrover{
         // Read in camera constants
         int hitcount = 0;
         std::string cameraConstants = "temp.json";
-        cv::Mat camMatrix = cv::Mat::eye(3, 3, CV_64F);
+        cv::Mat camMatrix = (cv::Mat_<double>(3,3) <<
+            415.69, 0.0, 320.0,   // fx, 0, cx
+            0.0, 415.69, 240.0,   // 0, fy, cy
+            0.0, 0.0, 1.0
+        );
+        //cv::Mat::eye(3, 3, CV_64F);
 
         cv::Mat distCoeffs = cv::Mat::zeros(5,1,CV_64F);
 
