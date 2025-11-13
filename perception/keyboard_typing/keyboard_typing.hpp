@@ -4,7 +4,7 @@
 #include <unordered_map>
 // #include "constants.h"
 namespace mrover{
-    class KeyboardTypingNode : public rclcpp::Node{
+    class KeyboardTypingNode final : public rclcpp::Node{
         private:
         struct Tag{
             int id = -1;
@@ -24,11 +24,11 @@ namespace mrover{
         std::vector<int> mTagIds;
 
         // TF tree
-        tf2_ros::Buffer mTfBuffer{get_clock()};
-        tf2_ros::TransformListener mTfListener{mTfBuffer};
+        // tf2_ros::Buffer mTfBuffer{get_clock()};
+        // tf2_ros::TransformListener mTfListener{mTfBuffer};
 
         // Other vars
-        Tag& mSelectedTag;
+        Tag mSelectedTag;
         int mHitCount = 0;
         std::unordered_map<int, Tag> mTagMap;
 
