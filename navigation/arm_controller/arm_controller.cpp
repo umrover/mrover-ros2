@@ -252,8 +252,8 @@ namespace mrover {
             rclcpp::Rate loopRate(3);
             while(get_clock()->now() - startTime < typingTimeout) {
                 mLastUpdate = get_clock()->now();
-                mPosTarget.y = joints["joint_a"].pos + typingGoalHandle->get_goal()->x_delta;
-                mPosTarget.gripper = joints["gripper"].pos + typingGoalHandle->get_goal()->y_delta;
+                mPosTarget.y = mTypingOrigin.y + typingGoalHandle->get_goal()->x_delta;
+                mPosTarget.gripper = mTypingOrigin.gripper + typingGoalHandle->get_goal()->y_delta;
                 if(typingGoalHandle->is_canceling()) {
                     result->success = false;
                     typingGoalHandle->canceled(result);
@@ -380,6 +380,7 @@ namespace mrover {
             RCLCPP_INFO(get_logger(), "IK Switching to Velocity Control Mode");
         } else { // typing mode
             mArmMode = ArmMode::TYPING;
+            mTypingOrigin = mArmPos;
             RCLCPP_INFO(get_logger(), "IK Switching to Typing (position) Mode");
         }
         resp->success = true;
