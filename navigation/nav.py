@@ -174,7 +174,7 @@ class Navigation(Node):
                 else self.ctx.rover.path_history.poses[-1].pose.position
             )
 
-            if(lastRoverPosition is None):
+            if lastRoverPosition is None:
                 self.ctx.rover.path_history.poses.append(roverPoseStamped)
             elif (
                 lastRoverPosition is not None and (x - lastRoverPosition.x) ** 2 + (y - lastRoverPosition.y) ** 2
