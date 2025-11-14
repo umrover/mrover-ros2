@@ -17,42 +17,15 @@ simulator:
       rover:
         type: urdf
         uri: package://mrover/urdf/rover/rover.urdf.xacro
-        position: [ 0.0, 0.0, 0.5 ]
+        position: [ 0.0, 0.0, 0.1 ]
       world:
         type: urdf
         uri: package://mrover/urdf/world/world.urdf.xacro
-      tag_0:
-        type: urdf
-        uri: package://mrover/urdf/world/tag_0.urdf.xacro
-        position: [ 11.0, 3.0, 0.7 ]
-      tag_1:
-        type: urdf
-        uri: package://mrover/urdf/world/tag_1.urdf.xacro
-        position: [ 15.0, -14.0, 2.4 ]
-      hammer:
-        type: urdf
-        uri: package://mrover/urdf/world/hammer.urdf.xacro
-        position: [ -2.0, -2.0, 0.7 ]
       bottle:
         type: urdf
         uri: package://mrover/urdf/world/bottle.urdf.xacro
-        position: [ -6.25, 10.5, 0.3 ]
-      rock1:
-        type: urdf
-        uri: package://mrover/urdf/world/rock.urdf.xacro
-        position: [ 2.0, -2.0, 0.1 ]
-      rock2:
-        type: urdf
-        uri: package://mrover/urdf/world/rock.urdf.xacro
-        position: [ 7.0, -6.0, 0.2 ]
-      rock3:
-        type: urdf
-        uri: package://mrover/urdf/world/rock.urdf.xacro
-        position: [ 8.0, -10.0, 1.0 ]
-      rock4:
-        type: urdf
-        uri: package://mrover/urdf/world/rock.urdf.xacro
-        position: [ 9.0, -2.0, 0.2 ]
+        position: [9.0, 10.0, 0.5]
+
 
     world_frame: "map"
     rover_frame: "sim_base_link"

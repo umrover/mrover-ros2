@@ -130,9 +130,12 @@ class WaypointState(State):
             direction_from_center = rover_position[:2]-center
             closest_radius_point = center + (direction_from_center/np.linalg.norm(direction_from_center)) * coverage_radius
 
+            #context.node.get_logger().info(distance_from_center)
+
             # This will set the rover's waypoint to the closest point on the coverage radius.
             # INWARD SPIRAL
             if distance_from_center > coverage_radius * 0.5:
+               #context.node.get_logger().info("inward spiral")
                self.waypoint_traj = segment_path(
                    context = context, dest = closest_radius_point[:2]
                )
@@ -140,6 +143,7 @@ class WaypointState(State):
             # This will set the rover's waypoint to the center of the coverage radius
             # OUTWARD SPIRAL
             else:
+                #context.node.get_logger().info("outward spiral")
                 self.waypoint_traj = segment_path(
                     context=context, dest=context.course.current_waypoint_pose_in_map().translation()[0:2]
                 )

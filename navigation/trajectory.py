@@ -95,26 +95,37 @@ class SearchTrajectory(Trajectory):
            # angles are evenly spaced between the start angle and 2pi*num_segments_per_rotation
            # an angle is created for each point of the spiral (hence why we include num_points)
            # our start angle is start_angle as we first want to go to the closest point on circle's radius
-           angles = np.linspace(start_angle, 2 * np.pi * num_spirals, num_points)
+           in_angles = np.linspace(start_angle, 2 * np.pi * num_spirals, num_points)
            # radii is simply evenly spaced "divisions" of the coverage_radius going inwards on each of the points in num_points
-           radii = np.linspace(coverage_radius, 0, num_points)
+           in_radii = np.linspace(coverage_radius, 3.0, num_points)
+           out_angles = np.linspace(in_angles[-1], in_angles[-1] + 2 * np.pi * num_spirals, num_points)
+           out_radii= np.linspace(3.0, coverage_radius, num_points)
+           in_x_coords = np.cos(in_angles) * in_radii
+           in_y_coords = np.sin(in_angles) * in_radii
+           out_x_coords = np.cos(out_angles) * out_radii
+           out_y_coords = np.sin(out_angles) * out_radii
+           #context.node.get_logger().info(f"Soooo tired")
+           vertices = np.vstack([np.column_stack([in_x_coords, in_y_coords]), np.column_stack([out_x_coords, out_y_coords])])
+
       
        else:
             # angles are evenly spaced between the start angle and 2pi*num_segments_per_rotation
            # an angle is created for each point of the spiral (hence why we include num_points)
            # our start angle is start_angle as we first want to go to directly to the origin first
-           angles = np.linspace(start_angle, 2 * np.pi * num_spirals, num_segments_per_rotation * num_spirals + 1)
+           angles = np.linspace(start_angle, 2 * np.pi * num_spirals, num_points)
            # radii is simply evenly spaced "divisions" of the coverage_radius going outwards on each of the points in num_points
            radii = np.linspace(0,coverage_radius, num_points)
-       # Radii are computed via following polar formula.
-       # This is correct because you want the radius to increase by 'distance_between_spirals' every 2pi radians (one rotation)
-       # convert to cartesian coordinates
-       x_coords = np.cos(angles) * radii
-       y_coords = np.sin(angles) * radii
-       # we want to return as a 2D matrix where each row is a coordinate pair
-       # so we reshape x and y coordinates to be (n, 1) matricies then stack horizontally to get (n, 2) matrix
-       vertices = np.hstack((x_coords.reshape(-1, 1), y_coords.reshape(-1, 1)))
+           # Radii are computed via following polar formula.
+           # This is correct because you want the radius to increase by 'distance_between_spirals' every 2pi radians (one rotation)
+           # convert to cartesian coordinates
+           x_coords = np.cos(angles) * radii
+           y_coords = np.sin(angles) * radii
+            # we want to return as a 2D matrix where each row is a coordinate pair
+            # so we reshape x and y coordinates to be (n, 1) matricies then stack horizontally to get (n, 2) matrix
+           vertices = np.hstack((x_coords.reshape(-1, 1), y_coords.reshape(-1, 1)))
+           
        all_points = []
+           
        if insert_extra:
            for i in range(len(vertices) - 1):
                all_points.append(vertices[i])
