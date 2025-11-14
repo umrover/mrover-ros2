@@ -2,6 +2,9 @@
 #include <cmath>
 #include <functional>
 #include <opencv2/core/matx.hpp>
+#include <opencv2/core/mat.hpp>
+#include <opencv2/highgui.hpp>
+#include <opencv2/imgproc.hpp>
 #include <rclcpp/logging.hpp>
 #include <unordered_map>
 
@@ -82,6 +85,7 @@ namespace mrover{
     }
 
     auto KeyboardTypingNode::yawCallback(sensor_msgs::msg::Image::ConstSharedPtr const& msg) -> void {
+        RCLCPP_INFO_STREAM(get_logger(), "callback");
         geometry_msgs::msg::Pose pose = estimatePose(msg);
 
         // extract yaw into a quarterian and then publish to mCostMapPub
@@ -99,13 +103,19 @@ namespace mrover{
         );
         //cv::Mat::eye(3, 3, CV_64F);
 
-        cv::Mat distCoeffs = cv::Mat::zeros(5,1,CV_64F);
+        cv::Mat distCoeffs = cv::Mat::zeros(1,5,CV_64F);
 
         // Read in images
         cv::Mat bgraImage{static_cast<int>(msg->height), static_cast<int>(msg->width), CV_8UC4, const_cast<uint8_t*>(msg->data.data())};
 
+        // convert to gray for estimation
         cv::Mat grayImage;
         cv::cvtColor(bgraImage, grayImage, cv::COLOR_BGRA2GRAY);
+        // Optional: enhance contrast
+        cv::equalizeHist(grayImage, grayImage);
+
+        // Optional: apply Gaussian blur to reduce noise
+        cv::GaussianBlur(grayImage, grayImage, cv::Size(5,5), 0);
 
         // Define variables
 
@@ -116,17 +126,18 @@ namespace mrover{
 
         // Define coordinate system
         float markerLength = 0.02;  // meters
-        cv::Mat objPoints(4, 3, CV_32F);
-        objPoints.at<float>(0, 0) = -markerLength/2.f; objPoints.at<float>(0, 1) = markerLength/2.f;  objPoints.at<float>(0, 2) = 0;
-        objPoints.at<float>(1, 0) = markerLength/2.f;  objPoints.at<float>(1, 1) = markerLength/2.f;  objPoints.at<float>(1, 2) = 0;
-        objPoints.at<float>(2, 0) = markerLength/2.f;  objPoints.at<float>(2, 1) = -markerLength/2.f; objPoints.at<float>(2, 2) = 0;
-        objPoints.at<float>(3, 0) = -markerLength/2.f; objPoints.at<float>(3, 1) = -markerLength/2.f; objPoints.at<float>(3, 2) = 0;
+        std::vector<cv::Point3f> objPoints = {
+            {-markerLength/2.f,  markerLength/2.f, 0},
+            { markerLength/2.f,  markerLength/2.f, 0},
+            { markerLength/2.f, -markerLength/2.f, 0},
+            {-markerLength/2.f, -markerLength/2.f, 0}
+        };
 
         // Detect Markers
         cv::aruco::detectMarkers(grayImage, dictionary, markerCorners, ids, detectorParams, rejectedCandidates);
 
         // Corner refinement
-        cv::Size winSize = cv::Size( 13, 13 );
+        cv::Size winSize = cv::Size( 5, 5 );
         cv::Size zeroZone = cv::Size( -1, -1 ); 
         cv::TermCriteria criteria = cv::TermCriteria( cv::TermCriteria::EPS + cv::TermCriteria::COUNT, 40, 0.001 );
 
@@ -152,6 +163,17 @@ namespace mrover{
         for (size_t i = 0; i < tvecs.size(); ++i) {
             tvecs[i] = tvecs[i] - offset_map.at(ids[i]);
         }
+
+        // draw results for debugging
+        // debugging reg image
+        if (!ids.empty()) {
+            cv::aruco::drawDetectedMarkers(grayImage, markerCorners, ids);
+            for (size_t i = 0; i < ids.size(); ++i) {
+                cv::drawFrameAxes(grayImage, camMatrix, distCoeffs, rvecs[i], tvecs[i], markerLength * 1.5f, 2);
+            }
+        }
+        cv::imshow("out", grayImage);
+        cv::waitKey(1);
         
         // Apply Kalman Filter to smooth the pose estimation
         for (size_t i = 0; i < tvecs.size(); ++i) {
