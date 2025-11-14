@@ -31,7 +31,8 @@ class Relaxation:
         )
 
         points_per_m = 3
-        interpolate = math.ceil(points_per_m * dist)  # total number of interpolated points
+        points_per_cell = points_per_m * cost_map.resolution
+        interpolate = math.ceil(points_per_cell * dist)  # total number of interpolated points
         segment_interval = dist / interpolate  # distance between interpolated points
         interpolated = np.column_stack(
             (
@@ -49,7 +50,7 @@ class Relaxation:
         )
 
         cost = 0.0
-        for x, y in interpolated:
+        for y, x in interpolated:
             if abs(0.5 - (x - int(x))) < 1e-5 and abs(0.5 - (y - int(y))) < 1e-5:     # Close to boundary
                 cost_arr = [
                     cost_map.data[int(x), int(y)],

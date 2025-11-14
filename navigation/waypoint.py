@@ -8,6 +8,7 @@ from . import (
 from mrover.msg import WaypointType
 from mrover.srv import MoveCostMap
 from .context import Context
+import time
 import rclpy
 from .context import Context
 from navigation.astar import AStar, SpiralEnd, NoPath, OutOfBounds, DestinationInHighCost
@@ -171,13 +172,13 @@ class WaypointState(State):
 
             if self.USE_RELAXATION:
                 relaxed_path = Relaxation.relax(context, Trajectory(np.apply_along_axis(lambda coord: cartesian_to_ij(context, coord), 1, self.local_traj.coordinates)))
-
                 cartesian_coords = np.apply_along_axis(lambda coord: ij_to_cartesian(context, coord), 1, relaxed_path.coordinates) 
-            
+                cartesian_coords = np.hstack((cartesian_coords, np.zeros((cartesian_coords.shape[0], 1))))
+
             else:
                 cartesian_coords = self.local_traj.coordinates
 
-            self.local_traj = Trajectory(np.hstack((cartesian_coords, np.zeros((cartesian_coords.shape[0], 1)))))
+            self.local_traj = Trajectory(cartesian_coords)
             publish_trajectory(self.local_traj, context, context.relaxed_publisher, [1.0, 0.0, 0.0])
                 
             if self.USE_INTERPOLATION:
@@ -189,7 +190,7 @@ class WaypointState(State):
                 old_cost = Relaxation.cost_full(context, self.local_traj)[0]
                 
                 if (spline_cost - old_cost) / (old_cost + 1e-7) > 0.5:
-                    context.node.get_logger().warning(f"Spline cost is much worse than old cost {spline_cost} vs {old_cost}. Using relaxed path instead!")
+                    context.node.get_logger().warning(f"Spline cost is much worse than old cost {spline_cost} vs {old_cost}. Using old path instead!")
 
                 else:
                     self.local_traj = spline_path
