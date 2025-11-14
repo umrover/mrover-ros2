@@ -183,13 +183,44 @@ namespace mrover{
         if (markerCorners.size() > 0) {
             cv::Rodrigues(rvecs[0], rotation_matrix);
 
+            double m00 = rotation_matrix.at<double>(0, 0);
+            double m10 = rotation_matrix.at<double>(1, 0);
+            double m11 = rotation_matrix.at<double>(1, 1);
+            double m12 = rotation_matrix.at<double>(1, 2);
+            double m20 = rotation_matrix.at<double>(2, 0);
+            double m21 = rotation_matrix.at<double>(2, 1);
+            double m22 = rotation_matrix.at<double>(2, 2);
+
+            double sy = std::sqrt(m00 * m00 + m10 * m10);
+            bool singular = sy < 1e-6;
+
+            double roll_rad, pitch_rad, yaw_rad;
+
+            if (!singular) {
+                roll_rad = std::atan2(m21, m22);
+                pitch_rad = std::atan2(-m20, sy);
+                yaw_rad = std::atan2(m10, m00);
+            } else {
+                roll_rad = std::atan2(-m12, m11);
+                pitch_rad = std::atan2(-m20, sy);
+                yaw_rad = 0;
+            }
+
+            //convert radians to degrees
+            double roll_deg = roll_rad * 180.0 / M_PI;
+            double pitch_deg = pitch_rad * 180.0 / M_PI;
+            double yaw_deg = yaw_rad * 180.0 / M_PI;
+
             Eigen::Matrix3d eigen_rotation;     
             eigen_rotation << 
-                rotation_matrix.at<double>(0, 0), rotation_matrix.at<double>(0, 1), rotation_matrix.at<double>(0, 2),
-                rotation_matrix.at<double>(1, 0), rotation_matrix.at<double>(1, 1), rotation_matrix.at<double>(1, 2),
-                rotation_matrix.at<double>(2, 0), rotation_matrix.at<double>(2, 1), rotation_matrix.at<double>(2, 2);
+                m00, rotation_matrix.at<double>(0, 1), rotation_matrix.at<double>(0, 2),
+                m10, m11, m12,
+                m20, m21, m22;
 
             Eigen::Quaterniond quat(eigen_rotation);
+            quat = Eigen::AngleAxisd(yaw_deg, Eigen::Vector3d::UnitZ())
+                 * Eigen::AngleAxisd(pitch_deg, Eigen::Vector3d::UnitY())
+                 * Eigen::AngleAxisd(roll_deg, Eigen::Vector3d::UnitX());
 
             // Create pose message and then return it
             pose.position.x = tvecs[0][0];
