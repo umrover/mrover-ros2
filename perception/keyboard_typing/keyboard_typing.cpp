@@ -1,7 +1,9 @@
 #include "keyboard_typing.hpp"
 #include <cmath>
 #include <functional>
+#include <opencv2/core/matx.hpp>
 #include <rclcpp/logging.hpp>
+#include <unordered_map>
 
 namespace mrover{ 
     KeyboardTypingNode::KeyboardTypingNode(rclcpp::NodeOptions const& options) : rclcpp::Node("keyboard_typing_node", options),  mLoopProfiler{get_logger()}
@@ -12,6 +14,68 @@ namespace mrover{
         mImageSub = create_subscription<sensor_msgs::msg::Image>("/finger_camera/image", rclcpp::QoS(1), [this](sensor_msgs::msg::Image::ConstSharedPtr const& msg) {
             yawCallback(msg);
         });
+
+        // Top left (TL) is origin
+        static int TL_ID = 50;
+        static int BL_ID = 51;
+        static int TR_ID = 52;
+        static int BR_ID = 53;
+
+        // Translation vectors relative to TL
+        // Placeholders for now
+        static cv::Vec3d TL_OFFSET(0.0, 0.0, 0.0);
+        static cv::Vec3d BL_OFFSET(0.0, -1.0, 0.0);
+        static cv::Vec3d TR_OFFSET(1.0, 0.0, 0.0);
+        static cv::Vec3d BR_OFFSET(1.0, -1.0, 0.0);
+
+        offset_map.insert({TL_ID, TL_OFFSET});
+        offset_map.insert({BL_ID, BL_OFFSET});
+        offset_map.insert({TR_ID, TR_OFFSET});
+        offset_map.insert({BR_ID, BR_OFFSET});
+
+        float dt = 1.0f / 30.0f;  // 30 FPS instead of once every second
+        // Initialize Kalman filter
+        // State vector: [x, y, z, vx, vy, vz, roll, pitch, yaw, vroll, vpitch, vyaw]
+        // Measurement vector: [x, y, z, roll, pitch, yaw]
+        kf = cv::KalmanFilter(12, 6, 0, CV_32F);
+
+        // Transition matrix (state update model)
+        kf.transitionMatrix = (cv::Mat_<float>(12, 12) <<
+            1, 0, 0, dt, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 1, 0, 0, dt, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 1, 0, 0, dt, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 1, 0, 0, dt, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 1, 0, 0, dt, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, dt,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
+        );
+
+        // Measurement matrix (maps state to measurements)
+        kf.measurementMatrix = (cv::Mat_<float>(6, 12) <<
+            1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0
+        );
+    
+        // Process noise covariance (model uncertainty)
+        cv::setIdentity(kf.processNoiseCov, cv::Scalar(1e-10));
+        
+        // Measurement noise covariance (sensor uncertainty)
+        cv::setIdentity(kf.measurementNoiseCov, cv::Scalar(1e-2));
+        
+        // Initial state covariance
+        cv::setIdentity(kf.errorCovPost, cv::Scalar(1));
+
+        // Initialize state to zeros
+        kf.statePost = cv::Mat::zeros(12, 1, CV_32F);
 
         // create publisher
         mCostMapPub = this->create_publisher<geometry_msgs::msg::Quaternion>("/keypose/yaw", rclcpp::QoS(1));
@@ -71,6 +135,8 @@ namespace mrover{
         }
 
         size_t nMarkers = markerCorners.size();
+
+        // Rotation and translation vectors
         std::vector<cv::Vec3d> rvecs(nMarkers), tvecs(nMarkers);
 
         // Estimate pose
@@ -81,11 +147,16 @@ namespace mrover{
                 cv::solvePnP(objPoints, markerCorners.at(i), camMatrix, distCoeffs, rvecs.at(i), tvecs.at(i));
             }
         }
+
+        // Offset the poses to origin
+        for (size_t i = 0; i < tvecs.size(); ++i) {
+            tvecs[i] = tvecs[i] - offset_map.at(ids[i]);
+        }
         
         // Apply Kalman Filter to smooth the pose estimation
-        // for (size_t i = 0; i < tvecs.size(); ++i) {
-        //     kalmanFilter(tvecs[i], rvecs[i]);
-        // }
+        for (size_t i = 0; i < tvecs.size(); ++i) {
+            applyKalmanFilter(tvecs[i], rvecs[i]);
+        }
 
         // Print rotation and translation sanity check
         if (tvecs.size() > 0) {
@@ -133,59 +204,7 @@ namespace mrover{
         return pose;
     }
     
-    auto KeyboardTypingNode::kalmanFilter(cv::Vec3d &tvec, cv::Vec3d &rvec) -> void {
-        static cv::KalmanFilter kf;
-        static bool isInitialized = false;
-
-        float dt = 1.0f / 30.0f;  // 30 FPS instead of once every second
-
-        // Initialize Kalman filter
-        if (!isInitialized) {
-            // State vector: [x, y, z, vx, vy, vz, roll, pitch, yaw, vroll, vpitch, vyaw]
-            // Measurement vector: [x, y, z, roll, pitch, yaw]
-            kf = cv::KalmanFilter(12, 6, 0, CV_32F);
-
-            // Transition matrix (state update model)
-            kf.transitionMatrix = (cv::Mat_<float>(12, 12) <<
-                1, 0, 0, dt, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 1, 0, 0, dt, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 1, 0, 0, dt, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 1, 0, 0, dt, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 1, 0, 0, dt, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, dt,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
-            );
-
-            // Measurement matrix (maps state to measurements)
-            kf.measurementMatrix = (cv::Mat_<float>(6, 12) <<
-                1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0
-            );
-        
-            // Process noise covariance (model uncertainty)
-            cv::setIdentity(kf.processNoiseCov, cv::Scalar(1e-10));
-            
-            // Measurement noise covariance (sensor uncertainty)
-            cv::setIdentity(kf.measurementNoiseCov, cv::Scalar(1e-2));
-            
-            // Initial state covariance
-            cv::setIdentity(kf.errorCovPost, cv::Scalar(1));
-
-            // Initialize state to zeros
-            kf.statePost = cv::Mat::zeros(12, 1, CV_32F);
-            
-            isInitialized = true;
-        }
-        
+    auto KeyboardTypingNode::applyKalmanFilter(cv::Vec3d &tvec, cv::Vec3d &rvec) -> void {        
         // --- Convert rvec to roll, pitch, yaw (Euler angles) ---
         cv::Mat rotation_matrix;
         cv::Rodrigues(rvec, rotation_matrix);
