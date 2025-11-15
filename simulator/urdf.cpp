@@ -373,14 +373,14 @@ namespace mrover {
         }
     }
 
-    URDF::~URDF(){
+    URDF::~URDF() {
         // remove the constraints
-        for (btMultiBodyConstraint* constraint : mConstraints) {
+        for (btMultiBodyConstraint* constraint: mConstraints) {
             mDynamicsWorld->removeConstraint(std::bit_cast<btTypedConstraint*>(constraint));
         }
 
         // remove the colliders
-        for (btMultiBodyLinkCollider* collider : mColliders) {
+        for (btMultiBodyLinkCollider* collider: mColliders) {
             mDynamicsWorld->removeCollisionObject(std::bit_cast<btCollisionObject*>(collider));
         }
 
