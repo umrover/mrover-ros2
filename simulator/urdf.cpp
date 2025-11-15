@@ -184,16 +184,13 @@ namespace mrover {
         return camera;
     }
 
-    URDF::URDF(Simulator& simulator, std::string_view uri, btTransform const& transform) {
+    URDF::URDF(Simulator& simulator, std::string_view uri, btTransform const& transform) : mDynamicsWorld{simulator.mDynamicsWorld} {
         RCLCPP_INFO_STREAM(simulator.get_logger(), std::format("{}", performXacro(uriToPath(uri))));
         if (!model.initString(performXacro(uriToPath(uri)))) throw std::runtime_error{std::format("Failed to parse URDF from URI: {}", uri)};
 
         std::size_t multiBodyLinkCount = model.links_.size() - 1; // Root link is treated separately by multibody, so subtract it off
         auto* multiBody = physics = simulator.makeBulletObject<btMultiBody>(simulator.mMultiBodies, multiBodyLinkCount, 0, btVector3{0, 0, 0}, false, false);
         multiBody->setBaseWorldTransform(transform);
-
-        std::vector<btMultiBodyLinkCollider*> collidersToFinalize;
-        std::vector<btMultiBodyConstraint*> constraintsToFinalize;
 
         // NOLINTNEXTLINE(misc-no-recursion)
         auto traverse = [&](auto&& self, urdf::LinkConstSharedPtr const& link) -> void {
@@ -276,9 +273,9 @@ namespace mrover {
 
             auto* collider = simulator.makeBulletObject<btMultiBodyLinkCollider>(simulator.mMultibodyCollider, multiBody, linkIndex);
             collider->setFriction(1);
-            collidersToFinalize.push_back(collider);
+            mColliders.push_back(collider);
             collider->setCollisionShape(makeCollisionShapeForLink(simulator, link));
-            simulator.mDynamicsWorld->addCollisionObject(collider, btBroadphaseProxy::DefaultFilter, btBroadphaseProxy::AllFilter);
+            mDynamicsWorld->addCollisionObject(collider, btBroadphaseProxy::DefaultFilter, btBroadphaseProxy::AllFilter);
 
             btScalar mass = 1;
             btVector3 inertia{1, 1, 1}; // TODO(quintin): Is this a sane default?
@@ -328,7 +325,7 @@ namespace mrover {
                     case urdf::Joint::PRISMATIC: {
                         RCLCPP_INFO_STREAM(simulator.get_logger(), "\tMotor");
                         auto* motor = simulator.makeBulletObject<btMultiBodyJointMotor>(simulator.mMultibodyConstraints, multiBody, linkIndex, 0, 0);
-                        constraintsToFinalize.push_back(motor);
+                        mConstraints.push_back(motor);
                         multiBody->getLink(linkIndex).m_userPtr = motor;
                         break;
                     }
@@ -340,7 +337,7 @@ namespace mrover {
                     case urdf::Joint::PRISMATIC: {
                         auto lower = static_cast<btScalar>(parentJoint->limits->lower), upper = static_cast<btScalar>(parentJoint->limits->upper);
                         auto* limitConstraint = simulator.makeBulletObject<btMultiBodyJointLimitConstraint>(simulator.mMultibodyConstraints, multiBody, linkIndex, lower, upper);
-                        constraintsToFinalize.push_back(limitConstraint);
+                        mConstraints.push_back(limitConstraint);
                     }
                     default:
                         break;
@@ -368,12 +365,27 @@ namespace mrover {
         btAlignedObjectArray<btVector3> m;
         multiBody->forwardKinematics(q, m);
         multiBody->updateCollisionObjectWorldTransforms(q, m);
-        simulator.mDynamicsWorld->addMultiBody(multiBody);
+        mDynamicsWorld->addMultiBody(multiBody);
 
-        for (btMultiBodyConstraint* constraint: constraintsToFinalize) {
+        for (btMultiBodyConstraint* constraint: mConstraints) {
             constraint->finalizeMultiDof();
-            simulator.mDynamicsWorld->addMultiBodyConstraint(constraint);
+            mDynamicsWorld->addMultiBodyConstraint(constraint);
         }
+    }
+
+    URDF::~URDF(){
+        // remove the constraints
+        for (btMultiBodyConstraint* constraint : mConstraints) {
+            mDynamicsWorld->removeConstraint(std::bit_cast<btTypedConstraint*>(constraint));
+        }
+
+        // remove the colliders
+        for (btMultiBodyLinkCollider* collider : mColliders) {
+            mDynamicsWorld->removeCollisionObject(std::bit_cast<btCollisionObject*>(collider));
+        }
+
+        // remove the body
+        mDynamicsWorld->removeMultiBody(physics);
     }
 
     auto Simulator::getUrdf(std::string const& name) -> std::optional<std::reference_wrapper<URDF>> {
