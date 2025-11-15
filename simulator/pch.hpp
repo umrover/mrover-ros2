@@ -72,10 +72,13 @@
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
 
+#include <yaml-cpp/yaml.h>
+
 #include <lie.hpp>
 #include <loop_profiler.hpp>
 #include <manif/algorithms/interpolation.h>
 #include <manif/manif.h>
+#include <parameter.hpp>
 #include <point.hpp>
 
 #include <mrover/msg/calibration_status.hpp>
