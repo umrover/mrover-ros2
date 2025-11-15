@@ -36,4 +36,6 @@ data/raw-pano-images
 teleoperation/basestation_gui/install/
 teleoperation/basestation_gui/log/
 
+# blender backup files
+*.blend1
 compile_commands.json
