@@ -19,10 +19,10 @@ namespace mrover{
         });
 
         // Top left (TL) is origin
-        static int TL_ID = 50;
-        static int BL_ID = 51;
-        static int TR_ID = 52;
-        static int BR_ID = 53;
+        static int TL_ID = 2;
+        static int BL_ID = 3;
+        static int TR_ID = 4;
+        static int BR_ID = 5;
 
         // Translation vectors relative to TL
         // Placeholders for now
@@ -159,9 +159,15 @@ namespace mrover{
             }
         }
 
+
         // Offset the poses to origin
         for (size_t i = 0; i < tvecs.size(); ++i) {
-            tvecs[i] = tvecs[i] - offset_map.at(ids[i]);
+            // Check if the detected tag ID exists in our offset map
+            if (offset_map.find(ids[i]) != offset_map.end()) {
+                tvecs[i] = tvecs[i] - offset_map.at(ids[i]);
+            } else {
+                RCLCPP_WARN(get_logger(), "Tag ID %d not found in offset_map, skipping offset", ids[i]);
+            }
         }
 
         // draw results for debugging
@@ -176,6 +182,7 @@ namespace mrover{
         cv::waitKey(1);
         
         // Apply Kalman Filter to smooth the pose estimation
+        // Maybe need to something to keep of valid offset poses
         for (size_t i = 0; i < tvecs.size(); ++i) {
             applyKalmanFilter(tvecs[i], rvecs[i]);
         }
