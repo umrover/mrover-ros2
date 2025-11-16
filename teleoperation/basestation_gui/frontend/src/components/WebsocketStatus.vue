@@ -49,38 +49,34 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue'
-import Vuex from 'vuex'
-const { mapState } = Vuex
+import { useWebsocketStore } from '@/stores/websocket'
+import { storeToRefs } from 'pinia'
 
 export default defineComponent({
-  data() {
-    return {
-      aliasMap: {
-        arm: 'arm',
-        auton: 'auton',
-        drive: 'drive',
-        mast: 'mast',
-        nav: 'nav',
-        science: 'sci',
-        waypoints: 'wypt',
-      } as Record<string, string>,
+  setup() {
+    const websocketStore = useWebsocketStore()
+    const { connectionStatus } = storeToRefs(websocketStore)
+
+    const aliasMap: Record<string, string> = {
+      arm: 'arm',
+      auton: 'auton',
+      drive: 'drive',
+      mast: 'mast',
+      nav: 'nav',
+      science: 'sci',
+      waypoints: 'wypt',
     }
-  },
 
-  computed: {
-    ...mapState('websocket', ['connectionStatus']),
-  },
+    const getAlias = (id: string): string => {
+      return aliasMap[id] || id
+    }
 
-  methods: {
-    isFlashingIn(id: string): boolean {
-      return this.$store.getters['websocket/isFlashingIn'](id)
-    },
-    isFlashingOut(id: string): boolean {
-      return this.$store.getters['websocket/isFlashingOut'](id)
-    },
-    getAlias(id: string): string {
-      return this.aliasMap[id] || id
-    },
+    return {
+      connectionStatus,
+      isFlashingIn: websocketStore.isFlashingIn,
+      isFlashingOut: websocketStore.isFlashingOut,
+      getAlias,
+    }
   },
 })
 </script>

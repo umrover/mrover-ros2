@@ -15,7 +15,7 @@ def send_mast_controls(keyboard: DeviceInputs, pub: Publisher) -> None:
         scale=Y_SCALE,
     )
     controller_z = filter_input(
-        simulated_axis(buttons, KeyboardButton.A, KeyboardButton.D),
+        simulated_axis(buttons, KeyboardButton.D, KeyboardButton.A),
         scale=Z_SCALE,
     )
     pub.publish(Throttle(names=["mast_gimbal_pitch", "mast_gimbal_yaw"], throttles=[controller_y, controller_z]))

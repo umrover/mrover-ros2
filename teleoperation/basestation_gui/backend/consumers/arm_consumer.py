@@ -2,7 +2,6 @@ import json
 import traceback
 from typing import Any, Type
 import asyncio
-import numpy as np
 
 # CONVERTED: Use the async version of the consumer
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
@@ -17,7 +16,7 @@ from backend.drive_controls import send_controller_twist
 from backend.input import DeviceInputs
 from backend.ra_controls import send_ra_controls
 from backend.sa_controls import send_sa_controls
-from geometry_msgs.msg import Twist
+from geometry_msgs.msg import Twist, PoseStamped
 from sensor_msgs.msg import JointState
 from mrover.msg import (
     Throttle,
@@ -39,7 +38,6 @@ class ArmConsumer(AsyncJsonWebsocketConsumer):
         self.subscribers = []
         self.timers = []
         self.cur_ra_mode: str = "disabled"
-        self.cur_sa_mode: str = "disabled"
         self.buffer = {} # Assuming this was intended to be an instance buffer
 
         # Topic Publishers are created once per connection
@@ -52,7 +50,8 @@ class ArmConsumer(AsyncJsonWebsocketConsumer):
         # Forwards ROS topic to GUI
         await self.forward_ros_topic("/arm_controller_state", ControllerState, "arm_state")
         await self.forward_ros_topic("/sa_controller_state", ControllerState, "sa_state")
-        await self.forward_sanitized_ros_topic("/arm_joint_data", JointState, "fk")
+        await self.forward_ros_topic("/arm_joint_data", JointState, "fk")
+        await self.forward_ros_topic("/arm_ik", IK, "ik_target")
 
     async def disconnect(self, close_code) -> None:
         """
@@ -94,32 +93,6 @@ class ArmConsumer(AsyncJsonWebsocketConsumer):
         )
         self.subscribers.append(sub)
 
-    async def forward_sanitized_ros_topic(self, topic_name: str, topic_type: Type, gui_msg_type: str) -> None:
-        loop = asyncio.get_running_loop()
-
-        # json cannot be parsed with NaN, remove it to not crash the frontend
-
-        def sanitize_data(data):
-            if isinstance(data, dict):
-                return {k: sanitize_data(v) for k, v in data.items()}
-            elif isinstance(data, list):
-                return [sanitize_data(item) for item in data]
-            elif isinstance(data, (int, float)):
-                return float(np.nan_to_num(data))
-            else:
-                return data
-
-        def callback(ros_message: Any):
-            raw_data = {"type": gui_msg_type, **message_to_ordereddict(ros_message)}
-            sanitized_data = sanitize_data(raw_data)
-            asyncio.run_coroutine_threadsafe(self.send_json(sanitized_data), loop)
-
-        # CONVERTED: Use sync_to_async for blocking rclpy calls
-        sub = await sync_to_async(self.node.create_subscription)(
-            topic_type, topic_name, callback, qos_profile=qos_profile_sensor_data
-        )
-        self.subscribers.append(sub)
-
 
     async def receive_json(self, content: dict, **kwargs) -> None:
         # CONVERTED: Use `receive_json` which automatically decodes the JSON content
@@ -149,19 +122,9 @@ class ArmConsumer(AsyncJsonWebsocketConsumer):
                     "type": "sa_controller",
                     "axes": axes,
                     "buttons": buttons,
-                    "site": site
                 }:
                     device_input = DeviceInputs(axes, buttons)
-                    # FIX: Use instance variable for mode
-                    if site == 0:
-                        send_sa_controls(self.cur_sa_mode, 0, device_input, self.sa_thr_pub)
-                    elif site == 1:
-                        send_sa_controls(self.cur_sa_mode, 1, device_input, self.sa_thr_pub)
-                    else:
-                        self.node.get_logger().warning(f"Unhandled Site: {site}")
-
-                case { "type": "sa_mode", "mode": sa_mode }:
-                    self.cur_sa_mode = sa_mode # FIX: Use instance variable
+                    send_sa_controls(device_input, self.sa_thr_pub)
 
                 case _:
                     self.node.get_logger().warning(f"Unhandled message on arm: {content}")
