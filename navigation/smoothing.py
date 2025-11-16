@@ -132,7 +132,7 @@ class Relaxation:
         )
 
         # TODO: depending on how inefficient this is, we may limit how many times this loop runs
-        while candidate_cost < cost or math.isclose(candidate_cost, cost):
+        while candidate_cost < cost or math.isclose(candidate_cost, cost, rel_tol=0.1):
             if len(current_trajectory.coordinates) <= 2:
                 break
 
