@@ -13,19 +13,5 @@ simulator:
 
     ref_heading: 90.0  # For the GPS sensor to work
 
-    objects:
-      rover:
-        type: urdf
-        uri: package://mrover/urdf/rover/rover.urdf.xacro
-        position: [ 0.0, 0.0, 0.1 ]
-      world:
-        type: urdf
-        uri: package://mrover/urdf/world/world.urdf.xacro
-      bottle:
-        type: urdf
-        uri: package://mrover/urdf/world/bottle.urdf.xacro
-        position: [9.0, 10.0, 0.5]
-
-
     world_frame: "map"
     rover_frame: "sim_base_link"
