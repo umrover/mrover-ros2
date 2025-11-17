@@ -4,7 +4,6 @@
 #include <rclcpp/node.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <rcutils/cmdline_parser.h>
-#include <string>
 
 #include <mrover/msg/set_position.hpp>
 #include <mrover/srv/get_position.hpp>
