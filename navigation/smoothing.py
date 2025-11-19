@@ -1,9 +1,45 @@
 from navigation.trajectory import Trajectory
-from navigation.context import Context, CostMap 
+from navigation.context import Context, CostMap
+from navigation.coordinate_utils import cartesian_to_ij, ij_to_cartesian, publish_trajectory
 
 from scipy.interpolate import splev, splprep
 import numpy as np
 import math, sys
+
+
+def smoothing(trajectory: Trajectory, context: Context, should_relax: bool, should_interpolate: bool):
+    if should_relax:
+        relaxed_path = Relaxation.relax(
+            context, Trajectory(np.apply_along_axis(lambda coord: cartesian_to_ij(context, coord), 1, trajectory.coordinates))
+        )
+        cartesian_coords = np.apply_along_axis(
+            lambda coord: ij_to_cartesian(context, coord), 1, relaxed_path.coordinates
+        )
+        cartesian_coords = np.hstack((cartesian_coords, np.zeros((cartesian_coords.shape[0], 1))))
+
+    else:
+        cartesian_coords = trajectory
+
+    output = Trajectory(cartesian_coords)
+    publish_trajectory(output, context, context.relaxed_publisher, [1.0, 0.0, 0.0])
+
+    if should_interpolate:
+        spline_path = SplineInterpolation.interpolate(context, output)
+
+        publish_trajectory(spline_path, context, context.interpolated_publisher, [0.0, 1.0, 0.0], size=0.05)
+
+        spline_cost = Relaxation.cost_full(context, spline_path)[0]
+        old_cost = Relaxation.cost_full(context, output)[0]
+
+        if (spline_cost - old_cost) / (old_cost + 1e-7) > 0.5:
+            context.node.get_logger().warning(
+                f"Spline cost is much worse than old cost {spline_cost} vs {old_cost}. Using old path instead!"
+            )
+
+        else:
+            output = spline_path
+
+    return output
 
 
 class Relaxation:
@@ -51,19 +87,18 @@ class Relaxation:
 
         cost = 0.0
         for y, x in interpolated:
-            if abs(0.5 - (x - int(x))) < 1e-5 and abs(0.5 - (y - int(y))) < 1e-5:     # Close to boundary
+            if abs(0.5 - (x - int(x))) < 1e-5 and abs(0.5 - (y - int(y))) < 1e-5:  # Close to boundary
                 cost_arr = [
                     cost_map.data[int(x), int(y)],
                     cost_map.data[int(x) + 1, int(y)],
                     cost_map.data[int(x), int(y) + 1],
-                    cost_map.data[int(x) + 1, int(y) + 1]
-                    ]
+                    cost_map.data[int(x) + 1, int(y) + 1],
+                ]
                 cost += segment_interval * (min(cost_arr) + 0.001)
             else:
-                cost += (
-                    segment_interval
-                    * (cost_map.data[int(y + 0.5), int(x + 0.5)] + 0.001) # make cost nonzero so distance matters
-                )
+                cost += segment_interval * (
+                    cost_map.data[int(y + 0.5), int(x + 0.5)] + 0.001
+                )  # make cost nonzero so distance matters
         return cost
 
     @staticmethod
@@ -127,9 +162,7 @@ class Relaxation:
         cost, _ = Relaxation.cost_full(ctx, trajectory)
 
         current_trajectory = trajectory
-        candidate_traj, candidate_cost = Relaxation.relax_single(
-            ctx, trajectory
-        )
+        candidate_traj, candidate_cost = Relaxation.relax_single(ctx, trajectory)
 
         # TODO: depending on how inefficient this is, we may limit how many times this loop runs
         while candidate_cost < cost or math.isclose(candidate_cost, cost, rel_tol=0.1):
@@ -139,29 +172,27 @@ class Relaxation:
             current_trajectory = candidate_traj
             cost = candidate_cost
 
-            candidate_traj, candidate_cost = Relaxation.relax_single(
-                ctx, current_trajectory
-            )
+            candidate_traj, candidate_cost = Relaxation.relax_single(ctx, current_trajectory)
 
         return current_trajectory
 
 
 class SplineInterpolation:
     @staticmethod
-    def interpolate(
-        ctx: Context, trajectory: Trajectory, spacing: float = 0.25
-    ) -> Trajectory:
+    def interpolate(ctx: Context, trajectory: Trajectory, spacing: float = 0.5) -> Trajectory:
         """
-        Fits cubic splines to the given trajectory and returns a new trajectory with 
+        Fits cubic splines to the given trajectory and returns a new trajectory with
         evenly spaced points sampled from the splines. We approximate the total distance
-        of the calculated splines and map the desired distances of each point to the 
+        of the calculated splines and map the desired distances of each point to the
         default parameterization produce by scipy.
         """
+        if len(trajectory.coordinates) < 2:
+            return trajectory
+
         # can configure smoothness (s) and other parameters
         try:
-            spline, u = splprep(
-                [trajectory.coordinates[:, 0], trajectory.coordinates[:, 1]], s=0,k=2
-            )
+
+            spline, u = splprep([trajectory.coordinates[:, 0], trajectory.coordinates[:, 1]], s=0, k=2)
         except Exception as e:
             print(e)
             return trajectory
@@ -179,7 +210,6 @@ class SplineInterpolation:
 
         u_spaced = np.interp(target_dist, dist, u_fine)  # map distance to u parameter
         u_spaced = np.append(u_spaced, u[-1])  # make sure end waypoint is preserved
-
 
         x_spaced, y_spaced = splev(u_spaced, spline)
 
