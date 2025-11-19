@@ -296,7 +296,7 @@ class DriveController:
 
         # TODO(Brendan): What do you want to do if there are no intersection points
         # Placeholder
-        if(intersection_points is not None):
+        if(intersection_points is not None and len(intersection_points)):
             # Display markers for intersection points and lookahead dist
             self.display_markers(rover_pos, lookahead_dist, intersection_points)
 
@@ -309,6 +309,7 @@ class DriveController:
         # Compute errors
         linear_error = float(np.linalg.norm(target_dir))
         angular_error = angle_to_rotate_2d(rover_dir[:2], target_dir[:2])
+        # self.node.get_logger().info(f'Angle: {angular_error}')
 
         # Determine linear and angular velocity
         output = self.get_twist_for_arch(
@@ -352,14 +353,18 @@ class DriveController:
             return Twist(), True
 
         # Compute angular velocity
-        linear_vel = linear_error * driving_p
+        linear_vel = np.clip(
+                        linear_error * driving_p,
+                        min_driving_effort,
+                        max_driving_effort,
+                    )
 
         angular_vel = (np.sin(angular_error) / lookahead_dist) * linear_vel
 
         # If we are outside are max_turning_effort, we will have no linear velocity
         # This is because we don't want to go outside of the arch
         # So we instead decide to prioritize turning to make the arch easier to follow
-        if (angular_vel > max_turning_effort or angular_error > 90):
+        if (angular_vel > max_turning_effort or angular_error > (0.60*np.pi)):
             cmd_vel = Twist(
                 angular=Vector3(
                     z=np.clip(
@@ -389,8 +394,8 @@ class DriveController:
             )
             return cmd_vel, False
 
-    @staticmethod
     def determine_next_point(
+        self,
         waypoints: Trajectory,
         intersections: list,
     ) -> np.ndarray:
@@ -409,7 +414,7 @@ class DriveController:
             # Get back to the path
             waypoints.decerement_point()
             return waypoints.get_current_point()
-        
+
         # There is only one intersection
         if len(intersections) == 1:
             waypoints.decerement_point()
@@ -421,7 +426,7 @@ class DriveController:
         dist_1 = np.sqrt((path_point_x - intersections[0][0])**2 + (path_point_y - intersections[0][1])**2)
         dist_2 = np.sqrt((path_point_x - intersections[1][0])**2 + (path_point_y - intersections[1][1])**2)
 
-        target_pos = [0,0]
+        target_pos = [0.0,0.0,0.0]
 
         if dist_1 < dist_2:
             target_pos[0] = intersections[0][0]
@@ -480,6 +485,7 @@ class DriveController:
     ) -> list | None:
         # A helper function for pure pursuit. 
         # Use this to compute the potential point we should be following!
+        intersections = []
 
         # Ensure a trajectory was passed through
         if waypoints is None:
@@ -491,7 +497,12 @@ class DriveController:
 
         # If the goal point is within our lookahead_dist, return the goal
         if waypoints.done():
-            return np.ndarray([x_1, y_1])
+            intersections.append([x_1, y_1, 0.0])
+            return intersections
+        elif waypoints.increment_point():
+            waypoints.decerement_point()
+            intersections.append([x_1, y_1, 0.0])
+            return intersections
 
         x_pos = rover_pos[0]
         y_pos = rover_pos[1]
@@ -511,6 +522,8 @@ class DriveController:
 
         valid_intersection_1 = False
         valid_intersection_2 = False
+        intersection_1 = [0.0,0.0,0.0]
+        intersection_2 = [0.0,0.0,0.0]
 
         # Determine if there is an intersection
         if (discriminate >= 0):
@@ -519,28 +532,34 @@ class DriveController:
             y_sol_1 = -det*d_x + abs(d_y)*np.sqrt(discriminate)
             y_sol_2 = -det*d_x - abs(d_y)*np.sqrt(discriminate)
 
-            intersection_1 = [x_sol_1 + x_pos, y_sol_1 + y_pos]
-            intersection_2 = [x_sol_2 + x_pos, y_sol_2 + y_pos]
+            intersection_1 = [x_sol_1 + x_pos, y_sol_1 + y_pos, 0.0]
+            intersection_2 = [x_sol_2 + x_pos, y_sol_2 + y_pos, 0.0]
 
             min_x = min(x_1, x_2)
             min_y = min(y_1, y_2)
             max_x = max(x_1, x_2)
             max_y = max(y_1, y_2)
 
+            # Something is wrong here with determining intersection points
+            # I am assuming this is to do with how we are incremeneting the points in the path
             if (min_x <= intersection_1[0] <= max_x and min_y <= intersection_1[1] <= max_y):
                 valid_intersection_1 = True
             if (min_x <= intersection_2[0] <= max_x and min_y <= intersection_2[1] <= max_y):
                 valid_intersection_2 = True
         else:
-            return None
+            waypoints.decerement_point()
+            intersections.append([x_1, y_1, 0.0])
+            return intersections
 
-        intersections = []
+        # if (valid_intersection_1):
+        #     intersections.append(intersection_1)
+        # if (valid_intersection_2):
+        #     intersections.append(intersection_2)
 
-        if (valid_intersection_1):
-            intersections.append(intersection_1)
-        if (valid_intersection_2):
-            intersections.append(intersection_2)
+        intersections.append(intersection_1)
+        intersections.append(intersection_2)
 
+        waypoints.decerement_point()
         return intersections
 
     def display_markers(
@@ -550,16 +569,19 @@ class DriveController:
         intersection_points: np.ndarray,
     ):
         for i, point in enumerate(intersection_points):
+            # self.node.get_logger().info(f'Points Publishing: {point}')
             self.intersection_pub.publish(
                 gen_marker(
                     time=self.node.get_clock().now(),
-                    point=point,
+                    point=[point[0],point[1]],
                     color=[0.0, 1.0, 0.0],
                     id=i,
                     lifetime=self.node.get_parameter("pub_lookahead_rate").value,
+                    size=0.2,
                 )
             )
-        self.intersection_pub.publish(
+
+        self.lookahead_pub.publish(
             ring_marker(
                 time=self.node.get_clock().now(),
                 point=rover_pos,

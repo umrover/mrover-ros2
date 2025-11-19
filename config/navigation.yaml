@@ -46,7 +46,7 @@ navigation:
       min_turning_effort: -0.5
       turning_p: 3.0
       driving_p: 20.0
-      lookahead_distance: 1.0
+      lookahead_distance: 0.8
       use_pure_pursuit: true
     
     long_range:

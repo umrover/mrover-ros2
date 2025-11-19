@@ -55,7 +55,7 @@ def gen_marker(
     return marker
 
 def ring_marker(
-    time: Time, point=[0.0, 0.0], color=[1.0, 1.0, 1.0], radius=0.5, size=0.2, lifetime=5, id=0, delete=False
+    time: Time, point=[0.0, 0.0], color=[1.0, 1.0, 1.0], radius=0.5, size=0.1, lifetime=5, id=0, delete=False
 ) -> Marker:
     """
     Creates and publishes a ring around the specified (x, y, z) coordinates with the given radius.
@@ -88,7 +88,7 @@ def ring_marker(
     # Use line segments to create a ring
     num_points = 100
     for i in range(num_points):
-        angle = 2 * np.pi * i / num_points
+        angle = 2 * np.pi * i / (num_points - 1)
         p = Point()
         p.x = point[0] + radius * np.cos(angle)
         p.y = point[1] + radius * np.sin(angle)
