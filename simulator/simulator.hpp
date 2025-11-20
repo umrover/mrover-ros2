@@ -85,6 +85,7 @@ namespace mrover {
             boost::container::small_vector<Uniform<ModelUniforms>, 2> visualUniforms;
             boost::container::small_vector<Uniform<ModelUniforms>, 2> collisionUniforms;
             Clock::time_point lastUpdate = Clock::now();
+            bool isHolding = false;
         };
 
         urdf::Model model;
