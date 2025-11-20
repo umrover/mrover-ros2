@@ -2,7 +2,12 @@ import * as THREE from 'three'
 import GUI from 'lil-gui'
 import URDFLoader from 'urdf-loader'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
-// import { TrackballControls } from 'three/addons/controls/TrackballControls.js'
+// import { FlyControls } from 'three/addons/controls/FlyControls.js'
+// import { ArcballControls } from 'three/addons/controls/ArcballControls.js'
+// import { FirstPersonControls } from 'three/addons/controls/FirstPersonControls.js'
+// import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js'
+//import { TrackballControls } from 'three/addons/controls/TrackballControls.js'
+import * as Text2D from 'three/addons/webxr/Text2D.js' //DEBUG
 
 const defaultJointValues = {
   chassis_to_arm_a: 24.14,
@@ -15,6 +20,16 @@ const defaultJointValues = {
 
 let rover = null
 let ikTargetSphere = null
+
+let camera_type_names = ["default", "follow", "full arm", "arm", "side arm", "top", "bottom"]
+let current_camera_type = "default"
+
+const costMapBlockWidth = 80
+const numCostMapBlocks = 20
+const costMapGridOffset = costMapBlockWidth * (numCostMapBlocks/2)
+
+//[Box Mesh, Text2D]
+let costMapBlocks = []
 
 export default function threeSetup() {
   // Canvas element
@@ -53,6 +68,38 @@ export default function threeSetup() {
   ikTargetSphere.position.set(0, 0, 0)
   ikTargetSphere.visible = false // Hidden by default until position is set
   scene.add(ikTargetSphere)
+
+  //Create costmap grid
+  //let costMapBlocks = []
+  
+  for(let i = 0, idx = 0; i < numCostMapBlocks; i++){
+    for(let j = 0; j < numCostMapBlocks; j++, idx++){
+      const currentGeometry = new THREE.BoxGeometry(costMapBlockWidth,1,costMapBlockWidth)
+      const currentMaterial = new THREE.MeshStandardMaterial({
+        color: 0xff0000,
+        /*emissive: 0xff0000,
+        emissiveIntensity: 0.3,*/
+      })
+      
+      costMapBlocks.push([new THREE.Mesh(currentGeometry, currentMaterial), Text2D.createText("0", costMapBlockWidth / 2)])
+
+      const current_x = i * costMapBlockWidth - costMapGridOffset
+      const current_z =  j * costMapBlockWidth - costMapGridOffset
+
+      costMapBlocks[idx][0].position.x = current_x
+      costMapBlocks[idx][0].position.y = -50
+      costMapBlocks[idx][0].position.z = current_z
+
+      costMapBlocks[idx][1].position.x = current_x
+      costMapBlocks[idx][1].position.y = -49
+      costMapBlocks[idx][1].position.z = current_z
+      costMapBlocks[idx][1].lookAt(current_x, 10, current_z)
+
+      scene.add(costMapBlocks[idx][0])
+      scene.add(costMapBlocks[idx][1])
+    }
+  }
+
 
   const manager = new THREE.LoadingManager()
   const loader = new URDFLoader(manager)
@@ -129,20 +176,131 @@ export default function threeSetup() {
   })
 
   // Camera setup
-  const camera = new THREE.PerspectiveCamera(
-    75,
-    sizes.width / sizes.height,
-    0.1,
-    1000,
-  )
-  camera.position.x = 100
-  camera.position.y = 50
-  camera.position.z = 100
-  camera.lookAt(0, 0, 0)
-  scene.add(camera)
+  // const camera = new THREE.PerspectiveCamera(
+  //   75,
+  //   sizes.width / sizes.height,
+  //   0.1,
+  //   1000,
+  // )
+  // camera.position.x = 100
+  // camera.position.y = 50
+  // camera.position.z = 100
+  // camera.lookAt(0, 0, 0)
+  // scene.add(camera)
+  
+  // const follow_camera = new THREE.PerspectiveCamera(
+  //   75,
+  //   sizes.width / sizes.height,
+  //   0.1,
+  //   1000,
+  // )
+  // follow_camera.position.x = -100
+  // follow_camera.position.y = 60
+  // follow_camera.position.z = 0
+  // follow_camera.lookAt(0, 20, 0)
+  // scene.add(follow_camera)
+
+  // var current_camera_type = "default"
+  // var camera_type_names = ["default", "follow"]
+  
+  //TODO just change camera position, not actual object?
+  var camera_types = {
+    "default": new THREE.PerspectiveCamera(
+      75,
+      sizes.width / sizes.height,
+      0.1,
+      1000,
+    ),
+    "follow": new THREE.PerspectiveCamera(
+        75,
+        sizes.width / sizes.height,
+        0.1,
+        1000,
+    ),
+    "full arm": new THREE.PerspectiveCamera(
+        75,
+        sizes.width / sizes.height,
+        0.1,
+        1000,
+    ),
+    "arm": new THREE.PerspectiveCamera(
+        75,
+        sizes.width / sizes.height,
+        0.1,
+        1000,
+    ),
+    "side arm": new THREE.PerspectiveCamera(
+        75,
+        sizes.width / sizes.height,
+        0.1,
+        1000,
+    ),
+    "top": new THREE.PerspectiveCamera(
+        75,
+        sizes.width / sizes.height,
+        0.1,
+        1000,
+    ),
+    "bottom": new THREE.PerspectiveCamera(
+        75,
+        sizes.width / sizes.height,
+        0.1,
+        1000,
+    )
+  }
+
+  camera_types["default"].position.x = 100
+  camera_types["default"].position.y = 50
+  camera_types["default"].position.z = 100
+  camera_types["default"].lookAt(0, 0, 0)
+  scene.add(camera_types["default"])
+
+  camera_types["follow"].position.x = -130
+  camera_types["follow"].position.y = 120
+  camera_types["follow"].position.z = 0
+  camera_types["follow"].lookAt(0, 30, 0)
+  scene.add(camera_types["follow"])
+
+  camera_types["full arm"].position.x = -20
+  camera_types["full arm"].position.y = 60
+  camera_types["full arm"].position.z = 0
+  camera_types["full arm"].lookAt(75, 0, 0)
+  scene.add(camera_types["arm"])
+
+  camera_types["arm"].position.x = 0
+  camera_types["arm"].position.y = 30
+  camera_types["arm"].position.z = 10//15
+  camera_types["arm"].lookAt(75, 10, 10)
+  scene.add(camera_types["arm"])
+
+  camera_types["side arm"].position.x = 25
+  camera_types["side arm"].position.y = 40
+  camera_types["side arm"].position.z = 70
+  camera_types["side arm"].lookAt(75, 0, 0)
+  scene.add(camera_types["side arm"])
+
+  camera_types["top"].position.x = -1
+  camera_types["top"].position.y = 160
+  camera_types["top"].position.z = 0
+  camera_types["top"].lookAt(0, 0, 0)
+  scene.add(camera_types["top"])
+
+  camera_types["bottom"].position.x = 11
+  camera_types["bottom"].position.y = -160
+  camera_types["bottom"].position.z = 0
+  camera_types["bottom"].lookAt(10, 0, 0)
+  scene.add(camera_types["top"])
+
+  // for(var tag of camera_type_names){
+  //   camera_types[tag].position.y = 500
+  // }
 
   // OrbitControls for the camera
-  const controls = new OrbitControls(camera, canvas)
+  const controls = new OrbitControls(camera_types["default"], canvas)
+  //controls.target = (0, 0, 0)
+  console.log("here -->")
+  console.log(controls.target)
+
   // controls.enableDamping = true
 
   // Renderer setup
@@ -170,11 +328,13 @@ export default function threeSetup() {
     if (timeSinceLastFrame > frameInterval) {
       timeSinceLastFrame %= frameInterval
       controls.update()
-      renderer.render(scene, camera)
+      renderer.render(scene, camera_types[current_camera_type])
     }
   }
 
   tick() // Start the animation loop
+
+  
 
   return () => {
     renderer.dispose() // Dispose renderer
@@ -214,6 +374,55 @@ export function updateIKTarget(position) {
   } else if (position === null || position === undefined) {
     // Hide sphere if no position provided
     ikTargetSphere.visible = false
+  }
+}
+
+export function set_camera_type(new_type) {
+  //console.log(current_camera_type);
+  current_camera_type = new_type
+}
+
+
+//DEBUG experimenting
+// export function updateCostMapGrid(grid_data){
+//   for(let i = 0; i < numCostMapBlocks * numCostMapBlocks; i++){
+//     console.log("i ran")
+//     costMapBlocks[i][1].text = "67" //DEBUG
+    //costMapBlocks[i][1].update()
+
+    //replace text
+    //scene.remove(costMapBlocks[i][1])
+
+    // const current_x = Math.floor(i / numCostMapBlocks) * costMapBlockWidth - costMapGridOffset
+    // const current_z =  (i % numCostMapBlocks) * costMapBlockWidth - costMapGridOffset
+      
+    // costMapBlocks[i][1] = Text2D.createText("67", costMapBlockWidth / 2)
+
+    // costMapBlocks[i][1].position.x = current_x
+    // costMapBlocks[i][1].position.y = -49
+    // costMapBlocks[i][1].position.z = current_z
+    // costMapBlocks[i][1].lookAt(current_x, 10, current_z)
+    
+    //scene.add(costMapBlocks[i][1])
+//   }
+// }
+// export function updateCostMapGrid(grid_data){
+//   for(let i = 0; i < numCostMapBlocks * numCostMapBlocks; i++){
+//     console.log(i)
+//     console.log(costMapBlocks[i])//[1].text = "67" //DEBUG
+//   }
+// }
+
+// updateCostMapGrid([1])
+
+export function updateCostMapGrid(grid_data){
+  for(let i = 0; i < numCostMapBlocks * numCostMapBlocks; i++){
+    const newMaterial = new THREE.MeshStandardMaterial({
+    color: 0xfff000
+    })
+
+    costMapBlocks[i][0].material = newMaterial
+    costMapBlocks[i][1].text = "67"
   }
 }
 
