@@ -37,3 +37,7 @@ teleoperation/basestation_gui/install/
 teleoperation/basestation_gui/log/
 starter_projects/
 data/images/
+
+# blender backup files
+*.blend1
+compile_commands.json
