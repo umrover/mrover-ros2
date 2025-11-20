@@ -10,6 +10,8 @@
 # clangd cache
 .cache/
 
+.clangd
+
 # IMGUI window layout
 imgui.ini
 

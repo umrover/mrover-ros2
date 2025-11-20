@@ -1,11 +1,10 @@
 #include <keyboard_typing/keyboard_typing.hpp>
-#include <rclcpp/executors/single_threaded_executor.hpp>
 
-auto main(int argc, char* argv[]) -> int {
+auto main(int argc, char** argv) -> int {
     rclcpp::init(argc, argv);
-    auto imgKD = std::make_shared<mrover::KeyboardTypingNode>();
+    auto keyboardT = std::make_shared<mrover::KeyboardTypingNode>();
     rclcpp::executors::SingleThreadedExecutor executor;
-    executor.add_node(imgKD);
+    executor.add_node(keyboardT);
     executor.spin();
 
     rclcpp::shutdown();

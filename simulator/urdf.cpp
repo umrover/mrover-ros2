@@ -36,7 +36,7 @@ namespace mrover {
 
         YAML::Node configuration = YAML::LoadFile(CONFIG_PATH / configFile);
         YAML::Node objects = configuration["objects"];
-        if (!objects.IsDefined()) {
+        if (!objects) {
             throw std::runtime_error("objects not defined in configuration file...");
         }
 
@@ -49,8 +49,8 @@ namespace mrover {
         // load in the new objects
         for (auto const& name: names) {
             std::string uri = objects[name]["uri"].as<std::string>();
-            std::vector<double> position = objects[name]["position"].IsDefined() ? objects[name]["position"].as<std::vector<double>>() : std::vector<double>{0, 0, 0};
-            std::vector<double> orientation = objects[name]["orientation"].IsDefined() ? objects[name]["orientation"].as<std::vector<double>>() : std::vector<double>{0, 0, 0, 1};
+            std::vector<double> position = objects[name]["position"] ? objects[name]["position"].as<std::vector<double>>() : std::vector<double>{0, 0, 0};
+            std::vector<double> orientation = objects[name]["orientation"] ? objects[name]["orientation"].as<std::vector<double>>() : std::vector<double>{0, 0, 0, 1};
             if (position.size() != 3) throw std::invalid_argument{"Position must have 3 elements"};
             if (orientation.size() != 4) throw std::invalid_argument{"Orientation must have 4 elements"};
             btTransform transform{btQuaternion{static_cast<btScalar>(orientation[0]), static_cast<btScalar>(orientation[1]), static_cast<btScalar>(orientation[2]), static_cast<btScalar>(orientation[3])}, btVector3{static_cast<btScalar>(position[0]), static_cast<btScalar>(position[1]), static_cast<btScalar>(position[2])}};
@@ -65,7 +65,7 @@ namespace mrover {
         // remove the old objects
         std::set<std::string> remove;
         for (auto const& [name, _]: mUrdfs) {
-            if (!objects[name].IsDefined()) {
+            if (!objects[name]) {
                 remove.insert(name);
             }
         }
