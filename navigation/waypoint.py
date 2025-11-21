@@ -42,7 +42,6 @@ class WaypointState(State):
     waypoint_timer: Timer
     path_pub: Publisher
     astar: AStar
-    marker_pub: Publisher
 
     UPDATE_DELAY: float
     NO_SEARCH_WAIT_TIME: float
@@ -64,7 +63,6 @@ class WaypointState(State):
         self.UPDATE_DELAY = context.node.get_parameter("search.update_delay").value
         self.NO_SEARCH_WAIT_TIME = context.node.get_parameter("waypoint.no_search_wait_time").value
 
-        self.marker_pub = context.node.create_publisher(Marker, "waypoint_trajectory", 10)
         self.astar = AStar(context)
         self.astar_traj = Trajectory(np.array([]))
         self.waypoint_traj = Trajectory(np.array([]))
@@ -90,6 +88,7 @@ class WaypointState(State):
     def on_exit(self, context: Context) -> None:
         self.marker_timer.cancel()
         self.waypoint_timer.cancel()
+        context.delete_path_marker(ns=str(type(self)))
 
     def update_waypoint(self, context: Context) -> None:
         self.waypoint_traj.clear()
@@ -307,31 +306,10 @@ class WaypointState(State):
     def display_markers(self, context: Context):
         if context.course is None:
             return
-        if context.node.get_parameter("display_markers").value:
-            start_pt = self.waypoint_traj.cur_pt
-            end_pt = min(start_pt + 5, len(self.waypoint_traj.coordinates))
-            for i, coord in enumerate(self.waypoint_traj.coordinates[:end_pt]):
-                if i >= start_pt:
-                    self.marker_pub.publish(
-                        gen_marker(
-                            context=context,
-                            point=coord,
-                            color=[1.0, 0.0, 1.0],
-                            id=i,
-                            lifetime=context.node.get_parameter("pub_path_rate").value,
-                        )
-                    )
+        
+        if self.USE_COSTMAP:
+            context.publish_path_marker(points=self.waypoint_traj.coordinates, color=[1.0,0.0,1.0], ns=str(type(self)))
+        else:
+            context.publish_path_marker(points=np.array([context.course.current_waypoint_pose_in_map().translation()]), color=[1.0, 0.0, 1.0], ns=str(type(self)))
 
-            if context.course.current_waypoint() is None:
-                return
-
-            self.marker_pub.publish(
-                gen_marker(
-                    context=context,
-                    point=context.course.current_waypoint_pose_in_map().translation()[0:2],
-                    color=[0.0, 0.0, 1.0],
-                    size=0.5,
-                    id=-1,
-                    lifetime=10000,
-                )
-            )
+        

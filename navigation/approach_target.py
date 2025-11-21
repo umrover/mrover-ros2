@@ -24,7 +24,6 @@ class ApproachTargetState(State):
     astar_traj: Trajectory
     target_traj: Trajectory
     astar: AStar
-    marker_pub: Publisher
     time_last_updated: Time
     target_position: np.ndarray | None
     marker_timer: Timer
@@ -50,7 +49,6 @@ class ApproachTargetState(State):
         self.USE_COSTMAP = context.node.get_parameter("costmap.use_costmap").value or current_waypoint.enable_costmap
         self.DISTANCE_THRESHOLD = context.node.get_parameter("search.distance_threshold").value
         self.COST_INFLATION_RADIUS = context.node.get_parameter("costmap.initial_inflation_radius").value
-        self.marker_pub = context.node.create_publisher(Marker, "target_trajectory", 10)
         self.astar_traj = Trajectory(np.array([]))
         self.target_traj = Trajectory(np.array([]))
         self.astar = AStar(context=context)
@@ -68,6 +66,7 @@ class ApproachTargetState(State):
     def on_exit(self, context: Context) -> None:
         self.marker_timer.cancel()
         self.update_timer.cancel()
+        context.delete_path_marker(ns=str(type(self)))
 
     def get_target_position(self, context: Context) -> np.ndarray | None:
         return context.env.current_target_pos()
@@ -363,35 +362,10 @@ class ApproachTargetState(State):
     def display_markers(self, context: Context):
         if self.target_position is None:
             return
-        if context.node.get_parameter("display_markers").value:
-
-            if self.USE_COSTMAP:
-                delete = Marker()
-                delete.action = Marker.DELETEALL
-                self.marker_pub.publish(delete)
-                start_pt = self.target_traj.cur_pt - 2 if self.target_traj.cur_pt - 2 >= 0 else 0
-                end_pt = (
-                    self.target_traj.cur_pt + 7
-                    if self.target_traj.cur_pt + 7 < len(self.target_traj.coordinates)
-                    else len(self.target_traj.coordinates)
-                )
-
-                for i, coord in enumerate(self.target_traj.coordinates[start_pt:end_pt]):
-                    self.marker_pub.publish(
-                        gen_marker(
-                            context=context,
-                            point=coord,
-                            color=[1.0, 0.0, 1.0],
-                            id=i + 1,
-                            lifetime=context.node.get_parameter("pub_path_rate").value,
-                        )
-                    )
-
-            self.marker_pub.publish(
-                gen_marker(
-                    context=context, point=self.target_position, color=[1.0, 1.0, 0.0], id=0, lifetime=100, size=0.5
-                )
-            )
+        if self.USE_COSTMAP:
+            context.publish_path_marker(points=self.target_traj.coordinates, color=[1.0, 1.0, 0.0], ns=str(type(self)))
+        else:
+            context.publish_path_marker(points=np.array([self.target_position]), color=[1.0, 1.0, 0.0], ns=str(type(self)))
 
     def self_in_distance_threshold(self, context: Context):
         rover_SE3 = context.rover.get_pose_in_map()

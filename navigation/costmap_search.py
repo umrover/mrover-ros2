@@ -36,7 +36,6 @@ class CostmapSearchState(State):
     is_recovering: bool = False
     path_pub: Publisher
     astar: AStar
-    marker_pub: Publisher
 
     USE_COSTMAP: bool
     STOP_THRESH: float
@@ -61,7 +60,6 @@ class CostmapSearchState(State):
         self.UPDATE_DELAY = context.node.get_parameter("search.update_delay").value
 
         self.time_begin = context.node.get_clock().now()
-        self.marker_pub = context.node.create_publisher(Marker, "spiral_points", 10)
 
         self.new_traj(context)
 
@@ -81,7 +79,7 @@ class CostmapSearchState(State):
         self.marker_timer.cancel()
         if self.update_astar_timer is not None:
             self.update_astar_timer.cancel()
-        self.marker_pub.publish(gen_marker(context, delete=True))
+        context.delete_path_marker(ns=str(type(self)))
 
     def display_markers(self, context: Context) -> None:
         start_pt = self.spiral_traj.cur_pt
@@ -90,17 +88,7 @@ class CostmapSearchState(State):
             if self.spiral_traj.cur_pt + 3 < len(self.spiral_traj.coordinates)
             else len(self.spiral_traj.coordinates)
         )
-        if context.node.get_parameter("display_markers").value:
-            for i, coord in enumerate(self.spiral_traj.coordinates[start_pt:end_pt]):
-                self.marker_pub.publish(
-                    gen_marker(
-                        context=context,
-                        point=coord,
-                        color=[1.0, 0.0, 0.0],
-                        id=i,
-                        lifetime=context.node.get_parameter("pub_path_rate").value,
-                    )
-                )
+        context.publish_path_marker(points=self.spiral_traj.coordinates[start_pt:end_pt], color=[1.0,0.0,0.0], ns=str(type(self)))
 
     def update_astar_traj(self, context: Context):
         if context.course is None:

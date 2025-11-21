@@ -229,24 +229,7 @@ class AStar:
             if len(cartesian_coords) >= 1:
                 trajectory = Trajectory(np.hstack((cartesian_coords, np.zeros((cartesian_coords.shape[0], 1)))))
 
-            # Publish the path for visualization in RViz
-            path_msg = Path()
-            path_msg.header = Header()
-            path_msg.header.frame_id = "map"
-
-            poses = []
-            for coord in cartesian_coords:
-                pose_stamped = PoseStamped()
-                pose_stamped.header.frame_id = "map"
-                pose_stamped.pose = Pose(
-                    position=Point(x=coord[0], y=coord[1], z=0.0), orientation=Quaternion(x=0.0, y=0.0, z=0.0, w=1.0)
-                )
-                poses.append(pose_stamped)
-
-            path_msg.poses = poses
-
-            if self.path_pub is not None:
-                self.path_pub.publish(path_msg)
+            context.publish_path_marker(points=cartesian_coords, color=[1.0,0.0,0.0], ns=str(type(self)))
         else:
             # If occupancy_list is None, no path is needed (start == end).
             trajectory = Trajectory(np.array([]))
