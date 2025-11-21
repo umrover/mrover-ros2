@@ -21,11 +21,17 @@ namespace mrover{
 
         // Filter that stores filtered pose
         cv::KalmanFilter kf;
-        
+
+        rclcpp::Time last_prediction_time_;
+        bool filter_initialized_ = false;
+
+        // Change the function signature to accept vectors
+        auto updateKalmanFilter(std::vector<cv::Vec3d> const& tvecs,
+                                std::vector<cv::Vec3d> const& rvecs) -> geometry_msgs::msg::Pose;
+
+        cv::Vec3d getGlobalCameraPosition(cv::Vec3d rvec, cv::Vec3d tvec, cv::Vec3d tag_offset_world);
 
         auto estimatePose(sensor_msgs::msg::Image::ConstSharedPtr const& msg) -> geometry_msgs::msg::Pose;
-
-        auto applyKalmanFilter(cv::Vec3d &tvec, cv::Vec3d &rvecs) -> void;
 
         auto yawCallback(sensor_msgs::msg::Image::ConstSharedPtr const& msg) -> void;
 
