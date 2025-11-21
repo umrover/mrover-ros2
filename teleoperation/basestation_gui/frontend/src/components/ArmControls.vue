@@ -18,7 +18,7 @@
           type="button"
           class="btn flex-fill"
           :class="mode === 'disabled' ? 'btn-danger' : 'btn-outline-danger'"
-          @click="mode = 'disabled'"
+          @click="newRAMode('disabled')"
         >
           Disabled
         </button>
@@ -26,7 +26,7 @@
           type="button"
           class="btn flex-fill"
           :class="mode === 'throttle' ? 'btn-success' : 'btn-outline-success'"
-          @click="mode = 'throttle'"
+          @click="newRAMode('throttle')"
         >
           Throttle
         </button>
@@ -34,7 +34,7 @@
           type="button"
           class="btn flex-fill"
           :class="mode === 'ik-pos' ? 'btn-success' : 'btn-outline-success'"
-          @click="mode = 'ik-pos'"
+          @click="newRAMode('ik-pos')"
         >
           IK Position
         </button>
@@ -42,7 +42,7 @@
           type="button"
           class="btn flex-fill"
           :class="mode === 'ik-vel' ? 'btn-success' : 'btn-outline-success'"
-          @click="mode = 'ik-vel'"
+          @click="newRAMode('ik-vel')"
         >
           IK Velocity
         </button>
@@ -55,6 +55,7 @@
 <script lang="ts" setup>
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useWebsocketStore } from '@/stores/websocket'
+import { armAPI } from '@/utils/api'
 
 const websocketStore = useWebsocketStore()
 
@@ -88,11 +89,6 @@ onMounted(() => {
       axes: gamepad.axes,
       buttons: gamepad.buttons.map(button => button.value),
     })
-
-    websocketStore.sendMessage('arm', {
-      type: 'ra_mode',
-      mode: mode.value,
-    })
   }, 1000 / UPDATE_HZ)
 })
 
@@ -100,4 +96,17 @@ onBeforeUnmount(() => {
   window.clearInterval(interval)
   document.removeEventListener('keydown', keyDown)
 })
+
+const newRAMode = async (newMode: string) => {
+  try {
+    mode.value = newMode
+    const data = await armAPI.setRAMode(mode.value)
+    if (data.status === 'success' && data.mode) {
+        mode.value = data.mode
+      };
+    }
+     catch (error) {
+    console.error('Failed to set arm mode:', error)
+  }
+}
 </script>
