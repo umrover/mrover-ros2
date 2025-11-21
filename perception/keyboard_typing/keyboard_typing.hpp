@@ -11,7 +11,7 @@ namespace mrover{
         LoopProfiler mLoopProfiler;
 
         // Can pub to any topic just make the name make sense
-        rclcpp::Publisher<geometry_msgs::msg::Quaternion>::SharedPtr mCostMapPub;
+        rclcpp::Publisher<msg::KeyboardYaw>::SharedPtr mCostMapPub;
 
         // Tag offsets
         std::unordered_map<int, cv::Vec3d> offset_map;

@@ -2,6 +2,12 @@
 #include "lie.hpp"
 #include <cmath>
 #include <opencv2/core/eigen.hpp>
+#include "mrover/msg/detail/keyboard_yaw__struct.hpp"
+#include <cmath>
+#include <functional>
+#include <geometry_msgs/msg/detail/quaternion__struct.hpp>
+#include <opencv2/aruco.hpp>
+#include <opencv2/calib3d.hpp>
 #include <opencv2/core/matx.hpp>
 #include <opencv2/core/mat.hpp>
 #include <opencv2/highgui.hpp>
@@ -68,7 +74,7 @@ namespace mrover{
         kf.statePost = cv::Mat::zeros(12, 1, CV_32F);
 
         // create publisher
-        mCostMapPub = this->create_publisher<geometry_msgs::msg::Quaternion>("/keypose/yaw", rclcpp::QoS(1));
+        mCostMapPub = this->create_publisher<msg::KeyboardYaw>("/keypose/yaw", rclcpp::QoS(1));
     }
 
     auto KeyboardTypingNode::yawCallback(sensor_msgs::msg::Image::ConstSharedPtr const& msg) -> void {
@@ -76,21 +82,40 @@ namespace mrover{
         geometry_msgs::msg::Pose pose = estimatePose(msg);
 
         // extract yaw into a quarterian and then publish to mCostMapPub
-        // mCostMapPub->publish(msg);
+        geometry_msgs::msg::Quaternion &orientation = pose.orientation;
+        double x = orientation.x;
+        double y = orientation.y;
+        double z = orientation.z;
+        double w = orientation.w;
+
+        double siny_cosp = 2.0 * (w * z + x * y);
+        double cosy_cosp = 1.0 - 2.0 * (y * y + z * z);
+        double yaw = std::atan2(siny_cosp, cosy_cosp);
+
+        // Convert to degrees if needed
+        double yaw_deg = yaw * 180.0 / M_PI;
+        msg::KeyboardYaw newmsg;
+        newmsg.yaw = yaw_deg;
+        RCLCPP_INFO_STREAM(get_logger(), yaw_deg);
+
+        mCostMapPub->publish(newmsg);
     }
 
     auto KeyboardTypingNode::estimatePose(sensor_msgs::msg::Image::ConstSharedPtr const& msg) -> geometry_msgs::msg::Pose {
         // Read in camera constants
-        int hitcount = 0;
         std::string cameraConstants = "temp.json";
         cv::Mat camMatrix = (cv::Mat_<double>(3,3) <<
-            415.69, 0.0, 320.0,   // fx, 0, cx
-            0.0, 415.69, 240.0,   // 0, fy, cy
+            432.82290127206676, 0.0, 320.66663616737236,   // fx, 0, cx
+            0.0, 428.8529386724118, 256.09398022438245,   // 0, fy, cy
             0.0, 0.0, 1.0
         );
-        //cv::Mat::eye(3, 3, CV_64F);
 
         cv::Mat distCoeffs = cv::Mat::zeros(1,5,CV_64F);
+        // cv::Mat distCoeffs = (cv::Mat_<double>(1,5) << 0.058961289426335314,
+        //     -0.000852015669231157,
+        //     -0.00011057338930940814,
+        //     0.004049336591019368,
+        //     -0.11113072350633851);
 
         // Read in images
         cv::Mat bgraImage{static_cast<int>(msg->height), static_cast<int>(msg->width), CV_8UC4, const_cast<uint8_t*>(msg->data.data())};
@@ -99,10 +124,10 @@ namespace mrover{
         cv::Mat grayImage;
         cv::cvtColor(bgraImage, grayImage, cv::COLOR_BGRA2GRAY);
         // Optional: enhance contrast
-        cv::equalizeHist(grayImage, grayImage);
+        // cv::equalizeHist(grayImage, grayImage);
 
         // Optional: apply Gaussian blur to reduce noise
-        cv::GaussianBlur(grayImage, grayImage, cv::Size(5,5), 0);
+        // cv::GaussianBlur(grayImage, grayImage, cv::Size(5,5), 0);
 
         // Define variables
 
@@ -140,23 +165,30 @@ namespace mrover{
         // Estimate pose
         if (!ids.empty()) {
             for (size_t i = 0; i < nMarkers; ++i) {
-                // RCLCPP_INFO_STREAM(get_logger(), "x: " << markerCorners[i][0].x);
-                // RCLCPP_INFO_STREAM(get_logger(), "y: " << markerCorners[i][0].y);
-                cv::solvePnP(objPoints, markerCorners.at(i), camMatrix, distCoeffs, rvecs.at(i), tvecs.at(i));
+                RCLCPP_INFO_STREAM(get_logger(), "x: " << markerCorners[i][0].x);
+                RCLCPP_INFO_STREAM(get_logger(), "y: " << markerCorners[i][0].y);
+                cv::solvePnP(objPoints, markerCorners.at(i), camMatrix, distCoeffs, rvecs.at(i), tvecs.at(i), false, cv::SOLVEPNP_IPPE_SQUARE);
             }
+            // cv::aruco::estimatePoseSingleMarkers(markerCorners, markerLength, camMatrix, distCoeffs, rvecs, tvecs);
         }
 
 
-        // Offset the poses to origin
-        for (size_t i = 0; i < tvecs.size(); ++i) {
-            // Check if the detected tag ID exists in our offset map
-            if (offset_map.find(ids[i]) != offset_map.end()) {
-                auto tag_offset_world = offset_map.at(ids[i]);
-                tvecs[i] = getGlobalCameraPosition(rvecs[i], tvecs[i], tag_offset_world);
-            } else {
-                RCLCPP_WARN(get_logger(), "Tag ID %d not found in offset_map, skipping offset", ids[i]);
-            }
-        }
+        // // Offset the poses to origin
+        // for (size_t i = 0; i < tvecs.size(); ++i) {
+        //     // Check if the detected tag ID exists in our offset map
+        //     if (offset_map.find(ids[i]) != offset_map.end()) {
+        //         tvecs[i] = tvecs[i] - offset_map.at(ids[i]);
+        //     } else {
+        //         RCLCPP_WARN(get_logger(), "Tag ID %d not found in offset_map, skipping offset", ids[i]);
+        //     }
+        // }
+        
+        // Apply Kalman Filter to smooth the pose estimation
+        // Maybe need to something to keep of valid offset poses
+        // for (size_t i = 0; i < tvecs.size(); ++i) {
+        //     if (ids[i] == 4)
+        //         applyKalmanFilter(tvecs[i], rvecs[i]);
+        // }
 
         // draw results for debugging
         // debugging reg image
@@ -166,9 +198,11 @@ namespace mrover{
                 cv::drawFrameAxes(grayImage, camMatrix, distCoeffs, rvecs[i], tvecs[i], markerLength * 1.5f, 2);
             }
         }
+
         cv::imshow("out", grayImage);
         cv::waitKey(1);
         
+
         // Print rotation and translation sanity check
         if (tvecs.size() > 0) {
             auto x = tvecs[0][0];
@@ -182,9 +216,9 @@ namespace mrover{
         }
 
         if (rvecs.size() > 0) {
-            RCLCPP_INFO_STREAM(get_logger(), "roll vector : " << rvecs[0][0] << "\n");
-            RCLCPP_INFO_STREAM(get_logger(), "pitch vector : " << rvecs[0][1] << "\n");
-            RCLCPP_INFO_STREAM(get_logger(), "yaw vector : " << rvecs[0][2] << "\n");
+            RCLCPP_INFO_STREAM(get_logger(), "roll vector : " << (rvecs[0][0]*180)/M_PI << "\n");
+            RCLCPP_INFO_STREAM(get_logger(), "pitch vector : " << (rvecs[0][1]*180)/M_PI << "\n");
+            RCLCPP_INFO_STREAM(get_logger(), "yaw vector : " << (rvecs[0][2]*180)/M_PI << "\n");
         }
 
         // Apply Kalman Filter to smooth the pose estimation
