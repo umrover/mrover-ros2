@@ -34,12 +34,17 @@ namespace mrover{
         static int TR_ID = 4;
         static int BR_ID = 5;
 
+        static float b_length = 0.354076;
+        static float b_width = 0.123444;
+
+        static float seperation_dist = (2/(std::sqrt(2)) + 1) * 0.01; // Centimeters to meters
+
         // Translation vectors relative to TL (x,y,z offset)
         // Placeholders for now
         static cv::Vec3d TL_OFFSET(0.0, 0.0, 0.0);
-        static cv::Vec3d BL_OFFSET(0.0, -1.0, 0.0);
-        static cv::Vec3d TR_OFFSET(1.0, 0.0, 0.0);
-        static cv::Vec3d BR_OFFSET(1.0, -1.0, 0.0);
+        static cv::Vec3d BL_OFFSET(0.0, -(b_width + 2 * seperation_dist), 0.0);
+        static cv::Vec3d TR_OFFSET(b_length + 2 * seperation_dist, 0.0, 0.0);
+        static cv::Vec3d BR_OFFSET(b_length + 2 * seperation_dist, -(b_width + 2 * seperation_dist), 0.0);
 
         offset_map.insert({TL_ID, TL_OFFSET});
         offset_map.insert({BL_ID, BL_OFFSET});
