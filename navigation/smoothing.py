@@ -165,7 +165,7 @@ class Relaxation:
         candidate_traj, candidate_cost = Relaxation.relax_single(ctx, trajectory)
 
         # TODO: depending on how inefficient this is, we may limit how many times this loop runs
-        while candidate_cost < cost or math.isclose(candidate_cost, cost, rel_tol=0.1):
+        while candidate_cost <= cost + 0.1 or math.isclose(candidate_cost, cost, rel_tol=0.4):
             if len(current_trajectory.coordinates) <= 2:
                 break
 
@@ -174,12 +174,14 @@ class Relaxation:
 
             candidate_traj, candidate_cost = Relaxation.relax_single(ctx, current_trajectory)
 
+        if len(current_trajectory.coordinates) > 1:
+            current_trajectory.coordinates = current_trajectory.coordinates[1:]
         return current_trajectory
 
 
 class SplineInterpolation:
     @staticmethod
-    def interpolate(ctx: Context, trajectory: Trajectory, spacing: float = 0.5) -> Trajectory:
+    def interpolate(ctx: Context, trajectory: Trajectory, spacing: float = 2) -> Trajectory:
         """
         Fits cubic splines to the given trajectory and returns a new trajectory with
         evenly spaced points sampled from the splines. We approximate the total distance
@@ -188,8 +190,17 @@ class SplineInterpolation:
         """
         if len(trajectory.coordinates) < 2:
             return trajectory
+        
+        initial = trajectory.coordinates[1] - trajectory.coordinates[0]
+        dist = np.hypot(initial[0], initial[1])
+        initial /= dist
 
-        # can configure smoothness (s) and other parameters
+        trajectory.coordinates = np.concatenate([
+            trajectory.coordinates[0][np.newaxis, :],
+            (trajectory.coordinates[0] + initial * min(dist, 0.5))[np.newaxis, :],
+            trajectory.coordinates[1:]
+        ], axis=0)
+
         try:
 
             spline, u = splprep([trajectory.coordinates[:, 0], trajectory.coordinates[:, 1]], s=0, k=2)

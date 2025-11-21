@@ -197,10 +197,10 @@
     virtualenv: "{{ ros2_workspace }}/src/mrover/venv"
     virtualenv_command: /usr/bin/python3.10 -m venv
 
-- name: Install Chromium
-  become: True
-  snap:
-    name: chromium
+# - name: Install Chromium
+#   become: True
+#   snap:
+#     name: chromium
 
 - name: Install or Upgrade Bun
   shell: curl -fsSL https://bun.sh/install | bash

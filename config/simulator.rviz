@@ -6,19 +6,10 @@ Panels:
       Expanded:
         - /Global Options1
         - /Status1
-        - /RobotModel1
         - /Path1
-        - /Marker1
-        - /MarkerArray1
-        - /MarkerArray1/Status1
-        - /MarkerArray1/Topic1
-        - /MarkerArray2
-        - /MarkerArray2/Status1
-        - /MarkerArray2/Topic1
         - /Path2
-        - /Path2/Offset1
       Splitter Ratio: 0.5
-    Tree Height: 1089
+    Tree Height: 575
   - Class: rviz_common/Selection
     Name: Selection
   - Class: rviz_common/Tool Properties
@@ -58,59 +49,18 @@ Visualization Manager:
       Plane Cell Count: 10
       Reference Frame: <Fixed Frame>
       Value: true
-    - Alpha: 1
-      Class: rviz_default_plugins/RobotModel
-      Collision Enabled: false
-      Description File: ""
-      Description Source: Topic
-      Description Topic:
-        Depth: 5
-        Durability Policy: Volatile
-        History Policy: Keep Last
-        Reliability Policy: Reliable
-        Value: /robot_description
+    - Class: rviz_default_plugins/Marker
       Enabled: true
-      Links:
-        All Links Enabled: true
-        Expand Joint Details: false
-        Expand Link Details: false
-        Expand Tree: false
-        Link Tree Style: Links in Alphabetic Order
-      Mass Properties:
-        Inertia: false
-        Mass: false
-      Name: RobotModel
-      TF Prefix: ""
-      Update Interval: 0
-      Value: true
-      Visual Enabled: true
-    - Alpha: 1
-      Buffer Length: 1
-      Class: rviz_default_plugins/Path
-      Color: 0; 0; 0
-      Enabled: true
-      Head Diameter: 0.30000001192092896
-      Head Length: 0.20000000298023224
-      Length: 0.30000001192092896
-      Line Style: Billboards
-      Line Width: 0.05000000074505806
-      Name: Path
-      Offset:
-        X: 0
-        Y: 0
-        Z: 0
-      Pose Color: 255; 85; 255
-      Pose Style: None
-      Radius: 0.029999999329447746
-      Shaft Diameter: 0.10000000149011612
-      Shaft Length: 0.10000000149011612
+      Name: Marker
+      Namespaces:
+        single_point: true
       Topic:
         Depth: 5
         Durability Policy: Volatile
         Filter size: 10
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /ground_truth_path
+        Value: /waypoint_trajectory
       Value: true
     - Alpha: 0.699999988079071
       Class: rviz_default_plugins/Map
@@ -133,65 +83,16 @@ Visualization Manager:
         Value: /costmap_updates
       Use Timestamp: false
       Value: true
-    - Class: rviz_default_plugins/Marker
-      Enabled: true
-      Name: Marker
-      Namespaces:
-        single_point: true
-      Topic:
-        Depth: 5
-        Durability Policy: Volatile
-        Filter size: 10
-        History Policy: Keep Last
-        Reliability Policy: Reliable
-        Value: /waypoint_trajectory
-      Value: true
-    - Class: rviz_default_plugins/MarkerArray
-      Enabled: true
-      Name: MarkerArray
-      Namespaces:
-        {}
-      Topic:
-        Depth: 5
-        Durability Policy: Volatile
-        History Policy: Keep Last
-        Reliability Policy: Reliable
-        Value: /waypoint_trajectory_array
-      Value: true
-    - Class: rviz_default_plugins/MarkerArray
-      Enabled: true
-      Name: MarkerArray
-      Namespaces:
-        single_point: true
-      Topic:
-        Depth: 5
-        Durability Policy: Volatile
-        History Policy: Keep Last
-        Reliability Policy: Reliable
-        Value: /relax_path
-      Value: true
-    - Class: rviz_default_plugins/MarkerArray
-      Enabled: true
-      Name: MarkerArray
-      Namespaces:
-        single_point: true
-      Topic:
-        Depth: 5
-        Durability Policy: Volatile
-        History Policy: Keep Last
-        Reliability Policy: Reliable
-        Value: /interpolated_path
-      Value: true
     - Alpha: 1
       Buffer Length: 1
       Class: rviz_default_plugins/Path
-      Color: 255; 138; 249
+      Color: 255; 0; 4
       Enabled: true
       Head Diameter: 0.30000001192092896
       Head Length: 0.20000000298023224
       Length: 0.30000001192092896
-      Line Style: Billboards
-      Line Width: 0.30000001192092896
+      Line Style: Lines
+      Line Width: 0.029999999329447746
       Name: Path
       Offset:
         X: 0
@@ -210,11 +111,63 @@ Visualization Manager:
         Reliability Policy: Reliable
         Value: /astar_path
       Value: true
+    - Class: rviz_default_plugins/MarkerArray
+      Enabled: true
+      Name: MarkerArray
+      Namespaces:
+        single_point: true
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /interpolated_path
+      Value: true
+    - Alpha: 1
+      Buffer Length: 1
+      Class: rviz_default_plugins/Path
+      Color: 0; 47; 255
+      Enabled: true
+      Head Diameter: 0.30000001192092896
+      Head Length: 0.20000000298023224
+      Length: 0.30000001192092896
+      Line Style: Lines
+      Line Width: 0.029999999329447746
+      Name: Path
+      Offset:
+        X: 0
+        Y: 0
+        Z: 0
+      Pose Color: 255; 85; 255
+      Pose Style: None
+      Radius: 0.029999999329447746
+      Shaft Diameter: 0.10000000149011612
+      Shaft Length: 0.10000000149011612
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        Filter size: 10
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /ground_truth_path
+      Value: true
+    - Class: rviz_default_plugins/MarkerArray
+      Enabled: true
+      Name: MarkerArray
+      Namespaces:
+        single_point: true
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /relax_path
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
     Fixed Frame: map
-    Frame Rate: 60
+    Frame Rate: 30
   Name: root
   Tools:
     - Class: rviz_default_plugins/Interact
@@ -256,33 +209,33 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/Orbit
-      Distance: 22.854093551635742
+      Distance: 25.43354606628418
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 8.125391960144043
-        Y: 2.2873737812042236
-        Z: -2.9399619102478027
+        X: 3.5478453636169434
+        Y: -5.333349227905273
+        Z: -2.0826046466827393
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.434796929359436
+      Pitch: 1.5597963333129883
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 4.703582286834717
+      Yaw: 4.730412006378174
     Saved: ~
 Window Geometry:
   Displays:
     collapsed: true
-  Height: 846
+  Height: 624
   Hide Left Dock: true
-  Hide Right Dock: false
-  QMainWindow State: 000000ff00000000fd000000040000000000000156000004cafc0200000008fb0000001200530065006c0065006300740069006f006e00000001e10000009b0000005c00fffffffb0000001e0054006f006f006c002000500072006f007000650072007400690065007302000001ed000001df00000185000000a3fb000000120056006900650077007300200054006f006f02000001df000002110000018500000122fb000000200054006f006f006c002000500072006f0070006500720074006900650073003203000002880000011d000002210000017afb000000100044006900730070006c006100790073000000003b000004ca000000c700fffffffb0000002000730065006c0065006300740069006f006e00200062007500660066006500720200000138000000aa0000023a00000294fb00000014005700690064006500530074006500720065006f02000000e6000000d2000003ee0000030bfb0000000c004b0069006e0065006300740200000186000001060000030c00000261000000010000010f000002b4fc0200000003fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000041000000780000000000000000fb0000000a00560069006500770073010000003b000002b4000000a000fffffffb0000001200530065006c0065006300740069006f006e010000025a000000b200000000000000000000000200000490000000a9fc0100000001fb0000000a00560069006500770073030000004e00000080000002e10000019700000003000004b00000003efc0100000002fb0000000800540069006d00650100000000000004b00000025300fffffffb0000000800540069006d006501000000000000045000000000000000000000039b000002b400000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
+  Hide Right Dock: true
+  QMainWindow State: 000000ff00000000fd000000040000000000000156000002c8fc0200000008fb0000001200530065006c0065006300740069006f006e00000001e10000009b0000005c00fffffffb0000001e0054006f006f006c002000500072006f007000650072007400690065007302000001ed000001df00000185000000a3fb000000120056006900650077007300200054006f006f02000001df000002110000018500000122fb000000200054006f006f006c002000500072006f0070006500720074006900650073003203000002880000011d000002210000017afb000000100044006900730070006c0061007900730000000027000002c8000000c700fffffffb0000002000730065006c0065006300740069006f006e00200062007500660066006500720200000138000000aa0000023a00000294fb00000014005700690064006500530074006500720065006f02000000e6000000d2000003ee0000030bfb0000000c004b0069006e0065006300740200000186000001060000030c00000261000000010000010f000002c8fc0200000003fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000041000000780000000000000000fb0000000a005600690065007700730000000027000002c8000000a000fffffffb0000001200530065006c0065006300740069006f006e010000025a000000b200000000000000000000000200000490000000a9fc0100000001fb0000000a00560069006500770073030000004e00000080000002e10000019700000003000002c80000003efc0100000002fb0000000800540069006d00650100000000000002c80000025300fffffffb0000000800540069006d00650100000000000004500000000000000000000002c8000001ea00000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
   Selection:
     collapsed: false
   Time:
@@ -290,7 +243,7 @@ Window Geometry:
   Tool Properties:
     collapsed: false
   Views:
-    collapsed: false
-  Width: 1200
-  X: 570
-  Y: 71
+    collapsed: true
+  Width: 712
+  X: 579
+  Y: 179

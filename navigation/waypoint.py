@@ -92,8 +92,8 @@ class WaypointState(State):
             context.node.get_logger().info("Resetting costmap dilation")
             context.reset_dilation()
 
-        self.USE_INTERPOLATION = True # TODO set properly
         self.USE_RELAXATION = True # TODO set properly
+        self.USE_INTERPOLATION = True # TODO set properly
 
         context.node.get_logger().info("On Enter finished")
 
