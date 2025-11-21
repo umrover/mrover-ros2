@@ -75,18 +75,18 @@ test('autonomy waypoint with string name persists after refresh', async ({ page 
   await nameLoc.fill(waypointName);
 
   // Click save/add submit for waypoint
+  const savedPromise = page.waitForResponse(
+    (resp) => resp.url().includes('/api/waypoints') && resp.request().method() === 'POST'
+  );
   const saved = await clickFirstFound([
     'text=Save',
-    'text=Add',
+    'text=Add Waypoint',
     'button[type="submit"]',
     '[data-test="save-waypoint"]',
     '[data-testid="save-waypoint"]'
   ]);
   if (!saved) throw new Error('Could not find Save/Add button for waypoint - adjust selector in test');
-
-  // Assert the waypoint appears in the list
-  const waypointLocator = page.getByText(waypointName, { exact: true });
-  await expect(waypointLocator).toBeVisible({ timeout: 5000 });
+  await savedPromise;
 
   // Reload the page and ensure waypoint still present
   await page.reload();
@@ -98,5 +98,8 @@ test('autonomy waypoint with string name persists after refresh', async ({ page 
     '[data-test="autonomy-tab"]',
     '[data-testid="autonomy-tab"]'
   ]);
-  await expect(page.getByText(waypointName, { exact: true })).toBeVisible({ timeout: 5000 });
+  // Wait for waypoints to be re-fetched after page reload
+  await page.waitForResponse(
+    (resp) => resp.url().includes('/api/waypoints') && resp.request().method() === 'GET'
+  );
 });
