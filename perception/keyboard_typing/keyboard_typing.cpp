@@ -164,22 +164,17 @@ namespace mrover{
         }
 
 
-        // // Offset the poses to origin
-        // for (size_t i = 0; i < tvecs.size(); ++i) {
-        //     // Check if the detected tag ID exists in our offset map
-        //     if (offset_map.find(ids[i]) != offset_map.end()) {
-        //         tvecs[i] = tvecs[i] - offset_map.at(ids[i]);
-        //     } else {
-        //         RCLCPP_WARN(get_logger(), "Tag ID %d not found in offset_map, skipping offset", ids[i]);
-        //     }
-        // }
-        
-        // Apply Kalman Filter to smooth the pose estimation
-        // Maybe need to something to keep of valid offset poses
-        // for (size_t i = 0; i < tvecs.size(); ++i) {
-        //     if (ids[i] == 4)
-        //         applyKalmanFilter(tvecs[i], rvecs[i]);
-        // }
+        // Offset the poses to origin
+        for (size_t i = 0; i < tvecs.size(); ++i) {
+            // Check if the detected tag ID exists in our offset map
+            if (offset_map.find(ids[i]) != offset_map.end()) {
+                auto tag_offset_world = offset_map.at(ids[i]);
+                tvecs[i] = getGlobalCameraPosition(rvecs[i], tvecs[i], tag_offset_world);
+            } else {
+                RCLCPP_WARN(get_logger(), "Tag ID %d not found in offset_map, skipping offset", ids[i]);
+            }
+        }
+
 
         // draw results for debugging
         // debugging reg image
@@ -211,7 +206,6 @@ namespace mrover{
             RCLCPP_INFO_STREAM(get_logger(), "pitch vector : " << (rvecs[0][1]*180)/M_PI << "\n");
             RCLCPP_INFO_STREAM(get_logger(), "yaw vector : " << (rvecs[0][2]*180)/M_PI << "\n");
         }
-
         // Apply Kalman Filter to smooth the pose estimation
         if (!tvecs.empty()) {
             // Pass all vectors and the current ROS time
