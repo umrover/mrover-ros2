@@ -20,12 +20,15 @@ namespace mrover{
         });
 
         // Top left (TL) is origin
+        // Bottom left (BL)
+        // Top right (TR)
+        // Bottom right (BR)
         static int TL_ID = 2;
         static int BL_ID = 3;
         static int TR_ID = 4;
         static int BR_ID = 5;
 
-        // Translation vectors relative to TL
+        // Translation vectors relative to TL (x,y,z offset)
         // Placeholders for now
         static cv::Vec3d TL_OFFSET(0.0, 0.0, 0.0);
         static cv::Vec3d BL_OFFSET(0.0, -1.0, 0.0);
