@@ -82,23 +82,9 @@ namespace mrover{
         geometry_msgs::msg::Pose pose = estimatePose(msg);
 
         // extract yaw into a quarterian and then publish to mCostMapPub
-        geometry_msgs::msg::Quaternion &orientation = pose.orientation;
-        double x = orientation.x;
-        double y = orientation.y;
-        double z = orientation.z;
-        double w = orientation.w;
+        
 
-        double siny_cosp = 2.0 * (w * z + x * y);
-        double cosy_cosp = 1.0 - 2.0 * (y * y + z * z);
-        double yaw = std::atan2(siny_cosp, cosy_cosp);
-
-        // Convert to degrees if needed
-        double yaw_deg = yaw * 180.0 / M_PI;
-        msg::KeyboardYaw newmsg;
-        newmsg.yaw = yaw_deg;
-        RCLCPP_INFO_STREAM(get_logger(), yaw_deg);
-
-        mCostMapPub->publish(newmsg);
+        mCostMapPub->publish();
     }
 
     auto KeyboardTypingNode::estimatePose(sensor_msgs::msg::Image::ConstSharedPtr const& msg) -> geometry_msgs::msg::Pose {
