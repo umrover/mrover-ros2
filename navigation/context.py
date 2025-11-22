@@ -46,7 +46,7 @@ class Rover:
     ctx: Context
     stuck: bool
     previous_state: State
-    path_history: deque
+    path_history: Path
 
     def get_pose_in_map(self) -> SE3 | None:
         try:
@@ -408,7 +408,7 @@ class Context:
         self.world_frame = node.get_parameter("world_frame").value
         self.rover_frame = node.get_parameter("rover_frame").value
         self.course = None
-        self.rover = Rover(self, False, OffState(), deque())
+        self.rover = Rover(self, False, OffState(), Path(header=Header(frame_id=self.world_frame)))
         self.env = Environment(self, image_targets=ImageTargetsStore(self), cost_map=CostMap())
         self.disable_requested = False
 
