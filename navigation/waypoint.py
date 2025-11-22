@@ -116,7 +116,8 @@ class WaypointState(State):
             context.rover.send_drive_command(Twist())
             return self
 
-        if self.waypoint_traj.empty():
+        if self.waypoint_traj.empty() or self.waypoint_traj.done():
+            self.waypoint_traj.clear()
             context.node.get_logger().info("Generating segmented path")
             self.waypoint_traj = segment_path(
                 context=context, dest=context.course.current_waypoint_pose_in_map().translation()[0:2]
@@ -125,7 +126,7 @@ class WaypointState(State):
             return self
 
         # BEGINNING OF LOGIC
-        while (
+        if (
             is_high_cost_point(context=context, point=self.waypoint_traj.get_current_point())
             and not self.waypoint_traj.is_last()
         ):
@@ -142,7 +143,6 @@ class WaypointState(State):
             if not (0 <= int(segment_point_ij[0]) < costmap_length and 0 <= int(segment_point_ij[1]) < costmap_length):
                 context.node.get_logger().info("Skipped too far, resetting")
                 self.waypoint_traj.reset()
-                break
 
             self.astar_traj.clear()
             return self

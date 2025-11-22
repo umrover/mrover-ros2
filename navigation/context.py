@@ -218,7 +218,7 @@ class Course:
     waypoints: list[tuple[Waypoint, SE3]]
     waypoint_index: int = 0
 
-    def increment_waypoint(self) -> int:
+    def increment_waypoint(self) -> bool:
         self.waypoint_index = min(self.waypoint_index + 1, len(self.waypoints))
         return self.waypoint_index >= len(self.waypoints)
 
@@ -598,7 +598,7 @@ class Context:
 
             lines_marker: Marker = deepcopy(points_marker)
 
-            points_marker.type = Marker.POINTS
+            points_marker.type = Marker.SPHERE_LIST
             points_marker.id = 0
             points_marker.scale.x = size
             points_marker.scale.y = size
