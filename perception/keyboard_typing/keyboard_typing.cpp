@@ -17,7 +17,7 @@
 #include <unordered_map>
 #include <fstream>
 
-namespace mrover{ 
+namespace mrover{
     KeyboardTypingNode::KeyboardTypingNode(rclcpp::NodeOptions const& options) : rclcpp::Node("keyboard_typing_node", options),  mLoopProfiler{get_logger()}
     {
         RCLCPP_INFO_STREAM(get_logger(), "KeyBoardTypingNode starting up");
@@ -228,10 +228,10 @@ namespace mrover{
 
         // Convert rvecs to quarterion
         // NOTE: Assume only 1 tag detected for now
-        cv::Mat rotation_matrix;
-        geometry_msgs::msg::Pose pose;
-        if (markerCorners.size() > 0) {
-            cv::Rodrigues(rvecs[0], rotation_matrix);
+        // cv::Mat rotation_matrix;
+        // geometry_msgs::msg::Pose pose;
+        // if (markerCorners.size() > 0) {
+        //     cv::Rodrigues(rvecs[0], rotation_matrix);
 
         //     double m00 = rotation_matrix.at<double>(0, 0);
         //     double m10 = rotation_matrix.at<double>(1, 0);
@@ -497,7 +497,7 @@ namespace mrover{
             fout.close();
         }
     }    
-}
+
 }
 
 /*
