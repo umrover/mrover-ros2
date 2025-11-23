@@ -12,6 +12,7 @@
 #include <opencv2/core/mat.hpp>
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgproc.hpp>
+#include <optional>
 #include <rclcpp/logging.hpp>
 #include <unordered_map>
 
@@ -84,15 +85,12 @@ namespace mrover{
 
     auto KeyboardTypingNode::yawCallback(sensor_msgs::msg::Image::ConstSharedPtr const& msg) -> void {
         RCLCPP_INFO_STREAM(get_logger(), "callback");
-        geometry_msgs::msg::Pose pose = estimatePose(msg);
+        std::optional<geometry_msgs::msg::Pose> pose = estimatePose(msg);
 
         // extract yaw into a quarterian and then publish to mCostMapPub
-        
-
-        mCostMapPub->publish();
     }
 
-    auto KeyboardTypingNode::estimatePose(sensor_msgs::msg::Image::ConstSharedPtr const& msg) -> geometry_msgs::msg::Pose {
+    auto KeyboardTypingNode::estimatePose(sensor_msgs::msg::Image::ConstSharedPtr const& msg) -> std::optional<geometry_msgs::msg::Pose>  {
         // Read in camera constants
         std::string cameraConstants = "temp.json";
         cv::Mat camMatrix = (cv::Mat_<double>(3,3) <<
@@ -156,8 +154,6 @@ namespace mrover{
         // Estimate pose
         if (!ids.empty()) {
             for (size_t i = 0; i < nMarkers; ++i) {
-                RCLCPP_INFO_STREAM(get_logger(), "x: " << markerCorners[i][0].x);
-                RCLCPP_INFO_STREAM(get_logger(), "y: " << markerCorners[i][0].y);
                 cv::solvePnP(objPoints, markerCorners.at(i), camMatrix, distCoeffs, rvecs.at(i), tvecs.at(i), false, cv::SOLVEPNP_IPPE_SQUARE);
             }
             // cv::aruco::estimatePoseSingleMarkers(markerCorners, markerLength, camMatrix, distCoeffs, rvecs, tvecs);
@@ -212,7 +208,7 @@ namespace mrover{
             // Returns the filtered pose
             return updateKalmanFilter(tvecs, rvecs);
         } else {
-            // Return nothing??
+            return std::nullopt;
         }
 
         // // Convert rvecs to quarterion
@@ -274,7 +270,7 @@ namespace mrover{
 
     // Helper function to convert OpenCV PnP result to Global Camera Position
     // Returns: Vector3d representing Camera Position in World Frame
-    auto getGlobalCameraPosition(cv::Vec3d const& rvec,
+    auto KeyboardTypingNode::getGlobalCameraPosition(cv::Vec3d const& rvec,
                                  cv::Vec3d const& tvec,
                                  cv::Vec3d const& tag_offset_world) -> cv::Vec3d {
         // 1. Convert OpenCV Inputs to Eigen types

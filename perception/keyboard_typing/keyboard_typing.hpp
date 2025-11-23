@@ -29,9 +29,9 @@ namespace mrover{
         auto updateKalmanFilter(std::vector<cv::Vec3d> const& tvecs,
                                 std::vector<cv::Vec3d> const& rvecs) -> geometry_msgs::msg::Pose;
 
-        cv::Vec3d getGlobalCameraPosition(cv::Vec3d rvec, cv::Vec3d tvec, cv::Vec3d tag_offset_world);
+        auto getGlobalCameraPosition(cv::Vec3d const& rvec, cv::Vec3d const& tvec, cv::Vec3d const& tag_offset_world) -> cv::Vec3d;
 
-        auto estimatePose(sensor_msgs::msg::Image::ConstSharedPtr const& msg) -> geometry_msgs::msg::Pose;
+        auto estimatePose(sensor_msgs::msg::Image::ConstSharedPtr const& msg) -> std::optional<geometry_msgs::msg::Pose>;
 
         auto yawCallback(sensor_msgs::msg::Image::ConstSharedPtr const& msg) -> void;
 
