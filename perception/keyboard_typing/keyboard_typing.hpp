@@ -21,6 +21,8 @@ namespace mrover{
 
         // Filter that stores filtered pose
         cv::KalmanFilter kf;
+        
+        auto outputToCSV(cv::Vec3d &tvec, cv::Vec3d &rvec) -> void;
 
         rclcpp::Time last_prediction_time_;
         bool filter_initialized_ = false;
