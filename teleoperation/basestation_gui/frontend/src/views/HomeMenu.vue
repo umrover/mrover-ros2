@@ -11,7 +11,7 @@
         <div class="d-flex flex-column gap-3">
           <MenuButton link="/DMTask" name="Delivery" />
           <MenuButton link="/ESTask" name="Equipment Servicing" />
-          <MenuButton link="/SPTask" name="Science Payload" />
+          <MenuButton link="/ScienceTask" name="Science" />
           <MenuButton link="/AutonTask" name="Autonomy" />
         </div>
       </div>

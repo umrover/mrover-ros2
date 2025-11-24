@@ -27,5 +27,10 @@ export default defineConfig({
         ws: true,
       },
     },
+    watch: {
+      usePolling: true,
+      interval: 1000,
+      ignored: ['**/node_modules/**', '**/.git/**'],
+    },
   }
 })

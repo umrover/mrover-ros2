@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Teleoperation System Tables</title>
+<style>
+body { font-family: Arial, sans-serif; padding: 20px; }
+table { border-collapse: collapse; width: auto; margin-bottom: 20px; font-size: 9px; table-layout: auto; }
+th { background-color: #1a73e8; color: white; padding: 2px 6px; text-align: left; border: 1px solid #ddd; white-space: nowrap; line-height: 1.1; }
+td { padding: 2px 6px; border: 1px solid #ddd; vertical-align: top; height: auto; line-height: 1.1; }
+tr { height: auto; }
+tr:nth-child(even) { background-color: #f2f2f2; }
+.table-title { background-color: #1a73e8; color: white; font-weight: bold; text-align: center; padding: 3px 6px; font-size: 10px; line-height: 1.1; }
+</style>
+</head>
+<body>
+<h1>Teleoperation ROS Stack System Summary</h1>
+
+<table>
+<tr><th colspan="4" class="table-title">System Status Overview</th></tr>
+<tr><th>System</th><th>Status</th><th>Consumer</th><th>REST API</th></tr>
+<tr><td>Arm</td><td>WEBSOCKET</td><td>arm_consumer.py</td><td>-</td></tr>
+<tr><td>Drive</td><td>WEBSOCKET</td><td>drive_consumer.py</td><td>-</td></tr>
+<tr><td>Science</td><td>HYBRID</td><td>science_consumer.py</td><td>science.py</td></tr>
+<tr><td>Mast</td><td>HYBRID</td><td>mast_consumer.py</td><td>mast.py</td></tr>
+<tr><td>Auton</td><td>REST API</td><td>-</td><td>auton.py</td></tr>
+<tr><td>Nav</td><td>WEBSOCKET</td><td>nav_consumer.py</td><td>-</td></tr>
+<tr><td>Waypoints</td><td>REST API</td><td>-</td><td>waypoints.py</td></tr>
+
+</table>
+
+
+<table>
+<tr><th colspan="3" class="table-title">Arm - Published Topics</th></tr>
+<tr><th>Topic</th><th>Type</th><th>Declaration</th></tr>
+<tr><td>arm_throttle_cmd</td><td>mrover/Throttle</td><td>string[] names, float32[] throttles</td></tr>
+<tr><td>/arm_position_cmd</td><td>mrover/Position</td><td>string[] names, float32[] positions</td></tr>
+<tr><td>/arm_velocity_cmd</td><td>mrover/Velocity</td><td>string[] names, float32[] velocities</td></tr>
+
+</table>
+
+
+
+<table>
+<tr><th colspan="3" class="table-title">Arm - Subscribed Topics</th></tr>
+<tr><th>Topic</th><th>Type</th><th>Declaration</th></tr>
+<tr><td>/arm_controller_state</td><td>mrover/ControllerState</td><td>string[] name, string[] state, string[] error, uint8[] limit_hit</td></tr>
+<tr><td>/arm_joint_data</td><td>sensor_msgs/JointState</td><td>string[] name, float64[] position, float64[] velocity, float64[] effort</td></tr>
+<tr><td>/arm_ik</td><td>mrover/IK</td><td>geometry_msgs/Vector3 pos, float32 pitch, float32 roll</td></tr>
+
+</table>
+
+
+
+
+
+<table>
+<tr><th colspan="3" class="table-title">Drive - Published Topics</th></tr>
+<tr><th>Topic</th><th>Type</th><th>Declaration</th></tr>
+<tr><td>/joystick_cmd_vel</td><td>geometry_msgs/Twist</td><td>Vector3 linear (float64 x, y, z), Vector3 angular (float64 x, y, z)</td></tr>
+<tr><td>/controller_cmd_vel</td><td>geometry_msgs/Twist</td><td>Vector3 linear (float64 x, y, z), Vector3 angular (float64 x, y, z)</td></tr>
+
+</table>
+
+
+
+<table>
+<tr><th colspan="3" class="table-title">Drive - Subscribed Topics</th></tr>
+<tr><th>Topic</th><th>Type</th><th>Declaration</th></tr>
+<tr><td>/drive_left_controller_data</td><td>mrover/ControllerState</td><td>string[] name, string[] state, string[] error, uint8[] limit_hit</td></tr>
+<tr><td>/drive_right_controller_data</td><td>mrover/ControllerState</td><td>string[] name, string[] state, string[] error, uint8[] limit_hit</td></tr>
+<tr><td>/drive_left_joint_data</td><td>sensor_msgs/JointState</td><td>string[] name, float64[] position, float64[] velocity, float64[] effort</td></tr>
+<tr><td>/drive_right_joint_data</td><td>sensor_msgs/JointState</td><td>string[] name, float64[] position, float64[] velocity, float64[] effort</td></tr>
+
+</table>
+
+
+
+
+
+<table>
+<tr><th colspan="3" class="table-title">Science - Published Topics</th></tr>
+<tr><th>Topic</th><th>Type</th><th>Declaration</th></tr>
+<tr><td>/sp_throttle_cmd</td><td>mrover/Throttle</td><td>string[] names, float32[] throttles</td></tr>
+
+</table>
+
+
+
+<table>
+<tr><th colspan="3" class="table-title">Science - Subscribed Topics</th></tr>
+<tr><th>Topic</th><th>Type</th><th>Declaration</th></tr>
+<tr><td>/led</td><td>mrover/LED</td><td>bool red, bool green, bool blue, bool is_blinking</td></tr>
+<tr><td>/science_oxygen_data</td><td>mrover/Oxygen</td><td>float64 percent, float64 variance</td></tr>
+<tr><td>/science_uv_data</td><td>mrover/UV</td><td>float64 uv_index, float64 variance</td></tr>
+<tr><td>/science_temperature_data</td><td>sensor_msgs/Temperature</td><td>float64 temperature, float64 variance</td></tr>
+<tr><td>/science_humidity_data</td><td>sensor_msgs/RelativeHumidity</td><td>float64 relative_humidity, float64 variance</td></tr>
+<tr><td>/sp_joint_state</td><td>sensor_msgs/JointState</td><td>string[] name, float64[] position, float64[] velocity, float64[] effort</td></tr>
+<tr><td>/sp_controller_state</td><td>mrover/ControllerState</td><td>string[] name, string[] state, string[] error, uint8[] limit_hit</td></tr>
+
+</table>
+
+
+
+<table>
+<tr><th colspan="4" class="table-title">Science - Services (REST API)</th></tr>
+<tr><th>Service</th><th>Type</th><th>Request</th><th>Response</th></tr>
+<tr><td>/sp_funnel_set_position</td><td>mrover/ServoSetPos</td><td>float32 position, bool is_counterclockwise</td><td>bool success</td></tr>
+
+</table>
+
+
+
+
+
+<table>
+<tr><th colspan="3" class="table-title">Mast - Subscribed Topics</th></tr>
+<tr><th>Topic</th><th>Type</th><th>Declaration</th></tr>
+<tr><td>/gimbal_joint_state</td><td>sensor_msgs/JointState</td><td>string[] name, float64[] position, float64[] velocity, float64[] effort</td></tr>
+
+</table>
+
+
+
+<table>
+<tr><th colspan="4" class="table-title">Mast - Services (REST API)</th></tr>
+<tr><th>Service</th><th>Type</th><th>Request</th><th>Response</th></tr>
+<tr><td>/panorama/start</td><td>mrover/PanoramaStart</td><td>-</td><td>-</td></tr>
+<tr><td>/panorama/end</td><td>mrover/PanoramaEnd</td><td>-</td><td>bool success, sensor_msgs/Image img</td></tr>
+<tr><td>/gimbal_set_position</td><td>mrover/ServoSetPos</td><td>float32 position, bool is_counterclockwise</td><td>bool success</td></tr>
+
+</table>
+
+
+
+
+
+
+
+<table>
+<tr><th colspan="4" class="table-title">Auton - Services (REST API)</th></tr>
+<tr><th>Service</th><th>Type</th><th>Request</th><th>Response</th></tr>
+<tr><td>/enable_auton</td><td>mrover/EnableAuton</td><td>bool enable, GPSWaypoint[] waypoints</td><td>bool success</td></tr>
+<tr><td>/enable_teleop</td><td>std_srvs/SetBool</td><td>bool data</td><td>bool success, string message</td></tr>
+
+</table>
+
+
+
+
+
+<table>
+<tr><th colspan="3" class="table-title">Nav - Subscribed Topics</th></tr>
+<tr><th>Topic</th><th>Type</th><th>Declaration</th></tr>
+<tr><td>/nav_state</td><td>mrover/StateMachineStateUpdate</td><td>string state_machine_name, string state</td></tr>
+<tr><td>/gps/fix</td><td>sensor_msgs/NavSatFix</td><td>float64 latitude, float64 longitude, float64 altitude, NavSatStatus status, float64[9] position_covariance</td></tr>
+<tr><td>basestation/position</td><td>sensor_msgs/NavSatFix</td><td>float64 latitude, float64 longitude, float64 altitude, NavSatStatus status, float64[9] position_covariance</td></tr>
+<tr><td>/drone_odometry</td><td>sensor_msgs/NavSatFix</td><td>float64 latitude, float64 longitude, float64 altitude, NavSatStatus status, float64[9] position_covariance</td></tr>
+
+</table>
+
+
+
+
+
+</body>
+</html>
