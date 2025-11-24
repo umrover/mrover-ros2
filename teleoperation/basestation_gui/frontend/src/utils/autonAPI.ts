@@ -15,7 +15,10 @@ export const autonAPI = {
     })
 
     if (!response.ok) {
-      return { status: 'error', message: `HTTP ${response.status}: ${response.statusText}` }
+      const data = await response.json()
+      const error_message = data["message"]
+      console.log(error_message)
+      return { status: 'error', message: `${error_message}` }
     }
 
     return response.json()
@@ -29,7 +32,10 @@ export const autonAPI = {
     })
 
     if (!response.ok) {
-      return { status: 'error', message: `HTTP ${response.status}: ${response.statusText}` }
+      const data = await response.json()
+      const error_message = data["message"]
+      console.log(error_message)
+      return { status: 'error', message: `HTTP ${response.status}: ${response.statusText}... ${error_message}` }
     }
 
     return response.json()
