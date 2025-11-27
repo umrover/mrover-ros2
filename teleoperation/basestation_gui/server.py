@@ -14,6 +14,7 @@ from backend.ros_manager import get_node
 
 # Import Routers
 from backend.routes.waypoints import router as waypoints_router
+from backend.routes.recordings import router as recordings_router
 from backend.routes.auton import router as auton_router
 from backend.routes.chassis import router as chassis_router
 from backend.routes.science import router as science_router
@@ -40,6 +41,7 @@ app.add_middleware(
 
 # Include Routers
 app.include_router(waypoints_router)
+app.include_router(recordings_router)
 app.include_router(auton_router)
 app.include_router(chassis_router)
 app.include_router(science_router)

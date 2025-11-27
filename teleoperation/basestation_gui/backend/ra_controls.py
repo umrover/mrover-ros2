@@ -8,18 +8,17 @@ from rclpy.publisher import Publisher
 from lie import SE3
 from backend.input import filter_input, simulated_axis, safe_index, DeviceInputs
 from backend.mappings import ControllerAxis, ControllerButton
+from backend.ros_manager import get_node
 from mrover.msg import Throttle, IK, Position, Velocity
+from mrover.srv import IkMode
 from sensor_msgs.msg import JointState
 from geometry_msgs.msg import Twist, Pose, Point, Quaternion
 
 from tf2_ros.buffer import Buffer
 
-import logging
-
-logger = logging.getLogger("django")
+import time
 
 ra_mode = "disabled"
-
 
 def get_ra_mode() -> str:
     return ra_mode
@@ -29,8 +28,39 @@ def set_ra_mode(new_ra_mode: str):
     global ra_mode
     ra_mode = new_ra_mode
 
+    node = get_node()
+
+    if new_ra_mode == "ik-pos":
+        call_ik_mode_service(node, IK_MODE_POSITION_CONTROL)
+    elif new_ra_mode == "ik-vel":
+        call_ik_mode_service(node, IK_MODE_VELOCITY_CONTROL)
+
+
+def call_ik_mode_service(node: Node, mode: int) -> bool:
+    client = node.create_client(IkMode, "/ik_mode")
+
+    if not client.wait_for_service(timeout_sec=1.0):
+        return False
+
+    request = IkMode.Request()
+    request.mode = mode
+
+    future = client.call_async(request)
+    start_time = time.time()
+    while not future.done():
+        if time.time() - start_time > 5.0:
+            return False
+        time.sleep(0.01)
+
+    result = future.result()
+    return result.success if result else False
+
 
 TAU = 2 * pi
+
+IK_MODE_POSITION_CONTROL = 0
+IK_MODE_VELOCITY_CONTROL = 1
+IK_MODE_TYPING = 2
 
 
 class Joint(Enum):
@@ -182,4 +212,3 @@ def send_ra_controls(
             else:
                 if joint_positions:
                     de_pitch = joint_positions.position[joint_positions.name.index("joint_de_pitch")]
-                    # position_publisher.publish(Position(["joint_de_roll", "joint_de_pitch"], [de_roll, de_pitch]))
