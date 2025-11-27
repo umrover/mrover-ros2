@@ -8,7 +8,7 @@ const API_BASE = '/api'
 
 export const autonAPI = {
   async enable(enabled: boolean, waypoints: AutonEnableWaypoint[]): Promise<AutonEnableResponse> {
-    const response = await fetch(`${API_BASE}/auton/enable/`, {
+    const response = await fetch(`${API_BASE}/enable_auton/`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ enabled, waypoints })

@@ -36,12 +36,3 @@
   shell: git submodule update --init deps/manif
   args:
     chdir: "{{ ros2_workspace }}/src/mrover"
-
-- name: Run Django migrations
-  shell: |
-    source {{ ansible_env.HOME }}/ros2_ws/src/mrover/venv/bin/activate
-    python teleoperation/basestation_gui/manage.py makemigrations
-    python teleoperation/basestation_gui/manage.py migrate
-  args:
-    chdir: "{{ ansible_env.HOME }}/ros2_ws/src/mrover"
-    executable: /bin/bash
