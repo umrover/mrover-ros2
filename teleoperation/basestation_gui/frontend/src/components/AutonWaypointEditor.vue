@@ -252,13 +252,13 @@ export default defineComponent({
         // Fetch Store Waypoints
         const autonData = await waypointsAPI.getAuton()
         if (autonData.status === 'success') {
-          this.waypoints = autonData.waypoints
+          this.waypoints = autonData.waypoints || []
         }
 
         // Fetch Active Route
         const courseData = await waypointsAPI.getCurrentAutonCourse()
         if (courseData.status === 'success') {
-          this.currentRoute = courseData.course
+          this.currentRoute = courseData.course || []
           
           // Mark items in route as "in_route" in the store list for visual feedback
           this.waypoints.forEach(wp => {

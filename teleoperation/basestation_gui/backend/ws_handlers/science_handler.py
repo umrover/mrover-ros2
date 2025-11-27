@@ -1,10 +1,10 @@
-from backend.ws_consumers.base_consumer import WebSocketHandler
+from backend.ws_handlers.base_handler import WebSocketHandler
 from backend.input import DeviceInputs
 from backend.sp_controls import send_sp_controls
 from mrover.msg import Throttle, ControllerState, LED, Oxygen, UV
 from sensor_msgs.msg import Temperature, RelativeHumidity, JointState
 
-class ScienceConsumer(WebSocketHandler):
+class ScienceHandler(WebSocketHandler):
     def __init__(self, websocket):
         super().__init__(websocket, 'science')
 

@@ -14,8 +14,9 @@
           header="Arm States"
         />
         <div class="p-2 d-flex flex-column gap-2">
-            <ArmControls />
-            <MastGimbalControls />
+          <ArmControls />
+          <GimbalControls />
+          <DriveControls />
         </div>
       </div>
       <div class="island p-2 rounded d-flex gap-2" style="flex: 0 0 auto">
@@ -42,9 +43,6 @@
         <BasicWaypointEditor :enableDrone="true" />
       </div>
     </div>
-    <div>
-      <DriveControls />
-    </div>
   </div>
 </template>
 
@@ -56,7 +54,7 @@ import BasicMap from '@/components/BasicRoverMap.vue'
 import BasicWaypointEditor from '@/components/BasicWaypointEditor.vue'
 import OdometryReading from '@/components/OdometryReading.vue'
 import DriveControls from '@/components/DriveControls.vue'
-import MastGimbalControls from '@/components/MastGimbalControls.vue'
+import GimbalControls from '@/components/GimbalControls.vue'
 import Rover3D from '@/components/Rover3D.vue'
 import { useWebsocketStore } from '@/stores/websocket'
 

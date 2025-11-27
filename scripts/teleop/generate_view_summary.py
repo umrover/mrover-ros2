@@ -62,7 +62,7 @@ class ViewInfo:
 
 def load_subteam_mapping(mapping_path: Path) -> Dict:
     """Load the subteam mapping configuration from YAML."""
-    with open(mapping_path, 'r') as f:
+    with open(mapping_path, "r") as f:
         return yaml.safe_load(f)
 
 
@@ -73,11 +73,11 @@ def parse_msg_file(msg_path: Path) -> str:
 
     content = msg_path.read_text()
     lines = []
-    for line in content.split('\n'):
-        line = line.split('#')[0].strip()
+    for line in content.split("\n"):
+        line = line.split("#")[0].strip()
         if line:
             lines.append(line)
-    return ', '.join(lines)
+    return ", ".join(lines)
 
 
 def parse_srv_file(srv_path: Path) -> Tuple[str, str]:
@@ -86,26 +86,26 @@ def parse_srv_file(srv_path: Path) -> Tuple[str, str]:
         return "", ""
 
     content = srv_path.read_text()
-    parts = content.split('---')
+    parts = content.split("---")
 
     request = ""
     response = ""
 
     if len(parts) >= 1:
         req_lines = []
-        for line in parts[0].split('\n'):
-            line = line.split('#')[0].strip()
+        for line in parts[0].split("\n"):
+            line = line.split("#")[0].strip()
             if line:
                 req_lines.append(line)
-        request = ', '.join(req_lines) if req_lines else "-"
+        request = ", ".join(req_lines) if req_lines else "-"
 
     if len(parts) >= 2:
         resp_lines = []
-        for line in parts[1].split('\n'):
-            line = line.split('#')[0].strip()
+        for line in parts[1].split("\n"):
+            line = line.split("#")[0].strip()
             if line:
                 resp_lines.append(line)
-        response = ', '.join(resp_lines) if resp_lines else "-"
+        response = ", ".join(resp_lines) if resp_lines else "-"
 
     return request, response
 
@@ -134,32 +134,53 @@ def get_standard_srv_declaration(srv_type: str) -> Tuple[str, str]:
 
 def get_msg_declaration(msg_type: str, msg_dir: Path) -> str:
     """Get message declaration for any message type."""
-    if '/' in msg_type or msg_type in ['Twist', 'PoseStamped', 'JointState', 'Temperature', 'RelativeHumidity', 'NavSatFix', 'Image', 'Float32']:
-        full_type = msg_type if '/' in msg_type else f'geometry_msgs/{msg_type}' if msg_type in ['Twist', 'PoseStamped'] else f'sensor_msgs/{msg_type}' if msg_type in ['JointState', 'Temperature', 'RelativeHumidity', 'NavSatFix', 'Image'] else f'std_msgs/{msg_type}'
+    if "/" in msg_type or msg_type in [
+        "Twist",
+        "PoseStamped",
+        "JointState",
+        "Temperature",
+        "RelativeHumidity",
+        "NavSatFix",
+        "Image",
+        "Float32",
+    ]:
+        full_type = (
+            msg_type
+            if "/" in msg_type
+            else (
+                f"geometry_msgs/{msg_type}"
+                if msg_type in ["Twist", "PoseStamped"]
+                else (
+                    f"sensor_msgs/{msg_type}"
+                    if msg_type in ["JointState", "Temperature", "RelativeHumidity", "NavSatFix", "Image"]
+                    else f"std_msgs/{msg_type}"
+                )
+            )
+        )
         return get_standard_msg_declaration(full_type)
     else:
-        msg_file = msg_dir / f'{msg_type}.msg'
+        msg_file = msg_dir / f"{msg_type}.msg"
         return parse_msg_file(msg_file)
 
 
 def get_subteam_for_topic(topic_name: str, component: str, mapping: Dict) -> Tuple[str, str]:
     """Get subteam name and ID for a topic."""
-    subteam_id = mapping.get('topics', {}).get(topic_name)
+    subteam_id = mapping.get("topics", {}).get(topic_name)
     if not subteam_id:
-        subteam_id = mapping.get('components', {}).get(component, 'esw')
+        subteam_id = mapping.get("components", {}).get(component, "esw")
 
-    subteam_info = mapping.get('subteams', {}).get(subteam_id, {'name': 'Unknown'})
-    return subteam_info.get('name', 'Unknown'), subteam_id
+    subteam_info = mapping.get("subteams", {}).get(subteam_id, {"name": "Unknown"})
+    return subteam_info.get("name", "Unknown"), subteam_id
 
 
 def get_subteam_for_service(service_name: str, component: str, mapping: Dict) -> Tuple[str, str]:
     """Get subteam name and ID for a service."""
-    subteam_id = mapping.get('services', {}).get(service_name)
+    subteam_id = mapping.get("services", {}).get(service_name)
     if not subteam_id:
-        subteam_id = mapping.get('components', {}).get(component, 'esw')
+        subteam_id = mapping.get("components", {}).get(component, "esw")
 
-    subteam_info = mapping.get('subteams', {}).get(subteam_id, {'name': 'Unknown'})
-    return subteam_info.get('name', 'Unknown'), subteam_id
+    subteam_info = mapping.get("subteams", {}).get(subteam_id, {"name": "Unknown"})
+    return subteam_info.get("name", "Unknown"), subteam_id
 
 
 def scan_consumer_file(consumer_path: Path) -> Dict[str, List[Tuple[str, str, str]]]:
@@ -174,21 +195,21 @@ def scan_consumer_file(consumer_path: Path) -> Dict[str, List[Tuple[str, str, st
     result = {}
 
     # Extract websocket name from filename (e.g., arm_consumer.py -> arm)
-    websocket_name = consumer_path.stem.replace('_consumer', '')
+    websocket_name = consumer_path.stem.replace("_consumer", "")
     result[websocket_name] = []
 
     # Find forward_ros_topic calls (subscriptions)
     forward_pattern = r'await\s+self\.forward_ros_topic\(["\']([^"\']+)["\']\s*,\s*(\w+)\s*,\s*["\']([^"\']+)["\']\)'
     for match in re.finditer(forward_pattern, content):
         topic_name, topic_type, gui_msg_type = match.groups()
-        result[websocket_name].append((topic_name, topic_type, gui_msg_type, 'subscribed'))
+        result[websocket_name].append((topic_name, topic_type, gui_msg_type, "subscribed"))
 
     # Find send_json calls with "type" field (for computed data like orientation, calibration)
     send_json_pattern = r'self\.send_json\(\s*\{[^}]*["\']type["\']\s*:\s*["\']([^"\']+)["\']'
     for match in re.finditer(send_json_pattern, content):
         gui_msg_type = match.group(1)
         # Mark as subscribed with special topic name to indicate it's computed
-        result[websocket_name].append((f'[computed:{gui_msg_type}]', 'Computed', gui_msg_type, 'subscribed'))
+        result[websocket_name].append((f"[computed:{gui_msg_type}]", "Computed", gui_msg_type, "subscribed"))
 
     # Build mapping of publisher variable names to (topic_name, topic_type)
     publishers = {}
@@ -199,7 +220,7 @@ def scan_consumer_file(consumer_path: Path) -> Dict[str, List[Tuple[str, str, st
 
     # Find receive_json match cases to map GUI message type to publisher
     # Pattern: case { "type": "gui_msg_type", ...}: ... self.pub_var.publish(...) or function(self.pub_var)
-    receive_section = re.search(r'async def receive_json.*?(?=\n    async def|\Z)', content, re.DOTALL)
+    receive_section = re.search(r"async def receive_json.*?(?=\n    async def|\Z)", content, re.DOTALL)
     if receive_section:
         receive_content = receive_section.group(0)
         # Find case statements with type
@@ -207,18 +228,18 @@ def scan_consumer_file(consumer_path: Path) -> Dict[str, List[Tuple[str, str, st
         for match in re.finditer(case_pattern, receive_content, re.DOTALL):
             gui_msg_type, case_body = match.groups()
             # Find direct publisher calls: self.pub_var.publish(...)
-            pub_call_pattern = r'self\.(\w+)\.publish\('
+            pub_call_pattern = r"self\.(\w+)\.publish\("
             for pub_match in re.finditer(pub_call_pattern, case_body):
                 pub_var = pub_match.group(1)
                 if pub_var in publishers:
                     topic_name, topic_type = publishers[pub_var]
-                    result[websocket_name].append((topic_name, topic_type, gui_msg_type, 'published'))
+                    result[websocket_name].append((topic_name, topic_type, gui_msg_type, "published"))
 
             # Find publisher passed to helper function: function(..., self.pub_var, ...)
             for pub_var in publishers.keys():
-                if f'self.{pub_var}' in case_body:
+                if f"self.{pub_var}" in case_body:
                     topic_name, topic_type = publishers[pub_var]
-                    result[websocket_name].append((topic_name, topic_type, gui_msg_type, 'published'))
+                    result[websocket_name].append((topic_name, topic_type, gui_msg_type, "published"))
 
     return result
 
@@ -233,29 +254,29 @@ def scan_vue_component(component_path: Path) -> Dict[str, any]:
 
     content = component_path.read_text()
     result = {
-        'name': component_path.stem,
-        'subscribes_to': [],
-        'publishes_to': [],
+        "name": component_path.stem,
+        "subscribes_to": [],
+        "publishes_to": [],
     }
 
     # Find watch statements for websocket messages
     watch_pattern = r'watch\(\s*\w+Message\s*,.*?msg\.type\s*===?\s*["\']([^"\']+)["\']'
     for match in re.finditer(watch_pattern, content, re.DOTALL):
         msg_type = match.group(1)
-        result['subscribes_to'].append(msg_type)
+        result["subscribes_to"].append(msg_type)
 
     # Find computed message type checks
     computed_pattern = r'\.type\s*===?\s*["\']([^"\']+)["\']'
     for match in re.finditer(computed_pattern, content):
         msg_type = match.group(1)
-        if msg_type not in result['subscribes_to']:
-            result['subscribes_to'].append(msg_type)
+        if msg_type not in result["subscribes_to"]:
+            result["subscribes_to"].append(msg_type)
 
     # Find sendMessage calls (publications)
     send_pattern = r'websocketStore\.sendMessage\(["\'](\w+)["\']\s*,\s*\{[^}]*type:\s*["\']([^"\']+)["\']'
     for match in re.finditer(send_pattern, content):
         websocket, msg_type = match.groups()
-        result['publishes_to'].append((websocket, msg_type))
+        result["publishes_to"].append((websocket, msg_type))
 
     return result
 
@@ -269,20 +290,20 @@ def scan_vue_view(view_path: Path) -> Dict[str, any]:
 
     content = view_path.read_text()
     result = {
-        'name': view_path.stem,
-        'websockets': [],
-        'components': {},
+        "name": view_path.stem,
+        "websockets": [],
+        "components": {},
     }
 
     # Find setupWebSocket calls with string literals
     websocket_pattern = r'websocketStore\.setupWebSocket\(["\'](\w+)["\']\)'
     for match in re.finditer(websocket_pattern, content):
         websocket = match.group(1)
-        result['websockets'].append(websocket)
+        result["websockets"].append(websocket)
 
     # Find websocket arrays like: const topics = ['drive', 'nav', 'science', 'mast']
     # followed by setupWebSocket(topic) in a loop
-    array_pattern = r'const\s+\w+\s*=\s*\[([\s\S]*?)\]'
+    array_pattern = r"const\s+\w+\s*=\s*\[([\s\S]*?)\]"
     for match in re.finditer(array_pattern, content):
         array_content = match.group(1)
         # Extract string literals from the array
@@ -290,25 +311,25 @@ def scan_vue_view(view_path: Path) -> Dict[str, any]:
         for str_match in re.finditer(string_pattern, array_content):
             websocket = str_match.group(1)
             # Check if this array is used with setupWebSocket
-            if 'setupWebSocket' in content and websocket not in result['websockets']:
-                result['websockets'].append(websocket)
+            if "setupWebSocket" in content and websocket not in result["websockets"]:
+                result["websockets"].append(websocket)
 
     # Find component usage with msg-type prop
     # Match each component tag with msg-type attribute
     component_pattern = r'<(\w+)[^>]*?msg-type=["\']([^"\']+)["\'][^>]*?>'
     for match in re.finditer(component_pattern, content):
         component_name, msg_type = match.groups()
-        if component_name not in result['components']:
-            result['components'][component_name] = {'msg_types': []}
-        if msg_type not in result['components'][component_name]['msg_types']:
-            result['components'][component_name]['msg_types'].append(msg_type)
+        if component_name not in result["components"]:
+            result["components"][component_name] = {"msg_types": []}
+        if msg_type not in result["components"][component_name]["msg_types"]:
+            result["components"][component_name]["msg_types"].append(msg_type)
 
     # Find all components used (even without props)
-    component_tag_pattern = r'<([A-Z]\w+)'
+    component_tag_pattern = r"<([A-Z]\w+)"
     for match in re.finditer(component_tag_pattern, content):
         component_name = match.group(1)
-        if component_name not in result['components']:
-            result['components'][component_name] = {'msg_types': []}
+        if component_name not in result["components"]:
+            result["components"][component_name] = {"msg_types": []}
 
     return result
 
@@ -351,25 +372,40 @@ def scan_views(project_root: Path, mapping: Dict) -> List[ViewInfo]:
     for component_file in components_dir.glob("*.vue"):
         info = scan_vue_component(component_file)
         if info:
-            component_info[info['name']] = info
+            component_info[info["name"]] = info
 
     # Scan frontend views
     views_dir = project_root / "teleoperation/basestation_gui/frontend/src/views"
 
     view_files = [
-        ('AutonTask.vue', 'Autonomy Mission', '/AutonTask'),
-        ('DMTask.vue', 'Delivery Mission', '/DMTask'),
-        ('ESTask.vue', 'Equipment Servicing', '/ESTask'),
-        ('SPTask.vue', 'Science Payload', '/SPTask'),
+        ("AutonTask.vue", "Autonomy Mission", "/AutonTask"),
+        ("DMTask.vue", "Delivery Mission", "/DMTask"),
+        ("ESTask.vue", "Equipment Servicing", "/ESTask"),
+        ("SPTask.vue", "Science Payload", "/SPTask"),
     ]
 
     service_db = {
-        '/enable_auton': ('mrover/EnableAuton', 'bool enable, GPSWaypoint[] waypoints', 'bool success', 'AutonWaypointEditor'),
-        '/enable_teleop': ('std_srvs/SetBool', 'bool data', 'bool success, string message', 'AutonWaypointEditor'),
-        '/sp_funnel_set_position': ('mrover/ServoSetPos', 'float32 position, bool is_counterclockwise', 'bool success', 'HexHub'),
-        '/gimbal_set_position': ('mrover/ServoSetPos', 'float32 position, bool is_counterclockwise', 'bool success', 'MastGimbalControls'),
-        '/panorama/start': ('mrover/PanoramaStart', '-', '-', 'PanoCam'),
-        '/panorama/end': ('mrover/PanoramaEnd', '-', 'bool success, sensor_msgs/Image img', 'PanoCam'),
+        "/enable_auton": (
+            "mrover/EnableAuton",
+            "bool enable, GPSWaypoint[] waypoints",
+            "bool success",
+            "AutonWaypointEditor",
+        ),
+        "/enable_teleop": ("std_srvs/SetBool", "bool data", "bool success, string message", "AutonWaypointEditor"),
+        "/sp_funnel_set_position": (
+            "mrover/ServoSetPos",
+            "float32 position, bool is_counterclockwise",
+            "bool success",
+            "HexHub",
+        ),
+        "/gimbal_set_position": (
+            "mrover/ServoSetPos",
+            "float32 position, bool is_counterclockwise",
+            "bool success",
+            "GimbalControls",
+        ),
+        "/panorama/start": ("mrover/PanoramaStart", "-", "-", "PanoCam"),
+        "/panorama/end": ("mrover/PanoramaEnd", "-", "bool success, sensor_msgs/Image img", "PanoCam"),
     }
 
     for view_filename, description, route in view_files:
@@ -380,14 +416,11 @@ def scan_views(project_root: Path, mapping: Dict) -> List[ViewInfo]:
         view_data = scan_vue_view(view_path)
 
         view = ViewInfo(
-            name=view_data['name'],
-            description=description,
-            route=route,
-            websockets=view_data['websockets']
+            name=view_data["name"], description=description, route=route, websockets=view_data["websockets"]
         )
 
         # For each component used in the view, collect topics
-        for comp_name, comp_data in view_data['components'].items():
+        for comp_name, comp_data in view_data["components"].items():
             comp_lower = comp_name
 
             # Get component's message subscriptions
@@ -395,16 +428,16 @@ def scan_views(project_root: Path, mapping: Dict) -> List[ViewInfo]:
                 comp = component_info[comp_name]
 
                 # Add subscribed topics based on what message types this view instance uses
-                msg_types_for_view = comp_data.get('msg_types', [])
+                msg_types_for_view = comp_data.get("msg_types", [])
                 if not msg_types_for_view:
-                    msg_types_for_view = comp['subscribes_to']
+                    msg_types_for_view = comp["subscribes_to"]
 
                 for msg_type in msg_types_for_view:
                     # Look up topic info from consumer data
-                    for websocket in view_data['websockets']:
+                    for websocket in view_data["websockets"]:
                         if websocket in consumer_topics:
                             for topic_name, topic_type, gui_msg_type, direction in consumer_topics[websocket]:
-                                if gui_msg_type == msg_type and direction == 'subscribed':
+                                if gui_msg_type == msg_type and direction == "subscribed":
                                     decl = get_msg_declaration(topic_type, project_root / "msg")
                                     subteam, subteam_id = get_subteam_for_topic(topic_name, comp_name, mapping)
                                     # Check if already added to avoid duplicates
@@ -413,57 +446,60 @@ def scan_views(project_root: Path, mapping: Dict) -> List[ViewInfo]:
                                         for t in view.subscribed_topics
                                     )
                                     if not already_exists:
-                                        view.subscribed_topics.append(TopicInfo(
-                                            name=topic_name,
-                                            type=topic_type,
-                                            declaration=decl,
-                                            component=comp_name,
-                                            subteam=subteam,
-                                            subteam_id=subteam_id
-                                        ))
+                                        view.subscribed_topics.append(
+                                            TopicInfo(
+                                                name=topic_name,
+                                                type=topic_type,
+                                                declaration=decl,
+                                                component=comp_name,
+                                                subteam=subteam,
+                                                subteam_id=subteam_id,
+                                            )
+                                        )
 
                 # Add published topics
-                for websocket, msg_type in comp['publishes_to']:
-                    if websocket in view_data['websockets']:
+                for websocket, msg_type in comp["publishes_to"]:
+                    if websocket in view_data["websockets"]:
                         if websocket in consumer_topics:
                             for topic_name, topic_type, gui_msg_type, direction in consumer_topics[websocket]:
-                                if gui_msg_type == msg_type and direction == 'published':
+                                if gui_msg_type == msg_type and direction == "published":
                                     decl = get_msg_declaration(topic_type, project_root / "msg")
                                     subteam, subteam_id = get_subteam_for_topic(topic_name, comp_name, mapping)
                                     # Check if already added to avoid duplicates
                                     already_exists = any(
-                                        t.name == topic_name and t.component == comp_name
-                                        for t in view.published_topics
+                                        t.name == topic_name and t.component == comp_name for t in view.published_topics
                                     )
                                     if not already_exists:
-                                        view.published_topics.append(TopicInfo(
-                                            name=topic_name,
-                                            type=topic_type,
-                                            declaration=decl,
-                                            component=comp_name,
-                                            subteam=subteam,
-                                            subteam_id=subteam_id
-                                        ))
+                                        view.published_topics.append(
+                                            TopicInfo(
+                                                name=topic_name,
+                                                type=topic_type,
+                                                declaration=decl,
+                                                component=comp_name,
+                                                subteam=subteam,
+                                                subteam_id=subteam_id,
+                                            )
+                                        )
 
         # Add services used in view
         for service_name, (service_type, request, response, comp) in service_db.items():
-            if comp in view_data['components']:
+            if comp in view_data["components"]:
                 subteam, subteam_id = get_subteam_for_service(service_name, comp, mapping)
-                view.services.append(ServiceInfo(
-                    name=service_name,
-                    type=service_type,
-                    request=request,
-                    response=response,
-                    component=comp,
-                    subteam=subteam,
-                    subteam_id=subteam_id
-                ))
+                view.services.append(
+                    ServiceInfo(
+                        name=service_name,
+                        type=service_type,
+                        request=request,
+                        response=response,
+                        component=comp,
+                        subteam=subteam,
+                        subteam_id=subteam_id,
+                    )
+                )
 
         views.append(view)
 
     return views
-
-
 
 
 def main():
@@ -483,9 +519,9 @@ def main():
     templates_dir = script_dir / "templates"
     env = Environment(loader=FileSystemLoader(templates_dir))
 
-    template = env.get_template('system_by_view.html.j2')
+    template = env.get_template("system_by_view.html.j2")
 
-    context = {'views': views}
+    context = {"views": views}
 
     output = project_root / "system_by_view.html"
     output.write_text(template.render(context))
@@ -494,5 +530,5 @@ def main():
     print("\nDone!")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

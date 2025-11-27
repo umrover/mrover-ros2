@@ -1,17 +1,14 @@
 <template>
-  <div class="d-flex flex-fill justify-content-between align-items-center gap-2 h-100 p-2">
-    <h4 class="m-0 font-monospace align-content-center">Drive</h4>
-    <span
-      class="rounded-circle"
-      :class="controllerConnected ? 'bg-success' : 'bg-danger'"
-      style="width: 20px; height: 20px;"
-    ></span>
+  <div class="d-flex justify-content-between align-items-center">
+    <h4 class="m-0">Drive Controls</h4>
+    <IndicatorDot :is-active="controllerConnected" class="me-2" />
   </div>
 </template>
 
 <script lang='ts' setup>
 import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { useWebsocketStore } from '@/stores/websocket'
+import IndicatorDot from './IndicatorDot.vue'
 
 const websocketStore = useWebsocketStore()
 

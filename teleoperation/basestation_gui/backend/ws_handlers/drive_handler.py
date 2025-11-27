@@ -1,11 +1,11 @@
-from backend.ws_consumers.base_consumer import WebSocketHandler
+from backend.ws_handlers.base_handler import WebSocketHandler
 from backend.input import DeviceInputs
 from backend.drive_controls import send_joystick_twist, send_controller_twist
 from mrover.msg import ControllerState
 from geometry_msgs.msg import Twist
 from sensor_msgs.msg import JointState
 
-class DriveConsumer(WebSocketHandler):
+class DriveHandler(WebSocketHandler):
     def __init__(self, websocket):
         super().__init__(websocket, 'drive')
 

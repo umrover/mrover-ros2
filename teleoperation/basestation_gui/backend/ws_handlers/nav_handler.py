@@ -1,11 +1,11 @@
 import asyncio
 import tf2_ros
 from lie import SE3
-from backend.ws_consumers.base_consumer import WebSocketHandler
+from backend.ws_handlers.base_handler import WebSocketHandler
 from mrover.msg import StateMachineStateUpdate
 from sensor_msgs.msg import NavSatFix
 
-class NavConsumer(WebSocketHandler):
+class NavHandler(WebSocketHandler):
     def __init__(self, websocket):
         super().__init__(websocket, 'nav')
         self.buffer = tf2_ros.Buffer()
@@ -43,4 +43,4 @@ class NavConsumer(WebSocketHandler):
 
     async def handle_message(self, data):
         """Handle incoming NAV messages"""
-        print(f"Nav consumer received message: {data}")
+        print(f"Nav handler received message: {data}")

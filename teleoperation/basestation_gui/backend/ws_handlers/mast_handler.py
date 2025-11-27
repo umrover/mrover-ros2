@@ -1,7 +1,7 @@
-from backend.ws_consumers.base_consumer import WebSocketHandler
+from backend.ws_handlers.base_handler import WebSocketHandler
 from sensor_msgs.msg import JointState
 
-class MastConsumer(WebSocketHandler):
+class MastHandler(WebSocketHandler):
     def __init__(self, websocket):
         super().__init__(websocket, 'mast')
 
@@ -11,4 +11,4 @@ class MastConsumer(WebSocketHandler):
 
     async def handle_message(self, data):
         """Handle incoming MAST messages"""
-        print(f"Mast consumer received unexpected message: {data}")
+        print(f"Mast handler received unexpected message: {data}")

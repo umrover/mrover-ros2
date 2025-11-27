@@ -1,10 +1,12 @@
 <template>
   <div class="wrapper view-wrapper">
-    <div class="data island p-2 rounded">
-      <div :class="['rounded p-2 mb-2', ledColor]">
-        <h2 class="text-center">Nav State: {{ navState }}</h2>
+    <div class="data island p-2 rounded d-flex flex-column gap-2">
+      <!-- Odometry Reading Box -->
+      <div class="rounded p-2 border border-2">
         <OdometryReading />
       </div>
+
+      <!-- Conditions Box -->
       <div>
         <div
           v-if="!stuck_status"
@@ -15,6 +17,11 @@
         <div v-else class="island p-2 rounded bg-danger text-center">
           <h4 class="m-0 p-0">Obstruction Detected</h4>
         </div>
+      </div>
+
+      <!-- Nav State Box -->
+      <div :class="['rounded p-2', ledColor]">
+        <h2 class="text-center m-0">Nav State: {{ navState }}</h2>
       </div>
     </div>
     <div class="island p-0 rounded map overflow-hidden">
@@ -30,9 +37,9 @@
       class="driveControls"
     >
       <DriveControls />
-      <MastGimbalControls />
+      <GimbalControls />
     </div>
-    <div class='island p-2 rounded moteus d-flex gap-2'>
+    <div class="island p-2 rounded moteus d-flex gap-2">
       <ControllerDataTable
         msg-type="drive_left_state"
         header="Drive Left States"
@@ -53,7 +60,7 @@ import AutonRoverMap from '../components/AutonRoverMap.vue'
 import AutonWaypointEditor from '../components/AutonWaypointEditor.vue'
 import OdometryReading from '../components/OdometryReading.vue'
 import DriveControls from '../components/DriveControls.vue'
-import MastGimbalControls from '../components/MastGimbalControls.vue'
+import GimbalControls from '../components/GimbalControls.vue'
 import ControllerDataTable from '../components/ControllerDataTable.vue'
 import { useWebsocketStore } from '@/stores/websocket'
 import { useAutonomyStore } from '@/stores/autonomy'
@@ -75,7 +82,12 @@ const navMessage = computed(() => messages.value['nav'])
 
 watch(scienceMessage, (msg: unknown) => {
   if (typeof msg === 'object' && msg !== null && 'type' in msg) {
-    const typedMsg = msg as { type: string; red?: boolean; green?: boolean; blue?: boolean }
+    const typedMsg = msg as {
+      type: string
+      red?: boolean
+      green?: boolean
+      blue?: boolean
+    }
     if (typedMsg.type === 'led') {
       if (typedMsg.red)
         ledColor.value = 'bg-danger' //red

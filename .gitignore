@@ -21,8 +21,9 @@ __pycache__/
 *.egg-info/
 venv/
 
-# SQL file for Teleop
+#Teleop Ignores
 *.sqlite3
+*.db
 bun.lock
 bun.lockb
 

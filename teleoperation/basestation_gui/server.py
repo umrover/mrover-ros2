@@ -4,6 +4,8 @@ import os
 import uvicorn
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 import msgpack
 
 # Import ROS manager - add current directory to path
@@ -16,13 +18,13 @@ from backend.routes.auton import router as auton_router
 from backend.routes.mast import router as mast_router
 from backend.routes.science import router as science_router
 
-# Import Consumers
-from backend.ws_consumers.arm_consumer import ArmConsumer
-from backend.ws_consumers.drive_consumer import DriveConsumer
-from backend.ws_consumers.mast_consumer import MastConsumer
-from backend.ws_consumers.nav_consumer import NavConsumer
-from backend.ws_consumers.science_consumer import ScienceConsumer
-from backend.ws_consumers.latency_consumer import LatencyConsumer
+# Import Handlers
+from backend.ws_handlers.arm_handler import ArmHandler
+from backend.ws_handlers.drive_handler import DriveHandler
+from backend.ws_handlers.mast_handler import MastHandler
+from backend.ws_handlers.nav_handler import NavHandler
+from backend.ws_handlers.science_handler import ScienceHandler
+from backend.ws_handlers.latency_handler import LatencyHandler
 
 app = FastAPI()
 
@@ -45,6 +47,7 @@ app.include_router(science_router)
 def health():
     return {"status": "ok"}
 
+# WebSocket Handlers ... (Keep existing logic)
 async def handle_websocket(websocket: WebSocket, ConsumerClass):
     await websocket.accept()
     handler = ConsumerClass(websocket)
@@ -65,32 +68,56 @@ async def handle_websocket(websocket: WebSocket, ConsumerClass):
 
 @app.websocket("/arm")
 async def ws_arm(websocket: WebSocket):
-    await handle_websocket(websocket, ArmConsumer)
+    await handle_websocket(websocket, ArmHandler)
 
 @app.websocket("/drive")
 async def ws_drive(websocket: WebSocket):
-    await handle_websocket(websocket, DriveConsumer)
+    await handle_websocket(websocket, DriveHandler)
 
 @app.websocket("/mast")
 async def ws_mast(websocket: WebSocket):
-    await handle_websocket(websocket, MastConsumer)
+    await handle_websocket(websocket, MastHandler)
 
 @app.websocket("/nav")
 async def ws_nav(websocket: WebSocket):
-    await handle_websocket(websocket, NavConsumer)
+    await handle_websocket(websocket, NavHandler)
 
 @app.websocket("/science")
 async def ws_science(websocket: WebSocket):
-    await handle_websocket(websocket, ScienceConsumer)
+    await handle_websocket(websocket, ScienceHandler)
 
 @app.websocket("/latency")
 async def ws_latency(websocket: WebSocket):
-    await handle_websocket(websocket, LatencyConsumer)
+    await handle_websocket(websocket, LatencyHandler)
 
 if __name__ == "__main__":
     # Initialize ROS
     node = get_node()
     print("ROS2 node initialized")
-    
+
+    # Serve Frontend Static Files (Production Mode)
+    if os.getenv("SERVE_STATIC_FRONTEND") == "true":
+        frontend_dist = os.path.join(os.path.dirname(os.path.abspath(__file__)), "frontend/dist")
+        if os.path.exists(frontend_dist):
+            print(f"Serving static files from {frontend_dist}")
+            # Serve files from assets directory first (css, js, images)
+            app.mount("/assets", StaticFiles(directory=os.path.join(frontend_dist, "assets")), name="assets")
+            
+            # Catch-all route for SPA (Single Page Application) support
+            # This must be the last route registered.
+            @app.get("/{full_path:path}")
+            async def serve_spa(full_path: str):
+                # Check if the requested path is for a file that exists in the root of dist
+                file_path = os.path.join(frontend_dist, full_path)
+                if os.path.exists(file_path) and os.path.isfile(file_path):
+                    return FileResponse(file_path)
+                    
+                # Otherwise, serve index.html for SPA routing (e.g., /about -> index.html)
+                return FileResponse(os.path.join(frontend_dist, "index.html"))
+        else:
+            print("Frontend 'dist' directory not found. Not serving static files.")
+    else:
+        print("SERVE_STATIC_FRONTEND is not 'true'. Running in API-only mode (no static file serving).")
+
     # Run Uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000, log_level="info")

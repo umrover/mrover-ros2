@@ -1,10 +1,10 @@
-from backend.ws_consumers.base_consumer import WebSocketHandler
+from backend.ws_handlers.base_handler import WebSocketHandler
 from backend.input import DeviceInputs
 from backend.ra_controls import send_ra_controls
 from mrover.msg import Throttle, IK, ControllerState, Position, Velocity
 from sensor_msgs.msg import JointState
 
-class ArmConsumer(WebSocketHandler):
+class ArmHandler(WebSocketHandler):
     def __init__(self, websocket):
         super().__init__(websocket, 'arm')
         self.cur_ra_mode = "disabled"

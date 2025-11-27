@@ -1,6 +1,8 @@
 <template>
-  <div class="d-flex justify-content-between p-2 gap-2">
-    <h4 class="m-0 font-monospace align-content-center">Panorama</h4>
+  <div class="d-flex flex-column gap-2 p-2">
+    <div class="d-flex justify-content-between align-items-center">
+      <h4 class="m-0">Panorama Controls</h4>
+    </div>
     <FeedbackButton
       name="Start Panorama"
       mode="action"
@@ -10,10 +12,6 @@
   </div>
 </template>
 
-<script lang="ts">
+<script lang="ts" setup>
 import FeedbackButton from './FeedbackButton.vue'
-
-export default {
-  components: { FeedbackButton },
-}
 </script>

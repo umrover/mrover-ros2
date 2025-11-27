@@ -1,6 +1,8 @@
 <template>
   <div class="funnel-container">
-    <h4 class="m-0 font-monospace align-self-start">Funnel</h4>
+    <div class="d-flex justify-content-between align-items-center w-100 mb-2">
+      <h4 class="m-0">Funnel Controls</h4>
+    </div>
     <div class="hex-ring">
       <div class="hex-center"></div>
       <button

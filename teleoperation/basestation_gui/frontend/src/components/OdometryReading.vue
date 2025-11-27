@@ -1,67 +1,117 @@
 <template>
-  <div class="odom-container d-flex gap-2 p-2">
-    <div class="odom-card">
-      <div class="odom-header">Rover</div>
-      <div class="odom-grid">
-        <span class="odom-label">Lat</span>
-        <span class="odom-value">{{ rover_latitude_deg.toFixed(6) }}</span>
-        <span class="odom-label">Lon</span>
-        <span class="odom-value">{{ rover_longitude_deg.toFixed(6) }}</span>
-        <span class="odom-label">Alt</span>
-        <span class="odom-value">{{ rover_altitude.toFixed(1) }}m</span>
+  <div
+    class="d-flex align-items-start gap-2 text-nowrap overflow-hidden justify-content-between font-monospace"
+  >
+    <!-- Rover -->
+    <div class="d-flex flex-column px-1 text-center flex-fill">
+      <div class="fw-bold text-secondary text-uppercase mb-1">Rover</div>
+      <div class="d-flex flex-column align-items-start">
+        <span
+          ><span class="text-muted me-1 d-inline-block" style="width: 2rem">Lat</span
+          ><span class="fw-bold">{{
+            rover_latitude_deg.toFixed(6)
+          }}</span></span
+        >
+        <span
+          ><span class="text-muted me-1 d-inline-block" style="width: 2rem">Lon</span
+          ><span class="fw-bold">{{
+            rover_longitude_deg.toFixed(6)
+          }}</span></span
+        >
+        <span
+          ><span class="text-muted me-1 d-inline-block" style="width: 2rem">Alt</span
+          ><span class="fw-bold">{{ rover_altitude.toFixed(1) }}m</span></span
+        >
       </div>
     </div>
 
-    <div class="odom-card">
-      <div class="odom-header">Base</div>
-      <div class="odom-grid">
-        <span class="odom-label">Lat</span>
-        <span class="odom-value">{{ basestation_latitude_deg.toFixed(6) }}</span>
-        <span class="odom-label">Lon</span>
-        <span class="odom-value">{{ basestation_longitude_deg.toFixed(6) }}</span>
+    <!-- Base -->
+    <div class="d-flex flex-column px-1 text-center flex-fill">
+      <div class="fw-bold text-secondary text-uppercase mb-1">Base</div>
+      <div class="d-flex flex-column align-items-start">
+        <span
+          ><span class="text-muted me-1 d-inline-block" style="width: 2rem">Lat</span
+          ><span class="fw-bold">{{
+            basestation_latitude_deg.toFixed(6)
+          }}</span></span
+        >
+        <span
+          ><span class="text-muted me-1 d-inline-block" style="width: 2rem">Lon</span
+          ><span class="fw-bold">{{
+            basestation_longitude_deg.toFixed(6)
+          }}</span></span
+        >
       </div>
     </div>
 
-    <div class="odom-card">
-      <div class="odom-header">Orientation</div>
-      <div class="odom-grid">
-        <span class="odom-label">Yaw</span>
-        <span class="odom-value">{{ rover_bearing_deg.toFixed(1) }}&deg;</span>
-        <span class="odom-label">Pitch</span>
-        <span class="odom-value">{{ pitch.toFixed(1) }}&deg;</span>
-        <span class="odom-label">Roll</span>
-        <span class="odom-value">{{ roll.toFixed(1) }}&deg;</span>
+    <!-- Orientation -->
+    <div class="d-flex flex-column px-1 text-center flex-fill">
+      <div class="fw-bold text-secondary text-uppercase mb-1">
+        Orientation
+      </div>
+      <div class="d-flex flex-column gap-1">
+        <span
+          ><span class="text-muted me-1 d-inline-block" style="width: 3rem">Yaw</span
+          ><span class="fw-bold"
+            >{{ rover_bearing_deg.toFixed(0) }}&deg;</span
+          ></span
+        >
+        <span
+          ><span class="text-muted me-1 d-inline-block" style="width: 3rem">Pitch</span
+          ><span class="fw-bold">{{ pitch.toFixed(0) }}&deg;</span></span
+        >
+        <span
+          ><span class="text-muted me-1 d-inline-block" style="width: 3rem">Roll</span
+          ><span class="fw-bold">{{ roll.toFixed(0) }}&deg;</span></span
+        >
       </div>
     </div>
 
-    <div class="odom-card">
-      <div class="odom-header">Status</div>
-      <div class="odom-grid">
-        <span class="odom-label">GPS</span>
-        <span class="odom-value" :class="rover_status ? 'text-success' : 'text-danger'">
-          {{ rover_status ? 'Fixed' : 'No Fix' }}
-        </span>
-        <span class="odom-label">Drone</span>
-        <span class="odom-value" :class="drone_status ? 'text-success' : 'text-danger'">
-          {{ drone_status ? 'Fixed' : 'No Fix' }}
-        </span>
-      </div>
-    </div>
-
-    <div class="odom-card">
-      <div class="odom-header">IMU Cal</div>
-      <div class="d-flex gap-2 justify-content-center">
-        <div class="imu-item">
-          <span class="imu-label">Mag</span>
-          <LEDIndicator :name="mag_calibration.toString()" :show_name="true" :connected="mag_calibration == 3" />
+    <!-- Fix Status -->
+    <div class="d-flex flex-column px-1 text-center flex-fill">
+      <div class="fw-bold text-secondary text-uppercase mb-1">Fix</div>
+      <div class="d-flex flex-column gap-1">
+        <div class="d-flex align-items-center justify-content-center gap-1">
+          <span class="text-muted">Rov</span>
+          <span
+            class="led"
+            :class="rover_status ? 'bg-success' : 'bg-danger'"
+          ></span>
         </div>
-        <div class="imu-item">
-          <span class="imu-label">Gyro</span>
-          <LEDIndicator :name="gyro_calibration.toString()" :show_name="true" :connected="gyro_calibration == 3" />
+        <div class="d-flex align-items-center justify-content-center gap-1">
+          <span class="text-muted">Drn</span>
+          <span
+            class="led"
+            :class="drone_status ? 'bg-success' : 'bg-danger'"
+          ></span>
         </div>
-        <div class="imu-item">
-          <span class="imu-label">Acc</span>
-          <LEDIndicator :name="accel_calibration.toString()" :show_name="true" :connected="accel_calibration == 3" />
+      </div>
+    </div>
+
+    <!-- IMU Cal -->
+    <div class="d-flex flex-column px-1 text-center flex-fill">
+      <div class="fw-bold text-secondary text-uppercase mb-1">IMU Cal</div>
+      <div class="d-flex flex-column gap-1">
+        <div class="d-flex align-items-center justify-content-center gap-1">
+          <span class="text-muted">MAG</span>
+          <span
+            class="led"
+            :class="mag_calibration == 3 ? 'bg-success' : 'bg-danger'"
+          ></span>
+        </div>
+        <div class="d-flex align-items-center justify-content-center gap-1">
+          <span class="text-muted">GYR</span>
+          <span
+            class="led"
+            :class="gyro_calibration == 3 ? 'bg-success' : 'bg-danger'"
+          ></span>
+        </div>
+        <div class="d-flex align-items-center justify-content-center gap-1">
+          <span class="text-muted">ACC</span>
+          <span
+            class="led"
+            :class="accel_calibration == 3 ? 'bg-success' : 'bg-danger'"
+          ></span>
         </div>
       </div>
     </div>
@@ -73,7 +123,6 @@ import { ref, computed, watch } from 'vue'
 import { useWebsocketStore } from '@/stores/websocket'
 import { storeToRefs } from 'pinia'
 import { quaternionToMapAngle } from '../utils/map.ts'
-import LEDIndicator from './LEDIndicator.vue'
 import type { NavMessage, CalibrationMessage } from '../types/coordinates'
 
 const websocketStore = useWebsocketStore()
@@ -97,7 +146,7 @@ const accel_calibration = ref(0)
 
 const navMessage = computed(() => messages.value['nav'])
 
-watch(navMessage, (msg) => {
+watch(navMessage, msg => {
   if (!msg) return
   const navMsg = msg as NavMessage
   if (navMsg.type === 'gps_fix') {
@@ -114,7 +163,9 @@ watch(navMessage, (msg) => {
     rover_bearing_deg.value = quaternionToMapAngle(navMsg.orientation)
     const { x: qx, y: qy, z: qz, w: qw } = navMsg.orientation
     pitch.value = (Math.asin(2 * (qx * qz - qy * qw)) * 180) / Math.PI
-    roll.value = (Math.atan2(2 * (qy * qz + qx * qw), 1 - 2 * (qx * qx + qy * qy)) * 180) / Math.PI
+    roll.value =
+      (Math.atan2(2 * (qy * qz + qx * qw), 1 - 2 * (qx * qx + qy * qy)) * 180) /
+      Math.PI
   } else if (navMsg.type === 'calibration') {
     const calMsg = msg as CalibrationMessage
     mag_calibration.value = calMsg.magnetometer_calibration
@@ -125,54 +176,9 @@ watch(navMessage, (msg) => {
 </script>
 
 <style scoped>
-.odom-container {
-  font-family: system-ui, -apple-system, sans-serif;
-}
-
-.odom-card {
-  background: var(--bs-light, #f8f9fa);
-  border: 1px solid var(--bs-border-color, #dee2e6);
-  border-radius: 6px;
-  padding: 6px 10px;
-}
-
-.odom-header {
-  font-size: 0.65rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  color: var(--bs-secondary, #6c757d);
-  margin-bottom: 4px;
-  text-align: center;
-}
-
-.odom-grid {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 2px 8px;
-  align-items: center;
-}
-
-.odom-label {
-  font-size: 0.7rem;
-  color: var(--bs-secondary, #6c757d);
-}
-
-.odom-value {
-  font-size: 0.7rem;
-  font-weight: 600;
-  font-family: 'SF Mono', Monaco, monospace;
-  text-align: right;
-}
-
-.imu-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-}
-
-.imu-label {
-  font-size: 0.6rem;
-  color: var(--bs-secondary, #6c757d);
+.led {
+  width: 16px;
+  height: 16px;
+  border-radius: 8px;
 }
 </style>

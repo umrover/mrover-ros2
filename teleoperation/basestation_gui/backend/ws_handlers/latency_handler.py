@@ -1,9 +1,9 @@
 import asyncio
 import time
 import msgpack
-from backend.ws_consumers.base_consumer import WebSocketHandler
+from backend.ws_handlers.base_handler import WebSocketHandler
 
-class LatencyConsumer(WebSocketHandler):
+class LatencyHandler(WebSocketHandler):
     def __init__(self, websocket):
         super().__init__(websocket, 'latency')
 

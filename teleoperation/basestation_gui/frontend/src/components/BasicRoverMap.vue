@@ -33,18 +33,20 @@
       <l-polyline :lat-lngs="[...odomPath]" :color="'blue'" />
       <l-polyline :lat-lngs="[...dronePath]" :color="'green'" />
     </l-map>
-    <div
-      class="controls px-2 py-1 position-absolute d-flex align-items-center gap-2 top-0 end-0 m-2 bg-white rounded"
-    >
-      <input
-        v-model="online"
-        type="checkbox"
-        class="form-check-input p-0"
-        style="width: 14px; height: 14px; vertical-align: middle"
-      />
-      <p class="mb-0 text-body" style="font-size: 14px; line-height: 18px">
-        Online
-      </p>
+    <div class="controls px-2 py-2 position-absolute d-flex flex-column gap-2 top-0 end-0 m-2 rounded border shadow-sm" style="background-color: rgba(255, 255, 255, 0.9)">
+      <div class="d-flex align-items-center gap-2">
+        <input
+          v-model="online"
+          type="checkbox"
+          class="form-check-input p-0"
+        />
+        <p class="mb-0 text-body" style="font-size: 14px; line-height: 18px">
+          Online
+        </p>
+      </div>
+      <button @click="centerOnRover" class="btn btn-sm btn-light border" style="font-size: 14px; padding: 4px 8px">
+        Center on Rover
+      </button>
     </div>
 
     <div class="odometry" v-if="odom">
@@ -70,7 +72,7 @@ import { useWebsocketStore } from '@/stores/websocket'
 import { storeToRefs } from 'pinia'
 import 'leaflet/dist/leaflet.css'
 import L from 'leaflet'
-import '../leaflet-rotatedmarker.js'
+import 'leaflet-rotatedmarker'
 import type { LeafletMouseEvent } from 'leaflet'
 import type { StoreWaypoint } from '@/types/waypoints'
 import type { Odom, NavMessage } from '@/types/coordinates'
@@ -170,6 +172,12 @@ const onMapReady = () => {
       droneMarker = droneRef.value.leafletObject as L.Marker
     }
   })
+}
+
+const centerOnRover = () => {
+  if (map) {
+    map.setView(odomLatLng.value, map.getZoom())
+  }
 }
 
 const getClickedLatLon = (e: LeafletMouseEvent) => {

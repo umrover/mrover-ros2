@@ -56,7 +56,7 @@ def compute_manual_joint_controls(controller: DeviceInputs) -> list[float]:
         ),
         0.0, #placeholder
         filter_input(
-            simulated_axis(controller.buttons, ControllerButton.RIGHT_TRIGGER, ControllerButton.LEFT_TRIGGER),
+            simulated_axis(controller.axes, ControllerAxis.RIGHT_TRIGGER, ControllerAxis.LEFT_TRIGGER),
             scale=JOINT_SCALES[Joint.AUGER.value],
         ),
         0.0, #placeholder
