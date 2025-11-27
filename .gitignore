@@ -26,6 +26,10 @@ venv/
 *.db
 bun.lock
 bun.lockb
+/teleoperation/api-docs/
+.python-version
+system*.html
+openapitools.json
 
 # macOS
 .DS_Store
@@ -37,7 +41,3 @@ state_machine/state_log.txt
 
 data/*.png
 data/raw-pano-images
-
-# dev
-.python-version
-system*.html

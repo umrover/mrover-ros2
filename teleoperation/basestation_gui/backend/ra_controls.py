@@ -165,9 +165,8 @@ def subset(names: list[str], values: list[float], joints: set[Joint]) -> tuple[l
 
 
 def send_ra_controls(
-    inputs: DeviceInputs, node: Node, thr_pub: Publisher, ee_pos_pub: Publisher, ee_vel_pub: Publisher, buffer: Buffer
+    inputs: DeviceInputs, node: Node, arm_thr_pub: Publisher, ik_pos_pub: Publisher, ik_vel_pub: Publisher, buffer: Buffer
 ) -> None:
-    global ra_mode
     match ra_mode:
         case "throttle" | "ik-pos" | "ik-vel":
             back_pressed = safe_index(inputs.buttons, ControllerButton.BACK) > 0.5
@@ -200,14 +199,14 @@ def send_ra_controls(
                         joint_names, position_values = subset(JOINT_NAMES, manual_controls, set(Joint))
                         pos_msg.names = joint_names
                         pos_msg.positions = position_values
-                        arm_pos_pub.publish(pos_msg)
+                        ik_pos_pub.publish(pos_msg)
                     case "ik-vel":
                         vel_msg = Velocity()
                         manual_controls = compute_manual_joint_controls(inputs)
                         joint_names, velocity_values = subset(JOINT_NAMES, manual_controls, set(Joint))
                         vel_msg.names = joint_names
                         vel_msg.velocities = velocity_values
-                        arm_vel_pub.publish(vel_msg)
+                        ik_vel_pub.publish(vel_msg)
 
             else:
                 if joint_positions:
