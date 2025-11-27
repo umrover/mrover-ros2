@@ -1,8 +1,8 @@
-from backend.ws_handlers.base_handler import WebSocketHandler
+from backend.ws.base_ws import WebSocketHandler
 from backend.input import DeviceInputs
 from backend.ra_controls import send_ra_controls
 from mrover.msg import Throttle, IK, ControllerState, Position, Velocity
-from sensor_msgs.msg import JointState
+from geometry_msgs.msg import Twist
 
 class ArmHandler(WebSocketHandler):
     def __init__(self, websocket):
@@ -12,12 +12,11 @@ class ArmHandler(WebSocketHandler):
 
     async def setup(self):
         """Setup ARM endpoint subscriptions and publishers"""
-        self.arm_thr_pub = self.node.create_publisher(Throttle, "arm_throttle_cmd", 1)
-        self.arm_pos_pub = self.node.create_publisher(Position, "/arm_position_cmd", 1)
-        self.arm_vel_pub = self.node.create_publisher(Velocity, "/arm_velocity_cmd", 1)
+        self.arm_thr_pub = self.node.create_publisher(Throttle, "/arm_thr_cmd", 1)
+        self.ik_pos_pub = self.node.create_publisher(IK, "/ik_pos_cmd", 1)
+        self.ik_vel_pub = self.node.create_publisher(Twist, "/ik_vel_cmd", 1)
 
         self.forward_ros_topic("/arm_controller_state", ControllerState, "arm_state")
-        self.forward_ros_topic("/arm_joint_data", JointState, "fk")
         self.forward_ros_topic("/arm_ik", IK, "ik_target")
 
     async def handle_message(self, data):
@@ -33,8 +32,8 @@ class ArmHandler(WebSocketHandler):
                 device_input,
                 self.node,
                 self.arm_thr_pub,
-                self.arm_pos_pub,
-                self.arm_vel_pub,
+                self.ik_pos_pub,
+                self.ik_vel_pub,
                 self.buffer,
             )
         elif msg_type == 'ra_mode':

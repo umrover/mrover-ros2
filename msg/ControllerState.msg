@@ -1,4 +1,8 @@
+std_msgs/Header header
 string[] name
-string[] state # Armed, Disconnected, or Error
+string[] state
 string[] error
-uint8[] limit_hit # 0,1,2,3 bits represent states
+float32[] position
+float32[] velocity
+float32[] current
+uint8[] limit_hit"

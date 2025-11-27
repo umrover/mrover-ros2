@@ -1,7 +1,7 @@
 import asyncio
 import time
 import msgpack
-from backend.ws_handlers.base_handler import WebSocketHandler
+from backend.ws.base_ws import WebSocketHandler
 
 class LatencyHandler(WebSocketHandler):
     def __init__(self, websocket):

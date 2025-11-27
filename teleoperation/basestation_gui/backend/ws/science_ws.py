@@ -1,8 +1,8 @@
-from backend.ws_handlers.base_handler import WebSocketHandler
+from backend.ws.base_ws import WebSocketHandler
 from backend.input import DeviceInputs
 from backend.sp_controls import send_sp_controls
-from mrover.msg import Throttle, ControllerState, LED, Oxygen, UV
-from sensor_msgs.msg import Temperature, RelativeHumidity, JointState
+from mrover.msg import Throttle, ControllerState, LED, Humidity, Temperature, Oxygen, UV, Ozone, CO2, Pressure
+from sensor_msgs.msg import JointState
 
 class ScienceHandler(WebSocketHandler):
     def __init__(self, websocket):
@@ -10,15 +10,22 @@ class ScienceHandler(WebSocketHandler):
 
     async def setup(self):
         """Setup SCIENCE endpoint subscriptions and publishers"""
-        self.sp_thr_pub = self.node.create_publisher(Throttle, "/sp_throttle_cmd", 1)
+        self.sp_thr_pub = self.node.create_publisher(Throttle, "/sp_thr_cmd", 1)
 
         self.forward_ros_topic("/led", LED, "led")
         self.forward_ros_topic("/science_oxygen_data", Oxygen, "oxygen")
         self.forward_ros_topic("/science_uv_data", UV, "uv")
         self.forward_ros_topic("/science_temperature_data", Temperature, "temperature")
-        self.forward_ros_topic("/science_humidity_data", RelativeHumidity, "humidity")
-        self.forward_ros_topic("/sp_joint_state", JointState, "sp_joint_state")
+        self.forward_ros_topic("/science_humidity_data", Humidity, "humidity")
         self.forward_ros_topic("/sp_controller_state", ControllerState, "sp_state")
+
+        self.forward_ros_topic("/sp_humidity_data", Humidity, "sp_humidity")
+        self.forward_ros_topic("/sp_temp_data", Temperature, "sp_temp")
+        self.forward_ros_topic("/sp_oxygen_data", Oxygen, "sp_oxygen")
+        self.forward_ros_topic("/sp_uv_data", UV, "sp_uv")
+        self.forward_ros_topic("/sp_ozone_data", Ozone, "sp_ozone")
+        self.forward_ros_topic("/sp_co2_data", CO2, "sp_co2")
+        self.forward_ros_topic("/sp_pressure_data", Pressure, "sp_pressure")
 
     async def handle_message(self, data):
         """Handle incoming SCIENCE control messages"""

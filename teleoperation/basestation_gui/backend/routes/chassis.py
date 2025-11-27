@@ -7,7 +7,7 @@ import cv2
 import time
 import math
 
-router = APIRouter(prefix="/api", tags=["mast"])
+router = APIRouter(prefix="/api", tags=["chassis"])
 
 def _call_service_sync(client, request, timeout=10.0):
     if not client.wait_for_service(timeout_sec=1.0):

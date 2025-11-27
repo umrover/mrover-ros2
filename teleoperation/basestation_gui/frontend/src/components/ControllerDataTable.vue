@@ -28,6 +28,24 @@
             {{ limits }}
           </td>
         </tr>
+        <tr>
+          <th class='table-secondary text-nowrap sticky-col px-2 py-1'>Position</th>
+          <td v-for='(pos, i) in position' :key='i' class="text-center small px-2 py-1">
+            {{ pos.toFixed(2) }}
+          </td>
+        </tr>
+        <tr>
+          <th class='table-secondary text-nowrap sticky-col px-2 py-1'>Velocity</th>
+          <td v-for='(vel, i) in velocity' :key='i' class="text-center small px-2 py-1">
+            {{ vel.toFixed(2) }}
+          </td>
+        </tr>
+        <tr>
+          <th class='table-secondary text-nowrap sticky-col px-2 py-1'>Current</th>
+          <td v-for='(cur, i) in current' :key='i' class="text-center small px-2 py-1">
+            {{ cur.toFixed(2) }}
+          </td>
+        </tr>
         </tbody>
       </table>
     </div>
@@ -58,6 +76,9 @@ const name = ref<string[]>([])
 const state = ref<string[]>([])
 const error = ref<string[]>([])
 const limits = ref<boolean[]>([])
+const position = ref<number[]>([])
+const velocity = ref<number[]>([])
+const current = ref<number[]>([])
 
 const armMessage = computed(() => messages.value['arm'])
 const driveMessage = computed(() => messages.value['drive'])
@@ -70,6 +91,9 @@ watch(armMessage, (msg) => {
     state.value = controllerMsg.state
     error.value = controllerMsg.error
     limits.value = controllerMsg.limit_hit
+    position.value = controllerMsg.position
+    velocity.value = controllerMsg.velocity
+    current.value = controllerMsg.current
   }
 })
 
@@ -80,6 +104,9 @@ watch(driveMessage, (msg) => {
     state.value = controllerMsg.state
     error.value = controllerMsg.error
     limits.value = controllerMsg.limit_hit
+    position.value = controllerMsg.position
+    velocity.value = controllerMsg.velocity
+    current.value = controllerMsg.current
   }
 })
 
@@ -90,6 +117,9 @@ watch(scienceMessage, (msg) => {
     state.value = controllerMsg.state
     error.value = controllerMsg.error
     limits.value = controllerMsg.limit_hit
+    position.value = controllerMsg.position
+    velocity.value = controllerMsg.velocity
+    current.value = controllerMsg.current
   }
 })
 </script>

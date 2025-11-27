@@ -41,9 +41,9 @@
 
 <script lang="ts" setup>
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
-import { mastAPI } from '@/utils/mastAPI'
+import { chassisAPI } from '@/utils/chassisAPI'
 import { useWebsocketStore } from '@/stores/websocket'
-import type { JointStateMessage } from '@/types/websocket'
+import type { ControllerStateMessage } from '@/types/websocket'
 import IndicatorDot from './IndicatorDot.vue'
 
 const websocketStore = useWebsocketStore()
@@ -53,11 +53,11 @@ let interval: number | undefined = undefined
 
 const UPDATE_HZ = 20
 
-const gimbalJointState = computed((): JointStateMessage | null => {
-  const messages = websocketStore.messages['mast']
+const gimbalJointState = computed((): ControllerStateMessage | null => {
+  const messages = websocketStore.messages['chassis']
   if (!messages || !Array.isArray(messages)) return null
-  const msg = messages.find((msg: { type: string }) => msg.type === 'gimbal_joint_state')
-  return msg ? (msg as JointStateMessage) : null
+  const msg = messages.find((msg: { type: string }) => msg.type === 'gimbal_state')
+  return msg ? (msg as ControllerStateMessage) : null
 })
 
 const pitchRadians = computed((): number => {
@@ -86,7 +86,7 @@ const adjustGimbal = async (
   adjustment: number,
 ): Promise<void> => {
   try {
-    await mastAPI.adjustGimbal(joint, adjustment, false)
+    await chassisAPI.adjustGimbal(joint, adjustment, false)
   } catch (error) {
     console.error('Failed to adjust gimbal:', error)
   }

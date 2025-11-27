@@ -1,7 +1,7 @@
 import asyncio
 import tf2_ros
 from lie import SE3
-from backend.ws_handlers.base_handler import WebSocketHandler
+from backend.ws.base_ws import WebSocketHandler
 from mrover.msg import StateMachineStateUpdate
 from sensor_msgs.msg import NavSatFix
 

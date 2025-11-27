@@ -1,4 +1,4 @@
-from backend.ws_handlers.base_handler import WebSocketHandler
+from backend.ws.base_ws import WebSocketHandler
 from backend.input import DeviceInputs
 from backend.drive_controls import send_joystick_twist, send_controller_twist
 from mrover.msg import ControllerState
@@ -11,13 +11,11 @@ class DriveHandler(WebSocketHandler):
 
     async def setup(self):
         """Setup DRIVE endpoint subscriptions and publishers"""
-        self.joystick_twist_pub = self.node.create_publisher(Twist, "/joystick_cmd_vel", 1)
-        self.controller_twist_pub = self.node.create_publisher(Twist, "/controller_cmd_vel", 1)
+        self.joystick_twist_pub = self.node.create_publisher(Twist, "/joystick_vel_cmd", 1)
+        self.controller_twist_pub = self.node.create_publisher(Twist, "/controller_vel_cmd", 1)
 
-        self.forward_ros_topic("/drive_left_controller_data", ControllerState, "drive_left_state")
-        self.forward_ros_topic("/drive_right_controller_data", ControllerState, "drive_right_state")
-        self.forward_ros_topic("/drive_left_joint_data", JointState, "drive_left_joint_state")
-        self.forward_ros_topic("/drive_right_joint_data", JointState, "drive_right_joint_state")
+        self.forward_ros_topic("/left_controller_state", ControllerState, "drive_left_state")
+        self.forward_ros_topic("/right_controller_state", ControllerState, "drive_right_state")
 
     async def handle_message(self, data):
         """Handle incoming DRIVE control messages"""

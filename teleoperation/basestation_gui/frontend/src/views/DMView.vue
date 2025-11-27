@@ -63,14 +63,14 @@ const websocketStore = useWebsocketStore()
 onMounted(() => {
   websocketStore.setupWebSocket('arm')
   websocketStore.setupWebSocket('drive')
-  websocketStore.setupWebSocket('mast')
+  websocketStore.setupWebSocket('chassis')
   websocketStore.setupWebSocket('nav')
 })
 
 onUnmounted(() => {
   websocketStore.closeWebSocket('arm')
   websocketStore.closeWebSocket('drive')
-  websocketStore.closeWebSocket('mast')
+  websocketStore.closeWebSocket('chassis')
   websocketStore.closeWebSocket('nav')
 })
 </script>

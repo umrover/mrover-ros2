@@ -87,14 +87,14 @@ const updateSite = async (selectedSite: number) => {
 
 onMounted(() => {
   websocketStore.setupWebSocket('arm')
-  websocketStore.setupWebSocket('mast')
+  websocketStore.setupWebSocket('chassis')
   websocketStore.setupWebSocket('nav')
   websocketStore.setupWebSocket('science')
 })
 
 onUnmounted(() => {
   websocketStore.closeWebSocket('arm')
-  websocketStore.closeWebSocket('mast')
+  websocketStore.closeWebSocket('chassis')
   websocketStore.closeWebSocket('nav')
   websocketStore.closeWebSocket('science')
 })

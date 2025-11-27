@@ -18,10 +18,17 @@ export interface RootState {
 }
 
 export interface ControllerStateMessage {
-  type: 'arm_state' | 'sp_state' | 'drive_left_state' | 'drive_right_state';
+  type: 'arm_state' | 'sp_state' | 'drive_left_state' | 'drive_right_state' | 'gimbal_state';
+  header?: {
+    stamp: { sec: number; nanosec: number };
+    frame_id: string;
+  };
   name: string[];
   state: string[];
   error: string[];
+  position: number[];
+  velocity: number[];
+  current: number[];
   limit_hit: boolean[];
 }
 
@@ -71,4 +78,39 @@ export interface HumidityMessage {
   relative_humidity: number;
 }
 
-export type ScienceMessage = OxygenMessage | UVMessage | TemperatureMessage | HumidityMessage;
+export interface SPHumidityMessage {
+  type: 'sp_humidity';
+  relative_humidity: number;
+}
+
+export interface SPTemperatureMessage {
+  type: 'sp_temp';
+  temperature: number;
+}
+
+export interface SPOxygenMessage {
+  type: 'sp_oxygen';
+  percent: number;
+}
+
+export interface SPUVMessage {
+  type: 'sp_uv';
+  uv_index: number;
+}
+
+export interface SPOzoneMessage {
+  type: 'sp_ozone';
+  ozone: number;
+}
+
+export interface SPCO2Message {
+  type: 'sp_co2';
+  co2: number;
+}
+
+export interface SPPressureMessage {
+  type: 'sp_pressure';
+  pressure: number;
+}
+
+export type ScienceMessage = OxygenMessage | UVMessage | TemperatureMessage | HumidityMessage | SPHumidityMessage | SPTemperatureMessage | SPOxygenMessage | SPUVMessage | SPOzoneMessage | SPCO2Message | SPPressureMessage;

@@ -54,7 +54,7 @@ const aliasMap: Record<string, string> = {
   arm: 'arm',
   auton: 'auton',
   drive: 'drive',
-  mast: 'mast',
+  chassis: 'chassis',
   nav: 'nav',
   science: 'sci',
   waypoints: 'wypt',

@@ -15,16 +15,16 @@ from backend.ros_manager import get_node
 # Import Routers
 from backend.routes.waypoints import router as waypoints_router
 from backend.routes.auton import router as auton_router
-from backend.routes.mast import router as mast_router
+from backend.routes.chassis import router as chassis_router
 from backend.routes.science import router as science_router
 
 # Import Handlers
-from backend.ws_handlers.arm_handler import ArmHandler
-from backend.ws_handlers.drive_handler import DriveHandler
-from backend.ws_handlers.mast_handler import MastHandler
-from backend.ws_handlers.nav_handler import NavHandler
-from backend.ws_handlers.science_handler import ScienceHandler
-from backend.ws_handlers.latency_handler import LatencyHandler
+from backend.ws.arm_ws import ArmHandler
+from backend.ws.drive_ws import DriveHandler
+from backend.ws.chassis_ws import ChassisHandler
+from backend.ws.nav_ws import NavHandler
+from backend.ws.science_ws import ScienceHandler
+from backend.ws.latency_ws import LatencyHandler
 
 app = FastAPI()
 
@@ -40,7 +40,7 @@ app.add_middleware(
 # Include Routers
 app.include_router(waypoints_router)
 app.include_router(auton_router)
-app.include_router(mast_router)
+app.include_router(chassis_router)
 app.include_router(science_router)
 
 @app.get("/api/health")
@@ -74,9 +74,9 @@ async def ws_arm(websocket: WebSocket):
 async def ws_drive(websocket: WebSocket):
     await handle_websocket(websocket, DriveHandler)
 
-@app.websocket("/mast")
-async def ws_mast(websocket: WebSocket):
-    await handle_websocket(websocket, MastHandler)
+@app.websocket("/chassis")
+async def ws_chassis(websocket: WebSocket):
+    await handle_websocket(websocket, ChassisHandler)
 
 @app.websocket("/nav")
 async def ws_nav(websocket: WebSocket):
