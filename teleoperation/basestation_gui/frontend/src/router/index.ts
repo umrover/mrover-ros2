@@ -1,11 +1,11 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import Menu from '../views/HomeMenu.vue'
-import DMTask from '../views/DMTask.vue'
-import ESTask from '../views/ESTask.vue'
-import AutonTask from '../views/AutonTask.vue'
-import Rover3D from '../components/Rover3D.vue'
-import ScienceTask from '../views/ScienceTask.vue'
-import DevView from '../views/DevView.vue'
+import Menu from '@/views/HomeMenu.vue'
+import DMTask from '@/views/DMView.vue'
+import ESTask from '@/views/ESView.vue'
+import AutonTask from '@/views/AutonView.vue'
+import Rover3D from '@/components/Rover3D.vue'
+import ScienceTask from '@/views/ScienceView.vue'
+import DevView from '@/views/DevView.vue'
 
 
 const routes = [

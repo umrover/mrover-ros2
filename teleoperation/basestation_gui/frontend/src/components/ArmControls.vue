@@ -11,10 +11,10 @@
       aria-label="Arm mode selection"
       >
         <button
-        type="button"
-        class="btn flex-fill"
-        :class="mode === 'disabled' ? 'btn-danger' : 'btn-outline-danger'"
-        @click="mode = 'disabled'"
+          type="button"
+          class="btn flex-fill"
+          :class="mode === 'disabled' ? 'btn-danger' : 'btn-outline-danger'"
+          @click="newRAMode('disabled')"
         >
         Disabled
       </button>
@@ -22,15 +22,15 @@
           type="button"
           class="btn flex-fill"
           :class="mode === 'throttle' ? 'btn-success' : 'btn-outline-success'"
-          @click="mode = 'throttle'"
-          >
+          @click="newRAMode('throttle')"
+        >
           Throttle
         </button>
         <button
-        type="button"
-        class="btn flex-fill"
-        :class="mode === 'ik-pos' ? 'btn-success' : 'btn-outline-success'"
-        @click="mode = 'ik-pos'"
+          type="button"
+          class="btn flex-fill"
+          :class="mode === 'ik-pos' ? 'btn-success' : 'btn-outline-success'"
+          @click="newRAMode('ik-pos')"
         >
           IK Position
         </button>
@@ -38,8 +38,8 @@
           type="button"
           class="btn flex-fill"
           :class="mode === 'ik-vel' ? 'btn-success' : 'btn-outline-success'"
-          @click="mode = 'ik-vel'"
-          >
+          @click="newRAMode('ik-vel')"
+        >
           IK Velocity
         </button>
       </div>
@@ -52,6 +52,7 @@
 <script lang="ts" setup>
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useWebsocketStore } from '@/stores/websocket'
+import { armAPI } from '@/utils/api'
 import GamepadDisplay from './GamepadDisplay.vue'
 import IndicatorDot from './IndicatorDot.vue'
 
@@ -68,9 +69,9 @@ let interval: number | undefined = undefined
 
 const UPDATE_HZ = 30
 
-const keyDown = (event: { key: string }) => {
+const keyDown = async (event: { key: string }) => {
   if (event.key === ' ') {
-    mode.value = 'disabled'
+    await newRAMode('disabled')
   }
 }
 
@@ -96,16 +97,6 @@ onMounted(() => {
       type: 'ra_controller',
       ...controllerData
     })
-
-    websocketStore.sendMessage('arm', {
-      type: 'ra_mode',
-      mode: mode.value,
-    })
-
-    websocketStore.sendMessage('drive', {
-      type: 'controller',
-      ...controllerData
-    })
   }, 1000 / UPDATE_HZ)
 })
 
@@ -113,4 +104,17 @@ onBeforeUnmount(() => {
   window.clearInterval(interval)
   document.removeEventListener('keydown', keyDown)
 })
+
+const newRAMode = async (newMode: string) => {
+  try {
+    mode.value = newMode
+    const data = await armAPI.setRAMode(mode.value)
+    if (data.status === 'success' && data.mode) {
+        mode.value = data.mode
+      };
+    }
+     catch (error) {
+    console.error('Failed to set arm mode:', error)
+  }
+}
 </script>

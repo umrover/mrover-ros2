@@ -46,3 +46,6 @@ class RecordingWaypointRequest(BaseModel):
     lat: float
     lon: float
     sequence: int
+
+class RAModeRequest(BaseModel):
+    mode: str

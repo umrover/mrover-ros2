@@ -7,7 +7,6 @@
 </template>
 
 <script lang="ts" setup>
-import { defineProps, withDefaults } from 'vue'
 
 interface Props {
   isActive: boolean

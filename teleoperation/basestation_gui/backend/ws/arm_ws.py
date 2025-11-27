@@ -1,13 +1,18 @@
+from typing import Optional
 from backend.ws.base_ws import WebSocketHandler
 from backend.input import DeviceInputs
 from backend.ra_controls import send_ra_controls
 from mrover.msg import Throttle, IK, ControllerState, Position, Velocity
 from geometry_msgs.msg import Twist
+from rclpy.publisher import Publisher
 
 class ArmHandler(WebSocketHandler):
+    arm_thr_pub: Publisher
+    ik_pos_pub: Publisher
+    ik_vel_pub: Publisher
+
     def __init__(self, websocket):
         super().__init__(websocket, 'arm')
-        self.cur_ra_mode = "disabled"
         self.buffer = {}
 
     async def setup(self):
@@ -28,7 +33,6 @@ class ArmHandler(WebSocketHandler):
             buttons = data.get('buttons', [])
             device_input = DeviceInputs(axes, buttons)
             send_ra_controls(
-                self.cur_ra_mode,
                 device_input,
                 self.node,
                 self.arm_thr_pub,
@@ -36,7 +40,5 @@ class ArmHandler(WebSocketHandler):
                 self.ik_vel_pub,
                 self.buffer,
             )
-        elif msg_type == 'ra_mode':
-            self.cur_ra_mode = data.get('mode', 'disabled')
         else:
             print(f"Unhandled ARM message: {msg_type}")

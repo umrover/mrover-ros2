@@ -52,12 +52,10 @@ const { isFlashingIn, isFlashingOut } = websocketStore
 
 const aliasMap: Record<string, string> = {
   arm: 'arm',
-  auton: 'auton',
   drive: 'drive',
-  chassis: 'chassis',
+  chassis: 'cha',
   nav: 'nav',
   science: 'sci',
-  waypoints: 'wypt',
   latency: 'lat',
 }
 

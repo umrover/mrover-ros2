@@ -15,10 +15,23 @@ from geometry_msgs.msg import Twist, Pose, Point, Quaternion
 from tf2_ros.buffer import Buffer
 
 import logging
-logger = logging.getLogger('django')
+
+logger = logging.getLogger("django")
+
+ra_mode = "disabled"
+
+
+def get_ra_mode() -> str:
+    return ra_mode
+
+
+def set_ra_mode(new_ra_mode: str):
+    global ra_mode
+    ra_mode = new_ra_mode
 
 
 TAU = 2 * pi
+
 
 class Joint(Enum):
     A = 0
@@ -121,7 +134,10 @@ def subset(names: list[str], values: list[float], joints: set[Joint]) -> tuple[l
     return [names[i.value] for i in filtered_joints], [values[i.value] for i in filtered_joints]
 
 
-def send_ra_controls(ra_mode: str, inputs: DeviceInputs, node: Node, arm_thr_pub: Publisher, arm_pos_pub: Publisher, arm_vel_pub: Publisher, buffer: Buffer) -> None: 
+def send_ra_controls(
+    inputs: DeviceInputs, node: Node, thr_pub: Publisher, ee_pos_pub: Publisher, ee_vel_pub: Publisher, buffer: Buffer
+) -> None:
+    global ra_mode
     match ra_mode:
         case "throttle" | "ik-pos" | "ik-vel":
             back_pressed = safe_index(inputs.buttons, ControllerButton.BACK) > 0.5
@@ -162,7 +178,6 @@ def send_ra_controls(ra_mode: str, inputs: DeviceInputs, node: Node, arm_thr_pub
                         vel_msg.names = joint_names
                         vel_msg.velocities = velocity_values
                         arm_vel_pub.publish(vel_msg)
-
 
             else:
                 if joint_positions:
