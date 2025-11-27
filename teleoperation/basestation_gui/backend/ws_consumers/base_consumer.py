@@ -1,11 +1,12 @@
 import asyncio
 import msgpack
+from fastapi import WebSocket
 from rclpy.qos import qos_profile_sensor_data
 from rosidl_runtime_py.convert import message_to_ordereddict
-from backend.consumers.ros_manager import get_node
+from backend.ros_manager import get_node
 
 class WebSocketHandler:
-    def __init__(self, websocket, endpoint):
+    def __init__(self, websocket: WebSocket, endpoint: str):
         self.websocket = websocket
         self.endpoint = endpoint
         self.node = get_node()
@@ -17,7 +18,7 @@ class WebSocketHandler:
         """Send msgpack encoded data to the WebSocket"""
         try:
             packed = msgpack.packb(data, use_bin_type=True)
-            await self.websocket.send(packed)
+            await self.websocket.send_bytes(packed)
         except Exception as e:
             print(f"Error sending message on {self.endpoint}: {e}")
 

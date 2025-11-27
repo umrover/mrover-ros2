@@ -1,12 +1,13 @@
-from flask import Blueprint, jsonify, request
-from backend.consumers.ros_manager import get_node
+from fastapi import APIRouter, HTTPException
+from backend.ros_manager import get_node
+from backend.models_pydantic import GimbalAdjustRequest
 from mrover.srv import PanoramaStart, PanoramaEnd, ServoSetPos
 import numpy as np
 import cv2
 import time
 import math
 
-mast_bp = Blueprint('mast', __name__)
+router = APIRouter(prefix="/api", tags=["mast"])
 
 def _call_service_sync(client, request, timeout=10.0):
     if not client.wait_for_service(timeout_sec=1.0):
@@ -21,7 +22,7 @@ def _call_service_sync(client, request, timeout=10.0):
 
     return future.result()
 
-@mast_bp.route('/panorama/start/', methods=['POST'])
+@router.post("/panorama/start/")
 def panorama_start():
     try:
         node = get_node()
@@ -31,14 +32,14 @@ def panorama_start():
         result = _call_service_sync(pano_start_srv, pano_request)
 
         if result is None:
-            return jsonify({'status': 'error', 'message': 'Service call failed'}), 500
+            raise HTTPException(status_code=500, detail="Service call failed")
 
-        return jsonify({'status': 'success'})
+        return {'status': 'success'}
 
     except Exception as e:
-        return jsonify({'status': 'error', 'message': str(e)}), 500
+        raise HTTPException(status_code=500, detail=str(e))
 
-@mast_bp.route('/panorama/stop/', methods=['POST'])
+@router.post("/panorama/stop/")
 def panorama_stop():
     try:
         node = get_node()
@@ -48,10 +49,10 @@ def panorama_stop():
         result = _call_service_sync(pano_end_srv, pano_request, timeout=30.0)
 
         if result is None:
-            return jsonify({'status': 'error', 'message': 'Service call failed'}), 500
+            raise HTTPException(status_code=500, detail="Service call failed")
 
         if not result.success:
-            return jsonify({'status': 'error', 'message': 'Panorama failed'}), 500
+            raise HTTPException(status_code=500, detail="Panorama failed")
 
         img_msg = result.img
         img_np = np.frombuffer(img_msg.data, dtype=np.uint8).reshape(
@@ -65,50 +66,43 @@ def panorama_stop():
         filename = f"../../data/{timestamp}_panorama.png"
         cv2.imwrite(filename, img_np)
 
-        return jsonify({
+        return {
             'status': 'success',
             'image_path': filename,
             'timestamp': timestamp
-        })
+        }
 
     except Exception as e:
-        return jsonify({'status': 'error', 'message': str(e)}), 500
+        raise HTTPException(status_code=500, detail=str(e))
 
-@mast_bp.route('/gimbal/adjust/', methods=['POST'])
-def gimbal_adjust():
+@router.post("/gimbal/adjust/")
+def gimbal_adjust(data: GimbalAdjustRequest):
     try:
-        joint = request.json.get('joint')
-        adjustment = request.json.get('adjustment')
-        absolute = request.json.get('absolute', False)
+        if data.joint not in ['pitch', 'yaw']:
+            raise HTTPException(status_code=400, detail="Joint must be pitch or yaw")
 
-        if not joint or adjustment is None:
-            return jsonify({'status': 'error', 'message': 'Missing joint or adjustment parameter'}), 400
-
-        if joint not in ['pitch', 'yaw']:
-            return jsonify({'status': 'error', 'message': 'Joint must be pitch or yaw'}), 400
-
-        adjustment_rad = math.radians(float(adjustment))
+        adjustment_rad = math.radians(data.adjustment)
 
         node = get_node()
         gimbal_srv = node.create_client(ServoSetPos, "/gimbal_set_position")
 
         gimbal_request = ServoSetPos.Request()
         gimbal_request.position = adjustment_rad
-        gimbal_request.is_counterclockwise = adjustment_rad < 0 if not absolute else False
+        gimbal_request.is_counterclockwise = adjustment_rad < 0 if not data.absolute else False
 
         result = _call_service_sync(gimbal_srv, gimbal_request)
 
         if result is None:
-            return jsonify({'status': 'error', 'message': 'Service call failed'}), 500
+            raise HTTPException(status_code=500, detail="Service call failed")
 
         if not result.success:
-            return jsonify({'status': 'error', 'message': 'Gimbal adjustment failed'}), 500
+            raise HTTPException(status_code=500, detail="Gimbal adjustment failed")
 
-        return jsonify({
+        return {
             'status': 'success',
-            'joint': joint,
-            'adjustment': adjustment
-        })
+            'joint': data.joint,
+            'adjustment': data.adjustment
+        }
 
     except Exception as e:
-        return jsonify({'status': 'error', 'message': str(e)}), 500
+        raise HTTPException(status_code=500, detail=str(e))

@@ -12,6 +12,7 @@ export interface AutonWaypoint {
   lon: number
   enable_costmap: boolean
   in_route?: boolean
+  deletable?: boolean
 }
 
 /**

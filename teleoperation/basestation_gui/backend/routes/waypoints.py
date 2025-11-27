@@ -1,75 +1,210 @@
-import os
-import json
-from flask import Blueprint, jsonify, request
+from fastapi import APIRouter, HTTPException, status
+from backend.database import get_db_connection
+from backend.models_pydantic import BasicWaypointList, AutonWaypointList, RecordingCreateRequest, RecordingWaypointRequest
 
-waypoints_bp = Blueprint('waypoints', __name__)
+router = APIRouter(prefix="/api/waypoints", tags=["waypoints"])
 
-# Waypoint Storage
-WAYPOINTS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), '../../waypoints.json')
+# --- Basic Waypoints ---
 
-def load_waypoints():
-    if os.path.exists(WAYPOINTS_FILE):
-        try:
-            with open(WAYPOINTS_FILE, 'r') as f:
-                return json.load(f)
-        except json.JSONDecodeError:
-            pass
-    return {'basic': [], 'auton': [], 'current_course': []}
-
-def save_waypoints(data):
-    with open(WAYPOINTS_FILE, 'w') as f:
-        json.dump(data, f, indent=2)
-
-# Initialize Waypoints
-waypoints_data = load_waypoints()
-
-@waypoints_bp.route('/basic/', methods=['GET'])
+@router.get("/basic/")
 def get_basic_waypoints():
-    return jsonify({'status': 'success', 'waypoints': waypoints_data.get('basic', [])})
+    conn = get_db_connection()
+    waypoints = conn.execute('SELECT * FROM basic_waypoints').fetchall()
+    conn.close()
+    return {
+        'status': 'success',
+        'waypoints': [dict(w) for w in waypoints]
+    }
 
-@waypoints_bp.route('/basic/save/', methods=['POST'])
-def save_basic_waypoints():
-    data = request.json
-    waypoints_data['basic'] = data.get('waypoints', [])
-    save_waypoints(waypoints_data)
-    return jsonify({'status': 'success', 'waypoints': waypoints_data['basic']})
-
-@waypoints_bp.route('/basic/clear/', methods=['DELETE'])
-def clear_basic_waypoints():
-    waypoints_data['basic'] = []
-    save_waypoints(waypoints_data)
-    return jsonify({'status': 'success', 'waypoints': []})
-
-@waypoints_bp.route('/auton/', methods=['GET'])
-def get_auton_waypoints():
-    return jsonify({'status': 'success', 'waypoints': waypoints_data.get('auton', [])})
-
-@waypoints_bp.route('/auton/save/', methods=['POST'])
-def save_auton_waypoints():
-    data = request.json
-    waypoints_data['auton'] = data.get('waypoints', [])
-    save_waypoints(waypoints_data)
-    return jsonify({'status': 'success', 'waypoints': waypoints_data['auton']})
-
-@waypoints_bp.route('/auton/current/', methods=['GET'])
-def get_current_auton_course():
-    return jsonify({'status': 'success', 'course': waypoints_data.get('current_course', [])})
-
-@waypoints_bp.route('/auton/current/save/', methods=['POST'])
-def save_current_auton_course():
-    data = request.json
-    waypoints_data['current_course'] = data.get('course', [])
-    save_waypoints(waypoints_data)
-    return jsonify({'status': 'success', 'course': waypoints_data['current_course']})
-
-@waypoints_bp.route('/auton/<int:waypoint_id>/', methods=['DELETE'])
-def delete_auton_waypoint(waypoint_id):
-    # Filter out the waypoint with the given ID
-    initial_len = len(waypoints_data['auton'])
-    waypoints_data['auton'] = [wp for wp in waypoints_data['auton'] if wp.get('id') != waypoint_id]
+@router.post("/basic/save/")
+def save_basic_waypoints(data: BasicWaypointList):
+    waypoints = data.waypoints
     
-    if len(waypoints_data['auton']) < initial_len:
-        save_waypoints(waypoints_data)
-        return jsonify({'status': 'success', 'message': f'Waypoint {waypoint_id} deleted'})
-    else:
-        return jsonify({'status': 'error', 'message': 'Waypoint not found'}), 404
+    conn = get_db_connection()
+    conn.execute('DELETE FROM basic_waypoints')
+    for w in waypoints:
+        conn.execute(
+            'INSERT INTO basic_waypoints (name, latitude, longitude, drone) VALUES (?, ?, ?, ?)',
+            (w.name, w.lat, w.lon, w.drone)
+        )
+    conn.commit()
+    conn.close()
+    
+    return {'status': 'success', 'count': len(waypoints)}
+
+@router.delete("/basic/clear/")
+def clear_basic_waypoints():
+    conn = get_db_connection()
+    conn.execute('DELETE FROM basic_waypoints')
+    conn.commit()
+    conn.close()
+    return {'status': 'success', 'waypoints': []}
+
+# --- Auton Waypoints (Store) ---
+
+@router.get("/auton/")
+def get_auton_waypoints():
+    conn = get_db_connection()
+    waypoints = conn.execute('SELECT * FROM auton_waypoints').fetchall()
+    conn.close()
+    
+    results = []
+    for w in waypoints:
+        wd = dict(w)
+        wd['lat'] = wd.pop('latitude')
+        wd['lon'] = wd.pop('longitude')
+        wd['enable_costmap'] = bool(wd['enable_costmap'])
+        wd['deletable'] = bool(wd['deletable'])
+        results.append(wd)
+        
+    return {'status': 'success', 'waypoints': results}
+
+@router.post("/auton/save/")
+def save_auton_waypoints(data: AutonWaypointList):
+    waypoints = data.waypoints
+    
+    conn = get_db_connection()
+    conn.execute('DELETE FROM auton_waypoints')
+    
+    for w in waypoints:
+        conn.execute('''
+            INSERT INTO auton_waypoints (name, tag_id, type, latitude, longitude, enable_costmap, deletable)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        ''', (
+            w.name, 
+            w.id, 
+            w.type, 
+            w.lat, 
+            w.lon, 
+            w.enable_costmap,
+            w.deletable
+        ))
+    
+    conn.commit()
+    conn.close()
+    return {'status': 'success'}
+
+@router.delete("/auton/{waypoint_id}/")
+def delete_auton_waypoint(waypoint_id: int):
+    conn = get_db_connection()
+    
+    wp = conn.execute('SELECT deletable FROM auton_waypoints WHERE id = ?', (waypoint_id,)).fetchone()
+    if not wp:
+        conn.close()
+        raise HTTPException(status_code=404, detail="Waypoint not found")
+        
+    if not wp['deletable']:
+        conn.close()
+        raise HTTPException(status_code=403, detail="This waypoint cannot be deleted")
+
+    conn.execute('DELETE FROM auton_waypoints WHERE id = ?', (waypoint_id,))
+    conn.commit()
+    conn.close()
+    return {'status': 'success', 'message': f'Waypoint {waypoint_id} deleted'}
+
+# --- Current Auton Course (Active Route) ---
+
+@router.get("/auton/current/")
+def get_current_auton_course():
+    conn = get_db_connection()
+    course = conn.execute('SELECT * FROM current_auton_course ORDER BY sequence_order ASC').fetchall()
+    conn.close()
+    
+    results = []
+    for w in course:
+        wd = dict(w)
+        wd['lat'] = wd.pop('latitude')
+        wd['lon'] = wd.pop('longitude')
+        wd['enable_costmap'] = bool(wd['enable_costmap'])
+        results.append(wd)
+
+    return {'status': 'success', 'course': results}
+
+@router.post("/auton/current/save/")
+def save_current_auton_course(data: AutonWaypointList):
+    course = data.waypoints
+    
+    conn = get_db_connection()
+    conn.execute('DELETE FROM current_auton_course')
+    
+    for i, w in enumerate(course):
+        conn.execute('''
+            INSERT INTO current_auton_course (name, tag_id, type, latitude, longitude, enable_costmap, sequence_order)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        ''', (
+            w.name,
+            w.id,
+            w.type,
+            w.lat,
+            w.lon,
+            w.enable_costmap,
+            i
+        ))
+        
+    conn.commit()
+    conn.close()
+    return {'status': 'success'}
+
+# --- Recordings ---
+
+@router.get("/recordings/")
+def get_recordings():
+    conn = get_db_connection()
+    recordings = conn.execute('''
+        SELECT r.id, r.name, r.is_drone, r.created_at, COUNT(w.id) as waypoint_count
+        FROM recordings r
+        LEFT JOIN recorded_waypoints w ON r.id = w.recording_id
+        GROUP BY r.id
+        ORDER BY r.created_at DESC
+    ''').fetchall()
+    conn.close()
+    return {'status': 'success', 'recordings': [dict(r) for r in recordings]}
+
+@router.post("/recordings/create/")
+def create_recording(data: RecordingCreateRequest):
+    conn = get_db_connection()
+    cur = conn.execute('INSERT INTO recordings (name, is_drone) VALUES (?, ?)', (data.name, data.is_drone))
+    rec_id = cur.lastrowid
+    conn.commit()
+    conn.close()
+    
+    return {'status': 'success', 'recording_id': rec_id}
+
+@router.post("/recordings/{rec_id}/waypoints/")
+def add_recording_waypoint(rec_id: int, data: RecordingWaypointRequest):
+    conn = get_db_connection()
+    conn.execute('''
+        INSERT INTO recorded_waypoints (recording_id, latitude, longitude, sequence)
+        VALUES (?, ?, ?, ?)
+    ''', (rec_id, data.lat, data.lon, data.sequence))
+    conn.commit()
+    conn.close()
+    return {'status': 'success'}
+
+@router.get("/recordings/{rec_id}/waypoints/")
+def get_recording_waypoints(rec_id: int):
+    conn = get_db_connection()
+    waypoints = conn.execute('''
+        SELECT id, latitude as lat, longitude as lon, timestamp, sequence
+        FROM recorded_waypoints 
+        WHERE recording_id = ?
+        ORDER BY sequence ASC
+    ''', (rec_id,)).fetchall()
+    conn.close()
+    return {'status': 'success', 'waypoints': [dict(w) for w in waypoints]}
+
+@router.delete("/recordings/{rec_id}/")
+def delete_recording(rec_id: int):
+    conn = get_db_connection()
+    conn.execute('DELETE FROM recordings WHERE id = ?', (rec_id,))
+    conn.commit()
+    conn.close()
+    return {'status': 'success', 'deleted': rec_id}
+
+@router.delete("/recordings/clear/")
+def clear_recordings():
+    conn = get_db_connection()
+    conn.execute('DELETE FROM recordings')
+    conn.commit()
+    conn.close()
+    return {'status': 'success'}

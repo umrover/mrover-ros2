@@ -23,7 +23,7 @@
         <button class="btn btn-success" @click="addWaypoint">Add</button>
         <button
           class="btn btn-danger"
-          :disabled="index <= 7"
+          :disabled="waypoint.deletable === false"
           @click="$emit('delete', index)"
         >
           Delete

@@ -203,8 +203,14 @@ const updateStoreActivityOut = () => {
   }, 200)
 }
 
+interface PongMessage {
+  type: string
+  sequence?: number
+  timestamp: number
+}
+
 const connectWebSocket = () => {
-  ws = new WebSocket('ws://localhost:8001/latency')
+  ws = new WebSocket('ws://localhost:8000/latency')
   ws.binaryType = 'arraybuffer'
 
   ws.onopen = () => {
@@ -215,7 +221,7 @@ const connectWebSocket = () => {
 
   ws.onmessage = (event) => {
     updateStoreActivityIn()
-    const data = decode(new Uint8Array(event.data)) as any
+    const data = decode(new Uint8Array(event.data)) as PongMessage
 
     if (data.type === 'pong') {
       const seq = data.sequence
