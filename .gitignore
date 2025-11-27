@@ -40,4 +40,4 @@ data/raw-pano-images
 
 # dev
 .python-version
-system_summary*
+system*.html

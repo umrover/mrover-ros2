@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException, status
 from backend.database import get_db_connection
 from backend.models_pydantic import BasicWaypointList, AutonWaypointList, RecordingCreateRequest, RecordingWaypointRequest
+from backend.recording_manager import get_recording_manager
 
 router = APIRouter(prefix="/api/waypoints", tags=["waypoints"])
 
@@ -162,13 +163,29 @@ def get_recordings():
 
 @router.post("/recordings/create/")
 def create_recording(data: RecordingCreateRequest):
-    conn = get_db_connection()
-    cur = conn.execute('INSERT INTO recordings (name, is_drone) VALUES (?, ?)', (data.name, data.is_drone))
-    rec_id = cur.lastrowid
-    conn.commit()
-    conn.close()
-    
-    return {'status': 'success', 'recording_id': rec_id}
+    try:
+        recording_manager = get_recording_manager()
+        rec_id = recording_manager.start_recording(data.name, data.is_drone)
+        return {'status': 'success', 'recording_id': rec_id}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to start recording: {str(e)}")
+
+@router.post("/recordings/stop/")
+def stop_recording():
+    try:
+        recording_manager = get_recording_manager()
+        result = recording_manager.stop_recording()
+        return {
+            'status': 'success',
+            'recording_id': result['recording_id'],
+            'waypoint_count': result['waypoint_count']
+        }
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to stop recording: {str(e)}")
 
 @router.post("/recordings/{rec_id}/waypoints/")
 def add_recording_waypoint(rec_id: int, data: RecordingWaypointRequest):

@@ -156,10 +156,6 @@ const isRecordingRover = ref(false)
 const isRecordingDrone = ref(false)
 const currentRecordingId = ref<number | null>(null)
 const showRecordingsModal = ref(false)
-const recordingSequence = ref(0)
-const lastRecordedLat = ref<number | null>(null)
-const lastRecordedLon = ref<number | null>(null)
-const RECORDING_THRESHOLD = 0.00001
 
 const formatted_odom = computed(() => {
   return {
@@ -177,24 +173,6 @@ watch(navMessage, async msg => {
   if (navMsg.type === 'gps_fix') {
     rover_latitude_deg.value = navMsg.latitude
     rover_longitude_deg.value = navMsg.longitude
-
-    if (isRecordingRover.value && currentRecordingId.value !== null) {
-      if (shouldRecordWaypoint(navMsg.latitude, navMsg.longitude)) {
-        try {
-          await recordingAPI.addWaypoint(
-            currentRecordingId.value,
-            navMsg.latitude,
-            navMsg.longitude,
-            recordingSequence.value
-          )
-          lastRecordedLat.value = navMsg.latitude
-          lastRecordedLon.value = navMsg.longitude
-          recordingSequence.value++
-        } catch (error) {
-          console.error('Failed to record waypoint:', error)
-        }
-      }
-    }
   }
 })
 
@@ -295,11 +273,16 @@ const startRecording = async (isDrone: boolean) => {
 
     if (response.status === 'success' && response.recording_id) {
       currentRecordingId.value = response.recording_id
-      recordingSequence.value = 0
-      lastRecordedLat.value = null
-      lastRecordedLon.value = null
-      if (isDrone) isRecordingDrone.value = true
-      else isRecordingRover.value = true
+
+      if (isDrone) {
+        isRecordingDrone.value = true
+      } else {
+        isRecordingRover.value = true
+      }
+
+      console.log(`Recording started: ${recordingName} (ID: ${response.recording_id})`)
+    } else {
+      console.error('Failed to start recording:', response.message)
     }
   } catch (error) {
     console.error('Error starting recording:', error)
@@ -307,20 +290,21 @@ const startRecording = async (isDrone: boolean) => {
 }
 
 const stopRecording = async () => {
-  currentRecordingId.value = null
-  recordingSequence.value = 0
-  lastRecordedLat.value = null
-  lastRecordedLon.value = null
-  isRecordingRover.value = false
-  isRecordingDrone.value = false
-}
+  try {
+    const response = await recordingAPI.stop()
 
-const shouldRecordWaypoint = (lat: number, lon: number): boolean => {
-  if (lastRecordedLat.value === null || lastRecordedLon.value === null) return true
-  const latDiff = Math.abs(lat - lastRecordedLat.value)
-  const lonDiff = Math.abs(lon - lastRecordedLon.value)
-  const distance = Math.sqrt(latDiff * latDiff + lonDiff * lonDiff)
-  return distance >= RECORDING_THRESHOLD
+    if (response.status === 'success') {
+      console.log(`Recording stopped`)
+    } else {
+      console.error('Failed to stop recording:', response.message)
+    }
+  } catch (error) {
+    console.error('Error stopping recording:', error)
+  } finally {
+    isRecordingRover.value = false
+    isRecordingDrone.value = false
+    currentRecordingId.value = null
+  }
 }
 </script>
 

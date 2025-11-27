@@ -57,6 +57,7 @@ const aliasMap: Record<string, string> = {
   nav: 'nav',
   science: 'sci',
   latency: 'lat',
+  recording: 'rec',
 }
 
 const getAlias = (id: string): string => {

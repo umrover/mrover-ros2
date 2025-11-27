@@ -70,14 +70,12 @@ watch(armMessage, (msg: unknown) => {
     updatePose(joints)
   } else if ('type' in msg && msg.type === 'ik_target') {
     const typedMsg = msg as ArmIKMessage
-    console.log(typedMsg)
     if (typedMsg.target.pose && typedMsg.target.pose.position) {
       const position = {
         x: typedMsg.target.pose.position.x * 100,
         y: typedMsg.target.pose.position.z * 100,
         z: typedMsg.target.pose.position.y * -100 + 20,
       }
-      console.log(position)
       updateIKTarget(position)
     }
   }
