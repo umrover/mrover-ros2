@@ -40,15 +40,23 @@
     </l-map>
 
     <!-- Controls -->
-    <div class="controls px-2 py-1 position-absolute d-flex align-items-center gap-2 top-0 end-0 m-2 bg-white rounded">
-      <input
-        v-model="online"
-        type="checkbox"
-        class="form-check-input p-0"
-      />
-      <p class="mb-0 text-body" style="font-size: 14px; line-height: 18px">
-        Online
-      </p>
+    <div class="controls px-2 py-2 position-absolute d-flex flex-column gap-2 top-0 end-0 m-2 rounded border shadow-sm bg-white">
+      <div class="d-flex align-items-center gap-2">
+        <input
+          v-model="online"
+          type="checkbox"
+          class="form-check-input p-0"
+        />
+        <p class="mb-0 text-body" style="font-size: 14px; line-height: 18px">
+          Online
+        </p>
+      </div>
+      <button @click="centerOnRover" class="btn btn-sm btn-light border" style="font-size: 14px; padding: 4px 8px">
+        Center on Rover
+      </button>
+      <button @click="centerOnBasestation" class="btn btn-sm btn-light border" style="font-size: 14px; padding: 4px 8px">
+        Center on Base
+      </button>
     </div>
   </div>
 </template>
@@ -67,7 +75,7 @@ import { useWebsocketStore } from '@/stores/websocket'
 import { storeToRefs } from 'pinia'
 import 'leaflet/dist/leaflet.css'
 import L from 'leaflet'
-import '../leaflet-rotatedmarker'
+import 'leaflet-rotatedmarker'
 import { ref, computed, watch, nextTick } from 'vue'
 import { quaternionToMapAngle } from '../utils/map'
 import type { NavMessage } from '../types/coordinates'
@@ -111,17 +119,17 @@ const odomPath = ref<L.LatLng[]>([])
 const findRover = ref(false)
 
 const locationIcon = L.icon({
-  iconUrl: 'location_marker_icon.png',
-  iconSize: [40, 40],
-  iconAnchor: [20, 20],
+  iconUrl: '/rover_marker.svg',
+  iconSize: [64, 64],
+  iconAnchor: [32, 32],
 })
 const basestationIcon = L.icon({
-  iconUrl: 'basestation_marker_icon.png',
-  iconSize: [40, 40],
-  iconAnchor: [20, 20],
+  iconUrl: '/basestation_marker.svg',
+  iconSize: [64, 64],
+  iconAnchor: [32, 56],
 })
 const waypointIcon = L.icon({
-  iconUrl: 'map_marker.png',
+  iconUrl: '/waypoint_marker.svg',
   iconSize: [64, 64],
   iconAnchor: [32, 64],
   popupAnchor: [0, -32],
@@ -133,6 +141,20 @@ const onMapReady = () => {
       roverMarker = roverRef.value.leafletObject as L.Marker
     }
   })
+}
+
+const centerOnRover = () => {
+  if (mapRef.value) {
+    const map = mapRef.value.leafletObject as L.Map
+    map.setView(odomLatLng.value, map.getZoom())
+  }
+}
+
+const centerOnBasestation = () => {
+  if (mapRef.value) {
+    const map = mapRef.value.leafletObject as L.Map
+    map.setView(basestationLatLng.value, map.getZoom())
+  }
 }
 
 const getClickedLatLon = (e: { latlng: { lat: number; lng: number } }) => {

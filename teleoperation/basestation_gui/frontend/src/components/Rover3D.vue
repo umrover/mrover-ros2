@@ -6,13 +6,8 @@
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useWebsocketStore } from '@/stores/websocket'
 import { storeToRefs } from 'pinia'
+import type { ControllerStateMessage } from '@/types/websocket'
 import threeSetup, { updatePose, updateIKTarget } from '../rover_three.js'
-
-interface ArmFKMessage {
-  type: 'fk'
-  name: string[]
-  position: number[]
-}
 
 interface ArmIKMessage {
   type: 'ik_target'
@@ -56,8 +51,8 @@ const armMessage = computed(() => messages.value['arm'])
 watch(armMessage, (msg: unknown) => {
   if (!msg || typeof msg !== 'object') return
 
-  if ('type' in msg && msg.type === 'fk') {
-    const typedMsg = msg as ArmFKMessage
+  if ('type' in msg && msg.type === 'arm_state') {
+    const typedMsg = msg as ControllerStateMessage
     const joints = typedMsg.name.map((name: string, index: number) => {
       const urdfName = jointNameMap[name] || name
       let position = typedMsg.position[index]
@@ -75,14 +70,12 @@ watch(armMessage, (msg: unknown) => {
     updatePose(joints)
   } else if ('type' in msg && msg.type === 'ik_target') {
     const typedMsg = msg as ArmIKMessage
-    console.log(typedMsg)
     if (typedMsg.target.pose && typedMsg.target.pose.position) {
       const position = {
         x: typedMsg.target.pose.position.x * 100,
         y: typedMsg.target.pose.position.z * 100,
         z: typedMsg.target.pose.position.y * -100 + 20,
       }
-      console.log(position)
       updateIKTarget(position)
     }
   }
