@@ -8,3 +8,25 @@ $body-alt: #dddddd;
 
 // Then import Bootstrap SCSS files (order is important)
 @import '../node_modules/bootstrap/scss/bootstrap.scss';
+
+// High contrast control colors for desert/sunlight use
+$control-primary-color: #334155;
+$control-primary-hover: #334155;
+$control-primary-active: #1e293b;
+
+:root {
+  --control-primary: #{$control-primary-color};
+  --control-primary-hover: #{$control-primary-hover};
+  --control-primary-active: #{$control-primary-active};
+}
+
+.btn-outline-control {
+  --bs-btn-color: #{$control-primary-color};
+  --bs-btn-border-color: #{$control-primary-color};
+  --bs-btn-hover-color: #fff;
+  --bs-btn-hover-bg: #{$control-primary-hover};
+  --bs-btn-hover-border-color: #{$control-primary-hover};
+  --bs-btn-active-color: #fff;
+  --bs-btn-active-bg: #{$control-primary-active};
+  --bs-btn-active-border-color: #{$control-primary-active};
+}

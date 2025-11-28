@@ -1,23 +1,25 @@
 <template>
   <div class="view-wrapper d-flex gap-2 w-100 h-100">
-    <div class="d-flex flex-column gap-2 flex-fill">
-      <div class="island p-2 rounded d-flex gap-2">
+    <div class="d-flex flex-column gap-2 h-100" style="width: 55%; flex-shrink: 0">
+      <div class="island p-2 rounded d-flex flex-row gap-2">
         <SPArmControls class="border border-2 p-1 rounded flex-fill" />
-        <GimbalControls class="border border-2 p-1 rounded flex-fill" />
-        <FunnelControls
-          @selectSite="updateSite"
-          class="border border-2 p-1 rounded flex-fill"
-        />
-      </div>
-      <div class="island p-2 rounded d-flex gap-2 align-items-center">
-        <DriveControls class="border border-2 rounded" />
-        <PanoramaControls class="border border-2 rounded flex-fill" />
+        <div class="d-flex flex-column gap-2">
+          <GimbalControls class="border border-2 p-1 rounded flex-fill" />
+          <DriveControls class="border border-2 p-1 rounded" />
+        </div>
+        <div class="d-flex flex-column gap-2">
+          <FunnelControls
+            @selectSite="updateSite"
+            class="border border-2 p-1 rounded flex-fill"
+          />
+          <PanoramaControls class="border border-2 p-1 rounded" />
+        </div>
       </div>
       <div class="island p-2 rounded">
         <OdometryReading class="rounded border border-2 w-100 h-100" />
       </div>
-      <div class="island p-2 rounded">
-        <SensorData :site="siteSelect" />
+      <div class="island p-2 rounded flex-fill d-flex flex-column" style="min-height: 0">
+        <SensorData />
       </div>
       <div class="island p-2 rounded d-flex gap-2">
         <ControllerDataTable

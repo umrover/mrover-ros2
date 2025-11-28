@@ -103,12 +103,12 @@ function buttonPressed(index: number): boolean {
 }
 
 .button-outline.pressed {
-  fill: #0d6efd;
-  stroke: #0d6efd;
+  fill: var(--control-primary);
+  stroke: var(--control-primary);
 }
 
 .button-filled {
-  fill: #0d6efd;
+  fill: var(--control-primary);
   stroke: none;
   transition: clip-path 0.1s;
 }

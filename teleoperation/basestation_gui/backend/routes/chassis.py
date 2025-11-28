@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from backend.ros_manager import get_node
-from backend.models_pydantic import GimbalAdjustRequest
-from mrover.srv import PanoramaStart, PanoramaEnd, ServoSetPos
+from backend.models_pydantic import GimbalAdjustRequest, ServoPositionRequest
+from mrover.srv import PanoramaStart, PanoramaEnd, ServoSetPos, ServoPosition
 import numpy as np
 import cv2
 import time
@@ -102,6 +102,31 @@ def gimbal_adjust(data: GimbalAdjustRequest):
             'status': 'success',
             'joint': data.joint,
             'adjustment': data.adjustment
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/sp_funnel_servo/")
+def sp_funnel_servo(data: ServoPositionRequest):
+    try:
+        node = get_node()
+        servo_srv = node.create_client(ServoPosition, "/sp_funnel_servo")
+
+        servo_request = ServoPosition.Request()
+        servo_request.header.stamp = node.get_clock().now().to_msg()
+        servo_request.header.frame_id = ""
+        servo_request.name = data.name
+        servo_request.position = data.position
+
+        result = _call_service_sync(servo_srv, servo_request)
+
+        if result is None:
+            raise HTTPException(status_code=500, detail="Service call failed")
+
+        return {
+            'status': 'success',
+            'at_tgt': result.at_tgt
         }
 
     except Exception as e:

@@ -3,36 +3,36 @@
     <div class="d-flex flex-column gap-2 w-100">
       <div class="d-flex justify-content-between align-items-center">
         <h4 class="m-0">Gimbal Controls</h4>
-        <IndicatorDot :is-active="controllerConnected" class="me-2" />
+        <IndicatorDot :is-active="hasServoState" class="me-2" />
       </div>
 
       <div class="d-flex align-items-center justify-content-center gap-1">
         <span class="fw-semibold text-end" style="min-width: 40px; font-size: 14px">Pitch</span>
         <div class="btn-group btn-group-sm">
-          <button class="btn btn-outline-secondary control-btn" @click="adjustGimbal('pitch', -10)">-10</button>
-          <button class="btn btn-outline-secondary control-btn" @click="adjustGimbal('pitch', -5)">-5</button>
-          <button class="btn btn-outline-secondary control-btn" @click="adjustGimbal('pitch', -1)">-1</button>
+          <button class="btn btn-outline-control control-btn" @click="adjustGimbal('pitch', -10)" :disabled="!hasServoState">-10</button>
+          <button class="btn btn-outline-control control-btn" @click="adjustGimbal('pitch', -5)" :disabled="!hasServoState">-5</button>
+          <button class="btn btn-outline-control control-btn" @click="adjustGimbal('pitch', -1)" :disabled="!hasServoState">-1</button>
         </div>
         <span class="font-monospace fw-semibold text-center bg-white border rounded px-2 py-1" style="min-width: 40px; font-size: 14px">{{ pitchDegrees }}°</span>
         <div class="btn-group btn-group-sm">
-          <button class="btn btn-outline-secondary control-btn" @click="adjustGimbal('pitch', 1)">+1</button>
-          <button class="btn btn-outline-secondary control-btn" @click="adjustGimbal('pitch', 5)">+5</button>
-          <button class="btn btn-outline-secondary control-btn" @click="adjustGimbal('pitch', 10)">+10</button>
+          <button class="btn btn-outline-control control-btn" @click="adjustGimbal('pitch', 1)" :disabled="!hasServoState">+1</button>
+          <button class="btn btn-outline-control control-btn" @click="adjustGimbal('pitch', 5)" :disabled="!hasServoState">+5</button>
+          <button class="btn btn-outline-control control-btn" @click="adjustGimbal('pitch', 10)" :disabled="!hasServoState">+10</button>
         </div>
       </div>
 
       <div class="d-flex align-items-center justify-content-center gap-1">
         <span class="fw-semibold text-end" style="min-width: 40px; font-size: 14px">Yaw</span>
         <div class="btn-group btn-group-sm">
-          <button class="btn btn-outline-secondary control-btn" @click="adjustGimbal('yaw', -10)">-10</button>
-          <button class="btn btn-outline-secondary control-btn" @click="adjustGimbal('yaw', -5)">-5</button>
-          <button class="btn btn-outline-secondary control-btn" @click="adjustGimbal('yaw', -1)">-1</button>
+          <button class="btn btn-outline-control control-btn" @click="adjustGimbal('yaw', -10)" :disabled="!hasServoState">-10</button>
+          <button class="btn btn-outline-control control-btn" @click="adjustGimbal('yaw', -5)" :disabled="!hasServoState">-5</button>
+          <button class="btn btn-outline-control control-btn" @click="adjustGimbal('yaw', -1)" :disabled="!hasServoState">-1</button>
         </div>
         <span class="font-monospace fw-semibold text-center bg-white border rounded px-2 py-1" style="min-width: 40px; font-size: 14px">{{ yawDegrees }}°</span>
         <div class="btn-group btn-group-sm">
-          <button class="btn btn-outline-secondary control-btn" @click="adjustGimbal('yaw', 1)">+1</button>
-          <button class="btn btn-outline-secondary control-btn" @click="adjustGimbal('yaw', 5)">+5</button>
-          <button class="btn btn-outline-secondary control-btn" @click="adjustGimbal('yaw', 10)">+10</button>
+          <button class="btn btn-outline-control control-btn" @click="adjustGimbal('yaw', 1)" :disabled="!hasServoState">+1</button>
+          <button class="btn btn-outline-control control-btn" @click="adjustGimbal('yaw', 5)" :disabled="!hasServoState">+5</button>
+          <button class="btn btn-outline-control control-btn" @click="adjustGimbal('yaw', 10)" :disabled="!hasServoState">+10</button>
         </div>
       </div>
     </div>
@@ -40,7 +40,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { computed } from 'vue'
 import { chassisAPI } from '@/utils/chassisAPI'
 import { useWebsocketStore } from '@/stores/websocket'
 import type { ControllerStateMessage } from '@/types/websocket'
@@ -48,16 +48,15 @@ import IndicatorDot from './IndicatorDot.vue'
 
 const websocketStore = useWebsocketStore()
 
-const controllerConnected = ref(false)
-let interval: number | undefined = undefined
-
-const UPDATE_HZ = 20
-
 const gimbalJointState = computed((): ControllerStateMessage | null => {
   const messages = websocketStore.messages['chassis']
   if (!messages || !Array.isArray(messages)) return null
-  const msg = messages.find((msg: { type: string }) => msg.type === 'gimbal_state')
+  const msg = messages.find((msg: { type: string }) => msg.type === 'sp_controller_state')
   return msg ? (msg as ControllerStateMessage) : null
+})
+
+const hasServoState = computed((): boolean => {
+  return gimbalJointState.value !== null
 })
 
 const pitchRadians = computed((): number => {
@@ -86,23 +85,27 @@ const adjustGimbal = async (
   adjustment: number,
 ): Promise<void> => {
   try {
-    await chassisAPI.adjustGimbal(joint, adjustment, false)
+    const state = gimbalJointState.value
+    if (!state || !state.name || !state.position) {
+      console.error('No gimbal state available')
+      return
+    }
+
+    const jointIndex = state.name.indexOf(joint)
+    if (jointIndex < 0) {
+      console.error(`Joint ${joint} not found in state`)
+      return
+    }
+
+    const currentPosition = state.position[jointIndex]
+    const adjustmentRadians = (adjustment * Math.PI) / 180
+    const newPosition = currentPosition + adjustmentRadians
+
+    await chassisAPI.setFunnelServo([joint], [newPosition])
   } catch (error) {
     console.error('Failed to adjust gimbal:', error)
   }
 }
-
-onMounted(() => {
-  interval = window.setInterval(() => {
-    const gamepads = navigator.getGamepads()
-    const gamepad = gamepads.find(gamepad => gamepad && gamepad.id.includes('Xbox'))
-    controllerConnected.value = !!gamepad
-  }, 1000 / UPDATE_HZ)
-})
-
-onBeforeUnmount(() => {
-  window.clearInterval(interval)
-})
 </script>
 
 <style scoped>

@@ -1,19 +1,17 @@
 <template>
-  <div class="funnel-container">
+  <div class="d-flex flex-column align-items-center p-1">
     <div class="d-flex justify-content-between align-items-center w-100 mb-2">
       <h4 class="m-0">Funnel Controls</h4>
     </div>
-    <div class="hex-ring">
-      <div class="hex-center"></div>
+    <div class="site-grid">
       <button
         v-for="(site, i) in sites"
         :key="i"
-        class="hex-btn"
+        class="btn btn-outline-control btn-sm"
         :class="{ active: currentSite === i }"
-        :style="getButtonStyle(i)"
         @click="selectSite(i)"
       >
-        {{ i + 1 }}
+        {{ site }}
       </button>
     </div>
   </div>
@@ -26,19 +24,15 @@ const emit = defineEmits<{
   selectSite: [site: number]
 }>()
 
-const sites = Array(6).fill(null)
+const sites = [
+  'Griess B',
+  'Sample',
+  'Buret A',
+  'Buret B',
+  'Trash',
+  'Griess A',
+]
 const currentSite = ref(0)
-
-const radius = 56
-
-function getButtonStyle(index: number) {
-  const angle = (index * 60 - 90) * (Math.PI / 180)
-  const x = Math.cos(angle) * radius
-  const y = Math.sin(angle) * radius
-  return {
-    transform: `translate(${x}px, ${y}px)`,
-  }
-}
 
 function selectSite(index: number) {
   currentSite.value = index
@@ -47,55 +41,13 @@ function selectSite(index: number) {
 </script>
 
 <style scoped>
-.funnel-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 8px;
+.site-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
 }
 
-
-.hex-ring {
-  position: relative;
-  width: 160px;
-  height: 160px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.hex-center {
-  width: 50px;
-  height: 58px;
-  background: #e9ecef;
-  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
-}
-
-.hex-btn {
-  position: absolute;
-  min-width: 40px;
-  height: 32px;
-  padding: 0 8px;
-  border-radius: 4px;
-  border: 2px solid #0d6efd;
-  background: white;
-  color: #0d6efd;
-  font-size: 0.75rem;
-  font-weight: 600;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.15s ease;
-  white-space: nowrap;
-}
-
-.hex-btn:hover {
-  background: #e7f1ff;
-}
-
-.hex-btn.active {
-  background: #0d6efd;
-  color: white;
+.btn {
+  min-width: 100px;
 }
 </style>

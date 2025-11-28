@@ -12,16 +12,16 @@
           v-if="!stuck_status"
           class="island p-2 rounded bg-success text-center"
         >
-          <h4 class="m-0 p-0">Nominal Conditions</h4>
+          <h3 class="m-0 p-0">Nominal Conditions</h3>
         </div>
         <div v-else class="island p-2 rounded bg-danger text-center">
-          <h4 class="m-0 p-0">Obstruction Detected</h4>
+          <h3 class="m-0 p-0">Obstruction Detected</h3>
         </div>
       </div>
 
       <!-- Nav State Box -->
-      <div :class="['rounded p-2', ledColor]">
-        <h2 class="text-center m-0">Nav State: {{ navState }}</h2>
+      <div :class="['rounded p-2 flex-fill d-flex align-items-center justify-content-center', ledColor]">
+        <h3 class="m-0">Nav State: {{ navState }}</h3>
       </div>
     </div>
     <div class="island p-0 rounded map overflow-hidden">

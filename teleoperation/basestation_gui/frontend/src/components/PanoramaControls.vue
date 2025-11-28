@@ -1,10 +1,8 @@
 <template>
-  <div class="d-flex flex-column gap-2 p-2">
-    <div class="d-flex justify-content-between align-items-center">
-      <h4 class="m-0">Panorama Controls</h4>
-    </div>
+  <div class="d-flex flex-row gap-2 justify-content-between align-items-center">
+    <h4 class="m-0">Panorama</h4>
     <FeedbackButton
-      name="Start Panorama"
+      name="Start"
       mode="action"
       active-text="Capturing..."
       complete-text="Complete"

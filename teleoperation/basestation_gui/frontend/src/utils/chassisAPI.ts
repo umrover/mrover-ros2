@@ -26,5 +26,14 @@ export const chassisAPI = {
       body: JSON.stringify({ joint, adjustment, absolute })
     })
     return response.json()
+  },
+
+  async setFunnelServo(name: string[], position: number[]): Promise<APIResponse> {
+    const response = await fetch(`${API_BASE}/chassis/sp_funnel_servo/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, position })
+    })
+    return response.json()
   }
 }

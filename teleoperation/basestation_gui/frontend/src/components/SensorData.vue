@@ -1,33 +1,16 @@
 <template>
-  <h3>Sensor Data</h3>
-  <div class="sensors align-items-center">
-    <table class="table table-bordered table-sm mx-3 mb-0" id="capture">
-      <thead>
-        <tr class="table-primary">
-          <th></th>
-          <th colspan="2">Oxygen (%)</th>
-          <th colspan="2">UV (index)</th>
-          <th colspan="2">Humidity (%)</th>
-          <th colspan="2">Temp (°C)</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <th class="table-secondary">
-            Site {{ String.fromCharCode(site + 65) }}
-          </th>
-          <td>{{ sensor_data.oxygen.toFixed(2) }}</td>
-          <td>{{ sensor_data.oxygen_var.toFixed(2) }}</td>
-          <td>{{ sensor_data.uv.toFixed(2) }}</td>
-          <td>{{ sensor_data.uv_var.toFixed(2) }}</td>
-          <td>{{ sensor_data.humidity.toFixed(2) }}</td>
-          <td>{{ sensor_data.humidity_var.toFixed(2) }}</td>
-          <td>{{ sensor_data.temp.toFixed(2) }}</td>
-          <td>{{ sensor_data.temp_var.toFixed(2) }}</td>
-        </tr>
-      </tbody>
-    </table>
-
+  <div class="d-flex flex-row gap-2 justify-content-between align-items-start pb-1">
+    <h3>Sensor Data</h3>
+    <div class="d-flex flex-row gap-2">
+      <button class="btn btn-primary text-nowrap" @click="showModal = true">
+        View All
+      </button>
+      <button class="btn btn-secondary text-nowrap" @click="downloadCSV">
+        <i class="bi bi-download"></i> CSV
+      </button>
+    </div>
+  </div>
+  <div class="d-flex align-items-start">
     <table class="table table-bordered table-sm mx-3 mb-0">
       <thead>
         <tr class="table-success">
@@ -55,40 +38,54 @@
       </tbody>
     </table>
 
-    <button class="btn btn-secondary" @click="download()">
-      Save Data to CSV
-    </button>
   </div>
 
-  <div style="display: flex; flex-direction: row; gap: 10px">
-    <div style="width: 50%; overflow-x: scroll">
-      <canvas
-        id="chart0"
-        style="width: 100%; height: 150px; background-color: white"
-      ></canvas>
+  <div class="d-flex flex-column gap-2 mt-2 flex-fill" style="min-height: 0">
+    <div class="d-flex gap-2" style="flex: 1; min-height: 0">
+      <div class="bg-white border rounded p-2 d-flex flex-column" style="flex: 1; min-width: 0">
+        <div class="d-flex justify-content-between align-items-center mb-1">
+          <strong style="font-size: 14px; color: #000000">Humidity (%)</strong>
+        </div>
+        <div style="flex: 1; min-height: 0">
+          <canvas id="chart0"></canvas>
+        </div>
+      </div>
+      <div class="bg-white border rounded p-2 d-flex flex-column" style="flex: 1; min-width: 0">
+        <div class="d-flex justify-content-between align-items-center mb-1">
+          <strong style="font-size: 14px; color: #000000">UV Index</strong>
+        </div>
+        <div style="flex: 1; min-height: 0">
+          <canvas id="chart1"></canvas>
+        </div>
+      </div>
     </div>
-    <div style="width: 50%; overflow-x: scroll; margin-top: 5px">
-      <canvas
-        id="chart1"
-        style="width: 100%; height: 150px; background-color: white"
-      ></canvas>
+    <div class="d-flex gap-2" style="flex: 1; min-height: 0">
+      <div class="bg-white border rounded p-2 d-flex flex-column" style="flex: 1; min-width: 0">
+        <div class="d-flex justify-content-between align-items-center mb-1">
+          <strong style="font-size: 14px; color: #000000">Ozone (ppb)</strong>
+        </div>
+        <div style="flex: 1; min-height: 0">
+          <canvas id="chart2"></canvas>
+        </div>
+      </div>
+      <div class="bg-white border rounded p-2 d-flex flex-column" style="flex: 1; min-width: 0">
+        <div class="d-flex justify-content-between align-items-center mb-1">
+          <strong style="font-size: 14px; color: #000000">Pressure (Pa)</strong>
+        </div>
+        <div style="flex: 1; min-height: 0">
+          <canvas id="chart3"></canvas>
+        </div>
+      </div>
     </div>
   </div>
 
-  <div style="display: flex; flex-direction: row; gap: 10px; margin-top: 5px">
-    <div style="width: 50%; overflow-x: scroll">
-      <canvas
-        id="chart2"
-        style="width: 100%; height: 150px; background-color: white"
-      ></canvas>
-    </div>
-    <div style="width: 50%; overflow-x: scroll">
-      <canvas
-        id="chart3"
-        style="width: 100%; height: 150px; background-color: white"
-      ></canvas>
-    </div>
-  </div>
+  <SensorModal
+    v-if="showModal"
+    :sensor-history="sensor_history"
+    :time-counter="timeCounter"
+    @close="showModal = false"
+    @reset="resetHistory"
+  />
 </template>
 
 <script lang="ts" setup>
@@ -98,23 +95,14 @@ import { storeToRefs } from 'pinia'
 import Chart from 'chart.js/auto'
 import type { SensorData } from '../types/sensors'
 import type { ScienceMessage } from '@/types/websocket'
-
-defineProps<{
-  site: number
-}>()
+import SensorModal from '@/components/SensorModal.vue'
 
 const websocketStore = useWebsocketStore()
 const { messages } = storeToRefs(websocketStore)
 
+const showModal = ref(false)
+
 const sensor_data = ref<SensorData>({
-  oxygen: 0,
-  oxygen_var: 0,
-  uv: 0,
-  uv_var: 0,
-  humidity: 0,
-  humidity_var: 0,
-  temp: 0,
-  temp_var: 0,
   sp_oxygen: 0,
   sp_uv: 0,
   sp_humidity: 0,
@@ -124,10 +112,13 @@ const sensor_data = ref<SensorData>({
   sp_pressure: 0,
 })
 const sensor_history = ref<number[][]>([
-  Array(10).fill(0), // oxygen
-  Array(10).fill(0), // humidity
-  Array(10).fill(0), // temperature
-  Array(10).fill(0), // uv
+  Array(20).fill(0), // sp_oxygen
+  Array(20).fill(0), // sp_humidity
+  Array(20).fill(0), // sp_temp
+  Array(20).fill(0), // sp_uv
+  Array(20).fill(0), // sp_ozone
+  Array(20).fill(0), // sp_co2
+  Array(20).fill(0), // sp_pressure
 ])
 const timeCounter = ref(0)
 
@@ -137,18 +128,6 @@ watch(scienceMessage, (msg) => {
   if (!msg) return
   const scienceMsg = msg as ScienceMessage;
   switch (scienceMsg.type) {
-    case 'oxygen':
-      sensor_data.value.oxygen = scienceMsg.percent
-      break
-    case 'uv':
-      sensor_data.value.uv = scienceMsg.uv_index
-      break
-    case 'temperature':
-      sensor_data.value.temp = scienceMsg.temperature
-      break
-    case 'humidity':
-      sensor_data.value.humidity = scienceMsg.relative_humidity
-      break
     case 'sp_oxygen':
       sensor_data.value.sp_oxygen = scienceMsg.percent
       break
@@ -173,14 +152,26 @@ watch(scienceMessage, (msg) => {
   }
 })
 
-const download = () => {
-  let csv = 'Oxygen,UV (index),Humidity,Temperature (C),SP Oxygen,SP UV,SP Humidity,SP Temp,SP Ozone,SP CO2,SP Pressure\n'
+const resetHistory = () => {
+  sensor_history.value = [
+    Array(20).fill(0),
+    Array(20).fill(0),
+    Array(20).fill(0),
+    Array(20).fill(0),
+    Array(20).fill(0),
+    Array(20).fill(0),
+    Array(20).fill(0),
+  ]
+  timeCounter.value = 0
+}
+
+const downloadCSV = () => {
+  let csv = 'Time,Oxygen,Humidity,Temp,UV,Ozone,CO2,Pressure\n'
 
   const numRows = sensor_history.value[0].length
   for (let i = 0; i < numRows; ++i) {
     const row = sensor_history.value.map(sensor => sensor[i])
-    csv += row.join(',') + ','
-    csv += `${sensor_data.value.sp_oxygen},${sensor_data.value.sp_uv},${sensor_data.value.sp_humidity},${sensor_data.value.sp_temp},${sensor_data.value.sp_ozone},${sensor_data.value.sp_co2},${sensor_data.value.sp_pressure}\n`
+    csv += `${i},${row.join(',')}\n`
   }
 
   const anchor = document.createElement('a')
@@ -215,44 +206,53 @@ onMounted(() => {
     });
   }
 
-  const titles = [
-    'Oxygen Percentage Over Time (s)',
-    'Relative Humidity Over Time (s)',
-    'Temperature (C) Over Time (s)',
-    'UV Index Over Time (s)',
+  const chartConfigs = [
+    { title: 'Humidity (%)', datasets: [{ label: 'Humidity', color: '#3BB273', historyIndex: 1 }] },
+    { title: 'UV Index', datasets: [{ label: 'UV', color: '#7768AE', historyIndex: 3 }] },
+    { title: 'Ozone (ppb)', datasets: [{ label: 'Ozone', color: '#F9A825', historyIndex: 4 }] },
+    { title: 'Pressure (Pa)', datasets: [{ label: 'Pressure', color: '#26A69A', historyIndex: 6 }] },
   ];
 
-  const lineColors = ['#4D9DE0', '#E15554', '#3BB273', '#7768AE'];
-  const maxHistory = 10;
+  const maxHistory = 20;
 
-  // Create the four charts
-  for (let i = 0; i < 4; ++i) {
+  for (let i = 0; i < chartConfigs.length; ++i) {
     waitForElm(`#chart${i}`).then(canvasElement => {
-      // Ensure the element exists and is a canvas before creating the chart
       if (canvasElement instanceof HTMLCanvasElement) {
-        const data = {
-          labels: Array.from({ length: 10 }, (_, i) => i), // Initialize with 0-9
-          datasets: [
-            {
-              label: titles[i],
-              data: Array(10).fill(0), // Initialize with 10 zeros
-              fill: false,
-              borderColor: lineColors[i],
-              tension: 0.1,
-            },
-          ],
-        };
+        const config = chartConfigs[i];
+        const datasets = config.datasets.map(ds => ({
+          label: ds.label,
+          data: Array(20).fill(0),
+          fill: false,
+          borderColor: ds.color,
+          tension: 0.1,
+        }));
 
         charts[i] = new Chart(canvasElement, {
           type: 'line',
-          data: data,
+          data: {
+            labels: Array.from({ length: 20 }, (_, i) => i),
+            datasets: datasets,
+          },
           options: {
-            responsive: false,
+            responsive: true,
+            maintainAspectRatio: false,
             animation: false,
+            plugins: {
+              title: {
+                display: false
+              },
+              legend: {
+                display: false
+              }
+            },
             scales: {
               y: {
                 beginAtZero: true,
+                ticks: { font: { size: 10 } }
               },
+              x: {
+                ticks: { font: { size: 10 } }
+              }
             },
           },
         });
@@ -262,27 +262,33 @@ onMounted(() => {
 
   // Set up the interval to update chart data
   setInterval(() => {
-    sensor_history.value[0].push(sensor_data.value.oxygen);
-    sensor_history.value[1].push(sensor_data.value.humidity);
-    sensor_history.value[2].push(sensor_data.value.temp);
-    sensor_history.value[3].push(sensor_data.value.uv);
+    sensor_history.value[0].push(sensor_data.value.sp_oxygen);
+    sensor_history.value[1].push(sensor_data.value.sp_humidity);
+    sensor_history.value[2].push(sensor_data.value.sp_temp);
+    sensor_history.value[3].push(sensor_data.value.sp_uv);
+    sensor_history.value[4].push(sensor_data.value.sp_ozone);
+    sensor_history.value[5].push(sensor_data.value.sp_co2);
+    sensor_history.value[6].push(sensor_data.value.sp_pressure);
 
     timeCounter.value++;
 
-    for (let x = 0; x < 4; ++x) {
+    for (let x = 0; x < 7; ++x) {
       if (sensor_history.value[x].length > maxHistory) {
         sensor_history.value[x].shift();
       }
     }
 
-    for (let x = 0; x < 4; ++x) {
-      const chart = charts[x];
+    for (let i = 0; i < chartConfigs.length; ++i) {
+      const chart = charts[i];
       if (chart) {
-        chart.data.datasets[0].data = [...sensor_history.value[x]];
-        // Create rolling time labels
-        const startTime = Math.max(0, timeCounter.value - sensor_history.value[x].length + 1);
+        const config = chartConfigs[i];
+        config.datasets.forEach((ds, idx) => {
+          chart.data.datasets[idx].data = [...sensor_history.value[ds.historyIndex]];
+        });
+
+        const startTime = Math.max(0, timeCounter.value - sensor_history.value[0].length + 1);
         chart.data.labels = Array.from(
-          { length: sensor_history.value[x].length },
+          { length: sensor_history.value[0].length },
           (_, i) => startTime + i
         );
         chart.update();
@@ -291,10 +297,3 @@ onMounted(() => {
   }, 1000);
 })
 </script>
-
-<style scoped>
-.sensors {
-  display: flex;
-  align-items: start;
-}
-</style>
