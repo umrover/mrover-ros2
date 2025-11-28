@@ -1,5 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import Menu from '@/views/HomeMenu.vue'
+import Menu from '@/views/HomeView.vue'
 import DMTask from '@/views/DMView.vue'
 import ESTask from '@/views/ESView.vue'
 import AutonTask from '@/views/AutonView.vue'

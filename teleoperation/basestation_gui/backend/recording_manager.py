@@ -1,6 +1,6 @@
 from typing import Optional
 from backend.ros_manager import get_node
-from backend.database import get_db_connection
+from backend.database import get_recordings_db
 from sensor_msgs.msg import NavSatFix
 from rclpy.qos import qos_profile_sensor_data
 
@@ -53,7 +53,7 @@ class RecordingManager:
             return
 
         try:
-            conn = get_db_connection()
+            conn = get_recordings_db()
             conn.execute('''
                 INSERT INTO recorded_waypoints (recording_id, latitude, longitude, sequence)
                 VALUES (?, ?, ?, ?)
@@ -68,7 +68,7 @@ class RecordingManager:
         if self.is_recording:
             raise ValueError("Recording already in progress")
 
-        conn = get_db_connection()
+        conn = get_recordings_db()
         cur = conn.execute('INSERT INTO recordings (name, is_drone) VALUES (?, ?)', (name, is_drone))
         recording_id = cur.lastrowid
         conn.commit()

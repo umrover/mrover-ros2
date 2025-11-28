@@ -7,19 +7,22 @@
       <div class="fw-bold text-secondary text-uppercase mb-1">Rover</div>
       <div class="d-flex flex-column align-items-start">
         <span
-          ><span class="text-muted me-1 d-inline-block" style="width: 2rem">Lat</span
+          ><span class="text-muted me-1 d-inline-block" style="width: 2rem"
+            >Lat</span
           ><span class="fw-bold">{{
             rover_latitude_deg.toFixed(6)
           }}</span></span
         >
         <span
-          ><span class="text-muted me-1 d-inline-block" style="width: 2rem">Lon</span
+          ><span class="text-muted me-1 d-inline-block" style="width: 2rem"
+            >Lon</span
           ><span class="fw-bold">{{
             rover_longitude_deg.toFixed(6)
           }}</span></span
         >
         <span
-          ><span class="text-muted me-1 d-inline-block" style="width: 2rem">Alt</span
+          ><span class="text-muted me-1 d-inline-block" style="width: 2rem"
+            >Alt</span
           ><span class="fw-bold">{{ rover_altitude.toFixed(1) }}m</span></span
         >
       </div>
@@ -30,13 +33,15 @@
       <div class="fw-bold text-secondary text-uppercase mb-1">Base</div>
       <div class="d-flex flex-column align-items-start">
         <span
-          ><span class="text-muted me-1 d-inline-block" style="width: 2rem">Lat</span
+          ><span class="text-muted me-1 d-inline-block" style="width: 2rem"
+            >Lat</span
           ><span class="fw-bold">{{
             basestation_latitude_deg.toFixed(6)
           }}</span></span
         >
         <span
-          ><span class="text-muted me-1 d-inline-block" style="width: 2rem">Lon</span
+          ><span class="text-muted me-1 d-inline-block" style="width: 2rem"
+            >Lon</span
           ><span class="fw-bold">{{
             basestation_longitude_deg.toFixed(6)
           }}</span></span
@@ -46,22 +51,23 @@
 
     <!-- Orientation -->
     <div class="d-flex flex-column px-1 text-center flex-fill">
-      <div class="fw-bold text-secondary text-uppercase mb-1">
-        Orientation
-      </div>
+      <div class="fw-bold text-secondary text-uppercase mb-1">Orientation</div>
       <div class="d-flex flex-column gap-1">
         <span
-          ><span class="text-muted me-1 d-inline-block" style="width: 3rem">Yaw</span
+          ><span class="text-muted me-1 d-inline-block" style="width: 3rem"
+            >Yaw</span
           ><span class="fw-bold"
             >{{ rover_bearing_deg.toFixed(0) }}&deg;</span
           ></span
         >
         <span
-          ><span class="text-muted me-1 d-inline-block" style="width: 3rem">Pitch</span
+          ><span class="text-muted me-1 d-inline-block" style="width: 3rem"
+            >Pitch</span
           ><span class="fw-bold">{{ pitch.toFixed(0) }}&deg;</span></span
         >
         <span
-          ><span class="text-muted me-1 d-inline-block" style="width: 3rem">Roll</span
+          ><span class="text-muted me-1 d-inline-block" style="width: 3rem"
+            >Roll</span
           ><span class="fw-bold">{{ roll.toFixed(0) }}&deg;</span></span
         >
       </div>
@@ -73,17 +79,11 @@
       <div class="d-flex flex-column gap-1">
         <div class="d-flex align-items-center justify-content-center gap-1">
           <span class="text-muted">Rov</span>
-          <span
-            class="led"
-            :class="rover_status ? 'bg-success' : 'bg-danger'"
-          ></span>
+          <IndicatorDot :is-active="rover_status >= 0" />
         </div>
         <div class="d-flex align-items-center justify-content-center gap-1">
           <span class="text-muted">Drn</span>
-          <span
-            class="led"
-            :class="drone_status ? 'bg-success' : 'bg-danger'"
-          ></span>
+          <IndicatorDot :is-active="drone_status >= 0" />
         </div>
       </div>
     </div>
@@ -94,24 +94,15 @@
       <div class="d-flex flex-column gap-1">
         <div class="d-flex align-items-center justify-content-center gap-1">
           <span class="text-muted">MAG</span>
-          <span
-            class="led"
-            :class="mag_calibration == 3 ? 'bg-success' : 'bg-danger'"
-          ></span>
+          <IndicatorDot :is-active="mag_calibration == 3" />
         </div>
         <div class="d-flex align-items-center justify-content-center gap-1">
           <span class="text-muted">GYR</span>
-          <span
-            class="led"
-            :class="gyro_calibration == 3 ? 'bg-success' : 'bg-danger'"
-          ></span>
+          <IndicatorDot :is-active="gyro_calibration == 3" />
         </div>
         <div class="d-flex align-items-center justify-content-center gap-1">
           <span class="text-muted">ACC</span>
-          <span
-            class="led"
-            :class="accel_calibration == 3 ? 'bg-success' : 'bg-danger'"
-          ></span>
+          <IndicatorDot :is-active="accel_calibration == 3" />
         </div>
       </div>
     </div>
@@ -124,6 +115,7 @@ import { useWebsocketStore } from '@/stores/websocket'
 import { storeToRefs } from 'pinia'
 import { quaternionToMapAngle } from '../utils/map.ts'
 import type { NavMessage, CalibrationMessage } from '../types/coordinates'
+import IndicatorDot from './IndicatorDot.vue'
 
 const websocketStore = useWebsocketStore()
 const { messages } = storeToRefs(websocketStore)
@@ -132,8 +124,8 @@ const rover_latitude_deg = ref(38.4071654)
 const rover_longitude_deg = ref(-110.7923927)
 const rover_bearing_deg = ref(0)
 const rover_altitude = ref(0)
-const rover_status = ref(false)
-const drone_status = ref(false)
+const rover_status = ref(-1)
+const drone_status = ref(-1)
 const basestation_latitude_deg = ref(38.4071654)
 const basestation_longitude_deg = ref(-110.7923927)
 
@@ -153,12 +145,12 @@ watch(navMessage, msg => {
     rover_latitude_deg.value = navMsg.latitude
     rover_longitude_deg.value = navMsg.longitude
     rover_altitude.value = navMsg.altitude
-    rover_status.value = navMsg.status
+    rover_status.value = navMsg.status.status
   } else if (navMsg.type === 'basestation_position') {
     basestation_latitude_deg.value = navMsg.latitude
     basestation_longitude_deg.value = navMsg.longitude
   } else if (navMsg.type === 'drone_waypoint') {
-    drone_status.value = navMsg.status
+    drone_status.value = navMsg.status.status
   } else if (navMsg.type === 'orientation') {
     rover_bearing_deg.value = quaternionToMapAngle(navMsg.orientation)
     const { x: qx, y: qy, z: qz, w: qw } = navMsg.orientation
@@ -174,11 +166,3 @@ watch(navMessage, msg => {
   }
 })
 </script>
-
-<style scoped>
-.led {
-  width: 16px;
-  height: 16px;
-  border-radius: 8px;
-}
-</style>

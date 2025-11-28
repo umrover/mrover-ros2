@@ -18,13 +18,21 @@ class AutonWaypoint(BaseModel):
     lon: float = 0.0
     enable_costmap: bool = True
     deletable: bool = True
+    db_id: int | None = None
 
 class AutonWaypointList(BaseModel):
     waypoints: List[AutonWaypoint]
 
+class AutonEnableWaypoint(BaseModel):
+    latitude_degrees: float
+    longitude_degrees: float
+    tag_id: int = -1
+    type: int = 0
+    enable_costmap: bool = True
+
 class AutonEnableRequest(BaseModel):
     enabled: bool
-    waypoints: List[AutonWaypoint] = []
+    waypoints: List[AutonEnableWaypoint] = []
 
 class TeleopEnableRequest(BaseModel):
     enabled: bool

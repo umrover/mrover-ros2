@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException
-from backend.database import get_db_connection
+from backend.database import get_recordings_db
 from backend.models_pydantic import RecordingCreateRequest, RecordingWaypointRequest
 from backend.recording_manager import get_recording_manager
 
@@ -7,7 +7,7 @@ router = APIRouter(prefix="/api/recordings", tags=["recordings"])
 
 @router.get("/")
 def get_recordings():
-    conn = get_db_connection()
+    conn = get_recordings_db()
     recordings = conn.execute('''
         SELECT r.id, r.name, r.is_drone, r.created_at, COUNT(w.id) as waypoint_count
         FROM recordings r
@@ -46,7 +46,7 @@ def stop_recording():
 
 @router.post("/{rec_id}/waypoints/")
 def add_recording_waypoint(rec_id: int, data: RecordingWaypointRequest):
-    conn = get_db_connection()
+    conn = get_recordings_db()
     conn.execute('''
         INSERT INTO recorded_waypoints (recording_id, latitude, longitude, sequence)
         VALUES (?, ?, ?, ?)
@@ -57,7 +57,7 @@ def add_recording_waypoint(rec_id: int, data: RecordingWaypointRequest):
 
 @router.get("/{rec_id}/waypoints/")
 def get_recording_waypoints(rec_id: int):
-    conn = get_db_connection()
+    conn = get_recordings_db()
     waypoints = conn.execute('''
         SELECT id, latitude as lat, longitude as lon, timestamp, sequence
         FROM recorded_waypoints
@@ -69,7 +69,7 @@ def get_recording_waypoints(rec_id: int):
 
 @router.delete("/{rec_id}/")
 def delete_recording(rec_id: int):
-    conn = get_db_connection()
+    conn = get_recordings_db()
     conn.execute('DELETE FROM recordings WHERE id = ?', (rec_id,))
     conn.commit()
     conn.close()
@@ -77,7 +77,7 @@ def delete_recording(rec_id: int):
 
 @router.delete("/clear/")
 def clear_recordings():
-    conn = get_db_connection()
+    conn = get_recordings_db()
     conn.execute('DELETE FROM recordings')
     conn.commit()
     conn.close()

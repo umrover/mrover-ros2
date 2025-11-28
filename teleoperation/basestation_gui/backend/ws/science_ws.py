@@ -1,8 +1,7 @@
 from backend.ws.base_ws import WebSocketHandler
 from backend.input import DeviceInputs
 from backend.sp_controls import send_sp_controls
-from mrover.msg import Throttle, ControllerState, LED, Humidity, Temperature, Oxygen, UV, Ozone, CO2, Pressure
-from sensor_msgs.msg import JointState
+from mrover.msg import Throttle, ControllerState, Humidity, Temperature, Oxygen, UV, Ozone, CO2, Pressure
 
 class ScienceHandler(WebSocketHandler):
     def __init__(self, websocket):
@@ -12,7 +11,6 @@ class ScienceHandler(WebSocketHandler):
         """Setup SCIENCE endpoint subscriptions and publishers"""
         self.sp_thr_pub = self.node.create_publisher(Throttle, "/sp_thr_cmd", 1)
 
-        self.forward_ros_topic("/led", LED, "led")
         self.forward_ros_topic("/science_oxygen_data", Oxygen, "oxygen")
         self.forward_ros_topic("/science_uv_data", UV, "uv")
         self.forward_ros_topic("/science_temperature_data", Temperature, "temperature")

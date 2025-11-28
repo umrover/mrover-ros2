@@ -13,6 +13,7 @@ export interface AutonWaypoint {
   enable_costmap: boolean
   in_route?: boolean
   deletable?: boolean
+  db_id?: number
 }
 
 /**

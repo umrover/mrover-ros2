@@ -16,16 +16,16 @@ export const autonAPI = {
 
     if (!response.ok) {
       const data = await response.json()
-      const error_message = data["message"]
+      const error_message = data["detail"] || data["message"] || `HTTP ${response.status}`
       console.log(error_message)
-      return { status: 'error', message: `${error_message}` }
+      return { status: 'error', message: typeof error_message === 'string' ? error_message : JSON.stringify(error_message) }
     }
 
     return response.json()
   },
 
   async enableTeleop(enabled: boolean): Promise<TeleopEnableResponse> {
-    const response = await fetch(`${API_BASE}/teleop/enable/`, {
+    const response = await fetch(`${API_BASE}/enable_teleop/`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ enabled })
@@ -33,9 +33,9 @@ export const autonAPI = {
 
     if (!response.ok) {
       const data = await response.json()
-      const error_message = data["message"]
+      const error_message = data["detail"] || data["message"] || `HTTP ${response.status}`
       console.log(error_message)
-      return { status: 'error', message: `HTTP ${response.status}: ${response.statusText}... ${error_message}` }
+      return { status: 'error', message: typeof error_message === 'string' ? error_message : JSON.stringify(error_message) }
     }
 
     return response.json()

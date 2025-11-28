@@ -139,9 +139,9 @@ import WaypointItem from './AutonWaypointItem.vue'
 import WaypointStore from './AutonWaypointStore.vue'
 
 import L from 'leaflet'
-import { reactive, defineComponent } from 'vue'
+import { defineComponent } from 'vue'
 import { Modal } from 'bootstrap'
-import type { AutonWaypoint, StoreWaypoint } from '@/types/waypoints'
+import type { AutonWaypoint } from '@/types/waypoints'
 import { waypointsAPI, autonAPI } from '@/utils/api'
 import { useWebsocketStore } from '@/stores/websocket'
 import { useAutonomyStore } from '@/stores/autonomy'
@@ -181,6 +181,7 @@ export default defineComponent({
       },
 
       allCostmapToggle: true,
+      nextAvailableTagId: 8,
     }
   },
 
@@ -253,13 +254,19 @@ export default defineComponent({
         const autonData = await waypointsAPI.getAuton()
         if (autonData.status === 'success') {
           this.waypoints = autonData.waypoints || []
+
+          // Calculate next available tag ID from existing waypoints
+          const maxTagId = this.waypoints.reduce((max, wp) => {
+            return wp.id > max ? wp.id : max
+          }, 7)
+          this.nextAvailableTagId = maxTagId + 1
         }
 
         // Fetch Active Route
         const courseData = await waypointsAPI.getCurrentAutonCourse()
         if (courseData.status === 'success') {
           this.currentRoute = courseData.course || []
-          
+
           // Mark items in route as "in_route" in the store list for visual feedback
           this.waypoints.forEach(wp => {
              wp.in_route = this.currentRoute.some(
@@ -325,10 +332,16 @@ export default defineComponent({
     saveNewWaypoint() {
       this.modalWypt.lat = this.clickPoint.lat
       this.modalWypt.lon = this.clickPoint.lon
-      
+
+      // Assign next available tag ID if this is not a Post type (type 1 allows user to set tag_id)
+      if (this.modalWypt.type !== 1) {
+        this.modalWypt.id = this.nextAvailableTagId
+        this.nextAvailableTagId++
+      }
+
       // Add to store (default deletable=true)
       this.waypoints.push({ ...this.modalWypt, enable_costmap: true })
-      
+
       // Reset modal
       this.modalWypt = {
         name: '',
@@ -343,17 +356,17 @@ export default defineComponent({
 
     async deleteFromStore(index: number) {
       const wp = this.waypoints[index]
-      
+
       // Optimistic UI update
       this.waypoints.splice(index, 1)
 
-      if (wp.id) {
+      if (wp.db_id && wp.deletable) {
         try {
           await waypointsAPI.deleteAutonWaypoint(wp)
         } catch (error) {
           console.error('Failed to delete waypoint:', error)
           // Revert on failure (optional, but good practice)
-          this.waypoints.splice(index, 0, wp) 
+          this.waypoints.splice(index, 0, wp)
         }
       }
     },
@@ -399,6 +412,9 @@ export default defineComponent({
       this.modal?.show()
     },
     closeModal() {
+      if (document.activeElement instanceof HTMLElement) {
+        document.activeElement.blur()
+      }
       this.modal?.hide()
     }
   },

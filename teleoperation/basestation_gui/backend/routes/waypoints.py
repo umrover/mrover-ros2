@@ -47,39 +47,48 @@ def get_auton_waypoints():
     conn = get_db_connection()
     waypoints = conn.execute('SELECT * FROM auton_waypoints').fetchall()
     conn.close()
-    
+
     results = []
     for w in waypoints:
         wd = dict(w)
+        wd['db_id'] = wd['id']
+        wd['id'] = wd.pop('tag_id')
         wd['lat'] = wd.pop('latitude')
         wd['lon'] = wd.pop('longitude')
         wd['enable_costmap'] = bool(wd['enable_costmap'])
         wd['deletable'] = bool(wd['deletable'])
         results.append(wd)
-        
+
     return {'status': 'success', 'waypoints': results}
 
 @router.post("/auton/save/")
 def save_auton_waypoints(data: AutonWaypointList):
     waypoints = data.waypoints
-    
+
     conn = get_db_connection()
-    conn.execute('DELETE FROM auton_waypoints')
-    
+
+    # Delete only user-added waypoints (deletable=1), keep defaults (1-8)
+    conn.execute('DELETE FROM auton_waypoints WHERE deletable = 1')
+
+    # Reset auto-increment to continue from 8 (after default waypoints)
+    conn.execute('DELETE FROM sqlite_sequence WHERE name = "auton_waypoints"')
+    conn.execute('INSERT INTO sqlite_sequence (name, seq) VALUES ("auton_waypoints", 8)')
+
     for w in waypoints:
-        conn.execute('''
-            INSERT INTO auton_waypoints (name, tag_id, type, latitude, longitude, enable_costmap, deletable)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-        ''', (
-            w.name, 
-            w.id, 
-            w.type, 
-            w.lat, 
-            w.lon, 
-            w.enable_costmap,
-            w.deletable
-        ))
-    
+        # Default waypoints (IDs 1-8) - UPDATE them to preserve IDs
+        if w.db_id is not None and 1 <= w.db_id <= 8:
+            conn.execute('''
+                UPDATE auton_waypoints
+                SET name=?, tag_id=?, type=?, latitude=?, longitude=?, enable_costmap=?
+                WHERE id=?
+            ''', (w.name, w.id, w.type, w.lat, w.lon, w.enable_costmap, w.db_id))
+        # User waypoints - INSERT new ones (they'll get new auto-increment IDs > 8)
+        elif w.deletable:
+            conn.execute('''
+                INSERT INTO auton_waypoints (name, tag_id, type, latitude, longitude, enable_costmap, deletable)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            ''', (w.name, w.id, w.type, w.lat, w.lon, w.enable_costmap, w.deletable))
+
     conn.commit()
     conn.close()
     return {'status': 'success'}

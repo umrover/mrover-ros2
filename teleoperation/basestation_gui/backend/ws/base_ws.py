@@ -10,7 +10,7 @@ class WebSocketHandler:
         self.websocket = websocket
         self.endpoint = endpoint
         self.node = get_node()
-        self.subscribers = []
+        self.subscriptions = []
         self.timers = []
         self.loop = asyncio.get_running_loop()
 
@@ -31,14 +31,14 @@ class WebSocketHandler:
         sub = self.node.create_subscription(
             topic_type, topic_name, callback, qos_profile=qos_profile_sensor_data
         )
-        self.subscribers.append(sub)
+        self.subscriptions.append(sub)
 
     async def cleanup(self):
         """Cleanup ROS resources"""
         print(f"Cleaning up {self.endpoint} WebSocket handler...")
-        for sub in self.subscribers:
+        for sub in self.subscriptions:
             self.node.destroy_subscription(sub)
-        self.subscribers.clear()
+        self.subscriptions.clear()
 
         for timer in self.timers:
             self.node.destroy_timer(timer)

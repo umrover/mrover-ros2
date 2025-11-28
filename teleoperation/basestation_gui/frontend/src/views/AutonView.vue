@@ -100,9 +100,17 @@ watch(scienceMessage, (msg: unknown) => {
 
 watch(navMessage, (msg: unknown) => {
   if (typeof msg === 'object' && msg !== null && 'type' in msg) {
-    const typedMsg = msg as { type: string; state?: string }
+    const typedMsg = msg as { type: string; state?: string; color?: string }
     if (typedMsg.type === 'nav_state') {
       navState.value = typedMsg.state || 'OffState'
+    } else if (typedMsg.type === 'led_color') {
+      if (typedMsg.color === 'red') {
+        ledColor.value = 'bg-danger'
+      } else if (typedMsg.color === 'blinking-green') {
+        ledColor.value = 'blink'
+      } else if (typedMsg.color === 'blue') {
+        ledColor.value = 'bg-primary'
+      }
     }
   }
 })
