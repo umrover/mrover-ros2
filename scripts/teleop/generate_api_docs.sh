@@ -14,7 +14,7 @@ if ! curl -s http://localhost:8000/openapi.json > /dev/null 2>&1; then
 
     for i in {1..30}; do
         curl -s http://localhost:8000/openapi.json > /dev/null 2>&1 && break
-        [ $i -eq 30 ] && echo "Server failed to start" && exit 1
+        [ "$i" -eq 30 ] && echo "Server failed to start" && exit 1
         sleep 1
     done
 fi
