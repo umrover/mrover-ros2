@@ -248,21 +248,24 @@ const startIcon = L.divIcon({
   className: 'custom-div-icon',
   iconSize: [12, 12],
   iconAnchor: [6, 6],
-})
+  iconUrl: '',
+}) as L.Icon
 
 const endIcon = L.divIcon({
   html: '<div style="background-color: #ef4444; width: 12px; height: 12px; border-radius: 50%; border: 2px solid white;"></div>',
   className: 'custom-div-icon',
   iconSize: [12, 12],
   iconAnchor: [6, 6],
-})
+  iconUrl: '',
+}) as L.Icon
 
 const currentIcon = L.divIcon({
   html: '<div style="background-color: #f59e0b; width: 16px; height: 16px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>',
   className: 'custom-div-icon',
   iconSize: [16, 16],
   iconAnchor: [8, 8],
-})
+  iconUrl: '',
+}) as L.Icon
 
 const filteredRecordings = computed(() => {
   return recordings.value.filter(r =>
@@ -270,27 +273,27 @@ const filteredRecordings = computed(() => {
   )
 })
 
-const mapCenter = computed(() => {
+const mapCenter = computed<[number, number]>(() => {
   if (waypoints.value.length === 0) return [0, 0]
   return [waypoints.value[0].lat, waypoints.value[0].lon]
 })
 
-const pathLatLngs = computed(() => {
+const pathLatLngs = computed<[number, number][]>(() => {
   return waypoints.value.map(wp => [wp.lat, wp.lon])
 })
 
-const startLatLng = computed(() => {
+const startLatLng = computed<[number, number]>(() => {
   if (waypoints.value.length === 0) return [0, 0]
   return [waypoints.value[0].lat, waypoints.value[0].lon]
 })
 
-const endLatLng = computed(() => {
+const endLatLng = computed<[number, number]>(() => {
   if (waypoints.value.length === 0) return [0, 0]
   const last = waypoints.value[waypoints.value.length - 1]
   return [last.lat, last.lon]
 })
 
-const currentLatLng = computed(() => {
+const currentLatLng = computed<[number, number]>(() => {
   if (waypoints.value.length === 0) return [0, 0]
   const wp = waypoints.value[currentWaypointIndex.value]
   return [wp.lat, wp.lon]
