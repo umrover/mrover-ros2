@@ -76,3 +76,7 @@ export interface RecordingsListResponse extends APIResponse {
 export interface RecordingWaypointsResponse extends APIResponse {
   waypoints?: RecordedWaypoint[]
 }
+
+export interface RAModeResponse extends APIResponse {
+  mode?: string
+}
