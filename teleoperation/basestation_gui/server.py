@@ -124,4 +124,5 @@ if __name__ == "__main__":
         print("SERVE_STATIC_FRONTEND is not 'true'. Running in API-only mode (no static file serving).")
 
     # Run Uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000, log_level="info")
+    port = int(os.getenv("PORT", "8000"))
+    uvicorn.run(app, host="0.0.0.0", port=port, log_level="info")
