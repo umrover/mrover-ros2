@@ -124,31 +124,44 @@ const timeCounter = ref(0)
 
 const scienceMessage = computed(() => messages.value['science'])
 
+let latestScienceMsg: ScienceMessage | null = null
+let rafScheduled = false
+
 watch(scienceMessage, (msg) => {
   if (!msg) return
-  const scienceMsg = msg as ScienceMessage;
-  switch (scienceMsg.type) {
-    case 'sp_oxygen':
-      sensor_data.value.sp_oxygen = scienceMsg.percent
-      break
-    case 'sp_uv':
-      sensor_data.value.sp_uv = scienceMsg.uv_index
-      break
-    case 'sp_temp':
-      sensor_data.value.sp_temp = scienceMsg.temperature
-      break
-    case 'sp_humidity':
-      sensor_data.value.sp_humidity = scienceMsg.relative_humidity
-      break
-    case 'sp_ozone':
-      sensor_data.value.sp_ozone = scienceMsg.ozone
-      break
-    case 'sp_co2':
-      sensor_data.value.sp_co2 = scienceMsg.co2
-      break
-    case 'sp_pressure':
-      sensor_data.value.sp_pressure = scienceMsg.pressure
-      break
+
+  latestScienceMsg = msg as ScienceMessage
+
+  if (!rafScheduled) {
+    rafScheduled = true
+    requestAnimationFrame(() => {
+      rafScheduled = false
+      if (!latestScienceMsg) return
+
+      switch (latestScienceMsg.type) {
+        case 'sp_oxygen':
+          sensor_data.value.sp_oxygen = latestScienceMsg.percent
+          break
+        case 'sp_uv':
+          sensor_data.value.sp_uv = latestScienceMsg.uv_index
+          break
+        case 'sp_temp':
+          sensor_data.value.sp_temp = latestScienceMsg.temperature
+          break
+        case 'sp_humidity':
+          sensor_data.value.sp_humidity = latestScienceMsg.relative_humidity
+          break
+        case 'sp_ozone':
+          sensor_data.value.sp_ozone = latestScienceMsg.ozone
+          break
+        case 'sp_co2':
+          sensor_data.value.sp_co2 = latestScienceMsg.co2
+          break
+        case 'sp_pressure':
+          sensor_data.value.sp_pressure = latestScienceMsg.pressure
+          break
+      }
+    })
   }
 })
 

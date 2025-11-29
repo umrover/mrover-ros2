@@ -166,13 +166,25 @@ const formatted_odom = computed(() => {
 
 const navMessage = computed(() => messages.value['nav'])
 
+let latestNavMsg: NavMessage | null = null
+let rafScheduled = false
+
 watch(navMessage, async msg => {
   if (!msg) return
-  const navMsg = msg as NavMessage
 
-  if (navMsg.type === 'gps_fix') {
-    rover_latitude_deg.value = navMsg.latitude
-    rover_longitude_deg.value = navMsg.longitude
+  latestNavMsg = msg as NavMessage
+
+  if (!rafScheduled) {
+    rafScheduled = true
+    requestAnimationFrame(() => {
+      rafScheduled = false
+      if (!latestNavMsg) return
+
+      if (latestNavMsg.type === 'gps_fix') {
+        rover_latitude_deg.value = latestNavMsg.latitude
+        rover_longitude_deg.value = latestNavMsg.longitude
+      }
+    })
   }
 })
 

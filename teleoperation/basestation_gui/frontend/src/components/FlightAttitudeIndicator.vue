@@ -20,15 +20,27 @@ const indicatorSize = ref(Math.min(window.innerHeight * 0.15, 180))
 
 const navMessage = computed(() => messages.value['nav'])
 
+let latestOrientationMsg: OrientationMessage | null = null
+let rafScheduled = false
+
 watch(navMessage, (msg) => {
   if (msg && (msg as OrientationMessage).type == 'orientation') {
-    const orientationMsg = msg as OrientationMessage;
-    const { x: qx, y: qy, z: qz, w: qw } = orientationMsg.orientation
-    pitch.value = (Math.asin(2 * (qx * qz - qy * qw)) * 180) / Math.PI
-    roll.value =
-      (Math.atan2(2 * (qy * qz + qx * qw), 1 - 2 * (qx * qx + qy * qy)) *
-        180) /
-      Math.PI
+    latestOrientationMsg = msg as OrientationMessage
+
+    if (!rafScheduled) {
+      rafScheduled = true
+      requestAnimationFrame(() => {
+        rafScheduled = false
+        if (latestOrientationMsg) {
+          const { x: qx, y: qy, z: qz, w: qw } = latestOrientationMsg.orientation
+          pitch.value = (Math.asin(2 * (qx * qz - qy * qw)) * 180) / Math.PI
+          roll.value =
+            (Math.atan2(2 * (qy * qz + qx * qw), 1 - 2 * (qx * qx + qy * qy)) *
+              180) /
+            Math.PI
+        }
+      })
+    }
   }
 })
 </script>

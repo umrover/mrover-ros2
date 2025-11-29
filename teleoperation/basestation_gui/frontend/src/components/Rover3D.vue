@@ -48,36 +48,49 @@ onBeforeUnmount(() => {
 
 const armMessage = computed(() => messages.value['arm'])
 
+let latestArmMsg: unknown = null
+let rafScheduled = false
+
 watch(armMessage, (msg: unknown) => {
   if (!msg || typeof msg !== 'object') return
 
-  if ('type' in msg && msg.type === 'arm_state') {
-    const typedMsg = msg as ControllerStateMessage
-    const joints = typedMsg.name.map((name: string, index: number) => {
-      const urdfName = jointNameMap[name] || name
-      let position = typedMsg.position[index]
+  latestArmMsg = msg
 
-      if (urdfName === 'chassis_to_arm_a') {
-        position = position * -100 + 40 // scale from m to cm
-      }
+  if (!rafScheduled) {
+    rafScheduled = true
+    requestAnimationFrame(() => {
+      rafScheduled = false
+      if (!latestArmMsg || typeof latestArmMsg !== 'object') return
 
-      return {
-        name: urdfName,
-        position,
+      if ('type' in latestArmMsg && latestArmMsg.type === 'arm_state') {
+        const typedMsg = latestArmMsg as ControllerStateMessage
+        const joints = typedMsg.name.map((name: string, index: number) => {
+          const urdfName = jointNameMap[name] || name
+          let position = typedMsg.position[index]
+
+          if (urdfName === 'chassis_to_arm_a') {
+            position = position * -100 + 40
+          }
+
+          return {
+            name: urdfName,
+            position,
+          }
+        })
+
+        updatePose(joints)
+      } else if ('type' in latestArmMsg && latestArmMsg.type === 'ik_target') {
+        const typedMsg = latestArmMsg as ArmIKMessage
+        if (typedMsg.target.pose && typedMsg.target.pose.position) {
+          const position = {
+            x: typedMsg.target.pose.position.x * 100,
+            y: typedMsg.target.pose.position.z * 100,
+            z: typedMsg.target.pose.position.y * -100 + 20,
+          }
+          updateIKTarget(position)
+        }
       }
     })
-
-    updatePose(joints)
-  } else if ('type' in msg && msg.type === 'ik_target') {
-    const typedMsg = msg as ArmIKMessage
-    if (typedMsg.target.pose && typedMsg.target.pose.position) {
-      const position = {
-        x: typedMsg.target.pose.position.x * 100,
-        y: typedMsg.target.pose.position.z * 100,
-        z: typedMsg.target.pose.position.y * -100 + 20,
-      }
-      updateIKTarget(position)
-    }
   }
 })
 </script>

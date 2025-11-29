@@ -84,42 +84,64 @@ const armMessage = computed(() => messages.value['arm'])
 const driveMessage = computed(() => messages.value['drive'])
 const scienceMessage = computed(() => messages.value['science'])
 
+let latestControllerMsg: ControllerStateMessage | null = null
+let rafScheduled = false
+
+function updateControllerData(msg: ControllerStateMessage) {
+  name.value = msg.name
+  state.value = msg.state
+  error.value = msg.error
+  limits.value = msg.limit_hit
+  position.value = msg.position
+  velocity.value = msg.velocity
+  current.value = msg.current
+}
+
 watch(armMessage, (msg) => {
   if (msg && (msg as ControllerStateMessage).type == props.msgType) {
-    const controllerMsg = msg as ControllerStateMessage;
-    name.value = controllerMsg.name
-    state.value = controllerMsg.state
-    error.value = controllerMsg.error
-    limits.value = controllerMsg.limit_hit
-    position.value = controllerMsg.position
-    velocity.value = controllerMsg.velocity
-    current.value = controllerMsg.current
+    latestControllerMsg = msg as ControllerStateMessage
+
+    if (!rafScheduled) {
+      rafScheduled = true
+      requestAnimationFrame(() => {
+        rafScheduled = false
+        if (latestControllerMsg) {
+          updateControllerData(latestControllerMsg)
+        }
+      })
+    }
   }
 })
 
 watch(driveMessage, (msg) => {
   if (msg && (msg as ControllerStateMessage).type == props.msgType) {
-    const controllerMsg = msg as ControllerStateMessage;
-    name.value = controllerMsg.name
-    state.value = controllerMsg.state
-    error.value = controllerMsg.error
-    limits.value = controllerMsg.limit_hit
-    position.value = controllerMsg.position
-    velocity.value = controllerMsg.velocity
-    current.value = controllerMsg.current
+    latestControllerMsg = msg as ControllerStateMessage
+
+    if (!rafScheduled) {
+      rafScheduled = true
+      requestAnimationFrame(() => {
+        rafScheduled = false
+        if (latestControllerMsg) {
+          updateControllerData(latestControllerMsg)
+        }
+      })
+    }
   }
 })
 
 watch(scienceMessage, (msg) => {
   if (msg && (msg as ControllerStateMessage).type == props.msgType) {
-    const controllerMsg = msg as ControllerStateMessage;
-    name.value = controllerMsg.name
-    state.value = controllerMsg.state
-    error.value = controllerMsg.error
-    limits.value = controllerMsg.limit_hit
-    position.value = controllerMsg.position
-    velocity.value = controllerMsg.velocity
-    current.value = controllerMsg.current
+    latestControllerMsg = msg as ControllerStateMessage
+
+    if (!rafScheduled) {
+      rafScheduled = true
+      requestAnimationFrame(() => {
+        rafScheduled = false
+        if (latestControllerMsg) {
+          updateControllerData(latestControllerMsg)
+        }
+      })
+    }
   }
 })
 </script>

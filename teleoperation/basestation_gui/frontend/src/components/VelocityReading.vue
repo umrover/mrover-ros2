@@ -26,11 +26,23 @@ const angular_z = ref(0)
 
 const navMessage = computed(() => messages.value['nav'])
 
+let latestCmdVel: CmdVelMessage | null = null
+let rafScheduled = false
+
 watch(navMessage, (msg) => {
   if (msg && (msg as CmdVelMessage).type == 'cmd_vel') {
-    const cmdVelMsg = msg as CmdVelMessage;
-    linear_x.value = cmdVelMsg.linear.x
-    angular_z.value = cmdVelMsg.angular.z
+    latestCmdVel = msg as CmdVelMessage
+
+    if (!rafScheduled) {
+      rafScheduled = true
+      requestAnimationFrame(() => {
+        rafScheduled = false
+        if (latestCmdVel) {
+          linear_x.value = latestCmdVel.linear.x
+          angular_z.value = latestCmdVel.angular.z
+        }
+      })
+    }
   }
 })
 </script>

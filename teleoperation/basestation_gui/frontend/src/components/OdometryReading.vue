@@ -138,31 +138,48 @@ const accel_calibration = ref(0)
 
 const navMessage = computed(() => messages.value['nav'])
 
-watch(navMessage, msg => {
-  if (!msg) return
-  const navMsg = msg as NavMessage
-  if (navMsg.type === 'gps_fix') {
-    rover_latitude_deg.value = navMsg.latitude
-    rover_longitude_deg.value = navMsg.longitude
-    rover_altitude.value = navMsg.altitude
-    rover_status.value = navMsg.status.status
-  } else if (navMsg.type === 'basestation_position') {
-    basestation_latitude_deg.value = navMsg.latitude
-    basestation_longitude_deg.value = navMsg.longitude
-  } else if (navMsg.type === 'drone_waypoint') {
-    drone_status.value = navMsg.status.status
-  } else if (navMsg.type === 'orientation') {
-    rover_bearing_deg.value = quaternionToMapAngle(navMsg.orientation)
-    const { x: qx, y: qy, z: qz, w: qw } = navMsg.orientation
+let latestNavMsg: NavMessage | null = null
+let rafScheduled = false
+
+function processNavMessage(msg: NavMessage) {
+  if (msg.type === 'gps_fix') {
+    rover_latitude_deg.value = msg.latitude
+    rover_longitude_deg.value = msg.longitude
+    rover_altitude.value = msg.altitude
+    rover_status.value = msg.status.status
+  } else if (msg.type === 'basestation_position') {
+    basestation_latitude_deg.value = msg.latitude
+    basestation_longitude_deg.value = msg.longitude
+  } else if (msg.type === 'drone_waypoint') {
+    drone_status.value = msg.status.status
+  } else if (msg.type === 'orientation') {
+    rover_bearing_deg.value = quaternionToMapAngle(msg.orientation)
+    const { x: qx, y: qy, z: qz, w: qw } = msg.orientation
     pitch.value = (Math.asin(2 * (qx * qz - qy * qw)) * 180) / Math.PI
     roll.value =
       (Math.atan2(2 * (qy * qz + qx * qw), 1 - 2 * (qx * qx + qy * qy)) * 180) /
       Math.PI
-  } else if (navMsg.type === 'calibration') {
+  } else if (msg.type === 'calibration') {
     const calMsg = msg as CalibrationMessage
     mag_calibration.value = calMsg.magnetometer_calibration
     gyro_calibration.value = calMsg.gyroscope_calibration
     accel_calibration.value = calMsg.acceleration_calibration
+  }
+}
+
+watch(navMessage, msg => {
+  if (!msg) return
+
+  latestNavMsg = msg as NavMessage
+
+  if (!rafScheduled) {
+    rafScheduled = true
+    requestAnimationFrame(() => {
+      rafScheduled = false
+      if (latestNavMsg) {
+        processNavMessage(latestNavMsg)
+      }
+    })
   }
 })
 </script>
