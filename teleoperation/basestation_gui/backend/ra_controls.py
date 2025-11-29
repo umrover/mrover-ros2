@@ -1,18 +1,14 @@
 from enum import Enum
-from math import pi
-from typing import Union
 
 from rclpy.node import Node
 from rclpy.publisher import Publisher
 
-from lie import SE3
 from backend.input import filter_input, simulated_axis, safe_index, DeviceInputs
 from backend.mappings import ControllerAxis, ControllerButton
 from backend.ros_manager import get_node
-from mrover.msg import Throttle, IK, Position, Velocity
+from mrover.msg import Throttle, IK
 from mrover.srv import IkMode
-from sensor_msgs.msg import JointState
-from geometry_msgs.msg import Twist, Pose, Point, Quaternion
+from geometry_msgs.msg import Twist
 
 from tf2_ros.buffer import Buffer
 
@@ -56,8 +52,6 @@ def call_ik_mode_service(node: Node, mode: int) -> bool:
     return result.success if result else False
 
 
-TAU = 2 * pi
-
 IK_MODE_POSITION_CONTROL = 0
 IK_MODE_VELOCITY_CONTROL = 1
 IK_MODE_TYPING = 2
@@ -95,22 +89,9 @@ JOINT_SCALES = [
     1.0,
 ]
 
-JOINT_DE_POSITION_SCALE = 1
-
 JOINT_A_MICRO_SCALE = 0.7
 
 CONTROLLER_STICK_DEADZONE = 0.18
-
-# Positions reported by the arm sensors
-joint_positions: Union[JointState, None] = None
-
-
-def joint_positions_callback(msg: JointState) -> None:
-    global joint_positions
-    joint_positions = msg
-
-
-# rospy.Subscriber("arm_joint_data", JointState, joint_positions_callback)
 
 
 def compute_manual_joint_controls(controller: DeviceInputs) -> list[float]:
@@ -157,57 +138,44 @@ def compute_manual_joint_controls(controller: DeviceInputs) -> list[float]:
 
 
 def subset(names: list[str], values: list[float], joints: set[Joint]) -> tuple[list[str], list[float]]:
-    # filtered_joints = [j for j in joints if j.value < 5] # temporarily switch to this for sim testing
     filtered_joints = [j for j in joints]
-    for i in filtered_joints:
-        print(i)
     return [names[i.value] for i in filtered_joints], [values[i.value] for i in filtered_joints]
 
 
 def send_ra_controls(
-    inputs: DeviceInputs, node: Node, arm_thr_pub: Publisher, ik_pos_pub: Publisher, ik_vel_pub: Publisher, buffer: Buffer
+    inputs: DeviceInputs, node: Node, thr_pub: Publisher, ee_pos_pub: Publisher, ee_vel_pub: Publisher, buffer: Buffer
 ) -> None:
     match ra_mode:
         case "throttle" | "ik-pos" | "ik-vel":
-            back_pressed = safe_index(inputs.buttons, ControllerButton.BACK) > 0.5
-            forward_pressed = safe_index(inputs.buttons, ControllerButton.FORWARD) > 0.5
-            home_pressed = safe_index(inputs.buttons, ControllerButton.HOME) > 0.5
-            match back_pressed, forward_pressed, home_pressed:
-                case True, False, False:
-                    de_roll = -TAU / 4
-                case False, True, False:
-                    de_roll = TAU / 4
-                case False, False, True:
-                    de_roll = 0
-                case _:
-                    de_roll = None
+            match ra_mode:
+                case "throttle":
+                    manual_controls = compute_manual_joint_controls(inputs)
+                    throttle_msg = Throttle()
+                    joint_names, throttle_values = subset(JOINT_NAMES, manual_controls, set(Joint))
+                    throttle_msg.names = joint_names
+                    throttle_msg.throttles = throttle_values
+                    thr_pub.publish(throttle_msg)
 
-            if de_roll is None:
+                case "ik-pos":
+                    ik_pos_msg = IK()
+                    ik_pos_msg.pos.x = (-1.0) * safe_index(inputs.axes, ControllerAxis.LEFT_Y)
+                    ik_pos_msg.pos.y = (-1.0) * safe_index(inputs.axes, ControllerAxis.LEFT_X)
+                    ik_pos_msg.pos.z = (-1.0) * safe_index(inputs.axes, ControllerAxis.RIGHT_Y)
+                    ik_pos_msg.pitch = 1.0 * simulated_axis(inputs.buttons, ControllerButton.RIGHT_TRIGGER, ControllerButton.LEFT_TRIGGER)
+                    ik_pos_msg.roll = 1.0 * simulated_axis(inputs.buttons, ControllerButton.RIGHT_BUMPER, ControllerButton.LEFT_BUMPER)
+                    ee_pos_pub.publish(ik_pos_msg)
+                case "ik-vel":
+                    ik_vel_msg = Twist()
+                    ik_vel_msg.linear.x = (-1.0) * filter_input(safe_index(inputs.axes, ControllerAxis.LEFT_Y), deadzone=CONTROLLER_STICK_DEADZONE)
+                    ik_vel_msg.linear.y = (-1.0) * filter_input(safe_index(inputs.axes, ControllerAxis.LEFT_X), deadzone=CONTROLLER_STICK_DEADZONE)
+                    ik_vel_msg.linear.z = (-1.0) * filter_input(safe_index(inputs.axes, ControllerAxis.RIGHT_Y), deadzone=CONTROLLER_STICK_DEADZONE)
+                    ik_vel_msg.angular.y = 1.0 * simulated_axis(inputs.buttons, ControllerButton.RIGHT_BUMPER, ControllerButton.LEFT_BUMPER)
+                    ik_vel_msg.angular.x = 1.0 * simulated_axis(inputs.buttons, ControllerButton.RIGHT_TRIGGER, ControllerButton.LEFT_TRIGGER)
+                    ee_vel_pub.publish(ik_vel_msg)
 
-                match ra_mode:
-                    case "throttle":
-                        manual_controls = compute_manual_joint_controls(inputs)
-                        throttle_msg = Throttle()
-                        joint_names, throttle_values = subset(JOINT_NAMES, manual_controls, set(Joint))
-                        throttle_msg.names = joint_names
-                        throttle_msg.throttles = throttle_values
-                        arm_thr_pub.publish(throttle_msg)
-
-                    case "ik-pos":
-                        pos_msg = Position()
-                        manual_controls = compute_manual_joint_controls(inputs)
-                        joint_names, position_values = subset(JOINT_NAMES, manual_controls, set(Joint))
-                        pos_msg.names = joint_names
-                        pos_msg.positions = position_values
-                        ik_pos_pub.publish(pos_msg)
-                    case "ik-vel":
-                        vel_msg = Velocity()
-                        manual_controls = compute_manual_joint_controls(inputs)
-                        joint_names, velocity_values = subset(JOINT_NAMES, manual_controls, set(Joint))
-                        vel_msg.names = joint_names
-                        vel_msg.velocities = velocity_values
-                        ik_vel_pub.publish(vel_msg)
-
-            else:
-                if joint_positions:
-                    de_pitch = joint_positions.position[joint_positions.name.index("joint_de_pitch")]
+                    manual_controls = compute_manual_joint_controls(inputs)
+                    throttle_msg = Throttle()
+                    joint_names, throttle_values = subset(JOINT_NAMES, manual_controls, set(Joint))
+                    throttle_msg.names = ["cam"]
+                    throttle_msg.throttles = [throttle_values[joint_names.index("cam")]]
+                    thr_pub.publish(throttle_msg)

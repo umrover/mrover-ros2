@@ -10,7 +10,7 @@ WAYPOINTS_DB = os.path.join(BASE_DIR, 'waypoints.db')
 RECORDINGS_DB = os.path.join(BASE_DIR, 'recordings.db')
 
 def init_waypoints_db():
-    """Initialize waypoints database with proper schema and default data"""
+    """Initialize waypoints database"""
     try:
         conn = sqlite3.connect(WAYPOINTS_DB)
         cursor = conn.cursor()
@@ -18,9 +18,7 @@ def init_waypoints_db():
         # Enable foreign keys
         cursor.execute("PRAGMA foreign_keys = ON;")
 
-        # Auton Waypoints Table (The "Store")
-        # Added "deletable" field (default 1/True).
-        # Pre-seeded items like Mallet/WaterBottle will have deletable=0.
+        # Auton Waypoints Table
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS auton_waypoints (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -34,12 +32,7 @@ def init_waypoints_db():
             )
         ''')
 
-        # Current Auton Course Table (The "Active Route")
-        # This references waypoints from the store, but since the order matters and
-        # the same waypoint might appear multiple times (though less likely for physical objects),
-        # we'll just copy the data or reference the ID.
-        # Given the previous implementation copied data, let's keep a separate table
-        # but maybe link it conceptually.
+        # Current Auton Course Table
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS current_auton_course (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -82,7 +75,7 @@ def init_waypoints_db():
                 VALUES (?, ?, ?, ?, ?, ?, ?)
             ''', defaults)
 
-            # Initialize auto-increment to 8 so next user waypoint gets ID 9
+            # Set auto-increment to 8
             cursor.execute('DELETE FROM sqlite_sequence WHERE name = "auton_waypoints"')
             cursor.execute('INSERT INTO sqlite_sequence (name, seq) VALUES ("auton_waypoints", 8)')
 
@@ -94,7 +87,7 @@ def init_waypoints_db():
         raise
 
 def init_recordings_db():
-    """Initialize recordings database with proper schema"""
+    """Initialize recordings database"""
     try:
         conn = sqlite3.connect(RECORDINGS_DB)
         cursor = conn.cursor()
