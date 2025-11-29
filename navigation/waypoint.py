@@ -80,7 +80,7 @@ class WaypointState(State):
         if current_waypoint is None:
             return
 
-        self.USE_COSTMAP = context.node.get_parameter("costmap.use_costmap").value or current_waypoint.enable_costmap
+        self.USE_COSTMAP = current_waypoint.enable_costmap
         if self.USE_COSTMAP:
             context.node.get_logger().info("Resetting costmap dilation")
             context.reset_dilation()
@@ -134,7 +134,7 @@ class WaypointState(State):
 
             # This will set the rover's waypoint to the closest point on the coverage radius.
             # INWARD SPIRAL
-            if distance_from_center > coverage_radius * 0.5:
+            if context.course.current_waypoint().enable_inward:
                #context.node.get_logger().info("inward spiral")
                self.waypoint_traj = segment_path(
                    context = context, dest = closest_radius_point[:2]

@@ -1,3 +1,5 @@
 int8 tag_id
 bool enable_costmap
 WaypointType type
+bool enable_inward
+float64 inward_radius_begin

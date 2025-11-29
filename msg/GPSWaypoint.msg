@@ -3,3 +3,5 @@ bool enable_costmap
 float64 latitude_degrees
 float64 longitude_degrees
 WaypointType type
+bool enable_inward
+float64 inward_radius_begin

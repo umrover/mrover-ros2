@@ -238,4 +238,3 @@ class SearchTrajectory(Trajectory):
            spiral_coordinates_r3,
            tag_id,
        )
-
