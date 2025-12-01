@@ -83,8 +83,12 @@ class SearchTrajectory(Trajectory):
        # The number of spirals should ensure coverage of the entire radius.
        # We add 1 to ensure that the last spiral covers the radius along the entire rotation,
        # as otherwise we will just make the outermost point touch the radius
-      
-       num_spirals = np.ceil(coverage_radius / distance_between_spirals).astype("int") + 1
+
+       if inward_spiral:
+           num_spirals = np.ceil(start_radius / distance_between_spirals).astype("int") + 1
+
+       else:
+           num_spirals = np.ceil(coverage_radius / distance_between_spirals).astype("int") + 1
 
 
        # The num_points variable is created as we used the below expression quite a bit in creating "angles" and "radii"
@@ -97,16 +101,15 @@ class SearchTrajectory(Trajectory):
            # our start angle is start_angle as we first want to go to the closest point on circle's radius
            in_angles = np.linspace(start_angle, 2 * np.pi * num_spirals, num_points)
            # radii is simply evenly spaced "divisions" of the coverage_radius going inwards on each of the points in num_points
-           in_radii = np.linspace(coverage_radius, 3.0, num_points)
-           out_angles = np.linspace(in_angles[-1], in_angles[-1] + 2 * np.pi * num_spirals, num_points)
-           out_radii= np.linspace(3.0, coverage_radius, num_points)
+           in_radii = np.linspace(start_radius, 0.0, num_points)
+           #out_angles = np.linspace(in_angles[-1], in_angles[-1] + 2 * np.pi * num_spirals, num_points)
+           #out_radii= np.linspace(0.0, coverage_radius, num_points)
            in_x_coords = np.cos(in_angles) * in_radii
            in_y_coords = np.sin(in_angles) * in_radii
-           out_x_coords = np.cos(out_angles) * out_radii
-           out_y_coords = np.sin(out_angles) * out_radii
+           #out_x_coords = np.cos(out_angles) * out_radii
+           #out_y_coords = np.sin(out_angles) * out_radii
            #context.node.get_logger().info(f"Soooo tired")
-           vertices = np.vstack([np.column_stack([in_x_coords, in_y_coords]), np.column_stack([out_x_coords, out_y_coords])])
-
+           vertices = np.hstack((in_x_coords.reshape(-1, 1), in_y_coords.reshape(-1, 1)))
       
        else:
             # angles are evenly spaced between the start angle and 2pi*num_segments_per_rotation
@@ -151,7 +154,9 @@ class SearchTrajectory(Trajectory):
        segments_per_rotation: int,
        tag_id: int,
        insert_extra: bool,
-       rover_position: np.ndarray
+       rover_position: np.ndarray,
+       enable_inward:bool,
+       inward_begin:float
 
 
    ):
@@ -184,12 +189,12 @@ class SearchTrajectory(Trajectory):
 
      
        # we do an inward spiral if we are more than half the coverage radius away from the center
-       if distance_from_center > coverage_radius * 0.5:
+       if enable_inward:
            # we pass this to the gen_spiral_coordinates function to indicate the necessity of an inward spiral
            inward_spiral = True
            # as we want to do an inward spiral, we need to find the closest point from the rover
            # to the coverage radius. Multiplies the unit vector with the coverage radius and offsets with the center
-           closest_radius_point = center + (direction_from_center/np.linalg.norm(direction_from_center)) * coverage_radius
+           closest_radius_point = center + (direction_from_center/np.linalg.norm(direction_from_center)) * inward_begin
            # finds the vector, in this case, to go to the closest radius point. move_to_center is misleading...help
            move_to_center = np.linspace(rover_position[:2], closest_radius_point, num=40)
            # so, this is simply the starting angle that the rover would begin its inward spiral at.
@@ -200,7 +205,7 @@ class SearchTrajectory(Trajectory):
                segments_per_rotation,
                insert_extra,
                inward_spiral,
-               coverage_radius,
+               inward_begin,
                starting_angle
            )
       
@@ -224,7 +229,7 @@ class SearchTrajectory(Trajectory):
        # numpy broadcasting magic to add center to each row of the spiral coordinates
        spiral_coordinates_r2 = zero_centered_spiral_r2 + center
        #add the coordinates to move the rover to its specific starting point!
-       spiral_coordinates_r2 = np.vstack([move_to_center, spiral_coordinates_r2])
+       #spiral_coordinates_r2 = np.vstack([move_to_center, spiral_coordinates_r2])
 
 
        # add a column of zeros to make it 3D

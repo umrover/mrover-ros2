@@ -310,6 +310,8 @@ class CostmapSearchState(State):
                 tag_id=search_center.tag_id,
                 insert_extra=True,
                 rover_position=context.rover.get_pose_in_map().translation()[0:2],
+                enable_inward = context.course.current_waypoint().enable_inward,
+                inward_begin = context.course.current_waypoint().inward_radius_begin
             )
             
             

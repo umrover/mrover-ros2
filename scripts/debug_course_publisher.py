@@ -44,7 +44,7 @@ def convert_waypoint_to_gps(reference_point: np.ndarray, waypoint_pose_pair: tup
    ref_lat, ref_lon, _ = reference_point
    x, y, z = pose.translation()
    lat, lon, _ = pymap3d.enu2geodetic(x, y, z, ref_lat, ref_lon, 0.0)
-   return GPSWaypoint(tag_id=waypoint.tag_id, enable_costmap = waypoint.enable_costmap, latitude_degrees=lat, longitude_degrees=lon, type=waypoint.type, enable_inward = waypoint.enable_inward)
+   return GPSWaypoint(tag_id=waypoint.tag_id, enable_costmap = waypoint.enable_costmap, latitude_degrees=lat, longitude_degrees=lon, type=waypoint.type, enable_inward = waypoint.enable_inward, inward_radius_begin = waypoint.inward_radius_begin)
    #return GPSWaypoint(tag_id=waypoint.tag_id, latitude_degrees=lat, longitude_degrees=lon, type=waypoint.type)
 
 
@@ -77,8 +77,8 @@ class DebugCoursePublisher(Node):
        msg.tag_id = -1
        msg.type=WaypointType(val=WaypointType.POST)
        msg.enable_costmap = True
-       msg.enable_inward = False
-       #msg.inward_radius_begin = 3.0
+       msg.enable_inward = True
+       msg.inward_radius_begin = 3.0
 
 
        future = publish_waypoints(
