@@ -1,6 +1,7 @@
 #include "keyboard_typing.hpp"
 #include "lie.hpp"
 #include <cmath>
+#include <geometry_msgs/msg/detail/pose__struct.hpp>
 #include <opencv2/core/eigen.hpp>
 #include "mrover/msg/detail/keyboard_yaw__struct.hpp"
 #include <cmath>
@@ -154,6 +155,8 @@ namespace mrover{
         // Estimate pose
         if (!ids.empty()) {
             for (size_t i = 0; i < nMarkers; ++i) {
+                RCLCPP_INFO_STREAM(get_logger(), "x: " << markerCorners[i][0].x);
+                RCLCPP_INFO_STREAM(get_logger(), "y: " << markerCorners[i][0].y);
                 cv::solvePnP(objPoints, markerCorners.at(i), camMatrix, distCoeffs, rvecs.at(i), tvecs.at(i), false, cv::SOLVEPNP_IPPE_SQUARE);
             }
             // cv::aruco::estimatePoseSingleMarkers(markerCorners, markerLength, camMatrix, distCoeffs, rvecs, tvecs);
@@ -183,7 +186,7 @@ namespace mrover{
 
         cv::imshow("out", grayImage);
         cv::waitKey(1);
-        
+
 
         // Print rotation and translation sanity check
         if (tvecs.size() > 0) {
@@ -206,7 +209,10 @@ namespace mrover{
         if (!tvecs.empty()) {
             // Pass all vectors and the current ROS time
             // Returns the filtered pose
-            return updateKalmanFilter(tvecs, rvecs);
+            geometry_msgs::msg::Pose finalestimation = updateKalmanFilter(tvecs, rvecs);
+
+
+            return finalestimation;
         } else {
             return std::nullopt;
         }
