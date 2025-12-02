@@ -12,14 +12,13 @@ from rclpy.publisher import Publisher
 from rclpy.time import Time
 from rclpy.timer import Timer
 from rclpy.duration import Duration
-from navigation.coordinate_utils import gen_marker, is_high_cost_point, d_calc, segment_path, cartesian_to_ij
+from navigation.coordinate_utils import is_high_cost_point, d_calc, segment_path, cartesian_to_ij
 
 
 class ApproachTargetState(State):
     UPDATE_DELAY: float
     USE_COSTMAP: bool
     DISTANCE_THRESHOLD: float
-    COST_INFLATION_RADIUS: float
     time_begin: Time
     astar_traj: Trajectory
     target_traj: Trajectory
@@ -35,8 +34,7 @@ class ApproachTargetState(State):
         if context.course is None:
             return
 
-        state = "Long Range State" if isinstance(self, LongRangeState) else "Approach Target State"
-        context.node.get_logger().info(f"Entered {state}")
+        context.node.get_logger().info(f"Entered {type(self)}")
         context.rover.previous_state = LongRangeState() if isinstance(self, LongRangeState) else ApproachTargetState()
 
         self.UPDATE_DELAY = context.node.get_parameter("search.update_delay").value
@@ -48,7 +46,6 @@ class ApproachTargetState(State):
 
         self.USE_COSTMAP = context.node.get_parameter("costmap.use_costmap").value or current_waypoint.enable_costmap
         self.DISTANCE_THRESHOLD = context.node.get_parameter("search.distance_threshold").value
-        self.COST_INFLATION_RADIUS = context.node.get_parameter("costmap.initial_inflation_radius").value
         self.astar_traj = Trajectory(np.array([]))
         self.target_traj = Trajectory(np.array([]))
         self.astar = AStar(context=context)
@@ -192,7 +189,7 @@ class ApproachTargetState(State):
         # If the a-star trajectory is empty and there is a segment to pathfind to, generate a new trajectory there
         if self.astar_traj.empty() and not self.target_traj.done():
             try:
-                self.astar_traj = self.astar.generate_trajectory(context, self.target_traj.get_current_point())
+                self.astar_traj = self.astar.generate_trajectory(self.target_traj.get_current_point())
             except Exception as e:
                 context.node.get_logger().info(str(e))
                 return self
@@ -364,6 +361,11 @@ class ApproachTargetState(State):
             return
         if self.USE_COSTMAP:
             context.publish_path_marker(points=self.target_traj.coordinates, color=[1.0, 1.0, 0.0], ns=str(type(self)))
+
+            if not self.astar_traj.empty() and not self.astar_traj.done():
+                context.publish_path_marker(points=self.astar_traj.coordinates[self.astar_traj.cur_pt:], color=[1.0, 0.0, 0.0], ns=str(type(AStar)))
+            else:
+                context.delete_path_marker(ns=str(type(AStar)))
         else:
             context.publish_path_marker(points=np.array([self.target_position]), color=[1.0, 1.0, 0.0], ns=str(type(self)))
 

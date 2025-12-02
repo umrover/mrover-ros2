@@ -576,7 +576,7 @@ class Context:
         return False
     
     def publish_path_marker(
-        self, points: np.ndarray, color: np.ndarray | list, ns: str, size=0.4, lifetime=0, 
+        self, points: np.ndarray, color: np.ndarray | list, ns: str, size=0.2, lifetime=0, 
     ) -> None:
         if self.node.get_parameter("display_markers").value:
             points_marker = Marker()
@@ -623,12 +623,12 @@ class Context:
             points_marker.id = 0
             lines_marker.id = 1
 
-            self.path_marker_publisher(points_marker)
-            self.path_marker_publisher(lines_marker)
+            self.path_marker_publisher.publish(points_marker)
+            self.path_marker_publisher.publish(lines_marker)
 
     def delete_all_markers( self) -> None:
         if self.node.get_parameter("display_markers").value:
             marker = Marker()
             marker.header = Header(frame_id="map", stamp=self.node.get_clock().now().to_msg())
             marker.action = Marker.DELETEALL
-            self.path_marker_publisher(marker)
+            self.path_marker_publisher.publish(marker)

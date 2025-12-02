@@ -10,8 +10,8 @@ from mrover.srv import MoveCostMap
 from .context import Context
 import rclpy
 from .context import Context
-from navigation.astar import AStar, SpiralEnd, NoPath, OutOfBounds, DestinationInHighCost
-from navigation.coordinate_utils import gen_marker, segment_path, is_high_cost_point, d_calc, cartesian_to_ij
+from navigation.astar import AStar, SpiralEnd, NoPath, OutOfBounds
+from navigation.coordinate_utils import segment_path, is_high_cost_point, d_calc, cartesian_to_ij
 from navigation.trajectory import Trajectory, SearchTrajectory
 from typing import Optional
 from rclpy.publisher import Publisher
@@ -40,7 +40,6 @@ class WaypointState(State):
     start_time: Time
     marker_timer: Timer
     waypoint_timer: Timer
-    path_pub: Publisher
     astar: AStar
 
     UPDATE_DELAY: float
@@ -157,7 +156,7 @@ class WaypointState(State):
         if self.astar_traj.empty():
             self.display_markers(context=context)
             try:
-                self.astar_traj = self.astar.generate_trajectory(context, self.waypoint_traj.get_current_point())
+                self.astar_traj = self.astar.generate_trajectory(self.waypoint_traj.get_current_point())
             except Exception as e:
                 context.node.get_logger().info(str(e))
                 return self
@@ -309,7 +308,9 @@ class WaypointState(State):
         
         if self.USE_COSTMAP:
             context.publish_path_marker(points=self.waypoint_traj.coordinates, color=[1.0,0.0,1.0], ns=str(type(self)))
+            if not self.astar_traj.empty() and not self.astar_traj.done():
+                context.publish_path_marker(points=self.astar_traj.coordinates[self.astar_traj.cur_pt:], color=[1.0, 0.0, 0.0], ns=str(type(AStar)))
+            else:
+                context.delete_path_marker(ns=str(type(AStar)))
         else:
             context.publish_path_marker(points=np.array([context.course.current_waypoint_pose_in_map().translation()]), color=[1.0, 0.0, 1.0], ns=str(type(self)))
-
-        
