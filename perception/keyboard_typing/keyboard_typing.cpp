@@ -16,8 +16,9 @@
 #include <optional>
 #include <rclcpp/logging.hpp>
 #include <unordered_map>
+#include <fstream>
 
-namespace mrover{ 
+namespace mrover{
     KeyboardTypingNode::KeyboardTypingNode(rclcpp::NodeOptions const& options) : rclcpp::Node("keyboard_typing_node", options),  mLoopProfiler{get_logger()}
     {
         RCLCPP_INFO_STREAM(get_logger(), "KeyBoardTypingNode starting up");
@@ -211,14 +212,28 @@ namespace mrover{
             // Returns the filtered pose
             geometry_msgs::msg::Pose finalestimation = updateKalmanFilter(tvecs, rvecs);
 
-
             return finalestimation;
+            // outputToCSV(tvecs[0], rvecs[0]);
+            // return updateKalmanFilter(tvecs, rvecs);
         } else {
             return std::nullopt;
         }
 
         // // Convert rvecs to quarterion
         // // NOTE: Assume only 1 tag detected for now
+        // cv::Mat rotation_matrix;
+        // geometry_msgs::msg::Pose pose;
+        // if (markerCorners.size() > 0) {
+        //     cv::Rodrigues(rvecs[0], rotation_matrix);
+
+        // if (rvecs.size() > 0) {
+        //     RCLCPP_INFO_STREAM(get_logger(), "roll vector : " << rvecs[0][0] << "\n");
+        //     RCLCPP_INFO_STREAM(get_logger(), "pitch vector : " << rvecs[0][1] << "\n");
+        //     RCLCPP_INFO_STREAM(get_logger(), "yaw vector : " << rvecs[0][2] << "\n");
+        // }
+
+        // Convert rvecs to quarterion
+        // NOTE: Assume only 1 tag detected for now
         // cv::Mat rotation_matrix;
         // geometry_msgs::msg::Pose pose;
         // if (markerCorners.size() > 0) {
@@ -438,6 +453,57 @@ namespace mrover{
 
         return filtered_pose;
     }
+
+    // auto KeyboardTypingNode::outputToCSV(cv::Vec3d &tvec, cv::Vec3d &rvec) -> void {
+    //     std::fstream fout;
+    //     fout.open("perception/keyboard_typing/csv_camera_output/test.csv", std::ios::out | std::ios::app);
+    //     if (fout.is_open()) {
+    //         double x = tvec[0];
+    //         double y = tvec[1];
+    //         double z = tvec[2];
+    //         double roll = rvec[0] * 180.0 / M_PI;
+    //         double pitch = rvec[1] * 180.0 / M_PI;
+    //         double yaw = rvec[2] * 180.0 / M_PI;
+    //         fout << x << "," << y << "," << z << ","
+    //         << roll << "," << pitch << "," << yaw << "," << std::endl;
+    //         fout.close();
+    //     }
+    // }
+    auto KeyboardTypingNode::outputToCSV(cv::Vec3d &tvec, cv::Vec3d &rvec) -> void {
+        static bool is_first_run = true; // Runs only once per program execution
+        std::string path = "perception/keyboard_typing/csv_camera_output/test.csv";
+
+        if(is_first_run){
+            std::string header;
+            std::fstream fin(path, std::ios::in);
+            if (fin.is_open()){
+                std::getline(fin, header);
+                fin.close();
+            }
+
+            std::fstream freset(path, std::ios::out | std::ios::trunc);
+            if(freset.is_open()){
+                if (!header.empty()) freset << header << std::endl;
+                freset.close();
+            }
+            is_first_run = false;
+        }
+
+        std::fstream fout(path, std::ios::out | std::ios::app);
+        if(fout.is_open()){
+            double x = tvec[0];
+            double y = tvec[1];
+            double z = tvec[2];
+            double roll = rvec[0] * 180.0 / M_PI;
+            double pitch = rvec[1] * 180.0 / M_PI;
+            double yaw = rvec[2] * 180.0 / M_PI;
+            
+            fout << x << "," << y << "," << z << ","
+                << roll << "," << pitch << "," << yaw << "," << std::endl;
+            fout.close();
+        }
+    }    
+
 }
 
 /*
