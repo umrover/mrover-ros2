@@ -28,7 +28,7 @@ def generate_launch_description():
         [
             DeclareLaunchArgument(
                 "mode",
-                default_value="dev",
+                default_value="prod",
                 description="Launch mode: dev (vite dev server, open browser manually) or prod (optimized build + chromium)",
             ),
             OpaqueFunction(function=launch_setup),
