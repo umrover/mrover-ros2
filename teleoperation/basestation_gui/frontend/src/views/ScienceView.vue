@@ -1,13 +1,13 @@
 <template>
   <div class="view-wrapper d-flex gap-2 w-100 h-100">
     <div class="d-flex flex-column gap-2 h-100" style="width: 55%; flex-shrink: 0">
-      <div class="island p-2 rounded d-flex flex-row gap-2">
+      <div class="island p-2 rounded d-flex flex-row gap-1">
         <SPArmControls class="border border-2 p-1 rounded flex-fill" />
-        <div class="d-flex flex-column gap-2">
+        <div class="d-flex flex-column gap-1">
           <GimbalControls class="border border-2 p-1 rounded flex-fill" />
           <DriveControls class="border border-2 p-1 rounded" />
         </div>
-        <div class="d-flex flex-column gap-2">
+        <div class="d-flex flex-column gap-1">
           <FunnelControls
             @selectSite="updateSite"
             class="border border-2 p-1 rounded flex-fill"
