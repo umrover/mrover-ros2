@@ -1,10 +1,11 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import Menu from '../views/HomeMenu.vue'
-import DMTask from '../views/DMTask.vue'
-import ESTask from '../views/ESTask.vue'
-import AutonTask from '../views/AutonTask.vue'
-import Rover3D from '../components/Rover3D.vue'
-import SPTask from '../views/SPTask.vue'
+import Menu from '@/views/HomeView.vue'
+import DMTask from '@/views/DMView.vue'
+import ESTask from '@/views/ESView.vue'
+import AutonTask from '@/views/AutonView.vue'
+import Rover3D from '@/components/Rover3D.vue'
+import ScienceTask from '@/views/ScienceView.vue'
+import DevView from '@/views/DevView.vue'
 
 
 const routes = [
@@ -34,9 +35,14 @@ const routes = [
     component: Rover3D
   },
   {
-    path: '/SPTask',
-    name: 'SPTask',
-    component: SPTask
+    path: '/ScienceTask',
+    name: 'ScienceTask',
+    component: ScienceTask
+  },
+  {
+    path: '/dev',
+    name: 'DevView',
+    component: DevView
   }
 ]
 const router = createRouter({

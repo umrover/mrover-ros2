@@ -1,19 +1,18 @@
 <template>
-  <div class="wrap flex-column justify-content-between">
+  <div class="sp-controls d-flex flex-column align-items-center gap-2">
     <div class="d-flex justify-content-between align-items-center w-100">
-      <h3 class="m-0 p-0">SA Arm Controls</h3>
-      <div
-        class="rounded-circle me-2"
-        :class="controllerConnected ? 'bg-success' : 'bg-danger'"
-        style="width: 16px; height: 16px"
-      ></div>
+      <h4 class="m-0">SP Arm Controls</h4>
+      <IndicatorDot :is-active="controllerConnected" class="me-2" />
     </div>
+    <GamepadDisplay :axes="axes" :buttons="buttons" />
   </div>
 </template>
 
 <script lang="ts" setup>
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useWebsocketStore } from '@/stores/websocket'
+import GamepadDisplay from './GamepadDisplay.vue'
+import IndicatorDot from './IndicatorDot.vue'
 
 const UPDATE_HZ = 20
 
@@ -22,19 +21,25 @@ const websocketStore = useWebsocketStore()
 const gamepadConnected = ref(false)
 const controllerConnected = computed(() => gamepadConnected.value)
 
+const axes = ref<number[]>([0, 0, 0, 0])
+const buttons = ref<number[]>(new Array(17).fill(0))
+
 let interval: number | undefined
 
 onMounted(() => {
   interval = window.setInterval(() => {
     const gamepads = navigator.getGamepads()
     const gamepad = gamepads.find(
-      gamepad => gamepad && gamepad.id.includes('Microsoft')
+      gamepad => gamepad && gamepad.id.includes('Microsoft'),
     )
     gamepadConnected.value = !!gamepad
     if (!gamepad) return
 
-    websocketStore.sendMessage('arm', {
-      type: 'sa_controller',
+    axes.value = [...gamepad.axes]
+    buttons.value = gamepad.buttons.map(button => button.value)
+
+    websocketStore.sendMessage('science', {
+      type: 'sp_controller',
       axes: gamepad.axes,
       buttons: gamepad.buttons.map(button => button.value),
     })
@@ -47,3 +52,9 @@ onBeforeUnmount(() => {
   }
 })
 </script>
+
+<style scoped>
+.sp-controls {
+  width: 100%;
+}
+</style>

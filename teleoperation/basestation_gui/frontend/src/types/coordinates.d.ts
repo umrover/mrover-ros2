@@ -38,7 +38,7 @@ export interface GpsFixMessage {
   latitude: number;
   longitude: number;
   altitude: number;
-  status: boolean;
+  status: { status: number };
 }
 
 /**
@@ -48,7 +48,7 @@ export interface BasestationPositionMessage {
   type: 'basestation_position';
   latitude: number;
   longitude: number;
-  status: boolean;
+  status: { status: number };
 }
 
 /**
@@ -58,7 +58,7 @@ export interface DroneWaypointMessage {
   type: 'drone_waypoint';
   latitude: number;
   longitude: number;
-  status: boolean;
+  status: { status: number };
 }
 
 /**

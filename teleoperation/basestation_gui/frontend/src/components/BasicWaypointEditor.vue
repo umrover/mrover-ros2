@@ -1,6 +1,8 @@
 <template>
   <div class="wrapper d-flex m-0 p-2 justify-content-between gap-3 w-100 h-100">
+    <!-- Left Column: Controls & Creation -->
     <div class="d-flex flex-column w-100 gap-2">
+      <!-- New Waypoint Form -->
       <div class="d-flex flex-column gap-2 border border-2 rounded p-2">
         <div class="d-flex align-items-center">
           <label for="waypointname" class="form-label m-0 me-2">Name:</label>
@@ -10,19 +12,11 @@
         </div>
         <div class="d-flex gap-2">
           <div class="flex-fill input-group">
-            <input
-              class="form-control"
-              id="deg1"
-              v-model.number="input.lat.d"
-            />
+            <input class="form-control" id="deg1" v-model.number="input.lat.d" />
             <span class="input-group-text font-monospace px-2">ºN</span>
           </div>
           <div class="flex-fill input-group">
-            <input
-              class="form-control"
-              id="deg2"
-              v-model.number="input.lon.d"
-            />
+            <input class="form-control" id="deg2" v-model.number="input.lon.d" />
             <span class="input-group-text font-monospace px-2">ºW</span>
           </div>
         </div>
@@ -30,6 +24,8 @@
           Add Waypoint
         </button>
       </div>
+
+      <!-- Rover Controls -->
       <div class="border border-2 rounded p-2 gap-2 d-flex flex-column">
         <div class="d-flex justify-content-between align-items-center gap-2">
           <h4>Rover</h4>
@@ -55,6 +51,8 @@
           Drop Waypoint at Rover
         </button>
       </div>
+
+      <!-- Drone Controls (Conditional) -->
       <div v-if="enableDrone" class="border border-2 rounded d-flex flex-column p-2 gap-2">
         <div class="d-flex justify-content-between align-items-center gap-2">
           <h4>Drone</h4>
@@ -73,26 +71,32 @@
             Stop Recording
           </button>
         </div>
-        <button
-          class="btn btn-info"
-          @click="addWaypoint(input, true)"
-        >
+        <button class="btn btn-info" @click="addWaypoint(input, true)">
           Add Drone Position
         </button>
       </div>
-      <button class="btn btn-success" @click="showRecordingsModal = true">View Recordings</button>
+
+      <!-- Action Buttons -->
+      <button class="btn btn-success" @click="showRecordingsModal = true">
+        View Recordings
+      </button>
       <div class="d-flex gap-2">
-        <button class="btn btn-danger flex-fill" @click="clearAllWaypoints">Clear Waypoints</button>
-        <button class="btn btn-danger flex-fill" @click="clearAllRecordings">Clear Recordings</button>
+        <button class="btn btn-danger flex-fill" @click="clearAllWaypoints">
+          Clear Waypoints
+        </button>
+        <button class="btn btn-danger flex-fill" @click="clearAllRecordings">
+          Clear Recordings
+        </button>
       </div>
     </div>
 
+    <!-- Right Column: Active Route List -->
     <div class="d-flex flex-column w-100">
       <div class="d-flex mb-2 align-items-center justify-content-between">
         <h4 class="m-0 p-0">Current Course</h4>
         <button class="btn btn-danger" @click="clearWaypoint">Clear</button>
       </div>
-      <div class="waypoint-wrapper overflow-y-scroll d-flex flex-column gap-2">
+      <div class="waypoint-wrapper overflow-y-scroll d-flex flex-column gap-2 flex-grow-1">
         <WaypointItem
           v-for="(waypoint, i) in storedWaypoints"
           :key="i"
@@ -132,8 +136,7 @@ defineProps({
 })
 
 const erdStore = useErdStore()
-const { highlightedWaypoint, searchWaypoint, clickPoint } =
-  storeToRefs(erdStore)
+const { highlightedWaypoint, searchWaypoint, clickPoint } = storeToRefs(erdStore)
 const { setWaypointList, setHighlightedWaypoint, setSearchWaypoint } = erdStore
 
 const websocketStore = useWebsocketStore()
@@ -153,10 +156,6 @@ const isRecordingRover = ref(false)
 const isRecordingDrone = ref(false)
 const currentRecordingId = ref<number | null>(null)
 const showRecordingsModal = ref(false)
-const recordingSequence = ref(0)
-const lastRecordedLat = ref<number | null>(null)
-const lastRecordedLon = ref<number | null>(null)
-const RECORDING_THRESHOLD = 0.00001
 
 const formatted_odom = computed(() => {
   return {
@@ -174,30 +173,15 @@ watch(navMessage, async msg => {
   if (navMsg.type === 'gps_fix') {
     rover_latitude_deg.value = navMsg.latitude
     rover_longitude_deg.value = navMsg.longitude
-
-    if (isRecordingRover.value && currentRecordingId.value !== null) {
-      if (shouldRecordWaypoint(navMsg.latitude, navMsg.longitude)) {
-        try {
-          await recordingAPI.addWaypoint(
-            currentRecordingId.value,
-            navMsg.latitude,
-            navMsg.longitude,
-            recordingSequence.value
-          )
-          lastRecordedLat.value = navMsg.latitude
-          lastRecordedLon.value = navMsg.longitude
-          recordingSequence.value++
-        } catch (error) {
-          console.error('Failed to record waypoint:', error)
-        }
-      }
-    }
   }
 })
 
-const saveWaypoints = async (waypoints: StoreWaypoint[]) => {
+// Watch waypoints to sync with Backend
+watch(storedWaypoints, async (newList) => {
+  setWaypointList(newList) // Update map
+  
   try {
-    const apiWaypoints: APIBasicWaypoint[] = waypoints.map(wp => ({
+    const apiWaypoints: APIBasicWaypoint[] = newList.map(wp => ({
       name: wp.name,
       lat: wp.latLng.lat,
       lon: wp.latLng.lng,
@@ -207,7 +191,20 @@ const saveWaypoints = async (waypoints: StoreWaypoint[]) => {
   } catch (error) {
     console.error('Failed to save waypoints:', error)
   }
-}
+}, { deep: true })
+
+// Watch map clicks
+watch(clickPoint, newClickPoint => {
+  input.value.lat.d = newClickPoint.lat
+  input.value.lon.d = newClickPoint.lon
+})
+
+onMounted(() => {
+  setHighlightedWaypoint(-1)
+  setSearchWaypoint(-1)
+  setWaypointList([])
+  setTimeout(() => loadWaypoints(), 250)
+})
 
 const loadWaypoints = async () => {
   try {
@@ -218,30 +215,13 @@ const loadWaypoints = async () => {
         latLng: L.latLng(wp.lat, wp.lon),
         drone: wp.drone,
       }))
-      setWaypointList(storedWaypoints.value)
     }
   } catch (error) {
     console.error('Failed to load waypoints:', error)
   }
 }
 
-const deleteItem = (payload: { index: number }) => {
-  if (highlightedWaypoint.value == payload.index) {
-    setHighlightedWaypoint(-1)
-  }
-  if (searchWaypoint.value == payload.index) {
-    setSearchWaypoint(-1)
-  }
-  storedWaypoints.value.splice(payload.index, 1)
-}
-
-const addWaypoint = (
-  coord: {
-    lat: { d: number }
-    lon: { d: number }
-  },
-  isDrone: boolean,
-) => {
+const addWaypoint = (coord: { lat: { d: number }, lon: { d: number } }, isDrone: boolean) => {
   storedWaypoints.value.push({
     name: name.value,
     latLng: L.latLng(coord.lat.d, coord.lon.d),
@@ -249,20 +229,18 @@ const addWaypoint = (
   })
 }
 
+const deleteItem = (payload: { index: number }) => {
+  if (highlightedWaypoint.value == payload.index) setHighlightedWaypoint(-1)
+  if (searchWaypoint.value == payload.index) setSearchWaypoint(-1)
+  storedWaypoints.value.splice(payload.index, 1)
+}
+
 const findWaypoint = (payload: { index: number }) => {
-  if (payload.index === highlightedWaypoint.value) {
-    setHighlightedWaypoint(-1)
-  } else {
-    setHighlightedWaypoint(payload.index)
-  }
+  setHighlightedWaypoint(payload.index === highlightedWaypoint.value ? -1 : payload.index)
 }
 
 const searchForWaypoint = (payload: { index: number }) => {
-  if (payload.index === searchWaypoint.value) {
-    setSearchWaypoint(-1)
-  } else {
-    setSearchWaypoint(payload.index)
-  }
+  setSearchWaypoint(payload.index === searchWaypoint.value ? -1 : payload.index)
 }
 
 const clearWaypoint = () => {
@@ -270,9 +248,7 @@ const clearWaypoint = () => {
 }
 
 const clearAllWaypoints = async () => {
-  if (!confirm('Are you sure you want to delete all waypoints? This cannot be undone.')) {
-    return
-  }
+  if (!confirm('Are you sure you want to delete all waypoints? This cannot be undone.')) return
   try {
     await waypointsAPI.deleteAll()
     storedWaypoints.value = []
@@ -282,9 +258,7 @@ const clearAllWaypoints = async () => {
 }
 
 const clearAllRecordings = async () => {
-  if (!confirm('Are you sure you want to delete all recordings? This cannot be undone.')) {
-    return
-  }
+  if (!confirm('Are you sure you want to delete all recordings? This cannot be undone.')) return
   try {
     await recordingAPI.deleteAll()
   } catch (error) {
@@ -299,9 +273,6 @@ const startRecording = async (isDrone: boolean) => {
 
     if (response.status === 'success' && response.recording_id) {
       currentRecordingId.value = response.recording_id
-      recordingSequence.value = 0
-      lastRecordedLat.value = null
-      lastRecordedLon.value = null
 
       if (isDrone) {
         isRecordingDrone.value = true
@@ -309,7 +280,7 @@ const startRecording = async (isDrone: boolean) => {
         isRecordingRover.value = true
       }
 
-      console.log(`Started recording: ${recordingName}`)
+      console.log(`Recording started: ${recordingName} (ID: ${response.recording_id})`)
     } else {
       console.error('Failed to start recording:', response.message)
     }
@@ -319,69 +290,28 @@ const startRecording = async (isDrone: boolean) => {
 }
 
 const stopRecording = async () => {
-  if (currentRecordingId.value) {
-    console.log(`Stopped recording ID: ${currentRecordingId.value} with ${recordingSequence.value} waypoints`)
+  try {
+    const response = await recordingAPI.stop()
+
+    if (response.status === 'success') {
+      console.log(`Recording stopped`)
+    } else {
+      console.error('Failed to stop recording:', response.message)
+    }
+  } catch (error) {
+    console.error('Error stopping recording:', error)
+  } finally {
+    isRecordingRover.value = false
+    isRecordingDrone.value = false
+    currentRecordingId.value = null
   }
-
-  currentRecordingId.value = null
-  recordingSequence.value = 0
-  lastRecordedLat.value = null
-  lastRecordedLon.value = null
-  isRecordingRover.value = false
-  isRecordingDrone.value = false
 }
-
-const shouldRecordWaypoint = (lat: number, lon: number): boolean => {
-  if (lastRecordedLat.value === null || lastRecordedLon.value === null) {
-    return true
-  }
-
-  const latDiff = Math.abs(lat - lastRecordedLat.value)
-  const lonDiff = Math.abs(lon - lastRecordedLon.value)
-  const distance = Math.sqrt(latDiff * latDiff + lonDiff * lonDiff)
-
-  return distance >= RECORDING_THRESHOLD
-}
-
-watch(
-  storedWaypoints,
-  newList => {
-    setWaypointList(newList)
-    saveWaypoints(newList)
-  },
-  { deep: true },
-)
-
-watch(clickPoint, newClickPoint => {
-  input.value.lat.d = newClickPoint.lat
-  input.value.lon.d = newClickPoint.lon
-})
-
-onMounted(() => {
-  setHighlightedWaypoint(-1)
-  setSearchWaypoint(-1)
-  setWaypointList([])
-
-  setTimeout(() => {
-    loadWaypoints()
-  }, 250)
-})
 </script>
 
 <style scoped>
 .waypoint-wrapper {
-  flex: 1;
-  overflow-y: auto;
   background-color: #dddddd;
   padding: 8px;
   border-radius: 8px;
-}
-
-.waypoint-col {
-  min-width: 300px;
-}
-
-.label-width {
-  min-width: 40px;
 }
 </style>

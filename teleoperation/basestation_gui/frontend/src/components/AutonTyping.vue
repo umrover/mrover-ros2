@@ -105,7 +105,6 @@ watch(autonMessage, (msg: unknown) => {
 
   if ('type' in msg && msg.type === 'typing_feedback') {
     const typedMsg = msg as TypingFeedbackMessage
-    console.log('yeet')
     currentKey.value = typedMsg.current_key
     currentState.value = typedMsg.current_state
     updateLetterStates()

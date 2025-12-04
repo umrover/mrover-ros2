@@ -38,7 +38,6 @@ namespace mrover {
         }
 
         auto updateLED() -> void {
-            // Teleoperation takes precedence over autonomous control
             if (is_teleop_enabled) {
                 led_mode = LEDMode::Blue;
             } else if (is_navigation_done) {
@@ -48,10 +47,15 @@ namespace mrover {
             }
 
             mrover::msg::LED led_msg;
-            led_msg.red = led_mode == LEDMode::Red;
-            led_msg.green = led_mode == LEDMode::BlinkingGreen;
-            led_msg.blue = led_mode == LEDMode::Blue;
-            led_msg.is_blinking = led_mode == LEDMode::BlinkingGreen;
+
+            if (led_mode == LEDMode::Red) {
+                led_msg.color = mrover::msg::LED::RED;
+            } else if (led_mode == LEDMode::Blue) {
+                led_msg.color = mrover::msg::LED::BLUE;
+            } else if (led_mode == LEDMode::BlinkingGreen) {
+                led_msg.color = mrover::msg::LED::BLINKING_GREEN;
+            }
+
             mLedPub->publish(led_msg);
         }
 
