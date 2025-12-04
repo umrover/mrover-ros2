@@ -1,5 +1,4 @@
 #include "keyboard_typing.hpp"
-#include "lie.hpp"
 #include <cmath>
 #include <geometry_msgs/msg/detail/pose__struct.hpp>
 #include <opencv2/core/eigen.hpp>
@@ -33,8 +32,8 @@ namespace mrover{
         // Top right (TR)
         // Bottom right (BR)
         static int TL_ID = 2;
-        static int BL_ID = 3;
-        static int TR_ID = 4;
+        static int BL_ID = 4;
+        static int TR_ID = 3;
         static int BR_ID = 5;
 
         static float b_length = 0.354076;
@@ -324,33 +323,29 @@ namespace mrover{
                                  cv::Vec3d const& tag_offset_world) -> cv::Vec3d {
         // 1. Convert OpenCV Inputs to Eigen types
         // --------------------------------------
-        // Translation: cv::Vec3d -> mrover::R3d (Eigen::Vector3d)
-        R3d t_eigen(tvec[0], tvec[1], tvec[2]);
+        // Translation: cv::Vec3d -> Eigen::Vector3d
+        Eigen::Vector3d t_c_t(tvec[0], tvec[1], tvec[2]);
 
-        // Rotation: cv::Vec3d (Rodrigues) -> cv::Mat -> Eigen::Matrix3d -> Eigen::Quaternion
+        // Rotation: cv::Vec3d (Rodrigues) -> cv::Mat -> Eigen::Matrix3d
         cv::Mat R_cv;
         cv::Rodrigues(rvec, R_cv);
 
-        Eigen::Matrix3d R_eigen_mat;
-        cv::cv2eigen(R_cv, R_eigen_mat);
+        Eigen::Matrix3d R_c_t;
+        cv::cv2eigen(R_cv, R_c_t);
 
-        S3d q_eigen(R_eigen_mat); // Convert Matrix to Quaternion 
+        // Calculate Camera Position in Tag Frame
+        // The transform from Tag to Camera is T_c_t = [R_c_t | t_c_t]
+        // We want the inverse transform T_t_c = [R_c_t^T | -R_c_t^T * t_c_t]
+        // The camera position in tag frame is the translation part of T_t_c
+        Eigen::Vector3d p_cam_in_tag = -R_c_t.transpose() * t_c_t;
 
-        // T_c_t: Transform of the Tag in the Camera frame (from PnP)
-        SE3d T_cam_tag(t_eigen, q_eigen);
+        // Calculate Camera Position in World Frame
+        // We assume the tag is axis-aligned with the world (Identity rotation)
+        // So we just add the tag's world offset
+        Eigen::Vector3d t_offset(tag_offset_world[0], tag_offset_world[1], tag_offset_world[2]);
+        Eigen::Vector3d p_cam_in_world = p_cam_in_tag + t_offset;
 
-        // T_w_t: Offsets from world tag offsets
-        R3d t_offset(tag_offset_world[0], tag_offset_world[1], tag_offset_world[2]);
-
-        // Assuming tags are flat on wall (Identity rotation).
-        // If tags are rotated, pass in quaternion here instead of identity.
-        SE3d T_world_tag(t_offset, S3d::Identity());
-
-        // T_world_cam = T_world_tag * (T_cam_tag)^-1
-        SE3d T_world_cam = T_world_tag * T_cam_tag.inverse();
-        R3d result_pos = T_world_cam.translation();
-
-        return cv::Vec3d(result_pos.x(), result_pos.y(), result_pos.z());
+        return cv::Vec3d(p_cam_in_world.x(), p_cam_in_world.y(), p_cam_in_world.z());
     }
 
     auto KeyboardTypingNode::updateKalmanFilter(cv::Vec3d& tvec, cv::Vec3d& rvec) -> geometry_msgs::msg::Pose {
