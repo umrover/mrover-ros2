@@ -51,7 +51,7 @@ class ApproachTargetState(State):
 
         self.USE_COSTMAP = context.node.get_parameter("costmap.use_costmap").value or current_waypoint.enable_costmap
         self.DISTANCE_THRESHOLD = context.node.get_parameter("search.distance_threshold").value
-        self.LOOK_DISTANCE_THRESHOLD = 5.0
+        self.LOOK_DISTANCE_THRESHOLD = context.node.get_parameter("search.distance_look_threshold").value
         self.COST_INFLATION_RADIUS = context.node.get_parameter("costmap.initial_inflation_radius").value
         self.marker_pub = context.node.create_publisher(Marker, "target_trajectory", 10)
         self.astar_traj = Trajectory(np.array([]))
@@ -222,7 +222,9 @@ class ApproachTargetState(State):
                     else:
                         context.node.get_logger().info("Found low-cost point")
                         return self
-
+                    
+        if self.self_in_distance_threshold(context, self.object_type):
+            return self.next_state(context=context, is_finished=True)
         arrived = False
         cmd_vel = Twist()
         if not self.astar_traj.done():
@@ -233,6 +235,7 @@ class ApproachTargetState(State):
                 context.node.get_parameter("single_tag.stop_threshold").value,
                 context.node.get_parameter("waypoint.drive_forward_threshold").value,
             )
+        
 
         # If we have arrived increment the a-star trajectory
         if arrived:
@@ -254,8 +257,6 @@ class ApproachTargetState(State):
                         return self
 
                     # If we are within the distance threshold of the target we have finished
-                    if self.self_in_distance_threshold(context, self.object_type):
-                        return self.next_state(context=context, is_finished=True)
 
                     # Otherwise we need to dilate to get closer
                     else:
@@ -287,7 +288,8 @@ class ApproachTargetState(State):
             context.node.get_parameter("single_tag.stop_threshold").value,
             context.node.get_parameter("waypoint.drive_forward_threshold").value,
         )
-
+        if self.self_in_distance_threshold(context, self.object_type):
+            return self.next_state(context=context, is_finished=True)
         if arrived:
             if isinstance(self, LongRangeState):
                 self.target_position = self.get_target_position(context)

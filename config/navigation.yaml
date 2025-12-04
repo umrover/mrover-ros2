@@ -67,6 +67,7 @@ navigation:
       safe_approach_distance: 5.0
       angle_thresh: 0.0872665 #pi/36 radians / 5 degrees
       distance_threshold: 1.0
+      distance_look_threshold: 5.0
       update_delay: 3.0
       
     single_tag:
