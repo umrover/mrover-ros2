@@ -274,8 +274,9 @@ const filteredRecordings = computed(() => {
 })
 
 const mapCenter = computed<[number, number]>(() => {
-  if (waypoints.value.length === 0) return [0, 0]
-  return [waypoints.value[0].lat, waypoints.value[0].lon]
+  const first = waypoints.value[0]
+  if (!first) return [0, 0]
+  return [first.lat, first.lon]
 })
 
 const pathLatLngs = computed<[number, number][]>(() => {
@@ -283,35 +284,36 @@ const pathLatLngs = computed<[number, number][]>(() => {
 })
 
 const startLatLng = computed<[number, number]>(() => {
-  if (waypoints.value.length === 0) return [0, 0]
-  return [waypoints.value[0].lat, waypoints.value[0].lon]
+  const first = waypoints.value[0]
+  if (!first) return [0, 0]
+  return [first.lat, first.lon]
 })
 
 const endLatLng = computed<[number, number]>(() => {
-  if (waypoints.value.length === 0) return [0, 0]
   const last = waypoints.value[waypoints.value.length - 1]
+  if (!last) return [0, 0]
   return [last.lat, last.lon]
 })
 
 const currentLatLng = computed<[number, number]>(() => {
-  if (waypoints.value.length === 0) return [0, 0]
   const wp = waypoints.value[currentWaypointIndex.value]
+  if (!wp) return [0, 0]
   return [wp.lat, wp.lon]
 })
 
 const currentTimestamp = computed(() => {
-  if (waypoints.value.length === 0) return ''
-  return waypoints.value[currentWaypointIndex.value].timestamp
+  const wp = waypoints.value[currentWaypointIndex.value]
+  return wp?.timestamp ?? ''
 })
 
 const startTimestamp = computed(() => {
-  if (waypoints.value.length === 0) return ''
-  return waypoints.value[0].timestamp
+  const first = waypoints.value[0]
+  return first?.timestamp ?? ''
 })
 
 const endTimestamp = computed(() => {
-  if (waypoints.value.length === 0) return ''
-  return waypoints.value[waypoints.value.length - 1].timestamp
+  const last = waypoints.value[waypoints.value.length - 1]
+  return last?.timestamp ?? ''
 })
 
 const formatTimestamp = (isoString: string) => {

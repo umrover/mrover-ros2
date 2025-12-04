@@ -81,7 +81,10 @@ const updateSite = async (selectedSite: number) => {
   siteSelect.value = selectedSite
 
   try {
-    await scienceAPI.setGearDiffPosition(site_to_radians[siteSelect.value], false)
+    const radians = site_to_radians[siteSelect.value]
+    if (radians !== undefined) {
+      await scienceAPI.setGearDiffPosition(radians, false)
+    }
   } catch (error) {
     console.error('Failed to set gear differential position:', error)
   }

@@ -55,7 +55,7 @@ watch(armMessage, (msg: unknown) => {
     const typedMsg = msg as ControllerStateMessage
     const joints = typedMsg.name.map((name: string, index: number) => {
       const urdfName = jointNameMap[name] || name
-      let position = typedMsg.position[index]
+      let position = typedMsg.position[index] ?? 0
 
       if (urdfName === 'chassis_to_arm_a') {
         position = position * -100 + 40 // scale from m to cm

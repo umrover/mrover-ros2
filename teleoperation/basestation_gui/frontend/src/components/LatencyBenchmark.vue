@@ -300,14 +300,14 @@ const p95Latency = computed(() => {
   if (latencies.value.length === 0) return '0.00'
   const sorted = [...latencies.value].sort((a, b) => a - b)
   const index = Math.ceil(sorted.length * 0.95) - 1
-  return sorted[index].toFixed(2)
+  return (sorted[index] ?? 0).toFixed(2)
 })
 
 const p99Latency = computed(() => {
   if (latencies.value.length === 0) return '0.00'
   const sorted = [...latencies.value].sort((a, b) => a - b)
   const index = Math.ceil(sorted.length * 0.99) - 1
-  return sorted[index].toFixed(2)
+  return (sorted[index] ?? 0).toFixed(2)
 })
 
 const messagesPerSecond = computed(() => {
@@ -431,8 +431,13 @@ const sendPing = () => {
   })
 
   const cutoffTime = now - windowDuration
-  while (bytesWindow.value.length > 0 && bytesWindow.value[0].timestamp < cutoffTime) {
-    bytesWindow.value.shift()
+  while (bytesWindow.value.length > 0) {
+    const first = bytesWindow.value[0]
+    if (first && first.timestamp < cutoffTime) {
+      bytesWindow.value.shift()
+    } else {
+      break
+    }
   }
 
   updateStoreActivityOut()

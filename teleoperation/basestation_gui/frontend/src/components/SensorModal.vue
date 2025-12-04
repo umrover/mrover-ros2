@@ -39,16 +39,10 @@
           >
             <h5 class="mb-2 text-nowrap">{{ config.title }}</h5>
             <div class="d-flex flex-column gap-2">
-              <button
-                class="btn btn-primary"
-                @click="downloadPNG(index)"
-              >
+              <button class="btn btn-primary" @click="downloadPNG(index)">
                 <i class="bi bi-download"></i> PNG
               </button>
-              <button
-                class="btn btn-secondary"
-                @click="downloadCSV(index)"
-              >
+              <button class="btn btn-secondary" @click="downloadCSV(index)">
                 <i class="bi bi-download"></i> CSV
               </button>
             </div>
@@ -68,13 +62,33 @@
 <script lang="ts" setup>
 import { onMounted, onUnmounted, watch } from 'vue'
 import Chart from 'chart.js/auto'
+import type { Chart as ChartType } from 'chart.js/auto'
 
-const props = defineProps<{
+interface ChartDataset {
+  label: string
+  color: string
+  historyIndex: number
+}
+
+interface ChartConfig {
+  title: string
+  datasets: ChartDataset[]
+}
+
+interface Props {
   sensorHistory: number[][]
   timeCounter: number
-}>()
+}
 
-const chartConfigs = [
+interface Emits {
+  close: []
+  reset: []
+}
+
+const props = defineProps<Props>()
+const emit = defineEmits<Emits>()
+
+const chartConfigs: readonly ChartConfig[] = [
   {
     title: 'Oxygen (%)',
     datasets: [{ label: 'Oxygen', color: '#4D9DE0', historyIndex: 0 }],
@@ -103,34 +117,37 @@ const chartConfigs = [
     title: 'Pressure (Pa)',
     datasets: [{ label: 'Pressure', color: '#26A69A', historyIndex: 6 }],
   },
-]
+] as const
 
-const charts: Chart[] = []
+const charts: (ChartType | null)[] = Array(chartConfigs.length).fill(null)
 
-const sanitizeFilename = (title: string) => {
+const sanitizeFilename = (title: string): string => {
   return title.replace(/[^a-zA-Z0-9]+/g, '_').replace(/^_|_$/g, '')
 }
 
-const downloadPNG = (chartIndex: number) => {
+const downloadPNG = (chartIndex: number): void => {
   const chart = charts[chartIndex]
-  if (!chart) return
+  const config = chartConfigs[chartIndex]
+  if (!chart || !config) return
 
   const canvas = chart.canvas
   const url = canvas.toDataURL('image/png')
   const anchor = document.createElement('a')
   anchor.href = url
-  anchor.download = `${sanitizeFilename(chartConfigs[chartIndex].title)}.png`
+  anchor.download = `${sanitizeFilename(config.title)}.png`
   anchor.click()
 }
 
-const downloadCSV = (chartIndex: number) => {
+const downloadCSV = (chartIndex: number): void => {
   const config = chartConfigs[chartIndex]
+  if (!config || !config.datasets[0]) return
+
   const historyIndex = config.datasets[0].historyIndex
+  const data = props.sensorHistory[historyIndex]
+  if (!data) return
 
   let csv = `Time,${config.datasets[0].label}\n`
-  const data = props.sensorHistory[historyIndex]
-
-  for (let i = 0; i < data.length; ++i) {
+  for (let i = 0; i < data.length; i++) {
     csv += `${i},${data[i]}\n`
   }
 
@@ -140,90 +157,92 @@ const downloadCSV = (chartIndex: number) => {
   anchor.click()
 }
 
-const updateCharts = () => {
-  for (let i = 0; i < chartConfigs.length; ++i) {
-    const chart = charts[i]
-    if (chart) {
-      const config = chartConfigs[i]
-      config.datasets.forEach((ds, idx) => {
-        chart.data.datasets[idx].data = [
-          ...props.sensorHistory[ds.historyIndex],
-        ]
-      })
+const updateCharts = (): void => {
+  const firstHistory = props.sensorHistory[0]
+  if (!firstHistory) return
 
-      const startTime = Math.max(
-        0,
-        props.timeCounter - props.sensorHistory[0].length + 1,
-      )
-      chart.data.labels = Array.from(
-        { length: props.sensorHistory[0].length },
-        (_, i) => startTime + i,
-      )
-      chart.update()
-    }
+  for (let i = 0; i < chartConfigs.length; i++) {
+    const chart = charts[i]
+    const config = chartConfigs[i]
+    if (!chart || !config) continue
+
+    config.datasets.forEach((ds, idx) => {
+      const dataset = chart.data.datasets[idx]
+      const historyData = props.sensorHistory[ds.historyIndex]
+      if (dataset && historyData) {
+        dataset.data = [...historyData]
+      }
+    })
+
+    const startTime = Math.max(0, props.timeCounter - firstHistory.length + 1)
+    chart.data.labels = Array.from(
+      { length: firstHistory.length },
+      (_, i) => startTime + i,
+    )
+    chart.update()
   }
 }
 
-const emit = defineEmits<{
-  close: []
-  reset: []
-}>()
-
-const handleEscape = (event: KeyboardEvent) => {
+const handleEscape = (event: KeyboardEvent): void => {
   if (event.key === 'Escape') {
     emit('close')
   }
 }
 
 onMounted(() => {
+  console.log()
   window.addEventListener('keydown', handleEscape)
 
-  for (let i = 0; i < chartConfigs.length; ++i) {
+  const firstHistory = props.sensorHistory[0]
+  if (!firstHistory) return
+
+  for (let i = 0; i < chartConfigs.length; i++) {
     const canvasElement = document.getElementById(
       `modal-chart-${i}`,
-    ) as HTMLCanvasElement
-    if (canvasElement) {
-      const config = chartConfigs[i]
-      const datasets = config.datasets.map(ds => ({
+    ) as HTMLCanvasElement | null
+
+    const config = chartConfigs[i]
+    if (!canvasElement || !config) continue
+
+    const datasets = config.datasets.map(ds => {
+      const historyData = props.sensorHistory[ds.historyIndex]
+      return {
         label: ds.label,
-        data: [...props.sensorHistory[ds.historyIndex]],
+        data: historyData ? [...historyData] : [],
         fill: false,
         borderColor: ds.color,
         tension: 0.1,
-      }))
+      }
+    })
 
-      const startTime = Math.max(
-        0,
-        props.timeCounter - props.sensorHistory[0].length + 1,
-      )
+    const startTime = Math.max(0, props.timeCounter - firstHistory.length + 1)
 
-      charts[i] = new Chart(canvasElement, {
-        type: 'line',
-        data: {
-          labels: Array.from(
-            { length: props.sensorHistory[0].length },
-            (_, i) => startTime + i,
-          ),
-          datasets: datasets,
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          animation: false,
-          plugins: {
-            legend: {
-              display: config.datasets.length > 1,
-              position: 'top',
-            },
-          },
-          scales: {
-            y: {
-              beginAtZero: true,
-            },
+    charts[i] = new Chart(canvasElement, {
+      type: 'line',
+      data: {
+        labels: Array.from(
+          { length: firstHistory.length },
+          (_, i) => startTime + i,
+        ),
+        datasets,
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: false,
+        plugins: {
+          legend: {
+            display: config.datasets.length > 1,
+            position: 'top',
           },
         },
-      })
-    }
+        scales: {
+          y: {
+            beginAtZero: true,
+          },
+        },
+      },
+    })
   }
 
   const interval = setInterval(updateCharts, 1000)
@@ -231,7 +250,7 @@ onMounted(() => {
   onUnmounted(() => {
     window.removeEventListener('keydown', handleEscape)
     clearInterval(interval)
-    charts.forEach(chart => chart.destroy())
+    charts.forEach(chart => chart?.destroy())
   })
 })
 

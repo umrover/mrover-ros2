@@ -25,7 +25,7 @@ jobs:
           # This makes sure that $GITHUB_WORKSPACE is the catkin workspace path
           path: "src/mrover"
       - name: Style Check
-        run: . /home/mrover/ros2_ws/src/mrover/venv/bin/activate && cd $GITHUB_WORKSPACE/src/mrover/ && ./style.sh
+        run: . /home/mrover/ros2_ws/src/mrover/venv/bin/activate && export PATH="$HOME/.bun/bin:$PATH" && cd $GITHUB_WORKSPACE/src/mrover/ && ./style.sh
       - name: Compiler Cache
         if: github.event.pull_request.draft == false
         uses: hendrikmuhs/ccache-action@v1.2

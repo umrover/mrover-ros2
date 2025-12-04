@@ -280,6 +280,8 @@ watch(searchWaypoint, newIndex => {
     return
   }
   const waypoint = waypointList.value[newIndex]
+  if (!waypoint) return
+
   if (!circle.value) {
     if (map) {
       circle.value = L.circle(waypoint.latLng, { radius: 20 }).addTo(map)

@@ -168,9 +168,12 @@ const resetHistory = () => {
 const downloadCSV = () => {
   let csv = 'Time,Oxygen,Humidity,Temp,UV,Ozone,CO2,Pressure\n'
 
-  const numRows = sensor_history.value[0].length
+  const firstHistory = sensor_history.value[0]
+  if (!firstHistory) return
+
+  const numRows = firstHistory.length
   for (let i = 0; i < numRows; ++i) {
-    const row = sensor_history.value.map(sensor => sensor[i])
+    const row = sensor_history.value.map(sensor => sensor?.[i] ?? 0)
     csv += `${i},${row.join(',')}\n`
   }
 
@@ -219,6 +222,8 @@ onMounted(() => {
     waitForElm(`#chart${i}`).then(canvasElement => {
       if (canvasElement instanceof HTMLCanvasElement) {
         const config = chartConfigs[i];
+        if (!config) return;
+
         const datasets = config.datasets.map(ds => ({
           label: ds.label,
           data: Array(20).fill(0),
@@ -262,35 +267,43 @@ onMounted(() => {
 
   // Set up the interval to update chart data
   setInterval(() => {
-    sensor_history.value[0].push(sensor_data.value.sp_oxygen);
-    sensor_history.value[1].push(sensor_data.value.sp_humidity);
-    sensor_history.value[2].push(sensor_data.value.sp_temp);
-    sensor_history.value[3].push(sensor_data.value.sp_uv);
-    sensor_history.value[4].push(sensor_data.value.sp_ozone);
-    sensor_history.value[5].push(sensor_data.value.sp_co2);
-    sensor_history.value[6].push(sensor_data.value.sp_pressure);
+    sensor_history.value[0]?.push(sensor_data.value.sp_oxygen);
+    sensor_history.value[1]?.push(sensor_data.value.sp_humidity);
+    sensor_history.value[2]?.push(sensor_data.value.sp_temp);
+    sensor_history.value[3]?.push(sensor_data.value.sp_uv);
+    sensor_history.value[4]?.push(sensor_data.value.sp_ozone);
+    sensor_history.value[5]?.push(sensor_data.value.sp_co2);
+    sensor_history.value[6]?.push(sensor_data.value.sp_pressure);
 
     timeCounter.value++;
 
     for (let x = 0; x < 7; ++x) {
-      if (sensor_history.value[x].length > maxHistory) {
-        sensor_history.value[x].shift();
+      const history = sensor_history.value[x];
+      if (history && history.length > maxHistory) {
+        history.shift();
       }
     }
 
     for (let i = 0; i < chartConfigs.length; ++i) {
       const chart = charts[i];
-      if (chart) {
-        const config = chartConfigs[i];
+      const config = chartConfigs[i];
+      if (chart && config) {
         config.datasets.forEach((ds, idx) => {
-          chart.data.datasets[idx].data = [...sensor_history.value[ds.historyIndex]];
+          const dataset = chart.data.datasets[idx];
+          const historyData = sensor_history.value[ds.historyIndex];
+          if (dataset && historyData) {
+            dataset.data = [...historyData];
+          }
         });
 
-        const startTime = Math.max(0, timeCounter.value - sensor_history.value[0].length + 1);
-        chart.data.labels = Array.from(
-          { length: sensor_history.value[0].length },
-          (_, i) => startTime + i
-        );
+        const firstHistory = sensor_history.value[0];
+        if (firstHistory) {
+          const startTime = Math.max(0, timeCounter.value - firstHistory.length + 1);
+          chart.data.labels = Array.from(
+            { length: firstHistory.length },
+            (_, i) => startTime + i
+          );
+        }
         chart.update();
       }
     }

@@ -63,14 +63,14 @@ const pitchRadians = computed((): number => {
   const state = gimbalJointState.value
   if (!state || !state.name || !state.position) return 0
   const pitchIndex = state.name.indexOf('pitch')
-  return pitchIndex >= 0 ? state.position[pitchIndex] : 0
+  return pitchIndex >= 0 ? (state.position[pitchIndex] ?? 0) : 0
 })
 
 const yawRadians = computed((): number => {
   const state = gimbalJointState.value
   if (!state || !state.name || !state.position) return 0
   const yawIndex = state.name.indexOf('yaw')
-  return yawIndex >= 0 ? state.position[yawIndex] : 0
+  return yawIndex >= 0 ? (state.position[yawIndex] ?? 0) : 0
 })
 
 const pitchDegrees = computed((): string =>
@@ -98,6 +98,11 @@ const adjustGimbal = async (
     }
 
     const currentPosition = state.position[jointIndex]
+    if (currentPosition === undefined) {
+      console.error(`Position for joint ${joint} is undefined`)
+      return
+    }
+
     const adjustmentRadians = (adjustment * Math.PI) / 180
     const newPosition = currentPosition + adjustmentRadians
 

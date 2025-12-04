@@ -284,11 +284,14 @@ export default defineComponent({
     addToRoute(waypoint: AutonWaypoint) {
       // Deep copy to allow independent modification (e.g., enable_costmap) in route vs store
       const newPoint = { ...waypoint, enable_costmap: this.allCostmapToggle }
-      
+
       // Visual feedback in store list
       const storeIndex = this.waypoints.findIndex(w => w === waypoint)
       if (storeIndex !== -1) {
-        this.waypoints[storeIndex].in_route = true
+        const storeWaypoint = this.waypoints[storeIndex]
+        if (storeWaypoint) {
+          storeWaypoint.in_route = true
+        }
       }
 
       this.currentRoute.push(newPoint)
@@ -305,13 +308,16 @@ export default defineComponent({
       const stillInRoute = this.currentRoute.some(
          r => r.name === waypoint.name && r.id === waypoint.id && r.type === waypoint.type
       )
-      
+
       if (!stillInRoute) {
         const storeIndex = this.waypoints.findIndex(
            w => w.name === waypoint.name && w.id === waypoint.id && w.type === waypoint.type
         )
         if (storeIndex !== -1) {
-          this.waypoints[storeIndex].in_route = false
+          const storeWaypoint = this.waypoints[storeIndex]
+          if (storeWaypoint) {
+            storeWaypoint.in_route = false
+          }
         }
       }
     },
@@ -356,6 +362,7 @@ export default defineComponent({
 
     async deleteFromStore(index: number) {
       const wp = this.waypoints[index]
+      if (!wp) return
 
       // Optimistic UI update
       this.waypoints.splice(index, 1)
@@ -372,9 +379,10 @@ export default defineComponent({
     },
 
     updateStoreWaypoint(waypoint: AutonWaypoint, index: number) {
-      if (index >= 0 && index < this.waypoints.length) {
-        this.waypoints[index].lat = waypoint.lat
-        this.waypoints[index].lon = waypoint.lon
+      const storeWaypoint = this.waypoints[index]
+      if (storeWaypoint) {
+        storeWaypoint.lat = waypoint.lat
+        storeWaypoint.lon = waypoint.lon
       }
     },
 
