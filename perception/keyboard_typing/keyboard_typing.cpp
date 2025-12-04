@@ -83,16 +83,58 @@ namespace mrover{
 
         // create publisher
         mCostMapPub = this->create_publisher<msg::KeyboardYaw>("/keypose/yaw", rclcpp::QoS(1));
+
+        // Define offsets
+        layout[4] = cv::Vec3d(0.0, 0.0, 0.0);       // BL
+        layout[5] = cv::Vec3d(0.387, 0.0, 0.0);     // BR
+        layout[3] = cv::Vec3d(0.387, 0.183, 0.0);   // TR
+        layout[2] = cv::Vec3d(0.0, 0.183, 0.0);     // TL
+
+        createRoverBoard();
     }
 
     auto KeyboardTypingNode::yawCallback(sensor_msgs::msg::Image::ConstSharedPtr const& msg) -> void {
-        RCLCPP_INFO_STREAM(get_logger(), "callback");
-        std::optional<geometry_msgs::msg::Pose> pose = estimatePose(msg);
+        std::optional<pose_output> pose = estimatePose(msg);
 
-        // extract yaw into a quarterian and then publish to mCostMapPub
+        // Publish yaw
+        if (pose.has_value()) {
+            mrover::msg::KeyboardYaw msg;
+            msg.yaw = pose->yaw;
+            mCostMapPub->publish(msg);
+        }
     }
 
-    auto KeyboardTypingNode::estimatePose(sensor_msgs::msg::Image::ConstSharedPtr const& msg) -> std::optional<geometry_msgs::msg::Pose>  {
+    auto KeyboardTypingNode::createRoverBoard() -> void {
+        // 1. Define the physical corners of the tags in the "Board Frame"
+        //    (The Board Frame origin will be your Bottom-Left tag)
+        std::vector<std::vector<cv::Point3f>> all_obj_points; 
+        std::vector<int> all_ids;
+
+        // Loop through your defined IDs to build the board structure
+        for(auto const& [id, offset] : layout) {
+            std::vector<cv::Point3f> corners;
+            double x = offset[0];
+            double y = offset[1];
+            double z = offset[2];
+
+            // Define the 4 corners for THIS specific tag relative to the Anchor
+            // Order: TL, TR, BR, BL
+            // Note: We center the tag on the offset coordinate
+            corners.push_back(cv::Point3f(x, y, z)); // Top Left
+            corners.push_back(cv::Point3f(x, y, z)); // Top Right
+            corners.push_back(cv::Point3f(x, y, z)); // Bottom Right
+            corners.push_back(cv::Point3f(x, y, z)); // Bottom Left
+
+            all_obj_points.push_back(corners);
+            all_ids.push_back(id);
+        }
+
+        // Create the Board object
+        // "dictionary" must be the same one used for detection
+        rover_board = cv::aruco::Board::create(all_obj_points, dictionary, all_ids);
+    }
+
+    auto KeyboardTypingNode::estimatePose(sensor_msgs::msg::Image::ConstSharedPtr const& msg) -> std::optional<pose_output>  {
         // Read in camera constants
         std::string cameraConstants = "temp.json";
         cv::Mat camMatrix = (cv::Mat_<double>(3,3) <<
@@ -125,7 +167,6 @@ namespace mrover{
         std::vector<std::vector<cv::Point2f>> markerCorners, rejectedCandidates;
         std::vector<int> ids;
         cv::Ptr<cv::aruco::DetectorParameters> detectorParams = cv::aruco::DetectorParameters::create();
-        cv::Ptr<cv::aruco::Dictionary> dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_4X4_50);
 
         // Define coordinate system
         float markerLength = 0.02;  // meters
@@ -150,19 +191,79 @@ namespace mrover{
 
         size_t nMarkers = markerCorners.size();
 
-        // Rotation and translation vectors
-        std::vector<cv::Vec3d> rvecs(nMarkers), tvecs(nMarkers);
-
         // Estimate pose
+        cv::Vec3d combined_tvec, combined_rvec;
         if (!ids.empty()) {
-            for (size_t i = 0; i < nMarkers; ++i) {
-                RCLCPP_INFO_STREAM(get_logger(), "x: " << markerCorners[i][0].x);
-                RCLCPP_INFO_STREAM(get_logger(), "y: " << markerCorners[i][0].y);
-                cv::solvePnP(objPoints, markerCorners.at(i), camMatrix, distCoeffs, rvecs.at(i), tvecs.at(i), false, cv::SOLVEPNP_IPPE_SQUARE);
+            std::vector<int> valid_indices;
+            for (size_t i = 0; i < ids.size(); ++i) {
+                if (layout.count(ids[i]) > 0) {
+                    valid_indices.push_back(i);
+                }
             }
-            // cv::aruco::estimatePoseSingleMarkers(markerCorners, markerLength, camMatrix, distCoeffs, rvecs, tvecs);
+
+            int validcnt = valid_indices.size();
+            
+            if (validcnt > 2) {
+                cv::aruco::estimatePoseBoard(markerCorners, ids, rover_board, camMatrix, distCoeffs, combined_rvec, combined_tvec);
+            } else if (validcnt > 0) {
+                RCLCPP_INFO_STREAM(get_logger(), "Using solvepnp");
+                cv::Vec3d sum_tvec(0,0,0);
+                cv::Vec3d sum_rvec(0,0,0);
+
+                for (int idx : valid_indices) {
+                    int id = ids[idx];
+                    
+                    // 1. Solve PnP for this specific tag (IPPE_SQUARE is extremely stable)
+                    cv::Vec3d rvec_single, tvec_single;
+                    cv::solvePnP(objPoints, markerCorners.at(idx), camMatrix, distCoeffs, rvec_single, tvec_single, false, cv::SOLVEPNP_IPPE_SQUARE);
+
+                    // 2. Shift to Anchor (Origin)
+                    // Retrieve offset
+                    cv::Vec3d offset_wall = layout[id]; 
+                    
+                    // Rotate offset
+                    cv::Mat R_cv;
+                    cv::Rodrigues(rvec_single, R_cv);
+                    Eigen::Matrix3d R_eigen;
+                    cv::cv2eigen(R_cv, R_eigen);
+
+                    Eigen::Vector3d p_offset_wall(offset_wall[0], offset_wall[1], offset_wall[2]);
+                    Eigen::Vector3d p_offset_cam = R_eigen * p_offset_wall;
+
+                    // Calculate Anchor Position according to THIS tag
+                    Eigen::Vector3d t_tag_eigen(tvec_single[0], tvec_single[1], tvec_single[2]);
+                    Eigen::Vector3d t_anchor = t_tag_eigen - p_offset_cam;
+
+                    // Accumulate
+                    sum_tvec += cv::Vec3d(t_anchor.x(), t_anchor.y(), t_anchor.z());
+                    sum_rvec += rvec_single; // Linear sum is okay for small jitter averaging
+                }
+
+            // Average the results
+            combined_tvec = sum_tvec / (double)validcnt;
+            combined_rvec = sum_rvec / (double)validcnt;
+            }
+
+            cv::drawFrameAxes(grayImage, camMatrix, distCoeffs, combined_rvec, combined_tvec, markerLength * 1.5f, 2);
         }
 
+
+        // Rotation and translation vectors
+        std::vector<cv::Vec3d> rvecs(nMarkers), tvecs(nMarkers);
+        // populate rvecs and tvecs
+        if (!ids.empty()) {
+            for (size_t i = 0; i < nMarkers; ++i) {
+                cv::solvePnP(objPoints, markerCorners.at(i), camMatrix, distCoeffs, rvecs.at(i), tvecs.at(i), false, cv::SOLVEPNP_IPPE_SQUARE);
+            }
+        }
+
+        // draw results for debugging
+        if (!ids.empty()) {
+            cv::aruco::drawDetectedMarkers(grayImage, markerCorners, ids);
+            // for (size_t i = 0; i < ids.size(); ++i) {
+            //     cv::drawFrameAxes(grayImage, camMatrix, distCoeffs, rvecs[i], tvecs[i], markerLength * 1.5f, 2);
+            // }
+        }
 
         // Offset the poses to origin
         for (size_t i = 0; i < tvecs.size(); ++i) {
@@ -176,117 +277,44 @@ namespace mrover{
         }
 
 
-        // draw results for debugging
-        // debugging reg image
-        if (!ids.empty()) {
-            cv::aruco::drawDetectedMarkers(grayImage, markerCorners, ids);
-            for (size_t i = 0; i < ids.size(); ++i) {
-                cv::drawFrameAxes(grayImage, camMatrix, distCoeffs, rvecs[i], tvecs[i], markerLength * 1.5f, 2);
-            }
-        }
-
-        cv::imshow("out", grayImage);
-        cv::waitKey(1);
-
-
         // Print rotation and translation sanity check
-        if (tvecs.size() > 0) {
-            auto x = tvecs[0][0];
-            auto y = tvecs[0][1];
-            auto z = tvecs[0][2];
-            RCLCPP_INFO_STREAM(get_logger(), "tag id" << ids[0] << "\n");
-            RCLCPP_INFO_STREAM(get_logger(), "x vector : " << x << "\n");
-            RCLCPP_INFO_STREAM(get_logger(), "y vector : " << y << "\n");
-            RCLCPP_INFO_STREAM(get_logger(), "z vector : " << z << "\n");
-            RCLCPP_INFO_STREAM(get_logger(), "distance : " << std::sqrt(x*x + y*y + z*z) << "\n");
-        }
+        // if (tvecs.size() > 0) {
+        //     auto x = tvecs[0][0];
+        //     auto y = tvecs[0][1];
+        //     auto z = tvecs[0][2];
+        //     RCLCPP_INFO_STREAM(get_logger(), "tag id" << ids[0] << "\n");
+        //     RCLCPP_INFO_STREAM(get_logger(), "x vector : " << x << "\n");
+        //     RCLCPP_INFO_STREAM(get_logger(), "y vector : " << y << "\n");
+        //     RCLCPP_INFO_STREAM(get_logger(), "z vector : " << z << "\n");
+        //     RCLCPP_INFO_STREAM(get_logger(), "distance : " << std::sqrt(x*x + y*y + z*z) << "\n");
+        // }
 
-        if (rvecs.size() > 0) {
-            RCLCPP_INFO_STREAM(get_logger(), "roll vector : " << (rvecs[0][0]*180)/M_PI << "\n");
-            RCLCPP_INFO_STREAM(get_logger(), "pitch vector : " << (rvecs[0][1]*180)/M_PI << "\n");
-            RCLCPP_INFO_STREAM(get_logger(), "yaw vector : " << (rvecs[0][2]*180)/M_PI << "\n");
-        }
+        // if (rvecs.size() > 0) {
+        //     RCLCPP_INFO_STREAM(get_logger(), "roll vector : " << (rvecs[0][0]*180)/M_PI << "\n");
+        //     RCLCPP_INFO_STREAM(get_logger(), "pitch vector : " << (rvecs[0][1]*180)/M_PI << "\n");
+        //     RCLCPP_INFO_STREAM(get_logger(), "yaw vector : " << (rvecs[0][2]*180)/M_PI << "\n");
+        // }
+        
         // Apply Kalman Filter to smooth the pose estimation
         if (!tvecs.empty()) {
             // Pass all vectors and the current ROS time
             // Returns the filtered pose
-            geometry_msgs::msg::Pose finalestimation = updateKalmanFilter(tvecs, rvecs);
+            geometry_msgs::msg::Pose finalestimation = updateKalmanFilter(combined_tvec, combined_rvec);
 
-            return finalestimation;
+            // Draw axes for debugging
+            // cv::drawFrameAxes(grayImage, camMatrix, distCoeffs, final_rvec, final_tvec, markerLength * 1.5f, 2);
+            cv::imshow("out", grayImage);
+            cv::waitKey(1);
+            outputToCSV(combined_tvec, combined_rvec);
+            return pose_output{finalestimation, combined_rvec[2]*180 / M_PI};
+
             // outputToCSV(tvecs[0], rvecs[0]);
             // return updateKalmanFilter(tvecs, rvecs);
         } else {
+            cv::imshow("out", grayImage);
+            cv::waitKey(1);
             return std::nullopt;
         }
-
-        // // Convert rvecs to quarterion
-        // // NOTE: Assume only 1 tag detected for now
-        // cv::Mat rotation_matrix;
-        // geometry_msgs::msg::Pose pose;
-        // if (markerCorners.size() > 0) {
-        //     cv::Rodrigues(rvecs[0], rotation_matrix);
-
-        // if (rvecs.size() > 0) {
-        //     RCLCPP_INFO_STREAM(get_logger(), "roll vector : " << rvecs[0][0] << "\n");
-        //     RCLCPP_INFO_STREAM(get_logger(), "pitch vector : " << rvecs[0][1] << "\n");
-        //     RCLCPP_INFO_STREAM(get_logger(), "yaw vector : " << rvecs[0][2] << "\n");
-        // }
-
-        // Convert rvecs to quarterion
-        // NOTE: Assume only 1 tag detected for now
-        // cv::Mat rotation_matrix;
-        // geometry_msgs::msg::Pose pose;
-        // if (markerCorners.size() > 0) {
-        //     cv::Rodrigues(rvecs[0], rotation_matrix);
-
-        //     double m00 = rotation_matrix.at<double>(0, 0);
-        //     double m10 = rotation_matrix.at<double>(1, 0);
-        //     double m11 = rotation_matrix.at<double>(1, 1);
-        //     double m12 = rotation_matrix.at<double>(1, 2);
-        //     double m20 = rotation_matrix.at<double>(2, 0);
-        //     double m21 = rotation_matrix.at<double>(2, 1);
-        //     double m22 = rotation_matrix.at<double>(2, 2);
-
-        //     double sy = std::sqrt(m00 * m00 + m10 * m10);
-        //     bool singular = sy < 1e-6;
-
-        //     double roll_rad, pitch_rad, yaw_rad;
-
-        //     if (!singular) {
-        //         roll_rad = std::atan2(m21, m22);
-        //         pitch_rad = std::atan2(-m20, sy);
-        //         yaw_rad = std::atan2(m10, m00);
-        //     } else {
-        //         roll_rad = std::atan2(-m12, m11);
-        //         pitch_rad = std::atan2(-m20, sy);
-        //         yaw_rad = 0;
-        //     }
-
-        //     //convert radians to degrees
-        //     double roll_deg = roll_rad * 180.0 / M_PI;
-        //     double pitch_deg = pitch_rad * 180.0 / M_PI;
-        //     double yaw_deg = yaw_rad * 180.0 / M_PI;
-
-        //     Eigen::Matrix3d eigen_rotation;     
-        //     eigen_rotation << 
-        //         m00, rotation_matrix.at<double>(0, 1), rotation_matrix.at<double>(0, 2),
-        //         m10, m11, m12,
-        //         m20, m21, m22;
-
-        //     Eigen::Quaterniond quat(eigen_rotation);
-        //     quat = Eigen::AngleAxisd(yaw_deg, Eigen::Vector3d::UnitZ())
-        //          * Eigen::AngleAxisd(pitch_deg, Eigen::Vector3d::UnitY())
-        //          * Eigen::AngleAxisd(roll_deg, Eigen::Vector3d::UnitX());
-
-        //     // Create pose message and then return it
-        //     pose.position.x = tvecs[0][0];
-        //     pose.position.y = tvecs[0][1];
-        //     pose.position.z = tvecs[0][2];
-        //     pose.orientation.x = quat.x();
-        //     pose.orientation.y = quat.y();
-        //     pose.orientation.z = quat.z();
-        //     pose.orientation.w = quat.w();
-        // }
     }
 
     // Helper function to convert OpenCV PnP result to Global Camera Position
@@ -325,8 +353,7 @@ namespace mrover{
         return cv::Vec3d(result_pos.x(), result_pos.y(), result_pos.z());
     }
 
-    auto KeyboardTypingNode::updateKalmanFilter(std::vector<cv::Vec3d> const& tvecs,
-                                                std::vector<cv::Vec3d> const& rvecs) -> geometry_msgs::msg::Pose {
+    auto KeyboardTypingNode::updateKalmanFilter(cv::Vec3d& tvec, cv::Vec3d& rvec) -> geometry_msgs::msg::Pose {
         // 1. Get current time from the Node's clock
         rclcpp::Time currentTime = this->get_clock()->now();
 
@@ -334,17 +361,21 @@ namespace mrover{
         if (!filter_initialized_) {
             last_prediction_time_ = currentTime;
             filter_initialized_ = true;
+
+            // Optional: You might want to initialize the state to the first detection
+            // to avoid a long "convergence" time from 0,0,0.
+            // kf.statePost.at<float>(0) = tvec[0]; etc...
+
             return geometry_msgs::msg::Pose();
         }
 
         // 3. Calculate Delta Time (dt)
-        // Subtracting two rclcpp::Time objects returns an rclcpp::Duration
         double dt = (currentTime - last_prediction_time_).seconds();
         
         // Update tracker
         last_prediction_time_ = currentTime;
 
-        // 2. UPDATE TRANSITION MATRIX & PREDICT (ONCE PER FRAME)
+        // 4. PREDICT STEP
         // ------------------------------------------------------
         // Update position rows (x = x + v*dt)
         kf.transitionMatrix.at<float>(0, 3) = dt;
@@ -358,75 +389,69 @@ namespace mrover{
 
         cv::Mat prediction = kf.predict();
 
-        // 3. CORRECTION LOOP (SEQUENTIAL UPDATES)
+        // 5. CORRECTION STEP (Single Tag)
         // ---------------------------------------
-        // We loop through every visible tag and "nudge" the filter
-        for (size_t i = 0; i < tvecs.size(); ++i) {
+        
+        // --- A. Extract Rotation (Rodrigues -> Euler) ---
+        cv::Mat R;
+        cv::Rodrigues(rvec, R); // Using the single input rvec
+        
+        double sy = std::sqrt(R.at<double>(0, 0) * R.at<double>(0, 0) + R.at<double>(1, 0) * R.at<double>(1, 0));
+        bool singular = sy < 1e-6;
+        double measured_roll, measured_pitch, measured_yaw;
 
-            // --- A. Helper: Extract Yaw from Rvec ---
-            cv::Mat R;
-            cv::Rodrigues(rvecs[i], R);
-            double sy = std::sqrt(R.at<double>(0, 0) * R.at<double>(0, 0) + R.at<double>(1, 0) * R.at<double>(1, 0));
-            bool singular = sy < 1e-6;
-            double measured_roll, measured_pitch, measured_yaw;
-
-            if (!singular) {
-                measured_roll = std::atan2(R.at<double>(2, 1), R.at<double>(2, 2));
-                measured_pitch = std::atan2(-R.at<double>(2, 0), sy);
-                measured_yaw = std::atan2(R.at<double>(1, 0), R.at<double>(0, 0));
-            } else {
-                measured_roll = std::atan2(-R.at<double>(1, 2), R.at<double>(1, 1));
-                measured_pitch = std::atan2(-R.at<double>(2, 0), sy);
-                measured_yaw = 0;
-            }
-
-            // --- B. Angle Wrapping (The Fix) ---
-            // Compare measured yaw to the filter's current belief (state index 5 for yaw, 8 for yaw_vel? Check your init)
-            // Based on your init: State is 12 vars.
-            // Indexes: 0=x, 1=y, 2=z... 6=roll, 7=pitch, 8=yaw.
-
-            float current_yaw_state = kf.statePost.at<float>(8); // Index 8 is Yaw position in your state vector
-
-            // Fix for angle clamping
-            while (measured_yaw - current_yaw_state > M_PI) {
-                measured_yaw -= 2.0 * M_PI;
-            }
-
-            while (measured_yaw - current_yaw_state < -M_PI) {
-                measured_yaw += 2.0 * M_PI;
-            }
-
-            // --- C. Dynamic Noise (Trust closer tags more) ---
-            double dist = cv::norm(tvecs[i]);
-
-            // Base noise (0.01) + Distance Penalty.
-            // Far away tags (e.g. 3 meters) get much higher variance.
-            float pos_noise = 0.001f + (0.05f * dist * dist);
-            float ang_noise = 0.01f + (0.1f * dist);
-
-            cv::setIdentity(kf.measurementNoiseCov, cv::Scalar(1));
-            kf.measurementNoiseCov.at<float>(0, 0) = pos_noise;
-            kf.measurementNoiseCov.at<float>(1, 1) = pos_noise;
-            kf.measurementNoiseCov.at<float>(2, 2) = pos_noise;
-            kf.measurementNoiseCov.at<float>(3, 3) = ang_noise;
-            kf.measurementNoiseCov.at<float>(4, 4) = ang_noise;
-            kf.measurementNoiseCov.at<float>(5, 5) = ang_noise;
-
-            // --- D. Build Measurement & Correct ---
-            cv::Mat measurement(6, 1, CV_32F);
-            measurement.at<float>(0) = static_cast<float>(tvecs[i][0]);
-            measurement.at<float>(1) = static_cast<float>(tvecs[i][1]);
-            measurement.at<float>(2) = static_cast<float>(tvecs[i][2]);
-            measurement.at<float>(3) = static_cast<float>(measured_roll);
-            measurement.at<float>(4) = static_cast<float>(measured_pitch);
-            measurement.at<float>(5) = static_cast<float>(measured_yaw);
-
-            // This updates the state immediately, so the next tag in the loop
-            // benefits from this correction.
-            kf.correct(measurement);
+        if (!singular) {
+            measured_roll = std::atan2(R.at<double>(2, 1), R.at<double>(2, 2));
+            measured_pitch = std::atan2(-R.at<double>(2, 0), sy);
+            measured_yaw = std::atan2(R.at<double>(1, 0), R.at<double>(0, 0));
+        } else {
+            measured_roll = std::atan2(-R.at<double>(1, 2), R.at<double>(1, 1));
+            measured_pitch = std::atan2(-R.at<double>(2, 0), sy);
+            measured_yaw = 0;
         }
 
-        // 4. EXPORT FINAL STATE TO POSE
+        // --- B. Angle Wrapping ---
+        // Get current Yaw state (Index 8)
+        float current_yaw_state = kf.statePost.at<float>(8); 
+
+        // Prevent 'jumps' when crossing PI/-PI boundaries
+        while (measured_yaw - current_yaw_state > M_PI) {
+            measured_yaw -= 2.0 * M_PI;
+        }
+
+        while (measured_yaw - current_yaw_state < -M_PI) {
+            measured_yaw += 2.0 * M_PI;
+        }
+
+        // --- C. Dynamic Noise (Trust closer tags more) ---
+        double dist = cv::norm(tvec); // Using the single input tvec
+
+        // Base noise + Distance Penalty
+        float pos_noise = 0.001f + (0.05f * dist * dist);
+        float ang_noise = 0.01f + (0.1f * dist);
+
+        cv::setIdentity(kf.measurementNoiseCov, cv::Scalar(1));
+        kf.measurementNoiseCov.at<float>(0, 0) = pos_noise;
+        kf.measurementNoiseCov.at<float>(1, 1) = pos_noise;
+        kf.measurementNoiseCov.at<float>(2, 2) = pos_noise;
+        kf.measurementNoiseCov.at<float>(3, 3) = ang_noise;
+        kf.measurementNoiseCov.at<float>(4, 4) = ang_noise;
+        kf.measurementNoiseCov.at<float>(5, 5) = ang_noise;
+
+        // --- D. Build Measurement & Correct ---
+        cv::Mat measurement(6, 1, CV_32F);
+        measurement.at<float>(0) = static_cast<float>(tvec[0]);
+        measurement.at<float>(1) = static_cast<float>(tvec[1]);
+        measurement.at<float>(2) = static_cast<float>(tvec[2]);
+        measurement.at<float>(3) = static_cast<float>(measured_roll);
+        measurement.at<float>(4) = static_cast<float>(measured_pitch);
+        measurement.at<float>(5) = static_cast<float>(measured_yaw);
+
+        // Perform the correction with the single measurement
+        kf.correct(measurement);
+
+
+        // 6. EXPORT FINAL STATE TO POSE
         // -----------------------------
         geometry_msgs::msg::Pose filtered_pose;
 
@@ -440,7 +465,6 @@ namespace mrover{
         double final_pitch = kf.statePost.at<float>(7);
         double final_yaw = kf.statePost.at<float>(8);
 
-        // Using Eigen for clean RPY -> Quat conversion
         Eigen::Quaterniond q;
         q = Eigen::AngleAxisd(final_yaw, Eigen::Vector3d::UnitZ()) *
             Eigen::AngleAxisd(final_pitch, Eigen::Vector3d::UnitY()) *
@@ -450,25 +474,10 @@ namespace mrover{
         filtered_pose.orientation.y = q.y();
         filtered_pose.orientation.z = q.z();
         filtered_pose.orientation.w = q.w();
-
+        
         return filtered_pose;
     }
 
-    // auto KeyboardTypingNode::outputToCSV(cv::Vec3d &tvec, cv::Vec3d &rvec) -> void {
-    //     std::fstream fout;
-    //     fout.open("perception/keyboard_typing/csv_camera_output/test.csv", std::ios::out | std::ios::app);
-    //     if (fout.is_open()) {
-    //         double x = tvec[0];
-    //         double y = tvec[1];
-    //         double z = tvec[2];
-    //         double roll = rvec[0] * 180.0 / M_PI;
-    //         double pitch = rvec[1] * 180.0 / M_PI;
-    //         double yaw = rvec[2] * 180.0 / M_PI;
-    //         fout << x << "," << y << "," << z << ","
-    //         << roll << "," << pitch << "," << yaw << "," << std::endl;
-    //         fout.close();
-    //     }
-    // }
     auto KeyboardTypingNode::outputToCSV(cv::Vec3d &tvec, cv::Vec3d &rvec) -> void {
         static bool is_first_run = true; // Runs only once per program execution
         std::string path = "perception/keyboard_typing/csv_camera_output/test.csv";
