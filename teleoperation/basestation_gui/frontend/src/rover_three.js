@@ -8,6 +8,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 // import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js'
 //import { TrackballControls } from 'three/addons/controls/TrackballControls.js'
 import * as Text2D from 'three/addons/webxr/Text2D.js' //DEBUG
+import { rand } from 'three/tsl'
 
 const defaultJointValues = {
   chassis_to_arm_a: 24.14,
@@ -27,6 +28,14 @@ let current_camera_type = "default"
 const costMapBlockWidth = 80
 const numCostMapBlocks = 20
 const costMapGridOffset = costMapBlockWidth * (numCostMapBlocks/2)
+
+
+// Create a canvas and context
+const textCanvas = document.createElement('canvas');
+textCanvas.width = 2400;//1280;
+textCanvas.height = 2400;//1280;
+const textCanvasContext = textCanvas.getContext('2d');
+const textCanvasTexture = new THREE.CanvasTexture(textCanvas);
 
 //[Box Mesh, Text2D]
 let costMapBlocks = []
@@ -81,10 +90,10 @@ export default function threeSetup() {
         emissiveIntensity: 0.3,*/
       })
       
-      costMapBlocks.push([new THREE.Mesh(currentGeometry, currentMaterial), Text2D.createText("0", costMapBlockWidth / 2)])
+      costMapBlocks.push([new THREE.Mesh(currentGeometry, currentMaterial), Text2D.createText("", costMapBlockWidth / 2)])
 
-      const current_x = i * costMapBlockWidth - costMapGridOffset
-      const current_z =  j * costMapBlockWidth - costMapGridOffset
+      const current_x = j * costMapBlockWidth - costMapGridOffset
+      const current_z =  i * costMapBlockWidth - costMapGridOffset
 
       costMapBlocks[idx][0].position.x = current_x
       costMapBlocks[idx][0].position.y = -50
@@ -99,6 +108,41 @@ export default function threeSetup() {
       scene.add(costMapBlocks[idx][1])
     }
   }
+
+  //Initialize Text
+  // Initial text rendering
+  let currentTextSize = Math.round(costMapBlockWidth * 0.3)
+  textCanvasContext.fillStyle = 'white';
+  textCanvasContext.font = currentTextSize + 'px Arial';
+  
+  //TODO this is a meh way of doing this
+  let tempGridData = []
+  for(let i = 0; i < costMapBlockWidth * costMapBlockWidth; i++){
+    tempGridData.push(i)
+  }
+
+  fillTextCanvas(tempGridData)
+
+  // for(let i = 0; i < numCostMapBlocks; i++){
+  //   for(let j = 0; j < numCostMapBlocks; j++){
+  //     textCanvasContext.fillText('0', 10 + j * costMapBlockWidth, 500 + i * costMapBlockWidth)
+  //   }
+  // }
+
+  //textCanvasContext.fillText('Initial Text', 10, 500);
+  //textCanvasContext.fillText('And me too!', 10, 500 + currentTextSize);
+
+  // Create a texture from the canvas
+  let textPlaneSideLength = 2400//costMapBlockWidth * numCostMapBlocks
+  const textCanvasMaterial = new THREE.MeshBasicMaterial({ map: textCanvasTexture, transparent: true });
+  const textCanvasPlane = new THREE.Mesh(new THREE.PlaneGeometry(textPlaneSideLength, textPlaneSideLength), textCanvasMaterial);
+  //textCanvasPlane.position.x = 50
+  textCanvasPlane.position.x = costMapGridOffset/2
+  textCanvasPlane.position.z = -costMapGridOffset/8
+  textCanvasPlane.lookAt(costMapGridOffset/2, 50, -costMapGridOffset/8)
+  textCanvasPlane.position.y = -49
+  scene.add(textCanvasPlane);
+
 
 
   const manager = new THREE.LoadingManager()
@@ -415,15 +459,45 @@ export function set_camera_type(new_type) {
 
 // updateCostMapGrid([1])
 
-export function updateCostMapGrid(grid_data){
+/*Fills the textCanvas with values according to gridData
+Note that it does not clear the canvas, nor marks it for update*/
+function fillTextCanvas(gridData){
+  for(let i = 0; i < numCostMapBlocks; i++){
+    for(let j = 0; j < numCostMapBlocks; j++){
+      textCanvasContext.fillText(gridData[(i * numCostMapBlocks) + j], 10 + j * costMapBlockWidth, 500 + i * costMapBlockWidth)
+    }
+  }
+}
+
+export function updateCostMapGrid(gridData){
+  let tempGridData = []
+  for(let i = 0; i < costMapBlockWidth * costMapBlockWidth; i++){
+    tempGridData.push(Math.round(Math.random() * 100))
+  }
+  
   for(let i = 0; i < numCostMapBlocks * numCostMapBlocks; i++){
+    
+    const newColor = new THREE.Color(tempGridData[i] * 0.01, 1 - tempGridData[i] * 0.01, 0)
+
     const newMaterial = new THREE.MeshStandardMaterial({
-    color: 0xfff000
+    color: newColor//0xfff000
     })
 
     costMapBlocks[i][0].material = newMaterial
     costMapBlocks[i][1].text = "67"
+    
   }
+
+  textCanvasContext.clearRect(0, 0, textCanvas.width, textCanvas.height);
+  // textCanvasContext.fillText('hkashjkdgahuaishuihsdhakshdkhashjdhuisah', 10, 50);
+  // for(let i = 0; i < numCostMapBlocks; i++){
+  //   for(let j = 0; j < numCostMapBlocks; j++){
+  //     textCanvasContext.fillText('67', 10 + j * costMapBlockWidth, 500 + i * costMapBlockWidth)
+  //   }
+  // }
+  
+  fillTextCanvas(tempGridData)
+  textCanvasTexture.needsUpdate = true;
 }
 
 // export function fk(positions, scene, joints) {
