@@ -96,7 +96,7 @@ onBeforeUnmount(() => {
 })
 
 const armMessage = computed(() => messages.value['arm'])
-const costMapMessage = computed(() => messages.value['costmap'])
+const contextMessage = computed(() => messages.value['context'])
 
 watch(armMessage, (msg: unknown) => {
   if (!msg || typeof msg !== 'object') return
@@ -131,12 +131,12 @@ watch(armMessage, (msg: unknown) => {
   }
 })
 
-watch(costMapMessage, (msg: unknown) => {
-  if (!msg || typeof msg !== 'object') return
-
-  if('data' in msg){
-    const typedMsg = msg
+watch(contextMessage, (msg: unknown) => {
+  if (typeof msg == 'object' && msg !== null && 'type' in msg) {
+    const typedMsg = msg as { type: string; state?: string }
+    if (typedMsg.type === 'costmap') {
+      console.log("hi")
+    }
   }
-
 })
 </script>
