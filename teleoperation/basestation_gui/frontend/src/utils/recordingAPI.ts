@@ -17,8 +17,16 @@ export const recordingAPI = {
     return response.json()
   },
 
+  async stop(): Promise<APIResponse> {
+    const response = await fetch(`${API_BASE}/recordings/stop/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    })
+    return response.json()
+  },
+
   async addWaypoint(recordingId: number, lat: number, lon: number, sequence: number): Promise<APIResponse> {
-    const response = await fetch(`${API_BASE}/recordings/${recordingId}/add/`, {
+    const response = await fetch(`${API_BASE}/recordings/${recordingId}/waypoints/`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ lat, lon, sequence })

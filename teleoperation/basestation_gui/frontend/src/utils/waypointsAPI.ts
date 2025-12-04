@@ -47,13 +47,13 @@ export const waypointsAPI = {
     const response = await fetch(`${API_BASE}/waypoints/auton/current/save/`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ course })
+      body: JSON.stringify({ waypoints: course })
     })
     return response.json()
   },
 
   async deleteAutonWaypoint(waypoint: AutonWaypoint): Promise<DeleteWaypointResponse> {
-    const response = await fetch(`${API_BASE}/waypoints/auton/${waypoint.id}/`, {
+    const response = await fetch(`${API_BASE}/waypoints/auton/${waypoint.db_id}/`, {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(waypoint)

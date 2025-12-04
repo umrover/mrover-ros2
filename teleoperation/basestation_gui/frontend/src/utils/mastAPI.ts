@@ -8,6 +8,14 @@ export const mastAPI = {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' }
     })
+    
+    if (!response.ok) {
+      const data = await response.json()
+      const error_message = data["message"]
+      console.log(error_message)
+      return { status: 'error', message: `${error_message}` }
+    }
+
     return response.json()
   },
 
@@ -16,6 +24,14 @@ export const mastAPI = {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' }
     })
+
+    if (!response.ok) {
+      const data = await response.json()
+      const error_message = data["message"]
+      console.log(error_message)
+      return { status: 'error', message: `${error_message}` }
+    }
+
     return response.json()
   }
 }
