@@ -124,19 +124,18 @@
 - name: Update rosdep
   command: rosdep update
 
-- name: Download Bun Installer
-  get_url:
-    url: https://bun.sh/install
-    dest: /tmp/bun_installer.sh
-    mode: 0755
-
-- name: Run Bun Installer
-  command: /tmp/bun_installer.sh
+- name: Install Bun
+  become: True
+  shell: curl -fsSL https://bun.sh/install | bash
+  environment:
+    BUN_INSTALL: /usr/local
   args:
-    creates: ~/.bun/bin/bun
+    creates: /usr/local/bin/bun
 
 - name: Install Bun Packages
-  command: ~/.bun/bin/bun install --cwd {{ ros2_workspace }}/src/mrover/teleoperation/basestation_gui/frontend
+  command: bun install
+  args:
+    chdir: "{{ ros2_workspace }}/src/mrover/teleoperation/basestation_gui/frontend"
 
 - name: Set G++ 13 as Default
   become: True
