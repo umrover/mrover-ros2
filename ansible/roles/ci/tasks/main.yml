@@ -68,8 +68,7 @@
       - ninja-build # Faster than make
       # - tmux
       # - htop
-      # - curl
-      # - unzip
+      - curl
       - rsync
       - python3-pip
       - python3-dev
@@ -123,20 +122,6 @@
 
 - name: Update rosdep
   command: rosdep update
-
-- name: Download Bun Installer
-  get_url:
-    url: https://bun.sh/install
-    dest: /tmp/bun_installer.sh
-    mode: 0755
-
-- name: Run Bun Installer
-  command: /tmp/bun_installer.sh
-  args:
-    creates: ~/.bun/bin/bun
-
-- name: Install Bun Packages
-  command: ~/.bun/bin/bun install --cwd {{ ros2_workspace }}/src/mrover/teleoperation/basestation_gui/frontend
 
 - name: Set G++ 13 as Default
   become: True
