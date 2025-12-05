@@ -2,7 +2,9 @@
 #include "lie.hpp"
 #include <cmath>
 #include <geometry_msgs/msg/detail/pose__struct.hpp>
+#include <geometry_msgs/msg/detail/vector3__struct.hpp>
 #include <opencv2/core/eigen.hpp>
+#include "mrover/msg/detail/ik__struct.hpp"
 #include "mrover/msg/detail/keyboard_yaw__struct.hpp"
 #include <cmath>
 #include <functional>
@@ -17,6 +19,8 @@
 #include <rclcpp/logging.hpp>
 #include <unordered_map>
 #include <fstream>
+#include <geometry_msgs/msg/vector3.hpp>
+#include <mrover/msg/ik.hpp>
 
 namespace mrover{
     KeyboardTypingNode::KeyboardTypingNode(rclcpp::NodeOptions const& options) : rclcpp::Node("keyboard_typing_node", options),  mLoopProfiler{get_logger()}
@@ -83,11 +87,14 @@ namespace mrover{
 
         // create publisher
         mCostMapPub = this->create_publisher<msg::KeyboardYaw>("/keypose/yaw", rclcpp::QoS(1));
+        mIKPub = this->create_publisher<msg::IK>("ee_pos_cmd",rclcpp::QoS(1));
     }
 
     auto KeyboardTypingNode::yawCallback(sensor_msgs::msg::Image::ConstSharedPtr const& msg) -> void {
         RCLCPP_INFO_STREAM(get_logger(), "callback");
         std::optional<geometry_msgs::msg::Pose> pose = estimatePose(msg);
+        sendIKCommand(1.2, .28, .19, 0, 0);
+
 
         // extract yaw into a quarterian and then publish to mCostMapPub
     }
@@ -327,6 +334,7 @@ namespace mrover{
 
     auto KeyboardTypingNode::updateKalmanFilter(std::vector<cv::Vec3d> const& tvecs,
                                                 std::vector<cv::Vec3d> const& rvecs) -> geometry_msgs::msg::Pose {
+
         // 1. Get current time from the Node's clock
         rclcpp::Time currentTime = this->get_clock()->now();
 
@@ -454,21 +462,21 @@ namespace mrover{
         return filtered_pose;
     }
 
-    // auto KeyboardTypingNode::outputToCSV(cv::Vec3d &tvec, cv::Vec3d &rvec) -> void {
-    //     std::fstream fout;
-    //     fout.open("perception/keyboard_typing/csv_camera_output/test.csv", std::ios::out | std::ios::app);
-    //     if (fout.is_open()) {
-    //         double x = tvec[0];
-    //         double y = tvec[1];
-    //         double z = tvec[2];
-    //         double roll = rvec[0] * 180.0 / M_PI;
-    //         double pitch = rvec[1] * 180.0 / M_PI;
-    //         double yaw = rvec[2] * 180.0 / M_PI;
-    //         fout << x << "," << y << "," << z << ","
-    //         << roll << "," << pitch << "," << yaw << "," << std::endl;
-    //         fout.close();
-    //     }
-    // }
+    auto KeyboardTypingNode::sendIKCommand(float x, float y, float z, float pitch, float roll) -> void {
+        if(!mIKPub){
+            RCLCPP_ERROR(get_logger(), "IK publisher not initialized");
+        }
+        msg::IK message;
+        message.pos.x = x;
+        message.pos.y = y;
+        message.pos.z = z;
+        message.pitch = pitch;
+        message.roll = roll;
+        mIKPub->publish(message);
+
+        RCLCPP_INFO(get_logger(), "Published IK Command {x=%.3f, y=%.3f, z=%.3f}", x, y, z);
+    }
+
     auto KeyboardTypingNode::outputToCSV(cv::Vec3d &tvec, cv::Vec3d &rvec) -> void {
         static bool is_first_run = true; // Runs only once per program execution
         std::string path = "perception/keyboard_typing/csv_camera_output/test.csv";

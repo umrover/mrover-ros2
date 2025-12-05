@@ -1,6 +1,11 @@
 #pragma once
 
+#include "mrover/msg/detail/ik__struct.hpp"
 #include "pch.hpp"
+#include <geometry_msgs/msg/detail/vector3__struct.hpp>
+#include <rclcpp/publisher.hpp>
+#include <geometry_msgs/msg/vector3.hpp>
+#include <mrover/msg/ik.hpp>
 // #include "constants.h"
 namespace mrover{
     class KeyboardTypingNode : public rclcpp::Node{
@@ -12,6 +17,7 @@ namespace mrover{
 
         // Can pub to any topic just make the name make sense
         rclcpp::Publisher<msg::KeyboardYaw>::SharedPtr mCostMapPub;
+        rclcpp::Publisher<msg::IK>::SharedPtr mIKPub;
 
         // Tag offsets
         std::unordered_map<int, cv::Vec3d> offset_map;
@@ -34,6 +40,8 @@ namespace mrover{
         auto getGlobalCameraPosition(cv::Vec3d const& rvec, cv::Vec3d const& tvec, cv::Vec3d const& tag_offset_world) -> cv::Vec3d;
 
         auto estimatePose(sensor_msgs::msg::Image::ConstSharedPtr const& msg) -> std::optional<geometry_msgs::msg::Pose>;
+
+        auto sendIKCommand(float x, float y, float z, float pitch, float roll) -> void;
 
         auto yawCallback(sensor_msgs::msg::Image::ConstSharedPtr const& msg) -> void;
 
