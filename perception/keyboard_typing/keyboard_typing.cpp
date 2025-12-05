@@ -69,7 +69,7 @@ namespace mrover{
         );
     
         // Process noise covariance (model uncertainty)
-        cv::setIdentity(kf.processNoiseCov, cv::Scalar(1e-10));
+        cv::setIdentity(kf.processNoiseCov, cv::Scalar(1e-4));
         
         // Measurement noise covariance (sensor uncertainty)
         cv::setIdentity(kf.measurementNoiseCov, cv::Scalar(1e-2));
@@ -265,15 +265,15 @@ namespace mrover{
         }
 
         // Offset the poses to origin
-        for (size_t i = 0; i < tvecs.size(); ++i) {
-            // Check if the detected tag ID exists in our offset map
-            if (offset_map.find(ids[i]) != offset_map.end()) {
-                auto tag_offset_world = offset_map.at(ids[i]);
-                tvecs[i] = getGlobalCameraPosition(rvecs[i], tvecs[i], tag_offset_world);
-            } else {
-                RCLCPP_WARN(get_logger(), "Tag ID %d not found in offset_map, skipping offset", ids[i]);
-            }
-        }
+        // for (size_t i = 0; i < tvecs.size(); ++i) {
+        //     // Check if the detected tag ID exists in our offset map
+        //     if (offset_map.find(ids[i]) != offset_map.end()) {
+        //         auto tag_offset_world = offset_map.at(ids[i]);
+        //         tvecs[i] = getGlobalCameraPosition(rvecs[i], tvecs[i], tag_offset_world);
+        //     } else {
+        //         RCLCPP_WARN(get_logger(), "Tag ID %d not found in offset_map, skipping offset", ids[i]);
+        //     }
+        // }
 
 
         // Print rotation and translation sanity check
@@ -300,11 +300,15 @@ namespace mrover{
             // Returns the filtered pose
             geometry_msgs::msg::Pose finalestimation = updateKalmanFilter(combined_tvec, combined_rvec);
 
+            // Draw after kalman filter
+            cv::drawFrameAxes(grayImage, camMatrix, distCoeffs, combined_rvec, combined_tvec, markerLength * 3.0f, 4);
+
             // Draw axes for debugging
             // cv::drawFrameAxes(grayImage, camMatrix, distCoeffs, final_rvec, final_tvec, markerLength * 1.5f, 2);
             cv::imshow("out", grayImage);
             cv::waitKey(1);
             outputToCSV(combined_tvec, combined_rvec);
+
             return pose_output{finalestimation, combined_rvec[2]*180 / M_PI};
 
             // outputToCSV(tvecs[0], rvecs[0]);
@@ -469,6 +473,15 @@ namespace mrover{
         filtered_pose.orientation.y = q.y();
         filtered_pose.orientation.z = q.z();
         filtered_pose.orientation.w = q.w();
+
+        // Update combined tvecs and rvecs
+        tvec[0] = filtered_pose.position.x;
+        tvec[1] = filtered_pose.position.y;
+        tvec[2] = filtered_pose.position.z;
+
+        rvec[0] = final_roll;
+        rvec[1] = final_pitch;
+        rvec[2] = final_yaw;
         
         return filtered_pose;
     }
