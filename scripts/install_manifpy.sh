@@ -15,7 +15,7 @@ cd "$TEMP_DIR"
 git clone https://github.com/artivis/manif.git
 cd manif
 
-python3 -m pip install .
+python3 -m pip install --ignore-installed .
 
 cd /
 rm -rf "$TEMP_DIR"
