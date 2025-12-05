@@ -294,7 +294,7 @@ namespace mrover{
         //     RCLCPP_INFO_STREAM(get_logger(), "pitch vector : " << (rvecs[0][1]*180)/M_PI << "\n");
         //     RCLCPP_INFO_STREAM(get_logger(), "yaw vector : " << (rvecs[0][2]*180)/M_PI << "\n");
         // }
-        
+
         // Apply Kalman Filter to smooth the pose estimation
         if (!tvecs.empty()) {
             // Pass all vectors and the current ROS time
