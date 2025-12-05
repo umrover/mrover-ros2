@@ -127,7 +127,7 @@
 
 - name: Build and Install Manif
   become: True
-  command: ./scripts/build_manif.sh
+  command: ./scripts/install_manifpy.sh
   args:
     chdir: "{{ ansible_env.HOME }}/ros2_ws/src/mrover/"
 
