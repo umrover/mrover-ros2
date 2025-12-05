@@ -275,25 +275,6 @@ namespace mrover{
             }
         }
 
-
-        // Print rotation and translation sanity check
-        // if (tvecs.size() > 0) {
-        //     auto x = tvecs[0][0];
-        //     auto y = tvecs[0][1];
-        //     auto z = tvecs[0][2];
-        //     RCLCPP_INFO_STREAM(get_logger(), "tag id" << ids[0] << "\n");
-        //     RCLCPP_INFO_STREAM(get_logger(), "x vector : " << x << "\n");
-        //     RCLCPP_INFO_STREAM(get_logger(), "y vector : " << y << "\n");
-        //     RCLCPP_INFO_STREAM(get_logger(), "z vector : " << z << "\n");
-        //     RCLCPP_INFO_STREAM(get_logger(), "distance : " << std::sqrt(x*x + y*y + z*z) << "\n");
-        // }
-
-        // if (rvecs.size() > 0) {
-        //     RCLCPP_INFO_STREAM(get_logger(), "roll vector : " << (rvecs[0][0]*180)/M_PI << "\n");
-        //     RCLCPP_INFO_STREAM(get_logger(), "pitch vector : " << (rvecs[0][1]*180)/M_PI << "\n");
-        //     RCLCPP_INFO_STREAM(get_logger(), "yaw vector : " << (rvecs[0][2]*180)/M_PI << "\n");
-        // }
-
         // Apply Kalman Filter to smooth the pose estimation
         if (!tvecs.empty()) {
             // Pass all vectors and the current ROS time
