@@ -200,7 +200,7 @@ class SearchTrajectory(Trajectory):
            # so, this is simply the starting angle that the rover would begin its inward spiral at.
            starting_angle = np.arctan2(closest_radius_point[1] - center[1], closest_radius_point[0] - center[0])
            zero_centered_spiral_r2 = cls.gen_spiral_coordinates(
-               coverage_radius,
+               inward_begin,
                distance_between_spirals,
                segments_per_rotation,
                insert_extra,

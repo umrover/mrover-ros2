@@ -305,14 +305,19 @@ class CostmapSearchState(State):
         distance_from_center = np.linalg.norm(rover_position_r[:2]-center_r[:2])
         
         enable_inward = False
+        coverage_radius_in = context.node.get_parameter("search.coverage_radius").value
         
         if context.course.current_waypoint().coverage_radius > 0 and distance_from_center > 0.5 * context.course.current_waypoint().coverage_radius:
             enable_inward = True
+        
+        if context.course.current_waypoint().coverage_radius > 0:
+            coverage_radius_in = context.course.current_waypoint().coverage_radius
+
 
         if not self.is_recovering:
             self.spiral_traj = SearchTrajectory.spiral_traj(
                 center=context.course.current_waypoint_pose_in_map().translation()[0:2],
-                coverage_radius=context.node.get_parameter("search.coverage_radius").value,
+                coverage_radius=coverage_radius_in,
                 distance_between_spirals=context.node.get_parameter("search.distance_between_spirals").value,
                 segments_per_rotation=context.node.get_parameter("search.segments_per_rotation").value,
                 #max_segment_length=context.node.get_parameter("search.max_segment_length").value,
