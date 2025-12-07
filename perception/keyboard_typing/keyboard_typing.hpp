@@ -53,7 +53,9 @@ namespace mrover{
         // Change the function signature to accept vectors
         auto updateKalmanFilter(cv::Vec3d &tvec, cv::Vec3d &rvec) -> geometry_msgs::msg::Pose;
 
-        auto getGlobalCameraPosition(cv::Vec3d const& rvec, cv::Vec3d const& tvec, cv::Vec3d const& tag_offset_world) -> cv::Vec3d;
+        auto getKeyToCameraTransform(cv::Vec3d const& rvec,
+                                     cv::Vec3d const& tvec,
+                                     cv::Vec3d const& tag_offset_key) -> cv::Mat;
 
 
         auto sendIKCommand(float x, float y, float z, float pitch, float roll) -> void;

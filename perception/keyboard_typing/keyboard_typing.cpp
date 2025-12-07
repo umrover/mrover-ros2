@@ -320,36 +320,37 @@ namespace mrover{
         }
     }
 
-    // Helper function to convert OpenCV PnP result to Global Camera Position
-    // Returns: Vector3d representing Camera Position in World Frame
-    auto KeyboardTypingNode::getGlobalCameraPosition(cv::Vec3d const& rvec,
-                                 cv::Vec3d const& tvec,
-                                 cv::Vec3d const& tag_offset_world) -> cv::Vec3d {
-        // 1. Convert OpenCV Inputs to Eigen types
-        // --------------------------------------
-        // Translation: cv::Vec3d -> Eigen::Vector3d
-        Eigen::Vector3d t_c_t(tvec[0], tvec[1], tvec[2]);
-
-        // Rotation: cv::Vec3d (Rodrigues) -> cv::Mat -> Eigen::Matrix3d
+    auto KeyboardTypingNode::getKeyToCameraTransform(cv::Vec3d const& rvec,
+                                                 cv::Vec3d const& tvec,
+                                                 cv::Vec3d const& tag_offset_key) -> cv::Mat {
+        
+        // 1. Define "Tag in Camera" (T_cam_tag)
+        // Isometry3d is a 4x4 matrix specifically for rigid transforms (Rotation + Translation)
+        Eigen::Isometry3d T_cam_tag = Eigen::Isometry3d::Identity();
+        
+        // Transform the rvec into eigen rotation matrix
         cv::Mat R_cv;
         cv::Rodrigues(rvec, R_cv);
+        Eigen::Matrix3d R_eigen;
+        cv::cv2eigen(R_cv, R_eigen);
+        
+        // Set Rotation
+        T_cam_tag.linear() = R_eigen;  
+        // Set Translation   
+        T_cam_tag.translation() = Eigen::Vector3d(tvec[0], tvec[1], tvec[2]);
 
-        Eigen::Matrix3d R_c_t;
-        cv::cv2eigen(R_cv, R_c_t);
+        // Transform from tag to key (only translation since on same plane as keyboard)
+        Eigen::Isometry3d T_key_tag = Eigen::Isometry3d::Identity();
+        T_key_tag.translation() = Eigen::Vector3d(tag_offset_key[0], tag_offset_key[1], tag_offset_key[2]);
 
-        // Calculate Camera Position in Tag Frame
-        // The transform from Tag to Camera is T_c_t = [R_c_t | t_c_t]
-        // We want the inverse transform T_t_c = [R_c_t^T | -R_c_t^T * t_c_t]
-        // The camera position in tag frame is the translation part of T_t_c
-        Eigen::Vector3d p_cam_in_tag = -R_c_t.transpose() * t_c_t;
+        // Logic: Camera <-- Tag <-- Key
+        // Math:  T_cam_key = T_cam_tag * T_key_tag.inverse()
+        Eigen::Isometry3d T_cam_key = T_cam_tag * T_key_tag.inverse();
 
-        // Calculate Camera Position in World Frame
-        // We assume the tag is axis-aligned with the world (Identity rotation)
-        // So we just add the tag's world offset
-        Eigen::Vector3d t_offset(tag_offset_world[0], tag_offset_world[1], tag_offset_world[2]);
-        Eigen::Vector3d p_cam_in_world = p_cam_in_tag + t_offset;
-
-        return cv::Vec3d(p_cam_in_world.x(), p_cam_in_world.y(), p_cam_in_world.z());
+        // OpenCV Matrix
+        cv::Mat T_out;
+        cv::eigen2cv(T_cam_key.matrix(), T_out);
+        return T_out;
     }
 
     auto KeyboardTypingNode::updateKalmanFilter(cv::Vec3d& tvec, cv::Vec3d& rvec) -> geometry_msgs::msg::Pose {
