@@ -35,9 +35,7 @@ export default defineComponent({
         '/AutonTask': 'Autonomy Mission',
         '/DMTask': 'Delivery Mission',
         '/ESTask': 'Equipment Servicing',
-        '/Cameras': 'Camera View',
-        '/SPTask' : "Science Payload",
-        '/dev': 'Development View'
+        '/ScienceTask' : "Science Mission",
       };
 
       return routeTitles[path] || 'Unknown Path';

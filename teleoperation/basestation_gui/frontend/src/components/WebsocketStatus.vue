@@ -5,17 +5,11 @@
       class="justify-content-center align-items-center border border-2 rounded px-1 me-1"
     >
       <div class="d-flex align-items-center gap-2">
-        <div
-          class="rounded-circle bg-success"
-          style="width: 16px; height: 16px"
-        ></div>
+        <IndicatorDot :is-active="true" />
         <span class="fw-semibold">= TX</span>
       </div>
       <div class="d-flex align-items-center gap-2">
-        <div
-          class="rounded-circle bg-danger"
-          style="width: 16px; height: 16px"
-        ></div>
+        <IndicatorDot :is-active="false" />
         <span class="fw-semibold">= RX</span>
       </div>
     </div>
@@ -47,36 +41,26 @@
   </div>
 </template>
 
-<script lang="ts">
-import { defineComponent } from 'vue'
+<script lang="ts" setup>
 import { useWebsocketStore } from '@/stores/websocket'
 import { storeToRefs } from 'pinia'
+import IndicatorDot from './IndicatorDot.vue'
 
-export default defineComponent({
-  setup() {
-    const websocketStore = useWebsocketStore()
-    const { connectionStatus } = storeToRefs(websocketStore)
+const websocketStore = useWebsocketStore()
+const { connectionStatus } = storeToRefs(websocketStore)
+const { isFlashingIn, isFlashingOut } = websocketStore
 
-    const aliasMap: Record<string, string> = {
-      arm: 'arm',
-      auton: 'auton',
-      drive: 'drive',
-      mast: 'mast',
-      nav: 'nav',
-      science: 'sci',
-      waypoints: 'wypt',
-    }
+const aliasMap: Record<string, string> = {
+  arm: 'arm',
+  drive: 'drive',
+  chassis: 'cha',
+  nav: 'nav',
+  science: 'sci',
+  latency: 'lat',
+  recording: 'rec',
+}
 
-    const getAlias = (id: string): string => {
-      return aliasMap[id] || id
-    }
-
-    return {
-      connectionStatus,
-      isFlashingIn: websocketStore.isFlashingIn,
-      isFlashingOut: websocketStore.isFlashingOut,
-      getAlias,
-    }
-  },
-})
+const getAlias = (id: string): string => {
+  return aliasMap[id] || id
+}
 </script>

@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import { encode, decode } from '@msgpack/msgpack'
 
 const webSockets: Record<string, WebSocket> = {}
 const flashTimersIn: Record<string, ReturnType<typeof setTimeout>> = {}
@@ -28,7 +29,7 @@ function debounceFlashClear(id: string, type: 'in' | 'out', store: WebsocketStor
       store.clearFlashOut(id)
     }
     delete timers[id]
-  }, 100)
+  }, 200)
 }
 
 function setupWebsocket(id: string, store: WebsocketStoreActions) {
@@ -42,7 +43,8 @@ function setupWebsocket(id: string, store: WebsocketStoreActions) {
     return
   }
 
-  const socket = new WebSocket(`ws://localhost:8000/ws/${id}`)
+  const socket = new WebSocket(`ws://localhost:8000/${id}`)
+  socket.binaryType = 'arraybuffer'
 
   socket.onopen = () => {
     console.log(`WebSocket ${id} Connected`)
@@ -50,7 +52,7 @@ function setupWebsocket(id: string, store: WebsocketStoreActions) {
   }
 
   socket.onmessage = event => {
-    const message = JSON.parse(event.data)
+    const message = decode(new Uint8Array(event.data))
     store.setMessage(id, message)
     store.setLastIncomingActivity(id, Date.now())
     store.setFlashIn(id, true)
@@ -147,7 +149,8 @@ export const useWebsocketStore = defineStore('websocket', () => {
       console.log('websocket ' + id + ' not ready')
       return
     }
-    socket.send(JSON.stringify(message))
+    const packed = encode(message)
+    socket.send(packed)
   }
 
   function setupWebSocket(id: string) {

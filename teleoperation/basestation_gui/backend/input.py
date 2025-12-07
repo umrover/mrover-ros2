@@ -42,11 +42,12 @@ def filter_input(value: float, deadzone: float = 0.1, quadratic: bool = False, s
     return value
 
 
-def safe_index(values: list[float], index: Enum) -> float:
-    return values[index.value] if values else 0.0
+def safe_index(values: list[float], index: Enum | int) -> float:
+    idx = index.value if isinstance(index, Enum) else index
+    return values[idx] if values and idx < len(values) else 0.0
 
 
-def simulated_axis(axes: list[float], positive_index: Enum, negative_index: Enum) -> float:
+def simulated_axis(axes: list[float], positive_index: Enum | int, negative_index: Enum | int) -> float:
     """
     Simulate a single axis from two buttons.
     """
