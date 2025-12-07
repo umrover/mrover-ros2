@@ -1,9 +1,12 @@
 import { createApp } from 'vue'
+import { createPinia } from 'pinia'
 import App from './App.vue'
 import router from './router'
-import { store } from './store'
 
-import './app.scss' //custom CSS override file
+import 'bootstrap-icons/font/bootstrap-icons.css'
+import './app.scss'
 
-const app: App<Element> = createApp(App)
-app.use(router).use(store).mount('#app')
+const app = createApp(App)
+const pinia = createPinia()
+
+app.use(router).use(pinia).mount('#app')

@@ -405,6 +405,7 @@ install(PROGRAMS
     scripts/ik_testing.py
     teleoperation/basestation_gui/gui_frontend.sh
     teleoperation/basestation_gui/gui_backend.sh
+    teleoperation/basestation_gui/gui_prod.sh
     teleoperation/basestation_gui/gui_chromium.sh
 
     # starter project sources
