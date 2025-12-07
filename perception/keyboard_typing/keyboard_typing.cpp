@@ -3,6 +3,7 @@
 #include <geometry_msgs/msg/detail/pose__struct.hpp>
 #include <geometry_msgs/msg/detail/vector3__struct.hpp>
 #include <opencv2/core/eigen.hpp>
+#include "keyboard_typing/constants.h"
 #include "mrover/msg/detail/ik__struct.hpp"
 #include "mrover/msg/detail/keyboard_yaw__struct.hpp"
 #include <cmath>
@@ -30,6 +31,7 @@ namespace mrover{
         mImageSub = create_subscription<sensor_msgs::msg::Image>("/finger_camera/image", rclcpp::QoS(1), [this](sensor_msgs::msg::Image::ConstSharedPtr const& msg) {
             yawCallback(msg);
         });
+
 
         // Top left (TL) is origin
         // Bottom left (BL)
@@ -144,6 +146,7 @@ namespace mrover{
     }
 
     auto KeyboardTypingNode::estimatePose(sensor_msgs::msg::Image::ConstSharedPtr const& msg) -> std::optional<pose_output>  {
+
         // Read in camera constants
         std::string cameraConstants = "temp.json";
         cv::Mat camMatrix = (cv::Mat_<double>(3,3) <<
@@ -297,8 +300,14 @@ namespace mrover{
             // Draw axes for debugging
             // cv::drawFrameAxes(grayImage, camMatrix, distCoeffs, final_rvec, final_tvec, markerLength * 1.5f, 2);
             cv::imshow("out", grayImage);
-            cv::waitKey(1);
-            outputToCSV(combined_tvec, combined_rvec);
+            int key = cv::waitKey(1) & 0xFF;
+            if(key == 'r'){
+                logPose = !logPose;
+                RCLCPP_INFO_STREAM(get_logger(), "Toggled logPose: " << (logPose ? "ON" : "OFF"));
+        }
+            if(logPose){
+                outputToCSV(combined_tvec, combined_rvec);
+            }
 
             return pose_output{finalestimation, combined_rvec[2]*180 / M_PI};
 
