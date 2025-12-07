@@ -12,6 +12,10 @@
 #include <mrover/msg/dynamixel_set_position.hpp>
 #include <mrover/srv/dynamixel_get_position.hpp>
 
+// Default setting
+#define DEFAULT_BAUDRATE 57600
+#define DEFAULT_DEVICE_NAME "/dev/ttyUSB0"
+#define DEFAULT_CURRENT_LIMIT 1750
 
 class DynamixelServoNode : public rclcpp::Node
 {
@@ -19,7 +23,17 @@ public:
   using SetPosition = mrover::msg::DynamixelSetPosition;
   using GetPosition = mrover::srv::DynamixelGetPosition;
 
-  DynamixelServoNode();
+  struct DynamixelState
+  {
+    const int baudRate = DEFAULT_BAUDRATE;
+    const std::string deviceName = DEFAULT_DEVICE_NAME;
+    const int initialCurrentLimit = DEFAULT_CURRENT_LIMIT;
+
+    DynamixelState(DynamixelState& state) = default;
+    DynamixelState() = default;
+  };
+
+  explicit DynamixelServoNode(DynamixelState state);
   virtual ~DynamixelServoNode();
 
   enum DirectionState {
@@ -32,7 +46,7 @@ private:
   rclcpp::Subscription<SetPosition>::SharedPtr set_position_subscriber_;
   rclcpp::Service<GetPosition>::SharedPtr get_position_server_;
 
-  int present_position;
+  DynamixelState state;
 };
 
 #define ADDR_OPERATING_MODE 11
@@ -43,10 +57,6 @@ private:
 // Protocol version
 #define PROTOCOL_VERSION 2.0  // Default Protocol version of DYNAMIXEL X series.
 
-// Default setting
-#define BAUDRATE 57600  // Default Baudrate of DYNAMIXEL X series
-#define DEVICE_NAME "/dev/ttyUSB0"  // [Linux]: "/dev/ttyUSB*", [Windows]: "COM*"
-
 dynamixel::PortHandler * portHandler;
 dynamixel::PacketHandler * packetHandler;
 
@@ -54,8 +64,9 @@ uint8_t dxl_error = 0;
 uint32_t goal_position = 0;
 int dxl_comm_result = COMM_TX_FAIL;
 
-DynamixelServoNode::DynamixelServoNode()
-: Node("read_write_node")
+DynamixelServoNode::DynamixelServoNode(DynamixelState state) : 
+  Node("read_write_node"),
+  state(state)
 {
   RCLCPP_INFO(this->get_logger(), "Run dynamixel servo node");
 
@@ -165,6 +176,7 @@ DynamixelServoNode::DynamixelServoNode()
     {
       // Read Present Position (length : 4 bytes) and Convert uint32 -> int32
       // When reading 2 byte data from AX / MX(1.0), use read2ByteTxRx() instead.
+      int present_position = 0;
       dxl_comm_result = packetHandler->read4ByteTxRx(
         portHandler,
         (uint8_t) request->id,
@@ -225,7 +237,9 @@ void setupDynamixel(uint8_t dxl_id)
 
 int main(int argc, char * argv[])
 {
-  portHandler = dynamixel::PortHandler::getPortHandler(DEVICE_NAME);
+  DynamixelServoNode::DynamixelState state = {};
+  
+  portHandler = dynamixel::PortHandler::getPortHandler(state.deviceName.c_str());
   packetHandler = dynamixel::PacketHandler::getPacketHandler(PROTOCOL_VERSION);
 
   // Open Serial Port
@@ -238,7 +252,7 @@ int main(int argc, char * argv[])
   }
 
   // Set the baudrate of the serial port (use DYNAMIXEL Baudrate)
-  dxl_comm_result = portHandler->setBaudRate(BAUDRATE);
+  dxl_comm_result = portHandler->setBaudRate(state.baudRate);
   if (dxl_comm_result == false) {
     RCLCPP_ERROR(rclcpp::get_logger("Dynamixel_Servo_Node"), "Failed to set the baudrate!");
     return -1;
@@ -250,7 +264,7 @@ int main(int argc, char * argv[])
 
   rclcpp::init(argc, argv);
 
-  auto readwritenode = std::make_shared<DynamixelServoNode>();
+  auto readwritenode = std::make_shared<DynamixelServoNode>(state);
   rclcpp::spin(readwritenode);
   rclcpp::shutdown();
 
