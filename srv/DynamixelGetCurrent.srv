@@ -1,5 +1,6 @@
+# Constants
 # Request
 uint8 id
 ---
 # Response
-int16 current
+int32 current

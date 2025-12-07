@@ -12,6 +12,8 @@
 
 #include <mrover/msg/dynamixel_set_position.hpp>
 #include <mrover/srv/dynamixel_get_position.hpp>
+#include <mrover/srv/dynamixel_get_current.hpp>
+
 
 
 class DynamixelServoNode : public rclcpp::Node
@@ -189,6 +191,59 @@ DynamixelServoNode::DynamixelServoNode()
     };
 
   get_position_server_ = create_service<GetPosition>("get_position", get_present_position);
+
+  auto get_present_current =
+    [this](
+      const std::shared_ptr<GetCurrent::Request> request,
+      std::shared_ptr<GetCurrent::Response> response) -> void
+    {
+      uint16_t raw_current = 0;
+      dxl_error = 0;
+
+      // Present Current is 2 bytes, signed, in mA units
+      dxl_comm_result = packetHandler->read2ByteTxRx(
+        portHandler,
+        static_cast<uint8_t>(request->id),
+        ADDR_PRESENT_CURRENT,
+        &raw_current,
+        &dxl_error
+      );
+
+      if (dxl_comm_result != COMM_SUCCESS) {
+        RCLCPP_ERROR(
+          this->get_logger(),
+          "Failed to read present current for ID %d: %s",
+          request->id,
+          packetHandler->getTxRxResult(dxl_comm_result)
+        );
+        response->current = 0;
+        return;
+      }
+
+      if (dxl_error != 0) {
+        RCLCPP_ERROR(
+          this->get_logger(),
+          "Present current read error for ID %d: %s",
+          request->id,
+          packetHandler->getRxPacketError(dxl_error)
+        );
+        response->current = 0;
+        return;
+      }
+
+      // Cast raw 16-bit to signed mA value
+      int16_t signed_current = static_cast<int16_t>(raw_current);
+      response->current = signed_current;
+
+      RCLCPP_INFO(
+        this->get_logger(),
+        "Get [ID: %d] [Present Current: %d mA]",
+        request->id,
+        static_cast<int>(signed_current)
+      );
+    };
+
+  get_current_server_ = create_service<GetCurrent>("get_current", get_present_current);
 }
 
 DynamixelServoNode::~DynamixelServoNode()
