@@ -11,7 +11,6 @@
 
 #include <mrover/msg/dynamixel_set_position.hpp>
 #include <mrover/srv/dynamixel_get_position.hpp>
-// Control table address for X series (except XL-320)
 
 
 class DynamixelServoNode : public rclcpp::Node
@@ -22,6 +21,12 @@ public:
 
   DynamixelServoNode();
   virtual ~DynamixelServoNode();
+
+  enum DirectionState {
+    DirectionOptimal,
+    DirectionCounterClockwise,
+    DirectionClockwise
+  };
 
 private:
   rclcpp::Subscription<SetPosition>::SharedPtr set_position_subscriber_;
@@ -87,6 +92,7 @@ DynamixelServoNode::DynamixelServoNode()
       return;
     }
 
+    uint32_t goal_position;
     // Get the actual current position modulo 4096
     uint32_t current_position = present_position % 4096;
     
@@ -95,14 +101,30 @@ DynamixelServoNode::DynamixelServoNode()
     
     // Normalize the difference to the range [-2048, 2047]
     int32_t normalized_diff = raw_diff;
-    if (normalized_diff > 2048) {
-      normalized_diff -= 4096;  // Go the other (shorter) way around
-    } else if (normalized_diff < -2048) {
-      normalized_diff += 4096;  // Go the other (shorter) way around
+    switch (msg->direction_state) {
+
+      case DirectionOptimal:
+        if (normalized_diff > 2048) {
+          normalized_diff -= 4096;  // Go the other (shorter) way around
+        } else if (normalized_diff < -2048) {
+          normalized_diff += 4096;  // Go the other (shorter) way around
+        }
+        break;
+      case DirectionClockwise: // clockwise
+        if (normalized_diff < 0)
+        {
+          normalized_diff += 4096;
+        }
+        break;
+      case DirectionCounterClockwise: // counter clockwise
+        if (normalized_diff > 0)
+        {
+          normalized_diff -= 4096;
+        }
+        break;
     }
     
     // Calculate the optimal goal position
-    uint32_t goal_position;
     if (normalized_diff >= 0) {
       goal_position = present_position + normalized_diff;
     } else {
