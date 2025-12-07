@@ -1,0 +1,5 @@
+# Request
+uint8 id
+---
+# Response
+int16 current

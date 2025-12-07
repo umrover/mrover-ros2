@@ -1,5 +1,6 @@
 #include "mrover/msg/detail/dynamixel_set_position__struct.hpp"
 #include "mrover/srv/detail/dynamixel_get_position__struct.hpp"
+#include "mrover/srv/detail/dynamixel_get_current__struct.hpp"
 #include <cstdlib>
 #include <dynamixel_sdk/dynamixel_sdk.h>
 #include <dynamixel_sdk/port_handler.h>
@@ -11,6 +12,8 @@
 
 #include <mrover/msg/dynamixel_set_position.hpp>
 #include <mrover/srv/dynamixel_get_position.hpp>
+#include <mrover/srv/dynamixel_get_current.hpp>
+
 // Control table address for X series (except XL-320)
 
 
@@ -19,6 +22,7 @@ class DynamixelServoNode : public rclcpp::Node
 public:
   using SetPosition = mrover::msg::DynamixelSetPosition;
   using GetPosition = mrover::srv::DynamixelGetPosition;
+  using GetCurrent = mrover::srv::DynamixelGetCurrent;
 
   DynamixelServoNode();
   virtual ~DynamixelServoNode();
@@ -28,12 +32,15 @@ private:
   rclcpp::Service<GetPosition>::SharedPtr get_position_server_;
 
   int present_position;
+
+  rclcpp::Service<GetCurrent>::SharedPtr get_current_server_;
 };
 
 #define ADDR_OPERATING_MODE 11
 #define ADDR_TORQUE_ENABLE 64
 #define ADDR_GOAL_POSITION 116
 #define ADDR_PRESENT_POSITION 132
+#define ADDR_PRESENT_CURRENT 126
 
 // Protocol version
 #define PROTOCOL_VERSION 2.0  // Default Protocol version of DYNAMIXEL X series.
