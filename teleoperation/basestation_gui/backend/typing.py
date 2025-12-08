@@ -1,7 +1,7 @@
 """ROS2 Action Client for the Typing Task"""
 
 import rclpy
-from mrover.action import KeyAction
+from mrover.action import TypingCode
 from rclpy.action import ActionClient
 from rclpy.node import Node
 
@@ -11,13 +11,13 @@ class TypingTaskActionClient(Node):
         super().__init__('typing_task_action_client')
         self.node = node
         self.websocket = websocket  # Instance of GUIConsumer
-        self._action_client = ActionClient(node, KeyAction, 'KeyAction')
+        self._action_client = ActionClient(node, TypingCode, '/es_typing_code')
 
     def send_code(self, code):
         from backend.consumers import GUIConsumer
         if isinstance(self.websocket, GUIConsumer):
-            goal_msg = KeyAction.Goal()
-            goal_msg.code = code
+            goal_msg = TypingCode.Goal()
+            goal_msg.launch_code = code
 
             # self._action_client.wait_for_server()
 
@@ -35,14 +35,14 @@ class TypingTaskActionClient(Node):
     
     def feedback_callback(self, feedback_msg):
         feedback = feedback_msg.feedback
-        current_key = feedback.key
-        current_state = feedback.state
-        self.get_logger().info(message=f'Received feedback: {current_key}, {current_state}')
+        current_state = feedback.current_state
+        current_index = feedback.current_index
+        self.get_logger().info(message=f'Received feedback: {current_state}, {current_index}')
         self.websocket.send_message_as_json(
             {
                 'type': 'typing_feedback',
-                'current_key': current_key, 
                 'current_state': current_state,
+                'current_index': current_index,
             }
         )
 

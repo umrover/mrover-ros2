@@ -11,12 +11,6 @@ class ScienceHandler(WebSocketHandler):
         """Setup SCIENCE endpoint subscriptions and publishers"""
         self.sp_thr_pub = self.node.create_publisher(Throttle, "/sp_thr_cmd", 1)
 
-        self.forward_ros_topic("/science_oxygen_data", Oxygen, "oxygen")
-        self.forward_ros_topic("/science_uv_data", UV, "uv")
-        self.forward_ros_topic("/science_temperature_data", Temperature, "temperature")
-        self.forward_ros_topic("/science_humidity_data", Humidity, "humidity")
-        self.forward_ros_topic("/sp_controller_state", ControllerState, "sp_state")
-
         self.forward_ros_topic("/sp_humidity_data", Humidity, "sp_humidity")
         self.forward_ros_topic("/sp_temp_data", Temperature, "sp_temp")
         self.forward_ros_topic("/sp_oxygen_data", Oxygen, "sp_oxygen")
@@ -24,6 +18,7 @@ class ScienceHandler(WebSocketHandler):
         self.forward_ros_topic("/sp_ozone_data", Ozone, "sp_ozone")
         self.forward_ros_topic("/sp_co2_data", CO2, "sp_co2")
         self.forward_ros_topic("/sp_pressure_data", Pressure, "sp_pressure")
+        self.forward_ros_topic("/sp_controller_state", ControllerState, "sp_controller_state")
 
     async def handle_message(self, data):
         """Handle incoming SCIENCE control messages"""

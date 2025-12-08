@@ -51,7 +51,7 @@ const websocketStore = useWebsocketStore()
 const gimbalJointState = computed((): ControllerStateMessage | null => {
   const messages = websocketStore.messages['chassis']
   if (!messages || !Array.isArray(messages)) return null
-  const msg = messages.find((msg: { type: string }) => msg.type === 'sp_controller_state')
+  const msg = messages.find((msg: { type: string }) => msg.type === 'gimbal_controller_state')
   return msg ? (msg as ControllerStateMessage) : null
 })
 
@@ -106,7 +106,7 @@ const adjustGimbal = async (
     const adjustmentRadians = (adjustment * Math.PI) / 180
     const newPosition = currentPosition + adjustmentRadians
 
-    await chassisAPI.setFunnelServo([joint], [newPosition])
+    await chassisAPI.adjustGimbal(joint, newPosition, true)
   } catch (error) {
     console.error('Failed to adjust gimbal:', error)
   }
