@@ -100,7 +100,7 @@ namespace mrover{
 
     auto KeyboardTypingNode::yawCallback(sensor_msgs::msg::Image::ConstSharedPtr const& msg) -> void {
         RCLCPP_INFO_STREAM(get_logger(), "callback");
-        sendIKCommand(1.2, .28, .19, 0, 0);
+        sendIKCommand(1.215, .253, .367, 0, 0);
 
         
     
