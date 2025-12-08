@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from backend.ros_manager import get_node
 from backend.models_pydantic import GimbalAdjustRequest, ServoPositionRequest
-from mrover.srv import PanoramaStart, PanoramaEnd, ServoSetPos, ServoPosition
+from mrover.srv import PanoramaStart, PanoramaEnd, ServoPosition
 import numpy as np
 import cv2
 import time
@@ -81,21 +81,21 @@ def gimbal_adjust(data: GimbalAdjustRequest):
         if data.joint not in ['pitch', 'yaw']:
             raise HTTPException(status_code=400, detail="Joint must be pitch or yaw")
 
-        adjustment_rad = math.radians(data.adjustment)
-
         node = get_node()
-        gimbal_srv = node.create_client(ServoSetPos, "/gimbal_set_position")
+        gimbal_srv = node.create_client(ServoPosition, "/gimbal_servo")
 
-        gimbal_request = ServoSetPos.Request()
-        gimbal_request.position = adjustment_rad
-        gimbal_request.is_counterclockwise = adjustment_rad < 0 if not data.absolute else False
+        gimbal_request = ServoPosition.Request()
+        gimbal_request.header.stamp = node.get_clock().now().to_msg()
+        gimbal_request.header.frame_id = ""
+        gimbal_request.name = [data.joint]
+        gimbal_request.position = [data.adjustment]
 
         result = _call_service_sync(gimbal_srv, gimbal_request)
 
         if result is None:
             raise HTTPException(status_code=500, detail="Service call failed")
 
-        if not result.success:
+        if not result.at_tgt[0]:
             raise HTTPException(status_code=500, detail="Gimbal adjustment failed")
 
         return {
