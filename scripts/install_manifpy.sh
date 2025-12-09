@@ -7,17 +7,26 @@ if [ "$EUID" -ne 0 ]; then
     exit 1
 fi
 
-apt-get install -y libeigen3-dev
+if ! python3 -c "import manifpy" 2>/dev/null; then
+    echo "installing manifpy"
 
-TEMP_DIR=$(mktemp -d)
-cd "$TEMP_DIR"
+    sudo apt-get install -y libeigen3-dev
 
-git clone https://github.com/artivis/manif.git
-cd manif
+    if [ ! -d "$HOME/manif" ]; then
+        cd "$HOME"
+        git clone https://github.com/artivis/manif.git
+    fi
 
-python3 -m pip install --ignore-installed .
+    cd "$HOME/manif"
+    python3 -m pip install .
 
-cd /
-rm -rf "$TEMP_DIR"
+    echo "manifpy installed"
+else
+    echo "manifpy already installed"
+fi
 
-echo "manifpy installed successfully"
+echo "initializing submodule"
+cd "$(dirname "$0")/.."
+git submodule update --init deps/manif
+
+echo "done"
