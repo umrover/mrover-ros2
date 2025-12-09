@@ -32,11 +32,11 @@
 class DynamixelServoNode : public rclcpp::Node
 {
 public:
-using SetPosition = mrover::msg::DynamixelSetPosition;
+  using SetPosition = mrover::msg::DynamixelSetPosition;
   using SetCurrentLimit  = mrover::msg::DynamixelSetCurrentLimit;
-using GetPosition = mrover::srv::DynamixelGetPosition;
-using GetCurrent = mrover::srv::DynamixelGetCurrent;
-using dynamixel_id_t = uint8_t;
+  using GetPosition = mrover::srv::DynamixelGetPosition;
+  using GetCurrent = mrover::srv::DynamixelGetCurrent;
+  using dynamixel_id_t = uint8_t;
 
   struct DynamixelServo
   {
@@ -89,6 +89,7 @@ private:
 #define ADDR_GOAL_POSITION 116
 #define ADDR_PRESENT_POSITION 132
 #define ADDR_PRESENT_CURRENT 126
+#define ADDR_CURRENT_LIMIT 102
 #define ADDR_VELOCITY_I_GAIN 76
 #define ADDR_VELOCITY_P_GAIN 78
 #define ADDR_POSITION_D_GAIN 80
@@ -228,7 +229,7 @@ void DynamixelServoNode::SetupServos()
     dxl_comm_result = packetHandler->write4ByteTxRx(
       portHandler,
       id,
-      ADDR_PRESENT_CURRENT,
+      ADDR_CURRENT_LIMIT,
       servo.currentLimit,
       &dxl_error
     );
