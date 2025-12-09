@@ -1,5 +1,7 @@
 #include "mrover/msg/detail/dynamixel_set_position__struct.hpp"
 #include "mrover/srv/detail/dynamixel_get_position__struct.hpp"
+#include "mrover/srv/detail/dynamixel_get_current__struct.hpp"
+#include <cstdint>
 #include <cstdlib>
 #include <dynamixel_sdk/dynamixel_sdk.h>
 #include <dynamixel_sdk/port_handler.h>
@@ -11,30 +13,57 @@
 
 #include <mrover/msg/dynamixel_set_position.hpp>
 #include <mrover/srv/dynamixel_get_position.hpp>
+#include <mrover/srv/dynamixel_get_current.hpp>
+#include <unordered_map>
+
 
 // Default setting
 #define DEFAULT_BAUDRATE 57600
 #define DEFAULT_DEVICE_NAME "/dev/ttyUSB0"
 #define DEFAULT_CURRENT_LIMIT 1750
+#define DEFAULT_POSITION_P_GAIN 0
+#define DEFAULT_POSITION_I_GAIN 0
+#define DEFAULT_POSITION_D_GAIN 0
+#define DEFAULT_POSITION_P_GAIN 0
+#define DEFAULT_VELOCITY_I_GAIN 0
 
 class DynamixelServoNode : public rclcpp::Node
 {
 public:
-  using SetPosition = mrover::msg::DynamixelSetPosition;
-  using GetPosition = mrover::srv::DynamixelGetPosition;
+using SetPosition = mrover::msg::DynamixelSetPosition;
+using GetPosition = mrover::srv::DynamixelGetPosition;
+using GetCurrent = mrover::srv::DynamixelGetCurrent;
+using dynamixel_id_t = uint8_t;
+
+  struct DynamixelServo
+  {
+    uint32_t positionPGain = DEFAULT_POSITION_P_GAIN;
+    uint32_t positionIGain = DEFAULT_POSITION_I_GAIN;
+    uint32_t positionDGain = DEFAULT_POSITION_D_GAIN;
+    uint32_t velocityPGain = DEFAULT_POSITION_P_GAIN;
+    uint32_t velocityIGain = DEFAULT_VELOCITY_I_GAIN;
+    uint32_t currentLimit = DEFAULT_CURRENT_LIMIT;
+
+
+    DynamixelServo(const DynamixelServo& state) = default;
+    DynamixelServo() = default;
+  };
 
   struct DynamixelState
   {
+
     const int baudRate = DEFAULT_BAUDRATE;
     const std::string deviceName = DEFAULT_DEVICE_NAME;
-    const int initialCurrentLimit = DEFAULT_CURRENT_LIMIT;
+    std::unordered_map<dynamixel_id_t, DynamixelServo> servos = {};
 
-    DynamixelState(DynamixelState& state) = default;
+    DynamixelState(const DynamixelState& state) = default;
     DynamixelState() = default;
   };
 
   explicit DynamixelServoNode(DynamixelState state);
   virtual ~DynamixelServoNode();
+
+  void SetupServos();
 
   enum DirectionState {
     DirectionOptimal,
@@ -47,12 +76,20 @@ private:
   rclcpp::Service<GetPosition>::SharedPtr get_position_server_;
 
   DynamixelState state;
+
+  rclcpp::Service<GetCurrent>::SharedPtr get_current_server_;
 };
 
 #define ADDR_OPERATING_MODE 11
 #define ADDR_TORQUE_ENABLE 64
 #define ADDR_GOAL_POSITION 116
 #define ADDR_PRESENT_POSITION 132
+#define ADDR_PRESENT_CURRENT 126
+#define ADDR_VELOCITY_I_GAIN 76
+#define ADDR_VELOCITY_P_GAIN 78
+#define ADDR_POSITION_D_GAIN 80
+#define ADDR_POSITION_I_GAIN 82
+#define ADDR_POSITION_P_GAIN 84
 
 // Protocol version
 #define PROTOCOL_VERSION 2.0  // Default Protocol version of DYNAMIXEL X series.
@@ -63,6 +100,150 @@ dynamixel::PacketHandler * packetHandler;
 uint8_t dxl_error = 0;
 uint32_t goal_position = 0;
 int dxl_comm_result = COMM_TX_FAIL;
+
+void DynamixelServoNode::SetupServos()
+{
+  for (auto& [id, servo] : state.servos)
+  {
+    // Set position p gain
+    dxl_comm_result = packetHandler->write4ByteTxRx(
+      portHandler,
+      id,
+      ADDR_POSITION_P_GAIN,
+      servo.positionPGain,
+      &dxl_error
+    );
+
+    if (dxl_comm_result != COMM_SUCCESS) {
+      RCLCPP_ERROR(this->get_logger(), "Failed to write position P gain: %d", id);
+    }
+
+    if (dxl_comm_result != COMM_SUCCESS) {
+      RCLCPP_ERROR(
+        this->get_logger(),
+        "Failed to write position P gain for ID %d: %s",
+        id,
+        packetHandler->getTxRxResult(dxl_comm_result)
+      );
+      return;
+    }
+
+    // Set position i gain
+    dxl_comm_result = packetHandler->write4ByteTxRx(
+      portHandler,
+      id,
+      ADDR_POSITION_I_GAIN,
+      servo.positionIGain,
+      &dxl_error
+    );
+
+    if (dxl_comm_result != COMM_SUCCESS) {
+      RCLCPP_ERROR(this->get_logger(), "Failed to Set position I gain: %d", id);
+    }
+
+    if (dxl_comm_result != COMM_SUCCESS) {
+      RCLCPP_ERROR(
+        this->get_logger(),
+        "Failed to write position I gain for ID %d: %s",
+        id,
+        packetHandler->getTxRxResult(dxl_comm_result)
+      );
+      return;
+    }
+
+    // Set position d gain
+    dxl_comm_result = packetHandler->write4ByteTxRx(
+      portHandler,
+      id,
+      ADDR_POSITION_D_GAIN,
+      servo.positionDGain,
+      &dxl_error
+    );
+
+    if (dxl_comm_result != COMM_SUCCESS) {
+      RCLCPP_ERROR(this->get_logger(), "Failed to Set position D gain: %d", id);
+    }
+
+    if (dxl_comm_result != COMM_SUCCESS) {
+      RCLCPP_ERROR(
+        this->get_logger(),
+        "Failed to write position D gain for ID %d: %s",
+        id,
+        packetHandler->getTxRxResult(dxl_comm_result)
+      );
+      return;
+    }
+
+    // Set velocity p gain
+    dxl_comm_result = packetHandler->write4ByteTxRx(
+      portHandler,
+      id,
+      ADDR_VELOCITY_P_GAIN,
+      servo.velocityPGain,
+      &dxl_error
+    );
+
+    if (dxl_comm_result != COMM_SUCCESS) {
+      RCLCPP_ERROR(this->get_logger(), "Failed to Set velocity P gain: %d", id);
+    }
+
+    if (dxl_comm_result != COMM_SUCCESS) {
+      RCLCPP_ERROR(
+        this->get_logger(),
+        "Failed to write velocity P gain for ID %d: %s",
+        id,
+        packetHandler->getTxRxResult(dxl_comm_result)
+      );
+      return;
+    }
+
+    // Set velocity i gain
+    dxl_comm_result = packetHandler->write4ByteTxRx(
+      portHandler,
+      id,
+      ADDR_VELOCITY_I_GAIN,
+      servo.velocityIGain,
+      &dxl_error
+    );
+
+    if (dxl_comm_result != COMM_SUCCESS) {
+      RCLCPP_ERROR(this->get_logger(), "Failed to Set velocity I gain: %d", id);
+    }
+
+    if (dxl_comm_result != COMM_SUCCESS) {
+      RCLCPP_ERROR(
+        this->get_logger(),
+        "Failed to write velocity I gain for ID %d: %s",
+        id,
+        packetHandler->getTxRxResult(dxl_comm_result)
+      );
+      return;
+    }
+
+    // Set current limit
+    dxl_comm_result = packetHandler->write4ByteTxRx(
+      portHandler,
+      id,
+      ADDR_PRESENT_CURRENT,
+      servo.currentLimit,
+      &dxl_error
+    );
+
+    if (dxl_comm_result != COMM_SUCCESS) {
+      RCLCPP_ERROR(this->get_logger(), "Failed to write current limit: %d", id);
+    }
+
+    if (dxl_comm_result != COMM_SUCCESS) {
+      RCLCPP_ERROR(
+        this->get_logger(),
+        "Failed to write current limit for ID %d: %s",
+        id,
+        packetHandler->getTxRxResult(dxl_comm_result)
+      );
+      return;
+    }
+  }
+}
 
 DynamixelServoNode::DynamixelServoNode(DynamixelState state) : 
   Node("read_write_node"),
@@ -92,7 +273,7 @@ DynamixelServoNode::DynamixelServoNode(DynamixelState state) :
     uint32_t present_position;
     dxl_comm_result = packetHandler->read4ByteTxRx(
       portHandler,
-      static_cast<uint8_t>(msg->id),
+      static_cast<dynamixel_id_t>(msg->id),
       ADDR_PRESENT_POSITION,
       reinterpret_cast<uint32_t *>(&present_position),
       &dxl_error
@@ -100,6 +281,16 @@ DynamixelServoNode::DynamixelServoNode(DynamixelState state) :
 
     if (dxl_comm_result != COMM_SUCCESS) {
       RCLCPP_ERROR(this->get_logger(), "Failed to read present position for ID: %d", msg->id);
+      return;
+    }
+
+    if (dxl_comm_result != COMM_SUCCESS) {
+      RCLCPP_ERROR(
+        this->get_logger(),
+        "Failed to read present position for ID %d: %s",
+        msg->id,
+        packetHandler->getTxRxResult(dxl_comm_result)
+      );
       return;
     }
 
@@ -185,6 +376,16 @@ DynamixelServoNode::DynamixelServoNode(DynamixelState state) :
         &dxl_error
       );
 
+      if (dxl_comm_result != COMM_SUCCESS) {
+        RCLCPP_ERROR(
+          this->get_logger(),
+          "Failed to read present position for ID %d: %s",
+          request->id,
+          packetHandler->getTxRxResult(dxl_comm_result)
+        );
+        return;
+      }
+
       RCLCPP_INFO(
         this->get_logger(),
         "Get [ID: %d] [Present Position: %d]",
@@ -196,6 +397,61 @@ DynamixelServoNode::DynamixelServoNode(DynamixelState state) :
     };
 
   get_position_server_ = create_service<GetPosition>("get_position", get_present_position);
+
+  auto get_present_current =
+    [this](
+      const std::shared_ptr<GetCurrent::Request> request,
+      std::shared_ptr<GetCurrent::Response> response) -> void
+    {
+      uint16_t raw_current = 0;
+      dxl_error = 0;
+
+      // Present Current is 2 bytes, signed, in mA units
+      dxl_comm_result = packetHandler->read2ByteTxRx(
+        portHandler,
+        static_cast<uint8_t>(request->id),
+        ADDR_PRESENT_CURRENT,
+        &raw_current,
+        &dxl_error
+      );
+
+      if (dxl_comm_result != COMM_SUCCESS) {
+        RCLCPP_ERROR(
+          this->get_logger(),
+          "Failed to read present current for ID %d: %s",
+          request->id,
+          packetHandler->getTxRxResult(dxl_comm_result)
+        );
+        response->current = 0;
+        return;
+      }
+
+      if (dxl_error != 0) {
+        RCLCPP_ERROR(
+          this->get_logger(),
+          "Present current read error for ID %d: %s",
+          request->id,
+          packetHandler->getRxPacketError(dxl_error)
+        );
+        response->current = 0;
+        return;
+      }
+
+      // Cast raw 16-bit to signed mA value
+      int16_t signed_current = static_cast<int16_t>(raw_current);
+      response->current = signed_current;
+
+      RCLCPP_INFO(
+        this->get_logger(),
+        "Get [ID: %d] [Present Current: %d mA]",
+        request->id,
+        static_cast<int>(signed_current)
+      );
+    };
+
+  get_current_server_ = create_service<GetCurrent>("get_current", get_present_current);
+
+  SetupServos();
 }
 
 DynamixelServoNode::~DynamixelServoNode()
@@ -235,9 +491,14 @@ void setupDynamixel(uint8_t dxl_id)
   }
 }
 
+
+
 int main(int argc, char * argv[])
 {
   DynamixelServoNode::DynamixelState state = {};
+
+  state.servos[3] = DynamixelServoNode::DynamixelServo{};
+  state.servos[4] = DynamixelServoNode::DynamixelServo{};
   
   portHandler = dynamixel::PortHandler::getPortHandler(state.deviceName.c_str());
   packetHandler = dynamixel::PacketHandler::getPacketHandler(PROTOCOL_VERSION);
