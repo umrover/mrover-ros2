@@ -1,4 +1,5 @@
 #include "mrover/msg/detail/dynamixel_set_position__struct.hpp"
+#include "mrover/msg/detail/dynamixel_set_current_limit__struct.hpp"
 #include "mrover/srv/detail/dynamixel_get_position__struct.hpp"
 #include "mrover/srv/detail/dynamixel_get_current__struct.hpp"
 #include <cstdint>
@@ -14,6 +15,7 @@
 #include <mrover/msg/dynamixel_set_position.hpp>
 #include <mrover/srv/dynamixel_get_position.hpp>
 #include <mrover/srv/dynamixel_get_current.hpp>
+#include <mrover/msg/dynamixel_set_current_limit.hpp>
 #include <unordered_map>
 
 
@@ -31,6 +33,7 @@ class DynamixelServoNode : public rclcpp::Node
 {
 public:
 using SetPosition = mrover::msg::DynamixelSetPosition;
+  using SetCurrentLimit  = mrover::msg::DynamixelSetCurrentLimit;
 using GetPosition = mrover::srv::DynamixelGetPosition;
 using GetCurrent = mrover::srv::DynamixelGetCurrent;
 using dynamixel_id_t = uint8_t;
@@ -78,6 +81,7 @@ private:
   DynamixelState state;
 
   rclcpp::Service<GetCurrent>::SharedPtr get_current_server_;
+  rclcpp::Subscription<SetCurrentLimit>::SharedPtr set_current_limit_subscriber_; 
 };
 
 #define ADDR_OPERATING_MODE 11
@@ -450,6 +454,98 @@ DynamixelServoNode::DynamixelServoNode(DynamixelState state) :
     };
 
   get_current_server_ = create_service<GetCurrent>("get_current", get_present_current);
+
+    // NEW: set_current_limit subscriber
+  set_current_limit_subscriber_ =
+    this->create_subscription<SetCurrentLimit>(
+      "set_current_limit",
+      QOS_RKL10V,
+      [this](const SetCurrentLimit::SharedPtr msg) -> void
+      {
+        uint8_t dxl_error_local = 0;
+
+        // Clamp requested limit into valid range [0, 1750] mA (XL330 spec)
+        int32_t requested = msg->current_limit;
+        if (requested < 0) {
+          requested = 0;
+        }
+        if (requested > 1750) {
+          requested = 1750;
+        }
+        uint16_t limit_mA = static_cast<uint16_t>(requested);
+
+        // 1) Disable torque (EEPROM write requires torque off)
+        dxl_comm_result = packetHandler->write1ByteTxRx(
+          portHandler,
+          static_cast<uint8_t>(msg->id),
+          ADDR_TORQUE_ENABLE,
+          0,
+          &dxl_error_local
+        );
+
+        if (dxl_comm_result != COMM_SUCCESS || dxl_error_local != 0) {
+          RCLCPP_ERROR(
+            this->get_logger(),
+            "Failed to disable torque before setting current limit (ID %d): %s",
+            msg->id,
+            packetHandler->getTxRxResult(dxl_comm_result)
+          );
+          return;
+        }
+
+        // 2) Write CURRENT_LIMIT (2 bytes, mA)
+        dxl_error_local = 0;
+        dxl_comm_result = packetHandler->write2ByteTxRx(
+          portHandler,
+          static_cast<uint8_t>(msg->id),
+          ADDR_CURRENT_LIMIT,
+          limit_mA,
+          &dxl_error_local
+        );
+
+        if (dxl_comm_result != COMM_SUCCESS) {
+          RCLCPP_ERROR(
+            this->get_logger(),
+            "Failed to set current limit for ID %d: %s",
+            msg->id,
+            packetHandler->getTxRxResult(dxl_comm_result)
+          );
+        } else if (dxl_error_local != 0) {
+          RCLCPP_ERROR(
+            this->get_logger(),
+            "Current limit write error for ID %d: %s",
+            msg->id,
+            packetHandler->getRxPacketError(dxl_error_local)
+          );
+        } else {
+          RCLCPP_INFO(
+            this->get_logger(),
+            "Set [ID: %d] [Current Limit: %d mA]",
+            msg->id,
+            static_cast<int>(limit_mA)
+          );
+        }
+
+        // 3) Re-enable torque
+        dxl_error_local = 0;
+        dxl_comm_result = packetHandler->write1ByteTxRx(
+          portHandler,
+          static_cast<uint8_t>(msg->id),
+          ADDR_TORQUE_ENABLE,
+          1,
+          &dxl_error_local
+        );
+
+        if (dxl_comm_result != COMM_SUCCESS || dxl_error_local != 0) {
+          RCLCPP_ERROR(
+            this->get_logger(),
+            "Warning: failed to re-enable torque after setting current limit (ID %d)",
+            msg->id
+          );
+        }
+      }
+    );
+
 
   SetupServos();
 }
