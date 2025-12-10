@@ -23,10 +23,10 @@
 #define DEFAULT_BAUDRATE 57600
 #define DEFAULT_DEVICE_NAME "/dev/ttyUSB0"
 #define DEFAULT_CURRENT_LIMIT 1750
-#define DEFAULT_POSITION_P_GAIN 0
+#define DEFAULT_POSITION_P_GAIN 400
 #define DEFAULT_POSITION_I_GAIN 0
 #define DEFAULT_POSITION_D_GAIN 0
-#define DEFAULT_POSITION_P_GAIN 0
+#define DEFAULT_VELOCITY_P_GAIN 180
 #define DEFAULT_VELOCITY_I_GAIN 0
 
 class DynamixelServoNode : public rclcpp::Node
@@ -43,7 +43,7 @@ public:
     uint32_t positionPGain = DEFAULT_POSITION_P_GAIN;
     uint32_t positionIGain = DEFAULT_POSITION_I_GAIN;
     uint32_t positionDGain = DEFAULT_POSITION_D_GAIN;
-    uint32_t velocityPGain = DEFAULT_POSITION_P_GAIN;
+    uint32_t velocityPGain = DEFAULT_VELOCITY_P_GAIN;
     uint32_t velocityIGain = DEFAULT_VELOCITY_I_GAIN;
     uint32_t currentLimit = DEFAULT_CURRENT_LIMIT;
 
@@ -134,7 +134,7 @@ void DynamixelServoNode::SetupServos()
     }
 
     // Set position i gain
-    dxl_comm_result = packetHandler->write4ByteTxRx(
+    dxl_comm_result = packetHandler->write2ByteTxRx(
       portHandler,
       id,
       ADDR_POSITION_I_GAIN,
@@ -157,7 +157,7 @@ void DynamixelServoNode::SetupServos()
     }
 
     // Set position d gain
-    dxl_comm_result = packetHandler->write4ByteTxRx(
+    dxl_comm_result = packetHandler->write2ByteTxRx(
       portHandler,
       id,
       ADDR_POSITION_D_GAIN,
@@ -180,7 +180,7 @@ void DynamixelServoNode::SetupServos()
     }
 
     // Set velocity p gain
-    dxl_comm_result = packetHandler->write4ByteTxRx(
+    dxl_comm_result = packetHandler->write2ByteTxRx(
       portHandler,
       id,
       ADDR_VELOCITY_P_GAIN,
@@ -203,7 +203,7 @@ void DynamixelServoNode::SetupServos()
     }
 
     // Set velocity i gain
-    dxl_comm_result = packetHandler->write4ByteTxRx(
+    dxl_comm_result = packetHandler->write2ByteTxRx(
       portHandler,
       id,
       ADDR_VELOCITY_I_GAIN,
@@ -226,7 +226,7 @@ void DynamixelServoNode::SetupServos()
     }
 
     // Set current limit
-    dxl_comm_result = packetHandler->write4ByteTxRx(
+    dxl_comm_result = packetHandler->write2ByteTxRx(
       portHandler,
       id,
       ADDR_CURRENT_LIMIT,
@@ -594,8 +594,11 @@ int main(int argc, char * argv[])
 {
   DynamixelServoNode::DynamixelState state = {};
 
-  state.servos[3] = DynamixelServoNode::DynamixelServo{};
-  state.servos[4] = DynamixelServoNode::DynamixelServo{};
+  DynamixelServoNode::DynamixelServo servo1 = {};
+  DynamixelServoNode::DynamixelServo servo2 = {};
+
+  state.servos[3] = servo1;
+  state.servos[4] = servo2;
   
   portHandler = dynamixel::PortHandler::getPortHandler(state.deviceName.c_str());
   packetHandler = dynamixel::PacketHandler::getPacketHandler(PROTOCOL_VERSION);
