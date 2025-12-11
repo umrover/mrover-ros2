@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from backend.ros_manager import get_node
 from backend.models_pydantic import GearDiffRequest
-from mrover.srv import ServoSetPos
+from mrover.srv import ServoPosition
 import time
 
 router = APIRouter(prefix="/api", tags=["science"])
@@ -23,17 +23,19 @@ def _call_service_sync(client, request, timeout=5.0):
 def gear_diff_position(data: GearDiffRequest):
     try:
         node = get_node()
-        sp_funnel_srv = node.create_client(ServoSetPos, "/sp_funnel_set_position")
+        sp_funnel_srv = node.create_client(ServoPosition, "/sp_funnel_servo")
 
-        sp_funnel_request = ServoSetPos.Request()
-        sp_funnel_request.position = data.position
-        sp_funnel_request.is_counterclockwise = data.is_counterclockwise
+        sp_funnel_request = ServoPosition.Request()
+        sp_funnel_request.header.stamp = node.get_clock().now().to_msg()
+        sp_funnel_request.header.frame_id = ""
+        sp_funnel_request.name = ["funnel"]
+        sp_funnel_request.position = [data.position]
 
         result = _call_service_sync(sp_funnel_srv, sp_funnel_request)
         if result is None:
             raise HTTPException(status_code=500, detail="Service call failed")
 
-        return {'status': 'success', 'position': data.position, 'is_counterclockwise': data.is_counterclockwise}
+        return {'status': 'success', 'position': data.position, 'at_tgt': result.at_tgt[0]}
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
