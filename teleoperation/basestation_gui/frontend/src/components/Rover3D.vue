@@ -56,7 +56,7 @@ import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useWebsocketStore } from '@/stores/websocket'
 import { storeToRefs } from 'pinia'
 import type { ControllerStateMessage } from '@/types/websocket'
-import threeSetup, { updatePose, updateIKTarget } from '../rover_three.js'
+import threeSetup, { updatePose, updateIKTarget, set_camera_type, updateCostMapGrid } from '../rover_three.js'
 
 interface ArmIKMessage {
   type: 'ik_target'
@@ -96,7 +96,7 @@ onBeforeUnmount(() => {
 })
 
 const armMessage = computed(() => messages.value['arm'])
-const contextMessage = computed(() => messages.value['context'])
+const contextMessage = computed(() => messages.value['costmap'])
 
 watch(armMessage, (msg: unknown) => {
   if (!msg || typeof msg !== 'object') return

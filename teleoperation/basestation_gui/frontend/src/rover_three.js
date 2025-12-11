@@ -464,7 +464,7 @@ Note that it does not clear the canvas, nor marks it for update*/
 function fillTextCanvas(gridData){
   for(let i = 0; i < numCostMapBlocks; i++){
     for(let j = 0; j < numCostMapBlocks; j++){
-      textCanvasContext.fillText(gridData[(i * numCostMapBlocks) + j], 10 + j * costMapBlockWidth, 500 + i * costMapBlockWidth)
+      textCanvasContext.fillText(gridData[(i * numCostMapBlocks) + j], j * costMapBlockWidth, 500 + i * costMapBlockWidth)
     }
   }
 }
