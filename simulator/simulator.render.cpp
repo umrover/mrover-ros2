@@ -70,14 +70,18 @@ namespace mrover {
         descriptor.depthStencil = &depthStencil;
 
 
-        std::array<wgpu::VertexAttribute, 3> attributes{};
+        std::array<wgpu::VertexAttribute, 5> attributes{};
         attributes[0].format = wgpu::VertexFormat::Float32x3;
         attributes[0].shaderLocation = 0;
         attributes[1].format = wgpu::VertexFormat::Float32x3;
         attributes[1].shaderLocation = 1;
-        attributes[2].format = wgpu::VertexFormat::Float32x2;
+        attributes[2].format = wgpu::VertexFormat::Float32x3;
         attributes[2].shaderLocation = 2;
-        std::array<wgpu::VertexBufferLayout, 3> vertexBufferLayout{};
+        attributes[3].format = wgpu::VertexFormat::Float32x3;
+        attributes[3].shaderLocation = 3;
+        attributes[4].format = wgpu::VertexFormat::Float32x2;
+        attributes[4].shaderLocation = 4;
+        std::array<wgpu::VertexBufferLayout, 5> vertexBufferLayout{};
         vertexBufferLayout[0].arrayStride = sizeof(float) * 3;
         vertexBufferLayout[0].stepMode = wgpu::VertexStepMode::Vertex;
         vertexBufferLayout[0].attributeCount = 1;
@@ -86,10 +90,18 @@ namespace mrover {
         vertexBufferLayout[1].stepMode = wgpu::VertexStepMode::Vertex;
         vertexBufferLayout[1].attributeCount = 1;
         vertexBufferLayout[1].attributes = attributes.data() + 1;
-        vertexBufferLayout[2].arrayStride = sizeof(float) * 2;
+        vertexBufferLayout[2].arrayStride = sizeof(float) * 3;
         vertexBufferLayout[2].stepMode = wgpu::VertexStepMode::Vertex;
         vertexBufferLayout[2].attributeCount = 1;
         vertexBufferLayout[2].attributes = attributes.data() + 2;
+        vertexBufferLayout[3].arrayStride = sizeof(float) * 3;
+        vertexBufferLayout[3].stepMode = wgpu::VertexStepMode::Vertex;
+        vertexBufferLayout[3].attributeCount = 1;
+        vertexBufferLayout[3].attributes = attributes.data() + 3;
+        vertexBufferLayout[4].arrayStride = sizeof(float) * 2;
+        vertexBufferLayout[4].stepMode = wgpu::VertexStepMode::Vertex;
+        vertexBufferLayout[4].attributeCount = 1;
+        vertexBufferLayout[4].attributes = attributes.data() + 4;
 
         descriptor.vertex.entryPoint = "vs_main";
         descriptor.vertex.module = mShaderModule;
@@ -130,7 +142,7 @@ namespace mrover {
         fragment.targets = targets.data();
         descriptor.fragment = &fragment;
 
-        std::array<wgpu::BindGroupLayoutEntry, 3> meshBindGroupLayoutEntries{};
+        std::array<wgpu::BindGroupLayoutEntry, 4> meshBindGroupLayoutEntries{};
         meshBindGroupLayoutEntries[0].binding = 0;
         meshBindGroupLayoutEntries[0].visibility = wgpu::ShaderStage::Fragment | wgpu::ShaderStage::Vertex;
         meshBindGroupLayoutEntries[0].buffer.type = wgpu::BufferBindingType::Uniform;
@@ -142,6 +154,10 @@ namespace mrover {
         meshBindGroupLayoutEntries[2].binding = 2;
         meshBindGroupLayoutEntries[2].visibility = wgpu::ShaderStage::Fragment;
         meshBindGroupLayoutEntries[2].sampler.type = wgpu::SamplerBindingType::Filtering;
+        meshBindGroupLayoutEntries[3].binding = 3;
+        meshBindGroupLayoutEntries[3].visibility = wgpu::ShaderStage::Fragment;
+        meshBindGroupLayoutEntries[3].texture.sampleType = wgpu::TextureSampleType::Float;
+        meshBindGroupLayoutEntries[3].texture.viewDimension = wgpu::TextureViewDimension::_2D;
 
         wgpu::BindGroupLayoutDescriptor meshBindGroupLayourDescriptor;
         meshBindGroupLayourDescriptor.entryCount = meshBindGroupLayoutEntries.size();
@@ -295,7 +311,7 @@ namespace mrover {
         mAdapter.getLimits(&limits);
 
         wgpu::RequiredLimits requiredLimits = wgpu::Default;
-        requiredLimits.limits.maxVertexAttributes = 4;
+        requiredLimits.limits.maxVertexAttributes = 5;
         requiredLimits.limits.maxVertexBuffers = 8;
         requiredLimits.limits.maxBindGroups = 2;
         requiredLimits.limits.maxUniformBuffersPerShaderStage = 4;
@@ -419,10 +435,13 @@ namespace mrover {
             mesh.indices.enqueueWriteIfUnitialized(mDevice, mQueue, wgpu::BufferUsage::Index);
             mesh.vertices.enqueueWriteIfUnitialized(mDevice, mQueue, wgpu::BufferUsage::Vertex);
             mesh.normals.enqueueWriteIfUnitialized(mDevice, mQueue, wgpu::BufferUsage::Vertex);
+            mesh.tangents.enqueueWriteIfUnitialized(mDevice, mQueue, wgpu::BufferUsage::Vertex);
+            mesh.bitangents.enqueueWriteIfUnitialized(mDevice, mQueue, wgpu::BufferUsage::Vertex);
             mesh.uvs.enqueueWriteIfUnitialized(mDevice, mQueue, wgpu::BufferUsage::Vertex);
             mesh.texture.enqueWriteIfUnitialized(mDevice);
+            mesh.normal_map.enqueWriteIfUnitialized(mDevice);
 
-            std::array<wgpu::BindGroupEntry, 3> bindGroupEntires{};
+            std::array<wgpu::BindGroupEntry, 4> bindGroupEntires{};
             bindGroupEntires[0].binding = 0;
             bindGroupEntires[0].buffer = uniforms.buffer;
             bindGroupEntires[0].size = sizeof(ModelUniforms);
@@ -430,6 +449,8 @@ namespace mrover {
             bindGroupEntires[1].textureView = mesh.texture.view;
             bindGroupEntires[2].binding = 2;
             bindGroupEntires[2].sampler = mesh.texture.sampler;
+            bindGroupEntires[3].binding = 3;
+            bindGroupEntires[3].textureView = mesh.normal_map.view;
             wgpu::BindGroupDescriptor descriptor;
             descriptor.layout = mPbrPipeline.getBindGroupLayout(0);
             descriptor.entryCount = bindGroupEntires.size();
@@ -439,7 +460,9 @@ namespace mrover {
             pass.setBindGroup(0, bindGroup, 0, nullptr);
             pass.setVertexBuffer(0, mesh.vertices.buffer, 0, mesh.vertices.sizeBytes());
             pass.setVertexBuffer(1, mesh.normals.buffer, 0, mesh.normals.sizeBytes());
-            pass.setVertexBuffer(2, mesh.uvs.buffer, 0, mesh.uvs.sizeBytes());
+            pass.setVertexBuffer(2, mesh.tangents.buffer, 0, mesh.tangents.sizeBytes());
+            pass.setVertexBuffer(3, mesh.bitangents.buffer, 0, mesh.bitangents.sizeBytes());
+            pass.setVertexBuffer(4, mesh.uvs.buffer, 0, mesh.uvs.sizeBytes());
             pass.setIndexBuffer(mesh.indices.buffer, wgpu::IndexFormat::Uint32, 0, mesh.indices.sizeBytes());
 
             static_assert(std::is_same_v<decltype(mesh.indices)::value_type, std::uint32_t>);

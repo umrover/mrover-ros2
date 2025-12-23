@@ -63,9 +63,12 @@ namespace mrover {
         struct Mesh {
             SharedBuffer<Eigen::Vector3f> vertices;
             SharedBuffer<Eigen::Vector3f> normals;
+            SharedBuffer<Eigen::Vector3f> tangents;
+            SharedBuffer<Eigen::Vector3f> bitangents;
             SharedBuffer<Eigen::Vector2f> uvs;
             SharedBuffer<std::uint32_t> indices;
             MeshTexture texture;
+            MeshTexture normal_map;
         };
 
         // DO NOT access the mesh unless you are certain it has been set from the async loader

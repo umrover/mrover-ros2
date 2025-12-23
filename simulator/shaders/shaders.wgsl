@@ -18,17 +18,22 @@ struct MeshUniforms {
 @group(0) @binding(0) var<uniform> mu: MeshUniforms;
 @group(0) @binding(1) var texture: texture_2d<f32>;
 @group(0) @binding(2) var textureSampler: sampler;
+@group(0) @binding(3) var normalTexture: texture_2d<f32>;
 
 struct InVertex {
     @location(0) positionInModel: vec3f,
     @location(1) normalInModel: vec3f,
-    @location(2) uv: vec2f,
+    @location(2) tangentInModel: vec3f,
+    @location(3) bitangentInModel: vec3f,
+    @location(4) uv: vec2f,
 }
 struct OutVertex {
    @builtin(position) positionInClip: vec4f,
    @location(0) positionInWorld: vec4f,
    @location(1) normalInWorld: vec4f,
-   @location(2) uv: vec2f,
+   @location(2) tangentInWorld: vec4f,
+   @location(3) bitangentInWorld: vec4f,
+   @location(4) uv: vec2f,
 }
 @vertex fn vs_main(in: InVertex) -> OutVertex {
     let positionInWorld = mu.modelToWorld * vec4(in.positionInModel, 1);
@@ -36,6 +41,9 @@ struct OutVertex {
     out.positionInClip = su.cameraToClip * su.worldToCamera * positionInWorld;
     out.positionInWorld = positionInWorld;
     out.normalInWorld = mu.modelToWorldForNormals * vec4(in.normalInModel, 0);
+    // TODO: should I just use the regular modelToWorld matrix here?
+    out.tangentInWorld = mu.modelToWorldForNormals * vec4(in.tangentInModel, 0);
+    out.bitangentInWorld = mu.modelToWorldForNormals * vec4(in.bitangentInModel, 0);
     out.uv = in.uv;
     return out;
 }
@@ -47,24 +55,40 @@ struct OutFragment {
 @fragment fn fs_main(in: OutVertex) -> OutFragment {
     let baseColor = textureSample(texture, textureSampler, in.uv);
 
+    let normalMapStrength = 1.0;
+    // each component is in the range [0,1]
+    let encodedNormal = textureSample(normalTexture, textureSampler, in.uv).rgb;
+    // shift to get negative values, then normalize because we only care about direction
+    // this normal is in a frame local to the surface of this face
+    let normalInLocal = normalize(encodedNormal - 0.5);
+
+    let localToWorld = mat3x3f(
+        normalize(in.tangentInWorld).xyz,
+        normalize(in.bitangentInWorld).xyz,
+        normalize(in.normalInWorld).xyz,
+    );
+
+    let normalInWorld = normalize(localToWorld * normalInLocal);
+    let mixedNormal = normalize(mix(in.normalInWorld, vec4(normalInWorld, 0), normalMapStrength));
+
     var out : OutFragment;
-    out.normalInCamera = (su.worldToCamera * in.normalInWorld + vec4(1, 1, 1, 0)) / 2;
+    out.normalInCamera = (su.worldToCamera * mixedNormal + vec4(1, 1, 1, 0)) / 2;
     out.normalInCamera.a = 1;
     // Ambient
-    let ambientStrength = 0.6;
+    let ambientStrength = 0.3;
     let ambient = ambientStrength * su.lightColor;
     // Diffuse
     let lightDirInWorld = normalize(su.lightInWorld - in.positionInWorld);
-    let diff = max(dot(in.normalInWorld, lightDirInWorld), 0.0);
+    let diff = max(dot(mixedNormal, lightDirInWorld), 0.0);
     let diffuse = diff * su.lightColor;
     // Specular
-    let specularStrength = 0.5;
+    let specularStrength = 0.1;
     let viewDirInWolrd = normalize(su.cameraInWorld - in.positionInWorld);
-    let reflectDir = reflect(-lightDirInWorld, in.normalInWorld);
+    let reflectDir = reflect(-lightDirInWorld, mixedNormal);
     let spec = pow(max(dot(viewDirInWolrd, reflectDir), 0.0), 32);
     let specular = specularStrength * spec * su.lightColor;
     // Combination
-    out.color = vec4(((ambient + diffuse + specular) * baseColor).rgb, 1);
+    out.color = vec4(((ambient + diffuse) * baseColor + specular).rgb, 1);
     return out;
 }
 
