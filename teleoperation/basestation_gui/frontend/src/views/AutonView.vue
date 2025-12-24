@@ -39,17 +39,8 @@
       <DriveControls />
       <GimbalControls />
     </div>
-    <div class="island p-2 rounded moteus d-flex gap-2">
-      <ControllerDataTable
-        msg-type="drive_left_state"
-        header="Drive Left States"
-        class="border border-2 rounded p-2 flex-fill"
-      />
-      <ControllerDataTable
-        msg-type="drive_right_state"
-        header="Drive Right States"
-        class="border border-2 rounded p-2 flex-fill"
-      />
+    <div class="island p-2 rounded moteus">
+      <ControllerDataTable mode="drive" header="Drive" />
     </div>
   </div>
 </template>

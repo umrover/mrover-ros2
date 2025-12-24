@@ -110,23 +110,10 @@ export default function threeSetup() {
     },
   )
 
-  // Sizes for window resizing
   const sizes = {
     width: canvas.clientWidth,
     height: canvas.clientHeight,
   }
-
-  // Resize event listenerreb
-  window.addEventListener('resize', () => {
-    sizes.width = canvas.clientWidth
-    sizes.height = canvas.clientHeight
-    // Update camera
-    camera.aspect = sizes.width / sizes.height
-    camera.updateProjectionMatrix()
-    // Update renderer
-    renderer.setSize(sizes.width, sizes.height)
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
-  })
 
   // Camera setup
   const camera = new THREE.PerspectiveCamera(
@@ -158,6 +145,16 @@ export default function threeSetup() {
   renderer.toneMapping = THREE.ACESFilmicToneMapping
   renderer.toneMappingExposure = 2.5
 
+  const resizeObserver = new ResizeObserver(() => {
+    sizes.width = canvas.clientWidth
+    sizes.height = canvas.clientHeight
+    camera.aspect = sizes.width / sizes.height
+    camera.updateProjectionMatrix()
+    renderer.setSize(sizes.width, sizes.height)
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+  })
+  resizeObserver.observe(canvas)
+
   const clock = new THREE.Clock()
   let timeSinceLastFrame = 0
   const fpsLimit = 60
@@ -174,10 +171,11 @@ export default function threeSetup() {
     }
   }
 
-  tick() // Start the animation loop
+  tick()
 
   return () => {
-    renderer.dispose() // Dispose renderer
+    resizeObserver.disconnect()
+    renderer.dispose()
   }
 }
 
