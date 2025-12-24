@@ -375,8 +375,6 @@ export default function threeSetup() {
 
   tick()
 
-  
-
   return () => {
     resizeObserver.disconnect()
     renderer.dispose()
