@@ -30,6 +30,7 @@ bun.lockb
 .python-version
 system*.html
 openapitools.json
+scripts/*_icd_report.csv
 
 # macOS
 .DS_Store
