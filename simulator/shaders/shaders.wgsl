@@ -83,8 +83,8 @@ struct OutFragment {
     let diffuse = diff * su.lightColor;
     // Specular
     let specularStrength = 0.1;
-    let viewDirInWolrd = normalize(su.cameraInWorld - in.positionInWorld);
-    let halfwayDir = normalize(lightDirInWorld + viewDirInWolrd);
+    let viewDirInWorld = normalize(su.cameraInWorld - in.positionInWorld);
+    let halfwayDir = normalize(lightDirInWorld + viewDirInWorld);
     let spec = pow(max(dot(mixedNormal, halfwayDir), 0.0), 32);
     let specular = specularStrength * spec * su.lightColor;
     // Combination
