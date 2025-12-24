@@ -22,21 +22,8 @@
         <SensorData />
       </div>
       <div class="island p-2 rounded d-flex gap-2">
-        <ControllerDataTable
-          msg-type="drive_left_state"
-          header="Drive Left"
-          class="rounded border border-2 p-2 flex-fill"
-        />
-        <ControllerDataTable
-          msg-type="drive_right_state"
-          header="Drive Right"
-          class="rounded border border-2 p-2 flex-fill"
-        />
-        <ControllerDataTable
-          msg-type="sp_state"
-          header="SP States"
-          class="rounded border border-2 p-2 flex-fill"
-        />
+        <ControllerDataTable mode="drive" header="Drive" />
+        <ControllerDataTable mode="sp" header="SP" />
       </div>
     </div>
     <div class="d-flex flex-column gap-2 flex-fill">
@@ -93,6 +80,7 @@ const updateSite = async (selectedSite: number) => {
 onMounted(() => {
   websocketStore.setupWebSocket('arm')
   websocketStore.setupWebSocket('chassis')
+  websocketStore.setupWebSocket('drive')
   websocketStore.setupWebSocket('nav')
   websocketStore.setupWebSocket('science')
 })
@@ -100,6 +88,7 @@ onMounted(() => {
 onUnmounted(() => {
   websocketStore.closeWebSocket('arm')
   websocketStore.closeWebSocket('chassis')
+  websocketStore.closeWebSocket('drive')
   websocketStore.closeWebSocket('nav')
   websocketStore.closeWebSocket('science')
 })

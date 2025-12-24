@@ -10,6 +10,9 @@
 # clangd cache
 .cache/
 
+# build symlink
+compile_commands.json
+
 # IMGUI window layout
 imgui.ini
 
@@ -26,7 +29,6 @@ venv/
 *.db
 bun.lock
 bun.lockb
-/teleoperation/api-docs/
 .python-version
 system*.html
 openapitools.json

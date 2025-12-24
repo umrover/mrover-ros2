@@ -254,10 +254,18 @@ namespace mrover {
                     }
                     controllerState.limit_hit.push_back(limitSwitches);
 
+                    double pos = rover.physics->getJointPos(rover.linkNameToMeta.at(urdfName).index);
+                    double vel = rover.physics->getJointVel(rover.linkNameToMeta.at(urdfName).index);
+                    double torque = rover.physics->getJointTorque(rover.linkNameToMeta.at(urdfName).index);
+
+                    controllerState.position.push_back(static_cast<float>(pos));
+                    controllerState.velocity.push_back(static_cast<float>(vel));
+                    controllerState.current.push_back(static_cast<float>(torque));
+
                     jointState.name.push_back(msgName);
-                    jointState.position.push_back(rover.physics->getJointPos(rover.linkNameToMeta.at(urdfName).index));
-                    jointState.velocity.push_back(rover.physics->getJointVel(rover.linkNameToMeta.at(urdfName).index));
-                    jointState.effort.push_back(rover.physics->getJointTorque(rover.linkNameToMeta.at(urdfName).index));
+                    jointState.position.push_back(pos);
+                    jointState.velocity.push_back(vel);
+                    jointState.effort.push_back(torque);
                 }
 
                 motorGroup.controllerStatePub->publish(controllerState);
