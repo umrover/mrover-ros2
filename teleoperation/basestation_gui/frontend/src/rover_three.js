@@ -8,7 +8,6 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 // import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js'
 //import { TrackballControls } from 'three/addons/controls/TrackballControls.js'
 import * as Text2D from 'three/addons/webxr/Text2D.js' //DEBUG
-import { rand } from 'three/tsl'
 
 const defaultJointValues = {
   chassis_to_arm_a: 24.14,
@@ -22,7 +21,6 @@ const defaultJointValues = {
 let rover = null
 let ikTargetSphere = null
 
-let camera_type_names = ["default", "follow", "full arm", "arm", "side arm", "top", "bottom"]
 let current_camera_type = "default"
 
 const costMapBlockWidth = 80
@@ -465,7 +463,7 @@ function fillTextCanvas(gridData){
   }
 }
 
-export function updateCostMapGrid(gridData){
+export function updateCostMapGrid(){
   let tempGridData = []
   for(let i = 0; i < costMapBlockWidth * costMapBlockWidth; i++){
     tempGridData.push(Math.round(Math.random() * 100))
