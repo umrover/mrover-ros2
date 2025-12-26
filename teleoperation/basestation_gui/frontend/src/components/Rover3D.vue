@@ -41,10 +41,10 @@
     @click = "set_camera_type('bottom')">
       Bottom Up
   </button>
-  <button 
-    type="test"
+  <button
+    type="button"
     class="btn flex-fill"
-    @click = "updateCostMapGrid([1])">
+    @click = "updateCostMapGrid()">
       Test Button
   </button>
 

@@ -1,0 +1,6 @@
+uint32 point_in_image_x
+uint32 point_in_image_y
+---
+bool success
+---
+float32 distance

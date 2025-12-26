@@ -2,8 +2,10 @@
 """
 ICD Compliance Checker
 
-Validates the codebase against the ICD (Interface Control Document) specification.
+Validates the codebase against the ICD specification.
 Checks message definitions for exact match with ICD.
+
+Download ICD as CSV format, assuming ICD format of year 25-26
 
 Usage:
     icd_check.py <icd.csv>                  Check compliance
@@ -267,16 +269,18 @@ class ICDChecker:
                     extra_fields = [f for f in actual_fields if f not in expected_set]
 
                     if missing_fields or extra_fields:
-                        self.mismatches.append(Mismatch(
-                            topic=entry.name,
-                            msg_type=typ,
-                            file_path=msg_path,
-                            interface_type=entry.interface_type,
-                            expected_content=entry.definition,
-                            actual_content=msg_path.read_text(),
-                            missing_fields=missing_fields,
-                            extra_fields=extra_fields,
-                        ))
+                        self.mismatches.append(
+                            Mismatch(
+                                topic=entry.name,
+                                msg_type=typ,
+                                file_path=msg_path,
+                                interface_type=entry.interface_type,
+                                expected_content=entry.definition,
+                                actual_content=msg_path.read_text(),
+                                missing_fields=missing_fields,
+                                extra_fields=extra_fields,
+                            )
+                        )
 
     def run(self) -> bool:
         """Run all checks. Returns True if no issues."""
@@ -299,12 +303,12 @@ class ICDChecker:
             print("=" * 60)
             print(f"MISMATCH ({len(self.mismatches)}):")
             print("=" * 60)
-            for m in self.mismatches:
-                print(f"  [{m.topic}] {m.msg_type}")
-                for f in m.missing_fields:
-                    print(f"    - missing: {f}")
-                for f in m.extra_fields:
-                    print(f"    + extra:   {f}")
+            for mm in self.mismatches:
+                print(f"  [{mm.topic}] {mm.msg_type}")
+                for fld in mm.missing_fields:
+                    print(f"    - missing: {fld}")
+                for fld in mm.extra_fields:
+                    print(f"    + extra:   {fld}")
             print()
 
         if not self.missing and not self.mismatches:
@@ -316,27 +320,27 @@ class ICDChecker:
             fixed_any = False
 
             if self.missing_types:
-                to_fix = [(p, t, i, d, n) for p, t, i, d, n in self.missing_types if self.should_fix(n)]
-                if to_fix:
+                missing_to_fix = [(p, t, i, d, n) for p, t, i, d, n in self.missing_types if self.should_fix(n)]
+                if missing_to_fix:
                     print("\n" + "=" * 60)
                     print("FIXING: Creating missing types...")
                     print("=" * 60)
-                    for pkg, typ, iface_type, definition, _ in to_fix:
+                    for pkg, typ, iface_type, definition, _ in missing_to_fix:
                         if self.create_missing_type(pkg, typ, iface_type, definition):
                             fixed_any = True
 
             if self.mismatches:
-                to_fix = [m for m in self.mismatches if self.should_fix(m.topic)]
-                if to_fix:
+                mismatches_to_fix = [mm for mm in self.mismatches if self.should_fix(mm.topic)]
+                if mismatches_to_fix:
                     print("\n" + "=" * 60)
                     print("FIXING: Replacing mismatched files with ICD spec...")
                     print("=" * 60)
-                    for mismatch in to_fix:
+                    for mismatch in mismatches_to_fix:
                         if self.fix_mismatch(mismatch):
                             fixed_any = True
 
             if fixed_any:
-                print("\nFiles modified. Remember to rebuild!")
+                print("\nFiles modified, rebuild for changes to take effect. ")
             elif self.fix != "":
                 print(f"\nNo matching topic found for: {self.fix}")
 
@@ -344,21 +348,15 @@ class ICDChecker:
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Check codebase compliance against ICD specification"
-    )
-    parser.add_argument(
-        "icd_file",
-        type=Path,
-        help="Path to the ICD CSV file"
-    )
+    parser = argparse.ArgumentParser(description="Check codebase compliance against ICD specification")
+    parser.add_argument("icd_file", type=Path, help="Path to the ICD CSV file")
     parser.add_argument(
         "--fix",
         nargs="?",
         const="",
         default=None,
         metavar="TOPIC",
-        help="Fix mismatches. Optionally specify topic (e.g., --fix /arm_thr_cmd)"
+        help="Fix mismatches. Optionally specify topic (e.g., --fix /arm_thr_cmd)",
     )
     args = parser.parse_args()
 
