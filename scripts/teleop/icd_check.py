@@ -3,18 +3,19 @@
 ICD Compliance Checker
 
 Validates the codebase against the ICD (Interface Control Document) specification.
-Checks message definitions, topic names, and service definitions.
+Checks message definitions for exact match with ICD.
 
 Usage:
-    icd_check.py <icd.csv>          Check compliance
-    icd_check.py <icd.csv> --fix    Check and create missing message types
+    icd_check.py <icd.csv>                  Check compliance
+    icd_check.py <icd.csv> --fix            Fix all mismatches
+    icd_check.py <icd.csv> --fix /topic     Fix specific topic only
 """
 
 import argparse
 import csv
 import re
 import sys
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
 
@@ -32,15 +33,27 @@ class ICDEntry:
     notes: str
 
 
+@dataclass
+class Mismatch:
+    topic: str
+    msg_type: str
+    file_path: Path
+    interface_type: str
+    expected_content: str
+    actual_content: str
+    missing_fields: list[str] = field(default_factory=list)
+    extra_fields: list[str] = field(default_factory=list)
+
+
 class ICDChecker:
-    def __init__(self, mrover_root: Path, icd_path: Path, fix: bool = False):
+    def __init__(self, mrover_root: Path, icd_path: Path, fix: Optional[str] = None):
         self.root = mrover_root
         self.icd_path = icd_path
-        self.fix = fix
+        self.fix = fix  # None = no fix, "" = fix all, "/topic" = fix specific
         self.entries: list[ICDEntry] = []
-        self.errors: list[str] = []
-        self.warnings: list[str] = []
-        self.missing_types: list[tuple[str, str, str, str]] = []  # (pkg, typ, iface_type, definition)
+        self.missing: list[str] = []
+        self.mismatches: list[Mismatch] = []
+        self.missing_types: list[tuple[str, str, str, str, str]] = []  # (pkg, typ, iface_type, definition, topic)
 
     def parse_icd(self) -> None:
         with open(self.icd_path, "r") as f:
@@ -54,7 +67,7 @@ class ICDChecker:
                 break
 
         if header_idx is None:
-            self.errors.append("Could not find header row in ICD CSV")
+            self.missing.append("Could not find header row in ICD CSV")
             return
 
         for row in rows[header_idx + 1 :]:
@@ -87,7 +100,6 @@ class ICDChecker:
         if not msg_type:
             return None
 
-        # Fix common typos
         msg_type = msg_type.replace("gemetry_msgs", "geometry_msgs")
 
         if "/" in msg_type:
@@ -107,7 +119,7 @@ class ICDChecker:
         return True
 
     def parse_msg_file(self, path: Path) -> list[str]:
-        """Parse a .msg file and return normalized field definitions."""
+        """Parse a .msg/.srv file and return normalized field definitions."""
         if not path.exists():
             return []
         fields = []
@@ -116,66 +128,66 @@ class ICDChecker:
                 line = line.split("#")[0].strip()
                 if not line:
                     continue
+                if line == "---":
+                    fields.append("---")
+                    continue
                 line = re.sub(r"\[\d*\]", "[]", line)
                 fields.append(line)
         return fields
+
+    def normalize_icd_field(self, line: str) -> Optional[str]:
+        """Normalize a single ICD field line. Returns None if not a valid field."""
+        line = line.strip()
+        if not line:
+            return None
+        if line.startswith("#"):
+            return None
+        if line.endswith(":") and "=" not in line:
+            return None
+        if line == "---":
+            return "---"
+
+        line = line.replace("double ", "float64 ")
+        line = line.replace("char[]", "string")
+        line = re.sub(r"\[\d*\]", "[]", line)
+
+        # Add default field names for types without them
+        parts = line.split()
+        if len(parts) == 1 and "/" in parts[0]:
+            # Type without field name, e.g., "std_msgs/Header" -> "std_msgs/Header header"
+            type_name = parts[0].split("/")[-1].lower()
+            line = f"{parts[0]} {type_name}"
+
+        return line
 
     def normalize_icd_definition(self, definition: str) -> list[str]:
         """Normalize ICD definition field for comparison."""
         fields = []
         for line in definition.split("\n"):
-            line = line.strip()
-            if not line:
-                continue
-            if line.startswith("---"):
-                continue
-            if line.startswith("#"):
-                continue
-            if ":" in line and not any(line.startswith(t) for t in ["uint8", "int8", "uint16", "int16", "uint32", "int32", "uint64", "int64", "float32", "float64"]):
-                continue
-            line = re.sub(r"\[\d*\]", "[]", line)
-            fields.append(line)
+            normalized = self.normalize_icd_field(line)
+            if normalized:
+                fields.append(normalized)
         return fields
 
-    def format_definition_for_file(self, definition: str, interface_type: str) -> str:
+    def format_definition_for_file(self, definition: str) -> str:
         """Convert ICD definition to proper .msg/.srv/.action format."""
         lines = []
-        in_response = False
-        in_feedback = False
-
         for line in definition.split("\n"):
-            line = line.strip()
-            if not line:
-                continue
-
-            if line == "---":
-                lines.append("---")
-                if not in_response:
-                    in_response = True
-                else:
-                    in_feedback = True
-                continue
-
-            # Skip inline type definitions (like "ImageTarget:")
-            if line.endswith(":") and not "=" in line:
-                continue
-
-            # Fix common type issues
-            line = line.replace("double ", "float64 ")
-            line = line.replace("char[]", "string")
-
-            # Handle constant definitions
-            if "=" in line:
-                lines.append(line)
-                continue
-
-            # Regular field
-            lines.append(line)
-
+            normalized = self.normalize_icd_field(line)
+            if normalized:
+                lines.append(normalized)
         return "\n".join(lines) + "\n"
 
+    def should_fix(self, topic: str) -> bool:
+        """Check if this topic should be fixed."""
+        if self.fix is None:
+            return False
+        if self.fix == "":
+            return True
+        return self.fix == topic
+
     def create_missing_type(self, pkg: str, typ: str, interface_type: str, definition: str) -> bool:
-        """Create a stub message/service/action file."""
+        """Create a message/service/action file."""
         if pkg != "mrover":
             return False
 
@@ -198,7 +210,7 @@ class ICDChecker:
 
         dir_path.mkdir(parents=True, exist_ok=True)
 
-        content = self.format_definition_for_file(definition, interface_type)
+        content = self.format_definition_for_file(definition)
         if not content.strip():
             content = "# TODO: Define fields\n"
 
@@ -206,29 +218,34 @@ class ICDChecker:
         print(f"  Created: {file_path.relative_to(self.root)}")
         return True
 
+    def fix_mismatch(self, mismatch: Mismatch) -> bool:
+        """Overwrite file to match ICD exactly."""
+        if not mismatch.file_path.exists():
+            return False
+
+        content = self.format_definition_for_file(mismatch.expected_content)
+        if not content.strip():
+            return False
+
+        mismatch.file_path.write_text(content)
+        print(f"  Replaced: {mismatch.file_path.relative_to(self.root)}")
+        return True
+
     def check_message_definitions(self) -> None:
-        """Check that message types exist and fields match."""
+        """Check that message types exist and match exactly."""
         for entry in self.entries:
             if not entry.msg_type:
-                self.warnings.append(
-                    f"[{entry.name}] No message type specified in ICD"
-                )
                 continue
 
             parsed = self.normalize_msg_type(entry.msg_type)
             if not parsed:
-                self.warnings.append(
-                    f"[{entry.name}] Could not parse message type: {entry.msg_type}"
-                )
                 continue
 
             pkg, typ = parsed
 
             if not self.check_msg_exists(pkg, typ):
-                self.errors.append(
-                    f"[{entry.name}] Message type not found: {pkg}/{typ}"
-                )
-                self.missing_types.append((pkg, typ, entry.interface_type, entry.definition))
+                self.missing.append(f"[{entry.name}] {pkg}/{typ}")
+                self.missing_types.append((pkg, typ, entry.interface_type, entry.definition, entry.name))
                 continue
 
             if pkg == "mrover" and entry.definition:
@@ -243,85 +260,87 @@ class ICDChecker:
                     actual_fields = self.parse_msg_file(msg_path)
                     expected_fields = self.normalize_icd_definition(entry.definition)
 
-                    for expected in expected_fields:
-                        if not any(expected in actual for actual in actual_fields):
-                            field_name = expected.split()[-1] if expected.split() else ""
-                            if field_name and not any(
-                                field_name in actual for actual in actual_fields
-                            ):
-                                self.warnings.append(
-                                    f"[{entry.name}] Field mismatch in {typ}: "
-                                    f"expected '{expected}'"
-                                )
+                    actual_set = set(actual_fields)
+                    expected_set = set(expected_fields)
 
-    def check_topic_usage(self) -> None:
-        """Grep source code for topic usage."""
-        topic_entries = [e for e in self.entries if e.interface_type == "Topic"]
+                    missing_fields = [f for f in expected_fields if f not in actual_set]
+                    extra_fields = [f for f in actual_fields if f not in expected_set]
 
-        source_topics: set[str] = set()
-        for pattern in ["**/*.cpp", "**/*.py", "**/*.vue", "**/*.ts"]:
-            for f in self.root.glob(pattern):
-                if "build" in str(f) or "install" in str(f):
-                    continue
-                try:
-                    content = f.read_text()
-                    matches = re.findall(r'["\'](/[a-z_/]+)["\']', content, re.IGNORECASE)
-                    source_topics.update(matches)
-                except Exception:
-                    pass
-
-        icd_topics = {e.name for e in topic_entries}
-
-        for topic in icd_topics:
-            if topic not in source_topics:
-                self.warnings.append(
-                    f"[{topic}] Defined in ICD but not found in source code"
-                )
+                    if missing_fields or extra_fields:
+                        self.mismatches.append(Mismatch(
+                            topic=entry.name,
+                            msg_type=typ,
+                            file_path=msg_path,
+                            interface_type=entry.interface_type,
+                            expected_content=entry.definition,
+                            actual_content=msg_path.read_text(),
+                            missing_fields=missing_fields,
+                            extra_fields=extra_fields,
+                        ))
 
     def run(self) -> bool:
-        """Run all checks. Returns True if no errors."""
+        """Run all checks. Returns True if no issues."""
         print(f"Parsing ICD from {self.icd_path}...")
         self.parse_icd()
         print(f"Found {len(self.entries)} ICD entries\n")
 
-        print("Checking message definitions...")
+        print("Checking message definitions...\n")
         self.check_message_definitions()
 
-        print("Checking topic usage in source...\n")
-        self.check_topic_usage()
-
-        if self.errors:
+        if self.missing:
             print("=" * 60)
-            print(f"ERRORS ({len(self.errors)}):")
+            print(f"MISSING ({len(self.missing)}):")
             print("=" * 60)
-            for e in self.errors:
-                print(f"  {e}")
+            for m in self.missing:
+                print(f"  {m}")
             print()
 
-        if self.warnings:
+        if self.mismatches:
             print("=" * 60)
-            print(f"WARNINGS ({len(self.warnings)}):")
+            print(f"MISMATCH ({len(self.mismatches)}):")
             print("=" * 60)
-            for w in self.warnings:
-                print(f"  {w}")
+            for m in self.mismatches:
+                print(f"  [{m.topic}] {m.msg_type}")
+                for f in m.missing_fields:
+                    print(f"    - missing: {f}")
+                for f in m.extra_fields:
+                    print(f"    + extra:   {f}")
             print()
 
-        if not self.errors and not self.warnings:
+        if not self.missing and not self.mismatches:
             print("All checks passed!")
 
-        print(f"\nSummary: {len(self.errors)} errors, {len(self.warnings)} warnings")
+        print(f"\nSummary: {len(self.missing)} missing, {len(self.mismatches)} mismatches")
 
-        if self.fix and self.missing_types:
-            print("\n" + "=" * 60)
-            print("FIXING: Creating missing message types...")
-            print("=" * 60)
-            created = 0
-            for pkg, typ, iface_type, definition in self.missing_types:
-                if self.create_missing_type(pkg, typ, iface_type, definition):
-                    created += 1
-            print(f"\nCreated {created} files. Remember to add them to CMakeLists.txt!")
+        if self.fix is not None:
+            fixed_any = False
 
-        return len(self.errors) == 0
+            if self.missing_types:
+                to_fix = [(p, t, i, d, n) for p, t, i, d, n in self.missing_types if self.should_fix(n)]
+                if to_fix:
+                    print("\n" + "=" * 60)
+                    print("FIXING: Creating missing types...")
+                    print("=" * 60)
+                    for pkg, typ, iface_type, definition, _ in to_fix:
+                        if self.create_missing_type(pkg, typ, iface_type, definition):
+                            fixed_any = True
+
+            if self.mismatches:
+                to_fix = [m for m in self.mismatches if self.should_fix(m.topic)]
+                if to_fix:
+                    print("\n" + "=" * 60)
+                    print("FIXING: Replacing mismatched files with ICD spec...")
+                    print("=" * 60)
+                    for mismatch in to_fix:
+                        if self.fix_mismatch(mismatch):
+                            fixed_any = True
+
+            if fixed_any:
+                print("\nFiles modified. Remember to rebuild!")
+            elif self.fix != "":
+                print(f"\nNo matching topic found for: {self.fix}")
+
+        return len(self.missing) == 0 and len(self.mismatches) == 0
 
 
 def main():
@@ -335,8 +354,11 @@ def main():
     )
     parser.add_argument(
         "--fix",
-        action="store_true",
-        help="Create stub files for missing message types"
+        nargs="?",
+        const="",
+        default=None,
+        metavar="TOPIC",
+        help="Fix mismatches. Optionally specify topic (e.g., --fix /arm_thr_cmd)"
     )
     args = parser.parse_args()
 
