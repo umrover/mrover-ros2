@@ -52,9 +52,49 @@ struct OutFragment {
     @location(0) color: vec4f,
     @location(1) normalInCamera: vec4f,
 }
-@fragment fn fs_main(in: OutVertex) -> OutFragment {
-    let baseColor = textureSample(texture, textureSampler, in.uv);
+// PBR FS
+fn fresnelSchlick(cosTheta: f32, F0: vec3f) -> vec3f {
+    return F0 + (1.0 - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
+}
 
+fn DistributionGGX(normal: vec3f, halfway: vec3f, roughness: f32) -> f32 {
+    let a = roughness * roughness;
+    let a2 = a * a;
+    let NdotH = max(dot(normal, halfway), 0.0);
+    let NdotH2 = NdotH * NdotH;
+
+    let num = a2;
+    let x = (NdotH2 * (a2 - 1.0) + 1.0);
+    let denom = 3.14159 * x * x;
+
+    return num / denom;
+}
+
+fn GeometrySchlickGGX(NdotV: f32, roughness: f32) -> f32 {
+    let r = roughness + 1.0;
+    let k = r * r / 8.0;
+
+    let num = NdotV;
+    let denom = NdotV * (1.0 - k) + k;
+
+    return num / denom;
+}
+
+fn GeometrySmith(normal: vec3f, viewDir: vec3f, lightDir: vec3f, roughness: f32) -> f32 {
+    let NdotV = max(dot(normal, viewDir), 0.0);
+    let NdotL = max(dot(normal, lightDir), 0.0);
+    let ggx1 = GeometrySchlickGGX(NdotL, roughness);
+    let ggx2 = GeometrySchlickGGX(NdotV, roughness);
+
+    return ggx1 * ggx2;
+}
+
+@fragment fn fs_main(in: OutVertex) -> OutFragment {
+    let metallic = 0.0;
+    let roughness = 0.93;
+    let ao = 0.1;
+
+    // get the normal vector
     let normalMapStrength = 1.0;
     // each component is in the range [0,1]
     let encodedNormal = textureSample(normalTexture, textureSampler, in.uv).rgb;
@@ -69,26 +109,47 @@ struct OutFragment {
     );
 
     let normalInWorld = normalize(localToWorld * normalInLocal);
-    let mixedNormal = normalize(mix(in.normalInWorld, vec4(normalInWorld, 0), normalMapStrength));
+    let mixedNormal = normalize(mix(in.normalInWorld.xyz, normalInWorld, normalMapStrength));
+
+    let viewDirInWorld = normalize((su.cameraInWorld - in.positionInWorld).xyz);
+    let lightDirInWorld = normalize((su.lightInWorld - in.positionInWorld).xyz);
+    let halfwayDir = normalize((lightDirInWorld + viewDirInWorld).xyz);
+
+    // now PBR stuff
+    let distanceToLight = length(su.lightInWorld - in.positionInWorld);
+    // let attenuation = 1 / (distanceToLight * distanceToLight);
+    let attenuation = 1.0;
+    let radiance = su.lightColor.rgb * attenuation * 5;
+
+    let albedo = textureSample(texture, textureSampler, in.uv).rgb;
+    let F0 = mix(vec3(0.04), albedo, metallic);
+    let F = fresnelSchlick(max(dot(halfwayDir, viewDirInWorld), 0), F0);
+
+    let NDF = DistributionGGX(mixedNormal, halfwayDir, roughness);
+    let G = GeometrySmith(mixedNormal, viewDirInWorld, lightDirInWorld, roughness);
+    let numerator = NDF * G * F;
+    let denominator = 4.0 * max(dot(mixedNormal, viewDirInWorld), 0.0) * max(dot(mixedNormal, lightDirInWorld), 0.0) + 0.0001;
+    let specular = numerator / denominator;
+
+    let kS = F;
+    let kD = (vec3(1.0) - kS) * (1.0 - metallic);
+
+    let PI = 3.14159265;
+    let NdotL = max(dot(mixedNormal, lightDirInWorld), 0.0);
+    let Lo = (kD * albedo / PI + specular) * radiance * NdotL;
+    let ambient = 0.03 * albedo * ao;
+
+    var color = ambient + Lo;
+    // gamma correct
+    // TODO: why does this make it look bad...
+    // color = color / (color + vec3(1.0));
+    // color = pow(color, vec3(1.0/2.2));
 
     var out : OutFragment;
-    out.normalInCamera = (su.worldToCamera * mixedNormal + vec4(1, 1, 1, 0)) / 2;
+    out.normalInCamera = (su.worldToCamera * vec4(mixedNormal, 0) + vec4(1, 1, 1, 0)) / 2;
     out.normalInCamera.a = 1;
-    // Ambient
-    let ambientStrength = 0.3;
-    let ambient = ambientStrength * su.lightColor;
-    // Diffuse
-    let lightDirInWorld = normalize(su.lightInWorld - in.positionInWorld);
-    let diff = max(dot(mixedNormal, lightDirInWorld), 0.0);
-    let diffuse = diff * su.lightColor;
-    // Specular
-    let specularStrength = 0.1;
-    let viewDirInWorld = normalize(su.cameraInWorld - in.positionInWorld);
-    let halfwayDir = normalize(lightDirInWorld + viewDirInWorld);
-    let spec = pow(max(dot(mixedNormal, halfwayDir), 0.0), 32);
-    let specular = specularStrength * spec * su.lightColor;
-    // Combination
-    out.color = vec4(((ambient + diffuse) * baseColor + specular).rgb, 1);
+    // TODO: think about alpha??
+    out.color = vec4(color, 1.0);
     return out;
 }
 
