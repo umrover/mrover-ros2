@@ -56,8 +56,8 @@ namespace mrover {
         }
 
         msg::Position positions;
-        positions.names = {"joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_roll"};
-        positions.positions = {
+        positions.name = {"joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_roll"};
+        positions.position = {
             static_cast<float>(y),
             static_cast<float>(q1),
             static_cast<float>(q2),
@@ -65,16 +65,16 @@ namespace mrover {
             static_cast<float>(target.roll),
         };
 
-        for (size_t i = 0; i < positions.names.size(); ++i) {
-            auto it = joints.find(positions.names[i]);
+        for (size_t i = 0; i < positions.name.size(); ++i) {
+            auto it = joints.find(positions.name[i]);
             // hopefully this will never happen, but just in case
             if (it == joints.end()) {
-                RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, "Unknown joint \"" << positions.names[i] << "\"");
+                RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, "Unknown joint \"" << positions.name[i] << "\"");
                 return std::nullopt;
             }
 
-            if (!it->second.limits.posInBounds(positions.positions[i])) {
-                RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, "Position for joint " << positions.names[i] << " not within limits!");
+            if (!it->second.limits.posInBounds(positions.position[i])) {
+                RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, "Position for joint " << positions.name[i] << " not within limits!");
                 return std::nullopt;
             }
         }
@@ -119,8 +119,8 @@ namespace mrover {
         }
 
         msg::Velocity velocities;
-        velocities.names = {"joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_roll"};
-        velocities.velocities = {
+        velocities.name = {"joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_roll"};
+        velocities.velocity = {
             static_cast<float>(vel.linear.y),
             static_cast<float>(joint_b_vel),
             static_cast<float>(joint_c_vel),
@@ -129,25 +129,25 @@ namespace mrover {
         };
 
         double scaleFactor = 1;
-        for (size_t i = 0; i < velocities.names.size(); ++i) {
-            auto it = joints.find(velocities.names[i]);
+        for (size_t i = 0; i < velocities.name.size(); ++i) {
+            auto it = joints.find(velocities.name[i]);
             if (it == joints.end()) {
-                RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, "Unknown Joint\"" << velocities.names[i] << "\"");
+                RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, "Unknown Joint\"" << velocities.name[i] << "\"");
                 return std::nullopt;
             }
 
-            if ((velocities.velocities[i] > 0 && it->second.limits.maxPos - it->second.pos < JOINT_VEL_THRESH) ||
-                (velocities.velocities[i] < 0 && it->second.pos - it->second.limits.minPos < JOINT_VEL_THRESH)) {
-                RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, "Joint " << velocities.names[i] << " too close to limit for velocity command");
+            if ((velocities.velocity[i] > 0 && it->second.limits.maxPos - it->second.pos < JOINT_VEL_THRESH) ||
+                (velocities.velocity[i] < 0 && it->second.pos - it->second.limits.minPos < JOINT_VEL_THRESH)) {
+                RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, "Joint " << velocities.name[i] << " too close to limit for velocity command");
                 return std::nullopt;
             }
-            scaleFactor = std::max(scaleFactor, velocities.velocities[i] / (velocities.velocities[i] > 0 ? it->second.limits.maxVel : it->second.limits.minVel));
+            scaleFactor = std::max(scaleFactor, velocities.velocity[i] / (velocities.velocity[i] > 0 ? it->second.limits.maxVel : it->second.limits.minVel));
         }
 
         // scale down all velocities so that we don't exceed motor velocity limits
         if (scaleFactor > 1)
             RCLCPP_INFO_STREAM_THROTTLE(get_logger(), *get_clock(), 500, "Commanded velocity too high. Scaling down by factor of " << scaleFactor);
-        for (auto& v : velocities.velocities)
+        for (auto& v : velocities.velocity)
             v = static_cast<float>(v / scaleFactor);
 
         return velocities;
@@ -204,8 +204,8 @@ namespace mrover {
 
     auto ArmController::timerCallback() -> void {
         msg::Position mCurrPos;
-        mCurrPos.names = {"joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_roll"};
-        mCurrPos.positions = {
+        mCurrPos.name = {"joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_roll"};
+        mCurrPos.position = {
             static_cast<float>(joints["joint_a"].pos),
             static_cast<float>(joints["joint_b"].pos),
             static_cast<float>(joints["joint_c"].pos),
@@ -234,13 +234,13 @@ namespace mrover {
         } else if (mArmMode == ArmMode::VELOCITY_CONTROL) {
             // TODO: Determine joint velocities that cancels out arm sag
             auto velocities = ikVelCalc(mVelTarget);
-            if (velocities && 
+            if (velocities &&
                 !(
-                    velocities->velocities[0] == 0 &&
-                    velocities->velocities[1] == 0 &&
-                    velocities->velocities[2] == 0 &&
-                    velocities->velocities[3] == 0 &&
-                    velocities->velocities[4] == 0
+                    velocities->velocity[0] == 0 &&
+                    velocities->velocity[1] == 0 &&
+                    velocities->velocity[2] == 0 &&
+                    velocities->velocity[3] == 0 &&
+                    velocities->velocity[4] == 0
                 )
             ) {
                 mVelPub->publish(velocities.value());
@@ -252,23 +252,23 @@ namespace mrover {
             }
         } else { // typing mode
             msg::Position positions;
-            positions.names = {"joint_a", "gripper"};
-            positions.positions = {
+            positions.name = {"joint_a", "gripper"};
+            positions.position = {
                 static_cast<float>(mPosTarget.y + mTypingOrigin.y),
                 static_cast<float>(mPosTarget.z + mTypingOrigin.gripper),
             };
 
             // bounds checking and such
-            for (size_t i = 0; i < positions.names.size(); ++i) {
-                auto it = joints.find(positions.names[i]);
+            for (size_t i = 0; i < positions.name.size(); ++i) {
+                auto it = joints.find(positions.name[i]);
                 // hopefully this will never happen, but just in case
                 if (it == joints.end()) {
-                    RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, "Unknown joint \"" << positions.names[i] << "\"");
+                    RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, "Unknown joint \"" << positions.name[i] << "\"");
                     return;
                 }
 
-                if (!it->second.limits.posInBounds(positions.positions[i])) {
-                    RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, "Position for joint " << positions.names[i] << " not within limits! (" << positions.positions[i] << ")");
+                if (!it->second.limits.posInBounds(positions.position[i])) {
+                    RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, "Position for joint " << positions.name[i] << " not within limits! (" << positions.position[i] << ")");
                     RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, "Typing IK failed");
                     return;
                 }
