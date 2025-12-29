@@ -149,8 +149,6 @@ class ICDChecker:
         if line == "---":
             return "---"
 
-        line = line.replace("double ", "float64 ")
-        line = line.replace("char[]", "string")
         line = re.sub(r"\[\d*\]", "[]", line)
 
         # Add default field names for types without them
