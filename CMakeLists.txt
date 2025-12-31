@@ -314,13 +314,6 @@ mrover_link_component(cost_map lie parameter_utils)
 
 mrover_executable_from_component(cost_map perception/executables/cost_map.cpp cost_map_component)
 
-# Keyboard Typing
-mrover_add_component(keyboard_typing perception/keyboard_typing/*.cpp perception/keyboard_typing/pch.hpp KeyboardTypingNode)
-mrover_ament_component(keyboard_typing rclcpp rclcpp_components tf2 tf2_ros)
-mrover_link_component(keyboard_typing lie opencv_core opencv_aruco opencv_imgproc parameter_utils)
-
-mrover_executable_from_component(keyboard_typing perception/executables/keyboard_typing.cpp keyboard_typing_component)
-
 # Embedded
 
 mrover_add_header_only_library(messaging esw/messaging)

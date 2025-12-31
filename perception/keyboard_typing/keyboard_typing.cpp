@@ -545,4 +545,3 @@ Steps
     a. Kalman filter the pose at the end of pose estimation
 2. Publish yaw to keyboard_yaw in yawCallback
 */
-}
