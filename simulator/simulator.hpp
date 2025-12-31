@@ -90,11 +90,17 @@ namespace mrover {
             Clock::time_point lastUpdate = Clock::now();
         };
 
-        urdf::Model model;
+        // Bullet Resources
+        std::vector<btMultiBodyLinkCollider*> mColliders;
+        std::vector<btMultiBodyConstraint*> mConstraints;
         btMultiBody* physics = nullptr;
+        std::shared_ptr<btMultiBodyDynamicsWorld> mDynamicsWorld;
+
+        urdf::Model model;
         std::unordered_map<std::string, LinkMeta> linkNameToMeta;
 
         URDF(Simulator& simulator, std::string_view uri, btTransform const& transform);
+        ~URDF();
 
         static auto makeCollisionShapeForLink(Simulator& simulator, urdf::LinkConstSharedPtr const& link) -> btCollisionShape*;
 
@@ -328,7 +334,7 @@ namespace mrover {
         std::unique_ptr<btHashedOverlappingPairCache> mOverlappingPairCache;
         std::unique_ptr<btDbvtBroadphase> mBroadphase;
         std::unique_ptr<btMultiBodyConstraintSolver> mSolver;
-        std::unique_ptr<btMultiBodyDynamicsWorld> mDynamicsWorld;
+        std::shared_ptr<btMultiBodyDynamicsWorld> mDynamicsWorld;
         std::vector<std::unique_ptr<btCollisionShape>> mCollisionShapes;
         std::vector<std::unique_ptr<btMultiBody>> mMultiBodies;
         std::vector<std::unique_ptr<btMultiBodyLinkCollider>> mMultibodyCollider;

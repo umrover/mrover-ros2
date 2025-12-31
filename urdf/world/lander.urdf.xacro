@@ -12,7 +12,7 @@
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://mrover/urdf/meshes/lander.fbx"/>
+        <mesh filename="package://mrover/urdf/meshes/lander_decimated.fbx"/>
       </geometry>
     </collision>
   </link>

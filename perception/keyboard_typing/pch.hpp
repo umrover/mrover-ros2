@@ -28,5 +28,6 @@
 #include <opencv2/core/matx.hpp>
 #include <opencv2/video/tracking.hpp>
 #include <loop_profiler.hpp>
+#include <mrover/msg/keyboard_yaw.hpp>
 // Commented this out for now since it was messing with linter
 // #include "constants.h"

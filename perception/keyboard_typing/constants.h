@@ -6,6 +6,8 @@
 #include <opencv2/aruco/dictionary.hpp>
 #include <string>
 
+bool logPose = false;
+
 //constants used across keyboard typing
 
 //------------------------------
