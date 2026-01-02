@@ -146,7 +146,8 @@ fn GeometrySmith(normal: vec3f, viewDir: vec3f, lightDir: vec3f, roughness: f32)
     let metallic = mu.metallic;
     // let roughness = 0.93;
     let roughness = mu.roughness;
-    let ao = 0.1;
+    // crank up the ambient lighting effect otherwise everything is really dark
+    let ao = 0.8;
 
     // get the normal vector
     let normalMapStrength = 1.0;
@@ -173,7 +174,7 @@ fn GeometrySmith(normal: vec3f, viewDir: vec3f, lightDir: vec3f, roughness: f32)
     let distanceToLight = length(su.lightInWorld - in.positionInWorld);
     // let attenuation = 1 / (distanceToLight * distanceToLight);
     let attenuation = 1.0;
-    let radiance = su.lightColor.rgb * attenuation * 5;
+    let radiance = su.lightColor.rgb * attenuation * 4;
 
     let albedo = textureSample(texture, textureSampler, in.uv).rgb;
     let F0 = mix(vec3(0.04), albedo, metallic);
@@ -191,7 +192,7 @@ fn GeometrySmith(normal: vec3f, viewDir: vec3f, lightDir: vec3f, roughness: f32)
     let PI = 3.14159265;
     let NdotL = max(dot(mixedNormal, lightDirInWorld), 0.0);
     let Lo = (kD * albedo / PI + specular) * radiance * NdotL;
-    let ambient = 0.03 * albedo * ao;
+    let ambient = 0.3 * albedo * ao;
 
     var color = ambient + Lo;
     // gamma correct
