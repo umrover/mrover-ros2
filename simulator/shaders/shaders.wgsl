@@ -78,14 +78,14 @@ struct OutFragment {
     out.normalInCamera = (su.worldToCamera * mixedNormal + vec4(1, 1, 1, 0)) / 2;
     out.normalInCamera.a = 1;
     // Ambient
-    let ambientStrength = 0.3;
+    let ambientStrength = 0.2;
     let ambient = ambientStrength * su.lightColor;
     // Diffuse
     let lightDirInWorld = normalize(su.lightInWorld - in.positionInWorld);
     let diff = max(dot(mixedNormal, lightDirInWorld), 0.0);
     let diffuse = diff * su.lightColor;
     // Specular
-    let specularStrength = 0.1;
+    let specularStrength = 0.08;
     let viewDirInWorld = normalize(su.cameraInWorld - in.positionInWorld);
     // classic phong
     //let reflectDir = reflect(-lightDirInWorld, mixedNormal);
