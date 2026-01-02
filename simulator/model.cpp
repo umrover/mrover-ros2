@@ -34,7 +34,7 @@ namespace mrover {
                 if (!mesh->HasNormals()) throw std::invalid_argument{std::format("Mesh #{} has no normals", meshIndex)};
                 if (!mesh->HasTextureCoords(0)) throw std::invalid_argument{std::format("Mesh #{} has no texture coordinates", meshIndex)};
 
-                auto& [vertices, normals, tangents, bitangents, uvs, indices, texture, normal_map] = meshes.emplace_back();
+                auto& [vertices, normals, tangents, bitangents, uvs, indices, texture, normal_map, roughness, metallic] = meshes.emplace_back();
 
                 assert(mesh->HasPositions());
                 vertices.data.resize(mesh->mNumVertices);
@@ -102,6 +102,12 @@ namespace mrover {
                         cv::Scalar color(255, 128, 128);
                         normal_map.data = cv::Mat{1, 1, CV_8UC4, color};
                     }
+
+                    material->Get(AI_MATKEY_ROUGHNESS_FACTOR, roughness);
+                    RCLCPP_INFO_STREAM(logger, std::format("\t\troughness: {}", roughness));
+
+                    material->Get(AI_MATKEY_METALLIC_FACTOR, metallic);
+                    RCLCPP_INFO_STREAM(logger, std::format("\t\tmetallic: {}", metallic));
 
                     RCLCPP_INFO_STREAM(logger, std::format("\tLoaded material: {}", name.C_Str()));
                 }

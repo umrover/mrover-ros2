@@ -14,6 +14,8 @@ struct SceneUniforms {
 struct MeshUniforms {
     modelToWorld: mat4x4f,
     modelToWorldForNormals: mat4x4f,
+    roughness: f32,
+    metallic: f32,
 }
 @group(0) @binding(0) var<uniform> mu: MeshUniforms;
 @group(0) @binding(1) var texture: texture_2d<f32>;
@@ -90,8 +92,10 @@ fn GeometrySmith(normal: vec3f, viewDir: vec3f, lightDir: vec3f, roughness: f32)
 }
 
 @fragment fn fs_main(in: OutVertex) -> OutFragment {
-    let metallic = 0.0;
-    let roughness = 0.93;
+    // let metallic = 0.0;
+    let metallic = mu.metallic;
+    // let roughness = 0.93;
+    let roughness = mu.roughness;
     let ao = 0.1;
 
     // get the normal vector

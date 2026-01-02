@@ -37,6 +37,8 @@ namespace mrover {
     struct ModelUniforms {
         Eigen::Matrix4f modelToWorld{};
         Eigen::Matrix4f modelToWorldForNormals{};
+        float roughness;
+        float metallic;
 
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     };
@@ -69,6 +71,9 @@ namespace mrover {
             SharedBuffer<std::uint32_t> indices;
             MeshTexture texture;
             MeshTexture normal_map;
+            // could make these also textures, but that might be doing too much
+            float roughness;
+            float metallic;
         };
 
         // DO NOT access the mesh unless you are certain it has been set from the async loader

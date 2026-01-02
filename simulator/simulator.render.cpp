@@ -440,6 +440,8 @@ namespace mrover {
             mesh.uvs.enqueueWriteIfUnitialized(mDevice, mQueue, wgpu::BufferUsage::Vertex);
             mesh.texture.enqueWriteIfUnitialized(mDevice);
             mesh.normal_map.enqueWriteIfUnitialized(mDevice);
+            uniforms.value.roughness = mesh.roughness;
+            uniforms.value.metallic = mesh.metallic;
 
             std::array<wgpu::BindGroupEntry, 4> bindGroupEntires{};
             bindGroupEntires[0].binding = 0;
