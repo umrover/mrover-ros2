@@ -16,6 +16,7 @@ import cv2
 
 # Custom msgs
 from mrover.srv import Panorama
+from mrover.srv import ServoPosition
 from lie import SE3
 
 class Panorama(Node):
@@ -24,6 +25,9 @@ class Panorama(Node):
 
         # Panorama service, called and then completes pano and returns
         self.pano_srv = self.create_service(Panorama, '/panorama', self.pano_callback)
+
+        # Subscribe to mast gimbal service
+        self.gimbal_srv = self.create_client(ServoPosition, "servo_position")
 
         # Panorama bools
         self.image_taken = False
@@ -42,6 +46,9 @@ class Panorama(Node):
         self.cam_fov_rad = np.radians(self.cam_fov_deg)
         self.num_rotations = np.ceil(2 * np.pi / self.cam_fov_rad)
 
+        if 2 * np.pi % self.cam_fov_rad == 0:
+            self.num_rotations += 1
+
     def pano_callback(self, _, response):
         self.stitcher = cv2.Stitcher.create(cv2.Stitcher_PANORAMA)
 
@@ -49,6 +56,7 @@ class Panorama(Node):
         self.image_sub = self.create_subscription(Image, "/zed_mini/left/image", self.image_callback, 1)
 
         for i in range(self.num_rotations):
+            pos_rad = (2 * np.pi / self.num_rotations) * i
             pass
 
     def image_callback(self, msg: Image):
