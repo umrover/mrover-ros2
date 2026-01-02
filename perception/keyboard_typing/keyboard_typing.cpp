@@ -638,6 +638,7 @@ namespace mrover{
         mLaunchCode = std::nullopt;
         mTypingUUID = std::nullopt;
         mUpdatePoseEstimate = true;
+        mTypingClient->async_cancel_all_goals(); // Cancel goal send to nav
         return rclcpp_action::CancelResponse::ACCEPT;
     }
 
