@@ -54,6 +54,56 @@ struct OutFragment {
     @location(0) color: vec4f,
     @location(1) normalInCamera: vec4f,
 }
+// Blinn-Phong shader
+@fragment fn fs_main(in: OutVertex) -> OutFragment {
+    let baseColor = textureSample(texture, textureSampler, in.uv);
+
+    let normalMapStrength = 1.0;
+    // each component is in the range [0,1]
+    let encodedNormal = textureSample(normalTexture, textureSampler, in.uv).rgb;
+    // shift to get negative values, then normalize because we only care about direction
+    // this normal is in a frame local to the surface of this face
+    let normalInLocal = normalize(encodedNormal - 0.5);
+
+    let localToWorld = mat3x3f(
+        normalize(in.tangentInWorld).xyz,
+        normalize(in.bitangentInWorld).xyz,
+        normalize(in.normalInWorld).xyz,
+    );
+
+    let normalInWorld = normalize(localToWorld * normalInLocal);
+    let mixedNormal = normalize(mix(in.normalInWorld, vec4(normalInWorld, 0), normalMapStrength));
+
+    var out : OutFragment;
+    out.normalInCamera = (su.worldToCamera * mixedNormal + vec4(1, 1, 1, 0)) / 2;
+    out.normalInCamera.a = 1;
+    // Ambient
+    let ambientStrength = 0.3;
+    let ambient = ambientStrength * su.lightColor;
+    // Diffuse
+    let lightDirInWorld = normalize(su.lightInWorld - in.positionInWorld);
+    let diff = max(dot(mixedNormal, lightDirInWorld), 0.0);
+    let diffuse = diff * su.lightColor;
+    // Specular
+    let specularStrength = 0.1;
+    let viewDirInWorld = normalize(su.cameraInWorld - in.positionInWorld);
+    // classic phong
+    //let reflectDir = reflect(-lightDirInWorld, mixedNormal);
+    //let spec = pow(max(dot(viewDirInWorld, reflectDir), 0.0), 32);
+    // blinn-phong
+    let halfwayDir = normalize(lightDirInWorld + viewDirInWorld);
+    let spec = pow(max(dot(mixedNormal, halfwayDir), 0.0), 32);
+
+    let specular = specularStrength * spec * su.lightColor;
+    // Combination
+    // out.color = vec4(((ambient + diffuse + specular) * baseColor).rgb, 1);
+    out.color = vec4(((ambient + diffuse) * baseColor + specular).rgb, 1);
+    // out.color = vec4(normalInLocal, 1);
+    // out.color = vec4(normalInWorld, 1);
+    // out.color = vec4(in.normalInWorld.xyz, 1);
+    return out;
+}
+
 // PBR FS
 fn fresnelSchlick(cosTheta: f32, F0: vec3f) -> vec3f {
     return F0 + (1.0 - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
@@ -91,7 +141,7 @@ fn GeometrySmith(normal: vec3f, viewDir: vec3f, lightDir: vec3f, roughness: f32)
     return ggx1 * ggx2;
 }
 
-@fragment fn fs_main(in: OutVertex) -> OutFragment {
+@fragment fn fs_main_pbr(in: OutVertex) -> OutFragment {
     // let metallic = 0.0;
     let metallic = mu.metallic;
     // let roughness = 0.93;

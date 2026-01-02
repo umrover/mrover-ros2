@@ -182,8 +182,13 @@ namespace mrover {
         pipelineLayoutDescriptor.bindGroupLayouts = reinterpret_cast<WGPUBindGroupLayout const*>(bindGroupLayouts.data());
         descriptor.layout = mDevice.createPipelineLayout(pipelineLayoutDescriptor);
 
+        mBlinnPhongPipeline = mDevice.createRenderPipeline(descriptor);
+        if (!mBlinnPhongPipeline) throw std::runtime_error("Failed to create WGPU Blinn-Phong pipeline");
+
+        fragment.entryPoint = "fs_main_pbr";
+
         mPbrPipeline = mDevice.createRenderPipeline(descriptor);
-        if (!mPbrPipeline) throw std::runtime_error("Failed to create WGPU render pipeline");
+        if (!mPbrPipeline) throw std::runtime_error("Failed to create WGPU PBR pipeline");
 
         // TODO(quintin): This is technically not correct. As far as I can tell getting actual wireframe rendering is pretty difficult in WGPU
         descriptor.primitive.topology = wgpu::PrimitiveTopology::LineList;
@@ -454,6 +459,7 @@ namespace mrover {
             bindGroupEntires[3].binding = 3;
             bindGroupEntires[3].textureView = mesh.normal_map.view;
             wgpu::BindGroupDescriptor descriptor;
+            // we can just use mPbrPipeline here because both PBR and Blinn-Phone use the same bind groups
             descriptor.layout = mPbrPipeline.getBindGroupLayout(0);
             descriptor.entryCount = bindGroupEntires.size();
             descriptor.entries = bindGroupEntires.data();
@@ -782,7 +788,7 @@ namespace mrover {
             depthStencilAttachment.view = mDepthTextureView;
 
             wgpu::RenderPassEncoder pass = encoder.beginRenderPass(renderPassDescriptor);
-            pass.setPipeline(mPbrPipeline);
+            pass.setPipeline(mPbrEnabled ? mPbrPipeline : mBlinnPhongPipeline);
 
             if (!mSceneUniforms.buffer) {
                 mSceneUniforms.init(mDevice);
@@ -803,6 +809,7 @@ namespace mrover {
             entry.buffer = mSceneUniforms.buffer;
             entry.size = sizeof(SceneUniforms);
             wgpu::BindGroupDescriptor descriptor;
+            // we can just use mPbrPipeline here because both PBR and Blinn-Phone use the same bind groups
             descriptor.layout = mPbrPipeline.getBindGroupLayout(1);
             descriptor.entryCount = 1;
             descriptor.entries = &entry;

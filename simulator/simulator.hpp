@@ -250,6 +250,7 @@ namespace mrover {
         bool mEnablePhysics{};
         bool mRenderModels = true;
         bool mRenderWireframeColliders = false;
+        bool mPbrEnabled = false;
         double mPublishHammerDistanceThreshold = 3;
         double mPublishBottleDistanceThreshold = 3;
         float mCameraLockSlerp = 0.02;
@@ -321,6 +322,7 @@ namespace mrover {
         wgpu::TextureView mNormalTextureView;
 
         wgpu::ShaderModule mShaderModule;
+        wgpu::RenderPipeline mBlinnPhongPipeline;
         wgpu::RenderPipeline mPbrPipeline;
         wgpu::RenderPipeline mWireframePipeline;
 
