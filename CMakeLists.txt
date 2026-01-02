@@ -318,6 +318,11 @@ mrover_link_component(cost_map lie parameter_utils)
 
 mrover_executable_from_component(cost_map perception/executables/cost_map.cpp cost_map_component)
 
+# TypingDeltasServer FOR TESTING
+mrover_add_node(typing_deltas_server perception/keyboard_typing/key_server_test.cpp perception/keyboard_typing/pch.hpp)
+target_link_libraries(typing_deltas_server lie parameter_utils opencv_core opencv_aruco opencv_imgproc opencv_highgui opencv_dnn opencv_calib3d opencv_imgcodecs opencv_video loop_profiler)
+ament_target_dependencies(typing_deltas_server rclcpp rclcpp_action tf2 tf2_ros geometry_msgs sensor_msgs)
+
 # Embedded
 
 mrover_add_header_only_library(messaging esw/messaging)
