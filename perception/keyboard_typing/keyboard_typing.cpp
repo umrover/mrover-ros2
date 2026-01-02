@@ -50,7 +50,7 @@ namespace mrover{
 
         mTypingServer = rclcpp_action::create_server<TypingCode>(
             this,
-            "typing_code",
+            "es_typing_code",
             std::bind(&KeyboardTypingNode::handle_goal, this, std::placeholders::_1, std::placeholders::_2),
             std::bind(&KeyboardTypingNode::handle_cancel, this, std::placeholders::_1),
             std::bind(&KeyboardTypingNode::handle_accepted, this, std::placeholders::_1));
