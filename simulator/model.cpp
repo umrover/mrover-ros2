@@ -18,8 +18,9 @@ namespace mrover {
             Assimp::Importer importer;
             importer.SetPropertyInteger(AI_CONFIG_PP_SBP_REMOVE, aiPrimitiveType_POINT | aiPrimitiveType_LINE); // Drop points and lines
 
-            // aiScene const* scene = importer.ReadFile(uri.data(),aiProcessPreset_TargetRealtime_MaxQuality);
-            aiScene const* scene = importer.ReadFile(uriToPath(uri), aiProcessPreset_TargetRealtime_Fast | aiProcess_FlipUVs);
+            // we switch to GenSmoothNormals because this seems to fix normals on some meshes
+            // if you shade flat in blender it shouldn't smooth it
+            aiScene const* scene = importer.ReadFile(uriToPath(uri), (aiProcessPreset_TargetRealtime_Fast ^ aiProcess_GenNormals) | aiProcess_GenSmoothNormals | aiProcess_FlipUVs);
             if (!scene) throw std::runtime_error{std::format("Scene import error: {} on path: {}", importer.GetErrorString(), uri)};
 
             RCLCPP_INFO_STREAM(logger, std::format("Loaded scene: {} with mesh count: {}", uri, scene->mNumMeshes));
@@ -106,7 +107,8 @@ namespace mrover {
                     material->Get(AI_MATKEY_ROUGHNESS_FACTOR, roughness);
                     RCLCPP_INFO_STREAM(logger, std::format("\t\troughness: {}", roughness));
 
-                    material->Get(AI_MATKEY_METALLIC_FACTOR, metallic);
+                    // don't ask me why metallic is this and not AI_MATKEY_METALLIC_FACTOR
+                    material->Get(AI_MATKEY_REFLECTIVITY, metallic);
                     RCLCPP_INFO_STREAM(logger, std::format("\t\tmetallic: {}", metallic));
 
                     RCLCPP_INFO_STREAM(logger, std::format("\tLoaded material: {}", name.C_Str()));
