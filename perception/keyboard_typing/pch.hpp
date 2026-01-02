@@ -1,5 +1,7 @@
 #pragma once
 
+#include <algorithm>
+
 #include <rclcpp/logging.hpp>
 #include <rclcpp/node.hpp>
 #include <rclcpp/rclcpp.hpp>
@@ -22,7 +24,7 @@
 #include <opencv2/highgui.hpp>
 #include <opencv2/dnn/all_layers.hpp>
 #include <Eigen/Geometry>
-#include <geometry_msgs/msg/detail/pose__struct.hpp>
+// #include <geometry_msgs/msg/detail/pose__struct.hpp>
 #include <opencv2/calib3d.hpp>
 #include <opencv2/core/mat.hpp>
 #include <opencv2/core/matx.hpp>
@@ -31,3 +33,18 @@
 #include <mrover/msg/keyboard_yaw.hpp>
 // Commented this out for now since it was messing with linter
 // #include "constants.h"
+
+#include <rclcpp/publisher.hpp>
+#include <rclcpp_action/client.hpp>
+#include <rclcpp_action/server.hpp>
+#include <rclcpp_action/rclcpp_action.hpp>
+#include <geometry_msgs/msg/vector3.hpp>
+
+#include <mrover/msg/ik.hpp>
+#include "mrover/action/typing_deltas.hpp"
+#include "mrover/action/typing_code.hpp"
+
+// Other
+#include <lie.hpp>
+#include <manif/impl/se3/SE3.h>
+#include <parameter.hpp>

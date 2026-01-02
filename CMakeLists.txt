@@ -151,6 +151,9 @@ message(STATUS "Found message files: ${MROVER_MESSAGE_FILE_PATHS}")
 file(GLOB_RECURSE MROVER_SERVICE_FILE_PATHS RELATIVE ${CMAKE_CURRENT_LIST_DIR} CONFIGURE_DEPENDS srv/*.srv)
 message(STATUS "Found service files: ${MROVER_SERVICE_FILE_PATHS}")
 
+file(GLOB_RECURSE MROVER_ACTION_FILE_PATHS RELATIVE ${CMAKE_CURRENT_LIST_DIR} CONFIGURE_DEPENDS action/*.action)
+message(STATUS "Found action files: ${MROVER_ACTION_FILE_PATHS}")
+
 # Starter Project
 message(STATUS "PROJ NAME: ${PROJECT_NAME}")
 
@@ -167,6 +170,7 @@ message(STATUS "Found message files: ${MROVER_MESSAGE_FILE_PATHS}")
 rosidl_generate_interfaces(${PROJECT_NAME}
     ${MROVER_MESSAGE_FILE_PATHS}
     ${MROVER_SERVICE_FILE_PATHS}
+    ${MROVER_ACTION_FILE_PATHS}
     DEPENDENCIES nav_msgs sensor_msgs geometry_msgs
 )
 
@@ -301,9 +305,9 @@ mrover_executable_from_component(stereo_tag_detector perception/executables/ster
 mrover_executable_from_component(image_tag_detector perception/executables/image_tag_detector.cpp tag_detector_component)
 
 # Keyboard Typing
-mrover_add_component(keyboard_typing perception/keyboard_typing/*.cpp perception/keyboard_typing/pch.hpp KeyboardTypingNode)
+mrover_add_component(keyboard_typing perception/keyboard_typing/keyboard_typing.cpp perception/keyboard_typing/pch.hpp KeyboardTypingNode)
 mrover_ament_component(keyboard_typing rclcpp rclcpp_components tf2 tf2_ros geometry_msgs sensor_msgs)
-mrover_link_component(keyboard_typing lie opencv_core opencv_aruco opencv_imgproc opencv_highgui opencv_dnn opencv_calib3d opencv_imgcodecs opencv_video loop_profiler)
+mrover_link_component(keyboard_typing lie parameter_utils opencv_core opencv_aruco opencv_imgproc opencv_highgui opencv_dnn opencv_calib3d opencv_imgcodecs opencv_video loop_profiler)
 
 mrover_executable_from_component(keyboard_typing perception/executables/keyboard_typing.cpp keyboard_typing_component)
 
