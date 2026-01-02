@@ -65,8 +65,8 @@ namespace mrover{
 
         // First position is rotation vector, second is translation vector
         // std::vector<cv::Vec3d> current_estimate;
-        std::optional<SE3d> mCameraToKey;
-        bool updatePoseEstimate = true;
+        std::optional<SE3d> mCameraToKey = std::nullopt;
+        bool mUpdatePoseEstimate = true;
 
         // Filter that stores filtered pose
         cv::KalmanFilter kf;

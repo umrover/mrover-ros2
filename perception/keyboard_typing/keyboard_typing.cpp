@@ -57,8 +57,7 @@ namespace mrover{
 
         // subscribe to image stream
         mImageSub = create_subscription<sensor_msgs::msg::Image>("/finger_camera/image", rclcpp::QoS(1), [this](sensor_msgs::msg::Image::ConstSharedPtr const& msg) {
-            if (updatePoseEstimate)
-                yawCallback(msg);
+            yawCallback(msg);
         });
 
 
@@ -128,13 +127,12 @@ namespace mrover{
     }
 
     auto KeyboardTypingNode::yawCallback(sensor_msgs::msg::Image::ConstSharedPtr const& msg) -> void {
-        RCLCPP_INFO_STREAM(get_logger(), "callback");
-        sendIKCommand(1.215, .253, .367, 0, 0);
-
-        
-    
-
-        std::optional<pose_output> pose = estimatePose(msg);
+        // If we are still updating pose estimate (i.e. no launch code sent, send IK and update pose)
+        std::optional<pose_output> pose = std::nullopt;
+        if (mUpdatePoseEstimate) {
+            sendIKCommand(1.215, .253, .367, 0, 0);
+            pose = estimatePose(msg);
+        }
 
         // Publish yaw
         if (pose.has_value()) {
@@ -337,8 +335,6 @@ namespace mrover{
             if(logPose){
                 outputToCSV(combined_tvec, combined_rvec);
             }
-
-            mCameraToKey = SE3Conversions::fromPose(finalestimation);
 
             return pose_output{finalestimation, combined_rvec[2]*180 / M_PI};
 
@@ -627,6 +623,7 @@ namespace mrover{
 
         mTypingUUID = uuid;
         mLaunchCode = temp;
+        mUpdatePoseEstimate = false; // Once we accept a goal, we no longer want to be updating the pose estimate
         return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
     }
 
@@ -639,12 +636,15 @@ namespace mrover{
 
         RCLCPP_INFO_STREAM(get_logger(), std::format("Cacelling goal {}", mLaunchCode.value()));
         mLaunchCode = std::nullopt;
+        mTypingUUID = std::nullopt;
+        mUpdatePoseEstimate = true;
         return rclcpp_action::CancelResponse::ACCEPT;
     }
 
     void KeyboardTypingNode::handle_accepted(const std::shared_ptr<GoalHandleTypingCode> goal_handle) {
         std::thread([this, goal_handle]() {
-            std::unique_lock<std::mutex> guard(mActionMutex);
+            std::unique_lock<std::mutex> guard(mActionMutex); // Lock shared variables
+
             auto result = std::make_shared<TypingCode::Result>();
             auto feedback = std::make_shared<TypingCode::Feedback>();
 
@@ -657,7 +657,8 @@ namespace mrover{
                 RCLCPP_WARN(this->get_logger(), "Sending Goal");
 
                 // TODO logic for figuring out deltas
-                // send_goal(x, y);
+                float x_delta, y_delta;
+                send_goal(x_delta, y_delta);
 
                 while (!mGoalReached.has_value()) { // TODO add logic for if goal is cancelled by teleop
                     mActionCV.wait(guard);
@@ -665,11 +666,18 @@ namespace mrover{
 
                 // TODO add handling for if goal fails
                 mGoalReached = std::nullopt;
+
+                // TODO add logic for pusher
+                //      see: /arm_thr_cmd in sw-icd-26 document for control
+                //      see: /arm_controller_state in sw-icd-26 document for feedback
+                // Maybe create subscriber to pusher here, possibly with some kind of pusher mutex/cv,
+                //  then let it go out of scope
             }
 
             result->success = true;
             mLaunchCode = std::nullopt;
             mTypingUUID = std::nullopt;
+            mUpdatePoseEstimate = true;
             goal_handle->succeed(result);
         }).detach();
     }
