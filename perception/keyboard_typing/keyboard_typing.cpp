@@ -660,9 +660,12 @@ namespace mrover{
                 float x_delta, y_delta;
                 send_goal(x_delta, y_delta);
 
-                while (!mGoalReached.has_value()) { // TODO add logic for if goal is cancelled by teleop
+                while (!mGoalReached.has_value()) {
                     mActionCV.wait(guard);
-                } // Block until goal reached
+                } // Wait until goal reached
+
+                if (!mLaunchCode.has_value())
+                    return;
 
                 // TODO add handling for if goal fails
                 mGoalReached = std::nullopt;
