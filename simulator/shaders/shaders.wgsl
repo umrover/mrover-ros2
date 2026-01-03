@@ -87,20 +87,13 @@ struct OutFragment {
     // Specular
     let specularStrength = 0.08;
     let viewDirInWorld = normalize(su.cameraInWorld - in.positionInWorld);
-    // classic phong
-    //let reflectDir = reflect(-lightDirInWorld, mixedNormal);
-    //let spec = pow(max(dot(viewDirInWorld, reflectDir), 0.0), 32);
     // blinn-phong
     let halfwayDir = normalize(lightDirInWorld + viewDirInWorld);
     let spec = pow(max(dot(mixedNormal, halfwayDir), 0.0), 32);
 
     let specular = specularStrength * spec * su.lightColor;
     // Combination
-    // out.color = vec4(((ambient + diffuse + specular) * baseColor).rgb, 1);
     out.color = vec4(((ambient + diffuse) * baseColor + specular).rgb, 1);
-    // out.color = vec4(normalInLocal, 1);
-    // out.color = vec4(normalInWorld, 1);
-    // out.color = vec4(in.normalInWorld.xyz, 1);
     return out;
 }
 
