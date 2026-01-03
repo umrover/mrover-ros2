@@ -141,7 +141,7 @@ endif ()
 include_directories(BEFORE SYSTEM preload)
 
 include(cmake/macros.cmake)
-# include(cmake/deps.cmake)
+include(testing/testing.cmake)
 
 ## Messages & Services & Actions
 
@@ -193,6 +193,7 @@ install(DIRECTORY starter_project/autonomy/launch DESTINATION share/${PROJECT_NA
 ament_python_install_package(navigation)
 ament_python_install_package(lie)
 ament_python_install_package(state_machine)
+ament_python_install_package(testing)
 
 ## C++
 
