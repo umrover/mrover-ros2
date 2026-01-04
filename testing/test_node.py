@@ -7,7 +7,7 @@ from rclpy.logging import get_logger
 from std_msgs.msg import String
 from test_infra import MRoverTesting
 
-from mrover.msg import TestEvent
+from mrover.msg import TestEvent, TestEvents
 
 import importlib
 import importlib.util
@@ -20,7 +20,7 @@ class TestNode(Node):
         self.index = 0
         self.events = []
         self.event_subscriber = self.create_subscription(
-            TestEvent,
+            TestEvents,
             'test_events',
             self.event_callback,
             10)
@@ -33,20 +33,20 @@ class TestNode(Node):
         elif self.index < len(self.events) and self.events[self.index](self):
             self.index += 1
 
-    def event_callback(self, msg: TestEvent):
-        self.get_logger().info(f"Recieved function_name: {msg.function_name} module_spec: {msg.module_spec}")
+    def event_callback(self, msg: TestEvents):
+        for event in msg.events:
+            try:
+                self.get_logger().info(f"Recieved function_name: {event.function_name} module_spec: {event.module_spec}")
 
-        try:
-            module = importlib.import_module(msg.module_spec)
+                module = importlib.import_module(event.module_spec)
 
-            function = getattr(module, msg.function_name)
+                function = getattr(module, event.function_name)
 
-            self.events.append(function)
-        except ImportError:
-            get_logger('testing').error("Error importing the module...")
-        except AttributeError:
-            get_logger('testing').error("Error getting the functino attribute...")
-
+                self.events.append(function)
+            except ImportError:
+                get_logger('testing').error("Error importing the module...")
+            except AttributeError:
+                get_logger('testing').error("Error getting the functino attribute...")
 
 def main(args=None):
     rclpy.init(args=args)

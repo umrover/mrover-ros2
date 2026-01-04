@@ -70,8 +70,24 @@ class MRoverTesting:
         MRoverTesting._node_map[name] = new_node
 
     @staticmethod
-    def _send_events(event, context):
-        rclpy.logging.get_logger('test_infra').info("Send Event")
+    def _send_events(context):
+        msg_data = "\"{events: ["
+        for event in MRoverTesting._events:
+            msg_data += f'{{function_name: {event.function_name}, module_spec: {event.module_spec} }},'
+        msg_data += "]}\""
+        rclpy.logging.get_logger("bruh").info(msg_data)
+        event_msg = ExecuteProcess(
+            cmd=[[
+                FindExecutable(name='ros2'),
+                ' topic pub --once ',
+                '/test_events ',
+                'mrover/msg/TestEvents ',
+                msg_data
+            ]],
+            shell=True
+        )
+
+        return [event_msg]
 
     @staticmethod
     def init():
