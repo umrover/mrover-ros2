@@ -33,7 +33,7 @@ def action2(node):
 def generate_launch_description():
     MRoverTesting.init()
 
-    MRoverTesting.add_event(enable_auton, {"waypoints": [
+    MRoverTesting.add_event(enable_auton, 0, Path(__file__), waypoints=[
         GPSWaypoint(
                 tag_id = 0,
                 enable_costmap = True,
@@ -41,7 +41,7 @@ def generate_launch_description():
                 longitude_degrees = -83.70957248114468,
                 type = WaypointType(val=WaypointType.POST)
             )
-        ]}, 0, Path(__file__))
+        ])
 
     MRoverTesting.add_node("nav.py", "navigation", ["navigation.yaml"])
 

@@ -3,7 +3,7 @@ import pickle
 from launch import LaunchDescription
 from ament_index_python import get_package_share_directory
 from launch_ros.actions import Node
-from typing import Callable, Any, Union
+from typing import Callable, Any, Union, TypeAlias
 from launch.actions import (
     DeclareLaunchArgument,
     EmitEvent,
@@ -57,7 +57,8 @@ from launch.conditions import LaunchConfigurationEquals
 import os
 
 class MRoverTesting:
-    _launch_actions: list[Node] = [] # TODO: Keep up to date
+    LaunchAction: TypeAlias = list[Union[Node, RegisterEventHandler, IncludeLaunchDescription, DeclareLaunchArgument]]
+    _launch_actions: LaunchAction = [] # TODO: Keep up to date
 
     _node_map: dict[str, Node] = {}
 
@@ -123,13 +124,15 @@ class MRoverTesting:
 
     @staticmethod
     def enable_sim() -> None:
+
         simulator_node = Node(
             package="mrover",
             executable="simulator",
             name="simulator",
             parameters=[
                 Path(get_package_share_directory("mrover"), "config", "simulator.yaml"),
-                Path(get_package_share_directory("mrover"), "config", "reference_coords.yaml")
+                Path(get_package_share_directory("mrover"), "config", "reference_coords.yaml"),
+                {"headless": True},
             ],
         )
 
@@ -141,11 +144,11 @@ class MRoverTesting:
         MRoverTesting._launch_actions.append(launch_include_base)
 
     @staticmethod
-    def get_launch_actions() -> list[Node]: # TODO(john): Keep this line up to date with all of the things that can be included in the launch descriptor
+    def get_launch_actions() -> LaunchAction: # TODO(john): Keep this line up to date with all of the things that can be included in the launch descriptor
         return MRoverTesting._launch_actions
 
     @staticmethod
-    def add_event(func: Callable[[rclpy.node.Node], bool], kwargs: Union[dict[str, Any], None], timeout: int, file: Path) -> None:
+    def add_event(func: Callable[[rclpy.node.Node, ...], bool], timeout: int, file: Path, **kwargs) -> None:
         event = TestEvent(
                     module_spec = str(file.relative_to(Path(get_package_share_directory("mrover"))).with_suffix('')).replace('/', '.'),
                     function_name = func.__name__,
