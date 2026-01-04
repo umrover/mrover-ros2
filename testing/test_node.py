@@ -11,6 +11,7 @@ from mrover.msg import TestEvent, TestEvents
 
 import importlib
 import importlib.util
+import pickle
 
 class TestNode(Node):
     def __init__(self):
@@ -19,6 +20,7 @@ class TestNode(Node):
         self.timer = self.create_timer(0.5, self.timer_callback)
         self.index = 0
         self.events = []
+        self.args = []
         self.event_subscriber = self.create_subscription(
             TestEvents,
             'test_events',
@@ -30,19 +32,20 @@ class TestNode(Node):
     def timer_callback(self):
         if len(self.events) == 0:
             self.get_logger().info("No Events Loaded...")
-        elif self.index < len(self.events) and self.events[self.index](self):
+        elif self.index < len(self.events) and self.events[self.index](self, **pickle.loads(self.args[self.index])):
             self.index += 1
 
     def event_callback(self, msg: TestEvents):
         for event in msg.events:
             try:
-                self.get_logger().info(f"Recieved function_name: {event.function_name} module_spec: {event.module_spec}")
+                self.get_logger().info(f"Recieved function_name: {event.function_name} module_spec: {event.module_spec} data: {event.data}")
 
                 module = importlib.import_module(event.module_spec)
 
                 function = getattr(module, event.function_name)
 
                 self.events.append(function)
+                self.args.append(event.data)
             except ImportError:
                 get_logger('testing').error("Error importing the module...")
             except AttributeError:
