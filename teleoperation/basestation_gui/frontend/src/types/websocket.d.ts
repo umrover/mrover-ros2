@@ -16,3 +16,101 @@ export interface RootState {
   // user: any;
   [key: string]: unknown; // Allows other modules to exist without explicit typing
 }
+
+export interface ControllerStateMessage {
+  type: 'arm_state' | 'sp_state' | 'drive_left_state' | 'drive_right_state' | 'gimbal_state' | 'sp_controller_state';
+  header?: {
+    stamp: { sec: number; nanosec: number };
+    frame_id: string;
+  };
+  name: string[];
+  state: string[];
+  error: string[];
+  position: number[];
+  velocity: number[];
+  current: number[];
+  limit_hit: boolean[];
+}
+
+export interface JointStateMessage {
+  type: 'drive_left_joint_state' | 'drive_right_joint_state' | 'gimbal_joint_state';
+  name: string[];
+  position: number[];
+  velocity: number[];
+  effort: number[];
+}
+
+export interface OrientationMessage {
+  type: 'orientation';
+  orientation: number[];
+}
+
+export interface CalibrationMessage {
+  type: 'calibration';
+  magnetometer_calibration: number;
+  gyroscope_calibration: number;
+  acceleration_calibration: number;
+}
+
+export interface CmdVelMessage {
+  type: 'cmd_vel';
+  linear: { x: number; y: number; z: number };
+  angular: { x: number; y: number; z: number };
+}
+
+export interface OxygenMessage {
+  type: 'oxygen';
+  percent: number;
+}
+
+export interface UVMessage {
+  type: 'uv';
+  uv_index: number;
+}
+
+export interface TemperatureMessage {
+  type: 'temperature';
+  temperature: number;
+}
+
+export interface HumidityMessage {
+  type: 'humidity';
+  relative_humidity: number;
+}
+
+export interface SPHumidityMessage {
+  type: 'sp_humidity';
+  relative_humidity: number;
+}
+
+export interface SPTemperatureMessage {
+  type: 'sp_temp';
+  temperature: number;
+}
+
+export interface SPOxygenMessage {
+  type: 'sp_oxygen';
+  percent: number;
+}
+
+export interface SPUVMessage {
+  type: 'sp_uv';
+  uv_index: number;
+}
+
+export interface SPOzoneMessage {
+  type: 'sp_ozone';
+  ozone: number;
+}
+
+export interface SPCO2Message {
+  type: 'sp_co2';
+  co2: number;
+}
+
+export interface SPPressureMessage {
+  type: 'sp_pressure';
+  pressure: number;
+}
+
+export type ScienceMessage = OxygenMessage | UVMessage | TemperatureMessage | HumidityMessage | SPHumidityMessage | SPTemperatureMessage | SPOxygenMessage | SPUVMessage | SPOzoneMessage | SPCO2Message | SPPressureMessage;
