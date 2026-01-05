@@ -91,7 +91,6 @@ namespace mrover {
 
                                    try {
                                        *arg = std::get<double>(mDefaultValue);
-                                       return;
                                    } catch (std::bad_variant_access const& ex) {
                                        throw std::runtime_error("Bad Variant Access: Type not double");
                                    }
