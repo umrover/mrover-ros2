@@ -50,6 +50,7 @@ namespace mrover {
                                [&](int* arg) {
                                    try {
                                        *arg = static_cast<int>(node->get_parameter(mParamDescriptor).as_int());
+                                       return;
                                    } catch (...) {}
 
                                    try {
@@ -61,6 +62,7 @@ namespace mrover {
                                [&](std::string* arg) {
                                    try {
                                        *arg = node->get_parameter(mParamDescriptor).as_string();
+                                       return;
                                    } catch (...) {}
 
                                    try {
@@ -72,6 +74,7 @@ namespace mrover {
                                [&](bool* arg) {
                                    try {
                                        *arg = node->get_parameter(mParamDescriptor).as_bool();
+                                       return;
                                    } catch (...) {}
 
                                    try {
@@ -83,10 +86,12 @@ namespace mrover {
                                [&](double* arg) {
                                    try {
                                        *arg = node->get_parameter(mParamDescriptor).as_double();
+                                       return;
                                    } catch (...) {}
 
                                    try {
                                        *arg = std::get<double>(mDefaultValue);
+                                       return;
                                    } catch (std::bad_variant_access const& ex) {
                                        throw std::runtime_error("Bad Variant Access: Type not double");
                                    }
@@ -94,6 +99,7 @@ namespace mrover {
                                [&](float* arg) {
                                    try {
                                        *arg = static_cast<float>(node->get_parameter(mParamDescriptor).as_double());
+                                       return;
                                    } catch (...) {}
 
                                    try {
