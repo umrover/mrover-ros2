@@ -5,7 +5,7 @@ from rclpy.node import Node
 from rclpy.logging import get_logger
 
 from std_msgs.msg import String
-from test_infra import MRoverTesting
+from test_infra import MRoverEventReturn, MRoverTesting
 
 from mrover.msg import TestEvent, TestEvents
 
@@ -30,10 +30,32 @@ class TestNode(Node):
         self.event_subscriber
 
     def timer_callback(self):
+        self.get_logger().info(f"Events length: {len(self.events)}")
+
+        if self.index < len(self.events):
+            self.get_logger().info(f"Running event index: {self.index} func: {self.events[self.index].__name__}")
+
         if len(self.events) == 0:
             self.get_logger().info("No Events Loaded...")
-        elif self.index < len(self.events) and self.events[self.index](self, **pickle.loads(self.args[self.index])):
-            self.index += 1
+        elif self.index < len(self.events):
+            return_val: MRoverEventReturn = self.events[self.index](self, **pickle.loads(self.args[self.index]))
+            match return_val.value:
+                case MRoverEventReturn.SUCCESS.value:
+                    self.get_logger().info("Event Success...")
+                    self.index += 1
+                    return
+                case MRoverEventReturn.FAILURE.value:
+                    self.get_logger().info("Event Failure...")
+                    # TODO: add more descriptive failures
+                    exit(1)
+                case MRoverEventReturn.PENDING.value:
+                    self.get_logger().info("Event Pending...")
+                    return
+                case _:
+                    self.get_logger().info("Event Unknown...")
+                    return
+        elif self.index == len(self.events):
+            self.get_logger().info("Events Finished...")
 
     def event_callback(self, msg: TestEvents):
         for event in msg.events:

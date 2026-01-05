@@ -56,6 +56,13 @@ from launch_ros.descriptions import ComposableNode
 from launch.conditions import LaunchConfigurationEquals
 import os
 
+from enum import Enum
+
+class MRoverEventReturn(Enum):
+    SUCCESS = 0
+    PENDING = 1
+    FAILURE = 2
+
 class MRoverTesting:
     LaunchAction: TypeAlias = list[Union[Node, RegisterEventHandler, IncludeLaunchDescription, DeclareLaunchArgument]]
     _launch_actions: LaunchAction = [] # TODO: Keep up to date
@@ -148,9 +155,9 @@ class MRoverTesting:
         return MRoverTesting._launch_actions
 
     @staticmethod
-    def add_event(func: Callable[[rclpy.node.Node, ...], bool], timeout: int, file: Path, **kwargs) -> None:
+    def add_event(func: Callable[[rclpy.node.Node, ...], MRoverEventReturn], timeout: int, **kwargs) -> None:
         event = TestEvent(
-                    module_spec = str(file.relative_to(Path(get_package_share_directory("mrover"))).with_suffix('')).replace('/', '.'),
+                    module_spec = str(Path(func.__code__.co_filename).relative_to(Path(get_package_share_directory("mrover"))).with_suffix('')).replace('/', '.'),
                     function_name = func.__name__,
                     data = pickle.dumps(kwargs)
                 )
