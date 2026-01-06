@@ -132,12 +132,14 @@
   command: ./scripts/build_manif.sh
   args:
     chdir: "{{ ansible_env.HOME }}/ros2_ws/src/mrover/"
+    creates: /usr/local/lib/python3.10/dist-packages/manifpy/__init__.py
 
 - name: Build and Install Dawn
   become: True
   command: ./scripts/build_dawn.sh
   args:
     chdir: "{{ ansible_env.HOME }}/ros2_ws/src/mrover/"
+    creates: "{{ ansible_env.HOME }}/ros2_ws/src/mrover/deps/dawn/out/Release/src/dawn/native/libwebgpu_dawn.so"
 
 - name: Initialize rosdep
   become: True
