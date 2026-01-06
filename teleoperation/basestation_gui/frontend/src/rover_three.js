@@ -348,8 +348,10 @@ export default function threeSetup() {
   const resizeObserver = new ResizeObserver(() => {
     sizes.width = canvas.clientWidth
     sizes.height = canvas.clientHeight
-    camera.aspect = sizes.width / sizes.height
-    camera.updateProjectionMatrix()
+    for (const cam of Object.values(camera_types)) {
+      cam.aspect = sizes.width / sizes.height
+      cam.updateProjectionMatrix()
+    }
     renderer.setSize(sizes.width, sizes.height)
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
   })
@@ -372,6 +374,8 @@ export default function threeSetup() {
   }
 
   tick()
+
+  
 
   return () => {
     resizeObserver.disconnect()

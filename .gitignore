@@ -10,9 +10,6 @@
 # clangd cache
 .cache/
 
-# build symlink
-compile_commands.json
-
 # IMGUI window layout
 imgui.ini
 
@@ -30,8 +27,6 @@ venv/
 bun.lock
 bun.lockb
 .python-version
-system*.html
-openapitools.json
 
 # macOS
 .DS_Store

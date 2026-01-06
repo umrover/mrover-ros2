@@ -135,7 +135,7 @@ onUnmounted(() => {
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   grid-template-rows: minmax(200px, 40%) auto auto;
   grid-template-areas:
-    'map map'
+    'data map'
     'data waypoints'
     'moteus waypoints';
   font-family: sans-serif;
@@ -157,6 +157,7 @@ onUnmounted(() => {
 
 .moteus {
   grid-area: moteus;
+  overflow: hidden;
 }
 
 .data {

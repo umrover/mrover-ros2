@@ -238,7 +238,11 @@ onMounted(() => {
         },
         scales: {
           y: {
-            beginAtZero: true,
+            beginAtZero: false,
+            ticks: {
+              maxTicksLimit: 10,
+              precision: 2,
+            },
           },
         },
       },

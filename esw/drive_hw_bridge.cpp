@@ -49,7 +49,7 @@ namespace mrover {
                 }
 
                 mJointStatePubs.emplace_back(create_publisher<sensor_msgs::msg::JointState>(std::format("drive_{}_joint_data", group), 1));
-                mControllerStatePubs.emplace_back(create_publisher<msg::ControllerState>(std::format("drive_{}_controller_state", group), 1));
+                mControllerStatePubs.emplace_back(create_publisher<msg::ControllerState>(std::format("{}_controller_state", group), 1));
             }
             mJointState.position.resize(mControllers.size());
             mJointState.velocity.resize(mControllers.size());

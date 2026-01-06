@@ -3,7 +3,17 @@
     <div class="d-flex flex-column gap-2 w-100">
       <div class="d-flex justify-content-between align-items-center">
         <h4 class="m-0">Gimbal Controls</h4>
-        <IndicatorDot :is-active="hasServoState" class="me-2" />
+        <div class="d-flex align-items-center">
+          <i
+            v-if="!hasServoState"
+            ref="tooltipRef"
+            class="bi bi-info-circle me-2"
+            data-bs-toggle="tooltip"
+            data-bs-placement="top"
+            title="Changes not allowed until gimbal position received"
+          ></i>
+          <IndicatorDot :is-active="hasServoState" class="me-2" />
+        </div>
       </div>
 
       <div class="d-flex align-items-center justify-content-center gap-1">
@@ -40,13 +50,27 @@
 </template>
 
 <script lang="ts" setup>
-import { computed } from 'vue'
+import { computed, ref, shallowRef, onMounted, onUnmounted } from 'vue'
+import { Tooltip } from 'bootstrap'
 import { chassisAPI } from '@/utils/chassisAPI'
 import { useWebsocketStore } from '@/stores/websocket'
 import type { ControllerStateMessage } from '@/types/websocket'
 import IndicatorDot from './IndicatorDot.vue'
 
 const websocketStore = useWebsocketStore()
+
+const tooltipRef = ref<HTMLElement | null>(null)
+const tooltip = shallowRef<Tooltip | null>(null)
+
+onMounted(() => {
+  if (tooltipRef.value) {
+    tooltip.value = new Tooltip(tooltipRef.value)
+  }
+})
+
+onUnmounted(() => {
+  tooltip.value?.dispose()
+})
 
 const gimbalJointState = computed((): ControllerStateMessage | null => {
   const messages = websocketStore.messages['chassis']
@@ -118,5 +142,13 @@ const adjustGimbal = async (
   min-width: 38px;
   font-size: 12px;
   padding: 2px 6px;
+}
+
+.control-btn:disabled {
+  background-color: #e0e0e0;
+  border-color: #ccc;
+  color: #999;
+  opacity: 1;
+  cursor: not-allowed;
 }
 </style>
