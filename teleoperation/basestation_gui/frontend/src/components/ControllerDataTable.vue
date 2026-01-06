@@ -1,6 +1,24 @@
 <template>
   <div class='d-flex flex-column border border-2 p-2 rounded mw-100' style="flex: 1 0 auto; min-width: 0;">
-    <h4 class="mb-2">{{ header }}</h4>
+    <div class="d-flex align-items-center justify-content-between mb-2">
+      <h4 class="m-0">{{ header }}</h4>
+      <div class="d-flex gap-2">
+        <button
+          type="button"
+          class="btn btn-sm"
+          :class="showStatus ? 'btn-success' : 'btn-danger'"
+          @mousedown.prevent
+          @click="showStatus = !showStatus"
+        >Status</button>
+        <button
+          type="button"
+          class="btn btn-sm"
+          :class="showValues ? 'btn-success' : 'btn-danger'"
+          @mousedown.prevent
+          @click="showValues = !showValues"
+        >Values</button>
+      </div>
+    </div>
     <div class="overflow-x-auto">
       <table class='table table-bordered table-sm m-0 w-auto text-nowrap compact-table'>
         <tbody>
@@ -10,37 +28,37 @@
             {{ n }}
           </td>
         </tr>
-        <tr>
+        <tr v-if="showStatus">
           <th class='table-secondary text-nowrap sticky-col px-2 py-1'>State</th>
           <td v-for='(s, i) in states' :key='i' class="text-center small px-2 py-1">
             {{ s }}
           </td>
         </tr>
-        <tr>
+        <tr v-if="showStatus">
           <th class='table-secondary text-nowrap sticky-col px-2 py-1'>Error</th>
           <td v-for='(e, i) in errors' :key='i' class="text-center small px-2 py-1">
             {{ e }}
           </td>
         </tr>
-        <tr>
+        <tr v-if="showStatus">
           <th class='table-secondary text-nowrap sticky-col px-2 py-1'>Limit Hit</th>
           <td v-for='(l, i) in limitHits' :key='i' class="text-center small px-2 py-1">
             {{ l }}
           </td>
         </tr>
-        <tr>
+        <tr v-if="showValues">
           <th class='table-secondary text-nowrap sticky-col px-2 py-1'>Position</th>
           <td v-for='(p, i) in positions' :key='i' class="text-center small px-2 py-1">
             {{ p.toFixed(2) }}
           </td>
         </tr>
-        <tr>
+        <tr v-if="showValues">
           <th class='table-secondary text-nowrap sticky-col px-2 py-1'>Velocity</th>
           <td v-for='(v, i) in velocities' :key='i' class="text-center small px-2 py-1">
             {{ v.toFixed(2) }}
           </td>
         </tr>
-        <tr>
+        <tr v-if="showValues">
           <th class='table-secondary text-nowrap sticky-col px-2 py-1'>Current</th>
           <td v-for='(c, i) in currents' :key='i' class="text-center small px-2 py-1">
             {{ c.toFixed(2) }}
@@ -65,6 +83,15 @@ const props = defineProps<{
 
 const websocketStore = useWebsocketStore()
 const { messages } = storeToRefs(websocketStore)
+
+const statusKey = `controllerDataTable_${props.mode}_showStatus`
+const valuesKey = `controllerDataTable_${props.mode}_showValues`
+
+const showStatus = ref(localStorage.getItem(statusKey) === 'true')
+const showValues = ref(localStorage.getItem(valuesKey) === 'true')
+
+watch(showStatus, (val) => localStorage.setItem(statusKey, String(val)))
+watch(showValues, (val) => localStorage.setItem(valuesKey, String(val)))
 
 const names = ref<string[]>([])
 const states = ref<string[]>([])

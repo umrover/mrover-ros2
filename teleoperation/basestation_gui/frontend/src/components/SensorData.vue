@@ -141,10 +141,10 @@ watch(scienceMessage, (msg) => {
       sensor_data.value.sp_humidity = scienceMsg.relative_humidity
       break
     case 'sp_ozone':
-      sensor_data.value.sp_ozone = scienceMsg.ozone
+      sensor_data.value.sp_ozone = scienceMsg.ppb
       break
     case 'sp_co2':
-      sensor_data.value.sp_co2 = scienceMsg.co2
+      sensor_data.value.sp_co2 = scienceMsg.ppm
       break
     case 'sp_pressure':
       sensor_data.value.sp_pressure = scienceMsg.pressure
@@ -252,8 +252,12 @@ onMounted(() => {
             },
             scales: {
               y: {
-                beginAtZero: true,
-                ticks: { font: { size: 10 } }
+                beginAtZero: false,
+                ticks: {
+                  font: { size: 10 },
+                  maxTicksLimit: 8,
+                  precision: 2,
+                }
               },
               x: {
                 ticks: { font: { size: 10 } }
