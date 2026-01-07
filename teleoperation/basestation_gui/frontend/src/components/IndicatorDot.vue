@@ -1,6 +1,6 @@
 <template>
   <div
-    class="rounded-circle"
+    class="rounded-circle flex-shrink-0"
     :class="isActive ? 'bg-success' : 'bg-danger'"
     :style="{ width: `${size}px`, height: `${size}px` }"
   ></div>

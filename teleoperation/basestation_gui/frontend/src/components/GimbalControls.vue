@@ -1,6 +1,6 @@
 <template>
-  <div class="d-flex align-items-start justify-content-center w-100">
-    <div class="d-flex flex-column gap-2 w-100">
+  <div class="d-flex align-items-start justify-content-center">
+    <div class="d-flex flex-column gap-2">
       <div class="d-flex justify-content-between align-items-center">
         <h4 class="m-0">Gimbal Controls</h4>
         <div class="d-flex align-items-center">
