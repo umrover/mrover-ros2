@@ -134,9 +134,15 @@ class WaypointState(State):
 
             # This will set the rover's waypoint to the closest point on the coverage radius.
             # INWARD SPIRAL
+
+            # inward_value is set to 0 if there is no inward start radius set
+            # if set to 0, this means that we should do an outward spiral
+            # in addition, we also would only want to do an inward spiral if the rover is outside half the inward start radius value
             inward_value = context.course.current_waypoint().coverage_radius
             if inward_value > 0 and distance_from_center > 0.5 * inward_value:
                context.node.get_logger().info("Travelling to inward spiral beginning at radius " + str(inward_value))
+
+               # Calculating the waypoint for the beginning of the inward spiral (closest point to the inward spiral radius)
                waypoint_for_inward = center + (direction_from_center/np.linalg.norm(direction_from_center)) * inward_value
                self.waypoint_traj = segment_path(
                    context = context, dest = waypoint_for_inward[:2]

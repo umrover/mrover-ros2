@@ -305,14 +305,15 @@ class CostmapSearchState(State):
         distance_from_center = np.linalg.norm(rover_position_r[:2]-center_r[:2])
         
         enable_inward = False
+
+        #we set coverage_radius_in to the default parameter value from navigation.yaml
         coverage_radius_in = context.node.get_parameter("search.coverage_radius").value
         
         if context.course.current_waypoint().coverage_radius > 0 and distance_from_center > 0.5 * context.course.current_waypoint().coverage_radius:
             enable_inward = True
-        
-        if context.course.current_waypoint().coverage_radius > 0:
-            coverage_radius_in = context.course.current_waypoint().coverage_radius
 
+            # we override coverage_radius_in to be the waypoint's inward spiral coverage radius
+            #coverage_radius_in = context.course.current_waypoint().coverage_radius
 
         if not self.is_recovering:
             self.spiral_traj = SearchTrajectory.spiral_traj(
@@ -324,6 +325,8 @@ class CostmapSearchState(State):
                 tag_id=search_center.tag_id,
                 insert_extra=True,
                 rover_position=context.rover.get_pose_in_map().translation()[0:2],
+
+                #the below two parameters are used in trajectory.py for generating inward spirals
                 enable_inward = enable_inward,
                 inward_begin = context.course.current_waypoint().coverage_radius
             )
