@@ -57,7 +57,15 @@ def assert_navigation_state(node, state: str):
 def generate_launch_description():
     MRoverTesting.init()
 
-    MRoverTesting.add_event(enable_auton, 0, waypoints=[
+    MRoverTesting.enable_sim(headless=True)
+
+    MRoverTesting.add_node("nav.py", "navigation", ["navigation.yaml"])
+
+    MRoverTesting.add_node("cost_map", "cost_map", ["perception.yaml"])
+
+    MRoverTesting.add_node("stereo_tag_detector", "stereo_tag_detector", [])
+
+    MRoverTesting.add_event(enable_auton, 1, waypoints=[
         GPSWaypoint(
                 tag_id = 0,
                 enable_costmap = True,
@@ -69,14 +77,9 @@ def generate_launch_description():
 
     # I wanted this "DoneState" to be DoneState() from an import but it complicates the environments...
     # this implies that there is no way to import from the actual navigation library since it will fail to find the modules
-    MRoverTesting.add_event(assert_navigation_state, 0, state="DoneState")
+    MRoverTesting.add_event(assert_navigation_state, 5, state="WaypointState")
+    MRoverTesting.add_event(assert_navigation_state, 20, state="ApproachTargetState")
+    MRoverTesting.add_event(assert_navigation_state, 15, state="DoneState")
 
-    MRoverTesting.add_node("nav.py", "navigation", ["navigation.yaml"])
-
-    MRoverTesting.add_node("cost_map", "cost_map", ["perception.yaml"])
-
-    MRoverTesting.add_node("stereo_tag_detector", "stereo_tag_detector", [])
-
-    MRoverTesting.enable_sim()
 
     return LaunchDescription(MRoverTesting.get_launch_actions())

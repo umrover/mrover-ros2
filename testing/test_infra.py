@@ -20,7 +20,7 @@ from launch.actions import (
     LogInfo,
     RegisterEventHandler,
     TimerAction,
-    OpaqueFunction,
+    OpaqueFunction
 )
 from launch.conditions import IfCondition
 from launch.event_handlers import (
@@ -58,6 +58,9 @@ import os
 
 from enum import Enum
 
+TEST_NODE_EXECUTABLE="test_node.py"
+TEST_NODE_NAME="test_node"
+
 class MRoverEventReturn(Enum):
     SUCCESS = 0
     PENDING = 1
@@ -72,15 +75,20 @@ class MRoverTesting:
     _events: list[TestEvent] = []
 
     @staticmethod
-    def add_node(executable: str, name: str, parameters: list[str]) -> None:
+    def add_node(executable: str, name: str, parameters: list[Union[str, dict[str, LaunchConfiguration]]], use_debug: bool=False) -> None:
         # always give the node reference coordinates by default
         parameters.append("reference_coords.yaml")
+        
+        if executable == TEST_NODE_EXECUTABLE:
+            temp_file_value = LaunchConfiguration('temp_file')
+            parameters.append({'temp_file': temp_file_value})
 
         new_node = Node(
             package="mrover",
             executable=executable,
             name=name,
-            parameters=[Path(get_package_share_directory("mrover"), "config", param_file) for param_file in parameters]
+            parameters=[Path(get_package_share_directory("mrover"), "config", param_file) if type(param_file) is str else param_file for param_file in parameters],
+            arguments=['--ros-args', '--log-level', 'DEBUG'] if use_debug else [],
         )
 
         MRoverTesting._launch_actions.append(new_node)
@@ -88,16 +96,15 @@ class MRoverTesting:
         MRoverTesting._node_map[name] = new_node
 
     @staticmethod
-    def _send_events(context):
+    def _send_events(_):
         msg_data = "\"{events: ["
         for event in MRoverTesting._events:
             data_data = "["
             for b in event.data:
                 data_data += f"{b}, "
             data_data += "]"
-            msg_data += f'{{function_name: {event.function_name}, module_spec: {event.module_spec}, data: {data_data} }},'
+            msg_data += f'{{function_name: {event.function_name}, module_spec: {event.module_spec}, data: {data_data}, timeout: {event.timeout} }},'
         msg_data += "]}\""
-        rclpy.logging.get_logger("bruh").info(msg_data)
         event_msg = ExecuteProcess(
             cmd=[[
                 FindExecutable(name='ros2'),
@@ -112,26 +119,43 @@ class MRoverTesting:
         return [event_msg]
 
     @staticmethod
-    def init():
-        MRoverTesting.add_node("test_node.py", "test_node", [])
+    def init(use_debug: bool=False):
+        temp_file_arg = DeclareLaunchArgument(
+            'temp_file', 
+            default_value='bruh',
+            description='A temporary file to write a return value'
+        )
+
+        MRoverTesting._launch_actions.append(temp_file_arg)
+
+        MRoverTesting.add_node(TEST_NODE_EXECUTABLE, TEST_NODE_NAME, [], use_debug=use_debug)
 
         # https://docs.ros.org/en/rolling/Tutorials/Intermediate/Launch/Using-Event-Handlers.html
         test_start_handler = RegisterEventHandler(
             OnProcessStart(
-                target_action=MRoverTesting._node_map["test_node"],
+                target_action=MRoverTesting._node_map[TEST_NODE_NAME],
                 on_start=[
                     OpaqueFunction(function=MRoverTesting._send_events),
                 ]
             )
         )
 
+        test_end_handler = RegisterEventHandler(
+            OnProcessExit(
+                target_action=MRoverTesting._node_map[TEST_NODE_NAME],
+                on_exit=[
+                    EmitEvent(event=Shutdown()),
+                ]
+            )
+        )
+
         MRoverTesting._launch_actions.append(test_start_handler)
+        MRoverTesting._launch_actions.append(test_end_handler)
 
         pass
 
     @staticmethod
-    def enable_sim() -> None:
-
+    def enable_sim(headless: bool=True) -> None:
         simulator_node = Node(
             package="mrover",
             executable="simulator",
@@ -139,7 +163,7 @@ class MRoverTesting:
             parameters=[
                 Path(get_package_share_directory("mrover"), "config", "simulator.yaml"),
                 Path(get_package_share_directory("mrover"), "config", "reference_coords.yaml"),
-                {"headless": True},
+                {"headless": headless},
             ],
         )
 
@@ -159,6 +183,7 @@ class MRoverTesting:
         event = TestEvent(
                     module_spec = str(Path(func.__code__.co_filename).relative_to(Path(get_package_share_directory("mrover"))).with_suffix('')).replace('/', '.'),
                     function_name = func.__name__,
+                    timeout = timeout,
                     data = pickle.dumps(kwargs)
                 )
 
