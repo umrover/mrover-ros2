@@ -15,3 +15,5 @@ text=auto
 *.fbx filter=lfs diff=lfs merge=lfs -text
 # Packages
 *.deb filter=lfs diff=lfs merge=lfs -text
+*.whl filter=lfs diff=lfs merge=lfs -text
+*.vsix filter=lfs diff=lfs merge=lfs -text

@@ -4,7 +4,7 @@
 
 namespace mrover {
 
-    using PointCloudGpu = thrust::device_vector<Point>;
+    using PointCloudGpu = wrapped_thrust::thrust::device_vector<Point>;
 
     class ZedWrapper : public rclcpp::Node {
     private:
@@ -68,6 +68,7 @@ namespace mrover {
         rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr mPcPub;
         rclcpp::Publisher<sensor_msgs::msg::CameraInfo>::SharedPtr mLeftCamInfoPub;
         rclcpp::Publisher<sensor_msgs::msg::CameraInfo>::SharedPtr mRightCamInfoPub;
+        rclcpp::Publisher<mrover::msg::Heading>::SharedPtr mMagHeadingPub;
 
         // Thread
 
@@ -81,7 +82,7 @@ namespace mrover {
         auto pointCloudUpdateThread() -> void;
 
     public:
-        ZedWrapper();
+        explicit ZedWrapper(rclcpp::NodeOptions const& options = rclcpp::NodeOptions());
 
         ~ZedWrapper() override;
     };
@@ -90,7 +91,7 @@ namespace mrover {
 
     auto fillImuMessage(rclcpp::Node* node, sl::SensorsData::IMUData& imuData, sensor_msgs::msg::Imu& msg) -> void;
 
-    auto fillMagMessage(sl::SensorsData::MagnetometerData const& magData, sensor_msgs::msg::MagneticField& msg) -> void;
+    auto fillMagMessage(sl::SensorsData::MagnetometerData const& magData, sensor_msgs::msg::MagneticField& magMsg, mrover::msg::Heading& headingMsg) -> void;
 
     auto checkCudaError(cudaError_t error) -> void;
 

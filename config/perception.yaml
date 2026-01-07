@@ -34,3 +34,26 @@ stereo_tag_detector:
     perspective_remove_ignored_margin_per_cell: 0.13
     perspective_remove_pixel_per_cell: 4
     polygonal_approx_accuracy_rate: 0.08
+
+long_range_cam:
+  ros__parameters:
+    width: 640
+    height: 480
+    framerate: 30
+    device: "long_range_cam"
+    watchdog_timeout: 1.0
+    decode_jpeg_from_device: false
+
+cost_map:
+  ros__parameters:
+    resolution: 1.0
+    size: 32.0
+    map_frame: "map"
+    near_clip: 2.0
+    far_clip: 7.0
+    near_width: 1.0
+    far_width: 2.0
+    alpha: 0.05
+    top_clip: 1.0
+    z_percent: 0.34
+    z_threshold: 0.51

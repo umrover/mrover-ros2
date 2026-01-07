@@ -7,6 +7,9 @@
 .vscode/
 .idea/
 
+# Compile Commands
+compile_commands.json
+
 # clangd cache
 .cache/
 
@@ -20,3 +23,20 @@ __pycache__/
 .mypy_cache/
 *.egg-info/
 venv/
+
+#Teleop Ignores
+*.sqlite3
+*.db
+bun.lock
+bun.lockb
+/teleoperation/api-docs/
+.python-version
+system*.html
+openapitools.json
+
+# macOS
+.DS_Store
+# nav state log
+state_machine/state_log.txt
+data/*.png
+data/raw-pano-images

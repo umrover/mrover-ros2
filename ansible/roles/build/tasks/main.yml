@@ -1,25 +1,41 @@
 # Allows us to install Python versions newer than 3.10
+- name: Add Python PPA Key
+  become: True
+  ansible.builtin.apt_key:
+    keyserver: keyserver.ubuntu.com
+    id: F23C5A6CF475977595C89F51BA6932366A755776
+    keyring: /usr/share/keyrings/deadsnakes-ppa-keyring.gpg
+
 - name: Add Python PPA
   become: True
   apt_repository:
-    repo: ppa:deadsnakes/ppa
+    repo: deb [signed-by=/usr/share/keyrings/deadsnakes-ppa-keyring.gpg] http://ppa.launchpad.net/deadsnakes/ppa/ubuntu {{ ubuntu_release }} main
 
 # Allows us to install G++13, so we can use an updated libstdc++ which provides more standard library features (C++20)
+- name: Add GCC PPA Key
+  become: True
+  ansible.builtin.apt_key:
+    keyserver: keyserver.ubuntu.com
+    id: 60C317803A41BA51845E371A1E9377A2BA9EF27F
+    keyring: /usr/share/keyrings/ubuntu-toolchain-r-ppa-keyring.gpg
+
 - name: Add GCC PPA
   become: True
   apt_repository:
-    repo: ppa:ubuntu-toolchain-r/test
+    repo: deb [signed-by=/usr/share/keyrings/ubuntu-toolchain-r-ppa-keyring.gpg] http://ppa.launchpad.net/ubuntu-toolchain-r/test/ubuntu {{ ubuntu_release }} main
 
 - name: Add LLVM APT Key
   become: True
-  apt_key:
+  ansible.builtin.get_url:
     url: https://apt.llvm.org/llvm-snapshot.gpg.key
+    dest: /usr/share/keyrings/llvm-archive-keyring.asc
+    mode: '0644'
 
 # Allows us to install LLVM tools
 - name: Add LLVM APT List
   become: True
   apt_repository:
-    repo: deb http://apt.llvm.org/{{ ubuntu_release }}/ llvm-toolchain-{{ ubuntu_release }}-18 main
+    repo: deb [signed-by=/usr/share/keyrings/llvm-archive-keyring.asc] http://apt.llvm.org/{{ ubuntu_release }}/ llvm-toolchain-{{ ubuntu_release }}-18 main
     filename: llvm
 
 - name: Add CMake APT Key
@@ -37,13 +53,14 @@
 
 - name: Add ROS APT Key
   become: True
-  apt_key:
-    url: https://raw.githubusercontent.com/ros/rosdistro/master/ros.key
+  ansible.builtin.shell: curl -fsSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key | gpg --dearmor -o /usr/share/keyrings/ros-archive-keyring.gpg
+  args:
+    creates: /usr/share/keyrings/ros-archive-keyring.gpg
 
 - name: Add ROS APT List
   become: True
   apt_repository:
-    repo: deb http://packages.ros.org/ros2/ubuntu {{ ubuntu_release }} main
+    repo: deb [signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu {{ ubuntu_release }} main
     filename: ros
 
 - name: Upgrade APT Packages
@@ -61,7 +78,6 @@
     name:
       - zsh
       - fzf
-      - neovim
       - sudo
       - cmake
       - ccache # Caches intermediate build files, speeds up compilation over time
@@ -100,17 +116,26 @@
       - ros-humble-ros-base
       - ros-humble-rviz2
       - ros-humble-xacro
+      - ros-humble-magic-enum
+      - ros-humble-rtcm-msgs
       # TODO (ali): why does this need to be installed manually
       - libboost-dev
+      - qtbase5-dev
+      - qtmultimedia5-dev
+      - libqt5multimedia5-plugins
+      - python3-pyqt5
 
-- name: Install Local APT Packages
+- name: Build and Install Manif
   become: True
-  apt:
-    state: present
-    deb: "{{ ros2_workspace }}/src/mrover/pkg/{{ item }}"
-  with_items:
-    - libmanif-dev.deb
-    - libdawn-dev.deb
+  command: ./scripts/build_manif.sh
+  args:
+    chdir: "{{ ansible_env.HOME }}/ros2_ws/src/mrover/"
+
+- name: Build and Install Dawn
+  become: True
+  command: ./scripts/build_dawn.sh
+  args:
+    chdir: "{{ ansible_env.HOME }}/ros2_ws/src/mrover/"
 
 - name: Initialize rosdep
   become: True
@@ -124,23 +149,6 @@
 
 # - name: Install ROS Packages
 #   # command: rosdep install --from-paths {{ ros2_workspace }}/src --ignore-src -y --rosdistro={{ ros_distro }}
-
-# - name: Download Bun Installer
-#   get_url:
-#     url: https://bun.sh/install
-#     dest: /tmp/bun_installer.sh
-#     mode: 0755
-
-# - name: Run Bun Installer
-#   command: /tmp/bun_installer.sh
-#   args:
-#     creates: ~/.bun/bin/bun
-
-# - name: Upgrade Bun
-#   command: ~/.bun/bin/bun upgrade
-
-# - name: Install Bun Packages
-#   command: ~/.bun/bin/bun install --cwd {{ catkin_workspace }}/src/mrover/src/teleoperation/frontend
 
 - name: Set G++ 13 as Default
   become: True
@@ -210,3 +218,15 @@
   become: True
   snap:
     name: chromium
+
+- name: Install or Upgrade Bun
+  shell: curl -fsSL https://bun.sh/install | bash
+  args:
+    executable: /bin/bash
+  environment:
+    BUN_INSTALL: "{{ ansible_env.HOME }}/.bun"
+
+- name: Install Bun Packages
+  command: ~/.bun/bin/bun install
+  args:
+    chdir: "{{ ansible_env.HOME }}/ros2_ws/src/mrover/teleoperation/basestation_gui/frontend"

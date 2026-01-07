@@ -13,7 +13,7 @@ namespace mrover {
     }
 
 
-    ZedWrapper::ZedWrapper() : Node(NODE_NAME, rclcpp::NodeOptions().use_intra_process_comms(true)), mLoopProfilerGrab{get_logger()}, mLoopProfilerUpdate{get_logger()} {
+    ZedWrapper::ZedWrapper(rclcpp::NodeOptions const& options) : Node(NODE_NAME, options), mLoopProfilerGrab{get_logger()}, mLoopProfilerUpdate{get_logger()} {
         try {
             RCLCPP_INFO(this->get_logger(), "Created Zed Wrapper Node, %s", NODE_NAME);
 
@@ -25,6 +25,7 @@ namespace mrover {
             mPcPub = create_publisher<sensor_msgs::msg::PointCloud2>("zed/left/points", 1);
             mRightCamInfoPub = create_publisher<sensor_msgs::msg::CameraInfo>("zed/right/camera_info", 1);
             mLeftCamInfoPub = create_publisher<sensor_msgs::msg::CameraInfo>("zed/left/camera_info", 1);
+            mMagHeadingPub = create_publisher<mrover::msg::Heading>("zed_imu/mag_heading", 1);
 
             // Declare and set Params
             int imageWidth{};
@@ -44,7 +45,7 @@ namespace mrover {
                     {"svo_file", svoFile, ""},
                     {"use_depth_stabilization", mUseDepthStabilization, false},
                     {"grab_resolution", grabResolutionString, std::string{sl::toString(sl::RESOLUTION::HD720)}},
-                    {"depth_mode", depthModeString, std::string{sl::toString(sl::DEPTH_MODE::PERFORMANCE)}},
+                    {"depth_mode", depthModeString, std::string{sl::toString(sl::DEPTH_MODE::NEURAL)}},
                     {"depth_maximum_distance", mDepthMaximumDistance, 12.0},
                     {"use_builtin_visual_odom", mUseBuiltinPosTracking, false},
                     {"use_pose_smoothing", mUsePoseSmoothing, true},
@@ -127,7 +128,7 @@ namespace mrover {
         try {
             RCLCPP_INFO(this->get_logger(), "Starting grab thread");
             while (rclcpp::ok()) {
-                //mLoopProfilerGrab.beginLoop();
+                mLoopProfilerGrab.beginLoop();
 
                 sl::RuntimeParameters runtimeParameters;
                 runtimeParameters.confidence_threshold = mDepthConfidence;
@@ -155,8 +156,8 @@ namespace mrover {
 
                 mLoopProfilerGrab.measureEvent("zed_retrieve_left_image");
 
-                // if (mZed.retrieveMeasure(mGrabMeasures.leftNormals, sl::MEASURE::NORMALS, sl::MEM::GPU, mNormalsResolution) != sl::ERROR_CODE::SUCCESS)
-                //     throw std::runtime_error("ZED failed to retrieve point cloud normals");
+                if (mZed.retrieveMeasure(mGrabMeasures.leftNormals, sl::MEASURE::NORMALS, sl::MEM::GPU, mNormalsResolution) != sl::ERROR_CODE::SUCCESS)
+                    throw std::runtime_error("ZED failed to retrieve point cloud normals");
 
                 assert(mGrabMeasures.leftImage.timestamp == mGrabMeasures.leftPoints.timestamp);
 
@@ -206,10 +207,14 @@ namespace mrover {
 
                     if (mZedInfo.camera_model != sl::MODEL::ZED_M) {
                         sensor_msgs::msg::MagneticField magMsg;
-                        fillMagMessage(sensorData.magnetometer, magMsg);
+                        mrover::msg::Heading headingMsg;
+                        fillMagMessage(sensorData.magnetometer, magMsg, headingMsg);
                         magMsg.header.frame_id = "zed_mag_frame";
                         magMsg.header.stamp = now();
                         mMagPub->publish(magMsg);
+                        headingMsg.header.frame_id = "zed_mag_frame";
+                        headingMsg.header.stamp = now();
+                        mMagHeadingPub->publish(headingMsg);
                     }
                 }
 
@@ -232,7 +237,7 @@ namespace mrover {
             RCLCPP_INFO(get_logger(), "Starting point cloud thread");
 
             while (rclcpp::ok()) {
-                //mLoopProfilerUpdate.beginLoop();
+                mLoopProfilerUpdate.beginLoop();
 
                 // TODO(quintin): May be bad to allocate every update, best case optimized by tcache
                 // Needed because publish directly shares the pointer to other nodelets running in this process
@@ -315,9 +320,5 @@ namespace mrover {
     }
 }; // namespace mrover
 
-auto main(int argc, char* argv[]) -> int {
-    rclcpp::init(argc, argv);
-    rclcpp::spin(std::make_shared<mrover::ZedWrapper>());
-    rclcpp::shutdown();
-    return 0;
-}
+#include "rclcpp_components/register_node_macro.hpp"
+RCLCPP_COMPONENTS_REGISTER_NODE(mrover::ZedWrapper)

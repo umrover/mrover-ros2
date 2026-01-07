@@ -2,27 +2,78 @@ from pathlib import Path
 
 from ament_index_python import get_package_share_directory
 
-from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument
-from launch.substitutions import LaunchConfiguration
-from launch_ros.actions import Node, ComposableNodeContainer
+import launch
+from launch_ros.actions import Node, LoadComposableNodes
 from launch_ros.descriptions import ComposableNode
-from launch.conditions import LaunchConfigurationEquals
 
 
 def generate_launch_description():
-    zed_node = Node(
+
+    # image tag detector composable node
+
+    img_tag_detector_composable_node = ComposableNode(
         package="mrover",
-        executable="zed",
-        name="zed_wrapper",
-        parameters=[Path(get_package_share_directory("mrover"), "config", "zed.yaml")],
+        plugin="mrover::ImageTagDetector",
+        name="image_tag_detector",
+        parameters=[Path(get_package_share_directory("mrover"), "config", "perception.yaml")],
+        extra_arguments=[{"use_intra_process_comms": True}],
     )
 
-    object_detector_node = Node(
+    # stereo tag detector composable node
+    stereo_tag_detector_composable_node = ComposableNode(
         package="mrover",
-        executable="object_detector",
-        name="object_detector",
-        parameters=[Path(get_package_share_directory("mrover"), "config", "object_detector.yaml")],
+        plugin="mrover::StereoTagDetector",
+        name="stereo_tag_detector",
+        parameters=[Path(get_package_share_directory("mrover"), "config", "perception.yaml")],
+        extra_arguments=[{"use_intra_process_comms": True}],
     )
 
-    return LaunchDescription([zed_node, object_detector_node])
+    # image object detector composable node
+    img_object_detector_composable_node = ComposableNode(
+        package="mrover",
+        plugin="mrover::ImageObjectDetector",
+        name="image_object_detector",
+        parameters=[Path(get_package_share_directory("mrover"), "config", "perception.yaml")],
+        extra_arguments=[{"use_intra_process_comms": True}],
+    )
+
+    # stereo object detector composable node
+    stereo_object_detector_composable_node = ComposableNode(
+        package="mrover",
+        plugin="mrover::StereoObjectDetector",
+        name="stereo_object_detector",
+        parameters=[Path(get_package_share_directory("mrover"), "config", "perception.yaml")],
+        extra_arguments=[{"use_intra_process_comms": True}],
+    )
+
+    # cost map composable node
+    cost_map_composable_node = ComposableNode(
+        package="mrover",
+        plugin="mrover::CostMapNode",
+        name="cost_map",
+        parameters=[Path(get_package_share_directory("mrover"), "config", "perception.yaml")],
+        extra_arguments=[{"use_intra_process_comms": True}],
+    )
+
+    # create the composed container
+    loaded_container = LoadComposableNodes(
+        target_container="zed_container",
+        composable_node_descriptions=[
+            img_tag_detector_composable_node,
+            stereo_tag_detector_composable_node,
+            img_object_detector_composable_node,
+            stereo_object_detector_composable_node,
+            cost_map_composable_node,
+        ],
+    )
+
+    # usb camera node
+    usb_cam = Node(
+        package="mrover",
+        executable="usb_camera",
+        name="long_range_cam",
+        parameters=[Path(get_package_share_directory("mrover"), "config", "perception.yaml")],
+        respawn=True,
+    )
+
+    return launch.LaunchDescription([loaded_container, usb_cam])

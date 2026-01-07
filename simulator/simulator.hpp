@@ -24,6 +24,9 @@ namespace mrover {
     static constexpr auto DEPTH_FORMAT = wgpu::TextureFormat::Depth32Float;
     static constexpr auto NORMAL_FORMAT = wgpu::TextureFormat::RGBA16Float;
 
+    static constexpr char const* DEFAULT_MAP = "default_map.yaml";
+    static std::filesystem::path const CONFIG_PATH = std::filesystem::current_path() / "config" / "simulator";
+
     struct Camera;
     struct StereoCamera;
     class Simulator;
@@ -93,11 +96,17 @@ namespace mrover {
             Clock::time_point lastUpdate = Clock::now();
         };
 
-        urdf::Model model;
+        // Bullet Resources
+        std::vector<btMultiBodyLinkCollider*> mColliders;
+        std::vector<btMultiBodyConstraint*> mConstraints;
         btMultiBody* physics = nullptr;
+        std::shared_ptr<btMultiBodyDynamicsWorld> mDynamicsWorld;
+
+        urdf::Model model;
         std::unordered_map<std::string, LinkMeta> linkNameToMeta;
 
         URDF(Simulator& simulator, std::string_view uri, btTransform const& transform);
+        ~URDF();
 
         static auto makeCollisionShapeForLink(Simulator& simulator, urdf::LinkConstSharedPtr const& link) -> btCollisionShape*;
 
@@ -220,6 +229,16 @@ namespace mrover {
         int mToggleRenderModelsKey = GLFW_KEY_M;
         int mToggleRenderWireframeCollidersKey = GLFW_KEY_C;
         int mToggleCameraLockKey = GLFW_KEY_O;
+        int mArmForwardKey = GLFW_KEY_UP;
+        int mArmBackwardKey = GLFW_KEY_DOWN;
+        int mArmLeftKey = GLFW_KEY_LEFT;
+        int mArmRightKey = GLFW_KEY_RIGHT;
+        int mArmUpKey = GLFW_KEY_SLASH;
+        int mArmDownKey = GLFW_KEY_PERIOD;
+        int mArmRollCWKey = GLFW_KEY_SEMICOLON;
+        int mArmRollCCWKey = GLFW_KEY_APOSTROPHE;
+        int mArmPitchUpKey = GLFW_KEY_RIGHT_BRACKET;
+        int mArmPitchDownKey = GLFW_KEY_LEFT_BRACKET;
 
         float mFlySpeed = 5.0f;
         float mRoverLinearSpeed = 1.0f;
@@ -230,11 +249,13 @@ namespace mrover {
         bool mEnablePhysics{};
         bool mRenderModels = true;
         bool mRenderWireframeColliders = false;
-        double mPublishHammerDistanceThreshold = 4;
-        double mPublishBottleDistanceThreshold = 4;
+        double mPublishHammerDistanceThreshold = 3;
+        double mPublishBottleDistanceThreshold = 3;
         float mCameraLockSlerp = 0.02;
 
         float mFloat = 0.0f;
+
+        std::string configFilename = DEFAULT_MAP;
 
         // ROS
 
@@ -249,8 +270,18 @@ namespace mrover {
         tf2_ros::TransformBroadcaster mTfBroadcaster{this};
 
         bool mPublishIk = true;
-        Eigen::Vector3f mIkTarget{0.382, 0.01, -0.217};
+        bool mIkMode = true; // true = position control, false = velocity control
+        Eigen::Vector3f mIkTarget{0.912, 0.01, -0.217};
+        float mIkPitch{0};
+        float mIkRoll{0};
+        // TODO: switch this to a twist
+        Eigen::Vector3f mIkVel{0, 0, 0};
+        float mIkPitchVel{0};
+        float mIkRollVel{0};
+        float mArmSpeed = 1;
         rclcpp::Publisher<msg::IK>::SharedPtr mIkTargetPub;
+        rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr mIkVelPub;
+        rclcpp::Client<srv::IkMode>::SharedPtr mIkModeClient;
 
         R3d mGpsLinearizationReferencePoint{};
         double mGpsLinerizationReferenceHeading{};
@@ -316,7 +347,7 @@ namespace mrover {
         std::unique_ptr<btHashedOverlappingPairCache> mOverlappingPairCache;
         std::unique_ptr<btDbvtBroadphase> mBroadphase;
         std::unique_ptr<btMultiBodyConstraintSolver> mSolver;
-        std::unique_ptr<btMultiBodyDynamicsWorld> mDynamicsWorld;
+        std::shared_ptr<btMultiBodyDynamicsWorld> mDynamicsWorld;
         std::vector<std::unique_ptr<btCollisionShape>> mCollisionShapes;
         std::vector<std::unique_ptr<btMultiBody>> mMultiBodies;
         std::vector<std::unique_ptr<btMultiBodyLinkCollider>> mMultibodyCollider;
@@ -446,7 +477,7 @@ namespace mrover {
 
         auto initPhysics() -> void;
 
-        auto initUrdfsFromParams() -> void;
+        auto initUrdfsFromParams(std::string const& configFile) -> void;
 
         auto tick() -> void;
 

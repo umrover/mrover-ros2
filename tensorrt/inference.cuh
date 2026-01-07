@@ -11,8 +11,11 @@ using nvinfer1::IExecutionContext;
 
 
 class Inference {
-    std::string mModelPath;
+    std::string mModelName;
 	std::string mPackagePath;
+
+	std::filesystem::path mONNXModelPath;
+	std::filesystem::path mEngineModelPath;
 
     nvinfer1::Logger mLogger;
 
@@ -21,7 +24,9 @@ class Inference {
     std::unique_ptr<IExecutionContext> mContext{};
 
     cv::Mat mInputTensor;
+	std::string mInputTensorName;
     cv::Mat mOutputTensor;
+	std::string mOutputTensorName;
 
     std::array<void*, 2> mBindings{};
 
@@ -35,7 +40,7 @@ class Inference {
      *
      * Uses the file path to locate the onnx model and the modelName to locate the engine file
      */
-    auto createCudaEngine(std::filesystem::path const& onnxModelPath, std::string const& modelName) -> ICudaEngine*;
+    auto createCudaEngine() -> ICudaEngine*;
 
     /**
      * @brief Performs the Model forward pass and allocates the reults in the output tensor
@@ -61,7 +66,7 @@ class Inference {
     auto createExecutionContext() -> void;
 
 public:
-    explicit Inference(std::filesystem::path const& onnxModelPath, std::string const& modelName, std::string packagePathString);
+    explicit Inference(std::string modelName, std::string packagePathString);
 
     /**
      * @brief Runs the forward pass on the given input image in CNN format
@@ -72,4 +77,19 @@ public:
      * @brief Retrieves the mat where the output from the forward pass was stored
      */
     auto getOutputTensor() -> cv::Mat;
+
+	/**
+	  * @brief Retrives the expected input tensor size
+	  */
+	auto getInputTensorSize() -> std::vector<int64_t>;
+
+	/**
+	  * @brief Retrives the expected input tensor size
+	  */
+	auto getOutputTensorSize() -> std::vector<int64_t>;
+
+    /**
+      * @brief Cleans up newly allocated resources
+      */
+    ~Inference();
 };

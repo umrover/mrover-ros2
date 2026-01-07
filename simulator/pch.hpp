@@ -27,6 +27,7 @@
 
 #include <ament_index_cpp/get_package_share_directory.hpp>
 #include <geometry_msgs/msg/twist_stamped.hpp>
+#include <geometry_msgs/msg/vector3.hpp>
 #include <nav_msgs/msg/odometry.hpp>
 #include <rclcpp/executors/single_threaded_executor.hpp>
 #include <rclcpp_components/register_node_macro.hpp>
@@ -71,10 +72,13 @@
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
 
+#include <yaml-cpp/yaml.h>
+
 #include <lie.hpp>
 #include <loop_profiler.hpp>
 #include <manif/algorithms/interpolation.h>
 #include <manif/manif.h>
+#include <parameter.hpp>
 #include <point.hpp>
 
 #include <mrover/msg/calibration_status.hpp>
@@ -85,3 +89,4 @@
 #include <mrover/msg/position.hpp>
 #include <mrover/msg/throttle.hpp>
 #include <mrover/msg/velocity.hpp>
+#include <mrover/srv/ik_mode.hpp>

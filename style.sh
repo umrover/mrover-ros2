@@ -5,6 +5,7 @@ set -Eeuo pipefail
 
 shopt -s nullglob globstar
 GLOBIGNORE="./venv/**"
+GLOBIGNORE="$GLOBIGNORE:./esw/fw/**"
 
 readonly RED='\033[0;31m'
 readonly NC='\033[0m'
@@ -55,7 +56,7 @@ readonly MYPY_PATH=$(find_executable mypy 1.11.2)
 
 # Add new directories with C++ code here:
 readonly CPP_FILES=(
-  ./{perception,lie,esw,simulator}/**/*.{cpp,hpp,h,cu,cuh}
+  ./{perception,lie,esw,simulator,parameter_utils}/**/*.{cpp,hpp,h,cu,cuh}
 )
 echo "Style checking C++ ..."
 "${CLANG_FORMAT_PATH}" "${CLANG_FORMAT_ARGS[@]}" -i "${CPP_FILES[@]}"
@@ -83,11 +84,32 @@ echo
 echo "Linting Python with mypy ..."
 "${MYPY_PATH}" --config-file=mypy.ini --check "${PYTHON_LINT_DIRS[@]}"
 
+if [ -d "./teleoperation/basestation_gui/frontend" ]; then
+  echo
+  echo "Type checking TypeScript with vue-tsc ..."
+  (cd ./teleoperation/basestation_gui/frontend && bun run type-check)
+  echo "Done"
+
+  echo
+  if [ $# -eq 0 ] || [ "$1" != "--fix" ]; then
+    echo "Linting TypeScript/Vue with eslint (dry run) ..."
+    (cd ./teleoperation/basestation_gui/frontend && bun run check)
+  else
+    echo "Linting and fixing TypeScript/Vue with eslint ..."
+    (cd ./teleoperation/basestation_gui/frontend && bun run lint)
+  fi
+  echo "Done"
+fi
+
 if command -v shellcheck &> /dev/null; then
   echo
   echo "Linting bash scripts with shellcheck ..."
   readonly SHELL_FILES=(
-    ./**/*.sh
+    ./ansible/**/*.sh
+    ./scripts/**/*.sh
+    ./starter_project/**/*.sh
+    ./teleoperation/**/*.sh
+    ./*.sh
   )
   # SC2155 is separate declaration and command.
   shellcheck --exclude=SC2155 "${SHELL_FILES[@]}"

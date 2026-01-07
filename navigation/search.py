@@ -82,6 +82,7 @@ class SearchState(State):
                 context.node.get_parameter("search.segments_per_rotation").value,
                 search_center.tag_id,
                 False,
+                max_segment_length=context.node.get_parameter("search.max_segment_length").value,
             )
         else:  # water bottle or mallet
             SearchState.trajectory = SearchTrajectory.spiral_traj(
@@ -91,5 +92,6 @@ class SearchState(State):
                 context.node.get_parameter("search.segments_per_rotation").value,
                 search_center.tag_id,
                 False,
+                max_segment_length=context.node.get_parameter("search.max_segment_length").value,
             )
         self.prev_target_pos_in_map = None

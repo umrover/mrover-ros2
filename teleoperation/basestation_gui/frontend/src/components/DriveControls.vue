@@ -1,99 +1,40 @@
 <template>
-  <div>
-      <p>Drive Controls</p>
-      <div>
-        <p>Left Motor Output: {{left}}</p>
-        <p>Right Motor Output:  {{right}}</p>
-      </div>
-
+  <div class="d-flex justify-content-between align-items-center">
+    <h4 class="m-0">Drive Controls</h4>
+    <IndicatorDot :is-active="controllerConnected" class="me-2" />
   </div>
 </template>
 
-<script>
+<script lang='ts' setup>
+import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { useWebsocketStore } from '@/stores/websocket'
+import IndicatorDot from './IndicatorDot.vue'
 
-let interval;
+const websocketStore = useWebsocketStore()
 
-export default {
-data () {
-  return {
-    rotational: 0,
-    linear: 0,
-    left: 0,
-    right: 0,
+const controllerConnected = ref(false)
+let interval: number | undefined = undefined
 
-    // declaring variable
-    socket: null
-  }
-},
+const UPDATE_HZ = 20
 
-
-beforeUnmount: function () {
-  window.clearInterval(interval);
-},
-
-methods: {
-  sendToROS(msg) {
-    this.socket.send(JSON.stringify(msg));
-  }
-},
-
-created: function () {
-
-  const JOYSTICK_CONFIG = {
-    'left_right': 0,
-    'forward_back': 1,
-    'twist': 2,
-    'dampen': 3,
-    'pan': 4,
-    'tilt': 5
-  }
-
-  this.socket = new WebSocket('ws://127.0.0.1:8000/ws/drive-controls');
-  this.socket.onmessage = (msg) => {
-        msg = JSON.parse(msg.data)
-    if(msg.type == "wheel_cmd"){
-      this.left = msg.left;
-      this.right = msg.right;
-    }
-  }
-
-  const updateRate = 0.05;
+onMounted(() => {
   interval = window.setInterval(() => {
-      const gamepads = navigator.getGamepads()
-      for (let i = 0; i < 4; i++) {
-        const gamepad = gamepads[i]
-        if (gamepad) {
-          if (gamepad.id.includes('Logitech')) {
-            // -1 multiplier to make turning left a positive value
-            // Both left_right axis and twisting the joystick will turn
-            this.rotational = -1 * (gamepad.axes[JOYSTICK_CONFIG['left_right']] + gamepad.axes[JOYSTICK_CONFIG['twist']])
-            // Range Constraints
-            if (this.rotational > 1) {
-              this.rotational = 1
-            }
-            else if (this.rotational < -1) {
-              this.rotational = -1
-            }
-            // forward on joystick is -1, so invert
-            this.linear = -1 * gamepad.axes[JOYSTICK_CONFIG['forward_back']]
+    const gamepads = navigator.getGamepads()
+    const gamepad = gamepads.find(gamepad => gamepad && gamepad.id.includes('Thrustmaster'))
+    controllerConnected.value = !!gamepad
+    if (!gamepad) return
 
-            // const joystickData = {
-            //   'type': 'joystick',
-            //   'forward_back': this.linear,
-            //   'left_right': this.rotational
-            // }
-        
-          }
-        }
-        
-      }
+    const inverse_axes = gamepad.axes.map((value, index) => index === 1 ? -value : value)
 
-  }, updateRate*1000)
-},
+    websocketStore.sendMessage('drive', {
+      type: 'joystick',
+      axes: inverse_axes,
+      buttons: gamepad.buttons.map(button => button.value)
+    })
+  }, 1000 / UPDATE_HZ)
+})
 
-}
+onBeforeUnmount(() => {
+  window.clearInterval(interval)
+})
 </script>
-
-<style scoped>
-
-</style>

@@ -1,46 +1,53 @@
 {
   "name": "frontend",
-  "version": "0.1.0",
+  "version": "0.0.0",
   "private": true,
+  "type": "module",
   "scripts": {
-    "serve": "vue-cli-service serve",
-    "build": "vue-cli-service build",
-    "lint": "vue-cli-service lint",
-    "watch": "vue-cli-service build --watch --mode development"
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "build-only": "vite build",
+    "type-check": "vue-tsc --build --force",
+    "lint": "eslint . --fix",
+    "check": "vue-tsc && eslint .",
+    "format": "prettier --write src/"
   },
   "dependencies": {
-    "core-js": "^3.8.3",
-    "vue": "^3.2.13",
-    "vue-router": "^4.2.4",
-    "vuex": "^4.1.0"
+    "@msgpack/msgpack": "^3.1.2",
+    "@popperjs/core": "^2.11.8",
+    "@typescript-eslint/eslint-plugin": "^8.48.1",
+    "@typescript-eslint/parser": "^8.48.1",
+    "@vue-leaflet/vue-leaflet": "^0.10.1",
+    "bootstrap": "^5.3.8",
+    "bootstrap-icons": "^1.13.1",
+    "chart.js": "^4.5.1",
+    "gamepad-display": "^1.0.2",
+    "leaflet": "^1.9.4",
+    "leaflet-rotatedmarker": "^0.2.0",
+    "lil-gui": "^0.21.0",
+    "pinia": "^3.0.4",
+    "three": "^0.181.2",
+    "typescript-eslint": "^8.48.1",
+    "urdf-loader": "^0.12.6",
+    "vue": "^3.5.25",
+    "vue-flight-indicators": "^0.1.1",
+    "vue-router": "^4.6.3"
   },
   "devDependencies": {
-    "@babel/core": "^7.12.16",
-    "@babel/eslint-parser": "^7.12.16",
-    "@vue/cli-plugin-babel": "~5.0.0",
-    "@vue/cli-plugin-eslint": "~5.0.0",
-    "@vue/cli-service": "~5.0.0",
-    "eslint": "^7.32.0",
-    "eslint-plugin-vue": "^8.0.3"
-  },
-  "eslintConfig": {
-    "root": true,
-    "env": {
-      "node": true
-    },
-    "extends": [
-      "plugin:vue/vue3-essential",
-      "eslint:recommended"
-    ],
-    "parserOptions": {
-      "parser": "@babel/eslint-parser"
-    },
-    "rules": {}
-  },
-  "browserslist": [
-    "> 1%",
-    "last 2 versions",
-    "not dead",
-    "not ie 11"
-  ]
+    "@tsconfig/node24": "^24.0.3",
+    "@types/bootstrap": "^5.2.10",
+    "@types/leaflet": "^1.9.21",
+    "@types/node": "^24.10.1",
+    "@vitejs/plugin-vue": "^6.0.2",
+    "@vue/eslint-config-prettier": "^10.2.0",
+    "@vue/tsconfig": "^0.8.1",
+    "eslint": "^9.39.1",
+    "eslint-plugin-vue": "^10.6.2",
+    "prettier": "^3.7.4",
+    "sass": "1.77.6",
+    "typescript": "^5.9.3",
+    "vite": "^7.2.6",
+    "vue-tsc": "^3.1.5"
+  }
 }
