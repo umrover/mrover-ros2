@@ -146,7 +146,7 @@ struct SkyboxUniforms {
 
 @vertex fn vs_skybox(@builtin(vertex_index) vNdx: u32) -> SkyboxVSOutput {
     // one big triangle to cover the whole screen
-    // clip space is is a square with vertices (-1,-1), (-1,1), (1,1), and (1,-1)
+    // clip space is a square with vertices (-1,-1), (-1,1), (1,1), and (1,-1)
     // so this triangle extends above and to the right of clip space to cover all of it
     let pos = array(
         vec2f(-1, 3),
