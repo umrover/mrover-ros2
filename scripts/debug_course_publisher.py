@@ -77,7 +77,6 @@ class DebugCoursePublisher(Node):
        msg.tag_id = -1
        msg.type=WaypointType(val=WaypointType.POST)
        msg.enable_costmap = True
-       #msg.enable_inward = True
        msg.coverage_radius = 3.0
 
 
@@ -88,7 +87,7 @@ class DebugCoursePublisher(Node):
                for waypoint in [
                    (
                        msg,
-                       SE3.from_position_orientation(8,8),
+                       SE3.from_position_orientation(1,1),
                    ),
                ]
            ],

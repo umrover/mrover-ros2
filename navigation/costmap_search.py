@@ -312,8 +312,9 @@ class CostmapSearchState(State):
         if context.course.current_waypoint().coverage_radius > 0 and distance_from_center > 0.5 * context.course.current_waypoint().coverage_radius:
             enable_inward = True
 
+        if context.course.current_waypoint().coverage_radius > 0:
             # we override coverage_radius_in to be the waypoint's inward spiral coverage radius
-            #coverage_radius_in = context.course.current_waypoint().coverage_radius
+            coverage_radius_in = context.course.current_waypoint().coverage_radius
 
         if not self.is_recovering:
             self.spiral_traj = SearchTrajectory.spiral_traj(
