@@ -42,7 +42,7 @@
   become: True
   apt_key:
     url: https://apt.kitware.com/keys/kitware-archive-latest.asc
-    id: EA587CE6512D89C580AAE55BA65337CCA8A748B8
+    id: 4DBEBE3EEC96E7B8C6EC5BE99E92FDC6C5B9BA75
     keyring: /usr/share/keyrings/kitware-archive-keyring.gpg
 
 # Allows us to install CMake versions newer than 3.22
