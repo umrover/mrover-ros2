@@ -14,13 +14,11 @@ TRUSTED_GPG_D="/etc/apt/trusted.gpg.d"
 KEYRINGS_DIR="/usr/share/keyrings"
 
 OLD_PPA_FILES=(
-    "$SOURCES_DIR/ppa_launchpad_net_deadsnakes_ppa_ubuntu.list"
-    "$SOURCES_DIR/deadsnakes-ubuntu-ppa-*.list"
-    "$SOURCES_DIR/ppa_launchpad_net_ubuntu_toolchain_r_test_ubuntu.list"
-    "$SOURCES_DIR/ubuntu-toolchain-r-ubuntu-test-*.list"
-    "$SOURCES_DIR/llvm.list"
-    "$SOURCES_DIR/kitware.list"
-    "$SOURCES_DIR/ros.list"
+    "$SOURCES_DIR/*deadsnakes*.list"
+    "$SOURCES_DIR/*toolchain*.list"
+    "$SOURCES_DIR/*llvm*.list"
+    "$SOURCES_DIR/*kitware*.list"
+    "$SOURCES_DIR/*ros*.list"
 )
 
 # Removed to avoid "Key is stored in legacy trusted.gpg keyring" warning
