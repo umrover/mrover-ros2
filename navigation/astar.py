@@ -5,6 +5,8 @@ from geometry_msgs.msg import Twist
 from navigation.context import Context
 from navigation.trajectory import Trajectory
 from navigation.coordinate_utils import ij_to_cartesian, cartesian_to_ij, d_calc, segment_path, is_high_cost_point
+
+
 class SpiralEnd(Exception):
     """
     Raised when there are no more points left in the search spiral.
@@ -27,7 +29,6 @@ class OutOfBounds(Exception):
     """
 
     pass
-
 
 
 class AStar:
@@ -57,9 +58,7 @@ class AStar:
             pos = came_from[pos]
         return path[::-1]  # Reverse the path
 
-    def a_star(
-        self, start: np.ndarray, end: np.ndarray, debug: bool = False
-    ) -> list | None:
+    def a_star(self, start: np.ndarray, end: np.ndarray, debug: bool = False) -> list | None:
         """
         A* Algorithm: Find a path from start to end in the costmap using f(n) = g(n) + h(n).
         :param start: Rover pose in cartesian coordinates.

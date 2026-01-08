@@ -240,7 +240,7 @@ class WaypointState(State):
             return backup.BackupState()
 
         # Returns either ApproachTargetState, LongRangeState, or None
-        approach_state = context.course.get_approach_state(use_long_range=False)
+        approach_state = context.course.get_approach_state(use_long_range=True)
         if approach_state is not None:
             return approach_state
 
@@ -305,12 +305,22 @@ class WaypointState(State):
     def display_markers(self, context: Context):
         if context.course is None:
             return
-        
+
         if self.USE_COSTMAP:
-            context.publish_path_marker(points=self.waypoint_traj.coordinates, color=[1.0,0.0,1.0], ns=str(type(self)))
+            context.publish_path_marker(
+                points=self.waypoint_traj.coordinates, color=[1.0, 0.0, 1.0], ns=str(type(self))
+            )
             if not self.astar_traj.empty() and not self.astar_traj.done():
-                context.publish_path_marker(points=self.astar_traj.coordinates[self.astar_traj.cur_pt:], color=[1.0, 0.0, 0.0], ns=str(type(AStar)))
+                context.publish_path_marker(
+                    points=self.astar_traj.coordinates[self.astar_traj.cur_pt :],
+                    color=[1.0, 0.0, 0.0],
+                    ns=str(type(AStar)),
+                )
             else:
                 context.delete_path_marker(ns=str(type(AStar)))
         else:
-            context.publish_path_marker(points=np.array([context.course.current_waypoint_pose_in_map().translation()]), color=[1.0, 0.0, 1.0], ns=str(type(self)))
+            context.publish_path_marker(
+                points=np.array([context.course.current_waypoint_pose_in_map().translation()]),
+                color=[1.0, 0.0, 1.0],
+                ns=str(type(self)),
+            )

@@ -363,11 +363,17 @@ class ApproachTargetState(State):
             context.publish_path_marker(points=self.target_traj.coordinates, color=[1.0, 1.0, 0.0], ns=str(type(self)))
 
             if not self.astar_traj.empty() and not self.astar_traj.done():
-                context.publish_path_marker(points=self.astar_traj.coordinates[self.astar_traj.cur_pt:], color=[1.0, 0.0, 0.0], ns=str(type(AStar)))
+                context.publish_path_marker(
+                    points=self.astar_traj.coordinates[self.astar_traj.cur_pt :],
+                    color=[1.0, 0.0, 0.0],
+                    ns=str(type(AStar)),
+                )
             else:
                 context.delete_path_marker(ns=str(type(AStar)))
         else:
-            context.publish_path_marker(points=np.array([self.target_position]), color=[1.0, 1.0, 0.0], ns=str(type(self)))
+            context.publish_path_marker(
+                points=np.array([self.target_position]), color=[1.0, 1.0, 0.0], ns=str(type(self))
+            )
 
     def self_in_distance_threshold(self, context: Context):
         rover_SE3 = context.rover.get_pose_in_map()

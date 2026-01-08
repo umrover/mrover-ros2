@@ -574,9 +574,14 @@ class Context:
                 self.dilate_cost(self.current_dilation_radius)
             return True
         return False
-    
+
     def publish_path_marker(
-        self, points: np.ndarray, color: np.ndarray | list, ns: str, size=0.2, lifetime=0, 
+        self,
+        points: np.ndarray,
+        color: np.ndarray | list,
+        ns: str,
+        size=0.2,
+        lifetime=0,
     ) -> None:
         if self.node.get_parameter("display_markers").value:
             points_marker = Marker()
@@ -587,14 +592,13 @@ class Context:
             points_marker.color.r = color[0]
             points_marker.color.g = color[1]
             points_marker.color.b = color[2]
-            points_marker.color.a = 1.0 
+            points_marker.color.a = 1.0
             points_marker.pose.orientation.w = 1.0
 
             for point in points:
                 assert len(point) > 1, f"Invalid point has size {len(point)}"
                 p = Point(x=point[0], y=point[1])
                 points_marker.points.append(p)
-
 
             lines_marker: Marker = deepcopy(points_marker)
 
@@ -603,7 +607,7 @@ class Context:
             points_marker.scale.x = size
             points_marker.scale.y = size
 
-            lines_marker.type = Marker.LINE_STRIP    
+            lines_marker.type = Marker.LINE_STRIP
             lines_marker.id = 1
             lines_marker.scale.x = size / 6
             lines_marker.scale.y = size / 6
@@ -611,7 +615,7 @@ class Context:
             self.path_marker_publisher.publish(points_marker)
             self.path_marker_publisher.publish(lines_marker)
 
-    def delete_path_marker( self, ns: str) -> None:
+    def delete_path_marker(self, ns: str) -> None:
         if self.node.get_parameter("display_markers").value:
             points_marker = Marker()
             points_marker.header = Header(frame_id="map", stamp=self.node.get_clock().now().to_msg())
@@ -626,7 +630,7 @@ class Context:
             self.path_marker_publisher.publish(points_marker)
             self.path_marker_publisher.publish(lines_marker)
 
-    def delete_all_markers( self) -> None:
+    def delete_all_markers(self) -> None:
         if self.node.get_parameter("display_markers").value:
             marker = Marker()
             marker.header = Header(frame_id="map", stamp=self.node.get_clock().now().to_msg())

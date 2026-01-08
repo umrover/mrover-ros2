@@ -88,10 +88,14 @@ class CostmapSearchState(State):
             if self.spiral_traj.cur_pt + 3 < len(self.spiral_traj.coordinates)
             else len(self.spiral_traj.coordinates)
         )
-        context.publish_path_marker(points=self.spiral_traj.coordinates[start_pt:end_pt], color=[1.0,0.0,1.0], ns=str(type(self)))
+        context.publish_path_marker(
+            points=self.spiral_traj.coordinates[start_pt:end_pt], color=[1.0, 0.0, 1.0], ns=str(type(self))
+        )
 
         if not self.astar_traj.empty() and not self.astar_traj.done():
-            context.publish_path_marker(points=self.astar_traj.coordinates[self.astar_traj.cur_pt:], color=[1.0, 0.0, 0.0], ns=str(type(AStar)))
+            context.publish_path_marker(
+                points=self.astar_traj.coordinates[self.astar_traj.cur_pt :], color=[1.0, 0.0, 0.0], ns=str(type(AStar))
+            )
         else:
             context.delete_path_marker(ns=str(type(AStar)))
 
