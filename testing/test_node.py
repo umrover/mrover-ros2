@@ -69,38 +69,51 @@ class TestNode(Node):
     def timer_callback(self):
         self.get_logger().debug(f"Events length: {len(self.events)}")
 
-        if self.index < len(self.events):
-            self.get_logger().debug(f"Running event index: {self.index} func: {self.events[self.index].__name__}")
-
+        # the functionality implemented here is actually very similar to ROS2 callbacks
+        # this could be switched to create new timer callbacks inside of the ros infra
+        # I think that could be a little bit cooked though since it would just make a crazy number
+        # of callbacks happen
         if len(self.events) == 0:
             self.get_logger().debug("No Events Loaded...")
+
         elif self.index < len(self.events):
+            assert(len(self.args[self.index]) == len(self.events[self.index]))
+            assert(len(self.args) == len(self.events) == len(self.timeouts))
+
             if self.is_first_event_call:
                 self.is_first_event_call = False
                 self.get_logger().info(f"{self.timeouts[self.index]}")
                 signal.alarm(self.timeouts[self.index])
-            
-            return_val: MRoverEventReturn = self.events[self.index](self, **pickle.loads(self.args[self.index]))
-            match return_val.value:
-                case MRoverEventReturn.SUCCESS.value:
-                    # clear any active alarms
-                    signal.alarm(0)
-                    self.is_first_event_call = True
+                self.is_event_done = [False] * len(self.args[self.index]) # TODO: Resume here with addding parallel events
 
-                    # increment on to the nexte event
-                    self.index += 1
-                    return
-                case MRoverEventReturn.FAILURE.value:
-                    # clear any active alarms
-                    signal.alarm(0)
-                    self.is_first_event_call = True
+            for idx, (args, event) in enumerate(zip(self.args[self.index], self.events[self.index])):
+                self.get_logger().debug(f"Running event index: {self.index}.{idx} func: {event.__name__}")
+                return_val: MRoverEventReturn = event(self, **pickle.loads(args))
+                match return_val.value:
+                    case MRoverEventReturn.SUCCESS.value:
+                        self.is_event_done[idx] = True
 
-                    # TODO: add more descriptive failures
-                    exit_error("Event Exited With Failure...")
-                case MRoverEventReturn.PENDING.value:
-                    return
-                case _:
-                    exit_error("Event Unknown Recieved...")
+                        if all(self.is_event_done):
+
+                            # clear any active alarms
+                            signal.alarm(0)
+                            self.is_first_event_call = True
+
+                            # increment on to the nexte event
+                            self.index += 1
+                            return
+                    case MRoverEventReturn.FAILURE.value:
+                        # clear any active alarms
+                        signal.alarm(0)
+                        self.is_first_event_call = True
+
+                        # no need to check all of the other statuses since we need all of them to succeed for the parallel event to succeed
+                        # TODO: add more descriptive failures
+                        exit_error("Event Exited With Failure...")
+                    case MRoverEventReturn.PENDING.value:
+                        return
+                    case _:
+                        exit_error("Event Unknown Recieved...")
         elif self.index == len(self.events):
             exit_success("Events Finished...")
 
@@ -111,9 +124,18 @@ class TestNode(Node):
 
                 function = getattr(module, event.function_name)
 
-                self.events.append(function)
-                self.args.append(event.data)
-                self.timeouts.append(event.timeout)
+                # append case
+                if event.event_group >= len(self.events):
+                    self.events.append([function])
+                    self.args.append([event.data])
+                    self.timeouts.append(event.timeout)
+                else:
+                    self.events[event.event_group].append(function)
+                    self.args[event.event_group].append(event.data)
+
+                    # there should already be a timeout associated with the event group
+                    assert(len(self.timeouts) >= event.event_group)
+
             except ImportError:
                 get_logger('testing').error("Error importing the module...")
             except AttributeError:

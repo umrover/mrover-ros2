@@ -103,7 +103,7 @@ class MRoverTesting:
             for b in event.data:
                 data_data += f"{b}, "
             data_data += "]"
-            msg_data += f'{{function_name: {event.function_name}, module_spec: {event.module_spec}, data: {data_data}, timeout: {event.timeout} }},'
+            msg_data += f'{{function_name: {event.function_name}, module_spec: {event.module_spec}, event_group: {event.event_group}, data: {data_data}, timeout: {event.timeout} }},'
         msg_data += "]}\""
         event_msg = ExecuteProcess(
             cmd=[[
@@ -184,6 +184,7 @@ class MRoverTesting:
                     module_spec = str(Path(func.__code__.co_filename).relative_to(Path(get_package_share_directory("mrover"))).with_suffix('')).replace('/', '.'),
                     function_name = func.__name__,
                     timeout = timeout,
+                    event_group = len(MRoverTesting._events),
                     data = pickle.dumps(kwargs)
                 )
 
