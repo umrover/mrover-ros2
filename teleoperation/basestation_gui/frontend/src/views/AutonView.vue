@@ -39,17 +39,8 @@
       <DriveControls />
       <GimbalControls />
     </div>
-    <div class="island p-2 rounded moteus d-flex gap-2">
-      <ControllerDataTable
-        msg-type="drive_left_state"
-        header="Drive Left States"
-        class="border border-2 rounded p-2 flex-fill"
-      />
-      <ControllerDataTable
-        msg-type="drive_right_state"
-        header="Drive Right States"
-        class="border border-2 rounded p-2 flex-fill"
-      />
+    <div class="island p-2 rounded moteus">
+      <ControllerDataTable mode="drive" header="Drive" />
     </div>
   </div>
 </template>
@@ -144,7 +135,7 @@ onUnmounted(() => {
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   grid-template-rows: minmax(200px, 40%) auto auto;
   grid-template-areas:
-    'map map'
+    'data map'
     'data waypoints'
     'moteus waypoints';
   font-family: sans-serif;
@@ -166,6 +157,7 @@ onUnmounted(() => {
 
 .moteus {
   grid-area: moteus;
+  overflow: hidden;
 }
 
 .data {

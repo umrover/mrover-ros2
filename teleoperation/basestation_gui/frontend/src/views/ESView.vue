@@ -7,9 +7,8 @@
       <Rover3D class="w-100 h-100" />
     </div>
     <div class="island p-2 rounded controller_state d-flex flex-column gap-2">
-      <ControllerDataTable msg-type="arm_state" header="Arm States" />
-      <ControllerDataTable msg-type="drive_left_state" header="Drive Left" />
-      <ControllerDataTable msg-type="drive_right_state" header="Drive Right" />
+      <ControllerDataTable mode="arm" header="Arm" />
+      <ControllerDataTable mode="drive" header="Drive" />
     </div>
     <div class="island p-2 rounded auton-typing">
       <AutonTyping />

@@ -45,7 +45,7 @@
         </p>
       </div>
       <button @click="centerOnRover" class="btn btn-sm btn-light border" style="font-size: 14px; padding: 4px 8px">
-        Center on Rover
+        Center
       </button>
     </div>
 

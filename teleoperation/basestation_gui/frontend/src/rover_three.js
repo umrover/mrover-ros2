@@ -8,7 +8,6 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 // import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js'
 //import { TrackballControls } from 'three/addons/controls/TrackballControls.js'
 import * as Text2D from 'three/addons/webxr/Text2D.js' //DEBUG
-import { rand } from 'three/tsl'
 
 const defaultJointValues = {
   chassis_to_arm_a: 24.14,
@@ -22,7 +21,6 @@ const defaultJointValues = {
 let rover = null
 let ikTargetSphere = null
 
-let camera_type_names = ["default", "follow", "full arm", "arm", "side arm", "top", "bottom"]
 let current_camera_type = "default"
 
 const costMapBlockWidth = 80
@@ -201,23 +199,10 @@ export default function threeSetup() {
     },
   )
 
-  // Sizes for window resizing
   const sizes = {
     width: canvas.clientWidth,
     height: canvas.clientHeight,
   }
-
-  // Resize event listenerreb
-  window.addEventListener('resize', () => {
-    sizes.width = canvas.clientWidth
-    sizes.height = canvas.clientHeight
-    // Update camera
-    camera.aspect = sizes.width / sizes.height
-    camera.updateProjectionMatrix()
-    // Update renderer
-    renderer.setSize(sizes.width, sizes.height)
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
-  })
 
   // Camera setup
   // const camera = new THREE.PerspectiveCamera(
@@ -360,6 +345,18 @@ export default function threeSetup() {
   renderer.toneMapping = THREE.ACESFilmicToneMapping
   renderer.toneMappingExposure = 2.5
 
+  const resizeObserver = new ResizeObserver(() => {
+    sizes.width = canvas.clientWidth
+    sizes.height = canvas.clientHeight
+    for (const cam of Object.values(camera_types)) {
+      cam.aspect = sizes.width / sizes.height
+      cam.updateProjectionMatrix()
+    }
+    renderer.setSize(sizes.width, sizes.height)
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+  })
+  resizeObserver.observe(canvas)
+
   const clock = new THREE.Clock()
   let timeSinceLastFrame = 0
   const fpsLimit = 60
@@ -376,12 +373,13 @@ export default function threeSetup() {
     }
   }
 
-  tick() // Start the animation loop
+  tick()
 
   
 
   return () => {
-    renderer.dispose() // Dispose renderer
+    resizeObserver.disconnect()
+    renderer.dispose()
   }
 }
 
@@ -470,11 +468,6 @@ function fillTextCanvas(gridData){
 }
 
 export function updateCostMapGrid(gridData){
-  // let tempGridData = []
-  // for(let i = 0; i < costMapBlockWidth * costMapBlockWidth; i++){
-  //   tempGridData.push(Math.round(Math.random() * 100))
-  // }
-  
   for(let i = 0; i < numCostMapBlocks * numCostMapBlocks; i++){
     
     const newColor = new THREE.Color(gridData[i] * 0.01, 1 - gridData[i] * 0.01, 0)
