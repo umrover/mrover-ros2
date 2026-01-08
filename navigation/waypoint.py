@@ -310,7 +310,7 @@ class WaypointState(State):
             context.publish_path_marker(
                 points=self.waypoint_traj.coordinates, color=[1.0, 0.0, 1.0], ns=str(type(self))
             )
-            if not self.astar_traj.empty() and not self.astar_traj.done():
+            if not self.astar_traj.is_last() and not self.astar_traj.done():
                 context.publish_path_marker(
                     points=self.astar_traj.coordinates[self.astar_traj.cur_pt :],
                     color=[1.0, 0.0, 0.0],
