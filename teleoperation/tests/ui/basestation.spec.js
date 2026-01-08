@@ -103,3 +103,7 @@ test('autonomy waypoint with string name persists after refresh', async ({ page 
     (resp) => resp.url().includes('/api/waypoints') && resp.request().method() === 'GET'
   );
 });
+
+test('basestation frontend loads', async ({ page }) => {
+  
+});
