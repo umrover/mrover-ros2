@@ -13,6 +13,7 @@ from navigation.costmap_search import CostmapSearchState
 from navigation.state import DoneState, OffState, off_check
 from navigation.waypoint import WaypointState
 from nav_msgs.msg import Path
+from nav_msgs.msg import Path
 from rclpy import Parameter
 from rclpy.executors import ExternalShutdownException, MultiThreadedExecutor, SingleThreadedExecutor
 from rclpy.node import Node
@@ -174,13 +175,12 @@ class Navigation(Node):
                 else self.ctx.rover.path_history.poses[-1].pose.position
             )
 
-            if lastRoverPosition is None:
+            if len(self.ctx.rover.path_history.poses) < self.HIST_SIZE:
                 self.ctx.rover.path_history.poses.append(roverPoseStamped)
             elif (
                 lastRoverPosition is not None and (x - lastRoverPosition.x) ** 2 + (y - lastRoverPosition.y) ** 2
             ) ** 0.5 > 0.15:
-                if len(self.ctx.rover.path_history.poses) > self.HIST_SIZE:
-                    self.ctx.rover.path_history.poses.pop(0)
+                self.ctx.rover.path_history.poses.pop(0)
                 self.ctx.rover.path_history.poses.append(roverPoseStamped)
 
             self.ctx.path_history_publisher.publish(self.ctx.rover.path_history)

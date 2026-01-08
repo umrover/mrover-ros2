@@ -50,56 +50,56 @@ namespace mrover {
                                [&](int* arg) {
                                    try {
                                        *arg = static_cast<int>(node->get_parameter(mParamDescriptor).as_int());
-                                   } catch (rclcpp::exceptions::ParameterUninitializedException& e) {
-                                       try {
-                                           *arg = std::get<int>(mDefaultValue);
-                                       } catch (std::bad_variant_access const& ex) {
-                                           throw std::runtime_error("Bad Variant Access: Type not int");
-                                       }
+                                   } catch (...) {}
+
+                                   try {
+                                       *arg = std::get<int>(mDefaultValue);
+                                   } catch (std::bad_variant_access const& ex) {
+                                       throw std::runtime_error("Bad Variant Access: Type not int");
                                    }
                                },
                                [&](std::string* arg) {
                                    try {
                                        *arg = node->get_parameter(mParamDescriptor).as_string();
-                                   } catch (rclcpp::exceptions::ParameterUninitializedException& e) {
-                                       try {
-                                           *arg = std::get<std::string>(mDefaultValue);
-                                       } catch (std::bad_variant_access const& ex) {
-                                           throw std::runtime_error("Bad Variant Access: Type not std::string");
-                                       }
+                                   } catch (...) {}
+
+                                   try {
+                                       *arg = std::get<std::string>(mDefaultValue);
+                                   } catch (std::bad_variant_access const& ex) {
+                                       throw std::runtime_error("Bad Variant Access: Type not string");
                                    }
                                },
                                [&](bool* arg) {
                                    try {
                                        *arg = node->get_parameter(mParamDescriptor).as_bool();
-                                   } catch (rclcpp::exceptions::ParameterUninitializedException& e) {
-                                       try {
-                                           *arg = std::get<bool>(mDefaultValue);
-                                       } catch (std::bad_variant_access const& ex) {
-                                           throw std::runtime_error("Bad Variant Access: Type not bool");
-                                       }
+                                   } catch (...) {}
+
+                                   try {
+                                       *arg = std::get<bool>(mDefaultValue);
+                                   } catch (std::bad_variant_access const& ex) {
+                                       throw std::runtime_error("Bad Variant Access: Type not bool");
                                    }
                                },
                                [&](double* arg) {
                                    try {
                                        *arg = node->get_parameter(mParamDescriptor).as_double();
-                                   } catch (rclcpp::exceptions::ParameterUninitializedException& e) {
-                                       try {
-                                           *arg = std::get<double>(mDefaultValue);
-                                       } catch (std::bad_variant_access const& ex) {
-                                           throw std::runtime_error("Bad Variant Access: Type not double");
-                                       }
+                                   } catch (...) {}
+
+                                   try {
+                                       *arg = std::get<double>(mDefaultValue);
+                                   } catch (std::bad_variant_access const& ex) {
+                                       throw std::runtime_error("Bad Variant Access: Type not double");
                                    }
                                },
                                [&](float* arg) {
                                    try {
                                        *arg = static_cast<float>(node->get_parameter(mParamDescriptor).as_double());
-                                   } catch (rclcpp::exceptions::ParameterUninitializedException& e) {
-                                       try {
-                                           *arg = std::get<float>(mDefaultValue);
-                                       } catch (std::bad_variant_access const& ex) {
-                                           throw std::runtime_error("Bad Variant Access: Type not float");
-                                       }
+                                   } catch (...) {}
+
+                                   try {
+                                       *arg = std::get<float>(mDefaultValue);
+                                   } catch (std::bad_variant_access const& ex) {
+                                       throw std::runtime_error("Bad Variant Access: Type not float");
                                    }
                                }},
                        mData);
@@ -108,7 +108,9 @@ namespace mrover {
         static inline auto declareParameters(rclcpp::Node* node, std::vector<ParameterWrapper>& params) -> void {
             RCLCPP_INFO(rclcpp::get_logger("param_logger"), "Declaring %zu parameters...", params.size());
             for (auto& param: params) {
-                node->declare_parameter(param.mParamDescriptor, param.mType);
+                try {
+                    node->declare_parameter(param.mParamDescriptor, param.mType);
+                } catch (rclcpp::exceptions::ParameterAlreadyDeclaredException const& e) {}
                 param.visit(node);
             }
         }

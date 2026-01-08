@@ -38,10 +38,10 @@ namespace mrover {
                 return;
             }
             mrover::LEDInfo ledInfo{};
-            ledInfo.red = msg->red;
-            ledInfo.green = msg->green;
-            ledInfo.blue = msg->blue;
-            ledInfo.blinking = msg->is_blinking;
+            ledInfo.red = msg->color == mrover::msg::LED::RED;
+            ledInfo.green = msg->color == mrover::msg::LED::BLINKING_GREEN;
+            ledInfo.blue = msg->color == mrover::msg::LED::BLUE;
+            ledInfo.blinking = msg->color == mrover::msg::LED::BLINKING_GREEN;
             ledCanDevice->publish_message(mrover::InBoundPDLBMessage{mrover::LEDCommand{.led_info = ledInfo}});
         }
 
