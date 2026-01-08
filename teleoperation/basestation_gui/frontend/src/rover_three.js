@@ -470,14 +470,14 @@ function fillTextCanvas(gridData){
 }
 
 export function updateCostMapGrid(gridData){
-  let tempGridData = []
-  for(let i = 0; i < costMapBlockWidth * costMapBlockWidth; i++){
-    tempGridData.push(Math.round(Math.random() * 100))
-  }
+  // let tempGridData = []
+  // for(let i = 0; i < costMapBlockWidth * costMapBlockWidth; i++){
+  //   tempGridData.push(Math.round(Math.random() * 100))
+  // }
   
   for(let i = 0; i < numCostMapBlocks * numCostMapBlocks; i++){
     
-    const newColor = new THREE.Color(tempGridData[i] * 0.01, 1 - tempGridData[i] * 0.01, 0)
+    const newColor = new THREE.Color(gridData[i] * 0.01, 1 - gridData[i] * 0.01, 0)
 
     const newMaterial = new THREE.MeshStandardMaterial({
     color: newColor//0xfff000
@@ -496,7 +496,7 @@ export function updateCostMapGrid(gridData){
   //   }
   // }
   
-  fillTextCanvas(tempGridData)
+  fillTextCanvas(gridData)
   textCanvasTexture.needsUpdate = true;
 }
 

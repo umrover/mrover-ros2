@@ -4,6 +4,7 @@ from backend.drive_controls import send_joystick_twist, send_controller_twist
 from mrover.msg import ControllerState
 from geometry_msgs.msg import Twist
 from sensor_msgs.msg import JointState
+from nav_msgs.msg import OccupancyGrid
 
 DRIVE_PUBLISH_RATE_HZ = 60
 
@@ -20,6 +21,8 @@ class DriveHandler(WebSocketHandler):
 
         self.forward_ros_topic("/left_controller_state", ControllerState, "drive_left_state")
         self.forward_ros_topic("/right_controller_state", ControllerState, "drive_right_state")
+
+        self.forward_ros_topic("/costmap", OccupancyGrid, "costmap")
 
         drive_timer = self.node.create_timer(1.0 / DRIVE_PUBLISH_RATE_HZ, self.publish_drive_commands)
         self.timers.append(drive_timer)

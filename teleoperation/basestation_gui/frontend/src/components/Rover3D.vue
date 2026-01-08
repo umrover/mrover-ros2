@@ -42,9 +42,9 @@
       Bottom Up
   </button>
   <button 
-    type="test"
+    type="button"
     class="btn flex-fill"
-    @click = "updateCostMapGrid([1])">
+    @click = "updateCostMapGrid([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])">
       Test Button
   </button>
 
@@ -55,7 +55,7 @@
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useWebsocketStore } from '@/stores/websocket'
 import { storeToRefs } from 'pinia'
-import type { ControllerStateMessage } from '@/types/websocket'
+import type { ControllerStateMessage, OccupancyGridMessage } from '@/types/websocket'
 import threeSetup, { updatePose, updateIKTarget, set_camera_type, updateCostMapGrid } from '../rover_three.js'
 
 interface ArmIKMessage {
@@ -87,6 +87,7 @@ const jointNameMap: Record<string, string> = {
 
 onMounted(() => {
   threeScene.value = threeSetup()
+  // websocketStore.setupWebSocket("costmap")
 })
 
 onBeforeUnmount(() => {
@@ -96,7 +97,7 @@ onBeforeUnmount(() => {
 })
 
 const armMessage = computed(() => messages.value['arm'])
-const contextMessage = computed(() => messages.value['costmap'])
+const driveMessage = computed(() => messages.value['drive'])
 
 watch(armMessage, (msg: unknown) => {
   if (!msg || typeof msg !== 'object') return
@@ -131,12 +132,21 @@ watch(armMessage, (msg: unknown) => {
   }
 })
 
-watch(contextMessage, (msg: unknown) => {
-  if (typeof msg == 'object' && msg !== null && 'type' in msg) {
-    const typedMsg = msg as { type: string; state?: string }
-    if (typedMsg.type === 'costmap') {
-      console.log("hi")
-    }
+watch(driveMessage, (msg: unknown) => {
+  if (!msg || typeof msg !== 'object') return
+
+  if ('data' in msg){
+    const typedMsg = msg as OccupancyGridMessage
+    updateCostMapGrid(msg.data)
   }
 })
+
+// watch(contextMessage, (msg: unknown) => {
+//   if (typeof msg == 'object' && msg !== null && 'type' in msg) {
+//     const typedMsg = msg as { type: string; state?: string }
+//     if (typedMsg.type === 'costmap') {
+//       console.log("hi")
+//     }
+//   }
+// })
 </script>
