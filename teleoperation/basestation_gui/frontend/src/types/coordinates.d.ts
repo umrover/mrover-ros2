@@ -1,20 +1,11 @@
 // src/types/navigation.ts
 
 /**
- * Represents coordinates in Degrees, Minutes, Seconds format.
- */
-export interface DMS {
-  d: number; // Degrees
-  m: number; // Minutes
-  s: number; // Seconds
-}
-
-/**
- * Represents a full odometry object formatted as DMS.
+ * Represents a full odometry object formatted as D (degrees).
  */
 export interface FormattedOdom {
-  lat: DMS;
-  lon: DMS;
+  lat: number;
+  lon: number;
 }
 
 /**
@@ -47,7 +38,7 @@ export interface GpsFixMessage {
   latitude: number;
   longitude: number;
   altitude: number;
-  status: boolean;
+  status: { status: number };
 }
 
 /**
@@ -57,7 +48,7 @@ export interface BasestationPositionMessage {
   type: 'basestation_position';
   latitude: number;
   longitude: number;
-  status: boolean;
+  status: { status: number };
 }
 
 /**
@@ -67,7 +58,7 @@ export interface DroneWaypointMessage {
   type: 'drone_waypoint';
   latitude: number;
   longitude: number;
-  status: boolean;
+  status: { status: number };
 }
 
 /**
@@ -79,6 +70,24 @@ export interface OrientationMessage {
 }
 
 /**
+ * Message payload for the 'calibration' type.
+ */
+export interface CalibrationMessage {
+  type: 'calibration';
+  magnetometer_calibration: number;
+  gyroscope_calibration: number;
+  acceleration_calibration: number;
+}
+
+/**
+ * Message payload for the 'nav_state' type.
+ */
+export interface NavStateMessage {
+  type: 'nav_state';
+  state: string;
+}
+
+/**
  * A union type representing any possible message from the 'nav' channel.
  * This allows TypeScript to correctly narrow down the message type in your watcher.
  */
@@ -86,7 +95,9 @@ export type NavMessage =
   | GpsFixMessage
   | BasestationPositionMessage
   | DroneWaypointMessage
-  | OrientationMessage;
+  | OrientationMessage
+  | CalibrationMessage
+  | NavStateMessage;
 
 /**
  * Defines the shape of the component's internal data state for full type safety.
