@@ -15,10 +15,10 @@ KEYRINGS_DIR="/usr/share/keyrings"
 
 OLD_PPA_FILES=(
     "$SOURCES_DIR/*deadsnakes*.list"
-    "$SOURCES_DIR/*toolchain*.list"
-    "$SOURCES_DIR/*llvm*.list"
-    "$SOURCES_DIR/*kitware*.list"
-    "$SOURCES_DIR/*ros*.list"
+    "$SOURCES_DIR/*ubuntu*toolchain*.list"
+    "$SOURCES_DIR/llvm.list"
+    "$SOURCES_DIR/kitware.list"
+    "$SOURCES_DIR/ros.list"
 )
 
 # Removed to avoid "Key is stored in legacy trusted.gpg keyring" warning
