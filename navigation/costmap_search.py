@@ -297,12 +297,13 @@ class CostmapSearchState(State):
             return
 
         search_center = context.course.current_waypoint()
+
         if search_center is None:
             return
         
-        center_r=context.course.current_waypoint_pose_in_map().translation()[:2]
+        center_r=context.course.current_waypoint_pose_in_map().translation()[0:2]
         rover_position_r=context.rover.get_pose_in_map().translation()[0:2]
-        distance_from_center = np.linalg.norm(rover_position_r[:2]-center_r[:2])
+        distance_from_center = np.linalg.norm(rover_position_r[0:2]-center_r[0:2])
         
         enable_inward = False
 
@@ -318,7 +319,7 @@ class CostmapSearchState(State):
 
         if not self.is_recovering:
             self.spiral_traj = SearchTrajectory.spiral_traj(
-                center=context.course.current_waypoint_pose_in_map().translation()[0:2],
+                center=center_r,
                 coverage_radius=coverage_radius_in,
                 distance_between_spirals=context.node.get_parameter("search.distance_between_spirals").value,
                 segments_per_rotation=context.node.get_parameter("search.segments_per_rotation").value,
@@ -326,12 +327,10 @@ class CostmapSearchState(State):
                 tag_id=search_center.tag_id,
                 insert_extra=True,
                 rover_position=context.rover.get_pose_in_map().translation()[0:2],
-
                 #the below two parameters are used in trajectory.py for generating inward spirals
                 enable_inward = enable_inward,
                 inward_begin = context.course.current_waypoint().coverage_radius
+
             )
-            
-            
 
         self.spiral_traj.cur_pt = context.course.last_spiral_point

@@ -87,7 +87,7 @@ class DebugCoursePublisher(Node):
                for waypoint in [
                    (
                        msg,
-                       SE3.from_position_orientation(1,1),
+                       SE3.from_position_orientation(8,8),
                    ),
                ]
            ],
