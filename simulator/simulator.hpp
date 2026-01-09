@@ -339,9 +339,7 @@ namespace mrover {
         Eigen::Vector4f mSkyColor{0.05f, 0.8f, 0.92f, 1.0f};
 
         // 1x1 normal map texture that's just flat
-        MeshTexture mDefaultNormalMap {
-            .data = cv::Mat{1, 1, CV_8UC4, {255, 128, 128}}
-        };
+        MeshTexture mDefaultNormalMap = {.data = cv::Mat{1, 1, CV_8UC4, {255, 128, 128}}};
 
         // Physics
 
