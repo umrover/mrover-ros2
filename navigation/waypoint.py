@@ -123,12 +123,11 @@ class WaypointState(State):
 
             # Here, we use center, coverage_radius, and rover_position to calculate
             # distance_from_center, direction_from_center, and closest_radius_point
-            center=context.course.current_waypoint_pose_in_map().translation()[0:2]
-            rover_position=context.rover.get_pose_in_map().translation()[0:2]
-            distance_from_center = np.linalg.norm(rover_position[0:2]-center[0:2])
-            direction_from_center = rover_position[0:2]-center
-            
-            
+            center = context.course.current_waypoint_pose_in_map().translation()[0:2]
+            rover_position = context.rover.get_pose_in_map().translation()[0:2]
+            distance_from_center = np.linalg.norm(rover_position[0:2] - center[0:2])
+            direction_from_center = rover_position[0:2] - center
+
             # INWARD SPIRAL
 
             # inward_value is set to 0 if there is no inward start radius set
@@ -137,14 +136,14 @@ class WaypointState(State):
             inward_value = context.course.current_waypoint().coverage_radius
 
             if inward_value > 0 and distance_from_center > 0.5 * inward_value:
-               context.node.get_logger().info("Travelling to inward spiral beginning at radius " + str(inward_value))
+                context.node.get_logger().info("Travelling to inward spiral beginning at radius " + str(inward_value))
 
-               # Calculating the waypoint for the beginning of the inward spiral (closest point to the inward spiral radius)
-               waypoint_for_inward = center + (direction_from_center/np.linalg.norm(direction_from_center)) * inward_value
-               self.waypoint_traj = segment_path(
-                   context = context, dest = waypoint_for_inward[:2]
-               )
-            
+                # Calculating the waypoint for the beginning of the inward spiral (closest point to the inward spiral radius)
+                waypoint_for_inward = (
+                    center + (direction_from_center / np.linalg.norm(direction_from_center)) * inward_value
+                )
+                self.waypoint_traj = segment_path(context=context, dest=waypoint_for_inward[:2])
+
             # This will set the rover's waypoint to the center of the coverage radius
             # OUTWARD SPIRAL
             else:
@@ -366,4 +365,3 @@ class WaypointState(State):
                     lifetime=10000,
                 )
             )
-            

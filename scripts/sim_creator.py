@@ -7,12 +7,12 @@ def create_60x60_grid():
 
     # CONFIG
     GRID_SIZE = 35
-    CELL_SIZE = 25 
-    MARGIN = 30  
+    CELL_SIZE = 25
+    MARGIN = 30
     TOTAL_PIXELS = GRID_SIZE * CELL_SIZE
 
     color_modes = ["white", "green", "blue", "red"]
-    current_mode_index = 0  
+    current_mode_index = 0
 
     grid_colors = [["white" for _ in range(GRID_SIZE)] for __ in range(GRID_SIZE)]
 
@@ -37,7 +37,7 @@ def create_60x60_grid():
         """Update the color of the 'mode' icon."""
         mode_canvas.itemconfig(mode_rect, fill=color_modes[current_mode_index])
 
-    rect_ids = {}  
+    rect_ids = {}
 
     for row in range(GRID_SIZE):
         for col in range(GRID_SIZE):
@@ -125,7 +125,6 @@ def create_60x60_grid():
             numeric_grid.append(numeric_row)
             print(numeric_row)
 
-
         yaml_header = """# All units are in SI
 # ===================
 # Time:     second, hz
@@ -166,7 +165,7 @@ simulator:
         }
         z_map = {1: "0.5", 2: "1.0", 3: "1.0"}
 
-        center_offset = GRID_SIZE // 2  
+        center_offset = GRID_SIZE // 2
 
         for row_i in range(GRID_SIZE):
             for col_i in range(GRID_SIZE):

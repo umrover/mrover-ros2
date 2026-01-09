@@ -300,17 +300,20 @@ class CostmapSearchState(State):
 
         if search_center is None:
             return
-        
-        center_r=context.course.current_waypoint_pose_in_map().translation()[0:2]
-        rover_position_r=context.rover.get_pose_in_map().translation()[0:2]
-        distance_from_center = np.linalg.norm(rover_position_r[0:2]-center_r[0:2])
-        
+
+        center_r = context.course.current_waypoint_pose_in_map().translation()[0:2]
+        rover_position_r = context.rover.get_pose_in_map().translation()[0:2]
+        distance_from_center = np.linalg.norm(rover_position_r[0:2] - center_r[0:2])
+
         enable_inward = False
 
-        #we set coverage_radius_in to the default parameter value from navigation.yaml
+        # we set coverage_radius_in to the default parameter value from navigation.yaml
         coverage_radius_in = context.node.get_parameter("search.coverage_radius").value
-        
-        if context.course.current_waypoint().coverage_radius > 0 and distance_from_center > 0.5 * context.course.current_waypoint().coverage_radius:
+
+        if (
+            context.course.current_waypoint().coverage_radius > 0
+            and distance_from_center > 0.5 * context.course.current_waypoint().coverage_radius
+        ):
             enable_inward = True
 
         if context.course.current_waypoint().coverage_radius > 0:
@@ -323,14 +326,13 @@ class CostmapSearchState(State):
                 coverage_radius=coverage_radius_in,
                 distance_between_spirals=context.node.get_parameter("search.distance_between_spirals").value,
                 segments_per_rotation=context.node.get_parameter("search.segments_per_rotation").value,
-                #max_segment_length=context.node.get_parameter("search.max_segment_length").value,
+                # max_segment_length=context.node.get_parameter("search.max_segment_length").value,
                 tag_id=search_center.tag_id,
                 insert_extra=True,
                 rover_position=context.rover.get_pose_in_map().translation()[0:2],
-                #the below two parameters are used in trajectory.py for generating inward spirals
-                enable_inward = enable_inward,
-                inward_begin = context.course.current_waypoint().coverage_radius
-
+                # the below two parameters are used in trajectory.py for generating inward spirals
+                enable_inward=enable_inward,
+                inward_begin=context.course.current_waypoint().coverage_radius,
             )
 
         self.spiral_traj.cur_pt = context.course.last_spiral_point
