@@ -444,7 +444,10 @@ namespace mrover {
             mesh.bitangents.enqueueWriteIfUnitialized(mDevice, mQueue, wgpu::BufferUsage::Vertex);
             mesh.uvs.enqueueWriteIfUnitialized(mDevice, mQueue, wgpu::BufferUsage::Vertex);
             mesh.texture.enqueWriteIfUnitialized(mDevice);
-            mesh.normal_map.enqueWriteIfUnitialized(mDevice);
+            if (mNormalMapEnabled)
+                mesh.normal_map.enqueWriteIfUnitialized(mDevice);
+            else
+                mDefaultNormalMap.enqueWriteIfUnitialized(mDevice);
             uniforms.value.roughness = mesh.roughness;
             uniforms.value.metallic = mesh.metallic;
 
@@ -457,7 +460,7 @@ namespace mrover {
             bindGroupEntires[2].binding = 2;
             bindGroupEntires[2].sampler = mesh.texture.sampler;
             bindGroupEntires[3].binding = 3;
-            bindGroupEntires[3].textureView = mesh.normal_map.view;
+            bindGroupEntires[3].textureView = mNormalMapEnabled ? mesh.normal_map.view : mDefaultNormalMap.view;
             wgpu::BindGroupDescriptor descriptor;
             // we can just use mPbrPipeline here because both PBR and Blinn-Phone use the same bind groups
             descriptor.layout = mPbrPipeline.getBindGroupLayout(0);

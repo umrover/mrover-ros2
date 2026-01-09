@@ -251,6 +251,7 @@ namespace mrover {
         bool mRenderModels = true;
         bool mRenderWireframeColliders = false;
         bool mPbrEnabled = false;
+        bool mNormalMapEnabled = true;
         double mPublishHammerDistanceThreshold = 3;
         double mPublishBottleDistanceThreshold = 3;
         float mCameraLockSlerp = 0.02;
@@ -336,6 +337,11 @@ namespace mrover {
         Uniform<SceneUniforms> mSceneUniforms;
 
         Eigen::Vector4f mSkyColor{0.05f, 0.8f, 0.92f, 1.0f};
+
+        // 1x1 normal map texture that's just flat
+        MeshTexture mDefaultNormalMap {
+            .data = cv::Mat{1, 1, CV_8UC4, {255, 128, 128}}
+        };
 
         // Physics
 
