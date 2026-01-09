@@ -189,3 +189,20 @@ class MRoverTesting:
                 )
 
         MRoverTesting._events.append(event)
+
+    @staticmethod
+    def add_parallel_events(funcs: list[Callable[[rclpy.node.Node, ...], MRoverEventReturn]], timeout: int, args: list[dict[str, Any]]) -> None:
+        # I pass a list of dictionaries here, it doesn't yield as nice of syntax, but I am not sure a better alternative
+        assert(len(funcs) == len(args))
+        group_event_idx = len(MRoverTesting._events)
+        for func, arg in zip(funcs, args):
+
+            event = TestEvent(
+                        module_spec = str(Path(func.__code__.co_filename).relative_to(Path(get_package_share_directory("mrover"))).with_suffix('')).replace('/', '.'),
+                        function_name = func.__name__,
+                        timeout = timeout, # this is only required for the first event, all others will be discarded by the ROS test node
+                        event_group = group_event_idx,
+                        data = pickle.dumps(arg)
+                    )
+
+            MRoverTesting._events.append(event)

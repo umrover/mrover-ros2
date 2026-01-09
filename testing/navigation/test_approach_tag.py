@@ -78,8 +78,6 @@ def generate_launch_description():
     # I wanted this "DoneState" to be DoneState() from an import but it complicates the environments...
     # this implies that there is no way to import from the actual navigation library since it will fail to find the modules
     MRoverTesting.add_event(assert_navigation_state, 5, state="WaypointState")
-    MRoverTesting.add_event(assert_navigation_state, 20, state="ApproachTargetState")
-    MRoverTesting.add_event(assert_navigation_state, 15, state="DoneState")
-
+    MRoverTesting.add_parallel_events([assert_navigation_state, assert_navigation_state], 30, [{"state": "ApproachTargetState"}, {"state": "DoneState"}])
 
     return LaunchDescription(MRoverTesting.get_launch_actions())

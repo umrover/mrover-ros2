@@ -67,8 +67,6 @@ class TestNode(Node):
         TEMP_FILE_PATH = Path(str(self.get_parameter('temp_file').value))
 
     def timer_callback(self):
-        self.get_logger().debug(f"Events length: {len(self.events)}")
-
         # the functionality implemented here is actually very similar to ROS2 callbacks
         # this could be switched to create new timer callbacks inside of the ros infra
         # I think that could be a little bit cooked though since it would just make a crazy number
@@ -84,36 +82,40 @@ class TestNode(Node):
                 self.is_first_event_call = False
                 self.get_logger().info(f"{self.timeouts[self.index]}")
                 signal.alarm(self.timeouts[self.index])
-                self.is_event_done = [False] * len(self.args[self.index]) # TODO: Resume here with addding parallel events
+                self.is_event_done = [False] * len(self.events[self.index]) # TODO: Resume here with addding parallel events
 
+            # loop over all of the parallel events
             for idx, (args, event) in enumerate(zip(self.args[self.index], self.events[self.index])):
-                self.get_logger().debug(f"Running event index: {self.index}.{idx} func: {event.__name__}")
-                return_val: MRoverEventReturn = event(self, **pickle.loads(args))
-                match return_val.value:
-                    case MRoverEventReturn.SUCCESS.value:
-                        self.is_event_done[idx] = True
+                if not self.is_event_done[idx]:
+                    self.get_logger().debug(f"Running event index: {self.index}.{idx} func: {event.__name__}")
+                    return_val: MRoverEventReturn = event(self, **pickle.loads(args))
+                    match return_val.value:
+                        case MRoverEventReturn.SUCCESS.value:
+                            self.is_event_done[idx] = True
 
-                        if all(self.is_event_done):
+                            if all(self.is_event_done):
 
+                                # clear any active alarms
+                                signal.alarm(0)
+                                self.is_first_event_call = True
+
+                                # increment on to the nexte event
+                                self.index += 1
+                                return
+                        case MRoverEventReturn.FAILURE.value:
                             # clear any active alarms
                             signal.alarm(0)
                             self.is_first_event_call = True
 
-                            # increment on to the nexte event
-                            self.index += 1
-                            return
-                    case MRoverEventReturn.FAILURE.value:
-                        # clear any active alarms
-                        signal.alarm(0)
-                        self.is_first_event_call = True
-
-                        # no need to check all of the other statuses since we need all of them to succeed for the parallel event to succeed
-                        # TODO: add more descriptive failures
-                        exit_error("Event Exited With Failure...")
-                    case MRoverEventReturn.PENDING.value:
-                        return
-                    case _:
-                        exit_error("Event Unknown Recieved...")
+                            # no need to check all of the other statuses since we need all of them to succeed for the parallel event to succeed
+                            # TODO: add more descriptive failures
+                            exit_error("Event Exited With Failure...")
+                        case MRoverEventReturn.PENDING.value:
+                            continue
+                        case _:
+                            exit_error("Event Unknown Recieved...")
+                else:
+                    self.get_logger().debug(f"NOT running event index: {self.index}.{idx} func: {event.__name__}")
         elif self.index == len(self.events):
             exit_success("Events Finished...")
 
