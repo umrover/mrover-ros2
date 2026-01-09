@@ -49,6 +49,8 @@ class NavHandler(WebSocketHandler):
     def nav_state_callback(self, msg):
         """Handle nav state updates and update LED accordingly"""
         set_nav_state(msg.state)
+        data_to_send = {"type": "nav_state", "state": msg.state}
+        asyncio.run_coroutine_threadsafe(self.send_msgpack(data_to_send), self.loop)
 
     def on_led_color_change(self, color: str):
         """Called when LED color changes"""

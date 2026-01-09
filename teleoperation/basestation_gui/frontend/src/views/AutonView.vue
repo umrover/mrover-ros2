@@ -139,6 +139,7 @@ watch(scienceMessage, (msg: unknown) => {
 })
 
 watch(navMessage, (msg: unknown) => {
+  console.log("recv")
   if (typeof msg === 'object' && msg !== null && 'type' in msg) {
     const typedMsg = msg as { type: string; state?: string; color?: string }
     if (typedMsg.type === 'nav_state') {
@@ -184,5 +185,18 @@ onUnmounted(() => {
 .vue-grid-item > div {
   height: 100%;
   width: 100%;
+}
+
+.blink {
+  animation: blink-green 1s infinite;
+}
+
+@keyframes blink-green {
+  0%, 50% {
+    background-color: var(--bs-success);
+  }
+  51%, 100% {
+    background-color: transparent;
+  }
 }
 </style>

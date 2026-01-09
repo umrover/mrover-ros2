@@ -7,6 +7,9 @@
 .vscode/
 .idea/
 
+# Compile Commands
+compile_commands.json
+
 # clangd cache
 .cache/
 

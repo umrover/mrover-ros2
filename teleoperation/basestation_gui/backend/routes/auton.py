@@ -67,34 +67,5 @@ def enable_auton(data: AutonEnableRequest):
 
 @router.post("/enable_teleop/")
 def enable_teleop(data: TeleopEnableRequest):
-    try:
-        node = get_node()
-        enable_teleop_srv = node.create_client(SetBool, "/enable_teleop")
-
-        if not enable_teleop_srv.wait_for_service(timeout_sec=1.0):
-            raise HTTPException(status_code=503, detail="Teleop service is not available. Is the LED/ESW node running?")
-
-        teleop_request = SetBool.Request()
-        teleop_request.data = data.enabled
-
-        result = _call_service_sync(enable_teleop_srv, teleop_request, logger=node.get_logger())
-        if result is None:
-            raise HTTPException(status_code=500, detail="Service /enable_teleop timed out")
-
-        if not result.success:
-            raise HTTPException(status_code=500, detail=f"Teleop enable failed: {result.message}")
-
-        set_teleop_enabled(data.enabled)
-
-        return {'status': 'success', 'enabled': data.enabled}
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        error_details = traceback.format_exc()
-        try:
-            node = get_node()
-            node.get_logger().error(f"Error in enable_teleop: {error_details}")
-        except:
-            pass
-        raise HTTPException(status_code=500, detail=str(e))
+    set_teleop_enabled(data.enabled)
+    return {'status': 'success', 'enabled': data.enabled}
