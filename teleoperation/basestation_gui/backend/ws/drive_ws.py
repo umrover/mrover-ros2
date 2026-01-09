@@ -21,7 +21,6 @@ class DriveHandler(WebSocketHandler):
 
         self.forward_ros_topic("/left_controller_state", ControllerState, "drive_left_state")
         self.forward_ros_topic("/right_controller_state", ControllerState, "drive_right_state")
-
         self.forward_ros_topic("/costmap", OccupancyGrid, "costmap")
 
         drive_timer = self.node.create_timer(1.0 / DRIVE_PUBLISH_RATE_HZ, self.publish_drive_commands)

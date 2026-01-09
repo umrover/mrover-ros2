@@ -1,52 +1,66 @@
 <template>
+  <div
+      class="btn-group d-flex justify-content-between"
+      role="group"
+      aria-label="Rover3D Options"
+      >
+    <button 
+      type="button"
+      class="btn flex-fill"
+      :class="camera_type === 'default' ? 'btn-success' : 'btn-outline-success'"
+      @click = "change_camera('default')">
+        Default
+    </button>
+    <button 
+      type="button"
+      class="btn flex-fill"
+      :class="camera_type === 'follow' ? 'btn-success' : 'btn-outline-success'"
+      @click = "change_camera('follow')">
+        Follow
+    </button>
+    <button 
+      type="button"
+      class="btn flex-fill"
+      :class="camera_type === 'arm' ? 'btn-success' : 'btn-outline-success'"
+      @click = "change_camera('arm')">
+        Arm
+    </button>
+    <button 
+      type="button"
+      class="btn flex-fill"
+      :class="camera_type === 'full arm' ? 'btn-success' : 'btn-outline-success'"
+      @click = "change_camera('full arm')">
+        Full Arm
+    </button>
+    <button 
+      type="button"
+      class="btn flex-fill"
+      :class="camera_type === 'side arm' ? 'btn-success' : 'btn-outline-success'"
+      @click = "change_camera('side arm')">
+        Side Arm
+    </button>
+    <button 
+      type="button"
+      class="btn flex-fill"
+      :class="camera_type === 'top' ? 'btn-success' : 'btn-outline-success'"
+      @click = "change_camera('top')">
+        Top Down
+    </button>
+    <button 
+      type="button"
+      class="btn flex-fill"
+      :class="camera_type === 'bottom' ? 'btn-success' : 'btn-outline-success'"
+      @click = "change_camera('bottom')">
+        Bottom Up
+    </button>
+  </div>
+
   <button 
-    type="button"
-    class="btn flex-fill"
-    @click = "set_camera_type('default')">
-      Default
-  </button>
-  <button 
-    type="button"
-    class="btn flex-fill"
-    @click = "set_camera_type('follow')">
-      Follow
-  </button>
-  <button 
-    type="button"
-    class="btn flex-fill"
-    @click = "set_camera_type('arm')">
-      Arm
-  </button>
-   <button 
-    type="button"
-    class="btn flex-fill"
-    @click = "set_camera_type('full arm')">
-      Full Arm
-  </button>
-  <button 
-    type="button"
-    class="btn flex-fill"
-    @click = "set_camera_type('side arm')">
-      Side Arm
-  </button>
-  <button 
-    type="button"
-    class="btn flex-fill"
-    @click = "set_camera_type('top')">
-      Top Down
-  </button>
-  <button 
-    type="button"
-    class="btn flex-fill"
-    @click = "set_camera_type('bottom')">
-      Bottom Up
-  </button>
-  <button 
-    type="button"
-    class="btn flex-fill"
-    @click = "updateCostMapGrid([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])">
-      Test Button
-  </button>
+      type="button"
+      class="btn btn-sm btn-light border"
+      @click = "toggleCostMapGridVisibility()">
+        Toggle Cost Map
+    </button>
 
   <canvas class="webgl p-0 h-100 w-100"></canvas>
 </template>
@@ -56,7 +70,7 @@ import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useWebsocketStore } from '@/stores/websocket'
 import { storeToRefs } from 'pinia'
 import type { ControllerStateMessage, OccupancyGridMessage } from '@/types/websocket'
-import threeSetup, { updatePose, updateIKTarget, set_camera_type, updateCostMapGrid } from '../rover_three.js'
+import threeSetup, { updatePose, updateIKTarget, set_camera_type, updateCostMapGrid, toggleCostMapGridVisibility } from '../rover_three.js'
 
 interface ArmIKMessage {
   type: 'ik_target'
@@ -87,7 +101,6 @@ const jointNameMap: Record<string, string> = {
 
 onMounted(() => {
   threeScene.value = threeSetup()
-  // websocketStore.setupWebSocket("costmap")
 })
 
 onBeforeUnmount(() => {
@@ -137,16 +150,14 @@ watch(driveMessage, (msg: unknown) => {
 
   if ('data' in msg){
     const typedMsg = msg as OccupancyGridMessage
-    updateCostMapGrid(msg.data)
+    updateCostMapGrid(typedMsg.data)
   }
 })
 
-// watch(contextMessage, (msg: unknown) => {
-//   if (typeof msg == 'object' && msg !== null && 'type' in msg) {
-//     const typedMsg = msg as { type: string; state?: string }
-//     if (typedMsg.type === 'costmap') {
-//       console.log("hi")
-//     }
-//   }
-// })
+const camera_type = ref('default')
+
+function change_camera(new_mode: string){
+  set_camera_type(new_mode)
+  camera_type.value = new_mode
+}
 </script>
