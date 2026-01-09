@@ -29,6 +29,7 @@ venv/
 *.db
 bun.lock
 bun.lockb
+**/package-lock.json
 .python-version
 
 # macOS
