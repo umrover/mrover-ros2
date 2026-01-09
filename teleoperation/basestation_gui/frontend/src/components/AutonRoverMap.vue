@@ -72,6 +72,7 @@ import {
 } from '@vue-leaflet/vue-leaflet'
 import { useAutonomyStore } from '@/stores/autonomy'
 import { useWebsocketStore } from '@/stores/websocket'
+import { useGridLayoutStore } from '@/stores/gridLayout'
 import { storeToRefs } from 'pinia'
 import 'leaflet/dist/leaflet.css'
 import L from 'leaflet'
@@ -86,6 +87,9 @@ const { setClickPoint } = autonomyStore
 
 const websocketStore = useWebsocketStore()
 const { messages } = storeToRefs(websocketStore)
+
+const gridLayoutStore = useGridLayoutStore()
+const { locked: gridLocked } = storeToRefs(gridLayoutStore)
 
 const rover_latitude_deg = ref(0)
 const rover_longitude_deg = ref(0)
@@ -140,6 +144,12 @@ const onMapReady = () => {
     if (roverRef.value) {
       roverMarker = roverRef.value.leafletObject as L.Marker
     }
+    if (mapRef.value) {
+      const map = mapRef.value.leafletObject as L.Map
+      if (!gridLocked.value) {
+        map.dragging.disable()
+      }
+    }
   })
 }
 
@@ -179,6 +189,16 @@ const polylinePath = computed(() => {
 })
 
 const navMessage = computed(() => messages.value['nav'])
+
+watch(gridLocked, (locked) => {
+  if (!mapRef.value) return
+  const map = mapRef.value.leafletObject as L.Map
+  if (locked) {
+    map.dragging.enable()
+  } else {
+    map.dragging.disable()
+  }
+}, { immediate: true })
 
 watch(navMessage, (msg) => {
   if (!msg) return
