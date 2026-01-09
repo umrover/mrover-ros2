@@ -1,0 +1,262 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e3]:
+  - generic [ref=e5]:
+    - link "MRover" [ref=e6] [cursor=pointer]:
+      - /url: /
+      - img "MRover" [ref=e7]
+    - heading "Autonomy Mission" [level=1] [ref=e8]
+    - generic [ref=e9]:
+      - generic [ref=e10]:
+        - generic [ref=e11]:
+          - generic [ref=e14]: = TX
+          - generic [ref=e17]: = RX
+        - generic [ref=e18]:
+          - paragraph [ref=e20]: drive
+          - paragraph [ref=e25]: nav
+          - paragraph [ref=e30]: sci
+          - paragraph [ref=e35]: mast
+      - button "" [ref=e41] [cursor=pointer]:
+        - generic [ref=e42]: 
+  - generic [ref=e43]:
+    - generic [ref=e44]:
+      - generic [ref=e45]:
+        - 'heading "Nav State: OffState" [level=2] [ref=e46]'
+        - generic [ref=e47]:
+          - generic [ref=e48]:
+            - generic [ref=e49]:
+              - generic [ref=e50]: Rover
+              - generic [ref=e51]:
+                - generic [ref=e52]:
+                  - generic [ref=e53]: "Lat:"
+                  - generic [ref=e54]: 38.4071654º
+                - generic [ref=e55]:
+                  - generic [ref=e56]: "Lon:"
+                  - generic [ref=e57]: "-110.7923927º"
+                - generic [ref=e58]:
+                  - generic [ref=e59]: "Bearing:"
+                  - generic [ref=e60]: 0.00º
+                - generic [ref=e61]:
+                  - generic [ref=e62]: "Alt:"
+                  - generic [ref=e63]: 0.00m
+            - generic [ref=e64]:
+              - generic [ref=e65]: Base
+              - generic [ref=e66]:
+                - generic [ref=e67]:
+                  - generic [ref=e68]: "Lat:"
+                  - generic [ref=e69]: 38.4071654º
+                - generic [ref=e70]:
+                  - generic [ref=e71]: "Lon:"
+                  - generic [ref=e72]: "-110.7923927º"
+                - generic [ref=e73]:
+                  - generic [ref=e74]: "GPS:"
+                  - generic [ref=e75]: Not Fixed
+                - generic [ref=e76]:
+                  - generic [ref=e77]: "Drone:"
+                  - generic [ref=e78]: Not Fixed
+          - generic [ref=e86]:
+            - generic [ref=e87]: IMU Cal
+            - generic [ref=e88]:
+              - generic [ref=e89]:
+                - generic [ref=e90]: "Mag:"
+                - generic [ref=e93]: "0"
+              - generic [ref=e94]:
+                - generic [ref=e95]: "Gyro:"
+                - generic [ref=e98]: "0"
+              - generic [ref=e99]:
+                - generic [ref=e100]: "Accel:"
+                - generic [ref=e103]: "0"
+      - heading "Nominal Conditions" [level=4] [ref=e106]
+    - generic [ref=e108]:
+      - generic [ref=e109]:
+        - generic:
+          - generic:
+            - img
+          - generic:
+            - button "Marker" [ref=e110] [cursor=pointer]
+            - button "Marker" [ref=e111] [cursor=pointer]
+        - generic:
+          - generic [ref=e112]:
+            - button "Zoom in" [ref=e113] [cursor=pointer]: +
+            - button "Zoom out" [ref=e114] [cursor=pointer]: −
+          - generic [ref=e116]: 100 m
+          - generic [ref=e117]:
+            - link "Leaflet" [ref=e118] [cursor=pointer]:
+              - /url: https://leafletjs.com
+              - img [ref=e119]
+              - text: Leaflet
+            - text: "| ©"
+            - link "OpenStreetMap" [ref=e123] [cursor=pointer]:
+              - /url: http://osm.org/copyright
+            - text: contributors
+      - generic [ref=e124]:
+        - checkbox [checked] [ref=e125]
+        - paragraph [ref=e126]: Online
+    - generic [ref=e128]:
+      - generic [ref=e129]:
+        - generic [ref=e130]:
+          - heading "Waypoints" [level=3] [ref=e131]
+          - button "Add from Map" [ref=e132] [cursor=pointer]
+        - generic [ref=e133]:
+          - generic [ref=e134]:
+            - generic [ref=e135]:
+              - heading "No Search 1" [level=5] [ref=e136]
+              - generic [ref=e137]: "ID: -1"
+            - generic [ref=e138]:
+              - generic [ref=e139]:
+                - textbox [ref=e140]: "0"
+                - generic [ref=e141]: ºN
+              - generic [ref=e142]:
+                - textbox [ref=e143]: "0"
+                - generic [ref=e144]: ºW
+              - generic [ref=e145]:
+                - button "Add" [ref=e146] [cursor=pointer]
+                - button "Delete" [disabled]
+          - generic [ref=e147]:
+            - generic [ref=e148]:
+              - heading "No Search 2" [level=5] [ref=e149]
+              - generic [ref=e150]: "ID: -1"
+            - generic [ref=e151]:
+              - generic [ref=e152]:
+                - textbox [ref=e153]: "0"
+                - generic [ref=e154]: ºN
+              - generic [ref=e155]:
+                - textbox [ref=e156]: "0"
+                - generic [ref=e157]: ºW
+              - generic [ref=e158]:
+                - button "Add" [ref=e159] [cursor=pointer]
+                - button "Delete" [disabled]
+          - generic [ref=e160]:
+            - generic [ref=e161]:
+              - heading "Post 1" [level=5] [ref=e162]
+              - generic [ref=e163]: "ID: 1"
+            - generic [ref=e164]:
+              - generic [ref=e165]:
+                - textbox [ref=e166]: "0"
+                - generic [ref=e167]: ºN
+              - generic [ref=e168]:
+                - textbox [ref=e169]: "0"
+                - generic [ref=e170]: ºW
+              - generic [ref=e171]:
+                - button "Add" [ref=e172] [cursor=pointer]
+                - button "Delete" [disabled]
+          - generic [ref=e173]:
+            - generic [ref=e174]:
+              - heading "Post 2" [level=5] [ref=e175]
+              - generic [ref=e176]: "ID: 2"
+            - generic [ref=e177]:
+              - generic [ref=e178]:
+                - textbox [ref=e179]: "0"
+                - generic [ref=e180]: ºN
+              - generic [ref=e181]:
+                - textbox [ref=e182]: "0"
+                - generic [ref=e183]: ºW
+              - generic [ref=e184]:
+                - button "Add" [ref=e185] [cursor=pointer]
+                - button "Delete" [disabled]
+          - generic [ref=e186]:
+            - generic [ref=e187]:
+              - heading "Post 3" [level=5] [ref=e188]
+              - generic [ref=e189]: "ID: 3"
+            - generic [ref=e190]:
+              - generic [ref=e191]:
+                - textbox [ref=e192]: "0"
+                - generic [ref=e193]: ºN
+              - generic [ref=e194]:
+                - textbox [ref=e195]: "0"
+                - generic [ref=e196]: ºW
+              - generic [ref=e197]:
+                - button "Add" [ref=e198] [cursor=pointer]
+                - button "Delete" [disabled]
+          - generic [ref=e199]:
+            - generic [ref=e200]:
+              - heading "Mallet" [level=5] [ref=e201]
+              - generic [ref=e202]: "ID: -1"
+            - generic [ref=e203]:
+              - generic [ref=e204]:
+                - textbox [ref=e205]: "0"
+                - generic [ref=e206]: ºN
+              - generic [ref=e207]:
+                - textbox [ref=e208]: "0"
+                - generic [ref=e209]: ºW
+              - generic [ref=e210]:
+                - button "Add" [ref=e211] [cursor=pointer]
+                - button "Delete" [disabled]
+          - generic [ref=e212]:
+            - generic [ref=e213]:
+              - heading "Water Bottle" [level=5] [ref=e214]
+              - generic [ref=e215]: "ID: -1"
+            - generic [ref=e216]:
+              - generic [ref=e217]:
+                - textbox [ref=e218]: "0"
+                - generic [ref=e219]: ºN
+              - generic [ref=e220]:
+                - textbox [ref=e221]: "0"
+                - generic [ref=e222]: ºW
+              - generic [ref=e223]:
+                - button "Add" [ref=e224] [cursor=pointer]
+                - button "Delete" [disabled]
+          - generic [ref=e225]:
+            - generic [ref=e226]:
+              - heading "Rock Pick" [level=5] [ref=e227]
+              - generic [ref=e228]: "ID: -1"
+            - generic [ref=e229]:
+              - generic [ref=e230]:
+                - textbox [ref=e231]: "0"
+                - generic [ref=e232]: ºN
+              - generic [ref=e233]:
+                - textbox [ref=e234]: "0"
+                - generic [ref=e235]: ºW
+              - generic [ref=e236]:
+                - button "Add" [ref=e237] [cursor=pointer]
+                - button "Delete" [disabled]
+      - generic [ref=e238]:
+        - generic [ref=e239]:
+          - button "Autonomy Mode " [ref=e240] [cursor=pointer]:
+            - generic [ref=e241]:
+              - generic [ref=e242]: Autonomy Mode
+              - generic [ref=e243]: 
+          - generic [ref=e245]:
+            - heading "Velocity" [level=4] [ref=e246]
+            - generic [ref=e247]:
+              - generic [ref=e248]: "Linear:"
+              - generic [ref=e249]: 0.000 m/s
+            - generic [ref=e250]:
+              - generic [ref=e251]: "Angular:"
+              - generic [ref=e252]: 0.000 rad/s
+          - button "Teleop Controls " [ref=e253] [cursor=pointer]:
+            - generic [ref=e254]:
+              - generic [ref=e255]: Teleop Controls
+              - generic [ref=e256]: 
+          - button "All Costmaps " [ref=e257] [cursor=pointer]:
+            - generic [ref=e258]:
+              - generic [ref=e259]: All Costmaps
+              - generic [ref=e260]: 
+        - heading "Current Course" [level=3] [ref=e261]
+    - generic [ref=e263]:
+      - generic [ref=e264]:
+        - heading "Drive Left States" [level=4] [ref=e265]
+        - table [ref=e267]:
+          - rowgroup [ref=e268]:
+            - row "Motor" [ref=e269]:
+              - cell "Motor" [ref=e270]
+            - row "State" [ref=e271]:
+              - cell "State" [ref=e272]
+            - row "Error" [ref=e273]:
+              - cell "Error" [ref=e274]
+            - row "Limit Hit" [ref=e275]:
+              - cell "Limit Hit" [ref=e276]
+      - generic [ref=e277]:
+        - heading "Drive Right States" [level=4] [ref=e278]
+        - table [ref=e280]:
+          - rowgroup [ref=e281]:
+            - row "Motor" [ref=e282]:
+              - cell "Motor" [ref=e283]
+            - row "State" [ref=e284]:
+              - cell "State" [ref=e285]
+            - row "Error" [ref=e286]:
+              - cell "Error" [ref=e287]
+            - row "Limit Hit" [ref=e288]:
+              - cell "Limit Hit" [ref=e289]
+```
