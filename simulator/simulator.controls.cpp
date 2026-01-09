@@ -3,7 +3,7 @@
 namespace mrover {
 
     auto Simulator::throttlesCallback(msg::Throttle::ConstSharedPtr const& msg) -> void {
-        forEachMotor(msg->names, msg->throttles, [&](btMultiBodyJointMotor* motor, float throttle) {
+        forEachMotor(msg->name, msg->throttle, [&](btMultiBodyJointMotor* motor, float throttle) {
             motor->setMaxAppliedImpulse(0.5);
             motor->setPositionTarget(0, 0);
             motor->setVelocityTarget(throttle, 0.5);
@@ -11,7 +11,7 @@ namespace mrover {
     }
 
     auto Simulator::positionsCallback(msg::Position::ConstSharedPtr const& msg) -> void {
-        forEachMotor(msg->names, msg->positions, [&](btMultiBodyJointMotor* motor, float position) {
+        forEachMotor(msg->name, msg->position, [&](btMultiBodyJointMotor* motor, float position) {
             motor->setMaxAppliedImpulse(0.5);
             motor->setPositionTarget(position, 0.05);
             motor->setVelocityTarget(0, 1);
@@ -19,7 +19,7 @@ namespace mrover {
     }
 
     void Simulator::velocitiesCallback(msg::Velocity::ConstSharedPtr const& msg) {
-        forEachMotor(msg->names, msg->velocities, [&](btMultiBodyJointMotor* motor, float velocity) {
+        forEachMotor(msg->name, msg->velocity, [&](btMultiBodyJointMotor* motor, float velocity) {
             motor->setMaxAppliedImpulse(0.5);
             motor->setPositionTarget(0, 0);
             motor->setVelocityTarget(velocity, 0.5);

@@ -100,12 +100,12 @@ export interface SPUVMessage {
 
 export interface SPOzoneMessage {
   type: 'sp_ozone';
-  ozone: number;
+  ppb: number;
 }
 
 export interface SPCO2Message {
   type: 'sp_co2';
-  co2: number;
+  ppm: number;
 }
 
 export interface SPPressureMessage {

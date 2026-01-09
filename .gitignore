@@ -29,10 +29,8 @@ venv/
 *.db
 bun.lock
 bun.lockb
-/teleoperation/api-docs/
+**/package-lock.json
 .python-version
-system*.html
-openapitools.json
 
 # macOS
 .DS_Store

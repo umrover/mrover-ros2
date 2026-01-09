@@ -36,7 +36,7 @@ body {
   flex: 1;
   min-height: 0;
   width: 100%;
-  padding: 0.625rem;
+  /* padding: 0.625rem; */
   background-color: #dddddd;
   overflow: hidden;
   box-sizing: border-box;

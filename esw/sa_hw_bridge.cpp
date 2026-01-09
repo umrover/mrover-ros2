@@ -74,14 +74,14 @@ namespace mrover {
 
 
         auto processThrottleCmd(msg::Throttle::ConstSharedPtr const& msg) -> void {
-            if (msg->names.size() != msg->throttles.size()) {
+            if (msg->name.size() != msg->throttle.size()) {
                 RCLCPP_ERROR(get_logger(), "Name count and value count mismatched!");
                 return;
             }
 
-            for (std::size_t i = 0; i < msg->names.size(); ++i) {
-                std::string const& name = msg->names[i];
-                Dimensionless const& throttle = msg->throttles[i];
+            for (std::size_t i = 0; i < msg->name.size(); ++i) {
+                std::string const& name = msg->name[i];
+                Dimensionless const& throttle = msg->throttle[i];
                 mMotors[name]->setDesiredThrottle(throttle);
             }
         }
@@ -189,8 +189,8 @@ namespace mrover {
 
             temp_msg.temperature = raw_temp;
             humidity_msg.relative_humidity = raw_hum;
-            position_msg.names = {"gear_diff"};
-            position_msg.positions = {raw_pos_rad};
+            position_msg.name = {"gear_diff"};
+            position_msg.position = {raw_pos_rad};
 
             mServoPositionPub->publish(position_msg);
             mTemperatureDataPub->publish(temp_msg);

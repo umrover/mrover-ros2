@@ -7,7 +7,7 @@ class ChassisHandler(WebSocketHandler):
 
     async def setup(self):
         """Setup CHASSIS endpoint subscriptions"""
-        self.forward_ros_topic("/sp_controller_state", ControllerState, "sp_controller_state")
+        self.forward_ros_topic("/gimbal_controller_state", ControllerState, "gimbal_controller_state")
 
     async def handle_message(self, data):
         """Handle incoming CHASSIS messages"""
