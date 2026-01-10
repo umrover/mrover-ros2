@@ -4,7 +4,7 @@ import numpy as np
 from sensor_msgs.msg import PointCloud2, Image
 from std_msgs.msg import Header
 from sensor_msgs.msg import Imu
-from mrover.srv import Panorama, ServoPosition
+from mrover.srv import ServoPosition, Pano
 
 import rclpy
 from rclpy.node import Node
@@ -13,7 +13,6 @@ from rclpy.duration import Duration
 import cv2
 import time
 import message_filters
-import datetime
 import os
 import sys
 from datetime import datetime
@@ -65,18 +64,18 @@ class Panorama(Node):
         super().__init__('panorama')
 
         # Pano Action Server
-        self.start_pano = self.create_service(Panorama, 'panorama', self.pano_callback)
+        self.start_pano = self.create_service(Pano, 'panorama', self.pano_callback)
         self.gimbal_client = self.create_client(ServoPosition, "gimbal_servo")
 
         # PC Stitching Variables
         self.pc_sub = message_filters.Subscriber(self, PointCloud2, "/zed_mini/left/points")
         self.imu_sub = message_filters.Subscriber(self, Imu, "/zed_mini_imu/data_raw")
+        self.subs = [self.pc_sub, self.imu_sub]
         self.pc_publisher = self.create_publisher(PointCloud2, "/stitched_pc", 1)
         self.pano_img_debug_publisher = self.create_publisher(Image, "/debug_pano", 1)
         self.pc_rate = PanoRate(2, self)
 
         self.stitched_pc = np.empty((0, 8), dtype=np.float32)
-        self.sync = message_filters.ApproximateTimeSynchronizer([self.pc_sub, self.imu_sub], 10, 1)
 
         # Image Stitching Variables
         self.img_sub = None
@@ -134,8 +133,17 @@ class Panorama(Node):
 
     def pano_callback(self, _, response):
         self.get_logger().info('Starting Pano...')
-        self.img_sub = self.create_subscription(Image, "/zed_mini/left/image", self.image_callback, 1)
+        self.sync = message_filters.ApproximateTimeSynchronizer([self.pc_sub, self.imu_sub], 10, 1)
         self.sync.registerCallback(self.synced_gps_pc_callback)
+        self.img_sub = self.create_subscription(Image, "/zed_mini/left/image", self.image_callback, 1)
+
+        end_time = time.time() + 20
+
+        while time.time() < end_time:
+            pass
+
+        self.img_sub = None
+        self.sync = None
 
         # construct pc from stitched
         try:
