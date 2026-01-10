@@ -1,14 +1,18 @@
 #!/usr/bin/env python3
 
+
 """
 The purpose of this file is for testing courses in the simulator without needing the autonomy GUI.
 You can add waypoints with and without tags and these will get published to navigation.
 """
 
+
 import sys
+
 
 import numpy as np
 import pymap3d
+
 
 import rclpy
 from lie import SE3
@@ -30,11 +34,20 @@ def publish_waypoints(node: Node, waypoints: list[GPSWaypoint]):
 
 
 def convert_waypoint_to_gps(reference_point: np.ndarray, waypoint_pose_pair: tuple[Waypoint, SE3]) -> GPSWaypoint:
+    # waypoint.enable_costmap = True
     waypoint, pose = waypoint_pose_pair
     ref_lat, ref_lon, _ = reference_point
     x, y, z = pose.translation()
     lat, lon, _ = pymap3d.enu2geodetic(x, y, z, ref_lat, ref_lon, 0.0)
-    return GPSWaypoint(tag_id=waypoint.tag_id, latitude_degrees=lat, longitude_degrees=lon, type=waypoint.type)
+    return GPSWaypoint(
+        tag_id=waypoint.tag_id,
+        enable_costmap=waypoint.enable_costmap,
+        latitude_degrees=lat,
+        longitude_degrees=lon,
+        type=waypoint.type,
+        coverage_radius=waypoint.coverage_radius,
+    )
+    # return GPSWaypoint(tag_id=waypoint.tag_id, latitude_degrees=lat, longitude_degrees=lon, type=waypoint.type)
 
 
 class DebugCoursePublisher(Node):
@@ -57,26 +70,20 @@ class DebugCoursePublisher(Node):
             ]
         )
 
+        msg = Waypoint()
+        msg.tag_id = -1
+        msg.type = WaypointType(val=WaypointType.POST)
+        msg.enable_costmap = True
+        msg.coverage_radius = 3.0
+
         future = publish_waypoints(
             self,
             [
                 convert_waypoint_to_gps(ref_point, waypoint)
                 for waypoint in [
                     (
-                        Waypoint(tag_id=0, type=WaypointType(val=WaypointType.NO_SEARCH)),
-                        SE3.from_position_orientation(4, 4),
-                    ),
-                    (
-                        Waypoint(tag_id=0, type=WaypointType(val=WaypointType.POST)),
-                        SE3.from_position_orientation(-2, -2),
-                    ),
-                    (
-                        Waypoint(tag_id=1, type=WaypointType(val=WaypointType.POST)),
-                        SE3.from_position_orientation(11, -10),
-                    ),
-                    (
-                        Waypoint(tag_id=1, type=WaypointType(val=WaypointType.MALLET)),
-                        SE3.from_position_orientation(5, 1),
+                        msg,
+                        SE3.from_position_orientation(8, 8),
                     ),
                 ]
             ],

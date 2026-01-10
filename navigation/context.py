@@ -44,7 +44,7 @@ class Rover:
     ctx: Context
     stuck: bool
     previous_state: State
-    path_history: deque
+    path_history: Path
 
     def get_pose_in_map(self) -> SE3 | None:
         try:
@@ -341,7 +341,10 @@ def convert_gps_to_cartesian(reference_point: np.ndarray, waypoint: GPSWaypoint)
     # Two points on a sphere are not going to have the same z-coordinate.
     # Navigation algorithms currently require all coordinates to have zero as the z-coordinate.
     return Waypoint(
-        tag_id=waypoint.tag_id, type=waypoint.type, enable_costmap=waypoint.enable_costmap
+        tag_id=waypoint.tag_id,
+        type=waypoint.type,
+        enable_costmap=waypoint.enable_costmap,
+        coverage_radius=waypoint.coverage_radius,
     ), SE3.from_position_orientation(x, y)
 
 
@@ -405,7 +408,7 @@ class Context:
         self.world_frame = node.get_parameter("world_frame").value
         self.rover_frame = node.get_parameter("rover_frame").value
         self.course = None
-        self.rover = Rover(self, False, OffState(), deque())
+        self.rover = Rover(self, False, OffState(), Path(header=Header(frame_id=self.world_frame)))
         self.env = Environment(self, image_targets=ImageTargetsStore(self), cost_map=CostMap())
         self.disable_requested = False
 
