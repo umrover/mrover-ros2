@@ -4,7 +4,7 @@ namespace mrover {
 
     auto Simulator::renderCamera(Camera& camera, wgpu::CommandEncoder& encoder, wgpu::RenderPassDescriptor const& passDescriptor) -> void {
         wgpu::RenderPassEncoder colorPass = encoder.beginRenderPass(passDescriptor);
-        colorPass.setPipeline(mPbrPipeline);
+        colorPass.setPipeline(mPbrEnabled ? mPbrPipeline : mBlinnPhongPipeline);
 
         if (!camera.sceneUniforms.buffer) camera.sceneUniforms.init(mDevice);
         camera.sceneUniforms.value.lightColor = {1, 1, 1, 1};
@@ -21,6 +21,7 @@ namespace mrover {
         entry.buffer = camera.sceneUniforms.buffer;
         entry.size = sizeof(SceneUniforms);
         wgpu::BindGroupDescriptor descriptor;
+        // we can just use mPbrPipeline here because both PBR and Blinn-Phone use the same bind groups
         descriptor.layout = mPbrPipeline.getBindGroupLayout(1);
         descriptor.entryCount = 1;
         descriptor.entries = &entry;

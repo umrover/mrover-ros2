@@ -37,6 +37,8 @@ namespace mrover {
     struct ModelUniforms {
         Eigen::Matrix4f modelToWorld{};
         Eigen::Matrix4f modelToWorldForNormals{};
+        float roughness;
+        float metallic;
 
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     };
@@ -63,9 +65,15 @@ namespace mrover {
         struct Mesh {
             SharedBuffer<Eigen::Vector3f> vertices;
             SharedBuffer<Eigen::Vector3f> normals;
+            SharedBuffer<Eigen::Vector3f> tangents;
+            SharedBuffer<Eigen::Vector3f> bitangents;
             SharedBuffer<Eigen::Vector2f> uvs;
             SharedBuffer<std::uint32_t> indices;
             MeshTexture texture;
+            MeshTexture normal_map;
+            // could make these also textures, but that might be doing too much
+            float roughness;
+            float metallic;
         };
 
         // DO NOT access the mesh unless you are certain it has been set from the async loader
@@ -242,6 +250,8 @@ namespace mrover {
         bool mEnablePhysics{};
         bool mRenderModels = true;
         bool mRenderWireframeColliders = false;
+        bool mPbrEnabled = false;
+        bool mNormalMapEnabled = true;
         double mPublishHammerDistanceThreshold = 3;
         double mPublishBottleDistanceThreshold = 3;
         float mCameraLockSlerp = 0.02;
@@ -313,6 +323,7 @@ namespace mrover {
         wgpu::TextureView mNormalTextureView;
 
         wgpu::ShaderModule mShaderModule;
+        wgpu::RenderPipeline mBlinnPhongPipeline;
         wgpu::RenderPipeline mPbrPipeline;
         wgpu::RenderPipeline mWireframePipeline;
 
@@ -326,6 +337,9 @@ namespace mrover {
         Uniform<SceneUniforms> mSceneUniforms;
 
         Eigen::Vector4f mSkyColor{0.05f, 0.8f, 0.92f, 1.0f};
+
+        // 1x1 normal map texture that's just flat
+        MeshTexture mDefaultNormalMap = {.data = cv::Mat{1, 1, CV_8UC4, {255, 128, 128}}};
 
         // Physics
 
