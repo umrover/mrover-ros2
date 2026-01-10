@@ -3,23 +3,20 @@
 import numpy as np
 from sensor_msgs.msg import PointCloud2, Image
 from std_msgs.msg import Header
-import sensor_msgs
-import tf2_ros
-from lie import SE3
 from sensor_msgs.msg import Imu
-from mrover.srv import Panorama
+from mrover.srv import Panorama, ServoPosition
 
 import rclpy
 from rclpy.node import Node
 from rclpy.duration import Duration
-import sys
-from datetime import datetime
 
 import cv2
 import time
 import message_filters
 import datetime
 import os
+import sys
+from datetime import datetime
 
 def get_quaternion_from_euler(roll, pitch, yaw):
   """
@@ -68,7 +65,8 @@ class Panorama(Node):
         super().__init__('panorama')
 
         # Pano Action Server
-        self.start_pano = self.create_service(Panorama, '/panorama', self.pano_callback)
+        self.start_pano = self.create_service(Panorama, 'panorama', self.pano_callback)
+        self.gimbal_client = self.create_client(ServoPosition, "gimbal_servo")
 
         # PC Stitching Variables
         self.pc_sub = message_filters.Subscriber(self, PointCloud2, "/zed_mini/left/points")
