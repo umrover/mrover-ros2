@@ -207,3 +207,8 @@ Servo::ServoStatus Servo::init(const std::string& deviceName)
     return ServoStatus::FailedToSetBaud;
   }
 }
+
+int Servo::getStatus()
+{
+
+}

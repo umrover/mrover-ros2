@@ -301,9 +301,9 @@ if (NOT APPLE)
     mrover_add_header_only_library(can_device esw/can_device)
     target_link_libraries(can_device INTERFACE ${rclcpp_LIBRARIES} moteus)
 
-    # mrover_add_library(dynamixel_library esw/dynamixel_library/*.cpp esw/dynamixel_library)
-    # ament_target_dependencies(dynamixel_library rclcpp std_srvs dynamixel_sdk)
-    # target_link_libraries(dynamixel_library can_device units messaging parameter_utils dynamixel_sdk::dynamixel_sdk)
+    mrover_add_library(servo_library esw/servo_library/*.cpp esw/servo_library)
+    ament_target_dependencies(servo_library rclcpp std_srvs dynamixel_sdk)
+    target_link_libraries(servo_library can_device units messaging parameter_utils dynamixel_sdk::dynamixel_sdk)
 
     mrover_add_library(motor_library esw/motor_library/*.cpp esw/motor_library)
     ament_target_dependencies(motor_library rclcpp std_srvs)
@@ -317,9 +317,9 @@ if (NOT APPLE)
     endmacro()
     
 
-    mrover_add_node(dynamixel esw/dynamixel.cpp)
-    ament_target_dependencies(dynamixel rclcpp std_srvs)
-    target_link_libraries(dynamixel dynamixel_sdk)
+    # mrover_add_node(dynamixel esw/dynamixel.cpp)
+    # ament_target_dependencies(dynamixel rclcpp std_srvs)
+    # target_link_libraries(dynamixel dynamixel_sdk)
 
     mrover_add_esw_motor_bridge_node(drive_hw_bridge esw/drive_hw_bridge.cpp)
     mrover_add_esw_motor_bridge_node(arm_hw_bridge esw/arm_hw_bridge.cpp)

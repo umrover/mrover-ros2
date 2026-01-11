@@ -75,11 +75,8 @@ public:
   ServoStatus setPosition(ServoPosition position, ServoMode mode);
   ServoStatus getPosition(ServoPosition& position);
   ServoStatus getPositionAbsolute(ServoPosition& position);
-  
-  ServoStatus setMode(ServoMode mode);
-  ServoStatus getMode(ServoMode& mode);
-  
   ServoStatus setProperty(ServoProperty prop, uint16_t value);
+  int getStatus();
 
   static ServoStatus init(const std::string& deviceName);
 
@@ -98,6 +95,7 @@ private:
   static dynamixel::PacketHandler *packetHandler;
 
   ServoId id;
+  uint32_t status;
 };
 
 }

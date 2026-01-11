@@ -3,4 +3,4 @@
 uint8 id
 ---
 # Response
-int32 position
+uint32 position
