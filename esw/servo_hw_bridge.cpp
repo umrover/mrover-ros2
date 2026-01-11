@@ -10,9 +10,10 @@
 #include <std_srvs/srv/set_bool.hpp>
 #include <unordered_map>
 
-#include "mrover/msg/detail/dynamixel_set_position__struct.hpp"
-#include "mrover/srv/detail/dynamixel_get_position__struct.hpp"
+#include "mrover/msg/detail/servo_position__struct.hpp"
+#include "mrover/srv/detail/servo_position__struct.hpp"
 #include "servo_library/servo.hpp"
+
 
 namespace mrover {
 
@@ -20,14 +21,14 @@ namespace mrover {
     public:
         PDLBBridge() : rclcpp::Node("pdlb_hw_bridge") {
             Servo::init("/dev/Ubs");
-            setPositionSubscriber = create_subscription<mrover::msg::DynamixelSetPosition>("set_position", 10, [this](mrover::msg::DynamixelSetPosition::ConstSharedPtr const& msg) {
-                servo->setPosition(msg->position, Servo::ServoMode::Optimal);
+            setPositionSubscriber = create_subscription<mrover::msg::ServoPosition>("set_position", 10, [this](mrover::msg::ServoPosition::ConstSharedPtr const& msg) {
+                servos.at(msg->name)->setPosition(msg->position, Servo::ServoMode::Optimal);
             });
 
-            getPositionService = this->create_service<mrover::srv::DynamixelGetPosition>("get_position", [this](
-                                                                                                             mrover::srv::DynamixelGetPosition::Request::SharedPtr const& request,
-                                                                                                              mrover::srv::DynamixelGetPosition::Response::SharedPtr response) {
-                servo->getPosition(response->position);
+            getPositionService = this->create_service<mrover::srv::ServoPosition>("get_position", [this](
+                                                                                                             mrover::srv::ServoPosition::Request::SharedPtr const& request,
+                                                                                                              mrover::srv::ServoPosition::Response::SharedPtr response) {
+                servos.at(request->name)->getPosition(response->position);
             });
         }
 
@@ -44,8 +45,8 @@ namespace mrover {
         } 
 
     private:
-        rclcpp::Subscription<mrover::msg::DynamixelSetPosition>::SharedPtr setPositionSubscriber;
-        rclcpp::Service<mrover::srv::DynamixelGetPosition>::SharedPtr getPositionService;
+        rclcpp::Subscription<mrover::msg::ServoPosition>::SharedPtr setPositionSubscriber;
+        rclcpp::Service<mrover::srv::ServoPosition>::SharedPtr getPositionService;
 
         std::unordered_map<std::string, std::unique_ptr<mrover::Servo>> servos;
 

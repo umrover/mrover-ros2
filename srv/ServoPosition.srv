@@ -1,6 +1,6 @@
 # Constants
 # Request
-uint8 id
+string name
 ---
 # Response
 uint32 position
