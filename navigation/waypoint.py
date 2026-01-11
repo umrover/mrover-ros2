@@ -124,6 +124,12 @@ class WaypointState(State):
             # Here, we use center, coverage_radius, and rover_position to calculate
             # distance_from_center, direction_from_center, and closest_radius_point
             center = context.course.current_waypoint_pose_in_map().translation()[0:2]
+
+            if context.rover.get_pose_in_map() is None or context.course.current_waypoint() is None:
+                context.node.get_logger().warn("Rover waypoint not set properly, waiting...")
+                context.rover.send_drive_command(Twist())
+                return self
+
             rover_position = context.rover.get_pose_in_map().translation()[0:2]
             distance_from_center = np.linalg.norm(rover_position[0:2] - center[0:2])
             direction_from_center = rover_position[0:2] - center

@@ -74,24 +74,49 @@ class SearchState(State):
         assert context.course is not None
         search_center = context.course.current_waypoint()
 
+        center = context.course.current_waypoint_pose_in_map().translation()[0:2]
+        rover_position = context.rover.get_pose_in_map().translation()[0:2]
+        distance_from_center = np.linalg.norm(rover_position[0:2] - center[0:2])
+
+        enable_inward = False
+
+        # we set coverage_radius_in to the default parameter value from navigation.yaml
+        coverage_radius_in = context.node.get_parameter("search.coverage_radius").value
+
+        if (
+            context.course.current_waypoint().coverage_radius > 0
+            and distance_from_center > 0.5 * context.course.current_waypoint().coverage_radius
+        ):
+            enable_inward = True
+
+        if context.course.current_waypoint().coverage_radius > 0:
+            # we override coverage_radius_in to be the waypoint's inward spiral coverage radius
+            coverage_radius_in = context.course.current_waypoint().coverage_radius
+
         if search_center.type.val == WaypointType.POST:
             SearchState.trajectory = SearchTrajectory.spiral_traj(
                 context.course.current_waypoint_pose_in_map().translation()[0:2],
-                context.node.get_parameter("search.coverage_radius").value,
+                coverage_radius_in,
                 context.node.get_parameter("search.distance_between_spirals").value,
                 context.node.get_parameter("search.segments_per_rotation").value,
                 search_center.tag_id,
                 False,
-                max_segment_length=context.node.get_parameter("search.max_segment_length").value,
+                # max_segment_length=context.node.get_parameter("search.max_segment_length").value,
+                rover_position=rover_position,
+                enable_inward=enable_inward,
+                inward_begin=context.coverage_radius_in,
             )
         else:  # water bottle or mallet
             SearchState.trajectory = SearchTrajectory.spiral_traj(
                 context.course.current_waypoint_pose_in_map().translation()[0:2],
-                context.node.get_parameter("object_search.coverage_radius").value,
+                coverage_radius_in,
                 context.node.get_parameter("object_search.distance_between_spirals").value,
                 context.node.get_parameter("search.segments_per_rotation").value,
                 search_center.tag_id,
                 False,
-                max_segment_length=context.node.get_parameter("search.max_segment_length").value,
+                # max_segment_length=context.node.get_parameter("search.max_segment_length").value,
+                rover_position=rover_position,
+                enable_inward=enable_inward,
+                inward_begin=context.coverage_radius_in,
             )
         self.prev_target_pos_in_map = None

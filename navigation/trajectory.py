@@ -163,7 +163,7 @@ class SearchTrajectory(Trajectory):
         :return:    SearchTrajectory object
         """
         # distance from the center
-        distance_from_center = np.linalg.norm(rover_position[:2] - center[:2])
+        distance_from_center = float(np.linalg.norm(rover_position[:2] - center[:2]))
 
         # vector towards the center from the rover
         direction_from_center = rover_position[:2] - center
