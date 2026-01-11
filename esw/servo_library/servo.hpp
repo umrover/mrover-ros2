@@ -19,7 +19,7 @@ namespace mrover {
 class Servo
 {
   using ServoId = uint8_t;
-  using ServoPosition = float;
+  using ServoPosition = uint32_t;
   using ServoAddr = uint16_t;
 
 public:

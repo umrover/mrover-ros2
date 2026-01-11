@@ -1,6 +1,7 @@
 #include "can_device.hpp"
 #include "messaging.hpp"
 
+#include <cstdint>
 #include <mrover/msg/led.hpp>
 
 #include <memory>
@@ -30,16 +31,23 @@ namespace mrover {
             });
         }
 
+        void create_servo(uint8_t id, const std::string& name)
+        {
+          servos.insert({name, std::make_unique<mrover::Servo>(id, name)});
+        }
+
         void initialize() {
             // Use this->shared_from_this() since rclcpp::Node already supports it
-            servo = std::make_unique<mrover::Servo>(3);
-        }
+            // servo = std::make_unique<mrover::Servo>(3);
+
+            create_servo(1, "name");
+        } 
 
     private:
         rclcpp::Subscription<mrover::msg::DynamixelSetPosition>::SharedPtr setPositionSubscriber;
         rclcpp::Service<mrover::srv::DynamixelGetPosition>::SharedPtr getPositionService;
 
-        std::unordered_map<std::string, Servo> servos;
+        std::unordered_map<std::string, std::unique_ptr<mrover::Servo>> servos;
 
         std::unique_ptr<mrover::Servo> servo;
     };
