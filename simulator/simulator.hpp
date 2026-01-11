@@ -28,6 +28,9 @@ namespace mrover {
     static constexpr auto DEPTH_FORMAT = wgpu::TextureFormat::Depth32Float;
     static constexpr auto NORMAL_FORMAT = wgpu::TextureFormat::RGBA16Float;
 
+    static constexpr char const* DEFAULT_MAP = "default_map.yaml";
+    static std::filesystem::path const CONFIG_PATH = std::filesystem::current_path() / "config" / "simulator";
+
     struct Camera;
     struct StereoCamera;
     class Simulator;
@@ -91,11 +94,17 @@ namespace mrover {
             Clock::time_point lastUpdate = Clock::now();
         };
 
-        urdf::Model model;
+        // Bullet Resources
+        std::vector<btMultiBodyLinkCollider*> mColliders;
+        std::vector<btMultiBodyConstraint*> mConstraints;
         btMultiBody* physics = nullptr;
+        std::shared_ptr<btMultiBodyDynamicsWorld> mDynamicsWorld;
+
+        urdf::Model model;
         std::unordered_map<std::string, LinkMeta> linkNameToMeta;
 
         URDF(Simulator& simulator, std::string_view uri, btTransform const& transform);
+        ~URDF();
 
         static auto makeCollisionShapeForLink(Simulator& simulator, urdf::LinkConstSharedPtr const& link) -> btCollisionShape*;
 
@@ -243,6 +252,8 @@ namespace mrover {
 
         float mFloat = 0.0f;
 
+        std::string configFilename = DEFAULT_MAP;
+
         // ROS
 
         rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr mGroundTruthPub;
@@ -335,7 +346,7 @@ namespace mrover {
         std::unique_ptr<btHashedOverlappingPairCache> mOverlappingPairCache;
         std::unique_ptr<btDbvtBroadphase> mBroadphase;
         std::unique_ptr<btMultiBodyConstraintSolver> mSolver;
-        std::unique_ptr<btMultiBodyDynamicsWorld> mDynamicsWorld;
+        std::shared_ptr<btMultiBodyDynamicsWorld> mDynamicsWorld;
         std::vector<std::unique_ptr<btCollisionShape>> mCollisionShapes;
         std::vector<std::unique_ptr<btMultiBody>> mMultiBodies;
         std::vector<std::unique_ptr<btMultiBodyLinkCollider>> mMultibodyCollider;
@@ -465,7 +476,7 @@ namespace mrover {
 
         auto initPhysics() -> void;
 
-        auto initUrdfsFromParams() -> void;
+        auto initUrdfsFromParams(std::string const& configFile) -> void;
 
         auto tick() -> void;
 

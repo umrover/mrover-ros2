@@ -23,7 +23,7 @@
         <button class="btn btn-success" @click="addWaypoint">Add</button>
         <button
           class="btn btn-danger"
-          :disabled="index <= 6"
+          :disabled="waypoint.deletable === false"
           @click="$emit('delete', index)"
         >
           Delete
@@ -36,13 +36,13 @@
 <script lang="ts">
 import { defineComponent } from 'vue'
 import type { PropType } from 'vue'
-import type { Waypoint } from '../types/waypoint'
+import type { AutonWaypoint } from '@/types/waypoints'
 
 export default defineComponent({
   name: 'WaypointStore',
   props: {
     waypoint: {
-      type: Object as PropType<Waypoint>,
+      type: Object as PropType<AutonWaypoint>,
       required: true,
     },
     index: {
@@ -50,14 +50,30 @@ export default defineComponent({
       required: true,
     },
   },
-  emits: ['add', 'delete'],
+  emits: ['add', 'delete', 'update'],
   data() {
     return {
       localLat: this.waypoint.lat,
       localLon: this.waypoint.lon,
     }
   },
+  watch: {
+    localLat(newVal) {
+      this.emitUpdate(newVal, this.localLon)
+    },
+    localLon(newVal) {
+      this.emitUpdate(this.localLat, newVal)
+    },
+  },
   methods: {
+    emitUpdate(lat: number, lon: number) {
+      const updatedWaypoint = {
+        ...this.waypoint,
+        lat: lat,
+        lon: lon,
+      }
+      this.$emit('update', updatedWaypoint, this.index)
+    },
     addWaypoint() {
       const updatedWaypoint = {
         ...this.waypoint,

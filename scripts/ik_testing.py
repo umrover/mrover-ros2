@@ -6,15 +6,16 @@ from rclpy.node import Node
 from rclpy.executors import ExternalShutdownException
 from geometry_msgs.msg import Twist
 
+
 class CirclePublisher(Node):
     def __init__(self):
         super().__init__("ik_circle_publisher")
-        self.vel_pub = self.create_publisher(Twist, 'ee_vel_cmd', 10)
+        self.vel_pub = self.create_publisher(Twist, "ee_vel_cmd", 10)
         self.dt = 0.1
         self.timer = self.create_timer(self.dt, self.timer_callback)
-        self.time = 0
-        self.radius = 0.2 # meters
-        self.period = 5 # seconds
+        self.time = 0.0
+        self.radius = 0.2  # meters
+        self.period = 5  # seconds
 
     def timer_callback(self):
         msg = Twist()
@@ -24,15 +25,16 @@ class CirclePublisher(Node):
         self.vel_pub.publish(msg)
         self.time += self.dt
 
+
 class MPublisher(Node):
     def __init__(self):
         super().__init__("ik_m_publisher")
         self.vel_pub = self.create_publisher(Twist, "ee_vel_cmd", 10)
         self.dt = 0.1
-        self.size = 0.4 # size of M in meters
+        self.size = 0.4  # size of M in meters
         self.speed = 0.2
         self.timer = self.create_timer(self.dt, self.timer_callback)
-        self.time = 0
+        self.time = 0.0
 
     def timer_callback(self):
         msg = Twist()
@@ -52,6 +54,7 @@ class MPublisher(Node):
             sys.exit(0)
         self.vel_pub.publish(msg)
         self.time += self.dt
+
 
 if __name__ == "__main__":
     try:
