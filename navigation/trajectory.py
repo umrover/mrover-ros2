@@ -3,6 +3,7 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
+# inward spiral search trajectory implemented
 
 @dataclass
 class Trajectory:
