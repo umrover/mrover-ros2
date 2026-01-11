@@ -99,29 +99,26 @@ Servo::ServoStatus Servo::setPosition(ServoPosition position, ServoMode mode)
   goalPosition = presentPosition + normalizedDifference;
 
   // Write goal position
-  write4Byte(ADDR_GOAL_POSITION, goalPosition, &hardwareStatus);
+  return write4Byte(ADDR_GOAL_POSITION, goalPosition, &hardwareStatus);
 }
 
 Servo::ServoStatus Servo::getPosition(ServoPosition& position)
 {
-
-  getPositionAbsolute(position);
+  Servo::ServoStatus status = getPositionAbsolute(position);
   position %= 4096;
+  return status;
 }
 
 Servo::ServoStatus Servo::getPositionAbsolute(ServoPosition& position)
 {
   uint8_t hardwareStatus;
-  uint32_t presentPosition;
-  read4Byte(ADDR_PRESENT_POSITION, presentPosition, &hardwareStatus);
-
-  position = presentPosition;
+  return read4Byte(ADDR_PRESENT_POSITION, position, &hardwareStatus);
 }
 
-int Servo::setProperty(ServoProperty prop, uint16_t value)
+Servo::ServoStatus Servo::setProperty(ServoProperty prop, uint16_t value)
 {
   uint8_t hardwareStatus;
-  write2Byte(static_cast<ServoAddr>(prop), value, &hardwareStatus);
+  return write2Byte(static_cast<ServoAddr>(prop), value, &hardwareStatus);
 }
 
 Servo::ServoStatus Servo::write1Byte(ServoAddr addr, uint8_t data, uint8_t* hardwareStatus) const

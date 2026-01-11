@@ -79,7 +79,7 @@ public:
   ServoStatus setMode(ServoMode mode);
   ServoStatus getMode(ServoMode& mode);
   
-  int setProperty(ServoProperty prop, uint16_t value);
+  ServoStatus setProperty(ServoProperty prop, uint16_t value);
 
   static ServoStatus init(const std::string& deviceName);
 
