@@ -3,23 +3,19 @@
 import numpy as np
 from sensor_msgs.msg import PointCloud2, Image
 from std_msgs.msg import Header
-import sensor_msgs
-import tf2_ros
-from lie import SE3
 from sensor_msgs.msg import Imu
-from mrover.srv import PanoramaStart, PanoramaEnd
+from mrover.srv import ServoPosition, Pano, Dummy
 
 import rclpy
 from rclpy.node import Node
 from rclpy.duration import Duration
-import sys
-from datetime import datetime
 
 import cv2
 import time
 import message_filters
-import datetime
 import os
+import sys
+from datetime import datetime
 
 def get_quaternion_from_euler(roll, pitch, yaw):
   """
@@ -68,29 +64,28 @@ class Panorama(Node):
         super().__init__('panorama')
 
         # Pano Action Server
-        self.start_pano = self.create_service(PanoramaStart, '/panorama/start', self.start_callback)
-        self.end_pano = self.create_service(PanoramaEnd, '/panorama/end', self.end_callback)
-
-        # Start the panorama
-        self.record_image = False
-        self.record_pc = False
+        self.start_pano = self.create_service(Pano, 'panorama', self.pano_callback)
+        self.gimbal_client = self.create_client(ServoPosition, "gimbal_servo")
+        self.dummy_client = self.create_client(Dummy, "dummy")
 
         # PC Stitching Variables
-        self.pc_sub = message_filters.Subscriber(self, PointCloud2, "/zed_mini/left/points")
-        self.imu_sub = message_filters.Subscriber(self, Imu, "/zed_mini_imu/data_raw")
+        self.pc_sub = message_filters.Subscriber(self, PointCloud2, "/zed/left/points")
+        self.imu_sub = message_filters.Subscriber(self, Imu, "/zed_imu/data_raw")
+        self.subs = [self.pc_sub, self.imu_sub]
         self.pc_publisher = self.create_publisher(PointCloud2, "/stitched_pc", 1)
         self.pano_img_debug_publisher = self.create_publisher(Image, "/debug_pano", 1)
         self.pc_rate = PanoRate(2, self)
 
         self.stitched_pc = np.empty((0, 8), dtype=np.float32)
-        self.sync = message_filters.ApproximateTimeSynchronizer([self.pc_sub, self.imu_sub], 10, 1)
-        self.sync.registerCallback(self.synced_gps_pc_callback)
 
         # Image Stitching Variables
-        self.img_sub = self.create_subscription(Image, "/zed_mini/left/image", self.image_callback, 1);
+        self.img_sub = None
         self.img_list = []
         self.stitcher = cv2.Stitcher.create()
         self.img_rate = PanoRate(2, self)
+        self.img_sub = self.create_subscription(Image, "/zed/left/image", self.image_callback, 0)
+        self.destroy_subscription(self.img_sub)
+        self.img_sub = None
 
 
     def rotate_pc(self, trans_mat: np.ndarray, pc: np.ndarray):
@@ -106,66 +101,57 @@ class Panorama(Node):
         return pc
 
     def synced_gps_pc_callback(self, pc_msg: PointCloud2, imu_msg: Imu):
+        self.get_logger().info("In Synced Callback")
         # extract xyzrgb fields
         # get every tenth point to make the pc sparser
         # TODO: dtype hard-coded to float32
-        if self.record_pc:
-            self.current_pc = pc_msg
-            self.arr_pc = np.frombuffer(bytearray(pc_msg.data), dtype=np.float32).reshape(
-                pc_msg.height * pc_msg.width, int(pc_msg.point_step / 4)
-            )[0::10, :]
+        self.current_pc = pc_msg
+        self.arr_pc = np.frombuffer(bytearray(pc_msg.data), dtype=np.float32).reshape(
+            pc_msg.height * pc_msg.width, int(pc_msg.point_step / 4)
+        )[0::10, :]
 
-            orientation = np.array([imu_msg.orientation._x, imu_msg.orientation._y, imu_msg.orientation._z, imu_msg.orientation._w])
+        orientation = np.array([imu_msg.orientation._x, imu_msg.orientation._y, imu_msg.orientation._z, imu_msg.orientation._w])
 
-            orientation = orientation / np.linalg.norm(orientation)
+        orientation = orientation / np.linalg.norm(orientation)
 
-            # Create the SE3
-            x, y, z, w = orientation
-            rotation = np.array([
-                [1 - 2*y**2 - 2*z**2, 2*x*y - 2*z*w, 2*x*z + 2*y*w, 0],
-                [2*x*y + 2*z*w, 1 - 2*x**2 - 2*z**2, 2*y*z - 2*x*w, 0],
-                [2*x*z - 2*y*w, 2*y*z + 2*x*w, 1 - 2*x**2 - 2*y**2, 0],
-                [0, 0, 0, 0]
-            ]) 
+        # Create the SE3
+        x, y, z, w = orientation
+        rotation = np.array([
+            [1 - 2*y**2 - 2*z**2, 2*x*y - 2*z*w, 2*x*z + 2*y*w, 0],
+            [2*x*y + 2*z*w, 1 - 2*x**2 - 2*z**2, 2*y*z - 2*x*w, 0],
+            [2*x*z - 2*y*w, 2*y*z + 2*x*w, 1 - 2*x**2 - 2*y**2, 0],
+            [0, 0, 0, 0]
+        ]) 
 
-            rotated_pc = self.rotate_pc(rotation, self.arr_pc)
-            self.stitched_pc = np.vstack((self.stitched_pc, rotated_pc))
-            self.pc_rate.sleep()
-        else:
-            # Clear the stitched pc
-            self.stitched_pc = np.empty((0, 8), dtype=np.float32)
+        rotated_pc = self.rotate_pc(rotation, self.arr_pc)
+        self.stitched_pc = np.vstack((self.stitched_pc, rotated_pc))
+        self.pc_rate.sleep()
 
     def image_callback(self, msg: Image):
-        if self.record_image:
-            self.current_img = cv2.cvtColor(
-                np.frombuffer(msg.data, dtype=np.uint8).reshape(msg.height, msg.width, 4), cv2.COLOR_RGBA2RGB
-            )
+        self.get_logger().info("In Image Callback")
+        self.current_img = cv2.cvtColor(
+            np.frombuffer(msg.data, dtype=np.uint8).reshape(msg.height, msg.width, 4), cv2.COLOR_RGBA2RGB
+        )
 
-            if self.current_img is not None:
-                self.img_list.append(np.copy(self.current_img))
-            self.img_rate.sleep()
-        else:
-            # Clear the images
-            self.img_list = []
-            self.stitcher = cv2.Stitcher.create(cv2.Stitcher_PANORAMA)
+        if self.current_img is not None:
+            self.img_list.append(np.copy(self.current_img))
+        self.img_rate.sleep()
 
-    def start_callback(self, _, response):
+    def pano_callback(self, _, response):
         self.get_logger().info('Starting Pano...')
+        self.img_sub = self.create_subscription(Image, "/zed/left/image", self.image_callback, 1)
+        self.sync = message_filters.ApproximateTimeSynchronizer([self.pc_sub, self.imu_sub], 10, 1)
+        self.sync.registerCallback(self.synced_gps_pc_callback)
 
-        self.record_image = True
-        self.record_pc = True
+        for _ in range(4):
+            self.get_logger().info("Sending dummy request")
+            req = Dummy.Request()
+            future = self.dummy_client.call_async(req)
+            rclpy.spin_until_future_complete(self, future)
 
-        # START SPINNING THE MAST GIMBAL
-
-        return response
-
-    def end_callback(self, _, response):
-        self.get_logger().info('Ending Pano...')
-
-        self.record_image = False
-        self.record_pc = False
-
-        # STOP SPINNING THE MAST GIMBAL
+        self.destroy_subscription(self.img_sub)
+        self.img_sub = None
+        self.sync = None
 
         # construct pc from stitched
         try:
@@ -232,6 +218,13 @@ class Panorama(Node):
             response.success = False
             return response
         
+        # clear pano and image list
+        self.stitched_pc = np.empty((0, 8), dtype=np.float32)
+        self.img_list = []
+        self.stitcher = cv2.Stitcher.create(cv2.Stitcher_PANORAMA)
+
+        self.img_sub = None
+        
         self.get_logger().info('Pano response sent to frontend')
         return response
 
@@ -247,3 +240,4 @@ def main(args=None):
 
 if __name__ == '__main__':
     main()
+

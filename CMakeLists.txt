@@ -384,6 +384,7 @@ set_target_properties(camera_client PROPERTIES
 # You must add Python scripts here to be able to "ros2 launch" them in terminal
 install(PROGRAMS
     perception/panorama.py
+    perception/dummy_gimbal.py
     navigation/nav.py
     navigation/stuck_detector/stuck_detector.py
     localization/gps_linearization.py
