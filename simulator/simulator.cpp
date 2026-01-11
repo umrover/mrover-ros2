@@ -19,8 +19,14 @@ namespace mrover {
             mIkTargetPub = create_publisher<msg::IK>("ee_pos_cmd", 1);
 
             mIkVelPub = create_publisher<geometry_msgs::msg::Twist>("ee_vel_cmd", 1);
-            
+
             mIkModeClient = create_client<srv::IkMode>("ik_mode");
+
+            mActionClient = rclcpp_action::create_client<action::ClickIk>(this->get_node_base_interface(),
+                                                                          this->get_node_graph_interface(),
+                                                                          this->get_node_logging_interface(),
+                                                                          this->get_node_waitables_interface(),
+                                                                          "click_ik");
 
             mMotorTimeoutMs = get_parameter("motor_timeout").as_int();
 

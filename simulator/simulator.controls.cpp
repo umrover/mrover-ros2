@@ -1,4 +1,6 @@
 #include "simulator.hpp"
+#include "mrover/action/detail/click_ik__struct.hpp"
+#include <rclcpp/logging.hpp>
 
 namespace mrover {
 
@@ -117,7 +119,7 @@ namespace mrover {
     }
 
     auto Simulator::userControls(Clock::duration dt) -> void {
-        if (mPublishIk && mIkMode) {
+        if (mPublishIk && mIkMode && !mClickIk) {
             msg::IK ik;
             ik.pos.x = mIkTarget.x();
             ik.pos.y = mIkTarget.y();
@@ -125,7 +127,25 @@ namespace mrover {
             ik.pitch = mIkPitch;
             ik.roll = mIkRoll;
             mIkTargetPub->publish(ik);
+        } else if (!mClickIkQueued && mClickIk && mPublishClickIk) {
+            mClickIkQueued = true;
+            action::ClickIk::Goal goal;
+            goal.set__point_in_image_x(static_cast<unsigned int>(mClickIkX));
+            goal.set__point_in_image_y(static_cast<unsigned int>(mClickIkY));
+            rclcpp_action::Client<action::ClickIk>::SendGoalOptions options;
+            options.result_callback = [this](rclcpp_action::ClientGoalHandle<action::ClickIk>::WrappedResult const& result) {
+                this->mClickIkQueued = false;
+                this->mPublishClickIk = false;
+                this->mCancelClickIk = false;
+                RCLCPP_INFO(this->get_logger(), "Action finished with code %d", (int) result.code);
+            };
+            mActionClient->async_send_goal(goal, options);
+        } else if (mClickIkQueued && mCancelClickIk) {
+            mActionClient->async_cancel_all_goals();
+            mCancelClickIk = false;
+            mClickIkQueued = false;
         }
+
         if (!mHasFocus || mInGui) return;
 
         if (mCameraInRoverTarget)

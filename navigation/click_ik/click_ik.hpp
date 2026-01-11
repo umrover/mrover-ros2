@@ -31,10 +31,10 @@ namespace mrover {
         std::unique_ptr<tf2_ros::Buffer> mTfBuffer = std::make_unique<tf2_ros::Buffer>(get_clock());
         std::shared_ptr<tf2_ros::TransformListener> mTfListener = std::make_shared<tf2_ros::TransformListener>(*mTfBuffer);
         std::shared_ptr<tf2_ros::TransformBroadcaster> mTfBroadcaster = std::make_shared<tf2_ros::TransformBroadcaster>(this);
-    public:
 
-        void executeClickIk(std::shared_ptr<rclcpp_action::ServerGoalHandle<action::ClickIk>> goal_handle);
-        
+    public:
+        void executeClickIk(std::shared_ptr<rclcpp_action::ServerGoalHandle<action::ClickIk>> const& goal_handle);
+
         explicit ClickIkNode(rclcpp::NodeOptions const& options = rclcpp::NodeOptions());
 
         ~ClickIkNode() override = default;

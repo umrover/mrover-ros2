@@ -1,5 +1,9 @@
 #pragma once
 
+#include "mrover/action/detail/click_ik__struct.hpp"
+#include <rclcpp_action/client.hpp>
+#include <rclcpp_action/create_client.hpp>
+
 #include "pch.hpp"
 
 #include "glfw_pointer.hpp"
@@ -250,6 +254,14 @@ namespace mrover {
         tf2_ros::Buffer mTfBuffer{get_clock()};
         tf2_ros::TransformListener mTfListener{mTfBuffer};
         tf2_ros::TransformBroadcaster mTfBroadcaster{this};
+
+        bool mClickIk = false;
+        bool mPublishClickIk = false;
+        bool mCancelClickIk = false;
+        bool mClickIkQueued = false;
+        float mClickIkX{0};
+        float mClickIkY{0};
+        rclcpp_action::Client<action::ClickIk>::SharedPtr mActionClient;
 
         bool mPublishIk = true;
         bool mIkMode = true; // true = position control, false = velocity control
