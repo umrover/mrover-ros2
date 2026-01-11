@@ -340,8 +340,12 @@ def convert_gps_to_cartesian(reference_point: np.ndarray, waypoint: GPSWaypoint)
     # Zero the z-coordinate because even though the altitudes are set to zero,
     # Two points on a sphere are not going to have the same z-coordinate.
     # Navigation algorithms currently require all coordinates to have zero as the z-coordinate.
+
     return Waypoint(
-        tag_id=waypoint.tag_id, type=waypoint.type, enable_costmap=waypoint.enable_costmap
+        tag_id=waypoint.tag_id,
+        type=waypoint.type,
+        enable_costmap=waypoint.enable_costmap,
+        coverage_radius=waypoint.coverage_radius,
     ), SE3.from_position_orientation(x, y)
 
 
