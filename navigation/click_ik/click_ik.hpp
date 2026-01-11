@@ -1,13 +1,6 @@
 #pragma once
 
-#include "mrover/action/detail/click_ik__struct.hpp"
 #include "pch.hpp"
-#include <mrover/msg/arm_status.hpp>
-#include <mrover/msg/ik.hpp>
-#include <rclcpp/publisher.hpp>
-#include <rclcpp_action/server.hpp>
-#include <rclcpp_action/types.hpp>
-#include <tf2_ros/transform_listener.h>
 
 namespace mrover {
 
@@ -42,7 +35,7 @@ namespace mrover {
         auto pointCloudCallback(sensor_msgs::msg::PointCloud2::ConstSharedPtr const& msg) -> void;
         auto statusCallback(msg::ArmStatus const& msg) -> void;
 
-        auto cancelClickIk() -> void;
+        auto abortClickIk() -> void;
 
         //Taken line for line from percep object detection code
         auto spiralSearchInImg(size_t xCenter, size_t yCenter) -> std::optional<Point>;

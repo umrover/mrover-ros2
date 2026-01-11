@@ -23,9 +23,9 @@ namespace mrover {
     ClickIkNode::ClickIkNode(rclcpp::NodeOptions const& options) : Node("click_ik", options) {
 
         auto handle_goal = [this](rclcpp_action::GoalUUID const& uuid, action::ClickIk_Goal::ConstSharedPtr const& goal) -> rclcpp_action::GoalResponse {
-            if (mCurrentGoalHandle)
-                return rclcpp_action::GoalResponse::REJECT;
             RCLCPP_INFO(this->get_logger(), "Click Ik request received for point: (%d, %d)", goal->point_in_image_x, goal->point_in_image_y);
+            if (mCurrentGoalHandle)
+                abortClickIk();
             (void) uuid;
             return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
         };
@@ -64,7 +64,7 @@ namespace mrover {
         mIkPub = create_publisher<msg::IK>("/ee_pos_cmd", 1);
 
         // ArmStatus subscriber
-        mStatusSub = create_subscription<msg::ArmStatus>("arm_status", 1, [this](msg::ArmStatus const& msg) {
+        mStatusSub = create_subscription<msg::ArmStatus>("/arm_cmd_status", 1, [this](msg::ArmStatus const& msg) {
             statusCallback(msg);
         });
 
@@ -107,9 +107,16 @@ namespace mrover {
         // message.target.header.frame_id = "zed_left_camera_frame";
         timer = this->create_wall_timer(std::chrono::milliseconds(10), [this, target_pose, target_transfer, goal_handle, result, feedback]() {
             if (goal_handle->is_canceling()) {
-                cancelClickIk();
+                auto result = std::make_shared<action::ClickIk::Result>();
+                result->success = false;
+                timer->cancel();
+                goal_handle->canceled(result);
+                if (mCurrentGoalHandle)
+                    mCurrentGoalHandle = nullptr;
+                RCLCPP_INFO(get_logger(), "ClickIk Goal Cancelled Successfully.");
                 return;
             }
+            if (!goal_handle->is_executing()) return;
 
             float const tolerance = 0.02;
             try {
@@ -139,16 +146,15 @@ namespace mrover {
         });
     }
 
-
-    void ClickIkNode::cancelClickIk() {
+    void ClickIkNode::abortClickIk() {
         timer->cancel();
         if (mCurrentGoalHandle) {
             auto result = std::make_shared<action::ClickIk::Result>();
             result->success = false;
-            mCurrentGoalHandle->canceled(result);
+            mCurrentGoalHandle->abort(result);
             mCurrentGoalHandle = nullptr;
         }
-        RCLCPP_INFO(get_logger(), "ClickIk Goal Cancelled Successfully.");
+        RCLCPP_INFO(get_logger(), "ClickIk Goal Aborted Successfully.");
     }
 
     void ClickIkNode::pointCloudCallback(sensor_msgs::msg::PointCloud2::ConstSharedPtr const& msg) {
@@ -202,9 +208,9 @@ namespace mrover {
     }
 
     auto ClickIkNode::statusCallback(msg::ArmStatus const& msg) -> void {
-        if (!msg.status) {
+        if (!msg.status && mCurrentGoalHandle) {
             RCLCPP_WARN(get_logger(), "Arm position unreachable");
-            cancelClickIk();
+            abortClickIk();
         }
     }
 

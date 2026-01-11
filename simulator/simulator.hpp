@@ -269,7 +269,6 @@ namespace mrover {
         bool mClickIk = false;
         bool mPublishClickIk = false;
         bool mCancelClickIk = false;
-        bool mClickIkQueued = false;
         float mClickIkX{0};
         float mClickIkY{0};
         rclcpp_action::Client<action::ClickIk>::SharedPtr mActionClient;
