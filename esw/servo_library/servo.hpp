@@ -19,7 +19,7 @@ namespace mrover {
 class Servo
 {
   using ServoId = uint8_t;
-  using ServoPosition = uint32_t;
+  using ServoPosition = float;
   using ServoAddr = uint16_t;
 
 public:
@@ -69,8 +69,8 @@ public:
     ServoProperties() = default;
   };
 
-  Servo(ServoId id, ServoProperties properties);
-  explicit Servo(ServoId id);
+  Servo(ServoId id, const std::string& name, ServoProperties properties);
+  explicit Servo(ServoId id, const std::string& name);
 
   ServoStatus setPosition(ServoPosition position, ServoMode mode);
   ServoStatus getPosition(ServoPosition& position);
@@ -95,7 +95,7 @@ private:
   static dynamixel::PacketHandler *packetHandler;
 
   ServoId id;
-  uint32_t status;
+  std::string name;
 };
 
 }

@@ -20,7 +20,7 @@
 
 using namespace mrover;
 
-Servo::Servo(ServoId id, ServoProperties properties) : id{id}
+Servo::Servo(ServoId id, const std::string& name, ServoProperties properties) : id{id}, name{name}
 {
   // ---------------------------------------------- Set servo properties ------------------------------------------------------ //
 
@@ -39,7 +39,7 @@ Servo::Servo(ServoId id, ServoProperties properties) : id{id}
   servoSetup();
 }
 
-Servo::Servo(ServoId id) : id{id}
+Servo::Servo(ServoId id, const std::string& name) : id{id}, name{name}
 {
   servoSetup();
 }

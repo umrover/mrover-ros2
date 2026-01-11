@@ -7,6 +7,7 @@
 #include <mrover/msg/pdlb.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <std_srvs/srv/set_bool.hpp>
+#include <unordered_map>
 
 #include "mrover/msg/detail/dynamixel_set_position__struct.hpp"
 #include "mrover/srv/detail/dynamixel_get_position__struct.hpp"
@@ -37,6 +38,8 @@ namespace mrover {
     private:
         rclcpp::Subscription<mrover::msg::DynamixelSetPosition>::SharedPtr setPositionSubscriber;
         rclcpp::Service<mrover::srv::DynamixelGetPosition>::SharedPtr getPositionService;
+
+        std::unordered_map<std::string, Servo> servos;
 
         std::unique_ptr<mrover::Servo> servo;
     };
