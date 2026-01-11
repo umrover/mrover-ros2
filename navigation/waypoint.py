@@ -171,10 +171,18 @@ class WaypointState(State):
                 self.waypoint_traj.increment_point()
                 if self.waypoint_traj.done():
                     return self.next_state(context=context)
+            # # Add extra point for smoother Pure Pursuit
+            # elif(self.USE_PURE_PURSUIT):
+            #     self.waypoint_traj.increment_point()
+            #     if not self.waypoint_traj.done():
+            #         np.append(self.astar_traj.coordinates, self.waypoint_traj.get_current_point())
+            #     self.waypoint_traj.decerement_point()
+
             return self
 
         arrived = False
         cmd_vel = Twist()
+        # context.node.get_logger().info(f"In waypoint: {len(self.astar_traj.coordinates)} and {self.astar_traj.cur_pt}")
         if len(self.astar_traj.coordinates) - self.astar_traj.cur_pt != 0:
             # Determine if we are going to use pure pursuit or not
             if not self.USE_PURE_PURSUIT:

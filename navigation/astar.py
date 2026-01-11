@@ -53,6 +53,7 @@ class AStar:
     COSTMAP_THRESH: float
     ANGLE_THRESH: float
     USE_COSTMAP: bool
+    USE_PURE_PURSUIT: bool
 
     def __init__(self, context: Context) -> None:
         self.context = context
@@ -65,6 +66,7 @@ class AStar:
 
         if hasattr(context, "course") and context.course is not None:
             current_waypoint = context.course.current_waypoint()
+            self.USE_PURE_PURSUIT = context.node.get_parameter_or("drive.use_pure_pursuit", True).value
             if current_waypoint is None:
                 self.USE_COSTMAP = context.node.get_parameter("costmap.use_costmap").value
             else:
@@ -198,7 +200,10 @@ class AStar:
         rover_position_in_map = rover_SE3.translation()[:2]
 
         if not self.USE_COSTMAP or not self.use_astar(context=context, dest=dest):
-            return Trajectory(np.array([dest]))
+            if (not self.USE_PURE_PURSUIT):
+                return Trajectory(np.array([dest]))
+            else:
+                return Trajectory(np.array([rover_SE3.translation(), dest]))
 
         costmap_length = self.context.env.cost_map.data.shape[0]
         rover_ij = cartesian_to_ij(context, rover_position_in_map)
