@@ -57,4 +57,17 @@ h1, h2, h3, h4, h5, h6 {
   line-height: 1.2;
 }
 
+.vue-grid-layout {
+  height: 100% !important;
+  width: 100% !important;
+}
+
+.vue-grid-item {
+  touch-action: none;
+}
+
+.vue-grid-item > div {
+  height: 100%;
+  width: 100%;
+}
 </style>
