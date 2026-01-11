@@ -10,8 +10,8 @@
 #include <std_srvs/srv/set_bool.hpp>
 #include <unordered_map>
 
-#include "mrover/msg/detail/servo_position__struct.hpp"
-#include "mrover/srv/detail/servo_position__struct.hpp"
+#include "mrover/msg/servo_position.hpp"
+#include "mrover/srv/servo_position.hpp"
 #include "servo_library/servo.hpp"
 
 
@@ -19,8 +19,8 @@ namespace mrover {
 
     class PDLBBridge final : public rclcpp::Node {
     public:
-        PDLBBridge() : rclcpp::Node("pdlb_hw_bridge") {
-            Servo::init("/dev/Ubs");
+        PDLBBridge() : rclcpp::Node("servo_hw_bridge") {
+            Servo::init("/dev/ttyUSB0");
             setPositionSubscriber = create_subscription<mrover::msg::ServoPosition>("set_position", 10, [this](mrover::msg::ServoPosition::ConstSharedPtr const& msg) {
                 servos.at(msg->name)->setPosition(msg->position, Servo::ServoMode::Optimal);
             });
@@ -41,7 +41,7 @@ namespace mrover {
             // Use this->shared_from_this() since rclcpp::Node already supports it
             // servo = std::make_unique<mrover::Servo>(3);
 
-            create_servo(1, "name");
+            create_servo(4, "name");
         } 
 
     private:

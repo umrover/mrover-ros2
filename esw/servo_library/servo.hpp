@@ -91,8 +91,8 @@ private:
   inline ServoStatus read2Byte(ServoAddr addr, uint16_t& data, uint8_t* hardwareStatus) const;
   inline ServoStatus read4Byte(ServoAddr addr, uint32_t& data, uint8_t* hardwareStatus) const;
 
-  static dynamixel::PortHandler *portHandler;
-  static dynamixel::PacketHandler *packetHandler;
+  inline static dynamixel::PortHandler *portHandler;
+  inline static dynamixel::PacketHandler *packetHandler;
 
   ServoId id;
   std::string name;
