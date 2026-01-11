@@ -93,7 +93,7 @@ class WaypointState(State):
             context.reset_dilation()
 
         self.USE_RELAXATION = context.node.get_parameter("smoothing.use_relaxation").value
-        self.USE_INTERPOLATION = context.node.get_parameter("smoothing.use_cost_map").value
+        self.USE_INTERPOLATION = context.node.get_parameter("smoothing.use_interpolation").value
 
         context.node.get_logger().info("On Enter finished")
 
