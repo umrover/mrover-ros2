@@ -97,6 +97,9 @@ class Navigation(Node):
                 ("recovery.drive_forward_threshold", Parameter.Type.DOUBLE),
                 ("recovery.recovery_distance", Parameter.Type.DOUBLE),
                 ("recovery.give_up_time", Parameter.Type.DOUBLE),
+                # Smoothing
+                ("smoothing.use_relaxation", Parameter.Type.BOOL),
+                ("smoothing.use_interpolation", Parameter.Type.BOOL),
             ],
         )
 
