@@ -165,7 +165,11 @@ class Relaxation:
         candidate_traj, candidate_cost = Relaxation.relax_single(ctx, trajectory)
 
         # TODO: depending on how inefficient this is, we may limit how many times this loop runs
-        while candidate_cost <= cost + 0.1 or math.isclose(candidate_cost, cost, rel_tol=0.4):
+        while candidate_cost <= cost + 0.1 or math.isclose(candidate_cost, cost, rel_tol=0.1):
+
+            manual_new_cost = Relaxation.cost_full(ctx, candidate_traj)
+            ctx.node.get_logger().info(f"Cost: {cost}, New Cost (relax calc): {candidate_cost}, New Cost (manual calc): {manual_new_cost}")
+
             if len(current_trajectory.coordinates) <= 2:
                 break
 
