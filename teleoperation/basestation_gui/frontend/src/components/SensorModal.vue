@@ -4,7 +4,7 @@
     @click.self="$emit('close')"
   >
     <div
-      class="bg-white rounded p-3"
+      class="bg-theme-card rounded p-3"
       style="
         width: 90%;
         max-width: 1200px;

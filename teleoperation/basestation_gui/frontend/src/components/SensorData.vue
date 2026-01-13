@@ -42,17 +42,17 @@
 
   <div class="d-flex flex-column gap-2 mt-2 flex-fill" style="min-height: 0">
     <div class="d-flex gap-2" style="flex: 1; min-height: 0">
-      <div class="bg-white border rounded p-2 d-flex flex-column" style="flex: 1; min-width: 0">
+      <div class="bg-theme-card border rounded p-2 d-flex flex-column" style="flex: 1; min-width: 0">
         <div class="d-flex justify-content-between align-items-center mb-1">
-          <strong style="font-size: 14px; color: #000000">Humidity (%)</strong>
+          <strong style="font-size: 14px; color: var(--text-primary)">Humidity (%)</strong>
         </div>
         <div style="flex: 1; min-height: 0">
           <canvas id="chart0"></canvas>
         </div>
       </div>
-      <div class="bg-white border rounded p-2 d-flex flex-column" style="flex: 1; min-width: 0">
+      <div class="bg-theme-card border rounded p-2 d-flex flex-column" style="flex: 1; min-width: 0">
         <div class="d-flex justify-content-between align-items-center mb-1">
-          <strong style="font-size: 14px; color: #000000">UV Index</strong>
+          <strong style="font-size: 14px; color: var(--text-primary)">UV Index</strong>
         </div>
         <div style="flex: 1; min-height: 0">
           <canvas id="chart1"></canvas>
@@ -60,17 +60,17 @@
       </div>
     </div>
     <div class="d-flex gap-2" style="flex: 1; min-height: 0">
-      <div class="bg-white border rounded p-2 d-flex flex-column" style="flex: 1; min-width: 0">
+      <div class="bg-theme-card border rounded p-2 d-flex flex-column" style="flex: 1; min-width: 0">
         <div class="d-flex justify-content-between align-items-center mb-1">
-          <strong style="font-size: 14px; color: #000000">Ozone (ppb)</strong>
+          <strong style="font-size: 14px; color: var(--text-primary)">Ozone (ppb)</strong>
         </div>
         <div style="flex: 1; min-height: 0">
           <canvas id="chart2"></canvas>
         </div>
       </div>
-      <div class="bg-white border rounded p-2 d-flex flex-column" style="flex: 1; min-width: 0">
+      <div class="bg-theme-card border rounded p-2 d-flex flex-column" style="flex: 1; min-width: 0">
         <div class="d-flex justify-content-between align-items-center mb-1">
-          <strong style="font-size: 14px; color: #000000">Pressure (Pa)</strong>
+          <strong style="font-size: 14px; color: var(--text-primary)">Pressure (Pa)</strong>
         </div>
         <div style="flex: 1; min-height: 0">
           <canvas id="chart3"></canvas>

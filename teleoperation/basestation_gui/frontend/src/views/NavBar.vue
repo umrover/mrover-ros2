@@ -24,6 +24,63 @@
       <div class="d-flex align-items-center gap-3">
         <WebsocketStatus />
         <div class="border-start border-2" style="height: 40px;"></div>
+        <div class="dropdown">
+          <button
+            class="btn border border-2 rounded d-flex align-items-center justify-content-center"
+            style="width: 50px; height: 50px;"
+            data-bs-toggle="dropdown"
+            aria-expanded="false"
+          >
+            <i :class="themeIcon" class="fs-5"></i>
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end">
+            <li>
+              <button
+                class="dropdown-item d-flex align-items-center gap-2"
+                :class="{ active: themeStore.currentTheme === 'light' }"
+                @click="themeStore.setTheme('light')"
+              >
+                <i class="bi bi-sun-fill"></i> Light
+              </button>
+            </li>
+            <li>
+              <button
+                class="dropdown-item d-flex align-items-center gap-2"
+                :class="{ active: themeStore.currentTheme === 'dark' }"
+                @click="themeStore.setTheme('dark')"
+              >
+                <i class="bi bi-moon-fill"></i> Dark
+              </button>
+            </li>
+            <li>
+              <button
+                class="dropdown-item d-flex align-items-center gap-2"
+                :class="{ active: themeStore.currentTheme === 'high-contrast-light' }"
+                @click="themeStore.setTheme('high-contrast-light')"
+              >
+                <i class="bi bi-circle-half"></i> High Contrast Light
+              </button>
+            </li>
+            <li>
+              <button
+                class="dropdown-item d-flex align-items-center gap-2"
+                :class="{ active: themeStore.currentTheme === 'high-contrast-dark' }"
+                @click="themeStore.setTheme('high-contrast-dark')"
+              >
+                <i class="bi bi-circle-fill"></i> High Contrast Dark
+              </button>
+            </li>
+            <li>
+              <button
+                class="dropdown-item d-flex align-items-center gap-2 text-danger"
+                :class="{ active: themeStore.currentTheme === 'dont-click-me' }"
+                @click="themeStore.setTheme('dont-click-me')"
+              >
+                <i class="bi bi-exclamation-triangle-fill"></i> Don't Click Me
+              </button>
+            </li>
+          </ul>
+        </div>
         <NotificationCenter />
       </div>
 		</div>
@@ -35,6 +92,7 @@ import { defineComponent } from 'vue';
 import WebsocketStatus from '../components/WebsocketStatus.vue';
 import NotificationCenter from '../components/NotificationCenter.vue';
 import { useGridLayoutStore } from '@/stores/gridLayout';
+import { useThemeStore } from '@/stores/theme';
 
 const GRID_LAYOUT_ROUTES = ['/AutonTask', '/ScienceTask', '/ESTask', '/DMTask'];
 
@@ -42,7 +100,8 @@ export default defineComponent({
   name: 'NavBar',
   setup() {
     const gridLayoutStore = useGridLayoutStore();
-    return { gridLayoutStore };
+    const themeStore = useThemeStore();
+    return { gridLayoutStore, themeStore };
   },
   computed: {
     title(): string {
@@ -50,6 +109,16 @@ export default defineComponent({
     },
     showGridControls(): boolean {
       return GRID_LAYOUT_ROUTES.includes(this.$route.path);
+    },
+    themeIcon(): string {
+      const icons: Record<string, string> = {
+        'light': 'bi bi-sun-fill',
+        'dark': 'bi bi-moon-fill',
+        'high-contrast-light': 'bi bi-circle-half',
+        'high-contrast-dark': 'bi bi-circle-fill',
+        'dont-click-me': 'bi bi-exclamation-triangle-fill'
+      };
+      return icons[this.themeStore.currentTheme] || 'bi bi-sun-fill';
     },
   },
 	components: {

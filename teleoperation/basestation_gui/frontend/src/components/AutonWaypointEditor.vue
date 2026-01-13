@@ -446,7 +446,7 @@ export default defineComponent({
 }
 
 .waypoint-wrapper {
-  background-color: #dddddd;
+  background-color: var(--view-bg);
   padding: 8px;
   border-radius: 8px;
 }

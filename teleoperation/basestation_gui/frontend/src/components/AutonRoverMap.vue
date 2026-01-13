@@ -39,7 +39,7 @@
       <l-polyline :lat-lngs="[...odomPath]" :color="'blue'" :dash-array="'5, 5'" />
     </l-map>
 
-    <div class="controls px-2 py-2 position-absolute d-flex flex-column gap-2 top-0 end-0 m-2 rounded border shadow-sm bg-white">
+    <div class="controls px-2 py-2 position-absolute d-flex flex-column gap-2 top-0 end-0 m-2 rounded border shadow-sm bg-theme-card">
       <div class="d-flex align-items-center gap-2">
         <input
         v-model="online"

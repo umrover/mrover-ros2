@@ -22,6 +22,120 @@ $control-primary-active: #1e293b;
   --control-primary: #{$control-primary-color};
   --control-primary-hover: #{$control-primary-hover};
   --control-primary-active: #{$control-primary-active};
+  --island-bg: #ffffff;
+  --view-bg: #dddddd;
+  --text-primary: #000000;
+  --text-muted: #6c757d;
+  --input-bg: #ffffff;
+  --input-border: #dee2e6;
+  --card-bg: #ffffff;
+  --table-header-bg: #e9ecef;
+  --disabled-bg: #e0e0e0;
+  --disabled-border: #ccc;
+  --disabled-text: #999;
+}
+
+[data-bs-theme='dark'] {
+  --control-primary: #4a5568;
+  --control-primary-hover: #5a6578;
+  --control-primary-active: #3a4558;
+  --island-bg: #212529;
+  --view-bg: #1a1d20;
+  --text-primary: #ffffff;
+  --text-muted: #adb5bd;
+  --input-bg: #2b3035;
+  --input-border: #495057;
+  --card-bg: #2b3035;
+  --table-header-bg: #343a40;
+  --disabled-bg: #3a3a3a;
+  --disabled-border: #555;
+  --disabled-text: #888;
+}
+
+[data-theme='high-contrast-light'] {
+  --control-primary: #000000;
+  --control-primary-hover: #1a1a1a;
+  --control-primary-active: #333333;
+  --island-bg: #ffffff;
+  --view-bg: #ffffff;
+  --text-primary: #000000;
+  --text-muted: #000000;
+  --input-bg: #ffffff;
+  --input-border: #000000;
+  --card-bg: #ffffff;
+  --table-header-bg: #ffffff;
+  --disabled-bg: #cccccc;
+  --disabled-border: #000000;
+  --disabled-text: #333333;
+  --bs-body-bg: #ffffff;
+  --bs-body-color: #000000;
+  --bs-border-color: #000000;
+
+  .btn-control {
+    --bs-btn-color: #ffffff;
+    --bs-btn-bg: #000000;
+    --bs-btn-border-color: #000000;
+    --bs-btn-hover-color: #ffffff;
+    --bs-btn-hover-bg: #1a1a1a;
+    --bs-btn-hover-border-color: #1a1a1a;
+    --bs-btn-active-color: #ffffff;
+    --bs-btn-active-bg: #333333;
+    --bs-btn-active-border-color: #333333;
+  }
+
+  .btn-outline-control {
+    --bs-btn-color: #000000;
+    --bs-btn-border-color: #000000;
+    --bs-btn-hover-color: #ffffff;
+    --bs-btn-hover-bg: #000000;
+    --bs-btn-hover-border-color: #000000;
+    --bs-btn-active-color: #ffffff;
+    --bs-btn-active-bg: #333333;
+    --bs-btn-active-border-color: #333333;
+  }
+}
+
+[data-theme='high-contrast-dark'] {
+  --control-primary: #ffffff;
+  --control-primary-hover: #e0e0e0;
+  --control-primary-active: #cccccc;
+  --island-bg: #000000;
+  --view-bg: #000000;
+  --text-primary: #ffffff;
+  --text-muted: #ffffff;
+  --input-bg: #000000;
+  --input-border: #ffffff;
+  --card-bg: #000000;
+  --table-header-bg: #000000;
+  --disabled-bg: #333333;
+  --disabled-border: #ffffff;
+  --disabled-text: #cccccc;
+  --bs-body-bg: #000000;
+  --bs-body-color: #ffffff;
+  --bs-border-color: #ffffff;
+
+  .btn-control {
+    --bs-btn-color: #000000;
+    --bs-btn-bg: #ffffff;
+    --bs-btn-border-color: #ffffff;
+    --bs-btn-hover-color: #000000;
+    --bs-btn-hover-bg: #e0e0e0;
+    --bs-btn-hover-border-color: #e0e0e0;
+    --bs-btn-active-color: #000000;
+    --bs-btn-active-bg: #cccccc;
+    --bs-btn-active-border-color: #cccccc;
+  }
+
+  .btn-outline-control {
+    --bs-btn-color: #ffffff;
+    --bs-btn-border-color: #ffffff;
+    --bs-btn-hover-color: #000000;
+    --bs-btn-hover-bg: #ffffff;
+    --bs-btn-hover-border-color: #ffffff;
+    --bs-btn-active-color: #000000;
+    --bs-btn-active-bg: #cccccc;
+    --bs-btn-active-border-color: #cccccc;
+  }
 }
 
 .btn-control {
@@ -45,4 +159,73 @@ $control-primary-active: #1e293b;
   --bs-btn-active-color: #fff;
   --bs-btn-active-bg: #{$control-primary-active};
   --bs-btn-active-border-color: #{$control-primary-active};
+}
+
+// Theme-aware utility classes
+.bg-theme-card {
+  background-color: var(--card-bg) !important;
+}
+
+.bg-theme-input {
+  background-color: var(--input-bg) !important;
+}
+
+.bg-theme-view {
+  background-color: var(--view-bg) !important;
+}
+
+.text-theme-primary {
+  color: var(--text-primary) !important;
+}
+
+// Easter egg: RGB chaos mode
+@keyframes rgb-bg-chaos {
+  0% { background-color: #ff0000; }
+  25% { background-color: #ff00ff; }
+  50% { background-color: #00ff00; }
+  75% { background-color: #00ffff; }
+  100% { background-color: #ff0000; }
+}
+
+@keyframes rgb-text-chaos {
+  0% { color: #00ff00; }
+  25% { color: #ffff00; }
+  50% { color: #ff00ff; }
+  75% { color: #0000ff; }
+  100% { color: #00ff00; }
+}
+
+@keyframes rgb-border-chaos {
+  0% { border-color: #00ff00; }
+  25% { border-color: #0000ff; }
+  50% { border-color: #ffff00; }
+  75% { border-color: #ff00ff; }
+  100% { border-color: #00ff00; }
+}
+
+html[data-theme='dont-click-me'] {
+  body, #app, .view-wrapper, .island, .wrapper, .navbar, nav,
+  .dropdown-menu, .modal-content, .card, .table, table,
+  .waypoints, .waypoint-wrapper, .velocity-wrapper,
+  .form-control, .input-group-text,
+  th, td, tr, div, section, header, footer, main, aside {
+    animation: rgb-bg-chaos 2s linear infinite;
+    background-color: #ff0000;
+  }
+
+  h1, h2, h3, h4, h5, h6, p, span, a, label,
+  .form-label, .text-muted, small, strong, i, li {
+    animation: rgb-text-chaos 2s linear infinite;
+  }
+
+  .border, .btn, button, .form-control, .card, .island,
+  .rounded, input, table, .dropdown-menu, .modal-content {
+    animation: rgb-bg-chaos 2s linear infinite, rgb-border-chaos 2s linear infinite;
+    border-width: 3px;
+    border-style: solid;
+  }
+
+  .btn, button {
+    animation: rgb-bg-chaos 2s linear infinite, rgb-text-chaos 2s linear infinite, rgb-border-chaos 2s linear infinite;
+  }
 }

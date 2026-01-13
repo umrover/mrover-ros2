@@ -23,7 +23,7 @@
           <button class="btn btn-outline-control control-btn" @click="adjustGimbal('pitch', -5)" :disabled="!hasServoState">-5</button>
           <button class="btn btn-outline-control control-btn" @click="adjustGimbal('pitch', -1)" :disabled="!hasServoState">-1</button>
         </div>
-        <span class="font-monospace fw-semibold text-center bg-white border rounded px-2 py-1" style="min-width: 40px; font-size: 14px">{{ pitchDegrees }}°</span>
+        <span class="font-monospace fw-semibold text-center bg-theme-card border rounded px-2 py-1" style="min-width: 40px; font-size: 14px">{{ pitchDegrees }}°</span>
         <div class="btn-group btn-group-sm">
           <button class="btn btn-outline-control control-btn" @click="adjustGimbal('pitch', 1)" :disabled="!hasServoState">+1</button>
           <button class="btn btn-outline-control control-btn" @click="adjustGimbal('pitch', 5)" :disabled="!hasServoState">+5</button>
@@ -38,7 +38,7 @@
           <button class="btn btn-outline-control control-btn" @click="adjustGimbal('yaw', -5)" :disabled="!hasServoState">-5</button>
           <button class="btn btn-outline-control control-btn" @click="adjustGimbal('yaw', -1)" :disabled="!hasServoState">-1</button>
         </div>
-        <span class="font-monospace fw-semibold text-center bg-white border rounded px-2 py-1" style="min-width: 40px; font-size: 14px">{{ yawDegrees }}°</span>
+        <span class="font-monospace fw-semibold text-center bg-theme-card border rounded px-2 py-1" style="min-width: 40px; font-size: 14px">{{ yawDegrees }}°</span>
         <div class="btn-group btn-group-sm">
           <button class="btn btn-outline-control control-btn" @click="adjustGimbal('yaw', 1)" :disabled="!hasServoState">+1</button>
           <button class="btn btn-outline-control control-btn" @click="adjustGimbal('yaw', 5)" :disabled="!hasServoState">+5</button>
@@ -145,9 +145,9 @@ const adjustGimbal = async (
 }
 
 .control-btn:disabled {
-  background-color: #e0e0e0;
-  border-color: #ccc;
-  color: #999;
+  background-color: var(--disabled-bg);
+  border-color: var(--disabled-border);
+  color: var(--disabled-text);
   opacity: 1;
   cursor: not-allowed;
 }
