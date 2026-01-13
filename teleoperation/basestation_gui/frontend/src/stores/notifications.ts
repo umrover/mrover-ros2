@@ -5,7 +5,6 @@ export interface Notification {
   id: number
   timestamp: string
   component: string
-  errorType: string
   message: string
   fullData: unknown
   read: boolean
@@ -47,7 +46,6 @@ export const useNotificationsStore = defineStore('notifications', () => {
 
   function addNotification(payload: {
     component?: string
-    errorType?: string
     message?: string
     fullData?: unknown
   }) {
@@ -55,19 +53,11 @@ export const useNotificationsStore = defineStore('notifications', () => {
       id: nextId.value++,
       timestamp: new Date().toISOString(),
       component: payload.component || 'Unknown',
-      errorType: payload.errorType || 'error',
       message: payload.message || 'Unknown error',
       fullData: payload.fullData || {},
       read: false
     }
     notifications.value.unshift(notification)
-  }
-
-  function markAsRead(notificationId: number) {
-    const notification = notifications.value.find(n => n.id === notificationId)
-    if (notification) {
-      notification.read = true
-    }
   }
 
   function markAllAsRead() {
@@ -85,13 +75,11 @@ export const useNotificationsStore = defineStore('notifications', () => {
     notifications.value = []
   }
 
-  function addAPIError(endpoint: string, error: unknown) {
-    const message = error instanceof Error ? error.message : String(error)
+  function addAPIError(endpoint: string, message: string, status: number) {
     addNotification({
-      component: 'API',
-      errorType: 'api_error',
-      message: `${endpoint}: ${message}`,
-      fullData: { endpoint, error }
+      component: endpoint,
+      message,
+      fullData: { endpoint, status, message }
     })
   }
 
@@ -101,7 +89,6 @@ export const useNotificationsStore = defineStore('notifications', () => {
     hasUnread,
     addNotification,
     addAPIError,
-    markAsRead,
     markAllAsRead,
     removeNotification,
     clearAll

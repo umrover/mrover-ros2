@@ -118,7 +118,6 @@ export default defineComponent({
           console.error(`${this.name} action failed:`, response.message)
           this.notificationsStore.addNotification({
             component: this.name,
-            errorType: 'API Error',
             message: response.message || 'Action failed',
             fullData: response
           })
@@ -127,8 +126,8 @@ export default defineComponent({
           setTimeout(() => { this.isComplete = false }, 2000)
         }
         this.$emit('complete', response)
-      } catch (error) {
-        this.$emit('error', error)
+      } catch {
+        this.$emit('error')
       } finally {
         this.isWaiting = false
       }
@@ -152,13 +151,12 @@ export default defineComponent({
           console.error(`${this.name} command failed:`, response.message)
           this.notificationsStore.addNotification({
             component: this.name,
-            errorType: 'API Error',
             message: response.message || 'Command failed',
             fullData: response
           })
           this.$emit('toggle', !targetState)
         }
-      } catch (error) {
+      } catch {
         this.$emit('toggle', !targetState)
       } finally {
         this.isWaiting = false

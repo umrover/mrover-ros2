@@ -14,8 +14,8 @@ export async function apiFetch<T>(
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({ detail: response.statusText }))
-    const message = error.detail || `HTTP ${response.status}`
-    useNotificationsStore().addAPIError(endpoint, new Error(message))
+    const message = error.detail || response.statusText
+    useNotificationsStore().addAPIError(endpoint, message, response.status)
     throw new Error(message)
   }
 
