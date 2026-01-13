@@ -171,7 +171,8 @@ class WaypointState(State):
                 self.waypoint_traj.increment_point()
                 if self.waypoint_traj.done():
                     return self.next_state(context=context)
-            # # Add extra point for smoother Pure Pursuit
+            # Add extra point for smoother Pure Pursuit
+            # Needs to be tested to see if this improves performace
             # elif(self.USE_PURE_PURSUIT):
             #     self.waypoint_traj.increment_point()
             #     if not self.waypoint_traj.done():
@@ -184,23 +185,13 @@ class WaypointState(State):
         cmd_vel = Twist()
         # context.node.get_logger().info(f"In waypoint: {len(self.astar_traj.coordinates)} and {self.astar_traj.cur_pt}")
         if len(self.astar_traj.coordinates) - self.astar_traj.cur_pt != 0:
-            # Determine if we are going to use pure pursuit or not
-            if not self.USE_PURE_PURSUIT:
-                waypoint_position_in_map = self.astar_traj.get_current_point()
-                cmd_vel, arrived = context.drive.get_drive_command(
-                    waypoint_position_in_map,
-                    context.rover.get_pose_in_map(),
-                    context.node.get_parameter("waypoint.stop_threshold").value,
-                    context.node.get_parameter("waypoint.drive_forward_threshold").value,
-                )
-            else:
-                cmd_vel, arrived = context.drive.get_drive_command(
-                    self.astar_traj,
-                    context.rover.get_pose_in_map(),
-                    context.node.get_parameter("waypoint.stop_threshold").value,
-                    context.node.get_parameter("waypoint.drive_forward_threshold").value,
-                )
-
+            waypoint_position_in_map = self.astar_traj.get_current_point()
+            cmd_vel, arrived = context.drive.get_drive_command(
+                (self.astar_traj if self.USE_PURE_PURSUIT else waypoint_position_in_map), # Determine if we are going to use pure pursuit or not
+                context.rover.get_pose_in_map(),
+                context.node.get_parameter("waypoint.stop_threshold").value,
+                context.node.get_parameter("waypoint.drive_forward_threshold").value,
+            )
 
         if arrived:
             self.astar_traj.increment_point()
