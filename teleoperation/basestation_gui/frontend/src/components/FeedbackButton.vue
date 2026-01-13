@@ -128,13 +128,6 @@ export default defineComponent({
         }
         this.$emit('complete', response)
       } catch (error) {
-        console.error(`${this.name} action failed:`, error)
-        this.notificationsStore.addNotification({
-          component: this.name,
-          errorType: 'Exception',
-          message: error instanceof Error ? error.message : String(error),
-          fullData: error instanceof Error ? { message: error.message, stack: error.stack } : { error: String(error) }
-        })
         this.$emit('error', error)
       } finally {
         this.isWaiting = false
@@ -166,13 +159,6 @@ export default defineComponent({
           this.$emit('toggle', !targetState)
         }
       } catch (error) {
-        console.error(`${this.name} command failed:`, error)
-        this.notificationsStore.addNotification({
-          component: this.name,
-          errorType: 'Exception',
-          message: error instanceof Error ? error.message : String(error),
-          fullData: error instanceof Error ? { message: error.message, stack: error.stack } : { error: String(error) }
-        })
         this.$emit('toggle', !targetState)
       } finally {
         this.isWaiting = false

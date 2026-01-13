@@ -12,10 +12,7 @@
           <DriveControls class="border border-2 p-1 rounded" />
         </div>
         <div class="d-flex flex-column gap-1">
-          <FunnelControls
-            @selectSite="updateSite"
-            class="border border-2 p-1 rounded flex-fill"
-          />
+          <FunnelControls class="border border-2 p-1 rounded flex-fill" />
           <PanoramaControls class="border border-2 p-1 rounded" />
         </div>
       </div>
@@ -55,7 +52,6 @@
 </template>
 
 <script lang="ts" setup>
-import { ref } from 'vue'
 import BaseGridView from '@/components/BaseGridView.vue'
 import SensorData from '@/components/SensorData.vue'
 import BasicMap from '@/components/BasicRoverMap.vue'
@@ -67,7 +63,6 @@ import ControllerDataTable from '@/components/ControllerDataTable.vue'
 import FunnelControls from '@/components/FunnelControls.vue'
 import PanoramaControls from '@/components/PanoramaControls.vue'
 import SPArmControls from '@/components/SPArmControls.vue'
-import { scienceAPI } from '@/utils/api'
 
 const defaultLayout = [
   { x: 0, y: 0, w: 7, h: 3, i: 'controls' },
@@ -77,27 +72,4 @@ const defaultLayout = [
   { x: 7, y: 0, w: 5, h: 6, i: 'map' },
   { x: 7, y: 6, w: 5, h: 6, i: 'waypoints' },
 ]
-
-const siteSelect = ref(0)
-const site_to_radians: { [key: number]: number } = {
-  0: 0.0,
-  1: Math.PI / 3,
-  2: (2 * Math.PI) / 3,
-  3: Math.PI,
-  4: (4 * Math.PI) / 3,
-  5: (5 * Math.PI) / 3,
-}
-
-const updateSite = async (selectedSite: number) => {
-  siteSelect.value = selectedSite
-
-  try {
-    const radians = site_to_radians[siteSelect.value]
-    if (radians !== undefined) {
-      await scienceAPI.setGearDiffPosition(radians, false)
-    }
-  } catch (error) {
-    console.error('Failed to set gear differential position:', error)
-  }
-}
 </script>
