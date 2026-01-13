@@ -167,14 +167,14 @@ class WaypointState(State):
 
         if self.astar_traj.empty():
             self.display_markers(context=context)
-            # try:
-            self.astar_traj = self.astar.generate_trajectory(context, self.waypoint_traj.get_current_point())
+            try:
+                self.astar_traj = self.astar.generate_trajectory(context, self.waypoint_traj.get_current_point())
 
-            self.astar_traj = smoothing(self.astar_traj, context, self.USE_RELAXATION, self.USE_INTERPOLATION)
-            
-            # except Exception as e:
-            #     context.node.get_logger().info(str(e))
-            #     return self
+                self.astar_traj = smoothing(self.astar_traj, context, self.USE_RELAXATION, self.USE_INTERPOLATION)
+                
+            except Exception as e:
+                context.node.get_logger().info(str(e))
+                return self
 
             if self.astar_traj.empty():
                 context.node.get_logger().info("Skipping unreachable point")

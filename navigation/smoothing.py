@@ -196,7 +196,7 @@ class Relaxation:
         while candidate_cost <= cost + 0.1 or math.isclose(candidate_cost, cost, rel_tol=0.1):
 
             manual_new_cost = Relaxation.cost_full(ctx, candidate_traj)
-            ctx.node.get_logger().info(f"Cost: {cost}, New Cost (relax calc): {candidate_cost}, New Cost (manual calc): {manual_new_cost}")
+            # ctx.node.get_logger().info(f"Cost: {cost}, New Cost (relax calc): {candidate_cost}, New Cost (manual calc): {manual_new_cost}")
 
             # If we relax to the point where only the start and end are left, leave the loop
             if len(current_trajectory.coordinates) <= 2:
