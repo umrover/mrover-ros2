@@ -76,10 +76,25 @@ namespace mrover {
             return;
         }
 
-        Eigen::Quaterniond uncorrected_orientation(last_imu->orientation.w, last_imu->orientation.x, last_imu->orientation.y, last_imu->orientation.z);
+        auto const& qmsg2 = last_imu->orientation;
+        if (!std::isfinite(qmsg2.w) || !std::isfinite(qmsg2.x) || !std::isfinite(qmsg2.y) || !std::isfinite(qmsg2.z)) {
+            RCLCPP_WARN(get_logger(), "IMU quaternion as a non-finite component, skipping orientation");
+            return;
+        }
+        Eigen::Quaterniond uncorrected_orientation(qmsg2.w, qmsg2.x, qmsg2.y, qmsg2.z);
+        double const norm2 = uncorrected_orientation.squaredNorm();
+        if (!std::isfinite(norm2) || norm2 < 1e-12) {
+            RCLCPP_WARN(get_logger(), "IMU quaternion has an invalid/near-zero norm, skipping normalization");
+        }
+        uncorrected_orientation.normalize();
         R2d uncorrected_forward = uncorrected_orientation.toRotationMatrix().col(0).head(2);
+        if (!uncorrected_forward.array().isFinite().all()) {
+            RCLCPP_WARN(get_logger(), "Forward vector not finite, skipping heading correction");
+        }
         double uncorrected_heading = std::atan2(uncorrected_forward.y(), uncorrected_forward.x());
-
+        if (!std::isfinite(uncorrected_heading)) {
+            RCLCPP_WARN(get_logger(), "Computed heading not finite, skipping heading correction");
+        }
         // correct with rtk heading only when heading is fixed
         if (heading_status->fix_type.fix == mrover::msg::FixType::FIXED) {
             double measured_heading = fmod(heading->heading + 90, 360);
@@ -111,11 +126,27 @@ namespace mrover {
         R3d position_in_map(last_position->vector.x, last_position->vector.y, last_position->vector.z);
         SE3d pose_in_map(position_in_map, SO3d::Identity());
 
+        auto const& qmsg = imu->orientation;
+        if (!std::isfinite(qmsg.w) || !std::isfinite(qmsg.x) || !std::isfinite(qmsg.y) || !std::isfinite(qmsg.z)) {
+            RCLCPP_WARN(get_logger(), "IMU quaternion has a non-finite component, skipping normalization");
+            return;
+        }
         // correct with mag heading
-        Eigen::Quaterniond uncorrected_orientation(last_imu->orientation.w, last_imu->orientation.x, last_imu->orientation.y, last_imu->orientation.z);
+        Eigen::Quaterniond uncorrected_orientation(qmsg.w, qmsg.x, qmsg.y, qmsg.z);
+        double const norm2 = uncorrected_orientation.squaredNorm();
+        if (!std::isfinite(norm2) || norm2 < 1e-12) {
+            RCLCPP_WARN(get_logger(), "IMU quaternion has invalid/near-zero norm; skipping orientation update");
+        }
+        uncorrected_orientation.normalize();
         SO3d uncorrected_orientation_rotm = uncorrected_orientation;
         R2d uncorrected_forward = uncorrected_orientation.toRotationMatrix().col(0).head(2);
+        if (!uncorrected_forward.array().isFinite().all()) {
+            RCLCPP_WARN(get_logger(), "Forward Vector not finite, skipping heading correction");
+        }
         double uncorrected_heading = std::atan2(uncorrected_forward.y(), uncorrected_forward.x());
+        if (!std::isfinite(uncorrected_heading)) {
+            RCLCPP_WARN(get_logger(), "Computed heading is not finite, skipping heading correction");
+        }
 
         double measured_heading = 90 - mag_heading->heading;
         if (measured_heading < -180) {
