@@ -58,7 +58,7 @@ auto GstVideoGridWidget::addGstVideoWidget(std::string const& name, std::string 
     auto* gstVideoBoxLabel = new QLabel(QString::fromStdString(name), gstVideoBoxWidget);
     auto* gstVideoBoxGstVideoWidget = new GstVideoWidget(gstVideoBoxWidget);
 
-    gstVideoBoxWidget->setMinimumSize(640, 360);
+    gstVideoBoxWidget->setMinimumSize(640, 480);
 
     gstVideoBoxGstVideoWidget->setGstPipeline(pipeline);
     if (gstVideoBoxGstVideoWidget->isError()) {
@@ -84,65 +84,53 @@ auto GstVideoGridWidget::addGstVideoWidget(std::string const& name, std::string 
     return true;
 }
 
-auto GstVideoGridWidget::getGstVideoWidget(std::string const& name) -> GstVideoWidget* {
-    if (!mGstVideoBoxes.contains(name)) {
+auto GstVideoGridWidget::findVideoBox(std::string const& name) -> GstVideoBox* {
+    auto it = mGstVideoBoxes.find(name);
+    if (it == mGstVideoBoxes.end()) {
+        setError(NonExistsError, "Camera name does not exist");
         return nullptr;
     }
-    return mGstVideoBoxes.at(name).gstVideoWidget;
+    clearError();
+    return &it->second;
+}
+
+auto GstVideoGridWidget::getGstVideoWidget(std::string const& name) -> GstVideoWidget* {
+    auto* box = findVideoBox(name);
+    return box ? box->gstVideoWidget : nullptr;
 }
 
 auto GstVideoGridWidget::playVideo(std::string const& name) -> bool {
-    if (!mGstVideoBoxes.contains(name)) {
-        setError(NonExistsError, "Camera name does not exist");
-        return false;
-    }
-    mGstVideoBoxes.at(name).gstVideoWidget->play();
-
-    clearError();
+    auto* box = findVideoBox(name);
+    if (!box) return false;
+    box->gstVideoWidget->play();
     return true;
 }
 
 auto GstVideoGridWidget::pauseVideo(std::string const& name) -> bool {
-    if (!mGstVideoBoxes.contains(name)) {
-        setError(NonExistsError, "Camera name does not exist");
-        return false;
-    }
-    mGstVideoBoxes.at(name).gstVideoWidget->pause();
-
-    clearError();
+    auto* box = findVideoBox(name);
+    if (!box) return false;
+    box->gstVideoWidget->pause();
     return true;
 }
 
 auto GstVideoGridWidget::stopVideo(std::string const& name) -> bool {
-    if (!mGstVideoBoxes.contains(name)) {
-        setError(NonExistsError, "Camera name does not exist");
-        return false;
-    }
-    mGstVideoBoxes.at(name).gstVideoWidget->stop();
-
-    clearError();
+    auto* box = findVideoBox(name);
+    if (!box) return false;
+    box->gstVideoWidget->stop();
     return true;
 }
 
 auto GstVideoGridWidget::hideVideo(std::string const& name) -> bool {
-    if (!mGstVideoBoxes.contains(name)) {
-        setError(NonExistsError, "Camera name does not exist");
-        return false;
-    }
-    mGstVideoBoxes.at(name).widget->setVisible(false);
-
-    clearError();
+    auto* box = findVideoBox(name);
+    if (!box) return false;
+    box->widget->setVisible(false);
     return true;
 }
 
 auto GstVideoGridWidget::showVideo(std::string const& name) -> bool {
-    if (!mGstVideoBoxes.contains(name)) {
-        setError(NonExistsError, "Camera name does not exist");
-        return false;
-    }
-    mGstVideoBoxes.at(name).widget->setVisible(true);
-
-    clearError();
+    auto* box = findVideoBox(name);
+    if (!box) return false;
+    box->widget->setVisible(true);
     return true;
 }
 

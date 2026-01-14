@@ -372,7 +372,7 @@ namespace mrover {
                     {std::format("{}.stream.width", cameraName), streamImageWidth, 0},
                     {std::format("{}.stream.height", cameraName), streamImageHeight, 0},
                     {std::format("{}.stream.framerate", cameraName), streamImageFramerate, 0},
-                    {std::format("{}.stream.codec", cameraName), codec, "H265"},
+                    {std::format("{}.stream.codec", cameraName), codec, "H264"},
                     {std::format("{}.stream.bitrate", cameraName), bitrate, 0},
                     {std::format("{}.image_capture.pixel_format", cameraName), imageCapturePixelFormat, "MJPG"},
                     {std::format("{}.image_capture.width", cameraName), imageCaptureImageWidth, 0},
@@ -502,7 +502,7 @@ namespace mrover {
     auto isIpAddressReachable(std::string const& address, int port) -> bool {
         int sockfd = socket(AF_INET, SOCK_STREAM, 0);
 
-        struct sockaddr_in sin {};
+        struct sockaddr_in sin{};
         sin.sin_family = AF_INET;
         sin.sin_port = htons(port);
         inet_pton(AF_INET, address.c_str(), &sin.sin_addr);

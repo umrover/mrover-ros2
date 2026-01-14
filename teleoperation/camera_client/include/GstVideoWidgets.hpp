@@ -49,6 +49,7 @@ namespace mrover {
 
         auto clearError() -> void;
         auto setError(Error error, std::string const& errorString) -> void;
+        auto findVideoBox(std::string const& name) -> GstVideoBox*;
 
     public:
         explicit GstVideoGridWidget(QWidget* parent = nullptr);

@@ -4,13 +4,13 @@
 
 namespace mrover {
     /**
- * @class GstRtpVideoCreatorWidget
- * @brief Widget to create a new RTP video source
- *
- * This widget allows the user to create a new RTP video source by specifying the name, port, and codec.
- * It emits a createRequested signal when the user clicks the submit button, which provides the name they
- * assigned the video source and the gstreamer pipeline which generally follows the structure (udpsrc --> rtpjitterbuffer --> rtpdepay --> decoder).
- */
+     * @class GstRtpVideoCreatorWidget
+     * @brief Widget to create a new RTP video source
+     *
+     * This widget allows the user to create a new RTP video source by specifying the name, port, and codec.
+     * It emits a createRequested signal when the user clicks the submit button, which provides the name they
+     * assigned the video source and the gstreamer pipeline which generally follows the structure (udpsrc --> rtpjitterbuffer --> rtpdepay --> decoder).
+     */
     class GstRtpVideoCreatorWidget : public QWidget {
         Q_OBJECT
 
@@ -39,6 +39,6 @@ namespace mrover {
         void onSubmitClicked();
 
     private:
-        void setWaiting(bool waiting);
+        auto setWaiting(bool waiting) -> void;
     };
 } // namespace mrover
