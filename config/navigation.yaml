@@ -19,6 +19,8 @@ navigation:
     target_expiration_duration: 60.0
     display_markers: true
     
+    pure_pursuit:
+      drive_forward_threshold: 0.5
 
     costmap:
       custom_costmap: false

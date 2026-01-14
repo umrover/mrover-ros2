@@ -376,7 +376,7 @@ class DriveController:
         # If we are outside are max_turning_effort, we will have no linear velocity
         # This is because we don't want to go outside of the arch
         # So we instead decide to prioritize turning to make the arch easier to follow
-        if (angular_vel > max_turning_effort or angular_error > (self.node.get_parameter("waypoint.drive_forward_threshold").value)):
+        if (angular_vel > max_turning_effort or angular_error > (self.node.get_parameter("pure_pursuit.drive_forward_threshold").value)):
             cmd_vel = Twist(
                 angular=Vector3(
                     z=np.clip(
@@ -387,7 +387,7 @@ class DriveController:
                 ),
             )
             return cmd_vel, False
-        elif (angular_vel < min_turning_effort or abs(angular_error) > (self.node.get_parameter("waypoint.drive_forward_threshold").value)):
+        elif (angular_vel < min_turning_effort or abs(angular_error) > (self.node.get_parameter("pure_pursuit.drive_forward_threshold").value)):
             cmd_vel = Twist(
                 angular=Vector3(
                     z=np.clip(

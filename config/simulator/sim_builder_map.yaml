@@ -1,0 +1,84 @@
+# All units are in SI
+# ===================
+# Time:     second, hz
+# Angle:    radian
+# Distance: meter
+
+objects:
+  rover:
+    type: urdf
+    uri: package://mrover/urdf/rover/rover.urdf.xacro
+    position: [ 0.0, 0.0, 0.5 ]
+  world:
+    type: urdf
+    uri: package://mrover/urdf/world/world.urdf.xacro
+
+      # Auto-generated rocks from the grid
+  rock_1:
+    type: urdf
+    uri: package://mrover/urdf/world/small_rock.urdf.xacro
+    position: [ -8.00, 7.00, 0.5 ]
+
+  rock_2:
+    type: urdf
+    uri: package://mrover/urdf/world/small_rock.urdf.xacro
+    position: [ -7.00, 7.00, 0.5 ]
+
+  rock_3:
+    type: urdf
+    uri: package://mrover/urdf/world/small_rock.urdf.xacro
+    position: [ -7.00, 6.00, 0.5 ]
+
+  rock_4:
+    type: urdf
+    uri: package://mrover/urdf/world/small_rock.urdf.xacro
+    position: [ -6.00, 6.00, 0.5 ]
+
+  rock_5:
+    type: urdf
+    uri: package://mrover/urdf/world/small_rock.urdf.xacro
+    position: [ -6.00, 5.00, 0.5 ]
+
+  rock_6:
+    type: urdf
+    uri: package://mrover/urdf/world/small_rock.urdf.xacro
+    position: [ -5.00, 5.00, 0.5 ]
+
+  rock_7:
+    type: urdf
+    uri: package://mrover/urdf/world/small_rock.urdf.xacro
+    position: [ -5.00, 4.00, 0.5 ]
+
+  rock_8:
+    type: urdf
+    uri: package://mrover/urdf/world/small_rock.urdf.xacro
+    position: [ -4.00, 4.00, 0.5 ]
+
+  rock_9:
+    type: urdf
+    uri: package://mrover/urdf/world/small_rock.urdf.xacro
+    position: [ -4.00, 3.00, 0.5 ]
+
+  rock_10:
+    type: urdf
+    uri: package://mrover/urdf/world/small_rock.urdf.xacro
+    position: [ -3.00, 3.00, 0.5 ]
+
+  rock_11:
+    type: urdf
+    uri: package://mrover/urdf/world/small_rock.urdf.xacro
+    position: [ -3.00, 2.00, 0.5 ]
+
+  rock_12:
+    type: urdf
+    uri: package://mrover/urdf/world/small_rock.urdf.xacro
+    position: [ -2.00, 2.00, 0.5 ]
+
+  rock_13:
+    type: urdf
+    uri: package://mrover/urdf/world/small_rock.urdf.xacro
+    position: [ -2.00, 1.00, 0.5 ]
+
+
+    world_frame: "map"
+    rover_frame: "sim_base_link"
