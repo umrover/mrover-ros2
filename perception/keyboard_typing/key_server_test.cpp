@@ -60,6 +60,13 @@ namespace mrover {
       RCLCPP_INFO_STREAM(this->get_logger(), "Sleeping for 10 sec, with periodic feedback");
 
       for (int i = 0; i <= 10; i++) {
+        if (goal_handle->is_canceling()) {
+            RCLCPP_INFO_STREAM(this->get_logger(), "Cancelling");
+            result->success = false;
+            goal_handle->canceled(result);
+            return;
+        }
+
         feedback->dist_remaining -= 1;
         goal_handle->publish_feedback(feedback);
         std::this_thread::sleep_for(std::chrono::seconds{1});

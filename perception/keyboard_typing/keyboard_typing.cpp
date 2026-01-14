@@ -1,37 +1,4 @@
 #include "keyboard_typing.hpp"
-#include <cmath>
-#include <algorithm>
-#include <cctype>
-#include <chrono>
-#include <cstddef>
-#include <geometry_msgs/msg/detail/pose__struct.hpp>
-#include <geometry_msgs/msg/detail/vector3__struct.hpp>
-#include <memory>
-#include <mutex>
-#include <opencv2/core/eigen.hpp>
-#include "keyboard_typing/constants.h"
-#include "lie.hpp"
-#include "mrover/msg/detail/ik__struct.hpp"
-#include "mrover/msg/detail/keyboard_yaw__struct.hpp"
-#include <cmath>
-#include <functional>
-#include <geometry_msgs/msg/detail/quaternion__struct.hpp>
-#include <opencv2/aruco.hpp>
-#include <opencv2/calib3d.hpp>
-#include <opencv2/core/matx.hpp>
-#include <opencv2/core/mat.hpp>
-#include <opencv2/highgui.hpp>
-#include <opencv2/imgproc.hpp>
-#include <optional>
-#include <rclcpp/logging.hpp>
-#include <rclcpp_action/client_goal_handle.hpp>
-#include <rclcpp_action/create_client.hpp>
-#include <rclcpp_action/server.hpp>
-#include <thread>
-#include <unordered_map>
-#include <fstream>
-#include <geometry_msgs/msg/vector3.hpp>
-#include <mrover/msg/ik.hpp>
 
 namespace mrover{
     KeyboardTypingNode::KeyboardTypingNode(rclcpp::NodeOptions const& options) : rclcpp::Node("keyboard_typing_node", options),  mLoopProfiler{get_logger()}
@@ -564,8 +531,7 @@ namespace mrover{
         }
     }
 
-    // ----------------- ACTION CLIENT/SERVER ------------------
-    
+    // ----------------------- ACTION SERVER/CLIENT ---------------------------
     // Typing IK action client functions (communication with Nav)
     auto KeyboardTypingNode::send_goal(float x_delta, float y_delta) -> bool {
         if (!mTypingClient->wait_for_action_server()) {
@@ -573,47 +539,50 @@ namespace mrover{
             return false;
         }
 
+        RCLCPP_INFO_STREAM(this->get_logger(), "Sending Goal");
+
         auto goal_msg = TypingDeltas::Goal();
         goal_msg.x_delta = x_delta;
         goal_msg.y_delta = y_delta;
 
         auto send_goal_options = rclcpp_action::Client<TypingDeltas>::SendGoalOptions();
-        send_goal_options.goal_response_callback = std::bind(&KeyboardTypingNode::goal_response_callback, this, std::placeholders::_1);
+        // send_goal_options.goal_response_callback = std::bind(&KeyboardTypingNode::goal_response_callback, this, std::placeholders::_1);
         send_goal_options.feedback_callback = std::bind(&KeyboardTypingNode::feedback_callback, this, std::placeholders::_1, std::placeholders::_2);
-        send_goal_options.result_callback = std::bind(&KeyboardTypingNode::result_callback, this, std::placeholders::_1);
+        // send_goal_options.result_callback = std::bind(&KeyboardTypingNode::result_callback, this, std::placeholders::_1);
 
-        mTypingClient->async_send_goal(goal_msg, send_goal_options);
-        return true;
+        std::shared_future<GoalHandleTypingDeltas::SharedPtr> future_goal_handle = mTypingClient->async_send_goal(goal_msg, send_goal_options);
+        future_goal_handle.wait();
+
+        if (future_goal_handle.get() == nullptr)
+            return false;
+
+        std::shared_future<GoalHandleTypingDeltas::WrappedResult> future_result = mTypingClient->async_get_result(future_goal_handle.get());
+        future_result.wait();
+        return (future_result.get().code == rclcpp_action::ResultCode::SUCCEEDED);
     }
-
-    void KeyboardTypingNode::goal_response_callback(const GoalHandleTypingDeltas::SharedPtr & goal_handle) {}
 
     void KeyboardTypingNode::feedback_callback(GoalHandleTypingDeltas::SharedPtr, const std::shared_ptr<const TypingDeltas::Feedback> feedback) {
         RCLCPP_INFO_STREAM(get_logger(), std::format("Feedback: {}", feedback->dist_remaining));
     }
 
-    void KeyboardTypingNode::result_callback(const GoalHandleTypingDeltas::WrappedResult & result) {
-        std::unique_lock<std::mutex> guard(mActionMutex);
-        mGoalReached = (result.code == rclcpp_action::ResultCode::SUCCEEDED);
-        mActionCV.notify_all();
-    }
+    // void KeyboardTypingNode::result_callback(const GoalHandleTypingDeltas::WrappedResult & result) {
+    //     mGoalReached = (result.code == rclcpp_action::ResultCode::SUCCEEDED);
+    // }
 
     // Typing IK action server functions (communication with teleop)
     auto KeyboardTypingNode::handle_goal(const rclcpp_action::GoalUUID & uuid,std::shared_ptr<const TypingCode::Goal> goal) -> rclcpp_action::GoalResponse {
-        std::unique_lock<std::mutex> guard(mActionMutex);
         // Reject goal if code length is incorrect, code already active, or not letters
         if (goal->launch_code.length() < mMinCodeLength || goal->launch_code.length() > mMaxCodeLength) {
             RCLCPP_WARN(this->get_logger(), "Launch code length must be in between %d and %d!", mMinCodeLength, mMaxCodeLength);
             return rclcpp_action::GoalResponse::REJECT;
         }
 
-        if (mLaunchCode.has_value()) {
+        if (mAcceptedGoalHandle && mAcceptedGoalHandle->is_active()) {
             RCLCPP_WARN(this->get_logger(), "Launch code already active!");
             return rclcpp_action::GoalResponse::REJECT;
         }
 
         std::string temp = goal->launch_code;
-        std::transform(temp.begin(), temp.end(), temp.begin(), ::toupper);
         if (!std::all_of(temp.begin(), temp.end(), [](unsigned char c){
             return std::isalpha(c);
         })) {
@@ -621,37 +590,37 @@ namespace mrover{
             return rclcpp_action::GoalResponse::REJECT;
         }
 
-        mTypingUUID = uuid;
-        mLaunchCode = temp;
         mUpdatePoseEstimate = false; // Once we accept a goal, we no longer want to be updating the pose estimate
+
+        RCLCPP_INFO_STREAM(get_logger(), std::format("Goal Accepted: {}", temp));
         return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
     }
 
     auto KeyboardTypingNode::handle_cancel(const std::shared_ptr<GoalHandleTypingCode> goal_handle) -> rclcpp_action::CancelResponse {
-        std::unique_lock<std::mutex> guard(mActionMutex);
-        if (!mTypingUUID || goal_handle->get_goal_id() != mTypingUUID.value()) {
+        if (goal_handle != mAcceptedGoalHandle) {
             RCLCPP_WARN(this->get_logger(), "Invalid Cancel ID");
             return rclcpp_action::CancelResponse::REJECT;
         }
 
-        RCLCPP_INFO_STREAM(get_logger(), std::format("Cacelling goal {}", mLaunchCode.value()));
-        mLaunchCode = std::nullopt;
-        mTypingUUID = std::nullopt;
+        RCLCPP_INFO_STREAM(get_logger(), std::format("Cacelling goal {}", goal_handle->get_goal()->launch_code));
         mUpdatePoseEstimate = true;
+        mAcceptedGoalHandle = nullptr;
         mTypingClient->async_cancel_all_goals(); // Cancel goal send to nav
         return rclcpp_action::CancelResponse::ACCEPT;
     }
 
     void KeyboardTypingNode::handle_accepted(const std::shared_ptr<GoalHandleTypingCode> goal_handle) {
-        std::thread([this, goal_handle]() {
-            std::unique_lock<std::mutex> guard(mActionMutex); // Lock shared variables
+        mAcceptedGoalHandle = goal_handle; // Set goal handle in the executor thread, not a new one
 
+        std::thread([this, goal_handle]() {
             auto result = std::make_shared<TypingCode::Result>();
             auto feedback = std::make_shared<TypingCode::Feedback>();
 
             result->success = false;
 
-            for (int i = 0; i < mLaunchCode.value().length(); i++) {
+            std::string launchCode = goal_handle->get_goal()->launch_code;
+            std::transform(launchCode.begin(), launchCode.end(), launchCode.begin(), ::toupper);
+            for (int i = 0; i < launchCode.length(); i++) {
                 feedback->current_index = static_cast<uint32_t>(i);
                 goal_handle->publish_feedback(feedback);
 
@@ -659,17 +628,17 @@ namespace mrover{
 
                 // TODO logic for figuring out deltas
                 float x_delta, y_delta;
+                x_delta = 0.0;
+                y_delta = 0.0;
                 send_goal(x_delta, y_delta);
 
-                while (!mGoalReached.has_value()) {
-                    mActionCV.wait(guard);
-                } // Wait until goal reached
-
-                if (!mLaunchCode.has_value())
+                if (goal_handle->is_canceling()) {
+                    result->success = false;
+                    goal_handle->canceled(result);
                     return;
+                } // Check if goal canceled again because we returned from a long function
 
                 // TODO add handling for if goal fails
-                mGoalReached = std::nullopt;
 
                 // TODO add logic for pusher
                 //      see: /arm_thr_cmd in sw-icd-26 document for control
@@ -679,13 +648,10 @@ namespace mrover{
             }
 
             result->success = true;
-            mLaunchCode = std::nullopt;
-            mTypingUUID = std::nullopt;
             mUpdatePoseEstimate = true;
             goal_handle->succeed(result);
         }).detach();
     }
-
 }
 
 /*

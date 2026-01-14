@@ -1,8 +1,7 @@
 #pragma once
 
 #include "pch.hpp"
-#include <condition_variable>
-#include <mutex>
+#include <memory>
 #include <rclcpp_action/server_goal_handle.hpp>
 #include <rclcpp_action/types.hpp>
 
@@ -16,9 +15,7 @@ namespace mrover{
 
         rclcpp_action::Client<TypingDeltas>::SharedPtr mTypingClient;
 
-        void goal_response_callback(const GoalHandleTypingDeltas::SharedPtr & goal_handle);
         void feedback_callback(GoalHandleTypingDeltas::SharedPtr, const std::shared_ptr<const TypingDeltas::Feedback> feedback);
-        void result_callback(const GoalHandleTypingDeltas::WrappedResult & result);
 
         auto send_goal(float x_delta, float y_delta) -> bool;
 
@@ -32,11 +29,7 @@ namespace mrover{
         auto handle_cancel(const std::shared_ptr<GoalHandleTypingCode> goal_handle) -> rclcpp_action::CancelResponse;
         void handle_accepted(const std::shared_ptr<GoalHandleTypingCode> goal_handle);
 
-        std::mutex mActionMutex;
-        std::condition_variable mActionCV;
-        std::optional<std::string> mLaunchCode = std::nullopt;
-        std::optional<rclcpp_action::GoalUUID> mTypingUUID;
-        std::optional<bool> mGoalReached = std::nullopt;
+        std::shared_ptr<GoalHandleTypingCode> mAcceptedGoalHandle = nullptr;
 
         // Store information for pose estimation
         struct pose_output {
