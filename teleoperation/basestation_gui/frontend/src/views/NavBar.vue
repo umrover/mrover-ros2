@@ -3,7 +3,11 @@
 		<div class="ps-3 pe-2 py-2 d-flex justify-content-between align-items-center position-relative">
 			<a class="logo" href="/"><img src="/mrover.png" alt="MRover" title="MRover" width="200" /></a>
       <h1>{{ title }}</h1>
-      <WebsocketStatus />
+      <div class="d-flex align-items-center gap-3">
+        <WebsocketStatus />
+        <div class="border-start border-2" style="height: 40px;"></div>
+        <NotificationCenter />
+      </div>
 		</div>
   </div>
 </template>
@@ -11,17 +15,18 @@
 <script lang="ts">
 import { defineComponent } from 'vue';
 import WebsocketStatus from '../components/WebsocketStatus.vue';
+import NotificationCenter from '../components/NotificationCenter.vue';
 
 export default defineComponent({
   name: 'NavBar',
   computed: {
     title(): string {
-      // @ts-expect-error ts dumb
       return this.getTitleForRoute(this.$route.path)
     },
   },
 	components: {
-    WebsocketStatus
+    WebsocketStatus,
+    NotificationCenter
 	},
   methods: {
     getTitleForRoute(path: string): string {
@@ -30,10 +35,7 @@ export default defineComponent({
         '/AutonTask': 'Autonomy Mission',
         '/DMTask': 'Delivery Mission',
         '/ESTask': 'Equipment Servicing',
-        '/ISHTask': 'ISH Mission',
-        '/SATask': 'Sample Acquisition',
-        '/Cameras': 'Camera View',
-        '/dev': 'Development View'
+        '/ScienceTask' : "Science Mission",
       };
 
       return routeTitles[path] || 'Unknown Path';
@@ -43,15 +45,6 @@ export default defineComponent({
 </script>
 
 <style scoped>
-h1 {
-	font-family: 'Consolas', 'Courier New', 'DejaVu Sans Mono', monospace;
-  font-weight: 400;
-  font-size: 2.7rem;
-	letter-spacing: -0.1rem;
-  margin: 0;
-  user-select: none;
-}
-
 .logo {
   position: absolute;
   left: 48%;

@@ -1,0 +1,18 @@
+# All units are in SI
+# ===================
+# Time:     second, hz
+# Angle:    radian
+# Distance: meter
+
+objects:
+  rover:
+    type: urdf
+    uri: package://mrover/urdf/rover/rover.urdf.xacro
+    position: [ 0.0, 0.0, 0.5 ]
+  world:
+    type: urdf
+    uri: package://mrover/urdf/world/world.urdf.xacro
+  lander:
+    type: urdf
+    uri: package://mrover/urdf/world/lander.urdf.xacro
+    position: [ 1.0, 1.0, 0.1 ]
