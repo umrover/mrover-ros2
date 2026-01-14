@@ -215,7 +215,12 @@ namespace mrover {
             static_cast<float>(joints["joint_de_roll"].pos),
         };
 
-        auto mTargetPoseFromVel = mArmPos;
+        /*if (carrot_initialized == false) {
+            mCarrotPose = mArmPos;
+            carrot_initialized = true;
+        }*/
+
+        auto mCarrotPose = mArmPos;
 
         if (get_clock()->now() - mLastUpdate > TIMEOUT) {
             RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 100, "IK Timed Out");
@@ -238,19 +243,19 @@ namespace mrover {
         } else if (mArmMode == ArmMode::VELOCITY_CONTROL) {
             // TODO: Determine joint velocities that cancels out arm sag
             double dt = 1.0/3;
-            mTargetPoseFromVel.x = mTargetPoseFromVel.x + mVelTarget.linear.x * dt;
-            mTargetPoseFromVel.y = mTargetPoseFromVel.y + mVelTarget.linear.y * dt;
-            mTargetPoseFromVel.z = mTargetPoseFromVel.z + mVelTarget.linear.z * dt;
-            mTargetPoseFromVel.pitch = mTargetPoseFromVel.pitch + mVelTarget.angular.y * dt;
-            mTargetPoseFromVel.roll = mTargetPoseFromVel.roll + mVelTarget.angular.x * dt;
+            mCarrotPose.x = mCarrotPose.x + mVelTarget.linear.x * dt;
+            mCarrotPose.y = mCarrotPose.y + mVelTarget.linear.y * dt;
+            mCarrotPose.z = mCarrotPose.z + mVelTarget.linear.z * dt;
+            mCarrotPose.pitch = mCarrotPose.pitch + mVelTarget.angular.y * dt;
+            mCarrotPose.roll = mCarrotPose.roll + mVelTarget.angular.x * dt;
 
             auto new_mVelTarget = mVelTarget;
 
-            new_mVelTarget.linear.x = (mTargetPoseFromVel.x - mArmPos.x)/dt;
-            new_mVelTarget.linear.y = (mTargetPoseFromVel.y - mArmPos.y)/dt;
-            new_mVelTarget.linear.z = (mTargetPoseFromVel.z - mArmPos.z)/dt;
-            new_mVelTarget.angular.x= (mTargetPoseFromVel.roll - mArmPos.roll)/dt;
-            new_mVelTarget.angular.y = (mTargetPoseFromVel.pitch - mArmPos.pitch)/dt;
+            new_mVelTarget.linear.x = (mCarrotPose.x - mArmPos.x)/dt;
+            new_mVelTarget.linear.y = (mCarrotPose.y - mArmPos.y)/dt;
+            new_mVelTarget.linear.z = (mCarrotPose.z - mArmPos.z)/dt;
+            new_mVelTarget.angular.x= (mCarrotPose.roll - mArmPos.roll)/dt;
+            new_mVelTarget.angular.y = (mCarrotPose.pitch - mArmPos.pitch)/dt;
 
             auto velocities = ikVelCalc(new_mVelTarget);
             if (velocities && 
@@ -305,7 +310,7 @@ namespace mrover {
         } else if (req->mode == srv::IkMode::Request::VELOCITY_CONTROL) {
             mArmMode = ArmMode::VELOCITY_CONTROL;
             RCLCPP_INFO(get_logger(), "IK Switching to Velocity Control Mode");
-            //mTargetPoseFromVel = mArmPos;
+            //mCarrotPose = mArmPos;
             //mLastTimeUpdateVel = get_clock()->now();
         } else { // typing mode
             mArmMode = ArmMode::TYPING;

@@ -24,6 +24,9 @@ namespace mrover {
             }
         };
 
+        ArmPos mCarrotPose;
+        bool carrot_initialized = false;
+
 
         struct JointWrapper {
             struct JointLimits {
