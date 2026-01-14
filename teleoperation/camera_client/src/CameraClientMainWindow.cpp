@@ -13,6 +13,11 @@ namespace mrover {
         mGstRtpVideoCreatorDock = new QDockWidget("Add Camera", this);
         mGstRtpVideoCreatorWidget = new GstRtpVideoCreatorWidget();
         mGstRtpVideoCreatorDock->setWidget(mGstRtpVideoCreatorWidget);
+        QPalette pal = QPalette();
+        pal.setColor(QPalette::Window, QApplication::palette().color(QPalette::Window));
+        mGstRtpVideoCreatorDock->setAutoFillBackground(true);
+        mGstRtpVideoCreatorDock->setPalette(pal);
+
 
         mCentralScrollArea->setWidget(mCameraGridWidget);
         mCentralScrollArea->setWidgetResizable(true);
