@@ -3,6 +3,23 @@
 #include "pch.hpp"
 
 namespace mrover {
+
+    class DraggableVideoFrame : public QFrame {
+        Q_OBJECT
+
+        std::string mCameraName;
+        QPoint mDragStartPosition;
+
+    protected:
+        void mousePressEvent(QMouseEvent* event) override;
+        void mouseMoveEvent(QMouseEvent* event) override;
+
+    public:
+        explicit DraggableVideoFrame(std::string cameraName, QWidget* parent = nullptr);
+
+        [[nodiscard]] auto cameraName() const -> std::string const& { return mCameraName; }
+    };
+
     class GstVideoWidget : public QVideoWidget {
         Q_OBJECT
 
@@ -34,7 +51,7 @@ namespace mrover {
 
     private:
         struct GstVideoBox {
-            QWidget* widget;
+            DraggableVideoFrame* widget;
             QVBoxLayout* layout;
 
             QLabel* label;
@@ -43,6 +60,7 @@ namespace mrover {
 
         QGridLayout* mMainLayout;
         std::unordered_map<std::string, GstVideoBox> mGstVideoBoxes;
+        std::vector<std::string> mVisibleOrder;
 
         GstVideoGridWidget::Error mError;
         QString mErrorString;
@@ -50,6 +68,13 @@ namespace mrover {
         auto clearError() -> void;
         auto setError(Error error, std::string const& errorString) -> void;
         auto findVideoBox(std::string const& name) -> GstVideoBox*;
+        auto rebuildGrid() -> void;
+        auto getDropTargetIndex(QPoint const& pos) const -> int;
+
+    protected:
+        void dragEnterEvent(QDragEnterEvent* event) override;
+        void dragMoveEvent(QDragMoveEvent* event) override;
+        void dropEvent(QDropEvent* event) override;
 
     public:
         explicit GstVideoGridWidget(QWidget* parent = nullptr);
@@ -61,9 +86,11 @@ namespace mrover {
         auto stopVideo(std::string const& name) -> bool;
         auto hideVideo(std::string const& name) -> bool;
         auto showVideo(std::string const& name) -> bool;
+        auto moveCamera(std::string const& name, int newIndex) -> bool;
 
         [[nodiscard]] auto error() const -> GstVideoGridWidget::Error;
         [[nodiscard]] auto errorString() const -> QString;
         [[nodiscard]] auto isError() const -> bool;
     };
+
 } // namespace mrover

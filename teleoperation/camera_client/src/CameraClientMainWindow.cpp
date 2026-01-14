@@ -27,17 +27,19 @@ namespace mrover {
 
                     CameraCallbacks callbacks{
                             .onHide = [this, name]() {
-                            mCameraGridWidget->hideVideo(name);
-                            if (auto* widget = mCameraGridWidget->getGstVideoWidget(name)) {
-                                widget->stop();
-                            }
-                            return true; },
+                                mCameraGridWidget->hideVideo(name);
+                                if (auto* widget = mCameraGridWidget->getGstVideoWidget(name)) {
+                                    widget->stop();
+                                }
+                                return true;
+                            },
                             .onShow = [this, name]() {
-                            mCameraGridWidget->showVideo(name);
-                            if (auto* widget = mCameraGridWidget->getGstVideoWidget(name)) {
-                                widget->play();
-                            }
-                            return true; },
+                                mCameraGridWidget->showVideo(name);
+                                if (auto* widget = mCameraGridWidget->getGstVideoWidget(name)) {
+                                    widget->play();
+                                }
+                                return true;
+                            },
                             .onPause = []() { return true; },
                             .onPlay = []() { return true; },
                             .onStop = []() { return true; },
