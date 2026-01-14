@@ -79,6 +79,8 @@ namespace mrover {
         auto ikPosCalc(ArmPos target) -> std::optional<msg::Position>;
         auto ikVelCalc(geometry_msgs::msg::Twist) -> std::optional<msg::Velocity>;
         auto timerCallback() -> void;
+    // Predict the end-effector pose after a short time horizon given a commanded twist
+    auto predictFuturePositionFromVelocity(geometry_msgs::msg::Twist const& vel, double dt) -> ArmPos;
 
         ArmPos mArmPos, mTypingOrigin, mPosTarget;
         std::optional<msg::Position> mPosFallback;

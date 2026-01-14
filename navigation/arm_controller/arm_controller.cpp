@@ -246,6 +246,9 @@ namespace mrover {
                 )
             ) {
                 mVelPub->publish(velocities.value());
+                double dt = 1.0/3.0;
+                ArmPos predicted = predictFuturePositionFromVelocity(mVelTarget, dt);
+                SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_predicted", "arm_base_link", predicted.toSE3(), get_clock()->now());
                 mPosFallback = std::nullopt;
             } else {
                 if(!velocities) RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1000, "Velocity IK failed!");
@@ -294,6 +297,19 @@ namespace mrover {
             mTypingOrigin = mArmPos;
         }
         resp->success = true;
+    }
+
+    auto ArmController::predictFuturePositionFromVelocity(geometry_msgs::msg::Twist const& vel, double dt) -> ArmPos {
+        ArmPos res = mArmPos;
+
+        res.x += vel.linear.x * dt;
+        res.y += vel.linear.y * dt;
+        res.z += vel.linear.z * dt;
+
+        res.pitch += vel.angular.y * dt;
+        res.roll += vel.angular.x * dt;
+
+        return res;
     }
 } // namespace mrover
 
