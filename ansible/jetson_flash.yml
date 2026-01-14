@@ -1,0 +1,8 @@
+---
+- hosts: all
+  vars:
+    jetson_linux_version_major: 36
+    jetson_linux_version_minor: 4
+    jetson_linux_version_patch: 4
+  roles:
+    - jetson_flash

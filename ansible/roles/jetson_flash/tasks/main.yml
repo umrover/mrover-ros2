@@ -1,0 +1,58 @@
+- name: Get Jetson Drivers
+  get_url:
+    url: https://developer.nvidia.com/downloads/embedded/l4t/r{{ jetson_linux_version_major }}_release_v{{ jetson_linux_version_minor }}.{{ jetson_linux_version_patch }}/release/Jetson_Linux_r{{ jetson_linux_version_major }}.{{ jetson_linux_version_minor }}.{{ jetson_linux_version_patch }}_aarch64.tbz2
+    dest: /tmp/jetson-driver-package.tbz2
+
+- name: Get Jetson Root File System
+  get_url:
+    url: https://developer.nvidia.com/downloads/embedded/l4t/r{{ jetson_linux_version_major }}_release_v{{ jetson_linux_version_minor }}.{{ jetson_linux_version_patch }}/release/Tegra_Linux_Sample-Root-Filesystem_r{{ jetson_linux_version_major }}.{{ jetson_linux_version_minor }}.{{ jetson_linux_version_patch }}_aarch64.tbz2
+    dest: /tmp/jetson-rootfs-package.tbz2
+
+- name: Create Jetson Directory
+  file:
+    path: /tmp/jetson-flash/Linux_for_Tegra/rootfs/
+    state: directory
+
+- name: Unzip Driver Tarball
+  unarchive:
+    src: /tmp/jetson-driver-package.tbz2
+    dest: /tmp/jetson-flash
+    creates: /tmp/jetson-flash/Linux_for_Tegra/bootloader
+
+- name: Unzip RootFs Tarball
+  become: true
+  unarchive:
+    src: /tmp/jetson-rootfs-package.tbz2
+    dest: /tmp/jetson-flash/Linux_for_Tegra/rootfs/
+    creates: /tmp/jetson-flash/Linux_for_Tegra/rootfs/bin
+
+- name: Run L4T Flash Prerequisites
+  become: true
+  shell:
+    chdir: /tmp/jetson-flash/Linux_for_Tegra
+    cmd: ./tools/l4t_flash_prerequisites.sh
+
+- name: Run Apply Binaries
+  become: true
+  shell:
+    chdir: /tmp/jetson-flash/Linux_for_Tegra
+    cmd: ./apply_binaries.sh
+
+- name: Install Apt Packages
+  become: true
+  apt:
+    cache_valid_time: 604800
+    state: latest
+    name:
+      - git
+      - build-essential
+      - bc
+      - flex
+      - bison
+      - libssl-dev
+      - zstd
+
+- name: Sync Kernel Sources
+  shell:
+    chdir: /tmp/jetson-flash/Linux_for_Tegra/source
+    cmd: ./source_sync.sh -k -t jetson_{{ jetson_linux_version_major }}.{{ jetson_linux_version_minor }}.{{ jetson_linux_version_patch }}
