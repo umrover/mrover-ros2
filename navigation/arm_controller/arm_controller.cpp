@@ -215,6 +215,8 @@ namespace mrover {
             static_cast<float>(joints["joint_de_roll"].pos),
         };
 
+        auto mTargetPoseFromVel = mArmPos;
+
         if (get_clock()->now() - mLastUpdate > TIMEOUT) {
             RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 100, "IK Timed Out");
             if(!mPosFallback) mPosFallback = mCurrPos;
@@ -235,7 +237,22 @@ namespace mrover {
             }
         } else if (mArmMode == ArmMode::VELOCITY_CONTROL) {
             // TODO: Determine joint velocities that cancels out arm sag
-            auto velocities = ikVelCalc(mVelTarget);
+            double dt = 1.0/3;
+            mTargetPoseFromVel.x = mTargetPoseFromVel.x + mVelTarget.linear.x * dt;
+            mTargetPoseFromVel.y = mTargetPoseFromVel.y + mVelTarget.linear.y * dt;
+            mTargetPoseFromVel.z = mTargetPoseFromVel.z + mVelTarget.linear.z * dt;
+            mTargetPoseFromVel.pitch = mTargetPoseFromVel.pitch + mVelTarget.angular.y * dt;
+            mTargetPoseFromVel.roll = mTargetPoseFromVel.roll + mVelTarget.angular.x * dt;
+
+            auto new_mVelTarget = mVelTarget;
+
+            new_mVelTarget.linear.x = (mTargetPoseFromVel.x - mArmPos.x)/dt;
+            new_mVelTarget.linear.y = (mTargetPoseFromVel.y - mArmPos.y)/dt;
+            new_mVelTarget.linear.z = (mTargetPoseFromVel.z - mArmPos.z)/dt;
+            new_mVelTarget.angular.x= (mTargetPoseFromVel.roll - mArmPos.roll)/dt;
+            new_mVelTarget.angular.y = (mTargetPoseFromVel.pitch - mArmPos.pitch)/dt;
+
+            auto velocities = ikVelCalc(new_mVelTarget);
             if (velocities && 
                 !(
                     velocities->velocities[0] == 0 &&
@@ -246,9 +263,7 @@ namespace mrover {
                 )
             ) {
                 mVelPub->publish(velocities.value());
-                double dt = 1.0/3.0;
-                ArmPos predicted = predictFuturePositionFromVelocity(mVelTarget, dt);
-                SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_predicted", "arm_base_link", predicted.toSE3(), get_clock()->now());
+                
                 mPosFallback = std::nullopt;
             } else {
                 if(!velocities) RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1000, "Velocity IK failed!");
@@ -290,6 +305,8 @@ namespace mrover {
         } else if (req->mode == srv::IkMode::Request::VELOCITY_CONTROL) {
             mArmMode = ArmMode::VELOCITY_CONTROL;
             RCLCPP_INFO(get_logger(), "IK Switching to Velocity Control Mode");
+            //mTargetPoseFromVel = mArmPos;
+            //mLastTimeUpdateVel = get_clock()->now();
         } else { // typing mode
             mArmMode = ArmMode::TYPING;
             RCLCPP_INFO(get_logger(), "IK Switching to Typing (position) Mode");
@@ -299,18 +316,7 @@ namespace mrover {
         resp->success = true;
     }
 
-    auto ArmController::predictFuturePositionFromVelocity(geometry_msgs::msg::Twist const& vel, double dt) -> ArmPos {
-        ArmPos res = mArmPos;
 
-        res.x += vel.linear.x * dt;
-        res.y += vel.linear.y * dt;
-        res.z += vel.linear.z * dt;
-
-        res.pitch += vel.angular.y * dt;
-        res.roll += vel.angular.x * dt;
-
-        return res;
-    }
 } // namespace mrover
 
 auto main(int argc, char** argv) -> int {
