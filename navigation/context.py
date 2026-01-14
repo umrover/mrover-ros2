@@ -102,6 +102,20 @@ class Environment:
             return None
 
         return target_pose.translation()
+    
+    def get_time_diff(self, frame: str) -> None | Time:
+        try:
+            waste, t = SE3.from_tf_tree_with_time(self.ctx.tf_buffer, frame, self.ctx.world_frame)
+        except (
+            tf2_ros.LookupException,
+            tf2_ros.ConnectivityException,
+            tf2_ros.ExtrapolationException,
+        ):
+            return None
+        
+        now = self.ctx.node.get_clock().now()
+        time = Time.from_msg(t)
+        return now - time
 
     def current_target_pos(self) -> np.ndarray | None:
         assert self.ctx.course is not None
@@ -113,6 +127,19 @@ class Environment:
                 return self.get_target_position("hammer")
             case Waypoint(type=WaypointType(val=WaypointType.WATER_BOTTLE)):
                 return self.get_target_position("bottle")
+            case _:
+                return None
+    
+    def current_time_diff(self):
+        assert self.ctx.course is not None
+
+        match self.ctx.course.current_waypoint():
+            case Waypoint(type=WaypointType(val=WaypointType.POST), tag_id=tag_id):
+                return self.get_time_diff(f"tag{tag_id}")
+            case Waypoint(type=WaypointType(val=WaypointType.MALLET)):
+                return self.get_time_diff("hammer")
+            case Waypoint(type=WaypointType(val=WaypointType.WATER_BOTTLE)):
+                return self.get_time_diff("bottle")
             case _:
                 return None
 

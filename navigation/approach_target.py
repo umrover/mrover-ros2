@@ -31,6 +31,7 @@ class ApproachTargetState(State):
     marker_timer: Timer
     update_timer: Timer
     object_type: int
+    no_look_ahead_dict: dict
 
     def on_enter(self, context: Context) -> None:
         from .long_range import LongRangeState
@@ -61,6 +62,7 @@ class ApproachTargetState(State):
         self.time_last_updated = context.node.get_clock().now()
         self.time_begin = context.node.get_clock().now()
         self.object_type = current_waypoint.type.val
+        self.no_look_ahead_dict = {'NO_SEARCH': 0, 'POST': 1}
 
         self.marker_timer = context.node.create_timer(
             context.node.get_parameter("pub_path_rate").value, lambda: self.display_markers(context=context)
@@ -407,13 +409,15 @@ class ApproachTargetState(State):
         target_pos = context.env.current_target_pos()
         if target_pos is None:
             return False
-
+        time_diff = context.env.current_time_diff()
+        if time_diff is None:
+            return False
         rover_translation = rover_SE3.translation()[0:2]
         distance_to_target = d_calc(rover_translation, tuple(target_pos))
-        if(object_type == 0 or object_type == 1):
+        if(object_type in self.no_look_ahead_dict.values()):
             return distance_to_target < self.DISTANCE_THRESHOLD
         else:
-            return distance_to_target < self.LOOK_DISTANCE_THRESHOLD
+            return distance_to_target < self.LOOK_DISTANCE_THRESHOLD and time_diff > Duration(nanoseconds=50000000)
 
     def point_in_distance_threshold(self, context: Context, point):
         if point is None:

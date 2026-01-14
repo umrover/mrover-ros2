@@ -13,7 +13,7 @@ namespace mrover {
     // Important formula that needs to hold true to avoid dropping: timeStep < maxSubSteps * fixedTimeStep
     constexpr int MAX_SUB_STEPS = 1024;
 
-    constexpr double TAU = 2 * std::numbers::pi;
+    constexpr double TAU = 0.5 * std::numbers::pi;
 
     auto btTransformToSe3(btTransform const& transform) -> SE3d {
         btVector3 const& p = transform.getOrigin();
