@@ -31,15 +31,13 @@ namespace mrover {
                                 if (auto* widget = mCameraGridWidget->getGstVideoWidget(name)) {
                                     widget->stop();
                                 }
-                                return true;
-                            },
+                                return true; },
                             .onShow = [this, name]() {
                                 mCameraGridWidget->showVideo(name);
                                 if (auto* widget = mCameraGridWidget->getGstVideoWidget(name)) {
                                     widget->play();
                                 }
-                                return true;
-                            },
+                                return true; },
                             .onPause = []() { return true; },
                             .onPlay = []() { return true; },
                             .onStop = []() { return true; },

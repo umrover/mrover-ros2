@@ -36,7 +36,7 @@ namespace mrover {
 
         mSelectors.emplace(name, selector);
 
-        // Maintain bottom stretch to keep selectors top-aligned
+        // bottom stretch to keep selectors top-aligned
         mSelectorsLayout->takeAt(mSelectorsLayout->count() - 1);
         mSelectorsLayout->addWidget(selector.widget);
         mSelectorsLayout->addStretch();

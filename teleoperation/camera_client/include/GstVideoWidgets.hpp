@@ -70,11 +70,13 @@ namespace mrover {
         auto findVideoBox(std::string const& name) -> GstVideoBox*;
         auto rebuildGrid() -> void;
         auto getDropTargetIndex(QPoint const& pos) const -> int;
+        auto calculateColumnCount() const -> int;
 
     protected:
         void dragEnterEvent(QDragEnterEvent* event) override;
         void dragMoveEvent(QDragMoveEvent* event) override;
         void dropEvent(QDropEvent* event) override;
+        void resizeEvent(QResizeEvent* event) override;
 
     public:
         explicit GstVideoGridWidget(QWidget* parent = nullptr);

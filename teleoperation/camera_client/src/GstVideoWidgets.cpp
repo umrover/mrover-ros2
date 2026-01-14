@@ -26,7 +26,7 @@ void DraggableVideoFrame::mouseMoveEvent(QMouseEvent* event) {
         return;
     }
 
-    // Check if we've moved far enough to start a drag
+    // check if we've moved far enough to start a drag
     if ((event->pos() - mDragStartPosition).manhattanLength() < QApplication::startDragDistance()) {
         return;
     }
@@ -36,7 +36,7 @@ void DraggableVideoFrame::mouseMoveEvent(QMouseEvent* event) {
     mimeData->setText(QString::fromStdString(mCameraName));
     drag->setMimeData(mimeData);
 
-    // Create a semi-transparent pixmap for visual feedback
+    // visual feedback
     QPixmap pixmap = grab();
     pixmap = pixmap.scaled(pixmap.size() / 2, Qt::KeepAspectRatio, Qt::SmoothTransformation);
     drag->setPixmap(pixmap);
@@ -88,13 +88,24 @@ auto GstVideoWidget::stop() -> void {
 // GstVideoGridWidget
 // --------------------------------------------
 
+namespace {
+    constexpr int MIN_VIDEO_WIDTH = 640;
+}
+
 GstVideoGridWidget::GstVideoGridWidget(QWidget* parent)
     : QWidget(parent), mError(NoError) {
     mMainLayout = new QGridLayout(this);
-    mMainLayout->setContentsMargins(5, -1, 5, -1);
+    mMainLayout->setContentsMargins(5, 5, 5, 5);
     mMainLayout->setSpacing(10);
     setLayout(mMainLayout);
     setAcceptDrops(true);
+}
+
+auto GstVideoGridWidget::calculateColumnCount() const -> int {
+    int const availableWidth = width() - mMainLayout->contentsMargins().left() - mMainLayout->contentsMargins().right();
+    int const cellWidth = MIN_VIDEO_WIDTH + mMainLayout->spacing();
+    int const columns = std::max(1, availableWidth / cellWidth);
+    return columns;
 }
 
 auto GstVideoGridWidget::addGstVideoWidget(std::string const& name, std::string const& pipeline) -> bool {
@@ -146,21 +157,28 @@ auto GstVideoGridWidget::findVideoBox(std::string const& name) -> GstVideoBox* {
 }
 
 auto GstVideoGridWidget::rebuildGrid() -> void {
-    // Remove all widgets from the grid (without deleting them)
+    // remove all widgets from the grid (without deleting them)
     for (auto& [name, box]: mGstVideoBoxes) {
         mMainLayout->removeWidget(box.widget);
     }
 
-    // Re-add only visible widgets in order
+    int const columns = calculateColumnCount();
+
+    // re-add only visible widgets in order
     for (std::size_t idx = 0; idx < mVisibleOrder.size(); ++idx) {
         auto* box = findVideoBox(mVisibleOrder[idx]);
         if (box) {
-            int const row = static_cast<int>(idx) / 2;
-            int const col = static_cast<int>(idx) % 2;
+            int const row = static_cast<int>(idx) / columns;
+            int const col = static_cast<int>(idx) % columns;
             mMainLayout->addWidget(box->widget, row, col, Qt::AlignCenter);
             box->widget->setVisible(true);
         }
     }
+}
+
+void GstVideoGridWidget::resizeEvent(QResizeEvent* event) {
+    QWidget::resizeEvent(event);
+    rebuildGrid();
 }
 
 auto GstVideoGridWidget::getGstVideoWidget(std::string const& name) -> GstVideoWidget* {
@@ -193,7 +211,6 @@ auto GstVideoGridWidget::hideVideo(std::string const& name) -> bool {
     auto* box = findVideoBox(name);
     if (!box) return false;
 
-    // Remove from visible order
     auto it = std::find(mVisibleOrder.begin(), mVisibleOrder.end(), name);
     if (it != mVisibleOrder.end()) {
         mVisibleOrder.erase(it);
@@ -208,7 +225,6 @@ auto GstVideoGridWidget::showVideo(std::string const& name) -> bool {
     auto* box = findVideoBox(name);
     if (!box) return false;
 
-    // Add to end of visible order (if not already visible)
     auto it = std::find(mVisibleOrder.begin(), mVisibleOrder.end(), name);
     if (it == mVisibleOrder.end()) {
         mVisibleOrder.push_back(name);
@@ -219,18 +235,15 @@ auto GstVideoGridWidget::showVideo(std::string const& name) -> bool {
 }
 
 auto GstVideoGridWidget::moveCamera(std::string const& name, int newIndex) -> bool {
-    // Find current position in visible order
     auto it = std::find(mVisibleOrder.begin(), mVisibleOrder.end(), name);
     if (it == mVisibleOrder.end()) {
         setError(NonExistsError, "Camera is not visible");
         return false;
     }
 
-    // Clamp newIndex to valid range
     int const maxIndex = static_cast<int>(mVisibleOrder.size()) - 1;
     int const clampedIndex = std::clamp(newIndex, 0, maxIndex);
 
-    // Remove from current position and insert at new position
     mVisibleOrder.erase(it);
     mVisibleOrder.insert(mVisibleOrder.begin() + clampedIndex, name);
 
@@ -266,7 +279,6 @@ auto GstVideoGridWidget::getDropTargetIndex(QPoint const& pos) const -> int {
         return 0;
     }
 
-    // Get the size of the first visible widget to estimate cell dimensions
     auto it = mGstVideoBoxes.find(mVisibleOrder.front());
     if (it == mGstVideoBoxes.end()) {
         return static_cast<int>(mVisibleOrder.size());
@@ -274,10 +286,11 @@ auto GstVideoGridWidget::getDropTargetIndex(QPoint const& pos) const -> int {
 
     QSize const cellSize = it->second.widget->size();
     int const spacing = mMainLayout->spacing();
+    int const columns = calculateColumnCount();
 
     int const col = pos.x() / (cellSize.width() + spacing);
     int const row = pos.y() / (cellSize.height() + spacing);
-    int const index = row * 2 + col;
+    int const index = row * columns + col;
 
     return std::clamp(index, 0, static_cast<int>(mVisibleOrder.size()));
 }

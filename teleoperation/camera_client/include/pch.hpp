@@ -28,6 +28,7 @@
 #include <QMimeData>
 #include <QMouseEvent>
 #include <QPixmap>
+#include <QResizeEvent>
 #include <QPushButton>
 #include <QScrollArea>
 #include <QStandardPaths>
