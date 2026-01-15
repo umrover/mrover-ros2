@@ -96,6 +96,11 @@
     src: files/config
     dest: /tmp/jetson-flash/Linux_for_Tegra/source/kernel/kernel-jammy-src/.config
 
+- name: Sync Kernel Configuration With Oldconfig
+  synchronize:
+    src: files/config
+    dest: /tmp/jetson-flash/Linux_for_Tegra/source/kernel/kernel-jammy-src/arch/arm64/configs/oldconfig
+
 - name: Build Jetson Kernel
   become: true
   command: ./scripts/build_jetson_kernel.sh

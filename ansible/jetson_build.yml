@@ -3,6 +3,7 @@
   vars:
     ros_distro: humble
     ubuntu_release: jammy
+    ifname: eth0
   roles:
     - build
     - jetson_build
