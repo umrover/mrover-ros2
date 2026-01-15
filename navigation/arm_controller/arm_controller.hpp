@@ -24,8 +24,8 @@ namespace mrover {
             }
         };
 
-        ArmPos mCarrotPose;
-        bool carrot_initialized = false;
+        /*ArmPos mCarrot;
+        bool carrot_initialized = false;*/
 
 
         struct JointWrapper {

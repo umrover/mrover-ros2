@@ -215,13 +215,6 @@ namespace mrover {
             static_cast<float>(joints["joint_de_roll"].pos),
         };
 
-        /*if (carrot_initialized == false) {
-            mCarrotPose = mArmPos;
-            carrot_initialized = true;
-        }*/
-
-        auto mCarrotPose = mArmPos;
-
         if (get_clock()->now() - mLastUpdate > TIMEOUT) {
             RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 100, "IK Timed Out");
             if(!mPosFallback) mPosFallback = mCurrPos;
@@ -242,22 +235,49 @@ namespace mrover {
             }
         } else if (mArmMode == ArmMode::VELOCITY_CONTROL) {
             // TODO: Determine joint velocities that cancels out arm sag
-            double dt = 1.0/3;
-            mCarrotPose.x = mCarrotPose.x + mVelTarget.linear.x * dt;
-            mCarrotPose.y = mCarrotPose.y + mVelTarget.linear.y * dt;
-            mCarrotPose.z = mCarrotPose.z + mVelTarget.linear.z * dt;
-            mCarrotPose.pitch = mCarrotPose.pitch + mVelTarget.angular.y * dt;
-            mCarrotPose.roll = mCarrotPose.roll + mVelTarget.angular.x * dt;
+            
+            /*if (!carrot_initialized) {
+                mCarrot = mArmPos;
+                carrot_initialized = true;
+            }*/
 
-            auto new_mVelTarget = mVelTarget;
+            ArmPos mCarrot = mArmPos;
 
-            new_mVelTarget.linear.x = (mCarrotPose.x - mArmPos.x)/dt;
-            new_mVelTarget.linear.y = (mCarrotPose.y - mArmPos.y)/dt;
-            new_mVelTarget.linear.z = (mCarrotPose.z - mArmPos.z)/dt;
-            new_mVelTarget.angular.x= (mCarrotPose.roll - mArmPos.roll)/dt;
-            new_mVelTarget.angular.y = (mCarrotPose.pitch - mArmPos.pitch)/dt;
+            if(mVelTarget.linear.x == 0 && mVelTarget.linear.y == 0 && mVelTarget.linear.z == 0 &&
+               mVelTarget.angular.x == 0 && mVelTarget.angular.y == 0) {
+                RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1000, "No velocity input currently");
+                if(!mPosFallback) {
+                    mPosFallback = mCurrPos;
+                }
+                mPosPub->publish(mPosFallback.value());
+                
+            }
 
-            auto velocities = ikVelCalc(new_mVelTarget);
+            else {
+                double dt = 1.0/3.0;
+
+                mCarrot.x += mVelTarget.linear.x * dt;
+                mCarrot.y += mVelTarget.linear.y * dt;
+                mCarrot.z += mVelTarget.linear.z * dt;
+                mCarrot.pitch += mVelTarget.angular.y * dt;
+                mCarrot.roll += mVelTarget.angular.x * dt;
+
+                auto calc_positions = ikPosCalc(mCarrot);
+                if (calc_positions) {
+                    mPosPub->publish(calc_positions.value());
+                    mPosFallback = std::nullopt;
+                    return;
+                }
+                else {
+                    RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1000, "No velocity input currently");
+                    if(!mPosFallback) {
+                        mPosFallback = mCurrPos;
+                    }
+                    mPosPub->publish(mPosFallback.value());
+                    return;
+                }
+            }
+            /*auto velocities = ikVelCalc(mVelTarget);
             if (velocities && 
                 !(
                     velocities->velocities[0] == 0 &&
@@ -268,13 +288,12 @@ namespace mrover {
                 )
             ) {
                 mVelPub->publish(velocities.value());
-                
                 mPosFallback = std::nullopt;
             } else {
                 if(!velocities) RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1000, "Velocity IK failed!");
                 if(!mPosFallback) mPosFallback = mCurrPos;
                 mPosPub->publish(mPosFallback.value());
-            }
+            }*/
         } else { // typing mode
             msg::Position positions;
             positions.names = {"joint_a", "gripper"};
@@ -310,8 +329,6 @@ namespace mrover {
         } else if (req->mode == srv::IkMode::Request::VELOCITY_CONTROL) {
             mArmMode = ArmMode::VELOCITY_CONTROL;
             RCLCPP_INFO(get_logger(), "IK Switching to Velocity Control Mode");
-            //mCarrotPose = mArmPos;
-            //mLastTimeUpdateVel = get_clock()->now();
         } else { // typing mode
             mArmMode = ArmMode::TYPING;
             RCLCPP_INFO(get_logger(), "IK Switching to Typing (position) Mode");
@@ -320,8 +337,6 @@ namespace mrover {
         }
         resp->success = true;
     }
-
-
 } // namespace mrover
 
 auto main(int argc, char** argv) -> int {
