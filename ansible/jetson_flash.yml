@@ -4,5 +4,8 @@
     jetson_linux_version_major: 36
     jetson_linux_version_minor: 4
     jetson_linux_version_patch: 4
+    pcan_version_major: 8
+    pcan_version_minor: 20
+    pcan_version_patch: 0
   roles:
     - jetson_flash
