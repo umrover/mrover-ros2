@@ -20,10 +20,8 @@
     state: latest
     name:
       - zstd # Required to unpack ZED installer
-      - cuda-toolkit-12-6
-      - cuda-compat-12-6
       - g++-9
-      - nvidia-opencv-dev
+      - nvidia-jetpack
 
 - name: ZED SDK Download
   get_url:
