@@ -372,7 +372,7 @@ namespace mrover {
                     {std::format("{}.stream.width", cameraName), streamImageWidth, 0},
                     {std::format("{}.stream.height", cameraName), streamImageHeight, 0},
                     {std::format("{}.stream.framerate", cameraName), streamImageFramerate, 0},
-                    {std::format("{}.stream.codec", cameraName), codec, "H264"},
+                    {std::format("{}.stream.codec", cameraName), codec, "H265"},
                     {std::format("{}.stream.bitrate", cameraName), bitrate, 0},
                     {std::format("{}.image_capture.pixel_format", cameraName), imageCapturePixelFormat, "MJPG"},
                     {std::format("{}.image_capture.width", cameraName), imageCaptureImageWidth, 0},

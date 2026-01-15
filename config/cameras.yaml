@@ -15,7 +15,7 @@
         width: 640
         height: 480
         framerate: 30
-        codec: H264
+        codec: H265
         bitrate: 1000000
       image_capture:
         pixel_format: YUYV
@@ -31,7 +31,7 @@
         width: 640
         height: 480
         framerate: 30
-        codec: H264
+        codec: H265
         bitrate: 1000000
       image_capture:
         pixel_format: YUYV
@@ -47,7 +47,7 @@
         width: 640
         height: 480
         framerate: 30
-        codec: H264
+        codec: H265
         bitrate: 1000000
       image_capture:
         pixel_format: YUYV
@@ -79,7 +79,7 @@
         width: 640
         height: 480
         framerate: 30
-        codec: H264
+        codec: H265
         bitrate: 1000000
       image_capture:
         pixel_format: ABGR32
@@ -112,7 +112,7 @@
         width: 1280
         height: 720
         framerate: 15
-        codec: H264
+        codec: H265
         bitrate: 1000000
       image_capture:
         pixel_format: ABGR32
