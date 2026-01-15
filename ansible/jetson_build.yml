@@ -8,3 +8,4 @@
     - build
     - jetson_build
     - jetson_networks
+    - dev
