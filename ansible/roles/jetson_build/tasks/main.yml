@@ -22,6 +22,7 @@
       - zstd # Required to unpack ZED installer
       - cuda-toolkit-12-6
       - cuda-compat-12-6
+      - g++-9
 
 - name: ZED SDK Download
   get_url:
