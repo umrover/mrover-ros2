@@ -23,6 +23,7 @@
       - cuda-toolkit-12-6
       - cuda-compat-12-6
       - g++-9
+      - nvidia-opencv-dev
 
 - name: ZED SDK Download
   get_url:
