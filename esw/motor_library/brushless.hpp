@@ -64,8 +64,8 @@ namespace mrover {
         using Base = ControllerBase<TOutputPosition, BrushlessController>;
 
         // TODO(quintin): this is actually so dumb
-        using OutputPosition = typename Base::OutputPosition;
-        using OutputVelocity = typename Base::OutputVelocity;
+        using OutputPosition = Base::OutputPosition;
+        using OutputVelocity = Base::OutputVelocity;
 
         using Base::mControllerName;
         using Base::mCurrentEffort;
@@ -342,10 +342,10 @@ namespace mrover {
 
         auto adjust(OutputPosition position) -> void {
             position = std::clamp(position, mMinPosition, mMaxPosition);
-            moteus::OutputExact::Command command{
+            moteus::OutputExact::Command const command{
                     .position = position.get(),
             };
-            moteus::OutputExact::Command outputExactCmd{command};
+            moteus::OutputExact::Command const outputExactCmd{command};
             moteus::CanFdFrame setPositionFrame = mMoteus->MakeOutputExact(outputExactCmd);
             mDevice.publish_moteus_frame(setPositionFrame);
         }

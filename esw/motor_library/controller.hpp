@@ -74,7 +74,7 @@ namespace mrover {
                 res->success = false;
                 return;
             }
-            using Position = typename detail::strip_conversion<OutputPosition>::type;
+            using Position = detail::strip_conversion<OutputPosition>::type;
             OutputPosition position = Position{req->value};
             static_cast<Derived*>(this)->adjust(position);
             res->success = true;
