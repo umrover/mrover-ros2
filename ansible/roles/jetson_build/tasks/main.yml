@@ -50,3 +50,10 @@
 - name: Udev TTY Trigger
   become: true
   command: udevadm trigger --subsystem-match=tty
+
+- name: Sync blacklists
+  become: true
+  synchronize:
+    src: files/modprobe/
+    dest: /etc/modprobe.d
+    recursive: true
