@@ -34,3 +34,18 @@
   command: /tmp/ZED_SDK_Tegra_L4T36.4_v5.1.2.zstd.run -- silent
   args:
     creates: /usr/local/zed
+
+- name: Sync all udev Rules
+  become: true
+  synchronize:
+    src: files/rules/
+    dest: /etc/udev/rules.d
+    recursive: true
+
+- name: Udev Reload Rules
+  become: true
+  command: udevadm control --reload-rules
+
+- name: Udev TTY Trigger
+  become: true
+  command: udevadm trigger --subsystem-match=tty

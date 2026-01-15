@@ -6,3 +6,4 @@
   roles:
     - build
     - jetson_build
+    - jetson_networks
