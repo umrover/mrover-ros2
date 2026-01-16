@@ -68,3 +68,9 @@
     src: files/modprobe/
     dest: /etc/modprobe.d
     recursive: true
+
+- name: Build OpenCV
+  become: true
+  command: ./ansible/roles/jetson_build/files/scripts/build_opencv.sh
+  args:
+    chdir: "{{ ansible_env.HOME }}/ros2_ws/src/mrover/"

@@ -103,7 +103,7 @@
 
 - name: Build Jetson Kernel
   become: true
-  command: ./scripts/build_jetson_kernel.sh
+  command: ./ansible/roles/jetson_flash/files/scripts/build_jetson_kernel.sh
   failed_when: False # this is not ideal
   args:
     chdir: "{{ ansible_env.HOME }}/ros2_ws/src/mrover/"
@@ -111,7 +111,7 @@
 
 - name: Build PCAN
   become: true
-  command: ./scripts/build_pcan_drivers.sh {{ pcan_version_major }} {{ pcan_version_minor }} {{ pcan_version_patch }}
+  command: ./ansible/roles/jetson_flash/files/scripts/build_pcan_drivers.sh {{ pcan_version_major }} {{ pcan_version_minor }} {{ pcan_version_patch }}
   args:
     chdir: "{{ ansible_env.HOME }}/ros2_ws/src/mrover/"
     # no creates here because we always rebuild
