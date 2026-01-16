@@ -1,4 +1,5 @@
 #include "gst_camera_server.hpp"
+#include "gst_utils.hpp"
 
 namespace mrover {
 
@@ -15,8 +16,6 @@ namespace mrover {
     }
 
     auto gstBusMessage(GstBus*, GstMessage* message, gpointer data) -> gboolean;
-
-    auto isIpAddressReachable(std::string const& address, int port) -> bool;
 
     auto GstCameraServer::deviceImageCallback(sensor_msgs::msg::Image::ConstSharedPtr const& msg) -> void {
         if (!mStreamPipelineWrapper.isPlaying() && !imageCaptureEnabled()) {
@@ -68,7 +67,7 @@ namespace mrover {
                               gst::addProperty("is-live", true),
                               gst::addProperty("format", "time"),
                               gst::addProperty("do-timestamp", true));
-            pipeline.pushBack(std::format("video/x-raw,format={},width={},height={},framerate={}/1", gst::video::toString(gst::video::RawFormat::BGRA), imageWidth, imageHeight, imageFramerate));
+            pipeline.pushBack(std::format("video/x-raw,format={},width={},height={},framerate={}/1", gst::video::v4l2::toStringGstType(pixelFormat), imageWidth, imageHeight, imageFramerate));
             pipeline.pushBack("queue");
         } else if (captureIsDev()) {
             pipeline.pushBack(gst::video::v4l2::createSrc(mDeviceNode, mStreamCaptureFormat, gst::addProperty("is-live", true)));
@@ -78,54 +77,82 @@ namespace mrover {
             pipeline.pushBack(std::format("video/x-raw,format={},width={},height={},framerate={}/1", gst::video::v4l2::toStringGstType(pixelFormat), imageWidth, imageHeight, imageFramerate));
         }
 
-        // Source decoder and H265 encoder
-        if (gst_element_factory_find("nvv4l2h265enc")) {
-            // Most likely on the Jetson
-            if (pixelFormat == gst::video::v4l2::PixelFormat::MJPG) {
-                // TODO(quintin): I had to apply this patch: https://forums.developer.nvidia.com/t/macrosilicon-usb/157777/4
-                //                nvv4l2camerasrc only supports UYUV by default, but our cameras are YUY2 (YUYV)
-                // Mostly used with USB cameras, MPEG capture uses way less USB bandwidth
-                pipeline.pushBack("nvv4l2decoder", gst::addProperty("mjpeg", 1)); // Hardware-accelerated JPEG decoding, output is apparently some unknown proprietary format
-                pipeline.pushBack("nvvidconv");                                   // Convert from proprietary format to NV12 so the encoder understands it
-                pipeline.pushBack("video/x-raw(memory:NVMM),format=NV12");
+        if (nvHardwareAvailable()) {
+            switch (pixelFormat) {
+                case gst::video::v4l2::PixelFormat::YUYV:
+                case gst::video::v4l2::PixelFormat::ABGR32: {
+                    if (cropEnabled()) {
+                        pipeline.pushBack(std::format("videocrop left={} right={} top={} bottom={}", mCropLeft, mCropRight, mCropTop, mCropBottom));
+                    }
 
-            } else {
-                if (cropEnabled()) {
-                    pipeline.pushBack(std::format("videocrop left={} right={} top={} bottom={}", mCropLeft, mCropRight, mCropTop, mCropBottom));
+                    pipeline.pushBack("nvvidconv");
+                    pipeline.pushBack("video/x-raw(memory:NVMM),format=NV12");
+                    break;
                 }
-
-                pipeline.pushBack("videoconvert");
-                pipeline.pushBack("video/x-raw,format=I420"); // Convert to I420 for the encoder, note we are still on the CPU
-                pipeline.pushBack("nvvidconv");               // Upload to GPU memory for the encoder
-                pipeline.pushBack("video/x-raw(memory:NVMM),format=I420");
+                case gst::video::v4l2::PixelFormat::MJPG: {
+                    pipeline.pushBack("nvv4l2decoder", gst::addProperty("mjpeg", 1)); // Hardware-accelerated JPEG decoding, output is apparently some unknown proprietary format
+                    pipeline.pushBack("nvvidconv");                                   // Convert from proprietary format to NV12 so the encoder understands it
+                    pipeline.pushBack("video/x-raw(memory:NVMM),format=NV12");
+                    // is not efficient to crop NV12 so we do not support it
+                    break;
+                }
             }
-
-            pipeline.pushBack("nvv4l2h265enc",
-                              gst::addProperty("bitrate", mBitrate),
-                              gst::addProperty("iframeinterval", 300),
-                              gst::addProperty("vbv-size", 33333),
-                              gst::addProperty("insert-sps-pps", true),
-                              gst::addProperty("control-rate", "constant_bitrate"),
-                              gst::addProperty("profile", "Main"),
-                              gst::addProperty("num-B-Frames", 0),
-                              gst::addProperty("ratecontrol-enable", true),
-                              gst::addProperty("preset-level", "UltraFastPreset"),
-                              gst::addProperty("EnableTwopassCBR", false),
-                              gst::addProperty("maxperf-enable", true));
+            switch (mCodec) {
+                // TODO (owen): ADD MORE FLEXIBILITY FOR ENCODING PROPERTIES
+                // https://docs.nvidia.com/metropolis/deepstream/7.1/text/DS_plugin_gst-nvvideo4linux2.html#encoder
+                case gst::video::Codec::H265: {
+                    pipeline.pushBack("nvv4l2h265enc",
+                                      gst::addProperty("bitrate", mBitrate),
+                                      gst::addProperty("iframeinterval", 300),
+                                      gst::addProperty("vbv-size", 33333),
+                                      gst::addProperty("insert-sps-pps", true),
+                                      gst::addProperty("control-rate", "constant_bitrate"),
+                                      gst::addProperty("profile", "main"),
+                                      gst::addProperty("num-B-Frames", 0),
+                                      gst::addProperty("ratecontrol-enable", true),
+                                      gst::addProperty("preset-level", "UltraFastPreset"),
+                                      gst::addProperty("EnableTwopassCBR", false),
+                                      gst::addProperty("maxperf-enable", true));
+                    pipeline.pushBack("h265parse");
+                    break;
+                }
+                case gst::video::Codec::H264: {
+                    pipeline.pushBack("nvv4l2h265enc",
+                                      gst::addProperty("bitrate", mBitrate));
+                    pipeline.pushBack("h264parse");
+                    break;
+                }
+                case gst::video::Codec::AV1: {
+                    pipeline.pushBack("nvv4l2av1enc",
+                                      gst::addProperty("bitrate", mBitrate));
+                    break;
+                }
+                default: {
+                    throw std::runtime_error{"Unsupported codec for NVENC hardware acceleration"};
+                }
+            }
         } else {
-            // For desktop/laptops with no hardware encoder
-            if (gst::video::v4l2::isCompressedPixelFormat(pixelFormat)) {
-                pipeline.pushBack(gst::video::createDefaultDecoder(toStringGstType(pixelFormat)));
-            } else {
-                pipeline.pushBack("videoconvert");
+            switch (pixelFormat) {
+                case gst::video::v4l2::PixelFormat::YUYV:
+                case gst::video::v4l2::PixelFormat::ABGR32: {
+                    if (cropEnabled()) {
+                        pipeline.pushBack(std::format("videocrop left={} right={} top={} bottom={}", mCropLeft, mCropRight, mCropTop, mCropBottom));
+                    }
+                    pipeline.pushBack("videoconvert");
+                    pipeline.pushBack(std::format("video/x-raw,format={}", gst::video::toString(gst::video::RawFormat::I420)));
+                    break;
+                }
+                case gst::video::v4l2::PixelFormat::MJPG: {
+                    pipeline.pushBack(gst::video::createDefaultDecoder(toStringGstType(pixelFormat)));
+                    pipeline.pushBack("videoconvert");
+                    pipeline.pushBack(std::format("video/x-raw,format={}", gst::video::toString(gst::video::RawFormat::I420)));
+                    if (cropEnabled()) {
+                        pipeline.pushBack(std::format("videocrop left={} right={} top={} bottom={}", mCropLeft, mCropRight, mCropTop, mCropBottom));
+                    }
+                    break;
+                }
             }
-
-            if (cropEnabled()) {
-                pipeline.pushBack(std::format("videocrop left={} right={} top={} bottom={}", mCropLeft, mCropRight, mCropTop, mCropBottom));
-            }
-
             pipeline.pushBack(gst::video::createDefaultEncoder(mCodec));
-
             if (mCodec == gst::video::Codec::H264) {
                 pipeline.addPropsToElement(pipeline.size() - 1,
                                            gst::addProperty("tune", "zerolatency"),
@@ -134,13 +161,20 @@ namespace mrover {
             }
         }
 
+        // ===== RTP PAYLOADER =====
+        pipeline.pushBack(gst::video::getRtpPayloader(mCodec));
         if (mCodec == gst::video::Codec::H265) {
-            pipeline.pushBack("h265parse");
-        } else if (mCodec == gst::video::Codec::H264) {
-            pipeline.pushBack("h264parse");
+            pipeline.addPropsToElement(pipeline.size() - 1,
+                                       gst::addProperty("config-interval", 1));
         }
+        pipeline.pushBack("queue",
+                          gst::addProperty("leaky", 2),             // drop old packets if the network is slow
+                          gst::addProperty("max-size-buffers", 3)); // try decreasing to 1 or 2 too reduce latency
+        pipeline.pushBack("udpsink",
+                          gst::addProperty("host", mAddress),
+                          gst::addProperty("port", mPort),
+                          gst::addProperty("sync", false));
 
-        pipeline.pushBack(gst::video::createRtpSink(mAddress, mPort, mCodec));
 
         RCLCPP_INFO_STREAM(get_logger(), std::format("GStreamer stream launch string: {}", pipeline.str()));
         mStreamPipelineWrapper = gst::PipelineWrapper(pipeline.str());
@@ -335,6 +369,13 @@ namespace mrover {
         return mImageCaptureServer != nullptr;
     }
 
+    [[nodiscard]] auto GstCameraServer::nvHardwareAvailable() -> bool {
+        return (gst_element_factory_find("nvv4l2h265enc") != nullptr) &&
+               (gst_element_factory_find("nvv4l2h264enc") != nullptr) &&
+               (gst_element_factory_find("nvv4l2decoder") != nullptr) &&
+               (gst_element_factory_find("nvvidconv") != nullptr);
+    }
+
     GstCameraServer::GstCameraServer(rclcpp::NodeOptions const& options) : Node{"gst_camera_server", options} {
         try {
             declare_parameter("camera", rclcpp::ParameterType::PARAMETER_STRING);
@@ -368,13 +409,13 @@ namespace mrover {
                     {std::format("{}.crop_right", cameraName), mCropRight, 0},
                     {std::format("{}.crop_top", cameraName), mCropTop, 0},
                     {std::format("{}.crop_bottom", cameraName), mCropBottom, 0},
-                    {std::format("{}.stream.pixel_format", cameraName), streamPixelFormat, "MJPG"},
+                    {std::format("{}.stream.pixel_format", cameraName), streamPixelFormat, "YUYV"},
                     {std::format("{}.stream.width", cameraName), streamImageWidth, 0},
                     {std::format("{}.stream.height", cameraName), streamImageHeight, 0},
                     {std::format("{}.stream.framerate", cameraName), streamImageFramerate, 0},
                     {std::format("{}.stream.codec", cameraName), codec, "H265"},
                     {std::format("{}.stream.bitrate", cameraName), bitrate, 0},
-                    {std::format("{}.image_capture.pixel_format", cameraName), imageCapturePixelFormat, "MJPG"},
+                    {std::format("{}.image_capture.pixel_format", cameraName), imageCapturePixelFormat, "YUYV"},
                     {std::format("{}.image_capture.width", cameraName), imageCaptureImageWidth, 0},
                     {std::format("{}.image_capture.height", cameraName), imageCaptureImageHeight, 0},
                     {std::format("{}.image_capture.framerate", cameraName), imageCaptureImageFramerate, 0},
@@ -394,15 +435,7 @@ namespace mrover {
                 }
             }
 
-
             mPort = static_cast<std::uint16_t>(port);
-            // TODO:(owen) none of this works
-            // if (mAddress != DEFAULT_IP_ADDRESS) {
-            //     if (!isIpAddressReachable(mAddress, mPort)) {
-            //         RCLCPP_ERROR_STREAM(get_logger(), std::format("IP address {} is not reachable. Using {} instead", mAddress, DEFAULT_IP_ADDRESS));
-            //         mAddress = DEFAULT_IP_ADDRESS;
-            //     }
-            // }
 
             mStreamCaptureFormat = gst::video::v4l2::CaptureFormat{
                     .pixelFormat = gst::video::v4l2::getPixelFormatFromStringView(streamPixelFormat),
@@ -497,24 +530,6 @@ namespace mrover {
                 break;
         }
         return TRUE;
-    }
-
-    auto isIpAddressReachable(std::string const& address, int port) -> bool {
-        int sockfd = socket(AF_INET, SOCK_STREAM, 0);
-
-        struct sockaddr_in sin{};
-        sin.sin_family = AF_INET;
-        sin.sin_port = htons(port);
-        inet_pton(AF_INET, address.c_str(), &sin.sin_addr);
-
-        bool isReachable;
-        if (connect(sockfd, (struct sockaddr*) &sin, sizeof(sin)) == -1) {
-            isReachable = false;
-        } else {
-            isReachable = true;
-            close(sockfd);
-        }
-        return isReachable;
     }
 
 } // namespace mrover

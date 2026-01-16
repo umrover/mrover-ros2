@@ -3,6 +3,22 @@
 #include "pch.hpp"
 
 namespace mrover {
+
+    namespace {
+        constexpr auto DEFAULT_RTP_JITTER = std::chrono::milliseconds(500);
+    }
+
+    inline auto createRtpToRawSrc(std::uint16_t port, gst::video::Codec codec, std::chrono::milliseconds rtpJitter = DEFAULT_RTP_JITTER) -> std::string {
+        std::string parser;
+        if (codec == gst::video::Codec::H265) {
+            parser = "! h265parse";
+        } else if (codec == gst::video::Codec::H264) {
+            parser = "! h264parse";
+        }
+
+        return std::format("udpsrc port={} ! application/x-rtp,media=video ! rtpjitterbuffer latency={} ! {} {} ! decodebin", port, rtpJitter.count(), getRtpDepayloader(codec), parser);
+    }
+
     /**
      * @class GstRtpVideoCreatorWidget
      * @brief Widget to create a new RTP video source

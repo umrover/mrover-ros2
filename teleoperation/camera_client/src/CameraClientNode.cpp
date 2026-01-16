@@ -10,6 +10,8 @@
 
 #include <gst_utils.hpp>
 
+#include "GstRtpVideoCreatorWidget.hpp"
+
 namespace mrover {
 
     CameraClientNode::CameraClientNode()
@@ -40,7 +42,7 @@ namespace mrover {
             declare_parameter(std::format("{}.stream.codec", cameraName), rclcpp::ParameterType::PARAMETER_STRING);
             std::string const codec = get_parameter(std::format("{}.stream.codec", cameraName)).as_string();
 
-            std::string const pipeline = gst::video::createRtpToRawSrc(port, gst::video::getCodecFromStringView(codec), rtpJitterMs);
+            std::string const pipeline = createRtpToRawSrc(port, gst::video::getCodecFromStringView(codec), rtpJitterMs);
 
             mMediaControlClients.emplace(cameraName, create_client<srv::MediaControl>(std::format("{}_media_control", cameraName)));
             mImageCaptureClients.emplace(cameraName, create_client<std_srvs::srv::Trigger>(std::format("{}_image_capture", cameraName)));
