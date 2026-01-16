@@ -65,6 +65,13 @@
     repo: deb [signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu {{ ubuntu_release }} main
     filename: ros
 
+- name: Sync APT Preferences
+  become: true
+  synchronize:
+    src: files/apt-preferences/
+    dest: /etc/apt/preferences.d
+    recursive: true
+
 - name: Upgrade APT Packages
   become: True
   apt:
@@ -81,7 +88,7 @@
       - zsh
       - fzf
       - sudo
-      - cmake=3.31.10-0kitware1ubuntu22.04.1
+      - cmake
       - ccache # Caches intermediate build files, speeds up compilation over time
       - ninja-build # Faster than make
       - tmux
