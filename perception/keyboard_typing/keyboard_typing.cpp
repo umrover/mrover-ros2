@@ -1,4 +1,5 @@
 #include "keyboard_typing.hpp"
+<<<<<<< HEAD
 #include <cmath>
 #include <geometry_msgs/msg/detail/pose__struct.hpp>
 #include <geometry_msgs/msg/detail/vector3__struct.hpp>
@@ -22,11 +23,30 @@
 #include <fstream>
 #include <geometry_msgs/msg/vector3.hpp>
 #include <mrover/msg/ik.hpp>
+=======
+>>>>>>> origin/kb/keyboard-typing
 
 namespace mrover{
     KeyboardTypingNode::KeyboardTypingNode(rclcpp::NodeOptions const& options) : rclcpp::Node("keyboard_typing_node", options),  mLoopProfiler{get_logger()}
     {
         RCLCPP_INFO_STREAM(get_logger(), "KeyBoardTypingNode starting up");
+
+        std::vector<ParameterWrapper> params{
+                {"min_code_length", mMinCodeLength, 3},
+                {"max_code_length", mMaxCodeLength, 6},
+        };
+
+        ParameterWrapper::declareParameters(this, params);
+
+        // Set up action server
+        mTypingClient = rclcpp_action::create_client<TypingDeltas>(this, "typing_deltas");
+
+        mTypingServer = rclcpp_action::create_server<TypingCode>(
+            this,
+            "es_typing_code",
+            std::bind(&KeyboardTypingNode::handle_goal, this, std::placeholders::_1, std::placeholders::_2),
+            std::bind(&KeyboardTypingNode::handle_cancel, this, std::placeholders::_1),
+            std::bind(&KeyboardTypingNode::handle_accepted, this, std::placeholders::_1));
 
         // subscribe to image stream
         mImageSub = create_subscription<sensor_msgs::msg::Image>("/finger_camera/image", rclcpp::QoS(1), [this](sensor_msgs::msg::Image::ConstSharedPtr const& msg) {
@@ -100,12 +120,13 @@ namespace mrover{
     }
 
     auto KeyboardTypingNode::yawCallback(sensor_msgs::msg::Image::ConstSharedPtr const& msg) -> void {
-        RCLCPP_INFO_STREAM(get_logger(), "callback");
-        sendIKCommand(1.215, .253, .367, 0, 0);
 
-        
-
-        std::optional<pose_output> pose = estimatePose(msg);
+        // If we are still updating pose estimate (i.e. no launch code sent, send IK and update pose)
+        std::optional<pose_output> pose = std::nullopt;
+        if (mUpdatePoseEstimate) {
+            sendIKCommand(1.215, .253, .367, 0, 0);
+            pose = estimatePose(msg);
+        }
 
         // Publish yaw & se3d
         if (pose.has_value()) {
@@ -324,38 +345,38 @@ namespace mrover{
         }
     }
 
-    auto KeyboardTypingNode::getKeyToCameraTransform(cv::Vec3d const& rvec,
-                                                 cv::Vec3d const& tvec,
-                                                 cv::Vec3d const& tag_offset_key) -> cv::Mat {
+    // auto KeyboardTypingNode::getKeyToCameraTransform(cv::Vec3d const& rvec,
+    //                                              cv::Vec3d const& tvec,
+    //                                              cv::Vec3d const& tag_offset_key) -> cv::Mat {
         
-        // 1. Define "Tag in Camera" (T_cam_tag)
-        // Isometry3d is a 4x4 matrix specifically for rigid transforms (Rotation + Translation)
-        Eigen::Isometry3d T_cam_tag = Eigen::Isometry3d::Identity();
+    //     // 1. Define "Tag in Camera" (T_cam_tag)
+    //     // Isometry3d is a 4x4 matrix specifically for rigid transforms (Rotation + Translation)
+    //     Eigen::Isometry3d T_cam_tag = Eigen::Isometry3d::Identity();
         
-        // Transform the rvec into eigen rotation matrix
-        cv::Mat R_cv;
-        cv::Rodrigues(rvec, R_cv);
-        Eigen::Matrix3d R_eigen;
-        cv::cv2eigen(R_cv, R_eigen);
+    //     // Transform the rvec into eigen rotation matrix
+    //     cv::Mat R_cv;
+    //     cv::Rodrigues(rvec, R_cv);
+    //     Eigen::Matrix3d R_eigen;
+    //     cv::cv2eigen(R_cv, R_eigen);
         
-        // Set Rotation
-        T_cam_tag.linear() = R_eigen;  
-        // Set Translation   
-        T_cam_tag.translation() = Eigen::Vector3d(tvec[0], tvec[1], tvec[2]);
+    //     // Set Rotation
+    //     T_cam_tag.linear() = R_eigen;  
+    //     // Set Translation   
+    //     T_cam_tag.translation() = Eigen::Vector3d(tvec[0], tvec[1], tvec[2]);
 
-        // Transform from tag to key (only translation since on same plane as keyboard)
-        Eigen::Isometry3d T_key_tag = Eigen::Isometry3d::Identity();
-        T_key_tag.translation() = Eigen::Vector3d(tag_offset_key[0], tag_offset_key[1], tag_offset_key[2]);
+    //     // Transform from tag to key (only translation since on same plane as keyboard)
+    //     Eigen::Isometry3d T_key_tag = Eigen::Isometry3d::Identity();
+    //     T_key_tag.translation() = Eigen::Vector3d(tag_offset_key[0], tag_offset_key[1], tag_offset_key[2]);
 
-        // Logic: Camera <-- Tag <-- Key
-        // Math:  T_cam_key = T_cam_tag * T_key_tag.inverse()
-        Eigen::Isometry3d T_cam_key = T_cam_tag * T_key_tag.inverse();
+    //     // Logic: Camera <-- Tag <-- Key
+    //     // Math:  T_cam_key = T_cam_tag * T_key_tag.inverse()
+    //     Eigen::Isometry3d T_cam_key = T_cam_tag * T_key_tag.inverse();
 
-        // OpenCV Matrix
-        cv::Mat T_out;
-        cv::eigen2cv(T_cam_key.matrix(), T_out);
-        return T_out;
-    }
+    //     // OpenCV Matrix
+    //     cv::Mat T_out;
+    //     cv::eigen2cv(T_cam_key.matrix(), T_out);
+    //     return T_out;
+    // }
 
     auto KeyboardTypingNode::updateKalmanFilter(cv::Vec3d& tvec, cv::Vec3d& rvec) -> geometry_msgs::msg::Pose {
         // 1. Get current time from the Node's clock
@@ -539,8 +560,129 @@ namespace mrover{
                 << roll << "," << pitch << "," << yaw << "," << std::endl;
             fout.close();
         }
-    }    
+    }
 
+    // ----------------------- ACTION SERVER/CLIENT ---------------------------
+    // Typing IK action client functions (communication with Nav)
+    auto KeyboardTypingNode::send_goal(float x_delta, float y_delta) -> bool {
+        if (!mTypingClient->wait_for_action_server()) {
+            RCLCPP_INFO_STREAM(this->get_logger(), "Typing Deltas Action Server not available");
+            return false;
+        }
+
+        RCLCPP_INFO_STREAM(this->get_logger(), "Sending Goal");
+
+        auto goal_msg = TypingDeltas::Goal();
+        goal_msg.x_delta = x_delta;
+        goal_msg.y_delta = y_delta;
+
+        auto send_goal_options = rclcpp_action::Client<TypingDeltas>::SendGoalOptions();
+        // send_goal_options.goal_response_callback = std::bind(&KeyboardTypingNode::goal_response_callback, this, std::placeholders::_1);
+        send_goal_options.feedback_callback = std::bind(&KeyboardTypingNode::feedback_callback, this, std::placeholders::_1, std::placeholders::_2);
+        // send_goal_options.result_callback = std::bind(&KeyboardTypingNode::result_callback, this, std::placeholders::_1);
+
+        std::shared_future<GoalHandleTypingDeltas::SharedPtr> future_goal_handle = mTypingClient->async_send_goal(goal_msg, send_goal_options);
+        future_goal_handle.wait();
+
+        if (future_goal_handle.get() == nullptr)
+            return false;
+
+        std::shared_future<GoalHandleTypingDeltas::WrappedResult> future_result = mTypingClient->async_get_result(future_goal_handle.get());
+        future_result.wait();
+        return (future_result.get().code == rclcpp_action::ResultCode::SUCCEEDED);
+    }
+
+    void KeyboardTypingNode::feedback_callback(GoalHandleTypingDeltas::SharedPtr, const std::shared_ptr<const TypingDeltas::Feedback> feedback) {
+        RCLCPP_INFO_STREAM(get_logger(), std::format("Feedback: {}", feedback->dist_remaining));
+    }
+
+    // void KeyboardTypingNode::result_callback(const GoalHandleTypingDeltas::WrappedResult & result) {
+    //     mGoalReached = (result.code == rclcpp_action::ResultCode::SUCCEEDED);
+    // }
+
+    // Typing IK action server functions (communication with teleop)
+    auto KeyboardTypingNode::handle_goal(const rclcpp_action::GoalUUID & uuid,std::shared_ptr<const TypingCode::Goal> goal) -> rclcpp_action::GoalResponse {
+        // Reject goal if code length is incorrect, code already active, or not letters
+        if (goal->launch_code.length() < mMinCodeLength || goal->launch_code.length() > mMaxCodeLength) {
+            RCLCPP_WARN(this->get_logger(), "Launch code length must be in between %d and %d!", mMinCodeLength, mMaxCodeLength);
+            return rclcpp_action::GoalResponse::REJECT;
+        }
+
+        if (mAcceptedGoalHandle && mAcceptedGoalHandle->is_active()) {
+            RCLCPP_WARN(this->get_logger(), "Launch code already active!");
+            return rclcpp_action::GoalResponse::REJECT;
+        }
+
+        std::string temp = goal->launch_code;
+        if (!std::all_of(temp.begin(), temp.end(), [](unsigned char c){
+            return std::isalpha(c);
+        })) {
+            RCLCPP_WARN(this->get_logger(), "All keys must be letters!");
+            return rclcpp_action::GoalResponse::REJECT;
+        }
+
+        mUpdatePoseEstimate = false; // Once we accept a goal, we no longer want to be updating the pose estimate
+
+        RCLCPP_INFO_STREAM(get_logger(), std::format("Goal Accepted: {}", temp));
+        return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
+    }
+
+    auto KeyboardTypingNode::handle_cancel(const std::shared_ptr<GoalHandleTypingCode> goal_handle) -> rclcpp_action::CancelResponse {
+        if (goal_handle != mAcceptedGoalHandle) {
+            RCLCPP_WARN(this->get_logger(), "Invalid Cancel ID");
+            return rclcpp_action::CancelResponse::REJECT;
+        }
+
+        RCLCPP_INFO_STREAM(get_logger(), std::format("Cacelling goal {}", goal_handle->get_goal()->launch_code));
+        mUpdatePoseEstimate = true;
+        mAcceptedGoalHandle = nullptr;
+        mTypingClient->async_cancel_all_goals(); // Cancel goal send to nav
+        return rclcpp_action::CancelResponse::ACCEPT;
+    }
+
+    void KeyboardTypingNode::handle_accepted(const std::shared_ptr<GoalHandleTypingCode> goal_handle) {
+        mAcceptedGoalHandle = goal_handle; // Set goal handle in the executor thread, not a new one
+
+        std::thread([this, goal_handle]() {
+            auto result = std::make_shared<TypingCode::Result>();
+            auto feedback = std::make_shared<TypingCode::Feedback>();
+
+            result->success = false;
+
+            std::string launchCode = goal_handle->get_goal()->launch_code;
+            std::transform(launchCode.begin(), launchCode.end(), launchCode.begin(), ::toupper);
+            for (int i = 0; i < launchCode.length(); i++) {
+                feedback->current_index = static_cast<uint32_t>(i);
+                goal_handle->publish_feedback(feedback);
+
+                RCLCPP_WARN(this->get_logger(), "Sending Goal");
+
+                // TODO logic for figuring out deltas
+                float x_delta, y_delta;
+                x_delta = 0.0;
+                y_delta = 0.0;
+                send_goal(x_delta, y_delta);
+
+                if (goal_handle->is_canceling()) {
+                    result->success = false;
+                    goal_handle->canceled(result);
+                    return;
+                } // Check if goal canceled again because we returned from a long function
+
+                // TODO add handling for if goal fails
+
+                // TODO add logic for pusher
+                //      see: /arm_thr_cmd in sw-icd-26 document for control
+                //      see: /arm_controller_state in sw-icd-26 document for feedback
+                // Maybe create subscriber to pusher here, possibly with some kind of pusher mutex/cv,
+                //  then let it go out of scope
+            }
+
+            result->success = true;
+            mUpdatePoseEstimate = true;
+            goal_handle->succeed(result);
+        }).detach();
+    }
 }
 
 /*

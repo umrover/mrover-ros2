@@ -1,0 +1,5 @@
+string launch_code
+---
+bool success
+---
+int32 current_index

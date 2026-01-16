@@ -1,20 +1,44 @@
 #pragma once
 
-#include "mrover/msg/detail/ik__struct.hpp"
 #include "pch.hpp"
-#include <geometry_msgs/msg/detail/vector3__struct.hpp>
-#include <rclcpp/publisher.hpp>
-#include <geometry_msgs/msg/vector3.hpp>
-#include <mrover/msg/ik.hpp>
+#include <memory>
+#include <rclcpp_action/server_goal_handle.hpp>
+#include <rclcpp_action/types.hpp>
+
 // #include "constants.h"
 namespace mrover{
     class KeyboardTypingNode : public rclcpp::Node{
         private:
+        // TypingDeltas action client - this communicates with Nav
+        using TypingDeltas = mrover::action::TypingDeltas;
+        using GoalHandleTypingDeltas = rclcpp_action::ClientGoalHandle<TypingDeltas>;
+
+        rclcpp_action::Client<TypingDeltas>::SharedPtr mTypingClient;
+
+        void feedback_callback(GoalHandleTypingDeltas::SharedPtr, const std::shared_ptr<const TypingDeltas::Feedback> feedback);
+
+        auto send_goal(float x_delta, float y_delta) -> bool;
+
+        // TypingCode action server - this communicates with teleop
+        using TypingCode = mrover::action::TypingCode;
+        using GoalHandleTypingCode = rclcpp_action::ServerGoalHandle<TypingCode>;
+
+        rclcpp_action::Server<TypingCode>::SharedPtr mTypingServer;
+
+        auto handle_goal(const rclcpp_action::GoalUUID & uuid,std::shared_ptr<const TypingCode::Goal> goal) -> rclcpp_action::GoalResponse;
+        auto handle_cancel(const std::shared_ptr<GoalHandleTypingCode> goal_handle) -> rclcpp_action::CancelResponse;
+        void handle_accepted(const std::shared_ptr<GoalHandleTypingCode> goal_handle);
+
+        std::shared_ptr<GoalHandleTypingCode> mAcceptedGoalHandle = nullptr;
+
         // Store information for pose estimation
         struct pose_output {
             geometry_msgs::msg::Pose pose;
             double yaw;
         };
+
+        // Params
+        int mMinCodeLength{}, mMaxCodeLength{};
 
         // Define a board
         cv::Ptr<cv::aruco::Board> rover_board;
@@ -34,6 +58,8 @@ namespace mrover{
 
         // First position is rotation vector, second is translation vector
         // std::vector<cv::Vec3d> current_estimate;
+        std::optional<SE3d> mCameraToKey = std::nullopt;
+        bool mUpdatePoseEstimate = true;
 
         // Filter that stores filtered pose
         cv::KalmanFilter kf;
@@ -53,9 +79,9 @@ namespace mrover{
         // Change the function signature to accept vectors
         auto updateKalmanFilter(cv::Vec3d &tvec, cv::Vec3d &rvec) -> geometry_msgs::msg::Pose;
 
-        auto getKeyToCameraTransform(cv::Vec3d const& rvec,
-                                     cv::Vec3d const& tvec,
-                                     cv::Vec3d const& tag_offset_key) -> cv::Mat;
+        // auto getKeyToCameraTransform(cv::Vec3d const& rvec,
+        //                              cv::Vec3d const& tvec,
+        //                              cv::Vec3d const& tag_offset_key) -> cv::Mat;
 
 
         auto sendIKCommand(float x, float y, float z, float pitch, float roll) -> void;
@@ -65,6 +91,7 @@ namespace mrover{
         auto estimatePose(sensor_msgs::msg::Image::ConstSharedPtr const& msg) -> std::optional<pose_output>;
 
         public:
+
         explicit KeyboardTypingNode(rclcpp::NodeOptions const& options = rclcpp::NodeOptions());
     };
 }
