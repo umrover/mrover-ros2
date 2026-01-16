@@ -81,7 +81,7 @@
       - zsh
       - fzf
       - sudo
-      - cmake
+      - cmake=3.31.10-0kitware1ubuntu22.04.1
       - ccache # Caches intermediate build files, speeds up compilation over time
       - ninja-build # Faster than make
       - tmux
