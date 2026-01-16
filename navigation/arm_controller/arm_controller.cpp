@@ -235,49 +235,7 @@ namespace mrover {
             }
         } else if (mArmMode == ArmMode::VELOCITY_CONTROL) {
             // TODO: Determine joint velocities that cancels out arm sag
-            
-            /*if (!carrot_initialized) {
-                mCarrot = mArmPos;
-                carrot_initialized = true;
-            }*/
-
-            ArmPos mCarrot = mArmPos;
-
-            if(mVelTarget.linear.x == 0 && mVelTarget.linear.y == 0 && mVelTarget.linear.z == 0 &&
-               mVelTarget.angular.x == 0 && mVelTarget.angular.y == 0) {
-                RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1000, "No velocity input currently");
-                if(!mPosFallback) {
-                    mPosFallback = mCurrPos;
-                }
-                mPosPub->publish(mPosFallback.value());
-                
-            }
-
-            else {
-                double dt = 1.0/3.0;
-
-                mCarrot.x += mVelTarget.linear.x * dt;
-                mCarrot.y += mVelTarget.linear.y * dt;
-                mCarrot.z += mVelTarget.linear.z * dt;
-                mCarrot.pitch += mVelTarget.angular.y * dt;
-                mCarrot.roll += mVelTarget.angular.x * dt;
-
-                auto calc_positions = ikPosCalc(mCarrot);
-                if (calc_positions) {
-                    mPosPub->publish(calc_positions.value());
-                    mPosFallback = std::nullopt;
-                    return;
-                }
-                else {
-                    RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1000, "No velocity input currently");
-                    if(!mPosFallback) {
-                        mPosFallback = mCurrPos;
-                    }
-                    mPosPub->publish(mPosFallback.value());
-                    return;
-                }
-            }
-            /*auto velocities = ikVelCalc(mVelTarget);
+            auto velocities = ikVelCalc(mVelTarget);
             if (velocities && 
                 !(
                     velocities->velocities[0] == 0 &&
@@ -287,13 +245,40 @@ namespace mrover {
                     velocities->velocities[4] == 0
                 )
             ) {
+                // ArmPos wantedCarrotPose = getCarrotPose(your start pose, your commanded vel);
+                // ArmPos currentCarrotPose = getCarrotPose(your current pose, your commanded vel)
+                // wantedCarrotPose - currentCarrotPose / dt = velocityToadd
+                // velocitytoadd + your command vel
+
+                double dt = 0.033; // 33 ms timer
+
+                ArmPos wantedCarrotPose = getCarrotPose(mPosTarget, mVelTarget, dt);
+                ArmPos currentCarrotPose = getCarrotPose(mArmPos, mVelTarget, dt);
+
+                geometry_msgs::msg::Twist velocityToAdd;
+                velocityToAdd.linear.x = (wantedCarrotPose.x - currentCarrotPose.x) / dt;
+                velocityToAdd.linear.y = (wantedCarrotPose.y - currentCarrotPose.y) / dt;
+                velocityToAdd.linear.z = (wantedCarrotPose.z - currentCarrotPose.z) / dt;
+                velocityToAdd.angular.x = (wantedCarrotPose.roll - currentCarrotPose.roll) / dt;
+                velocityToAdd.angular.y = (wantedCarrotPose.pitch - currentCarrotPose.pitch) / dt;
+                velocityToAdd.angular.z = 0;
+
+                geometry_msgs::msg::Twist newCommandedVel;
+                newCommandedVel.linear.x = mVelTarget.linear.x + velocityToAdd.linear.x;
+                newCommandedVel.linear.y = mVelTarget.linear.y + velocityToAdd.linear.y;
+                newCommandedVel.linear.z = mVelTarget.linear.z + velocityToAdd.linear.z;
+                newCommandedVel.angular.x = mVelTarget.angular.x + velocityToAdd.angular.x;
+                newCommandedVel.angular.y = mVelTarget.angular.y + velocityToAdd.angular.y;
+                newCommandedVel.angular.z = mVelTarget.angular.z;
+                velocities = ikVelCalc(newCommandedVel);
+
                 mVelPub->publish(velocities.value());
                 mPosFallback = std::nullopt;
             } else {
                 if(!velocities) RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1000, "Velocity IK failed!");
                 if(!mPosFallback) mPosFallback = mCurrPos;
                 mPosPub->publish(mPosFallback.value());
-            }*/
+            }
         } else { // typing mode
             msg::Position positions;
             positions.names = {"joint_a", "gripper"};
@@ -320,6 +305,17 @@ namespace mrover {
             mPosFallback = std::nullopt;
             mPosPub->publish(positions);
         }
+    }
+
+    auto getCarrotPose(ArmPos pos, Twist commandedVel, const double dt) -> ArmPos {
+        return ArmPos(
+            pos.x + commandedVel.linear.x * dt,
+            pos.y + commandedVel.linear.y * dt,
+            pos.z + commandedVel.linear.z * dt,
+            pos.pitch + commandedVel.angular.y * dt,
+            pos.roll + commandedVel.angular.x * dt,
+            pos.gripper
+        );
     }
 
     auto ArmController::modeCallback(srv::IkMode::Request::ConstSharedPtr const& req, srv::IkMode::Response::SharedPtr const& resp) -> void {
