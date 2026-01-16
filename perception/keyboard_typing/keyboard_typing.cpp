@@ -4,6 +4,7 @@
 #include <geometry_msgs/msg/detail/vector3__struct.hpp>
 #include <opencv2/core/eigen.hpp>
 #include "keyboard_typing/constants.h"
+#include "lie.hpp"
 #include "mrover/msg/detail/ik__struct.hpp"
 #include "mrover/msg/detail/keyboard_yaw__struct.hpp"
 #include <cmath>
@@ -103,15 +104,18 @@ namespace mrover{
         sendIKCommand(1.215, .253, .367, 0, 0);
 
         
-    
 
         std::optional<pose_output> pose = estimatePose(msg);
 
-        // Publish yaw
+        // Publish yaw & se3d
         if (pose.has_value()) {
             mrover::msg::KeyboardYaw msg;
             msg.yaw = pose->yaw;
             mCostMapPub->publish(msg);
+
+            // Publish transform of tag to tree
+            SE3d se3 = SE3Conversions::fromPose(pose->pose);
+            
         }
     }
 
