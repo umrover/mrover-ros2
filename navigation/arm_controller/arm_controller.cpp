@@ -270,9 +270,18 @@ namespace mrover {
                 newCommandedVel.angular.x = mVelTarget.angular.x + velocityToAdd.angular.x;
                 newCommandedVel.angular.y = mVelTarget.angular.y + velocityToAdd.angular.y;
                 newCommandedVel.angular.z = mVelTarget.angular.z;
-                velocities = ikVelCalc(newCommandedVel);
 
+                if(mVelTarget.linear.x == 0 && mVelTarget.linear.y == 0 && mVelTarget.linear.z == 0 &&
+               mVelTarget.angular.x == 0 && mVelTarget.angular.y == 0) {
+                // if no velcoity command is given
+                if(!mPosFallback) mPosFallback = mCurrPos;
+                mPosPub->publish(mPosFallback.value());
+                
+               } else {
+                velocities = ikVelCalc(newCommandedVel);
                 mVelPub->publish(velocities.value());
+               }
+               
                 mPosFallback = std::nullopt;
             } else {
                 if(!velocities) RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1000, "Velocity IK failed!");
@@ -307,7 +316,7 @@ namespace mrover {
         }
     }
 
-    auto getCarrotPose(ArmPos pos, Twist commandedVel, const double dt) -> ArmPos {
+    auto ArmController::getCarrotPose(ArmPos pos, Twist commandedVel, const double dt) -> ArmPos {
         return ArmPos(
             pos.x + commandedVel.linear.x * dt,
             pos.y + commandedVel.linear.y * dt,
