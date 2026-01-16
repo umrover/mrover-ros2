@@ -65,6 +65,18 @@
     repo: deb [signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu {{ ubuntu_release }} main
     filename: ros
 
+- name: Add NodeSource APT Key
+  become: True
+  apt_key:
+    url: https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key
+    keyring: /usr/share/keyrings/nodesource-keyring.gpg
+
+- name: Add NodeSource APT List
+  become: True
+  apt_repository:
+    repo: deb [signed-by=/usr/share/keyrings/nodesource-keyring.gpg] https://deb.nodesource.com/node_24.x nodistro main
+    filename: nodesource
+
 - name: Upgrade APT Packages
   become: True
   apt:
@@ -126,6 +138,7 @@
       - qtmultimedia5-dev
       - libqt5multimedia5-plugins
       - python3-pyqt5
+      - nodejs
 
 - name: Build and Install Manif
   become: True
