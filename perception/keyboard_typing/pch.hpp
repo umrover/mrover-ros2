@@ -31,12 +31,9 @@
 #include <opencv2/core/mat.hpp>
 #include <opencv2/core/matx.hpp>
 #include <opencv2/video/tracking.hpp>
-<<<<<<< HEAD
 #include <loop_profiler.hpp>
 #include <mrover/msg/keyboard_yaw.hpp>
 #include <lie.hpp>
-=======
->>>>>>> origin/kb/keyboard-typing
 // Commented this out for now since it was messing with linter
 // #include "constants.h"
 

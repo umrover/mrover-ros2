@@ -1,5 +1,4 @@
 #include "keyboard_typing.hpp"
-<<<<<<< HEAD
 #include <cmath>
 #include <geometry_msgs/msg/detail/pose__struct.hpp>
 #include <geometry_msgs/msg/detail/vector3__struct.hpp>
@@ -23,8 +22,6 @@
 #include <fstream>
 #include <geometry_msgs/msg/vector3.hpp>
 #include <mrover/msg/ik.hpp>
-=======
->>>>>>> origin/kb/keyboard-typing
 
 namespace mrover{
     KeyboardTypingNode::KeyboardTypingNode(rclcpp::NodeOptions const& options) : rclcpp::Node("keyboard_typing_node", options),  mLoopProfiler{get_logger()}
