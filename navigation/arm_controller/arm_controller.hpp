@@ -24,6 +24,11 @@ namespace mrover {
             }
         };
 
+        ArmPos mCarrotPoseCorrect;
+        ArmPos mCarrotPoseLast;
+        rclcpp::Time mCarrotUpdateTime;
+        bool initializedCarrot = false;
+
 
         struct JointWrapper {
             struct JointLimits {
