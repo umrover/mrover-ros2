@@ -46,6 +46,7 @@ echo "------------------------------------"
 sudo make install
 echo "export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH" >> ~/.bashrc
 echo "export PYTHONPATH=/usr/local/lib/python3.10/site-packages/:$PYTHONPATH" >> ~/.bashrc
+# shellcheck source=${HOME}/.bashrc
 source "${HOME}/.bashrc"
 
 
