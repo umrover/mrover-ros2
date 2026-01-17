@@ -1,0 +1,288 @@
+# Robostack-based build environment - distro agnostic
+# Supports: Ubuntu/Debian, Fedora, Arch Linux
+
+- name: Set package names for Debian/Ubuntu
+  set_fact:
+    system_packages:
+      - zsh
+      - fzf
+      - sudo
+      - tmux
+      - htop
+      - curl
+      - unzip
+      - rsync
+      - shellcheck
+      - clang
+      - lld
+      - lldb
+      - gcc
+      - g++
+      - libbullet-dev
+      - libglfw3-dev
+      - libx11-xcb-dev
+      - libnl-3-dev
+      - libnl-route-3-dev
+      - libtbb-dev
+      - libassimp-dev
+      - libeigen3-dev
+      - libopencv-dev
+      - libgstreamer1.0-dev
+      - libgstreamer-plugins-base1.0-dev
+      - vainfo
+      - x264
+      - libboost-dev
+      - qtbase5-dev
+      - qtmultimedia5-dev
+      - libqt5multimedia5-plugins
+      - python3-pyqt5
+      - flatpak
+    pkg_manager: apt
+  when: ansible_os_family == "Debian"
+
+- name: Set package names for Fedora
+  set_fact:
+    system_packages:
+      - zsh
+      - fzf
+      - sudo
+      - tmux
+      - htop
+      - curl
+      - unzip
+      - rsync
+      - ShellCheck
+      - clang
+      - lld
+      - lldb
+      - gcc
+      - gcc-c++
+      - bullet-devel
+      - glfw-devel
+      - libX11-xcb
+      - libnl3-devel
+      - tbb-devel
+      - assimp-devel
+      - eigen3-devel
+      - opencv-devel
+      - gstreamer1-devel
+      - gstreamer1-plugins-base-devel
+      - libva-utils
+      - x264
+      - boost-devel
+      - qt5-qtbase-devel
+      - qt5-qtmultimedia-devel
+      - python3-qt5
+      - flatpak
+    pkg_manager: dnf
+  when: ansible_os_family == "RedHat"
+
+- name: Set package names for Arch
+  set_fact:
+    system_packages:
+      - zsh
+      - fzf
+      - sudo
+      - tmux
+      - htop
+      - curl
+      - unzip
+      - rsync
+      - shellcheck
+      - clang
+      - lld
+      - lldb
+      - gcc
+      - bullet
+      - glfw
+      - libx11
+      - libnl
+      - tbb
+      - assimp
+      - eigen
+      - opencv
+      - gstreamer
+      - gst-plugins-base
+      - libva-utils
+      - x264
+      - boost
+      - qt5-base
+      - qt5-multimedia
+      - python-pyqt5
+      - flatpak
+    pkg_manager: pacman
+  when: ansible_os_family == "Archlinux"
+
+- name: Install system packages (Debian/Ubuntu)
+  become: True
+  apt:
+    cache_valid_time: 604800
+    state: latest
+    update_cache: yes
+    name: "{{ system_packages }}"
+  when: ansible_os_family == "Debian"
+
+- name: Install system packages (Fedora)
+  become: True
+  dnf:
+    state: latest
+    name: "{{ system_packages }}"
+  when: ansible_os_family == "RedHat"
+
+- name: Install system packages (Arch)
+  become: True
+  pacman:
+    state: latest
+    update_cache: yes
+    name: "{{ system_packages }}"
+  when: ansible_os_family == "Archlinux"
+
+- name: Check if Miniforge is installed
+  stat:
+    path: "{{ miniforge_path }}/bin/mamba"
+  register: miniforge_installed
+
+- name: Download Miniforge installer
+  get_url:
+    url: https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh
+    dest: /tmp/miniforge.sh
+    mode: '0755'
+  when: not miniforge_installed.stat.exists
+
+- name: Install Miniforge
+  shell: /tmp/miniforge.sh -b -p {{ miniforge_path }}
+  args:
+    creates: "{{ miniforge_path }}/bin/mamba"
+  when: not miniforge_installed.stat.exists
+
+- name: Initialize Mamba for bash
+  shell: "{{ miniforge_path }}/bin/mamba init bash"
+  ignore_errors: yes
+  changed_when: false
+
+- name: Initialize Mamba for zsh
+  shell: "{{ miniforge_path }}/bin/mamba init zsh"
+  ignore_errors: yes
+  changed_when: false
+
+- name: Check if ROS conda environment exists
+  shell: "{{ miniforge_path }}/bin/mamba env list | grep -q {{ conda_env_name }}"
+  register: conda_env_exists
+  ignore_errors: yes
+  changed_when: false
+
+- name: Create ROS conda environment with Robostack
+  shell: |
+    {{ miniforge_path }}/bin/mamba create -y -n {{ conda_env_name }} \
+      -c conda-forge -c robostack-staging \
+      ros-humble-ros-base \
+      ros-humble-rviz2 \
+      ros-humble-xacro \
+      magic_enum \
+      colcon-common-extensions \
+      rosdep \
+      cmake \
+      ninja \
+      ccache \
+      python=3.11
+  when: conda_env_exists.rc != 0
+
+# rtcm_msgs is not in robostack, clone for building from source
+- name: Clone rtcm_msgs for building from source
+  git:
+    repo: https://github.com/tilk/rtcm_msgs.git
+    dest: "{{ ros2_workspace }}/src/rtcm_msgs"
+    version: ros2
+
+- name: Build and Install Manif (using conda Python)
+  shell: |
+    source {{ miniforge_path }}/etc/profile.d/conda.sh
+    conda activate {{ conda_env_name }}
+    cd {{ ros2_workspace }}/src/mrover
+    git submodule update --init deps/manif
+    cd deps/manif
+    pip install .
+  args:
+    executable: /bin/bash
+    creates: "{{ miniforge_path }}/envs/{{ conda_env_name }}/lib/python3.11/site-packages/manifpy/__init__.py"
+
+- name: Build and Install Dawn
+  become: True
+  command: ./scripts/build_dawn.sh
+  args:
+    chdir: "{{ ros2_workspace }}/src/mrover/"
+    creates: "{{ ros2_workspace }}/src/mrover/deps/dawn/out/Release/src/dawn/native/libwebgpu_dawn.so"
+
+- name: Initialize rosdep
+  shell: |
+    source {{ miniforge_path }}/etc/profile.d/conda.sh
+    conda activate {{ conda_env_name }}
+    rosdep init
+  args:
+    executable: /bin/bash
+    creates: /etc/ros/rosdep/sources.list.d/20-default.list
+  become: True
+  ignore_errors: yes
+
+- name: Update rosdep
+  shell: |
+    source {{ miniforge_path }}/etc/profile.d/conda.sh
+    conda activate {{ conda_env_name }}
+    rosdep update
+  args:
+    executable: /bin/bash
+  ignore_errors: yes
+  changed_when: false
+
+- name: Install Python dev dependencies in conda env
+  shell: |
+    source {{ miniforge_path }}/etc/profile.d/conda.sh
+    conda activate {{ conda_env_name }}
+    pip install -e "{{ ros2_workspace }}/src/mrover[dev]"
+  args:
+    executable: /bin/bash
+
+- name: Add Flathub repository
+  become: True
+  command: flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+  changed_when: false
+
+- name: Install Chromium via Flatpak
+  become: True
+  command: flatpak install -y flathub org.chromium.Chromium
+  args:
+    creates: /var/lib/flatpak/app/org.chromium.Chromium
+
+- name: Download Bun installer
+  get_url:
+    url: https://bun.sh/install
+    dest: /tmp/bun_install.sh
+    mode: '0755'
+
+- name: Install or Upgrade Bun
+  shell: /tmp/bun_install.sh
+  args:
+    executable: /bin/bash
+  environment:
+    BUN_INSTALL: "{{ ansible_env.HOME }}/.bun"
+
+- name: Install Bun Packages
+  command: "{{ ansible_env.HOME }}/.bun/bin/bun install"
+  args:
+    chdir: "{{ ros2_workspace }}/src/mrover/teleoperation/basestation_gui/frontend"
+
+- name: Create activation helper script
+  copy:
+    dest: "{{ ros2_workspace }}/src/mrover/activate_ros.sh"
+    mode: '0755'
+    content: |
+      #!/bin/bash
+      # Source this file to activate the ROS environment
+      # Usage: source activate_ros.sh
+
+      source {{ miniforge_path }}/etc/profile.d/conda.sh
+      conda activate {{ conda_env_name }}
+
+      echo "ROS2 Humble (Robostack) environment activated"
+      echo "Python: $(which python)"
+      echo "ROS_DISTRO: $ROS_DISTRO"

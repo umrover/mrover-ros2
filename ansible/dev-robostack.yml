@@ -1,0 +1,11 @@
+---
+# Robostack-based development environment for Ubuntu 24.04+
+# Usage: ./ansible.sh dev-robostack.yml
+- hosts: all
+  vars:
+    ros_distro: humble
+    conda_env_name: ros_env
+    miniforge_path: "{{ ansible_env.HOME }}/miniforge3"
+  roles:
+    - build-robostack
+    - dev
