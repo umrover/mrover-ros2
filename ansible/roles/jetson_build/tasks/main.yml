@@ -74,6 +74,6 @@
 - name: Sync Systemd
   become: true
   synchronize:
-    src: files/systemd
+    src: files/systemd/
     dest: /etc/systemd/system
     recursive: true
