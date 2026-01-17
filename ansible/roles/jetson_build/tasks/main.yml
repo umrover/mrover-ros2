@@ -1,15 +1,3 @@
-- name: Hold Jetson Kernel Packages Constant
-  dpkg_selections:
-    name:
-      - nvidia-l4t-display-kernel
-      - nvidia-l4t-kernel
-      - nvidia-l4t-kernel-dtbs
-      - nvidia-l4t-kernel-headers
-      - nvidia-l4t-kernel-oot-headers
-      - nvidia-l4t-kernel-oot-modules
-      - nvidia-l4t-bootloader
-    selection: hold
-
 - name: Jetson Stats
   become: true
   pip:
