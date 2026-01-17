@@ -77,3 +77,9 @@
     src: files/systemd/
     dest: /etc/systemd/system
     recursive: true
+
+- name: Reload Systemd Daemon
+  systemd_service:
+    state: restarted
+    daemon_reload: true
+    name: can
