@@ -9,7 +9,7 @@ export KERNEL_HEADERS="${JETSON_SOURCE_DIR}/Linux_for_Tegra/source/kernel/kernel
 export INSTALL_MOD_PATH="${JETSON_SOURCE_DIR}/Linux_for_Tegra/rootfs/"
 
 # Change to the kernel sources directory
-pushd "${JETSON_SOURCE_DIR}/Linux_for_Tegra/source"
+pushd "${JETSON_SOURCE_DIR}/Linux_for_Tegra/source" || exit
 
 # Invoke Make commands
 # Build the kernel
@@ -22,10 +22,10 @@ cp "kernel/kernel-jammy-src/arch/arm64/boot/Image" "${JETSON_SOURCE_DIR}/Linux_f
 make modules
 sudo -E make modules_install
 
-pushd "${JETSON_SOURCE_DIR}/Linux_for_Tegra"
+pushd "${JETSON_SOURCE_DIR}/Linux_for_Tegra" || exit
 sudo ./tools/l4t_update_initrd.sh
 
 # Build the DTBs
-pushd "${JETSON_SOURCE_DIR}/Linux_for_Tegra/source"
+pushd "${JETSON_SOURCE_DIR}/Linux_for_Tegra/source" || exit
 make dtbs
 cp "kernel-devicetree/generic-dts/dtbs/*" "${JETSON_SOURCE_DIR}/Linux_for_Tegra/kernel/dtb/"

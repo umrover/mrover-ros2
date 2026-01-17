@@ -10,7 +10,7 @@ KERNEL_LOCATION="/tmp/jetson-flash/Linux_for_Tegra/source/kernel/kernel-jammy-sr
 PATH="$PATH:/tmp/aarch64--glibc--stable-2022.08-1/lib"
 
 # Change to the kernel sources directory
-pushd "${PCAN_SOURCE_DIR}/"
+pushd "${PCAN_SOURCE_DIR}/" || exit
 
 sudo make CROSS_COMPILE=${CROSS_COMPILE} KERNEL_LOCATION=${KERNEL_LOCATION} ARCH=arm64 PCAN_BASIC="" DESTDIR="../../jetson-flash/Linux_for_Tegra/rootfs" clean
 
