@@ -62,3 +62,17 @@
   command: ./ansible/roles/jetson_build/files/scripts/build_opencv.sh
   args:
     chdir: "{{ ansible_env.HOME }}/ros2_ws/src/mrover/"
+
+- name: Sync Bin
+  become: true
+  synchronize:
+    src: files/bin/
+    dest: /usr/local/bin
+    recursive: true
+
+- name: Sync Systemd
+  become: true
+  synchronize:
+    src: files/systemd
+    dest: /etc/systemd/system
+    recursive: true
