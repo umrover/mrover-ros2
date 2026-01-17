@@ -5,7 +5,7 @@
     ubuntu_release: jammy
     ifname: eth0
   roles:
-    - build
     - jetson_build
+    - build
     - jetson_networks
     - dev
