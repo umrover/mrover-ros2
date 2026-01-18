@@ -413,11 +413,11 @@ class ApproachTargetState(State):
         if time_diff is None:
             return False
         rover_translation = rover_SE3.translation()[0:2]
-        distance_to_target = d_calc(rover_translation, tuple(target_pos))
+        distance_to_target = d_calc(rover_translation, tuple(target_pos))        
         if(object_type in self.no_look_ahead_dict.values()):
             return distance_to_target < self.DISTANCE_THRESHOLD
         else:
-            return distance_to_target < self.LOOK_DISTANCE_THRESHOLD and time_diff > Duration(nanoseconds=50000000)
+            return distance_to_target < self.LOOK_DISTANCE_THRESHOLD and time_diff < Duration(nanoseconds=50000000)
 
     def point_in_distance_threshold(self, context: Context, point):
         if point is None:
