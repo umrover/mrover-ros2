@@ -24,12 +24,6 @@ namespace mrover {
             }
         };
 
-        ArmPos mCarrotPoseCorrect;
-        ArmPos mCarrotPoseLast;
-        rclcpp::Time mCarrotUpdateTime;
-        bool initializedCarrot = false;
-        static rclcpp::Time last;
-
 
         struct JointWrapper {
             struct JointLimits {
@@ -84,15 +78,12 @@ namespace mrover {
 
         auto ikPosCalc(ArmPos target) -> std::optional<msg::Position>;
         auto ikVelCalc(geometry_msgs::msg::Twist) -> std::optional<msg::Velocity>;
-        auto getCarrotPose(ArmPos pos, geometry_msgs::msg::Twist commandedVel, const double dt) -> ArmPos;
         auto timerCallback() -> void;
 
         ArmPos mArmPos, mTypingOrigin, mPosTarget;
         std::optional<msg::Position> mPosFallback;
         geometry_msgs::msg::Twist mVelTarget;
         rclcpp::Time mLastUpdate;
-        rclcpp::Time now_time;
-        double time_change;
 
         enum class ArmMode : char {
             VELOCITY_CONTROL,

@@ -1,8 +1,6 @@
 #include "arm_controller.hpp"
 #include <rclcpp/logging.hpp>
 
-//commit
-
 namespace mrover {
     const rclcpp::Duration ArmController::TIMEOUT = rclcpp::Duration(0, 0.3 * 1e9); // 0.3 seconds
 
@@ -141,7 +139,6 @@ namespace mrover {
             if ((velocities.velocities[i] > 0 && it->second.limits.maxPos - it->second.pos < JOINT_VEL_THRESH) ||
                 (velocities.velocities[i] < 0 && it->second.pos - it->second.limits.minPos < JOINT_VEL_THRESH)) {
                 RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, "Joint " << velocities.names[i] << " too close to limit for velocity command");
-                mCarrotPoseLast = mArmPos;
                 return std::nullopt;
             }
             scaleFactor = std::max(scaleFactor, velocities.velocities[i] / (velocities.velocities[i] > 0 ? it->second.limits.maxVel : it->second.limits.minVel));
@@ -216,13 +213,6 @@ namespace mrover {
             static_cast<float>(joints["joint_de_roll"].pos),
         };
 
-        /*if (carrot_initialized == false) {
-            mCarrotPose = mArmPos;
-            carrot_initialized = true;
-        }*/
-
-        //auto mCarrotPose = mArmPos;
-
         if (get_clock()->now() - mLastUpdate > TIMEOUT) {
             RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 100, "IK Timed Out");
             if(!mPosFallback) mPosFallback = mCurrPos;
@@ -243,81 +233,7 @@ namespace mrover {
             }
         } else if (mArmMode == ArmMode::VELOCITY_CONTROL) {
             // TODO: Determine joint velocities that cancels out arm sag
-
-            if (initializedCarrot == false) {
-                mCarrotPoseCorrect = mArmPos;
-                mCarrotPoseLast = mArmPos;
-                initializedCarrot = true;
-            }
-
-            bool velocity_not_active = (mVelTarget.linear.x == 0 && mVelTarget.linear.y == 0 && mVelTarget.linear.z == 0 &&
-                mVelTarget.angular.x == 0 && mVelTarget.angular.y == 0);
-
-            bool velocity_active = (get_clock()->now() - mLastUpdate) < TIMEOUT;
-
-            //last = get_clock()->now();
-            //now_time = get_clock()->now();
-            //time_change = (now_time - last).seconds();
-            //last = now_time;
-
-            double time_change = 33.0/1000.0;
-
-            if (velocity_active) {
-                mCarrotPoseCorrect.x += mVelTarget.linear.x * time_change;
-                mCarrotPoseCorrect.y += mVelTarget.linear.y * time_change;
-                mCarrotPoseCorrect.z += mVelTarget.linear.z * time_change;
-                mCarrotPoseCorrect.pitch += mVelTarget.angular.y * time_change;
-                mCarrotPoseCorrect.roll += mVelTarget.angular.x * time_change;
-            }
-
-            Eigen::Vector3d error_vector(
-                mCarrotPoseCorrect.x - mArmPos.x,
-                mCarrotPoseCorrect.y - mArmPos.y,
-                mCarrotPoseCorrect.z - mArmPos.z
-            );
-
-            Eigen::Vector3d command(
-                mVelTarget.linear.x,
-                mVelTarget.linear.y,
-                mVelTarget.linear.z
-            );
-
-            Eigen::Vector3d proj_error(
-                0,0,0
-            );
-
-            if (command.norm() > 0) {
-                proj_error = error_vector.dot(command.normalized()) * command.normalized();
-            }
-
-            auto new_mVelTarget = mVelTarget;
-
-            const double k = 1.5; // correction gain
-
-            /*new_mVelTarget.linear.x = ((mCarrotPoseCorrect.x - mArmPos.x)) * k;
-            new_mVelTarget.linear.y = ((mCarrotPoseCorrect.y - mArmPos.y)) * k;
-            new_mVelTarget.linear.z = ((mCarrotPoseCorrect.z - mArmPos.z)) * k;
-            new_mVelTarget.angular.x = ((mCarrotPoseCorrect.roll - mArmPos.roll)) * k;
-            new_mVelTarget.angular.y = ((mCarrotPoseCorrect.pitch - mArmPos.pitch))  * k;*/
-
-            new_mVelTarget.linear.x = proj_error.x() * k;
-            new_mVelTarget.linear.y = proj_error.y() * k;
-            new_mVelTarget.linear.z = proj_error.z() * k;
-            new_mVelTarget.angular.x = ((mCarrotPoseCorrect.roll - mArmPos.roll)) * k;
-            new_mVelTarget.angular.y = ((mCarrotPoseCorrect.pitch - mArmPos.pitch))  * k;
-
-            new_mVelTarget.linear.x = std::clamp(new_mVelTarget.linear.x, -MAX_SPEED, MAX_SPEED);
-            new_mVelTarget.linear.y = std::clamp(new_mVelTarget.linear.y, -MAX_SPEED, MAX_SPEED);
-            new_mVelTarget.linear.z = std::clamp(new_mVelTarget.linear.z, -MAX_SPEED, MAX_SPEED);
-            new_mVelTarget.angular.x = std::clamp(new_mVelTarget.angular.x, -MAX_SPEED, MAX_SPEED);
-            new_mVelTarget.angular.y = std::clamp(new_mVelTarget.angular.y, -MAX_SPEED, MAX_SPEED);
-
-            if (!velocity_active) {
-                new_mVelTarget = geometry_msgs::msg::Twist();
-                mCarrotPoseCorrect = mArmPos;
-            }
-
-            auto velocities = ikVelCalc(new_mVelTarget);
+            auto velocities = ikVelCalc(mVelTarget);
             if (velocities && 
                 !(
                     velocities->velocities[0] == 0 &&
@@ -328,7 +244,6 @@ namespace mrover {
                 )
             ) {
                 mVelPub->publish(velocities.value());
-                mCarrotPoseLast = mCarrotPoseCorrect;
                 mPosFallback = std::nullopt;
             } else {
                 if(!velocities) RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1000, "Velocity IK failed!");
@@ -361,7 +276,7 @@ namespace mrover {
             mPosFallback = std::nullopt;
             mPosPub->publish(positions);
         }
-    }   
+    }
 
     auto ArmController::modeCallback(srv::IkMode::Request::ConstSharedPtr const& req, srv::IkMode::Response::SharedPtr const& resp) -> void {
         if (req->mode == srv::IkMode::Request::POSITION_CONTROL) {
@@ -370,8 +285,6 @@ namespace mrover {
         } else if (req->mode == srv::IkMode::Request::VELOCITY_CONTROL) {
             mArmMode = ArmMode::VELOCITY_CONTROL;
             RCLCPP_INFO(get_logger(), "IK Switching to Velocity Control Mode");
-            //mCarrotPose = mArmPos;
-            mCarrotUpdateTime = get_clock()->now();
         } else { // typing mode
             mArmMode = ArmMode::TYPING;
             RCLCPP_INFO(get_logger(), "IK Switching to Typing (position) Mode");
@@ -380,8 +293,6 @@ namespace mrover {
         }
         resp->success = true;
     }
-
-
 } // namespace mrover
 
 auto main(int argc, char** argv) -> int {
