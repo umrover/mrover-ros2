@@ -26,7 +26,7 @@ namespace mrover {
 
                 const auto timeout = std::chrono::seconds(3);
                 const auto start = this->get_clock()->now();                                                                                 
-                Servo::ServoStatus status = servos.at(request->name)->setPosition(request->position, Servo::ServoMode::Optimal);
+                Servo::ServoStatus status = servos.at(request->name)->setPosition(static_cast<uint32_t>((request->position / 360.0f) * 4096.0f), Servo::ServoMode::Optimal);
 
                 while(status == Servo::ServoStatus::Active){
                     status = servos.at(request->name)->getTargetStatus();
