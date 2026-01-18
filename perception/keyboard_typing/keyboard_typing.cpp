@@ -1,6 +1,7 @@
 #include "keyboard_typing.hpp"
 #include <cmath>
 #include <geometry_msgs/msg/detail/pose__struct.hpp>
+#include <geometry_msgs/msg/detail/twist__struct.hpp>
 #include <geometry_msgs/msg/detail/vector3__struct.hpp>
 #include <opencv2/core/eigen.hpp>
 #include "keyboard_typing/constants.h"
@@ -18,6 +19,7 @@
 #include <opencv2/imgproc.hpp>
 #include <optional>
 #include <rclcpp/logging.hpp>
+#include <thread>
 #include <unordered_map>
 #include <fstream>
 #include <geometry_msgs/msg/vector3.hpp>
@@ -51,31 +53,16 @@ namespace mrover{
         });
 
 
-        // Top left (TL) is origin
-        // Bottom left (BL)
-        // Top right (TR)
-        // Bottom right (BR)
-        static int TL_ID = 2;
-        static int BL_ID = 4;
-        static int TR_ID = 3;
-        static int BR_ID = 5;
-
-        static float b_length = 0.354076;
-        static float b_width = 0.123444;
-
-        static float seperation_dist = (2/(std::sqrt(2)) + 1) * 0.01; // Centimeters to meters
-
-        // Translation vectors relative to TL (x,y,z offset)
-        // Placeholders for now
-        static cv::Vec3d TL_OFFSET(0.0, 0.0, 0.0);
-        static cv::Vec3d BL_OFFSET(0.0, -(b_width + 2 * seperation_dist), 0.0);
-        static cv::Vec3d TR_OFFSET(b_length + 2 * seperation_dist, 0.0, 0.0);
-        static cv::Vec3d BR_OFFSET(b_length + 2 * seperation_dist, -(b_width + 2 * seperation_dist), 0.0);
-
-        offset_map.insert({TL_ID, TL_OFFSET});
-        offset_map.insert({BL_ID, BL_OFFSET});
-        offset_map.insert({TR_ID, TR_OFFSET});
-        offset_map.insert({BR_ID, BR_OFFSET});
+        // grab transform from finger_cam to gripper
+        // wait until the transformation is acquired
+        while (true) {
+            try {
+                cam_to_gripper = SE3Conversions::fromTfTree(tf_buffer, "finger_camera_frame", "arm_gripper_link");
+                break;
+            } catch (tf2::TransformException const& e) {
+                RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, std::format("TF tree error processing keyboard typing: {}", e.what()));
+            }
+        }
 
         // Initialize Kalman filter
         // State vector: [x, y, z, vx, vy, vz, roll, pitch, yaw, vroll, vpitch, vyaw]
@@ -91,7 +78,7 @@ namespace mrover{
             0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0
         );
-    
+
         // Process noise covariance (model uncertainty)
         cv::setIdentity(kf.processNoiseCov, cv::Scalar(1e-4));
         
@@ -106,7 +93,11 @@ namespace mrover{
 
         // create publisher
         mCostMapPub = this->create_publisher<msg::KeyboardYaw>("/keypose/yaw", rclcpp::QoS(1));
+
         mIKPub = this->create_publisher<msg::IK>("ee_pos_cmd",rclcpp::QoS(1));
+
+        mIKVelPub = this->create_publisher<geometry_msgs::msg::Twist>("ee_vel_cmd",rclcpp::QoS(10));
+
         // Define offsets
         layout[4] = cv::Vec3d(0.0, 0.0, 0.0);       // BL
         layout[5] = cv::Vec3d(0.387, 0.0, 0.0);     // BR
@@ -117,11 +108,10 @@ namespace mrover{
     }
 
     auto KeyboardTypingNode::yawCallback(sensor_msgs::msg::Image::ConstSharedPtr const& msg) -> void {
-
         // If we are still updating pose estimate (i.e. no launch code sent, send IK and update pose)
         std::optional<pose_output> pose = std::nullopt;
         if (mUpdatePoseEstimate) {
-            sendIKCommand(1.215, .253, .367, 0, 0);
+            // sendIKCommand(1.100, .253, .367, 0, 0);
             pose = estimatePose(msg);
         }
 
@@ -131,9 +121,19 @@ namespace mrover{
             msg.yaw = pose->yaw;
             mCostMapPub->publish(msg);
 
-            // Publish transform of tag to tree
-            SE3d se3 = SE3Conversions::fromPose(pose->pose);
-            
+            // Convert pose to se3d
+            SE3d cam_to_tag = SE3Conversions::fromPose(pose->pose);
+
+            // Apply transform from finger_camera to arm_gripper_link onto pose
+            SE3d gripper_to_tag = cam_to_gripper.inverse() * cam_to_tag;
+
+            // Publish to tf tree
+            SE3Conversions::pushToTfTree(tf_broadcaster, "keyboard_tag", "arm_gripper_link", gripper_to_tag, get_clock()->now());
+
+            // Put arm into initial configuration (above z key)
+            if (!TEMP) {
+                align_arm();
+            }
         }
     }
 
@@ -299,22 +299,24 @@ namespace mrover{
             // }
         }
 
-        // Offset the poses to origin
-        // for (size_t i = 0; i < tvecs.size(); ++i) {
-        //     // Check if the detected tag ID exists in our offset map
-        //     if (offset_map.find(ids[i]) != offset_map.end()) {
-        //         auto tag_offset_world = offset_map.at(ids[i]);
-        //         tvecs[i] = getGlobalCameraPosition(rvecs[i], tvecs[i], tag_offset_world);
-        //     } else {
-        //         RCLCPP_WARN(get_logger(), "Tag ID %d not found in offset_map, skipping offset", ids[i]);
-        //     }
-        // }
-
         // Apply Kalman Filter to smooth the pose estimation
         if (!tvecs.empty()) {
             // Pass all vectors and the current ROS time
             // Returns the filtered pose
             geometry_msgs::msg::Pose finalestimation = updateKalmanFilter(combined_tvec, combined_rvec);
+
+            finalestimation.position.x = combined_tvec[0];
+            finalestimation.position.y = combined_tvec[1];
+            finalestimation.position.z = combined_tvec[2];
+
+            Eigen::Quaterniond q;
+            q = Eigen::AngleAxisd(combined_rvec[0], Eigen::Vector3d::UnitZ()) *
+                Eigen::AngleAxisd(combined_rvec[1], Eigen::Vector3d::UnitY()) *
+                Eigen::AngleAxisd(combined_rvec[2], Eigen::Vector3d::UnitX());
+            finalestimation.orientation.x = q.x();
+            finalestimation.orientation.y = q.y();
+            finalestimation.orientation.z = q.z();
+            finalestimation.orientation.w = q.w();
 
             // Draw after kalman filter
             cv::drawFrameAxes(grayImage, camMatrix, distCoeffs, combined_rvec, combined_tvec, markerLength * 3.0f, 4);
@@ -342,39 +344,6 @@ namespace mrover{
         }
     }
 
-    // auto KeyboardTypingNode::getKeyToCameraTransform(cv::Vec3d const& rvec,
-    //                                              cv::Vec3d const& tvec,
-    //                                              cv::Vec3d const& tag_offset_key) -> cv::Mat {
-        
-    //     // 1. Define "Tag in Camera" (T_cam_tag)
-    //     // Isometry3d is a 4x4 matrix specifically for rigid transforms (Rotation + Translation)
-    //     Eigen::Isometry3d T_cam_tag = Eigen::Isometry3d::Identity();
-        
-    //     // Transform the rvec into eigen rotation matrix
-    //     cv::Mat R_cv;
-    //     cv::Rodrigues(rvec, R_cv);
-    //     Eigen::Matrix3d R_eigen;
-    //     cv::cv2eigen(R_cv, R_eigen);
-        
-    //     // Set Rotation
-    //     T_cam_tag.linear() = R_eigen;  
-    //     // Set Translation   
-    //     T_cam_tag.translation() = Eigen::Vector3d(tvec[0], tvec[1], tvec[2]);
-
-    //     // Transform from tag to key (only translation since on same plane as keyboard)
-    //     Eigen::Isometry3d T_key_tag = Eigen::Isometry3d::Identity();
-    //     T_key_tag.translation() = Eigen::Vector3d(tag_offset_key[0], tag_offset_key[1], tag_offset_key[2]);
-
-    //     // Logic: Camera <-- Tag <-- Key
-    //     // Math:  T_cam_key = T_cam_tag * T_key_tag.inverse()
-    //     Eigen::Isometry3d T_cam_key = T_cam_tag * T_key_tag.inverse();
-
-    //     // OpenCV Matrix
-    //     cv::Mat T_out;
-    //     cv::eigen2cv(T_cam_key.matrix(), T_out);
-    //     return T_out;
-    // }
-
     auto KeyboardTypingNode::updateKalmanFilter(cv::Vec3d& tvec, cv::Vec3d& rvec) -> geometry_msgs::msg::Pose {
         // 1. Get current time from the Node's clock
         rclcpp::Time currentTime = this->get_clock()->now();
@@ -383,6 +352,9 @@ namespace mrover{
         if (!filter_initialized_) {
             last_prediction_time_ = currentTime;
             filter_initialized_ = true;
+
+            
+            // sendIKCommand(1.165, .191, .367, 0, 0);
 
             // Optional: You might want to initialize the state to the first detection
             // to avoid a long "convergence" time from 0,0,0.
@@ -498,15 +470,78 @@ namespace mrover{
         filtered_pose.orientation.w = q.w();
 
         // Update combined tvecs and rvecs
-        tvec[0] = filtered_pose.position.x;
-        tvec[1] = filtered_pose.position.y;
-        tvec[2] = filtered_pose.position.z;
+        // tvec[0] = filtered_pose.position.x;
+        // tvec[1] = filtered_pose.position.y;
+        // tvec[2] = filtered_pose.position.z;
 
-        rvec[0] = final_roll;
-        rvec[1] = final_pitch;
-        rvec[2] = final_yaw;
+        // rvec[0] = final_roll;
+        // rvec[1] = final_pitch;
+        // rvec[2] = final_yaw;
         
         return filtered_pose;
+    }
+
+    auto KeyboardTypingNode::align_arm() -> void {
+        // Grab gripper_to_tag and then calculate deltas
+        SE3d gripper_to_tag;
+        try {
+            gripper_to_tag = SE3Conversions::fromTfTree(tf_buffer, "arm_gripper_link", "keyboard_tag");
+            // Calculate Deltas and send to arm
+            double dx = gripper_to_tag.translation().x();
+            double dy = gripper_to_tag.translation().y();
+            double dz = gripper_to_tag.translation().z();
+
+            double dist = std::sqrt(dx*dx + dy*dy + dz*dz);
+
+            double dir_x = dx/dist;
+            double dir_y = dy/dist;
+            double dir_z = dz/dist;
+
+
+            double dt = 0.2;
+            double duration = dist / dt;
+
+            int steps = duration / dt;
+
+            geometry_msgs::msg::Twist cmd;
+            cmd.linear.x = 0;
+            // cmd.linear.y = -dir_x * dt;
+            // cmd.linear.z = -dir_y * dt;
+            cmd.linear.y = 10;
+            cmd.linear.z = 10;
+
+            // no rotation
+            cmd.angular.x = 0.0;
+            cmd.angular.y = 0.0;
+            cmd.angular.z = 0.0;
+
+            for (int i = 0; i < steps; ++i) {
+                mIKVelPub->publish(cmd);
+            }
+
+            geometry_msgs::msg::Twist stop;
+            mIKVelPub->publish(stop);
+
+
+
+
+            // TEMP = true;
+            RCLCPP_INFO_STREAM(this->get_logger(), "x_delta = " << gripper_to_tag.translation().x());
+            RCLCPP_INFO_STREAM(this->get_logger(), "y_delta = " << dy);
+            RCLCPP_INFO_STREAM(this->get_logger(), "z_delta = " << gripper_to_tag.translation().z());
+
+            // For when action server does stuff
+            // double x_delta = gripper_to_tag.translation().x();
+            // double y_delta = gripper_to_tag.translation().y();
+            // bool sent = send_goal(x_delta, y_delta);
+            // if (sent) {
+            //     RCLCPP_INFO_STREAM(this->get_logger(), "Goal Sent");
+            // } else {
+            //     RCLCPP_INFO_STREAM(this->get_logger(), "Failed");
+            // }
+        } catch (tf2::TransformException const& e) {
+            RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, std::format("TF tree error processing keyboard typing: {}", e.what()));
+        }
     }
 
     auto KeyboardTypingNode::sendIKCommand(float x, float y, float z, float pitch, float roll) -> void {
@@ -648,6 +683,7 @@ namespace mrover{
 
             std::string launchCode = goal_handle->get_goal()->launch_code;
             std::transform(launchCode.begin(), launchCode.end(), launchCode.begin(), ::toupper);
+
             for (int i = 0; i < launchCode.length(); i++) {
                 feedback->current_index = static_cast<uint32_t>(i);
                 goal_handle->publish_feedback(feedback);

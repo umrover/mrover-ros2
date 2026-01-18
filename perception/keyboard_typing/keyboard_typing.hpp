@@ -40,17 +40,31 @@ namespace mrover{
         // Params
         int mMinCodeLength{}, mMaxCodeLength{};
 
+        // transform broadcaster
+        tf2_ros::Buffer tf_buffer{get_clock()};
+        tf2_ros::TransformListener tf_listener{tf_buffer};
+        tf2_ros::TransformBroadcaster tf_broadcaster{this};
+
+        // transform from camera to end effector
+        SE3d cam_to_gripper;
+
+        bool TEMP = false;
+
         // Define a board
         cv::Ptr<cv::aruco::Board> rover_board;
 
         // Sub to /finger_camera/image topic
         rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr mImageSub;
 
+        // Sub to /ee_pos_cmd topic
+        rclcpp::Subscription<msg::IK>::SharedPtr mArmSub;
+
         LoopProfiler mLoopProfiler;
 
         // Can pub to any topic just make the name make sense
         rclcpp::Publisher<msg::KeyboardYaw>::SharedPtr mCostMapPub;
         rclcpp::Publisher<msg::IK>::SharedPtr mIKPub;
+        rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr mIKVelPub;
 
 
         // Tag offsets
@@ -89,6 +103,8 @@ namespace mrover{
         auto yawCallback(sensor_msgs::msg::Image::ConstSharedPtr const& msg) -> void;
 
         auto estimatePose(sensor_msgs::msg::Image::ConstSharedPtr const& msg) -> std::optional<pose_output>;
+
+        auto align_arm() -> void;
 
         public:
 
