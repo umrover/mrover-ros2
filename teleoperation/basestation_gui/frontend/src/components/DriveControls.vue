@@ -20,6 +20,7 @@ let interval: number | undefined = undefined
 const UPDATE_HZ = 20
 
 onMounted(() => {
+  websocketStore.setupWebSocket('drive')
   interval = window.setInterval(() => {
     const gamepads = navigator.getGamepads()
     const gamepad = gamepads.find(gamepad => gamepad && gamepad.id.includes('Thrustmaster'))
