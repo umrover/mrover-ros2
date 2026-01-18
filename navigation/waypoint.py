@@ -117,57 +117,57 @@ class WaypointState(State):
             context.rover.send_drive_command(Twist())
             return self
 
-        if self.waypoint_traj.empty():
-            context.node.get_logger().info("Generating segmented path")
-            self.waypoint_traj = segment_path(
-                context=context, dest=context.course.current_waypoint_pose_in_map().translation()[0:2]
-            )
-            self.display_markers(context=context)
-            return self
+        # if self.waypoint_traj.empty():
+        #     context.node.get_logger().info("Generating segmented path")
+        #     self.waypoint_traj = segment_path(
+        #         context=context, dest=context.course.current_waypoint_pose_in_map().translation()[0:2]
+        #     )
+        #     self.display_markers(context=context)
+        #     return self
 
         # BEGINNING OF LOGIC
-        while (
-            is_high_cost_point(context=context, point=self.waypoint_traj.get_current_point())
-            and not self.waypoint_traj.is_last()
-        ):
-            context.node.get_logger().info("Skipping high cost point")
-            self.waypoint_traj.increment_point()
+        # while (
+        #     is_high_cost_point(context=context, point=self.waypoint_traj.get_current_point())
+        #     and not self.waypoint_traj.is_last()
+        # ):
+        #     context.node.get_logger().info("Skipping high cost point")
+        #     self.waypoint_traj.increment_point()
 
-            if self.waypoint_traj.done():
-                return self.next_state(context=context)
+        #     if self.waypoint_traj.done():
+        #         return self.next_state(context=context)
 
-            segment_point_ij = cartesian_to_ij(context, self.waypoint_traj.get_current_point())
-            costmap_length = context.env.cost_map.data.shape[0]
-            # If we skipped to a point outside the costmap, begin the spiral again
-            # TODO: Behavior should probably to be to go towards the closest point within the costmap
-            if not (0 <= int(segment_point_ij[0]) < costmap_length and 0 <= int(segment_point_ij[1]) < costmap_length):
-                context.node.get_logger().info("Skipped too far, resetting")
-                self.waypoint_traj.reset()
-                break
+        #     segment_point_ij = cartesian_to_ij(context, self.waypoint_traj.get_current_point())
+        #     costmap_length = context.env.cost_map.data.shape[0]
+        #     # If we skipped to a point outside the costmap, begin the spiral again
+        #     # TODO: Behavior should probably to be to go towards the closest point within the costmap
+        #     if not (0 <= int(segment_point_ij[0]) < costmap_length and 0 <= int(segment_point_ij[1]) < costmap_length):
+        #         context.node.get_logger().info("Skipped too far, resetting")
+        #         self.waypoint_traj.reset()
+        #         break
 
-            self.astar_traj.clear()
-            return self
+        #     self.astar_traj.clear()
+        #     return self
 
         costmap_length = context.env.cost_map.data.shape[0]
-        curr_point = cartesian_to_ij(context, self.waypoint_traj.get_current_point())
-        if not (0 <= int(curr_point[0]) < costmap_length and 0 <= int(curr_point[1]) < costmap_length):
-            context.node.get_logger().warn("Trajectory point out of the map. Clearing trajectory and trying again...")
-            self.waypoint_traj.clear()
-            return self
+        # curr_point = cartesian_to_ij(context, self.waypoint_traj.get_current_point())
+        # if not (0 <= int(curr_point[0]) < costmap_length and 0 <= int(curr_point[1]) < costmap_length):
+        #     context.node.get_logger().warn("Trajectory point out of the map. Clearing trajectory and trying again...")
+        #     self.waypoint_traj.clear()
+        #     return self
 
         if self.astar_traj.empty():
             self.display_markers(context=context)
             try:
-                self.astar_traj = self.astar.generate_trajectory(context, self.waypoint_traj.get_current_point())
+                self.astar_traj = self.astar.generate_trajectory(context, context.course.current_waypoint_pose_in_map().translation()[0:2])
             except Exception as e:
                 context.node.get_logger().info(str(e))
                 return self
 
             if self.astar_traj.empty():
-                context.node.get_logger().info("Skipping unreachable point")
-                self.waypoint_traj.increment_point()
-                if self.waypoint_traj.done():
-                    return self.next_state(context=context)
+                # context.node.get_logger().info("Skipping unreachable point")
+                # self.waypoint_traj.increment_point()
+                # if self.waypoint_traj.done():
+                return self.next_state(context=context)
             return self
 
         arrived = False
@@ -186,9 +186,9 @@ class WaypointState(State):
             if self.astar_traj.done():
                 self.astar_traj.clear()
                 context.node.get_logger().info(f"Arrived at segment point")
-                self.waypoint_traj.increment_point()
-                if self.waypoint_traj.done():
-                    return self.next_state(context=context)
+                # self.waypoint_traj.increment_point()
+                # if self.waypoint_traj.done():
+                return self.next_state(context=context)
                 self.display_markers(context=context)
         else:
             self.time_no_search_wait = None
