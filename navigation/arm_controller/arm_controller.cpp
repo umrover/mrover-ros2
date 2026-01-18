@@ -250,54 +250,72 @@ namespace mrover {
                 initializedCarrot = true;
             }
 
-            //rclcpp::Time now = get_clock()->now();
-            double dt = 33.333/1000.0;
-            //mCarrotUpdateTime = now;
+            bool velocity_not_active = (mVelTarget.linear.x == 0 && mVelTarget.linear.y == 0 && mVelTarget.linear.z == 0 &&
+                mVelTarget.angular.x == 0 && mVelTarget.angular.y == 0);
 
-            //bool velocity_active = dt < TIMEOUT.seconds();
+            bool velocity_active = (get_clock()->now() - mLastUpdate) < TIMEOUT;
 
-            //double dt = 2.0;
+            //last = get_clock()->now();
+            //now_time = get_clock()->now();
+            //time_change = (now_time - last).seconds();
+            //last = now_time;
 
-            double dx = mVelTarget.linear.x * dt;
-            double dy = mVelTarget.linear.y * dt;
-            double dz = mVelTarget.linear.z * dt;
-            double dpitch = mVelTarget.angular.y * dt;
-            double droll = mVelTarget.angular.x * dt;   
+            double time_change = 33.0/1000.0;
 
-            double current_arm_carrot_error_x = mCarrotPoseCorrect.x - mArmPos.x;
-            double current_arm_carrot_error_y = mCarrotPoseCorrect.y - mArmPos.y;
-            double current_arm_carrot_error_z = mCarrotPoseCorrect.z - mArmPos.z;
-            double current_arm_carrot_error_pitch = mCarrotPoseCorrect.pitch - mArmPos.pitch;
-            double current_arm_carrot_error_roll = mCarrotPoseCorrect.roll - mArmPos.roll;
+            if (velocity_active) {
+                mCarrotPoseCorrect.x += mVelTarget.linear.x * time_change;
+                mCarrotPoseCorrect.y += mVelTarget.linear.y * time_change;
+                mCarrotPoseCorrect.z += mVelTarget.linear.z * time_change;
+                mCarrotPoseCorrect.pitch += mVelTarget.angular.y * time_change;
+                mCarrotPoseCorrect.roll += mVelTarget.angular.x * time_change;
+            }
 
+            Eigen::Vector3d error_vector(
+                mCarrotPoseCorrect.x - mArmPos.x,
+                mCarrotPoseCorrect.y - mArmPos.y,
+                mCarrotPoseCorrect.z - mArmPos.z
+            );
 
+            Eigen::Vector3d command(
+                mVelTarget.linear.x,
+                mVelTarget.linear.y,
+                mVelTarget.linear.z
+            );
 
-            mCarrotPoseCorrect.x = mCarrotPoseLast.x + std::clamp(dx, current_arm_carrot_error_x);
-            mCarrotPoseCorrect.y = mCarrotPoseLast.y + std::clamp(dy, current_arm_carrot_error_y);
-            mCarrotPoseCorrect.z = mCarrotPoseLast.z + std::clamp(dz, current_arm_carrot_error_z);
-            mCarrotPoseCorrect.pitch = mCarrotPoseLast.pitch + std::clamp(dpitch, current_arm_carrot_error_pitch);
-            mCarrotPoseCorrect.roll = mCarrotPoseLast.roll + std::clamp(droll, current_arm_carrot_error_roll);
+            Eigen::Vector3d proj_error(
+                0,0,0
+            );
 
+            if (command.norm() > 0) {
+                proj_error = error_vector.dot(command.normalized()) * command.normalized();
+            }
 
             auto new_mVelTarget = mVelTarget;
-            new_mVelTarget.linear.x = (mCarrotPoseCorrect.x - mArmPos.x)/dt;
-            new_mVelTarget.linear.y = (mCarrotPoseCorrect.y - mArmPos.y)/dt;
-            new_mVelTarget.linear.z = (mCarrotPoseCorrect.z - mArmPos.z)/dt;
-            new_mVelTarget.angular.x= (mCarrotPoseCorrect.roll - mArmPos.roll)/dt;
-            new_mVelTarget.angular.y = (mCarrotPoseCorrect.pitch - mArmPos.pitch)/dt;
 
-            auto& jointA = joints["joint_a"];
+            const double k = 1.5; // correction gain
 
-            if ((jointA.limits.maxPos - jointA.pos) < JOINT_VEL_THRESH &&
-                new_mVelTarget.linear.y > 0) {
-                new_mVelTarget.linear.y = 0.0;
+            /*new_mVelTarget.linear.x = ((mCarrotPoseCorrect.x - mArmPos.x)) * k;
+            new_mVelTarget.linear.y = ((mCarrotPoseCorrect.y - mArmPos.y)) * k;
+            new_mVelTarget.linear.z = ((mCarrotPoseCorrect.z - mArmPos.z)) * k;
+            new_mVelTarget.angular.x = ((mCarrotPoseCorrect.roll - mArmPos.roll)) * k;
+            new_mVelTarget.angular.y = ((mCarrotPoseCorrect.pitch - mArmPos.pitch))  * k;*/
+
+            new_mVelTarget.linear.x = proj_error.x() * k;
+            new_mVelTarget.linear.y = proj_error.y() * k;
+            new_mVelTarget.linear.z = proj_error.z() * k;
+            new_mVelTarget.angular.x = ((mCarrotPoseCorrect.roll - mArmPos.roll)) * k;
+            new_mVelTarget.angular.y = ((mCarrotPoseCorrect.pitch - mArmPos.pitch))  * k;
+
+            new_mVelTarget.linear.x = std::clamp(new_mVelTarget.linear.x, -MAX_SPEED, MAX_SPEED);
+            new_mVelTarget.linear.y = std::clamp(new_mVelTarget.linear.y, -MAX_SPEED, MAX_SPEED);
+            new_mVelTarget.linear.z = std::clamp(new_mVelTarget.linear.z, -MAX_SPEED, MAX_SPEED);
+            new_mVelTarget.angular.x = std::clamp(new_mVelTarget.angular.x, -MAX_SPEED, MAX_SPEED);
+            new_mVelTarget.angular.y = std::clamp(new_mVelTarget.angular.y, -MAX_SPEED, MAX_SPEED);
+
+            if (!velocity_active) {
+                new_mVelTarget = geometry_msgs::msg::Twist();
+                mCarrotPoseCorrect = mArmPos;
             }
-
-            if ((jointA.pos - jointA.limits.minPos) < JOINT_VEL_THRESH &&
-                new_mVelTarget.linear.y < 0) {
-                new_mVelTarget.linear.y = 0.0;
-            }
-
 
             auto velocities = ikVelCalc(new_mVelTarget);
             if (velocities && 
@@ -343,7 +361,7 @@ namespace mrover {
             mPosFallback = std::nullopt;
             mPosPub->publish(positions);
         }
-    }
+    }   
 
     auto ArmController::modeCallback(srv::IkMode::Request::ConstSharedPtr const& req, srv::IkMode::Response::SharedPtr const& resp) -> void {
         if (req->mode == srv::IkMode::Request::POSITION_CONTROL) {

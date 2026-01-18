@@ -28,6 +28,7 @@ namespace mrover {
         ArmPos mCarrotPoseLast;
         rclcpp::Time mCarrotUpdateTime;
         bool initializedCarrot = false;
+        static rclcpp::Time last;
 
 
         struct JointWrapper {
@@ -90,6 +91,8 @@ namespace mrover {
         std::optional<msg::Position> mPosFallback;
         geometry_msgs::msg::Twist mVelTarget;
         rclcpp::Time mLastUpdate;
+        rclcpp::Time now_time;
+        double time_change;
 
         enum class ArmMode : char {
             VELOCITY_CONTROL,
