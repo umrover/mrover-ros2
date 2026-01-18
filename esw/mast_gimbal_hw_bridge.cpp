@@ -8,7 +8,7 @@
 
 #include <units.hpp>
 
-#include <mrover/msg/controller_state.hpp>
+#include <mrover/msg/gimbal_control_state.hpp>
 #include <mrover/msg/position.hpp>
 #include <mrover/msg/throttle.hpp>
 #include <mrover/msg/velocity.hpp>
@@ -59,6 +59,13 @@ namespace mrover {
                 response->at_tgt = (status == Servo::ServoStatus::Success);
 
             });
+
+
+            mGimbalStatePub = this->create_publisher<mrover::msg::GimbalControlState>("gimbal_control_state", 10);
+
+            mPublishDataTimer = this->create_wall_timer(std::chrono::milliseconds(100),
+                          std::bind(&MastGimbalHWBridge::publishDataCallback, this));
+
         }
 
     private:
@@ -69,54 +76,47 @@ namespace mrover {
 
         std::unique_ptr<mrover::Servo> servo;
 
-
         std::vector<std::pair<std::string, int>> const mServoNames = {{"mast_gimbal_pitch", 1}, {"mast_gimbal_yaw", 2}};
 
-
-
-
+        rclcpp::Publisher<mrover::msg::GimbalControlState>::SharedPtr mGimbalStatePub;
         rclcpp::TimerBase::SharedPtr mPublishDataTimer;
-        rclcpp::Publisher<sensor_msgs::msg::JointState>::SharedPtr mJointDataPub;
-        rclcpp::Publisher<msg::ControllerState>::SharedPtr mControllerStatePub;
-
-        msg::ControllerState mControllerState;
-
-
-        auto processThrottleCmd(msg::Throttle::ConstSharedPtr const& msg) -> void {
-            if (msg->names.size() != msg->throttles.size()) {
-                RCLCPP_ERROR(get_logger(), "Name count and value count mismatched!");
-                return;
-            }
-
-            for (std::size_t i = 0; i < msg->names.size(); ++i) {
-                std::string const& name = msg->names[i];
-                Dimensionless const& throttle = msg->throttles[i];
-                mMotors[name]->setDesiredThrottle(throttle);
-            }
-        }
-
-
+        msg::GimbalControlState mControllerState;
+        
         auto publishDataCallback() -> void {
-            mJointData.header.stamp = get_clock()->now();
+            const size_t n = mServoNames.size();
 
-            for (size_t i = 0; i < mMotorNames.size(); ++i) {
-                auto const& name = mMotorNames[i];
-                auto const& motor = mMotors[name];
+            mControllerState.name.resize(n);
+            mControllerState.position.resize(n);
+            mControllerState.velocity.resize(n);
+            mControllerState.current.resize(n);
+            
+            for (size_t i = 0; i < n; ++i) {
+                const auto& name = mServoNames[i].first;
+                auto& servo = *servos.at(name);
 
-                mJointData.position[i] = {motor->getPosition().get()};
-                mJointData.velocity[i] = {motor->getVelocity().get()};
-                mJointData.effort[i] = {motor->getEffort()};
+                mControllerState.name[i] = name;
 
-                mControllerState.state[i] = {motor->getState()};
-                mControllerState.error[i] = {motor->getErrorState()};
-                mControllerState.limit_hit[i] = {motor->getLimitsHitBits()};
+                float pos = 0.0f;
+                float vel = 0.0f;
+                float cur = 0.0f;
+
+                servo.getPosition(pos);
+                servo.getVelocity(vel);
+                servo.getCurrent(cur);
+
+                mControllerState.position[i] = pos;
+                mControllerState.velocity[i] = vel;
+                mControllerState.current[i]  = cur;
+
+                /*mControllerState.state[i] = {servo->getState()};
+                mControllerState.error[i] = {servo->getErrorState()};
+                mControllerState.limit_hit[i] = {servo->getLimitsHitBits()};*/
             }
 
-            mJointDataPub->publish(mJointData);
-            mControllerStatePub->publish(mControllerState);
+            mGimbalStatePub->publish(mControllerState);
         }
-    };
-} // namespace mrover
+    };// namespace mrover
+}
 
 auto main(int argc, char** argv) -> int {
     rclcpp::init(argc, argv);

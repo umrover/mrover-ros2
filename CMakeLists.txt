@@ -319,6 +319,7 @@ if (NOT APPLE)
     mrover_add_esw_motor_bridge_node(drive_hw_bridge esw/drive_hw_bridge.cpp)
     mrover_add_esw_motor_bridge_node(arm_hw_bridge esw/arm_hw_bridge.cpp)
     mrover_add_esw_motor_bridge_node(mast_gimbal_hw_bridge esw/mast_gimbal_hw_bridge.cpp)
+    target_link_libraries(mast_gimbal_hw_bridge servo_library)
 
     macro(mrover_add_esw_servo_bridge_node name sources)
         mrover_add_node(${name} ${sources})
