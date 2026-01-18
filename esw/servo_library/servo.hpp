@@ -20,6 +20,8 @@ class Servo
 {
   using ServoId = uint8_t;
   using ServoPosition = uint32_t;
+  using ServoVelocity = uint32_t;
+  using ServoCurrent = uint32_t;
   using ServoAddr = uint16_t;
 
 public:
@@ -76,6 +78,8 @@ public:
 
   ServoStatus setPosition(ServoPosition position, ServoMode mode);
   ServoStatus getPosition(ServoPosition& position);
+  ServoStatus getVelocity(ServoVelocity& velocity);
+  ServoStatus getCurrent(ServoCurrent& current);
   ServoStatus getPositionAbsolute(ServoPosition& position);
   ServoStatus setProperty(ServoProperty prop, uint16_t value);
   ServoStatus getTargetStatus();

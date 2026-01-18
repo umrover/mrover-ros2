@@ -10,6 +10,7 @@
 #define ADDR_TORQUE_ENABLE 64
 #define ADDR_GOAL_POSITION 116
 #define ADDR_PRESENT_POSITION 132
+#define ADDR_PRESENT_VELOCITY 128
 #define ADDR_PRESENT_CURRENT 126
 #define ADDR_CURRENT_LIMIT 102
 #define ADDR_VELOCITY_I_GAIN 76
@@ -19,6 +20,7 @@
 #define ADDR_POSITION_P_GAIN 84
 
 #define SERVO_POSITION_DEAD_ZONE 5
+
 
 using namespace mrover;
 
@@ -129,6 +131,18 @@ Servo::ServoStatus Servo::getPosition(ServoPosition& position)
   Servo::ServoStatus status = getPositionAbsolute(position);
   position %= 4096;
   return status;
+}
+
+Servo::ServoStatus Servo::getVelocity(ServoVelocity& velocity)
+{
+  uint8_t hardwareStatus;
+  return read4Byte(ADDR_PRESENT_VELOCITY, velocity, &hardwareStatus);
+}
+
+Servo::ServoStatus Servo::getCurrent(ServoCurrent& current)
+{
+  uint8_t hardwareStatus;
+  return read4Byte(ADDR_PRESENT_CURRENT, current, &hardwareStatus);
 }
 
 Servo::ServoStatus Servo::getPositionAbsolute(ServoPosition& position)
