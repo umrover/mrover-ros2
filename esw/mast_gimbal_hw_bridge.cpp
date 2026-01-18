@@ -15,7 +15,9 @@
 #include <mrover/srv/adjust_motor.hpp>
 #include <sensor_msgs/msg/joint_state.hpp>
 
-#include "motor_library/brushed.hpp"
+#include "mrover/srv/servo_position.hpp"
+
+#include "servo_library/servo.hpp"
 
 namespace mrover {
 
@@ -26,41 +28,57 @@ namespace mrover {
             // all initialization is done in the init() function to allow for the usage of shared_from_this()
         }
 
+        void create_servo(uint8_t id, const std::string& name)
+        {
+            servos.insert({name, std::make_unique<mrover::Servo>(id, name)});
+        }
+
         auto init() -> void {
 
-            for (auto const& name: mMotorNames) {
-                mMotors[name] = std::make_shared<BrushedController>(shared_from_this(), "jetson", name);
+            Servo::init("/dev/ttyUSB0");
+
+            for (auto const& servo : mServoNames) {
+                create_servo(servo.second, servo.first);
             }
 
-            mThrottleSub = create_subscription<msg::Throttle>("mast_gimbal_throttle_cmd", 1, [this](msg::Throttle::ConstSharedPtr const& msg) { processThrottleCmd(msg); });
+            getPositionService = this->create_service<mrover::srv::ServoPosition>("get_position", [this](
+                                                                                                             mrover::srv::ServoPosition::Request::SharedPtr const& request,
+                                                                                                              mrover::srv::ServoPosition::Response::SharedPtr const& response) {
 
-            mPublishDataTimer = create_wall_timer(
-                    std::chrono::milliseconds(100),
-                    [this]() { publishDataCallback(); });
-            mJointDataPub = create_publisher<sensor_msgs::msg::JointState>("mast_gimbal_joint_data", 1);
-            mControllerStatePub = create_publisher<msg::ControllerState>("mast_gimbal_controller_state", 1);
+                const auto timeout = std::chrono::seconds(3);
+                const auto start = this->get_clock()->now();                                                                                 
+                Servo::ServoStatus status = servos.at(request->name)->setPosition(request->position, Servo::ServoMode::Optimal);
 
-            mJointData.name = mMotorNames;
-            mJointData.position.resize(mMotorNames.size());
-            mJointData.velocity.resize(mMotorNames.size());
-            mJointData.effort.resize(mMotorNames.size());
+                while(status == Servo::ServoStatus::Active){
+                    status = servos.at(request->name)->getTargetStatus();
+                    if(this->get_clock()->now() - start > timeout){
+                        RCLCPP_WARN(this->get_logger(), "Timeout reached while waiting for servo to reach target position");
+                        break;
+                    }
+                }
+                response->at_tgt = (status == Servo::ServoStatus::Success);
 
-            mControllerState.name = mMotorNames;
-            mControllerState.state.resize(mMotorNames.size());
-            mControllerState.error.resize(mMotorNames.size());
-            mControllerState.limit_hit.resize(mMotorNames.size());
+            });
         }
 
     private:
-        std::vector<std::string> const mMotorNames = {"mast_gimbal_pitch", "mast_gimbal_yaw"};
-        std::unordered_map<std::string, std::shared_ptr<BrushedController>> mMotors;
 
-        rclcpp::Subscription<msg::Throttle>::SharedPtr mThrottleSub;
+        rclcpp::Service<mrover::srv::ServoPosition>::SharedPtr getPositionService;
+
+        std::unordered_map<std::string, std::unique_ptr<mrover::Servo>> servos;
+
+        std::unique_ptr<mrover::Servo> servo;
+
+
+        std::vector<std::pair<std::string, int>> const mServoNames = {{"mast_gimbal_pitch", 1}, {"mast_gimbal_yaw", 2}};
+
+
+
 
         rclcpp::TimerBase::SharedPtr mPublishDataTimer;
         rclcpp::Publisher<sensor_msgs::msg::JointState>::SharedPtr mJointDataPub;
         rclcpp::Publisher<msg::ControllerState>::SharedPtr mControllerStatePub;
-        sensor_msgs::msg::JointState mJointData;
+
         msg::ControllerState mControllerState;
 
 

@@ -10,7 +10,6 @@
 #include <std_srvs/srv/set_bool.hpp>
 #include <unordered_map>
 
-#include "mrover/msg/servo_position.hpp"
 #include "mrover/srv/servo_position.hpp"
 #include "servo_library/servo.hpp"
 
@@ -54,7 +53,6 @@ namespace mrover {
         } 
 
     private:
-        rclcpp::Subscription<mrover::msg::ServoPosition>::SharedPtr setPositionSubscriber;
         rclcpp::Service<mrover::srv::ServoPosition>::SharedPtr getPositionService;
 
         std::unordered_map<std::string, std::unique_ptr<mrover::Servo>> servos;
