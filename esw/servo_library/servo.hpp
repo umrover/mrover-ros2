@@ -19,9 +19,9 @@ namespace mrover {
 class Servo
 {
   using ServoId = uint8_t;
-  using ServoPosition = uint32_t;
-  using ServoVelocity = uint32_t;
-  using ServoCurrent = uint32_t;
+  using ServoPosition = float;
+  using ServoVelocity = float;
+  using ServoCurrent = float;
   using ServoAddr = uint16_t;
 
 public:
