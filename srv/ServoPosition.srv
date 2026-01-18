@@ -1,7 +1,7 @@
 # Constants
 # Request
 string name
-uint32 position
+float32 position
 ---
 # Response
 bool at_tgt
