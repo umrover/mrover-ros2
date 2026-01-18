@@ -78,7 +78,7 @@ public:
   ServoStatus getPosition(ServoPosition& position);
   ServoStatus getPositionAbsolute(ServoPosition& position);
   ServoStatus setProperty(ServoProperty prop, uint16_t value);
-  ServoStatus GetTargetStatus();
+  ServoStatus getTargetStatus();
 
   static ServoStatus init(const std::string& deviceName);
 

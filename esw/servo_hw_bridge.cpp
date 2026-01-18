@@ -28,7 +28,23 @@ namespace mrover {
             getPositionService = this->create_service<mrover::srv::ServoPosition>("get_position", [this](
                                                                                                              mrover::srv::ServoPosition::Request::SharedPtr const& request,
                                                                                                               mrover::srv::ServoPosition::Response::SharedPtr response) {
-                servos.at(request->name)->getPosition(response->position);
+                servos.at(request->name)->getPosition(request->position);
+
+                const auto timeout = std::chrono::seconds(3);
+                const auto start = this->get_clock()->now();                                                                                 
+                Servo::ServoStatus status = servos.at(request->name)->setPosition(request->position, Servo::ServoMode::Optimal);
+                
+
+
+                while(status == Servo::ServoStatus::Active){
+                    status = servos.at(request->name)->getTargetStatus();
+                    if(this->get_clock()->now() - start > timeout){
+                        RCLCPP_WARN(this->get_logger(), "Timeout reached while waiting for servo to reach target position");
+                        break;
+                    }
+                }
+                response->at_tgt = (status == Servo::ServoStatus::Success);
+
             });
         }
 

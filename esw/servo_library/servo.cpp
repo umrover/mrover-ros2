@@ -103,7 +103,7 @@ Servo::ServoStatus Servo::setPosition(ServoPosition position, ServoMode mode)
   return write4Byte(ADDR_GOAL_POSITION, goalPosition, &hardwareStatus);
 }
 
-Servo::ServoStatus Servo::GetTargetStatus()
+Servo::ServoStatus Servo::getTargetStatus()
 {
   uint8_t hardwareStatus;
   uint32_t presentPosition;
