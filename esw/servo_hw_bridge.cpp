@@ -21,20 +21,13 @@ namespace mrover {
     public:
         PDLBBridge() : rclcpp::Node("servo_hw_bridge") {
             Servo::init("/dev/ttyUSB0");
-            setPositionSubscriber = create_subscription<mrover::msg::ServoPosition>("set_position", 10, [this](mrover::msg::ServoPosition::ConstSharedPtr const& msg) {
-                servos.at(msg->name)->setPosition(msg->position, Servo::ServoMode::Optimal);
-            });
-
             getPositionService = this->create_service<mrover::srv::ServoPosition>("get_position", [this](
                                                                                                              mrover::srv::ServoPosition::Request::SharedPtr const& request,
-                                                                                                              mrover::srv::ServoPosition::Response::SharedPtr response) {
-                servos.at(request->name)->getPosition(request->position);
+                                                                                                              mrover::srv::ServoPosition::Response::SharedPtr const& response) {
 
                 const auto timeout = std::chrono::seconds(3);
                 const auto start = this->get_clock()->now();                                                                                 
                 Servo::ServoStatus status = servos.at(request->name)->setPosition(request->position, Servo::ServoMode::Optimal);
-                
-
 
                 while(status == Servo::ServoStatus::Active){
                     status = servos.at(request->name)->getTargetStatus();

@@ -199,7 +199,7 @@ Servo::ServoStatus Servo::read2Byte(ServoAddr addr, uint16_t& data, uint8_t* har
   ));
 }
 
-Servo::ServoStatus Servo::(ServoAddr addr, uint32_t& data, uint8_t* hardwareStatus) const
+Servo::ServoStatus Servo::read4Byte(ServoAddr addr, uint32_t& data, uint8_t* hardwareStatus) const
 {
   return static_cast<ServoStatus>(packetHandler->read4ByteTxRx(
     portHandler,
