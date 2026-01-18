@@ -18,6 +18,8 @@
 #define ADDR_POSITION_I_GAIN 82
 #define ADDR_POSITION_P_GAIN 84
 
+#define SERVO_POSITION_DEAD_ZONE 5
+
 using namespace mrover;
 
 Servo::Servo(ServoId id, const std::string& name, ServoProperties properties) : id{id}, name{name}
@@ -66,7 +68,6 @@ Servo::ServoStatus Servo::setPosition(ServoPosition position, ServoMode mode)
   uint32_t presentPosition;
   read4Byte(ADDR_PRESENT_POSITION, presentPosition, &hardwareStatus);
 
-  uint32_t goalPosition;
   uint32_t currentPosition = presentPosition % 4096;
 
   // Calculate the signed difference (accounting for overflow)
@@ -100,6 +101,27 @@ Servo::ServoStatus Servo::setPosition(ServoPosition position, ServoMode mode)
 
   // Write goal position
   return write4Byte(ADDR_GOAL_POSITION, goalPosition, &hardwareStatus);
+}
+
+Servo::ServoStatus Servo::GetTargetStatus()
+{
+  uint8_t hardwareStatus;
+  uint32_t presentPosition;
+  read4Byte(ADDR_PRESENT_POSITION, presentPosition, &hardwareStatus);
+
+  uint32_t goalPositionMod = goalPosition % 4096;
+
+  if (presentPosition > goalPositionMod - SERVO_POSITION_DEAD_ZONE && presentPosition < goalPositionMod + SERVO_POSITION_DEAD_ZONE)
+  {
+    return ServoStatus::Success;
+  }
+
+  if (hardwareStatus != 0)
+  {
+    return ServoStatus::HardwareFailure;
+  }
+
+  return ServoStatus::Active;
 }
 
 Servo::ServoStatus Servo::getPosition(ServoPosition& position)
@@ -177,7 +199,7 @@ Servo::ServoStatus Servo::read2Byte(ServoAddr addr, uint16_t& data, uint8_t* har
   ));
 }
 
-Servo::ServoStatus Servo::read4Byte(ServoAddr addr, uint32_t& data, uint8_t* hardwareStatus) const
+Servo::ServoStatus Servo::(ServoAddr addr, uint32_t& data, uint8_t* hardwareStatus) const
 {
   return static_cast<ServoStatus>(packetHandler->read4ByteTxRx(
     portHandler,
@@ -206,9 +228,4 @@ Servo::ServoStatus Servo::init(const std::string& deviceName)
   if (!dxlCommResult) {
     return ServoStatus::FailedToSetBaud;
   }
-}
-
-int Servo::getStatus()
-{
-
 }

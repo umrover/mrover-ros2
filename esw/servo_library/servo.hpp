@@ -26,6 +26,8 @@ public:
 
   enum class ServoStatus
   {
+    Active = 400,
+    HardwareFailure = 401,
     Success = 0,
     FailedToOpenPort,
     FailedToSetBaud,
@@ -76,7 +78,7 @@ public:
   ServoStatus getPosition(ServoPosition& position);
   ServoStatus getPositionAbsolute(ServoPosition& position);
   ServoStatus setProperty(ServoProperty prop, uint16_t value);
-  int getStatus();
+  ServoStatus GetTargetStatus();
 
   static ServoStatus init(const std::string& deviceName);
 
@@ -96,6 +98,7 @@ private:
 
   ServoId id;
   std::string name;
+  uint32_t goalPosition;
 };
 
 }
