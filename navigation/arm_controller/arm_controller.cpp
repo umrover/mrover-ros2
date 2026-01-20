@@ -233,7 +233,40 @@ namespace mrover {
             }
         } else if (mArmMode == ArmMode::VELOCITY_CONTROL) {
             // TODO: Determine joint velocities that cancels out arm sag
-            auto velocities = ikVelCalc(mVelTarget);
+            const auto now = get_clock()->now();
+            if (carrot_initialized == false) {
+                mPrevTime = get_clock()->now();
+                mCarrotPos = mArmPos;
+                carrot_initialized = true;
+            }
+            double dt = (now - mPrevTime).seconds();
+            mPrevTime = now;
+
+            if (dt <= 0){
+                dt = 0.033; // default to 30Hz
+            }
+
+            mCarrotPos.x = mArmPos.x + mVelTarget.linear.x * dt;
+            mCarrotPos.y = mArmPos.y + mVelTarget.linear.y * dt;
+            mCarrotPos.z = mArmPos.z + mVelTarget.linear.z * dt;
+            mCarrotPos.pitch = mArmPos.pitch + mVelTarget.angular.y * dt;
+            mCarrotPos.roll = mArmPos.roll + mVelTarget.angular.x * dt;
+
+            const double error_x = mCarrotPos.x - mArmPos.x;
+            const double error_y = mCarrotPos.y - mArmPos.y;
+            const double error_z = mCarrotPos.z - mArmPos.z;
+            const double error_pitch = mCarrotPos.pitch - mArmPos.pitch;
+            const double error_roll = mCarrotPos.roll - mArmPos.roll;
+
+            auto adjusted_v = mVelTarget;
+
+            adjusted_v.linear.x = mCarrotk * (error_x / mCarrotTime);
+            adjusted_v.linear.y = mCarrotk * (error_y / mCarrotTime);
+            adjusted_v.linear.z = mCarrotk * (error_z / mCarrotTime);
+            adjusted_v.angular.y = mCarrotk * (error_pitch / mCarrotTime);
+            adjusted_v.angular.x = mCarrotk * (error_roll / mCarrotTime);
+
+            auto velocities = ikVelCalc(adjusted_v);
             if (velocities && 
                 !(
                     velocities->velocities[0] == 0 &&
@@ -285,6 +318,7 @@ namespace mrover {
         } else if (req->mode == srv::IkMode::Request::VELOCITY_CONTROL) {
             mArmMode = ArmMode::VELOCITY_CONTROL;
             RCLCPP_INFO(get_logger(), "IK Switching to Velocity Control Mode");
+            carrot_initialized = false;
         } else { // typing mode
             mArmMode = ArmMode::TYPING;
             RCLCPP_INFO(get_logger(), "IK Switching to Typing (position) Mode");
