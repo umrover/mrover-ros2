@@ -25,7 +25,7 @@ namespace mrover {
         };
 
         double mCarrotTime = 0.033;
-        double mCarrotk = 3.0;
+        double mCarrotk = 1;
         rclcpp::Time mPrevTime;
         bool carrot_initialized = false;
         ArmPos mCarrotPos;

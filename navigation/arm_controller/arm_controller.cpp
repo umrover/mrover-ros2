@@ -242,15 +242,17 @@ namespace mrover {
             double dt = (now - mPrevTime).seconds();
             mPrevTime = now;
 
-            if (dt <= 0){
+            if (dt <= 0 || dt > 1){
                 dt = 0.033; // default to 30Hz
             }
 
-            mCarrotPos.x = mArmPos.x + mVelTarget.linear.x * dt;
-            mCarrotPos.y = mArmPos.y + mVelTarget.linear.y * dt;
-            mCarrotPos.z = mArmPos.z + mVelTarget.linear.z * dt;
-            mCarrotPos.pitch = mArmPos.pitch + mVelTarget.angular.y * dt;
-            mCarrotPos.roll = mArmPos.roll + mVelTarget.angular.x * dt;
+            const double k = 0.30;
+
+            mCarrotPos.x += mVelTarget.linear.x * dt * k;
+            mCarrotPos.y += mVelTarget.linear.y * dt * k;
+            mCarrotPos.z += mVelTarget.linear.z * dt * k;
+            mCarrotPos.pitch += mVelTarget.angular.y * dt * k;
+            mCarrotPos.roll += mVelTarget.angular.x * dt * k;
 
             const double error_x = mCarrotPos.x - mArmPos.x;
             const double error_y = mCarrotPos.y - mArmPos.y;
@@ -260,11 +262,13 @@ namespace mrover {
 
             auto adjusted_v = mVelTarget;
 
-            adjusted_v.linear.x = mCarrotk * (error_x / mCarrotTime);
-            adjusted_v.linear.y = mCarrotk * (error_y / mCarrotTime);
-            adjusted_v.linear.z = mCarrotk * (error_z / mCarrotTime);
-            adjusted_v.angular.y = mCarrotk * (error_pitch / mCarrotTime);
-            adjusted_v.angular.x = mCarrotk * (error_roll / mCarrotTime);
+            mCarrotTime = dt;
+
+            adjusted_v.linear.x += mCarrotk * (error_x / mCarrotTime);
+            adjusted_v.linear.y += mCarrotk * (error_y / mCarrotTime);
+            adjusted_v.linear.z += mCarrotk * (error_z / mCarrotTime);
+            adjusted_v.angular.y += mCarrotk * (error_pitch / mCarrotTime);
+            adjusted_v.angular.x += mCarrotk * (error_roll / mCarrotTime);
 
             auto velocities = ikVelCalc(adjusted_v);
             if (velocities && 
@@ -279,7 +283,10 @@ namespace mrover {
                 mVelPub->publish(velocities.value());
                 mPosFallback = std::nullopt;
             } else {
-                if(!velocities) RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1000, "Velocity IK failed!");
+                if(!velocities) {
+                    RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1000, "Velocity IK failed!");
+                    mCarrotPos = mArmPos;
+                }
                 if(!mPosFallback) mPosFallback = mCurrPos;
                 mPosPub->publish(mPosFallback.value());
             }
