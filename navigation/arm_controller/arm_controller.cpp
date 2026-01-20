@@ -246,7 +246,7 @@ namespace mrover {
                 dt = 0.033; // default to 30Hz
             }
 
-            const double k = 0.30;
+            const double k = 0.75;
 
             mCarrotPos.x += mVelTarget.linear.x * dt * k;
             mCarrotPos.y += mVelTarget.linear.y * dt * k;
