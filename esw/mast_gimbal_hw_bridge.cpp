@@ -60,7 +60,6 @@ namespace mrover {
 
             });
 
-
             mGimbalStatePub = this->create_publisher<mrover::msg::GimbalControlState>("gimbal_control_state", 10);
 
             mPublishDataTimer = this->create_wall_timer(std::chrono::milliseconds(100),
@@ -89,6 +88,9 @@ namespace mrover {
             mControllerState.position.resize(n);
             mControllerState.velocity.resize(n);
             mControllerState.current.resize(n);
+            mControllerState.error.resize(n);
+            mControllerState.state.resize(n);
+            mControllerState.limit_hit.resize(n);
             
             for (size_t i = 0; i < n; ++i) {
                 const auto& name = mServoNames[i].first;
@@ -100,17 +102,38 @@ namespace mrover {
                 float vel = 0.0f;
                 float cur = 0.0f;
 
-                servo.getPosition(pos);
-                servo.getVelocity(vel);
-                servo.getCurrent(cur);
+                Servo::ServoStatus ps = servo.getPosition(pos);
+                Servo::ServoStatus vs = servo.getVelocity(vel);
+                Servo::ServoStatus cs = servo.getCurrent(cur);
 
                 mControllerState.position[i] = pos;
                 mControllerState.velocity[i] = vel;
                 mControllerState.current[i]  = cur;
 
-                /*mControllerState.state[i] = {servo->getState()};
-                mControllerState.error[i] = {servo->getErrorState()};
-                mControllerState.limit_hit[i] = {servo->getLimitsHitBits()};*/
+                Servo::ServoStatus ts = servo.getTargetStatus();
+
+                /*mControllerState.state[i] = {servo->getState()};*/
+                if (ts == Servo::ServoStatus::Active) {
+                    mControllerState.state[i] = "active";
+                } else if (ts == Servo::ServoStatus::Success) {
+                    mControllerState.state[i] = "success";
+                } else {
+                    mControllerState.state[i] = "error";
+                }      
+
+                /*mControllerState.error[i] = {servo->getErrorState()};*/
+                mControllerState.error[i] = "";
+                if (ps != Servo::ServoStatus::Success) {
+                    mControllerState.error[i] = "pos_read_fail";
+                } else if (vs != Servo::ServoStatus::Success) {
+                    mControllerState.error[i] = "vel_read_fail";
+                } else if (cs != Servo::ServoStatus::Success) {
+                    mControllerState.error[i] = "cur_read_fail";
+                } else if (ts == Servo::ServoStatus::HardwareFailure) {
+                    mControllerState.error[i] = "hardware_failure";
+                }
+
+                /*mControllerState.limit_hit[i] = {servo->getLimitsHitBits()};*/
             }
 
             mGimbalStatePub->publish(mControllerState);
