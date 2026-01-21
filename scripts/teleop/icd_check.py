@@ -100,7 +100,7 @@ def check_and_fix(root: Path, entries: list[Entry], fix_topic: str | None) -> bo
     if mismatches:
         print(f"MISMATCH ({len(mismatches)}):")
         for entry, path, expected in mismatches:
-            actual_fields = set(normalize_field(l) for l in path.read_text().split("\n")) - {None}
+            actual_fields = {f for l in path.read_text().split("\n") if (f := normalize_field(l))}
             expected_fields = set(expected.split("\n")) - {""}
             missing_f = expected_fields - actual_fields
             extra_f = actual_fields - expected_fields
