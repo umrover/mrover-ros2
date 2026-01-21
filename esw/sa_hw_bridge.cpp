@@ -74,14 +74,14 @@ namespace mrover {
 
 
         auto processThrottleCmd(msg::Throttle::ConstSharedPtr const& msg) -> void {
-            if (msg->name.size() != msg->throttle.size()) {
+            if (msg->names.size() != msg->throttles.size()) {
                 RCLCPP_ERROR(get_logger(), "Name count and value count mismatched!");
                 return;
             }
 
-            for (std::size_t i = 0; i < msg->name.size(); ++i) {
-                std::string const& name = msg->name[i];
-                Dimensionless const& throttle = msg->throttle[i];
+            for (std::size_t i = 0; i < msg->names.size(); ++i) {
+                std::string const& name = msg->names[i];
+                Dimensionless const& throttle = msg->throttles[i];
                 mMotors[name]->setDesiredThrottle(throttle);
             }
         }
@@ -97,9 +97,9 @@ namespace mrover {
                 mJointData.velocity[i] = {motor->getVelocity().get()};
                 mJointData.effort[i] = {motor->getEffort()};
 
-                mControllerState.state[i] = {motor->getState()};
-                mControllerState.error[i] = {motor->getErrorState()};
-                mControllerState.limit_hit[i] = {motor->getLimitsHitBits()};
+                mControllerState.states[i] = {motor->getState()};
+                mControllerState.errors[i] = {motor->getErrorState()};
+                mControllerState.limits_hit[i] = {motor->getLimitsHitBits()};
             }
 
             mJointDataPub->publish(mJointData);
@@ -189,8 +189,8 @@ namespace mrover {
 
             temp_msg.temperature = raw_temp;
             humidity_msg.relative_humidity = raw_hum;
-            position_msg.name = {"gear_diff"};
-            position_msg.position = {raw_pos_rad};
+            position_msg.names = {"gear_diff"};
+            position_msg.positions = {raw_pos_rad};
 
             mServoPositionPub->publish(position_msg);
             mTemperatureDataPub->publish(temp_msg);
@@ -228,10 +228,10 @@ namespace mrover {
             mJointData.velocity.resize(mMotorNames.size());
             mJointData.effort.resize(mMotorNames.size());
 
-            mControllerState.name = mMotorNames;
-            mControllerState.state.resize(mMotorNames.size());
-            mControllerState.error.resize(mMotorNames.size());
-            mControllerState.limit_hit.resize(mMotorNames.size());
+            mControllerState.names = mMotorNames;
+            mControllerState.states.resize(mMotorNames.size());
+            mControllerState.errors.resize(mMotorNames.size());
+            mControllerState.limits_hit.resize(mMotorNames.size());
 
 
             mSetServoPositionSrv = create_service<srv::ServoSetPos>(

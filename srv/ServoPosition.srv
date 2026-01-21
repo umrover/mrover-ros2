@@ -1,5 +1,5 @@
 std_msgs/Header header
-string[] name
-float32[] position
+string[] names
+float32[] positions # 0.0-360.0
 ---
-bool[] at_tgt
+bool[] at_tgts

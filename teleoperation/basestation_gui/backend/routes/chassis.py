@@ -87,15 +87,15 @@ def gimbal_adjust(data: GimbalAdjustRequest):
         gimbal_request = ServoPosition.Request()
         gimbal_request.header.stamp = node.get_clock().now().to_msg()
         gimbal_request.header.frame_id = ""
-        gimbal_request.name = [data.joint]
-        gimbal_request.position = [data.adjustment]
+        gimbal_request.names = [data.joint]
+        gimbal_request.positions = [data.adjustment]
 
         result = _call_service_sync(gimbal_srv, gimbal_request)
 
         if result is None:
             raise HTTPException(status_code=500, detail="Service call failed")
 
-        if not result.at_tgt[0]:
+        if not result.at_tgts[0]:
             raise HTTPException(status_code=500, detail="Gimbal adjustment failed")
 
         return {
@@ -116,8 +116,8 @@ def sp_funnel_servo(data: ServoPositionRequest):
         servo_request = ServoPosition.Request()
         servo_request.header.stamp = node.get_clock().now().to_msg()
         servo_request.header.frame_id = ""
-        servo_request.name = data.name
-        servo_request.position = data.position
+        servo_request.names = data.names
+        servo_request.positions = data.positions
 
         result = _call_service_sync(servo_srv, servo_request)
 
@@ -126,7 +126,7 @@ def sp_funnel_servo(data: ServoPositionRequest):
 
         return {
             'status': 'success',
-            'at_tgt': result.at_tgt
+            'at_tgts': result.at_tgts
         }
 
     except Exception as e:

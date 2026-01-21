@@ -28,14 +28,14 @@ def gear_diff_position(data: GearDiffRequest):
         sp_funnel_request = ServoPosition.Request()
         sp_funnel_request.header.stamp = node.get_clock().now().to_msg()
         sp_funnel_request.header.frame_id = ""
-        sp_funnel_request.name = ["funnel"]
-        sp_funnel_request.position = [data.position]
+        sp_funnel_request.names = ["funnel"]
+        sp_funnel_request.positions = [data.position]
 
         result = _call_service_sync(sp_funnel_srv, sp_funnel_request)
         if result is None:
             raise HTTPException(status_code=500, detail="Service call failed")
 
-        return {'status': 'success', 'position': data.position, 'at_tgt': result.at_tgt[0]}
+        return {'status': 'success', 'position': data.position, 'at_tgt': result.at_tgts[0]}
 
     except Exception as e:
         get_logger().error(f"gear_diff_position error: {e}")

@@ -1,3 +1,3 @@
 std_msgs/Header header
-string[] name
-float32[] throttle
+string[] names
+float32[] throttles

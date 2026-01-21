@@ -45,7 +45,7 @@ namespace mrover {
                     std::string name = std::format("{}_{}", motor, group);
                     mControllers.try_emplace(name, shared_from_this(), "jetson", name);
                     mJointState.name.push_back(name);
-                    mControllerState.name.push_back(name);
+                    mControllerState.names.push_back(name);
                 }
 
                 mJointStatePubs.emplace_back(create_publisher<sensor_msgs::msg::JointState>(std::format("drive_{}_joint_data", group), 1));
@@ -55,9 +55,9 @@ namespace mrover {
             mJointState.velocity.resize(mControllers.size());
             mJointState.effort.resize(mControllers.size());
 
-            mControllerState.state.resize(mControllers.size());
-            mControllerState.error.resize(mControllers.size());
-            mControllerState.limit_hit.resize(mControllers.size());
+            mControllerState.states.resize(mControllers.size());
+            mControllerState.errors.resize(mControllers.size());
+            mControllerState.limits_hit.resize(mControllers.size());
 
             // Periodic timer for published motor states
             mPublishDataTimer = create_wall_timer(std::chrono::milliseconds(100), [this]() { publishStatesDataCallback(); });
@@ -68,16 +68,16 @@ namespace mrover {
         }
 
         auto moveMotorsThrottle(msg::Throttle::ConstPtr const& msg) -> void {
-            for (size_t i = 0; i < msg->name.size(); ++i) {
-                std::string const& name = msg->name[i];
-                float const& throttle = msg->throttle[i];
+            for (size_t i = 0; i < msg->names.size(); ++i) {
+                std::string const& name = msg->names[i];
+                float const& throttle = msg->throttles[i];
                 if (!mControllers.contains(name)) {
-                    RCLCPP_ERROR(get_logger(), "Group throttle request for %s ignored (%f)!", name.c_str(), msg->throttle[i]);
+                    RCLCPP_ERROR(get_logger(), "Group throttle request for %s ignored (%f)!", name.c_str(), msg->throttles[i]);
                     continue;
                 }
                 BrushlessController<Revolutions>& controller = getController(name);
-                if (msg->name.at(i) != controller.getControllerName()) {
-                    RCLCPP_ERROR(get_logger(), "Throttle request at topic for %s ignored!", msg->name.at(0).c_str());
+                if (msg->names.at(i) != controller.getControllerName()) {
+                    RCLCPP_ERROR(get_logger(), "Throttle request at topic for %s ignored!", msg->names.at(0).c_str());
                     continue;
                 }
                 controller.setDesiredThrottle(throttle);
@@ -85,16 +85,16 @@ namespace mrover {
         }
 
         auto moveMotorsVelocity(msg::Velocity::ConstPtr const& msg) -> void {
-            for (size_t i = 0; i < msg->name.size(); ++i) {
-                std::string const& name = msg->name[i];
-                float const& velocity = msg->velocity[i];
+            for (size_t i = 0; i < msg->names.size(); ++i) {
+                std::string const& name = msg->names[i];
+                float const& velocity = msg->velocities[i];
                 if (!mControllers.contains(name)) {
                     RCLCPP_ERROR(get_logger(), "Velocity request for %s ignored!", name.c_str());
                     continue;
                 }
                 BrushlessController<Revolutions>& controller = getController(name);
-                if (msg->name.at(i) != controller.getControllerName()) {
-                    RCLCPP_ERROR(get_logger(), "Velocity request at topic for %s ignored!", msg->name.at(0).c_str());
+                if (msg->names.at(i) != controller.getControllerName()) {
+                    RCLCPP_ERROR(get_logger(), "Velocity request at topic for %s ignored!", msg->names.at(0).c_str());
                     continue;
                 }
                 controller.setDesiredVelocity(RadiansPerSecond{velocity});
@@ -103,16 +103,16 @@ namespace mrover {
 
         auto moveMotorsPosition(msg::Position::ConstPtr const& msg) -> void {
             // TODO - if any of the motor positions are invalid, then u should cancel the message.
-            for (std::size_t i = 0; i < msg->name.size(); ++i) {
-                std::string const& name = msg->name[i];
-                float const& position = msg->position[i];
+            for (std::size_t i = 0; i < msg->names.size(); ++i) {
+                std::string const& name = msg->names[i];
+                float const& position = msg->positions[i];
                 if (!mControllers.contains(name)) {
                     RCLCPP_ERROR(get_logger(), "Position request for %s ignored!", name.c_str());
                     continue;
                 }
                 BrushlessController<Revolutions>& controller = getController(name);
-                if (msg->name.at(i) != controller.getControllerName()) {
-                    RCLCPP_ERROR(get_logger(), "Position request at topic for %s ignored!", msg->name.at(0).c_str());
+                if (msg->names.at(i) != controller.getControllerName()) {
+                    RCLCPP_ERROR(get_logger(), "Position request at topic for %s ignored!", msg->names.at(0).c_str());
                     continue;
                 }
                 controller.setDesiredPosition(Radians{position});
@@ -127,9 +127,9 @@ namespace mrover {
                 mJointState.velocity[i] = controller.getVelocity().get();
                 mJointState.effort[i] = controller.getEffort();
 
-                mControllerState.state[i] = controller.getState();
-                mControllerState.error[i] = controller.getErrorState();
-                mControllerState.limit_hit[i] = controller.getLimitsHitBits();
+                mControllerState.states[i] = controller.getState();
+                mControllerState.errors[i] = controller.getErrorState();
+                mControllerState.limits_hit[i] = controller.getLimitsHitBits();
             }
             for (auto const& jointPub: mJointStatePubs) {
                 jointPub->publish(mJointState);

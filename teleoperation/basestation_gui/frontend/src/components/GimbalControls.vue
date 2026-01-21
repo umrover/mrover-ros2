@@ -85,16 +85,16 @@ const hasServoState = computed((): boolean => {
 
 const pitchRadians = computed((): number => {
   const state = gimbalJointState.value
-  if (!state || !state.name || !state.position) return 0
-  const pitchIndex = state.name.indexOf('pitch')
-  return pitchIndex >= 0 ? (state.position[pitchIndex] ?? 0) : 0
+  if (!state || !state.names || !state.positions) return 0
+  const pitchIndex = state.names.indexOf('pitch')
+  return pitchIndex >= 0 ? (state.positions[pitchIndex] ?? 0) : 0
 })
 
 const yawRadians = computed((): number => {
   const state = gimbalJointState.value
-  if (!state || !state.name || !state.position) return 0
-  const yawIndex = state.name.indexOf('yaw')
-  return yawIndex >= 0 ? (state.position[yawIndex] ?? 0) : 0
+  if (!state || !state.names || !state.positions) return 0
+  const yawIndex = state.names.indexOf('yaw')
+  return yawIndex >= 0 ? (state.positions[yawIndex] ?? 0) : 0
 })
 
 const pitchDegrees = computed((): string =>
@@ -110,18 +110,18 @@ const adjustGimbal = async (
 ): Promise<void> => {
   try {
     const state = gimbalJointState.value
-    if (!state || !state.name || !state.position) {
+    if (!state || !state.names || !state.positions) {
       console.error('No gimbal state available')
       return
     }
 
-    const jointIndex = state.name.indexOf(joint)
+    const jointIndex = state.names.indexOf(joint)
     if (jointIndex < 0) {
       console.error(`Joint ${joint} not found in state`)
       return
     }
 
-    const currentPosition = state.position[jointIndex]
+    const currentPosition = state.positions[jointIndex]
     if (currentPosition === undefined) {
       console.error(`Position for joint ${joint} is undefined`)
       return

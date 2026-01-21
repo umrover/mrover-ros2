@@ -4,7 +4,7 @@ import { ref, watch } from 'vue'
 const LOCKED_KEY = 'gridLayout_locked'
 
 export const useGridLayoutStore = defineStore('gridLayout', () => {
-  const locked = ref(localStorage.getItem(LOCKED_KEY) === 'true')
+  const locked = ref(localStorage.getItem(LOCKED_KEY) !== 'false')
   const resetCounter = ref(0)
 
   watch(locked, (val) => {

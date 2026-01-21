@@ -17,10 +17,10 @@ export const chassisAPI = {
     })
   },
 
-  setFunnelServo(name: string[], position: number[]): Promise<APIResponse> {
+  setFunnelServo(names: string[], positions: number[]): Promise<APIResponse> {
     return apiFetch('/chassis/sp_funnel_servo/', {
       method: 'POST',
-      body: JSON.stringify({ name, position })
+      body: JSON.stringify({ names, positions })
     })
   }
 }

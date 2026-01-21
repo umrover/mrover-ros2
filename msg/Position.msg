@@ -1,3 +1,3 @@
 std_msgs/Header header
-string[] name
-float32[] position
+string[] names
+float32[] positions

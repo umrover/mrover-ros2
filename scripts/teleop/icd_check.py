@@ -149,6 +149,10 @@ class ICDChecker:
         if line == "---":
             return "---"
 
+        line = line.split("#")[0].strip()
+        if not line:
+            return None
+
         line = re.sub(r"\[\d*\]", "[]", line)
 
         # Add default field names for types without them

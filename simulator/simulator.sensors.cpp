@@ -242,9 +242,9 @@ namespace mrover {
                 for (std::string const& msgName: motorGroup.names) {
                     std::string urdfName = mMsgToUrdf.left.at(msgName);
 
-                    controllerState.name.push_back(msgName);
-                    controllerState.state.emplace_back("Armed");
-                    controllerState.error.emplace_back("None");
+                    controllerState.names.push_back(msgName);
+                    controllerState.states.emplace_back("Armed");
+                    controllerState.errors.emplace_back("None");
                     std::uint8_t limitSwitches = 0b000;
                     if (auto limits = rover.model.getLink(urdfName)->parent_joint->limits) {
                         double jointPosition = rover.physics->getJointPos(rover.linkNameToMeta.at(urdfName).index);
@@ -252,15 +252,15 @@ namespace mrover {
                         if (jointPosition < limits->lower + OFFSET) limitSwitches |= 0b001;
                         if (jointPosition > limits->upper - OFFSET) limitSwitches |= 0b010;
                     }
-                    controllerState.limit_hit.push_back(limitSwitches);
+                    controllerState.limits_hit.push_back(limitSwitches);
 
                     double pos = rover.physics->getJointPos(rover.linkNameToMeta.at(urdfName).index);
                     double vel = rover.physics->getJointVel(rover.linkNameToMeta.at(urdfName).index);
                     double torque = rover.physics->getJointTorque(rover.linkNameToMeta.at(urdfName).index);
 
-                    controllerState.position.push_back(static_cast<float>(pos));
-                    controllerState.velocity.push_back(static_cast<float>(vel));
-                    controllerState.current.push_back(static_cast<float>(torque));
+                    controllerState.positions.push_back(static_cast<float>(pos));
+                    controllerState.velocities.push_back(static_cast<float>(vel));
+                    controllerState.currents.push_back(static_cast<float>(torque));
 
                     jointState.name.push_back(msgName);
                     jointState.position.push_back(pos);

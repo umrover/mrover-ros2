@@ -105,13 +105,13 @@ const leftState = ref<ControllerStateMessage | null>(null)
 const rightState = ref<ControllerStateMessage | null>(null)
 
 function updateFromMessage(msg: ControllerStateMessage) {
-  names.value = msg.name
-  states.value = msg.state
-  errors.value = msg.error
-  limitHits.value = msg.limit_hit
-  positions.value = msg.position
-  velocities.value = msg.velocity
-  currents.value = msg.current
+  names.value = msg.names
+  states.value = msg.states
+  errors.value = msg.errors
+  limitHits.value = msg.limits_hit
+  positions.value = msg.positions
+  velocities.value = msg.velocities
+  currents.value = msg.currents
 }
 
 function combineLeftRight() {
@@ -119,16 +119,16 @@ function combineLeftRight() {
   const right = rightState.value
   if (!left && !right) return
 
-  const l = left || { name: [], state: [], error: [], limit_hit: [], position: [], velocity: [], current: [] }
-  const r = right || { name: [], state: [], error: [], limit_hit: [], position: [], velocity: [], current: [] }
+  const l = left || { names: [], states: [], errors: [], limits_hit: [], positions: [], velocities: [], currents: [] }
+  const r = right || { names: [], states: [], errors: [], limits_hit: [], positions: [], velocities: [], currents: [] }
 
-  names.value = [...l.name, ...r.name]
-  states.value = [...l.state, ...r.state]
-  errors.value = [...l.error, ...r.error]
-  limitHits.value = [...l.limit_hit, ...r.limit_hit]
-  positions.value = [...l.position, ...r.position]
-  velocities.value = [...l.velocity, ...r.velocity]
-  currents.value = [...l.current, ...r.current]
+  names.value = [...l.names, ...r.names]
+  states.value = [...l.states, ...r.states]
+  errors.value = [...l.errors, ...r.errors]
+  limitHits.value = [...l.limits_hit, ...r.limits_hit]
+  positions.value = [...l.positions, ...r.positions]
+  velocities.value = [...l.velocities, ...r.velocities]
+  currents.value = [...l.currents, ...r.currents]
 }
 
 const driveMessage = computed(() => messages.value['drive'])
