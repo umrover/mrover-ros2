@@ -39,5 +39,6 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   window.clearInterval(interval)
+  websocketStore.closeWebSocket('drive')
 })
 </script>

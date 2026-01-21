@@ -1,10 +1,11 @@
 from typing import Optional
-from backend.ros_manager import get_node
+from backend.managers.ros import get_node
 from backend.database import get_recordings_db
 from sensor_msgs.msg import NavSatFix
 from rclpy.qos import qos_profile_sensor_data
 
 RECORDING_RATE_HZ = 5
+
 
 class RecordingManager:
     def __init__(self):
@@ -23,26 +24,37 @@ class RecordingManager:
         self.rover_gps_sub = self.node.create_subscription(
             NavSatFix,
             "/gps/fix",
-            self._handle_rover_gps,
+            self.handle_rover_gps,
             qos_profile=qos_profile_sensor_data
         )
 
         self.drone_gps_sub = self.node.create_subscription(
             NavSatFix,
             "/drone_odometry",
-            self._handle_drone_gps,
+            self.handle_drone_gps,
             qos_profile=qos_profile_sensor_data
         )
 
-    def _handle_rover_gps(self, msg: NavSatFix):
+    def shutdown(self):
+        if self.timer:
+            self.node.destroy_timer(self.timer)
+            self.timer = None
+        if self.rover_gps_sub:
+            self.node.destroy_subscription(self.rover_gps_sub)
+            self.rover_gps_sub = None
+        if self.drone_gps_sub:
+            self.node.destroy_subscription(self.drone_gps_sub)
+            self.drone_gps_sub = None
+
+    def handle_rover_gps(self, msg: NavSatFix):
         self.rover_lat = msg.latitude
         self.rover_lon = msg.longitude
 
-    def _handle_drone_gps(self, msg: NavSatFix):
+    def handle_drone_gps(self, msg: NavSatFix):
         self.drone_lat = msg.latitude
         self.drone_lon = msg.longitude
 
-    def _recording_callback(self):
+    def recording_callback(self):
         if not self.is_recording or self.current_recording_id is None:
             return
 
@@ -52,6 +64,7 @@ class RecordingManager:
         if lat == 0.0 and lon == 0.0:
             return
 
+        conn = None
         try:
             conn = get_recordings_db()
             conn.execute('''
@@ -59,20 +72,26 @@ class RecordingManager:
                 VALUES (?, ?, ?, ?)
             ''', (self.current_recording_id, lat, lon, self.recording_sequence))
             conn.commit()
-            conn.close()
             self.recording_sequence += 1
         except Exception as e:
             print(f"Failed to save waypoint: {e}")
+        finally:
+            if conn:
+                conn.close()
 
     def start_recording(self, name: str, is_drone: bool) -> int:
         if self.is_recording:
             raise ValueError("Recording already in progress")
 
-        conn = get_recordings_db()
-        cur = conn.execute('INSERT INTO recordings (name, is_drone) VALUES (?, ?)', (name, is_drone))
-        recording_id = cur.lastrowid
-        conn.commit()
-        conn.close()
+        conn = None
+        try:
+            conn = get_recordings_db()
+            cur = conn.execute('INSERT INTO recordings (name, is_drone) VALUES (?, ?)', (name, is_drone))
+            recording_id = cur.lastrowid
+            conn.commit()
+        finally:
+            if conn:
+                conn.close()
 
         self.current_recording_id = recording_id
         self.recording_sequence = 0
@@ -81,7 +100,7 @@ class RecordingManager:
 
         self.timer = self.node.create_timer(
             1.0 / RECORDING_RATE_HZ,
-            self._recording_callback
+            self.recording_callback
         )
 
         print(f"Started recording: {name} (ID: {recording_id}) at {RECORDING_RATE_HZ}Hz")
@@ -119,10 +138,12 @@ class RecordingManager:
             "is_drone": self.is_drone_recording
         }
 
-_recording_manager = None
+
+recording_manager = None
+
 
 def get_recording_manager() -> RecordingManager:
-    global _recording_manager
-    if _recording_manager is None:
-        _recording_manager = RecordingManager()
-    return _recording_manager
+    global recording_manager
+    if recording_manager is None:
+        recording_manager = RecordingManager()
+    return recording_manager

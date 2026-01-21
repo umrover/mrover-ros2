@@ -8,8 +8,8 @@ class ScienceHandler(WebSocketHandler):
         super().__init__(websocket, 'science')
 
     async def setup(self):
-        """Setup SCIENCE endpoint subscriptions and publishers"""
         self.sp_thr_pub = self.node.create_publisher(Throttle, "/sp_thr_cmd", 1)
+        self.publishers.append(self.sp_thr_pub)
 
         self.forward_ros_topic("/sp_humidity_data", Humidity, "sp_humidity")
         self.forward_ros_topic("/sp_temp_data", Temperature, "sp_temp")
@@ -21,7 +21,6 @@ class ScienceHandler(WebSocketHandler):
         self.forward_ros_topic("/sp_controller_state", ControllerState, "sp_controller_state")
 
     async def handle_message(self, data):
-        """Handle incoming SCIENCE control messages"""
         msg_type = data.get('type')
 
         if msg_type == 'sp_controller':

@@ -89,7 +89,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useWebsocketStore } from '@/stores/websocket'
 import { storeToRefs } from 'pinia'
 import Chart from 'chart.js/auto'
@@ -183,10 +183,19 @@ const downloadCSV = () => {
   anchor.click()
 }
 
-onMounted(() => {
-  const charts: Chart[] = [];
+const charts: Chart[] = []
+let updateInterval: number | undefined = undefined
 
-  // This helper function waits for a DOM element to be available
+const chartConfigs = [
+  { title: 'Humidity (%)', datasets: [{ label: 'Humidity', color: '#3BB273', historyIndex: 1 }] },
+  { title: 'UV Index', datasets: [{ label: 'UV', color: '#7768AE', historyIndex: 3 }] },
+  { title: 'Ozone (ppb)', datasets: [{ label: 'Ozone', color: '#F9A825', historyIndex: 4 }] },
+  { title: 'Pressure (Pa)', datasets: [{ label: 'Pressure', color: '#26A69A', historyIndex: 6 }] },
+]
+
+const maxHistory = 20
+
+onMounted(() => {
   function waitForElm(selector: string): Promise<Element | null> {
     return new Promise(resolve => {
       const elm = document.querySelector(selector);
@@ -208,15 +217,6 @@ onMounted(() => {
       });
     });
   }
-
-  const chartConfigs = [
-    { title: 'Humidity (%)', datasets: [{ label: 'Humidity', color: '#3BB273', historyIndex: 1 }] },
-    { title: 'UV Index', datasets: [{ label: 'UV', color: '#7768AE', historyIndex: 3 }] },
-    { title: 'Ozone (ppb)', datasets: [{ label: 'Ozone', color: '#F9A825', historyIndex: 4 }] },
-    { title: 'Pressure (Pa)', datasets: [{ label: 'Pressure', color: '#26A69A', historyIndex: 6 }] },
-  ];
-
-  const maxHistory = 20;
 
   for (let i = 0; i < chartConfigs.length; ++i) {
     waitForElm(`#chart${i}`).then(canvasElement => {
@@ -269,8 +269,7 @@ onMounted(() => {
     });
   }
 
-  // Set up the interval to update chart data
-  setInterval(() => {
+  updateInterval = window.setInterval(() => {
     sensor_history.value[0]?.push(sensor_data.value.sp_oxygen);
     sensor_history.value[1]?.push(sensor_data.value.sp_humidity);
     sensor_history.value[2]?.push(sensor_data.value.sp_temp);
@@ -312,5 +311,16 @@ onMounted(() => {
       }
     }
   }, 1000);
+})
+
+onBeforeUnmount(() => {
+  if (updateInterval !== undefined) {
+    clearInterval(updateInterval)
+    updateInterval = undefined
+  }
+  for (const chart of charts) {
+    chart?.destroy()
+  }
+  charts.length = 0
 })
 </script>

@@ -11,7 +11,7 @@ import traceback
 
 # Import Singleton ROS Manager
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from backend.ros_manager import get_node, get_logger
+from backend.managers.ros import get_node, get_logger
 from backend.logging_config import LOGGING_CONFIG
 
 # API Routers

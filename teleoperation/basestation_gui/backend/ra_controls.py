@@ -1,39 +1,41 @@
+import asyncio
 from enum import Enum
+import threading
 
 from rclpy.node import Node
 from rclpy.publisher import Publisher
 
 from backend.input import filter_input, simulated_axis, safe_index, DeviceInputs
 from backend.mappings import ControllerAxis, ControllerButton
-from backend.ros_manager import get_node
+from backend.managers.ros import get_service_client
 from mrover.msg import Throttle, IK
 from mrover.srv import IkMode
 from geometry_msgs.msg import Twist
 
 from tf2_ros.buffer import Buffer
 
-import time
-
 ra_mode = "disabled"
+ra_mode_lock = threading.Lock()
+
 
 def get_ra_mode() -> str:
-    return ra_mode
+    with ra_mode_lock:
+        return ra_mode
 
 
-def set_ra_mode(new_ra_mode: str):
+async def set_ra_mode(new_ra_mode: str):
     global ra_mode
-    ra_mode = new_ra_mode
-
-    node = get_node()
+    with ra_mode_lock:
+        ra_mode = new_ra_mode
 
     if new_ra_mode == "ik-pos":
-        call_ik_mode_service(node, IK_MODE_POSITION_CONTROL)
+        await call_ik_mode_service(IK_MODE_POSITION_CONTROL)
     elif new_ra_mode == "ik-vel":
-        call_ik_mode_service(node, IK_MODE_VELOCITY_CONTROL)
+        await call_ik_mode_service(IK_MODE_VELOCITY_CONTROL)
 
 
-def call_ik_mode_service(node: Node, mode: int) -> bool:
-    client = node.create_client(IkMode, "/ik_mode")
+async def call_ik_mode_service(mode: int) -> bool:
+    client = get_service_client(IkMode, "/ik_mode")
 
     if not client.wait_for_service(timeout_sec=1.0):
         return False
@@ -42,14 +44,17 @@ def call_ik_mode_service(node: Node, mode: int) -> bool:
     request.mode = mode
 
     future = client.call_async(request)
-    start_time = time.time()
-    while not future.done():
-        if time.time() - start_time > 5.0:
-            return False
-        time.sleep(0.01)
-
-    result = future.result()
-    return result.success if result else False
+    try:
+        await asyncio.wait_for(
+            asyncio.get_event_loop().run_in_executor(None, future.result),
+            timeout=5.0
+        )
+        result = future.result()
+        return result.success if result else False
+    except asyncio.TimeoutError:
+        return False
+    except Exception:
+        return False
 
 
 IK_MODE_POSITION_CONTROL = 0
@@ -145,9 +150,10 @@ def subset(names: list[str], values: list[float], joints: set[Joint]) -> tuple[l
 def send_ra_controls(
     inputs: DeviceInputs, node: Node, thr_pub: Publisher, ee_pos_pub: Publisher, ee_vel_pub: Publisher, buffer: Buffer
 ) -> None:
-    match ra_mode:
+    current_mode = get_ra_mode()
+    match current_mode:
         case "throttle" | "ik-pos" | "ik-vel":
-            match ra_mode:
+            match current_mode:
                 case "throttle":
                     manual_controls = compute_manual_joint_controls(inputs)
                     throttle_msg = Throttle()

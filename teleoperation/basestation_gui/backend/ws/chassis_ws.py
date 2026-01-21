@@ -6,9 +6,7 @@ class ChassisHandler(WebSocketHandler):
         super().__init__(websocket, 'chassis')
 
     async def setup(self):
-        """Setup CHASSIS endpoint subscriptions"""
         self.forward_ros_topic("/gimbal_controller_state", ControllerState, "gimbal_controller_state")
 
     async def handle_message(self, data):
-        """Handle incoming CHASSIS messages"""
         print(f"Chassis handler received unexpected message: {data}")

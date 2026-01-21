@@ -1,5 +1,3 @@
-"""ROS2 Action Client for the Typing Task"""
-
 import rclpy
 from mrover.action import TypingCode
 from rclpy.action import ActionClient
@@ -11,7 +9,7 @@ class TypingTaskActionClient(Node):
         super().__init__('typing_task_action_client')
         self.node = node
         self.websocket = websocket  # Instance of GUIConsumer
-        self._action_client = ActionClient(node, TypingCode, '/es_typing_code')
+        self.action_client = ActionClient(node, TypingCode, '/es_typing_code')
 
     def send_code(self, code):
         from backend.consumers import GUIConsumer
@@ -19,9 +17,9 @@ class TypingTaskActionClient(Node):
             goal_msg = TypingCode.Goal()
             goal_msg.launch_code = code
 
-            # self._action_client.wait_for_server()
+            # self.action_client.wait_for_server()
 
-            send_goal_future = self._action_client.send_goal_async(goal_msg, feedback_callback=self.feedback_callback)
+            send_goal_future = self.action_client.send_goal_async(goal_msg, feedback_callback=self.feedback_callback)
             send_goal_future.add_done_callback(self.goal_response_callback)
             
             return send_goal_future
