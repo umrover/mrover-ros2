@@ -246,13 +246,19 @@ namespace mrover {
                 dt = 0.033; // default to 30Hz
             }
 
-            const double k = 0.75;
+            const double k = 0.25;
 
             mCarrotPos.x += mVelTarget.linear.x * dt * k;
             mCarrotPos.y += mVelTarget.linear.y * dt * k;
             mCarrotPos.z += mVelTarget.linear.z * dt * k;
             mCarrotPos.pitch += mVelTarget.angular.y * dt * k;
             mCarrotPos.roll += mVelTarget.angular.x * dt * k;
+
+            if (!ikPosCalc(mCarrotPos)) {
+                mCarrotPos = mArmPos;
+            }
+
+            SE3Conversions::pushToTfTree(mTfBroadcaster, "carrot_target", "arm_base_link", mCarrotPos.toSE3(), get_clock()->now());
 
             const double error_x = mCarrotPos.x - mArmPos.x;
             const double error_y = mCarrotPos.y - mArmPos.y;
@@ -269,6 +275,7 @@ namespace mrover {
             adjusted_v.linear.z += mCarrotk * (error_z / mCarrotTime);
             adjusted_v.angular.y += mCarrotk * (error_pitch / mCarrotTime);
             adjusted_v.angular.x += mCarrotk * (error_roll / mCarrotTime);
+
 
             auto velocities = ikVelCalc(adjusted_v);
             if (velocities && 
