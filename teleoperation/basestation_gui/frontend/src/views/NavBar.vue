@@ -94,8 +94,6 @@ import NotificationCenter from '../components/NotificationCenter.vue';
 import { useGridLayoutStore } from '@/stores/gridLayout';
 import { useThemeStore } from '@/stores/theme';
 
-const GRID_LAYOUT_ROUTES = ['/AutonTask', '/ScienceTask', '/ESTask', '/DMTask'];
-
 export default defineComponent({
   name: 'NavBar',
   setup() {
@@ -108,7 +106,7 @@ export default defineComponent({
       return this.getTitleForRoute(this.$route.path)
     },
     showGridControls(): boolean {
-      return GRID_LAYOUT_ROUTES.includes(this.$route.path);
+      return this.$route.meta.hasGridLayout === true;
     },
     themeIcon(): string {
       const icons: Record<string, string> = {
