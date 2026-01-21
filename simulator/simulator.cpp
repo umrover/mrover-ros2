@@ -49,7 +49,6 @@ namespace mrover {
             {
                 auto addGroup = [&](std::string_view groupName, std::string_view controllerStateTopic, std::vector<std::string> const& names) {
                     MotorGroup& group = mMotorGroups.emplace_back();
-                    group.jointStatePub = create_publisher<sensor_msgs::msg::JointState>(std::format("{}_joint_data", groupName), 1);
                     group.controllerStatePub = create_publisher<msg::ControllerState>(std::string{controllerStateTopic}, 1);
                     group.names = names;
                     group.throttleSub = create_subscription<msg::Throttle>(std::format("{}_throttle_cmd", groupName), 1, [this](msg::Throttle::ConstSharedPtr const& msg) {

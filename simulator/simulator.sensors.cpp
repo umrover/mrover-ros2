@@ -236,9 +236,6 @@ namespace mrover {
             for (MotorGroup& motorGroup: mMotorGroups) {
                 msg::ControllerState controllerState;
 
-                sensor_msgs::msg::JointState jointState;
-                jointState.header.stamp = get_clock()->now();
-
                 for (std::string const& msgName: motorGroup.names) {
                     std::string urdfName = mMsgToUrdf.left.at(msgName);
 
@@ -261,15 +258,9 @@ namespace mrover {
                     controllerState.positions.push_back(static_cast<float>(pos));
                     controllerState.velocities.push_back(static_cast<float>(vel));
                     controllerState.currents.push_back(static_cast<float>(torque));
-
-                    jointState.name.push_back(msgName);
-                    jointState.position.push_back(pos);
-                    jointState.velocity.push_back(vel);
-                    jointState.effort.push_back(torque);
                 }
 
                 motorGroup.controllerStatePub->publish(controllerState);
-                motorGroup.jointStatePub->publish(jointState);
             }
         }
     }

@@ -181,7 +181,6 @@ namespace mrover {
         rclcpp::Subscription<msg::Throttle>::SharedPtr throttleSub;
         rclcpp::Subscription<msg::Velocity>::SharedPtr velocitySub;
         rclcpp::Subscription<msg::Position>::SharedPtr positionSub;
-        rclcpp::Publisher<sensor_msgs::msg::JointState>::SharedPtr jointStatePub;
         rclcpp::Publisher<msg::ControllerState>::SharedPtr controllerStatePub;
     };
 
