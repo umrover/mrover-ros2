@@ -2,6 +2,7 @@
 
 #include "pch.hpp"
 #include <memory>
+#include <rclcpp/subscription.hpp>
 #include <rclcpp_action/server_goal_handle.hpp>
 #include <rclcpp_action/types.hpp>
 
@@ -46,9 +47,7 @@ namespace mrover{
         tf2_ros::TransformBroadcaster tf_broadcaster{this};
 
         // transform from camera to end effector
-        SE3d cam_to_gripper;
-
-        bool TEMP = false;
+        SE3d gripper_to_cam;
 
         // Define a board
         cv::Ptr<cv::aruco::Board> rover_board;
@@ -56,8 +55,7 @@ namespace mrover{
         // Sub to /finger_camera/image topic
         rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr mImageSub;
 
-        // Sub to /ee_pos_cmd topic
-        rclcpp::Subscription<msg::IK>::SharedPtr mArmSub;
+        int cnt = 0;
 
         LoopProfiler mLoopProfiler;
 

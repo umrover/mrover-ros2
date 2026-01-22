@@ -52,17 +52,18 @@ namespace mrover{
             yawCallback(msg);
         });
 
-
         // grab transform from finger_cam to gripper
         // wait until the transformation is acquired
         while (true) {
             try {
-                cam_to_gripper = SE3Conversions::fromTfTree(tf_buffer, "finger_camera_frame", "arm_gripper_link");
+                gripper_to_cam = SE3Conversions::fromTfTree(tf_buffer, "finger_camera_frame", "arm_fk");
                 break;
             } catch (tf2::TransformException const& e) {
                 RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, std::format("TF tree error processing keyboard typing: {}", e.what()));
             }
         }
+
+        
 
         // Initialize Kalman filter
         // State vector: [x, y, z, vx, vy, vz, roll, pitch, yaw, vroll, vpitch, vyaw]
@@ -96,8 +97,6 @@ namespace mrover{
 
         mIKPub = this->create_publisher<msg::IK>("ee_pos_cmd",rclcpp::QoS(1));
 
-        mIKVelPub = this->create_publisher<geometry_msgs::msg::Twist>("ee_vel_cmd",rclcpp::QoS(10));
-
         // Define offsets
         layout[4] = cv::Vec3d(0.0, 0.0, 0.0);       // BL
         layout[5] = cv::Vec3d(0.387, 0.0, 0.0);     // BR
@@ -109,31 +108,27 @@ namespace mrover{
 
     auto KeyboardTypingNode::yawCallback(sensor_msgs::msg::Image::ConstSharedPtr const& msg) -> void {
         // If we are still updating pose estimate (i.e. no launch code sent, send IK and update pose)
-        std::optional<pose_output> pose = std::nullopt;
+        std::optional<pose_output> output = std::nullopt;
         if (mUpdatePoseEstimate) {
             // sendIKCommand(1.100, .253, .367, 0, 0);
-            pose = estimatePose(msg);
+            output = estimatePose(msg);
         }
 
         // Publish yaw & se3d
-        if (pose.has_value()) {
+        if (output.has_value()) {
             mrover::msg::KeyboardYaw msg;
-            msg.yaw = pose->yaw;
+            msg.yaw = output->yaw;
             mCostMapPub->publish(msg);
 
             // Convert pose to se3d
-            SE3d cam_to_tag = SE3Conversions::fromPose(pose->pose);
+            SE3d cam_to_tag = SE3Conversions::fromPose(output->pose);
 
             // Apply transform from finger_camera to arm_gripper_link onto pose
-            SE3d gripper_to_tag = cam_to_gripper.inverse() * cam_to_tag;
+            
+            // SE3d gripper_to_tag = gripper_to_cam * cam_to_tag;
 
             // Publish to tf tree
-            SE3Conversions::pushToTfTree(tf_broadcaster, "keyboard_tag", "arm_gripper_link", gripper_to_tag, get_clock()->now());
-
-            // Put arm into initial configuration (above z key)
-            if (!TEMP) {
-                align_arm();
-            }
+            SE3Conversions::pushToTfTree(tf_broadcaster, "keyboard_tag", "arm_fk", cam_to_tag, get_clock()->now());
         }
     }
 
@@ -305,18 +300,18 @@ namespace mrover{
             // Returns the filtered pose
             geometry_msgs::msg::Pose finalestimation = updateKalmanFilter(combined_tvec, combined_rvec);
 
-            finalestimation.position.x = combined_tvec[0];
-            finalestimation.position.y = combined_tvec[1];
-            finalestimation.position.z = combined_tvec[2];
+            // finalestimation.position.x = combined_tvec[0];
+            // finalestimation.position.y = combined_tvec[1];
+            // finalestimation.position.z = combined_tvec[2];
 
-            Eigen::Quaterniond q;
-            q = Eigen::AngleAxisd(combined_rvec[0], Eigen::Vector3d::UnitZ()) *
-                Eigen::AngleAxisd(combined_rvec[1], Eigen::Vector3d::UnitY()) *
-                Eigen::AngleAxisd(combined_rvec[2], Eigen::Vector3d::UnitX());
-            finalestimation.orientation.x = q.x();
-            finalestimation.orientation.y = q.y();
-            finalestimation.orientation.z = q.z();
-            finalestimation.orientation.w = q.w();
+            // Eigen::Quaterniond q;
+            // q = Eigen::AngleAxisd(combined_rvec[0], Eigen::Vector3d::UnitZ()) *
+            //     Eigen::AngleAxisd(combined_rvec[1], Eigen::Vector3d::UnitY()) *
+            //     Eigen::AngleAxisd(combined_rvec[2], Eigen::Vector3d::UnitX());
+            // finalestimation.orientation.x = q.x();
+            // finalestimation.orientation.y = q.y();
+            // finalestimation.orientation.z = q.z();
+            // finalestimation.orientation.w = q.w();
 
             // Draw after kalman filter
             cv::drawFrameAxes(grayImage, camMatrix, distCoeffs, combined_rvec, combined_tvec, markerLength * 3.0f, 4);
@@ -326,9 +321,10 @@ namespace mrover{
             cv::imshow("out", grayImage);
             int key = cv::waitKey(1) & 0xFF;
             if(key == 'r'){
-                logPose = !logPose;
-                RCLCPP_INFO_STREAM(get_logger(), "Toggled logPose: " << (logPose ? "ON" : "OFF"));
-        }
+                // logPose = !logPose;
+                // RCLCPP_INFO_STREAM(get_logger(), "Toggled logPose: " << (logPose ? "ON" : "OFF"));
+                align_arm();
+            }
             if(logPose){
                 outputToCSV(combined_tvec, combined_rvec);
             }
@@ -450,9 +446,12 @@ namespace mrover{
         geometry_msgs::msg::Pose filtered_pose;
 
         // Position
-        filtered_pose.position.x = kf.statePost.at<float>(0);
-        filtered_pose.position.y = kf.statePost.at<float>(1);
-        filtered_pose.position.z = kf.statePost.at<float>(2);
+        // filtered_pose.position.x = kf.statePost.at<float>(0);
+        // filtered_pose.position.y = kf.statePost.at<float>(1);
+        // filtered_pose.position.z = kf.statePost.at<float>(2);
+        filtered_pose.position.x = tvec[0];
+        filtered_pose.position.y = tvec[1];
+        filtered_pose.position.z = tvec[2];
 
         // Orientation (Convert RPY back to Quaternion)
         double final_roll = kf.statePost.at<float>(6);
@@ -470,13 +469,13 @@ namespace mrover{
         filtered_pose.orientation.w = q.w();
 
         // Update combined tvecs and rvecs
-        // tvec[0] = filtered_pose.position.x;
-        // tvec[1] = filtered_pose.position.y;
-        // tvec[2] = filtered_pose.position.z;
+        tvec[0] = filtered_pose.position.x;
+        tvec[1] = filtered_pose.position.y;
+        tvec[2] = filtered_pose.position.z;
 
-        // rvec[0] = final_roll;
-        // rvec[1] = final_pitch;
-        // rvec[2] = final_yaw;
+        rvec[0] = final_roll;
+        rvec[1] = final_pitch;
+        rvec[2] = final_yaw;
         
         return filtered_pose;
     }
@@ -484,51 +483,52 @@ namespace mrover{
     auto KeyboardTypingNode::align_arm() -> void {
         // Grab gripper_to_tag and then calculate deltas
         SE3d gripper_to_tag;
+        SE3d armbase_to_armfk;
+
+        // grab current arm configuration
+        // get transform from arm base link to arm fk, gives us initial configuration
+        // while (true) {
+        //     try {
+        //         armbase_to_armfk = SE3Conversions::fromTfTree(tf_buffer, "arm_fk", "arm_base_link");
+        //         break;
+        //     } catch (tf2::TransformException const& e) {
+        //         RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, std::format("TF tree error processing keyboard typing: {}", e.what()));
+        //     }
+        // }
+
         try {
-            gripper_to_tag = SE3Conversions::fromTfTree(tf_buffer, "arm_gripper_link", "keyboard_tag");
+            // gripper_to_tag = SE3Conversions::fromTfTree(tf_buffer, "arm_gripper_link", "keyboard_tag");
+            gripper_to_tag = SE3Conversions::fromTfTree(tf_buffer, "keyboard_tag", "arm_fk");
+            armbase_to_armfk = SE3Conversions::fromTfTree(tf_buffer, "arm_fk", "arm_base_link");
+
             // Calculate Deltas and send to arm
-            double dx = gripper_to_tag.translation().x();
-            double dy = gripper_to_tag.translation().y();
-            double dz = gripper_to_tag.translation().z();
+            // double dx = gripper_to_tag.translation().x();
+            // double dy = armbase_to_armfk.translation().y() + gripper_to_tag.translation().y();
+            // double dz = armbase_to_armfk.translation().z() - gripper_to_tag.translation().z();
+            // double dx = gripper_to_tag.translation().x();
+            double dy = gripper_to_tag.translation().x();
+            double dz = gripper_to_tag.translation().y();
 
-            double dist = std::sqrt(dx*dx + dy*dy + dz*dz);
+            RCLCPP_INFO_STREAM(this->get_logger(), "cur_y = " << armbase_to_armfk.translation().y());
+            RCLCPP_INFO_STREAM(this->get_logger(), "cur_z = " << armbase_to_armfk.translation().z());
+            
+            double newy = armbase_to_armfk.translation().y() - dy;
+            double newz = armbase_to_armfk.translation().z() - dz;
 
-            double dir_x = dx/dist;
-            double dir_y = dy/dist;
-            double dir_z = dz/dist;
+            if (newy > 0.35) newy = 0.35;
+            if (newy < 0) newy = 0;
+            if (newz > 0.6) newz = 0.6;
+            if (newz < -0.415) newz = -0.415;
 
+            // if (dy > 0.35) dy = 0.35;
+            // if (dy < 0) dy = 0;
+            // if (dz > 0.6) dz = 0.6;
+            // if (dz < -0.415) dz = -0.415;
 
-            double dt = 0.2;
-            double duration = dist / dt;
-
-            int steps = duration / dt;
-
-            geometry_msgs::msg::Twist cmd;
-            cmd.linear.x = 0;
-            // cmd.linear.y = -dir_x * dt;
-            // cmd.linear.z = -dir_y * dt;
-            cmd.linear.y = 10;
-            cmd.linear.z = 10;
-
-            // no rotation
-            cmd.angular.x = 0.0;
-            cmd.angular.y = 0.0;
-            cmd.angular.z = 0.0;
-
-            for (int i = 0; i < steps; ++i) {
-                mIKVelPub->publish(cmd);
-            }
-
-            geometry_msgs::msg::Twist stop;
-            mIKVelPub->publish(stop);
-
-
-
-
-            // TEMP = true;
-            RCLCPP_INFO_STREAM(this->get_logger(), "x_delta = " << gripper_to_tag.translation().x());
+            sendIKCommand(armbase_to_armfk.translation().x(), newy, newz, 0, 0);
             RCLCPP_INFO_STREAM(this->get_logger(), "y_delta = " << dy);
-            RCLCPP_INFO_STREAM(this->get_logger(), "z_delta = " << gripper_to_tag.translation().z());
+            RCLCPP_INFO_STREAM(this->get_logger(), "z_delta = " << dz);
+            // RCLCPP_INFO_STREAM(this->get_logger(), "z_delta = " << dz);
 
             // For when action server does stuff
             // double x_delta = gripper_to_tag.translation().x();
