@@ -131,7 +131,7 @@ Servo::ServoStatus Servo::getPosition(ServoPosition& position)
   uint8_t hardwareStatus;
   uint32_t positionInt;
   ServoStatus status = read4Byte(ADDR_PRESENT_POSITION, positionInt, &hardwareStatus);
-  position = (static_cast<float>(positionInt & 4096) / 4096.0f) * 360.0f;
+  position = (static_cast<float>(positionInt % 4096) / 4096.0f) * 360.0f;
   return status;
 }
 
@@ -140,16 +140,16 @@ Servo::ServoStatus Servo::getVelocity(ServoVelocity& velocity)
   uint8_t hardwareStatus;
   uint32_t velocity_int;
   Servo::ServoStatus status = read4Byte(ADDR_PRESENT_VELOCITY, velocity_int, &hardwareStatus);
-  velocity = (velocity * 0.22888f);
+  velocity = (static_cast<float>(static_cast<int32_t>(velocity_int)) * 0.22888f);
   return status;
 }
 
 Servo::ServoStatus Servo::getCurrent(ServoCurrent& current)
 {
   uint8_t hardwareStatus;
-  uint32_t currentInt;
-  ServoStatus status = read4Byte(ADDR_PRESENT_CURRENT, currentInt, &hardwareStatus);
-  current = static_cast<float>(currentInt) / 1000.0f;
+  uint16_t currentInt;
+  ServoStatus status = read2Byte(ADDR_PRESENT_CURRENT, currentInt, &hardwareStatus);
+  current = static_cast<float>(static_cast<int16_t>(currentInt))/ 1000.0f;
   return status;
 }
 

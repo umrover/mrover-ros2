@@ -75,7 +75,7 @@ namespace mrover {
 
         std::unique_ptr<mrover::Servo> servo;
 
-        std::vector<std::pair<std::string, int>> const mServoNames = {{"mast_gimbal_pitch", 1}, {"mast_gimbal_yaw", 2}};
+        std::vector<std::pair<std::string, int>> const mServoNames = {{"mast_gimbal_pitch", 3}, {"mast_gimbal_yaw", 4}};
 
         rclcpp::Publisher<mrover::msg::GimbalControlState>::SharedPtr mGimbalStatePub;
         rclcpp::TimerBase::SharedPtr mPublishDataTimer;
@@ -122,7 +122,7 @@ namespace mrover {
                 }      
 
                 /*mControllerState.error[i] = {servo->getErrorState()};*/
-                mControllerState.error[i] = "";
+                /*mControllerState.error[i] = "";
                 if (ps != Servo::ServoStatus::Success) {
                     mControllerState.error[i] = "pos_read_fail";
                 } else if (vs != Servo::ServoStatus::Success) {
@@ -131,6 +131,46 @@ namespace mrover {
                     mControllerState.error[i] = "cur_read_fail";
                 } else if (ts == Servo::ServoStatus::HardwareFailure) {
                     mControllerState.error[i] = "hardware_failure";
+                }*/
+
+                /*mControllerState.error[i] = {servo->getErrorState()};*/
+                switch(ps) {
+                    case Servo::ServoStatus::CommNotAvailable:
+                        mControllerState.error[i] = "CommNotAvailable";
+                        break; 
+                    case Servo::ServoStatus::CommTxError:
+                        mControllerState.error[i] = "CommTxError";
+                        break;
+                    case Servo::ServoStatus::HardwareFailure:
+                        mControllerState.error[i] = "HardwareFailure";
+                        break;
+                    case Servo::ServoStatus::CommRxCorrupt:
+                        mControllerState.error[i] = "CommRxCorrupt";
+                        break;
+                    case Servo::ServoStatus::CommRxTimeout:
+                        mControllerState.error[i] = "CommRxTimeout";
+                        break;
+                    case Servo::ServoStatus::CommRxFail:
+                        mControllerState.error[i] = "CommRxFail";
+                        break;
+                    case Servo::ServoStatus::CommTxFail:
+                        mControllerState.error[i] = "CommTxFail";
+                        break;
+                    case Servo::ServoStatus::CommPortBusy:
+                        mControllerState.error[i] = "CommPortBusy";
+                        break;
+                    case Servo::ServoStatus::CommRxWaiting:
+                        mControllerState.error[i] = "CommRxWaiting";
+                        break;
+                    case Servo::ServoStatus::FailedToOpenPort:
+                        mControllerState.error[i] = "FailedToOpenPort";
+                        break;
+                    case Servo::ServoStatus::FailedToSetBaud:
+                        mControllerState.error[i] = "FailedToSetBaud";
+                        break;
+                    default:
+                        mControllerState.error[i] = "NoError";
+                        break;
                 }
 
                 /*mControllerState.limit_hit[i] = {servo->getLimitsHitBits()};*/
