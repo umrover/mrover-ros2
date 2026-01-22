@@ -246,7 +246,9 @@ namespace mrover {
                 dt = 0.033; // default to 30Hz
             }
 
-            const double k = 0.25;
+            if (true) dt = 0.0175;
+
+            const double k = 0.50 ;
 
             mCarrotPos.x += mVelTarget.linear.x * dt * k;
             mCarrotPos.y += mVelTarget.linear.y * dt * k;
@@ -254,21 +256,33 @@ namespace mrover {
             mCarrotPos.pitch += mVelTarget.angular.y * dt * k;
             mCarrotPos.roll += mVelTarget.angular.x * dt * k;
 
-            if (!ikPosCalc(mCarrotPos)) {
-                mCarrotPos = mArmPos;
+            double error_x = mCarrotPos.x - mArmPos.x;
+            double error_y = mCarrotPos.y - mArmPos.y;
+            double error_z = mCarrotPos.z - mArmPos.z;
+            double error_pitch = mCarrotPos.pitch - mArmPos.pitch;
+            double error_roll = mCarrotPos.roll - mArmPos.roll;
+
+            const double max_dist = 0.03;
+
+            double error_total = std::sqrt(error_x * error_x + error_y * error_y + error_z * error_z);
+            if (error_total > max_dist) {
+                double reduce_factor = max_dist / error_total;
+                mCarrotPos.x = mArmPos.x + error_x * reduce_factor;
+                mCarrotPos.y = mArmPos.y + error_y * reduce_factor;
+                mCarrotPos.z = mArmPos.z + error_z * reduce_factor;
             }
 
             SE3Conversions::pushToTfTree(mTfBroadcaster, "carrot_target", "arm_base_link", mCarrotPos.toSE3(), get_clock()->now());
 
-            const double error_x = mCarrotPos.x - mArmPos.x;
-            const double error_y = mCarrotPos.y - mArmPos.y;
-            const double error_z = mCarrotPos.z - mArmPos.z;
-            const double error_pitch = mCarrotPos.pitch - mArmPos.pitch;
-            const double error_roll = mCarrotPos.roll - mArmPos.roll;
-
             auto adjusted_v = mVelTarget;
 
-            mCarrotTime = dt;
+            mCarrotTime = 0.033;
+
+            error_x = mCarrotPos.x - mArmPos.x;
+            error_y = mCarrotPos.y - mArmPos.y;
+            error_z = mCarrotPos.z - mArmPos.z;
+            error_pitch = mCarrotPos.pitch - mArmPos.pitch;
+            error_roll = mCarrotPos.roll - mArmPos.roll;
 
             adjusted_v.linear.x += mCarrotk * (error_x / mCarrotTime);
             adjusted_v.linear.y += mCarrotk * (error_y / mCarrotTime);
