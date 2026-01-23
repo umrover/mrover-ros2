@@ -20,7 +20,7 @@ class WebSocketHandler:
         self.timers = []
         self.loop = asyncio.get_running_loop()
         self.closed = False
-        self._last_send_times: dict[str, float] = {}
+        self.last_send_times: dict[str, float] = {}
 
     async def send_msgpack(self, data):
         if self.closed:
@@ -41,13 +41,13 @@ class WebSocketHandler:
             pass
 
     def forward_ros_topic(self, topic_name, topic_type, gui_msg_type):
-        self._last_send_times[topic_name] = 0.0
+        self.last_send_times[topic_name] = 0.0
 
         def callback(ros_message):
             now = time.monotonic()
-            if now - self._last_send_times[topic_name] < FORWARD_INTERVAL_SEC:
+            if now - self.last_send_times[topic_name] < FORWARD_INTERVAL_SEC:
                 return
-            self._last_send_times[topic_name] = now
+            self.last_send_times[topic_name] = now
             data_to_send = {"type": gui_msg_type, **message_to_ordereddict(ros_message)}
             self.schedule_send(data_to_send)
 
