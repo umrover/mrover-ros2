@@ -43,7 +43,7 @@ function setupWebsocket(id: string, store: WebsocketStoreActions) {
     return
   }
 
-  const socket = new WebSocket(`ws://localhost:8000/${id}`)
+  const socket = new WebSocket(`ws://${window.location.hostname}:8000/${id}`)
   socket.binaryType = 'arraybuffer'
 
   socket.onopen = () => {

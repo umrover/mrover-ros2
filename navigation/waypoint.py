@@ -158,7 +158,9 @@ class WaypointState(State):
         if self.astar_traj.empty():
             self.display_markers(context=context)
             try:
+                a = time.time()
                 self.astar_traj = self.astar.generate_trajectory(context, context.course.current_waypoint_pose_in_map().translation()[0:2])
+                context.node.get_logger().info(f"GENERATED {time.time() - a}")
             except Exception as e:
                 context.node.get_logger().info(str(e))
                 return self
@@ -174,6 +176,7 @@ class WaypointState(State):
         cmd_vel = Twist()
         if len(self.astar_traj.coordinates) - self.astar_traj.cur_pt != 0:
             waypoint_position_in_map = self.astar_traj.get_current_point()
+            waypoint_position_in_map = np.array([*waypoint_position_in_map, 0])
             cmd_vel, arrived = context.drive.get_drive_command(
                 waypoint_position_in_map,
                 context.rover.get_pose_in_map(),

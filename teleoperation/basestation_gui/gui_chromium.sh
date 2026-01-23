@@ -8,4 +8,4 @@ while ! curl -s http://localhost:8000 >/dev/null 2>&1; do
 done
 
 echo "Server is up, launching Chromium..."
-exec chromium --app=${ADDRESS}
+# exec chromium --app=${ADDRESS}
