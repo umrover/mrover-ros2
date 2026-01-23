@@ -1,9 +1,13 @@
 import asyncio
+import time
 import msgpack
 from fastapi import WebSocket
 from rclpy.qos import qos_profile_sensor_data
 from rosidl_runtime_py.convert import message_to_ordereddict
 from backend.managers.ros import get_node
+
+FORWARD_RATE_HZ = 30
+FORWARD_INTERVAL_SEC = 1.0 / FORWARD_RATE_HZ
 
 
 class WebSocketHandler:
@@ -16,6 +20,7 @@ class WebSocketHandler:
         self.timers = []
         self.loop = asyncio.get_running_loop()
         self.closed = False
+        self._last_send_times: dict[str, float] = {}
 
     async def send_msgpack(self, data):
         if self.closed:
@@ -36,7 +41,13 @@ class WebSocketHandler:
             pass
 
     def forward_ros_topic(self, topic_name, topic_type, gui_msg_type):
+        self._last_send_times[topic_name] = 0.0
+
         def callback(ros_message):
+            now = time.monotonic()
+            if now - self._last_send_times[topic_name] < FORWARD_INTERVAL_SEC:
+                return
+            self._last_send_times[topic_name] = now
             data_to_send = {"type": gui_msg_type, **message_to_ordereddict(ros_message)}
             self.schedule_send(data_to_send)
 
