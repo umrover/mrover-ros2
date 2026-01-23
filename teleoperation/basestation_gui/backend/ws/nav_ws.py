@@ -1,3 +1,4 @@
+import rclpy.time
 import tf2_ros
 from tf2_ros import LookupException, ConnectivityException, ExtrapolationException
 from lie import SE3
@@ -30,6 +31,8 @@ class NavHandler(WebSocketHandler):
 
     def send_localization_callback(self):
         try:
+            if not self.buffer.can_transform("map", "base_link", rclpy.time.Time()):
+                return
             base_link_in_map = SE3.from_tf_tree(self.buffer, "map", "base_link")
             quat = base_link_in_map.quat().tolist()
             data_to_send = {

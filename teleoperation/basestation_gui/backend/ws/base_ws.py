@@ -1,4 +1,5 @@
 import asyncio
+import threading
 import time
 import msgpack
 from fastapi import WebSocket
@@ -20,6 +21,7 @@ class WebSocketHandler:
         self.timers = []
         self.loop = asyncio.get_running_loop()
         self.closed = False
+        self.callback_lock = threading.Lock()
         self.last_send_times: dict[str, float] = {}
 
     async def send_msgpack(self, data):
@@ -44,12 +46,15 @@ class WebSocketHandler:
         self.last_send_times[topic_name] = 0.0
 
         def callback(ros_message):
-            now = time.monotonic()
-            if now - self.last_send_times[topic_name] < FORWARD_INTERVAL_SEC:
-                return
-            self.last_send_times[topic_name] = now
-            data_to_send = {"type": gui_msg_type, **message_to_ordereddict(ros_message)}
-            self.schedule_send(data_to_send)
+            with self.callback_lock:
+                if self.closed:
+                    return
+                now = time.monotonic()
+                if now - self.last_send_times[topic_name] < FORWARD_INTERVAL_SEC:
+                    return
+                self.last_send_times[topic_name] = now
+                data_to_send = {"type": gui_msg_type, **message_to_ordereddict(ros_message)}
+                self.schedule_send(data_to_send)
 
         sub = self.node.create_subscription(
             topic_type, topic_name, callback, qos_profile=qos_profile_sensor_data
@@ -58,7 +63,8 @@ class WebSocketHandler:
 
     async def cleanup(self):
         print(f"Cleaning up {self.endpoint} WebSocket handler...")
-        self.closed = True
+        with self.callback_lock:
+            self.closed = True
 
         for sub in self.subscriptions:
             self.node.destroy_subscription(sub)
