@@ -17,7 +17,7 @@ const websocketStore = useWebsocketStore()
 const controllerConnected = ref(false)
 let interval: number | undefined = undefined
 
-const UPDATE_HZ = 20
+const UPDATE_HZ = 30
 
 onMounted(() => {
   websocketStore.setupWebSocket('drive')
