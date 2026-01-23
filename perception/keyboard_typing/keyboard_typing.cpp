@@ -1,5 +1,7 @@
 #include "keyboard_typing.hpp"
+#include <chrono>
 #include <cmath>
+#include <cstdlib>
 #include <geometry_msgs/msg/detail/pose__struct.hpp>
 #include <geometry_msgs/msg/detail/twist__struct.hpp>
 #include <geometry_msgs/msg/detail/vector3__struct.hpp>
@@ -63,7 +65,7 @@ namespace mrover{
             }
         }
 
-        
+
 
         // Initialize Kalman filter
         // State vector: [x, y, z, vx, vy, vz, roll, pitch, yaw, vroll, vpitch, vyaw]
@@ -123,12 +125,29 @@ namespace mrover{
             // Convert pose to se3d
             SE3d cam_to_tag = SE3Conversions::fromPose(output->pose);
 
+            RCLCPP_INFO_STREAM(get_logger(), "x: " << output->pose.position.x);
+            RCLCPP_INFO_STREAM(get_logger(), "y: " << output->pose.position.y);
+            RCLCPP_INFO_STREAM(get_logger(), "z: " << output->pose.position.z);
+
+
+
             // Transform from camera frame to arm_fk frame:
             // Camera X (horizontal) -> arm_fk Y
             // Camera Y (vertical)   -> arm_fk Z
             // Camera Z (forward)    -> arm_fk X
+
+            // open cv coordinates
+            // +X is right
+            // -Y is up
+            // +Z is forward
+
+            // arm_fk coordinates
+            // -Y is right
+            // +Z is up
+            // +X is forwards
+
             Eigen::Vector3d cam_pos = cam_to_tag.translation();
-            Eigen::Vector3d arm_fk_pos(-cam_pos.z(),- cam_pos.x(),- cam_pos.y());
+            Eigen::Vector3d arm_fk_pos(cam_pos.z(),-cam_pos.x(),-cam_pos.y());
             
             // Rotation to convert camera frame orientation to arm_fk frame
             // This rotation matrix maps: X->Y, Y->Z, Z->X
@@ -144,7 +163,7 @@ namespace mrover{
             SE3d arm_fk_to_tag{arm_fk_pos, transformed_rotation};
 
             // Publish to tf tree
-            SE3Conversions::pushToTfTree(tf_broadcaster, "keyboard_tag", "arm_fk", arm_fk_to_tag, get_clock()->now());
+            SE3Conversions::pushToTfTree(tf_broadcaster, "keyboard_tag", "arm_fk", gripper_to_cam*arm_fk_to_tag, get_clock()->now());
         }
     }
 
@@ -314,20 +333,20 @@ namespace mrover{
         if (!tvecs.empty()) {
             // Pass all vectors and the current ROS time
             // Returns the filtered pose
-            geometry_msgs::msg::Pose finalestimation = updateKalmanFilter(combined_tvec, combined_rvec);
+            geometry_msgs::msg::Pose finalestimation; // = updateKalmanFilter(combined_tvec, combined_rvec);
 
-            // finalestimation.position.x = combined_tvec[0];
-            // finalestimation.position.y = combined_tvec[1];
-            // finalestimation.position.z = combined_tvec[2];
+            finalestimation.position.x = combined_tvec[0];
+            finalestimation.position.y = combined_tvec[1];
+            finalestimation.position.z = combined_tvec[2];
 
-            // Eigen::Quaterniond q;
-            // q = Eigen::AngleAxisd(combined_rvec[0], Eigen::Vector3d::UnitZ()) *
-            //     Eigen::AngleAxisd(combined_rvec[1], Eigen::Vector3d::UnitY()) *
-            //     Eigen::AngleAxisd(combined_rvec[2], Eigen::Vector3d::UnitX());
-            // finalestimation.orientation.x = q.x();
-            // finalestimation.orientation.y = q.y();
-            // finalestimation.orientation.z = q.z();
-            // finalestimation.orientation.w = q.w();
+            Eigen::Quaterniond q;
+            q = Eigen::AngleAxisd(combined_rvec[0], Eigen::Vector3d::UnitZ()) *
+                Eigen::AngleAxisd(combined_rvec[1], Eigen::Vector3d::UnitY()) *
+                Eigen::AngleAxisd(combined_rvec[2], Eigen::Vector3d::UnitX());
+            finalestimation.orientation.x = q.x();
+            finalestimation.orientation.y = q.y();
+            finalestimation.orientation.z = q.z();
+            finalestimation.orientation.w = q.w();
 
             // Draw after kalman filter
             cv::drawFrameAxes(grayImage, camMatrix, distCoeffs, combined_rvec, combined_tvec, markerLength * 3.0f, 4);
@@ -502,19 +521,8 @@ namespace mrover{
         SE3d armbase_to_armfk;
         SE3d armfk_to_keyboard;
 
-        // grab current arm configuration
-        // get transform from arm base link to arm fk, gives us initial configuration
-        // while (true) {
-        //     try {
-        //         armbase_to_armfk = SE3Conversions::fromTfTree(tf_buffer, "arm_fk", "arm_base_link");
-        //         break;
-        //     } catch (tf2::TransformException const& e) {
-        //         RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, std::format("TF tree error processing keyboard typing: {}", e.what()));
-        //     }
-        // }
-
         try {
-            // gripper_to_tag = SE3Conversions::fromTfTree(tf_buffer, "keyboard_tag", "arm_fk");
+            gripper_to_tag = SE3Conversions::fromTfTree(tf_buffer, "keyboard_tag", "arm_base_link");
             armbase_to_armfk = SE3Conversions::fromTfTree(tf_buffer, "arm_fk", "arm_base_link");
             armfk_to_keyboard = SE3Conversions::fromTfTree(tf_buffer, "keyboard_tag", "arm_fk");
 
@@ -540,12 +548,16 @@ namespace mrover{
             if (newz > 0.6) newz = 0.6;
             if (newz < -0.415) newz = -0.415;
 
-            // if (dy > 0.35) dy = 0.35;
-            // if (dy < 0) dy = 0;
-            // if (dz > 0.6) dz = 0.6;
-            // if (dz < -0.415) dz = -0.415;
 
-            sendIKCommand(armbase_to_armfk.translation().x(), newy, newz, 0, 0);
+            // Continously send IK command until arm is in position
+            using clock = std::chrono::steady_clock;
+
+            auto start = clock::now();
+            auto duration = std::chrono::duration<double>(1.5);
+            while (clock::now() - start < duration) {
+                // sendIKCommand(armbase_to_armfk.translation().x(), newy, newz, 0, 0);
+                sendIKCommand(armbase_to_armfk.translation().x(), gripper_to_tag.translation().y(), gripper_to_tag.translation().z(), 0, 0);
+            }
             // RCLCPP_INFO_STREAM(this->get_logger(), "y_delta = " << dy);
             // RCLCPP_INFO_STREAM(this->get_logger(), "z_delta = " << dz);
             // RCLCPP_INFO_STREAM(this->get_logger(), "z_delta = " << dz);
@@ -568,17 +580,6 @@ namespace mrover{
         // Grab gripper_to_tag and then calculate deltas
         SE3d gripper_to_tag;
         SE3d armbase_to_armfk;
-
-        // grab current arm configuration
-        // get transform from arm base link to arm fk, gives us initial configuration
-        // while (true) {
-        //     try {
-        //         armbase_to_armfk = SE3Conversions::fromTfTree(tf_buffer, "arm_fk", "arm_base_link");
-        //         break;
-        //     } catch (tf2::TransformException const& e) {
-        //         RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, std::format("TF tree error processing keyboard typing: {}", e.what()));
-        //     }
-        // }
 
         try {
             // gripper_to_tag = SE3Conversions::fromTfTree(tf_buffer, "arm_gripper_link", "keyboard_tag");

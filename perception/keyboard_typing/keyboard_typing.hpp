@@ -49,6 +49,8 @@ namespace mrover{
         // transform from camera to end effector
         SE3d gripper_to_cam;
 
+        double floattolerance = 0.001;
+
         // Define a board
         cv::Ptr<cv::aruco::Board> rover_board;
 
