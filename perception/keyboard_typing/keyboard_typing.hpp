@@ -104,6 +104,8 @@ namespace mrover{
 
         auto align_arm() -> void;
 
+        auto send_z_key_command() -> void;
+
         public:
 
         explicit KeyboardTypingNode(rclcpp::NodeOptions const& options = rclcpp::NodeOptions());

@@ -123,12 +123,28 @@ namespace mrover{
             // Convert pose to se3d
             SE3d cam_to_tag = SE3Conversions::fromPose(output->pose);
 
-            // Apply transform from finger_camera to arm_gripper_link onto pose
+            // Transform from camera frame to arm_fk frame:
+            // Camera X (horizontal) -> arm_fk Y
+            // Camera Y (vertical)   -> arm_fk Z
+            // Camera Z (forward)    -> arm_fk X
+            Eigen::Vector3d cam_pos = cam_to_tag.translation();
+            Eigen::Vector3d arm_fk_pos(-cam_pos.z(),- cam_pos.x(),- cam_pos.y());
             
-            // SE3d gripper_to_tag = gripper_to_cam * cam_to_tag;
+            // Rotation to convert camera frame orientation to arm_fk frame
+            // This rotation matrix maps: X->Y, Y->Z, Z->X
+            Eigen::Matrix3d cam_to_arm_rotation;
+            cam_to_arm_rotation << 0, 0, 1,   // arm_fk X comes from camera Z
+                                   1, 0, 0,   // arm_fk Y comes from camera X
+                                   0, 1, 0;   // arm_fk Z comes from camera Y
+            
+            Eigen::Quaterniond cam_rot(cam_to_tag.rotation());
+            Eigen::Quaterniond frame_rotation(cam_to_arm_rotation);
+            Eigen::Quaterniond transformed_rotation = (frame_rotation * cam_rot).normalized();
+            
+            SE3d arm_fk_to_tag{arm_fk_pos, transformed_rotation};
 
             // Publish to tf tree
-            SE3Conversions::pushToTfTree(tf_broadcaster, "keyboard_tag", "arm_fk", cam_to_tag, get_clock()->now());
+            SE3Conversions::pushToTfTree(tf_broadcaster, "keyboard_tag", "arm_fk", arm_fk_to_tag, get_clock()->now());
         }
     }
 
@@ -484,6 +500,74 @@ namespace mrover{
         // Grab gripper_to_tag and then calculate deltas
         SE3d gripper_to_tag;
         SE3d armbase_to_armfk;
+        SE3d armfk_to_keyboard;
+
+        // grab current arm configuration
+        // get transform from arm base link to arm fk, gives us initial configuration
+        // while (true) {
+        //     try {
+        //         armbase_to_armfk = SE3Conversions::fromTfTree(tf_buffer, "arm_fk", "arm_base_link");
+        //         break;
+        //     } catch (tf2::TransformException const& e) {
+        //         RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, std::format("TF tree error processing keyboard typing: {}", e.what()));
+        //     }
+        // }
+
+        try {
+            // gripper_to_tag = SE3Conversions::fromTfTree(tf_buffer, "keyboard_tag", "arm_fk");
+            armbase_to_armfk = SE3Conversions::fromTfTree(tf_buffer, "arm_fk", "arm_base_link");
+            armfk_to_keyboard = SE3Conversions::fromTfTree(tf_buffer, "keyboard_tag", "arm_fk");
+
+            // Calculate Deltas and send to arm
+            // double dx = gripper_to_tag.translation().x();
+            // double dy = armbase_to_armfk.translation().y() + gripper_to_tag.translation().y();
+            // double dz = armbase_to_armfk.translation().z() - gripper_to_tag.translation().z();
+            // double dx = gripper_to_tag.translation().x();
+
+
+            double dy = armfk_to_keyboard.translation().y();
+            double dz = armfk_to_keyboard.translation().z();
+
+            // RCLCPP_INFO_STREAM(this->get_logger(), "cur_y = " << armbase_to_armfk.translation().y());
+            // RCLCPP_INFO_STREAM(this->get_logger(), "cur_z = " << armbase_to_armfk.translation().z());
+            
+            double newy = armbase_to_armfk.translation().y() + dy;
+            double newz = armbase_to_armfk.translation().z() + dz;
+
+            // Bounds of what the robot physically can move
+            if (newy > 0.35) newy = 0.35;
+            if (newy < 0) newy = 0;
+            if (newz > 0.6) newz = 0.6;
+            if (newz < -0.415) newz = -0.415;
+
+            // if (dy > 0.35) dy = 0.35;
+            // if (dy < 0) dy = 0;
+            // if (dz > 0.6) dz = 0.6;
+            // if (dz < -0.415) dz = -0.415;
+
+            sendIKCommand(armbase_to_armfk.translation().x(), newy, newz, 0, 0);
+            // RCLCPP_INFO_STREAM(this->get_logger(), "y_delta = " << dy);
+            // RCLCPP_INFO_STREAM(this->get_logger(), "z_delta = " << dz);
+            // RCLCPP_INFO_STREAM(this->get_logger(), "z_delta = " << dz);
+
+            // For when action server does stuff
+            // double x_delta = gripper_to_tag.translation().x();
+            // double y_delta = gripper_to_tag.translation().y();
+            // bool sent = send_goal(x_delta, y_delta);
+            // if (sent) {
+            //     RCLCPP_INFO_STREAM(this->get_logger(), "Goal Sent");
+            // } else {
+            //     RCLCPP_INFO_STREAM(this->get_logger(), "Failed");
+            // }
+        } catch (tf2::TransformException const& e) {
+            RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, std::format("TF tree error processing keyboard typing: {}", e.what()));
+        }
+    }
+
+    auto KeyboardTypingNode::send_z_key_command() -> void {
+        // Grab gripper_to_tag and then calculate deltas
+        SE3d gripper_to_tag;
+        SE3d armbase_to_armfk;
 
         // grab current arm configuration
         // get transform from arm base link to arm fk, gives us initial configuration
@@ -515,6 +599,7 @@ namespace mrover{
             double newy = armbase_to_armfk.translation().y() - dy;
             double newz = armbase_to_armfk.translation().z() - dz;
 
+            // Bounds of what the robot physically can move
             if (newy > 0.35) newy = 0.35;
             if (newy < 0) newy = 0;
             if (newz > 0.6) newz = 0.6;
