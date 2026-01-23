@@ -20,7 +20,11 @@ navigation:
     display_markers: true
     
     pure_pursuit:
-      drive_forward_threshold: 0.5
+      drive_forward_threshold: 0.785
+      driving_p: 20.0
+      min_lookahead_distance: 0.4
+      max_lookahead_distance: 1.5
+      use_pure_pursuit: true
 
     costmap:
       custom_costmap: false
@@ -49,7 +53,6 @@ navigation:
       turning_p: 3.0
       driving_p: 20.0
       lookahead_distance: 0.6
-      use_pure_pursuit: true
     
     long_range:
       distance_ahead: 3.0

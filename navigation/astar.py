@@ -66,7 +66,7 @@ class AStar:
 
         if hasattr(context, "course") and context.course is not None:
             current_waypoint = context.course.current_waypoint()
-            self.USE_PURE_PURSUIT = context.node.get_parameter_or("drive.use_pure_pursuit", True).value
+            self.USE_PURE_PURSUIT = context.node.get_parameter_or("pure_pursuit.use_pure_pursuit", True).value
             if current_waypoint is None:
                 self.USE_COSTMAP = context.node.get_parameter("costmap.use_costmap").value
             else:

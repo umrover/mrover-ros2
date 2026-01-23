@@ -49,6 +49,10 @@ class Navigation(Node):
                 ("target_expiration_duration", Parameter.Type.DOUBLE),
                 # Pure Pursuit
                 ("pure_pursuit.drive_forward_threshold", Parameter.Type.DOUBLE),
+                ("pure_pursuit.min_lookahead_distance", Parameter.Type.DOUBLE),
+                ("pure_pursuit.max_lookahead_distance", Parameter.Type.DOUBLE),
+                ("pure_pursuit.driving_p", Parameter.Type.DOUBLE),
+                ("pure_pursuit.use_pure_pursuit", Parameter.Type.BOOL),
                 # Costmap
                 ("costmap.custom_costmap", Parameter.Type.BOOL),
                 ("costmap.use_costmap", Parameter.Type.BOOL),
@@ -67,7 +71,6 @@ class Navigation(Node):
                 ("drive.turning_p", Parameter.Type.DOUBLE),
                 ("drive.driving_p", Parameter.Type.DOUBLE),
                 ("drive.lookahead_distance", Parameter.Type.DOUBLE),
-                ("drive.use_pure_pursuit", Parameter.Type.BOOL),
                 # Waypoint
                 ("waypoint.stop_threshold", Parameter.Type.DOUBLE),
                 ("waypoint.drive_forward_threshold", Parameter.Type.DOUBLE),

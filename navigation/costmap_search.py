@@ -57,7 +57,7 @@ class CostmapSearchState(State):
             return
 
         self.USE_COSTMAP = context.node.get_parameter("costmap.use_costmap").value or current_waypoint.enable_costmap
-        self.USE_PURE_PURSUIT = context.node.get_parameter_or("drive.use_pure_pursuit", True).value
+        self.USE_PURE_PURSUIT = context.node.get_parameter_or("pure_pursuit.use_pure_pursuit", True).value
 
         self.STOP_THRESH = context.node.get_parameter("search.stop_threshold").value
         self.DRIVE_FWD_THRESH = context.node.get_parameter("search.drive_forward_threshold").value
