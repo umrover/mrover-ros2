@@ -29,6 +29,9 @@ namespace mrover {
 
         renderModels(colorPass);
 
+        Eigen::Matrix4f clipToWorld = cameraInWorld.transform().cast<float>() * camera.sceneUniforms.value.cameraToClip.inverse().cast<float>();
+        renderSkybox(colorPass, clipToWorld, camera.skyboxUniforms);
+
         colorPass.end();
 
         bindGroup.release();
