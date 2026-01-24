@@ -8,6 +8,7 @@
 #include <geometry_msgs/msg/detail/vector3__struct.hpp>
 #include <manif/impl/se3/SE3.h>
 #include <opencv2/core/eigen.hpp>
+#include "keyboard_typing/constants.hpp"
 #include "lie.hpp"
 #include "mrover/msg/detail/ik__struct.hpp"
 #include "mrover/msg/detail/keyboard_yaw__struct.hpp"
@@ -366,6 +367,7 @@ namespace mrover{
                 // logPose = !logPose;
                 // RCLCPP_INFO_STREAM(get_logger(), "Toggled logPose: " << (logPose ? "ON" : "OFF"));
                 align_arm();
+                send_z_key_command();
             }
             // if(logPose){
             //     outputToCSV(combined_tvec, combined_rvec);
@@ -565,7 +567,7 @@ namespace mrover{
 
         try {
             // gripper_to_tag = SE3Conversions::fromTfTree(tf_buffer, "arm_gripper_link", "keyboard_tag");
-            gripper_to_tag = SE3Conversions::fromTfTree(tf_buffer, "keyboard_tag", "arm_fk");
+            // gripper_to_tag = SE3Conversions::fromTfTree(tf_buffer, "keyboard_tag", "arm_fk");
             armbase_to_armfk = SE3Conversions::fromTfTree(tf_buffer, "arm_fk", "arm_base_link");
 
 
@@ -575,29 +577,33 @@ namespace mrover{
             // double dz = armbase_to_armfk.translation().z() - gripper_to_tag.translation().z();
             // double dx = gripper_to_tag.translation().x();
 
-            double dy = gripper_to_tag.translation().x();
-            double dz = gripper_to_tag.translation().y();
+            // double dy = gripper_to_tag.translation().x();
+            // double dz = gripper_to_tag.translation().y();
 
             RCLCPP_INFO_STREAM(this->get_logger(), "cur_y = " << armbase_to_armfk.translation().y());
             RCLCPP_INFO_STREAM(this->get_logger(), "cur_z = " << armbase_to_armfk.translation().z());
+
+            sendIKCommand(armbase_to_armfk.translation().x(),
+                            armbase_to_armfk.translation().y() + zKeyTransformation_new[1],
+                            armbase_to_armfk.translation().z() + zKeyTransformation_new[2], 0, 0);
             
-            double newy = armbase_to_armfk.translation().y() - dy;
-            double newz = armbase_to_armfk.translation().z() - dz;
+            // double newy = armbase_to_armfk.translation().y() - dy;
+            // double newz = armbase_to_armfk.translation().z() - dz;
 
             // Bounds of what the robot physically can move
-            if (newy > 0.35) newy = 0.35;
-            if (newy < 0) newy = 0;
-            if (newz > 0.6) newz = 0.6;
-            if (newz < -0.415) newz = -0.415;
+            // if (newy > 0.35) newy = 0.35;
+            // if (newy < 0) newy = 0;
+            // if (newz > 0.6) newz = 0.6;
+            // if (newz < -0.415) newz = -0.415;
 
             // if (dy > 0.35) dy = 0.35;
             // if (dy < 0) dy = 0;
             // if (dz > 0.6) dz = 0.6;
             // if (dz < -0.415) dz = -0.415;
 
-            sendIKCommand(armbase_to_armfk.translation().x(), newy, newz, 0, 0);
-            RCLCPP_INFO_STREAM(this->get_logger(), "y_delta = " << dy);
-            RCLCPP_INFO_STREAM(this->get_logger(), "z_delta = " << dz);
+            // sendIKCommand(armbase_to_armfk.translation().x(), newy, newz, 0, 0);
+            // RCLCPP_INFO_STREAM(this->get_logger(), "y_delta = " << dy);
+            // RCLCPP_INFO_STREAM(this->get_logger(), "z_delta = " << dz);
             // RCLCPP_INFO_STREAM(this->get_logger(), "z_delta = " << dz);
 
             // For when action server does stuff

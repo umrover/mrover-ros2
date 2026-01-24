@@ -92,6 +92,6 @@ std::unordered_map<std::string, cv::Vec3d> keyboard = {
 // x -> z
 Eigen::Vector3d zKeyTransformation = {0.06495,0.041575,0.0303784};
 
-Eigen::Vector3d zKeyTransformation_new = {0.0303784,-0.06495,-0.041575};
+Eigen::Vector3d zKeyTransformation_new = {0.0303784,-0.06495,0.041575};
 
 #endif // KEYBOARD_TYPING_CONSTANTS_H
