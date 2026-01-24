@@ -888,7 +888,7 @@ namespace mrover {
             if (mRenderWireframeColliders) renderWireframeColliders(pass);
 
             Eigen::Matrix4f clipToWorld = mCameraInWorld.transform().cast<float>() * mSceneUniforms.value.cameraToClip.inverse().cast<float>();
-            renderSkybox(pass, clipToWorld, mSkyboxUniforms);
+            if (mRenderSkybox) renderSkybox(pass, clipToWorld, mSkyboxUniforms);
 
             guiUpdate(pass);
 
