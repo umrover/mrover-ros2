@@ -3,6 +3,7 @@ import { ref, computed } from 'vue'
 import { encode, decode } from '@msgpack/msgpack'
 
 const webSockets: Record<string, WebSocket> = {}
+const refCounts: Record<string, number> = {}
 const flashTimersIn: Record<string, ReturnType<typeof setTimeout>> = {}
 const flashTimersOut: Record<string, ReturnType<typeof setTimeout>> = {}
 const reconnectTimers: Record<string, ReturnType<typeof setTimeout>> = {}
@@ -207,6 +208,10 @@ export const useWebsocketStore = defineStore('websocket', () => {
   }
 
   function setupWebSocket(id: string) {
+    refCounts[id] = (refCounts[id] || 0) + 1
+    if (refCounts[id] > 1) {
+      return
+    }
     closedIntentionally.delete(id)
     reconnectAttempts[id] = 0
     setupWebsocket(id, {
@@ -224,6 +229,13 @@ export const useWebsocketStore = defineStore('websocket', () => {
   }
 
   function closeWebSocket(id: string) {
+    if (refCounts[id]) {
+      refCounts[id]--
+      if (refCounts[id] > 0) {
+        return
+      }
+      delete refCounts[id]
+    }
     closedIntentionally.add(id)
     if (reconnectTimers[id]) {
       clearTimeout(reconnectTimers[id])
