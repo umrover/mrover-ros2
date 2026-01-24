@@ -305,7 +305,7 @@ mrover_executable_from_component(stereo_tag_detector perception/executables/ster
 mrover_executable_from_component(image_tag_detector perception/executables/image_tag_detector.cpp tag_detector_component)
 
 # Keyboard Typing
-mrover_add_component(keyboard_typing perception/keyboard_typing/keyboard_typing.cpp perception/keyboard_typing/pch.hpp KeyboardTypingNode)
+mrover_add_component(keyboard_typing perception/keyboard_typing/keyboard_typing.cpp perception/keyboard_typing/pch.hpp KeyboardTypingNode perception/keyboard_typing/constants.hpp)
 mrover_ament_component(keyboard_typing rclcpp rclcpp_components tf2 tf2_ros geometry_msgs sensor_msgs)
 mrover_link_component(keyboard_typing lie parameter_utils opencv_core opencv_aruco opencv_imgproc opencv_highgui opencv_dnn opencv_calib3d opencv_imgcodecs opencv_video loop_profiler)
 

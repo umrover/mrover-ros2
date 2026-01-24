@@ -5,6 +5,7 @@
 #include <opencv2/aruco/charuco.hpp>
 #include <opencv2/aruco/dictionary.hpp>
 #include <string>
+#include "pch.hpp"
 
 bool logPose = false;
 
@@ -76,6 +77,21 @@ std::unordered_map<std::string, cv::Vec3d> keyboard = {
         {"backspace", cv::Vec3d{fourthRowX + 11*key_length + 0.028575, 3*key_length,fourthRowZ}}
 };
 
-cv::Vec3d zKeyTransformation = {0.06495,0.041575,0.0303784};
+// our coordinates
+// +X is right
+// +Y is up
+// +Z is forward
+
+// arm_fk coordinates
+// -Y is right
+// +Z is up
+// +X is forwards
+
+// y -> -x
+// z -> y
+// x -> z
+Eigen::Vector3d zKeyTransformation = {0.06495,0.041575,0.0303784};
+
+Eigen::Vector3d zKeyTransformation_new = {0.0303784,-0.06495,-0.041575};
 
 #endif // KEYBOARD_TYPING_CONSTANTS_H

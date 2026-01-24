@@ -53,7 +53,7 @@
 #include <parameter.hpp>
 
 // Random and unordered, potential duplicates
-#include "keyboard_typing/constants.h"
+#include "constants.hpp"
 #include "lie.hpp"
 #include <algorithm>
 #include <cctype>

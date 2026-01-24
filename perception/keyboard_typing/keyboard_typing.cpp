@@ -1,12 +1,13 @@
 #include "keyboard_typing.hpp"
+#include <Eigen/src/Geometry/Quaternion.h>
 #include <chrono>
 #include <cmath>
 #include <cstdlib>
 #include <geometry_msgs/msg/detail/pose__struct.hpp>
 #include <geometry_msgs/msg/detail/twist__struct.hpp>
 #include <geometry_msgs/msg/detail/vector3__struct.hpp>
+#include <manif/impl/se3/SE3.h>
 #include <opencv2/core/eigen.hpp>
-#include "keyboard_typing/constants.h"
 #include "lie.hpp"
 #include "mrover/msg/detail/ik__struct.hpp"
 #include "mrover/msg/detail/keyboard_yaw__struct.hpp"
@@ -164,6 +165,12 @@ namespace mrover{
 
             // Publish to tf tree
             SE3Conversions::pushToTfTree(tf_broadcaster, "keyboard_tag", "arm_fk", gripper_to_cam*arm_fk_to_tag, get_clock()->now());
+
+            // Initialize transforms for every key, temporarily here for now
+            SE3d z_to_tag{zKeyTransformation_new, Eigen::Quaterniond::Identity()};
+            SE3Conversions::pushToTfTree(tf_broadcaster, "keyboard_z", "keyboard_tag", z_to_tag, get_clock()->now());
+
+            
         }
     }
 
@@ -360,9 +367,9 @@ namespace mrover{
                 // RCLCPP_INFO_STREAM(get_logger(), "Toggled logPose: " << (logPose ? "ON" : "OFF"));
                 align_arm();
             }
-            if(logPose){
-                outputToCSV(combined_tvec, combined_rvec);
-            }
+            // if(logPose){
+            //     outputToCSV(combined_tvec, combined_rvec);
+            // }
 
             return pose_output{finalestimation, combined_rvec[2]*180 / M_PI};
 
@@ -519,45 +526,20 @@ namespace mrover{
         // Grab gripper_to_tag and then calculate deltas
         SE3d gripper_to_tag;
         SE3d armbase_to_armfk;
-        SE3d armfk_to_keyboard;
 
         try {
             gripper_to_tag = SE3Conversions::fromTfTree(tf_buffer, "keyboard_tag", "arm_base_link");
             armbase_to_armfk = SE3Conversions::fromTfTree(tf_buffer, "arm_fk", "arm_base_link");
-            armfk_to_keyboard = SE3Conversions::fromTfTree(tf_buffer, "keyboard_tag", "arm_fk");
-
-            // Calculate Deltas and send to arm
-            // double dx = gripper_to_tag.translation().x();
-            // double dy = armbase_to_armfk.translation().y() + gripper_to_tag.translation().y();
-            // double dz = armbase_to_armfk.translation().z() - gripper_to_tag.translation().z();
-            // double dx = gripper_to_tag.translation().x();
-
-
-            double dy = armfk_to_keyboard.translation().y();
-            double dz = armfk_to_keyboard.translation().z();
-
-            // RCLCPP_INFO_STREAM(this->get_logger(), "cur_y = " << armbase_to_armfk.translation().y());
-            // RCLCPP_INFO_STREAM(this->get_logger(), "cur_z = " << armbase_to_armfk.translation().z());
-            
-            double newy = armbase_to_armfk.translation().y() + dy;
-            double newz = armbase_to_armfk.translation().z() + dz;
 
             // Bounds of what the robot physically can move
-            if (newy > 0.35) newy = 0.35;
-            if (newy < 0) newy = 0;
-            if (newz > 0.6) newz = 0.6;
-            if (newz < -0.415) newz = -0.415;
+            // if (newy > 0.35) newy = 0.35;
+            // if (newy < 0) newy = 0;
+            // if (newz > 0.6) newz = 0.6;
+            // if (newz < -0.415) newz = -0.415;
 
+            // Continously send IK command for 1.5s
+            sendIKCommand(armbase_to_armfk.translation().x(), gripper_to_tag.translation().y(), gripper_to_tag.translation().z(), 0, 0);
 
-            // Continously send IK command until arm is in position
-            using clock = std::chrono::steady_clock;
-
-            auto start = clock::now();
-            auto duration = std::chrono::duration<double>(1.5);
-            while (clock::now() - start < duration) {
-                // sendIKCommand(armbase_to_armfk.translation().x(), newy, newz, 0, 0);
-                sendIKCommand(armbase_to_armfk.translation().x(), gripper_to_tag.translation().y(), gripper_to_tag.translation().z(), 0, 0);
-            }
             // RCLCPP_INFO_STREAM(this->get_logger(), "y_delta = " << dy);
             // RCLCPP_INFO_STREAM(this->get_logger(), "z_delta = " << dz);
             // RCLCPP_INFO_STREAM(this->get_logger(), "z_delta = " << dz);
@@ -586,11 +568,13 @@ namespace mrover{
             gripper_to_tag = SE3Conversions::fromTfTree(tf_buffer, "keyboard_tag", "arm_fk");
             armbase_to_armfk = SE3Conversions::fromTfTree(tf_buffer, "arm_fk", "arm_base_link");
 
+
             // Calculate Deltas and send to arm
             // double dx = gripper_to_tag.translation().x();
             // double dy = armbase_to_armfk.translation().y() + gripper_to_tag.translation().y();
             // double dz = armbase_to_armfk.translation().z() - gripper_to_tag.translation().z();
             // double dx = gripper_to_tag.translation().x();
+
             double dy = gripper_to_tag.translation().x();
             double dz = gripper_to_tag.translation().y();
 
@@ -640,7 +624,13 @@ namespace mrover{
         message.pos.z = z;
         message.pitch = pitch;
         message.roll = roll;
-        mIKPub->publish(message);
+
+        using clock = std::chrono::steady_clock;
+        auto start = clock::now();
+        auto duration = std::chrono::duration<double>(1.5);
+        while (clock::now() - start < duration) {
+            mIKPub->publish(message);
+        }
 
         RCLCPP_INFO(get_logger(), "Published IK Command {x=%.3f, y=%.3f, z=%.3f}", x, y, z);
     }

@@ -1,10 +1,6 @@
 #pragma once
 
 #include "pch.hpp"
-#include <memory>
-#include <rclcpp/subscription.hpp>
-#include <rclcpp_action/server_goal_handle.hpp>
-#include <rclcpp_action/types.hpp>
 
 // #include "constants.h"
 namespace mrover{
@@ -48,8 +44,6 @@ namespace mrover{
 
         // transform from camera to end effector
         SE3d gripper_to_cam;
-
-        double floattolerance = 0.001;
 
         // Define a board
         cv::Ptr<cv::aruco::Board> rover_board;
@@ -113,3 +107,5 @@ namespace mrover{
         explicit KeyboardTypingNode(rclcpp::NodeOptions const& options = rclcpp::NodeOptions());
     };
 }
+
+extern Eigen::Vector3d zKeyTransformation_new;
