@@ -9,7 +9,7 @@ from rclpy.duration import Duration
 import time
 from navigation import approach_target, stuck_recovery, waypoint, state
 from navigation.astar import AStar, SpiralEnd, NoPath, OutOfBounds
-from navigation.coordinate_utils import d_calc, gen_marker, is_high_cost_point, cartesian_to_ij
+from navigation.coordinate_utils import d_calc, is_high_cost_point, cartesian_to_ij
 from navigation.context import Context
 from navigation.trajectory import Trajectory, SearchTrajectory
 from visualization_msgs.msg import Marker
@@ -36,7 +36,6 @@ class CostmapSearchState(State):
     is_recovering: bool = False
     path_pub: Publisher
     astar: AStar
-    marker_pub: Publisher
 
     USE_COSTMAP: bool
     STOP_THRESH: float
@@ -61,7 +60,6 @@ class CostmapSearchState(State):
         self.UPDATE_DELAY = context.node.get_parameter("search.update_delay").value
 
         self.time_begin = context.node.get_clock().now()
-        self.marker_pub = context.node.create_publisher(Marker, "spiral_points", 10)
 
         self.new_traj(context)
 
@@ -81,33 +79,32 @@ class CostmapSearchState(State):
         self.marker_timer.cancel()
         if self.update_astar_timer is not None:
             self.update_astar_timer.cancel()
-        self.marker_pub.publish(gen_marker(context, delete=True))
+        context.delete_path_marker(ns=str(type(self)))
 
     def display_markers(self, context: Context) -> None:
         start_pt = self.spiral_traj.cur_pt
         end_pt = (
-            self.spiral_traj.cur_pt + 6
+            self.spiral_traj.cur_pt + 20
             if self.spiral_traj.cur_pt + 3 < len(self.spiral_traj.coordinates)
             else len(self.spiral_traj.coordinates)
         )
-        if context.node.get_parameter("display_markers").value:
-            for i, coord in enumerate(self.spiral_traj.coordinates[start_pt:end_pt]):
-                self.marker_pub.publish(
-                    gen_marker(
-                        context=context,
-                        point=coord,
-                        color=[1.0, 0.0, 0.0],
-                        id=i,
-                        lifetime=context.node.get_parameter("pub_path_rate").value,
-                    )
-                )
+        context.publish_path_marker(
+            points=self.spiral_traj.coordinates[start_pt:end_pt], color=[1.0, 0.0, 1.0], ns=str(type(self))
+        )
+
+        if not self.astar_traj.is_last() and not self.astar_traj.done():
+            context.publish_path_marker(
+                points=self.astar_traj.coordinates[self.astar_traj.cur_pt :], color=[1.0, 0.0, 0.0], ns=str(type(AStar))
+            )
+        else:
+            context.delete_path_marker(ns=str(type(AStar)))
 
     def update_astar_traj(self, context: Context):
         if context.course is None:
             return
         context.rover.send_drive_command(Twist())
         try:
-            self.astar_traj = self.astar.generate_trajectory(context, self.spiral_traj.get_current_point())
+            self.astar_traj = self.astar.generate_trajectory(self.spiral_traj.get_current_point())
         except Exception as e:
             context.node.get_logger().info(str(e))
             return self

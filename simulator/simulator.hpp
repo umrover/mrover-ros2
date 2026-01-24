@@ -59,6 +59,12 @@ namespace mrover {
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     };
 
+    struct SkyboxUniforms {
+        Eigen::Matrix4f clipToWorld{};
+
+        EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+    };
+
     struct Model {
         struct Mesh {
             SharedBuffer<Eigen::Vector3f> vertices;
@@ -151,6 +157,7 @@ namespace mrover {
         wgpu::TextureView normalTextureView;
 
         Uniform<SceneUniforms> sceneUniforms{};
+        Uniform<SkyboxUniforms> skyboxUniforms{};
         wgpu::BindGroup sceneBindGroup;
 
         wgpu::Buffer stagingBuffer;
@@ -241,6 +248,7 @@ namespace mrover {
         bool mEnablePhysics{};
         bool mRenderModels = true;
         bool mRenderWireframeColliders = false;
+        bool mRenderSkybox = false;
         double mPublishHammerDistanceThreshold = 3;
         double mPublishBottleDistanceThreshold = 3;
         float mCameraLockSlerp = 0.02;
@@ -314,8 +322,13 @@ namespace mrover {
         wgpu::ShaderModule mShaderModule;
         wgpu::RenderPipeline mPbrPipeline;
         wgpu::RenderPipeline mWireframePipeline;
+        wgpu::RenderPipeline mSkyboxPipeline;
 
         wgpu::ComputePipeline mPointCloudPipeline;
+
+        CubeMapTexture mSkyboxTexture;
+        wgpu::BindGroupLayout mSkyboxBGLayout;
+        std::array<std::filesystem::path, 6> mSkyboxTexturePaths = {"skybox_px.jpg", "skybox_nx.jpg", "skybox_py.jpg", "skybox_ny.jpg", "skybox_pz.jpg", "skybox_nz.jpg"};
 
         std::unordered_map<std::string, Model> mUriToModel;
 
@@ -323,6 +336,7 @@ namespace mrover {
         bool mInGui = false;
 
         Uniform<SceneUniforms> mSceneUniforms;
+        Uniform<SkyboxUniforms> mSkyboxUniforms;
 
         Eigen::Vector4f mSkyColor{0.05f, 0.8f, 0.92f, 1.0f};
 
@@ -480,6 +494,8 @@ namespace mrover {
         auto renderModels(wgpu::RenderPassEncoder& pass) -> void;
 
         auto renderWireframeColliders(wgpu::RenderPassEncoder& pass) -> void;
+
+        auto renderSkybox(wgpu::RenderPassEncoder& pass, Eigen::Matrix4f& clipToWorld, Uniform<SkyboxUniforms>& uniforms) -> void;
 
         auto renderUpdate() -> void;
 
