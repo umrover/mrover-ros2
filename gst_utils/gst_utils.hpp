@@ -219,14 +219,14 @@ namespace mrover::gst {
             return "video/x-raw";
         }
 
-        // TODO:(owen) I don't like the config-interval=1 for H265. Should be configurable somehow
-#define CODEC_ITER(_F)                                                                                \
-    _F(H264, "video/x-h264", "x264enc", "avdec_h264", "rtph264pay", "rtph264depay")                   \
-    _F(H265, "video/x-h265", "x265enc", "avdec_h265", "rtph265pay config-interval=1", "rtph265depay") \
-    _F(VP8, "video/x-vp8", "vp8enc", "vp8dec", "rtpvp8pay", "rtpvp8depay")                            \
-    _F(VP9, "video/x-vp9", "vp9enc", "vp9dec", "rtpvp9pay", "rtpvp9depay")                            \
-    _F(MPEG4, "video/mpeg4", "avenc_mpeg4", "avdec_mpeg4", "rtpmp4vpay", "rtpmp4vdepay")              \
-    _F(JPEG, "image/jpeg", "jpegenc", "jpegdec", "rtpjpegpay", "rtpjpegdepay")
+#define CODEC_ITER(_F)                                                                   \
+    _F(H264, "video/x-h264", "x264enc", "avdec_h264", "rtph264pay", "rtph264depay")      \
+    _F(H265, "video/x-h265", "x265enc", "avdec_h265", "rtph265pay", "rtph265depay")      \
+    _F(VP8, "video/x-vp8", "vp8enc", "vp8dec", "rtpvp8pay", "rtpvp8depay")               \
+    _F(VP9, "video/x-vp9", "vp9enc", "vp9dec", "rtpvp9pay", "rtpvp9depay")               \
+    _F(MPEG4, "video/mpeg4", "avenc_mpeg4", "avdec_mpeg4", "rtpmp4vpay", "rtpmp4vdepay") \
+    _F(JPEG, "image/jpeg", "jpegenc", "jpegdec", "rtpjpegpay", "rtpjpegdepay")           \
+    _F(AV1, "video/x-av1", "av1enc", "av1dec", "rtpav1pay", "rtpav1depay")
 
         enum class Codec : unsigned int {
 #define F(name, ...) name,
@@ -335,22 +335,6 @@ namespace mrover::gst {
             return createDefaultDecoder(getCodecFromStringView(codec), std::forward<Args>(extraProps)...);
         }
 
-        inline auto createRtpSink(std::string const& host, std::uint16_t port, video::Codec codec) {
-            return std::format("{} ! queue ! udpsink host={} port={}", getRtpPayloader(codec), host, port);
-        }
-
-        constexpr auto DEFAULT_RTP_JITTER = std::chrono::milliseconds(500);
-
-        inline auto createRtpToRawSrc(std::uint16_t port, Codec codec, std::chrono::milliseconds rtpJitter = DEFAULT_RTP_JITTER) -> std::string {
-            std::string parser;
-            if (codec == Codec::H265) {
-                parser = "! h265parse";
-            } else if (codec == Codec::H264) {
-                parser = "! h264parse";
-            }
-
-            return std::format("udpsrc port={} ! application/x-rtp,media=video ! rtpjitterbuffer latency={} ! {} {} ! decodebin", port, rtpJitter.count(), getRtpDepayloader(codec), parser);
-        }
 
         namespace v4l2 {
 

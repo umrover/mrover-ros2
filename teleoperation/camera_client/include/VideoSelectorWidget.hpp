@@ -5,6 +5,16 @@
 #include "CallbackCheckBox.hpp"
 
 namespace mrover {
+
+    struct CameraCallbacks {
+        RequestCallback onHide;
+        RequestCallback onShow;
+        RequestCallback onPause;
+        RequestCallback onPlay;
+        RequestCallback onStop;
+        RequestCallback onScreenshot;
+    };
+
     class VideoSelectorWidget : public QWidget {
         Q_OBJECT
 
@@ -23,16 +33,14 @@ namespace mrover {
         std::unordered_map<std::string, Selector> mSelectors;
         QVBoxLayout* mSelectorsLayout;
 
+        auto createVisibilityCheckBox(Selector& selector, CameraCallbacks const& callbacks) -> void;
+        auto createMediaControls(Selector& selector, std::string const& cameraName, CameraCallbacks const& callbacks) -> void;
+        auto createScreenshotButton(Selector& selector, CameraCallbacks const& callbacks) -> void;
+
     public:
         explicit VideoSelectorWidget(QWidget* parent = nullptr);
 
-        auto addCamera(std::string const& name) -> void;
-        auto addVisibilitySelector(std::string const& cameraName, RequestCallback hideRequest, RequestCallback showRequest) -> void;
-        auto addMediaControls(std::string const& cameraName, RequestCallback pauseRequest, RequestCallback playRequest, RequestCallback stopRequest) -> void;
-        auto addScreenshotButton(std::string const& cameraName, RequestCallback screenshotRequest) -> void;
-
-    signals:
-        void stopClicked(std::string const& name);
-        void screenshotClicked(std::string const& name);
+        auto addCamera(std::string const& name, CameraCallbacks callbacks) -> void;
     };
+
 } // namespace mrover
