@@ -22,6 +22,7 @@
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgproc.hpp>
 #include <optional>
+#include <rclcpp/logger.hpp>
 #include <rclcpp/logging.hpp>
 #include <thread>
 #include <unordered_map>
@@ -104,9 +105,9 @@ namespace mrover{
 
         // Define offsets
         layout[4] = cv::Vec3d(0.0, 0.0, 0.0);       // BL
-        layout[5] = cv::Vec3d(0.387, 0.0, 0.0);     // BR
-        layout[3] = cv::Vec3d(0.387, 0.183, 0.0);   // TR
-        layout[2] = cv::Vec3d(0.0, 0.183, 0.0);     // TL
+        layout[5] = cv::Vec3d(0.41407, 0.0, 0.0);     // BR
+        layout[3] = cv::Vec3d(0.41407, 0.183444, 0.0);   // TR
+        layout[2] = cv::Vec3d(0.0, 0.183444, 0.0);     // TL
 
         createRoverBoard();
     }
@@ -127,12 +128,6 @@ namespace mrover{
 
             // Convert pose to se3d
             SE3d cam_to_tag = SE3Conversions::fromPose(output->pose);
-
-            RCLCPP_INFO_STREAM(get_logger(), "x: " << output->pose.position.x);
-            RCLCPP_INFO_STREAM(get_logger(), "y: " << output->pose.position.y);
-            RCLCPP_INFO_STREAM(get_logger(), "z: " << output->pose.position.z);
-
-
 
             // Transform from camera frame to arm_fk frame:
             // Camera X (horizontal) -> arm_fk Y
@@ -226,6 +221,10 @@ namespace mrover{
         // Read in images
         cv::Mat bgraImage{static_cast<int>(msg->height), static_cast<int>(msg->width), CV_8UC4, const_cast<uint8_t*>(msg->data.data())};
 
+        // For debugging image
+        cv::Mat bgrImage;
+        cv::cvtColor(bgraImage, bgrImage, cv::COLOR_BGRA2BGR);
+
         // convert to gray for estimation
         cv::Mat grayImage;
         cv::cvtColor(bgraImage, grayImage, cv::COLOR_BGRA2GRAY);
@@ -279,7 +278,6 @@ namespace mrover{
             if (validcnt > 2) {
                 cv::aruco::estimatePoseBoard(markerCorners, ids, rover_board, camMatrix, distCoeffs, combined_rvec, combined_tvec);
             } else if (validcnt > 0) {
-                RCLCPP_INFO_STREAM(get_logger(), "Using solvepnp");
                 cv::Vec3d sum_tvec(0,0,0);
                 cv::Vec3d sum_rvec(0,0,0);
 
@@ -317,7 +315,7 @@ namespace mrover{
             combined_rvec = sum_rvec / (double)validcnt;
             }
 
-            cv::drawFrameAxes(grayImage, camMatrix, distCoeffs, combined_rvec, combined_tvec, markerLength * 1.5f, 2);
+            cv::drawFrameAxes(bgrImage, camMatrix, distCoeffs, combined_rvec, combined_tvec, markerLength * 1.5f, 2);
         }
 
 
@@ -332,7 +330,7 @@ namespace mrover{
 
         // draw results for debugging
         if (!ids.empty()) {
-            cv::aruco::drawDetectedMarkers(grayImage, markerCorners, ids);
+            cv::aruco::drawDetectedMarkers(bgrImage, markerCorners, ids);
             // for (size_t i = 0; i < ids.size(); ++i) {
             //     cv::drawFrameAxes(grayImage, camMatrix, distCoeffs, rvecs[i], tvecs[i], markerLength * 1.5f, 2);
             // }
@@ -358,14 +356,14 @@ namespace mrover{
             finalestimation.orientation.w = q.w();
 
             // Draw after kalman filter
-            cv::drawFrameAxes(grayImage, camMatrix, distCoeffs, combined_rvec, combined_tvec, markerLength * 3.0f, 4);
+            // cv::drawFrameAxes(grayImage, camMatrix, distCoeffs, combined_rvec, combined_tvec, markerLength * 3.0f, 4);
 
             // Draw circle for debugging
             int cx = grayImage.cols / 2;
             int cy = grayImage.rows / 2;
 
             cv::circle(
-                grayImage,
+                bgrImage,
                 cv::Point(cx, cy),
                 2,                  // radius
                 cv::Scalar(0, 0, 255), // BGR: red
@@ -374,7 +372,7 @@ namespace mrover{
 
             // Draw axes for debugging
             // cv::drawFrameAxes(grayImage, camMatrix, distCoeffs, final_rvec, final_tvec, markerLength * 1.5f, 2);
-            cv::imshow("out", grayImage);
+            cv::imshow("out", bgrImage);
             int key = cv::waitKey(1) & 0xFF;
             if(key == 'r'){
                 // logPose = !logPose;
@@ -394,7 +392,7 @@ namespace mrover{
             // outputToCSV(tvecs[0], rvecs[0]);
             // return updateKalmanFilter(tvecs, rvecs);
         } else {
-            cv::imshow("out", grayImage);
+            cv::imshow("out", bgrImage);
             cv::waitKey(1);
             return std::nullopt;
         }
@@ -576,7 +574,7 @@ namespace mrover{
         }
     }
 
-    auto KeyboardTypingNode::send_z_key_command() -> void {
+    auto KeyboardTypingNode:: send_z_key_command() -> void {
         // Grab gripper_to_tag and then calculate deltas
         SE3d armbase_to_z;
         SE3d armbase_to_armfk;
@@ -587,9 +585,14 @@ namespace mrover{
 
             // sendIKCommand(armbase_to_armfk.translation().x(), armbase_to_z.translation().y(), armbase_to_z.translation().z(), 0, 0);
 
+            // sendIKCommand(armbase_to_armfk.translation().x(),
+            //                 armbase_to_armfk.translation().y() + zKeyTransformation_new[1],
+            //                 armbase_to_armfk.translation().z() + zKeyTransformation_new[2], 0, 0);
+
             sendIKCommand(armbase_to_armfk.translation().x(),
-                            armbase_to_armfk.translation().y() + zKeyTransformation_new[1],
-                            armbase_to_armfk.translation().z() + zKeyTransformation_new[2], 0, 0);
+            armbase_to_z.translation().y(), armbase_to_z.translation().z(), 0, 0);
+
+            RCLCPP_INFO_STREAM(get_logger(), "y_delta = " << (armbase_to_armfk.translation().y() - armbase_to_z.translation().y()));
                             
         } catch (tf2::TransformException const& e) {
             RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, std::format("TF tree error processing keyboard typing: {}", e.what()));
