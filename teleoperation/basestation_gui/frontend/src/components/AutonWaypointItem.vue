@@ -93,7 +93,7 @@ export default {
 
 <style scoped>
 .waypoints {
-  background-color: #ffffff;
+  background-color: var(--card-bg);
   border-radius: 6px;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 }

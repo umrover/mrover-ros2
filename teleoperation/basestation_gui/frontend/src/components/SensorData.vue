@@ -42,17 +42,17 @@
 
   <div class="d-flex flex-column gap-2 mt-2 flex-fill" style="min-height: 0">
     <div class="d-flex gap-2" style="flex: 1; min-height: 0">
-      <div class="bg-white border rounded p-2 d-flex flex-column" style="flex: 1; min-width: 0">
+      <div class="bg-theme-card border rounded p-2 d-flex flex-column" style="flex: 1; min-width: 0">
         <div class="d-flex justify-content-between align-items-center mb-1">
-          <strong style="font-size: 14px; color: #000000">Humidity (%)</strong>
+          <strong style="font-size: 14px; color: var(--text-primary)">Humidity (%)</strong>
         </div>
         <div style="flex: 1; min-height: 0">
           <canvas id="chart0"></canvas>
         </div>
       </div>
-      <div class="bg-white border rounded p-2 d-flex flex-column" style="flex: 1; min-width: 0">
+      <div class="bg-theme-card border rounded p-2 d-flex flex-column" style="flex: 1; min-width: 0">
         <div class="d-flex justify-content-between align-items-center mb-1">
-          <strong style="font-size: 14px; color: #000000">UV Index</strong>
+          <strong style="font-size: 14px; color: var(--text-primary)">UV Index</strong>
         </div>
         <div style="flex: 1; min-height: 0">
           <canvas id="chart1"></canvas>
@@ -60,17 +60,17 @@
       </div>
     </div>
     <div class="d-flex gap-2" style="flex: 1; min-height: 0">
-      <div class="bg-white border rounded p-2 d-flex flex-column" style="flex: 1; min-width: 0">
+      <div class="bg-theme-card border rounded p-2 d-flex flex-column" style="flex: 1; min-width: 0">
         <div class="d-flex justify-content-between align-items-center mb-1">
-          <strong style="font-size: 14px; color: #000000">Ozone (ppb)</strong>
+          <strong style="font-size: 14px; color: var(--text-primary)">Ozone (ppb)</strong>
         </div>
         <div style="flex: 1; min-height: 0">
           <canvas id="chart2"></canvas>
         </div>
       </div>
-      <div class="bg-white border rounded p-2 d-flex flex-column" style="flex: 1; min-width: 0">
+      <div class="bg-theme-card border rounded p-2 d-flex flex-column" style="flex: 1; min-width: 0">
         <div class="d-flex justify-content-between align-items-center mb-1">
-          <strong style="font-size: 14px; color: #000000">Pressure (Pa)</strong>
+          <strong style="font-size: 14px; color: var(--text-primary)">Pressure (Pa)</strong>
         </div>
         <div style="flex: 1; min-height: 0">
           <canvas id="chart3"></canvas>
@@ -89,7 +89,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useWebsocketStore } from '@/stores/websocket'
 import { storeToRefs } from 'pinia'
 import Chart from 'chart.js/auto'
@@ -141,10 +141,10 @@ watch(scienceMessage, (msg) => {
       sensor_data.value.sp_humidity = scienceMsg.relative_humidity
       break
     case 'sp_ozone':
-      sensor_data.value.sp_ozone = scienceMsg.ozone
+      sensor_data.value.sp_ozone = scienceMsg.ppb
       break
     case 'sp_co2':
-      sensor_data.value.sp_co2 = scienceMsg.co2
+      sensor_data.value.sp_co2 = scienceMsg.ppm
       break
     case 'sp_pressure':
       sensor_data.value.sp_pressure = scienceMsg.pressure
@@ -183,10 +183,19 @@ const downloadCSV = () => {
   anchor.click()
 }
 
-onMounted(() => {
-  const charts: Chart[] = [];
+const charts: Chart[] = []
+let updateInterval: number | undefined = undefined
 
-  // This helper function waits for a DOM element to be available
+const chartConfigs = [
+  { title: 'Humidity (%)', datasets: [{ label: 'Humidity', color: '#3BB273', historyIndex: 1 }] },
+  { title: 'UV Index', datasets: [{ label: 'UV', color: '#7768AE', historyIndex: 3 }] },
+  { title: 'Ozone (ppb)', datasets: [{ label: 'Ozone', color: '#F9A825', historyIndex: 4 }] },
+  { title: 'Pressure (Pa)', datasets: [{ label: 'Pressure', color: '#26A69A', historyIndex: 6 }] },
+]
+
+const maxHistory = 20
+
+onMounted(() => {
   function waitForElm(selector: string): Promise<Element | null> {
     return new Promise(resolve => {
       const elm = document.querySelector(selector);
@@ -208,15 +217,6 @@ onMounted(() => {
       });
     });
   }
-
-  const chartConfigs = [
-    { title: 'Humidity (%)', datasets: [{ label: 'Humidity', color: '#3BB273', historyIndex: 1 }] },
-    { title: 'UV Index', datasets: [{ label: 'UV', color: '#7768AE', historyIndex: 3 }] },
-    { title: 'Ozone (ppb)', datasets: [{ label: 'Ozone', color: '#F9A825', historyIndex: 4 }] },
-    { title: 'Pressure (Pa)', datasets: [{ label: 'Pressure', color: '#26A69A', historyIndex: 6 }] },
-  ];
-
-  const maxHistory = 20;
 
   for (let i = 0; i < chartConfigs.length; ++i) {
     waitForElm(`#chart${i}`).then(canvasElement => {
@@ -252,8 +252,12 @@ onMounted(() => {
             },
             scales: {
               y: {
-                beginAtZero: true,
-                ticks: { font: { size: 10 } }
+                beginAtZero: false,
+                ticks: {
+                  font: { size: 10 },
+                  maxTicksLimit: 8,
+                  precision: 2,
+                }
               },
               x: {
                 ticks: { font: { size: 10 } }
@@ -265,8 +269,7 @@ onMounted(() => {
     });
   }
 
-  // Set up the interval to update chart data
-  setInterval(() => {
+  updateInterval = window.setInterval(() => {
     sensor_history.value[0]?.push(sensor_data.value.sp_oxygen);
     sensor_history.value[1]?.push(sensor_data.value.sp_humidity);
     sensor_history.value[2]?.push(sensor_data.value.sp_temp);
@@ -308,5 +311,16 @@ onMounted(() => {
       }
     }
   }, 1000);
+})
+
+onBeforeUnmount(() => {
+  if (updateInterval !== undefined) {
+    clearInterval(updateInterval)
+    updateInterval = undefined
+  }
+  for (const chart of charts) {
+    chart?.destroy()
+  }
+  charts.length = 0
 })
 </script>

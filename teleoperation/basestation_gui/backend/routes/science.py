@@ -1,39 +1,50 @@
+import asyncio
+
 from fastapi import APIRouter, HTTPException
-from backend.ros_manager import get_node
+
+from backend.managers.ros import get_node, get_logger, get_service_client
 from backend.models_pydantic import GearDiffRequest
-from mrover.srv import ServoSetPos
-import time
+from mrover.srv import ServoPosition
 
 router = APIRouter(prefix="/api", tags=["science"])
 
-def _call_service_sync(client, request, timeout=5.0):
+
+async def call_service_async(client, request, timeout=5.0):
     if not client.wait_for_service(timeout_sec=1.0):
         return None
 
     future = client.call_async(request)
-    start_time = time.time()
-    while not future.done():
-        if time.time() - start_time > timeout:
-            return None
-        time.sleep(0.01)
+    try:
+        await asyncio.wait_for(
+            asyncio.get_event_loop().run_in_executor(None, future.result),
+            timeout=timeout
+        )
+        return future.result()
+    except asyncio.TimeoutError:
+        return None
 
-    return future.result()
 
-@router.post("/gear_diff_position/")
-def gear_diff_position(data: GearDiffRequest):
+@router.post("/science/gear-diff/position/")
+async def gear_diff_position(data: GearDiffRequest):
     try:
         node = get_node()
-        sp_funnel_srv = node.create_client(ServoSetPos, "/sp_funnel_set_position")
+        client = get_service_client(ServoPosition, "/sp_funnel_servo")
 
-        sp_funnel_request = ServoSetPos.Request()
-        sp_funnel_request.position = data.position
-        sp_funnel_request.is_counterclockwise = data.is_counterclockwise
+        sp_funnel_request = ServoPosition.Request()
+        sp_funnel_request.header.stamp = node.get_clock().now().to_msg()
+        sp_funnel_request.header.frame_id = ""
+        sp_funnel_request.names = ["funnel"]
+        sp_funnel_request.positions = [data.position]
 
-        result = _call_service_sync(sp_funnel_srv, sp_funnel_request)
+        result = await call_service_async(client, sp_funnel_request)
         if result is None:
             raise HTTPException(status_code=500, detail="Service call failed")
 
-        return {'status': 'success', 'position': data.position, 'is_counterclockwise': data.is_counterclockwise}
+        at_tgt = result.at_tgts[0] if result.at_tgts else False
+        return {'status': 'success', 'position': data.position, 'at_tgt': at_tgt}
 
+    except HTTPException:
+        raise
     except Exception as e:
+        get_logger().error(f"gear_diff_position error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
