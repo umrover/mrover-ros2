@@ -67,6 +67,7 @@ namespace mrover{
             }
         }
 
+        current_key = "";
 
 
         // Initialize Kalman filter
@@ -593,6 +594,8 @@ namespace mrover{
         } catch (tf2::TransformException const& e) {
             RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, std::format("TF tree error processing keyboard typing: {}", e.what()));
         }
+
+        current_key = 'z';
     }
 
     auto KeyboardTypingNode::sendIKCommand(float x, float y, float z, float pitch, float roll) -> void {
@@ -741,7 +744,7 @@ namespace mrover{
             std::string launchCode = goal_handle->get_goal()->launch_code;
             std::transform(launchCode.begin(), launchCode.end(), launchCode.begin(), ::toupper);
 
-            for (int i = 0; i < launchCode.length(); i++) {
+            for (size_t i = 0; i < launchCode.length(); i++) {
                 feedback->current_index = static_cast<uint32_t>(i);
                 goal_handle->publish_feedback(feedback);
 
@@ -749,8 +752,8 @@ namespace mrover{
 
                 // TODO logic for figuring out deltas
                 float x_delta, y_delta;
-                x_delta = 0.0;
-                y_delta = 0.0;
+                x_delta = keyboard.at({launchCode[i]})[0] - keyboard.at(current_key)[0];
+                y_delta = keyboard.at({launchCode[i]})[1] - keyboard.at(current_key)[1];
                 send_goal(x_delta, y_delta);
 
                 if (goal_handle->is_canceling()) {
@@ -766,6 +769,8 @@ namespace mrover{
                 //      see: /arm_controller_state in sw-icd-26 document for feedback
                 // Maybe create subscriber to pusher here, possibly with some kind of pusher mutex/cv,
                 //  then let it go out of scope
+
+                current_key = launchCode[i];
             }
 
             result->success = true;

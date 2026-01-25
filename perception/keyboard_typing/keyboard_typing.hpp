@@ -34,6 +34,8 @@ namespace mrover{
             double yaw;
         };
 
+        std::string current_key;
+
         // Params
         int mMinCodeLength{}, mMaxCodeLength{};
 
