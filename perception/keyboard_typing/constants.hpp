@@ -1,10 +1,5 @@
-#ifndef KEYBOARD_TYPING_CONSTANTS_H
-#define KEYBOARD_TYPING_CONSTANTS_H
+#pragma once
 
-#include <opencv2/aruco.hpp>
-#include <opencv2/aruco/charuco.hpp>
-#include <opencv2/aruco/dictionary.hpp>
-#include <string>
 #include "pch.hpp"
 
 bool logPose = false;
@@ -92,6 +87,6 @@ std::unordered_map<std::string, cv::Vec3d> keyboard = {
 // x -> z
 Eigen::Vector3d zKeyTransformation = {0.06495,0.041575,0.0303784};
 
-Eigen::Vector3d zKeyTransformation_new = {0.0303784,-0.06495,0.041575};
+// Eigen::Vector3d zKeyTransformation_new = {0.0303784,-0.06495,0.041575};
 
-#endif // KEYBOARD_TYPING_CONSTANTS_H
+Eigen::Vector3d zKeyTransformation_new = {0.0303784,-0.10495,-0.061575};
