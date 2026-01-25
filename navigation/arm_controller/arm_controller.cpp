@@ -232,67 +232,79 @@ namespace mrover {
                 mPosPub->publish(mPosFallback.value());
             }
         } else if (mArmMode == ArmMode::VELOCITY_CONTROL) {
-            // TODO: Determine joint velocities that cancels out arm sag
+
             const auto now = get_clock()->now();
-            if (carrot_initialized == false) {
-                mPrevTime = get_clock()->now();
+
+            if (!carrot_initialized) {
+                mPrevTime = now;
                 mCarrotPos = mArmPos;
                 carrot_initialized = true;
             }
+
             double dt = (now - mPrevTime).seconds();
             mPrevTime = now;
 
-            if (dt <= 0 || dt > 1){
-                dt = 0.033; // default to 30Hz
+            if (dt <= 0.0 || dt > 1.0) {
+                dt = 0.033; 
             }
 
-            if (true) dt = 0.0175;
+            dt = 0.01;
 
-            const double k = 0.50 ;
+            const double k = 0.50;
 
-            mCarrotPos.x += mVelTarget.linear.x * dt * k;
-            mCarrotPos.y += mVelTarget.linear.y * dt * k;
-            mCarrotPos.z += mVelTarget.linear.z * dt * k;
+            mCarrotPos.x     += mVelTarget.linear.x  * dt * k;
+            mCarrotPos.y     += mVelTarget.linear.y  * dt * k;
+            mCarrotPos.z     += mVelTarget.linear.z  * dt * k;
             mCarrotPos.pitch += mVelTarget.angular.y * dt * k;
-            mCarrotPos.roll += mVelTarget.angular.x * dt * k;
+            mCarrotPos.roll  += mVelTarget.angular.x * dt * k;
 
-            double error_x = mCarrotPos.x - mArmPos.x;
-            double error_y = mCarrotPos.y - mArmPos.y;
-            double error_z = mCarrotPos.z - mArmPos.z;
-            double error_pitch = mCarrotPos.pitch - mArmPos.pitch;
-            double error_roll = mCarrotPos.roll - mArmPos.roll;
+            auto error_x = mCarrotPos.x - mArmPos.x;
+            auto error_y = mCarrotPos.y - mArmPos.y;
+            auto error_z = mCarrotPos.z - mArmPos.z;
+            auto error_pitch = mCarrotPos.pitch - mArmPos.pitch;
+            auto error_roll  = mCarrotPos.roll  - mArmPos.roll;
 
             const double max_dist = 0.03;
 
             double error_total = std::sqrt(error_x * error_x + error_y * error_y + error_z * error_z);
+
             if (error_total > max_dist) {
-                double reduce_factor = max_dist / error_total;
+                const double reduce_factor = max_dist / error_total;
                 mCarrotPos.x = mArmPos.x + error_x * reduce_factor;
                 mCarrotPos.y = mArmPos.y + error_y * reduce_factor;
                 mCarrotPos.z = mArmPos.z + error_z * reduce_factor;
             }
 
-            SE3Conversions::pushToTfTree(mTfBroadcaster, "carrot_target", "arm_base_link", mCarrotPos.toSE3(), get_clock()->now());
+            SE3Conversions::pushToTfTree(
+                mTfBroadcaster,
+                "carrot_target",
+                "arm_base_link",
+                mCarrotPos.toSE3(),
+                now
+            );
 
             auto adjusted_v = mVelTarget;
 
-            mCarrotTime = 0.033;
 
             error_x = mCarrotPos.x - mArmPos.x;
             error_y = mCarrotPos.y - mArmPos.y;
             error_z = mCarrotPos.z - mArmPos.z;
             error_pitch = mCarrotPos.pitch - mArmPos.pitch;
-            error_roll = mCarrotPos.roll - mArmPos.roll;
+            error_roll  = mCarrotPos.roll  - mArmPos.roll;
 
-            adjusted_v.linear.x += mCarrotk * (error_x / mCarrotTime);
-            adjusted_v.linear.y += mCarrotk * (error_y / mCarrotTime);
-            adjusted_v.linear.z += mCarrotk * (error_z / mCarrotTime);
-            adjusted_v.angular.y += mCarrotk * (error_pitch / mCarrotTime);
-            adjusted_v.angular.x += mCarrotk * (error_roll / mCarrotTime);
 
+            const double Kp_lin = 12.0;
+            const double Kp_ang = 8.0; 
+
+            adjusted_v.linear.x  += Kp_lin * error_x;
+            adjusted_v.linear.y  += Kp_lin * error_y;
+            adjusted_v.linear.z  += Kp_lin * error_z;
+            adjusted_v.angular.y += Kp_ang * error_pitch;
+            adjusted_v.angular.x += Kp_ang * error_roll;
 
             auto velocities = ikVelCalc(adjusted_v);
-            if (velocities && 
+
+            if (velocities &&
                 !(
                     velocities->velocities[0] == 0 &&
                     velocities->velocities[1] == 0 &&
@@ -304,20 +316,31 @@ namespace mrover {
                 mVelPub->publish(velocities.value());
                 mPosFallback = std::nullopt;
             } else {
-                if(!velocities) {
-                    RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1000, "Velocity IK failed!");
+                if (!velocities) {
+                    RCLCPP_WARN_THROTTLE(
+                        get_logger(),
+                        *get_clock(),
+                        1000,
+                        "Velocity IK failed!"
+                    );
                     mCarrotPos = mArmPos;
                 }
-                if(!mPosFallback) mPosFallback = mCurrPos;
-                mPosPub->publish(mPosFallback.value());
+
+                if (!mPosFallback) {
+                    mPosFallback = mCurrPos;
+                    //mPosFallback = ikPosCalc(mCarrotPos).value();
+                    //mCarrotPos = mArmPos;
+                    mPosPub->publish(mPosFallback.value());
+                }
             }
-        } else { // typing mode
-            msg::Position positions;
-            positions.names = {"joint_a", "gripper"};
-            positions.positions = {
-                static_cast<float>(mPosTarget.y + mTypingOrigin.y),
-                static_cast<float>(mPosTarget.z + mTypingOrigin.gripper),
-            };
+
+            } else { // typing mode
+                msg::Position positions;
+                positions.names = {"joint_a", "gripper"};
+                positions.positions = {
+                    static_cast<float>(mPosTarget.y + mTypingOrigin.y),
+                    static_cast<float>(mPosTarget.z + mTypingOrigin.gripper),
+                };
 
             // bounds checking and such
             for (size_t i = 0; i < positions.names.size(); ++i) {
