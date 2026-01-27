@@ -233,6 +233,26 @@ namespace mrover {
             }
         } else if (mArmMode == ArmMode::VELOCITY_CONTROL) {
 
+            
+
+            if (mVelTarget.linear.x == 0 &&
+                mVelTarget.linear.y == 0 &&
+                mVelTarget.linear.z == 0 &&
+                mVelTarget.angular.x == 0 &&
+                mVelTarget.angular.y == 0) {
+                // no movement command, so just stop the arm
+                if (hold == false) {
+                    mPosFallback = mCurrPos;
+                    hold = true;
+                }
+                
+                mPosPub->publish(mPosFallback.value());
+
+                return;
+            }
+
+            hold = false;
+
             const auto now = get_clock()->now();
 
             if (!carrot_initialized) {
@@ -250,7 +270,7 @@ namespace mrover {
 
             dt = 0.01;
 
-            const double k = 0.50;
+            const double k = 0.70;
 
             mCarrotPos.x     += mVelTarget.linear.x  * dt * k;
             mCarrotPos.y     += mVelTarget.linear.y  * dt * k;
@@ -264,7 +284,7 @@ namespace mrover {
             auto error_pitch = mCarrotPos.pitch - mArmPos.pitch;
             auto error_roll  = mCarrotPos.roll  - mArmPos.roll;
 
-            const double max_dist = 0.03;
+            const double max_dist = 0.05;
 
             double error_total = std::sqrt(error_x * error_x + error_y * error_y + error_z * error_z);
 
