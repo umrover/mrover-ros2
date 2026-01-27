@@ -1,6 +1,6 @@
 <template>
-  <div class="d-flex flex-column align-items-center w-100">
-    <div class="d-flex flex-column gap-2 w-100 align-items-center">
+  <div class="d-flex flex-column align-items-center">
+    <div class="d-flex flex-column gap-2 align-items-center">
       <div class="d-flex justify-content-between align-items-center w-100">
         <h4 class="m-0">Arm Controls</h4>
         <IndicatorDot :is-active="controllerConnected" class="me-2" />
@@ -32,7 +32,7 @@
           :class="mode === 'ik-pos' ? 'btn-success' : 'btn-outline-success'"
           @click="newRAMode('ik-pos')"
         >
-          IK Position
+          IK Pos
         </button>
         <button
           type="button"
@@ -40,10 +40,10 @@
           :class="mode === 'ik-vel' ? 'btn-success' : 'btn-outline-success'"
           @click="newRAMode('ik-vel')"
         >
-          IK Velocity
+          IK Vel
         </button>
       </div>
-      <GamepadDisplay :axes="axes" :buttons="buttons" />
+      <GamepadDisplay :axes="axes" :buttons="buttons" layout="horizontal" />
     </div>
   </div>
 </template>

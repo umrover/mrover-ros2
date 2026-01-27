@@ -14,7 +14,7 @@ from navigation.state import DoneState, OffState, off_check
 from navigation.waypoint import WaypointState
 from nav_msgs.msg import Path
 from rclpy import Parameter
-from rclpy.executors import ExternalShutdownException, MultiThreadedExecutor, SingleThreadedExecutor
+from rclpy.executors import ExternalShutdownException, SingleThreadedExecutor
 from rclpy.node import Node
 from state_machine.state_machine import StateMachine
 from state_machine.state_publisher_server import StatePublisher

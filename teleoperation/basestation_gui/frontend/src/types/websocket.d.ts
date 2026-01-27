@@ -18,25 +18,25 @@ export interface RootState {
 }
 
 export interface ControllerStateMessage {
-  type: 'arm_state' | 'sp_state' | 'drive_left_state' | 'drive_right_state' | 'gimbal_state' | 'sp_controller_state';
+  type: 'arm_state' | 'sp_state' | 'drive_left_state' | 'drive_right_state' | 'gimbal_state' | 'sp_controller_state' | 'gimbal_controller_state';
   header?: {
     stamp: { sec: number; nanosec: number };
     frame_id: string;
   };
-  name: string[];
-  state: string[];
-  error: string[];
-  position: number[];
-  velocity: number[];
-  current: number[];
-  limit_hit: boolean[];
+  names: string[];
+  states: string[];
+  errors: string[];
+  positions: number[];
+  velocities: number[];
+  currents: number[];
+  limits_hit: boolean[];
 }
 
 export interface JointStateMessage {
   type: 'drive_left_joint_state' | 'drive_right_joint_state' | 'gimbal_joint_state';
-  name: string[];
-  position: number[];
-  velocity: number[];
+  names: string[];
+  positions: number[];
+  velocities: number[];
   effort: number[];
 }
 
@@ -100,12 +100,12 @@ export interface SPUVMessage {
 
 export interface SPOzoneMessage {
   type: 'sp_ozone';
-  ozone: number;
+  ppb: number;
 }
 
 export interface SPCO2Message {
   type: 'sp_co2';
-  co2: number;
+  ppm: number;
 }
 
 export interface SPPressureMessage {
