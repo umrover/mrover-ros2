@@ -5,6 +5,7 @@
 #include <dynamixel_sdk/dynamixel_sdk.h>
 #include <dynamixel_sdk/port_handler.h>
 #include <dynamixel_sdk/packet_handler.h>
+#include <parameter.hpp>
 #include <string>
 
 #define DEFAULT_CURRENT_LIMIT 1750
@@ -73,8 +74,8 @@ public:
     ServoProperties() = default;
   };
 
-  Servo(ServoId id, const std::string& name, ServoProperties properties);
-  explicit Servo(ServoId id, const std::string& name);
+  Servo(rclcpp::Node::SharedPtr node, ServoId id, const std::string& name, ServoProperties properties);
+  Servo(rclcpp::Node::SharedPtr node, ServoId id, const std::string& name);
 
   ServoStatus setPosition(ServoPosition position, ServoMode mode);
   ServoStatus getPosition(ServoPosition& position);
@@ -83,10 +84,13 @@ public:
   ServoStatus getPositionAbsolute(ServoPosition& position);
   ServoStatus setProperty(ServoProperty prop, uint16_t value);
   ServoStatus getTargetStatus();
+  bool getLimitStatus();
 
   static ServoStatus init(const std::string& deviceName);
 
 private:
+  auto updateConfigFromParameters() -> void;
+
   ServoStatus servoSetup();
 
   inline ServoStatus write1Byte(ServoAddr addr, uint8_t data, uint8_t* hardwareStatus) const;
@@ -100,9 +104,15 @@ private:
   inline static dynamixel::PortHandler *portHandler;
   inline static dynamixel::PacketHandler *packetHandler;
 
-  ServoId id;
-  std::string name;
+  ServoId mServoId;
+  std::string mServoName;
+  float forwardLimit;
+  float reverseLimit;
   uint32_t goalPosition;
+
+  bool atLimit = false;
+
+  rclcpp::Node::SharedPtr mNode;
 };
 
 }

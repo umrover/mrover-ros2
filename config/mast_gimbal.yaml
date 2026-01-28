@@ -1,30 +1,8 @@
 mast_gimbal_hw_bridge:
   ros__parameters:
     mast_gimbal_pitch:
-      gear_ratio: 1.0
-      is_inverted: false
-      driver_voltage: 10.5
-      motor_max_voltage: 12.0
-      quad_present: false
-      abs_present: false
+      forward_limit: 90.0
+      reverse_limit: 270.0
     mast_gimbal_yaw:
-      gear_ratio: 1.0
-      is_inverted: true
-      driver_voltage: 10.5
-      motor_max_voltage: 12.0
-      quad_present: true
-      quad_ratio: 0.001013780932  # approx. 1000:1 per https://www.pololu.com/file/0J1487/pololu-micro-metal-gearmotors-rev-6-1.pdf
-      abs_present: false
-      calibration_throttle: 0.5
-      limit_switch_0_present: true
-      limit_switch_0_enabled: true
-      limit_switch_0_limits_forward: false
-      limit_switch_0_active_high: false
-      limit_switch_0_used_for_readjustment: true
-      limit_switch_0_readjust_position: 0.0
-      limit_switch_1_present: true
-      limit_switch_1_enabled: true
-      limit_switch_1_limits_forward: true
-      limit_switch_1_active_high: false
-      limit_switch_1_used_for_readjustment: true
-      limit_switch_1_readjust_position: 0.0
+      forward_limit: 90.0
+      reverse_limit: 270.0

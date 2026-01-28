@@ -1,4 +1,5 @@
 #include "servo.hpp"
+#include "parameter.hpp"
 #include <cstdint>
 
 // Protocol version
@@ -24,10 +25,26 @@
 
 using namespace mrover;
 
-Servo::Servo(ServoId id, const std::string& name, ServoProperties properties) : id{id}, name{name}
+auto Servo::updateConfigFromParameters() -> void {
+    std::vector<ParameterWrapper> parameters = {
+            {std::format("{}.reverse_limit", mServoName), reverseLimit, 90.0f},
+            {std::format("{}.forward_limit", mServoName), forwardLimit, 270.0f}
+    };
+
+    ParameterWrapper::declareParameters(mNode.get(), parameters);
+
+    assert(forward_limit > 0.0f);
+    assert(reverse_limit > 0.0f);
+    assert(forward_limit < 360.0f);
+    assert(reverse_limit < 360.0f);
+}
+
+Servo::Servo(rclcpp::Node::SharedPtr node, ServoId mServoId, const std::string& mServoName, ServoProperties properties) : mNode{std::move(node)}, mServoId{mServoId}, mServoName{mServoName}
 {
   // ---------------------------------------------- Set servo properties ------------------------------------------------------ //
-
+  updateConfigFromParameters();
+  forwardLimit = 90;
+  reverseLimit = 270;
   // Position Gain
   setProperty(ServoProperty::PositionPGain, properties.positionPGain);
   setProperty(ServoProperty::PositionIGain, properties.positionIGain);
@@ -43,7 +60,7 @@ Servo::Servo(ServoId id, const std::string& name, ServoProperties properties) : 
   servoSetup();
 }
 
-Servo::Servo(ServoId id, const std::string& name) : id{id}, name{name}
+Servo::Servo(rclcpp::Node::SharedPtr node, ServoId mServoId, const std::string& mServoName) : mNode{std::move(node)}, mServoId{mServoId}, mServoName{mServoName}
 {
   servoSetup();
 }
@@ -63,6 +80,7 @@ Servo::ServoStatus Servo::servoSetup()
 
 Servo::ServoStatus Servo::setPosition(ServoPosition position, ServoMode mode)
 {
+
   uint32_t targetPosition = static_cast<uint32_t>((position / 360.0f) * 4096.0f) % 4096;
 
   uint8_t hardwareStatus;
@@ -98,8 +116,24 @@ Servo::ServoStatus Servo::setPosition(ServoPosition position, ServoMode mode)
       break;
   }
 
+  if (normalizedDifference > 0 && (presentPosition + normalizedDifference) % 4096 > forwardLimit)
+  {
+    atLimit = true;
+    int toLimit = ((presentPosition + normalizedDifference) % 4096) - forwardLimit;
+    goalPosition = presentPosition + toLimit;
+  }
+  else if (normalizedDifference < 0 && (presentPosition + normalizedDifference) % 4096 < reverseLimit)
+  {
+    atLimit = true;
+    int toLimit = ((presentPosition + normalizedDifference) % 4096) + reverseLimit;
+    goalPosition = presentPosition + toLimit;
+  }
+  else
+  {
+    goalPosition = presentPosition + normalizedDifference;
+  }
+
   // Calculate the optimal goal position
-  goalPosition = presentPosition + normalizedDifference;
 
   // Write goal position
   return write4Byte(ADDR_GOAL_POSITION, goalPosition, &hardwareStatus);
@@ -172,7 +206,7 @@ Servo::ServoStatus Servo::write1Byte(ServoAddr addr, uint8_t data, uint8_t* hard
 {
   return static_cast<ServoStatus>(packetHandler->write1ByteTxRx(
     portHandler,
-    id,
+    mServoId,
     addr,
     data,
     hardwareStatus
@@ -183,7 +217,7 @@ Servo::ServoStatus Servo::write2Byte(ServoAddr addr, uint16_t data, uint8_t* har
 {
   return static_cast<ServoStatus>(packetHandler->write2ByteTxRx(
     portHandler,
-    id,
+    mServoId,
     addr,
     data,
     hardwareStatus
@@ -194,7 +228,7 @@ Servo::ServoStatus Servo::write4Byte(ServoAddr addr, uint32_t data, uint8_t* har
 {
   return static_cast<ServoStatus>(packetHandler->write4ByteTxRx(
     portHandler,
-    id,
+    mServoId,
     addr,
     data,
     hardwareStatus
@@ -206,7 +240,7 @@ Servo::ServoStatus Servo::read1Byte(ServoAddr addr, uint8_t& data, uint8_t* hard
 {
   return static_cast<ServoStatus>(packetHandler->read1ByteTxRx(
     portHandler,
-    id,
+    mServoId,
     addr,
     &data,
     hardwareStatus
@@ -217,7 +251,7 @@ Servo::ServoStatus Servo::read2Byte(ServoAddr addr, uint16_t& data, uint8_t* har
 {
   return static_cast<ServoStatus>(packetHandler->read2ByteTxRx(
     portHandler,
-    id,
+    mServoId,
     addr,
     &data,
     hardwareStatus
@@ -228,7 +262,7 @@ Servo::ServoStatus Servo::read4Byte(ServoAddr addr, uint32_t& data, uint8_t* har
 {
   return static_cast<ServoStatus>(packetHandler->read4ByteTxRx(
     portHandler,
-    id,
+    mServoId,
     addr,
     &data,
     hardwareStatus
@@ -253,4 +287,9 @@ Servo::ServoStatus Servo::init(const std::string& deviceName)
   if (!dxlCommResult) {
     return ServoStatus::FailedToSetBaud;
   }
+}
+
+bool Servo::getLimitStatus()
+{
+  return atLimit;
 }

@@ -30,7 +30,7 @@ namespace mrover {
 
         void create_servo(uint8_t id, const std::string& name)
         {
-            servos.insert({name, std::make_unique<mrover::Servo>(id, name)});
+            servos.insert(name, std::make_shared<mrover::Servo>(shared_from_this(), id, name));
         }
 
         auto init() -> void {
@@ -69,11 +69,11 @@ namespace mrover {
 
     private:
 
+    
+
         rclcpp::Service<mrover::srv::ServoPosition>::SharedPtr getPositionService;
 
-        std::unordered_map<std::string, std::unique_ptr<mrover::Servo>> servos;
-
-        std::unique_ptr<mrover::Servo> servo;
+        std::unordered_map<std::string, std::shared_ptr<mrover::Servo>> servos;
 
         std::vector<std::pair<std::string, int>> const mServoNames = {{"mast_gimbal_pitch", 3}, {"mast_gimbal_yaw", 4}};
 

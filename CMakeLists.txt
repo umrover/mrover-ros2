@@ -321,14 +321,6 @@ if (NOT APPLE)
     mrover_add_esw_motor_bridge_node(mast_gimbal_hw_bridge esw/mast_gimbal_hw_bridge.cpp)
     target_link_libraries(mast_gimbal_hw_bridge servo_library)
 
-    macro(mrover_add_esw_servo_bridge_node name sources)
-        mrover_add_node(${name} ${sources})
-        ament_target_dependencies(${name} rclcpp std_srvs)
-        target_link_libraries(${name} can_device units messaging)
-        target_link_libraries(${name} servo_library)
-    endmacro()
-    
-    mrover_add_esw_servo_bridge_node(servo_hw_bridge esw/servo_hw_bridge.cpp)
 
     mrover_add_node(pdlb_hw_bridge esw/pdlb_hw_bridge.cpp)
     ament_target_dependencies(pdlb_hw_bridge rclcpp std_srvs)
