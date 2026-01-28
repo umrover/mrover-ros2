@@ -232,16 +232,35 @@ namespace mrover {
                 mPosPub->publish(mPosFallback.value());
             }
         } else if (mArmMode == ArmMode::VELOCITY_CONTROL) {
+//add something to avoid stuff with bad initiliazation stuff yay
+// tune for x direction stuff
 
-            
+            if ((mVelTarget.linear.x != 0 | 
+                mVelTarget.linear.y != 0 |
+                mVelTarget.linear.z != 0 |
+                mVelTarget.angular.x != 0 |
+                mVelTarget.angular.y != 0) && not_initialized == true) 
+                {
+                not_initialized = false;
+                }
 
             if (mVelTarget.linear.x == 0 &&
                 mVelTarget.linear.y == 0 &&
                 mVelTarget.linear.z == 0 &&
                 mVelTarget.angular.x == 0 &&
-                mVelTarget.angular.y == 0) {
+                mVelTarget.angular.y == 0 && not_initialized == true) {
+                    return;
+                }
+
+            
+            if (mVelTarget.linear.x == 0 &&
+                mVelTarget.linear.y == 0 &&
+                mVelTarget.linear.z == 0 &&
+                mVelTarget.angular.x == 0 &&
+                mVelTarget.angular.y == 0 && not_initialized == false) {
                 // no movement command, so just stop the arm
                 if (hold == false) {
+                    mCarrotPos = mArmPos;
                     mPosFallback = mCurrPos;
                     hold = true;
                 }
@@ -270,7 +289,7 @@ namespace mrover {
 
             dt = 0.01;
 
-            const double k = 0.70;
+            const double k = 1;
 
             mCarrotPos.x     += mVelTarget.linear.x  * dt * k;
             mCarrotPos.y     += mVelTarget.linear.y  * dt * k;
@@ -284,7 +303,7 @@ namespace mrover {
             auto error_pitch = mCarrotPos.pitch - mArmPos.pitch;
             auto error_roll  = mCarrotPos.roll  - mArmPos.roll;
 
-            const double max_dist = 0.05;
+            const double max_dist = 0.01;
 
             double error_total = std::sqrt(error_x * error_x + error_y * error_y + error_z * error_z);
 
@@ -313,7 +332,7 @@ namespace mrover {
             error_roll  = mCarrotPos.roll  - mArmPos.roll;
 
 
-            const double Kp_lin = 12.0;
+            const double Kp_lin = 20.0;
             const double Kp_ang = 8.0; 
 
             adjusted_v.linear.x  += Kp_lin * error_x;
@@ -389,6 +408,7 @@ namespace mrover {
         } else if (req->mode == srv::IkMode::Request::VELOCITY_CONTROL) {
             mArmMode = ArmMode::VELOCITY_CONTROL;
             RCLCPP_INFO(get_logger(), "IK Switching to Velocity Control Mode");
+            not_initialized = true;
             carrot_initialized = false;
         } else { // typing mode
             mArmMode = ArmMode::TYPING;

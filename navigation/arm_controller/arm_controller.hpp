@@ -30,6 +30,8 @@ namespace mrover {
         bool carrot_initialized = false;
         ArmPos mCarrotPos;
         bool hold = false;
+        bool not_initialized = true;
+
 
 
         struct JointWrapper {
