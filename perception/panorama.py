@@ -5,9 +5,9 @@ from sensor_msgs.msg import PointCloud2, Image
 from std_msgs.msg import Header
 import sensor_msgs
 import tf2_ros
-from lie import SE3
+# from lie import SE3
 from sensor_msgs.msg import Imu
-from mrover.srv import PanoramaStart, PanoramaEnd
+from mrover.srv import PanoramaStart, PanoramaEnd, Pano, ServoPosition
 
 import rclpy
 from rclpy.node import Node
@@ -70,14 +70,16 @@ class Panorama(Node):
         # Pano Action Server
         self.start_pano = self.create_service(PanoramaStart, '/panorama/start', self.start_callback)
         self.end_pano = self.create_service(PanoramaEnd, '/panorama/end', self.end_callback)
+        # self.start_pano = self.create_service(Pano, 'panorama', self.pano_callback)
+        self.gimbal_client = self.create_client(ServoPosition, "gimbal_servo")
 
         # Start the panorama
         self.record_image = False
         self.record_pc = False
 
         # PC Stitching Variables
-        self.pc_sub = message_filters.Subscriber(self, PointCloud2, "/zed_mini/left/points")
-        self.imu_sub = message_filters.Subscriber(self, Imu, "/zed_mini_imu/data_raw")
+        self.pc_sub = message_filters.Subscriber(self, PointCloud2, "/zed/left/points")
+        self.imu_sub = message_filters.Subscriber(self, Imu, "/zed_imu/data_raw")
         self.pc_publisher = self.create_publisher(PointCloud2, "/stitched_pc", 1)
         self.pano_img_debug_publisher = self.create_publisher(Image, "/debug_pano", 1)
         self.pc_rate = PanoRate(2, self)
@@ -87,10 +89,12 @@ class Panorama(Node):
         self.sync.registerCallback(self.synced_gps_pc_callback)
 
         # Image Stitching Variables
-        self.img_sub = self.create_subscription(Image, "/zed_mini/left/image", self.image_callback, 1);
+        self.img_sub = self.create_subscription(Image, "/zed/left/image", self.image_callback, 1)
         self.img_list = []
         self.stitcher = cv2.Stitcher.create()
         self.img_rate = PanoRate(2, self)
+
+        os.mkdir(f"data/raw-pano-images")
 
 
     def rotate_pc(self, trans_mat: np.ndarray, pc: np.ndarray):
