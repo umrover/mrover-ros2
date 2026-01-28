@@ -4,11 +4,39 @@
 
 #include "pch.hpp"
 
+#include <gst/gst.h>
+
+#include <X11/Xlib.h>
+#undef Bool
+#undef Status
+#undef CursorShape
+#undef None
+#undef KeyPress
+#undef KeyRelease
+#undef FocusIn
+#undef FocusOut
+#undef FontChange
+#undef Expose
+#undef Unsorted
+
 #include "CameraClientMainWindow.hpp"
 #include "CameraClientNode.hpp"
 
+namespace {
+    XErrorHandler gPreviousHandler = nullptr;
+
+    int filterXErrors(Display* dpy, XErrorEvent* event) {
+        if (event->error_code == BadWindow || event->error_code == BadDrawable) return 0;
+        if (gPreviousHandler) return gPreviousHandler(dpy, event);
+        return 0;
+    }
+}
+
 auto main(int argc, char** argv) -> int {
     QApplication app(argc, argv);
+
+    gPreviousHandler = XSetErrorHandler(filterXErrors);
+    gst_init(nullptr, nullptr);
 
     rclcpp::init(argc, argv);
 
@@ -60,6 +88,8 @@ auto main(int argc, char** argv) -> int {
     QObject::connect(&spinTimer, &QTimer::timeout, [&exec]() {
         if (rclcpp::ok()) {
             exec.spin_some();
+        } else {
+            QApplication::quit();
         }
     });
     spinTimer.start(10); // 10ms

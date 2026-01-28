@@ -22,7 +22,7 @@
 #include <QLabel>
 #include <QLineEdit>
 #include <QMainWindow>
-#include <QMediaPlayer>
+#include <QDebug>
 #include <QMenu>
 #include <QMenuBar>
 #include <QMimeData>
@@ -34,8 +34,9 @@
 #include <QStandardPaths>
 #include <QToolBar>
 #include <QVBoxLayout>
-#include <QVideoWidget>
 #include <QWidget>
+
+#include <gst/gst.h>
 
 #include <opencv2/core.hpp>
 

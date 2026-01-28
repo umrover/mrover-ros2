@@ -153,9 +153,16 @@ namespace mrover {
                 }
             }
             pipeline.pushBack(gst::video::createDefaultEncoder(mCodec));
-            if (mCodec == gst::video::Codec::H264) {
+            if (mCodec == gst::video::Codec::H265) {
+                pipeline.addPropsToElement(pipeline.size() - 1,
+                                           gst::addProperty("speed-preset", "ultrafast"),
+                                           gst::addProperty("tune", "zerolatency"),
+                                           gst::addProperty("bitrate", mBitrate / 1000),
+                                           gst::addProperty("name", "encoder"));
+            } else if (mCodec == gst::video::Codec::H264) {
                 pipeline.addPropsToElement(pipeline.size() - 1,
                                            gst::addProperty("tune", "zerolatency"),
+                                           gst::addProperty("speed-preset", "ultrafast"),
                                            gst::addProperty("bitrate", mBitrate),
                                            gst::addProperty("name", "encoder"));
             }
