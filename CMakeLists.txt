@@ -171,7 +171,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
     ${MROVER_MESSAGE_FILE_PATHS}
     ${MROVER_SERVICE_FILE_PATHS}
     ${MROVER_ACTION_FILE_PATHS}
-    DEPENDENCIES nav_msgs sensor_msgs geometry_msgs
+    DEPENDENCIES nav_msgs sensor_msgs geometry_msgs unique_identifier_msgs
 )
 
 # Starter project 
