@@ -17,7 +17,7 @@ namespace mrover {
     CameraClientNode::CameraClientNode()
         : QObject(nullptr),
           Node("camera_client") {
-
+        mClickIkClient = rclcpp_action::create_client<action::ClickIk>(this, "/click_ik");
         RCLCPP_INFO(get_logger(), "Camera client initialized");
     }
 
@@ -115,6 +115,28 @@ namespace mrover {
 
         // emit signal with a copy (since the original data will go out of scope)
         emit imageCaptured(QString::fromStdString(cameraName), qImg.copy());
+    }
+
+    void CameraClientNode::sendClickIk(std::uint32_t x, std::uint32_t y) {
+        if (!mClickIkClient->action_server_is_ready()) {
+            RCLCPP_WARN(get_logger(), "ClickIk action server not ready");
+            return;
+        }
+        auto goal = action::ClickIk::Goal{};
+        goal.point_in_image_x = x;
+        goal.point_in_image_y = y;
+        RCLCPP_INFO(get_logger(), "Sending ClickIk goal: (%u, %u)", x, y);
+
+        auto options = rclcpp_action::Client<action::ClickIk>::SendGoalOptions{};
+        options.feedback_callback =
+                [this](auto, auto feedback) {
+                    emit clickIkFeedback(feedback->distance);
+                };
+        options.result_callback =
+                [this](auto const& result) {
+                    emit clickIkResult(result.result->success);
+                };
+        mClickIkClient->async_send_goal(goal, options);
     }
 
 } // namespace mrover

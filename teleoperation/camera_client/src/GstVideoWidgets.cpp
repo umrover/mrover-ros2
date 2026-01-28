@@ -108,6 +108,36 @@ auto GstVideoWidget::isError() const -> bool {
     return mIsError;
 }
 
+auto GstVideoWidget::setImageSize(int w, int h) -> void {
+    mImageWidth = w;
+    mImageHeight = h;
+}
+
+void GstVideoWidget::mousePressEvent(QMouseEvent* event) {
+    if (event->button() == Qt::LeftButton && mImageWidth > 0 && mImageHeight > 0) {
+        int widgetW = width();
+        int widgetH = height();
+
+        double scaleX = static_cast<double>(widgetW) / mImageWidth;
+        double scaleY = static_cast<double>(widgetH) / mImageHeight;
+        double scale = std::min(scaleX, scaleY);
+
+        double renderW = mImageWidth * scale;
+        double renderH = mImageHeight * scale;
+
+        double offsetX = (widgetW - renderW) / 2.0;
+        double offsetY = (widgetH - renderH) / 2.0;
+
+        double imgX = (event->pos().x() - offsetX) / scale;
+        double imgY = (event->pos().y() - offsetY) / scale;
+
+        if (imgX >= 0 && imgX < mImageWidth && imgY >= 0 && imgY < mImageHeight) {
+            emit clicked(static_cast<std::uint32_t>(imgX), static_cast<std::uint32_t>(imgY));
+        }
+    }
+    QWidget::mousePressEvent(event);
+}
+
 auto GstVideoWidget::play() -> void {
     if (mPipeline) gst_element_set_state(mPipeline, GST_STATE_PLAYING);
 }

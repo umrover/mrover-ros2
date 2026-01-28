@@ -29,11 +29,15 @@ namespace mrover {
         bool mIsError = false;
         QString mErrorString;
 
+        int mImageWidth = 0;
+        int mImageHeight = 0;
+
     public:
         explicit GstVideoWidget(QWidget* parent = nullptr);
         ~GstVideoWidget() override;
 
         auto setGstPipeline(std::string const& pipeline) -> void;
+        auto setImageSize(int w, int h) -> void;
 
         [[nodiscard]] auto errorString() const -> QString;
         [[nodiscard]] auto isError() const -> bool;
@@ -42,8 +46,12 @@ namespace mrover {
         auto pause() -> void;
         auto stop() -> void;
 
+    signals:
+        void clicked(std::uint32_t imageX, std::uint32_t imageY);
+
     protected:
         void showEvent(QShowEvent* event) override;
+        void mousePressEvent(QMouseEvent* event) override;
 
     private:
         void startPipeline();

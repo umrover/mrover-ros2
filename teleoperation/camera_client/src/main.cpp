@@ -69,11 +69,32 @@ auto main(int argc, char** argv) -> int {
                                  .onScreenshot = [node, name]() { return node->requestScreenshot(name); },
                          };
 
-                         mainWindow->createCamera(name, info.pipeline, std::move(callbacks));
+                         if (name == "zed") {
+                             auto* panel = mainWindow->getClickIkPanel();
+                             auto* videoWidget = new mrover::GstVideoWidget();
+                             videoWidget->setGstPipeline(info.pipeline);
+                             videoWidget->setImageSize(1280, 720);
+                             panel->placeZedWidget(videoWidget);
+
+                             QObject::connect(videoWidget, &mrover::GstVideoWidget::clicked,
+                                              panel, [panel, nodePtr = node.get()](std::uint32_t x, std::uint32_t y) {
+                                                  if (panel->canSendClick()) {
+                                                      panel->markRunning();
+                                                      nodePtr->sendClickIk(x, y);
+                                                  }
+                                              });
+                         } else {
+                             mainWindow->createCamera(name, info.pipeline, std::move(callbacks));
+                         }
                      });
 
     QObject::connect(node.get(), &mrover::CameraClientNode::imageCaptured,
                      mainWindow.get(), &mrover::CameraClientMainWindow::showImagePreview);
+
+    QObject::connect(node.get(), &mrover::CameraClientNode::clickIkFeedback,
+                     mainWindow->getClickIkPanel(), &mrover::ClickIkPanel::updateFeedback);
+    QObject::connect(node.get(), &mrover::CameraClientNode::clickIkResult,
+                     mainWindow->getClickIkPanel(), &mrover::ClickIkPanel::updateResult);
 
     node->discoverCameras();
 

@@ -19,12 +19,17 @@ namespace mrover {
         mGstRtpVideoCreatorDock->setPalette(pal);
 
 
+        mClickIkDock = new QDockWidget("ClickIK", this);
+        mClickIkPanel = new ClickIkPanel();
+        mClickIkDock->setWidget(mClickIkPanel);
+
         mCentralScrollArea->setWidget(mCameraGridWidget);
         mCentralScrollArea->setWidgetResizable(true);
         setCentralWidget(mCentralScrollArea);
 
         addDockWidget(Qt::LeftDockWidgetArea, mCameraSelectorDock);
         splitDockWidget(mCameraSelectorDock, mGstRtpVideoCreatorDock, Qt::Vertical);
+        addDockWidget(Qt::RightDockWidgetArea, mClickIkDock);
 
         connect(mGstRtpVideoCreatorWidget, &GstRtpVideoCreatorWidget::createRequested,
                 this, [this](std::string const& name, std::string const& pipeline) {
@@ -73,6 +78,10 @@ namespace mrover {
 
     auto CameraClientMainWindow::getCameraGridWidget() -> GstVideoGridWidget* {
         return mCameraGridWidget;
+    }
+
+    auto CameraClientMainWindow::getClickIkPanel() -> ClickIkPanel* {
+        return mClickIkPanel;
     }
 
     void CameraClientMainWindow::showImagePreview(QString const& cameraName, QImage const& image) {
