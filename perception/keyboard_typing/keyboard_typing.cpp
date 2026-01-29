@@ -161,7 +161,7 @@ namespace mrover{
             SE3d arm_fk_to_tag{arm_fk_pos, transformed_rotation};
 
             // Publish to tf tree
-            SE3Conversions::pushToTfTree(tf_broadcaster, "keyboard_tag", "arm_fk", gripper_to_cam*arm_fk_to_tag, get_clock()->now());
+            SE3Conversions::pushToTfTree(tf_broadcaster, "keyboard_tag", "arm_gripper_link", gripper_to_cam*arm_fk_to_tag, get_clock()->now());
 
             // Initialize transforms for every key, temporarily here for now
             SE3d z_to_tag{zKeyTransformation_new, Eigen::Quaterniond::Identity()};
@@ -381,7 +381,7 @@ namespace mrover{
                 // send_z_key_command();
             }
             if(key == 't'){
-                send_z_key_command();
+                align_to_z();
             }
             // if(logPose){
             //     outputToCSV(combined_tvec, combined_rvec);
@@ -574,7 +574,7 @@ namespace mrover{
         }
     }
 
-    auto KeyboardTypingNode:: send_z_key_command() -> void {
+    auto KeyboardTypingNode:: align_to_z() -> void {
         // Grab gripper_to_tag and then calculate deltas
         SE3d armbase_to_z;
         SE3d armbase_to_armfk;
@@ -746,6 +746,9 @@ namespace mrover{
 
             std::string launchCode = goal_handle->get_goal()->launch_code;
             std::transform(launchCode.begin(), launchCode.end(), launchCode.begin(), ::toupper);
+
+            // Align arm over z key
+            align_to_z();
 
             for (size_t i = 0; i < launchCode.length(); i++) {
                 feedback->current_index = static_cast<uint32_t>(i);

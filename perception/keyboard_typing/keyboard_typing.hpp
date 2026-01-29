@@ -102,7 +102,7 @@ namespace mrover{
 
         auto align_arm() -> void;
 
-        auto send_z_key_command() -> void;
+        auto align_to_z() -> void;
 
         public:
 
@@ -111,3 +111,4 @@ namespace mrover{
 }
 
 extern Eigen::Vector3d zKeyTransformation_new;
+extern std::unordered_map<std::string, cv::Vec3d> keyboard;

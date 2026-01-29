@@ -91,4 +91,4 @@ Eigen::Vector3d zKeyTransformation = {0.06495,0.041575,0.0303784};
 // Eigen::Vector3d zKeyTransformation_new = {0.0303784,-0.06495,0.041575};
 
 // SIM UNITS, SUBJECT TO CHANGE
-Eigen::Vector3d zKeyTransformation_new = {0.07995,-0.061575, 0.0303784};
+Eigen::Vector3d zKeyTransformation_new = {0.07955,-0.061575, 0.0303784};
