@@ -19,53 +19,42 @@
         >Values</button>
       </div>
     </div>
-    <div class="overflow-x-auto">
-      <table class='table table-bordered table-sm m-0 w-auto text-nowrap compact-table'>
-        <tbody>
-        <tr>
-          <th class='table-secondary text-nowrap sticky-col px-2 py-1'>Motor</th>
-          <td v-for='(n, i) in names' :key='i' class="text-center small px-2 py-1">
-            {{ n }}
-          </td>
-        </tr>
-        <tr v-if="showStatus">
-          <th class='table-secondary text-nowrap sticky-col px-2 py-1'>State</th>
-          <td v-for='(s, i) in states' :key='i' class="text-center small px-2 py-1">
-            {{ s }}
-          </td>
-        </tr>
-        <tr v-if="showStatus">
-          <th class='table-secondary text-nowrap sticky-col px-2 py-1'>Error</th>
-          <td v-for='(e, i) in errors' :key='i' class="text-center small px-2 py-1">
-            {{ e }}
-          </td>
-        </tr>
-        <tr v-if="showStatus">
-          <th class='table-secondary text-nowrap sticky-col px-2 py-1'>Limit Hit</th>
-          <td v-for='(l, i) in limitHits' :key='i' class="text-center small px-2 py-1">
-            {{ l }}
-          </td>
-        </tr>
-        <tr v-if="showValues">
-          <th class='table-secondary text-nowrap sticky-col px-2 py-1'>Position</th>
-          <td v-for='(p, i) in positions' :key='i' class="text-center small px-2 py-1">
-            {{ p.toFixed(2) }}
-          </td>
-        </tr>
-        <tr v-if="showValues">
-          <th class='table-secondary text-nowrap sticky-col px-2 py-1'>Velocity</th>
-          <td v-for='(v, i) in velocities' :key='i' class="text-center small px-2 py-1">
-            {{ v.toFixed(2) }}
-          </td>
-        </tr>
-        <tr v-if="showValues">
-          <th class='table-secondary text-nowrap sticky-col px-2 py-1'>Current</th>
-          <td v-for='(c, i) in currents' :key='i' class="text-center small px-2 py-1">
-            {{ c.toFixed(2) }}
-          </td>
-        </tr>
-        </tbody>
-      </table>
+
+    <!-- Replaced the previous table with an interactive SVG rover view -->
+    <div class="d-flex gap-2">
+      <div class="flex-grow-1 d-flex align-items-center justify-content-center p-2" style="min-width:0;">
+        <svg viewBox="0 0 200 110" class="rover-svg" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Rover diagram">
+          <!-- body -->
+          <rect x="30" y="25" width="140" height="60" rx="6" fill="#e9ecef" stroke="#adb5bd" />
+          <!-- visual wheel placeholders; clickable -->
+          <g v-for="(w, idx) in wheelPositions" :key="w.id" :transform="`translate(${w.x}, ${w.y})`" class="wheel-group" @click="selectedIndex = idx" :title="`Select ${w.label}`" style="cursor: pointer;">
+            <circle :r="8" :fill="selectedIndex === idx ? '#0d6efd' : '#fff'" stroke="#495057" stroke-width="1.5" />
+            <text x="0" y="3" font-size="6" text-anchor="middle" fill="#495057">{{ w.short }}</text>
+          </g>
+
+          <!-- labels for front/back -->
+          <text x="100" y="18" font-size="7" text-anchor="middle" fill="#495057">{{ header }}</text>
+        </svg>
+      </div>
+
+      <div class="details-panel p-2 border-start" style="width: 220px; min-width: 140px;">
+        <div class="mb-1 small text-muted">Selected Part</div>
+        <div class="fw-bold mb-2">{{ selectedData.name ?? 'None' }}</div>
+
+        <div v-if="showStatus" class="small mb-2">
+          <div><span class="text-muted">State:</span> <span>{{ selectedData.state }}</span></div>
+          <div><span class="text-muted">Error:</span> <span>{{ selectedData.error }}</span></div>
+          <div><span class="text-muted">Limit Hit:</span> <span>{{ selectedData.limitHit ? 'Yes' : 'No' }}</span></div>
+        </div>
+
+        <div v-if="showValues" class="small">
+          <div><span class="text-muted">Position:</span> <span>{{ formatNumber(selectedData.position) }}</span></div>
+          <div><span class="text-muted">Velocity:</span> <span>{{ formatNumber(selectedData.velocity) }}</span></div>
+          <div><span class="text-muted">Current:</span> <span>{{ formatNumber(selectedData.current) }}</span></div>
+        </div>
+
+        <div v-if="selectedIndex === -1" class="small text-muted mt-2">Click a wheel to view data.</div>
+      </div>
     </div>
   </div>
 </template>
@@ -162,6 +151,51 @@ watch(scienceMessage, (msg) => {
     updateFromMessage(typed)
   }
 })
+
+// --- New interactive view state ---
+
+// Selected wheel/index (-1 means none)
+const selectedIndex = ref<number>(-1)
+
+// Wheel visual positions and labels in SVG coordinates
+const wheelPositions = [
+  { id: 'front_left', label: 'Front Left Wheel', short: 'FL', x: 50, y: 30 },
+  { id: 'front_right', label: 'Front Right Wheel', short: 'FR', x: 150, y: 30 },
+  { id: 'mid_left', label: 'Middle Left Wheel', short: 'ML', x: 50, y: 55 },
+  { id: 'mid_right', label: 'Middle Right Wheel', short: 'MR', x: 150, y: 55 },
+  { id: 'rear_left', label: 'Rear Left Wheel', short: 'RL', x: 50, y: 80 },
+  { id: 'rear_right', label: 'Rear Right Wheel', short: 'RR', x: 150, y: 80 },
+]
+
+// Helper to safely format numbers
+function formatNumber(v: unknown) {
+  if (typeof v === 'number' && Number.isFinite(v)) return v.toFixed(2)
+  return '—'
+}
+
+const selectedData = computed(() => {
+  const idx = selectedIndex.value
+  if (idx < 0 || idx >= names.value.length) {
+    return {
+      name: null,
+      state: '—',
+      error: '—',
+      limitHit: false,
+      position: null,
+      velocity: null,
+      current: null,
+    }
+  }
+  return {
+    name: names.value[idx] ?? `#${idx}`,
+    state: states.value[idx] ?? '—',
+    error: errors.value[idx] ?? '—',
+    limitHit: !!limitHits.value[idx],
+    position: positions.value[idx] ?? null,
+    velocity: velocities.value[idx] ?? null,
+    current: currents.value[idx] ?? null,
+  }
+})
 </script>
 
 <style scoped>
@@ -179,5 +213,26 @@ watch(scienceMessage, (msg) => {
 .compact-table td {
   white-space: nowrap;
   width: 1%;
+}
+
+/* New styles for interactive rover view */
+.rover-svg {
+  width: 100%;
+  height: 220px;
+  max-height: 260px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.6), rgba(250,250,250,0.9));
+  border-radius: 6px;
+  box-sizing: border-box;
+}
+
+.wheel-group:hover circle {
+  stroke-width: 2;
+  transform: scale(1.08);
+  transform-origin: center;
+}
+
+/* small details panel */
+.details-panel {
+  background: transparent;
 }
 </style>
