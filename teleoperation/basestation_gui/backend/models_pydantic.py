@@ -37,6 +37,10 @@ class AutonEnableRequest(BaseModel):
 class TeleopEnableRequest(BaseModel):
     enabled: bool
 
+class GimbalPositionRequest(BaseModel):
+    joint: str
+    position: float
+
 class GimbalAdjustRequest(BaseModel):
     joint: str
     adjustment: float

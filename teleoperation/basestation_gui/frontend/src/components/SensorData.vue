@@ -1,78 +1,71 @@
 <template>
-  <div class="d-flex flex-row gap-2 justify-content-between align-items-start pb-1">
-    <h3>Sensor Data</h3>
-    <div class="d-flex flex-row gap-2">
-      <button class="btn btn-primary text-nowrap" @click="showModal = true">
+  <div class="d-flex align-items-center gap-2 mb-2">
+    <h4 class="component-header">Sensor<br>Data</h4>
+    <div class="d-flex flex-column gap-1">
+      <button class="btn btn-outline-control btn-sm border-2" @click="showModal = true">
         View All
       </button>
-      <button class="btn btn-secondary text-nowrap" @click="downloadCSV">
+      <button class="btn btn-outline-secondary btn-sm border-2" @click="downloadCSV">
         <i class="bi bi-download"></i> CSV
       </button>
     </div>
+    <div class="d-flex gap-2 flex-grow-1">
+      <div class="flex-fill d-flex flex-column align-items-center bg-theme-view rounded p-1">
+        <span class="small fw-semibold text-uppercase text-muted sensor-label">Oxygen</span>
+        <span class="fw-bold">{{ sensor_data.sp_oxygen.toFixed(2) }}<span class="text-muted ms-1 small">%</span></span>
+      </div>
+      <div class="flex-fill d-flex flex-column align-items-center bg-theme-view rounded p-1">
+        <span class="small fw-semibold text-uppercase text-muted sensor-label">UV</span>
+        <span class="fw-bold">{{ sensor_data.sp_uv.toFixed(2) }}<span class="text-muted ms-1 small">idx</span></span>
+      </div>
+      <div class="flex-fill d-flex flex-column align-items-center bg-theme-view rounded p-1">
+        <span class="small fw-semibold text-uppercase text-muted sensor-label">Humidity</span>
+        <span class="fw-bold">{{ sensor_data.sp_humidity.toFixed(2) }}<span class="text-muted ms-1 small">%</span></span>
+      </div>
+      <div class="flex-fill d-flex flex-column align-items-center bg-theme-view rounded p-1">
+        <span class="small fw-semibold text-uppercase text-muted sensor-label">Temp</span>
+        <span class="fw-bold">{{ sensor_data.sp_temp.toFixed(2) }}<span class="text-muted ms-1 small">&deg;C</span></span>
+      </div>
+      <div class="flex-fill d-flex flex-column align-items-center bg-theme-view rounded p-1">
+        <span class="small fw-semibold text-uppercase text-muted sensor-label">Ozone</span>
+        <span class="fw-bold">{{ sensor_data.sp_ozone.toFixed(2) }}<span class="text-muted ms-1 small">ppb</span></span>
+      </div>
+      <div class="flex-fill d-flex flex-column align-items-center bg-theme-view rounded p-1">
+        <span class="small fw-semibold text-uppercase text-muted sensor-label">CO2</span>
+        <span class="fw-bold">{{ sensor_data.sp_co2.toFixed(2) }}<span class="text-muted ms-1 small">ppm</span></span>
+      </div>
+      <div class="flex-fill d-flex flex-column align-items-center bg-theme-view rounded p-1">
+        <span class="small fw-semibold text-uppercase text-muted sensor-label">Pressure</span>
+        <span class="fw-bold">{{ sensor_data.sp_pressure.toFixed(0) }}<span class="text-muted ms-1 small">Pa</span></span>
+      </div>
+    </div>
   </div>
-  <div class="d-flex align-items-start">
-    <table class="table table-bordered table-sm mx-3 mb-0">
-      <thead>
-        <tr class="table-success">
-          <th>SP Sensors</th>
-          <th>Oxygen (%)</th>
-          <th>UV (index)</th>
-          <th>Humidity (%)</th>
-          <th>Temp (°C)</th>
-          <th>Ozone (ppb)</th>
-          <th>CO2 (ppm)</th>
-          <th>Pressure (Pa)</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <th class="table-secondary">Live Data</th>
-          <td>{{ sensor_data.sp_oxygen.toFixed(2) }}</td>
-          <td>{{ sensor_data.sp_uv.toFixed(2) }}</td>
-          <td>{{ sensor_data.sp_humidity.toFixed(2) }}</td>
-          <td>{{ sensor_data.sp_temp.toFixed(2) }}</td>
-          <td>{{ sensor_data.sp_ozone.toFixed(2) }}</td>
-          <td>{{ sensor_data.sp_co2.toFixed(2) }}</td>
-          <td>{{ sensor_data.sp_pressure.toFixed(2) }}</td>
-        </tr>
-      </tbody>
-    </table>
 
-  </div>
-
-  <div class="d-flex flex-column gap-2 mt-2 flex-fill" style="min-height: 0">
-    <div class="d-flex gap-2" style="flex: 1; min-height: 0">
-      <div class="bg-theme-card border rounded p-2 d-flex flex-column" style="flex: 1; min-width: 0">
-        <div class="d-flex justify-content-between align-items-center mb-1">
-          <strong style="font-size: 14px; color: var(--text-primary)">Humidity (%)</strong>
-        </div>
-        <div style="flex: 1; min-height: 0">
+  <div class="d-flex flex-column gap-2 flex-grow-1 min-height-0">
+    <div class="d-flex gap-2 flex-fill min-height-0 flex-basis-0">
+      <div class="cmd-panel d-flex flex-column flex-fill min-width-0 p-1 flex-basis-0">
+        <span class="cmd-data-label mb-1">Humidity (%)</span>
+        <div class="flex-grow-1 min-height-0">
           <canvas id="chart0"></canvas>
         </div>
       </div>
-      <div class="bg-theme-card border rounded p-2 d-flex flex-column" style="flex: 1; min-width: 0">
-        <div class="d-flex justify-content-between align-items-center mb-1">
-          <strong style="font-size: 14px; color: var(--text-primary)">UV Index</strong>
-        </div>
-        <div style="flex: 1; min-height: 0">
+      <div class="cmd-panel d-flex flex-column flex-fill min-width-0 p-1 flex-basis-0">
+        <span class="cmd-data-label mb-1">UV Index</span>
+        <div class="flex-grow-1 min-height-0">
           <canvas id="chart1"></canvas>
         </div>
       </div>
     </div>
-    <div class="d-flex gap-2" style="flex: 1; min-height: 0">
-      <div class="bg-theme-card border rounded p-2 d-flex flex-column" style="flex: 1; min-width: 0">
-        <div class="d-flex justify-content-between align-items-center mb-1">
-          <strong style="font-size: 14px; color: var(--text-primary)">Ozone (ppb)</strong>
-        </div>
-        <div style="flex: 1; min-height: 0">
+    <div class="d-flex gap-2 flex-fill min-height-0 flex-basis-0">
+      <div class="cmd-panel d-flex flex-column flex-fill min-width-0 p-1 flex-basis-0">
+        <span class="cmd-data-label mb-1">Ozone (ppb)</span>
+        <div class="flex-grow-1 min-height-0">
           <canvas id="chart2"></canvas>
         </div>
       </div>
-      <div class="bg-theme-card border rounded p-2 d-flex flex-column" style="flex: 1; min-width: 0">
-        <div class="d-flex justify-content-between align-items-center mb-1">
-          <strong style="font-size: 14px; color: var(--text-primary)">Pressure (Pa)</strong>
-        </div>
-        <div style="flex: 1; min-height: 0">
+      <div class="cmd-panel d-flex flex-column flex-fill min-width-0 p-1 flex-basis-0">
+        <span class="cmd-data-label mb-1">Pressure (Pa)</span>
+        <div class="flex-grow-1 min-height-0">
           <canvas id="chart3"></canvas>
         </div>
       </div>
@@ -112,13 +105,13 @@ const sensor_data = ref<SensorData>({
   sp_pressure: 0,
 })
 const sensor_history = ref<number[][]>([
-  Array(20).fill(0), // sp_oxygen
-  Array(20).fill(0), // sp_humidity
-  Array(20).fill(0), // sp_temp
-  Array(20).fill(0), // sp_uv
-  Array(20).fill(0), // sp_ozone
-  Array(20).fill(0), // sp_co2
-  Array(20).fill(0), // sp_pressure
+  Array(20).fill(0),
+  Array(20).fill(0),
+  Array(20).fill(0),
+  Array(20).fill(0),
+  Array(20).fill(0),
+  Array(20).fill(0),
+  Array(20).fill(0),
 ])
 const timeCounter = ref(0)
 
@@ -324,3 +317,22 @@ onBeforeUnmount(() => {
   charts.length = 0
 })
 </script>
+
+<style scoped>
+.sensor-label {
+  font-size: 0.65rem;
+  letter-spacing: 0.05em;
+}
+
+.min-height-0 {
+  min-height: 0;
+}
+
+.min-width-0 {
+  min-width: 0;
+}
+
+.flex-basis-0 {
+  flex: 1 1 0 !important;
+}
+</style>

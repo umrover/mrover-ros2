@@ -107,6 +107,27 @@ def save_auton_waypoints(data: AutonWaypointList):
             conn.close()
 
 
+@router.delete("/auton/clear/")
+def clear_auton_waypoints():
+    """Clear all user-added auton waypoints (deletable=1), keep defaults."""
+    conn = get_db_connection()
+    conn.execute('DELETE FROM auton_waypoints WHERE deletable = 1')
+    conn.execute('DELETE FROM current_auton_course')
+    conn.commit()
+    conn.close()
+    return {'status': 'success', 'message': 'User waypoints and current course cleared'}
+
+@router.delete("/auton/clear/all/")
+def clear_all_auton_waypoints():
+    """Clear ALL auton waypoints including defaults. Use with caution."""
+    conn = get_db_connection()
+    conn.execute('DELETE FROM auton_waypoints')
+    conn.execute('DELETE FROM current_auton_course')
+    conn.execute('DELETE FROM sqlite_sequence WHERE name = "auton_waypoints"')
+    conn.commit()
+    conn.close()
+    return {'status': 'success', 'message': 'All waypoints cleared'}
+
 @router.delete("/auton/{waypoint_id}/")
 def delete_auton_waypoint(waypoint_id: int):
     conn = None

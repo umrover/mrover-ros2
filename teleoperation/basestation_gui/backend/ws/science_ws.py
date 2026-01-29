@@ -9,7 +9,7 @@ class ScienceHandler(WebSocketHandler):
         super().__init__(websocket, 'science')
 
     async def setup(self):
-        self.sp_thr_pub = self.node.create_publisher(Throttle, "/sp_thr_cmd", 10)
+        self.sp_thr_pub = self.node.create_publisher(Throttle, "/sp_thr_cmd", 1)
         self.publishers.append(self.sp_thr_pub)
 
         self.forward_ros_topic("/sp_humidity_data", Humidity, "sp_humidity")

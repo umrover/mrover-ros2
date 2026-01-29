@@ -1,34 +1,36 @@
 <template>
-  <div class="waypoints p-2 mb-2">
-    <div class="waypoint-header mb-1">
-      <h5 class="mb-0">{{ waypoint.name }}</h5>
-      <small class="text-muted">ID: {{ waypoint.id }}</small>
+  <div class="cmd-list-item p-2 rounded border border-2" data-testid="pw-waypoint-store-item">
+    <div class="d-flex justify-content-between align-items-center mb-1">
+      <h5 class="cmd-list-item-title m-0" data-testid="pw-waypoint-name">{{ waypoint.name }}</h5>
+      <span class="cmd-data-label">ID: {{ waypoint.id }}</span>
     </div>
-    <div>
-      <div class="input-group mb-1">
+    <div class="mb-2">
+      <div class="input-group input-group-sm mb-1">
         <input
-          class="form-control"
-          v-model.number="localLat" :id="'lat-' + waypoint.id"
+          class="form-control cmd-input border-2"
+          v-model.number="localLat"
+          :id="'lat-' + waypoint.id"
         />
-        <span class="input-group-text">ºN</span>
+        <span class="input-group-text border-2">ºN</span>
       </div>
-      <div class="input-group mb-1">
+      <div class="input-group input-group-sm">
         <input
-          class="form-control"
-          v-model.number="localLon" :id="'lon-' + waypoint.id"
+          class="form-control cmd-input border-2"
+          v-model.number="localLon"
+          :id="'lon-' + waypoint.id"
         />
-        <span class="input-group-text">ºW</span>
+        <span class="input-group-text border-2">ºW</span>
       </div>
-      <div class="waypoint-button-row">
-        <button class="btn btn-success" @click="addWaypoint">Add</button>
-        <button
-          class="btn btn-danger"
-          :disabled="waypoint.deletable === false"
-          @click="$emit('delete', index)"
-        >
-          Delete
-        </button>
-      </div>
+    </div>
+    <div class="d-flex gap-1">
+      <button class="btn btn-success btn-sm border-2 cmd-btn-text" @click="addWaypoint">Add</button>
+      <button
+        class="btn btn-danger btn-sm border-2 cmd-btn-text"
+        :disabled="waypoint.deletable === false"
+        @click="$emit('delete', index)"
+      >
+        Delete
+      </button>
     </div>
   </div>
 </template>
@@ -87,29 +89,31 @@ export default defineComponent({
 </script>
 
 <style scoped>
-.waypoints {
+.cmd-list-item {
   background-color: var(--card-bg);
-  border-radius: 6px;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 }
 
-.waypoint-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+.cmd-list-item-title {
+  font-size: 0.875rem;
+  font-weight: 600;
 }
 
-.waypoint-button-row {
-  display: flex;
-  justify-content: space-between;
-  gap: 0.5rem;
-}
-
-.waypoint-button-row .btn {
-  flex: 1;
+.cmd-data-label {
+  font-size: 0.6875rem;
+  color: var(--text-muted);
 }
 
 .input-group-text {
-  min-width: 50px;
+  font-size: 0.75rem;
+  min-width: 40px;
+  justify-content: center;
+}
+
+.cmd-btn-text {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  flex: 1 1 0;
 }
 </style>

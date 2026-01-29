@@ -1,13 +1,17 @@
 <template>
-  <div class="velocity-wrapper">
-    <h4>Velocity</h4>
-    <div class="velocity-row pb-1">
-      <span class="label">Linear:</span>
-      <span class="value">{{ linear_x.toFixed(3) }} m/s</span>
-    </div>
-    <div class="velocity-row">
-      <span class="label">Angular:</span>
-      <span class="value">{{ angular_z.toFixed(3) }} rad/s</span>
+  <div class="rounded d-flex flex-row gap-5 w-100 h-100 align-items-center">
+    <h4 class="component-header">Velocity</h4>
+    <div class="d-flex flex-column gap-1 flex-grow-1">
+      <div class="d-flex align-items-baseline gap-1 text-nowrap">
+        <span class="cmd-data-label">Linear</span>
+        <span class="cmd-data-value velocity-value">{{ linear_x.toFixed(3) }}</span>
+        <span class="cmd-data-unit">m/s</span>
+      </div>
+      <div class="d-flex align-items-baseline gap-1 text-nowrap">
+        <span class="cmd-data-label">Angular</span>
+        <span class="cmd-data-value velocity-value">{{ angular_z.toFixed(3) }}</span>
+        <span class="cmd-data-unit">rad/s</span>
+      </div>
     </div>
   </div>
 </template>
@@ -36,25 +40,8 @@ watch(navMessage, (msg) => {
 </script>
 
 <style scoped>
-.velocity-wrapper {
-  background-color: var(--view-bg);
-  padding: 0.5rem;
-  border-radius: 8px;
-  max-width: 320px;
-}
-
-h3 {
-  font-family: monospace;
-  letter-spacing: -0.1rem;
-}
-
-.velocity-row {
-  display: flex;
-  flex-direction: column;
-}
-
-.label {
-  font-weight: bold;
-  letter-spacing: -0.03rem;
+.velocity-value {
+  font-family: var(--cmd-font-mono);
+  font-size: 1rem;
 }
 </style>

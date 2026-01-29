@@ -8,15 +8,14 @@ create instance of rosaction in callback area -->
 
 <template>
   <div class="auton-typing-container">
-    <!-- left col -->
-    <div class="column left">
-      <h5>Typing Input</h5>
+    <div class="d-flex flex-column align-items-center text-center w-100">
+      <h4 class="component-header mb-2">Typing Input</h4>
       <form>
         <div class="form-group">
           <input
             v-model="typingMessage"
             type="text"
-            class="form-control"
+            class="form-control cmd-input border-2"
             id="autonTyping"
             placeholder="Message"
             maxlength="6"
@@ -24,12 +23,12 @@ create instance of rosaction in callback area -->
             :disabled="codeSent"
           />
         </div>
-        <span class="form-text">Must be 3-6 characters long.</span>
+        <span class="typing-hint">Must be 3-6 characters long.</span>
 
-        <div class="button-group">
+        <div class="d-flex justify-content-center">
           <button
             v-if="!codeSent"
-            class="btn btn-primary custom-btn"
+            class="btn btn-sm btn-outline-control border-2 typing-btn"
             :disabled="typingMessage.length < 3"
             @click.prevent="submitMessage()"
           >
@@ -37,7 +36,7 @@ create instance of rosaction in callback area -->
           </button>
           <button
             v-if="codeSent"
-            class="btn btn-danger custom-btn"
+            class="btn btn-sm btn-outline-secondary border-2 typing-btn"
             @click.prevent="submitMessage()"
           >
             Cancel
@@ -46,16 +45,16 @@ create instance of rosaction in callback area -->
       </form>
     </div>
 
-    <div class="stacked-columns">
-      <!-- middle col -->
-      <div class="column middle">
-        <h5>Feedback</h5>
+    <div class="d-flex flex-column gap-3">
+      <div class="d-flex flex-column align-items-center text-center w-100">
+        <h4 class="component-header mb-2">Feedback</h4>
         <table class="feedback-table">
           <tbody>
             <tr>
               <td
                 v-for="index in 6"
                 :key="index"
+                class="border-2"
                 :class="getLetterClass(letterStates[index - 1] ?? 'grey')"
               >
                 {{ typingMessage[index - 1] ?? '_' }}
@@ -65,13 +64,11 @@ create instance of rosaction in callback area -->
         </table>
       </div>
 
-      <!-- right col, needs implementation, ask for specifics -->
-      <div class="column right">
-        <h5>Planar Alignment</h5>
-        <div class="wrap border border-2 rounded p-1">
-          <h6 class="m-0 p-0 font-monospace text-center">
-            0 degrees
-          </h6>
+      <div class="d-flex flex-column align-items-center text-center w-100">
+        <h4 class="component-header mb-2">Planar Alignment</h4>
+        <div class="d-flex align-items-baseline justify-content-center gap-1 p-2 rounded bg-theme-view">
+          <span class="cmd-data-value">0</span>
+          <span class="cmd-data-unit">degrees</span>
         </div>
       </div>
     </div>
@@ -162,72 +159,62 @@ function getLetterClass(state: string) {
 .auton-typing-container {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 40px;
+  gap: var(--cmd-gap-xl);
   justify-content: center;
   align-items: start;
-  text-align: center;
   width: 100%;
-  padding: 2px 5px 2px 5px;
+  padding: var(--cmd-padding-sm);
 }
 
-.column {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+
+.cmd-input {
   text-align: center;
-  width: 100%;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
 }
 
-.custom-btn {
-  width: 150px;
-  height: 50px;
+.typing-hint {
+  font-size: var(--cmd-font-xs);
+  color: var(--text-muted);
+  display: block;
+  margin: var(--cmd-gap-xs) 0 var(--cmd-gap-md);
 }
 
-.info {
-  height: 200px;
-  overflow-y: auto;
+.typing-btn {
+  width: clamp(100px, 7vw, 140px);
+  height: clamp(36px, 2.5vw, 48px);
 }
 
-.percent {
-  font-size: large;
-}
 .feedback-table {
   border-collapse: collapse;
-  margin-top: 10px;
+  margin-top: var(--cmd-gap-md);
 }
 
 .feedback-table td {
-  width: 40px;
-  height: 40px;
+  width: clamp(30px, 2vw, 44px);
+  height: clamp(30px, 2vw, 44px);
   text-align: center;
-  font-size: 24px;
-  font-weight: bold;
-  border: 1px solid #ccc;
+  font-size: var(--cmd-font-xl);
+  font-weight: 700;
 }
 
 .grey-cell {
-  background-color: #d3d3d3;
-  color: black;
+  background-color: var(--view-bg);
+  color: var(--text-muted);
 }
 
 .typed-cell {
-  background-color: green;
+  background-color: var(--cmd-status-ok);
   color: white;
 }
 
 .in-progress-cell {
-  background-color: orange;
+  background-color: #f59e0b;
   color: white;
 }
 
 .not-typed-cell {
-  background-color: red;
+  background-color: var(--cmd-status-error);
   color: white;
-}
-
-.stacked-columns {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
 }
 </style>

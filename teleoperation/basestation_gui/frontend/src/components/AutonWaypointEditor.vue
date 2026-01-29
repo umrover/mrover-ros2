@@ -1,14 +1,23 @@
 <template>
   <div class="wrapper d-flex m-0 p-0 h-100 w-100 gap-2">
     <!-- Left Column: Waypoint Store (Inactive/All Waypoints) -->
-    <div class="d-flex flex-column w-100">
-      <div class="waypoint-header p-1 d-flex justify-content-between align-items-center">
-        <h3 class="m-0 p-0">Waypoints</h3>
-        <button class="btn btn-success" @click="openModal()">
-          Add from Map
-        </button>
+    <div class="editor-column">
+      <div class="waypoint-header p-2 mb-2 d-flex justify-content-between align-items-center border-bottom border-2">
+        <h4 class="component-header m-0 p-0">Waypoint Store</h4>
+        <div class="d-flex gap-2 align-items-center">
+          <button
+            class="btn btn-danger btn-sm border-2 cmd-btn-icon-sm"
+            @click="openResetModal"
+            title="Reset waypoints"
+          >
+            <i class="bi bi-arrow-clockwise"></i>
+          </button>
+          <button class="btn btn-sm btn-success border-2" data-testid="pw-add-from-map" @click="openModal()">
+            Add from Map
+          </button>
+        </div>
       </div>
-      <div class="waypoint-wrapper overflow-y-scroll flex-grow-1">
+      <div class="waypoint-wrapper p-2 rounded flex-grow-1 overflow-auto" data-testid="pw-waypoint-store-list">
         <WaypointStore
           v-for="(waypoint, index) in waypoints"
           :key="waypoint.id || index"
@@ -21,55 +30,39 @@
       </div>
     </div>
 
-    <!-- Right Column: Active Route & Controls -->
-    <div class="d-flex flex-column w-100">
-      <!-- Controls Grid -->
-      <div class="datagrid m-0 p-0">
-        <FeedbackButton
-          ref="autonCheckbox"
-          class="auton-checkbox"
-          :name="'Autonomy Mode'"
-          :checked="autonEnabled"
-          :action="autonAction"
-          @toggle="handleAutonToggle"
-        />
-        <div class="stats">
-          <VelocityReading />
-        </div>
-        <FeedbackButton
-          ref="teleopCheckbox"
-          class="teleop-checkbox"
-          :name="'Teleop Controls'"
-          :checked="teleopEnabled"
-          :action="teleopAction"
-          @toggle="handleTeleopToggle"
-        />
-        <FeedbackButton
-          ref="costmapCheckbox"
-          class="costmap-checkbox"
-          :name="'All Costmaps'"
-          :checked="allCostmapToggle"
-          @toggle="handleCostmapToggle"
-        />
+    <!-- Right Column: Active Route -->
+    <div class="editor-column">
+      <div class="waypoint-header p-2 mb-2 d-flex justify-content-between align-items-center border-bottom border-2">
+        <h4 class="component-header m-0 p-0">Current Course</h4>
+        <button
+          class="btn btn-sm border-2"
+          :class="allCostmapToggle ? 'btn-success' : 'btn-danger'"
+          @click="toggleAllCostmaps"
+        >
+          All Costmaps
+        </button>
       </div>
-
-      <!-- Active Route List -->
-      <h3 class="m-0 p-0">Current Course</h3>
-      <div class="waypoint-wrapper overflow-y-scroll d-flex flex-column gap-2 flex-grow-1">
-        <WaypointItem
-          v-for="(waypoint, index) in currentRoute"
-          :key="index"
-          :waypoint="waypoint"
-          @delete="deleteFromRoute(waypoint)"
-          @toggleCostmap="toggleRouteCostmap"
-        />
-      </div>
+      <draggable
+        v-model="currentRoute"
+        item-key="id"
+        handle=".drag-handle"
+        ghost-class="drag-ghost"
+        class="waypoint-wrapper p-2 rounded d-flex flex-column gap-1 flex-grow-1 overflow-auto"
+      >
+        <template #item="{ element }">
+          <WaypointItem
+            :waypoint="element"
+            @delete="deleteFromRoute(element)"
+            @toggleCostmap="toggleRouteCostmap"
+          />
+        </template>
+      </draggable>
     </div>
   </div>
 
   <!-- Add Waypoint Modal -->
   <Teleport to="body">
-    <div class="modal fade" id="modalWypt" tabindex="-1" role="dialog">
+    <div class="modal fade" id="modalWypt" tabindex="-1" role="dialog" data-testid="pw-waypoint-modal">
       <div class="modal-dialog modal-dialog-centered" role="document">
         <div class="modal-content">
           <div class="modal-header">
@@ -83,6 +76,7 @@
                 <input
                   class="form-control"
                   id="waypointname"
+                  data-testid="pw-waypoint-name-input"
                   v-model="modalWypt.name"
                 />
               </div>
@@ -122,10 +116,35 @@
           <div class="modal-footer">
             <button
               type="button"
-              class="btn btn-secondary"
+              class="btn btn-secondary border-2"
+              data-testid="pw-add-waypoint-submit"
               @click="saveNewWaypoint"
             >
               Add Waypoint
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Reset Confirmation Modal -->
+    <div class="modal fade" id="modalReset" tabindex="-1" role="dialog">
+      <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Reset Waypoints</h5>
+            <button type="button" class="btn-close" @click="closeResetModal"></button>
+          </div>
+          <div class="modal-body">
+            <p>This will clear all user-added waypoints and the current course.</p>
+            <p class="text-muted mb-0">Default waypoints will be preserved.</p>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary border-2" @click="closeResetModal">
+              Cancel
+            </button>
+            <button type="button" class="btn btn-danger border-2" @click="confirmReset">
+              Reset
             </button>
           </div>
         </div>
@@ -135,44 +154,37 @@
 </template>
 
 <script lang="ts">
-import FeedbackButton from './FeedbackButton.vue'
-import VelocityReading from './VelocityReading.vue'
 import WaypointItem from './AutonWaypointItem.vue'
 import WaypointStore from './AutonWaypointStore.vue'
+import draggable from 'vuedraggable'
 
 import L from 'leaflet'
 import { defineComponent } from 'vue'
 import { Modal } from 'bootstrap'
 import type { AutonWaypoint } from '@/types/waypoints'
-import { waypointsAPI, autonAPI } from '@/utils/api'
-import { useWebsocketStore } from '@/stores/websocket'
+import { waypointsAPI } from '@/utils/api'
 import { useAutonomyStore } from '@/stores/autonomy'
 
 export default defineComponent({
   components: {
     WaypointItem,
-    FeedbackButton,
-    VelocityReading,
     WaypointStore,
+    draggable,
   },
 
   setup() {
-    const websocketStore = useWebsocketStore()
     const autonomyStore = useAutonomyStore()
-    return { websocketStore, autonomyStore }
+    return { autonomyStore }
   },
-
-  emits: ['toggleTeleop'],
 
   data() {
     return {
-      // The "Store": list of all available waypoints
       waypoints: [] as AutonWaypoint[],
-
-      // The "Active Route": subset of waypoints currently being navigated
       currentRoute: [] as AutonWaypoint[],
+      allCostmapToggle: true,
 
       modal: null as Modal | null,
+      resetModal: null as Modal | null,
       modalWypt: {
         name: '',
         id: -1,
@@ -182,21 +194,11 @@ export default defineComponent({
         enable_costmap: true,
       },
 
-      allCostmapToggle: true,
       nextAvailableTagId: 8,
     }
   },
 
   computed: {
-    navMessage() {
-      return this.websocketStore.messages['nav']
-    },
-    autonEnabled() {
-      return this.autonomyStore.autonEnabled
-    },
-    teleopEnabled() {
-      return this.autonomyStore.teleopEnabled
-    },
     clickPoint() {
       return this.autonomyStore.clickPoint
     },
@@ -229,7 +231,10 @@ export default defineComponent({
         // Update map visualization
         const mapPoints = newRoute.map(waypoint => ({
           latLng: L.latLng(waypoint.lat, waypoint.lon),
-          name: waypoint.name
+          name: waypoint.name,
+          id: waypoint.id,
+          type: waypoint.type,
+          enable_costmap: waypoint.enable_costmap
         }))
         this.autonomyStore.setRoute(mapPoints)
 
@@ -242,10 +247,18 @@ export default defineComponent({
       },
       deep: true,
     },
+
+    // Apply costmap toggle to all route waypoints
+    allCostmapToggle(newState: boolean) {
+      this.currentRoute.forEach((wp: AutonWaypoint) => {
+        wp.enable_costmap = newState
+      })
+    },
   },
 
   async mounted() {
     this.modal = new Modal('#modalWypt', {})
+    this.resetModal = new Modal('#modalReset', {})
     await this.fetchData()
   },
 
@@ -328,11 +341,8 @@ export default defineComponent({
       waypoint.enable_costmap = enable_costmap
     },
 
-    handleCostmapToggle(newState: boolean) {
-      this.allCostmapToggle = newState
-      this.currentRoute.forEach((wp: AutonWaypoint) => {
-        wp.enable_costmap = newState
-      })
+    toggleAllCostmaps() {
+      this.allCostmapToggle = !this.allCostmapToggle
     },
 
     // --- Store Management ---
@@ -388,35 +398,6 @@ export default defineComponent({
       }
     },
 
-    // --- Auton Control ---
-
-    autonAction(newState: boolean) {
-      const waypoints = newState
-        ? this.currentRoute.map((waypoint: AutonWaypoint) => ({
-            latitude_degrees: waypoint.lat,
-            longitude_degrees: waypoint.lon,
-            tag_id: waypoint.id,
-            type: waypoint.type,
-            enable_costmap: waypoint.enable_costmap,
-          }))
-        : []
-
-      return autonAPI.enable(newState, waypoints)
-    },
-
-    handleAutonToggle(newState: boolean) {
-      this.autonomyStore.setAutonMode(newState)
-    },
-
-    teleopAction(newState: boolean) {
-      return autonAPI.enableTeleop(newState)
-    },
-
-    handleTeleopToggle(newState: boolean) {
-      this.autonomyStore.setTeleopMode(newState)
-      this.$emit('toggleTeleop', newState)
-    },
-
     // --- Modal ---
     openModal() {
       this.modal?.show()
@@ -426,33 +407,45 @@ export default defineComponent({
         document.activeElement.blur()
       }
       this.modal?.hide()
+    },
+
+    // --- Reset ---
+    openResetModal() {
+      this.resetModal?.show()
+    },
+    closeResetModal() {
+      this.resetModal?.hide()
+    },
+    async confirmReset() {
+      try {
+        await waypointsAPI.clearAuton()
+        await this.fetchData()
+      } catch (error) {
+        console.error('Failed to reset waypoints:', error)
+      } finally {
+        this.closeResetModal()
+      }
     }
   },
 })
 </script>
 
 <style scoped>
-.datagrid {
-  display: grid;
-  grid-gap: 6px;
-  grid-template-columns: 65% auto;
-  grid-template-rows: auto auto;
-  grid-template-areas:
-    'auton-check stats'
-    'teleop-check stats'
-    'costmap-check stats';
-  font-family: sans-serif;
-  padding-bottom: 10px;
+.editor-column {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
 }
 
 .waypoint-wrapper {
   background-color: var(--view-bg);
-  padding: 8px;
-  border-radius: 8px;
+  scrollbar-gutter: stable;
 }
 
-.teleop-checkbox { grid-area: teleop-check; width: 100%; }
-.costmap-checkbox { grid-area: costmap-check; width: 100%; }
-.stats { grid-area: stats; }
-.auton-checkbox { grid-area: auton-check; }
+.drag-ghost {
+  opacity: 0.4;
+  background-color: var(--bs-secondary-bg);
+  border-style: dashed !important;
+}
 </style>

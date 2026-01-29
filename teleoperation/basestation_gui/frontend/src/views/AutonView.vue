@@ -4,12 +4,30 @@
     :default-layout="defaultLayout"
     :topics="['drive', 'nav', 'science', 'chassis']"
   >
-    <template #data>
-      <div class="island p-2 rounded d-flex flex-column gap-2 h-100">
-        <div class="rounded p-2 border border-2">
-          <OdometryReading />
-        </div>
+    <template #odometry>
+      <div class="island p-2 rounded h-100">
+        <OdometryReading />
+      </div>
+    </template>
+
+    <template #nav-status>
+      <div class="island p-2 rounded h-100 d-flex flex-column">
         <NavigationStatus />
+      </div>
+    </template>
+
+    <template #controls>
+      <div class="island p-2 rounded h-100">
+        <AutonControls
+          @toggleTeleop="teleopEnabledCheck = $event"
+          @toggleCostmap="allCostmapToggle = $event"
+        />
+      </div>
+    </template>
+
+    <template #velocity>
+      <div class="island p-2 rounded h-100">
+        <VelocityReading />
       </div>
     </template>
 
@@ -20,13 +38,13 @@
     </template>
 
     <template #waypoints>
-      <div class="island p-2 rounded h-100 overflow-auto">
-        <AutonWaypointEditor @toggleTeleop="teleopEnabledCheck = $event" />
+      <div class="island p-2 rounded h-100 overflow-y-auto">
+        <AutonWaypointEditor :allCostmapToggle="allCostmapToggle" />
       </div>
     </template>
 
     <template #moteus>
-      <div class="island p-2 rounded h-100">
+      <div class="island p-2 rounded h-100 overflow-hidden">
         <ControllerDataTable mode="drive" header="Drive" />
       </div>
     </template>
@@ -47,8 +65,10 @@ import { ref } from 'vue'
 import BaseGridView from '@/components/BaseGridView.vue'
 import AutonRoverMap from '@/components/AutonRoverMap.vue'
 import AutonWaypointEditor from '@/components/AutonWaypointEditor.vue'
+import AutonControls from '@/components/AutonControls.vue'
 import OdometryReading from '@/components/OdometryReading.vue'
 import NavigationStatus from '@/components/NavigationStatus.vue'
+import VelocityReading from '@/components/VelocityReading.vue'
 import DriveControls from '@/components/DriveControls.vue'
 import GimbalControls from '@/components/GimbalControls.vue'
 import ControllerDataTable from '@/components/ControllerDataTable.vue'
@@ -56,14 +76,18 @@ import { useAutonomyStore } from '@/stores/autonomy'
 import { storeToRefs } from 'pinia'
 
 const defaultLayout = [
-  { x: 0, y: 0, w: 6, h: 8, i: 'data' },
-  { x: 0, y: 6, w: 6, h: 4, i: 'moteus' },
+  { x: 0, y: 0, w: 6, h: 2, i: 'odometry' },
+  { x: 0, y: 2, w: 6, h: 5, i: 'nav-status' },
+  { x: 0, y: 7, w: 3, h: 1, i: 'velocity' },
+  { x: 3, y: 7, w: 3, h: 1, i: 'controls' },
+  { x: 0, y: 8, w: 6, h: 4, i: 'moteus' },
   { x: 6, y: 0, w: 6, h: 5, i: 'map' },
-  { x: 6, y: 6, w: 6, h: 7, i: 'waypoints' },
+  { x: 6, y: 5, w: 6, h: 7, i: 'waypoints' },
 ]
 
 const autonomyStore = useAutonomyStore()
 const { autonEnabled } = storeToRefs(autonomyStore)
 
 const teleopEnabledCheck = ref(false)
+const allCostmapToggle = ref(true)
 </script>
