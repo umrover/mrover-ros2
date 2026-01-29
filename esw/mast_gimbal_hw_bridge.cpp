@@ -30,7 +30,7 @@ namespace mrover {
 
         void create_servo(uint8_t id, const std::string& name)
         {
-            servos.insert(name, std::make_shared<mrover::Servo>(shared_from_this(), id, name));
+            servos.insert({name, std::make_shared<mrover::Servo>(shared_from_this(), id, name)});
         }
 
         auto init() -> void {
@@ -97,6 +97,7 @@ namespace mrover {
                 auto& servo = *servos.at(name);
 
                 mControllerState.name[i] = name;
+                mControllerState.limit_hit[i] = servo.getLimitStatus();
 
                 float pos = 0.0f;
                 float vel = 0.0f;

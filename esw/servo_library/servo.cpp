@@ -26,10 +26,13 @@
 using namespace mrover;
 
 auto Servo::updateConfigFromParameters() -> void {
+    float floatForwardLimit;
+    float floatReverseLimit;
     std::vector<ParameterWrapper> parameters = {
-            {std::format("{}.reverse_limit", mServoName), reverseLimit, 90.0f},
-            {std::format("{}.forward_limit", mServoName), forwardLimit, 270.0f}
+            {std::format("{}.reverse_limit", mServoName), floatReverseLimit, 90.0f},
+            {std::format("{}.forward_limit", mServoName), floatForwardLimit, 270.0f}
     };
+
 
     ParameterWrapper::declareParameters(mNode.get(), parameters);
 
@@ -37,14 +40,14 @@ auto Servo::updateConfigFromParameters() -> void {
     assert(reverse_limit > 0.0f);
     assert(forward_limit < 360.0f);
     assert(reverse_limit < 360.0f);
+
+    reverseLimit = static_cast<int>((reverseLimit / 360.0f) * 4096.0f);
+    forwardLimit = static_cast<int>((forwardLimit / 360.0f) * 4096.0f);
 }
 
 Servo::Servo(rclcpp::Node::SharedPtr node, ServoId mServoId, const std::string& mServoName, ServoProperties properties) : mNode{std::move(node)}, mServoId{mServoId}, mServoName{mServoName}
 {
   // ---------------------------------------------- Set servo properties ------------------------------------------------------ //
-  updateConfigFromParameters();
-  forwardLimit = 90;
-  reverseLimit = 270;
   // Position Gain
   setProperty(ServoProperty::PositionPGain, properties.positionPGain);
   setProperty(ServoProperty::PositionIGain, properties.positionIGain);
@@ -67,6 +70,10 @@ Servo::Servo(rclcpp::Node::SharedPtr node, ServoId mServoId, const std::string& 
 
 Servo::ServoStatus Servo::servoSetup()
 {
+    updateConfigFromParameters();
+  forwardLimit = 270;
+  reverseLimit = 90;
+
   uint8_t hardwareStatus;
 
   // Use Position Control Mode
@@ -116,13 +123,13 @@ Servo::ServoStatus Servo::setPosition(ServoPosition position, ServoMode mode)
       break;
   }
 
-  if (normalizedDifference > 0 && (presentPosition + normalizedDifference) % 4096 > forwardLimit)
+  if (normalizedDifference > 0 && ((presentPosition + normalizedDifference) % 4096) > forwardLimit)
   {
     atLimit = true;
     int toLimit = ((presentPosition + normalizedDifference) % 4096) - forwardLimit;
     goalPosition = presentPosition + toLimit;
   }
-  else if (normalizedDifference < 0 && (presentPosition + normalizedDifference) % 4096 < reverseLimit)
+  else if (normalizedDifference < 0 && ((presentPosition + normalizedDifference) % 4096) < reverseLimit)
   {
     atLimit = true;
     int toLimit = ((presentPosition + normalizedDifference) % 4096) + reverseLimit;
@@ -130,6 +137,7 @@ Servo::ServoStatus Servo::setPosition(ServoPosition position, ServoMode mode)
   }
   else
   {
+    atLimit = false;
     goalPosition = presentPosition + normalizedDifference;
   }
 

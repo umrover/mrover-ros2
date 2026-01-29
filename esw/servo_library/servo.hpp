@@ -106,8 +106,8 @@ private:
 
   ServoId mServoId;
   std::string mServoName;
-  float forwardLimit;
-  float reverseLimit;
+  int forwardLimit;
+  int reverseLimit;
   uint32_t goalPosition;
 
   bool atLimit = false;
