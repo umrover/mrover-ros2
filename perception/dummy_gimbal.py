@@ -14,10 +14,9 @@ import time
 class DummyServer(Node):
     def __init__(self):
         super().__init__('dummy_gimbal')
-        self.reentrant_cbg = ReentrantCallbackGroup()
 
         # Pano Action Server
-        self.start_pano = self.create_service(Dummy, 'dummy', self.dummy_callback, callback_group=self.reentrant_cbg)
+        self.start_pano = self.create_service(Dummy, 'dummy', self.dummy_callback)
 
 
     def dummy_callback(self, _, response):
@@ -30,25 +29,13 @@ class DummyServer(Node):
 
 def main(args=None):
     rclpy.init(args=args)
-    
-    node1 = DummyServer()
-    
-    # Create the MultiThreadedExecutor, optionally specifying the number of threads
-    # If not specified, it uses the number of CPU cores if implemented, otherwise 1
-    executor = MultiThreadedExecutor(num_threads=2)
-    
-    executor.add_node(node1)
-    
-    try:
-        executor.spin()
-    except KeyboardInterrupt:
-        pass
-    except Exception as e:
-        node1.get_logger().error(f"An error occurred: {e}")
-    finally:
-        executor.shutdown()
-        node1.destroy_node()
-        rclpy.shutdown()
+
+    serv = DummyServer()
+
+    rclpy.spin(serv)
+
+    serv.destroy_node()
+    rclpy.shutdown()
 
 if __name__ == '__main__':
     main()
