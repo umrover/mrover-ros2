@@ -111,6 +111,17 @@
                   <option value="4">Rock Pick</option>
                 </select>
               </div>
+              <div class="col-12">
+                <label for="coverage_radius" class="form-label">Coverage Radius (0 for default):</label>
+                <input
+                  class="form-control"
+                  id="coverage_radius"
+                  v-model.number="modalWypt.coverage_radius"
+                  type="number"
+                  step="0.5"
+                  min="0"
+                />
+              </div>
             </div>
           </div>
           <div class="modal-footer">
@@ -192,6 +203,7 @@ export default defineComponent({
         lat: 0,
         lon: 0,
         enable_costmap: true,
+        coverage_radius: 0,
       },
 
       nextAvailableTagId: 8,
@@ -234,7 +246,8 @@ export default defineComponent({
           name: waypoint.name,
           id: waypoint.id,
           type: waypoint.type,
-          enable_costmap: waypoint.enable_costmap
+          enable_costmap: waypoint.enable_costmap,
+          coverage_radius: waypoint.coverage_radius
         }))
         this.autonomyStore.setRoute(mapPoints)
 
@@ -368,6 +381,7 @@ export default defineComponent({
         lat: 0,
         lon: 0,
         enable_costmap: true,
+        coverage_radius: 0,
       }
       this.closeModal()
     },
@@ -395,6 +409,8 @@ export default defineComponent({
       if (storeWaypoint) {
         storeWaypoint.lat = waypoint.lat
         storeWaypoint.lon = waypoint.lon
+        storeWaypoint.name = waypoint.name
+        storeWaypoint.coverage_radius = waypoint.coverage_radius
       }
     },
 

@@ -17,6 +17,7 @@ class AutonWaypoint(BaseModel):
     lat: float = 0.0
     lon: float = 0.0
     enable_costmap: bool = True
+    coverage_radius: float = 0.0
     deletable: bool = True
     db_id: int | None = None
 
@@ -29,6 +30,7 @@ class AutonEnableWaypoint(BaseModel):
     tag_id: int = -1
     type: int = 0
     enable_costmap: bool = True
+    coverage_radius: float = 0.0
 
 class AutonEnableRequest(BaseModel):
     enabled: bool

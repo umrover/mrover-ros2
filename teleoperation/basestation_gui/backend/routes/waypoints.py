@@ -91,14 +91,14 @@ def save_auton_waypoints(data: AutonWaypointList):
             if w.db_id is not None and 1 <= w.db_id <= 8:
                 conn.execute('''
                     UPDATE auton_waypoints
-                    SET name=?, tag_id=?, type=?, latitude=?, longitude=?, enable_costmap=?
+                    SET name=?, tag_id=?, type=?, latitude=?, longitude=?, enable_costmap=?, coverage_radius=?
                     WHERE id=?
-                ''', (w.name, w.id, w.type, w.lat, w.lon, w.enable_costmap, w.db_id))
+                ''', (w.name, w.id, w.type, w.lat, w.lon, w.enable_costmap, w.coverage_radius, w.db_id))
             elif w.deletable:
                 conn.execute('''
-                    INSERT INTO auton_waypoints (name, tag_id, type, latitude, longitude, enable_costmap, deletable)
-                    VALUES (?, ?, ?, ?, ?, ?, ?)
-                ''', (w.name, w.id, w.type, w.lat, w.lon, w.enable_costmap, w.deletable))
+                    INSERT INTO auton_waypoints (name, tag_id, type, latitude, longitude, enable_costmap, coverage_radius, deletable)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                ''', (w.name, w.id, w.type, w.lat, w.lon, w.enable_costmap, w.coverage_radius, w.deletable))
 
         conn.commit()
         return {'status': 'success'}
@@ -110,12 +110,17 @@ def save_auton_waypoints(data: AutonWaypointList):
 @router.delete("/auton/clear/")
 def clear_auton_waypoints():
     """Clear all user-added auton waypoints (deletable=1), keep defaults."""
-    conn = get_db_connection()
-    conn.execute('DELETE FROM auton_waypoints WHERE deletable = 1')
-    conn.execute('DELETE FROM current_auton_course')
-    conn.commit()
-    conn.close()
-    return {'status': 'success', 'message': 'User waypoints and current course cleared'}
+    conn = None
+    try:
+        conn = get_db_connection()
+        conn.execute('DELETE FROM auton_waypoints WHERE deletable = 1')
+        conn.execute('DELETE FROM current_auton_course')
+        conn.commit()
+        return {'status': 'success', 'message': 'User waypoints and current course cleared'}
+    finally:
+        if conn:
+            conn.close()
+
 
 @router.delete("/auton/clear/all/")
 def clear_all_auton_waypoints():
@@ -180,8 +185,8 @@ def save_current_auton_course(data: AutonWaypointList):
 
         for i, w in enumerate(course):
             conn.execute('''
-                INSERT INTO current_auton_course (name, tag_id, type, latitude, longitude, enable_costmap, sequence_order)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO current_auton_course (name, tag_id, type, latitude, longitude, enable_costmap, coverage_radius, sequence_order)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             ''', (
                 w.name,
                 w.id,
@@ -189,6 +194,7 @@ def save_current_auton_course(data: AutonWaypointList):
                 w.lat,
                 w.lon,
                 w.enable_costmap,
+                w.coverage_radius,
                 i
             ))
 

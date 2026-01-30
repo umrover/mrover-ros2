@@ -41,6 +41,7 @@ async def enable_auton(data: AutonEnableRequest):
                     longitude_degrees=wp.longitude_degrees,
                     type=WaypointType(val=int(wp.type)),
                     enable_costmap=wp.enable_costmap,
+                    coverage_radius=wp.coverage_radius,
                 )
                 for wp in data.waypoints
             ],

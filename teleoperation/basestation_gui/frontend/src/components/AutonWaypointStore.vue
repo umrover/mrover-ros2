@@ -1,29 +1,18 @@
 <template>
-  <div class="cmd-list-item p-2 rounded border border-2" data-testid="pw-waypoint-store-item">
+  <div class="cmd-list-item p-2 rounded border border-2 mb-1" data-testid="pw-waypoint-store-item">
     <div class="d-flex justify-content-between align-items-center mb-1">
       <h5 class="cmd-list-item-title m-0" data-testid="pw-waypoint-name">{{ waypoint.name }}</h5>
-      <span class="cmd-data-label">ID: {{ waypoint.id }}</span>
+      <div class="d-flex align-items-center gap-2">
+        <span class="cmd-data-label">ID: {{ waypoint.id }}</span>
+        <span class="cmd-data-label">R: {{ waypoint.coverage_radius }}</span>
+      </div>
     </div>
     <div class="mb-2">
-      <div class="input-group input-group-sm mb-1">
-        <input
-          class="form-control cmd-input border-2"
-          v-model.number="localLat"
-          :id="'lat-' + waypoint.id"
-        />
-        <span class="input-group-text border-2">ºN</span>
-      </div>
-      <div class="input-group input-group-sm">
-        <input
-          class="form-control cmd-input border-2"
-          v-model.number="localLon"
-          :id="'lon-' + waypoint.id"
-        />
-        <span class="input-group-text border-2">ºW</span>
-      </div>
+      <small class="text-muted">{{ waypoint.lat.toFixed(6) }}N, {{ waypoint.lon.toFixed(6) }}W</small>
     </div>
     <div class="d-flex gap-1">
-      <button class="btn btn-success btn-sm border-2 cmd-btn-text" @click="addWaypoint">Add</button>
+      <button class="btn btn-success btn-sm border-2 cmd-btn-text" @click="$emit('add', waypoint)">Add</button>
+      <button class="btn btn-warning btn-sm border-2 cmd-btn-text" @click="openEditModal">Edit</button>
       <button
         class="btn btn-danger btn-sm border-2 cmd-btn-text"
         :disabled="waypoint.deletable === false"
@@ -32,6 +21,49 @@
         Delete
       </button>
     </div>
+
+    <Teleport to="body">
+      <div class="modal fade" :id="'editModal-' + index" tabindex="-1" role="dialog">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title">Edit Waypoint</h5>
+              <button type="button" class="btn-close" @click="closeEditModal"></button>
+            </div>
+            <div class="modal-body">
+              <div class="mb-3">
+                <label class="form-label">Name:</label>
+                <input class="form-control" v-model="editData.name" />
+              </div>
+              <div class="row mb-3">
+                <div class="col-6">
+                  <label class="form-label">Latitude:</label>
+                  <input class="form-control" v-model.number="editData.lat" type="number" step="0.000001" />
+                </div>
+                <div class="col-6">
+                  <label class="form-label">Longitude:</label>
+                  <input class="form-control" v-model.number="editData.lon" type="number" step="0.000001" />
+                </div>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Coverage Radius (0 for default):</label>
+                <input
+                  class="form-control"
+                  v-model.number="editData.coverage_radius"
+                  type="number"
+                  step="0.5"
+                  min="0"
+                />
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary border-2" @click="closeEditModal">Cancel</button>
+              <button type="button" class="btn btn-primary border-2" @click="saveEdit">Save</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
@@ -39,6 +71,7 @@
 import { defineComponent } from 'vue'
 import type { PropType } from 'vue'
 import type { AutonWaypoint } from '@/types/waypoints'
+import { Modal } from 'bootstrap'
 
 export default defineComponent({
   name: 'WaypointStore',
@@ -55,34 +88,41 @@ export default defineComponent({
   emits: ['add', 'delete', 'update'],
   data() {
     return {
-      localLat: this.waypoint.lat,
-      localLon: this.waypoint.lon,
+      editModal: null as Modal | null,
+      editData: {
+        name: '',
+        lat: 0,
+        lon: 0,
+        coverage_radius: 0,
+      },
     }
   },
-  watch: {
-    localLat(newVal) {
-      this.emitUpdate(newVal, this.localLon)
-    },
-    localLon(newVal) {
-      this.emitUpdate(this.localLat, newVal)
-    },
-  },
   methods: {
-    emitUpdate(lat: number, lon: number) {
+    openEditModal() {
+      this.editData = {
+        name: this.waypoint.name,
+        lat: this.waypoint.lat,
+        lon: this.waypoint.lon,
+        coverage_radius: this.waypoint.coverage_radius,
+      }
+      if (!this.editModal) {
+        this.editModal = new Modal(`#editModal-${this.index}`, {})
+      }
+      this.editModal.show()
+    },
+    closeEditModal() {
+      this.editModal?.hide()
+    },
+    saveEdit() {
       const updatedWaypoint = {
         ...this.waypoint,
-        lat: lat,
-        lon: lon,
+        name: this.editData.name,
+        lat: this.editData.lat,
+        lon: this.editData.lon,
+        coverage_radius: this.editData.coverage_radius,
       }
       this.$emit('update', updatedWaypoint, this.index)
-    },
-    addWaypoint() {
-      const updatedWaypoint = {
-        ...this.waypoint,
-        lat: this.localLat,
-        lon: this.localLon,
-      }
-      this.$emit('add', updatedWaypoint)
+      this.closeEditModal()
     },
   },
 })
@@ -101,12 +141,6 @@ export default defineComponent({
 .cmd-data-label {
   font-size: 0.6875rem;
   color: var(--text-muted);
-}
-
-.input-group-text {
-  font-size: 0.75rem;
-  min-width: 40px;
-  justify-content: center;
 }
 
 .cmd-btn-text {
