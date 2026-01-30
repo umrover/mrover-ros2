@@ -68,6 +68,7 @@ namespace mrover {
             ImGui::Checkbox("Enable Physics (P)", &mEnablePhysics);
             ImGui::Checkbox("Render Models (M)", &mRenderModels);
             ImGui::Checkbox("Render Wireframe Colliders (C)", &mRenderWireframeColliders);
+            ImGui::Checkbox("Render Skybox", &mRenderSkybox);
             ImGui::Text("Camera Locked: %s", mCameraInRoverTarget ? "True" : "False");
             ImGui::SliderFloat("Camera Lock Lerp", &mCameraLockSlerp, 0.0f, 1.0f);
 
@@ -97,6 +98,25 @@ namespace mrover {
 
             ImGui::InputDouble("Publish Hammer Distance Threshold", &mPublishHammerDistanceThreshold);
             ImGui::InputDouble("Publish Bottle Distance Threshold", &mPublishBottleDistanceThreshold);
+
+            // for the imgui combo: https://skia.googlesource.com/external/github.com/ocornut/imgui/+/refs/tags/v1.73/imgui_demo.cpp
+            static ImGuiComboFlags flags = 0;
+            std::optional<std::string> selectedPath = std::nullopt;
+            ImGui::Text("Map Selection:");
+            if (ImGui::BeginCombo(" ", configFilename.c_str(), flags)) { // no text here, its taken care of above
+                for (auto const& file: std::filesystem::directory_iterator{CONFIG_PATH}) {
+                    if (ImGui::Selectable(file.path().filename().c_str())) {
+                        selectedPath = std::make_optional<std::string>(file.path().filename());
+                    }
+                }
+                ImGui::EndCombo();
+            }
+
+            if (selectedPath.has_value()) {
+                std::cout << "Selected: " << selectedPath.value() << '\n';
+                configFilename = selectedPath.value();
+                initUrdfsFromParams(configFilename);
+            }
 
             ImGui::EndDisabled();
             ImGui::End();

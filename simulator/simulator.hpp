@@ -24,6 +24,9 @@ namespace mrover {
     static constexpr auto DEPTH_FORMAT = wgpu::TextureFormat::Depth32Float;
     static constexpr auto NORMAL_FORMAT = wgpu::TextureFormat::RGBA16Float;
 
+    static constexpr char const* DEFAULT_MAP = "default_map.yaml";
+    static std::filesystem::path const CONFIG_PATH = std::filesystem::current_path() / "config" / "simulator";
+
     struct Camera;
     struct StereoCamera;
     class Simulator;
@@ -52,6 +55,12 @@ namespace mrover {
     struct ComputeUniforms {
         Eigen::Matrix4f clipToCamera{};
         Eigen::Vector2i resolution{};
+
+        EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+    };
+
+    struct SkyboxUniforms {
+        Eigen::Matrix4f clipToWorld{};
 
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     };
@@ -88,11 +97,17 @@ namespace mrover {
             bool isHolding = false;
         };
 
-        urdf::Model model;
+        // Bullet Resources
+        std::vector<btMultiBodyLinkCollider*> mColliders;
+        std::vector<btMultiBodyConstraint*> mConstraints;
         btMultiBody* physics = nullptr;
+        std::shared_ptr<btMultiBodyDynamicsWorld> mDynamicsWorld;
+
+        urdf::Model model;
         std::unordered_map<std::string, LinkMeta> linkNameToMeta;
 
         URDF(Simulator& simulator, std::string_view uri, btTransform const& transform);
+        ~URDF();
 
         static auto makeCollisionShapeForLink(Simulator& simulator, urdf::LinkConstSharedPtr const& link) -> btCollisionShape*;
 
@@ -143,6 +158,7 @@ namespace mrover {
         wgpu::TextureView normalTextureView;
 
         Uniform<SceneUniforms> sceneUniforms{};
+        Uniform<SkyboxUniforms> skyboxUniforms{};
         wgpu::BindGroup sceneBindGroup;
 
         wgpu::Buffer stagingBuffer;
@@ -173,7 +189,6 @@ namespace mrover {
         rclcpp::Subscription<msg::Throttle>::SharedPtr throttleSub;
         rclcpp::Subscription<msg::Velocity>::SharedPtr velocitySub;
         rclcpp::Subscription<msg::Position>::SharedPtr positionSub;
-        rclcpp::Publisher<sensor_msgs::msg::JointState>::SharedPtr jointStatePub;
         rclcpp::Publisher<msg::ControllerState>::SharedPtr controllerStatePub;
     };
 
@@ -234,11 +249,14 @@ namespace mrover {
         bool mEnablePhysics{};
         bool mRenderModels = true;
         bool mRenderWireframeColliders = false;
+        bool mRenderSkybox = false;
         double mPublishHammerDistanceThreshold = 3;
         double mPublishBottleDistanceThreshold = 3;
         float mCameraLockSlerp = 0.02;
 
         float mFloat = 0.0f;
+
+        std::string configFilename = DEFAULT_MAP;
 
         // ROS
 
@@ -305,8 +323,13 @@ namespace mrover {
         wgpu::ShaderModule mShaderModule;
         wgpu::RenderPipeline mPbrPipeline;
         wgpu::RenderPipeline mWireframePipeline;
+        wgpu::RenderPipeline mSkyboxPipeline;
 
         wgpu::ComputePipeline mPointCloudPipeline;
+
+        CubeMapTexture mSkyboxTexture;
+        wgpu::BindGroupLayout mSkyboxBGLayout;
+        std::array<std::filesystem::path, 6> mSkyboxTexturePaths = {"skybox_px.jpg", "skybox_nx.jpg", "skybox_py.jpg", "skybox_ny.jpg", "skybox_pz.jpg", "skybox_nz.jpg"};
 
         std::unordered_map<std::string, Model> mUriToModel;
 
@@ -314,6 +337,7 @@ namespace mrover {
         bool mInGui = false;
 
         Uniform<SceneUniforms> mSceneUniforms;
+        Uniform<SkyboxUniforms> mSkyboxUniforms;
 
         Eigen::Vector4f mSkyColor{0.05f, 0.8f, 0.92f, 1.0f};
 
@@ -324,7 +348,7 @@ namespace mrover {
         std::unique_ptr<btHashedOverlappingPairCache> mOverlappingPairCache;
         std::unique_ptr<btDbvtBroadphase> mBroadphase;
         std::unique_ptr<btMultiBodyConstraintSolver> mSolver;
-        std::unique_ptr<btMultiBodyDynamicsWorld> mDynamicsWorld;
+        std::shared_ptr<btMultiBodyDynamicsWorld> mDynamicsWorld;
         std::vector<std::unique_ptr<btCollisionShape>> mCollisionShapes;
         std::vector<std::unique_ptr<btMultiBody>> mMultiBodies;
         std::vector<std::unique_ptr<btMultiBodyLinkCollider>> mMultibodyCollider;
@@ -454,7 +478,7 @@ namespace mrover {
 
         auto initPhysics() -> void;
 
-        auto initUrdfsFromParams() -> void;
+        auto initUrdfsFromParams(std::string const& configFile) -> void;
 
         auto tick() -> void;
 
@@ -471,6 +495,8 @@ namespace mrover {
         auto renderModels(wgpu::RenderPassEncoder& pass) -> void;
 
         auto renderWireframeColliders(wgpu::RenderPassEncoder& pass) -> void;
+
+        auto renderSkybox(wgpu::RenderPassEncoder& pass, Eigen::Matrix4f& clipToWorld, Uniform<SkyboxUniforms>& uniforms) -> void;
 
         auto renderUpdate() -> void;
 

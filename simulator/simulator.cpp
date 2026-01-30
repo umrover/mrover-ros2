@@ -6,9 +6,25 @@ namespace mrover {
                                                        .use_intra_process_comms(true)
                                                        .allow_undeclared_parameters(true)
                                                        .automatically_declare_parameters_from_overrides(true)} {
+        double saveRate;
+        int saveHistory;
+        int motorTimeoutMs;
+        std::vector<ParameterWrapper> params = {
+                {"save_rate", saveRate, 1.0},
+                {"save_history", saveHistory, 4096},
+                {"motor_timeout", motorTimeoutMs, 100},
+                {"headless", mIsHeadless, false},
+                {"ref_lat", mGpsLinearizationReferencePoint(0), 42.293195},
+                {"ref_lon", mGpsLinearizationReferencePoint(1), -83.7096706},
+                {"ref_alt", mGpsLinearizationReferencePoint(2), 0.0},
+                {"ref_heading", mGpsLinerizationReferenceHeading, 90.0}};
+        ParameterWrapper::declareParameters(this, params);
+
         try {
-            mSaveTask = PeriodicTask{get_parameter("save_rate").as_double()};
-            mSaveHistory = boost::circular_buffer<SaveData>{static_cast<std::size_t>(get_parameter("save_history").as_int())};
+            mSaveTask = PeriodicTask{saveRate};
+            mSaveHistory = boost::circular_buffer<SaveData>{static_cast<std::size_t>(saveHistory)};
+            mMotorTimeoutMs = motorTimeoutMs;
+            mEnablePhysics = mIsHeadless;
 
             mGroundTruthPub = create_publisher<nav_msgs::msg::Odometry>("ground_truth", 1);
 
@@ -22,46 +38,33 @@ namespace mrover {
 
             mIkModeClient = create_client<srv::IkMode>("ik_mode");
 
-            mMotorTimeoutMs = get_parameter("motor_timeout").as_int();
-
-            mIsHeadless = get_parameter("headless").as_bool();
-            mEnablePhysics = mIsHeadless;
-            {
-                mGpsLinearizationReferencePoint = {
-                        get_parameter("ref_lat").as_double(),
-                        get_parameter("ref_lon").as_double(),
-                        get_parameter("ref_alt").as_double(),
-                };
-                mGpsLinerizationReferenceHeading = get_parameter("ref_heading").as_double();
-            }
-
             if (!mIsHeadless) initWindow();
 
             initPhysics();
 
             initRender();
 
-            initUrdfsFromParams();
+            initUrdfsFromParams(DEFAULT_MAP);
 
             {
-                auto addGroup = [&](std::string_view groupName, std::vector<std::string> const& names) {
+                auto addGroup = [&](std::string_view groupName, std::string_view controllerStateTopic, std::vector<std::string> const& names,
+                                    std::string_view thrSuffix = "_throttle_cmd", std::string_view velSuffix = "_velocity_cmd", std::string_view posSuffix = "_position_cmd") {
                     MotorGroup& group = mMotorGroups.emplace_back();
-                    group.jointStatePub = create_publisher<sensor_msgs::msg::JointState>(std::format("{}_joint_data", groupName), 1);
-                    group.controllerStatePub = create_publisher<msg::ControllerState>(std::format("{}_controller_data", groupName), 1);
+                    group.controllerStatePub = create_publisher<msg::ControllerState>(std::string{controllerStateTopic}, 1);
                     group.names = names;
-                    group.throttleSub = create_subscription<msg::Throttle>(std::format("{}_throttle_cmd", groupName), 1, [this](msg::Throttle::ConstSharedPtr const& msg) {
+                    group.throttleSub = create_subscription<msg::Throttle>(std::format("/{}{}", groupName, thrSuffix), 1, [this](msg::Throttle::ConstSharedPtr const& msg) {
                         throttlesCallback(msg);
                     });
-                    group.velocitySub = create_subscription<msg::Velocity>(std::format("{}_velocity_cmd", groupName), 1, [this](msg::Velocity::ConstSharedPtr const& msg) {
+                    group.velocitySub = create_subscription<msg::Velocity>(std::format("/{}{}", groupName, velSuffix), 1, [this](msg::Velocity::ConstSharedPtr const& msg) {
                         velocitiesCallback(msg);
                     });
-                    group.positionSub = create_subscription<msg::Position>(std::format("{}_position_cmd", groupName), 1, [this](msg::Position::ConstSharedPtr const& msg) {
+                    group.positionSub = create_subscription<msg::Position>(std::format("/{}{}", groupName, posSuffix), 1, [this](msg::Position::ConstSharedPtr const& msg) {
                         positionsCallback(msg);
                     });
                 };
-                addGroup("arm", {"joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_roll", "gripper"});
-                addGroup("drive_left", {"front_left", "middle_left", "back_left"});
-                addGroup("drive_right", {"front_right", "middle_right", "back_right"});
+                addGroup("arm", "arm_controller_state", {"joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_roll", "gripper"}, "_thr_cmd", "_vel_cmd", "_pos_cmd");
+                addGroup("drive_left", "left_controller_state", {"front_left", "middle_left", "back_left"});
+                addGroup("drive_right", "right_controller_state", {"front_right", "middle_right", "back_right"});
 
                 std::vector<decltype(mMsgToUrdf)::value_type> elements{
                         {"joint_a", "arm_a_link"},
@@ -130,15 +133,6 @@ namespace mrover {
             ImGui_ImplWGPU_Shutdown();
             ImGui_ImplGlfw_Shutdown();
             ImGui::DestroyContext();
-        }
-
-        for (int i = mDynamicsWorld->getNumConstraints() - 1; i >= 0; --i) {
-            mDynamicsWorld->removeConstraint(mDynamicsWorld->getConstraint(i));
-        }
-
-        for (int i = mDynamicsWorld->getNumCollisionObjects() - 1; i >= 0; --i) {
-            btCollisionObject* object = mDynamicsWorld->getCollisionObjectArray()[i];
-            mDynamicsWorld->removeCollisionObject(object);
         }
     }
 
