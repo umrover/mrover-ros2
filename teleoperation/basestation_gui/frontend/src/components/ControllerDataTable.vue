@@ -25,7 +25,15 @@
       <div class="flex-grow-1 d-flex align-items-center justify-content-center p-2" style="min-width:0;">
         <svg viewBox="0 0 200 110" class="rover-svg" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Rover diagram">
           <!-- body -->
-          <rect x="30" y="25" width="140" height="60" rx="6" fill="#e9ecef" stroke="#adb5bd" />
+          <image
+            href="/urdf/DM_Rover_image.svg"
+            x="30"
+            y="25"
+            width="140"
+            height="60"
+            preserveAspectRatio="xMidYMid meet"
+          />
+
           <!-- visual wheel placeholders; clickable -->
           <g v-for="(w, idx) in wheelPositions" :key="w.id" :transform="`translate(${w.x}, ${w.y})`" class="wheel-group" @click="selectedIndex = idx" :title="`Select ${w.label}`" style="cursor: pointer;">
             <circle :r="8" :fill="selectedIndex === idx ? '#0d6efd' : '#fff'" stroke="#495057" stroke-width="1.5" />
