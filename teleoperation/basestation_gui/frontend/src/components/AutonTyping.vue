@@ -76,13 +76,13 @@ create instance of rosaction in callback area -->
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useWebsocketStore } from '@/stores/websocket'
 import { storeToRefs } from 'pinia'
 
 interface TypingFeedbackMessage {
   type: 'typing_feedback'
-  current_key: string
+  current_index: number
   current_state: string
 }
 
@@ -91,9 +91,17 @@ const { messages } = storeToRefs(websocketStore)
 
 const typingMessage = ref('')
 const codeSent = ref(false)
-const currentKey = ref('')
+const currentIndex = ref(0)
 const currentState = ref('')
 const letterStates = ref<string[]>(Array(6).fill('notTyped'))
+
+onMounted(() => {
+  websocketStore.setupWebSocket('auton')
+})
+
+onBeforeUnmount(() => {
+  websocketStore.closeWebSocket('auton')
+})
 
 const autonMessage = computed(() => messages.value['auton'])
 
@@ -102,9 +110,22 @@ watch(autonMessage, (msg: unknown) => {
 
   if ('type' in msg && msg.type === 'typing_feedback') {
     const typedMsg = msg as TypingFeedbackMessage
-    currentKey.value = typedMsg.current_key
+    currentIndex.value = typedMsg.current_index
     currentState.value = typedMsg.current_state
-    updateLetterStates()
+
+    if (typedMsg.current_state === 'complete') {
+      for (let i = 0; i < typingMessage.value.length; i++) {
+        letterStates.value[i] = 'typed'
+      }
+      codeSent.value = false
+      typingMessage.value = ''
+    } else {
+      updateLetterStates()
+    }
+  } else if ('type' in msg && msg.type === 'typing_cancelled') {
+    codeSent.value = false
+    typingMessage.value = ''
+    letterStates.value = Array(6).fill('notTyped')
   }
 })
 
@@ -133,12 +154,12 @@ function submitMessage() {
 function updateLetterStates() {
   if (!typingMessage.value) return
   for (let i = 0; i < typingMessage.value.length; i++) {
-    if (i < currentKey.value.length) {
-      letterStates.value[i] = 'typed' // green
-    } else if (i === currentKey.value.length) {
-      letterStates.value[i] = 'inProgress' // orange
+    if (i < currentIndex.value) {
+      letterStates.value[i] = 'typed'
+    } else if (i === currentIndex.value) {
+      letterStates.value[i] = 'inProgress'
     } else {
-      letterStates.value[i] = 'notTyped' // red
+      letterStates.value[i] = 'notTyped'
     }
   }
 }
