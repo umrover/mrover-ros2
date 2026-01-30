@@ -1,71 +1,55 @@
 <template>
-  <div class="view-wrapper wrapper-es">
-    <div class="island p-2 rounded arm-controls">
-      <ArmControls />
-    </div>
-    <div class="island rounded rover-3d overflow-hidden">
-      <Rover3D class="w-100 h-100" />
-    </div>
-    <div class="island p-2 rounded controller_state d-flex flex-column gap-2">
-      <ControllerDataTable msg-type="arm_state" header="Arm States" />
-      <ControllerDataTable msg-type="drive_left_state" header="Drive Left" />
-      <ControllerDataTable msg-type="drive_right_state" header="Drive Right" />
-    </div>
-    <div class="island p-2 rounded auton-typing">
-      <AutonTyping />
-    </div>
-  </div>
+  <BaseGridView
+    layout-key="esView_gridLayout"
+    :default-layout="defaultLayout"
+    :topics="['arm', 'drive']"
+  >
+    <template #arm-controls>
+      <div class="island p-2 rounded h-100">
+        <ArmControls />
+      </div>
+    </template>
+
+    <template #drive-controls>
+      <div class="island p-2 rounded h-100">
+        <DriveControls />
+      </div>
+    </template>
+
+    <template #rover-3d>
+      <div class="island rounded overflow-hidden h-100">
+        <Rover3D class="w-100 h-100" />
+      </div>
+    </template>
+
+    <template #controller_state>
+      <div class="island p-2 rounded d-flex flex-column gap-2 h-100">
+        <ControllerDataTable mode="arm" header="Arm" />
+        <ControllerDataTable mode="drive" header="Drive" />
+      </div>
+    </template>
+
+    <template #auton-typing>
+      <div class="island p-2 rounded h-100">
+        <AutonTyping />
+      </div>
+    </template>
+  </BaseGridView>
 </template>
 
-<script lang='ts' setup>
-import { onMounted, onUnmounted } from 'vue'
+<script lang="ts" setup>
+import BaseGridView from '@/components/BaseGridView.vue'
 import ControllerDataTable from '@/components/ControllerDataTable.vue'
 import ArmControls from '@/components/ArmControls.vue'
+import DriveControls from '@/components/DriveControls.vue'
 import Rover3D from '@/components/Rover3D.vue'
 import AutonTyping from '@/components/AutonTyping.vue'
-import { useWebsocketStore } from '@/stores/websocket'
 
-const websocketStore = useWebsocketStore()
-
-onMounted(() => {
-  websocketStore.setupWebSocket('arm')
-  websocketStore.setupWebSocket('drive')
-})
-
-onUnmounted(() => {
-  websocketStore.closeWebSocket('arm')
-  websocketStore.closeWebSocket('drive')
-})
+const defaultLayout = [
+  { x: 0, y: 0, w: 3, h: 2, i: 'arm-controls' },
+  { x: 3, y: 0, w: 1, h: 2, i: 'drive-controls' },
+  { x: 0, y: 2, w: 4, h: 3, i: 'auton-typing' },
+  { x: 0, y: 5, w: 4, h: 7, i: 'controller_state' },
+  { x: 4, y: 0, w: 8, h: 12, i: 'rover-3d' },
+]
 </script>
-
-<style>
-.wrapper-es {
-  display: grid;
-  gap: 10px;
-  width: 100%;
-  height: 100%;
-  grid-template-columns: 25% auto; /* was formerly 400px auto */
-  grid-template-rows: auto 21% auto;
-  grid-template-areas:
-    'arm-controls rover-3d'
-    'auton-typing rover-3d'
-    'controller_state rover-3d';
-  font-family: sans-serif;
-}
-
-.auton-typing {
-  grid-area: auton-typing;
-}
-
-.arm-controls {
-  grid-area: arm-controls;
-}
-
-.controller_state {
-  grid-area: controller_state;
-}
-
-.rover-3d {
-  grid-area: rover-3d;
-}
-</style>
