@@ -42,6 +42,14 @@
         >
           IK Vel
         </button>
+
+        <button
+          type="button"
+          class="btn flex-fill"
+          @click="doNothing()"
+      >
+      TEST
+    </button>
       </div>
       <GamepadDisplay :axes="axes" :buttons="buttons" layout="horizontal" />
     </div>
@@ -115,6 +123,18 @@ const newRAMode = async (newMode: string) => {
     }
      catch (error) {
     console.error('Failed to set arm mode:', error)
+  }
+}
+
+const doNothing = async() => {
+  try {
+    const data = await armAPI.stowArm()
+    if (data) {
+        console.log("done it")
+      };
+    }
+     catch (error) {
+    console.log('TESTING: ', error)
   }
 }
 </script>
