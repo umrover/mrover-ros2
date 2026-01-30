@@ -65,14 +65,14 @@ namespace mrover {
 
 
         auto processThrottleCmd(msg::Throttle::ConstSharedPtr const& msg) -> void {
-            if (msg->name.size() != msg->throttle.size()) {
+            if (msg->names.size() != msg->throttles.size()) {
                 RCLCPP_ERROR(get_logger(), "Name count and value count mismatched!");
                 return;
             }
 
-            for (std::size_t i = 0; i < msg->name.size(); ++i) {
-                std::string const& name = msg->name[i];
-                Dimensionless const& throttle = msg->throttle[i];
+            for (std::size_t i = 0; i < msg->names.size(); ++i) {
+                std::string const& name = msg->names[i];
+                Dimensionless const& throttle = msg->throttles[i];
                 mMotors[name]->setDesiredThrottle(throttle);
             }
         }

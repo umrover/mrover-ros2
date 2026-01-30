@@ -80,14 +80,14 @@ namespace mrover {
 
             {
                 msg::Velocity leftVelocity;
-                leftVelocity.name = LEFT_NAMES;
-                leftVelocity.velocity = {leftOuter.get(), leftInner.get(), leftOuter.get()};
+                leftVelocity.names = LEFT_NAMES;
+                leftVelocity.velocities = {leftOuter.get(), leftInner.get(), leftOuter.get()};
                 leftVelocityPub->publish(leftVelocity);
             }
             {
                 msg::Velocity rightVelocity;
-                rightVelocity.name = RIGHT_NAMES;
-                rightVelocity.velocity = {rightOuter.get(), rightInner.get(), rightOuter.get()};
+                rightVelocity.names = RIGHT_NAMES;
+                rightVelocity.velocities = {rightOuter.get(), rightInner.get(), rightOuter.get()};
                 rightVelocityPub->publish(rightVelocity);
             }
         }

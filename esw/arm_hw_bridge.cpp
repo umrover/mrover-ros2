@@ -150,16 +150,16 @@ namespace mrover {
 
 
         auto processThrottleCmd(msg::Throttle::ConstSharedPtr const& msg) -> void {
-            if (msg->name.size() != msg->throttle.size()) {
+            if (msg->names.size() != msg->throttles.size()) {
                 RCLCPP_ERROR(get_logger(), "Name count and value count mismatched!");
                 return;
             }
 
             std::optional<Dimensionless> jointDePitchThrottle, jointDeRollThrottle;
 
-            for (std::size_t i = 0; i < msg->name.size(); ++i) {
-                std::string const& name = msg->name[i];
-                Dimensionless const& throttle = msg->throttle[i];
+            for (std::size_t i = 0; i < msg->names.size(); ++i) {
+                std::string const& name = msg->names[i];
+                Dimensionless const& throttle = msg->throttles[i];
 
                 // Silly little thing to save some speed. Could easily just do the straight up string comparision
                 switch (name.front() + name.back()) {
@@ -218,16 +218,16 @@ namespace mrover {
         }
 
         auto processVelocityCmd(msg::Velocity::ConstSharedPtr const& msg) -> void {
-            if (msg->name.size() != msg->velocity.size()) {
+            if (msg->names.size() != msg->velocities.size()) {
                 RCLCPP_ERROR(get_logger(), "Name count and value count mismatched!");
                 return;
             }
 
             std::optional<RadiansPerSecond> jointDePitchVelocity, jointDeRollVelocity;
 
-            for (std::size_t i = 0; i < msg->name.size(); ++i) {
-                std::string const& name = msg->name[i];
-                float const& velocity = msg->velocity[i];
+            for (std::size_t i = 0; i < msg->names.size(); ++i) {
+                std::string const& name = msg->names[i];
+                float const& velocity = msg->velocities[i];
 
                 // Silly little thing to save some speed. Could easily just do the straight up string comparision
                 switch (name.front() + name.back()) {
@@ -286,16 +286,16 @@ namespace mrover {
         }
 
         auto processPositionCmd(msg::Position::ConstSharedPtr const& msg) -> void {
-            if (msg->name.size() != msg->position.size()) {
+            if (msg->names.size() != msg->positions.size()) {
                 RCLCPP_ERROR(get_logger(), "Name count and value count mismatched!");
                 return;
             }
 
             std::optional<Radians> jointDePitchPosition, jointDeRollPosition;
 
-            for (std::size_t i = 0; i < msg->name.size(); ++i) {
-                std::string const& name = msg->name[i];
-                float const& position = msg->position[i];
+            for (std::size_t i = 0; i < msg->names.size(); ++i) {
+                std::string const& name = msg->names[i];
+                float const& position = msg->positions[i];
 
                 // Silly little thing to save some speed. Could easily just do the straight up string comparision
                 switch (name.front() + name.back()) {
