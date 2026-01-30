@@ -124,23 +124,25 @@ namespace mrover {
                 pipeline.pushBack(std::format("videocrop left={} right={} top={} bottom={}", mCropLeft, mCropRight, mCropTop, mCropBottom));
             }
 
-            pipeline.pushBack(gst::video::createDefaultEncoder(mCodec));
+            pipeline.pushBack("xvimagesink");
 
-            if (mCodec == gst::video::Codec::H264) {
-                pipeline.addPropsToElement(pipeline.size() - 1,
-                                           gst::addProperty("tune", "zerolatency"),
-                                           gst::addProperty("bitrate", mBitrate),
-                                           gst::addProperty("name", "encoder"));
-            }
+        //     pipeline.pushBack(gst::video::createDefaultEncoder(mCodec));
+        //
+        //     if (mCodec == gst::video::Codec::H264) {
+        //         pipeline.addPropsToElement(pipeline.size() - 1,
+        //                                    gst::addProperty("tune", "zerolatency"),
+        //                                    gst::addProperty("bitrate", mBitrate),
+        //                                    gst::addProperty("name", "encoder"));
+        //     }
         }
-
-        if (mCodec == gst::video::Codec::H265) {
-            pipeline.pushBack("h265parse");
-        } else if (mCodec == gst::video::Codec::H264) {
-            pipeline.pushBack("h264parse");
-        }
-
-        pipeline.pushBack(gst::video::createRtpSink(mAddress, mPort, mCodec));
+        //
+        // if (mCodec == gst::video::Codec::H265) {
+        //     pipeline.pushBack("h265parse");
+        // } else if (mCodec == gst::video::Codec::H264) {
+        //     pipeline.pushBack("h264parse");
+        // }
+        //
+        // pipeline.pushBack(gst::video::createRtpSink(mAddress, mPort, mCodec));
 
         RCLCPP_INFO_STREAM(get_logger(), std::format("GStreamer stream launch string: {}", pipeline.str()));
         mStreamPipelineWrapper = gst::PipelineWrapper(pipeline.str());

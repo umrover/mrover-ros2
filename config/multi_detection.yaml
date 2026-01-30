@@ -1,0 +1,44 @@
+# Laptop Camera
+laptop_cam:
+  ros__parameters:
+    device: "video0"
+
+laptop_cam_tag_detector:
+  ros__parameters:
+    image_sub_topic: "/laptop_cam/image"
+
+laptop_cam_streamer:
+  ros__parameters:
+    camera: "laptop_cam"
+
+# Ardu Camera
+ardu_cam:
+  ros__parameters:
+    device: "video4"
+
+ardu_cam_tag_detector:
+  ros__parameters:
+    image_sub_topic: "/ardu_cam/image"
+
+ardu_cam_streamer:
+  ros__parameters:
+    camera: "ardu_cam"
+
+/**:
+  ros__parameters:
+    laptop_cam:
+      address: 127.0.0.1 # localhost
+      image_topic: "/laptop_cam_tag_detector/detections"
+      stream:
+        pixel_format: YUYV
+        width: 640
+        height: 480
+        framerate: 30
+    ardu_cam:
+      address: 127.0.0.1 # localhost
+      image_topic: "/ardu_cam_tag_detector/detections"
+      stream:
+        pixel_format: YUYV
+        width: 640
+        height: 480
+        framerate: 30

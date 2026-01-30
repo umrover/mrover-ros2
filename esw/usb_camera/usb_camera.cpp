@@ -32,8 +32,8 @@ namespace mrover {
             ParameterWrapper::declareParameters(this, params);
 
             device = std::format("/dev/{}", deviceName);
-            imageTopicName = std::format("/{}/image", deviceName);
-            cameraInfoTopicName = std::format("/{}/camera_info", deviceName);
+            imageTopicName = std::format("/{}/image", get_name());
+            cameraInfoTopicName = std::format("/{}/camera_info", get_name());
 
             /* Interfaces */
             mImgPub = create_publisher<sensor_msgs::msg::Image>(imageTopicName, 1);

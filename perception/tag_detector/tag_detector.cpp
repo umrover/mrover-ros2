@@ -67,16 +67,18 @@ namespace mrover {
     }
 
     ImageTagDetector::ImageTagDetector(rclcpp::NodeOptions const& options) : TagDetectorBase{"image_tag_detector", options}, mCameraHorizontalFOV{} {
+        std::string imageSubTopic;
         std::vector<ParameterWrapper> params{
+                {"image_sub_topic", imageSubTopic, "/long_range_cam/image"},
                 {"camera_horizontal_fov", mCameraHorizontalFOV, 10.0}};
 
         ParameterWrapper::declareParameters(this, params);
 
-        mDetectedImagePub = create_publisher<sensor_msgs::msg::Image>("image_tag_detection", 1);
+        mDetectedImagePub = create_publisher<sensor_msgs::msg::Image>(std::format("/{}/detections", get_name()), 1);
 
-        mTargetsPub = create_publisher<msg::ImageTargets>("/tags", 1);
+        mTargetsPub = create_publisher<msg::ImageTargets>(std::format("/{}/tags", get_name()), 1);
 
-        mImageSub = create_subscription<sensor_msgs::msg::Image>("/long_range_cam/image", 1, [this](sensor_msgs::msg::Image::ConstSharedPtr const& msg) {
+        mImageSub = create_subscription<sensor_msgs::msg::Image>(imageSubTopic, 1, [this](sensor_msgs::msg::Image::ConstSharedPtr const& msg) {
             imageCallback(msg);
         });
     }
