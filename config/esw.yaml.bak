@@ -1,0 +1,89 @@
+# All units are in SI
+# ===================
+# Time:     second, hz
+# Angle:    radian
+# Distance: meter
+
+differential_drive_controller:
+  ros__parameters:
+    rover:
+      width: 0.86
+      length: 0.86
+      wheel_radius: 0.13
+      max_linear_speed: 10.0
+      max_angular_speed: 10.0
+
+can_bridge_0:
+  ros__parameters:
+    interface: can0
+    is_extended_frame: true
+    devices:
+      jetson:
+        id: 0x10
+      pdlb:
+        id: 0x11
+      mast_gimbal_pitch:
+        id: 0x12
+      mast_gimbal_yaw:
+        id: 0x13
+can_bridge_1:
+  ros__parameters:
+    interface: can1
+    is_extended_frame: true
+    devices:
+      jetson:
+        id: 0x10
+      front_left:
+        id: 0x20
+      middle_left:
+        id: 0x21
+      back_left:
+        id: 0x22
+      front_right:
+        id: 0x23
+      middle_right:
+        id: 0x24
+      back_right:
+        id: 0x25
+can_bridge_2:
+  ros__parameters:
+    interface: can2
+    is_extended_frame: true
+    devices:
+      jetson:
+        id: 0x10
+      joint_a:
+        id: 0x30
+      joint_b:
+        id: 0x31
+      joint_c:
+        id: 0x32
+      joint_de_0:
+        id: 0x33
+      joint_de_1:
+        id: 0x34
+      gripper:
+        id: 0x35
+      cam:
+        id: 0x36
+      auger:
+        id: 0x40
+      sensor_actuator:
+        id: 0x41
+      linear_actuator:
+        id: 0x42
+      pump_0:
+        id: 0x43
+      pump_1:
+        id: 0x44
+can_bridge_3:
+  ros__parameters:
+    interface: can3
+    is_extended_frame: true
+    devices:
+      jetson:
+        id: 0x10
+      science_a:
+        id: 0x50
+      science_b:
+        id: 0x51

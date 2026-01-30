@@ -1,74 +1,98 @@
 #pragma once
 
 #include <algorithm>
-#include <cstddef>
-#include <cstdint>
 #include <format>
-#include <span>
+#include <functional>
 #include <string>
 #include <variant>
 
-#include <rclcpp/rclcpp.hpp>
-#include <rclcpp/utilities.hpp>
-
+#include <CANBus1.hpp>
 #include <moteus/moteus.h>
-
 #include <mrover/msg/can.hpp>
+#include <rclcpp/rclcpp.hpp>
+
 
 namespace mrover {
 
     using namespace mjbots;
 
-    template<typename T>
-    concept IsSerializable = std::is_trivially_copyable_v<T>;
+    static constexpr uint32_t MOTEUS_PREFIX = 0x0000;
 
-    template<typename T>
-    concept IsCanFdSerializable = IsSerializable<T> && sizeof(T) <= 64;
+    template<typename Variant, typename NewType>
+    struct add_to_variant;
+
+    template<typename... Ts, typename NewType>
+    struct add_to_variant<std::variant<Ts...>, NewType> {
+        using type = std::variant<Ts..., NewType>;
+    };
+
+    using can_msg_t = add_to_variant<CANBus1Msg_t, moteus::CanFdFrame>::type;
 
     class CanDevice {
-        rclcpp::Node::SharedPtr mNode;
-        rclcpp::Publisher<msg::CAN>::SharedPtr mCanPublisher;
-        std::string mFromDevice{}, mToDevice{};
+        rclcpp::Node::SharedPtr m_node;
+        rclcpp::Publisher<msg::CAN>::SharedPtr m_can_publisher;
+        rclcpp::Subscription<msg::CAN>::SharedPtr m_can_subscriber;
+        std::string m_src_device{}, m_dest_device{};
+        std::function<void(can_msg_t const&)> m_callback;
 
-        void publish_data(std::span<std::byte const> data, bool replyRequired = false) {
-            msg::CAN can_message;
-            can_message.source = mFromDevice;
-            can_message.destination = mToDevice;
-            can_message.reply_required = replyRequired;
-            // This is needed since ROS is old and uses std::uint8_t instead of std::byte
-            std::ranges::transform(data, std::back_inserter(can_message.data), [](std::byte b) { return static_cast<std::uint8_t>(b); });
-            mCanPublisher->publish(can_message);
+        void handle_incoming_ros(msg::CAN::ConstSharedPtr const& msg) {
+            if (!m_callback) return;
+
+            // mask out source
+            uint32_t incoming_base_id = msg->prefix & ~CAN_NODE_MASK;
+
+            if (incoming_base_id == MOTEUS_PREFIX) {
+                moteus::CanFdFrame frame;
+                frame.size = std::min(msg->data.size(), static_cast<size_t>(64));
+                std::memcpy(frame.data, msg->data.data(), frame.size);
+                m_callback(frame);
+                return;
+            }
+
+            auto try_parse = [&]<typename T>() {
+                if constexpr (!std::is_same_v<T, moteus::CanFdFrame>) {
+                    if (T::BASE_ID == incoming_base_id) {
+                        m_callback(T{msg->data.data()});
+                    }
+                }
+            };
+
+            [&]<typename... Ts>(std::variant<Ts...>*) {
+                (try_parse.operator()<Ts>(), ...);
+            }(static_cast<CANBus1Msg_t*>(nullptr));
         }
 
     public:
         CanDevice() = default;
 
-        CanDevice(rclcpp::Node::SharedPtr node, std::string from_device, std::string to_device)
-            : mNode{std::move(node)},
-              mFromDevice{std::move(from_device)},
-              mToDevice{std::move(to_device)} {
-            // rclcpp::init(0, nullptr);
-            mCanPublisher = mNode->create_publisher<msg::CAN>(std::format("can/{}/out", mToDevice), 1);
+        CanDevice(rclcpp::Node::SharedPtr node, std::string src_device, std::string dest_device,
+                  std::function<void(can_msg_t const&)> callback = nullptr)
+            : m_node{std::move(node)}, m_src_device{std::move(src_device)},
+              m_dest_device{std::move(dest_device)}, m_callback{std::move(callback)} {
+
+            m_can_publisher = m_node->create_publisher<msg::CAN>(std::format("can/{}/out", m_dest_device), 10);
+            m_can_subscriber = m_node->create_subscription<msg::CAN>(std::format("can/{}/in", m_src_device), 10,
+                                                                     [this](msg::CAN::ConstSharedPtr const& msg) -> void { handle_incoming_ros(msg); });
         }
 
+        void publish_message(can_msg_t const& msg) {
+            msg::CAN ros_msg;
+            ros_msg.source = m_src_device;
+            ros_msg.destination = m_dest_device;
 
-        template<typename... Variants>
-            requires(IsCanFdSerializable<std::variant<Variants...>>)
-        void publish_message(std::variant<Variants...> const& data) {
-            // This is okay since "publish_data" makes a copy
-            auto* address = reinterpret_cast<std::byte const*>(&data);
-            // TODO - currently doesnt work since tag is at end
-            // Consider a variant where one alternative is very small and the other is very large
-            // We don't want to always serialize the size of the large one (e.g. if we just did sizeof the overall variant)
-            // This visit ensures we get the size of the actual underlying current alternative
-            // std::size_t size = std::visit([](auto const& v) { return sizeof(v); }, data);
-            std::size_t size = sizeof(data);
-            publish_data({address, size});
-        }
+            std::visit([&](auto const& val) {
+                using T = std::decay_t<decltype(val)>;
+                if constexpr (std::is_same_v<T, moteus::CanFdFrame>) {
+                    ros_msg.prefix = MOTEUS_PREFIX;
+                    ros_msg.data.assign(val.data, val.data + val.size);
+                } else {
+                    ros_msg.prefix = T::BASE_ID;
+                    ros_msg.data.assign(val.msg_arr, val.msg_arr + sizeof(val.msg_arr));
+                }
+            },
+                       msg);
 
-        void publish_moteus_frame(moteus::CanFdFrame const& frame) {
-            auto* address = reinterpret_cast<std::byte const*>(frame.data);
-            publish_data({address, frame.size}, frame.reply_required);
+            m_can_publisher->publish(ros_msg);
         }
     };
 } // namespace mrover

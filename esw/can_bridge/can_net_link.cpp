@@ -3,26 +3,26 @@
 namespace mrover {
 
     CanNetLink::CanNetLink(rclcpp::Logger const& logger, std::string interface)
-        : mInterface{std::move(interface)} {
+        : m_interface{std::move(interface)} {
 
         try {
-            mSocket = nl_socket_alloc();
-            if (mSocket == nullptr) {
+            m_socket = nl_socket_alloc();
+            if (m_socket == nullptr) {
                 throw std::runtime_error("Failed to allocate the network link socket");
             }
 
-            if (int status = nl_connect(mSocket, NETLINK_ROUTE); status < 0) {
+            if (int status = nl_connect(m_socket, NETLINK_ROUTE); status < 0) {
                 throw std::runtime_error("Failed to connect to the network link socket");
             }
 
-            rtnl_link_alloc_cache(mSocket, AF_UNSPEC, &mCache);
-            if (mCache == nullptr) {
+            rtnl_link_alloc_cache(m_socket, AF_UNSPEC, &m_cache);
+            if (m_cache == nullptr) {
                 throw std::runtime_error("Failed to allocate the network link cache");
             }
 
-            rtnl_link* link = rtnl_link_get_by_name(mCache, mInterface.c_str());
+            rtnl_link* link = rtnl_link_get_by_name(m_cache, m_interface.c_str());
             if (link == nullptr) {
-                throw std::runtime_error(std::format("Failed to retrieve the link {} by name", mInterface));
+                throw std::runtime_error(std::format("Failed to retrieve the link {} by name", m_interface));
             }
 
             if (bool is_up = rtnl_link_get_flags(link) & IFF_UP; !is_up) {
@@ -66,7 +66,7 @@ namespace mrover {
             //     }
             // }
 
-            RCLCPP_INFO_STREAM(logger, "Set up");
+            RCLCPP_INFO_STREAM(logger, "netlink configured");
 
         } catch (std::exception const& exception) {
             RCLCPP_FATAL_STREAM(logger, std::format("Exception in setup: {}", exception.what()));
@@ -75,7 +75,7 @@ namespace mrover {
     }
 
     CanNetLink::~CanNetLink() {
-        if (!mSocket || !mCache) return;
+        if (!m_socket || !m_cache) return;
 
         // TODO: just assume interface is always up
         // if (mInterface.starts_with("can")) {
@@ -89,9 +89,9 @@ namespace mrover {
         //     rtnl_link_put(link); // Free
         // }
 
-        nl_socket_free(mSocket);
-        mCache = nullptr;
-        mSocket = nullptr;
+        nl_socket_free(m_socket);
+        m_cache = nullptr;
+        m_socket = nullptr;
     }
 
 } // namespace mrover
