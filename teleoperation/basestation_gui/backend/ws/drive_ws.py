@@ -4,6 +4,7 @@ from backend.input import DeviceInputs
 from backend.drive_controls import send_joystick_twist, send_controller_twist
 from mrover.msg import ControllerState
 from geometry_msgs.msg import Twist
+from nav_msgs.msg import OccupancyGrid
 
 
 class DriveHandler(WebSocketHandler):
@@ -17,6 +18,7 @@ class DriveHandler(WebSocketHandler):
 
         self.forward_ros_topic("/left_controller_state", ControllerState, "drive_left_state")
         self.forward_ros_topic("/right_controller_state", ControllerState, "drive_right_state")
+        self.forward_ros_topic("/costmap", OccupancyGrid, "costmap")
 
     async def handle_message(self, data):
         msg_type = data.get('type')

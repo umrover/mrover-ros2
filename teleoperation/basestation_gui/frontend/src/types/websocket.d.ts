@@ -40,6 +40,34 @@ export interface JointStateMessage {
   effort: number[];
 }
 
+export interface OccupancyGridMessage {
+  header: {
+    seq: number;
+    stamp: number; //time
+    frame_id: number;
+  };
+  info: {
+    map_load_time: number; //time
+    resolution: number;
+    width: number;
+    height: number;
+    origin: {
+      position: {
+        x: number;
+        y: number;
+        z: number;
+      };
+      orientation : {
+        x: number;
+        y: number;
+        z: number;
+        w: number;
+      };
+    };
+  };
+  data: number[];
+}
+
 export interface OrientationMessage {
   type: 'orientation';
   orientation: number[];

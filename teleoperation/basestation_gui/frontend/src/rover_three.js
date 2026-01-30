@@ -1,13 +1,9 @@
 import * as THREE from 'three'
 import GUI from 'lil-gui'
 import URDFLoader from 'urdf-loader'
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
-// import { FlyControls } from 'three/addons/controls/FlyControls.js'
-// import { ArcballControls } from 'three/addons/controls/ArcballControls.js'
-// import { FirstPersonControls } from 'three/addons/controls/FirstPersonControls.js'
-// import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js'
-//import { TrackballControls } from 'three/addons/controls/TrackballControls.js'
-import * as Text2D from 'three/addons/webxr/Text2D.js' //DEBUG
 
 const defaultJointValues = {
   chassis_to_arm_a: 24.14,
@@ -23,20 +19,21 @@ let ikTargetSphere = null
 
 let current_camera_type = "default"
 
-const costMapBlockWidth = 80
-const numCostMapBlocks = 20
+const costMapBlockWidth = 40
+const numCostMapBlocks = 40
 const costMapGridOffset = costMapBlockWidth * (numCostMapBlocks/2)
-
-
-// Create a canvas and context
+let costMapBlocks = []
 const textCanvas = document.createElement('canvas');
-textCanvas.width = 2400;//1280;
-textCanvas.height = 2400;//1280;
+const textCanvasSideLength = costMapBlockWidth * numCostMapBlocks
+textCanvas.width = textCanvasSideLength;
+textCanvas.height = textCanvasSideLength;
 const textCanvasContext = textCanvas.getContext('2d');
 const textCanvasTexture = new THREE.CanvasTexture(textCanvas);
-
-//[Box Mesh, Text2D]
-let costMapBlocks = []
+const textCanvasMaterial = new THREE.MeshBasicMaterial({ map: textCanvasTexture, transparent: true });
+const textCanvasPlane = new THREE.Mesh(new THREE.PlaneGeometry(textCanvasSideLength, textCanvasSideLength), textCanvasMaterial);
+textCanvasPlane.position.x = -costMapBlockWidth / 2
+textCanvasPlane.position.y = -49
+textCanvasPlane.position.z = -costMapBlockWidth / 2
 
 export default function threeSetup() {
   // Canvas element
@@ -76,69 +73,43 @@ export default function threeSetup() {
   ikTargetSphere.visible = false // Hidden by default until position is set
   scene.add(ikTargetSphere)
 
-  //Create costmap grid
-  //let costMapBlocks = []
-  
+  //Create costmap grid  
   for(let i = 0, idx = 0; i < numCostMapBlocks; i++){
     for(let j = 0; j < numCostMapBlocks; j++, idx++){
       const currentGeometry = new THREE.BoxGeometry(costMapBlockWidth,1,costMapBlockWidth)
       const currentMaterial = new THREE.MeshStandardMaterial({
-        color: 0xff0000,
-        /*emissive: 0xff0000,
-        emissiveIntensity: 0.3,*/
+        color: 0x9d00ff,
       })
       
-      costMapBlocks.push([new THREE.Mesh(currentGeometry, currentMaterial), Text2D.createText("", costMapBlockWidth / 2)])
+      costMapBlocks.push(new THREE.Mesh(currentGeometry, currentMaterial))
 
       const current_x = j * costMapBlockWidth - costMapGridOffset
       const current_z =  i * costMapBlockWidth - costMapGridOffset
 
-      costMapBlocks[idx][0].position.x = current_x
-      costMapBlocks[idx][0].position.y = -50
-      costMapBlocks[idx][0].position.z = current_z
+      costMapBlocks[idx].position.x = current_x
+      costMapBlocks[idx].position.y = -50
+      costMapBlocks[idx].position.z = current_z
 
-      costMapBlocks[idx][1].position.x = current_x
-      costMapBlocks[idx][1].position.y = -49
-      costMapBlocks[idx][1].position.z = current_z
-      costMapBlocks[idx][1].lookAt(current_x, 10, current_z)
-
-      scene.add(costMapBlocks[idx][0])
-      scene.add(costMapBlocks[idx][1])
+      scene.add(costMapBlocks[idx])
     }
   }
 
   //Initialize Text
-  // Initial text rendering
-  let currentTextSize = Math.round(costMapBlockWidth * 0.3)
+  const currentTextSize = costMapBlockWidth * 0.3
   textCanvasContext.fillStyle = 'white';
   textCanvasContext.font = currentTextSize + 'px Arial';
+  textCanvasContext.textAlign = 'center';
+  textCanvasContext.textBaseline = 'middle';
   
-  //TODO this is a meh way of doing this
   let tempGridData = []
   for(let i = 0; i < costMapBlockWidth * costMapBlockWidth; i++){
-    tempGridData.push(i)
+    tempGridData.push(-1)
   }
 
   fillTextCanvas(tempGridData)
 
-  // for(let i = 0; i < numCostMapBlocks; i++){
-  //   for(let j = 0; j < numCostMapBlocks; j++){
-  //     textCanvasContext.fillText('0', 10 + j * costMapBlockWidth, 500 + i * costMapBlockWidth)
-  //   }
-  // }
-
-  //textCanvasContext.fillText('Initial Text', 10, 500);
-  //textCanvasContext.fillText('And me too!', 10, 500 + currentTextSize);
-
-  // Create a texture from the canvas
-  let textPlaneSideLength = 2400//costMapBlockWidth * numCostMapBlocks
-  const textCanvasMaterial = new THREE.MeshBasicMaterial({ map: textCanvasTexture, transparent: true });
-  const textCanvasPlane = new THREE.Mesh(new THREE.PlaneGeometry(textPlaneSideLength, textPlaneSideLength), textCanvasMaterial);
-  //textCanvasPlane.position.x = 50
-  textCanvasPlane.position.x = costMapGridOffset/2
-  textCanvasPlane.position.z = -costMapGridOffset/8
-  textCanvasPlane.lookAt(costMapGridOffset/2, 50, -costMapGridOffset/8)
-  textCanvasPlane.position.y = -49
+  //Add textCanvasPlane to Scene
+  textCanvasPlane.lookAt(-costMapBlockWidth / 2, 50, -costMapBlockWidth / 2)
   scene.add(textCanvasPlane);
 
 
@@ -148,6 +119,18 @@ export default function threeSetup() {
   loader.packages = {
     mrover: '/urdf',
   }
+
+  loader.loadMeshCb = function(path, manager, onComplete) {
+    const gltfLoader = new GLTFLoader(manager);
+    const dracoLoader = new DRACOLoader();
+    dracoLoader.setDecoderPath( 'https://www.gstatic.com/draco/v1/decoders/' );
+    gltfLoader.setDRACOLoader( dracoLoader );
+    gltfLoader.load(path, result => {
+        onComplete(result.scene); // Pass the GLTF scene to urdf-loader
+    }, undefined, err => {
+        onComplete(null, err); // Handle errors
+    });
+  };
 
   // Load using absolute path from web root
   loader.load(
@@ -205,35 +188,7 @@ export default function threeSetup() {
   }
 
   // Camera setup
-  // const camera = new THREE.PerspectiveCamera(
-  //   75,
-  //   sizes.width / sizes.height,
-  //   0.1,
-  //   1000,
-  // )
-  // camera.position.x = 100
-  // camera.position.y = 50
-  // camera.position.z = 100
-  // camera.lookAt(0, 0, 0)
-  // scene.add(camera)
-  
-  // const follow_camera = new THREE.PerspectiveCamera(
-  //   75,
-  //   sizes.width / sizes.height,
-  //   0.1,
-  //   1000,
-  // )
-  // follow_camera.position.x = -100
-  // follow_camera.position.y = 60
-  // follow_camera.position.z = 0
-  // follow_camera.lookAt(0, 20, 0)
-  // scene.add(follow_camera)
-
-  // var current_camera_type = "default"
-  // var camera_type_names = ["default", "follow"]
-  
-  //TODO just change camera position, not actual object?
-  var camera_types = {
+  const camera_types = {
     "default": new THREE.PerspectiveCamera(
       75,
       sizes.width / sizes.height,
@@ -265,12 +220,6 @@ export default function threeSetup() {
         1000,
     ),
     "top": new THREE.PerspectiveCamera(
-        75,
-        sizes.width / sizes.height,
-        0.1,
-        1000,
-    ),
-    "bottom": new THREE.PerspectiveCamera(
         75,
         sizes.width / sizes.height,
         0.1,
@@ -313,16 +262,6 @@ export default function threeSetup() {
   camera_types["top"].position.z = 0
   camera_types["top"].lookAt(0, 0, 0)
   scene.add(camera_types["top"])
-
-  camera_types["bottom"].position.x = 11
-  camera_types["bottom"].position.y = -160
-  camera_types["bottom"].position.z = 0
-  camera_types["bottom"].lookAt(10, 0, 0)
-  scene.add(camera_types["top"])
-
-  // for(var tag of camera_type_names){
-  //   camera_types[tag].position.y = 500
-  // }
 
   // OrbitControls for the camera
   const controls = new OrbitControls(camera_types["default"], canvas)
@@ -420,82 +359,64 @@ export function updateIKTarget(position) {
 }
 
 export function set_camera_type(new_type) {
-  //console.log(current_camera_type);
   current_camera_type = new_type
 }
 
-
-//DEBUG experimenting
-// export function updateCostMapGrid(grid_data){
-//   for(let i = 0; i < numCostMapBlocks * numCostMapBlocks; i++){
-//     console.log("i ran")
-//     costMapBlocks[i][1].text = "67" //DEBUG
-    //costMapBlocks[i][1].update()
-
-    //replace text
-    //scene.remove(costMapBlocks[i][1])
-
-    // const current_x = Math.floor(i / numCostMapBlocks) * costMapBlockWidth - costMapGridOffset
-    // const current_z =  (i % numCostMapBlocks) * costMapBlockWidth - costMapGridOffset
-      
-    // costMapBlocks[i][1] = Text2D.createText("67", costMapBlockWidth / 2)
-
-    // costMapBlocks[i][1].position.x = current_x
-    // costMapBlocks[i][1].position.y = -49
-    // costMapBlocks[i][1].position.z = current_z
-    // costMapBlocks[i][1].lookAt(current_x, 10, current_z)
-    
-    //scene.add(costMapBlocks[i][1])
-//   }
-// }
-// export function updateCostMapGrid(grid_data){
-//   for(let i = 0; i < numCostMapBlocks * numCostMapBlocks; i++){
-//     console.log(i)
-//     console.log(costMapBlocks[i])//[1].text = "67" //DEBUG
-//   }
-// }
-
-// updateCostMapGrid([1])
-
-/*Fills the textCanvas with values according to gridData
-Note that it does not clear the canvas, nor marks it for update*/
+// Fills the textCanvas with values according to gridData
+// Note that it does not clear the canvas, nor marks it for update
 function fillTextCanvas(gridData){
   for(let i = 0; i < numCostMapBlocks; i++){
     for(let j = 0; j < numCostMapBlocks; j++){
-      textCanvasContext.fillText(gridData[(i * numCostMapBlocks) + j], 10 + j * costMapBlockWidth, 500 + i * costMapBlockWidth)
+      textCanvasContext.fillText(gridData[(i * numCostMapBlocks) + j], (j + 0.5) * costMapBlockWidth, (i + 0.5) * costMapBlockWidth)
     }
   }
 }
 
-export function updateCostMapGrid(){
-  let tempGridData = []
-  for(let i = 0; i < costMapBlockWidth * costMapBlockWidth; i++){
-    tempGridData.push(Math.round(Math.random() * 100))
-  }
-  
+export function updateCostMapGrid(gridData){
   for(let i = 0; i < numCostMapBlocks * numCostMapBlocks; i++){
     
-    const newColor = new THREE.Color(tempGridData[i] * 0.01, 1 - tempGridData[i] * 0.01, 0)
+    const newColor = new THREE.Color(gridData[i] * 0.01, 1 - gridData[i] * 0.01, 0)
 
     const newMaterial = new THREE.MeshStandardMaterial({
-    color: newColor//0xfff000
+    color: newColor
     })
 
-    costMapBlocks[i][0].material = newMaterial
-    costMapBlocks[i][1].text = "67"
-    
+    costMapBlocks[i].material = newMaterial
+
+    //costMapBlocks.material.color = THREE.Color(gridData[i] * 0.01, 1 - gridData[i] * 0.01, 0)
   }
 
   textCanvasContext.clearRect(0, 0, textCanvas.width, textCanvas.height);
-  // textCanvasContext.fillText('hkashjkdgahuaishuihsdhakshdkhashjdhuisah', 10, 50);
-  // for(let i = 0; i < numCostMapBlocks; i++){
-  //   for(let j = 0; j < numCostMapBlocks; j++){
-  //     textCanvasContext.fillText('67', 10 + j * costMapBlockWidth, 500 + i * costMapBlockWidth)
-  //   }
-  // }
   
+  fillTextCanvas(gridData)
+  textCanvasTexture.needsUpdate = true;
+}
+
+export function resetCostMapGrid(){
+  for(let i = 0; i < numCostMapBlocks * numCostMapBlocks; i++){
+    const newMaterial = new THREE.MeshStandardMaterial({
+        color: 0x9d00ff,
+      })
+    costMapBlocks[i].material = newMaterial
+  }
+
+  textCanvasContext.clearRect(0, 0, textCanvas.width, textCanvas.height);
+  
+  let tempGridData = []
+  for(let i = 0; i < costMapBlockWidth * costMapBlockWidth; i++){
+    tempGridData.push(-100)
+  }
+
   fillTextCanvas(tempGridData)
   textCanvasTexture.needsUpdate = true;
+}
+
+export function toggleCostMapGridVisibility(){
+  for(let i = 0; i < numCostMapBlocks * numCostMapBlocks; i++){
+    costMapBlocks[i].visible = !costMapBlocks[i].visible
+  }
+
+  textCanvasPlane.visible = !textCanvasPlane.visible
 }
 
 // export function fk(positions, scene, joints) {

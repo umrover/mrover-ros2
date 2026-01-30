@@ -1,4 +1,5 @@
 #include "cost_map.hpp"
+#include <cstdio>
 
 namespace mrover {
     auto remap(double x, double inMin, double inMax, double outMin, double outMax) -> double {
@@ -157,6 +158,26 @@ namespace mrover {
             postProcessed.header.frame_id = mMapFrame;
             postProcessed.data.resize(mNumDivisions * mNumDivisions * mGlobalGridMsg.data.size(), UNKNOWN_COST);
 
+            // // For metadata (resolution, dimensions):                                        
+            // RCLCPP_INFO_STREAM(get_logger(), "mGlobalGridMsg: width=" <<                   
+            // postProcessed.info.width                                                      
+            //     << ", height=" << mGlobalGridMsg.info.height                               
+            //     << ", resolution=" << mGlobalGridMsg.info.resolution);                     
+                                                                                            
+            // // For the grid data itself (can be very large, so consider limiting output):    
+            // // Print cells with known values                                                      
+            // for (size_t i = 0; i < mGlobalGridMsg.data.size() /*std::min(mGlobalGridMsg.data.size(), size_t(100))*/; ++i) 
+            // {   
+            //     if(mGlobalGridMsg.data[i] != -1){                                                                          
+            //         RCLCPP_INFO(get_logger(), "Cell %zu: %d", i,                              
+            //     static_cast<int>(mGlobalGridMsg.data[i]));    
+            //     }                                 
+            // }                                                                             
+                                                                                            
+            // // To throttle output (avoid spamming console since this is in a callback):      
+            // RCLCPP_INFO_STREAM_THROTTLE(get_logger(), *get_clock(), 1000,                 
+            //     "mGlobalGridMsg size: " << mGlobalGridMsg.data.size());
+
             // Fill each new cell in the new map with data from the old cell (each old cell will populate numDivisions^2 worth of data)
             for (int row = 0; row < mHeight; ++row) {
                 for (int col = 0; col < mWidth; ++col) {
@@ -215,6 +236,26 @@ namespace mrover {
                     }
                 }
             }
+
+            // // For metadata (resolution, dimensions):                                        
+            // RCLCPP_INFO_STREAM(get_logger(), "PostProcessed: width=" <<                   
+            // postProcessed.info.width                                                      
+            //     << ", height=" << postProcessed.info.height                               
+            //     << ", resolution=" << postProcessed.info.resolution);                     
+                                                                                            
+            // // For the grid data itself (can be very large, so consider limiting output):    
+            // // Print first N cells                                                        
+            // for (size_t i = 0; i < postProcessed.data.size() /*(std::min(postProcessed.data.size(), size_t(100))*/; ++i) 
+            // {           
+            //     if(postProcessed.data[i] != -1){                                                                  
+            //     RCLCPP_INFO(get_logger(), "Cell %zu: %d", i,                              
+            // static_cast<int>(postProcessed.data[i]));   
+            //     }                                  
+            // }                                                                             
+                                                                                            
+            // // To throttle output (avoid spamming console since this is in a callback):      
+            // RCLCPP_INFO_STREAM_THROTTLE(get_logger(), *get_clock(), 1000,                 
+            //     "PostProcessed size: " << postProcessed.data.size());
 
 
             mCostMapPub->publish(postProcessed);

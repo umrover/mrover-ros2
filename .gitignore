@@ -13,6 +13,9 @@ compile_commands.json
 # clangd cache
 .cache/
 
+# build symlink
+compile_commands.json
+
 # IMGUI window layout
 imgui.ini
 

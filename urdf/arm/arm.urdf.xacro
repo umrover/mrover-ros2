@@ -115,16 +115,16 @@
 
   <link name="base_link">
     <xacro:box_inertia m="3.0" w="${base_len}" h="${base_width}" d="${base_height}"/>
-    <xacro:link-visual fileName="chasis.dae" col="red" r="1" g="1" b="1"/>
+    <xacro:link-visual fileName="chasis.glb" col="red" r="1" g="1" b="1"/>
     <!--    <collision>-->
     <!--        <origin rpy="0 0 0" xyz="0 0 -9.5"/>-->
     <!--        <geometry>-->
-    <!--            <mesh filename="package://robo_impls/urdf/rover.dae"/>-->
+    <!--            <mesh filename="package://robo_impls/urdf/rover.glb"/>-->
     <!--        </geometry>-->
     <!--    </collision> -->
   </link>
   <link name="a_link">
-    <xacro:link-visual fileName="link.a.dae"
+    <xacro:link-visual fileName="link.a.glb"
                        col="white" r="1" g="1" b="1"/>
     <!--    <xacro:link-collision-cylinder radius="3.75" x1="0" y1="0" z1="-1.25" x2="0" y2="0" z2="-3.75"/>-->
     <!--    <xacro:link-collision-cylinder radius="1.75" x1="3.6467207" y1="3.6590503" z1="-0.75" x2="3.6467207"-->
@@ -132,19 +132,19 @@
     <!--    <xacro:link-inertial z="-2.5" mass="0.5" ixx="2.3" iyy="2.3" izz="3.5"/>-->
   </link>
   <link name="b_link">
-    <xacro:link-visual fileName="link.b.dae"
+    <xacro:link-visual fileName="link.b.glb"
                        col="orange" r="1" g="0.43" b="0"/>
   </link>
   <link name="c_link">
-    <xacro:link-visual fileName="link.c.dae"
+    <xacro:link-visual fileName="link.c.glb"
                        col="yellow" r="1" g="1" b="0"/>
   </link>
   <link name="d_link">
-    <xacro:link-visual fileName="link.d.dae"
+    <xacro:link-visual fileName="link.d.glb"
                        col="green" r="0.43" g="1" b="0"/>
   </link>
   <link name="e_link">
-    <xacro:link-visual fileName="link.e.dae"
+    <xacro:link-visual fileName="link.e.glb"
                        col="blue" r="0" g="0" b="1"/>
   </link>
 </robot>

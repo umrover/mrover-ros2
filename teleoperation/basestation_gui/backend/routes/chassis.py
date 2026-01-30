@@ -87,6 +87,8 @@ async def gimbal_adjust(data: GimbalAdjustRequest):
     try:
         if data.joint not in ['pitch', 'yaw']:
             raise HTTPException(status_code=400, detail="Joint must be pitch or yaw")
+        
+        node = get_node() 
 
         node = get_node()
         client = get_service_client(ServoPosition, "/gimbal_servo")

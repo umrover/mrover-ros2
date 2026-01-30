@@ -74,6 +74,7 @@ onUnmounted(() => {
 
 const gimbalJointState = computed((): ControllerStateMessage | null => {
   const messages = websocketStore.messages['chassis']
+  console.log(messages)
   if (!messages || !Array.isArray(messages)) return null
   const msg = messages.find((msg: { type: string }) => msg.type === 'gimbal_controller_state')
   return msg ? (msg as ControllerStateMessage) : null
