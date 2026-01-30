@@ -7,9 +7,6 @@ from rclpy.qos import qos_profile_sensor_data
 from rosidl_runtime_py.convert import message_to_ordereddict
 from backend.managers.ros import get_node
 
-FORWARD_RATE_HZ = 30
-FORWARD_INTERVAL_SEC = 1.0 / FORWARD_RATE_HZ
-
 
 class WebSocketHandler:
     def __init__(self, websocket: WebSocket, endpoint: str):
@@ -21,8 +18,6 @@ class WebSocketHandler:
         self.timers = []
         self.loop = asyncio.get_running_loop()
         self.closed = False
-        self.callback_lock = threading.Lock()
-        self.last_send_times: dict[str, float] = {}
 
     async def send_msgpack(self, data):
         if self.closed:
@@ -43,18 +38,9 @@ class WebSocketHandler:
             pass
 
     def forward_ros_topic(self, topic_name, topic_type, gui_msg_type):
-        self.last_send_times[topic_name] = 0.0
-
         def callback(ros_message):
-            with self.callback_lock:
-                if self.closed:
-                    return
-                now = time.monotonic()
-                if now - self.last_send_times[topic_name] < FORWARD_INTERVAL_SEC:
-                    return
-                self.last_send_times[topic_name] = now
-                data_to_send = {"type": gui_msg_type, **message_to_ordereddict(ros_message)}
-                self.schedule_send(data_to_send)
+            data_to_send = {"type": gui_msg_type, **message_to_ordereddict(ros_message)}
+            self.schedule_send(data_to_send)
 
         sub = self.node.create_subscription(
             topic_type, topic_name, callback, qos_profile=qos_profile_sensor_data
@@ -63,8 +49,7 @@ class WebSocketHandler:
 
     async def cleanup(self):
         print(f"Cleaning up {self.endpoint} WebSocket handler...")
-        with self.callback_lock:
-            self.closed = True
+        self.closed = True
 
         for sub in self.subscriptions:
             self.node.destroy_subscription(sub)

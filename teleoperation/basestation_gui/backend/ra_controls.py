@@ -21,6 +21,9 @@ ra_mode_lock = threading.Lock()
 def get_ra_mode() -> str:
     with ra_mode_lock:
         return ra_mode
+    
+def test_return_nothing():
+    return
 
 
 async def set_ra_mode(new_ra_mode: str):

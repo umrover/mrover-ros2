@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { encode, decode } from '@msgpack/msgpack'
+import { useNotificationsStore } from '@/stores/notifications'
 
 const webSockets: Record<string, WebSocket> = {}
 const refCounts: Record<string, number> = {}
@@ -197,6 +198,7 @@ export const useWebsocketStore = defineStore('websocket', () => {
     const socket = webSockets[id]
     if (!socket) {
       console.log('websocket selection failed with id', id)
+      useNotificationsStore().addAPIError(id, 'websocket selection failed', 500)
       return
     }
     if (socket.readyState === socket.CLOSED) {
