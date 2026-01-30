@@ -160,6 +160,7 @@ class Panorama(Node):
 
         # START SPINNING THE MAST GIMBAL
         req = ServoPosition.Request()
+        req.header = Header()
         req.name = ["gimbal_pitch", "gimbal_yaw"]
         req.position = [90.0, 360.0] # TODO is 90 correct?? 0?
         self.gimbal_client.call_async(req)
