@@ -1,6 +1,12 @@
 #include "simulator.hpp"
 #include "mrover/action/detail/click_ik__struct.hpp"
+#include "mrover/action/detail/ik_image_sample__struct.hpp"
+#include <cstddef>
+#include <future>
+#include <memory>
 #include <rclcpp/logging.hpp>
+#include <rclcpp_action/client.hpp>
+#include <vector>
 
 namespace mrover {
 
@@ -146,6 +152,28 @@ namespace mrover {
         } else if (mCancelClickIk) {
             mActionClient->async_cancel_all_goals();
             mCancelClickIk = false;
+        } else if (mSampleIk) {
+            mHasSampled = true;
+            size_t x = mStereoCameras.front().base.resolution.x() / IMAGE_SAMPLE_RESOLUTION;
+            size_t y = mStereoCameras.front().base.resolution.y() / IMAGE_SAMPLE_RESOLUTION;
+            action::IkImageSample::Goal goal;
+            goal.set__w(x);
+            goal.set__h(y);
+            goal.set__scale(IMAGE_SAMPLE_RESOLUTION);
+            rclcpp_action::Client<action::IkImageSample>::SendGoalOptions options;
+            options.result_callback = [this](rclcpp_action::ClientGoalHandle<action::IkImageSample>::WrappedResult const future) {
+                if (future.code == rclcpp_action::ResultCode::ABORTED)
+                    return;
+                this->mImageSample = future.result;
+                if (!mImageSample) {
+                    RCLCPP_WARN(this->get_logger(), "ClickIK Image Sample failed");
+                    return;
+                }
+                RCLCPP_INFO(this->get_logger(), "Successfully received ClickIK Image Sample");
+            };
+            mImageSampleClient->async_send_goal(goal, options);
+        } else if (mClearIkSample) {
+            mImageSample = nullptr;
         }
 
         if (!mHasFocus || mInGui) return;

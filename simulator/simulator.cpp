@@ -1,4 +1,5 @@
 #include "simulator.hpp"
+#include "mrover/srv/detail/ik_image_sample__struct.hpp"
 
 namespace mrover {
 
@@ -43,6 +44,12 @@ namespace mrover {
                                                                           this->get_node_logging_interface(),
                                                                           this->get_node_waitables_interface(),
                                                                           "click_ik");
+
+            mImageSampleClient = rclcpp_action::create_client<action::IkImageSample>(this->get_node_base_interface(),
+                                                                                     this->get_node_graph_interface(),
+                                                                                     this->get_node_logging_interface(),
+                                                                                     this->get_node_waitables_interface(),
+                                                                                     "ik_image_sample");
 
             mMotorTimeoutMs = get_parameter("motor_timeout").as_int();
 

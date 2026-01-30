@@ -1,6 +1,11 @@
 #pragma once
 
+#include "mrover/action/detail/ik_image_sample__struct.hpp"
+#include "mrover/srv/detail/ik_image_sample__struct.hpp"
+#include "mrover/srv/detail/ik_mode__struct.hpp"
+#include "mrover/srv/detail/ik_sample__struct.hpp"
 #include "pch.hpp"
+#include <rclcpp_action/server.hpp>
 
 namespace mrover {
 
@@ -10,11 +15,17 @@ namespace mrover {
         rclcpp::Subscription<msg::ArmStatus>::ConstSharedPtr mStatusSub;
 
         rclcpp_action::Server<action::ClickIk>::SharedPtr server;
+        rclcpp_action::Server<action::IkImageSample>::SharedPtr iSServer;
 
         msg::IK message;
         rclcpp::TimerBase::SharedPtr timer;
 
         std::shared_ptr<rclcpp_action::ServerGoalHandle<action::ClickIk>> mCurrentGoalHandle;
+        std::shared_ptr<rclcpp_action::ServerGoalHandle<action::IkImageSample>> iSCurrentGoalHandle;
+        bool cancelIkImageSample = false;
+
+
+        rclcpp::Client<srv::IkSample>::SharedPtr mIkSampleClient;
 
         Point const* mPoints{};
         std::size_t mNumPoints{};
@@ -25,8 +36,11 @@ namespace mrover {
         std::shared_ptr<tf2_ros::TransformListener> mTfListener = std::make_shared<tf2_ros::TransformListener>(*mTfBuffer);
         std::shared_ptr<tf2_ros::TransformBroadcaster> mTfBroadcaster = std::make_shared<tf2_ros::TransformBroadcaster>(this);
 
+
     public:
         void executeClickIk(std::shared_ptr<rclcpp_action::ServerGoalHandle<action::ClickIk>> const& goal_handle);
+        void executeIkImageSample(std::shared_ptr<rclcpp_action::ServerGoalHandle<action::IkImageSample>> const& goal_handle);
+
 
         explicit ClickIkNode(rclcpp::NodeOptions const& options = rclcpp::NodeOptions());
 

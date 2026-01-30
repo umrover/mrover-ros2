@@ -78,7 +78,7 @@ def generate_launch_description():
             # gst_websocket_streamer_node,
             # launch_include_base,
             simulator_node,
-            # arm_controller_node,
+            arm_controller_node,
             rviz_node,
         ]
     )

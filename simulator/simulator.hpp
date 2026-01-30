@@ -1,9 +1,13 @@
 #pragma once
 
 #include "mrover/action/detail/click_ik__struct.hpp"
+#include <rclcpp/client.hpp>
+#include <rclcpp/service.hpp>
 #include <rclcpp_action/client.hpp>
 #include <rclcpp_action/create_client.hpp>
 
+#include "mrover/action/detail/ik_image_sample__struct.hpp"
+#include "mrover/srv/detail/ik_image_sample__struct.hpp"
 #include "pch.hpp"
 
 #include "glfw_pointer.hpp"
@@ -272,6 +276,12 @@ namespace mrover {
         float mClickIkX{0};
         float mClickIkY{0};
         rclcpp_action::Client<action::ClickIk>::SharedPtr mActionClient;
+        bool mSampleIk = false;
+        bool mHasSampled = false;
+        bool mClearIkSample = false;
+        action::IkImageSample::Result::SharedPtr mImageSample;
+        uint8_t const IMAGE_SAMPLE_RESOLUTION = 10;
+        rclcpp_action::Client<action::IkImageSample>::SharedPtr mImageSampleClient;
 
         bool mPublishIk = true;
         bool mIkMode = true; // true = position control, false = velocity control

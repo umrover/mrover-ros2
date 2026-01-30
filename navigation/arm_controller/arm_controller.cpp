@@ -1,5 +1,8 @@
 #include "arm_controller.hpp"
+#include "lie.hpp"
 #include "mrover/msg/detail/arm_status__struct.hpp"
+#include "mrover/srv/detail/ik_sample__struct.hpp"
+#include <optional>
 #include <rclcpp/logging.hpp>
 namespace mrover {
     rclcpp::Duration const ArmController::TIMEOUT = rclcpp::Duration(0, 0.3 * 1e9); // 0.3 seconds
@@ -27,6 +30,10 @@ namespace mrover {
 
         mModeServ = create_service<srv::IkMode>("ik_mode", [this](srv::IkMode::Request::ConstSharedPtr const& req, srv::IkMode::Response::SharedPtr const& resp) {
             modeCallback(req, resp);
+        });
+
+        mSampleServ = create_service<srv::IkSample>("ik_sample", [this](srv::IkSample::Request::ConstSharedPtr const& req, srv::IkSample::Response::SharedPtr const& resp) {
+            sampleCallback(req, resp);
         });
     }
 
@@ -215,7 +222,7 @@ namespace mrover {
         };
 
         if (get_clock()->now() - mLastUpdate > TIMEOUT) {
-            RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 100, "IK Timed Out");
+            // RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 100, "IK Timed Out");
             if (!mPosFallback) mPosFallback = mCurrPos;
             mPosPub->publish(mPosFallback.value());
             return;
@@ -296,6 +303,24 @@ namespace mrover {
         }
         resp->success = true;
     }
+
+    void poseCalcTimeoutWrapper(msg::IK::ConstSharedPtr const& ik_target) {
+    }
+
+    void ArmController::sampleCallback(srv::IkSample::Request::ConstSharedPtr const& req, srv::IkSample::Response::SharedPtr const& resp) {
+        ArmPos testPose;
+        testPose.x = req->pos.x;
+        testPose.y = req->pos.y;
+        testPose.z = req->pos.z;
+        RCLCPP_INFO(this->get_logger(), "Checking Position Validity: x:%f, y:%f, z:%f\n", req->pos.x, req->pos.y, req->pos.z);
+        auto positions = ikPosCalc(testPose);
+        if (positions == std::nullopt)
+            resp->valid = false;
+        else
+            resp->valid = true;
+        RCLCPP_INFO(this->get_logger(), "Response identified as: %s", resp->valid ? "valid" : "invalid");
+    }
+
 } // namespace mrover
 
 auto main(int argc, char** argv) -> int {
