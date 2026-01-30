@@ -70,7 +70,6 @@ class Panorama(Node):
         # Pano Action Server
         self.start_pano = self.create_service(PanoramaStart, '/panorama/start', self.start_callback)
         self.end_pano = self.create_service(PanoramaEnd, '/panorama/end', self.end_callback)
-        # self.start_pano = self.create_service(Pano, 'panorama', self.pano_callback)
         self.gimbal_client = self.create_client(ServoPosition, "gimbal_servo")
 
         # Start the panorama
@@ -91,7 +90,7 @@ class Panorama(Node):
         # Image Stitching Variables
         self.img_sub = self.create_subscription(Image, "/zed/left/image", self.image_callback, 1)
         self.img_list = []
-        self.stitcher = cv2.Stitcher.create()
+        self.stitcher = cv2.Stitcher.create(cv2.Stitcher_PANORAMA)
         self.img_rate = PanoRate(2, self)
 
         os.mkdir(f"data/raw-pano-images")
@@ -160,6 +159,10 @@ class Panorama(Node):
         self.record_pc = True
 
         # START SPINNING THE MAST GIMBAL
+        req = ServoPosition.Request()
+        req.name = ["gimbal_pitch", "gimbal_yaw"]
+        req.position = [90.0, 360.0] # TODO is 90 correct?? 0?
+        self.gimbal_client.call_async(req)
 
         return response
 
@@ -168,8 +171,6 @@ class Panorama(Node):
 
         self.record_image = False
         self.record_pc = False
-
-        # STOP SPINNING THE MAST GIMBAL
 
         # construct pc from stitched
         try:
