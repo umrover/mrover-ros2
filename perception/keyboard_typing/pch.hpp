@@ -66,6 +66,7 @@
 #include <geometry_msgs/msg/vector3.hpp>
 #include <memory>
 #include <mrover/msg/ik.hpp>
+#include <mrover/msg/position.hpp>
 #include <mutex>
 #include <opencv2/aruco.hpp>
 #include <opencv2/calib3d.hpp>

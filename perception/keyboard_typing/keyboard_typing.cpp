@@ -383,6 +383,9 @@ namespace mrover{
             if(key == 't'){
                 align_to_z();
             }
+            if(key == 'g'){
+                rotateGripper(-M_PI/2);
+            }
             // if(logPose){
             //     outputToCSV(combined_tvec, combined_rvec);
             // }
@@ -554,6 +557,9 @@ namespace mrover{
             // if (newz < -0.415) newz = -0.415;
 
             // Continously send IK command for 1.5s
+
+            // grab ro
+
             sendIKCommand(armbase_to_armfk.translation().x(), gripper_to_tag.translation().y(), gripper_to_tag.translation().z(), 0, 0);
 
             // RCLCPP_INFO_STREAM(this->get_logger(), "y_delta = " << dy);
@@ -600,6 +606,25 @@ namespace mrover{
 
         current_key = 'z';
     }
+
+    auto KeyboardTypingNode::rotateGripper(float radians) -> void {
+        SE3d armbase_to_armfk;
+
+        try{
+            armbase_to_armfk = SE3Conversions::fromTfTree(tf_buffer, "arm_fk", "arm_base_link");
+            sendIKCommand(armbase_to_armfk.translation().x(), armbase_to_armfk.translation().y(), armbase_to_armfk.translation().z(), 0, radians);
+        } catch (tf2::TransformException const& e) {
+            RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, std::format("TF tree error processing keyboard typing: {}", e.what()));
+        }
+        // if(!mArmPub){
+        //     RCLCPP_ERROR(get_logger(), "ESW Arm publisher not initialized");
+        // }
+        // msg::Position message;
+        // message.names = {"joint_de_roll"};
+        // message.positions = {radians};
+        // mArmPub->publish(message);
+    }
+
 
     auto KeyboardTypingNode::sendIKCommand(float x, float y, float z, float pitch, float roll) -> void {
         if(!mIKPub){

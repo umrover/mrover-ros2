@@ -1,5 +1,6 @@
 #pragma once
 
+#include "mrover/msg/detail/position__struct.hpp"
 #include "pch.hpp"
 
 // #include "constants.h"
@@ -101,6 +102,8 @@ namespace mrover{
         auto estimatePose(sensor_msgs::msg::Image::ConstSharedPtr const& msg) -> std::optional<pose_output>;
 
         auto align_arm() -> void;
+
+        auto rotateGripper(float radians) -> void;
 
         auto align_to_z() -> void;
 
