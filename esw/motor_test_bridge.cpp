@@ -77,7 +77,7 @@ namespace mrover {
                     m_bmc->set_desired_throttle(throttle);
                 }
                 if (name.front() == 'm') {
-                    RCLCPP_ERROR(get_logger(), "throttle request for %s ignored (%f)!", name.c_str(), throttle);
+                    m_moteus->set_desired_throttle(throttle);
                 }
             }
         }

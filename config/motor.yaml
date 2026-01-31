@@ -22,3 +22,8 @@ motor_test_bridge:
       limit_switch_1_readjust_position: 0.0
       limit_switch_1_aux_number: 1
       limit_switch_1_aux_pin: 2
+    bmc:
+      motor_en: true
+      lim_a_en: true
+      lim_a_is_forward: true
+      lim_b_en: true

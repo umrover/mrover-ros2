@@ -13,12 +13,6 @@ namespace mrover {
     };
     static_assert(sizeof(RawCanFdId) == sizeof(canid_t));
 
-    struct CanFdMessageId {
-        std::uint32_t destination : 8 {};
-        std::uint32_t source : 8 {};
-        std::uint32_t prefix : 13 {};
-    };
-
     struct CanFdPubSub {
         rclcpp::Publisher<msg::CAN>::SharedPtr publisher;
         rclcpp::Subscription<msg::CAN>::SharedPtr subscriber;

@@ -363,7 +363,7 @@ endif ()
 
 if (NetLink_FOUND AND NetLinkRoute_FOUND)
     mrover_add_node(can_bridge esw/can_bridge/*.cpp esw/can_bridge/pch.hpp esw/can_bridge/can_bridge.hpp)
-    target_link_libraries(can_bridge PkgConfig::NetLink PkgConfig::NetLinkRoute)
+    target_link_libraries(can_bridge dbc PkgConfig::NetLink PkgConfig::NetLinkRoute)
     ament_target_dependencies(can_bridge rclcpp)
 endif ()
 
