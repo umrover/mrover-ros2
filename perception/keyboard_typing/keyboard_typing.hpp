@@ -114,4 +114,4 @@ namespace mrover{
 }
 
 extern Eigen::Vector3d zKeyTransformation_new;
-extern std::unordered_map<std::string, cv::Vec3d> keyboard;
+extern std::unordered_map<char, cv::Vec3d> keyboard;

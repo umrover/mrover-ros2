@@ -556,11 +556,21 @@ namespace mrover{
             // if (newz > 0.6) newz = 0.6;
             // if (newz < -0.415) newz = -0.415;
 
+            // Grab pitch from tag transform
+
+            double r00 = gripper_to_tag.transform()(0,0);
+            double r10 = gripper_to_tag.transform()(1,0);
+            double r20 = gripper_to_tag.transform()(2,0);
+
+            double pitch_rad = std::atan2(-r20, std::hypot(r00, r10));
+
+            // grab current pitch
+            double current_pitch = std::atan2(-armbase_to_armfk.rotation()(2, 0), std::hypot(armbase_to_armfk.rotation()(0, 0), armbase_to_armfk.rotation()(1, 0)));
+
+            RCLCPP_INFO_STREAM(this->get_logger(), "pitch = " << pitch_rad);
+
             // Continously send IK command for 1.5s
-
-            // grab ro
-
-            sendIKCommand(armbase_to_armfk.translation().x(), gripper_to_tag.translation().y(), gripper_to_tag.translation().z(), 0, 0);
+            sendIKCommand(armbase_to_armfk.translation().x(), gripper_to_tag.translation().y(), gripper_to_tag.translation().z(), current_pitch - pitch_rad, 0);
 
             // RCLCPP_INFO_STREAM(this->get_logger(), "y_delta = " << dy);
             // RCLCPP_INFO_STREAM(this->get_logger(), "z_delta = " << dz);
@@ -773,7 +783,7 @@ namespace mrover{
             std::transform(launchCode.begin(), launchCode.end(), launchCode.begin(), ::toupper);
 
             // Align arm over z key
-            align_to_z();
+            // align_to_z();
 
             for (size_t i = 0; i < launchCode.length(); i++) {
                 feedback->current_index = static_cast<uint32_t>(i);
@@ -782,9 +792,11 @@ namespace mrover{
                 RCLCPP_WARN(this->get_logger(), "Sending Goal");
 
                 // TODO logic for figuring out deltas
-                float x_delta, y_delta;
-                x_delta = keyboard.at({launchCode[i]})[0] - keyboard.at(current_key)[0];
-                y_delta = keyboard.at({launchCode[i]})[1] - keyboard.at(current_key)[1];
+                float x_delta = 0;
+                float y_delta = 0;
+
+                x_delta = keyboard[launchCode[i]][0];
+                y_delta = keyboard[launchCode[i]][1];
                 send_goal(x_delta, y_delta);
 
                 if (goal_handle->is_canceling()) {
