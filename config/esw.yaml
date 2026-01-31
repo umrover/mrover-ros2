@@ -23,4 +23,4 @@ can_bridge_0:
       moteus:
         id: 0x20
       bmc:
-        id: 0x02
+        id: 0x00

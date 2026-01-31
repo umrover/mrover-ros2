@@ -93,21 +93,29 @@ namespace mrover {
     }
 
     auto CanBridge::frame_read_callback() -> void {
-        auto [identifier, isError, isRtr, isExt] = std::bit_cast<RawCanFdId>(m_read_frame.can_id);
-        auto [dest_id, src_id, prefix] = std::bit_cast<CanFdMessageId>(identifier);
+        auto const [identifier, is_error, is_rtr, is_ext] = std::bit_cast<RawCanFdId>(m_read_frame.can_id);
+
+        // extract prefix, source, and dest
+        uint32_t const dest_id = (identifier & CAN_DEST_ID_MASK) >> CAN_DEST_ID_OFFSET;
+        uint32_t const src_id  = (identifier & CAN_SRC_ID_MASK) >> CAN_SRC_ID_OFFSET;
+        uint32_t const prefix  = identifier & ~CAN_NODE_MASK;
 
         auto const src_it = m_devices.right.find(src_id);
         auto const dest_it = m_devices.right.find(dest_id);
-        // drop any packets with invalid src/dest registers
-        if (src_it == m_devices.right.end() || dest_it == m_devices.right.end()) return;
 
+        // drop any packets with invalid src/dest registers
+        if (src_it == m_devices.right.end() || dest_it == m_devices.right.end()) {
+            return;
+        }
+
+        // create ros2 canfd frame
         msg::CAN msg;
         msg.source = src_it->second;
         msg.destination = dest_it->second;
         msg.prefix = prefix;
         msg.data.assign(m_read_frame.data, m_read_frame.data + m_read_frame.len);
 
-        // publish to the specific device's /in topic
+        // publish frame
         m_devices_pub_sub.at(dest_it->second).publisher->publish(msg);
     }
 
@@ -126,10 +134,9 @@ namespace mrover {
 
         if (src_it == m_devices.left.end() || dest_it == m_devices.left.end()) return;
 
-        CanFdMessageId id_bits{
-                .destination = dest_it->second,
-                .source = src_it->second,
-                .prefix = static_cast<uint32_t>(msg->prefix)};
+        uint32_t id_bits = (static_cast<uint32_t>(msg->prefix) & ~CAN_NODE_MASK) // no shifts here, 16 LSBs of prefix are 0
+                           | ((static_cast<std::uint32_t>(src_it->second) << CAN_SRC_ID_OFFSET) & CAN_SRC_ID_MASK)
+                           | ((static_cast<std::uint32_t>(dest_it->second) << CAN_DEST_ID_OFFSET) & CAN_DEST_ID_MASK);
 
         canfd_frame frame{
                 .can_id = std::bit_cast<canid_t>(RawCanFdId{
