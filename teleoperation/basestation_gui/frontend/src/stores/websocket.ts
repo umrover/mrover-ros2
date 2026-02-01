@@ -4,6 +4,7 @@ import { encode, decode } from '@msgpack/msgpack'
 import { useNotificationsStore } from '@/stores/notifications'
 
 const webSockets: Record<string, WebSocket> = {}
+const refCounts: Record<string, number> = {}
 const flashTimersIn: Record<string, ReturnType<typeof setTimeout>> = {}
 const flashTimersOut: Record<string, ReturnType<typeof setTimeout>> = {}
 const reconnectTimers: Record<string, ReturnType<typeof setTimeout>> = {}
@@ -23,6 +24,8 @@ interface WebsocketStoreActions {
   setFlashOut: (id: string, value: boolean) => void
   clearFlashIn: (id: string) => void
   clearFlashOut: (id: string) => void
+  addIncomingMetrics: (id: string, bytes: number) => void
+  addOutgoingMetrics: (id: string, bytes: number) => void
 }
 
 function debounceFlashClear(id: string, type: 'in' | 'out', store: WebsocketStoreActions) {
@@ -65,10 +68,12 @@ function setupWebsocket(id: string, store: WebsocketStoreActions) {
   }
 
   socket.onmessage = event => {
-    const message = decode(new Uint8Array(event.data))
+    const data = new Uint8Array(event.data)
+    const message = decode(data)
     store.setMessage(id, message)
     store.setLastIncomingActivity(id, Date.now())
     store.setFlashIn(id, true)
+    store.addIncomingMetrics(id, data.byteLength)
     debounceFlashClear(id, 'in', store)
   }
 
@@ -113,6 +118,8 @@ function setupWebsocket(id: string, store: WebsocketStoreActions) {
     }
     store.setLastOutgoingActivity(id, Date.now())
     store.setFlashOut(id, true)
+    const byteLength = data instanceof Blob ? data.size : (data as ArrayBufferView).byteLength ?? (data as ArrayBuffer).byteLength ?? 0
+    store.addOutgoingMetrics(id, byteLength)
     debounceFlashClear(id, 'out', store)
     return originalSend.call(this, data)
   }
@@ -128,6 +135,10 @@ export const useWebsocketStore = defineStore('websocket', () => {
   const lastOutgoingActivity = ref<Record<string, number>>({})
   const flashIn = ref<Record<string, boolean>>({})
   const flashOut = ref<Record<string, boolean>>({})
+  const incomingMessages = ref<Record<string, number>>({})
+  const outgoingMessages = ref<Record<string, number>>({})
+  const incomingBytes = ref<Record<string, number>>({})
+  const outgoingBytes = ref<Record<string, number>>({})
 
   // Getters
   const isFlashingIn = computed(() => (id: string) => flashIn.value[id] || false)
@@ -166,6 +177,23 @@ export const useWebsocketStore = defineStore('websocket', () => {
     lastOutgoingActivity.value[id] = timestamp
   }
 
+  function addIncomingMetrics(id: string, bytes: number) {
+    incomingMessages.value[id] = (incomingMessages.value[id] || 0) + 1
+    incomingBytes.value[id] = (incomingBytes.value[id] || 0) + bytes
+  }
+
+  function addOutgoingMetrics(id: string, bytes: number) {
+    outgoingMessages.value[id] = (outgoingMessages.value[id] || 0) + 1
+    outgoingBytes.value[id] = (outgoingBytes.value[id] || 0) + bytes
+  }
+
+  function resetMetrics() {
+    incomingMessages.value = {}
+    outgoingMessages.value = {}
+    incomingBytes.value = {}
+    outgoingBytes.value = {}
+  }
+
   function sendMessage(id: string, message: unknown) {
     const socket = webSockets[id]
     if (!socket) {
@@ -182,6 +210,10 @@ export const useWebsocketStore = defineStore('websocket', () => {
   }
 
   function setupWebSocket(id: string) {
+    refCounts[id] = (refCounts[id] || 0) + 1
+    if (refCounts[id] > 1) {
+      return
+    }
     closedIntentionally.delete(id)
     reconnectAttempts[id] = 0
     setupWebsocket(id, {
@@ -192,11 +224,20 @@ export const useWebsocketStore = defineStore('websocket', () => {
       setFlashIn,
       setFlashOut,
       clearFlashIn,
-      clearFlashOut
+      clearFlashOut,
+      addIncomingMetrics,
+      addOutgoingMetrics
     })
   }
 
   function closeWebSocket(id: string) {
+    if (refCounts[id]) {
+      refCounts[id]--
+      if (refCounts[id] > 0) {
+        return
+      }
+      delete refCounts[id]
+    }
     closedIntentionally.add(id)
     if (reconnectTimers[id]) {
       clearTimeout(reconnectTimers[id])
@@ -217,6 +258,10 @@ export const useWebsocketStore = defineStore('websocket', () => {
     lastOutgoingActivity,
     flashIn,
     flashOut,
+    incomingMessages,
+    outgoingMessages,
+    incomingBytes,
+    outgoingBytes,
     // Getters
     isFlashingIn,
     isFlashingOut,
@@ -229,6 +274,9 @@ export const useWebsocketStore = defineStore('websocket', () => {
     clearFlashOut,
     setLastIncomingActivity,
     setLastOutgoingActivity,
+    addIncomingMetrics,
+    addOutgoingMetrics,
+    resetMetrics,
     sendMessage,
     setupWebSocket,
     closeWebSocket

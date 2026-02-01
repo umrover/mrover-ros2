@@ -164,4 +164,84 @@ namespace mrover {
         }
     };
 
+    struct CubeMapTexture {
+        // need 6 faces for a cube
+        std::array<cv::Mat, 6> data;
+
+        wgpu::Texture texture;
+        wgpu::TextureView view;
+        wgpu::Sampler sampler;
+
+        auto enqueWriteIfUnitialized(wgpu::Device& device) -> bool {
+            for (cv::Mat const& d: data)
+                if (d.empty()) return false;
+            if (texture != nullptr) return false;
+
+
+            std::array<cv::Mat, 6> dataToWrite;
+            for (size_t i = 0; i < data.size(); ++i) {
+                cvtColor(data[i], dataToWrite[i], cv::COLOR_BGR2RGBA);
+                assert(dataToWrite[i].cols == dataToWrite[0].cols && dataToWrite[i].rows == dataToWrite[0].rows);
+            }
+
+            // assume all images are the same size
+            int cols = dataToWrite[0].cols;
+            int rows = dataToWrite[0].rows;
+
+            wgpu::TextureDescriptor descriptor;
+            descriptor.dimension = wgpu::TextureDimension::_2D;
+            descriptor.size.width = static_cast<std::uint32_t>(cols);
+            descriptor.size.height = static_cast<std::uint32_t>(rows);
+            descriptor.size.depthOrArrayLayers = dataToWrite.size();
+            descriptor.mipLevelCount = 1; // don't need multiple mips because skybox is always the same size
+            descriptor.sampleCount = 1;
+            descriptor.format = wgpu::TextureFormat::RGBA8Unorm;
+            descriptor.usage = wgpu::TextureUsage::TextureBinding | wgpu::TextureUsage::CopyDst;
+            texture = device.createTexture(descriptor);
+
+            wgpu::TextureViewDescriptor viewDescriptor;
+            viewDescriptor.arrayLayerCount = dataToWrite.size();
+            viewDescriptor.mipLevelCount = descriptor.mipLevelCount;
+            viewDescriptor.dimension = wgpu::TextureViewDimension::Cube;
+            viewDescriptor.format = descriptor.format;
+            view = texture.createView(viewDescriptor);
+
+            wgpu::ImageCopyTexture destination;
+            destination.texture = texture;
+
+            wgpu::SamplerDescriptor samplerDescriptor;
+            samplerDescriptor.addressModeU = wgpu::AddressMode::Repeat;
+            samplerDescriptor.addressModeV = wgpu::AddressMode::Repeat;
+            samplerDescriptor.addressModeW = wgpu::AddressMode::Repeat;
+            samplerDescriptor.minFilter = wgpu::FilterMode::Linear;
+            samplerDescriptor.magFilter = wgpu::FilterMode::Linear;
+            samplerDescriptor.lodMaxClamp = static_cast<float>(descriptor.mipLevelCount);
+            samplerDescriptor.maxAnisotropy = 1;
+            sampler = device.createSampler(samplerDescriptor);
+
+            for (size_t layer = 0; layer < dataToWrite.size(); ++layer) {
+                wgpu::TextureDataLayout source;
+                source.bytesPerRow = static_cast<std::uint32_t>(dataToWrite[layer].step);
+                source.rowsPerImage = static_cast<std::uint32_t>(dataToWrite[layer].rows);
+                destination.origin = {0, 0, static_cast<std::uint32_t>(layer)};
+                device.getQueue().writeTexture(
+                        destination,
+                        dataToWrite[layer].data, dataToWrite[layer].total() * dataToWrite[layer].elemSize(),
+                        source,
+                        wgpu::Extent3D{static_cast<std::uint32_t>(dataToWrite[layer].cols), static_cast<std::uint32_t>(dataToWrite[layer].rows), 1});
+            }
+
+            return true;
+        }
+
+        ~CubeMapTexture() {
+            if (sampler) sampler.release();
+            if (view) view.release();
+            if (texture) {
+                texture.destroy();
+                texture.release();
+            }
+        }
+    };
+
 } // namespace mrover

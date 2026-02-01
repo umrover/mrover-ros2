@@ -2,7 +2,7 @@ import rclpy
 import threading
 import atexit
 from rclpy.node import Node
-from rclpy.executors import MultiThreadedExecutor
+from rclpy.executors import SingleThreadedExecutor
 
 lock = threading.Lock()
 initialized = threading.Event()
@@ -43,7 +43,7 @@ def get_context():
 
 
 def ros_spin():
-    executor = MultiThreadedExecutor(context=context)
+    executor = SingleThreadedExecutor(context=context)
     executor.add_node(node)
     try:
         executor.spin()

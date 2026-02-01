@@ -1,3 +1,4 @@
+import asyncio
 from backend.ws.base_ws import WebSocketHandler
 from backend.input import DeviceInputs
 from backend.sp_controls import send_sp_controls
@@ -27,6 +28,6 @@ class ScienceHandler(WebSocketHandler):
             axes = data.get('axes', [])
             buttons = data.get('buttons', [])
             device_input = DeviceInputs(axes, buttons)
-            send_sp_controls(device_input, self.sp_thr_pub)
+            await asyncio.to_thread(send_sp_controls, device_input, self.sp_thr_pub)
         else:
             print(f"Unhandled SCIENCE message: {msg_type}")

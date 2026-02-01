@@ -26,7 +26,7 @@
     </template>
 
     <template #moteus>
-      <div class="island p-2 rounded h-100 overflow-hidden">
+      <div class="island p-2 rounded h-100">
         <ControllerDataTable mode="drive" header="Drive" />
       </div>
     </template>

@@ -40,7 +40,16 @@ async def set_ra_mode(new_ra_mode: str):
 async def call_ik_mode_service(mode: int) -> bool:
     client = get_service_client(IkMode, "/ik_mode")
 
-    if not client.wait_for_service(timeout_sec=1.0):
+    try:
+        service_ready = await asyncio.wait_for(
+            asyncio.get_event_loop().run_in_executor(
+                None, lambda: client.wait_for_service(timeout_sec=0.1)
+            ),
+            timeout=1.0
+        )
+        if not service_ready:
+            return False
+    except asyncio.TimeoutError:
         return False
 
     request = IkMode.Request()

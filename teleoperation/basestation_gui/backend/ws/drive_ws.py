@@ -1,3 +1,4 @@
+import asyncio
 from backend.ws.base_ws import WebSocketHandler
 from backend.input import DeviceInputs
 from backend.drive_controls import send_joystick_twist, send_controller_twist
@@ -23,10 +24,10 @@ class DriveHandler(WebSocketHandler):
         if msg_type == 'joystick':
             axes = data.get('axes', [])
             buttons = data.get('buttons', [])
-            send_joystick_twist(DeviceInputs(axes, buttons), self.joystick_twist_pub)
+            await asyncio.to_thread(send_joystick_twist, DeviceInputs(axes, buttons), self.joystick_twist_pub)
         elif msg_type == 'controller':
             axes = data.get('axes', [])
             buttons = data.get('buttons', [])
-            send_controller_twist(DeviceInputs(axes, buttons), self.controller_twist_pub)
+            await asyncio.to_thread(send_controller_twist, DeviceInputs(axes, buttons), self.controller_twist_pub)
         else:
             print(f"Unhandled DRIVE message: {msg_type}")
