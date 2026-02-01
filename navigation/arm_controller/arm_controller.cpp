@@ -448,8 +448,8 @@ namespace mrover {
             msg::Position positions;
             positions.names = {"joint_a", "gripper"};
             positions.positions = {
-                    static_cast<float>(mPosTarget.y + mTypingOrigin.y),
-                    static_cast<float>(mPosTarget.z + mTypingOrigin.gripper),
+                    static_cast<float>(mPosTarget.y),
+                    static_cast<float>(mPosTarget.gripper),
             };
 
             // bounds checking and such

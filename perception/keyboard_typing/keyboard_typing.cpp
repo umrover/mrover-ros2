@@ -43,7 +43,7 @@ namespace mrover{
         ParameterWrapper::declareParameters(this, params);
 
         // Set up action server
-        mTypingClient = rclcpp_action::create_client<TypingDeltas>(this, "typing_deltas");
+        mTypingClient = rclcpp_action::create_client<TypingDeltas>(this, "typing_ik");
 
         mTypingServer = rclcpp_action::create_server<TypingCode>(
             this,
@@ -283,7 +283,7 @@ namespace mrover{
 
                 for (int idx : valid_indices) {
                     int id = ids[idx];
-                    
+
                     // 1. Solve PnP for this specific tag (IPPE_SQUARE is extremely stable)
                     cv::Vec3d rvec_single, tvec_single;
                     cv::solvePnP(objPoints, markerCorners.at(idx), camMatrix, distCoeffs, rvec_single, tvec_single, false, cv::SOLVEPNP_IPPE_SQUARE);
@@ -291,7 +291,7 @@ namespace mrover{
                     // 2. Shift to Anchor (Origin)
                     // Retrieve offset
                     cv::Vec3d offset_wall = layout[id]; 
-                    
+
                     // Rotate offset
                     cv::Mat R_cv;
                     cv::Rodrigues(rvec_single, R_cv);
@@ -797,6 +797,12 @@ namespace mrover{
 
                 x_delta = keyboard[launchCode[i]][0];
                 y_delta = keyboard[launchCode[i]][1];
+
+                RCLCPP_WARN(this->get_logger(), "X_pos", mMinCodeLength, mMaxCodeLength);
+
+                RCLCPP_WARN(this->get_logger(), "x_delta", x_delta);
+                RCLCPP_WARN(this->get_logger(), "y_delta", y_delta);
+
                 send_goal(x_delta, y_delta);
 
                 if (goal_handle->is_canceling()) {
