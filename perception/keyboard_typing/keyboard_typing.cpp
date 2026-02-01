@@ -101,7 +101,7 @@ namespace mrover{
         // create publisher
         mCostMapPub = this->create_publisher<msg::KeyboardYaw>("/keypose/yaw", rclcpp::QoS(1));
 
-        mIKPub = this->create_publisher<msg::IK>("ee_pos_cmd",rclcpp::QoS(1));
+        mIKPub = this->create_publisher<msg::IK>("ik_pos_cmd",rclcpp::QoS(1));
 
         // Define offsets
         layout[4] = cv::Vec3d(0.0, 0.0, 0.0);       // BL
@@ -723,7 +723,7 @@ namespace mrover{
     }
 
     void KeyboardTypingNode::feedback_callback(GoalHandleTypingDeltas::SharedPtr, const std::shared_ptr<const TypingDeltas::Feedback> feedback) {
-        RCLCPP_INFO_STREAM(get_logger(), std::format("Feedback: {}", feedback->dist_remaining));
+        // RCLCPP_INFO_STREAM(get_logger(), std::format("Feedback: {}", feedback->dist_remaining));
     }
 
     // void KeyboardTypingNode::result_callback(const GoalHandleTypingDeltas::WrappedResult & result) {
@@ -800,10 +800,11 @@ namespace mrover{
 
                 RCLCPP_WARN(this->get_logger(), "X_pos", mMinCodeLength, mMaxCodeLength);
 
-                RCLCPP_WARN(this->get_logger(), "x_delta", x_delta);
-                RCLCPP_WARN(this->get_logger(), "y_delta", y_delta);
+                RCLCPP_INFO_STREAM(this->get_logger(), "current letter = " << launchCode[i]);
+                RCLCPP_INFO_STREAM(this->get_logger(), "x_delta = " << x_delta);
+                RCLCPP_INFO_STREAM(this->get_logger(), "y_delta = " << y_delta);
 
-                send_goal(x_delta, y_delta);
+                send_goal(-x_delta, y_delta);
 
                 if (goal_handle->is_canceling()) {
                     result->success = false;
