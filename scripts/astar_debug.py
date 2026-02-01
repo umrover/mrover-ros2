@@ -83,7 +83,7 @@ class SimWindow:
             self.ctx.env = Environment(self.ctx, image_targets=ImageTargetsStore(self.ctx), cost_map=costmap)
             # self.ctx.node.get_logger().info(costmap.data)
         astar = AStar(self.ctx)
-        self.path_history = astar.a_star(self.start[::-1], self.end[::-1], context=self.ctx, debug=True)
+        self.path_history = astar.a_star(self.start[::-1], self.end[::-1], debug=True)
         if self.path_history:
             self.pause = False
             if self.path_history:

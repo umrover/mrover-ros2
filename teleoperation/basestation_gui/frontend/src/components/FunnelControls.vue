@@ -8,7 +8,8 @@
         v-for="(site, i) in sites"
         :key="i"
         class="btn btn-outline-control btn-sm"
-        :class="{ active: currentSite === i }"
+        :class="{ active: currentSite === i, 'btn-warning': isLoading && pendingSite === i }"
+        :disabled="isLoading"
         @click="selectSite(i)"
       >
         {{ site }}
@@ -19,10 +20,7 @@
 
 <script lang="ts" setup>
 import { ref } from 'vue'
-
-const emit = defineEmits<{
-  selectSite: [site: number]
-}>()
+import { scienceAPI } from '@/utils/api'
 
 const sites = [
   'Griess B',
@@ -32,11 +30,39 @@ const sites = [
   'Trash',
   'Griess A',
 ]
-const currentSite = ref(0)
 
-function selectSite(index: number) {
+const site_to_radians: Record<number, number> = {
+  0: 0.0,
+  1: Math.PI / 3,
+  2: (2 * Math.PI) / 3,
+  3: Math.PI,
+  4: (4 * Math.PI) / 3,
+  5: (5 * Math.PI) / 3,
+}
+
+const currentSite = ref(0)
+const pendingSite = ref<number | null>(null)
+const isLoading = ref(false)
+
+async function selectSite(index: number) {
+  if (index === currentSite.value || isLoading.value) return
+
+  const previousSite = currentSite.value
   currentSite.value = index
-  emit('selectSite', index)
+  pendingSite.value = index
+  isLoading.value = true
+
+  try {
+    const radians = site_to_radians[index]
+    if (radians !== undefined) {
+      await scienceAPI.setGearDiffPosition(radians, false)
+    }
+  } catch {
+    currentSite.value = previousSite
+  } finally {
+    isLoading.value = false
+    pendingSite.value = null
+  }
 }
 </script>
 
