@@ -20,49 +20,72 @@
       </div>
     </div>
 
-    <!-- Replaced the previous table with an interactive SVG rover view -->
     <div class="d-flex gap-2">
       <div class="flex-grow-1 d-flex align-items-center justify-content-center p-2" style="min-width:0;">
-        <svg viewBox="0 0 200 110" class="rover-svg" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Rover diagram">
-          <!-- body -->
+        <svg viewBox="0 0 240 110" class="rover-svg" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Rover diagram">
           <image
-            href="/urdf/DM_Rover_image.svg"
-            x="30"
+            :href="roverImageUrl"
+            x="50"
             y="25"
             width="140"
             height="60"
             preserveAspectRatio="xMidYMid meet"
           />
 
-          <!-- visual wheel placeholders; clickable -->
-          <g v-for="(w, idx) in wheelPositions" :key="w.id" :transform="`translate(${w.x}, ${w.y})`" class="wheel-group" @click="selectedIndex = idx" :title="`Select ${w.label}`" style="cursor: pointer;">
+          <g v-for="(w, idx) in wheelPositions" :key="w.id" :transform="`translate(${w.x}, ${w.y})`" class="wheel-group" @click="selectedIndex = idx" style="cursor: pointer;">
+            <g class="live-data">
+              <text 
+                :x="w.x < 120 ? -12 : 12" 
+                y="-2" 
+                :text-anchor="w.x < 120 ? 'end' : 'start'" 
+                font-size="5" 
+                font-weight="bold" 
+                fill="#212529"
+              >
+                {{ states[idx] || 'OFFLINE' }}
+              </text>
+              <text 
+                :x="w.x < 120 ? -12 : 12" 
+                y="5" 
+                :text-anchor="w.x < 120 ? 'end' : 'start'" 
+                font-size="5" 
+                fill="#6c757d"
+              >
+                {{ formatNumber(velocities[idx]) }} m/s
+              </text>
+            </g>
+
             <circle :r="8" :fill="selectedIndex === idx ? '#0d6efd' : '#fff'" stroke="#495057" stroke-width="1.5" />
-            <text x="0" y="3" font-size="6" text-anchor="middle" fill="#495057">{{ w.short }}</text>
+            <text x="0" y="2" font-size="6" text-anchor="middle" :fill="selectedIndex === idx ? '#fff' : '#495057'" font-weight="bold">
+              {{ w.short }}
+            </text>
           </g>
 
-          <!-- labels for front/back -->
-          <text x="100" y="18" font-size="7" text-anchor="middle" fill="#495057">{{ header }}</text>
+          <text x="120" y="18" font-size="7" text-anchor="middle" fill="#495057" font-weight="bold">{{ header }}</text>
         </svg>
       </div>
 
       <div class="details-panel p-2 border-start" style="width: 220px; min-width: 140px;">
-        <div class="mb-1 small text-muted">Selected Part</div>
-        <div class="fw-bold mb-2">{{ selectedData.name ?? 'None' }}</div>
+  <div class="mb-1 small text-muted">Selected Part</div>
+  <div class="fw-bold mb-2">{{ selectedData.name ?? 'None' }}</div>
 
-        <div v-if="showStatus" class="small mb-2">
-          <div><span class="text-muted">State:</span> <span>{{ selectedData.state }}</span></div>
-          <div><span class="text-muted">Error:</span> <span>{{ selectedData.error }}</span></div>
-          <div><span class="text-muted">Limit Hit:</span> <span>{{ selectedData.limitHit ? 'Yes' : 'No' }}</span></div>
-        </div>
+  <div v-if="showStatus" class="small mb-2">
+    <div v-if="mode !== 'drive'"><span class="text-muted">State:</span> <span>{{ selectedData.state }}</span></div>
+    
+    <div><span class="text-muted">Error:</span> <span>{{ selectedData.error }}</span></div>
+    <div><span class="text-muted">Limit Hit:</span> <span>{{ selectedData.limitHit ? 'Yes' : 'No' }}</span></div>
+  </div>
 
-        <div v-if="showValues" class="small">
-          <div><span class="text-muted">Position:</span> <span>{{ formatNumber(selectedData.position) }}</span></div>
-          <div><span class="text-muted">Velocity:</span> <span>{{ formatNumber(selectedData.velocity) }}</span></div>
-          <div><span class="text-muted">Current:</span> <span>{{ formatNumber(selectedData.current) }}</span></div>
-        </div>
+  <div v-if="showValues" class="small">
+    <div><span class="text-muted">Position:</span> <span>{{ formatNumber(selectedData.position) }}</span></div>
+    
+    <div v-if="mode !== 'drive'"><span class="text-muted">Velocity:</span> <span>{{ formatNumber(selectedData.velocity) }}</span></div>
+    
+    <div><span class="text-muted">Current:</span> <span>{{ formatNumber(selectedData.current) }}</span></div>
+  </div>
 
-        <div v-if="selectedIndex === -1" class="small text-muted mt-2">Click a wheel to view data.</div>
-      </div>
+  <div v-if="selectedIndex === -1" class="small text-muted mt-2">Click a wheel to view detailed logs.</div>
+</div>
     </div>
   </div>
 </template>
@@ -112,12 +135,8 @@ function updateFromMessage(msg: ControllerStateMessage) {
 }
 
 function combineLeftRight() {
-  const left = leftState.value
-  const right = rightState.value
-  if (!left && !right) return
-
-  const l = left || { names: [], states: [], errors: [], limits_hit: [], positions: [], velocities: [], currents: [] }
-  const r = right || { names: [], states: [], errors: [], limits_hit: [], positions: [], velocities: [], currents: [] }
+  const l = leftState.value || { names: [], states: [], errors: [], limits_hit: [], positions: [], velocities: [], currents: [] }
+  const r = rightState.value || { names: [], states: [], errors: [], limits_hit: [], positions: [], velocities: [], currents: [] }
 
   names.value = [...l.names, ...r.names]
   states.value = [...l.states, ...r.states]
@@ -146,101 +165,69 @@ watch(driveMessage, (msg) => {
 
 watch(armMessage, (msg) => {
   if (props.mode !== 'arm' || !msg) return
-  const typed = msg as ControllerStateMessage
-  if (typed.type === 'arm_state') {
-    updateFromMessage(typed)
-  }
+  updateFromMessage(msg as ControllerStateMessage)
 })
 
 watch(scienceMessage, (msg) => {
   if (props.mode !== 'sp' || !msg) return
-  const typed = msg as ControllerStateMessage
-  if (typed.type === 'sp_controller_state') {
-    updateFromMessage(typed)
-  }
+  updateFromMessage(msg as ControllerStateMessage)
 })
 
-// --- New interactive view state ---
-
-// Selected wheel/index (-1 means none)
 const selectedIndex = ref<number>(-1)
 
-// Wheel visual positions and labels in SVG coordinates
+// Adjusted X coordinates to make room for labels within the 240px viewBox
 const wheelPositions = [
-  { id: 'front_left', label: 'Front Left Wheel', short: 'FL', x: 50, y: 30 },
-  { id: 'front_right', label: 'Front Right Wheel', short: 'FR', x: 150, y: 30 },
-  { id: 'mid_left', label: 'Middle Left Wheel', short: 'ML', x: 50, y: 55 },
-  { id: 'mid_right', label: 'Middle Right Wheel', short: 'MR', x: 150, y: 55 },
-  { id: 'rear_left', label: 'Rear Left Wheel', short: 'RL', x: 50, y: 80 },
-  { id: 'rear_right', label: 'Rear Right Wheel', short: 'RR', x: 150, y: 80 },
+  { id: 'front_left', label: 'Front Left', short: 'FL', x: 60, y: 30 },
+  { id: 'front_right', label: 'Front Right', short: 'FR', x: 180, y: 30 },
+  { id: 'mid_left', label: 'Middle Left', short: 'ML', x: 60, y: 55 },
+  { id: 'mid_right', label: 'Middle Right', short: 'MR', x: 180, y: 55 },
+  { id: 'rear_left', label: 'Rear Left', short: 'RL', x: 60, y: 80 },
+  { id: 'rear_right', label: 'Rear Right', short: 'RR', x: 180, y: 80 },
 ]
 
-// Helper to safely format numbers
 function formatNumber(v: unknown) {
   if (typeof v === 'number' && Number.isFinite(v)) return v.toFixed(2)
-  return '—'
+  return '0.00'
 }
 
 const selectedData = computed(() => {
   const idx = selectedIndex.value
   if (idx < 0 || idx >= names.value.length) {
-    return {
-      name: null,
-      state: '—',
-      error: '—',
-      limitHit: false,
-      position: null,
-      velocity: null,
-      current: null,
-    }
+    return { name: null, state: '—', error: '—', limitHit: false, position: null, velocity: null, current: null }
   }
   return {
-    name: names.value[idx] ?? `#${idx}`,
-    state: states.value[idx] ?? '—',
-    error: errors.value[idx] ?? '—',
+    name: names.value[idx],
+    state: states.value[idx],
+    error: errors.value[idx],
     limitHit: !!limitHits.value[idx],
-    position: positions.value[idx] ?? null,
-    velocity: velocities.value[idx] ?? null,
-    current: currents.value[idx] ?? null,
+    position: positions.value[idx],
+    velocity: velocities.value[idx],
+    current: currents.value[idx],
   }
 })
+
+const roverImageUrl = `${import.meta.env.BASE_URL}urdf/DM_Rover_image.svg`
 </script>
 
 <style scoped>
-.sticky-col {
-  position: sticky;
-  left: 0;
-  z-index: 1;
-}
-
-.compact-table {
-  table-layout: auto;
-}
-
-.compact-table th,
-.compact-table td {
-  white-space: nowrap;
-  width: 1%;
-}
-
-/* New styles for interactive rover view */
 .rover-svg {
   width: 100%;
   height: 220px;
-  max-height: 260px;
-  background: linear-gradient(180deg, rgba(255,255,255,0.6), rgba(250,250,250,0.9));
+  background: #f8f9fa;
   border-radius: 6px;
-  box-sizing: border-box;
 }
 
 .wheel-group:hover circle {
-  stroke-width: 2;
-  transform: scale(1.08);
-  transform-origin: center;
+  stroke: #0d6efd;
+  transition: all 0.2s ease;
 }
 
-/* small details panel */
 .details-panel {
-  background: transparent;
+  background: white;
+}
+
+.live-data text {
+  pointer-events: none; /* Prevents text from blocking clicks on the wheel */
+  user-select: none;
 }
 </style>
