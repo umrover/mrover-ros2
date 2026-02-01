@@ -123,22 +123,38 @@ Servo::ServoStatus Servo::setPosition(ServoPosition position, ServoMode mode)
       break;
   }
 
-  if (normalizedDifference > 0 && ((presentPosition + normalizedDifference) % 4096) > forwardLimit)
-  {
-    atLimit = true;
-    int toLimit = ((presentPosition + normalizedDifference) % 4096) - forwardLimit;
-    goalPosition = presentPosition + toLimit;
-  }
-  else if (normalizedDifference < 0 && ((presentPosition + normalizedDifference) % 4096) < reverseLimit)
-  {
-    atLimit = true;
-    int toLimit = ((presentPosition + normalizedDifference) % 4096) + reverseLimit;
-    goalPosition = presentPosition + toLimit;
-  }
-  else
-  {
-    atLimit = false;
-    goalPosition = presentPosition + normalizedDifference;
+  // Calculate proposed position
+  int32_t proposedPosition = currentPosition + normalizedDifference;
+  
+  // Normalize proposed position to 0-4095 range
+  while (proposedPosition < 0) proposedPosition += 4096;
+  while (proposedPosition >= 4096) proposedPosition -= 4096;
+  uint32_t normalizedProposed = static_cast<uint32_t>(proposedPosition);
+
+  atLimit = false;
+  
+  if (forwardLimit > reverseLimit) {
+    // Normal case: limits don't wrap around 0
+    if (normalizedProposed > forwardLimit) {
+      atLimit = true;
+      goalPosition = forwardLimit;
+    } else if (normalizedProposed < reverseLimit) {
+      atLimit = true;
+      goalPosition = reverseLimit;
+    } else {
+      goalPosition = normalizedProposed;
+    }
+  } else {
+    // Limits wrap around 0 (e.g., reverseLimit=300, forwardLimit=100)
+    if (normalizedProposed < reverseLimit && normalizedProposed > forwardLimit) {
+      atLimit = true;
+      // Choose the closer limit
+      int32_t toReverse = (normalizedProposed - reverseLimit + 4096) % 4096;
+      int32_t toForward = (forwardLimit - normalizedProposed + 4096) % 4096;
+      goalPosition = (toReverse < toForward) ? reverseLimit : forwardLimit;
+    } else {
+      goalPosition = normalizedProposed;
+    }
   }
 
   // Calculate the optimal goal position
