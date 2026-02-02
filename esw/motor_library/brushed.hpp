@@ -17,15 +17,15 @@ namespace mrover {
         };
 
         enum struct bmc_error_t : uint8_t {
-            NONE, // no error
-            NO_MODE, // no mode selected
+            NONE,                           // no error
+            NO_MODE,                        // no mode selected
             INVALID_CONFIGURATION_FOR_MODE, // in position or velocity mode without feedback mechanism configured to close the loop
-            INVALID_FLASH_CONFIG, // signal that there are too many encoders connected or something
-            WWDG_EXPIRED, // watchdog expired
-            UNCALIBRATED, // received position or velocity mode before calibrated
-            CAN_ERROR_FATAL, // unrecoverable CAN error encountered
-            I2C_ERROR_FATAL, // unrecoverable I2C error encountered
-            SPI_ERROR_FATAL, // unrecoverable SPI error encountered
+            INVALID_FLASH_CONFIG,           // signal that there are too many encoders connected or something
+            WWDG_EXPIRED,                   // watchdog expired
+            UNCALIBRATED,                   // received position or velocity mode before calibrated
+            CAN_ERROR_FATAL,                // unrecoverable CAN error encountered
+            I2C_ERROR_FATAL,                // unrecoverable I2C error encountered
+            SPI_ERROR_FATAL,                // unrecoverable SPI error encountered
         };
 
         static auto byte2mode(uint8_t const value) -> mode_t {
@@ -47,16 +47,26 @@ namespace mrover {
 
         static auto err2str(bmc_error_t const error) -> std::string {
             switch (error) {
-                case bmc_error_t::NONE:                           return "None";
-                case bmc_error_t::NO_MODE:                        return "No mode selected";
-                case bmc_error_t::INVALID_CONFIGURATION_FOR_MODE: return "Invalid configuration for mode";
-                case bmc_error_t::INVALID_FLASH_CONFIG:           return "Invalid flash configuration";
-                case bmc_error_t::WWDG_EXPIRED:                   return "CAN watchdog expired";
-                case bmc_error_t::UNCALIBRATED:                   return "Uncalibrated";
-                case bmc_error_t::CAN_ERROR_FATAL:                return "Fatal CAN error";
-                case bmc_error_t::I2C_ERROR_FATAL:                return "Fatal I2C error";
-                case bmc_error_t::SPI_ERROR_FATAL:                return "Fatal SPI error";
-                default:                                          return "Unknown Error";
+                case bmc_error_t::NONE:
+                    return "None";
+                case bmc_error_t::NO_MODE:
+                    return "No mode selected";
+                case bmc_error_t::INVALID_CONFIGURATION_FOR_MODE:
+                    return "Invalid configuration for mode";
+                case bmc_error_t::INVALID_FLASH_CONFIG:
+                    return "Invalid flash configuration";
+                case bmc_error_t::WWDG_EXPIRED:
+                    return "CAN watchdog expired";
+                case bmc_error_t::UNCALIBRATED:
+                    return "Uncalibrated";
+                case bmc_error_t::CAN_ERROR_FATAL:
+                    return "Fatal CAN error";
+                case bmc_error_t::I2C_ERROR_FATAL:
+                    return "Fatal I2C error";
+                case bmc_error_t::SPI_ERROR_FATAL:
+                    return "Fatal SPI error";
+                default:
+                    return "Unknown Error";
             }
         }
 
@@ -69,7 +79,6 @@ namespace mrover {
         }
 
     public:
-
         BrushedController(rclcpp::Node::SharedPtr node, std::string master_name, std::string controller_name)
             : Base{std::move(node), std::move(master_name), std::move(controller_name)} {
             // TODO(eric) one day when we fix the non-volatile configs on the BMC this will all go away
