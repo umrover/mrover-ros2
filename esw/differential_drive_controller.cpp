@@ -28,11 +28,10 @@ namespace mrover {
         static constexpr RadiansPerSecond MAX_SPEED{70.0};
         static constexpr auto TIMEOUT = std::chrono::milliseconds(200);
 
-        std::vector<std::string> const LEFT_NAMES{"front_left", "middle_left", "back_left"};
-        std::vector<std::string> const RIGHT_NAMES{"front_right", "middle_right", "back_right"};
+        std::vector<std::string> const NAMES{"front_left", "middle_left", "back_left", "front_right", "middle_right", "back_right"};
 
         cmd_t m_joy, m_ctrl, m_nav;
-        rclcpp::Publisher<msg::Velocity>::SharedPtr m_left_velocity_pub, m_right_velocity_pub;
+        rclcpp::Publisher<msg::Velocity>::SharedPtr m_velocity_pub;
         rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr m_joy_sub, m_ctrl_sub, m_nav_sub;
         rclcpp::TimerBase::SharedPtr m_timer;
 
@@ -97,18 +96,10 @@ namespace mrover {
                 right_outer = right_outer * change_ratio;
             }
 
-            {
-                msg::Velocity left_velocity;
-                left_velocity.name = LEFT_NAMES;
-                left_velocity.velocity = {left_outer.get(), left_inner.get(), left_outer.get()};
-                m_left_velocity_pub->publish(left_velocity);
-            }
-            {
-                msg::Velocity right_velocity;
-                right_velocity.name = RIGHT_NAMES;
-                right_velocity.velocity = {right_outer.get(), right_inner.get(), right_outer.get()};
-                m_right_velocity_pub->publish(right_velocity);
-            }
+            msg::Velocity velocity;
+            velocity.names = NAMES;
+            velocity.velocities = {left_outer.get(), left_inner.get(), left_outer.get(), right_outer.get(), right_inner.get(), right_outer.get()};
+            m_velocity_pub->publish(velocity);
         }
 
     public:
@@ -119,8 +110,7 @@ namespace mrover {
             declare_parameter("rover.length", rclcpp::ParameterType::PARAMETER_DOUBLE);
             declare_parameter("rover.wheel_radius", rclcpp::ParameterType::PARAMETER_DOUBLE);
 
-            m_left_velocity_pub = create_publisher<msg::Velocity>("drive_left_velocity_cmd", 10);
-            m_right_velocity_pub = create_publisher<msg::Velocity>("drive_right_velocity_cmd", 10);
+            m_velocity_pub = create_publisher<msg::Velocity>("drive_velocity_cmd", 10);
 
             m_joy_sub = create_subscription<geometry_msgs::msg::Twist>("/joystick_vel_cmd", 10, std::bind(&DifferentialDriveController::joy_cb, this, _1));
             m_ctrl_sub = create_subscription<geometry_msgs::msg::Twist>("/controller_vel_cmd", 10, std::bind(&DifferentialDriveController::ctrl_cb, this, _1));
