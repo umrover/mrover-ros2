@@ -68,259 +68,260 @@ auto Servo::updateConfigFromParameters() -> void {
     assert(reverseLimit <= 4096);
 }
 
-Servo::Servo(rclcpp::Node::SharedPtr node, ServoId mServoId, const std::string& mServoName) : 
-        mServoId{mServoId}, mServoName{mServoName}, mNode{std::move(node)}
+Servo::Servo(rclcpp::Node::SharedPtr node, ServoId mServoId, std::string mServoName) : 
+        mServoId{mServoId}, mServoName{std::move(mServoName)},
+        forwardLimit{0}, reverseLimit{0}, goalPosition{0}, mNode{std::move(node)}
 {
-  updateConfigFromParameters();
+    updateConfigFromParameters();
 
-  uint8_t hardwareStatus;
+    uint8_t hardwareStatus;
 
-  // Use Position Control Mode
-  write1Byte(ADDR_OPERATING_MODE, 4, &hardwareStatus);
+    // Use Position Control Mode
+    write1Byte(ADDR_OPERATING_MODE, 4, &hardwareStatus);
 
-  // Enable torque
-  write1Byte(ADDR_TORQUE_ENABLE, 1, &hardwareStatus);
+    // Enable torque
+    write1Byte(ADDR_TORQUE_ENABLE, 1, &hardwareStatus);
 }
 
-Servo::ServoStatus Servo::setPosition(ServoPosition position, ServoMode mode)
+auto Servo::setPosition(ServoPosition position, ServoMode mode) -> Servo::ServoStatus
 {
-  // Convert degrees to ticks (0.0 - 360.0) to (0 to 4096)
-  uint16_t targetPosition = static_cast<uint16_t>((position / 360.0f) * 4096.0f) % 4096;
+    // Convert degrees to ticks (0.0 - 360.0) to (0 to 4096)
+    uint16_t targetPosition = static_cast<uint16_t>((position / 360.0f) * 4096.0f) % 4096;
 
-  uint8_t hardwareStatus;
+    uint8_t hardwareStatus;
 
-  uint32_t presentPosition;
-  read4Byte(ADDR_PRESENT_POSITION, presentPosition, &hardwareStatus);
-  
-  // Get current position (make sure its positive)
-  uint16_t currentPosition = static_cast<uint16_t>(((presentPosition % 4096) + 4096) % 4096);
+    uint32_t presentPosition;
+    read4Byte(ADDR_PRESENT_POSITION, presentPosition, &hardwareStatus);
+    
+    // Get current position (make sure its positive)
+    uint16_t currentPosition = static_cast<uint16_t>(((presentPosition % 4096) + 4096) % 4096);
 
-  // Calculate the signed difference (accounting for overflow)
-  int normalizedDifference = static_cast<int>(targetPosition - currentPosition);
+    // Calculate the signed difference (accounting for overflow)
+    int normalizedDifference = static_cast<int>(targetPosition - currentPosition);
 
-  atLimit = false;
+    atLimit = false;
 
-  mode = ServoMode::Limited;
-
-  switch (mode)
-  {
-    case ServoMode::Optimal:
-      if (normalizedDifference > (SERVO_TICKS / 2)) {
-        normalizedDifference -= SERVO_TICKS;  // Go the other (shorter) way around
-      } else if (normalizedDifference < -(SERVO_TICKS / 2)) {
-        normalizedDifference += SERVO_TICKS;  // Go the other (shorter) way around
-      }
-      break;
-    case ServoMode::Clockwise: // clockwise
-      if (normalizedDifference < 0)
-      {
-        normalizedDifference += SERVO_TICKS;
-      }
-      break;
-    case ServoMode::CounterClockwise: // counter clockwise
-      if (normalizedDifference > 0)
-      {
-        normalizedDifference -= SERVO_TICKS;
-      }
-      break;
-    case ServoMode::Limited:
+    switch (mode)
     {
-      // Gets middle point between limits
-      int middle_limit = (forwardLimit + reverseLimit) / 2;
+        case ServoMode::Optimal:
+            if (normalizedDifference > (SERVO_TICKS / 2)) {
+                normalizedDifference -= SERVO_TICKS;  // Go the other (shorter) way around
+            } else if (normalizedDifference < -(SERVO_TICKS / 2)) {
+                normalizedDifference += SERVO_TICKS;  // Go the other (shorter) way around
+            }
+            break;
+        case ServoMode::Clockwise: // clockwise
+            if (normalizedDifference < 0)
+            {
+                normalizedDifference += SERVO_TICKS;
+            }
+            break;
+        case ServoMode::CounterClockwise: // counter clockwise
+            if (normalizedDifference > 0)
+            {
+                normalizedDifference -= SERVO_TICKS;
+            }
+            break;
+        case ServoMode::Limited:
+        {
+            // Gets middle point between limits
+            int middle_limit = (forwardLimit + reverseLimit) / 2;
 
-      // Corrects middle limit if on wrong side
-      if (forwardLimit > reverseLimit)
-      {
-        middle_limit += (SERVO_TICKS / 2);
-      }
-      middle_limit %= SERVO_TICKS;
+            // Corrects middle limit if on wrong side
+            if (forwardLimit > reverseLimit)
+            {
+                middle_limit += (SERVO_TICKS / 2);
+            }
+            middle_limit %= SERVO_TICKS;
 
-      normalizedDifference = (targetPosition - currentPosition);
+            normalizedDifference = (targetPosition - currentPosition);
 
-      // If the current path to the final position goes over the middle limit, go the other way
-      if (middle_limit > currentPosition && middle_limit < targetPosition)
-      {
-        if (normalizedDifference > 0) normalizedDifference -= SERVO_TICKS;
-        else if (normalizedDifference < 0) normalizedDifference += SERVO_TICKS;
-      }
+            // If the current path to the final position goes over the middle limit, go the other way
+            if (middle_limit > currentPosition && middle_limit < targetPosition)
+            {
+                if (normalizedDifference > 0) normalizedDifference -= SERVO_TICKS;
+                else if (normalizedDifference < 0) normalizedDifference += SERVO_TICKS;
+            }
 
-      atLimit = false;
+            atLimit = false;
 
-      // Limit destination if between forwardLimit and middleLimit
-      if (upper(targetPosition) > forwardLimit && targetPosition < upper(middle_limit)) {
-        normalizedDifference = (forwardLimit - currentPosition) % SERVO_TICKS;
-        if (normalizedDifference < 0 && !(upper(currentPosition) > forwardLimit && currentPosition < upper(middle_limit))) normalizedDifference += SERVO_TICKS;
-        atLimit = true;
-      }
+            // Limit destination if between forwardLimit and middleLimit
+            if (upper(targetPosition) > forwardLimit && targetPosition < upper(middle_limit)) {
+                normalizedDifference = (forwardLimit - currentPosition) % SERVO_TICKS;
+                if (normalizedDifference < 0 && !(upper(currentPosition) > forwardLimit && currentPosition < upper(middle_limit))) normalizedDifference += SERVO_TICKS;
+                atLimit = true;
+            }
 
-      // Limit destination if between reverseLimit and middleLimit
-      else if (upper(targetPosition) > middle_limit && targetPosition < upper(reverseLimit))
-      {
-        normalizedDifference = (reverseLimit - currentPosition) % SERVO_TICKS;
-        if (normalizedDifference > 0 && !(upper(currentPosition) > middle_limit && currentPosition < upper(reverseLimit))) normalizedDifference -= SERVO_TICKS;
-        atLimit = true;
-      }
+            // Limit destination if between reverseLimit and middleLimit
+            else if (upper(targetPosition) > middle_limit && targetPosition < upper(reverseLimit))
+            {
+                normalizedDifference = (reverseLimit - currentPosition) % SERVO_TICKS;
+                if (normalizedDifference > 0 && !(upper(currentPosition) > middle_limit && currentPosition < upper(reverseLimit))) normalizedDifference -= SERVO_TICKS;
+                atLimit = true;
+            }
+        }
     }
-  }
 
-  // Calculate final goal position
-  goalPosition = currentPosition + normalizedDifference;
+    // Calculate final goal position
+    goalPosition = currentPosition + normalizedDifference;
 
-  // Write goal position
-  return write4Byte(ADDR_GOAL_POSITION, goalPosition, &hardwareStatus);
+    // Write goal position
+    return write4Byte(ADDR_GOAL_POSITION, goalPosition, &hardwareStatus);
 }
 
-Servo::ServoStatus Servo::getTargetStatus()
+auto Servo::getTargetStatus() -> Servo::ServoStatus
 {
-  uint8_t hardwareStatus;
-  uint32_t presentPosition;
-  read4Byte(ADDR_PRESENT_POSITION, presentPosition, &hardwareStatus);
+    uint8_t hardwareStatus;
+    uint32_t presentPosition;
+    read4Byte(ADDR_PRESENT_POSITION, presentPosition, &hardwareStatus);
 
-  uint32_t goalPositionMod = goalPosition % SERVO_TICKS;
+    uint32_t goalPositionMod = goalPosition % SERVO_TICKS;
 
-  if (presentPosition > goalPositionMod - SERVO_POSITION_DEAD_ZONE && presentPosition < goalPositionMod + SERVO_POSITION_DEAD_ZONE)
-  {
+    if (presentPosition > goalPositionMod - SERVO_POSITION_DEAD_ZONE && presentPosition < goalPositionMod + SERVO_POSITION_DEAD_ZONE)
+    {
+        return ServoStatus::Success;
+    }
+
+    if (hardwareStatus != 0)
+    {
+        return ServoStatus::HardwareFailure;
+    }
+
+    return ServoStatus::Active;
+}
+
+auto Servo::getPosition(ServoPosition& position) -> Servo::ServoStatus
+{
+    uint8_t hardwareStatus;
+    uint32_t positionInt;
+    ServoStatus status = read4Byte(ADDR_PRESENT_POSITION, positionInt, &hardwareStatus);
+    position = (static_cast<float>(positionInt % 4096) / 4096.0f) * 360.0f;
+    return status;
+}
+
+auto Servo::getVelocity(ServoVelocity& velocity) -> Servo::ServoStatus
+{
+    uint8_t hardwareStatus;
+    uint32_t velocity_int;
+    Servo::ServoStatus status = read4Byte(ADDR_PRESENT_VELOCITY, velocity_int, &hardwareStatus);
+    velocity = (static_cast<float>(static_cast<int32_t>(velocity_int)) * 0.22888f);
+    return status;
+}
+
+auto Servo::getCurrent(ServoCurrent& current) -> Servo::ServoStatus
+{
+    uint8_t hardwareStatus;
+    uint16_t currentInt;
+    ServoStatus status = read2Byte(ADDR_PRESENT_CURRENT, currentInt, &hardwareStatus);
+    current = static_cast<float>(static_cast<int16_t>(currentInt))/ 1000.0f;
+    return status;
+}
+
+auto Servo::getPositionAbsolute(ServoPosition& position) -> Servo::ServoStatus
+{
+    uint8_t hardwareStatus;
+    uint32_t positionInt;
+    ServoStatus status = read4Byte(ADDR_PRESENT_POSITION, positionInt, &hardwareStatus);
+    position = (static_cast<float>(positionInt) / 4096.0f) * 360.0f;
+    return status;
+}
+
+auto Servo::setProperty(ServoProperty prop, uint16_t value) -> Servo::ServoStatus
+{
+    uint8_t hardwareStatus;
+    return write2Byte(static_cast<ServoAddr>(prop), value, &hardwareStatus);
+}
+
+auto Servo::write1Byte(ServoAddr addr, uint8_t data, uint8_t* hardwareStatus) const -> Servo::ServoStatus
+{
+    return static_cast<ServoStatus>(packetHandler->write1ByteTxRx(
+        portHandler,
+        mServoId,
+        addr,
+        data,
+        hardwareStatus
+    ));
+}
+
+auto Servo::write2Byte(ServoAddr addr, uint16_t data, uint8_t* hardwareStatus) const -> Servo::ServoStatus
+{
+    return static_cast<ServoStatus>(packetHandler->write2ByteTxRx(
+        portHandler,
+        mServoId,
+        addr,
+        data,
+        hardwareStatus
+    ));
+}
+
+auto Servo::write4Byte(ServoAddr addr, uint32_t data, uint8_t* hardwareStatus) const -> Servo::ServoStatus
+{
+    return static_cast<ServoStatus>(packetHandler->write4ByteTxRx(
+        portHandler,
+        mServoId,
+        addr,
+        data,
+        hardwareStatus
+    ));
+}
+
+
+auto Servo::read1Byte(ServoAddr addr, uint8_t& data, uint8_t* hardwareStatus) const -> Servo::ServoStatus
+{
+    return static_cast<ServoStatus>(packetHandler->read1ByteTxRx(
+        portHandler,
+        mServoId,
+        addr,
+        &data,
+        hardwareStatus
+    ));
+}
+
+auto Servo::read2Byte(ServoAddr addr, uint16_t& data, uint8_t* hardwareStatus) const -> Servo::ServoStatus
+{
+    return static_cast<ServoStatus>(packetHandler->read2ByteTxRx(
+        portHandler,
+        mServoId,
+        addr,
+        &data,
+        hardwareStatus
+    ));
+}
+
+auto Servo::read4Byte(ServoAddr addr, uint32_t& data, uint8_t* hardwareStatus) const -> Servo::ServoStatus
+{
+    return static_cast<ServoStatus>(packetHandler->read4ByteTxRx(
+        portHandler,
+        mServoId,
+        addr,
+        &data,
+        hardwareStatus
+    ));
+}
+
+auto Servo::init(const std::string& deviceName) -> Servo::ServoStatus
+{
+    portHandler = dynamixel::PortHandler::getPortHandler(deviceName.c_str());
+    packetHandler = dynamixel::PacketHandler::getPacketHandler(PROTOCOL_VERSION);
+
+    int dxlCommResult;
+
+    // Open Serial Port
+    dxlCommResult = portHandler->openPort();
+    if (!dxlCommResult) {
+        return ServoStatus::FailedToOpenPort;
+    }
+
+    // Set the baudrate of the serial port (use DYNAMIXEL Baudrate)
+    dxlCommResult = portHandler->setBaudRate(SERVO_BAUDRATE);
+    if (!dxlCommResult) {
+        return ServoStatus::FailedToSetBaud;
+    }
+
     return ServoStatus::Success;
-  }
-
-  if (hardwareStatus != 0)
-  {
-    return ServoStatus::HardwareFailure;
-  }
-
-  return ServoStatus::Active;
 }
 
-Servo::ServoStatus Servo::getPosition(ServoPosition& position)
+auto Servo::getLimitStatus() const -> bool
 {
-  uint8_t hardwareStatus;
-  uint32_t positionInt;
-  ServoStatus status = read4Byte(ADDR_PRESENT_POSITION, positionInt, &hardwareStatus);
-  position = (static_cast<float>(positionInt % 4096) / 4096.0f) * 360.0f;
-  return status;
-}
-
-Servo::ServoStatus Servo::getVelocity(ServoVelocity& velocity)
-{
-  uint8_t hardwareStatus;
-  uint32_t velocity_int;
-  Servo::ServoStatus status = read4Byte(ADDR_PRESENT_VELOCITY, velocity_int, &hardwareStatus);
-  velocity = (static_cast<float>(static_cast<int32_t>(velocity_int)) * 0.22888f);
-  return status;
-}
-
-Servo::ServoStatus Servo::getCurrent(ServoCurrent& current)
-{
-  uint8_t hardwareStatus;
-  uint16_t currentInt;
-  ServoStatus status = read2Byte(ADDR_PRESENT_CURRENT, currentInt, &hardwareStatus);
-  current = static_cast<float>(static_cast<int16_t>(currentInt))/ 1000.0f;
-  return status;
-}
-
-Servo::ServoStatus Servo::getPositionAbsolute(ServoPosition& position)
-{
-  uint8_t hardwareStatus;
-  uint32_t positionInt;
-  ServoStatus status = read4Byte(ADDR_PRESENT_POSITION, positionInt, &hardwareStatus);
-  position = (static_cast<float>(positionInt) / 4096.0f) * 360.0f;
-  return status;
-}
-
-Servo::ServoStatus Servo::setProperty(ServoProperty prop, uint16_t value)
-{
-  uint8_t hardwareStatus;
-  return write2Byte(static_cast<ServoAddr>(prop), value, &hardwareStatus);
-}
-
-Servo::ServoStatus Servo::write1Byte(ServoAddr addr, uint8_t data, uint8_t* hardwareStatus) const
-{
-  return static_cast<ServoStatus>(packetHandler->write1ByteTxRx(
-    portHandler,
-    mServoId,
-    addr,
-    data,
-    hardwareStatus
-  ));
-}
-
-Servo::ServoStatus Servo::write2Byte(ServoAddr addr, uint16_t data, uint8_t* hardwareStatus) const
-{
-  return static_cast<ServoStatus>(packetHandler->write2ByteTxRx(
-    portHandler,
-    mServoId,
-    addr,
-    data,
-    hardwareStatus
-  ));
-}
-
-Servo::ServoStatus Servo::write4Byte(ServoAddr addr, uint32_t data, uint8_t* hardwareStatus) const
-{
-  return static_cast<ServoStatus>(packetHandler->write4ByteTxRx(
-    portHandler,
-    mServoId,
-    addr,
-    data,
-    hardwareStatus
-  ));
-}
-
-
-Servo::ServoStatus Servo::read1Byte(ServoAddr addr, uint8_t& data, uint8_t* hardwareStatus) const
-{
-  return static_cast<ServoStatus>(packetHandler->read1ByteTxRx(
-    portHandler,
-    mServoId,
-    addr,
-    &data,
-    hardwareStatus
-  ));
-}
-
-Servo::ServoStatus Servo::read2Byte(ServoAddr addr, uint16_t& data, uint8_t* hardwareStatus) const
-{
-  return static_cast<ServoStatus>(packetHandler->read2ByteTxRx(
-    portHandler,
-    mServoId,
-    addr,
-    &data,
-    hardwareStatus
-  ));
-}
-
-Servo::ServoStatus Servo::read4Byte(ServoAddr addr, uint32_t& data, uint8_t* hardwareStatus) const
-{
-  return static_cast<ServoStatus>(packetHandler->read4ByteTxRx(
-    portHandler,
-    mServoId,
-    addr,
-    &data,
-    hardwareStatus
-  ));
-}
-
-Servo::ServoStatus Servo::init(const std::string& deviceName)
-{
-  portHandler = dynamixel::PortHandler::getPortHandler(deviceName.c_str());
-  packetHandler = dynamixel::PacketHandler::getPacketHandler(PROTOCOL_VERSION);
-
-  int dxlCommResult;
-
-  // Open Serial Port
-  dxlCommResult = portHandler->openPort();
-  if (!dxlCommResult) {
-    return ServoStatus::FailedToOpenPort;
-  }
-
-  // Set the baudrate of the serial port (use DYNAMIXEL Baudrate)
-  dxlCommResult = portHandler->setBaudRate(SERVO_BAUDRATE);
-  if (!dxlCommResult) {
-    return ServoStatus::FailedToSetBaud;
-  }
-}
-
-bool Servo::getLimitStatus() const
-{
-  return atLimit;
+    return atLimit;
 }

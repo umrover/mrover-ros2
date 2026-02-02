@@ -62,29 +62,29 @@ public:
     Limited,
   };
 
-  Servo(rclcpp::Node::SharedPtr node, ServoId id, const std::string& name);
+  Servo(rclcpp::Node::SharedPtr node, ServoId id, std::string name);
 
-  ServoStatus setPosition(ServoPosition position, ServoMode mode);
-  ServoStatus getPosition(ServoPosition& position);
-  ServoStatus getVelocity(ServoVelocity& velocity);
-  ServoStatus getCurrent(ServoCurrent& current);
-  ServoStatus getPositionAbsolute(ServoPosition& position);
-  ServoStatus setProperty(ServoProperty prop, uint16_t value);
-  ServoStatus getTargetStatus();
-  bool getLimitStatus() const;
+  auto setPosition(ServoPosition position, ServoMode mode) -> ServoStatus;
+  auto getPosition(ServoPosition& position) -> ServoStatus;
+  auto getVelocity(ServoVelocity& velocity) -> ServoStatus;
+  auto getCurrent(ServoCurrent& current) -> ServoStatus;
+  auto getPositionAbsolute(ServoPosition& position) -> ServoStatus;
+  auto setProperty(ServoProperty prop, uint16_t value) -> ServoStatus;
+  auto getTargetStatus() -> ServoStatus;
+  [[nodiscard]] auto getLimitStatus() const -> bool;
 
-  static ServoStatus init(const std::string& deviceName);
+  static auto init(const std::string& deviceName) -> ServoStatus;
 
 private:
   auto updateConfigFromParameters() -> void;
 
-  inline ServoStatus write1Byte(ServoAddr addr, uint8_t data, uint8_t* hardwareStatus) const;
-  inline ServoStatus write2Byte(ServoAddr addr, uint16_t data, uint8_t* hardwareStatus) const;
-  inline ServoStatus write4Byte(ServoAddr addr, uint32_t data, uint8_t* hardwareStatus) const;
+  inline auto write1Byte(ServoAddr addr, uint8_t data, uint8_t* hardwareStatus) const -> Servo::ServoStatus;
+  inline auto write2Byte(ServoAddr addr, uint16_t data, uint8_t* hardwareStatus) const -> Servo::ServoStatus;
+  inline auto write4Byte(ServoAddr addr, uint32_t data, uint8_t* hardwareStatus) const -> Servo::ServoStatus;
 
-  inline ServoStatus read1Byte(ServoAddr addr, uint8_t& data, uint8_t* hardwareStatus) const;
-  inline ServoStatus read2Byte(ServoAddr addr, uint16_t& data, uint8_t* hardwareStatus) const;
-  inline ServoStatus read4Byte(ServoAddr addr, uint32_t& data, uint8_t* hardwareStatus) const;
+  inline auto read1Byte(ServoAddr addr, uint8_t& data, uint8_t* hardwareStatus) const -> Servo::ServoStatus;
+  inline auto read2Byte(ServoAddr addr, uint16_t& data, uint8_t* hardwareStatus) const -> Servo::ServoStatus;
+  inline auto read4Byte(ServoAddr addr, uint32_t& data, uint8_t* hardwareStatus) const -> Servo::ServoStatus;
 
   inline static dynamixel::PortHandler *portHandler;
   inline static dynamixel::PacketHandler *packetHandler;

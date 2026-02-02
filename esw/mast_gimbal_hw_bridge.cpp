@@ -48,7 +48,7 @@ namespace mrover {
 
                 const auto timeout = std::chrono::seconds(3);
                 const auto start = this->get_clock()->now();                                                                                 
-                Servo::ServoStatus status = servos.at(request->name)->setPosition(request->position, Servo::ServoMode::Optimal);
+                Servo::ServoStatus status = servos.at(request->name)->setPosition(request->position, Servo::ServoMode::Limited);
 
                 while(status == Servo::ServoStatus::Active){
                     status = servos.at(request->name)->getTargetStatus();
@@ -104,9 +104,9 @@ namespace mrover {
                 float vel = 0.0f;
                 float cur = 0.0f;
 
-                Servo::ServoStatus ps = servo.getPosition(pos);
-                Servo::ServoStatus vs = servo.getVelocity(vel);
-                Servo::ServoStatus cs = servo.getCurrent(cur);
+                Servo::ServoStatus err = servo.getPosition(pos);
+                servo.getVelocity(vel);
+                servo.getCurrent(cur);
 
                 mControllerState.position[i] = pos;
                 mControllerState.velocity[i] = vel;
@@ -124,19 +124,7 @@ namespace mrover {
                 }      
 
                 /*mControllerState.error[i] = {servo->getErrorState()};*/
-                /*mControllerState.error[i] = "";
-                if (ps != Servo::ServoStatus::Success) {
-                    mControllerState.error[i] = "pos_read_fail";
-                } else if (vs != Servo::ServoStatus::Success) {
-                    mControllerState.error[i] = "vel_read_fail";
-                } else if (cs != Servo::ServoStatus::Success) {
-                    mControllerState.error[i] = "cur_read_fail";
-                } else if (ts == Servo::ServoStatus::HardwareFailure) {
-                    mControllerState.error[i] = "hardware_failure";
-                }*/
-
-                /*mControllerState.error[i] = {servo->getErrorState()};*/
-                switch(ps) {
+                switch(err) {
                     case Servo::ServoStatus::CommNotAvailable:
                         mControllerState.error[i] = "CommNotAvailable";
                         break; 
