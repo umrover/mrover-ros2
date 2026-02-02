@@ -24,6 +24,7 @@ namespace mrover {
     class MastGimbalHWBridge : public rclcpp::Node {
 
     public:
+    
         MastGimbalHWBridge() : rclcpp::Node{"mast_gimbal_hw_bridge"} {
             // all initialization is done in the init() function to allow for the usage of shared_from_this()
         }

@@ -22,6 +22,9 @@
 
 #define SERVO_POSITION_DEAD_ZONE 5
 
+#define SERVO_TICKS 4096
+
+#define upper(val) (val == 0 ? 4096 : val)
 
 using namespace mrover;
 
@@ -70,9 +73,9 @@ Servo::Servo(rclcpp::Node::SharedPtr node, ServoId mServoId, const std::string& 
 
 Servo::ServoStatus Servo::servoSetup()
 {
-    updateConfigFromParameters();
-  forwardLimit = 270;
-  reverseLimit = 90;
+  updateConfigFromParameters();
+  forwardLimit = 1024;
+  reverseLimit = 4096 - 1024;
 
   uint8_t hardwareStatus;
 
@@ -87,77 +90,87 @@ Servo::ServoStatus Servo::servoSetup()
 
 Servo::ServoStatus Servo::setPosition(ServoPosition position, ServoMode mode)
 {
-
-  uint32_t targetPosition = static_cast<uint32_t>((position / 360.0f) * 4096.0f) % 4096;
+  // Convert degrees to ticks (0.0 - 360.0) to (0 to 4096)
+  uint16_t targetPosition = static_cast<uint16_t>((position / 360.0f) * 4096.0f) % 4096;
 
   uint8_t hardwareStatus;
 
   uint32_t presentPosition;
   read4Byte(ADDR_PRESENT_POSITION, presentPosition, &hardwareStatus);
-
-  uint32_t currentPosition = presentPosition % 4096;
+  
+  // Get current position (make sure its positive)
+  uint16_t currentPosition = static_cast<uint16_t>(((presentPosition % 4096) + 4096) % 4096);
 
   // Calculate the signed difference (accounting for overflow)
-  int32_t normalizedDifference = static_cast<int32_t>(targetPosition - currentPosition);
+  int normalizedDifference = static_cast<int>(targetPosition - currentPosition);
+
+  atLimit = false;
+
+  mode = ServoMode::Limited;
 
   switch (mode)
   {
     case ServoMode::Optimal:
-      if (normalizedDifference > 2048) {
-        normalizedDifference -= 4096;  // Go the other (shorter) way around
-      } else if (normalizedDifference < -2048) {
-        normalizedDifference += 4096;  // Go the other (shorter) way around
+      if (normalizedDifference > (SERVO_TICKS / 2)) {
+        normalizedDifference -= SERVO_TICKS;  // Go the other (shorter) way around
+      } else if (normalizedDifference < -(SERVO_TICKS / 2)) {
+        normalizedDifference += SERVO_TICKS;  // Go the other (shorter) way around
       }
       break;
     case ServoMode::Clockwise: // clockwise
       if (normalizedDifference < 0)
       {
-        normalizedDifference += 4096;
+        normalizedDifference += SERVO_TICKS;
       }
       break;
     case ServoMode::CounterClockwise: // counter clockwise
       if (normalizedDifference > 0)
       {
-        normalizedDifference -= 4096;
+        normalizedDifference -= SERVO_TICKS;
       }
       break;
+    case ServoMode::Limited:
+    {
+      // Gets middle point between limits
+      int middle_limit = (forwardLimit + reverseLimit) / 2;
+
+      // Corrects middle limit if on wrong side
+      if (forwardLimit > reverseLimit)
+      {
+        middle_limit += (SERVO_TICKS / 2);
+      }
+      middle_limit %= SERVO_TICKS;
+
+      normalizedDifference = (targetPosition - currentPosition);
+
+      // If the current path to the final position goes over the middle limit, go the other way
+      if (middle_limit > currentPosition && middle_limit < targetPosition)
+      {
+        if (normalizedDifference > 0) normalizedDifference -= SERVO_TICKS;
+        else if (normalizedDifference < 0) normalizedDifference += SERVO_TICKS;
+      }
+
+      atLimit = false;
+
+      // Limit destination if between forwardLimit and middleLimit
+      if (upper(targetPosition) > forwardLimit && targetPosition < upper(middle_limit)) {
+        normalizedDifference = (forwardLimit - currentPosition) % SERVO_TICKS;
+        if (normalizedDifference < 0 && !(upper(currentPosition) > forwardLimit && currentPosition < upper(middle_limit))) normalizedDifference += SERVO_TICKS;
+        atLimit = true;
+      }
+
+      // Limit destination if between reverseLimit and middleLimit
+      else if (upper(targetPosition) > middle_limit && targetPosition < upper(reverseLimit))
+      {
+        normalizedDifference = (reverseLimit - currentPosition) % SERVO_TICKS;
+        if (normalizedDifference > 0 && !(upper(currentPosition) > middle_limit && currentPosition < upper(reverseLimit))) normalizedDifference -= SERVO_TICKS;
+        atLimit = true;
+      }
+    }
   }
 
-  // Calculate proposed position
-  int32_t proposedPosition = currentPosition + normalizedDifference;
-  
-  // Normalize proposed position to 0-4095 range
-  while (proposedPosition < 0) proposedPosition += 4096;
-  while (proposedPosition >= 4096) proposedPosition -= 4096;
-  uint32_t normalizedProposed = static_cast<uint32_t>(proposedPosition);
-
-  atLimit = false;
-  
-  if (forwardLimit > reverseLimit) {
-    // Normal case: limits don't wrap around 0
-    if (normalizedProposed > forwardLimit) {
-      atLimit = true;
-      goalPosition = forwardLimit;
-    } else if (normalizedProposed < reverseLimit) {
-      atLimit = true;
-      goalPosition = reverseLimit;
-    } else {
-      goalPosition = normalizedProposed;
-    }
-  } else {
-    // Limits wrap around 0 (e.g., reverseLimit=300, forwardLimit=100)
-    if (normalizedProposed < reverseLimit && normalizedProposed > forwardLimit) {
-      atLimit = true;
-      // Choose the closer limit
-      int32_t toReverse = (normalizedProposed - reverseLimit + 4096) % 4096;
-      int32_t toForward = (forwardLimit - normalizedProposed + 4096) % 4096;
-      goalPosition = (toReverse < toForward) ? reverseLimit : forwardLimit;
-    } else {
-      goalPosition = normalizedProposed;
-    }
-  }
-
-  // Calculate the optimal goal position
+  // Calculate final goal position
+  goalPosition = currentPosition + normalizedDifference;
 
   // Write goal position
   return write4Byte(ADDR_GOAL_POSITION, goalPosition, &hardwareStatus);
@@ -169,7 +182,7 @@ Servo::ServoStatus Servo::getTargetStatus()
   uint32_t presentPosition;
   read4Byte(ADDR_PRESENT_POSITION, presentPosition, &hardwareStatus);
 
-  uint32_t goalPositionMod = goalPosition % 4096;
+  uint32_t goalPositionMod = goalPosition % SERVO_TICKS;
 
   if (presentPosition > goalPositionMod - SERVO_POSITION_DEAD_ZONE && presentPosition < goalPositionMod + SERVO_POSITION_DEAD_ZONE)
   {
@@ -313,7 +326,7 @@ Servo::ServoStatus Servo::init(const std::string& deviceName)
   }
 }
 
-bool Servo::getLimitStatus()
+bool Servo::getLimitStatus() const
 {
   return atLimit;
 }

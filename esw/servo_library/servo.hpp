@@ -59,6 +59,7 @@ public:
     Optimal,
     Clockwise,
     CounterClockwise,
+    Limited,
   };
 
   struct ServoProperties
@@ -73,7 +74,13 @@ public:
     ServoProperties(const ServoProperties& state) = default;
     ServoProperties() = default;
   };
-
+bool moveToTarget(
+    int startPos,          // [0, 4096]
+    int forwardLimit,      // >= 0
+    int reverseLimit,      // >= 0
+    int targetPos,         // desired position
+    int* distanceOut       // signed distance traveled
+);
   Servo(rclcpp::Node::SharedPtr node, ServoId id, const std::string& name, ServoProperties properties);
   Servo(rclcpp::Node::SharedPtr node, ServoId id, const std::string& name);
 
@@ -84,7 +91,7 @@ public:
   ServoStatus getPositionAbsolute(ServoPosition& position);
   ServoStatus setProperty(ServoProperty prop, uint16_t value);
   ServoStatus getTargetStatus();
-  bool getLimitStatus();
+  bool getLimitStatus() const;
 
   static ServoStatus init(const std::string& deviceName);
 
