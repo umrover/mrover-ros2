@@ -50,38 +50,100 @@ void DraggableVideoFrame::mouseMoveEvent(QMouseEvent* event) {
 // GstVideoWidget
 // --------------------------------------------
 
-GstVideoWidget::GstVideoWidget(QWidget* parent) : QVideoWidget(parent) {
-    mPlayer = new QMediaPlayer(this);
-    mPlayer->setVideoOutput(this);
+GstVideoWidget::GstVideoWidget(QWidget* parent) : QWidget(parent) {
+}
+
+GstVideoWidget::~GstVideoWidget() {
+    if (mPipeline) {
+        gst_element_set_state(mPipeline, GST_STATE_NULL);
+        gst_object_unref(mPipeline);
+    }
 }
 
 auto GstVideoWidget::setGstPipeline(std::string const& pipeline) -> void {
-    mPlayer->setMedia(QUrl(std::format("gst-pipeline: {} ! videoconvert ! xvimagesink name=\"qtvideosink\" sync=false", pipeline).c_str()));
+    if (mPipeline) {
+        gst_element_set_state(mPipeline, GST_STATE_NULL);
+        gst_object_unref(mPipeline);
+        mPipeline = nullptr;
+    }
+    mPipelineString = pipeline + " ! videoconvert ! qwidget5videosink name=videosink";
+    mStarted = false;
+    mIsError = false;
+    mErrorString.clear();
+}
+
+void GstVideoWidget::showEvent(QShowEvent* event) {
+    QWidget::showEvent(event);
+    if (mStarted || mPipelineString.empty()) return;
+    mStarted = true;
+
+    startPipeline();
+}
+
+void GstVideoWidget::startPipeline() {
+    GError* err = nullptr;
+    mPipeline = gst_parse_launch(mPipelineString.c_str(), &err);
+    if (!mPipeline) {
+        mIsError = true;
+        mErrorString = err ? QString::fromUtf8(err->message) : "Failed to create pipeline";
+        qWarning() << "GstVideoWidget: Failed to create pipeline:" << mErrorString;
+        if (err) g_error_free(err);
+        return;
+    }
+    if (err) {
+        qWarning() << "GstVideoWidget: Pipeline warning:" << err->message;
+        g_error_free(err);
+    }
+
+    GstElement* sink = gst_bin_get_by_name(GST_BIN(mPipeline), "videosink");
+    if (!sink) {
+        mIsError = true;
+        mErrorString = "Failed to find videosink element";
+        qWarning() << "GstVideoWidget:" << mErrorString;
+        return;
+    }
+
+    g_object_set(sink, "widget", this, "force-aspect-ratio", TRUE, nullptr);
+    gst_object_unref(sink);
+
+    qDebug() << "GstVideoWidget: Pipeline created, starting playback";
     play();
 }
 
 auto GstVideoWidget::errorString() const -> QString {
-    return mPlayer->errorString();
-}
-
-auto GstVideoWidget::error() const -> QMediaPlayer::Error {
-    return mPlayer->error();
+    return mErrorString;
 }
 
 auto GstVideoWidget::isError() const -> bool {
-    return mPlayer->error() != QMediaPlayer::NoError;
+    return mIsError;
+}
+
+auto GstVideoWidget::setImageSize(int w, int h) -> void {
+    mImageWidth = w;
+    mImageHeight = h;
+}
+
+void GstVideoWidget::mousePressEvent(QMouseEvent* event) {
+    if (event->button() == Qt::LeftButton && mImageWidth > 0 && mImageHeight > 0) {
+        int x = event->pos().x() * 2;
+        int y = event->pos().y() * 2;
+        if (x >= 0 && x < mImageWidth && y >= 0 && y < mImageHeight) {
+            emit clicked(static_cast<std::uint32_t>(x), static_cast<std::uint32_t>(y));
+        }
+    }
+    QWidget::mousePressEvent(event);
 }
 
 auto GstVideoWidget::play() -> void {
-    mPlayer->play();
+    if (mPipeline) gst_element_set_state(mPipeline, GST_STATE_PLAYING);
 }
 
 auto GstVideoWidget::pause() -> void {
-    mPlayer->pause();
+    if (mPipeline) gst_element_set_state(mPipeline, GST_STATE_PAUSED);
 }
 
 auto GstVideoWidget::stop() -> void {
-    mPlayer->stop();
+    if (mPipeline) gst_element_set_state(mPipeline, GST_STATE_NULL);
 }
 
 // --------------------------------------------

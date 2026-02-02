@@ -51,6 +51,7 @@ endif ()
 
 find_package(rclpy REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(rclcpp_action REQUIRED)
 find_package(rclcpp_components REQUIRED)
 find_package(ament_cmake REQUIRED)
 find_package(ament_cmake_python REQUIRED)
@@ -151,6 +152,9 @@ message(STATUS "Found message files: ${MROVER_MESSAGE_FILE_PATHS}")
 file(GLOB_RECURSE MROVER_SERVICE_FILE_PATHS RELATIVE ${CMAKE_CURRENT_LIST_DIR} CONFIGURE_DEPENDS srv/*.srv)
 message(STATUS "Found service files: ${MROVER_SERVICE_FILE_PATHS}")
 
+file(GLOB_RECURSE MROVER_ACTION_FILE_PATHS RELATIVE ${CMAKE_CURRENT_LIST_DIR} CONFIGURE_DEPENDS action/*.action)
+message(STATUS "Found action files: ${MROVER_ACTION_FILE_PATHS}")
+
 # Starter Project
 message(STATUS "PROJ NAME: ${PROJECT_NAME}")
 
@@ -167,7 +171,8 @@ message(STATUS "Found message files: ${MROVER_MESSAGE_FILE_PATHS}")
 rosidl_generate_interfaces(${PROJECT_NAME}
     ${MROVER_MESSAGE_FILE_PATHS}
     ${MROVER_SERVICE_FILE_PATHS}
-    DEPENDENCIES nav_msgs sensor_msgs geometry_msgs
+    ${MROVER_ACTION_FILE_PATHS}
+    DEPENDENCIES nav_msgs sensor_msgs geometry_msgs action_msgs
 )
 
 # Starter project 
@@ -367,12 +372,12 @@ if (NetLink_FOUND AND NetLinkRoute_FOUND)
 endif ()
 
 # Teleop Qt5 Camera Client
-find_package(Qt5 5.15 REQUIRED COMPONENTS Widgets Multimedia MultimediaWidgets)
+find_package(Qt5 5.15 REQUIRED COMPONENTS Widgets)
 
 mrover_add_node(camera_client teleoperation/camera_client/*.*pp teleoperation/camera_client/include/pch.hpp)
 target_include_directories(camera_client PRIVATE teleoperation/camera_client/include)
-target_link_libraries(camera_client gst_utils Qt::Widgets Qt::Multimedia Qt::MultimediaWidgets opencv_core opencv_imgcodecs)
-ament_target_dependencies(camera_client rclcpp std_srvs sensor_msgs)
+target_link_libraries(camera_client gst_utils Qt::Widgets PkgConfig::Gst X11 opencv_core opencv_imgcodecs)
+ament_target_dependencies(camera_client rclcpp rclcpp_action std_srvs sensor_msgs)
 set_target_properties(camera_client PROPERTIES
     AUTOMOC ON
     AUTORCC ON

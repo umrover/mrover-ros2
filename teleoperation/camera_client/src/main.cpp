@@ -4,11 +4,39 @@
 
 #include "pch.hpp"
 
+#include <gst/gst.h>
+
+#include <X11/Xlib.h>
+#undef Bool
+#undef Status
+#undef CursorShape
+#undef None
+#undef KeyPress
+#undef KeyRelease
+#undef FocusIn
+#undef FocusOut
+#undef FontChange
+#undef Expose
+#undef Unsorted
+
 #include "CameraClientMainWindow.hpp"
 #include "CameraClientNode.hpp"
 
+namespace {
+    XErrorHandler gPreviousHandler = nullptr;
+
+    int filterXErrors(Display* dpy, XErrorEvent* event) {
+        if (event->error_code == BadWindow || event->error_code == BadDrawable) return 0;
+        if (gPreviousHandler) return gPreviousHandler(dpy, event);
+        return 0;
+    }
+}
+
 auto main(int argc, char** argv) -> int {
     QApplication app(argc, argv);
+
+    gPreviousHandler = XSetErrorHandler(filterXErrors);
+    gst_init(nullptr, nullptr);
 
     rclcpp::init(argc, argv);
 
@@ -41,11 +69,33 @@ auto main(int argc, char** argv) -> int {
                                  .onScreenshot = [node, name]() { return node->requestScreenshot(name); },
                          };
 
-                         mainWindow->createCamera(name, info.pipeline, std::move(callbacks));
+                         if (name == "zed") {
+                             auto* panel = mainWindow->getClickIkPanel();
+                             auto* videoWidget = new mrover::GstVideoWidget();
+                             videoWidget->setGstPipeline(info.pipeline);
+                             videoWidget->setImageSize(1280, 720);
+                             panel->placeZedWidget(videoWidget);
+
+                             QObject::connect(videoWidget, &mrover::GstVideoWidget::clicked,
+                                              panel, [panel, nodePtr = node.get()](std::uint32_t x, std::uint32_t y) {
+                                                  if (panel->canSendClick()) {
+                                                      panel->updateClickPosition(x, y);
+                                                      panel->markRunning();
+                                                      nodePtr->sendClickIk(x, y);
+                                                  }
+                                              });
+                         } else {
+                             mainWindow->createCamera(name, info.pipeline, std::move(callbacks));
+                         }
                      });
 
     QObject::connect(node.get(), &mrover::CameraClientNode::imageCaptured,
                      mainWindow.get(), &mrover::CameraClientMainWindow::showImagePreview);
+
+    QObject::connect(node.get(), &mrover::CameraClientNode::clickIkFeedback,
+                     mainWindow->getClickIkPanel(), &mrover::ClickIkPanel::updateFeedback);
+    QObject::connect(node.get(), &mrover::CameraClientNode::clickIkResult,
+                     mainWindow->getClickIkPanel(), &mrover::ClickIkPanel::updateResult);
 
     node->discoverCameras();
 
@@ -60,6 +110,8 @@ auto main(int argc, char** argv) -> int {
     QObject::connect(&spinTimer, &QTimer::timeout, [&exec]() {
         if (rclcpp::ok()) {
             exec.spin_some();
+        } else {
+            QApplication::quit();
         }
     });
     spinTimer.start(10); // 10ms
