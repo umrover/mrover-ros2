@@ -97,8 +97,8 @@ namespace mrover {
 
         // extract prefix, source, and dest
         uint32_t const dest_id = (identifier & CAN_DEST_ID_MASK) >> CAN_DEST_ID_OFFSET;
-        uint32_t const src_id  = (identifier & CAN_SRC_ID_MASK) >> CAN_SRC_ID_OFFSET;
-        uint32_t const prefix  = identifier & ~CAN_NODE_MASK;
+        uint32_t const src_id = (identifier & CAN_SRC_ID_MASK) >> CAN_SRC_ID_OFFSET;
+        uint32_t const prefix = identifier & ~CAN_NODE_MASK;
 
         auto const src_it = m_devices.right.find(src_id);
         auto const dest_it = m_devices.right.find(dest_id);
@@ -135,8 +135,7 @@ namespace mrover {
         if (src_it == m_devices.left.end() || dest_it == m_devices.left.end()) return;
 
         uint32_t id_bits = (static_cast<uint32_t>(msg->prefix) & ~CAN_NODE_MASK) // no shifts here, 16 LSBs of prefix are 0
-                           | ((static_cast<std::uint32_t>(src_it->second) << CAN_SRC_ID_OFFSET) & CAN_SRC_ID_MASK)
-                           | ((static_cast<std::uint32_t>(dest_it->second) << CAN_DEST_ID_OFFSET) & CAN_DEST_ID_MASK);
+                           | ((static_cast<std::uint32_t>(src_it->second) << CAN_SRC_ID_OFFSET) & CAN_SRC_ID_MASK) | ((static_cast<std::uint32_t>(dest_it->second) << CAN_DEST_ID_OFFSET) & CAN_DEST_ID_MASK);
 
         canfd_frame frame{
                 .can_id = std::bit_cast<canid_t>(RawCanFdId{
