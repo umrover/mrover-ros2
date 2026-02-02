@@ -29,53 +29,49 @@
 using namespace mrover;
 
 auto Servo::updateConfigFromParameters() -> void {
-    float floatForwardLimit;
-    float floatReverseLimit;
+    double floatForwardLimit;
+    double floatReverseLimit;
+    double positionPGain;
+    double positionIGain;
+    double positionDGain;
+    double velocityPGain;
+    double velocityIGain; 
+    double currentLimit;
+
     std::vector<ParameterWrapper> parameters = {
-            {std::format("{}.reverse_limit", mServoName), floatReverseLimit, 90.0f},
-            {std::format("{}.forward_limit", mServoName), floatForwardLimit, 270.0f}
+            {std::format("{}.reverse_limit", mServoName), floatReverseLimit, 90.0},
+            {std::format("{}.forward_limit", mServoName), floatForwardLimit, 270.0},
+            {std::format("{}.position_p", mServoName), positionPGain, 400.0},
+            {std::format("{}.position_i", mServoName), positionIGain, 0.0},
+            {std::format("{}.position_d", mServoName), positionDGain, 0.0},
+            {std::format("{}.velocity_p", mServoName), velocityPGain, 180.0},
+            {std::format("{}.velocity_i", mServoName), velocityIGain, 90.0},
+            {std::format("{}.current_limit", mServoName), currentLimit, 1750.0}
     };
 
+    setProperty(ServoProperty::PositionPGain, static_cast<uint16_t>(positionPGain));
+    setProperty(ServoProperty::PositionIGain, static_cast<uint16_t>(positionIGain));
+    setProperty(ServoProperty::PositionDGain, static_cast<uint16_t>(positionDGain));
+    setProperty(ServoProperty::VelocityPGain, static_cast<uint16_t>(velocityPGain));
+    setProperty(ServoProperty::VelocityIGain, static_cast<uint16_t>(velocityIGain));
+    setProperty(ServoProperty::CurrentLimit, static_cast<uint16_t>(currentLimit));
 
     ParameterWrapper::declareParameters(mNode.get(), parameters);
 
-    assert(forward_limit > 0.0f);
-    assert(reverse_limit > 0.0f);
-    assert(forward_limit < 360.0f);
-    assert(reverse_limit < 360.0f);
+    
+    reverseLimit = static_cast<int>((static_cast<float>(reverseLimit) / 360.0f) * 4096.0f);
+    forwardLimit = static_cast<int>((static_cast<float>(forwardLimit) / 360.0f) * 4096.0f);
 
-    reverseLimit = static_cast<int>((reverseLimit / 360.0f) * 4096.0f);
-    forwardLimit = static_cast<int>((forwardLimit / 360.0f) * 4096.0f);
+    assert(forwardLimit >= 0);
+    assert(reverseLimit >= 0);
+    assert(forwardLimit <= 4096);
+    assert(reverseLimit <= 4096);
 }
 
-Servo::Servo(rclcpp::Node::SharedPtr node, ServoId mServoId, const std::string& mServoName, ServoProperties properties) : mNode{std::move(node)}, mServoId{mServoId}, mServoName{mServoName}
-{
-  // ---------------------------------------------- Set servo properties ------------------------------------------------------ //
-  // Position Gain
-  setProperty(ServoProperty::PositionPGain, properties.positionPGain);
-  setProperty(ServoProperty::PositionIGain, properties.positionIGain);
-  setProperty(ServoProperty::PositionDGain, properties.positionDGain);
-
-  // Velocity Gain
-  setProperty(ServoProperty::VelocityPGain, properties.velocityPGain);
-  setProperty(ServoProperty::VelocityIGain, properties.velocityIGain);
-
-  // Current Limit
-  setProperty(ServoProperty::CurrentLimit, properties.currentLimit);
-
-  servoSetup();
-}
-
-Servo::Servo(rclcpp::Node::SharedPtr node, ServoId mServoId, const std::string& mServoName) : mNode{std::move(node)}, mServoId{mServoId}, mServoName{mServoName}
-{
-  servoSetup();
-}
-
-Servo::ServoStatus Servo::servoSetup()
+Servo::Servo(rclcpp::Node::SharedPtr node, ServoId mServoId, const std::string& mServoName) : 
+        mServoId{mServoId}, mServoName{mServoName}, mNode{std::move(node)}
 {
   updateConfigFromParameters();
-  forwardLimit = 1024;
-  reverseLimit = 4096 - 1024;
 
   uint8_t hardwareStatus;
 
@@ -84,8 +80,6 @@ Servo::ServoStatus Servo::servoSetup()
 
   // Enable torque
   write1Byte(ADDR_TORQUE_ENABLE, 1, &hardwareStatus);
-
-  return Servo::ServoStatus::Success;
 }
 
 Servo::ServoStatus Servo::setPosition(ServoPosition position, ServoMode mode)

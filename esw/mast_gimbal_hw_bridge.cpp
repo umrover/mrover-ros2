@@ -36,7 +36,7 @@ namespace mrover {
 
         auto init() -> void {
 
-            Servo::init("/dev/ttyUSB0");
+            // Servo::init("/dev/ttyUSB0");
 
             for (auto const& servo : mServoNames) {
                 create_servo(servo.second, servo.first);

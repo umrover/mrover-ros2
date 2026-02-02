@@ -62,26 +62,6 @@ public:
     Limited,
   };
 
-  struct ServoProperties
-  {
-    uint16_t positionPGain = DEFAULT_POSITION_P_GAIN;
-    uint16_t positionIGain = DEFAULT_POSITION_I_GAIN;
-    uint16_t positionDGain = DEFAULT_POSITION_D_GAIN;
-    uint16_t velocityPGain = DEFAULT_VELOCITY_P_GAIN;
-    uint16_t velocityIGain = DEFAULT_VELOCITY_I_GAIN;
-    uint16_t currentLimit = DEFAULT_CURRENT_LIMIT;
-
-    ServoProperties(const ServoProperties& state) = default;
-    ServoProperties() = default;
-  };
-bool moveToTarget(
-    int startPos,          // [0, 4096]
-    int forwardLimit,      // >= 0
-    int reverseLimit,      // >= 0
-    int targetPos,         // desired position
-    int* distanceOut       // signed distance traveled
-);
-  Servo(rclcpp::Node::SharedPtr node, ServoId id, const std::string& name, ServoProperties properties);
   Servo(rclcpp::Node::SharedPtr node, ServoId id, const std::string& name);
 
   ServoStatus setPosition(ServoPosition position, ServoMode mode);
@@ -97,8 +77,6 @@ bool moveToTarget(
 
 private:
   auto updateConfigFromParameters() -> void;
-
-  ServoStatus servoSetup();
 
   inline ServoStatus write1Byte(ServoAddr addr, uint8_t data, uint8_t* hardwareStatus) const;
   inline ServoStatus write2Byte(ServoAddr addr, uint16_t data, uint8_t* hardwareStatus) const;
