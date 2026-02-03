@@ -26,14 +26,7 @@ class ImageCapture(Node):
         unique_id = "{date:%Y-%m-%d_%H:%M:%S}".format(date=datetime.datetime.now())
 
         path = (
-            Path(get_package_share_directory("mrover"))
-            / ".."
-            / ".."
-            / ".."
-            / ".."
-            / ".."
-            / "src"
-            / "mrover"
+            ".."
             / "data"
             / "images"
         )

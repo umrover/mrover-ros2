@@ -50,6 +50,7 @@ namespace mrover {
                                [&](int* arg) {
                                    try {
                                        *arg = static_cast<int>(node->get_parameter(mParamDescriptor).as_int());
+                                       return;
                                    } catch (...) {}
 
                                    try {
@@ -61,6 +62,7 @@ namespace mrover {
                                [&](std::string* arg) {
                                    try {
                                        *arg = node->get_parameter(mParamDescriptor).as_string();
+                                       return;
                                    } catch (...) {}
 
                                    try {
@@ -72,6 +74,7 @@ namespace mrover {
                                [&](bool* arg) {
                                    try {
                                        *arg = node->get_parameter(mParamDescriptor).as_bool();
+                                       return;
                                    } catch (...) {}
 
                                    try {
@@ -83,6 +86,7 @@ namespace mrover {
                                [&](double* arg) {
                                    try {
                                        *arg = node->get_parameter(mParamDescriptor).as_double();
+                                       return;
                                    } catch (...) {}
 
                                    try {
@@ -94,6 +98,7 @@ namespace mrover {
                                [&](float* arg) {
                                    try {
                                        *arg = static_cast<float>(node->get_parameter(mParamDescriptor).as_double());
+                                       return;
                                    } catch (...) {}
 
                                    try {

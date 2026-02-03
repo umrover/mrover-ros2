@@ -1,34 +1,28 @@
 <template>
-  <div class="d-flex flex-column align-items-center w-100">
-    <div class="d-flex flex-column gap-2" style="width: 500px; max-width: 100%;">
-      <div class="d-flex justify-content-between align-items-center">
-        <h3 class="m-0">Arm Controls</h3>
-        <span
-          class="px-2 py-2 rounded-2 text-black fw-semibold text-center"
-          style="width: 130px; display: inline-block; font-family: monospace;"
-          :class="controllerConnected ? 'bg-success' : 'bg-secondary'"
-        >
-          {{ controllerConnected ? 'Connected  ' : 'Disconnected' }}
-        </span>
+  <div class="d-flex flex-column align-items-center">
+    <div class="d-flex flex-column gap-2 align-items-center">
+      <div class="d-flex justify-content-between align-items-center w-100">
+        <h4 class="m-0">Arm Controls</h4>
+        <IndicatorDot :is-active="controllerConnected" class="me-2" />
       </div>
       <div
-        class="btn-group d-flex justify-content-between"
-        role="group"
-        aria-label="Arm mode selection"
+      class="btn-group d-flex justify-content-between"
+      role="group"
+      aria-label="Arm mode selection"
       >
         <button
           type="button"
           class="btn flex-fill"
           :class="mode === 'disabled' ? 'btn-danger' : 'btn-outline-danger'"
-          @click="mode = 'disabled'"
+          @click="newRAMode('disabled')"
         >
-          Disabled
-        </button>
-        <button
+        Disabled
+      </button>
+      <button
           type="button"
           class="btn flex-fill"
           :class="mode === 'throttle' ? 'btn-success' : 'btn-outline-success'"
-          @click="mode = 'throttle'"
+          @click="newRAMode('throttle')"
         >
           Throttle
         </button>
@@ -36,85 +30,91 @@
           type="button"
           class="btn flex-fill"
           :class="mode === 'ik-pos' ? 'btn-success' : 'btn-outline-success'"
-          @click="mode = 'ik-pos'"
+          @click="newRAMode('ik-pos')"
         >
-          IK Position
+          IK Pos
         </button>
         <button
           type="button"
           class="btn flex-fill"
           :class="mode === 'ik-vel' ? 'btn-success' : 'btn-outline-success'"
-          @click="mode = 'ik-vel'"
+          @click="newRAMode('ik-vel')"
         >
-          IK Velocity
+          IK Vel
         </button>
       </div>
+      <GamepadDisplay :axes="axes" :buttons="buttons" layout="horizontal" />
     </div>
   </div>
 </template>
 
 
-<script lang="ts">
-import { defineComponent } from 'vue'
-import Vuex from 'vuex'
-const { mapActions, mapState } = Vuex
+<script lang="ts" setup>
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { useWebsocketStore } from '@/stores/websocket'
+import { armAPI } from '@/utils/api'
+import GamepadDisplay from './GamepadDisplay.vue'
+import IndicatorDot from './IndicatorDot.vue'
+
+const websocketStore = useWebsocketStore()
+
+const mode = ref('disabled')
+const gamepadConnected = ref(false)
+const axes = ref<number[]>([0, 0, 0, 0])
+const buttons = ref<number[]>(new Array(17).fill(0))
+
+const controllerConnected = computed(() => gamepadConnected.value)
+
+let interval: number | undefined = undefined
 
 const UPDATE_HZ = 30
 
-export default defineComponent({
-  data() {
-    return {
-      mode: 'disabled',
-      gamepadConnected: false,
+const keyDown = async (event: { key: string }) => {
+  if (event.key === ' ') {
+    await newRAMode('disabled')
+  }
+}
+
+onMounted(() => {
+  document.addEventListener('keydown', keyDown)
+  interval = window.setInterval(() => {
+    const gamepads = navigator.getGamepads()
+    const gamepad = gamepads.find(
+      gamepad => gamepad && gamepad.id.includes('Microsoft')
+    )
+    gamepadConnected.value = !!gamepad
+    if (!gamepad) return
+
+    axes.value = [...gamepad.axes]
+    buttons.value = gamepad.buttons.map(button => button.value)
+
+    const controllerData = {
+      axes: gamepad.axes,
+      buttons: gamepad.buttons.map(button => button.value)
     }
-  },
-  computed: {
-    ...mapState('websocket', ['message']),
-    controllerConnected(): boolean {
-      return this.gamepadConnected
-    },
-  },
-  mounted() {
-    document.addEventListener('keydown', this.keyDown)
-  },
-  created() {
-    this.interval = window.setInterval(() => {
-      const gamepads = navigator.getGamepads()
-      const gamepad = gamepads.find(
-        gamepad => gamepad && gamepad.id.includes('Microsoft'),
-      )
-      this.gamepadConnected = !!gamepad
-      if (!gamepad) return
 
-      this.$store.dispatch('websocket/sendMessage', {
-        id: 'arm',
-        message: {
-          type: 'ra_controller',
-          axes: gamepad.axes,
-          buttons: gamepad.buttons.map(button => button.value),
-        },
-      })
-
-      this.$store.dispatch('websocket/sendMessage', {
-        id: 'arm',
-        message: {
-          type: 'ra_mode',
-          mode: this.mode,
-        },
-      })
-    }, 1000 / UPDATE_HZ)
-  },
-  beforeUnmount() {
-    window.clearInterval(this.interval)
-    document.removeEventListener('keydown', this.keyDown)
-  },
-  methods: {
-    ...mapActions('websocket', ['sendMessage']),
-    keyDown(event: { key: string }) {
-      if (event.key === ' ') {
-        this.mode = 'disabled'
-      }
-    },
-  },
+    websocketStore.sendMessage('arm', {
+      type: 'ra_controller',
+      ...controllerData
+    })
+  }, 1000 / UPDATE_HZ)
 })
+
+onBeforeUnmount(() => {
+  window.clearInterval(interval)
+  document.removeEventListener('keydown', keyDown)
+})
+
+const newRAMode = async (newMode: string) => {
+  try {
+    mode.value = newMode
+    const data = await armAPI.setRAMode(mode.value)
+    if (data.status === 'success' && data.mode) {
+        mode.value = data.mode
+      };
+    }
+     catch (error) {
+    console.error('Failed to set arm mode:', error)
+  }
+}
 </script>

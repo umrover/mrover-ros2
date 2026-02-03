@@ -35,6 +35,6 @@ COLCON_EXTENSION_BLOCKLIST=colcon_core.event_handler.desktop_notification colcon
 	--build-base "build/$build_profile" \
 	--install-base "install/$build_profile"
 
-rm -rf $(pwd)/build/$build_profile/mrover/.cmake/api
+rm -rf "$(pwd)/build/$build_profile/mrover/.cmake/api"
 
-ln -sf $(pwd)/build/$build_profile/compile_commands.json $(pwd)/src/mrover/compile_commands.json
+ln -sf "$(pwd)/build/$build_profile/compile_commands.json" "$(pwd)/src/mrover/compile_commands.json"
