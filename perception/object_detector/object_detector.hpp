@@ -48,6 +48,7 @@ namespace mrover {
 
         std::string mCameraFrame;
         std::string mWorldFrame;
+        std::string mImageSubTopic;
 
         cv::Mat mRgbImage, mImageBlob;
 
@@ -58,6 +59,7 @@ namespace mrover {
         sensor_msgs::msg::Image mDetectionsImageMessage;
 
         rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr mDebugImgPub;
+        rclcpp::Publisher<mrover::msg::ObjectBoundingBoxes>::SharedPtr mBoxesPub;
 
         int mObjIncrementWeight{};
         int mObjDecrementWeight{};
@@ -84,6 +86,8 @@ namespace mrover {
                                std::vector<Detection>& detections) const -> void;
 
         static auto preprocessYOLOv8Input(Model const& model, cv::Mat const& rgbImage, cv::Mat& blobSizedImage, cv::Mat& blob) -> void;
+
+        auto resizeBoundingBoxes(cv::Size const& outputSpace, std::vector<Detection>& detections) const -> void;
 
     public:
         explicit ObjectDetectorBase(rclcpp::NodeOptions const& options = rclcpp::NodeOptions());

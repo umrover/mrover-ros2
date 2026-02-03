@@ -34,8 +34,22 @@ namespace mrover {
         mTensorRT.modelForwardPass(mImageBlob, outputTensor);
 
         mModel.outputTensorToDetections(mModel, outputTensor, detections);
+        resizeBoundingBoxes(cv::Size(static_cast<int>(msg->width), static_cast<int>(msg->height)), detections);
 
         mLoopProfiler.measureEvent("Execution");
+
+        msg::ObjectBoundingBoxes msgs{};
+        for(auto const& det : detections){
+            msg::ObjectBoundingBox msg;
+            msg.x = static_cast<uint32_t>(det.box.x);
+            msg.y = static_cast<uint32_t>(det.box.y);
+            msg.w = static_cast<uint32_t>(det.box.width);
+            msg.h = static_cast<uint32_t>(det.box.height);
+            msg.object = det.className;
+            msgs.targets.push_back(msg);
+        }
+        mBoxesPub->publish(msgs);
+        mLoopProfiler.measureEvent("Detection Image");
 
         // Increment Object hit counts if theyre seen
         // Decrement Object hit counts if they're not seen
@@ -56,17 +70,13 @@ namespace mrover {
         for (auto const& [classId, className, confidence, box]: detections) {
             // Resize from blob space to image space
             cv::Point2f centerInBlob = cv::Point2f{box.tl()} + cv::Point2f{box.size()} / 2;
-            float xRatio = static_cast<float>(msg->width) / static_cast<float>(imageSize.width);
-            float yRatio = static_cast<float>(msg->height) / static_cast<float>(imageSize.height);
-            std::size_t centerXInImage = std::lround(centerInBlob.x * xRatio);
-            std::size_t centerYInImage = std::lround(centerInBlob.y * yRatio);
 
             if (seenObjects[classId]) return;
 
             seenObjects[classId] = true;
 
             // Get the object's position in 3D from the point cloud and run this statement if the optional has a value
-            if (std::optional<SE3d> objectInCamera = spiralSearchForValidPoint(msg, centerXInImage, centerYInImage, box.width, box.height)) {
+            if (std::optional<SE3d> objectInCamera = spiralSearchForValidPoint(msg, static_cast<std::size_t>(centerInBlob.x), static_cast<std::size_t>(centerInBlob.y), box.width, box.height)) {
                 try {
                     std::string objectImmediateFrame = std::format("immediate{}", className);
                     // Push the immediate detections to the camera frame
@@ -198,8 +208,22 @@ namespace mrover {
         mTensorRT.modelForwardPass(mImageBlob, outputTensor);
 
         mModel.outputTensorToDetections(mModel, outputTensor, detections);
+        resizeBoundingBoxes(cv::Size(static_cast<int>(msg->width), static_cast<int>(msg->height)), detections);
 
         mLoopProfiler.measureEvent("Execution");
+
+        msg::ObjectBoundingBoxes msgs{};
+        for(auto const& det : detections){
+            msg::ObjectBoundingBox msg;
+            msg.x = static_cast<uint32_t>(det.box.x);
+            msg.y = static_cast<uint32_t>(det.box.y);
+            msg.w = static_cast<uint32_t>(det.box.width);
+            msg.h = static_cast<uint32_t>(det.box.height);
+            msg.object = det.className;
+            msgs.targets.push_back(msg);
+        }
+        mBoxesPub->publish(msgs);
+        mLoopProfiler.measureEvent("Detection Image");
 
         mrover::msg::ImageTargets targets{};
         for (auto const& [classId, className, confidence, box]: detections) {
@@ -225,6 +249,20 @@ namespace mrover {
         float xRecentered = 0.5f - xNormalized;
         float bearingDegrees = xRecentered * mCameraHorizontalFov;
         return bearingDegrees * std::numbers::pi_v<float> / 180.0f;
+    }
+
+    auto ObjectDetectorBase::resizeBoundingBoxes(cv::Size const& outputSpace, std::vector<Detection>& detections) const -> void{
+        float xRatio = static_cast<float>(outputSpace.width) / static_cast<float>(mModel.inputTensorSize[2]);
+        float yRatio = static_cast<float>(outputSpace.height) / static_cast<float>(mModel.inputTensorSize[3]);
+        
+        for(auto& det : detections){
+            cv::Rect newBoundingBox;
+            newBoundingBox.x = static_cast<int>(static_cast<float>(det.box.x) * xRatio);
+            newBoundingBox.y = static_cast<int>(static_cast<float>(det.box.y) * yRatio);
+            newBoundingBox.width = static_cast<int>(static_cast<float>(det.box.width) * xRatio);
+            newBoundingBox.height = static_cast<int>(static_cast<float>(det.box.height) * yRatio);
+            std::swap(newBoundingBox, det.box);
+        }
     }
 
 } // namespace mrover

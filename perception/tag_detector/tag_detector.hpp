@@ -15,7 +15,7 @@ namespace mrover {
 
     protected:
         rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr mDetectedImagePub;
-        rclcpp::Publisher<mrover::msg::ObjectBoundingBoxes>::SharedPtr mBoxesPub;
+        rclcpp::Publisher<mrover::msg::TagBoundingBoxes>::SharedPtr mBoxesPub;
 
         std::unordered_map<int, rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr> mThreshImagePubs; // Map from threshold scale to publisher
 

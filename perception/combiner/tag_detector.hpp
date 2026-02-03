@@ -11,20 +11,19 @@ namespace mrover {
 
         // Object Bounding Boxes
         // Tags
-        mrover::msg::ObjectBoundingBoxes mTagBoxes;
-        rclcpp::Subscription<mrover::msg::ObjectBoundingBoxes>::SharedPtr mTagBoxesSub;
+        std::vector<std::vector<cv::Point2f>> mTagCorners;
+        std::vector<int> mTagIds;
+        rclcpp::Subscription<mrover::msg::TagBoundingBoxes>::SharedPtr mTagBoxesSub;
 
         // Mallet
-        mrover::msg::ObjectBoundingBoxes mMalletBoxes;
-        rclcpp::Subscription<mrover::msg::ObjectBoundingBoxes>::SharedPtr mMalletBoxesSub;
-
-        // Bottle
-        mrover::msg::ObjectBoundingBoxes mBottleBoxes;
-        rclcpp::Subscription<mrover::msg::ObjectBoundingBoxes>::SharedPtr mBottleBoxesSub;
+        mrover::msg::ObjectBoundingBoxes mObjectBoxes;
+        rclcpp::Subscription<mrover::msg::ObjectBoundingBoxes>::SharedPtr mObjectBoxesSub;
 
         // Message
         sensor_msgs::msg::Image mImage;
         rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr mImagePub;
+
+        static auto getColor(std::string const& type) -> cv::Vec3b;
 
     public:
         explicit Combiner(rclcpp::NodeOptions const& options = rclcpp::NodeOptions());

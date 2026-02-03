@@ -8,6 +8,11 @@ laptop_cam_tag_detector:
     image_sub_topic: "/laptop_cam/image"
     box_pub_topic: "/laptop_cam/tag_boxes"
 
+laptop_cam_object_detector:
+  ros__parameters:
+    image_sub_topic: "/laptop_cam/image"
+    box_pub_topic: "/laptop_cam/object_boxes"
+
 laptop_cam_streamer:
   ros__parameters:
     camera: "laptop_cam"

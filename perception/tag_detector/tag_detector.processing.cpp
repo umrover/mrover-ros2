@@ -40,14 +40,18 @@ namespace mrover {
         publishThresholdedImage();
         mProfiler.measureEvent("Threshold");
 
-        msg::ObjectBoundingBoxes msgs{};
-        for(auto const& corners : mImmediateCorners){
-            assert(corners.size() == 4);
-            msg::ObjectBoundingBox msg;
-            msg.x = static_cast<uint32_t>(corners[0].x);
-            msg.y = static_cast<uint32_t>(corners[0].y);
-            msg.w = static_cast<uint32_t>(corners[2].x - corners[0].x);
-            msg.h = static_cast<uint32_t>(corners[2].y - corners[0].y);
+        msg::TagBoundingBoxes msgs{};
+        assert(mImmediateCorners.size() == mImmediateIds.size());
+        for(std::size_t i = 0; i < mImmediateCorners.size(); ++i){
+            msg::TagBoundingBox msg;
+            auto const& corners = mImmediateCorners[i];
+            int id = mImmediateIds[i];
+
+            for(auto const& corner : corners){
+                msg.corners.push_back(corner.x);
+                msg.corners.push_back(corner.y);
+            }
+            msg.id = id;
             msgs.targets.push_back(msg);
         }
         mBoxesPub->publish(msgs);
@@ -123,14 +127,18 @@ namespace mrover {
         cv::aruco::detectMarkers(mBgrImage, mDictionary, mImmediateCorners, mImmediateIds, mDetectorParams);
         mProfiler.measureEvent("Detection");
 
-        msg::ObjectBoundingBoxes msgs{};
-        for(auto const& corners : mImmediateCorners){
-            assert(corners.size() == 4);
-            msg::ObjectBoundingBox msg;
-            msg.x = static_cast<uint32_t>(corners[0].x);
-            msg.y = static_cast<uint32_t>(corners[0].y);
-            msg.w = static_cast<uint32_t>(corners[2].x - corners[0].x);
-            msg.h = static_cast<uint32_t>(corners[2].y - corners[0].y);
+        msg::TagBoundingBoxes msgs{};
+        assert(mImmediateCorners.size() == mImmediateIds.size());
+        for(std::size_t i = 0; i < mImmediateCorners.size(); ++i){
+            msg::TagBoundingBox msg;
+            auto const& corners = mImmediateCorners[i];
+            int id = mImmediateIds[i];
+
+            for(auto const& corner : corners){
+                msg.corners.push_back(corner.x);
+                msg.corners.push_back(corner.y);
+            }
+            msg.id = id;
             msgs.targets.push_back(msg);
         }
         mBoxesPub->publish(msgs);

@@ -29,6 +29,16 @@ def generate_launch_description():
             respawn=True,
         )
 
+        obj_detector = Node(
+            package="mrover",
+            executable="image_object_detector",
+            name=f"{cam_name}_cam_object_detector",
+            parameters=[
+                Path(get_package_share_directory("mrover"), "config", "multi_detection.yaml"),
+            ],
+            respawn=True,
+        )
+
         cam_streamer = Node(
             package="mrover",
             executable="gst_camera_server",
@@ -51,6 +61,7 @@ def generate_launch_description():
 
         launch_list.append(cam)
         launch_list.append(tag_detector)
+        launch_list.append(obj_detector)
         launch_list.append(cam_streamer)
         launch_list.append(combiner)
 

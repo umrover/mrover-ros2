@@ -30,7 +30,7 @@
 
 #include <mrover/msg/image_target.hpp>
 #include <mrover/msg/image_targets.hpp>
-#include <mrover/msg/object_bounding_boxes.hpp>
+#include <mrover/msg/tag_bounding_boxes.hpp>
 
 #include "parameter.hpp"
 #include <lie.hpp>

@@ -5,6 +5,7 @@ namespace mrover {
 
     ObjectDetectorBase::ObjectDetectorBase(rclcpp::NodeOptions const& options) : rclcpp::Node(NODE_NAME, options), mLoopProfiler{get_logger()} {
         std::string modelName;
+        std::string boxPubTopic{};
 
         std::vector<ParameterWrapper> params{
                 {"camera_frame", mCameraFrame, "zed_left_camera_frame"},
@@ -16,7 +17,9 @@ namespace mrover {
                 {"model_name", modelName, "Large-Dataset"},
                 {"model_score_threshold", mModelScoreThreshold, 0.75},
                 {"model_nms_threshold", mModelNMSThreshold, 0.5},
-                {"object_detector_debug", mDebug, true}};
+                {"object_detector_debug", mDebug, true},
+                {"box_pub_topic", boxPubTopic, "camera_cam/bottle_boxes"},
+                {"image_sub_topic", mImageSubTopic, "camera_cam/image"}};
 
         ParameterWrapper::declareParameters(this, params);
 
@@ -34,6 +37,8 @@ namespace mrover {
         using namespace std::placeholders;
 
         mModel = Model(modelName, {0, 0}, {"bottle", "hammer"}, mTensorRT.getInputTensorSize(), mTensorRT.getOutputTensorSize(), [](Model const& model, cv::Mat& rgbImage, cv::Mat& blobSizedImage, cv::Mat& blob) { preprocessYOLOv8Input(model, rgbImage, blobSizedImage, blob); }, [this](Model const& model, cv::Mat& output, std::vector<Detection>& detections) { parseYOLOv8Output(model, output, detections); });
+
+        mBoxesPub = create_publisher<mrover::msg::ObjectBoundingBoxes>(boxPubTopic, 1);
 
         RCLCPP_INFO_STREAM(get_logger(), std::format("Object detector initialized with model: {} and thresholds: {} and {}", mModel.modelName, mModelScoreThreshold, mModelNMSThreshold));
     }
@@ -58,7 +63,7 @@ namespace mrover {
 
         mDebugImgPub = create_publisher<sensor_msgs::msg::Image>("/long_range_object_detector/debug_img", 1);
 
-        mSensorSub = create_subscription<sensor_msgs::msg::Image>("/long_range_cam/image", 1, [this](sensor_msgs::msg::Image::ConstSharedPtr const& msg) {
+        mSensorSub = create_subscription<sensor_msgs::msg::Image>(mImageSubTopic, 1, [this](sensor_msgs::msg::Image::ConstSharedPtr const& msg) {
             ImageObjectDetector::imageCallback(msg);
         });
 

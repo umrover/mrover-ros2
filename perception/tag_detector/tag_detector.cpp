@@ -56,7 +56,7 @@ namespace mrover {
             mDetectorParams->cornerRefinementMethod = cv::aruco::CORNER_REFINE_NONE;
         }
 
-        mBoxesPub = create_publisher<mrover::msg::ObjectBoundingBoxes>(boxPubTopic, 1);
+        mBoxesPub = create_publisher<mrover::msg::TagBoundingBoxes>(boxPubTopic, 1);
 
         RCLCPP_INFO(get_logger(), "Tag detection ready!");
     }
