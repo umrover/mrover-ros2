@@ -11,24 +11,27 @@ namespace mrover {
         std::string tagTopicName = std::format("/{}/tag_boxes", cameraName);
         std::string malletTopicName = std::format("/{}/mallet_boxes", cameraName);
         std::string bottleTopicName = std::format("/{}/bottle_boxes", cameraName);
+        std::string imagePubTopicName = std::format("/{}/detections", cameraName);
 
         ParameterWrapper::declareParameters(this, params);
     
-        mImageSub = create_subscription<sensor_msgs::msg::Image>(imageTopicName, 1, [this](sensor_msgs::msg::Image::ConstSharedPtr const& msg){
+        mImageSub = create_subscription<sensor_msgs::msg::Image>(imageTopicName, 1, [this](sensor_msgs::msg::Image::ConstSharedPtr const& msg) -> void{
                     imageCallback(msg);
                 });
 
-        mTagBoxesSub = create_subscription<mrover::msg::ObjectBoundingBoxes>(tagTopicName, 1, [this](mrover::msg::ObjectBoundingBoxes const& msg){
+        mTagBoxesSub = create_subscription<mrover::msg::ObjectBoundingBoxes>(tagTopicName, 1, [this](mrover::msg::ObjectBoundingBoxes const& msg) -> void{
                     mTagBoxes = msg;
                 });
 
-        mMalletBoxesSub = create_subscription<mrover::msg::ObjectBoundingBoxes>(malletTopicName, 1, [this](mrover::msg::ObjectBoundingBoxes const& msg){
+        mMalletBoxesSub = create_subscription<mrover::msg::ObjectBoundingBoxes>(malletTopicName, 1, [this](mrover::msg::ObjectBoundingBoxes const& msg) -> void{
                     mMalletBoxes = msg;
                 });
 
-        mBottleBoxesSub = create_subscription<mrover::msg::ObjectBoundingBoxes>(bottleTopicName, 1, [this](mrover::msg::ObjectBoundingBoxes const& msg){
+        mBottleBoxesSub = create_subscription<mrover::msg::ObjectBoundingBoxes>(bottleTopicName, 1, [this](mrover::msg::ObjectBoundingBoxes const& msg) -> void{
                     mBottleBoxes = msg;
                 });
+
+        mImagePub = create_publisher<sensor_msgs::msg::Image>(imagePubTopicName, 1);
     }
 
     auto Combiner::imageCallback(sensor_msgs::msg::Image::ConstSharedPtr const& msg) -> void{
@@ -47,13 +50,13 @@ namespace mrover {
         mImage.header.frame_id = "zed_left_camera_frame";
         mImage.height = msg->height;
         mImage.width = msg->width;
-        mThresholdImageMessage.encoding = sensor_msgs::image_encodings::MONO8;
-        mThresholdImageMessage.step = mGrayImage.step;
-        mThresholdImageMessage.is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
-        size_t size = mThresholdImageMessage.step * mThresholdImageMessage.height;
-        mThresholdImageMessage.data.resize(size);
-        std::memcpy(mThresholdImageMessage.data.data(), mGrayImage.data, size);
+        mImage.encoding = sensor_msgs::image_encodings::BGR8;
+        mImage.step = msg->step;
+        mImage.is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
+        size_t size = msg->step * msg->height;
+        mImage.data.resize(size);
+        std::memcpy(mImage.data.data(), bgrImage.data, size);
 
-        publisher->publish(mThresholdImageMessage);
+        mImagePub->publish(mImage);
     }
 } // namespace mrover

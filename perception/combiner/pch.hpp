@@ -10,6 +10,8 @@
 #include <opencv4/opencv2/core.hpp>
 
 #include <sensor_msgs/msg/image.hpp>
+#include <sensor_msgs/image_encodings.hpp>
+
 #include <mrover/msg/object_bounding_box.hpp>
 #include <mrover/msg/object_bounding_boxes.hpp>
 
