@@ -104,7 +104,7 @@ class Environment:
             return None
 
         return target_pose.translation()
-    
+
     def get_time_diff(self, frame: str) -> None | Time:
         try:
             waste, t = SE3.from_tf_tree_with_time(self.ctx.tf_buffer, frame, self.ctx.world_frame)
@@ -114,7 +114,7 @@ class Environment:
             tf2_ros.ExtrapolationException,
         ):
             return None
-        
+
         now = self.ctx.node.get_clock().now()
         time = Time.from_msg(t)
         return now - time
@@ -131,7 +131,7 @@ class Environment:
                 return self.get_target_position("bottle")
             case _:
                 return None
-    
+
     def current_time_diff(self):
         assert self.ctx.course is not None
 
