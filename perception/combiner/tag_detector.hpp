@@ -27,7 +27,7 @@ namespace mrover {
         rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr mImagePub;
 
     public:
-        explicit Combiner(std::string const& name, rclcpp::NodeOptions const& options = rclcpp::NodeOptions());
+        explicit Combiner(rclcpp::NodeOptions const& options = rclcpp::NodeOptions());
     };
 
 } // namespace mrover

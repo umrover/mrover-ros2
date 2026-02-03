@@ -7,6 +7,7 @@ namespace mrover {
         int dictionaryNumber{};
         bool doCornerRefinement{};
         bool cornerRefinementSubPix{};
+        std::string boxPubTopic{};
 
         mDetectorParams = cv::makePtr<cv::aruco::DetectorParameters>();
 
@@ -38,7 +39,8 @@ namespace mrover {
                 {"min_otsu_std_dev", mDetectorParams->minOtsuStdDev, 5.0},
                 {"perspective_remove_ignored_margin_per_cell", mDetectorParams->perspectiveRemoveIgnoredMarginPerCell, 0.13},
                 {"perspective_remove_pixel_per_cell", mDetectorParams->perspectiveRemovePixelPerCell, 4},
-                {"polygonal_approx_accuracy_rate", mDetectorParams->polygonalApproxAccuracyRate, 0.08}};
+                {"polygonal_approx_accuracy_rate", mDetectorParams->polygonalApproxAccuracyRate, 0.08},
+                {"box_pub_topic", boxPubTopic, "camera_cam/tag_boxes"}};
 
         ParameterWrapper::declareParameters(this, params);
 
@@ -54,6 +56,7 @@ namespace mrover {
             mDetectorParams->cornerRefinementMethod = cv::aruco::CORNER_REFINE_NONE;
         }
 
+        mBoxesPub = create_publisher<mrover::msg::ObjectBoundingBoxes>(boxPubTopic, 1);
 
         RCLCPP_INFO(get_logger(), "Tag detection ready!");
     }

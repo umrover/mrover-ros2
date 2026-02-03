@@ -39,11 +39,21 @@ def generate_launch_description():
             respawn=True,
         )
 
+        combiner = Node(
+            package="mrover",
+            executable="combiner",
+            name=f"{cam_name}_cam_detections",
+            parameters=[
+                Path(get_package_share_directory("mrover"), "config", "multi_detection.yaml"),
+            ],
+            respawn=True,
+        )
+
         launch_list.append(cam)
         launch_list.append(tag_detector)
         launch_list.append(cam_streamer)
+        launch_list.append(combiner)
 
     add_detector("laptop")
-    add_detector("ardu")
 
     return LaunchDescription(launch_list)

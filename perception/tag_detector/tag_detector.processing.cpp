@@ -40,6 +40,19 @@ namespace mrover {
         publishThresholdedImage();
         mProfiler.measureEvent("Threshold");
 
+        msg::ObjectBoundingBoxes msgs{};
+        for(auto const& corners : mImmediateCorners){
+            assert(corners.size() == 4);
+            msg::ObjectBoundingBox msg;
+            msg.x = static_cast<uint32_t>(corners[0].x);
+            msg.y = static_cast<uint32_t>(corners[0].y);
+            msg.w = static_cast<uint32_t>(corners[2].x - corners[0].x);
+            msg.h = static_cast<uint32_t>(corners[2].y - corners[0].y);
+            msgs.targets.push_back(msg);
+        }
+        mBoxesPub->publish(msgs);
+        mProfiler.measureEvent("Detection Image");
+
         // Update ID, image center, and increment hit count for all detected tags
         for (std::size_t i = 0; i < mImmediateIds.size(); ++i) {
             int id = mImmediateIds[i];
@@ -109,6 +122,19 @@ namespace mrover {
         // {mImmediateCorneres, mImmediateIds} are the outputs from OpenCV
         cv::aruco::detectMarkers(mBgrImage, mDictionary, mImmediateCorners, mImmediateIds, mDetectorParams);
         mProfiler.measureEvent("Detection");
+
+        msg::ObjectBoundingBoxes msgs{};
+        for(auto const& corners : mImmediateCorners){
+            assert(corners.size() == 4);
+            msg::ObjectBoundingBox msg;
+            msg.x = static_cast<uint32_t>(corners[0].x);
+            msg.y = static_cast<uint32_t>(corners[0].y);
+            msg.w = static_cast<uint32_t>(corners[2].x - corners[0].x);
+            msg.h = static_cast<uint32_t>(corners[2].y - corners[0].y);
+            msgs.targets.push_back(msg);
+        }
+        mBoxesPub->publish(msgs);
+        mProfiler.measureEvent("Detection Image");
 
         msg::ImageTargets targets;
         for (std::size_t i = 0; i < mImmediateIds.size(); ++i) {

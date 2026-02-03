@@ -307,6 +307,11 @@ mrover_link_component(cost_map lie parameter_utils)
 
 mrover_executable_from_component(cost_map perception/executables/cost_map.cpp cost_map_component)
 
+# Combiner
+mrover_add_node(combiner perception/combiner/*.cpp perception/combiner/pch.hpp)
+ament_target_dependencies(combiner rclcpp rclcpp_components tf2 tf2_ros)
+target_link_libraries(combiner lie opencv_core opencv_aruco opencv_imgproc loop_profiler parameter_utils)
+
 # Embedded
 
 mrover_add_header_only_library(messaging esw/messaging)
