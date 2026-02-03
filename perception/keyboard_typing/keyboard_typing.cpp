@@ -14,7 +14,7 @@ namespace mrover{
         ParameterWrapper::declareParameters(this, params);
 
         // Set up action server
-        mTypingClient = rclcpp_action::create_client<TypingDeltas>(this, "typing_deltas");
+        mTypingClient = rclcpp_action::create_client<TypingDeltas>(this, "typing_ik");
 
         mTypingServer = rclcpp_action::create_server<TypingCode>(
             this,
@@ -72,7 +72,7 @@ namespace mrover{
         // create publisher
         mCostMapPub = this->create_publisher<msg::KeyboardYaw>("/keypose/yaw", rclcpp::QoS(1));
 
-        mIKPub = this->create_publisher<msg::IK>("ee_pos_cmd",rclcpp::QoS(1));
+        mIKPub = this->create_publisher<msg::IK>("ik_pos_cmd",rclcpp::QoS(1));
 
         // Define offsets
         layout[4] = cv::Vec3d(0.0, 0.0, 0.0);       // BL
@@ -254,7 +254,7 @@ namespace mrover{
 
                 for (int idx : valid_indices) {
                     int id = ids[idx];
-                    
+
                     // 1. Solve PnP for this specific tag (IPPE_SQUARE is extremely stable)
                     cv::Vec3d rvec_single, tvec_single;
                     cv::solvePnP(objPoints, markerCorners.at(idx), camMatrix, distCoeffs, rvec_single, tvec_single, false, cv::SOLVEPNP_IPPE_SQUARE);
@@ -262,7 +262,7 @@ namespace mrover{
                     // 2. Shift to Anchor (Origin)
                     // Retrieve offset
                     cv::Vec3d offset_wall = layout[id]; 
-                    
+
                     // Rotate offset
                     cv::Mat R_cv;
                     cv::Rodrigues(rvec_single, R_cv);
@@ -694,7 +694,7 @@ namespace mrover{
     }
 
     void KeyboardTypingNode::feedback_callback(GoalHandleTypingDeltas::SharedPtr, const std::shared_ptr<const TypingDeltas::Feedback> feedback) {
-        RCLCPP_INFO_STREAM(get_logger(), std::format("Feedback: {}", feedback->dist_remaining));
+        // RCLCPP_INFO_STREAM(get_logger(), std::format("Feedback: {}", feedback->dist_remaining));
     }
 
     // void KeyboardTypingNode::result_callback(const GoalHandleTypingDeltas::WrappedResult & result) {
@@ -768,7 +768,14 @@ namespace mrover{
 
                 x_delta = keyboard[launchCode[i]][0];
                 y_delta = keyboard[launchCode[i]][1];
-                send_goal(x_delta, y_delta);
+
+                RCLCPP_WARN(this->get_logger(), "X_pos", mMinCodeLength, mMaxCodeLength);
+
+                RCLCPP_INFO_STREAM(this->get_logger(), "current letter = " << launchCode[i]);
+                RCLCPP_INFO_STREAM(this->get_logger(), "x_delta = " << x_delta);
+                RCLCPP_INFO_STREAM(this->get_logger(), "y_delta = " << y_delta);
+
+                send_goal(-x_delta, y_delta);
 
                 if (goal_handle->is_canceling()) {
                     result->success = false;

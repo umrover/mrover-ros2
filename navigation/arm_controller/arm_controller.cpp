@@ -266,7 +266,7 @@ namespace mrover {
 
                 double distRemaining = sqrt(pow(joints["joint_a"].pos - mPosTarget.y, 2) + pow((joints["gripper"].pos - mPosTarget.gripper), 2));
                 // make param
-                if(distRemaining < 0.0001) {
+                if(distRemaining < 0.0002) {
                     result->success = true;
                     typingGoalHandle->succeed(result);
 
@@ -448,8 +448,8 @@ namespace mrover {
             msg::Position positions;
             positions.names = {"joint_a", "gripper"};
             positions.positions = {
-                    static_cast<float>(mPosTarget.y + mTypingOrigin.y),
-                    static_cast<float>(mPosTarget.z + mTypingOrigin.gripper),
+                    static_cast<float>(mPosTarget.y),
+                    static_cast<float>(mPosTarget.gripper),
             };
 
             // bounds checking and such
