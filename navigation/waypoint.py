@@ -331,6 +331,7 @@ class WaypointState(State):
                             point=coord,
                             color=[1.0, 0.0, 1.0],
                             id=i,
+                            size=0.5,
                             lifetime=context.node.get_parameter("pub_path_rate").value,
                         )
                     )
