@@ -5,3 +5,4 @@
     ubuntu_release: focal
   roles:
     - jetson_networks
+    - jetson_boot_order

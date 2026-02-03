@@ -1,0 +1,3 @@
+- name: Set Boot Order
+  become: true
+  ansible.builtin.script: files/prioritize_emmc.sh
