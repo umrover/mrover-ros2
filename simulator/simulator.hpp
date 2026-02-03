@@ -4,6 +4,7 @@
 
 #include "glfw_pointer.hpp"
 #include "wgpu_objects.hpp"
+#include <GLFW/glfw3.h>
 
 using namespace std::literals;
 
@@ -239,6 +240,8 @@ namespace mrover {
         int mArmRollCCWKey = GLFW_KEY_APOSTROPHE;
         int mArmPitchUpKey = GLFW_KEY_RIGHT_BRACKET;
         int mArmPitchDownKey = GLFW_KEY_LEFT_BRACKET;
+        int mArmGripperCloseKey = GLFW_KEY_MINUS;
+        int mArmGripperOpenKey = GLFW_KEY_EQUAL;
 
         float mFlySpeed = 5.0f;
         float mRoverLinearSpeed = 1.0f;
@@ -272,9 +275,10 @@ namespace mrover {
 
         bool mPublishIk = true;
         bool mIkMode = true; // true = position control, false = velocity control
-        Eigen::Vector3f mIkTarget{0.912, 0.01, -0.217};
-        float mIkPitch{0};
-        float mIkRoll{0};
+        Eigen::Vector3f mIkTarget{0.29, 0.0f, -0.320};
+        float mIkPitch{1.05};
+        float mIkRoll{1.57079632679};
+        float mIkGripper{0};
         // TODO: switch this to a twist
         Eigen::Vector3f mIkVel{0, 0, 0};
         float mIkPitchVel{0};

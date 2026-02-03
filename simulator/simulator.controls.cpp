@@ -20,7 +20,7 @@ namespace mrover {
 
     void Simulator::velocitiesCallback(msg::Velocity::ConstSharedPtr const& msg) {
         forEachMotor(msg->names, msg->velocities, [&](btMultiBodyJointMotor* motor, float velocity) {
-            if (std::abs(velocity) < 1e-4) {
+            if (std::abs(velocity) < 1e-4 && !msg->names[0].contains("drive")) {
                 btMultiBody* body = motor->getMultiBodyA();
                 int linkIndex = motor->getLinkA();
                 float currPos = body->getJointPos(linkIndex);
@@ -132,6 +132,7 @@ namespace mrover {
             ik.pos.z = mIkTarget.z();
             ik.pitch = mIkPitch;
             ik.roll = mIkRoll;
+            ik.gripper = mIkGripper;
             mIkTargetPub->publish(ik);
         }
         if (!mHasFocus || mInGui) return;

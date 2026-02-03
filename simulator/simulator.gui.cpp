@@ -88,10 +88,11 @@ namespace mrover {
                 }
                 if (mIkMode) {
                     ImGui::SliderFloat("IK X Position", &mIkTarget.x(), 0, 1.5);
-                    ImGui::SliderFloat("IK Y Position", &mIkTarget.y(), 0, .45);
+                    ImGui::SliderFloat("IK Y Position", &mIkTarget.y(), 0, .37);
                     ImGui::SliderFloat("IK Z Position", &mIkTarget.z(), -1.0, 1.0);
                     ImGui::SliderFloat("IK Pitch", &mIkPitch, -3.14f, 3.14f);
                     ImGui::SliderFloat("IK Roll", &mIkRoll, -3.14f, 3.14f);
+                    ImGui::SliderFloat("IK Gripper", &mIkGripper, -0.0f, 0.1f);
                 } else
                     ImGui::SliderFloat("Arm Speed", &mArmSpeed, 0, 1);
             }
