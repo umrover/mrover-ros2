@@ -308,9 +308,19 @@ mrover_link_component(cost_map lie parameter_utils)
 mrover_executable_from_component(cost_map perception/executables/cost_map.cpp cost_map_component)
 
 # Combiner
-mrover_add_node(combiner perception/combiner/*.cpp perception/combiner/pch.hpp)
-ament_target_dependencies(combiner rclcpp rclcpp_components tf2 tf2_ros)
-target_link_libraries(combiner lie opencv_core opencv_aruco opencv_imgproc loop_profiler parameter_utils)
+mrover_add_component(combiner perception/combiner/*.cpp perception/combiner/pch.hpp Combiner)
+mrover_ament_component(combiner rclcpp rclcpp_components tf2 tf2_ros)
+mrover_link_component(combiner lie opencv_core opencv_aruco opencv_imgproc loop_profiler parameter_utils)
+
+mrover_executable_from_component(combiner perception/executables/combiner.cpp combiner_component)
+
+# USB Camera
+
+mrover_add_component(usb_camera perception/usb_camera/*.cpp perception/usb_camera/pch.hpp UsbCamera)
+mrover_ament_component(usb_camera rclcpp rclcpp_components)
+mrover_link_component(usb_camera PkgConfig::Gst PkgConfig::GstApp opencv_core opencv_imgcodecs parameter_utils)
+
+mrover_executable_from_component(usb_camera perception/executables/usb_camera.cpp usb_camera_component)
 
 # Embedded
 
@@ -352,9 +362,6 @@ mrover_add_node(led esw/led.cpp)
 ament_target_dependencies(led rclcpp std_srvs)
 
 if (Gst_FOUND AND GstApp_FOUND)
-    mrover_add_node(usb_camera esw/usb_camera/*.cpp esw/usb_camera/pch.hpp)
-    target_link_libraries(usb_camera PkgConfig::Gst PkgConfig::GstApp opencv_core opencv_imgcodecs parameter_utils)
-    ament_target_dependencies(usb_camera rclcpp)
 
     if (LibUdev_FOUND)
         mrover_add_component(gst_camera_server esw/gst_camera_server/*.c* esw/gst_camera_server/pch.hpp GstCameraServer)

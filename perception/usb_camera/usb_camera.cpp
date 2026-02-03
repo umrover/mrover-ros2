@@ -176,9 +176,5 @@ namespace mrover {
 
 } // namespace mrover
 
-auto main(int argc, char** argv) -> int {
-    rclcpp::init(argc, argv);
-    rclcpp::spin(std::make_shared<mrover::UsbCamera>());
-    rclcpp::shutdown();
-    return EXIT_SUCCESS;
-}
+#include "rclcpp_components/register_node_macro.hpp"
+RCLCPP_COMPONENTS_REGISTER_NODE(mrover::UsbCamera)

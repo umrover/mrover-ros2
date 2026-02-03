@@ -1,4 +1,4 @@
-#include "tag_detector.hpp"
+#include "combiner.hpp"
 
 namespace mrover {
 
@@ -82,3 +82,6 @@ namespace mrover {
         }
     }
 } // namespace mrover
+
+#include "rclcpp_components/register_node_macro.hpp"
+RCLCPP_COMPONENTS_REGISTER_NODE(mrover::Combiner)
