@@ -46,19 +46,24 @@ namespace mrover {
                                                                                                              mrover::srv::ServoPosition::Request::SharedPtr const& request,
                                                                                                               mrover::srv::ServoPosition::Response::SharedPtr const& response) {
 
-                const auto timeout = std::chrono::seconds(3);
-                const auto start = this->get_clock()->now();                                                                                 
-                Servo::ServoStatus status = servos.at(request->name)->setPosition(request->position, Servo::ServoMode::Limited);
+                const size_t n = request->names.size();
+                response->at_tgts.resize(n);
+                for (size_t i = 0; i < n; ++i) {                                                                                                   
+                           
+                    printf("Name: %s, Position: %f\n", request->names[i].c_str(), request->positions[i]);
+                    const auto timeout = std::chrono::seconds(3);
+                    const auto start = this->get_clock()->now();                                                                                 
+                    Servo::ServoStatus status = servos.at(request->names[i])->setPosition(request->positions[i], Servo::ServoMode::Limited);
 
-                while(status == Servo::ServoStatus::Active){
-                    status = servos.at(request->name)->getTargetStatus();
-                    if(this->get_clock()->now() - start > timeout){
-                        RCLCPP_WARN(this->get_logger(), "Timeout reached while waiting for servo to reach target position");
-                        break;
+                    while(status == Servo::ServoStatus::Active){
+                        status = servos.at(request->names[i])->getTargetStatus();
+                        if(this->get_clock()->now() - start > timeout){
+                            RCLCPP_WARN(this->get_logger(), "Timeout reached while waiting for servo to reach target position");
+                            break;
+                        }
                     }
+                    response->at_tgts[i] = (status == Servo::ServoStatus::Success);
                 }
-                response->at_tgt = (status == Servo::ServoStatus::Success);
-
             });
 
             mGimbalStatePub = this->create_publisher<mrover::msg::GimbalControlState>("gimbal_control_state", 10);
@@ -171,6 +176,7 @@ namespace mrover {
     };// namespace mrover
 }
 
+
 auto main(int argc, char** argv) -> int {
     rclcpp::init(argc, argv);
     auto mast_gimbal_hw_bridge = std::make_shared<mrover::MastGimbalHWBridge>();
@@ -179,3 +185,4 @@ auto main(int argc, char** argv) -> int {
     rclcpp::shutdown();
     return EXIT_SUCCESS;
 }
+
