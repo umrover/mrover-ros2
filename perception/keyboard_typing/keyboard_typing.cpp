@@ -1,34 +1,5 @@
 #include "keyboard_typing.hpp"
-#include <Eigen/src/Geometry/Quaternion.h>
-#include <chrono>
-#include <cmath>
-#include <cstdlib>
-#include <geometry_msgs/msg/detail/pose__struct.hpp>
-#include <geometry_msgs/msg/detail/twist__struct.hpp>
-#include <geometry_msgs/msg/detail/vector3__struct.hpp>
-#include <manif/impl/se3/SE3.h>
-#include <opencv2/core/eigen.hpp>
-#include "keyboard_typing/constants.hpp"
-#include "lie.hpp"
-#include "mrover/msg/detail/ik__struct.hpp"
-#include "mrover/msg/detail/keyboard_yaw__struct.hpp"
-#include <cmath>
-#include <functional>
-#include <geometry_msgs/msg/detail/quaternion__struct.hpp>
-#include <opencv2/aruco.hpp>
-#include <opencv2/calib3d.hpp>
-#include <opencv2/core/matx.hpp>
-#include <opencv2/core/mat.hpp>
-#include <opencv2/highgui.hpp>
-#include <opencv2/imgproc.hpp>
-#include <optional>
-#include <rclcpp/logger.hpp>
-#include <rclcpp/logging.hpp>
-#include <thread>
-#include <unordered_map>
-#include <fstream>
-#include <geometry_msgs/msg/vector3.hpp>
-#include <mrover/msg/ik.hpp>
+
 
 namespace mrover{
     KeyboardTypingNode::KeyboardTypingNode(rclcpp::NodeOptions const& options) : rclcpp::Node("keyboard_typing_node", options),  mLoopProfiler{get_logger()}

@@ -1,7 +1,6 @@
 #pragma once
 
 #include "pch.hpp"
-#include <cmath>
 
 bool logPose = false;
 
