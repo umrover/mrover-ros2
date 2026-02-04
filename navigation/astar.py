@@ -35,14 +35,26 @@ class AStar:
     context: Context
     TRAVERSABLE_COST: float
     COSTMAP_THRESH: float
+    ANGLE_THRESH: float
+    USE_COSTMAP: bool
+    USE_PURE_PURSUIT: bool
 
     def __init__(self, context: Context) -> None:
         self.context = context
         self.TRAVERSABLE_COST = self.context.node.get_parameter("search.traversable_cost").value
         self.COSTMAP_THRESH = self.context.node.get_parameter("costmap.costmap_thresh").value
 
-    @staticmethod
-    def return_path(came_from: dict[tuple, tuple], current_pos: tuple):
+        if hasattr(context, "course") and context.course is not None:
+            current_waypoint = context.course.current_waypoint()
+            self.USE_PURE_PURSUIT = context.node.get_parameter_or("drive.use_pure_pursuit", True).value
+            if current_waypoint is None:
+                self.USE_COSTMAP = context.node.get_parameter("costmap.use_costmap").value
+            else:
+                self.USE_COSTMAP = (
+                    context.node.get_parameter("costmap.use_costmap").value or current_waypoint.enable_costmap
+                )
+
+    def return_path(self, came_from: dict[tuple, tuple], current_pos: tuple):
         """
         Reconstruct path after the A* search algorithm finishes.
         :param came_from: Dictionary mapping from each node to where we came from.
@@ -150,8 +162,11 @@ class AStar:
 
         rover_position_in_map = rover_SE3.translation()[:2]
 
-        if not self.use_astar(dest=dest):
-            return Trajectory(np.array([dest]))
+        if not self.USE_COSTMAP or not self.use_astar(context=context, dest=dest):
+            if (not self.USE_PURE_PURSUIT):
+                return Trajectory(np.array([dest]))
+            else:
+                return Trajectory(np.array([rover_SE3.translation(), dest]))
 
         costmap_length = self.context.env.cost_map.data.shape[0]
         rover_ij = cartesian_to_ij(self.context, rover_position_in_map)

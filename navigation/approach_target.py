@@ -13,11 +13,13 @@ from rclpy.time import Time
 from rclpy.timer import Timer
 from rclpy.duration import Duration
 from navigation.coordinate_utils import is_high_cost_point, d_calc, segment_path, cartesian_to_ij
+from navigation.marker_utils import gen_marker
 
 
 class ApproachTargetState(State):
     UPDATE_DELAY: float
     USE_COSTMAP: bool
+    USE_PURE_PURSUIT: bool
     DISTANCE_THRESHOLD: float
     time_begin: Time
     astar_traj: Trajectory
@@ -45,6 +47,7 @@ class ApproachTargetState(State):
             return
 
         self.USE_COSTMAP = context.node.get_parameter("costmap.use_costmap").value or current_waypoint.enable_costmap
+        self.USE_PURE_PURSUIT = context.node.get_parameter_or("drive.use_pure_pursuit", True).value
         self.DISTANCE_THRESHOLD = context.node.get_parameter("search.distance_threshold").value
         self.astar_traj = Trajectory(np.array([]))
         self.target_traj = Trajectory(np.array([]))
@@ -220,7 +223,7 @@ class ApproachTargetState(State):
         if not self.astar_traj.done():
             curr_point = self.astar_traj.get_current_point()
             cmd_vel, arrived = context.drive.get_drive_command(
-                curr_point,
+                (self.astar_traj if self.USE_PURE_PURSUIT else curr_point), # Determine if pure pursuit will be used
                 rover_pose,
                 context.node.get_parameter("single_tag.stop_threshold").value,
                 context.node.get_parameter("waypoint.drive_forward_threshold").value,
@@ -362,11 +365,31 @@ class ApproachTargetState(State):
         if self.USE_COSTMAP:
             context.publish_path_marker(points=self.target_traj.coordinates, color=[1.0, 1.0, 0.0], ns=str(type(self)))
 
-            if not self.astar_traj.is_last() and not self.astar_traj.done():
-                context.publish_path_marker(
-                    points=self.astar_traj.coordinates[self.astar_traj.cur_pt :],
-                    color=[1.0, 0.0, 0.0],
-                    ns=str(type(AStar)),
+            if self.USE_COSTMAP:
+                delete = Marker()
+                delete.action = Marker.DELETEALL
+                self.marker_pub.publish(delete)
+                start_pt = self.target_traj.cur_pt - 2 if self.target_traj.cur_pt - 2 >= 0 else 0
+                end_pt = (
+                    self.target_traj.cur_pt + 7
+                    if self.target_traj.cur_pt + 7 < len(self.target_traj.coordinates)
+                    else len(self.target_traj.coordinates)
+                )
+
+                for i, coord in enumerate(self.target_traj.coordinates[start_pt:end_pt]):
+                    self.marker_pub.publish(
+                        gen_marker(
+                            time=context.node.get_clock().now(),
+                            point=coord,
+                            color=[1.0, 0.0, 1.0],
+                            id=i + 1,
+                            lifetime=context.node.get_parameter("pub_path_rate").value,
+                        )
+                    )
+
+            self.marker_pub.publish(
+                gen_marker(
+                    time=context.node.get_clock().now(), point=self.target_position, color=[1.0, 1.0, 0.0], id=0, lifetime=100, size=0.5
                 )
             else:
                 context.delete_path_marker(ns=str(type(AStar)))
