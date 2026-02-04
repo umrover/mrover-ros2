@@ -230,39 +230,16 @@ namespace mrover {
             // add something to avoid stuff with bad initiliazation stuff yay
             // tune for x direction stuff
 
-            if ((mVelTarget.linear.x != 0 |
-                 mVelTarget.linear.y != 0 |
-                 mVelTarget.linear.z != 0 |
-                 mVelTarget.angular.x != 0 |
-                 mVelTarget.angular.y != 0) &&
-                not_initialized == true) {
-                not_initialized = false;
-            }
-
             if (mVelTarget.linear.x == 0 &&
                 mVelTarget.linear.y == 0 &&
                 mVelTarget.linear.z == 0 &&
                 mVelTarget.angular.x == 0 &&
-                mVelTarget.angular.y == 0 && not_initialized == true) {
-                return;
-            }
-
-
-            if (mVelTarget.linear.x == 0 &&
-                mVelTarget.linear.y == 0 &&
-                mVelTarget.linear.z == 0 &&
-                mVelTarget.angular.x == 0 &&
-                mVelTarget.angular.y == 0 && not_initialized == false) {
+                mVelTarget.angular.y == 0) {
                 // no movement command, so just stop the arm
-                if (hold == false) {
-                    mCarrotPos = mArmPos;
-                    hold = true;
-                }
+                mCarrotPos = mArmPos;
+            }   
 
-                return;
-            }
-
-            hold = false;
+            //hold = false;
 
             auto const now = get_clock()->now();
 
@@ -342,6 +319,7 @@ namespace mrover {
                         velocities->velocities[3] == 0 &&
                         velocities->velocities[4] == 0)) {
                 mVelPub->publish(velocities.value());
+               
             } else {
                 if (!velocities) {
                     RCLCPP_WARN_THROTTLE(
