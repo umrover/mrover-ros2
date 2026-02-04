@@ -23,7 +23,7 @@
         <button class="btn btn-success" @click="addWaypoint">Add</button>
         <button
           class="btn btn-danger"
-          :disabled="index <= 7"
+          :disabled="index <= 6"
           @click="$emit('delete', index)"
         >
           Delete
@@ -36,13 +36,13 @@
 <script lang="ts">
 import { defineComponent } from 'vue'
 import type { PropType } from 'vue'
-import type { AutonWaypoint } from '@/types/waypoints'
+import type { Waypoint } from '../types/waypoint'
 
 export default defineComponent({
   name: 'WaypointStore',
   props: {
     waypoint: {
-      type: Object as PropType<AutonWaypoint>,
+      type: Object as PropType<Waypoint>,
       required: true,
     },
     index: {

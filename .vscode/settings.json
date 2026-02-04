@@ -12,8 +12,6 @@
     "python.analysis.extraPaths": [
         "/opt/ros/humble/lib/python3/dist-packages",
         "../../install/mrover/local/lib/python3.10/dist-packages",
-        "/opt/ros/humble/lib/python3.10/site-packages",
-        "/opt/ros/humble/local/lib/python3.10/dist-packages"
     ],
     "[python]": {
         "editor.defaultFormatter": "ms-python.black-formatter",
@@ -36,8 +34,4 @@
         "deps": true,
         "venv": true,
     },
-    "python.autoComplete.extraPaths": [
-        "/opt/ros/humble/lib/python3.10/site-packages",
-        "/opt/ros/humble/local/lib/python3.10/dist-packages"
-    ],
 }

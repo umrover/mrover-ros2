@@ -2,35 +2,13 @@
   <canvas class="webgl p-0 h-100 w-100"></canvas>
 </template>
 
-<script lang="ts" setup>
-import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
-import { useWebsocketStore } from '@/stores/websocket'
-import { storeToRefs } from 'pinia'
-import threeSetup, { updatePose, updateIKTarget } from '../rover_three.js'
-
-interface ArmFKMessage {
-  type: 'fk'
-  name: string[]
-  position: number[]
-}
-
-interface ArmIKMessage {
-  type: 'ik_target'
-  target: {
-    pose: {
-      position: {
-        x: number
-        y: number
-        z: number
-      }
-    }
-  }
-}
-
-const websocketStore = useWebsocketStore()
-const { messages } = storeToRefs(websocketStore)
-
-const threeScene = ref<(() => void) | null>(null)
+<script lang="ts">
+import { defineComponent } from 'vue'
+import Vuex from 'vuex'
+const { mapState } = Vuex
+// @ts-expect-error shut up ts
+import threeSetup, { updatePose } from '../rover_three.js'
+import type { WebSocketState } from '../types/websocket.js'
 
 const jointNameMap: Record<string, string> = {
   joint_a: 'chassis_to_arm_a',
@@ -41,50 +19,47 @@ const jointNameMap: Record<string, string> = {
   gripper: 'gripper_link', // not implemented lol
 }
 
-onMounted(() => {
-  threeScene.value = threeSetup()
-})
 
-onBeforeUnmount(() => {
-  if (threeScene.value) {
-    threeScene.value()
-  }
-})
-
-const armMessage = computed(() => messages.value['arm'])
-
-watch(armMessage, (msg: unknown) => {
-  if (!msg || typeof msg !== 'object') return
-
-  if ('type' in msg && msg.type === 'fk') {
-    const typedMsg = msg as ArmFKMessage
-    const joints = typedMsg.name.map((name: string, index: number) => {
-      const urdfName = jointNameMap[name] || name
-      let position = typedMsg.position[index]
-
-      if (urdfName === 'chassis_to_arm_a') {
-        position = position * -100 + 40 // scale from m to cm
-      }
-
-      return {
-        name: urdfName,
-        position,
-      }
-    })
-
-    updatePose(joints)
-  } else if ('type' in msg && msg.type === 'ik_target') {
-    const typedMsg = msg as ArmIKMessage
-    console.log(typedMsg)
-    if (typedMsg.target.pose && typedMsg.target.pose.position) {
-      const position = {
-        x: typedMsg.target.pose.position.x * 100,
-        y: typedMsg.target.pose.position.z * 100,
-        z: typedMsg.target.pose.position.y * -100 + 20,
-      }
-      console.log(position)
-      updateIKTarget(position)
+export default defineComponent({
+  data() {
+    return {
+      threeScene: null,
     }
-  }
+  },
+
+  mounted() {
+    this.threeScene = threeSetup('threejs')
+  },
+
+  computed: {
+    ...mapState('websocket', {
+      armMessage: (state: WebSocketState) => state.messages['arm'],
+    }),
+  },
+
+  watch: {
+    armMessage(msg) {
+      const joints = msg.name.map((name: string, index: number) => {
+        const urdfName = jointNameMap[name] || name
+        let position = msg.position[index]
+
+        if (urdfName === 'chassis_to_arm_a') {
+          position = position * -100 + 40 // scale from m to cm
+        }
+
+        return {
+          name: urdfName,
+          position,
+        }
+      })
+
+      console.log(joints)
+      updatePose(joints)
+
+      // else if (msg.type === 'ik') {
+      //   this.threeScene.ik(msg.target)
+      // }
+    },
+  },
 })
 </script>

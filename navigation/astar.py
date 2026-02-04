@@ -8,8 +8,7 @@ from nav_msgs.msg import Path
 from std_msgs.msg import Header
 from navigation.context import Context
 from navigation.trajectory import Trajectory
-from navigation.coordinate_utils import ij_to_cartesian, cartesian_to_ij, d_calc, segment_path, is_high_cost_point, publish_trajectory
-from navigation.smoothing import Relaxation, SplineInterpolation
+from navigation.coordinate_utils import ij_to_cartesian, cartesian_to_ij, d_calc, segment_path, is_high_cost_point
 from rclpy.publisher import Publisher
 
 
@@ -223,10 +222,9 @@ class AStar:
             trajectory.reset()
             return Trajectory(np.array([]))
             # raise NoPath
-            
+
         if occupancy_list is not None:
             cartesian_coords = ij_to_cartesian(context, np.array(occupancy_list))
-
             # Exclude the first point since it should be the rover's starting position
             if len(cartesian_coords) >= 1:
                 trajectory = Trajectory(np.hstack((cartesian_coords, np.zeros((cartesian_coords.shape[0], 1)))))

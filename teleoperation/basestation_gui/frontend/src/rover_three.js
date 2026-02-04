@@ -14,7 +14,6 @@ const defaultJointValues = {
 }
 
 let rover = null
-let ikTargetSphere = null
 
 export default function threeSetup() {
   // Canvas element
@@ -41,18 +40,6 @@ export default function threeSetup() {
 
   // const axesHelper = new THREE.AxesHelper(50)
   // scene.add(axesHelper)
-
-  // Create IK target sphere
-  const sphereGeometry = new THREE.SphereGeometry(2, 16, 16)
-  const sphereMaterial = new THREE.MeshStandardMaterial({
-    color: 0xff0000,
-    emissive: 0xff0000,
-    emissiveIntensity: 0.3,
-  })
-  ikTargetSphere = new THREE.Mesh(sphereGeometry, sphereMaterial)
-  ikTargetSphere.position.set(0, 0, 0)
-  ikTargetSphere.visible = false // Hidden by default until position is set
-  scene.add(ikTargetSphere)
 
   const manager = new THREE.LoadingManager()
   const loader = new URDFLoader(manager)
@@ -195,26 +182,6 @@ export function updatePose(joints) {
       }
     }
   })
-}
-
-export function updateIKTarget(position) {
-  if (!ikTargetSphere) return
-
-  // Update sphere position
-  // Assuming position is an object with x, y, z properties
-  if (
-    position &&
-    typeof position.x === 'number' &&
-    typeof position.y === 'number' &&
-    typeof position.z === 'number'
-  ) {
-    ikTargetSphere.position.set(position.x + 10, position.y, position.z)
-    ikTargetSphere.visible = true
-    console.log('pos ', position.x, position.y, position.z)
-  } else if (position === null || position === undefined) {
-    // Hide sphere if no position provided
-    ikTargetSphere.visible = false
-  }
 }
 
 // export function fk(positions, scene, joints) {

@@ -42,6 +42,9 @@
 
 
 <script lang="ts">
+import Vuex from 'vuex'
+const { mapState, mapActions } = Vuex
+
 export default {
   emits: ['selectSite', 'orientation'],
   data() {
@@ -51,7 +54,11 @@ export default {
       orientation: 'cw',
     }
   },
+  computed: {
+    ...mapState('websocket', ['message']),
+  },
   methods: {
+    ...mapActions('websocket', ['sendMessage']),
     setOrientation(value: 'cw' | 'ccw') {
       this.orientation = value
       this.$emit('orientation', value === 'ccw')

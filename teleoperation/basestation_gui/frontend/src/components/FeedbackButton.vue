@@ -2,7 +2,8 @@
   <button :class="['btn', currentColor]" :style="customStyles" @click="handleClick">
     <span class="d-inline-flex align-items-center gap-2">
       <span>{{ displayName }}</span>
-      <i :class="checked ? 'bi bi-check-square-fill' : 'bi bi-square'"></i>
+      <i v-if="mode === 'toggle'" :class="checked ? 'bi bi-check-square-fill' : 'bi bi-square'"></i>
+      <i v-else-if="isWaiting" class="bi bi-arrow-repeat spin"></i>
     </span>
   </button>
 </template>
@@ -23,7 +24,7 @@ export default defineComponent({
     },
     checked: {
       type: Boolean,
-      required: true,
+      default: false,
     },
     action: {
       type: Function as PropType<(newState: boolean) => Promise<{ status: string; message?: string }>>,
@@ -38,23 +39,44 @@ export default defineComponent({
       type: [String, Number],
       default: '',
     },
+    mode: {
+      type: String as PropType<'toggle' | 'action'>,
+      default: 'toggle',
+    },
+    activeText: {
+      type: String,
+      default: '',
+    },
+    completeText: {
+      type: String,
+      default: '',
+    },
   },
 
   data() {
     return {
       isWaiting: false,
+      isComplete: false,
     }
   },
 
   computed: {
     currentColor(): string {
-      if (this.isWaiting) {
-        return 'btn-warning'
+      if (this.mode === 'action') {
+        if (this.isComplete) return 'btn-success'
+        if (this.isWaiting) return 'btn-warning'
+        return 'btn-primary'
       }
+      if (this.isWaiting) return 'btn-warning'
       return this.checked ? 'btn-success' : 'btn-danger'
     },
 
     displayName(): string {
+      if (this.mode === 'action') {
+        if (this.isComplete && this.completeText) return this.completeText
+        if (this.isWaiting) return this.activeText || this.name
+        return this.name
+      }
       if (this.isWaiting) {
         return `Setting to ${this.checked ? 'ON' : 'OFF'}`
       }
@@ -71,20 +93,55 @@ export default defineComponent({
 
   methods: {
     async handleClick() {
-      if (this.isWaiting) return // Prevent double-clicks
+      if (this.isWaiting) return
 
+      if (this.mode === 'action') {
+        await this.handleActionMode()
+      } else {
+        await this.handleToggleMode()
+      }
+    },
+
+    async handleActionMode() {
+      if (!this.action) {
+        this.$emit('start')
+        return
+      }
+
+      this.isWaiting = true
+      this.$emit('start')
+
+      try {
+        const response = await this.action(true)
+
+        if (response.status === 'error') {
+          console.error(`${this.name} action failed:`, response.message)
+          this.notificationsStore.addNotification({
+            component: this.name,
+            message: response.message || 'Action failed',
+            fullData: response
+          })
+        } else if (this.completeText) {
+          this.isComplete = true
+          setTimeout(() => { this.isComplete = false }, 2000)
+        }
+        this.$emit('complete', response)
+      } catch {
+        this.$emit('error')
+      } finally {
+        this.isWaiting = false
+      }
+    },
+
+    async handleToggleMode() {
       const targetState = !this.checked
 
-      // If no action (simple toggle), just emit
       if (!this.action) {
         this.$emit('toggle', targetState)
         return
       }
 
-      // With action, show waiting state
       this.isWaiting = true
-
-      // Emit toggle immediately so parent updates state
       this.$emit('toggle', targetState)
 
       try {
@@ -92,31 +149,14 @@ export default defineComponent({
 
         if (response.status === 'error') {
           console.error(`${this.name} command failed:`, response.message)
-
-          // Log to notification store
           this.notificationsStore.addNotification({
             component: this.name,
-            errorType: 'API Error',
             message: response.message || 'Command failed',
             fullData: response
           })
-
-          // Revert state on error
           this.$emit('toggle', !targetState)
         }
-        // On success, state stays as is
-      } catch (error) {
-        console.error(`${this.name} command failed:`, error)
-
-        // Log to notification store
-        this.notificationsStore.addNotification({
-          component: this.name,
-          errorType: 'Exception',
-          message: error instanceof Error ? error.message : String(error),
-          fullData: error instanceof Error ? { message: error.message, stack: error.stack } : { error: String(error) }
-        })
-
-        // Revert state on exception
+      } catch {
         this.$emit('toggle', !targetState)
       } finally {
         this.isWaiting = false
@@ -127,4 +167,12 @@ export default defineComponent({
 </script>
 
 <style scoped>
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
 </style>

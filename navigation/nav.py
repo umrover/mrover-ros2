@@ -12,13 +12,13 @@ from navigation.stuck_recovery import StuckRecoveryState
 from navigation.costmap_search import CostmapSearchState
 from navigation.state import DoneState, OffState, off_check
 from navigation.waypoint import WaypointState
-from nav_msgs.msg import Path
 from rclpy import Parameter
 from rclpy.executors import ExternalShutdownException, MultiThreadedExecutor, SingleThreadedExecutor
 from rclpy.node import Node
 from state_machine.state_machine import StateMachine
 from state_machine.state_publisher_server import StatePublisher
 from mrover.srv import Smoothing
+
 
 class Navigation(Node):
     state_machine: StateMachine
@@ -98,9 +98,6 @@ class Navigation(Node):
                 ("recovery.drive_forward_threshold", Parameter.Type.DOUBLE),
                 ("recovery.recovery_distance", Parameter.Type.DOUBLE),
                 ("recovery.give_up_time", Parameter.Type.DOUBLE),
-                # Smoothing
-                ("smoothing.use_relaxation", Parameter.Type.BOOL),
-                ("smoothing.use_interpolation", Parameter.Type.BOOL),
             ],
         )
 
@@ -175,25 +172,18 @@ class Navigation(Node):
         return True
     def publish_path(self) -> None:
         if (rover_pose_in_map := self.ctx.rover.get_pose_in_map()) is not None:
-            x, y, z = rover_pose_in_map.translation()
-            roverPoseStamped = PoseStamped(
-                header=self.ctx.rover.path_history.header, pose=Pose(position=Point(x=x, y=y, z=z))
-            )
-            lastRoverPosition: Point | None = (
-                None
-                if len(self.ctx.rover.path_history.poses) == 0
-                else self.ctx.rover.path_history.poses[-1].pose.position
-            )
-
-            if len(self.ctx.rover.path_history.poses) < self.HIST_SIZE:
-                self.ctx.rover.path_history.poses.append(roverPoseStamped)
-            elif (
-                lastRoverPosition is not None and (x - lastRoverPosition.x) ** 2 + (y - lastRoverPosition.y) ** 2
-            ) ** 0.5 > 0.15:
-                self.ctx.rover.path_history.poses.pop(0)
-                self.ctx.rover.path_history.poses.append(roverPoseStamped)
-
-            self.ctx.path_history_publisher.publish(self.ctx.rover.path_history)
+            x, y, _ = rover_pose_in_map.translation()
+            if (
+                len(self.ctx.rover.path_history) >= 1
+                and ((x - self.ctx.rover.path_history[-1][0]) ** 2 + (y - self.ctx.rover.path_history[-1][1]) ** 2)
+                ** 0.5
+                > 0.15
+            ):
+                self.ctx.rover.path_history.append([x, y, 0])
+                if len(self.ctx.rover.path_history) > self.HIST_SIZE:
+                    self.ctx.rover.path_history.popleft()
+            else:
+                self.ctx.rover.path_history.append([x, y, 0])
 
 
 if __name__ == "__main__":

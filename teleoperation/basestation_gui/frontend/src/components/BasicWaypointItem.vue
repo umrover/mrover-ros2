@@ -4,14 +4,13 @@
     v-bind:class="{ 'drone-waypoint': waypoint.drone }"
   >
     <div class="waypoint-header mb-1">
-      <h5 class="mb-0">{{ waypoint.name }}</h5>
-      <span class="badge bg-secondary">{{ index }}</span>
+      <h5 class="mb-0 w-100">{{ waypoint.name }}</h5>
     </div>
 
     <div class="coordinates mb-2 w-100">
-      <p class="coordinate m-0">{{ waypoint.latLng.lat.toFixed(5) }}ºN</p>
+      <p class="coordinate m-0">{{ waypoint.lat }}ºN</p>
       <span class="mx-2">|</span>
-      <p class="coordinate m-0">{{ waypoint.latLng.lng.toFixed(5) }}ºW</p>
+      <p class="coordinate m-0">{{ waypoint.lon }}ºW</p>
     </div>
 
     <div class="d-flex w-100 gap-2">
@@ -22,15 +21,27 @@
   </div>
 </template>
 
-<script lang="ts" setup>
-defineProps({
-  waypoint: {
-    type: Object,
-    required: true
+<script lang="ts">
+import { defineComponent } from 'vue'
+import Vuex from 'vuex'
+const { mapGetters } = Vuex
+
+export default defineComponent({
+  props: {
+    waypoint: {
+      type: Object,
+      required: true
+    },
+    index: {
+      type: Number,
+      required: true
+    }
   },
-  index: {
-    type: Number,
-    required: true
+
+  computed: {
+    ...mapGetters('erd', {
+      highlightedWaypoint: 'highlightedWaypoint'
+    })
   }
 })
 </script>

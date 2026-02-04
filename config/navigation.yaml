@@ -39,8 +39,8 @@ navigation:
       max_hits: 10
 
     drive:
-      max_driving_effort: 1.0
-      min_driving_effort: -1.0
+      max_driving_effort: 0.6
+      min_driving_effort: -0.6
       max_turning_effort: 0.5
       min_turning_effort: -0.5
       turning_p: 3.0
@@ -84,10 +84,6 @@ navigation:
       drive_forward_threshold: 0.34
       recovery_distance: 2.0
       give_up_time: 10.0
-
-    smoothing:
-      use_interpolation: true
-      use_relaxation: true
 
 stuck_detector:
   ros__parameters:

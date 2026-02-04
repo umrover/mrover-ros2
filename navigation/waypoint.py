@@ -8,7 +8,6 @@ from . import (
 from mrover.msg import WaypointType
 from mrover.srv import MoveCostMap
 from .context import Context
-import time
 import rclpy
 from .context import Context
 from navigation.astar import AStar, SpiralEnd, NoPath, OutOfBounds, DestinationInHighCost
@@ -25,9 +24,6 @@ from nav_msgs.msg import Path
 from std_msgs.msg import Header
 from visualization_msgs.msg import Marker
 import numpy as np
-
-from navigation.smoothing import smoothing
-
 
 
 class WaypointState(State):
@@ -51,13 +47,10 @@ class WaypointState(State):
     UPDATE_DELAY: float
     NO_SEARCH_WAIT_TIME: float
     USE_COSTMAP: bool
-    USE_RELAXATION: bool
-    USE_INTERPOLATION: bool
 
     def on_enter(self, context: Context) -> None:
         if context.course is None:
             return
-        
 
         self.time_begin = context.node.get_clock().now()
         self.start_time = context.node.get_clock().now()
@@ -91,9 +84,6 @@ class WaypointState(State):
         if self.USE_COSTMAP:
             context.node.get_logger().info("Resetting costmap dilation")
             context.reset_dilation()
-
-        self.USE_RELAXATION = context.node.get_parameter("smoothing.use_relaxation").value
-        self.USE_INTERPOLATION = context.node.get_parameter("smoothing.use_interpolation").value
 
         context.node.get_logger().info("On Enter finished")
 
@@ -169,9 +159,6 @@ class WaypointState(State):
             self.display_markers(context=context)
             try:
                 self.astar_traj = self.astar.generate_trajectory(context, self.waypoint_traj.get_current_point())
-
-                self.astar_traj = smoothing(self.astar_traj, context, self.USE_RELAXATION, self.USE_INTERPOLATION)
-                
             except Exception as e:
                 context.node.get_logger().info(str(e))
                 return self
@@ -331,7 +318,6 @@ class WaypointState(State):
                             point=coord,
                             color=[1.0, 0.0, 1.0],
                             id=i,
-                            size=0.5,
                             lifetime=context.node.get_parameter("pub_path_rate").value,
                         )
                     )

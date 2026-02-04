@@ -2,7 +2,6 @@ from dataclasses import dataclass, field
 import numpy as np
 
 
-
 @dataclass
 class Trajectory:
     # Coordinates of the trajectory
@@ -51,7 +50,6 @@ class Trajectory:
         """
         self.cur_pt = 0
 
-    
 
 @dataclass
 class SearchTrajectory(Trajectory):
