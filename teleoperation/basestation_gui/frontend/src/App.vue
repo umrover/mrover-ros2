@@ -6,13 +6,21 @@
 </template>
 
 <script lang="ts">
+import { onMounted } from 'vue'
 import NavBar from './views/NavBar.vue'
+import { useThemeStore } from '@/stores/theme'
 
 export default {
   name: 'App',
   components: {
     NavBar,
   },
+  setup() {
+    const themeStore = useThemeStore()
+    onMounted(() => {
+      themeStore.initTheme()
+    })
+  }
 }
 </script>
 
@@ -21,6 +29,7 @@ html,
 body {
   height: 100%;
   margin: 0;
+  overflow: hidden;
 }
 
 #app {
@@ -28,39 +37,44 @@ body {
   display: flex;
   flex-direction: column;
   height: 100%;
+  overflow: hidden;
 }
 
 .view-wrapper {
-  height: 100vh;
-  width: 100vw;
-  padding: 10px;
-  background-color: #dddddd;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  background-color: var(--view-bg);
   overflow: hidden;
   box-sizing: border-box;
 }
 
 .island {
-  background-color: #ffffff;
+  background-color: var(--island-bg);
   border-radius: 6px;
 }
 
-/* rules below targets all button classes and ensures the text is black
-.btn {
-  color: #000 !important;
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', 'Monaco', monospace;
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: -0.04em;
+  margin: 0;
+  padding: 0;
+  line-height: 1.2;
 }
 
-.btn-outline-primary:hover,
-.btn-outline-primary:focus,
-.btn-outline-secondary:hover,
-.btn-outline-secondary:focus 
-{
-  color: #000 !important;
+.vue-grid-layout {
+  height: 100% !important;
+  width: 100% !important;
 }
 
-.btn-primary.active,
-.btn-primary:active,
-.btn:is(.btn-primary, .btn-outline-primary):focus 
-{
-  color: #000 !important;
-} */
+.vue-grid-item {
+  touch-action: none;
+}
+
+.vue-grid-item > div {
+  height: 100%;
+  width: 100%;
+}
 </style>

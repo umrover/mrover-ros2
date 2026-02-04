@@ -2,6 +2,20 @@
 
 set -euxo pipefail
 
+# determine the build profile
+build_profile=Debug
+
+if [[ "$#" -ne "0" ]]; then
+	if [[ "$#" -eq "1" && ( "$1" == "Release" || "$1" == "RelWithDebInfo" || "$1" == "Debug" ) ]]; then
+		build_profile=$1
+	else
+		echo "Usage ./build.sh [Release|RelWithDebInfo|Debug]"
+		exit 1
+	fi
+fi
+
+echo "Using build profile: $build_profile"
+
 # Build in the colcon workspace, not the package
 pushd ../..
 
@@ -13,11 +27,14 @@ export CXX=clang++
 export CUDAHOSTCXX=g++-9
 export CUDACXX=/usr/local/cuda-12/bin/nvcc
 
-# TODO (ali): add build configs for debug vs release
-colcon build \
-	--cmake-args -G Ninja -W no-dev -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+# invoke colcon
+COLCON_EXTENSION_BLOCKLIST=colcon_core.event_handler.desktop_notification colcon build \
+	--cmake-args -G Ninja -W no-dev -DCMAKE_BUILD_TYPE="$build_profile" \
 	--symlink-install \
 	--event-handlers console_direct+ \
-	"$@"
+	--build-base "build/$build_profile" \
+	--install-base "install/$build_profile"
 
-rm -rf ../../build/mrover/.cmake/api
+rm -rf "$(pwd)/build/$build_profile/mrover/.cmake/api"
+
+ln -sf "$(pwd)/build/$build_profile/compile_commands.json" "$(pwd)/src/mrover/compile_commands.json"

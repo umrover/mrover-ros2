@@ -51,10 +51,12 @@ macro(mrover_add_component name sources includes)
         rclcpp_components_register_nodes(${name}_component "mrover::${node}")
     endforeach()
     target_compile_definitions(${name}_component PRIVATE "COMPOSITION_BUILDING_DLL")
-    install(
-        TARGETS ${name}_component
-        LIBRARY DESTINATION lib
-    )
+    install(CODE "execute_process( \
+    COMMAND ${CMAKE_COMMAND} -E create_symlink \
+    ${CMAKE_CURRENT_LIST_DIR}/../../build/${CMAKE_BUILD_TYPE}/${PROJECT_NAME}/lib${name}_component.so \
+    ${CMAKE_CURRENT_LIST_DIR}/../../install/${CMAKE_BUILD_TYPE}/${PROJECT_NAME}/lib/lib${name}_component.so \
+    )"
+)
 endmacro()  
 
 macro(mrover_executable_from_component name main_file)

@@ -1,7 +1,5 @@
-# Constants
-# Request
-string name
-float32 position
+std_msgs/Header header
+string[] names
+float32[] positions
 ---
-# Response
-bool at_tgt
+bool[] at_tgts

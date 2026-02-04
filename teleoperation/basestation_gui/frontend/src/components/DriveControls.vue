@@ -1,42 +1,44 @@
-<script lang='ts'>
-import Vuex from 'vuex'
-const { mapActions } = Vuex;
+<template>
+  <div class="d-flex flex-column align-items-start h-100">
+    <div class="d-flex align-items-center gap-2">
+      <h4 class="m-0">Drive Controls</h4>
+      <IndicatorDot :is-active="controllerConnected" />
+    </div>
+  </div>
+</template>
 
-const UPDATE_HZ = 20
+<script lang='ts' setup>
+import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { useWebsocketStore } from '@/stores/websocket'
+import IndicatorDot from './IndicatorDot.vue'
 
-export default {
-  methods: {
-    ...mapActions('websocket', ['sendMessage'])
-  },
+const websocketStore = useWebsocketStore()
 
-  beforeUnmount: function() {
-    window.clearInterval(this.interval)
-  },
+const controllerConnected = ref(false)
+let interval: number | undefined = undefined
 
-  created: function() {
-    this.interval = window.setInterval(() => {
-      const gamepads = navigator.getGamepads()
-      const gamepad = gamepads.find(gamepad => gamepad && gamepad.id.includes('Thrustmaster'))
-      if (!gamepad) return
+const UPDATE_HZ = 30
 
-      const inverse_axes = gamepad.axes.map((value, index) => index === 1 ? -value : value)
+onMounted(() => {
+  websocketStore.setupWebSocket('drive')
+  interval = window.setInterval(() => {
+    const gamepads = navigator.getGamepads()
+    const gamepad = gamepads.find(gamepad => gamepad && gamepad.id.includes('Thrustmaster'))
+    controllerConnected.value = !!gamepad
+    if (!gamepad) return
 
-      this.$store.dispatch('websocket/sendMessage', {
-        id: 'drive',
-        message: {
-          type: 'joystick',
-          // inverted controls, get rid of map after testing
-          axes: inverse_axes,
-          buttons: gamepad.buttons.map(button => button.value)
-        },
-      })
-    }, 1000 / UPDATE_HZ)
-  }
-}
+    const inverse_axes = gamepad.axes.map((value, index) => index === 1 ? -value : value)
+
+    websocketStore.sendMessage('drive', {
+      type: 'joystick',
+      axes: inverse_axes,
+      buttons: gamepad.buttons.map(button => button.value)
+    })
+  }, 1000 / UPDATE_HZ)
+})
+
+onBeforeUnmount(() => {
+  window.clearInterval(interval)
+  websocketStore.closeWebSocket('drive')
+})
 </script>
-
-<style scoped>
-.drive {
-  display: none;
-}
-</style>

@@ -1,25 +1,4 @@
 {
-    //// CMake
-    "cmake.generator": "Ninja",
-    // Set to the catkin build directory
-    "cmake.buildDirectory": "${workspaceFolder}/../../build/mrover",
-    // We want catkin to configure
-    // VSCode will try to use its own toolchain and ignore the catkin profile
-    "cmake.configureOnOpen": false,
-    "cmake.configureOnEdit": false,
-    "cmake.automaticReconfigure": false,
-    "cmake.debugConfig": {
-        "miDebuggerPath": "/usr/bin/gdb",
-        "args": [
-            "--ros-args",
-            "--params-file",
-            "${workspaceFolder}/config/esw.yaml",
-            "--params-file",
-            "${workspaceFolder}/config/arm.yaml",
-            "--params-file",
-            "${workspaceFolder}/config/drive.yaml"
-        ]
-    },
     //// Microsoft C++
     // Disable since clangd is used instead
     "C_Cpp.intelliSenseEngine": "disabled",
@@ -27,12 +6,17 @@
     "python.analysis.inlayHints.variableTypes": true,
     "python.analysis.inlayHints.callArgumentNames": "all",
     "python.analysis.inlayHints.functionReturnTypes": true,
-    // ~/ros2_ws/install/mrover/local/lib/python3.10/dist-packages is already in PYTHONPATH,
+    // ~/ros2_ws/install/{profile}/mrover/lib/python3.10/site-packages is already in PYTHONPATH,
     // but Pylance currently has a bug where it cannot handle the symlinks in it.
-    // Below we are just putting directly where those symlinks go
+    // Below we are just putting directly where those symlinks go for all build profiles
     "python.analysis.extraPaths": [
         "/opt/ros/humble/lib/python3/dist-packages",
-        "../../install/mrover/local/lib/python3.10/dist-packages",
+        "../../install/Debug/mrover/lib/python3.10/site-packages",
+        "../../install/Release/mrover/lib/python3.10/site-packages",
+        "../../install/RelWithDebInfo/mrover/lib/python3.10/site-packages",
+        "../../build/Debug/mrover/rosidl_generator_py",
+        "../../build/Release/mrover/rosidl_generator_py",
+        "../../build/RelWithDebInfo/mrover/rosidl_generator_py",
     ],
     "[python]": {
         "editor.defaultFormatter": "ms-python.black-formatter",

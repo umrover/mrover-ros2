@@ -68,7 +68,7 @@ namespace mrover {
 
     ImageTagDetector::ImageTagDetector(rclcpp::NodeOptions const& options) : TagDetectorBase{"image_tag_detector", options}, mCameraHorizontalFOV{} {
         std::vector<ParameterWrapper> params{
-                {"camera_horizontal_fov", mCameraHorizontalFOV, 80.0}};
+                {"camera_horizontal_fov", mCameraHorizontalFOV, 10.0}};
 
         ParameterWrapper::declareParameters(this, params);
 
