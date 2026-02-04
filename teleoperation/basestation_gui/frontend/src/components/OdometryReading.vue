@@ -1,6 +1,6 @@
 <template>
   <div
-    class="d-flex align-items-start gap-2 text-nowrap overflow-hidden justify-content-between font-monospace"
+    class="d-flex align-items-start gap-2 text-nowrap justify-content-between font-monospace"
   >
     <!-- Rover -->
     <div class="d-flex flex-column px-1 text-center flex-fill">
