@@ -32,14 +32,11 @@
 </template>
 
 <script lang="ts">
-import { useAutonomyStore } from '@/stores/autonomy'
+import Vuex from 'vuex'
+const { mapGetters } = Vuex
+import { convertDMS } from '../utils/map'
 
 export default {
-  setup() {
-    const autonomyStore = useAutonomyStore()
-    return { autonomyStore }
-  },
-
   props: {
     waypoint: {
       type: Object,
@@ -77,14 +74,26 @@ export default {
   },
 
   computed: {
-    highlightedWaypoint() {
-      return this.autonomyStore.highlightedWaypoint
+    ...mapGetters('map', {
+      odom_format: 'odomFormat',
+    }),
+
+    ...mapGetters('autonomy', {
+      highlightedWaypoint: 'highlightedWaypoint',
+    }),
+
+    min_enabled: function () {
+      return this.odom_format != 'D'
+    },
+
+    sec_enabled: function () {
+      return this.odom_format == 'DMS'
     },
 
     output: function () {
       return {
-        lat: this.waypoint.lat,
-        lon: this.waypoint.lon,
+        lat: convertDMS({ d: this.waypoint.lat, m: 0, s: 0 }, this.odom_format),
+        lon: convertDMS({ d: this.waypoint.lon, m: 0, s: 0 }, this.odom_format),
       }
     },
   },

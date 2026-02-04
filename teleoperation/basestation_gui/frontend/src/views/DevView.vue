@@ -5,42 +5,58 @@
   </div>
 </template>
 
-<script lang="ts" setup>
+<script lang="ts">
 import ArmControls from '../components/ArmControls.vue';
-import { useWebsocketStore } from '@/stores/websocket'
-import { storeToRefs } from 'pinia'
+import { defineComponent } from 'vue'
+import Vuex from 'vuex'
+const { mapState } = Vuex
+import type { WebSocketState } from '../types/websocket';
 
-const websocketStore = useWebsocketStore()
-const { messages } = storeToRefs(websocketStore)
+export default defineComponent({
+  components: {
+    ArmControls
+  },
 
-const waypointsMessage = computed(() => messages.value['waypoints'])
+  mounted() {
+    this.$store.dispatch('websocket/setupWebSocket', 'arm')
+    this.$store.dispatch('websocket/setupWebSocket', 'nav')
 
-onMounted(() => {
-  websocketStore.setupWebSocket('arm')
-  websocketStore.setupWebSocket('nav')
+    setTimeout(() => {
+      this.$store.dispatch('websocket/closeWebSocket', 'nav')
+      this.spamTestMessages()
+    }, 1000)
+  },
 
-  setTimeout(() => {
-    websocketStore.closeWebSocket('nav')
-    spamTestMessages()
-  }, 1000)
+  unmounted() {
+    this.$store.dispatch('websocket/closeWebSocket', 'arm')
+    this.$store.dispatch('websocket/closeWebSocket', 'nav')
+  },
+  
+  computed: { // correct websocket message receiver, specify websocket in []
+    ...mapState('websocket', {
+      waypointsMessage: (state: WebSocketState) => state.messages['waypoints']
+    }),
+  },
+
+  watch: { // then watch for messages
+    waypointsMessage(msg) {
+      console.log(msg)
+    }
+  },
+
+  methods: {
+    spamTestMessages() {
+      const interval = setInterval(() => {
+        this.$store.dispatch('websocket/sendMessage', {
+          id: 'waypoints',
+          message: {
+            type: 'debug',
+            timestamp: new Date().toISOString(),
+          },
+        })
+      }, 1000)
+      setTimeout(() => clearInterval(interval), 5000)
+    },
+  },
 })
-
-onUnmounted(() => {
-  websocketStore.closeWebSocket('arm')
-  websocketStore.closeWebSocket('nav')
-})
-
-watch(waypointsMessage, (msg) => {
-  console.log(msg)
-})
-
-const spamTestMessages = () => {
-  const interval = setInterval(() => {
-    websocketStore.sendMessage('waypoints', {
-      type: 'debug',
-      timestamp: new Date().toISOString(),
-    })
-  }, 1000)
-  setTimeout(() => clearInterval(interval), 5000)
-}
 </script>

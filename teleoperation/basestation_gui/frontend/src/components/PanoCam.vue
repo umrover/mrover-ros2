@@ -23,7 +23,8 @@
 </template>
 
 <script lang="ts">
-import { mastAPI } from '@/utils/api'
+import Vuex from 'vuex'
+const { mapActions } = Vuex
 
 export default {
   data() {
@@ -32,23 +33,16 @@ export default {
     }
   },
   methods: {
-    async togglePano(action: 'start' | 'stop') {
+    ...mapActions('websocket', ['sendMessage']),
+    togglePano(action: 'start' | 'stop') {
       this.panoActive = action === 'start'
-
-      try {
-        if (action === 'start') {
-          await mastAPI.startPanorama()
-        } else {
-          const result = await mastAPI.stopPanorama()
-          if (result.status === 'success' && result.image_path) {
-            console.log('Panorama saved to:', result.image_path)
-          }
-        }
-      } catch (error) {
-        console.error('Failed to toggle panorama:', error)
-        // Revert state on error
-        this.panoActive = !this.panoActive
-      }
+      this.sendMessage({
+        id: 'mast',
+        message: {
+          type: 'pano',
+          action,
+        },
+      })
     },
   },
 }

@@ -10,7 +10,7 @@
       <div class="waypoint-wrapper overflow-y-scroll">
         <WaypointStore
           v-for="(waypoint, index) in waypoints"
-          :key="index"
+          :key="waypoint"
           :waypoint="waypoint"
           :index="index"
           @add="addItem"
@@ -20,38 +20,36 @@
     </div>
     <div class="d-flex flex-column w-100">
       <div class="datagrid m-0 p-0">
-        <FeedbackButton
+        <AutonModeCheckbox
           ref="autonCheckbox"
           class="auton-checkbox"
-          :name="'Autonomy Mode'"
-          :checked="autonEnabled"
-          :action="autonAction"
-          @toggle="handleAutonToggle"
+          :name="autonButtonText"
+          :color="autonButtonColor"
+          @toggle="toggleAutonMode($event)"
         />
         <div class="stats">
           <VelocityReading />
         </div>
-        <FeedbackButton
+        <Checkbox
           ref="teleopCheckbox"
           class="teleop-checkbox"
           :name="'Teleop Controls'"
-          :checked="teleopEnabled"
-          :action="teleopAction"
-          @toggle="handleTeleopToggle"
+          :width="220"
+          @toggle="toggleTeleopMode($event)"
         />
-        <FeedbackButton
+        <Checkbox
           ref="costmapCheckbox"
           class="costmap-checkbox"
-          :name="'All Costmaps'"
-          :checked="allCostmapToggle"
-          @toggle="handleCostmapToggle"
+          :name="'Kill All Costmaps'"
+          :width="220"
+          @toggle="toggleAllCostmaps"
         />
       </div>
       <h3 class="m-0 p-0">Current Course</h3>
       <div class="waypoint-wrapper overflow-y-scroll d-flex flex-column gap-2">
         <WaypointItem
-          v-for="(waypoint, index) in currentRoute"
-          :key="index"
+          v-for="waypoint in currentRoute"
+          :key="waypoint"
           :waypoint="waypoint"
           @delete="deleteItem(waypoint)"
           @toggleCostmap="toggleCostmap"
@@ -100,7 +98,6 @@
               <option value="1">Post</option>
               <option value="2">Mallet</option>
               <option value="3">Water Bottle</option>
-              <option value="4">Rock Pick</option>
             </select>
           </div>
         </div>
@@ -119,31 +116,28 @@
 </template>
 
 <script lang="ts">
-import FeedbackButton from './FeedbackButton.vue'
+import AutonModeCheckbox from './AutonModeCheckbox.vue'
+import Checkbox from './BasicCheckbox.vue'
 import VelocityReading from './VelocityReading.vue'
 import WaypointItem from './AutonWaypointItem.vue'
 import WaypointStore from './AutonWaypointStore.vue'
-
+import Vuex from 'vuex'
+const { mapState, mapActions, mapMutations, mapGetters } = Vuex
 import L from 'leaflet'
 import { reactive, defineComponent } from 'vue'
 import { Modal } from 'bootstrap'
-import type { AutonWaypoint, StoreWaypoint } from '@/types/waypoints'
-import { waypointsAPI, autonAPI } from '@/utils/api'
-import { useWebsocketStore } from '@/stores/websocket'
-import { useAutonomyStore } from '@/stores/autonomy'
+import type { Waypoint } from '../types/waypoint'
+import type { WebSocketState } from '@/types/websocket'
+
+let auton_publish_interval: number
 
 export default defineComponent({
   components: {
     WaypointItem,
-    FeedbackButton,
+    AutonModeCheckbox,
+    Checkbox,
     VelocityReading,
     WaypointStore,
-  },
-
-  setup() {
-    const websocketStore = useWebsocketStore()
-    const autonomyStore = useAutonomyStore()
-    return { websocketStore, autonomyStore }
   },
 
   emits: ['toggleTeleop'],
@@ -207,15 +201,7 @@ export default defineComponent({
           lon: 0,
           enable_costmap: true,
         },
-        {
-          name: 'Rock Pick',
-          id: -1,
-          type: 4,
-          lat: 0,
-          lon: 0,
-          enable_costmap: true,
-        },
-      ] as AutonWaypoint[],
+      ] as Waypoint[],
 
       modal: null as Modal | null,
       modalWypt: {
@@ -227,49 +213,59 @@ export default defineComponent({
         enable_costmap: true,
       },
 
+      teleopEnabledCheck: false,
       allCostmapToggle: true,
 
-      route: reactive([] as AutonWaypoint[]),
+      route: reactive([]),
 
-      currentRoute: [] as AutonWaypoint[],
+      currentRoute: [],
+
+      autonButtonColor: 'btn-danger',
+
+      roverStuck: false,
+      waitingForNavResponse: false,
     }
   },
   computed: {
-    navMessage() {
-      return this.websocketStore.messages['nav']
+    ...mapState('websocket', {
+      navMessage: (state: WebSocketState) => state.messages['nav'],
+      waypointMessage: (state: WebSocketState) => state.messages['waypoints'],
+    }),
+    ...mapGetters('autonomy', {
+      autonEnabled: 'autonEnabled',
+      teleopEnabled: 'teleopEnabled',
+      clickPoint: 'clickPoint',
+    }),
+
+    autonButtonText: function () {
+      return this.autonButtonColor == 'btn-warning'
+        ? 'Setting to ' + this.autonEnabled
+        : 'Autonomy Mode'
     },
-    autonEnabled() {
-      return this.autonomyStore.autonEnabled
-    },
-    teleopEnabled() {
-      return this.autonomyStore.teleopEnabled
-    },
-    clickPoint() {
-      return this.autonomyStore.clickPoint
-    }
   },
 
   watch: {
     waypoints: {
-      async handler(newList: AutonWaypoint[]) {
+      handler(newList: Waypoint[]) {
         const waypoints = newList.map(waypoint => {
           const lat = waypoint.lat
           const lon = waypoint.lon
           return { latLng: L.latLng(lat, lon), name: waypoint.name }
         })
         this.setWaypointList(waypoints)
-
-        try {
-          await waypointsAPI.saveAuton(newList)
-        } catch (error) {
-          console.error('Failed to save auton waypoints:', error)
-        }
+        this.$store.dispatch('websocket/sendMessage', {
+          id: 'waypoints',
+          message: {
+            type: 'save_auton_waypoint_list',
+            data: newList,
+          },
+        })
       },
       deep: true,
     },
 
     currentRoute: {
-      async handler(newRoute: AutonWaypoint[]) {
+      handler(newRoute: Waypoint[]) {
         const waypoints = newRoute.map(waypoint => {
           const lat = waypoint.lat
           const lon = waypoint.lon
@@ -277,111 +273,163 @@ export default defineComponent({
         })
         this.setRoute(waypoints)
 
-        try {
-          await waypointsAPI.saveCurrentAutonCourse(this.currentRoute)
-        } catch (error) {
-          console.error('Failed to save current auton course:', error)
-        }
+        this.$store.dispatch('websocket/sendMessage', {
+          id: 'waypoints',
+          message: {
+            type: 'save_current_auton_course',
+            data: this.currentRoute,
+          },
+        })
       },
       deep: true,
     },
 
+    navMessage(msg) {
+      if (msg.type == 'nav_state') {
+        // If still waiting for nav...
+        if (
+          (msg.state == 'OffState' && this.autonEnabled) ||
+          (msg.state !== 'OffState' && !this.autonEnabled) ||
+          (msg.state == 'DoneState' && !this.autonEnabled)
+        ) {
+          return
+        }
+        this.waitingForNavResponse = false
+        this.autonButtonColor = this.autonEnabled ? 'btn-success' : 'btn-danger'
+      } else if (msg.type == 'get_auton_waypoint_list') {
+        // Get waypoints from server on page load
+        console.log(msg)
+        if (msg.data.length > 0) this.waypoints = msg.data
+        const waypoints = msg.data.map(
+          (waypoint: { lat: number; lon: number; name: string }) => {
+            const lat = waypoint.lat
+            const lon = waypoint.lon
+            return { latLng: L.latLng(lat, lon), name: waypoint.name }
+          },
+        )
+        this.setWaypointList(waypoints)
+      }
+      if (msg.type == 'get_current_auton_course') {
+        // console.log("here2 before", this.currentRoute)
+        this.currentRoute = msg.data
+        // console.log("here2", this.currentRoute)
+      }
+    },
+    waypointMessage(msg) {
+      if (msg.type == 'get_auton_waypoint_list') {
+        // Get waypoints from server on page load
+        console.log(msg)
+        if (msg.data.length > 0) this.waypoints = msg.data
+        const waypoints = msg.data.map(
+          (waypoint: { lat: number; lon: number; name: string }) => {
+            const lat = waypoint.lat
+            const lon = waypoint.lon
+            return { latLng: L.latLng(lat, lon), name: waypoint.name }
+          },
+        )
+        this.setWaypointList(waypoints)
+      }
+    }
   },
 
   mounted() {
     this.modal = new Modal('#modalWypt', {})
-  },
-
-  async created() {
-    setTimeout(async () => {
-      try {
-        const autonData = await waypointsAPI.getAuton()
-        if (autonData.status === 'success' && autonData.waypoints && autonData.waypoints.length > 0) {
-          this.waypoints = autonData.waypoints
-          const waypoints = autonData.waypoints.map(
-            (waypoint: { lat: number; lon: number; name: string }) => ({
-              latLng: L.latLng(waypoint.lat, waypoint.lon),
-              name: waypoint.name
-            })
-          )
-          this.setWaypointList(waypoints)
-        }
-
-        const courseData = await waypointsAPI.getCurrentAutonCourse()
-        if (courseData.status === 'success' && courseData.course) {
-          this.currentRoute = courseData.course
-        }
-      } catch (error) {
-        console.error('Failed to load auton waypoints:', error)
+    auton_publish_interval = window.setInterval(() => {
+      if (this.waitingForNavResponse) {
+        this.sendAutonCommand()
       }
-    }, 250)
+    }, 1000)
+    // window.setTimeout(() => {
+      // Timeout so websocket will be initialized
+      
+      this.$store.dispatch('websocket/sendMessage', {
+        id: 'waypoints',
+        message: {
+          type: 'get_current_auton_course',
+        },
+      })
+    // }, 1000)
   },
+
+  beforeUnmount: function () {
+    window.clearInterval(auton_publish_interval)
+    this.autonEnabled = false
+    this.sendAutonCommand()
+  },
+
 
   methods: {
-    setRoute(route: StoreWaypoint[]) {
-      this.autonomyStore.setRoute(route)
-    },
-    setWaypointList(list: StoreWaypoint[]) {
-      this.autonomyStore.setWaypointList(list)
-    },
-    setAutonMode(mode: boolean) {
-      this.autonomyStore.setAutonMode(mode)
-    },
-    setTeleopMode(mode: boolean) {
-      this.autonomyStore.setTeleopMode(mode)
+    ...mapActions('websocket', ['sendMessage']),
+
+    ...mapMutations('autonomy', {
+      setRoute: 'setRoute',
+      setWaypointList: 'setWaypointList',
+      setAutonMode: 'setAutonMode',
+      setTeleopMode: 'setTeleopMode',
+    }),
+
+    sendAutonCommand() {
+      if (this.autonEnabled) {
+        this.$store.dispatch('websocket/sendMessage', {
+          id: 'auton',
+          message: {
+            type: 'auton_enable',
+            enabled: true,
+            waypoints: this.currentRoute.map((waypoint: Waypoint) => {
+              const lat = waypoint.lat
+              const lon = waypoint.lon
+              // Return a GPSWaypoint.msg formatted object for each
+              return {
+                latitude_degrees: lat,
+                longitude_degrees: lon,
+                tag_id: waypoint.id,
+                type: waypoint.type,
+                enable_costmap: waypoint.enable_costmap,
+              }
+            }),
+          },
+        })
+      } else {
+        //if auton's not enabled, send an empty message
+        this.$store.dispatch('websocket/sendMessage', {
+          id: 'auton',
+          message: {
+            type: 'auton_enable',
+            enabled: false,
+            waypoints: [],
+          },
+        })
+      }
     },
 
-    autonAction(newState: boolean) {
-      const waypoints = newState
-        ? this.currentRoute.map((waypoint: AutonWaypoint) => ({
-            latitude_degrees: waypoint.lat,
-            longitude_degrees: waypoint.lon,
-            tag_id: waypoint.id,
-            type: waypoint.type,
-            enable_costmap: waypoint.enable_costmap,
-          }))
-        : []
-
-      return autonAPI.enable(newState, waypoints)
-    },
-
-    handleAutonToggle(newState: boolean) {
-      this.setAutonMode(newState)
-    },
-
-    async deleteItem(waypoint: AutonWaypoint) {
+    deleteItem: function (waypoint: Waypoint) {
       waypoint.in_route = false
       const index = this.route.indexOf(waypoint)
       this.route.splice(index, 1)
       this.currentRoute.splice(this.currentRoute.indexOf(waypoint), 1)
-
-      try {
-        await waypointsAPI.deleteAutonWaypoint(waypoint)
-      } catch (error) {
-        console.error('Failed to delete auton waypoint:', error)
-      }
-    },
-
-    toggleCostmap({
-      waypoint,
-      enable_costmap,
-    }: {
-      waypoint: AutonWaypoint
-      enable_costmap: boolean
-    }) {
-      waypoint.enable_costmap = enable_costmap
-    },
-
-    handleCostmapToggle(newState: boolean) {
-      this.allCostmapToggle = newState
-      this.currentRoute.forEach((wp: AutonWaypoint) => {
-        wp.enable_costmap = newState
+      this.$store.dispatch('websocket/sendMessage', {
+        id: 'waypoints',
+        message: {
+          type: 'delete_auton_waypoint_from_course',
+          data: waypoint,
+        },
       })
     },
 
-    addItem: function (waypoint: AutonWaypoint) {
+    toggleCostmap({ waypoint, enable_costmap }: { waypoint: Waypoint; enable_costmap: boolean }) {
+      waypoint.enable_costmap = enable_costmap
+    },
+
+    toggleAllCostmaps() {
+      this.allCostmapToggle = !this.allCostmapToggle
+      this.waypoints.forEach((wp: Waypoint) => {
+        wp.enable_costmap = this.allCostmapToggle
+      })
+    },
+
+    addItem: function (waypoint: Waypoint) {
       if (!waypoint.in_route) {
-        waypoint['enable_costmap'] = this.allCostmapToggle
+        waypoint['enable_costmap'] = waypoint.enable_costmap ?? false
         this.route.push(waypoint)
         this.currentRoute.push(waypoint)
         waypoint.in_route = true
@@ -389,9 +437,7 @@ export default defineComponent({
     },
 
     openModal: function () {
-      if (this.modal) {
-        this.modal.show()
-      }
+      this.modal.show()
     },
 
     addMapWaypoint: function () {
@@ -406,22 +452,30 @@ export default defineComponent({
         lon: 0,
         enable_costmap: true,
       }
-      if (this.modal) {
-        this.modal.hide()
-      }
+      this.modal.hide()
     },
 
     deleteMapWaypoint: function (index: number) {
       this.waypoints.splice(index, 1)
     },
 
-    teleopAction(newState: boolean) {
-      return autonAPI.enableTeleop(newState)
+    toggleAutonMode: function (val: boolean) {
+      this.setAutonMode(val)
+      // This will trigger the yellow "waiting for nav" state of the checkbox
+      this.autonButtonColor = 'btn-warning'
+      this.waitingForNavResponse = true
     },
 
-    handleTeleopToggle(newState: boolean) {
-      this.setTeleopMode(newState)
-      this.$emit('toggleTeleop', newState)
+    toggleTeleopMode: function () {
+      this.teleopEnabledCheck = !this.teleopEnabledCheck
+      this.$store.dispatch('websocket/sendMessage', {
+        id: 'auton',
+        message: {
+          type: 'teleop_enable',
+          enabled: this.teleopEnabledCheck,
+        },
+      })
+      this.$emit('toggleTeleop', this.teleopEnabledCheck)
     },
   },
 })
