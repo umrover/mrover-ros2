@@ -310,7 +310,7 @@ mrover_executable_from_component(cost_map perception/executables/cost_map.cpp co
 # Combiner
 mrover_add_component(combiner perception/combiner/*.cpp perception/combiner/pch.hpp Combiner)
 mrover_ament_component(combiner rclcpp rclcpp_components tf2 tf2_ros)
-mrover_link_component(combiner lie opencv_core opencv_aruco opencv_imgproc loop_profiler parameter_utils)
+mrover_link_component(combiner lie opencv_core opencv_aruco opencv_imgproc opencv_dnn loop_profiler parameter_utils)
 
 mrover_executable_from_component(combiner perception/executables/combiner.cpp combiner_component)
 

@@ -2,6 +2,8 @@
 
 #include <string>
 #include <vector>
+#include <array>
+#include <deque>
 
 #include <rclcpp/node.hpp>
 
@@ -9,6 +11,7 @@
 #include <opencv4/opencv2/highgui.hpp>
 #include <opencv4/opencv2/core.hpp>
 #include <opencv4/opencv2/aruco.hpp>
+#include <opencv4/opencv2/dnn.hpp>
 
 #include <sensor_msgs/msg/image.hpp>
 #include <sensor_msgs/image_encodings.hpp>
