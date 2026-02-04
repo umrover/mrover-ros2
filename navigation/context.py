@@ -403,8 +403,6 @@ class Context:
         from .state import OffState
 
         self.node = node
-        self.drive = DriveController(node)
-
         self.world_frame = node.get_parameter("world_frame").value
         self.rover_frame = node.get_parameter("rover_frame").value
         self.course = None
@@ -418,7 +416,11 @@ class Context:
         self.search_point_publisher = node.create_publisher(GPSPointList, "search_path", 1)
         self.path_history_publisher = node.create_publisher(Path, "ground_truth_path", 10)
         self.path_marker_publisher = node.create_publisher(Marker, "path_marker", 1)
+        self.lookahead_pub = self.node.create_publisher(Marker, 'lookahead_circle', 10)
+        self.intersection_pub = self.node.create_publisher(Marker, 'intersection_points', 10)
         self.tf_broadcaster = tf2_ros.StaticTransformBroadcaster(node)
+
+        self.drive = DriveController(node, self.lookahead_pub, self.intersection_pub)
 
         node.create_subscription(Bool, "nav_stuck", self.stuck_callback, 1)
         node.create_subscription(ImageTargets, "tags", self.image_targets_callback, 1)

@@ -104,10 +104,10 @@ class AStar:
             _, current = heapq.heappop(open_set)
 
             if debug:
-                debug_list.append(self.return_path(came_from, current))
+                debug_list.append(self.return_path(self,came_from, current))
 
             if current == end_ij:
-                return debug_list if debug else self.return_path(came_from, current)
+                return debug_list if debug else self.return_path(self,came_from, current)
 
             for rel_pos in adjacent_squares:
                 neighbor_pos = tuple(np.array(current) + rel_pos)
@@ -163,7 +163,7 @@ class AStar:
 
         rover_position_in_map = rover_SE3.translation()[:2]
 
-        if not self.USE_COSTMAP or not self.use_astar(context=context, dest=dest):
+        if not self.USE_COSTMAP or not self.use_astar(dest=dest):
             if (not self.USE_PURE_PURSUIT):
                 return Trajectory(np.array([dest]))
             else:

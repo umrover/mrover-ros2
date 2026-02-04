@@ -8,6 +8,7 @@ from lie import SE3, normalized, angle_to_rotate_2d
 from geometry_msgs.msg import Twist, Vector3
 from navigation.marker_utils import gen_marker, ring_marker
 from rclpy.node import Node
+from rclpy.publisher import Publisher
 from trajectory import Trajectory
 from visualization_msgs.msg import Marker
 
@@ -22,17 +23,17 @@ class DriveController:
     _last_target: np.ndarray | None
     _last_lookahead_dist: float
     _driver_state: DriveMode
+    lookahead_pub: Publisher
+    intersection_pub: Publisher
 
-    def __init__(self, node: Node):
+    def __init__(self, node: Node, lookahead_pub : Publisher, intersect_pub : Publisher):
         self.node = node
         self._last_angular_error = None
         self._last_target = None
         self._last_lookahead_dist = self.node.get_parameter("pure_pursuit.min_lookahead_distance").value
+        self.lookahead_pub = lookahead_pub
+        self.intersection_pub = intersect_pub
         self._driver_state = self.DriveMode.STOPPED
-        
-        # Rviz Markers
-        self.lookahead_pub = self.node.create_publisher(Marker, 'lookahead_circle', 10)
-        self.intersection_pub = self.node.create_publisher(Marker, 'intersection_points', 10)
 
     def reset(self) -> None:
         self._driver_state = self.DriveMode.STOPPED
@@ -301,6 +302,7 @@ class DriveController:
 
         # If we are at the target position, return a zero command
         # self.node.get_logger().info(f"How Close: {np.linalg.norm(target_pos - rover_pos)} and {completion_thresh}")
+        # TESTING: Use lookahead instead of completion thresh
         if np.linalg.norm(target_pos - rover_pos) < completion_thresh:
             return Twist(), True
 
@@ -344,14 +346,16 @@ class DriveController:
         # Compute velocities
         edited_err = angular_error
         if (angular_error > 0):
-            edited_err = min(angular_error, np.pi)
+            edited_err = min(angular_error, np.pi/2)
         elif (angular_error < 0):
-            edited_err = max(angular_error, -1*np.pi)
+            edited_err = max(angular_error, -1*np.pi/2)
         
 
         # TODO: Test the dynamic lookahead distance. Use the normal controller when close enough to the point
-        linear_vel = max_driving_effort * max(0, np.cos(abs(edited_err)))
-        angular_vel = (np.sin(angular_error) / lookahead_dist) * max_turning_effort
+        linear_vel = max_driving_effort * max(0.0001, np.cos(abs(edited_err)+(np.pi / 2)) + 1)
+        # self.node.get_logger().info(f'Vel: {linear_vel}')
+        angular_vel = (2*np.sin(angular_error) / lookahead_dist) * 1/linear_vel
+        # angular_vel = (np.sin(angular_error)) * max_turning_effort
 
         self._last_lookahead_dist = ((max_lookahead_dist - min_lookahead_dist) * (linear_vel / max_driving_effort)) + min_lookahead_dist
 
