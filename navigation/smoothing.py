@@ -5,6 +5,10 @@ from navigation.coordinate_utils import cartesian_to_ij, ij_to_cartesian, publis
 from scipy.interpolate import splev, splprep
 import numpy as np
 import math, sys
+from rclpy.node import Node
+from mrover.srv import Smoothing
+
+
 
 def smoothing(trajectory: Trajectory, context: Context, should_relax: bool, should_interpolate: bool) -> Trajectory:
     """
