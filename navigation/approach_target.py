@@ -398,11 +398,6 @@ class ApproachTargetState(State):
                 gen_marker(
                     time=context.node.get_clock().now(), point=self.target_position, color=[1.0, 1.0, 0.0], id=0, lifetime=100, size=0.5
                 )
-            else:
-                context.delete_path_marker(ns=str(type(AStar)))
-        else:
-            context.publish_path_marker(
-                points=np.array([self.target_position]), color=[1.0, 1.0, 0.0], ns=str(type(self))
             )
 
     def self_in_distance_threshold(self, context: Context):
