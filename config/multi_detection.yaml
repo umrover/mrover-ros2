@@ -24,10 +24,15 @@ laptop_cam_detections:
 /**:
   ros__parameters:
     laptop_cam:
-      address: 127.0.0.1 # localhost
+      address: 10.1.0.2 # laptop
+      port: 8087
       image_topic: "/laptop_cam/detections"
+      dev_node: ""
+      dev_path: ""
       stream:
-        pixel_format: YUYV
+        pixel_format: ABGR32
         width: 640
         height: 480
         framerate: 30
+        codec: H265
+        bitrate: 1000000
