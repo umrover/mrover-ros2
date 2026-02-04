@@ -8,6 +8,7 @@ from lie import SE3, normalized, angle_to_rotate_2d
 from geometry_msgs.msg import Twist, Vector3
 from navigation.marker_utils import gen_marker, ring_marker
 from rclpy.node import Node
+from rclpy.publisher import Publisher
 from trajectory import Trajectory
 from visualization_msgs.msg import Marker
 
@@ -20,17 +21,19 @@ class DriveController:
 
     _last_angular_error: float | None
     _last_target: np.ndarray | None
+    _last_lookahead_dist: float
     _driver_state: DriveMode
+    lookahead_pub: Publisher
+    intersection_pub: Publisher
 
-    def __init__(self, node: Node):
+    def __init__(self, node: Node, lookahead_pub : Publisher, intersect_pub : Publisher):
         self.node = node
         self._last_angular_error = None
         self._last_target = None
+        self._last_lookahead_dist = self.node.get_parameter("pure_pursuit.min_lookahead_distance").value
+        self.lookahead_pub = lookahead_pub
+        self.intersection_pub = intersect_pub
         self._driver_state = self.DriveMode.STOPPED
-        
-        # Rviz Markers
-        self.lookahead_pub = self.node.create_publisher(Marker, 'lookahead_circle', 10)
-        self.intersection_pub = self.node.create_publisher(Marker, 'intersection_points', 10)
 
     def reset(self) -> None:
         self._driver_state = self.DriveMode.STOPPED
@@ -286,7 +289,7 @@ class DriveController:
             rover_dir *= -1
 
         # Obtain lookahead_distance
-        lookahead_dist = self.node.get_parameter("drive.lookahead_distance").value
+        lookahead_dist = self._last_lookahead_dist
 
         # Check and set if there is a new farther found point in the path
         self.set_farthest_path_point(waypoints, rover_pos, lookahead_dist)
@@ -298,9 +301,9 @@ class DriveController:
         target_pos = self.determine_next_point(waypoints, intersection_points)
 
         # If we are at the target position, return a zero command
+        # self.node.get_logger().info(f"How Close: {np.linalg.norm(target_pos - rover_pos)} and {completion_thresh}")
+        # TESTING: Use lookahead instead of completion thresh
         if np.linalg.norm(target_pos - rover_pos) < completion_thresh:
-            # if (not waypoints.done()):
-            #     waypoints.increment_point()
             return Twist(), True
 
         self.display_markers(rover_pos, lookahead_dist, [target_pos])
@@ -308,114 +311,71 @@ class DriveController:
         # Get target direction vector
         target_dir = target_pos - rover_pos
 
-        # Compute errors
-        linear_error = float(np.linalg.norm(target_dir))
+        # Compute error
         angular_error = angle_to_rotate_2d(rover_dir[:2], target_dir[:2])
-        self.node.get_logger().info(f'Angle: {angular_error}')
 
         # Determine linear and angular velocity
         output = self.get_twist_for_arch(
             angular_error,
-            linear_error,
-            completion_thresh,
-            lookahead_dist
+            lookahead_dist,
+            np.linalg.norm(target_dir),
         )
 
+        # Don't believe this will occur
         if drive_back:
             output[0].linear.x *= -1
 
-        self._last_angular_error = angular_error
-        self._last_target = target_pos
         return output
 
     def get_twist_for_arch(
         self,
         angular_error: float,
-        linear_error: float,
-        completion_thresh: float,
         lookahead_dist : float,
+        distance: float
     ) -> tuple[Twist, bool]:
         # A helper function for pure pursuit
         # Determines the angular and linear velocity needed to follow the arch
 
-        turning_p = self.node.get_parameter("drive.turning_p").value
-        driving_p = self.node.get_parameter("drive.driving_p").value
-        min_turning_effort = self.node.get_parameter(
-            "drive.min_turning_effort").value
-        max_turning_effort = self.node.get_parameter(
-            "drive.max_turning_effort").value
-        min_driving_effort = self.node.get_parameter(
-            "drive.min_driving_effort").value
-        max_driving_effort = self.node.get_parameter(
-            "drive.max_driving_effort").value
+        min_turning_effort = self.node.get_parameter("drive.min_turning_effort").value
+        max_turning_effort = self.node.get_parameter("drive.max_turning_effort").value
+        min_driving_effort = self.node.get_parameter("drive.min_driving_effort").value
+        max_driving_effort = self.node.get_parameter("drive.max_driving_effort").value
+        min_lookahead_dist = self.node.get_parameter("pure_pursuit.min_lookahead_distance").value
+        max_lookahead_dist = self.node.get_parameter("pure_pursuit.max_lookahead_distance").value
         
-        # If we are at the target position, return a zero command
-        # if abs(linear_error) < completion_thresh:
-        #     self._last_angular_error = None
-        #     return Twist(), True
+        # Compute velocities
+        edited_err = angular_error
+        if (angular_error > 0):
+            edited_err = min(angular_error, np.pi/2)
+        elif (angular_error < 0):
+            edited_err = max(angular_error, -1*np.pi/2)
+        
 
-        # Compute angular velocity
-        linear_vel = linear_error * driving_p
+        # TODO: Test the dynamic lookahead distance. Use the normal controller when close enough to the point
+        linear_vel = max_driving_effort * max(0.0001, np.cos(abs(edited_err)+(np.pi / 2)) + 1)
+        # self.node.get_logger().info(f'Vel: {linear_vel}')
+        angular_vel = (2*np.sin(angular_error) / lookahead_dist) * 1/linear_vel
+        # angular_vel = (np.sin(angular_error)) * max_turning_effort
 
-        angular_vel = (np.sin(angular_error) / lookahead_dist) * linear_vel
-        self.node.get_logger().info(f'Angle Vel: {angular_vel}')
+        self._last_lookahead_dist = ((max_lookahead_dist - min_lookahead_dist) * (linear_vel / max_driving_effort)) + min_lookahead_dist
 
-        # Check to make sure linear and angular vel are in bounds
-        linear_vel_clip = linear_vel / max_driving_effort
-        angular_vel_clip = abs(angular_vel / max_turning_effort) # angular can be negative
-
-        # Ajust if out of bounds, we will just clip bottom for now
-        if (linear_vel_clip > 1 or angular_vel_clip > 1):
-            if (linear_vel_clip > angular_vel):
-                linear_vel = linear_vel / linear_vel_clip
-                angular_vel = angular_vel / linear_vel_clip
-            else:
-                linear_vel = linear_vel / angular_vel_clip
-                angular_vel = angular_vel / angular_vel_clip
-
-        # If we are outside are max_turning_effort, we will have no linear velocity
-        # This is because we don't want to go outside of the arch
-        # So we instead decide to prioritize turning to make the arch easier to follow
-        if (angular_vel > max_turning_effort or angular_error > (self.node.get_parameter("pure_pursuit.drive_forward_threshold").value)):
-            cmd_vel = Twist(
-                angular=Vector3(
-                    z=np.clip(
-                        max_turning_effort,
-                        min_turning_effort,
-                        max_turning_effort,
-                    )
-                ),
-            )
-            return cmd_vel, False
-        elif (angular_vel < min_turning_effort or abs(angular_error) > (self.node.get_parameter("pure_pursuit.drive_forward_threshold").value)):
-            cmd_vel = Twist(
-                angular=Vector3(
-                    z=np.clip(
-                        min_turning_effort,
-                        min_turning_effort,
-                        max_turning_effort,
-                    )
-                ),
-            )
-            return cmd_vel, False
-        else:
-            cmd_vel = Twist(
-                linear=Vector3(
-                    x=np.clip(
-                        linear_vel,
-                        min_driving_effort,
-                        max_driving_effort,
-                    )
-                ),
-                angular=Vector3(
-                    z=np.clip(
-                        angular_vel,
-                        min_turning_effort,
-                        max_turning_effort,
-                    )
-                ),
-            )
-            return cmd_vel, False
+        cmd_vel = Twist(
+            linear=Vector3(
+                x=np.clip(
+                    linear_vel,
+                    min_driving_effort,
+                    max_driving_effort,
+                )
+            ),
+            angular=Vector3(
+                z=np.clip(
+                    angular_vel,
+                    min_turning_effort,
+                    max_turning_effort,
+                )
+            ),
+        )
+        return cmd_vel, False
 
     def determine_next_point(
         self,
@@ -470,8 +430,6 @@ class DriveController:
         # A helper function for pure pursuit 
         # Determines the farthest found waypoint in the path
         # Ensures each point has to be found sequentially in the path
-
-        new_point = False
         stop_incrementing = False
 
         # Determine next point
@@ -518,10 +476,7 @@ class DriveController:
         x1 = waypoints.get_current_point()[0]
         y1 = waypoints.get_current_point()[1]
 
-        # If the goal point is within our lookahead_dist, return the goal
-        # if waypoints.done():
-        #     intersections.append([x1, y1, 0.0])
-        #     return intersections
+        # If the goal point is last, return the goal
         if waypoints.increment_point():
             waypoints.decerement_point()
             return intersections
@@ -583,11 +538,6 @@ class DriveController:
             intersections.append(intersection_1)
         if (valid_intersection_2):
             intersections.append(intersection_2)
-
-        # intersections.append(intersection_1)
-        # intersections.append(intersection_2)
-
-        # self.node.get_logger().info("Valid Intersection")
 
         waypoints.decerement_point()
 

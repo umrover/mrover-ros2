@@ -9,7 +9,7 @@ from rclpy.duration import Duration
 import time
 from navigation import approach_target, stuck_recovery, waypoint, state
 from navigation.astar import AStar, SpiralEnd, NoPath, OutOfBounds
-from navigation.coordinate_utils import d_calc, is_high_cost_point, cartesian_to_ij
+from navigation.coordinate_utils import d_calc, gen_marker, is_high_cost_point, cartesian_to_ij
 from navigation.context import Context
 from navigation.trajectory import Trajectory, SearchTrajectory
 from visualization_msgs.msg import Marker
@@ -36,6 +36,7 @@ class CostmapSearchState(State):
     is_recovering: bool = False
     path_pub: Publisher
     astar: AStar
+    marker_pub: Publisher
 
     USE_COSTMAP: bool
     USE_PURE_PURSUIT: bool
@@ -55,13 +56,14 @@ class CostmapSearchState(State):
             return
 
         self.USE_COSTMAP = context.node.get_parameter("costmap.use_costmap").value or current_waypoint.enable_costmap
-        self.USE_PURE_PURSUIT = context.node.get_parameter_or("drive.use_pure_pursuit", True).value
+        self.USE_PURE_PURSUIT = context.node.get_parameter_or("pure_pursuit.use_pure_pursuit", True).value
 
         self.STOP_THRESH = context.node.get_parameter("search.stop_threshold").value
         self.DRIVE_FWD_THRESH = context.node.get_parameter("search.drive_forward_threshold").value
         self.UPDATE_DELAY = context.node.get_parameter("search.update_delay").value
 
         self.time_begin = context.node.get_clock().now()
+        self.marker_pub = context.node.create_publisher(Marker, "spiral_points", 10)
 
         self.new_traj(context)
 
@@ -86,7 +88,7 @@ class CostmapSearchState(State):
     def display_markers(self, context: Context) -> None:
         start_pt = self.spiral_traj.cur_pt
         end_pt = (
-            self.spiral_traj.cur_pt + 20
+            self.spiral_traj.cur_pt + 6
             if self.spiral_traj.cur_pt + 3 < len(self.spiral_traj.coordinates)
             else len(self.spiral_traj.coordinates)
         )
@@ -106,7 +108,7 @@ class CostmapSearchState(State):
             return
         context.rover.send_drive_command(Twist())
         try:
-            self.astar_traj = self.astar.generate_trajectory(self.spiral_traj.get_current_point())
+            self.astar_traj = self.astar.generate_trajectory(context, self.spiral_traj.get_current_point())
         except Exception as e:
             context.node.get_logger().info(str(e))
             return self

@@ -8,7 +8,7 @@ import rclpy
 from scipy import ndimage
 
 import tf2_ros
-from geometry_msgs.msg import Twist, Point
+from geometry_msgs.msg import Twist
 from mrover.srv import MoveCostMap, DilateCostMap
 from lie import SE3
 from mrover.msg import (
@@ -23,7 +23,6 @@ from mrover.msg import (
 from mrover.srv import EnableAuton
 from nav_msgs.msg import Path
 from nav_msgs.msg import OccupancyGrid
-from visualization_msgs.msg import Marker, MarkerArray
 from rclpy.duration import Duration
 from rclpy.node import Node
 from rclpy.publisher import Publisher
@@ -36,7 +35,6 @@ from state_machine.state import State
 from std_msgs.msg import Bool, Header
 from .drive import DriveController
 from collections import deque
-from copy import deepcopy
 
 NO_TAG: int = -1
 
@@ -46,7 +44,7 @@ class Rover:
     ctx: Context
     stuck: bool
     previous_state: State
-    path_history: Path
+    path_history: deque
 
     def get_pose_in_map(self) -> SE3 | None:
         try:
@@ -218,7 +216,7 @@ class Course:
     waypoints: list[tuple[Waypoint, SE3]]
     waypoint_index: int = 0
 
-    def increment_waypoint(self) -> bool:
+    def increment_waypoint(self) -> int:
         self.waypoint_index = min(self.waypoint_index + 1, len(self.waypoints))
         return self.waypoint_index >= len(self.waypoints)
 
@@ -377,7 +375,6 @@ class Context:
     stuck_listener: Subscription
     costmap_listener: Subscription
     path_history_publisher: Publisher
-    path_marker_publisher: Publisher
     COSTMAP_THRESH: float
     current_dilation_radius: float
     exec: SingleThreadedExecutor
@@ -403,12 +400,10 @@ class Context:
         from .state import OffState
 
         self.node = node
-        self.drive = DriveController(node)
-
         self.world_frame = node.get_parameter("world_frame").value
         self.rover_frame = node.get_parameter("rover_frame").value
         self.course = None
-        self.rover = Rover(self, False, OffState(), Path(header=Header(frame_id=self.world_frame)))
+        self.rover = Rover(self, False, OffState(), deque())
         self.env = Environment(self, image_targets=ImageTargetsStore(self), cost_map=CostMap())
         self.disable_requested = False
 
@@ -418,7 +413,11 @@ class Context:
         self.search_point_publisher = node.create_publisher(GPSPointList, "search_path", 1)
         self.path_history_publisher = node.create_publisher(Path, "ground_truth_path", 10)
         self.path_marker_publisher = node.create_publisher(Marker, "path_marker", 1)
+        self.lookahead_pub = self.node.create_publisher(Marker, 'lookahead_circle', 10)
+        self.intersection_pub = self.node.create_publisher(Marker, 'intersection_points', 10)
         self.tf_broadcaster = tf2_ros.StaticTransformBroadcaster(node)
+
+        self.drive = DriveController(node, self.lookahead_pub, self.intersection_pub)
 
         node.create_subscription(Bool, "nav_stuck", self.stuck_callback, 1)
         node.create_subscription(ImageTargets, "tags", self.image_targets_callback, 1)
@@ -574,65 +573,3 @@ class Context:
                 self.dilate_cost(self.current_dilation_radius)
             return True
         return False
-
-    def publish_path_marker(
-        self,
-        points: np.ndarray,
-        color: np.ndarray | list,
-        ns: str,
-        size=0.2,
-        lifetime=0,
-    ) -> None:
-        if self.node.get_parameter("display_markers").value:
-            points_marker = Marker()
-            points_marker.lifetime = Duration(seconds=lifetime).to_msg()
-            points_marker.header = Header(frame_id="map", stamp=self.node.get_clock().now().to_msg())
-            points_marker.ns = ns
-            points_marker.action = Marker.ADD
-            points_marker.color.r = color[0]
-            points_marker.color.g = color[1]
-            points_marker.color.b = color[2]
-            points_marker.color.a = 1.0
-            points_marker.pose.orientation.w = 1.0
-
-            for point in points:
-                assert len(point) > 1, f"Invalid point has size {len(point)}"
-                p = Point(x=point[0], y=point[1])
-                points_marker.points.append(p)
-
-            lines_marker: Marker = deepcopy(points_marker)
-
-            points_marker.type = Marker.SPHERE_LIST
-            points_marker.id = 0
-            points_marker.scale.x = size
-            points_marker.scale.y = size
-
-            lines_marker.type = Marker.LINE_STRIP
-            lines_marker.id = 1
-            lines_marker.scale.x = size / 6
-            lines_marker.scale.y = size / 6
-
-            self.path_marker_publisher.publish(points_marker)
-            self.path_marker_publisher.publish(lines_marker)
-
-    def delete_path_marker(self, ns: str) -> None:
-        if self.node.get_parameter("display_markers").value:
-            points_marker = Marker()
-            points_marker.header = Header(frame_id="map", stamp=self.node.get_clock().now().to_msg())
-            points_marker.ns = ns
-            points_marker.action = Marker.DELETE
-
-            lines_marker: Marker = deepcopy(points_marker)
-
-            points_marker.id = 0
-            lines_marker.id = 1
-
-            self.path_marker_publisher.publish(points_marker)
-            self.path_marker_publisher.publish(lines_marker)
-
-    def delete_all_markers(self) -> None:
-        if self.node.get_parameter("display_markers").value:
-            marker = Marker()
-            marker.header = Header(frame_id="map", stamp=self.node.get_clock().now().to_msg())
-            marker.action = Marker.DELETEALL
-            self.path_marker_publisher.publish(marker)

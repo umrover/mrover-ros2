@@ -21,10 +21,12 @@ class ApproachTargetState(State):
     USE_COSTMAP: bool
     USE_PURE_PURSUIT: bool
     DISTANCE_THRESHOLD: float
+    COST_INFLATION_RADIUS: float
     time_begin: Time
     astar_traj: Trajectory
     target_traj: Trajectory
     astar: AStar
+    marker_pub: Publisher
     time_last_updated: Time
     target_position: np.ndarray | None
     marker_timer: Timer
@@ -36,7 +38,8 @@ class ApproachTargetState(State):
         if context.course is None:
             return
 
-        context.node.get_logger().info(f"Entered {type(self)}")
+        state = "Long Range State" if isinstance(self, LongRangeState) else "Approach Target State"
+        context.node.get_logger().info(f"Entered {state}")
         context.rover.previous_state = LongRangeState() if isinstance(self, LongRangeState) else ApproachTargetState()
 
         self.UPDATE_DELAY = context.node.get_parameter("search.update_delay").value
@@ -47,8 +50,10 @@ class ApproachTargetState(State):
             return
 
         self.USE_COSTMAP = context.node.get_parameter("costmap.use_costmap").value or current_waypoint.enable_costmap
-        self.USE_PURE_PURSUIT = context.node.get_parameter_or("drive.use_pure_pursuit", True).value
+        self.USE_PURE_PURSUIT = context.node.get_parameter_or("pure_pursuit.use_pure_pursuit", True).value
         self.DISTANCE_THRESHOLD = context.node.get_parameter("search.distance_threshold").value
+        self.COST_INFLATION_RADIUS = context.node.get_parameter("costmap.initial_inflation_radius").value
+        self.marker_pub = context.node.create_publisher(Marker, "target_trajectory", 10)
         self.astar_traj = Trajectory(np.array([]))
         self.target_traj = Trajectory(np.array([]))
         self.astar = AStar(context=context)
@@ -66,7 +71,6 @@ class ApproachTargetState(State):
     def on_exit(self, context: Context) -> None:
         self.marker_timer.cancel()
         self.update_timer.cancel()
-        context.delete_path_marker(ns=str(type(self)))
 
     def get_target_position(self, context: Context) -> np.ndarray | None:
         return context.env.current_target_pos()
@@ -192,7 +196,7 @@ class ApproachTargetState(State):
         # If the a-star trajectory is empty and there is a segment to pathfind to, generate a new trajectory there
         if self.astar_traj.empty() and not self.target_traj.done():
             try:
-                self.astar_traj = self.astar.generate_trajectory(self.target_traj.get_current_point())
+                self.astar_traj = self.astar.generate_trajectory(context, self.target_traj.get_current_point())
             except Exception as e:
                 context.node.get_logger().info(str(e))
                 return self
@@ -218,12 +222,16 @@ class ApproachTargetState(State):
                         context.node.get_logger().info("Found low-cost point")
                         return self
 
+        rover_pos = rover_pose.translation()
+        rover_pos[2] = 0
+        distance_to_target = np.linalg.norm(self.target_position - rover_pos)
+
         arrived = False
         cmd_vel = Twist()
         if not self.astar_traj.done():
             curr_point = self.astar_traj.get_current_point()
             cmd_vel, arrived = context.drive.get_drive_command(
-                (self.astar_traj if self.USE_PURE_PURSUIT else curr_point), # Determine if pure pursuit will be used
+                (self.astar_traj if self.USE_PURE_PURSUIT and distance_to_target > 1 else curr_point), # Determine if pure pursuit will be used
                 rover_pose,
                 context.node.get_parameter("single_tag.stop_threshold").value,
                 context.node.get_parameter("waypoint.drive_forward_threshold").value,
@@ -362,8 +370,7 @@ class ApproachTargetState(State):
     def display_markers(self, context: Context):
         if self.target_position is None:
             return
-        if self.USE_COSTMAP:
-            context.publish_path_marker(points=self.target_traj.coordinates, color=[1.0, 1.0, 0.0], ns=str(type(self)))
+        if context.node.get_parameter("display_markers").value:
 
             if self.USE_COSTMAP:
                 delete = Marker()
@@ -379,7 +386,7 @@ class ApproachTargetState(State):
                 for i, coord in enumerate(self.target_traj.coordinates[start_pt:end_pt]):
                     self.marker_pub.publish(
                         gen_marker(
-                            time=context.node.get_clock().now(),
+                            context=context,
                             point=coord,
                             color=[1.0, 0.0, 1.0],
                             id=i + 1,

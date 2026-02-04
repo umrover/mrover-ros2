@@ -163,7 +163,7 @@ def main(args=None):
 
     # Create a temporary node to get the parameter values before creating the UI.
     temp_node = Node("temp_node")
-    temp_node.declare_parameter("size", 32)
+    temp_node.declare_parameter("size", 64)
     temp_node.declare_parameter("resolution", 0.5)
     grid_size = temp_node.get_parameter("size").value
     temp_node.destroy_node()
