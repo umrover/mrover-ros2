@@ -20,6 +20,7 @@ from mrover.msg import (
     ImageTarget,
     ImageTargets,
 )
+from std_srvs.srv import SetBool
 from mrover.srv import EnableAuton
 from nav_msgs.msg import Path
 from nav_msgs.msg import OccupancyGrid
@@ -411,6 +412,7 @@ class Context:
         self.disable_requested = False
 
         node.create_service(EnableAuton, "enable_auton", self.enable_auton)
+        node.create_service(SetBool, "toggle_pure_pursuit", self.toggle_pure_pursuit)
 
         self.command_publisher = node.create_publisher(Twist, "nav_cmd_vel", 1)
         self.search_point_publisher = node.create_publisher(GPSPointList, "search_path", 1)
@@ -465,6 +467,10 @@ class Context:
             self.disable_requested = True
         response.success = True
         return response
+    
+    def toggle_pure_pursuit(self, request: SetBool.Request, response: SetBool.Response) -> SetBool.Response:
+        # TODO(brendan): do whatever you need to here
+        pass
 
     def stuck_callback(self, msg: Bool) -> None:
         self.rover.stuck = msg.data
