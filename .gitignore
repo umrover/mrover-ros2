@@ -7,9 +7,6 @@
 .vscode/
 .idea/
 
-# Compile Commands
-compile_commands.json
-
 # clangd cache
 .cache/
 
@@ -24,24 +21,17 @@ __pycache__/
 *.egg-info/
 venv/
 
-#Teleop Ignores
+# SQL file for Teleop
 *.sqlite3
-*.db
 bun.lock
 bun.lockb
-**/package-lock.json
-**/node_modules/
-**/test-results/
-**/playwright-report/
-.python-version
 
 # macOS
 .DS_Store
 # nav state log
 state_machine/state_log.txt
-
-/teleoperation/basestation_gui/install/
-/teleoperation/basestation_gui/log/
-
 data/*.png
 data/raw-pano-images
+
+teleoperation/basestation_gui/install/
+teleoperation/basestation_gui/log/

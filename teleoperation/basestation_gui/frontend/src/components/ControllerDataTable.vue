@@ -1,183 +1,99 @@
 <template>
-  <div class='d-flex flex-column border border-2 p-2 rounded mw-100' style="flex: 1 0 auto; min-width: 0;">
-    <div class="d-flex align-items-center justify-content-between mb-2">
-      <h4 class="m-0">{{ header }}</h4>
-      <div class="d-flex gap-2">
-        <button
-          type="button"
-          class="btn btn-sm"
-          :class="showStatus ? 'btn-success' : 'btn-danger'"
-          @mousedown.prevent
-          @click="showStatus = !showStatus"
-        >Status</button>
-        <button
-          type="button"
-          class="btn btn-sm"
-          :class="showValues ? 'btn-success' : 'btn-danger'"
-          @mousedown.prevent
-          @click="showValues = !showValues"
-        >Values</button>
-      </div>
-    </div>
-    <div class="overflow-x-auto">
-      <table class='table table-bordered table-sm m-0 w-auto text-nowrap compact-table'>
-        <tbody>
-        <tr>
-          <th class='table-secondary text-nowrap sticky-col px-2 py-1'>Motor</th>
-          <td v-for='(n, i) in names' :key='i' class="text-center small px-2 py-1">
-            {{ n }}
-          </td>
-        </tr>
-        <tr v-if="showStatus">
-          <th class='table-secondary text-nowrap sticky-col px-2 py-1'>State</th>
-          <td v-for='(s, i) in states' :key='i' class="text-center small px-2 py-1">
-            {{ s }}
-          </td>
-        </tr>
-        <tr v-if="showStatus">
-          <th class='table-secondary text-nowrap sticky-col px-2 py-1'>Error</th>
-          <td v-for='(e, i) in errors' :key='i' class="text-center small px-2 py-1">
-            {{ e }}
-          </td>
-        </tr>
-        <tr v-if="showStatus">
-          <th class='table-secondary text-nowrap sticky-col px-2 py-1'>Limit Hit</th>
-          <td v-for='(l, i) in limitHits' :key='i' class="text-center small px-2 py-1">
-            {{ l }}
-          </td>
-        </tr>
-        <tr v-if="showValues">
-          <th class='table-secondary text-nowrap sticky-col px-2 py-1'>Position</th>
-          <td v-for='(p, i) in positions' :key='i' class="text-center small px-2 py-1">
-            {{ p.toFixed(2) }}
-          </td>
-        </tr>
-        <tr v-if="showValues">
-          <th class='table-secondary text-nowrap sticky-col px-2 py-1'>Velocity</th>
-          <td v-for='(v, i) in velocities' :key='i' class="text-center small px-2 py-1">
-            {{ v.toFixed(2) }}
-          </td>
-        </tr>
-        <tr v-if="showValues">
-          <th class='table-secondary text-nowrap sticky-col px-2 py-1'>Current</th>
-          <td v-for='(c, i) in currents' :key='i' class="text-center small px-2 py-1">
-            {{ c.toFixed(2) }}
-          </td>
-        </tr>
-        </tbody>
-      </table>
-    </div>
+  <div class='wrap border border-2 p-2 rounded'>
+    <h3 class="m-0 p-0 mb-1">{{ header }}</h3>
+    <table class='table table-bordered m-0 p-0 border' style='table-layout: fixed; width: auto'>
+      <tbody>
+      <tr>
+        <th class='table-secondary'>Motor</th>
+        <td v-for='(name, i) in name' :key='i' class="m-0 px-1">
+          {{ name }}
+        </td>
+      </tr>
+      <tr>
+        <th class='table-secondary'>State</th>
+        <td v-for='(state, i) in state' :key='i'>
+          {{ state }}
+        </td>
+      </tr>
+      <tr>
+        <th class='table-secondary'>Error</th>
+        <td v-for='(error, i) in error' :key='i'>
+          {{ error }}
+        </td>
+      </tr>
+      <tr>
+        <th class='table-secondary'>Limit Hit</th>
+        <td v-for='(limits, i) in limits' :key='i'>
+          {{ limits }}
+        </td>
+      </tr>
+      </tbody>
+    </table>
   </div>
 </template>
 
-<script lang='ts' setup>
-import { ref, computed, watch } from 'vue'
-import { useWebsocketStore } from '@/stores/websocket'
-import { storeToRefs } from 'pinia'
-import type { ControllerStateMessage } from '@/types/websocket'
+<script lang='ts'>
+import { defineComponent } from 'vue'
+import Vuex from 'vuex';
+const { mapState } = Vuex;
+import type { WebSocketState } from '../types/websocket';
 
-const props = defineProps<{
-  header: string
-  mode: 'drive' | 'arm' | 'sp'
-}>()
+export default defineComponent({
+  props: {
+    header: {
+      type: String,
+      required: true,
+    },
+    msgType: {
+      type: String,
+      required: true,
+    }
+  },
 
-const websocketStore = useWebsocketStore()
-const { messages } = storeToRefs(websocketStore)
+  data() {
+    return {
+      name: [] as string[],
+      state: [] as string[],
+      error: [] as string[],
+      limits: [] as boolean[]
+    }
+  },
 
-const statusKey = `controllerDataTable_${props.mode}_showStatus`
-const valuesKey = `controllerDataTable_${props.mode}_showValues`
+  computed: {
+    ...mapState('websocket', {
+      armMessage: (state: WebSocketState) => state.messages['arm'],
+      driveMessage: (state: WebSocketState) => state.messages['drive']
+    })
+  },
 
-const showStatus = ref(localStorage.getItem(statusKey) === 'true')
-const showValues = ref(localStorage.getItem(valuesKey) === 'true')
+  // arm_state, drive_state, sa_state, drive_left_state, drive_right_state
+  // arm, drive, 
 
-watch(showStatus, (val) => localStorage.setItem(statusKey, String(val)))
-watch(showValues, (val) => localStorage.setItem(valuesKey, String(val)))
-
-const names = ref<string[]>([])
-const states = ref<string[]>([])
-const errors = ref<string[]>([])
-const limitHits = ref<boolean[]>([])
-const positions = ref<number[]>([])
-const velocities = ref<number[]>([])
-const currents = ref<number[]>([])
-
-const leftState = ref<ControllerStateMessage | null>(null)
-const rightState = ref<ControllerStateMessage | null>(null)
-
-function updateFromMessage(msg: ControllerStateMessage) {
-  names.value = msg.names
-  states.value = msg.states
-  errors.value = msg.errors
-  limitHits.value = msg.limits_hit
-  positions.value = msg.positions
-  velocities.value = msg.velocities
-  currents.value = msg.currents
-}
-
-function combineLeftRight() {
-  const left = leftState.value
-  const right = rightState.value
-  if (!left && !right) return
-
-  const l = left || { names: [], states: [], errors: [], limits_hit: [], positions: [], velocities: [], currents: [] }
-  const r = right || { names: [], states: [], errors: [], limits_hit: [], positions: [], velocities: [], currents: [] }
-
-  names.value = [...l.names, ...r.names]
-  states.value = [...l.states, ...r.states]
-  errors.value = [...l.errors, ...r.errors]
-  limitHits.value = [...l.limits_hit, ...r.limits_hit]
-  positions.value = [...l.positions, ...r.positions]
-  velocities.value = [...l.velocities, ...r.velocities]
-  currents.value = [...l.currents, ...r.currents]
-}
-
-const driveMessage = computed(() => messages.value['drive'])
-const armMessage = computed(() => messages.value['arm'])
-const scienceMessage = computed(() => messages.value['science'])
-
-watch(driveMessage, (msg) => {
-  if (props.mode !== 'drive' || !msg) return
-  const typed = msg as ControllerStateMessage
-  if (typed.type === 'drive_left_state') {
-    leftState.value = typed
-    combineLeftRight()
-  } else if (typed.type === 'drive_right_state') {
-    rightState.value = typed
-    combineLeftRight()
-  }
-})
-
-watch(armMessage, (msg) => {
-  if (props.mode !== 'arm' || !msg) return
-  const typed = msg as ControllerStateMessage
-  if (typed.type === 'arm_state') {
-    updateFromMessage(typed)
-  }
-})
-
-watch(scienceMessage, (msg) => {
-  if (props.mode !== 'sp' || !msg) return
-  const typed = msg as ControllerStateMessage
-  if (typed.type === 'sp_controller_state') {
-    updateFromMessage(typed)
+  watch: {
+    armMessage(msg) {
+      if (msg.type == this.msgType) {
+        this.name = msg.name
+        this.state = msg.state
+        this.error = msg.error
+        this.limits = msg.limit_hit
+      }
+    },
+    driveMessage(msg) {
+      if (msg.type == this.msgType) {
+        this.name = msg.name
+        this.state = msg.state
+        this.error = msg.error
+        this.limits = msg.limit_hit
+      }
+    },
   }
 })
 </script>
 
 <style scoped>
-.sticky-col {
-  position: sticky;
-  left: 0;
-  z-index: 1;
-}
-
-.compact-table {
-  table-layout: auto;
-}
-
-.compact-table th,
-.compact-table td {
-  white-space: nowrap;
-  width: 1%;
+.wrap {
+  display: inline-block;
+  align-content: center;
+  min-width: 350px;
 }
 </style>

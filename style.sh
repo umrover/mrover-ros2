@@ -84,23 +84,6 @@ echo
 echo "Linting Python with mypy ..."
 "${MYPY_PATH}" --config-file=mypy.ini --check "${PYTHON_LINT_DIRS[@]}"
 
-if [ -d "./teleoperation/basestation_gui/frontend" ]; then
-  echo
-  echo "Type checking TypeScript with vue-tsc ..."
-  (cd ./teleoperation/basestation_gui/frontend && bun run type-check)
-  echo "Done"
-
-  echo
-  if [ $# -eq 0 ] || [ "$1" != "--fix" ]; then
-    echo "Linting TypeScript/Vue with eslint (dry run) ..."
-    (cd ./teleoperation/basestation_gui/frontend && bun run check)
-  else
-    echo "Linting and fixing TypeScript/Vue with eslint ..."
-    (cd ./teleoperation/basestation_gui/frontend && bun run lint)
-  fi
-  echo "Done"
-fi
-
 if command -v shellcheck &> /dev/null; then
   echo
   echo "Linting bash scripts with shellcheck ..."

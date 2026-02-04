@@ -220,22 +220,6 @@
   <xacro:arm_link name="c" m="1" x="0.55" y="0.04" z="0.04" dz="0.1"/>
   <xacro:arm_link name="d" m="1" x="0.065" y="0.15" z="0.065"/>
   <xacro:arm_link name="e" m="1" x="0.15" y="0.155" z="0.032"/>
-  <!-- TODO: figure out why this is cooked -->
-  <!-- <xacro:arm_link name="gripper" m="1" x="0.13" y="0.02" z="0.03"/> -->
-  <link name="arm_gripper_link">
-    <xacro:box_inertia m="1" d="0.02" w="0.13" h="0.03"/>
-    <visual>
-      <geometry>
-        <mesh filename="package://mrover/urdf/meshes/arm_gripper.fbx"/>
-      </geometry>
-    </visual>
-    <collision>
-      <origin xyz="$0.0875 0 0"/>
-      <geometry>
-        <box size="0.085 0.02 0.03"/>
-      </geometry>
-    </collision>
-  </link>
 
   <joint name="chassis_link_to_arm_a_link" type="prismatic">
     <origin xyz="0.164882 -0.200235 0.051497"/>
@@ -261,14 +245,6 @@
     <child link="arm_e_link"/>
     <axis xyz="1 0 0"/>
     <limit lower="-2.35619" upper="2.35619" effort="0" velocity="0"/>
-  </joint>
-
-  <joint name="arm_e_link_to_arm_gripper_link" type="prismatic">
-    <origin xyz="0.0 0.079 0.0"/>
-    <parent link="arm_e_link"/>
-    <child link="arm_gripper_link"/>
-    <axis xyz="0 -1 0"/>
-    <limit lower="0" upper="0.08" effort="0" velocity="0"/>
   </joint>
 
   <xacro:wheels side="left" reflect="1"/>
@@ -335,14 +311,6 @@
       </geometry>
     </collision>
   </link>
-
-  <joint name="arm_e_link_to_finger_camera" type="fixed">
-    <origin xyz="0 0 0" rpy="0 0 0"/>
-    <parent link="arm_e_link"/>
-    <child link="finger_camera_frame"/>
-  </joint>
-
-  <link name="finger_camera_frame"/>
 
   <!-- TODO(quintin): I removed this for now, feel free to add it back when needed -->
 

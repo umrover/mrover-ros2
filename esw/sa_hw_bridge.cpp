@@ -97,9 +97,9 @@ namespace mrover {
                 mJointData.velocity[i] = {motor->getVelocity().get()};
                 mJointData.effort[i] = {motor->getEffort()};
 
-                mControllerState.states[i] = {motor->getState()};
-                mControllerState.errors[i] = {motor->getErrorState()};
-                mControllerState.limits_hit[i] = {motor->getLimitsHitBits()};
+                mControllerState.state[i] = {motor->getState()};
+                mControllerState.error[i] = {motor->getErrorState()};
+                mControllerState.limit_hit[i] = {motor->getLimitsHitBits()};
             }
 
             mJointDataPub->publish(mJointData);
@@ -228,10 +228,10 @@ namespace mrover {
             mJointData.velocity.resize(mMotorNames.size());
             mJointData.effort.resize(mMotorNames.size());
 
-            mControllerState.names = mMotorNames;
-            mControllerState.states.resize(mMotorNames.size());
-            mControllerState.errors.resize(mMotorNames.size());
-            mControllerState.limits_hit.resize(mMotorNames.size());
+            mControllerState.name = mMotorNames;
+            mControllerState.state.resize(mMotorNames.size());
+            mControllerState.error.resize(mMotorNames.size());
+            mControllerState.limit_hit.resize(mMotorNames.size());
 
 
             mSetServoPositionSrv = create_service<srv::ServoSetPos>(
