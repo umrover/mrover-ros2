@@ -9,6 +9,7 @@ from scipy import ndimage
 
 import tf2_ros
 from geometry_msgs.msg import Twist
+from std_srvs.srv import SetBool
 from mrover.srv import MoveCostMap, DilateCostMap
 from lie import SE3
 from mrover.msg import (
@@ -409,13 +410,18 @@ class Context:
         self.env = Environment(self, image_targets=ImageTargetsStore(self), cost_map=CostMap())
         self.disable_requested = False
 
+        # services 
         node.create_service(EnableAuton, "enable_auton", self.enable_auton)
+        node.create_service(SetBool, "toggle_path_relaxation", self.toggle_path_relaxation)
+        node.create_service(SetBool, "toggle_path_interpolation", self.toggle_path_interpolation)
 
+        # publishers
         self.command_publisher = node.create_publisher(Twist, "nav_cmd_vel", 1)
         self.search_point_publisher = node.create_publisher(GPSPointList, "search_path", 1)
         self.path_history_publisher = node.create_publisher(Path, "ground_truth_path", 10)
         self.tf_broadcaster = tf2_ros.StaticTransformBroadcaster(node)
 
+        # subscribers
         node.create_subscription(Bool, "nav_stuck", self.stuck_callback, 1)
         node.create_subscription(ImageTargets, "tags", self.image_targets_callback, 1)
         node.create_subscription(ImageTargets, "objects", self.image_targets_callback, 1)
@@ -427,6 +433,7 @@ class Context:
         self.tf_buffer = tf2_ros.Buffer()
         tf2_ros.TransformListener(self.tf_buffer, node)
 
+        # parameter initialization
         self.COSTMAP_THRESH = node.get_parameter("costmap.costmap_thresh").value
         self.move_future = None
 
@@ -459,6 +466,14 @@ class Context:
             self.disable_requested = True
         response.success = True
         return response
+    
+    def toggle_path_relaxation(self, request: SetBool.Request, response: SetBool.Response) -> SetBool.Response:
+        # TODO(aaron and david): do whatever you need to
+        pass
+
+    def toggle_path_interpolation(self, request: SetBool.Request, response: SetBool.Response) -> SetBool.Response:
+        # TODO(aaron and david): do whatever you need to
+        pass
 
     def stuck_callback(self, msg: Bool) -> None:
         self.rover.stuck = msg.data
