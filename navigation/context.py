@@ -6,6 +6,7 @@ import numpy as np
 import pymap3d
 import rclpy
 from scipy import ndimage
+from rclpy.parameter import Parameter
 
 import tf2_ros
 from geometry_msgs.msg import Twist, Point
@@ -414,6 +415,8 @@ class Context:
         node.create_service(EnableAuton, "enable_auton", self.enable_auton)
         node.create_service(SetBool, "toggle_pure_pursuit", self.toggle_pure_pursuit)
 
+        self.use_pure_pursuit = node.get_parameter("pure_pursuit.use_pure_pursuit").value
+
         self.command_publisher = node.create_publisher(Twist, "nav_cmd_vel", 1)
         self.search_point_publisher = node.create_publisher(GPSPointList, "search_path", 1)
         self.path_history_publisher = node.create_publisher(Path, "ground_truth_path", 10)
@@ -470,7 +473,12 @@ class Context:
     
     def toggle_pure_pursuit(self, request: SetBool.Request, response: SetBool.Response) -> SetBool.Response:
         # TODO(brendan): do whatever you need to here
-        pass
+        if request.data:
+            self.node.set_parameters([Parameter("pure_pursuit.use_pure_pursuit", Parameter.Type.BOOL, True)])
+        else:
+            self.node.set_parameters([Parameter("pure_pursuit.use_pure_pursuit", Parameter.Type.BOOL, False)])
+        response.success = True
+        return response
 
     def stuck_callback(self, msg: Bool) -> None:
         self.rover.stuck = msg.data
