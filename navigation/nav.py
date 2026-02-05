@@ -17,7 +17,6 @@ from rclpy.executors import ExternalShutdownException, MultiThreadedExecutor, Si
 from rclpy.node import Node
 from state_machine.state_machine import StateMachine
 from state_machine.state_publisher_server import StatePublisher
-from mrover.srv import Smoothing
 
 
 class Navigation(Node):
@@ -158,18 +157,11 @@ class Navigation(Node):
         self.create_timer(1 / update_rate, self.state_machine.update)
         self.create_timer(1 / pub_path_rate, self.publish_path)
 
-
-        self.config_smoothing = self.create_service(Smoothing, "smoothing", self.smoothing_callback)
-
         self.get_logger().info("Ready!")
 
         self.HIST_SIZE = self.get_parameter("path_hist_size").value
 
-    def smoothing_callback(self, request):
-        self.set_parameters([Parameter("smoothing.use_interpolation", Parameter.Type.BOOL, request.use_interpolation),
-                              Parameter("smoothing.use_relaxation", Parameter.Type.BOOL, request.use_relaxation)])
 
-        return True
     def publish_path(self) -> None:
         if (rover_pose_in_map := self.ctx.rover.get_pose_in_map()) is not None:
             x, y, _ = rover_pose_in_map.translation()

@@ -24,6 +24,7 @@ from mrover.msg import (
 from mrover.srv import EnableAuton
 from nav_msgs.msg import Path
 from nav_msgs.msg import OccupancyGrid
+from rclpy import Parameter
 from rclpy.duration import Duration
 from rclpy.node import Node
 from rclpy.publisher import Publisher
@@ -412,8 +413,8 @@ class Context:
 
         # services 
         node.create_service(EnableAuton, "enable_auton", self.enable_auton)
-        node.create_service(SetBool, "toggle_path_relaxation", self.toggle_path_relaxation)
-        node.create_service(SetBool, "toggle_path_interpolation", self.toggle_path_interpolation)
+        node.create_service(SetBool, "/navigation/toggle_path_relaxation", self.toggle_path_relaxation)
+        node.create_service(SetBool, "/navigation/toggle_path_interpolation", self.toggle_path_interpolation)
 
         # publishers
         self.command_publisher = node.create_publisher(Twist, "nav_cmd_vel", 1)
@@ -468,12 +469,20 @@ class Context:
         return response
     
     def toggle_path_relaxation(self, request: SetBool.Request, response: SetBool.Response) -> SetBool.Response:
-        # TODO(aaron and david): do whatever you need to
-        pass
+        self.node.set_parameters([Parameter("smoothing.use_relaxation", Parameter.Type.BOOL, request.data)])
+        self.node.get_logger().info(f"Set path relaxation toggle to {request.data}.")
+        
+        response.success = True
+        response.message = f"Set path relaxation toggle to {request.data}."
+        return response
 
     def toggle_path_interpolation(self, request: SetBool.Request, response: SetBool.Response) -> SetBool.Response:
-        # TODO(aaron and david): do whatever you need to
-        pass
+        self.node.set_parameters([Parameter("smoothing.use_interpolation", Parameter.Type.BOOL, request.data)])
+        self.node.get_logger().info(f"Set path interpolation toggle to {request.data}.")
+        
+        response.success = True
+        response.message = f"Set path interpolation toggle to {request.data}."
+        return response
 
     def stuck_callback(self, msg: Bool) -> None:
         self.rover.stuck = msg.data
