@@ -284,7 +284,7 @@ if(ZED_FOUND AND CUDA_FOUND)
     # Object Detector
     mrover_add_component(object_detector perception/object_detector/*.c* perception/object_detector/pch.hpp StereoObjectDetector ImageObjectDetector)
     mrover_link_component(object_detector opencv_core opencv_dnn opencv_imgproc lie tbb tensorrt opencv_imgcodecs opencv_highgui loop_profiler parameter_utils cuda_compiler_flags)
-    mrover_ament_component(object_detector rclcpp sensor_msgs rclcpp_components CUDA tf2 tf2_ros)
+    mrover_ament_component(object_detector rclcpp std_srvs sensor_msgs rclcpp_components CUDA tf2 tf2_ros)
 
     mrover_executable_from_component(stereo_object_detector perception/executables/stereo_object_detector.cpp object_detector_component)
     mrover_executable_from_component(image_object_detector perception/executables/image_object_detector.cpp object_detector_component)
@@ -302,7 +302,7 @@ mrover_executable_from_component(image_tag_detector perception/executables/image
 
 # Cost Map
 mrover_add_component(cost_map perception/cost_map/*.cpp perception/cost_map/pch.hpp CostMapNode)
-mrover_ament_component(cost_map rclcpp rclcpp_components tf2 tf2_ros)
+mrover_ament_component(cost_map rclcpp std_srvs rclcpp_components tf2 tf2_ros)
 mrover_link_component(cost_map lie parameter_utils)
 
 mrover_executable_from_component(cost_map perception/executables/cost_map.cpp cost_map_component)

@@ -35,6 +35,10 @@ namespace mrover {
             dilateCostMapCallback(req, res);
         });
 
+        mToggleCostMap = create_service<std_srvs::srv::SetBool>("toggle_cost_map", [this](std_srvs::srv::SetBool::Request::ConstSharedPtr req, std_srvs::srv::SetBool::Response::SharedPtr res) {
+            toggleCostMapCallback(req, res);
+        });
+
         mPCDebugPub = create_publisher<sensor_msgs::msg::PointCloud2>("cost_map/debug_pc", 1);
 
         // Fill in grid resolution

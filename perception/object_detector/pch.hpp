@@ -33,6 +33,7 @@
 #include <rclcpp/rclcpp.hpp>
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2_ros/transform_listener.h>
+#include <std_srvs/srv/set_bool.hpp>
 
 // Messages
 #include "sensor_msgs/image_encodings.hpp"

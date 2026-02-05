@@ -43,3 +43,4 @@
 #include <mrover/srv/dilate_cost_map.hpp>
 #include <mrover/srv/move_cost_map.hpp>
 #include <rclcpp/service.hpp>
+#include <std_srvs/srv/set_bool.hpp>
