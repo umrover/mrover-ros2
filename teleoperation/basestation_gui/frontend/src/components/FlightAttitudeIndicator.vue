@@ -1,36 +1,43 @@
 <template>
-  <div ref="wrapperRef" class="d-flex justify-content-center align-items-center w-100 h-100">
-    <Attitude :size="indicatorSize" :pitch="pitch" :roll="roll" />
+  <div class="d-flex justify-content-center">
+    <Attitude :size="200" :pitch="pitch" :roll="roll" />
   </div>
 </template>
 
-<script lang="ts" setup>
-import { ref, computed, watch } from 'vue'
+<script lang="ts">
 import { Attitude } from 'vue-flight-indicators'
-import { useWebsocketStore } from '@/stores/websocket'
-import { storeToRefs } from 'pinia'
-import type { OrientationMessage } from '@/types/coordinates'
+import Vuex from 'vuex'
+const { mapState } = Vuex
 
-const websocketStore = useWebsocketStore()
-const { messages } = storeToRefs(websocketStore)
+export default {
+  components: {
+    Attitude,
+  },
+  data() {
+    return {
+      // Degrees
+      pitch: 0,
+      roll: 0,
+    }
+  },
 
-const pitch = ref(0)
-const roll = ref(0)
-const indicatorSize = ref(Math.min(window.innerHeight * 0.15, 180))
+  computed: {
+    ...mapState('websocket', ['message']),
+  },
 
-const navMessage = computed(() => messages.value['nav'])
-
-watch(navMessage, (msg) => {
-  if (msg && (msg as OrientationMessage).type == 'orientation') {
-    const orientationMsg = msg as OrientationMessage;
-    const { x: qx, y: qy, z: qz, w: qw } = orientationMsg.orientation
-    pitch.value = (Math.asin(2 * (qx * qz - qy * qw)) * 180) / Math.PI
-    roll.value =
-      (Math.atan2(2 * (qy * qz + qx * qw), 1 - 2 * (qx * qx + qy * qy)) *
-        180) /
-      Math.PI
-  }
-})
+  watch: {
+    message(msg) { // DEPRECATED, not updating to new style
+      if (msg.type == 'orientation') {
+        const [qx, qy, qz, qw] = msg.orientation
+        this.pitch = (Math.asin(2 * (qx * qz - qy * qw)) * 180) / Math.PI
+        this.roll =
+          (Math.atan2(2 * (qy * qz + qx * qw), 1 - 2 * (qx * qx + qy * qy)) *
+            180) /
+          Math.PI
+      }
+    },
+  },
+}
 </script>
 
 <style scoped></style>

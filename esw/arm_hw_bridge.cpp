@@ -105,10 +105,10 @@ namespace mrover {
             mJointData.velocity.resize(mJointNames.size());
             mJointData.effort.resize(mJointNames.size());
 
-            mControllerState.names = mJointNames;
-            mControllerState.states.resize(mJointNames.size());
-            mControllerState.errors.resize(mJointNames.size());
-            mControllerState.limits_hit.resize(mJointNames.size());
+            mControllerState.name = mJointNames;
+            mControllerState.state.resize(mJointNames.size());
+            mControllerState.error.resize(mJointNames.size());
+            mControllerState.limit_hit.resize(mJointNames.size());
         }
 
     private:
@@ -394,33 +394,33 @@ namespace mrover {
 
             mJointDataPub->publish(mJointData);
 
-            mControllerState.states[0] = {mJointA->getState()};
-            mControllerState.errors[0] = {mJointA->getErrorState()};
-            mControllerState.limits_hit[0] = {mJointA->getLimitsHitBits()};
+            mControllerState.state[0] = {mJointA->getState()};
+            mControllerState.error[0] = {mJointA->getErrorState()};
+            mControllerState.limit_hit[0] = {mJointA->getLimitsHitBits()};
 
-            mControllerState.states[1] = {mJointB->getState()};
-            mControllerState.errors[1] = {mJointB->getErrorState()};
-            mControllerState.limits_hit[1] = {mJointB->getLimitsHitBits()};
+            mControllerState.state[1] = {mJointB->getState()};
+            mControllerState.error[1] = {mJointB->getErrorState()};
+            mControllerState.limit_hit[1] = {mJointB->getLimitsHitBits()};
 
-            mControllerState.states[2] = {mJointC->getState()};
-            mControllerState.errors[2] = {mJointC->getErrorState()};
-            mControllerState.limits_hit[2] = {mJointC->getLimitsHitBits()};
+            mControllerState.state[2] = {mJointC->getState()};
+            mControllerState.error[2] = {mJointC->getErrorState()};
+            mControllerState.limit_hit[2] = {mJointC->getLimitsHitBits()};
 
-            mControllerState.states[3] = {mJointDe0->getState()};
-            mControllerState.errors[3] = {mJointDe0->getErrorState()};
-            mControllerState.limits_hit[3] = {mJointDe0->getLimitsHitBits()};
+            mControllerState.state[3] = {mJointDe0->getState()};
+            mControllerState.error[3] = {mJointDe0->getErrorState()};
+            mControllerState.limit_hit[3] = {mJointDe0->getLimitsHitBits()};
 
-            mControllerState.states[4] = {mJointDe1->getState()};
-            mControllerState.errors[4] = {mJointDe1->getErrorState()};
-            mControllerState.limits_hit[4] = {mJointDe1->getLimitsHitBits()};
+            mControllerState.state[4] = {mJointDe1->getState()};
+            mControllerState.error[4] = {mJointDe1->getErrorState()};
+            mControllerState.limit_hit[4] = {mJointDe1->getLimitsHitBits()};
 
-            mControllerState.states[5] = {mGripper->getState()};
-            mControllerState.errors[5] = {mGripper->getErrorState()};
-            mControllerState.limits_hit[5] = {mGripper->getLimitsHitBits()};
+            mControllerState.state[5] = {mGripper->getState()};
+            mControllerState.error[5] = {mGripper->getErrorState()};
+            mControllerState.limit_hit[5] = {mGripper->getLimitsHitBits()};
 
-            mControllerState.states[6] = {mCam->getState()};
-            mControllerState.errors[6] = {mCam->getErrorState()};
-            mControllerState.limits_hit[6] = {mCam->getLimitsHitBits()};
+            mControllerState.state[6] = {mCam->getState()};
+            mControllerState.error[6] = {mCam->getErrorState()};
+            mControllerState.limit_hit[6] = {mCam->getLimitsHitBits()};
 
             mControllerStatePub->publish(mControllerState);
         }

@@ -13,10 +13,11 @@ from navigation.costmap_search import CostmapSearchState
 from navigation.state import DoneState, OffState, off_check
 from navigation.waypoint import WaypointState
 from rclpy import Parameter
-from rclpy.executors import ExternalShutdownException, SingleThreadedExecutor
+from rclpy.executors import ExternalShutdownException, MultiThreadedExecutor, SingleThreadedExecutor
 from rclpy.node import Node
 from state_machine.state_machine import StateMachine
 from state_machine.state_publisher_server import StatePublisher
+from mrover.srv import Smoothing
 
 
 class Navigation(Node):
@@ -37,6 +38,7 @@ class Navigation(Node):
                 # General
                 ("update_rate", Parameter.Type.DOUBLE),
                 ("pub_path_rate", Parameter.Type.DOUBLE),
+                ("pub_lookahead_rate", Parameter.Type.INTEGER),
                 ("path_hist_size", Parameter.Type.INTEGER),
                 ("display_markers", Parameter.Type.BOOL),
                 ("world_frame", Parameter.Type.STRING),
@@ -45,6 +47,12 @@ class Navigation(Node):
                 ("ref_lon", Parameter.Type.DOUBLE),
                 ("ref_alt", Parameter.Type.DOUBLE),
                 ("target_expiration_duration", Parameter.Type.DOUBLE),
+                # Pure Pursuit
+                ("pure_pursuit.drive_forward_threshold", Parameter.Type.DOUBLE),
+                ("pure_pursuit.min_lookahead_distance", Parameter.Type.DOUBLE),
+                ("pure_pursuit.max_lookahead_distance", Parameter.Type.DOUBLE),
+                ("pure_pursuit.driving_p", Parameter.Type.DOUBLE),
+                ("pure_pursuit.use_pure_pursuit", Parameter.Type.BOOL),
                 # Costmap
                 ("costmap.custom_costmap", Parameter.Type.BOOL),
                 ("costmap.use_costmap", Parameter.Type.BOOL),
@@ -157,31 +165,32 @@ class Navigation(Node):
         self.create_timer(1 / update_rate, self.state_machine.update)
         self.create_timer(1 / pub_path_rate, self.publish_path)
 
+
+        self.config_smoothing = self.create_service(Smoothing, "smoothing", self.smoothing_callback)
+
         self.get_logger().info("Ready!")
 
         self.HIST_SIZE = self.get_parameter("path_hist_size").value
 
+    def smoothing_callback(self, request):
+        self.set_parameters([Parameter("smoothing.use_interpolation", Parameter.Type.BOOL, request.use_interpolation),
+                              Parameter("smoothing.use_relaxation", Parameter.Type.BOOL, request.use_relaxation)])
+
+        return True
     def publish_path(self) -> None:
         if (rover_pose_in_map := self.ctx.rover.get_pose_in_map()) is not None:
-            x, y, z = rover_pose_in_map.translation()
-            roverPoseStamped = PoseStamped(
-                header=self.ctx.rover.path_history.header, pose=Pose(position=Point(x=x, y=y, z=z))
-            )
-            lastRoverPosition: Point | None = (
-                None
-                if len(self.ctx.rover.path_history.poses) == 0
-                else self.ctx.rover.path_history.poses[-1].pose.position
-            )
-
-            if len(self.ctx.rover.path_history.poses) < self.HIST_SIZE:
-                self.ctx.rover.path_history.poses.append(roverPoseStamped)
-            elif (
-                lastRoverPosition is not None and (x - lastRoverPosition.x) ** 2 + (y - lastRoverPosition.y) ** 2
-            ) ** 0.5 > 0.15:
-                self.ctx.rover.path_history.poses.pop(0)
-                self.ctx.rover.path_history.poses.append(roverPoseStamped)
-
-            self.ctx.path_history_publisher.publish(self.ctx.rover.path_history)
+            x, y, _ = rover_pose_in_map.translation()
+            if (
+                len(self.ctx.rover.path_history) >= 1
+                and ((x - self.ctx.rover.path_history[-1][0]) ** 2 + (y - self.ctx.rover.path_history[-1][1]) ** 2)
+                ** 0.5
+                > 0.15
+            ):
+                self.ctx.rover.path_history.append([x, y, 0])
+                if len(self.ctx.rover.path_history) > self.HIST_SIZE:
+                    self.ctx.rover.path_history.popleft()
+            else:
+                self.ctx.rover.path_history.append([x, y, 0])
 
 
 if __name__ == "__main__":

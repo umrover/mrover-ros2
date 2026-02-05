@@ -9,34 +9,9 @@ on:
       - main
       - integration
 jobs:
-  style:
-    name: Style Checks
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.x'
-      - name: Install Python tools
-        run: pip install black==24.8.0 mypy==1.11.2
-      - name: Install clang-format
-        run: |
-          wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
-          sudo add-apt-repository 'deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-18 main'
-          sudo apt-get update
-          sudo apt-get install -y clang-format-18
-      - name: Install shellcheck
-        run: sudo apt-get install -y shellcheck
-      - uses: oven-sh/setup-bun@v1
-      - name: Install Frontend Dependencies
-        run: cd teleoperation/basestation_gui/frontend && bun install
-      - name: Run Style Check
-        run: ./style.sh
-
   ci:
-    name: Build
+    name: CI
     runs-on: ubuntu-latest
-    needs: style
     container:
       image: umrover1/ros2:latest
       # GitHub is silly and requires us to be running as root for their checkout action
@@ -49,6 +24,8 @@ jobs:
           # lfs: "true"
           # This makes sure that $GITHUB_WORKSPACE is the catkin workspace path
           path: "src/mrover"
+      - name: Style Check
+        run: . /home/mrover/ros2_ws/src/mrover/venv/bin/activate && cd $GITHUB_WORKSPACE/src/mrover/ && ./style.sh
       - name: Compiler Cache
         if: github.event.pull_request.draft == false
         uses: hendrikmuhs/ccache-action@v1.2
