@@ -193,7 +193,7 @@ namespace mrover {
 
     // TODO(quintin): I removed IMU, you may want to add it back
     struct Imu : SensorBase {
-        rclcpp::Publisher<sensor_msgs::msg::MagneticField>::SharedPtr magPub;
+        rclcpp::Publisher<mrover::msg::Heading>::SharedPtr magPub;
         rclcpp::Publisher<sensor_msgs::msg::Imu>::SharedPtr uncalibPub, imuPub;
         rclcpp::Publisher<mrover::msg::CalibrationStatus>::SharedPtr calibStatusPub;
         // ros::Publisher<sensor_msgs::msg::MagneticField> magPub, uncalibPub, calibStatusPub;
