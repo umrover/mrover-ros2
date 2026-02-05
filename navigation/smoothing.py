@@ -6,6 +6,8 @@ from scipy.interpolate import splev, splprep
 import numpy as np
 import math, sys
 
+
+
 def smoothing(trajectory: Trajectory, context: Context, should_relax: bool, should_interpolate: bool) -> Trajectory:
     """
     Performs relaxation and/or interpolation on given trajectory
@@ -30,7 +32,7 @@ def smoothing(trajectory: Trajectory, context: Context, should_relax: bool, shou
         cartesian_coords = np.hstack((cartesian_coords, np.zeros((cartesian_coords.shape[0], 1))))
 
     else:
-        cartesian_coords = trajectory
+        cartesian_coords = trajectory.coordinates
     
     
     output = Trajectory(cartesian_coords)
