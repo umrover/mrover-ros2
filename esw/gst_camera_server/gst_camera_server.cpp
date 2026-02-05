@@ -124,8 +124,6 @@ namespace mrover {
                 pipeline.pushBack(std::format("videocrop left={} right={} top={} bottom={}", mCropLeft, mCropRight, mCropTop, mCropBottom));
             }
 
-            pipeline.pushBack("xvimagesink");
-
             pipeline.pushBack(gst::video::createDefaultEncoder(mCodec));
 
             if (mCodec == gst::video::Codec::H264) {
