@@ -12,6 +12,7 @@
       <FeedbackButton
         ref="teleopCheckbox"
         class="w-100"
+        data-testid="pw-teleop-toggle"
         :name="'Teleop Controls'"
         :checked="teleopEnabled"
         :action="teleopAction"

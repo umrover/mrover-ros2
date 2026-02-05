@@ -48,16 +48,16 @@ watch(scienceMessage, (msg: unknown) => {
 
 watch(navMessage, (msg: unknown) => {
   if (typeof msg === 'object' && msg !== null && 'type' in msg) {
-    const typedMsg = msg as { type: string; state?: string; color?: string }
+    const typedMsg = msg as { type: string; state?: string; color?: number }
     if (typedMsg.type === 'nav_state') {
       navState.value = typedMsg.state || 'OffState'
     } else if (typedMsg.type === 'led_color') {
-      if (typedMsg.color === 'red') {
+      if (typedMsg.color === 0) {
         ledColorClass.value = 'nav-state--error'
-      } else if (typedMsg.color === 'blinking-green') {
-        ledColorClass.value = 'nav-state--ok nav-state--blink'
-      } else if (typedMsg.color === 'blue') {
+      } else if (typedMsg.color === 1) {
         ledColorClass.value = 'nav-state--info'
+      } else if (typedMsg.color === 2) {
+        ledColorClass.value = 'nav-state--ok nav-state--blink'
       }
     }
   }
