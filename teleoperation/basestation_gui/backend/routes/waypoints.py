@@ -185,7 +185,7 @@ def save_current_auton_course(data: AutonWaypointList):
 
         for i, w in enumerate(course):
             conn.execute('''
-                INSERT INTO current_auton_course (name, tag_id, type, latitude, longitude, enable_costmap, coverage_radius, sequence_order)
+                INSERT INTO current_auton_course (name, tag_id, type, latitude, longitude, enable_costmap, sequence_order)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             ''', (
                 w.name,
@@ -194,7 +194,7 @@ def save_current_auton_course(data: AutonWaypointList):
                 w.lat,
                 w.lon,
                 w.enable_costmap,
-                w.coverage_radius,
+                # w.coverage_radius,
                 i
             ))
 
