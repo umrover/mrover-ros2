@@ -62,7 +62,7 @@ const teleopEnabled = computed(() => autonomyStore.teleopEnabled)
 const purePursuitEnabled = computed(() => autonomyStore.purePursuitEnabled)
 const pathRelaxationEnabled = computed(() => autonomyStore.pathRelaxationEnabled)
 const pathInterpolationEnabled = computed(() => autonomyStore.pathInterpolationEnabled)
-
+  
 const autonAction = (newState: boolean) => {
   const route = autonomyStore.route
   const waypoints = newState
@@ -72,6 +72,7 @@ const autonAction = (newState: boolean) => {
         tag_id: waypoint.id,
         type: waypoint.type,
         enable_costmap: waypoint.enable_costmap,
+        coverage_radius: waypoint.coverage_radius,
       }))
     : []
 

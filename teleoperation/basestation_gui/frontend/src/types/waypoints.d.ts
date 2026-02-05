@@ -45,6 +45,7 @@ export interface AutonRouteWaypoint extends StoreWaypoint {
   id: number
   type: number
   enable_costmap: boolean
+  coverage_radius: number
 }
 
 /**
