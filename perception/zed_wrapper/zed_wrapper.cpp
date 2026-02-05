@@ -77,9 +77,9 @@ namespace mrover {
                 initParameters.input.setFromSVOFile(mSvoPath);
             } else {
                 if (mSerialNumber == -1) {
-                    initParameters.input.setFromCameraID(-1, sl::BUS_TYPE::USB);
+                    initParameters.input.setFromCameraID(-1);
                 } else {
-                    initParameters.input.setFromSerialNumber(mSerialNumber, sl::BUS_TYPE::USB);
+                    initParameters.input.setFromSerialNumber(mSerialNumber);
                 }
             }
 
