@@ -44,6 +44,52 @@ cam2_cam_detections:
   ros__parameters:
     camera_name: "cam2"
 
+# Camera3
+cam3_cam:
+  ros__parameters:
+    device: "video4"
+
+cam3_cam_tag_detector:
+  ros__parameters:
+    image_sub_topic: "/cam3_cam/image"
+    box_pub_topic: "/cam3_cam/tag_boxes"
+
+cam3_cam_object_detector:
+  ros__parameters:
+    image_sub_topic: "/cam3_cam/image"
+    box_pub_topic: "/cam3_cam/object_boxes"
+
+cam3_cam_streamer:
+  ros__parameters:
+    camera: "cam3_cam"
+
+cam3_cam_detections:
+  ros__parameters:
+    camera_name: "cam3"
+
+# Camera4
+cam4_cam:
+  ros__parameters:
+    device: "video6"
+
+cam4_cam_tag_detector:
+  ros__parameters:
+    image_sub_topic: "/cam4_cam/image"
+    box_pub_topic: "/cam4_cam/tag_boxes"
+
+cam4_cam_object_detector:
+  ros__parameters:
+    image_sub_topic: "/cam4_cam/image"
+    box_pub_topic: "/cam4_cam/object_boxes"
+
+cam4_cam_streamer:
+  ros__parameters:
+    camera: "cam4_cam"
+
+cam4_cam_detections:
+  ros__parameters:
+    camera_name: "cam4"
+
 /**:
   ros__parameters:
     cam1_cam:
@@ -72,6 +118,32 @@ cam2_cam_detections:
         framerate: 30
         codec: H265
         bitrate: 1000000
+    cam3_cam:
+      address: 10.1.0.2 # laptop
+      port: 8089
+      image_topic: "/cam3_cam/detections"
+      dev_node: ""
+      dev_path: ""
+      stream:
+        pixel_format: ABGR32
+        width: 640
+        height: 480
+        framerate: 30
+        codec: H265
+        bitrate: 1000000
+    cam4_cam:
+      address: 10.1.0.2 # laptop
+      port: 8090
+      image_topic: "/cam4_cam/detections"
+      dev_node: ""
+      dev_path: ""
+      stream:
+        pixel_format: ABGR32
+        width: 640
+        height: 480
+        framerate: 30
+        codec: H265
+        bitrate: 1000000
 
 camera_client:
   ros__parameters:
@@ -79,4 +151,6 @@ camera_client:
     cameras:
       - "cam1_cam"
       - "cam2_cam"
+      - "cam3_cam"
+      - "cam4_cam"
     rtp_jitter_ms: 50
