@@ -1,42 +1,44 @@
 <template>
-  <div class='drive' />
+  <div class="d-flex flex-column align-items-start h-100">
+    <div class="d-flex align-items-center gap-2">
+      <h4 class="m-0">Drive Controls</h4>
+      <IndicatorDot :is-active="controllerConnected" />
+    </div>
+  </div>
 </template>
 
-<script lang='ts'>
-import { mapActions } from 'vuex'
+<script lang='ts' setup>
+import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { useWebsocketStore } from '@/stores/websocket'
+import IndicatorDot from './IndicatorDot.vue'
 
-const UPDATE_HZ = 20
+const websocketStore = useWebsocketStore()
 
-export default {
-  methods: {
-    ...mapActions('websocket', ['sendMessage'])
-  },
+const controllerConnected = ref(false)
+let interval: number | undefined = undefined
 
-  beforeUnmount: function() {
-    window.clearInterval(this.interval)
-  },
+const UPDATE_HZ = 30
 
-  created: function() {
-    this.interval = window.setInterval(() => {
-      const gamepads = navigator.getGamepads()
-      const gamepad = gamepads.find(gamepad => gamepad && gamepad.id.includes('Thrustmaster'))
-      if (!gamepad) return
+onMounted(() => {
+  websocketStore.setupWebSocket('drive')
+  interval = window.setInterval(() => {
+    const gamepads = navigator.getGamepads()
+    const gamepad = gamepads.find(gamepad => gamepad && gamepad.id.includes('Thrustmaster'))
+    controllerConnected.value = !!gamepad
+    if (!gamepad) return
 
-      const inverse_axes = gamepad.axes.map((value, index) => index === 1 ? -value : value)
+    const inverse_axes = gamepad.axes.map((value, index) => index === 1 ? -value : value)
 
-      this.sendMessage({
-        type: 'joystick',
-        // inverted controls, get rid of map after testing
-        axes: inverse_axes,
-        buttons: gamepad.buttons.map(button => button.value)
-      })
-    }, 1000 / UPDATE_HZ)
-  }
-}
+    websocketStore.sendMessage('drive', {
+      type: 'joystick',
+      axes: inverse_axes,
+      buttons: gamepad.buttons.map(button => button.value)
+    })
+  }, 1000 / UPDATE_HZ)
+})
+
+onBeforeUnmount(() => {
+  window.clearInterval(interval)
+  websocketStore.closeWebSocket('drive')
+})
 </script>
-
-<style scoped>
-.drive {
-  display: none;
-}
-</style>

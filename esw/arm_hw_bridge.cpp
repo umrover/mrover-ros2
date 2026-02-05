@@ -4,16 +4,19 @@
 #include <vector>
 
 #include <rclcpp/rclcpp.hpp>
+#include <sensor_msgs/msg/joint_state.hpp>
 
 #include <units.hpp>
 #include <units_eigen.hpp>
+
+#include <parameter.hpp>
 
 #include <mrover/msg/controller_state.hpp>
 #include <mrover/msg/position.hpp>
 #include <mrover/msg/throttle.hpp>
 #include <mrover/msg/velocity.hpp>
 #include <mrover/srv/adjust_motor.hpp>
-#include <sensor_msgs/msg/joint_state.hpp>
+#include <mrover/srv/control_cam.hpp>
 
 #include "motor_library/brushed.hpp"
 #include "motor_library/brushless.hpp"
@@ -33,7 +36,8 @@ namespace mrover {
 
     // How often we send an adjust command to the DE motors
     // This corrects the HALL-effect motor source on the Moteus based on the absolute encoder readings
-    std::chrono::seconds static constexpr DE_OFFSET_TIMER_PERIOD = std::chrono::seconds{1};
+    std::chrono::seconds static constexpr DE_OFFSET_TIMER_PERIOD = std::chrono::seconds{5};
+
 
     class ArmHWBridge : public rclcpp::Node {
 
@@ -60,8 +64,32 @@ namespace mrover {
             mArmPositionSub = create_subscription<msg::Position>("arm_position_cmd", 1, [this](msg::Position::ConstSharedPtr const& msg) { processPositionCmd(msg); });
 
             mDeOffsetTimer = create_wall_timer(DE_OFFSET_TIMER_PERIOD, [this]() { updateDeOffsets(); });
-            mJointDe0AdjustClient = create_client<srv::AdjustMotor>("joint_de_0_adjust");
-            mJointDe1AdjustClient = create_client<srv::AdjustMotor>("joint_de_1_adjust");
+
+            int camControlDuration, camControlPeriod;
+            std::vector<ParameterWrapper> parameters = {
+                    {"joint_de_pitch_offset", mJointDePitchOffset.rep, 0.0},
+                    {"joint_de_roll_offset", mJointDeRollOffset.rep, 0.0},
+                    {"joint_de_pitch_max_position", mJointDePitchMaxPosition.rep, std::numeric_limits<float>::infinity()},
+                    {"joint_de_pitch_min_position", mJointDePitchMinPosition.rep, -std::numeric_limits<float>::infinity()},
+                    {"joint_de_roll_max_position", mJointDeRollMaxPosition.rep, std::numeric_limits<float>::infinity()},
+                    {"joint_de_roll_min_position", mJointDeRollMinPosition.rep, -std::numeric_limits<float>::infinity()},
+                    {"cam_control_duration", camControlDuration, 0},
+                    {"cam_control_period", camControlPeriod, 50},
+            };
+            ParameterWrapper::declareParameters(this, parameters);
+
+            mCamControlDuration = std::chrono::milliseconds{camControlDuration};
+            mCamControlPeriod = std::chrono::milliseconds{camControlPeriod};
+
+            mCamControlCallbackGroup = create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
+            mCamControlServer = create_service<srv::ControlCam>(
+                    "cam_control",
+                    [this](srv::ControlCam::Request::ConstSharedPtr const& req,
+                           srv::ControlCam::Response::SharedPtr const& res) {
+                        camControlServiceCallback(req, res);
+                    },
+                    rmw_qos_profile_services_default,
+                    mCamControlCallbackGroup);
 
             mPublishDataTimer = create_wall_timer(
                     std::chrono::milliseconds(100),
@@ -74,10 +102,10 @@ namespace mrover {
             mJointData.velocity.resize(mJointNames.size());
             mJointData.effort.resize(mJointNames.size());
 
-            mControllerState.name = mJointNames;
-            mControllerState.state.resize(mJointNames.size());
-            mControllerState.error.resize(mJointNames.size());
-            mControllerState.limit_hit.resize(mJointNames.size());
+            mControllerState.names = mJointNames;
+            mControllerState.states.resize(mJointNames.size());
+            mControllerState.errors.resize(mJointNames.size());
+            mControllerState.limits_hit.resize(mJointNames.size());
         }
 
     private:
@@ -89,17 +117,27 @@ namespace mrover {
         std::shared_ptr<BrushlessController<Revolutions>> mJointDe0;
         std::shared_ptr<BrushlessController<Revolutions>> mJointDe1;
         std::shared_ptr<BrushedController> mGripper;
-        std::shared_ptr<BrushedController> mCam; // rip the solenoid. tentative name until design finalized
-
+        std::shared_ptr<BrushedController> mCam;
 
         rclcpp::Subscription<msg::Throttle>::SharedPtr mArmThrottleSub;
         rclcpp::Subscription<msg::Velocity>::SharedPtr mArmVelocitySub;
         rclcpp::Subscription<msg::Position>::SharedPtr mArmPositionSub;
 
         rclcpp::TimerBase::SharedPtr mDeOffsetTimer;
-        rclcpp::Client<srv::AdjustMotor>::SharedPtr mJointDe0AdjustClient;
-        rclcpp::Client<srv::AdjustMotor>::SharedPtr mJointDe1AdjustClient;
-        std::optional<Vector2<Radians>> mJointDePitchRoll;
+        Radians mJointDePitchOffset, mJointDeRollOffset;
+        std::optional<Vector2<Radians>> mJointDePitchRoll; // position after offset is applied (raw - offset)
+
+        Radians mJointDePitchMaxPosition, mJointDePitchMinPosition;
+        Radians mJointDeRollMaxPosition, mJointDeRollMinPosition;
+
+
+        // The duration in which we command the cam to move in one direction
+        std::chrono::milliseconds mCamControlDuration;
+        // Defines the rate in which we send CAN messages to the cam
+        std::chrono::milliseconds mCamControlPeriod;
+
+        rclcpp::CallbackGroup::SharedPtr mCamControlCallbackGroup;
+        rclcpp::Service<srv::ControlCam>::SharedPtr mCamControlServer;
 
         rclcpp::TimerBase::SharedPtr mPublishDataTimer;
         rclcpp::Publisher<sensor_msgs::msg::JointState>::SharedPtr mJointDataPub;
@@ -146,7 +184,28 @@ namespace mrover {
                 }
             }
 
-            if (jointDePitchThrottle.has_value() && jointDeRollThrottle.has_value()) {
+            if (jointDePitchThrottle.has_value() || jointDeRollThrottle.has_value()) {
+                if (!jointDePitchThrottle.has_value()) {
+                    jointDePitchThrottle = Dimensionless{0};
+                } else if (!jointDeRollThrottle.has_value()) {
+                    jointDeRollThrottle = Dimensionless{0};
+                }
+
+                if (mJointDePitchRoll.has_value()) {
+                    if ((*jointDePitchThrottle > Dimensionless{0} && (*mJointDePitchRoll)[0] >= mJointDePitchMaxPosition) ||
+                        (*jointDePitchThrottle < Dimensionless{0} && (*mJointDePitchRoll)[0] <= mJointDePitchMinPosition)) {
+                        RCLCPP_INFO(get_logger(), "Joint DE Pitch limit hit!");
+                        jointDePitchThrottle = Dimensionless{0};
+                    }
+                    if ((*jointDeRollThrottle > Dimensionless{0} && (*mJointDePitchRoll)[1] >= mJointDeRollMaxPosition) ||
+                        (*jointDeRollThrottle < Dimensionless{0} && (*mJointDePitchRoll)[1] <= mJointDeRollMinPosition)) {
+                        RCLCPP_INFO(get_logger(), "Joint DE Roll limit hit!");
+                        jointDeRollThrottle = Dimensionless{0};
+                    }
+                } else {
+                    RCLCPP_WARN(get_logger(), "Commanding Joint DE throttle with no position readings! No limits will be enforced");
+                }
+
                 Vector2<Dimensionless> const pitchRollThrottles{jointDePitchThrottle.value(), jointDeRollThrottle.value()};
                 Vector2<Dimensionless> const motorThrottles = PITCH_ROLL_TO_0_1 * pitchRollThrottles;
 
@@ -193,7 +252,28 @@ namespace mrover {
                 }
             }
 
-            if (jointDePitchVelocity.has_value() && jointDeRollVelocity.has_value()) {
+            if (jointDePitchVelocity.has_value() || jointDeRollVelocity.has_value()) {
+                if (!jointDePitchVelocity.has_value()) {
+                    jointDePitchVelocity = RadiansPerSecond{0};
+                } else if (!jointDeRollVelocity.has_value()) {
+                    jointDeRollVelocity = RadiansPerSecond{0};
+                }
+
+                if (mJointDePitchRoll.has_value()) {
+                    if ((*jointDePitchVelocity > RadiansPerSecond{0} && (*mJointDePitchRoll)[0] >= mJointDePitchMaxPosition) ||
+                        (*jointDePitchVelocity < RadiansPerSecond{0} && (*mJointDePitchRoll)[0] <= mJointDePitchMinPosition)) {
+                        RCLCPP_INFO(get_logger(), "Joint DE Pitch limit hit!");
+                        jointDePitchVelocity = RadiansPerSecond{0};
+                    }
+                    if ((*jointDeRollVelocity > RadiansPerSecond{0} && (*mJointDePitchRoll)[1] >= mJointDeRollMaxPosition) ||
+                        (*jointDeRollVelocity < RadiansPerSecond{0} && (*mJointDePitchRoll)[1] <= mJointDeRollMinPosition)) {
+                        RCLCPP_INFO(get_logger(), "Joint DE Roll limit hit!");
+                        jointDeRollVelocity = RadiansPerSecond{0};
+                    }
+                } else {
+                    RCLCPP_WARN(get_logger(), "Commanding Joint DE velocity with no position readings! No limits will be enforced");
+                }
+
                 Vector2<RadiansPerSecond> const pitchRollVelocities{jointDePitchVelocity.value(), jointDeRollVelocity.value()};
                 Vector2<RadiansPerSecond> const motorVelocities = PITCH_ROLL_TO_01_SCALE * PITCH_ROLL_TO_0_1 * pitchRollVelocities;
 
@@ -239,7 +319,27 @@ namespace mrover {
                         break;
                 }
 
-                if (jointDePitchPosition.has_value() && jointDeRollPosition.has_value()) {
+                if (jointDePitchPosition.has_value() || jointDeRollPosition.has_value()) {
+                    if (!mJointDePitchRoll.has_value()) {
+                        RCLCPP_WARN(get_logger(), "Commanding Joint DE position with no position readings! Not commanding position");
+                        return;
+                    }
+
+                    if (!jointDePitchPosition.has_value()) {
+                        jointDePitchPosition = (*mJointDePitchRoll)[0];
+                    } else if (!jointDeRollPosition.has_value()) {
+                        jointDeRollPosition = (*mJointDePitchRoll)[1];
+                    }
+
+                    if ((*jointDePitchPosition >= mJointDePitchMaxPosition) || (*jointDePitchPosition <= mJointDePitchMinPosition)) {
+                        RCLCPP_INFO(get_logger(), "Joint DE Pitch limit hit!");
+                        jointDePitchPosition = (*mJointDePitchRoll)[0];
+                    }
+                    if ((*jointDeRollPosition >= mJointDeRollMaxPosition) || (*jointDeRollPosition <= mJointDeRollMinPosition)) {
+                        RCLCPP_INFO(get_logger(), "Joint DE Roll limit hit!");
+                        jointDeRollPosition = (*mJointDePitchRoll)[1];
+                    }
+
                     Vector2<Radians> const pitchRollPositions{jointDePitchPosition.value(), jointDeRollPosition.value()};
                     Vector2<Radians> motorPositions = PITCH_ROLL_TO_01_SCALE * PITCH_ROLL_TO_0_1 * pitchRollPositions;
 
@@ -269,8 +369,8 @@ namespace mrover {
             mJointData.velocity[2] = {RadiansPerSecond{mJointC->getVelocity()}.get()};
             mJointData.effort[2] = {mJointC->getEffort()};
 
-            auto const pitchWrapped = wrapAngle(Radians{mJointDe0->getPosition()}.get());
-            auto const rollWrapped = wrapAngle(Radians{mJointDe1->getPosition()}.get());
+            auto const pitchWrapped = wrapAngle((Radians{mJointDe0->getPosition()} - mJointDePitchOffset).get());
+            auto const rollWrapped = wrapAngle((Radians{mJointDe1->getPosition()} - mJointDeRollOffset).get());
             mJointDePitchRoll = {pitchWrapped, rollWrapped};
 
             mJointData.position[3] = pitchWrapped;
@@ -291,33 +391,33 @@ namespace mrover {
 
             mJointDataPub->publish(mJointData);
 
-            mControllerState.state[0] = {mJointA->getState()};
-            mControllerState.error[0] = {mJointA->getErrorState()};
-            mControllerState.limit_hit[0] = {mJointA->getLimitsHitBits()};
+            mControllerState.states[0] = {mJointA->getState()};
+            mControllerState.errors[0] = {mJointA->getErrorState()};
+            mControllerState.limits_hit[0] = {mJointA->getLimitsHitBits()};
 
-            mControllerState.state[1] = {mJointB->getState()};
-            mControllerState.error[1] = {mJointB->getErrorState()};
-            mControllerState.limit_hit[1] = {mJointB->getLimitsHitBits()};
+            mControllerState.states[1] = {mJointB->getState()};
+            mControllerState.errors[1] = {mJointB->getErrorState()};
+            mControllerState.limits_hit[1] = {mJointB->getLimitsHitBits()};
 
-            mControllerState.state[2] = {mJointC->getState()};
-            mControllerState.error[2] = {mJointC->getErrorState()};
-            mControllerState.limit_hit[2] = {mJointC->getLimitsHitBits()};
+            mControllerState.states[2] = {mJointC->getState()};
+            mControllerState.errors[2] = {mJointC->getErrorState()};
+            mControllerState.limits_hit[2] = {mJointC->getLimitsHitBits()};
 
-            mControllerState.state[3] = {mJointDe0->getState()};
-            mControllerState.error[3] = {mJointDe0->getErrorState()};
-            mControllerState.limit_hit[3] = {mJointDe0->getLimitsHitBits()};
+            mControllerState.states[3] = {mJointDe0->getState()};
+            mControllerState.errors[3] = {mJointDe0->getErrorState()};
+            mControllerState.limits_hit[3] = {mJointDe0->getLimitsHitBits()};
 
-            mControllerState.state[4] = {mJointDe1->getState()};
-            mControllerState.error[4] = {mJointDe1->getErrorState()};
-            mControllerState.limit_hit[4] = {mJointDe1->getLimitsHitBits()};
+            mControllerState.states[4] = {mJointDe1->getState()};
+            mControllerState.errors[4] = {mJointDe1->getErrorState()};
+            mControllerState.limits_hit[4] = {mJointDe1->getLimitsHitBits()};
 
-            mControllerState.state[5] = {mGripper->getState()};
-            mControllerState.error[5] = {mGripper->getErrorState()};
-            mControllerState.limit_hit[5] = {mGripper->getLimitsHitBits()};
+            mControllerState.states[5] = {mGripper->getState()};
+            mControllerState.errors[5] = {mGripper->getErrorState()};
+            mControllerState.limits_hit[5] = {mGripper->getLimitsHitBits()};
 
-            mControllerState.state[6] = {mCam->getState()};
-            mControllerState.error[6] = {mCam->getErrorState()};
-            mControllerState.limit_hit[6] = {mCam->getLimitsHitBits()};
+            mControllerState.states[6] = {mCam->getState()};
+            mControllerState.errors[6] = {mCam->getErrorState()};
+            mControllerState.limits_hit[6] = {mCam->getLimitsHitBits()};
 
             mControllerStatePub->publish(mControllerState);
         }
@@ -326,17 +426,53 @@ namespace mrover {
             if (!mJointDePitchRoll) return;
 
             Vector2<Radians> motorPositions = PITCH_ROLL_TO_01_SCALE * PITCH_ROLL_TO_0_1 * mJointDePitchRoll.value();
-            {
-                auto adjust = std::make_shared<srv::AdjustMotor::Request>();
-                adjust->name = "joint_de_0";
-                adjust->value = {motorPositions[0].get()};
-                mJointDe0AdjustClient->async_send_request(adjust);
+            mJointDe0->adjust(motorPositions[0]);
+            mJointDe1->adjust(motorPositions[1]);
+        }
+
+        auto camIn() -> void {
+            auto endTime = get_clock()->now() + mCamControlDuration;
+            while (get_clock()->now() < endTime) {
+                mCam->setDesiredThrottle(-1.0);
+                std::this_thread::sleep_for(mCamControlPeriod);
             }
-            {
-                auto adjust = std::make_shared<srv::AdjustMotor::Request>();
-                adjust->name = "joint_de_1";
-                adjust->value = {motorPositions[1].get()};
-                mJointDe1AdjustClient->async_send_request(adjust);
+        }
+
+        auto camOut() -> void {
+            auto endTime = get_clock()->now() + mCamControlDuration;
+            while (get_clock()->now() < endTime) {
+                mCam->setDesiredThrottle(1.0);
+                std::this_thread::sleep_for(mCamControlPeriod);
+            }
+        }
+
+        auto camPulse() -> void {
+            camOut();
+            std::this_thread::sleep_for(mCamControlDuration);
+            camIn();
+        }
+
+        auto camControlServiceCallback(srv::ControlCam::Request::ConstSharedPtr const& req, srv::ControlCam::Response::SharedPtr const& res) -> void {
+            switch (req->action) {
+                case srv::ControlCam::Request::CAM_IN: {
+                    camIn();
+                    res->success = true;
+                    break;
+                }
+                case srv::ControlCam::Request::CAM_OUT: {
+                    camOut();
+                    res->success = true;
+                    break;
+                }
+                case srv::ControlCam::Request::CAM_PULSE: {
+                    camPulse();
+                    res->success = true;
+                    break;
+                }
+                default: {
+                    res->success = false;
+                    break;
+                }
             }
         }
     };
@@ -346,7 +482,11 @@ auto main(int argc, char** argv) -> int {
     rclcpp::init(argc, argv);
     auto arm_hw_bridge = std::make_shared<mrover::ArmHWBridge>();
     arm_hw_bridge->init();
-    rclcpp::spin(arm_hw_bridge);
+
+    rclcpp::executors::MultiThreadedExecutor executor;
+    executor.add_node(arm_hw_bridge);
+    executor.spin();
+
     rclcpp::shutdown();
     return EXIT_SUCCESS;
 }

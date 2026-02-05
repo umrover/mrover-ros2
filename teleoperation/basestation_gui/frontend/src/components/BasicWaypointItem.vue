@@ -1,52 +1,70 @@
 <template>
   <div
-    class="shadow my-1 p-3 rounded waypoint-item"
+    class="waypoints p-2"
     v-bind:class="{ 'drone-waypoint': waypoint.drone }"
   >
-    <div class="name">
-      <p>{{ waypoint.name }}</p>
+    <div class="waypoint-header mb-1">
+      <h5 class="mb-0">{{ waypoint.name }}</h5>
+      <span class="badge bg-secondary">{{ index }}</span>
     </div>
-    <div class="location">
-      <p>{{ waypoint.lat }}ºN, {{ waypoint.lon }}ºW</p>
+
+    <div class="coordinates mb-2 w-100">
+      <p class="coordinate m-0">{{ waypoint.latLng.lat.toFixed(5) }}ºN</p>
+      <span class="mx-2">|</span>
+      <p class="coordinate m-0">{{ waypoint.latLng.lng.toFixed(5) }}ºW</p>
     </div>
-    <div class="text-center">
-      <button class="btn btn-danger" @click="$emit('delete', { index: index })">Delete</button>
-      <button class="btn btn-success" @click="$emit('find', { index: index })">Find</button>
-      <button class="btn btn-success" @click="$emit('search', {index: index})">Search</button>
+
+    <div class="d-flex w-100 gap-2">
+      <button class="btn btn-success btn-sm w-100" @click="$emit('find', { index: index })">Find</button>
+      <button class="btn btn-success btn-sm w-100" @click="$emit('search', {index: index})">Search</button>
+      <button class="btn btn-danger btn-sm w-100" @click="$emit('delete', { index: index })">Delete</button>
     </div>
   </div>
 </template>
 
-<script lang="ts">
-import { defineComponent } from 'vue'
-import { mapGetters } from 'vuex'
-
-export default defineComponent({
-  props: {
-    waypoint: {
-      type: Object,
-      required: true
-    },
-    index: {
-      type: Number,
-      required: true
-    }
+<script lang="ts" setup>
+defineProps({
+  waypoint: {
+    type: Object,
+    required: true
   },
-
-  computed: {
-    ...mapGetters('erd', {
-      highlightedWaypoint: 'highlightedWaypoint'
-    })
+  index: {
+    type: Number,
+    required: true
   }
 })
 </script>
 
 <style scoped>
-button {
-  margin: 0px 2px 0px 2px;
+.waypoints {
+  background-color: var(--card-bg);
+  border-radius: 6px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.waypoint-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.coordinates {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.coordinate {
+  text-align: center;
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .drone-waypoint {
-  background-color: limegreen;
+  background-color: #bbeeff;
+  border: 1px solid cyan;
 }
 </style>

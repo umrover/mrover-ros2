@@ -1,3 +1,6 @@
 #!/bin/bash
+
+export RCUTILS_CONSOLE_OUTPUT_FORMAT="[{severity}] {message}"
+
 cd teleoperation/basestation_gui || exit 1
-python3 manage.py runserver
+exec python3 server.py

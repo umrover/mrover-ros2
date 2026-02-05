@@ -1,89 +1,102 @@
 <template>
-  <div class="wrap">
-    <div class="box">
-      <div class="form-group">
-        <label for="waypointname">Name:</label>
-        <input class="form-control" id="waypointname" v-model="name" />
-      </div>
-
-      <div class="form-check form-check-inline">
-        <input
-          v-model="odom_format_in"
-          class="form-check-input"
-          type="radio"
-          id="radioD"
-          value="D"
-        />
-        <label class="form-check-label" for="radioD">D</label>
-      </div>
-      <div class="form-check form-check-inline">
-        <input
-          v-model="odom_format_in"
-          class="form-check-input"
-          type="radio"
-          id="radioDM"
-          value="DM"
-        />
-        <label class="form-check-label" for="radioDM">DM</label>
-      </div>
-      <div class="form-check form-check-inline">
-        <input
-          v-model="odom_format_in"
-          class="form-check-input"
-          type="radio"
-          id="radioDMS"
-          value="DMS"
-        />
-        <label class="form-check-label" for="radioDMS">DMS</label>
-      </div>
-
-      <div class="row">
-        <div class="col input-group">
-          <input class="form-control" id="deg1" v-model.number="input.lat.d" />
-          <span for="deg1" class="input-group-text">º</span>
+  <div class="wrapper d-flex m-0 p-2 justify-content-between gap-3 w-100 h-100">
+    <!-- Left Column: Controls & Creation -->
+    <div class="d-flex flex-column w-100 gap-2">
+      <!-- New Waypoint Form -->
+      <div class="d-flex flex-column gap-2 border border-2 rounded p-2">
+        <div class="d-flex align-items-center">
+          <label for="waypointname" class="form-label m-0 me-2">Name:</label>
+          <div class="col">
+            <input class="form-control" id="waypointname" v-model="name" />
+          </div>
         </div>
-        <div v-if="min_enabled" class="col input-group">
-          <input class="form-control" id="min1" v-model.number="input.lat.m" />
-          <span for="min1" class="input-group-text">'</span>
+        <div class="d-flex gap-2">
+          <div class="flex-fill input-group">
+            <input class="form-control" id="deg1" v-model.number="input.lat.d" />
+            <span class="input-group-text font-monospace px-2">ºN</span>
+          </div>
+          <div class="flex-fill input-group">
+            <input class="form-control" id="deg2" v-model.number="input.lon.d" />
+            <span class="input-group-text font-monospace px-2">ºW</span>
+          </div>
         </div>
-        <div v-if="sec_enabled" class="col input-group">
-          <input class="form-control" id="sec1" v-model.number="input.lat.s" />
-          <span for="sec1" class="input-group-text">"</span>
-        </div>
-        N
-      </div>
-      <div class="row">
-        <div class="col input-group">
-          <input class="form-control" id="deg2" v-model.number="input.lon.d" />
-          <span for="deg2" class="input-group-text">º</span>
-        </div>
-        <div v-if="min_enabled" class="col input-group">
-          <input class="form-control" id="min2" v-model.number="input.lon.m" />
-          <span for="min2" class="input-group-text">'</span>
-        </div>
-        <div v-if="sec_enabled" class="col input-group">
-          <input class="form-control" id="sec2" v-model.number="input.lon.s" />
-          <span for="sec2" class="input-group-text">"</span>
-        </div>
-        W
-      </div>
-
-      <div class="add-drop">
-        <button class="btn btn-primary" @click="addWaypoint(input, false)">Add Waypoint</button>
-        <button class="btn btn-primary" @click="addWaypoint(formatted_odom, false)">
-          Drop Waypoint
+        <button class="btn btn-success" @click="addWaypoint(input, false)">
+          Add Waypoint
         </button>
-        <button v-if="droneWaypointButton" class="btn btn-primary" @click="addWaypoint(input, true)">
+      </div>
+
+      <!-- Rover Controls -->
+      <div class="border border-2 rounded p-2 gap-2 d-flex flex-column">
+        <div class="d-flex justify-content-between align-items-center gap-2">
+          <h4>Rover</h4>
+          <button
+            v-if="!isRecordingRover"
+            class="btn btn-success btn-sm"
+            @click="startRecording(false)"
+          >
+            Start Recording
+          </button>
+          <button
+            v-if="isRecordingRover"
+            class="btn btn-danger btn-sm"
+            @click="stopRecording"
+          >
+            Stop Recording
+          </button>
+        </div>
+        <button
+          class="btn btn-success"
+          @click="addWaypoint(formatted_odom, false)"
+        >
+          Drop Waypoint at Rover
+        </button>
+      </div>
+
+      <!-- Drone Controls (Conditional) -->
+      <div v-if="enableDrone" class="border border-2 rounded d-flex flex-column p-2 gap-2">
+        <div class="d-flex justify-content-between align-items-center gap-2">
+          <h4>Drone</h4>
+          <button
+            v-if="!isRecordingDrone"
+            class="btn btn-success btn-sm"
+            @click="startRecording(true)"
+          >
+            Start Recording
+          </button>
+          <button
+            v-if="isRecordingDrone"
+            class="btn btn-danger btn-sm"
+            @click="stopRecording"
+          >
+            Stop Recording
+          </button>
+        </div>
+        <button class="btn btn-info" @click="addWaypoint(input, true)">
           Add Drone Position
         </button>
       </div>
-    </div>
-    <div class="box">
-      <div class="all-waypoints">
-        <h4 class="waypoint-headers">Waypoints</h4>
-        <button class="btn btn-primary" @click="clearWaypoint">Clear Waypoints</button>
+
+      <!-- Action Buttons -->
+      <button class="btn btn-success" @click="showRecordingsModal = true">
+        View Recordings
+      </button>
+      <div class="d-flex gap-2">
+        <button class="btn btn-danger flex-fill" @click="clearAllWaypoints">
+          Clear Waypoints
+        </button>
+        <button class="btn btn-danger flex-fill" @click="clearAllRecordings">
+          Clear Recordings
+        </button>
       </div>
-      <div class="waypoints">
+    </div>
+
+    <!-- Right Column: Active Route List -->
+    <div class="d-flex flex-column w-100">
+      <div class="d-flex mb-2 align-items-center justify-content-between">
+        <h4 class="m-0 p-0">Current Course</h4>
+        <button class="btn btn-danger" @click="clearWaypoint">Clear</button>
+      </div>
+      <div class="waypoint-wrapper overflow-y-scroll d-flex flex-column gap-2 flex-grow-1">
         <WaypointItem
           v-for="(waypoint, i) in storedWaypoints"
           :key="i"
@@ -95,249 +108,210 @@
         />
       </div>
     </div>
+
+    <RecordingsModal
+      :show="showRecordingsModal"
+      @close="showRecordingsModal = false"
+    />
   </div>
 </template>
 
-<script lang="ts">
-import { convertDMS } from '../utils.js'
+<script lang="ts" setup>
+import { ref, computed, watch, onMounted } from 'vue'
 import WaypointItem from './BasicWaypointItem.vue'
-import { mapMutations, mapGetters, mapActions, mapState } from 'vuex'
-import _ from 'lodash'
+import RecordingsModal from './RecordingsModal.vue'
+import { useErdStore } from '@/stores/erd'
+import { useWebsocketStore } from '@/stores/websocket'
+import { storeToRefs } from 'pinia'
 import L from 'leaflet'
+import { waypointsAPI, recordingAPI } from '@/utils/api'
+import type { StoreWaypoint, APIBasicWaypoint } from '@/types/waypoints'
+import type { NavMessage } from '@/types/coordinates'
 
-export default {
-  props: {
-    odom: {
-      type: Object,
-      default: () => ({latitude_deg: 0, longitude_deg: 0, bearing_deg: 0})
-    },
-    droneWaypointButton: {
-      type: Boolean,
-      required: false
-    }
+defineProps({
+  enableDrone: {
+    type: Boolean,
+    required: false,
   },
+})
 
-  data() {
-    return {
-      name: 'Waypoint',
-      odom_format_in: 'DM',
-      input: {
-        lat: {
-          d: 0,
-          m: 0,
-          s: 0
-        },
-        lon: {
-          d: 0,
-          m: 0,
-          s: 0
-        }
-      },
+const erdStore = useErdStore()
+const { highlightedWaypoint, searchWaypoint, clickPoint } = storeToRefs(erdStore)
+const { setWaypointList, setHighlightedWaypoint, setSearchWaypoint } = erdStore
 
-      storedWaypoints: []
+const websocketStore = useWebsocketStore()
+const { messages } = storeToRefs(websocketStore)
+
+const rover_latitude_deg = ref(0)
+const rover_longitude_deg = ref(0)
+
+const name = ref('Waypoint')
+const input = ref({
+  lat: { d: 0 },
+  lon: { d: 0 },
+})
+const storedWaypoints = ref<StoreWaypoint[]>([])
+
+const isRecordingRover = ref(false)
+const isRecordingDrone = ref(false)
+const currentRecordingId = ref<number | null>(null)
+const showRecordingsModal = ref(false)
+
+const formatted_odom = computed(() => {
+  return {
+    lat: { d: rover_latitude_deg.value },
+    lon: { d: rover_longitude_deg.value },
+  }
+})
+
+const navMessage = computed(() => messages.value['nav'])
+
+watch(navMessage, async msg => {
+  if (!msg) return
+  const navMsg = msg as NavMessage
+
+  if (navMsg.type === 'gps_fix') {
+    rover_latitude_deg.value = navMsg.latitude
+    rover_longitude_deg.value = navMsg.longitude
+  }
+})
+
+// Watch waypoints to sync with Backend
+watch(storedWaypoints, async (newList) => {
+  setWaypointList(newList) // Update map
+  
+  try {
+    const apiWaypoints: APIBasicWaypoint[] = newList.map(wp => ({
+      name: wp.name,
+      lat: wp.latLng.lat,
+      lon: wp.latLng.lng,
+      drone: wp.drone,
+    }))
+    await waypointsAPI.saveBasic(apiWaypoints)
+  } catch (error) {
+    console.error('Failed to save waypoints:', error)
+  }
+}, { deep: true })
+
+// Watch map clicks
+watch(clickPoint, newClickPoint => {
+  input.value.lat.d = newClickPoint.lat
+  input.value.lon.d = newClickPoint.lon
+})
+
+onMounted(() => {
+  setHighlightedWaypoint(-1)
+  setSearchWaypoint(-1)
+  setWaypointList([])
+  setTimeout(() => loadWaypoints(), 250)
+})
+
+const loadWaypoints = async () => {
+  try {
+    const data = await waypointsAPI.getBasic()
+    if (data.status === 'success' && data.waypoints) {
+      storedWaypoints.value = data.waypoints.map((wp: APIBasicWaypoint) => ({
+        name: wp.name,
+        latLng: L.latLng(wp.lat, wp.lon),
+        drone: wp.drone,
+      }))
     }
-  },
+  } catch (error) {
+    console.error('Failed to load waypoints:', error)
+  }
+}
 
-  methods: {
-    ...mapActions('websocket', ['sendMessage']),
+const addWaypoint = (coord: { lat: { d: number }, lon: { d: number } }, isDrone: boolean) => {
+  storedWaypoints.value.push({
+    name: name.value,
+    latLng: L.latLng(coord.lat.d, coord.lon.d),
+    drone: isDrone,
+  })
+}
 
-    ...mapMutations('erd', {
-      setWaypointList: 'setWaypointList',
-      setHighlightedWaypoint: 'setHighlightedWaypoint',
-      setSearchWaypoint: 'setSearchWaypoint'
-    }),
+const deleteItem = (payload: { index: number }) => {
+  if (highlightedWaypoint.value == payload.index) setHighlightedWaypoint(-1)
+  if (searchWaypoint.value == payload.index) setSearchWaypoint(-1)
+  storedWaypoints.value.splice(payload.index, 1)
+}
 
-    ...mapMutations('map', {
-      setOdomFormat: 'setOdomFormat'
-    }),
+const findWaypoint = (payload: { index: number }) => {
+  setHighlightedWaypoint(payload.index === highlightedWaypoint.value ? -1 : payload.index)
+}
 
-    deleteItem: function (payload: { index: number }) {
-      if (this.highlightedWaypoint == payload.index) {
-        this.setHighlightedWaypoint(-1)
-      }
-      if (this.searchWaypoint == payload.index) {
-        this.setSearchWaypoint(-1)
-      }
-      this.storedWaypoints.splice(payload.index, 1)
-    },
+const searchForWaypoint = (payload: { index: number }) => {
+  setSearchWaypoint(payload.index === searchWaypoint.value ? -1 : payload.index)
+}
 
-    addWaypoint: function (
-      coord: {
-        lat: { d: number; m: number; s: number }
-        lon: { d: number; m: number; s: number }
-      },
-      isDrone: boolean
-    ) {
-      this.storedWaypoints.push({
-        name: this.name,
-        lat: (coord.lat.d + coord.lat.m / 60 + coord.lat.s / 3600).toFixed(5),
-        lon: (coord.lon.d + coord.lon.m / 60 + coord.lon.s / 3600).toFixed(5),
-        drone: isDrone
-      })
-    },
+const clearWaypoint = () => {
+  storedWaypoints.value = []
+}
 
-    findWaypoint: function (payload: { index: number }) {
-      if (payload.index === this.highlightedWaypoint) {
-        this.setHighlightedWaypoint(-1)
+const clearAllWaypoints = async () => {
+  if (!confirm('Are you sure you want to delete all waypoints? This cannot be undone.')) return
+  try {
+    await waypointsAPI.deleteAll()
+    storedWaypoints.value = []
+  } catch (error) {
+    console.error('Failed to clear waypoints:', error)
+  }
+}
+
+const clearAllRecordings = async () => {
+  if (!confirm('Are you sure you want to delete all recordings? This cannot be undone.')) return
+  try {
+    await recordingAPI.deleteAll()
+  } catch (error) {
+    console.error('Failed to clear recordings:', error)
+  }
+}
+
+const startRecording = async (isDrone: boolean) => {
+  try {
+    const recordingName = `${isDrone ? 'Drone' : 'Rover'} Recording ${new Date().toLocaleString()}`
+    const response = await recordingAPI.create(recordingName, isDrone)
+
+    if (response.status === 'success' && response.recording_id) {
+      currentRecordingId.value = response.recording_id
+
+      if (isDrone) {
+        isRecordingDrone.value = true
       } else {
-        this.setHighlightedWaypoint(payload.index)
+        isRecordingRover.value = true
       }
-    },
 
-    searchForWaypoint: function (payload: { index: number }) {
-      if (payload.index === this.searchWaypoint) {
-        this.setSearchWaypoint(-1)
-      } else {
-        this.setSearchWaypoint(payload.index)
-      }
-    },
-
-    clearWaypoint: function () {
-      this.storedWaypoints = []
+      console.log(`Recording started: ${recordingName} (ID: ${response.recording_id})`)
+    } else {
+      console.error('Failed to start recording:', response.message)
     }
-  },
+  } catch (error) {
+    console.error('Error starting recording:', error)
+  }
+}
 
-  watch: {
-    storedWaypoints: {
-      handler: function (newList) {
-        const waypoints = newList.map((waypoint: { lat: any; lon: any; name: any; drone: any }) => {
-          return {
-            latLng: L.latLng(waypoint.lat, waypoint.lon),
-            name: waypoint.name,
-            drone: waypoint.drone
-          }
-        })
-        this.setWaypointList(waypoints)
-        this.sendMessage({ type: 'save_basic_waypoint_list', data: newList })
-      },
-      deep: true
-    },
+const stopRecording = async () => {
+  try {
+    const response = await recordingAPI.stop()
 
-    message: {
-      handler: function (msg) {
-        if (msg.type == 'get_basic_waypoint_list') {
-          // Get waypoints from server on page load
-          this.storedWaypoints = msg.data
-          const waypoints = msg.data.map((waypoint: { lat: any; lon: any; name: any }) => {
-            const lat = waypoint.lat
-            const lon = waypoint.lon
-            return { latLng: L.latLng(lat, lon), name: waypoint.name }
-          })
-          this.setWaypointList(waypoints)
-        }
-      },
-      deep: true
-    },
-
-    odom_format_in: function (newOdomFormat) {
-      this.setOdomFormat(newOdomFormat)
-      this.input.lat = convertDMS(this.input.lat, newOdomFormat)
-      this.input.lon = convertDMS(this.input.lon, newOdomFormat)
-    },
-
-    clickPoint: function (newClickPoint) {
-      this.input.lat.d = newClickPoint.lat
-      this.input.lon.d = newClickPoint.lon
-      this.input.lat.m = 0
-      this.input.lon.m = 0
-      this.input.lat.s = 0
-      this.input.lon.s = 0
-      this.input.lat = convertDMS(this.input.lat, this.odom_format_in)
-      this.input.lon = convertDMS(this.input.lon, this.odom_format_in)
+    if (response.status === 'success') {
+      console.log(`Recording stopped`)
+    } else {
+      console.error('Failed to stop recording:', response.message)
     }
-  },
-
-  created: function () {
-    // Reset waypoint editors
-    this.setHighlightedWaypoint(-1)
-    this.setSearchWaypoint(-1)
-    this.setWaypointList([])
-
-    // Set odometer format
-    this.odom_format_in = this.odom_format
-
-    window.setTimeout(() => {
-      // Timeout so websocket will be initialized
-      this.sendMessage({ type: 'get_basic_waypoint_list', data: null })
-    }, 250)
-  },
-
-  computed: {
-    ...mapState('websocket', ['message']),
-    ...mapGetters('erd', {
-      highlightedWaypoint: 'highlightedWaypoint',
-      searchWaypoint: 'searchWaypoint',
-      clickPoint: 'clickPoint'
-    }),
-
-    ...mapGetters('map', {
-      odom_format: 'odomFormat'
-    }),
-
-    min_enabled: function () {
-      return this.odom_format != 'D'
-    },
-
-    sec_enabled: function () {
-      return this.odom_format == 'DMS'
-    },
-
-    formatted_odom: function () {
-      return {
-        lat: convertDMS({ d: this.odom.latitude_deg, m: 0, s: 0 }, this.odom_format),
-        lon: convertDMS({ d: this.odom.longitude_deg, m: 0, s: 0 }, this.odom_format)
-      }
-    }
-  },
-
-  components: {
-    WaypointItem
+  } catch (error) {
+    console.error('Error stopping recording:', error)
+  } finally {
+    isRecordingRover.value = false
+    isRecordingDrone.value = false
+    currentRecordingId.value = null
   }
 }
 </script>
 
 <style scoped>
-.wrap {
-  display: flex;
-  flex-direction: row;
-  height: 100%;
-  margin: auto;
-}
-
-.box {
-  width: 50%;
-  height: 100%;
-  margin-right: 20px;
-}
-
-.dragArea {
-  height: 100%;
-}
-
-.all-waypoints {
-  display: inline-flex;
-  align-items: center;
-}
-
-.all-waypoints button {
-  margin: 5px;
-}
-
-.waypoints {
-  height: 30vh;
-  overflow-y: auto;
-}
-
-.waypoint-headers {
-  margin: auto;
-}
-
-.add-drop {
-  display: flex;
-  text-align: center;
-}
-
-.add-drop button {
-  margin: 10px;
+.waypoint-wrapper {
+  background-color: var(--view-bg);
+  padding: 8px;
+  border-radius: 8px;
 }
 </style>

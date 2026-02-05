@@ -50,18 +50,19 @@ namespace mrover {
                     set_parameter(rclcpp::Parameter(std::format("{}.max_torque", name), 25.0));
                     mControllers.try_emplace(name, shared_from_this(), "jetson", name);
                     mJointState.name.push_back(name);
+                    mControllerState.names.push_back(name);
                 }
                 mJointState.position.resize(mControllers.size());
                 mJointState.velocity.resize(mControllers.size());
                 mJointState.effort.resize(mControllers.size());
 
                 mJointStatePubs.emplace_back(create_publisher<sensor_msgs::msg::JointState>(std::format("drive_{}_joint_data", group), 1));
-                mControllerStatePubs.emplace_back(create_publisher<msg::ControllerState>(std::format("drive_{}_controller_state", group), 1));
+                mControllerStatePubs.emplace_back(create_publisher<msg::ControllerState>(std::format("{}_controller_state", group), 1));
             }
 
-            mControllerState.state.resize(mControllers.size());
-            mControllerState.error.resize(mControllers.size());
-            mControllerState.limit_hit.resize(mControllers.size());
+            mControllerState.states.resize(mControllers.size());
+            mControllerState.errors.resize(mControllers.size());
+            mControllerState.limits_hit.resize(mControllers.size());
 
             // Periodic timer for published motor states
             mPublishDataTimer = create_wall_timer(std::chrono::milliseconds(100), [this]() { publishStatesDataCallback(); });
@@ -131,9 +132,9 @@ namespace mrover {
                 mJointState.velocity[i] = controller.getVelocity().get();
                 mJointState.effort[i] = controller.getEffort();
 
-                mControllerState.state[i] = controller.getState();
-                mControllerState.error[i] = controller.getErrorState();
-                mControllerState.limit_hit[i] = controller.getLimitsHitBits();
+                mControllerState.states[i] = controller.getState();
+                mControllerState.errors[i] = controller.getErrorState();
+                mControllerState.limits_hit[i] = controller.getLimitsHitBits();
             }
             for (auto const& jointPub: mJointStatePubs) {
                 jointPub->publish(mJointState);

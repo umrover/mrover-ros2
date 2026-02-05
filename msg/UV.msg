@@ -1,2 +1,1 @@
-float64 uv_index
-float64 variance
+uint8 uv_index

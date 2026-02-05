@@ -9,13 +9,42 @@ export default defineConfig({
     vue(),
   ],
   publicDir: "public",
-  // resolve: {
-  //   alias: {
-  //     '@': fileURLToPath(new URL('./src', import.meta.url))
-  //   }
-  // },
+  resolve: {
+    alias: {
+      '@': fileURLToPath(new URL('./src', import.meta.url))
+    }
+  },
   server: {
     host: 'localhost',
-    port: 8080
+    port: 8080,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
+      '/ws': {
+        target: 'http://localhost:8000',
+        ws: true,
+      },
+    },
+    watch: {
+      usePolling: true,
+      interval: 1000,
+      ignored: ['**/node_modules/**', '**/.git/**'],
+    },
+  },
+  preview: {
+    host: 'localhost',
+    port: 8080,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
+      '/ws': {
+        target: 'http://localhost:8000',
+        ws: true,
+      },
+    },
   }
 })

@@ -1,11 +1,12 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import Menu from '../components/Menu.vue'
-import DMESTask from '../components/DMESTask.vue'
-import AutonTask from '../components/AutonTask.vue'
-import ISHTask from '../components/ISHTask.vue'
-import SATask from '../components/SATask.vue'
-import Cameras from '../components/Cameras.vue'
-import Rover3D from '../components/Rover3D.vue'
+import Menu from '@/views/HomeView.vue'
+import DMTask from '@/views/DMView.vue'
+import ESTask from '@/views/ESView.vue'
+import AutonTask from '@/views/AutonView.vue'
+import Rover3D from '@/components/Rover3D.vue'
+import ScienceTask from '@/views/ScienceView.vue'
+import DevView from '@/views/DevView.vue'
+
 
 const routes = [
   {
@@ -16,43 +17,36 @@ const routes = [
   {
     path: '/DMTask',
     name: 'DMTask',
-    component: DMESTask,
-    props: {
-      type: 'DM'
-    }
+    component: DMTask,
+    meta: { hasGridLayout: true }
   },
   {
     path: '/ESTask',
     name: 'ESTask',
-    component: DMESTask,
-    props: {
-      type: 'ES'
-    }
+    component: ESTask,
+    meta: { hasGridLayout: true }
   },
   {
     path: '/AutonTask',
     name: 'AutonTask',
-    component: AutonTask
-  },
-  {
-    path: '/SATask',
-    name: 'SATask',
-    component: SATask
-  },
-  {
-    path: '/ISHTask',
-    name: 'ISHTask',
-    component: ISHTask
-  },
-  {
-    path: '/Cameras',
-    name: 'Cameras',
-    component: Cameras
+    component: AutonTask,
+    meta: { hasGridLayout: true }
   },
   {
     path: '/Control',
     name: 'Control',
     component: Rover3D
+  },
+  {
+    path: '/ScienceTask',
+    name: 'ScienceTask',
+    component: ScienceTask,
+    meta: { hasGridLayout: true }
+  },
+  {
+    path: '/dev',
+    name: 'DevView',
+    component: DevView
   }
 ]
 const router = createRouter({

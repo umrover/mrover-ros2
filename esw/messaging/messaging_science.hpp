@@ -4,55 +4,46 @@
 #include <cstdint>
 #include <variant>
 
+#include <units.hpp>
+
 namespace mrover {
 
 #pragma pack(push, 1)
 
-    struct BaseCommand {
-    };
+    struct BaseScienceMessage {};
 
     enum struct ScienceDevice {
-        HEATER_B0,
-        HEATER_N0,
-        HEATER_B1,
-        HEATER_N1,
-        HEATER_B2,
-        HEATER_N2,
-        WHITE_LED_0,
-        WHITE_LED_1,
-        WHITE_LED_2,
-        UV_LED_0,
-        UV_LED_1,
-        UV_LED_2
+        HEATER_0,
+        HEATER_1,
+        WHITE_LED,
     };
 
-    struct EnableScienceDeviceCommand : BaseCommand {
+    struct EnableScienceDeviceCommand : BaseScienceMessage {
         ScienceDevice science_device{};
         bool enable{};
     };
 
-    struct HeaterAutoShutOffCommand : BaseCommand {
+    struct HeaterAutoShutOffCommand : BaseScienceMessage {
         bool enable_auto_shutoff{};
     };
 
-    struct ConfigThermistorAutoShutOffCommand : BaseCommand {
+    struct ConfigThermistorAutoShutOffCommand : BaseScienceMessage {
         float shutoff_temp{};
     };
 
     struct HeaterStateInfo {
-        [[maybe_unused]] std::uint8_t _ignore : 2 {};
-        std::uint8_t on : 6 {};
+        std::uint8_t on : 2 {};
     };
 
-    struct HeaterStateData : BaseCommand {
+    struct HeaterStateData {
         HeaterStateInfo heater_state_info;
     };
 
-    struct ThermistorData : BaseCommand {
-        std::array<float, 6> temps{};
+    struct ThermistorData {
+        std::array<float, 2> temps;
     };
 
-    struct SensorData : BaseCommand {
+    struct SensorData {
         std::uint8_t id;
         double data;
     };
@@ -61,8 +52,7 @@ namespace mrover {
         TEMPERATURE = 1,
         HUMIDITY = 2,
         OXYGEN = 3,
-        METHANE = 4,
-        UV = 5,
+        UV = 4,
     };
 
     using InBoundScienceMessage = std::variant<
@@ -73,4 +63,14 @@ namespace mrover {
 
 #pragma pack(pop)
 
+    // Utility for std::visit with lambdas
+    template<class... Ts>
+    struct overloaded : Ts... {
+        using Ts::operator()...;
+    };
+
 } // namespace mrover
+
+// Macros needed to operate on bitfields
+#define SET_BIT_AT_INDEX(x, index, value) ((x) = ((x) & ~(1 << (index))) | ((value) << (index)))
+#define GET_BIT_AT_INDEX(x, index) ((x) & (1 << (index)))

@@ -19,7 +19,7 @@ def cartesian_to_ij(context: Context, cart_coord: np.ndarray) -> np.ndarray:
     :param cart_coord: array of x and y cartesian coordinates
     :return: array of i and j coordinates for the occupancy grid
     """
-    return np.floor((cart_coord[0:2] - context.env.cost_map.origin) / context.env.cost_map.resolution).astype(np.int8)
+    return np.floor((cart_coord[0:2] - context.env.cost_map.origin) / context.env.cost_map.resolution).astype(np.int32)
 
 
 def ij_to_cartesian(context: Context, ij_coords: np.ndarray) -> np.ndarray:
@@ -67,50 +67,7 @@ def vec_angle(self, v1: tuple, v2: tuple) -> float:
     return abs(angle_rad)
 
 
-def gen_marker(context: Context, point=[0.0, 0.0], color=[1.0, 1.0, 1.0], size=0.2, lifetime=5, id=0) -> Marker:
-    """
-    Creates and publishes a single spherical marker at the specified (x, y, z) coordinates.
-
-    :param point: A tuple or list containing the (x, y) coordinates of the marker.
-                The Z coordinate is set to 0.0 by default.
-    :param context: The context object providing necessary ROS utilities,
-                    such as the node clock for setting the timestamp.
-    :return: A Marker object representing the spherical marker with predefined size and color.
-    """
-
-    marker = Marker()
-    marker.lifetime = Duration(seconds=lifetime).to_msg()
-    marker.header = Header(frame_id="map")
-    marker.header.stamp = context.node.get_clock().now().to_msg()
-
-    marker.ns = "single_point"
-    marker.id = id
-    marker.type = Marker.SPHERE
-    marker.action = Marker.ADD
-
-    # Set the scale (size) of the sphere
-    marker.scale.x = size
-    marker.scale.y = size
-    marker.scale.z = size
-
-    # Set the color (RGBA)
-    marker.color.r = color[0]
-    marker.color.g = color[1]
-    marker.color.b = color[2]
-    marker.color.a = 1.0  # fully opaque
-
-    # Define the position
-    marker.pose.position.x = point[0]
-    marker.pose.position.y = point[1]
-    marker.pose.position.z = 0.0
-
-    # Orientation is irrelevant for a sphere but must be valid
-    marker.pose.orientation.w = 1.0
-
-    return marker
-
-
-def segment_path(context: Context, dest: np.ndarray, seg_len: float = 0.5):
+def segment_path(context: Context, dest: np.ndarray, seg_len: float = 2.0):
     """
     Segment the path from the rover's current position to the current waypoint into equally spaced points
 
@@ -143,15 +100,11 @@ def segment_path(context: Context, dest: np.ndarray, seg_len: float = 0.5):
         traj_path = np.concatenate((temp, np.array([dest])), axis=0)  #
 
     # Create a Trajectory object from the segmented path
-    segmented_trajectory = Trajectory(np.hstack((traj_path, np.zeros((traj_path.shape[0], 1)))))
-
-    context.node.get_logger().info(f"Segmented path: {segmented_trajectory.coordinates}")
+    segmented_trajectory = Trajectory(np.hstack((traj_path, np.zeros((traj_path.shape[0], 1))))[1:])
     return segmented_trajectory
 
 
-def is_high_cost_point(point: np.ndarray, context: Context, min_cost=0.2) -> bool:
-    if not context.node.get_parameter("search.use_costmap").value:
-        return False
+def is_high_cost_point(point: np.ndarray, context: Context) -> bool:
     cost_map = context.env.cost_map.data
 
     point_ij = cartesian_to_ij(context=context, cart_coord=point)
@@ -159,4 +112,4 @@ def is_high_cost_point(point: np.ndarray, context: Context, min_cost=0.2) -> boo
     if not (0 <= int(point_ij[0]) < cost_map.shape[0] and 0 <= int(point_ij[1]) < cost_map.shape[1]):
         context.node.get_logger().warn("Point is out of bounds in the costmap")
         return False
-    return cost_map[int(point_ij[0])][int(point_ij[1])] > min_cost
+    return cost_map[int(point_ij[0])][int(point_ij[1])] > context.node.get_parameter("search.traversable_cost").value

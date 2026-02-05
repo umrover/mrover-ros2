@@ -1,108 +1,120 @@
 <template>
-  <div class='wrap'>
-    <h2>Arm Controls</h2>
-    <div class='controls-flex'>
-      <h4>Mode</h4>
-        <input v-model='mode' type="radio" class="btn-check" name="options-outlined" id="disabled" value='disabled' autocomplete="off" checked>
-        <label class="btn btn-outline-danger" for="disabled">Disabled</label>
-        <input v-model='mode' type="radio" class="btn-check" name="options-outlined" id="throttle" value='throttle' autocomplete="off">
-        <label class="btn btn-outline-success" for="throttle">Throttle</label>
-        <input v-model='mode' type="radio" class="btn-check" name="options-outlined" id="ik-pos" value='ik-pos' autocomplete="off">
-        <label class="btn btn-outline-success" for="ik-pos">IK Position</label>
-        <input v-model='mode' type="radio" class="btn-check" name="options-outlined" id="ik-vel" value='ik-vel' autocomplete="off">
-        <label class="btn btn-outline-success" for="ik-vel">IK Velocity</label>
+  <div class="d-flex flex-column align-items-center">
+    <div class="d-flex flex-column gap-2 align-items-center">
+      <div class="d-flex justify-content-between align-items-center w-100">
+        <h4 class="m-0">Arm Controls</h4>
+        <IndicatorDot :is-active="controllerConnected" class="me-2" />
+      </div>
+      <div
+      class="btn-group d-flex justify-content-between"
+      role="group"
+      aria-label="Arm mode selection"
+      >
+        <button
+          type="button"
+          class="btn flex-fill"
+          :class="mode === 'disabled' ? 'btn-danger' : 'btn-outline-danger'"
+          @click="newRAMode('disabled')"
+        >
+        Disabled
+      </button>
+      <button
+          type="button"
+          class="btn flex-fill"
+          :class="mode === 'throttle' ? 'btn-success' : 'btn-outline-success'"
+          @click="newRAMode('throttle')"
+        >
+          Throttle
+        </button>
+        <button
+          type="button"
+          class="btn flex-fill"
+          :class="mode === 'ik-pos' ? 'btn-success' : 'btn-outline-success'"
+          @click="newRAMode('ik-pos')"
+        >
+          IK Pos
+        </button>
+        <button
+          type="button"
+          class="btn flex-fill"
+          :class="mode === 'ik-vel' ? 'btn-success' : 'btn-outline-success'"
+          @click="newRAMode('ik-vel')"
+        >
+          IK Vel
+        </button>
+      </div>
+      <GamepadDisplay :axes="axes" :buttons="buttons" layout="horizontal" />
     </div>
   </div>
 </template>
 
-<script lang='ts'>
-import { defineComponent } from 'vue'
-import { mapActions, mapState } from 'vuex'
 
-const UPDATE_HZ = 20
+<script lang="ts" setup>
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { useWebsocketStore } from '@/stores/websocket'
+import { armAPI } from '@/utils/api'
+import GamepadDisplay from './GamepadDisplay.vue'
+import IndicatorDot from './IndicatorDot.vue'
 
-export default defineComponent({
-  components: {
-  },
-  data() {
-    return {
-      mode: 'disabled'
-    }
-  },
+const websocketStore = useWebsocketStore()
 
-  computed: {
-    ...mapState('websocket', ['message'])
-  },
+const mode = ref('disabled')
+const gamepadConnected = ref(false)
+const axes = ref<number[]>([0, 0, 0, 0])
+const buttons = ref<number[]>(new Array(17).fill(0))
 
-  mounted: function() {
-    document.addEventListener('keydown', this.keyDown)
-  },
+const controllerConnected = computed(() => gamepadConnected.value)
 
-  created: function() {
-    this.interval = window.setInterval(() => {
-      const gamepads = navigator.getGamepads()
-      // may need to check for Xbox rather than Microsoft
-      const gamepad = gamepads.find(gamepad => gamepad && gamepad.id.includes('Microsoft'))
-      if (!gamepad) return
+let interval: number | undefined = undefined
 
-      this.sendMessage({
-        type: 'ra_controller',
-        axes: gamepad.axes,
-        buttons: gamepad.buttons.map(button => button.value)
-      })
+const UPDATE_HZ = 30
 
-      this.sendMessage({
-        type: 'ra_mode',
-        mode: this.mode
-      })
-    }, 1000 / UPDATE_HZ)
-  },
-
-  beforeUnmount: function() {
-    window.clearInterval(this.interval)
-    document.removeEventListener('keydown', this.keyDown)
-  },
-
-  methods: {
-    ...mapActions('websocket', ['sendMessage']),
-
-    keyDown: function(event: { key: string }) {
-      // Use the space bar as an e-stop
-      if (event.key == ' ') {
-        this.mode = 'disabled'
-      }
-    }
+const keyDown = async (event: { key: string }) => {
+  if (event.key === ' ') {
+    await newRAMode('disabled')
   }
+}
+
+onMounted(() => {
+  document.addEventListener('keydown', keyDown)
+  interval = window.setInterval(() => {
+    const gamepads = navigator.getGamepads()
+    const gamepad = gamepads.find(
+      gamepad => gamepad && gamepad.id.includes('Microsoft')
+    )
+    gamepadConnected.value = !!gamepad
+    if (!gamepad) return
+
+    axes.value = [...gamepad.axes]
+    buttons.value = gamepad.buttons.map(button => button.value)
+
+    const controllerData = {
+      axes: gamepad.axes,
+      buttons: gamepad.buttons.map(button => button.value)
+    }
+
+    websocketStore.sendMessage('arm', {
+      type: 'ra_controller',
+      ...controllerData
+    })
+  }, 1000 / UPDATE_HZ)
 })
+
+onBeforeUnmount(() => {
+  window.clearInterval(interval)
+  document.removeEventListener('keydown', keyDown)
+})
+
+const newRAMode = async (newMode: string) => {
+  try {
+    mode.value = newMode
+    const data = await armAPI.setRAMode(mode.value)
+    if (data.status === 'success' && data.mode) {
+        mode.value = data.mode
+      };
+    }
+     catch (error) {
+    console.error('Failed to set arm mode:', error)
+  }
+}
 </script>
-
-<style scoped>
-.wrap {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-items: center;
-  width: 100%;
-  height: auto;
-}
-
-.wrap h2 h4 {
-  margin: 0;
-  font-size: 1.5em;
-  font-weight: bold;
-  text-align: center;
-  width: 100%;
-  padding: 5px 0;
-}
-
-.controls-flex {
-  flex-wrap: wrap;
-  display: flex;
-  align-items: center;
-  width: 100%;
-  column-gap: 20px;
-  padding-left: 10px;
-  margin-bottom: 5px;
-  margin-top: 5px;
-}
-</style>

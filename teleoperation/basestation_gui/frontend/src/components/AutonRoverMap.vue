@@ -1,258 +1,154 @@
 <template>
-  <div class="wrap">
-    <!-- Leaflet Map Definition-->
-    <l-map @ready="onMapReady" ref="map" class="map" :zoom="16" :center="center" @click="getClickedLatLon($event)">
+  <div class="position-relative w-100 h-100">
+    <l-map
+      @ready="handleMapReady"
+      ref="mapRef"
+      class="map z-0"
+      :zoom="16"
+      :center="center"
+      @click="getClickedLatLon($event)"
+    >
       <l-control-scale :imperial="false" />
-      <!-- Tile Layer for map background -->
-      <l-tile-layer ref="tileLayer" :url="online ? onlineUrl : offlineUrl" :attribution="attribution"
-        :options="online ? onlineTileOptions : offlineTileOptions" />
-
-      <!-- Markers for rover location -->
-      <l-marker ref="rover" :lat-lng="odomLatLng" :icon="locationIcon" />
-
-      <!-- Markers for basestation location -->
-      <l-marker ref="basestation" :lat-lng="basestationLatLng" :icon="basestationIcon" />
-
-      <!-- Waypoint Icons -->
-      <l-marker v-for="(waypoint, index) in waypointList" :key="index" :lat-lng="waypoint.latLng" :icon="waypointIcon">
+      <l-tile-layer
+        ref="tileLayer"
+        :url="online ? onlineUrl : offlineUrl"
+        :attribution="attribution"
+        :options="online ? onlineTileOptions : offlineTileOptions"
+      />
+      <l-marker ref="roverRef" :lat-lng="odomLatLng" :icon="locationIcon" />
+      <l-marker
+        ref="basestationRef"
+        :lat-lng="basestationLatLng"
+        :icon="basestationIcon"
+      />
+      <l-marker
+        v-for="(waypoint, index) in waypointList"
+        :key="index"
+        :lat-lng="waypoint.latLng"
+        :icon="waypointIcon"
+      >
         <l-tooltip :options="{ permanent: 'true', direction: 'top' }">
           {{ waypoint.name }}
         </l-tooltip>
       </l-marker>
-
-      <!-- Polylines -->
-      <l-polyline :lat-lngs="polylinePath" :color="'red'" :dash-array="'5, 5'" />
-      <l-polyline :lat-lngs="odomPath" :color="'blue'" :dash-array="'5, 5'" />
+      <l-polyline
+        :lat-lngs="polylinePath"
+        :color="'red'"
+        :dash-array="'5, 5'"
+      />
+      <l-polyline :lat-lngs="[...odomPath]" :color="'blue'" :dash-array="'5, 5'" />
     </l-map>
-    <!-- Controls that go directly under the map -->
-    <div class="controls">
-      <div class="online">
-        <label><input v-model="online" type="checkbox" />Online</label>
+
+    <div class="controls px-2 py-2 position-absolute d-flex flex-column gap-2 top-0 end-0 m-2 rounded border shadow-sm bg-theme-card">
+      <div class="d-flex align-items-center gap-2">
+        <input
+        v-model="online"
+          type="checkbox"
+          class="form-check-input p-0"
+        />
+        <p class="mb-0 text-body" style="font-size: 14px; line-height: 18px">
+          Online
+        </p>
       </div>
+      <button @click="centerOnRover" class="btn btn-sm btn-light border" style="font-size: 14px; padding: 4px 8px">
+        Center on Rover
+      </button>
+      <button @click="centerOnBasestation" class="btn btn-sm btn-light border" style="font-size: 14px; padding: 4px 8px">
+        Center on Base
+      </button>
     </div>
   </div>
 </template>
 
-<script lang="ts">
+<script lang="ts" setup>
 import {
   LMap,
   LTileLayer,
   LMarker,
   LPolyline,
   LTooltip,
-  LControlScale
+  LControlScale,
 } from '@vue-leaflet/vue-leaflet'
-import { mapGetters, mapMutations } from 'vuex'
+import { useAutonomyStore } from '@/stores/autonomy'
+import { storeToRefs } from 'pinia'
 import 'leaflet/dist/leaflet.css'
-import L from '../leaflet-rotatedmarker'
+import L from 'leaflet'
+import { ref, computed, watch } from 'vue'
+import { useRoverMap } from '@/composables/useRoverMap'
+import type { NavMessage } from '@/types/coordinates'
 
-const MAX_ODOM_COUNT = 10
-const DRAW_FREQUENCY = 10
-// Options for the tilelayer object on the map
-const onlineUrl = 'http://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}'
-const offlineUrl = 'map/urc/{z}/{x}/{y}.jpg'
-const onlineTileOptions = {
-  maxNativeZoom: 22,
-  maxZoom: 100,
-  subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
+const autonomyStore = useAutonomyStore()
+const { route, waypointList } = storeToRefs(autonomyStore)
+const { setClickPoint } = autonomyStore
+
+const {
+  center,
+  online,
+  mapRef,
+  roverRef,
+  odomPath,
+  odomLatLng,
+  onlineUrl,
+  offlineUrl,
+  onlineTileOptions,
+  offlineTileOptions,
+  attribution,
+  locationIcon,
+  waypointIcon,
+  onMapReady,
+  centerOnRover,
+  getMap,
+  navMessage,
+} = useRoverMap({
+  maxOdomCount: 10,
+  drawFrequency: 10,
+  initialCenter: [38.4071654, -110.7923927],
+  offlineUrl: 'map/urc/{z}/{x}/{y}.jpg',
+})
+
+const basestation_latitude_deg = ref(0)
+const basestation_longitude_deg = ref(0)
+
+const basestationIcon = L.icon({
+  iconUrl: '/basestation_marker.svg',
+  iconSize: [64, 64],
+  iconAnchor: [32, 56],
+})
+
+const basestationLatLng = computed(() => {
+  return L.latLng(basestation_latitude_deg.value, basestation_longitude_deg.value)
+})
+
+const polylinePath = computed(() => {
+  return [odomLatLng.value].concat(
+    route.value.map((waypoint) => waypoint.latLng),
+  )
+})
+
+const handleMapReady = () => {
+  onMapReady()
 }
-const offlineTileOptions = {
-  minZoom: 16,
-  maxZoom: 20,
-}
 
-export default {
-  name: 'AutonRoverMap',
-  components: {
-    LMap,
-    LTileLayer,
-    LMarker,
-    LPolyline,
-    LTooltip,
-    LControlScale
-  },
-  props: {
-    odom: {
-      type: Object,
-      default: () => ({latitude_deg: 0, longitude_deg: 0, bearing_deg: 0})
-    },
-    basestation: {
-      type: Object,
-      default: () => ({ latitude_deg: 0, longitude_deg: 0 })
-    }
-  },
-  data() {
-    return {
-      center: L.latLng(38.4071654, -110.7923927),
-      attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors',
-      online: true,
-      onlineUrl: onlineUrl,
-      offlineUrl: offlineUrl,
-      onlineTileOptions: onlineTileOptions,
-      offlineTileOptions: offlineTileOptions,
-      roverMarker: null,
-      waypointIcon: null,
-      locationIcon: null,
-
-      map: null,
-      odomCount: 0,
-      odomPath: [],
-
-      findRover: false
-    }
-  },
-  computed: {
-    ...mapGetters('autonomy', {
-      route: 'route',
-      waypointList: 'waypointList',
-      autonEnabled: 'autonEnabled'
-    }),
-
-    // Convert to latLng object for Leaflet to use
-    odomLatLng: function () {
-      if (this.odom && typeof this.odom === 'object' && this.odom.latitude_deg !== undefined && this.odom.longitude_deg !== undefined ) {
-        return L.latLng(this.odom.latitude_deg, this.odom.longitude_deg);
-      } else {
-        // Handle the case where odom is not yet ready
-        console.warn('odom data not ready yet');
-        return L.latLng(0,0); // or default value or return null
-      }
-    },
-
-    basestationLatLng: function () {
-      if (this.basestation && typeof this.basestation === 'object' && this.basestation.latitude_deg !== undefined && this.basestation.longitude_deg !== undefined ) {
-        return L.latLng(this.basestation.latitude_deg, this.basestation.longitude_deg)
-      } else {
-        return L.latLng(0, 0)
-      }
-    },
-
-    // Concat waypoints on course with rover marker at index 0 for polyline
-    polylinePath: function () {
-      return [this.odomLatLng].concat(
-        this.route.map((waypoint: { latLng: any }) => waypoint.latLng)
-      )
-    }
-  },
-  watch: {
-    odom: {
-      handler: function (val) {
-        // Trigger every time rover odom is changed
-        const lat = val.latitude_deg
-        const lng = val.longitude_deg
-        const angle = val.bearing_deg
-
-        const latLng = L.latLng(lat, lng)
-
-        // Move to rover on first odom message
-        if (!this.findRover) {
-          this.findRover = true
-          this.center = latLng
-        }
-
-        // Update the rover marker using bearing angle
-        if (this.roverMarker !== null) {
-          this.roverMarker.setRotationAngle(angle)
-          this.roverMarker.setLatLng(latLng)
-        }
-
-        // Update the rover path
-        this.odomCount++
-        if (this.odomCount % DRAW_FREQUENCY === 0) {
-          if (this.odomPath.length > MAX_ODOM_COUNT) {
-            this.odomPath = [...this.odomPath.slice(1), latLng] //remove oldest element
-          }
-
-          this.odomPath = [...this.odomPath, latLng]
-          this.odomCount = 0
-        }
-      },
-      // Deep will watch for changes in children of an object
-      deep: true
-    }
-  },
-  created: function () {
-    // Get Icons for Map
-    this.locationIcon = L.icon({
-      iconUrl: 'location_marker_icon.png',
-      iconSize: [40, 40],
-      iconAnchor: [20, 20]
-    })
-    this.basestationIcon = L.icon({
-      iconUrl: 'basestation_marker_icon.png',
-      iconSize: [40, 40],
-      iconAnchor: [20, 20]
-    })
-    this.waypointIcon = L.icon({
-      iconUrl: 'map_marker.png',
-      iconSize: [64, 64],
-      iconAnchor: [32, 64],
-      popupAnchor: [0, -32]
-    })
-  },
-
-  methods: {
-    onMapReady: function () {
-      // Pull objects from refs to be able to access data and change w functions
-      this.$nextTick(() => {
-        this.map = this.$refs.map.leafletObject
-        this.roverMarker = this.$refs.rover.leafletObject
-      })
-    },
-    // Event listener for setting store values to get data to waypoint Editor
-    getClickedLatLon: function (e: { latlng: { lat: any; lng: any } }) {
-      this.setClickPoint({
-        lat: e.latlng.lat,
-        lon: e.latlng.lng,
-      })
-    },
-
-    ...mapMutations('autonomy', {
-      setClickPoint: 'setClickPoint',
-      setWaypointList: 'setWaypointList',
-      setOdomFormat: 'setOdomFormat'
-    })
+const centerOnBasestation = () => {
+  const map = getMap()
+  if (map) {
+    map.setView(basestationLatLng.value, map.getZoom())
   }
 }
+
+const getClickedLatLon = (e: { latlng: { lat: number; lng: number } }) => {
+  setClickPoint({
+    lat: e.latlng.lat,
+    lon: e.latlng.lng,
+  })
+}
+
+watch(navMessage, (msg) => {
+  if (!msg) return
+  const navMsg = msg as NavMessage
+  if (navMsg.type === 'basestation_position') {
+    basestation_latitude_deg.value = navMsg.latitude
+    basestation_longitude_deg.value = navMsg.longitude
+  }
+})
 </script>
-
-<style scoped>
-.controls label {
-  font-size: 12px;
-}
-
-.controls div {
-  display: inline-block;
-}
-
-.online {
-  float: right;
-}
-
-.wrap {
-  align-items: center;
-  width: 100%;
-  height: 100%;
-  display: grid;
-  overflow: hidden;
-  min-height: 40vh;
-  grid-gap: 3px;
-  grid-template-columns: auto;
-  grid-template-rows: 94% 6%;
-  grid-template-areas:
-    'map'
-    'controls';
-}
-
-/* Grid area declarations */
-.map {
-  height: 100%;
-  width: 100%;
-  grid-area: map;
-}
-
-.controls {
-  grid-area: controls;
-  display: inline;
-}
-</style>

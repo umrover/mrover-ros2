@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# git submodule update --init deps/dawn
+git submodule update --init deps/dawn
 
 pushd deps/dawn || exit
 cmake \
@@ -8,7 +8,7 @@ cmake \
     -G Ninja \
     -W no-dev \
     -D CMAKE_BUILD_TYPE=Release \
-    -D CMAKE_CXX_FLAGS="-march=native" \
+    -D CMAKE_CXX_FLAGS="-march=native -D_LIBCPP_ENABLE_REMOVED_ALLOCATOR_CONST" \
     -D DAWN_FETCH_DEPENDENCIES=ON \
     -D DAWN_ENABLE_DESKTOP_GL=OFF \
     -D DAWN_ENABLE_OPENGLES=OFF \

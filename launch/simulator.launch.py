@@ -53,6 +53,7 @@ def generate_launch_description():
         name="simulator",
         parameters=[
             os.path.join(get_package_share_directory("mrover"), "config", "simulator.yaml"),
+            os.path.join(get_package_share_directory("mrover"), "config", "reference_coords.yaml"),
             {"headless": LaunchConfiguration("headless")},
         ],
     )

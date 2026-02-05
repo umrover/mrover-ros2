@@ -36,7 +36,7 @@ def generate_launch_description():
     base_link_to_right_gps = Node(
         package="tf2_ros",
         executable="static_transform_publisher",
-        arguments=["0.0", "0.5", "0", "0", "0", "0", "1", "right_gps_frame", "base_link"]
+        arguments=["0.0", "0.55", "0", "0", "0", "0", "1", "gps_frame", "base_link"],
     )
 
     # Run Navigation
@@ -51,6 +51,4 @@ def generate_launch_description():
         arguments=["0", "0", "1", "0", "0", "0", "1", "base_link", "zed_left_camera_frame"],
     )
 
-    return LaunchDescription(
-        [launch_jetson_base, launch_perception, launch_navigation, base_link_to_zed, base_link_to_right_gps]
-    )
+    return LaunchDescription([launch_jetson_base, launch_perception, base_link_to_zed, base_link_to_right_gps])
