@@ -17,9 +17,9 @@ class ArmHandler(WebSocketHandler):
         self.buffer = {}
 
     async def setup(self):
-        self.arm_thr_pub = self.node.create_publisher(Throttle, "/arm_thr_cmd", 10)
-        self.ik_pos_pub = self.node.create_publisher(IK, "/ik_pos_cmd", 10)
-        self.ik_vel_pub = self.node.create_publisher(Twist, "/ik_vel_cmd", 10)
+        self.arm_thr_pub = self.node.create_publisher(Throttle, "/arm_thr_cmd", 1)
+        self.ik_pos_pub = self.node.create_publisher(IK, "/ik_pos_cmd", 1)
+        self.ik_vel_pub = self.node.create_publisher(Twist, "/ik_vel_cmd", 1)
         self.publishers.extend([self.arm_thr_pub, self.ik_pos_pub, self.ik_vel_pub])
 
         self.forward_ros_topic("/arm_controller_state", ControllerState, "arm_state")

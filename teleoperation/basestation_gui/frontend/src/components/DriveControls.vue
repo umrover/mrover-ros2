@@ -1,7 +1,7 @@
 <template>
-  <div class="d-flex flex-column align-items-start h-100">
-    <div class="d-flex align-items-center gap-2">
-      <h4 class="m-0">Drive Controls</h4>
+  <div class="d-flex flex-column w-100 h-100">
+    <div class="d-flex justify-content-between align-items-center w-100">
+      <h4 class="component-header">Drive Controls</h4>
       <IndicatorDot :is-active="controllerConnected" />
     </div>
   </div>

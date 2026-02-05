@@ -1,68 +1,54 @@
 <template>
-  <div class='d-flex flex-column border border-2 p-2 rounded mw-100' style="flex: 1 0 auto; min-width: 0;">
-    <div class="d-flex align-items-center justify-content-between mb-2">
-      <h4 class="m-0">{{ header }}</h4>
-      <div class="d-flex gap-2">
+  <div class="cmd-panel controller-table-panel">
+    <div class="cmd-panel-header">
+      <h4>{{ header }}</h4>
+      <div class="d-flex gap-1">
         <button
           type="button"
-          class="btn btn-sm"
-          :class="showStatus ? 'btn-success' : 'btn-danger'"
+          class="btn btn-sm border-2"
+          :class="showStatus ? 'btn-success' : 'btn-outline-secondary'"
           @mousedown.prevent
           @click="showStatus = !showStatus"
         >Status</button>
         <button
           type="button"
-          class="btn btn-sm"
-          :class="showValues ? 'btn-success' : 'btn-danger'"
+          class="btn btn-sm border-2"
+          :class="showValues ? 'btn-success' : 'btn-outline-secondary'"
           @mousedown.prevent
           @click="showValues = !showValues"
         >Values</button>
       </div>
     </div>
-    <div class="overflow-x-auto">
-      <table class='table table-bordered table-sm m-0 w-auto text-nowrap compact-table'>
+    <div class="overflow-x-auto cmd-scroll">
+      <table class="cmd-table compact-table">
         <tbody>
         <tr>
-          <th class='table-secondary text-nowrap sticky-col px-2 py-1'>Motor</th>
-          <td v-for='(n, i) in names' :key='i' class="text-center small px-2 py-1">
-            {{ n }}
-          </td>
+          <th class="sticky-col">Motor</th>
+          <td v-for="(n, i) in names" :key="i">{{ n }}</td>
         </tr>
         <tr v-if="showStatus">
-          <th class='table-secondary text-nowrap sticky-col px-2 py-1'>State</th>
-          <td v-for='(s, i) in states' :key='i' class="text-center small px-2 py-1">
-            {{ s }}
-          </td>
+          <th class="sticky-col">State</th>
+          <td v-for="(s, i) in states" :key="i">{{ s }}</td>
         </tr>
         <tr v-if="showStatus">
-          <th class='table-secondary text-nowrap sticky-col px-2 py-1'>Error</th>
-          <td v-for='(e, i) in errors' :key='i' class="text-center small px-2 py-1">
-            {{ e }}
-          </td>
+          <th class="sticky-col">Error</th>
+          <td v-for="(e, i) in errors" :key="i">{{ e }}</td>
         </tr>
         <tr v-if="showStatus">
-          <th class='table-secondary text-nowrap sticky-col px-2 py-1'>Limit Hit</th>
-          <td v-for='(l, i) in limitHits' :key='i' class="text-center small px-2 py-1">
-            {{ l }}
-          </td>
+          <th class="sticky-col">Limit Hit</th>
+          <td v-for="(l, i) in limitHits" :key="i">{{ l }}</td>
         </tr>
         <tr v-if="showValues">
-          <th class='table-secondary text-nowrap sticky-col px-2 py-1'>Position</th>
-          <td v-for='(p, i) in positions' :key='i' class="text-center small px-2 py-1">
-            {{ p.toFixed(2) }}
-          </td>
+          <th class="sticky-col">Position</th>
+          <td v-for="(p, i) in positions" :key="i">{{ p.toFixed(2) }}</td>
         </tr>
         <tr v-if="showValues">
-          <th class='table-secondary text-nowrap sticky-col px-2 py-1'>Velocity</th>
-          <td v-for='(v, i) in velocities' :key='i' class="text-center small px-2 py-1">
-            {{ v.toFixed(2) }}
-          </td>
+          <th class="sticky-col">Velocity</th>
+          <td v-for="(v, i) in velocities" :key="i">{{ v.toFixed(2) }}</td>
         </tr>
         <tr v-if="showValues">
-          <th class='table-secondary text-nowrap sticky-col px-2 py-1'>Current</th>
-          <td v-for='(c, i) in currents' :key='i' class="text-center small px-2 py-1">
-            {{ c.toFixed(2) }}
-          </td>
+          <th class="sticky-col">Current</th>
+          <td v-for="(c, i) in currents" :key="i">{{ c.toFixed(2) }}</td>
         </tr>
         </tbody>
       </table>
@@ -165,10 +151,16 @@ watch(scienceMessage, (msg) => {
 </script>
 
 <style scoped>
+.controller-table-panel {
+  flex: 1 0 auto;
+  min-width: 0;
+}
+
 .sticky-col {
   position: sticky;
   left: 0;
   z-index: 1;
+  background-color: var(--table-header-bg);
 }
 
 .compact-table {
@@ -179,5 +171,6 @@ watch(scienceMessage, (msg) => {
 .compact-table td {
   white-space: nowrap;
   width: 1%;
+  text-align: center;
 }
 </style>

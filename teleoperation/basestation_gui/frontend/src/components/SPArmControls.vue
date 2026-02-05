@@ -1,10 +1,10 @@
 <template>
-  <div class="sp-controls d-flex flex-column align-items-center gap-2">
-    <div class="d-flex justify-content-between align-items-center w-100">
-      <h4 class="m-0">SP Arm Controls</h4>
-      <IndicatorDot :is-active="controllerConnected" class="me-2" />
+  <div class="d-flex flex-column gap-2 h-100">
+    <div class="d-flex justify-content-between align-items-center">
+      <h4 class="component-header">SP Arm Controls</h4>
+      <IndicatorDot :is-active="controllerConnected" />
     </div>
-    <GamepadDisplay :axes="axes" :buttons="buttons" />
+    <GamepadDisplay :axes="axes" :buttons="buttons" class="flex-grow-1 min-height-0" />
   </div>
 </template>
 
@@ -54,7 +54,7 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
-.sp-controls {
-  width: 100%;
+.min-height-0 {
+  min-height: 0;
 }
 </style>
