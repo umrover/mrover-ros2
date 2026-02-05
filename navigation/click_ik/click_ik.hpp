@@ -1,7 +1,6 @@
 #pragma once
 
 #include "mrover/action/detail/ik_image_sample__struct.hpp"
-#include "mrover/srv/detail/ik_image_sample__struct.hpp"
 #include "mrover/srv/detail/ik_mode__struct.hpp"
 #include "mrover/srv/detail/ik_sample__struct.hpp"
 #include "pch.hpp"

@@ -7,7 +7,6 @@
 #include <rclcpp_action/create_client.hpp>
 
 #include "mrover/action/detail/ik_image_sample__struct.hpp"
-#include "mrover/srv/detail/ik_image_sample__struct.hpp"
 #include "pch.hpp"
 
 #include "glfw_pointer.hpp"

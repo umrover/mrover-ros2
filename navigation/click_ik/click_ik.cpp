@@ -4,7 +4,6 @@
 #include "mrover/action/detail/ik_image_sample__struct.hpp"
 #include "mrover/msg/detail/arm_status__struct.hpp"
 #include "mrover/msg/detail/ik__struct.hpp"
-#include "mrover/srv/detail/ik_image_sample__struct.hpp"
 #include "mrover/srv/detail/ik_sample__struct.hpp"
 #include <chrono>
 #include <cstddef>

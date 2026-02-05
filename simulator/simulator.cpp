@@ -1,5 +1,4 @@
 #include "simulator.hpp"
-#include "mrover/srv/detail/ik_image_sample__struct.hpp"
 
 namespace mrover {
 

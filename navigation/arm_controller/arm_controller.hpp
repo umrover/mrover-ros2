@@ -1,6 +1,5 @@
 #pragma once
 #include "mrover/msg/detail/arm_status__struct.hpp"
-#include "mrover/srv/detail/ik_image_sample__struct.hpp"
 #include "mrover/srv/detail/ik_sample__struct.hpp"
 #include "pch.hpp"
 #include <rclcpp/publisher.hpp>
