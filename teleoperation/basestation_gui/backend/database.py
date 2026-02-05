@@ -27,6 +27,7 @@ def init_waypoints_db():
                 latitude REAL DEFAULT 0.0,
                 longitude REAL DEFAULT 0.0,
                 enable_costmap BOOLEAN DEFAULT 1,
+                coverage_radius REAL DEFAULT 0.0,
                 deletable BOOLEAN DEFAULT 1
             )
         ''')
@@ -41,6 +42,7 @@ def init_waypoints_db():
                 latitude REAL DEFAULT 0.0,
                 longitude REAL DEFAULT 0.0,
                 enable_costmap BOOLEAN DEFAULT 1,
+                coverage_radius REAL DEFAULT 0.0,
                 sequence_order INTEGER NOT NULL
             )
         ''')
@@ -60,18 +62,18 @@ def init_waypoints_db():
         cursor.execute("SELECT count(*) FROM auton_waypoints")
         if cursor.fetchone()[0] == 0:
             defaults = [
-                ("No Search 1", 0, 0, 0.0, 0.0, 1, 0), # Not deletable
-                ("No Search 2", 1, 0, 0.0, 0.0, 1, 0), # Not deletable
-                ("Post 1", 2, 1, 0.0, 0.0, 1, 0),      # Not deletable
-                ("Post 2", 3, 1, 0.0, 0.0, 1, 0),      # Not deletable
-                ("Post 3", 4, 1, 0.0, 0.0, 1, 0),      # Not deletable
-                ("Mallet", 5, 2, 0.0, 0.0, 1, 0),      # Not deletable
-                ("Water Bottle", 6, 3, 0.0, 0.0, 1, 0),# Not deletable
-                ("Rock Pick", 7, 4, 0.0, 0.0, 1, 0),   # Not deletable
+                ("No Search 1", 0, 0, 0.0, 0.0, 1, 0.0, 0), # Not deletable
+                ("No Search 2", 1, 0, 0.0, 0.0, 1, 0.0, 0), # Not deletable
+                ("Post 1", 2, 1, 0.0, 0.0, 1, 0.0, 0),      # Not deletable
+                ("Post 2", 3, 1, 0.0, 0.0, 1, 0.0, 0),      # Not deletable
+                ("Post 3", 4, 1, 0.0, 0.0, 1, 0.0, 0),      # Not deletable
+                ("Mallet", 5, 2, 0.0, 0.0, 1, 0.0, 0),      # Not deletable
+                ("Water Bottle", 6, 3, 0.0, 0.0, 1, 0.0, 0),# Not deletable
+                ("Rock Pick", 7, 4, 0.0, 0.0, 1, 0.0, 0),   # Not deletable
             ]
             cursor.executemany('''
-                INSERT INTO auton_waypoints (name, tag_id, type, latitude, longitude, enable_costmap, deletable)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO auton_waypoints (name, tag_id, type, latitude, longitude, enable_costmap, coverage_radius, deletable)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             ''', defaults)
 
             # Set auto-increment to 8
