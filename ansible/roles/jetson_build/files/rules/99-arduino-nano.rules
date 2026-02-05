@@ -1,1 +1,0 @@
-SUBSYSTEM=="tty", ATTRS{idVendor}=="1a86", ATTRS{idProduct}=="7523", KERNEL=="ttyCH341USB0", SYMLINK+="arduino_nano"

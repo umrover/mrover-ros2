@@ -79,7 +79,7 @@ namespace mrover {
                 if (mSerialNumber == -1) {
                     initParameters.input.setFromCameraID(-1, sl::BUS_TYPE::USB);
                 } else {
-                    initParameters.input.setFromSerialNumber(mSerialNumber);
+                    initParameters.input.setFromSerialNumber(mSerialNumber, sl::BUS_TYPE::USB);
                 }
             }
 
