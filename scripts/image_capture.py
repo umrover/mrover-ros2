@@ -25,11 +25,7 @@ class ImageCapture(Node):
         img = np.frombuffer(msg.data, dtype=np.uint8).reshape(msg.height, msg.width, -1)
         unique_id = "{date:%Y-%m-%d_%H:%M:%S}".format(date=datetime.datetime.now())
 
-        path = (
-            ".."
-            / "data"
-            / "images"
-        )
+        path = ".." / "data" / "images"
 
         if not path.exists():
             path.mkdir(parents=True, exist_ok=True)
