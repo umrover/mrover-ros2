@@ -77,5 +77,7 @@ def generate_launch_description():
 
     add_detector("cam1")
     add_detector("cam2")
+    add_detector("cam3")
+    add_detector("cam4")
 
     return LaunchDescription(launch_list)
