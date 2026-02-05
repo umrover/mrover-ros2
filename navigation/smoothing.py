@@ -6,8 +6,6 @@ from scipy.interpolate import splev, splprep
 import numpy as np
 import math, sys
 
-
-
 def smoothing(trajectory: Trajectory, context: Context, should_relax: bool, should_interpolate: bool) -> Trajectory:
     """
     Performs relaxation and/or interpolation on given trajectory
