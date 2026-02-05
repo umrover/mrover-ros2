@@ -36,7 +36,7 @@
       />
       <FeedbackButton
         class="w-100"
-        :name="'Path Smoothing'"
+        :name="'Path Interpolation'"
         :checked="pathInterpolationEnabled"
         :action="pathInterpolationAction"
         @toggle="handlePathInterpolationToggle"
