@@ -34,8 +34,8 @@ export const autonAPI = {
     })
   },
 
-  togglePathSmoothing(enabled: boolean): Promise<TeleopEnableResponse> {
-    return apiFetch('/toggle_path_smoothing/', {
+  togglePathInterpolation(enabled: boolean): Promise<TeleopEnableResponse> {
+    return apiFetch('/toggle_path_interpolation/', {
       method: 'POST',
       body: JSON.stringify({ enabled })
     })

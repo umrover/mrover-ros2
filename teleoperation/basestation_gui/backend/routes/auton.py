@@ -96,11 +96,11 @@ async def toggle_path_relaxation(data: TeleopEnableRequest):
     return {'status': 'success', 'enabled': data.enabled}
 
 
-@router.post("/toggle_path_smoothing/")
-async def toggle_path_smoothing(data: TeleopEnableRequest):
-    client = get_service_client(SetBool, "/toggle_path_smoothing")
+@router.post("/toggle_path_interpolation/")
+async def toggle_path_interpolation(data: TeleopEnableRequest):
+    client = get_service_client(SetBool, "/toggle_path_interpolation")
     request = SetBool.Request(data=data.enabled)
     result = await call_service_async(client, request)
     if result is None:
-        raise HTTPException(status_code=500, detail="Service /toggle_path_smoothing is not available or timed out")
+        raise HTTPException(status_code=500, detail="Service /toggle_path_interpolation is not available or timed out")
     return {'status': 'success', 'enabled': data.enabled}

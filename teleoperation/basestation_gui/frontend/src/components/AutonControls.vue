@@ -37,9 +37,9 @@
       <FeedbackButton
         class="w-100"
         :name="'Path Smoothing'"
-        :checked="pathSmoothingEnabled"
-        :action="pathSmoothingAction"
-        @toggle="handlePathSmoothingToggle"
+        :checked="pathInterpolationEnabled"
+        :action="pathInterpolationAction"
+        @toggle="handlePathInterpolationToggle"
       />
     </div>
   </div>
@@ -61,7 +61,7 @@ const autonEnabled = computed(() => autonomyStore.autonEnabled)
 const teleopEnabled = computed(() => autonomyStore.teleopEnabled)
 const purePursuitEnabled = computed(() => autonomyStore.purePursuitEnabled)
 const pathRelaxationEnabled = computed(() => autonomyStore.pathRelaxationEnabled)
-const pathSmoothingEnabled = computed(() => autonomyStore.pathSmoothingEnabled)
+const pathInterpolationEnabled = computed(() => autonomyStore.pathInterpolationEnabled)
 
 const autonAction = (newState: boolean) => {
   const route = autonomyStore.route
@@ -107,12 +107,12 @@ const handlePathRelaxationToggle = (newState: boolean) => {
   autonomyStore.setPathRelaxation(newState)
 }
 
-const pathSmoothingAction = (newState: boolean) => {
-  return autonAPI.togglePathSmoothing(newState)
+const pathInterpolationAction = (newState: boolean) => {
+  return autonAPI.togglePathInterpolation(newState)
 }
 
-const handlePathSmoothingToggle = (newState: boolean) => {
-  autonomyStore.setPathSmoothing(newState)
+const handlePathInterpolationToggle = (newState: boolean) => {
+  autonomyStore.setPathInterpolation(newState)
 }
 </script>
 
