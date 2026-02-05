@@ -1,14 +1,17 @@
   import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import type { StoreWaypoint } from '@/types/waypoints'
+import type { StoreWaypoint, AutonRouteWaypoint } from '@/types/waypoints'
 
 export const useAutonomyStore = defineStore('autonomy', () => {
   // State
-  const route = ref<StoreWaypoint[]>([])
+  const route = ref<AutonRouteWaypoint[]>([])
   const waypointList = ref<StoreWaypoint[]>([])
   const highlightedWaypoint = ref(-1)
   const autonEnabled = ref(false)
   const teleopEnabled = ref(false)
+  const purePursuitEnabled = ref(false)
+  const pathRelaxationEnabled = ref(false)
+  const pathInterpolationEnabled = ref(false)
   const odomFormat = ref('DM')
   const clickPoint = ref({ lat: 0, lon: 0 })
 
@@ -22,7 +25,7 @@ export const useAutonomyStore = defineStore('autonomy', () => {
   const getClickPoint = computed(() => clickPoint.value)
 
   // Actions
-  function setRoute(newRoute: StoreWaypoint[]) {
+  function setRoute(newRoute: AutonRouteWaypoint[]) {
     route.value = newRoute
   }
 
@@ -32,6 +35,18 @@ export const useAutonomyStore = defineStore('autonomy', () => {
 
   function setTeleopMode(newTeleopEnabled: boolean) {
     teleopEnabled.value = newTeleopEnabled
+  }
+
+  function setPurePursuit(enabled: boolean) {
+    purePursuitEnabled.value = enabled
+  }
+
+  function setPathRelaxation(enabled: boolean) {
+    pathRelaxationEnabled.value = enabled
+  }
+
+  function setPathInterpolation(enabled: boolean) {
+    pathInterpolationEnabled.value = enabled
   }
 
   function setWaypointList(newList: StoreWaypoint[]) {
@@ -57,6 +72,9 @@ export const useAutonomyStore = defineStore('autonomy', () => {
     highlightedWaypoint,
     autonEnabled,
     teleopEnabled,
+    purePursuitEnabled,
+    pathRelaxationEnabled,
+    pathInterpolationEnabled,
     odomFormat,
     clickPoint,
     // Getters
@@ -71,6 +89,9 @@ export const useAutonomyStore = defineStore('autonomy', () => {
     setRoute,
     setAutonMode,
     setTeleopMode,
+    setPurePursuit,
+    setPathRelaxation,
+    setPathInterpolation,
     setWaypointList,
     setHighlightedWaypoint,
     setOdomFormat,

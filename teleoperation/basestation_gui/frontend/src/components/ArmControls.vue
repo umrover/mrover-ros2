@@ -1,63 +1,68 @@
 <template>
-  <div class="d-flex flex-column align-items-center w-100">
-    <div class="d-flex flex-column gap-2" style="width: 500px; max-width: 100%;">
-      <div class="d-flex justify-content-between align-items-center">
-        <h3 class="m-0">Arm Controls</h3>
-        <span
-          class="px-2 py-2 rounded-2 text-black fw-semibold text-center"
-          style="width: 130px; display: inline-block; font-family: monospace;"
-          :class="controllerConnected ? 'bg-success' : 'bg-secondary'"
-        >
-          {{ controllerConnected ? 'Connected  ' : 'Disconnected' }}
-        </span>
-      </div>
-      <div
-        class="btn-group d-flex justify-content-between"
-        role="group"
-        aria-label="Arm mode selection"
-      >
+  <div class="d-flex flex-column gap-2 h-100">
+    <div class="d-flex justify-content-between align-items-center">
+      <h4 class="component-header m-0">Arm Controls</h4>
+      <IndicatorDot :is-active="controllerConnected" class="me-2" />
+    </div>
+    <div class="btn-group w-100 border-2" role="group" aria-label="Arm mode selection" data-testid="pw-arm-mode-buttons">
         <button
           type="button"
-          class="btn flex-fill"
+          class="btn btn-sm border-2"
           :class="mode === 'disabled' ? 'btn-danger' : 'btn-outline-danger'"
-          @click="mode = 'disabled'"
+          data-testid="pw-arm-mode-disabled"
+          @click="newRAMode('disabled')"
         >
           Disabled
         </button>
         <button
           type="button"
-          class="btn flex-fill"
+          class="btn btn-sm border-2"
           :class="mode === 'throttle' ? 'btn-success' : 'btn-outline-success'"
-          @click="mode = 'throttle'"
+          data-testid="pw-arm-mode-throttle"
+          @click="newRAMode('throttle')"
         >
           Throttle
         </button>
         <button
           type="button"
-          class="btn flex-fill"
+          class="btn btn-sm border-2"
           :class="mode === 'ik-pos' ? 'btn-success' : 'btn-outline-success'"
-          @click="mode = 'ik-pos'"
+          data-testid="pw-arm-mode-ik-pos"
+          @click="newRAMode('ik-pos')"
         >
           IK Position
         </button>
         <button
           type="button"
-          class="btn flex-fill"
+          class="btn btn-sm border-2"
           :class="mode === 'ik-vel' ? 'btn-success' : 'btn-outline-success'"
-          @click="mode = 'ik-vel'"
+          data-testid="pw-arm-mode-ik-vel"
+          @click="newRAMode('ik-vel')"
         >
           IK Velocity
         </button>
       </div>
-    </div>
+    <GamepadDisplay :axes="axes" :buttons="buttons" layout="horizontal" class="flex-grow-1 min-height-0" />
   </div>
 </template>
 
+<script lang="ts" setup>
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { useWebsocketStore } from '@/stores/websocket'
+import { armAPI } from '@/utils/api'
+import GamepadDisplay from './GamepadDisplay.vue'
+import IndicatorDot from './IndicatorDot.vue'
 
-<script lang="ts">
-import { defineComponent } from 'vue'
-import Vuex from 'vuex'
-const { mapActions, mapState } = Vuex
+const websocketStore = useWebsocketStore()
+
+const mode = ref('disabled')
+const gamepadConnected = ref(false)
+const axes = ref<number[]>([0, 0, 0, 0])
+const buttons = ref<number[]>(new Array(17).fill(0))
+
+const controllerConnected = computed(() => gamepadConnected.value)
+
+let interval: number | undefined = undefined
 
 const UPDATE_HZ = 30
 
@@ -117,4 +122,27 @@ export default defineComponent({
     },
   },
 })
+
+onBeforeUnmount(() => {
+  window.clearInterval(interval)
+  document.removeEventListener('keydown', keyDown)
+})
+
+const newRAMode = async (newMode: string) => {
+  try {
+    mode.value = newMode
+    const data = await armAPI.setRAMode(mode.value)
+    if (data.status === 'success' && data.mode) {
+      mode.value = data.mode
+    }
+  } catch (error) {
+    console.error('Failed to set arm mode:', error)
+  }
+}
 </script>
+
+<style scoped>
+.min-height-0 {
+  min-height: 0;
+}
+</style>

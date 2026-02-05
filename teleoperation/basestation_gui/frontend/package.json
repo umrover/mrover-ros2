@@ -13,6 +13,8 @@
     "format": "prettier --write src/"
   },
   "dependencies": {
+    "@fontsource/jetbrains-mono": "^5.2.8",
+    "@msgpack/msgpack": "^3.1.3",
     "@popperjs/core": "^2.11.8",
     "@vue-leaflet/vue-leaflet": "^0.10.1",
     "bootstrap": "^5.3.7",
@@ -25,17 +27,18 @@
     "urdf-loader": "^0.12.6",
     "vue": "^3.5.17",
     "vue-flight-indicators": "^0.1.1",
-    "vue-router": "^4.5.1",
-    "vuex": "^4.1.0"
+    "vue-grid-layout-v3": "^3.1.2",
+    "vue-router": "^4.6.4",
+    "vuedraggable": "^4.1.0"
   },
   "devDependencies": {
     "@tsconfig/node20": "^20.1.6",
     "@types/bootstrap": "^5.2.10",
-    "@types/html2canvas": "^1.0.0",
-    "@types/jsdom": "^21.1.7",
-    "@types/node": "^24.0.13",
-    "@types/three": "^0.178.1",
-    "@vitejs/plugin-vue": "^6.0.0",
+    "@types/leaflet": "^1.9.21",
+    "@types/node": "^24.10.11",
+    "@typescript-eslint/eslint-plugin": "^8.54.0",
+    "@typescript-eslint/parser": "^8.54.0",
+    "@vitejs/plugin-vue": "^6.0.4",
     "@vue/eslint-config-prettier": "^10.2.0",
     "@vue/eslint-config-typescript": "^14.6.0",
     "@vue/test-utils": "^2.4.6",
@@ -47,9 +50,10 @@
     "npm-run-all2": "^8.0.4",
     "prettier": "^3.6.2",
     "sass": "1.77.6",
-    "typescript": "^5.8.3",
-    "vite": "^7.0.4",
-    "vitest": "^3.2.4",
-    "vue-tsc": "^3.0.1"
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.54.0",
+    "vite": "^7.3.1",
+    "vue-grid-layout-v3-types": "^1.0.5",
+    "vue-tsc": "^3.2.4"
   }
 }

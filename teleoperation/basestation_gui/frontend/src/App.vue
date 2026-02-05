@@ -40,8 +40,8 @@ body {
 }
 
 .island {
-  background-color: #ffffff;
-  border-radius: 6px;
+  background-color: var(--island-bg);
+  border-radius: var(--cmd-radius-md);
 }
 
 /* rules below targets all button classes and ensures the text is black

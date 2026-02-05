@@ -6,6 +6,7 @@ import numpy as np
 import pymap3d
 import rclpy
 from scipy import ndimage
+from rclpy.parameter import Parameter
 
 import tf2_ros
 from geometry_msgs.msg import Twist
@@ -21,6 +22,7 @@ from mrover.msg import (
     ImageTarget,
     ImageTargets,
 )
+from std_srvs.srv import SetBool
 from mrover.srv import EnableAuton
 from nav_msgs.msg import Path
 from nav_msgs.msg import OccupancyGrid
@@ -410,8 +412,9 @@ class Context:
 
         # services 
         node.create_service(EnableAuton, "enable_auton", self.enable_auton)
-        node.create_service(SetBool, "toggle_path_relaxation", self.toggle_path_relaxation)
-        node.create_service(SetBool, "toggle_path_interpolation", self.toggle_path_interpolation)
+        node.create_service(SetBool, "toggle_pure_pursuit", self.toggle_pure_pursuit)
+
+        self.use_pure_pursuit = node.get_parameter("pure_pursuit.use_pure_pursuit").value
 
         # publishers
         self.command_publisher = node.create_publisher(Twist, "nav_cmd_vel", 1)
@@ -472,13 +475,14 @@ class Context:
         response.success = True
         return response
     
-    def toggle_path_relaxation(self, request: SetBool.Request, response: SetBool.Response) -> SetBool.Response:
-        # TODO(aaron and david): do whatever you need to
-        pass
-
-    def toggle_path_interpolation(self, request: SetBool.Request, response: SetBool.Response) -> SetBool.Response:
-        # TODO(aaron and david): do whatever you need to
-        pass
+    def toggle_pure_pursuit(self, request: SetBool.Request, response: SetBool.Response) -> SetBool.Response:
+        # TODO(brendan): do whatever you need to here
+        if request.data:
+            self.node.set_parameters([Parameter("pure_pursuit.use_pure_pursuit", Parameter.Type.BOOL, True)])
+        else:
+            self.node.set_parameters([Parameter("pure_pursuit.use_pure_pursuit", Parameter.Type.BOOL, False)])
+        response.success = True
+        return response
 
     def stuck_callback(self, msg: Bool) -> None:
         self.rover.stuck = msg.data

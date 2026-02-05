@@ -33,25 +33,18 @@
       <l-polyline :lat-lngs="odomPath" :color="'blue'" />
       <l-polyline :lat-lngs="dronePath" :color="'green'" />
     </l-map>
-    <div
-      class="controls px-2 py-1 position-absolute d-flex align-items-center gap-2 top-0 end-0 m-2 bg-white rounded"
-    >
-      <input
-        v-model="online"
-        type="checkbox"
-        class="form-check-input p-0"
-        style="width: 14px; height: 14px; vertical-align: middle"
-      />
-      <p class="mb-0 text-body" style="font-size: 14px; line-height: 18px">
-        Online
-      </p>
-    </div>
-
-    <div class="odometry" v-if="odom">
-      <p>
-        Lat: {{ odom.latitude_deg.toFixed(6) }}º N, Lon:
-        {{ odom.longitude_deg.toFixed(6) }}º E
-      </p>
+    <div class="map-controls cmd-panel">
+      <div class="d-flex align-items-center gap-2">
+        <input
+          v-model="online"
+          type="checkbox"
+          class="form-check-input p-0"
+        />
+        <span class="cmd-data-label">Online</span>
+      </div>
+      <button @click="centerOnRover" class="btn btn-sm btn-outline-control border-2 map-btn">
+        Center
+      </button>
     </div>
   </div>
 </template>
@@ -69,22 +62,78 @@ import Vuex from 'vuex'
 const { mapGetters, mapMutations, mapActions, mapState } = Vuex
 
 import 'leaflet/dist/leaflet.css'
-import L from '../leaflet-rotatedmarker.js'
-import type { LeafletMouseEvent } from 'leaflet';
-import type { Waypoint } from '@/types/basicWaypoint.js'
+import L from 'leaflet'
+import 'leaflet-rotatedmarker'
+import type { LeafletMouseEvent } from 'leaflet'
+import type { StoreWaypoint } from '@/types/waypoints'
+import type { NavMessage } from '@/types/coordinates'
+import { ref, computed, watch } from 'vue'
+import { useRoverMap } from '@/composables/useRoverMap'
 
-const MAX_ODOM_COUNT = 1000
-const DRAW_FREQUENCY = 1
-const onlineUrl = 'http://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}'
-const offlineUrl = 'map/{z}/{x}/{y}.png'
-const onlineTileOptions = {
-  maxNativeZoom: 22,
-  maxZoom: 100,
-  subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
-}
-const offlineTileOptions = {
-  maxNativeZoom: 16,
-  maxZoom: 100,
+const erdStore = useErdStore()
+const { waypointList, highlightedWaypoint, searchWaypoint } = storeToRefs(erdStore)
+const { setClickPoint } = erdStore
+
+const {
+  center,
+  online,
+  mapRef,
+  roverRef,
+  odomPath,
+  odomLatLng,
+  onlineUrl,
+  offlineUrl,
+  onlineTileOptions,
+  offlineTileOptions,
+  attribution,
+  locationIcon,
+  waypointIcon,
+  onMapReady,
+  centerOnRover,
+  getMap,
+  navMessage,
+} = useRoverMap({
+  maxOdomCount: 1000,
+  drawFrequency: 1,
+  initialCenter: [38.4225202, -110.7844653],
+})
+
+const drone_latitude_deg = ref(0)
+const drone_longitude_deg = ref(0)
+const droneRef = ref<{ leafletObject: L.Marker } | null>(null)
+let droneMarker: L.Marker | null = null
+const droneCount = ref(0)
+const dronePath = ref<L.LatLng[]>([])
+const circle = ref<L.Circle | null>(null)
+
+const droneIcon = L.icon({
+  iconUrl: '/drone_marker.svg',
+  iconSize: [64, 64],
+  iconAnchor: [32, 32],
+})
+const droneWaypointIcon = L.icon({
+  iconUrl: '/waypoint_marker_drone.svg',
+  iconSize: [64, 64],
+  iconAnchor: [32, 64],
+  popupAnchor: [0, -32],
+})
+const highlightedWaypointIcon = L.icon({
+  iconUrl: '/waypoint_marker_highlighted.svg',
+  iconSize: [64, 64],
+  iconAnchor: [32, 64],
+  popupAnchor: [0, -32],
+})
+
+const droneLatLng = computed(() => {
+  return L.latLng(drone_latitude_deg.value, drone_longitude_deg.value)
+})
+
+const handleMapReady = () => {
+  onMapReady(() => {
+    if (droneRef.value) {
+      droneMarker = droneRef.value.leafletObject as L.Marker
+    }
+  })
 }
 
 export default {
@@ -334,4 +383,20 @@ export default {
 .map {
   min-height: 50vh;
 }
+
+.map-controls {
+  position: absolute;
+  top: var(--cmd-gap-md);
+  right: var(--cmd-gap-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--cmd-gap-sm);
+  z-index: 1000;
+}
+
+.map-btn {
+  font-size: var(--cmd-font-xs);
+  text-transform: uppercase;
+}
+
 </style>

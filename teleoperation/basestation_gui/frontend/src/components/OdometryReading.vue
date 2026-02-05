@@ -1,86 +1,102 @@
 <template>
-  <div class="d-flex flex-column w-100 wrap">
-    <div class="d-flex justify-content-between w-100 flex-wrap gap-1">
-      <div class="d-flex flex-column gap-2">
-        <div class="border border-2 border-secondary rounded p-2">
-          <h5 class="m-0 p-0 text-center">Rover Odom</h5>
-          <div class="d-flex gap-3 justify-content-center">
-            <div class="odomModule">
-              <small class="text-muted">Latitude</small>
-              <p class="mb-0">{{ formatted_odom.lat.d }}º</p>
-              <p v-if="min_enabled" class="mb-0">
-                {{ formatted_odom.lat.m }}' N
-              </p>
-              <p v-if="sec_enabled" class="mb-0">
-                {{ formatted_odom.lat.s }}" N
-              </p>
-            </div>
-            <div class="odomModule">
-              <small class="text-muted">Longitude</small>
-              <p class="mb-0">{{ formatted_odom.lon.d }}º</p>
-              <p v-if="min_enabled" class="mb-0">
-                {{ formatted_odom.lon.m }}' E
-              </p>
-              <p v-if="sec_enabled" class="mb-0">
-                {{ formatted_odom.lon.s }}" E
-              </p>
-            </div>
-          </div>
+  <div class="odom-container d-flex flex-row py-2 overflow-hidden align-items-stretch">
+    <!-- Rover -->
+    <div class="flex-fill d-flex flex-column px-3 position-relative divider-end">
+      <div class="odom-section-header text-uppercase text-muted fw-bold text-center mb-2 opacity-75">Rover</div>
+      <div class="d-flex flex-column gap-1">
+        <div class="odom-row d-flex align-items-center justify-content-between gap-2 text-nowrap lh-1">
+          <span class="odom-label font-monospace text-uppercase text-muted">Lat</span>
+          <span class="odom-value font-monospace fw-bold">{{ rover_latitude_deg.toFixed(6) }}</span>
         </div>
-        <div class="d-flex justify-content-center gap-3">
-          <div class="odomModule">
-            <small class="text-muted">Bearing</small>
-            <p class="mb-0">{{ rover_bearing_deg.toFixed(2) }}º</p>
-          </div>
-          <div class="odomModule">
-            <small class="text-muted">Altitude</small>
-            <p class="mb-0">{{ rover_altitude.toFixed(2) }} m</p>
-          </div>
+        <div class="odom-row d-flex align-items-center justify-content-between gap-2 text-nowrap lh-1">
+          <span class="odom-label font-monospace text-uppercase text-muted">Lon</span>
+          <span class="odom-value font-monospace fw-bold">{{ rover_longitude_deg.toFixed(6) }}</span>
         </div>
-      </div>
-      <div class="d-flex justify-content-center align-items-center p-0 m-0">
-        <FlightAttitudeIndicator />
-      </div>
-      <div class="d-flex flex-column gap-2">
-        <div class="border border-2 border-secondary rounded p-2">
-          <h5 class="m-0 p-0 font-monospace text-center">Basestation Odom</h5>
-          <div class="d-flex gap-3 justify-content-center">
-            <div class="odomModule">
-              <small class="text-muted">Latitude</small>
-              <p class="mb-0">{{ formatted_basestation_odom.lat.d }}º</p>
-              <p v-if="min_enabled" class="mb-0">
-                {{ formatted_basestation_odom.lat.m }}' N
-              </p>
-              <p v-if="sec_enabled" class="mb-0">
-                {{ formatted_basestation_odom.lat.s }}" N
-              </p>
-            </div>
-            <div class="odomModule">
-              <small class="text-muted">Longitude</small>
-              <p class="mb-0">{{ formatted_basestation_odom.lon.d }}º</p>
-              <p v-if="min_enabled" class="mb-0">
-                {{ formatted_basestation_odom.lon.m }}' E
-              </p>
-              <p v-if="sec_enabled" class="mb-0">
-                {{ formatted_basestation_odom.lon.s }}" E
-              </p>
-            </div>
-          </div>
-        </div>
-        <div class="d-flex justify-content-center gap-3">
-          <div class="odomModule">
-            <small class="text-muted">Odom Status</small>
-            <p class="mb-0">{{ get_odom_status }}</p>
-          </div>
-          <div class="odomModule">
-            <small class="text-muted">Drone Status</small>
-            <p class="mb-0">{{ get_drone_status }}</p>
+        <div class="odom-row d-flex align-items-center justify-content-between gap-2 text-nowrap lh-1">
+          <span class="odom-label font-monospace text-uppercase text-muted">Alt</span>
+          <div class="d-flex align-items-baseline">
+            <span class="odom-value font-monospace fw-bold">{{ rover_altitude.toFixed(1) }}</span>
+            <span class="odom-unit font-monospace text-muted ms-1">m</span>
           </div>
         </div>
       </div>
     </div>
-    <div class="d-flex justify-content-center">
-      <IMUCalibration />
+
+    <!-- Base -->
+    <div class="flex-fill d-flex flex-column px-3 position-relative divider-end">
+      <div class="odom-section-header text-uppercase text-muted fw-bold text-center mb-2 opacity-75">Base</div>
+      <div class="d-flex flex-column gap-1">
+        <div class="odom-row d-flex align-items-center justify-content-between gap-2 text-nowrap lh-1">
+          <span class="odom-label font-monospace text-uppercase text-muted">Lat</span>
+          <span class="odom-value font-monospace fw-bold">{{ basestation_latitude_deg.toFixed(6) }}</span>
+        </div>
+        <div class="odom-row d-flex align-items-center justify-content-between gap-2 text-nowrap lh-1">
+          <span class="odom-label font-monospace text-uppercase text-muted">Lon</span>
+          <span class="odom-value font-monospace fw-bold">{{ basestation_longitude_deg.toFixed(6) }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Orientation -->
+    <div class="flex-fill d-flex flex-column px-3 position-relative divider-end">
+      <div class="odom-section-header text-uppercase text-muted fw-bold text-center mb-2 opacity-75">Orientation</div>
+      <div class="d-flex flex-column gap-1">
+        <div class="odom-row d-flex align-items-center justify-content-between gap-2 text-nowrap lh-1">
+          <span class="odom-label font-monospace text-uppercase text-muted">Yaw</span>
+          <div class="d-flex align-items-baseline">
+            <span class="odom-value font-monospace fw-bold">{{ rover_bearing_deg.toFixed(0) }}</span>
+            <span class="odom-unit font-monospace text-muted ms-1">&deg;</span>
+          </div>
+        </div>
+        <div class="odom-row d-flex align-items-center justify-content-between gap-2 text-nowrap lh-1">
+          <span class="odom-label font-monospace text-uppercase text-muted">Pit</span>
+          <div class="d-flex align-items-baseline">
+            <span class="odom-value font-monospace fw-bold">{{ pitch.toFixed(0) }}</span>
+            <span class="odom-unit font-monospace text-muted ms-1">&deg;</span>
+          </div>
+        </div>
+        <div class="odom-row d-flex align-items-center justify-content-between gap-2 text-nowrap lh-1">
+          <span class="odom-label font-monospace text-uppercase text-muted">Rol</span>
+          <div class="d-flex align-items-baseline">
+            <span class="odom-value font-monospace fw-bold">{{ roll.toFixed(0) }}</span>
+            <span class="odom-unit font-monospace text-muted ms-1">&deg;</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Fix Status -->
+    <div class="flex-fill d-flex flex-column px-3 position-relative divider-end">
+      <div class="odom-section-header text-uppercase text-muted fw-bold text-center mb-2 opacity-75">Fix</div>
+      <div class="d-flex flex-column gap-1">
+        <div class="odom-row d-flex align-items-center justify-content-between gap-2 text-nowrap lh-1">
+          <span class="odom-label font-monospace text-uppercase text-muted">Rov</span>
+          <IndicatorDot :is-active="rover_status >= 0" :size="16" />
+        </div>
+        <div class="odom-row d-flex align-items-center justify-content-between gap-2 text-nowrap lh-1">
+          <span class="odom-label font-monospace text-uppercase text-muted">Drn</span>
+          <IndicatorDot :is-active="drone_status >= 0" :size="16" />
+        </div>
+      </div>
+    </div>
+
+    <!-- IMU Cal -->
+    <div class="flex-fill d-flex flex-column px-3 position-relative">
+      <div class="odom-section-header text-uppercase text-muted fw-bold text-center mb-2 opacity-75">IMU Cal</div>
+      <div class="d-flex flex-column gap-1">
+        <div class="odom-row d-flex align-items-center justify-content-between gap-2 text-nowrap lh-1">
+          <span class="odom-label font-monospace text-uppercase text-muted">Mag</span>
+          <IndicatorDot :is-active="mag_calibration == 3" :size="16" />
+        </div>
+        <div class="odom-row d-flex align-items-center justify-content-between gap-2 text-nowrap lh-1">
+          <span class="odom-label font-monospace text-uppercase text-muted">Gyr</span>
+          <IndicatorDot :is-active="gyro_calibration == 3" :size="16" />
+        </div>
+        <div class="odom-row d-flex align-items-center justify-content-between gap-2 text-nowrap lh-1">
+          <span class="odom-label font-monospace text-uppercase text-muted">Acc</span>
+          <IndicatorDot :is-active="accel_calibration == 3" :size="16" />
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -218,11 +234,35 @@ export default defineComponent({
 </script>
 
 <style scoped>
-.odomModule {
-  width: 100px;
+.odom-section-header {
+  font-size: clamp(0.65rem, 0.9vw, 0.9rem);
+  letter-spacing: 0.1em;
 }
 
-.wrap {
-  min-width: 700px;
+.odom-label {
+  font-size: clamp(0.75rem, 1vw, 1rem);
+  min-width: 2.5rem;
+}
+
+.odom-value {
+  font-size: clamp(0.95rem, 1.3vw, 1.4rem);
+}
+
+.odom-unit {
+  font-size: clamp(0.75rem, 1vw, 1rem);
+}
+
+.odom-row {
+  height: 1.5rem;
+}
+
+.divider-end::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 15%;
+  height: 70%;
+  width: 1px;
+  background: var(--cmd-panel-border);
 }
 </style>

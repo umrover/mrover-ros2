@@ -1,13 +1,18 @@
 <template>
-  <div class="velocity-wrapper">
-    <h4>Velocity</h4>
-    <div class="velocity-row pb-1">
-      <span class="label">Linear:</span>
-      <span class="value">{{ linear_x.toFixed(3) }} m/s</span>
+  <div class="d-flex flex-column gap-2">
+    <div class="d-flex align-items-baseline justify-content-between">
+      <span class="cmd-data-label">Linear</span>
+      <div>
+        <span class="cmd-data-value velocity-value">{{ linear_x.toFixed(2) }}</span>
+        <span class="cmd-data-unit ms-1">m/s</span>
+      </div>
     </div>
-    <div class="velocity-row">
-      <span class="label">Angular:</span>
-      <span class="value">{{ angular_z.toFixed(3) }} rad/s</span>
+    <div class="d-flex align-items-baseline justify-content-between">
+      <span class="cmd-data-label">Angular</span>
+      <div>
+        <span class="cmd-data-value velocity-value">{{ angular_z.toFixed(2) }}</span>
+        <span class="cmd-data-unit ms-1">rad/s</span>
+      </div>
     </div>
   </div>
 </template>
@@ -42,25 +47,8 @@ export default {
 </script>
 
 <style scoped>
-.velocity-wrapper {
-  background-color: #dddddd;
-  padding: 0.5rem;
-  border-radius: 8px;
-  max-width: 320px;
-}
-
-h3 {
-  font-family: monospace;
-  letter-spacing: -0.1rem;
-}
-
-.velocity-row {
-  display: flex;
-  flex-direction: column;
-}
-
-.label {
-  font-weight: bold;
-  letter-spacing: -0.03rem;
+.velocity-value {
+  font-family: var(--cmd-font-mono);
+  font-size: 1rem;
 }
 </style>

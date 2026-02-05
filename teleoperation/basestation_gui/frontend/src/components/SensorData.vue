@@ -1,49 +1,74 @@
 <template>
-  <h3>Sensor Data</h3>
-  <div class="sensors align-items-center">
-    <table class="table table-bordered mx-3 mb-0" id="capture">
-      <thead>
-        <tr class="table-primary">
-          <th></th>
-          <th colspan="2">Oxygen (%)</th>
-          <th colspan="2">UV (index)</th>
-          <th colspan="2">Humidity (%)</th>
-          <th colspan="2">Temp (°C)</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <th class="table-secondary">
-            Site {{ String.fromCharCode(site + 65) }}
-          </th>
-          <!-- entries assumes string, any type pair -->
-          <td
-            v-for="([, val], index) in Object.entries(sensor_data)"
-            :key="index"
-          >
-            {{ val.toFixed(2) }}
-          </td>
-        </tr>
-      </tbody>
-    </table>
-
-    <button class="btn btn-secondary" @click="download()">
-      Save Data to CSV
-    </button>
+  <div class="d-flex align-items-center gap-2 mb-2">
+    <h4 class="component-header">Sensor<br>Data</h4>
+    <div class="d-flex flex-column gap-1">
+      <button class="btn btn-outline-control btn-sm border-2" @click="showModal = true">
+        View All
+      </button>
+      <button class="btn btn-outline-secondary btn-sm border-2" @click="downloadCSV">
+        <i class="bi bi-download"></i> CSV
+      </button>
+    </div>
+    <div class="d-flex gap-2 flex-grow-1">
+      <div class="flex-fill d-flex flex-column align-items-center bg-theme-view rounded p-1">
+        <span class="small fw-semibold text-uppercase text-muted sensor-label">Oxygen</span>
+        <span class="fw-bold">{{ sensor_data.sp_oxygen.toFixed(2) }}<span class="text-muted ms-1 small">%</span></span>
+      </div>
+      <div class="flex-fill d-flex flex-column align-items-center bg-theme-view rounded p-1">
+        <span class="small fw-semibold text-uppercase text-muted sensor-label">UV</span>
+        <span class="fw-bold">{{ sensor_data.sp_uv.toFixed(2) }}<span class="text-muted ms-1 small">idx</span></span>
+      </div>
+      <div class="flex-fill d-flex flex-column align-items-center bg-theme-view rounded p-1">
+        <span class="small fw-semibold text-uppercase text-muted sensor-label">Humidity</span>
+        <span class="fw-bold">{{ sensor_data.sp_humidity.toFixed(2) }}<span class="text-muted ms-1 small">%</span></span>
+      </div>
+      <div class="flex-fill d-flex flex-column align-items-center bg-theme-view rounded p-1">
+        <span class="small fw-semibold text-uppercase text-muted sensor-label">Temp</span>
+        <span class="fw-bold">{{ sensor_data.sp_temp.toFixed(2) }}<span class="text-muted ms-1 small">&deg;C</span></span>
+      </div>
+      <div class="flex-fill d-flex flex-column align-items-center bg-theme-view rounded p-1">
+        <span class="small fw-semibold text-uppercase text-muted sensor-label">Ozone</span>
+        <span class="fw-bold">{{ sensor_data.sp_ozone.toFixed(2) }}<span class="text-muted ms-1 small">ppb</span></span>
+      </div>
+      <div class="flex-fill d-flex flex-column align-items-center bg-theme-view rounded p-1">
+        <span class="small fw-semibold text-uppercase text-muted sensor-label">CO2</span>
+        <span class="fw-bold">{{ sensor_data.sp_co2.toFixed(2) }}<span class="text-muted ms-1 small">ppm</span></span>
+      </div>
+      <div class="flex-fill d-flex flex-column align-items-center bg-theme-view rounded p-1">
+        <span class="small fw-semibold text-uppercase text-muted sensor-label">Pressure</span>
+        <span class="fw-bold">{{ sensor_data.sp_pressure.toFixed(0) }}<span class="text-muted ms-1 small">Pa</span></span>
+      </div>
+    </div>
   </div>
 
-  <div style="display: flex; flex-direction: row; gap: 10px">
-    <div style="width: 50%; overflow-x: scroll">
-      <canvas
-        id="chart0"
-        style="width: 100%; height: 200px; background-color: white"
-      ></canvas>
+  <div class="d-flex flex-column gap-2 flex-grow-1 min-height-0">
+    <div class="d-flex gap-2 flex-fill min-height-0 flex-basis-0">
+      <div class="cmd-panel d-flex flex-column flex-fill min-width-0 p-1 flex-basis-0">
+        <span class="cmd-data-label mb-1">Humidity (%)</span>
+        <div class="flex-grow-1 min-height-0">
+          <canvas id="chart0"></canvas>
+        </div>
+      </div>
+      <div class="cmd-panel d-flex flex-column flex-fill min-width-0 p-1 flex-basis-0">
+        <span class="cmd-data-label mb-1">UV Index</span>
+        <div class="flex-grow-1 min-height-0">
+          <canvas id="chart1"></canvas>
+        </div>
+      </div>
     </div>
-    <div style="width: 50%; overflow-x: scroll; margin-top: 5px">
-      <canvas
-        id="chart1"
-        style="width: 100%; height: 200px; background-color: white"
-      ></canvas>
+    <div class="d-flex gap-2 flex-fill min-height-0 flex-basis-0">
+      <div class="cmd-panel d-flex flex-column flex-fill min-width-0 p-1 flex-basis-0">
+        <span class="cmd-data-label mb-1">Ozone (ppb)</span>
+        <div class="flex-grow-1 min-height-0">
+          <canvas id="chart2"></canvas>
+        </div>
+      </div>
+      <div class="cmd-panel d-flex flex-column flex-fill min-width-0 p-1 flex-basis-0">
+        <span class="cmd-data-label mb-1">Pressure (Pa)</span>
+        <div class="flex-grow-1 min-height-0">
+          <canvas id="chart3"></canvas>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -102,8 +127,25 @@ export default {
     };
   },
 
-  mounted() {
-    const charts: Chart[] = [];
+const sensor_data = ref<SensorData>({
+  sp_oxygen: 0,
+  sp_uv: 0,
+  sp_humidity: 0,
+  sp_temp: 0,
+  sp_ozone: 0,
+  sp_co2: 0,
+  sp_pressure: 0,
+})
+const sensor_history = ref<number[][]>([
+  Array(20).fill(0),
+  Array(20).fill(0),
+  Array(20).fill(0),
+  Array(20).fill(0),
+  Array(20).fill(0),
+  Array(20).fill(0),
+  Array(20).fill(0),
+])
+const timeCounter = ref(0)
 
     // This helper function waits for a DOM element to be available
     function waitForElm(selector: string): Promise<Element | null> {
@@ -272,8 +314,20 @@ export default {
 </script>
 
 <style scoped>
-.sensors {
-  display: flex;
-  align-items: start;
+.sensor-label {
+  font-size: 0.65rem;
+  letter-spacing: 0.05em;
+}
+
+.min-height-0 {
+  min-height: 0;
+}
+
+.min-width-0 {
+  min-width: 0;
+}
+
+.flex-basis-0 {
+  flex: 1 1 0 !important;
 }
 </style>

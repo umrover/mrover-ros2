@@ -1,32 +1,30 @@
 <template>
-  <div class="waypoints p-2">
-    <div class="waypoint-header mb-1">
-      <h5 class="mb-0">{{ waypoint.name }}</h5>
-      <small class="text-muted">ID: {{ waypoint.id }}</small>
+  <div class="cmd-list-item p-2 rounded border border-2">
+    <div class="d-flex justify-content-between align-items-center mb-1">
+      <div class="d-flex align-items-center gap-2">
+        <i class="bi bi-grip-vertical drag-handle"></i>
+        <h5 class="cmd-list-item-title m-0">{{ waypoint.name }}</h5>
+      </div>
+      <span class="cmd-data-label">#{{ waypoint.id }}</span>
     </div>
 
-    <div class="coordinates mb-1">
-      <p class="coordinate m-0">{{ waypoint.lat.toFixed(7) }}ºN</p>
-      <span class="mx-2">|</span>
-      <p class="coordinate m-0">{{ waypoint.lon.toFixed(7) }}ºW</p>
+    <div class="d-flex align-items-center justify-content-center gap-1 mb-2">
+      <span class="cmd-data-value">{{ waypoint.lat.toFixed(7) }}</span>
+      <span class="cmd-data-unit">ºN</span>
+      <span class="text-muted mx-1">|</span>
+      <span class="cmd-data-value">{{ waypoint.lon.toFixed(7) }}</span>
+      <span class="cmd-data-unit">ºW</span>
     </div>
 
-    <div class="d-flex w-100 gap-2">
+    <div class="d-flex gap-1">
       <button
-        v-if="!enable_costmap"
-        class="btn btn-danger w-100"
+        class="btn btn-sm border-2 flex-fill"
+        :class="enable_costmap ? 'btn-success' : 'btn-danger'"
         @click="toggleCostmap"
       >
         Costmap
       </button>
-      <button
-        v-if="enable_costmap"
-        class="btn btn-success w-100"
-        @click="toggleCostmap"
-      >
-        Costmap
-      </button>
-      <button class="btn btn-danger w-100" @click="deleteWaypoint">Delete</button>
+      <button class="btn btn-sm btn-danger border-2 flex-fill" @click="deleteWaypoint">Delete</button>
     </div>
   </div>
 </template>
@@ -101,30 +99,36 @@ export default {
 </script>
 
 <style scoped>
-.waypoints {
-  background-color: #ffffff;
-  border-radius: 6px;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+.cmd-list-item {
+  background-color: var(--card-bg);
 }
 
-.waypoint-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+.cmd-list-item-title {
+  font-size: 0.875rem;
+  font-weight: 600;
 }
 
-.coordinates {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  width: 100%;
+.cmd-data-label {
+  font-size: 0.6875rem;
+  color: var(--text-muted);
 }
 
-.coordinate {
-  text-align: center;
-  flex: 1;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+.cmd-data-value {
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.cmd-data-unit {
+  font-size: 0.6875rem;
+  color: var(--text-muted);
+}
+
+.drag-handle {
+  cursor: grab;
+  color: var(--text-muted);
+}
+
+.drag-handle:active {
+  cursor: grabbing;
 }
 </style>
