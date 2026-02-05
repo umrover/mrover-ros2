@@ -112,8 +112,8 @@
       dev_path: ""
       stream:
         pixel_format: ABGR32 # https://www.kernel.org/doc/html/v4.9/media/uapi/v4l/pixfmt-packed-rgb.html
-        width: 1280
-        height: 720
+        width: 640
+        height: 480
         framerate: 15
         codec: H265
         bitrate: 1000000

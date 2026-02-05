@@ -75,6 +75,7 @@ def generate_launch_description():
         launch_list.append(container)
         launch_list.append(load_container)
 
-    add_detector("laptop")
+    add_detector("cam1")
+    add_detector("cam2")
 
     return LaunchDescription(launch_list)

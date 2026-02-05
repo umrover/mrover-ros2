@@ -1,32 +1,55 @@
-# Laptop Camera
-laptop_cam:
+# Camera1
+cam1_cam:
   ros__parameters:
     device: "video0"
 
-laptop_cam_tag_detector:
+cam1_cam_tag_detector:
   ros__parameters:
-    image_sub_topic: "/laptop_cam/image"
-    box_pub_topic: "/laptop_cam/tag_boxes"
+    image_sub_topic: "/cam1_cam/image"
+    box_pub_topic: "/cam1_cam/tag_boxes"
 
-laptop_cam_object_detector:
+cam1_cam_object_detector:
   ros__parameters:
-    image_sub_topic: "/laptop_cam/image"
-    box_pub_topic: "/laptop_cam/object_boxes"
+    image_sub_topic: "/cam1_cam/image"
+    box_pub_topic: "/cam1_cam/object_boxes"
 
-laptop_cam_streamer:
+cam1_cam_streamer:
   ros__parameters:
-    camera: "laptop_cam"
+    camera: "cam1_cam"
 
-laptop_cam_detections:
+cam1_cam_detections:
   ros__parameters:
-    camera_name: "laptop"
+    camera_name: "cam1"
+
+# Camera2
+cam2_cam:
+  ros__parameters:
+    device: "video2"
+
+cam2_cam_tag_detector:
+  ros__parameters:
+    image_sub_topic: "/cam2_cam/image"
+    box_pub_topic: "/cam2_cam/tag_boxes"
+
+cam2_cam_object_detector:
+  ros__parameters:
+    image_sub_topic: "/cam2_cam/image"
+    box_pub_topic: "/cam2_cam/object_boxes"
+
+cam2_cam_streamer:
+  ros__parameters:
+    camera: "cam2_cam"
+
+cam2_cam_detections:
+  ros__parameters:
+    camera_name: "cam2"
 
 /**:
   ros__parameters:
-    laptop_cam:
+    cam1_cam:
       address: 10.1.0.2 # laptop
       port: 8087
-      image_topic: "/laptop_cam/detections"
+      image_topic: "/cam1_cam/detections"
       dev_node: ""
       dev_path: ""
       stream:
@@ -36,3 +59,24 @@ laptop_cam_detections:
         framerate: 30
         codec: H265
         bitrate: 1000000
+    cam2_cam:
+      address: 10.1.0.2 # laptop
+      port: 8088
+      image_topic: "/cam2_cam/detections"
+      dev_node: ""
+      dev_path: ""
+      stream:
+        pixel_format: ABGR32
+        width: 640
+        height: 480
+        framerate: 30
+        codec: H265
+        bitrate: 1000000
+
+camera_client:
+  ros__parameters:
+    test: 10
+    cameras:
+      - "cam1_cam"
+      - "cam2_cam"
+    rtp_jitter_ms: 50
