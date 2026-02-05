@@ -68,7 +68,7 @@ namespace mrover {
         SE3d pose_in_map(position_in_map, SO3d::Identity());
 
         auto const& qmsg = imu_msg.orientation;
-        if (!(std::isfinite(qmsg.w) || !std::isfinite(qmsg.x) || !std::isfinite(qmsg.y) || !std::isfinite(qmsg.z))) {
+        if (!std::isfinite(qmsg.w) || !std::isfinite(qmsg.x) || !std::isfinite(qmsg.y) || !std::isfinite(qmsg.z)) {
             RCLCPP_WARN(get_logger(), "IMU quaternion has non-finite component; skipping orientation update");
             return;
         }
