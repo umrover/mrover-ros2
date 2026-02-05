@@ -178,10 +178,10 @@ const selectedIndex = ref<number>(-1)
 // Adjusted X coordinates to make room for labels within the 240px viewBox
 const wheelPositions = [
   { id: 'front_left', label: 'Front Left', short: 'FL', x: 60, y: 30 },
-  { id: 'front_right', label: 'Front Right', short: 'FR', x: 180, y: 30 },
   { id: 'mid_left', label: 'Middle Left', short: 'ML', x: 60, y: 55 },
-  { id: 'mid_right', label: 'Middle Right', short: 'MR', x: 180, y: 55 },
   { id: 'rear_left', label: 'Rear Left', short: 'RL', x: 60, y: 80 },
+  { id: 'front_right', label: 'Front Right', short: 'FR', x: 180, y: 30 },
+  { id: 'mid_right', label: 'Middle Right', short: 'MR', x: 180, y: 55 },
   { id: 'rear_right', label: 'Rear Right', short: 'RR', x: 180, y: 80 },
 ]
 
