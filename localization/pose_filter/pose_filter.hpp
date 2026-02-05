@@ -41,7 +41,7 @@ namespace mrover {
 
         // parameters
         std::string world_frame;
-        std::string rover_frame;
+        std::string gps_frame;
         double rover_heading_change_threshold;
         double minimum_linear_speed;
 
