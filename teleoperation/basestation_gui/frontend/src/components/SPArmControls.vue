@@ -14,7 +14,7 @@ import { useWebsocketStore } from '@/stores/websocket'
 import GamepadDisplay from './GamepadDisplay.vue'
 import IndicatorDot from './IndicatorDot.vue'
 
-const UPDATE_HZ = 20
+const UPDATE_HZ = 30
 
 const websocketStore = useWebsocketStore()
 
