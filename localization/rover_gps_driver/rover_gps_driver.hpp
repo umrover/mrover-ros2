@@ -22,20 +22,26 @@ namespace mrover {
         boost::asio::basic_serial_port<boost::asio::io_context::executor_type> serial;
         boost::asio::streambuf read_buffer;
 
-        unsigned long baud;
+        int baud;
         std::string port;
-        std::string frame_id;
+        std::string gps_frame;
 
         // data store
         std::map<std::string, std::string> headers_to_constellations;
         std::map<std::string, std::vector<uint8_t> > satellite_signals;
 
         const uint8_t MAX_SATELLITE_SIGNAL_SIZE = 36;
+
+        // reference coordinates
+        double ref_lat;
+        double ref_lon;
+        double ref_alt;
         
 
     public:
         explicit RoverGPSDriver(boost::asio::io_context& io);
         void spin();
+        void stop();
 
     }; // class RoverDriverNode
 } // namespace mrover
