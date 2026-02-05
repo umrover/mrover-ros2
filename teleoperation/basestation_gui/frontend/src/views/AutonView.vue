@@ -77,9 +77,9 @@ import { storeToRefs } from 'pinia'
 
 const defaultLayout = [
   { x: 0, y: 0, w: 6, h: 2, i: 'odometry' },
-  { x: 0, y: 2, w: 6, h: 5, i: 'nav-status' },
-  { x: 0, y: 7, w: 3, h: 1, i: 'velocity' },
-  { x: 3, y: 7, w: 3, h: 1, i: 'controls' },
+  { x: 0, y: 2, w: 6, h: 4, i: 'nav-status' },
+  { x: 0, y: 7, w: 2, h: 2, i: 'velocity' },
+  { x: 2, y: 7, w: 4, h: 2, i: 'controls' },
   { x: 0, y: 8, w: 6, h: 4, i: 'moteus' },
   { x: 6, y: 0, w: 6, h: 5, i: 'map' },
   { x: 6, y: 5, w: 6, h: 7, i: 'waypoints' },

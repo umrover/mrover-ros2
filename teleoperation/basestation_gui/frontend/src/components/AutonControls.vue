@@ -1,5 +1,5 @@
 <template>
-  <div class="d-flex flex-row gap-2 h-100">
+  <div class="d-flex flex-row gap-2">
     <div class="d-flex flex-column gap-1" style="flex: 1;">
       <FeedbackButton
         ref="autonCheckbox"
@@ -16,6 +16,29 @@
         :checked="teleopEnabled"
         :action="teleopAction"
         @toggle="handleTeleopToggle"
+      />
+    </div>
+    <div class="d-flex flex-column gap-1" style="flex: 1;">
+      <FeedbackButton
+        class="w-100"
+        :name="'Pure Pursuit'"
+        :checked="purePursuitEnabled"
+        :action="purePursuitAction"
+        @toggle="handlePurePursuitToggle"
+      />
+      <FeedbackButton
+        class="w-100"
+        :name="'Path Relaxation'"
+        :checked="pathRelaxationEnabled"
+        :action="pathRelaxationAction"
+        @toggle="handlePathRelaxationToggle"
+      />
+      <FeedbackButton
+        class="w-100"
+        :name="'Path Smoothing'"
+        :checked="pathSmoothingEnabled"
+        :action="pathSmoothingAction"
+        @toggle="handlePathSmoothingToggle"
       />
     </div>
   </div>
@@ -35,6 +58,9 @@ const autonomyStore = useAutonomyStore()
 
 const autonEnabled = computed(() => autonomyStore.autonEnabled)
 const teleopEnabled = computed(() => autonomyStore.teleopEnabled)
+const purePursuitEnabled = computed(() => autonomyStore.purePursuitEnabled)
+const pathRelaxationEnabled = computed(() => autonomyStore.pathRelaxationEnabled)
+const pathSmoothingEnabled = computed(() => autonomyStore.pathSmoothingEnabled)
 
 const autonAction = (newState: boolean) => {
   const route = autonomyStore.route
@@ -62,6 +88,30 @@ const teleopAction = (newState: boolean) => {
 const handleTeleopToggle = (newState: boolean) => {
   autonomyStore.setTeleopMode(newState)
   emit('toggleTeleop', newState)
+}
+
+const purePursuitAction = (newState: boolean) => {
+  return autonAPI.togglePurePursuit(newState)
+}
+
+const handlePurePursuitToggle = (newState: boolean) => {
+  autonomyStore.setPurePursuit(newState)
+}
+
+const pathRelaxationAction = (newState: boolean) => {
+  return autonAPI.togglePathRelaxation(newState)
+}
+
+const handlePathRelaxationToggle = (newState: boolean) => {
+  autonomyStore.setPathRelaxation(newState)
+}
+
+const pathSmoothingAction = (newState: boolean) => {
+  return autonAPI.togglePathSmoothing(newState)
+}
+
+const handlePathSmoothingToggle = (newState: boolean) => {
+  autonomyStore.setPathSmoothing(newState)
 }
 </script>
 

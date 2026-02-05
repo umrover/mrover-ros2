@@ -1,16 +1,17 @@
 <template>
-  <div class="rounded d-flex flex-row gap-5 w-100 h-100 align-items-center">
-    <h4 class="component-header">Velocity</h4>
-    <div class="d-flex flex-column gap-1 flex-grow-1">
-      <div class="d-flex align-items-baseline gap-1 text-nowrap">
-        <span class="cmd-data-label">Linear</span>
-        <span class="cmd-data-value velocity-value">{{ linear_x.toFixed(3) }}</span>
-        <span class="cmd-data-unit">m/s</span>
+  <div class="d-flex flex-column gap-2">
+    <div class="d-flex align-items-baseline justify-content-between">
+      <span class="cmd-data-label">Linear</span>
+      <div>
+        <span class="cmd-data-value velocity-value">{{ linear_x.toFixed(2) }}</span>
+        <span class="cmd-data-unit ms-1">m/s</span>
       </div>
-      <div class="d-flex align-items-baseline gap-1 text-nowrap">
-        <span class="cmd-data-label">Angular</span>
-        <span class="cmd-data-value velocity-value">{{ angular_z.toFixed(3) }}</span>
-        <span class="cmd-data-unit">rad/s</span>
+    </div>
+    <div class="d-flex align-items-baseline justify-content-between">
+      <span class="cmd-data-label">Angular</span>
+      <div>
+        <span class="cmd-data-value velocity-value">{{ angular_z.toFixed(2) }}</span>
+        <span class="cmd-data-unit ms-1">rad/s</span>
       </div>
     </div>
   </div>
