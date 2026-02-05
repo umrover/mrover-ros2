@@ -11,7 +11,7 @@ export const useAutonomyStore = defineStore('autonomy', () => {
   const teleopEnabled = ref(false)
   const purePursuitEnabled = ref(false)
   const pathRelaxationEnabled = ref(false)
-  const pathSmoothingEnabled = ref(false)
+  const pathInterpolationEnabled = ref(false)
   const odomFormat = ref('DM')
   const clickPoint = ref({ lat: 0, lon: 0 })
 
@@ -45,8 +45,8 @@ export const useAutonomyStore = defineStore('autonomy', () => {
     pathRelaxationEnabled.value = enabled
   }
 
-  function setPathSmoothing(enabled: boolean) {
-    pathSmoothingEnabled.value = enabled
+  function setPathInterpolation(enabled: boolean) {
+    pathInterpolationEnabled.value = enabled
   }
 
   function setWaypointList(newList: StoreWaypoint[]) {
@@ -74,7 +74,7 @@ export const useAutonomyStore = defineStore('autonomy', () => {
     teleopEnabled,
     purePursuitEnabled,
     pathRelaxationEnabled,
-    pathSmoothingEnabled,
+    pathInterpolationEnabled,
     odomFormat,
     clickPoint,
     // Getters
@@ -91,7 +91,7 @@ export const useAutonomyStore = defineStore('autonomy', () => {
     setTeleopMode,
     setPurePursuit,
     setPathRelaxation,
-    setPathSmoothing,
+    setPathInterpolation,
     setWaypointList,
     setHighlightedWaypoint,
     setOdomFormat,
