@@ -1,4 +1,5 @@
 #include "keyboard_typing.hpp"
+#include "lie.hpp"
 
 
 namespace mrover{
@@ -128,11 +129,11 @@ namespace mrover{
             Eigen::Quaterniond cam_rot(cam_to_tag.rotation());
             Eigen::Quaterniond frame_rotation(cam_to_arm_rotation);
             Eigen::Quaterniond transformed_rotation = (frame_rotation * cam_rot).normalized();
-            
+
             SE3d arm_fk_to_tag{arm_fk_pos, transformed_rotation};
 
             // Publish to tf tree
-            SE3Conversions::pushToTfTree(tf_broadcaster, "keyboard_tag", "arm_gripper_link", gripper_to_cam*arm_fk_to_tag, get_clock()->now());
+            SE3Conversions::pushToTfTree(tf_broadcaster, "keyboard_tag", "arm_fk", gripper_to_cam*arm_fk_to_tag, get_clock()->now());
 
             // Initialize transforms for every key, temporarily here for now
             SE3d z_to_tag{zKeyTransformation_new, Eigen::Quaterniond::Identity()};
@@ -356,6 +357,11 @@ namespace mrover{
             }
             if(key == 'g'){
                 rotateGripper(-M_PI/2);
+            }
+            if(key == 'h'){
+                SE3d transform = SE3Conversions::fromTfTree(tf_buffer, "arm_fk", "arm_gripper_link");
+                RCLCPP_INFO_STREAM(get_logger(), "y: " << transform.translation().y());
+                RCLCPP_INFO_STREAM(get_logger(), "z: " << transform.translation().z());
             }
             // if(logPose){
             //     outputToCSV(combined_tvec, combined_rvec);
@@ -611,10 +617,22 @@ namespace mrover{
         if(!mIKPub){
             RCLCPP_ERROR(get_logger(), "IK publisher not initialized");
         }
+        // shift over to arm_gripper_link
+        float y_offset_local = -0.0062535;
+
+        float dx = y_offset_local * (std::sin(pitch) * std::sin(roll));
+        float dy = y_offset_local * std::cos(roll);
+        float dz = y_offset_local * (std::cos(pitch) * std::sin(roll));
+
+
         msg::IK message;
-        message.pos.x = x;
-        message.pos.y = y;
-        message.pos.z = z;
+
+        message.pos.x = x + dx;
+        message.pos.y = y + dy;
+        message.pos.z = z + dz;
+        // message.pos.x = x;
+        // message.pos.y = y;
+        // message.pos.z = z;
         message.pitch = pitch;
         message.roll = roll;
 
