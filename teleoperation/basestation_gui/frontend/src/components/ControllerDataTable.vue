@@ -206,7 +206,8 @@ const selectedData = computed(() => {
   }
 })
 
-const roverImageUrl = `${import.meta.env.BASE_URL}urdf/DM_Rover_image.svg`
+// Use the DM_Rover_image.svg in the public root directory
+const roverImageUrl = `${import.meta.env.BASE_URL}DM_Rover_image.svg`
 </script>
 
 <style scoped>
