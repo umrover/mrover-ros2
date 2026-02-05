@@ -5,16 +5,16 @@ namespace mrover {
     RoverGPSDriver::RoverGPSDriver(boost::asio::io_context& io) : Node("rover_gps_driver"), serial(io) {
         
         // connect to serial
-        declare_parameter("port_unicore", rclcpp::ParameterType::PARAMETER_STRING);
-        declare_parameter("baud_unicore", rclcpp::ParameterType::PARAMETER_INTEGER);
-        declare_parameter("frame_id", rclcpp::ParameterType::PARAMETER_STRING);
-        declare_parameter("ref_lat", rclcpp::ParameterType::PARAMETER_DOUBLE);
-        declare_parameter("ref_lon", rclcpp::ParameterType::PARAMETER_DOUBLE);
-        declare_parameter("ref_alt", rclcpp::ParameterType::PARAMETER_DOUBLE);
+        std::vector<ParameterWrapper> params{
+                {"port_unicore", port, "/dev/unicore_gps"},
+                {"baud_unicore", baud, 115200},
+                {"gps_frame", gps_frame, "gps_frame"},
+                {"ref_lat", ref_lat, 42.293195},
+                {"ref_lon", ref_lon, -83.7096706},
+                {"ref_alt", ref_alt, 0.0}
+        };
 
-        port = get_parameter("port_unicore").as_string();
-        baud = get_parameter("baud_unicore").as_int();
-        frame_id = get_parameter("frame_id").as_string();
+        ParameterWrapper::declareParameters(this, params);
 
         serial.open(port);
         std::string port_string = std::to_string(baud);
@@ -25,11 +25,11 @@ namespace mrover {
         // publishers and subscribers
         gps_pub = this->create_publisher<sensor_msgs::msg::NavSatFix>("/gps/fix", 10);
         gps_status_pub = this->create_publisher<mrover::msg::FixStatus>("/gps_fix_status", 10);
+        satellite_signal_pub = this->create_publisher<mrover::msg::SatelliteSignal>("/gps/satellite_signal", 10);
         heading_pub = this->create_publisher<mrover::msg::Heading>("/heading/fix", 10);
         heading_status_pub = this->create_publisher<mrover::msg::FixStatus>("/heading_fix_status", 10);
         velocity_pub = this->create_publisher<geometry_msgs::msg::Vector3Stamped>("/velocity/fix", 10);
         velocity_status_pub = this->create_publisher<mrover::msg::FixStatus>("/velocity_fix_status", 10);
-        satellite_signal_pub = this->create_publisher<mrover::msg::SatelliteSignal>("/gps/satellite_signal", 10);
         rtcm_sub = this->create_subscription<rtcm_msgs::msg::Message>("/rtcm", 10, [&](rtcm_msgs::msg::Message::ConstSharedPtr const& rtcm_message) {
             process_rtcm(rtcm_message);
         });
@@ -80,9 +80,9 @@ namespace mrover {
                     fix_type.fix = mrover::msg::FixType::NO_SOL;
                     fix_status.fix_type = fix_type;
 
-                    nav_sat_fix.latitude = get_parameter("ref_lat").as_double();
-                    nav_sat_fix.longitude = get_parameter("ref_lon").as_double();
-                    nav_sat_fix.altitude = get_parameter("ref_alt").as_double();
+                    nav_sat_fix.latitude = ref_lat;
+                    nav_sat_fix.longitude = ref_lon;
+                    nav_sat_fix.altitude = ref_alt;
 
                     gps_pub->publish(nav_sat_fix);
                     gps_status_pub->publish(fix_status);
@@ -247,12 +247,26 @@ namespace mrover {
 
     void RoverGPSDriver::spin() {
         while (rclcpp::ok()) {
-            boost::asio::read_until(serial, read_buffer, '\n');
-            std::istream buffer(&read_buffer);
-            std::string unicore_msg;
-            std::getline(buffer, unicore_msg);
-            process_unicore(unicore_msg);
+            try{
+                boost::asio::read_until(serial, read_buffer, '\n');
+                std::istream buffer(&read_buffer);
+                std::string unicore_msg;
+                std::getline(buffer, unicore_msg);
+                process_unicore(unicore_msg);
+            }catch(...){
+                // Do nothing
+                RCLCPP_WARN(get_logger(), "Exception caught while reading from the serial port.");
+            }
+            
             rclcpp::spin_some(this->get_node_base_interface());
+        }
+    }
+
+    void RoverGPSDriver::stop() {
+        boost::system::error_code e;
+        serial.close(e);
+        if (e) {
+            RCLCPP_WARN(this->get_logger(), "Failed to close serial port: %s", e.message().c_str());
         }
     }
 
@@ -266,6 +280,8 @@ int main(int argc, char**argv) {
     auto node = std::make_shared<mrover::RoverGPSDriver>(io);
 
     node->spin();
+
+    node->stop();
     rclcpp::shutdown();
     
     return 0;
