@@ -231,6 +231,10 @@ mrover_add_node(rover_gps_driver localization/rover_gps_driver.cpp)
 ament_target_dependencies(rover_gps_driver rclcpp sensor_msgs rtcm_msgs)
 target_link_libraries(rover_gps_driver parameter_utils)
 
+mrover_add_node(iekf_se3 localization/iekf_se3/*.cpp)
+ament_target_dependencies(iekf_se3 rclcpp tf2 tf2_ros geometry_msgs sensor_msgs)
+target_link_libraries(iekf_se3 lie Eigen3::Eigen)
+
 mrover_add_node(heading_filter localization/heading_filter.cpp)
 ament_target_dependencies(heading_filter rclcpp rcutils sensor_msgs builtin_interfaces message_filters)
 target_link_libraries(heading_filter lie)
