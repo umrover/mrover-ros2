@@ -28,13 +28,26 @@ def generate_launch_description():
             extra_arguments=[{"use_intra_process_comms": True}],
         )
 
-        cam = ComposableNode(
-            package="mrover",
-            plugin="mrover::UsbCamera",
-            name=f"{cam_name}_cam",
-            parameters=[Path(get_package_share_directory("mrover"), "config", "multi_detection.yaml")],
-            extra_arguments=[{"use_intra_process_comms": True}],
-        )
+        if cam_name != "zed":
+            cam = ComposableNode(
+                package="mrover",
+                plugin="mrover::UsbCamera",
+                name=f"{cam_name}_cam",
+                parameters=[Path(get_package_share_directory("mrover"), "config", "multi_detection.yaml")],
+                extra_arguments=[{"use_intra_process_comms": True}],
+            )
+        else:
+            cam = ComposableNode(
+                package="mrover",
+                plugin="mrover::ZedWrapper",
+                name=f"zed_wrapper",
+                parameters=[
+                        Path(get_package_share_directory("mrover"), "config", "multi_detection.yaml"),
+                        Path(get_package_share_directory("mrover"), "config", "zed.yaml")
+                    ],
+                extra_arguments=[{"use_intra_process_comms": True}],
+            )
+
 
         tag_detector = ComposableNode(
             package="mrover",
@@ -79,5 +92,6 @@ def generate_launch_description():
     add_detector("cam2")
     add_detector("cam3")
     add_detector("cam4")
+    add_detector("zed")
 
     return LaunchDescription(launch_list)

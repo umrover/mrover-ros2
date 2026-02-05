@@ -19,7 +19,10 @@ cam1_cam_streamer:
 
 cam1_cam_detections:
   ros__parameters:
-    camera_name: "cam1"
+    image_topic: "/cam1_cam/image"
+    tag_topic: "/cam1_cam/tag_boxes"
+    object_topic: "/cam1_cam/object_boxes"
+    detection_topic: "/cam1_cam/detections"
 
 # Camera2
 cam2_cam:
@@ -42,7 +45,10 @@ cam2_cam_streamer:
 
 cam2_cam_detections:
   ros__parameters:
-    camera_name: "cam2"
+    image_topic: "/cam2_cam/image"
+    tag_topic: "/cam2_cam/tag_boxes"
+    object_topic: "/cam2_cam/object_boxes"
+    detection_topic: "/cam2_cam/detections"
 
 # Camera3
 cam3_cam:
@@ -65,7 +71,10 @@ cam3_cam_streamer:
 
 cam3_cam_detections:
   ros__parameters:
-    camera_name: "cam3"
+    image_topic: "/cam3_cam/image"
+    tag_topic: "/cam3_cam/tag_boxes"
+    object_topic: "/cam3_cam/object_boxes"
+    detection_topic: "/cam3_cam/detections"
 
 # Camera4
 cam4_cam:
@@ -88,7 +97,32 @@ cam4_cam_streamer:
 
 cam4_cam_detections:
   ros__parameters:
-    camera_name: "cam4"
+    image_topic: "/cam4_cam/image"
+    tag_topic: "/cam4_cam/tag_boxes"
+    object_topic: "/cam4_cam/object_boxes"
+    detection_topic: "/cam4_cam/detections"
+
+# ZED
+zed_cam_tag_detector:
+  ros__parameters:
+    image_sub_topic: "/zed/left/image"
+    box_pub_topic: "/zed/left/tag_boxes"
+
+zed_cam_object_detector:
+  ros__parameters:
+    image_sub_topic: "/zed/left/image"
+    box_pub_topic: "/zed/left/object_boxes"
+
+zed_cam_streamer:
+  ros__parameters:
+    camera: "zed"
+
+zed_cam_detections:
+  ros__parameters:
+    image_topic: "/zed/left/image"
+    tag_topic: "/zed/left/tag_boxes"
+    object_topic: "/zed/left/object_boxes"
+    detection_topic: "/zed/left/detections"
 
 /**:
   ros__parameters:
@@ -144,6 +178,19 @@ cam4_cam_detections:
         framerate: 30
         codec: H265
         bitrate: 1000000
+    zed:
+      address: 10.1.0.2 # laptop
+      port: 8091
+      image_topic: "/zed/left/detections"
+      dev_node: ""
+      dev_path: ""
+      stream:
+        pixel_format: ABGR32
+        width: 1280
+        height: 720
+        framerate: 30
+        codec: H265
+        bitrate: 1000000
 
 camera_client:
   ros__parameters:
@@ -153,4 +200,5 @@ camera_client:
       - "cam2_cam"
       - "cam3_cam"
       - "cam4_cam"
+      - "zed"
     rtp_jitter_ms: 50

@@ -7,16 +7,18 @@ namespace mrover {
     };
 
     Combiner::Combiner(rclcpp::NodeOptions const& options) : Node{"combiner", options} {
-        std::string cameraName{};
+        std::string imageTopicName{};
+        std::string tagTopicName{};
+        std::string objectTopicName{};
+        std::string imagePubTopicName{};
         std::vector<ParameterWrapper> params{
-                {"camera_name", cameraName, "camera"}};
+                {"image_topic", imageTopicName, "/usb_cam/image"},
+                {"tag_topic", tagTopicName, "/usb_cam/tag_boxes"},
+                {"object_topic", objectTopicName, "/usb_cam/object_boxes"},
+                {"detection_topic", imagePubTopicName, "/usb_cam/detections"}};
 
         ParameterWrapper::declareParameters(this, params);
 
-        std::string imageTopicName = std::format("/{}_cam/image", cameraName);
-        std::string tagTopicName = std::format("/{}_cam/tag_boxes", cameraName);
-        std::string objectTopicName = std::format("/{}_cam/object_boxes", cameraName);
-        std::string imagePubTopicName = std::format("/{}_cam/detections", cameraName);
 
         for(auto const& [name, _] : CLASSES){
             mObjectBoxes[name] = std::tuple<std::deque<cv::Rect>, std::deque<float>, std::deque<std::size_t>>();
