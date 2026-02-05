@@ -452,6 +452,10 @@ class Context:
         self.move_future = None
         self.dilate_future = None
 
+        # not great but idc
+        self.node.set_parameters([Parameter("smoothing.use_relaxation", Parameter.Type.BOOL, False)])
+        self.node.set_parameters([Parameter("smoothing.use_interpolation", Parameter.Type.BOOL, False)])
+
         if not node.get_parameter("costmap.custom_costmap").value:
             while not self.move_cli.wait_for_service(timeout_sec=1.0):
                 node.get_logger().info("Waiting for move_cost_map service...")
