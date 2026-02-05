@@ -417,8 +417,8 @@ class Context:
 
         # services 
         node.create_service(EnableAuton, "enable_auton", self.enable_auton)
-        node.create_service(SetBool, "/navigation/toggle_path_relaxation", self.toggle_path_relaxation)
-        node.create_service(SetBool, "/navigation/toggle_path_interpolation", self.toggle_path_interpolation)
+        node.create_service(SetBool, "toggle_path_relaxation", self.toggle_path_relaxation)
+        node.create_service(SetBool, "toggle_path_interpolation", self.toggle_path_interpolation)
 
         # publishers
         self.command_publisher = node.create_publisher(Twist, "nav_cmd_vel", 1)
