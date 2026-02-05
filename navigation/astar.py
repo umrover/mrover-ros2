@@ -8,7 +8,8 @@ from nav_msgs.msg import Path
 from std_msgs.msg import Header
 from navigation.context import Context
 from navigation.trajectory import Trajectory
-from navigation.coordinate_utils import ij_to_cartesian, cartesian_to_ij, d_calc, segment_path, is_high_cost_point
+from navigation.coordinate_utils import ij_to_cartesian, cartesian_to_ij, d_calc, segment_path, is_high_cost_point, publish_trajectory
+from navigation.smoothing import Relaxation, SplineInterpolation
 from rclpy.publisher import Publisher
 
 
@@ -140,11 +141,11 @@ class AStar:
             while open_set:
                 _, current = heapq.heappop(open_set)
 
-            if debug:
-                debug_list.append(self.return_path(self,came_from, current))
+                if debug:
+                    debug_list.append(self.return_path(came_from, current))
 
-            if current == end_ij:
-                return debug_list if debug else self.return_path(self,came_from, current)
+                if current == end_ij:
+                    return debug_list if debug else self.return_path(came_from, current)
 
                 for rel_pos in adjacent_squares:
                     neighbor_pos = tuple(np.array(current) + rel_pos)
@@ -228,7 +229,7 @@ class AStar:
             trajectory.reset()
             return Trajectory(np.array([]))
             # raise NoPath
-
+            
         if occupancy_list is not None:
             cartesian_coords = ij_to_cartesian(context, np.array(occupancy_list))
             # Exclude the first point since it should be the rover's starting position

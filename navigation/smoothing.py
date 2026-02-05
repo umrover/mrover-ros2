@@ -5,8 +5,6 @@ from navigation.coordinate_utils import cartesian_to_ij, ij_to_cartesian, publis
 from scipy.interpolate import splev, splprep
 import numpy as np
 import math, sys
-from rclpy.node import Node
-from mrover.srv import Smoothing
 
 
 
@@ -34,7 +32,7 @@ def smoothing(trajectory: Trajectory, context: Context, should_relax: bool, shou
         cartesian_coords = np.hstack((cartesian_coords, np.zeros((cartesian_coords.shape[0], 1))))
 
     else:
-        cartesian_coords = trajectory
+        cartesian_coords = trajectory.coordinates
     
     
     output = Trajectory(cartesian_coords)

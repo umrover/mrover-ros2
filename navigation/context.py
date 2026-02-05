@@ -26,6 +26,8 @@ from std_srvs.srv import SetBool
 from mrover.srv import EnableAuton
 from nav_msgs.msg import Path
 from nav_msgs.msg import OccupancyGrid
+from visualization_msgs.msg import Marker, MarkerArray
+from rclpy import Parameter
 from rclpy.duration import Duration
 from rclpy.node import Node
 from rclpy.publisher import Publisher
@@ -38,6 +40,7 @@ from state_machine.state import State
 from std_msgs.msg import Bool, Header
 from .drive import DriveController
 from collections import deque
+from copy import deepcopy
 
 NO_TAG: int = -1
 
@@ -378,6 +381,9 @@ class Context:
     stuck_listener: Subscription
     costmap_listener: Subscription
     path_history_publisher: Publisher
+    path_marker_publisher: Publisher
+    relaxed_publisher: Publisher
+    interpolated_publisher: Publisher
     COSTMAP_THRESH: float
     current_dilation_radius: float
     exec: SingleThreadedExecutor
@@ -416,6 +422,9 @@ class Context:
 
         self.use_pure_pursuit = node.get_parameter("pure_pursuit.use_pure_pursuit").value
 
+        node.create_service(SetBool, "/navigation/toggle_path_relaxation", self.toggle_path_relaxation)
+        node.create_service(SetBool, "/navigation/toggle_path_interpolation", self.toggle_path_interpolation)
+
         # publishers
         self.command_publisher = node.create_publisher(Twist, "nav_cmd_vel", 1)
         self.search_point_publisher = node.create_publisher(GPSPointList, "search_path", 1)
@@ -428,6 +437,10 @@ class Context:
         self.drive = DriveController(node, self.lookahead_pub, self.intersection_pub)
 
         self.drive = DriveController(node, self.lookahead_pub, self.intersection_pub)
+
+        self.relaxed_publisher = node.create_publisher(MarkerArray, "relaxed_path", 10)
+        self.interpolated_publisher = node.create_publisher(MarkerArray, "interpolated_path", 10)
+        self.tf_broadcaster = tf2_ros.StaticTransformBroadcaster(node)
 
         # subscribers
         node.create_subscription(Bool, "nav_stuck", self.stuck_callback, 1)
@@ -451,6 +464,10 @@ class Context:
         self.dilate_cli = node.create_client(DilateCostMap, "dilate_cost_map")
         self.move_future = None
         self.dilate_future = None
+
+        # not great but idc
+        self.node.set_parameters([Parameter("smoothing.use_relaxation", Parameter.Type.BOOL, False)])
+        self.node.set_parameters([Parameter("smoothing.use_interpolation", Parameter.Type.BOOL, False)])
 
         if not node.get_parameter("costmap.custom_costmap").value:
             while not self.move_cli.wait_for_service(timeout_sec=1.0):
@@ -482,6 +499,20 @@ class Context:
         else:
             self.node.set_parameters([Parameter("pure_pursuit.use_pure_pursuit", Parameter.Type.BOOL, False)])
         response.success = True
+    def toggle_path_relaxation(self, request: SetBool.Request, response: SetBool.Response) -> SetBool.Response:
+        self.node.set_parameters([Parameter("smoothing.use_relaxation", Parameter.Type.BOOL, request.data)])
+        self.node.get_logger().info(f"Set path relaxation toggle to {request.data}.")
+        
+        response.success = True
+        response.message = f"Set path relaxation toggle to {request.data}."
+        return response
+
+    def toggle_path_interpolation(self, request: SetBool.Request, response: SetBool.Response) -> SetBool.Response:
+        self.node.set_parameters([Parameter("smoothing.use_interpolation", Parameter.Type.BOOL, request.data)])
+        self.node.get_logger().info(f"Set path interpolation toggle to {request.data}.")
+        
+        response.success = True
+        response.message = f"Set path interpolation toggle to {request.data}."
         return response
 
     def stuck_callback(self, msg: Bool) -> None:

@@ -17,6 +17,8 @@ from geometry_msgs.msg import Twist
 from state_machine.state import State
 from rclpy.publisher import Publisher
 
+from navigation.smoothing import smoothing
+
 
 # REFERENCE: https://docs.google.com/document/d/18GjDWxIu5f5-N5t5UgbrZGdEyaDj9ZMEUuXex8-NKrA/edit
 class CostmapSearchState(State):
@@ -40,6 +42,8 @@ class CostmapSearchState(State):
 
     USE_COSTMAP: bool
     USE_PURE_PURSUIT: bool
+    USE_RELAXATION: bool
+    USE_INTERPOLATION: bool
     STOP_THRESH: float
     DRIVE_FWD_THRESH: float
     UPDATE_DELAY: float
@@ -57,6 +61,8 @@ class CostmapSearchState(State):
 
         self.USE_COSTMAP = context.node.get_parameter("costmap.use_costmap").value or current_waypoint.enable_costmap
         self.USE_PURE_PURSUIT = context.node.get_parameter_or("pure_pursuit.use_pure_pursuit", True).value
+        self.USE_INTERPOLATION = True # TODO set properly
+        self.USE_RELAXATION = True # TODO set properly
 
         self.STOP_THRESH = context.node.get_parameter("search.stop_threshold").value
         self.DRIVE_FWD_THRESH = context.node.get_parameter("search.drive_forward_threshold").value
@@ -83,7 +89,7 @@ class CostmapSearchState(State):
         self.marker_timer.cancel()
         if self.update_astar_timer is not None:
             self.update_astar_timer.cancel()
-        context.delete_path_marker(ns=str(type(self)))
+        self.marker_pub.publish(gen_marker(context, delete=True))
 
     def display_markers(self, context: Context) -> None:
         start_pt = self.spiral_traj.cur_pt
@@ -92,16 +98,17 @@ class CostmapSearchState(State):
             if self.spiral_traj.cur_pt + 3 < len(self.spiral_traj.coordinates)
             else len(self.spiral_traj.coordinates)
         )
-        context.publish_path_marker(
-            points=self.spiral_traj.coordinates[start_pt:end_pt], color=[1.0, 0.0, 1.0], ns=str(type(self))
-        )
-
-        if not self.astar_traj.is_last() and not self.astar_traj.done():
-            context.publish_path_marker(
-                points=self.astar_traj.coordinates[self.astar_traj.cur_pt :], color=[1.0, 0.0, 0.0], ns=str(type(AStar))
-            )
-        else:
-            context.delete_path_marker(ns=str(type(AStar)))
+        if context.node.get_parameter("display_markers").value:
+            for i, coord in enumerate(self.spiral_traj.coordinates[start_pt:end_pt]):
+                self.marker_pub.publish(
+                    gen_marker(
+                        context=context,
+                        point=coord,
+                        color=[1.0, 0.0, 0.0],
+                        id=i,
+                        lifetime=context.node.get_parameter("pub_path_rate").value,
+                    )
+                )
 
     def update_astar_traj(self, context: Context):
         if context.course is None:
@@ -109,6 +116,7 @@ class CostmapSearchState(State):
         context.rover.send_drive_command(Twist())
         try:
             self.astar_traj = self.astar.generate_trajectory(context, self.spiral_traj.get_current_point())
+            self.astar_traj = smoothing(self.astar_traj, context, self.USE_RELAXATION, self.USE_INTERPOLATION)
         except Exception as e:
             context.node.get_logger().info(str(e))
             return self

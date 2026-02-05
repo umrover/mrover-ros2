@@ -1,12 +1,12 @@
 import numpy as np
 from navigation.context import Context
-from visualization_msgs.msg import Marker
+from visualization_msgs.msg import Marker, MarkerArray
 from rclpy.duration import Duration
 from rclpy.time import Time
 from std_msgs.msg import Header
 from navigation.trajectory import Trajectory
 from lie import SE3
-
+from rclpy.publisher import Publisher
 
 def cartesian_to_ij(context: Context, cart_coord: np.ndarray) -> np.ndarray:
     """
@@ -112,3 +112,15 @@ def is_high_cost_point(point: np.ndarray, context: Context) -> bool:
         context.node.get_logger().warn("Point is out of bounds in the costmap")
         return False
     return cost_map[int(point_ij[0])][int(point_ij[1])] > context.node.get_parameter("search.traversable_cost").value
+
+
+def publish_trajectory(trajectory: Trajectory, ctx, publisher: Publisher, color=[1,1,1], size=0.2) -> None:
+    """
+    Publishes a Marker Array to the given topic.
+    """
+    m_arr = []
+    for i, c in enumerate(trajectory.coordinates):
+        m_arr.append(gen_marker(ctx, list(c), color=color, id=i, size=size))
+
+    publisher.publish(MarkerArray(markers=m_arr))
+

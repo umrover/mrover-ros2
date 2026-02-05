@@ -23,8 +23,10 @@ class ApproachTargetState(State):
     DISTANCE_THRESHOLD: float
     COST_INFLATION_RADIUS: float
     time_begin: Time
+
     astar_traj: Trajectory
     target_traj: Trajectory
+
     astar: AStar
     marker_pub: Publisher
     time_last_updated: Time
