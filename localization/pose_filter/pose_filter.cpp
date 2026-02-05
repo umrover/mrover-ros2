@@ -5,12 +5,12 @@ namespace mrover {
     PoseFilter::PoseFilter() : Node("pose_filter") {
 
         declare_parameter("world_frame", rclcpp::ParameterType::PARAMETER_STRING);
-        declare_parameter("rover_frame", rclcpp::ParameterType::PARAMETER_STRING);
+        declare_parameter("gps_frame", rclcpp::ParameterType::PARAMETER_STRING);
         declare_parameter("rover_heading_change_threshold", rclcpp::ParameterType::PARAMETER_DOUBLE);
         declare_parameter("minimum_linear_speed", rclcpp::ParameterType::PARAMETER_DOUBLE);
 
         world_frame = get_parameter("world_frame").as_string();
-        rover_frame = get_parameter("rover_frame").as_string();
+        gps_frame = get_parameter("gps_frame").as_string();
         rover_heading_change_threshold = get_parameter("rover_heading_change_threshold").as_double();
         minimum_linear_speed = get_parameter("minimum_linear_speed").as_double();
 
@@ -67,7 +67,17 @@ namespace mrover {
         R3d position_in_map(last_pos.value().x, last_pos.value().y, last_pos.value().z);
         SE3d pose_in_map(position_in_map, SO3d::Identity());
 
-        Eigen::Quaterniond uncorrected_orientation(imu_msg.orientation.w, imu_msg.orientation.x, imu_msg.orientation.y, imu_msg.orientation.z);
+        auto const& qmsg = imu_msg.orientation;
+        if (!(std::isfinite(qmsg.w) || !std::isfinite(qmsg.x) || !std::isfinite(qmsg.y) || !std::isfinite(qmsg.z))) {
+            RCLCPP_WARN(get_logger(), "IMU quaternion has non-finite component; skipping orientation update");
+            return;
+        }
+        Eigen::Quaterniond uncorrected_orientation(qmsg.w, qmsg.x, qmsg.y, qmsg.z);
+        double const norm2 = uncorrected_orientation.squaredNorm();
+        if (!std::isfinite(norm2) || norm2 < 1e-12) {
+            RCLCPP_WARN(get_logger(), "IMU quaternion has invalid/near-zero norm; skipping orientation update");
+            return;
+        }
         uncorrected_orientation.normalize();
         SO3d uncorrected_orientation_rotm = uncorrected_orientation;
 
@@ -81,7 +91,7 @@ namespace mrover {
             pose_in_map.asSO3() = corrected_orientation;
         }
 
-        SE3Conversions::pushToTfTree(tf_broadcaster, rover_frame, world_frame, pose_in_map, get_clock()->now());
+        SE3Conversions::pushToTfTree(tf_broadcaster, gps_frame, world_frame, pose_in_map, get_clock()->now());
     }
 
     void PoseFilter::drive_forward_callback() {
@@ -111,8 +121,8 @@ namespace mrover {
         for (rclcpp::Time t = start; t < end; t += STEP) {
 
             try {
-                auto rover_in_map_old = SE3Conversions::fromTfTree(tf_buffer, rover_frame, world_frame, t - STEP);
-                auto rover_in_map_new = SE3Conversions::fromTfTree(tf_buffer, rover_frame, world_frame, t);
+                auto rover_in_map_old = SE3Conversions::fromTfTree(tf_buffer, gps_frame, world_frame, t - STEP);
+                auto rover_in_map_new = SE3Conversions::fromTfTree(tf_buffer, gps_frame, world_frame, t);
                 R3d rover_velocity_in_map = (rover_in_map_new.translation() - rover_in_map_old.translation()) / STEP.seconds();
                 R3d rover_angular_velocity_in_map = (rover_in_map_new.asSO3() - rover_in_map_old.asSO3()).coeffs();
                 rover_velocity_sum += rover_velocity_in_map.head<2>();
@@ -145,12 +155,33 @@ namespace mrover {
 
         RCLCPP_INFO(get_logger(), "Drive forward heading: %f deg", drive_forward_heading * (180 / M_PI));
 
-        Eigen::Quaterniond uncorrected_orientation(last_imu.value().orientation.w, last_imu.value().orientation.x, last_imu.value().orientation.y, last_imu.value().orientation.z);
-        R2d uncorrected_forward = uncorrected_orientation.toRotationMatrix().col(0).head(2);
-        double uncorrected_heading = std::atan2(uncorrected_forward.y(), uncorrected_forward.x());
+        {
+            auto const& qmsg2 = last_imu.value().orientation;
+            if (!std::isfinite(qmsg2.w) || !std::isfinite(qmsg2.x) || !std::isfinite(qmsg2.y) || !std::isfinite(qmsg2.z)) {
+                RCLCPP_WARN(get_logger(), "IMU quaternion has non-finite component; skipping heading correction");
+                return;
+            }
+            Eigen::Quaterniond uncorrected_orientation(qmsg2.w, qmsg2.x, qmsg2.y, qmsg2.z);
+            double const norm2 = uncorrected_orientation.squaredNorm();
+            if (!std::isfinite(norm2) || norm2 < 1e-12) {
+                RCLCPP_WARN(get_logger(), "IMU quaternion has invalid/near-zero norm; skipping heading correction");
+                return;
+            }
+            uncorrected_orientation.normalize();
+            R2d uncorrected_forward = uncorrected_orientation.toRotationMatrix().col(0).head(2);
+            if (!(uncorrected_forward.array().isFinite().all())) {
+                RCLCPP_WARN(get_logger(), "Forward vector not finite; skipping heading correction");
+                return;
+            }
+            double uncorrected_heading = std::atan2(uncorrected_forward.y(), uncorrected_forward.x());
+            if (!std::isfinite(uncorrected_heading)) {
+                RCLCPP_WARN(get_logger(), "Computed heading is not finite; skipping heading correction");
+                return;
+            }
 
-        double heading_correction_delta = drive_forward_heading - uncorrected_heading;
-        curr_heading_correction = Eigen::AngleAxisd(heading_correction_delta, R3d::UnitZ());
+            double heading_correction_delta = drive_forward_heading - uncorrected_heading;
+            curr_heading_correction = Eigen::AngleAxisd(heading_correction_delta, R3d::UnitZ());
+        }
 
 
     }
