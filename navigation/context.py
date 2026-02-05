@@ -420,8 +420,6 @@ class Context:
         node.create_service(EnableAuton, "enable_auton", self.enable_auton)
         node.create_service(SetBool, "toggle_pure_pursuit", self.toggle_pure_pursuit)
 
-        self.use_pure_pursuit = node.get_parameter("pure_pursuit.use_pure_pursuit").value
-
         node.create_service(SetBool, "/navigation/toggle_path_relaxation", self.toggle_path_relaxation)
         node.create_service(SetBool, "/navigation/toggle_path_interpolation", self.toggle_path_interpolation)
 
@@ -493,7 +491,6 @@ class Context:
         return response
     
     def toggle_pure_pursuit(self, request: SetBool.Request, response: SetBool.Response) -> SetBool.Response:
-        # TODO(brendan): do whatever you need to here
         if request.data:
             self.node.set_parameters([Parameter("pure_pursuit.use_pure_pursuit", Parameter.Type.BOOL, True)])
         else:
