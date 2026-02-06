@@ -64,7 +64,6 @@ namespace mrover {
 
         double K = (P) / (P + heading_correction_delta_noise);
         double innovation = heading_correction_delta_meas - X;
-        innovation = fmod((innovation + 3 * M_PI), 2 * M_PI) - M_PI;
         X = X + K * innovation;
         P = (1 - K) * P;
 
