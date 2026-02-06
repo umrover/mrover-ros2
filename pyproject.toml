@@ -11,27 +11,20 @@ maintainers = [
 dependencies = [
     "empy==3.3.4",
     "numpy==1.26.4",
-    "shapely==2.0.6",   
+    "shapely==2.0.6",
     "moteus==0.3.72",
     "pymap3d==3.1.0",
     "pyubx2==1.2.45",
     "lark==1.1.2",
     "transforms3d==0.4.2",
     "colcon-common-extensions==0.3.0",
-    "django>=5.0",
-    "daphne>=4.1",
-    "channels>=4.1",
     "opencv-python>=4.9",
     "graphviz>=0.21",
     "fastapi>=0.100.0",
     "pydantic>=2.0.0",
     "websockets>=12.0",
     "msgpack>=1.0.0",
-    "uvicorn>=0.38.0",
-    "pytest>=7.0.0",
-    "pytest-asyncio>=0.21.0",
-    "websocket-client>=1.6.0",
-    "requests>=2.28.0",
+    "uvicorn>=0.38.0"
 ]
 
 [project.optional-dependencies]
