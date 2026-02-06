@@ -3,6 +3,17 @@
 #   apt:
 #     name: nvidia-driver-{{driver_edition}}
 #
+- name: Check NVIDIA Driver Install
+  ansible.builtin.command: nvidia-smi
+  register: nvidia_smi_output
+  ignore_errors: true
+  changed_when: false
+
+- name: Check Driver Status
+  ansible.builtin.fail:
+    msg: "NVIDIA driver is not installed or nvidia-smi is not in PATH. Install nvidia drivers before running this playbook"
+  when: nvidia_smi_output.rc != 0
+
 - name: Download CUDA Keyring
   get_url:
     url: https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-keyring_1.1-1_all.deb
@@ -19,18 +30,18 @@
     update_cache: true
     state: latest
     name:
-      - cuda-12-3
+      - cuda-toolkit-12-6
       - g++-9
       - zstd # Required to unpack ZED installer
 
 - name: ZED SDK Download
   get_url:
-    url: https://download.stereolabs.com/zedsdk/4.1/cu121/ubuntu22
-    dest: /tmp/ZED_SDK_Ubuntu22_cuda12.1_v4.1.4.zstd.run
+    url: https://download.stereolabs.com/zedsdk/4.2/cu12/ubuntu22
+    dest: /tmp/ZED_SDK_Ubuntu22_cuda12.1_v4.2.5.zstd.run
     mode: 0755
 
 - name: ZED SDK Install
   # Silent mode prevents any user input prompting
-  command: /tmp/ZED_SDK_Ubuntu22_cuda12.1_v4.1.4.zstd.run -- silent
+  command: /tmp/ZED_SDK_Ubuntu22_cuda12.1_v4.2.5.zstd.run --silent
   args:
     creates: /usr/local/zed
