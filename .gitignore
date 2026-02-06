@@ -8,6 +8,9 @@
 .idea/
 compile_commands.json
 
+# Compile Commands
+compile_commands.json
+
 # clangd cache
 .cache/
 
@@ -27,14 +30,19 @@ venv/
 *.db
 bun.lock
 bun.lockb
-/teleoperation/api-docs/
+**/package-lock.json
+**/node_modules/
+**/test-results/
+**/playwright-report/
 .python-version
-system*.html
-openapitools.json
 
 # macOS
 .DS_Store
 # nav state log
 state_machine/state_log.txt
+
+/teleoperation/basestation_gui/install/
+/teleoperation/basestation_gui/log/
+
 data/*.png
 data/raw-pano-images

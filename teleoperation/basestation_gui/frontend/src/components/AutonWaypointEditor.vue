@@ -68,68 +68,70 @@
   </div>
 
   <!-- Add Waypoint Modal -->
-  <div class="modal fade" id="modalWypt" tabindex="-1" role="dialog">
-    <div class="modal-dialog modal-dialog-centered" role="document">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">Add Waypoint</h5>
-          <button type="button" class="btn-close" @click="closeModal"></button>
-        </div>
-        <div class="modal-body">
-          <div class="row g-3">
-            <div class="col-md-6">
-              <label for="waypointname" class="form-label">Name:</label>
-              <input
-                class="form-control"
-                id="waypointname"
-                v-model="modalWypt.name"
-              />
-            </div>
-            <div class="col-md-6">
-              <label for="waypointid" class="form-label">Tag ID:</label>
-              <input
-                v-if="modalWypt.type == 1"
-                class="form-control"
-                id="waypointid"
-                v-model="modalWypt.id"
-                type="number"
-                max="249"
-                min="0"
-                step="1"
-              />
-              <input
-                v-else
-                class="form-control"
-                id="waypointid"
-                type="number"
-                placeholder="-1"
-                disabled
-              />
-            </div>
-            <div class="col-12">
-              <label class="form-label">Type:</label>
-              <select class="form-select" v-model="modalWypt.type">
-                <option value="0">No Search</option>
-                <option value="1">Post</option>
-                <option value="2">Mallet</option>
-                <option value="3">Water Bottle</option>
-                <option value="4">Rock Pick</option>
-              </select>
+  <Teleport to="body">
+    <div class="modal fade" id="modalWypt" tabindex="-1" role="dialog">
+      <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Add Waypoint</h5>
+            <button type="button" class="btn-close" @click="closeModal"></button>
+          </div>
+          <div class="modal-body">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label for="waypointname" class="form-label">Name:</label>
+                <input
+                  class="form-control"
+                  id="waypointname"
+                  v-model="modalWypt.name"
+                />
+              </div>
+              <div class="col-md-6">
+                <label for="waypointid" class="form-label">Tag ID:</label>
+                <input
+                  v-if="modalWypt.type == 1"
+                  class="form-control"
+                  id="waypointid"
+                  v-model="modalWypt.id"
+                  type="number"
+                  max="249"
+                  min="0"
+                  step="1"
+                />
+                <input
+                  v-else
+                  class="form-control"
+                  id="waypointid"
+                  type="number"
+                  placeholder="-1"
+                  disabled
+                />
+              </div>
+              <div class="col-12">
+                <label class="form-label">Type:</label>
+                <select class="form-select" v-model="modalWypt.type">
+                  <option value="0">No Search</option>
+                  <option value="1">Post</option>
+                  <option value="2">Mallet</option>
+                  <option value="3">Water Bottle</option>
+                  <option value="4">Rock Pick</option>
+                </select>
+              </div>
             </div>
           </div>
-        </div>
-        <div class="modal-footer">
-          <button
-            type="button"
-            class="btn btn-secondary"
-            @click="saveNewWaypoint"
-          >
-            Add Waypoint
-          </button>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              @click="saveNewWaypoint"
+            >
+              Add Waypoint
+            </button>
+          </div>
         </div>
       </div>
     </div>
-  </div>
+  </Teleport>
 </template>
 
 <script lang="ts">
@@ -444,7 +446,7 @@ export default defineComponent({
 }
 
 .waypoint-wrapper {
-  background-color: #dddddd;
+  background-color: var(--view-bg);
   padding: 8px;
   border-radius: 8px;
 }

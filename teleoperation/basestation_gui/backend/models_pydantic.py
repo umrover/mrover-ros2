@@ -59,5 +59,5 @@ class RAModeRequest(BaseModel):
     mode: str
 
 class ServoPositionRequest(BaseModel):
-    name: List[str]
-    position: List[float]
+    names: List[str]
+    positions: List[float]

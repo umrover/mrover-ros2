@@ -1,4 +1,53 @@
 <template>
+  <button 
+    type="button"
+    class="btn flex-fill"
+    @click = "set_camera_type('default')">
+      Default
+  </button>
+  <button 
+    type="button"
+    class="btn flex-fill"
+    @click = "set_camera_type('follow')">
+      Follow
+  </button>
+  <button 
+    type="button"
+    class="btn flex-fill"
+    @click = "set_camera_type('arm')">
+      Arm
+  </button>
+   <button 
+    type="button"
+    class="btn flex-fill"
+    @click = "set_camera_type('full arm')">
+      Full Arm
+  </button>
+  <button 
+    type="button"
+    class="btn flex-fill"
+    @click = "set_camera_type('side arm')">
+      Side Arm
+  </button>
+  <button 
+    type="button"
+    class="btn flex-fill"
+    @click = "set_camera_type('top')">
+      Top Down
+  </button>
+  <button 
+    type="button"
+    class="btn flex-fill"
+    @click = "set_camera_type('bottom')">
+      Bottom Up
+  </button>
+  <button
+    type="button"
+    class="btn flex-fill"
+    @click = "updateCostMapGrid()">
+      Test Button
+  </button>
+
   <canvas class="webgl p-0 h-100 w-100"></canvas>
 </template>
 
@@ -7,7 +56,7 @@ import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useWebsocketStore } from '@/stores/websocket'
 import { storeToRefs } from 'pinia'
 import type { ControllerStateMessage } from '@/types/websocket'
-import threeSetup, { updatePose, updateIKTarget } from '../rover_three.js'
+import threeSetup, { updatePose, updateIKTarget, set_camera_type, updateCostMapGrid} from '../rover_three.js'
 
 interface ArmIKMessage {
   type: 'ik_target'
@@ -47,15 +96,16 @@ onBeforeUnmount(() => {
 })
 
 const armMessage = computed(() => messages.value['arm'])
+const contextMessage = computed(() => messages.value['context'])
 
 watch(armMessage, (msg: unknown) => {
   if (!msg || typeof msg !== 'object') return
 
   if ('type' in msg && msg.type === 'arm_state') {
     const typedMsg = msg as ControllerStateMessage
-    const joints = typedMsg.name.map((name: string, index: number) => {
+    const joints = typedMsg.names.map((name: string, index: number) => {
       const urdfName = jointNameMap[name] || name
-      let position = typedMsg.position[index] ?? 0
+      let position = typedMsg.positions[index] ?? 0
 
       if (urdfName === 'chassis_to_arm_a') {
         position = position * -100 + 40 // scale from m to cm
@@ -77,6 +127,15 @@ watch(armMessage, (msg: unknown) => {
         z: typedMsg.target.pose.position.y * -100 + 20,
       }
       updateIKTarget(position)
+    }
+  }
+})
+
+watch(contextMessage, (msg: unknown) => {
+  if (typeof msg == 'object' && msg !== null && 'type' in msg) {
+    const typedMsg = msg as { type: string; state?: string }
+    if (typedMsg.type === 'costmap') {
+      console.log("hi")
     }
   }
 })
