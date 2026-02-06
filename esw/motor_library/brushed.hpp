@@ -1,57 +1,183 @@
 #pragma once
 
-#include <std_srvs/srv/trigger.hpp>
-
-#include <messaging.hpp>
-#include <parameter.hpp>
-#include <units.hpp>
-
 #include "controller.hpp"
+#include "parameter.hpp"
 
 namespace mrover {
 
-    struct Gains {
-        double p{}, i{}, d{}, ff{};
-    };
+    class BrushedController final : public ControllerBase<BrushedController> {
+        using Base = ControllerBase<BrushedController>;
 
-    // For now only revolute joints are supported => hardcode to Radians
-    class BrushedController final : public ControllerBase<Radians, BrushedController> {
-        static constexpr std::size_t MAX_NUM_LIMIT_SWITCHES = 2;
-        static_assert(MAX_NUM_LIMIT_SWITCHES <= 2, "Only 2 limit switches are supported");
+        enum struct mode_t : uint8_t {
+            STOPPED = 0,
+            FAULT = 1,
+            THROTTLE = 5,
+            POSITION = 6,
+            VELOCITY = 7,
+        };
 
-        Gains mPositionGains{};
-        Gains mVelocityGains{};
+        enum struct bmc_error_t : uint8_t {
+            NONE,                           // no error
+            NO_MODE,                        // no mode selected
+            INVALID_CONFIGURATION_FOR_MODE, // in position or velocity mode without feedback mechanism configured to close the loop
+            INVALID_FLASH_CONFIG,           // signal that there are too many encoders connected or something
+            WWDG_EXPIRED,                   // watchdog expired
+            UNCALIBRATED,                   // received position or velocity mode before calibrated
+            CAN_ERROR_FATAL,                // unrecoverable CAN error encountered
+            I2C_ERROR_FATAL,                // unrecoverable I2C error encountered
+            SPI_ERROR_FATAL,                // unrecoverable SPI error encountered
+        };
 
-        Percent mCalibrationThrottle = 0.0;
+        static auto byte2mode(uint8_t const value) -> mode_t {
+            switch (value) {
+                case 0:
+                    return mode_t::STOPPED;
+                case 1:
+                    return mode_t::FAULT;
+                case 5:
+                    return mode_t::THROTTLE;
+                case 6:
+                    return mode_t::POSITION;
+                case 7:
+                    return mode_t::VELOCITY;
+                default:
+                    throw std::invalid_argument("invalid mode");
+            }
+        }
 
-        bool mIsConfigured{false};
-        ConfigCommand mConfigCommand;
+        static auto err2str(bmc_error_t const error) -> std::string {
+            switch (error) {
+                case bmc_error_t::NONE:
+                    return "None";
+                case bmc_error_t::NO_MODE:
+                    return "No mode selected";
+                case bmc_error_t::INVALID_CONFIGURATION_FOR_MODE:
+                    return "Invalid configuration for mode";
+                case bmc_error_t::INVALID_FLASH_CONFIG:
+                    return "Invalid flash configuration";
+                case bmc_error_t::WWDG_EXPIRED:
+                    return "CAN watchdog expired";
+                case bmc_error_t::UNCALIBRATED:
+                    return "Uncalibrated";
+                case bmc_error_t::CAN_ERROR_FATAL:
+                    return "Fatal CAN error";
+                case bmc_error_t::I2C_ERROR_FATAL:
+                    return "Fatal I2C error";
+                case bmc_error_t::SPI_ERROR_FATAL:
+                    return "Fatal SPI error";
+                default:
+                    return "Unknown Error";
+            }
+        }
+
+        mode_t m_reported_mode{mode_t::STOPPED};
+
+        void ensure_mode(mode_t const target_mode) {
+            if (m_reported_mode != target_mode) {
+                m_device.publish_message(BMCModeCmd{static_cast<uint8_t>(target_mode), 1});
+            }
+        }
 
     public:
-        BrushedController(rclcpp::Node::SharedPtr node, std::string masterName, std::string controllerName);
+        BrushedController(rclcpp::Node::SharedPtr node, std::string master_name, std::string controller_name)
+            : Base{std::move(node), std::move(master_name), std::move(controller_name)} {
+            // TODO(eric) one day when we fix the non-volatile configs on the BMC this will all go away
+            // bool motor_en, motor_inv, quad_en, quad_phase;
+            // bool abs_i2c_en, abs_i2c_phase, abs_spi_en, abs_spi_phase;
+            // bool lim_a_en, lim_a_active_high, lim_a_is_forward, lim_a_use_readjust;
+            // bool lim_b_en, lim_b_active_high, lim_b_is_forward, lim_b_use_readjust;
+            // float max_pwm;
+            // int host_id;
+            //
+            // std::vector<ParameterWrapper> parameters = {
+            //     {std::format("{}.max_pwm", m_controller_name), max_pwm, 1.0},
+            //
+            //     // SYS_CFG Bitfields
+            //     {std::format("{}.motor_en", m_controller_name), motor_en, false},
+            //     {std::format("{}.motor_inv", m_controller_name), motor_inv, false},
+            //     {std::format("{}.quad_en", m_controller_name), quad_en, false},
+            //     {std::format("{}.quad_phase", m_controller_name), quad_phase, false},
+            //     {std::format("{}.abs_i2c_en", m_controller_name), abs_i2c_en, false},
+            //     {std::format("{}.abs_i2c_phase", m_controller_name), abs_i2c_phase, false},
+            //     {std::format("{}.abs_spi_en", m_controller_name), abs_spi_en, false},
+            //     {std::format("{}.abs_spi_phase", m_controller_name), abs_spi_phase, false},
+            //
+            //     // LIMIT_CFG Bitfields
+            //     {std::format("{}.lim_a_en", m_controller_name), lim_a_en, false},
+            //     {std::format("{}.lim_a_active_high", m_controller_name), lim_a_active_high, false},
+            //     {std::format("{}.lim_a_is_forward", m_controller_name), lim_a_is_forward, false},
+            //     {std::format("{}.lim_a_use_readjust", m_controller_name), lim_a_use_readjust, false},
+            //     {std::format("{}.lim_b_en", m_controller_name), lim_b_en, false},
+            //     {std::format("{}.lim_b_active_high", m_controller_name), lim_b_active_high, false},
+            //     {std::format("{}.lim_b_is_forward", m_controller_name), lim_b_is_forward, false},
+            //     {std::format("{}.lim_b_use_readjust", m_controller_name), lim_b_use_readjust, false},
+            // };
+            //
+            // ParameterWrapper::declareParameters(m_node.get(), parameters);
 
-        auto setDesiredThrottle(Percent throttle) -> void; // from -1.0 to 1.0
+            // SYS_CFG
+            // uint8_t sys_cfg = 0;
+            // sys_cfg |= (static_cast<uint8_t>(motor_en)      << 0);
+            // sys_cfg |= (static_cast<uint8_t>(motor_inv)     << 1);
+            // sys_cfg |= (static_cast<uint8_t>(quad_en)      << 2);
+            // sys_cfg |= (static_cast<uint8_t>(quad_phase)   << 3);
+            // sys_cfg |= (static_cast<uint8_t>(abs_i2c_en)   << 4);
+            // sys_cfg |= (static_cast<uint8_t>(abs_i2c_phase)<< 5);
+            // sys_cfg |= (static_cast<uint8_t>(abs_spi_en)   << 6);
+            // sys_cfg |= (static_cast<uint8_t>(abs_spi_phase)<< 7);
 
-        auto setDesiredPosition(Radians position) -> void;
+            // LIMIT_CFG
+            // uint8_t limit_cfg = 0;
+            // limit_cfg |= (static_cast<uint8_t>(lim_a_en)           << 0);
+            // limit_cfg |= (static_cast<uint8_t>(lim_a_active_high)  << 1);
+            // limit_cfg |= (static_cast<uint8_t>(lim_a_is_forward)   << 2);
+            // limit_cfg |= (static_cast<uint8_t>(lim_a_use_readjust) << 3);
+            // limit_cfg |= (static_cast<uint8_t>(lim_b_en)           << 4);
+            // limit_cfg |= (static_cast<uint8_t>(lim_b_active_high)  << 5);
+            // limit_cfg |= (static_cast<uint8_t>(lim_b_is_forward)   << 6);
+            // limit_cfg |= (static_cast<uint8_t>(lim_b_use_readjust) << 7);
+            //
+            // m_device.publish_message(BMCConfigCmd{0x01, static_cast<uint32_t>(sys_cfg), true});
+            // m_device.publish_message(BMCConfigCmd{0x02, static_cast<uint32_t>(limit_cfg), true});
+            // m_device.publish_message(BMCConfigCmd{0x24, std::bit_cast<uint32_t>(max_pwm), true});
+        }
 
-        auto setDesiredVelocity(RadiansPerSecond velocity) -> void;
+        auto set_desired_throttle(Percent const throttle) -> void {
+            ensure_mode(mode_t::THROTTLE);
+            m_device.publish_message(BMCTargetCmd{throttle.get(), 1});
+        }
 
-        auto adjust(Radians position) -> void;
+        auto set_desired_position(Radians const position) -> void {
+            ensure_mode(mode_t::POSITION);
+            m_device.publish_message(BMCTargetCmd{position.get(), 1});
+        }
 
-        auto processCANMessage(msg::CAN::ConstSharedPtr const& msg) -> void;
+        auto set_desired_velocity(RadiansPerSecond const velocity) -> void {
+            ensure_mode(mode_t::VELOCITY);
+            m_device.publish_message(BMCTargetCmd{velocity.get(), 1});
+        }
 
-        auto processMessage(ControllerDataState const& state) -> void;
+        void process_message(can_msg_t const& msg) {
+            std::visit([this](auto const& decoded) -> auto {
+                using T = std::decay_t<decltype(decoded)>;
 
-        auto processMessage(DebugState const&) -> void {}
+                if constexpr (std::is_same_v<T, BMCMotorState>) {
+                    this->m_position = decoded.position;
+                    this->m_velocity = decoded.velocity;
+                    this->m_current = decoded.current;
+                    this->m_limit_hit[0] = static_cast<bool>(decoded.limit_a);
+                    this->m_limit_hit[1] = static_cast<bool>(decoded.limit_b);
 
-        auto sendConfiguration() -> void;
-
-        auto calibrateServiceCallback(std_srvs::srv::Trigger::Request::SharedPtr req, std_srvs::srv::Trigger::Response::SharedPtr res) -> void;
-
-    private:
-        static auto errorToString(BDCMCErrorInfo errorCode) -> std::string;
-
-        auto updateConfigFromParameters() -> void;
+                    // update internal bmc state
+                    auto mode = byte2mode(decoded.mode);
+                    this->m_reported_mode = mode;
+                    this->m_state = (mode == mode_t::FAULT) ? "Fault" : "Running";
+                    this->m_error_state = err2str(static_cast<bmc_error_t>(decoded.fault_code));
+                } else if constexpr (std::is_same_v<T, BMCAck>) {
+                    RCLCPP_INFO(m_node->get_logger(), "BMC Ack received: %u", decoded.data);
+                }
+            },
+                       msg);
+        }
     };
-
 } // namespace mrover
