@@ -10,7 +10,7 @@ namespace mrover {
         auto imageCallback(sensor_msgs::msg::Image::ConstSharedPtr const& msg) -> void;
 
         // CONSTANTS
-        static constexpr std::size_t NUM_CLASSES = 2;
+        static constexpr std::size_t NUM_CLASSES = 3;
         static constexpr std::size_t WINDOW_SIZE = 5;
         static std::array<std::pair<std::string, cv::Vec3b>, NUM_CLASSES> const CLASSES;
         static constexpr std::size_t LINE_THICKNESS = 4;

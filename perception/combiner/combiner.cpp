@@ -3,7 +3,8 @@
 namespace mrover {
     std::array<std::pair<std::string, cv::Vec3b>, Combiner::NUM_CLASSES> const Combiner::CLASSES = {
         std::pair<std::string, cv::Vec3b>{"hammer", cv::Vec3b{0,132,255}},
-        std::pair<std::string, cv::Vec3b>{"bottle", cv::Vec3b{255,43,0}}
+        std::pair<std::string, cv::Vec3b>{"bottle", cv::Vec3b{255,43,0}},
+        std::pair<std::string, cv::Vec3b>{"pick", cv::Vec3b{52,198,235}}
     };
 
     Combiner::Combiner(rclcpp::NodeOptions const& options) : Node{"combiner", options} {
