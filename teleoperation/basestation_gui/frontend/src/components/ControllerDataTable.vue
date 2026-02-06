@@ -108,13 +108,13 @@ function combineLeftRight() {
   const l = left || { names: [], states: [], errors: [], limits_hit: [], positions: [], velocities: [], currents: [] }
   const r = right || { names: [], states: [], errors: [], limits_hit: [], positions: [], velocities: [], currents: [] }
 
-  names.value = [...l.names, ...r.names]
-  states.value = [...l.states, ...r.states]
-  errors.value = [...l.errors, ...r.errors]
-  limitHits.value = [...l.limits_hit, ...r.limits_hit]
-  positions.value = [...l.positions, ...r.positions]
-  velocities.value = [...l.velocities, ...r.velocities]
-  currents.value = [...l.currents, ...r.currents]
+  names.value = l.names.concat(r.names)
+  states.value = l.states.concat(r.states)
+  errors.value = l.errors.concat(r.errors)
+  limitHits.value = l.limits_hit.concat(r.limits_hit)
+  positions.value = l.positions.concat(r.positions)
+  velocities.value = l.velocities.concat(r.velocities)
+  currents.value = l.currents.concat(r.currents)
 }
 
 const driveMessage = computed(() => messages.value['drive'])

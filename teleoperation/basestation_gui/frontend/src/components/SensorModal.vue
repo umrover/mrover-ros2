@@ -48,7 +48,7 @@
 </template>
 
 <script lang="ts" setup>
-import { onMounted, onUnmounted, watch } from 'vue'
+import { onMounted, onUnmounted } from 'vue'
 import Chart from 'chart.js/auto'
 import type { Chart as ChartType } from 'chart.js/auto'
 
@@ -245,8 +245,6 @@ onMounted(() => {
     charts.forEach(chart => chart?.destroy())
   })
 })
-
-watch(() => props.sensorHistory, updateCharts, { deep: true })
 </script>
 
 <style scoped>

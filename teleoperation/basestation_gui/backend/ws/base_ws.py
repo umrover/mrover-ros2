@@ -4,8 +4,26 @@ import time
 import msgpack
 from fastapi import WebSocket
 from rclpy.qos import qos_profile_sensor_data
-from rosidl_runtime_py.convert import message_to_ordereddict
 from backend.managers.ros import get_node
+
+_field_cache: dict[type, list[str]] = {}
+
+
+def _msg_to_dict(msg) -> dict:
+    msg_type = type(msg)
+    if msg_type not in _field_cache:
+        _field_cache[msg_type] = [s for s in msg.__slots__ if not s.startswith('_')]
+    result = {}
+    for slot in _field_cache[msg_type]:
+        val = getattr(msg, slot)
+        if hasattr(val, '__slots__') and hasattr(val, 'get_fields_and_field_types'):
+            result[slot] = _msg_to_dict(val)
+        elif isinstance(val, (list, tuple, bytes)):
+            result[slot] = list(val)
+        else:
+            result[slot] = val
+    return result
+
 
 FORWARD_RATE_HZ = 30
 FORWARD_INTERVAL_SEC = 1.0 / FORWARD_RATE_HZ
@@ -53,7 +71,8 @@ class WebSocketHandler:
                 if now - self.last_send_times[topic_name] < FORWARD_INTERVAL_SEC:
                     return
                 self.last_send_times[topic_name] = now
-                data_to_send = {"type": gui_msg_type, **message_to_ordereddict(ros_message)}
+                data_to_send = _msg_to_dict(ros_message)
+                data_to_send["type"] = gui_msg_type
                 self.schedule_send(data_to_send)
 
         sub = self.node.create_subscription(

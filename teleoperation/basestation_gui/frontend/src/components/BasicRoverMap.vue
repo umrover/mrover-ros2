@@ -30,8 +30,8 @@
         </l-marker>
       </div>
 
-      <l-polyline :lat-lngs="[...odomPath]" :color="'blue'" />
-      <l-polyline :lat-lngs="[...dronePath]" :color="'green'" />
+      <l-polyline :lat-lngs="odomPath" :color="'blue'" />
+      <l-polyline :lat-lngs="dronePath" :color="'green'" />
     </l-map>
     <div class="map-controls cmd-panel">
       <div class="d-flex align-items-center gap-2">
@@ -66,7 +66,7 @@ import 'leaflet-rotatedmarker'
 import type { LeafletMouseEvent } from 'leaflet'
 import type { StoreWaypoint } from '@/types/waypoints'
 import type { NavMessage } from '@/types/coordinates'
-import { ref, computed, watch } from 'vue'
+import { ref, shallowRef, triggerRef, computed, watch } from 'vue'
 import { useRoverMap } from '@/composables/useRoverMap'
 
 const erdStore = useErdStore()
@@ -101,8 +101,7 @@ const drone_latitude_deg = ref(0)
 const drone_longitude_deg = ref(0)
 const droneRef = ref<{ leafletObject: L.Marker } | null>(null)
 let droneMarker: L.Marker | null = null
-const droneCount = ref(0)
-const dronePath = ref<L.LatLng[]>([])
+const dronePath = shallowRef<L.LatLng[]>([])
 const circle = ref<L.Circle | null>(null)
 
 const droneIcon = L.icon({
@@ -168,15 +167,11 @@ watch([drone_latitude_deg, drone_longitude_deg], () => {
     droneMarker.setLatLng(latLng)
   }
 
-  droneCount.value++
-  if (droneCount.value % 1 === 0) {
-    if (dronePath.value.length > 1000) {
-      dronePath.value = [...dronePath.value.slice(1), latLng]
-    } else {
-      dronePath.value = [...dronePath.value, latLng]
-    }
-    droneCount.value = 0
+  if (dronePath.value.length > 1000) {
+    dronePath.value.shift()
   }
+  dronePath.value.push(latLng)
+  triggerRef(dronePath)
 })
 
 watch(searchWaypoint, (newIndex) => {

@@ -1,4 +1,3 @@
-import asyncio
 from typing import Optional
 from backend.ws.base_ws import WebSocketHandler
 from backend.input import DeviceInputs
@@ -32,8 +31,7 @@ class ArmHandler(WebSocketHandler):
             axes = data.get('axes', [])
             buttons = data.get('buttons', [])
             device_input = DeviceInputs(axes, buttons)
-            await asyncio.to_thread(
-                send_ra_controls,
+            send_ra_controls(
                 device_input,
                 self.node,
                 self.arm_thr_pub,

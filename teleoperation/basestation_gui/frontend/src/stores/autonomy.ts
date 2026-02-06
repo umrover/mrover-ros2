@@ -1,5 +1,5 @@
   import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 import type { StoreWaypoint, AutonRouteWaypoint } from '@/types/waypoints'
 
 export const useAutonomyStore = defineStore('autonomy', () => {
@@ -14,15 +14,6 @@ export const useAutonomyStore = defineStore('autonomy', () => {
   const pathInterpolationEnabled = ref(false)
   const odomFormat = ref('DM')
   const clickPoint = ref({ lat: 0, lon: 0 })
-
-  // Getters
-  const getRoute = computed(() => route.value)
-  const getWaypointList = computed(() => waypointList.value)
-  const getHighlightedWaypoint = computed(() => highlightedWaypoint.value)
-  const isAutonEnabled = computed(() => autonEnabled.value)
-  const isTeleopEnabled = computed(() => teleopEnabled.value)
-  const getOdomFormat = computed(() => odomFormat.value)
-  const getClickPoint = computed(() => clickPoint.value)
 
   // Actions
   function setRoute(newRoute: AutonRouteWaypoint[]) {
@@ -77,14 +68,6 @@ export const useAutonomyStore = defineStore('autonomy', () => {
     pathInterpolationEnabled,
     odomFormat,
     clickPoint,
-    // Getters
-    getRoute,
-    getWaypointList,
-    getHighlightedWaypoint,
-    isAutonEnabled,
-    isTeleopEnabled,
-    getOdomFormat,
-    getClickPoint,
     // Actions
     setRoute,
     setAutonMode,

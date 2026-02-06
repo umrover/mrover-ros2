@@ -152,8 +152,7 @@ def compute_manual_joint_controls(controller: DeviceInputs) -> list[float]:
 
 
 def subset(names: list[str], values: list[float], joints: set[Joint]) -> tuple[list[str], list[float]]:
-    filtered_joints = [j for j in joints]
-    return [names[i.value] for i in filtered_joints], [values[i.value] for i in filtered_joints]
+    return [names[i.value] for i in joints], [values[i.value] for i in joints]
 
 
 def send_ra_controls(
@@ -188,9 +187,11 @@ def send_ra_controls(
                     ik_vel_msg.angular.x = 1.0 * simulated_axis(inputs.axes, ControllerAxis.RIGHT_TRIGGER, ControllerAxis.LEFT_TRIGGER)
                     ee_vel_pub.publish(ik_vel_msg)
 
-                    manual_controls = compute_manual_joint_controls(inputs)
+                    cam_throttle = filter_input(
+                        simulated_axis(inputs.buttons, ControllerButton.Y, ControllerButton.A),
+                        scale=JOINT_SCALES[Joint.CAM.value],
+                    )
                     throttle_msg = Throttle()
-                    joint_names, throttle_values = subset(JOINT_NAMES, manual_controls, set(Joint))
                     throttle_msg.names = ["cam"]
-                    throttle_msg.throttles = [throttle_values[joint_names.index("cam")]]
+                    throttle_msg.throttles = [cam_throttle]
                     thr_pub.publish(throttle_msg)

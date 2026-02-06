@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 import type { StoreWaypoint } from '@/types/waypoints'
 
 export const useErdStore = defineStore('erd', () => {
@@ -9,13 +9,6 @@ export const useErdStore = defineStore('erd', () => {
   const searchWaypoint = ref(-1)
   const odomFormat = ref('DM')
   const clickPoint = ref({ lat: 0, lon: 0 })
-
-  // Getters
-  const getWaypointList = computed(() => waypointList.value)
-  const getHighlightedWaypoint = computed(() => highlightedWaypoint.value)
-  const getSearchWaypoint = computed(() => searchWaypoint.value)
-  const getOdomFormat = computed(() => odomFormat.value)
-  const getClickPoint = computed(() => clickPoint.value)
 
   // Actions
   function setWaypointList(newList: StoreWaypoint[]) {
@@ -45,12 +38,6 @@ export const useErdStore = defineStore('erd', () => {
     searchWaypoint,
     odomFormat,
     clickPoint,
-    // Getters
-    getWaypointList,
-    getHighlightedWaypoint,
-    getSearchWaypoint,
-    getOdomFormat,
-    getClickPoint,
     // Actions
     setWaypointList,
     setHighlightedWaypoint,
