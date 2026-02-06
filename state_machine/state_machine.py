@@ -66,7 +66,7 @@ class StateMachine(Generic[ContextType]):
                 self.current_state = next_state
                 self.current_state.on_enter(self.context)
             except Exception as e:
-                self.logger.debug(f"Error in {str(current_state)}: {e}")
+                self.logger.warn(f"Error in {str(current_state)}: {e}")
 
     def add_transition(self, state_from: State, state_to: State) -> None:
         self.state_transitions[type(state_from)].add(type(state_to))

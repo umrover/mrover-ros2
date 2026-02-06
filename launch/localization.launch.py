@@ -12,7 +12,10 @@ def generate_launch_description():
         package="mrover",
         executable="rover_gps_driver",
         name="rover_gps_driver",
-        parameters=[os.path.join(get_package_share_directory("mrover"), "config", "localization.yaml"), os.path.join(get_package_share_directory("mrover"), "config", "reference_coords.yaml")],
+        parameters=[
+            Path(get_package_share_directory("mrover"), "config", "localization.yaml"),
+            Path(get_package_share_directory("mrover"), "config", "reference_coords.yaml"),
+        ],
         output="screen",
         respawn=True,
     )
@@ -21,7 +24,10 @@ def generate_launch_description():
         package="mrover",
         executable="gps_linearization.py",
         name="gps_linearization",
-        parameters=[os.path.join(get_package_share_directory("mrover"), "config", "localization.yaml"), os.path.join(get_package_share_directory("mrover"), "config", "reference_coords.yaml")],
+        parameters=[
+            Path(get_package_share_directory("mrover"), "config", "localization.yaml"),
+            Path(get_package_share_directory("mrover"), "config", "reference_coords.yaml"),
+        ],
         respawn=True,
     )
 
@@ -29,7 +35,10 @@ def generate_launch_description():
         package="mrover",
         executable="heading_filter",
         name="heading_filter",
-        parameters=[os.path.join(get_package_share_directory("mrover"), "config", "localization.yaml"), os.path.join(get_package_share_directory("mrover"), "config", "reference_coords.yaml")],
+        parameters=[
+            Path(get_package_share_directory("mrover"), "config", "localization.yaml"),
+            Path(get_package_share_directory("mrover"), "config", "reference_coords.yaml"),
+        ],
         respawn=True,
     )
 
@@ -37,7 +46,10 @@ def generate_launch_description():
         package="mrover",
         executable="iekf_se3",
         name="iekf_se3",
-        parameters=[os.path.join(get_package_share_directory("mrover"), "config", "localization.yaml"), os.path.join(get_package_share_directory("mrover"), "config", "reference_coords.yaml")],
+        parameters=[
+            os.path.join(get_package_share_directory("mrover"), "config", "localization.yaml"),
+            os.path.join(get_package_share_directory("mrover"), "config", "reference_coords.yaml"),
+        ],
         output="screen",
         respawn=True,
     )
@@ -46,7 +58,10 @@ def generate_launch_description():
         package="mrover",
         executable="pose_filter",
         name="pose_filter",
-        parameters=[os.path.join(get_package_share_directory("mrover"), "config", "localization.yaml"), os.path.join(get_package_share_directory("mrover"), "config", "reference_coords.yaml")],
+        parameters=[
+            os.path.join(get_package_share_directory("mrover"), "config", "localization.yaml"),
+            os.path.join(get_package_share_directory("mrover"), "config", "reference_coords.yaml"),
+        ],
         respawn=True,
     )
 

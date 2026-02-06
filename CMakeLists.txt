@@ -59,12 +59,12 @@ find_package(sensor_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(rtcm_msgs REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
-find_package(action_msgs REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(urdf REQUIRED)
 find_package(std_srvs REQUIRED)
 find_package(magic_enum REQUIRED)
+find_package(yaml_cpp_vendor REQUIRED)
 
 find_package(Assimp NAMES Assimp assimp REQUIRED)
 find_package(Bullet REQUIRED)
@@ -151,9 +151,6 @@ message(STATUS "Found message files: ${MROVER_MESSAGE_FILE_PATHS}")
 file(GLOB_RECURSE MROVER_SERVICE_FILE_PATHS RELATIVE ${CMAKE_CURRENT_LIST_DIR} CONFIGURE_DEPENDS srv/*.srv)
 message(STATUS "Found service files: ${MROVER_SERVICE_FILE_PATHS}")
 
-file(GLOB_RECURSE MROVER_ACTION_FILE_PATHS RELATIVE ${CMAKE_CURRENT_LIST_DIR} CONFIGURE_DEPENDS action/*.action)
-message(STATUS "Found action files: ${MROVER_ACTION_FILE_PATHS}")
-
 # Starter Project
 message(STATUS "PROJ NAME: ${PROJECT_NAME}")
 
@@ -170,8 +167,7 @@ message(STATUS "Found message files: ${MROVER_MESSAGE_FILE_PATHS}")
 rosidl_generate_interfaces(${PROJECT_NAME}
     ${MROVER_MESSAGE_FILE_PATHS}
     ${MROVER_SERVICE_FILE_PATHS}
-    ${MROVER_ACTION_FILE_PATHS}
-    DEPENDENCIES nav_msgs sensor_msgs geometry_msgs action_msgs
+    DEPENDENCIES nav_msgs sensor_msgs geometry_msgs
 )
 
 # Starter project 
@@ -217,13 +213,14 @@ target_link_libraries(gst_utils INTERFACE magic_enum::magic_enum PkgConfig::Gst 
 # Simulator
 
 mrover_add_node(simulator simulator/*.cpp simulator simulator/pch.hpp)
-ament_target_dependencies(simulator rclcpp rclcpp_components nav_msgs sensor_msgs geometry_msgs tf2 tf2_ros urdf)
+ament_target_dependencies(simulator rclcpp rclcpp_components nav_msgs sensor_msgs geometry_msgs tf2 tf2_ros urdf yaml_cpp_vendor)
 target_link_libraries(simulator
     assimp::assimp glfw3webgpu webgpu glfw webgpu_hpp imgui
     ${BULLET_LIBRARIES}
     lie Eigen3::Eigen
     opencv_core opencv_imgcodecs opencv_imgproc
     loop_profiler
+    parameter_utils
 )
 target_include_directories(simulator SYSTEM PRIVATE ${BULLET_INCLUDE_DIRS} ${OPENCV_INCLUDE_DIRS})
 
@@ -342,7 +339,7 @@ mrover_add_node(differential_drive_controller esw/differential_drive_controller.
 ament_target_dependencies(differential_drive_controller rclcpp std_srvs)
 target_link_libraries(differential_drive_controller units messaging)
 
-mrover_add_node(arm_controller teleoperation/arm_controller/arm_controller.cpp teleoperation/arm_controller/pch.hpp)
+mrover_add_node(arm_controller navigation/arm_controller/arm_controller.cpp navigation/arm_controller/pch.hpp)
 target_link_libraries(arm_controller lie)
 ament_target_dependencies(arm_controller rclcpp)
 
@@ -398,8 +395,10 @@ install(PROGRAMS
     scripts/custom_costmap.py
     scripts/visualizer.py
     scripts/image_capture.py
+    scripts/ik_testing.py
     teleoperation/basestation_gui/gui_frontend.sh
     teleoperation/basestation_gui/gui_backend.sh
+    teleoperation/basestation_gui/gui_prod.sh
     teleoperation/basestation_gui/gui_chromium.sh
 
     # starter project sources

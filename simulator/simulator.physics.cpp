@@ -47,7 +47,7 @@ namespace mrover {
         // Make the rocker and bogie try to always return to their initial positions
         // They can still move, so they act as a suspension system
         if (auto it = mUrdfs.find("rover"); it != mUrdfs.end()) {
-            URDF& rover = it->second;
+            URDF const& rover = it->second;
 
             for (auto const& name: {"left_rocker_link", "right_rocker_link"}) {
                 int linkIndex = rover.linkNameToMeta.at(name).index;
@@ -57,22 +57,15 @@ namespace mrover {
             }
             // check if arm motor commands have expired
             // TODO: fix hard-coded names?
-            for (auto const& name: {"arm_a_link", "arm_b_link", "arm_c_link", "arm_d_link", "arm_e_link"}) {
+            for (auto const& name: {"arm_a_link", "arm_b_link", "arm_c_link", "arm_d_link", "arm_e_link", "arm_gripper_link"}) {
                 bool expired = std::chrono::duration_cast<std::chrono::milliseconds>(Clock::now() - rover.linkNameToMeta.at(name).lastUpdate).count() > mMotorTimeoutMs;
-                auto& linkMeta = rover.linkNameToMeta.at(name);
                 if (expired) {
-                    if (!linkMeta.isHolding) {
-                        int linkIndex = linkMeta.index;
-                        auto* motor = std::bit_cast<btMultiBodyJointMotor*>(rover.physics->getLink(linkIndex).m_userPtr);
-                        assert(motor);
-                        linkMeta.isHolding = true;
-
-                        btScalar currPos = rover.physics->getJointPos(linkIndex);
-                        motor->setVelocityTarget(0, 1);
-                        motor->setPositionTarget(currPos, 1);
-                    }
-                } else {
-                    linkMeta.isHolding = false;
+                    int linkIndex = rover.linkNameToMeta.at(name).index;
+                    auto* motor = std::bit_cast<btMultiBodyJointMotor*>(rover.physics->getLink(linkIndex).m_userPtr);
+                    assert(motor);
+                    motor->setVelocityTarget(0, 1);
+                    // set p gain to 0 to stop position control
+                    motor->setPositionTarget(0, 0);
                 }
             }
         }
