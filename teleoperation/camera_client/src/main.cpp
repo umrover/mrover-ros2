@@ -1,159 +1,125 @@
+#include <QTimer>
+
 #include <rclcpp/rclcpp.hpp>
 
 #include "pch.hpp"
 
+#include <gst/gst.h>
+
+#include <X11/Xlib.h>
+#undef Bool
+#undef Status
+#undef CursorShape
+#undef None
+#undef KeyPress
+#undef KeyRelease
+#undef FocusIn
+#undef FocusOut
+#undef FontChange
+#undef Expose
+#undef Unsorted
+
 #include "CameraClientMainWindow.hpp"
-#include "ImagePreview.hpp"
+#include "CameraClientNode.hpp"
 
-namespace mrover {
-    class CameraClientNode : public rclcpp::Node {
+namespace {
+    XErrorHandler gPreviousHandler = nullptr;
 
-        std::shared_ptr<CameraClientMainWindow> mQtGui;
-        std::unordered_map<std::string, rclcpp::Client<srv::MediaControl>::SharedPtr> mMediaControlClients;
-        std::unordered_map<std::string, rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr> mImageCaptureClients;
-        std::unordered_map<std::string, rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr> mImageCaptureSubscribers;
-
-        auto imageCaptureCallback(std::string const& cameraName, sensor_msgs::msg::Image::ConstSharedPtr const& msg) {
-            RCLCPP_INFO(get_logger(), "Received image from camera");
-            if (msg->encoding != sensor_msgs::image_encodings::BGR8) {
-                RCLCPP_ERROR(this->get_logger(), "Unsupported encoding - image capture must be BGR8");
-                return;
-            }
-
-            cv::Size receivedSize{static_cast<int>(msg->width), static_cast<int>(msg->height)};
-            cv::Mat bgrFrame{receivedSize, CV_8UC3, const_cast<std::uint8_t*>(msg->data.data()), msg->step};
-
-            QImage qImg(bgrFrame.data, bgrFrame.cols, bgrFrame.rows, static_cast<int>(bgrFrame.step), QImage::Format_BGR888);
-
-            auto* imagePreview = new ImagePreview();
-            imagePreview->updateImage(qImg);
-            imagePreview->setWindowTitle(QString::fromStdString(cameraName) + " - Screenshot");
-            imagePreview->setAttribute(Qt::WA_DeleteOnClose);
-            imagePreview->show();
-        }
-
-    public:
-        explicit CameraClientNode(std::shared_ptr<CameraClientMainWindow> qtGui) : Node("camera_client"), mQtGui(std::move(qtGui)) {
-            RCLCPP_INFO(get_logger(), "Camera client initialized");
-
-            declare_parameter("cameras", rclcpp::ParameterType::PARAMETER_STRING_ARRAY);
-            auto cameraNames = get_parameter("cameras").as_string_array();
-
-            declare_parameter("rtp_jitter_ms", 100);
-            auto rtpJitterMs = std::chrono::milliseconds(get_parameter("rtp_jitter_ms").as_int());
-
-            for (auto const& cameraName: cameraNames) {
-                RCLCPP_INFO(get_logger(), "cameraName: %s", cameraName.c_str());
-
-                if (mMediaControlClients.contains(cameraName)) {
-                    RCLCPP_WARN(get_logger(), "Camera %s already exists, skipping", cameraName.c_str());
-                    continue;
-                }
-
-                declare_parameter(std::format("{}.port", cameraName), rclcpp::ParameterType::PARAMETER_INTEGER);
-                std::uint16_t const port = static_cast<std::uint16_t>(this->get_parameter(std::format("{}.port", cameraName)).as_int());
-
-                declare_parameter(std::format("{}.stream.codec", cameraName), rclcpp::ParameterType::PARAMETER_STRING);
-                std::string const codec = this->get_parameter(std::format("{}.stream.codec", cameraName)).as_string();
-
-                std::string const pipeline = gst::video::createRtpToRawSrc(port, gst::video::getCodecFromStringView(codec), rtpJitterMs);
-
-                mMediaControlClients.emplace(cameraName, create_client<srv::MediaControl>(std::format("{}_media_control", cameraName)));
-                mImageCaptureClients.emplace(cameraName, create_client<std_srvs::srv::Trigger>(std::format("{}_image_capture", cameraName)));
-                mImageCaptureSubscribers.emplace(cameraName, create_subscription<sensor_msgs::msg::Image>(std::format("{}_image", cameraName), 1, [this, cameraName](sensor_msgs::msg::Image::ConstSharedPtr const& msg) {
-                                                     imageCaptureCallback(cameraName, msg);
-                                                 }));
-
-                RequestCallback pipelinePauseRequest = [this, cameraName]() {
-                    qDebug() << "Pause request for camera" << cameraName.c_str();
-                    auto client = mMediaControlClients.find(cameraName);
-                    if (client == mMediaControlClients.end()) {
-                        RCLCPP_ERROR(get_logger(), "Camera %s not found", cameraName.c_str());
-                        return false;
-                    }
-                    auto request = std::make_shared<srv::MediaControl::Request>();
-                    request->command = srv::MediaControl::Request::PAUSE;
-                    auto result = client->second->async_send_request(request);
-
-                    // TODO:(owen) check result success
-                    return true;
-                };
-
-                RequestCallback pipelinePlayRequest = [this, cameraName]() {
-                    qDebug() << "Play request for camera" << cameraName.c_str();
-                    auto client = mMediaControlClients.find(cameraName);
-                    if (client == mMediaControlClients.end()) {
-                        RCLCPP_ERROR(get_logger(), "Camera %s not found", cameraName.c_str());
-                        return false;
-                    }
-                    auto request = std::make_shared<srv::MediaControl::Request>();
-                    request->command = srv::MediaControl::Request::PLAY;
-                    auto result = client->second->async_send_request(request);
-
-                    // TODO:(owen) check result success
-                    return true;
-                };
-
-                RequestCallback pipelineStopRequest = [this, cameraName]() {
-                    qDebug() << "Stop request for camera" << cameraName.c_str();
-                    auto client = mMediaControlClients.find(cameraName);
-                    if (client == mMediaControlClients.end()) {
-                        RCLCPP_ERROR(get_logger(), "Camera %s not found", cameraName.c_str());
-                        return false;
-                    }
-                    auto request = std::make_shared<srv::MediaControl::Request>();
-                    request->command = srv::MediaControl::Request::STOP;
-                    auto result = client->second->async_send_request(request);
-
-                    // TODO:(owen) check result success
-                    return true;
-                };
-
-                RequestCallback screenshotRequest = [this, cameraName]() {
-                    qDebug() << "Screenshot request for camera" << cameraName.c_str();
-                    auto client = mImageCaptureClients.find(cameraName);
-                    if (client == mImageCaptureClients.end()) {
-                        RCLCPP_ERROR(get_logger(), "Camera %s not found", cameraName.c_str());
-                        return false;
-                    }
-                    auto request = std::make_shared<std_srvs::srv::Trigger::Request>();
-                    auto result = client->second->async_send_request(request);
-
-                    // TODO:(owen) check result success
-                    return true;
-                };
-
-                mQtGui->createCamera(cameraName, pipeline);
-                mQtGui->getCameraSelectorWidget()->addMediaControls(cameraName, std::move(pipelinePauseRequest), std::move(pipelinePlayRequest), std::move(pipelineStopRequest));
-                mQtGui->getCameraSelectorWidget()->addScreenshotButton(cameraName, std::move(screenshotRequest));
-            }
-        }
-    };
-} // namespace mrover
+    int filterXErrors(Display* dpy, XErrorEvent* event) {
+        if (event->error_code == BadWindow || event->error_code == BadDrawable) return 0;
+        if (gPreviousHandler) return gPreviousHandler(dpy, event);
+        return 0;
+    }
+}
 
 auto main(int argc, char** argv) -> int {
     QApplication app(argc, argv);
-    auto qtGui = std::make_shared<mrover::CameraClientMainWindow>();
-    qtGui->setWindowTitle("MRover Cameras");
-    qtGui->setMinimumSize(1280, 720);
-    qtGui->show();
+
+    gPreviousHandler = XSetErrorHandler(filterXErrors);
+    gst_init(nullptr, nullptr);
 
     rclcpp::init(argc, argv);
-    auto node = std::make_shared<mrover::CameraClientNode>(qtGui);
+
+    auto mainWindow = std::make_shared<mrover::CameraClientMainWindow>();
+    mainWindow->setWindowTitle("MRover Cameras");
+    mainWindow->setMinimumSize(1280, 720);
+
+    auto node = std::make_shared<mrover::CameraClientNode>();
+
+    QObject::connect(node.get(), &mrover::CameraClientNode::cameraDiscovered,
+                     mainWindow.get(), [mainWindow, node](mrover::CameraInfo const& info) {
+                         std::string const& name = info.name;
+
+                         mrover::CameraCallbacks callbacks{
+                                 .onHide = [mainWindow, name]() {
+                                     mainWindow->getCameraGridWidget()->hideVideo(name);
+                                     if (auto* widget = mainWindow->getCameraGridWidget()->getGstVideoWidget(name)) {
+                                         widget->stop();
+                                     }
+                                     return true; },
+                                 .onShow = [mainWindow, name]() {
+                                     mainWindow->getCameraGridWidget()->showVideo(name);
+                                     if (auto* widget = mainWindow->getCameraGridWidget()->getGstVideoWidget(name)) {
+                                         widget->play();
+                                     }
+                                     return true; },
+                                 .onPause = [node, name]() { return node->requestPause(name); },
+                                 .onPlay = [node, name]() { return node->requestPlay(name); },
+                                 .onStop = [node, name]() { return node->requestStop(name); },
+                                 .onScreenshot = [node, name]() { return node->requestScreenshot(name); },
+                         };
+
+                         if (name == "zed") {
+                             auto* panel = mainWindow->getClickIkPanel();
+                             auto* videoWidget = new mrover::GstVideoWidget();
+                             videoWidget->setGstPipeline(info.pipeline);
+                             videoWidget->setImageSize(1280, 720);
+                             panel->placeZedWidget(videoWidget);
+
+                             QObject::connect(videoWidget, &mrover::GstVideoWidget::clicked,
+                                              panel, [panel, nodePtr = node.get()](std::uint32_t x, std::uint32_t y) {
+                                                  if (panel->canSendClick()) {
+                                                      panel->markRunning();
+                                                      nodePtr->sendClickIk(x, y);
+                                                  }
+                                              });
+                         } else {
+                             mainWindow->createCamera(name, info.pipeline, std::move(callbacks));
+                         }
+                     });
+
+    QObject::connect(node.get(), &mrover::CameraClientNode::imageCaptured,
+                     mainWindow.get(), &mrover::CameraClientMainWindow::showImagePreview);
+
+    QObject::connect(node.get(), &mrover::CameraClientNode::clickIkFeedback,
+                     mainWindow->getClickIkPanel(), &mrover::ClickIkPanel::updateFeedback);
+    QObject::connect(node.get(), &mrover::CameraClientNode::clickIkResult,
+                     mainWindow->getClickIkPanel(), &mrover::ClickIkPanel::updateResult);
+
+    node->discoverCameras();
+
+    QObject::connect(mainWindow.get(), &mrover::CameraClientMainWindow::closed, []() {
+        rclcpp::shutdown();
+    });
 
     rclcpp::executors::MultiThreadedExecutor exec;
     exec.add_node(node);
 
-    QObject::connect(qtGui.get(), &mrover::CameraClientMainWindow::closed, [&]() {
-        rclcpp::shutdown();
+    QTimer spinTimer;
+    QObject::connect(&spinTimer, &QTimer::timeout, [&exec]() {
+        if (rclcpp::ok()) {
+            exec.spin_some();
+        } else {
+            QApplication::quit();
+        }
     });
+    spinTimer.start(10); // 10ms
 
-    while (rclcpp::ok()) {
-        exec.spin_some();
-        app.processEvents();
-    }
+    mainWindow->show();
+
+    int const result = QApplication::exec();
 
     exec.remove_node(node);
 
-    return EXIT_SUCCESS;
+    return result;
 }

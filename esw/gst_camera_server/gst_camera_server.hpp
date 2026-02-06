@@ -55,6 +55,8 @@ namespace mrover {
         auto mediaControlServerCallback(srv::MediaControl::Request::ConstSharedPtr const& req, srv::MediaControl::Response::SharedPtr const& res) -> void;
         auto imageCaptureServerCallback(std_srvs::srv::Trigger::Request::ConstSharedPtr const&, std_srvs::srv::Trigger::Response::SharedPtr const& res) -> void;
 
+        [[nodiscard]] static auto nvHardwareAvailable() -> bool;
+
     public:
         explicit GstCameraServer(rclcpp::NodeOptions const& options = rclcpp::NodeOptions());
 

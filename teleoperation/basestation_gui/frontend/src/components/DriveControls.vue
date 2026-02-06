@@ -1,7 +1,9 @@
 <template>
-  <div class="d-flex justify-content-between align-items-center">
-    <h4 class="m-0">Drive Controls</h4>
-    <IndicatorDot :is-active="controllerConnected" class="me-2" />
+  <div class="d-flex flex-column align-items-start h-100">
+    <div class="d-flex align-items-center gap-2">
+      <h4 class="m-0">Drive Controls</h4>
+      <IndicatorDot :is-active="controllerConnected" />
+    </div>
   </div>
 </template>
 
@@ -15,9 +17,10 @@ const websocketStore = useWebsocketStore()
 const controllerConnected = ref(false)
 let interval: number | undefined = undefined
 
-const UPDATE_HZ = 20
+const UPDATE_HZ = 30
 
 onMounted(() => {
+  websocketStore.setupWebSocket('drive')
   interval = window.setInterval(() => {
     const gamepads = navigator.getGamepads()
     const gamepad = gamepads.find(gamepad => gamepad && gamepad.id.includes('Thrustmaster'))
@@ -36,5 +39,6 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   window.clearInterval(interval)
+  websocketStore.closeWebSocket('drive')
 })
 </script>

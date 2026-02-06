@@ -1,36 +1,36 @@
+import asyncio
+import traceback
+
 from fastapi import APIRouter, HTTPException
-from backend.ros_manager import get_node
+
+from backend.managers.ros import get_node, get_service_client
 from backend.models_pydantic import AutonEnableRequest, TeleopEnableRequest
-from backend.led_manager import set_teleop_enabled
+from backend.managers.led import set_teleop_enabled
 from mrover.srv import EnableAuton
 from mrover.msg import GPSWaypoint, WaypointType
-from std_srvs.srv import SetBool
-import time
-import traceback
 
 router = APIRouter(prefix="/api", tags=["auton"])
 
-def _call_service_sync(client, request, timeout=5.0, logger=None):
+
+async def call_service_async(client, request, timeout=5.0):
     if not client.wait_for_service(timeout_sec=1.0):
-        if logger:
-            logger.error(f"Service {client.srv_name} is not available after 1 second wait")
         return None
 
     future = client.call_async(request)
-    start_time = time.time()
-    while not future.done():
-        if time.time() - start_time > timeout:
-            return None
-        time.sleep(0.01)
+    try:
+        await asyncio.wait_for(
+            asyncio.get_event_loop().run_in_executor(None, future.result),
+            timeout=timeout
+        )
+        return future.result()
+    except asyncio.TimeoutError:
+        return None
 
-    return future.result()
 
 @router.post("/enable_auton/")
-def enable_auton(data: AutonEnableRequest):
+async def enable_auton(data: AutonEnableRequest):
     try:
-        node = get_node()
-
-        enable_auton_srv = node.create_client(EnableAuton, "/enable_auton")
+        client = get_service_client(EnableAuton, "/enable_auton")
 
         auton_request = EnableAuton.Request(
             enable=data.enabled,
@@ -46,7 +46,7 @@ def enable_auton(data: AutonEnableRequest):
             ],
         )
 
-        result = _call_service_sync(enable_auton_srv, auton_request, logger=node.get_logger())
+        result = await call_service_async(client, auton_request)
         if result is None:
             raise HTTPException(status_code=500, detail="Service /enable_auton is not available or timed out")
 
@@ -56,6 +56,8 @@ def enable_auton(data: AutonEnableRequest):
             'waypoint_count': len(data.waypoints)
         }
 
+    except HTTPException:
+        raise
     except Exception as e:
         error_details = traceback.format_exc()
         try:
@@ -65,36 +67,8 @@ def enable_auton(data: AutonEnableRequest):
             pass
         raise HTTPException(status_code=500, detail=str(e))
 
+
 @router.post("/enable_teleop/")
 def enable_teleop(data: TeleopEnableRequest):
-    try:
-        node = get_node()
-        enable_teleop_srv = node.create_client(SetBool, "/enable_teleop")
-
-        if not enable_teleop_srv.wait_for_service(timeout_sec=1.0):
-            raise HTTPException(status_code=503, detail="Teleop service is not available. Is the LED/ESW node running?")
-
-        teleop_request = SetBool.Request()
-        teleop_request.data = data.enabled
-
-        result = _call_service_sync(enable_teleop_srv, teleop_request, logger=node.get_logger())
-        if result is None:
-            raise HTTPException(status_code=500, detail="Service /enable_teleop timed out")
-
-        if not result.success:
-            raise HTTPException(status_code=500, detail=f"Teleop enable failed: {result.message}")
-
-        set_teleop_enabled(data.enabled)
-
-        return {'status': 'success', 'enabled': data.enabled}
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        error_details = traceback.format_exc()
-        try:
-            node = get_node()
-            node.get_logger().error(f"Error in enable_teleop: {error_details}")
-        except:
-            pass
-        raise HTTPException(status_code=500, detail=str(e))
+    set_teleop_enabled(data.enabled)
+    return {'status': 'success', 'enabled': data.enabled}

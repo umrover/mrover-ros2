@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <chrono>
 #include <cstdint>
 #include <string>
@@ -11,6 +12,9 @@
 #include <QComboBox>
 #include <QDateTime>
 #include <QDockWidget>
+#include <QDrag>
+#include <QDragEnterEvent>
+#include <QDropEvent>
 #include <QFileDialog>
 #include <QFormLayout>
 #include <QGridLayout>
@@ -18,17 +22,21 @@
 #include <QLabel>
 #include <QLineEdit>
 #include <QMainWindow>
-#include <QMediaPlayer>
+#include <QDebug>
 #include <QMenu>
 #include <QMenuBar>
+#include <QMimeData>
+#include <QMouseEvent>
 #include <QPixmap>
+#include <QResizeEvent>
 #include <QPushButton>
 #include <QScrollArea>
 #include <QStandardPaths>
 #include <QToolBar>
 #include <QVBoxLayout>
-#include <QVideoWidget>
 #include <QWidget>
+
+#include <gst/gst.h>
 
 #include <opencv2/core.hpp>
 

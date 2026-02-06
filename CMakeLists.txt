@@ -51,6 +51,7 @@ endif ()
 
 find_package(rclpy REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(rclcpp_action REQUIRED)
 find_package(rclcpp_components REQUIRED)
 find_package(ament_cmake REQUIRED)
 find_package(ament_cmake_python REQUIRED)
@@ -117,7 +118,7 @@ endif()
 find_package(PkgConfig REQUIRED)
 pkg_search_module(NetLink libnl-3.0 IMPORTED_TARGET QUIET)
 pkg_search_module(NetLinkRoute libnl-route-3.0 IMPORTED_TARGET QUIET)
-pkg_search_module(Gst gstreamer-1.0 IMPORTED_TARGET QUIET)
+pkg_search_module(Gst gstreamer-1.0 IMPORTED_TARGET QUIET) # if this is failing try: `sudo apt install libunwind-dev`
 pkg_search_module(GstApp gstreamer-app-1.0 IMPORTED_TARGET QUIET)
 pkg_search_module(LibUdev libudev IMPORTED_TARGET QUIET)
 
@@ -171,7 +172,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
     ${MROVER_MESSAGE_FILE_PATHS}
     ${MROVER_SERVICE_FILE_PATHS}
     ${MROVER_ACTION_FILE_PATHS}
-    DEPENDENCIES nav_msgs sensor_msgs geometry_msgs
+    DEPENDENCIES nav_msgs sensor_msgs geometry_msgs action_msgs
 )
 
 # Starter project 
@@ -378,12 +379,12 @@ if (NetLink_FOUND AND NetLinkRoute_FOUND)
 endif ()
 
 # Teleop Qt5 Camera Client
-find_package(Qt5 5.15 REQUIRED COMPONENTS Widgets Multimedia MultimediaWidgets)
+find_package(Qt5 5.15 REQUIRED COMPONENTS Widgets)
 
 mrover_add_node(camera_client teleoperation/camera_client/*.*pp teleoperation/camera_client/include/pch.hpp)
 target_include_directories(camera_client PRIVATE teleoperation/camera_client/include)
-target_link_libraries(camera_client gst_utils Qt::Widgets Qt::Multimedia Qt::MultimediaWidgets opencv_core opencv_imgcodecs)
-ament_target_dependencies(camera_client rclcpp std_srvs sensor_msgs)
+target_link_libraries(camera_client gst_utils Qt::Widgets PkgConfig::Gst X11 opencv_core opencv_imgcodecs)
+ament_target_dependencies(camera_client rclcpp rclcpp_action std_srvs sensor_msgs)
 set_target_properties(camera_client PROPERTIES
     AUTOMOC ON
     AUTORCC ON

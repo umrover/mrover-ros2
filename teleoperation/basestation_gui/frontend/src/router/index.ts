@@ -17,17 +17,20 @@ const routes = [
   {
     path: '/DMTask',
     name: 'DMTask',
-    component: DMTask
+    component: DMTask,
+    meta: { hasGridLayout: true }
   },
   {
     path: '/ESTask',
     name: 'ESTask',
-    component: ESTask
+    component: ESTask,
+    meta: { hasGridLayout: true }
   },
   {
     path: '/AutonTask',
     name: 'AutonTask',
-    component: AutonTask
+    component: AutonTask,
+    meta: { hasGridLayout: true }
   },
   {
     path: '/Control',
@@ -37,7 +40,8 @@ const routes = [
   {
     path: '/ScienceTask',
     name: 'ScienceTask',
-    component: ScienceTask
+    component: ScienceTask,
+    meta: { hasGridLayout: true }
   },
   {
     path: '/dev',
