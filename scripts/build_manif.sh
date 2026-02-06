@@ -1,9 +1,12 @@
-#!/bin/bash
-
-set -euxo pipefail
+#!/usr/bin/bash
 
 git submodule update --init deps/manif
 
-pushd deps/manif
+pushd deps/manif || exit
 
-python3 -m pip install .
+# build and instal cmake
+cmake . -B build
+cmake --build build
+sudo cmake --install build
+
+popd || exit

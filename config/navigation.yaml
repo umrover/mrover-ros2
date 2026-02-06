@@ -84,6 +84,10 @@ navigation:
       drive_forward_threshold: 0.34
       recovery_distance: 2.0
       give_up_time: 10.0
+    
+    smoothing:
+      use_relaxation: true
+      use_interpolation: true
 
 stuck_detector:
   ros__parameters:

@@ -2,6 +2,4 @@
 
 Fresh new upgrade of our code from [ROS 1](https://github.com/umrover/mrover-ros) noetic.
 
-To get started, check out our [wiki](https://github.com/umrover/mrover-ros2/wiki).
-
-![image](https://github.com/user-attachments/assets/3d6a759c-572a-4cc0-9a7c-a687dec3c19a)
+![Screenshot from 2024-09-14 12-46-54](https://github.com/user-attachments/assets/eed2667c-7a42-406c-857f-e4a006982525)

@@ -30,47 +30,31 @@ namespace mrover {
         return btVector3{static_cast<btScalar>(inertia->ixx), static_cast<btScalar>(inertia->iyy), static_cast<btScalar>(inertia->izz)} * INERTIA_MULTIPLIER;
     }
 
-    auto Simulator::initUrdfsFromParams(std::string const& configFile) -> void {
-        // As far as I can tell array of structs in YAML is not even supported by ROS 2 as compared to ROS 1
-        // See: https://robotics.stackexchange.com/questions/109909/reading-a-vector-of-structs-as-parameters-in-ros2
+    auto Simulator::initUrdfsFromParams() -> void {
+        {
+            // As far as I can tell array of structs in YAML is not even supported by ROS 2 as compared to ROS 1
+            // See: https://robotics.stackexchange.com/questions/109909/reading-a-vector-of-structs-as-parameters-in-ros2
 
-        YAML::Node configuration = YAML::LoadFile(CONFIG_PATH / configFile);
-        YAML::Node objects = configuration["objects"];
-        if (!objects) {
-            throw std::runtime_error("objects not defined in configuration file...");
-        }
+            std::map<std::string, rclcpp::Parameter> objects;
+            get_parameters("objects", objects);
 
-        // Extract the names of the objects, there will be multiple object_name.* keys that we consolidate into just object_name
-        std::set<std::string> names;
-        for (auto const& obj: objects) {
-            names.insert(obj.first.as<std::string>());
-        }
+            // Extract the names of the objects, there will be multiple object_name.* keys that we consolidate into just object_name
+            std::set<std::string> names;
+            std::ranges::transform(objects | std::views::keys, std::inserter(names, names.end()), [](std::string const& fullName) {
+                return fullName.substr(0, fullName.find('.'));
+            });
 
-        // load in the new objects
-        for (auto const& name: names) {
-            std::string uri = objects[name]["uri"].as<std::string>();
-            std::vector<double> position = objects[name]["position"] ? objects[name]["position"].as<std::vector<double>>() : std::vector<double>{0, 0, 0};
-            std::vector<double> orientation = objects[name]["orientation"] ? objects[name]["orientation"].as<std::vector<double>>() : std::vector<double>{0, 0, 0, 1};
-            if (position.size() != 3) throw std::invalid_argument{"Position must have 3 elements"};
-            if (orientation.size() != 4) throw std::invalid_argument{"Orientation must have 4 elements"};
-            btTransform transform{btQuaternion{static_cast<btScalar>(orientation[0]), static_cast<btScalar>(orientation[1]), static_cast<btScalar>(orientation[2]), static_cast<btScalar>(orientation[3])}, btVector3{static_cast<btScalar>(position[0]), static_cast<btScalar>(position[1]), static_cast<btScalar>(position[2])}};
-            if (auto [it, wasAdded] = mUrdfs.try_emplace(name, *this, uri, transform); !wasAdded) {
-                // if the mesh wasn't added reset the position and orientation
-                if (it->second.physics) {
-                    it->second.physics->setBaseWorldTransform(transform);
+            for (auto const& name: names) {
+                std::string uri = objects.at(std::format("{}.uri", name)).as_string();
+                std::vector<double> position = objects.contains(std::format("{}.position", name)) ? objects.at(std::format("{}.position", name)).as_double_array() : std::vector<double>{0, 0, 0};
+                std::vector<double> orientation = objects.contains(std::format("{}.orientation", name)) ? objects.at(std::format("{}.orientation", name)).as_double_array() : std::vector<double>{0, 0, 0, 1};
+                if (position.size() != 3) throw std::invalid_argument{"Position must have 3 elements"};
+                if (orientation.size() != 4) throw std::invalid_argument{"Orientation must have 4 elements"};
+                btTransform transform{btQuaternion{static_cast<btScalar>(orientation[0]), static_cast<btScalar>(orientation[1]), static_cast<btScalar>(orientation[2]), static_cast<btScalar>(orientation[3])}, btVector3{static_cast<btScalar>(position[0]), static_cast<btScalar>(position[1]), static_cast<btScalar>(position[2])}};
+                if (auto [_, wasAdded] = mUrdfs.try_emplace(name, *this, uri, transform); !wasAdded) {
+                    throw std::invalid_argument{std::format("Duplicate object name: {}", name)};
                 }
             }
-        }
-
-        // remove the old objects
-        std::set<std::string> remove;
-        for (auto const& [name, _]: mUrdfs) {
-            if (!objects[name]) {
-                remove.insert(name);
-            }
-        }
-        for (auto const& name: remove) {
-            mUrdfs.erase(mUrdfs.find(name));
         }
     }
 
@@ -184,13 +168,16 @@ namespace mrover {
         return camera;
     }
 
-    URDF::URDF(Simulator& simulator, std::string_view uri, btTransform const& transform) : mDynamicsWorld{simulator.mDynamicsWorld} {
+    URDF::URDF(Simulator& simulator, std::string_view uri, btTransform const& transform) {
         RCLCPP_INFO_STREAM(simulator.get_logger(), std::format("{}", performXacro(uriToPath(uri))));
         if (!model.initString(performXacro(uriToPath(uri)))) throw std::runtime_error{std::format("Failed to parse URDF from URI: {}", uri)};
 
         std::size_t multiBodyLinkCount = model.links_.size() - 1; // Root link is treated separately by multibody, so subtract it off
         auto* multiBody = physics = simulator.makeBulletObject<btMultiBody>(simulator.mMultiBodies, multiBodyLinkCount, 0, btVector3{0, 0, 0}, false, false);
         multiBody->setBaseWorldTransform(transform);
+
+        std::vector<btMultiBodyLinkCollider*> collidersToFinalize;
+        std::vector<btMultiBodyConstraint*> constraintsToFinalize;
 
         // NOLINTNEXTLINE(misc-no-recursion)
         auto traverse = [&](auto&& self, urdf::LinkConstSharedPtr const& link) -> void {
@@ -221,11 +208,6 @@ namespace mrover {
                     stereoCamera.base = std::move(camera);
                     stereoCamera.pcPub = simulator.create_publisher<sensor_msgs::msg::PointCloud2>(pointCloudTopic, 1);
                     simulator.mStereoCameras.emplace_back(std::move(stereoCamera));
-                } else if (link->name.contains("finger"sv)) {
-                    camera.frameId = "finger_camera_frame";
-                    camera.imgPub = simulator.create_publisher<sensor_msgs::msg::Image>("finger_camera/image", 1);
-                    camera.fov = 75;
-                    simulator.mCameras.push_back(std::move(camera));
                 } else {
                     camera.frameId = "long_range_camera_link";
                     camera.imgPub = simulator.create_publisher<sensor_msgs::msg::Image>("long_range_cam/image", 1);
@@ -273,9 +255,9 @@ namespace mrover {
 
             auto* collider = simulator.makeBulletObject<btMultiBodyLinkCollider>(simulator.mMultibodyCollider, multiBody, linkIndex);
             collider->setFriction(1);
-            mColliders.push_back(collider);
+            collidersToFinalize.push_back(collider);
             collider->setCollisionShape(makeCollisionShapeForLink(simulator, link));
-            mDynamicsWorld->addCollisionObject(collider, btBroadphaseProxy::DefaultFilter, btBroadphaseProxy::AllFilter);
+            simulator.mDynamicsWorld->addCollisionObject(collider, btBroadphaseProxy::DefaultFilter, btBroadphaseProxy::AllFilter);
 
             btScalar mass = 1;
             btVector3 inertia{1, 1, 1}; // TODO(quintin): Is this a sane default?
@@ -325,7 +307,7 @@ namespace mrover {
                     case urdf::Joint::PRISMATIC: {
                         RCLCPP_INFO_STREAM(simulator.get_logger(), "\tMotor");
                         auto* motor = simulator.makeBulletObject<btMultiBodyJointMotor>(simulator.mMultibodyConstraints, multiBody, linkIndex, 0, 0);
-                        mConstraints.push_back(motor);
+                        constraintsToFinalize.push_back(motor);
                         multiBody->getLink(linkIndex).m_userPtr = motor;
                         break;
                     }
@@ -337,7 +319,7 @@ namespace mrover {
                     case urdf::Joint::PRISMATIC: {
                         auto lower = static_cast<btScalar>(parentJoint->limits->lower), upper = static_cast<btScalar>(parentJoint->limits->upper);
                         auto* limitConstraint = simulator.makeBulletObject<btMultiBodyJointLimitConstraint>(simulator.mMultibodyConstraints, multiBody, linkIndex, lower, upper);
-                        mConstraints.push_back(limitConstraint);
+                        constraintsToFinalize.push_back(limitConstraint);
                     }
                     default:
                         break;
@@ -365,27 +347,12 @@ namespace mrover {
         btAlignedObjectArray<btVector3> m;
         multiBody->forwardKinematics(q, m);
         multiBody->updateCollisionObjectWorldTransforms(q, m);
-        mDynamicsWorld->addMultiBody(multiBody);
+        simulator.mDynamicsWorld->addMultiBody(multiBody);
 
-        for (btMultiBodyConstraint* constraint: mConstraints) {
+        for (btMultiBodyConstraint* constraint: constraintsToFinalize) {
             constraint->finalizeMultiDof();
-            mDynamicsWorld->addMultiBodyConstraint(constraint);
+            simulator.mDynamicsWorld->addMultiBodyConstraint(constraint);
         }
-    }
-
-    URDF::~URDF() {
-        // remove the constraints
-        for (btMultiBodyConstraint* constraint: mConstraints) {
-            mDynamicsWorld->removeConstraint(std::bit_cast<btTypedConstraint*>(constraint));
-        }
-
-        // remove the colliders
-        for (btMultiBodyLinkCollider* collider: mColliders) {
-            mDynamicsWorld->removeCollisionObject(std::bit_cast<btCollisionObject*>(collider));
-        }
-
-        // remove the body
-        mDynamicsWorld->removeMultiBody(physics);
     }
 
     auto Simulator::getUrdf(std::string const& name) -> std::optional<std::reference_wrapper<URDF>> {
