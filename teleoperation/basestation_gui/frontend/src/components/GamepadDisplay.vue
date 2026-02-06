@@ -33,8 +33,7 @@ watch(
     if (display && props.axes && props.buttons) {
       display.update(props.axes, props.buttons)
     }
-  },
-  { deep: true }
+  }
 )
 
 onUnmounted(() => {

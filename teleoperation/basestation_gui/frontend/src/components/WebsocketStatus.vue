@@ -27,12 +27,12 @@
         <div class="d-flex justify-content-center align-items-center gap-2">
           <div
             class="rounded-circle"
-            :class="isFlashingOut(id) ? 'bg-success' : 'bg-secondary'"
+            :class="flashOutDisplay[id] ? 'bg-success' : 'bg-secondary'"
             style="width: 16px; height: 16px"
           ></div>
           <div
             class="rounded-circle"
-            :class="isFlashingIn(id) ? 'bg-danger' : 'bg-secondary'"
+            :class="flashInDisplay[id] ? 'bg-danger' : 'bg-secondary'"
             style="width: 16px; height: 16px"
           ></div>
         </div>
@@ -52,8 +52,11 @@ import { storeToRefs } from 'pinia'
 import IndicatorDot from './IndicatorDot.vue'
 
 const websocketStore = useWebsocketStore()
-const { connectionStatus, incomingMessages, outgoingMessages, incomingBytes, outgoingBytes } = storeToRefs(websocketStore)
-const { isFlashingIn, isFlashingOut } = websocketStore
+const { connectionStatus } = storeToRefs(websocketStore)
+const { getFlashIn, getFlashOut, getIncomingMessages, getOutgoingMessages, getIncomingBytes, getOutgoingBytes } = websocketStore
+
+const flashInDisplay = ref<Record<string, boolean>>({})
+const flashOutDisplay = ref<Record<string, boolean>>({})
 
 const aliasMap: Record<string, string> = {
   arm: 'arm',
@@ -86,10 +89,10 @@ function sumValues(obj: Record<string, number>): number {
 }
 
 function updateRates() {
-  const inMsgs = sumValues(incomingMessages.value)
-  const outMsgs = sumValues(outgoingMessages.value)
-  const inBytes = sumValues(incomingBytes.value)
-  const outBytes = sumValues(outgoingBytes.value)
+  const inMsgs = sumValues(getIncomingMessages())
+  const outMsgs = sumValues(getOutgoingMessages())
+  const inBytes = sumValues(getIncomingBytes())
+  const outBytes = sumValues(getOutgoingBytes())
 
   rxMsgRate.value = (inMsgs - prevInMsgs) * RATE_MULTIPLIER
   txMsgRate.value = (outMsgs - prevOutMsgs) * RATE_MULTIPLIER
@@ -100,6 +103,11 @@ function updateRates() {
   prevOutMsgs = outMsgs
   prevInBytes = inBytes
   prevOutBytes = outBytes
+
+  for (const id of Object.keys(connectionStatus.value)) {
+    flashInDisplay.value[id] = getFlashIn(id)
+    flashOutDisplay.value[id] = getFlashOut(id)
+  }
 }
 
 function formatBytes(bytes: number): string {

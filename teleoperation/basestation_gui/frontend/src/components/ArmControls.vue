@@ -64,7 +64,7 @@ const controllerConnected = computed(() => gamepadConnected.value)
 
 let interval: number | undefined = undefined
 
-const UPDATE_HZ = 30
+const UPDATE_HZ = 15
 
 const keyDown = async (event: { key: string }) => {
   if (event.key === ' ') {
