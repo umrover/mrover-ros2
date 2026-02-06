@@ -101,21 +101,19 @@ namespace mrover {
             return;
         }
         // correct with rtk heading only when heading is fixed
-        if (heading_status->fix_type.fix == mrover::msg::FixType::FIXED) {
-            double measured_heading = -1 * heading->heading;
-            if (measured_heading < -180) {
-                measured_heading = 360 + measured_heading;
-            }
-            measured_heading = measured_heading * (M_PI / 180);
-
-            double heading_correction_delta = measured_heading - uncorrected_heading;
-            heading_correction_delta = fmod((heading_correction_delta + 3 * M_PI), 2 * M_PI) - M_PI;
-            predict(get_parameter("process_noise").as_double());
-            correct(heading_correction_delta, get_parameter("rtk_heading_noise").as_double());
+        double measured_heading = fmod(heading->heading + 90, 360);
+        measured_heading = 90 - measured_heading;
+        if (measured_heading < -180) {
+            measured_heading = measured_heading + 360;
         }
+        measured_heading = measured_heading * (M_PI / 180);
 
-        
-    }
+        double heading_correction_delta = measured_heading - uncorrected_heading;
+        heading_correction_delta = fmod((heading_correction_delta + 3 * M_PI), 2 * M_PI) - M_PI;
+        predict(get_parameter("process_noise").as_double());
+        correct(heading_correction_delta, get_parameter("rtk_heading_noise").as_double());
+    }     
+}
 
     void HeadingFilter::sync_imu_and_mag_callback(const sensor_msgs::msg::Imu::ConstSharedPtr &imu, const mrover::msg::Heading::ConstSharedPtr &mag_heading) {
         imu_and_mag_watchdog.reset();
