@@ -93,7 +93,8 @@ class Panorama(Node):
         self.stitcher = cv2.Stitcher.create(cv2.Stitcher_PANORAMA)
         self.img_rate = PanoRate(2, self)
 
-        os.mkdir(f"data/raw-pano-images")
+        if not os.path.isdir(f"data/raw-pano-images"):
+            os.mkdir(f"data/raw-pano-images")
 
 
     def rotate_pc(self, trans_mat: np.ndarray, pc: np.ndarray):
@@ -159,11 +160,11 @@ class Panorama(Node):
         self.record_pc = True
 
         # START SPINNING THE MAST GIMBAL
-        req = ServoPosition.Request()
-        req.header = Header()
-        req.name = ["gimbal_pitch", "gimbal_yaw"]
-        req.position = [90.0, 360.0] # TODO is 90 correct?? 0?
-        self.gimbal_client.call_async(req)
+        # req = ServoPosition.Request()
+        # req.header = Header()
+        # req.name = ["gimbal_pitch", "gimbal_yaw"]
+        # req.position = [90.0, 360.0] # TODO is 90 correct?? 0?
+        # self.gimbal_client.call_async(req)
 
         return response
 
@@ -205,7 +206,10 @@ class Panorama(Node):
 
         # stitch the pano together
         self.get_logger().info(f"Stitching {len(self.img_list)} images...")
-        _, pano = self.stitcher.stitch(self.img_list)
+        status, pano = self.stitcher.stitch(self.img_list)
+
+        if status != cv2.Stitcher_OK:
+            print(f"Stitching failed with error code {status}")
 
         # Construct Pano and Save
         if pano is not None:
