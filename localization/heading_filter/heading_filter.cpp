@@ -10,6 +10,7 @@ namespace mrover {
         declare_parameter("mag_heading_noise", rclcpp::ParameterType::PARAMETER_DOUBLE);
         declare_parameter("rtk_heading_noise", rclcpp::ParameterType::PARAMETER_DOUBLE);
         declare_parameter("process_noise", rclcpp::ParameterType::PARAMETER_DOUBLE);
+        declare_parameter("chiSQgate", rclcpp::ParameterType::PARAMETER_DOUBLE);
 
         // subscribers
         linearized_position_sub = this->create_subscription<geometry_msgs::msg::Vector3Stamped>("/linearized_position", 1, [&](const geometry_msgs::msg::Vector3Stamped::ConstSharedPtr &position) {
@@ -62,11 +63,23 @@ namespace mrover {
 
     void HeadingFilter::correct(double heading_correction_delta_meas, double heading_correction_delta_noise) {
 
-        double K = (P) / (P + heading_correction_delta_noise);
+        double S = (P + heading_correction_delta_noise);
         double innovation = heading_correction_delta_meas - X;
         innovation = fmod((innovation + 3 * M_PI), 2 * M_PI) - M_PI;
-        X = fmod((X + K * (innovation) + 3 * M_PI), 2 * M_PI) - M_PI;
-        P = (1 - K) * P;
+
+        /*
+        We don't always want to correct - sometimes we want to gate out particularly inaccurate values.
+        */
+        double mahalanobis = innovation / S * innovation;
+        if(mahalanobis <= get_parameter("chiSQgate").as_double()) {
+            double K = P / S;
+            X = fmod((X + K * (innovation) + 3 * M_PI), 2 * M_PI) - M_PI;
+            P = (1 - K) * P;
+        }
+        else {
+            // would normally set X to predicted X but not necessary here bc we don't really predict X
+        }
+        
 
     }
 

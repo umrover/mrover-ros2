@@ -28,6 +28,7 @@ heading_filter:
     mag_heading_noise: 1.0
     rtk_heading_noise: 0.01
     process_noise: 0.000001
+  chiSQgate: 6.0
 
 pose_filter:
   ros__parameters:
