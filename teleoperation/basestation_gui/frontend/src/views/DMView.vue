@@ -5,55 +5,39 @@
     :topics="['arm', 'drive', 'chassis', 'nav']"
   >
     <template #rover-3d>
-      <div class="island rounded overflow-hidden h-full">
-        <Rover3D class="w-full h-full" />
+      <div class="island rounded overflow-hidden h-100">
+        <Rover3D class="w-100 h-100" />
       </div>
     </template>
 
     <template #odometry>
-      <div class="island p-2 rounded h-full">
+      <div class="island p-2 rounded h-100">
         <OdometryReading />
       </div>
     </template>
 
-    <template #arm-moteus>
-      <div class="island p-2 rounded h-full">
-        <ControllerDataTable mode="arm" header="Arm" />
-      </div>
-    </template>
-
-    <template #drive-moteus>
-      <div class="island p-2 rounded h-full">
-        <ControllerDataTable mode="drive" header="Drive" />
-      </div>
-    </template>
-
-    <template #arm-controls>
-      <div class="island p-2 rounded h-full">
-        <ArmControls />
-      </div>
-    </template>
-
-    <template #gimbal-controls>
-      <div class="island p-2 rounded h-full">
-        <GimbalControls />
-      </div>
-    </template>
-
-    <template #drive-controls>
-      <div class="island p-2 rounded h-full">
-        <DriveControls />
+    <template #controls>
+      <div class="island p-2 rounded d-flex flex-column gap-2 h-100">
+        <div class="d-flex flex-row justify-content-between">
+            <ArmControls />
+            <GimbalControls />
+            <DriveControls />
+        </div>
+        <div class="d-flex flex-row gap-2 flex-grow-1" style="min-height: 0;">
+            <ControllerDataTable mode="arm" header="Arm" />
+            <ControllerDataTable mode="drive" header="Drive" />
+        </div>
       </div>
     </template>
 
     <template #map>
-      <div class="island p-0 rounded overflow-hidden h-full">
+      <div class="island p-0 rounded overflow-hidden h-100">
         <BasicMap />
       </div>
     </template>
 
     <template #waypoints>
-      <div class="island p-2 rounded h-full">
+      <div class="island p-2 rounded h-100">
         <BasicWaypointEditor :enableDrone="true" />
       </div>
     </template>
@@ -74,11 +58,7 @@ import Rover3D from '@/components/Rover3D.vue'
 const defaultLayout = [
   { x: 0, y: 0, w: 6, h: 4, i: 'rover-3d' },
   { x: 0, y: 4, w: 6, h: 2, i: 'odometry' },
-  { x: 0, y: 6, w: 3, h: 2, i: 'arm-controls' },
-  { x: 3, y: 6, w: 2, h: 2, i: 'gimbal-controls' },
-  { x: 5, y: 6, w: 1, h: 2, i: 'drive-controls' },
-  { x: 0, y: 8, w: 3, h: 4, i: 'arm-moteus' },
-  { x: 3, y: 8, w: 3, h: 4, i: 'drive-moteus' },
+  { x: 0, y: 6, w: 6, h: 6, i: 'controls' },
   { x: 6, y: 0, w: 6, h: 6, i: 'map' },
   { x: 6, y: 6, w: 6, h: 6, i: 'waypoints' },
 ]
