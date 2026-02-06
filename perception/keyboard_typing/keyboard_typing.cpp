@@ -582,8 +582,19 @@ namespace mrover{
             //                 armbase_to_armfk.translation().y() + zKeyTransformation_new[1],
             //                 armbase_to_armfk.translation().z() + zKeyTransformation_new[2], 0, 0);
 
+            // Grab pitch from tag transform
+
+            double r00 = armbase_to_z.transform()(0,0);
+            double r10 = armbase_to_z.transform()(1,0);
+            double r20 = armbase_to_z.transform()(2,0);
+
+            double pitch_rad = std::atan2(-r20, std::hypot(r00, r10));
+
+            // grab current pitch
+            double current_pitch = std::atan2(-armbase_to_armfk.rotation()(2, 0), std::hypot(armbase_to_armfk.rotation()(0, 0), armbase_to_armfk.rotation()(1, 0)));
+
             sendIKCommand(armbase_to_armfk.translation().x(),
-            armbase_to_z.translation().y(), armbase_to_z.translation().z(), 0, 0);
+            armbase_to_z.translation().y(), armbase_to_z.translation().z(), current_pitch - pitch_rad, 0);
 
             RCLCPP_INFO_STREAM(get_logger(), "y_delta = " << (armbase_to_armfk.translation().y() - armbase_to_z.translation().y()));
                             
@@ -624,15 +635,12 @@ namespace mrover{
         float dy = y_offset_local * std::cos(roll);
         float dz = y_offset_local * (std::cos(pitch) * std::sin(roll));
 
-
         msg::IK message;
 
         message.pos.x = x + dx;
         message.pos.y = y + dy;
         message.pos.z = z + dz;
-        // message.pos.x = x;
-        // message.pos.y = y;
-        // message.pos.z = z;
+
         message.pitch = pitch;
         message.roll = roll;
 
