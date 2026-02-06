@@ -8,97 +8,174 @@
 
 #include <units.hpp>
 
-#include <mrover/msg/controller_state.hpp>
+#include <mrover/msg/gimbal_control_state.hpp>
 #include <mrover/msg/position.hpp>
 #include <mrover/msg/throttle.hpp>
 #include <mrover/msg/velocity.hpp>
 #include <mrover/srv/adjust_motor.hpp>
 #include <sensor_msgs/msg/joint_state.hpp>
 
-#include "motor_library/brushed.hpp"
+#include "mrover/srv/servo_position.hpp"
+
+#include "servo_library/servo.hpp"
 
 namespace mrover {
 
     class MastGimbalHWBridge : public rclcpp::Node {
 
     public:
+    
         MastGimbalHWBridge() : rclcpp::Node{"mast_gimbal_hw_bridge"} {
             // all initialization is done in the init() function to allow for the usage of shared_from_this()
         }
 
+        void create_servo(uint8_t id, const std::string& name)
+        {
+            servos.insert({name, std::make_shared<mrover::Servo>(shared_from_this(), id, name)});
+        }
+
         auto init() -> void {
 
-            for (auto const& name: mMotorNames) {
-                mMotors[name] = std::make_shared<BrushedController>(shared_from_this(), "jetson", name);
+            // Servo::init("/dev/ttyUSB0");
+
+            for (auto const& servo : mServoNames) {
+                create_servo(servo.second, servo.first);
             }
 
-            mThrottleSub = create_subscription<msg::Throttle>("mast_gimbal_throttle_cmd", 1, [this](msg::Throttle::ConstSharedPtr const& msg) { processThrottleCmd(msg); });
+            getPositionService = this->create_service<mrover::srv::ServoPosition>("get_position", [this](
+                                                                                                             mrover::srv::ServoPosition::Request::SharedPtr const& request,
+                                                                                                              mrover::srv::ServoPosition::Response::SharedPtr const& response) {
 
-            mPublishDataTimer = create_wall_timer(
-                    std::chrono::milliseconds(100),
-                    [this]() { publishDataCallback(); });
-            mJointDataPub = create_publisher<sensor_msgs::msg::JointState>("mast_gimbal_joint_data", 1);
-            mControllerStatePub = create_publisher<msg::ControllerState>("mast_gimbal_controller_state", 1);
+                const size_t n = request->names.size();
+                response->at_tgts.resize(n);
+                for (size_t i = 0; i < n; ++i) {                                                                                                   
+                           
+                    printf("Name: %s, Position: %f\n", request->names[i].c_str(), request->positions[i]);
+                    const auto timeout = std::chrono::seconds(3);
+                    const auto start = this->get_clock()->now();                                                                                 
+                    Servo::ServoStatus status = servos.at(request->names[i])->setPosition(request->positions[i], Servo::ServoMode::Limited);
 
-            mJointData.name = mMotorNames;
-            mJointData.position.resize(mMotorNames.size());
-            mJointData.velocity.resize(mMotorNames.size());
-            mJointData.effort.resize(mMotorNames.size());
+                    while(status == Servo::ServoStatus::Active){
+                        status = servos.at(request->names[i])->getTargetStatus();
+                        if(this->get_clock()->now() - start > timeout){
+                            RCLCPP_WARN(this->get_logger(), "Timeout reached while waiting for servo to reach target position");
+                            break;
+                        }
+                    }
+                    response->at_tgts[i] = (status == Servo::ServoStatus::Success);
+                }
+            });
 
-            mControllerState.names = mMotorNames;
-            mControllerState.states.resize(mMotorNames.size());
-            mControllerState.errors.resize(mMotorNames.size());
-            mControllerState.limits_hit.resize(mMotorNames.size());
+            mGimbalStatePub = this->create_publisher<mrover::msg::GimbalControlState>("gimbal_control_state", 10);
+
+            mPublishDataTimer = this->create_wall_timer(std::chrono::milliseconds(100),
+                          std::bind(&MastGimbalHWBridge::publishDataCallback, this));
+
         }
 
     private:
-        std::vector<std::string> const mMotorNames = {"mast_gimbal_pitch", "mast_gimbal_yaw"};
-        std::unordered_map<std::string, std::shared_ptr<BrushedController>> mMotors;
 
-        rclcpp::Subscription<msg::Throttle>::SharedPtr mThrottleSub;
+    
 
+        rclcpp::Service<mrover::srv::ServoPosition>::SharedPtr getPositionService;
+
+        std::unordered_map<std::string, std::shared_ptr<mrover::Servo>> servos;
+
+        std::vector<std::pair<std::string, int>> const mServoNames = {{"mast_gimbal_pitch", 3}, {"mast_gimbal_yaw", 4}};
+
+        rclcpp::Publisher<mrover::msg::GimbalControlState>::SharedPtr mGimbalStatePub;
         rclcpp::TimerBase::SharedPtr mPublishDataTimer;
-        rclcpp::Publisher<sensor_msgs::msg::JointState>::SharedPtr mJointDataPub;
-        rclcpp::Publisher<msg::ControllerState>::SharedPtr mControllerStatePub;
-        sensor_msgs::msg::JointState mJointData;
-        msg::ControllerState mControllerState;
-
-
-        auto processThrottleCmd(msg::Throttle::ConstSharedPtr const& msg) -> void {
-            if (msg->names.size() != msg->throttles.size()) {
-                RCLCPP_ERROR(get_logger(), "Name count and value count mismatched!");
-                return;
-            }
-
-            for (std::size_t i = 0; i < msg->names.size(); ++i) {
-                std::string const& name = msg->names[i];
-                Dimensionless const& throttle = msg->throttles[i];
-                mMotors[name]->setDesiredThrottle(throttle);
-            }
-        }
-
-
+        msg::GimbalControlState mControllerState;
+        
         auto publishDataCallback() -> void {
-            mJointData.header.stamp = get_clock()->now();
+            const size_t n = mServoNames.size();
 
-            for (size_t i = 0; i < mMotorNames.size(); ++i) {
-                auto const& name = mMotorNames[i];
-                auto const& motor = mMotors[name];
+            mControllerState.name.resize(n);
+            mControllerState.position.resize(n);
+            mControllerState.velocity.resize(n);
+            mControllerState.current.resize(n);
+            mControllerState.error.resize(n);
+            mControllerState.state.resize(n);
+            mControllerState.limit_hit.resize(n);
+            
+            for (size_t i = 0; i < n; ++i) {
+                const auto& name = mServoNames[i].first;
+                auto& servo = *servos.at(name);
 
-                mJointData.position[i] = {motor->getPosition().get()};
-                mJointData.velocity[i] = {motor->getVelocity().get()};
-                mJointData.effort[i] = {motor->getEffort()};
+                mControllerState.name[i] = name;
+                mControllerState.limit_hit[i] = servo.getLimitStatus();
 
-                mControllerState.states[i] = {motor->getState()};
-                mControllerState.errors[i] = {motor->getErrorState()};
-                mControllerState.limits_hit[i] = {motor->getLimitsHitBits()};
+                float pos = 0.0f;
+                float vel = 0.0f;
+                float cur = 0.0f;
+
+                Servo::ServoStatus err = servo.getPosition(pos);
+                servo.getVelocity(vel);
+                servo.getCurrent(cur);
+
+                mControllerState.position[i] = pos;
+                mControllerState.velocity[i] = vel;
+                mControllerState.current[i]  = cur;
+
+                Servo::ServoStatus ts = servo.getTargetStatus();
+
+                /*mControllerState.state[i] = {servo->getState()};*/
+                if (ts == Servo::ServoStatus::Active) {
+                    mControllerState.state[i] = "active";
+                } else if (ts == Servo::ServoStatus::Success) {
+                    mControllerState.state[i] = "success";
+                } else {
+                    mControllerState.state[i] = "error";
+                }      
+
+                /*mControllerState.error[i] = {servo->getErrorState()};*/
+                switch(err) {
+                    case Servo::ServoStatus::CommNotAvailable:
+                        mControllerState.error[i] = "CommNotAvailable";
+                        break; 
+                    case Servo::ServoStatus::CommTxError:
+                        mControllerState.error[i] = "CommTxError";
+                        break;
+                    case Servo::ServoStatus::HardwareFailure:
+                        mControllerState.error[i] = "HardwareFailure";
+                        break;
+                    case Servo::ServoStatus::CommRxCorrupt:
+                        mControllerState.error[i] = "CommRxCorrupt";
+                        break;
+                    case Servo::ServoStatus::CommRxTimeout:
+                        mControllerState.error[i] = "CommRxTimeout";
+                        break;
+                    case Servo::ServoStatus::CommRxFail:
+                        mControllerState.error[i] = "CommRxFail";
+                        break;
+                    case Servo::ServoStatus::CommTxFail:
+                        mControllerState.error[i] = "CommTxFail";
+                        break;
+                    case Servo::ServoStatus::CommPortBusy:
+                        mControllerState.error[i] = "CommPortBusy";
+                        break;
+                    case Servo::ServoStatus::CommRxWaiting:
+                        mControllerState.error[i] = "CommRxWaiting";
+                        break;
+                    case Servo::ServoStatus::FailedToOpenPort:
+                        mControllerState.error[i] = "FailedToOpenPort";
+                        break;
+                    case Servo::ServoStatus::FailedToSetBaud:
+                        mControllerState.error[i] = "FailedToSetBaud";
+                        break;
+                    default:
+                        mControllerState.error[i] = "NoError";
+                        break;
+                }
+
+                /*mControllerState.limit_hit[i] = {servo->getLimitsHitBits()};*/
             }
 
-            mJointDataPub->publish(mJointData);
-            mControllerStatePub->publish(mControllerState);
+            mGimbalStatePub->publish(mControllerState);
         }
-    };
-} // namespace mrover
+    };// namespace mrover
+}
+
 
 auto main(int argc, char** argv) -> int {
     rclcpp::init(argc, argv);
@@ -108,3 +185,4 @@ auto main(int argc, char** argv) -> int {
     rclcpp::shutdown();
     return EXIT_SUCCESS;
 }
+
