@@ -2,7 +2,7 @@
   <div class='d-flex flex-column border border-2 p-2 rounded mw-100' style="flex: 1 0 auto; min-width: 0;">
     <div class="d-flex align-items-center justify-content-between mb-2">
       <h4 class="m-0">{{ header }}</h4>
-      <div class="d-flex gap-2">
+      <div class="d-flex gap-2" v-if="mode !== 'arm'">
         <button
           type="button"
           class="btn btn-sm"
@@ -21,8 +21,8 @@
     </div>
 
     <div class="d-flex gap-2">
-      <div class="flex-grow-1 d-flex align-items-center justify-content-center p-2" style="min-width:0;">
-        <svg viewBox="0 0 240 110" class="rover-svg" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Rover diagram">
+      <div class="flex-grow-1 d-flex align-items-center justify-content-center" style="min-width:0;">
+        <svg viewBox="10 5 220 95" class="rover-svg" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Rover diagram">
           <image
             :href="roverImageUrl"
             x="50"
@@ -35,37 +35,37 @@
           <g v-for="(w, idx) in wheelPositions" :key="w.id" :transform="`translate(${w.x}, ${w.y})`" class="wheel-group" @click="selectedIndex = idx" style="cursor: pointer;">
             <g class="live-data">
               <text 
-                :x="w.x < 120 ? -12 : 12" 
+                :x="w.x < 120 ? -14 : 14" 
                 y="-2" 
                 :text-anchor="w.x < 120 ? 'end' : 'start'" 
-                font-size="5" 
+                font-size="7" 
                 font-weight="bold" 
                 fill="#212529"
               >
                 {{ states[idx] || 'OFFLINE' }}
               </text>
               <text 
-                :x="w.x < 120 ? -12 : 12" 
-                y="5" 
+                :x="w.x < 120 ? -14 : 14" 
+                y="7" 
                 :text-anchor="w.x < 120 ? 'end' : 'start'" 
-                font-size="5" 
+                font-size="7" 
                 fill="#6c757d"
               >
                 {{ formatNumber(velocities[idx]) }} m/s
               </text>
             </g>
 
-            <circle :r="8" :fill="selectedIndex === idx ? '#0d6efd' : '#fff'" stroke="#495057" stroke-width="1.5" />
-            <text x="0" y="2" font-size="6" text-anchor="middle" :fill="selectedIndex === idx ? '#fff' : '#495057'" font-weight="bold">
+            <circle :r="10" :fill="selectedIndex === idx ? '#0d6efd' : '#fff'" stroke="#495057" stroke-width="1.5" />
+            <text x="0" y="3" font-size="8" text-anchor="middle" :fill="selectedIndex === idx ? '#fff' : '#495057'" font-weight="bold">
               {{ w.short }}
             </text>
           </g>
 
-          <text x="120" y="18" font-size="7" text-anchor="middle" fill="#495057" font-weight="bold">{{ header }}</text>
+          <text x="120" y="16" font-size="10" text-anchor="middle" fill="#495057" font-weight="bold">{{ header }}</text>
         </svg>
       </div>
 
-      <div class="details-panel p-2 border-start" style="width: 220px; min-width: 140px;">
+      <div v-if="mode !== 'arm'" class="details-panel p-2 border-start">
   <div class="mb-1 small text-muted">Selected Part</div>
   <div class="fw-bold mb-2">{{ selectedData.name ?? 'None' }}</div>
 
@@ -207,13 +207,15 @@ const selectedData = computed(() => {
 })
 
 // Use the DM_Rover_image.svg in the public root directory
-const roverImageUrl = `${import.meta.env.BASE_URL}DM_Rover_image.svg`
+const roverImageUrl = `${import.meta.env.BASE_URL}roverForArmDrivePNG.png`
 </script>
 
 <style scoped>
 .rover-svg {
   width: 100%;
-  height: 220px;
+  height: auto;
+  max-height: 150px;
+  aspect-ratio: 220 / 95;
   background: #f8f9fa;
   border-radius: 6px;
 }
@@ -225,6 +227,8 @@ const roverImageUrl = `${import.meta.env.BASE_URL}DM_Rover_image.svg`
 
 .details-panel {
   background: white;
+  width: 150px;
+  min-width: 120px;
 }
 
 .live-data text {

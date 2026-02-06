@@ -16,18 +16,17 @@
       </div>
     </template>
 
-    <template #moteus>
-      <div class="island p-2 rounded d-flex flex-row gap-2 h-100">
-        <ControllerDataTable mode="arm" header="Arm" />
-        <ControllerDataTable mode="drive" header="Drive" />
-      </div>
-    </template>
-
     <template #controls>
-      <div class="island p-2 rounded d-flex flex-row justify-content-between h-100">
-        <ArmControls />
-        <GimbalControls />
-        <DriveControls />
+      <div class="island p-2 rounded d-flex flex-column gap-2 h-100">
+        <div class="d-flex flex-row justify-content-between">
+            <ArmControls />
+            <GimbalControls />
+            <DriveControls />
+        </div>
+        <div class="d-flex flex-row gap-2 flex-grow-1" style="min-height: 0;">
+            <ControllerDataTable mode="arm" header="Arm" />
+            <ControllerDataTable mode="drive" header="Drive" />
+        </div>
       </div>
     </template>
 
@@ -59,8 +58,7 @@ import Rover3D from '@/components/Rover3D.vue'
 const defaultLayout = [
   { x: 0, y: 0, w: 6, h: 4, i: 'rover-3d' },
   { x: 0, y: 4, w: 6, h: 2, i: 'odometry' },
-  { x: 0, y: 6, w: 6, h: 2, i: 'controls' },
-  { x: 0, y: 8, w: 6, h: 4, i: 'moteus' },
+  { x: 0, y: 6, w: 6, h: 6, i: 'controls' },
   { x: 6, y: 0, w: 6, h: 6, i: 'map' },
   { x: 6, y: 6, w: 6, h: 6, i: 'waypoints' },
 ]
