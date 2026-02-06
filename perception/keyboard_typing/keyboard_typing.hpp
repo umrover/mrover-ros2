@@ -13,6 +13,9 @@ namespace mrover{
 
         rclcpp_action::Client<TypingDeltas>::SharedPtr mTypingClient;
 
+        // Ik mode client
+        rclcpp::Client<srv::IkMode>::SharedPtr mIkModeClient;
+
         void feedback_callback(GoalHandleTypingDeltas::SharedPtr, const std::shared_ptr<const TypingDeltas::Feedback> feedback);
 
         auto send_goal(float x_delta, float y_delta) -> bool;
