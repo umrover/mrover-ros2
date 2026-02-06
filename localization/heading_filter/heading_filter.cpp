@@ -65,7 +65,7 @@ namespace mrover {
         double K = (P) / (P + heading_correction_delta_noise);
         double innovation = heading_correction_delta_meas - X;
         innovation = fmod((innovation + 3 * M_PI), 2 * M_PI) - M_PI;
-        X = fmod((X + K * (innovation) + 3 * M_PI), 2 * M_PI) - M_PI;
+        X = X + K * innovation;
         P = (1 - K) * P;
 
     }
@@ -100,7 +100,7 @@ namespace mrover {
             RCLCPP_WARN(get_logger(), "Computed heading not finite, skipping heading correction");
             return;
         }
-        // correct with rtk heading only when heading is fixed
+
         double measured_heading = fmod(heading->heading + 90, 360);
         measured_heading = 90 - measured_heading;
         if (measured_heading < -180) {
