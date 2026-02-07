@@ -85,19 +85,6 @@ def get_recording_waypoints(rec_id: int):
             conn.close()
 
 
-@router.delete("/{rec_id}/")
-def delete_recording(rec_id: int):
-    conn = None
-    try:
-        conn = get_recordings_db()
-        conn.execute('DELETE FROM recordings WHERE id = ?', (rec_id,))
-        conn.commit()
-        return {'status': 'success', 'deleted': rec_id}
-    finally:
-        if conn:
-            conn.close()
-
-
 @router.delete("/clear/")
 def clear_recordings():
     conn = None
@@ -106,6 +93,19 @@ def clear_recordings():
         conn.execute('DELETE FROM recordings')
         conn.commit()
         return {'status': 'success'}
+    finally:
+        if conn:
+            conn.close()
+
+
+@router.delete("/{rec_id}/")
+def delete_recording(rec_id: int):
+    conn = None
+    try:
+        conn = get_recordings_db()
+        conn.execute('DELETE FROM recordings WHERE id = ?', (rec_id,))
+        conn.commit()
+        return {'status': 'success', 'deleted': rec_id}
     finally:
         if conn:
             conn.close()

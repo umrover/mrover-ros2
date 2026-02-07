@@ -2,10 +2,10 @@
   <div class="d-flex align-items-center gap-2 mb-2">
     <h4 class="component-header">Sensor<br>Data</h4>
     <div class="d-flex flex-column gap-1">
-      <button class="btn btn-outline-control btn-sm border-2" @click="showModal = true">
+      <button class="btn btn-outline-control btn-sm border-2" data-testid="pw-sensor-view-all" @click="showModal = true">
         View All
       </button>
-      <button class="btn btn-outline-secondary btn-sm border-2" @click="downloadCSV">
+      <button class="btn btn-outline-secondary btn-sm border-2" data-testid="pw-sensor-csv-btn" @click="downloadCSV">
         <i class="bi bi-download"></i> CSV
       </button>
     </div>

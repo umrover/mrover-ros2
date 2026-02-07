@@ -1,5 +1,5 @@
 <template>
-  <div class="d-flex flex-column gap-1 w-100 h-100 overflow-hidden">
+  <div class="d-flex flex-column gap-1 w-100 h-100 overflow-hidden" data-testid="pw-gimbal-controls">
     <div class="d-flex justify-content-between align-items-center w-100">
       <h4 class="component-header">Gimbal Controls</h4>
       <div class="d-flex align-items-center">
@@ -21,7 +21,7 @@
         <span class="value-display">{{ pitchDegrees }}&deg;</span>
         <span class="axis-label-spacer"></span>
       </div>
-      <div class="btn-row">
+      <div class="btn-row" data-testid="pw-gimbal-pitch-btns">
         <button class="btn btn-outline-control btn-sm control-btn" @click="adjustGimbal('pitch', -10)" :disabled="!hasServoState">-10</button>
         <button class="btn btn-outline-control btn-sm control-btn" @click="adjustGimbal('pitch', -5)" :disabled="!hasServoState">-5</button>
         <button class="btn btn-outline-control btn-sm control-btn" @click="adjustGimbal('pitch', -1)" :disabled="!hasServoState">-1</button>
@@ -37,7 +37,7 @@
         <span class="value-display">{{ yawDegrees }}&deg;</span>
         <span class="axis-label-spacer"></span>
       </div>
-      <div class="btn-row">
+      <div class="btn-row" data-testid="pw-gimbal-yaw-btns">
         <button class="btn btn-outline-control btn-sm control-btn" @click="adjustGimbal('yaw', -10)" :disabled="!hasServoState">-10</button>
         <button class="btn btn-outline-control btn-sm control-btn" @click="adjustGimbal('yaw', -5)" :disabled="!hasServoState">-5</button>
         <button class="btn btn-outline-control btn-sm control-btn" @click="adjustGimbal('yaw', -1)" :disabled="!hasServoState">-1</button>

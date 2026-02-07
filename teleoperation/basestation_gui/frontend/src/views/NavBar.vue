@@ -8,12 +8,14 @@
           <button
             class="btn btn-sm cmd-btn-icon-sm border-2"
             :class="gridLayoutStore.locked ? 'btn-danger' : 'btn-success'"
+            data-testid="pw-grid-lock-btn"
             @click="gridLayoutStore.toggleLock()"
           >
             <i :class="gridLayoutStore.locked ? 'bi bi-lock-fill' : 'bi bi-unlock-fill'"></i>
           </button>
           <button
             class="btn btn-sm btn-secondary cmd-btn-icon-sm border-2"
+            data-testid="pw-grid-reset-btn"
             @click="gridLayoutStore.triggerReset()"
           >
             <i class="bi bi-arrow-counterclockwise"></i>
@@ -27,6 +29,7 @@
         <div class="dropdown d-flex">
           <button
             class="theme-btn border border-2 rounded"
+            data-testid="pw-theme-dropdown"
             data-bs-toggle="dropdown"
             aria-expanded="false"
           >

@@ -10,7 +10,7 @@
         <div class="d-flex flex-column gap-2">
           <div class="d-flex align-items-center gap-2">
             <label for="waypointname" class="cmd-data-label m-0">Name:</label>
-            <input class="form-control cmd-input flex-grow-1" id="waypointname" v-model="name" />
+            <input class="form-control cmd-input flex-grow-1" id="waypointname" data-testid="pw-basic-wp-name" v-model="name" />
           </div>
           <div class="d-flex gap-2">
             <div class="flex-fill input-group input-group-sm">
@@ -22,7 +22,7 @@
               <span class="input-group-text">ºW</span>
             </div>
           </div>
-          <button class="btn btn-success btn-sm border-2" @click="addWaypoint(input, false)">
+          <button class="btn btn-success btn-sm border-2" data-testid="pw-basic-wp-add-btn" @click="addWaypoint(input, false)">
             Add Waypoint
           </button>
         </div>
@@ -81,11 +81,11 @@
 
       <!-- Action Buttons -->
       <div class="py-2">
-        <button class="btn btn-success btn-sm border-2 w-100 mb-2" @click="showRecordingsModal = true">
+        <button class="btn btn-success btn-sm border-2 w-100 mb-2" data-testid="pw-basic-wp-recordings-btn" @click="showRecordingsModal = true">
           View Recordings
         </button>
         <div class="d-flex gap-2 w-100">
-          <button class="btn btn-danger btn-sm border-2" @click="openClearWaypointsModal">
+          <button class="btn btn-danger btn-sm border-2" data-testid="pw-basic-wp-clear-btn" @click="openClearWaypointsModal">
             Clear Waypoints
           </button>
           <button class="btn btn-danger btn-sm border-2" @click="openClearRecordingsModal">
@@ -101,7 +101,7 @@
         <h4 class="component-header m-0">Current Course</h4>
         <button class="btn btn-danger btn-sm border-2" @click="clearWaypoint">Clear</button>
       </div>
-      <div class="bg-theme-view p-2 rounded overflow-y-auto d-flex flex-column gap-2 flex-grow-1">
+      <div class="bg-theme-view p-2 rounded overflow-y-auto d-flex flex-column gap-2 flex-grow-1" data-testid="pw-basic-wp-list">
         <WaypointItem
           v-for="(waypoint, i) in storedWaypoints"
           :key="i"

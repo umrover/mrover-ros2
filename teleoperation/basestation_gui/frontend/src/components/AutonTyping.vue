@@ -17,6 +17,7 @@ create instance of rosaction in callback area -->
             type="text"
             class="form-control cmd-input border-2"
             id="autonTyping"
+            data-testid="pw-typing-input"
             placeholder="Message"
             maxlength="6"
             required
@@ -29,6 +30,7 @@ create instance of rosaction in callback area -->
           <button
             v-if="!codeSent"
             class="btn btn-sm btn-outline-control border-2 typing-btn"
+            data-testid="pw-typing-submit"
             :disabled="typingMessage.length < 3"
             @click.prevent="submitMessage()"
           >
@@ -48,7 +50,7 @@ create instance of rosaction in callback area -->
     <div class="d-flex flex-column gap-3">
       <div class="d-flex flex-column align-items-center text-center w-100">
         <h4 class="component-header mb-2">Feedback</h4>
-        <table class="feedback-table">
+        <table class="feedback-table" data-testid="pw-typing-feedback">
           <tbody>
             <tr>
               <td

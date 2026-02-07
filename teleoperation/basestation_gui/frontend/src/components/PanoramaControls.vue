@@ -1,7 +1,7 @@
 <template>
   <div class="d-flex flex-column gap-2 w-100 h-100">
     <h4 class="component-header">Panorama</h4>
-    <button :class="['btn', buttonClass]" :disabled="loading" @click="toggle">
+    <button :class="['btn', buttonClass]" :disabled="loading" data-testid="pw-panorama-toggle" @click="toggle">
       <span class="d-inline-flex align-items-center gap-2">
         <span>{{ buttonText }}</span>
         <span v-if="loading" class="spinner-border spinner-border-sm"></span>

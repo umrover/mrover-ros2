@@ -7,6 +7,7 @@
           type="button"
           class="btn btn-sm border-2"
           :class="showStatus ? 'btn-success' : 'btn-outline-secondary'"
+          data-testid="pw-controller-status-toggle"
           @mousedown.prevent
           @click="showStatus = !showStatus"
         >Status</button>
@@ -14,6 +15,7 @@
           type="button"
           class="btn btn-sm border-2"
           :class="showValues ? 'btn-success' : 'btn-outline-secondary'"
+          data-testid="pw-controller-values-toggle"
           @mousedown.prevent
           @click="showValues = !showValues"
         >Values</button>

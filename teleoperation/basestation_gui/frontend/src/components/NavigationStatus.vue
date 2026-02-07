@@ -1,15 +1,15 @@
 <template>
   <div class="d-flex flex-column gap-2 flex-fill">
-    <div class="cmd-panel status-panel px-3 py-2" :class="stuckStatus ? 'status-panel--error' : 'status-panel--ok'">
+    <div class="cmd-panel status-panel px-3 py-2" data-testid="pw-status-panel" :class="stuckStatus ? 'status-panel--error' : 'status-panel--ok'">
       <div class="d-flex align-items-center gap-2">
         <span class="status-dot rounded-circle"></span>
         <span class="status-label">{{ stuckStatus ? 'Obstruction Detected' : 'Nominal Conditions' }}</span>
       </div>
     </div>
-    <div class="cmd-panel nav-state-panel flex-fill d-flex align-items-center justify-content-center" :class="ledColorClass">
+    <div class="cmd-panel nav-state-panel flex-fill d-flex align-items-center justify-content-center" data-testid="pw-nav-state-panel" :class="ledColorClass">
       <div class="d-flex flex-column align-items-center gap-1">
         <span class="cmd-data-label">Nav State</span>
-        <span class="nav-state-value">{{ navState }}</span>
+        <span class="nav-state-value" data-testid="pw-nav-state-value">{{ navState }}</span>
       </div>
     </div>
   </div>

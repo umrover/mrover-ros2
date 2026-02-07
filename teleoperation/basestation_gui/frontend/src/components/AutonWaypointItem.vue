@@ -1,5 +1,5 @@
 <template>
-  <div class="cmd-list-item p-2 rounded border border-2">
+  <div class="cmd-list-item p-2 rounded border border-2" data-testid="pw-route-item">
     <div class="d-flex justify-content-between align-items-center mb-1">
       <div class="d-flex align-items-center gap-2">
         <i class="bi bi-grip-vertical drag-handle"></i>
@@ -14,6 +14,7 @@
         <button
           class="btn btn-sm border-2 cmd-btn-text"
           :class="enable_costmap ? 'btn-success' : 'btn-danger'"
+          data-testid="pw-route-costmap-toggle"
           @click="toggleCostmap"
         >Costmap</button>
         <button class="btn btn-sm btn-danger border-2 cmd-btn-icon" @click="deleteWaypoint"><i class="bi bi-trash-fill"></i></button>

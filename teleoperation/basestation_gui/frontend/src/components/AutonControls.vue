@@ -4,6 +4,7 @@
       <FeedbackButton
         ref="autonCheckbox"
         class="w-100"
+        data-testid="pw-auton-toggle"
         :name="'Autonomy Mode'"
         :checked="autonEnabled"
         :action="autonAction"
@@ -22,6 +23,7 @@
     <div class="d-flex flex-column gap-1" style="flex: 1;">
       <FeedbackButton
         class="w-100"
+        data-testid="pw-pure-pursuit-toggle"
         :name="'Pure Pursuit'"
         :checked="purePursuitEnabled"
         :action="purePursuitAction"
@@ -29,6 +31,7 @@
       />
       <FeedbackButton
         class="w-100"
+        data-testid="pw-path-relaxation-toggle"
         :name="'Path Relaxation'"
         :checked="pathRelaxationEnabled"
         :action="pathRelaxationAction"
@@ -36,6 +39,7 @@
       />
       <FeedbackButton
         class="w-100"
+        data-testid="pw-path-interpolation-toggle"
         :name="'Path Interpolation'"
         :checked="pathInterpolationEnabled"
         :action="pathInterpolationAction"

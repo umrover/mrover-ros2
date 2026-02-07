@@ -109,4 +109,36 @@ test.describe('ArmControls', () => {
       await expect(disabledButton).toHaveClass(/btn-danger/, { timeout: 5000 });
     }
   });
+
+  test('IK position mode activates', async ({ page }) => {
+    await page.goto('http://localhost:8080/DMTask');
+    await page.waitForLoadState('networkidle');
+
+    const ikPosButton = page.getByTestId('pw-arm-mode-ik-pos');
+    await expect(ikPosButton).toBeVisible({ timeout: 15000 });
+
+    const modeChangePromise = page.waitForResponse(
+      (resp) => resp.url().includes('/api/arm/ra_mode') && resp.request().method() === 'POST'
+    );
+    await ikPosButton.click();
+    await modeChangePromise;
+
+    await expect(ikPosButton).toHaveClass(/btn-success/, { timeout: 5000 });
+  });
+
+  test('IK velocity mode activates', async ({ page }) => {
+    await page.goto('http://localhost:8080/DMTask');
+    await page.waitForLoadState('networkidle');
+
+    const ikVelButton = page.getByTestId('pw-arm-mode-ik-vel');
+    await expect(ikVelButton).toBeVisible({ timeout: 15000 });
+
+    const modeChangePromise = page.waitForResponse(
+      (resp) => resp.url().includes('/api/arm/ra_mode') && resp.request().method() === 'POST'
+    );
+    await ikVelButton.click();
+    await modeChangePromise;
+
+    await expect(ikVelButton).toHaveClass(/btn-success/, { timeout: 5000 });
+  });
 });

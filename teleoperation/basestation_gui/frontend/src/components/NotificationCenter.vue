@@ -2,6 +2,7 @@
   <div class="position-relative d-flex align-self-stretch">
     <button
       class="notification-btn border border-2 rounded"
+      data-testid="pw-notification-bell"
       @click="togglePanel"
     >
       <i class="bi bi-bell-fill"></i>
@@ -13,13 +14,14 @@
       </span>
     </button>
 
-    <div v-if="showPanel" class="notification-panel cmd-panel">
+    <div v-if="showPanel" class="notification-panel cmd-panel" data-testid="pw-notification-panel">
       <div class="d-flex justify-content-between align-items-center p-3 border-bottom border-2">
         <h4 class="component-header m-0">Notifications</h4>
         <div class="d-flex gap-2">
           <button
             v-if="notifications.length > 0"
             class="btn btn-sm btn-outline-danger border-2"
+            data-testid="pw-notification-clear-all"
             @click="clearAll"
           >
             Clear All

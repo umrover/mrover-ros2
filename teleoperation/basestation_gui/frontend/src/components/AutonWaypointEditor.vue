@@ -7,6 +7,7 @@
         <div class="d-flex gap-2 align-items-center">
           <button
             class="btn btn-danger btn-sm border-2 cmd-btn-icon-sm"
+            data-testid="pw-reset-waypoints-btn"
             @click="openResetModal"
             title="Reset waypoints"
           >
@@ -37,6 +38,7 @@
         <button
           class="btn btn-sm border-2"
           :class="allCostmapToggle ? 'btn-success' : 'btn-danger'"
+          data-testid="pw-costmap-toggle-all"
           @click="toggleAllCostmaps"
         >
           All Costmaps

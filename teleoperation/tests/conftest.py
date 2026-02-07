@@ -13,6 +13,9 @@ def pytest_configure(config):
     config.addinivalue_line(
         'markers', 'ros: marks tests that require ROS 2 environment'
     )
+    config.addinivalue_line(
+        'markers', 'api: marks tests as API contract tests (require backend only)'
+    )
 
 
 @pytest.fixture(scope='session')

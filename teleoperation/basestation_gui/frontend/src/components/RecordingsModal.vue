@@ -5,7 +5,7 @@
       class="modal-backdrop d-flex align-items-center justify-content-center"
       @click.self="$emit('close')"
     >
-      <div class="modal-dialog modal-xl" style="width: 90%; max-width: 1400px">
+      <div class="modal-dialog modal-xl" data-testid="pw-recordings-modal" style="width: 90%; max-width: 1400px">
         <div class="modal-content bg-theme-card rounded shadow">
         <div class="d-flex justify-content-between align-items-center px-3 py-2 border-bottom border-2">
           <h4 class="component-header m-0">Recordings</h4>
@@ -23,6 +23,7 @@
               <button
                 class="nav-link-tab"
                 :class="{ active: activeTab === 'rover' }"
+                data-testid="pw-recordings-tab-rover"
                 @click="activeTab = 'rover'"
               >
                 Rover
@@ -32,6 +33,7 @@
               <button
                 class="nav-link-tab"
                 :class="{ active: activeTab === 'drone' }"
+                data-testid="pw-recordings-tab-drone"
                 @click="activeTab = 'drone'"
               >
                 Drone

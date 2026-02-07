@@ -1,5 +1,5 @@
 <template>
-  <a class="menu-button border border-2 rounded" :href="link">
+  <a class="menu-button border border-2 rounded" data-testid="pw-menu-btn" :href="link">
     <span class="terminal-arrow">&gt;</span>
     <span class="button-text">{{ name }}</span>
     <span class="button-bg"></span>

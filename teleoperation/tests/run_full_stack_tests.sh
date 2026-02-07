@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Full-stack test runner for teleoperation
-# Runs both Playwright (frontend) and pytest (backend/ROS) tests
+# Runs Playwright (frontend), pytest API, and pytest integration tests
 
 set -e
 
@@ -25,24 +25,35 @@ print_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
-check_services() {
-    print_status "Checking required services..."
-
+check_backend() {
     if ! curl -s http://localhost:8000/docs > /dev/null 2>&1; then
         print_error "Backend server not running on localhost:8000"
         print_warning "Start with: cd $TELEOP_DIR/basestation_gui && ./gui_backend.sh"
         return 1
     fi
     print_status "Backend server: OK"
+    return 0
+}
 
+check_frontend() {
     if ! curl -s http://localhost:8080 > /dev/null 2>&1; then
         print_error "Frontend server not running on localhost:8080"
         print_warning "Start with: cd $TELEOP_DIR/basestation_gui/frontend && npm run dev"
         return 1
     fi
     print_status "Frontend server: OK"
-
     return 0
+}
+
+check_services() {
+    print_status "Checking required services..."
+    check_backend && check_frontend
+}
+
+run_api_tests() {
+    print_status "Running API contract tests..."
+    cd "$SCRIPT_DIR"
+    python3 -m pytest api/ -v --tb=short -m "not ros"
 }
 
 run_playwright_tests() {
@@ -75,6 +86,8 @@ run_all() {
     fi
 
     echo ""
+    run_api_tests
+    echo ""
     run_playwright_tests
     echo ""
     run_pytest_integration
@@ -84,6 +97,9 @@ run_all() {
 }
 
 case "${1:-all}" in
+    api)
+        check_backend && run_api_tests
+        ;;
     playwright)
         check_services && run_playwright_tests
         ;;
@@ -97,10 +113,11 @@ case "${1:-all}" in
         run_all
         ;;
     *)
-        echo "Usage: $0 {all|playwright|pytest|check}"
+        echo "Usage: $0 {all|api|playwright|pytest|check}"
         echo ""
         echo "Commands:"
         echo "  all        Run all tests (default)"
+        echo "  api        Run only API contract tests (backend only)"
         echo "  playwright Run only Playwright UI tests"
         echo "  pytest     Run only pytest integration tests"
         echo "  check      Check if required services are running"
