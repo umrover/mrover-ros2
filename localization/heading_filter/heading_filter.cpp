@@ -101,7 +101,7 @@ namespace mrover {
             return;
         }
         if (heading_status->fix_type.fix == mrover::msg::FixType::FIXED) {
-            double const rover_map_deg = std::fmod(heading->heading + 90. + 360., 360.);
+            double const rover_map_deg = fmod(heading->heading + 90. + 360., 360.);
             double measured_heading_deg = 90. - rover_map_deg;
             if (measured_heading_deg <= -180.) { measured_heading_deg += 360.; }
             else if (measured_heading_deg > 180.) { measured_heading_deg -= 360.; }
