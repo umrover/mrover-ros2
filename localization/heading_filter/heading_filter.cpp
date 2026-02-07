@@ -168,7 +168,9 @@ namespace mrover {
         SO3d curr_heading_correction = Eigen::AngleAxisd(X, R3d::UnitZ());
         RCLCPP_INFO_THROTTLE(get_logger(), *get_clock(), 1000, "%s", std::format("Heading corrected by: {} rad", X).c_str());
         SO3d corrected_orientation = curr_heading_correction * uncorrected_orientation_rotm;
-        pose_in_map.asSO3() = corrected_orientation;
+        Eigen::Quaterniond q = corrected_orientation.quat();
+        q.normalize();
+        pose_in_map.asSO3() = SO3d(q);
 
         SE3Conversions::pushToTfTree(tf_broadcaster, get_parameter("gps_frame").as_string(), get_parameter("world_frame").as_string(), pose_in_map, get_clock()->now());
     }
