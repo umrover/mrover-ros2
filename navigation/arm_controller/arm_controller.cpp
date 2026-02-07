@@ -287,7 +287,7 @@ namespace mrover {
             auto error_pitch = mCarrotPos.pitch - mArmPos.pitch;
             auto error_roll = mCarrotPos.roll - mArmPos.roll;
 
-            double const max_dist = 0.02;
+            double const max_dist = 0.015;
 
             double error_total = std::sqrt(error_x * error_x + error_y * error_y + error_z * error_z);
 
@@ -296,6 +296,19 @@ namespace mrover {
                 mCarrotPos.x = mArmPos.x + error_x * reduce_factor;
                 mCarrotPos.y = mArmPos.y + error_y * reduce_factor;
                 mCarrotPos.z = mArmPos.z + error_z * reduce_factor;
+            }
+
+            double error_check_x = mCheckCarrotPos.x - mCarrotPos.x;
+            double error_check_y = mCheckCarrotPos.y - mCarrotPos.y;
+            double error_check_z = mCheckCarrotPos.z - mCarrotPos.z;
+            double error_check = std::sqrt(error_check_x * error_check_x + error_check_y * error_check_y + error_check_z * error_check_z);
+
+            if (error_check > 0.04) {
+                RCLCPP_WARN_THROTTLE(
+                            get_logger(),
+                            *get_clock(),
+                            1000,
+                            "Arm IK failing! Desired movement will not be achieved. Return to normal bounds");
             }
 
             SE3Conversions::pushToTfTree(
@@ -315,8 +328,8 @@ namespace mrover {
             error_roll = mCarrotPos.roll - mArmPos.roll;
 
 
-            double const Kp_lin = 14.0;
-            double const Kp_ang = 16.0;
+            double const Kp_lin = 20.0;
+            double const Kp_ang = 20.0;
 
             adjusted_v.linear.x += Kp_lin * error_x;
             adjusted_v.linear.y += Kp_lin * error_y;
