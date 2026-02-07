@@ -237,6 +237,7 @@ namespace mrover {
                 mVelTarget.angular.y == 0) {
                 // no movement command, so just stop the arm
                 mCarrotPos = mArmPos;
+                mCheckCarrotPos = mArmPos;
             }   
 
             //hold = false;
@@ -246,6 +247,7 @@ namespace mrover {
             if (!carrot_initialized) {
                 mPrevTime = now;
                 mCarrotPos = mArmPos;
+                mCheckCarrotPos = mArmPos;
                 carrot_initialized = true;
             }
 
@@ -266,13 +268,26 @@ namespace mrover {
             mCarrotPos.pitch += mVelTarget.angular.y * dt * k;
             mCarrotPos.roll += mVelTarget.angular.x * dt * k;
 
+            mCheckCarrotPos.x += mVelTarget.linear.x * dt * k;
+            mCheckCarrotPos.y += mVelTarget.linear.y * dt * k;
+            mCheckCarrotPos.z += mVelTarget.linear.z * dt * k;
+            mCheckCarrotPos.pitch += mVelTarget.angular.y * dt * k;
+            mCheckCarrotPos.roll += mVelTarget.angular.x * dt * k;
+
+            SE3Conversions::pushToTfTree(
+                    mTfBroadcaster,
+                    "checking_target",
+                    "arm_base_link",
+                    mCheckCarrotPos.toSE3(),
+                    now);
+
             auto error_x = mCarrotPos.x - mArmPos.x;
             auto error_y = mCarrotPos.y - mArmPos.y;
             auto error_z = mCarrotPos.z - mArmPos.z;
             auto error_pitch = mCarrotPos.pitch - mArmPos.pitch;
             auto error_roll = mCarrotPos.roll - mArmPos.roll;
 
-            double const max_dist = 0.01;
+            double const max_dist = 0.02;
 
             double error_total = std::sqrt(error_x * error_x + error_y * error_y + error_z * error_z);
 
@@ -300,8 +315,8 @@ namespace mrover {
             error_roll = mCarrotPos.roll - mArmPos.roll;
 
 
-            double const Kp_lin = 20.0;
-            double const Kp_ang = 8.0;
+            double const Kp_lin = 14.0;
+            double const Kp_ang = 16.0;
 
             adjusted_v.linear.x += Kp_lin * error_x;
             adjusted_v.linear.y += Kp_lin * error_y;
@@ -318,7 +333,7 @@ namespace mrover {
                         velocities->velocities[2] == 0 &&
                         velocities->velocities[3] == 0 &&
                         velocities->velocities[4] == 0)) {
-                mVelPub->publish(velocities.value());
+                        mVelPub->publish(velocities.value());
                
             } else {
                 if (!velocities) {
@@ -328,6 +343,7 @@ namespace mrover {
                             1000,
                             "Velocity IK failed!");
                     mCarrotPos = mArmPos;
+                    mCheckCarrotPos = mArmPos;
                 }
             }
 

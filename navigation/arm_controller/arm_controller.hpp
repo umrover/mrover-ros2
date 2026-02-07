@@ -29,6 +29,7 @@ namespace mrover {
         rclcpp::Time mPrevTime;
         bool carrot_initialized = false;
         ArmPos mCarrotPos;
+        ArmPos mCheckCarrotPos;
         bool hold = false;
         bool not_initialized = true;
 
