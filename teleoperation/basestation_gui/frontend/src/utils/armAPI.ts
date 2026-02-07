@@ -7,5 +7,7 @@ export const armAPI = {
       method: 'POST',
       body: JSON.stringify({ mode })
     })
-  }
+  },
+
+  // TODO(stow): Add stowArm() method.
 }

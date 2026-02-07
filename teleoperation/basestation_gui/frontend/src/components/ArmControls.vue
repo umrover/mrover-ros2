@@ -42,6 +42,13 @@
           IK Vel
         </button>
       </div>
+
+    <!-- TODO(stow): Add stow button. Gray out while stowing, show distance to target.
+         On convergence or timeout, call setRAMode("disabled"). -->
+    <!-- <button class="btn btn-sm btn-outline-warning border-2 w-100" :disabled="isStowing" @click="stowArm">
+      Stow
+    </button> -->
+
     <GamepadDisplay :axes="axes" :buttons="buttons" layout="horizontal" class="flex-grow-1 min-height-0" />
   </div>
 </template>
@@ -74,6 +81,37 @@ onMounted(() => {
 onBeforeUnmount(() => {
   document.removeEventListener('keydown', keyDown)
 })
+
+// TODO(stow): Implement stow arm. /arm_ik reports actual EE position in 3-space.
+//
+// Approach:
+//   1. Call armAPI.stowArm() -- REST sets ra_mode to "stow", returns target {x,y,z}
+//   2. The 15 Hz gamepad polling continues sending ra_controller messages via WebSocket.
+//      In "stow" mode, send_ra_controls() publishes STOW_POSITION instead of gamepad input,
+//      keeping the arm watchdog timer satisfied.
+//   3. Watch websocketStore.messages['arm'] for 'ik_target' messages (streamed from /arm_ik
+//      ROS topic at 30 Hz). Compute Euclidean distance from current EE position to stow target.
+//   4. On convergence (distance < STOW_THRESHOLD): call setRAMode("disabled"), show success.
+//      On timeout (STOW_TIMEOUT_MS): call setRAMode("disabled"), show failure.
+//
+// const STOW_THRESHOLD = 0.01
+// const STOW_TIMEOUT_MS = 30_000
+//
+// const isStowing = ref(false)
+// const stowTarget = ref<{ x: number; y: number; z: number } | null>(null)
+// const stowDistance = ref<number | null>(null)
+// let stowTimeoutId: number | undefined
+//
+// const euclideanDistance = (a: { x: number; y: number; z: number }, b: { x: number; y: number; z: number }) =>
+//   Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2 + (a.z - b.z) ** 2)
+//
+// const stowArm = async () => {
+//   // TODO(stow)
+// }
+//
+// const completeStow = async (reason: 'success' | 'timeout') => {
+//   // TODO(stow)
+// }
 
 const newRAMode = async (newMode: string) => {
   try {
