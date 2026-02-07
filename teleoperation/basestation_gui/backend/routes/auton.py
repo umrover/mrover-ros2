@@ -14,14 +14,20 @@ router = APIRouter(prefix="/api", tags=["auton"])
 
 
 async def call_service_async(client, request, timeout=5.0):
-    if not client.wait_for_service(timeout_sec=1.0):
+    loop = asyncio.get_running_loop()
+
+    service_ready = await asyncio.wait_for(
+        loop.run_in_executor(None, lambda: client.wait_for_service(timeout_sec=0.1)),
+        timeout=1.0,
+    )
+    if not service_ready:
         return None
 
     future = client.call_async(request)
     try:
         await asyncio.wait_for(
-            asyncio.get_event_loop().run_in_executor(None, future.result),
-            timeout=timeout
+            loop.run_in_executor(None, future.result),
+            timeout=timeout,
         )
         return future.result()
     except asyncio.TimeoutError:
