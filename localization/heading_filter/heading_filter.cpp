@@ -95,7 +95,7 @@ namespace mrover {
             RCLCPP_WARN(get_logger(), "Forward vector not finite, skipping heading correction");
             return;
         }
-        double uncorrected_heading = std::atan2(uncorrected_forward.y(), uncorrected_forward.x());
+        double uncorrected_heading = atan2(uncorrected_forward.y(), uncorrected_forward.x());
         if (!std::isfinite(uncorrected_heading)) {
             RCLCPP_WARN(get_logger(), "Computed heading not finite, skipping heading correction");
             return;
@@ -134,7 +134,6 @@ namespace mrover {
             RCLCPP_WARN(get_logger(), "IMU quaternion has a non-finite component, skipping normalization");
             return;
         }
-        // correct with mag heading
         Eigen::Quaterniond uncorrected_orientation(qmsg.w, qmsg.x, qmsg.y, qmsg.z);
         double const norm2 = uncorrected_orientation.squaredNorm();
         if (!std::isfinite(norm2) || norm2 < 1e-12) {
@@ -143,7 +142,7 @@ namespace mrover {
         }
         uncorrected_orientation.normalize();
         SO3d uncorrected_orientation_rotm = uncorrected_orientation;
-        R2d uncorrected_forward = uncorrected_orientation.toRotationMatrix().col(0).head(2);
+        R2d uncorrected_forward = uncorrected_orientation_rotm.rotation().col(0).head(2);
         if (!uncorrected_forward.array().isFinite().all()) {
             RCLCPP_WARN(get_logger(), "Forward Vector not finite, skipping heading correction");
             return;
@@ -164,12 +163,19 @@ namespace mrover {
         predict(get_parameter("process_noise").as_double());
         correct(heading_correction_delta, get_parameter("mag_heading_noise").as_double());
 
-        // apply correction and publish
+        if (!std::isfinite(X)) {
+            RCLCPP_WARN(get_logger(), "Kalman state X is not finite, skipping TF publish");
+            return;
+        }
         SO3d curr_heading_correction = Eigen::AngleAxisd(X, R3d::UnitZ());
         RCLCPP_INFO_THROTTLE(get_logger(), *get_clock(), 1000, "%s", std::format("Heading corrected by: {} rad", X).c_str());
         SO3d corrected_orientation = curr_heading_correction * uncorrected_orientation_rotm;
         Eigen::Quaterniond q = corrected_orientation.quat();
         q.normalize();
+        if (!q.coeffs().array().isFinite().all() || q.squaredNorm() < 1e-12) {
+            RCLCPP_WARN(get_logger(), "Corrected orientation quaternion invalid after normalize, skipping TF publish");
+            return;
+        }
         pose_in_map.asSO3() = SO3d(q);
 
         SE3Conversions::pushToTfTree(tf_broadcaster, get_parameter("gps_frame").as_string(), get_parameter("world_frame").as_string(), pose_in_map, get_clock()->now());
