@@ -37,6 +37,17 @@ export interface StoreWaypoint {
 }
 
 /**
+ * Extended waypoint for autonomous navigation routes
+ * Includes AprilTag ID, type, and costmap settings alongside LatLng
+ */
+export interface AutonRouteWaypoint extends StoreWaypoint {
+  tag_id: number
+  type: number
+  enable_costmap: boolean
+  coverage_radius: number
+}
+
+/**
  * API request/response types for waypoints
  */
 

@@ -64,6 +64,21 @@
           @toggleCostmap="toggleRouteCostmap"
         />
       </div>
+      <draggable
+        v-model="currentRoute"
+        item-key="tag_id"
+        handle=".drag-handle"
+        ghost-class="drag-ghost"
+        class="waypoint-wrapper p-2 rounded d-flex flex-column gap-1 flex-grow-1 overflow-auto"
+      >
+        <template #item="{ element }">
+          <WaypointItem
+            :waypoint="element"
+            @delete="deleteFromRoute(element)"
+            @toggleCostmap="toggleRouteCostmap"
+          />
+        </template>
+      </draggable>
     </div>
   </div>
 
@@ -182,7 +197,8 @@ export default defineComponent({
         enable_costmap: true,
       },
 
-      allCostmapToggle: true,
+      saveWaypointsTimer: null as ReturnType<typeof setTimeout> | null,
+      saveRouteTimer: null as ReturnType<typeof setTimeout> | null,
     }
   },
 
@@ -228,7 +244,11 @@ export default defineComponent({
         // Update map visualization
         const mapPoints = newRoute.map(waypoint => ({
           latLng: L.latLng(waypoint.lat, waypoint.lon),
-          name: waypoint.name
+          name: waypoint.name,
+          tag_id: waypoint.tag_id,
+          type: waypoint.type,
+          enable_costmap: waypoint.enable_costmap,
+          coverage_radius: waypoint.coverage_radius
         }))
         this.autonomyStore.setRoute(mapPoints)
 
@@ -336,7 +356,6 @@ export default defineComponent({
 
       this.waypoints.push({ ...this.modalWypt, enable_costmap: true })
 
-      // Reset modal
       this.modalWypt = {
         name: '',
         tag_id: -1,

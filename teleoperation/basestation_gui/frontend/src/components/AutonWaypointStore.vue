@@ -1,8 +1,11 @@
 <template>
-  <div class="waypoints p-2 mb-2">
-    <div class="waypoint-header mb-1">
-      <h5 class="mb-0">{{ waypoint.name }}</h5>
-      <small class="text-muted">Tag ID: {{ waypoint.tag_id }}</small>
+  <div class="cmd-list-item p-2 rounded border border-2 mb-1" data-testid="pw-waypoint-store-item">
+    <div class="d-flex justify-content-between align-items-center mb-1">
+      <h5 class="cmd-list-item-title m-0" data-testid="pw-waypoint-name">{{ waypoint.name }}</h5>
+      <div class="d-flex align-items-center gap-2">
+        <span class="cmd-data-label">Tag ID: {{ waypoint.tag_id }}</span>
+        <span class="cmd-data-label">R: {{ waypoint.coverage_radius }}</span>
+      </div>
     </div>
     <div>
       <div class="input-group mb-1">
