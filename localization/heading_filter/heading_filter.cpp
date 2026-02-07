@@ -101,11 +101,11 @@ namespace mrover {
             return;
         }
         if (heading_status->fix_type.fix == mrover::msg::FixType::FIXED) {
-            double measured_heading = fmod(heading->heading + 90, 360);
-            measured_heading = 90 - measured_heading;
-            if (measured_heading <= -180) { measured_heading += 360; } 
-            else if (measured_heading > 180) { measured_heading -= 360; }
-            measured_heading = measured_heading * (M_PI / 180);
+            double const rover_map_deg = std::fmod(heading->heading + 90. + 360., 360.);
+            double measured_heading_deg = 90. - rover_map_deg;
+            if (measured_heading_deg <= -180.) { measured_heading_deg += 360.; }
+            else if (measured_heading_deg > 180.) { measured_heading_deg -= 360.; }
+            double const measured_heading = measured_heading_deg * (M_PI / 180.);
 
             double heading_correction_delta = measured_heading - uncorrected_heading;
             heading_correction_delta = fmod((heading_correction_delta + 3 * M_PI), 2 * M_PI) - M_PI;
@@ -154,11 +154,10 @@ namespace mrover {
             return;
         }
 
-        double measured_heading = 90 - mag_heading->heading;
-        if (measured_heading < -180) {
-            measured_heading = 360 + measured_heading;
-        }
-        measured_heading = measured_heading * (M_PI / 180);
+        double measured_heading_deg = 90. - mag_heading->heading;
+        if (measured_heading_deg <= -180.) { measured_heading_deg += 360.; }
+        else if (measured_heading_deg > 180.) { measured_heading_deg -= 360.; }
+        double const measured_heading = measured_heading_deg * (M_PI / 180.);
 
         double heading_correction_delta = measured_heading - uncorrected_heading;
         heading_correction_delta = fmod((heading_correction_delta + 3 * M_PI), 2 * M_PI) - M_PI;
