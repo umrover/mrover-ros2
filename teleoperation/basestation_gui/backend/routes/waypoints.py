@@ -62,8 +62,7 @@ def get_auton_waypoints():
         results = []
         for w in waypoints:
             wd = dict(w)
-            wd['db_id'] = wd['id']
-            wd['id'] = wd.pop('tag_id')
+            wd['db_id'] = wd.pop('id')
             wd['lat'] = wd.pop('latitude')
             wd['lon'] = wd.pop('longitude')
             wd['enable_costmap'] = bool(wd['enable_costmap'])
@@ -93,12 +92,12 @@ def save_auton_waypoints(data: AutonWaypointList):
                     UPDATE auton_waypoints
                     SET name=?, tag_id=?, type=?, latitude=?, longitude=?, enable_costmap=?
                     WHERE id=?
-                ''', (w.name, w.id, w.type, w.lat, w.lon, w.enable_costmap, w.db_id))
+                ''', (w.name, w.tag_id, w.type, w.lat, w.lon, w.enable_costmap, w.db_id))
             elif w.deletable:
                 conn.execute('''
                     INSERT INTO auton_waypoints (name, tag_id, type, latitude, longitude, enable_costmap, deletable)
                     VALUES (?, ?, ?, ?, ?, ?, ?)
-                ''', (w.name, w.id, w.type, w.lat, w.lon, w.enable_costmap, w.deletable))
+                ''', (w.name, w.tag_id, w.type, w.lat, w.lon, w.enable_costmap, w.deletable))
 
         conn.commit()
         return {'status': 'success'}
@@ -138,7 +137,7 @@ def get_current_auton_course():
         results = []
         for w in course:
             wd = dict(w)
-            wd['id'] = wd.pop('tag_id')
+            wd.pop('id')
             wd['lat'] = wd.pop('latitude')
             wd['lon'] = wd.pop('longitude')
             wd['enable_costmap'] = bool(wd['enable_costmap'])
@@ -164,7 +163,7 @@ def save_current_auton_course(data: AutonWaypointList):
                 VALUES (?, ?, ?, ?, ?, ?, ?)
             ''', (
                 w.name,
-                w.id,
+                w.tag_id,
                 w.type,
                 w.lat,
                 w.lon,
