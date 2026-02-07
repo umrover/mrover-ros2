@@ -217,30 +217,28 @@ export default defineComponent({
   },
 
   watch: {
-    // Sync Waypoint Store with Backend
     waypoints: {
-      async handler(newList: AutonWaypoint[]) {
-        // Update map visualization
+      handler(newList: AutonWaypoint[]) {
         const mapPoints = newList.map(waypoint => ({
           latLng: L.latLng(waypoint.lat, waypoint.lon),
           name: waypoint.name
         }))
         this.autonomyStore.setWaypointList(mapPoints)
 
-        // Save to backend
-        try {
-          await waypointsAPI.saveAuton(newList)
-        } catch (error) {
-          console.error('Failed to save auton waypoints:', error)
-        }
+        if (this._saveWaypointsTimer != null) clearTimeout(this._saveWaypointsTimer)
+        this._saveWaypointsTimer = setTimeout(async () => {
+          try {
+            await waypointsAPI.saveAuton(newList)
+          } catch (error) {
+            console.error('Failed to save auton waypoints:', error)
+          }
+        }, 500)
       },
       deep: true,
     },
 
-    // Sync Active Route with Backend
     currentRoute: {
-      async handler(newRoute: AutonWaypoint[]) {
-        // Update map visualization
+      handler(newRoute: AutonWaypoint[]) {
         const mapPoints = newRoute.map(waypoint => ({
           latLng: L.latLng(waypoint.lat, waypoint.lon),
           name: waypoint.name,
@@ -251,12 +249,14 @@ export default defineComponent({
         }))
         this.autonomyStore.setRoute(mapPoints)
 
-        // Save to backend
-        try {
-          await waypointsAPI.saveCurrentAutonCourse(newRoute)
-        } catch (error) {
-          console.error('Failed to save current auton course:', error)
-        }
+        if (this._saveRouteTimer != null) clearTimeout(this._saveRouteTimer)
+        this._saveRouteTimer = setTimeout(async () => {
+          try {
+            await waypointsAPI.saveCurrentAutonCourse(newRoute)
+          } catch (error) {
+            console.error('Failed to save current auton course:', error)
+          }
+        }, 500)
       },
       deep: true,
     },
@@ -267,6 +267,16 @@ export default defineComponent({
         wp.enable_costmap = newState
       })
     },
+  },
+
+  created() {
+    this._saveWaypointsTimer = null as ReturnType<typeof setTimeout> | null
+    this._saveRouteTimer = null as ReturnType<typeof setTimeout> | null
+  },
+
+  beforeUnmount() {
+    if (this._saveWaypointsTimer != null) clearTimeout(this._saveWaypointsTimer)
+    if (this._saveRouteTimer != null) clearTimeout(this._saveRouteTimer)
   },
 
   async mounted() {
