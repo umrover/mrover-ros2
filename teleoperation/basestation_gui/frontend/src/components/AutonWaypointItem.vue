@@ -5,7 +5,7 @@
         <i class="bi bi-grip-vertical drag-handle"></i>
         <h5 class="cmd-list-item-title m-0">{{ waypoint.name }}</h5>
       </div>
-      <span class="cmd-data-label">#{{ waypoint.id }}</span>
+      <span class="cmd-data-label">#{{ waypoint.tag_id }}</span>
     </div>
 
     <div class="d-flex justify-content-between align-items-center">

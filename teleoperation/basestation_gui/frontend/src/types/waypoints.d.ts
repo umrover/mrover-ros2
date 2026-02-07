@@ -6,7 +6,7 @@ import type { LatLng } from 'leaflet'
  */
 export interface AutonWaypoint {
   name: string
-  id: number
+  tag_id: number
   type: number
   lat: number
   lon: number
@@ -42,7 +42,7 @@ export interface StoreWaypoint {
  * Includes AprilTag ID, type, and costmap settings alongside LatLng
  */
 export interface AutonRouteWaypoint extends StoreWaypoint {
-  id: number
+  tag_id: number
   type: number
   enable_costmap: boolean
   coverage_radius: number

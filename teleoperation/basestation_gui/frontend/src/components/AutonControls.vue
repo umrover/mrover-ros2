@@ -69,7 +69,7 @@ const autonAction = (newState: boolean) => {
     ? route.map((waypoint) => ({
         latitude_degrees: waypoint.latLng.lat,
         longitude_degrees: waypoint.latLng.lng,
-        tag_id: waypoint.id,
+        tag_id: waypoint.tag_id,
         type: waypoint.type,
         enable_costmap: waypoint.enable_costmap,
         coverage_radius: waypoint.coverage_radius,

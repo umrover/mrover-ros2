@@ -3,7 +3,7 @@
     <div class="d-flex justify-content-between align-items-center mb-1">
       <h5 class="cmd-list-item-title m-0" data-testid="pw-waypoint-name">{{ waypoint.name }}</h5>
       <div class="d-flex align-items-center gap-2">
-        <span class="cmd-data-label">ID: {{ waypoint.id }}</span>
+        <span class="cmd-data-label">Tag ID: {{ waypoint.tag_id }}</span>
         <span class="cmd-data-label">R: {{ waypoint.coverage_radius }}</span>
       </div>
     </div>
