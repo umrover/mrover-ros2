@@ -207,6 +207,9 @@ export default defineComponent({
       },
 
       nextAvailableTagId: 8,
+
+      saveWaypointsTimer: null as ReturnType<typeof setTimeout> | null,
+      saveRouteTimer: null as ReturnType<typeof setTimeout> | null,
     }
   },
 
@@ -225,8 +228,8 @@ export default defineComponent({
         }))
         this.autonomyStore.waypointList = mapPoints
 
-        if (this._saveWaypointsTimer != null) clearTimeout(this._saveWaypointsTimer)
-        this._saveWaypointsTimer = setTimeout(async () => {
+        if (this.saveWaypointsTimer != null) clearTimeout(this.saveWaypointsTimer)
+        this.saveWaypointsTimer = setTimeout(async () => {
           try {
             await waypointsAPI.saveAuton(newList)
           } catch (error) {
@@ -249,8 +252,8 @@ export default defineComponent({
         }))
         this.autonomyStore.route = mapPoints
 
-        if (this._saveRouteTimer != null) clearTimeout(this._saveRouteTimer)
-        this._saveRouteTimer = setTimeout(async () => {
+        if (this.saveRouteTimer != null) clearTimeout(this.saveRouteTimer)
+        this.saveRouteTimer = setTimeout(async () => {
           try {
             await waypointsAPI.saveCurrentAutonCourse(newRoute)
           } catch (error) {
@@ -269,14 +272,9 @@ export default defineComponent({
     },
   },
 
-  created() {
-    this._saveWaypointsTimer = null as ReturnType<typeof setTimeout> | null
-    this._saveRouteTimer = null as ReturnType<typeof setTimeout> | null
-  },
-
   beforeUnmount() {
-    if (this._saveWaypointsTimer != null) clearTimeout(this._saveWaypointsTimer)
-    if (this._saveRouteTimer != null) clearTimeout(this._saveRouteTimer)
+    if (this.saveWaypointsTimer != null) clearTimeout(this.saveWaypointsTimer)
+    if (this.saveRouteTimer != null) clearTimeout(this.saveRouteTimer)
   },
 
   async mounted() {

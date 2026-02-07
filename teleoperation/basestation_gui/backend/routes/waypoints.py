@@ -164,9 +164,12 @@ def get_current_auton_course():
         results = []
         for w in course:
             wd = dict(w)
+            del wd['id']
+            wd['id'] = wd.pop('tag_id')
             wd['lat'] = wd.pop('latitude')
             wd['lon'] = wd.pop('longitude')
             wd['enable_costmap'] = bool(wd['enable_costmap'])
+            del wd['sequence_order']
             results.append(wd)
 
         return {'status': 'success', 'course': results}

@@ -7,19 +7,17 @@
         <span class="cmd-data-label">R: {{ waypoint.coverage_radius }}</span>
       </div>
     </div>
-    <div class="mb-2">
+    <div class="d-flex justify-content-between align-items-center">
       <small class="text-muted">{{ waypoint.lat.toFixed(6) }}N, {{ waypoint.lon.toFixed(6) }}W</small>
-    </div>
-    <div class="d-flex gap-1">
-      <button class="btn btn-success btn-sm border-2 cmd-btn-text" @click="$emit('add', waypoint)">Add</button>
-      <button class="btn btn-warning btn-sm border-2 cmd-btn-text" @click="openEditModal">Edit</button>
-      <button
-        class="btn btn-danger btn-sm border-2 cmd-btn-text"
-        :disabled="waypoint.deletable === false"
-        @click="$emit('delete', index)"
-      >
-        Delete
-      </button>
+      <div class="d-flex gap-1">
+        <button class="btn btn-success btn-sm border-2 cmd-btn-icon" @click="$emit('add', waypoint)"><i class="bi bi-plus-lg"></i></button>
+        <button class="btn btn-warning btn-sm border-2 cmd-btn-icon" @click="openEditModal"><i class="bi bi-pencil-fill"></i></button>
+        <button
+          class="btn btn-danger btn-sm border-2 cmd-btn-icon"
+          :disabled="waypoint.deletable === false"
+          @click="$emit('delete', index)"
+        ><i class="bi bi-trash-fill"></i></button>
+      </div>
     </div>
 
     <Teleport to="body">
@@ -143,11 +141,13 @@ export default defineComponent({
   color: var(--text-muted);
 }
 
-.cmd-btn-text {
-  font-size: 0.6875rem;
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-  flex: 1 1 0;
+.cmd-btn-icon {
+  width: 1.75rem;
+  height: 1.75rem;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
 }
 </style>

@@ -8,23 +8,16 @@
       <span class="cmd-data-label">#{{ waypoint.id }}</span>
     </div>
 
-    <div class="d-flex align-items-center justify-content-center gap-1 mb-2">
-      <span class="cmd-data-value">{{ waypoint.lat.toFixed(7) }}</span>
-      <span class="cmd-data-unit">ºN</span>
-      <span class="text-muted mx-1">|</span>
-      <span class="cmd-data-value">{{ waypoint.lon.toFixed(7) }}</span>
-      <span class="cmd-data-unit">ºW</span>
-    </div>
-
-    <div class="d-flex gap-1">
-      <button
-        class="btn btn-sm border-2 flex-fill"
-        :class="enable_costmap ? 'btn-success' : 'btn-danger'"
-        @click="toggleCostmap"
-      >
-        Costmap
-      </button>
-      <button class="btn btn-sm btn-danger border-2 flex-fill" @click="deleteWaypoint">Delete</button>
+    <div class="d-flex justify-content-between align-items-center">
+      <small class="text-muted">{{ waypoint.lat.toFixed(6) }}N, {{ waypoint.lon.toFixed(6) }}W</small>
+      <div class="d-flex gap-1">
+        <button
+          class="btn btn-sm border-2 cmd-btn-text"
+          :class="enable_costmap ? 'btn-success' : 'btn-danger'"
+          @click="toggleCostmap"
+        >Costmap</button>
+        <button class="btn btn-sm btn-danger border-2 cmd-btn-icon" @click="deleteWaypoint"><i class="bi bi-trash-fill"></i></button>
+      </div>
     </div>
   </div>
 </template>
@@ -104,14 +97,22 @@ export default {
   color: var(--text-muted);
 }
 
-.cmd-data-value {
-  font-size: 0.8125rem;
-  font-weight: 600;
+.cmd-btn-icon {
+  width: 1.75rem;
+  height: 1.75rem;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
 }
 
-.cmd-data-unit {
+.cmd-btn-text {
   font-size: 0.6875rem;
-  color: var(--text-muted);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 0.15rem 0.4rem;
 }
 
 .drag-handle {

@@ -1,9 +1,9 @@
 <template>
   <button :class="['btn feedback-btn border-2', currentColor]" :style="customStyles" @click="handleClick">
-    <span class="d-inline-flex align-items-center gap-2">
+    <span class="d-flex align-items-center w-100">
       <span>{{ displayName }}</span>
-      <i v-if="mode === 'toggle'" :class="checked ? 'bi bi-check-square-fill' : 'bi bi-square'"></i>
-      <i v-else-if="isWaiting" class="bi bi-arrow-repeat spin"></i>
+      <i v-if="mode === 'toggle'" class="ms-auto" :class="checked ? 'bi bi-check-square-fill' : 'bi bi-square'"></i>
+      <i v-else-if="isWaiting" class="bi bi-arrow-repeat spin ms-auto"></i>
     </span>
   </button>
 </template>
