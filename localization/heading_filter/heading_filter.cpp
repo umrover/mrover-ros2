@@ -103,11 +103,8 @@ namespace mrover {
         if (heading_status->fix_type.fix == mrover::msg::FixType::FIXED) {
             double measured_heading = fmod(heading->heading + 90, 360);
             measured_heading = 90 - measured_heading;
-            if (measured_heading <= -180) {
-                measured_heading += 360;
-            } else if (measured_heading > 180) {
-                measured_heading -= 360;
-            }
+            if (measured_heading <= -180) { measured_heading += 360; } 
+            else if (measured_heading > 180) { measured_heading -= 360; }
             measured_heading = measured_heading * (M_PI / 180);
 
             double heading_correction_delta = measured_heading - uncorrected_heading;
