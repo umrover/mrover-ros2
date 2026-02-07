@@ -100,11 +100,13 @@ namespace mrover {
             RCLCPP_WARN(get_logger(), "Computed heading not finite, skipping heading correction");
             return;
         }
-        // correct with rtk heading only when heading is fixed
         if (heading_status->fix_type.fix == mrover::msg::FixType::FIXED) {
-            double measured_heading = -1 * heading->heading;
-            if (measured_heading < -180) {
-                measured_heading = 360 + measured_heading;
+            double measured_heading = fmod(heading->heading + 90, 360);
+            measured_heading = 90 - measured_heading;
+            if (measured_heading <= -180) {
+                measured_heading += 360;
+            } else if (measured_heading > 180) {
+                measured_heading -= 360;
             }
             measured_heading = measured_heading * (M_PI / 180);
 
