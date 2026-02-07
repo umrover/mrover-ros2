@@ -46,13 +46,13 @@
       <div class="cmd-panel d-flex flex-column flex-fill min-width-0 p-1 flex-basis-0">
         <span class="cmd-data-label mb-1">Humidity (%)</span>
         <div class="flex-grow-1 min-height-0">
-          <canvas id="chart0"></canvas>
+          <canvas ref="chartRef0"></canvas>
         </div>
       </div>
       <div class="cmd-panel d-flex flex-column flex-fill min-width-0 p-1 flex-basis-0">
         <span class="cmd-data-label mb-1">UV Index</span>
         <div class="flex-grow-1 min-height-0">
-          <canvas id="chart1"></canvas>
+          <canvas ref="chartRef1"></canvas>
         </div>
       </div>
     </div>
@@ -60,13 +60,13 @@
       <div class="cmd-panel d-flex flex-column flex-fill min-width-0 p-1 flex-basis-0">
         <span class="cmd-data-label mb-1">Ozone (ppb)</span>
         <div class="flex-grow-1 min-height-0">
-          <canvas id="chart2"></canvas>
+          <canvas ref="chartRef2"></canvas>
         </div>
       </div>
       <div class="cmd-panel d-flex flex-column flex-fill min-width-0 p-1 flex-basis-0">
         <span class="cmd-data-label mb-1">Pressure (Pa)</span>
         <div class="flex-grow-1 min-height-0">
-          <canvas id="chart3"></canvas>
+          <canvas ref="chartRef3"></canvas>
         </div>
       </div>
     </div>
@@ -176,6 +176,12 @@ const downloadCSV = () => {
   anchor.click()
 }
 
+const chartRef0 = ref<HTMLCanvasElement | null>(null)
+const chartRef1 = ref<HTMLCanvasElement | null>(null)
+const chartRef2 = ref<HTMLCanvasElement | null>(null)
+const chartRef3 = ref<HTMLCanvasElement | null>(null)
+const chartRefs = [chartRef0, chartRef1, chartRef2, chartRef3]
+
 const charts: Chart[] = []
 let updateInterval: number | undefined = undefined
 
@@ -189,77 +195,49 @@ const chartConfigs = [
 const maxHistory = 20
 
 onMounted(() => {
-  function waitForElm(selector: string): Promise<Element | null> {
-    return new Promise(resolve => {
-      const elm = document.querySelector(selector);
-      if (elm) {
-        return resolve(elm);
-      }
-
-      const observer = new MutationObserver(() => {
-        const elm = document.querySelector(selector);
-        if (elm) {
-          observer.disconnect();
-          resolve(elm);
-        }
-      });
-
-      observer.observe(document.body, {
-        childList: true,
-        subtree: true,
-      });
-    });
-  }
-
   for (let i = 0; i < chartConfigs.length; ++i) {
-    waitForElm(`#chart${i}`).then(canvasElement => {
-      if (canvasElement instanceof HTMLCanvasElement) {
-        const config = chartConfigs[i];
-        if (!config) return;
+    const canvasElement = chartRefs[i]?.value
+    if (!canvasElement) continue
+    const config = chartConfigs[i]
+    if (!config) continue
 
-        const datasets = config.datasets.map(ds => ({
-          label: ds.label,
-          data: Array(20).fill(0),
-          fill: false,
-          borderColor: ds.color,
-          tension: 0.1,
-        }));
+    const datasets = config.datasets.map(ds => ({
+      label: ds.label,
+      data: Array(20).fill(0),
+      fill: false,
+      borderColor: ds.color,
+      tension: 0.1,
+    }))
 
-        charts[i] = new Chart(canvasElement, {
-          type: 'line',
-          data: {
-            labels: Array.from({ length: 20 }, (_, i) => i),
-            datasets: datasets,
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            animation: false,
-            plugins: {
-              title: {
-                display: false
-              },
-              legend: {
-                display: false
-              }
-            },
-            scales: {
-              y: {
-                beginAtZero: false,
-                ticks: {
-                  font: { size: 10 },
-                  maxTicksLimit: 8,
-                  precision: 2,
-                }
-              },
-              x: {
-                ticks: { font: { size: 10 } }
-              }
+    charts[i] = new Chart(canvasElement, {
+      type: 'line',
+      data: {
+        labels: Array.from({ length: 20 }, (_, i) => i),
+        datasets: datasets,
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: false,
+        plugins: {
+          title: { display: false },
+          legend: { display: false },
+        },
+        scales: {
+          y: {
+            beginAtZero: false,
+            ticks: {
+              font: { size: 10 },
+              maxTicksLimit: 8,
+              precision: 2,
             },
           },
-        });
-      }
-    });
+          x: {
+            ticks: { font: { size: 10 } },
+          },
+        },
+      },
+    })
   }
 
   updateInterval = window.setInterval(() => {

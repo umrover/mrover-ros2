@@ -77,7 +77,6 @@ import type { NavMessage } from '@/types/coordinates'
 
 const autonomyStore = useAutonomyStore()
 const { route, waypointList } = storeToRefs(autonomyStore)
-const { setClickPoint } = autonomyStore
 
 const {
   center,
@@ -135,10 +134,10 @@ const centerOnBasestation = () => {
 }
 
 const getClickedLatLon = (e: { latlng: { lat: number; lng: number } }) => {
-  setClickPoint({
+  autonomyStore.clickPoint = {
     lat: e.latlng.lat,
     lon: e.latlng.lng,
-  })
+  }
 }
 
 watch(navMessage, (msg) => {

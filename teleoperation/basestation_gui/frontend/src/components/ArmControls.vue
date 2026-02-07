@@ -2,7 +2,7 @@
   <div class="d-flex flex-column gap-2 h-100">
     <div class="d-flex justify-content-between align-items-center">
       <h4 class="component-header m-0">Arm Controls</h4>
-      <IndicatorDot :is-active="controllerConnected" class="me-2" />
+      <IndicatorDot :is-active="connected" class="me-2" />
     </div>
     <div class="btn-group w-100 border-2" role="group" aria-label="Arm mode selection" data-testid="pw-arm-mode-buttons">
         <button
@@ -47,24 +47,19 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
-import { useWebsocketStore } from '@/stores/websocket'
+import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { armAPI } from '@/utils/api'
+import { useGamepadPolling } from '@/composables/useGamepadPolling'
 import GamepadDisplay from './GamepadDisplay.vue'
 import IndicatorDot from './IndicatorDot.vue'
 
-const websocketStore = useWebsocketStore()
-
 const mode = ref('disabled')
-const gamepadConnected = ref(false)
-const axes = ref<number[]>([0, 0, 0, 0])
-const buttons = ref<number[]>(new Array(17).fill(0))
 
-const controllerConnected = computed(() => gamepadConnected.value)
-
-let interval: number | undefined = undefined
-
-const UPDATE_HZ = 15
+const { connected, axes, buttons } = useGamepadPolling({
+  controllerIdFilter: 'Microsoft',
+  topic: 'arm',
+  messageType: 'ra_controller',
+})
 
 const keyDown = async (event: { key: string }) => {
   if (event.key === ' ') {
@@ -74,31 +69,9 @@ const keyDown = async (event: { key: string }) => {
 
 onMounted(() => {
   document.addEventListener('keydown', keyDown)
-  interval = window.setInterval(() => {
-    const gamepads = navigator.getGamepads()
-    const gamepad = gamepads.find(
-      gamepad => gamepad && gamepad.id.includes('Microsoft')
-    )
-    gamepadConnected.value = !!gamepad
-    if (!gamepad) return
-
-    axes.value = [...gamepad.axes]
-    buttons.value = gamepad.buttons.map(button => button.value)
-
-    const controllerData = {
-      axes: gamepad.axes,
-      buttons: gamepad.buttons.map(button => button.value)
-    }
-
-    websocketStore.sendMessage('arm', {
-      type: 'ra_controller',
-      ...controllerData
-    })
-  }, 1000 / UPDATE_HZ)
 })
 
 onBeforeUnmount(() => {
-  window.clearInterval(interval)
   document.removeEventListener('keydown', keyDown)
 })
 

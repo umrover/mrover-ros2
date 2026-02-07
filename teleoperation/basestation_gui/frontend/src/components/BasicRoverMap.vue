@@ -71,7 +71,6 @@ import { useRoverMap } from '@/composables/useRoverMap'
 
 const erdStore = useErdStore()
 const { waypointList, highlightedWaypoint, searchWaypoint } = storeToRefs(erdStore)
-const { setClickPoint } = erdStore
 
 const {
   center,
@@ -135,11 +134,10 @@ const handleMapReady = () => {
 }
 
 const getClickedLatLon = (e: LeafletMouseEvent) => {
-  console.log(e)
-  setClickPoint({
+  erdStore.clickPoint = {
     lat: e.latlng.lat,
     lon: e.latlng.lng,
-  })
+  }
 }
 
 const getWaypointIcon = (waypoint: StoreWaypoint, index: number) => {

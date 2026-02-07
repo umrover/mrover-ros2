@@ -73,10 +73,10 @@ onUnmounted(() => {
 })
 
 const gimbalJointState = computed((): ControllerStateMessage | null => {
-  const messages = websocketStore.messages['chassis']
-  if (!messages || !Array.isArray(messages)) return null
-  const msg = messages.find((msg: { type: string }) => msg.type === 'gimbal_controller_state')
-  return msg ? (msg as ControllerStateMessage) : null
+  const msg = websocketStore.messages['chassis']
+  if (!msg) return null
+  const typedMsg = msg as ControllerStateMessage
+  return typedMsg.type === 'gimbal_controller_state' ? typedMsg : null
 })
 
 const hasServoState = computed((): boolean => {

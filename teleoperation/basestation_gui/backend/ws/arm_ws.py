@@ -1,8 +1,7 @@
-from typing import Optional
 from backend.ws.base_ws import WebSocketHandler
 from backend.input import DeviceInputs
 from backend.ra_controls import send_ra_controls
-from mrover.msg import Throttle, IK, ControllerState, Position, Velocity
+from mrover.msg import Throttle, IK, ControllerState
 from geometry_msgs.msg import Twist
 from rclpy.publisher import Publisher
 
@@ -13,7 +12,6 @@ class ArmHandler(WebSocketHandler):
 
     def __init__(self, websocket):
         super().__init__(websocket, 'arm')
-        self.buffer = {}
 
     async def setup(self):
         self.arm_thr_pub = self.node.create_publisher(Throttle, "/arm_thr_cmd", 1)
@@ -33,11 +31,9 @@ class ArmHandler(WebSocketHandler):
             device_input = DeviceInputs(axes, buttons)
             send_ra_controls(
                 device_input,
-                self.node,
                 self.arm_thr_pub,
                 self.ik_pos_pub,
                 self.ik_vel_pub,
-                self.buffer,
             )
         else:
             print(f"Unhandled ARM message: {msg_type}")

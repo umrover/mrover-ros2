@@ -137,7 +137,7 @@ watch(contextMessage, (msg: unknown) => {
   if (typeof msg == 'object' && msg !== null && 'type' in msg) {
     const typedMsg = msg as { type: string; state?: string }
     if (typedMsg.type === 'costmap') {
-      console.log("hi")
+      updateCostMapGrid()
     }
   }
 })

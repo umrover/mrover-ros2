@@ -10,39 +10,11 @@ export const useErdStore = defineStore('erd', () => {
   const odomFormat = ref('DM')
   const clickPoint = ref({ lat: 0, lon: 0 })
 
-  // Actions
-  function setWaypointList(newList: StoreWaypoint[]) {
-    waypointList.value = newList
-  }
-
-  function setHighlightedWaypoint(newWaypoint: number) {
-    highlightedWaypoint.value = newWaypoint
-  }
-
-  function setSearchWaypoint(newWaypoint: number) {
-    searchWaypoint.value = newWaypoint
-  }
-
-  function setOdomFormat(newOdomFormat: string) {
-    odomFormat.value = newOdomFormat
-  }
-
-  function setClickPoint(newClickPoint: { lat: number; lon: number }) {
-    clickPoint.value = newClickPoint
-  }
-
   return {
-    // State
     waypointList,
     highlightedWaypoint,
     searchWaypoint,
     odomFormat,
     clickPoint,
-    // Actions
-    setWaypointList,
-    setHighlightedWaypoint,
-    setSearchWaypoint,
-    setOdomFormat,
-    setClickPoint,
   }
 })

@@ -80,7 +80,7 @@ const autonAction = (newState: boolean) => {
 }
 
 const handleAutonToggle = (newState: boolean) => {
-  autonomyStore.setAutonMode(newState)
+  autonomyStore.autonEnabled = newState
 }
 
 const teleopAction = (newState: boolean) => {
@@ -88,7 +88,7 @@ const teleopAction = (newState: boolean) => {
 }
 
 const handleTeleopToggle = (newState: boolean) => {
-  autonomyStore.setTeleopMode(newState)
+  autonomyStore.teleopEnabled = newState
   emit('toggleTeleop', newState)
 }
 
@@ -97,7 +97,7 @@ const purePursuitAction = (newState: boolean) => {
 }
 
 const handlePurePursuitToggle = (newState: boolean) => {
-  autonomyStore.setPurePursuit(newState)
+  autonomyStore.purePursuitEnabled = newState
 }
 
 const pathRelaxationAction = (newState: boolean) => {
@@ -105,7 +105,7 @@ const pathRelaxationAction = (newState: boolean) => {
 }
 
 const handlePathRelaxationToggle = (newState: boolean) => {
-  autonomyStore.setPathRelaxation(newState)
+  autonomyStore.pathRelaxationEnabled = newState
 }
 
 const pathInterpolationAction = (newState: boolean) => {
@@ -113,7 +113,7 @@ const pathInterpolationAction = (newState: boolean) => {
 }
 
 const handlePathInterpolationToggle = (newState: boolean) => {
-  autonomyStore.setPathInterpolation(newState)
+  autonomyStore.pathInterpolationEnabled = newState
 }
 </script>
 

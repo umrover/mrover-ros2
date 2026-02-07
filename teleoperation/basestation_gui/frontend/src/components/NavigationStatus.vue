@@ -27,24 +27,7 @@ const ledColorClass = ref('nav-state--error')
 const stuckStatus = ref(false)
 const navState = ref('OffState')
 
-const scienceMessage = computed(() => messages.value['science'])
 const navMessage = computed(() => messages.value['nav'])
-
-watch(scienceMessage, (msg: unknown) => {
-  if (typeof msg === 'object' && msg !== null && 'type' in msg) {
-    const typedMsg = msg as {
-      type: string
-      red?: boolean
-      green?: boolean
-      blue?: boolean
-    }
-    if (typedMsg.type === 'led') {
-      if (typedMsg.red) ledColorClass.value = 'nav-state--error'
-      else if (typedMsg.green) ledColorClass.value = 'nav-state--ok nav-state--blink'
-      else if (typedMsg.blue) ledColorClass.value = 'nav-state--info'
-    }
-  }
-})
 
 watch(navMessage, (msg: unknown) => {
   if (typeof msg === 'object' && msg !== null && 'type' in msg) {

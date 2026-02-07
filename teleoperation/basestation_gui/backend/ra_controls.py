@@ -2,7 +2,6 @@ import asyncio
 from enum import Enum
 import threading
 
-from rclpy.node import Node
 from rclpy.publisher import Publisher
 
 from backend.input import filter_input, simulated_axis, safe_index, DeviceInputs
@@ -11,8 +10,6 @@ from backend.managers.ros import get_service_client
 from mrover.msg import Throttle, IK
 from mrover.srv import IkMode
 from geometry_msgs.msg import Twist
-
-from tf2_ros.buffer import Buffer
 
 ra_mode = "disabled"
 ra_mode_lock = threading.Lock()
@@ -39,7 +36,7 @@ async def call_ik_mode_service(mode: int) -> bool:
 
     try:
         service_ready = await asyncio.wait_for(
-            asyncio.get_event_loop().run_in_executor(
+            asyncio.get_running_loop().run_in_executor(
                 None, lambda: client.wait_for_service(timeout_sec=0.1)
             ),
             timeout=1.0
@@ -55,7 +52,7 @@ async def call_ik_mode_service(mode: int) -> bool:
     future = client.call_async(request)
     try:
         await asyncio.wait_for(
-            asyncio.get_event_loop().run_in_executor(None, future.result),
+            asyncio.get_running_loop().run_in_executor(None, future.result),
             timeout=5.0
         )
         result = future.result()
@@ -156,7 +153,7 @@ def subset(names: list[str], values: list[float], joints: set[Joint]) -> tuple[l
 
 
 def send_ra_controls(
-    inputs: DeviceInputs, node: Node, thr_pub: Publisher, ee_pos_pub: Publisher, ee_vel_pub: Publisher, buffer: Buffer
+    inputs: DeviceInputs, thr_pub: Publisher, ee_pos_pub: Publisher, ee_vel_pub: Publisher,
 ) -> None:
     current_mode = get_ra_mode()
     match current_mode:

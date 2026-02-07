@@ -183,7 +183,6 @@ defineProps({
 
 const erdStore = useErdStore()
 const { highlightedWaypoint, searchWaypoint, clickPoint } = storeToRefs(erdStore)
-const { setWaypointList, setHighlightedWaypoint, setSearchWaypoint } = erdStore
 
 const websocketStore = useWebsocketStore()
 const { messages } = storeToRefs(websocketStore)
@@ -227,7 +226,7 @@ watch(navMessage, async msg => {
 
 // Watch waypoints to sync with Backend
 watch(storedWaypoints, async (newList) => {
-  setWaypointList(newList) // Update map
+  erdStore.waypointList = newList // Update map
   
   try {
     const apiWaypoints: APIBasicWaypoint[] = newList.map(wp => ({
@@ -249,9 +248,9 @@ watch(clickPoint, newClickPoint => {
 })
 
 onMounted(() => {
-  setHighlightedWaypoint(-1)
-  setSearchWaypoint(-1)
-  setWaypointList([])
+  erdStore.highlightedWaypoint = -1
+  erdStore.searchWaypoint = -1
+  erdStore.waypointList = []
   clearWaypointsModal.value = new Modal('#clearWaypointsModal', {})
   clearRecordingsModal.value = new Modal('#clearRecordingsModal', {})
   setTimeout(() => loadWaypoints(), 250)
@@ -281,17 +280,17 @@ const addWaypoint = (coord: { lat: { d: number }, lon: { d: number } }, isDrone:
 }
 
 const deleteItem = (payload: { index: number }) => {
-  if (highlightedWaypoint.value == payload.index) setHighlightedWaypoint(-1)
-  if (searchWaypoint.value == payload.index) setSearchWaypoint(-1)
+  if (highlightedWaypoint.value == payload.index) erdStore.highlightedWaypoint = -1
+  if (searchWaypoint.value == payload.index) erdStore.searchWaypoint = -1
   storedWaypoints.value.splice(payload.index, 1)
 }
 
 const findWaypoint = (payload: { index: number }) => {
-  setHighlightedWaypoint(payload.index === highlightedWaypoint.value ? -1 : payload.index)
+  erdStore.highlightedWaypoint = payload.index === highlightedWaypoint.value ? -1 : payload.index
 }
 
 const searchForWaypoint = (payload: { index: number }) => {
-  setSearchWaypoint(payload.index === searchWaypoint.value ? -1 : payload.index)
+  erdStore.searchWaypoint = payload.index === searchWaypoint.value ? -1 : payload.index
 }
 
 const clearWaypoint = () => {

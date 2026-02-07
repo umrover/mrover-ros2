@@ -223,7 +223,7 @@ export default defineComponent({
           latLng: L.latLng(waypoint.lat, waypoint.lon),
           name: waypoint.name
         }))
-        this.autonomyStore.setWaypointList(mapPoints)
+        this.autonomyStore.waypointList = mapPoints
 
         if (this._saveWaypointsTimer != null) clearTimeout(this._saveWaypointsTimer)
         this._saveWaypointsTimer = setTimeout(async () => {
@@ -247,7 +247,7 @@ export default defineComponent({
           enable_costmap: waypoint.enable_costmap,
           coverage_radius: waypoint.coverage_radius
         }))
-        this.autonomyStore.setRoute(mapPoints)
+        this.autonomyStore.route = mapPoints
 
         if (this._saveRouteTimer != null) clearTimeout(this._saveRouteTimer)
         this._saveRouteTimer = setTimeout(async () => {
