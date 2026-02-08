@@ -318,7 +318,7 @@ if (NOT APPLE)
 
     mrover_add_library(servo_library esw/servo_library/*.cpp esw/servo_library)
     ament_target_dependencies(servo_library rclcpp std_srvs dynamixel_sdk)
-    target_link_libraries(servo_library can_device units messaging parameter_utils dynamixel_sdk::dynamixel_sdk)
+    target_link_libraries(servo_library units parameter_utils dynamixel_sdk::dynamixel_sdk)
 
     mrover_add_library(motor_library esw/motor_library/*.cpp esw/motor_library)
     ament_target_dependencies(motor_library rclcpp std_srvs)

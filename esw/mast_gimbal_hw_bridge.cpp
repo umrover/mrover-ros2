@@ -8,7 +8,8 @@
 
 #include <units.hpp>
 
-#include <mrover/msg/gimbal_control_state.hpp>
+//#include <mrover/msg/gimbal_control_state.hpp>
+#include <mrover/msg/controller_state.hpp>
 #include <mrover/msg/position.hpp>
 #include <mrover/msg/throttle.hpp>
 #include <mrover/msg/velocity.hpp>
@@ -66,7 +67,7 @@ namespace mrover {
                 }
             });
 
-            mGimbalStatePub = this->create_publisher<mrover::msg::GimbalControlState>("gimbal_control_state", 10);
+            mGimbalStatePub = this->create_publisher<mrover::msg::ControllerState>("controller_state", 10);
 
             mPublishDataTimer = this->create_wall_timer(std::chrono::milliseconds(100),
                           std::bind(&MastGimbalHWBridge::publishDataCallback, this));
@@ -81,29 +82,29 @@ namespace mrover {
 
         std::unordered_map<std::string, std::shared_ptr<mrover::Servo>> servos;
 
-        std::vector<std::pair<std::string, int>> const mServoNames = {{"mast_gimbal_pitch", 3}, {"mast_gimbal_yaw", 4}};
+        std::vector<std::pair<std::string, int>> const mServoNames = {{"gimbal_pitch", 3}, {"gimbal_yaw", 4}};
 
-        rclcpp::Publisher<mrover::msg::GimbalControlState>::SharedPtr mGimbalStatePub;
+        rclcpp::Publisher<mrover::msg::ControllerState>::SharedPtr mGimbalStatePub;
         rclcpp::TimerBase::SharedPtr mPublishDataTimer;
-        msg::GimbalControlState mControllerState;
+        msg::ControllerState mControllerState;
         
         auto publishDataCallback() -> void {
             const size_t n = mServoNames.size();
 
-            mControllerState.name.resize(n);
-            mControllerState.position.resize(n);
-            mControllerState.velocity.resize(n);
-            mControllerState.current.resize(n);
-            mControllerState.error.resize(n);
-            mControllerState.state.resize(n);
-            mControllerState.limit_hit.resize(n);
+            mControllerState.names.resize(n);
+            mControllerState.positions.resize(n);
+            mControllerState.velocities.resize(n);
+            mControllerState.currents.resize(n);
+            mControllerState.errors.resize(n);
+            mControllerState.states.resize(n);
+            mControllerState.limits_hit.resize(n);
             
             for (size_t i = 0; i < n; ++i) {
                 const auto& name = mServoNames[i].first;
                 auto& servo = *servos.at(name);
 
-                mControllerState.name[i] = name;
-                mControllerState.limit_hit[i] = servo.getLimitStatus();
+                mControllerState.names[i] = name;
+                mControllerState.limits_hit[i] = servo.getLimitStatus();
 
                 float pos = 0.0f;
                 float vel = 0.0f;
@@ -113,58 +114,58 @@ namespace mrover {
                 servo.getVelocity(vel);
                 servo.getCurrent(cur);
 
-                mControllerState.position[i] = pos;
-                mControllerState.velocity[i] = vel;
-                mControllerState.current[i]  = cur;
+                mControllerState.positions[i] = pos;
+                mControllerState.velocities[i] = vel;
+                mControllerState.currents[i]  = cur;
 
                 Servo::ServoStatus ts = servo.getTargetStatus();
 
                 /*mControllerState.state[i] = {servo->getState()};*/
                 if (ts == Servo::ServoStatus::Active) {
-                    mControllerState.state[i] = "active";
+                    mControllerState.states[i] = "active";
                 } else if (ts == Servo::ServoStatus::Success) {
-                    mControllerState.state[i] = "success";
+                    mControllerState.states[i] = "success";
                 } else {
-                    mControllerState.state[i] = "error";
+                    mControllerState.states[i] = "error";
                 }      
 
                 /*mControllerState.error[i] = {servo->getErrorState()};*/
                 switch(err) {
                     case Servo::ServoStatus::CommNotAvailable:
-                        mControllerState.error[i] = "CommNotAvailable";
+                        mControllerState.errors[i] = "CommNotAvailable";
                         break; 
                     case Servo::ServoStatus::CommTxError:
-                        mControllerState.error[i] = "CommTxError";
+                        mControllerState.errors[i] = "CommTxError";
                         break;
                     case Servo::ServoStatus::HardwareFailure:
-                        mControllerState.error[i] = "HardwareFailure";
+                        mControllerState.errors[i] = "HardwareFailure";
                         break;
                     case Servo::ServoStatus::CommRxCorrupt:
-                        mControllerState.error[i] = "CommRxCorrupt";
+                        mControllerState.errors[i] = "CommRxCorrupt";
                         break;
                     case Servo::ServoStatus::CommRxTimeout:
-                        mControllerState.error[i] = "CommRxTimeout";
+                        mControllerState.errors[i] = "CommRxTimeout";
                         break;
                     case Servo::ServoStatus::CommRxFail:
-                        mControllerState.error[i] = "CommRxFail";
+                        mControllerState.errors[i] = "CommRxFail";
                         break;
                     case Servo::ServoStatus::CommTxFail:
-                        mControllerState.error[i] = "CommTxFail";
+                        mControllerState.errors[i] = "CommTxFail";
                         break;
                     case Servo::ServoStatus::CommPortBusy:
-                        mControllerState.error[i] = "CommPortBusy";
+                        mControllerState.errors[i] = "CommPortBusy";
                         break;
                     case Servo::ServoStatus::CommRxWaiting:
-                        mControllerState.error[i] = "CommRxWaiting";
+                        mControllerState.errors[i] = "CommRxWaiting";
                         break;
                     case Servo::ServoStatus::FailedToOpenPort:
-                        mControllerState.error[i] = "FailedToOpenPort";
+                        mControllerState.errors[i] = "FailedToOpenPort";
                         break;
                     case Servo::ServoStatus::FailedToSetBaud:
-                        mControllerState.error[i] = "FailedToSetBaud";
+                        mControllerState.errors[i] = "FailedToSetBaud";
                         break;
                     default:
-                        mControllerState.error[i] = "NoError";
+                        mControllerState.errors[i] = "NoError";
                         break;
                 }
 
