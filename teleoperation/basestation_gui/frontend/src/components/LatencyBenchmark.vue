@@ -22,12 +22,13 @@
       <button
         class="btn btn-sm d-flex align-items-center gap-1"
         :class="isRunning ? 'btn-danger' : 'btn-success'"
+        data-testid="pw-latency-start"
         @click="toggleBenchmark"
       >
         <i :class="isRunning ? 'bi bi-stop-fill' : 'bi bi-play-fill'"></i>
         {{ isRunning ? 'Stop' : 'Start' }}
       </button>
-      <button class="btn btn-sm btn-secondary d-flex align-items-center gap-1" @click="resetStats">
+      <button class="btn btn-sm btn-secondary d-flex align-items-center gap-1" data-testid="pw-latency-reset" @click="resetStats">
         <i class="bi bi-arrow-counterclockwise"></i> Reset
       </button>
       <div class="d-flex align-items-center gap-1">
@@ -35,6 +36,7 @@
           v-model.number="frequency"
           type="number"
           class="form-control form-control-sm text-center"
+          data-testid="pw-latency-freq"
           style="width: 65px"
           min="1"
           max="1000"

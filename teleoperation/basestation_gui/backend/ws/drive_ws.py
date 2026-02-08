@@ -1,4 +1,3 @@
-import asyncio
 from backend.ws.base_ws import WebSocketHandler
 from backend.input import DeviceInputs
 from backend.drive_controls import send_joystick_twist, send_controller_twist
@@ -11,8 +10,8 @@ class DriveHandler(WebSocketHandler):
         super().__init__(websocket, 'drive')
 
     async def setup(self):
-        self.joystick_twist_pub = self.node.create_publisher(Twist, "/joystick_vel_cmd", 10)
-        self.controller_twist_pub = self.node.create_publisher(Twist, "/controller_vel_cmd", 10)
+        self.joystick_twist_pub = self.node.create_publisher(Twist, "/joystick_vel_cmd", 1)
+        self.controller_twist_pub = self.node.create_publisher(Twist, "/controller_vel_cmd", 1)
         self.publishers.extend([self.joystick_twist_pub, self.controller_twist_pub])
 
         self.forward_ros_topic("/left_controller_state", ControllerState, "drive_left_state")
@@ -24,10 +23,10 @@ class DriveHandler(WebSocketHandler):
         if msg_type == 'joystick':
             axes = data.get('axes', [])
             buttons = data.get('buttons', [])
-            await asyncio.to_thread(send_joystick_twist, DeviceInputs(axes, buttons), self.joystick_twist_pub)
+            send_joystick_twist(DeviceInputs(axes, buttons), self.joystick_twist_pub)
         elif msg_type == 'controller':
             axes = data.get('axes', [])
             buttons = data.get('buttons', [])
-            await asyncio.to_thread(send_controller_twist, DeviceInputs(axes, buttons), self.controller_twist_pub)
+            send_controller_twist(DeviceInputs(axes, buttons), self.controller_twist_pub)
         else:
             print(f"Unhandled DRIVE message: {msg_type}")

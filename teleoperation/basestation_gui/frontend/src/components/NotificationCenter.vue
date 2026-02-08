@@ -1,54 +1,57 @@
 <template>
-  <div class="position-relative">
+  <div class="position-relative d-flex align-self-stretch">
     <button
-      class="btn border border-2 rounded position-relative d-flex align-items-center justify-content-center"
-      style="width: 50px; height: 50px;"
+      class="notification-btn border border-2 rounded"
+      data-testid="pw-notification-bell"
       @click="togglePanel"
     >
-      <i class="bi bi-bell-fill fs-5"></i>
+      <i class="bi bi-bell-fill"></i>
       <span
         v-if="unreadCount > 0"
-        class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+        class="notification-badge"
       >
         {{ unreadCount }}
       </span>
     </button>
 
-    <div v-if="showPanel" class="dropdown-menu show position-absolute end-0 mt-2 shadow" style="width: 500px; z-index: 1051;">
-      <div class="d-flex justify-content-between align-items-center p-3 border-bottom bg-light">
-        <h5 class="m-0">Notifications</h5>
+    <div v-if="showPanel" class="notification-panel cmd-panel" data-testid="pw-notification-panel">
+      <div class="d-flex justify-content-between align-items-center p-3 border-bottom border-2">
+        <h4 class="component-header m-0">Notifications</h4>
         <div class="d-flex gap-2">
           <button
             v-if="notifications.length > 0"
-            class="btn btn-sm btn-outline-danger"
+            class="btn btn-sm btn-outline-danger border-2"
+            data-testid="pw-notification-clear-all"
             @click="clearAll"
           >
             Clear All
           </button>
-          <button class="btn-close" @click="showPanel = false"></button>
+          <button class="btn btn-sm btn-outline-secondary border-2 cmd-btn-icon-sm" @click="showPanel = false">
+            <i class="bi bi-x-lg"></i>
+          </button>
         </div>
       </div>
 
-      <div class="overflow-auto" style="max-height: 520px;">
-        <div v-if="notifications.length === 0" class="text-center text-muted p-4">
+      <div class="notification-list overflow-auto">
+        <div v-if="notifications.length === 0" class="text-center text-muted p-4 notification-empty">
           No notifications
         </div>
 
         <div
           v-for="notification in notifications"
           :key="notification.id"
-          class="p-3 border-bottom"
+          class="p-3 border-bottom border-2 notification-item"
         >
           <div class="d-flex justify-content-between align-items-start">
             <div class="flex-grow-1">
               <div class="d-flex align-items-center gap-2">
-                <strong>{{ notification.component }}</strong>
-                <small class="text-muted">{{ formatTimestamp(notification.timestamp) }}</small>
+                <span class="notification-component">{{ notification.component }}</span>
+                <span class="notification-time text-muted">{{ formatTimestamp(notification.timestamp) }}</span>
               </div>
-              <p class="mb-1 mt-2">{{ notification.message }}</p>
+              <p class="mt-2 mb-1">{{ notification.message }}</p>
             </div>
             <button
-              class="btn btn-sm btn-link text-danger p-0"
+              class="btn btn-sm btn-outline-secondary border-2 cmd-btn-icon-sm"
               @click="removeNotification(notification.id)"
               title="Remove"
             >
@@ -58,7 +61,7 @@
 
           <div class="mt-2">
             <button
-              class="btn btn-sm btn-link p-0"
+              class="btn btn-sm btn-outline-control border-2"
               @click="toggleDetails(notification.id)"
             >
               <i :class="expandedNotifications.includes(notification.id) ? 'bi bi-chevron-up' : 'bi bi-chevron-down'"></i>
@@ -68,8 +71,7 @@
 
           <pre
             v-if="expandedNotifications.includes(notification.id)"
-            class="bg-light border rounded p-2 mt-2 mb-0 small overflow-auto"
-            style="max-height: 300px;"
+            class="notification-details p-2 mt-2 rounded overflow-auto"
           >{{ JSON.stringify(notification.fullData, null, 2) }}</pre>
         </div>
       </div>
@@ -151,3 +153,76 @@ export default defineComponent({
   }
 })
 </script>
+
+<style scoped>
+.notification-btn {
+  min-width: 48px;
+  height: 100%;
+  padding: 0.25rem 0.5rem;
+  position: relative;
+  background-color: var(--card-bg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.notification-btn i {
+  font-size: 1.25rem;
+}
+
+.notification-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  line-height: 18px;
+  text-align: center;
+  color: #fff;
+  background-color: var(--bs-danger);
+  border-radius: 50rem;
+}
+
+.notification-panel {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  margin-top: 0.5rem;
+  width: 500px;
+  z-index: 1051;
+  box-shadow: var(--cmd-shadow-md);
+}
+
+.notification-list {
+  max-height: 520px;
+}
+
+.notification-empty {
+  font-size: 0.875rem;
+}
+
+.notification-item:last-child {
+  border-bottom: none !important;
+}
+
+.notification-component {
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.notification-time {
+  font-size: 0.6875rem;
+}
+
+.notification-details {
+  background-color: var(--view-bg);
+  border: 2px solid var(--cmd-panel-border);
+  font-size: 0.75rem;
+  max-height: 300px;
+}
+</style>

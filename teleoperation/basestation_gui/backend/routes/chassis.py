@@ -8,7 +8,7 @@ from backend.managers.ros import get_node, get_service_client
 from backend.models_pydantic import GimbalAdjustRequest, ServoPositionRequest
 from mrover.srv import PanoramaStart, PanoramaEnd, ServoPosition
 
-router = APIRouter(prefix="/api", tags=["chassis"])
+router = APIRouter(prefix="/api/chassis", tags=["chassis"])
 
 
 async def call_service_async(client, request, timeout=10.0):

@@ -2,7 +2,6 @@ import asyncio
 from enum import Enum
 import threading
 
-from rclpy.node import Node
 from rclpy.publisher import Publisher
 
 from backend.input import filter_input, simulated_axis, safe_index, DeviceInputs
@@ -11,8 +10,6 @@ from backend.managers.ros import get_service_client
 from mrover.msg import Throttle, IK
 from mrover.srv import IkMode
 from geometry_msgs.msg import Twist
-
-from tf2_ros.buffer import Buffer
 
 ra_mode = "disabled"
 ra_mode_lock = threading.Lock()
@@ -39,7 +36,7 @@ async def call_ik_mode_service(mode: int) -> bool:
 
     try:
         service_ready = await asyncio.wait_for(
-            asyncio.get_event_loop().run_in_executor(
+            asyncio.get_running_loop().run_in_executor(
                 None, lambda: client.wait_for_service(timeout_sec=0.1)
             ),
             timeout=1.0
@@ -55,7 +52,7 @@ async def call_ik_mode_service(mode: int) -> bool:
     future = client.call_async(request)
     try:
         await asyncio.wait_for(
-            asyncio.get_event_loop().run_in_executor(None, future.result),
+            asyncio.get_running_loop().run_in_executor(None, future.result),
             timeout=5.0
         )
         result = future.result()
@@ -152,12 +149,11 @@ def compute_manual_joint_controls(controller: DeviceInputs) -> list[float]:
 
 
 def subset(names: list[str], values: list[float], joints: set[Joint]) -> tuple[list[str], list[float]]:
-    filtered_joints = [j for j in joints]
-    return [names[i.value] for i in filtered_joints], [values[i.value] for i in filtered_joints]
+    return [names[i.value] for i in joints], [values[i.value] for i in joints]
 
 
 def send_ra_controls(
-    inputs: DeviceInputs, node: Node, thr_pub: Publisher, ee_pos_pub: Publisher, ee_vel_pub: Publisher, buffer: Buffer
+    inputs: DeviceInputs, thr_pub: Publisher, ee_pos_pub: Publisher, ee_vel_pub: Publisher,
 ) -> None:
     current_mode = get_ra_mode()
     match current_mode:
@@ -188,9 +184,11 @@ def send_ra_controls(
                     ik_vel_msg.angular.x = 1.0 * simulated_axis(inputs.axes, ControllerAxis.RIGHT_TRIGGER, ControllerAxis.LEFT_TRIGGER)
                     ee_vel_pub.publish(ik_vel_msg)
 
-                    manual_controls = compute_manual_joint_controls(inputs)
+                    cam_throttle = filter_input(
+                        simulated_axis(inputs.buttons, ControllerButton.Y, ControllerButton.A),
+                        scale=JOINT_SCALES[Joint.CAM.value],
+                    )
                     throttle_msg = Throttle()
-                    joint_names, throttle_values = subset(JOINT_NAMES, manual_controls, set(Joint))
                     throttle_msg.names = ["cam"]
-                    throttle_msg.throttles = [throttle_values[joint_names.index("cam")]]
+                    throttle_msg.throttles = [cam_throttle]
                     thr_pub.publish(throttle_msg)

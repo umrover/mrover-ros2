@@ -1,4 +1,3 @@
-import asyncio
 from backend.ws.base_ws import WebSocketHandler
 from backend.input import DeviceInputs
 from backend.sp_controls import send_sp_controls
@@ -9,7 +8,7 @@ class ScienceHandler(WebSocketHandler):
         super().__init__(websocket, 'science')
 
     async def setup(self):
-        self.sp_thr_pub = self.node.create_publisher(Throttle, "/sp_thr_cmd", 10)
+        self.sp_thr_pub = self.node.create_publisher(Throttle, "/sp_thr_cmd", 1)
         self.publishers.append(self.sp_thr_pub)
 
         self.forward_ros_topic("/sp_humidity_data", Humidity, "sp_humidity")
@@ -28,6 +27,6 @@ class ScienceHandler(WebSocketHandler):
             axes = data.get('axes', [])
             buttons = data.get('buttons', [])
             device_input = DeviceInputs(axes, buttons)
-            await asyncio.to_thread(send_sp_controls, device_input, self.sp_thr_pub)
+            send_sp_controls(device_input, self.sp_thr_pub)
         else:
             print(f"Unhandled SCIENCE message: {msg_type}")

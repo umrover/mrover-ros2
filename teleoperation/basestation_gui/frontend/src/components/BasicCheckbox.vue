@@ -1,19 +1,21 @@
 <template>
-  <div v-if="!disabled" class="wrap-button">
+  <div v-if="!disabled" class="d-flex align-items-center justify-content-center p-1">
     <button
-      :class="['btn', color]"
+      :class="['btn checkbox-btn border-2', color]"
       :style="customStyles"
       @click="toggleAndEmit()"
     >
-      <span>{{ name }}: {{ active ? '\u2611' : '\u2610' }}</span>
+      <span>{{ name }}</span>
+      <i :class="active ? 'bi bi-check-square-fill' : 'bi bi-square'"></i>
     </button>
   </div>
-  <div v-else class="wrap-button button-disabled">
+  <div v-else class="d-flex align-items-center justify-content-center p-1 opacity-50">
     <button
-      :class="['btn', color, 'disabled']"
+      :class="['btn checkbox-btn border-2', color, 'disabled']"
       :style="customStyles"
     >
-      <span>{{ name }}: {{ active ? '\u2611' : '\u2610' }}</span>
+      <span>{{ name }}</span>
+      <i :class="active ? 'bi bi-check-square-fill' : 'bi bi-square'"></i>
     </button>
   </div>
 </template>
@@ -76,14 +78,14 @@ export default defineComponent({
 </script>
 
 <style scoped>
-.wrap-button {
+.checkbox-btn {
   display: flex;
   align-items: center;
-  justify-content: center;
-  padding: 1px;
-}
-
-.button-disabled {
-  opacity: 0.5;
+  gap: 0.5rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  transition: all var(--cmd-transition);
 }
 </style>
