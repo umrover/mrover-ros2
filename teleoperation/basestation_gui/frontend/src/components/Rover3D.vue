@@ -1,52 +1,54 @@
 <template>
-  <button 
-    type="button"
-    class="btn flex-fill"
-    @click = "set_camera_type('default')">
+  <div class="d-flex flex-wrap gap-1 mb-2">
+    <button
+      type="button"
+      class="btn btn-sm btn-outline-control border-2 flex-grow-1"
+      @click="set_camera_type('default')">
       Default
-  </button>
-  <button 
-    type="button"
-    class="btn flex-fill"
-    @click = "set_camera_type('follow')">
+    </button>
+    <button
+      type="button"
+      class="btn btn-sm btn-outline-control border-2 flex-grow-1"
+      @click="set_camera_type('follow')">
       Follow
-  </button>
-  <button 
-    type="button"
-    class="btn flex-fill"
-    @click = "set_camera_type('arm')">
+    </button>
+    <button
+      type="button"
+      class="btn btn-sm btn-outline-control border-2 flex-grow-1"
+      @click="set_camera_type('arm')">
       Arm
-  </button>
-   <button 
-    type="button"
-    class="btn flex-fill"
-    @click = "set_camera_type('full arm')">
+    </button>
+    <button
+      type="button"
+      class="btn btn-sm btn-outline-control border-2 flex-grow-1"
+      @click="set_camera_type('full arm')">
       Full Arm
-  </button>
-  <button 
-    type="button"
-    class="btn flex-fill"
-    @click = "set_camera_type('side arm')">
+    </button>
+    <button
+      type="button"
+      class="btn btn-sm btn-outline-control border-2 flex-grow-1"
+      @click="set_camera_type('side arm')">
       Side Arm
-  </button>
-  <button 
-    type="button"
-    class="btn flex-fill"
-    @click = "set_camera_type('top')">
+    </button>
+    <button
+      type="button"
+      class="btn btn-sm btn-outline-control border-2 flex-grow-1"
+      @click="set_camera_type('top')">
       Top Down
-  </button>
-  <button 
-    type="button"
-    class="btn flex-fill"
-    @click = "set_camera_type('bottom')">
+    </button>
+    <button
+      type="button"
+      class="btn btn-sm btn-outline-control border-2 flex-grow-1"
+      @click="set_camera_type('bottom')">
       Bottom Up
-  </button>
-  <button
-    type="button"
-    class="btn flex-fill"
-    @click = "updateCostMapGrid()">
-      Test Button
-  </button>
+    </button>
+    <button
+      type="button"
+      class="btn btn-sm btn-outline-secondary border-2 flex-grow-1"
+      @click="updateCostMapGrid()">
+      Test
+    </button>
+  </div>
 
   <canvas class="webgl p-0 h-100 w-100"></canvas>
 </template>
@@ -82,7 +84,7 @@ const jointNameMap: Record<string, string> = {
   joint_c: 'arm_b_to_arm_c',
   joint_de_pitch: 'arm_c_to_arm_d',
   joint_de_roll: 'arm_d_to_arm_e',
-  gripper: 'gripper_link', // not implemented lol
+  gripper: 'gripper_link',
 }
 
 onMounted(() => {
@@ -108,7 +110,7 @@ watch(armMessage, (msg: unknown) => {
       let position = typedMsg.positions[index] ?? 0
 
       if (urdfName === 'chassis_to_arm_a') {
-        position = position * -100 + 40 // scale from m to cm
+        position = position * -100 + 40
       }
 
       return {
@@ -135,8 +137,11 @@ watch(contextMessage, (msg: unknown) => {
   if (typeof msg == 'object' && msg !== null && 'type' in msg) {
     const typedMsg = msg as { type: string; state?: string }
     if (typedMsg.type === 'costmap') {
-      console.log("hi")
+      updateCostMapGrid()
     }
   }
 })
 </script>
+
+<style scoped>
+</style>

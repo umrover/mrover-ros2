@@ -1,25 +1,29 @@
 <template>
-  <div
-    v-if="show"
-    class="modal-backdrop d-flex align-items-center justify-content-center"
-    @click.self="$emit('close')"
-  >
-    <div class="modal-dialog modal-xl w-90">
-      <div class="modal-content bg-theme-card rounded shadow">
-        <div class="modal-header border-bottom p-2">
-          <h4 class="mb-0">Recordings</h4>
+  <Teleport to="body">
+    <div
+      v-if="show"
+      class="modal-backdrop d-flex align-items-center justify-content-center"
+      @click.self="$emit('close')"
+    >
+      <div class="modal-dialog modal-xl" data-testid="pw-recordings-modal" style="width: 90%; max-width: 1400px">
+        <div class="modal-content bg-theme-card rounded shadow">
+        <div class="d-flex justify-content-between align-items-center px-3 py-2 border-bottom border-2">
+          <h4 class="component-header m-0">Recordings</h4>
           <button
             type="button"
-            class="btn-close me-1"
+            class="btn btn-sm btn-outline-control border-2"
             @click="$emit('close')"
-          ></button>
+          >
+            <i class="bi bi-x-lg"></i>
+          </button>
         </div>
         <div class="modal-body p-0">
-          <ul class="nav nav-tabs px-3 pt-3">
+          <ul class="nav nav-tabs px-3 pt-2 gap-1 border-0">
             <li class="nav-item">
               <button
-                class="nav-link"
+                class="nav-link-tab"
                 :class="{ active: activeTab === 'rover' }"
+                data-testid="pw-recordings-tab-rover"
                 @click="activeTab = 'rover'"
               >
                 Rover
@@ -27,8 +31,9 @@
             </li>
             <li class="nav-item">
               <button
-                class="nav-link"
+                class="nav-link-tab"
                 :class="{ active: activeTab === 'drone' }"
+                data-testid="pw-recordings-tab-drone"
                 @click="activeTab = 'drone'"
               >
                 Drone
@@ -37,7 +42,7 @@
           </ul>
           <div class="p-3">
             <div class="d-flex gap-3" style="height: 600px">
-              <div class="border rounded p-2 overflow-auto sidebar">
+              <div class="recordings-sidebar p-2 rounded overflow-auto">
                 <div
                   v-if="isLoadingRecordings"
                   class="d-flex justify-content-center align-items-center p-4"
@@ -48,7 +53,7 @@
                 </div>
                 <div
                   v-else-if="filteredRecordings.length === 0"
-                  class="text-muted"
+                  class="text-muted text-center p-3 small"
                 >
                   No recordings available
                 </div>
@@ -56,34 +61,28 @@
                   v-else
                   v-for="recording in filteredRecordings"
                   :key="recording.id"
-                  class="p-2 mb-2 border rounded"
-                  :class="
-                    selectedRecording?.id === recording.id
-                      ? 'bg-primary text-white'
-                      : 'hover-bg-light'
-                  "
+                  class="cmd-list-item"
+                  :class="{ 'cmd-list-item--selected': selectedRecording?.id === recording.id }"
                 >
                   <div
-                    class="cursor-pointer"
+                    role="button"
                     @click="selectRecording(recording.id)"
                   >
-                    <div class="fw-bold">{{ recording.name }}</div>
-                    <small>{{ formatDate(recording.created_at) }}</small>
-                    <div>
-                      <small>{{ recording.waypoint_count }} waypoints</small>
-                    </div>
+                    <div class="fw-semibold small">{{ recording.name }}</div>
+                    <div class="text-muted" style="font-size: 0.6875rem">{{ formatDate(recording.created_at) }}</div>
+                    <div class="text-muted" style="font-size: 0.6875rem">{{ recording.waypoint_count }} waypoints</div>
                   </div>
                   <button
-                    class="btn btn-sm btn-danger mt-2 w-100"
+                    class="btn btn-sm btn-outline-secondary border-2 w-100 mt-2"
                     @click.stop="deleteRecording(recording.id)"
                   >
                     Delete
                   </button>
                 </div>
               </div>
-              <div class="flex-fill d-flex flex-column gap-2 map-container">
+              <div class="flex-fill d-flex flex-column gap-2" style="min-width: 0">
                 <div
-                  class="border rounded flex-fill position-relative"
+                  class="border border-2 rounded flex-fill position-relative"
                   style="min-height: 400px"
                 >
                   <div
@@ -124,58 +123,44 @@
                     :options="{ scrollWheelZoom: true }"
                   >
                     <l-tile-layer
-                      url="http://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}"
-                      :options="{
-                        maxNativeZoom: 22,
-                        maxZoom: 100,
-                        subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
-                      }"
+                      :url="onlineUrl"
+                      :options="onlineTileOptions"
                     />
-                    <!-- Full path polyline -->
                     <l-polyline
                       :lat-lngs="pathLatLngs"
                       :color="'#2563eb'"
                       :weight="4"
                       :opacity="0.8"
                     />
-                    <!-- Start marker (green) -->
                     <l-marker :lat-lng="startLatLng" :icon="startIcon">
                       <l-tooltip>Start</l-tooltip>
                     </l-marker>
-                    <!-- End marker (red) -->
                     <l-marker :lat-lng="endLatLng" :icon="endIcon">
                       <l-tooltip>End</l-tooltip>
                     </l-marker>
-                    <!-- Current position marker (orange) -->
                     <l-marker :lat-lng="currentLatLng" :icon="currentIcon" />
                   </l-map>
                 </div>
                 <div
-                  v-if="
-                    selectedRecording &&
-                    waypoints.length > 0 &&
-                    !isLoadingWaypoints
-                  "
-                  class="border rounded p-2"
+                  v-if="selectedRecording && waypoints.length > 0 && !isLoadingWaypoints"
+                  class="p-2 rounded"
+                  style="background-color: var(--view-bg)"
                 >
                   <div class="d-flex align-items-center gap-2 mb-2">
                     <button
-                      class="btn btn-sm"
-                      :class="isPlaying ? 'btn-danger' : 'btn-success'"
+                      class="btn btn-sm border-2"
+                      :class="isPlaying ? 'btn-outline-secondary' : 'btn-outline-control'"
                       @click="togglePlayback"
                     >
                       {{ isPlaying ? 'Pause' : 'Play' }}
                     </button>
                     <button
-                      class="btn btn-sm btn-secondary"
+                      class="btn btn-sm btn-outline-secondary border-2"
                       @click="resetPlayback"
                     >
                       Reset
                     </button>
-                    <span class="ms-2"
-                      >{{ currentWaypointIndex + 1 }} /
-                      {{ waypoints.length }}</span
-                    >
+                    <span class="fw-semibold small ms-2">{{ currentWaypointIndex + 1 }} / {{ waypoints.length }}</span>
                   </div>
                   <input
                     type="range"
@@ -184,20 +169,18 @@
                     :max="waypoints.length - 1"
                     v-model.number="currentWaypointIndex"
                   />
-                  <div
-                    class="d-flex justify-content-between text-muted"
-                    style="font-size: 12px"
-                  >
+                  <div class="d-flex justify-content-between" style="font-size: 0.6875rem">
                     <div>
-                      <strong>Start:</strong>
-                      {{ formatTimestamp(startTimestamp) }}
+                      <span class="text-muted me-1">Start:</span>
+                      <span>{{ formatTimestamp(startTimestamp) }}</span>
                     </div>
                     <div>
-                      <strong>Current:</strong>
-                      {{ formatTimestamp(currentTimestamp) }}
+                      <span class="text-muted me-1">Current:</span>
+                      <span>{{ formatTimestamp(currentTimestamp) }}</span>
                     </div>
                     <div>
-                      <strong>End:</strong> {{ formatTimestamp(endTimestamp) }}
+                      <span class="text-muted me-1">End:</span>
+                      <span>{{ formatTimestamp(endTimestamp) }}</span>
                     </div>
                   </div>
                 </div>
@@ -205,9 +188,10 @@
             </div>
           </div>
         </div>
+        </div>
       </div>
     </div>
-  </div>
+  </Teleport>
 </template>
 
 <script lang="ts" setup>
@@ -223,6 +207,7 @@ import 'leaflet/dist/leaflet.css'
 import L from 'leaflet'
 import { recordingAPI } from '@/utils/api'
 import type { Recording, RecordedWaypoint } from '@/utils/apiTypes'
+import { useRoverMap } from '@/composables/useRoverMap'
 
 const props = defineProps({
   show: {
@@ -233,13 +218,19 @@ const props = defineProps({
 
 defineEmits(['close'])
 
+const {
+  mapRef,
+  onlineUrl,
+  onlineTileOptions,
+  getMap,
+} = useRoverMap()
+
 const activeTab = ref<'rover' | 'drone'>('rover')
 const recordings = ref<Recording[]>([])
 const selectedRecording = ref<Recording | null>(null)
 const waypoints = shallowRef<RecordedWaypoint[]>([])
 const currentWaypointIndex = ref(0)
 const isPlaying = ref(false)
-const mapRef = ref<{ leafletObject: L.Map } | null>(null)
 const isLoadingRecordings = ref(false)
 const isLoadingWaypoints = ref(false)
 let playbackInterval: number | null = null
@@ -351,8 +342,8 @@ const selectRecording = async (recordingId: number) => {
       playbackInterval = null
 
       await nextTick()
-      if (mapRef.value && waypoints.value.length > 0) {
-        const map = mapRef.value.leafletObject
+      const map = getMap()
+      if (map && waypoints.value.length > 0) {
         const bounds = L.latLngBounds(
           waypoints.value.map(wp => [wp.lat, wp.lon]),
         )
@@ -474,27 +465,36 @@ onBeforeUnmount(() => {
   z-index: 1050;
 }
 
-.w-90 {
-  width: 90%;
-  max-width: 1400px;
-}
-
-.sidebar {
-  width: 280px;
-  min-width: 280px;
-  max-width: 280px;
-}
-
-.map-container {
-  min-width: 0;
-  flex: 1;
-}
-
-.cursor-pointer {
+.nav-link-tab {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 0.5rem 1rem;
+  border: 2px solid transparent;
+  border-bottom: none;
+  border-radius: var(--cmd-radius-sm) var(--cmd-radius-sm) 0 0;
+  background: transparent;
+  color: var(--text-muted);
   cursor: pointer;
+  transition: all var(--cmd-transition);
 }
 
-.hover-bg-light:hover {
+.nav-link-tab:hover,
+.nav-link-tab.active {
+  color: var(--cmd-accent);
   background-color: var(--view-bg);
+  border-color: var(--cmd-panel-border);
+}
+
+.recordings-sidebar {
+  width: 280px;
+  flex-shrink: 0;
+  background-color: var(--view-bg);
+}
+
+.cmd-list-item--selected {
+  border-color: var(--cmd-accent);
+  background-color: rgba(14, 116, 144, 0.1);
 }
 </style>

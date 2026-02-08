@@ -1,19 +1,21 @@
 <template>
-	<div class="wrapper">
-		<div class="ps-3 pe-2 py-2 d-flex justify-content-between align-items-center position-relative">
-			<a class="logo" href="/"><img src="/mrover.png" alt="MRover" title="MRover" width="200" /></a>
+  <div class="wrapper">
+    <div class="ps-3 pe-2 py-2 d-flex justify-content-between align-items-center position-relative">
+      <a class="logo" href="/"><img src="/mrover.png" alt="MRover" title="MRover" width="200" /></a>
       <div class="d-flex align-items-center gap-3">
         <h1>{{ title }}</h1>
-        <div v-if="showGridControls" class="d-flex align-items-center gap-1 border rounded px-2 py-1">
+        <div v-if="showGridControls" class="d-flex align-items-center gap-1 border border-2 rounded px-2 py-1">
           <button
-            class="btn btn-sm px-2"
+            class="btn btn-sm cmd-btn-icon-sm border-2"
             :class="gridLayoutStore.locked ? 'btn-danger' : 'btn-success'"
+            data-testid="pw-grid-lock-btn"
             @click="gridLayoutStore.toggleLock()"
           >
             <i :class="gridLayoutStore.locked ? 'bi bi-lock-fill' : 'bi bi-unlock-fill'"></i>
           </button>
           <button
-            class="btn btn-sm btn-secondary px-2"
+            class="btn btn-sm btn-secondary cmd-btn-icon-sm border-2"
+            data-testid="pw-grid-reset-btn"
             @click="gridLayoutStore.triggerReset()"
           >
             <i class="bi bi-arrow-counterclockwise"></i>
@@ -21,17 +23,17 @@
           <span class="ms-1 small text-muted">Grid</span>
         </div>
       </div>
-      <div class="d-flex align-items-center gap-3">
+      <div class="d-flex align-items-stretch gap-2">
         <WebsocketStatus />
-        <div class="border-start border-2" style="height: 40px;"></div>
-        <div class="dropdown">
+        <div class="border-start border-2 align-self-center nav-divider"></div>
+        <div class="dropdown d-flex">
           <button
-            class="btn border border-2 rounded d-flex align-items-center justify-content-center"
-            style="width: 50px; height: 50px;"
+            class="theme-btn border border-2 rounded"
+            data-testid="pw-theme-dropdown"
             data-bs-toggle="dropdown"
             aria-expanded="false"
           >
-            <i :class="themeIcon" class="fs-5"></i>
+            <i :class="themeIcon"></i>
           </button>
           <ul class="dropdown-menu dropdown-menu-end">
             <li>
@@ -83,7 +85,7 @@
         </div>
         <NotificationCenter />
       </div>
-		</div>
+    </div>
   </div>
 </template>
 
@@ -119,10 +121,10 @@ export default defineComponent({
       return icons[this.themeStore.currentTheme] || 'bi bi-sun-fill';
     },
   },
-	components: {
+  components: {
     WebsocketStatus,
     NotificationCenter
-	},
+  },
   methods: {
     getTitleForRoute(path: string): string {
       const routeTitles: Record<string, string> = {
@@ -143,5 +145,31 @@ export default defineComponent({
 .logo {
   position: absolute;
   left: 48%;
+}
+
+h1 {
+  font-size: clamp(1.25rem, 1rem + 0.5vw, 1.75rem) !important;
+  margin: 0 !important;
+  line-height: 1 !important;
+}
+
+.nav-divider {
+  height: clamp(32px, 2.5vw, 48px);
+}
+
+.theme-btn {
+  min-width: 48px;
+  height: 100%;
+  padding: 0.25rem 0.5rem;
+  background-color: var(--card-bg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.theme-btn i {
+  font-size: 1.25rem;
 }
 </style>

@@ -1,5 +1,5 @@
 <template>
-  <a class="menu-button" :href="link">
+  <a class="menu-button border border-2 rounded" data-testid="pw-menu-btn" :href="link">
     <span class="terminal-arrow">&gt;</span>
     <span class="button-text">{{ name }}</span>
     <span class="button-bg"></span>
@@ -30,33 +30,34 @@ export default defineComponent({
   position: relative;
   display: flex;
   align-items: center;
-  padding: 1rem 1.5rem;
+  padding: 1rem clamp(1rem, 1.2vw, 1.75rem);
   text-decoration: none;
-  font-family: 'Courier New', monospace;
-  font-size: 1.125rem;
-  font-weight: 600;
+  font-family: var(--cmd-font-mono);
+  font-size: 1.1rem;
+  font-weight: 500;
   color: #4c7899;
   background: transparent;
-  border: 2px solid #94a3b8;
-  border-radius: 6px;
+  border-color: #94a3b8;
   cursor: pointer;
   overflow: hidden;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  min-height: 3.5rem;
 }
 
 .terminal-arrow {
   position: absolute;
-  left: -30px;
+  left: clamp(-25px, -1.5vw, -35px);
   color: #92400e;
-  font-size: 1.5rem;
+  font-size: 1.25rem;
   font-weight: bold;
   opacity: 0;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 3;
 }
 
 .button-text {
   position: relative;
-  z-index: 2;
+  z-index: 3;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -73,7 +74,7 @@ export default defineComponent({
 
 .menu-button:hover {
   border-color: #0e7490;
-  padding-left: 2.5rem;
+  padding-left: clamp(2.5rem, 2.5vw, 3.5rem);
   box-shadow: 0 4px 20px rgba(14, 116, 144, 0.25);
   background: rgba(14, 116, 144, 0.08);
 }
@@ -81,7 +82,6 @@ export default defineComponent({
 .menu-button:hover .terminal-arrow {
   left: 1rem;
   opacity: 1;
-  animation: pulse 1.5s infinite;
 }
 
 .menu-button:hover .button-text {
@@ -96,65 +96,5 @@ export default defineComponent({
 .menu-button:active {
   transform: scale(0.98);
   box-shadow: 0 2px 10px rgba(14, 116, 144, 0.3);
-}
-
-@keyframes pulse {
-  0%, 100% {
-    transform: translateX(0);
-    opacity: 1;
-  }
-  50% {
-    transform: translateX(3px);
-    opacity: 0.8;
-  }
-}
-
-/* Add scanline effect */
-.menu-button::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(
-    to bottom,
-    transparent 50%,
-    rgba(14, 116, 144, 0.05) 50%
-  );
-  background-size: 100% 4px;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.3s;
-}
-
-.menu-button:hover::before {
-  opacity: 1;
-}
-
-/* Glitch effect on active */
-@keyframes glitch {
-  0% {
-    transform: translate(0);
-  }
-  20% {
-    transform: translate(-2px, 2px);
-  }
-  40% {
-    transform: translate(-2px, -2px);
-  }
-  60% {
-    transform: translate(2px, 2px);
-  }
-  80% {
-    transform: translate(2px, -2px);
-  }
-  100% {
-    transform: translate(0);
-  }
-}
-
-.menu-button:active .button-text {
-  animation: glitch 0.3s;
 }
 </style>

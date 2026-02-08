@@ -1,9 +1,9 @@
 <template>
-  <button :class="['btn', currentColor]" :style="customStyles" @click="handleClick">
-    <span class="d-inline-flex align-items-center gap-2">
+  <button :class="['btn feedback-btn border-2', currentColor]" :style="customStyles" @click="handleClick">
+    <span class="d-flex align-items-center w-100">
       <span>{{ displayName }}</span>
-      <i v-if="mode === 'toggle'" :class="checked ? 'bi bi-check-square-fill' : 'bi bi-square'"></i>
-      <i v-else-if="isWaiting" class="bi bi-arrow-repeat spin"></i>
+      <i v-if="mode === 'toggle'" class="ms-auto" :class="checked ? 'bi bi-check-square-fill' : 'bi bi-square'"></i>
+      <i v-else-if="isWaiting" class="bi bi-arrow-repeat spin ms-auto"></i>
     </span>
   </button>
 </template>
@@ -65,7 +65,7 @@ export default defineComponent({
       if (this.mode === 'action') {
         if (this.isComplete) return 'btn-success'
         if (this.isWaiting) return 'btn-warning'
-        return 'btn-primary'
+        return 'btn-success'
       }
       if (this.isWaiting) return 'btn-warning'
       return this.checked ? 'btn-success' : 'btn-danger'
@@ -167,6 +167,15 @@ export default defineComponent({
 </script>
 
 <style scoped>
+.feedback-btn {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  border-radius: var(--cmd-radius-sm);
+  transition: all var(--cmd-transition);
+}
+
 .spin {
   animation: spin 1s linear infinite;
 }

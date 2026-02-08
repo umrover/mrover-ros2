@@ -1,49 +1,49 @@
 <template>
-  <div class="d-flex align-items-start justify-content-center">
-    <div class="d-flex flex-column gap-2">
-      <div class="d-flex justify-content-between align-items-center">
-        <h4 class="m-0">Gimbal Controls</h4>
-        <div class="d-flex align-items-center">
-          <i
-            v-if="!hasServoState"
-            ref="tooltipRef"
-            class="bi bi-info-circle me-2"
-            data-bs-toggle="tooltip"
-            data-bs-placement="top"
-            title="Changes not allowed until gimbal position received"
-          ></i>
-          <IndicatorDot :is-active="hasServoState" class="me-2" />
-        </div>
+  <div class="d-flex flex-column gap-1 w-100 h-100 overflow-hidden" data-testid="pw-gimbal-controls">
+    <div class="d-flex justify-content-between align-items-center w-100">
+      <h4 class="component-header">Gimbal Controls</h4>
+      <div class="d-flex align-items-center">
+        <i
+          v-if="!hasServoState"
+          ref="tooltipRef"
+          class="bi bi-info-circle me-1 small"
+          data-bs-toggle="tooltip"
+          data-bs-placement="top"
+          title="Changes not allowed until gimbal position received"
+        ></i>
+        <IndicatorDot :is-active="hasServoState" />
       </div>
+    </div>
 
-      <div class="d-flex align-items-center justify-content-center gap-1">
-        <span class="fw-semibold text-end" style="min-width: 40px; font-size: 14px">Pitch</span>
-        <div class="btn-group btn-group-sm">
-          <button class="btn btn-outline-control control-btn" @click="adjustGimbal('pitch', -10)" :disabled="!hasServoState">-10</button>
-          <button class="btn btn-outline-control control-btn" @click="adjustGimbal('pitch', -5)" :disabled="!hasServoState">-5</button>
-          <button class="btn btn-outline-control control-btn" @click="adjustGimbal('pitch', -1)" :disabled="!hasServoState">-1</button>
-        </div>
-        <span class="font-monospace fw-semibold text-center bg-theme-card border rounded px-2 py-1" style="min-width: 40px; font-size: 14px">{{ pitchDegrees }}°</span>
-        <div class="btn-group btn-group-sm">
-          <button class="btn btn-outline-control control-btn" @click="adjustGimbal('pitch', 1)" :disabled="!hasServoState">+1</button>
-          <button class="btn btn-outline-control control-btn" @click="adjustGimbal('pitch', 5)" :disabled="!hasServoState">+5</button>
-          <button class="btn btn-outline-control control-btn" @click="adjustGimbal('pitch', 10)" :disabled="!hasServoState">+10</button>
-        </div>
+    <div class="axis-block">
+      <div class="axis-header">
+        <span class="axis-label">Pitch</span>
+        <span class="value-display">{{ pitchDegrees }}&deg;</span>
+        <span class="axis-label-spacer"></span>
       </div>
+      <div class="btn-row" data-testid="pw-gimbal-pitch-btns">
+        <button class="btn btn-outline-control btn-sm control-btn" @click="adjustGimbal('pitch', -10)" :disabled="!hasServoState">-10</button>
+        <button class="btn btn-outline-control btn-sm control-btn" @click="adjustGimbal('pitch', -5)" :disabled="!hasServoState">-5</button>
+        <button class="btn btn-outline-control btn-sm control-btn" @click="adjustGimbal('pitch', -1)" :disabled="!hasServoState">-1</button>
+        <button class="btn btn-outline-control btn-sm control-btn" @click="adjustGimbal('pitch', 1)" :disabled="!hasServoState">+1</button>
+        <button class="btn btn-outline-control btn-sm control-btn" @click="adjustGimbal('pitch', 5)" :disabled="!hasServoState">+5</button>
+        <button class="btn btn-outline-control btn-sm control-btn" @click="adjustGimbal('pitch', 10)" :disabled="!hasServoState">+10</button>
+      </div>
+    </div>
 
-      <div class="d-flex align-items-center justify-content-center gap-1">
-        <span class="fw-semibold text-end" style="min-width: 40px; font-size: 14px">Yaw</span>
-        <div class="btn-group btn-group-sm">
-          <button class="btn btn-outline-control control-btn" @click="adjustGimbal('yaw', -10)" :disabled="!hasServoState">-10</button>
-          <button class="btn btn-outline-control control-btn" @click="adjustGimbal('yaw', -5)" :disabled="!hasServoState">-5</button>
-          <button class="btn btn-outline-control control-btn" @click="adjustGimbal('yaw', -1)" :disabled="!hasServoState">-1</button>
-        </div>
-        <span class="font-monospace fw-semibold text-center bg-theme-card border rounded px-2 py-1" style="min-width: 40px; font-size: 14px">{{ yawDegrees }}°</span>
-        <div class="btn-group btn-group-sm">
-          <button class="btn btn-outline-control control-btn" @click="adjustGimbal('yaw', 1)" :disabled="!hasServoState">+1</button>
-          <button class="btn btn-outline-control control-btn" @click="adjustGimbal('yaw', 5)" :disabled="!hasServoState">+5</button>
-          <button class="btn btn-outline-control control-btn" @click="adjustGimbal('yaw', 10)" :disabled="!hasServoState">+10</button>
-        </div>
+    <div class="axis-block">
+      <div class="axis-header">
+        <span class="axis-label">Yaw</span>
+        <span class="value-display">{{ yawDegrees }}&deg;</span>
+        <span class="axis-label-spacer"></span>
+      </div>
+      <div class="btn-row" data-testid="pw-gimbal-yaw-btns">
+        <button class="btn btn-outline-control btn-sm control-btn" @click="adjustGimbal('yaw', -10)" :disabled="!hasServoState">-10</button>
+        <button class="btn btn-outline-control btn-sm control-btn" @click="adjustGimbal('yaw', -5)" :disabled="!hasServoState">-5</button>
+        <button class="btn btn-outline-control btn-sm control-btn" @click="adjustGimbal('yaw', -1)" :disabled="!hasServoState">-1</button>
+        <button class="btn btn-outline-control btn-sm control-btn" @click="adjustGimbal('yaw', 1)" :disabled="!hasServoState">+1</button>
+        <button class="btn btn-outline-control btn-sm control-btn" @click="adjustGimbal('yaw', 5)" :disabled="!hasServoState">+5</button>
+        <button class="btn btn-outline-control btn-sm control-btn" @click="adjustGimbal('yaw', 10)" :disabled="!hasServoState">+10</button>
       </div>
     </div>
   </div>
@@ -73,10 +73,10 @@ onUnmounted(() => {
 })
 
 const gimbalJointState = computed((): ControllerStateMessage | null => {
-  const messages = websocketStore.messages['chassis']
-  if (!messages || !Array.isArray(messages)) return null
-  const msg = messages.find((msg: { type: string }) => msg.type === 'gimbal_controller_state')
-  return msg ? (msg as ControllerStateMessage) : null
+  const msg = websocketStore.messages['chassis']
+  if (!msg) return null
+  const typedMsg = msg as ControllerStateMessage
+  return typedMsg.type === 'gimbal_controller_state' ? typedMsg : null
 })
 
 const hasServoState = computed((): boolean => {
@@ -106,7 +106,7 @@ const yawDegrees = computed((): string =>
 
 const adjustGimbal = async (
   joint: 'pitch' | 'yaw',
-  adjustment: number,
+  adjustmentDegrees: number,
 ): Promise<void> => {
   try {
     const state = gimbalJointState.value
@@ -127,21 +127,61 @@ const adjustGimbal = async (
       return
     }
 
-    const adjustmentRadians = (adjustment * Math.PI) / 180
-    const newPosition = currentPosition + adjustmentRadians
+    const adjustmentRadians = (adjustmentDegrees * Math.PI) / 180
+    const targetPosition = currentPosition + adjustmentRadians
 
-    await chassisAPI.adjustGimbal(joint, newPosition, true)
+    await chassisAPI.adjustGimbal(joint, targetPosition, true)
   } catch (error) {
-    console.error('Failed to adjust gimbal:', error)
+    console.error('Failed to set gimbal position:', error)
   }
 }
 </script>
 
 <style scoped>
+.axis-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.axis-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.axis-label,
+.axis-label-spacer {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  width: 32px;
+}
+
+.axis-label-spacer {
+  visibility: hidden;
+}
+
+.value-display {
+  font-size: 0.8rem;
+  font-weight: 600;
+  background-color: var(--card-bg);
+  border: 2px solid var(--input-border);
+  border-radius: var(--cmd-radius-sm);
+  padding: 0 0.5rem;
+}
+
+.btn-row {
+  display: flex;
+  gap: 0.25rem;
+}
+
 .control-btn {
-  min-width: 38px;
-  font-size: 12px;
-  padding: 2px 6px;
+  flex: 1;
+  padding: 0.35rem 0;
+  font-size: 0.7rem;
+  font-weight: 600;
 }
 
 .control-btn:disabled {

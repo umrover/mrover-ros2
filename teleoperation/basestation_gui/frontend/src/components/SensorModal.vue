@@ -1,53 +1,40 @@
 <template>
-  <div
-    class="modal-backdrop d-flex justify-content-center align-items-center"
-    @click.self="$emit('close')"
-  >
+  <Teleport to="body">
     <div
-      class="bg-theme-card rounded p-3"
-      style="
-        width: 90%;
-        max-width: 1200px;
-        height: 90vh;
-        overflow: hidden;
-        display: flex;
-        flex-direction: column;
-      "
+      class="modal-backdrop d-flex justify-content-center align-items-center"
+      @click.self="$emit('close')"
     >
-      <div class="d-flex justify-content-between align-items-center pb-2">
-        <h4 class="mb-0">All Sensor Charts</h4>
+      <div class="sensor-modal-content cmd-panel">
+      <div class="sensor-modal-header">
+        <h4 class="component-header">All Sensor Charts</h4>
         <div class="d-flex gap-2">
-          <button class="btn btn-danger" @click="$emit('reset')">
+          <button class="btn btn-sm border-2 border-secondary" @click="$emit('reset')">
             <i class="bi bi-arrow-counterclockwise"></i> Reset
           </button>
-          <button class="btn btn-secondary" @click="$emit('close')">
+          <button class="btn btn-sm border-2 border-secondary close-btn" @click="$emit('close')">
             <i class="bi bi-x-lg"></i>
           </button>
         </div>
       </div>
 
-      <div class="d-flex flex-column gap-2 flex-fill" style="overflow: hidden">
+      <div class="sensor-charts-container">
         <div
           v-for="(config, index) in chartConfigs"
           :key="index"
-          class="border rounded p-2 bg-light d-flex flex-row gap-3"
-          style="flex: 1; min-height: 0"
+          class="sensor-chart-panel"
         >
-          <div
-            class="d-flex flex-column align-items-start"
-            style="width: 180px; flex-shrink: 0"
-          >
-            <h5 class="mb-2 text-nowrap">{{ config.title }}</h5>
-            <div class="d-flex flex-column gap-2">
-              <button class="btn btn-primary" @click="downloadPNG(index)">
+          <div class="sensor-chart-sidebar">
+            <h5 class="sensor-chart-title">{{ config.title }}</h5>
+            <div class="d-flex flex-column gap-1">
+              <button class="btn btn-sm border-2 border-secondary" @click="downloadPNG(index)">
                 <i class="bi bi-download"></i> PNG
               </button>
-              <button class="btn btn-secondary" @click="downloadCSV(index)">
+              <button class="btn btn-sm border-2 border-secondary" @click="downloadCSV(index)">
                 <i class="bi bi-download"></i> CSV
               </button>
             </div>
           </div>
-          <div class="flex-fill d-flex" style="min-width: 0">
+          <div class="sensor-chart-canvas">
             <canvas
               :id="`modal-chart-${index}`"
               style="width: 100%; height: 100%"
@@ -55,12 +42,13 @@
           </div>
         </div>
       </div>
+      </div>
     </div>
-  </div>
+  </Teleport>
 </template>
 
 <script lang="ts" setup>
-import { onMounted, onUnmounted, watch } from 'vue'
+import { onMounted, onUnmounted } from 'vue'
 import Chart from 'chart.js/auto'
 import type { Chart as ChartType } from 'chart.js/auto'
 
@@ -98,7 +86,7 @@ const chartConfigs: readonly ChartConfig[] = [
     datasets: [{ label: 'Humidity', color: '#3BB273', historyIndex: 1 }],
   },
   {
-    title: 'Temperature (°C)',
+    title: 'Temperature (C)',
     datasets: [{ label: 'Temp', color: '#E15554', historyIndex: 2 }],
   },
   {
@@ -110,8 +98,8 @@ const chartConfigs: readonly ChartConfig[] = [
     datasets: [{ label: 'Ozone', color: '#F9A825', historyIndex: 4 }],
   },
   {
-    title: 'CO₂ (ppm)',
-    datasets: [{ label: 'CO₂', color: '#8D6E63', historyIndex: 5 }],
+    title: 'CO2 (ppm)',
+    datasets: [{ label: 'CO2', color: '#8D6E63', historyIndex: 5 }],
   },
   {
     title: 'Pressure (Pa)',
@@ -257,8 +245,6 @@ onMounted(() => {
     charts.forEach(chart => chart?.destroy())
   })
 })
-
-watch(() => props.sensorHistory, updateCharts, { deep: true })
 </script>
 
 <style scoped>
@@ -270,5 +256,79 @@ watch(() => props.sensorHistory, updateCharts, { deep: true })
   height: 100%;
   background-color: rgba(0, 0, 0, 0.7);
   z-index: 1000;
+}
+
+.sensor-modal-content {
+  width: 90%;
+  max-width: 1200px;
+  height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.sensor-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid var(--cmd-panel-border);
+  margin-bottom: 0.5rem;
+}
+
+.close-btn {
+  aspect-ratio: 1;
+  padding: 0.25rem;
+}
+
+.sensor-charts-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  flex: 1;
+  overflow: hidden;
+}
+
+.sensor-chart-panel {
+  display: flex;
+  flex-direction: row;
+  gap: 0.75rem;
+  flex: 1;
+  min-height: 0;
+  border: var(--cmd-border-width) solid var(--cmd-panel-border);
+  border-radius: var(--cmd-radius-sm);
+  padding: 0.5rem;
+}
+
+.sensor-chart-sidebar {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 160px;
+  flex-shrink: 0;
+}
+
+.sensor-chart-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--text-muted);
+  margin-bottom: 0.5rem;
+  white-space: nowrap;
+}
+
+.sensor-chart-sidebar .btn {
+  font-size: 0.6875rem;
+}
+
+.sensor-modal-content .btn:hover {
+  background-color: var(--table-header-bg);
+}
+
+.sensor-chart-canvas {
+  flex: 1;
+  display: flex;
+  min-width: 0;
 }
 </style>

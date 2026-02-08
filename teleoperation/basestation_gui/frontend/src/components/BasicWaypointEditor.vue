@@ -1,102 +1,107 @@
 <template>
-  <div class="wrapper d-flex m-0 p-2 justify-content-between gap-3 w-100 h-100">
+  <div class="d-flex m-0 p-0 h-100 w-100 gap-2">
     <!-- Left Column: Controls & Creation -->
-    <div class="d-flex flex-column w-100 gap-2">
+    <div class="d-flex flex-column w-100">
       <!-- New Waypoint Form -->
-      <div class="d-flex flex-column gap-2 border border-2 rounded p-2">
-        <div class="d-flex align-items-center">
-          <label for="waypointname" class="form-label m-0 me-2">Name:</label>
-          <div class="col">
-            <input class="form-control" id="waypointname" v-model="name" />
-          </div>
+      <div class="py-2 border-bottom border-2">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <h4 class="component-header m-0">Add Waypoint</h4>
         </div>
-        <div class="d-flex gap-2">
-          <div class="flex-fill input-group">
-            <input class="form-control" id="deg1" v-model.number="input.lat.d" />
-            <span class="input-group-text font-monospace px-2">ºN</span>
+        <div class="d-flex flex-column gap-2">
+          <div class="d-flex align-items-center gap-2">
+            <label for="waypointname" class="cmd-data-label m-0">Name:</label>
+            <input class="form-control cmd-input flex-grow-1" id="waypointname" data-testid="pw-basic-wp-name" v-model="name" />
           </div>
-          <div class="flex-fill input-group">
-            <input class="form-control" id="deg2" v-model.number="input.lon.d" />
-            <span class="input-group-text font-monospace px-2">ºW</span>
+          <div class="d-flex gap-2">
+            <div class="flex-fill input-group input-group-sm">
+              <input class="form-control cmd-input" id="deg1" v-model.number="input.lat.d" />
+              <span class="input-group-text">ºN</span>
+            </div>
+            <div class="flex-fill input-group input-group-sm">
+              <input class="form-control cmd-input" id="deg2" v-model.number="input.lon.d" />
+              <span class="input-group-text">ºW</span>
+            </div>
           </div>
+          <button class="btn btn-success btn-sm border-2" data-testid="pw-basic-wp-add-btn" @click="addWaypoint(input, false)">
+            Add Waypoint
+          </button>
         </div>
-        <button class="btn btn-success" @click="addWaypoint(input, false)">
-          Add Waypoint
-        </button>
       </div>
 
       <!-- Rover Controls -->
-      <div class="border border-2 rounded p-2 gap-2 d-flex flex-column">
-        <div class="d-flex justify-content-between align-items-center gap-2">
-          <h4>Rover</h4>
+      <div class="py-2 border-bottom border-2">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <h4 class="component-header m-0">Rover</h4>
           <button
             v-if="!isRecordingRover"
-            class="btn btn-success btn-sm"
+            class="btn btn-success btn-sm border-2"
             @click="startRecording(false)"
           >
             Start Recording
           </button>
           <button
             v-if="isRecordingRover"
-            class="btn btn-danger btn-sm"
+            class="btn btn-danger btn-sm border-2"
             @click="stopRecording"
           >
             Stop Recording
           </button>
         </div>
         <button
-          class="btn btn-success"
+          class="btn btn-success btn-sm border-2 w-100"
           @click="addWaypoint(formatted_odom, false)"
         >
           Drop Waypoint at Rover
         </button>
       </div>
 
-      <!-- Drone Controls (Conditional) -->
-      <div v-if="enableDrone" class="border border-2 rounded d-flex flex-column p-2 gap-2">
-        <div class="d-flex justify-content-between align-items-center gap-2">
-          <h4>Drone</h4>
+      <!-- Drone Controls (es only) -->
+      <div v-if="enableDrone" class="py-2 border-bottom border-2">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <h4 class="component-header m-0">Drone</h4>
           <button
             v-if="!isRecordingDrone"
-            class="btn btn-success btn-sm"
+            class="btn btn-success btn-sm border-2"
             @click="startRecording(true)"
           >
             Start Recording
           </button>
           <button
             v-if="isRecordingDrone"
-            class="btn btn-danger btn-sm"
+            class="btn btn-danger btn-sm border-2"
             @click="stopRecording"
           >
             Stop Recording
           </button>
         </div>
-        <button class="btn btn-info" @click="addWaypoint(input, true)">
+        <button class="btn btn-info btn-sm border-2 w-100" @click="addWaypoint(input, true)">
           Add Drone Position
         </button>
       </div>
 
       <!-- Action Buttons -->
-      <button class="btn btn-success" @click="showRecordingsModal = true">
-        View Recordings
-      </button>
-      <div class="d-flex gap-2">
-        <button class="btn btn-danger flex-fill" @click="clearAllWaypoints">
-          Clear Waypoints
+      <div class="py-2">
+        <button class="btn btn-success btn-sm border-2 w-100 mb-2" data-testid="pw-basic-wp-recordings-btn" @click="showRecordingsModal = true">
+          View Recordings
         </button>
-        <button class="btn btn-danger flex-fill" @click="clearAllRecordings">
-          Clear Recordings
-        </button>
+        <div class="d-flex gap-2 w-100">
+          <button class="btn btn-danger btn-sm border-2" data-testid="pw-basic-wp-clear-btn" @click="openClearWaypointsModal">
+            Clear Waypoints
+          </button>
+          <button class="btn btn-danger btn-sm border-2" @click="openClearRecordingsModal">
+            Clear Recordings
+          </button>
+        </div>
       </div>
     </div>
 
     <!-- Right Column: Active Route List -->
     <div class="d-flex flex-column w-100">
-      <div class="d-flex mb-2 align-items-center justify-content-between">
-        <h4 class="m-0 p-0">Current Course</h4>
-        <button class="btn btn-danger" @click="clearWaypoint">Clear</button>
+      <div class="p-1 mb-2 border-bottom border-2 d-flex justify-content-between align-items-center">
+        <h4 class="component-header m-0">Current Course</h4>
+        <button class="btn btn-danger btn-sm border-2" @click="clearWaypoint">Clear</button>
       </div>
-      <div class="waypoint-wrapper overflow-y-scroll d-flex flex-column gap-2 flex-grow-1">
+      <div class="bg-theme-view p-2 rounded overflow-y-auto d-flex flex-column gap-2 flex-grow-1" data-testid="pw-basic-wp-list">
         <WaypointItem
           v-for="(waypoint, i) in storedWaypoints"
           :key="i"
@@ -113,11 +118,52 @@
       :show="showRecordingsModal"
       @close="showRecordingsModal = false"
     />
+
+    <!-- Clear Waypoints Confirmation Modal -->
+    <Teleport to="body">
+      <div class="modal fade" id="clearWaypointsModal" tabindex="-1" role="dialog">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title">Clear Waypoints</h5>
+              <button type="button" class="btn-close" @click="closeClearWaypointsModal"></button>
+            </div>
+            <div class="modal-body">
+              <p class="mb-0">Are you sure you want to delete all waypoints? This cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary btn-sm border-2" @click="closeClearWaypointsModal">Cancel</button>
+              <button type="button" class="btn btn-danger btn-sm border-2" @click="confirmClearWaypoints">Clear</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Clear Recordings Confirmation Modal -->
+      <div class="modal fade" id="clearRecordingsModal" tabindex="-1" role="dialog">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title">Clear Recordings</h5>
+              <button type="button" class="btn-close" @click="closeClearRecordingsModal"></button>
+            </div>
+            <div class="modal-body">
+              <p class="mb-0">Are you sure you want to delete all recordings? This cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary btn-sm border-2" @click="closeClearRecordingsModal">Cancel</button>
+              <button type="button" class="btn btn-danger btn-sm border-2" @click="confirmClearRecordings">Clear</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
 <script lang="ts" setup>
 import { ref, computed, watch, onMounted } from 'vue'
+import { Modal } from 'bootstrap'
 import WaypointItem from './BasicWaypointItem.vue'
 import RecordingsModal from './RecordingsModal.vue'
 import { useErdStore } from '@/stores/erd'
@@ -137,7 +183,6 @@ defineProps({
 
 const erdStore = useErdStore()
 const { highlightedWaypoint, searchWaypoint, clickPoint } = storeToRefs(erdStore)
-const { setWaypointList, setHighlightedWaypoint, setSearchWaypoint } = erdStore
 
 const websocketStore = useWebsocketStore()
 const { messages } = storeToRefs(websocketStore)
@@ -156,6 +201,9 @@ const isRecordingRover = ref(false)
 const isRecordingDrone = ref(false)
 const currentRecordingId = ref<number | null>(null)
 const showRecordingsModal = ref(false)
+
+const clearWaypointsModal = ref<Modal | null>(null)
+const clearRecordingsModal = ref<Modal | null>(null)
 
 const formatted_odom = computed(() => {
   return {
@@ -178,7 +226,7 @@ watch(navMessage, async msg => {
 
 // Watch waypoints to sync with Backend
 watch(storedWaypoints, async (newList) => {
-  setWaypointList(newList) // Update map
+  erdStore.waypointList = newList // Update map
   
   try {
     const apiWaypoints: APIBasicWaypoint[] = newList.map(wp => ({
@@ -200,9 +248,11 @@ watch(clickPoint, newClickPoint => {
 })
 
 onMounted(() => {
-  setHighlightedWaypoint(-1)
-  setSearchWaypoint(-1)
-  setWaypointList([])
+  erdStore.highlightedWaypoint = -1
+  erdStore.searchWaypoint = -1
+  erdStore.waypointList = []
+  clearWaypointsModal.value = new Modal('#clearWaypointsModal', {})
+  clearRecordingsModal.value = new Modal('#clearRecordingsModal', {})
   setTimeout(() => loadWaypoints(), 250)
 })
 
@@ -230,39 +280,57 @@ const addWaypoint = (coord: { lat: { d: number }, lon: { d: number } }, isDrone:
 }
 
 const deleteItem = (payload: { index: number }) => {
-  if (highlightedWaypoint.value == payload.index) setHighlightedWaypoint(-1)
-  if (searchWaypoint.value == payload.index) setSearchWaypoint(-1)
+  if (highlightedWaypoint.value == payload.index) erdStore.highlightedWaypoint = -1
+  if (searchWaypoint.value == payload.index) erdStore.searchWaypoint = -1
   storedWaypoints.value.splice(payload.index, 1)
 }
 
 const findWaypoint = (payload: { index: number }) => {
-  setHighlightedWaypoint(payload.index === highlightedWaypoint.value ? -1 : payload.index)
+  erdStore.highlightedWaypoint = payload.index === highlightedWaypoint.value ? -1 : payload.index
 }
 
 const searchForWaypoint = (payload: { index: number }) => {
-  setSearchWaypoint(payload.index === searchWaypoint.value ? -1 : payload.index)
+  erdStore.searchWaypoint = payload.index === searchWaypoint.value ? -1 : payload.index
 }
 
 const clearWaypoint = () => {
   storedWaypoints.value = []
 }
 
-const clearAllWaypoints = async () => {
-  if (!confirm('Are you sure you want to delete all waypoints? This cannot be undone.')) return
+const openClearWaypointsModal = () => {
+  clearWaypointsModal.value?.show()
+}
+
+const closeClearWaypointsModal = () => {
+  clearWaypointsModal.value?.hide()
+}
+
+const confirmClearWaypoints = async () => {
   try {
     await waypointsAPI.deleteAll()
     storedWaypoints.value = []
   } catch (error) {
     console.error('Failed to clear waypoints:', error)
+  } finally {
+    closeClearWaypointsModal()
   }
 }
 
-const clearAllRecordings = async () => {
-  if (!confirm('Are you sure you want to delete all recordings? This cannot be undone.')) return
+const openClearRecordingsModal = () => {
+  clearRecordingsModal.value?.show()
+}
+
+const closeClearRecordingsModal = () => {
+  clearRecordingsModal.value?.hide()
+}
+
+const confirmClearRecordings = async () => {
   try {
     await recordingAPI.deleteAll()
   } catch (error) {
     console.error('Failed to clear recordings:', error)
+  } finally {
+    closeClearRecordingsModal()
   }
 }
 
@@ -309,9 +377,9 @@ const stopRecording = async () => {
 </script>
 
 <style scoped>
-.waypoint-wrapper {
-  background-color: var(--view-bg);
-  padding: 8px;
-  border-radius: 8px;
+.input-group-text {
+  font-size: 0.75rem;
+  min-width: 40px;
+  justify-content: center;
 }
 </style>

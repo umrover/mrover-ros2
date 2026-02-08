@@ -1,19 +1,71 @@
 <template>
-  <div class="d-flex flex-column align-items-center p-1">
+  <div class="d-flex flex-column align-items-center p-1" data-testid="pw-funnel-controls">
     <div class="d-flex justify-content-between align-items-center w-100 mb-2">
-      <h4 class="m-0">Funnel Controls</h4>
+      <h4 class="component-header">Funnel Controls</h4>
     </div>
-    <div class="site-grid">
-      <button
-        v-for="(site, i) in sites"
-        :key="i"
-        class="btn btn-outline-control btn-sm"
-        :class="{ active: currentSite === i, 'btn-warning': isLoading && pendingSite === i }"
-        :disabled="isLoading"
-        @click="selectSite(i)"
-      >
-        {{ site }}
-      </button>
+    <div class="site-rows">
+      <div class="site-row justify-content-center">
+        <button
+          class="btn btn-outline-control btn-sm border-2 site-btn"
+          :class="{ active: currentSite === 1, 'btn-warning': isLoading && pendingSite === 1 }"
+          :disabled="isLoading"
+          :data-testid="`pw-funnel-site-1`"
+          @click="selectSite(1)"
+        >
+          Sample
+        </button>
+      </div>
+      <div class="site-row justify-content-between">
+        <button
+          class="btn btn-outline-control btn-sm border-2 site-btn"
+          :class="{ active: currentSite === 0, 'btn-warning': isLoading && pendingSite === 0 }"
+          :disabled="isLoading"
+          :data-testid="`pw-funnel-site-0`"
+          @click="selectSite(0)"
+        >
+          Griess B
+        </button>
+        <button
+          class="btn btn-outline-control btn-sm border-2 site-btn"
+          :class="{ active: currentSite === 2, 'btn-warning': isLoading && pendingSite === 2 }"
+          :disabled="isLoading"
+          :data-testid="`pw-funnel-site-2`"
+          @click="selectSite(2)"
+        >
+          Buret A
+        </button>
+      </div>
+      <div class="site-row justify-content-between">
+        <button
+          class="btn btn-outline-control btn-sm border-2 site-btn"
+          :class="{ active: currentSite === 3, 'btn-warning': isLoading && pendingSite === 3 }"
+          :disabled="isLoading"
+          :data-testid="`pw-funnel-site-3`"
+          @click="selectSite(3)"
+        >
+          Buret B
+        </button>
+        <button
+          class="btn btn-outline-control btn-sm border-2 site-btn"
+          :class="{ active: currentSite === 5, 'btn-warning': isLoading && pendingSite === 5 }"
+          :disabled="isLoading"
+          :data-testid="`pw-funnel-site-5`"
+          @click="selectSite(5)"
+        >
+          Griess A
+        </button>
+      </div>
+      <div class="site-row justify-content-center">
+        <button
+          class="btn btn-outline-control btn-sm border-2 site-btn"
+          :class="{ active: currentSite === 4, 'btn-warning': isLoading && pendingSite === 4 }"
+          :disabled="isLoading"
+          :data-testid="`pw-funnel-site-4`"
+          @click="selectSite(4)"
+        >
+          Trash
+        </button>
+      </div>
     </div>
   </div>
 </template>
@@ -21,15 +73,6 @@
 <script lang="ts" setup>
 import { ref } from 'vue'
 import { scienceAPI } from '@/utils/api'
-
-const sites = [
-  'Griess B',
-  'Sample',
-  'Buret A',
-  'Buret B',
-  'Trash',
-  'Griess A',
-]
 
 const site_to_radians: Record<number, number> = {
   0: 0.0,
@@ -67,13 +110,21 @@ async function selectSite(index: number) {
 </script>
 
 <style scoped>
-.site-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
+.site-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  width: 100%;
 }
 
-.btn {
-  min-width: 100px;
+.site-row {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.site-btn {
+  width: 70px;
+  padding-top: 0.2rem;
+  padding-bottom: 0.2rem;
 }
 </style>
