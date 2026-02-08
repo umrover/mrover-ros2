@@ -167,6 +167,7 @@ namespace mrover {
             RCLCPP_WARN(get_logger(), "Kalman state X is not finite, skipping TF publish");
             return;
         }
+        
         SO3d curr_heading_correction = Eigen::AngleAxisd(X, R3d::UnitZ());
         RCLCPP_INFO_THROTTLE(get_logger(), *get_clock(), 1000, "%s", std::format("Heading corrected by: {} rad", X).c_str());
         SO3d corrected_orientation = curr_heading_correction * uncorrected_orientation_rotm;
