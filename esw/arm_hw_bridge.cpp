@@ -34,24 +34,13 @@ namespace mrover {
     auto static const PITCH_ROLL_TO_0_1 = (Matrix2<Dimensionless>{} << -1, -1, -1, 1).finished();
     Dimensionless static constexpr PITCH_ROLL_TO_01_SCALE{40};
 
-    // How often we send an adjust command to the DE motors
-    // This corrects the HALL-effect motor source on the Moteus based on the absolute encoder readings
-    auto static constexpr DE_OFFSET_TIMER_PERIOD = std::chrono::seconds{5};
-
-
-    // using MetersPerRadian = compound_unit<Meters, inverse<Radians>>;
-    // using RadiansPerMeter = compound_unit<Radians, inverse<Meters>>;
-    float static constexpr GRIPPER_METERS_PER_RADIAN{0.00001727579};
-    float static constexpr GRIPPER_RADIANS_PER_METER{1 / 0.00001727579};
-
     class ArmHWBridge : public rclcpp::Node {
 
         using Controller = std::variant<
-            std::shared_ptr<BrushedController<Meters>>,
-            std::shared_ptr<BrushedController<Radians>>,
-            std::shared_ptr<BrushlessController<Meters>>,
-            std::shared_ptr<BrushlessController<Revolutions>>
-        >;
+                std::shared_ptr<BrushedController<Meters>>,
+                std::shared_ptr<BrushedController<Radians>>,
+                std::shared_ptr<BrushlessController<Meters>>,
+                std::shared_ptr<BrushlessController<Revolutions>>>;
 
     public:
         ArmHWBridge() : rclcpp::Node{"arm_hw_bridge"} {
@@ -114,12 +103,11 @@ namespace mrover {
         std::shared_ptr<BrushedController<Meters>> mPusher;
 
         std::unordered_map<std::string_view, Controller> const mRegistry = {
-            {"joint_a", mJointA},
-            {"joint_b", mJointB},
-            {"joint_c", mJointC},
-            {"gripper", mGripper},
-            {"pusher",  mPusher}
-        };
+                {"joint_a", mJointA},
+                {"joint_b", mJointB},
+                {"joint_c", mJointC},
+                {"gripper", mGripper},
+                {"pusher", mPusher}};
 
         rclcpp::Subscription<msg::Throttle>::SharedPtr mArmThrottleSub;
         rclcpp::Subscription<msg::Velocity>::SharedPtr mArmVelocitySub;
@@ -140,7 +128,7 @@ namespace mrover {
                 return it->second;
             return std::nullopt;
         }
-        
+
         auto processThrottleCmd(msg::Throttle::ConstSharedPtr const& msg) -> void {
             if (msg->names.size() != msg->throttles.size()) {
                 RCLCPP_ERROR(get_logger(), "Name count and value count mismatched!");
