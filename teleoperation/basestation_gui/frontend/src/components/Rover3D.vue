@@ -142,6 +142,3 @@ watch(contextMessage, (msg: unknown) => {
   }
 })
 </script>
-
-<style scoped>
-</style>

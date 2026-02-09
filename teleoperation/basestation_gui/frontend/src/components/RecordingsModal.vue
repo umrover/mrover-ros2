@@ -461,22 +461,22 @@ onBeforeUnmount(() => {
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  background-color: var(--cmd-backdrop);
   z-index: 1050;
+  background-color: var(--cmd-backdrop);
 }
 
 .nav-link-tab {
+  padding: 0.5rem 1rem;
   font-size: 0.75rem;
   font-weight: 600;
+  color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.03em;
-  padding: 0.5rem 1rem;
+  cursor: pointer;
+  background: transparent;
   border: 2px solid transparent;
   border-bottom: none;
   border-radius: var(--cmd-radius-sm) var(--cmd-radius-sm) 0 0;
-  background: transparent;
-  color: var(--text-muted);
-  cursor: pointer;
   transition: all var(--cmd-transition);
 }
 
@@ -488,13 +488,13 @@ onBeforeUnmount(() => {
 }
 
 .recordings-sidebar {
-  width: 280px;
   flex-shrink: 0;
+  width: 280px;
   background-color: var(--view-bg);
 }
 
 .cmd-list-item--selected {
-  border-color: var(--cmd-accent);
   background-color: var(--view-bg);
+  border-color: var(--cmd-accent);
 }
 </style>

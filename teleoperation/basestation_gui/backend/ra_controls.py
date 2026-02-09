@@ -1,4 +1,3 @@
-import asyncio
 from enum import Enum
 import threading
 
@@ -7,6 +6,7 @@ from rclpy.publisher import Publisher
 from backend.input import filter_input, simulated_axis, safe_index, DeviceInputs
 from backend.mappings import ControllerAxis, ControllerButton
 from backend.managers.ros import get_service_client
+from backend.utils.ros_service import call_service_async
 from mrover.msg import Throttle, IK
 from mrover.srv import IkMode
 from geometry_msgs.msg import Twist
@@ -33,34 +33,10 @@ async def set_ra_mode(new_ra_mode: str):
 
 async def call_ik_mode_service(mode: int) -> bool:
     client = get_service_client(IkMode, "/ik_mode")
-
-    try:
-        service_ready = await asyncio.wait_for(
-            asyncio.get_running_loop().run_in_executor(
-                None, lambda: client.wait_for_service(timeout_sec=0.1)
-            ),
-            timeout=1.0
-        )
-        if not service_ready:
-            return False
-    except asyncio.TimeoutError:
-        return False
-
     request = IkMode.Request()
     request.mode = mode
-
-    future = client.call_async(request)
-    try:
-        await asyncio.wait_for(
-            asyncio.get_running_loop().run_in_executor(None, future.result),
-            timeout=5.0
-        )
-        result = future.result()
-        return result.success if result else False
-    except asyncio.TimeoutError:
-        return False
-    except Exception:
-        return False
+    result = await call_service_async(client, request, timeout=5.0)
+    return result.success if result else False
 
 
 IK_MODE_POSITION_CONTROL = 0

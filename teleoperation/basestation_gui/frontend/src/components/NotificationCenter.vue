@@ -156,16 +156,16 @@ export default defineComponent({
 
 <style scoped>
 .notification-btn {
-  min-width: 48px;
-  height: 100%;
-  padding: 0.25rem 0.5rem;
   position: relative;
-  background-color: var(--card-bg);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  min-width: 48px;
+  height: 100%;
+  padding: 0.25rem 0.5rem;
   cursor: pointer;
+  background-color: var(--card-bg);
 }
 
 .notification-btn i {
@@ -182,19 +182,19 @@ export default defineComponent({
   font-size: 0.6875rem;
   font-weight: 600;
   line-height: 18px;
+  color: #fff;
   text-align: center;
-  color: #ffffff;
   background-color: var(--bs-danger);
   border-radius: 50rem;
 }
 
 .notification-panel {
   position: absolute;
-  right: 0;
   top: 100%;
-  margin-top: 0.5rem;
-  width: 500px;
+  right: 0;
   z-index: 1051;
+  width: 500px;
+  margin-top: 0.5rem;
   box-shadow: var(--cmd-shadow-md);
 }
 
@@ -220,9 +220,9 @@ export default defineComponent({
 }
 
 .notification-details {
+  max-height: 300px;
+  font-size: 0.75rem;
   background-color: var(--view-bg);
   border: 2px solid var(--cmd-panel-border);
-  font-size: 0.75rem;
-  max-height: 300px;
 }
 </style>

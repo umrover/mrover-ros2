@@ -113,19 +113,19 @@ function handleStoreUpdate(waypoint: AutonWaypoint, index: number) {
 <style scoped>
 .editor-column {
   display: flex;
-  flex-direction: column;
   flex: 1;
+  flex-direction: column;
   min-width: 0;
 }
 
 .waypoint-wrapper {
-  background-color: var(--view-bg);
   scrollbar-gutter: stable;
+  background-color: var(--view-bg);
 }
 
 .drag-ghost {
-  opacity: 0.4;
   background-color: var(--bs-secondary-bg);
   border-style: dashed !important;
+  opacity: 0.4;
 }
 </style>

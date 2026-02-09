@@ -19,8 +19,8 @@ withDefaults(defineProps<Props>(), {
 
 <style scoped>
 .indicator-dot {
-  border-radius: 50%;
   flex-shrink: 0;
+  border-radius: 50%;
 }
 
 .indicator-dot--active {

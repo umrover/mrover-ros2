@@ -271,8 +271,8 @@ async function stopRecording() {
 
 <style scoped>
 .input-group-text {
-  font-size: 0.75rem;
-  min-width: 40px;
   justify-content: center;
+  min-width: 40px;
+  font-size: 0.75rem;
 }
 </style>

@@ -19,8 +19,8 @@ export default defineComponent({
 <style scoped>
 .terminal-link {
   font-family: var(--cmd-font-mono);
-  color: var(--text-muted);
   font-size: 1rem;
+  color: var(--text-muted);
   transition: color 0.1s ease;
 }
 
@@ -38,10 +38,10 @@ export default defineComponent({
 }
 
 .terminal-link::before {
-  content: '>';
   margin-right: 0.5rem;
-  opacity: 0;
   color: var(--text-primary);
+  content: '>';
+  opacity: 0;
 }
 
 .terminal-link:hover::before {

@@ -166,8 +166,8 @@ watch(navMessage, msg => {
 }
 
 .odom-label {
-  font-size: clamp(0.75rem, 1vw, 1rem);
   min-width: 2.5rem;
+  font-size: clamp(0.75rem, 1vw, 1rem);
 }
 
 .odom-value {
@@ -183,12 +183,12 @@ watch(navMessage, msg => {
 }
 
 .divider-end::after {
-  content: '';
   position: absolute;
-  right: 0;
   top: 15%;
-  height: 70%;
+  right: 0;
   width: 1px;
+  height: 70%;
+  content: '';
   background: var(--cmd-panel-border);
 }
 </style>

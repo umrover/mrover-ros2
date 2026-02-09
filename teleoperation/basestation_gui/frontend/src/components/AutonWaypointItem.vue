@@ -59,26 +59,26 @@ function toggleCostmap() {
 }
 
 .cmd-btn-icon {
-  width: 1.75rem;
-  height: 1.75rem;
-  padding: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  padding: 0;
   font-size: 0.75rem;
 }
 
 .cmd-btn-text {
+  padding: 0.15rem 0.4rem;
   font-size: 0.6875rem;
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.03em;
-  padding: 0.15rem 0.4rem;
 }
 
 .drag-handle {
-  cursor: grab;
   color: var(--text-muted);
+  cursor: grab;
 }
 
 .drag-handle:active {

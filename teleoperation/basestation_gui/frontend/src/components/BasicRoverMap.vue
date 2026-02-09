@@ -206,10 +206,10 @@ watch(searchWaypoint, (newIndex) => {
   position: absolute;
   top: var(--cmd-gap-md);
   right: var(--cmd-gap-md);
+  z-index: 1000;
   display: flex;
   flex-direction: column;
   gap: var(--cmd-gap-sm);
-  z-index: 1000;
 }
 
 .map-btn {

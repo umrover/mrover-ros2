@@ -1,10 +1,10 @@
 <template>
-  <div class="wrapper">
+  <div class="wrapper bg-theme-card border-bottom border-theme">
     <div class="ps-3 pe-2 py-2 d-flex justify-content-between align-items-center position-relative">
-      <a class="logo" href="/"><img src="/mrover.png" alt="MRover" title="MRover" width="200" /></a>
+      <a class="logo position-absolute" href="/"><img src="/mrover.png" alt="MRover" title="MRover" width="200" /></a>
       <div class="d-flex align-items-center gap-3">
-        <h1>{{ title }}</h1>
-        <div v-if="showGridControls" class="d-flex align-items-center gap-1 border border-2 rounded px-2 py-1">
+        <h1 class="text-theme-primary">{{ title }}</h1>
+        <div v-if="showGridControls" class="d-flex align-items-center gap-1 border border-2 border-theme rounded px-2 py-1">
           <button
             class="btn btn-sm cmd-btn-icon-sm border-2"
             :class="gridLayoutStore.locked ? 'btn-danger' : 'btn-success'"
@@ -25,10 +25,10 @@
       </div>
       <div class="d-flex align-items-stretch gap-2">
         <WebsocketStatus />
-        <div class="border-start border-2 align-self-center nav-divider"></div>
+        <div class="border-start border-2 border-start-theme align-self-center nav-divider"></div>
         <div class="dropdown d-flex">
           <button
-            class="theme-btn border border-2 rounded"
+            class="theme-btn d-flex flex-column align-items-center justify-content-center border border-2 border-theme rounded"
             data-testid="pw-theme-dropdown"
             data-bs-toggle="dropdown"
             aria-expanded="false"
@@ -143,13 +143,12 @@ export default defineComponent({
 
 <style scoped>
 .logo {
-  position: absolute;
   left: 48%;
 }
 
 h1 {
-  font-size: clamp(1.25rem, 1rem + 0.5vw, 1.75rem) !important;
   margin: 0 !important;
+  font-size: clamp(1.25rem, 1rem + 0.5vw, 1.75rem) !important;
   line-height: 1 !important;
 }
 
@@ -161,12 +160,8 @@ h1 {
   min-width: 48px;
   height: 100%;
   padding: 0.25rem 0.5rem;
-  background-color: var(--card-bg);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
   cursor: pointer;
+  background-color: var(--card-bg);
 }
 
 .theme-btn i {

@@ -172,8 +172,8 @@ watch(scienceMessage, (msg) => {
 
 .compact-table th,
 .compact-table td {
-  white-space: nowrap;
   width: 1%;
   text-align: center;
+  white-space: nowrap;
 }
 </style>

@@ -44,11 +44,11 @@ defineProps({
 }
 
 .cmd-list-item--drone {
+  background-color: rgb(30 102 245 / 5%);
   border-color: var(--cmd-status-info) !important;
-  background-color: rgba(30, 102, 245, 0.05);
 }
 
 [data-bs-theme='dark'] .cmd-list-item--drone {
-  background-color: rgba(137, 180, 250, 0.1);
+  background-color: rgb(137 180 250 / 10%);
 }
 </style>

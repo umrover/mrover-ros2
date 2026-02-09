@@ -7,8 +7,8 @@ make an autonTyping rosaction
 create instance of rosaction in callback area -->
 
 <template>
-  <div class="auton-typing-container">
-    <div class="d-flex flex-column align-items-center text-center w-100">
+  <div class="row g-4 w-100 p-2 align-items-start mx-0">
+    <div class="col-6 d-flex flex-column align-items-center text-center">
       <h4 class="component-header mb-2">Typing Input</h4>
       <form>
         <div class="form-group">
@@ -47,7 +47,7 @@ create instance of rosaction in callback area -->
       </form>
     </div>
 
-    <div class="d-flex flex-column gap-3">
+    <div class="col-6 d-flex flex-column gap-3">
       <div class="d-flex flex-column align-items-center text-center w-100">
         <h4 class="component-header mb-2">Feedback</h4>
         <table class="feedback-table" data-testid="pw-typing-feedback">
@@ -179,28 +179,19 @@ function getLetterClass(state: string) {
 </script>
 
 <style scoped>
-.auton-typing-container {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--cmd-gap-xl);
-  justify-content: center;
-  align-items: start;
-  width: 100%;
-  padding: var(--cmd-padding-sm);
-}
-
-
 .cmd-input {
+  /* stylelint-disable-next-line declaration-property-value-disallowed-list */
   text-align: center;
   text-transform: uppercase;
   letter-spacing: 0.1em;
 }
 
 .typing-hint {
-  font-size: var(--cmd-font-xs);
-  color: var(--text-muted);
+  /* stylelint-disable-next-line declaration-property-value-disallowed-list */
   display: block;
   margin: var(--cmd-gap-xs) 0 var(--cmd-gap-md);
+  font-size: var(--cmd-font-xs);
+  color: var(--text-muted);
 }
 
 .typing-btn {
@@ -209,35 +200,36 @@ function getLetterClass(state: string) {
 }
 
 .feedback-table {
-  border-collapse: collapse;
   margin-top: var(--cmd-gap-md);
+  border-collapse: collapse;
 }
 
 .feedback-table td {
   width: clamp(30px, 2vw, 44px);
   height: clamp(30px, 2vw, 44px);
-  text-align: center;
   font-size: var(--cmd-font-xl);
   font-weight: 700;
+  /* stylelint-disable-next-line declaration-property-value-disallowed-list */
+  text-align: center;
 }
 
 .grey-cell {
-  background-color: var(--view-bg);
   color: var(--text-muted);
+  background-color: var(--view-bg);
 }
 
 .typed-cell {
+  color: #fff;
   background-color: var(--cmd-status-ok);
-  color: #ffffff;
 }
 
 .in-progress-cell {
+  color: #fff;
   background-color: var(--cmd-status-warn);
-  color: #ffffff;
 }
 
 .not-typed-cell {
+  color: #fff;
   background-color: var(--cmd-status-error);
-  color: #ffffff;
 }
 </style>

@@ -134,12 +134,12 @@ function saveEdit() {
 }
 
 .cmd-btn-icon {
-  width: 1.75rem;
-  height: 1.75rem;
-  padding: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  padding: 0;
   font-size: 0.75rem;
 }
 </style>

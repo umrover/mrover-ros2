@@ -252,28 +252,28 @@ onMounted(() => {
   position: fixed;
   top: 0;
   left: 0;
+  z-index: 1000;
   width: 100%;
   height: 100%;
   background-color: var(--cmd-backdrop);
-  z-index: 1000;
 }
 
 .sensor-modal-content {
+  display: flex;
+  flex-direction: column;
   width: 90%;
   max-width: 1200px;
   height: 90vh;
   overflow: hidden;
-  display: flex;
-  flex-direction: column;
 }
 
 .sensor-modal-header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
   padding-bottom: 0.5rem;
-  border-bottom: 2px solid var(--cmd-panel-border);
   margin-bottom: 0.5rem;
+  border-bottom: 2px solid var(--cmd-panel-border);
 }
 
 .close-btn {
@@ -283,38 +283,38 @@ onMounted(() => {
 
 .sensor-charts-container {
   display: flex;
+  flex: 1;
   flex-direction: column;
   gap: 0.5rem;
-  flex: 1;
   overflow: hidden;
 }
 
 .sensor-chart-panel {
   display: flex;
+  flex: 1;
   flex-direction: row;
   gap: 0.75rem;
-  flex: 1;
   min-height: 0;
+  padding: 0.5rem;
   border: var(--cmd-border-width) solid var(--cmd-panel-border);
   border-radius: var(--cmd-radius-sm);
-  padding: 0.5rem;
 }
 
 .sensor-chart-sidebar {
   display: flex;
+  flex-shrink: 0;
   flex-direction: column;
   align-items: flex-start;
   width: 160px;
-  flex-shrink: 0;
 }
 
 .sensor-chart-title {
+  margin-bottom: 0.5rem;
   font-size: 0.75rem;
   font-weight: 600;
+  color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.03em;
-  color: var(--text-muted);
-  margin-bottom: 0.5rem;
   white-space: nowrap;
 }
 
@@ -327,8 +327,8 @@ onMounted(() => {
 }
 
 .sensor-chart-canvas {
-  flex: 1;
   display: flex;
+  flex: 1;
   min-width: 0;
 }
 </style>

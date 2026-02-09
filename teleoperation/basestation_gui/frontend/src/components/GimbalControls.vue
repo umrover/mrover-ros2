@@ -152,11 +152,11 @@ const adjustGimbal = async (
 
 .axis-label,
 .axis-label-spacer {
+  width: 32px;
   font-size: 0.7rem;
   font-weight: 600;
-  text-transform: uppercase;
   color: var(--text-muted);
-  width: 32px;
+  text-transform: uppercase;
 }
 
 .axis-label-spacer {
@@ -164,12 +164,12 @@ const adjustGimbal = async (
 }
 
 .value-display {
+  padding: 0 0.5rem;
   font-size: 0.8rem;
   font-weight: 600;
   background-color: var(--card-bg);
   border: 2px solid var(--input-border);
   border-radius: var(--cmd-radius-sm);
-  padding: 0 0.5rem;
 }
 
 .btn-row {
@@ -185,10 +185,10 @@ const adjustGimbal = async (
 }
 
 .control-btn:disabled {
+  color: var(--disabled-text);
+  cursor: not-allowed;
   background-color: var(--disabled-bg);
   border-color: var(--disabled-border);
-  color: var(--disabled-text);
   opacity: 1;
-  cursor: not-allowed;
 }
 </style>
