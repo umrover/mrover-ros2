@@ -105,6 +105,7 @@ namespace mrover {
 
         // drop any packets with invalid src/dest registers
         if (src_it == m_devices.right.end() || dest_it == m_devices.right.end()) {
+            RCLCPP_INFO(get_logger(), "could not find one of %x or %x", src_id, dest_id);
             return;
         }
 
@@ -116,7 +117,7 @@ namespace mrover {
         msg.data.assign(m_read_frame.data, m_read_frame.data + m_read_frame.len);
 
         // publish frame
-        m_devices_pub_sub.at(dest_it->second).publisher->publish(msg);
+        m_devices_pub_sub.at(src_it->second).publisher->publish(msg);
     }
 
     auto CanBridge::frame_send_request_callback(msg::CAN::ConstSharedPtr const& msg) -> void {
@@ -136,6 +137,11 @@ namespace mrover {
 
         uint32_t id_bits = (static_cast<uint32_t>(msg->prefix) & ~CAN_NODE_MASK) // no shifts here, 16 LSBs of prefix are 0
                            | ((static_cast<std::uint32_t>(src_it->second) << CAN_SRC_ID_OFFSET) & CAN_SRC_ID_MASK) | ((static_cast<std::uint32_t>(dest_it->second) << CAN_DEST_ID_OFFSET) & CAN_DEST_ID_MASK);
+
+        // put in reply req bit for moteus
+        if (msg->prefix == MOTEUS_PREFIX && msg->mjbots_reply_request) {
+            id_bits |= MOTEUS_REPLY_MASK;
+        }
 
         canfd_frame frame{
                 .can_id = std::bit_cast<canid_t>(RawCanFdId{

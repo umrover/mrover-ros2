@@ -61,10 +61,12 @@ namespace mrover {
 
     template<IsUnit TOutputPosition>
     class BrushlessController final : public ControllerBase<BrushlessController<TOutputPosition>> {
-        using Base = ControllerBase<BrushlessController>;
-
+    public:
         using OutputPosition = TOutputPosition;
         using OutputVelocity = compound_unit<OutputPosition, inverse<Seconds>>;
+
+    private:
+        using Base = ControllerBase<BrushlessController>;
 
         using Base::m_controller_name;
         using Base::m_current;
@@ -231,8 +233,8 @@ namespace mrover {
                         .watchdog_timeout = moteus::kFloat,
                 };
 
-                moteus::CanFdFrame velocityFrame = m_moteus->MakePosition(command, &format);
-                m_device.publish_message(velocityFrame);
+                moteus::CanFdFrame velocity_frame = m_moteus->MakePosition(command, &format);
+                m_device.publish_message(velocity_frame);
             }
 
 #ifdef DEBUG_BUILD
@@ -350,7 +352,7 @@ namespace mrover {
 
         auto send_query() -> void {
             moteus::CanFdFrame queryFrame = m_moteus->MakeQuery();
-            m_device.publish_message(queryFrame);
+            m_device.publish_message(queryFrame, true);
         }
 
     private:

@@ -71,14 +71,15 @@ namespace mrover {
               m_dest_device{std::move(dest_device)}, m_callback{std::move(callback)} {
 
             m_can_publisher = m_node->create_publisher<msg::CAN>(std::format("can/{}/out", m_dest_device), 10);
-            m_can_subscriber = m_node->create_subscription<msg::CAN>(std::format("can/{}/in", m_src_device), 10,
+            m_can_subscriber = m_node->create_subscription<msg::CAN>(std::format("can/{}/in", m_dest_device), 10,
                                                                      [this](msg::CAN::ConstSharedPtr const& msg) -> void { handle_incoming_ros(msg); });
         }
 
-        void publish_message(can_msg_t const& msg) {
+        void publish_message(can_msg_t const& msg, bool const& mjbots_reply_request = false) {
             msg::CAN ros_msg;
             ros_msg.source = m_src_device;
             ros_msg.destination = m_dest_device;
+            ros_msg.mjbots_reply_request = mjbots_reply_request;
 
             std::visit([&](auto const& val) {
                 using T = std::decay_t<decltype(val)>;
