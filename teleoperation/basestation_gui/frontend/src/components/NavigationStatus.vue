@@ -66,16 +66,16 @@ watch(navMessage, (msg: unknown) => {
   border-color: var(--bs-success);
 }
 
-.status-panel--ok .status-dot { background-color: #fff; }
-.status-panel--ok .status-label { color: #fff; }
+.status-panel--ok .status-dot { background-color: #ffffff; }
+.status-panel--ok .status-label { color: #ffffff; }
 
 .status-panel--error {
   background-color: var(--bs-danger);
   border-color: var(--bs-danger);
 }
 
-.status-panel--error .status-dot { background-color: #fff; }
-.status-panel--error .status-label { color: #fff; }
+.status-panel--error .status-dot { background-color: #ffffff; }
+.status-panel--error .status-label { color: #ffffff; }
 
 .nav-state-panel {
   min-height: clamp(70px, 5vw, 100px);
@@ -94,7 +94,7 @@ watch(navMessage, (msg: unknown) => {
 }
 
 .nav-state--error .cmd-data-label { color: rgba(255, 255, 255, 0.8); }
-.nav-state--error .nav-state-value { color: #fff; }
+.nav-state--error .nav-state-value { color: #ffffff; }
 
 .nav-state--ok {
   background-color: var(--bs-success);
@@ -102,7 +102,7 @@ watch(navMessage, (msg: unknown) => {
 }
 
 .nav-state--ok .cmd-data-label { color: rgba(255, 255, 255, 0.8); }
-.nav-state--ok .nav-state-value { color: #fff; }
+.nav-state--ok .nav-state-value { color: #ffffff; }
 
 .nav-state--info {
   background-color: var(--bs-primary);
@@ -110,7 +110,7 @@ watch(navMessage, (msg: unknown) => {
 }
 
 .nav-state--info .cmd-data-label { color: rgba(255, 255, 255, 0.8); }
-.nav-state--info .nav-state-value { color: #fff; }
+.nav-state--info .nav-state-value { color: #ffffff; }
 
 .nav-state--blink .nav-state-value {
   animation: blink-text 1s infinite;

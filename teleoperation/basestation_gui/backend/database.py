@@ -1,5 +1,8 @@
+import logging
 import sqlite3
 import os
+
+logger = logging.getLogger(__name__)
 
 BASE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), '../..')
 
@@ -82,9 +85,9 @@ def init_waypoints_db():
 
         conn.commit()
         conn.close()
-        print(f"Waypoints database initialized: {WAYPOINTS_DB}")
+        logger.info(f"Waypoints database initialized: {WAYPOINTS_DB}")
     except Exception as e:
-        print(f"Error initializing waypoints database: {e}")
+        logger.error(f"Error initializing waypoints database: {e}")
         raise
 
 def init_recordings_db():
@@ -120,9 +123,9 @@ def init_recordings_db():
 
         conn.commit()
         conn.close()
-        print(f"Recordings database initialized: {RECORDINGS_DB}")
+        logger.info(f"Recordings database initialized: {RECORDINGS_DB}")
     except Exception as e:
-        print(f"Error initializing recordings database: {e}")
+        logger.error(f"Error initializing recordings database: {e}")
         raise
 
 def get_waypoints_db():
@@ -139,6 +142,11 @@ def get_recordings_db():
 def get_db_connection():
     return get_waypoints_db()
 
-# Initialize on module load
-init_waypoints_db()
-init_recordings_db()
+_initialized = False
+
+def ensure_initialized():
+    global _initialized
+    if not _initialized:
+        init_waypoints_db()
+        init_recordings_db()
+        _initialized = True

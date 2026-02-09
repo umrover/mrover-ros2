@@ -128,7 +128,7 @@
                     />
                     <l-polyline
                       :lat-lngs="pathLatLngs"
-                      :color="'#2563eb'"
+                      :color="'var(--cmd-accent)'"
                       :weight="4"
                       :opacity="0.8"
                     />
@@ -235,7 +235,7 @@ const isLoadingRecordings = ref(false)
 const isLoadingWaypoints = ref(false)
 let playbackInterval: number | null = null
 const startIcon = L.divIcon({
-  html: '<div style="background-color: #10b981; width: 12px; height: 12px; border-radius: 50%; border: 2px solid white;"></div>',
+  html: '<div style="background-color: var(--cmd-status-ok); width: 12px; height: 12px; border-radius: 50%; border: 2px solid white;"></div>',
   className: 'custom-div-icon',
   iconSize: [12, 12],
   iconAnchor: [6, 6],
@@ -243,7 +243,7 @@ const startIcon = L.divIcon({
 }) as L.Icon
 
 const endIcon = L.divIcon({
-  html: '<div style="background-color: #ef4444; width: 12px; height: 12px; border-radius: 50%; border: 2px solid white;"></div>',
+  html: '<div style="background-color: var(--cmd-status-error); width: 12px; height: 12px; border-radius: 50%; border: 2px solid white;"></div>',
   className: 'custom-div-icon',
   iconSize: [12, 12],
   iconAnchor: [6, 6],
@@ -251,7 +251,7 @@ const endIcon = L.divIcon({
 }) as L.Icon
 
 const currentIcon = L.divIcon({
-  html: '<div style="background-color: #f59e0b; width: 16px; height: 16px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>',
+  html: '<div style="background-color: var(--cmd-status-warn); width: 16px; height: 16px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>',
   className: 'custom-div-icon',
   iconSize: [16, 16],
   iconAnchor: [8, 8],
@@ -461,7 +461,7 @@ onBeforeUnmount(() => {
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: var(--cmd-backdrop);
   z-index: 1050;
 }
 
@@ -495,6 +495,6 @@ onBeforeUnmount(() => {
 
 .cmd-list-item--selected {
   border-color: var(--cmd-accent);
-  background-color: rgba(14, 116, 144, 0.1);
+  background-color: var(--view-bg);
 }
 </style>

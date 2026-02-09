@@ -81,6 +81,7 @@ $control-primary-active: #1e293b;
   --bs-body-bg: #ffffff;
   --bs-body-color: #000000;
   --bs-border-color: #000000;
+  --cmd-backdrop: rgba(0, 0, 0, 0.8);
   .btn-control {
     --bs-btn-color: #ffffff;
     --bs-btn-bg: #000000;
@@ -127,6 +128,7 @@ $control-primary-active: #1e293b;
   --bs-body-bg: #000000;
   --bs-body-color: #ffffff;
   --bs-border-color: #ffffff;
+  --cmd-backdrop: rgba(0, 0, 0, 0.9);
   .btn-control {
     --bs-btn-color: #000000;
     --bs-btn-bg: #ffffff;
@@ -219,11 +221,13 @@ $control-primary-active: #1e293b;
   --cmd-status-info: #1e66f5;
   --cmd-accent: #1e66f5;
   --cmd-panel-border: rgba(0, 0, 0, 0.1);
+  --cmd-backdrop: rgba(0, 0, 0, 0.5);
 }
 [data-bs-theme='dark'] {
   --cmd-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
   --cmd-shadow-md: 0 2px 4px rgba(0, 0, 0, 0.3);
   --cmd-panel-border: rgba(255, 255, 255, 0.1);
+  --cmd-backdrop: rgba(0, 0, 0, 0.7);
   --cmd-status-ok: #a6e3a1;
   --cmd-status-warn: #f9e2af;
   --cmd-status-error: #f38ba8;

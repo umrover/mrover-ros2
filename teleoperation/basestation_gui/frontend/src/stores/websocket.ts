@@ -66,7 +66,8 @@ function setupWebsocket(id: string, store: WebsocketStoreActions) {
     return
   }
 
-  const socket = new WebSocket(`ws://localhost:8000/${id}`)
+  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+  const socket = new WebSocket(`${protocol}//${window.location.host}/ws/${id}`)
   socket.binaryType = 'arraybuffer'
 
   socket.onopen = () => {
@@ -144,7 +145,7 @@ export const useWebsocketStore = defineStore('websocket', () => {
   }
 
   function setConnectionStatus(id: string, status: string) {
-    connectionStatus.value[id] = status
+    connectionStatus.value = { ...connectionStatus.value, [id]: status }
   }
 
   function setFlashIn(id: string, value: boolean) {
@@ -215,11 +216,11 @@ export const useWebsocketStore = defineStore('websocket', () => {
   function sendMessage(id: string, message: unknown) {
     const socket = webSockets[id]
     if (!socket) {
-      console.log('websocket selection failed with id', id)
+      console.error('WebSocket not found for id:', id)
       return
     }
-    if (socket.readyState === socket.CLOSED) {
-      console.log('websocket ' + id + ' not ready')
+    if (socket.readyState !== WebSocket.OPEN) {
+      console.error(`WebSocket ${id} not ready (state: ${socket.readyState})`)
       return
     }
     const packed = encode(message)

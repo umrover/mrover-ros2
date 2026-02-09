@@ -183,7 +183,7 @@ export default defineComponent({
   font-weight: 600;
   line-height: 18px;
   text-align: center;
-  color: #fff;
+  color: #ffffff;
   background-color: var(--bs-danger);
   border-radius: 50rem;
 }

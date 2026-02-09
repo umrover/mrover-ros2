@@ -1,10 +1,12 @@
 import type {
   AutonWaypoint,
-  BasicWaypoint,
+  BasicWaypointRecord,
   WaypointsResponse,
   BasicWaypointsResponse,
   CurrentCourseResponse,
-  DeleteWaypointResponse
+  DeleteWaypointResponse,
+  CreateWaypointResponse,
+  CreateBasicWaypointResponse
 } from './apiTypes'
 import { apiFetch } from './apiFetch'
 
@@ -13,10 +15,23 @@ export const waypointsAPI = {
     return apiFetch('/waypoints/basic/')
   },
 
-  saveBasic(waypoints: BasicWaypoint[]): Promise<BasicWaypointsResponse> {
-    return apiFetch('/waypoints/basic/save/', {
+  createBasic(waypoint: Omit<BasicWaypointRecord, 'db_id'>): Promise<CreateBasicWaypointResponse> {
+    return apiFetch('/waypoints/basic/', {
       method: 'POST',
-      body: JSON.stringify({ waypoints })
+      body: JSON.stringify(waypoint)
+    })
+  },
+
+  updateBasic(id: number, fields: Partial<BasicWaypointRecord>): Promise<CreateBasicWaypointResponse> {
+    return apiFetch(`/waypoints/basic/${id}/`, {
+      method: 'PATCH',
+      body: JSON.stringify(fields)
+    })
+  },
+
+  deleteBasicWaypoint(id: number): Promise<DeleteWaypointResponse> {
+    return apiFetch(`/waypoints/basic/${id}/`, {
+      method: 'DELETE'
     })
   },
 
@@ -24,10 +39,17 @@ export const waypointsAPI = {
     return apiFetch('/waypoints/auton/')
   },
 
-  saveAuton(waypoints: AutonWaypoint[]): Promise<WaypointsResponse> {
-    return apiFetch('/waypoints/auton/save/', {
+  createAuton(waypoint: Omit<AutonWaypoint, 'db_id' | 'deletable'>): Promise<CreateWaypointResponse> {
+    return apiFetch('/waypoints/auton/', {
       method: 'POST',
-      body: JSON.stringify({ waypoints })
+      body: JSON.stringify(waypoint)
+    })
+  },
+
+  updateAuton(id: number, fields: Partial<AutonWaypoint>): Promise<CreateWaypointResponse> {
+    return apiFetch(`/waypoints/auton/${id}/`, {
+      method: 'PATCH',
+      body: JSON.stringify(fields)
     })
   },
 

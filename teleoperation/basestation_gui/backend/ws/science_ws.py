@@ -1,4 +1,5 @@
 from backend.ws.base_ws import WebSocketHandler
+from backend.managers.ros import get_logger
 from backend.input import DeviceInputs
 from backend.sp_controls import send_sp_controls
 from mrover.msg import Throttle, ControllerState, Humidity, Temperature, Oxygen, UV, Ozone, CO2, Pressure
@@ -29,4 +30,4 @@ class ScienceHandler(WebSocketHandler):
             device_input = DeviceInputs(axes, buttons)
             send_sp_controls(device_input, self.sp_thr_pub)
         else:
-            print(f"Unhandled SCIENCE message: {msg_type}")
+            get_logger().warning(f"Unhandled SCIENCE message: {msg_type}")

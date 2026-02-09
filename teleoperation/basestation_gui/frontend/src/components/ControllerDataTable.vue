@@ -107,8 +107,9 @@ function combineLeftRight() {
   const right = rightState.value
   if (!left && !right) return
 
-  const l = left || { names: [], states: [], errors: [], limits_hit: [], positions: [], velocities: [], currents: [] }
-  const r = right || { names: [], states: [], errors: [], limits_hit: [], positions: [], velocities: [], currents: [] }
+  const empty = { names: [], states: [], errors: [], limits_hit: [], positions: [], velocities: [], currents: [] }
+  const l = left ? { ...empty, ...left } : empty
+  const r = right ? { ...empty, ...right } : empty
 
   names.value = l.names.concat(r.names)
   states.value = l.states.concat(r.states)

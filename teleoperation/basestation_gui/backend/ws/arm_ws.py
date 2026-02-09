@@ -1,4 +1,5 @@
 from backend.ws.base_ws import WebSocketHandler
+from backend.managers.ros import get_logger
 from backend.input import DeviceInputs
 from backend.ra_controls import send_ra_controls
 from mrover.msg import Throttle, IK, ControllerState
@@ -36,4 +37,4 @@ class ArmHandler(WebSocketHandler):
                 self.ik_vel_pub,
             )
         else:
-            print(f"Unhandled ARM message: {msg_type}")
+            get_logger().warning(f"Unhandled ARM message: {msg_type}")

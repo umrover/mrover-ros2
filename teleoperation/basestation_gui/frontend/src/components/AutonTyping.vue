@@ -228,16 +228,16 @@ function getLetterClass(state: string) {
 
 .typed-cell {
   background-color: var(--cmd-status-ok);
-  color: white;
+  color: #ffffff;
 }
 
 .in-progress-cell {
-  background-color: #f59e0b;
-  color: white;
+  background-color: var(--cmd-status-warn);
+  color: #ffffff;
 }
 
 .not-typed-cell {
   background-color: var(--cmd-status-error);
-  color: white;
+  color: #ffffff;
 }
 </style>

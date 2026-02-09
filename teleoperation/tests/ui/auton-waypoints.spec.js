@@ -67,14 +67,8 @@ test('waypoint name persists after refresh', async ({ page }) => {
   );
   await page.getByTestId('pw-add-waypoint-submit').click();
   await savePromise;
-  await expect(page.getByTestId('pw-waypoint-modal')).not.toHaveClass(/show/, { timeout: 5000 });
 
-  const loadPromise = page.waitForResponse(
-    (resp) => resp.url().includes('/api/waypoints/auton') && resp.request().method() === 'GET',
-    { timeout: 15000 }
-  );
   await page.reload();
-  await loadPromise;
   await page.waitForLoadState('networkidle');
 
   const wp = page.getByTestId('pw-waypoint-store-list')

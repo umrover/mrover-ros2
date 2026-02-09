@@ -22,13 +22,13 @@ def get_ra_mode() -> str:
 
 async def set_ra_mode(new_ra_mode: str):
     global ra_mode
-    with ra_mode_lock:
-        ra_mode = new_ra_mode
-
     if new_ra_mode == "ik-pos":
         await call_ik_mode_service(IK_MODE_POSITION_CONTROL)
     elif new_ra_mode == "ik-vel":
         await call_ik_mode_service(IK_MODE_VELOCITY_CONTROL)
+
+    with ra_mode_lock:
+        ra_mode = new_ra_mode
 
 
 async def call_ik_mode_service(mode: int) -> bool:

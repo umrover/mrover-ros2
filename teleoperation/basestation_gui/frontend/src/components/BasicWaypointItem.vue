@@ -6,11 +6,11 @@
     </div>
 
     <div class="d-flex align-items-baseline gap-1 mb-2">
-      <span class="cmd-data-value waypoint-coord">{{ waypoint.latLng.lat.toFixed(5) }}</span>
-      <span class="cmd-data-unit">ºN</span>
+      <span class="cmd-data-value waypoint-coord">{{ waypoint.lat.toFixed(5) }}</span>
+      <span class="cmd-data-unit">N</span>
       <span class="text-muted mx-1">|</span>
-      <span class="cmd-data-value waypoint-coord">{{ waypoint.latLng.lng.toFixed(5) }}</span>
-      <span class="cmd-data-unit">ºW</span>
+      <span class="cmd-data-value waypoint-coord">{{ waypoint.lon.toFixed(5) }}</span>
+      <span class="cmd-data-unit">W</span>
     </div>
 
     <div class="d-flex gap-1">

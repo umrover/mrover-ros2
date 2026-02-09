@@ -13,73 +13,33 @@
       <div class="d-flex gap-1">
         <button
           class="btn btn-sm border-2 cmd-btn-text"
-          :class="enable_costmap ? 'btn-success' : 'btn-danger'"
+          :class="waypoint.enable_costmap ? 'btn-success' : 'btn-danger'"
           data-testid="pw-route-costmap-toggle"
           @click="toggleCostmap"
         >Costmap</button>
-        <button class="btn btn-sm btn-danger border-2 cmd-btn-icon" @click="deleteWaypoint"><i class="bi bi-trash-fill"></i></button>
+        <button class="btn btn-sm btn-danger border-2 cmd-btn-icon" @click="$emit('delete', { waypoint })"><i class="bi bi-trash-fill"></i></button>
       </div>
     </div>
   </div>
 </template>
 
-<script lang="ts">
-import { useAutonomyStore } from '@/stores/autonomy'
+<script lang="ts" setup>
+import type { AutonWaypoint } from '@/types/waypoints'
 
-export default {
-  setup() {
-    const autonomyStore = useAutonomyStore()
-    return { autonomyStore }
-  },
+const props = defineProps<{
+  waypoint: AutonWaypoint
+}>()
 
-  props: {
-    waypoint: {
-      type: Object,
-      required: true,
-    },
-  },
+const emit = defineEmits<{
+  delete: [payload: { waypoint: AutonWaypoint }]
+  toggleCostmap: [payload: { waypoint: AutonWaypoint; enable_costmap: boolean }]
+}>()
 
-  data() {
-    return {
-      enable_costmap: true,
-    }
-  },
-
-  methods: {
-    toggleCostmap() {
-      this.enable_costmap = !this.enable_costmap
-      this.$emit('toggleCostmap', {
-        waypoint: this.waypoint,
-        enable_costmap: this.enable_costmap,
-      })
-    },
-
-    deleteWaypoint() {
-      this.$emit('delete', { waypoint: this.waypoint })
-    },
-  },
-
-  watch: {
-    'waypoint.enable_costmap': {
-      immediate: true,
-      handler(newVal) {
-        this.enable_costmap = newVal
-      },
-    },
-  },
-
-  computed: {
-    highlightedWaypoint() {
-      return this.autonomyStore.highlightedWaypoint
-    },
-
-    output: function () {
-      return {
-        lat: this.waypoint.lat,
-        lon: this.waypoint.lon,
-      }
-    },
-  },
+function toggleCostmap() {
+  emit('toggleCostmap', {
+    waypoint: props.waypoint,
+    enable_costmap: !props.waypoint.enable_costmap,
+  })
 }
 </script>
 

@@ -22,7 +22,7 @@
         :icon="basestationIcon"
       />
       <l-marker
-        v-for="(waypoint, index) in waypointList"
+        v-for="(waypoint, index) in waypointListForMap"
         :key="index"
         :lat-lng="waypoint.latLng"
         :icon="waypointIcon"
@@ -76,7 +76,7 @@ import { useRoverMap } from '@/composables/useRoverMap'
 import type { NavMessage } from '@/types/coordinates'
 
 const autonomyStore = useAutonomyStore()
-const { route, waypointList } = storeToRefs(autonomyStore)
+const { routeForMap, waypointListForMap } = storeToRefs(autonomyStore)
 
 const {
   center,
@@ -118,7 +118,7 @@ const basestationLatLng = computed(() => {
 
 const polylinePath = computed(() => {
   return [odomLatLng.value].concat(
-    route.value.map((waypoint) => waypoint.latLng),
+    routeForMap.value.map((waypoint) => waypoint.latLng),
   )
 })
 

@@ -24,6 +24,6 @@ withDefaults(defineProps<Props>(), {
 }
 
 .indicator-dot--active {
-  background-color: #40a02b;
+  background-color: var(--cmd-status-ok);
 }
 </style>

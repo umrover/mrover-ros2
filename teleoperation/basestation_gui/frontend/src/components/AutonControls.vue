@@ -68,9 +68,9 @@ const pathRelaxationEnabled = computed(() => autonomyStore.pathRelaxationEnabled
 const pathInterpolationEnabled = computed(() => autonomyStore.pathInterpolationEnabled)
   
 const autonAction = (newState: boolean) => {
-  const route = autonomyStore.route
+  const routeMap = autonomyStore.routeForMap
   const waypoints = newState
-    ? route.map((waypoint) => ({
+    ? routeMap.map((waypoint) => ({
         latitude_degrees: waypoint.latLng.lat,
         longitude_degrees: waypoint.latLng.lng,
         tag_id: waypoint.tag_id,

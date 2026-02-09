@@ -20,7 +20,6 @@
       <div class="island p-2 rounded h-100">
         <AutonControls
           @toggleTeleop="teleopEnabledCheck = $event"
-          @toggleCostmap="allCostmapToggle = $event"
         />
       </div>
     </template>
@@ -39,7 +38,7 @@
 
     <template #waypoints>
       <div class="island p-2 rounded h-100 overflow-y-auto">
-        <AutonWaypointEditor :allCostmapToggle="allCostmapToggle" />
+        <AutonWaypointEditor />
       </div>
     </template>
 
@@ -89,5 +88,4 @@ const autonomyStore = useAutonomyStore()
 const { autonEnabled } = storeToRefs(autonomyStore)
 
 const teleopEnabledCheck = ref(false)
-const allCostmapToggle = ref(true)
 </script>

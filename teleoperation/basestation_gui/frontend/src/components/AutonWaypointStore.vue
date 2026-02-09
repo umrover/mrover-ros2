@@ -10,12 +10,12 @@
     <div class="d-flex justify-content-between align-items-center">
       <small class="text-muted">{{ waypoint.lat.toFixed(6) }}N, {{ waypoint.lon.toFixed(6) }}W</small>
       <div class="d-flex gap-1">
-        <button class="btn btn-success btn-sm border-2 cmd-btn-icon" @click="$emit('add', waypoint)"><i class="bi bi-plus-lg"></i></button>
+        <button class="btn btn-success btn-sm border-2 cmd-btn-icon" @click="emit('add', waypoint)"><i class="bi bi-plus-lg"></i></button>
         <button class="btn btn-warning btn-sm border-2 cmd-btn-icon" @click="openEditModal"><i class="bi bi-pencil-fill"></i></button>
         <button
           class="btn btn-danger btn-sm border-2 cmd-btn-icon"
           :disabled="waypoint.deletable === false"
-          @click="$emit('delete', index)"
+          @click="emit('delete', index)"
         ><i class="bi bi-trash-fill"></i></button>
       </div>
     </div>
@@ -65,65 +65,57 @@
   </div>
 </template>
 
-<script lang="ts">
-import { defineComponent } from 'vue'
-import type { PropType } from 'vue'
+<script lang="ts" setup>
+import { ref } from 'vue'
 import type { AutonWaypoint } from '@/types/waypoints'
 import { Modal } from 'bootstrap'
 
-export default defineComponent({
-  name: 'WaypointStore',
-  props: {
-    waypoint: {
-      type: Object as PropType<AutonWaypoint>,
-      required: true,
-    },
-    index: {
-      type: Number,
-      required: true,
-    },
-  },
-  emits: ['add', 'delete', 'update'],
-  data() {
-    return {
-      editModal: null as Modal | null,
-      editData: {
-        name: '',
-        lat: 0,
-        lon: 0,
-        coverage_radius: 0,
-      },
-    }
-  },
-  methods: {
-    openEditModal() {
-      this.editData = {
-        name: this.waypoint.name,
-        lat: this.waypoint.lat,
-        lon: this.waypoint.lon,
-        coverage_radius: this.waypoint.coverage_radius,
-      }
-      if (!this.editModal) {
-        this.editModal = new Modal(`#editModal-${this.index}`, {})
-      }
-      this.editModal.show()
-    },
-    closeEditModal() {
-      this.editModal?.hide()
-    },
-    saveEdit() {
-      const updatedWaypoint = {
-        ...this.waypoint,
-        name: this.editData.name,
-        lat: this.editData.lat,
-        lon: this.editData.lon,
-        coverage_radius: this.editData.coverage_radius,
-      }
-      this.$emit('update', updatedWaypoint, this.index)
-      this.closeEditModal()
-    },
-  },
+const props = defineProps<{
+  waypoint: AutonWaypoint
+  index: number
+}>()
+
+const emit = defineEmits<{
+  add: [waypoint: AutonWaypoint]
+  delete: [index: number]
+  update: [waypoint: AutonWaypoint, index: number]
+}>()
+
+const editModal = ref<Modal | null>(null)
+const editData = ref({
+  name: '',
+  lat: 0,
+  lon: 0,
+  coverage_radius: 0,
 })
+
+function openEditModal() {
+  editData.value = {
+    name: props.waypoint.name,
+    lat: props.waypoint.lat,
+    lon: props.waypoint.lon,
+    coverage_radius: props.waypoint.coverage_radius,
+  }
+  if (!editModal.value) {
+    editModal.value = new Modal(`#editModal-${props.index}`, {})
+  }
+  editModal.value.show()
+}
+
+function closeEditModal() {
+  editModal.value?.hide()
+}
+
+function saveEdit() {
+  emit('update', {
+    ...props.waypoint,
+    name: editData.value.name,
+    lat: editData.value.lat,
+    lon: editData.value.lon,
+    coverage_radius: editData.value.coverage_radius,
+  }, props.index)
+  closeEditModal()
+}
 </script>
 
 <style scoped>

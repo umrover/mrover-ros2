@@ -19,7 +19,7 @@
       <l-marker ref="roverRef" :lat-lng="odomLatLng" :icon="locationIcon" />
       <l-marker ref="droneRef" :lat-lng="droneLatLng" :icon="droneIcon" />
 
-      <div v-for="(waypoint, index) in waypointList" :key="index">
+      <div v-for="(waypoint, index) in waypointListForMap" :key="index">
         <l-marker
           :lat-lng="waypoint.latLng"
           :icon="getWaypointIcon(waypoint, index)"
@@ -64,13 +64,13 @@ import 'leaflet/dist/leaflet.css'
 import L from 'leaflet'
 import 'leaflet-rotatedmarker'
 import type { LeafletMouseEvent } from 'leaflet'
-import type { StoreWaypoint } from '@/types/waypoints'
+import type { MapWaypoint } from '@/types/waypoints'
 import type { NavMessage } from '@/types/coordinates'
 import { ref, shallowRef, triggerRef, computed, watch } from 'vue'
 import { useRoverMap } from '@/composables/useRoverMap'
 
 const erdStore = useErdStore()
-const { waypointList, highlightedWaypoint, searchWaypoint } = storeToRefs(erdStore)
+const { waypointListForMap, highlightedWaypoint, searchWaypoint } = storeToRefs(erdStore)
 
 const {
   center,
@@ -140,7 +140,7 @@ const getClickedLatLon = (e: LeafletMouseEvent) => {
   }
 }
 
-const getWaypointIcon = (waypoint: StoreWaypoint, index: number) => {
+const getWaypointIcon = (waypoint: MapWaypoint, index: number) => {
   if (index === highlightedWaypoint.value) {
     return highlightedWaypointIcon
   } else if (waypoint.drone) {
@@ -181,7 +181,7 @@ watch(searchWaypoint, (newIndex) => {
     circle.value = null
     return
   }
-  const waypoint = waypointList.value[newIndex]
+  const waypoint = waypointListForMap.value[newIndex]
   if (!waypoint) return
 
   if (!circle.value) {

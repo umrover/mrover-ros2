@@ -1,5 +1,6 @@
 import asyncio
 from backend.ws.base_ws import WebSocketHandler
+from backend.managers.ros import get_logger
 from rclpy.action import ActionClient
 from mrover.action import TypingCode
 
@@ -22,7 +23,7 @@ class AutonHandler(WebSocketHandler):
             else:
                 await self.send_typing_code(code)
         else:
-            print(f"Unhandled AUTON message: {msg_type}")
+            get_logger().warning(f"Unhandled AUTON message: {msg_type}")
 
     async def send_typing_code(self, code: str):
         server_ready = await asyncio.to_thread(
@@ -69,4 +70,6 @@ class AutonHandler(WebSocketHandler):
                 await asyncio.to_thread(self.current_goal_handle.cancel_goal_async)
             except Exception:
                 pass
+        if hasattr(self, 'action_client'):
+            self.action_client.destroy()
         await super().cleanup()
