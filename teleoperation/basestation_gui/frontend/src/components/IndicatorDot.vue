@@ -1,7 +1,7 @@
 <template>
   <div
-    class="indicator-dot"
-    :class="isActive ? 'indicator-dot--active' : 'bg-danger'"
+    class="shrink-0 rounded-full"
+    :class="isActive ? 'bg-cmd-success' : 'bg-cmd-danger'"
     :style="{ width: `${size}px`, height: `${size}px` }"
   ></div>
 </template>
@@ -17,13 +17,3 @@ withDefaults(defineProps<Props>(), {
 })
 </script>
 
-<style scoped>
-.indicator-dot {
-  flex-shrink: 0;
-  border-radius: 50%;
-}
-
-.indicator-dot--active {
-  background-color: var(--cmd-status-ok);
-}
-</style>

@@ -1,17 +1,17 @@
 <template>
   <Teleport to="body">
     <div
-      class="modal-backdrop d-flex justify-content-center align-items-center"
+      class="modal-backdrop flex justify-center items-center"
       @click.self="$emit('close')"
     >
       <div class="sensor-modal-content cmd-panel">
       <div class="sensor-modal-header">
         <h4 class="component-header">All Sensor Charts</h4>
-        <div class="d-flex gap-2">
-          <button class="btn btn-sm border-2 border-secondary" @click="$emit('reset')">
+        <div class="flex gap-2">
+          <button class="cmd-btn cmd-btn-sm cmd-btn-outline-secondary" @click="$emit('reset')">
             <i class="bi bi-arrow-counterclockwise"></i> Reset
           </button>
-          <button class="btn btn-sm border-2 border-secondary close-btn" @click="$emit('close')">
+          <button class="cmd-btn cmd-btn-sm cmd-btn-outline-secondary close-btn" @click="$emit('close')">
             <i class="bi bi-x-lg"></i>
           </button>
         </div>
@@ -25,11 +25,11 @@
         >
           <div class="sensor-chart-sidebar">
             <h5 class="sensor-chart-title">{{ config.title }}</h5>
-            <div class="d-flex flex-column gap-1">
-              <button class="btn btn-sm border-2 border-secondary" @click="downloadPNG(index)">
+            <div class="flex flex-col gap-1">
+              <button class="cmd-btn cmd-btn-sm cmd-btn-outline-secondary" @click="downloadPNG(index)">
                 <i class="bi bi-download"></i> PNG
               </button>
-              <button class="btn btn-sm border-2 border-secondary" @click="downloadCSV(index)">
+              <button class="cmd-btn cmd-btn-sm cmd-btn-outline-secondary" @click="downloadCSV(index)">
                 <i class="bi bi-download"></i> CSV
               </button>
             </div>
@@ -318,11 +318,11 @@ onMounted(() => {
   white-space: nowrap;
 }
 
-.sensor-chart-sidebar .btn {
+.sensor-chart-sidebar .cmd-btn {
   font-size: 0.6875rem;
 }
 
-.sensor-modal-content .btn:hover {
+.sensor-modal-content .cmd-btn:hover {
   background-color: var(--table-header-bg);
 }
 

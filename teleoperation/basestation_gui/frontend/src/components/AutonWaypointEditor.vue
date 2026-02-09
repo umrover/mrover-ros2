@@ -1,23 +1,23 @@
 <template>
-  <div class="wrapper d-flex m-0 p-0 h-100 w-100 gap-2">
+  <div class="wrapper flex m-0 p-0 h-full w-full gap-2">
     <div class="editor-column">
-      <div class="waypoint-header p-2 mb-2 d-flex justify-content-between align-items-center border-bottom border-2">
-        <h4 class="component-header m-0 p-0">Waypoint Store</h4>
-        <div class="d-flex gap-2 align-items-center">
+      <div class="waypoint-header p-2 mb-2 flex justify-between items-center border-b">
+        <h4 class="component-header">Waypoint Store</h4>
+        <div class="flex gap-2 items-center">
           <button
-            class="btn btn-danger btn-sm border-2 cmd-btn-icon-sm"
+            class="cmd-btn cmd-btn-danger cmd-btn-sm cmd-btn-icon-sm"
             data-testid="pw-reset-waypoints-btn"
             @click="resetModal?.open()"
             title="Reset waypoints"
           >
             <i class="bi bi-arrow-clockwise"></i>
           </button>
-          <button class="btn btn-sm btn-success border-2" data-testid="pw-add-from-map" @click="addModal?.open()">
+          <button class="cmd-btn cmd-btn-sm cmd-btn-success" data-testid="pw-add-from-map" @click="addModal?.open()">
             Add from Map
           </button>
         </div>
       </div>
-      <div class="waypoint-wrapper p-2 rounded flex-grow-1 overflow-auto" data-testid="pw-waypoint-store-list">
+      <div class="waypoint-wrapper p-2 rounded grow overflow-auto" data-testid="pw-waypoint-store-list">
         <WaypointStore
           v-for="(waypoint, index) in autonomyStore.waypoints"
           :key="waypoint.db_id || index"
@@ -31,11 +31,11 @@
     </div>
 
     <div class="editor-column">
-      <div class="waypoint-header p-2 mb-2 d-flex justify-content-between align-items-center border-bottom border-2">
-        <h4 class="component-header m-0 p-0">Current Course</h4>
+      <div class="waypoint-header p-2 mb-2 flex justify-between items-center border-b">
+        <h4 class="component-header">Current Course</h4>
         <button
-          class="btn btn-sm border-2"
-          :class="autonomyStore.allCostmapToggle ? 'btn-success' : 'btn-danger'"
+          class="cmd-btn cmd-btn-sm"
+          :class="autonomyStore.allCostmapToggle ? 'cmd-btn-success' : 'cmd-btn-danger'"
           data-testid="pw-costmap-toggle-all"
           @click="autonomyStore.toggleAllCostmaps()"
         >
@@ -47,7 +47,7 @@
         item-key="tag_id"
         handle=".drag-handle"
         ghost-class="drag-ghost"
-        class="waypoint-wrapper p-2 rounded d-flex flex-column gap-1 flex-grow-1 overflow-auto"
+        class="waypoint-wrapper p-2 rounded flex flex-col gap-1 grow overflow-auto"
         @end="autonomyStore.saveRoute()"
       >
         <template #item="{ element }">
@@ -124,7 +124,7 @@ function handleStoreUpdate(waypoint: AutonWaypoint, index: number) {
 }
 
 .drag-ghost {
-  background-color: var(--bs-secondary-bg);
+  background-color: var(--control-primary);
   border-style: dashed !important;
   opacity: 0.4;
 }

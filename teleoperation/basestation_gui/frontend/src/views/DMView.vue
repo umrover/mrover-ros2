@@ -5,55 +5,55 @@
     :topics="['arm', 'drive', 'chassis', 'nav']"
   >
     <template #rover-3d>
-      <div class="island rounded overflow-hidden h-100">
-        <Rover3D class="w-100 h-100" />
+      <div class="island rounded overflow-hidden h-full">
+        <Rover3D class="w-full h-full" />
       </div>
     </template>
 
     <template #odometry>
-      <div class="island p-2 rounded h-100">
+      <div class="island p-2 rounded h-full">
         <OdometryReading />
       </div>
     </template>
 
     <template #arm-moteus>
-      <div class="island p-2 rounded h-100">
+      <div class="island p-2 rounded h-full">
         <ControllerDataTable mode="arm" header="Arm" />
       </div>
     </template>
 
     <template #drive-moteus>
-      <div class="island p-2 rounded h-100">
+      <div class="island p-2 rounded h-full">
         <ControllerDataTable mode="drive" header="Drive" />
       </div>
     </template>
 
     <template #arm-controls>
-      <div class="island p-2 rounded h-100">
+      <div class="island p-2 rounded h-full">
         <ArmControls />
       </div>
     </template>
 
     <template #gimbal-controls>
-      <div class="island p-2 rounded h-100">
+      <div class="island p-2 rounded h-full">
         <GimbalControls />
       </div>
     </template>
 
     <template #drive-controls>
-      <div class="island p-2 rounded h-100">
+      <div class="island p-2 rounded h-full">
         <DriveControls />
       </div>
     </template>
 
     <template #map>
-      <div class="island p-0 rounded overflow-hidden h-100">
+      <div class="island p-0 rounded overflow-hidden h-full">
         <BasicMap />
       </div>
     </template>
 
     <template #waypoints>
-      <div class="island p-2 rounded h-100">
+      <div class="island p-2 rounded h-full">
         <BasicWaypointEditor :enableDrone="true" />
       </div>
     </template>

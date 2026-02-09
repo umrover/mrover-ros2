@@ -1,56 +1,57 @@
 <template>
-  <div class="d-flex flex-wrap gap-1 mb-2">
-    <button
-      type="button"
-      class="btn btn-sm btn-outline-control border-2 flex-grow-1"
-      @click="set_camera_type('default')">
-      Default
-    </button>
-    <button
-      type="button"
-      class="btn btn-sm btn-outline-control border-2 flex-grow-1"
-      @click="set_camera_type('follow')">
-      Follow
-    </button>
-    <button
-      type="button"
-      class="btn btn-sm btn-outline-control border-2 flex-grow-1"
-      @click="set_camera_type('arm')">
-      Arm
-    </button>
-    <button
-      type="button"
-      class="btn btn-sm btn-outline-control border-2 flex-grow-1"
-      @click="set_camera_type('full arm')">
-      Full Arm
-    </button>
-    <button
-      type="button"
-      class="btn btn-sm btn-outline-control border-2 flex-grow-1"
-      @click="set_camera_type('side arm')">
-      Side Arm
-    </button>
-    <button
-      type="button"
-      class="btn btn-sm btn-outline-control border-2 flex-grow-1"
-      @click="set_camera_type('top')">
-      Top Down
-    </button>
-    <button
-      type="button"
-      class="btn btn-sm btn-outline-control border-2 flex-grow-1"
-      @click="set_camera_type('bottom')">
-      Bottom Up
-    </button>
-    <button
-      type="button"
-      class="btn btn-sm btn-outline-secondary border-2 flex-grow-1"
-      @click="updateCostMapGrid()">
-      Test
-    </button>
+  <div class="flex flex-col w-full h-full">
+    <div class="flex flex-wrap gap-1 mb-2 shrink-0">
+      <button
+        type="button"
+        class="cmd-btn cmd-btn-sm cmd-btn-outline-control grow"
+        @click="set_camera_type('default')">
+        Default
+      </button>
+      <button
+        type="button"
+        class="cmd-btn cmd-btn-sm cmd-btn-outline-control grow"
+        @click="set_camera_type('follow')">
+        Follow
+      </button>
+      <button
+        type="button"
+        class="cmd-btn cmd-btn-sm cmd-btn-outline-control grow"
+        @click="set_camera_type('arm')">
+        Arm
+      </button>
+      <button
+        type="button"
+        class="cmd-btn cmd-btn-sm cmd-btn-outline-control grow"
+        @click="set_camera_type('full arm')">
+        Full Arm
+      </button>
+      <button
+        type="button"
+        class="cmd-btn cmd-btn-sm cmd-btn-outline-control grow"
+        @click="set_camera_type('side arm')">
+        Side Arm
+      </button>
+      <button
+        type="button"
+        class="cmd-btn cmd-btn-sm cmd-btn-outline-control grow"
+        @click="set_camera_type('top')">
+        Top Down
+      </button>
+      <button
+        type="button"
+        class="cmd-btn cmd-btn-sm cmd-btn-outline-control grow"
+        @click="set_camera_type('bottom')">
+        Bottom Up
+      </button>
+      <button
+        type="button"
+        class="cmd-btn cmd-btn-sm cmd-btn-outline-secondary grow"
+        @click="updateCostMapGrid()">
+        Test
+      </button>
+    </div>
+    <canvas class="webgl grow min-h-0 w-full"></canvas>
   </div>
-
-  <canvas class="webgl p-0 h-100 w-100"></canvas>
 </template>
 
 <script lang="ts" setup>

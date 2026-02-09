@@ -1,19 +1,19 @@
 <template>
-  <div class="cmd-list-item p-2 rounded border border-2 mb-1" data-testid="pw-waypoint-store-item">
-    <div class="d-flex justify-content-between align-items-center mb-1">
-      <h5 class="cmd-list-item-title m-0" data-testid="pw-waypoint-name">{{ waypoint.name }}</h5>
-      <div class="d-flex align-items-center gap-2">
+  <div class="cmd-list-item" data-testid="pw-waypoint-store-item">
+    <div class="flex justify-between items-center mb-1">
+      <h5 class="cmd-list-item-title" data-testid="pw-waypoint-name">{{ waypoint.name }}</h5>
+      <div class="flex items-center gap-2">
         <span class="cmd-data-label">Tag ID: {{ waypoint.tag_id }}</span>
         <span class="cmd-data-label">R: {{ waypoint.coverage_radius }}</span>
       </div>
     </div>
-    <div class="d-flex justify-content-between align-items-center">
+    <div class="flex justify-between items-center">
       <small class="text-muted">{{ waypoint.lat.toFixed(6) }}N, {{ waypoint.lon.toFixed(6) }}W</small>
-      <div class="d-flex gap-1">
-        <button class="btn btn-success btn-sm border-2 cmd-btn-icon" @click="emit('add', waypoint)"><i class="bi bi-plus-lg"></i></button>
-        <button class="btn btn-warning btn-sm border-2 cmd-btn-icon" @click="openEditModal"><i class="bi bi-pencil-fill"></i></button>
+      <div class="flex gap-1">
+        <button class="cmd-btn cmd-btn-success cmd-btn-sm cmd-btn-icon" @click="emit('add', waypoint)"><i class="bi bi-plus-lg"></i></button>
+        <button class="cmd-btn cmd-btn-warning cmd-btn-sm cmd-btn-icon" @click="openEditModal"><i class="bi bi-pencil-fill"></i></button>
         <button
-          class="btn btn-danger btn-sm border-2 cmd-btn-icon"
+          class="cmd-btn cmd-btn-danger cmd-btn-sm cmd-btn-icon"
           :disabled="waypoint.deletable === false"
           @click="emit('delete', index)"
         ><i class="bi bi-trash-fill"></i></button>
@@ -21,32 +21,32 @@
     </div>
 
     <Teleport to="body">
-      <div class="modal fade" :id="'editModal-' + index" tabindex="-1" role="dialog">
-        <div class="modal-dialog modal-dialog-centered" role="document">
-          <div class="modal-content">
-            <div class="modal-header">
-              <h5 class="modal-title">Edit Waypoint</h5>
-              <button type="button" class="btn-close" @click="closeEditModal"></button>
+      <div v-if="isOpen" class="cmd-modal-backdrop" @click.self="closeEditModal">
+        <div class="cmd-modal-dialog">
+          <div class="cmd-modal-content">
+            <div class="cmd-modal-header">
+              <h5 class="cmd-modal-title">Edit Waypoint</h5>
+              <button type="button" class="cmd-btn-close" @click="closeEditModal"><i class="bi bi-x-lg"></i></button>
             </div>
-            <div class="modal-body">
-              <div class="mb-3">
-                <label class="form-label">Name:</label>
-                <input class="form-control" v-model="editData.name" />
+            <div class="cmd-modal-body">
+              <div class="mb-4">
+                <label class="cmd-form-label">Name:</label>
+                <input class="cmd-form-control" v-model="editData.name" />
               </div>
-              <div class="row mb-3">
-                <div class="col-6">
-                  <label class="form-label">Latitude:</label>
-                  <input class="form-control" v-model.number="editData.lat" type="number" step="0.000001" />
+              <div class="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label class="cmd-form-label">Latitude:</label>
+                  <input class="cmd-form-control" v-model.number="editData.lat" type="number" step="0.000001" />
                 </div>
-                <div class="col-6">
-                  <label class="form-label">Longitude:</label>
-                  <input class="form-control" v-model.number="editData.lon" type="number" step="0.000001" />
+                <div>
+                  <label class="cmd-form-label">Longitude:</label>
+                  <input class="cmd-form-control" v-model.number="editData.lon" type="number" step="0.000001" />
                 </div>
               </div>
-              <div class="mb-3">
-                <label class="form-label">Coverage Radius (0 for default):</label>
+              <div class="mb-4">
+                <label class="cmd-form-label">Coverage Radius (0 for default):</label>
                 <input
-                  class="form-control"
+                  class="cmd-form-control"
                   v-model.number="editData.coverage_radius"
                   type="number"
                   step="0.5"
@@ -54,9 +54,9 @@
                 />
               </div>
             </div>
-            <div class="modal-footer">
-              <button type="button" class="btn btn-secondary border-2" @click="closeEditModal">Cancel</button>
-              <button type="button" class="btn btn-primary border-2" @click="saveEdit">Save</button>
+            <div class="cmd-modal-footer">
+              <button type="button" class="cmd-btn cmd-btn-secondary" @click="closeEditModal">Cancel</button>
+              <button type="button" class="cmd-btn cmd-btn-primary" @click="saveEdit">Save</button>
             </div>
           </div>
         </div>
@@ -68,7 +68,7 @@
 <script lang="ts" setup>
 import { ref } from 'vue'
 import type { AutonWaypoint } from '@/types/waypoints'
-import { Modal } from 'bootstrap'
+import { useModal } from '@/composables/useModal'
 
 const props = defineProps<{
   waypoint: AutonWaypoint
@@ -81,7 +81,7 @@ const emit = defineEmits<{
   update: [waypoint: AutonWaypoint, index: number]
 }>()
 
-const editModal = ref<Modal | null>(null)
+const { isOpen, show, hide } = useModal()
 const editData = ref({
   name: '',
   lat: 0,
@@ -96,14 +96,11 @@ function openEditModal() {
     lon: props.waypoint.lon,
     coverage_radius: props.waypoint.coverage_radius,
   }
-  if (!editModal.value) {
-    editModal.value = new Modal(`#editModal-${props.index}`, {})
-  }
-  editModal.value.show()
+  show()
 }
 
 function closeEditModal() {
-  editModal.value?.hide()
+  hide()
 }
 
 function saveEdit() {
@@ -119,10 +116,6 @@ function saveEdit() {
 </script>
 
 <style scoped>
-.cmd-list-item {
-  background-color: var(--card-bg);
-}
-
 .cmd-list-item-title {
   font-size: 0.875rem;
   font-weight: 600;

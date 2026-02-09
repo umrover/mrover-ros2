@@ -5,62 +5,62 @@
     :topics="['arm', 'chassis', 'drive', 'nav', 'science']"
   >
     <template #sparm>
-      <div class="island p-2 rounded h-100">
-        <SPArmControls class="h-100" />
+      <div class="island p-2 rounded h-full">
+        <SPArmControls class="h-full" />
       </div>
     </template>
 
     <template #gimbal>
-      <div class="island p-2 rounded h-100">
-        <GimbalControls class="h-100" />
+      <div class="island p-2 rounded h-full">
+        <GimbalControls class="h-full" />
       </div>
     </template>
 
     <template #drive>
-      <div class="island p-2 rounded h-100">
-        <DriveControls class="h-100" />
+      <div class="island p-2 rounded h-full">
+        <DriveControls class="h-full" />
       </div>
     </template>
 
     <template #funnel>
-      <div class="island p-2 rounded h-100">
-        <FunnelControls class="h-100" />
+      <div class="island p-2 rounded h-full">
+        <FunnelControls class="h-full" />
       </div>
     </template>
 
     <template #panorama>
-      <div class="island p-2 rounded h-100">
-        <PanoramaControls class="h-100" />
+      <div class="island p-2 rounded h-full">
+        <PanoramaControls class="h-full" />
       </div>
     </template>
 
     <template #odometry>
-      <div class="island p-0 rounded h-100">
-        <OdometryReading class="w-100 h-100" />
+      <div class="island p-0 rounded h-full">
+        <OdometryReading class="w-full h-full" />
       </div>
     </template>
 
     <template #sensors>
-      <div class="island p-2 rounded h-100 d-flex flex-column">
+      <div class="island p-2 rounded h-full flex flex-col">
         <SensorData />
       </div>
     </template>
 
     <template #moteus>
-      <div class="island p-2 rounded d-flex gap-2 h-100">
+      <div class="island p-2 rounded flex gap-2 h-full">
         <ControllerDataTable mode="drive" header="Drive" />
         <ControllerDataTable mode="sp" header="SP" />
       </div>
     </template>
 
     <template #map>
-      <div class="island p-0 rounded overflow-hidden h-100">
+      <div class="island p-0 rounded overflow-hidden h-full">
         <BasicMap />
       </div>
     </template>
 
     <template #waypoints>
-      <div class="island p-2 rounded h-100">
+      <div class="island p-2 rounded h-full">
         <BasicWaypointEditor />
       </div>
     </template>

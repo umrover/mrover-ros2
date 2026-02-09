@@ -2,19 +2,19 @@
   <div class="cmd-panel controller-table-panel">
     <div class="cmd-panel-header">
       <h4>{{ header }}</h4>
-      <div class="d-flex gap-1">
+      <div class="flex gap-1">
         <button
           type="button"
-          class="btn btn-sm border-2"
-          :class="showStatus ? 'btn-success' : 'btn-outline-secondary'"
+          class="cmd-btn cmd-btn-sm"
+          :class="showStatus ? 'cmd-btn-success' : 'cmd-btn-outline-secondary'"
           data-testid="pw-controller-status-toggle"
           @mousedown.prevent
           @click="showStatus = !showStatus"
         >Status</button>
         <button
           type="button"
-          class="btn btn-sm border-2"
-          :class="showValues ? 'btn-success' : 'btn-outline-secondary'"
+          class="cmd-btn cmd-btn-sm"
+          :class="showValues ? 'cmd-btn-success' : 'cmd-btn-outline-secondary'"
           data-testid="pw-controller-values-toggle"
           @mousedown.prevent
           @click="showValues = !showValues"
@@ -107,7 +107,7 @@ function combineLeftRight() {
   const right = rightState.value
   if (!left && !right) return
 
-  const empty = { names: [], states: [], errors: [], limits_hit: [], positions: [], velocities: [], currents: [] }
+  const empty: ControllerStateMessage = { type: 'drive_left_state', names: [], states: [], errors: [], limits_hit: [], positions: [], velocities: [], currents: [] }
   const l = left ? { ...empty, ...left } : empty
   const r = right ? { ...empty, ...right } : empty
 

@@ -1,6 +1,6 @@
 <template>
-  <a class="d-block text-decoration-none py-1 terminal-link" :href="link">
-    <span class="me-2 opacity-50 prefix">./</span>{{ name }}
+  <a class="block no-underline py-1 terminal-link" :href="link">
+    <span class="mr-2 opacity-50 prefix">./</span>{{ name }}
   </a>
 </template>
 

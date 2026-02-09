@@ -1,28 +1,28 @@
 <template>
   <Teleport to="body">
-    <div class="modal fade" id="modalWypt" tabindex="-1" role="dialog" data-testid="pw-waypoint-modal">
-      <div class="modal-dialog modal-dialog-centered" role="document">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title">Add Waypoint</h5>
-            <button type="button" class="btn-close" @click="close"></button>
+    <div v-if="isOpen" class="cmd-modal-backdrop" @click.self="close" data-testid="pw-waypoint-modal">
+      <div class="cmd-modal-dialog">
+        <div class="cmd-modal-content">
+          <div class="cmd-modal-header">
+            <h5 class="cmd-modal-title">Add Waypoint</h5>
+            <button type="button" class="cmd-btn-close" @click="close"><i class="bi bi-x-lg"></i></button>
           </div>
-          <div class="modal-body">
-            <div class="row g-3">
-              <div class="col-md-6">
-                <label for="waypointname" class="form-label">Name:</label>
+          <div class="cmd-modal-body">
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label for="waypointname" class="cmd-form-label">Name:</label>
                 <input
-                  class="form-control"
+                  class="cmd-form-control"
                   id="waypointname"
                   data-testid="pw-waypoint-name-input"
                   v-model="form.name"
                 />
               </div>
-              <div class="col-md-6">
-                <label for="waypointid" class="form-label">Tag ID:</label>
+              <div>
+                <label for="waypointid" class="cmd-form-label">Tag ID:</label>
                 <input
                   v-if="form.type == 1"
-                  class="form-control"
+                  class="cmd-form-control"
                   id="waypointid"
                   v-model="form.tag_id"
                   type="number"
@@ -32,16 +32,16 @@
                 />
                 <input
                   v-else
-                  class="form-control"
+                  class="cmd-form-control"
                   id="waypointid"
                   type="number"
                   placeholder="-1"
                   disabled
                 />
               </div>
-              <div class="col-12">
-                <label class="form-label">Type:</label>
-                <select class="form-select" v-model="form.type">
+              <div class="col-span-2">
+                <label class="cmd-form-label">Type:</label>
+                <select class="cmd-form-select" v-model="form.type">
                   <option value="0">No Search</option>
                   <option value="1">Post</option>
                   <option value="2">Mallet</option>
@@ -49,10 +49,10 @@
                   <option value="4">Rock Pick</option>
                 </select>
               </div>
-              <div class="col-12">
-                <label for="coverage_radius" class="form-label">Coverage Radius (0 for default):</label>
+              <div class="col-span-2">
+                <label for="coverage_radius" class="cmd-form-label">Coverage Radius (0 for default):</label>
                 <input
-                  class="form-control"
+                  class="cmd-form-control"
                   id="coverage_radius"
                   v-model.number="form.coverage_radius"
                   type="number"
@@ -62,10 +62,10 @@
               </div>
             </div>
           </div>
-          <div class="modal-footer">
+          <div class="cmd-modal-footer">
             <button
               type="button"
-              class="btn btn-secondary border-2"
+              class="cmd-btn cmd-btn-secondary"
               data-testid="pw-add-waypoint-submit"
               @click="submit"
             >
@@ -79,12 +79,12 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, onMounted } from 'vue'
-import { Modal } from 'bootstrap'
+import { ref } from 'vue'
+import { useModal } from '@/composables/useModal'
 import { useAutonomyStore } from '@/stores/autonomy'
 
 const autonomyStore = useAutonomyStore()
-const modal = ref<Modal | null>(null)
+const { isOpen, show, hide } = useModal()
 
 const defaultForm = () => ({
   name: '',
@@ -95,19 +95,13 @@ const defaultForm = () => ({
 
 const form = ref(defaultForm())
 
-onMounted(() => {
-  modal.value = new Modal('#modalWypt', {})
-})
-
-function open() {
-  modal.value?.show()
-}
+function open() { show() }
 
 function close() {
   if (document.activeElement instanceof HTMLElement) {
     document.activeElement.blur()
   }
-  modal.value?.hide()
+  hide()
 }
 
 async function submit() {

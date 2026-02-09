@@ -1,5 +1,5 @@
 <template>
-  <div class="position-relative w-100 h-100 map">
+  <div class="relative w-full h-full map">
     <l-map
       @ready="handleMapReady"
       ref="mapRef"
@@ -34,15 +34,15 @@
       <l-polyline :lat-lngs="dronePath" :color="'green'" />
     </l-map>
     <div class="map-controls cmd-panel">
-      <div class="d-flex align-items-center gap-2">
+      <div class="flex items-center gap-2">
         <input
           v-model="online"
           type="checkbox"
-          class="form-check-input p-0"
+          class="cmd-form-check p-0"
         />
         <span class="cmd-data-label">Online</span>
       </div>
-      <button @click="centerOnRover" class="btn btn-sm btn-outline-control border-2 map-btn">
+      <button @click="centerOnRover" class="cmd-btn cmd-btn-sm cmd-btn-outline-control map-btn">
         Center
       </button>
     </div>

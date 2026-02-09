@@ -5,19 +5,19 @@
     :topics="['drive', 'nav', 'science', 'chassis']"
   >
     <template #odometry>
-      <div class="island p-2 rounded h-100">
+      <div class="island p-2 rounded h-full">
         <OdometryReading />
       </div>
     </template>
 
     <template #nav-status>
-      <div class="island p-2 rounded h-100 d-flex flex-column">
+      <div class="island p-2 rounded h-full flex flex-col">
         <NavigationStatus />
       </div>
     </template>
 
     <template #controls>
-      <div class="island p-2 rounded h-100">
+      <div class="island p-2 rounded h-full">
         <AutonControls
           @toggleTeleop="teleopEnabledCheck = $event"
         />
@@ -25,25 +25,25 @@
     </template>
 
     <template #velocity>
-      <div class="island p-2 rounded h-100">
+      <div class="island p-2 rounded h-full">
         <VelocityReading />
       </div>
     </template>
 
     <template #map>
-      <div class="island p-0 rounded h-100 overflow-hidden">
+      <div class="island p-0 rounded h-full overflow-hidden">
         <AutonRoverMap />
       </div>
     </template>
 
     <template #waypoints>
-      <div class="island p-2 rounded h-100 overflow-y-auto">
+      <div class="island p-2 rounded h-full overflow-y-auto">
         <AutonWaypointEditor />
       </div>
     </template>
 
     <template #moteus>
-      <div class="island p-2 rounded h-100 overflow-hidden">
+      <div class="island p-2 rounded h-full overflow-hidden">
         <ControllerDataTable mode="drive" header="Drive" />
       </div>
     </template>

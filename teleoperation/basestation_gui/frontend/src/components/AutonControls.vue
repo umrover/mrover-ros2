@@ -1,9 +1,9 @@
 <template>
-  <div class="d-flex flex-row gap-2">
-    <div class="d-flex flex-column gap-1" style="flex: 1;">
+  <div class="flex flex-row gap-2">
+    <div class="flex flex-col gap-1" style="flex: 1;">
       <FeedbackButton
         ref="autonCheckbox"
-        class="w-100"
+        class="w-full"
         data-testid="pw-auton-toggle"
         :name="'Autonomy Mode'"
         :checked="autonEnabled"
@@ -12,7 +12,7 @@
       />
       <FeedbackButton
         ref="teleopCheckbox"
-        class="w-100"
+        class="w-full"
         data-testid="pw-teleop-toggle"
         :name="'Teleop Controls'"
         :checked="teleopEnabled"
@@ -20,9 +20,9 @@
         @toggle="handleTeleopToggle"
       />
     </div>
-    <div class="d-flex flex-column gap-1" style="flex: 1;">
+    <div class="flex flex-col gap-1" style="flex: 1;">
       <FeedbackButton
-        class="w-100"
+        class="w-full"
         data-testid="pw-pure-pursuit-toggle"
         :name="'Pure Pursuit'"
         :checked="purePursuitEnabled"
@@ -30,7 +30,7 @@
         @toggle="handlePurePursuitToggle"
       />
       <FeedbackButton
-        class="w-100"
+        class="w-full"
         data-testid="pw-path-relaxation-toggle"
         :name="'Path Relaxation'"
         :checked="pathRelaxationEnabled"
@@ -38,7 +38,7 @@
         @toggle="handlePathRelaxationToggle"
       />
       <FeedbackButton
-        class="w-100"
+        class="w-full"
         data-testid="pw-path-interpolation-toggle"
         :name="'Path Interpolation'"
         :checked="pathInterpolationEnabled"
@@ -66,7 +66,7 @@ const teleopEnabled = computed(() => autonomyStore.teleopEnabled)
 const purePursuitEnabled = computed(() => autonomyStore.purePursuitEnabled)
 const pathRelaxationEnabled = computed(() => autonomyStore.pathRelaxationEnabled)
 const pathInterpolationEnabled = computed(() => autonomyStore.pathInterpolationEnabled)
-  
+
 const autonAction = (newState: boolean) => {
   const routeMap = autonomyStore.routeForMap
   const waypoints = newState

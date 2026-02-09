@@ -1,13 +1,13 @@
 <template>
-  <div class="d-flex flex-column gap-2 flex-fill">
-    <div class="cmd-panel status-panel px-3 py-2" data-testid="pw-status-panel" :class="stuckStatus ? 'status-panel--error' : 'status-panel--ok'">
-      <div class="d-flex align-items-center gap-2">
-        <span class="status-dot rounded-circle"></span>
+  <div class="flex flex-col gap-2 flex-1">
+    <div class="cmd-panel status-panel px-4 py-2" data-testid="pw-status-panel" :class="stuckStatus ? 'status-panel--error' : 'status-panel--ok'">
+      <div class="flex items-center gap-2">
+        <span class="status-dot rounded-full"></span>
         <span class="status-label">{{ stuckStatus ? 'Obstruction Detected' : 'Nominal Conditions' }}</span>
       </div>
     </div>
-    <div class="cmd-panel nav-state-panel flex-fill d-flex align-items-center justify-content-center" data-testid="pw-nav-state-panel" :class="ledColorClass">
-      <div class="d-flex flex-column align-items-center gap-1">
+    <div class="cmd-panel nav-state-panel flex-1 flex items-center justify-center" data-testid="pw-nav-state-panel" :class="ledColorClass">
+      <div class="flex flex-col items-center gap-1">
         <span class="cmd-data-label">Nav State</span>
         <span class="nav-state-value" data-testid="pw-nav-state-value">{{ navState }}</span>
       </div>
@@ -62,16 +62,16 @@ watch(navMessage, (msg: unknown) => {
 }
 
 .status-panel--ok {
-  background-color: var(--bs-success);
-  border-color: var(--bs-success);
+  background-color: var(--cmd-status-ok);
+  border-color: var(--cmd-status-ok);
 }
 
 .status-panel--ok .status-dot { background-color: #fff; }
 .status-panel--ok .status-label { color: #fff; }
 
 .status-panel--error {
-  background-color: var(--bs-danger);
-  border-color: var(--bs-danger);
+  background-color: var(--cmd-status-error);
+  border-color: var(--cmd-status-error);
 }
 
 .status-panel--error .status-dot { background-color: #fff; }
@@ -89,24 +89,24 @@ watch(navMessage, (msg: unknown) => {
 }
 
 .nav-state--error {
-  background-color: var(--bs-danger);
-  border-color: var(--bs-danger);
+  background-color: var(--cmd-status-error);
+  border-color: var(--cmd-status-error);
 }
 
 .nav-state--error .cmd-data-label { color: rgb(255 255 255 / 80%); }
 .nav-state--error .nav-state-value { color: #fff; }
 
 .nav-state--ok {
-  background-color: var(--bs-success);
-  border-color: var(--bs-success);
+  background-color: var(--cmd-status-ok);
+  border-color: var(--cmd-status-ok);
 }
 
 .nav-state--ok .cmd-data-label { color: rgb(255 255 255 / 80%); }
 .nav-state--ok .nav-state-value { color: #fff; }
 
 .nav-state--info {
-  background-color: var(--bs-primary);
-  border-color: var(--bs-primary);
+  background-color: var(--cmd-accent);
+  border-color: var(--cmd-accent);
 }
 
 .nav-state--info .cmd-data-label { color: rgb(255 255 255 / 80%); }

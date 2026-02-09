@@ -1,82 +1,84 @@
 <template>
-  <div class="wrapper bg-theme-card border-bottom border-theme">
-    <div class="ps-3 pe-2 py-2 d-flex justify-content-between align-items-center position-relative">
-      <a class="logo position-absolute" href="/"><img src="/mrover.png" alt="MRover" title="MRover" width="200" /></a>
-      <div class="d-flex align-items-center gap-3">
+  <div class="wrapper bg-theme-card border-b border-theme">
+    <div class="pl-4 pr-2 py-2 flex justify-between items-center relative">
+      <a class="logo absolute" href="/"><img src="/mrover.png" alt="MRover" title="MRover" width="200" /></a>
+      <div class="flex items-center gap-4">
         <h1 class="text-theme-primary">{{ title }}</h1>
-        <div v-if="showGridControls" class="d-flex align-items-center gap-1 border border-2 border-theme rounded px-2 py-1">
+        <div v-if="showGridControls" class="flex items-center gap-1 border border-2 border-theme rounded px-2 py-1">
           <button
-            class="btn btn-sm cmd-btn-icon-sm border-2"
-            :class="gridLayoutStore.locked ? 'btn-danger' : 'btn-success'"
+            class="cmd-btn cmd-btn-sm cmd-btn-icon-sm"
+            :class="gridLayoutStore.locked ? 'cmd-btn-danger' : 'cmd-btn-success'"
             data-testid="pw-grid-lock-btn"
             @click="gridLayoutStore.toggleLock()"
           >
             <i :class="gridLayoutStore.locked ? 'bi bi-lock-fill' : 'bi bi-unlock-fill'"></i>
           </button>
           <button
-            class="btn btn-sm btn-secondary cmd-btn-icon-sm border-2"
+            class="cmd-btn cmd-btn-sm cmd-btn-secondary cmd-btn-icon-sm"
             data-testid="pw-grid-reset-btn"
             @click="gridLayoutStore.triggerReset()"
           >
             <i class="bi bi-arrow-counterclockwise"></i>
           </button>
-          <span class="ms-1 small text-muted">Grid</span>
+          <span class="ml-1 text-sm text-muted">Grid</span>
         </div>
       </div>
-      <div class="d-flex align-items-stretch gap-2">
+      <div class="flex items-stretch gap-2">
         <WebsocketStatus />
-        <div class="border-start border-2 border-start-theme align-self-center nav-divider"></div>
-        <div class="dropdown d-flex">
+        <div class="border-l border-2 border-start-theme self-center nav-divider"></div>
+        <div class="dropdown flex relative">
           <button
-            class="theme-btn d-flex flex-column align-items-center justify-content-center border border-2 border-theme rounded"
+            class="theme-btn flex flex-col items-center justify-center border border-2 border-theme rounded"
             data-testid="pw-theme-dropdown"
-            data-bs-toggle="dropdown"
-            aria-expanded="false"
+            @click="dropdownOpen = !dropdownOpen"
           >
             <i :class="themeIcon"></i>
           </button>
-          <ul class="dropdown-menu dropdown-menu-end">
+          <ul
+            class="cmd-dropdown-menu"
+            :class="{ show: dropdownOpen }"
+          >
             <li>
               <button
-                class="dropdown-item d-flex align-items-center gap-2"
+                class="cmd-dropdown-item flex items-center gap-2"
                 :class="{ active: themeStore.currentTheme === 'light' }"
-                @click="themeStore.setTheme('light')"
+                @click="themeStore.setTheme('light'); dropdownOpen = false"
               >
                 <i class="bi bi-sun-fill"></i> Light
               </button>
             </li>
             <li>
               <button
-                class="dropdown-item d-flex align-items-center gap-2"
+                class="cmd-dropdown-item flex items-center gap-2"
                 :class="{ active: themeStore.currentTheme === 'dark' }"
-                @click="themeStore.setTheme('dark')"
+                @click="themeStore.setTheme('dark'); dropdownOpen = false"
               >
                 <i class="bi bi-moon-fill"></i> Dark
               </button>
             </li>
             <li>
               <button
-                class="dropdown-item d-flex align-items-center gap-2"
+                class="cmd-dropdown-item flex items-center gap-2"
                 :class="{ active: themeStore.currentTheme === 'high-contrast-light' }"
-                @click="themeStore.setTheme('high-contrast-light')"
+                @click="themeStore.setTheme('high-contrast-light'); dropdownOpen = false"
               >
                 <i class="bi bi-circle-half"></i> High Contrast Light
               </button>
             </li>
             <li>
               <button
-                class="dropdown-item d-flex align-items-center gap-2"
+                class="cmd-dropdown-item flex items-center gap-2"
                 :class="{ active: themeStore.currentTheme === 'high-contrast-dark' }"
-                @click="themeStore.setTheme('high-contrast-dark')"
+                @click="themeStore.setTheme('high-contrast-dark'); dropdownOpen = false"
               >
                 <i class="bi bi-circle-fill"></i> High Contrast Dark
               </button>
             </li>
             <li>
               <button
-                class="dropdown-item d-flex align-items-center gap-2 text-danger"
+                class="cmd-dropdown-item flex items-center gap-2 text-cmd-danger"
                 :class="{ active: themeStore.currentTheme === 'dont-click-me' }"
-                @click="themeStore.setTheme('dont-click-me')"
+                @click="themeStore.setTheme('dont-click-me'); dropdownOpen = false"
               >
                 <i class="bi bi-exclamation-triangle-fill"></i> Don't Click Me
               </button>
@@ -90,7 +92,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent } from 'vue';
+import { defineComponent, ref, onMounted, onUnmounted } from 'vue';
 import WebsocketStatus from '../components/WebsocketStatus.vue';
 import NotificationCenter from '../components/NotificationCenter.vue';
 import { useGridLayoutStore } from '@/stores/gridLayout';
@@ -101,7 +103,24 @@ export default defineComponent({
   setup() {
     const gridLayoutStore = useGridLayoutStore();
     const themeStore = useThemeStore();
-    return { gridLayoutStore, themeStore };
+    const dropdownOpen = ref(false);
+
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (dropdownOpen.value && !target.closest('.dropdown')) {
+        dropdownOpen.value = false;
+      }
+    };
+
+    onMounted(() => {
+      document.addEventListener('click', handleClickOutside);
+    });
+
+    onUnmounted(() => {
+      document.removeEventListener('click', handleClickOutside);
+    });
+
+    return { gridLayoutStore, themeStore, dropdownOpen };
   },
   computed: {
     title(): string {

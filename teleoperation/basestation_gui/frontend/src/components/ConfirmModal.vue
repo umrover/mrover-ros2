@@ -1,23 +1,23 @@
 <template>
   <Teleport to="body">
-    <div class="modal fade" :id="modalId" tabindex="-1" role="dialog">
-      <div class="modal-dialog modal-dialog-centered" role="document">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title">{{ title }}</h5>
-            <button type="button" class="btn-close" @click="close"></button>
+    <div v-if="isOpen" class="cmd-modal-backdrop" @click.self="close">
+      <div class="cmd-modal-dialog">
+        <div class="cmd-modal-content">
+          <div class="cmd-modal-header">
+            <h5 class="cmd-modal-title">{{ title }}</h5>
+            <button type="button" class="cmd-btn-close" @click="close"><i class="bi bi-x-lg"></i></button>
           </div>
-          <div class="modal-body">
+          <div class="cmd-modal-body">
             <slot>
               <p class="mb-0">{{ message }}</p>
             </slot>
           </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary btn-sm border-2" @click="close">Cancel</button>
+          <div class="cmd-modal-footer">
+            <button type="button" class="cmd-btn cmd-btn-secondary cmd-btn-sm" @click="close">Cancel</button>
             <button
               type="button"
-              class="btn btn-sm border-2"
-              :class="`btn-${confirmVariant}`"
+              class="cmd-btn cmd-btn-sm"
+              :class="`cmd-btn-${confirmVariant}`"
               @click="confirm"
             >{{ confirmText }}</button>
           </div>
@@ -28,10 +28,11 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, onMounted } from 'vue'
-import { Modal } from 'bootstrap'
+import { useModal } from '@/composables/useModal'
 
-const props = withDefaults(defineProps<{
+const { isOpen, show, hide } = useModal()
+
+withDefaults(defineProps<{
   modalId: string
   title: string
   message?: string
@@ -47,24 +48,9 @@ const emit = defineEmits<{
   confirm: []
 }>()
 
-const modal = ref<Modal | null>(null)
-
-onMounted(() => {
-  modal.value = new Modal(`#${props.modalId}`, {})
-})
-
-function open() {
-  modal.value?.show()
-}
-
-function close() {
-  modal.value?.hide()
-}
-
-function confirm() {
-  emit('confirm')
-  close()
-}
+function open() { show() }
+function close() { hide() }
+function confirm() { emit('confirm'); hide() }
 
 defineExpose({ open, close })
 </script>

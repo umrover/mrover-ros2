@@ -5,37 +5,37 @@
     :topics="['arm', 'drive']"
   >
     <template #arm-controls>
-      <div class="island p-2 rounded h-100">
+      <div class="island p-2 rounded h-full">
         <ArmControls />
       </div>
     </template>
 
     <template #drive-controls>
-      <div class="island p-2 rounded h-100">
+      <div class="island p-2 rounded h-full">
         <DriveControls />
       </div>
     </template>
 
     <template #rover-3d>
-      <div class="island rounded overflow-hidden h-100">
-        <Rover3D class="w-100 h-100" />
+      <div class="island rounded overflow-hidden h-full">
+        <Rover3D class="w-full h-full" />
       </div>
     </template>
 
     <template #arm-moteus>
-      <div class="island p-2 rounded h-100">
+      <div class="island p-2 rounded h-full">
         <ControllerDataTable mode="arm" header="Arm" />
       </div>
     </template>
 
     <template #drive-moteus>
-      <div class="island p-2 rounded h-100">
+      <div class="island p-2 rounded h-full">
         <ControllerDataTable mode="drive" header="Drive" />
       </div>
     </template>
 
     <template #auton-typing>
-      <div class="island p-2 rounded h-100">
+      <div class="island p-2 rounded h-full">
         <AutonTyping />
       </div>
     </template>
