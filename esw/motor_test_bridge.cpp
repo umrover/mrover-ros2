@@ -44,7 +44,7 @@ namespace mrover {
 
             for (std::string const& name: m_motor_names) {
                 if (name.front() == 'b') {
-                    m_bmc = std::make_shared<BrushedController>(shared_from_this(), "jetson", name);
+                    m_bmc = std::make_shared<BrushedController<Radians>>(shared_from_this(), "jetson", name);
                 }
                 if (name.front() == 'm') {
                     m_moteus = std::make_shared<BrushlessController<Radians>>(shared_from_this(), "jetson", name);
@@ -134,7 +134,7 @@ namespace mrover {
     private:
         std::vector<std::string> m_motor_names = {"bmc", "moteus"};
 
-        std::shared_ptr<BrushedController> m_bmc;
+        std::shared_ptr<BrushedController<Radians>> m_bmc;
         std::shared_ptr<BrushlessController<Radians>> m_moteus;
 
         rclcpp::Subscription<msg::Throttle>::SharedPtr m_throttle_sub;

@@ -1,12 +1,28 @@
 #pragma once
 
 #include "controller.hpp"
-#include "parameter.hpp"
 
 namespace mrover {
 
-    class BrushedController final : public ControllerBase<BrushedController> {
+    template<IsUnit TOutputPosition>
+    class BrushedController final : public ControllerBase<BrushedController<TOutputPosition>> {
+    public:
+        using OutputPosition = TOutputPosition;
+        using OutputVelocity = compound_unit<OutputPosition, inverse<Seconds>>;
+
+    private:
         using Base = ControllerBase<BrushedController>;
+
+        using Base::m_controller_name;
+        using Base::m_current;
+        using Base::m_device;
+        using Base::m_error_state;
+        using Base::m_limit_hit;
+        using Base::m_master_name;
+        using Base::m_node;
+        using Base::m_position;
+        using Base::m_state;
+        using Base::m_velocity;
 
         enum struct mode_t : uint8_t {
             STOPPED = 0,
@@ -81,65 +97,6 @@ namespace mrover {
     public:
         BrushedController(rclcpp::Node::SharedPtr node, std::string master_name, std::string controller_name)
             : Base{std::move(node), std::move(master_name), std::move(controller_name)} {
-            // TODO(eric) one day when we fix the non-volatile configs on the BMC this will all go away
-            // bool motor_en, motor_inv, quad_en, quad_phase;
-            // bool abs_i2c_en, abs_i2c_phase, abs_spi_en, abs_spi_phase;
-            // bool lim_a_en, lim_a_active_high, lim_a_is_forward, lim_a_use_readjust;
-            // bool lim_b_en, lim_b_active_high, lim_b_is_forward, lim_b_use_readjust;
-            // float max_pwm;
-            // int host_id;
-            //
-            // std::vector<ParameterWrapper> parameters = {
-            //     {std::format("{}.max_pwm", m_controller_name), max_pwm, 1.0},
-            //
-            //     // SYS_CFG Bitfields
-            //     {std::format("{}.motor_en", m_controller_name), motor_en, false},
-            //     {std::format("{}.motor_inv", m_controller_name), motor_inv, false},
-            //     {std::format("{}.quad_en", m_controller_name), quad_en, false},
-            //     {std::format("{}.quad_phase", m_controller_name), quad_phase, false},
-            //     {std::format("{}.abs_i2c_en", m_controller_name), abs_i2c_en, false},
-            //     {std::format("{}.abs_i2c_phase", m_controller_name), abs_i2c_phase, false},
-            //     {std::format("{}.abs_spi_en", m_controller_name), abs_spi_en, false},
-            //     {std::format("{}.abs_spi_phase", m_controller_name), abs_spi_phase, false},
-            //
-            //     // LIMIT_CFG Bitfields
-            //     {std::format("{}.lim_a_en", m_controller_name), lim_a_en, false},
-            //     {std::format("{}.lim_a_active_high", m_controller_name), lim_a_active_high, false},
-            //     {std::format("{}.lim_a_is_forward", m_controller_name), lim_a_is_forward, false},
-            //     {std::format("{}.lim_a_use_readjust", m_controller_name), lim_a_use_readjust, false},
-            //     {std::format("{}.lim_b_en", m_controller_name), lim_b_en, false},
-            //     {std::format("{}.lim_b_active_high", m_controller_name), lim_b_active_high, false},
-            //     {std::format("{}.lim_b_is_forward", m_controller_name), lim_b_is_forward, false},
-            //     {std::format("{}.lim_b_use_readjust", m_controller_name), lim_b_use_readjust, false},
-            // };
-            //
-            // ParameterWrapper::declareParameters(m_node.get(), parameters);
-
-            // SYS_CFG
-            // uint8_t sys_cfg = 0;
-            // sys_cfg |= (static_cast<uint8_t>(motor_en)      << 0);
-            // sys_cfg |= (static_cast<uint8_t>(motor_inv)     << 1);
-            // sys_cfg |= (static_cast<uint8_t>(quad_en)      << 2);
-            // sys_cfg |= (static_cast<uint8_t>(quad_phase)   << 3);
-            // sys_cfg |= (static_cast<uint8_t>(abs_i2c_en)   << 4);
-            // sys_cfg |= (static_cast<uint8_t>(abs_i2c_phase)<< 5);
-            // sys_cfg |= (static_cast<uint8_t>(abs_spi_en)   << 6);
-            // sys_cfg |= (static_cast<uint8_t>(abs_spi_phase)<< 7);
-
-            // LIMIT_CFG
-            // uint8_t limit_cfg = 0;
-            // limit_cfg |= (static_cast<uint8_t>(lim_a_en)           << 0);
-            // limit_cfg |= (static_cast<uint8_t>(lim_a_active_high)  << 1);
-            // limit_cfg |= (static_cast<uint8_t>(lim_a_is_forward)   << 2);
-            // limit_cfg |= (static_cast<uint8_t>(lim_a_use_readjust) << 3);
-            // limit_cfg |= (static_cast<uint8_t>(lim_b_en)           << 4);
-            // limit_cfg |= (static_cast<uint8_t>(lim_b_active_high)  << 5);
-            // limit_cfg |= (static_cast<uint8_t>(lim_b_is_forward)   << 6);
-            // limit_cfg |= (static_cast<uint8_t>(lim_b_use_readjust) << 7);
-            //
-            // m_device.publish_message(BMCConfigCmd{0x01, static_cast<uint32_t>(sys_cfg), true});
-            // m_device.publish_message(BMCConfigCmd{0x02, static_cast<uint32_t>(limit_cfg), true});
-            // m_device.publish_message(BMCConfigCmd{0x24, std::bit_cast<uint32_t>(max_pwm), true});
         }
 
         auto set_desired_throttle(Percent const throttle) -> void {
@@ -147,12 +104,12 @@ namespace mrover {
             m_device.publish_message(BMCTargetCmd{throttle.get(), 1});
         }
 
-        auto set_desired_position(Radians const position) -> void {
+        auto set_desired_position(OutputPosition const position) -> void {
             ensure_mode(mode_t::POSITION);
             m_device.publish_message(BMCTargetCmd{position.get(), 1});
         }
 
-        auto set_desired_velocity(RadiansPerSecond const velocity) -> void {
+        auto set_desired_velocity(OutputVelocity const velocity) -> void {
             ensure_mode(mode_t::VELOCITY);
             m_device.publish_message(BMCTargetCmd{velocity.get(), 1});
         }
