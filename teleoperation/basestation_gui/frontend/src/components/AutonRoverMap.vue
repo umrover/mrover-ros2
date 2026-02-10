@@ -1,8 +1,8 @@
 <template>
   <div class="position-relative w-100 h-100">
     <l-map
-      @ready="handleMapReady"
-      ref="mapRef"
+      @ready="onMapReady"
+      ref="map"
       class="map z-0"
       :zoom="16"
       :center="center"
@@ -15,9 +15,9 @@
         :attribution="attribution"
         :options="online ? onlineTileOptions : offlineTileOptions"
       />
-      <l-marker ref="roverRef" :lat-lng="odomLatLng" :icon="locationIcon" />
+      <l-marker ref="rover" :lat-lng="odomLatLng" :icon="locationIcon" />
       <l-marker
-        ref="basestationRef"
+        ref="basestation"
         :lat-lng="basestationLatLng"
         :icon="basestationIcon"
       />
@@ -36,7 +36,7 @@
         :color="'red'"
         :dash-array="'5, 5'"
       />
-      <l-polyline :lat-lngs="[...odomPath]" :color="'blue'" :dash-array="'5, 5'" />
+      <l-polyline :lat-lngs="odomPath" :color="'blue'" :dash-array="'5, 5'" />
     </l-map>
 
     <div class="map-controls cmd-panel">
@@ -58,7 +58,7 @@
   </div>
 </template>
 
-<script lang="ts" setup>
+<script lang="ts">
 import {
   LMap,
   LTileLayer,
@@ -67,79 +67,64 @@ import {
   LTooltip,
   LControlScale,
 } from '@vue-leaflet/vue-leaflet'
-import { useAutonomyStore } from '@/stores/autonomy'
-import { storeToRefs } from 'pinia'
+import Vuex from 'vuex'
+const { mapGetters, mapMutations } = Vuex
 import 'leaflet/dist/leaflet.css'
-import L from 'leaflet'
-import { ref, computed, watch } from 'vue'
-import { useRoverMap } from '@/composables/useRoverMap'
-import type { NavMessage } from '@/types/coordinates'
+import L from '../leaflet-rotatedmarker'
+import type { LatLng } from '@/types/leaflet'
 
-const autonomyStore = useAutonomyStore()
-const { route, waypointList } = storeToRefs(autonomyStore)
-const { setClickPoint } = autonomyStore
-
-const {
-  center,
-  online,
-  mapRef,
-  roverRef,
-  odomPath,
-  odomLatLng,
-  onlineUrl,
-  offlineUrl,
-  onlineTileOptions,
-  offlineTileOptions,
-  attribution,
-  locationIcon,
-  waypointIcon,
-  onMapReady,
-  centerOnRover,
-  getMap,
-  navMessage,
-} = useRoverMap({
-  maxOdomCount: 10,
-  drawFrequency: 10,
-  initialCenter: [38.4071654, -110.7923927],
-  offlineUrl: 'map/urc/{z}/{x}/{y}.jpg',
-})
-
-const basestation_latitude_deg = ref(0)
-const basestation_longitude_deg = ref(0)
-
-const basestationIcon = L.icon({
-  iconUrl: '/basestation_marker.svg',
-  iconSize: [64, 64],
-  iconAnchor: [32, 56],
-})
-
-const basestationLatLng = computed(() => {
-  return L.latLng(basestation_latitude_deg.value, basestation_longitude_deg.value)
-})
-
-const polylinePath = computed(() => {
-  return [odomLatLng.value].concat(
-    route.value.map((waypoint) => waypoint.latLng),
-  )
-})
-
-const handleMapReady = () => {
-  onMapReady()
+const MAX_ODOM_COUNT = 10
+const DRAW_FREQUENCY = 10
+// Options for the tilelayer object on the map
+const onlineUrl = 'http://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}'
+const offlineUrl = 'map/urc/{z}/{x}/{y}.jpg'
+const onlineTileOptions = {
+  maxNativeZoom: 22,
+  maxZoom: 100,
+  subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+}
+const offlineTileOptions = {
+  minZoom: 16,
+  maxZoom: 20,
 }
 
-const centerOnBasestation = () => {
-  const map = getMap()
-  if (map) {
-    map.setView(basestationLatLng.value, map.getZoom())
-  }
-}
+export default {
+  name: 'AutonRoverMap',
+  components: {
+    LMap,
+    LTileLayer,
+    LMarker,
+    LPolyline,
+    LTooltip,
+    LControlScale,
+  },
+  props: {
+    odom: {
+      type: Object,
+      default: () => ({ latitude_deg: 0, longitude_deg: 0, bearing_deg: 0 }),
+    },
+    basestation: {
+      type: Object,
+      default: () => ({ latitude_deg: 0, longitude_deg: 0 }),
+    },
+  },
+  data() {
+    return {
+      center: L.latLng(38.4071654, -110.7923927),
+      attribution:
+        '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors',
+      online: true,
+      onlineUrl: onlineUrl,
+      offlineUrl: offlineUrl,
+      onlineTileOptions: onlineTileOptions,
+      offlineTileOptions: offlineTileOptions,
+      roverMarker: null,
+      waypointIcon: null,
+      locationIcon: null,
 
-const getClickedLatLon = (e: { latlng: { lat: number; lng: number } }) => {
-  setClickPoint({
-    lat: e.latlng.lat,
-    lon: e.latlng.lng,
-  })
-}
+      map: null,
+      odomCount: 0,
+      odomPath: [],
 
 watch(navMessage, (msg) => {
   if (!msg) return

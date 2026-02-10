@@ -72,28 +72,60 @@
     </div>
   </div>
 
-  <SensorModal
-    v-if="showModal"
-    :sensor-history="sensor_history"
-    :time-counter="timeCounter"
-    @close="showModal = false"
-    @reset="resetHistory"
-  />
+  <div style="display: flex; flex-direction: row; gap: 10px; margin-top: 5px">
+    <div style="width: 50%; overflow-x: scroll">
+      <canvas
+        id="chart2"
+        style="width: 100%; height: 200px; background-color: white"
+      ></canvas>
+    </div>
+    <div style="width: 50%; overflow-x: scroll">
+      <canvas
+        id="chart3"
+        style="width: 100%; height: 200px; background-color: white"
+      ></canvas>
+    </div>
+  </div>
 </template>
 
-<script lang="ts" setup>
-import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
-import { useWebsocketStore } from '@/stores/websocket'
-import { storeToRefs } from 'pinia'
+<script lang="ts">
+import Vuex from 'vuex'
+const { mapState } = Vuex
 import Chart from 'chart.js/auto'
 import type { SensorData } from '../types/sensors'
-import type { ScienceMessage } from '@/types/websocket'
-import SensorModal from '@/components/SensorModal.vue'
+import type { WebSocketState } from '../types/websocket'
 
-const websocketStore = useWebsocketStore()
-const { messages } = storeToRefs(websocketStore)
+export default {
+  props: {
+    site: {
+      type: Number,
+      required: true,
+    },
+  },
 
-const showModal = ref(false)
+  data(): {
+    sensor_data: SensorData;
+    sensor_history: number[][];
+  } {
+    return {
+      sensor_data: {
+        oxygen: 0,
+        oxygen_var: 0,
+        uv: 0,
+        uv_var: 0,
+        humidity: 0,
+        humidity_var: 0,
+        temp: 0,
+        temp_var: 0,
+      },
+      sensor_history: [
+        [], // oxygen
+        [], // humidity
+        [], // temperature
+        [], // uv
+      ],
+    };
+  },
 
 const sensor_data = ref<SensorData>({
   sp_oxygen: 0,
@@ -115,207 +147,170 @@ const sensor_history = ref<number[][]>([
 ])
 const timeCounter = ref(0)
 
-const scienceMessage = computed(() => messages.value['science'])
-
-watch(scienceMessage, (msg) => {
-  if (!msg) return
-  const scienceMsg = msg as ScienceMessage;
-  switch (scienceMsg.type) {
-    case 'sp_oxygen':
-      sensor_data.value.sp_oxygen = scienceMsg.percent
-      break
-    case 'sp_uv':
-      sensor_data.value.sp_uv = scienceMsg.uv_index
-      break
-    case 'sp_temp':
-      sensor_data.value.sp_temp = scienceMsg.temperature
-      break
-    case 'sp_humidity':
-      sensor_data.value.sp_humidity = scienceMsg.relative_humidity
-      break
-    case 'sp_ozone':
-      sensor_data.value.sp_ozone = scienceMsg.ppb
-      break
-    case 'sp_co2':
-      sensor_data.value.sp_co2 = scienceMsg.ppm
-      break
-    case 'sp_pressure':
-      sensor_data.value.sp_pressure = scienceMsg.pressure
-      break
-  }
-})
-
-const resetHistory = () => {
-  sensor_history.value = [
-    Array(20).fill(0),
-    Array(20).fill(0),
-    Array(20).fill(0),
-    Array(20).fill(0),
-    Array(20).fill(0),
-    Array(20).fill(0),
-    Array(20).fill(0),
-  ]
-  timeCounter.value = 0
-}
-
-const downloadCSV = () => {
-  let csv = 'Time,Oxygen,Humidity,Temp,UV,Ozone,CO2,Pressure\n'
-
-  const firstHistory = sensor_history.value[0]
-  if (!firstHistory) return
-
-  const numRows = firstHistory.length
-  for (let i = 0; i < numRows; ++i) {
-    const row = sensor_history.value.map(sensor => sensor?.[i] ?? 0)
-    csv += `${i},${row.join(',')}\n`
-  }
-
-  const anchor = document.createElement('a')
-  anchor.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv)
-  anchor.download = 'sensor_data.csv'
-  anchor.click()
-}
-
-const charts: Chart[] = []
-let updateInterval: number | undefined = undefined
-
-const chartConfigs = [
-  { title: 'Humidity (%)', datasets: [{ label: 'Humidity', color: '#3BB273', historyIndex: 1 }] },
-  { title: 'UV Index', datasets: [{ label: 'UV', color: '#7768AE', historyIndex: 3 }] },
-  { title: 'Ozone (ppb)', datasets: [{ label: 'Ozone', color: '#F9A825', historyIndex: 4 }] },
-  { title: 'Pressure (Pa)', datasets: [{ label: 'Pressure', color: '#26A69A', historyIndex: 6 }] },
-]
-
-const maxHistory = 20
-
-onMounted(() => {
-  function waitForElm(selector: string): Promise<Element | null> {
-    return new Promise(resolve => {
-      const elm = document.querySelector(selector);
-      if (elm) {
-        return resolve(elm);
-      }
-
-      const observer = new MutationObserver(() => {
+    // This helper function waits for a DOM element to be available
+    function waitForElm(selector: string): Promise<Element | null> {
+      return new Promise(resolve => {
         const elm = document.querySelector(selector);
         if (elm) {
-          observer.disconnect();
-          resolve(elm);
+          return resolve(elm);
         }
-      });
 
-      observer.observe(document.body, {
-        childList: true,
-        subtree: true,
-      });
-    });
-  }
-
-  for (let i = 0; i < chartConfigs.length; ++i) {
-    waitForElm(`#chart${i}`).then(canvasElement => {
-      if (canvasElement instanceof HTMLCanvasElement) {
-        const config = chartConfigs[i];
-        if (!config) return;
-
-        const datasets = config.datasets.map(ds => ({
-          label: ds.label,
-          data: Array(20).fill(0),
-          fill: false,
-          borderColor: ds.color,
-          tension: 0.1,
-        }));
-
-        charts[i] = new Chart(canvasElement, {
-          type: 'line',
-          data: {
-            labels: Array.from({ length: 20 }, (_, i) => i),
-            datasets: datasets,
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            animation: false,
-            plugins: {
-              title: {
-                display: false
-              },
-              legend: {
-                display: false
-              }
-            },
-            scales: {
-              y: {
-                beginAtZero: false,
-                ticks: {
-                  font: { size: 10 },
-                  maxTicksLimit: 8,
-                  precision: 2,
-                }
-              },
-              x: {
-                ticks: { font: { size: 10 } }
-              }
-            },
-          },
-        });
-      }
-    });
-  }
-
-  updateInterval = window.setInterval(() => {
-    sensor_history.value[0]?.push(sensor_data.value.sp_oxygen);
-    sensor_history.value[1]?.push(sensor_data.value.sp_humidity);
-    sensor_history.value[2]?.push(sensor_data.value.sp_temp);
-    sensor_history.value[3]?.push(sensor_data.value.sp_uv);
-    sensor_history.value[4]?.push(sensor_data.value.sp_ozone);
-    sensor_history.value[5]?.push(sensor_data.value.sp_co2);
-    sensor_history.value[6]?.push(sensor_data.value.sp_pressure);
-
-    timeCounter.value++;
-
-    for (let x = 0; x < 7; ++x) {
-      const history = sensor_history.value[x];
-      if (history && history.length > maxHistory) {
-        history.shift();
-      }
-    }
-
-    for (let i = 0; i < chartConfigs.length; ++i) {
-      const chart = charts[i];
-      const config = chartConfigs[i];
-      if (chart && config) {
-        config.datasets.forEach((ds, idx) => {
-          const dataset = chart.data.datasets[idx];
-          const historyData = sensor_history.value[ds.historyIndex];
-          if (dataset && historyData) {
-            dataset.data = [...historyData];
+        const observer = new MutationObserver(() => {
+          const elm = document.querySelector(selector);
+          if (elm) {
+            observer.disconnect();
+            resolve(elm);
           }
         });
 
-        const firstHistory = sensor_history.value[0];
-        if (firstHistory) {
-          const startTime = Math.max(0, timeCounter.value - firstHistory.length + 1);
-          chart.data.labels = Array.from(
-            { length: firstHistory.length },
-            (_, i) => startTime + i
-          );
-        }
-        chart.update();
-      }
+        observer.observe(document.body, {
+          childList: true,
+          subtree: true,
+        });
+      });
     }
-  }, 1000);
-})
 
-onBeforeUnmount(() => {
-  if (updateInterval !== undefined) {
-    clearInterval(updateInterval)
-    updateInterval = undefined
-  }
-  for (const chart of charts) {
-    chart?.destroy()
-  }
-  charts.length = 0
-})
+    const titles = [
+      'Oxygen Percentage Over Time (s)',
+      'Relative Humidity Over Time (s)',
+      'Temperature (C) Over Time (s)',
+      'UV Index Over Time (s)',
+    ];
+
+    const lineColors = ['#4D9DE0', '#E15554', '#3BB273', '#7768AE'];
+    const maxHistory = 10;
+
+    // Create the four charts
+    for (let i = 0; i < 4; ++i) {
+      waitForElm(`#chart${i}`).then(canvasElement => {
+        // Ensure the element exists and is a canvas before creating the chart
+        if (canvasElement instanceof HTMLCanvasElement) {
+          const data = {
+            labels: [] as number[], // Initialize labels array
+            datasets: [
+              {
+                label: titles[i],
+                data: this.sensor_history[i],
+                fill: false,
+                borderColor: lineColors[i],
+                tension: 0.1,
+              },
+            ],
+          };
+
+          charts[i] = new Chart(canvasElement, {
+            type: 'line',
+            data: data,
+            options: {
+              responsive: false,
+              scales: {
+                y: {
+                  beginAtZero: true,
+                },
+              },
+            },
+          });
+        }
+      });
+    }
+
+    // Set up the interval to update chart data
+    setInterval(() => {
+      this.sensor_history[0].push(this.sensor_data.oxygen);
+      this.sensor_history[1].push(this.sensor_data.humidity);
+      this.sensor_history[2].push(this.sensor_data.temp);
+      this.sensor_history[3].push(this.sensor_data.uv);
+
+      for (let x = 0; x < 4; ++x) {
+        if (this.sensor_history[x].length > maxHistory) {
+          this.sensor_history[x].shift();
+        }
+      }
+
+      for (let x = 0; x < 4; ++x) {
+        const chart = charts[x];
+        if (chart) {
+          // Update the labels to match the data length
+          chart.data.labels = Array.from(
+            { length: this.sensor_history[x].length },
+            (_, i) => i
+          );
+          chart.update();
+        }
+      }
+    }, 1000);
+  },
+
+  computed: {
+    ...mapState('websocket', {
+      scienceMessage: (state: WebSocketState) => state.messages['science']
+    }),
+    sensorValues() {
+      return [
+        this.sensor_data.oxygen,
+        this.sensor_data.oxygen_var,
+        this.sensor_data.uv,
+        this.sensor_data.uv_var,
+        this.sensor_data.humidity,
+        this.sensor_data.humidity_var,
+        this.sensor_data.temp,
+        this.sensor_data.temp_var,
+      ]
+    },
+  },
+  created() {
+    // window.setInterval();
+    // this.interval = window.setInterval(() => {
+    //   this.randomizeSensorData();
+    // })
+  },
+  watch: {
+    scienceMessage(msg) {
+      switch (msg.type) {
+        case 'oxygen':
+          this.sensor_data.oxygen = msg.percent
+          // this.sensor_data.oxygen_var = msg.varianace
+          break
+        case 'uv':
+          this.sensor_data.uv = msg.uv_index
+          // this.sensor_data.uv_var = msg.varianace
+          break
+        case 'temperature':
+          this.sensor_data.temp = msg.temperature
+          // this.sensor_data.temp_var = msg.variance
+          break
+        case 'humidity':
+          this.sensor_data.humidity = msg.relative_humidity
+          // this.sensor_data.humidity_var = 100* msg.variance
+          break
+      }
+    },
+  },
+
+  methods: {
+    // randomizeSensorData() {
+    //       this.sensor_data.oxygen = (19.5 + Math.random() * 4);
+    //       this.sensor_data.uv = (1.5 + Math.random() * 0.5);
+    //       this.sensor_data.humidity = (68 + Math.random() * 4);
+    //       this.sensor_data.temp = (-2.8 + Math.random() * 2.8);
+    // },
+    download() {
+      // downloads csv of table
+      let csv = 'Oxygen, UV (index), Humidity, Temperature (C)\n'
+
+      const numRows = this.sensor_history[0].length // transpose (flip) array
+      for (let i = 0; i < numRows; ++i) {
+        const row = this.sensor_history.map(sensor => sensor[i])
+        csv += row.join(',') + '\n'
+      }
+
+      const anchor = document.createElement('a')
+      anchor.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv)
+      anchor.download = 'sensor_data.csv'
+      anchor.click()
+    },
+  },
+}
 </script>
 
 <style scoped>

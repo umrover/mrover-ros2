@@ -59,7 +59,6 @@ find_package(sensor_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(rtcm_msgs REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
-find_package(action_msgs REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(urdf REQUIRED)
@@ -152,9 +151,6 @@ message(STATUS "Found message files: ${MROVER_MESSAGE_FILE_PATHS}")
 file(GLOB_RECURSE MROVER_SERVICE_FILE_PATHS RELATIVE ${CMAKE_CURRENT_LIST_DIR} CONFIGURE_DEPENDS srv/*.srv)
 message(STATUS "Found service files: ${MROVER_SERVICE_FILE_PATHS}")
 
-file(GLOB_RECURSE MROVER_ACTION_FILE_PATHS RELATIVE ${CMAKE_CURRENT_LIST_DIR} CONFIGURE_DEPENDS action/*.action)
-message(STATUS "Found action files: ${MROVER_ACTION_FILE_PATHS}")
-
 # Starter Project
 message(STATUS "PROJ NAME: ${PROJECT_NAME}")
 
@@ -171,8 +167,7 @@ message(STATUS "Found message files: ${MROVER_MESSAGE_FILE_PATHS}")
 rosidl_generate_interfaces(${PROJECT_NAME}
     ${MROVER_MESSAGE_FILE_PATHS}
     ${MROVER_SERVICE_FILE_PATHS}
-    ${MROVER_ACTION_FILE_PATHS}
-    DEPENDENCIES nav_msgs sensor_msgs geometry_msgs action_msgs
+    DEPENDENCIES nav_msgs sensor_msgs geometry_msgs
 )
 
 # Starter project 

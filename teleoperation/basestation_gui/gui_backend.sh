@@ -1,6 +1,8 @@
 #!/bin/bash
 
-export RCUTILS_CONSOLE_OUTPUT_FORMAT="[{severity}] {message}"
+
 
 cd teleoperation/basestation_gui || exit 1
-exec python3 server.py
+# clears the currentautoncourse table upon restarting the app
+python3 manage.py migrate
+python3 manage.py runserver

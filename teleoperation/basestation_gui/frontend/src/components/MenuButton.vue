@@ -26,9 +26,13 @@ export default defineComponent({
 </script>
 
 <style scoped>
-.menu-button {
-  position: relative;
+a {
+  margin: 5px;
+  width: 250px;
+  height: 150px;
+
   display: flex;
+  justify-content: center;
   align-items: center;
   padding: 1rem clamp(1rem, 1.2vw, 1.75rem);
   text-decoration: none;

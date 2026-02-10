@@ -101,61 +101,135 @@
   </div>
 </template>
 
-<script lang="ts" setup>
-import { ref, computed, watch } from 'vue'
-import { useWebsocketStore } from '@/stores/websocket'
-import { storeToRefs } from 'pinia'
-import { quaternionToMapAngle } from '../utils/map.ts'
-import type { NavMessage, CalibrationMessage } from '../types/coordinates'
-import IndicatorDot from './IndicatorDot.vue'
+<script lang="ts">
+import { defineComponent } from 'vue'
+import Vuex from 'vuex'
+const { mapState } = Vuex
+import { convertDMS, quaternionToMapAngle } from '../utils/map.js'
+import IMUCalibration from './IMUCalibration.vue'
+import FlightAttitudeIndicator from './FlightAttitudeIndicator.vue'
+import type { WebSocketState } from '../types/websocket.js'
+import type {
+  Odom,
+  FormattedOdom,
+  OdomData,
+  NavMessage,
+} from '../types/coordinates.js'
 
-const websocketStore = useWebsocketStore()
-const { messages } = storeToRefs(websocketStore)
+export default defineComponent({
+  components: {
+    FlightAttitudeIndicator,
+    IMUCalibration,
+  },
 
-const rover_latitude_deg = ref(38.4071654)
-const rover_longitude_deg = ref(-110.7923927)
-const rover_bearing_deg = ref(0)
-const rover_altitude = ref(0)
-const rover_status = ref(-1)
-const drone_status = ref(-1)
-const basestation_latitude_deg = ref(38.4071654)
-const basestation_longitude_deg = ref(-110.7923927)
+  emits: ['odom', 'drone_odom', 'basestation_odom'],
 
-const pitch = ref(0)
-const roll = ref(0)
+  data(): OdomData {
+    return {
+      rover_latitude_deg: 38.4071654,
+      rover_longitude_deg: -110.7923927,
+      rover_bearing_deg: 0,
+      rover_altitude: 0,
+      rover_status: false,
+      drone_latitude_deg: 38.4071654,
+      drone_longitude_deg: -110.7923927,
+      drone_status: false,
+      basestation_latitude_deg: 38.4071654,
+      basestation_longitude_deg: -110.7923927,
+      basestation_status: false,
+    }
+  },
+  computed: {
+    ...mapState('websocket', {
+      navMessage: (state: WebSocketState) => state.messages['nav'],
+    }),
 
-const mag_calibration = ref(0)
-const gyro_calibration = ref(0)
-const accel_calibration = ref(0)
+    odom_format(): string {
+      return this.$store.getters['map/odomFormat']
+    },
 
-const navMessage = computed(() => messages.value['nav'])
+    formatted_odom(): FormattedOdom {
+      return {
+        lat: convertDMS(
+          { d: this.rover_latitude_deg, m: 0, s: 0 },
+          this.odom_format,
+        ),
+        lon: convertDMS(
+          { d: this.rover_longitude_deg, m: 0, s: 0 },
+          this.odom_format,
+        ),
+      }
+    },
+    formatted_basestation_odom(): FormattedOdom {
+      return {
+        lat: convertDMS(
+          { d: this.basestation_latitude_deg, m: 0, s: 0 },
+          this.odom_format,
+        ),
+        lon: convertDMS(
+          { d: this.basestation_longitude_deg, m: 0, s: 0 },
+          this.odom_format,
+        ),
+      }
+    },
+    min_enabled(): boolean {
+      return this.odom_format !== 'D'
+    },
+    sec_enabled(): boolean {
+      return this.odom_format === 'DMS'
+    },
+    alt_available(): boolean {
+      return !isNaN(this.rover_altitude)
+    },
+    get_odom_status(): string {
+      return this.rover_status ? 'Fixed' : 'Not Fixed'
+    },
+    get_drone_status(): string {
+      return this.drone_status ? 'Fixed' : 'Not Fixed'
+    },
+  },
 
-watch(navMessage, msg => {
-  if (!msg) return
-  const navMsg = msg as NavMessage
-  if (navMsg.type === 'gps_fix') {
-    rover_latitude_deg.value = navMsg.latitude
-    rover_longitude_deg.value = navMsg.longitude
-    rover_altitude.value = navMsg.altitude
-    rover_status.value = navMsg.status.status
-  } else if (navMsg.type === 'basestation_position') {
-    basestation_latitude_deg.value = navMsg.latitude
-    basestation_longitude_deg.value = navMsg.longitude
-  } else if (navMsg.type === 'drone_waypoint') {
-    drone_status.value = navMsg.status.status
-  } else if (navMsg.type === 'orientation') {
-    rover_bearing_deg.value = quaternionToMapAngle(navMsg.orientation)
-    const { x: qx, y: qy, z: qz, w: qw } = navMsg.orientation
-    pitch.value = (Math.asin(2 * (qx * qz - qy * qw)) * 180) / Math.PI
-    roll.value =
-      (Math.atan2(2 * (qy * qz + qx * qw), 1 - 2 * (qx * qx + qy * qy)) * 180) /
-      Math.PI
-  } else if (navMsg.type === 'calibration') {
-    const calMsg = msg as CalibrationMessage
-    mag_calibration.value = calMsg.magnetometer_calibration
-    gyro_calibration.value = calMsg.gyroscope_calibration
-    accel_calibration.value = calMsg.acceleration_calibration
-  }
+  watch: {
+    // The watcher now correctly gets the type from the manual computed property.
+    navMessage(msg: NavMessage | undefined) {
+      if (!msg) return
+
+      if (msg.type === 'gps_fix') {
+        this.rover_latitude_deg = msg.latitude
+        this.rover_longitude_deg = msg.longitude
+        this.rover_altitude = msg.altitude
+        this.rover_status = msg.status
+        this.$emit('odom', {
+          latitude_deg: this.rover_latitude_deg,
+          longitude_deg: this.rover_longitude_deg,
+          bearing_deg: this.rover_bearing_deg,
+        } as Odom)
+      } else if (msg.type === 'basestation_position') {
+        this.basestation_latitude_deg = msg.latitude
+        this.basestation_longitude_deg = msg.longitude
+        this.basestation_status = msg.status
+        this.$emit('basestation_odom', {
+          latitude_deg: this.basestation_latitude_deg,
+          longitude_deg: this.basestation_longitude_deg,
+        } as Odom)
+      } else if (msg.type === 'drone_waypoint') {
+        this.drone_latitude_deg = msg.latitude
+        this.drone_longitude_deg = msg.longitude
+        this.drone_status = msg.status
+        this.$emit('drone_odom', {
+          latitude_deg: this.drone_latitude_deg,
+          longitude_deg: this.drone_longitude_deg,
+        })
+      } else if (msg.type === 'orientation') {
+        this.rover_bearing_deg = quaternionToMapAngle(msg.orientation)
+        this.$emit('odom', {
+          latitude_deg: this.rover_latitude_deg,
+          longitude_deg: this.rover_longitude_deg,
+          bearing_deg: this.rover_bearing_deg,
+        } as Odom)
+      }
+    },
+  },
 })
 </script>
 

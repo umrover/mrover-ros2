@@ -89,33 +89,13 @@
 <script lang="ts">
 import { defineComponent } from 'vue';
 import WebsocketStatus from '../components/WebsocketStatus.vue';
-import NotificationCenter from '../components/NotificationCenter.vue';
-import { useGridLayoutStore } from '@/stores/gridLayout';
-import { useThemeStore } from '@/stores/theme';
 
 export default defineComponent({
   name: 'NavBar',
-  setup() {
-    const gridLayoutStore = useGridLayoutStore();
-    const themeStore = useThemeStore();
-    return { gridLayoutStore, themeStore };
-  },
   computed: {
     title(): string {
+      // @ts-expect-error ts dumb
       return this.getTitleForRoute(this.$route.path)
-    },
-    showGridControls(): boolean {
-      return this.$route.meta.hasGridLayout === true;
-    },
-    themeIcon(): string {
-      const icons: Record<string, string> = {
-        'light': 'bi bi-sun-fill',
-        'dark': 'bi bi-moon-fill',
-        'high-contrast-light': 'bi bi-circle-half',
-        'high-contrast-dark': 'bi bi-circle-fill',
-        'dont-click-me': 'bi bi-exclamation-triangle-fill'
-      };
-      return icons[this.themeStore.currentTheme] || 'bi bi-sun-fill';
     },
   },
   components: {
@@ -129,7 +109,10 @@ export default defineComponent({
         '/AutonTask': 'Autonomy Mission',
         '/DMTask': 'Delivery Mission',
         '/ESTask': 'Equipment Servicing',
-        '/ScienceTask' : "Science Mission",
+        '/ISHTask': 'ISH Mission',
+        '/SATask': 'Sample Acquisition',
+        '/Cameras': 'Camera View',
+        '/dev': 'Development View'
       };
 
       return routeTitles[path] || 'Unknown Path';
@@ -139,6 +122,15 @@ export default defineComponent({
 </script>
 
 <style scoped>
+h1 {
+	font-family: 'Consolas', 'Courier New', 'DejaVu Sans Mono', monospace;
+  font-weight: 400;
+  font-size: 2.7rem;
+	letter-spacing: -0.1rem;
+  margin: 0;
+  user-select: none;
+}
+
 .logo {
   position: absolute;
   left: 48%;

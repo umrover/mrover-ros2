@@ -201,7 +201,7 @@ class AStar:
 
         rover_position_in_map = rover_SE3.translation()[:2]
 
-        if not self.USE_COSTMAP or not self.use_astar(dest=dest):
+        if not self.USE_COSTMAP or not self.use_astar(context=context, dest=dest):
             if (not self.USE_PURE_PURSUIT):
                 return Trajectory(np.array([dest]))
             else:
@@ -232,7 +232,6 @@ class AStar:
             
         if occupancy_list is not None:
             cartesian_coords = ij_to_cartesian(context, np.array(occupancy_list))
-
             # Exclude the first point since it should be the rover's starting position
             if len(cartesian_coords) >= 1:
                 trajectory = Trajectory(np.hstack((cartesian_coords, np.zeros((cartesian_coords.shape[0], 1)))))

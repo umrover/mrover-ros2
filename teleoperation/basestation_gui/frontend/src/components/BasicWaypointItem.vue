@@ -21,15 +21,27 @@
   </div>
 </template>
 
-<script lang="ts" setup>
-defineProps({
-  waypoint: {
-    type: Object,
-    required: true
+<script lang="ts">
+import { defineComponent } from 'vue'
+import Vuex from 'vuex'
+const { mapGetters } = Vuex
+
+export default defineComponent({
+  props: {
+    waypoint: {
+      type: Object,
+      required: true
+    },
+    index: {
+      type: Number,
+      required: true
+    }
   },
-  index: {
-    type: Number,
-    required: true
+
+  computed: {
+    ...mapGetters('erd', {
+      highlightedWaypoint: 'highlightedWaypoint'
+    })
   }
 })
 </script>

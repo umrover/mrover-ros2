@@ -56,96 +56,60 @@
   </div>
 </template>
 
-<script lang='ts' setup>
-import { ref, computed, watch } from 'vue'
-import { useWebsocketStore } from '@/stores/websocket'
-import { storeToRefs } from 'pinia'
-import type { ControllerStateMessage } from '@/types/websocket'
+<script lang='ts'>
+import { defineComponent } from 'vue'
+import Vuex from 'vuex';
+const { mapState } = Vuex;
+import type { WebSocketState } from '../types/websocket';
 
-const props = defineProps<{
-  header: string
-  mode: 'drive' | 'arm' | 'sp'
-}>()
+export default defineComponent({
+  props: {
+    header: {
+      type: String,
+      required: true,
+    },
+    msgType: {
+      type: String,
+      required: true,
+    }
+  },
 
-const websocketStore = useWebsocketStore()
-const { messages } = storeToRefs(websocketStore)
+  data() {
+    return {
+      name: [] as string[],
+      state: [] as string[],
+      error: [] as string[],
+      limits: [] as boolean[]
+    }
+  },
 
-const statusKey = `controllerDataTable_${props.mode}_showStatus`
-const valuesKey = `controllerDataTable_${props.mode}_showValues`
+  computed: {
+    ...mapState('websocket', {
+      armMessage: (state: WebSocketState) => state.messages['arm'],
+      driveMessage: (state: WebSocketState) => state.messages['drive']
+    })
+  },
 
-const showStatus = ref(localStorage.getItem(statusKey) === 'true')
-const showValues = ref(localStorage.getItem(valuesKey) === 'true')
+  // arm_state, drive_state, sa_state, drive_left_state, drive_right_state
+  // arm, drive, 
 
-watch(showStatus, (val) => localStorage.setItem(statusKey, String(val)))
-watch(showValues, (val) => localStorage.setItem(valuesKey, String(val)))
-
-const names = ref<string[]>([])
-const states = ref<string[]>([])
-const errors = ref<string[]>([])
-const limitHits = ref<boolean[]>([])
-const positions = ref<number[]>([])
-const velocities = ref<number[]>([])
-const currents = ref<number[]>([])
-
-const leftState = ref<ControllerStateMessage | null>(null)
-const rightState = ref<ControllerStateMessage | null>(null)
-
-function updateFromMessage(msg: ControllerStateMessage) {
-  names.value = msg.names
-  states.value = msg.states
-  errors.value = msg.errors
-  limitHits.value = msg.limits_hit
-  positions.value = msg.positions
-  velocities.value = msg.velocities
-  currents.value = msg.currents
-}
-
-function combineLeftRight() {
-  const left = leftState.value
-  const right = rightState.value
-  if (!left && !right) return
-
-  const l = left || { names: [], states: [], errors: [], limits_hit: [], positions: [], velocities: [], currents: [] }
-  const r = right || { names: [], states: [], errors: [], limits_hit: [], positions: [], velocities: [], currents: [] }
-
-  names.value = [...l.names, ...r.names]
-  states.value = [...l.states, ...r.states]
-  errors.value = [...l.errors, ...r.errors]
-  limitHits.value = [...l.limits_hit, ...r.limits_hit]
-  positions.value = [...l.positions, ...r.positions]
-  velocities.value = [...l.velocities, ...r.velocities]
-  currents.value = [...l.currents, ...r.currents]
-}
-
-const driveMessage = computed(() => messages.value['drive'])
-const armMessage = computed(() => messages.value['arm'])
-const scienceMessage = computed(() => messages.value['science'])
-
-watch(driveMessage, (msg) => {
-  if (props.mode !== 'drive' || !msg) return
-  const typed = msg as ControllerStateMessage
-  if (typed.type === 'drive_left_state') {
-    leftState.value = typed
-    combineLeftRight()
-  } else if (typed.type === 'drive_right_state') {
-    rightState.value = typed
-    combineLeftRight()
-  }
-})
-
-watch(armMessage, (msg) => {
-  if (props.mode !== 'arm' || !msg) return
-  const typed = msg as ControllerStateMessage
-  if (typed.type === 'arm_state') {
-    updateFromMessage(typed)
-  }
-})
-
-watch(scienceMessage, (msg) => {
-  if (props.mode !== 'sp' || !msg) return
-  const typed = msg as ControllerStateMessage
-  if (typed.type === 'sp_controller_state') {
-    updateFromMessage(typed)
+  watch: {
+    armMessage(msg) {
+      if (msg.type == this.msgType) {
+        this.name = msg.name
+        this.state = msg.state
+        this.error = msg.error
+        this.limits = msg.limit_hit
+      }
+    },
+    driveMessage(msg) {
+      if (msg.type == this.msgType) {
+        this.name = msg.name
+        this.state = msg.state
+        this.error = msg.error
+        this.limits = msg.limit_hit
+      }
+    },
   }
 })
 </script>

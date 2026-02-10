@@ -32,9 +32,9 @@ namespace mrover {
 
             mImageTargetsPub = create_publisher<msg::ImageTargets>("objects", 1);
 
-            mIkTargetPub = create_publisher<msg::IK>("ik_pos_cmd", 1);
+            mIkTargetPub = create_publisher<msg::IK>("ee_pos_cmd", 1);
 
-            mIkVelPub = create_publisher<geometry_msgs::msg::Twist>("ik_vel_cmd", 1);
+            mIkVelPub = create_publisher<geometry_msgs::msg::Twist>("ee_vel_cmd", 1);
 
             mIkModeClient = create_client<srv::IkMode>("ik_mode");
 

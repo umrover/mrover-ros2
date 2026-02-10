@@ -53,30 +53,13 @@
   <canvas class="webgl p-0 h-100 w-100"></canvas>
 </template>
 
-<script lang="ts" setup>
-import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
-import { useWebsocketStore } from '@/stores/websocket'
-import { storeToRefs } from 'pinia'
-import type { ControllerStateMessage } from '@/types/websocket'
-import threeSetup, { updatePose, updateIKTarget, set_camera_type, updateCostMapGrid} from '../rover_three.js'
-
-interface ArmIKMessage {
-  type: 'ik_target'
-  target: {
-    pose: {
-      position: {
-        x: number
-        y: number
-        z: number
-      }
-    }
-  }
-}
-
-const websocketStore = useWebsocketStore()
-const { messages } = storeToRefs(websocketStore)
-
-const threeScene = ref<(() => void) | null>(null)
+<script lang="ts">
+import { defineComponent } from 'vue'
+import Vuex from 'vuex'
+const { mapState } = Vuex
+// @ts-expect-error shut up ts
+import threeSetup, { updatePose } from '../rover_three.js'
+import type { WebSocketState } from '../types/websocket.js'
 
 const jointNameMap: Record<string, string> = {
   joint_a: 'chassis_to_arm_a',
@@ -87,9 +70,6 @@ const jointNameMap: Record<string, string> = {
   gripper: 'gripper_link',
 }
 
-onMounted(() => {
-  threeScene.value = threeSetup()
-})
 
 onBeforeUnmount(() => {
   if (threeScene.value) {
@@ -130,16 +110,42 @@ watch(armMessage, (msg: unknown) => {
       }
       updateIKTarget(position)
     }
-  }
-})
+  },
 
-watch(contextMessage, (msg: unknown) => {
-  if (typeof msg == 'object' && msg !== null && 'type' in msg) {
-    const typedMsg = msg as { type: string; state?: string }
-    if (typedMsg.type === 'costmap') {
-      console.log("hi")
-    }
-  }
+  mounted() {
+    this.threeScene = threeSetup('threejs')
+  },
+
+  computed: {
+    ...mapState('websocket', {
+      armMessage: (state: WebSocketState) => state.messages['arm'],
+    }),
+  },
+
+  watch: {
+    armMessage(msg) {
+      const joints = msg.name.map((name: string, index: number) => {
+        const urdfName = jointNameMap[name] || name
+        let position = msg.position[index]
+
+        if (urdfName === 'chassis_to_arm_a') {
+          position = position * -100 + 40 // scale from m to cm
+        }
+
+        return {
+          name: urdfName,
+          position,
+        }
+      })
+
+      console.log(joints)
+      updatePose(joints)
+
+      // else if (msg.type === 'ik') {
+      //   this.threeScene.ik(msg.target)
+      // }
+    },
+  },
 })
 </script>
 

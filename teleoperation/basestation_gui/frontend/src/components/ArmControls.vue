@@ -30,7 +30,7 @@
           data-testid="pw-arm-mode-ik-pos"
           @click="newRAMode('ik-pos')"
         >
-          IK Pos
+          IK Position
         </button>
         <button
           type="button"
@@ -39,7 +39,7 @@
           data-testid="pw-arm-mode-ik-vel"
           @click="newRAMode('ik-vel')"
         >
-          IK Vel
+          IK Velocity
         </button>
       </div>
     <GamepadDisplay :axes="axes" :buttons="buttons" layout="horizontal" class="flex-grow-1 min-height-0" />
@@ -66,35 +66,61 @@ let interval: number | undefined = undefined
 
 const UPDATE_HZ = 30
 
-const keyDown = async (event: { key: string }) => {
-  if (event.key === ' ') {
-    await newRAMode('disabled')
-  }
-}
-
-onMounted(() => {
-  document.addEventListener('keydown', keyDown)
-  interval = window.setInterval(() => {
-    const gamepads = navigator.getGamepads()
-    const gamepad = gamepads.find(
-      gamepad => gamepad && gamepad.id.includes('Microsoft')
-    )
-    gamepadConnected.value = !!gamepad
-    if (!gamepad) return
-
-    axes.value = [...gamepad.axes]
-    buttons.value = gamepad.buttons.map(button => button.value)
-
-    const controllerData = {
-      axes: gamepad.axes,
-      buttons: gamepad.buttons.map(button => button.value)
+export default defineComponent({
+  data() {
+    return {
+      mode: 'disabled',
+      gamepadConnected: false,
     }
+  },
+  computed: {
+    ...mapState('websocket', ['message']),
+    controllerConnected(): boolean {
+      return this.gamepadConnected
+    },
+  },
+  mounted() {
+    document.addEventListener('keydown', this.keyDown)
+  },
+  created() {
+    this.interval = window.setInterval(() => {
+      const gamepads = navigator.getGamepads()
+      const gamepad = gamepads.find(
+        gamepad => gamepad && gamepad.id.includes('Microsoft'),
+      )
+      this.gamepadConnected = !!gamepad
+      if (!gamepad) return
 
-    websocketStore.sendMessage('arm', {
-      type: 'ra_controller',
-      ...controllerData
-    })
-  }, 1000 / UPDATE_HZ)
+      this.$store.dispatch('websocket/sendMessage', {
+        id: 'arm',
+        message: {
+          type: 'ra_controller',
+          axes: gamepad.axes,
+          buttons: gamepad.buttons.map(button => button.value),
+        },
+      })
+
+      this.$store.dispatch('websocket/sendMessage', {
+        id: 'arm',
+        message: {
+          type: 'ra_mode',
+          mode: this.mode,
+        },
+      })
+    }, 1000 / UPDATE_HZ)
+  },
+  beforeUnmount() {
+    window.clearInterval(this.interval)
+    document.removeEventListener('keydown', this.keyDown)
+  },
+  methods: {
+    ...mapActions('websocket', ['sendMessage']),
+    keyDown(event: { key: string }) {
+      if (event.key === ' ') {
+        this.mode = 'disabled'
+      }
+    },
+  },
 })
 
 onBeforeUnmount(() => {

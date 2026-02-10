@@ -11,8 +11,11 @@ from .context import Context
 import time
 import rclpy
 from .context import Context
+from navigation.astar import AStar, SpiralEnd, NoPath, OutOfBounds
+from navigation.coordinate_utils import segment_path, is_high_cost_point, d_calc, cartesian_to_ij
 from navigation.astar import AStar, SpiralEnd, NoPath, OutOfBounds, DestinationInHighCost
-from navigation.coordinate_utils import gen_marker, segment_path, is_high_cost_point, d_calc, cartesian_to_ij
+from navigation.coordinate_utils import segment_path, is_high_cost_point, d_calc, cartesian_to_ij
+from navigation.marker_utils import gen_marker
 from navigation.trajectory import Trajectory, SearchTrajectory
 from typing import Optional
 from rclpy.publisher import Publisher
@@ -171,7 +174,6 @@ class WaypointState(State):
             self.display_markers(context=context)
             try:
                 self.astar_traj = self.astar.generate_trajectory(context, self.waypoint_traj.get_current_point())
-
                 self.astar_traj = smoothing(self.astar_traj, context, self.USE_RELAXATION, self.USE_INTERPOLATION)
                 
             except Exception as e:
