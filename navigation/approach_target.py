@@ -19,6 +19,8 @@ class ApproachTargetState(State):
     UPDATE_DELAY: float
     USE_COSTMAP: bool
     DISTANCE_THRESHOLD: float
+    LOOK_DISTANCE_THRESHOLD: float
+    COST_INFLATION_RADIUS: float
     time_begin: Time
     astar_traj: Trajectory
     target_traj: Trajectory
@@ -27,6 +29,8 @@ class ApproachTargetState(State):
     target_position: np.ndarray | None
     marker_timer: Timer
     update_timer: Timer
+    object_type: int
+    no_look_ahead_dict: dict
 
     def on_enter(self, context: Context) -> None:
         from .long_range import LongRangeState
@@ -46,12 +50,16 @@ class ApproachTargetState(State):
 
         self.USE_COSTMAP = context.node.get_parameter("costmap.use_costmap").value or current_waypoint.enable_costmap
         self.DISTANCE_THRESHOLD = context.node.get_parameter("search.distance_threshold").value
+        self.COST_INFLATION_RADIUS = context.node.get_parameter("costmap.initial_inflation_radius").value
+        self.marker_pub = context.node.create_publisher(Marker, "target_trajectory", 10)
         self.astar_traj = Trajectory(np.array([]))
         self.target_traj = Trajectory(np.array([]))
         self.astar = AStar(context=context)
         self.target_position = None
         self.time_last_updated = context.node.get_clock().now()
         self.time_begin = context.node.get_clock().now()
+        self.object_type = current_waypoint.type.val
+        self.no_look_ahead_dict = {"NO_SEARCH": 0, "POST": 1}
 
         self.marker_timer = context.node.create_timer(
             context.node.get_parameter("pub_path_rate").value, lambda: self.display_markers(context=context)
@@ -215,6 +223,8 @@ class ApproachTargetState(State):
                         context.node.get_logger().info("Found low-cost point")
                         return self
 
+        if self.self_in_distance_threshold(context, self.object_type):
+            return self.next_state(context=context, is_finished=True)
         arrived = False
         cmd_vel = Twist()
         if not self.astar_traj.done():
@@ -246,8 +256,6 @@ class ApproachTargetState(State):
                         return self
 
                     # If we are within the distance threshold of the target we have finished
-                    if self.self_in_distance_threshold(context):
-                        return self.next_state(context=context, is_finished=True)
 
                     # Otherwise we need to dilate to get closer
                     else:
@@ -279,7 +287,8 @@ class ApproachTargetState(State):
             context.node.get_parameter("single_tag.stop_threshold").value,
             context.node.get_parameter("waypoint.drive_forward_threshold").value,
         )
-
+        if self.self_in_distance_threshold(context, self.object_type):
+            return self.next_state(context=context, is_finished=True)
         if arrived:
             if isinstance(self, LongRangeState):
                 self.target_position = self.get_target_position(context)
@@ -375,7 +384,7 @@ class ApproachTargetState(State):
                 points=np.array([self.target_position]), color=[1.0, 1.0, 0.0], ns=str(type(self))
             )
 
-    def self_in_distance_threshold(self, context: Context):
+    def self_in_distance_threshold(self, context: Context, object_type: int):
         rover_SE3 = context.rover.get_pose_in_map()
         if rover_SE3 is None:
             return False
@@ -383,10 +392,15 @@ class ApproachTargetState(State):
         target_pos = context.env.current_target_pos()
         if target_pos is None:
             return False
-
+        time_diff = context.env.current_time_diff()
+        if time_diff is None:
+            return False
         rover_translation = rover_SE3.translation()[0:2]
         distance_to_target = d_calc(rover_translation, tuple(target_pos))
-        return distance_to_target < self.DISTANCE_THRESHOLD
+        if object_type in self.no_look_ahead_dict.values():
+            return distance_to_target < self.DISTANCE_THRESHOLD
+        else:
+            return distance_to_target < self.LOOK_DISTANCE_THRESHOLD and time_diff < Duration(nanoseconds=50000000)
 
     def point_in_distance_threshold(self, context: Context, point):
         if point is None:
