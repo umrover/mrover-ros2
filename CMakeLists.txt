@@ -316,6 +316,14 @@ mrover_link_component(cost_map lie parameter_utils)
 
 mrover_executable_from_component(cost_map perception/executables/cost_map.cpp cost_map_component)
 
+# TESTING
+# Zed Timer
+mrover_add_component(zed_timer perception/zed_timer/*.cpp ZedTimerNode)
+mrover_ament_component(zed_timer rclcpp rclcpp_components sensor_msgs tf2 tf2_ros)
+mrover_link_component(zed_timer lie parameter_utils)
+
+mrover_executable_from_component(zed_timer perception/executables/zed_timer.cpp zed_timer_component)
+
 # Embedded
 
 mrover_add_header_only_library(messaging esw/messaging)
