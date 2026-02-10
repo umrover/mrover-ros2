@@ -105,7 +105,7 @@ namespace mrover {
 
         // drop any packets with invalid src/dest registers
         if (src_it == mDevices.right.end() || dest_it == mDevices.right.end()) {
-            RCLCPP_INFO(get_logger(), "could not find one of %x or %x", src_id, dest_id);
+            // RCLCPP_INFO(get_logger(), "could not find one of %x or %x", src_id, dest_id);
             return;
         }
 

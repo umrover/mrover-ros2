@@ -20,7 +20,7 @@ namespace mrover {
             fkCallback(msg);
         });
 
-        mTypingServer = rclcpp_action::create_server<action::TypingDeltas>(
+        mTypingServer = rclcpp_action::create_server<action::TypingPosition>(
             this,
             "typing_ik",
             [this](auto & uuid, auto typingGoal) { return handleTypingGoal(uuid, typingGoal); },
