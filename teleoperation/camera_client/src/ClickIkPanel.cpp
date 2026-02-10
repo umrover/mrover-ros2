@@ -24,24 +24,10 @@ namespace mrover {
         mInfoRow->addWidget(mFeedbackLabel, 1);
         mLayout->addLayout(mInfoRow);
 
-        mVideoContainer = new QWidget(this);
-        mVideoContainerLayout = new QVBoxLayout(mVideoContainer);
-        mVideoContainerLayout->setContentsMargins(0, 0, 0, 0);
-        mVideoContainer->setLayout(mVideoContainerLayout);
-        mLayout->addWidget(mVideoContainer, 1);
-
         setLayout(mLayout);
-        setMinimumWidth(640);
 
         refreshStatus();
         refreshResultLabel(false);
-    }
-
-    auto ClickIkPanel::placeZedWidget(GstVideoWidget* widget) -> void {
-        widget->setParent(mVideoContainer);
-        widget->setFixedSize(640, 360);
-        mVideoContainerLayout->addWidget(widget, 0, Qt::AlignCenter);
-        widget->show();
     }
 
     void ClickIkPanel::onToggle() {

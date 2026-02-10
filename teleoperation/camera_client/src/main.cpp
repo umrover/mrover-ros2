@@ -69,13 +69,17 @@ auto main(int argc, char** argv) -> int {
                                  .onScreenshot = [node, name]() { return node->requestScreenshot(name); },
                          };
 
+                         mainWindow->createCamera(name, info.pipeline, std::move(callbacks));
+
+                         auto* videoWidget = mainWindow->getCameraGridWidget()->getGstVideoWidget(name);
+                         if (!videoWidget) return;
+
+                         if (info.imageWidth > 0 && info.imageHeight > 0) {
+                             videoWidget->setImageSize(info.imageWidth, info.imageHeight);
+                         }
+
                          if (name == "zed") {
                              auto* panel = mainWindow->getClickIkPanel();
-                             auto* videoWidget = new mrover::GstVideoWidget();
-                             videoWidget->setGstPipeline(info.pipeline);
-                             videoWidget->setImageSize(1280, 720);
-                             panel->placeZedWidget(videoWidget);
-
                              QObject::connect(videoWidget, &mrover::GstVideoWidget::clicked,
                                               panel, [panel, nodePtr = node.get()](std::uint32_t x, std::uint32_t y) {
                                                   if (panel->canSendClick()) {
@@ -84,8 +88,6 @@ auto main(int argc, char** argv) -> int {
                                                       nodePtr->sendClickIk(x, y);
                                                   }
                                               });
-                         } else {
-                             mainWindow->createCamera(name, info.pipeline, std::move(callbacks));
                          }
                      });
 

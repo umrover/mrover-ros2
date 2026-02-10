@@ -1,7 +1,6 @@
 #pragma once
 
 #include "pch.hpp"
-#include "GstVideoWidgets.hpp"
 
 namespace mrover {
 
@@ -15,8 +14,6 @@ namespace mrover {
         QLabel* mResultLabel;
         QLabel* mClickLabel;
         QVBoxLayout* mLayout;
-        QWidget* mVideoContainer;
-        QVBoxLayout* mVideoContainerLayout;
 
         bool mEnabled = false;
         bool mRunning = false;
@@ -26,7 +23,6 @@ namespace mrover {
     public:
         explicit ClickIkPanel(QWidget* parent = nullptr);
 
-        auto placeZedWidget(GstVideoWidget* widget) -> void;
         [[nodiscard]] auto canSendClick() const -> bool { return mEnabled && !mRunning; }
 
     public slots:

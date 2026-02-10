@@ -21,6 +21,8 @@ namespace mrover {
     struct CameraInfo {
         std::string name;
         std::string pipeline;
+        int imageWidth = 0;
+        int imageHeight = 0;
     };
 
     // inherits from both QObject (for signals) and rclcpp::Node (for ROS)

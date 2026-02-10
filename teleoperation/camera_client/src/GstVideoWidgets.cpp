@@ -125,8 +125,10 @@ auto GstVideoWidget::setImageSize(int w, int h) -> void {
 
 void GstVideoWidget::mousePressEvent(QMouseEvent* event) {
     if (event->button() == Qt::LeftButton && mImageWidth > 0 && mImageHeight > 0) {
-        int x = event->pos().x() * 2;
-        int y = event->pos().y() * 2;
+        double const scaleX = static_cast<double>(mImageWidth) / width();
+        double const scaleY = static_cast<double>(mImageHeight) / height();
+        int x = static_cast<int>(event->pos().x() * scaleX);
+        int y = static_cast<int>(event->pos().y() * scaleY);
         if (x >= 0 && x < mImageWidth && y >= 0 && y < mImageHeight) {
             emit clicked(static_cast<std::uint32_t>(x), static_cast<std::uint32_t>(y));
         }

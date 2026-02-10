@@ -42,6 +42,11 @@ namespace mrover {
             declare_parameter(std::format("{}.stream.codec", cameraName), rclcpp::ParameterType::PARAMETER_STRING);
             std::string const codec = get_parameter(std::format("{}.stream.codec", cameraName)).as_string();
 
+            declare_parameter(std::format("{}.stream.width", cameraName), 0);
+            declare_parameter(std::format("{}.stream.height", cameraName), 0);
+            auto const imageWidth = static_cast<int>(get_parameter(std::format("{}.stream.width", cameraName)).as_int());
+            auto const imageHeight = static_cast<int>(get_parameter(std::format("{}.stream.height", cameraName)).as_int());
+
             std::string const pipeline = createRtpToRawSrc(port, gst::video::getCodecFromStringView(codec), rtpJitterMs);
 
             mMediaControlClients.emplace(cameraName, create_client<srv::MediaControl>(std::format("{}_media_control", cameraName)));
@@ -52,8 +57,7 @@ namespace mrover {
                                                                      imageCaptureCallback(cameraName, msg);
                                                                  }));
 
-            // emit signal for GUI to handle camera setup
-            emit cameraDiscovered(CameraInfo{.name = cameraName, .pipeline = pipeline});
+            emit cameraDiscovered(CameraInfo{.name = cameraName, .pipeline = pipeline, .imageWidth = imageWidth, .imageHeight = imageHeight});
         }
     }
 
