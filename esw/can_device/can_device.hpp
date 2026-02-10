@@ -26,17 +26,17 @@ namespace mrover {
         using type = std::variant<Ts..., NewType>;
     };
 
-    using can_msg_t = add_to_variant<CANBus1Msg_t, moteus::CanFdFrame>::type;
+    using CANMsg_t = add_to_variant<CANBus1Msg_t, moteus::CanFdFrame>::type;
 
-    class CanDevice {
-        rclcpp::Node::SharedPtr m_node;
-        rclcpp::Publisher<msg::CAN>::SharedPtr m_can_publisher;
-        rclcpp::Subscription<msg::CAN>::SharedPtr m_can_subscriber;
-        std::string m_src_device{}, m_dest_device{};
-        std::function<void(can_msg_t const&)> m_callback;
+    class CANDevice {
+        rclcpp::Node::SharedPtr mNode;
+        rclcpp::Publisher<msg::CAN>::SharedPtr mCANPublisher;
+        rclcpp::Subscription<msg::CAN>::SharedPtr mCANSubscriber;
+        std::string mSrcDevice{}, mDestDevice{};
+        std::function<void(CANMsg_t const&)> mCallback;
 
-        void handle_incoming_ros(msg::CAN::ConstSharedPtr const& msg) {
-            if (!m_callback) return;
+        void handleIncomingROSMessage(msg::CAN::ConstSharedPtr const& msg) {
+            if (!mCallback) return;
 
             // mask out source
             uint32_t incoming_base_id = msg->prefix & ~CAN_NODE_MASK;
@@ -45,14 +45,14 @@ namespace mrover {
                 moteus::CanFdFrame frame;
                 frame.size = std::min(msg->data.size(), static_cast<size_t>(64));
                 std::memcpy(frame.data, msg->data.data(), frame.size);
-                m_callback(frame);
+                mCallback(frame);
                 return;
             }
 
             auto try_parse = [&]<typename T>() {
                 if constexpr (!std::is_same_v<T, moteus::CanFdFrame>) {
                     if (T::BASE_ID == incoming_base_id) {
-                        m_callback(T{msg->data.data()});
+                        mCallback(T{msg->data.data()});
                     }
                 }
             };
@@ -63,23 +63,23 @@ namespace mrover {
         }
 
     public:
-        CanDevice() = default;
+        CANDevice() = default;
 
-        CanDevice(rclcpp::Node::SharedPtr node, std::string src_device, std::string dest_device,
-                  std::function<void(can_msg_t const&)> callback = nullptr)
-            : m_node{std::move(node)}, m_src_device{std::move(src_device)},
-              m_dest_device{std::move(dest_device)}, m_callback{std::move(callback)} {
+        CANDevice(rclcpp::Node::SharedPtr node, std::string srcDevice, std::string destDevice,
+                  std::function<void(CANMsg_t const&)> callback = nullptr)
+            : mNode{std::move(node)}, mSrcDevice{std::move(srcDevice)},
+              mDestDevice{std::move(destDevice)}, mCallback{std::move(callback)} {
 
-            m_can_publisher = m_node->create_publisher<msg::CAN>(std::format("can/{}/out", m_dest_device), 10);
-            m_can_subscriber = m_node->create_subscription<msg::CAN>(std::format("can/{}/in", m_dest_device), 10,
-                                                                     [this](msg::CAN::ConstSharedPtr const& msg) -> void { handle_incoming_ros(msg); });
+            mCANPublisher = mNode->create_publisher<msg::CAN>(std::format("can/{}/out", mDestDevice), 10);
+            mCANSubscriber = mNode->create_subscription<msg::CAN>(std::format("can/{}/in", mDestDevice), 10,
+                                                                  [this](msg::CAN::ConstSharedPtr const& msg) -> void { handleIncomingROSMessage(msg); });
         }
 
-        void publish_message(can_msg_t const& msg, bool const& mjbots_reply_request = false) {
+        void publishMessage(CANMsg_t const& msg, bool const& mjbotsReplyRequest = false) {
             msg::CAN ros_msg;
-            ros_msg.source = m_src_device;
-            ros_msg.destination = m_dest_device;
-            ros_msg.mjbots_reply_request = mjbots_reply_request;
+            ros_msg.source = mSrcDevice;
+            ros_msg.destination = mDestDevice;
+            ros_msg.mjbots_reply_request = mjbotsReplyRequest;
 
             std::visit([&](auto const& val) {
                 using T = std::decay_t<decltype(val)>;
@@ -93,7 +93,7 @@ namespace mrover {
             },
                        msg);
 
-            m_can_publisher->publish(ros_msg);
+            mCANPublisher->publish(ros_msg);
         }
     };
 } // namespace mrover

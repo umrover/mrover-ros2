@@ -8,37 +8,37 @@ namespace mrover {
     static constexpr uint32_t MOTEUS_PREFIX = 0x0000;
     static constexpr uint32_t MOTEUS_REPLY_MASK = 0x8000;
 
-    struct RawCanFdId {
+    struct RawCANFDID_t {
         std::uint32_t identifier : 29 {};
         bool is_error_frame : 1 {};
         bool is_remote_transmission_request : 1 {};
         bool is_extended_frame : 1 {};
     };
-    static_assert(sizeof(RawCanFdId) == sizeof(canid_t));
+    static_assert(sizeof(RawCANFDID_t) == sizeof(canid_t));
 
-    struct CanFdPubSub {
+    struct CANFDPubSub {
         rclcpp::Publisher<msg::CAN>::SharedPtr publisher;
         rclcpp::Subscription<msg::CAN>::SharedPtr subscriber;
     };
 
-    class CanBridge : public rclcpp::Node {
-        std::string m_interface;
-        canfd_frame m_read_frame{};
-        CanNetLink m_can_net_link;
-        std::optional<boost::asio::posix::basic_stream_descriptor<>> m_stream;
-        std::jthread m_io_thread;
-        boost::asio::io_service m_io_service;
-        boost::bimap<std::string, std::uint8_t> m_devices;
-        std::unordered_map<std::string, CanFdPubSub> m_devices_pub_sub;
+    class CANBridge : public rclcpp::Node {
+        std::string mInterface;
+        canfd_frame mReadFrame{};
+        CanNetLink mCANNetLink;
+        std::optional<boost::asio::posix::basic_stream_descriptor<>> mStream;
+        std::jthread mIOThread;
+        boost::asio::io_service mIOService;
+        boost::bimap<std::string, std::uint8_t> mDevices;
+        std::unordered_map<std::string, CANFDPubSub> mDevicesPubSub;
 
-        [[nodiscard]] auto setup_socket() const -> int;
-        void read_frame_async();
-        void frame_read_callback();
-        void frame_send_request_callback(msg::CAN::ConstSharedPtr const& msg);
+        [[nodiscard]] auto setupSocket() const -> int;
+        void readFrameAsync();
+        void frameReadCallback();
+        void frameSendRequestCallback(msg::CAN::ConstSharedPtr const& msg);
 
     public:
-        CanBridge();
-        ~CanBridge() override;
+        CANBridge();
+        ~CANBridge() override;
     };
 
 } // namespace mrover

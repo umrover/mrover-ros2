@@ -150,19 +150,19 @@ namespace mrover {
                         jointDeRollThrottle = throttle;
                         break;
                     case 'j' + 'a':
-                        mJointA->set_desired_throttle(throttle);
+                        mJointA->setDesiredThrottle(throttle);
                         break;
                     case 'j' + 'b':
-                        mJointB->set_desired_throttle(throttle);
+                        mJointB->setDesiredThrottle(throttle);
                         break;
                     case 'j' + 'c':
-                        mJointC->set_desired_throttle(throttle);
+                        mJointC->setDesiredThrottle(throttle);
                         break;
                     case 'g' + 'r':
-                        mGripper->set_desired_throttle(throttle);
+                        mGripper->setDesiredThrottle(throttle);
                         break;
                     case 'p' + 'r':
-                        mPusher->set_desired_throttle(throttle);
+                        mPusher->setDesiredThrottle(throttle);
                         break;
                 }
             }
@@ -192,8 +192,8 @@ namespace mrover {
                 Vector2<Dimensionless> const pitchRollThrottles{jointDePitchThrottle.value(), jointDeRollThrottle.value()};
                 Vector2<Dimensionless> const motorThrottles = PITCH_ROLL_TO_0_1 * pitchRollThrottles;
 
-                mJointDE0->set_desired_throttle(motorThrottles[0].get());
-                mJointDE1->set_desired_throttle(motorThrottles[1].get());
+                mJointDE0->setDesiredThrottle(motorThrottles[0].get());
+                mJointDE1->setDesiredThrottle(motorThrottles[1].get());
             }
         }
 
@@ -218,19 +218,19 @@ namespace mrover {
                         jointDeRollVelocity = RadiansPerSecond{velocity};
                         break;
                     case 'j' + 'a':
-                        mJointA->set_desired_velocity(MetersPerSecond{velocity});
+                        mJointA->setDesiredVelocity(MetersPerSecond{velocity});
                         break;
                     case 'j' + 'b':
-                        mJointB->set_desired_velocity(RadiansPerSecond{velocity});
+                        mJointB->setDesiredVelocity(RadiansPerSecond{velocity});
                         break;
                     case 'j' + 'c':
-                        mJointC->set_desired_velocity(RadiansPerSecond{velocity});
+                        mJointC->setDesiredVelocity(RadiansPerSecond{velocity});
                         break;
                     case 'g' + 'r':
-                        mGripper->set_desired_velocity(MetersPerSecond{velocity});
+                        mGripper->setDesiredVelocity(MetersPerSecond{velocity});
                         break;
                     case 'p' + 'r':
-                        mPusher->set_desired_velocity(MetersPerSecond{velocity});
+                        mPusher->setDesiredVelocity(MetersPerSecond{velocity});
                         break;
                 }
             }
@@ -260,8 +260,8 @@ namespace mrover {
                 Vector2<RadiansPerSecond> const pitchRollVelocities{jointDePitchVelocity.value(), jointDeRollVelocity.value()};
                 Vector2<RadiansPerSecond> const motorVelocities = PITCH_ROLL_TO_01_SCALE * PITCH_ROLL_TO_0_1 * pitchRollVelocities;
 
-                mJointDE0->set_desired_velocity(motorVelocities[0]);
-                mJointDE1->set_desired_velocity(motorVelocities[1]);
+                mJointDE0->setDesiredVelocity(motorVelocities[0]);
+                mJointDE1->setDesiredVelocity(motorVelocities[1]);
             }
         }
 
@@ -286,19 +286,19 @@ namespace mrover {
                         jointDeRollPosition = Radians{position};
                         break;
                     case 'j' + 'a':
-                        mJointA->set_desired_position(Meters{position});
+                        mJointA->setDesiredPosition(Meters{position});
                         break;
                     case 'j' + 'b':
-                        mJointB->set_desired_position(Radians{position});
+                        mJointB->setDesiredPosition(Radians{position});
                         break;
                     case 'j' + 'c':
-                        mJointC->set_desired_position(Radians{position});
+                        mJointC->setDesiredPosition(Radians{position});
                         break;
                     case 'g' + 'r':
-                        mGripper->set_desired_position(Meters{position});
+                        mGripper->setDesiredPosition(Meters{position});
                         break;
                     case 'p' + 'r':
-                        mPusher->set_desired_position(Meters{position});
+                        mPusher->setDesiredPosition(Meters{position});
                         break;
                 }
 
@@ -326,8 +326,8 @@ namespace mrover {
                     Vector2<Radians> const pitchRollPositions{jointDePitchPosition.value(), jointDeRollPosition.value()};
                     Vector2<Radians> motorPositions = PITCH_ROLL_TO_01_SCALE * PITCH_ROLL_TO_0_1 * pitchRollPositions;
 
-                    mJointDE0->set_desired_position(motorPositions[0]);
-                    mJointDE1->set_desired_position(motorPositions[1]);
+                    mJointDE0->setDesiredPosition(motorPositions[0]);
+                    mJointDE1->setDesiredPosition(motorPositions[1]);
                 }
             }
         }
@@ -341,8 +341,8 @@ namespace mrover {
         auto publishDataCallback() -> void {
             mControllerState.header.stamp = now();
 
-            auto const pitchWrapped = wrapAngle((Radians{mJointDE0->get_position()} - mJointDePitchOffset).get());
-            auto const rollWrapped = wrapAngle((Radians{mJointDE1->get_position()} - mJointDeRollOffset).get());
+            auto const pitchWrapped = wrapAngle((Radians{mJointDE0->getPosition()} - mJointDePitchOffset).get());
+            auto const rollWrapped = wrapAngle((Radians{mJointDE1->getPosition()} - mJointDeRollOffset).get());
             mJointDePitchRoll = {pitchWrapped, rollWrapped};
 
             for (std::size_t i = 0; i < mJointNames.size(); ++i) {
@@ -351,65 +351,65 @@ namespace mrover {
                 switch (name.front() + name.back()) {
                     case 'j' + 'h':
                         mControllerState.names[i] = name;
-                        mControllerState.states[i] = mJointDE0->get_state();
-                        mControllerState.errors[i] = mJointDE0->get_error();
+                        mControllerState.states[i] = mJointDE0->getState();
+                        mControllerState.errors[i] = mJointDE0->getError();
                         mControllerState.positions[i] = pitchWrapped;
-                        mControllerState.velocities[i] = {RadiansPerSecond{mJointDE0->get_velocity()}.get()};
-                        mControllerState.currents[i] = mJointDE0->get_current();
+                        mControllerState.velocities[i] = {RadiansPerSecond{mJointDE0->getVelocity()}.get()};
+                        mControllerState.currents[i] = mJointDE0->getCurrent();
                         mControllerState.limits_hit[i] = mJointDE0->getLimitsHitBits();
                         break;
                     case 'j' + 'l':
                         mControllerState.names[i] = name;
-                        mControllerState.states[i] = mJointDE1->get_state();
-                        mControllerState.errors[i] = mJointDE1->get_error();
+                        mControllerState.states[i] = mJointDE1->getState();
+                        mControllerState.errors[i] = mJointDE1->getError();
                         mControllerState.positions[i] = rollWrapped;
-                        mControllerState.velocities[i] = {RadiansPerSecond{mJointDE1->get_velocity()}.get()};
-                        mControllerState.currents[i] = mJointDE1->get_current();
+                        mControllerState.velocities[i] = {RadiansPerSecond{mJointDE1->getVelocity()}.get()};
+                        mControllerState.currents[i] = mJointDE1->getCurrent();
                         mControllerState.limits_hit[i] = mJointDE1->getLimitsHitBits();
                         break;
                     case 'j' + 'a':
                         mControllerState.names[i] = name;
-                        mControllerState.states[i] = mJointA->get_state();
-                        mControllerState.errors[i] = mJointA->get_error();
-                        mControllerState.positions[i] = mJointA->get_position();
-                        mControllerState.velocities[i] = mJointA->get_velocity();
-                        mControllerState.currents[i] = mJointA->get_current();
+                        mControllerState.states[i] = mJointA->getState();
+                        mControllerState.errors[i] = mJointA->getError();
+                        mControllerState.positions[i] = mJointA->getPosition();
+                        mControllerState.velocities[i] = mJointA->getVelocity();
+                        mControllerState.currents[i] = mJointA->getCurrent();
                         mControllerState.limits_hit[i] = mJointA->getLimitsHitBits();
                         break;
                     case 'j' + 'b':
                         mControllerState.names[i] = name;
-                        mControllerState.states[i] = mJointB->get_state();
-                        mControllerState.errors[i] = mJointB->get_error();
-                        mControllerState.positions[i] = mJointB->get_position();
-                        mControllerState.velocities[i] = mJointB->get_velocity();
-                        mControllerState.currents[i] = mJointB->get_current();
+                        mControllerState.states[i] = mJointB->getState();
+                        mControllerState.errors[i] = mJointB->getError();
+                        mControllerState.positions[i] = mJointB->getPosition();
+                        mControllerState.velocities[i] = mJointB->getVelocity();
+                        mControllerState.currents[i] = mJointB->getCurrent();
                         mControllerState.limits_hit[i] = mJointB->getLimitsHitBits();
                         break;
                     case 'j' + 'c':
                         mControllerState.names[i] = name;
-                        mControllerState.states[i] = mJointC->get_state();
-                        mControllerState.errors[i] = mJointC->get_error();
-                        mControllerState.positions[i] = mJointC->get_position();
-                        mControllerState.velocities[i] = mJointC->get_velocity();
-                        mControllerState.currents[i] = mJointC->get_current();
+                        mControllerState.states[i] = mJointC->getState();
+                        mControllerState.errors[i] = mJointC->getError();
+                        mControllerState.positions[i] = mJointC->getPosition();
+                        mControllerState.velocities[i] = mJointC->getVelocity();
+                        mControllerState.currents[i] = mJointC->getCurrent();
                         mControllerState.limits_hit[i] = mJointC->getLimitsHitBits();
                         break;
                     case 'g' + 'r':
                         mControllerState.names[i] = name;
-                        mControllerState.states[i] = mGripper->get_state();
-                        mControllerState.errors[i] = mGripper->get_error();
-                        mControllerState.positions[i] = mGripper->get_position();
-                        mControllerState.velocities[i] = mGripper->get_velocity();
-                        mControllerState.currents[i] = mGripper->get_current();
+                        mControllerState.states[i] = mGripper->getState();
+                        mControllerState.errors[i] = mGripper->getError();
+                        mControllerState.positions[i] = mGripper->getPosition();
+                        mControllerState.velocities[i] = mGripper->getVelocity();
+                        mControllerState.currents[i] = mGripper->getCurrent();
                         mControllerState.limits_hit[i] = mGripper->getLimitsHitBits();
                         break;
                     case 'p' + 'r':
                         mControllerState.names[i] = name;
-                        mControllerState.states[i] = mPusher->get_state();
-                        mControllerState.errors[i] = mPusher->get_error();
-                        mControllerState.positions[i] = mPusher->get_position();
-                        mControllerState.velocities[i] = mPusher->get_velocity();
-                        mControllerState.currents[i] = mPusher->get_current();
+                        mControllerState.states[i] = mPusher->getState();
+                        mControllerState.errors[i] = mPusher->getError();
+                        mControllerState.positions[i] = mPusher->getPosition();
+                        mControllerState.velocities[i] = mPusher->getVelocity();
+                        mControllerState.currents[i] = mPusher->getCurrent();
                         mControllerState.limits_hit[i] = mPusher->getLimitsHitBits();
                         break;
                 }

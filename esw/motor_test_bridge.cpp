@@ -30,132 +30,132 @@ namespace mrover {
         }
 
         auto init() -> void {
-            m_throttle_sub = create_subscription<msg::Throttle>("motor_thr_cmd", 1, [this](msg::Throttle::ConstSharedPtr const& msg) {
-                process_throttle_cmd(msg);
+            mThrottleSub = create_subscription<msg::Throttle>("motor_thr_cmd", 1, [this](msg::Throttle::ConstSharedPtr const& msg) {
+                processThrottleCmd(msg);
             });
-            m_position_sub = create_subscription<msg::Position>("motor_pos_cmd", 1, [this](msg::Position::ConstSharedPtr const& msg) {
-                process_position_cmd(msg);
+            mPositionSub = create_subscription<msg::Position>("motor_pos_cmd", 1, [this](msg::Position::ConstSharedPtr const& msg) {
+                processPositionCmd(msg);
             });
-            m_velocity_sub = create_subscription<msg::Velocity>("motor_vel_cmd", 1, [this](msg::Velocity::ConstSharedPtr const& msg) {
-                process_velocity_cmd(msg);
+            mVelocitySub = create_subscription<msg::Velocity>("motor_vel_cmd", 1, [this](msg::Velocity::ConstSharedPtr const& msg) {
+                processVelocityCmd(msg);
             });
 
-            m_controller_state_pub = create_publisher<msg::ControllerState>("motor_controller_state", 1);
+            mControllerStatePub = create_publisher<msg::ControllerState>("motor_controller_state", 1);
 
-            for (std::string const& name: m_motor_names) {
+            for (std::string const& name: mMotorNames) {
                 if (name.front() == 'b') {
-                    m_bmc = std::make_shared<BrushedController<Radians>>(shared_from_this(), "jetson", name);
+                    mBMC = std::make_shared<BrushedController<Radians>>(shared_from_this(), "jetson", name);
                 }
                 if (name.front() == 'm') {
-                    m_moteus = std::make_shared<BrushlessController<Radians>>(shared_from_this(), "jetson", name);
+                    mMoteus = std::make_shared<BrushlessController<Radians>>(shared_from_this(), "jetson", name);
                 }
             }
 
-            m_controller_state.header.stamp = now();
-            m_controller_state.header.frame_id = "";
-            m_controller_state.names.resize(m_motor_names.size());
-            m_controller_state.states.resize(m_motor_names.size());
-            m_controller_state.errors.resize(m_motor_names.size());
-            m_controller_state.positions.resize(m_motor_names.size());
-            m_controller_state.velocities.resize(m_motor_names.size());
-            m_controller_state.currents.resize(m_motor_names.size());
-            m_controller_state.limits_hit.resize(m_motor_names.size());
+            mControllerState.header.stamp = now();
+            mControllerState.header.frame_id = "";
+            mControllerState.names.resize(mMotorNames.size());
+            mControllerState.states.resize(mMotorNames.size());
+            mControllerState.errors.resize(mMotorNames.size());
+            mControllerState.positions.resize(mMotorNames.size());
+            mControllerState.velocities.resize(mMotorNames.size());
+            mControllerState.currents.resize(mMotorNames.size());
+            mControllerState.limits_hit.resize(mMotorNames.size());
 
-            m_publish_state_timer = create_wall_timer(std::chrono::milliseconds(100), [this]() { publish_state_callback(); });
+            mPublishStateTimer = create_wall_timer(std::chrono::milliseconds(100), [this]() { publishStateCallback(); });
         }
 
-        auto process_throttle_cmd(msg::Throttle::ConstSharedPtr const& msg) -> void {
+        auto processThrottleCmd(msg::Throttle::ConstSharedPtr const& msg) -> void {
             for (size_t i = 0; i < msg->names.size(); ++i) {
                 std::string const& name = msg->names[i];
                 float const& throttle = msg->throttles[i];
-                if (!std::ranges::any_of(m_motor_names.begin(), m_motor_names.end(), [&](std::string const& x) { return x == name; })) {
+                if (!std::ranges::any_of(mMotorNames.begin(), mMotorNames.end(), [&](std::string const& x) { return x == name; })) {
                     RCLCPP_ERROR(get_logger(), "throttle request for %s ignored (%f)!", name.c_str(), throttle);
                     continue;
                 }
 
                 if (name.front() == 'b') {
-                    m_bmc->set_desired_throttle(throttle);
+                    mBMC->setDesiredThrottle(throttle);
                 }
                 if (name.front() == 'm') {
-                    m_moteus->set_desired_throttle(throttle);
+                    mMoteus->setDesiredThrottle(throttle);
                 }
             }
         }
 
-        auto process_position_cmd(msg::Position::ConstSharedPtr const& msg) -> void {
+        auto processPositionCmd(msg::Position::ConstSharedPtr const& msg) -> void {
             // TODO(eric) if any of the motor positions are invalid, then should cancel the message
             for (size_t i = 0; i < msg->names.size(); ++i) {
                 std::string const& name = msg->names[i];
                 float const& position = msg->positions[i];
-                if (!std::ranges::any_of(m_motor_names.begin(), m_motor_names.end(), [&](std::string const& x) { return x == name; })) {
+                if (!std::ranges::any_of(mMotorNames.begin(), mMotorNames.end(), [&](std::string const& x) { return x == name; })) {
                     RCLCPP_ERROR(get_logger(), "position request for %s ignored (%f)!", name.c_str(), position);
                     continue;
                 }
 
                 if (name.front() == 'b') {
-                    m_bmc->set_desired_position(Radians{position});
+                    mBMC->setDesiredPosition(Radians{position});
                 }
                 if (name.front() == 'm') {
-                    m_moteus->set_desired_position(Radians{position});
+                    mMoteus->setDesiredPosition(Radians{position});
                 }
             }
         }
 
-        auto process_velocity_cmd(msg::Velocity::ConstSharedPtr const& msg) -> void {
+        auto processVelocityCmd(msg::Velocity::ConstSharedPtr const& msg) -> void {
             for (size_t i = 0; i < msg->names.size(); ++i) {
                 std::string const& name = msg->names[i];
                 float const& velocity = msg->velocities[i];
-                if (!std::ranges::any_of(m_motor_names.begin(), m_motor_names.end(), [&](std::string const& x) { return x == name; })) {
+                if (!std::ranges::any_of(mMotorNames.begin(), mMotorNames.end(), [&](std::string const& x) { return x == name; })) {
                     RCLCPP_ERROR(get_logger(), "position request for %s ignored (%f)!", name.c_str(), velocity);
                     continue;
                 }
 
                 if (name.front() == 'b') {
-                    m_bmc->set_desired_velocity(RadiansPerSecond{velocity});
+                    mBMC->setDesiredVelocity(RadiansPerSecond{velocity});
                 }
                 if (name.front() == 'm') {
-                    m_moteus->set_desired_velocity(RadiansPerSecond{velocity});
+                    mMoteus->setDesiredVelocity(RadiansPerSecond{velocity});
                 }
             }
         }
 
-        auto publish_state_callback() -> void {
-            m_controller_state.header.stamp = get_clock()->now();
-            for (size_t i = 0; i < m_motor_names.size(); ++i) {
-                if (std::string const& name = m_motor_names[i]; name.front() == 'b' && m_bmc) {
-                    fill_state_msg(i, name, m_bmc);
-                } else if (name.front() == 'm' && m_moteus) {
-                    fill_state_msg(i, name, m_moteus);
+        auto publishStateCallback() -> void {
+            mControllerState.header.stamp = get_clock()->now();
+            for (size_t i = 0; i < mMotorNames.size(); ++i) {
+                if (std::string const& name = mMotorNames[i]; name.front() == 'b' && mBMC) {
+                    fillStateMsg(i, name, mBMC);
+                } else if (name.front() == 'm' && mMoteus) {
+                    fillStateMsg(i, name, mMoteus);
                 }
             }
-            m_controller_state_pub->publish(m_controller_state);
+            mControllerStatePub->publish(mControllerState);
         }
 
     private:
-        std::vector<std::string> m_motor_names = {"bmc", "moteus"};
+        std::vector<std::string> mMotorNames = {"bmc", "moteus"};
 
-        std::shared_ptr<BrushedController<Radians>> m_bmc;
-        std::shared_ptr<BrushlessController<Radians>> m_moteus;
+        std::shared_ptr<BrushedController<Radians>> mBMC;
+        std::shared_ptr<BrushlessController<Radians>> mMoteus;
 
-        rclcpp::Subscription<msg::Throttle>::SharedPtr m_throttle_sub;
-        rclcpp::Subscription<msg::Velocity>::SharedPtr m_velocity_sub;
-        rclcpp::Subscription<msg::Position>::SharedPtr m_position_sub;
+        rclcpp::Subscription<msg::Throttle>::SharedPtr mThrottleSub;
+        rclcpp::Subscription<msg::Velocity>::SharedPtr mVelocitySub;
+        rclcpp::Subscription<msg::Position>::SharedPtr mPositionSub;
 
-        rclcpp::TimerBase::SharedPtr m_publish_state_timer;
+        rclcpp::TimerBase::SharedPtr mPublishStateTimer;
 
-        rclcpp::Publisher<msg::ControllerState>::SharedPtr m_controller_state_pub;
+        rclcpp::Publisher<msg::ControllerState>::SharedPtr mControllerStatePub;
 
-        msg::ControllerState m_controller_state;
+        msg::ControllerState mControllerState;
 
         template<typename T>
-        auto fill_state_msg(size_t const i, std::string const& name, std::shared_ptr<T>& controller) -> void {
-            m_controller_state.names[i] = name;
-            m_controller_state.states[i] = controller->get_state();
-            m_controller_state.errors[i] = controller->get_error();
-            m_controller_state.positions[i] = controller->get_position();
-            m_controller_state.velocities[i] = controller->get_velocity();
-            m_controller_state.currents[i] = controller->get_current();
-            m_controller_state.limits_hit[i] = controller->getLimitsHitBits();
+        auto fillStateMsg(size_t const i, std::string const& name, std::shared_ptr<T>& controller) -> void {
+            mControllerState.names[i] = name;
+            mControllerState.states[i] = controller->getState();
+            mControllerState.errors[i] = controller->getError();
+            mControllerState.positions[i] = controller->getPosition();
+            mControllerState.velocities[i] = controller->getVelocity();
+            mControllerState.currents[i] = controller->getCurrent();
+            mControllerState.limits_hit[i] = controller->getLimitsHitBits();
         }
     };
 

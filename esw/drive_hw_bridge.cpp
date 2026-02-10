@@ -30,120 +30,120 @@ namespace mrover {
 
         auto init() -> void {
             // publishers and subscribers for left and right motor groups
-            for (std::string const& group: m_motor_groups) {
-                m_velocity_sub = create_subscription<msg::Velocity>(std::format("drive_velocity_cmd", group), 1, [this](msg::Velocity::ConstSharedPtr const& msg) {
-                    process_velocity_cmd(msg);
+            for (std::string const& group: mMotorGroups) {
+                mVelocitySub = create_subscription<msg::Velocity>(std::format("drive_velocity_cmd", group), 1, [this](msg::Velocity::ConstSharedPtr const& msg) {
+                    processVelocityCmd(msg);
                 });
 
                 // emplace controller names
-                for (std::string const& motor: m_motors) {
+                for (std::string const& motor: mMotors) {
                     std::string name = std::format("{}_{}", motor, group);
-                    m_controllers.try_emplace(name, shared_from_this(), "jetson", name);
-                    m_controller_state.names.push_back(name);
+                    mControllers.try_emplace(name, shared_from_this(), "jetson", name);
+                    mControllerState.names.push_back(name);
                 }
 
                 // initialize outbound message
-                m_controller_state.header.stamp = now();
-                m_controller_state.header.frame_id = "";
-                m_controller_state.names.resize(m_controllers.size());
-                m_controller_state.states.resize(m_controllers.size());
-                m_controller_state.errors.resize(m_controllers.size());
-                m_controller_state.positions.resize(m_controllers.size());
-                m_controller_state.velocities.resize(m_controllers.size());
-                m_controller_state.currents.resize(m_controllers.size());
-                m_controller_state.limits_hit.resize(m_controllers.size());
+                mControllerState.header.stamp = now();
+                mControllerState.header.frame_id = "";
+                mControllerState.names.resize(mControllers.size());
+                mControllerState.states.resize(mControllers.size());
+                mControllerState.errors.resize(mControllers.size());
+                mControllerState.positions.resize(mControllers.size());
+                mControllerState.velocities.resize(mControllers.size());
+                mControllerState.currents.resize(mControllers.size());
+                mControllerState.limits_hit.resize(mControllers.size());
 
-                m_controller_state_pubs.emplace_back(create_publisher<msg::ControllerState>(std::format("{}_controller_state", group), 1));
+                mControllerStatePubs.emplace_back(create_publisher<msg::ControllerState>(std::format("{}_controller_state", group), 1));
             }
 
             // periodic timer for published motor states
-            m_publish_state_timer = create_wall_timer(std::chrono::milliseconds(100), [this]() { publish_state_callback(); });
+            mPublishStateTimer = create_wall_timer(std::chrono::milliseconds(100), [this]() { publishStateCallback(); });
         }
 
-        auto get_controller(std::string const& name) -> BrushlessController<Revolutions>& {
-            return m_controllers.at(name);
+        auto getController(std::string const& name) -> BrushlessController<Revolutions>& {
+            return mControllers.at(name);
         }
 
-        auto process_throttle_cmd(msg::Throttle::ConstSharedPtr const& msg) -> void {
+        auto processThrottleCmd(msg::Throttle::ConstSharedPtr const& msg) -> void {
             for (size_t i = 0; i < msg->names.size(); ++i) {
                 std::string const& name = msg->names[i];
                 float const& throttle = msg->throttles[i];
-                if (!m_controllers.contains(name)) {
+                if (!mControllers.contains(name)) {
                     RCLCPP_ERROR(get_logger(), "Group throttle request for %s ignored (%f)!", name.c_str(), msg->throttles[i]);
                     continue;
                 }
-                BrushlessController<Revolutions>& controller = get_controller(name);
-                if (msg->names.at(i) != controller.get_name()) {
+                BrushlessController<Revolutions>& controller = getController(name);
+                if (msg->names.at(i) != controller.getName()) {
                     RCLCPP_ERROR(get_logger(), "Throttle request at topic for %s ignored!", msg->names.at(0).c_str());
                     continue;
                 }
-                controller.set_desired_throttle(throttle);
+                controller.setDesiredThrottle(throttle);
             }
         }
 
-        auto process_velocity_cmd(msg::Velocity::ConstSharedPtr const& msg) -> void {
+        auto processVelocityCmd(msg::Velocity::ConstSharedPtr const& msg) -> void {
             for (size_t i = 0; i < msg->names.size(); ++i) {
                 std::string const& name = msg->names[i];
                 float const& velocity = msg->velocities[i];
-                if (!m_controllers.contains(name)) {
+                if (!mControllers.contains(name)) {
                     RCLCPP_ERROR(get_logger(), "Velocity request for %s ignored!", name.c_str());
                     continue;
                 }
-                BrushlessController<Revolutions>& controller = get_controller(name);
-                if (msg->names.at(i) != controller.get_name()) {
+                BrushlessController<Revolutions>& controller = getController(name);
+                if (msg->names.at(i) != controller.getName()) {
                     RCLCPP_ERROR(get_logger(), "Velocity request at topic for %s ignored!", msg->names.at(0).c_str());
                     continue;
                 }
-                controller.set_desired_velocity(RadiansPerSecond{velocity});
+                controller.setDesiredVelocity(RadiansPerSecond{velocity});
             }
         }
 
-        auto process_position_cmd(msg::Position::ConstSharedPtr const& msg) -> void {
+        auto processPositionCmd(msg::Position::ConstSharedPtr const& msg) -> void {
             // TODO - if any of the motor positions are invalid, then u should cancel the message.
             for (std::size_t i = 0; i < msg->names.size(); ++i) {
                 std::string const& name = msg->names[i];
                 float const& position = msg->positions[i];
-                if (!m_controllers.contains(name)) {
+                if (!mControllers.contains(name)) {
                     RCLCPP_ERROR(get_logger(), "Position request for %s ignored!", name.c_str());
                     continue;
                 }
-                BrushlessController<Revolutions>& controller = get_controller(name);
-                if (msg->names.at(i) != controller.get_name()) {
+                BrushlessController<Revolutions>& controller = getController(name);
+                if (msg->names.at(i) != controller.getName()) {
                     RCLCPP_ERROR(get_logger(), "Position request at topic for %s ignored!", msg->names.at(0).c_str());
                     continue;
                 }
-                controller.set_desired_position(Radians{position});
+                controller.setDesiredPosition(Radians{position});
             }
         }
 
-        auto publish_state_callback() -> void {
-            m_controller_state.header.stamp = now();
-            for (size_t i = 0; i < m_controller_state.names.size(); ++i) {
-                auto& controller = get_controller(m_controller_state.names[i]);
-                m_controller_state.states[i] = controller.get_state();
-                m_controller_state.errors[i] = controller.get_error();
-                m_controller_state.positions[i] = controller.get_position();
-                m_controller_state.velocities[i] = controller.get_velocity();
-                m_controller_state.currents[i] = controller.get_current();
-                m_controller_state.limits_hit[i] = controller.getLimitsHitBits();
+        auto publishStateCallback() -> void {
+            mControllerState.header.stamp = now();
+            for (size_t i = 0; i < mControllerState.names.size(); ++i) {
+                auto& controller = getController(mControllerState.names[i]);
+                mControllerState.states[i] = controller.getState();
+                mControllerState.errors[i] = controller.getError();
+                mControllerState.positions[i] = controller.getPosition();
+                mControllerState.velocities[i] = controller.getVelocity();
+                mControllerState.currents[i] = controller.getCurrent();
+                mControllerState.limits_hit[i] = controller.getLimitsHitBits();
             }
-            for (auto const& statePub: m_controller_state_pubs) {
-                statePub->publish(m_controller_state);
+            for (auto const& statePub: mControllerStatePubs) {
+                statePub->publish(mControllerState);
             }
         }
 
     private:
-        std::vector<std::string> m_motor_groups = {"left", "right"};
-        std::vector<std::string> m_motors = {"front", "middle", "back"};
-        std::unordered_map<std::string, BrushlessController<Revolutions>> m_controllers;
+        std::vector<std::string> mMotorGroups = {"left", "right"};
+        std::vector<std::string> mMotors = {"front", "middle", "back"};
+        std::unordered_map<std::string, BrushlessController<Revolutions>> mControllers;
 
-        rclcpp::Subscription<msg::Velocity>::SharedPtr m_velocity_sub;
+        rclcpp::Subscription<msg::Velocity>::SharedPtr mVelocitySub;
 
-        rclcpp::TimerBase::SharedPtr m_publish_state_timer;
+        rclcpp::TimerBase::SharedPtr mPublishStateTimer;
 
-        std::vector<rclcpp::Publisher<msg::ControllerState>::SharedPtr> m_controller_state_pubs;
+        std::vector<rclcpp::Publisher<msg::ControllerState>::SharedPtr> mControllerStatePubs;
 
-        msg::ControllerState m_controller_state;
+        msg::ControllerState mControllerState;
     };
 
 } // namespace mrover

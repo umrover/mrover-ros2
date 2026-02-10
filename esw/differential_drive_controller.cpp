@@ -30,21 +30,21 @@ namespace mrover {
 
         std::vector<std::string> const NAMES{"front_left", "middle_left", "back_left", "front_right", "middle_right", "back_right"};
 
-        cmd_t m_joy, m_ctrl, m_nav;
-        rclcpp::Publisher<msg::Velocity>::SharedPtr m_velocity_pub;
-        rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr m_joy_sub, m_ctrl_sub, m_nav_sub;
-        rclcpp::TimerBase::SharedPtr m_timer;
+        cmd_t mJoystick, mController, mNavigation;
+        rclcpp::Publisher<msg::Velocity>::SharedPtr mVelocityPub;
+        rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr mJoystickSub, mControllerSub, mNavigationSub;
+        rclcpp::TimerBase::SharedPtr mTimer;
 
-        auto joy_cb(geometry_msgs::msg::Twist::ConstSharedPtr const& msg) -> void {
-            m_joy = {*msg, now(), true};
+        auto joystickCallback(geometry_msgs::msg::Twist::ConstSharedPtr const& msg) -> void {
+            mJoystick = {*msg, now(), true};
         }
 
-        auto ctrl_cb(geometry_msgs::msg::Twist::ConstSharedPtr const& msg) -> void {
-            m_ctrl = {*msg, now(), true};
+        auto controllerCallback(geometry_msgs::msg::Twist::ConstSharedPtr const& msg) -> void {
+            mController = {*msg, now(), true};
         }
 
-        auto nav_cb(geometry_msgs::msg::Twist::ConstSharedPtr const& msg) -> void {
-            m_nav = {*msg, now(), true};
+        auto navigationCallback(geometry_msgs::msg::Twist::ConstSharedPtr const& msg) -> void {
+            mNavigation = {*msg, now(), true};
         }
 
         void update() {
@@ -52,16 +52,16 @@ namespace mrover {
                 return c.valid && (now() - c.stamp) < TIMEOUT;
             };
 
-            if (is_fresh(m_joy)) {
-                move_drive(std::make_shared<geometry_msgs::msg::Twist>(m_joy.msg));
-            } else if (is_fresh(m_ctrl)) {
-                move_drive(std::make_shared<geometry_msgs::msg::Twist>(m_ctrl.msg));
-            } else if (is_fresh(m_nav)) {
-                move_drive(std::make_shared<geometry_msgs::msg::Twist>(m_nav.msg));
+            if (is_fresh(mJoystick)) {
+                moveDrive(std::make_shared<geometry_msgs::msg::Twist>(mJoystick.msg));
+            } else if (is_fresh(mController)) {
+                moveDrive(std::make_shared<geometry_msgs::msg::Twist>(mController.msg));
+            } else if (is_fresh(mNavigation)) {
+                moveDrive(std::make_shared<geometry_msgs::msg::Twist>(mNavigation.msg));
             }
         }
 
-        auto move_drive(geometry_msgs::msg::Twist::ConstSharedPtr const& msg) const -> void {
+        auto moveDrive(geometry_msgs::msg::Twist::ConstSharedPtr const& msg) const -> void {
             // See 13.3.1.4 in "Modern Robotics" for the math
             // Link: https://hades.mech.northwestern.edu/images/7/7f/MR.pdf
 
@@ -99,7 +99,7 @@ namespace mrover {
             msg::Velocity velocity;
             velocity.names = NAMES;
             velocity.velocities = {left_outer.get(), left_inner.get(), left_outer.get(), right_outer.get(), right_inner.get(), right_outer.get()};
-            m_velocity_pub->publish(velocity);
+            mVelocityPub->publish(velocity);
         }
 
     public:
@@ -110,13 +110,13 @@ namespace mrover {
             declare_parameter("rover.length", rclcpp::ParameterType::PARAMETER_DOUBLE);
             declare_parameter("rover.wheel_radius", rclcpp::ParameterType::PARAMETER_DOUBLE);
 
-            m_velocity_pub = create_publisher<msg::Velocity>("drive_velocity_cmd", 10);
+            mVelocityPub = create_publisher<msg::Velocity>("drive_velocity_cmd", 10);
 
-            m_joy_sub = create_subscription<geometry_msgs::msg::Twist>("/joystick_vel_cmd", 10, std::bind(&DifferentialDriveController::joy_cb, this, _1));
-            m_ctrl_sub = create_subscription<geometry_msgs::msg::Twist>("/controller_vel_cmd", 10, std::bind(&DifferentialDriveController::ctrl_cb, this, _1));
-            m_nav_sub = create_subscription<geometry_msgs::msg::Twist>("/nav_vel_cmd", 10, std::bind(&DifferentialDriveController::nav_cb, this, _1));
+            mJoystickSub = create_subscription<geometry_msgs::msg::Twist>("/joystick_vel_cmd", 10, std::bind(&DifferentialDriveController::joystickCallback, this, _1));
+            mControllerSub = create_subscription<geometry_msgs::msg::Twist>("/controller_vel_cmd", 10, std::bind(&DifferentialDriveController::controllerCallback, this, _1));
+            mNavigationSub = create_subscription<geometry_msgs::msg::Twist>("/nav_vel_cmd", 10, std::bind(&DifferentialDriveController::navigationCallback, this, _1));
 
-            m_timer = create_wall_timer(std::chrono::milliseconds(20), std::bind(&DifferentialDriveController::update, this));
+            mTimer = create_wall_timer(std::chrono::milliseconds(20), std::bind(&DifferentialDriveController::update, this));
         }
     };
 
