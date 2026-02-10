@@ -3,13 +3,18 @@
     static_cam:
       address: 10.1.0.2 # if using RTP, should be set to IP of basestation
       port: 8081
+      # camera source can be one of three options: dev_node, dev_path, or image_topic
+      # if no camera source is specified, defaults to videotestsrc
       dev_node: "/dev/static_cam"
-      dev_path: ""
+      # crop_left: PIXELS
+      # crop_right: PIXELS
+      # crop_top: PIXELS
+      # crop_bottom: PIXELS
       stream:
-        pixel_format: MJPG # from v4l2-ctl -d DEV_NODE --list-formats-ext
+        pixel_format: YUYV # from v4l2-ctl -d DEV_NODE --list-formats-ext
         width: 640
         height: 480
-        framerate: 15
+        framerate: 30
         codec: H265
         bitrate: 1000000
       image_capture:
@@ -18,15 +23,14 @@
         height: 720
         framerate: 5
     boom_cam:
-      address: 10.1.0.2 # if using RTP, should be set to IP of basestation
+      address: 10.1.0.2
       port: 8082
       dev_node: "/dev/boomcam"
-      dev_path: ""
       stream:
-        pixel_format: MJPG # from v4l2-ctl -d DEV_NODE --list-formats-ext
+        pixel_format: YUYV
         width: 640
         height: 480
-        framerate: 15
+        framerate: 30
         codec: H265
         bitrate: 1000000
       image_capture:
@@ -37,13 +41,12 @@
     mob_cam_left:
       address: 10.1.0.2
       port: 8083
-      dev_node: "/dev/mobcam_left"
-      dev_path: ""
+      dev_node: "/dev/mob_cam_left"
       stream:
-        pixel_format: MJPG # from v4l2-ctl -d DEV_NODE --list-formats-ext
+        pixel_format: YUYV
         width: 640
         height: 480
-        framerate: 15
+        framerate: 30
         codec: H265
         bitrate: 1000000
       image_capture:
@@ -54,10 +57,9 @@
     mob_cam_right:
       address: 10.1.0.2
       port: 8084
-      dev_node: "/dev/mobcam_right"
-      dev_path: ""
+      dev_node: "/dev/mob_cam_right"
       stream:
-        pixel_format: MJPG # from v4l2-ctl -d DEV_NODE --list-formats-ext
+        pixel_format: MJPG
         width: 640
         height: 480
         framerate: 15
@@ -72,8 +74,6 @@
       address: 10.1.0.2
       port: 8085
       image_topic: "/long_range_cam/image"
-      dev_node: ""
-      dev_path: ""
       stream:
         pixel_format: ABGR32
         width: 640
@@ -90,10 +90,9 @@
       address: 10.1.0.2
       port: 8086
       dev_node: "/dev/zed_mini"
-      dev_path: ""
       crop_right: 672
       stream:
-        pixel_format: YUYV # from v4l2-ctl -d DEV_NODE --list-formats-ext
+        pixel_format: YUYV
         width: 1344
         height: 376
         framerate: 15
@@ -108,8 +107,6 @@
       address: 10.1.0.2
       port: 8087
       image_topic: "/zed/left/image"
-      dev_node: ""
-      dev_path: ""
       stream:
         pixel_format: ABGR32 # https://www.kernel.org/doc/html/v4.9/media/uapi/v4l/pixfmt-packed-rgb.html
         width: 1280
