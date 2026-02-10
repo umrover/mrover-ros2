@@ -7,18 +7,18 @@
 #define SERVO_BAUDRATE 57600 // Baud rate of dynamixel devices
 
 // Servo Addresses
-#define ADDR_OPERATING_MODE 11
-#define ADDR_TORQUE_ENABLE 64
-#define ADDR_GOAL_POSITION 116
-#define ADDR_PRESENT_POSITION 132
-#define ADDR_PRESENT_VELOCITY 128
-#define ADDR_PRESENT_CURRENT 126
-#define ADDR_CURRENT_LIMIT 102
-#define ADDR_VELOCITY_I_GAIN 76
-#define ADDR_VELOCITY_P_GAIN 78
-#define ADDR_POSITION_D_GAIN 80
-#define ADDR_POSITION_I_GAIN 82
-#define ADDR_POSITION_P_GAIN 84
+static constexpr int8_t ADDR_OPERATING_MODE = 11;
+static constexpr int8_t ADDR_TORQUE_ENABLE = 64;
+static constexpr int8_t ADDR_GOAL_POSITION = 116;
+static constexpr int8_t ADDR_PRESENT_POSITION = 132;
+static constexpr int8_t ADDR_PRESENT_VELOCITY = 128;
+static constexpr int8_t ADDR_PRESENT_CURRENT = 126;
+static constexpr int8_t ADDR_CURRENT_LIMIT = 102;
+static constexpr int8_t ADDR_VELOCITY_I_GAIN = 76;
+static constexpr int8_t ADDR_VELOCITY_P_GAIN = 78;
+static constexpr int8_t ADDR_POSITION_D_GAIN = 80;
+static constexpr int8_t ADDR_POSITION_I_GAIN = 82;
+static constexpr int8_t ADDR_POSITION_P_GAIN = 84;
 
 #define SERVO_POSITION_DEAD_ZONE 5
 
@@ -29,8 +29,8 @@
 using namespace mrover;
 
 auto Servo::updateConfigFromParameters() -> void {
-    double floatForwardLimit;
-    double floatReverseLimit;
+    double floatmForwardLimit;
+    double floatmReverseLimit;
     double positionPGain;
     double positionIGain;
     double positionDGain;
@@ -39,8 +39,8 @@ auto Servo::updateConfigFromParameters() -> void {
     double currentLimit;
 
     std::vector<ParameterWrapper> parameters = {
-            {std::format("{}.reverse_limit", mServoName), floatReverseLimit, 90.0},
-            {std::format("{}.forward_limit", mServoName), floatForwardLimit, 270.0},
+            {std::format("{}.reverse_limit", mServoName), floatmReverseLimit, 90.0},
+            {std::format("{}.forward_limit", mServoName), floatmForwardLimit, 270.0},
             {std::format("{}.position_p", mServoName), positionPGain, 400.0},
             {std::format("{}.position_i", mServoName), positionIGain, 0.0},
             {std::format("{}.position_d", mServoName), positionDGain, 0.0},
@@ -59,18 +59,18 @@ auto Servo::updateConfigFromParameters() -> void {
     ParameterWrapper::declareParameters(mNode.get(), parameters);
 
     
-    reverseLimit = static_cast<int>((static_cast<float>(reverseLimit) / 360.0f) * 4096.0f);
-    forwardLimit = static_cast<int>((static_cast<float>(forwardLimit) / 360.0f) * 4096.0f);
+    mReverseLimit = static_cast<int>((static_cast<float>(mReverseLimit) / 360.0f) * 4096.0f);
+    mForwardLimit = static_cast<int>((static_cast<float>(mForwardLimit) / 360.0f) * 4096.0f);
 
-    assert(forwardLimit >= 0);
-    assert(reverseLimit >= 0);
-    assert(forwardLimit <= 4096);
-    assert(reverseLimit <= 4096);
+    assert(mForwardLimit >= 0);
+    assert(mReverseLimit >= 0);
+    assert(mForwardLimit <= 4096);
+    assert(mReverseLimit <= 4096);
 }
 
 Servo::Servo(rclcpp::Node::SharedPtr node, ServoId mServoId, std::string mServoName) : 
         mServoId{mServoId}, mServoName{std::move(mServoName)},
-        forwardLimit{0}, reverseLimit{0}, goalPosition{0}, mNode{std::move(node)}
+        mForwardLimit{0}, mReverseLimit{0}, mGoalPosition{0}, mNode{std::move(node)}
 {
     updateConfigFromParameters();
 
@@ -99,7 +99,7 @@ auto Servo::setPosition(ServoPosition position, ServoMode mode) -> Servo::ServoS
     // Calculate the signed difference (accounting for overflow)
     int normalizedDifference = static_cast<int>(targetPosition - currentPosition);
 
-    atLimit = false;
+    mAtLimit = false;
 
     switch (mode)
     {
@@ -125,59 +125,61 @@ auto Servo::setPosition(ServoPosition position, ServoMode mode) -> Servo::ServoS
         case ServoMode::Limited:
         {
             // Gets middle point between limits
-            int middle_limit = (forwardLimit + reverseLimit) / 2;
+            int middleLimit = (mForwardLimit + mReverseLimit) / 2;
 
             // Corrects middle limit if on wrong side
-            if (forwardLimit > reverseLimit)
+            if (mForwardLimit > mReverseLimit)
             {
-                middle_limit += (SERVO_TICKS / 2);
+                middleLimit += (SERVO_TICKS / 2);
             }
-            middle_limit %= SERVO_TICKS;
+            middleLimit %= SERVO_TICKS;
 
             normalizedDifference = (targetPosition - currentPosition);
 
             // If the current path to the final position goes over the middle limit, go the other way
-            if (middle_limit > currentPosition && middle_limit < targetPosition)
+            if (middleLimit > currentPosition && middleLimit < targetPosition)
             {
                 if (normalizedDifference > 0) normalizedDifference -= SERVO_TICKS;
                 else if (normalizedDifference < 0) normalizedDifference += SERVO_TICKS;
             }
 
-            atLimit = false;
+            mAtLimit = false;
 
-            // Limit destination if between forwardLimit and middleLimit
-            if (upper(targetPosition) > forwardLimit && targetPosition < upper(middle_limit)) {
-                normalizedDifference = (forwardLimit - currentPosition) % SERVO_TICKS;
-                if (normalizedDifference < 0 && !(upper(currentPosition) > forwardLimit && currentPosition < upper(middle_limit))) normalizedDifference += SERVO_TICKS;
-                atLimit = true;
+            // Limit destination if between mForwardLimit and middleLimit
+            if (upper(targetPosition) > mForwardLimit && targetPosition < upper(middleLimit)) {
+                normalizedDifference = (mForwardLimit - currentPosition) % SERVO_TICKS;
+                if (normalizedDifference < 0 && !(upper(currentPosition) > mForwardLimit && currentPosition < upper(middleLimit))) normalizedDifference += SERVO_TICKS;
+                mAtLimit = true;
             }
 
-            // Limit destination if between reverseLimit and middleLimit
-            else if (upper(targetPosition) > middle_limit && targetPosition < upper(reverseLimit))
+            // Limit destination if between mReverseLimit and middleLimit
+            else if (upper(targetPosition) > middleLimit && targetPosition < upper(mReverseLimit))
             {
-                normalizedDifference = (reverseLimit - currentPosition) % SERVO_TICKS;
-                if (normalizedDifference > 0 && !(upper(currentPosition) > middle_limit && currentPosition < upper(reverseLimit))) normalizedDifference -= SERVO_TICKS;
-                atLimit = true;
+                normalizedDifference = (mReverseLimit - currentPosition) % SERVO_TICKS;
+                if (normalizedDifference > 0 && !(upper(currentPosition) > middleLimit && currentPosition < upper(mReverseLimit))) normalizedDifference -= SERVO_TICKS;
+                mAtLimit = true;
             }
         }
     }
 
     // Calculate final goal position
-    goalPosition = currentPosition + normalizedDifference;
+    mGoalPosition = currentPosition + normalizedDifference;
 
     // Write goal position
-    return write4Byte(ADDR_GOAL_POSITION, goalPosition, &hardwareStatus);
+    return write4Byte(ADDR_GOAL_POSITION, mGoalPosition, &hardwareStatus);
 }
 
 auto Servo::getTargetStatus() -> Servo::ServoStatus
 {
     uint8_t hardwareStatus;
     uint32_t presentPosition;
-    read4Byte(ADDR_PRESENT_POSITION, presentPosition, &hardwareStatus);
+    
+    ServoStatus status = read4Byte(ADDR_PRESENT_POSITION, presentPosition, &hardwareStatus);
+    if (status != ServoStatus::Success) return status;
 
-    uint32_t goalPositionMod = goalPosition % SERVO_TICKS;
+    uint32_t mGoalPositionMod = mGoalPosition % SERVO_TICKS;
 
-    if (presentPosition > goalPositionMod - SERVO_POSITION_DEAD_ZONE && presentPosition < goalPositionMod + SERVO_POSITION_DEAD_ZONE)
+    if (presentPosition > mGoalPositionMod - SERVO_POSITION_DEAD_ZONE && presentPosition < mGoalPositionMod + SERVO_POSITION_DEAD_ZONE)
     {
         return ServoStatus::Success;
     }
@@ -204,7 +206,7 @@ auto Servo::getVelocity(ServoVelocity& velocity) -> Servo::ServoStatus
     uint8_t hardwareStatus;
     uint32_t velocity_int;
     Servo::ServoStatus status = read4Byte(ADDR_PRESENT_VELOCITY, velocity_int, &hardwareStatus);
-    velocity = (static_cast<float>(static_cast<int32_t>(velocity_int)) * 0.22888f);
+    velocity = (static_cast<float>(static_cast<int32_t>(velocity_int)) * 0.22888f); // 0.22888f Conversion factor to get rot/sec (found in dynamixel wizard) 
     return status;
 }
 
@@ -323,5 +325,5 @@ auto Servo::init(const std::string& deviceName) -> Servo::ServoStatus
 
 auto Servo::getLimitStatus() const -> bool
 {
-    return atLimit;
+    return mAtLimit;
 }

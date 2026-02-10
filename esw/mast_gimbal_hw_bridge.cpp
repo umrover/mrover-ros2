@@ -87,8 +87,7 @@ namespace mrover {
             mGimbalStatePub = this->create_publisher<mrover::msg::ControllerState>("controller_state", 10);
 
             mPublishDataTimer = this->create_wall_timer(std::chrono::milliseconds(100),
-                          std::bind(&MastGimbalHWBridge::publishDataCallback, this));
-
+                          [&](){ return MastGimbalHWBridge::publishDataCallback(); });
         }
 
     private:

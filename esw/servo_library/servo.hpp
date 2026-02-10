@@ -8,21 +8,21 @@
 #include <parameter.hpp>
 #include <string>
 
-#define DEFAULT_CURRENT_LIMIT 1750
-#define DEFAULT_POSITION_P_GAIN 400
-#define DEFAULT_POSITION_I_GAIN 0
-#define DEFAULT_POSITION_D_GAIN 0
-#define DEFAULT_VELOCITY_P_GAIN 180
-#define DEFAULT_VELOCITY_I_GAIN 0
+static constexpr uint16_t DEFAULT_CURRENT_LIMIT = 1750;
+static constexpr uint16_t DEFAULT_POSITION_P_GAIN = 400;
+static constexpr uint16_t DEFAULT_POSITION_I_GAIN = 0;
+static constexpr uint16_t DEFAULT_POSITION_D_GAIN = 0;
+static constexpr uint16_t DEFAULT_VELOCITY_P_GAIN = 180;
+static constexpr uint16_t DEFAULT_VELOCITY_I_GAIN = 0;
 
 namespace mrover {
 
 class Servo
 {
   using ServoId = uint8_t;
-  using ServoPosition = float;
-  using ServoVelocity = float;
-  using ServoCurrent = float;
+  using ServoPosition = float; // Degrees
+  using ServoVelocity = float; // rot/sec
+  using ServoCurrent = float;  // mA
   using ServoAddr = uint16_t;
 
 public:
@@ -91,11 +91,11 @@ private:
 
   ServoId mServoId;
   std::string mServoName;
-  int forwardLimit;
-  int reverseLimit;
-  uint32_t goalPosition;
+  int mForwardLimit;
+  int mReverseLimit;
+  uint32_t mGoalPosition;
 
-  bool atLimit = false;
+  bool mAtLimit = false;
 
   rclcpp::Node::SharedPtr mNode;
 };
