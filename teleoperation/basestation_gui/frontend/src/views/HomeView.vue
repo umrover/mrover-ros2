@@ -38,70 +38,62 @@ export default {
 
 .i3-window {
   width: 100%;
-  max-width: 700px;
+  max-width: clamp(500px, 36vw, 800px);
   background: var(--card-bg);
-  border: 4px solid #4c7899;
+  border: clamp(3px, 0.25vw, 5px) solid #4c7899;
   overflow: hidden;
   animation: fadeIn 0.3s ease-out;
+  font-family: var(--cmd-font-mono);
+  font-size: 1rem;
 }
 
 @keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 .i3-titlebar {
-  background: linear-gradient(to bottom, #4c7899 0%, #4c7899 100%);
-  border-bottom: 1px solid #2f5373;
-  min-height: 24px;
-  padding-top: 0.25rem;
-  padding-bottom: 0.25rem;
+  background: #4c7899;
+  border-bottom: 2px solid #4c7899;
+  min-height: clamp(24px, 1.5vw, 36px);
+  padding: 0.25rem var(--cmd-padding-sm);
 }
 
 .i3-title {
   color: #ffffff;
-  font-family: monospace;
   font-size: 0.875rem;
   font-weight: normal;
-  letter-spacing: 0.5px;
 }
 
 .i3-content {
   background: var(--card-bg);
-  min-height: 300px;
-  font-family: 'Courier New', monospace;
+  min-height: clamp(250px, 20vw, 400px);
 }
 
 .terminal-prompt {
-  color: #0e7490;
   font-size: 1rem;
   line-height: 1.5;
 }
 
 .user {
-  color: #0e7490;
+  color: #2e7d32;
 }
 
 .separator {
-  color: #1e293b;
-  margin: 0 4px;
+  color: var(--text-primary);
 }
 
 .path {
-  color: #1e40af;
+  color: #1565c0;
   font-weight: bold;
 }
 
 .prompt-symbol {
-  color: #1e293b;
-  margin: 0 8px 0 4px;
+  color: var(--text-primary);
+  margin: 0 var(--cmd-gap-sm) 0 0.25rem;
 }
 
 .command {
-  color: #92400e;
+  color: #6d4c41;
 }
 </style>

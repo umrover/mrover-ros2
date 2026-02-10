@@ -18,7 +18,7 @@ from navigation.coordinate_utils import gen_marker, is_high_cost_point, d_calc, 
 class ApproachTargetState(State):
     UPDATE_DELAY: float
     USE_COSTMAP: bool
-    
+    USE_PURE_PURSUIT: bool
     DISTANCE_THRESHOLD: float
     COST_INFLATION_RADIUS: float
     time_begin: Time
@@ -51,6 +51,7 @@ class ApproachTargetState(State):
             return
 
         self.USE_COSTMAP = context.node.get_parameter("costmap.use_costmap").value or current_waypoint.enable_costmap
+        self.USE_PURE_PURSUIT = context.node.get_parameter_or("pure_pursuit.use_pure_pursuit", True).value
         self.DISTANCE_THRESHOLD = context.node.get_parameter("search.distance_threshold").value
         self.COST_INFLATION_RADIUS = context.node.get_parameter("costmap.initial_inflation_radius").value
         self.marker_pub = context.node.create_publisher(Marker, "target_trajectory", 10)
@@ -223,12 +224,16 @@ class ApproachTargetState(State):
                         context.node.get_logger().info("Found low-cost point")
                         return self
 
+        rover_pos = rover_pose.translation()
+        rover_pos[2] = 0
+        distance_to_target = np.linalg.norm(self.target_position - rover_pos)
+
         arrived = False
         cmd_vel = Twist()
         if not self.astar_traj.done():
             curr_point = self.astar_traj.get_current_point()
             cmd_vel, arrived = context.drive.get_drive_command(
-                curr_point,
+                (self.astar_traj if self.USE_PURE_PURSUIT and distance_to_target > 1 else curr_point), # Determine if pure pursuit will be used
                 rover_pose,
                 context.node.get_parameter("single_tag.stop_threshold").value,
                 context.node.get_parameter("waypoint.drive_forward_threshold").value,

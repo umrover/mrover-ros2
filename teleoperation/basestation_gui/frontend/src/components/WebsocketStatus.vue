@@ -6,11 +6,11 @@
     >
       <div class="d-flex align-items-center gap-2">
         <IndicatorDot :is-active="true" />
-        <span class="fw-semibold">= TX</span>
+        <span class="ws-label">= TX</span>
       </div>
       <div class="d-flex align-items-center gap-2">
         <IndicatorDot :is-active="false" />
-        <span class="fw-semibold">= RX</span>
+        <span class="ws-label">= RX</span>
       </div>
     </div>
     <div class="gap-1 d-flex">
@@ -22,7 +22,7 @@
           status === 'disconnected' ? 'bg-warning' : ''
         ]"
       >
-        <p class="fw-bold m-0 p-0 text-center">{{ getAlias(id) }}</p>
+        <p class="ws-connection-name m-0 p-0 text-center">{{ getAlias(id) }}</p>
 
         <div class="d-flex justify-content-center align-items-center gap-2">
           <div
@@ -57,7 +57,7 @@ const { isFlashingIn, isFlashingOut } = websocketStore
 
 const aliasMap: Record<string, string> = {
   arm: 'arm',
-  drive: 'drive',
+  drive: 'drv',
   chassis: 'cha',
   nav: 'nav',
   science: 'sci',
@@ -116,3 +116,13 @@ onBeforeUnmount(() => {
   if (interval) window.clearInterval(interval)
 })
 </script>
+
+<style scoped>
+.ws-label {
+  font-weight: 600;
+}
+
+.ws-connection-name {
+  font-weight: 700;
+}
+</style>

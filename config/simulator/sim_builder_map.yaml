@@ -1,0 +1,39 @@
+# All units are in SI
+# ===================
+# Time:     second, hz
+# Angle:    radian
+# Distance: meter
+
+objects:
+  rover:
+    type: urdf
+    uri: package://mrover/urdf/rover/rover.urdf.xacro
+    position: [ 0.0, 0.0, 0.5 ]
+  world:
+    type: urdf
+    uri: package://mrover/urdf/world/world.urdf.xacro
+
+      # Auto-generated rocks from the grid
+  rock_1:
+    type: urdf
+    uri: package://mrover/urdf/world/large_rock.urdf.xacro
+    position: [ -4.00, 9.00, 1.0 ]
+
+  rock_2:
+    type: urdf
+    uri: package://mrover/urdf/world/medium_rock.urdf.xacro
+    position: [ -2.00, 9.00, 1.0 ]
+
+  rock_3:
+    type: urdf
+    uri: package://mrover/urdf/world/small_rock.urdf.xacro
+    position: [ 2.00, 8.00, 0.5 ]
+
+  rock_4:
+    type: urdf
+    uri: package://mrover/urdf/world/small_rock.urdf.xacro
+    position: [ -9.00, 3.00, 0.5 ]
+
+
+    world_frame: "map"
+    rover_frame: "sim_base_link"

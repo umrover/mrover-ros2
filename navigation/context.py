@@ -6,6 +6,7 @@ import numpy as np
 import pymap3d
 import rclpy
 from scipy import ndimage
+from rclpy.parameter import Parameter
 
 import tf2_ros
 from geometry_msgs.msg import Twist, Point
@@ -21,6 +22,7 @@ from mrover.msg import (
     ImageTarget,
     ImageTargets,
 )
+from std_srvs.srv import SetBool
 from mrover.srv import EnableAuton
 from nav_msgs.msg import Path
 from nav_msgs.msg import OccupancyGrid
@@ -406,8 +408,6 @@ class Context:
         from .state import OffState
 
         self.node = node
-        self.drive = DriveController(node)
-
         self.world_frame = node.get_parameter("world_frame").value
         self.rover_frame = node.get_parameter("rover_frame").value
         self.course = None
@@ -419,6 +419,9 @@ class Context:
         node.create_service(EnableAuton, "enable_auton", self.enable_auton)
         node.create_service(SetBool, "/navigation/toggle_path_relaxation", self.toggle_path_relaxation)
         node.create_service(SetBool, "/navigation/toggle_path_interpolation", self.toggle_path_interpolation)
+        node.create_service(SetBool, "toggle_pure_pursuit", self.toggle_pure_pursuit)
+
+        self.use_pure_pursuit = node.get_parameter("pure_pursuit.use_pure_pursuit").value
 
         # publishers
         self.command_publisher = node.create_publisher(Twist, "nav_cmd_vel", 1)
@@ -430,6 +433,12 @@ class Context:
         self.tf_broadcaster = tf2_ros.StaticTransformBroadcaster(node)
 
         # subscribers
+        self.lookahead_pub = self.node.create_publisher(Marker, 'lookahead_circle', 10)
+        self.intersection_pub = self.node.create_publisher(Marker, 'intersection_points', 10)
+        self.tf_broadcaster = tf2_ros.StaticTransformBroadcaster(node)
+
+        self.drive = DriveController(node, self.lookahead_pub, self.intersection_pub)
+
         node.create_subscription(Bool, "nav_stuck", self.stuck_callback, 1)
         node.create_subscription(ImageTargets, "tags", self.image_targets_callback, 1)
         node.create_subscription(ImageTargets, "objects", self.image_targets_callback, 1)
@@ -493,6 +502,13 @@ class Context:
         
         response.success = True
         response.message = f"Set path interpolation toggle to {request.data}."
+    def toggle_pure_pursuit(self, request: SetBool.Request, response: SetBool.Response) -> SetBool.Response:
+        # TODO(brendan): do whatever you need to here
+        if request.data:
+            self.node.set_parameters([Parameter("pure_pursuit.use_pure_pursuit", Parameter.Type.BOOL, True)])
+        else:
+            self.node.set_parameters([Parameter("pure_pursuit.use_pure_pursuit", Parameter.Type.BOOL, False)])
+        response.success = True
         return response
 
     def stuck_callback(self, msg: Bool) -> None:

@@ -132,27 +132,14 @@ def create_60x60_grid():
 # Angle:    radian
 # Distance: meter
 
-simulator:
-  ros__parameters:
-    save_rate: 1.0
-    save_history: 4096
-    headless: false
-    motor_timeout: 100
-
-    ref_heading: 90.0  # For the GPS sensor to work
-
-    objects:
-      rover:
-        type: urdf
-        uri: package://mrover/urdf/rover/rover.urdf.xacro
-        position: [ 0.0, 0.0, 0.1 ]
-      world:
-        type: urdf
-        uri: package://mrover/urdf/world/world.urdf.xacro
-      bottle:
-        type: urdf
-        uri: package://mrover/urdf/world/bottle.urdf.xacro
-        position: [9.0, 10.0, 0.5]
+objects:
+  rover:
+    type: urdf
+    uri: package://mrover/urdf/rover/rover.urdf.xacro
+    position: [ 0.0, 0.0, 0.5 ]
+  world:
+    type: urdf
+    uri: package://mrover/urdf/world/world.urdf.xacro
 
 """
 
@@ -180,10 +167,10 @@ simulator:
                     rock_counter += 1
 
                     lines = [
-                        f"      {rock_name}:",
-                        f"        type: urdf",
-                        f"        uri: {uri_map[val]}",
-                        f"        position: [ {x:.2f}, {y:.2f}, {z_map[val]} ]\n",
+                        f"  {rock_name}:",
+                        f"    type: urdf",
+                        f"    uri: {uri_map[val]}",
+                        f"    position: [ {x:.2f}, {y:.2f}, {z_map[val]} ]\n",
                     ]
                     yaml_rocks.append("\n".join(lines))
 
@@ -194,7 +181,7 @@ simulator:
 """
 
         # 5) Write out to new_sim.yaml
-        with open("config/simulator.yaml", "w") as f:
+        with open("config/simulator/sim_builder_map.yaml", "w") as f:
             f.write(yaml_header)
             if yaml_rocks:
                 f.write("      # Auto-generated rocks from the grid\n")

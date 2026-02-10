@@ -54,6 +54,7 @@ class AStar:
     COSTMAP_THRESH: float
     ANGLE_THRESH: float
     USE_COSTMAP: bool
+    USE_PURE_PURSUIT: bool
 
     def __init__(self, context: Context) -> None:
         self.context = context
@@ -66,6 +67,7 @@ class AStar:
 
         if hasattr(context, "course") and context.course is not None:
             current_waypoint = context.course.current_waypoint()
+            self.USE_PURE_PURSUIT = context.node.get_parameter_or("pure_pursuit.use_pure_pursuit", True).value
             if current_waypoint is None:
                 self.USE_COSTMAP = context.node.get_parameter("costmap.use_costmap").value
             else:
@@ -73,6 +75,7 @@ class AStar:
                     context.node.get_parameter("costmap.use_costmap").value or current_waypoint.enable_costmap
                 )
 
+    @staticmethod
     def return_path(self, came_from: dict[tuple, tuple], current_pos: tuple):
         """
         Reconstruct path after the A* search algorithm finishes.
@@ -138,11 +141,11 @@ class AStar:
             while open_set:
                 _, current = heapq.heappop(open_set)
 
-                if debug:
-                    debug_list.append(self.return_path(came_from, current))
+            if debug:
+                debug_list.append(self.return_path(self,came_from, current))
 
-                if current == end_ij:
-                    return debug_list if debug else self.return_path(came_from, current)
+            if current == end_ij:
+                return debug_list if debug else self.return_path(self,came_from, current)
 
                 for rel_pos in adjacent_squares:
                     neighbor_pos = tuple(np.array(current) + rel_pos)
@@ -198,8 +201,11 @@ class AStar:
 
         rover_position_in_map = rover_SE3.translation()[:2]
 
-        if not self.USE_COSTMAP or not self.use_astar(context=context, dest=dest):
-            return Trajectory(np.array([dest]))
+        if not self.USE_COSTMAP or not self.use_astar(dest=dest):
+            if (not self.USE_PURE_PURSUIT):
+                return Trajectory(np.array([dest]))
+            else:
+                return Trajectory(np.array([rover_SE3.translation(), dest]))
 
         costmap_length = self.context.env.cost_map.data.shape[0]
         rover_ij = cartesian_to_ij(context, rover_position_in_map)
