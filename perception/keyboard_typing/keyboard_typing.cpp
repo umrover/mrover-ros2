@@ -1,5 +1,7 @@
 #include "keyboard_typing.hpp"
 #include "lie.hpp"
+#include "mrover/srv/detail/ik_mode__struct.hpp"
+#include <cstddef>
 
 
 namespace mrover{
@@ -39,6 +41,9 @@ namespace mrover{
                 RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, std::format("TF tree error processing keyboard typing: {}", e.what()));
             }
         }
+
+        // Create Ik mode client
+        mIkModeClient = create_client<srv::IkMode>("ik_mode");
 
         current_key = "";
 
@@ -399,7 +404,7 @@ namespace mrover{
 
         // 3. Calculate Delta Time (dt)
         double dt = (currentTime - last_prediction_time_).seconds();
-        
+
         // Update tracker
         last_prediction_time_ = currentTime;
 
@@ -582,8 +587,19 @@ namespace mrover{
             //                 armbase_to_armfk.translation().y() + zKeyTransformation_new[1],
             //                 armbase_to_armfk.translation().z() + zKeyTransformation_new[2], 0, 0);
 
+            // Grab pitch from tag transform
+
+            double r00 = armbase_to_z.transform()(0,0);
+            double r10 = armbase_to_z.transform()(1,0);
+            double r20 = armbase_to_z.transform()(2,0);
+
+            double pitch_rad = std::atan2(-r20, std::hypot(r00, r10));
+
+            // grab current pitch
+            double current_pitch = std::atan2(-armbase_to_armfk.rotation()(2, 0), std::hypot(armbase_to_armfk.rotation()(0, 0), armbase_to_armfk.rotation()(1, 0)));
+
             sendIKCommand(armbase_to_armfk.translation().x(),
-            armbase_to_z.translation().y(), armbase_to_z.translation().z(), 0, 0);
+            armbase_to_z.translation().y(), armbase_to_z.translation().z(), current_pitch - pitch_rad, 0);
 
             RCLCPP_INFO_STREAM(get_logger(), "y_delta = " << (armbase_to_armfk.translation().y() - armbase_to_z.translation().y()));
                             
@@ -599,17 +615,13 @@ namespace mrover{
 
         try{
             armbase_to_armfk = SE3Conversions::fromTfTree(tf_buffer, "arm_fk", "arm_base_link");
-            sendIKCommand(armbase_to_armfk.translation().x(), armbase_to_armfk.translation().y(), armbase_to_armfk.translation().z(), 0, radians);
+            // grab current pitch
+            double current_pitch = std::atan2(-armbase_to_armfk.rotation()(2, 0), std::hypot(armbase_to_armfk.rotation()(0, 0), armbase_to_armfk.rotation()(1, 0)));
+
+            sendIKCommand(armbase_to_armfk.translation().x(), armbase_to_armfk.translation().y(), armbase_to_armfk.translation().z(), current_pitch, radians);
         } catch (tf2::TransformException const& e) {
             RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, std::format("TF tree error processing keyboard typing: {}", e.what()));
         }
-        // if(!mArmPub){
-        //     RCLCPP_ERROR(get_logger(), "ESW Arm publisher not initialized");
-        // }
-        // msg::Position message;
-        // message.names = {"joint_de_roll"};
-        // message.positions = {radians};
-        // mArmPub->publish(message);
     }
 
 
@@ -624,15 +636,12 @@ namespace mrover{
         float dy = y_offset_local * std::cos(roll);
         float dz = y_offset_local * (std::cos(pitch) * std::sin(roll));
 
-
         msg::IK message;
 
         message.pos.x = x + dx;
         message.pos.y = y + dy;
         message.pos.z = z + dz;
-        // message.pos.x = x;
-        // message.pos.y = y;
-        // message.pos.z = z;
+
         message.pitch = pitch;
         message.roll = roll;
 
@@ -643,7 +652,7 @@ namespace mrover{
             mIKPub->publish(message);
         }
 
-        RCLCPP_INFO(get_logger(), "Published IK Command {x=%.3f, y=%.3f, z=%.3f}", x, y, z);
+        RCLCPP_INFO(get_logger(), "Published IK Command {x=%.3f, y=%.3f, z=%.3f, p=%.3f, r=%.3f}", x, y, z, pitch, roll);
     }
 
     auto KeyboardTypingNode::outputToCSV(cv::Vec3d &tvec, cv::Vec3d &rvec) -> void {
@@ -772,15 +781,28 @@ namespace mrover{
             std::transform(launchCode.begin(), launchCode.end(), launchCode.begin(), ::toupper);
 
             // Align arm over z key
-            // align_to_z();
+            RCLCPP_INFO_STREAM(this->get_logger(), "Aligning to z key");
+            align_to_z();
 
+            // rotate gripper 90 degrees
+            RCLCPP_INFO_STREAM(this->get_logger(), "Rotating gripper 90 degrees");
+            rotateGripper(-1.5708);
+
+            // Activate typing mode
+            RCLCPP_INFO_STREAM(this->get_logger(), "Sending ik mode request");
+            auto ik_req = std::make_shared<srv::IkMode::Request>();
+            ik_req->mode = srv::IkMode::Request::TYPING;
+            mIkModeClient->async_send_request(ik_req);
+
+            
+            RCLCPP_INFO_STREAM(this->get_logger(), "Typing Sequence starting");
+            // Start typing sequence
             for (size_t i = 0; i < launchCode.length(); i++) {
                 feedback->current_index = static_cast<uint32_t>(i);
                 goal_handle->publish_feedback(feedback);
 
                 RCLCPP_WARN(this->get_logger(), "Sending Goal");
 
-                // TODO logic for figuring out deltas
                 float x_delta = 0;
                 float y_delta = 0;
 
