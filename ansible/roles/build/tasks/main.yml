@@ -76,7 +76,8 @@
   become: True
   apt:
     cache_valid_time: 604800
-    upgrade: dist
+    state: latest
+    upgrade: yes
 
 - name: Install APT Packages
   become: True
