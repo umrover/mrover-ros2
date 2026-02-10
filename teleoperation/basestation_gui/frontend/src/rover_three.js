@@ -4,6 +4,7 @@ import URDFLoader from 'urdf-loader'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
+import { clamp } from 'three/src/math/MathUtils.js';
 
 const defaultJointValues = {
   chassis_to_arm_a: 24.14,
@@ -375,7 +376,11 @@ function fillTextCanvas(gridData){
 export function updateCostMapGrid(gridData){
   for(let i = 0; i < numCostMapBlocks * numCostMapBlocks; i++){
     
-    const newColor = new THREE.Color(gridData[i] * 0.01, 1 - gridData[i] * 0.01, 0)
+    const newColor = gridData[i] == 0 ?  
+      new THREE.Color(0, 0.5, 0):
+      gridData[i] < 0 ?
+      new THREE.Color(0, 0.1, 0):
+      new THREE.Color(gridData[i] * 0.01, 1 - gridData[i] * 0.01, 0)
 
     const newMaterial = new THREE.MeshStandardMaterial({
     color: newColor
