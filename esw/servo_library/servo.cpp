@@ -7,18 +7,18 @@
 #define SERVO_BAUDRATE 57600 // Baud rate of dynamixel devices
 
 // Servo Addresses
-static constexpr int8_t ADDR_OPERATING_MODE = 11;
-static constexpr int8_t ADDR_TORQUE_ENABLE = 64;
-static constexpr int8_t ADDR_GOAL_POSITION = 116;
-static constexpr int8_t ADDR_PRESENT_POSITION = 132;
-static constexpr int8_t ADDR_PRESENT_VELOCITY = 128;
-static constexpr int8_t ADDR_PRESENT_CURRENT = 126;
-static constexpr int8_t ADDR_CURRENT_LIMIT = 102;
-static constexpr int8_t ADDR_VELOCITY_I_GAIN = 76;
-static constexpr int8_t ADDR_VELOCITY_P_GAIN = 78;
-static constexpr int8_t ADDR_POSITION_D_GAIN = 80;
-static constexpr int8_t ADDR_POSITION_I_GAIN = 82;
-static constexpr int8_t ADDR_POSITION_P_GAIN = 84;
+static constexpr uint8_t ADDR_OPERATING_MODE = 11;
+static constexpr uint8_t ADDR_TORQUE_ENABLE = 64;
+static constexpr uint8_t ADDR_GOAL_POSITION = 116;
+static constexpr uint8_t ADDR_PRESENT_POSITION = 132;
+static constexpr uint8_t ADDR_PRESENT_VELOCITY = 128;
+static constexpr uint8_t ADDR_PRESENT_CURRENT = 126;
+static constexpr uint8_t ADDR_CURRENT_LIMIT = 102;
+static constexpr uint8_t ADDR_VELOCITY_I_GAIN = 76;
+static constexpr uint8_t ADDR_VELOCITY_P_GAIN = 78;
+static constexpr uint8_t ADDR_POSITION_D_GAIN = 80;
+static constexpr uint8_t ADDR_POSITION_I_GAIN = 82;
+static constexpr uint8_t ADDR_POSITION_P_GAIN = 84;
 
 #define SERVO_POSITION_DEAD_ZONE 5
 
@@ -49,6 +49,7 @@ auto Servo::updateConfigFromParameters() -> void {
             {std::format("{}.current_limit", mServoName), currentLimit, 1750.0}
     };
 
+    
     setProperty(ServoProperty::PositionPGain, static_cast<uint16_t>(positionPGain));
     setProperty(ServoProperty::PositionIGain, static_cast<uint16_t>(positionIGain));
     setProperty(ServoProperty::PositionDGain, static_cast<uint16_t>(positionDGain));
@@ -59,8 +60,8 @@ auto Servo::updateConfigFromParameters() -> void {
     ParameterWrapper::declareParameters(mNode.get(), parameters);
 
     
-    mReverseLimit = static_cast<int>((static_cast<float>(mReverseLimit) / 360.0f) * 4096.0f);
-    mForwardLimit = static_cast<int>((static_cast<float>(mForwardLimit) / 360.0f) * 4096.0f);
+    mReverseLimit = static_cast<int>((static_cast<float>(90) / 360.0f) * 4096.0f);
+    mForwardLimit = static_cast<int>((static_cast<float>(270) / 360.0f) * 4096.0f);
 
     assert(mForwardLimit >= 0);
     assert(mReverseLimit >= 0);
@@ -126,7 +127,6 @@ auto Servo::setPosition(ServoPosition position, ServoMode mode) -> Servo::ServoS
         {
             // Gets middle point between limits
             int middleLimit = (mForwardLimit + mReverseLimit) / 2;
-
             // Corrects middle limit if on wrong side
             if (mForwardLimit > mReverseLimit)
             {
@@ -135,7 +135,6 @@ auto Servo::setPosition(ServoPosition position, ServoMode mode) -> Servo::ServoS
             middleLimit %= SERVO_TICKS;
 
             normalizedDifference = (targetPosition - currentPosition);
-
             // If the current path to the final position goes over the middle limit, go the other way
             if (middleLimit > currentPosition && middleLimit < targetPosition)
             {
@@ -164,7 +163,6 @@ auto Servo::setPosition(ServoPosition position, ServoMode mode) -> Servo::ServoS
 
     // Calculate final goal position
     mGoalPosition = currentPosition + normalizedDifference;
-
     // Write goal position
     return write4Byte(ADDR_GOAL_POSITION, mGoalPosition, &hardwareStatus);
 }

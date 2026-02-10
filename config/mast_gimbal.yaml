@@ -1,6 +1,6 @@
 mast_gimbal_hw_bridge:
   ros__parameters:
-    mast_gimbal_pitch:
+    gimbal_pitch:
       forward_limit: 90.0
       reverse_limit: 270.0
       position_p: 400
@@ -9,7 +9,7 @@ mast_gimbal_hw_bridge:
       velocity_p: 180
       velocity_i: 0
       current_limit: 1750
-    mast_gimbal_yaw:
+    gimbal_yaw:
       forward_limit: 90.0
       reverse_limit: 270.0
       position_p: 400
