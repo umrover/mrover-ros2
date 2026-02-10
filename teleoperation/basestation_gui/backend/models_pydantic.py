@@ -12,7 +12,7 @@ class BasicWaypointList(BaseModel):
 
 class AutonWaypoint(BaseModel):
     name: str
-    id: int = -1
+    tag_id: int = -1
     type: int = 0
     lat: float = 0.0
     lon: float = 0.0
