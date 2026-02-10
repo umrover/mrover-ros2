@@ -8,7 +8,6 @@
 
 #include <units.hpp>
 
-//#include <mrover/msg/gimbal_control_state.hpp>
 #include <mrover/msg/controller_state.hpp>
 #include <mrover/msg/position.hpp>
 #include <mrover/msg/throttle.hpp>
@@ -35,6 +34,19 @@ namespace mrover {
             servos.insert({name, std::make_shared<mrover::Servo>(shared_from_this(), id, name)});
         }
 
+        bool servos_active(std::vector<Servo::ServoStatus>& statuses)
+        {
+            bool active = false;
+            for (auto& status : statuses)
+            {
+                if (status == Servo::ServoStatus::Active)
+                {
+                    active = true;
+                }
+            }
+            return active;
+        }
+
         auto init() -> void {
 
             // Servo::init("/dev/ttyUSB0");
@@ -45,25 +57,30 @@ namespace mrover {
 
             getPositionService = this->create_service<mrover::srv::ServoPosition>("get_position", [this](
                                                                                                              mrover::srv::ServoPosition::Request::SharedPtr const& request,
-                                                                                                              mrover::srv::ServoPosition::Response::SharedPtr const& response) {
+                                                                                                                 mrover::srv::ServoPosition::Response::SharedPtr const& response) {
 
                 const size_t n = request->names.size();
-                response->at_tgts.resize(n);
-                for (size_t i = 0; i < n; ++i) {                                                                                                   
-                           
-                    printf("Name: %s, Position: %f\n", request->names[i].c_str(), request->positions[i]);
-                    const auto timeout = std::chrono::seconds(3);
-                    const auto start = this->get_clock()->now();                                                                                 
-                    Servo::ServoStatus status = servos.at(request->names[i])->setPosition(request->positions[i], Servo::ServoMode::Limited);
+                std::vector<Servo::ServoStatus> statuses = std::vector<Servo::ServoStatus>(n);
 
-                    while(status == Servo::ServoStatus::Active){
-                        status = servos.at(request->names[i])->getTargetStatus();
-                        if(this->get_clock()->now() - start > timeout){
-                            RCLCPP_WARN(this->get_logger(), "Timeout reached while waiting for servo to reach target position");
-                            break;
-                        }
+                const auto timeout = std::chrono::seconds(3);
+                const auto start = this->get_clock()->now();       
+
+                for (int i = 0; i < n; i++)
+                {
+                    statuses[i] = servos.at(request->names[i])->setPosition(request->positions[i], Servo::ServoMode::Limited);
+                }  
+
+                while (servos_active(statuses))
+                {
+                    for (int i = 0; i < n; i++)
+                    {
+                        statuses[i] = servos.at(request->names[i])->getTargetStatus();
+                        response->at_tgts[i] = (statuses[i] == Servo::ServoStatus::Success);
                     }
-                    response->at_tgts[i] = (status == Servo::ServoStatus::Success);
+                    if(this->get_clock()->now() - start > timeout){
+                        RCLCPP_WARN(this->get_logger(), "Timeout reached while waiting for servo to reach target position");
+                        break;
+                    }
                 }
             });
 
