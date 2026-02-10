@@ -1,10 +1,33 @@
 <template>
-  <div class="cmd-list-item p-2 rounded border border-2 mb-1" data-testid="pw-waypoint-store-item">
-    <div class="d-flex justify-content-between align-items-center mb-1">
-      <h5 class="cmd-list-item-title m-0" data-testid="pw-waypoint-name">{{ waypoint.name }}</h5>
-      <div class="d-flex align-items-center gap-2">
-        <span class="cmd-data-label">ID: {{ waypoint.id }}</span>
-        <span class="cmd-data-label">R: {{ waypoint.coverage_radius }}</span>
+  <div class="waypoints p-2 mb-2">
+    <div class="waypoint-header mb-1">
+      <h5 class="mb-0">{{ waypoint.name }}</h5>
+      <small class="text-muted">TAG ID: {{ waypoint.tag_id }}</small>
+    </div>
+    <div>
+      <div class="input-group mb-1">
+        <input
+          class="form-control"
+          v-model.number="localLat" :id="'lat-' + waypoint.tag_id"
+        />
+        <span class="input-group-text">ºN</span>
+      </div>
+      <div class="input-group mb-1">
+        <input
+          class="form-control"
+          v-model.number="localLon" :id="'lon-' + waypoint.tag_id"
+        />
+        <span class="input-group-text">ºW</span>
+      </div>
+      <div class="waypoint-button-row">
+        <button class="btn btn-success" @click="addWaypoint">Add</button>
+        <button
+          class="btn btn-danger"
+          :disabled="waypoint.deletable === false"
+          @click="$emit('delete', index)"
+        >
+          Delete
+        </button>
       </div>
     </div>
     <div class="mb-2">
