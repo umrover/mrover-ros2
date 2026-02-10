@@ -1,0 +1,106 @@
+# SPDX-License-Identifier: GPL 2.0
+#
+# Special Udev rules for PEAK-System PC CAN interfaces.
+#
+# Copyright (c) 2014-2020 PEAK-System GmbH <www.peak-system.com>
+#
+# Contact: <linux@peak-system.com>
+# Author:  Stephane Grosjean <s.grosjean@peak-system.com>
+#
+# NOTES:
+#
+#	Since Linux 3.11, devices and their attrs can be created BEFORE
+#	notifying userspace. Thus, when running such Kernels, there is no need
+#	to use the WAIT_FOR keyword in the Udev rules.
+#
+#	When running any older Kernels, user should also run an udev daemon
+#	that recognizes the WAIT_FOR keyword, and, should also update below
+#	rules in order to uncomment lines containing the WAIT_FOR keyword.
+#
+ACTION!="add", GOTO="lbl_udev_end"
+
+# create symlinks: /dev/pcan-pcie_fd/devid=X -> /dev/pcanpciY (PCAN-PCIe FD)
+# only if devid is not the default value 0xffffffff.
+KERNEL=="pcanpcifd*",\
+	SYMLINK+="pcan-pcie_fd/$attr{adapter_number}/can$attr{ctrlr_number}"
+KERNEL=="pcanpcifd*",\
+	ATTR{devid} != "4294967295",\
+	SYMLINK+="pcan-pcie_fd/devid=$attr{devid}",\
+	GOTO="lbl_udev_pcan"
+
+# create symlinks: /dev/pcan-pci/devid=X -> /dev/pcanpciY (PCAN-PCIe only)
+# only if devid is not the default value 0xffffffff.
+KERNEL=="pcanpci*",\
+	SYMLINK+="pcan-pci/$attr{adapter_number}/can$attr{ctrlr_number}",\
+KERNEL=="pcanpci*",\
+	ATTR{devid} != "4294967295",\
+	SYMLINK+="pcan-pci/devid=$attr{devid}",\
+	GOTO="lbl_udev_pcan"
+
+# create symlinks: /dev/pcan-usb_fd/devid=X -> /dev/pcanusbY (PCAN-USB X6 only)
+# only if devid is not the default value 0xffffffff nor 0.
+#KERNEL=="pcanusbfd*", WAIT_FOR="hwtype", ATTR{hwtype}=="20",\
+KERNEL=="pcanusbfd*", ATTR{hwtype}=="20",\
+	SYMLINK+="pcan-usb_x6/$attr{adapter_number}/can$attr{ctrlr_number}"
+KERNEL=="pcanusbfd*", ATTR{hwtype}=="20",\
+	ATTR{devid} != "4294967295", ATTR{devid} != "0",\
+	SYMLINK+="pcan-usb_x6/devid=$attr{devid}",\
+	GOTO="lbl_udev_pcan"
+
+# create symlinks: /dev/pcan-usb_fd/devid=X -> /dev/pcanusbY (PCAN-USB FD only)
+# (since v7.14, PCAN-USB FD hwtype attribute = 18)
+# only if devid is not the default value 0xffffffff nor 0.
+#KERNEL=="pcanusbfd*", WAIT_FOR="hwtype", ATTR{hwtype}=="18",\
+KERNEL=="pcanusbfd*", ATTR{hwtype}=="18",\
+	SYMLINK+="pcan-usb_fd/$attr{adapter_number}/can$attr{ctrlr_number}"
+KERNEL=="pcanusbfd*", ATTR{hwtype}=="18",\
+	ATTR{devid} != "4294967295", ATTR{devid} != "0",\
+	SYMLINK+="pcan-usb_fd/devid=$attr{devid}",\
+	GOTO="lbl_udev_pcan"
+
+# create symlinks: /dev/pcan-usb_pro_fd/devid=X -> /dev/pcanusbY (PCAN-USB Pro FD only)
+# (since v7.14, PCAN-USB Pro FD hwtype attribute = 17)
+# only if devid is not the default value 0xffffffff.
+#KERNEL=="pcanusbfd*", WAIT_FOR="hwtype", ATTR{hwtype}=="17",\
+KERNEL=="pcanusbfd*", ATTR{hwtype}=="17",\
+	SYMLINK+="pcanusbpfd%m",\
+	SYMLINK+="pcan-usb_pro_fd/$attr{adapter_number}/can$attr{ctrlr_number}"
+KERNEL=="pcanusbfd*", ATTR{hwtype}=="17",\
+	ATTR{devid} != "4294967295", ATTR{devid} != "0",\
+	SYMLINK+="pcan-usb_pro_fd/devid=$attr{devid}",\
+	GOTO="lbl_udev_pcan"
+
+# create symlinks: /dev/pcan-usb/devid=X -> /dev/pcanusbY (PCAN-USB only)
+# only if devid is not the default value 0xff.
+# (since v7.13, PCAN-USB devid attribute contains hard-coded device id)
+# Note:  New PCAN-USB devices use 00 as devid default value
+#KERNEL=="pcanusb*", WAIT_FOR="hwtype", ATTR{hwtype}=="11",\
+KERNEL=="pcanusb*", ATTR{hwtype}=="11",\
+	SYMLINK+="pcan-usb/$attr{adapter_number}/can$attr{ctrlr_number}"
+KERNEL=="pcanusb*", ATTR{hwtype}=="11",\
+	ATTR{devid} != "255", ATTR{devid} != "0",\
+	SYMLINK+="pcan-usb/devid=$attr{devid}",\
+	GOTO="lbl_udev_pcan"
+
+# create symlinks: /dev/pcan-usb_pro/devid=X ->/dev/pcanusbY (PCAN-USB Pro only)
+# (since v7.13, PCAN-USB Pro hwtype attribute = 13)
+# only if devid is not the default value 0xffffffff.
+#KERNEL=="pcanusb*", WAIT_FOR="hwtype", ATTR{hwtype}=="13",\
+KERNEL=="pcanusb*", ATTR{hwtype}=="13",\
+	SYMLINK+="pcanusbpro%m",\
+	SYMLINK+="pcan-usb_pro/$attr{adapter_number}/can$attr{ctrlr_number}"
+KERNEL=="pcanusb*", ATTR{hwtype}=="13",\
+	ATTR{devid} != "4294967295",\
+	SYMLINK+="pcan-usb_pro/devid=$attr{devid}",\
+	GOTO="lbl_udev_pcan"
+
+# All other PCAN devices
+LABEL="lbl_udev_pcan"
+KERNEL=="pcanpci*", SYMLINK+="pcan%m", MODE="0666"
+KERNEL=="pcanpccard*", SYMLINK+="pcan%m", MODE="0666"
+KERNEL=="pcanisa*", SYMLINK+="pcan%m", MODE="0666"
+KERNEL=="pcanepp*", SYMLINK+="pcan%m", MODE="0666"
+KERNEL=="pcansp*", SYMLINK+="pcan%m", MODE="0666"
+KERNEL=="pcanusb*", SYMLINK+="pcan%m", MODE="0666"
+
+LABEL="lbl_udev_end"
