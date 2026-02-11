@@ -48,8 +48,8 @@ navigation:
       lookahead_distance: 1.0
 
     smoothing:
-      use_interpolation: false
-      use_relaxation: false
+      use_interpolation: true
+      use_relaxation: true
     
     long_range:
       distance_ahead: 3.0
