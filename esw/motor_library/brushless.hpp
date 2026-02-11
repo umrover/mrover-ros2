@@ -200,9 +200,9 @@ namespace mrover {
         }
 
         auto setDesiredVelocity(OutputVelocity velocity) -> void {
+            sendQuery();
             // Only check for limit switches if at least one limit switch exists and is enabled
             if (mHasLimit) {
-                sendQuery();
 
                 if (auto [is_fwd_pressed, is_bwd_pressed] = getPressedLimitSwitchInfo();
                     (velocity > OutputVelocity{0} && is_fwd_pressed) ||
@@ -243,10 +243,9 @@ namespace mrover {
         }
 
         auto setDesiredPosition(OutputPosition position) -> void {
+            sendQuery();
             // Only check for limit switches if at least one limit switch exists and is enabled
             if (mHasLimit) {
-                sendQuery();
-
                 if (auto [is_fwd_pressed, is_bwd_pressed] = getPressedLimitSwitchInfo();
                     (mPosition < position.get() && is_fwd_pressed) ||
                     (mPosition > position.get() && is_bwd_pressed)) {
