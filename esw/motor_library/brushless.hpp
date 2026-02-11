@@ -116,7 +116,7 @@ namespace mrover {
         std::array<LimitSwitchInfo, MAX_NUM_LIMIT_SWITCHES> mLimitSwitchesInfo{};
 
         std::optional<moteus::Controller> mMoteus;
-        std::int8_t m_moteus_aux1_info{}, mMoteusAux2Info{};
+        std::int8_t mMoteusAux1Info{}, mMoteusAux2Info{};
         bool mHasLimit{};
 
     public:
@@ -163,7 +163,7 @@ namespace mrover {
 
                 if (mLimitSwitchesInfo[i].present && mLimitSwitchesInfo[i].enabled && !mLimitSwitchesInfo[i].activeHigh) {
                     if (mLimitSwitchesInfo[i].auxNumber == MoteusAuxNumber::AUX1) {
-                        m_moteus_aux1_info |= (1 << static_cast<std::size_t>(mLimitSwitchesInfo[i].auxPin));
+                        mMoteusAux1Info |= (1 << static_cast<std::size_t>(mLimitSwitchesInfo[i].auxPin));
                     } else if (mLimitSwitchesInfo[i].auxNumber == MoteusAuxNumber::AUX2) {
                         mMoteusAux2Info |= (1 << static_cast<std::size_t>(mLimitSwitchesInfo[i].auxPin));
                     }
@@ -298,7 +298,7 @@ namespace mrover {
                     mErrorState = moteusErrorCodeToErrorState(result.mode, static_cast<ErrorCode>(result.fault));
                     mState = moteusModeToState(result.mode);
 
-                    m_moteus_aux1_info = result.aux1_gpio;
+                    mMoteusAux1Info = result.aux1_gpio;
                     mMoteusAux2Info = result.aux2_gpio;
 
                     if (result.mode == moteus::Mode::kPositionTimeout || result.mode == moteus::Mode::kFault) {
@@ -324,7 +324,7 @@ namespace mrover {
             MoteusLimitSwitchInfo result{};
             for (std::size_t i = 0; i < MAX_NUM_LIMIT_SWITCHES; ++i) {
                 if (mLimitSwitchesInfo[i].present && mLimitSwitchesInfo[i].enabled) {
-                    std::uint8_t const aux_info = (mLimitSwitchesInfo[i].auxNumber == MoteusAuxNumber::AUX1) ? m_moteus_aux1_info : mMoteusAux2Info;
+                    std::uint8_t const aux_info = (mLimitSwitchesInfo[i].auxNumber == MoteusAuxNumber::AUX1) ? mMoteusAux1Info : mMoteusAux2Info;
                     bool gpio_state = aux_info & (1 << static_cast<std::size_t>(mLimitSwitchesInfo[i].auxPin));
 
                     // Assign to Base m_limit_hit

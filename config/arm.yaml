@@ -22,27 +22,12 @@ arm_hw_bridge:
       limit_switch_1_readjust_position: 0.0
       limit_switch_1_aux_number: 1
       limit_switch_1_aux_pin: 2
+    joint_b_segment_length: 0.434
+    joint_b_actuator_length: 0.324
+    joint_b_mount_length: 0.157
+    joint_b_mount_theta: 1.25499645 # 90 deg - 18.094 deg
+    joint_b_segment_offset_theta: 0.09384635 # 5.377 deg
 #    joint_b:
-#      min_velocity: -1.0
-#      max_velocity: 1.0
-#      min_position: -0.9
-#      max_position: 0.0
-#      gear_ratio: 1.0
-#      is_inverted: true
-#      driver_voltage: 12.0
-#      motor_max_voltage: 12.0
-#      quad_present: false
-#      abs_present: true
-#      abs_ratio: -1.0
-#      abs_offset: 0.995
-#      position_p: 30.0
-#      velocity_p: 5.0
-#      calibration_throttle: 0.5
-#      limit_switch_0_present: true
-#      limit_switch_0_enabled: true
-#      limit_switch_0_limits_forward: false
-#      limit_switch_0_active_high: false
-#      limit_switch_0_used_for_readjustment: false
 #    joint_c:
 #      min_velocity: -0.06
 #      max_velocity: 0.06

@@ -56,8 +56,8 @@ can_bridge_2:
         id: 0x10
       joint_a:
         id: 0x30
-#      joint_b:
-#        id: 0x31
+      joint_b:
+        id: 0x31
 #      joint_c:
 #        id: 0x32
 #      joint_de_0:
