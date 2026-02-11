@@ -1,6 +1,7 @@
 #include "keyboard_typing.hpp"
 #include "lie.hpp"
 #include "mrover/srv/detail/ik_mode__struct.hpp"
+#include "mrover/srv/detail/pusher__struct.hpp"
 #include <cstddef>
 
 
@@ -319,18 +320,33 @@ namespace mrover{
             // Returns the filtered pose
             geometry_msgs::msg::Pose finalestimation; // = updateKalmanFilter(combined_tvec, combined_rvec);
 
-            finalestimation.position.x = combined_tvec[0];
-            finalestimation.position.y = combined_tvec[1];
-            finalestimation.position.z = combined_tvec[2];
+            Eigen::Vector3d rvec(
+                combined_rvec[0],
+                combined_rvec[1],
+                combined_rvec[2]
+            );
 
+            double angle = rvec.norm();
             Eigen::Quaterniond q;
-            q = Eigen::AngleAxisd(combined_rvec[0], Eigen::Vector3d::UnitZ()) *
-                Eigen::AngleAxisd(combined_rvec[1], Eigen::Vector3d::UnitY()) *
-                Eigen::AngleAxisd(combined_rvec[2], Eigen::Vector3d::UnitX());
+
+            if (angle < 1e-12) {
+                q.setIdentity();
+            } else {
+                Eigen::Vector3d axis = rvec / angle;
+                q = Eigen::AngleAxisd(angle, axis);
+            }
+
             finalestimation.orientation.x = q.x();
             finalestimation.orientation.y = q.y();
             finalestimation.orientation.z = q.z();
             finalestimation.orientation.w = q.w();
+
+            finalestimation.position.x = combined_tvec[0];
+            finalestimation.position.y = combined_tvec[1];
+            finalestimation.position.z = combined_tvec[2];
+
+            double yaw_rad = q.toRotationMatrix().eulerAngles(2, 1, 0)[0];
+            double yaw_deg = yaw_rad * 180.0 / M_PI;
 
             // Draw after kalman filter
             // cv::drawFrameAxes(grayImage, camMatrix, distCoeffs, combined_rvec, combined_tvec, markerLength * 3.0f, 4);
@@ -372,7 +388,7 @@ namespace mrover{
             //     outputToCSV(combined_tvec, combined_rvec);
             // }
 
-            return pose_output{finalestimation, combined_rvec[2]*180 / M_PI};
+            return pose_output{finalestimation, yaw_deg};
 
             // outputToCSV(tvecs[0], rvecs[0]);
             // return updateKalmanFilter(tvecs, rvecs);
@@ -546,13 +562,10 @@ namespace mrover{
 
             double pitch_rad = std::atan2(-r20, std::hypot(r00, r10));
 
-            // grab current pitch
-            double current_pitch = std::atan2(-armbase_to_armfk.rotation()(2, 0), std::hypot(armbase_to_armfk.rotation()(0, 0), armbase_to_armfk.rotation()(1, 0)));
-
             RCLCPP_INFO_STREAM(this->get_logger(), "pitch = " << pitch_rad);
 
             // Continously send IK command for 1.5s
-            sendIKCommand(armbase_to_armfk.translation().x(), gripper_to_tag.translation().y(), gripper_to_tag.translation().z(), current_pitch - pitch_rad, 0);
+            sendIKCommand(armbase_to_armfk.translation().x(), gripper_to_tag.translation().y(), gripper_to_tag.translation().z(), pitch_rad, 0);
 
             // RCLCPP_INFO_STREAM(this->get_logger(), "y_delta = " << dy);
             // RCLCPP_INFO_STREAM(this->get_logger(), "z_delta = " << dz);
@@ -595,11 +608,8 @@ namespace mrover{
 
             double pitch_rad = std::atan2(-r20, std::hypot(r00, r10));
 
-            // grab current pitch
-            double current_pitch = std::atan2(-armbase_to_armfk.rotation()(2, 0), std::hypot(armbase_to_armfk.rotation()(0, 0), armbase_to_armfk.rotation()(1, 0)));
-
             sendIKCommand(armbase_to_armfk.translation().x(),
-            armbase_to_z.translation().y(), armbase_to_z.translation().z(), current_pitch - pitch_rad, 0);
+            armbase_to_z.translation().y(), armbase_to_z.translation().z(), pitch_rad, 0);
 
             RCLCPP_INFO_STREAM(get_logger(), "y_delta = " << (armbase_to_armfk.translation().y() - armbase_to_z.translation().y()));
                             
@@ -720,6 +730,24 @@ namespace mrover{
         return (future_result.get().code == rclcpp_action::ResultCode::SUCCEEDED);
     }
 
+    auto KeyboardTypingNode::send_pusher_goal() -> bool {
+        if (!mPusherClient->wait_for_service()) {
+            RCLCPP_INFO_STREAM(this->get_logger(), "Pusher Service not available");
+            return false;
+        }
+
+        RCLCPP_INFO_STREAM(this->get_logger(), "Sending Pusher Command");
+
+        auto msg =  std::make_shared<srv::Pusher::Request>();
+        msg->start = true;
+
+        auto result = mPusherClient->async_send_request(msg);
+
+        result.wait();
+
+        return true;
+    }
+
     void KeyboardTypingNode::feedback_callback(GoalHandleTypingDeltas::SharedPtr, const std::shared_ptr<const TypingDeltas::Feedback> feedback) {
         // RCLCPP_INFO_STREAM(get_logger(), std::format("Feedback: {}", feedback->dist_remaining));
     }
@@ -816,6 +844,9 @@ namespace mrover{
                 RCLCPP_INFO_STREAM(this->get_logger(), "y_delta = " << y_delta);
 
                 send_goal(-x_delta, y_delta);
+
+                // Send request to extend pusher all the way
+                // send_pusher_goal();
 
                 if (goal_handle->is_canceling()) {
                     result->success = false;

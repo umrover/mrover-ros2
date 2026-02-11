@@ -1,6 +1,5 @@
 #pragma once
 
-#include "mrover/msg/detail/position__struct.hpp"
 #include "pch.hpp"
 
 // #include "constants.h"
@@ -11,7 +10,12 @@ namespace mrover{
         using TypingDeltas = mrover::action::TypingDeltas;
         using GoalHandleTypingDeltas = rclcpp_action::ClientGoalHandle<TypingDeltas>;
 
+        using PusherSrv = srv::Pusher;
+
         rclcpp_action::Client<TypingDeltas>::SharedPtr mTypingClient;
+
+        // Pusher client
+        rclcpp::Client<PusherSrv>::SharedPtr mPusherClient;
 
         // Ik mode client
         rclcpp::Client<srv::IkMode>::SharedPtr mIkModeClient;
@@ -109,6 +113,8 @@ namespace mrover{
         auto rotateGripper(float radians) -> void;
 
         auto align_to_z() -> void;
+
+        auto send_pusher_goal() -> bool;
 
         public:
 

@@ -69,3 +69,6 @@
 #include "constants.hpp"
 #include "keyboard_typing/constants.hpp"
 #include <mrover/srv/ik_mode.hpp>
+
+#include "mrover/msg/detail/position__struct.hpp"
+#include "mrover/srv/detail/pusher__struct.hpp"
