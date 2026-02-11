@@ -1,9 +1,9 @@
 <template>
-  <button :class="['btn', currentColor]" :style="customStyles" @click="handleClick">
-    <span class="d-inline-flex align-items-center gap-2">
+  <button :class="['cmd-btn', currentColor]" :style="customStyles" @click="handleClick">
+    <span class="flex items-center w-full">
       <span>{{ displayName }}</span>
-      <i v-if="mode === 'toggle'" :class="checked ? 'bi bi-check-square-fill' : 'bi bi-square'"></i>
-      <i v-else-if="isWaiting" class="bi bi-arrow-repeat spin"></i>
+      <i v-if="mode === 'toggle'" class="ml-auto" :class="checked ? 'bi bi-check-square-fill' : 'bi bi-square'"></i>
+      <i v-else-if="isWaiting" class="bi bi-arrow-repeat animate-spin ml-auto"></i>
     </span>
   </button>
 </template>
@@ -63,12 +63,12 @@ export default defineComponent({
   computed: {
     currentColor(): string {
       if (this.mode === 'action') {
-        if (this.isComplete) return 'btn-success'
-        if (this.isWaiting) return 'btn-warning'
-        return 'btn-primary'
+        if (this.isComplete) return 'cmd-btn-success'
+        if (this.isWaiting) return 'cmd-btn-warning'
+        return 'cmd-btn-success'
       }
-      if (this.isWaiting) return 'btn-warning'
-      return this.checked ? 'btn-success' : 'btn-danger'
+      if (this.isWaiting) return 'cmd-btn-warning'
+      return this.checked ? 'cmd-btn-success' : 'cmd-btn-danger'
     },
 
     displayName(): string {
@@ -166,13 +166,3 @@ export default defineComponent({
 })
 </script>
 
-<style scoped>
-.spin {
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-</style>
