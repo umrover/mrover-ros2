@@ -30,7 +30,7 @@ class DebugArmPublisher(Node):
     def __init__(self):
         super().__init__("debug_arm_publisher")
 
-        self.mode = Mode.TYPING
+        self.mode = Mode.THR
 
         self.thr_pub = self.create_publisher(Throttle, "arm_thr_cmd", 1)
         self.pos_pub = self.create_publisher(Position, "arm_pos_cmd", 1)
@@ -52,7 +52,7 @@ class DebugArmPublisher(Node):
         header = Header(stamp = self.get_clock().now().to_msg(), frame_id = "base_link")
 
         joint_names = ["joint_a", "gripper"]
-        joint_throttles = [-1.0, 0.0]
+        joint_throttles = [0.0, 0.7]
         
         arm_thr_cmd = Throttle(header=header, names=joint_names, throttles=joint_throttles)
         self.thr_pub.publish(arm_thr_cmd)
