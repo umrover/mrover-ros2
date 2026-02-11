@@ -34,8 +34,7 @@
 #include <mrover/msg/velocity.hpp>
 #include <mrover/msg/controller_state.hpp>
 #include <mrover/srv/ik_mode.hpp>
-#include "mrover/action/typing_deltas.hpp"
-#include "mrover/action/detail/typing_deltas__struct.hpp"
+#include "mrover/action/typing_position.hpp"
 
 
 

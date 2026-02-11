@@ -1,4 +1,5 @@
 #pragma once
+#include "mrover/action/detail/typing_position__struct.hpp"
 #include "pch.hpp"
 
 
@@ -77,12 +78,12 @@ namespace mrover {
 
         [[maybe_unused]] rclcpp::Subscription<msg::IK>::SharedPtr mIkSub;
         [[maybe_unused]] rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr mVelSub;
-        [[maybe_unused]] rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr mJointSub;
+        [[maybe_unused]] rclcpp::Subscription<msg::ControllerState>::SharedPtr mJointSub;
 
-        rclcpp_action::Server<action::TypingDeltas>::SharedPtr mTypingServer;
-        auto handleTypingGoal(const rclcpp_action::GoalUUID & uuid, std::shared_ptr<const action::TypingDeltas_Goal> typingGoal) -> rclcpp_action::GoalResponse;
-        auto handleTypingCancel(std::shared_ptr<rclcpp_action::ServerGoalHandle<action::TypingDeltas>> typingGoalHandle) -> rclcpp_action::CancelResponse;
-        auto handleTypingAccepted(std::shared_ptr<rclcpp_action::ServerGoalHandle<action::TypingDeltas>> typingGoalHandle) -> void;
+        rclcpp_action::Server<action::TypingPosition>::SharedPtr mTypingServer;
+        auto handleTypingGoal(const rclcpp_action::GoalUUID & uuid, std::shared_ptr<const action::TypingPosition_Goal> typingGoal) -> rclcpp_action::GoalResponse;
+        auto handleTypingCancel(std::shared_ptr<rclcpp_action::ServerGoalHandle<action::TypingPosition>> typingGoalHandle) -> rclcpp_action::CancelResponse;
+        auto handleTypingAccepted(std::shared_ptr<rclcpp_action::ServerGoalHandle<action::TypingPosition>> typingGoalHandle) -> void;
         std::optional<rclcpp_action::GoalUUID> mTypingGoalID;
 
         rclcpp::Publisher<msg::Position>::SharedPtr mPosPub;
