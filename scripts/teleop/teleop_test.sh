@@ -2,16 +2,12 @@
 
 set -e
 
-while [[ "$#" -gt 0 ]]; do
-    case $1 in
-        -h|--help)
-            echo "Usage: $0 [-h|--help]"
-            exit 0
-            ;;
-        *) echo "Unknown option: $1"; exit 1 ;;
-    esac
-    shift
-done
+if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
+    echo "Usage: $0 [-h|--help]"
+    exit 0
+elif [[ "$#" -gt 0 ]]; then
+    echo "Unknown option: $1"; exit 1
+fi
 
 FRONTEND_URL="http://localhost:8080"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
