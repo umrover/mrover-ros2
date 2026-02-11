@@ -4,7 +4,6 @@ from tf2_ros import LookupException, ConnectivityException, ExtrapolationExcepti
 from lie import SE3
 from backend.ws.base_ws import WebSocketHandler
 from backend.managers.led import set_nav_state
-from mrover.msg import LED
 from mrover.msg import StateMachineStateUpdate
 from sensor_msgs.msg import NavSatFix
 
@@ -24,7 +23,6 @@ class NavHandler(WebSocketHandler):
         self.forward_ros_topic("/gps/fix", NavSatFix, "gps_fix")
         self.forward_ros_topic("basestation/position", NavSatFix, "basestation_position")
         self.forward_ros_topic("/drone_odometry", NavSatFix, "drone_waypoint")
-        self.forward_ros_topic("/led", LED, "led_color")
 
         timer = self.node.create_timer(0.1, self.send_localization_callback)
         self.timers.append(timer)
