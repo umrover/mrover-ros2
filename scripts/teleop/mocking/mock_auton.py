@@ -26,7 +26,9 @@ class MockAuton(Node):
         self.get_logger().info(f"Mock auton node started (typing delay: {typing_delay}s)")
 
     def on_enable_auton(self, request, response):
-        self.get_logger().info(f"Auton {'enabled' if request.enable else 'disabled'}, {len(request.waypoints)} waypoints")
+        self.get_logger().info(
+            f"Auton {'enabled' if request.enable else 'disabled'}, {len(request.waypoints)} waypoints"
+        )
         response.success = True
         return response
 
@@ -36,6 +38,7 @@ class MockAuton(Node):
             response.success = True
             response.message = f"{name} toggled"
             return response
+
         return handler
 
     def execute_typing(self, goal_handle):
@@ -67,7 +70,9 @@ class MockAuton(Node):
 
 def main(args=None):
     parser = argparse.ArgumentParser(description="Mock autonomy subsystem")
-    parser.add_argument("--typing-delay", type=float, default=1.0, help="Delay between typed characters in seconds (default: 1.0)")
+    parser.add_argument(
+        "--typing-delay", type=float, default=1.0, help="Delay between typed characters in seconds (default: 1.0)"
+    )
     parsed_args = parser.parse_args()
 
     rclpy.init(args=args)

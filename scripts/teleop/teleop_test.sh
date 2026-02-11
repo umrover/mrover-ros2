@@ -2,17 +2,10 @@
 
 set -e
 
-# Parse command line arguments
-RESET_DB=false
 while [[ "$#" -gt 0 ]]; do
     case $1 in
-        --reset) RESET_DB=true ;;
         -h|--help)
-            echo "Usage: $0 [options]"
-            echo ""
-            echo "Options:"
-            echo "  --reset    Clear waypoints database before running tests"
-            echo "  -h, --help Show this help message"
+            echo "Usage: $0 [-h|--help]"
             exit 0
             ;;
         *) echo "Unknown option: $1"; exit 1 ;;

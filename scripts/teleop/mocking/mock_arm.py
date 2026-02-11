@@ -63,7 +63,9 @@ class MockArm(Node):
     def on_ik_pos(self, msg: IK):
         now = self.get_clock().now().nanoseconds / 1e9
         if now - self.last_log_time > 1.0:
-            self.get_logger().info(f"IK pos: ({msg.pos.x:.3f}, {msg.pos.y:.3f}, {msg.pos.z:.3f}) pitch={msg.pitch:.2f} roll={msg.roll:.2f}")
+            self.get_logger().info(
+                f"IK pos: ({msg.pos.x:.3f}, {msg.pos.y:.3f}, {msg.pos.z:.3f}) pitch={msg.pitch:.2f} roll={msg.roll:.2f}"
+            )
             self.last_log_time = now
 
     def on_ik_vel(self, msg: Twist):

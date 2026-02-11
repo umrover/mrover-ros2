@@ -31,7 +31,9 @@ class MockSensorData(Node):
         self.create_timer(1.0 / sensor_rate, self.publish_sensor_data)
         self.create_timer(1.0 / controller_rate, self.publish_controller_state)
 
-        self.get_logger().info(f"Mock sensor data node started (sensors: {sensor_rate} Hz, controller: {controller_rate} Hz)")
+        self.get_logger().info(
+            f"Mock sensor data node started (sensors: {sensor_rate} Hz, controller: {controller_rate} Hz)"
+        )
 
     def publish_sensor_data(self):
         self.t += 0.3
@@ -88,7 +90,9 @@ class MockSensorData(Node):
 def main(args=None):
     parser = argparse.ArgumentParser(description="Mock science sensor data and SP controller state")
     parser.add_argument("-r", "--rate", type=float, default=1.0, help="Sensor publishing rate in Hz (default: 1.0)")
-    parser.add_argument("--controller-rate", type=float, default=10.0, help="Controller state rate in Hz (default: 10.0)")
+    parser.add_argument(
+        "--controller-rate", type=float, default=10.0, help="Controller state rate in Hz (default: 10.0)"
+    )
     parsed_args = parser.parse_args()
 
     rclpy.init(args=args)

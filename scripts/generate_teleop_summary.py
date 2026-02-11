@@ -49,13 +49,13 @@ def parse_msg_file(msg_path: Path) -> str:
 
     content = msg_path.read_text()
     lines = []
-    for line in content.split('\n'):
+    for line in content.split("\n"):
         # Remove inline comments
-        line = line.split('#')[0].strip()
+        line = line.split("#")[0].strip()
         # Skip empty lines and comment-only lines
         if line:
             lines.append(line)
-    return ', '.join(lines)
+    return ", ".join(lines)
 
 
 def parse_srv_file(srv_path: Path) -> Tuple[str, str]:
@@ -64,28 +64,28 @@ def parse_srv_file(srv_path: Path) -> Tuple[str, str]:
         return "", ""
 
     content = srv_path.read_text()
-    parts = content.split('---')
+    parts = content.split("---")
 
     request = ""
     response = ""
 
     if len(parts) >= 1:
         req_lines = []
-        for line in parts[0].split('\n'):
+        for line in parts[0].split("\n"):
             # Remove inline comments
-            line = line.split('#')[0].strip()
+            line = line.split("#")[0].strip()
             if line:
                 req_lines.append(line)
-        request = ', '.join(req_lines) if req_lines else "-"
+        request = ", ".join(req_lines) if req_lines else "-"
 
     if len(parts) >= 2:
         resp_lines = []
-        for line in parts[1].split('\n'):
+        for line in parts[1].split("\n"):
             # Remove inline comments
-            line = line.split('#')[0].strip()
+            line = line.split("#")[0].strip()
             if line:
                 resp_lines.append(line)
-        response = ', '.join(resp_lines) if resp_lines else "-"
+        response = ", ".join(resp_lines) if resp_lines else "-"
 
     return request, response
 
@@ -126,13 +126,34 @@ def extract_topics_from_consumer(consumer_path: Path, msg_dir: Path) -> Tuple[Li
         topic_name = match.group(2)
 
         # Determine full message type
-        if '/' in msg_type or msg_type in ['Twist', 'PoseStamped', 'JointState', 'Temperature', 'RelativeHumidity', 'NavSatFix', 'Image', 'Float32']:
+        if "/" in msg_type or msg_type in [
+            "Twist",
+            "PoseStamped",
+            "JointState",
+            "Temperature",
+            "RelativeHumidity",
+            "NavSatFix",
+            "Image",
+            "Float32",
+        ]:
             # Standard ROS or already has package
-            full_type = msg_type if '/' in msg_type else f'geometry_msgs/{msg_type}' if msg_type in ['Twist', 'PoseStamped'] else f'sensor_msgs/{msg_type}' if msg_type in ['JointState', 'Temperature', 'RelativeHumidity', 'NavSatFix', 'Image'] else f'std_msgs/{msg_type}'
+            full_type = (
+                msg_type
+                if "/" in msg_type
+                else (
+                    f"geometry_msgs/{msg_type}"
+                    if msg_type in ["Twist", "PoseStamped"]
+                    else (
+                        f"sensor_msgs/{msg_type}"
+                        if msg_type in ["JointState", "Temperature", "RelativeHumidity", "NavSatFix", "Image"]
+                        else f"std_msgs/{msg_type}"
+                    )
+                )
+            )
             declaration = get_standard_msg_declaration(full_type)
         else:
-            full_type = f'mrover/{msg_type}'
-            msg_file = msg_dir / f'{msg_type}.msg'
+            full_type = f"mrover/{msg_type}"
+            msg_file = msg_dir / f"{msg_type}.msg"
             declaration = parse_msg_file(msg_file)
 
         published.append(Topic(topic_name, full_type, declaration))
@@ -144,12 +165,33 @@ def extract_topics_from_consumer(consumer_path: Path, msg_dir: Path) -> Tuple[Li
         msg_type = match.group(2)
 
         # Determine full message type
-        if '/' in msg_type or msg_type in ['Twist', 'PoseStamped', 'JointState', 'Temperature', 'RelativeHumidity', 'NavSatFix', 'Image', 'Float32']:
-            full_type = msg_type if '/' in msg_type else f'geometry_msgs/{msg_type}' if msg_type in ['Twist', 'PoseStamped'] else f'sensor_msgs/{msg_type}' if msg_type in ['JointState', 'Temperature', 'RelativeHumidity', 'NavSatFix', 'Image'] else f'std_msgs/{msg_type}'
+        if "/" in msg_type or msg_type in [
+            "Twist",
+            "PoseStamped",
+            "JointState",
+            "Temperature",
+            "RelativeHumidity",
+            "NavSatFix",
+            "Image",
+            "Float32",
+        ]:
+            full_type = (
+                msg_type
+                if "/" in msg_type
+                else (
+                    f"geometry_msgs/{msg_type}"
+                    if msg_type in ["Twist", "PoseStamped"]
+                    else (
+                        f"sensor_msgs/{msg_type}"
+                        if msg_type in ["JointState", "Temperature", "RelativeHumidity", "NavSatFix", "Image"]
+                        else f"std_msgs/{msg_type}"
+                    )
+                )
+            )
             declaration = get_standard_msg_declaration(full_type)
         else:
-            full_type = f'mrover/{msg_type}'
-            msg_file = msg_dir / f'{msg_type}.msg'
+            full_type = f"mrover/{msg_type}"
+            msg_file = msg_dir / f"{msg_type}.msg"
             declaration = parse_msg_file(msg_file)
 
         subscribed.append(Topic(topic_name, full_type, declaration))
@@ -170,12 +212,12 @@ def extract_services_from_views(view_path: Path, srv_dir: Path) -> List[Service]
         service_name = match.group(2)
 
         # Determine full service type and get declarations
-        if srv_type == 'SetBool':
-            full_type = 'std_srvs/SetBool'
+        if srv_type == "SetBool":
+            full_type = "std_srvs/SetBool"
             request, response = get_standard_srv_declaration(full_type)
         else:
-            full_type = f'mrover/{srv_type}'
-            srv_file = srv_dir / f'{srv_type}.srv'
+            full_type = f"mrover/{srv_type}"
+            srv_file = srv_dir / f"{srv_type}.srv"
             request, response = parse_srv_file(srv_file)
 
         services.append(Service(service_name, full_type, request, response))
@@ -195,11 +237,11 @@ def scan_teleoperation_system(project_root: Path) -> Dict[str, SystemInfo]:
 
     # Scan consumers
     consumer_files = {
-        'arm': 'arm_consumer.py',
-        'drive': 'drive_consumer.py',
-        'science': 'science_consumer.py',
-        'mast': 'mast_consumer.py',
-        'nav': 'nav_consumer.py',
+        "arm": "arm_consumer.py",
+        "drive": "drive_consumer.py",
+        "science": "science_consumer.py",
+        "mast": "mast_consumer.py",
+        "nav": "nav_consumer.py",
     }
 
     for system_name, filename in consumer_files.items():
@@ -214,15 +256,15 @@ def scan_teleoperation_system(project_root: Path) -> Dict[str, SystemInfo]:
             status="WEBSOCKET",
             consumer=filename,
             published_topics=pub,
-            subscribed_topics=sub
+            subscribed_topics=sub,
         )
 
     # Scan REST API views
     view_files = {
-        'science': 'science.py',
-        'mast': 'mast.py',
-        'auton': 'auton.py',
-        'waypoints': 'waypoints.py',
+        "science": "science.py",
+        "mast": "mast.py",
+        "auton": "auton.py",
+        "waypoints": "waypoints.py",
     }
 
     for system_name, filename in view_files.items():
@@ -240,10 +282,7 @@ def scan_teleoperation_system(project_root: Path) -> Dict[str, SystemInfo]:
         else:
             # REST API only
             systems[system_name] = SystemInfo(
-                name=system_name.capitalize(),
-                status="REST API",
-                rest_api=filename,
-                services=services
+                name=system_name.capitalize(), status="REST API", rest_api=filename, services=services
             )
 
     return systems
@@ -258,16 +297,18 @@ def generate_markdown(systems: Dict[str, SystemInfo], output_path: Path):
     md.append("|--------|--------|----------|----------|")
 
     # Sort systems for consistent output
-    for name in ['arm', 'drive', 'science', 'mast', 'auton', 'nav', 'waypoints']:
+    for name in ["arm", "drive", "science", "mast", "auton", "nav", "waypoints"]:
         if name in systems:
             sys = systems[name]
-            md.append(f"| {sys.name} | **{sys.status}** | {sys.consumer if sys.consumer else '-'} | {sys.rest_api if sys.rest_api else '-'} |")
+            md.append(
+                f"| {sys.name} | **{sys.status}** | {sys.consumer if sys.consumer else '-'} | {sys.rest_api if sys.rest_api else '-'} |"
+            )
 
     md.append("\n**Note:** For HYBRID systems - WS: datastream only, everything else on REST API\n")
     md.append("---\n")
 
     # Generate detailed sections for each system
-    for name in ['arm', 'drive', 'science', 'mast', 'auton', 'nav', 'waypoints']:
+    for name in ["arm", "drive", "science", "mast", "auton", "nav", "waypoints"]:
         if name not in systems:
             continue
 
@@ -303,76 +344,86 @@ def generate_markdown(systems: Dict[str, SystemInfo], output_path: Path):
 
     md.append("**Last Updated:** Auto-generated")
 
-    output_path.write_text('\n'.join(md))
+    output_path.write_text("\n".join(md))
     print(f"Generated: {output_path}")
 
 
 def generate_html(systems: Dict[str, SystemInfo], output_path: Path):
     """Generate the HTML tables for Google Slides."""
 
-    html = ['<!DOCTYPE html>', '<html>', '<head>']
+    html = ["<!DOCTYPE html>", "<html>", "<head>"]
     html.append('<meta charset="UTF-8">')
-    html.append('<title>Teleoperation System Tables</title>')
-    html.append('<style>')
-    html.append('body { font-family: Arial, sans-serif; padding: 20px; }')
-    html.append('table { border-collapse: collapse; width: auto; margin-bottom: 20px; font-size: 9px; table-layout: auto; }')
-    html.append('th { background-color: #1a73e8; color: white; padding: 2px 6px; text-align: left; border: 1px solid #ddd; white-space: nowrap; line-height: 1.1; }')
-    html.append('td { padding: 2px 6px; border: 1px solid #ddd; vertical-align: top; height: auto; line-height: 1.1; }')
-    html.append('tr { height: auto; }')
-    html.append('tr:nth-child(even) { background-color: #f2f2f2; }')
-    html.append('.table-title { background-color: #1a73e8; color: white; font-weight: bold; text-align: center; padding: 3px 6px; font-size: 10px; line-height: 1.1; }')
-    html.append('</style>')
-    html.append('</head>')
-    html.append('<body>')
-    html.append('<h1>Teleoperation ROS Stack System Summary</h1>')
+    html.append("<title>Teleoperation System Tables</title>")
+    html.append("<style>")
+    html.append("body { font-family: Arial, sans-serif; padding: 20px; }")
+    html.append(
+        "table { border-collapse: collapse; width: auto; margin-bottom: 20px; font-size: 9px; table-layout: auto; }"
+    )
+    html.append(
+        "th { background-color: #1a73e8; color: white; padding: 2px 6px; text-align: left; border: 1px solid #ddd; white-space: nowrap; line-height: 1.1; }"
+    )
+    html.append("td { padding: 2px 6px; border: 1px solid #ddd; vertical-align: top; height: auto; line-height: 1.1; }")
+    html.append("tr { height: auto; }")
+    html.append("tr:nth-child(even) { background-color: #f2f2f2; }")
+    html.append(
+        ".table-title { background-color: #1a73e8; color: white; font-weight: bold; text-align: center; padding: 3px 6px; font-size: 10px; line-height: 1.1; }"
+    )
+    html.append("</style>")
+    html.append("</head>")
+    html.append("<body>")
+    html.append("<h1>Teleoperation ROS Stack System Summary</h1>")
 
     # System Status Overview
-    html.append('<table>')
+    html.append("<table>")
     html.append('<tr><th colspan="4" class="table-title">System Status Overview</th></tr>')
-    html.append('<tr><th>System</th><th>Status</th><th>Consumer</th><th>REST API</th></tr>')
+    html.append("<tr><th>System</th><th>Status</th><th>Consumer</th><th>REST API</th></tr>")
 
-    for name in ['arm', 'drive', 'science', 'mast', 'auton', 'nav', 'waypoints']:
+    for name in ["arm", "drive", "science", "mast", "auton", "nav", "waypoints"]:
         if name in systems:
             sys = systems[name]
-            html.append(f'<tr><td>{sys.name}</td><td>{sys.status}</td><td>{sys.consumer if sys.consumer else "-"}</td><td>{sys.rest_api if sys.rest_api else "-"}</td></tr>')
+            html.append(
+                f'<tr><td>{sys.name}</td><td>{sys.status}</td><td>{sys.consumer if sys.consumer else "-"}</td><td>{sys.rest_api if sys.rest_api else "-"}</td></tr>'
+            )
 
-    html.append('</table>')
+    html.append("</table>")
 
     # Detailed tables for each system
-    for name in ['arm', 'drive', 'science', 'mast', 'auton', 'nav']:
+    for name in ["arm", "drive", "science", "mast", "auton", "nav"]:
         if name not in systems:
             continue
 
         sys = systems[name]
 
         if sys.published_topics:
-            html.append('<table>')
+            html.append("<table>")
             html.append(f'<tr><th colspan="3" class="table-title">{sys.name} - Published Topics</th></tr>')
-            html.append('<tr><th>Topic</th><th>Type</th><th>Declaration</th></tr>')
+            html.append("<tr><th>Topic</th><th>Type</th><th>Declaration</th></tr>")
             for topic in sys.published_topics:
-                html.append(f'<tr><td>{topic.name}</td><td>{topic.msg_type}</td><td>{topic.declaration}</td></tr>')
-            html.append('</table>')
+                html.append(f"<tr><td>{topic.name}</td><td>{topic.msg_type}</td><td>{topic.declaration}</td></tr>")
+            html.append("</table>")
 
         if sys.subscribed_topics:
-            html.append('<table>')
+            html.append("<table>")
             html.append(f'<tr><th colspan="3" class="table-title">{sys.name} - Subscribed Topics</th></tr>')
-            html.append('<tr><th>Topic</th><th>Type</th><th>Declaration</th></tr>')
+            html.append("<tr><th>Topic</th><th>Type</th><th>Declaration</th></tr>")
             for topic in sys.subscribed_topics:
-                html.append(f'<tr><td>{topic.name}</td><td>{topic.msg_type}</td><td>{topic.declaration}</td></tr>')
-            html.append('</table>')
+                html.append(f"<tr><td>{topic.name}</td><td>{topic.msg_type}</td><td>{topic.declaration}</td></tr>")
+            html.append("</table>")
 
         if sys.services:
-            html.append('<table>')
+            html.append("<table>")
             html.append(f'<tr><th colspan="4" class="table-title">{sys.name} - Services (REST API)</th></tr>')
-            html.append('<tr><th>Service</th><th>Type</th><th>Request</th><th>Response</th></tr>')
+            html.append("<tr><th>Service</th><th>Type</th><th>Request</th><th>Response</th></tr>")
             for service in sys.services:
-                html.append(f'<tr><td>{service.name}</td><td>{service.srv_type}</td><td>{service.request}</td><td>{service.response}</td></tr>')
-            html.append('</table>')
+                html.append(
+                    f"<tr><td>{service.name}</td><td>{service.srv_type}</td><td>{service.request}</td><td>{service.response}</td></tr>"
+                )
+            html.append("</table>")
 
-    html.append('</body>')
-    html.append('</html>')
+    html.append("</body>")
+    html.append("</html>")
 
-    output_path.write_text('\n'.join(html))
+    output_path.write_text("\n".join(html))
     print(f"Generated: {output_path}")
 
 
@@ -397,5 +448,5 @@ def main():
     print("\nDone!")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

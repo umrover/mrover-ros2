@@ -103,7 +103,9 @@ class MockNav(Node):
 def main(args=None):
     parser = argparse.ArgumentParser(description="Mock navigation subsystem")
     parser.add_argument("-r", "--rate", type=float, default=5.0, help="GPS publishing rate in Hz (default: 5.0)")
-    parser.add_argument("--nav-cycle-sec", type=float, default=15.0, help="Nav state cycle period in seconds (default: 15.0)")
+    parser.add_argument(
+        "--nav-cycle-sec", type=float, default=15.0, help="Nav state cycle period in seconds (default: 15.0)"
+    )
     parsed_args = parser.parse_args()
 
     rclpy.init(args=args)
