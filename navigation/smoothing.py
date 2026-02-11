@@ -17,6 +17,7 @@ def smoothing(trajectory: Trajectory, context: Context, should_relax: bool, shou
     :param should_interpolate:  Enable interpolation
     :return:                    Smoothed trajectory
     """
+
     if should_relax:
         # Perform relaxation
         relaxed_path = Relaxation.relax(

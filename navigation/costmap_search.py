@@ -60,8 +60,8 @@ class CostmapSearchState(State):
             return
 
         self.USE_COSTMAP = context.node.get_parameter("costmap.use_costmap").value or current_waypoint.enable_costmap
-        self.USE_INTERPOLATION = True # TODO set properly
-        self.USE_RELAXATION = True # TODO set properly
+        self.USE_INTERPOLATION = context.node.get_parameter_or("smoothing.use_relaxation", True).value
+        self.USE_RELAXATION = context.node.get_parameter_or("smoothing.use_interpolation", True).value
         self.USE_PURE_PURSUIT = context.node.get_parameter_or("pure_pursuit.use_pure_pursuit", True).value
 
         self.STOP_THRESH = context.node.get_parameter("search.stop_threshold").value

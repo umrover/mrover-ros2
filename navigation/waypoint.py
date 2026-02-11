@@ -11,7 +11,7 @@ from .context import Context
 import time
 import rclpy
 from .context import Context
-from navigation.astar import AStar, SpiralEnd, NoPath, OutOfBounds, DestinationInHighCost
+from navigation.astar import AStar, SpiralEnd, NoPath, OutOfBounds
 from navigation.coordinate_utils import gen_marker, segment_path, is_high_cost_point, d_calc, cartesian_to_ij
 from navigation.trajectory import Trajectory, SearchTrajectory
 from typing import Optional
@@ -171,7 +171,6 @@ class WaypointState(State):
             self.display_markers(context=context)
             try:
                 self.astar_traj = self.astar.generate_trajectory(context, self.waypoint_traj.get_current_point())
-
                 self.astar_traj = smoothing(self.astar_traj, context, self.USE_RELAXATION, self.USE_INTERPOLATION)
                 
             except Exception as e:
@@ -183,13 +182,6 @@ class WaypointState(State):
                 self.waypoint_traj.increment_point()
                 if self.waypoint_traj.done():
                     return self.next_state(context=context)
-            # Add extra point for smoother Pure Pursuit
-            # Needs to be tested to see if this improves performace
-            # elif(self.USE_PURE_PURSUIT):
-            #     self.waypoint_traj.increment_point()
-            #     if not self.waypoint_traj.done():
-            #         np.append(self.astar_traj.coordinates, self.waypoint_traj.get_current_point())
-            #     self.waypoint_traj.decerement_point()
 
             return self
 

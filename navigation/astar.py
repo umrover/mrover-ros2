@@ -37,12 +37,12 @@ class OutOfBounds(Exception):
     pass
 
 
-class DestinationInHighCost(Exception):
-    """
-    Raised when the destination is in high cost
-    """
+# class DestinationInHighCost(Exception):
+#     """
+#     Raised when the destination is in high cost
+#     """
 
-    pass
+#     pass
 
 
 class AStar:
@@ -201,7 +201,7 @@ class AStar:
 
         rover_position_in_map = rover_SE3.translation()[:2]
 
-        if not self.USE_COSTMAP or not self.use_astar(dest=dest):
+        if not self.USE_COSTMAP or not self.use_astar(context=context, dest=dest):
             if (not self.USE_PURE_PURSUIT):
                 return Trajectory(np.array([dest]))
             else:
