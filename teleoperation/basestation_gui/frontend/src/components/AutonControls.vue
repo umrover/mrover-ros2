@@ -62,17 +62,16 @@ const teleopEnabled = computed(() => autonomyStore.teleopEnabled)
 const purePursuitEnabled = computed(() => autonomyStore.purePursuitEnabled)
 const pathRelaxationEnabled = computed(() => autonomyStore.pathRelaxationEnabled)
 const pathInterpolationEnabled = computed(() => autonomyStore.pathInterpolationEnabled)
-  
+
 const autonAction = (newState: boolean) => {
   const route = autonomyStore.route
   const waypoints = newState
     ? route.map((waypoint) => ({
         latitude_degrees: waypoint.latLng.lat,
         longitude_degrees: waypoint.latLng.lng,
-        tag_id: waypoint.tag_id,
+        tag_id: waypoint.id,
         type: waypoint.type,
         enable_costmap: waypoint.enable_costmap,
-        coverage_radius: waypoint.coverage_radius,
       }))
     : []
 
@@ -80,7 +79,7 @@ const autonAction = (newState: boolean) => {
 }
 
 const handleAutonToggle = (newState: boolean) => {
-  autonomyStore.autonEnabled = newState
+  autonomyStore.setAutonMode(newState)
 }
 
 const teleopAction = (newState: boolean) => {
@@ -88,7 +87,7 @@ const teleopAction = (newState: boolean) => {
 }
 
 const handleTeleopToggle = (newState: boolean) => {
-  autonomyStore.teleopEnabled = newState
+  autonomyStore.setTeleopMode(newState)
   emit('toggleTeleop', newState)
 }
 
@@ -97,7 +96,7 @@ const purePursuitAction = (newState: boolean) => {
 }
 
 const handlePurePursuitToggle = (newState: boolean) => {
-  autonomyStore.purePursuitEnabled = newState
+  autonomyStore.setPurePursuit(newState)
 }
 
 const pathRelaxationAction = (newState: boolean) => {
@@ -105,7 +104,7 @@ const pathRelaxationAction = (newState: boolean) => {
 }
 
 const handlePathRelaxationToggle = (newState: boolean) => {
-  autonomyStore.pathRelaxationEnabled = newState
+  autonomyStore.setPathRelaxation(newState)
 }
 
 const pathInterpolationAction = (newState: boolean) => {
@@ -113,7 +112,7 @@ const pathInterpolationAction = (newState: boolean) => {
 }
 
 const handlePathInterpolationToggle = (newState: boolean) => {
-  autonomyStore.pathInterpolationEnabled = newState
+  autonomyStore.setPathInterpolation(newState)
 }
 </script>
 

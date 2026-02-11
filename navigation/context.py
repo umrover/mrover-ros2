@@ -6,9 +6,11 @@ import numpy as np
 import pymap3d
 import rclpy
 from scipy import ndimage
+from rclpy.parameter import Parameter
 
 import tf2_ros
 from geometry_msgs.msg import Twist, Point
+from std_srvs.srv import SetBool
 from mrover.srv import MoveCostMap, DilateCostMap
 from lie import SE3
 from mrover.msg import (
@@ -20,10 +22,12 @@ from mrover.msg import (
     ImageTarget,
     ImageTargets,
 )
+from std_srvs.srv import SetBool
 from mrover.srv import EnableAuton
 from nav_msgs.msg import Path
 from nav_msgs.msg import OccupancyGrid
 from visualization_msgs.msg import Marker, MarkerArray
+from rclpy import Parameter
 from rclpy.duration import Duration
 from rclpy.node import Node
 from rclpy.publisher import Publisher
@@ -35,7 +39,6 @@ from rclpy.executors import SingleThreadedExecutor
 from state_machine.state import State
 from std_msgs.msg import Bool, Header
 from .drive import DriveController
-from collections import deque
 from copy import deepcopy
 
 NO_TAG: int = -1
@@ -378,6 +381,8 @@ class Context:
     costmap_listener: Subscription
     path_history_publisher: Publisher
     path_marker_publisher: Publisher
+    relaxed_publisher: Publisher
+    interpolated_publisher: Publisher
     COSTMAP_THRESH: float
     current_dilation_radius: float
     exec: SingleThreadedExecutor
@@ -403,8 +408,6 @@ class Context:
         from .state import OffState
 
         self.node = node
-        self.drive = DriveController(node)
-
         self.world_frame = node.get_parameter("world_frame").value
         self.rover_frame = node.get_parameter("rover_frame").value
         self.course = None
@@ -412,13 +415,29 @@ class Context:
         self.env = Environment(self, image_targets=ImageTargetsStore(self), cost_map=CostMap())
         self.disable_requested = False
 
+        # services 
         node.create_service(EnableAuton, "enable_auton", self.enable_auton)
+        node.create_service(SetBool, "toggle_path_relaxation", self.toggle_path_relaxation)
+        node.create_service(SetBool, "toggle_path_interpolation", self.toggle_path_interpolation)
+        node.create_service(SetBool, "toggle_pure_pursuit", self.toggle_pure_pursuit)
 
+        self.use_pure_pursuit = node.get_parameter("pure_pursuit.use_pure_pursuit").value
+
+        # publishers
         self.command_publisher = node.create_publisher(Twist, "nav_cmd_vel", 1)
         self.search_point_publisher = node.create_publisher(GPSPointList, "search_path", 1)
         self.path_history_publisher = node.create_publisher(Path, "ground_truth_path", 10)
         self.path_marker_publisher = node.create_publisher(Marker, "path_marker", 1)
+        self.relaxed_publisher = node.create_publisher(MarkerArray, "relaxed_path", 10)
+        self.interpolated_publisher = node.create_publisher(MarkerArray, "interpolated_path", 10)
         self.tf_broadcaster = tf2_ros.StaticTransformBroadcaster(node)
+
+        # subscribers
+        self.lookahead_pub = self.node.create_publisher(Marker, 'lookahead_circle', 10)
+        self.intersection_pub = self.node.create_publisher(Marker, 'intersection_points', 10)
+        self.tf_broadcaster = tf2_ros.StaticTransformBroadcaster(node)
+
+        self.drive = DriveController(node, self.lookahead_pub, self.intersection_pub)
 
         node.create_subscription(Bool, "nav_stuck", self.stuck_callback, 1)
         node.create_subscription(ImageTargets, "tags", self.image_targets_callback, 1)
@@ -431,6 +450,7 @@ class Context:
         self.tf_buffer = tf2_ros.Buffer()
         tf2_ros.TransformListener(self.tf_buffer, node)
 
+        # parameter initialization
         self.COSTMAP_THRESH = node.get_parameter("costmap.costmap_thresh").value
         self.move_future = None
 
@@ -440,6 +460,10 @@ class Context:
         self.dilate_cli = node.create_client(DilateCostMap, "dilate_cost_map")
         self.move_future = None
         self.dilate_future = None
+
+        # not great but idc
+        self.node.set_parameters([Parameter("smoothing.use_relaxation", Parameter.Type.BOOL, False)])
+        self.node.set_parameters([Parameter("smoothing.use_interpolation", Parameter.Type.BOOL, False)])
 
         if not node.get_parameter("costmap.custom_costmap").value:
             while not self.move_cli.wait_for_service(timeout_sec=1.0):
@@ -461,6 +485,30 @@ class Context:
             self.course = convert_and_get_course(self, ref_point, request)
         else:
             self.disable_requested = True
+        response.success = True
+        return response
+    
+    def toggle_path_relaxation(self, request: SetBool.Request, response: SetBool.Response) -> SetBool.Response:
+        self.node.set_parameters([Parameter("smoothing.use_relaxation", Parameter.Type.BOOL, request.data)])
+        self.node.get_logger().info(f"Set path relaxation toggle to {request.data}.")
+        
+        response.success = True
+        response.message = f"Set path relaxation toggle to {request.data}."
+        return response
+
+    def toggle_path_interpolation(self, request: SetBool.Request, response: SetBool.Response) -> SetBool.Response:
+        self.node.set_parameters([Parameter("smoothing.use_interpolation", Parameter.Type.BOOL, request.data)])
+        self.node.get_logger().info(f"Set path interpolation toggle to {request.data}.")
+        
+        response.success = True
+        response.message = f"Set path interpolation toggle to {request.data}."
+        return response
+
+    def toggle_pure_pursuit(self, request: SetBool.Request, response: SetBool.Response) -> SetBool.Response:
+        if request.data:
+            self.node.set_parameters([Parameter("pure_pursuit.use_pure_pursuit", Parameter.Type.BOOL, True)])
+        else:
+            self.node.set_parameters([Parameter("pure_pursuit.use_pure_pursuit", Parameter.Type.BOOL, False)])
         response.success = True
         return response
 

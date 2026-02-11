@@ -51,7 +51,7 @@ body {
 
 .island {
   background-color: var(--island-bg);
-  border-radius: 6px;
+  border-radius: var(--cmd-radius-md);
 }
 
 h1, h2, h3, h4, h5, h6 {
