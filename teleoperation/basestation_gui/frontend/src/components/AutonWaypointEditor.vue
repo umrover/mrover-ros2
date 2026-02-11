@@ -197,6 +197,7 @@ export default defineComponent({
         enable_costmap: true,
       },
 
+      allCostmapToggle: true,
       saveWaypointsTimer: null as ReturnType<typeof setTimeout> | null,
       saveRouteTimer: null as ReturnType<typeof setTimeout> | null,
     }
@@ -247,8 +248,7 @@ export default defineComponent({
           name: waypoint.name,
           tag_id: waypoint.tag_id,
           type: waypoint.type,
-          enable_costmap: waypoint.enable_costmap,
-          coverage_radius: waypoint.coverage_radius
+          enable_costmap: waypoint.enable_costmap
         }))
         this.autonomyStore.setRoute(mapPoints)
 

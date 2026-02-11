@@ -1,11 +1,8 @@
 <template>
-  <div class="cmd-list-item p-2 rounded border border-2">
-    <div class="d-flex justify-content-between align-items-center mb-1">
-      <div class="d-flex align-items-center gap-2">
-        <i class="bi bi-grip-vertical drag-handle"></i>
-        <h5 class="cmd-list-item-title m-0">{{ waypoint.name }}</h5>
-      </div>
-      <span class="cmd-data-label">#{{ waypoint.tag_id }}</span>
+  <div class="waypoints p-2">
+    <div class="waypoint-header mb-1">
+      <h5 class="mb-0">{{ waypoint.name }}</h5>
+      <small class="text-muted">ID: {{ waypoint.tag_id }}</small>
     </div>
 
     <div class="coordinates mb-1">
