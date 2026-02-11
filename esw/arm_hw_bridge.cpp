@@ -94,13 +94,13 @@ namespace mrover {
             }
 
             mProbeTimer = create_wall_timer(
-            mProbeInterval,
-            [this]() {
-                probeIfBrushless(mJointA, "joint_a");
-                probeIfBrushless(mJointC, "joint_c");
-                probeIfBrushless(mJointDE0, "joint_de_0");
-                probeIfBrushless(mJointDE1, "joint_de_1");
-            });
+                    mProbeInterval,
+                    [this]() {
+                        probeIfBrushless(mJointA, "joint_a");
+                        probeIfBrushless(mJointC, "joint_c");
+                        probeIfBrushless(mJointDE0, "joint_de_0");
+                        probeIfBrushless(mJointDE1, "joint_de_1");
+                    });
 
             mPublishDataTimer = create_wall_timer(
                     std::chrono::milliseconds(100),
@@ -560,7 +560,6 @@ namespace mrover {
         }
 
         auto queryMoteusCallback() -> void {
-
         }
     };
 } // namespace mrover
