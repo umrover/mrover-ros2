@@ -50,6 +50,7 @@ namespace mrover {
                 std::shared_ptr<BrushedController<Meters>>,
                 std::shared_ptr<BrushedController<Radians>>,
                 std::shared_ptr<BrushlessController<Meters>>,
+                std::shared_ptr<BrushlessController<Radians>>,
                 std::shared_ptr<BrushlessController<Revolutions>>>;
 
     public:
@@ -60,7 +61,7 @@ namespace mrover {
         auto init() -> void {
             mJointA = std::make_shared<BrushlessController<Meters>>(shared_from_this(), "jetson", "joint_a");
             mJointB = std::make_shared<BrushedController<Meters>>(shared_from_this(), "jetson", "joint_b");
-            mJointC = std::make_shared<BrushlessController<Revolutions>>(shared_from_this(), "jetson", "joint_c");
+            mJointC = std::make_shared<BrushlessController<Radians>>(shared_from_this(), "jetson", "joint_c");
             mJointDE0 = std::make_shared<BrushlessController<Revolutions>>(shared_from_this(), "jetson", "joint_de_0");
             mJointDE1 = std::make_shared<BrushlessController<Revolutions>>(shared_from_this(), "jetson", "joint_de_1");
             mGripper = std::make_shared<BrushedController<Meters>>(shared_from_this(), "jetson", "gripper");
@@ -95,7 +96,6 @@ namespace mrover {
             mProbeTimer = create_wall_timer(
             mProbeInterval,
             [this]() {
-                // We pass the variant and the name
                 probeIfBrushless(mJointA, "joint_a");
                 probeIfBrushless(mJointC, "joint_c");
                 probeIfBrushless(mJointDE0, "joint_de_0");
@@ -130,7 +130,7 @@ namespace mrover {
 
         std::shared_ptr<BrushlessController<Meters>> mJointA;
         std::shared_ptr<BrushedController<Meters>> mJointB;
-        std::shared_ptr<BrushlessController<Revolutions>> mJointC;
+        std::shared_ptr<BrushlessController<Radians>> mJointC;
         std::shared_ptr<BrushlessController<Revolutions>> mJointDE0;
         std::shared_ptr<BrushlessController<Revolutions>> mJointDE1;
         std::shared_ptr<BrushedController<Meters>> mGripper;
@@ -169,6 +169,7 @@ namespace mrover {
 
             auto const brushless_meters = std::get_if<std::shared_ptr<BrushlessController<Meters>>>(&joint_variant);
             auto const brushless_revs = std::get_if<std::shared_ptr<BrushlessController<Revolutions>>>(&joint_variant);
+            auto const brushless_rads = std::get_if<std::shared_ptr<BrushlessController<Radians>>>(&joint_variant);
 
             if (brushless_meters && *brushless_meters) {
                 (*brushless_meters)->sendQuery();
@@ -176,15 +177,20 @@ namespace mrover {
             } else if (brushless_revs && *brushless_revs) {
                 (*brushless_revs)->sendQuery();
                 (*brushless_revs)->getPressedLimitSwitchInfo();
+            } else if (brushless_rads && *brushless_rads) {
+                (*brushless_rads)->sendQuery();
+                (*brushless_rads)->getPressedLimitSwitchInfo();
             }
         }
 
         auto bRadiansToMeters(Radians const rad) -> Meters {
+            auto const standard_rad = -rad;
+
             auto const a = mJointBMountLength;
             auto const c = mJointBSegmentLength;
 
             // calculate internal angle
-            auto const beta = PI - rad - mJointBMountTheta - mJointBSegmentOffsetTheta;
+            auto const beta = PI - standard_rad - mJointBMountTheta - mJointBSegmentOffsetTheta;
 
             // law of cosines for total actuator length
             // b^2 = a^2 + c^2 - 2ac * cos(beta)
@@ -212,7 +218,9 @@ namespace mrover {
             // transform to radians in rover plane relative to horizontal
             auto const interior_beta = Radians{acos(cos_beta)};
             auto const segment_angle_to_horizontal = PI - interior_beta - mJointBMountTheta;
-            return segment_angle_to_horizontal - mJointBSegmentOffsetTheta;
+            auto const standard_rad = segment_angle_to_horizontal - mJointBSegmentOffsetTheta;
+
+            return -standard_rad;
         }
 
         auto bVelocityToAngular(MetersPerSecond const vel, Meters const current_len, Radians const current_rad) -> RadiansPerSecond {
@@ -220,16 +228,16 @@ namespace mrover {
             auto const c = mJointBSegmentLength;
             auto const b = mJointBActuatorLength + current_len;
 
-            // beta = pi - current_rad - mountTheta - offsetTheta
-            auto const beta = PI - current_rad - mJointBMountTheta - mJointBSegmentOffsetTheta;
+            auto const standard_rad = -current_rad;
+            auto const beta = PI - standard_rad - mJointBMountTheta - mJointBSegmentOffsetTheta;
             auto const sin_beta = sin(beta.get());
 
-            // no div 0
             if (std::abs(sin_beta) < 1e-6) return RadiansPerSecond{0.0};
 
-            // negative sign exists because, b increases, beta increases, but final value decreases.
-            auto const omega = -(b.get() * vel.get()) / (a.get() * c.get() * sin_beta);
-            return RadiansPerSecond{omega};
+            // omega_std = -(b * v) / (a * c * sin_beta)
+            // omega = -omega_std
+            auto const omega_standard = -(b.get() * vel.get()) / (a.get() * c.get() * sin_beta);
+            return RadiansPerSecond{-omega_standard};
         }
 
         auto bAngularToVelocity(RadiansPerSecond const omega, Meters const current_len, Radians const current_rad) -> MetersPerSecond {
@@ -237,11 +245,14 @@ namespace mrover {
             auto const c = mJointBSegmentLength;
             auto const b = mJointBActuatorLength + current_len;
 
-            auto const beta = PI - current_rad - mJointBMountTheta - mJointBSegmentOffsetTheta;
+            auto const standard_rad = -current_rad;
+            auto const standard_omega = -omega;
+
+            auto const beta = PI - standard_rad - mJointBMountTheta - mJointBSegmentOffsetTheta;
             auto const sin_beta = sin(beta.get());
 
-            // v = (ac * sin(beta) / b) * (-omega)
-            auto const vel = (a.get() * c.get() * sin_beta / b.get()) * (-omega.get());
+            // v = (ac * sin_beta / b) * (-omega_std)
+            auto const vel = (a.get() * c.get() * sin_beta / b.get()) * (-standard_omega.get());
             return MetersPerSecond{vel};
         }
 

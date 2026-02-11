@@ -25,15 +25,15 @@ arm_hw_bridge:
     joint_b_segment_length: 0.434
     joint_b_actuator_length: 0.324
     joint_b_mount_length: 0.157
-    joint_b_mount_theta: 1.25499645 # 90 deg - 18.094 deg
-    joint_b_segment_offset_theta: 0.09384635 # 5.377 deg
-#    joint_b:
-#    joint_c:
-#      min_velocity: -0.06
-#      max_velocity: 0.06
-#      min_position: -0.125
-#      max_position: 0.30
-#      max_torque: 200.0
+    joint_b_mount_theta: 1.25499645 # 90deg - 18.094deg
+    joint_b_segment_offset_theta: 0.09384635 # 5.377deg
+    # joint_b: # TODO(eric) add clamps to position & velocity similar to motei
+    joint_c:
+      min_velocity: -0.06
+      max_velocity: 0.06
+      min_position: -1.04719755 # -60deg old value: -0.125
+      max_position: 3.05432619 # 175deg old value: 0.30
+      max_torque: 200.0
 #    # Offsets are substracted from the absolute encoder readings for pitch and roll
 #    # In order to zero, move the joint to the zero position and read the unadjusted positions. These should be the set to the offsets
 #    joint_de_pitch_offset: 0.018 # radians
