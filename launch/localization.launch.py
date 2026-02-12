@@ -65,4 +65,11 @@ def generate_launch_description():
         respawn=True,
     )
 
-    return LaunchDescription([rover_gps_driver_node, gps_linearization_node, pose_filter_node, heading_filter_node])
+    # the 0.55 is because its the right gps
+    base_link_to_right_gps = Node(
+        package="tf2_ros",
+        executable="static_transform_publisher",
+        arguments=["0.0", "0.55", "0", "0", "0", "0", "1", "gps_frame", "base_link"],
+    )
+
+    return LaunchDescription([base_link_to_right_gps, rover_gps_driver_node, gps_linearization_node, pose_filter_node])
