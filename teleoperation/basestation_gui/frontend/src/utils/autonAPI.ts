@@ -39,5 +39,19 @@ export const autonAPI = {
       method: 'POST',
       body: JSON.stringify({ enabled })
     })
+  },
+
+  // TODO(object): Implement toggleStereoDetector.
+  // It should POST to '/toggle_stereo_detector/' with { enabled }.
+  // Follow the exact same pattern as enableTeleop() above.
+  toggleStereoDetector(enabled: boolean): Promise<TeleopEnableResponse> {
+    // TODO(object): Replace this stub with a real apiFetch call
+    return Promise.resolve({ status: 'success' } as TeleopEnableResponse)
+  },
+
+  // TODO(object): Same pattern, POST to '/toggle_image_detector/'
+  toggleImageDetector(enabled: boolean): Promise<TeleopEnableResponse> {
+    // TODO(object): Replace this stub with a real apiFetch call
+    return Promise.resolve({ status: 'success' } as TeleopEnableResponse)
   }
 }

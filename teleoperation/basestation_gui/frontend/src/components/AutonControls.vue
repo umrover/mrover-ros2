@@ -45,12 +45,26 @@
         :action="pathInterpolationAction"
         @toggle="handlePathInterpolationToggle"
       />
+      <FeedbackButton
+        class="w-full"
+        :name="'Stereo Detector'"
+        :checked="stereoDetectorEnabled"
+        :action="stereoDetectorAction"
+        @toggle="stereoDetectorEnabled = $event"
+      />
+      <FeedbackButton
+        class="w-full"
+        :name="'Image Detector'"
+        :checked="imageDetectorEnabled"
+        :action="imageDetectorAction"
+        @toggle="imageDetectorEnabled = $event"
+      />
     </div>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import FeedbackButton from './FeedbackButton.vue'
 import { useAutonomyStore } from '@/stores/autonomy'
 import { autonAPI } from '@/utils/api'
@@ -118,6 +132,24 @@ const pathInterpolationAction = (newState: boolean) => {
 
 const handlePathInterpolationToggle = (newState: boolean) => {
   autonomyStore.pathInterpolationEnabled = newState
+}
+
+const stereoDetectorEnabled = ref(false)
+const imageDetectorEnabled = ref(false)
+
+// TODO(object): Wire these to call your autonAPI methods.
+// The function receives newState (boolean) and must return
+// a Promise of { status: string; message?: string }.
+// Example pattern (from teleopAction above):
+//   const teleopAction = (newState: boolean) => autonAPI.enableTeleop(newState)
+const stereoDetectorAction = async (newState: boolean) => {
+  // TODO(object): return autonAPI.toggleStereoDetector(newState)
+  return { status: 'success' }
+}
+
+const imageDetectorAction = async (newState: boolean) => {
+  // TODO(object): return autonAPI.toggleImageDetector(newState)
+  return { status: 'success' }
 }
 </script>
 
