@@ -220,6 +220,8 @@
   <xacro:arm_link name="c" m="1" x="0.35" y="0.04" z="0.04" dz="0.1"/>
   <xacro:arm_link name="d" m="1" x="0.065" y="0.15" z="0.065"/>
   <xacro:arm_link name="e" m="1" x="0.15" y="0.155" z="0.032"/>
+  <xacro:arm_link name="la_base" m="0.1" x="0.01" y="0.01" z="0.08" dz="0.1"/>
+  <xacro:arm_link name="la_piston" m="0.1" x="0.01" y="0.01" z="0.05" dz="-0.05"/>
   <!-- TODO: figure out why this is cooked -->
   <!-- <xacro:arm_link name="gripper" m="1" x="0.13" y="0.02" z="0.03"/> -->
   <link name="arm_gripper_link">
@@ -254,6 +256,9 @@
   <xacro:arm_revolute_joint parent="arm_c" child="arm_d"
                             x="0.39525" y="0" z="0.08329"
                             lower="-1.1344" upper="1.1344"/>
+  <xacro:arm_revolute_joint parent="arm_a" child="arm_la_base"
+                            x="-0.00441" y="0" z="0.20149"
+                            lower="0" upper="2"/>
 
   <joint name="arm_d_link_to_arm_e_link" type="revolute">
     <origin xyz="0 0 0"/>
@@ -269,6 +274,14 @@
     <child link="arm_gripper_link"/>
     <axis xyz="0 1 0"/>
     <limit lower="0" upper="0.088" effort="0" velocity="0"/>
+  </joint>
+
+  <joint name="arm_la_base_link_to_arm_la_piston_link" type="prismatic">
+    <origin xyz="0.0 0.0 0.32"/>
+    <parent link="arm_la_base_link"/>
+    <child link="arm_la_piston_link"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="0" upper="0.25" effort="0" velocity="0"/>
   </joint>
 
   <xacro:wheels side="left" reflect="1"/>

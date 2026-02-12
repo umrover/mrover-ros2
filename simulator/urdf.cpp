@@ -360,6 +360,14 @@ namespace mrover {
 
         traverse(traverse, model.getRoot());
 
+        // add point to point link for arm linear actuator
+        if (uri.find("rover.urdf.xacro") != std::string_view::npos) {
+            int pistonLink = linkNameToMeta.at("arm_la_piston_link").index;
+            int bcLink = linkNameToMeta.at("arm_b_link").index;
+            auto* p2p = simulator.makeBulletObject<btMultiBodyPoint2Point>(simulator.mMultibodyConstraints, multiBody, pistonLink, multiBody, bcLink, btVector3(0, 0, 0), btVector3(0.43190, 0, 0.03997));
+            mConstraints.push_back(p2p);
+        }
+
         multiBody->finalizeMultiDof();
         btAlignedObjectArray<btQuaternion> q;
         btAlignedObjectArray<btVector3> m;
