@@ -55,8 +55,9 @@
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useWebsocketStore } from '@/stores/websocket'
 import { storeToRefs } from 'pinia'
-import type { ControllerStateMessage } from '@/types/websocket'
-import threeSetup, { updatePose, updateIKTarget, set_camera_type, updateCostMapGrid} from '../rover_three.js'
+import type { ControllerStateMessage, OccupancyGridMessage } from '@/types/websocket'
+import threeSetup, { updatePose, updateIKTarget, set_camera_type, updateCostMapGrid, toggleCostMapGridVisibility, setCostMapGridVisibility} from '../rover_three.js'
+import type { NavMessage } from '@/types/coordinates.js'
 
 interface ArmIKMessage {
   type: 'ik_target'
@@ -87,16 +88,19 @@ const jointNameMap: Record<string, string> = {
 
 onMounted(() => {
   threeScene.value = threeSetup()
+  websocketStore.setupWebSocket('nav')
 })
 
 onBeforeUnmount(() => {
   if (threeScene.value) {
     threeScene.value()
   }
+  websocketStore.closeWebSocket('nav')
 })
 
 const armMessage = computed(() => messages.value['arm'])
-const contextMessage = computed(() => messages.value['context'])
+const driveMessage = computed(() => messages.value['drive'])
+const navMessage = computed(() => messages.value['nav'])
 
 watch(armMessage, (msg: unknown) => {
   if (!msg || typeof msg !== 'object') return
@@ -131,12 +135,41 @@ watch(armMessage, (msg: unknown) => {
   }
 })
 
-watch(contextMessage, (msg: unknown) => {
-  if (typeof msg == 'object' && msg !== null && 'type' in msg) {
-    const typedMsg = msg as { type: string; state?: string }
-    if (typedMsg.type === 'costmap') {
-      console.log("hi")
+let roverPos = {
+  latitude: 0.0,
+  longitude: 0.0
+}
+
+watch(driveMessage, (msg: unknown) => {
+  if (!msg || typeof msg !== 'object') return
+
+  if ('data' in msg){
+    const typedMsg = msg as OccupancyGridMessage
+
+    const default_offset = 40
+
+    let offsetPos = {
+      x: Math.floor((roverPos.longitude + 83.70967) * 10000 - (typedMsg.info.origin.position.x + 30)) + 40,
+      y: Math.floor((roverPos.latitude - 42.29319) * 10000 - (typedMsg.info.origin.position.y + 30)) + 40
     }
+
+    let processed_data = []
+    for(let i = 0, k = 0; i < offsetPos.y; ++i){
+      for(let j = 0; j < offsetPos.x; ++j, ++k){
+        processed_data[k] = typedMsg.data[((i + offsetPos.y) * 120) + j + offsetPos.x]
+      }
+    }
+
+    updateCostMapGrid(processed_data)
+  }
+})
+
+watch(navMessage, msg => {
+if (!msg) return
+  const navMsg = msg as NavMessage
+  if (navMsg.type === 'gps_fix') {
+    roverPos.latitude = navMsg.latitude
+    roverPos.longitude = navMsg.longitude
   }
 })
 </script>
