@@ -217,7 +217,7 @@
 
   <xacro:arm_link name="a" m="1" x="0.1" y="0.1" z="0.1"/>
   <xacro:arm_link name="b" m="1" x="0.58" y="0.04" z="0.04"/>
-  <xacro:arm_link name="c" m="1" x="0.55" y="0.04" z="0.04" dz="0.1"/>
+  <xacro:arm_link name="c" m="1" x="0.35" y="0.04" z="0.04" dz="0.1"/>
   <xacro:arm_link name="d" m="1" x="0.065" y="0.15" z="0.065"/>
   <xacro:arm_link name="e" m="1" x="0.15" y="0.155" z="0.032"/>
   <!-- TODO: figure out why this is cooked -->
@@ -230,7 +230,7 @@
       </geometry>
     </visual>
     <collision>
-      <origin xyz="$0.0875 0 0"/>
+      <origin xyz="0.0875 0 0"/>
       <geometry>
         <box size="0.085 0.02 0.03"/>
       </geometry>
@@ -246,17 +246,17 @@
   </joint>
 
   <xacro:arm_revolute_joint parent="arm_a" child="arm_b"
-                            x="0.034346" y="0" z="0.049024"
-                            lower="${-TAU / 8}" upper="0"/>
+                            x="0.04452" y="0" z="0.05163"
+                            lower="-1.1344" upper="0.2617"/>
   <xacro:arm_revolute_joint parent="arm_b" child="arm_c"
-                            x="0.534365" y="0" z="0.009056"
-                            lower="-0.959931" upper="2.87979"/>
+                            x="0.53271" y="0" z="0"
+                            lower="-1.0471" upper="3.0543"/>
   <xacro:arm_revolute_joint parent="arm_c" child="arm_d"
-                            x="0.546033" y="0" z="0.088594"
-                            lower="-2.35619" upper="2.35619"/>
+                            x="0.39525" y="0" z="0.08329"
+                            lower="-1.1344" upper="1.1344"/>
 
   <joint name="arm_d_link_to_arm_e_link" type="revolute">
-    <origin xyz="0.044886 0 0"/>
+    <origin xyz="0 0 0"/>
     <parent link="arm_d_link"/>
     <child link="arm_e_link"/>
     <axis xyz="1 0 0"/>
@@ -264,11 +264,11 @@
   </joint>
 
   <joint name="arm_e_link_to_arm_gripper_link" type="prismatic">
-    <origin xyz="0.0 0.079 0.0"/>
+    <origin xyz="0.08375 0.0 0.0"/>
     <parent link="arm_e_link"/>
     <child link="arm_gripper_link"/>
-    <axis xyz="0 -1 0"/>
-    <limit lower="0" upper="0.08" effort="0" velocity="0"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="0" upper="0.088" effort="0" velocity="0"/>
   </joint>
 
   <xacro:wheels side="left" reflect="1"/>
