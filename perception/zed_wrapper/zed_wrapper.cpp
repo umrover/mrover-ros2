@@ -226,9 +226,6 @@ namespace mrover {
 
         } catch (std::exception const& e) {
             RCLCPP_FATAL_STREAM(get_logger(), std::format("Exception while running grab thread: {}", e.what()));
-            // mZed.close();
-            // rclcpp::shutdown();
-            // std::exit(EXIT_FAILURE);
         }
     }
 
@@ -295,8 +292,6 @@ namespace mrover {
             RCLCPP_INFO(get_logger(), "Tag thread finished");
         } catch (std::exception const& e) {
             RCLCPP_FATAL_STREAM(get_logger(), std::format("Exception while running point cloud thread: {}", e.what()));
-            // rclcpp::shutdown();
-            // std::exit(EXIT_FAILURE);
         }
     }
 
