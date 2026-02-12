@@ -81,7 +81,7 @@ class Panorama(Node):
         self.record_pc = False
 
         # PC Stitching Variables
-        self.pc_sub = message_filters.Subscriber(self, PointCloud2, f"/{zed_version}_mini/left/points")
+        self.pc_sub = message_filters.Subscriber(self, PointCloud2, f"/{zed_version}/left/points")
         self.imu_sub = message_filters.Subscriber(self, Imu, f"/{zed_version}_imu/data_raw")
         self.pc_publisher = self.create_publisher(PointCloud2, "/stitched_pc", 1)
         self.pano_img_debug_publisher = self.create_publisher(Image, "/debug_pano", 1)
@@ -97,7 +97,7 @@ class Panorama(Node):
         self.stitcher = cv2.Stitcher_create(cv2.Stitcher_PANORAMA)
         self.img_rate = PanoRate(2, self)
 
-        if not os.path.isdir(f"data/raw-pano-images"):
+        if not os.path.isdir("data/raw-pano-images"):
             os.mkdir("data/raw-pano-images")
 
 
@@ -157,6 +157,9 @@ class Panorama(Node):
         self.record_image = True
         self.record_pc = True
 
+        if self.img_sub is None:
+            self.img_sub = self.create_subscription(Image, f"/{zed_version}/left/image", self.image_callback, 1)
+
         # START SPINNING THE MAST GIMBAL
         # req = ServoPosition.Request()
         # req.header = Header()
@@ -171,6 +174,10 @@ class Panorama(Node):
 
         self.record_image = False
         self.record_pc = False
+
+        if self.img_sub is not None:
+            self.destroy_subscription(self.img_sub)
+            self.img_sub = None
 
         # construct pc from stitched
         try:
