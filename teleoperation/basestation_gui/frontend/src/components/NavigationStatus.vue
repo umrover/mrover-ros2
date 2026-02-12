@@ -18,30 +18,32 @@
 <script lang="ts" setup>
 import { ref, computed, watch } from 'vue'
 import { useWebsocketStore } from '@/stores/websocket'
+import { useAutonomyStore } from '@/stores/autonomy'
 import { storeToRefs } from 'pinia'
 
 const websocketStore = useWebsocketStore()
 const { messages } = storeToRefs(websocketStore)
 
-const ledColorClass = ref('nav-state--error')
+const autonomyStore = useAutonomyStore()
+const { teleopEnabled } = storeToRefs(autonomyStore)
+
 const stuckStatus = ref(false)
 const navState = ref('OffState')
+
+const ledColorClass = computed(() => {
+  if (teleopEnabled.value) return 'nav-state--info'
+  if (navState.value === 'DoneState') return 'nav-state--ok nav-state--blink'
+  return 'nav-state--error'
+})
+
 
 const navMessage = computed(() => messages.value['nav'])
 
 watch(navMessage, (msg: unknown) => {
   if (typeof msg === 'object' && msg !== null && 'type' in msg) {
-    const typedMsg = msg as { type: string; state?: string; color?: number }
+    const typedMsg = msg as { type: string; state?: string }
     if (typedMsg.type === 'nav_state') {
       navState.value = typedMsg.state || 'OffState'
-    } else if (typedMsg.type === 'led_color') {
-      if (typedMsg.color === 0) {
-        ledColorClass.value = 'nav-state--error'
-      } else if (typedMsg.color === 1) {
-        ledColorClass.value = 'nav-state--info'
-      } else if (typedMsg.color === 2) {
-        ledColorClass.value = 'nav-state--ok nav-state--blink'
-      }
     }
   }
 })

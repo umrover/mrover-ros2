@@ -1,5 +1,5 @@
 <template>
-  <button :class="['cmd-btn', currentColor]" :style="customStyles" @click="handleClick">
+  <button :class="['cmd-btn', currentColor]" :style="customStyles" :disabled="disabled" @click="handleClick">
     <span class="flex items-center w-full">
       <span>{{ displayName }}</span>
       <i v-if="mode === 'toggle'" class="ml-auto" :class="checked ? 'bi bi-check-square-fill' : 'bi bi-square'"></i>
@@ -38,6 +38,10 @@ export default defineComponent({
     height: {
       type: [String, Number],
       default: '',
+    },
+    disabled: {
+      type: Boolean,
+      default: false,
     },
     mode: {
       type: String as PropType<'toggle' | 'action'>,

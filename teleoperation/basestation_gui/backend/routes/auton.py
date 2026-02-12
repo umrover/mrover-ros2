@@ -1,4 +1,3 @@
-import asyncio
 import traceback
 
 from fastapi import APIRouter, HTTPException
@@ -6,32 +5,12 @@ from fastapi import APIRouter, HTTPException
 from backend.managers.ros import get_node, get_service_client
 from backend.models_pydantic import AutonEnableRequest, TeleopEnableRequest
 from backend.managers.led import set_teleop_enabled
+from backend.utils.ros_service import call_service_async
 from mrover.srv import EnableAuton
 from mrover.msg import GPSWaypoint, WaypointType
 from std_srvs.srv import SetBool
 
 router = APIRouter(prefix="/api", tags=["auton"])
-
-
-async def call_service_async(client, request, timeout=5.0):
-    loop = asyncio.get_running_loop()
-
-    service_ready = await asyncio.wait_for(
-        loop.run_in_executor(None, lambda: client.wait_for_service(timeout_sec=0.1)),
-        timeout=1.0,
-    )
-    if not service_ready:
-        return None
-
-    future = client.call_async(request)
-    try:
-        await asyncio.wait_for(
-            loop.run_in_executor(None, future.result),
-            timeout=timeout,
-        )
-        return future.result()
-    except asyncio.TimeoutError:
-        return None
 
 
 @router.post("/enable_auton/")

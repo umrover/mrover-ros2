@@ -3,18 +3,19 @@ import asyncio
 
 async def call_service_async(client, request, timeout=10.0):
     loop = asyncio.get_running_loop()
-    service_ready = await loop.run_in_executor(
-        None, lambda: client.wait_for_service(timeout_sec=1.0)
-    )
-    if not service_ready:
-        return None
-
     future = client.call_async(request)
+    event = asyncio.Event()
+    result_holder = [None]
+
+    def on_done(fut):
+        result_holder[0] = fut.result()
+        loop.call_soon_threadsafe(event.set)
+
+    future.add_done_callback(on_done)
+
     try:
-        await asyncio.wait_for(
-            loop.run_in_executor(None, future.result),
-            timeout=timeout
-        )
-        return future.result()
+        await asyncio.wait_for(event.wait(), timeout=timeout)
+        return result_holder[0]
     except asyncio.TimeoutError:
+        future.cancel()
         return None
