@@ -197,7 +197,7 @@ class ApproachTargetState(State):
         # If the a-star trajectory is empty and there is a segment to pathfind to, generate a new trajectory there
         if self.astar_traj.empty() and not self.target_traj.done():
             try:
-                self.astar_traj = self.astar.generate_trajectory(context, self.target_traj.get_current_point())
+                self.astar_traj = self.astar.generate_trajectory(self.target_traj.get_current_point())
 
             except Exception as e:
                 context.node.get_logger().info(str(e))
