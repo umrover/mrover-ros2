@@ -1,7 +1,7 @@
 #pragma once
 
-#include "pch.hpp"
 #include "GstVideoWidgets.hpp"
+#include "pch.hpp"
 
 namespace mrover {
 
@@ -16,6 +16,7 @@ namespace mrover {
         QVBoxLayout* mLayout;
         QWidget* mVideoContainer;
         QVBoxLayout* mVideoContainerLayout;
+        mrover::GstVideoWidget* mVideoWidget;
 
         bool mEnabled = false;
         bool mRunning = false;
@@ -40,6 +41,7 @@ namespace mrover {
         void onToggle();
         void refreshStatus();
         void refreshResultLabel(bool lastSuccess);
+        void resizeEvent(QResizeEvent* event) override;
     };
 
 } // namespace mrover

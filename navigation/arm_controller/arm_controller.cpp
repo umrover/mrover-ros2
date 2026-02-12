@@ -12,15 +12,15 @@ namespace mrover {
         mVelPub = create_publisher<msg::Velocity>("arm_vel_cmd", 10);
         mStatusPub = create_publisher<msg::ArmStatus>("arm_cmd_status", 10);
 
-        mIkSub = create_subscription<msg::IK>("ee_pos_cmd", 1, [this](msg::IK::ConstSharedPtr const& msg) {
+        mIkSub = create_subscription<msg::IK>("ik_pos_cmd", 1, [this](msg::IK::ConstSharedPtr const& msg) {
             posCallback(msg);
         });
 
-        mVelSub = create_subscription<geometry_msgs::msg::Twist>("ee_vel_cmd", 1, [this](geometry_msgs::msg::Twist::ConstSharedPtr const& msg) {
+        mVelSub = create_subscription<geometry_msgs::msg::Twist>("ik_vel_cmd", 1, [this](geometry_msgs::msg::Twist::ConstSharedPtr const& msg) {
             velCallback(msg);
         });
 
-        mJointSub = create_subscription<sensor_msgs::msg::JointState>("arm_joint_data", 1, [this](sensor_msgs::msg::JointState::ConstSharedPtr const& msg) {
+        mJointSub = create_subscription<mrover::msg::ControllerState>("arm_controller_state", 1, [this](mrover::msg::ControllerState::ConstSharedPtr const& msg) {
             fkCallback(msg);
         });
 
@@ -172,31 +172,31 @@ namespace mrover {
             RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 100, "Received velocity command in position mode!");
     }
 
-    void ArmController::fkCallback(sensor_msgs::msg::JointState::ConstSharedPtr const& joint_state) {
+    void ArmController::fkCallback(mrover::msg::ControllerState::ConstSharedPtr const& joint_state) {
         // update joint positions stored in ArmController class
-        for (size_t i = 0; i < joint_state->name.size(); ++i) {
-            auto it = joints.find(joint_state->name[i]);
+        for (size_t i = 0; i < joint_state->names.size(); ++i) {
+            auto it = joints.find(joint_state->names[i]);
             if (it == joints.end()) {
-                RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, "Unknown joint \"" << joint_state->name[i] << "\"");
+                RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, "Unknown joint \"" << joint_state->names[i] << "\"");
                 continue;
             }
-            it->second.pos = joint_state->position[i];
+            it->second.pos = joint_state->positions[i];
         }
 
-        double y = joint_state->position[0]; // joint a position
+        double y = joint_state->positions[0]; // joint a position
         // joint b position
-        double angle = -joint_state->position[1];
+        double angle = -joint_state->positions[1];
         double x = LINK_BC * std::cos(angle);
         double z = LINK_BC * std::sin(angle);
         // joint c position
-        angle -= joint_state->position[2] - JOINT_C_OFFSET;
+        angle -= joint_state->positions[2] - JOINT_C_OFFSET;
         x += LINK_CD * std::cos(angle);
         z += LINK_CD * std::sin(angle);
         // joint de position
-        angle -= joint_state->position[3] + JOINT_C_OFFSET;
+        angle -= joint_state->positions[3] + JOINT_C_OFFSET;
         x += END_EFFECTOR_LENGTH * std::cos(angle);
         z += END_EFFECTOR_LENGTH * std::sin(angle);
-        mArmPos = {x, y, z, -angle, joint_state->position[4], std::max(joint_state->position[5], 0.0)};
+        mArmPos = {x, y, z, -angle, joint_state->positions[4], std::max(joint_state->positions[5], 0.0f)};
 
         SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_fk", "arm_base_link", mArmPos.toSE3(), get_clock()->now());
     }
@@ -222,9 +222,7 @@ namespace mrover {
         };
 
         if (get_clock()->now() - mLastUpdate > TIMEOUT) {
-            // RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 100, "IK Timed Out");
-            if (!mPosFallback) mPosFallback = mCurrPos;
-            mPosPub->publish(mPosFallback.value());
+            RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 100, "IK Timed Out");
             return;
         }
 
@@ -235,17 +233,118 @@ namespace mrover {
             SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_target", "arm_base_link", mPosTarget.toSE3(), get_clock()->now());
             if (positions) {
                 mPosPub->publish(positions.value());
-                mPosFallback = std::nullopt;
             } else {
                 RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1000, "Position IK failed!");
-                if (!mPosFallback) mPosFallback = mCurrPos;
-                mPosPub->publish(mPosFallback.value());
-                status.set__status(false);
             }
             mStatusPub->publish(status);
         } else if (mArmMode == ArmMode::VELOCITY_CONTROL) {
-            // TODO: Determine joint velocities that cancels out arm sag
-            auto velocities = ikVelCalc(mVelTarget);
+            // add something to avoid stuff with bad initiliazation stuff yay
+            // tune for x direction stuff
+
+            if ((mVelTarget.linear.x != 0 |
+                 mVelTarget.linear.y != 0 |
+                 mVelTarget.linear.z != 0 |
+                 mVelTarget.angular.x != 0 |
+                 mVelTarget.angular.y != 0) &&
+                not_initialized == true) {
+                not_initialized = false;
+            }
+
+            if (mVelTarget.linear.x == 0 &&
+                mVelTarget.linear.y == 0 &&
+                mVelTarget.linear.z == 0 &&
+                mVelTarget.angular.x == 0 &&
+                mVelTarget.angular.y == 0 && not_initialized == true) {
+                return;
+            }
+
+
+            if (mVelTarget.linear.x == 0 &&
+                mVelTarget.linear.y == 0 &&
+                mVelTarget.linear.z == 0 &&
+                mVelTarget.angular.x == 0 &&
+                mVelTarget.angular.y == 0 && not_initialized == false) {
+                // no movement command, so just stop the arm
+                if (hold == false) {
+                    mCarrotPos = mArmPos;
+                    hold = true;
+                }
+
+                return;
+            }
+
+            hold = false;
+
+            auto const now = get_clock()->now();
+
+            if (!carrot_initialized) {
+                mPrevTime = now;
+                mCarrotPos = mArmPos;
+                carrot_initialized = true;
+            }
+
+            double dt = (now - mPrevTime).seconds();
+            mPrevTime = now;
+
+            if (dt <= 0.0 || dt > 1.0) {
+                dt = 0.033;
+            }
+
+            dt = 0.01;
+
+            double const k = 1;
+
+            mCarrotPos.x += mVelTarget.linear.x * dt * k;
+            mCarrotPos.y += mVelTarget.linear.y * dt * k;
+            mCarrotPos.z += mVelTarget.linear.z * dt * k;
+            mCarrotPos.pitch += mVelTarget.angular.y * dt * k;
+            mCarrotPos.roll += mVelTarget.angular.x * dt * k;
+
+            auto error_x = mCarrotPos.x - mArmPos.x;
+            auto error_y = mCarrotPos.y - mArmPos.y;
+            auto error_z = mCarrotPos.z - mArmPos.z;
+            auto error_pitch = mCarrotPos.pitch - mArmPos.pitch;
+            auto error_roll = mCarrotPos.roll - mArmPos.roll;
+
+            double const max_dist = 0.01;
+
+            double error_total = std::sqrt(error_x * error_x + error_y * error_y + error_z * error_z);
+
+            if (error_total > max_dist) {
+                double const reduce_factor = max_dist / error_total;
+                mCarrotPos.x = mArmPos.x + error_x * reduce_factor;
+                mCarrotPos.y = mArmPos.y + error_y * reduce_factor;
+                mCarrotPos.z = mArmPos.z + error_z * reduce_factor;
+            }
+
+            SE3Conversions::pushToTfTree(
+                    mTfBroadcaster,
+                    "carrot_target",
+                    "arm_base_link",
+                    mCarrotPos.toSE3(),
+                    now);
+
+            auto adjusted_v = mVelTarget;
+
+
+            error_x = mCarrotPos.x - mArmPos.x;
+            error_y = mCarrotPos.y - mArmPos.y;
+            error_z = mCarrotPos.z - mArmPos.z;
+            error_pitch = mCarrotPos.pitch - mArmPos.pitch;
+            error_roll = mCarrotPos.roll - mArmPos.roll;
+
+
+            double const Kp_lin = 20.0;
+            double const Kp_ang = 8.0;
+
+            adjusted_v.linear.x += Kp_lin * error_x;
+            adjusted_v.linear.y += Kp_lin * error_y;
+            adjusted_v.linear.z += Kp_lin * error_z;
+            adjusted_v.angular.y += Kp_ang * error_pitch;
+            adjusted_v.angular.x += Kp_ang * error_roll;
+
+            auto velocities = ikVelCalc(adjusted_v);
+
             if (velocities &&
                 !(
                         velocities->velocities[0] == 0 &&
@@ -254,12 +353,10 @@ namespace mrover {
                         velocities->velocities[3] == 0 &&
                         velocities->velocities[4] == 0)) {
                 mVelPub->publish(velocities.value());
-                mPosFallback = std::nullopt;
             } else {
-                if (!velocities) RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1000, "Velocity IK failed!");
-                if (!mPosFallback) mPosFallback = mCurrPos;
-                mPosPub->publish(mPosFallback.value());
+                if(!velocities) RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1000, "Velocity IK failed!");
             }
+
         } else { // typing mode
             msg::Position positions;
             positions.names = {"joint_a", "gripper"};
@@ -283,7 +380,6 @@ namespace mrover {
                     return;
                 }
             }
-            mPosFallback = std::nullopt;
             mPosPub->publish(positions);
         }
     }
@@ -295,6 +391,8 @@ namespace mrover {
         } else if (req->mode == srv::IkMode::Request::VELOCITY_CONTROL) {
             mArmMode = ArmMode::VELOCITY_CONTROL;
             RCLCPP_INFO(get_logger(), "IK Switching to Velocity Control Mode");
+            not_initialized = true;
+            carrot_initialized = false;
         } else { // typing mode
             mArmMode = ArmMode::TYPING;
             RCLCPP_INFO(get_logger(), "IK Switching to Typing (position) Mode");

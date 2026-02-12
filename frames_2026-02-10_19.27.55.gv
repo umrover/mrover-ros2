@@ -1,0 +1,37 @@
+digraph G {
+"arm_base_link" -> "arm_target"[label=" Broadcaster: default_authority\nAverage rate: 130.513\nBuffer length: 5.011\nMost recent transform: 1770769675.796262\nOldest transform: 1770769670.785264\n"];
+"base_link" -> "arm_base_link"[label=" Broadcaster: default_authority\nAverage rate: 5.305\nBuffer length: 4.713\nMost recent transform: 1770769675.625128\nOldest transform: 1770769670.912305\n"];
+"map" -> "lander_truth"[label=" Broadcaster: default_authority\nAverage rate: 5.305\nBuffer length: 4.712\nMost recent transform: 1770769675.624484\nOldest transform: 1770769670.912125\n"];
+"map" -> "rover_truth"[label=" Broadcaster: default_authority\nAverage rate: 137.837\nBuffer length: 4.716\nMost recent transform: 1770769675.627985\nOldest transform: 1770769670.912257\n"];
+"map" -> "base_link"[label=" Broadcaster: default_authority\nAverage rate: 137.835\nBuffer length: 4.716\nMost recent transform: 1770769675.628076\nOldest transform: 1770769670.912291\n"];
+"base_link" -> "chassis_link"[label=" Broadcaster: default_authority\nAverage rate: 5.305\nBuffer length: 4.713\nMost recent transform: 1770769675.625302\nOldest transform: 1770769670.91233\n"];
+"chassis_link" -> "arm_a_link"[label=" Broadcaster: default_authority\nAverage rate: 5.304\nBuffer length: 4.713\nMost recent transform: 1770769675.625449\nOldest transform: 1770769670.912462\n"];
+"arm_a_link" -> "arm_b_link"[label=" Broadcaster: default_authority\nAverage rate: 5.305\nBuffer length: 4.713\nMost recent transform: 1770769675.625592\nOldest transform: 1770769670.912987\n"];
+"arm_b_link" -> "arm_c_link"[label=" Broadcaster: default_authority\nAverage rate: 5.305\nBuffer length: 4.713\nMost recent transform: 1770769675.625735\nOldest transform: 1770769670.913092\n"];
+"arm_c_link" -> "arm_d_link"[label=" Broadcaster: default_authority\nAverage rate: 5.304\nBuffer length: 4.713\nMost recent transform: 1770769675.626158\nOldest transform: 1770769670.91312\n"];
+"arm_d_link" -> "arm_e_link"[label=" Broadcaster: default_authority\nAverage rate: 5.305\nBuffer length: 4.713\nMost recent transform: 1770769675.626184\nOldest transform: 1770769670.913333\n"];
+"arm_e_link" -> "arm_gripper_link"[label=" Broadcaster: default_authority\nAverage rate: 5.304\nBuffer length: 4.713\nMost recent transform: 1770769675.626739\nOldest transform: 1770769670.913514\n"];
+"arm_e_link" -> "finger_camera_frame"[label=" Broadcaster: default_authority\nAverage rate: 5.304\nBuffer length: 4.713\nMost recent transform: 1770769675.626787\nOldest transform: 1770769670.9138\n"];
+"chassis_link" -> "center_gps"[label=" Broadcaster: default_authority\nAverage rate: 5.304\nBuffer length: 4.713\nMost recent transform: 1770769675.62698\nOldest transform: 1770769670.913828\n"];
+"chassis_link" -> "imu"[label=" Broadcaster: default_authority\nAverage rate: 5.304\nBuffer length: 4.713\nMost recent transform: 1770769675.627162\nOldest transform: 1770769670.914019\n"];
+"chassis_link" -> "left_gps"[label=" Broadcaster: default_authority\nAverage rate: 5.304\nBuffer length: 4.713\nMost recent transform: 1770769675.627234\nOldest transform: 1770769670.914064\n"];
+"chassis_link" -> "left_rocker_link"[label=" Broadcaster: default_authority\nAverage rate: 5.304\nBuffer length: 4.713\nMost recent transform: 1770769675.627282\nOldest transform: 1770769670.914137\n"];
+"left_rocker_link" -> "back_left_wheel_link"[label=" Broadcaster: default_authority\nAverage rate: 5.304\nBuffer length: 4.713\nMost recent transform: 1770769675.627339\nOldest transform: 1770769670.914164\n"];
+"left_rocker_link" -> "left_bogie_link"[label=" Broadcaster: default_authority\nAverage rate: 5.304\nBuffer length: 4.713\nMost recent transform: 1770769675.627375\nOldest transform: 1770769670.914243\n"];
+"left_bogie_link" -> "center_left_wheel_link"[label=" Broadcaster: default_authority\nAverage rate: 5.305\nBuffer length: 4.713\nMost recent transform: 1770769675.627403\nOldest transform: 1770769670.91466\n"];
+"left_bogie_link" -> "front_left_wheel_link"[label=" Broadcaster: default_authority\nAverage rate: 5.305\nBuffer length: 4.712\nMost recent transform: 1770769675.627434\nOldest transform: 1770769670.915067\n"];
+"chassis_link" -> "long_range_camera_link"[label=" Broadcaster: default_authority\nAverage rate: 5.305\nBuffer length: 4.712\nMost recent transform: 1770769675.627538\nOldest transform: 1770769670.915129\n"];
+"chassis_link" -> "right_gps"[label=" Broadcaster: default_authority\nAverage rate: 5.305\nBuffer length: 4.712\nMost recent transform: 1770769675.627573\nOldest transform: 1770769670.915288\n"];
+"chassis_link" -> "right_rocker_link"[label=" Broadcaster: default_authority\nAverage rate: 5.306\nBuffer length: 4.712\nMost recent transform: 1770769675.627604\nOldest transform: 1770769670.915541\n"];
+"right_rocker_link" -> "back_right_wheel_link"[label=" Broadcaster: default_authority\nAverage rate: 5.306\nBuffer length: 4.712\nMost recent transform: 1770769675.627661\nOldest transform: 1770769670.915719\n"];
+"right_rocker_link" -> "right_bogie_link"[label=" Broadcaster: default_authority\nAverage rate: 5.306\nBuffer length: 4.712\nMost recent transform: 1770769675.627746\nOldest transform: 1770769670.915758\n"];
+"right_bogie_link" -> "center_right_wheel_link"[label=" Broadcaster: default_authority\nAverage rate: 5.306\nBuffer length: 4.712\nMost recent transform: 1770769675.627778\nOldest transform: 1770769670.915853\n"];
+"right_bogie_link" -> "front_right_wheel_link"[label=" Broadcaster: default_authority\nAverage rate: 5.306\nBuffer length: 4.712\nMost recent transform: 1770769675.627844\nOldest transform: 1770769670.91598\n"];
+"chassis_link" -> "zed_left_camera_frame"[label=" Broadcaster: default_authority\nAverage rate: 5.306\nBuffer length: 4.712\nMost recent transform: 1770769675.627913\nOldest transform: 1770769670.916119\n"];
+"map" -> "world_truth"[label=" Broadcaster: default_authority\nAverage rate: 5.306\nBuffer length: 4.712\nMost recent transform: 1770769675.628095\nOldest transform: 1770769670.91619\n"];
+"arm_base_link" -> "arm_fk"[label=" Broadcaster: default_authority\nAverage rate: 5.306\nBuffer length: 4.712\nMost recent transform: 1770769675.628388\nOldest transform: 1770769670.91649\n"];
+edge [style=invis];
+ subgraph cluster_legend { style=bold; color=black; label ="view_frames Result";
+"Recorded at time: 1770769675.8095803"[ shape=plaintext ] ;
+}->"map";
+}

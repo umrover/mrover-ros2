@@ -123,8 +123,8 @@ namespace mrover {
             return;
         }
         auto goal = action::ClickIk::Goal{};
-        goal.point_in_image_x = x;
-        goal.point_in_image_y = y;
+        goal.point_in_image_x = x / 2;
+        goal.point_in_image_y = y / 2;
         RCLCPP_INFO(get_logger(), "Sending ClickIk goal: (%u, %u)", x, y);
 
         auto options = rclcpp_action::Client<action::ClickIk>::SendGoalOptions{};

@@ -100,7 +100,7 @@ namespace mrover {
         });
 
         // IK Publisher
-        mIkPub = create_publisher<msg::IK>("/ee_pos_cmd", 1);
+        mIkPub = create_publisher<msg::IK>("/ik_pos_cmd", 1);
 
         // ArmStatus subscriber
         mStatusSub = create_subscription<msg::ArmStatus>("/arm_cmd_status", 1, [this](msg::ArmStatus const& msg) {
@@ -125,8 +125,10 @@ namespace mrover {
 
         if (!target_point.has_value()) {
             RCLCPP_WARN(get_logger(), "Target point does not exist.");
+            auto result = std::make_shared<action::ClickIk::Result>();
             result->success = false;
-            goal_handle->canceled(result);
+            mCurrentGoalHandle->abort(result);
+            mCurrentGoalHandle = nullptr;
             return; // fix
         }
 
@@ -140,7 +142,27 @@ namespace mrover {
         target_point->x -= ArmController::END_EFFECTOR_LENGTH;
         SE3d target_transfer = SE3Conversions::fromTfTree(*mTfBuffer, "zed_left_camera_frame", "arm_base_link");
         target_transfer *= target_pose;
-
+        auto req = std::make_shared<srv::IkSample::Request>();
+        req->pos.x = target_transfer.x();
+        req->pos.y = target_transfer.y();
+        req->pos.z = target_transfer.z();
+        auto a = mIkSampleClient->async_send_request(req);
+        if (a.wait_for(std::chrono::milliseconds(1000)) != std::future_status::ready) {
+            RCLCPP_INFO(this->get_logger(), "Point Sample timed out.");
+            auto result = std::make_shared<action::ClickIk::Result>();
+            result->success = false;
+            mCurrentGoalHandle->abort(result);
+            mCurrentGoalHandle = nullptr;
+            return;
+        } else if (!a.get()->valid) {
+            RCLCPP_INFO(this->get_logger(), "Aborted, Invalid point.");
+            auto result = std::make_shared<action::ClickIk::Result>();
+            result->success = false;
+            mCurrentGoalHandle->abort(result);
+            mCurrentGoalHandle = nullptr;
+            return;
+        }
+        RCLCPP_INFO(this->get_logger(), "Point Verified");
 
         // message.pos = pose;
         // message.target.header.frame_id = "zed_left_camera_frame";
@@ -159,11 +181,10 @@ namespace mrover {
 
             float const tolerance = 0.02;
             try {
-                SE3d arm_position = SE3Conversions::fromTfTree(*mTfBuffer, "arm_e_link", "zed_left_camera_frame");
-                double distance = pow(pow(arm_position.x() + ArmController::END_EFFECTOR_LENGTH - target_pose.x(), 2) + pow(arm_position.y() - target_pose.y(), 2) + pow(arm_position.z() - target_pose.z(), 2), 0.5);
+                SE3d arm_position = SE3Conversions::fromTfTree(*mTfBuffer, "arm_base_link", "arm_fk");
+                double distance = pow(pow(arm_position.x() + target_transfer.x(), 2) + pow(arm_position.y() + target_transfer.y(), 2) + pow(arm_position.z() + target_transfer.z(), 2), 0.5);
                 RCLCPP_INFO(this->get_logger(), "Arm Position: %f, %f, %f", arm_position.x(), arm_position.y(), arm_position.z());
                 RCLCPP_INFO(this->get_logger(), "Arm Command: %f, %f, %f", target_transfer.x(), target_transfer.y(), target_transfer.z());
-                RCLCPP_INFO(this->get_logger(), "Desired Position: %f, %f, %f", target_pose.x(), target_pose.y(), target_pose.z());
 
                 feedback->distance = static_cast<float>(distance);
                 goal_handle->publish_feedback(feedback);
@@ -172,6 +193,7 @@ namespace mrover {
                     timer->cancel();
                     result->success = true;
                     goal_handle->succeed(result);
+                    mCurrentGoalHandle = nullptr;
                     return;
                 }
                 msg::IK ik;

@@ -33,6 +33,15 @@ namespace mrover {
             }
         };
 
+        double mCarrotTime = 0.033;
+        double mCarrotk = 1;
+        rclcpp::Time mPrevTime;
+        bool carrot_initialized = false;
+        ArmPos mCarrotPos;
+        bool hold = false;
+        bool not_initialized = true;
+
+
 
         struct JointWrapper {
             struct JointLimits {
@@ -44,16 +53,33 @@ namespace mrover {
             JointLimits limits;
             double pos;
         };
-
-        // TODO: update velocity limits to make them real
+        
+        // these positional limits are slightly conservative versions of the limits listed in the 2025-26 cdr
         std::unordered_map<std::string, JointWrapper> joints = {
-                {"joint_a", {.limits = {.minPos = 0, .maxPos = 0.35, .minVel = -0.05, .maxVel = 0.05}, .pos = 0}},
-                {"joint_b", {.limits = {.minPos = -0.9, .maxPos = 0, .minVel = -0.05, .maxVel = 0.05}, .pos = 0}},
-                {"joint_c", {.limits = {.minPos = -0.959931, .maxPos = 2.87979, .minVel = -0.05 * 2 * std::numbers::pi, .maxVel = 0.05 * 2 * std::numbers::pi}, .pos = 0}},
-                {"joint_de_pitch", {.limits = {.minPos = -1.3, .maxPos = 1.2, .minVel = -0.2, .maxVel = 0.2}, // pretty conservative limits atm
-                                    .pos = 0}},
-                {"joint_de_roll", {.limits = {.minPos = -2.36, .maxPos = 1.44, .minVel = -1, .maxVel = 1}, .pos = 0}},
-                {"gripper", {.limits = {.minPos = 0, .maxPos = 0.1, .minVel = -1, .maxVel = 1}, .pos = 0}},
+            {"joint_a", {
+                .limits = {.minPos = 0, .maxPos = 0.37, .minVel = -0.05, .maxVel = 0.05},
+                .pos = 0
+            }},
+            {"joint_b", {
+                .limits = {.minPos = -1.1, .maxPos = 0.25, .minVel = -0.05, .maxVel = 0.05},
+                .pos = 0
+            }},
+            {"joint_c", {
+                .limits = {.minPos = -1.0, .maxPos = 3.0, .minVel = -0.05 * 2 * std::numbers::pi, .maxVel = 0.05 * 2 * std::numbers::pi},
+                .pos = 0
+            }},
+            {"joint_de_pitch", {
+                .limits = {.minPos = -1.1, .maxPos = 1.1, .minVel = -0.2, .maxVel = 0.2}, 
+                .pos = 0
+            }},
+            {"joint_de_roll", {
+                .limits = {.minPos = -3.14, .maxPos = 3.13, .minVel = -1, .maxVel = 1},
+                .pos = 0
+            }},
+            {"gripper", {
+                .limits = {.minPos = 0, .maxPos = 0.1, .minVel = -1, .maxVel = 1},
+                .pos = 0
+            }},
         };
 
         // ClickIK Verification
@@ -62,7 +88,7 @@ namespace mrover {
 
         [[maybe_unused]] rclcpp::Subscription<msg::IK>::SharedPtr mIkSub;
         [[maybe_unused]] rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr mVelSub;
-        [[maybe_unused]] rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr mJointSub;
+        [[maybe_unused]] rclcpp::Subscription<mrover::msg::ControllerState>::SharedPtr mJointSub;
 
         rclcpp::Publisher<msg::Position>::SharedPtr mPosPub;
         rclcpp::Publisher<msg::Velocity>::SharedPtr mVelPub;
@@ -78,7 +104,6 @@ namespace mrover {
         auto timerCallback() -> void;
 
         ArmPos mArmPos, mTypingOrigin, mPosTarget;
-        std::optional<msg::Position> mPosFallback;
         geometry_msgs::msg::Twist mVelTarget;
         rclcpp::Time mLastUpdate;
 
@@ -106,7 +131,7 @@ namespace mrover {
 
         void posCallback(msg::IK::ConstSharedPtr const& ik_target);
         void velCallback(geometry_msgs::msg::Twist::ConstSharedPtr const& ik_vel);
-        void fkCallback(sensor_msgs::msg::JointState::ConstSharedPtr const& joint_state);
+        void fkCallback(mrover::msg::ControllerState::ConstSharedPtr const& joint_state);
         auto modeCallback(srv::IkMode::Request::ConstSharedPtr const& req, srv::IkMode::Response::SharedPtr const& resp) -> void;
     };
 

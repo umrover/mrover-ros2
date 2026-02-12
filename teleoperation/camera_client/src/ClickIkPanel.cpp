@@ -35,9 +35,23 @@ namespace mrover {
     }
 
     auto ClickIkPanel::placeZedWidget(GstVideoWidget* widget) -> void {
-        widget->setParent(mVideoContainer);
-        mVideoContainerLayout->addWidget(widget);
-        widget->show();
+        mVideoWidget = widget;
+        mVideoWidget->setParent(mVideoContainer);
+
+        mVideoWidget->setGeometry(mVideoContainer->rect());
+        mVideoWidget->show();
+    }
+
+    void ClickIkPanel::resizeEvent(QResizeEvent* event) {
+        QWidget::resizeEvent(event); // Let the base class handle layout first
+
+        if (mVideoWidget && mVideoContainer) {
+            // Manually snap the video widget to the container's exact dimensions
+            mVideoWidget->setGeometry(mVideoContainer->rect());
+
+            // Synchronize the internal coordinate system to this new size
+            mVideoWidget->setImageSize(mVideoWidget->width(), mVideoWidget->height());
+        }
     }
 
     void ClickIkPanel::onToggle() {
