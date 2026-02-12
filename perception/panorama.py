@@ -216,10 +216,12 @@ class Panorama(Node):
         if status != cv2.Stitcher_OK:
             print(f"Stitching failed with error code {status}")
 
-        # Construct Pano and Save
+        # Construct Pano and Save, get stitching order
         if pano is not None:
             # save the panorama if it succeeds
             cv2.imwrite(f"{new_path}/pano.png", pano)
+            order = list(self.stitcher.component())
+            print(order)
             
             # convert the panorama to bgra for transport through ROS
             bgra_pano = cv2.cvtColor(pano, cv2.COLOR_BGR2BGRA)
