@@ -67,12 +67,30 @@
         </button>
       </div>
     </div>
+    <div class="flex flex-col gap-1 w-full mt-2 pt-2 border-t border-gray-600">
+      <div class="flex justify-between items-center">
+        <span class="text-xs font-semibold uppercase text-gray-400">Fine Adjust</span>
+        <span class="text-sm font-mono font-semibold px-2 py-0.5 rounded bg-[var(--card-bg)] border-2 border-[var(--input-border)]">
+          {{ currentDegrees }}&deg;
+        </span>
+      </div>
+      <div class="flex gap-1">
+        <button class="cmd-btn cmd-btn-outline-control cmd-btn-sm flex-1" :disabled="!hasFunnelState" @click="adjustFunnel(-10)">-10</button>
+        <button class="cmd-btn cmd-btn-outline-control cmd-btn-sm flex-1" :disabled="!hasFunnelState" @click="adjustFunnel(-5)">-5</button>
+        <button class="cmd-btn cmd-btn-outline-control cmd-btn-sm flex-1" :disabled="!hasFunnelState" @click="adjustFunnel(-1)">-1</button>
+        <button class="cmd-btn cmd-btn-outline-control cmd-btn-sm flex-1" :disabled="!hasFunnelState" @click="adjustFunnel(1)">+1</button>
+        <button class="cmd-btn cmd-btn-outline-control cmd-btn-sm flex-1" :disabled="!hasFunnelState" @click="adjustFunnel(5)">+5</button>
+        <button class="cmd-btn cmd-btn-outline-control cmd-btn-sm flex-1" :disabled="!hasFunnelState" @click="adjustFunnel(10)">+10</button>
+      </div>
+    </div>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { scienceAPI } from '@/utils/api'
+import { useWebsocketStore } from '@/stores/websocket'
+import type { ControllerStateMessage } from '@/types/websocket'
 
 const site_to_radians: Record<number, number> = {
   0: 0.0,
@@ -81,6 +99,60 @@ const site_to_radians: Record<number, number> = {
   3: Math.PI,
   4: (4 * Math.PI) / 3,
   5: (5 * Math.PI) / 3,
+}
+
+const websocketStore = useWebsocketStore()
+
+// TODO(funnel): Read the funnel motor position from WebSocket messages.
+//
+// The backend (science_ws.py) forwards '/sp_controller_state' messages
+// over the 'science' WebSocket with type 'sp_controller_state'.
+//
+// Steps:
+//   1. Get the science messages: websocketStore.messages['science']
+//   2. Check if the message exists and has type === 'sp_controller_state'
+//   3. Cast it to ControllerStateMessage and return it
+//   4. Return null if no matching message found
+//
+// Hint: Look at GimbalControls.vue -- it does the exact same thing
+// but reads from 'chassis' messages with type 'gimbal_controller_state'.
+const funnelState = computed((): ControllerStateMessage | null => {
+  // TODO(funnel): Implement this
+  return null
+})
+
+const hasFunnelState = computed((): boolean => {
+  return funnelState.value !== null
+})
+
+// TODO(funnel): Extract the funnel position in degrees from funnelState.
+//
+// Steps:
+//   1. Get funnelState.value (return '0' if null)
+//   2. Find the index of 'funnel' in state.names array
+//   3. Get the position at that index from state.positions (in radians)
+//   4. Convert to degrees: (radians * 180) / Math.PI
+//   5. Return as a string with .toFixed(0)
+//
+// Hint: See pitchDegrees/yawDegrees in GimbalControls.vue.
+const currentDegrees = computed((): string => {
+  // TODO(funnel): Implement this
+  return '0'
+})
+
+// TODO(funnel): Send a micro-adjustment to the funnel.
+//
+// Steps:
+//   1. Get the current position in radians from funnelState
+//      (same lookup as currentDegrees but don't convert)
+//   2. Convert the degrees parameter to radians: (degrees * Math.PI) / 180
+//   3. Add the adjustment to the current position
+//   4. Call: await scienceAPI.setGearDiffPosition(newPosition, false)
+//
+// Hint: Same pattern as adjustGimbal() in GimbalControls.vue,
+// but using scienceAPI instead of chassisAPI.
+async function adjustFunnel(_degrees: number) {
+  // TODO(funnel): Implement this
 }
 
 const currentSite = ref(0)

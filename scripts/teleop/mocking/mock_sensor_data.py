@@ -8,7 +8,7 @@ import argparse
 
 from mrover.msg import Humidity, Temperature, Oxygen, UV, Ozone, CO2, Pressure, ControllerState, Throttle
 
-SP_MOTORS = ["linear_actuator", "auger", "pump_0", "pump_1", "sensor_actuator"]
+SP_MOTORS = ["linear_actuator", "auger", "pump_0", "pump_1", "sensor_actuator", "funnel"]
 
 
 class MockSensorData(Node):
