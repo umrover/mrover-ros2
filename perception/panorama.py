@@ -69,7 +69,7 @@ class Panorama(Node):
         super().__init__('panorama')
 
         # Variable for the ZED you'd like to use (zed or zed_mini)
-        zed_version= "zed"
+        self.zed_version= "zed"
 
         # Pano Action Server
         self.start_pano = self.create_service(PanoramaStart, '/panorama/start', self.start_callback)
@@ -81,8 +81,8 @@ class Panorama(Node):
         self.record_pc = False
 
         # PC Stitching Variables
-        self.pc_sub = message_filters.Subscriber(self, PointCloud2, f"/{zed_version}/left/points")
-        self.imu_sub = message_filters.Subscriber(self, Imu, f"/{zed_version}_imu/data_raw")
+        self.pc_sub = message_filters.Subscriber(self, PointCloud2, f"/{self.zed_version}/left/points")
+        self.imu_sub = message_filters.Subscriber(self, Imu, f"/{self.zed_version}_imu/data_raw")
         self.pc_publisher = self.create_publisher(PointCloud2, "/stitched_pc", 1)
         self.pano_img_debug_publisher = self.create_publisher(Image, "/debug_pano", 1)
         self.pc_rate = PanoRate(2, self)
@@ -92,7 +92,7 @@ class Panorama(Node):
         self.sync.registerCallback(self.synced_gps_pc_callback)
 
         # Image Stitching Variables
-        self.img_sub = self.create_subscription(Image, f"/{zed_version}/left/image", self.image_callback, 1)
+        self.img_sub = self.create_subscription(Image, f"/{self.zed_version}/left/image", self.image_callback, 1)
         self.img_list = []
         self.stitcher = cv2.Stitcher_create(cv2.Stitcher_PANORAMA)
         self.img_rate = PanoRate(2, self)
@@ -158,7 +158,7 @@ class Panorama(Node):
         self.record_pc = True
 
         if self.img_sub is None:
-            self.img_sub = self.create_subscription(Image, f"/{zed_version}/left/image", self.image_callback, 1)
+            self.img_sub = self.create_subscription(Image, f"/{self.zed_version}/left/image", self.image_callback, 1)
 
         # START SPINNING THE MAST GIMBAL
         # req = ServoPosition.Request()
