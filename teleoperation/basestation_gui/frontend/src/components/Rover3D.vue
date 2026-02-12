@@ -135,19 +135,21 @@ watch(driveMessage, (msg: unknown) => {
     const default_offset = 40
 
     let offsetPos = {
-      x: Math.floor((roverPos.longitude + 83.70967) * 10000 - (typedMsg.info.origin.position.x + 30)) + 40,
-      y: Math.floor((roverPos.latitude - 42.29319) * 10000 - (typedMsg.info.origin.position.y + 30)) + 40
+      x: Math.floor((roverPos.longitude + 83.7096) * 100000 - (typedMsg.info.origin.position.x + 30)) + 40,
+      y: Math.floor((roverPos.latitude - 42.2931) * 100000 - (typedMsg.info.origin.position.y + 30)) + 40
     }
 
 
     let processed_data = []
-    for(let i = 0, k = 0; i < offsetPos.y; ++i){
-      for(let j = 0; j < offsetPos.x; ++j, ++k){
+    for(let i = 0, k = 0; i < 40; ++i){
+      for(let j = 0; j < 40; ++j, ++k){
         processed_data[k] = typedMsg.data[((i + offsetPos.y) * 120) + j + offsetPos.x]
       }
     }
     
     updateCostMapGrid(processed_data)
+    // console.log((roverPos.longitude + 83.7096) * 100000)
+    // console.log((roverPos.latitude - 42.2931) * 100000)
     // console.log(roverPos)
     // console.log(typedMsg.info.origin.position)
     // console.log(offsetPos)
