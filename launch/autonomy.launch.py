@@ -51,4 +51,10 @@ def generate_launch_description():
         arguments=["0", "0", "1", "0", "0", "0", "1", "base_link", "zed_left_camera_frame"],
     )
 
+    map_to_base_link = Node(
+        package="tf2_ros",
+        executable="static_transform_publisher",
+        arguments=["0.0", "0.55", "0", "0", "0", "0", "1", "map", "base_link"],
+    )
+
     return LaunchDescription([launch_jetson_base, launch_perception, base_link_to_zed, base_link_to_right_gps])

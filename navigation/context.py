@@ -418,8 +418,11 @@ class Context:
         # services 
         node.create_service(EnableAuton, "enable_auton", self.enable_auton)
         node.create_service(SetBool, "toggle_path_relaxation", self.toggle_path_relaxation)
+    
         node.create_service(SetBool, "toggle_path_interpolation", self.toggle_path_interpolation)
         node.create_service(SetBool, "toggle_pure_pursuit", self.toggle_pure_pursuit)
+
+        node.get_logger().info("toggle services ready")
 
         self.use_pure_pursuit = node.get_parameter("pure_pursuit.use_pure_pursuit").value
 

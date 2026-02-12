@@ -28,7 +28,7 @@ can_bridge_0:
         id: 0x13
 can_bridge_1:
   ros__parameters:
-    interface: can1
+    interface: can4
     is_extended_frame: true
     devices:
       jetson:

@@ -57,4 +57,4 @@ def generate_launch_description():
         arguments=["0.0", "0.55", "0", "0", "0", "0", "1", "gps_frame", "base_link"],
     )
 
-    return LaunchDescription([base_link_to_right_gps, rover_gps_driver_node, gps_linearization_node, pose_filter_node])
+    return LaunchDescription([base_link_to_right_gps, rover_gps_driver_node, gps_linearization_node, heading_filter_node])

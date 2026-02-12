@@ -109,12 +109,10 @@ def generate_launch_description():
             launch_include_can,
             diff_drive_controller_node,
             superstructure_node,
-            led_node,
             drive_hw_bridge_node,
-            pdlb_hw_bridge_node,
             mob_left_streamer_node,
             static_streamer_node,
             mast_gimbal_hw_bridge_node,
-            zed_container,
+            pdlb_hw_bridge_node
         ]
     )

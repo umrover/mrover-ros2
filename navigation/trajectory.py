@@ -149,13 +149,14 @@ class SearchTrajectory(Trajectory):
 
         # numpy broadcasting magic to add center to each row of the spiral coordinates
         spiral_coordinates_r2 = zero_centered_spiral_r2 + center
+        spiral_coordinates_r2 = spiral_coordinates_r2[6:]
         # add a column of zeros to make it 3D
         spiral_coordinates_r3 = np.hstack(
             (
                 spiral_coordinates_r2,
                 np.zeros(spiral_coordinates_r2.shape[0]).reshape(-1, 1),
-            )
-        )
+                )
+            )[6:]
         return SearchTrajectory(
             spiral_coordinates_r3,
             tag_id,

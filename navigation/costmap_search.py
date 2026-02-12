@@ -115,7 +115,7 @@ class CostmapSearchState(State):
             return
         context.rover.send_drive_command(Twist())
         try:
-            self.astar_traj = self.astar.generate_trajectory(context, self.spiral_traj.get_current_point())
+            self.astar_traj = self.astar.generate_trajectory(self.spiral_traj.get_current_point())
             self.astar_traj = smoothing(self.astar_traj, context, self.USE_RELAXATION, self.USE_INTERPOLATION)
         except Exception as e:
             context.node.get_logger().info(str(e))
