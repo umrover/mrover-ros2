@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import numpy as np
+import copy
 from sensor_msgs.msg import PointCloud2, Image
 from std_msgs.msg import Header
 import sensor_msgs
@@ -67,6 +68,9 @@ class Panorama(Node):
     def __init__(self):
         super().__init__('panorama')
 
+        # Variable for the ZED you'd like to use (zed or zed_mini)
+        zed_version= "zed"
+
         # Pano Action Server
         self.start_pano = self.create_service(PanoramaStart, '/panorama/start', self.start_callback)
         self.end_pano = self.create_service(PanoramaEnd, '/panorama/end', self.end_callback)
@@ -77,8 +81,8 @@ class Panorama(Node):
         self.record_pc = False
 
         # PC Stitching Variables
-        self.pc_sub = message_filters.Subscriber(self, PointCloud2, "/zed_mini/left/points")
-        self.imu_sub = message_filters.Subscriber(self, Imu, "/zed_mini_imu/data_raw")
+        self.pc_sub = message_filters.Subscriber(self, PointCloud2, f"/{zed_version}_mini/left/points")
+        self.imu_sub = message_filters.Subscriber(self, Imu, f"/{zed_version}_imu/data_raw")
         self.pc_publisher = self.create_publisher(PointCloud2, "/stitched_pc", 1)
         self.pano_img_debug_publisher = self.create_publisher(Image, "/debug_pano", 1)
         self.pc_rate = PanoRate(2, self)
@@ -88,13 +92,13 @@ class Panorama(Node):
         self.sync.registerCallback(self.synced_gps_pc_callback)
 
         # Image Stitching Variables
-        self.img_sub = self.create_subscription(Image, "/zed_mini/left/image", self.image_callback, 1)
+        self.img_sub = self.create_subscription(Image, f"/{zed_version}/left/image", self.image_callback, 1)
         self.img_list = []
-        self.stitcher = cv2.Stitcher.create(cv2.Stitcher_PANORAMA)
+        self.stitcher = cv2.Stitcher_create(cv2.Stitcher_PANORAMA)
         self.img_rate = PanoRate(2, self)
 
         if not os.path.isdir(f"data/raw-pano-images"):
-            os.mkdir(f"data/raw-pano-images")
+            os.mkdir("data/raw-pano-images")
 
 
     def rotate_pc(self, trans_mat: np.ndarray, pc: np.ndarray):
@@ -135,9 +139,6 @@ class Panorama(Node):
             rotated_pc = self.rotate_pc(rotation, self.arr_pc)
             self.stitched_pc = np.vstack((self.stitched_pc, rotated_pc))
             self.pc_rate.sleep()
-        else:
-            # Clear the stitched pc
-            self.stitched_pc = np.empty((0, 8), dtype=np.float32)
 
     def image_callback(self, msg: Image):
         if self.record_image:
@@ -146,16 +147,13 @@ class Panorama(Node):
             )
 
             if self.current_img is not None:
-                self.img_list.append(np.copy(self.current_img))
+                self.img_list.append(copy.deepcopy(self.current_img))
             self.img_rate.sleep()
-        else:
-            # Clear the images
-            self.img_list = []
-            self.stitcher = cv2.Stitcher.create(cv2.Stitcher_PANORAMA)
 
     def start_callback(self, _, response):
         self.get_logger().info('Starting Pano...')
 
+        self.stitcher = cv2.Stitcher_create(cv2.Stitcher_PANORAMA)
         self.record_image = True
         self.record_pc = True
 
@@ -214,7 +212,7 @@ class Panorama(Node):
         # Construct Pano and Save
         if pano is not None:
             # save the panorama if it succeeds
-            cv2.imwrite(f"{new_path}/pano.png", img)
+            cv2.imwrite(f"{new_path}/pano.png", pano)
             
             # convert the panorama to bgra for transport through ROS
             bgra_pano = cv2.cvtColor(pano, cv2.COLOR_BGR2BGRA)
@@ -242,6 +240,8 @@ class Panorama(Node):
             response.success = False
             return response
         
+        self.stitched_pc = np.empty((0, 8), dtype=np.float32)
+        self.img_list = []
         self.get_logger().info('Pano response sent to frontend')
         return response
 

@@ -3,7 +3,7 @@ import cv2
 import os
 import glob
 
-image_paths = sorted(glob.glob(os.path.join("/home/khush/ros2_ws/src/mrover/data/raw-pano-images/2026-02-09_21:41:50", "*.png")))
+image_paths = sorted(glob.glob(os.path.join("/home/khush/ros2_ws/src/mrover/data/raw-pano-images/2026-02-12_11:15:47", "*.png")))
 
 images = []
 for path in image_paths:
