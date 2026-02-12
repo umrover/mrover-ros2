@@ -1,5 +1,9 @@
 #pragma once
 #include "pch.hpp"
+#include <nav_msgs/msg/path.hpp>
+#include <geometry_msgs/msg/pose_stamped.hpp>
+#include <visualization_msgs/msg/marker.hpp>
+#include <deque>
 
 namespace mrover {
 
@@ -24,16 +28,14 @@ namespace mrover {
             }
         };
 
-        double mCarrotTime = 0.033;
-        double mCarrotk = 1;
+        //double mCarrotTime = 0.033;
+        //double mCarrotk = 1;
         rclcpp::Time mPrevTime;
         bool carrot_initialized = false;
         ArmPos mCarrotPos;
         ArmPos mCheckCarrotPos;
-        bool hold = false;
+        //bool hold = false;
         bool not_initialized = true;
-
-
 
         struct JointWrapper {
             struct JointLimits {
@@ -78,8 +80,14 @@ namespace mrover {
         [[maybe_unused]] rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr mVelSub;
         [[maybe_unused]] rclcpp::Subscription<mrover::msg::ControllerState>::SharedPtr mJointSub;
 
+        
+
         rclcpp::Publisher<msg::Position>::SharedPtr mPosPub;
         rclcpp::Publisher<msg::Velocity>::SharedPtr mVelPub;
+        rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr mEEPathPub;
+        rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr mEEPointPub;
+        rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr mCtPointPub;
+        std::deque<geometry_msgs::msg::PoseStamped> mPathPoses;
         tf2_ros::TransformBroadcaster mTfBroadcaster{this};
         tf2_ros::Buffer mTfBuffer{get_clock()};
         tf2_ros::TransformListener mTfListener{mTfBuffer};

@@ -1,12 +1,16 @@
 #include "arm_controller.hpp"
 #include <rclcpp/logging.hpp>
 
+
 namespace mrover {
     rclcpp::Duration const ArmController::TIMEOUT = rclcpp::Duration(0, 0.3 * 1e9); // 0.3 seconds
 
     ArmController::ArmController() : Node{"arm_controller"}, mLastUpdate{get_clock()->now() - TIMEOUT} {
         mPosPub = create_publisher<msg::Position>("arm_pos_cmd", 10);
         mVelPub = create_publisher<msg::Velocity>("arm_vel_cmd", 10);
+        mEEPathPub = create_publisher<nav_msgs::msg::Path>("ee_path", 10);
+        mEEPointPub = create_publisher<visualization_msgs::msg::Marker>("ee_point", 10);
+        mCtPointPub = create_publisher<visualization_msgs::msg::Marker>("carrot_point", 10);
 
         mIkSub = create_subscription<msg::IK>("ik_pos_cmd", 1, [this](msg::IK::ConstSharedPtr const& msg) {
             posCallback(msg);
@@ -359,6 +363,72 @@ namespace mrover {
                     mCheckCarrotPos = mArmPos;
                 }
             }
+
+            geometry_msgs::msg::PoseStamped p_stamped;
+            visualization_msgs::msg::Marker ee_point;
+            visualization_msgs::msg::Marker ct_point;
+
+            ct_point.header.stamp = now;
+            ee_point.header.stamp = now;
+            p_stamped.header.stamp = now;
+
+            p_stamped.header.frame_id = "arm_base_link";
+            ct_point.header.frame_id = "arm_base_link";
+            ee_point.header.frame_id = "arm_base_link";
+
+            ct_point.ns = "ee_pt";
+            ct_point.id = 0;
+            ct_point.type = visualization_msgs::msg::Marker::SPHERE;
+            ct_point.action = visualization_msgs::msg::Marker::ADD;
+
+            ee_point.ns = "ee_pt";
+            ee_point.id = 0;
+            ee_point.type = visualization_msgs::msg::Marker::SPHERE;
+            ee_point.action = visualization_msgs::msg::Marker::ADD;
+
+            p_stamped.pose.position.x = mArmPos.x;
+            p_stamped.pose.position.y = mArmPos.y;
+            p_stamped.pose.position.z = mArmPos.z;
+
+            ct_point.pose.position.x = mArmPos.x;
+            ct_point.pose.position.y = mArmPos.y;
+            ct_point.pose.position.z = mArmPos.z;
+            
+            ct_point.scale.x = 0.05;
+            ct_point.scale.y = 0.05;
+            ct_point.scale.z = 0.05;
+            ct_point.color.a = 1.0;
+            ct_point.color.r = 0.0;
+            ct_point.color.g = 0.0;
+            ct_point.color.b = 1.0;
+            mEEPointPub->publish(ct_point);
+
+            ee_point.pose.position.x = mArmPos.x;
+            ee_point.pose.position.y = mArmPos.y;
+            ee_point.pose.position.z = mArmPos.z;
+  
+            ee_point.scale.x = 0.03;
+            ee_point.scale.y = 0.03;
+            ee_point.scale.z = 0.03;
+            ee_point.color.a = 1.0;
+            ee_point.color.r = 1.0;
+            ee_point.color.g = 0.0;
+            ee_point.color.b = 0.0;
+            mCtPointPub->publish(ee_point);
+
+            mPathPoses.push_back(p_stamped);
+
+            if (mPathPoses.size() >= 500) {
+                mPathPoses.pop_front();
+            }
+
+            nav_msgs::msg::Path path_msg;
+            path_msg.header.stamp = now;
+            path_msg.header.frame_id = "arm_base_link";
+            path_msg.poses.assign(mPathPoses.begin(), mPathPoses.end());
+
+            mEEPathPub->publish(path_msg);
+
 
         } else { // typing mode
             msg::Position positions;

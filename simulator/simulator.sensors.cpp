@@ -174,6 +174,7 @@ namespace mrover {
                 odometry.twist.twist.angular.y = w.y();
                 odometry.twist.twist.angular.z = w.z();
                 mGroundTruthPub->publish(odometry);
+                
             }
 
             for (Gps& gps: mGps) {
