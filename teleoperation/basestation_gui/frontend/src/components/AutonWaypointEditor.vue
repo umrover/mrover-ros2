@@ -30,6 +30,7 @@
           class="auton-checkbox"
           :name="'Autonomy Mode'"
           :checked="autonEnabled"
+          :disabled="teleopEnabled"
           :action="autonAction"
           @toggle="handleAutonToggle"
         />
@@ -402,9 +403,14 @@ export default defineComponent({
       return autonAPI.enableTeleop(newState)
     },
 
-    handleTeleopToggle(newState: boolean) {
+    async handleTeleopToggle(newState: boolean) {
       this.autonomyStore.setTeleopMode(newState)
       this.$emit('toggleTeleop', newState)
+
+      if (newState && this.autonEnabled) {
+        await this.autonAction(false)
+        this.autonomyStore.setAutonMode(false)
+      }
     },
 
     // --- Modal ---

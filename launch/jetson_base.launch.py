@@ -41,8 +41,6 @@ def generate_launch_description():
         ],
     )
 
-    led_node = Node(package="mrover", executable="led", name="led")
-
     pdlb_hw_bridge_node = Node(
         package="mrover",
         executable="pdlb_hw_bridge",
@@ -109,7 +107,6 @@ def generate_launch_description():
             launch_include_can,
             diff_drive_controller_node,
             superstructure_node,
-            led_node,
             drive_hw_bridge_node,
             pdlb_hw_bridge_node,
             mob_left_streamer_node,

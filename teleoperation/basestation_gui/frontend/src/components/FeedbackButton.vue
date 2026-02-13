@@ -1,5 +1,5 @@
 <template>
-  <button :class="['btn', currentColor]" :style="customStyles" @click="handleClick">
+  <button :class="['btn', currentColor]" :style="customStyles" :disabled="disabled" @click="handleClick">
     <span class="d-inline-flex align-items-center gap-2">
       <span>{{ displayName }}</span>
       <i v-if="mode === 'toggle'" :class="checked ? 'bi bi-check-square-fill' : 'bi bi-square'"></i>
@@ -38,6 +38,10 @@ export default defineComponent({
     height: {
       type: [String, Number],
       default: '',
+    },
+    disabled: {
+      type: Boolean,
+      default: false,
     },
     mode: {
       type: String as PropType<'toggle' | 'action'>,
