@@ -70,27 +70,27 @@ async def handle_websocket(websocket: WebSocket, ConsumerClass):
     finally:
         await handler.cleanup()
 
-@app.websocket("/arm")
+@app.websocket("/ws/arm")
 async def ws_arm(websocket: WebSocket):
     await handle_websocket(websocket, ArmHandler)
 
-@app.websocket("/drive")
+@app.websocket("/ws/drive")
 async def ws_drive(websocket: WebSocket):
     await handle_websocket(websocket, DriveHandler)
 
-@app.websocket("/chassis")
+@app.websocket("/ws/chassis")
 async def ws_chassis(websocket: WebSocket):
     await handle_websocket(websocket, ChassisHandler)
 
-@app.websocket("/nav")
+@app.websocket("/ws/nav")
 async def ws_nav(websocket: WebSocket):
     await handle_websocket(websocket, NavHandler)
 
-@app.websocket("/science")
+@app.websocket("/ws/science")
 async def ws_science(websocket: WebSocket):
     await handle_websocket(websocket, ScienceHandler)
 
-@app.websocket("/latency")
+@app.websocket("/ws/latency")
 async def ws_latency(websocket: WebSocket):
     await handle_websocket(websocket, LatencyHandler)
 
