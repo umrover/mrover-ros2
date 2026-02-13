@@ -1,68 +1,56 @@
 <template>
-  <div class='d-flex flex-column border border-2 p-2 rounded mw-100' style="flex: 1 0 auto; min-width: 0;">
-    <div class="d-flex align-items-center justify-content-between mb-2">
-      <h4 class="m-0">{{ header }}</h4>
-      <div class="d-flex gap-2">
+  <div class="cmd-panel controller-table-panel">
+    <div class="cmd-panel-header">
+      <h4>{{ header }}</h4>
+      <div class="flex gap-1">
         <button
           type="button"
-          class="btn btn-sm"
-          :class="showStatus ? 'btn-success' : 'btn-danger'"
+          class="cmd-btn cmd-btn-sm"
+          :class="showStatus ? 'cmd-btn-success' : 'cmd-btn-outline-secondary'"
+          data-testid="pw-controller-status-toggle"
           @mousedown.prevent
           @click="showStatus = !showStatus"
         >Status</button>
         <button
           type="button"
-          class="btn btn-sm"
-          :class="showValues ? 'btn-success' : 'btn-danger'"
+          class="cmd-btn cmd-btn-sm"
+          :class="showValues ? 'cmd-btn-success' : 'cmd-btn-outline-secondary'"
+          data-testid="pw-controller-values-toggle"
           @mousedown.prevent
           @click="showValues = !showValues"
         >Values</button>
       </div>
     </div>
-    <div class="overflow-x-auto">
-      <table class='table table-bordered table-sm m-0 w-auto text-nowrap compact-table'>
+    <div class="overflow-x-auto cmd-scroll">
+      <table class="cmd-table compact-table">
         <tbody>
         <tr>
-          <th class='table-secondary text-nowrap sticky-col px-2 py-1'>Motor</th>
-          <td v-for='(n, i) in names' :key='i' class="text-center small px-2 py-1">
-            {{ n }}
-          </td>
+          <th class="sticky-col">Motor</th>
+          <td v-for="(n, i) in names" :key="i">{{ n }}</td>
         </tr>
         <tr v-if="showStatus">
-          <th class='table-secondary text-nowrap sticky-col px-2 py-1'>State</th>
-          <td v-for='(s, i) in states' :key='i' class="text-center small px-2 py-1">
-            {{ s }}
-          </td>
+          <th class="sticky-col">State</th>
+          <td v-for="(s, i) in states" :key="i">{{ s }}</td>
         </tr>
         <tr v-if="showStatus">
-          <th class='table-secondary text-nowrap sticky-col px-2 py-1'>Error</th>
-          <td v-for='(e, i) in errors' :key='i' class="text-center small px-2 py-1">
-            {{ e }}
-          </td>
+          <th class="sticky-col">Error</th>
+          <td v-for="(e, i) in errors" :key="i">{{ e }}</td>
         </tr>
         <tr v-if="showStatus">
-          <th class='table-secondary text-nowrap sticky-col px-2 py-1'>Limit Hit</th>
-          <td v-for='(l, i) in limitHits' :key='i' class="text-center small px-2 py-1">
-            {{ l }}
-          </td>
+          <th class="sticky-col">Limit Hit</th>
+          <td v-for="(l, i) in limitHits" :key="i">{{ l }}</td>
         </tr>
         <tr v-if="showValues">
-          <th class='table-secondary text-nowrap sticky-col px-2 py-1'>Position</th>
-          <td v-for='(p, i) in positions' :key='i' class="text-center small px-2 py-1">
-            {{ p.toFixed(2) }}
-          </td>
+          <th class="sticky-col">Position</th>
+          <td v-for="(p, i) in positions" :key="i">{{ p.toFixed(2) }}</td>
         </tr>
         <tr v-if="showValues">
-          <th class='table-secondary text-nowrap sticky-col px-2 py-1'>Velocity</th>
-          <td v-for='(v, i) in velocities' :key='i' class="text-center small px-2 py-1">
-            {{ v.toFixed(2) }}
-          </td>
+          <th class="sticky-col">Velocity</th>
+          <td v-for="(v, i) in velocities" :key="i">{{ v.toFixed(2) }}</td>
         </tr>
         <tr v-if="showValues">
-          <th class='table-secondary text-nowrap sticky-col px-2 py-1'>Current</th>
-          <td v-for='(c, i) in currents' :key='i' class="text-center small px-2 py-1">
-            {{ c.toFixed(2) }}
-          </td>
+          <th class="sticky-col">Current</th>
+          <td v-for="(c, i) in currents" :key="i">{{ c.toFixed(2) }}</td>
         </tr>
         </tbody>
       </table>
@@ -105,6 +93,7 @@ const leftState = ref<ControllerStateMessage | null>(null)
 const rightState = ref<ControllerStateMessage | null>(null)
 
 function updateFromMessage(msg: ControllerStateMessage) {
+  if (!msg || !Array.isArray(msg.names)) return
   names.value = msg.names
   states.value = msg.states
   errors.value = msg.errors
@@ -119,16 +108,15 @@ function combineLeftRight() {
   const right = rightState.value
   if (!left && !right) return
 
-  const l = left || { names: [], states: [], errors: [], limits_hit: [], positions: [], velocities: [], currents: [] }
-  const r = right || { names: [], states: [], errors: [], limits_hit: [], positions: [], velocities: [], currents: [] }
+  const arr = (v: unknown): unknown[] => Array.isArray(v) ? v : []
 
-  names.value = [...l.names, ...r.names]
-  states.value = [...l.states, ...r.states]
-  errors.value = [...l.errors, ...r.errors]
-  limitHits.value = [...l.limits_hit, ...r.limits_hit]
-  positions.value = [...l.positions, ...r.positions]
-  velocities.value = [...l.velocities, ...r.velocities]
-  currents.value = [...l.currents, ...r.currents]
+  names.value = [...arr(left?.names), ...arr(right?.names)] as string[]
+  states.value = [...arr(left?.states), ...arr(right?.states)] as string[]
+  errors.value = [...arr(left?.errors), ...arr(right?.errors)] as string[]
+  limitHits.value = [...arr(left?.limits_hit), ...arr(right?.limits_hit)] as boolean[]
+  positions.value = [...arr(left?.positions), ...arr(right?.positions)] as number[]
+  velocities.value = [...arr(left?.velocities), ...arr(right?.velocities)] as number[]
+  currents.value = [...arr(left?.currents), ...arr(right?.currents)] as number[]
 }
 
 const driveMessage = computed(() => messages.value['drive'])
@@ -165,10 +153,16 @@ watch(scienceMessage, (msg) => {
 </script>
 
 <style scoped>
+.controller-table-panel {
+  flex: 1 0 auto;
+  min-width: 0;
+}
+
 .sticky-col {
   position: sticky;
   left: 0;
   z-index: 1;
+  background-color: var(--table-header-bg);
 }
 
 .compact-table {
@@ -177,7 +171,8 @@ watch(scienceMessage, (msg) => {
 
 .compact-table th,
 .compact-table td {
-  white-space: nowrap;
   width: 1%;
+  text-align: center;
+  white-space: nowrap;
 }
 </style>

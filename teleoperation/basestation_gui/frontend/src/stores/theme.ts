@@ -24,8 +24,6 @@ function saveToStorage(theme: Theme) {
 }
 
 function applyTheme(theme: Theme) {
-  const bsTheme = theme === 'dark' || theme === 'high-contrast-dark' ? 'dark' : 'light'
-  document.documentElement.setAttribute('data-bs-theme', bsTheme)
   document.documentElement.setAttribute('data-theme', theme)
 }
 

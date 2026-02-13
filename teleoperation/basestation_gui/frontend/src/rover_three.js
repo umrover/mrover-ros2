@@ -337,7 +337,7 @@ export default function threeSetup() {
     antialias: true,
     canvas: canvas,
   })
-  renderer.setSize(sizes.width, sizes.height)
+  renderer.setSize(sizes.width, sizes.height, false)
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
   renderer.shadowMap.enabled = true
   renderer.shadowMap.type = THREE.PCFSoftShadowMap
@@ -352,10 +352,10 @@ export default function threeSetup() {
       cam.aspect = sizes.width / sizes.height
       cam.updateProjectionMatrix()
     }
-    renderer.setSize(sizes.width, sizes.height)
+    renderer.setSize(sizes.width, sizes.height, false)
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
   })
-  resizeObserver.observe(canvas)
+  resizeObserver.observe(canvas.parentElement)
 
   const clock = new THREE.Clock()
   let timeSinceLastFrame = 0

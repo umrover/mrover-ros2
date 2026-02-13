@@ -29,6 +29,7 @@ from backend.ws.chassis_ws import ChassisHandler
 from backend.ws.nav_ws import NavHandler
 from backend.ws.science_ws import ScienceHandler
 from backend.ws.latency_ws import LatencyHandler
+from backend.ws.auton_ws import AutonHandler
 
 app = FastAPI()
 
@@ -36,7 +37,6 @@ app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -49,6 +49,8 @@ app.include_router(chassis_router)
 app.include_router(science_router)
 app.include_router(arm_router)
 
+MAX_WS_PAYLOAD_BYTES = 1024 * 1024  # 1 MB
+
 # WebSocket Handlers
 async def handle_websocket(websocket: WebSocket, ConsumerClass):
     await websocket.accept()
@@ -57,6 +59,9 @@ async def handle_websocket(websocket: WebSocket, ConsumerClass):
         await handler.setup()
         while True:
             data = await websocket.receive_bytes()
+            if len(data) > MAX_WS_PAYLOAD_BYTES:
+                get_logger().warning(f"Oversized payload ({len(data)} bytes) on {handler.endpoint}, dropping")
+                continue
             unpacked = msgpack.unpackb(data, raw=False)
             await handler.handle_message(unpacked)
     except WebSocketDisconnect:
@@ -66,29 +71,33 @@ async def handle_websocket(websocket: WebSocket, ConsumerClass):
     finally:
         await handler.cleanup()
 
-@app.websocket("/arm")
+@app.websocket("/ws/arm")
 async def ws_arm(websocket: WebSocket):
     await handle_websocket(websocket, ArmHandler)
 
-@app.websocket("/drive")
+@app.websocket("/ws/drive")
 async def ws_drive(websocket: WebSocket):
     await handle_websocket(websocket, DriveHandler)
 
-@app.websocket("/chassis")
+@app.websocket("/ws/chassis")
 async def ws_chassis(websocket: WebSocket):
     await handle_websocket(websocket, ChassisHandler)
 
-@app.websocket("/nav")
+@app.websocket("/ws/nav")
 async def ws_nav(websocket: WebSocket):
     await handle_websocket(websocket, NavHandler)
 
-@app.websocket("/science")
+@app.websocket("/ws/science")
 async def ws_science(websocket: WebSocket):
     await handle_websocket(websocket, ScienceHandler)
 
-@app.websocket("/latency")
+@app.websocket("/ws/latency")
 async def ws_latency(websocket: WebSocket):
     await handle_websocket(websocket, LatencyHandler)
+
+@app.websocket("/ws/auton")
+async def ws_auton(websocket: WebSocket):
+    await handle_websocket(websocket, AutonHandler)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -98,13 +107,19 @@ if __name__ == "__main__":
 
     get_node()
 
+    from backend.database import ensure_initialized
+    ensure_initialized()
+
     if args.serve_static:
         frontend_dist = os.path.join(os.path.dirname(os.path.abspath(__file__)), "frontend/dist")
+        real_frontend_dist = os.path.realpath(frontend_dist)
         app.mount("/assets", StaticFiles(directory=os.path.join(frontend_dist, "assets")), name="assets")
 
         @app.get("/{full_path:path}")
         async def serve_spa(full_path: str):
-            file_path = os.path.join(frontend_dist, full_path)
+            file_path = os.path.realpath(os.path.join(frontend_dist, full_path))
+            if not file_path.startswith(real_frontend_dist):
+                return FileResponse(os.path.join(frontend_dist, "index.html"))
             if os.path.exists(file_path) and os.path.isfile(file_path):
                 return FileResponse(file_path)
             return FileResponse(os.path.join(frontend_dist, "index.html"))
