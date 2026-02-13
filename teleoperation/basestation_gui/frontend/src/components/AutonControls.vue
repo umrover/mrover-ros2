@@ -76,7 +76,6 @@ const autonAction = (newState: boolean) => {
         tag_id: waypoint.tag_id,
         type: waypoint.type,
         enable_costmap: waypoint.enable_costmap,
-        coverage_radius: waypoint.coverage_radius,
       }))
     : []
 

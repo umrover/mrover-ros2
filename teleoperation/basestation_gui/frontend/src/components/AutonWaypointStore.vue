@@ -4,7 +4,6 @@
       <h5 class="cmd-list-item-title" data-testid="pw-waypoint-name">{{ waypoint.name }}</h5>
       <div class="flex items-center gap-2">
         <span class="cmd-data-label">Tag ID: {{ waypoint.tag_id }}</span>
-        <span class="cmd-data-label">R: {{ waypoint.coverage_radius }}</span>
       </div>
     </div>
     <div class="flex justify-between items-center">
@@ -43,16 +42,6 @@
                   <input class="cmd-form-control" v-model.number="editData.lon" type="number" step="0.000001" />
                 </div>
               </div>
-              <div class="mb-4">
-                <label class="cmd-form-label">Coverage Radius (0 for default):</label>
-                <input
-                  class="cmd-form-control"
-                  v-model.number="editData.coverage_radius"
-                  type="number"
-                  step="0.5"
-                  min="0"
-                />
-              </div>
             </div>
             <div class="cmd-modal-footer">
               <button type="button" class="cmd-btn cmd-btn-secondary" @click="closeEditModal">Cancel</button>
@@ -86,7 +75,6 @@ const editData = ref({
   name: '',
   lat: 0,
   lon: 0,
-  coverage_radius: 0,
 })
 
 function openEditModal() {
@@ -94,7 +82,6 @@ function openEditModal() {
     name: props.waypoint.name,
     lat: props.waypoint.lat,
     lon: props.waypoint.lon,
-    coverage_radius: props.waypoint.coverage_radius,
   }
   show()
 }
@@ -109,7 +96,6 @@ function saveEdit() {
     name: editData.value.name,
     lat: editData.value.lat,
     lon: editData.value.lon,
-    coverage_radius: editData.value.coverage_radius,
   }, props.index)
   closeEditModal()
 }

@@ -31,8 +31,7 @@ export const useAutonomyStore = defineStore('autonomy', () => {
       name: wp.name,
       tag_id: wp.tag_id,
       type: wp.type,
-      enable_costmap: wp.enable_costmap,
-      coverage_radius: wp.coverage_radius
+      enable_costmap: wp.enable_costmap
     }))
   )
 

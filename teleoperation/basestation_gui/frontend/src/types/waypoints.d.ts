@@ -7,7 +7,6 @@ export interface AutonWaypoint {
   lat: number
   lon: number
   enable_costmap: boolean
-  coverage_radius: number
   deletable?: boolean
   db_id?: number
 }
@@ -30,5 +29,4 @@ export interface MapRouteWaypoint extends MapWaypoint {
   tag_id: number
   type: number
   enable_costmap: boolean
-  coverage_radius: number
 }

@@ -47,7 +47,6 @@ export interface AutonEnableWaypoint {
   tag_id: number
   type: number
   enable_costmap: boolean
-  coverage_radius: number
 }
 
 export interface RecordedWaypoint {

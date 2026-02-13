@@ -102,8 +102,6 @@ function handleStoreUpdate(waypoint: AutonWaypoint, index: number) {
   if (waypoint.name !== existing.name) fields.name = waypoint.name
   if (waypoint.lat !== existing.lat) fields.lat = waypoint.lat
   if (waypoint.lon !== existing.lon) fields.lon = waypoint.lon
-  if (waypoint.coverage_radius !== existing.coverage_radius) fields.coverage_radius = waypoint.coverage_radius
-
   if (Object.keys(fields).length > 0) {
     autonomyStore.updateWaypoint(existing.db_id, fields)
   }
