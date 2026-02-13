@@ -16,6 +16,7 @@ interface StoredState {
 }
 
 const STORAGE_KEY = 'notifications_store'
+const MAX_NOTIFICATIONS = 100
 
 function loadFromStorage(): StoredState {
   try {
@@ -58,6 +59,9 @@ export const useNotificationsStore = defineStore('notifications', () => {
       read: false
     }
     notifications.value.unshift(notification)
+    if (notifications.value.length > MAX_NOTIFICATIONS) {
+      notifications.value.length = MAX_NOTIFICATIONS
+    }
   }
 
   function markAllAsRead() {
