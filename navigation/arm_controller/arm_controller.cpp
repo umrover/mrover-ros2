@@ -234,35 +234,25 @@ namespace mrover {
             // add something to avoid stuff with bad initiliazation stuff yay
             // tune for x direction stuff
 
-            if (mVelTarget.linear.x == 0 &&
-                mVelTarget.linear.y == 0 &&
-                mVelTarget.linear.z == 0 &&
-                mVelTarget.angular.x == 0 &&
-                mVelTarget.angular.y == 0) {
-                // no movement command, so just stop the arm
-                mCarrotPos = mArmPos;
-                mCheckCarrotPos = mArmPos;
-            }   
-
             //hold = false;
 
             auto const now = get_clock()->now();
 
-            if (!carrot_initialized) {
+            /*if (!carrot_initialized) {
                 mPrevTime = now;
                 mCarrotPos = mArmPos;
                 mCheckCarrotPos = mArmPos;
                 carrot_initialized = true;
-            }
+            }*/
 
-            double dt = (now - mPrevTime).seconds();
-            mPrevTime = now;
+            /*double dt = (now - mPrevTime).seconds();
+            mPrevTime = now;*/
 
-            if (dt <= 0.0 || dt > 1.0) {
+            /*if (dt <= 0.0 || dt > 1.0) {
                 dt = 0.033;
-            }
+            }*/
 
-            dt = 0.01;
+            double dt = 0.01;
 
             double const k = 1;
 
@@ -288,10 +278,10 @@ namespace mrover {
             auto error_x = mCarrotPos.x - mArmPos.x;
             auto error_y = mCarrotPos.y - mArmPos.y;
             auto error_z = mCarrotPos.z - mArmPos.z;
-            auto error_pitch = mCarrotPos.pitch - mArmPos.pitch;
-            auto error_roll = mCarrotPos.roll - mArmPos.roll;
+            //auto error_pitch = mCarrotPos.pitch - mArmPos.pitch;
+            //auto error_roll = mCarrotPos.roll - mArmPos.roll;
 
-            double const max_dist = 0.015;
+            double const max_dist = 0.01;
 
             double error_total = std::sqrt(error_x * error_x + error_y * error_y + error_z * error_z);
 
@@ -302,18 +292,18 @@ namespace mrover {
                 mCarrotPos.z = mArmPos.z + error_z * reduce_factor;
             }
 
-            double error_check_x = mCheckCarrotPos.x - mCarrotPos.x;
+            /*double error_check_x = mCheckCarrotPos.x - mCarrotPos.x;
             double error_check_y = mCheckCarrotPos.y - mCarrotPos.y;
             double error_check_z = mCheckCarrotPos.z - mCarrotPos.z;
-            double error_check = std::sqrt(error_check_x * error_check_x + error_check_y * error_check_y + error_check_z * error_check_z);
+            double error_check = std::sqrt(error_check_x * error_check_x + error_check_y * error_check_y + error_check_z * error_check_z);*/
 
-            if (error_check > 0.04) {
+           /* if (error_check > 0.04) {
                 RCLCPP_WARN_THROTTLE(
                             get_logger(),
                             *get_clock(),
                             1000,
                             "Arm IK failing! Desired movement will not be achieved. Return to normal bounds");
-            }
+            }*/
 
             SE3Conversions::pushToTfTree(
                     mTfBroadcaster,
@@ -322,7 +312,15 @@ namespace mrover {
                     mCarrotPos.toSE3(),
                     now);
 
-            auto adjusted_v = mVelTarget;
+            auto positions = ikPosCalc(mCarrotPos);
+            if (positions) {
+                mPosPub->publish(positions.value());
+            }
+            else {
+                RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1000, "Fake Vel IK failed!");
+            }
+            
+            /**auto adjusted_v = mVelTarget;
 
 
             error_x = mCarrotPos.x - mArmPos.x;
@@ -332,12 +330,12 @@ namespace mrover {
             error_roll = mCarrotPos.roll - mArmPos.roll;
 
 
-            double const Kp_lin = 20.0;
-            double const Kp_ang = 20.0;
+            double const Kp_lin = 25.0;
+            double const Kp_ang = 8.0;
 
-            adjusted_v.linear.x += Kp_lin * error_x;
+            adjusted_v.linear.x += Kp_lin * error_x * 0.85;
             adjusted_v.linear.y += Kp_lin * error_y;
-            adjusted_v.linear.z += Kp_lin * error_z;
+            adjusted_v.linear.z += Kp_lin * error_z * 1.50;
             adjusted_v.angular.y += Kp_ang * error_pitch;
             adjusted_v.angular.x += Kp_ang * error_roll;
 
@@ -362,9 +360,9 @@ namespace mrover {
                     mCarrotPos = mArmPos;
                     mCheckCarrotPos = mArmPos;
                 }
-            }
+            }**/
 
-            geometry_msgs::msg::PoseStamped p_stamped;
+            /*geometry_msgs::msg::PoseStamped p_stamped;
             visualization_msgs::msg::Marker ee_point;
             visualization_msgs::msg::Marker ct_point;
 
@@ -376,15 +374,17 @@ namespace mrover {
             ct_point.header.frame_id = "arm_base_link";
             ee_point.header.frame_id = "arm_base_link";
 
-            ct_point.ns = "ee_pt";
+            ct_point.ns = "ct_pt";
             ct_point.id = 0;
             ct_point.type = visualization_msgs::msg::Marker::SPHERE;
             ct_point.action = visualization_msgs::msg::Marker::ADD;
+            ct_point.lifetime = rclcpp::Duration::from_seconds(10.0);
 
             ee_point.ns = "ee_pt";
             ee_point.id = 0;
             ee_point.type = visualization_msgs::msg::Marker::SPHERE;
             ee_point.action = visualization_msgs::msg::Marker::ADD;
+            ee_point.lifetime = rclcpp::Duration::from_seconds(10.0);
 
             p_stamped.pose.position.x = mArmPos.x;
             p_stamped.pose.position.y = mArmPos.y;
@@ -398,23 +398,23 @@ namespace mrover {
             ct_point.scale.y = 0.05;
             ct_point.scale.z = 0.05;
             ct_point.color.a = 1.0;
-            ct_point.color.r = 0.0;
-            ct_point.color.g = 0.0;
-            ct_point.color.b = 1.0;
-            mEEPointPub->publish(ct_point);
+            ct_point.color.r = 1.0;
+            ct_point.color.g = 0.5;
+            ct_point.color.b = 0.0;
+            mCtPointPub->publish(ct_point);
 
             ee_point.pose.position.x = mArmPos.x;
             ee_point.pose.position.y = mArmPos.y;
             ee_point.pose.position.z = mArmPos.z;
   
-            ee_point.scale.x = 0.03;
-            ee_point.scale.y = 0.03;
-            ee_point.scale.z = 0.03;
+            ee_point.scale.x = 0.1;
+            ee_point.scale.y = 0.1;
+            ee_point.scale.z = 0.1;
             ee_point.color.a = 1.0;
             ee_point.color.r = 1.0;
             ee_point.color.g = 0.0;
             ee_point.color.b = 0.0;
-            mCtPointPub->publish(ee_point);
+            mEEPointPub->publish(ee_point);
 
             mPathPoses.push_back(p_stamped);
 
@@ -427,7 +427,7 @@ namespace mrover {
             path_msg.header.frame_id = "arm_base_link";
             path_msg.poses.assign(mPathPoses.begin(), mPathPoses.end());
 
-            mEEPathPub->publish(path_msg);
+            mEEPathPub->publish(path_msg);*/
 
 
         } else { // typing mode
