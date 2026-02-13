@@ -31,6 +31,9 @@ async def enable_auton(data: AutonEnableRequest):
             ],
         )
 
+        if data.enabled:
+            set_teleop_enabled(False)
+
         result = await call_service_async(client, auton_request)
         if result is None:
             raise HTTPException(status_code=500, detail="Service /enable_auton is not available or timed out")
