@@ -78,9 +78,3 @@ class TestAutonCourse:
         assert course[0]['enable_costmap'] is True
         assert isinstance(course[0]['enable_costmap'], bool)
 
-    def test_clear_auton_clears_course_too(self, api, clean_auton_waypoints):
-        wps = [_make_course_waypoint()]
-        _save_course(api, wps)
-        api.delete(url(api, '/api/waypoints/auton/clear/'))
-        course = _get_course(api)
-        assert course == []

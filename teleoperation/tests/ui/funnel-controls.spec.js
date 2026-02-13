@@ -1,20 +1,14 @@
 const { test, expect } = require('@playwright/test');
 
-test.beforeEach(async ({ page }) => {
-  await page.setViewportSize({ width: 1920, height: 1080 });
-});
-
 test('funnel controls visible on ScienceTask', async ({ page }) => {
-  await page.goto('http://localhost:8080/ScienceTask');
-  await page.waitForLoadState('networkidle');
+  await page.goto('/ScienceTask');
   const controls = page.getByTestId('pw-funnel-controls');
-  await expect(controls).toBeVisible({ timeout: 15000 });
+  await expect(controls).toBeVisible();
 });
 
 test('6 site buttons visible', async ({ page }) => {
-  await page.goto('http://localhost:8080/ScienceTask');
-  await page.waitForLoadState('networkidle');
-  await expect(page.getByTestId('pw-funnel-controls')).toBeVisible({ timeout: 15000 });
+  await page.goto('/ScienceTask');
+  await expect(page.getByTestId('pw-funnel-controls')).toBeVisible();
 
   for (let i = 0; i <= 5; i++) {
     await expect(page.getByTestId(`pw-funnel-site-${i}`)).toBeVisible();
@@ -22,11 +16,10 @@ test('6 site buttons visible', async ({ page }) => {
 });
 
 test('clicking site shows active state', async ({ page }) => {
-  await page.goto('http://localhost:8080/ScienceTask');
-  await page.waitForLoadState('networkidle');
+  await page.goto('/ScienceTask');
 
   const siteBtn = page.getByTestId('pw-funnel-site-1');
-  await expect(siteBtn).toBeVisible({ timeout: 15000 });
+  await expect(siteBtn).toBeVisible();
   await siteBtn.click();
-  await expect(siteBtn).toHaveClass(/active/, { timeout: 5000 });
+  await expect(siteBtn).toHaveClass(/active/);
 });

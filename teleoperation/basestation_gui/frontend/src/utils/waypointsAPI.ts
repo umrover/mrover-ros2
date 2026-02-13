@@ -75,11 +75,7 @@ export const waypointsAPI = {
     return apiFetch('/waypoints/basic/clear/', { method: 'DELETE' })
   },
 
-  clearAuton(): Promise<DeleteWaypointResponse> {
-    return apiFetch('/waypoints/auton/clear/', { method: 'DELETE' })
-  },
-
-  clearAllAuton(): Promise<DeleteWaypointResponse> {
-    return apiFetch('/waypoints/auton/clear/all/', { method: 'DELETE' })
+  rebuildAuton(): Promise<DeleteWaypointResponse> {
+    return apiFetch('/waypoints/auton/rebuild/', { method: 'POST' })
   }
 }

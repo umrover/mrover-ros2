@@ -62,9 +62,9 @@ def _url(api, path):
 
 @pytest.fixture
 def clean_auton_waypoints(api):
-    api.delete(_url(api, '/api/waypoints/auton/clear/'))
+    api.post(_url(api, '/api/waypoints/auton/rebuild/'))
     yield
-    api.delete(_url(api, '/api/waypoints/auton/clear/'))
+    api.post(_url(api, '/api/waypoints/auton/rebuild/'))
 
 
 @pytest.fixture

@@ -1,37 +1,30 @@
 const { test, expect } = require('@playwright/test');
 
-test.beforeEach(async ({ page }) => {
-  await page.setViewportSize({ width: 1920, height: 1080 });
-});
-
 test('add waypoint form visible', async ({ page }) => {
-  await page.goto('http://localhost:8080/DMTask');
-  await page.waitForLoadState('networkidle');
-  await expect(page.getByTestId('pw-basic-wp-name')).toBeVisible({ timeout: 15000 });
+  await page.goto('/DMTask');
+  await expect(page.getByTestId('pw-basic-wp-name')).toBeVisible();
   await expect(page.getByTestId('pw-basic-wp-add-btn')).toBeVisible();
 });
 
 test('add waypoint creates entry', async ({ page }) => {
-  await page.goto('http://localhost:8080/DMTask');
-  await page.waitForLoadState('networkidle');
+  await page.goto('/DMTask');
 
   const nameInput = page.getByTestId('pw-basic-wp-name');
-  await expect(nameInput).toBeVisible({ timeout: 15000 });
+  await expect(nameInput).toBeVisible();
   await nameInput.clear();
   await nameInput.fill('TestBasicWP');
 
   await page.getByTestId('pw-basic-wp-add-btn').click();
 
   const list = page.getByTestId('pw-basic-wp-list');
-  await expect(list.locator(':text("TestBasicWP")')).toBeVisible({ timeout: 5000 });
+  await expect(list.locator(':text("TestBasicWP")')).toBeVisible();
 });
 
 test('clear empties list', async ({ page }) => {
-  await page.goto('http://localhost:8080/DMTask');
-  await page.waitForLoadState('networkidle');
+  await page.goto('/DMTask');
 
   const nameInput = page.getByTestId('pw-basic-wp-name');
-  await expect(nameInput).toBeVisible({ timeout: 15000 });
+  await expect(nameInput).toBeVisible();
   await nameInput.clear();
   await nameInput.fill('ClearTest');
   await page.getByTestId('pw-basic-wp-add-btn').click();
@@ -39,8 +32,8 @@ test('clear empties list', async ({ page }) => {
 
   await page.getByTestId('pw-basic-wp-clear-btn').click();
 
-  const confirmBtn = page.locator('#clearWaypointsModal .btn-danger:has-text("Clear")');
-  await expect(confirmBtn).toBeVisible({ timeout: 5000 });
+  const confirmBtn = page.locator('.cmd-modal-backdrop .cmd-btn-danger');
+  await expect(confirmBtn).toBeVisible();
 
   const clearResponse = page.waitForResponse(
     (resp) => resp.url().includes('/api/waypoints/basic/clear') && resp.status() === 200
@@ -49,21 +42,18 @@ test('clear empties list', async ({ page }) => {
   await clearResponse;
 
   await page.reload();
-  await page.waitForLoadState('networkidle');
   const list = page.getByTestId('pw-basic-wp-list');
   const items = list.locator('.cmd-list-item');
-  await expect(items).toHaveCount(0, { timeout: 15000 });
+  await expect(items).toHaveCount(0);
 });
 
 test('view recordings button visible', async ({ page }) => {
-  await page.goto('http://localhost:8080/DMTask');
-  await page.waitForLoadState('networkidle');
-  await expect(page.getByTestId('pw-basic-wp-recordings-btn')).toBeVisible({ timeout: 15000 });
+  await page.goto('/DMTask');
+  await expect(page.getByTestId('pw-basic-wp-recordings-btn')).toBeVisible();
 });
 
 test('start recording button visible', async ({ page }) => {
-  await page.goto('http://localhost:8080/DMTask');
-  await page.waitForLoadState('networkidle');
+  await page.goto('/DMTask');
   const recordBtn = page.locator('button:has-text("Start Recording")').first();
-  await expect(recordBtn).toBeVisible({ timeout: 15000 });
+  await expect(recordBtn).toBeVisible();
 });

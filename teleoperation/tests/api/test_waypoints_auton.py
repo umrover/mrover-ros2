@@ -144,19 +144,3 @@ class TestAutonWaypointDelete:
     def test_delete_nonexistent_returns_404(self, api):
         resp = api.delete(url(api, '/api/waypoints/auton/9999/'))
         assert resp.status_code == 404
-
-    def test_clear_removes_only_user_waypoints(self, api, clean_auton_waypoints):
-        _create_waypoint(api)
-        api.delete(url(api, '/api/waypoints/auton/clear/'))
-        waypoints = _get_waypoints(api)
-        user_wps = [w for w in waypoints if w['deletable']]
-        defaults = [w for w in waypoints if not w['deletable']]
-        assert len(user_wps) == 0
-        assert len(defaults) == 8
-
-    def test_clear_all_removes_everything(self, api):
-        api.delete(url(api, '/api/waypoints/auton/clear/all/'))
-        resp = api.get(url(api, '/api/waypoints/auton/'))
-        data = resp.json()
-        assert len(data['waypoints']) == 0
-        seed_auton_defaults()

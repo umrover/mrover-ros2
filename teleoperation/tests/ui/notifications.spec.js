@@ -1,34 +1,27 @@
 const { test, expect } = require('@playwright/test');
 
-test.beforeEach(async ({ page }) => {
-  await page.setViewportSize({ width: 1920, height: 1080 });
-});
-
 test('bell button visible', async ({ page }) => {
-  await page.goto('http://localhost:8080/');
-  await page.waitForLoadState('networkidle');
-  await expect(page.getByTestId('pw-notification-bell')).toBeVisible({ timeout: 10000 });
+  await page.goto('/');
+  await expect(page.getByTestId('pw-notification-bell')).toBeVisible();
 });
 
 test('clicking bell opens panel', async ({ page }) => {
-  await page.goto('http://localhost:8080/');
-  await page.waitForLoadState('networkidle');
+  await page.goto('/');
   const bell = page.getByTestId('pw-notification-bell');
-  await expect(bell).toBeVisible({ timeout: 10000 });
+  await expect(bell).toBeVisible();
   await bell.click();
-  await expect(page.getByTestId('pw-notification-panel')).toBeVisible({ timeout: 5000 });
+  await expect(page.getByTestId('pw-notification-panel')).toBeVisible();
 });
 
-test('clicking bell again closes panel', async ({ page }) => {
-  await page.goto('http://localhost:8080/');
-  await page.waitForLoadState('networkidle');
+test('clicking outside closes panel', async ({ page }) => {
+  await page.goto('/');
   const bell = page.getByTestId('pw-notification-bell');
-  await expect(bell).toBeVisible({ timeout: 10000 });
+  await expect(bell).toBeVisible();
 
   await bell.click();
-  await expect(page.getByTestId('pw-notification-panel')).toBeVisible({ timeout: 5000 });
+  await expect(page.getByTestId('pw-notification-panel')).toBeVisible();
 
-  const backdrop = page.locator('.position-fixed.top-0.start-0.w-100.h-100');
+  const backdrop = page.locator('.fixed.top-0.left-0.w-full.h-full');
   await backdrop.click({ position: { x: 10, y: 10 } });
-  await expect(page.getByTestId('pw-notification-panel')).not.toBeVisible({ timeout: 5000 });
+  await expect(page.getByTestId('pw-notification-panel')).not.toBeVisible({ timeout: 3000 });
 });

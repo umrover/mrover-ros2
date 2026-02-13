@@ -1,5 +1,5 @@
 <template>
-  <a class="block no-underline py-1 terminal-link" :href="link">
+  <a class="block no-underline py-1 terminal-link" :href="link" data-testid="pw-menu-btn">
     <span class="mr-2 opacity-50 prefix">./</span>{{ name }}
   </a>
 </template>

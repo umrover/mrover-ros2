@@ -76,7 +76,7 @@ def ros_context():
     rclpy.shutdown()
 
 
-@pytest.fixture
+@pytest.fixture(scope='class')
 def throttle_subscriber(ros_context):
     """Create a throttle subscriber node with its own executor thread."""
     node = ThrottleSubscriber()
@@ -85,6 +85,8 @@ def throttle_subscriber(ros_context):
 
     spin_thread = threading.Thread(target=executor.spin, daemon=True)
     spin_thread.start()
+
+    time.sleep(1.0)
 
     yield node
 
@@ -109,7 +111,7 @@ def send_arm_controller_input(axes: list[float], buttons: list[float]) -> bool:
     """Send controller input via WebSocket to the arm endpoint."""
     try:
         ws = websocket.create_connection(
-            'ws://localhost:8000/arm',
+            'ws://localhost:8000/ws/arm',
             timeout=5.0
         )
         message = msgpack.packb({

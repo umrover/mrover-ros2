@@ -142,6 +142,16 @@ def get_recordings_db():
 def get_db_connection():
     return get_waypoints_db()
 
+def rebuild_auton_tables():
+    conn = sqlite3.connect(WAYPOINTS_DB)
+    cursor = conn.cursor()
+    cursor.execute("DROP TABLE IF EXISTS current_auton_course")
+    cursor.execute("DROP TABLE IF EXISTS auton_waypoints")
+    cursor.execute("DELETE FROM sqlite_sequence WHERE name IN ('auton_waypoints', 'current_auton_course')")
+    conn.commit()
+    conn.close()
+    init_waypoints_db()
+
 _initialized = False
 
 def ensure_initialized():

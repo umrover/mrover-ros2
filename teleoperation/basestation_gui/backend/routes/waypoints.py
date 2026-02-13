@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException
-from backend.database import get_db_connection
+from backend.database import get_db_connection, rebuild_auton_tables
 from backend.models_pydantic import BasicWaypoint, BasicWaypointList, AutonWaypointList, CreateAutonWaypoint, UpdateAutonWaypoint, UpdateBasicWaypoint
 
 router = APIRouter(prefix="/api/waypoints", tags=["waypoints"])
@@ -240,35 +240,12 @@ def update_auton_waypoint(waypoint_id: int, data: UpdateAutonWaypoint):
             conn.close()
 
 
-@router.delete("/auton/clear/")
-def clear_auton_waypoints():
-    """Clear all user-added auton waypoints (deletable=1), keep defaults."""
-    conn = None
-    try:
-        conn = get_db_connection()
-        conn.execute('DELETE FROM auton_waypoints WHERE deletable = 1')
-        conn.execute('DELETE FROM current_auton_course')
-        conn.commit()
-        return {'status': 'success', 'message': 'User waypoints and current course cleared'}
-    finally:
-        if conn:
-            conn.close()
+@router.post("/auton/rebuild/")
+def rebuild_auton():
+    """Drop and recreate auton tables with fresh schema and default seeds."""
+    rebuild_auton_tables()
+    return {'status': 'success', 'message': 'Auton tables rebuilt'}
 
-
-@router.delete("/auton/clear/all/")
-def clear_all_auton_waypoints():
-    """Clear ALL auton waypoints including defaults. Use with caution."""
-    conn = None
-    try:
-        conn = get_db_connection()
-        conn.execute('DELETE FROM auton_waypoints')
-        conn.execute('DELETE FROM current_auton_course')
-        conn.execute('DELETE FROM sqlite_sequence WHERE name = "auton_waypoints"')
-        conn.commit()
-        return {'status': 'success', 'message': 'All waypoints cleared'}
-    finally:
-        if conn:
-            conn.close()
 
 @router.delete("/auton/{waypoint_id}/")
 def delete_auton_waypoint(waypoint_id: int):
