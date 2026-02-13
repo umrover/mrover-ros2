@@ -64,10 +64,8 @@ namespace mrover {
 
         double K = (P) / (P + heading_correction_delta_noise);
         double innovation = heading_correction_delta_meas - X;
-        innovation = fmod((innovation + 3 * M_PI), 2 * M_PI) - M_PI;
         X = fmod((X + K * (innovation) + 3 * M_PI), 2 * M_PI) - M_PI;
         P = (1 - K) * P;
-
     }
 
     void HeadingFilter::sync_rtk_heading_callback(const mrover::msg::Heading::ConstSharedPtr &heading, const mrover::msg::FixStatus::ConstSharedPtr &heading_status) {
