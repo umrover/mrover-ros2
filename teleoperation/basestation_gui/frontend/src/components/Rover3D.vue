@@ -106,6 +106,7 @@ watch(armMessage, (msg: unknown) => {
 
   if ('type' in msg && msg.type === 'arm_state') {
     const typedMsg = msg as ControllerStateMessage
+    if (!Array.isArray(typedMsg.names)) return
     const joints = typedMsg.names.map((name: string, index: number) => {
       const urdfName = jointNameMap[name] || name
       let position = typedMsg.positions[index] ?? 0

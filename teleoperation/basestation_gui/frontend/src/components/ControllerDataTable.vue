@@ -93,6 +93,7 @@ const leftState = ref<ControllerStateMessage | null>(null)
 const rightState = ref<ControllerStateMessage | null>(null)
 
 function updateFromMessage(msg: ControllerStateMessage) {
+  if (!msg || !Array.isArray(msg.names)) return
   names.value = msg.names
   states.value = msg.states
   errors.value = msg.errors
@@ -107,17 +108,15 @@ function combineLeftRight() {
   const right = rightState.value
   if (!left && !right) return
 
-  const empty: ControllerStateMessage = { type: 'drive_left_state', names: [], states: [], errors: [], limits_hit: [], positions: [], velocities: [], currents: [] }
-  const l = left ? { ...empty, ...left } : empty
-  const r = right ? { ...empty, ...right } : empty
+  const arr = (v: unknown): unknown[] => Array.isArray(v) ? v : []
 
-  names.value = l.names.concat(r.names)
-  states.value = l.states.concat(r.states)
-  errors.value = l.errors.concat(r.errors)
-  limitHits.value = l.limits_hit.concat(r.limits_hit)
-  positions.value = l.positions.concat(r.positions)
-  velocities.value = l.velocities.concat(r.velocities)
-  currents.value = l.currents.concat(r.currents)
+  names.value = [...arr(left?.names), ...arr(right?.names)] as string[]
+  states.value = [...arr(left?.states), ...arr(right?.states)] as string[]
+  errors.value = [...arr(left?.errors), ...arr(right?.errors)] as string[]
+  limitHits.value = [...arr(left?.limits_hit), ...arr(right?.limits_hit)] as boolean[]
+  positions.value = [...arr(left?.positions), ...arr(right?.positions)] as number[]
+  velocities.value = [...arr(left?.velocities), ...arr(right?.velocities)] as number[]
+  currents.value = [...arr(left?.currents), ...arr(right?.currents)] as number[]
 }
 
 const driveMessage = computed(() => messages.value['drive'])
