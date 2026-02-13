@@ -1,79 +1,164 @@
-  import { defineStore } from 'pinia'
+import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import type { StoreWaypoint } from '@/types/waypoints'
+import L from 'leaflet'
+import type { AutonWaypoint, MapWaypoint, MapRouteWaypoint } from '@/types/waypoints'
+import { waypointsAPI } from '@/utils/api'
 
 export const useAutonomyStore = defineStore('autonomy', () => {
-  // State
-  const route = ref<StoreWaypoint[]>([])
-  const waypointList = ref<StoreWaypoint[]>([])
+  const waypoints = ref<AutonWaypoint[]>([])
+  const route = ref<AutonWaypoint[]>([])
+  const allCostmapToggle = ref(true)
+
   const highlightedWaypoint = ref(-1)
   const autonEnabled = ref(false)
   const teleopEnabled = ref(false)
+  const purePursuitEnabled = ref(false)
+  const pathRelaxationEnabled = ref(false)
+  const pathInterpolationEnabled = ref(false)
   const odomFormat = ref('DM')
   const clickPoint = ref({ lat: 0, lon: 0 })
 
-  // Getters
-  const getRoute = computed(() => route.value)
-  const getWaypointList = computed(() => waypointList.value)
-  const getHighlightedWaypoint = computed(() => highlightedWaypoint.value)
-  const isAutonEnabled = computed(() => autonEnabled.value)
-  const isTeleopEnabled = computed(() => teleopEnabled.value)
-  const getOdomFormat = computed(() => odomFormat.value)
-  const getClickPoint = computed(() => clickPoint.value)
+  const waypointListForMap = computed<MapWaypoint[]>(() =>
+    waypoints.value.map(wp => ({
+      latLng: L.latLng(wp.lat, wp.lon),
+      name: wp.name
+    }))
+  )
 
-  // Actions
-  function setRoute(newRoute: StoreWaypoint[]) {
-    route.value = newRoute
+  const routeForMap = computed<MapRouteWaypoint[]>(() =>
+    route.value.map(wp => ({
+      latLng: L.latLng(wp.lat, wp.lon),
+      name: wp.name,
+      tag_id: wp.tag_id,
+      type: wp.type,
+      enable_costmap: wp.enable_costmap
+    }))
+  )
+
+  function isInRoute(wp: AutonWaypoint): boolean {
+    return route.value.some(
+      r => r.name === wp.name && r.tag_id === wp.tag_id && r.type === wp.type
+    )
   }
 
-  function setAutonMode(newAutonEnabled: boolean) {
-    autonEnabled.value = newAutonEnabled
+  async function fetchAll() {
+    try {
+      const autonData = await waypointsAPI.getAuton()
+      if (autonData.status === 'success') {
+        waypoints.value = autonData.waypoints || []
+      }
+
+      const courseData = await waypointsAPI.getCurrentAutonCourse()
+      if (courseData.status === 'success') {
+        route.value = courseData.course || []
+      }
+    } catch (error) {
+      console.error('Failed to load waypoints:', error)
+    }
   }
 
-  function setTeleopMode(newTeleopEnabled: boolean) {
-    teleopEnabled.value = newTeleopEnabled
+  async function createWaypoint(payload: Omit<AutonWaypoint, 'db_id' | 'deletable'>) {
+    const resp = await waypointsAPI.createAuton(payload)
+    if (resp.status === 'success' && resp.waypoint) {
+      waypoints.value = [...waypoints.value, resp.waypoint]
+    }
+    return resp
   }
 
-  function setWaypointList(newList: StoreWaypoint[]) {
-    waypointList.value = newList
+  async function updateWaypoint(dbId: number, fields: Partial<AutonWaypoint>) {
+    const resp = await waypointsAPI.updateAuton(dbId, fields)
+    if (resp.status === 'success' && resp.waypoint) {
+      waypoints.value = waypoints.value.map(wp =>
+        wp.db_id === dbId ? resp.waypoint! : wp
+      )
+    }
+    return resp
   }
 
-  function setHighlightedWaypoint(newWaypoint: number) {
-    highlightedWaypoint.value = newWaypoint
+  async function deleteWaypoint(index: number) {
+    const wp = waypoints.value[index]
+    if (!wp) return
+
+    const next = [...waypoints.value]
+    next.splice(index, 1)
+    waypoints.value = next
+
+    if (wp.db_id != null && wp.deletable) {
+      try {
+        await waypointsAPI.deleteAutonWaypoint(wp)
+      } catch (error) {
+        console.error('Failed to delete waypoint:', error)
+        waypoints.value = [...waypoints.value.slice(0, index), wp, ...waypoints.value.slice(index)]
+      }
+    }
   }
 
-  function setOdomFormat(newOdomFormat: string) {
-    odomFormat.value = newOdomFormat
+  async function addToRoute(waypoint: AutonWaypoint) {
+    const newPoint = { ...waypoint, enable_costmap: allCostmapToggle.value }
+    route.value = [...route.value, newPoint]
+    await saveRoute()
   }
 
-  function setClickPoint(newClickPoint: { lat: number; lon: number }) {
-    clickPoint.value = newClickPoint
+  async function removeFromRoute(waypoint: AutonWaypoint) {
+    const index = route.value.indexOf(waypoint)
+    if (index > -1) {
+      const next = [...route.value]
+      next.splice(index, 1)
+      route.value = next
+    }
+    await saveRoute()
+  }
+
+  async function saveRoute() {
+    try {
+      await waypointsAPI.saveCurrentAutonCourse(route.value)
+    } catch (error) {
+      console.error('Failed to save current auton course:', error)
+    }
+  }
+
+  async function toggleRouteCostmap(payload: { waypoint: AutonWaypoint; enable_costmap: boolean }) {
+    route.value = route.value.map(wp =>
+      wp === payload.waypoint ? { ...wp, enable_costmap: payload.enable_costmap } : wp
+    )
+    await saveRoute()
+  }
+
+  async function toggleAllCostmaps() {
+    allCostmapToggle.value = !allCostmapToggle.value
+    route.value = route.value.map(wp => ({ ...wp, enable_costmap: allCostmapToggle.value }))
+    await saveRoute()
+  }
+
+  async function resetUserWaypoints() {
+    await waypointsAPI.clearAuton()
+    await fetchAll()
   }
 
   return {
-    // State
+    waypoints,
     route,
-    waypointList,
+    allCostmapToggle,
     highlightedWaypoint,
     autonEnabled,
     teleopEnabled,
+    purePursuitEnabled,
+    pathRelaxationEnabled,
+    pathInterpolationEnabled,
     odomFormat,
     clickPoint,
-    // Getters
-    getRoute,
-    getWaypointList,
-    getHighlightedWaypoint,
-    isAutonEnabled,
-    isTeleopEnabled,
-    getOdomFormat,
-    getClickPoint,
-    // Actions
-    setRoute,
-    setAutonMode,
-    setTeleopMode,
-    setWaypointList,
-    setHighlightedWaypoint,
-    setOdomFormat,
-    setClickPoint,
+    waypointListForMap,
+    routeForMap,
+    isInRoute,
+    fetchAll,
+    createWaypoint,
+    updateWaypoint,
+    deleteWaypoint,
+    addToRoute,
+    removeFromRoute,
+    saveRoute,
+    toggleRouteCostmap,
+    toggleAllCostmaps,
+    resetUserWaypoints,
   }
 })

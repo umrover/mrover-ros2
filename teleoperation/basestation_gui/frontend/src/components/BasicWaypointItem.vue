@@ -1,23 +1,22 @@
 <template>
-  <div
-    class="waypoints p-2"
-    v-bind:class="{ 'drone-waypoint': waypoint.drone }"
-  >
-    <div class="waypoint-header mb-1">
-      <h5 class="mb-0">{{ waypoint.name }}</h5>
-      <span class="badge bg-secondary">{{ index }}</span>
+  <div class="cmd-list-item" :class="{ 'cmd-list-item--drone': waypoint.drone }">
+    <div class="flex justify-between items-center mb-1">
+      <h5>{{ waypoint.name }}</h5>
+      <span class="cmd-data-label">#{{ index }}</span>
     </div>
 
-    <div class="coordinates mb-2 w-100">
-      <p class="coordinate m-0">{{ waypoint.latLng.lat.toFixed(5) }}ºN</p>
-      <span class="mx-2">|</span>
-      <p class="coordinate m-0">{{ waypoint.latLng.lng.toFixed(5) }}ºW</p>
+    <div class="flex items-baseline gap-1 mb-2">
+      <span class="cmd-data-value waypoint-coord">{{ waypoint.lat.toFixed(5) }}</span>
+      <span class="cmd-data-unit">N</span>
+      <span class="text-muted mx-1">|</span>
+      <span class="cmd-data-value waypoint-coord">{{ waypoint.lon.toFixed(5) }}</span>
+      <span class="cmd-data-unit">W</span>
     </div>
 
-    <div class="d-flex w-100 gap-2">
-      <button class="btn btn-success btn-sm w-100" @click="$emit('find', { index: index })">Find</button>
-      <button class="btn btn-success btn-sm w-100" @click="$emit('search', {index: index})">Search</button>
-      <button class="btn btn-danger btn-sm w-100" @click="$emit('delete', { index: index })">Delete</button>
+    <div class="flex gap-1">
+      <button class="cmd-btn cmd-btn-success cmd-btn-sm flex-1" @click="$emit('find', { index: index })">Find</button>
+      <button class="cmd-btn cmd-btn-success cmd-btn-sm flex-1" @click="$emit('search', {index: index})">Search</button>
+      <button class="cmd-btn cmd-btn-sm cmd-btn-outline-primary flex-1" @click="$emit('delete', { index: index })">Delete</button>
     </div>
   </div>
 </template>
@@ -36,35 +35,16 @@ defineProps({
 </script>
 
 <style scoped>
-.waypoints {
-  background-color: var(--card-bg);
-  border-radius: 6px;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+.waypoint-coord {
+  font-size: 0.9375rem;
 }
 
-.waypoint-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+.cmd-list-item--drone {
+  background-color: rgb(30 102 245 / 5%);
+  border-color: var(--cmd-status-info) !important;
 }
 
-.coordinates {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  width: 100%;
-}
-
-.coordinate {
-  text-align: center;
-  flex: 1;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.drone-waypoint {
-  background-color: #bbeeff;
-  border: 1px solid cyan;
+:is([data-theme='dark'], [data-theme='high-contrast-dark']) .cmd-list-item--drone {
+  background-color: rgb(137 180 250 / 10%);
 }
 </style>
