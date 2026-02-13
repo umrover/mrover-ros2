@@ -12,7 +12,7 @@ from rclpy.publisher import Publisher
 from rclpy.time import Time
 from rclpy.timer import Timer
 from rclpy.duration import Duration
-from navigation.coordinate_utils import is_high_cost_point, d_calc, segment_path, cartesian_to_ij, ij_to_cartesian, publish_trajectory
+from navigation.coordinate_utils import is_high_cost_point, d_calc, segment_path, cartesian_to_ij, ij_to_cartesian
 
 
 class ApproachTargetState(State):

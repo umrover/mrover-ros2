@@ -531,7 +531,7 @@ class DriveController:
         else:
             waypoints.decerement_point()
             intersections.append([x2, y2, 0.0])
-            self.node.get_logger().info("No Valid Intersection")
+            # self.node.get_logger().info("No Valid Intersection")
             return intersections
 
         if (valid_intersection_1):
@@ -543,7 +543,7 @@ class DriveController:
 
         if not len(intersections):
             intersections.append([x2, y2, 0.0])
-            self.node.get_logger().info("No Intersections")
+            # self.node.get_logger().info("No Intersections")
         return intersections
 
     def display_markers(

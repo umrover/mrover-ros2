@@ -381,8 +381,6 @@ class Context:
     costmap_listener: Subscription
     path_history_publisher: Publisher
     path_marker_publisher: Publisher
-    relaxed_publisher: Publisher
-    interpolated_publisher: Publisher
     COSTMAP_THRESH: float
     current_dilation_radius: float
     exec: SingleThreadedExecutor
@@ -428,8 +426,6 @@ class Context:
         self.search_point_publisher = node.create_publisher(GPSPointList, "search_path", 1)
         self.path_history_publisher = node.create_publisher(Path, "ground_truth_path", 10)
         self.path_marker_publisher = node.create_publisher(Marker, "path_marker", 1)
-        self.relaxed_publisher = node.create_publisher(MarkerArray, "relaxed_path", 10)
-        self.interpolated_publisher = node.create_publisher(MarkerArray, "interpolated_path", 10)
         self.tf_broadcaster = tf2_ros.StaticTransformBroadcaster(node)
 
         # subscribers

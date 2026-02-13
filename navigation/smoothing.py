@@ -1,6 +1,6 @@
 from navigation.trajectory import Trajectory
 from navigation.context import Context, CostMap
-from navigation.coordinate_utils import cartesian_to_ij, ij_to_cartesian, publish_trajectory
+from navigation.coordinate_utils import cartesian_to_ij, ij_to_cartesian
 
 from scipy.interpolate import splev, splprep
 import numpy as np
@@ -37,15 +37,14 @@ def smoothing(trajectory: Trajectory, context: Context, should_relax: bool, shou
     
     
     output = Trajectory(cartesian_coords)
-    publish_trajectory(output, context, context.relaxed_publisher, [1.0, 0.0, 0.0])
+    context.publish_path_marker(output.coordinates,[1.0, 0.0, 0.0],"relaxed_path")
 
     if should_interpolate:
         # Perform spline interpolation
         spline_path = SplineInterpolation.interpolate(context, output, spacing=2.0)
         plot_spline_path = SplineInterpolation.interpolate(context, output, spacing=0.1)
 
-
-        publish_trajectory(plot_spline_path, context, context.interpolated_publisher, [0.0, 1.0, 0.0], size=0.1)
+        context.publish_path_marker(plot_spline_path.coordinates,[0.0, 1.0, 0.0],"interpolated_path",0.1)
 
         # Check if new interpolated spline is worse than relaxed/original trajectory
         spline_cost = Relaxation.cost_full(context, spline_path)[0]

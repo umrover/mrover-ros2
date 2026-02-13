@@ -4,9 +4,9 @@ from visualization_msgs.msg import Marker, MarkerArray
 from rclpy.duration import Duration
 from rclpy.time import Time
 from std_msgs.msg import Header
+from rclpy.publisher import Publisher
 from navigation.trajectory import Trajectory
 from lie import SE3
-from rclpy.publisher import Publisher
 
 def cartesian_to_ij(context: Context, cart_coord: np.ndarray) -> np.ndarray:
     """
