@@ -1,46 +1,46 @@
 <template>
-  <div class="d-flex justify-content-center" style="user-select: none;">
+  <div class="flex justify-center" style="user-select: none;">
     <div
       v-if="Object.keys(connectionStatus as Record<string, any>).length > 0"
-      class="justify-content-center align-items-center border border-2 rounded px-1 me-1"
+      class="justify-center items-center border border-2 rounded px-1 mr-1"
     >
-      <div class="d-flex align-items-center gap-2">
+      <div class="flex items-center gap-2">
         <IndicatorDot :is-active="true" />
-        <span class="fw-semibold">= TX</span>
+        <span class="font-semibold">= TX</span>
       </div>
-      <div class="d-flex align-items-center gap-2">
+      <div class="flex items-center gap-2">
         <IndicatorDot :is-active="false" />
-        <span class="fw-semibold">= RX</span>
+        <span class="font-semibold">= RX</span>
       </div>
     </div>
-    <div class="gap-1 d-flex">
+    <div class="gap-1 flex">
       <div
         v-for="(status, id) in connectionStatus"
         :key="id"
         :class="[
-          'mx-0 flex-column align-items-center border border-2 rounded p-1',
-          status === 'disconnected' ? 'bg-warning' : ''
+          'mx-0 flex-col items-center border border-2 rounded p-1',
+          status === 'disconnected' ? 'bg-cmd-warning' : ''
         ]"
       >
-        <p class="fw-bold m-0 p-0 text-center">{{ getAlias(id) }}</p>
+        <p class="font-bold text-center">{{ getAlias(id) }}</p>
 
-        <div class="d-flex justify-content-center align-items-center gap-2">
+        <div class="flex justify-center items-center gap-2">
           <div
-            class="rounded-circle"
-            :class="isFlashingOut(id) ? 'bg-success' : 'bg-secondary'"
+            class="rounded-full"
+            :class="flashOutDisplay[id] ? 'bg-cmd-success' : 'bg-cmd-secondary'"
             style="width: 16px; height: 16px"
           ></div>
           <div
-            class="rounded-circle"
-            :class="isFlashingIn(id) ? 'bg-danger' : 'bg-secondary'"
+            class="rounded-full"
+            :class="flashInDisplay[id] ? 'bg-cmd-danger' : 'bg-cmd-secondary'"
             style="width: 16px; height: 16px"
           ></div>
         </div>
       </div>
     </div>
-    <div class="border border-2 rounded px-1 ms-1 d-flex flex-column justify-content-center">
-      <div class="d-flex gap-2"><span class="text-success fw-semibold">TX</span> {{ txMsgRate }}/s {{ formatBytes(txByteRate) }}/s</div>
-      <div class="d-flex gap-2"><span class="text-danger fw-semibold">RX</span> {{ rxMsgRate }}/s {{ formatBytes(rxByteRate) }}/s</div>
+    <div class="border border-2 rounded px-1 ml-1 flex flex-col justify-center">
+      <div class="flex gap-2"><span class="text-cmd-success font-semibold">TX</span> {{ txMsgRate }}/s {{ formatBytes(txByteRate) }}/s</div>
+      <div class="flex gap-2"><span class="text-cmd-danger font-semibold">RX</span> {{ rxMsgRate }}/s {{ formatBytes(rxByteRate) }}/s</div>
     </div>
   </div>
 </template>
@@ -52,12 +52,15 @@ import { storeToRefs } from 'pinia'
 import IndicatorDot from './IndicatorDot.vue'
 
 const websocketStore = useWebsocketStore()
-const { connectionStatus, incomingMessages, outgoingMessages, incomingBytes, outgoingBytes } = storeToRefs(websocketStore)
-const { isFlashingIn, isFlashingOut } = websocketStore
+const { connectionStatus } = storeToRefs(websocketStore)
+const { getFlashIn, getFlashOut, getIncomingMessages, getOutgoingMessages, getIncomingBytes, getOutgoingBytes } = websocketStore
+
+const flashInDisplay = ref<Record<string, boolean>>({})
+const flashOutDisplay = ref<Record<string, boolean>>({})
 
 const aliasMap: Record<string, string> = {
   arm: 'arm',
-  drive: 'drive',
+  drive: 'drv',
   chassis: 'cha',
   nav: 'nav',
   science: 'sci',
@@ -86,10 +89,10 @@ function sumValues(obj: Record<string, number>): number {
 }
 
 function updateRates() {
-  const inMsgs = sumValues(incomingMessages.value)
-  const outMsgs = sumValues(outgoingMessages.value)
-  const inBytes = sumValues(incomingBytes.value)
-  const outBytes = sumValues(outgoingBytes.value)
+  const inMsgs = sumValues(getIncomingMessages())
+  const outMsgs = sumValues(getOutgoingMessages())
+  const inBytes = sumValues(getIncomingBytes())
+  const outBytes = sumValues(getOutgoingBytes())
 
   rxMsgRate.value = (inMsgs - prevInMsgs) * RATE_MULTIPLIER
   txMsgRate.value = (outMsgs - prevOutMsgs) * RATE_MULTIPLIER
@@ -100,6 +103,11 @@ function updateRates() {
   prevOutMsgs = outMsgs
   prevInBytes = inBytes
   prevOutBytes = outBytes
+
+  for (const id of Object.keys(connectionStatus.value)) {
+    flashInDisplay.value[id] = getFlashIn(id)
+    flashOutDisplay.value[id] = getFlashOut(id)
+  }
 }
 
 function formatBytes(bytes: number): string {
@@ -116,3 +124,4 @@ onBeforeUnmount(() => {
   if (interval) window.clearInterval(interval)
 })
 </script>
+
