@@ -60,10 +60,10 @@ can_bridge_2:
         id: 0x31
       joint_c:
         id: 0x32
-#      joint_de_0:
-#        id: 0x33
-#      joint_de_1:
-#        id: 0x34
+      joint_de_0:
+        id: 0x33
+      joint_de_1:
+        id: 0x34
       gripper:
         id: 0x35
 #      pusher:

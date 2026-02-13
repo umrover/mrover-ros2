@@ -287,8 +287,8 @@ namespace mrover {
                     auto result = moteus::Query::Parse(val.data, val.size);
 
                     if (this->mControllerName.find("joint_de") != std::string::npos) {
-                        mPosition = result.extra[0].value;
-                        mVelocity = result.extra[1].value;
+                        mPosition = result.extra[0].value * 2.0f * M_PI;
+                        mVelocity = result.extra[1].value * 2.0f * M_PI;
                     } else {
                         mPosition = static_cast<float>(result.position);
                         mVelocity = static_cast<float>(result.velocity);

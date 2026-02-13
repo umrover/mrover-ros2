@@ -95,7 +95,7 @@ namespace mrover {
 
             mProbeTimer = create_wall_timer(
                     mProbeInterval,
-                    [this]() {
+                    [this]() -> void {
                         probeIfBrushless(mJointA, "joint_a");
                         probeIfBrushless(mJointC, "joint_c");
                         probeIfBrushless(mJointDE0, "joint_de_0");
@@ -104,7 +104,7 @@ namespace mrover {
 
             mPublishDataTimer = create_wall_timer(
                     std::chrono::milliseconds(100),
-                    [this]() { publishDataCallback(); });
+                    [this]() -> void { publishDataCallback(); });
             mControllerStatePub = create_publisher<msg::ControllerState>("arm_controller_state", 1);
 
             mControllerState.names = mJointNames;
@@ -183,7 +183,7 @@ namespace mrover {
             }
         }
 
-        auto bRadiansToMeters(Radians const rad) -> Meters {
+        auto bRadiansToMeters(Radians const rad) const -> Meters {
             auto const standard_rad = -rad;
 
             auto const a = mJointBMountLength;
@@ -202,7 +202,7 @@ namespace mrover {
             return b - mJointBActuatorLength;
         }
 
-        auto bMetersToRadians(Meters const len) -> Radians {
+        auto bMetersToRadians(Meters const len) const -> Radians {
             auto const a = mJointBMountLength;
             auto const b = mJointBActuatorLength + len;
             auto const c = mJointBSegmentLength;
@@ -223,7 +223,7 @@ namespace mrover {
             return -standard_rad;
         }
 
-        auto bVelocityToAngular(MetersPerSecond const vel, Meters const current_len, Radians const current_rad) -> RadiansPerSecond {
+        auto bVelocityToAngular(MetersPerSecond const vel, Meters const current_len, Radians const current_rad) const -> RadiansPerSecond {
             auto const a = mJointBMountLength;
             auto const c = mJointBSegmentLength;
             auto const b = mJointBActuatorLength + current_len;
@@ -240,7 +240,7 @@ namespace mrover {
             return RadiansPerSecond{-omega_standard};
         }
 
-        auto bAngularToVelocity(RadiansPerSecond const omega, Meters const current_len, Radians const current_rad) -> MetersPerSecond {
+        auto bAngularToVelocity(RadiansPerSecond const omega, Meters const current_len, Radians const current_rad) const -> MetersPerSecond {
             auto const a = mJointBMountLength;
             auto const c = mJointBSegmentLength;
             auto const b = mJointBActuatorLength + current_len;
@@ -437,34 +437,34 @@ namespace mrover {
                         mPusher->setDesiredPosition(Meters{position});
                         break;
                 }
+            }
 
-                if (jointDePitchPosition.has_value() || jointDeRollPosition.has_value()) {
-                    if (!mJointDePitchRoll.has_value()) {
-                        RCLCPP_WARN(get_logger(), "Commanding Joint DE position with no position readings! Not commanding position");
-                        return;
-                    }
-
-                    if (!jointDePitchPosition.has_value()) {
-                        jointDePitchPosition = (*mJointDePitchRoll)[0];
-                    } else if (!jointDeRollPosition.has_value()) {
-                        jointDeRollPosition = (*mJointDePitchRoll)[1];
-                    }
-
-                    if ((*jointDePitchPosition >= mJointDePitchMaxPosition) || (*jointDePitchPosition <= mJointDePitchMinPosition)) {
-                        RCLCPP_INFO(get_logger(), "Joint DE Pitch limit hit!");
-                        jointDePitchPosition = (*mJointDePitchRoll)[0];
-                    }
-                    if ((*jointDeRollPosition >= mJointDeRollMaxPosition) || (*jointDeRollPosition <= mJointDeRollMinPosition)) {
-                        RCLCPP_INFO(get_logger(), "Joint DE Roll limit hit!");
-                        jointDeRollPosition = (*mJointDePitchRoll)[1];
-                    }
-
-                    Vector2<Radians> const pitchRollPositions{jointDePitchPosition.value(), jointDeRollPosition.value()};
-                    Vector2<Radians> motorPositions = PITCH_ROLL_TO_01_SCALE * PITCH_ROLL_TO_0_1 * pitchRollPositions;
-
-                    mJointDE0->setDesiredPosition(motorPositions[0]);
-                    mJointDE1->setDesiredPosition(motorPositions[1]);
+            if (jointDePitchPosition.has_value() || jointDeRollPosition.has_value()) {
+                if (!mJointDePitchRoll.has_value()) {
+                    RCLCPP_WARN(get_logger(), "Commanding Joint DE position with no position readings! Not commanding position");
+                    return;
                 }
+
+                if (!jointDePitchPosition.has_value()) {
+                    jointDePitchPosition = (*mJointDePitchRoll)[0];
+                } else if (!jointDeRollPosition.has_value()) {
+                    jointDeRollPosition = (*mJointDePitchRoll)[1];
+                }
+
+                if ((*jointDePitchPosition >= mJointDePitchMaxPosition) || (*jointDePitchPosition <= mJointDePitchMinPosition)) {
+                    RCLCPP_INFO(get_logger(), "Joint DE Pitch limit hit!");
+                    jointDePitchPosition = (*mJointDePitchRoll)[0];
+                }
+                if ((*jointDeRollPosition >= mJointDeRollMaxPosition) || (*jointDeRollPosition <= mJointDeRollMinPosition)) {
+                    RCLCPP_INFO(get_logger(), "Joint DE Roll limit hit!");
+                    jointDeRollPosition = (*mJointDePitchRoll)[1];
+                }
+
+                Vector2<Radians> const pitchRollPositions{jointDePitchPosition.value(), jointDeRollPosition.value()};
+                Vector2<Radians> motorPositions = PITCH_ROLL_TO_01_SCALE * PITCH_ROLL_TO_0_1 * pitchRollPositions;
+
+                mJointDE0->setDesiredPosition(motorPositions[0]);
+                mJointDE1->setDesiredPosition(motorPositions[1]);
             }
         }
 
@@ -477,8 +477,8 @@ namespace mrover {
         auto publishDataCallback() -> void {
             mControllerState.header.stamp = now();
 
-            auto const pitchWrapped = wrapAngle((Radians{mJointDE0->getPosition()} - mJointDePitchOffset).get());
-            auto const rollWrapped = wrapAngle((Radians{mJointDE1->getPosition()} - mJointDeRollOffset).get());
+            auto const pitchWrapped = wrapAngle((Radians{mJointDE1->getPosition()} - mJointDePitchOffset).get());
+            auto const rollWrapped = wrapAngle((Radians{mJointDE0->getPosition()} - mJointDeRollOffset).get());
             mJointDePitchRoll = {pitchWrapped, rollWrapped};
 
             for (std::size_t i = 0; i < mJointNames.size(); ++i) {
@@ -487,21 +487,21 @@ namespace mrover {
                 switch (name.front() + name.back()) {
                     case 'j' + 'h':
                         mControllerState.names[i] = name;
-                        mControllerState.states[i] = mJointDE0->getState();
-                        mControllerState.errors[i] = mJointDE0->getError();
-                        mControllerState.positions[i] = pitchWrapped;
-                        mControllerState.velocities[i] = {RadiansPerSecond{mJointDE0->getVelocity()}.get()};
-                        mControllerState.currents[i] = mJointDE0->getCurrent();
-                        mControllerState.limits_hit[i] = mJointDE0->getLimitsHitBits();
-                        break;
-                    case 'j' + 'l':
-                        mControllerState.names[i] = name;
                         mControllerState.states[i] = mJointDE1->getState();
                         mControllerState.errors[i] = mJointDE1->getError();
-                        mControllerState.positions[i] = rollWrapped;
+                        mControllerState.positions[i] = pitchWrapped;
                         mControllerState.velocities[i] = {RadiansPerSecond{mJointDE1->getVelocity()}.get()};
                         mControllerState.currents[i] = mJointDE1->getCurrent();
                         mControllerState.limits_hit[i] = mJointDE1->getLimitsHitBits();
+                        break;
+                    case 'j' + 'l':
+                        mControllerState.names[i] = name;
+                        mControllerState.states[i] = mJointDE0->getState();
+                        mControllerState.errors[i] = mJointDE0->getError();
+                        mControllerState.positions[i] = rollWrapped;
+                        mControllerState.velocities[i] = {RadiansPerSecond{mJointDE0->getVelocity()}.get()};
+                        mControllerState.currents[i] = mJointDE0->getCurrent();
+                        mControllerState.limits_hit[i] = mJointDE0->getLimitsHitBits();
                         break;
                     case 'j' + 'a':
                         mControllerState.names[i] = name;
@@ -559,8 +559,6 @@ namespace mrover {
             mControllerStatePub->publish(mControllerState);
         }
 
-        auto queryMoteusCallback() -> void {
-        }
     };
 } // namespace mrover
 
