@@ -1,3 +1,5 @@
+import os
+
 from fastapi import APIRouter, HTTPException
 import numpy as np
 import cv2
@@ -5,9 +7,10 @@ import cv2
 from backend.managers.ros import get_node, get_service_client
 from backend.models_pydantic import GimbalAdjustRequest, ServoPositionRequest
 from backend.utils.ros_service import call_service_async
+from backend.database import BASE_DIR
 from mrover.srv import PanoramaStart, PanoramaEnd, ServoPosition
 
-router = APIRouter(prefix="/api", tags=["chassis"])
+router = APIRouter(prefix="/api/chassis", tags=["chassis"])
 
 
 @router.post("/panorama/start/")
@@ -51,7 +54,9 @@ async def panorama_stop():
 
         node = get_node()
         timestamp = node.get_clock().now().nanoseconds
-        filename = f"../../data/{timestamp}_panorama.png"
+        data_dir = os.path.join(BASE_DIR, 'data')
+        os.makedirs(data_dir, exist_ok=True)
+        filename = os.path.join(data_dir, f"{timestamp}_panorama.png")
         cv2.imwrite(filename, img_np)
 
         return {

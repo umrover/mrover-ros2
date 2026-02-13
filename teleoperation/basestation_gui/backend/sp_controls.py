@@ -1,20 +1,10 @@
 from enum import Enum
-from math import pi
-from typing import Union
 
-# import rospy
-from rclpy.node import Node
 from rclpy.publisher import Publisher
-from rclpy.client import Client
 
-from backend.input import filter_input, simulated_axis, safe_index, DeviceInputs
+from backend.input import filter_input, simulated_axis, DeviceInputs
 from backend.mappings import ControllerAxis, ControllerButton
 from mrover.msg import Throttle
-
-import logging
-logger = logging.getLogger('django')
-
-TAU = 2 * pi
 
 
 class Joint(Enum):
