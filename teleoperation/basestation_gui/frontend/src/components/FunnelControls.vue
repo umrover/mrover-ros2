@@ -82,7 +82,7 @@ const SITE_LABELS = ['Cache', 'A Buret', 'A Griess', 'Trash', 'B Buret', 'B Grie
 const confirmedSite = ref(0)
 const pendingSite = ref<number | null>(null)
 const isLoading = ref(false)
-const atTarget = ref(false)
+const atTarget = ref<boolean | null>(null)
 const offsetDeg = ref(Number(localStorage.getItem(OFFSET_STORAGE_KEY)) || 0)
 
 const currentPositionDeg = computed(() =>
