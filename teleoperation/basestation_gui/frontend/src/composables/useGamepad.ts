@@ -1,27 +1,30 @@
 import { ref, onMounted, onBeforeUnmount, type Ref } from 'vue'
 import { useWebsocketStore } from '@/stores/websocket'
 
-export interface UseGamepadPollingOptions {
+export interface UseGamepadOptions {
   controllerIdFilter: string
-  topic: string
-  messageType: string
   hz?: number
   transformAxes?: (axes: number[]) => number[]
+  ws?: {
+    topic: string
+    messageType: string
+  }
 }
 
-export interface UseGamepadPollingReturn {
+export interface UseGamepadReturn {
   connected: Ref<boolean>
   axes: Ref<number[]>
   buttons: Ref<number[]>
 }
 
-export function useGamepadPolling(options: UseGamepadPollingOptions): UseGamepadPollingReturn {
-  const { controllerIdFilter, topic, messageType, hz = 15, transformAxes } = options
-  const websocketStore = useWebsocketStore()
+export function useGamepad(options: UseGamepadOptions): UseGamepadReturn {
+  const { controllerIdFilter, hz = 15, transformAxes, ws } = options
 
   const connected = ref(false)
   const axes = ref<number[]>([0, 0, 0, 0])
   const buttons = ref<number[]>(new Array(17).fill(0))
+
+  const websocketStore = ws ? useWebsocketStore() : null
 
   let interval: number | undefined
 
@@ -34,16 +37,18 @@ export function useGamepadPolling(options: UseGamepadPollingOptions): UseGamepad
 
       const rawAxes = Array.from(gamepad.axes)
       const mappedButtons = gamepad.buttons.map(b => b.value)
+      const finalAxes = transformAxes ? transformAxes(rawAxes) : rawAxes
 
-      axes.value = transformAxes ? transformAxes(rawAxes) : rawAxes
+      axes.value = finalAxes
       buttons.value = mappedButtons
 
-      const sendAxes = transformAxes ? transformAxes(rawAxes) : rawAxes
-      websocketStore.sendMessage(topic, {
-        type: messageType,
-        axes: sendAxes,
-        buttons: mappedButtons,
-      })
+      if (websocketStore && ws) {
+        websocketStore.sendMessage(ws.topic, {
+          type: ws.messageType,
+          axes: finalAxes,
+          buttons: mappedButtons,
+        })
+      }
     }, 1000 / hz)
   })
 

@@ -5,10 +5,10 @@ from rclpy.node import Node
 
 # import service
 from std_srvs.srv import SetBool
-from mrover.srv import EnableBool
+from mrover.srv import ServoPosition
 
-SERVICE_TYPE = EnableBool
-SERVICE_NAME = "/science_enable_white_led_a"
+SERVICE_TYPE = ServoPosition
+SERVICE_NAME = "/sp_funnel_servo"
 
 
 class Service(Node):
@@ -19,9 +19,7 @@ class Service(Node):
         self.srv = self.create_service(SERVICE_TYPE, SERVICE_NAME, self.callback)
 
     def callback(self, request, response):
-        response.success = True
         self.get_logger().info(f"Incoming request: {request}")
-
         return response
 
 

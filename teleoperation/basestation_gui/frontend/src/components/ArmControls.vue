@@ -1,7 +1,7 @@
 <template>
   <div class="flex flex-col gap-2 h-full">
     <div class="flex justify-between items-center">
-      <h4 class="component-header">Arm Controls</h4>
+      <h4 class="component-header">Arm</h4>
       <IndicatorDot :is-active="connected" class="mr-2" />
     </div>
     <div class="btn-group w-full" role="group" aria-label="Arm mode selection" data-testid="pw-arm-mode-buttons">
@@ -49,16 +49,15 @@
 <script lang="ts" setup>
 import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { armAPI } from '@/utils/api'
-import { useGamepadPolling } from '@/composables/useGamepadPolling'
+import { useGamepad } from '@/composables/useGamepad'
 import GamepadDisplay from './GamepadDisplay.vue'
 import IndicatorDot from './IndicatorDot.vue'
 
 const mode = ref('disabled')
 
-const { connected, axes, buttons } = useGamepadPolling({
+const { connected, axes, buttons } = useGamepad({
   controllerIdFilter: 'Microsoft',
-  topic: 'arm',
-  messageType: 'ra_controller',
+  ws: { topic: 'arm', messageType: 'ra_controller' },
 })
 
 const keyDown = async (event: { key: string }) => {

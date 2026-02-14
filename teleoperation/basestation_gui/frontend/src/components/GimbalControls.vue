@@ -1,7 +1,7 @@
 <template>
   <div class="flex flex-col gap-1 w-full h-full overflow-hidden" data-testid="pw-gimbal-controls">
     <div class="flex justify-between items-center w-full">
-      <h4 class="component-header">Gimbal Controls</h4>
+      <h4 class="component-header">Gimbal</h4>
       <div class="flex items-center">
         <i
           v-if="!hasServoState"

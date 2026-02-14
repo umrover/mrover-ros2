@@ -68,8 +68,8 @@ class GimbalAdjustRequest(BaseModel):
     adjustment: float = Field(ge=-3.14159, le=3.14159)
     absolute: bool = False
 
-class GearDiffRequest(BaseModel):
-    position: float = Field(ge=-3.14159, le=3.14159)
+class ServoPositionCommand(BaseModel):
+    position: float = Field(ge=0.0, le=6.28319)
     is_counterclockwise: bool = False
 
 class RecordingCreateRequest(BaseModel):

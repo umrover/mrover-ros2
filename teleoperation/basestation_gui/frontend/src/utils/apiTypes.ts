@@ -80,3 +80,8 @@ export interface RecordingWaypointsResponse extends APIResponse {
 export interface RAModeResponse extends APIResponse {
   mode?: string
 }
+
+export interface ServoResponse extends APIResponse {
+  position?: number
+  at_tgt?: boolean
+}

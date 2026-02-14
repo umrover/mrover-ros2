@@ -1,7 +1,7 @@
 import asyncio
 
 
-async def call_service_async(client, request, timeout=10.0):
+async def call_service_async(client, request, timeout=1.0):
     loop = asyncio.get_running_loop()
     future = client.call_async(request)
     event = asyncio.Event()
