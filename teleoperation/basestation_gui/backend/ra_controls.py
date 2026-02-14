@@ -133,7 +133,7 @@ def compute_manual_joint_controls(controller: DeviceInputs) -> list[float]:
             deadzone=CONTROLLER_STICK_DEADZONE,
         ),
         filter_input(
-            simulated_axis(controller.axes, ControllerAxis.RIGHT_TRIGGER, ControllerAxis.LEFT_TRIGGER),
+            simulated_axis(controller.buttons, ControllerButton.RIGHT_TRIGGER, ControllerButton.LEFT_TRIGGER),
             scale=JOINT_SCALES[Joint.DE_PITCH.value],
         ),
         filter_input(
@@ -176,7 +176,7 @@ def send_ra_controls(
                     ik_pos_msg.pos.x = (-1.0) * safe_index(inputs.axes, ControllerAxis.LEFT_Y)
                     ik_pos_msg.pos.y = (-1.0) * safe_index(inputs.axes, ControllerAxis.LEFT_X)
                     ik_pos_msg.pos.z = (-1.0) * safe_index(inputs.axes, ControllerAxis.RIGHT_Y)
-                    ik_pos_msg.pitch = 1.0 * simulated_axis(inputs.axes, ControllerAxis.RIGHT_TRIGGER, ControllerAxis.LEFT_TRIGGER)
+                    ik_pos_msg.pitch = 1.0 * simulated_axis(inputs.buttons, ControllerButton.RIGHT_TRIGGER, ControllerButton.LEFT_TRIGGER)
                     ik_pos_msg.roll = 1.0 * simulated_axis(inputs.buttons, ControllerButton.RIGHT_BUMPER, ControllerButton.LEFT_BUMPER)
                     ee_pos_pub.publish(ik_pos_msg)
                 case "ik-vel":
@@ -185,7 +185,7 @@ def send_ra_controls(
                     ik_vel_msg.linear.y = (-1.0) * filter_input(safe_index(inputs.axes, ControllerAxis.LEFT_X), deadzone=CONTROLLER_STICK_DEADZONE)
                     ik_vel_msg.linear.z = (-1.0) * filter_input(safe_index(inputs.axes, ControllerAxis.RIGHT_Y), deadzone=CONTROLLER_STICK_DEADZONE)
                     ik_vel_msg.angular.y = 1.0 * simulated_axis(inputs.buttons, ControllerButton.RIGHT_BUMPER, ControllerButton.LEFT_BUMPER)
-                    ik_vel_msg.angular.x = 1.0 * simulated_axis(inputs.axes, ControllerAxis.RIGHT_TRIGGER, ControllerAxis.LEFT_TRIGGER)
+                    ik_vel_msg.angular.x = 1.0 * simulated_axis(inputs.buttons, ControllerButton.RIGHT_TRIGGER, ControllerButton.LEFT_TRIGGER)
                     ee_vel_pub.publish(ik_vel_msg)
 
                     manual_controls = compute_manual_joint_controls(inputs)

@@ -3,10 +3,6 @@ class ControllerAxis:
     LEFT_Y = 1
     RIGHT_X = 2
     RIGHT_Y = 3
-    LEFT_TRIGGER = 4
-    RIGHT_TRIGGER = 5
-    DPAD_X = 6
-    DPAD_Y = 7
 
 class ControllerButton:
     A = 0
@@ -15,16 +11,17 @@ class ControllerButton:
     Y = 3
     LEFT_BUMPER = 4
     RIGHT_BUMPER = 5
-    BACK = 6
-    START = 7
-    HOME = 8
-    LEFT_STICK = 9
-    RIGHT_STICK = 10
-    DPAD_UP = 11
-    DPAD_DOWN = 12
-    DPAD_LEFT = 13
-    DPAD_RIGHT = 14
-    FORWARD = 15 # Not standard, but used in code
+    LEFT_TRIGGER = 6
+    RIGHT_TRIGGER = 7
+    BACK = 8
+    START = 9
+    LEFT_STICK = 10
+    RIGHT_STICK = 11
+    DPAD_UP = 12
+    DPAD_DOWN = 13
+    DPAD_LEFT = 14
+    DPAD_RIGHT = 15
+    HOME = 16
 
 class JoystickAxis:
     FORWARD_BACK = 1
