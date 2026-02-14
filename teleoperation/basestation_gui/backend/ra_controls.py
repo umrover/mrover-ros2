@@ -133,7 +133,7 @@ def compute_manual_joint_controls(controller: DeviceInputs) -> list[float]:
             deadzone=CONTROLLER_STICK_DEADZONE,
         ),
         filter_input(
-            simulated_axis(controller.axes, ControllerAxis.RIGHT_TRIGGER, ControllerAxis.LEFT_TRIGGER),
+            simulated_axis(controller.buttons, ControllerAxis.RIGHT_TRIGGER, ControllerAxis.LEFT_TRIGGER),
             scale=JOINT_SCALES[Joint.DE_PITCH.value],
         ),
         filter_input(
