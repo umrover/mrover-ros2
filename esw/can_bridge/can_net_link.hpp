@@ -18,17 +18,17 @@ namespace mrover {
         }
 
         auto operator=(CanNetLink&& other) noexcept -> CanNetLink& {
-            mInterface = std::move(other.mInterface);
-            mSocket = std::exchange(other.mSocket, nullptr);
-            mCache = std::exchange(other.mCache, nullptr);
+            m_interface = std::move(other.m_interface);
+            m_socket = std::exchange(other.m_socket, nullptr);
+            m_cache = std::exchange(other.m_cache, nullptr);
             return *this;
         }
 
         ~CanNetLink();
 
-        std::string mInterface{};
-        nl_cache* mCache{};
-        nl_sock* mSocket{};
+        std::string m_interface{};
+        nl_cache* m_cache{};
+        nl_sock* m_socket{};
     };
 
 } // namespace mrover

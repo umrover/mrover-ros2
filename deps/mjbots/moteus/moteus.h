@@ -73,6 +73,7 @@ class Controller {
     VFOCMode::Format vfoc_format;
     CurrentMode::Format current_format;
     StayWithinMode::Format stay_within_format;
+    ZeroVelocityMode::Format zero_velocity_format;
 
     // Use the given prefix for all CAN IDs.
     uint32_t can_prefix = 0x0000;
@@ -193,6 +194,35 @@ class Controller {
 
 
   /////////////////////////////////////////
+  // ZeroVelocityMode
+
+  CanFdFrame MakeZeroVelocity(const ZeroVelocityMode::Command& cmd = {},
+                               const ZeroVelocityMode::Format* command_override = nullptr,
+                               const Query::Format* query_override = nullptr) {
+    return MakeFrame(
+        ZeroVelocityMode(), cmd,
+        (command_override == nullptr ?
+         options_.zero_velocity_format : *command_override),
+        query_override);
+  }
+
+  Optional<Result> SetZeroVelocity(const ZeroVelocityMode::Command& cmd = {},
+                                    const ZeroVelocityMode::Format* command_override = nullptr,
+                                    const Query::Format* query_override = nullptr) {
+    return ExecuteSingleCommand(
+        MakeZeroVelocity(cmd, command_override, query_override));
+  }
+
+  void AsyncZeroVelocity(const ZeroVelocityMode::Command& cmd,
+                         Result* result, CompletionCallback callback,
+                         const ZeroVelocityMode::Format* command_override = nullptr,
+                         const Query::Format* query_override = nullptr) {
+    AsyncStartSingleCommand(MakeZeroVelocity(cmd, command_override, query_override),
+                            result, callback);
+  }
+
+
+  /////////////////////////////////////////
   // PositionMode
 
   CanFdFrame MakePosition(const PositionMode::Command& cmd,
@@ -224,6 +254,8 @@ class Controller {
   /// Repeatedly send a position command until the reported
   /// trajectory_complete flag is true.  This will always enable a
   /// query and will return the result of the final such response.
+  ///
+  /// It will return early if a fault is reported.
   Optional<Result> SetPositionWaitComplete(
       const PositionMode::Command& cmd,
       double period_s,
@@ -240,7 +272,9 @@ class Controller {
 
       if (count == 0 &&
           !!maybe_result &&
-          maybe_result->values.trajectory_complete) {
+          (maybe_result->values.trajectory_complete ||
+           maybe_result->values.mode == Mode::kFault ||
+           maybe_result->values.mode == Mode::kPositionTimeout)) {
         return *maybe_result;
       }
 
@@ -617,6 +651,89 @@ class Controller {
     }
   }
 
+
+  /////////////////////////////////////////
+  // GPIO Write
+
+  CanFdFrame MakeWriteGpio(const GpioWrite::Command& cmd,
+                           const GpioWrite::Format* command_override = nullptr,
+                           const Query::Format* query_override = nullptr) {
+    return MakeFrame(GpioWrite(), cmd,
+                     (command_override == nullptr ?
+                      GpioWrite::Format() : *command_override),
+                     query_override);
+  }
+
+  Optional<Result> SetWriteGpio(const GpioWrite::Command& cmd,
+                                const GpioWrite::Format* command_override = nullptr,
+                                const Query::Format* query_override = nullptr) {
+    return ExecuteSingleCommand(
+        MakeWriteGpio(cmd, command_override, query_override));
+  }
+
+  void AsyncWriteGpio(const GpioWrite::Command& cmd,
+                      Result* result, CompletionCallback callback,
+                      const GpioWrite::Format* command_override = nullptr,
+                      const Query::Format* query_override = nullptr) {
+    AsyncStartSingleCommand(
+        MakeWriteGpio(cmd, command_override, query_override),
+        result, callback);
+  }
+
+  /////////////////////////////////////////
+  // GPIO Read
+
+  CanFdFrame MakeGpioRead(const GpioRead::Format* command_override = nullptr,
+                          const Query::Format* query_override = nullptr) {
+    return MakeFrame(GpioRead(), GpioRead::Command(),
+                     (command_override == nullptr ?
+                      GpioRead::Format() : *command_override),
+                     query_override);
+
+  }
+
+  Optional<Result> SeGpioRead(const GpioRead::Format* command_override = nullptr,
+                              const Query::Format* query_override = nullptr) {
+    return ExecuteSingleCommand(
+        MakeGpioRead(command_override, query_override));
+  }
+
+  void AsyncGpioRead(Result* result, CompletionCallback callback,
+                     const GpioRead::Format* command_override = nullptr,
+                     const Query::Format* query_override = nullptr) {
+    AsyncStartSingleCommand(
+        MakeGpioRead(command_override, query_override),
+        result, callback);
+  }
+
+
+  /////////////////////////////////////////
+  // Aux PWM Write
+
+  CanFdFrame MakeAuxPwmWrite(const AuxPwmWrite::Command& cmd,
+                             const AuxPwmWrite::Format* command_override = nullptr,
+                             const Query::Format* query_override = nullptr) {
+    return MakeFrame(AuxPwmWrite(), cmd,
+                     (command_override == nullptr ?
+                      AuxPwmWrite::Format() : *command_override),
+                     query_override);
+  }
+
+  Optional<Result> SetAuxPwmWrite(const AuxPwmWrite::Command& cmd,
+                                  const AuxPwmWrite::Format* command_override = nullptr,
+                                  const Query::Format* query_override = nullptr) {
+    return ExecuteSingleCommand(
+        MakeAuxPwmWrite(cmd, command_override, query_override));
+  }
+
+  void AsyncAuxPwmWrite(const AuxPwmWrite::Command& cmd,
+                        Result* result, CompletionCallback callback,
+                        const AuxPwmWrite::Format* command_override = nullptr,
+                        const Query::Format* query_override = nullptr) {
+    AsyncStartSingleCommand(
+        MakeAuxPwmWrite(cmd, command_override, query_override),
+        result, callback);
+  }
 
   /////////////////////////////////////////
   // Schema version checking
