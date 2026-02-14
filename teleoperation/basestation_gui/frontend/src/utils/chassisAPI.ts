@@ -1,4 +1,4 @@
-import type { APIResponse } from './apiTypes'
+import type { APIResponse, ServoResponse } from './apiTypes'
 import { apiFetch } from './apiFetch'
 
 export const chassisAPI = {
@@ -10,7 +10,7 @@ export const chassisAPI = {
     return apiFetch('/chassis/panorama/stop/', { method: 'POST' })
   },
 
-  adjustGimbal(joint: 'pitch' | 'yaw', adjustment: number, absolute: boolean = false): Promise<APIResponse> {
+  adjustGimbal(joint: 'pitch' | 'yaw', adjustment: number, absolute: boolean = false): Promise<ServoResponse> {
     return apiFetch('/chassis/gimbal/adjust/', {
       method: 'POST',
       body: JSON.stringify({ joint, adjustment, absolute })

@@ -2,7 +2,7 @@
   <div class="flex flex-col gap-2 h-full">
     <div class="flex justify-between items-center">
       <h4 class="component-header">SP Arm</h4>
-      <IndicatorDot :is-active="connected" />
+      <i class="bi bi-dpad-fill" :class="connected ? 'text-cmd-success' : 'text-muted'" />
     </div>
     <GamepadDisplay :axes="axes" :buttons="buttons" class="grow min-h-0" />
   </div>
@@ -11,7 +11,6 @@
 <script lang="ts" setup>
 import { useGamepad } from '@/composables/useGamepad'
 import GamepadDisplay from './GamepadDisplay.vue'
-import IndicatorDot from './IndicatorDot.vue'
 
 const { connected, axes, buttons } = useGamepad({
   controllerIdFilter: 'Microsoft',

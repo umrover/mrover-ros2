@@ -91,13 +91,12 @@ async def gimbal_adjust(data: GimbalAdjustRequest):
         if result is None:
             raise HTTPException(status_code=500, detail="Service call failed")
 
-        if not result.at_tgts or not result.at_tgts[0]:
-            raise HTTPException(status_code=500, detail="Gimbal adjustment failed")
-
+        at_tgt = result.at_tgts[0] if result.at_tgts else False
         return {
             'status': 'success',
             'joint': data.joint,
-            'adjustment': data.adjustment
+            'adjustment': data.adjustment,
+            'at_tgt': at_tgt,
         }
 
     except HTTPException:

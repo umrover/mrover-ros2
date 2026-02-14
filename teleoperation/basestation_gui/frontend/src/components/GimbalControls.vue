@@ -2,58 +2,49 @@
   <div class="flex flex-col gap-1 w-full h-full overflow-hidden" data-testid="pw-gimbal-controls">
     <div class="flex justify-between items-center w-full">
       <h4 class="component-header">Gimbal</h4>
-      <div class="flex items-center">
-        <i
-          v-if="!hasServoState"
-          class="bi bi-info-circle mr-1 text-sm"
-          title="Changes not allowed until gimbal position received"
-        ></i>
-        <IndicatorDot :is-active="hasServoState" />
-      </div>
+      <IndicatorDot :is-active="hasServoState && atTarget" />
     </div>
 
-    <div class="axis-block">
+    <div v-for="joint in JOINTS" :key="joint" class="axis-block">
       <div class="axis-header">
-        <span class="axis-label">Pitch</span>
-        <span class="value-display">{{ pitchDegrees }}&deg;</span>
+        <span class="axis-label">{{ joint }}</span>
+        <span class="value-display">{{ jointDegrees(joint) }}&deg;</span>
         <span class="axis-label-spacer"></span>
       </div>
-      <div class="btn-row" data-testid="pw-gimbal-pitch-btns">
-        <button class="cmd-btn cmd-btn-outline-control cmd-btn-sm control-btn" @click="adjustGimbal('pitch', -10)" :disabled="!hasServoState">-10</button>
-        <button class="cmd-btn cmd-btn-outline-control cmd-btn-sm control-btn" @click="adjustGimbal('pitch', -5)" :disabled="!hasServoState">-5</button>
-        <button class="cmd-btn cmd-btn-outline-control cmd-btn-sm control-btn" @click="adjustGimbal('pitch', -1)" :disabled="!hasServoState">-1</button>
-        <button class="cmd-btn cmd-btn-outline-control cmd-btn-sm control-btn" @click="adjustGimbal('pitch', 1)" :disabled="!hasServoState">+1</button>
-        <button class="cmd-btn cmd-btn-outline-control cmd-btn-sm control-btn" @click="adjustGimbal('pitch', 5)" :disabled="!hasServoState">+5</button>
-        <button class="cmd-btn cmd-btn-outline-control cmd-btn-sm control-btn" @click="adjustGimbal('pitch', 10)" :disabled="!hasServoState">+10</button>
-      </div>
-    </div>
-
-    <div class="axis-block">
-      <div class="axis-header">
-        <span class="axis-label">Yaw</span>
-        <span class="value-display">{{ yawDegrees }}&deg;</span>
-        <span class="axis-label-spacer"></span>
-      </div>
-      <div class="btn-row" data-testid="pw-gimbal-yaw-btns">
-        <button class="cmd-btn cmd-btn-outline-control cmd-btn-sm control-btn" @click="adjustGimbal('yaw', -10)" :disabled="!hasServoState">-10</button>
-        <button class="cmd-btn cmd-btn-outline-control cmd-btn-sm control-btn" @click="adjustGimbal('yaw', -5)" :disabled="!hasServoState">-5</button>
-        <button class="cmd-btn cmd-btn-outline-control cmd-btn-sm control-btn" @click="adjustGimbal('yaw', -1)" :disabled="!hasServoState">-1</button>
-        <button class="cmd-btn cmd-btn-outline-control cmd-btn-sm control-btn" @click="adjustGimbal('yaw', 1)" :disabled="!hasServoState">+1</button>
-        <button class="cmd-btn cmd-btn-outline-control cmd-btn-sm control-btn" @click="adjustGimbal('yaw', 5)" :disabled="!hasServoState">+5</button>
-        <button class="cmd-btn cmd-btn-outline-control cmd-btn-sm control-btn" @click="adjustGimbal('yaw', 10)" :disabled="!hasServoState">+10</button>
+      <div class="btn-row" :data-testid="`pw-gimbal-${joint}-btns`">
+        <button
+          v-for="delta in DELTAS"
+          :key="delta"
+          class="cmd-btn cmd-btn-outline-control cmd-btn-sm control-btn"
+          :class="{ 'cmd-btn-secondary': pendingJoint === joint }"
+          :disabled="!hasServoState || isLoading"
+          @click="adjustGimbal(joint, delta)"
+        >
+          {{ delta > 0 ? `+${delta}` : delta }}
+        </button>
       </div>
     </div>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { computed } from 'vue'
+import { ref, computed } from 'vue'
 import { chassisAPI } from '@/utils/chassisAPI'
 import { useWebsocketStore } from '@/stores/websocket'
 import type { ControllerStateMessage } from '@/types/websocket'
 import IndicatorDot from './IndicatorDot.vue'
 
+type Joint = 'pitch' | 'yaw'
+
+const JOINTS: Joint[] = ['pitch', 'yaw']
+const DELTAS = [-10, -5, -1, 1, 5, 10]
+const DEG_TO_RAD = Math.PI / 180
+const RAD_TO_DEG = 180 / Math.PI
+
 const websocketStore = useWebsocketStore()
+const isLoading = ref(false)
+const atTarget = ref(false)
+const pendingJoint = ref<Joint | null>(null)
 
 const gimbalJointState = computed((): ControllerStateMessage | null => {
   const msg = websocketStore.messages['chassis']
@@ -62,60 +53,36 @@ const gimbalJointState = computed((): ControllerStateMessage | null => {
   return typedMsg.type === 'gimbal_controller_state' ? typedMsg : null
 })
 
-const hasServoState = computed((): boolean => {
-  return gimbalJointState.value !== null
-})
+const hasServoState = computed(() => gimbalJointState.value !== null)
 
-const pitchRadians = computed((): number => {
+function jointRadians(joint: Joint): number {
   const state = gimbalJointState.value
-  if (!state || !state.names || !state.positions) return 0
-  const pitchIndex = state.names.indexOf('pitch')
-  return pitchIndex >= 0 ? (state.positions[pitchIndex] ?? 0) : 0
-})
+  if (!state?.names || !state.positions) return 0
+  const idx = state.names.indexOf(joint)
+  return idx >= 0 ? (state.positions[idx] ?? 0) : 0
+}
 
-const yawRadians = computed((): number => {
-  const state = gimbalJointState.value
-  if (!state || !state.names || !state.positions) return 0
-  const yawIndex = state.names.indexOf('yaw')
-  return yawIndex >= 0 ? (state.positions[yawIndex] ?? 0) : 0
-})
+function jointDegrees(joint: Joint): string {
+  return (jointRadians(joint) * RAD_TO_DEG).toFixed(0)
+}
 
-const pitchDegrees = computed((): string =>
-  ((pitchRadians.value * 180) / Math.PI).toFixed(0),
-)
-const yawDegrees = computed((): string =>
-  ((yawRadians.value * 180) / Math.PI).toFixed(0),
-)
+async function adjustGimbal(joint: Joint, deltaDegrees: number) {
+  if (isLoading.value || !hasServoState.value) return
 
-const adjustGimbal = async (
-  joint: 'pitch' | 'yaw',
-  adjustmentDegrees: number,
-): Promise<void> => {
+  const currentRadians = jointRadians(joint)
+  const targetRadians = currentRadians + deltaDegrees * DEG_TO_RAD
+
+  pendingJoint.value = joint
+  isLoading.value = true
+
   try {
-    const state = gimbalJointState.value
-    if (!state || !state.names || !state.positions) {
-      console.error('No gimbal state available')
-      return
-    }
-
-    const jointIndex = state.names.indexOf(joint)
-    if (jointIndex < 0) {
-      console.error(`Joint ${joint} not found in state`)
-      return
-    }
-
-    const currentPosition = state.positions[jointIndex]
-    if (currentPosition === undefined) {
-      console.error(`Position for joint ${joint} is undefined`)
-      return
-    }
-
-    const adjustmentRadians = (adjustmentDegrees * Math.PI) / 180
-    const targetPosition = currentPosition + adjustmentRadians
-
-    await chassisAPI.adjustGimbal(joint, targetPosition, true)
-  } catch (error) {
-    console.error('Failed to set gimbal position:', error)
+    const result = await chassisAPI.adjustGimbal(joint, targetRadians, true)
+    atTarget.value = !!result.at_tgt
+  } catch {
+    atTarget.value = false
+  } finally {
+    isLoading.value = false
+    pendingJoint.value = null
   }
 }
 </script>

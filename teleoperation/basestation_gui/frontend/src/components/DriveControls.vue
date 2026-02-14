@@ -2,14 +2,13 @@
   <div class="flex flex-col w-full h-full">
     <div class="flex justify-between items-center w-full">
       <h4 class="component-header">Drive</h4>
-      <IndicatorDot :is-active="connected" />
+      <i class="bi bi-dpad-fill" :class="connected ? 'text-cmd-success' : 'text-muted'" />
     </div>
   </div>
 </template>
 
 <script lang='ts' setup>
 import { useGamepad } from '@/composables/useGamepad'
-import IndicatorDot from './IndicatorDot.vue'
 
 const { connected } = useGamepad({
   controllerIdFilter: 'Thrustmaster',

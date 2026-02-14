@@ -2,7 +2,7 @@
   <div class="flex flex-col gap-2 h-full">
     <div class="flex justify-between items-center">
       <h4 class="component-header">Arm</h4>
-      <IndicatorDot :is-active="connected" class="mr-2" />
+      <i class="bi bi-dpad-fill mr-2" :class="connected ? 'text-cmd-success' : 'text-muted'" />
     </div>
     <div class="btn-group w-full" role="group" aria-label="Arm mode selection" data-testid="pw-arm-mode-buttons">
         <button
@@ -51,7 +51,6 @@ import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { armAPI } from '@/utils/api'
 import { useGamepad } from '@/composables/useGamepad'
 import GamepadDisplay from './GamepadDisplay.vue'
-import IndicatorDot from './IndicatorDot.vue'
 
 const mode = ref('disabled')
 
