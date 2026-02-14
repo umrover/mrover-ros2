@@ -1,10 +1,19 @@
-class ControllerAxis:
+"""
+Mappings can be found easily with: https://hardwaretester.com/gamepad
+The following are for an XBox 360 controller and a Thrustmaster T.16000M joystick
+"""
+
+from enum import Enum
+
+
+class ControllerAxis(Enum):
     LEFT_X = 0
     LEFT_Y = 1
     RIGHT_X = 2
     RIGHT_Y = 3
 
-class ControllerButton:
+
+class ControllerButton(Enum):
     A = 0
     B = 1
     X = 2
@@ -23,10 +32,11 @@ class ControllerButton:
     DPAD_RIGHT = 15
     HOME = 16
 
-class JoystickAxis:
+
+class JoystickAxis(Enum):
     FORWARD_BACK = 1
     LEFT_RIGHT = 0
     TWIST = 2
     THROTTLE = 3
-    MICRO_FORWARD_BACK = 5 # Hat switch Y
-    MICRO_LEFT_RIGHT = 4   # Hat switch X
+    MICRO_FORWARD_BACK = 5
+    MICRO_LEFT_RIGHT = 4
