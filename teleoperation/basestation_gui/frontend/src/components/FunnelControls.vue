@@ -74,6 +74,7 @@ const PRESS_THRESHOLD = 0.5
 const TWO_PI = 2 * Math.PI
 const DEG_TO_RAD = Math.PI / 180
 const RAD_TO_DEG = 180 / Math.PI
+const OFFSET_STORAGE_KEY = 'funnel-offset-deg'
 
 const SITE_RADIANS = [0, Math.PI / 3, (2 * Math.PI) / 3, Math.PI, (4 * Math.PI) / 3, (5 * Math.PI) / 3] as const
 const SITE_LABELS = ['Cache', 'A Buret', 'A Griess', 'Trash', 'B Buret', 'B Griess'] as const
@@ -82,7 +83,7 @@ const confirmedSite = ref(0)
 const pendingSite = ref<number | null>(null)
 const isLoading = ref(false)
 const atTarget = ref(false)
-const offsetDeg = ref(0)
+const offsetDeg = ref(Number(localStorage.getItem(OFFSET_STORAGE_KEY)) || 0)
 
 const currentPositionDeg = computed(() =>
   Math.round((SITE_RADIANS[confirmedSite.value] ?? 0) * RAD_TO_DEG + offsetDeg.value)
@@ -95,11 +96,22 @@ function siteClass(site: number) {
   }
 }
 
+function resetOffset() {
+  offsetDeg.value = 0
+  localStorage.removeItem(OFFSET_STORAGE_KEY)
+}
+
+function persistOffset() {
+  localStorage.setItem(OFFSET_STORAGE_KEY, String(offsetDeg.value))
+}
+
 async function adjustOffset(delta: number) {
-  const prevOffset = offsetDeg.value
+  if (isLoading.value) return
   offsetDeg.value += delta
   const success = await sendPosition(confirmedSite.value)
-  if (!success) offsetDeg.value = prevOffset
+  if (success) {
+    persistOffset()
+  }
 }
 
 const { buttons } = useGamepad({ controllerIdFilter: 'Microsoft', hz: 10 })
@@ -128,6 +140,7 @@ async function sendPosition(index: number): Promise<boolean> {
     return true
   } catch {
     atTarget.value = false
+    resetOffset()
     return false
   } finally {
     isLoading.value = false
@@ -140,4 +153,3 @@ function selectSite(index: number) {
   sendPosition(index)
 }
 </script>
-  
