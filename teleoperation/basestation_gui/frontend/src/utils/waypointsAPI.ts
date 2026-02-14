@@ -6,66 +6,50 @@ import type {
   CurrentCourseResponse,
   DeleteWaypointResponse
 } from './apiTypes'
-
-const API_BASE = '/api'
+import { apiFetch } from './apiFetch'
 
 export const waypointsAPI = {
-  async getBasic(): Promise<BasicWaypointsResponse> {
-    const response = await fetch(`${API_BASE}/waypoints/basic/`)
-    return response.json()
+  getBasic(): Promise<BasicWaypointsResponse> {
+    return apiFetch('/waypoints/basic/')
   },
 
-  async saveBasic(waypoints: BasicWaypoint[]): Promise<BasicWaypointsResponse> {
-    const response = await fetch(`${API_BASE}/waypoints/basic/save/`, {
+  saveBasic(waypoints: BasicWaypoint[]): Promise<BasicWaypointsResponse> {
+    return apiFetch('/waypoints/basic/save/', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ waypoints })
     })
-    return response.json()
   },
 
-  async getAuton(): Promise<WaypointsResponse> {
-    const response = await fetch(`${API_BASE}/waypoints/auton/`)
-    return response.json()
+  getAuton(): Promise<WaypointsResponse> {
+    return apiFetch('/waypoints/auton/')
   },
 
-  async saveAuton(waypoints: AutonWaypoint[]): Promise<WaypointsResponse> {
-    const response = await fetch(`${API_BASE}/waypoints/auton/save/`, {
+  saveAuton(waypoints: AutonWaypoint[]): Promise<WaypointsResponse> {
+    return apiFetch('/waypoints/auton/save/', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ waypoints })
     })
-    return response.json()
   },
 
-  async getCurrentAutonCourse(): Promise<CurrentCourseResponse> {
-    const response = await fetch(`${API_BASE}/waypoints/auton/current/`)
-    return response.json()
+  getCurrentAutonCourse(): Promise<CurrentCourseResponse> {
+    return apiFetch('/waypoints/auton/current/')
   },
 
-  async saveCurrentAutonCourse(course: AutonWaypoint[]): Promise<CurrentCourseResponse> {
-    const response = await fetch(`${API_BASE}/waypoints/auton/current/save/`, {
+  saveCurrentAutonCourse(course: AutonWaypoint[]): Promise<CurrentCourseResponse> {
+    return apiFetch('/waypoints/auton/current/save/', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ waypoints: course })
     })
-    return response.json()
   },
 
-  async deleteAutonWaypoint(waypoint: AutonWaypoint): Promise<DeleteWaypointResponse> {
-    const response = await fetch(`${API_BASE}/waypoints/auton/${waypoint.db_id}/`, {
+  deleteAutonWaypoint(waypoint: AutonWaypoint): Promise<DeleteWaypointResponse> {
+    return apiFetch(`/waypoints/auton/${waypoint.db_id}/`, {
       method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(waypoint)
     })
-    return response.json()
   },
 
-  async deleteAll(): Promise<BasicWaypointsResponse> {
-    const response = await fetch(`${API_BASE}/waypoints/basic/clear/`, {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' }
-    })
-    return response.json()
+  deleteAll(): Promise<BasicWaypointsResponse> {
+    return apiFetch('/waypoints/basic/clear/', { method: 'DELETE' })
   }
 }

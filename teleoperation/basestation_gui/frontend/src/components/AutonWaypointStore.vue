@@ -2,20 +2,20 @@
   <div class="waypoints p-2 mb-2">
     <div class="waypoint-header mb-1">
       <h5 class="mb-0">{{ waypoint.name }}</h5>
-      <small class="text-muted">ID: {{ waypoint.id }}</small>
+      <small class="text-muted">TAG ID: {{ waypoint.tag_id }}</small>
     </div>
     <div>
       <div class="input-group mb-1">
         <input
           class="form-control"
-          v-model.number="localLat" :id="'lat-' + waypoint.id"
+          v-model.number="localLat" :id="'lat-' + waypoint.tag_id"
         />
         <span class="input-group-text">ºN</span>
       </div>
       <div class="input-group mb-1">
         <input
           class="form-control"
-          v-model.number="localLon" :id="'lon-' + waypoint.id"
+          v-model.number="localLon" :id="'lon-' + waypoint.tag_id"
         />
         <span class="input-group-text">ºW</span>
       </div>
@@ -88,7 +88,7 @@ export default defineComponent({
 
 <style scoped>
 .waypoints {
-  background-color: #ffffff;
+  background-color: var(--card-bg);
   border-radius: 6px;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 }

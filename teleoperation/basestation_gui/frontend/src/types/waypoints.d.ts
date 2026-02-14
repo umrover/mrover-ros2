@@ -6,7 +6,7 @@ import type { LatLng } from 'leaflet'
  */
 export interface AutonWaypoint {
   name: string
-  id: number
+  tag_id: number
   type: number
   lat: number
   lon: number

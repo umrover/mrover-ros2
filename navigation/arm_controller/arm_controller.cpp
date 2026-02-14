@@ -5,8 +5,8 @@ namespace mrover {
     const rclcpp::Duration ArmController::TIMEOUT = rclcpp::Duration(0, 0.3 * 1e9); // 0.3 seconds
 
     ArmController::ArmController() : Node{"arm_controller"}, mLastUpdate{get_clock()->now() - TIMEOUT} {
-        mPosPub = create_publisher<msg::Position>("arm_position_cmd", 10);
-        mVelPub = create_publisher<msg::Velocity>("arm_velocity_cmd", 10);
+        mPosPub = create_publisher<msg::Position>("arm_pos_cmd", 10);
+        mVelPub = create_publisher<msg::Velocity>("arm_vel_cmd", 10);
 
         mIkSub = create_subscription<msg::IK>("ee_pos_cmd", 1, [this](msg::IK::ConstSharedPtr const& msg) {
             posCallback(msg);
@@ -234,7 +234,7 @@ namespace mrover {
         } else if (mArmMode == ArmMode::VELOCITY_CONTROL) {
             // TODO: Determine joint velocities that cancels out arm sag
             auto velocities = ikVelCalc(mVelTarget);
-            if (velocities && 
+            if (velocities &&
                 !(
                     velocities->velocities[0] == 0 &&
                     velocities->velocities[1] == 0 &&
