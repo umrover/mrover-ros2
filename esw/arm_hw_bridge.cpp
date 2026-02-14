@@ -478,7 +478,7 @@ namespace mrover {
             mControllerState.header.stamp = now();
 
             auto const pitchWrapped = wrapAngle((Radians{mJointDE1->getPosition()} - mJointDePitchOffset).get());
-            auto const rollWrapped = wrapAngle((Radians{mJointDE0->getPosition()} - mJointDeRollOffset).get());
+            auto const rollWrapped = wrapAngle((Radians{-1 * mJointDE0->getPosition()} - mJointDeRollOffset).get());
             mJointDePitchRoll = {pitchWrapped, rollWrapped};
 
             for (std::size_t i = 0; i < mJointNames.size(); ++i) {

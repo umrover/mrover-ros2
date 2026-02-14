@@ -35,10 +35,10 @@ arm_hw_bridge:
       max_torque: 200.0
     # Offsets are substracted from the absolute encoder readings for pitch and roll
     # In order to zero, move the joint to the zero position and read the unadjusted positions. These should be the set to the offsets
-    joint_de_pitch_offset: -1.57 #0.74497 # 0.018 # radians
-    joint_de_roll_offset: -2.7934 #0.556107 # 3.02 # radians
+    joint_de_pitch_offset: 0.06 # radians
+    joint_de_roll_offset: -3.44 # radians
     joint_de_pitch_max_position: 1.0 # radians
-    joint_de_pitch_min_position: -1.0 # radians
+    joint_de_pitch_min_position: -0.85 # radians
     joint_de_roll_max_position: 1.57 # radians
     joint_de_roll_min_position: -1.57 # radians
     joint_de_0:
