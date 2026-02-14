@@ -160,6 +160,12 @@ class Panorama(Node):
         if self.img_sub is None:
             self.img_sub = self.create_subscription(Image, f"/{self.zed_version}/left/image", self.image_callback, 1)
 
+        if self.pc_sub is None and self.imu_sub is None: 
+            self.pc_sub = message_filters.Subscriber(self, PointCloud2, f"/{self.zed_version}/left/points")
+            self.imu_sub = message_filters.Subscriber(self, Imu, f"/{self.zed_version}_imu/data_raw")
+            self.sync = message_filters.ApproximateTimeSynchronizer([self.pc_sub, self.imu_sub], 10, 1)
+            self.sync.registerCallback(self.synced_gps_pc_callback)
+
         # START SPINNING THE MAST GIMBAL
         # req = ServoPosition.Request()
         # req.header = Header()
@@ -178,6 +184,13 @@ class Panorama(Node):
         if self.img_sub is not None:
             self.destroy_subscription(self.img_sub)
             self.img_sub = None
+
+        if self.pc_sub is not None and self.imu_sub is not None:
+            self.destroy_subscription(self.pc_sub.sub)
+            self.destroy_subscription(self.imu_sub.sub)
+            self.pc_sub = None
+            self.imu_sub = None
+            self.sync = None
 
         # construct pc from stitched
         try:
