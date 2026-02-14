@@ -3,10 +3,8 @@ class ControllerAxis:
     LEFT_Y = 1
     RIGHT_X = 2
     RIGHT_Y = 3
-    LEFT_TRIGGER = 4
-    RIGHT_TRIGGER = 5
-    DPAD_X = 6
-    DPAD_Y = 7
+    LEFT_TRIGGER = 6
+    RIGHT_TRIGGER = 7
 
 class ControllerButton:
     A = 0
