@@ -29,8 +29,8 @@ static constexpr uint8_t ADDR_POSITION_P_GAIN = 84;
 using namespace mrover;
 
 auto Servo::updateConfigFromParameters() -> void {
-    double floatmForwardLimit;
-    double floatmReverseLimit;
+    double forwardLimit;
+    double reverseLimit;
     double positionPGain;
     double positionIGain;
     double positionDGain;
@@ -39,8 +39,8 @@ auto Servo::updateConfigFromParameters() -> void {
     double currentLimit;
 
     std::vector<ParameterWrapper> parameters = {
-            {std::format("{}.reverse_limit", mServoName), floatmReverseLimit, 90.0},
-            {std::format("{}.forward_limit", mServoName), floatmForwardLimit, 270.0},
+            {std::format("{}.reverse_limit", mServoName), forwardLimit, 90.0},
+            {std::format("{}.forward_limit", mServoName), reverseLimit, 270.0},
             {std::format("{}.position_p", mServoName), positionPGain, 400.0},
             {std::format("{}.position_i", mServoName), positionIGain, 0.0},
             {std::format("{}.position_d", mServoName), positionDGain, 0.0},
@@ -49,6 +49,16 @@ auto Servo::updateConfigFromParameters() -> void {
             {std::format("{}.current_limit", mServoName), currentLimit, 1750.0}
     };
 
+    ParameterWrapper::declareParameters(mNode.get(), parameters);
+
+    mNode->get_parameter(std::format("{}.reverse_limit", mServoName), forwardLimit);
+    mNode->get_parameter(std::format("{}.forward_limit", mServoName), reverseLimit);
+    mNode->get_parameter(std::format("{}.position_p", mServoName), positionPGain);
+    mNode->get_parameter(std::format("{}.position_i", mServoName), positionIGain);
+    mNode->get_parameter(std::format("{}.position_d", mServoName), positionDGain);
+    mNode->get_parameter(std::format("{}.velocity_p", mServoName), velocityPGain);
+    mNode->get_parameter(std::format("{}.velocity_i", mServoName), velocityIGain);
+    mNode->get_parameter(std::format("{}.current_limit", mServoName), currentLimit);
     
     setProperty(ServoProperty::PositionPGain, static_cast<uint16_t>(positionPGain));
     setProperty(ServoProperty::PositionIGain, static_cast<uint16_t>(positionIGain));
