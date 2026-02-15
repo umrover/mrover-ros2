@@ -54,7 +54,7 @@ async def panorama_stop():
 
         node = get_node()
         timestamp = node.get_clock().now().nanoseconds
-        data_dir = os.path.join(BASE_DIR, 'data')
+        data_dir = os.path.join(BASE_DIR, '..', 'data')
         os.makedirs(data_dir, exist_ok=True)
         filename = os.path.join(data_dir, f"{timestamp}_panorama.png")
         cv2.imwrite(filename, img_np)
