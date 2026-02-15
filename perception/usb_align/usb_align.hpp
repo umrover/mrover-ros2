@@ -109,6 +109,3 @@ namespace mrover{
         explicit UsbAlignNode(rclcpp::NodeOptions const& options = rclcpp::NodeOptions());
     };
 }
-
-extern Eigen::Vector3d zKeyTransformation_new;
-extern std::unordered_map<char, cv::Vec3d> keyboard;

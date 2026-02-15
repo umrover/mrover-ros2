@@ -27,20 +27,20 @@ namespace mrover{
             std::bind(&KeyboardTypingNode::handle_accepted, this, std::placeholders::_1));
 
         // subscribe to image stream
-        mImageSub = create_subscription<sensor_msgs::msg::Image>("/finger_camera/image", rclcpp::QoS(1), [this](sensor_msgs::msg::Image::ConstSharedPtr const& msg) {
+        mImageSub = create_subscription<sensor_msgs::msg::Image>("/video0/image", rclcpp::QoS(1), [this](sensor_msgs::msg::Image::ConstSharedPtr const& msg) {
             yawCallback(msg);
         });
 
         // grab transform from finger_cam to gripper
         // wait until the transformation is acquired
-        while (true) {
-            try {
-                gripper_to_cam = SE3Conversions::fromTfTree(tf_buffer, "finger_camera_frame", "arm_fk");
-                break;
-            } catch (tf2::TransformException const& e) {
-                RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, std::format("TF tree error processing keyboard typing: {}", e.what()));
-            }
-        }
+        // while (true) {
+        //     try {
+        //         gripper_to_cam = SE3Conversions::fromTfTree(tf_buffer, "finger_camera_frame", "arm_fk");
+        //         break;
+        //     } catch (tf2::TransformException const& e) {
+        //         RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, std::format("TF tree error processing keyboard typing: {}", e.what()));
+        //     }
+        // }
 
         // Create Ik mode client
         mIkModeClient = create_client<srv::IkMode>("ik_mode");
@@ -81,11 +81,15 @@ namespace mrover{
         mIKPub = this->create_publisher<msg::IK>("ik_pos_cmd",rclcpp::QoS(1));
 
         // Define offsets
-        layout[4] = cv::Vec3d(0.0, 0.0, 0.0);       // BL
-        layout[5] = cv::Vec3d(0.41407, 0.0, 0.0);     // BR
-        layout[3] = cv::Vec3d(0.41407, 0.183444, 0.0);   // TR
-        layout[2] = cv::Vec3d(0.0, 0.183444, 0.0);     // TL
+        // layout[4] = cv::Vec3d(0.0, 0.0, 0.0);       // BL
+        // layout[5] = cv::Vec3d(0.41407, 0.0, 0.0);     // BR
+        // layout[3] = cv::Vec3d(0.41407, 0.183444, 0.0);   // TR
+        // layout[2] = cv::Vec3d(0.0, 0.183444, 0.0);     // TL
 
+        layout[4] = cv::Vec3d(0.0, 0.0, 0.0);       // BL
+        layout[5] = cv::Vec3d(0.381, 0.0, 0.0);     // BR
+        layout[3] = cv::Vec3d(0.381, 0.152, 0.0);   // TR
+        layout[2] = cv::Vec3d(0.0, 0.152, 0.0);     // TL
         createRoverBoard();
     }
 
@@ -138,11 +142,11 @@ namespace mrover{
             SE3d arm_fk_to_tag{arm_fk_pos, transformed_rotation};
 
             // Publish to tf tree
-            SE3Conversions::pushToTfTree(tf_broadcaster, "keyboard_tag", "arm_fk", gripper_to_cam*arm_fk_to_tag, get_clock()->now());
+            // SE3Conversions::pushToTfTree(tf_broadcaster, "keyboard_tag", "arm_fk", gripper_to_cam*arm_fk_to_tag, get_clock()->now());
 
             // Initialize transforms for every key, temporarily here for now
             SE3d z_to_tag{zKeyTransformation_new, Eigen::Quaterniond::Identity()};
-            SE3Conversions::pushToTfTree(tf_broadcaster, "keyboard_z", "keyboard_tag", z_to_tag, get_clock()->now());
+            // SE3Conversions::pushToTfTree(tf_broadcaster, "keyboard_z", "keyboard_tag", z_to_tag, get_clock()->now());
 
 
         }
@@ -182,18 +186,28 @@ namespace mrover{
 
         // Read in camera constants
         std::string cameraConstants = "temp.json";
+        // cv::Mat camMatrix = (cv::Mat_<double>(3,3) <<
+        //     432.82290127206676, 0.0, 320.66663616737236,   // fx, 0, cx
+        //     0.0, 428.8529386724118, 256.09398022438245,   // 0, fy, cy
+        //     0.0, 0.0, 1.0
+        // );
         cv::Mat camMatrix = (cv::Mat_<double>(3,3) <<
-            432.82290127206676, 0.0, 320.66663616737236,   // fx, 0, cx
-            0.0, 428.8529386724118, 256.09398022438245,   // 0, fy, cy
+            418.70576013014954, 0.0, 320.781111263661,   // fx, 0, cx
+            0.0, 415.2075086552425, 246.25969754720163,   // 0, fy, cy
             0.0, 0.0, 1.0
         );
 
-        cv::Mat distCoeffs = cv::Mat::zeros(1,5,CV_64F);
+        // cv::Mat distCoeffs = cv::Mat::zeros(1,5,CV_64F);
         // cv::Mat distCoeffs = (cv::Mat_<double>(1,5) << 0.058961289426335314,
         //     -0.000852015669231157,
         //     -0.00011057338930940814,
         //     0.004049336591019368,
         //     -0.11113072350633851);
+        cv::Mat distCoeffs = (cv::Mat_<double>(1,5) << 0.04646192035449534,
+            -0.05536733031108705,
+            -0.0009708208011724877,
+            -0.0006245615225159122,
+            0.01750913015048783);
 
         // Read in images
         cv::Mat bgraImage{static_cast<int>(msg->height), static_cast<int>(msg->width), CV_8UC4, const_cast<uint8_t*>(msg->data.data())};
