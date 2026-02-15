@@ -65,6 +65,7 @@ find_package(urdf REQUIRED)
 find_package(std_srvs REQUIRED)
 find_package(magic_enum REQUIRED)
 find_package(yaml_cpp_vendor REQUIRED)
+find_package(dynamixel_sdk REQUIRED)
 
 find_package(Assimp NAMES Assimp assimp REQUIRED)
 find_package(Bullet REQUIRED)
@@ -315,6 +316,10 @@ if (NOT APPLE)
     mrover_add_header_only_library(can_device esw/can_device)
     target_link_libraries(can_device INTERFACE ${rclcpp_LIBRARIES} moteus)
 
+    mrover_add_library(servo_library esw/servo_library/*.cpp esw/servo_library)
+    ament_target_dependencies(servo_library rclcpp std_srvs dynamixel_sdk)
+    target_link_libraries(servo_library units parameter_utils dynamixel_sdk::dynamixel_sdk)
+
     mrover_add_library(motor_library esw/motor_library/*.cpp esw/motor_library)
     ament_target_dependencies(motor_library rclcpp std_srvs)
     target_link_libraries(motor_library can_device units messaging parameter_utils)
@@ -325,10 +330,12 @@ if (NOT APPLE)
         target_link_libraries(${name} can_device units messaging)
         target_link_libraries(${name} motor_library)
     endmacro()
-
+    
     mrover_add_esw_motor_bridge_node(drive_hw_bridge esw/drive_hw_bridge.cpp)
     mrover_add_esw_motor_bridge_node(arm_hw_bridge esw/arm_hw_bridge.cpp)
     mrover_add_esw_motor_bridge_node(mast_gimbal_hw_bridge esw/mast_gimbal_hw_bridge.cpp)
+    target_link_libraries(mast_gimbal_hw_bridge servo_library)
+
 
     mrover_add_node(pdlb_hw_bridge esw/pdlb_hw_bridge.cpp)
     ament_target_dependencies(pdlb_hw_bridge rclcpp std_srvs)
