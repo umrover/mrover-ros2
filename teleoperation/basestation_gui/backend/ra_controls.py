@@ -89,7 +89,7 @@ JOINT_NAMES = [
     "joint_c",
     "joint_de_pitch",
     "joint_de_roll",
-    "cam",
+    "pusher",
     "gripper",
 ]
 
