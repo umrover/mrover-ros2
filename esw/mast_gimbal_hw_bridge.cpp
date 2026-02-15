@@ -50,7 +50,7 @@ namespace mrover {
                 create_servo(servo.second, servo.first);
             }
 
-            getPositionService = this->create_service<mrover::srv::ServoPosition>("get_position", [this](
+            getPositionService = this->create_service<mrover::srv::ServoPosition>("set_position", [this](
                                                                                                           mrover::srv::ServoPosition::Request::SharedPtr const& request,
                                                                                                           mrover::srv::ServoPosition::Response::SharedPtr const& response) {
                 size_t const n = request->names.size();
@@ -75,7 +75,7 @@ namespace mrover {
                 }
             });
 
-            mGimbalStatePub = this->create_publisher<mrover::msg::ControllerState>("controller_state", 10);
+            mGimbalStatePub = this->create_publisher<mrover::msg::ControllerState>("gimbal_control_state", 10);
 
             mPublishDataTimer = this->create_wall_timer(std::chrono::milliseconds(100),
                                                         [&]() { return MastGimbalHWBridge::publishDataCallback(); });
