@@ -131,7 +131,13 @@ namespace mrover {
         Matrix66d Q = Matrix66d::Zero();
         Matrix66d Q_d = Matrix66d::Zero();
 
+        RCLCPP_INFO(get_logger(), "predict_vel");
+
         A << Matrix33d::Zero(), Matrix33d::Zero(), manif::skew(v), Matrix33d::Zero();
+
+        A.eval();
+
+        RCLCPP_INFO(get_logger(), "success predict_vel");
 
         // covariance
         Q.block<3, 3>(3, 3) = cov_v.cwiseAbs();
@@ -240,12 +246,20 @@ namespace mrover {
         Vector4d b;
         Matrix33d N;
 
+        RCLCPP_INFO(get_logger(), "pos_callback");
+
         H << Matrix33d::Zero(), -1 * Matrix33d::Identity();
         Y << -1 * X.block<3, 3>(0, 0).transpose() * Vector3d{pos_msg->vector.x, pos_msg->vector.y, pos_msg->vector.z}, 1;
+        Y.eval();
+        RCLCPP_INFO(get_logger(), "Y success");
         b << 0, 0, 0, 1;
         N << pos_noise_fixed * Matrix33d::Identity();
+        N.eval();
+        RCLCPP_INFO(get_logger(), "N success");
 
         correct(Y, b, N, H);
+
+        RCLCPP_INFO(get_logger(), "pos_callback success");
         
     }
     
@@ -267,14 +281,23 @@ namespace mrover {
 
         heading = heading * (M_PI / 180);
 
+        RCLCPP_INFO(get_logger(), "mag_heading");
+
         H << -1 * manif::skew(mag_ref), Matrix33d::Zero();
         Y << -1 * Vector3d{std::cos(heading), -std::sin(heading), 0}, 0;
+        Y.eval();
+        RCLCPP_INFO(get_logger(), "Y success");
         b << -1 * mag_ref, 0;
+        b.eval();
+        RCLCPP_INFO(get_logger(), "b success");
         N << X.block<3, 3>(0, 0) * mag_heading_noise * Matrix33d::Identity() * X.block<3, 3>(0, 0).transpose();
-
+        N.eval();
+        RCLCPP_INFO(get_logger(), "N success");
         if (use_mag) {
             correct(Y, b, N, H);
         }
+
+        RCLCPP_INFO(get_logger(), "mag_heading success");
     
     }
     
@@ -291,12 +314,20 @@ namespace mrover {
         Vector3d accel_meas{a.x, a.y, a.z};
         accel_meas.normalize();
 
+        RCLCPP_INFO(get_logger(), "accel_callback");
+
         H << -1 * manif::skew(accel_ref), Matrix33d::Zero();
         Y << -1 * accel_meas, 0;
+        Y.eval();
+        RCLCPP_INFO(get_logger(), "Y success");
         b << -1 * accel_ref, 0;
+        b.eval();
+        RCLCPP_INFO(get_logger(), "b success");
         N << X.block<3, 3>(0, 0) * cov_a * X.block<3, 3>(0, 0).transpose();
-
+        N.eval();
+        RCLCPP_INFO(get_logger(), "N success");
         correct(Y, b, N, H);
+        RCLCPP_INFO(get_logger(), "accel success");
     }
 
     void IEKF_SE3::rtk_heading_callback(const mrover::msg::Heading::ConstSharedPtr &rtk_heading, const mrover::msg::FixStatus::ConstSharedPtr &rtk_heading_status) {
@@ -320,13 +351,22 @@ namespace mrover {
 
         heading = heading * (M_PI / 180);
 
+        RCLCPP_INFO(get_logger(), "rtk_heading");
+
         H << -1 * manif::skew(rtk_heading_ref), Matrix33d::Zero();
         Y << -1 * Vector3d{std::cos(heading), -std::sin(heading), 0}, 0;
+        Y.eval();
+        RCLCPP_INFO(get_logger(), "Y success");
         b << -1 * rtk_heading_ref, 0;
+        b.eval();
+        RCLCPP_INFO(get_logger(), "b success");
         N << X.block<3, 3>(0, 0) * rtk_heading_noise * Matrix33d::Identity() * X.block<3, 3>(0, 0).transpose();
+        N.eval();
+        RCLCPP_INFO(get_logger(), "N success");
 
         correct(Y, b, N, H);
 
+        RCLCPP_INFO(get_logger(), "rtk_heading success");
     }
 
     void IEKF_SE3::drive_forward_callback() {
@@ -340,7 +380,7 @@ namespace mrover {
             RCLCPP_WARN(get_logger(), "Rover is not being commanded forward!");
             return;
         }
-
+        RCLCPP_INFO(get_logger(), "drive_forward");
         R2d rover_velocity_sum = R2d::Zero();
         double rover_heading_old = 0.0;
         double rover_heading_new = 0.0;
@@ -405,12 +445,19 @@ namespace mrover {
 
         H << -1 * manif::skew(drive_forward_ref), Matrix33d::Zero();
         Y << -1 * Vector3d{std::cos(drive_forward_heading), -std::sin(drive_forward_heading), 0}, 0;
+        Y.eval();
+        RCLCPP_INFO(get_logger(), "Y success");
         b << -1 * drive_forward_ref, 0;
+        b.eval();
+        RCLCPP_INFO(get_logger(), "b success");
         N << X.block<3, 3>(0, 0) * drive_forward_heading_noise * Matrix33d::Identity() * X.block<3, 3>(0, 0).transpose();
-
+        N.eval();
+        RCLCPP_INFO(get_logger(), "N success");
         if (use_drive_forward) {
             correct(Y, b, N, H);
         }
+
+        RCLCPP_INFO(get_logger(), "drive_success");
         
     }
 
