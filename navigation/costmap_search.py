@@ -204,7 +204,7 @@ class CostmapSearchState(State):
         target_position_in_map = self.astar_traj.get_current_point()
 
         cmd_vel, arrived = context.drive.get_drive_command(
-            (self.astar_traj if self.USE_PURE_PURSUIT else target_position_in_map), # Parameter depends on if pure pursuit is used
+            (self.astar_traj if self.USE_PURE_PURSUIT and self.spiral_traj.cur_pt > 7 else target_position_in_map), # Parameter depends on if pure pursuit is used
             context.rover.get_pose_in_map(),
             self.STOP_THRESH,
             self.DRIVE_FWD_THRESH,
