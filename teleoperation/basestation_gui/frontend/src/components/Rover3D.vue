@@ -26,6 +26,14 @@
         @click="toggleCostMapGridVisibility()">
           Toggle Cost Map
     </button>
+
+    <button
+        type="button"
+        class="btn btn-sm btn-light border"
+        :class="{ 'active': doCostmapRotation === true }"
+        @click="toggleCostmapRotation()">
+          Relative Rotation
+    </button>
   </div>
 
   <canvas class="webgl p-0 h-100 w-100"></canvas>
@@ -36,9 +44,12 @@ import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useWebsocketStore } from '@/stores/websocket'
 import { storeToRefs } from 'pinia'
 import type { ControllerStateMessage, OccupancyGridMessage } from '@/types/websocket'
-import threeSetup, { updatePose, updateIKTarget, set_camera_type, updateCostMapGrid, toggleCostMapGridVisibility} from '../rover_three.js'
+import threeSetup, { updatePose, updateIKTarget, set_camera_type, updateCostMapGrid, toggleCostMapGridVisibility, setCostMapRotation} from '../rover_three.js'
 import type { NavMessage } from '@/types/coordinates.js'
-import { round } from 'three/tsl'
+import { quaternionToMapAngle } from '../utils/map.ts'
+
+const rover_bearing_deg = ref(0)
+const doCostmapRotation = ref(true)
 
 interface ArmIKMessage {
   type: 'ik_target'
@@ -126,20 +137,17 @@ watch(driveMessage, (msg: unknown) => {
 
   if ('data' in msg){
     const typedMsg = msg as OccupancyGridMessage
-    
-    // let costMapPos = {
-    //   latitude: typedMsg.info.origin.position.x,
-    //   longitude: typedMsg.info.origin.position.y
-    // }
 
+    // 1/3 of costmap array length
     const default_offset = 40
 
-    //83.70967
-    //42.29319
+    // First digits of rover starting coords:
+    // 83.70967
+    // 42.29319
 
     let offsetPos = {
-      x: Math.floor((roverPos.longitude + 83.70967) * 200000 - (typedMsg.info.origin.position.x + 30)) + 40,//48,
-      y: Math.floor((roverPos.latitude - 42.29319) * 200000 - (typedMsg.info.origin.position.y + 30)) + 40//25
+      x: Math.floor((roverPos.longitude + 83.70967) * 250000 - (typedMsg.info.origin.position.x + 30)) + default_offset,
+      y: Math.floor((roverPos.latitude - 42.29319) * 250000 - (typedMsg.info.origin.position.y + 30)) + default_offset
     }
 
 
@@ -151,6 +159,10 @@ watch(driveMessage, (msg: unknown) => {
     }
     
     updateCostMapGrid(processed_data)
+    if(doCostmapRotation.value){
+      setCostMapRotation(Math.PI * rover_bearing_deg.value/180 - Math.PI / 2)
+    }
+    // console.log(rover_bearing_deg.value)
     // console.log((roverPos.longitude + 83.7096) * 100000)
     // console.log((roverPos.latitude - 42.2931) * 100000)
     // console.log(roverPos)
@@ -162,7 +174,6 @@ watch(driveMessage, (msg: unknown) => {
 })
 
 watch(navMessage, msg => {
-  // console.log("got")
 if (!msg) return
   const navMsg = msg as NavMessage
   if (navMsg.type === 'gps_fix') {
@@ -172,8 +183,14 @@ if (!msg) return
     // rover_longitude_deg.value = navMsg.longitude
     // rover_altitude.value = navMsg.altitude
     // rover_status.value = navMsg.status.status
-  }
-})
+  } else if (navMsg.type === 'orientation') {
+    rover_bearing_deg.value = quaternionToMapAngle(navMsg.orientation)
+    const { x: qx, y: qy, z: qz, w: qw } = navMsg.orientation
+    // pitch.value = (Math.asin(2 * (qx * qz - qy * qw)) * 180) / Math.PI
+    // roll.value =
+    //   (Math.atan2(2 * (qy * qz + qx * qw), 1 - 2 * (qx * qx + qy * qy)) * 180) /
+    //   Math.PI
+}})
 
 
 const camera_type = ref('default')
@@ -181,5 +198,14 @@ const camera_type = ref('default')
 function change_camera(new_mode: string){
   set_camera_type(new_mode)
   camera_type.value = new_mode
+}
+
+function toggleCostmapRotation(){
+  if(doCostmapRotation.value){
+    doCostmapRotation.value = false
+    setCostMapRotation(0)
+  } else {
+    doCostmapRotation.value = true
+  }
 }
 </script>

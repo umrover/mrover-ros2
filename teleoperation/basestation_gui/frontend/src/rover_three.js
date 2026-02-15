@@ -20,6 +20,7 @@ let ikTargetSphere = null
 
 let current_camera_type = "default"
 
+const costMapAnchor = new THREE.Object3D()
 const costMapBlockWidth = 40
 const numCostMapBlocks = 40
 const costMapGridOffset = costMapBlockWidth * (numCostMapBlocks/2)
@@ -74,7 +75,8 @@ export default function threeSetup() {
   ikTargetSphere.visible = false // Hidden by default until position is set
   scene.add(ikTargetSphere)
 
-  //Create costmap grid  
+  //Create costmap grid 
+  scene.add(costMapAnchor)
   for(let i = 0, idx = 0; i < numCostMapBlocks; i++){
     for(let j = 0; j < numCostMapBlocks; j++, idx++){
       const currentGeometry = new THREE.BoxGeometry(costMapBlockWidth,1,costMapBlockWidth)
@@ -91,7 +93,7 @@ export default function threeSetup() {
       costMapBlocks[idx].position.y = -50
       costMapBlocks[idx].position.z = current_z
 
-      scene.add(costMapBlocks[idx])
+      costMapAnchor.add(costMapBlocks[idx])
     }
   }
 
@@ -111,7 +113,7 @@ export default function threeSetup() {
 
   //Add textCanvasPlane to Scene
   textCanvasPlane.lookAt(-costMapBlockWidth / 2, 50, -costMapBlockWidth / 2)
-  scene.add(textCanvasPlane);
+  costMapAnchor.add(textCanvasPlane);
 
 
 
@@ -422,6 +424,10 @@ export function toggleCostMapGridVisibility(){
   }
 
   textCanvasPlane.visible = !textCanvasPlane.visible
+}
+
+export function setCostMapRotation(rotationValue){
+  costMapAnchor.rotation.y = rotationValue
 }
 
 // export function fk(positions, scene, joints) {
