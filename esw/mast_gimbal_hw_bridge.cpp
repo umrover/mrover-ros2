@@ -24,23 +24,18 @@ namespace mrover {
     class MastGimbalHWBridge : public rclcpp::Node {
 
     public:
-    
         MastGimbalHWBridge() : rclcpp::Node{"mast_gimbal_hw_bridge"} {
             // all initialization is done in the init() function to allow for the usage of shared_from_this()
         }
 
-        void create_servo(uint8_t id, const std::string& name)
-        {
+        auto create_servo(uint8_t id, std::string const& name) -> void {
             servos.insert({name, std::make_shared<mrover::Servo>(shared_from_this(), id, name)});
         }
 
-        bool servos_active(std::vector<Servo::ServoStatus>& statuses)
-        {
+        static auto servos_active(std::vector<Servo::ServoStatus>& statuses) -> bool {
             bool active = false;
-            for (auto& status : statuses)
-            {
-                if (status == Servo::ServoStatus::Active)
-                {
+            for (auto& status: statuses) {
+                if (status == Servo::ServoStatus::Active) {
                     active = true;
                 }
             }
@@ -49,35 +44,31 @@ namespace mrover {
 
         auto init() -> void {
 
-             Servo::init("/dev/ttyUSB0");
+            Servo::init("/dev/ttyUSB0");
 
-            for (auto const& servo : mServoNames) {
+            for (auto const& servo: mServoNames) {
                 create_servo(servo.second, servo.first);
             }
 
             getPositionService = this->create_service<mrover::srv::ServoPosition>("get_position", [this](
-                                                                                                             mrover::srv::ServoPosition::Request::SharedPtr const& request,
-                                                                                                                 mrover::srv::ServoPosition::Response::SharedPtr const& response) {
-
-                const size_t n = request->names.size();
+                                                                                                          mrover::srv::ServoPosition::Request::SharedPtr const& request,
+                                                                                                          mrover::srv::ServoPosition::Response::SharedPtr const& response) {
+                size_t const n = request->names.size();
                 std::vector<Servo::ServoStatus> statuses = std::vector<Servo::ServoStatus>(n);
 
-                const auto timeout = std::chrono::seconds(3);
-                const auto start = this->get_clock()->now();       
+                auto const timeout = std::chrono::seconds(3);
+                auto const start = this->get_clock()->now();
 
-                for (int i = 0; i < n; i++)
-                {
+                for (size_t i = 0; i < n; i++) {
                     statuses[i] = servos.at(request->names[i])->setPosition(request->positions[i], Servo::ServoMode::Limited);
-                }  
+                }
 
-                while (servos_active(statuses))
-                {
-                    for (int i = 0; i < n; i++)
-                    {
+                while (servos_active(statuses)) {
+                    for (size_t i = 0; i < n; i++) {
                         statuses[i] = servos.at(request->names[i])->getTargetStatus();
                         response->at_tgts[i] = (statuses[i] == Servo::ServoStatus::Success);
                     }
-                    if(this->get_clock()->now() - start > timeout){
+                    if (this->get_clock()->now() - start > timeout) {
                         RCLCPP_WARN(this->get_logger(), "Timeout reached while waiting for servo to reach target position");
                         break;
                     }
@@ -87,13 +78,10 @@ namespace mrover {
             mGimbalStatePub = this->create_publisher<mrover::msg::ControllerState>("controller_state", 10);
 
             mPublishDataTimer = this->create_wall_timer(std::chrono::milliseconds(100),
-                          [&](){ return MastGimbalHWBridge::publishDataCallback(); });
+                                                        [&]() { return MastGimbalHWBridge::publishDataCallback(); });
         }
 
     private:
-
-    
-
         rclcpp::Service<mrover::srv::ServoPosition>::SharedPtr getPositionService;
 
         std::unordered_map<std::string, std::shared_ptr<mrover::Servo>> servos;
@@ -103,9 +91,9 @@ namespace mrover {
         rclcpp::Publisher<mrover::msg::ControllerState>::SharedPtr mGimbalStatePub;
         rclcpp::TimerBase::SharedPtr mPublishDataTimer;
         msg::ControllerState mControllerState;
-        
+
         auto publishDataCallback() -> void {
-            const size_t n = mServoNames.size();
+            size_t const n = mServoNames.size();
 
             mControllerState.names.resize(n);
             mControllerState.positions.resize(n);
@@ -114,9 +102,9 @@ namespace mrover {
             mControllerState.errors.resize(n);
             mControllerState.states.resize(n);
             mControllerState.limits_hit.resize(n);
-            
+
             for (size_t i = 0; i < n; ++i) {
-                const auto& name = mServoNames[i].first;
+                auto const& name = mServoNames[i].first;
                 auto& servo = *servos.at(name);
 
                 mControllerState.names[i] = name;
@@ -132,7 +120,7 @@ namespace mrover {
 
                 mControllerState.positions[i] = pos;
                 mControllerState.velocities[i] = vel;
-                mControllerState.currents[i]  = cur;
+                mControllerState.currents[i] = cur;
 
                 Servo::ServoStatus ts = servo.getTargetStatus();
 
@@ -143,13 +131,13 @@ namespace mrover {
                     mControllerState.states[i] = "success";
                 } else {
                     mControllerState.states[i] = "error";
-                }      
+                }
 
                 /*mControllerState.error[i] = {servo->getErrorState()};*/
-                switch(err) {
+                switch (err) {
                     case Servo::ServoStatus::CommNotAvailable:
                         mControllerState.errors[i] = "CommNotAvailable";
-                        break; 
+                        break;
                     case Servo::ServoStatus::CommTxError:
                         mControllerState.errors[i] = "CommTxError";
                         break;
@@ -190,8 +178,8 @@ namespace mrover {
 
             mGimbalStatePub->publish(mControllerState);
         }
-    };// namespace mrover
-}
+    }; // namespace mrover
+} // namespace mrover
 
 
 auto main(int argc, char** argv) -> int {
@@ -202,4 +190,3 @@ auto main(int argc, char** argv) -> int {
     rclcpp::shutdown();
     return EXIT_SUCCESS;
 }
-
