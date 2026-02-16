@@ -21,14 +21,6 @@ namespace mrover {
             fkCallback(msg);
         });
 
-        mTypingServer = rclcpp_action::create_server<action::TypingPosition>(
-            this,
-            "typing_ik",
-            [this](auto & uuid, auto typingGoal) { return handleTypingGoal(uuid, typingGoal); },
-            [this](auto typingGoalHandle) { return handleTypingCancel(typingGoalHandle); },
-            [this](auto typingGoalHandle) { return handleTypingAccepted(typingGoalHandle); }
-        );
-
         mTimer = create_wall_timer(std::chrono::milliseconds(33), [this]() {
             timerCallback();
         });
@@ -213,87 +205,6 @@ namespace mrover {
             mLastUpdate = get_clock()->now();
         else
             RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 100, "Received position command in velocity mode!");
-    }
-
-        auto ArmController::handleTypingGoal(const rclcpp_action::GoalUUID & uuid, std::shared_ptr<const action::TypingPosition_Goal> typingGoal) -> rclcpp_action::GoalResponse {
-        (void)typingGoal;
-        
-        if(mArmMode != ArmMode::TYPING) 
-            RCLCPP_WARN(get_logger(), "Rejecting goal: recieved typing goal while not in typing mode!");
-        
-        if(mTypingGoalID) {
-            RCLCPP_WARN(get_logger(), "Rejecting goal: received new typing goal while there already exists an active goal!");
-            return rclcpp_action::GoalResponse::REJECT;
-        }
-
-        mTypingGoalID = uuid;
-        RCLCPP_INFO(get_logger(), "Accepting new typing goal");
-        return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
-    }
-    
-    auto ArmController::handleTypingCancel(const std::shared_ptr<rclcpp_action::ServerGoalHandle<action::TypingPosition>> typingGoalHandle) -> rclcpp_action::CancelResponse {
-        if(!mTypingGoalID || typingGoalHandle->get_goal_id() != mTypingGoalID.value()) {
-            RCLCPP_WARN(get_logger(), "Rejecting cancel: attempted to cancel an invalid typing goal");
-            return rclcpp_action::CancelResponse::REJECT;
-        } 
-        RCLCPP_INFO(get_logger(), "Accepting typing goal cancel");
-        return rclcpp_action::CancelResponse::ACCEPT;
-    }
-    
-    auto ArmController::handleTypingAccepted(const std::shared_ptr<rclcpp_action::ServerGoalHandle<action::TypingPosition>> typingGoalHandle) -> void {
-        std::thread([this, typingGoalHandle]() {
-            auto result = std::make_shared<action::TypingPosition::Result>();
-            result->success = false;
-            auto feedback = std::make_shared<action::TypingPosition::Feedback>();
-            RCLCPP_INFO(get_logger(), "Joint A Current: %f, Gripper Current: %f", joints["joint_a"].pos, joints["gripper"].pos);
-            
-
-            // make param
-            rclcpp::Duration typingTimeout = rclcpp::Duration(15, 0);
-            rclcpp::Time startTime = get_clock()->now();
-
-            // make param
-            rclcpp::Rate loopRate(3);
-            while(get_clock()->now() - startTime < typingTimeout) {
-                mLastUpdate = get_clock()->now();
-                mPosTarget.y = mTypingOrigin.y + typingGoalHandle->get_goal()->x;
-                mPosTarget.gripper = mTypingOrigin.gripper + typingGoalHandle->get_goal()->y;
-                RCLCPP_INFO(get_logger(), "Joint A Target: %f, Gripper Target: %f", mPosTarget.y, mPosTarget.gripper);
-                if(typingGoalHandle->is_canceling()) {
-                    result->success = false;
-                    typingGoalHandle->canceled(result);
-
-                    mTypingGoalID = std::nullopt;
-
-                    RCLCPP_INFO(get_logger(), "Typing goal sucessfully cancelled");
-                    return;
-                }
-
-                double distRemaining = sqrt(pow(joints["joint_a"].pos - mPosTarget.y, 2) + pow((joints["gripper"].pos - mPosTarget.gripper), 2));
-                // make param
-                if(distRemaining < 0.004) {
-                    result->success = true;
-                    typingGoalHandle->succeed(result);
-
-                    mTypingGoalID = std::nullopt;
-
-                    RCLCPP_INFO(get_logger(), "Typing goal sucessfully finished");
-                    return;
-                }
-
-                // send feedback
-                feedback->dist_remaining = static_cast<float>(distRemaining);
-                typingGoalHandle->publish_feedback(feedback);
-            }
-            result->success = false;
-            typingGoalHandle->abort(result);
-
-            mTypingGoalID = std::nullopt;
-            
-            RCLCPP_INFO(get_logger(), "Aborting goal: typing goal took too long!");
-            return;
-
-        }).detach();
     }
 
     auto ArmController::timerCallback() -> void {
