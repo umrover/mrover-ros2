@@ -29,6 +29,7 @@ namespace mrover {
         [[nodiscard]] auto getPosition() const -> float { return mPosition; }
         [[nodiscard]] auto getVelocity() const -> float { return mVelocity; }
         [[nodiscard]] auto getCurrent() const -> float { return mCurrent; }
+        [[nodiscard]] auto getIsStalled() const -> bool { return mIsStalled; }
         [[nodiscard]] auto getLimitsHitBits() const -> std::uint8_t {
             std::uint8_t limits_hit{};
             for (int i = 0; i < 4; ++i) {
@@ -49,6 +50,7 @@ namespace mrover {
         float mVelocity{0.0f};
         float mCurrent{0.0f};
         std::array<bool, 4> mLimitHit{};
+        bool mIsStalled{false};
     };
 
 } // namespace mrover

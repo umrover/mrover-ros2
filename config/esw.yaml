@@ -66,8 +66,8 @@ can_bridge_2:
         id: 0x34
       gripper:
         id: 0x35
-#      pusher:
-#        id: 0x36
+      pusher:
+        id: 0x36
 #      auger:
 #        id: 0x40
 #      sensor_actuator:
