@@ -177,7 +177,10 @@ namespace mrover {
         // update joint positions stored in ArmController class
         for (size_t i = 0; i < joint_state->names.size(); ++i) {
             auto it = joints.find(joint_state->names[i]);
+        for (size_t i = 0; i < joint_state->names.size(); ++i) {
+            auto it = joints.find(joint_state->names[i]);
             if (it == joints.end()) {
+                RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, "Unknown joint \"" << joint_state->names[i] << "\"");
                 RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, "Unknown joint \"" << joint_state->names[i] << "\"");
                 continue;
             }
@@ -189,11 +192,14 @@ namespace mrover {
         }
 
         double y = joint_state->positions[0]; // joint a position
+        double y = joint_state->positions[0]; // joint a position
         // joint b position
+        double angle = -joint_state->positions[1];
         double angle = -joint_state->positions[1];
         double x = LINK_BC * std::cos(angle);
         double z = LINK_BC * std::sin(angle);
         // joint c position
+        angle -= joint_state->positions[2] - JOINT_C_OFFSET;
         angle -= joint_state->positions[2] - JOINT_C_OFFSET;
         x += LINK_CD * std::cos(angle);
         z += LINK_CD * std::sin(angle);
@@ -341,6 +347,7 @@ namespace mrover {
                 if (!velocities) RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1000, "Velocity IK failed!");
                 if (!mPosFallback) mPosFallback = mCurrPos;
                 mPosPub->publish(mPosFallback.value());
+                if(!velocities) RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1000, "Velocity IK failed!");
             }
         } else { // typing mode
             if(mTypingGoalID) {
@@ -360,15 +367,13 @@ namespace mrover {
                         return;
                     }
 
-                    if (!it->second.limits.posInBounds(positions.positions[i])) {
-                        RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, "Position for joint " << positions.names[i] << " not within limits! (" << positions.positions[i] << ")");
-                        RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, "Typing IK failed");
-                        return;
-                    }
+                if (!it->second.limits.posInBounds(positions.positions[i])) {
+                    RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, "Position for joint " << positions.names[i] << " not within limits! (" << positions.positions[i] << ")");
+                    RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, "Typing IK failed");
+                    return;
                 }
-                mPosFallback = std::nullopt;
-                mPosPub->publish(positions);
             }
+            mPosPub->publish(positions);
         }
     }
 

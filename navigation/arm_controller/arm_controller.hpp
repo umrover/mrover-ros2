@@ -74,7 +74,6 @@ namespace mrover {
         auto timerCallback() -> void;
 
         ArmPos mArmPos, mTypingOrigin, mPosTarget;
-        std::optional<msg::Position> mPosFallback;
         geometry_msgs::msg::Twist mVelTarget;
         rclcpp::Time mLastUpdate;
 
@@ -102,6 +101,7 @@ namespace mrover {
 
         void posCallback(msg::IK::ConstSharedPtr const& ik_target);
         void velCallback(geometry_msgs::msg::Twist::ConstSharedPtr const& ik_vel);
+        void fkCallback(mrover::msg::ControllerState::ConstSharedPtr const& joint_state);
         void fkCallback(mrover::msg::ControllerState::ConstSharedPtr const& joint_state);
         auto modeCallback(srv::IkMode::Request::ConstSharedPtr const& req, srv::IkMode::Response::SharedPtr const& resp) -> void;
     };
