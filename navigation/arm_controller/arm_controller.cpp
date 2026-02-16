@@ -343,30 +343,32 @@ namespace mrover {
                 mPosPub->publish(mPosFallback.value());
             }
         } else { // typing mode
-            msg::Position positions;
-            positions.names = {"joint_a", "gripper"};
-            positions.positions = {
-                    static_cast<float>(mPosTarget.y + mTypingOrigin.y),
-                    static_cast<float>(mPosTarget.z + mTypingOrigin.gripper),
-            };
+            if(mTypingGoalID) {
+                msg::Position positions;
+                positions.names = {"joint_a", "gripper"};
+                positions.positions = {
+                        static_cast<float>(mPosTarget.y + mTypingOrigin.y),
+                        static_cast<float>(mPosTarget.z + mTypingOrigin.gripper),
+                };
 
-            // bounds checking and such
-            for (size_t i = 0; i < positions.names.size(); ++i) {
-                auto it = joints.find(positions.names[i]);
-                // hopefully this will never happen, but just in case
-                if (it == joints.end()) {
-                    RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, "Unknown joint \"" << positions.names[i] << "\"");
-                    return;
-                }
+                // bounds checking and such
+                for (size_t i = 0; i < positions.names.size(); ++i) {
+                    auto it = joints.find(positions.names[i]);
+                    // hopefully this will never happen, but just in case
+                    if (it == joints.end()) {
+                        RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, "Unknown joint \"" << positions.names[i] << "\"");
+                        return;
+                    }
 
-                if (!it->second.limits.posInBounds(positions.positions[i])) {
-                    RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, "Position for joint " << positions.names[i] << " not within limits! (" << positions.positions[i] << ")");
-                    RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, "Typing IK failed");
-                    return;
+                    if (!it->second.limits.posInBounds(positions.positions[i])) {
+                        RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, "Position for joint " << positions.names[i] << " not within limits! (" << positions.positions[i] << ")");
+                        RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, "Typing IK failed");
+                        return;
+                    }
                 }
+                mPosFallback = std::nullopt;
+                mPosPub->publish(positions);
             }
-            mPosFallback = std::nullopt;
-            mPosPub->publish(positions);
         }
     }
 
