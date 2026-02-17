@@ -1,0 +1,24 @@
+aruco_tracker:
+  ros__parameters:
+    # --- Setup ---
+    # cam_base_topic: "/video4/image"
+    cam_base_topic: "/finger_camera/image"
+    image_is_rectified: false             # Set to false if using raw/distorted image
+    marker_dict: "4X4_50"                # Your specific dictionary
+    marker_size: 0.02                    # Size of the tag in meters (e.g. 10cm)
+    publish_tf: true                     # Publish TF transforms (camera -> marker)
+    
+    # These parameters are passed directly to the OpenCV detector
+    aruco:
+      # Corner Refinement: Crucial for accurate pose estimation
+      # 0=None, 1=Subpix (Slow/Accurate), 2=Contour (Fast), 3=AprilTag (Robust)
+      cornerRefinementMethod: 2
+      
+      # Thresholding: How the algorithm converts the image to black & white
+      adaptiveThreshWinSizeMin: 3
+      adaptiveThreshWinSizeMax: 23
+      adaptiveThreshWinSizeStep: 10
+      
+      # Polygons: Filter out "squares" that are too small or too close together
+      minMarkerPerimeterRate: 0.03  # Ignore tags smaller than 3% of image
+      polygonalApproxAccuracyRate: 0.05
