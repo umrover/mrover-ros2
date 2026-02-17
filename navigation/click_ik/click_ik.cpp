@@ -247,7 +247,7 @@ namespace mrover {
             if (currX > mPointCloudWidth)
                 currX = mPointCloudWidth;
             if (currY > mPointCloudHeight)
-                currY = mPointCloudWidth;
+                currY = mPointCloudHeight;
             if (currX + currY * mPointCloudWidth >= temp)
                 return std::nullopt;
 
@@ -290,8 +290,10 @@ namespace mrover {
         }
 
         auto const goal = goal_handle->get_goal();
+        RCLCPP_INFO(get_logger(), "Goal, w:%d, h:%d, scale:%f", goal->w, goal->h, goal->scale);
         auto result = std::make_shared<action::IkImageSample::Result>();
         result->success.resize(goal->w * goal->h);
+        SE3d target_transfer_function = SE3Conversions::fromTfTree(*mTfBuffer, "zed_left_camera_frame", "arm_base_link");
         for (int i = 0; i < goal->w; i++) {
             for (int j = 0; j < goal->h; j++) {
                 if (goal_handle->is_canceling()) {
@@ -301,9 +303,11 @@ namespace mrover {
                     RCLCPP_INFO(get_logger(), "ClickIk Goal Cancelled Successfully.");
                     return;
                 }
-                auto target_point = spiralSearchInImg(static_cast<size_t>(goal->scale * i), static_cast<size_t>(goal->scale * j));
+                auto target_point = spiralSearchInImg(
+                        static_cast<size_t>((static_cast<float>(i) / static_cast<float>(goal->w)) * static_cast<float>(mPointCloudWidth)),
+                        static_cast<size_t>((static_cast<float>(j) / static_cast<float>(goal->h)) * static_cast<float>(mPointCloudHeight)));
                 if (!target_point.has_value()) {
-                    result->success[i * goal->w + j] = false;
+                    result->success[j * goal->w + i] = false;
                     continue;
                 }
 
@@ -315,7 +319,7 @@ namespace mrover {
                 pose.position.set__z(target_point.value().z);
                 SE3d target_pose = SE3Conversions::fromPose(pose);
                 target_point->x -= ArmController::END_EFFECTOR_LENGTH;
-                SE3d target_transfer = SE3Conversions::fromTfTree(*mTfBuffer, "zed_left_camera_frame", "arm_base_link");
+                SE3d target_transfer = target_transfer_function;
                 target_transfer *= target_pose;
                 srv::IkSample::Request::SharedPtr sendReq = std::make_shared<srv::IkSample::Request>();
                 geometry_msgs::msg::Vector3 vec;

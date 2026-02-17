@@ -5,12 +5,16 @@
 
 #include <QDebug>
 
+#include <memory>
 #include <opencv2/core.hpp>
+#include <rclcpp/logging.hpp>
+#include <rclcpp_action/create_client.hpp>
 #include <sensor_msgs/image_encodings.hpp>
 
 #include <gst_utils.hpp>
 
 #include "GstRtpVideoCreatorWidget.hpp"
+#include "mrover/action/detail/ik_image_sample__struct.hpp"
 
 namespace mrover {
 
@@ -18,6 +22,7 @@ namespace mrover {
         : QObject(nullptr),
           Node("camera_client") {
         mClickIkClient = rclcpp_action::create_client<action::ClickIk>(this, "/click_ik");
+        mIkSampleClient = rclcpp_action::create_client<action::IkImageSample>(this, "/ik_image_sample");
         RCLCPP_INFO(get_logger(), "Camera client initialized");
     }
 
@@ -137,6 +142,31 @@ namespace mrover {
                     emit clickIkResult(result.result->success);
                 };
         mClickIkClient->async_send_goal(goal, options);
+    }
+
+    void CameraClientNode::sampleClickIk() {
+        RCLCPP_INFO(this->get_logger(), "Sending ClickIK Image Sample Request.");
+        auto goal = action::IkImageSample::Goal();
+        goal.set__w(1280 / 10);
+        goal.set__h(720 / 10);
+        goal.set__scale(10);
+        auto options = rclcpp_action::Client<action::IkImageSample>::SendGoalOptions{};
+        options.result_callback =
+                [this](auto const& result) {
+                    if (result.code != rclcpp_action::ResultCode::SUCCEEDED) {
+                        return;
+                    }
+
+                    // 2. Ensure the result pointer actually exists
+                    if (result.result) {
+                        // Store it in a class member first to keep the memory alive
+                        this->mImageSample = result.result;
+
+                        // 3. Emit the member or the pointer
+                        emit ikImageSampleResult(this->mImageSample);
+                    };
+                };
+        mIkSampleClient->async_send_goal(goal, options);
     }
 
 } // namespace mrover

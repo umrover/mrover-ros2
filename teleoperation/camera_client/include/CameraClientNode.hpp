@@ -1,6 +1,8 @@
 #pragma once
 
+#include "mrover/action/detail/ik_image_sample__struct.hpp"
 #include <memory>
+#include <qimage.h>
 #include <string>
 #include <unordered_map>
 
@@ -31,6 +33,8 @@ namespace mrover {
         std::unordered_map<std::string, rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr> mImageCaptureClients;
         std::unordered_map<std::string, rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr> mImageCaptureSubscribers;
         rclcpp_action::Client<action::ClickIk>::SharedPtr mClickIkClient;
+        rclcpp_action::Client<action::IkImageSample>::SharedPtr mIkSampleClient;
+        action::IkImageSample::Result::SharedPtr mImageSample;
 
         auto imageCaptureCallback(std::string const& cameraName, sensor_msgs::msg::Image::ConstSharedPtr const& msg) -> void;
         auto sendMediaControlRequest(std::string const& cameraName, std::uint8_t command) -> bool;
@@ -47,6 +51,7 @@ namespace mrover {
         void imageCaptured(QString cameraName, QImage image);
         void clickIkFeedback(float distance);
         void clickIkResult(bool success);
+        void ikImageSampleResult(action::IkImageSample::Result::SharedPtr imageSample);
 
     public slots:
         bool requestPause(std::string const& cameraName);
@@ -54,6 +59,7 @@ namespace mrover {
         bool requestStop(std::string const& cameraName);
         bool requestScreenshot(std::string const& cameraName);
         void sendClickIk(std::uint32_t x, std::uint32_t y);
+        void sampleClickIk();
     };
 
 } // namespace mrover

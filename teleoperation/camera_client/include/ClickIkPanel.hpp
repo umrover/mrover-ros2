@@ -1,7 +1,10 @@
 #pragma once
 
 #include "GstVideoWidgets.hpp"
+#include "mrover/action/detail/ik_image_sample__struct.hpp"
 #include "pch.hpp"
+#include <qlabel.h>
+#include <qpushbutton.h>
 
 namespace mrover {
 
@@ -17,11 +20,18 @@ namespace mrover {
         QWidget* mVideoContainer;
         QVBoxLayout* mVideoContainerLayout;
         mrover::GstVideoWidget* mVideoWidget;
+        QPushButton* mSampleButton;
+        QPushButton* mClearOverlayButton;
+        QLabel* mSampleOverlay;
+        QImage* mOverlayImage;
+
 
         bool mEnabled = false;
         bool mRunning = false;
+        bool mShowOverlay = false;
         int mSuccessCount = 0;
         int mFailCount = 0;
+        uint8_t const IMAGE_SAMPLE_RESOLUTION = 10;
 
     public:
         explicit ClickIkPanel(QWidget* parent = nullptr);
@@ -32,13 +42,17 @@ namespace mrover {
     public slots:
         void updateFeedback(float distance);
         void updateResult(bool success);
+        void enableOverlayWidget(mrover::action::IkImageSample::Result::SharedPtr imageSample);
         void markRunning();
 
     signals:
         void toggled(bool enabled);
+        void sample();
 
     private:
         void onToggle();
+        void onSample();
+        void onClearOverlay();
         void refreshStatus();
         void refreshResultLabel(bool lastSuccess);
         void resizeEvent(QResizeEvent* event) override;
