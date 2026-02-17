@@ -215,17 +215,17 @@ target_link_libraries(gst_utils INTERFACE magic_enum::magic_enum PkgConfig::Gst 
 
 # Simulator
 
-#mrover_add_node(simulator simulator/*.cpp simulator simulator/pch.hpp)
-#ament_target_dependencies(simulator rclcpp rclcpp_components nav_msgs sensor_msgs geometry_msgs tf2 tf2_ros urdf yaml_cpp_vendor)
-#target_link_libraries(simulator
-#    assimp::assimp glfw3webgpu webgpu glfw webgpu_hpp imgui
-#    ${BULLET_LIBRARIES}
-#    lie Eigen3::Eigen
-#    opencv_core opencv_imgcodecs opencv_imgproc
-#    loop_profiler
-#    parameter_utils
-#)
-#target_include_directories(simulator SYSTEM PRIVATE ${BULLET_INCLUDE_DIRS} ${OPENCV_INCLUDE_DIRS})
+mrover_add_node(simulator simulator/*.cpp simulator simulator/pch.hpp)
+ament_target_dependencies(simulator rclcpp rclcpp_components nav_msgs sensor_msgs geometry_msgs tf2 tf2_ros urdf yaml_cpp_vendor)
+target_link_libraries(simulator
+   assimp::assimp glfw3webgpu webgpu glfw webgpu_hpp imgui
+   ${BULLET_LIBRARIES}
+   lie Eigen3::Eigen
+   opencv_core opencv_imgcodecs opencv_imgproc
+   loop_profiler
+   parameter_utils
+)
+target_include_directories(simulator SYSTEM PRIVATE ${BULLET_INCLUDE_DIRS} ${OPENCV_INCLUDE_DIRS})
 
 
 # Localization
@@ -344,12 +344,12 @@ mrover_add_node(differential_drive_controller esw/differential_drive_controller.
 ament_target_dependencies(differential_drive_controller rclcpp std_srvs)
 target_link_libraries(differential_drive_controller units)
 
-# mrover_add_node(arm_controller navigation/arm_controller/arm_controller.cpp navigation/arm_controller/pch.hpp)
-# target_link_libraries(arm_controller lie)
-# ament_target_dependencies(arm_controller rclcpp)
+mrover_add_node(arm_controller navigation/arm_controller/arm_controller.cpp navigation/arm_controller/pch.hpp)
+target_link_libraries(arm_controller lie)
+ament_target_dependencies(arm_controller rclcpp)
 
-# mrover_add_node(led esw/led.cpp)
-# ament_target_dependencies(led rclcpp std_srvs)
+mrover_add_node(led esw/led.cpp)
+ament_target_dependencies(led rclcpp std_srvs)
 
 if (Gst_FOUND AND GstApp_FOUND)
     mrover_add_node(usb_camera esw/usb_camera/*.cpp esw/usb_camera/pch.hpp)

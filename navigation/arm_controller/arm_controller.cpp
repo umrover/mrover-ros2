@@ -1,6 +1,4 @@
 #include "arm_controller.hpp"
-#include "mrover/msg/detail/controller_state__struct.hpp"
-#include <rclcpp/logging.hpp>
 
 namespace mrover {
     rclcpp::Duration const ArmController::TIMEOUT = rclcpp::Duration(0, 0.3 * 1e9); // 0.3 seconds
@@ -20,6 +18,8 @@ namespace mrover {
         mJointSub = create_subscription<msg::ControllerState>("arm_controller_state", 1, [this](msg::ControllerState::ConstSharedPtr const& msg) {
             fkCallback(msg);
         });
+
+        mTypingGoalID = std::nullopt;
 
         mTypingServer = rclcpp_action::create_server<action::TypingPosition>(
             this,
@@ -375,6 +375,7 @@ namespace mrover {
             RCLCPP_INFO(get_logger(), "IK Switching to Typing (position) Mode");
             // set reference point for typing
             mTypingOrigin = mArmPos;
+            mPosTarget = mArmPos;
         }
         resp->success = true;
     }
