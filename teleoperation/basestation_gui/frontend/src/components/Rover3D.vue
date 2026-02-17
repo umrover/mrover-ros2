@@ -1,52 +1,32 @@
 <template>
-  <button
-    type="button"
-    class="btn flex-fill"
-    @click = "set_camera_type('default')">
-      Default
-  </button>
-  <button
-    type="button"
-    class="btn flex-fill"
-    @click = "set_camera_type('follow')">
-      Follow
-  </button>
-  <button
-    type="button"
-    class="btn flex-fill"
-    @click = "set_camera_type('arm')">
-      Arm
-  </button>
-   <button
-    type="button"
-    class="btn flex-fill"
-    @click = "set_camera_type('full arm')">
-      Full Arm
-  </button>
-  <button
-    type="button"
-    class="btn flex-fill"
-    @click = "set_camera_type('side arm')">
-      Side Arm
-  </button>
-  <button
-    type="button"
-    class="btn flex-fill"
-    @click = "set_camera_type('top')">
-      Top Down
-  </button>
-  <button
-    type="button"
-    class="btn flex-fill"
-    @click = "set_camera_type('bottom')">
-      Bottom Up
-  </button>
-  <button
-    type="button"
-    class="btn flex-fill"
-    @click = "toggleCostMap()">
-      Toggle Cost Map
-  </button>
+  <div class="d-flex gap-3 p-2">
+    <div class="dropdown">
+      <button
+        class="btn btn-success dropdown-toggle"
+        type="button"
+        id="cameraDropdown"
+        data-bs-toggle="dropdown"
+        aria-expanded="false"
+      >
+        Camera: {{ camera_type === 'default' ? 'Default' : camera_type === 'follow' ? 'Follow' : camera_type === 'arm' ? 'Arm' : camera_type === 'full arm' ? 'Full Arm' : camera_type === 'side arm' ? 'Side Arm' : 'Top Down' }}
+      </button>
+      <ul class="dropdown-menu" aria-labelledby="cameraDropdown">
+        <li><a class="dropdown-item" :class="{ 'active': camera_type === 'default' }" @click="change_camera('default')">Default</a></li>
+        <li><a class="dropdown-item" :class="{ 'active': camera_type === 'follow' }" @click="change_camera('follow')">Follow</a></li>
+        <li><a class="dropdown-item" :class="{ 'active': camera_type === 'arm' }" @click="change_camera('arm')">Arm</a></li>
+        <li><a class="dropdown-item" :class="{ 'active': camera_type === 'full arm' }" @click="change_camera('full arm')">Full Arm</a></li>
+        <li><a class="dropdown-item" :class="{ 'active': camera_type === 'side arm' }" @click="change_camera('side arm')">Side Arm</a></li>
+        <li><a class="dropdown-item" :class="{ 'active': camera_type === 'top' }" @click="change_camera('top')">Top Down</a></li>
+      </ul>
+    </div>
+
+    <button
+        type="button"
+        class="btn btn-sm btn-light border"
+        @click="toggleCostMap()">
+          Toggle Cost Map
+    </button>
+  </div>
 
   <canvas class="webgl p-0 h-100 w-100"></canvas>
 </template>
@@ -188,4 +168,12 @@ if (!msg) return
     roverPos.longitude = navMsg.longitude
   }
 })
+
+
+const camera_type = ref('default')
+
+function change_camera(new_mode: string){
+  set_camera_type(new_mode)
+  camera_type.value = new_mode
+}
 </script>
