@@ -1,6 +1,4 @@
 #include "arm_controller.hpp"
-#include "mrover/msg/detail/controller_state__struct.hpp"
-#include <rclcpp/logging.hpp>
 
 namespace mrover {
     rclcpp::Duration const ArmController::TIMEOUT = rclcpp::Duration(0, 0.3 * 1e9); // 0.3 seconds
