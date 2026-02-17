@@ -44,8 +44,10 @@ namespace mrover {
 
         auto init() -> void {
 
-            Servo::init("/dev/ttyUSB0");
-
+            
+            std::string device_name = this->declare_parameter<std::string>("device_name", "/dev/ttyUSB0");
+            Servo::init(device_name);
+            
             for (auto const& servo: mServoNames) {
                 create_servo(servo.second, servo.first);
             }
