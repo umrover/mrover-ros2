@@ -424,6 +424,14 @@ export function toggleCostMapGridVisibility(){
   textCanvasPlane.visible = !textCanvasPlane.visible
 }
 
+export function setCostMapGridVisibility(visible){
+  for(let i = 0; i < numCostMapBlocks * numCostMapBlocks; i++){
+    costMapBlocks[i].visible = visible
+  }
+
+  textCanvasPlane.visible = visible
+}
+
 // export function fk(positions, scene, joints) {
 //   let cumulativeMatrix = new THREE.Matrix4()
 //   cumulativeMatrix.makeTranslation(new THREE.Vector3(0, 0, 0.439675)) // base_link offset
