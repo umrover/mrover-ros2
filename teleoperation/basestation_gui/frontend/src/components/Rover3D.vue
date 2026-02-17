@@ -1,41 +1,41 @@
 <template>
-  <button 
+  <button
     type="button"
     class="btn flex-fill"
     @click = "set_camera_type('default')">
       Default
   </button>
-  <button 
+  <button
     type="button"
     class="btn flex-fill"
     @click = "set_camera_type('follow')">
       Follow
   </button>
-  <button 
+  <button
     type="button"
     class="btn flex-fill"
     @click = "set_camera_type('arm')">
       Arm
   </button>
-   <button 
+   <button
     type="button"
     class="btn flex-fill"
     @click = "set_camera_type('full arm')">
       Full Arm
   </button>
-  <button 
+  <button
     type="button"
     class="btn flex-fill"
     @click = "set_camera_type('side arm')">
       Side Arm
   </button>
-  <button 
+  <button
     type="button"
     class="btn flex-fill"
     @click = "set_camera_type('top')">
       Top Down
   </button>
-  <button 
+  <button
     type="button"
     class="btn flex-fill"
     @click = "set_camera_type('bottom')">
@@ -44,8 +44,8 @@
   <button
     type="button"
     class="btn flex-fill"
-    @click = "updateCostMapGrid()">
-      Test Button
+    @click = "toggleCostMap()">
+      Toggle Cost Map
   </button>
 
   <canvas class="webgl p-0 h-100 w-100"></canvas>
@@ -86,8 +86,21 @@ const jointNameMap: Record<string, string> = {
   gripper: 'gripper_link', // not implemented lol
 }
 
+const COSTMAP_VISIBLE_KEY = 'rover3d.costmapVisible'
+
+const costmapVisible = ref(localStorage.getItem(COSTMAP_VISIBLE_KEY) !== 'false')
+
+function toggleCostMap() {
+  costmapVisible.value = !costmapVisible.value
+  localStorage.setItem(COSTMAP_VISIBLE_KEY, String(costmapVisible.value))
+  toggleCostMapGridVisibility()
+}
+
 onMounted(() => {
   threeScene.value = threeSetup()
+  if (!costmapVisible.value) {
+    setCostMapGridVisibility(false)
+  }
   websocketStore.setupWebSocket('nav')
 })
 
