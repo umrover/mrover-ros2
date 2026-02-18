@@ -271,7 +271,7 @@ namespace mrover {
 
                 double distRemaining = sqrt(pow(joints["joint_a"].pos - mPosTarget.y, 2) + pow((joints["gripper"].pos - mPosTarget.gripper), 2));
                 // make param
-                if(distRemaining < 0.004) {
+                if(distRemaining < 0.002) {
                     result->success = true;
                     typingGoalHandle->succeed(result);
 
