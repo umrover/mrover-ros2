@@ -1,52 +1,32 @@
 <template>
-  <button 
-    type="button"
-    class="btn flex-fill"
-    @click = "set_camera_type('default')">
-      Default
-  </button>
-  <button 
-    type="button"
-    class="btn flex-fill"
-    @click = "set_camera_type('follow')">
-      Follow
-  </button>
-  <button 
-    type="button"
-    class="btn flex-fill"
-    @click = "set_camera_type('arm')">
-      Arm
-  </button>
-   <button 
-    type="button"
-    class="btn flex-fill"
-    @click = "set_camera_type('full arm')">
-      Full Arm
-  </button>
-  <button 
-    type="button"
-    class="btn flex-fill"
-    @click = "set_camera_type('side arm')">
-      Side Arm
-  </button>
-  <button 
-    type="button"
-    class="btn flex-fill"
-    @click = "set_camera_type('top')">
-      Top Down
-  </button>
-  <button 
-    type="button"
-    class="btn flex-fill"
-    @click = "set_camera_type('bottom')">
-      Bottom Up
-  </button>
-  <button
-    type="button"
-    class="btn flex-fill"
-    @click = "updateCostMapGrid()">
-      Test Button
-  </button>
+  <div class="d-flex gap-3 p-2">
+    <div class="dropdown">
+      <button
+        class="btn btn-success dropdown-toggle"
+        type="button"
+        id="cameraDropdown"
+        data-bs-toggle="dropdown"
+        aria-expanded="false"
+      >
+        Camera: {{ camera_type === 'default' ? 'Default' : camera_type === 'follow' ? 'Follow' : camera_type === 'arm' ? 'Arm' : camera_type === 'full arm' ? 'Full Arm' : camera_type === 'side arm' ? 'Side Arm' : 'Top Down' }}
+      </button>
+      <ul class="dropdown-menu" aria-labelledby="cameraDropdown">
+        <li><a class="dropdown-item" :class="{ 'active': camera_type === 'default' }" @click="change_camera('default')">Default</a></li>
+        <li><a class="dropdown-item" :class="{ 'active': camera_type === 'follow' }" @click="change_camera('follow')">Follow</a></li>
+        <li><a class="dropdown-item" :class="{ 'active': camera_type === 'arm' }" @click="change_camera('arm')">Arm</a></li>
+        <li><a class="dropdown-item" :class="{ 'active': camera_type === 'full arm' }" @click="change_camera('full arm')">Full Arm</a></li>
+        <li><a class="dropdown-item" :class="{ 'active': camera_type === 'side arm' }" @click="change_camera('side arm')">Side Arm</a></li>
+        <li><a class="dropdown-item" :class="{ 'active': camera_type === 'top' }" @click="change_camera('top')">Top Down</a></li>
+      </ul>
+    </div>
+
+    <button
+        type="button"
+        class="btn btn-sm btn-light border"
+        @click="toggleCostMap()">
+          Toggle Cost Map
+    </button>
+  </div>
 
   <canvas class="webgl p-0 h-100 w-100"></canvas>
 </template>
@@ -55,8 +35,9 @@
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useWebsocketStore } from '@/stores/websocket'
 import { storeToRefs } from 'pinia'
-import type { ControllerStateMessage } from '@/types/websocket'
-import threeSetup, { updatePose, updateIKTarget, set_camera_type, updateCostMapGrid} from '../rover_three.js'
+import type { ControllerStateMessage, OccupancyGridMessage } from '@/types/websocket'
+import threeSetup, { updatePose, updateIKTarget, set_camera_type, updateCostMapGrid, toggleCostMapGridVisibility, setCostMapGridVisibility} from '../rover_three.js'
+import type { NavMessage } from '@/types/coordinates.js'
 
 interface ArmIKMessage {
   type: 'ik_target'
@@ -85,18 +66,34 @@ const jointNameMap: Record<string, string> = {
   gripper: 'gripper_link', // not implemented lol
 }
 
+const COSTMAP_VISIBLE_KEY = 'rover3d.costmapVisible'
+
+const costmapVisible = ref(localStorage.getItem(COSTMAP_VISIBLE_KEY) !== 'false')
+
+function toggleCostMap() {
+  costmapVisible.value = !costmapVisible.value
+  localStorage.setItem(COSTMAP_VISIBLE_KEY, String(costmapVisible.value))
+  toggleCostMapGridVisibility()
+}
+
 onMounted(() => {
   threeScene.value = threeSetup()
+  if (!costmapVisible.value) {
+    setCostMapGridVisibility(false)
+  }
+  websocketStore.setupWebSocket('nav')
 })
 
 onBeforeUnmount(() => {
   if (threeScene.value) {
     threeScene.value()
   }
+  websocketStore.closeWebSocket('nav')
 })
 
 const armMessage = computed(() => messages.value['arm'])
-const contextMessage = computed(() => messages.value['context'])
+const driveMessage = computed(() => messages.value['drive'])
+const navMessage = computed(() => messages.value['nav'])
 
 watch(armMessage, (msg: unknown) => {
   if (!msg || typeof msg !== 'object') return
@@ -131,12 +128,52 @@ watch(armMessage, (msg: unknown) => {
   }
 })
 
-watch(contextMessage, (msg: unknown) => {
-  if (typeof msg == 'object' && msg !== null && 'type' in msg) {
-    const typedMsg = msg as { type: string; state?: string }
-    if (typedMsg.type === 'costmap') {
-      console.log("hi")
+let roverPos = {
+  latitude: 0.0,
+  longitude: 0.0
+}
+
+watch(driveMessage, (msg: unknown) => {
+  if (!msg || typeof msg !== 'object') return
+
+  if ('data' in msg){
+    const typedMsg = msg as OccupancyGridMessage
+
+    const default_offset = 40
+
+    //83.70967
+    //42.29319
+
+    let offsetPos = {
+      x: Math.floor((roverPos.longitude + 83.70967) * 200000 - (typedMsg.info.origin.position.x + 30)) + 40,//48,
+      y: Math.floor((roverPos.latitude - 42.29319) * 200000 - (typedMsg.info.origin.position.y + 30)) + 40//25
     }
+
+    let processed_data = []
+    for(let i = 40, k = 0; i >= 0; --i){
+      for(let j = 0; j < 40; ++j, ++k){
+        processed_data[k] = typedMsg.data[((i + offsetPos.y) * 120) + j + offsetPos.x]
+      }
+    }
+
+    updateCostMapGrid(processed_data)
   }
 })
+
+watch(navMessage, msg => {
+if (!msg) return
+  const navMsg = msg as NavMessage
+  if (navMsg.type === 'gps_fix') {
+    roverPos.latitude = navMsg.latitude
+    roverPos.longitude = navMsg.longitude
+  }
+})
+
+
+const camera_type = ref('default')
+
+function change_camera(new_mode: string){
+  set_camera_type(new_mode)
+  camera_type.value = new_mode
+}
 </script>
