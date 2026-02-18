@@ -74,14 +74,14 @@ export default function threeSetup() {
   ikTargetSphere.visible = false // Hidden by default until position is set
   scene.add(ikTargetSphere)
 
-  //Create costmap grid  
+  //Create costmap grid
   for(let i = 0, idx = 0; i < numCostMapBlocks; i++){
     for(let j = 0; j < numCostMapBlocks; j++, idx++){
       const currentGeometry = new THREE.BoxGeometry(costMapBlockWidth,1,costMapBlockWidth)
       const currentMaterial = new THREE.MeshStandardMaterial({
-        color: 0x9d00ff,
+        color: 0x2f2f2f,
       })
-      
+
       costMapBlocks.push(new THREE.Mesh(currentGeometry, currentMaterial))
 
       const current_x = j * costMapBlockWidth - costMapGridOffset
@@ -94,26 +94,6 @@ export default function threeSetup() {
       scene.add(costMapBlocks[idx])
     }
   }
-
-  //Initialize Text
-  const currentTextSize = costMapBlockWidth * 0.3
-  textCanvasContext.fillStyle = 'white';
-  textCanvasContext.font = currentTextSize + 'px Arial';
-  textCanvasContext.textAlign = 'center';
-  textCanvasContext.textBaseline = 'middle';
-  
-  let tempGridData = []
-  for(let i = 0; i < costMapBlockWidth * costMapBlockWidth; i++){
-    tempGridData.push(-1)
-  }
-
-  fillTextCanvas(tempGridData)
-
-  //Add textCanvasPlane to Scene
-  textCanvasPlane.lookAt(-costMapBlockWidth / 2, 50, -costMapBlockWidth / 2)
-  scene.add(textCanvasPlane);
-
-
 
   const manager = new THREE.LoadingManager()
   const loader = new URDFLoader(manager)
