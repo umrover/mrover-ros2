@@ -89,6 +89,7 @@ namespace mrover {
         int mForwardLimit;
         int mReverseLimit;
         uint32_t mGoalPosition;
+        uint32_t mPositionMultiplier;
 
         bool mAtLimit = false;
 

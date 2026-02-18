@@ -31,10 +31,12 @@ auto Servo::updateConfigFromParameters() -> void {
     double velocityPGain;
     double velocityIGain;
     double currentLimit;
+    float positionMultiplier;
 
     std::vector<ParameterWrapper> parameters = {
-            {std::format("{}.reverse_limit", mServoName), forwardLimit, 90.0},
-            {std::format("{}.forward_limit", mServoName), reverseLimit, 270.0},
+            {std::format("{}.position_multiplier", mServoName), positionMultiplier, 340.0},
+            {std::format("{}.reverse_limit", mServoName), reverseLimit, 0.0},
+            {std::format("{}.forward_limit", mServoName), forwardLimit, 340.0},
             {std::format("{}.position_p", mServoName), positionPGain, 400.0},
             {std::format("{}.position_i", mServoName), positionIGain, 0.0},
             {std::format("{}.position_d", mServoName), positionDGain, 0.0},
@@ -44,8 +46,9 @@ auto Servo::updateConfigFromParameters() -> void {
 
     ParameterWrapper::declareParameters(mNode.get(), parameters);
 
-    mNode->get_parameter(std::format("{}.reverse_limit", mServoName), forwardLimit);
-    mNode->get_parameter(std::format("{}.forward_limit", mServoName), reverseLimit);
+    mNode->get_parameter(std::format("{}.position_multiplier", mServoName), positionMultiplier);
+    mNode->get_parameter(std::format("{}.reverse_limit", mServoName), reverseLimit);
+    mNode->get_parameter(std::format("{}.forward_limit", mServoName), forwardLimit);
     mNode->get_parameter(std::format("{}.position_p", mServoName), positionPGain);
     mNode->get_parameter(std::format("{}.position_i", mServoName), positionIGain);
     mNode->get_parameter(std::format("{}.position_d", mServoName), positionDGain);
@@ -61,10 +64,11 @@ auto Servo::updateConfigFromParameters() -> void {
     setProperty(ServoProperty::CurrentLimit, static_cast<uint16_t>(currentLimit));
 
     ParameterWrapper::declareParameters(mNode.get(), parameters);
+    
+    mPositionMultiplier = (float)positionMultiplier;
 
-
-    mReverseLimit = static_cast<int>((static_cast<float>(90) / 360.0f) * 4096.0f);
-    mForwardLimit = static_cast<int>((static_cast<float>(270) / 360.0f) * 4096.0f);
+    mReverseLimit = static_cast<int>((reverseLimit / 360.0f) * 4096.0f);
+    mForwardLimit = static_cast<int>((forwardLimit / 360.0f) * 4096.0f);
 
     assert(mForwardLimit >= 0);
     assert(mReverseLimit >= 0);
@@ -93,6 +97,7 @@ auto Servo::setPosition(ServoPosition position, ServoMode mode) -> Servo::ServoS
 
     uint32_t presentPosition;
     read4Byte(ADDR_PRESENT_POSITION, presentPosition, &hardwareStatus);
+    presentPosition = (float)presentPosition / mPositionMultiplier;
 
     // Get current position (make sure its positive)
     uint16_t currentPosition = static_cast<uint16_t>(((presentPosition % 4096) + 4096) % 4096);
@@ -159,7 +164,7 @@ auto Servo::setPosition(ServoPosition position, ServoMode mode) -> Servo::ServoS
     // Calculate final goal position
     mGoalPosition = currentPosition + normalizedDifference;
     // Write goal position
-    return write4Byte(ADDR_GOAL_POSITION, mGoalPosition, &hardwareStatus);
+    return write4Byte(ADDR_GOAL_POSITION, (float)mGoalPosition * mPositionMultiplier, &hardwareStatus);
 }
 
 auto Servo::getTargetStatus() -> Servo::ServoStatus {
@@ -167,6 +172,7 @@ auto Servo::getTargetStatus() -> Servo::ServoStatus {
     uint32_t presentPosition;
 
     ServoStatus status = read4Byte(ADDR_PRESENT_POSITION, presentPosition, &hardwareStatus);
+    presentPosition = (float)presentPosition / mPositionMultiplier;
     if (status != ServoStatus::Success) return status;
 
     uint32_t mGoalPositionMod = mGoalPosition % SERVO_TICKS;
@@ -186,6 +192,7 @@ auto Servo::getPosition(ServoPosition& position) -> Servo::ServoStatus {
     uint8_t hardwareStatus;
     uint32_t positionInt;
     ServoStatus status = read4Byte(ADDR_PRESENT_POSITION, positionInt, &hardwareStatus);
+    positionInt = (float)positionInt / mPositionMultiplier;
     position = (static_cast<float>(positionInt % 4096) / 4096.0f) * 360.0f;
     return status;
 }
@@ -210,6 +217,7 @@ auto Servo::getPositionAbsolute(ServoPosition& position) -> Servo::ServoStatus {
     uint8_t hardwareStatus;
     uint32_t positionInt;
     ServoStatus status = read4Byte(ADDR_PRESENT_POSITION, positionInt, &hardwareStatus);
+    positionInt = (float)positionInt / mPositionMultiplier;
     position = (static_cast<float>(positionInt) / 4096.0f) * 360.0f;
     return status;
 }

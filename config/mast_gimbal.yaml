@@ -1,18 +1,20 @@
 mast_gimbal_hw_bridge:
   ros__parameters:
-    device_name: "/dev/u2d2"
+    device_name: "/dev/ttyUSB0"
     gimbal_pitch:
-      forward_limit: 90.0
-      reverse_limit: 271.0
-      position_p: 400.0
+      position_multiplier: 1.0
+      forward_limit: 110.0
+      reverse_limit: 5.0
+      position_p: 1000.0
       position_i: 0.0
-      position_d: 0.0
-      velocity_p: 180.0
+      position_d: 100.0
+      velocity_p: 50.0
       velocity_i: 0.0
       current_limit: 1750.0
     gimbal_yaw:
-      forward_limit: 90.0
-      reverse_limit: 271.0
+      position_multiplier: 6.25
+      forward_limit: 350.0
+      reverse_limit: 10.0
       position_p: 400.0
       position_i: 0.0
       position_d: 0.0
