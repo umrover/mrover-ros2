@@ -155,7 +155,6 @@ watch(driveMessage, (msg: unknown) => {
         processed_data[k] = typedMsg.data[((i + offsetPos.y) * 120) + j + offsetPos.x]
       }
     }
-
     updateCostMapGrid(processed_data)
   }
 })

@@ -56,7 +56,7 @@
     </visual>
   </link>
   <joint name="chassis_to_arm_a" type="prismatic">
-    <origin rpy="0 0 0" xyz="0 6.5 9.87"/>
+    <origin rpy="0 0 0" xyz="0 22.5 9.87"/>
     <parent link="chassis_link"/>
     <child link="arm_a_link"/>
     <axis xyz="0 -1 0"/>
