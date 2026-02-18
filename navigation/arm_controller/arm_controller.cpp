@@ -321,16 +321,143 @@ namespace mrover {
                 RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1000, "Position IK failed!");
             }
         } else if (mArmMode == ArmMode::VELOCITY_CONTROL) {
-            // TODO: Determine joint velocities that cancels out arm sag
-            auto velocities = ikVelCalc(mVelTarget);
+            if ((mVelTarget.linear.x != 0 | 
+                mVelTarget.linear.y != 0 |
+                mVelTarget.linear.z != 0 |
+                mVelTarget.angular.x != 0 |
+                mVelTarget.angular.y != 0) && not_initialized == true) 
+                {
+                not_initialized = false;
+                }
+
+            if (mVelTarget.linear.x == 0 &&
+                mVelTarget.linear.y == 0 &&
+                mVelTarget.linear.z == 0 &&
+                mVelTarget.angular.x == 0 &&
+                mVelTarget.angular.y == 0 && not_initialized == true) {
+                    return;
+                }
+
+            
+            if (mVelTarget.linear.x == 0 &&
+                mVelTarget.linear.y == 0 &&
+                mVelTarget.linear.z == 0 &&
+                mVelTarget.angular.x == 0 &&
+                mVelTarget.angular.y == 0 && not_initialized == false) {
+                // no movement command, so just stop the arm
+                if (hold == false) {
+                    mCarrotPos = mArmPos;
+                    mPosFallback = mCurrPos;
+                    hold = true;
+                }
+                
+                mPosPub->publish(mPosFallback.value());
+
+                return;
+            }
+
+            hold = false;
+
+            const auto now = get_clock()->now();
+
+            if (!carrot_initialized) {
+                mPrevTime = now;
+                mCarrotPos = mArmPos;
+                carrot_initialized = true;
+            }
+
+            double dt = (now - mPrevTime).seconds();
+            mPrevTime = now;
+
+            if (dt <= 0.0 || dt > 1.0) {
+                dt = 0.033; 
+            }
+
+            dt = 0.01;
+
+            const double k = 1;
+
+            mCarrotPos.x     += mVelTarget.linear.x  * dt * k;
+            mCarrotPos.y     += mVelTarget.linear.y  * dt * k;
+            mCarrotPos.z     += mVelTarget.linear.z  * dt * k;
+            mCarrotPos.pitch += mVelTarget.angular.y * dt * k;
+            mCarrotPos.roll  += mVelTarget.angular.x * dt * k;
+
+            auto error_x = mCarrotPos.x - mArmPos.x;
+            auto error_y = mCarrotPos.y - mArmPos.y;
+            auto error_z = mCarrotPos.z - mArmPos.z;
+            auto error_pitch = mCarrotPos.pitch - mArmPos.pitch;
+            auto error_roll  = mCarrotPos.roll  - mArmPos.roll;
+
+            const double max_dist = 0.01;
+
+            double error_total = std::sqrt(error_x * error_x + error_y * error_y + error_z * error_z);
+
+            if (error_total > max_dist) {
+                const double reduce_factor = max_dist / error_total;
+                mCarrotPos.x = mArmPos.x + error_x * reduce_factor;
+                mCarrotPos.y = mArmPos.y + error_y * reduce_factor;
+                mCarrotPos.z = mArmPos.z + error_z * reduce_factor;
+            }
+
+            SE3Conversions::pushToTfTree(
+                mTfBroadcaster,
+                "carrot_target",
+                "arm_base_link",
+                mCarrotPos.toSE3(),
+                now
+            );
+
+            auto adjusted_v = mVelTarget;
+
+
+            error_x = mCarrotPos.x - mArmPos.x;
+            error_y = mCarrotPos.y - mArmPos.y;
+            error_z = mCarrotPos.z - mArmPos.z;
+            error_pitch = mCarrotPos.pitch - mArmPos.pitch;
+            error_roll  = mCarrotPos.roll  - mArmPos.roll;
+
+
+            const double Kp_lin = 20.0;
+            const double Kp_ang = 8.0; 
+
+            adjusted_v.linear.x  += Kp_lin * error_x;
+            adjusted_v.linear.y  += Kp_lin * error_y;
+            adjusted_v.linear.z  += Kp_lin * error_z;
+            adjusted_v.angular.y += Kp_ang * error_pitch;
+            adjusted_v.angular.x += Kp_ang * error_roll;
+
+            auto velocities = ikVelCalc(adjusted_v);
+
             if (velocities &&
                 !(
-                        velocities->velocities[0] == 0 &&
-                        velocities->velocities[1] == 0 &&
-                        velocities->velocities[2] == 0 &&
-                        velocities->velocities[3] == 0 &&
-                        velocities->velocities[4] == 0)) {
+                    velocities->velocities[0] == 0 &&
+                    velocities->velocities[1] == 0 &&
+                    velocities->velocities[2] == 0 &&
+                    velocities->velocities[3] == 0 &&
+                    velocities->velocities[4] == 0
+                )
+            ) {
                 mVelPub->publish(velocities.value());
+                mPosFallback = std::nullopt;
+            } else {
+                if (!velocities) {
+                    RCLCPP_WARN_THROTTLE(
+                        get_logger(),
+                        *get_clock(),
+                        1000,
+                        "Velocity IK failed!"
+                    );
+                    mCarrotPos = mArmPos;
+                }
+
+                if (!mPosFallback) {
+                    mPosFallback = mCurrPos;
+                    //mPosFallback = ikPosCalc(mCarrotPos).value();
+                    //mCarrotPos = mArmPos;
+                    mPosPub->publish(mPosFallback.value());
+                }
+            }
             } else {
                 if (!velocities) RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1000, "Velocity IK failed!");
             }

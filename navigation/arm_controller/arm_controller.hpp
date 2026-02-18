@@ -77,6 +77,14 @@ namespace mrover {
         geometry_msgs::msg::Twist mVelTarget;
         rclcpp::Time mLastUpdate;
 
+        double mCarrotTime = 0.033;
+        double mCarrotk = 1;
+        rclcpp::Time mPrevTime;
+        bool carrot_initialized = false;
+        ArmPos mCarrotPos;
+        bool hold = false;
+        bool not_initialized = true;
+
         enum class ArmMode : char {
             VELOCITY_CONTROL,
             POSITION_CONTROL,
