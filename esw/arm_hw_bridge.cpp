@@ -65,9 +65,13 @@ namespace mrover {
     public:
         ArmHWBridge() : rclcpp::Node{"arm_hw_bridge"} {
             // all initialization is done in the init() function to allow for the usage of shared_from_this()
+            mCbGroup = this->create_callback_group(rclcpp::CallbackGroupType::Reentrant);
         }
 
         auto init() -> void {
+            auto sub_options = rclcpp::SubscriptionOptions();
+            sub_options.callback_group = mCbGroup;
+
             mJointA = std::make_shared<BrushlessController<Meters>>(shared_from_this(), "jetson", "joint_a");
             mJointB = std::make_shared<BrushedController<Meters>>(shared_from_this(), "jetson", "joint_b");
             mJointC = std::make_shared<BrushlessController<Radians>>(shared_from_this(), "jetson", "joint_c");
@@ -79,7 +83,15 @@ namespace mrover {
             mArmThrottleSub = create_subscription<msg::Throttle>("arm_thr_cmd", 1, [this](msg::Throttle::ConstSharedPtr const& msg) { processThrottleCmd(msg); });
             mArmVelocitySub = create_subscription<msg::Velocity>("arm_vel_cmd", 1, [this](msg::Velocity::ConstSharedPtr const& msg) { processVelocityCmd(msg); });
             mArmPositionSub = create_subscription<msg::Position>("arm_pos_cmd", 1, [this](msg::Position::ConstSharedPtr const& msg) { processPositionCmd(msg); });
-            mPusherService = create_service<srv::Pusher>("pusher_service",[this](srv::Pusher::Request::ConstSharedPtr const& req, srv::Pusher::Response::SharedPtr const& res) { handlePusherService(req, res); });
+
+            mPusherService = create_service<srv::Pusher>(
+                "pusher",
+                [this](srv::Pusher::Request::ConstSharedPtr const& req, srv::Pusher::Response::SharedPtr const& res) {
+                    handlePusherService(req, res);
+                },
+                rmw_qos_profile_services_default,
+                mCbGroup
+            );
 
             std::vector<ParameterWrapper> parameters = {
                     {"joint_b_segment_length", mJointBSegmentLength.rep, 0.0},
@@ -107,7 +119,8 @@ namespace mrover {
 
             mPusherControlTimer = create_wall_timer(
                 std::chrono::milliseconds(100),
-                [this]() { updatePusherStateMachine(); });
+                [this]() { updatePusherStateMachine(); },
+                mCbGroup);
             mProbeTimer = create_wall_timer(
                     mProbeInterval,
                     [this]() -> void {
@@ -153,6 +166,7 @@ namespace mrover {
         std::shared_ptr<BrushedController<Meters>> mGripper;
         std::shared_ptr<BrushedController<Meters>> mPusher;
 
+        rclcpp::CallbackGroup::SharedPtr mCbGroup;
         PusherState mPusherState = PusherState::IDLE;
         std::shared_ptr<std::promise<bool>> mPusherPromise;
 
@@ -387,9 +401,6 @@ namespace mrover {
                     case 'g' + 'r':
                         mGripper->setDesiredVelocity(MetersPerSecond{velocity});
                         break;
-                    case 'p' + 'r':
-                        mPusher->setDesiredVelocity(MetersPerSecond{velocity});
-                        break;
                 }
             }
 
@@ -458,9 +469,6 @@ namespace mrover {
                     case 'g' + 'r':
                         mGripper->setDesiredPosition(Meters{position});
                         break;
-                    case 'p' + 'r':
-                        mPusher->setDesiredPosition(Meters{position});
-                        break;
                 }
             }
 
@@ -506,6 +514,7 @@ namespace mrover {
             mPusherPromise = std::make_shared<std::promise<bool>>();
             auto future = mPusherPromise->get_future();
             mPusherState = PusherState::DRIVING_FORWARD;
+            mPusherWaitCycles = 0;
 
             // respond when complete
             res->finished = future.get();
@@ -520,7 +529,6 @@ namespace mrover {
             switch (mPusherState) {
                 case PusherState::DRIVING_FORWARD:
                     mPusher->setDesiredThrottle(mPusherThrottle);
-
                     if ((limits & PUSHER_FWD_MASK) || stalled) {
                         mPusher->setDesiredThrottle(Percent{0.0});
                         mPusherWaitCycles = 0;
@@ -533,12 +541,12 @@ namespace mrover {
                     mPusherWaitCycles++;
                     if (mPusherWaitCycles >= mPusherWaitDuration) {
                         mPusherState = PusherState::RETRACTING;
+                        mPusherWaitCycles = 0;
                     }
                     break;
 
                 case PusherState::RETRACTING:
                     mPusher->setDesiredThrottle(-mPusherThrottle);
-
                     if (limits & PUSHER_REV_MASK) {
                         mPusher->setDesiredThrottle(Percent{0.0});
                         mPusherState = PusherState::IDLE;
