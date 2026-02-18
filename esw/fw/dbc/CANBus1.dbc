@@ -1,0 +1,123 @@
+VERSION ""
+
+
+NS_ : 
+	NS_DESC_
+	CM_
+	BA_DEF_
+	BA_
+	VAL_
+	CAT_DEF_
+	CAT_
+	FILTER
+	BA_DEF_DEF_
+	EV_DATA_
+	ENVVAR_DATA_
+	SGTYPE_
+	SGTYPE_VAL_
+	BA_DEF_SGTYPE_
+	BA_SGTYPE_
+	SIG_TYPE_REF_
+	VAL_TABLE_
+	SIG_GROUP_
+	SIG_VALTYPE_
+	SIGTYPE_VALTYPE_
+	BO_TX_BU_
+	BA_DEF_REL_
+	BA_REL_
+	BA_DEF_DEF_REL_
+	BU_SG_REL_
+	BU_EV_REL_
+	BU_BO_REL_
+	SG_MUL_VAL_
+
+BS_:
+
+BU_:
+
+
+BO_ 3221225472 VECTOR__INDEPENDENT_SIG_MSG: 0 Vector__XXX
+ SG_ reserved : 9|7@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ velocity_valid : 97|1@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ position_valid : 96|1@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ throttle : 64|32@1- (1,0) [0|0] "Percent" Vector__XXX
+ SG_ velocity : 32|32@1- (1,0) [0|0] "Rotations per Second" Vector__XXX
+ SG_ data1 : 0|64@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ data2 : 64|64@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ data3 : 128|64@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ NewSignal_0004 : 192|8@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ timestamp : 80|16@1+ (1,0) [0|0] "" Vector__XXX
+
+BO_ 2148532224 BMCModeCmd: 2 Vector__XXX
+ SG_ mode : 0|8@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ enable : 8|1@1+ (1,0) [0|0] "" Vector__XXX
+
+BO_ 2148597760 BMCTargetCmd: 5 Vector__XXX
+ SG_ target : 0|32@1- (1,0) [0|0] "" Vector__XXX
+ SG_ target_valid : 32|1@1+ (1,0) [0|0] "" Vector__XXX
+
+BO_ 2148663296 BMCConfigCmd: 6 Vector__XXX
+ SG_ address : 0|8@1+ (1,0) [0|0] "Memory Address" Vector__XXX
+ SG_ value : 8|32@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ apply : 40|1@1+ (1,0) [0|0] "" Vector__XXX
+
+BO_ 2148728832 BMCResetCmd: 1 Vector__XXX
+ SG_ reset : 0|1@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ clear_faults : 1|1@1+ (1,0) [0|0] "" Vector__XXX
+
+BO_ 2149580800 BMCMotorState: 16 Vector__XXX
+ SG_ mode : 0|8@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ fault_code : 8|8@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ position : 16|32@1- (1,0) [0|0] "Radians" Vector__XXX
+ SG_ velocity : 48|32@1- (1,0) [0|0] "Radians per Second" Vector__XXX
+ SG_ limit_a : 112|1@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ limit_b : 113|1@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ is_stalled : 114|1@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ current : 80|32@1- (1,0) [0|0] "" Vector__XXX
+
+BO_ 2148794368 BMCProbe: 4 Vector__XXX
+ SG_ data : 0|32@1+ (1,0) [0|0] "" Vector__XXX
+
+BO_ 2149646336 BMCAck: 4 Vector__XXX
+ SG_ data : 0|32@1+ (1,0) [0|0] "" Vector__XXX
+
+
+
+BA_DEF_ BO_  "CANFD_BRS" ENUM  "0","1";
+BA_DEF_  "BusType" STRING ;
+BA_DEF_ BU_  "ECU" STRING ;
+BA_DEF_ BO_  "VFrameFormat" ENUM  "StandardCAN","ExtendedCAN","reserved","reserved","reserved","reserved","reserved","reserved","reserved","reserved","reserved","reserved","reserved","reserved","StandardCAN_FD","ExtendedCAN_FD";
+BA_DEF_DEF_  "CANFD_BRS" "1";
+BA_DEF_DEF_  "BusType" "";
+BA_DEF_DEF_  "ECU" "";
+BA_DEF_DEF_  "VFrameFormat" "StandardCAN";
+BA_ "BusType" "CAN FD";
+BA_ "VFrameFormat" BO_ 2148532224 15;
+BA_ "CANFD_BRS" BO_ 2148532224 1;
+BA_ "VFrameFormat" BO_ 2148597760 15;
+BA_ "CANFD_BRS" BO_ 2148597760 1;
+BA_ "VFrameFormat" BO_ 2148663296 15;
+BA_ "CANFD_BRS" BO_ 2148663296 1;
+BA_ "VFrameFormat" BO_ 2148728832 15;
+BA_ "CANFD_BRS" BO_ 2148728832 1;
+BA_ "VFrameFormat" BO_ 2149580800 15;
+BA_ "CANFD_BRS" BO_ 2149580800 1;
+BA_ "VFrameFormat" BO_ 2148794368 15;
+BA_ "CANFD_BRS" BO_ 2148794368 1;
+BA_ "VFrameFormat" BO_ 2149646336 15;
+BA_ "CANFD_BRS" BO_ 2149646336 1;
+VAL_ 3221225472 velocity_valid 1 "Valid" 0 "Invalid" ;
+VAL_ 3221225472 position_valid 1 "Valid" 0 "Invalid" ;
+VAL_ 2148532224 mode 0 "Stopped" 1 "Fault" 5 "Throttle" 6 "Position" 7 "Velocity" ;
+VAL_ 2148532224 enable 1 "Enabled" 0 "Disabled" ;
+VAL_ 2148597760 target_valid 1 "Valid" 0 "Invalid" ;
+VAL_ 2148728832 reset 1 "Enable" 0 "Disable" ;
+VAL_ 2148728832 clear_faults 1 "Enable" 0 "Disable" ;
+VAL_ 2149580800 mode 0 "Stopped" 1 "Fault" 5 "Throttle" 6 "Position" 7 "Velocity" ;
+SIG_VALTYPE_ 3221225472 throttle : 1;
+SIG_VALTYPE_ 3221225472 velocity : 1;
+SIG_VALTYPE_ 2148597760 target : 1;
+SIG_VALTYPE_ 2149580800 position : 1;
+SIG_VALTYPE_ 2149580800 velocity : 1;
+SIG_VALTYPE_ 2149580800 current : 1;
+

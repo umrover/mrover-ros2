@@ -1,0 +1,208 @@
+/* {{dbc_name}}.hpp */
+/* THIS FILE IS AUTO-GENERATED */
+/* MODIFICATIONS WILL BE OVERWRITTEN ON BUILD */
+/* Generated on: {{ timestamp }} */
+
+#pragma once
+
+{# Include C libraries #}
+{%- for lib in libs %}
+#include <{{ lib }}>
+{%- endfor %}
+#ifdef STM32
+#include <serial/fdcan.hpp>
+#endif
+
+
+namespace mrover {
+    static constexpr uint32_t CAN_NODE_MASK = 0xFFFF;
+    static constexpr uint32_t CAN_DEST_ID_MASK = 0x00FF;
+    static constexpr uint32_t CAN_SRC_ID_MASK = 0xFF00;
+    static constexpr uint32_t CAN_DEST_ID_OFFSET = 0;
+    static constexpr uint32_t CAN_SRC_ID_OFFSET = 8;
+
+    {% for msg_id, msg in message_dict.items() %}
+    class {{ msg.name }} {
+    public:
+        static constexpr uint32_t CAN_ID = {{ msg_id }};
+        static constexpr uint32_t BASE_ID = CAN_ID & ~CAN_NODE_MASK;
+        {%- set signals = msg.signal_dict %}
+        {%- for sig_name, sig_data in signals.items() %}
+        {{sig_data.data_type}} {{sig_name}};
+        {%- endfor %}
+
+        uint8_t msg_arr[{{ msg.byte_length }}];
+
+        explicit {{ msg.name }}(uint8_t const * byte_arr) {
+            std::memset(msg_arr, 0, {{ msg.byte_length }});
+            std::memcpy(msg_arr, byte_arr, {{ msg.byte_length }});
+
+            [[maybe_unused]] uint32_t i = 0;
+        {%- set ns = namespace(boolIter = 0) %}
+        {%- for sig_name, sig_data in signals.items() %}
+
+        {%- if sig_data.bit_length == 1 %}
+            {%- if ns.boolIter == 8 %}
+            {%- set ns.boolIter = 0 %}
+            ++i;
+            {%- endif %}
+            {{ sig_name }} = (byte_arr[i] >> {{ ns.boolIter }}) & 0b1;
+            {%- set ns.boolIter = ns.boolIter + 1 %}
+
+        {%- else %}
+            uint{{ sig_data.bit_length if sig_data.bit_length > 8 else 8 }}_t temp_{{ sig_name }} = 0;
+
+            for (uint8_t j = 0; j < {{ sig_data.byte_length }}; ++j) {
+                temp_{{ sig_name }} |= static_cast<uint{{ sig_data.bit_length if sig_data.bit_length > 8 else 8 }}_t>(byte_arr[i]) << (8*j);
+                ++i;
+            }
+            {{ sig_name }} = std::bit_cast<{{ sig_data.data_type }}>(temp_{{ sig_name }});
+        {%- endif %}
+        {%- endfor %}
+        }
+
+        {{ msg.name }}(
+        {%- if signals %}
+        {%- for sig_name, sig_data in signals.items() %}
+            {{ sig_data.data_type }} const {{ sig_name }}_in
+            {%- if not loop.last %}, {% endif %}
+        {%- endfor %}
+        ) :
+        {%- for sig_name, sig_data in signals.items() %}
+            {{ sig_name }}({{ sig_name }}_in)
+            {%- if not loop.last %}, {% endif %}
+        {%- endfor %}
+        {%- else %}
+        )
+        {%- endif %}
+         {
+            std::memset(msg_arr, 0, {{ msg.byte_length }});
+
+            [[maybe_unused]] uint32_t i = 0;
+        {%- set ns = namespace(boolIter = 0) %}
+        {%- for sig_name, sig_data in signals.items() %}
+
+        {%- if sig_data.bit_length == 1 %}
+            {%- if ns.boolIter == 8 %}
+            {%- set ns.boolIter = 0 %}
+            ++i;
+            {%- endif %}
+
+            if({{ sig_name }}) {
+                msg_arr[i] |= (1 << {{ ns.boolIter }});
+            } else {
+                msg_arr[i] &= ~(1 << {{ ns.boolIter }});
+            }
+            {%- set ns.boolIter = ns.boolIter + 1 %}
+
+        {%- else %}
+            for (uint8_t j = 0; j < {{ sig_data.byte_length }}; ++j) {
+                msg_arr[i] = (std::bit_cast<uint{{ sig_data.bit_length if sig_data.bit_length > 8 else 8 }}_t>({{ sig_name }}) >> (8*j)) & 0xFF;
+                ++i;
+            }
+        {%- endif %}
+        {%- endfor %}
+        }
+    };
+    {% endfor %}
+
+    template<typename T>
+    concept is_can_message = requires(T const can_msg, uint8_t const* byte_arr) {
+        { T{byte_arr} };
+        { can_msg.msg_arr } -> std::convertible_to<const uint8_t*>;
+        { T::BASE_ID } -> std::convertible_to<uint32_t const>;
+    };
+
+    using {{ dbc_name }}Msg_t = std::variant<
+    {%- for type in message_types %}
+        {{ type }}{% if not loop.last %},{% endif %}
+    {%- endfor %}
+    >;
+
+#ifdef HAL_FDCAN_MODULE_ENABLED
+    constexpr std::size_t dlc_to_size(uint32_t const dlc) {
+        if (dlc <= FDCAN_DLC_BYTES_8) return dlc;
+        if (dlc == FDCAN_DLC_BYTES_12) return 12;
+        if (dlc == FDCAN_DLC_BYTES_16) return 16;
+        if (dlc == FDCAN_DLC_BYTES_20) return 20;
+        if (dlc == FDCAN_DLC_BYTES_24) return 24;
+        if (dlc == FDCAN_DLC_BYTES_32) return 32;
+        if (dlc == FDCAN_DLC_BYTES_48) return 48;
+        if (dlc == FDCAN_DLC_BYTES_64) return 64;
+        return 0;
+    }
+
+    class {{ dbc_name }}Handler {
+        FDCAN* m_fdcan;
+    public:
+        {{ dbc_name }}Handler() = default;
+
+        explicit {{ dbc_name }}Handler(FDCAN* fdcan_driver)
+            : m_fdcan{fdcan_driver} {}
+
+        struct SendHandler {
+            {{ dbc_name }}Handler* m_can_handler;
+            uint32_t const m_src_node_id;
+            uint32_t const m_dest_node_id;
+
+            SendHandler({{ dbc_name }}Handler* can_handler, uint32_t const src_node_id, uint32_t const dest_node_id)
+                : m_can_handler{can_handler}, m_src_node_id{src_node_id}, m_dest_node_id{dest_node_id} {}
+
+            template<typename can_msg_t>
+            void operator()(can_msg_t const& message) const
+                requires is_can_message<can_msg_t>
+            {
+                uint32_t const final_id = (can_msg_t::BASE_ID & ~CAN_NODE_MASK) | ((m_src_node_id << CAN_SRC_ID_OFFSET) & CAN_SRC_ID_MASK) | ((m_dest_node_id << CAN_DEST_ID_OFFSET) & CAN_DEST_ID_MASK);
+                std::span<uint8_t const> const data(message.msg_arr, sizeof(message.msg_arr));
+                this->m_can_handler->m_fdcan->send(final_id,
+                    std::string_view(reinterpret_cast<char const*>(data.data()), data.size())
+                );
+            }
+        };
+
+        auto send(
+            {{ dbc_name }}Msg_t const& message_variant,
+            uint32_t const src_node_id,
+            uint32_t const dest_node_id
+        ) -> void {
+            SendHandler sender(this, src_node_id, dest_node_id);
+            std::visit(sender, message_variant);
+        }
+
+        [[nodiscard]] auto receive() const -> std::optional<{{ dbc_name }}Msg_t> {
+            FDCAN_RxHeaderTypeDef header;
+            uint8_t data_buffer[FDCAN_MAX_FRAME_SIZE];
+
+            if (std::span<uint8_t> const data_span{data_buffer, FDCAN_MAX_FRAME_SIZE}; m_fdcan->receive(&header, data_span)) {
+                uint32_t const received_base_id = header.Identifier & ~CAN_NODE_MASK;
+
+                std::size_t const received_size = dlc_to_size(header.DataLength);
+                std::span<uint8_t const> const received_data(data_buffer, received_size);
+
+                switch (received_base_id) {
+            {% for msg in messages_for_handler %}
+                    case ({{ msg.id }} & ~CAN_NODE_MASK): {
+                        return {{ dbc_name }}Msg_t{ {{ msg.name }}{received_data.data()} };
+                    }
+            {%- endfor %}
+                    default:
+                        return std::nullopt;
+                }
+            }
+            return std::nullopt;
+        }
+    };
+#else // HAL_FDCAN_MODULE_ENABLED
+    // TODO: build jetson implementation here
+    class __attribute__((unavailable("enable 'FDCAN' in STM32CubeMX to use mrover::{{ dbc_name }}Handler"))) {{ dbc_name }}Handler {
+    public:
+        template<typename... Args>
+        explicit {{ dbc_name }}Handler(Args&&... args) {}
+    };
+#endif // HAL_FDCAN_MODULE_ENABLED
+
+    template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
+    template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
+
+
+} // namespace mrover

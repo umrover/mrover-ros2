@@ -1,0 +1,53 @@
+name: site
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - docs/**
+      - mkdocs.yml
+      - .github/workflows/site.yml
+  pull_request:
+    branches: [ "main" ]
+    paths:
+      - docs/**
+      - mkdocs.yml
+      - .github/workflows/site.yml
+  workflow_dispatch: {}  # manual trigger for testing after merge
+
+permissions:
+  contents: write
+
+concurrency:
+  group: site-deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure git credentials # for gh-deploy
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: 3.x
+
+      - name: Install MkDocs
+        run: pip install mkdocs pymdown-extensions
+
+      # PRs & manual runs: build only (no deploy)
+      - name: MkDocs build
+        if: github.event_name != 'push' || github.ref != 'refs/heads/main'
+        run: mkdocs build --strict
+
+      # Pushes to main: actually deploy
+      - name: MkDocs deploy to GitHub Pages
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: mkdocs gh-deploy --force
+

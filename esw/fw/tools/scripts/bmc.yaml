@@ -1,0 +1,46 @@
+# CAN messaging
+can_id: 3
+host_can_id: 1
+
+# system configuration
+motor_en: true
+motor_inv: false
+quad_en: true
+quad_phase: false
+abs_i2c_en: false
+abs_i2c_phase: false
+abs_spi_en: false
+abs_spi_phase: false
+
+# limit configuration
+lim_a_en: true
+lim_a_active_high: false
+lim_a_is_forward: true
+lim_a_use_readjust: true
+lim_b_en: true
+lim_b_active_high: false
+lim_b_is_forward: false
+lim_b_use_readjust: true
+
+# encoder params
+quad_cpr: 64.0
+abs_i2c_ratio: 1.0
+abs_i2c_offset: 0.0
+abs_spi_ratio: 1.0
+abs_spi_offset: 0.0
+gear_ratio: 10.0  # :1
+
+# position & velocity limits
+limit_a_position: 0.0
+limit_b_position: 100.0
+max_pwm: 1.0
+min_pos: 0.0
+max_pos: 100.0
+min_vel: -2.0
+max_vel: 2.0
+
+# control gains
+k_p: 0.0
+k_i: 0.0
+k_d: 0.0
+k_f: 0.0
