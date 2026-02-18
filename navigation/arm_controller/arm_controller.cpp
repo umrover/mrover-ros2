@@ -206,6 +206,54 @@ namespace mrover {
             RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 100, "Received position command in velocity mode!");
     }
 
+    auto ArmController::velZeroCheck() -> bool {
+         return mVelTarget.linear.x == 0 &&
+                mVelTarget.linear.y == 0 &&
+                mVelTarget.linear.z == 0 &&
+                mVelTarget.angular.x == 0 &&
+                mVelTarget.angular.y == 0;
+    }
+
+    auto ArmContoller::carrotPosAdjust(ArmController::ArmPos &mPos, geometry_msgs::msg::Twist &mVel, double dt, double k) -> void {
+            mPos.x += mVel.linear.x * dt * k;
+            mPos.y += mVel.linear.y * dt * k;
+            mPos.z += mVel.linear.z * dt * k;
+            mPos.pitch += mVel.angular.y * dt * k;
+            mPos.roll += mVel.angular.x * dt * k;
+    }
+
+    auto ArmController::carrotPosCheck(ArmController::ArmPos &mCarrotPos, ArmController::ArmPos &mCheckCarrotPos, ArmController::ArmPos &mArmPosCheck) {
+        auto error_x = mCarrotPos.x - mArmPosCheck.x;
+        auto error_y = mCarrotPos.y - mArmPosCheck.y;
+        auto error_z = mCarrotPos.z - mArmPosCheck.z;
+        auto error_pitch = mCarrotPos.pitch - mArmPosCheck.pitch;
+        auto error_roll = mCarrotPos.roll - mArmPosCheck.roll;
+
+        double const max_dist = 0.015;
+
+        double error_total = std::sqrt(error_x * error_x + error_y * error_y + error_z * error_z);
+
+        if (error_total > max_dist) {
+            double const reduce_factor = max_dist / error_total;
+            mCarrotPos.x = mArmPosCheck.x + error_x * reduce_factor;
+            mCarrotPos.y = mArmPosCheck.y + error_y * reduce_factor;
+            mCarrotPos.z = mArmPosCheck.z + error_z * reduce_factor;
+        }
+
+        double error_check_x = mCheckCarrotPos.x - mCarrotPos.x;
+        double error_check_y = mCheckCarrotPos.y - mCarrotPos.y;
+        double error_check_z = mCheckCarrotPos.z - mCarrotPos.z;
+        double error_check = std::sqrt(error_check_x * error_check_x + error_check_y * error_check_y + error_check_z * error_check_z);
+
+        if (error_check > 0.04) {
+            RCLCPP_WARN_THROTTLE(
+                        get_logger(),
+                        *get_clock(),
+                        1000,
+                        "Arm IK failing! Desired movement will not be achieved. Return to normal bounds");
+        }
+    }
+
     auto ArmController::timerCallback() -> void {
         msg::Position mCurrPos;
         mCurrPos.names = {"joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_roll"};
@@ -231,89 +279,27 @@ namespace mrover {
                 RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1000, "Position IK failed!");
             }
         } else if (mArmMode == ArmMode::VELOCITY_CONTROL) {
-            // add something to avoid stuff with bad initiliazation stuff yay
-            // tune for x direction stuff
 
-            if (mVelTarget.linear.x == 0 &&
-                mVelTarget.linear.y == 0 &&
-                mVelTarget.linear.z == 0 &&
-                mVelTarget.angular.x == 0 &&
-                mVelTarget.angular.y == 0) {
-                // no movement command, so just stop the arm
+            if (velZeroCheck()) {
                 mCarrotPos = mArmPos;
                 mCheckCarrotPos = mArmPos;
             }   
 
-            //hold = false;
-
             auto const now = get_clock()->now();
 
             if (!carrot_initialized) {
-                mPrevTime = now;
                 mCarrotPos = mArmPos;
                 mCheckCarrotPos = mArmPos;
                 carrot_initialized = true;
             }
 
-            double dt = (now - mPrevTime).seconds();
-            mPrevTime = now;
-
-            if (dt <= 0.0 || dt > 1.0) {
-                dt = 0.033;
-            }
-
-            dt = 0.01;
+            double dt = 0.01;
 
             double const k = 1;
 
-            mCarrotPos.x += mVelTarget.linear.x * dt * k;
-            mCarrotPos.y += mVelTarget.linear.y * dt * k;
-            mCarrotPos.z += mVelTarget.linear.z * dt * k;
-            mCarrotPos.pitch += mVelTarget.angular.y * dt * k;
-            mCarrotPos.roll += mVelTarget.angular.x * dt * k;
-
-            mCheckCarrotPos.x += mVelTarget.linear.x * dt * k;
-            mCheckCarrotPos.y += mVelTarget.linear.y * dt * k;
-            mCheckCarrotPos.z += mVelTarget.linear.z * dt * k;
-            mCheckCarrotPos.pitch += mVelTarget.angular.y * dt * k;
-            mCheckCarrotPos.roll += mVelTarget.angular.x * dt * k;
-
-            SE3Conversions::pushToTfTree(
-                    mTfBroadcaster,
-                    "checking_target",
-                    "arm_base_link",
-                    mCheckCarrotPos.toSE3(),
-                    now);
-
-            auto error_x = mCarrotPos.x - mArmPos.x;
-            auto error_y = mCarrotPos.y - mArmPos.y;
-            auto error_z = mCarrotPos.z - mArmPos.z;
-            auto error_pitch = mCarrotPos.pitch - mArmPos.pitch;
-            auto error_roll = mCarrotPos.roll - mArmPos.roll;
-
-            double const max_dist = 0.015;
-
-            double error_total = std::sqrt(error_x * error_x + error_y * error_y + error_z * error_z);
-
-            if (error_total > max_dist) {
-                double const reduce_factor = max_dist / error_total;
-                mCarrotPos.x = mArmPos.x + error_x * reduce_factor;
-                mCarrotPos.y = mArmPos.y + error_y * reduce_factor;
-                mCarrotPos.z = mArmPos.z + error_z * reduce_factor;
-            }
-
-            double error_check_x = mCheckCarrotPos.x - mCarrotPos.x;
-            double error_check_y = mCheckCarrotPos.y - mCarrotPos.y;
-            double error_check_z = mCheckCarrotPos.z - mCarrotPos.z;
-            double error_check = std::sqrt(error_check_x * error_check_x + error_check_y * error_check_y + error_check_z * error_check_z);
-
-            if (error_check > 0.04) {
-                RCLCPP_WARN_THROTTLE(
-                            get_logger(),
-                            *get_clock(),
-                            1000,
-                            "Arm IK failing! Desired movement will not be achieved. Return to normal bounds");
-            }
+            carrotPosAdjust(mCarrotPos, mVelTarget, 0.01, 1);
+            carrotPosAdjust(mCheckCarrotPos, mVelTarget, 0.01, 1);
+            carrotPosCheck(mCarrotPos, mCheckCarrotPos, mArmPos);
 
             SE3Conversions::pushToTfTree(
                     mTfBroadcaster,
@@ -321,9 +307,15 @@ namespace mrover {
                     "arm_base_link",
                     mCarrotPos.toSE3(),
                     now);
+            
+            SE3Conversions::pushToTfTree(
+                    mTfBroadcaster,
+                    "checking_target",
+                    "arm_base_link",
+                    mCheckCarrotPos.toSE3(),
+                    now);
 
             auto adjusted_v = mVelTarget;
-
 
             error_x = mCarrotPos.x - mArmPos.x;
             error_y = mCarrotPos.y - mArmPos.y;
