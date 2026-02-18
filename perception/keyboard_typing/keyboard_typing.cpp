@@ -1,8 +1,12 @@
 #include "keyboard_typing.hpp"
+#include "keyboard_typing/pch.hpp"
 #include "lie.hpp"
 #include "mrover/srv/detail/ik_mode__struct.hpp"
 #include "mrover/srv/detail/pusher__struct.hpp"
+#include <cmath>
 #include <cstddef>
+#include <opencv2/calib3d.hpp>
+#include <Eigen/Eigenvalues>
 
 
 namespace mrover{
@@ -28,20 +32,20 @@ namespace mrover{
             std::bind(&KeyboardTypingNode::handle_accepted, this, std::placeholders::_1));
 
         // subscribe to image stream
-        mImageSub = create_subscription<sensor_msgs::msg::Image>("/finger_camera/image", rclcpp::QoS(1), [this](sensor_msgs::msg::Image::ConstSharedPtr const& msg) {
+        mImageSub = create_subscription<sensor_msgs::msg::Image>("/video4/image", rclcpp::QoS(1), [this](sensor_msgs::msg::Image::ConstSharedPtr const& msg) {
             yawCallback(msg);
         });
 
         // grab transform from finger_cam to gripper
         // wait until the transformation is acquired
-        while (true) {
-            try {
-                gripper_to_cam = SE3Conversions::fromTfTree(tf_buffer, "finger_camera_frame", "arm_fk");
-                break;
-            } catch (tf2::TransformException const& e) {
-                RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, std::format("TF tree error processing keyboard typing: {}", e.what()));
-            }
-        }
+        // while (true) {
+        //     try {
+        //         gripper_to_cam = SE3Conversions::fromTfTree(tf_buffer, "finger_camera_frame", "arm_fk");
+        //         break;
+        //     } catch (tf2::TransformException const& e) {
+        //         RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, std::format("TF tree error processing keyboard typing: {}", e.what()));
+        //     }
+        // }
 
         // Create Ik mode client
         mIkModeClient = create_client<srv::IkMode>("ik_mode");
@@ -129,8 +133,8 @@ namespace mrover{
             // This rotation matrix maps: X->Y, Y->Z, Z->X
             Eigen::Matrix3d cam_to_arm_rotation;
             cam_to_arm_rotation << 0, 0, 1,   // arm_fk X comes from camera Z
-                                   1, 0, 0,   // arm_fk Y comes from camera X
-                                   0, 1, 0;   // arm_fk Z comes from camera Y
+                                   -1, 0, 0,   // arm_fk Y comes from camera X
+                                   0, -1, 0;   // arm_fk Z comes from camera Y
             
             Eigen::Quaterniond cam_rot(cam_to_tag.rotation());
             Eigen::Quaterniond frame_rotation(cam_to_arm_rotation);
@@ -139,11 +143,11 @@ namespace mrover{
             SE3d arm_fk_to_tag{arm_fk_pos, transformed_rotation};
 
             // Publish to tf tree
-            SE3Conversions::pushToTfTree(tf_broadcaster, "keyboard_tag", "arm_fk", gripper_to_cam*arm_fk_to_tag, get_clock()->now());
+            // SE3Conversions::pushToTfTree(tf_broadcaster, "keyboard_tag", "arm_fk", gripper_to_cam*arm_fk_to_tag, get_clock()->now());
 
             // Initialize transforms for every key, temporarily here for now
             SE3d z_to_tag{zKeyTransformation_new, Eigen::Quaterniond::Identity()};
-            SE3Conversions::pushToTfTree(tf_broadcaster, "keyboard_z", "keyboard_tag", z_to_tag, get_clock()->now());
+            // SE3Conversions::pushToTfTree(tf_broadcaster, "keyboard_z", "keyboard_tag", z_to_tag, get_clock()->now());
 
 
         }
@@ -218,6 +222,10 @@ namespace mrover{
         std::vector<int> ids;
         cv::Ptr<cv::aruco::DetectorParameters> detectorParams = cv::aruco::DetectorParameters::create();
 
+        detectorParams->adaptiveThreshWinSizeMin = 3;
+        detectorParams->adaptiveThreshWinSizeMax = 23;
+        detectorParams->adaptiveThreshWinSizeStep = 10;
+
         // Define coordinate system
         float markerLength = 0.02;  // meters
         std::vector<cv::Point3f> objPoints = {
@@ -252,12 +260,15 @@ namespace mrover{
             }
 
             int validcnt = valid_indices.size();
+
+            // Convert to quarternion, sum, and then divide
             
             if (validcnt > 2) {
                 cv::aruco::estimatePoseBoard(markerCorners, ids, rover_board, camMatrix, distCoeffs, combined_rvec, combined_tvec);
             } else if (validcnt > 0) {
                 cv::Vec3d sum_tvec(0,0,0);
-                cv::Vec3d sum_rvec(0,0,0);
+
+                Eigen::Matrix4d A = Eigen::Matrix4d::Zero();
 
                 for (int idx : valid_indices) {
                     int id = ids[idx];
@@ -285,12 +296,35 @@ namespace mrover{
 
                     // Accumulate
                     sum_tvec += cv::Vec3d(t_anchor.x(), t_anchor.y(), t_anchor.z());
-                    sum_rvec += rvec_single; // Linear sum is okay for small jitter averaging
+
+                    // Convert to quaternion
+                    Eigen::Quaterniond q(R_eigen);
+                    q.normalize();
+
+                    // Accumulate outer product
+                    Eigen::Vector4d v(q.w(), q.x(), q.y(), q.z());
+                    A += v * v.transpose();
+
                 }
 
-            // Average the results
-            combined_tvec = sum_tvec / (double)validcnt;
-            combined_rvec = sum_rvec / (double)validcnt;
+                // Average the results
+                Eigen::SelfAdjointEigenSolver<Eigen::Matrix4d> eig(A);
+                int index;
+                eig.eigenvalues().maxCoeff(&index);
+
+                Eigen::Vector4d avg = eig.eigenvectors().col(index);
+
+                Eigen::Quaterniond q_avg(avg(0), avg(1), avg(2), avg(3));
+                q_avg.normalize();
+
+                Eigen::Matrix3d R_avg = q_avg.toRotationMatrix();
+
+                cv::Mat R_cv;
+                cv::eigen2cv(R_avg, R_cv);
+
+                cv::Rodrigues(R_cv, combined_rvec);
+
+                combined_tvec = sum_tvec / (double)validcnt;
             }
 
             cv::drawFrameAxes(bgrImage, camMatrix, distCoeffs, combined_rvec, combined_tvec, markerLength * 1.5f, 2);
@@ -309,9 +343,9 @@ namespace mrover{
         // draw results for debugging
         if (!ids.empty()) {
             cv::aruco::drawDetectedMarkers(bgrImage, markerCorners, ids);
-            // for (size_t i = 0; i < ids.size(); ++i) {
-            //     cv::drawFrameAxes(grayImage, camMatrix, distCoeffs, rvecs[i], tvecs[i], markerLength * 1.5f, 2);
-            // }
+            for (size_t i = 0; i < ids.size(); ++i) {
+                cv::drawFrameAxes(bgrImage, camMatrix, distCoeffs, rvecs[i], tvecs[i], markerLength * 1.5f, 2);
+            }
         }
 
         // Apply Kalman Filter to smooth the pose estimation
@@ -345,8 +379,16 @@ namespace mrover{
             finalestimation.position.y = combined_tvec[1];
             finalestimation.position.z = combined_tvec[2];
 
-            double yaw_rad = q.toRotationMatrix().eulerAngles(2, 1, 0)[0];
+            double siny = 2.0 * (q.w() * q.y() - q.z() * q.x());
+            double yaw_rad;
+            if (std::abs(siny) >= 1)
+                yaw_rad = std::copysign(M_PI / 2, siny);
+            else
+                yaw_rad = std::asin(siny);
+
             double yaw_deg = yaw_rad * 180.0 / M_PI;
+
+
 
             // Draw after kalman filter
             // cv::drawFrameAxes(grayImage, camMatrix, distCoeffs, combined_rvec, combined_tvec, markerLength * 3.0f, 4);
@@ -560,7 +602,7 @@ namespace mrover{
             double r10 = gripper_to_tag.transform()(1,0);
             double r20 = gripper_to_tag.transform()(2,0);
 
-            double pitch_rad = std::atan2(-r20, std::hypot(r00, r10));
+            double pitch_rad = -std::atan2(-r20, std::hypot(r00, r10));
 
             RCLCPP_INFO_STREAM(this->get_logger(), "pitch = " << pitch_rad);
 
@@ -606,7 +648,7 @@ namespace mrover{
             double r10 = armbase_to_z.transform()(1,0);
             double r20 = armbase_to_z.transform()(2,0);
 
-            double pitch_rad = std::atan2(-r20, std::hypot(r00, r10));
+            double pitch_rad = -std::atan2(-r20, std::hypot(r00, r10));
 
             sendIKCommand(armbase_to_armfk.translation().x(),
             armbase_to_z.translation().y(), armbase_to_z.translation().z(), pitch_rad, 0);
@@ -626,6 +668,7 @@ namespace mrover{
         try{
             armbase_to_armfk = SE3Conversions::fromTfTree(tf_buffer, "arm_fk", "arm_base_link");
             // grab current pitch
+            // Get the forward pointing vector of the gripper (usually the X-axis of the arm_fk frame)
             double current_pitch = std::atan2(-armbase_to_armfk.rotation()(2, 0), std::hypot(armbase_to_armfk.rotation()(0, 0), armbase_to_armfk.rotation()(1, 0)));
 
             sendIKCommand(armbase_to_armfk.translation().x(), armbase_to_armfk.translation().y(), armbase_to_armfk.translation().z(), current_pitch, radians);
@@ -657,9 +700,17 @@ namespace mrover{
 
         using clock = std::chrono::steady_clock;
         auto start = clock::now();
-        auto duration = std::chrono::duration<double>(1.5);
-        while (clock::now() - start < duration) {
+        auto duration = std::chrono::duration<double>(10);
+
+
+        SE3d curarmpos = SE3Conversions::fromTfTree(tf_buffer, "arm_fk", "arm_base_link");
+
+        double dist =  sqrt(pow(curarmpos.translation().x()-x, 2) + pow(curarmpos.translation().y()-y,2));
+        while (clock::now() - start < duration || dist > 0.009) {
             mIKPub->publish(message);
+            curarmpos = SE3Conversions::fromTfTree(tf_buffer, "arm_fk", "arm_base_link");
+            dist =  sqrt(pow(curarmpos.translation().x()-x, 2) + pow(curarmpos.translation().y()-y,2));
+            RCLCPP_INFO_STREAM(get_logger(), "remaining distance = " << dist);
         }
 
         RCLCPP_INFO(get_logger(), "Published IK Command {x=%.3f, y=%.3f, z=%.3f, p=%.3f, r=%.3f}", x, y, z, pitch, roll);
