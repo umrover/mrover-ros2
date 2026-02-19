@@ -132,6 +132,11 @@ let roverPos = {
   longitude: 0.0
 }
 
+const approxStartPos = {
+  longitude: -83.70967,
+  latitude: 42.29319
+}
+
 watch(driveMessage, (msg: unknown) => {
   if (!msg || typeof msg !== 'object') return
 
@@ -142,12 +147,12 @@ watch(driveMessage, (msg: unknown) => {
     const default_offset = 40
 
     // First digits of rover starting coords:
-    // 83.70967
-    // 42.29319
+    // -83.70967111915785
+    // 42.293195112872276
 
     let offsetPos = {
-      x: Math.floor((roverPos.longitude + 83.70967) * 250000 - (typedMsg.info.origin.position.x + 30)) + default_offset,
-      y: Math.floor((roverPos.latitude - 42.29319) * 250000 - (typedMsg.info.origin.position.y + 30)) + default_offset
+      x: Math.floor((roverPos.longitude - approxStartPos.longitude) * 170000 - (typedMsg.info.origin.position.x + 30)) + default_offset,
+      y: Math.floor((roverPos.latitude - approxStartPos.latitude) * 200000 - (typedMsg.info.origin.position.y + 30)) + default_offset
     }
 
 
@@ -185,7 +190,7 @@ if (!msg) return
     // rover_status.value = navMsg.status.status
   } else if (navMsg.type === 'orientation') {
     rover_bearing_deg.value = quaternionToMapAngle(navMsg.orientation)
-    const { x: qx, y: qy, z: qz, w: qw } = navMsg.orientation
+    //const { x: qx, y: qy, z: qz, w: qw } = navMsg.orientation
     // pitch.value = (Math.asin(2 * (qx * qz - qy * qw)) * 180) / Math.PI
     // roll.value =
     //   (Math.atan2(2 * (qy * qz + qx * qw), 1 - 2 * (qx * qx + qy * qy)) * 180) /
