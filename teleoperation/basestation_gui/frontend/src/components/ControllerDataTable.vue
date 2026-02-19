@@ -10,10 +10,10 @@
         <svg viewBox="10 5 220 95" class="rover-svg" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Rover diagram">
           <image
             :href="roverImageUrl"
-            x="50"
-            y="25"
-            width="140"
-            height="60"
+            x="14"
+            y="-70"
+            width="250"
+            height="250"
             preserveAspectRatio="xMidYMid meet"
           />
 
@@ -142,9 +142,9 @@ watch(scienceMessage, (msg) => {
 
 // Adjusted X coordinates to make room for labels within the 240px viewBox
 const wheelPositions = [
-  { id: 'front_left', label: 'Front Left', short: 'FL', x: 60, y: 30 },
-  { id: 'mid_left', label: 'Middle Left', short: 'ML', x: 60, y: 55 },
-  { id: 'rear_left', label: 'Rear Left', short: 'RL', x: 60, y: 80 },
+  { id: 'front_left', label: 'Front Left', short: 'FL', x: 90, y: 30 },
+  { id: 'mid_left', label: 'Middle Left', short: 'ML', x: 90, y: 55 },
+  { id: 'rear_left', label: 'Rear Left', short: 'RL', x: 90, y: 80 },
   { id: 'front_right', label: 'Front Right', short: 'FR', x: 180, y: 30 },
   { id: 'mid_right', label: 'Middle Right', short: 'MR', x: 180, y: 55 },
   { id: 'rear_right', label: 'Rear Right', short: 'RR', x: 180, y: 80 },
@@ -158,7 +158,7 @@ function formatNumber(v: unknown) {
 
 
 // Use the DM_Rover_image.svg in the public root directory
-const roverImageUrl = `${import.meta.env.BASE_URL}roverForArmDrivePNG.png`
+const roverImageUrl = `${import.meta.env.BASE_URL}RoverImage.png`
 </script>
 
 <style scoped>
