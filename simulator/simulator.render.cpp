@@ -173,75 +173,6 @@ namespace mrover {
         descriptor.primitive.topology = wgpu::PrimitiveTopology::LineList;
         mWireframePipeline = mDevice.createRenderPipeline(descriptor);
         if (!mWireframePipeline) throw std::runtime_error("Failed to create WGPU wireframe render pipeline");
-
-        // skybox stuff
-        wgpu::RenderPipelineDescriptor skyboxDescriptor;
-        skyboxDescriptor.label = "skybox pipeline";
-        skyboxDescriptor.vertex.module = mShaderModule;
-        skyboxDescriptor.vertex.entryPoint = "vs_skybox";
-        skyboxDescriptor.vertex.bufferCount = 0;
-        skyboxDescriptor.vertex.buffers = nullptr;
-        skyboxDescriptor.vertex.constantCount = 0;
-        skyboxDescriptor.vertex.constants = nullptr;
-
-        skyboxDescriptor.primitive.topology = wgpu::PrimitiveTopology::TriangleList;
-        skyboxDescriptor.primitive.cullMode = wgpu::CullMode::Back;
-
-        wgpu::FragmentState skyboxFragment;
-        skyboxFragment.module = mShaderModule;
-        skyboxFragment.entryPoint = "fs_skybox";
-        skyboxFragment.constantCount = 0;
-        skyboxFragment.constants = nullptr;
-        skyboxDescriptor.fragment = &skyboxFragment;
-
-        // reuse color targets from before (this includes normals, but we won't populate them)
-        skyboxFragment.targetCount = targets.size();
-        skyboxFragment.targets = targets.data();
-
-        skyboxDescriptor.multisample.count = 1;
-        skyboxDescriptor.multisample.mask = ~0u;
-        skyboxDescriptor.multisample.alphaToCoverageEnabled = false;
-
-        wgpu::DepthStencilState skyboxDepthStencil;
-        skyboxDepthStencil.depthCompare = wgpu::CompareFunction::LessEqual;
-        skyboxDepthStencil.depthWriteEnabled = true;
-        skyboxDepthStencil.format = wgpu::TextureFormat::Depth32Float;
-        skyboxDepthStencil.stencilReadMask = 0;
-        skyboxDepthStencil.stencilWriteMask = 0;
-
-        skyboxDescriptor.depthStencil = &skyboxDepthStencil;
-
-        std::array<wgpu::BindGroupLayoutEntry, 3> skyboxBindGroupLayoutEntries{};
-        skyboxBindGroupLayoutEntries[0].binding = 0;
-        skyboxBindGroupLayoutEntries[0].visibility = wgpu::ShaderStage::Fragment;
-        skyboxBindGroupLayoutEntries[0].buffer.type = wgpu::BufferBindingType::Uniform;
-        skyboxBindGroupLayoutEntries[0].buffer.minBindingSize = sizeof(SkyboxUniforms);
-        skyboxBindGroupLayoutEntries[1].binding = 1;
-        skyboxBindGroupLayoutEntries[1].visibility = wgpu::ShaderStage::Fragment;
-        skyboxBindGroupLayoutEntries[1].sampler.type = wgpu::SamplerBindingType::Filtering;
-        skyboxBindGroupLayoutEntries[2].binding = 2;
-        skyboxBindGroupLayoutEntries[2].visibility = wgpu::ShaderStage::Fragment;
-        skyboxBindGroupLayoutEntries[2].texture.sampleType = wgpu::TextureSampleType::Float;
-        skyboxBindGroupLayoutEntries[2].texture.viewDimension = wgpu::TextureViewDimension::Cube;
-
-        wgpu::BindGroupLayoutDescriptor skyboxBindGroupLayoutDescriptor;
-        skyboxBindGroupLayoutDescriptor.entryCount = skyboxBindGroupLayoutEntries.size();
-        skyboxBindGroupLayoutDescriptor.entries = skyboxBindGroupLayoutEntries.data();
-        wgpu::BindGroupLayout skyboxBindGroupLayout = mDevice.createBindGroupLayout(skyboxBindGroupLayoutDescriptor);
-
-        wgpu::PipelineLayoutDescriptor skyboxPipelineLayoutDescriptor;
-        skyboxPipelineLayoutDescriptor.bindGroupLayoutCount = 1;
-        skyboxPipelineLayoutDescriptor.bindGroupLayouts = reinterpret_cast<WGPUBindGroupLayout const*>(&skyboxBindGroupLayout);
-
-        skyboxDescriptor.layout = mDevice.createPipelineLayout(skyboxPipelineLayoutDescriptor);
-
-        mSkyboxPipeline = mDevice.createRenderPipeline(skyboxDescriptor);
-        if (!mSkyboxPipeline) throw std::runtime_error("Failed to create WGPU skybox render pipeline");
-
-        // idk if this is the best place to do this
-        for (size_t i = 0; i < mSkyboxTexturePaths.size(); ++i) {
-            mSkyboxTexture.data[i] = readTexture(mSkyboxTexturePaths[i]);
-        }
     }
 
     auto computeCameraToClip(float fovY, float aspect, float zNear, float zFar) -> Eigen::Matrix4f {
@@ -596,37 +527,6 @@ namespace mrover {
         }
     }
 
-    auto Simulator::renderSkybox(wgpu::RenderPassEncoder& pass, Eigen::Matrix4f& clipToWorld, Uniform<SkyboxUniforms>& uniforms) -> void {
-        mSkyboxTexture.enqueWriteIfUnitialized(mDevice);
-        pass.setPipeline(mSkyboxPipeline);
-
-        if (!uniforms.buffer)
-            uniforms.init(mDevice);
-
-        uniforms.value.clipToWorld = clipToWorld;
-        uniforms.enqueueWrite();
-
-        std::array<wgpu::BindGroupEntry, 3> skyboxEntries{};
-        skyboxEntries[0].binding = 0;
-        skyboxEntries[0].buffer = uniforms.buffer;
-        skyboxEntries[0].size = sizeof(SkyboxUniforms);
-        skyboxEntries[1].binding = 1;
-        skyboxEntries[1].sampler = mSkyboxTexture.sampler;
-        skyboxEntries[2].binding = 2;
-        skyboxEntries[2].textureView = mSkyboxTexture.view;
-
-        wgpu::BindGroupDescriptor skyboxDescriptor;
-        skyboxDescriptor.layout = mSkyboxPipeline.getBindGroupLayout(0);
-        skyboxDescriptor.entryCount = skyboxEntries.size();
-        skyboxDescriptor.entries = skyboxEntries.data();
-
-        wgpu::BindGroup skyboxBindGroup = mDevice.createBindGroup(skyboxDescriptor);
-        pass.setBindGroup(0, skyboxBindGroup, 0, nullptr);
-        pass.draw(3, 1, 0, 0);
-
-        skyboxBindGroup.release();
-    }
-
     // template<typename T>
     // struct Pool {
     //     boost::container::static_vector<T*, 32> container;
@@ -886,9 +786,6 @@ namespace mrover {
 
             if (mRenderModels) renderModels(pass);
             if (mRenderWireframeColliders) renderWireframeColliders(pass);
-
-            Eigen::Matrix4f clipToWorld = mCameraInWorld.transform().cast<float>() * mSceneUniforms.value.cameraToClip.inverse().cast<float>();
-            if (mRenderSkybox) renderSkybox(pass, clipToWorld, mSkyboxUniforms);
 
             guiUpdate(pass);
 
