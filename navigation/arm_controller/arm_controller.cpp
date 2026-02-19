@@ -5,8 +5,8 @@ namespace mrover {
     const rclcpp::Duration ArmController::TIMEOUT = rclcpp::Duration(0, 0.3 * 1e9); // 0.3 seconds
 
     ArmController::ArmController() : Node{"arm_controller"}, mLastUpdate{get_clock()->now() - TIMEOUT} {
-        mPosPub = create_publisher<msg::Position>("arm_pos_cmd", 10);
-        mVelPub = create_publisher<msg::Velocity>("arm_vel_cmd", 10);
+        mPosPub = create_publisher<msg::Position>("arm_position_cmd", 10);
+        mVelPub = create_publisher<msg::Velocity>("arm_velocity_cmd", 10);
 
         mIkSub = create_subscription<msg::IK>("ee_pos_cmd", 1, [this](msg::IK::ConstSharedPtr const& msg) {
             posCallback(msg);
@@ -215,8 +215,6 @@ namespace mrover {
 
         if (get_clock()->now() - mLastUpdate > TIMEOUT) {
             RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 100, "IK Timed Out");
-            if(!mPosFallback) mPosFallback = mCurrPos;
-            mPosPub->publish(mPosFallback.value());
             return;
         }
 
@@ -225,16 +223,13 @@ namespace mrover {
             SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_target", "arm_base_link", mPosTarget.toSE3(), get_clock()->now());
             if (positions) {
                 mPosPub->publish(positions.value());
-                mPosFallback = std::nullopt;
             } else {
                 RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1000, "Position IK failed!");
-                if(!mPosFallback) mPosFallback = mCurrPos;
-                mPosPub->publish(mPosFallback.value());
             }
         } else if (mArmMode == ArmMode::VELOCITY_CONTROL) {
             // TODO: Determine joint velocities that cancels out arm sag
             auto velocities = ikVelCalc(mVelTarget);
-            if (velocities &&
+            if (velocities && 
                 !(
                     velocities->velocities[0] == 0 &&
                     velocities->velocities[1] == 0 &&
@@ -244,11 +239,8 @@ namespace mrover {
                 )
             ) {
                 mVelPub->publish(velocities.value());
-                mPosFallback = std::nullopt;
             } else {
                 if(!velocities) RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1000, "Velocity IK failed!");
-                if(!mPosFallback) mPosFallback = mCurrPos;
-                mPosPub->publish(mPosFallback.value());
             }
         } else { // typing mode
             msg::Position positions;
@@ -273,7 +265,6 @@ namespace mrover {
                     return;
                 }
             }
-            mPosFallback = std::nullopt;
             mPosPub->publish(positions);
         }
     }
