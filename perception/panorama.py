@@ -9,6 +9,7 @@ import tf2_ros
 # from lie import SE3
 from sensor_msgs.msg import Imu
 from mrover.srv import PanoramaStart, PanoramaEnd, Pano, ServoPosition
+from mrover.msg import Heading
 
 import rclpy
 from rclpy.node import Node
@@ -21,6 +22,7 @@ import time
 import message_filters
 import datetime
 import os
+from enum import Enum
 
 def get_quaternion_from_euler(roll, pitch, yaw):
   """
@@ -40,6 +42,16 @@ def get_quaternion_from_euler(roll, pitch, yaw):
   qw = np.cos(roll/2) * np.cos(pitch/2) * np.cos(yaw/2) + np.sin(roll/2) * np.sin(pitch/2) * np.sin(yaw/2)
  
   return [qx, qy, qz, qw]
+
+class Direction(Enum):
+    N = 0
+    E = 2
+    S = 1
+    W = 3
+    NE = 4
+    SE = 5
+    SW = 6
+    NW = 7
 
 # Controls execution rate to be at a given hz
 class PanoRate():
@@ -79,6 +91,12 @@ class Panorama(Node):
         # Start the panorama
         self.record_image = False
         self.record_pc = False
+
+        # Heading variables
+        self.heading_sub = self.create_subscription(Heading, "/heading/fix", self.heading_callback, 1)
+        self.pano_dirs = ['N', 'E', 'S', 'W']
+        self.cur_heading = Direction.N
+        self.start_heading = Direction.N
 
         # PC Stitching Variables
         self.pc_sub = message_filters.Subscriber(self, PointCloud2, f"/{self.zed_version}/left/points")
@@ -150,6 +168,44 @@ class Panorama(Node):
                 self.img_list.append(copy.deepcopy(self.current_img))
             self.img_rate.sleep()
 
+    def heading_callback(self, heading: Heading):
+        self.start_heading = Direction.N
+        pass
+
+    def label_pano(self, order: np.ndarray[int], pano: np.ndarray):
+        # label hard coded NESW as a test
+        fontFace = cv2.FONT_HERSHEY_SIMPLEX
+        fontScale = 2.0
+        color = (255, 255, 255)
+        thickness = 5
+        lineType = cv2.LINE_AA
+
+        cur_dir = self.start_heading
+
+        # Find out where first image is in the order (or whatever is closest to it)
+        closest = order.argmin()
+
+        x_org = int(0 + closest * (pano.shape[1] / len(order)))
+        if self.cur_heading.value > 3:
+            # if our starting dir was NW,NE,SW, or SE the starting cardinal direction will be 1/8
+            # of the way through the image after that (mod image size)
+            x_org = (x_org + int(pano.shape[1] / 8)) % int(pano.shape[1])
+        y_org = int(pano.shape[0] / 4)
+
+        # Every cardinal dir will be seperated by 1/4 of the image size
+        x_step = int(pano.shape[1] / 4)
+
+        # Our starting index will be our heading, and every 1/4 of the image 
+        # will be the next direction
+        for i in range(len(self.pano_dirs)):
+            text = self.pano_dirs[cur_dir]
+
+            cv2.putText(pano, text, (x_org,y_org), fontFace, fontScale, color, thickness, lineType)
+            x_org += x_step
+            cur_dir = (cur_dir + 1) % len(self.pano_dirs)
+
+        return pano
+        
     def start_callback(self, _, response):
         self.get_logger().info('Starting Pano...')
 
@@ -165,6 +221,10 @@ class Panorama(Node):
             self.imu_sub = message_filters.Subscriber(self, Imu, f"/{self.zed_version}_imu/data_raw")
             self.sync = message_filters.ApproximateTimeSynchronizer([self.pc_sub, self.imu_sub], 10, 1)
             self.sync.registerCallback(self.synced_gps_pc_callback)
+
+        if self.heading_sub is not None:
+            self.destroy_subscription(self.heading_sub)
+            self.heading_sub = None
 
         # START SPINNING THE MAST GIMBAL
         # req = ServoPosition.Request()
@@ -232,9 +292,9 @@ class Panorama(Node):
         # Construct Pano and Save, get stitching order
         if pano is not None:
             # save the panorama if it succeeds
+            order = self.stitcher.component()
+            self.label_pano(order, pano)
             cv2.imwrite(f"{new_path}/pano.png", pano)
-            order = list(self.stitcher.component())
-            print(order)
             
             # convert the panorama to bgra for transport through ROS
             bgra_pano = cv2.cvtColor(pano, cv2.COLOR_BGR2BGRA)
@@ -260,8 +320,11 @@ class Panorama(Node):
             # pano stitcher failed
             self.get_logger().info('Pano Failed...')
             response.success = False
-            return response
         
+        # Start capturing heading again
+        if self.heading_sub is None:
+            self.heading_sub = self.create_subscription(Heading, "/heading/fix", self.heading_callback, 1)
+            
         self.stitched_pc = np.empty((0, 8), dtype=np.float32)
         self.img_list = []
         self.get_logger().info('Pano response sent to frontend')
