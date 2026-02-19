@@ -143,13 +143,11 @@ const imageDetectorEnabled = ref(false)
 // Example pattern (from teleopAction above):
 //   const teleopAction = (newState: boolean) => autonAPI.enableTeleop(newState)
 const stereoDetectorAction = async (newState: boolean) => {
-  // TODO(object): return autonAPI.toggleStereoDetector(newState)
-  return { status: 'success' }
+  return autonAPI.toggleStereoDetector(newState)
 }
 
 const imageDetectorAction = async (newState: boolean) => {
-  // TODO(object): return autonAPI.toggleImageDetector(newState)
-  return { status: 'success' }
+  return autonAPI.toggleImageDetector(newState)
 }
 </script>
 
