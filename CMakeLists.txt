@@ -152,7 +152,7 @@ file(GLOB_RECURSE MROVER_SERVICE_FILE_PATHS RELATIVE ${CMAKE_CURRENT_LIST_DIR} C
 message(STATUS "Found service files: ${MROVER_SERVICE_FILE_PATHS}")
 
 file(GLOB_RECURSE MROVER_ACTION_FILE_PATHS RELATIVE ${CMAKE_CURRENT_LIST_DIR} CONFIGURE_DEPENDS action/*.action)
-message(STATUS "Found action files: ${MROVER_ACTION_FILE_PATHS}")
+message(STATUS "Found service files: ${MROVER_ACTION_FILE_PATHS}")
 
 # Starter Project
 message(STATUS "PROJ NAME: ${PROJECT_NAME}")
@@ -171,7 +171,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
     ${MROVER_MESSAGE_FILE_PATHS}
     ${MROVER_SERVICE_FILE_PATHS}
     ${MROVER_ACTION_FILE_PATHS}
-    DEPENDENCIES nav_msgs sensor_msgs geometry_msgs unique_identifier_msgs
+    DEPENDENCIES nav_msgs sensor_msgs geometry_msgs
 )
 
 # Starter project 
@@ -208,7 +208,6 @@ mrover_add_library(lie lie/*.cpp lie)
 target_link_libraries(lie MANIF::manif)
 ament_target_dependencies(lie rclcpp geometry_msgs tf2 tf2_ros)
 
-mrover_add_header_only_library(units units)
 mrover_add_header_only_library(loop_profiler loop_profiler)
 mrover_add_header_only_library(parameter_utils parameter_utils)
 mrover_add_header_only_library(gst_utils gst_utils)
@@ -219,12 +218,12 @@ target_link_libraries(gst_utils INTERFACE magic_enum::magic_enum PkgConfig::Gst 
 mrover_add_node(simulator simulator/*.cpp simulator simulator/pch.hpp)
 ament_target_dependencies(simulator rclcpp rclcpp_components nav_msgs sensor_msgs geometry_msgs tf2 tf2_ros urdf yaml_cpp_vendor)
 target_link_libraries(simulator
-    assimp::assimp glfw3webgpu webgpu glfw webgpu_hpp imgui
-    ${BULLET_LIBRARIES}
-    lie Eigen3::Eigen
-    opencv_core opencv_imgcodecs opencv_imgproc
-    loop_profiler
-    parameter_utils
+   assimp::assimp glfw3webgpu webgpu glfw webgpu_hpp imgui
+   ${BULLET_LIBRARIES}
+   lie Eigen3::Eigen
+   opencv_core opencv_imgcodecs opencv_imgproc
+   loop_profiler
+   parameter_utils
 )
 target_include_directories(simulator SYSTEM PRIVATE ${BULLET_INCLUDE_DIRS} ${OPENCV_INCLUDE_DIRS})
 
@@ -297,12 +296,12 @@ else()
 endif()
 
 # Tag Detector
-mrover_add_component(tag_detector perception/tag_detector/*.cpp perception/tag_detector/pch.hpp StereoTagDetector ImageTagDetector)
-mrover_ament_component(tag_detector rclcpp rclcpp_components tf2 tf2_ros)
-mrover_link_component(tag_detector lie opencv_core opencv_aruco opencv_imgproc loop_profiler parameter_utils)
+#mrover_add_component(tag_detector perception/tag_detector/*.cpp perception/tag_detector/pch.hpp StereoTagDetector ImageTagDetector)
+#mrover_ament_component(tag_detector rclcpp rclcpp_components tf2 tf2_ros)
+#mrover_link_component(tag_detector lie opencv_core opencv_aruco opencv_imgproc loop_profiler parameter_utils)
 
-mrover_executable_from_component(stereo_tag_detector perception/executables/stereo_tag_detector.cpp tag_detector_component)
-mrover_executable_from_component(image_tag_detector perception/executables/image_tag_detector.cpp tag_detector_component)
+#mrover_executable_from_component(stereo_tag_detector perception/executables/stereo_tag_detector.cpp tag_detector_component)
+#mrover_executable_from_component(image_tag_detector perception/executables/image_tag_detector.cpp tag_detector_component)
 
 # Keyboard Typing
 mrover_add_component(keyboard_typing perception/keyboard_typing/keyboard_typing.cpp perception/keyboard_typing/pch.hpp KeyboardTypingNode perception/keyboard_typing/constants.hpp)
@@ -312,11 +311,11 @@ mrover_link_component(keyboard_typing lie parameter_utils opencv_core opencv_aru
 mrover_executable_from_component(keyboard_typing perception/executables/keyboard_typing.cpp keyboard_typing_component)
 
 # Cost Map
-mrover_add_component(cost_map perception/cost_map/*.cpp perception/cost_map/pch.hpp CostMapNode)
-mrover_ament_component(cost_map rclcpp rclcpp_components tf2 tf2_ros)
-mrover_link_component(cost_map lie parameter_utils)
+#mrover_add_component(cost_map perception/cost_map/*.cpp perception/cost_map/pch.hpp CostMapNode)
+#mrover_ament_component(cost_map rclcpp rclcpp_components tf2 tf2_ros)
+#mrover_link_component(cost_map lie parameter_utils)
 
-mrover_executable_from_component(cost_map perception/executables/cost_map.cpp cost_map_component)
+#mrover_executable_from_component(cost_map perception/executables/cost_map.cpp cost_map_component)
 
 # TypingDeltasServer FOR TESTING
 mrover_add_node(typing_deltas_server perception/keyboard_typing/key_server_test.cpp perception/keyboard_typing/pch.hpp)
@@ -325,35 +324,37 @@ ament_target_dependencies(typing_deltas_server rclcpp rclcpp_action tf2 tf2_ros 
 
 # Embedded
 
-mrover_add_header_only_library(messaging esw/messaging)
+add_subdirectory(esw/fw/lib)
 
 if (NOT APPLE)
     mrover_add_header_only_library(can_device esw/can_device)
-    target_link_libraries(can_device INTERFACE ${rclcpp_LIBRARIES} moteus)
+    target_link_libraries(can_device INTERFACE ${rclcpp_LIBRARIES} moteus dbc)
 
-    mrover_add_library(motor_library esw/motor_library/*.cpp esw/motor_library)
-    ament_target_dependencies(motor_library rclcpp std_srvs)
-    target_link_libraries(motor_library can_device units messaging parameter_utils)
+    # mrover_add_library(motor_library esw/motor_library/*.cpp esw/motor_library)
+    mrover_add_header_only_library(motor_library esw/motor_library)
+    # ament_target_dependencies(motor_library rclcpp std_srvs)
+    target_link_libraries(motor_library INTERFACE can_device units parameter_utils)
 
     macro(mrover_add_esw_motor_bridge_node name sources)
         mrover_add_node(${name} ${sources})
         ament_target_dependencies(${name} rclcpp std_srvs)
-        target_link_libraries(${name} can_device units messaging)
+        target_link_libraries(${name} can_device units)
         target_link_libraries(${name} motor_library)
     endmacro()
 
     mrover_add_esw_motor_bridge_node(drive_hw_bridge esw/drive_hw_bridge.cpp)
+    mrover_add_esw_motor_bridge_node(motor_test_bridge esw/motor_test_bridge.cpp)
     mrover_add_esw_motor_bridge_node(arm_hw_bridge esw/arm_hw_bridge.cpp)
-    mrover_add_esw_motor_bridge_node(mast_gimbal_hw_bridge esw/mast_gimbal_hw_bridge.cpp)
+    # mrover_add_esw_motor_bridge_node(mast_gimbal_hw_bridge esw/mast_gimbal_hw_bridge.cpp)
 
-    mrover_add_node(pdlb_hw_bridge esw/pdlb_hw_bridge.cpp)
-    ament_target_dependencies(pdlb_hw_bridge rclcpp std_srvs)
-    target_link_libraries(pdlb_hw_bridge can_device units messaging)
+    # mrover_add_node(pdlb_hw_bridge esw/pdlb_hw_bridge.cpp)
+    # ament_target_dependencies(pdlb_hw_bridge rclcpp std_srvs)
+    # target_link_libraries(pdlb_hw_bridge can_device units messaging)
 endif()
 
 mrover_add_node(differential_drive_controller esw/differential_drive_controller.cpp)
 ament_target_dependencies(differential_drive_controller rclcpp std_srvs)
-target_link_libraries(differential_drive_controller units messaging)
+target_link_libraries(differential_drive_controller units)
 
 mrover_add_node(arm_controller navigation/arm_controller/arm_controller.cpp navigation/arm_controller/pch.hpp)
 target_link_libraries(arm_controller lie)
@@ -377,8 +378,8 @@ if (Gst_FOUND AND GstApp_FOUND)
 endif ()
 
 if (NetLink_FOUND AND NetLinkRoute_FOUND)
-    mrover_add_node(can_bridge esw/can_bridge/*.cpp esw/can_bridge/pch.hpp)
-    target_link_libraries(can_bridge PkgConfig::NetLink PkgConfig::NetLinkRoute)
+    mrover_add_node(can_bridge esw/can_bridge/*.cpp esw/can_bridge/pch.hpp esw/can_bridge/can_bridge.hpp)
+    target_link_libraries(can_bridge dbc PkgConfig::NetLink PkgConfig::NetLinkRoute)
     ament_target_dependencies(can_bridge rclcpp)
 endif ()
 
