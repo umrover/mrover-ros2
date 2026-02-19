@@ -100,10 +100,20 @@ async def toggle_path_interpolation(data: TeleopEnableRequest):
 # Look at toggle_pure_pursuit() above for the exact pattern.
 @router.post("/toggle_stereo_detector/")
 async def toggle_stereo_detector(data: TeleopEnableRequest):
-    raise HTTPException(status_code=501, detail="Not implemented yet")
+    client = get_service_client(SetBool, "/toggle_stereo_detector")
+    request = SetBool.Request(data=data.enabled)
+    result = await call_service_async(client, request)
+    if result is None:
+        raise HTTPException(status_code=500, detail="Service /toggle_stereo_detector is not available or timed out")
+    return {'status': 'success', 'enabled': data.enabled}
 
 
 # TODO(object): Same as above, but call "/toggle_image_detector" service.
 @router.post("/toggle_image_detector/")
 async def toggle_image_detector(data: TeleopEnableRequest):
-    raise HTTPException(status_code=501, detail="Not implemented yet")
+    client = get_service_client(SetBool, "/toggle_image_detector")
+    request = SetBool.Request(data=data.enabled)
+    result = await call_service_async(client, request)
+    if result is None:
+        raise HTTPException(status_code=500, detail="Service /toggle_image_detector is not available or timed out")
+    return {'status': 'success', 'enabled': data.enabled}
