@@ -43,16 +43,6 @@ def get_quaternion_from_euler(roll, pitch, yaw):
  
   return [qx, qy, qz, qw]
 
-class Direction(Enum):
-    N = 0
-    E = 2
-    S = 1
-    W = 3
-    NE = 4
-    SE = 5
-    SW = 6
-    NW = 7
-
 # Controls execution rate to be at a given hz
 class PanoRate():
     def __init__(self, rate, node):
@@ -95,8 +85,7 @@ class Panorama(Node):
         # Heading variables
         self.heading_sub = self.create_subscription(Heading, "/heading/fix", self.heading_callback, 1)
         self.pano_dirs = ['N', 'E', 'S', 'W']
-        self.cur_heading = Direction.N
-        self.start_heading = Direction.N
+        self.cur_heading = 90 # degrees
 
         # PC Stitching Variables
         self.pc_sub = message_filters.Subscriber(self, PointCloud2, f"/{self.zed_version}/left/points")
@@ -169,41 +158,42 @@ class Panorama(Node):
             self.img_rate.sleep()
 
     def heading_callback(self, heading: Heading):
-        self.start_heading = Direction.N
         pass
 
     def label_pano(self, order: np.ndarray[int], pano: np.ndarray):
         # label hard coded NESW as a test
         fontFace = cv2.FONT_HERSHEY_SIMPLEX
         fontScale = 2.0
-        color = (255, 255, 255)
+        color = (93, 236, 251)
         thickness = 5
         lineType = cv2.LINE_AA
 
-        cur_dir = self.start_heading
-
-        # Find out where first image is in the order (or whatever is closest to it)
-        closest = order.argmin()
-
-        x_org = int(0 + closest * (pano.shape[1] / len(order)))
-        if self.cur_heading.value > 3:
-            # if our starting dir was NW,NE,SW, or SE the starting cardinal direction will be 1/8
-            # of the way through the image after that (mod image size)
-            x_org = (x_org + int(pano.shape[1] / 8)) % int(pano.shape[1])
+        # make array of approx heading for each image
+        heading_step = 340 / len(self.img_list)
+        approx_heading = np.array([])
+        for i in range(len(self.img_list)):
+            approx_heading = np.append(approx_heading, [int(self.cur_heading + i*heading_step) % 340])
+        
+        # For each cardinal dir, find which image has closest heading to that direction
+        # Then find the image closest to that one in number from the order list
+        # Put the direction where that image "starts" in the pano (assume each indiv.
+        # image takes up roughly the same amount of space)
         y_org = int(pano.shape[0] / 4)
+        img_mid = pano.shape[1] / (2*len(order))
+        for i, dir in enumerate(self.pano_dirs):
+            head = i * 90
+            diffs = np.abs(approx_heading - head)
+            closest = diffs.argmin()
 
-        # Every cardinal dir will be seperated by 1/4 of the image size
-        x_step = int(pano.shape[1] / 4)
+            diffs = np.abs(order - int(closest))
+            pos = diffs.argmin()
 
-        # Our starting index will be our heading, and every 1/4 of the image 
-        # will be the next direction
-        for i in range(len(self.pano_dirs)):
-            text = self.pano_dirs[cur_dir]
+            if abs(approx_heading[int(pos)] - approx_heading[int(closest)]) > 20:
+                continue
+            x_org = int(pos * (pano.shape[1] / len(order)) + img_mid)
 
-            cv2.putText(pano, text, (x_org,y_org), fontFace, fontScale, color, thickness, lineType)
-            x_org += x_step
-            cur_dir = (cur_dir + 1) % len(self.pano_dirs)
-
+            cv2.putText(pano, dir, (x_org,y_org), fontFace, fontScale, color, thickness, lineType)
+        
         return pano
         
     def start_callback(self, _, response):
@@ -227,11 +217,11 @@ class Panorama(Node):
             self.heading_sub = None
 
         # START SPINNING THE MAST GIMBAL
-        # req = ServoPosition.Request()
-        # req.header = Header()
-        # req.name = ["gimbal_pitch", "gimbal_yaw"]
-        # req.position = [90.0, 360.0] # TODO is 90 correct?? 0?
-        # self.gimbal_client.call_async(req)
+        req = ServoPosition.Request()
+        req.header = Header()
+        req.name = ["gimbal_pitch", "gimbal_yaw"]
+        req.position = [90.0, 360.0] # TODO is 90 correct?? 0?
+        self.gimbal_client.call_async(req)
 
         return response
 
@@ -240,6 +230,13 @@ class Panorama(Node):
 
         self.record_image = False
         self.record_pc = False
+
+        # Return Mast Gimbal to original position
+        req = ServoPosition.Request()
+        req.header = Header()
+        req.name = ["gimbal_pitch", "gimbal_yaw"]
+        req.position = [90.0, 0.0] # TODO is 90 correct?? 0?
+        self.gimbal_client.call_async(req)
 
         if self.img_sub is not None:
             self.destroy_subscription(self.img_sub)
@@ -292,8 +289,8 @@ class Panorama(Node):
         # Construct Pano and Save, get stitching order
         if pano is not None:
             # save the panorama if it succeeds
-            order = self.stitcher.component()
-            self.label_pano(order, pano)
+            # order = self.stitcher.component()
+            # self.label_pano(order, pano)
             cv2.imwrite(f"{new_path}/pano.png", pano)
             
             # convert the panorama to bgra for transport through ROS
