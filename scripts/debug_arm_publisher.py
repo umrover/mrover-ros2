@@ -27,12 +27,12 @@ class DebugArmPublisher(Node):
     vel_pub: Publisher
     typing_client: ActionClient
     mode: Mode
-    joint_b_vel: float
+    joint_b_thr: float
     def __init__(self):
         super().__init__("debug_arm_publisher")
 
-        self.mode = Mode.VEL
-        self.joint_b_vel = 1.0
+        self.mode = Mode.THR
+        self.joint_b_thr = 1.0
 
         self.thr_pub = self.create_publisher(Throttle, "arm_thr_cmd", 1)
         self.pos_pub = self.create_publisher(Position, "arm_pos_cmd", 1)
@@ -42,6 +42,7 @@ class DebugArmPublisher(Node):
 
         match self.mode:
             case Mode.THR:
+                print("hello")
                 self.thr_timer = self.create_timer(1.0/hz, self.throttle_timer_callback)
             case Mode.POS:
                 self.pos_timer = self.create_timer(1.0/hz, self.pos_timer_callback)
@@ -56,8 +57,9 @@ class DebugArmPublisher(Node):
         header = Header(stamp = self.get_clock().now().to_msg(), frame_id = "base_link")
 
         joint_names = ["joint_b"]
-        joint_throttles = [max(self.joint_b_vel, 0.1)]
-        self.joint_b_vel -= 0.01
+        joint_throttles = [max(self.joint_b_thr, 0.1)]
+        joint_throttles = [0.5]
+        self.joint_b_thr -= 0.002
         
         # joint_names = ["joint_de_pitch"]
         # joint_throttles = [1.0]

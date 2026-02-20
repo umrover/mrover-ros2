@@ -292,6 +292,7 @@ namespace mrover {
 
             // v = (ac * sin_beta / b) * (-omega_std)
             auto const vel = (a.get() * c.get() * sin_beta / b.get()) * (-standard_omega.get());
+	    RCLCPP_INFO_STREAM(get_logger(), "B Linear Velocity: " << vel);
             return MetersPerSecond{vel};
         }
 

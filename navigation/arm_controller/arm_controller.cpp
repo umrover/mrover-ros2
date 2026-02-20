@@ -127,6 +127,9 @@ namespace mrover {
             return std::nullopt;
         }
 
+	double factor = (joint_b_vel < 0) ? -1 : 1;
+	joint_b_vel = std::max(std::abs(joint_b_vel), 0.015) * factor;
+
         msg::Velocity velocities;
         velocities.names = {"joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_roll"};
         velocities.velocities = {
@@ -347,11 +350,9 @@ namespace mrover {
                 // no movement command, so just stop the arm
                 if (hold == false) {
                     mCarrotPos = mArmPos;
-                    mPosFallback = mCurrPos;
                     hold = true;
                 }
                 
-                mPosPub->publish(mPosFallback.value());
 
                 return;
             }
@@ -389,7 +390,7 @@ namespace mrover {
             auto error_pitch = mCarrotPos.pitch - mArmPos.pitch;
             auto error_roll  = mCarrotPos.roll  - mArmPos.roll;
 
-            const double max_dist = 0.01;
+            const double max_dist = 0.05;
 
             double error_total = std::sqrt(error_x * error_x + error_y * error_y + error_z * error_z);
 
@@ -418,7 +419,7 @@ namespace mrover {
             error_roll  = mCarrotPos.roll  - mArmPos.roll;
 
 
-            const double Kp_lin = 20.0;
+            const double Kp_lin = 100.0;
             const double Kp_ang = 8.0; 
 
             adjusted_v.linear.x  += Kp_lin * error_x;
@@ -439,7 +440,6 @@ namespace mrover {
                 )
             ) {
                 mVelPub->publish(velocities.value());
-                mPosFallback = std::nullopt;
             } else {
                 if (!velocities) {
                     RCLCPP_WARN_THROTTLE(
@@ -451,15 +451,6 @@ namespace mrover {
                     mCarrotPos = mArmPos;
                 }
 
-                if (!mPosFallback) {
-                    mPosFallback = mCurrPos;
-                    //mPosFallback = ikPosCalc(mCarrotPos).value();
-                    //mCarrotPos = mArmPos;
-                    mPosPub->publish(mPosFallback.value());
-                }
-            }
-            } else {
-                if (!velocities) RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1000, "Velocity IK failed!");
             }
         } else { // typing mode
             if(mTypingGoalID) {

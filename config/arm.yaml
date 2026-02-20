@@ -28,8 +28,8 @@ arm_hw_bridge:
     joint_b_mount_theta: 1.25499645 # 71.906deg
     joint_b_segment_offset_theta: 0.09384635 # 5.377deg
     joint_c:
-      min_velocity: -0.06
-      max_velocity: 0.06
+      min_velocity: -0.377
+      max_velocity: 0.377
       min_position: -1.04719755 # -60deg
       max_position: 3.05432619 # 175deg
       max_torque: 200.0
@@ -38,7 +38,7 @@ arm_hw_bridge:
     joint_de_pitch_offset: 0.06 # radians
     joint_de_roll_offset: -3.44 # radians
     joint_de_pitch_max_position: 1.0 # radians
-    joint_de_pitch_min_position: -0.85 # radians
+    joint_de_pitch_min_position: -1.82 # radians
     joint_de_roll_max_position: 1.57 # radians
     joint_de_roll_min_position: -1.57 # radians
     joint_de_0:
