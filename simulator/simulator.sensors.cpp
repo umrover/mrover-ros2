@@ -262,7 +262,7 @@ namespace mrover {
 
                 motorGroup.controllerStatePub->publish(controllerState);
                 motorGroup.jointStatePub->publish(jointState);
-            }
+ROS            }
         }
     }
 
