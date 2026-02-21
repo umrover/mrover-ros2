@@ -20,8 +20,8 @@
 #include <mrover/msg/velocity.hpp>
 #include <mrover/srv/pusher.hpp>
 
-#include "brushed.hpp"
-#include "brushless.hpp"
+#include <brushed.hpp>
+#include <brushless.hpp>
 
 
 namespace mrover {

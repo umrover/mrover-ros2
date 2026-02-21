@@ -68,15 +68,9 @@ can_bridge_2:
         id: 0x35
       pusher:
         id: 0x36
-#      auger:
-#        id: 0x40
-#      sensor_actuator:
-#        id: 0x41
-#      linear_actuator:
-#        id: 0x42
-#      pump_0:
-#        id: 0x43
-#      pump_1:
-#        id: 0x44
       science:
-        id: 0x70
+        id: 0x40
+      auger:
+        id: 0x41
+      linear_actuator:
+        id: 0x42

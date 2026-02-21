@@ -1,4 +1,3 @@
-#include "mrover/msg/detail/humidity__struct.hpp"
 #include <cstddef>
 #include <cstring>
 #include <memory>
@@ -6,13 +5,9 @@
 
 #include <rclcpp/node.hpp>
 #include <rclcpp/rclcpp.hpp>
-#include <sensor_msgs/msg/detail/temperature__struct.hpp>
-#include <sensor_msgs/msg/relative_humidity.hpp>
-#include <sensor_msgs/msg/temperature.hpp>
 
-#include <can_device.hpp>
-
-#include <mrover/msg/can.hpp>
+#include <mrover/msg/controller_state.hpp>
+#include <mrover/msg/throttle.hpp>
 #include <mrover/msg/temperature.hpp>
 #include <mrover/msg/humidity.hpp>
 #include <mrover/msg/pressure.hpp>
@@ -20,77 +15,117 @@
 #include <mrover/msg/ozone.hpp>
 #include <mrover/msg/co2.hpp>
 #include <mrover/msg/uv.hpp>
-// #include <pch.hpp>
+
+#include <science.hpp>
+#include <brushed.hpp>
 
 
 namespace mrover {
-    class ScienceHWBridge final : public rclcpp::Node {
-    private:
-        rclcpp::Publisher<msg::Temperature>::SharedPtr mTemperaturePub;
-        rclcpp::Publisher<msg::Humidity>::SharedPtr mHumidityPub;
-        rclcpp::Publisher<msg::Pressure>::SharedPtr mPressurePub;
-        rclcpp::Publisher<msg::Oxygen>::SharedPtr mOxygenPub;
-        rclcpp::Publisher<msg::Ozone>::SharedPtr mOzonePub;
-        rclcpp::Publisher<msg::CO2>::SharedPtr mCO2Pub;
-        rclcpp::Publisher<msg::UV>::SharedPtr mUVPub;
+    class ScienceHWBridge : public rclcpp::Node {
 
-        rclcpp::Subscription<msg::CAN>::ConstSharedPtr mCANSub;
-
-        CANDevice mCANDevice;
-
-        void processSensorData(std::span<const float> message) {
-            msg::UV uv_msg;
-            uv_msg.uv_index = message[0];
-            mUVPub->publish(uv_msg);
-
-            msg::Temperature temp_msg;
-            temp_msg.temperature = message[1];
-            mTemperaturePub->publish(temp_msg);
-
-            msg::Humidity humidity_msg;
-            humidity_msg.relative_humidity = message[2];
-            mHumidityPub->publish(humidity_msg);
-
-            msg::Pressure pressure_msg;
-            pressure_msg.pressure = message[3];
-            mPressurePub->publish(pressure_msg);
-
-            msg::Oxygen oxygen_msg;
-            oxygen_msg.percent = message[4];
-            mOxygenPub->publish(oxygen_msg);
-
-            msg::Ozone ozone_msg;
-            ozone_msg.ppb = message[5];
-            mOzonePub->publish(ozone_msg);
-
-            msg::CO2 co2_msg;
-            co2_msg.percent = message[6];
-            mCO2Pub->publish(co2_msg);
-        }
-
-        void processCANData(msg::CAN::ConstSharedPtr const& message) {
-            processSensorData(std::span<const float>(reinterpret_cast<const float*>(message->data.data()), message->data.size() / sizeof(float)));
-        }
+        using Controller = std::variant<
+                std::shared_ptr<BrushedController<Meters>>,
+                std::shared_ptr<BrushedController<Radians>>>;
 
     public:
         ScienceHWBridge() : Node{"science_hw_bridge"} {}
 
-        void init() {
-            mTemperaturePub = create_publisher<msg::Temperature>("sp_temperature_data", 10);
-            mHumidityPub = create_publisher<msg::Humidity>("sp_humidity_data", 10);
-            mPressurePub = create_publisher<msg::Pressure>("sp_pressure_data", 10);
-            mOxygenPub = create_publisher<msg::Oxygen>("sp_oxygen_data", 10);
-            mOzonePub = create_publisher<msg::Ozone>("sp_ozone_data", 10);
-            mCO2Pub = create_publisher<msg::CO2>("sp_co2_data", 10);
-            mUVPub = create_publisher<msg::UV>("sp_uv_data", 10);
+        auto init() -> void {
+            mScienceBoard = std::make_shared<ScienceBoard>(shared_from_this(), "jetson", "science");
+            mAuger = std::make_shared<BrushedController<Radians>>(shared_from_this(), "jetson", "auger");
+            mLinearActuator = std::make_shared<BrushedController<Meters>>(shared_from_this(), "jetson", "linear_actuator");
 
-            mCANSub = create_subscription<msg::CAN>("/can/science/in", 10, [this](msg::CAN::ConstSharedPtr const& msg) { processCANData(msg); });
+            mSPThrottleSub = create_subscription<msg::Throttle>("sp_thr_cmd", 1, [this](msg::Throttle::ConstSharedPtr const& msg) { processThrottleCmd(msg); });
 
-            // mCANDevice = CanDevice(rclcpp::Node::shared_from_this(), "jetson", "science");
+            mPublishDataTimer = create_wall_timer(
+                    std::chrono::milliseconds(100),
+                    [this]() -> void { publishDataCallback(); });
+            mControllerStatePub = create_publisher<msg::ControllerState>("sp_controller_state", 1);
+
+            mControllerState.names = mActuatorNames;
+            mControllerState.states.resize(mActuatorNames.size());
+            mControllerState.errors.resize(mActuatorNames.size());
+            mControllerState.limits_hit.resize(mActuatorNames.size());
+
+            mControllerState.header.stamp = now();
+            mControllerState.header.frame_id = "";
+            mControllerState.names = mActuatorNames;
+            mControllerState.states.resize(mActuatorNames.size());
+            mControllerState.errors.resize(mActuatorNames.size());
+            mControllerState.positions.resize(mActuatorNames.size());
+            mControllerState.velocities.resize(mActuatorNames.size());
+            mControllerState.currents.resize(mActuatorNames.size());
+            mControllerState.limits_hit.resize(mActuatorNames.size());
+        }
+
+    private:
+        std::vector<std::string> const mActuatorNames{"auger", "linear_actuator"};
+
+        std::shared_ptr<ScienceBoard> mScienceBoard;
+        std::shared_ptr<BrushedController<Radians>> mAuger;
+        std::shared_ptr<BrushedController<Meters>> mLinearActuator;
+
+        rclcpp::TimerBase::SharedPtr mPublishDataTimer;
+        rclcpp::Subscription<msg::Throttle>::SharedPtr mSPThrottleSub;
+        rclcpp::Publisher<msg::ControllerState>::SharedPtr mControllerStatePub;
+        msg::ControllerState mControllerState;
+
+        auto processThrottleCmd(msg::Throttle::ConstSharedPtr const& msg) -> void {
+            if (msg->names.size() != msg->throttles.size()) {
+                RCLCPP_ERROR(get_logger(), "Name count and value count mismatched!");
+                return;
+            }
+
+            for (std::size_t i = 0; i < msg->names.size(); ++i) {
+                std::string const& name = msg->names[i];
+                Dimensionless const& throttle = msg->throttles[i];
+
+                // Silly little thing to save some speed. Could easily just do the straight up string comparision
+                switch (name.front() + name.back()) {
+                    case 'a' + 'r':
+                        mAuger->setDesiredThrottle(throttle);
+                        break;
+                    case 'l' + 'r':
+                        mLinearActuator->setDesiredThrottle(throttle);
+                        break;
+                }
+            }
+        }
+
+        auto publishDataCallback() -> void {
+            mControllerState.header.stamp = now();
+
+            for (std::size_t i = 0; i < mActuatorNames.size(); ++i) {
+                std::string_view const name = mActuatorNames[i];
+
+                switch (name.front() + name.back()) {
+                    case 'a' + 'r':
+                        mControllerState.names[i] = name;
+                        mControllerState.states[i] = mAuger->getState();
+                        mControllerState.errors[i] = mAuger->getError();
+                        mControllerState.positions[i] = mAuger->getPosition();
+                        mControllerState.velocities[i] = mAuger->getVelocity();
+                        mControllerState.currents[i] = mAuger->getCurrent();
+                        mControllerState.limits_hit[i] = mAuger->getLimitsHitBits();
+                        break;
+                    case 'l' + 'r':
+                        mControllerState.names[i] = name;
+                        mControllerState.states[i] = mLinearActuator->getState();
+                        mControllerState.errors[i] = mLinearActuator->getError();
+                        mControllerState.positions[i] = mLinearActuator->getPosition();
+                        mControllerState.velocities[i] = mLinearActuator->getVelocity();
+                        mControllerState.currents[i] = mLinearActuator->getCurrent();
+                        mControllerState.limits_hit[i] = mLinearActuator->getLimitsHitBits();
+                        break;
+                }
+            }
+
+            mControllerStatePub->publish(mControllerState);
         }
     };
 
 } // namespace mrover
+
 
 auto main(int argc, char** argv) -> int {
     rclcpp::init(argc, argv);
