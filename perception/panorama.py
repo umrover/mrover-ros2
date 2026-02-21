@@ -66,12 +66,47 @@ class PanoRate():
         if(duration_seconds > 0):
             time.sleep(duration_seconds)
 
+# class PanoramaStitcher():
+#     def __init__(self, img_list):
+#         self.sift = cv2.SIFT.create()
+#         self.img_list = img_list
+
+#     def compute_features(self):
+#         result_map = {}
+#         for index, img in enumerate(self.img_list):
+#             feature_tuple = self.sift.detectAndCompute(img, None)
+#             result_map[index] = feature_tuple
+        
+#         return result_map
+
+#     def match_neighbors(self):
+        
+#         pass
+
+#     def estimate_rotations(self):
+#         pass
+
+#     def bundle_adjust(self):
+#         pass
+
+#     def spherical_warp(self):
+#         pass
+
+#     def compensate_exposure(self):
+#         pass
+
+#     def find_seams(self):
+#         pass
+
+#     def multiband_blend(self):
+#         pass
+
 class Panorama(Node):
     def __init__(self):
         super().__init__('panorama')
 
         # Variable for the ZED you'd like to use (zed or zed_mini)
-        self.zed_version= "zed"
+        self.zed_version= "zed_mini"
 
         # Pano Action Server
         self.start_pano = self.create_service(PanoramaStart, '/panorama/start', self.start_callback)
