@@ -5,12 +5,12 @@
 #include <variant>
 
 // Standard ROS 2 message includes
-#include <mrover/msg/temperature.hpp>
+#include <mrover/msg/co2.hpp>
 #include <mrover/msg/humidity.hpp>
-#include <mrover/msg/pressure.hpp>
 #include <mrover/msg/oxygen.hpp>
 #include <mrover/msg/ozone.hpp>
-#include <mrover/msg/co2.hpp>
+#include <mrover/msg/pressure.hpp>
+#include <mrover/msg/temperature.hpp>
 #include <mrover/msg/uv.hpp>
 
 namespace mrover {
@@ -40,7 +40,8 @@ namespace mrover {
                 if constexpr (std::is_same_v<T, SCISensorData>) {
                     publishROSData(decoded);
                 }
-            }, msg);
+            },
+                       msg);
         }
 
     private:

@@ -6,18 +6,18 @@
 #include <rclcpp/node.hpp>
 #include <rclcpp/rclcpp.hpp>
 
+#include <mrover/msg/co2.hpp>
 #include <mrover/msg/controller_state.hpp>
-#include <mrover/msg/throttle.hpp>
-#include <mrover/msg/temperature.hpp>
 #include <mrover/msg/humidity.hpp>
-#include <mrover/msg/pressure.hpp>
 #include <mrover/msg/oxygen.hpp>
 #include <mrover/msg/ozone.hpp>
-#include <mrover/msg/co2.hpp>
+#include <mrover/msg/pressure.hpp>
+#include <mrover/msg/temperature.hpp>
+#include <mrover/msg/throttle.hpp>
 #include <mrover/msg/uv.hpp>
 
-#include <science.hpp>
 #include <brushed.hpp>
+#include <science.hpp>
 
 
 namespace mrover {

@@ -1,8 +1,8 @@
 #include <chrono>
+#include <future>
 #include <memory>
 #include <numbers>
 #include <string>
-#include <future>
 #include <vector>
 
 #include <rclcpp/rclcpp.hpp>
@@ -85,13 +85,12 @@ namespace mrover {
             mArmPositionSub = create_subscription<msg::Position>("arm_pos_cmd", 1, [this](msg::Position::ConstSharedPtr const& msg) { processPositionCmd(msg); });
 
             mPusherService = create_service<srv::Pusher>(
-                "pusher",
-                [this](srv::Pusher::Request::ConstSharedPtr const& req, srv::Pusher::Response::SharedPtr const& res) {
-                    handlePusherService(req, res);
-                },
-                rmw_qos_profile_services_default,
-                mCbGroup
-            );
+                    "pusher",
+                    [this](srv::Pusher::Request::ConstSharedPtr const& req, srv::Pusher::Response::SharedPtr const& res) {
+                        handlePusherService(req, res);
+                    },
+                    rmw_qos_profile_services_default,
+                    mCbGroup);
 
             std::vector<ParameterWrapper> parameters = {
                     {"joint_b_segment_length", mJointBSegmentLength.rep, 0.0},
@@ -118,9 +117,9 @@ namespace mrover {
             }
 
             mPusherControlTimer = create_wall_timer(
-                std::chrono::milliseconds(100),
-                [this]() { updatePusherStateMachine(); },
-                mCbGroup);
+                    std::chrono::milliseconds(100),
+                    [this]() { updatePusherStateMachine(); },
+                    mCbGroup);
             mProbeTimer = create_wall_timer(
                     mProbeInterval,
                     [this]() -> void {
@@ -652,7 +651,6 @@ namespace mrover {
 
             mControllerStatePub->publish(mControllerState);
         }
-
     };
 } // namespace mrover
 

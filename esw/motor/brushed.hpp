@@ -17,8 +17,8 @@ namespace mrover {
         using Base::mCurrent;
         using Base::mDevice;
         using Base::mErrorState;
-        using Base::mLimitHit;
         using Base::mIsStalled;
+        using Base::mLimitHit;
         using Base::mMasterName;
         using Base::mNode;
         using Base::mPosition;
@@ -125,7 +125,7 @@ namespace mrover {
                     this->mCurrent = decoded.current;
                     this->mLimitHit[0] = static_cast<bool>(decoded.limit_a);
                     this->mLimitHit[1] = static_cast<bool>(decoded.limit_b);
-                    this->mIsStalled = static_cast<bool>(decoded.is_stalled );
+                    this->mIsStalled = static_cast<bool>(decoded.is_stalled);
 
                     // update internal bmc state
                     auto mode = byteToMode(decoded.mode);
