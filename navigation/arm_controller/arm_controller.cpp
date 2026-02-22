@@ -214,7 +214,7 @@ namespace mrover {
                 mVelTarget.angular.y == 0;
     }
 
-    auto ArmContoller::carrotPosAdjust(ArmController::ArmPos &mPos, geometry_msgs::msg::Twist &mVel, double dt, double k) -> void {
+    auto ArmController::carrotPosAdjust(ArmController::ArmPos &mPos, geometry_msgs::msg::Twist &mVel, double dt, double k) -> void {
             mPos.x += mVel.linear.x * dt * k;
             mPos.y += mVel.linear.y * dt * k;
             mPos.z += mVel.linear.z * dt * k;
@@ -222,12 +222,12 @@ namespace mrover {
             mPos.roll += mVel.angular.x * dt * k;
     }
 
-    auto ArmController::carrotPosCheck(ArmController::ArmPos &mCarrotPos, ArmController::ArmPos &mCheckCarrotPos, ArmController::ArmPos &mArmPosCheck) {
+    auto ArmController::carrotPosCheck(ArmController::ArmPos &mCarrotPos, ArmController::ArmPos &mCheckCarrotPos, ArmController::ArmPos &mArmPosCheck) -> void {
         auto error_x = mCarrotPos.x - mArmPosCheck.x;
         auto error_y = mCarrotPos.y - mArmPosCheck.y;
         auto error_z = mCarrotPos.z - mArmPosCheck.z;
-        auto error_pitch = mCarrotPos.pitch - mArmPosCheck.pitch;
-        auto error_roll = mCarrotPos.roll - mArmPosCheck.roll;
+        //auto error_pitch = mCarrotPos.pitch - mArmPosCheck.pitch;
+        //auto error_roll = mCarrotPos.roll - mArmPosCheck.roll;
 
         double const max_dist = 0.015;
 
@@ -317,11 +317,11 @@ namespace mrover {
 
             auto adjusted_v = mVelTarget;
 
-            error_x = mCarrotPos.x - mArmPos.x;
-            error_y = mCarrotPos.y - mArmPos.y;
-            error_z = mCarrotPos.z - mArmPos.z;
-            error_pitch = mCarrotPos.pitch - mArmPos.pitch;
-            error_roll = mCarrotPos.roll - mArmPos.roll;
+            auto error_x = mCarrotPos.x - mArmPos.x;
+            auto error_y = mCarrotPos.y - mArmPos.y;
+            auto error_z = mCarrotPos.z - mArmPos.z;
+            auto error_pitch = mCarrotPos.pitch - mArmPos.pitch;
+            auto error_roll = mCarrotPos.roll - mArmPos.roll;
 
 
             double const Kp_lin = 20.0;

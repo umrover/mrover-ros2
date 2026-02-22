@@ -97,6 +97,9 @@ namespace mrover {
         auto ikPosCalc(ArmPos target) -> std::optional<msg::Position>;
         auto ikVelCalc(geometry_msgs::msg::Twist) -> std::optional<msg::Velocity>;
         auto timerCallback() -> void;
+        auto velZeroCheck() -> bool;
+        auto carrotPosAdjust(ArmPos &mPos, geometry_msgs::msg::Twist &mVel, double dt, double k) -> void;
+        auto carrotPosCheck(ArmPos &mCarrotPos, ArmPos &mCheckCarrotPos, ArmPos &mArmPosCheck) -> void;
 
         ArmPos mArmPos, mTypingOrigin, mPosTarget;
         geometry_msgs::msg::Twist mVelTarget;
