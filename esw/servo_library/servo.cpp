@@ -37,7 +37,7 @@ auto Servo::updateConfigFromParameters() -> void {
             {std::format("{}.position_multiplier", mServoName), positionMultiplier, 340.0},
             {std::format("{}.reverse_limit", mServoName), reverseLimit, 0.0},
             {std::format("{}.forward_limit", mServoName), forwardLimit, 340.0},
-            {std::format("{}.position_p", mServoName), positionPGain, 400.0},
+            {std::format("{}.position_p", mServoName), positionPGain, 500.0},
             {std::format("{}.position_i", mServoName), positionIGain, 0.0},
             {std::format("{}.position_d", mServoName), positionDGain, 0.0},
             {std::format("{}.velocity_p", mServoName), velocityPGain, 180.0},

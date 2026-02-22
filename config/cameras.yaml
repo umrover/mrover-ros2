@@ -1,9 +1,9 @@
 /**:
   ros__parameters:
-    static_cam:
+    science_payload:
       address: 10.1.0.2 # if using RTP, should be set to IP of basestation
       port: 8081
-      dev_node: "/dev/static_cam"
+      dev_node: "/dev/science_payload"
       dev_path: ""
       stream:
         pixel_format: MJPG # from v4l2-ctl -d DEV_NODE --list-formats-ext
@@ -17,7 +17,7 @@
         width: 1280
         height: 720
         framerate: 5
-    boom_cam:
+    science_handling_0:
       address: 10.1.0.2 # if using RTP, should be set to IP of basestation
       port: 8082
       dev_node: "/dev/boomcam"
@@ -34,7 +34,7 @@
         width: 1280
         height: 720
         framerate: 5
-    mob_cam_left:
+    science_handling_1:
       address: 10.1.0.2
       port: 8083
       dev_node: "/dev/mobcam_left"
@@ -125,11 +125,11 @@
 
 boom_streamer:
   ros__parameters:
-    camera: "boom_cam"
+    camera: "science_handling_0"
 
 mob_left_streamer:
   ros__parameters:
-    camera: "mob_cam_left"
+    camera: "science_handling_1"
 
 mob_right_streamer:
   ros__parameters:
@@ -141,7 +141,7 @@ long_range_streamer:
 
 static_streamer:
   ros__parameters:
-    camera: "static_cam"
+    camera: "science_payload"
 
 zed_mini_streamer:
   ros__parameters:
@@ -155,11 +155,8 @@ camera_client:
   ros__parameters:
     test: 10
     cameras:
-      - "boom_cam"
-      - "mob_cam_left"
-      - "static_cam"
-      - "long_range_cam"
-      - "zed_mini"
-      - "zed"
+      - "science_handling_0"
+      - "science_handling_1"
+      - "science_payload"
     rtp_jitter_ms: 50
 
