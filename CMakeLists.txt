@@ -320,7 +320,7 @@ if (NOT APPLE)
 
     mrover_add_library(servo esw/servo/*.cpp esw/servo)
     ament_target_dependencies(servo rclcpp std_srvs dynamixel_sdk)
-    target_link_libraries(servo units parameter_utils dynamixel_sdk::dynamixel_sdk)
+    target_link_libraries(servo units parameter_utils dynamixel_sdk)
 
     mrover_add_header_only_library(science esw/science)
     target_link_libraries(science INTERFACE can_device units)

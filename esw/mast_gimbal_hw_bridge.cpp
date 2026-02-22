@@ -17,7 +17,7 @@
 
 #include "mrover/srv/servo_position.hpp"
 
-#include "servo_library/servo.hpp"
+#include "servo.hpp"
 
 namespace mrover {
 
