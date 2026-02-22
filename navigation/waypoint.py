@@ -173,7 +173,7 @@ class WaypointState(State):
         arrived = False
         cmd_vel = Twist()
         if len(self.astar_traj.coordinates) - self.astar_traj.cur_pt != 0:
-            waypoint_position_in_map = self.astar_traj.get_current_point()
+            waypoint_position_in_map = self.astar_traj.get_current_point()[:2]
             waypoint_position_in_map = np.array([*waypoint_position_in_map, 0])
             cmd_vel, arrived = context.drive.get_drive_command(
                 waypoint_position_in_map,
