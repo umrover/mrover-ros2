@@ -105,7 +105,7 @@ class Environment:
 
         return target_pose.translation()
     
-    def get_time_diff(self, frame: str) -> None | Time:
+    def get_time_diff(self, frame: str) -> None | Duration:
         try:
             waste, t = SE3.from_tf_tree_with_time(self.ctx.tf_buffer, frame, self.ctx.world_frame)
         except (
@@ -477,6 +477,7 @@ class Context:
 
     def enable_auton(self, request: EnableAuton.Request, response: EnableAuton.Response) -> EnableAuton.Response:
         self.node.get_logger().info("Received new course to navigate!")
+        self.node.get_logger().info(str(request.waypoints[0].type))
         if request.enable:
             ref_point = np.array(
                 [

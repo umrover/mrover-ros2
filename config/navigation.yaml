@@ -68,6 +68,7 @@ navigation:
       angle_thresh: 0.0872665 #pi/36 radians / 5 degrees
       distance_threshold: 1.0
       distance_look_threshold: 5.0
+      stop_angle_threshold: 0.2094 #pi/15 radians / 12 degrees
       update_delay: 3.0
       
     single_tag:

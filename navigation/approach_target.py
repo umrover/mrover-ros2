@@ -1,4 +1,5 @@
 import numpy as np
+import math
 from typing import Any
 from navigation.trajectory import Trajectory
 from navigation.astar import AStar, NoPath, OutOfBounds
@@ -20,6 +21,7 @@ class ApproachTargetState(State):
     USE_COSTMAP: bool
     DISTANCE_THRESHOLD: float
     LOOK_DISTANCE_THRESHOLD: float
+    STOP_ANGLE_THRESHOLD:float
     time_begin: Time
     astar_traj: Trajectory
     target_traj: Trajectory
@@ -50,6 +52,7 @@ class ApproachTargetState(State):
         self.USE_COSTMAP = context.node.get_parameter("costmap.use_costmap").value or current_waypoint.enable_costmap
         self.DISTANCE_THRESHOLD = context.node.get_parameter("search.distance_threshold").value
         self.LOOK_DISTANCE_THRESHOLD = context.node.get_parameter("search.distance_look_threshold").value
+        self.STOP_ANGLE_THRESHOLD = context.node.get_parameter("search.stop_angle_threshold").value
         self.COST_INFLATION_RADIUS = context.node.get_parameter("costmap.initial_inflation_radius").value
         self.marker_pub = context.node.create_publisher(Marker, "target_trajectory", 10)
         self.astar_traj = Trajectory(np.array([]))
@@ -224,6 +227,7 @@ class ApproachTargetState(State):
                         return self
                     
         if self.self_in_distance_threshold(context, self.object_type):
+            context.node.get_logger().info("Exited through distance threshold")
             return self.next_state(context=context, is_finished=True)
         arrived = False
         cmd_vel = Twist()
@@ -263,6 +267,8 @@ class ApproachTargetState(State):
                         context.node.get_logger().info("Too far from target, dilating costmap")
                         if not context.shrink_dilation():
                             # Fully dilated and still failed, go to next state
+                            context.node.get_logger().info("Exited without distance threshold")
+                            self.self_in_distance_threshold(context, self.object_type)
                             return self.next_state(context=context, is_finished=True)
                         return self
 
@@ -397,12 +403,22 @@ class ApproachTargetState(State):
         if time_diff is None:
             return False
         rover_translation = rover_SE3.translation()[0:2]
-        distance_to_target = d_calc(rover_translation, tuple(target_pos))        
+        distance_to_target = d_calc(rover_translation, tuple(target_pos))
         if(object_type in self.no_look_ahead_dict.values()):
             return distance_to_target < self.DISTANCE_THRESHOLD
         else:
-            return distance_to_target < self.LOOK_DISTANCE_THRESHOLD and time_diff < Duration(nanoseconds=50000000)
+            return distance_to_target < self.LOOK_DISTANCE_THRESHOLD and time_diff < Duration(nanoseconds=30000000) and self.target_in_frame(context, rover_SE3, target_pos)
 
+    def target_in_frame(self, context: Context, rover_SE3, target_pos: np.ndarray):
+        rover_to_model = target_pos - rover_SE3.translation()
+        rover_norm_model = np.linalg.norm(rover_to_model)
+        rover_to_model /= rover_norm_model
+        rover_forward = rover_SE3.rotation()[:, 0]
+        rover_dot_model = np.dot(rover_to_model, rover_forward)
+        angle_to_model = np.arccos(rover_dot_model)
+        angle_to_model = math.copysign(angle_to_model, np.cross(rover_forward, rover_to_model)[2])
+        context.node.get_logger().info("Angle to model" + str(angle_to_model))
+        return angle_to_model < self.STOP_ANGLE_THRESHOLD and angle_to_model > -1 * self.STOP_ANGLE_THRESHOLD
     def point_in_distance_threshold(self, context: Context, point):
         if point is None:
             return False
