@@ -106,7 +106,7 @@ class Panorama(Node):
         super().__init__('panorama')
 
         # Variable for the ZED you'd like to use (zed or zed_mini)
-        self.zed_version= "zed_mini"
+        self.zed_version= "zed"
 
         # Pano Action Server
         self.start_pano = self.create_service(PanoramaStart, '/panorama/start', self.start_callback)
@@ -252,11 +252,11 @@ class Panorama(Node):
             self.heading_sub = None
 
         # START SPINNING THE MAST GIMBAL
-        req = ServoPosition.Request()
-        req.header = Header()
-        req.name = ["gimbal_pitch", "gimbal_yaw"]
-        req.position = [90.0, 360.0] # TODO is 90 correct?? 0?
-        self.gimbal_client.call_async(req)
+        # req = ServoPosition.Request()
+        # req.header = Header()
+        # req.name = ["gimbal_pitch", "gimbal_yaw"]
+        # req.position = [90.0, 360.0] # TODO is 90 correct?? 0?
+        # self.gimbal_client.call_async(req)
 
         return response
 
@@ -267,11 +267,11 @@ class Panorama(Node):
         self.record_pc = False
 
         # Return Mast Gimbal to original position
-        req = ServoPosition.Request()
-        req.header = Header()
-        req.name = ["gimbal_pitch", "gimbal_yaw"]
-        req.position = [90.0, 0.0] # TODO is 90 correct?? 0?
-        self.gimbal_client.call_async(req)
+        # req = ServoPosition.Request()
+        # req.header = Header()
+        # req.name = ["gimbal_pitch", "gimbal_yaw"]
+        # req.position = [90.0, 0.0] # TODO is 90 correct?? 0?
+        # self.gimbal_client.call_async(req)
 
         if self.img_sub is not None:
             self.destroy_subscription(self.img_sub)
