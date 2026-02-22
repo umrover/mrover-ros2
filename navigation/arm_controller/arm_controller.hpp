@@ -100,6 +100,13 @@ namespace mrover {
         auto velZeroCheck() -> bool;
         auto carrotPosAdjust(ArmPos &mPos, geometry_msgs::msg::Twist &mVel, double dt, double k) -> void;
         auto carrotPosCheck(ArmPos &mCarrotPos, ArmPos &mCheckCarrotPos, ArmPos &mArmPosCheck) -> void;
+        auto visualize_carrot_ee() -> void;
+        auto configure_posestamped(geometry_msgs::msg::PoseStamped &p_stamped) -> void;
+        auto configure_vis_marker(visualization_msgs::msg::Marker &point,
+                                             ArmController::ArmPos &mTargetPos,
+                                             float x, float y, float z,
+                                             float a, float r, float g, float b) -> void;
+        
 
         ArmPos mArmPos, mTypingOrigin, mPosTarget;
         geometry_msgs::msg::Twist mVelTarget;

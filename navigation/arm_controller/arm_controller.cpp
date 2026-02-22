@@ -254,6 +254,73 @@ namespace mrover {
         }
     }
 
+    auto ArmController::configure_posestamped(geometry_msgs::msg::PoseStamped &p_stamped) -> void {
+        auto const now = get_clock()->now();
+        p_stamped.header.stamp = now;
+        p_stamped.header.frame_id = "arm_base_link";
+        p_stamped.pose.position.x = mArmPos.x;
+        p_stamped.pose.position.y = mArmPos.y;
+        p_stamped.pose.position.z = mArmPos.z;
+    }
+
+    auto ArmController::configure_vis_marker(visualization_msgs::msg::Marker &point,
+                                             ArmController::ArmPos &mTargetPos,
+                                             float x, float y, float z,
+                                             float a, float r, float g, float b) -> void {
+        auto const now = get_clock()->now();
+        point.header.stamp = now;
+        point.header.frame_id = "arm_base_link";
+        point.pose.position.x = mTargetPos.x;
+        point.pose.position.y = mTargetPos.y;
+        point.pose.position.z = mTargetPos.z;
+        point.scale.x = x;
+        point.scale.y = y;
+        point.scale.z = z;
+        point.color.a = a;
+        point.color.r = r;
+        point.color.g = g;
+        point.color.b = b;
+    }
+
+    auto ArmController::visualize_carrot_ee() -> void {
+        geometry_msgs::msg::PoseStamped p_stamped;
+        visualization_msgs::msg::Marker ee_point;
+        visualization_msgs::msg::Marker ct_point;
+
+        auto const now = get_clock()->now();
+
+        configure_posestamped(p_stamped);
+
+        ct_point.ns = "ct_pt";
+        ct_point.id = 0;
+        ct_point.type = visualization_msgs::msg::Marker::SPHERE;
+        ct_point.action = visualization_msgs::msg::Marker::ADD;
+
+        ee_point.ns = "ee_pt";
+        ee_point.id = 0;
+        ee_point.type = visualization_msgs::msg::Marker::SPHERE;
+        ee_point.action = visualization_msgs::msg::Marker::ADD;
+
+        configure_vis_marker(ct_point, mCarrotPos, 0.05, 0.05, 0.05, 1.0, 0.0, 0.0, 1.0);
+        configure_vis_marker(ee_point, mArmPos, 0.05, 0.05, 0.05, 1.0, 1.0, 0.0, 0.0);
+
+        mCtPointPub->publish(ct_point);
+        mEEPointPub->publish(ee_point);
+
+        mPathPoses.push_back(p_stamped);
+
+        if (mPathPoses.size() >= 500) {
+            mPathPoses.pop_front();
+        }
+
+        nav_msgs::msg::Path path_msg;
+        path_msg.header.stamp = now;
+        path_msg.header.frame_id = "arm_base_link";
+        path_msg.poses.assign(mPathPoses.begin(), mPathPoses.end());
+
+        mEEPathPub->publish(path_msg);
+    }
+
     auto ArmController::timerCallback() -> void {
         msg::Position mCurrPos;
         mCurrPos.names = {"joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_roll"};
@@ -295,10 +362,10 @@ namespace mrover {
 
             double dt = 0.01;
 
-            double const k = 1;
+            double k = 1;
 
-            carrotPosAdjust(mCarrotPos, mVelTarget, 0.01, 1);
-            carrotPosAdjust(mCheckCarrotPos, mVelTarget, 0.01, 1);
+            carrotPosAdjust(mCarrotPos, mVelTarget, dt, k);
+            carrotPosAdjust(mCheckCarrotPos, mVelTarget, dt, k);
             carrotPosCheck(mCarrotPos, mCheckCarrotPos, mArmPos);
 
             SE3Conversions::pushToTfTree(
@@ -356,71 +423,7 @@ namespace mrover {
                 }
             }
 
-            geometry_msgs::msg::PoseStamped p_stamped;
-            visualization_msgs::msg::Marker ee_point;
-            visualization_msgs::msg::Marker ct_point;
-
-            ct_point.header.stamp = now;
-            ee_point.header.stamp = now;
-            p_stamped.header.stamp = now;
-
-            p_stamped.header.frame_id = "arm_base_link";
-            ct_point.header.frame_id = "arm_base_link";
-            ee_point.header.frame_id = "arm_base_link";
-
-            ct_point.ns = "ee_pt";
-            ct_point.id = 0;
-            ct_point.type = visualization_msgs::msg::Marker::SPHERE;
-            ct_point.action = visualization_msgs::msg::Marker::ADD;
-
-            ee_point.ns = "ee_pt";
-            ee_point.id = 0;
-            ee_point.type = visualization_msgs::msg::Marker::SPHERE;
-            ee_point.action = visualization_msgs::msg::Marker::ADD;
-
-            p_stamped.pose.position.x = mArmPos.x;
-            p_stamped.pose.position.y = mArmPos.y;
-            p_stamped.pose.position.z = mArmPos.z;
-
-            ct_point.pose.position.x = mArmPos.x;
-            ct_point.pose.position.y = mArmPos.y;
-            ct_point.pose.position.z = mArmPos.z;
-            
-            ct_point.scale.x = 0.05;
-            ct_point.scale.y = 0.05;
-            ct_point.scale.z = 0.05;
-            ct_point.color.a = 1.0;
-            ct_point.color.r = 0.0;
-            ct_point.color.g = 0.0;
-            ct_point.color.b = 1.0;
-            mEEPointPub->publish(ct_point);
-
-            ee_point.pose.position.x = mArmPos.x;
-            ee_point.pose.position.y = mArmPos.y;
-            ee_point.pose.position.z = mArmPos.z;
-  
-            ee_point.scale.x = 0.03;
-            ee_point.scale.y = 0.03;
-            ee_point.scale.z = 0.03;
-            ee_point.color.a = 1.0;
-            ee_point.color.r = 1.0;
-            ee_point.color.g = 0.0;
-            ee_point.color.b = 0.0;
-            mCtPointPub->publish(ee_point);
-
-            mPathPoses.push_back(p_stamped);
-
-            if (mPathPoses.size() >= 500) {
-                mPathPoses.pop_front();
-            }
-
-            nav_msgs::msg::Path path_msg;
-            path_msg.header.stamp = now;
-            path_msg.header.frame_id = "arm_base_link";
-            path_msg.poses.assign(mPathPoses.begin(), mPathPoses.end());
-
-            mEEPathPub->publish(path_msg);
-
+            visualize_carrot_ee();
 
         } else { // typing mode
             msg::Position positions;
