@@ -158,6 +158,9 @@ namespace mrover {
 
         double heading_correction_delta = measured_heading - uncorrected_heading;
         heading_correction_delta = fmod((heading_correction_delta + 3 * M_PI), 2 * M_PI) - M_PI;
+
+        auto previousX = X;
+
         predict(get_parameter("process_noise").as_double());
         correct(heading_correction_delta, get_parameter("mag_heading_noise").as_double());
 
@@ -166,8 +169,9 @@ namespace mrover {
             return;
         }
         
+        auto correctionDelta = (X - previousX);
         SO3d curr_heading_correction = Eigen::AngleAxisd(X, R3d::UnitZ());
-        RCLCPP_INFO_THROTTLE(get_logger(), *get_clock(), 1000, "%s", std::format("Heading corrected by: {} rad", X).c_str());
+        RCLCPP_INFO_THROTTLE(get_logger(), *get_clock(), 1000, "%s", std::format("Heading corrected by: {} rad", correctionDelta).c_str());
         SO3d corrected_orientation = curr_heading_correction * uncorrected_orientation_rotm;
         Eigen::Quaterniond q = corrected_orientation.quat();
         q.normalize();
