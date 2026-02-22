@@ -33,13 +33,13 @@ export default {
   flex: 1;
   position: relative;
   overflow: hidden;
-  background: #e8e8e8;
+  background: var(--view-bg);
 }
 
 .i3-window {
   width: 100%;
   max-width: 700px;
-  background: #ffffff;
+  background: var(--card-bg);
   border: 4px solid #4c7899;
   overflow: hidden;
   animation: fadeIn 0.3s ease-out;
@@ -71,7 +71,7 @@ export default {
 }
 
 .i3-content {
-  background: #ffffff;
+  background: var(--card-bg);
   min-height: 300px;
   font-family: 'Courier New', monospace;
 }

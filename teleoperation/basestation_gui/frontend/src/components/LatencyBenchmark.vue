@@ -1,127 +1,119 @@
 <template>
-  <div class="d-flex flex-column gap-2 p-3">
-    <h4 class="m-0">Latency Benchmark</h4>
+  <div class="d-flex flex-column gap-2 p-3 small">
+    <div class="d-flex justify-content-between align-items-center">
+      <h5 class="m-0 fw-semibold">Latency Benchmark</h5>
+      <div
+        class="d-flex align-items-center gap-2 px-2 py-1 rounded"
+        :class="connectionStatus === 'connected' ? 'bg-success-subtle' : 'bg-danger-subtle'"
+      >
+        <span
+          class="rounded-circle d-inline-block"
+          style="width: 8px; height: 8px;"
+          :class="connectionStatus === 'connected' ? 'bg-success' : 'bg-danger'"
+        ></span>
+        <span
+          class="small fw-medium"
+          :class="connectionStatus === 'connected' ? 'text-success-emphasis' : 'text-danger-emphasis'"
+        >{{ connectionStatus }}</span>
+      </div>
+    </div>
 
     <div class="d-flex gap-2 align-items-center flex-wrap">
       <button
-        class="btn btn-sm"
+        class="btn btn-sm d-flex align-items-center gap-1"
         :class="isRunning ? 'btn-danger' : 'btn-success'"
         @click="toggleBenchmark"
       >
-        {{ isRunning ? 'Stop' : 'Start' }} Benchmark
+        <i :class="isRunning ? 'bi bi-stop-fill' : 'bi bi-play-fill'"></i>
+        {{ isRunning ? 'Stop' : 'Start' }}
       </button>
-      <button
-        class="btn btn-sm btn-secondary"
-        @click="resetStats"
-      >
-        Reset
+      <button class="btn btn-sm btn-secondary d-flex align-items-center gap-1" @click="resetStats">
+        <i class="bi bi-arrow-counterclockwise"></i> Reset
       </button>
       <div class="d-flex align-items-center gap-1">
         <input
           v-model.number="frequency"
           type="number"
-          class="form-control form-control-sm"
-          style="width: 70px"
+          class="form-control form-control-sm text-center"
+          style="width: 65px"
           min="1"
           max="1000"
         />
-        <span class="text-nowrap">Hz</span>
+        <span class="text-body-secondary">Hz</span>
       </div>
     </div>
 
-    <div class="d-flex flex-column gap-1">
-      <h6 class="mb-1 mt-2">Connection</h6>
-      <div class="d-flex justify-content-between">
-        <span>Status:</span>
-        <span :class="connectionStatus === 'connected' ? 'text-success' : 'text-danger'">
-          {{ connectionStatus }}
-        </span>
+    <div class="card">
+      <div class="card-body py-2 px-3">
+        <div class="text-uppercase text-body-secondary fw-semibold small mb-2">Latency</div>
+        <div class="d-flex justify-content-between py-1 bg-primary-subtle rounded px-2 mb-1">
+          <span>Current RTT</span>
+          <span class="font-monospace fw-medium">{{ currentLatency }} ms</span>
+        </div>
+        <div class="d-flex justify-content-between py-1">
+          <span>Average</span>
+          <span class="font-monospace">{{ averageLatency }} ms</span>
+        </div>
+        <div class="d-flex justify-content-between py-1">
+          <span>Min / Max</span>
+          <span class="font-monospace">{{ minLatency }} / {{ maxLatency }} ms</span>
+        </div>
+        <div class="d-flex justify-content-between py-1">
+          <span>Std Dev</span>
+          <span class="font-monospace">{{ stdDevLatency }} ms</span>
+        </div>
+        <div class="d-flex justify-content-between py-1">
+          <span>P95 / P99</span>
+          <span class="font-monospace">{{ p95Latency }} / {{ p99Latency }} ms</span>
+        </div>
       </div>
+    </div>
 
-      <h6 class="mb-1 mt-2">Latency</h6>
-      <div class="d-flex justify-content-between">
-        <span>Current RTT:</span>
-        <span class="font-monospace">{{ currentLatency }} ms</span>
+    <div class="card">
+      <div class="card-body py-2 px-3">
+        <div class="text-uppercase text-body-secondary fw-semibold small mb-2">Throughput</div>
+        <div class="d-flex justify-content-between py-1">
+          <span>Frequency</span>
+          <span class="font-monospace" :class="actualFrequencyColor">{{ actualFrequency }} / {{ frequency }} Hz</span>
+        </div>
+        <div class="d-flex justify-content-between py-1">
+          <span>Messages/sec</span>
+          <span class="font-monospace">{{ messagesPerSecond }}</span>
+        </div>
+        <div class="d-flex justify-content-between py-1">
+          <span>Upload</span>
+          <span class="font-monospace">{{ uploadThroughput }} KB/s</span>
+        </div>
+        <div class="d-flex justify-content-between py-1">
+          <span>Download</span>
+          <span class="font-monospace">{{ downloadThroughput }} KB/s</span>
+        </div>
+        <div class="d-flex justify-content-between py-1">
+          <span>Total TX / RX</span>
+          <span class="font-monospace">{{ totalBytesSent }} / {{ totalBytesReceived }} KB</span>
+        </div>
       </div>
-      <div class="d-flex justify-content-between">
-        <span>Average RTT:</span>
-        <span class="font-monospace">{{ averageLatency }} ms</span>
-      </div>
-      <div class="d-flex justify-content-between">
-        <span>Min RTT:</span>
-        <span class="font-monospace">{{ minLatency }} ms</span>
-      </div>
-      <div class="d-flex justify-content-between">
-        <span>Max RTT:</span>
-        <span class="font-monospace">{{ maxLatency }} ms</span>
-      </div>
-      <div class="d-flex justify-content-between">
-        <span>Std Dev:</span>
-        <span class="font-monospace">{{ stdDevLatency }} ms</span>
-      </div>
-      <div class="d-flex justify-content-between">
-        <span>P95 RTT:</span>
-        <span class="font-monospace">{{ p95Latency }} ms</span>
-      </div>
-      <div class="d-flex justify-content-between">
-        <span>P99 RTT:</span>
-        <span class="font-monospace">{{ p99Latency }} ms</span>
-      </div>
+    </div>
 
-      <h6 class="mb-1 mt-2">Throughput</h6>
-      <div class="d-flex justify-content-between">
-        <span>Target Frequency:</span>
-        <span class="font-monospace">{{ frequency }} Hz</span>
-      </div>
-      <div class="d-flex justify-content-between">
-        <span>Actual Frequency:</span>
-        <span class="font-monospace" :class="actualFrequencyColor">{{ actualFrequency }} Hz</span>
-      </div>
-      <div class="d-flex justify-content-between">
-        <span>Messages/sec:</span>
-        <span class="font-monospace">{{ messagesPerSecond }}</span>
-      </div>
-      <div class="d-flex justify-content-between">
-        <span>Upload:</span>
-        <span class="font-monospace">{{ uploadThroughput }} KB/s</span>
-      </div>
-      <div class="d-flex justify-content-between">
-        <span>Download:</span>
-        <span class="font-monospace">{{ downloadThroughput }} KB/s</span>
-      </div>
-      <div class="d-flex justify-content-between">
-        <span>Total Sent:</span>
-        <span class="font-monospace">{{ totalBytesSent }} KB</span>
-      </div>
-      <div class="d-flex justify-content-between">
-        <span>Total Received:</span>
-        <span class="font-monospace">{{ totalBytesReceived }} KB</span>
-      </div>
-
-      <h6 class="mb-1 mt-2">Reliability</h6>
-      <div class="d-flex justify-content-between">
-        <span>Packets Sent:</span>
-        <span class="font-monospace">{{ packetsSent }}</span>
-      </div>
-      <div class="d-flex justify-content-between">
-        <span>Packets Received:</span>
-        <span class="font-monospace">{{ packetsReceived }}</span>
-      </div>
-      <div class="d-flex justify-content-between">
-        <span>Packets Lost:</span>
-        <span class="font-monospace" :class="packetsLost > 0 ? 'text-danger' : 'text-success'">
-          {{ packetsLost }}
-        </span>
-      </div>
-      <div class="d-flex justify-content-between">
-        <span>Packet Loss:</span>
-        <span class="font-monospace" :class="parseFloat(packetLossRate) > 0 ? 'text-warning' : 'text-success'">
-          {{ packetLossRate }}%
-        </span>
-      </div>
-      <div class="d-flex justify-content-between">
-        <span>Out of Order:</span>
-        <span class="font-monospace">{{ outOfOrderCount }}</span>
+    <div class="card">
+      <div class="card-body py-2 px-3">
+        <div class="text-uppercase text-body-secondary fw-semibold small mb-2">Reliability</div>
+        <div class="d-flex justify-content-between py-1">
+          <span>Packets</span>
+          <span class="font-monospace">{{ packetsReceived }} / {{ packetsSent }}</span>
+        </div>
+        <div class="d-flex justify-content-between py-1">
+          <span>Lost</span>
+          <span class="font-monospace" :class="packetsLost > 0 ? 'text-danger' : 'text-success'">
+            {{ packetsLost }} ({{ packetLossRate }}%)
+          </span>
+        </div>
+        <div class="d-flex justify-content-between py-1">
+          <span>Out of Order</span>
+          <span class="font-monospace" :class="outOfOrderCount > 0 ? 'text-warning' : ''">
+            {{ outOfOrderCount }}
+          </span>
+        </div>
       </div>
     </div>
   </div>
@@ -547,7 +539,4 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-.font-monospace {
-  font-family: 'Courier New', monospace;
-}
 </style>

@@ -5,7 +5,7 @@
     @click.self="$emit('close')"
   >
     <div class="modal-dialog modal-xl w-90">
-      <div class="modal-content bg-white rounded shadow">
+      <div class="modal-content bg-theme-card rounded shadow">
         <div class="modal-header border-bottom p-2">
           <h4 class="mb-0">Recordings</h4>
           <button
@@ -495,6 +495,6 @@ onBeforeUnmount(() => {
 }
 
 .hover-bg-light:hover {
-  background-color: #f8f9fa;
+  background-color: var(--view-bg);
 }
 </style>

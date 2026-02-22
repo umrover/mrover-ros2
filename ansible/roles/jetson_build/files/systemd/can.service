@@ -1,0 +1,12 @@
+[Unit]
+Wants=network-online.target
+After=network-online.target
+StartLimitInterval=500
+StartLimitBurst=5
+[Service]
+User=root
+Restart=on-failure
+RestartSec=2
+ExecStart=/usr/local/bin/restart_can
+[Install]
+WantedBy=multi-user.target
