@@ -1,39 +1,26 @@
 import type { APIResponse } from './apiTypes'
-
-const API_BASE = '/api'
+import { apiFetch } from './apiFetch'
 
 export const chassisAPI = {
-  async startPanorama(): Promise<APIResponse> {
-    const response = await fetch(`${API_BASE}/chassis/panorama/start/`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' }
-    })
-    return response.json()
+  startPanorama(): Promise<APIResponse> {
+    return apiFetch('/chassis/panorama/start/', { method: 'POST' })
   },
 
-  async stopPanorama(): Promise<APIResponse> {
-    const response = await fetch(`${API_BASE}/chassis/panorama/stop/`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' }
-    })
-    return response.json()
+  stopPanorama(): Promise<APIResponse> {
+    return apiFetch('/chassis/panorama/stop/', { method: 'POST' })
   },
 
-  async adjustGimbal(joint: 'pitch' | 'yaw', adjustment: number, absolute: boolean = false): Promise<APIResponse> {
-    const response = await fetch(`${API_BASE}/chassis/gimbal/adjust/`, {
+  adjustGimbal(joint: 'pitch' | 'yaw', adjustment: number, absolute: boolean = false): Promise<APIResponse> {
+    return apiFetch('/chassis/gimbal/adjust/', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ joint, adjustment, absolute })
     })
-    return response.json()
   },
 
-  async setFunnelServo(name: string[], position: number[]): Promise<APIResponse> {
-    const response = await fetch(`${API_BASE}/chassis/sp_funnel_servo/`, {
+  setFunnelServo(names: string[], positions: number[]): Promise<APIResponse> {
+    return apiFetch('/chassis/sp_funnel_servo/', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, position })
+      body: JSON.stringify({ names, positions })
     })
-    return response.json()
   }
 }

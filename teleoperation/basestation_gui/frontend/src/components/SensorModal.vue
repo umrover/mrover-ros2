@@ -4,7 +4,7 @@
     @click.self="$emit('close')"
   >
     <div
-      class="bg-white rounded p-3"
+      class="bg-theme-card rounded p-3"
       style="
         width: 90%;
         max-width: 1200px;
@@ -110,7 +110,7 @@ const chartConfigs: readonly ChartConfig[] = [
     datasets: [{ label: 'Ozone', color: '#F9A825', historyIndex: 4 }],
   },
   {
-    title: 'CO₂ (ppm)',
+    title: 'CO₂ (Rel. %)',
     datasets: [{ label: 'CO₂', color: '#8D6E63', historyIndex: 5 }],
   },
   {
@@ -238,7 +238,11 @@ onMounted(() => {
         },
         scales: {
           y: {
-            beginAtZero: true,
+            beginAtZero: false,
+            ticks: {
+              maxTicksLimit: 10,
+              precision: 2,
+            },
           },
         },
       },

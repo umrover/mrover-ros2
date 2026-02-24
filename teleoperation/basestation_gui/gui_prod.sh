@@ -7,5 +7,4 @@ bun install || exit 1
 bun run build || exit 1
 cd .. || exit 1
 
-export SERVE_STATIC_FRONTEND="true"
-exec python3 server.py
+exec python3 server.py --serve-static
