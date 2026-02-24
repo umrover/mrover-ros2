@@ -501,10 +501,9 @@ class Context:
         return response
 
     def toggle_pure_pursuit(self, request: SetBool.Request, response: SetBool.Response) -> SetBool.Response:
-        if request.data:
-            self.node.set_parameters([Parameter("pure_pursuit.use_pure_pursuit", Parameter.Type.BOOL, True)])
-        else:
-            self.node.set_parameters([Parameter("pure_pursuit.use_pure_pursuit", Parameter.Type.BOOL, False)])
+        self.node.set_parameters([Parameter("pure_pursuit.use_pure_pursuit", Parameter.Type.BOOL, request.data)])
+        response.message = f"Set pure pursuit toggle to {request.data}."
+        self.node.get_logger().info(response.message)
         response.success = True
         return response
 
