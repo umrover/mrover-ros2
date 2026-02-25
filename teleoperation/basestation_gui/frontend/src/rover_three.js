@@ -1,10 +1,9 @@
 import * as THREE from 'three'
 import GUI from 'lil-gui'
 import URDFLoader from 'urdf-loader'
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
-import { clamp } from 'three/src/math/MathUtils.js';
 
 const defaultJointValues = {
   chassis_to_arm_a: 24.14,
@@ -17,53 +16,68 @@ const defaultJointValues = {
 
 let rover = null
 let ikTargetSphere = null
+let current_camera_type = 'default'
 
-let current_camera_type = "default"
-
+// Costmap DataTexture
 const costMapAnchor = new THREE.Object3D()
 const costMapBlockWidth = 40
 export const numCostMapBlocks = 40
-const costMapGridOffset = costMapBlockWidth * (numCostMapBlocks/2)
-let costMapBlocks = []
-const textCanvas = document.createElement('canvas');
+const costMapSize = numCostMapBlocks * numCostMapBlocks
+const costMapTextureData = new Uint8Array(costMapSize * 4)
+const costMapTexture = new THREE.DataTexture(
+  costMapTextureData,
+  numCostMapBlocks,
+  numCostMapBlocks,
+  THREE.RGBAFormat,
+)
+costMapTexture.magFilter = THREE.NearestFilter
+costMapTexture.minFilter = THREE.NearestFilter
+const costMapSideLength = costMapBlockWidth * numCostMapBlocks
+const costMapMaterial = new THREE.MeshBasicMaterial({ map: costMapTexture })
+const costMapPlane = new THREE.Mesh(
+  new THREE.PlaneGeometry(costMapSideLength, costMapSideLength),
+  costMapMaterial,
+)
+
+// Costmap text overlay
+const textCanvas = document.createElement('canvas')
 const textCanvasSideLength = costMapBlockWidth * numCostMapBlocks
-textCanvas.width = textCanvasSideLength;
-textCanvas.height = textCanvasSideLength;
-const textCanvasContext = textCanvas.getContext('2d');
-const textCanvasTexture = new THREE.CanvasTexture(textCanvas);
-const textCanvasMaterial = new THREE.MeshBasicMaterial({ map: textCanvasTexture, transparent: true });
-const textCanvasPlane = new THREE.Mesh(new THREE.PlaneGeometry(textCanvasSideLength, textCanvasSideLength), textCanvasMaterial);
-textCanvasPlane.position.x = -costMapBlockWidth / 2
-textCanvasPlane.position.y = -49
-textCanvasPlane.position.z = -costMapBlockWidth / 2
+textCanvas.width = textCanvasSideLength
+textCanvas.height = textCanvasSideLength
+const textCanvasContext = textCanvas.getContext('2d')
+const textCanvasTexture = new THREE.CanvasTexture(textCanvas)
+const textCanvasMaterial = new THREE.MeshBasicMaterial({
+  map: textCanvasTexture,
+  transparent: true,
+})
+const textCanvasPlane = new THREE.Mesh(
+  new THREE.PlaneGeometry(textCanvasSideLength, textCanvasSideLength),
+  textCanvasMaterial,
+)
+textCanvasPlane.position.set(
+  -costMapBlockWidth / 2,
+  -49,
+  -costMapBlockWidth / 2,
+)
 
 export default function threeSetup() {
-  // Canvas element
   const canvas = document.querySelector('canvas.webgl')
-  // const gui = new GUI( { container: document.querySelector("canvas.webgl") } ); // ??
   const gui = new GUI({ width: 400 })
   gui.hide()
 
-  // Scene setup
   const scene = new THREE.Scene()
   scene.background = new THREE.Color(0x87ceeb)
-  // scene.background = new THREE.Color(0xbbbbbb);
 
-  // Lighting setup
-  // Ambient Light (soft light)
-  const ambientLight = new THREE.AmbientLight(0x808080, 1) // soft white light
+  // Lighting
+  const ambientLight = new THREE.AmbientLight(0x808080, 1)
   scene.add(ambientLight)
 
-  // Directional Light (main light source)
-  const directionalLight = new THREE.DirectionalLight(0xffffff, 1) // white light
-  directionalLight.position.set(2, 3, 2) // Position of light source
-  directionalLight.castShadow = true // Enable shadows
+  const directionalLight = new THREE.DirectionalLight(0xffffff, 1)
+  directionalLight.position.set(2, 3, 2)
+  directionalLight.castShadow = true
   scene.add(directionalLight)
 
-  // const axesHelper = new THREE.AxesHelper(50)
-  // scene.add(axesHelper)
-
-  // Create IK target sphere
+  // IK target sphere
   const sphereGeometry = new THREE.SphereGeometry(2, 16, 16)
   const sphereMaterial = new THREE.MeshStandardMaterial({
     color: 0xff0000,
@@ -72,81 +86,62 @@ export default function threeSetup() {
   })
   ikTargetSphere = new THREE.Mesh(sphereGeometry, sphereMaterial)
   ikTargetSphere.position.set(0, 0, 0)
-  ikTargetSphere.visible = false // Hidden by default until position is set
+  ikTargetSphere.visible = false
   scene.add(ikTargetSphere)
 
-  //Create costmap grid 
+  // Costmap plane + text overlay
   scene.add(costMapAnchor)
-  for(let i = 0, idx = 0; i < numCostMapBlocks; i++){
-    for(let j = 0; j < numCostMapBlocks; j++, idx++){
-      const currentGeometry = new THREE.BoxGeometry(costMapBlockWidth,1,costMapBlockWidth)
-      const currentMaterial = new THREE.MeshStandardMaterial({
-        color: 0x9d00ff,
-      })
-      
-      costMapBlocks.push(new THREE.Mesh(currentGeometry, currentMaterial))
+  costMapPlane.position.set(-costMapBlockWidth / 2, -50, -costMapBlockWidth / 2)
+  costMapPlane.rotation.x = -Math.PI / 2
+  costMapAnchor.add(costMapPlane)
 
-      const current_x = j * costMapBlockWidth - costMapGridOffset
-      const current_z =  i * costMapBlockWidth - costMapGridOffset
-
-      costMapBlocks[idx].position.x = current_x
-      costMapBlocks[idx].position.y = -50
-      costMapBlocks[idx].position.z = current_z
-
-      costMapAnchor.add(costMapBlocks[idx])
-    }
-  }
-
-  //Initialize Text
   const currentTextSize = costMapBlockWidth * 0.3
-  textCanvasContext.fillStyle = 'white';
-  textCanvasContext.font = currentTextSize + 'px Arial';
-  textCanvasContext.textAlign = 'center';
-  textCanvasContext.textBaseline = 'middle';
-  
-  let tempGridData = []
-  for(let i = 0; i < costMapBlockWidth * costMapBlockWidth; i++){
-    tempGridData.push(-1)
-  }
-
-  fillTextCanvas(tempGridData)
-
-  //Add textCanvasPlane to Scene
+  textCanvasContext.fillStyle = 'white'
+  textCanvasContext.font = currentTextSize + 'px Arial'
+  textCanvasContext.textAlign = 'center'
+  textCanvasContext.textBaseline = 'middle'
   textCanvasPlane.lookAt(-costMapBlockWidth / 2, 50, -costMapBlockWidth / 2)
-  costMapAnchor.add(textCanvasPlane);
+  costMapAnchor.add(textCanvasPlane)
 
-
-
+  // URDF loader
   const manager = new THREE.LoadingManager()
   const loader = new URDFLoader(manager)
-  loader.packages = {
-    mrover: '/urdf',
+  loader.packages = { mrover: '/urdf' }
+
+  // Custom mesh loader for GLTF + Draco compressed meshes
+  loader.loadMeshCb = function (path, manager, onComplete) {
+    const gltfLoader = new GLTFLoader(manager)
+    const dracoLoader = new DRACOLoader()
+    dracoLoader.setDecoderPath('https://www.gstatic.com/draco/v1/decoders/')
+    gltfLoader.setDRACOLoader(dracoLoader)
+    gltfLoader.load(
+      path,
+      result => onComplete(result.scene),
+      undefined,
+      err => onComplete(null, err),
+    )
   }
 
-  loader.loadMeshCb = function(path, manager, onComplete) {
-    const gltfLoader = new GLTFLoader(manager);
-    const dracoLoader = new DRACOLoader();
-    dracoLoader.setDecoderPath( 'https://www.gstatic.com/draco/v1/decoders/' );
-    gltfLoader.setDRACOLoader( dracoLoader );
-    gltfLoader.load(path, result => {
-        onComplete(result.scene); // Pass the GLTF scene to urdf-loader
-    }, undefined, err => {
-        onComplete(null, err); // Handle errors
-    });
-  };
-
-  // Load using absolute path from web root
   loader.load(
-    // '/urdf/arm/arm.urdf',
     '/urdf/rover/rover.urdf',
     robot => {
       rover = robot
-      robot.position.set(0, -50, 0)
-      robot.rotation.x = -Math.PI / 2
-      robot.updateMatrixWorld()
-      scene.add(robot)
 
-      // Add GUI controls for joint angles
+      // roverContainer: world position + ROS Z-up to Three.js Y-up frame conversion
+      const roverContainer = new THREE.Group()
+      roverContainer.position.set(0, -50, 0)
+      roverContainer.rotation.x = -Math.PI / 2
+      scene.add(roverContainer)
+
+      // roverPivot: visual-only rotation so model faces forward (does not affect joint transforms)
+      const roverPivot = new THREE.Group()
+      roverPivot.rotation.z = Math.PI / 2
+      roverContainer.add(roverPivot)
+
+      roverPivot.add(robot)
+      robot.updateMatrixWorld()
+
+      // GUI controls for joint angles
       robot.traverse(obj => {
         if (
           obj.jointType === 'revolute' ||
@@ -154,129 +149,70 @@ export default function threeSetup() {
           obj.jointType === 'prismatic'
         ) {
           const name = obj.name || 'unnamed_joint'
-
           const initialValue =
             typeof defaultJointValues[name] === 'number'
               ? defaultJointValues[name]
               : typeof obj.jointValue === 'number'
                 ? obj.jointValue
                 : 0
-
           const min = obj.limit?.lower ?? -Math.PI
           const max = obj.limit?.upper ?? Math.PI
 
           const folder = gui.addFolder(name)
           const paramObj = { value: initialValue }
-
           obj.setJointValue(initialValue)
-
           folder
             .add(paramObj, 'value', min, max, 0.01)
             .name(`${name} (${obj.jointType})`)
-            .onChange(value => {
-              obj.setJointValue(value)
-            })
+            .onChange(value => obj.setJointValue(value))
         }
       })
     },
     undefined,
-    err => {
-      console.error('Failed to load URDF:', err)
-    },
+    err => console.error('Failed to load URDF:', err),
   )
 
-  const sizes = {
-    width: canvas.clientWidth,
-    height: canvas.clientHeight,
-  }
+  // Cameras
+  const sizes = { width: canvas.clientWidth, height: canvas.clientHeight }
+  const makeCamera = () =>
+    new THREE.PerspectiveCamera(75, sizes.width / sizes.height, 0.1, 1000)
 
-  // Camera setup
   const camera_types = {
-    "default": new THREE.PerspectiveCamera(
-      75,
-      sizes.width / sizes.height,
-      0.1,
-      1000,
-    ),
-    "follow": new THREE.PerspectiveCamera(
-        75,
-        sizes.width / sizes.height,
-        0.1,
-        1000,
-    ),
-    "full arm": new THREE.PerspectiveCamera(
-        75,
-        sizes.width / sizes.height,
-        0.1,
-        1000,
-    ),
-    "arm": new THREE.PerspectiveCamera(
-        75,
-        sizes.width / sizes.height,
-        0.1,
-        1000,
-    ),
-    "side arm": new THREE.PerspectiveCamera(
-        75,
-        sizes.width / sizes.height,
-        0.1,
-        1000,
-    ),
-    "top": new THREE.PerspectiveCamera(
-        75,
-        sizes.width / sizes.height,
-        0.1,
-        1000,
-    )
+    default: makeCamera(),
+    follow: makeCamera(),
+    'full arm': makeCamera(),
+    arm: makeCamera(),
+    'side arm': makeCamera(),
+    top: makeCamera(),
   }
 
-  camera_types["default"].position.x = 100
-  camera_types["default"].position.y = 50
-  camera_types["default"].position.z = 100
-  camera_types["default"].lookAt(0, 0, 0)
-  scene.add(camera_types["default"])
+  camera_types['default'].position.set(100, 50, 100)
+  camera_types['default'].lookAt(0, 0, 0)
 
-  camera_types["follow"].position.x = -130
-  camera_types["follow"].position.y = 120
-  camera_types["follow"].position.z = 0
-  camera_types["follow"].lookAt(0, 30, 0)
-  scene.add(camera_types["follow"])
+  camera_types['follow'].position.set(-130, 120, 0)
+  camera_types['follow'].lookAt(0, 30, 0)
 
-  camera_types["full arm"].position.x = -20
-  camera_types["full arm"].position.y = 60
-  camera_types["full arm"].position.z = 0
-  camera_types["full arm"].lookAt(75, 0, 0)
-  scene.add(camera_types["arm"])
+  camera_types['full arm'].position.set(-20, 60, 0)
+  camera_types['full arm'].lookAt(75, 0, 0)
 
-  camera_types["arm"].position.x = 0
-  camera_types["arm"].position.y = 30
-  camera_types["arm"].position.z = 10//15
-  camera_types["arm"].lookAt(75, 10, 10)
-  scene.add(camera_types["arm"])
+  camera_types['arm'].position.set(0, 30, 10)
+  camera_types['arm'].lookAt(75, 10, 10)
 
-  camera_types["side arm"].position.x = 25
-  camera_types["side arm"].position.y = 40
-  camera_types["side arm"].position.z = 70
-  camera_types["side arm"].lookAt(75, 0, 0)
-  scene.add(camera_types["side arm"])
+  camera_types['side arm'].position.set(25, 40, 70)
+  camera_types['side arm'].lookAt(75, 0, 0)
 
-  camera_types["top"].position.x = -1
-  camera_types["top"].position.y = 160
-  camera_types["top"].position.z = 0
-  camera_types["top"].lookAt(0, 0, 0)
-  scene.add(camera_types["top"])
+  camera_types['top'].position.set(-1, 160, 0)
+  camera_types['top'].lookAt(0, 0, 0)
 
-  // OrbitControls for the camera
-  const controls = new OrbitControls(camera_types["default"], canvas)
-  //controls.target = (0, 0, 0)
+  for (const cam of Object.values(camera_types)) {
+    scene.add(cam)
+  }
 
-  // controls.enableDamping = true
+  // OrbitControls only attached to default camera
+  const controls = new OrbitControls(camera_types['default'], canvas)
 
-  // Renderer setup
-  const renderer = new THREE.WebGLRenderer({
-    antialias: true,
-    canvas: canvas,
-  })
+  // Renderer
+  const renderer = new THREE.WebGLRenderer({ antialias: true, canvas })
   renderer.setSize(sizes.width, sizes.height)
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
   renderer.shadowMap.enabled = true
@@ -299,8 +235,7 @@ export default function threeSetup() {
 
   const clock = new THREE.Clock()
   let timeSinceLastFrame = 0
-  const fpsLimit = 60
-  const frameInterval = 1 / fpsLimit
+  const frameInterval = 1 / 60
 
   const tick = () => {
     window.requestAnimationFrame(tick)
@@ -312,10 +247,7 @@ export default function threeSetup() {
       renderer.render(scene, camera_types[current_camera_type])
     }
   }
-
   tick()
-
-  
 
   return () => {
     resizeObserver.disconnect()
@@ -341,9 +273,6 @@ export function updatePose(joints) {
 
 export function updateIKTarget(position) {
   if (!ikTargetSphere) return
-
-  // Update sphere position
-  // Assuming position is an object with x, y, z properties
   if (
     position &&
     typeof position.x === 'number' &&
@@ -353,7 +282,6 @@ export function updateIKTarget(position) {
     ikTargetSphere.position.set(position.x + 10, position.y, position.z)
     ikTargetSphere.visible = true
   } else if (position === null || position === undefined) {
-    // Hide sphere if no position provided
     ikTargetSphere.visible = false
   }
 }
@@ -362,102 +290,66 @@ export function set_camera_type(new_type) {
   current_camera_type = new_type
 }
 
-// Fills the textCanvas with values according to gridData
-// Note that it does not clear the canvas, nor marks it for update
-function fillTextCanvas(gridData){
-  for(let i = 0; i < numCostMapBlocks; i++){
-    for(let j = 0; j < numCostMapBlocks; j++){
-      textCanvasContext.fillText(gridData[(i * numCostMapBlocks) + j], (j + 0.5) * costMapBlockWidth, (i + 0.5) * costMapBlockWidth)
+// Draws numeric cost values onto the text canvas (does not clear or mark for update)
+function fillTextCanvas(gridData) {
+  for (let i = 0; i < numCostMapBlocks; i++) {
+    for (let j = 0; j < numCostMapBlocks; j++) {
+      textCanvasContext.fillText(
+        gridData[i * numCostMapBlocks + j],
+        (j + 0.5) * costMapBlockWidth,
+        (i + 0.5) * costMapBlockWidth,
+      )
     }
   }
 }
 
-export function updateCostMapGrid(gridData){
-  for(let i = 0; i < numCostMapBlocks * numCostMapBlocks; i++){
-    
-    const newColor = gridData[i] == 0 ?  
-      new THREE.Color(0, 0.5, 0):
-      gridData[i] < 0 ?
-      new THREE.Color(0, 0.1, 0):
-      new THREE.Color(gridData[i] * 0.01, 1 - gridData[i] * 0.01, 0)
-
-    const newMaterial = new THREE.MeshStandardMaterial({
-    color: newColor
-    })
-
-    costMapBlocks[i].material = newMaterial
-
-    //costMapBlocks.material.color = THREE.Color(gridData[i] * 0.01, 1 - gridData[i] * 0.01, 0)
+export function updateCostMapGrid(gridData) {
+  for (let i = 0; i < costMapSize; i++) {
+    const val = gridData[i]
+    const idx = i * 4
+    if (val === 0) {
+      costMapTextureData[idx] = 0
+      costMapTextureData[idx + 1] = 128
+      costMapTextureData[idx + 2] = 0
+    } else if (val < 0) {
+      costMapTextureData[idx] = 0
+      costMapTextureData[idx + 1] = 26
+      costMapTextureData[idx + 2] = 0
+    } else {
+      costMapTextureData[idx] = Math.min(255, val * 2.55)
+      costMapTextureData[idx + 1] = Math.max(0, 255 - val * 2.55)
+      costMapTextureData[idx + 2] = 0
+    }
+    costMapTextureData[idx + 3] = 255
   }
+  costMapTexture.needsUpdate = true
 
-  textCanvasContext.clearRect(0, 0, textCanvas.width, textCanvas.height);
-  
+  textCanvasContext.clearRect(0, 0, textCanvas.width, textCanvas.height)
   fillTextCanvas(gridData)
-  textCanvasTexture.needsUpdate = true;
+  textCanvasTexture.needsUpdate = true
 }
 
-export function resetCostMapGrid(){
-  for(let i = 0; i < numCostMapBlocks * numCostMapBlocks; i++){
-    const newMaterial = new THREE.MeshStandardMaterial({
-        color: 0x9d00ff,
-      })
-    costMapBlocks[i].material = newMaterial
+export function resetCostMapGrid() {
+  for (let i = 0; i < costMapSize; i++) {
+    const idx = i * 4
+    costMapTextureData[idx] = 157
+    costMapTextureData[idx + 1] = 0
+    costMapTextureData[idx + 2] = 255
+    costMapTextureData[idx + 3] = 255
   }
+  costMapTexture.needsUpdate = true
 
-  textCanvasContext.clearRect(0, 0, textCanvas.width, textCanvas.height);
-  
-  let tempGridData = []
-  for(let i = 0; i < costMapBlockWidth * costMapBlockWidth; i++){
-    tempGridData.push(-100)
-  }
-
+  textCanvasContext.clearRect(0, 0, textCanvas.width, textCanvas.height)
+  const tempGridData = new Array(costMapSize).fill(-100)
   fillTextCanvas(tempGridData)
-  textCanvasTexture.needsUpdate = true;
+  textCanvasTexture.needsUpdate = true
 }
 
-export function toggleCostMapGridVisibility(){
-  for(let i = 0; i < numCostMapBlocks * numCostMapBlocks; i++){
-    costMapBlocks[i].visible = !costMapBlocks[i].visible
-  }
-
+export function toggleCostMapGridVisibility() {
+  costMapPlane.visible = !costMapPlane.visible
   textCanvasPlane.visible = !textCanvasPlane.visible
 }
 
-export function setCostMapRotation(rotationValue){
+export function setCostMapRotation(rotationValue) {
   costMapAnchor.rotation.y = rotationValue
 }
-
-// export function fk(positions, scene, joints) {
-//   let cumulativeMatrix = new THREE.Matrix4()
-//   cumulativeMatrix.makeTranslation(new THREE.Vector3(0, 0, 0.439675)) // base_link offset
-
-//   for (let i = 0; i < joints.length; ++i) {
-//     let mesh = scene.getObjectByName(joints[i].name)
-//     if (!mesh) continue
-
-//     let localMatrix = new THREE.Matrix4()
-//     let rotationAngle = positions[i]
-
-//     if (joints[i].name === 'chassis') {
-//       localMatrix.makeTranslation(0, rotationAngle, 0)
-//     } else {
-//       localMatrix.makeRotationY(rotationAngle)
-//     }
-
-//     let offset = new THREE.Vector3().fromArray(joints[i].translation)
-//     localMatrix.setPosition(
-//       new THREE.Vector3().setFromMatrixPosition(localMatrix).add(offset),
-//     )
-
-//     mesh.matrixAutoUpdate = false
-//     mesh.matrix = cumulativeMatrix.clone()
-
-//     cumulativeMatrix.multiply(localMatrix)
-//   }
-// }
-
-// export function ik(target, targetCube) {
-//   let quaternion = new THREE.Quaternion(...target.quaternion)
-//   targetCube.position.set(...target.position)
-//   targetCube.setRotationFromQuaternion(quaternion)
-// }
