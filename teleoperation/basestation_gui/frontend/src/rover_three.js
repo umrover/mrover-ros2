@@ -22,7 +22,7 @@ let current_camera_type = "default"
 
 const costMapAnchor = new THREE.Object3D()
 const costMapBlockWidth = 40
-const numCostMapBlocks = 40
+export const numCostMapBlocks = 40
 const costMapGridOffset = costMapBlockWidth * (numCostMapBlocks/2)
 let costMapBlocks = []
 const textCanvas = document.createElement('canvas');
@@ -269,8 +269,6 @@ export default function threeSetup() {
   // OrbitControls for the camera
   const controls = new OrbitControls(camera_types["default"], canvas)
   //controls.target = (0, 0, 0)
-  console.log("here -->")
-  console.log(controls.target)
 
   // controls.enableDamping = true
 
@@ -354,7 +352,6 @@ export function updateIKTarget(position) {
   ) {
     ikTargetSphere.position.set(position.x + 10, position.y, position.z)
     ikTargetSphere.visible = true
-    console.log('pos ', position.x, position.y, position.z)
   } else if (position === null || position === undefined) {
     // Hide sphere if no position provided
     ikTargetSphere.visible = false
