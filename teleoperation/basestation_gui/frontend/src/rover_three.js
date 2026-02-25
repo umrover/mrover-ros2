@@ -32,6 +32,7 @@ const costMapTexture = new THREE.DataTexture(
 )
 costMapTexture.magFilter = THREE.NearestFilter
 costMapTexture.minFilter = THREE.NearestFilter
+costMapTexture.flipY = true
 const costMapSideLength = costMapBlockWidth * numCostMapBlocks
 const costMapMaterial = new THREE.MeshBasicMaterial({ map: costMapTexture })
 const costMapPlane = new THREE.Mesh(
@@ -135,7 +136,7 @@ export default function threeSetup() {
 
       // roverPivot: visual-only rotation so model faces forward (does not affect joint transforms)
       const roverPivot = new THREE.Group()
-      roverPivot.rotation.z = Math.PI / 2
+      // roverPivot.rotation.z = -Math.PI / 2
       roverContainer.add(roverPivot)
 
       roverPivot.add(robot)
@@ -186,7 +187,7 @@ export default function threeSetup() {
     top: makeCamera(),
   }
 
-  camera_types['default'].position.set(100, 50, 100)
+  camera_types['default'].position.set(100, 50, -100)
   camera_types['default'].lookAt(0, 0, 0)
 
   camera_types['follow'].position.set(-130, 120, 0)
@@ -348,6 +349,11 @@ export function resetCostMapGrid() {
 export function toggleCostMapGridVisibility() {
   costMapPlane.visible = !costMapPlane.visible
   textCanvasPlane.visible = !textCanvasPlane.visible
+}
+
+export function setCostMapGridVisibility(visible) {
+  costMapPlane.visible = visible
+  textCanvasPlane.visible = visible
 }
 
 export function setCostMapRotation(rotationValue) {

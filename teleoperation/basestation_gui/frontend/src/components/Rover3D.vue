@@ -23,7 +23,7 @@
     <button
         type="button"
         class="btn btn-sm btn-light border"
-        @click="toggleCostMapGridVisibility()">
+        @click="toggleCostMap()">
           Toggle Cost Map
     </button>
 
@@ -44,7 +44,7 @@ import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useWebsocketStore } from '@/stores/websocket'
 import { storeToRefs } from 'pinia'
 import type { ControllerStateMessage, OccupancyGridMessage } from '@/types/websocket'
-import threeSetup, { updatePose, updateIKTarget, set_camera_type, updateCostMapGrid, toggleCostMapGridVisibility, setCostMapRotation, numCostMapBlocks } from '../rover_three.js'
+import threeSetup, { updatePose, updateIKTarget, set_camera_type, updateCostMapGrid, toggleCostMapGridVisibility, setCostMapGridVisibility, setCostMapRotation, numCostMapBlocks } from '../rover_three.js'
 import type { NavMessage, OrientationMessage } from '@/types/coordinates.js'
 import { quaternionToMapAngle } from '../utils/map.ts'
 
@@ -75,8 +75,21 @@ const jointNameMap: Record<string, string> = {
   gripper: 'gripper_link', // not implemented lol
 }
 
+const COSTMAP_VISIBLE_KEY = 'rover3d.costmapVisible'
+
+const costmapVisible = ref(localStorage.getItem(COSTMAP_VISIBLE_KEY) !== 'false')
+
+function toggleCostMap() {
+  costmapVisible.value = !costmapVisible.value
+  localStorage.setItem(COSTMAP_VISIBLE_KEY, String(costmapVisible.value))
+  toggleCostMapGridVisibility()
+}
+
 onMounted(() => {
   threeScene.value = threeSetup()
+  if (!costmapVisible.value) {
+    setCostMapGridVisibility(false)
+  }
   websocketStore.setupWebSocket('nav')
 })
 
