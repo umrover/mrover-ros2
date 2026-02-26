@@ -8,7 +8,11 @@ objects:
   rover:
     type: urdf
     uri: package://mrover/urdf/rover/rover.urdf.xacro
-    position: [ 0.0, 0.0, 0.5 ]
+    position: [ 7.0, 0.5, 1 ]
   mars_world:
     type: urdf
     uri: package://mrover/urdf/world/mars.urdf.xacro
+  rock_1:
+    type: urdf
+    uri: package://mrover/urdf/world/large_rock.urdf.xacro
+    position: [ 0.0, 0.0, -1.0 ]
