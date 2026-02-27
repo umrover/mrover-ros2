@@ -1,6 +1,6 @@
 <template>
   <div class="d-flex flex-row gap-2 justify-content-between align-items-start pb-1">
-    <h3>Sensor Data</h3>
+    <h3>Habitability Data</h3>
     <div class="d-flex flex-row gap-2">
       <button class="btn btn-primary text-nowrap" @click="showModal = true">
         View All
