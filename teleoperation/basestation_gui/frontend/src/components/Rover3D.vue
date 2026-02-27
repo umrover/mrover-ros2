@@ -11,12 +11,12 @@
         Camera: {{ camera_type === 'default' ? 'Default' : camera_type === 'follow' ? 'Follow' : camera_type === 'arm' ? 'Arm' : camera_type === 'full arm' ? 'Full Arm' : camera_type === 'side arm' ? 'Side Arm' : 'Top Down' }}
       </button>
       <ul class="dropdown-menu" aria-labelledby="cameraDropdown">
-        <li><a class="dropdown-item" :class="{ 'active': camera_type === 'default' }" @click="change_camera('default')">Default</a></li>
-        <li><a class="dropdown-item" :class="{ 'active': camera_type === 'follow' }" @click="change_camera('follow')">Follow</a></li>
-        <li><a class="dropdown-item" :class="{ 'active': camera_type === 'arm' }" @click="change_camera('arm')">Arm</a></li>
-        <li><a class="dropdown-item" :class="{ 'active': camera_type === 'full arm' }" @click="change_camera('full arm')">Full Arm</a></li>
-        <li><a class="dropdown-item" :class="{ 'active': camera_type === 'side arm' }" @click="change_camera('side arm')">Side Arm</a></li>
-        <li><a class="dropdown-item" :class="{ 'active': camera_type === 'top' }" @click="change_camera('top')">Top Down</a></li>
+        <li><a class="dropdown-item" :class="{ 'active': camera_type === 'default' }" @click="setCamera('default')">Default</a></li>
+        <li><a class="dropdown-item" :class="{ 'active': camera_type === 'follow' }" @click="setCamera('follow')">Follow</a></li>
+        <li><a class="dropdown-item" :class="{ 'active': camera_type === 'arm' }" @click="setCamera('arm')">Arm</a></li>
+        <li><a class="dropdown-item" :class="{ 'active': camera_type === 'full arm' }" @click="setCamera('full arm')">Full Arm</a></li>
+        <li><a class="dropdown-item" :class="{ 'active': camera_type === 'side arm' }" @click="setCamera('side arm')">Side Arm</a></li>
+        <li><a class="dropdown-item" :class="{ 'active': camera_type === 'top' }" @click="setCamera('top')">Top Down</a></li>
       </ul>
     </div>
 
@@ -44,9 +44,9 @@ import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useWebsocketStore } from '@/stores/websocket'
 import { storeToRefs } from 'pinia'
 import type { ControllerStateMessage, OccupancyGridMessage } from '@/types/websocket'
-import threeSetup, { updatePose, updateIKTarget, set_camera_type, updateCostMapGrid, toggleCostMapGridVisibility, setCostMapGridVisibility, setCostMapRotation, numCostMapBlocks } from '../rover_three.js'
-import type { NavMessage, OrientationMessage } from '@/types/coordinates.js'
-import { quaternionToMapAngle } from '../utils/map.ts'
+import type { NavMessage, OrientationMessage } from '@/types/coordinates'
+import { quaternionToMapAngle } from '@/utils/map'
+import { useRoverScene, NUM_COSTMAP_BLOCKS, type CameraType } from '@/composables/useRoverScene'
 
 interface ArmIKMessage {
   type: 'ik_target'
@@ -64,7 +64,18 @@ interface ArmIKMessage {
 const websocketStore = useWebsocketStore()
 const { messages } = storeToRefs(websocketStore)
 
-const threeScene = ref<(() => void) | null>(null)
+const {
+  setup: setupScene,
+  dispose: disposeScene,
+  cameraType: camera_type,
+  setCamera,
+  updateCostMap,
+  toggleCostMapVisibility,
+  setCostMapVisibility,
+  setCostMapRotation,
+  updateJoints,
+  updateIKTarget,
+} = useRoverScene()
 
 const jointNameMap: Record<string, string> = {
   joint_a: 'chassis_to_arm_a',
@@ -72,31 +83,29 @@ const jointNameMap: Record<string, string> = {
   joint_c: 'arm_b_to_arm_c',
   joint_de_pitch: 'arm_c_to_arm_d',
   joint_de_roll: 'arm_d_to_arm_e',
-  gripper: 'gripper_link', // not implemented lol
+  gripper: 'gripper_link',
 }
 
 const COSTMAP_VISIBLE_KEY = 'rover3d.costmapVisible'
-
 const costmapVisible = ref(localStorage.getItem(COSTMAP_VISIBLE_KEY) !== 'false')
 
 function toggleCostMap() {
   costmapVisible.value = !costmapVisible.value
   localStorage.setItem(COSTMAP_VISIBLE_KEY, String(costmapVisible.value))
-  toggleCostMapGridVisibility()
+  toggleCostMapVisibility()
 }
 
 onMounted(() => {
-  threeScene.value = threeSetup()
+  const canvas = document.querySelector('canvas.webgl') as HTMLCanvasElement
+  setupScene(canvas)
   if (!costmapVisible.value) {
-    setCostMapGridVisibility(false)
+    setCostMapVisibility(false)
   }
   websocketStore.setupWebSocket('nav')
 })
 
 onBeforeUnmount(() => {
-  if (threeScene.value) {
-    threeScene.value()
-  }
+  disposeScene()
   websocketStore.closeWebSocket('nav')
 })
 
@@ -111,28 +120,23 @@ watch(armMessage, (msg: unknown) => {
     const typedMsg = msg as ControllerStateMessage
     const joints = typedMsg.names.map((name: string, index: number) => {
       const urdfName = jointNameMap[name] || name
-      let position = typedMsg.positions[index] ?? 0
+      const rawPosition: number = typedMsg.positions[index] ?? 0
+      const position = urdfName === 'chassis_to_arm_a'
+        ? rawPosition * -100 + 40
+        : rawPosition
 
-      if (urdfName === 'chassis_to_arm_a') {
-        position = position * -100 + 40 // scale from m to cm
-      }
-
-      return {
-        name: urdfName,
-        position,
-      }
+      return { name: urdfName, position }
     })
 
-    updatePose(joints)
+    updateJoints(joints)
   } else if ('type' in msg && msg.type === 'ik_target') {
     const typedMsg = msg as ArmIKMessage
     if (typedMsg.target.pose && typedMsg.target.pose.position) {
-      const position = {
+      updateIKTarget({
         x: typedMsg.target.pose.position.x * 100,
         y: typedMsg.target.pose.position.z * 100,
         z: typedMsg.target.pose.position.y * -100 + 20,
-      }
-      updateIKTarget(position)
+      })
     }
   }
 })
@@ -150,24 +154,24 @@ watch(driveMessage, (msg: unknown) => {
   const roverCol = Math.floor((roverMapPos.x - origin.position.x) / resolution)
   const roverRow = Math.floor((roverMapPos.y - origin.position.y) / resolution)
 
-  const halfBlocks = Math.floor(numCostMapBlocks / 2)
+  const halfBlocks = Math.floor(NUM_COSTMAP_BLOCKS / 2)
   const startCol = roverCol - halfBlocks
   const startRow = roverRow - halfBlocks
 
   const processedData: number[] = []
-  for (let i = numCostMapBlocks - 1, k = 0; i >= 0; --i) {
-    for (let j = 0; j < numCostMapBlocks; ++j, ++k) {
+  for (let i = NUM_COSTMAP_BLOCKS - 1, k = 0; i >= 0; --i) {
+    for (let j = 0; j < NUM_COSTMAP_BLOCKS; ++j, ++k) {
       const col = startCol + j
       const row = startRow + i
       if (col < 0 || col >= width || row < 0 || row >= height) {
         processedData[k] = -1
       } else {
-        processedData[k] = typedMsg.data[row * width + col]
+        processedData[k] = typedMsg.data[row * width + col] ?? -1
       }
     }
   }
 
-  updateCostMapGrid(processedData)
+  updateCostMap(processedData)
 
   if (doCostmapRotation.value) {
     setCostMapRotation(Math.PI * rover_bearing_deg.value / 180 - Math.PI / 2)
@@ -185,14 +189,6 @@ watch(navMessage, (msg) => {
     }
   }
 })
-
-
-const camera_type = ref('default')
-
-function change_camera(new_mode: string){
-  set_camera_type(new_mode)
-  camera_type.value = new_mode
-}
 
 function toggleCostmapRotation() {
   if (doCostmapRotation.value) {

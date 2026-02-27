@@ -1,0 +1,91 @@
+import { ref } from 'vue'
+import { createScene, type SceneContext } from '@/three/scene'
+import { createCameras, type CameraManager, type CameraType } from '@/three/cameras'
+import { createCostmap, NUM_COSTMAP_BLOCKS, type CostmapRenderer } from '@/three/costmap'
+import { loadRover, type RoverModel, type JointUpdate, type Position3D } from '@/three/rover-model'
+
+export type { JointUpdate, Position3D, CameraType }
+export { NUM_COSTMAP_BLOCKS }
+
+export function useRoverScene() {
+  let sceneCtx: SceneContext | null = null
+  let cameraManager: CameraManager | null = null
+  let costmap: CostmapRenderer | null = null
+  let roverModel: RoverModel | null = null
+
+  const cameraType = ref<CameraType>('default')
+
+  function setup(canvas: HTMLCanvasElement) {
+    sceneCtx = createScene(canvas)
+    cameraManager = createCameras(canvas, sceneCtx.scene)
+    costmap = createCostmap(sceneCtx.scene)
+    roverModel = loadRover(sceneCtx.scene)
+
+    // Wire resize to camera aspect updates
+    const resizeObserver = new ResizeObserver(() => {
+      cameraManager?.updateAspect(canvas.clientWidth, canvas.clientHeight)
+    })
+    resizeObserver.observe(canvas)
+
+    sceneCtx.startRenderLoop(
+      () => cameraManager!.getActive(),
+      () => cameraManager?.controls.update(),
+    )
+  }
+
+  function dispose() {
+    sceneCtx?.dispose()
+    sceneCtx = null
+    cameraManager = null
+    costmap = null
+    roverModel = null
+  }
+
+  function setCamera(type: CameraType) {
+    cameraManager?.setType(type)
+    cameraType.value = type
+  }
+
+  function updateCostMap(gridData: number[]) {
+    costmap?.update(gridData)
+  }
+
+  function resetCostMap() {
+    costmap?.reset()
+  }
+
+  function toggleCostMapVisibility() {
+    costmap?.toggleVisibility()
+  }
+
+  function setCostMapVisibility(visible: boolean) {
+    costmap?.setVisibility(visible)
+  }
+
+  function setCostMapRotation(radians: number) {
+    costmap?.setRotation(radians)
+  }
+
+  function updateJoints(joints: JointUpdate[]) {
+    roverModel?.updateJoints(joints)
+  }
+
+  function updateIKTarget(position: Position3D | null) {
+    roverModel?.updateIKTarget(position)
+  }
+
+  return {
+    setup,
+    dispose,
+    cameraType,
+    setCamera,
+    updateCostMap,
+    resetCostMap,
+    toggleCostMapVisibility,
+    setCostMapVisibility,
+    setCostMapRotation,
+    updateJoints,
+    updateIKTarget,
+    NUM_COSTMAP_BLOCKS,
+  }
+}
