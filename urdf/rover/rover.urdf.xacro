@@ -3,7 +3,7 @@
 
   <!-- Constants -->
 
-  <xacro:property name="base_width" value="0.59892"/>
+  <xacro:property name="base_width" value="0.59812"/>
   <xacro:property name="base_len" value="0.478"/>
   <xacro:property name="base_height" value="0.183"/>
   <xacro:property name="wheel_radius" value="0.12"/>
@@ -189,7 +189,7 @@
     <joint name="${side}_rocker_link_to_front_${side}_wheel_link" type="continuous">
       <parent link="${side}_rocker_link"/>
       <child link="front_${side}_wheel_link"/>
-      <origin xyz="0.34781 0.28303 ${reflect * 0.15200}"/>
+      <origin xyz="0.34781 0.28163 ${reflect * 0.15235}"/>
       <axis xyz="0 0 1"/>
       <limit effort="${wheel_torque}" velocity="0"/>
     </joint>
@@ -213,8 +213,7 @@
     <joint name="${side}_rocker_link_to_${side}_lambda_lower_link" type="continuous">
       <parent link="${side}_rocker_link"/>
       <child link="${side}_lambda_lower_link"/>
-      <!-- TODO: figure out what coordinate frame this is in -->
-      <origin xyz="-0.2773 0.15460 ${reflect * 0.05577}"/>
+      <origin xyz="-0.27730 0.15319 ${reflect * 0.05611}"/>
       <axis xyz="0 0 1"/>
       <limit effort="0" velocity="0"/>
     </joint>
@@ -222,7 +221,7 @@
     <joint name="${side}_rocker_link_to_${side}_lambda_crank_front_link" type="revolute">
       <parent link="${side}_rocker_link"/>
       <child link="${side}_lambda_crank_front_link"/>
-      <origin xyz="-0.27730 0.01220 ${reflect * 0.09809}"/>
+      <origin xyz="-0.27730 0.01080 ${reflect * 0.09844}"/>
       <axis xyz="0 0 1"/>
       <limit upper="${pi/2}" lower="-${pi/2}" effort="0" velocity="0"/>
     </joint>
@@ -230,7 +229,7 @@
     <joint name="${side}_rocker_link_to_${side}_lambda_crank_rear_link" type="revolute">
       <parent link="${side}_rocker_link"/>
       <child link="${side}_lambda_crank_rear_link"/>
-      <origin xyz="-0.27730 0.01220 ${reflect * 0.10760}"/>
+      <origin xyz="-0.27730 0.01080 ${reflect * 0.10795}"/>
       <axis xyz="0 0 1"/>
       <limit upper="${pi/2}" lower="-${pi/2}" effort="0" velocity="0"/>
     </joint>
@@ -317,7 +316,7 @@
   </link>
 
   <joint name="chassis_link_to_arm_a_link" type="prismatic">
-    <origin xyz="0.0 -0.200235 0.09870"/>
+    <origin xyz="0.0 -0.200235 0.10011"/>
     <parent link="chassis_link"/>
     <child link="arm_a_link"/>
     <axis xyz="0 1 0"/>
@@ -399,9 +398,6 @@
   <!-- TODO(quintin): Import the ZED URDF here -->
 
   <joint name="chassis_link_to_zed_left_camera_frame" type="fixed">
-  <!-- Suspension link lengths (measured from blender) -->
-  <!-- TODO: make sure these are real for 2026 -->
-
     <origin xyz="0.13 0.025 0.025"/>
     <parent link="chassis_link"/>
     <child link="zed_left_camera_frame"/>
