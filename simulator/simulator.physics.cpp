@@ -49,12 +49,6 @@ namespace mrover {
         if (auto it = mUrdfs.find("rover"); it != mUrdfs.end()) {
             URDF const& rover = it->second;
 
-            for (auto const& name: {"left_rocker_link", "right_rocker_link"}) {
-                int linkIndex = rover.linkNameToMeta.at(name).index;
-                auto* motor = std::bit_cast<btMultiBodyJointMotor*>(rover.physics->getLink(linkIndex).m_userPtr);
-                motor->setMaxAppliedImpulse(0.5);
-                motor->setPositionTarget(0);
-            }
             // check if arm motor commands have expired
             // TODO: fix hard-coded names?
             for (auto const& name: {"arm_a_link", "arm_b_link", "arm_c_link", "arm_d_link", "arm_e_link", "arm_gripper_link"}) {

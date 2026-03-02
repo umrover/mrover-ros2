@@ -383,6 +383,16 @@ namespace mrover {
             }
         }
 
+        // add point to point links for diff bar
+        if (uri.find("rover.urdf.xacro") != std::string_view::npos) {
+            for (int side = 0; side < 2; ++side) {
+                int rockerLink = linkNameToMeta.at(std::format("{}_rocker_link", side ? "left" : "right")).index;
+                int diffBarConnectorLink = linkNameToMeta.at(std::format("{}_diff_bar_connector_link", side ? "left" : "right")).index;
+                auto* p2p = simulator.makeBulletObject<btMultiBodyPoint2Point>(simulator.mMultibodyConstraints, multiBody, rockerLink, multiBody, diffBarConnectorLink, btVector3(-0.38765, 0.09797, ((side * 2) - 1) * 0.05642f), btVector3(0, 0, -0.09210));
+                mConstraints.push_back(p2p);
+            }
+        }
+
         multiBody->finalizeMultiDof();
         btAlignedObjectArray<btQuaternion> q;
         btAlignedObjectArray<btVector3> m;
