@@ -29,7 +29,7 @@ export interface ControllerStateMessage {
   positions: number[];
   velocities: number[];
   currents: number[];
-  limits_hit: boolean[];
+  limits_hit: number[];
 }
 
 export interface JointStateMessage {

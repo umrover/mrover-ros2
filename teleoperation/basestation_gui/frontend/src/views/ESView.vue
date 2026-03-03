@@ -22,15 +22,15 @@
       </div>
     </template>
 
-    <template #arm-moteus>
+    <template #arm-data>
       <div class="island p-2 rounded h-full">
-        <ControllerDataTable mode="arm" header="Arm" />
+        <ArmDataTable />
       </div>
     </template>
 
-    <template #drive-moteus>
+    <template #drive-data>
       <div class="island p-2 rounded h-full">
-        <DriveControllerState />
+        <DriveDataTable />
       </div>
     </template>
 
@@ -44,8 +44,8 @@
 
 <script lang="ts" setup>
 import BaseGridView from '@/components/BaseGridView.vue'
-import ControllerDataTable from '@/components/ControllerDataTable.vue'
-import DriveControllerState from '@/components/DriveControllerState.vue'
+import ArmDataTable from '@/components/ControllerDataTable/ArmDataTable.vue'
+import DriveDataTable from '@/components/ControllerDataTable/DriveDataTable.vue'
 import ArmControls from '@/components/ArmControls.vue'
 import DriveControls from '@/components/DriveControls.vue'
 import Rover3D from '@/components/Rover3D.vue'
@@ -55,8 +55,8 @@ const defaultLayout = [
   { x: 0, y: 0, w: 3, h: 2, i: 'arm-controls' },
   { x: 3, y: 0, w: 1, h: 2, i: 'drive-controls' },
   { x: 0, y: 2, w: 4, h: 2, i: 'auton-typing' },
-  { x: 0, y: 4, w: 4, h: 4, i: 'arm-moteus' },
-  { x: 0, y: 8, w: 4, h: 4, i: 'drive-moteus' },
+  { x: 0, y: 4, w: 4, h: 4, i: 'arm-data' },
+  { x: 0, y: 8, w: 4, h: 4, i: 'drive-data' },
   { x: 4, y: 0, w: 8, h: 12, i: 'rover-3d' },
 ]
 </script>

@@ -46,10 +46,21 @@
       </div>
     </template>
 
-    <template #moteus>
-      <div class="island p-2 rounded flex gap-2 h-full">
-        <DriveControllerState />
-        <ControllerDataTable mode="sp" header="SP" />
+    <template #arm-data>
+      <div class="island p-2 rounded h-full">
+        <ArmDataTable />
+      </div>
+    </template>
+
+    <template #drive-data>
+      <div class="island p-2 rounded h-full">
+        <DriveDataTable />
+      </div>
+    </template>
+
+    <template #sp-data>
+      <div class="island p-2 rounded h-full">
+        <SPDataTable />
       </div>
     </template>
 
@@ -75,8 +86,9 @@ import BasicWaypointEditor from '@/components/BasicWaypointEditor.vue'
 import DriveControls from '@/components/DriveControls.vue'
 import GimbalControls from '@/components/GimbalControls.vue'
 import OdometryReading from '@/components/OdometryReading.vue'
-import ControllerDataTable from '@/components/ControllerDataTable.vue'
-import DriveControllerState from '@/components/DriveControllerState.vue'
+import ArmDataTable from '@/components/ControllerDataTable/ArmDataTable.vue'
+import SPDataTable from '@/components/ControllerDataTable/SPDataTable.vue'
+import DriveDataTable from '@/components/ControllerDataTable/DriveDataTable.vue'
 import FunnelControls from '@/components/FunnelControls.vue'
 import PanoramaControls from '@/components/PanoramaControls.vue'
 import SPArmControls from '@/components/SPArmControls.vue'
@@ -89,7 +101,9 @@ const defaultLayout = [
   { x: 6, y: 1, w: 1, h: 1, i: 'panorama' },
   { x: 0, y: 3, w: 7, h: 2, i: 'odometry' },
   { x: 0, y: 5, w: 7, h: 4, i: 'sensors' },
-  { x: 0, y: 9, w: 7, h: 4, i: 'moteus' },
+  { x: 0, y: 9, w: 3, h: 4, i: 'arm-data' },
+  { x: 3, y: 9, w: 2, h: 4, i: 'drive-data' },
+  { x: 5, y: 9, w: 2, h: 4, i: 'sp-data' },
   { x: 7, y: 0, w: 5, h: 6, i: 'map' },
   { x: 7, y: 6, w: 5, h: 6, i: 'waypoints' },
 ]

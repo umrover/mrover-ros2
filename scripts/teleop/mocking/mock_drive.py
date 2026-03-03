@@ -36,8 +36,8 @@ class MockDrive(Node):
         msg.states = ["Armed"] * len(names)
         msg.errors = [""] * len(names)
         msg.positions = [math.sin(self.t + i * phase_offset) * 10.0 for i in range(len(names))]
-        msg.velocities = [0.0] * len(names)
-        msg.currents = [0.1] * len(names)
+        msg.velocities = [math.sin(self.t + i * phase_offset) * 5.0 for i in range(len(names))]
+        msg.currents = [abs(math.cos(self.t + i * phase_offset)) * 2.0 for i in range(len(names))]
         msg.limits_hit = [0] * len(names)
         return msg
 
