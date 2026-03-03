@@ -1,31 +1,15 @@
 <template>
   <div class="d-flex flex-column border border-2 p-2 rounded mw-100" style="flex: 1 0 auto; min-width: 0;">
     <h4 class="m-0 mb-1">Drive</h4>
-    <svg viewBox="0 0 280 100" class="rover-svg" preserveAspectRatio="xMidYMid meet">
-      <rect x="110" y="10" width="60" height="80" rx="4" fill="#e9ecef" stroke="#495057" stroke-width="1.5" />
-
-      <g v-for="(w, idx) in wheels" :key="w.id">
-        <line :x1="w.lineX1" :y1="w.y + 6" :x2="w.lineX2" :y2="w.y + 6" stroke="#495057" stroke-width="1" />
-        <rect
-          :x="w.x" :y="w.y" width="16" height="12" rx="2"
-          :fill="stateColor(states[idx])" stroke="#495057" stroke-width="1"
-        />
-        <text
-          :x="w.labelX" :y="w.y + 5"
-          :text-anchor="w.left ? 'end' : 'start'"
-          font-size="5.5" font-weight="bold" fill="#212529"
-        >
-          {{ states[idx] || 'OFFLINE' }}
-        </text>
-        <text
-          :x="w.labelX" :y="w.y + 12"
-          :text-anchor="w.left ? 'end' : 'start'"
-          font-size="5" fill="#495057"
-        >
-          {{ formatVelocity(velocities[idx]) }} m/s
-        </text>
-      </g>
-    </svg>
+    <div class="wheel-grid">
+      <div v-for="w in wheels" :key="w.id" class="wheel-cell rounded p-1 text-center">
+        <div class="fw-bold small">{{ w.label }}</div>
+        <div class="small" :style="{ color: stateColor(states[w.idx]) }">
+          {{ states[w.idx] || 'OFFLINE' }}
+        </div>
+        <div class="text-muted small">{{ formatVelocity(velocities[w.idx]) }} m/s</div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -67,18 +51,18 @@ watch(driveMessage, (msg) => {
 })
 
 const wheels = [
-  { id: 'fl', left: true,  x: 88,  y: 10, lineX1: 104, lineX2: 110, labelX: 86 },
-  { id: 'ml', left: true,  x: 88,  y: 40, lineX1: 104, lineX2: 110, labelX: 86 },
-  { id: 'rl', left: true,  x: 88,  y: 70, lineX1: 104, lineX2: 110, labelX: 86 },
-  { id: 'fr', left: false, x: 176, y: 10, lineX1: 170, lineX2: 176, labelX: 194 },
-  { id: 'mr', left: false, x: 176, y: 40, lineX1: 170, lineX2: 176, labelX: 194 },
-  { id: 'rr', left: false, x: 176, y: 70, lineX1: 170, lineX2: 176, labelX: 194 },
+  { id: 'fl', label: 'FL', idx: 0 },
+  { id: 'fr', label: 'FR', idx: 3 },
+  { id: 'ml', label: 'ML', idx: 1 },
+  { id: 'mr', label: 'MR', idx: 4 },
+  { id: 'rl', label: 'RL', idx: 2 },
+  { id: 'rr', label: 'RR', idx: 5 },
 ]
 
 function stateColor(state: string | undefined): string {
-  if (!state || state === 'OFFLINE') return '#f8d7da'
-  if (state === 'ARMED') return '#d1e7dd'
-  return '#fff3cd'
+  if (!state || state === 'OFFLINE') return '#dc3545'
+  if (state === 'ARMED') return '#198754'
+  return '#ffc107'
 }
 
 function formatVelocity(v: unknown): string {
@@ -88,8 +72,14 @@ function formatVelocity(v: unknown): string {
 </script>
 
 <style scoped>
-.rover-svg {
-  max-width: 100%;
-  max-height: 100%;
+.wheel-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+}
+
+.wheel-cell {
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
 }
 </style>
