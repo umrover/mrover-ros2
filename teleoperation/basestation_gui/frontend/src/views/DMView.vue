@@ -25,7 +25,7 @@
         </div>
         <div class="d-flex flex-row gap-2 flex-grow-1" style="min-height: 0;">
             <ControllerDataTable mode="arm" header="Arm" />
-            <ControllerDataTable mode="drive" header="Drive" />
+            <DriveControllerState />
         </div>
       </div>
     </template>
@@ -47,6 +47,7 @@
 <script lang="ts" setup>
 import BaseGridView from '@/components/BaseGridView.vue'
 import ControllerDataTable from '@/components/ControllerDataTable.vue'
+import DriveControllerState from '@/components/DriveControllerState.vue'
 import ArmControls from '@/components/ArmControls.vue'
 import BasicMap from '@/components/BasicRoverMap.vue'
 import BasicWaypointEditor from '@/components/BasicWaypointEditor.vue'
