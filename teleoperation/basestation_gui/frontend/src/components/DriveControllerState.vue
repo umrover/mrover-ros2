@@ -1,13 +1,20 @@
 <template>
-  <div class="d-flex flex-column border border-2 p-2 rounded mw-100" style="flex: 1 0 auto; min-width: 0;">
-    <h4 class="m-0 mb-1">Drive</h4>
-    <div class="wheel-grid">
-      <div v-for="w in wheels" :key="w.id" class="wheel-cell rounded p-1 text-center">
-        <div class="fw-bold small">{{ w.label }}</div>
-        <div class="small" :style="{ color: stateColor(states[w.idx]) }">
-          {{ states[w.idx] || 'OFFLINE' }}
-        </div>
-        <div class="text-muted small">{{ formatVelocity(velocities[w.idx]) }} m/s</div>
+  <div class="cmd-panel flex flex-col h-full">
+    <div class="cmd-panel-header">
+      <h4>Drive</h4>
+    </div>
+    <div class="grid grid-cols-2 gap-1 flex-1">
+      <div
+        v-for="w in wheels"
+        :key="w.id"
+        class="rounded p-1.5 text-center border"
+        :class="stateClass(states[w.idx])"
+      >
+        <div class="text-xs font-bold tracking-wide" style="color: var(--text-primary)">{{ w.label }}</div>
+        <div class="text-xs font-semibold">{{ states[w.idx] || 'OFFLINE' }}</div>
+        <div class="text-xs" style="color: var(--text-muted)">{{ formatNumber(velocities[w.idx]) }} m/s</div>
+        <div class="text-xs" style="color: var(--text-muted)">{{ formatNumber(currents[w.idx]) }} A</div>
+        <div v-if="errors[w.idx]" class="text-xs text-cmd-danger">{{ errors[w.idx] }}</div>
       </div>
     </div>
   </div>
@@ -24,16 +31,20 @@ const { messages } = storeToRefs(websocketStore)
 
 const states = ref<string[]>([])
 const velocities = ref<number[]>([])
+const currents = ref<number[]>([])
+const errors = ref<string[]>([])
 
 const leftState = ref<ControllerStateMessage | null>(null)
 const rightState = ref<ControllerStateMessage | null>(null)
 
 function combineLeftRight() {
-  const l = leftState.value || { states: [], velocities: [] }
-  const r = rightState.value || { states: [], velocities: [] }
+  const l = leftState.value || { states: [], velocities: [], currents: [], errors: [] }
+  const r = rightState.value || { states: [], velocities: [], currents: [], errors: [] }
 
   states.value = [...l.states, ...r.states]
   velocities.value = [...l.velocities, ...r.velocities]
+  currents.value = [...l.currents, ...r.currents]
+  errors.value = [...l.errors, ...r.errors]
 }
 
 const driveMessage = computed(() => messages.value['drive'])
@@ -59,27 +70,14 @@ const wheels = [
   { id: 'rr', label: 'RR', idx: 5 },
 ]
 
-function stateColor(state: string | undefined): string {
-  if (!state || state === 'OFFLINE') return '#dc3545'
-  if (state === 'ARMED') return '#198754'
-  return '#ffc107'
+function stateClass(state: string | undefined): string {
+  if (!state || state === 'OFFLINE') return 'bg-cmd-danger-subtle border-theme'
+  if (state === 'ARMED') return 'bg-cmd-success-subtle border-theme'
+  return 'border-theme'
 }
 
-function formatVelocity(v: unknown): string {
+function formatNumber(v: unknown): string {
   if (typeof v === 'number' && Number.isFinite(v)) return v.toFixed(2)
   return '0.00'
 }
 </script>
-
-<style scoped>
-.wheel-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 4px;
-}
-
-.wheel-cell {
-  background: #f8f9fa;
-  border: 1px solid #dee2e6;
-}
-</style>
