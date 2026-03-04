@@ -5,6 +5,7 @@ from backend.ra_controls import send_ra_controls
 from mrover.msg import Throttle, IK, ControllerState
 from geometry_msgs.msg import Twist
 from rclpy.publisher import Publisher
+# from mrover.msg import Velocity
 
 class ArmHandler(WebSocketHandler):
     arm_thr_pub: Publisher
@@ -22,6 +23,8 @@ class ArmHandler(WebSocketHandler):
 
         self.forward_ros_topic("/arm_controller_state", ControllerState, "arm_state")
         self.forward_ros_topic("/arm_ik", IK, "ik_target")
+        self.forward_ros_topic("/arm_thr_cmd", Throttle, "arm_throttle_command")
+        # self.forward_ros_topic("/arm_vel_cmd", Velocity, "arm_velocity_command")
 
     async def handle_message(self, data):
         msg_type = data.get('type')

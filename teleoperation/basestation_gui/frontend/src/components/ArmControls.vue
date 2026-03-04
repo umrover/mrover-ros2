@@ -2,6 +2,11 @@
   <div class="flex flex-col gap-2 h-full">
     <div class="flex justify-between items-center">
       <h4 class="component-header">Arm Controls</h4>
+      <p 
+      class="text-danger"
+      :class="forcing_limit === true ? 'visible' : 'invisible'">
+        Limit Reached!
+      </p>
       <IndicatorDot :is-active="connected" class="mr-2" />
     </div>
     <div class="btn-group w-full" role="group" aria-label="Arm mode selection" data-testid="pw-arm-mode-buttons">
@@ -47,13 +52,21 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { armAPI } from '@/utils/api'
 import { useGamepadPolling } from '@/composables/useGamepadPolling'
 import GamepadDisplay from './GamepadDisplay.vue'
 import IndicatorDot from './IndicatorDot.vue'
+import { useWebsocketStore } from '@/stores/websocket'
+import { storeToRefs } from 'pinia'
+import type { ControllerStateMessage, ThrottleMessage/*, VelocityMessage*/ } from '@/types/websocket'
+
+const websocketStore = useWebsocketStore()
+const { messages } = storeToRefs(websocketStore)
 
 const mode = ref('disabled')
+const forcing_limit = ref(false)
+const limits_hit_external = ref([0, 0, 0, 0, 0, 0])
 
 const { connected, axes, buttons } = useGamepadPolling({
   controllerIdFilter: 'Microsoft',
@@ -75,6 +88,8 @@ onBeforeUnmount(() => {
   document.removeEventListener('keydown', keyDown)
 })
 
+const armMessage = computed(() => messages.value['arm'])
+
 const newRAMode = async (newMode: string) => {
   try {
     mode.value = newMode
@@ -86,5 +101,56 @@ const newRAMode = async (newMode: string) => {
     console.error('Failed to set arm mode:', error)
   }
 }
+
+watch(armMessage, (msg: unknown) => {
+if (!msg || typeof msg !== 'object') return
+
+  if ('type' in msg && msg.type === "arm_state"){
+    const typedMsg = msg as ControllerStateMessage
+    for(let i = 0; i < 6; ++i){
+      limits_hit_external.value[i] = typedMsg.limits_hit[i]
+    }
+
+    // limits_hit_external.value = typedMsg.limits_hit
+    // forcing_limit.value = false
+
+    // forcing_limit.value = typedMsg.limits_hit.includes(1) ||  typedMsg.limits_hit.includes(2)
+    // console.log(typeof(typedMsg.limits_hit[0]))
+    // console.log(typedMsg.limits_hit)
+    // console.log(typedMsg.positions)
+    // console.log(typedMsg.velocities)
+    // console.log(limits_hit_external.value)
+  }
+
+  if ('type' in msg && msg.type === "arm_throttle_command"){
+    const typedMessage = msg as ThrottleMessage
+    forcing_limit.value = false;
+
+      if(limits_hit_external.value[0] == 1 && typedMessage.throttles[6] < 0){
+        forcing_limit.value = true
+      } else if (limits_hit_external.value[0] == 2 && typedMessage.throttles[6] > 0) {
+        forcing_limit.value = true
+      }
+
+      if(limits_hit_external.value[1] == 1 && typedMessage.throttles[1] < 0){
+        forcing_limit.value = true
+      } else if (limits_hit_external.value[1] == 2 && typedMessage.throttles[1] > 0) {
+        forcing_limit.value = true
+      }
+
+      if(limits_hit_external.value[2] == 1 && typedMessage.throttles[2] < 0){
+        forcing_limit.value = true
+      } else if (limits_hit_external.value[2] == 2 && typedMessage.throttles[2] > 0) {
+        forcing_limit.value = true
+      }
+  }
+
+  // if ('type' in msg && msg.type === "arm_velocity_command"){
+  //   console.log("read")
+
+  //   // const typedMessage = msg as VelocityMessage
+  //   // console.log(typedMessage)
+  // }
+})
 </script>
 
