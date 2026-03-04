@@ -46,7 +46,7 @@ import { storeToRefs } from 'pinia'
 import type { ControllerStateMessage, OccupancyGridMessage } from '@/types/websocket'
 import type { NavMessage, OrientationMessage } from '@/types/coordinates'
 import { quaternionToMapAngle } from '@/utils/map'
-import { useRoverScene, NUM_COSTMAP_BLOCKS, type CameraType } from '@/composables/useRoverScene'
+import { useRoverScene, NUM_COSTMAP_BLOCKS } from '@/composables/useRoverScene'
 
 interface ArmIKMessage {
   type: 'ik_target'

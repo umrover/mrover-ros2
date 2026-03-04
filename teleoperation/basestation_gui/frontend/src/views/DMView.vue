@@ -54,7 +54,7 @@ import BasicWaypointEditor from '@/components/BasicWaypointEditor.vue'
 import OdometryReading from '@/components/OdometryReading.vue'
 import DriveControls from '@/components/DriveControls.vue'
 import GimbalControls from '@/components/GimbalControls.vue'
-import Rover3D from '@/components/Rover3D.vue'
+import Rover3D from '@/components/three/Rover3D.vue'
 
 const defaultLayout = [
   { x: 0, y: 0, w: 6, h: 4, i: 'rover-3d' },

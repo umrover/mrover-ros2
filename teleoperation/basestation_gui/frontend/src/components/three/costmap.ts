@@ -74,7 +74,7 @@ export function createCostmap(scene: THREE.Scene): CostmapRenderer {
 
   function update(gridData: number[]) {
     for (let i = 0; i < GRID_SIZE; i++) {
-      const val = gridData[i]
+      const val = gridData[i] ?? -1
       const idx = i * 4
       if (val === 0) {
         textureData[idx] = 0

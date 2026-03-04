@@ -26,7 +26,6 @@ export function createScene(canvas: HTMLCanvasElement): SceneContext {
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
   renderer.shadowMap.enabled = true
   renderer.shadowMap.type = THREE.PCFSoftShadowMap
-  renderer.physicallyCorrectLights = true
   renderer.toneMapping = THREE.ACESFilmicToneMapping
   renderer.toneMappingExposure = 2.5
 
@@ -43,13 +42,15 @@ export function createScene(canvas: HTMLCanvasElement): SceneContext {
     getActiveCamera: () => THREE.Camera,
     onUpdate?: () => void,
   ) {
-    const clock = new THREE.Clock()
+    let lastTime = performance.now()
     let timeSinceLastFrame = 0
     const frameInterval = 1 / 60
 
     const tick = () => {
       animationFrameId = window.requestAnimationFrame(tick)
-      const delta = clock.getDelta()
+      const now = performance.now()
+      const delta = (now - lastTime) / 1000
+      lastTime = now
       timeSinceLastFrame += delta
       if (timeSinceLastFrame > frameInterval) {
         timeSinceLastFrame %= frameInterval

@@ -56,7 +56,7 @@ export function loadRover(scene: THREE.Scene): RoverModel {
   loader.loadMeshCb = function (
     path: string,
     manager: THREE.LoadingManager,
-    onComplete: (mesh: THREE.Object3D | null, err?: Error) => void,
+    onComplete: (mesh: THREE.Object3D, err?: Error) => void,
   ) {
     const gltfLoader = new GLTFLoader(manager)
     const dracoLoader = new DRACOLoader()
@@ -66,7 +66,7 @@ export function loadRover(scene: THREE.Scene): RoverModel {
       path,
       result => onComplete(result.scene),
       undefined,
-      err => onComplete(null, err as Error),
+      err => onComplete(new THREE.Object3D(), err as Error),
     )
   }
 
