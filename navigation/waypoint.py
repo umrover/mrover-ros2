@@ -156,9 +156,10 @@ class WaypointState(State):
         if self.astar_traj.empty():
             self.display_markers(context=context)
             try:
-                a = time.time()
+                a = context.node.get_clock().now() 
                 self.astar_traj = self.astar.generate_trajectory(context.course.current_waypoint_pose_in_map().translation()[0:2])
-                context.node.get_logger().info(f"GENERATED {time.time() - a}")
+                context.node.get_logger().info(f"GENERATED {(context.node.get_clock().now() - a).nanoseconds / 10e9}")
+                
             except Exception as e:
                 context.node.get_logger().info(str(e))
                 return self
