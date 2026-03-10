@@ -11,7 +11,7 @@
       <div class="waypoint-wrapper overflow-y-scroll flex-grow-1">
         <WaypointStore
           v-for="(waypoint, index) in waypoints"
-          :key="waypoint.id || index"
+          :key="waypoint.tag_id || index"
           :waypoint="waypoint"
           :index="index"
           @add="addToRoute"
@@ -92,7 +92,7 @@
                   v-if="modalWypt.type == 1"
                   class="form-control"
                   id="waypointid"
-                  v-model="modalWypt.id"
+                  v-model="modalWypt.tag_id"
                   type="number"
                   max="249"
                   min="0"
@@ -175,7 +175,7 @@ export default defineComponent({
       modal: null as Modal | null,
       modalWypt: {
         name: '',
-        id: -1,
+        tag_id: -1,
         type: 0,
         lat: 0,
         lon: 0,
@@ -183,7 +183,8 @@ export default defineComponent({
       },
 
       allCostmapToggle: true,
-      nextAvailableTagId: 8,
+      saveWaypointsTimer: null as ReturnType<typeof setTimeout> | null,
+      saveRouteTimer: null as ReturnType<typeof setTimeout> | null,
     }
   },
 
@@ -229,7 +230,10 @@ export default defineComponent({
         // Update map visualization
         const mapPoints = newRoute.map(waypoint => ({
           latLng: L.latLng(waypoint.lat, waypoint.lon),
-          name: waypoint.name
+          name: waypoint.name,
+          tag_id: waypoint.tag_id,
+          type: waypoint.type,
+          enable_costmap: waypoint.enable_costmap
         }))
         this.autonomyStore.setRoute(mapPoints)
 
@@ -256,12 +260,6 @@ export default defineComponent({
         const autonData = await waypointsAPI.getAuton()
         if (autonData.status === 'success') {
           this.waypoints = autonData.waypoints || []
-
-          // Calculate next available tag ID from existing waypoints
-          const maxTagId = this.waypoints.reduce((max, wp) => {
-            return wp.id > max ? wp.id : max
-          }, 7)
-          this.nextAvailableTagId = maxTagId + 1
         }
 
         // Fetch Active Route
@@ -272,7 +270,7 @@ export default defineComponent({
           // Mark items in route as "in_route" in the store list for visual feedback
           this.waypoints.forEach(wp => {
              wp.in_route = this.currentRoute.some(
-               r => r.name === wp.name && r.id === wp.id && r.type === wp.type
+               r => r.name === wp.name && r.tag_id === wp.tag_id && r.type === wp.type
              )
           })
         }
@@ -308,12 +306,12 @@ export default defineComponent({
       // Update visual feedback in store
       // Check if this type of waypoint still exists in the route elsewhere
       const stillInRoute = this.currentRoute.some(
-         r => r.name === waypoint.name && r.id === waypoint.id && r.type === waypoint.type
+         r => r.name === waypoint.name && r.tag_id === waypoint.tag_id && r.type === waypoint.type
       )
 
       if (!stillInRoute) {
         const storeIndex = this.waypoints.findIndex(
-           w => w.name === waypoint.name && w.id === waypoint.id && w.type === waypoint.type
+           w => w.name === waypoint.name && w.tag_id === waypoint.tag_id && w.type === waypoint.type
         )
         if (storeIndex !== -1) {
           const storeWaypoint = this.waypoints[storeIndex]
@@ -341,19 +339,11 @@ export default defineComponent({
       this.modalWypt.lat = this.clickPoint.lat
       this.modalWypt.lon = this.clickPoint.lon
 
-      // Assign next available tag ID if this is not a Post type (type 1 allows user to set tag_id)
-      if (this.modalWypt.type !== 1) {
-        this.modalWypt.id = this.nextAvailableTagId
-        this.nextAvailableTagId++
-      }
-
-      // Add to store (default deletable=true)
       this.waypoints.push({ ...this.modalWypt, enable_costmap: true })
 
-      // Reset modal
       this.modalWypt = {
         name: '',
-        id: -1,
+        tag_id: -1,
         type: 0,
         lat: 0,
         lon: 0,
@@ -395,7 +385,7 @@ export default defineComponent({
         ? this.currentRoute.map((waypoint: AutonWaypoint) => ({
             latitude_degrees: waypoint.lat,
             longitude_degrees: waypoint.lon,
-            tag_id: waypoint.id,
+            tag_id: waypoint.tag_id,
             type: waypoint.type,
             enable_costmap: waypoint.enable_costmap,
           }))
