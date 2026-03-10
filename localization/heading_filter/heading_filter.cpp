@@ -172,12 +172,19 @@ namespace mrover {
         if (measured_heading < -180) {
             measured_heading = 360 + measured_heading;
         }
+        // if around 90 or 270 +- 10 deg, skip pred/corr
+        bool skipPred = (measured_heading>=80 && measured_heading<=100) ||
+                        (measured_heading>=260&& measured_heading<=280);
         measured_heading = measured_heading * (M_PI / 180);
 
         double heading_correction_delta = measured_heading - uncorrected_heading;
         heading_correction_delta = fmod((heading_correction_delta + 3 * M_PI), 2 * M_PI) - M_PI;
-        predict(get_parameter("process_noise").as_double());
-        correct(heading_correction_delta, get_parameter("mag_heading_noise").as_double());
+
+        
+        if(!skipPred) {
+            predict(get_parameter("process_noise").as_double());
+            correct(heading_correction_delta, get_parameter("mag_heading_noise").as_double());
+        }
 
         // apply correction and publish
         SO3d curr_heading_correction = Eigen::AngleAxisd(X, R3d::UnitZ());
