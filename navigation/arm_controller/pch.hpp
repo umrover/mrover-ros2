@@ -15,6 +15,7 @@
 #include <sensor_msgs/msg/joint_state.hpp>
 #include <rclcpp/create_timer.hpp>
 
+#include <mrover/msg/arm_status.hpp>
 #include <mrover/msg/ik.hpp>
 #include <mrover/msg/position.hpp>
 #include <mrover/msg/velocity.hpp>
