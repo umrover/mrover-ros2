@@ -174,7 +174,7 @@ namespace mrover {
         }
         // if around 90 or 270 +- 10 deg, skip pred/corr
         bool skipPred = (measured_heading>=80 && measured_heading<=100) ||
-                        (measured_heading>=260&& measured_heading<=280);
+                        (measured_heading>=-100&&measured_heading<=-80);
         measured_heading = measured_heading * (M_PI / 180);
 
         double heading_correction_delta = measured_heading - uncorrected_heading;
