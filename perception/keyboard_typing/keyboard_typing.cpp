@@ -17,10 +17,38 @@ namespace mrover{
         std::vector<ParameterWrapper> params{
                 {"min_code_length", mMinCodeLength, 3},
                 {"max_code_length", mMaxCodeLength, 6},
+                {"tag_size", mTagSize, 0.02},
         };
 
         ParameterWrapper::declareParameters(this, params);
 
+        // Declare vector params manually since param wrapper doesnt support vector
+        std::map<std::string, rclcpp::ParameterValue> vector_params;
+        vector_params["camera_matrix"] = rclcpp::ParameterValue(std::vector<double>(9, 0.0));
+        vector_params["distortion_coefficients"] = rclcpp::ParameterValue(std::vector<double>(5, 0.0));
+        vector_params["tag_offsets"] = rclcpp::ParameterValue(std::vector<double>{});
+
+        this->declare_parameters("", vector_params);
+        std::vector<double> cam_raw = this->get_parameter("camera_matrix").as_double_array();
+        std::vector<double> dist_raw = this->get_parameter("distortion_coefficients").as_double_array();
+
+        // Read in Camera intrinsics
+        mCameraMatrix = cv::Mat(3, 3, CV_64F, cam_raw.data()).clone();
+        mDistCoeffs = cv::Mat(1, (int)dist_raw.size(), CV_64F, dist_raw.data()).clone();
+
+        // Grab tag offsets
+        std::vector<double> offset_raw = this->get_parameter("tag_offsets").as_double_array();
+
+        for (size_t i = 0; i + 3 < offset_raw.size(); i += 4) {
+            int id = static_cast<int>(offset_raw[i]);
+            float x = static_cast<float>(offset_raw[i+1]);
+            float y = static_cast<float>(offset_raw[i+2]);
+            float z = static_cast<float>(offset_raw[i+3]);
+            
+            layout[id] = cv::Vec3d(x, y, z);
+        }
+
+        
         // Set up action server
         mTypingClient = rclcpp_action::create_client<TypingDeltas>(this, "typing_ik");
 
@@ -32,20 +60,20 @@ namespace mrover{
             std::bind(&KeyboardTypingNode::handle_accepted, this, std::placeholders::_1));
 
         // subscribe to image stream
-        mImageSub = create_subscription<sensor_msgs::msg::Image>("/video4/image", rclcpp::QoS(1), [this](sensor_msgs::msg::Image::ConstSharedPtr const& msg) {
+        mImageSub = create_subscription<sensor_msgs::msg::Image>("/finger_camera/image", rclcpp::QoS(1), [this](sensor_msgs::msg::Image::ConstSharedPtr const& msg) {
             yawCallback(msg);
         });
 
         // grab transform from finger_cam to gripper
         // wait until the transformation is acquired
-        // while (true) {
-        //     try {
-        //         gripper_to_cam = SE3Conversions::fromTfTree(tf_buffer, "finger_camera_frame", "arm_fk");
-        //         break;
-        //     } catch (tf2::TransformException const& e) {
-        //         RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, std::format("TF tree error processing keyboard typing: {}", e.what()));
-        //     }
-        // }
+        while (true) {
+            try {
+                gripper_to_cam = SE3Conversions::fromTfTree(tf_buffer, "finger_camera_frame", "arm_fk");
+                break;
+            } catch (tf2::TransformException const& e) {
+                RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, std::format("TF tree error processing keyboard typing: {}", e.what()));
+            }
+        }
 
         // Create Ik mode client
         mIkModeClient = create_client<srv::IkMode>("ik_mode");
@@ -86,10 +114,10 @@ namespace mrover{
         mIKPub = this->create_publisher<msg::IK>("ik_pos_cmd",rclcpp::QoS(1));
 
         // Define offsets
-        layout[4] = cv::Vec3d(0.0, 0.0, 0.0);       // BL
-        layout[5] = cv::Vec3d(0.41407, 0.0, 0.0);     // BR
-        layout[3] = cv::Vec3d(0.41407, 0.183444, 0.0);   // TR
-        layout[2] = cv::Vec3d(0.0, 0.183444, 0.0);     // TL
+        // layout[4] = cv::Vec3d(0.0, 0.0, 0.0);       // BL
+        // layout[5] = cv::Vec3d(0.41407, 0.0, 0.0);     // BR
+        // layout[3] = cv::Vec3d(0.41407, 0.183444, 0.0);   // TR
+        // layout[2] = cv::Vec3d(0.0, 0.183444, 0.0);     // TL
 
         createRoverBoard();
     }
@@ -107,6 +135,11 @@ namespace mrover{
             mrover::msg::KeyboardYaw msg;
             msg.yaw = output->yaw;
             mCostMapPub->publish(msg);
+
+            // Output debug
+            // RCLCPP_INFO_STREAM(get_logger(), "X: " << output->pose.position.x);
+            // RCLCPP_INFO_STREAM(get_logger(), "Y: " << output->pose.position.y);
+            // RCLCPP_INFO_STREAM(get_logger(), "Z: " << output->pose.position.z);
 
             // Convert pose to se3d
             SE3d cam_to_tag = SE3Conversions::fromPose(output->pose);
@@ -143,11 +176,11 @@ namespace mrover{
             SE3d arm_fk_to_tag{arm_fk_pos, transformed_rotation};
 
             // Publish to tf tree
-            // SE3Conversions::pushToTfTree(tf_broadcaster, "keyboard_tag", "arm_fk", gripper_to_cam*arm_fk_to_tag, get_clock()->now());
+            SE3Conversions::pushToTfTree(tf_broadcaster, "keyboard_tag", "arm_fk", gripper_to_cam*arm_fk_to_tag, get_clock()->now());
 
             // Initialize transforms for every key, temporarily here for now
             SE3d z_to_tag{zKeyTransformation_new, Eigen::Quaterniond::Identity()};
-            // SE3Conversions::pushToTfTree(tf_broadcaster, "keyboard_z", "keyboard_tag", z_to_tag, get_clock()->now());
+            SE3Conversions::pushToTfTree(tf_broadcaster, "keyboard_z", "keyboard_tag", z_to_tag, get_clock()->now());
 
 
         }
@@ -184,21 +217,18 @@ namespace mrover{
     }
 
     auto KeyboardTypingNode::estimatePose(sensor_msgs::msg::Image::ConstSharedPtr const& msg) -> std::optional<pose_output>  {
+        // cv::Mat camMatrix = (cv::Mat_<double>(3,3) <<
+        //     294.8447664894051, 0.0, 320.781111263661,   // fx, 0, cx
+        //     0.0, 292.9945007031336, 241.50291271027783,   // 0, fy, cy
+        //     0.0, 0.0, 1.0
+        // );
 
-        // Read in camera constants
-        std::string cameraConstants = "temp.json";
-        cv::Mat camMatrix = (cv::Mat_<double>(3,3) <<
-            432.82290127206676, 0.0, 320.66663616737236,   // fx, 0, cx
-            0.0, 428.8529386724118, 256.09398022438245,   // 0, fy, cy
-            0.0, 0.0, 1.0
-        );
-
-        cv::Mat distCoeffs = cv::Mat::zeros(1,5,CV_64F);
-        // cv::Mat distCoeffs = (cv::Mat_<double>(1,5) << 0.058961289426335314,
-        //     -0.000852015669231157,
-        //     -0.00011057338930940814,
-        //     0.004049336591019368,
-        //     -0.11113072350633851);
+        // cv::Mat distCoeffs = (cv::Mat_<double>(1,5) << 
+        //     0.0002545998769717633,
+        // -0.06500186703787096,
+        // -0.0012230890083846627,
+        // -0.0010254508499132765,
+        // 0.02647360145709905);
 
         // Read in images
         cv::Mat bgraImage{static_cast<int>(msg->height), static_cast<int>(msg->width), CV_8UC4, const_cast<uint8_t*>(msg->data.data())};
@@ -226,8 +256,21 @@ namespace mrover{
         detectorParams->adaptiveThreshWinSizeMax = 23;
         detectorParams->adaptiveThreshWinSizeStep = 10;
 
+        detectorParams->adaptiveThreshConstant = 9;
+
+        detectorParams->perspectiveRemovePixelPerCell = 2;
+
+        detectorParams->minDistanceToBorder = 1;   // default is 3
+        detectorParams->minMarkerPerimeterRate = 0.01;   // default ~0.03
+
+        detectorParams->cornerRefinementMethod = cv::aruco::CORNER_REFINE_SUBPIX;
+
+        detectorParams->cornerRefinementWinSize = 3;
+
+        detectorParams->cornerRefinementMaxIterations = 20;
+
         // Define coordinate system
-        float markerLength = 0.02;  // meters
+        float markerLength = 0.019;  // meters
         std::vector<cv::Point3f> objPoints = {
             {-markerLength/2.f,  markerLength/2.f, 0},
             { markerLength/2.f,  markerLength/2.f, 0},
@@ -237,15 +280,6 @@ namespace mrover{
 
         // Detect Markers
         cv::aruco::detectMarkers(grayImage, dictionary, markerCorners, ids, detectorParams, rejectedCandidates);
-
-        // Corner refinement
-        cv::Size winSize = cv::Size( 5, 5 );
-        cv::Size zeroZone = cv::Size( -1, -1 ); 
-        cv::TermCriteria criteria = cv::TermCriteria( cv::TermCriteria::EPS + cv::TermCriteria::COUNT, 40, 0.001 );
-
-        for (std::vector<cv::Point2f> &corners : markerCorners) {
-            cv::cornerSubPix(grayImage, corners, winSize, zeroZone, criteria);
-        }
 
         size_t nMarkers = markerCorners.size();
 
@@ -261,73 +295,100 @@ namespace mrover{
 
             int validcnt = valid_indices.size();
 
-            // Convert to quarternion, sum, and then divide
-            
-            if (validcnt > 2) {
-                cv::aruco::estimatePoseBoard(markerCorners, ids, rover_board, camMatrix, distCoeffs, combined_rvec, combined_tvec);
-            } else if (validcnt > 0) {
-                cv::Vec3d sum_tvec(0,0,0);
+            float tag_size = 0.02f; 
+            float half_size = tag_size / 2.0f;
 
-                Eigen::Matrix4d A = Eigen::Matrix4d::Zero();
+            std::vector<cv::Point3f> all_objPoints;
+            std::vector<cv::Point2f> all_imgPoints; 
 
+            if (validcnt > 0) {
                 for (int idx : valid_indices) {
                     int id = ids[idx];
+                    
+                    cv::Point3f tag_center(layout[id][0], layout[id][1], layout[id][2]);
+                    
+                    all_objPoints.push_back(tag_center + cv::Point3f(-half_size,  half_size, 0)); // Top-Left
+                    all_objPoints.push_back(tag_center + cv::Point3f( half_size,  half_size, 0)); // Top-Right
+                    all_objPoints.push_back(tag_center + cv::Point3f( half_size, -half_size, 0)); // Bottom-Right
+                    all_objPoints.push_back(tag_center + cv::Point3f(-half_size, -half_size, 0)); // Bottom-Left
 
-                    // 1. Solve PnP for this specific tag (IPPE_SQUARE is extremely stable)
-                    cv::Vec3d rvec_single, tvec_single;
-                    cv::solvePnP(objPoints, markerCorners.at(idx), camMatrix, distCoeffs, rvec_single, tvec_single, false, cv::SOLVEPNP_IPPE_SQUARE);
-
-                    // 2. Shift to Anchor (Origin)
-                    // Retrieve offset
-                    cv::Vec3d offset_wall = layout[id]; 
-
-                    // Rotate offset
-                    cv::Mat R_cv;
-                    cv::Rodrigues(rvec_single, R_cv);
-                    Eigen::Matrix3d R_eigen;
-                    cv::cv2eigen(R_cv, R_eigen);
-
-                    Eigen::Vector3d p_offset_wall(offset_wall[0], offset_wall[1], offset_wall[2]);
-                    Eigen::Vector3d p_offset_cam = R_eigen * p_offset_wall;
-
-                    // Calculate Anchor Position according to THIS tag
-                    Eigen::Vector3d t_tag_eigen(tvec_single[0], tvec_single[1], tvec_single[2]);
-                    Eigen::Vector3d t_anchor = t_tag_eigen - p_offset_cam;
-
-                    // Accumulate
-                    sum_tvec += cv::Vec3d(t_anchor.x(), t_anchor.y(), t_anchor.z());
-
-                    // Convert to quaternion
-                    Eigen::Quaterniond q(R_eigen);
-                    q.normalize();
-
-                    // Accumulate outer product
-                    Eigen::Vector4d v(q.w(), q.x(), q.y(), q.z());
-                    A += v * v.transpose();
-
+                    for (int i = 0; i < 4; i++) {
+                        all_imgPoints.push_back(markerCorners.at(idx)[i]);
+                    }
                 }
-
-                // Average the results
-                Eigen::SelfAdjointEigenSolver<Eigen::Matrix4d> eig(A);
-                int index;
-                eig.eigenvalues().maxCoeff(&index);
-
-                Eigen::Vector4d avg = eig.eigenvectors().col(index);
-
-                Eigen::Quaterniond q_avg(avg(0), avg(1), avg(2), avg(3));
-                q_avg.normalize();
-
-                Eigen::Matrix3d R_avg = q_avg.toRotationMatrix();
-
-                cv::Mat R_cv;
-                cv::eigen2cv(R_avg, R_cv);
-
-                cv::Rodrigues(R_cv, combined_rvec);
-
-                combined_tvec = sum_tvec / (double)validcnt;
+                cv::solvePnP(all_objPoints, all_imgPoints, mCameraMatrix, mDistCoeffs, combined_rvec, combined_tvec, false, cv::SOLVEPNP_ITERATIVE);
             }
 
-            cv::drawFrameAxes(bgrImage, camMatrix, distCoeffs, combined_rvec, combined_tvec, markerLength * 1.5f, 2);
+            // Convert to quarternion, sum, and then divide
+            
+            // if (validcnt > 2) {
+            //     cv::aruco::estimatePoseBoard(markerCorners, ids, rover_board, camMatrix, distCoeffs, combined_rvec, combined_tvec);
+            // } else if (validcnt > 0) {
+            //     cv::Vec3d sum_tvec(0,0,0);
+
+            //     Eigen::Matrix4d A = Eigen::Matrix4d::Zero();
+
+            //     for (int idx : valid_indices) {
+            //         int id = ids[idx];
+
+            //         // Solve PnP for this specific tag
+            //         cv::Vec3d rvec_single, tvec_single;
+            //         cv::solvePnP(objPoints, markerCorners.at(idx), camMatrix, distCoeffs, rvec_single, tvec_single, false, cv::SOLVEPNP_IPPE_SQUARE);
+
+            //         // Debug output
+            //         RCLCPP_INFO_STREAM(get_logger(), "X: " << tvec_single[0]);
+            //         RCLCPP_INFO_STREAM(get_logger(), "Y: " << tvec_single[1]);
+            //         RCLCPP_INFO_STREAM(get_logger(), "Z: " << tvec_single[2]);
+
+
+            //         // 2. Shift to Anchor (Origin)
+            //         // Retrieve offset
+            //         cv::Vec3d offset_wall = layout[id]; 
+
+            //         // Rotate offset
+            //         cv::Mat R_cv;
+            //         cv::Rodrigues(rvec_single, R_cv);
+            //         Eigen::Matrix3d R_eigen;
+            //         cv::cv2eigen(R_cv, R_eigen);
+
+            //         Eigen::Vector3d p_offset_wall(offset_wall[0], offset_wall[1], offset_wall[2]);
+            //         Eigen::Vector3d p_offset_cam = R_eigen * p_offset_wall;
+
+            //         // Calculate Anchor Position according to THIS tag
+            //         Eigen::Vector3d t_tag_eigen(tvec_single[0], tvec_single[1], tvec_single[2]);
+            //         Eigen::Vector3d t_anchor = t_tag_eigen - p_offset_cam;
+
+            //         // Accumulate
+            //         sum_tvec += cv::Vec3d(t_anchor.x(), t_anchor.y(), t_anchor.z());
+
+            //         // Convert to quaternion
+            //         Eigen::Quaterniond q(R_eigen);
+            //         q.normalize();
+
+            //         // Accumulate outer product
+            //         Eigen::Vector4d v(q.w(), q.x(), q.y(), q.z());
+            //         A += v * v.transpose();
+
+            //     }
+
+            //     // Average the results
+            //     Eigen::SelfAdjointEigenSolver<Eigen::Matrix4d> eig(A);
+            //     int index;
+            //     eig.eigenvalues().maxCoeff(&index);
+
+            //     Eigen::Vector4d avg = eig.eigenvectors().col(index);
+
+            //     Eigen::Quaterniond q_avg(avg(0), avg(1), avg(2), avg(3));
+            //     q_avg.normalize();
+
+            //     Eigen::Matrix3d R_avg = q_avg.toRotationMatrix();
+
+            //     cv::Mat R_cv;
+            //     cv::eigen2cv(R_avg, R_cv);
+
+            //     cv::Rodrigues(R_cv, combined_rvec);
+
+            //     combined_tvec = sum_tvec / (double)validcnt;
         }
 
 
@@ -336,7 +397,7 @@ namespace mrover{
         // populate rvecs and tvecs
         if (!ids.empty()) {
             for (size_t i = 0; i < nMarkers; ++i) {
-                cv::solvePnP(objPoints, markerCorners.at(i), camMatrix, distCoeffs, rvecs.at(i), tvecs.at(i), false, cv::SOLVEPNP_IPPE_SQUARE);
+                cv::solvePnP(objPoints, markerCorners.at(i), mCameraMatrix, mDistCoeffs, rvecs.at(i), tvecs.at(i), false, cv::SOLVEPNP_IPPE_SQUARE);
             }
         }
 
@@ -344,15 +405,14 @@ namespace mrover{
         if (!ids.empty()) {
             cv::aruco::drawDetectedMarkers(bgrImage, markerCorners, ids);
             for (size_t i = 0; i < ids.size(); ++i) {
-                cv::drawFrameAxes(bgrImage, camMatrix, distCoeffs, rvecs[i], tvecs[i], markerLength * 1.5f, 2);
+                cv::drawFrameAxes(bgrImage, mCameraMatrix, mDistCoeffs, rvecs[i], tvecs[i], markerLength * 1.5f, 2);
             }
         }
 
-        // Apply Kalman Filter to smooth the pose estimation
         if (!tvecs.empty()) {
             // Pass all vectors and the current ROS time
             // Returns the filtered pose
-            geometry_msgs::msg::Pose finalestimation; // = updateKalmanFilter(combined_tvec, combined_rvec);
+            geometry_msgs::msg::Pose finalestimation; ///updateKalmanFilter(combined_tvec, combined_rvec);
 
             Eigen::Vector3d rvec(
                 combined_rvec[0],
@@ -392,6 +452,7 @@ namespace mrover{
 
             // Draw after kalman filter
             // cv::drawFrameAxes(grayImage, camMatrix, distCoeffs, combined_rvec, combined_tvec, markerLength * 3.0f, 4);
+            cv::drawFrameAxes(bgrImage, mCameraMatrix, mDistCoeffs, combined_rvec, combined_tvec, markerLength * 1.5f, 2);
 
             // Draw circle for debugging
             int cx = grayImage.cols / 2;
@@ -597,7 +658,6 @@ namespace mrover{
             // if (newz < -0.415) newz = -0.415;
 
             // Grab pitch from tag transform
-
             double r00 = gripper_to_tag.transform()(0,0);
             double r10 = gripper_to_tag.transform()(1,0);
             double r20 = gripper_to_tag.transform()(2,0);
@@ -609,19 +669,6 @@ namespace mrover{
             // Continously send IK command for 1.5s
             sendIKCommand(armbase_to_armfk.translation().x(), gripper_to_tag.translation().y(), gripper_to_tag.translation().z(), pitch_rad, 0);
 
-            // RCLCPP_INFO_STREAM(this->get_logger(), "y_delta = " << dy);
-            // RCLCPP_INFO_STREAM(this->get_logger(), "z_delta = " << dz);
-            // RCLCPP_INFO_STREAM(this->get_logger(), "z_delta = " << dz);
-
-            // For when action server does stuff
-            // double x_delta = gripper_to_tag.translation().x();
-            // double y_delta = gripper_to_tag.translation().y();
-            // bool sent = send_goal(x_delta, y_delta);
-            // if (sent) {
-            //     RCLCPP_INFO_STREAM(this->get_logger(), "Goal Sent");
-            // } else {
-            //     RCLCPP_INFO_STREAM(this->get_logger(), "Failed");
-            // }
         } catch (tf2::TransformException const& e) {
             RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, std::format("TF tree error processing keyboard typing: {}", e.what()));
         }
@@ -678,6 +725,7 @@ namespace mrover{
     }
 
 
+    // NOTE: NEED TO FIX SEND LOGIC FOR ROLLING GRIPPER
     auto KeyboardTypingNode::sendIKCommand(float x, float y, float z, float pitch, float roll) -> void {
         if(!mIKPub){
             RCLCPP_ERROR(get_logger(), "IK publisher not initialized");
@@ -706,7 +754,7 @@ namespace mrover{
         SE3d curarmpos = SE3Conversions::fromTfTree(tf_buffer, "arm_fk", "arm_base_link");
 
         double dist =  sqrt(pow(curarmpos.translation().x()-x, 2) + pow(curarmpos.translation().y()-y,2));
-        while (clock::now() - start < duration || dist > 0.009) {
+        while (clock::now() - start < duration && dist > 0.007) {
             mIKPub->publish(message);
             curarmpos = SE3Conversions::fromTfTree(tf_buffer, "arm_fk", "arm_base_link");
             dist =  sqrt(pow(curarmpos.translation().x()-x, 2) + pow(curarmpos.translation().y()-y,2));
@@ -779,24 +827,6 @@ namespace mrover{
         std::shared_future<GoalHandleTypingDeltas::WrappedResult> future_result = mTypingClient->async_get_result(future_goal_handle.get());
         future_result.wait();
         return (future_result.get().code == rclcpp_action::ResultCode::SUCCEEDED);
-    }
-
-    auto KeyboardTypingNode::send_pusher_goal() -> bool {
-        if (!mPusherClient->wait_for_service()) {
-            RCLCPP_INFO_STREAM(this->get_logger(), "Pusher Service not available");
-            return false;
-        }
-
-        RCLCPP_INFO_STREAM(this->get_logger(), "Sending Pusher Command");
-
-        auto msg =  std::make_shared<srv::Pusher::Request>();
-        msg->start = true;
-
-        auto result = mPusherClient->async_send_request(msg);
-
-        result.wait();
-
-        return true;
     }
 
     void KeyboardTypingNode::feedback_callback(GoalHandleTypingDeltas::SharedPtr, const std::shared_ptr<const TypingDeltas::Feedback> feedback) {
@@ -895,9 +925,6 @@ namespace mrover{
                 RCLCPP_INFO_STREAM(this->get_logger(), "y_delta = " << y_delta);
 
                 send_goal(-x_delta, y_delta);
-
-                // Send request to extend pusher all the way
-                // send_pusher_goal();
 
                 if (goal_handle->is_canceling()) {
                     result->success = false;

@@ -76,4 +76,13 @@ def generate_launch_description():
         respawn=True,
     )
 
-    return launch.LaunchDescription([loaded_container, usb_cam])
+    # keyboard typing node
+    keyboard_typing = Node(
+        package="mrover",
+        executable="keyboard_typing",
+        name="keyboard_typing",
+        parameters=[Path(get_package_share_directory("mrover"), "config", "keyboard_typing.yaml")],
+        respawn=False,
+    )
+
+    return launch.LaunchDescription([loaded_container, usb_cam, keyboard_typing])

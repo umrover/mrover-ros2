@@ -14,9 +14,6 @@ namespace mrover{
 
         rclcpp_action::Client<TypingDeltas>::SharedPtr mTypingClient;
 
-        // Pusher client
-        rclcpp::Client<PusherSrv>::SharedPtr mPusherClient;
-
         // Ik mode client
         rclcpp::Client<srv::IkMode>::SharedPtr mIkModeClient;
 
@@ -46,6 +43,9 @@ namespace mrover{
 
         // Params
         int mMinCodeLength{}, mMaxCodeLength{};
+        cv::Mat mCameraMatrix;
+        cv::Mat mDistCoeffs;
+        double mTagSize;
 
         // transform broadcaster
         tf2_ros::Buffer tf_buffer{get_clock()};
@@ -113,8 +113,6 @@ namespace mrover{
         auto rotateGripper(float radians) -> void;
 
         auto align_to_z() -> void;
-
-        auto send_pusher_goal() -> bool;
 
         public:
 
