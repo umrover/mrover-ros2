@@ -126,16 +126,18 @@ auto Servo::setPosition(ServoPosition position, ServoMode mode) -> Servo::ServoS
             }
             break;
         case ServoMode::Limited: {
+            
             // Gets middle point between limits
             int middleLimit = (mForwardLimit + mReverseLimit) / 2;
+
             // Corrects middle limit if on wrong side
             if (mForwardLimit > mReverseLimit) {
-                middleLimit += (SERVO_TICKS / 2);
+                middleLimit = 0;
             }
             middleLimit %= SERVO_TICKS;
 
             normalizedDifference = (targetPosition - currentPosition);
-            // If the current path to the final position goes over the middle limit, go the other way
+=            // If the current path to the final position goes over the middle limit, go the other way
             if (middleLimit > currentPosition && middleLimit < targetPosition) {
                 if (normalizedDifference > 0)
                     normalizedDifference -= SERVO_TICKS;
