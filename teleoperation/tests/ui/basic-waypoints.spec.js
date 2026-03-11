@@ -5,14 +5,14 @@ test.beforeEach(async ({ page }) => {
 });
 
 test('add waypoint form visible', async ({ page }) => {
-  await page.goto('http://localhost:8080/DMTask');
+  await page.goto('/DMTask');
   await page.waitForLoadState('networkidle');
   await expect(page.getByTestId('pw-basic-wp-name')).toBeVisible({ timeout: 15000 });
   await expect(page.getByTestId('pw-basic-wp-add-btn')).toBeVisible();
 });
 
 test('add waypoint creates entry', async ({ page }) => {
-  await page.goto('http://localhost:8080/DMTask');
+  await page.goto('/DMTask');
   await page.waitForLoadState('networkidle');
 
   const nameInput = page.getByTestId('pw-basic-wp-name');
@@ -27,7 +27,7 @@ test('add waypoint creates entry', async ({ page }) => {
 });
 
 test('clear empties list', async ({ page }) => {
-  await page.goto('http://localhost:8080/DMTask');
+  await page.goto('/DMTask');
   await page.waitForLoadState('networkidle');
 
   const nameInput = page.getByTestId('pw-basic-wp-name');
@@ -56,13 +56,13 @@ test('clear empties list', async ({ page }) => {
 });
 
 test('view recordings button visible', async ({ page }) => {
-  await page.goto('http://localhost:8080/DMTask');
+  await page.goto('/DMTask');
   await page.waitForLoadState('networkidle');
   await expect(page.getByTestId('pw-basic-wp-recordings-btn')).toBeVisible({ timeout: 15000 });
 });
 
 test('start recording button visible', async ({ page }) => {
-  await page.goto('http://localhost:8080/DMTask');
+  await page.goto('/DMTask');
   await page.waitForLoadState('networkidle');
   const recordBtn = page.locator('button:has-text("Start Recording")').first();
   await expect(recordBtn).toBeVisible({ timeout: 15000 });
