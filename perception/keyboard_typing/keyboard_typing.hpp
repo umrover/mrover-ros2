@@ -119,6 +119,8 @@ namespace mrover{
 
         auto vectorMedianFilter(cv::Vec3d tvec, cv::Vec3d rvec) -> void;
 
+        auto squaredEuclideanDistance(const cv::Vec3d& a, const cv::Vec3d& b) -> double;
+
         std::deque<cv::Vec3d> tvec_window;
 
         std::deque<cv::Vec3d> rvec_window;

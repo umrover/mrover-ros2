@@ -6,6 +6,7 @@
 #include <Eigen/src/Core/Matrix.h>
 #include <cmath>
 #include <cstddef>
+#include <limits>
 #include <opencv2/calib3d.hpp>
 #include <Eigen/Eigenvalues>
 #include <opencv2/core/matx.hpp>
@@ -499,6 +500,18 @@ namespace mrover{
         }
         tvec_window.push_back(tvec);
         rvec_window.push_back(rvec);
+
+        cv::Vec3d medianTvec = tvec_window.back();
+        // double min_tvec_sum = std::numeric_limits<double>::max();
+
+        for(size_t i = 0; i < tvec_window.size(); i++) {
+            double currentTvecSum = 0;
+            for(size_t j = 0; j < tvec_window.size(); j++) {
+                if(i != j) {
+                    currentTvecSum += cv::norm(tvec_window[i] - tvec_window[j]);
+                }
+            }
+        }
 
         // Take the median
         
