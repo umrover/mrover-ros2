@@ -7,8 +7,10 @@
 #include <Eigen/src/Geometry/Quaternion.h>
 #include <cmath>
 #include <cstddef>
+#include <limits>
 #include <opencv2/calib3d.hpp>
 #include <Eigen/Eigenvalues>
+#include <opencv2/core/mat.hpp>
 #include <opencv2/core/matx.hpp>
 
 
@@ -493,7 +495,7 @@ namespace mrover{
         }
     }
 
-    auto KeyboardTypingNode::vectorMedianFilter(cv::Vec3d tvec, cv::Vec3d rvec) -> void {
+    auto KeyboardTypingNode::vectorMedianFilter(cv::Vec3d tvec, cv::Vec3d rvec) -> std::pair<cv::Vec3d, cv::Vec3d> {
         if (tvec_window.size() > 4) {
             tvec_window.pop_front();
             rvec_window.pop_front();
@@ -501,8 +503,52 @@ namespace mrover{
         tvec_window.push_back(tvec);
         rvec_window.push_back(rvec);
 
+        cv::Vec3d medianTvec = tvec_window.back();
+        double min_sum = std::numeric_limits<double>::max();
+
+        // for(size_t i = 0; i < tvec_window.size(); i++) {
+        //     double currentTvecSum = 0;
+        //     for(size_t j = 0; j < tvec_window.size(); j++) {
+        //         if(i != j) {
+        //             currentTvecSum += cv::norm(tvec_window[i] - tvec_window[j]);
+        //         }
+        //     }
+        // }
+
         // Take the median
-        return;
+        int filtered_idx = 0;
+
+
+        // Find median rvec
+        for (size_t i = 0; i < rvec_window.size(); ++i) {
+            double angle_diff_radians = 0;
+            double currentTvecSum = 0;
+            for (size_t j = 0; j < rvec_window.size(); ++j) {
+                if (i == j) {
+                    continue;
+                }
+                cv::Mat R_i;
+                cv::Rodrigues(rvec_window[i], R_i);
+                cv::Mat R_j;
+                cv::Rodrigues(rvec_window[j], R_j);
+
+                // Compute diff and then convert back to rodrigues to get magnitude
+                cv::Mat R_diff = R_i * R_j.t(); // transpose is inverse b/c orthogonal, so computes difference
+                cv::Mat axis_angle_vec;
+                cv::Rodrigues(R_diff, axis_angle_vec);
+
+                angle_diff_radians += cv::norm(axis_angle_vec);
+                currentTvecSum += cv::norm(tvec_window[i] - tvec_window[j]);
+            }
+            double min_sum_current = angle_diff_radians + currentTvecSum;
+            if(min_sum_current < min_sum) {
+                min_sum = min_sum_current;
+                filtered_idx = i;
+            }
+        }
+
+
+        return {tvec_window[filtered_idx], rvec_window[filtered_idx]};
     }
 
     auto KeyboardTypingNode::align_arm() -> void {
