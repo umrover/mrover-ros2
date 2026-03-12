@@ -61,7 +61,7 @@ namespace mrover {
     }
 
 
-    void HeadingFilter::correct(double heading_correction_delta_meas, double heading_correction_delta_noise) {
+    void HeadingFilter::correct(double heading_correction_delta_meas, double heading_correction_delta_noise, bool skipGating) {
 
         double S = (P + heading_correction_delta_noise);
         double innovation = heading_correction_delta_meas - X;
@@ -71,7 +71,7 @@ namespace mrover {
         We don't always want to correct - sometimes we want to gate out particularly inaccurate values.
         */
         double mahalanobis = innovation / S * innovation;
-        if(mahalanobis <= get_parameter("chiSQgate").as_double()) {
+        if(skipGating || mahalanobis <= get_parameter("chiSQgate").as_double()) {
             double K = P / S;
             X = fmod((X + K * (innovation) + 3 * M_PI), 2 * M_PI) - M_PI;
             P = (1 - K) * P;
@@ -124,7 +124,8 @@ namespace mrover {
             double heading_correction_delta = measured_heading - uncorrected_heading;
             heading_correction_delta = fmod((heading_correction_delta + 3 * M_PI), 2 * M_PI) - M_PI;
             predict(get_parameter("process_noise").as_double());
-            correct(heading_correction_delta, get_parameter("rtk_heading_noise").as_double());
+            // don't need to gate RTK - it's very accurate
+            correct(heading_correction_delta, get_parameter("rtk_heading_noise").as_double(), true);
         }
 
         
@@ -172,9 +173,12 @@ namespace mrover {
         if (measured_heading < -180) {
             measured_heading = 360 + measured_heading;
         }
-        // if around 90 or 270 +- 10 deg, skip pred/corr
-        bool skipPred = (measured_heading>=80 && measured_heading<=100) ||
-                        (measured_heading>=-100&&measured_heading<=-80);
+        // if around 90 or 270 +- 10 deg (ENU frame - 0 or 180 in mag frame), skip pred/corr bc very inaccurate
+        bool skipPred = (measured_heading>=-10 && measured_heading<=10) ||
+                        (measured_heading>=170 || measured_heading<=-170);
+        // if around 0 or 180 +- 20 deg, don't gate bc it's relatively accurate (and the large error accounts for inaccuracy)
+        bool skipGate = (measured_heading>=70 && measured_heading<=110) ||
+                        (measured_heading>=-110||measured_heading<=-70);
         measured_heading = measured_heading * (M_PI / 180);
 
         double heading_correction_delta = measured_heading - uncorrected_heading;
@@ -183,16 +187,17 @@ namespace mrover {
         
         if(!skipPred) {
             predict(get_parameter("process_noise").as_double());
-            correct(heading_correction_delta, get_parameter("mag_heading_noise").as_double());
+            correct(heading_correction_delta, get_parameter("mag_heading_noise").as_double(), skipGate);
+        
+
+            // apply correction and publish
+            SO3d curr_heading_correction = Eigen::AngleAxisd(X, R3d::UnitZ());
+            RCLCPP_INFO_THROTTLE(get_logger(), *get_clock(), 1000, "%s", std::format("Heading corrected by: {} rad", X).c_str());
+            SO3d corrected_orientation = curr_heading_correction * uncorrected_orientation_rotm;
+            pose_in_map.asSO3() = corrected_orientation;
+
+            SE3Conversions::pushToTfTree(tf_broadcaster, get_parameter("gps_frame").as_string(), get_parameter("world_frame").as_string(), pose_in_map, get_clock()->now());
         }
-
-        // apply correction and publish
-        SO3d curr_heading_correction = Eigen::AngleAxisd(X, R3d::UnitZ());
-        RCLCPP_INFO_THROTTLE(get_logger(), *get_clock(), 1000, "%s", std::format("Heading corrected by: {} rad", X).c_str());
-        SO3d corrected_orientation = curr_heading_correction * uncorrected_orientation_rotm;
-        pose_in_map.asSO3() = corrected_orientation;
-
-        SE3Conversions::pushToTfTree(tf_broadcaster, get_parameter("gps_frame").as_string(), get_parameter("world_frame").as_string(), pose_in_map, get_clock()->now());
     }
 
 }
