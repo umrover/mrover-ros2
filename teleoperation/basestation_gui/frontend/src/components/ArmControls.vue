@@ -47,11 +47,17 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { armAPI } from '@/utils/api'
 import { useGamepadPolling } from '@/composables/useGamepadPolling'
 import GamepadDisplay from './GamepadDisplay.vue'
 import IndicatorDot from './IndicatorDot.vue'
+import { useWebsocketStore } from '@/stores/websocket'
+import { storeToRefs } from 'pinia'
+import type { ControllerStateMessage } from '@/types/websocket'
+
+const webSocketStore = useWebsocketStore()
+const { messages } = storeToRefs(webSocketStore)
 
 const mode = ref('disabled')
 
@@ -75,16 +81,30 @@ onBeforeUnmount(() => {
   document.removeEventListener('keydown', keyDown)
 })
 
+const armMessage = computed (() => messages.value['arm']) 
+
 const newRAMode = async (newMode: string) => {
   try {
     mode.value = newMode
     const data = await armAPI.setRAMode(mode.value)
     if (data.status === 'success' && data.mode) {
       mode.value = data.mode
+
     }
   } catch (error) {
     console.error('Failed to set arm mode:', error)
   }
 }
+
+watch(armMessage, (msg: unknown) => {
+  if (!msg || typeof msg !== "object") return;
+
+  if ("type" in msg && msg.type === "arm_state") {
+    const typedMsg = msg as ControllerStateMessage;
+
+    console.log(typedMsg.positions);
+  }
+});
+
 </script>
 
