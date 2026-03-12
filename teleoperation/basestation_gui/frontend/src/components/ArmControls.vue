@@ -126,23 +126,23 @@ if (!msg || typeof msg !== 'object') return
     const typedMessage = msg as ThrottleMessage
     forcing_limit.value = false;
 
-      if(limits_hit_external.value[0] == 1 && typedMessage.throttles[6] < 0){
-        forcing_limit.value = true
-      } else if (limits_hit_external.value[0] == 2 && typedMessage.throttles[6] > 0) {
-        forcing_limit.value = true
-      }
+    if(limits_hit_external.value[0] == 1 && typedMessage.throttles[2] < 0){
+      forcing_limit.value = true
+    } else if (limits_hit_external.value[0] == 2 && typedMessage.throttles[2] > 0) {
+      forcing_limit.value = true
+    }
 
-      if(limits_hit_external.value[1] == 1 && typedMessage.throttles[1] < 0){
-        forcing_limit.value = true
-      } else if (limits_hit_external.value[1] == 2 && typedMessage.throttles[1] > 0) {
-        forcing_limit.value = true
-      }
+    if(limits_hit_external.value[1] == 1 && typedMessage.throttles[3] < 0){
+      forcing_limit.value = true
+    } else if (limits_hit_external.value[1] == 2 && typedMessage.throttles[3] > 0) {
+      forcing_limit.value = true
+    }
 
-      if(limits_hit_external.value[2] == 1 && typedMessage.throttles[2] < 0){
-        forcing_limit.value = true
-      } else if (limits_hit_external.value[2] == 2 && typedMessage.throttles[2] > 0) {
-        forcing_limit.value = true
-      }
+    if(limits_hit_external.value[2] == 1 && typedMessage.throttles[1] < 0){
+      forcing_limit.value = true
+    } else if (limits_hit_external.value[2] == 2 && typedMessage.throttles[1] > 0) {
+      forcing_limit.value = true
+    }
   }
 
   // if ('type' in msg && msg.type === "arm_velocity_command"){
