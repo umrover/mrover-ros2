@@ -19,6 +19,7 @@ from navigation.coordinate_utils import is_high_cost_point, d_calc, segment_path
 class ApproachTargetState(State):
     UPDATE_DELAY: float
     USE_COSTMAP: bool
+    SPIN_ROVER: bool
     DISTANCE_THRESHOLD: float
     LOOK_DISTANCE_THRESHOLD: float
     STOP_ANGLE_THRESHOLD:float
@@ -50,6 +51,7 @@ class ApproachTargetState(State):
             return
 
         self.USE_COSTMAP = context.node.get_parameter("costmap.use_costmap").value or current_waypoint.enable_costmap
+        self.SPIN_ROVER = False
         self.DISTANCE_THRESHOLD = context.node.get_parameter("search.distance_threshold").value
         self.LOOK_DISTANCE_THRESHOLD = context.node.get_parameter("search.distance_look_threshold").value
         self.STOP_ANGLE_THRESHOLD = context.node.get_parameter("search.stop_angle_threshold").value
@@ -167,7 +169,9 @@ class ApproachTargetState(State):
             context.node.get_logger().warn("Rover has no pose, waiting...")
             context.rover.send_drive_command(Twist())
             return self
-
+        
+        if self.SPIN_ROVER:
+            self.target_traj
         # If the target trajectory is empty, develop a new path to it
         if len(self.target_traj.coordinates) == 0:
             context.node.get_logger().info("Generating approach segmented path")
@@ -182,9 +186,7 @@ class ApproachTargetState(State):
             context=context, point=self.target_traj.get_current_point()
         ):
             context.node.get_logger().info(f"Skipped high cost point")
-            self.target_traj.increment_point()
-
-            if self.target_traj.done():
+            if(self.target_traj.increment_point()):
                 break
 
         if not self.target_traj.done():
@@ -226,9 +228,11 @@ class ApproachTargetState(State):
                         context.node.get_logger().info("Found low-cost point")
                         return self
                     
+        # If we are within the distance threshold of the target we have finished
         if self.self_in_distance_threshold(context, self.object_type):
             context.node.get_logger().info("Exited through distance threshold")
             return self.next_state(context=context, is_finished=True)
+        
         arrived = False
         cmd_vel = Twist()
         if not self.astar_traj.done():
@@ -260,8 +264,6 @@ class ApproachTargetState(State):
                         self.target_position = self.get_target_position(context)
                         return self
 
-                    # If we are within the distance threshold of the target we have finished
-
                     # Otherwise we need to dilate to get closer
                     else:
                         context.node.get_logger().info("Too far from target, dilating costmap")
@@ -269,7 +271,11 @@ class ApproachTargetState(State):
                             # Fully dilated and still failed, go to next state
                             context.node.get_logger().info("Exited without distance threshold")
                             self.self_in_distance_threshold(context, self.object_type)
-                            return self.next_state(context=context, is_finished=True)
+                            if not self.SPIN_ROVER:
+                                self.SPIN_ROVER = True
+                            else:
+                                self.next_state(context, is_finished=True)
+                            #return self.next_state(context=context, is_finished=True)
                         return self
 
         else:
@@ -419,6 +425,7 @@ class ApproachTargetState(State):
         angle_to_model = math.copysign(angle_to_model, np.cross(rover_forward, rover_to_model)[2])
         context.node.get_logger().info("Angle to model" + str(angle_to_model))
         return angle_to_model < self.STOP_ANGLE_THRESHOLD and angle_to_model > -1 * self.STOP_ANGLE_THRESHOLD
+    
     def point_in_distance_threshold(self, context: Context, point):
         if point is None:
             return False

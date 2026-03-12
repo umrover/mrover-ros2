@@ -27,6 +27,9 @@ class Trajectory:
         """
         self.cur_pt = max(0, self.cur_pt - 1)
         return self.cur_pt <= 0
+    def add_end_point(self, position: list) -> int:
+        self.coordinates.append(position)
+        return len(self.coordinates) - 1
 
     def done(self) -> bool:
         return self.cur_pt >= len(self.coordinates)
