@@ -3,10 +3,12 @@
 #include "lie.hpp"
 #include "mrover/srv/detail/ik_mode__struct.hpp"
 #include "mrover/srv/detail/pusher__struct.hpp"
+#include <Eigen/src/Core/Matrix.h>
 #include <cmath>
 #include <cstddef>
 #include <opencv2/calib3d.hpp>
 #include <Eigen/Eigenvalues>
+#include <opencv2/core/matx.hpp>
 
 
 namespace mrover{
@@ -27,14 +29,17 @@ namespace mrover{
         vector_params["camera_matrix"] = rclcpp::ParameterValue(std::vector<double>(9, 0.0));
         vector_params["distortion_coefficients"] = rclcpp::ParameterValue(std::vector<double>(5, 0.0));
         vector_params["tag_offsets"] = rclcpp::ParameterValue(std::vector<double>{});
+        vector_params["z_key_transform"] = rclcpp::ParameterValue(std::vector<double>{});
 
         this->declare_parameters("", vector_params);
         std::vector<double> cam_raw = this->get_parameter("camera_matrix").as_double_array();
         std::vector<double> dist_raw = this->get_parameter("distortion_coefficients").as_double_array();
+        std::vector<double> zTransformRaw = this->get_parameter("z_key_transform").as_double_array();
 
         // Read in Camera intrinsics
         mCameraMatrix = cv::Mat(3, 3, CV_64F, cam_raw.data()).clone();
         mDistCoeffs = cv::Mat(1, (int)dist_raw.size(), CV_64F, dist_raw.data()).clone();
+        mZKeyTransform = Eigen::Vector3d::Map(zTransformRaw.data());
 
         // Grab tag offsets
         std::vector<double> offset_raw = this->get_parameter("tag_offsets").as_double_array();
@@ -47,7 +52,6 @@ namespace mrover{
             
             layout[id] = cv::Vec3d(x, y, z);
         }
-
         
         // Set up action server
         mTypingClient = rclcpp_action::create_client<TypingDeltas>(this, "typing_ik");
@@ -79,7 +83,6 @@ namespace mrover{
         mIkModeClient = create_client<srv::IkMode>("ik_mode");
 
         current_key = "";
-
 
         // Initialize Kalman filter
         // State vector: [x, y, z, vx, vy, vz, roll, pitch, yaw, vroll, vpitch, vyaw]
@@ -113,13 +116,7 @@ namespace mrover{
 
         mIKPub = this->create_publisher<msg::IK>("ik_pos_cmd",rclcpp::QoS(1));
 
-        // Define offsets
-        // layout[4] = cv::Vec3d(0.0, 0.0, 0.0);       // BL
-        // layout[5] = cv::Vec3d(0.41407, 0.0, 0.0);     // BR
-        // layout[3] = cv::Vec3d(0.41407, 0.183444, 0.0);   // TR
-        // layout[2] = cv::Vec3d(0.0, 0.183444, 0.0);     // TL
-
-        createRoverBoard();
+        // createRoverBoard();
     }
 
     auto KeyboardTypingNode::yawCallback(sensor_msgs::msg::Image::ConstSharedPtr const& msg) -> void {
@@ -161,14 +158,14 @@ namespace mrover{
 
             Eigen::Vector3d cam_pos = cam_to_tag.translation();
             Eigen::Vector3d arm_fk_pos(cam_pos.z(),-cam_pos.x(),-cam_pos.y());
-            
+
             // Rotation to convert camera frame orientation to arm_fk frame
             // This rotation matrix maps: X->Y, Y->Z, Z->X
             Eigen::Matrix3d cam_to_arm_rotation;
             cam_to_arm_rotation << 0, 0, 1,   // arm_fk X comes from camera Z
                                    -1, 0, 0,   // arm_fk Y comes from camera X
                                    0, -1, 0;   // arm_fk Z comes from camera Y
-            
+
             Eigen::Quaterniond cam_rot(cam_to_tag.rotation());
             Eigen::Quaterniond frame_rotation(cam_to_arm_rotation);
             Eigen::Quaterniond transformed_rotation = (frame_rotation * cam_rot).normalized();
@@ -179,17 +176,15 @@ namespace mrover{
             SE3Conversions::pushToTfTree(tf_broadcaster, "keyboard_tag", "arm_fk", gripper_to_cam*arm_fk_to_tag, get_clock()->now());
 
             // Initialize transforms for every key, temporarily here for now
-            SE3d z_to_tag{zKeyTransformation_new, Eigen::Quaterniond::Identity()};
+            SE3d z_to_tag{mZKeyTransform, Eigen::Quaterniond::Identity()};
             SE3Conversions::pushToTfTree(tf_broadcaster, "keyboard_z", "keyboard_tag", z_to_tag, get_clock()->now());
-
-
         }
     }
 
     auto KeyboardTypingNode::createRoverBoard() -> void {
         // 1. Define the physical corners of the tags in the "Board Frame"
         //    (The Board Frame origin will be your Bottom-Left tag)
-        std::vector<std::vector<cv::Point3f>> all_obj_points; 
+        std::vector<std::vector<cv::Point3f>> all_obj_points;
         std::vector<int> all_ids;
 
         // Loop through your defined IDs to build the board structure
@@ -217,19 +212,6 @@ namespace mrover{
     }
 
     auto KeyboardTypingNode::estimatePose(sensor_msgs::msg::Image::ConstSharedPtr const& msg) -> std::optional<pose_output>  {
-        // cv::Mat camMatrix = (cv::Mat_<double>(3,3) <<
-        //     294.8447664894051, 0.0, 320.781111263661,   // fx, 0, cx
-        //     0.0, 292.9945007031336, 241.50291271027783,   // 0, fy, cy
-        //     0.0, 0.0, 1.0
-        // );
-
-        // cv::Mat distCoeffs = (cv::Mat_<double>(1,5) << 
-        //     0.0002545998769717633,
-        // -0.06500186703787096,
-        // -0.0012230890083846627,
-        // -0.0010254508499132765,
-        // 0.02647360145709905);
-
         // Read in images
         cv::Mat bgraImage{static_cast<int>(msg->height), static_cast<int>(msg->width), CV_8UC4, const_cast<uint8_t*>(msg->data.data())};
 
@@ -252,22 +234,32 @@ namespace mrover{
         std::vector<int> ids;
         cv::Ptr<cv::aruco::DetectorParameters> detectorParams = cv::aruco::DetectorParameters::create();
 
+        // Could potentially run a mild gaussian blur plus sharpening kernel if instability is encountered
+
         detectorParams->adaptiveThreshWinSizeMin = 3;
         detectorParams->adaptiveThreshWinSizeMax = 23;
-        detectorParams->adaptiveThreshWinSizeStep = 10;
+        detectorParams->adaptiveThreshWinSizeStep = 2;
 
-        detectorParams->adaptiveThreshConstant = 9;
+        detectorParams->adaptiveThreshConstant = 7;
 
-        detectorParams->perspectiveRemovePixelPerCell = 2;
+        detectorParams->perspectiveRemovePixelPerCell = 3;
 
         detectorParams->minDistanceToBorder = 1;   // default is 3
-        detectorParams->minMarkerPerimeterRate = 0.01;   // default ~0.03
+        detectorParams->minMarkerPerimeterRate = 0.05;   // default ~0.03
 
         detectorParams->cornerRefinementMethod = cv::aruco::CORNER_REFINE_SUBPIX;
+
+        detectorParams->polygonalApproxAccuracyRate = 0.05;
 
         detectorParams->cornerRefinementWinSize = 3;
 
         detectorParams->cornerRefinementMaxIterations = 20;
+
+        detectorParams->errorCorrectionRate = 0.8;
+
+        detectorParams->maxErroneousBitsInBorderRate = 0.5;
+
+        detectorParams->minCornerDistanceRate = 0.05;
 
         // Define coordinate system
         float markerLength = 0.019;  // meters
@@ -320,7 +312,7 @@ namespace mrover{
             }
 
             // Convert to quarternion, sum, and then divide
-            
+
             // if (validcnt > 2) {
             //     cv::aruco::estimatePoseBoard(markerCorners, ids, rover_board, camMatrix, distCoeffs, combined_rvec, combined_tvec);
             // } else if (validcnt > 0) {
@@ -448,8 +440,6 @@ namespace mrover{
 
             double yaw_deg = yaw_rad * 180.0 / M_PI;
 
-
-
             // Draw after kalman filter
             // cv::drawFrameAxes(grayImage, camMatrix, distCoeffs, combined_rvec, combined_tvec, markerLength * 3.0f, 4);
             cv::drawFrameAxes(bgrImage, mCameraMatrix, mDistCoeffs, combined_rvec, combined_tvec, markerLength * 1.5f, 2);
@@ -500,6 +490,19 @@ namespace mrover{
             cv::waitKey(1);
             return std::nullopt;
         }
+    }
+
+    auto KeyboardTypingNode::vectorMedianFilter(cv::Vec3d tvec, cv::Vec3d rvec) -> void {
+        if (tvec_window.size() > 4) {
+            tvec_window.pop_front();
+            rvec_window.pop_front();
+        }
+        tvec_window.push_back(tvec);
+        rvec_window.push_back(rvec);
+
+        // Take the median
+        
+        return;
     }
 
     auto KeyboardTypingNode::updateKalmanFilter(cv::Vec3d& tvec, cv::Vec3d& rvec) -> geometry_msgs::msg::Pose {
@@ -651,12 +654,6 @@ namespace mrover{
             gripper_to_tag = SE3Conversions::fromTfTree(tf_buffer, "keyboard_tag", "arm_base_link");
             armbase_to_armfk = SE3Conversions::fromTfTree(tf_buffer, "arm_fk", "arm_base_link");
 
-            // Bounds of what the robot physically can move
-            // if (newy > 0.35) newy = 0.35;
-            // if (newy < 0) newy = 0;
-            // if (newz > 0.6) newz = 0.6;
-            // if (newz < -0.415) newz = -0.415;
-
             // Grab pitch from tag transform
             double r00 = gripper_to_tag.transform()(0,0);
             double r10 = gripper_to_tag.transform()(1,0);
@@ -666,7 +663,6 @@ namespace mrover{
 
             RCLCPP_INFO_STREAM(this->get_logger(), "pitch = " << pitch_rad);
 
-            // Continously send IK command for 1.5s
             sendIKCommand(armbase_to_armfk.translation().x(), gripper_to_tag.translation().y(), gripper_to_tag.translation().z(), pitch_rad, 0);
 
         } catch (tf2::TransformException const& e) {
@@ -683,14 +679,7 @@ namespace mrover{
             armbase_to_z = SE3Conversions::fromTfTree(tf_buffer, "keyboard_z", "arm_base_link");
             armbase_to_armfk = SE3Conversions::fromTfTree(tf_buffer, "arm_fk", "arm_base_link");
 
-            // sendIKCommand(armbase_to_armfk.translation().x(), armbase_to_z.translation().y(), armbase_to_z.translation().z(), 0, 0);
-
-            // sendIKCommand(armbase_to_armfk.translation().x(),
-            //                 armbase_to_armfk.translation().y() + zKeyTransformation_new[1],
-            //                 armbase_to_armfk.translation().z() + zKeyTransformation_new[2], 0, 0);
-
             // Grab pitch from tag transform
-
             double r00 = armbase_to_z.transform()(0,0);
             double r10 = armbase_to_z.transform()(1,0);
             double r20 = armbase_to_z.transform()(2,0);
@@ -724,8 +713,6 @@ namespace mrover{
         }
     }
 
-
-    // NOTE: NEED TO FIX SEND LOGIC FOR ROLLING GRIPPER
     auto KeyboardTypingNode::sendIKCommand(float x, float y, float z, float pitch, float roll) -> void {
         if(!mIKPub){
             RCLCPP_ERROR(get_logger(), "IK publisher not initialized");
@@ -750,14 +737,13 @@ namespace mrover{
         auto start = clock::now();
         auto duration = std::chrono::duration<double>(10);
 
-
         SE3d curarmpos = SE3Conversions::fromTfTree(tf_buffer, "arm_fk", "arm_base_link");
 
-        double dist =  sqrt(pow(curarmpos.translation().x()-x, 2) + pow(curarmpos.translation().y()-y,2));
-        while (clock::now() - start < duration && dist > 0.007) {
+        double dist =  pow(curarmpos.translation().x()-x, 2) + pow(curarmpos.translation().y()-y,2);
+        while (clock::now() - start < duration || dist > 0.007) {
             mIKPub->publish(message);
             curarmpos = SE3Conversions::fromTfTree(tf_buffer, "arm_fk", "arm_base_link");
-            dist =  sqrt(pow(curarmpos.translation().x()-x, 2) + pow(curarmpos.translation().y()-y,2));
+            dist =  pow(curarmpos.translation().x()-x, 2) + pow(curarmpos.translation().y()-y,2);
             RCLCPP_INFO_STREAM(get_logger(), "remaining distance = " << dist);
         }
 
@@ -903,7 +889,6 @@ namespace mrover{
             ik_req->mode = srv::IkMode::Request::TYPING;
             mIkModeClient->async_send_request(ik_req);
 
-            
             RCLCPP_INFO_STREAM(this->get_logger(), "Typing Sequence starting");
             // Start typing sequence
             for (size_t i = 0; i < launchCode.length(); i++) {
@@ -915,8 +900,8 @@ namespace mrover{
                 float x_delta = 0;
                 float y_delta = 0;
 
-                x_delta = keyboard[launchCode[i]][0];
-                y_delta = keyboard[launchCode[i]][1];
+                x_delta = keyboard_offset[launchCode[i]][0];
+                y_delta = keyboard_offset[launchCode[i]][1];
 
                 RCLCPP_WARN(this->get_logger(), "X_pos", mMinCodeLength, mMaxCodeLength);
 
@@ -933,12 +918,6 @@ namespace mrover{
                 } // Check if goal canceled again because we returned from a long function
 
                 // TODO add handling for if goal fails
-
-                // TODO add logic for pusher
-                //      see: /arm_thr_cmd in sw-icd-26 document for control
-                //      see: /arm_controller_state in sw-icd-26 document for feedback
-                // Maybe create subscriber to pusher here, possibly with some kind of pusher mutex/cv,
-                //  then let it go out of scope
 
                 current_key = launchCode[i];
             }

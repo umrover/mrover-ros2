@@ -46,6 +46,7 @@ namespace mrover{
         cv::Mat mCameraMatrix;
         cv::Mat mDistCoeffs;
         double mTagSize;
+        Eigen::Vector3d mZKeyTransform;
 
         // transform broadcaster
         tf2_ros::Buffer tf_buffer{get_clock()};
@@ -114,11 +115,18 @@ namespace mrover{
 
         auto align_to_z() -> void;
 
+        // Median Filter
+
+        auto vectorMedianFilter(cv::Vec3d tvec, cv::Vec3d rvec) -> void;
+
+        std::deque<cv::Vec3d> tvec_window;
+
+        std::deque<cv::Vec3d> rvec_window;
+
         public:
 
         explicit KeyboardTypingNode(rclcpp::NodeOptions const& options = rclcpp::NodeOptions());
     };
 }
 
-extern Eigen::Vector3d zKeyTransformation_new;
-extern std::unordered_map<char, cv::Vec3d> keyboard;
+extern std::unordered_map<char, cv::Vec3d> keyboard_offset;
