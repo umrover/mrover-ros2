@@ -117,7 +117,7 @@ namespace mrover{
 
         // Median Filter
 
-        auto vectorMedianFilter(cv::Vec3d tvec, cv::Vec3d rvec) -> void;
+        auto vectorMedianFilter(cv::Vec3d tvec, cv::Vec3d rvec) -> std::pair<cv::Vec3d, cv::Vec3d>;
 
         auto squaredEuclideanDistance(const cv::Vec3d& a, const cv::Vec3d& b) -> double;
 

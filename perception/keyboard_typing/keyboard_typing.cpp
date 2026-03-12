@@ -9,6 +9,7 @@
 #include <limits>
 #include <opencv2/calib3d.hpp>
 #include <Eigen/Eigenvalues>
+#include <opencv2/core/mat.hpp>
 #include <opencv2/core/matx.hpp>
 
 
@@ -493,7 +494,7 @@ namespace mrover{
         }
     }
 
-    auto KeyboardTypingNode::vectorMedianFilter(cv::Vec3d tvec, cv::Vec3d rvec) -> void {
+    auto KeyboardTypingNode::vectorMedianFilter(cv::Vec3d tvec, cv::Vec3d rvec) -> std::pair<cv::Vec3d, cv::Vec3d> {
         if (tvec_window.size() > 4) {
             tvec_window.pop_front();
             rvec_window.pop_front();
@@ -514,8 +515,28 @@ namespace mrover{
         }
 
         // Take the median
-        
-        return;
+        int filtered_idx = 0;
+
+
+        // Find median rvec
+        for (size_t i = 0; i < rvec_window.size(); ++i) {
+            double angle_diff_radians;
+            for (size_t j = 0; j < rvec_window.size(); ++j) {
+                cv::Mat R_i;
+                cv::Rodrigues(rvec[i], R_i);
+                cv::Mat R_j;
+                cv::Rodrigues(rvec[j], R_j);
+
+                // Compute diff and then convert back to rodrigues to get magnitude
+                cv::Mat R_diff = R_i * R_j.t(); // transpose is inverse b/c orthogonal, so computes difference
+                cv::Mat axis_angle_vec;
+                cv::Rodrigues(R_diff, axis_angle_vec);
+
+                angle_diff_radians = cv::norm(axis_angle_vec);
+            } 
+        } 
+
+        return {tvec_window[filtered_idx], rvec_window[filtered_idx]};
     }
 
     auto KeyboardTypingNode::updateKalmanFilter(cv::Vec3d& tvec, cv::Vec3d& rvec) -> geometry_msgs::msg::Pose {
