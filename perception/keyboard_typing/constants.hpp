@@ -39,7 +39,7 @@ double fourthRowX = -0.009525;
 double secondRowZ = 0.0007112;
 double thirdRowZ = 0.0017272;
 double fourthRowZ = 0.0048514;
-std::unordered_map<char, cv::Vec3d> keyboard = {
+std::unordered_map<char, cv::Vec3d> keyboard_offset = {
         {'Z', cv::Vec3d{0,0,0}},
         {'X', cv::Vec3d{key_length,0,0}},
         {'C', cv::Vec3d{2*key_length,0,0}},
