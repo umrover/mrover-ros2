@@ -110,37 +110,37 @@ if (!msg || typeof msg !== 'object') return
     for(let i = 0; i < 6; ++i){
       limits_hit_external.value[i] = typedMsg.limits_hit[i]
     }
-
-    // limits_hit_external.value = typedMsg.limits_hit
-    // forcing_limit.value = false
-
-    // forcing_limit.value = typedMsg.limits_hit.includes(1) ||  typedMsg.limits_hit.includes(2)
-    // console.log(typeof(typedMsg.limits_hit[0]))
-    // console.log(typedMsg.limits_hit)
-    // console.log(typedMsg.positions)
-    // console.log(typedMsg.velocities)
-    // console.log(limits_hit_external.value)
   }
 
   if ('type' in msg && msg.type === "arm_throttle_command"){
     const typedMessage = msg as ThrottleMessage
     forcing_limit.value = false;
 
+    // Joint A
     if(limits_hit_external.value[0] == 1 && typedMessage.throttles[2] < 0){
       forcing_limit.value = true
     } else if (limits_hit_external.value[0] == 2 && typedMessage.throttles[2] > 0) {
       forcing_limit.value = true
     }
 
+    // Joint B
     if(limits_hit_external.value[1] == 1 && typedMessage.throttles[3] < 0){
       forcing_limit.value = true
     } else if (limits_hit_external.value[1] == 2 && typedMessage.throttles[3] > 0) {
       forcing_limit.value = true
     }
 
+    // Joint C
     if(limits_hit_external.value[2] == 1 && typedMessage.throttles[1] < 0){
       forcing_limit.value = true
     } else if (limits_hit_external.value[2] == 2 && typedMessage.throttles[1] > 0) {
+      forcing_limit.value = true
+    }
+
+    // Roll Joint
+    if(limits_hit_external.value[4] == 1 && typedMessage.throttles[6] < 0){
+      forcing_limit.value = true
+    } else if (limits_hit_external.value[4] == 2 && typedMessage.throttles[6] > 0) {
       forcing_limit.value = true
     }
   }
