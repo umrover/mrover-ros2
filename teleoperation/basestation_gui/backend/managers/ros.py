@@ -1,3 +1,5 @@
+from _thread import LockType
+
 import rclpy
 import threading
 import atexit
@@ -11,7 +13,7 @@ context = None
 node = None
 ros_thread = None
 service_clients = {}
-service_clients_lock = threading.Lock()
+service_clients_lock: LockType = threading.Lock()
 
 
 def get_node() -> Node:
@@ -24,6 +26,9 @@ def get_node() -> Node:
 
 def get_logger():
     return get_node().get_logger()
+
+def get_publisher(pub_name):
+    return node.publishers[pub_name]
 
 
 def get_service_client(srv_type, srv_name):

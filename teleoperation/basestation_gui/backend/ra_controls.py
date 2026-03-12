@@ -9,6 +9,7 @@ from backend.managers.ros import get_service_client
 from mrover.msg import Throttle, IK
 from mrover.srv import IkMode
 from geometry_msgs.msg import Twist
+from backend.managers.ros import get_logger, get_node
 
 ra_mode = "disabled"
 ra_mode_lock = threading.Lock()
@@ -23,6 +24,7 @@ async def set_ra_mode(new_ra_mode: str):
     global ra_mode
     with ra_mode_lock:
         ra_mode = new_ra_mode
+        get_logger().error("set_ra_mode hit")
 
     if new_ra_mode == "ik-pos":
         await call_ik_mode_service(IK_MODE_POSITION_CONTROL)
@@ -30,7 +32,11 @@ async def set_ra_mode(new_ra_mode: str):
         await call_ik_mode_service(IK_MODE_VELOCITY_CONTROL)
     # TODO(stow): Handle "stow" mode here.
     elif new_ra_mode == "stow":
-        await call_ik_mode_service(IK_MODE_VELOCITY_CONTROL)
+        await call_ik_mode_service(IK_MODE_POSITION_CONTROL)
+        ik_pos_pub = get_node().get_publisher("ik_pos_pub")
+        ik_pos_pub.publish(STOW_POSITION)
+        
+
 
 
 
@@ -172,7 +178,9 @@ def send_ra_controls(
         case "throttle" | "ik-pos" | "ik-vel" | "stow":
             match current_mode:
                 case "stow":
+                    get_logger().error("stow req received")
                     ee_pos_pub.publish(STOW_POSITION)
+                    
 
                 case "throttle":
                     manual_controls = compute_manual_joint_controls(inputs)
