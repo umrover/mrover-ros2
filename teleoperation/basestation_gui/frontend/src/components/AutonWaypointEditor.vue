@@ -11,7 +11,7 @@
       <div class="waypoint-wrapper overflow-y-scroll flex-grow-1">
         <WaypointStore
           v-for="(waypoint, index) in waypoints"
-          :key="waypoint.id || index"
+          :key="waypoint.tag_id || index"
           :waypoint="waypoint"
           :index="index"
           @add="addToRoute"
@@ -68,68 +68,70 @@
   </div>
 
   <!-- Add Waypoint Modal -->
-  <div class="modal fade" id="modalWypt" tabindex="-1" role="dialog">
-    <div class="modal-dialog modal-dialog-centered" role="document">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">Add Waypoint</h5>
-          <button type="button" class="btn-close" @click="closeModal"></button>
-        </div>
-        <div class="modal-body">
-          <div class="row g-3">
-            <div class="col-md-6">
-              <label for="waypointname" class="form-label">Name:</label>
-              <input
-                class="form-control"
-                id="waypointname"
-                v-model="modalWypt.name"
-              />
-            </div>
-            <div class="col-md-6">
-              <label for="waypointid" class="form-label">Tag ID:</label>
-              <input
-                v-if="modalWypt.type == 1"
-                class="form-control"
-                id="waypointid"
-                v-model="modalWypt.id"
-                type="number"
-                max="249"
-                min="0"
-                step="1"
-              />
-              <input
-                v-else
-                class="form-control"
-                id="waypointid"
-                type="number"
-                placeholder="-1"
-                disabled
-              />
-            </div>
-            <div class="col-12">
-              <label class="form-label">Type:</label>
-              <select class="form-select" v-model="modalWypt.type">
-                <option value="0">No Search</option>
-                <option value="1">Post</option>
-                <option value="2">Mallet</option>
-                <option value="3">Water Bottle</option>
-                <option value="4">Rock Pick</option>
-              </select>
+  <Teleport to="body">
+    <div class="modal fade" id="modalWypt" tabindex="-1" role="dialog">
+      <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Add Waypoint</h5>
+            <button type="button" class="btn-close" @click="closeModal"></button>
+          </div>
+          <div class="modal-body">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label for="waypointname" class="form-label">Name:</label>
+                <input
+                  class="form-control"
+                  id="waypointname"
+                  v-model="modalWypt.name"
+                />
+              </div>
+              <div class="col-md-6">
+                <label for="waypointid" class="form-label">Tag ID:</label>
+                <input
+                  v-if="modalWypt.type == 1"
+                  class="form-control"
+                  id="waypointid"
+                  v-model="modalWypt.tag_id"
+                  type="number"
+                  max="249"
+                  min="0"
+                  step="1"
+                />
+                <input
+                  v-else
+                  class="form-control"
+                  id="waypointid"
+                  type="number"
+                  placeholder="-1"
+                  disabled
+                />
+              </div>
+              <div class="col-12">
+                <label class="form-label">Type:</label>
+                <select class="form-select" v-model="modalWypt.type">
+                  <option value="0">No Search</option>
+                  <option value="1">Post</option>
+                  <option value="2">Mallet</option>
+                  <option value="3">Water Bottle</option>
+                  <option value="4">Rock Pick</option>
+                </select>
+              </div>
             </div>
           </div>
-        </div>
-        <div class="modal-footer">
-          <button
-            type="button"
-            class="btn btn-secondary"
-            @click="saveNewWaypoint"
-          >
-            Add Waypoint
-          </button>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              @click="saveNewWaypoint"
+            >
+              Add Waypoint
+            </button>
+          </div>
         </div>
       </div>
     </div>
-  </div>
+  </Teleport>
 </template>
 
 <script lang="ts">
@@ -173,7 +175,7 @@ export default defineComponent({
       modal: null as Modal | null,
       modalWypt: {
         name: '',
-        id: -1,
+        tag_id: -1,
         type: 0,
         lat: 0,
         lon: 0,
@@ -181,7 +183,8 @@ export default defineComponent({
       },
 
       allCostmapToggle: true,
-      nextAvailableTagId: 8,
+      saveWaypointsTimer: null as ReturnType<typeof setTimeout> | null,
+      saveRouteTimer: null as ReturnType<typeof setTimeout> | null,
     }
   },
 
@@ -227,7 +230,10 @@ export default defineComponent({
         // Update map visualization
         const mapPoints = newRoute.map(waypoint => ({
           latLng: L.latLng(waypoint.lat, waypoint.lon),
-          name: waypoint.name
+          name: waypoint.name,
+          tag_id: waypoint.tag_id,
+          type: waypoint.type,
+          enable_costmap: waypoint.enable_costmap
         }))
         this.autonomyStore.setRoute(mapPoints)
 
@@ -254,12 +260,6 @@ export default defineComponent({
         const autonData = await waypointsAPI.getAuton()
         if (autonData.status === 'success') {
           this.waypoints = autonData.waypoints || []
-
-          // Calculate next available tag ID from existing waypoints
-          const maxTagId = this.waypoints.reduce((max, wp) => {
-            return wp.id > max ? wp.id : max
-          }, 7)
-          this.nextAvailableTagId = maxTagId + 1
         }
 
         // Fetch Active Route
@@ -270,7 +270,7 @@ export default defineComponent({
           // Mark items in route as "in_route" in the store list for visual feedback
           this.waypoints.forEach(wp => {
              wp.in_route = this.currentRoute.some(
-               r => r.name === wp.name && r.id === wp.id && r.type === wp.type
+               r => r.name === wp.name && r.tag_id === wp.tag_id && r.type === wp.type
              )
           })
         }
@@ -306,12 +306,12 @@ export default defineComponent({
       // Update visual feedback in store
       // Check if this type of waypoint still exists in the route elsewhere
       const stillInRoute = this.currentRoute.some(
-         r => r.name === waypoint.name && r.id === waypoint.id && r.type === waypoint.type
+         r => r.name === waypoint.name && r.tag_id === waypoint.tag_id && r.type === waypoint.type
       )
 
       if (!stillInRoute) {
         const storeIndex = this.waypoints.findIndex(
-           w => w.name === waypoint.name && w.id === waypoint.id && w.type === waypoint.type
+           w => w.name === waypoint.name && w.tag_id === waypoint.tag_id && w.type === waypoint.type
         )
         if (storeIndex !== -1) {
           const storeWaypoint = this.waypoints[storeIndex]
@@ -339,19 +339,11 @@ export default defineComponent({
       this.modalWypt.lat = this.clickPoint.lat
       this.modalWypt.lon = this.clickPoint.lon
 
-      // Assign next available tag ID if this is not a Post type (type 1 allows user to set tag_id)
-      if (this.modalWypt.type !== 1) {
-        this.modalWypt.id = this.nextAvailableTagId
-        this.nextAvailableTagId++
-      }
-
-      // Add to store (default deletable=true)
       this.waypoints.push({ ...this.modalWypt, enable_costmap: true })
 
-      // Reset modal
       this.modalWypt = {
         name: '',
-        id: -1,
+        tag_id: -1,
         type: 0,
         lat: 0,
         lon: 0,
@@ -393,7 +385,7 @@ export default defineComponent({
         ? this.currentRoute.map((waypoint: AutonWaypoint) => ({
             latitude_degrees: waypoint.lat,
             longitude_degrees: waypoint.lon,
-            tag_id: waypoint.id,
+            tag_id: waypoint.tag_id,
             type: waypoint.type,
             enable_costmap: waypoint.enable_costmap,
           }))
@@ -444,7 +436,7 @@ export default defineComponent({
 }
 
 .waypoint-wrapper {
-  background-color: #dddddd;
+  background-color: var(--view-bg);
   padding: 8px;
   border-radius: 8px;
 }

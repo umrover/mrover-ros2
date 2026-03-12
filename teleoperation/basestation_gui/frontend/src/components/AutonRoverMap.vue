@@ -1,7 +1,7 @@
 <template>
   <div class="position-relative w-100 h-100">
     <l-map
-      @ready="onMapReady"
+      @ready="handleMapReady"
       ref="mapRef"
       class="map z-0"
       :zoom="16"
@@ -39,11 +39,10 @@
       <l-polyline :lat-lngs="[...odomPath]" :color="'blue'" :dash-array="'5, 5'" />
     </l-map>
 
-    <!-- Controls -->
-    <div class="controls px-2 py-2 position-absolute d-flex flex-column gap-2 top-0 end-0 m-2 rounded border shadow-sm bg-white">
+    <div class="controls px-2 py-2 position-absolute d-flex flex-column gap-2 top-0 end-0 m-2 rounded border shadow-sm bg-theme-card">
       <div class="d-flex align-items-center gap-2">
         <input
-          v-model="online"
+        v-model="online"
           type="checkbox"
           class="form-check-input p-0"
         />
@@ -71,101 +70,49 @@ import {
   LControlScale,
 } from '@vue-leaflet/vue-leaflet'
 import { useAutonomyStore } from '@/stores/autonomy'
-import { useWebsocketStore } from '@/stores/websocket'
 import { storeToRefs } from 'pinia'
 import 'leaflet/dist/leaflet.css'
 import L from 'leaflet'
-import 'leaflet-rotatedmarker'
-import { ref, computed, watch, nextTick } from 'vue'
-import { quaternionToMapAngle } from '../utils/map'
-import type { NavMessage } from '../types/coordinates'
+import { ref, computed, watch } from 'vue'
+import { useRoverMap } from '@/composables/useRoverMap'
+import type { NavMessage } from '@/types/coordinates'
 
 const autonomyStore = useAutonomyStore()
 const { route, waypointList } = storeToRefs(autonomyStore)
 const { setClickPoint } = autonomyStore
 
-const websocketStore = useWebsocketStore()
-const { messages } = storeToRefs(websocketStore)
+const {
+  center,
+  online,
+  mapRef,
+  roverRef,
+  odomPath,
+  odomLatLng,
+  onlineUrl,
+  offlineUrl,
+  onlineTileOptions,
+  offlineTileOptions,
+  attribution,
+  locationIcon,
+  waypointIcon,
+  onMapReady,
+  centerOnRover,
+  getMap,
+  navMessage,
+} = useRoverMap({
+  maxOdomCount: 10,
+  drawFrequency: 10,
+  initialCenter: [38.4071654, -110.7923927],
+  offlineUrl: 'map/urc/{z}/{x}/{y}.jpg',
+})
 
-const rover_latitude_deg = ref(0)
-const rover_longitude_deg = ref(0)
-const rover_bearing_deg = ref(0)
 const basestation_latitude_deg = ref(0)
 const basestation_longitude_deg = ref(0)
 
-const MAX_ODOM_COUNT = 10
-const DRAW_FREQUENCY = 10
-const onlineUrl = 'http://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}'
-const offlineUrl = 'map/urc/{z}/{x}/{y}.jpg'
-const onlineTileOptions = {
-  maxNativeZoom: 22,
-  maxZoom: 100,
-  subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
-}
-const offlineTileOptions = {
-  minZoom: 16,
-  maxZoom: 20,
-}
-
-const center = ref<[number, number]>([38.4071654, -110.7923927])
-const attribution = ref('&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors')
-const online = ref(true)
-const mapRef = ref<{ leafletObject: L.Map } | null>(null)
-const roverRef = ref<{ leafletObject: L.Marker } | null>(null)
-const basestationRef = ref(null)
-let roverMarker: L.Marker | null = null
-const odomCount = ref(0)
-const odomPath = ref<L.LatLng[]>([])
-const findRover = ref(false)
-
-const locationIcon = L.icon({
-  iconUrl: '/rover_marker.svg',
-  iconSize: [64, 64],
-  iconAnchor: [32, 32],
-})
 const basestationIcon = L.icon({
   iconUrl: '/basestation_marker.svg',
   iconSize: [64, 64],
   iconAnchor: [32, 56],
-})
-const waypointIcon = L.icon({
-  iconUrl: '/waypoint_marker.svg',
-  iconSize: [64, 64],
-  iconAnchor: [32, 64],
-  popupAnchor: [0, -32],
-})
-
-const onMapReady = () => {
-  nextTick(() => {
-    if (roverRef.value) {
-      roverMarker = roverRef.value.leafletObject as L.Marker
-    }
-  })
-}
-
-const centerOnRover = () => {
-  if (mapRef.value) {
-    const map = mapRef.value.leafletObject as L.Map
-    map.setView(odomLatLng.value, map.getZoom())
-  }
-}
-
-const centerOnBasestation = () => {
-  if (mapRef.value) {
-    const map = mapRef.value.leafletObject as L.Map
-    map.setView(basestationLatLng.value, map.getZoom())
-  }
-}
-
-const getClickedLatLon = (e: { latlng: { lat: number; lng: number } }) => {
-  setClickPoint({
-    lat: e.latlng.lat,
-    lon: e.latlng.lng,
-  })
-}
-
-const odomLatLng = computed(() => {
-  return L.latLng(rover_latitude_deg.value, rover_longitude_deg.value)
 })
 
 const basestationLatLng = computed(() => {
@@ -178,48 +125,30 @@ const polylinePath = computed(() => {
   )
 })
 
-const navMessage = computed(() => messages.value['nav'])
+const handleMapReady = () => {
+  onMapReady()
+}
+
+const centerOnBasestation = () => {
+  const map = getMap()
+  if (map) {
+    map.setView(basestationLatLng.value, map.getZoom())
+  }
+}
+
+const getClickedLatLon = (e: { latlng: { lat: number; lng: number } }) => {
+  setClickPoint({
+    lat: e.latlng.lat,
+    lon: e.latlng.lng,
+  })
+}
 
 watch(navMessage, (msg) => {
   if (!msg) return
   const navMsg = msg as NavMessage
-
-  if (navMsg.type === 'gps_fix') {
-    rover_latitude_deg.value = navMsg.latitude
-    rover_longitude_deg.value = navMsg.longitude
-  } else if (navMsg.type === 'basestation_position') {
+  if (navMsg.type === 'basestation_position') {
     basestation_latitude_deg.value = navMsg.latitude
     basestation_longitude_deg.value = navMsg.longitude
-  } else if (navMsg.type === 'orientation') {
-    rover_bearing_deg.value = quaternionToMapAngle(navMsg.orientation)
-  }
-})
-
-watch([rover_latitude_deg, rover_longitude_deg, rover_bearing_deg], () => {
-  const lat = rover_latitude_deg.value
-  const lng = rover_longitude_deg.value
-  const angle = rover_bearing_deg.value
-
-  const latLng = L.latLng(lat, lng)
-
-  if (!findRover.value) {
-    findRover.value = true
-    center.value = [lat, lng]
-  }
-
-  if (roverMarker !== null) {
-    roverMarker.setRotationAngle(angle)
-    roverMarker.setLatLng(latLng)
-  }
-
-  odomCount.value++
-  if (odomCount.value % DRAW_FREQUENCY === 0) {
-    if (odomPath.value.length > MAX_ODOM_COUNT) {
-      odomPath.value = [...odomPath.value.slice(1), latLng]
-    } else {
-      odomPath.value = [...odomPath.value, latLng]
-    }
-    odomCount.value = 0
   }
 })
 </script>

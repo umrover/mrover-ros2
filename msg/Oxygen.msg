@@ -1,2 +1,1 @@
 float64 percent
-float64 variance

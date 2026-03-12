@@ -47,24 +47,24 @@ namespace mrover {
             initUrdfsFromParams(DEFAULT_MAP);
 
             {
-                auto addGroup = [&](std::string_view groupName, std::vector<std::string> const& names) {
+                auto addGroup = [&](std::string_view groupName, std::string_view controllerStateTopic, std::vector<std::string> const& names,
+                                    std::string_view thrSuffix = "_throttle_cmd", std::string_view velSuffix = "_velocity_cmd", std::string_view posSuffix = "_position_cmd") {
                     MotorGroup& group = mMotorGroups.emplace_back();
-                    group.jointStatePub = create_publisher<sensor_msgs::msg::JointState>(std::format("{}_joint_data", groupName), 1);
-                    group.controllerStatePub = create_publisher<msg::ControllerState>(std::format("{}_controller_data", groupName), 1);
+                    group.controllerStatePub = create_publisher<msg::ControllerState>(std::string{controllerStateTopic}, 1);
                     group.names = names;
-                    group.throttleSub = create_subscription<msg::Throttle>(std::format("{}_throttle_cmd", groupName), 1, [this](msg::Throttle::ConstSharedPtr const& msg) {
+                    group.throttleSub = create_subscription<msg::Throttle>(std::format("/{}{}", groupName, thrSuffix), 1, [this](msg::Throttle::ConstSharedPtr const& msg) {
                         throttlesCallback(msg);
                     });
-                    group.velocitySub = create_subscription<msg::Velocity>(std::format("{}_velocity_cmd", groupName), 1, [this](msg::Velocity::ConstSharedPtr const& msg) {
+                    group.velocitySub = create_subscription<msg::Velocity>(std::format("/{}{}", groupName, velSuffix), 1, [this](msg::Velocity::ConstSharedPtr const& msg) {
                         velocitiesCallback(msg);
                     });
-                    group.positionSub = create_subscription<msg::Position>(std::format("{}_position_cmd", groupName), 1, [this](msg::Position::ConstSharedPtr const& msg) {
+                    group.positionSub = create_subscription<msg::Position>(std::format("/{}{}", groupName, posSuffix), 1, [this](msg::Position::ConstSharedPtr const& msg) {
                         positionsCallback(msg);
                     });
                 };
-                addGroup("arm", {"joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_roll", "gripper"});
-                addGroup("drive_left", {"front_left", "middle_left", "back_left"});
-                addGroup("drive_right", {"front_right", "middle_right", "back_right"});
+                addGroup("arm", "arm_controller_state", {"joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_roll", "gripper"}, "_thr_cmd", "_vel_cmd", "_pos_cmd");
+                addGroup("drive_left", "left_controller_state", {"front_left", "middle_left", "back_left"});
+                addGroup("drive_right", "right_controller_state", {"front_right", "middle_right", "back_right"});
 
                 std::vector<decltype(mMsgToUrdf)::value_type> elements{
                         {"joint_a", "arm_a_link"},

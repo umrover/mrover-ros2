@@ -2,7 +2,7 @@
   <div class="waypoints p-2">
     <div class="waypoint-header mb-1">
       <h5 class="mb-0">{{ waypoint.name }}</h5>
-      <small class="text-muted">ID: {{ waypoint.id }}</small>
+      <small class="text-muted">ID: {{ waypoint.tag_id }}</small>
     </div>
 
     <div class="coordinates mb-1">
@@ -93,7 +93,7 @@ export default {
 
 <style scoped>
 .waypoints {
-  background-color: #ffffff;
+  background-color: var(--card-bg);
   border-radius: 6px;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 }

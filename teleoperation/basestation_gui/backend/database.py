@@ -10,7 +10,6 @@ WAYPOINTS_DB = os.path.join(BASE_DIR, 'waypoints.db')
 RECORDINGS_DB = os.path.join(BASE_DIR, 'recordings.db')
 
 def init_waypoints_db():
-    """Initialize waypoints database"""
     try:
         conn = sqlite3.connect(WAYPOINTS_DB)
         cursor = conn.cursor()
@@ -87,7 +86,6 @@ def init_waypoints_db():
         raise
 
 def init_recordings_db():
-    """Initialize recordings database"""
     try:
         conn = sqlite3.connect(RECORDINGS_DB)
         cursor = conn.cursor()

@@ -37,7 +37,7 @@ watch(navMessage, (msg) => {
 
 <style scoped>
 .velocity-wrapper {
-  background-color: #dddddd;
+  background-color: var(--view-bg);
   padding: 0.5rem;
   border-radius: 8px;
   max-width: 320px;
