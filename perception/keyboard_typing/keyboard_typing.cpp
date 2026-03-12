@@ -503,16 +503,16 @@ namespace mrover{
         rvec_window.push_back(rvec);
 
         cv::Vec3d medianTvec = tvec_window.back();
-        // double min_tvec_sum = std::numeric_limits<double>::max();
+        double min_sum = std::numeric_limits<double>::max();
 
-        for(size_t i = 0; i < tvec_window.size(); i++) {
-            double currentTvecSum = 0;
-            for(size_t j = 0; j < tvec_window.size(); j++) {
-                if(i != j) {
-                    currentTvecSum += cv::norm(tvec_window[i] - tvec_window[j]);
-                }
-            }
-        }
+        // for(size_t i = 0; i < tvec_window.size(); i++) {
+        //     double currentTvecSum = 0;
+        //     for(size_t j = 0; j < tvec_window.size(); j++) {
+        //         if(i != j) {
+        //             currentTvecSum += cv::norm(tvec_window[i] - tvec_window[j]);
+        //         }
+        //     }
+        // }
 
         // Take the median
         int filtered_idx = 0;
@@ -521,15 +521,15 @@ namespace mrover{
         // Find median rvec
         for (size_t i = 0; i < rvec_window.size(); ++i) {
             double angle_diff_radians = 0;
+            double currentTvecSum = 0;
             for (size_t j = 0; j < rvec_window.size(); ++j) {
                 if (i == j) {
                     continue;
                 }
-
                 cv::Mat R_i;
-                cv::Rodrigues(rvec[i], R_i);
+                cv::Rodrigues(rvec_window[i], R_i);
                 cv::Mat R_j;
-                cv::Rodrigues(rvec[j], R_j);
+                cv::Rodrigues(rvec_window[j], R_j);
 
                 // Compute diff and then convert back to rodrigues to get magnitude
                 cv::Mat R_diff = R_i * R_j.t(); // transpose is inverse b/c orthogonal, so computes difference
@@ -537,8 +537,15 @@ namespace mrover{
                 cv::Rodrigues(R_diff, axis_angle_vec);
 
                 angle_diff_radians += cv::norm(axis_angle_vec);
-            } 
-        } 
+                currentTvecSum += cv::norm(tvec_window[i] - tvec_window[j]);
+            }
+            double min_sum_current = angle_diff_radians + currentTvecSum;
+            if(min_sum_current < min_sum) {
+                min_sum = min_sum_current;
+                filtered_idx = i;
+            }
+        }
+
 
         return {tvec_window[filtered_idx], rvec_window[filtered_idx]};
     }
