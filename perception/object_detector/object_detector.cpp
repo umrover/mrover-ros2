@@ -46,6 +46,10 @@ namespace mrover {
         mSensorSub = create_subscription<sensor_msgs::msg::PointCloud2>("/zed/left/points", 1, [this](sensor_msgs::msg::PointCloud2::ConstSharedPtr const& msg) {
             StereoObjectDetector::pointCloudCallback(msg);
         });
+
+        mToggleStereoDetector = create_service<std_srvs::srv::SetBool>("toggle_stereo_object_detector", [this](std_srvs::srv::SetBool::Request::ConstSharedPtr req, std_srvs::srv::SetBool::Response::SharedPtr res) {
+            toggleStereoDetector(req, res);
+        });
     }
 
     ImageObjectDetector::ImageObjectDetector(rclcpp::NodeOptions const& options) : ObjectDetectorBase(options) {
@@ -60,6 +64,10 @@ namespace mrover {
 
         mSensorSub = create_subscription<sensor_msgs::msg::Image>("/long_range_cam/image", 1, [this](sensor_msgs::msg::Image::ConstSharedPtr const& msg) {
             ImageObjectDetector::imageCallback(msg);
+        });
+
+        mToggleImageDetector = create_service<std_srvs::srv::SetBool>("toggle_image_object_detector", [this](std_srvs::srv::SetBool::Request::ConstSharedPtr req, std_srvs::srv::SetBool::Response::SharedPtr res) {
+            toggleImageDetector(req, res);
         });
 
         mTargetsPub = create_publisher<mrover::msg::ImageTargets>("objects", 1);
