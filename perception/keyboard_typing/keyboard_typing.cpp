@@ -507,8 +507,12 @@ namespace mrover{
 
         // Find median rvec
         for (size_t i = 0; i < rvec_window.size(); ++i) {
-            double angle_diff_radians;
+            double angle_diff_radians = 0;
             for (size_t j = 0; j < rvec_window.size(); ++j) {
+                if (i == j) {
+                    continue;
+                }
+
                 cv::Mat R_i;
                 cv::Rodrigues(rvec[i], R_i);
                 cv::Mat R_j;
@@ -519,7 +523,7 @@ namespace mrover{
                 cv::Mat axis_angle_vec;
                 cv::Rodrigues(R_diff, axis_angle_vec);
 
-                angle_diff_radians = cv::norm(axis_angle_vec);
+                angle_diff_radians += cv::norm(axis_angle_vec);
             } 
         } 
 
