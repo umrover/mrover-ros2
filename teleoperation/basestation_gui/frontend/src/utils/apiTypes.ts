@@ -82,4 +82,15 @@ export interface RAModeResponse extends APIResponse {
   mode?: string
 }
 
-// TODO(stow): Add StowResponse type for POST /api/arm/stow/ endpoint.
+export interface StowResponse extends APIResponse {
+  mode?: string
+  stow_target: {
+    pos: {
+      x: number
+      y: number
+      z: number
+    }
+    pitch: number
+    roll: number
+  }
+}

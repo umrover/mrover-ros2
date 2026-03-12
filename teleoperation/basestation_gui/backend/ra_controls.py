@@ -3,7 +3,6 @@ from enum import Enum
 import threading
 
 from rclpy.publisher import Publisher
-
 from backend.input import filter_input, simulated_axis, safe_index, DeviceInputs
 from backend.mappings import ControllerAxis, ControllerButton
 from backend.managers.ros import get_service_client
@@ -30,6 +29,9 @@ async def set_ra_mode(new_ra_mode: str):
     elif new_ra_mode == "ik-vel":
         await call_ik_mode_service(IK_MODE_VELOCITY_CONTROL)
     # TODO(stow): Handle "stow" mode here.
+    elif new_ra_mode == "stow":
+        await call_ik_mode_service(IK_MODE_VELOCITY_CONTROL)
+
 
 
 async def call_ik_mode_service(mode: int) -> bool:
@@ -69,12 +71,12 @@ IK_MODE_VELOCITY_CONTROL = 1
 IK_MODE_TYPING = 2
 
 # TODO(stow): Define stow position constant. Get values from hardware team.
-# STOW_POSITION = IK()
-# STOW_POSITION.pos.x = 0.0
-# STOW_POSITION.pos.y = 0.0
-# STOW_POSITION.pos.z = 0.0
-# STOW_POSITION.pitch = 0.0
-# STOW_POSITION.roll = 0.0
+STOW_POSITION = IK()
+STOW_POSITION.pos.x = 0.0
+STOW_POSITION.pos.y = 0.0
+STOW_POSITION.pos.z = 0.0
+STOW_POSITION.pitch = 0.0
+STOW_POSITION.roll = 0.0
 
 
 class Joint(Enum):
@@ -167,8 +169,11 @@ def send_ra_controls(
     current_mode = get_ra_mode()
     match current_mode:
         # TODO(stow): Add "stow" case that publishes STOW_POSITION to ee_pos_pub.
-        case "throttle" | "ik-pos" | "ik-vel":
+        case "throttle" | "ik-pos" | "ik-vel" | "stow":
             match current_mode:
+                case "stow":
+                    ee_pos_pub.publish(STOW_POSITION)
+
                 case "throttle":
                     manual_controls = compute_manual_joint_controls(inputs)
                     throttle_msg = Throttle()

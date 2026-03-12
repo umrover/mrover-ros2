@@ -45,9 +45,9 @@
 
     <!-- TODO(stow): Add stow button. Gray out while stowing, show distance to target.
          On convergence or timeout, call setRAMode("disabled"). -->
-    <!-- <button class="btn btn-sm btn-outline-warning border-2 w-100" :disabled="isStowing" @click="stowArm">
+    <button class="btn btn-sm btn-outline-warning border-2 w-100" :disabled="isStowing" @click="stowArm">
       Stow
-    </button> -->
+    </button>
 
     <GamepadDisplay :axes="axes" :buttons="buttons" layout="horizontal" class="flex-grow-1 min-height-0" />
   </div>
@@ -94,20 +94,29 @@ onBeforeUnmount(() => {
 //   4. On convergence (distance < STOW_THRESHOLD): call setRAMode("disabled"), show success.
 //      On timeout (STOW_TIMEOUT_MS): call setRAMode("disabled"), show failure.
 //
-// const STOW_THRESHOLD = 0.01
-// const STOW_TIMEOUT_MS = 30_000
-//
-// const isStowing = ref(false)
-// const stowTarget = ref<{ x: number; y: number; z: number } | null>(null)
-// const stowDistance = ref<number | null>(null)
+const STOW_THRESHOLD = 0.01
+const STOW_TIMEOUT_MS = 30_000
+
+const isStowing = ref(false)
+const stowTarget = ref<{ x: number; y: number; z: number } | null>(null)
+const stowDistance = ref<number | null>(null)
 // let stowTimeoutId: number | undefined
 //
 // const euclideanDistance = (a: { x: number; y: number; z: number }, b: { x: number; y: number; z: number }) =>
 //   Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2 + (a.z - b.z) ** 2)
 //
-// const stowArm = async () => {
-//   // TODO(stow)
-// }
+const stowArm = async () => {
+  // TODO(stow)
+  isStowing.value = true;
+  const result = await armAPI.stowArm();
+
+  // start timeout
+  // watcher function goes somewhere in this file
+
+  stowTarget.value = { x: result.stow_target.pos.x, y: result.stow_target.pos.y, z: result.stow_target.pos.z };
+
+
+}
 //
 // const completeStow = async (reason: 'success' | 'timeout') => {
 //   // TODO(stow)
