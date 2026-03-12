@@ -4,6 +4,7 @@
 #include "mrover/srv/detail/ik_mode__struct.hpp"
 #include "mrover/srv/detail/pusher__struct.hpp"
 #include <Eigen/src/Core/Matrix.h>
+#include <Eigen/src/Geometry/Quaternion.h>
 #include <cmath>
 #include <cstddef>
 #include <opencv2/calib3d.hpp>
@@ -501,148 +502,7 @@ namespace mrover{
         rvec_window.push_back(rvec);
 
         // Take the median
-        
         return;
-    }
-
-    auto KeyboardTypingNode::updateKalmanFilter(cv::Vec3d& tvec, cv::Vec3d& rvec) -> geometry_msgs::msg::Pose {
-        // 1. Get current time from the Node's clock
-        rclcpp::Time currentTime = this->get_clock()->now();
-
-        // 2. Handle Initialization
-        if (!filter_initialized_) {
-            last_prediction_time_ = currentTime;
-            filter_initialized_ = true;
-
-
-            // sendIKCommand(1.165, .191, .367, 0, 0);
-
-            // Optional: You might want to initialize the state to the first detection
-            // to avoid a long "convergence" time from 0,0,0.
-            // kf.statePost.at<float>(0) = tvec[0]; etc...
-
-            return geometry_msgs::msg::Pose();
-        }
-
-        // 3. Calculate Delta Time (dt)
-        double dt = (currentTime - last_prediction_time_).seconds();
-
-        // Update tracker
-        last_prediction_time_ = currentTime;
-
-        // 4. PREDICT STEP
-        // ------------------------------------------------------
-        // Update position rows (x = x + v*dt)
-        kf.transitionMatrix.at<float>(0, 3) = dt;
-        kf.transitionMatrix.at<float>(1, 4) = dt;
-        kf.transitionMatrix.at<float>(2, 5) = dt;
-
-        // Update rotation rows (yaw = yaw + v_yaw*dt)
-        kf.transitionMatrix.at<float>(6, 9) = dt;
-        kf.transitionMatrix.at<float>(7, 10) = dt;
-        kf.transitionMatrix.at<float>(8, 11) = dt;
-
-        cv::Mat prediction = kf.predict();
-
-        // 5. CORRECTION STEP (Single Tag)
-        // ---------------------------------------
-        
-        // --- A. Extract Rotation (Rodrigues -> Euler) ---
-        cv::Mat R;
-        cv::Rodrigues(rvec, R); // Using the single input rvec
-        
-        double sy = std::sqrt(R.at<double>(0, 0) * R.at<double>(0, 0) + R.at<double>(1, 0) * R.at<double>(1, 0));
-        bool singular = sy < 1e-6;
-        double measured_roll, measured_pitch, measured_yaw;
-
-        if (!singular) {
-            measured_roll = std::atan2(R.at<double>(2, 1), R.at<double>(2, 2));
-            measured_pitch = std::atan2(-R.at<double>(2, 0), sy);
-            measured_yaw = std::atan2(R.at<double>(1, 0), R.at<double>(0, 0));
-        } else {
-            measured_roll = std::atan2(-R.at<double>(1, 2), R.at<double>(1, 1));
-            measured_pitch = std::atan2(-R.at<double>(2, 0), sy);
-            measured_yaw = 0;
-        }
-
-        // --- B. Angle Wrapping ---
-        // Get current Yaw state (Index 8)
-        float current_yaw_state = kf.statePost.at<float>(8); 
-
-        // Prevent 'jumps' when crossing PI/-PI boundaries
-        while (measured_yaw - current_yaw_state > M_PI) {
-            measured_yaw -= 2.0 * M_PI;
-        }
-
-        while (measured_yaw - current_yaw_state < -M_PI) {
-            measured_yaw += 2.0 * M_PI;
-        }
-
-        // --- C. Dynamic Noise (Trust closer tags more) ---
-        double dist = cv::norm(tvec); // Using the single input tvec
-
-        // Base noise + Distance Penalty
-        float pos_noise = 0.001f + (0.05f * dist * dist);
-        float ang_noise = 0.01f + (0.1f * dist);
-
-        cv::setIdentity(kf.measurementNoiseCov, cv::Scalar(1));
-        kf.measurementNoiseCov.at<float>(0, 0) = pos_noise;
-        kf.measurementNoiseCov.at<float>(1, 1) = pos_noise;
-        kf.measurementNoiseCov.at<float>(2, 2) = pos_noise;
-        kf.measurementNoiseCov.at<float>(3, 3) = ang_noise;
-        kf.measurementNoiseCov.at<float>(4, 4) = ang_noise;
-        kf.measurementNoiseCov.at<float>(5, 5) = ang_noise;
-
-        // --- D. Build Measurement & Correct ---
-        cv::Mat measurement(6, 1, CV_32F);
-        measurement.at<float>(0) = static_cast<float>(tvec[0]);
-        measurement.at<float>(1) = static_cast<float>(tvec[1]);
-        measurement.at<float>(2) = static_cast<float>(tvec[2]);
-        measurement.at<float>(3) = static_cast<float>(measured_roll);
-        measurement.at<float>(4) = static_cast<float>(measured_pitch);
-        measurement.at<float>(5) = static_cast<float>(measured_yaw);
-
-        // Perform the correction with the single measurement
-        kf.correct(measurement);
-
-
-        // 6. EXPORT FINAL STATE TO POSE
-        // -----------------------------
-        geometry_msgs::msg::Pose filtered_pose;
-
-        // Position
-        // filtered_pose.position.x = kf.statePost.at<float>(0);
-        // filtered_pose.position.y = kf.statePost.at<float>(1);
-        // filtered_pose.position.z = kf.statePost.at<float>(2);
-        filtered_pose.position.x = tvec[0];
-        filtered_pose.position.y = tvec[1];
-        filtered_pose.position.z = tvec[2];
-
-        // Orientation (Convert RPY back to Quaternion)
-        double final_roll = kf.statePost.at<float>(6);
-        double final_pitch = kf.statePost.at<float>(7);
-        double final_yaw = kf.statePost.at<float>(8);
-
-        Eigen::Quaterniond q;
-        q = Eigen::AngleAxisd(final_yaw, Eigen::Vector3d::UnitZ()) *
-            Eigen::AngleAxisd(final_pitch, Eigen::Vector3d::UnitY()) *
-            Eigen::AngleAxisd(final_roll, Eigen::Vector3d::UnitX());
-
-        filtered_pose.orientation.x = q.x();
-        filtered_pose.orientation.y = q.y();
-        filtered_pose.orientation.z = q.z();
-        filtered_pose.orientation.w = q.w();
-
-        // Update combined tvecs and rvecs
-        tvec[0] = filtered_pose.position.x;
-        tvec[1] = filtered_pose.position.y;
-        tvec[2] = filtered_pose.position.z;
-
-        rvec[0] = final_roll;
-        rvec[1] = final_pitch;
-        rvec[2] = final_yaw;
-        
-        return filtered_pose;
     }
 
     auto KeyboardTypingNode::align_arm() -> void {
@@ -698,20 +558,20 @@ namespace mrover{
         current_key = 'z';
     }
 
-    auto KeyboardTypingNode::rotateGripper(float radians) -> void {
-        SE3d armbase_to_armfk;
+    // auto KeyboardTypingNode::rotateGripper(float radians) -> void {
+    //     SE3d armbase_to_armfk;
 
-        try{
-            armbase_to_armfk = SE3Conversions::fromTfTree(tf_buffer, "arm_fk", "arm_base_link");
-            // grab current pitch
-            // Get the forward pointing vector of the gripper (usually the X-axis of the arm_fk frame)
-            double current_pitch = std::atan2(-armbase_to_armfk.rotation()(2, 0), std::hypot(armbase_to_armfk.rotation()(0, 0), armbase_to_armfk.rotation()(1, 0)));
+    //     try{
+    //         armbase_to_armfk = SE3Conversions::fromTfTree(tf_buffer, "arm_fk", "arm_base_link");
+    //         // grab current pitch
+    //         // Get the forward pointing vector of the gripper (usually the X-axis of the arm_fk frame)
+    //         double current_pitch = std::atan2(-armbase_to_armfk.rotation()(2, 0), std::hypot(armbase_to_armfk.rotation()(0, 0), armbase_to_armfk.rotation()(1, 0)));
 
-            sendIKCommand(armbase_to_armfk.translation().x(), armbase_to_armfk.translation().y(), armbase_to_armfk.translation().z(), current_pitch, radians);
-        } catch (tf2::TransformException const& e) {
-            RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, std::format("TF tree error processing keyboard typing: {}", e.what()));
-        }
-    }
+    //         sendIKCommand(armbase_to_armfk.translation().x(), armbase_to_armfk.translation().y(), armbase_to_armfk.translation().z(), current_pitch, radians);
+    //     } catch (tf2::TransformException const& e) {
+    //         RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, std::format("TF tree error processing keyboard typing: {}", e.what()));
+    //     }
+    // }
 
     auto KeyboardTypingNode::sendIKCommand(float x, float y, float z, float pitch, float roll) -> void {
         if(!mIKPub){
@@ -881,7 +741,7 @@ namespace mrover{
 
             // rotate gripper 90 degrees
             RCLCPP_INFO_STREAM(this->get_logger(), "Rotating gripper 90 degrees");
-            rotateGripper(-1.5708);
+            // rotateGripper(-1.5708);
 
             // Activate typing mode
             RCLCPP_INFO_STREAM(this->get_logger(), "Sending ik mode request");
