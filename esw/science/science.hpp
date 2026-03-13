@@ -1,5 +1,6 @@
 #pragma once
 
+#include "CANBus1.hpp"
 #include "can_device.hpp"
 #include <rclcpp/rclcpp.hpp>
 #include <variant>
@@ -12,15 +13,17 @@
 #include <mrover/msg/pressure.hpp>
 #include <mrover/msg/temperature.hpp>
 #include <mrover/msg/uv.hpp>
+#include <mrover/msg/sensor_states.hpp>
+#include <mrover/srv/science_board_reset.hpp>
 
 namespace mrover {
 
     class ScienceBoard {
     public:
-        ScienceBoard(rclcpp::Node::SharedPtr node, std::string masterName, std::string deviceName)
+        ScienceBoard (rclcpp::Node::SharedPtr node, std::string masterName, std::string deviceName)
             : mNode{node},
               mDevice{node, std::move(masterName), std::move(deviceName),
-                      [this](CANMsg_t const& msg) { processMessage(msg); }} {
+                            [this](CANMsg_t const& msg) { processMessage(msg); }} {
 
             // initialize publishers
             mTemperaturePub = mNode->create_publisher<msg::Temperature>("sp_temperature_data", 10);
@@ -30,14 +33,28 @@ namespace mrover {
             mOzonePub = mNode->create_publisher<msg::Ozone>("sp_ozone_data", 10);
             mCO2Pub = mNode->create_publisher<msg::CO2>("sp_co2_data", 10);
             mUVPub = mNode->create_publisher<msg::UV>("sp_uv_data", 10);
+            mSensorStatesPub = mNode->create_publisher<msg::SensorStates>("sensor_states", 10);
+
+            // initialize services
+            mSBReset = mNode->create_service<srv::ScienceBoardReset>("sb_reset", 
+                [this](srv::ScienceBoardReset::Request::SharedPtr const req, srv::ScienceBoardReset::Response::SharedPtr res) { processRequest(req, res); });
         }
 
-        auto processMessage(CANMsg_t const& msg) -> void {
+        void processRequest (srv::ScienceBoardReset::Request::SharedPtr const req, srv::ScienceBoardReset::Response::SharedPtr res) {
+            CANMsg_t const msg = SCIResetCommand(req->reset, req->clear_faults);
+            mDevice.publishMessage(msg);
+
+            res->success = true;
+        }
+
+        void processMessage (CANMsg_t const& msg) {
             std::visit([this](auto const& decoded) {
                 using T = std::decay_t<decltype(decoded)>;
 
                 // send science sensor data
                 if constexpr (std::is_same_v<T, SCISensorData>) {
+                    publishROSData(decoded);
+                } else if constexpr (std::is_same_v<T, SCISensorState>) {
                     publishROSData(decoded);
                 }
             },
@@ -55,8 +72,11 @@ namespace mrover {
         rclcpp::Publisher<msg::Ozone>::SharedPtr mOzonePub;
         rclcpp::Publisher<msg::CO2>::SharedPtr mCO2Pub;
         rclcpp::Publisher<msg::UV>::SharedPtr mUVPub;
+        rclcpp::Publisher<msg::SensorStates>::SharedPtr mSensorStatesPub;
 
-        auto publishROSData(SCISensorData const& data) -> void {
+        rclcpp::Service<srv::ScienceBoardReset>::SharedPtr mSBReset;
+
+        void publishROSData (SCISensorData const& data) {
             msg::UV uv_msg;
             uv_msg.uv_index = data.uv_index;
             mUVPub->publish(uv_msg);
@@ -84,6 +104,16 @@ namespace mrover {
             msg::CO2 co2_msg;
             co2_msg.percent = data.co2;
             mCO2Pub->publish(co2_msg);
+        }
+
+        void publishROSData (SCISensorState const& data) {
+            msg::SensorStates sensor_states;
+            sensor_states.uv_state = data.uv_state;
+            sensor_states.thp_state = data.thp_state;
+            sensor_states.oxygen_state = data.oxygen_state;
+            sensor_states.ozone_state = data.ozone_state;
+            sensor_states.co2_state = data.co2_state;
+            mSensorStatesPub->publish(sensor_states);
         }
     };
 
