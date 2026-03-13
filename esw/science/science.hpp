@@ -4,6 +4,7 @@
 #include "can_device.hpp"
 #include <rclcpp/rclcpp.hpp>
 #include <variant>
+#include <typeinfo>
 
 // Standard ROS 2 message includes
 #include <mrover/msg/co2.hpp>
@@ -56,6 +57,8 @@ namespace mrover {
                     publishROSData(decoded);
                 } else if constexpr (std::is_same_v<T, SCISensorState>) {
                     publishROSData(decoded);
+                } else {
+                    RCLCPP_WARN(mNode->get_logger(), "science received unexpected message type %s", typeid(T).name());
                 }
             },
                        msg);
@@ -77,43 +80,43 @@ namespace mrover {
         rclcpp::Service<srv::ScienceBoardReset>::SharedPtr mSBReset;
 
         void publishROSData (SCISensorData const& data) {
-            msg::UV uv_msg;
-            uv_msg.uv_index = data.uv_index;
-            mUVPub->publish(uv_msg);
+            msg::UV yvMsg;
+            yvMsg.uv_index = data.uv_index;
+            mUVPub->publish(yvMsg);
 
-            msg::Temperature temp_msg;
-            temp_msg.temperature = data.temperature;
-            mTemperaturePub->publish(temp_msg);
+            msg::Temperature tempMsg;
+            tempMsg.temperature = data.temperature;
+            mTemperaturePub->publish(tempMsg);
 
-            msg::Humidity hum_msg;
-            hum_msg.relative_humidity = data.humidity;
-            mHumidityPub->publish(hum_msg);
+            msg::Humidity humMsg;
+            humMsg.relative_humidity = data.humidity;
+            mHumidityPub->publish(humMsg);
 
-            msg::Pressure press_msg;
-            press_msg.pressure = data.pressure;
-            mPressurePub->publish(press_msg);
+            msg::Pressure pressMsg;
+            pressMsg.pressure = data.pressure;
+            mPressurePub->publish(pressMsg);
 
-            msg::Oxygen o2_msg;
-            o2_msg.percent = data.oxygen;
-            mOxygenPub->publish(o2_msg);
+            msg::Oxygen o2Msg;
+            o2Msg.percent = data.oxygen;
+            mOxygenPub->publish(o2Msg);
 
-            msg::Ozone ozone_msg;
-            ozone_msg.ppb = data.ozone;
-            mOzonePub->publish(ozone_msg);
+            msg::Ozone ozoneMsg;
+            ozoneMsg.ppb = data.ozone;
+            mOzonePub->publish(ozoneMsg);
 
-            msg::CO2 co2_msg;
-            co2_msg.percent = data.co2;
-            mCO2Pub->publish(co2_msg);
+            msg::CO2 co2Msg;
+            co2Msg.percent = data.co2;
+            mCO2Pub->publish(co2Msg);
         }
 
         void publishROSData (SCISensorState const& data) {
-            msg::SensorStates sensor_states;
-            sensor_states.uv_state = data.uv_state;
-            sensor_states.thp_state = data.thp_state;
-            sensor_states.oxygen_state = data.oxygen_state;
-            sensor_states.ozone_state = data.ozone_state;
-            sensor_states.co2_state = data.co2_state;
-            mSensorStatesPub->publish(sensor_states);
+            msg::SensorStates sensorStates;
+            sensorStates.uv_state = data.uv_state;
+            sensorStates.thp_state = data.thp_state;
+            sensorStates.oxygen_state = data.oxygen_state;
+            sensorStates.ozone_state = data.ozone_state;
+            sensorStates.co2_state = data.co2_state;
+            mSensorStatesPub->publish(sensorStates);
         }
     };
 

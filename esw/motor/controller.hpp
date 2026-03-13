@@ -7,6 +7,7 @@
 #include <variant>
 
 namespace mrover {
+    static constexpr std::size_t NUM_LIMITS = 4;
 
     template<typename Derived>
     class ControllerBase {
@@ -32,7 +33,7 @@ namespace mrover {
         [[nodiscard]] auto getIsStalled() const -> bool { return mIsStalled; }
         [[nodiscard]] auto getLimitsHitBits() const -> std::uint8_t {
             std::uint8_t limits_hit{};
-            for (int i = 0; i < 4; ++i) {
+            for (std::size_t i = 0; i < NUM_LIMITS; ++i) {
                 limits_hit |= mLimitHit.at(i) << i;
             }
             return limits_hit;
@@ -49,7 +50,7 @@ namespace mrover {
         float mPosition{0.0f};
         float mVelocity{0.0f};
         float mCurrent{0.0f};
-        std::array<bool, 4> mLimitHit{};
+        std::array<bool, NUM_LIMITS> mLimitHit{};
         bool mIsStalled{false};
     };
 

@@ -59,10 +59,9 @@ namespace mrover {
         bool isBackwardPressed{};
     };
 
-    template<IsUnit TOutputPosition>
-    class BrushlessController final : public ControllerBase<BrushlessController<TOutputPosition>> {
+    template<IsUnit OutputPosition>
+    class BrushlessController final : public ControllerBase<BrushlessController<OutputPosition>> {
     public:
-        using OutputPosition = TOutputPosition;
         using OutputVelocity = compound_unit<OutputPosition, inverse<Seconds>>;
 
     private:
@@ -120,16 +119,16 @@ namespace mrover {
         bool mHasLimit{};
 
     public:
-        BrushlessController(rclcpp::Node::SharedPtr node, std::string master_name, std::string controller_name)
-            : Base{std::move(node), std::move(master_name), std::move(controller_name)} {
+        BrushlessController(rclcpp::Node::SharedPtr node, std::string masterName, std::string controllerName)
+            : Base{std::move(node), std::move(masterName), std::move(controllerName)} {
 
-            double min_velocity, max_velocity;
-            double min_position, max_position;
+            double minVelocity, maxVelocity;
+            double minPosition, maxPosition;
             std::vector<ParameterWrapper> parameters = {
-                    {std::format("{}.min_velocity", mControllerName), min_velocity, -1.0},
-                    {std::format("{}.max_velocity", mControllerName), max_velocity, 1.0},
-                    {std::format("{}.min_position", mControllerName), min_position, -1.0},
-                    {std::format("{}.max_position", mControllerName), max_position, 1.0},
+                    {std::format("{}.min_velocity", mControllerName), minVelocity, -1.0},
+                    {std::format("{}.max_velocity", mControllerName), maxVelocity, 1.0},
+                    {std::format("{}.min_position", mControllerName), minPosition, -1.0},
+                    {std::format("{}.max_position", mControllerName), maxPosition, 1.0},
                     {std::format("{}.max_torque", mControllerName), mMaxTorque, 0.3},
                     {std::format("{}.watchdog_timeout", mControllerName), mWatchdogTimeout, 0.25},
             };
@@ -147,10 +146,10 @@ namespace mrover {
 
             ParameterWrapper::declareParameters(mNode.get(), parameters);
 
-            mMinVelocity = OutputVelocity{min_velocity};
-            mMaxVelocity = OutputVelocity{max_velocity};
-            mMinPosition = OutputPosition{min_position};
-            mMaxPosition = OutputPosition{max_position};
+            mMinVelocity = OutputVelocity{minVelocity};
+            mMaxVelocity = OutputVelocity{maxVelocity};
+            mMinPosition = OutputPosition{minPosition};
+            mMaxPosition = OutputPosition{maxPosition};
 
             // if active low, we want to make the default value make it believe that
             // the limit switch is NOT pressed.
@@ -171,24 +170,24 @@ namespace mrover {
             }
 
             moteus::Controller::Options options;
-            moteus::Query::Format query_format{};
-            query_format.aux1_gpio = moteus::kInt8;
-            query_format.aux2_gpio = moteus::kInt8;
+            moteus::Query::Format queryFormat{};
+            queryFormat.aux1_gpio = moteus::kInt8;
+            queryFormat.aux2_gpio = moteus::kInt8;
             if (this->mControllerName.find("joint_de") != std::string::npos) {
                 // DE0 and DE1 have absolute encoders
                 // They are not used for their internal control loops
                 // Instead we request them at the ROS level and send adjust commands periodically
                 // Therefore we do not get them as part of normal messages and must request them explicitly
-                query_format.extra[0] = moteus::Query::ItemFormat{
+                queryFormat.extra[0] = moteus::Query::ItemFormat{
                         .register_number = moteus::Register::kEncoder1Position,
                         .resolution = moteus::kFloat,
                 };
-                query_format.extra[1] = moteus::Query::ItemFormat{
+                queryFormat.extra[1] = moteus::Query::ItemFormat{
                         .register_number = moteus::Register::kEncoder1Velocity,
                         .resolution = moteus::kFloat,
                 };
             }
-            options.query_format = query_format;
+            options.query_format = queryFormat;
             mMoteus.emplace(options);
         }
 
@@ -204,9 +203,9 @@ namespace mrover {
             // Only check for limit switches if at least one limit switch exists and is enabled
             if (mHasLimit) {
 
-                if (auto [is_fwd_pressed, is_bwd_pressed] = getPressedLimitSwitchInfo();
-                    (velocity > OutputVelocity{0} && is_fwd_pressed) ||
-                    (velocity < OutputVelocity{0} && is_bwd_pressed)) {
+                if (auto [isFwdPressed, isBwdPressed] = getPressedLimitSwitchInfo();
+                    (velocity > OutputVelocity{0} && isFwdPressed) ||
+                    (velocity < OutputVelocity{0} && isBwdPressed)) {
 #ifdef DEBUG_BUILD
                     RCLCPP_DEBUG(mNode->get_logger(), "%s hit limit switch. Not commanding velocity", mControllerName.c_str());
 #endif
@@ -233,8 +232,8 @@ namespace mrover {
                         .watchdog_timeout = moteus::kFloat,
                 };
 
-                moteus::CanFdFrame velocity_frame = mMoteus->MakePosition(command, &format);
-                mDevice.publishMessage(velocity_frame);
+                moteus::CanFdFrame velocityFrame = mMoteus->MakePosition(command, &format);
+                mDevice.publishMessage(velocityFrame);
             }
 
 #ifdef DEBUG_BUILD
@@ -246,9 +245,9 @@ namespace mrover {
             sendQuery();
             // Only check for limit switches if at least one limit switch exists and is enabled
             if (mHasLimit) {
-                if (auto [is_fwd_pressed, is_bwd_pressed] = getPressedLimitSwitchInfo();
-                    (mPosition < position.get() && is_fwd_pressed) ||
-                    (mPosition > position.get() && is_bwd_pressed)) {
+                if (auto [isFwdPressed, isBwdPressed] = getPressedLimitSwitchInfo();
+                    (mPosition < position.get() && isFwdPressed) ||
+                    (mPosition > position.get() && isBwdPressed)) {
 #ifdef DEBUG_BUILD
                     RCLCPP_DEBUG(mNode->get_logger(), "%s hit limit switch. Not commanding position", mControllerName.c_str());
 #endif
@@ -272,8 +271,8 @@ namespace mrover {
                     .watchdog_timeout = moteus::kFloat,
             };
 
-            moteus::CanFdFrame position_frame = mMoteus->MakePosition(command, &format);
-            mDevice.publishMessage(position_frame);
+            moteus::CanFdFrame positionFrame = mMoteus->MakePosition(command, &format);
+            mDevice.publishMessage(positionFrame);
 
 #ifdef DEBUG_BUILD
             RCLCPP_DEBUG(mNode->get_logger(), "Commanding %s position to: %f", mControllerName.c_str(), position.get());
@@ -304,30 +303,32 @@ namespace mrover {
                         setStop();
                         RCLCPP_WARN(mNode->get_logger(), "Position timeout hit");
                     }
+                } else {
+                    RCLCPP_WARN(mNode->get_logger(), "moteus received unexpected message type %s", typeid(T).name());
                 }
             },
                        msg);
         }
 
         auto setStop() -> void {
-            moteus::CanFdFrame set_stop_frame = mMoteus->MakeStop();
-            mDevice.publishMessage(set_stop_frame);
+            moteus::CanFdFrame stopFrame = mMoteus->MakeStop();
+            mDevice.publishMessage(stopFrame);
         }
 
         auto setBrake() -> void {
-            moteus::CanFdFrame set_brake_frame = mMoteus->MakeBrake();
-            mDevice.publishMessage(set_brake_frame);
+            moteus::CanFdFrame brakeFrame = mMoteus->MakeBrake();
+            mDevice.publishMessage(brakeFrame);
         }
 
         auto getPressedLimitSwitchInfo() -> MoteusLimitSwitchInfo {
             MoteusLimitSwitchInfo result{};
             for (std::size_t i = 0; i < MAX_NUM_LIMIT_SWITCHES; ++i) {
                 if (mLimitSwitchesInfo[i].present && mLimitSwitchesInfo[i].enabled) {
-                    std::uint8_t const aux_info = (mLimitSwitchesInfo[i].auxNumber == MoteusAuxNumber::AUX1) ? mMoteusAux1Info : mMoteusAux2Info;
-                    bool gpio_state = aux_info & (1 << static_cast<std::size_t>(mLimitSwitchesInfo[i].auxPin));
+                    std::uint8_t const auxInfo = (mLimitSwitchesInfo[i].auxNumber == MoteusAuxNumber::AUX1) ? mMoteusAux1Info : mMoteusAux2Info;
+                    bool gpioState = auxInfo & (1 << static_cast<std::size_t>(mLimitSwitchesInfo[i].auxPin));
 
                     // Assign to Base m_limit_hit
-                    mLimitHit[i] = (gpio_state == mLimitSwitchesInfo[i].activeHigh);
+                    mLimitHit[i] = (gpioState == mLimitSwitchesInfo[i].activeHigh);
                 }
                 result.isForwardPressed = (mLimitHit[i] && mLimitSwitchesInfo[i].limitsForward) || result.isForwardPressed;
                 result.isBackwardPressed = (mLimitHit[i] && !mLimitSwitchesInfo[i].limitsForward) || result.isBackwardPressed;
@@ -344,8 +345,8 @@ namespace mrover {
                     .position = position.get(),
             };
             moteus::OutputExact::Command const outputExactCmd{command};
-            moteus::CanFdFrame set_position_frame = mMoteus->MakeOutputExact(outputExactCmd);
-            mDevice.publishMessage(set_position_frame);
+            moteus::CanFdFrame positionFrame = mMoteus->MakeOutputExact(outputExactCmd);
+            mDevice.publishMessage(positionFrame);
         }
 
         auto sendQuery() -> void {

@@ -24,7 +24,7 @@ namespace mrover {
     class CANBridge : public rclcpp::Node {
         std::string mInterface;
         canfd_frame mReadFrame{};
-        CanNetLink mCANNetLink;
+        CANNetLink mCANNetLink;
         std::optional<boost::asio::posix::basic_stream_descriptor<>> mStream;
         std::jthread mIOThread;
         boost::asio::io_service mIOService;

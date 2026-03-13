@@ -27,6 +27,7 @@ namespace mrover {
     };
 
     using CANMsg_t = add_to_variant<CANBus1Msg_t, moteus::CanFdFrame>::type;
+    static_assert(std::is_trivially_copyable_v<CANBus1Msg_t> && sizeof(CANBus1Msg_t) <= 64);
 
     class CANDevice {
         rclcpp::Node::SharedPtr mNode;
@@ -39,9 +40,9 @@ namespace mrover {
             if (!mCallback) return;
 
             // mask out source
-            uint32_t incoming_base_id = msg->prefix & ~CAN_NODE_MASK;
+            uint32_t incomingBaseID = msg->prefix & ~CAN_NODE_MASK;
 
-            if (incoming_base_id == MOTEUS_PREFIX) {
+            if (incomingBaseID == MOTEUS_PREFIX) {
                 moteus::CanFdFrame frame;
                 frame.size = std::min(msg->data.size(), static_cast<size_t>(64));
                 std::memcpy(frame.data, msg->data.data(), frame.size);
@@ -49,16 +50,16 @@ namespace mrover {
                 return;
             }
 
-            auto try_parse = [&]<typename T>() {
+            auto tryParse = [&]<typename T>() {
                 if constexpr (!std::is_same_v<T, moteus::CanFdFrame>) {
-                    if (T::BASE_ID == incoming_base_id) {
+                    if (T::BASE_ID == incomingBaseID) {
                         mCallback(T{msg->data.data()});
                     }
                 }
             };
 
             [&]<typename... Ts>(std::variant<Ts...>*) {
-                (try_parse.operator()<Ts>(), ...);
+                (tryParse.operator()<Ts>(), ...);
             }(static_cast<CANBus1Msg_t*>(nullptr));
         }
 
@@ -76,24 +77,24 @@ namespace mrover {
         }
 
         void publishMessage(CANMsg_t const& msg, bool const& mjbotsReplyRequest = false) {
-            msg::CAN ros_msg;
-            ros_msg.source = mSrcDevice;
-            ros_msg.destination = mDestDevice;
-            ros_msg.mjbots_reply_request = mjbotsReplyRequest;
+            msg::CAN rosMsg;
+            rosMsg.source = mSrcDevice;
+            rosMsg.destination = mDestDevice;
+            rosMsg.mjbots_reply_request = mjbotsReplyRequest;
 
             std::visit([&](auto const& val) {
                 using T = std::decay_t<decltype(val)>;
                 if constexpr (std::is_same_v<T, moteus::CanFdFrame>) {
-                    ros_msg.prefix = MOTEUS_PREFIX;
-                    ros_msg.data.assign(val.data, val.data + val.size);
+                    rosMsg.prefix = MOTEUS_PREFIX;
+                    rosMsg.data.assign(val.data, val.data + val.size);
                 } else {
-                    ros_msg.prefix = T::BASE_ID;
-                    ros_msg.data.assign(val.msg_arr, val.msg_arr + sizeof(val.msg_arr));
+                    rosMsg.prefix = T::BASE_ID;
+                    rosMsg.data.assign(val.msg_arr, val.msg_arr + sizeof(val.msg_arr));
                 }
             },
                        msg);
 
-            mCANPublisher->publish(ros_msg);
+            mCANPublisher->publish(rosMsg);
         }
     };
 } // namespace mrover

@@ -54,10 +54,10 @@ namespace mrover {
                 RCLCPP_INFO_STREAM(get_logger(), std::format("added device: {} (id: {:#x})", name, id));
             }
 
-            mCANNetLink = CanNetLink{get_logger().get_child("link"), mInterface};
-            int socket_fd = setupSocket();
+            mCANNetLink = CANNetLink{get_logger().get_child("link"), mInterface};
+            int socketFD = setupSocket();
             mStream.emplace(mIOService);
-            mStream->assign(socket_fd);
+            mStream->assign(socketFD);
 
             readFrameAsync();
             mIOThread = std::jthread{[this] { mIOService.run(); }};
@@ -69,17 +69,17 @@ namespace mrover {
     }
 
     auto CANBridge::setupSocket() const -> int {
-        int const socket_fd = checkSyscallResult(socket(PF_CAN, SOCK_RAW, CAN_RAW));
-        RCLCPP_INFO_STREAM(get_logger(), std::format("opened can socket with file descriptor: {}", socket_fd));
+        int const socketFD = checkSyscallResult(socket(PF_CAN, SOCK_RAW, CAN_RAW));
+        RCLCPP_INFO_STREAM(get_logger(), std::format("opened can socket with file descriptor: {}", socketFD));
         ifreq ifr{};
         std::strcpy(ifr.ifr_name, mInterface.c_str());
-        ioctl(socket_fd, SIOCGIFINDEX, &ifr);
+        ioctl(socketFD, SIOCGIFINDEX, &ifr);
         sockaddr_can addr{.can_family = AF_CAN, .can_ifindex = ifr.ifr_ifindex};
-        checkSyscallResult(bind(socket_fd, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)));
+        checkSyscallResult(bind(socketFD, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)));
         RCLCPP_INFO_STREAM(get_logger(), "bound can socket");
         int const enable_can_fd = 1;
-        checkSyscallResult(setsockopt(socket_fd, SOL_CAN_RAW, CAN_RAW_FD_FRAMES, &enable_can_fd, sizeof(enable_can_fd)));
-        return socket_fd;
+        checkSyscallResult(setsockopt(socketFD, SOL_CAN_RAW, CAN_RAW_FD_FRAMES, &enable_can_fd, sizeof(enable_can_fd)));
+        return socketFD;
     }
 
     auto CANBridge::readFrameAsync() -> void {
@@ -93,59 +93,60 @@ namespace mrover {
     }
 
     auto CANBridge::frameReadCallback() -> void {
-        auto const [identifier, is_error, is_rtr, is_ext] = std::bit_cast<RawCANFDID_t>(mReadFrame.can_id);
+        auto const [identifier, isErr, isRTR, isExt] = std::bit_cast<RawCANFDID_t>(mReadFrame.can_id);
 
         // extract prefix, source, and dest
-        uint32_t const dest_id = (identifier & CAN_DEST_ID_MASK) >> CAN_DEST_ID_OFFSET;
-        uint32_t const src_id = (identifier & CAN_SRC_ID_MASK) >> CAN_SRC_ID_OFFSET;
+        uint32_t const destID = (identifier & CAN_DEST_ID_MASK) >> CAN_DEST_ID_OFFSET;
+        uint32_t const srcID = (identifier & CAN_SRC_ID_MASK) >> CAN_SRC_ID_OFFSET;
         uint32_t const prefix = identifier & ~CAN_NODE_MASK;
 
-        auto const src_it = mDevices.right.find(src_id);
-        auto const dest_it = mDevices.right.find(dest_id);
+        auto const srcIterator = mDevices.right.find(srcID);
+        auto const destIterator = mDevices.right.find(destID);
 
         // drop any packets with invalid src/dest registers
-        if (src_it == mDevices.right.end() || dest_it == mDevices.right.end()) {
-            RCLCPP_INFO(get_logger(), "could not find one of %x or %x", src_id, dest_id);
+        if (srcIterator == mDevices.right.end() || destIterator == mDevices.right.end()) {
+            RCLCPP_INFO(get_logger(), "could not find one of %x or %x", srcID, destID);
             return;
         }
 
         // create ros2 canfd frame
         msg::CAN msg;
-        msg.source = src_it->second;
-        msg.destination = dest_it->second;
+        msg.source = srcIterator->second;
+        msg.destination = destIterator->second;
         msg.prefix = prefix;
         msg.data.assign(mReadFrame.data, mReadFrame.data + mReadFrame.len);
 
         // publish frame
-        mDevicesPubSub.at(src_it->second).publisher->publish(msg);
+        mDevicesPubSub.at(srcIterator->second).publisher->publish(msg);
     }
 
     auto CANBridge::frameSendRequestCallback(msg::CAN::ConstSharedPtr const& msg) -> void {
-        auto const src_it = mDevices.left.find(msg->source);
-        if (src_it == mDevices.left.end()) {
+        auto const srcIterator = mDevices.left.find(msg->source);
+        if (srcIterator == mDevices.left.end()) {
             RCLCPP_WARN_STREAM(get_logger(), std::format("sending message that has an unknown source: {}", msg->source));
             return;
         }
 
-        auto const dest_it = mDevices.left.find(msg->destination);
-        if (dest_it == mDevices.left.end()) {
+        auto const destIterator = mDevices.left.find(msg->destination);
+        if (destIterator == mDevices.left.end()) {
             RCLCPP_WARN_STREAM(get_logger(), std::format("sending message that has an unknown destination: {}", msg->destination));
             return;
         }
 
-        if (src_it == mDevices.left.end() || dest_it == mDevices.left.end()) return;
+        if (srcIterator == mDevices.left.end() || destIterator == mDevices.left.end()) return;
 
-        uint32_t id_bits = (static_cast<uint32_t>(msg->prefix) & ~CAN_NODE_MASK) // no shifts here, 16 LSBs of prefix are 0
-                           | ((static_cast<std::uint32_t>(src_it->second) << CAN_SRC_ID_OFFSET) & CAN_SRC_ID_MASK) | ((static_cast<std::uint32_t>(dest_it->second) << CAN_DEST_ID_OFFSET) & CAN_DEST_ID_MASK);
+        uint32_t idBits = (static_cast<uint32_t>(msg->prefix) & ~CAN_NODE_MASK) // no shifts here, 16 LSBs of prefix are 0
+                          | ((static_cast<std::uint32_t>(srcIterator->second) << CAN_SRC_ID_OFFSET) & CAN_SRC_ID_MASK)
+                          | ((static_cast<std::uint32_t>(destIterator->second) << CAN_DEST_ID_OFFSET) & CAN_DEST_ID_MASK);
 
         // put in reply req bit for moteus
         if (msg->prefix == MOTEUS_PREFIX && msg->mjbots_reply_request) {
-            id_bits |= MOTEUS_REPLY_MASK;
+            idBits |= MOTEUS_REPLY_MASK;
         }
 
         canfd_frame frame{
                 .can_id = std::bit_cast<canid_t>(RawCANFDID_t{
-                        .identifier = std::bit_cast<uint32_t>(id_bits),
+                        .identifier = std::bit_cast<uint32_t>(idBits),
                         .is_extended_frame = true}),
                 .len = nearestFittingFDCANFrameSize(msg->data.size())};
         std::memcpy(frame.data, msg->data.data(), std::min(msg->data.size(), static_cast<size_t>(64)));

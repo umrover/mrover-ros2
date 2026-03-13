@@ -46,6 +46,8 @@ namespace mrover {
     auto static const PITCH_ROLL_TO_0_1 = (Matrix2<Dimensionless>{} << -1, -1, -1, 1).finished();
     Dimensionless static constexpr PITCH_ROLL_TO_01_SCALE{40};
 
+    auto static constexpr PROBE_INTERVAL_MS = 100;
+
     class ArmHWBridge : public rclcpp::Node {
 
         using Controller = std::variant<
@@ -69,8 +71,8 @@ namespace mrover {
         }
 
         auto init() -> void {
-            auto sub_options = rclcpp::SubscriptionOptions();
-            sub_options.callback_group = mCbGroup;
+            auto subOptions = rclcpp::SubscriptionOptions();
+            subOptions.callback_group = mCbGroup;
 
             mJointA = std::make_shared<BrushlessController<Meters>>(shared_from_this(), "jetson", "joint_a");
             mJointB = std::make_shared<BrushedController<Meters>>(shared_from_this(), "jetson", "joint_b");
@@ -113,11 +115,11 @@ namespace mrover {
             if ((mJointBSegmentLength + mJointBActuatorLength <= mJointBMountLength) ||
                 (mJointBSegmentLength + mJointBMountLength <= mJointBActuatorLength) ||
                 (mJointBActuatorLength + mJointBMountLength <= mJointBSegmentLength)) {
-                RCLCPP_ERROR(get_logger(), "arm joint b segment lengths are invalid");
+                throw std::runtime_error("arm joint b segment lengths are invalid");
             }
 
             mPusherControlTimer = create_wall_timer(
-                    std::chrono::milliseconds(100),
+                    std::chrono::milliseconds(PROBE_INTERVAL_MS),
                     [this]() { updatePusherStateMachine(); },
                     mCbGroup);
             mProbeTimer = create_wall_timer(

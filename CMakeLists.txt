@@ -211,17 +211,17 @@ target_link_libraries(gst_utils INTERFACE magic_enum::magic_enum PkgConfig::Gst 
 
 # Simulator
 
-#mrover_add_node(simulator simulator/*.cpp simulator simulator/pch.hpp)
-#ament_target_dependencies(simulator rclcpp rclcpp_components nav_msgs sensor_msgs geometry_msgs tf2 tf2_ros urdf yaml_cpp_vendor)
-#target_link_libraries(simulator
-#    assimp::assimp glfw3webgpu webgpu glfw webgpu_hpp imgui
-#    ${BULLET_LIBRARIES}
-#    lie Eigen3::Eigen
-#    opencv_core opencv_imgcodecs opencv_imgproc
-#    loop_profiler
-#    parameter_utils
-#)
-#target_include_directories(simulator SYSTEM PRIVATE ${BULLET_INCLUDE_DIRS} ${OPENCV_INCLUDE_DIRS})
+mrover_add_node(simulator simulator/*.cpp simulator simulator/pch.hpp)
+ament_target_dependencies(simulator rclcpp rclcpp_components nav_msgs sensor_msgs geometry_msgs tf2 tf2_ros urdf yaml_cpp_vendor)
+target_link_libraries(simulator
+    assimp::assimp glfw3webgpu webgpu glfw webgpu_hpp imgui
+    ${BULLET_LIBRARIES}
+    lie Eigen3::Eigen
+    opencv_core opencv_imgcodecs opencv_imgproc
+    loop_profiler
+    parameter_utils
+)
+target_include_directories(simulator SYSTEM PRIVATE ${BULLET_INCLUDE_DIRS} ${OPENCV_INCLUDE_DIRS})
 
 
 # Localization
@@ -292,19 +292,19 @@ else()
 endif()
 
 # Tag Detector
-#mrover_add_component(tag_detector perception/tag_detector/*.cpp perception/tag_detector/pch.hpp StereoTagDetector ImageTagDetector)
-#mrover_ament_component(tag_detector rclcpp rclcpp_components tf2 tf2_ros)
-#mrover_link_component(tag_detector lie opencv_core opencv_aruco opencv_imgproc loop_profiler parameter_utils)
+mrover_add_component(tag_detector perception/tag_detector/*.cpp perception/tag_detector/pch.hpp StereoTagDetector ImageTagDetector)
+mrover_ament_component(tag_detector rclcpp rclcpp_components tf2 tf2_ros)
+mrover_link_component(tag_detector lie opencv_core opencv_aruco opencv_imgproc loop_profiler parameter_utils)
 
-#mrover_executable_from_component(stereo_tag_detector perception/executables/stereo_tag_detector.cpp tag_detector_component)
-#mrover_executable_from_component(image_tag_detector perception/executables/image_tag_detector.cpp tag_detector_component)
+mrover_executable_from_component(stereo_tag_detector perception/executables/stereo_tag_detector.cpp tag_detector_component)
+mrover_executable_from_component(image_tag_detector perception/executables/image_tag_detector.cpp tag_detector_component)
 
 # Cost Map
-#mrover_add_component(cost_map perception/cost_map/*.cpp perception/cost_map/pch.hpp CostMapNode)
-#mrover_ament_component(cost_map rclcpp rclcpp_components tf2 tf2_ros)
-#mrover_link_component(cost_map lie parameter_utils)
+mrover_add_component(cost_map perception/cost_map/*.cpp perception/cost_map/pch.hpp CostMapNode)
+mrover_ament_component(cost_map rclcpp rclcpp_components tf2 tf2_ros)
+mrover_link_component(cost_map lie parameter_utils)
 
-#mrover_executable_from_component(cost_map perception/executables/cost_map.cpp cost_map_component)
+mrover_executable_from_component(cost_map perception/executables/cost_map.cpp cost_map_component)
 
 # Embedded
 
@@ -329,11 +329,6 @@ if (NOT APPLE)
     mrover_add_esw_bridge_node(drive_hw_bridge esw/drive_hw_bridge.cpp)
     mrover_add_esw_bridge_node(arm_hw_bridge esw/arm_hw_bridge.cpp)
     mrover_add_esw_bridge_node(science_hw_bridge esw/science_hw_bridge.cpp)
-    # mrover_add_esw_bridge_node(mast_gimbal_hw_bridge esw/mast_gimbal_hw_bridge.cpp)
-
-    # mrover_add_node(pdlb_hw_bridge esw/pdlb_hw_bridge.cpp)
-    # ament_target_dependencies(pdlb_hw_bridge rclcpp std_srvs)
-    # target_link_libraries(pdlb_hw_bridge can_device units messaging)
 endif()
 
 mrover_add_node(differential_drive_controller esw/differential_drive_controller.cpp)
@@ -343,9 +338,9 @@ target_link_libraries(differential_drive_controller units)
 # ament_target_dependencies(science_hw_bridge rclcpp)
 # target_link_libraries(science_hw_bridge can_device dbc)
 
-# mrover_add_node(arm_controller navigation/arm_controller/arm_controller.cpp navigation/arm_controller/pch.hpp)
-# target_link_libraries(arm_controller lie)
-# ament_target_dependencies(arm_controller rclcpp)
+mrover_add_node(arm_controller navigation/arm_controller/arm_controller.cpp navigation/arm_controller/pch.hpp)
+target_link_libraries(arm_controller lie)
+ament_target_dependencies(arm_controller rclcpp)
 
 # mrover_add_node(led esw/led.cpp)
 # ament_target_dependencies(led rclcpp std_srvs)

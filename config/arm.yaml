@@ -55,6 +55,7 @@ arm_hw_bridge:
       max_torque: 20.0
     pusher_throttle: 0.8
     pusher_wait_duration: 5.0
+    # TODO(eric): configure and enable DE limits
 #      limit_switch_0_present: true
 #      limit_switch_0_enabled: true
 #      limit_switch_0_limits_forward: true

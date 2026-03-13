@@ -134,6 +134,8 @@ namespace mrover {
                     this->mErrorState = errorToString(static_cast<BMCError_t>(decoded.fault_code));
                 } else if constexpr (std::is_same_v<T, BMCAck>) {
                     RCLCPP_INFO(mNode->get_logger(), "BMC Ack received: %u", decoded.data);
+                } else {
+                    RCLCPP_WARN(mNode->get_logger(), "BMC received unexpected message type %s", typeid(T).name());
                 }
             },
                        msg);
