@@ -1,8 +1,11 @@
+import logging
 import rclpy
 import threading
 import atexit
 from rclpy.node import Node
 from rclpy.executors import SingleThreadedExecutor
+
+logger = logging.getLogger(__name__)
 
 lock = threading.Lock()
 initialized = threading.Event()
@@ -54,7 +57,7 @@ def ros_spin():
 def init_ros():
     global context, node, ros_thread
 
-    print("Initializing ROS Manager...")
+    logger.info("Initializing ROS Manager...")
     context = rclpy.Context()
     rclpy.init(context=context)
 
@@ -64,13 +67,13 @@ def init_ros():
     ros_thread = threading.Thread(target=ros_spin, daemon=True)
     ros_thread.start()
 
-    print("ROS Manager started in a background thread.")
+    logger.info("ROS Manager started in a background thread.")
     initialized.set()
 
 
 def shutdown_ros():
     global context, node
-    print("Shutting down ROS Manager...")
+    logger.info("Shutting down ROS Manager...")
     if context and rclpy.ok(context=context):
         if node:
             node.destroy_node()
