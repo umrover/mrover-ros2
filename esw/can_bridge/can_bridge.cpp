@@ -136,8 +136,7 @@ namespace mrover {
         if (srcIterator == mDevices.left.end() || destIterator == mDevices.left.end()) return;
 
         uint32_t idBits = (static_cast<uint32_t>(msg->prefix) & ~CAN_NODE_MASK) // no shifts here, 16 LSBs of prefix are 0
-                          | ((static_cast<std::uint32_t>(srcIterator->second) << CAN_SRC_ID_OFFSET) & CAN_SRC_ID_MASK)
-                          | ((static_cast<std::uint32_t>(destIterator->second) << CAN_DEST_ID_OFFSET) & CAN_DEST_ID_MASK);
+                          | ((static_cast<std::uint32_t>(srcIterator->second) << CAN_SRC_ID_OFFSET) & CAN_SRC_ID_MASK) | ((static_cast<std::uint32_t>(destIterator->second) << CAN_DEST_ID_OFFSET) & CAN_DEST_ID_MASK);
 
         // put in reply req bit for moteus
         if (msg->prefix == MOTEUS_PREFIX && msg->mjbots_reply_request) {
