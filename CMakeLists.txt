@@ -204,7 +204,6 @@ mrover_add_library(lie lie/*.cpp lie)
 target_link_libraries(lie MANIF::manif)
 ament_target_dependencies(lie rclcpp geometry_msgs tf2 tf2_ros)
 
-mrover_add_header_only_library(units units)
 mrover_add_header_only_library(loop_profiler loop_profiler)
 mrover_add_header_only_library(parameter_utils parameter_utils)
 mrover_add_header_only_library(gst_utils gst_utils)
@@ -309,42 +308,42 @@ mrover_executable_from_component(cost_map perception/executables/cost_map.cpp co
 
 # Embedded
 
-mrover_add_header_only_library(messaging esw/messaging)
+add_subdirectory(esw/fw/lib)
 
 if (NOT APPLE)
     mrover_add_header_only_library(can_device esw/can_device)
-    target_link_libraries(can_device INTERFACE ${rclcpp_LIBRARIES} moteus)
+    target_link_libraries(can_device INTERFACE ${rclcpp_LIBRARIES} moteus dbc)
 
-    mrover_add_library(motor_library esw/motor_library/*.cpp esw/motor_library)
-    ament_target_dependencies(motor_library rclcpp std_srvs)
-    target_link_libraries(motor_library can_device units messaging parameter_utils)
+    mrover_add_header_only_library(motor esw/motor)
+    target_link_libraries(motor INTERFACE can_device units parameter_utils)
 
-    macro(mrover_add_esw_motor_bridge_node name sources)
+    mrover_add_header_only_library(science esw/science)
+    target_link_libraries(science INTERFACE can_device units)
+
+    macro(mrover_add_esw_bridge_node name sources)
         mrover_add_node(${name} ${sources})
         ament_target_dependencies(${name} rclcpp std_srvs)
-        target_link_libraries(${name} can_device units messaging)
-        target_link_libraries(${name} motor_library)
+        target_link_libraries(${name} can_device units motor science)
     endmacro()
 
-    mrover_add_esw_motor_bridge_node(drive_hw_bridge esw/drive_hw_bridge.cpp)
-    mrover_add_esw_motor_bridge_node(arm_hw_bridge esw/arm_hw_bridge.cpp)
-    mrover_add_esw_motor_bridge_node(mast_gimbal_hw_bridge esw/mast_gimbal_hw_bridge.cpp)
-
-    mrover_add_node(pdlb_hw_bridge esw/pdlb_hw_bridge.cpp)
-    ament_target_dependencies(pdlb_hw_bridge rclcpp std_srvs)
-    target_link_libraries(pdlb_hw_bridge can_device units messaging)
+    mrover_add_esw_bridge_node(drive_hw_bridge esw/drive_hw_bridge.cpp)
+    mrover_add_esw_bridge_node(arm_hw_bridge esw/arm_hw_bridge.cpp)
+    mrover_add_esw_bridge_node(science_hw_bridge esw/science_hw_bridge.cpp)
 endif()
 
 mrover_add_node(differential_drive_controller esw/differential_drive_controller.cpp)
 ament_target_dependencies(differential_drive_controller rclcpp std_srvs)
-target_link_libraries(differential_drive_controller units messaging)
+target_link_libraries(differential_drive_controller units)
+# mrover_add_node(science_hw_bridge esw/science_hw_bridge.cpp)
+# ament_target_dependencies(science_hw_bridge rclcpp)
+# target_link_libraries(science_hw_bridge can_device dbc)
 
 mrover_add_node(arm_controller navigation/arm_controller/arm_controller.cpp navigation/arm_controller/pch.hpp)
 target_link_libraries(arm_controller lie)
 ament_target_dependencies(arm_controller rclcpp)
 
-mrover_add_node(led esw/led.cpp)
-ament_target_dependencies(led rclcpp std_srvs)
+# mrover_add_node(led esw/led.cpp)
+# ament_target_dependencies(led rclcpp std_srvs)
 
 if (Gst_FOUND AND GstApp_FOUND)
     mrover_add_node(usb_camera esw/usb_camera/*.cpp esw/usb_camera/pch.hpp)
@@ -361,8 +360,8 @@ if (Gst_FOUND AND GstApp_FOUND)
 endif ()
 
 if (NetLink_FOUND AND NetLinkRoute_FOUND)
-    mrover_add_node(can_bridge esw/can_bridge/*.cpp esw/can_bridge/pch.hpp)
-    target_link_libraries(can_bridge PkgConfig::NetLink PkgConfig::NetLinkRoute)
+    mrover_add_node(can_bridge esw/can_bridge/*.cpp esw/can_bridge/pch.hpp esw/can_bridge/can_bridge.hpp)
+    target_link_libraries(can_bridge dbc PkgConfig::NetLink PkgConfig::NetLinkRoute)
     ament_target_dependencies(can_bridge rclcpp)
 endif ()
 

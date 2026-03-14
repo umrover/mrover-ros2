@@ -1,1 +1,1 @@
-float64 ppb
+float32 ppb
