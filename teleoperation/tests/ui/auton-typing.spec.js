@@ -5,13 +5,13 @@ test.beforeEach(async ({ page }) => {
 });
 
 test('typing input visible on ESTask', async ({ page }) => {
-  await page.goto('http://localhost:8080/ESTask');
+  await page.goto('/ESTask');
   await page.waitForLoadState('networkidle');
   await expect(page.getByTestId('pw-typing-input')).toBeVisible({ timeout: 15000 });
 });
 
 test('submit disabled for <3 chars', async ({ page }) => {
-  await page.goto('http://localhost:8080/ESTask');
+  await page.goto('/ESTask');
   await page.waitForLoadState('networkidle');
 
   const input = page.getByTestId('pw-typing-input');
@@ -23,7 +23,7 @@ test('submit disabled for <3 chars', async ({ page }) => {
 });
 
 test('submit enabled for 3+ chars', async ({ page }) => {
-  await page.goto('http://localhost:8080/ESTask');
+  await page.goto('/ESTask');
   await page.waitForLoadState('networkidle');
 
   const input = page.getByTestId('pw-typing-input');
@@ -35,7 +35,7 @@ test('submit enabled for 3+ chars', async ({ page }) => {
 });
 
 test('feedback table has 6 cells', async ({ page }) => {
-  await page.goto('http://localhost:8080/ESTask');
+  await page.goto('/ESTask');
   await page.waitForLoadState('networkidle');
 
   const table = page.getByTestId('pw-typing-feedback');

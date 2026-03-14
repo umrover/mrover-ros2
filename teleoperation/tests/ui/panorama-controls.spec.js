@@ -5,14 +5,14 @@ test.beforeEach(async ({ page }) => {
 });
 
 test('panorama button visible on ScienceTask', async ({ page }) => {
-  await page.goto('http://localhost:8080/ScienceTask');
+  await page.goto('/ScienceTask');
   await page.waitForLoadState('networkidle');
   const toggle = page.getByTestId('pw-panorama-toggle');
   await expect(toggle).toBeVisible({ timeout: 15000 });
 });
 
 test('button shows Start initially', async ({ page }) => {
-  await page.goto('http://localhost:8080/ScienceTask');
+  await page.goto('/ScienceTask');
   await page.waitForLoadState('networkidle');
   const toggle = page.getByTestId('pw-panorama-toggle');
   await expect(toggle).toBeVisible({ timeout: 15000 });
