@@ -31,8 +31,8 @@ class WebSocketHandler:
         try:
             packed = msgpack.packb(data, use_bin_type=True)
             await self.websocket.send_bytes(packed)
-        except Exception:
-            pass
+        except Exception as exc:
+            get_logger().debug(f"Send failed on {self.endpoint}: {exc}")
 
     def schedule_send(self, data):
         if self.closed:

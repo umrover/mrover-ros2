@@ -31,13 +31,9 @@ def get_logger():
 
 def get_service_client(srv_type, srv_name):
     with service_clients_lock:
-        if srv_name in service_clients:
-            client = service_clients[srv_name]
-            if client.service_is_ready():
-                return client
-            client.destroy()
-        n = get_node()
-        service_clients[srv_name] = n.create_client(srv_type, srv_name)
+        if srv_name not in service_clients:
+            n = get_node()
+            service_clients[srv_name] = n.create_client(srv_type, srv_name)
         return service_clients[srv_name]
 
 
