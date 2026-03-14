@@ -299,9 +299,12 @@ namespace mrover {
                     mMoteusAux1Info = result.aux1_gpio;
                     mMoteusAux2Info = result.aux2_gpio;
 
-                    if (result.mode == moteus::Mode::kPositionTimeout || result.mode == moteus::Mode::kFault) {
+                    if (result.mode == moteus::Mode::kPositionTimeout) {
                         setStop();
-                        RCLCPP_WARN(mNode->get_logger(), "Position timeout hit");
+                        RCLCPP_WARN_STREAM(mNode->get_logger(), "Position timeout hit on " << this->mControllerName);
+                    }else if(result.mode == moteus::Mode::kFault){
+                        setStop();
+                        RCLCPP_WARN_STREAM(mNode->get_logger(), "Moteus fault occurred on " << this->mControllerName);
                     }
                 } else {
                     RCLCPP_WARN(mNode->get_logger(), "moteus received unexpected message type %s", typeid(T).name());
