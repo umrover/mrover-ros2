@@ -5,13 +5,13 @@ test.beforeEach(async ({ page }) => {
 });
 
 test('sensor data visible on ScienceTask', async ({ page }) => {
-  await page.goto('http://localhost:8080/ScienceTask');
+  await page.goto('/ScienceTask');
   await page.waitForLoadState('networkidle');
   await expect(page.getByTestId('pw-sensor-view-all')).toBeVisible({ timeout: 15000 });
 });
 
 test('view all opens modal', async ({ page }) => {
-  await page.goto('http://localhost:8080/ScienceTask');
+  await page.goto('/ScienceTask');
   await page.waitForLoadState('networkidle');
   const viewAllBtn = page.getByTestId('pw-sensor-view-all');
   await expect(viewAllBtn).toBeVisible({ timeout: 15000 });
@@ -21,7 +21,7 @@ test('view all opens modal', async ({ page }) => {
 });
 
 test('csv button visible', async ({ page }) => {
-  await page.goto('http://localhost:8080/ScienceTask');
+  await page.goto('/ScienceTask');
   await page.waitForLoadState('networkidle');
   await expect(page.getByTestId('pw-sensor-csv-btn')).toBeVisible({ timeout: 15000 });
 });

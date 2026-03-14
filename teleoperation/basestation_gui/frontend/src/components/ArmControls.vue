@@ -2,6 +2,11 @@
   <div class="flex flex-col gap-2 h-full">
     <div class="flex justify-between items-center">
       <h4 class="component-header">Arm Controls</h4>
+      <p 
+      class="text-danger"
+      :class="forcing_limit === true ? 'visible' : 'invisible'">
+        Limit Reached!
+      </p>
       <IndicatorDot :is-active="connected" class="mr-2" />
     </div>
     <div class="btn-group w-full" role="group" aria-label="Arm mode selection" data-testid="pw-arm-mode-buttons">
@@ -47,13 +52,15 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { armAPI } from '@/utils/api'
 import { useGamepadPolling } from '@/composables/useGamepadPolling'
 import GamepadDisplay from './GamepadDisplay.vue'
 import IndicatorDot from './IndicatorDot.vue'
 
 const mode = ref('disabled')
+const forcing_limit = ref(false)
+const limits_hit_external = ref([0, 0, 0, 0, 0, 0])
 
 const { connected, axes, buttons } = useGamepadPolling({
   controllerIdFilter: 'Microsoft',
@@ -81,6 +88,7 @@ const newRAMode = async (newMode: string) => {
     const data = await armAPI.setRAMode(mode.value)
     if (data.status === 'success' && data.mode) {
       mode.value = data.mode
+
     }
   } catch (error) {
     console.error('Failed to set arm mode:', error)

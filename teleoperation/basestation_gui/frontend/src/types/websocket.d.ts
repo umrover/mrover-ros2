@@ -113,4 +113,22 @@ export interface SPPressureMessage {
   pressure: number;
 }
 
+// export interface VelocityMessage {
+//   header?: {
+//     stamp: { sec: number; nanosec: number };
+//     frame_id: string;
+//   }; 
+//   names: string[];
+//   velocities: number[];
+// }
+
+export interface ThrottleMessage {
+  header?: {
+    stamp: { sec: number; nanosec: number };
+    frame_id: string;
+  }; 
+  names: string[];
+  throttles: number[];
+}
+
 export type ScienceMessage = OxygenMessage | UVMessage | TemperatureMessage | HumidityMessage | SPHumidityMessage | SPTemperatureMessage | SPOxygenMessage | SPUVMessage | SPOzoneMessage | SPCO2Message | SPPressureMessage;

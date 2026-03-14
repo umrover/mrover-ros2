@@ -5,7 +5,7 @@ test.beforeEach(async ({ page }) => {
 });
 
 test('default waypoints load', async ({ page }) => {
-  await page.goto('http://localhost:8080/AutonTask');
+  await page.goto('/AutonTask');
   await page.waitForLoadState('networkidle');
   const storeItems = page.getByTestId('pw-waypoint-store-item');
   await expect(storeItems.first()).toBeVisible({ timeout: 15000 });
@@ -14,7 +14,7 @@ test('default waypoints load', async ({ page }) => {
 });
 
 test('add from map opens modal', async ({ page }) => {
-  await page.goto('http://localhost:8080/AutonTask');
+  await page.goto('/AutonTask');
   await page.waitForLoadState('networkidle');
   const addBtn = page.getByTestId('pw-add-from-map');
   await expect(addBtn).toBeVisible({ timeout: 15000 });
@@ -25,7 +25,7 @@ test('add from map opens modal', async ({ page }) => {
 
 test('add waypoint with name', async ({ page }) => {
   const wpName = `test-wp-${Date.now()}`;
-  await page.goto('http://localhost:8080/AutonTask');
+  await page.goto('/AutonTask');
   await page.waitForLoadState('networkidle');
 
   await page.getByTestId('pw-add-from-map').click();
@@ -54,7 +54,7 @@ test('add waypoint with name', async ({ page }) => {
 
 test('waypoint name persists after refresh', async ({ page }) => {
   const wpName = `persist-${Date.now()}`;
-  await page.goto('http://localhost:8080/AutonTask');
+  await page.goto('/AutonTask');
   await page.waitForLoadState('networkidle');
 
   await page.getByTestId('pw-add-from-map').click();
@@ -89,7 +89,7 @@ test('waypoint name persists after refresh', async ({ page }) => {
 });
 
 test('default waypoints cannot be deleted', async ({ page }) => {
-  await page.goto('http://localhost:8080/AutonTask');
+  await page.goto('/AutonTask');
   await page.waitForLoadState('networkidle');
 
   const firstDefault = page.getByTestId('pw-waypoint-store-item').filter({ hasText: 'No Search 1' });
@@ -104,7 +104,7 @@ test('default waypoints cannot be deleted', async ({ page }) => {
 
 test('user waypoint can be deleted', async ({ page }) => {
   const wpName = `del-test-${Date.now()}`;
-  await page.goto('http://localhost:8080/AutonTask');
+  await page.goto('/AutonTask');
   await page.waitForLoadState('networkidle');
 
   await page.getByTestId('pw-add-from-map').click();
@@ -129,7 +129,7 @@ test('user waypoint can be deleted', async ({ page }) => {
 });
 
 test('add waypoint to route', async ({ page }) => {
-  await page.goto('http://localhost:8080/AutonTask');
+  await page.goto('/AutonTask');
   await page.waitForLoadState('networkidle');
 
   const firstItem = page.getByTestId('pw-waypoint-store-item').first();
@@ -143,7 +143,7 @@ test('add waypoint to route', async ({ page }) => {
 });
 
 test('delete from route', async ({ page }) => {
-  await page.goto('http://localhost:8080/AutonTask');
+  await page.goto('/AutonTask');
   await page.waitForLoadState('networkidle');
 
   const firstItem = page.getByTestId('pw-waypoint-store-item').first();
@@ -165,7 +165,7 @@ test('delete from route', async ({ page }) => {
 });
 
 test('all costmaps toggle', async ({ page }) => {
-  await page.goto('http://localhost:8080/AutonTask');
+  await page.goto('/AutonTask');
   await page.waitForLoadState('networkidle');
 
   const toggleBtn = page.getByTestId('pw-costmap-toggle-all');
@@ -180,7 +180,7 @@ test('all costmaps toggle', async ({ page }) => {
 
 test('reset clears user waypoints', async ({ page }) => {
   const wpName = `reset-test-${Date.now()}`;
-  await page.goto('http://localhost:8080/AutonTask');
+  await page.goto('/AutonTask');
   await page.waitForLoadState('networkidle');
 
   await page.getByTestId('pw-add-from-map').click();

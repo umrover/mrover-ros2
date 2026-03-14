@@ -5,14 +5,14 @@ test.beforeEach(async ({ page }) => {
 });
 
 test('gimbal controls visible on DMTask', async ({ page }) => {
-  await page.goto('http://localhost:8080/DMTask');
+  await page.goto('/DMTask');
   await page.waitForLoadState('networkidle');
   const controls = page.getByTestId('pw-gimbal-controls');
   await expect(controls).toBeVisible({ timeout: 15000 });
 });
 
 test('pitch buttons visible', async ({ page }) => {
-  await page.goto('http://localhost:8080/DMTask');
+  await page.goto('/DMTask');
   await page.waitForLoadState('networkidle');
   const pitchRow = page.getByTestId('pw-gimbal-pitch-btns');
   await expect(pitchRow).toBeVisible({ timeout: 15000 });
@@ -21,7 +21,7 @@ test('pitch buttons visible', async ({ page }) => {
 });
 
 test('yaw buttons visible', async ({ page }) => {
-  await page.goto('http://localhost:8080/DMTask');
+  await page.goto('/DMTask');
   await page.waitForLoadState('networkidle');
   const yawRow = page.getByTestId('pw-gimbal-yaw-btns');
   await expect(yawRow).toBeVisible({ timeout: 15000 });
@@ -30,7 +30,7 @@ test('yaw buttons visible', async ({ page }) => {
 });
 
 test('buttons disabled initially', async ({ page }) => {
-  await page.goto('http://localhost:8080/DMTask');
+  await page.goto('/DMTask');
   await page.waitForLoadState('networkidle');
   const pitchRow = page.getByTestId('pw-gimbal-pitch-btns');
   await expect(pitchRow).toBeVisible({ timeout: 15000 });

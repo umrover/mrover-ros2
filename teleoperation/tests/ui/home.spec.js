@@ -5,19 +5,19 @@ test.beforeEach(async ({ page }) => {
 });
 
 test('frontend loads with title', async ({ page }) => {
-  await page.goto('http://localhost:8080/');
+  await page.goto('/');
   await expect(page).toHaveTitle(/MRover/);
 });
 
 test('4 mission buttons visible', async ({ page }) => {
-  await page.goto('http://localhost:8080/');
+  await page.goto('/');
   await page.waitForLoadState('networkidle');
   const buttons = page.getByTestId('pw-menu-btn');
   await expect(buttons).toHaveCount(4);
 });
 
 test('Delivery navigates to /DMTask', async ({ page }) => {
-  await page.goto('http://localhost:8080/');
+  await page.goto('/');
   await page.waitForLoadState('networkidle');
   const btn = page.getByTestId('pw-menu-btn').filter({ hasText: 'Delivery' });
   await btn.click();
@@ -25,7 +25,7 @@ test('Delivery navigates to /DMTask', async ({ page }) => {
 });
 
 test('Equipment Servicing navigates to /ESTask', async ({ page }) => {
-  await page.goto('http://localhost:8080/');
+  await page.goto('/');
   await page.waitForLoadState('networkidle');
   const btn = page.getByTestId('pw-menu-btn').filter({ hasText: 'Equipment Servicing' });
   await btn.click();
@@ -33,7 +33,7 @@ test('Equipment Servicing navigates to /ESTask', async ({ page }) => {
 });
 
 test('Science navigates to /ScienceTask', async ({ page }) => {
-  await page.goto('http://localhost:8080/');
+  await page.goto('/');
   await page.waitForLoadState('networkidle');
   const btn = page.getByTestId('pw-menu-btn').filter({ hasText: 'Science' });
   await btn.click();
@@ -41,7 +41,7 @@ test('Science navigates to /ScienceTask', async ({ page }) => {
 });
 
 test('Autonomy navigates to /AutonTask', async ({ page }) => {
-  await page.goto('http://localhost:8080/');
+  await page.goto('/');
   await page.waitForLoadState('networkidle');
   const btn = page.getByTestId('pw-menu-btn').filter({ hasText: 'Autonomy' });
   await btn.click();

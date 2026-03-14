@@ -5,7 +5,7 @@ test.beforeEach(async ({ page }) => {
 });
 
 test('theme dropdown opens', async ({ page }) => {
-  await page.goto('http://localhost:8080/');
+  await page.goto('/');
   await page.waitForLoadState('networkidle');
   const themeBtn = page.getByTestId('pw-theme-dropdown');
   await expect(themeBtn).toBeVisible({ timeout: 10000 });
@@ -15,7 +15,7 @@ test('theme dropdown opens', async ({ page }) => {
 });
 
 test('dark theme applies', async ({ page }) => {
-  await page.goto('http://localhost:8080/');
+  await page.goto('/');
   await page.waitForLoadState('networkidle');
   const themeBtn = page.getByTestId('pw-theme-dropdown');
   await themeBtn.click();
@@ -27,7 +27,7 @@ test('dark theme applies', async ({ page }) => {
 });
 
 test('light theme applies', async ({ page }) => {
-  await page.goto('http://localhost:8080/');
+  await page.goto('/');
   await page.waitForLoadState('networkidle');
   const themeBtn = page.getByTestId('pw-theme-dropdown');
   await themeBtn.click();
@@ -39,7 +39,7 @@ test('light theme applies', async ({ page }) => {
 });
 
 test('grid lock toggles on DMTask', async ({ page }) => {
-  await page.goto('http://localhost:8080/DMTask');
+  await page.goto('/DMTask');
   await page.waitForLoadState('networkidle');
   const lockBtn = page.getByTestId('pw-grid-lock-btn');
   await expect(lockBtn).toBeVisible({ timeout: 15000 });
@@ -51,14 +51,14 @@ test('grid lock toggles on DMTask', async ({ page }) => {
 });
 
 test('grid controls hidden on home', async ({ page }) => {
-  await page.goto('http://localhost:8080/');
+  await page.goto('/');
   await page.waitForLoadState('networkidle');
   const lockBtn = page.getByTestId('pw-grid-lock-btn');
   await expect(lockBtn).not.toBeVisible({ timeout: 3000 });
 });
 
 test('logo links home', async ({ page }) => {
-  await page.goto('http://localhost:8080/DMTask');
+  await page.goto('/DMTask');
   await page.waitForLoadState('networkidle');
   const logo = page.locator('.logo');
   await expect(logo).toBeVisible({ timeout: 10000 });
