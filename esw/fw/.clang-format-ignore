@@ -1,0 +1,14 @@
+# stm32 auto generated
+src/**/main.h
+src/**/stm32*_hal_conf.h
+src/**/stm32*_it.h
+src/**/stm32*_hal_msp.c
+src/**/stm32*_it.c
+src/**/syscalls.c
+src/**/sysmem.c
+src/**/system_stm32*.c
+
+lib/stm32g4/**/*
+**/*build*/**/*
+
+src/science/**

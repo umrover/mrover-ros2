@@ -126,7 +126,7 @@ namespace mrover {
         velocities.names = {"joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_roll"};
         velocities.velocities = {
                 static_cast<float>(vel.linear.y),
-                static_cast<float>(joint_b_vel),
+                static_cast<float>(0.6 * joint_b_vel),
                 static_cast<float>(joint_c_vel),
                 static_cast<float>(joint_de_pitch_vel),
                 static_cast<float>(vel.angular.x),
@@ -390,15 +390,28 @@ namespace mrover {
             auto error_pitch = mCarrotPos.pitch - mArmPos.pitch;
             auto error_roll = mCarrotPos.roll - mArmPos.roll;
 
+            mArmTotalError[0] += error_x;
+            mArmTotalError[1] += error_y;
+            mArmTotalError[2] += error_z;
+            mArmTotalError[3] += error_pitch;
+            mArmTotalError[4] += error_roll;
 
-            double const Kp_lin = 20.0;
-            double const Kp_ang = 20.0;
+            for (int i = 0; i <= 4; i++) {
+                mArmTotalError[i] = std::min(std::max(mArmTotalError[i], -0.005), 0.0-5);
+            }
 
-            adjusted_v.linear.x += Kp_lin * error_x;
-            adjusted_v.linear.y += Kp_lin * error_y;
-            adjusted_v.linear.z += Kp_lin * error_z;
-            adjusted_v.angular.y += Kp_ang * error_pitch;
-            adjusted_v.angular.x += Kp_ang * error_roll;
+
+            double const Kp_lin = 5.0;
+            double const Kp_ang = 5.0;
+
+            double const Ki_lin = 0.5;
+            double const Ki_ang = 0.5;
+
+            adjusted_v.linear.x += (Kp_lin * error_x + mArmTotalError[0] * Ki_lin);
+            adjusted_v.linear.y += (Kp_lin * error_y + mArmTotalError[1] * Ki_lin);
+            adjusted_v.linear.z += (Kp_lin * error_z + mArmTotalError[2] * Ki_lin);
+            adjusted_v.angular.y += (Kp_ang * error_pitch + mArmTotalError[3] * Ki_ang);
+            adjusted_v.angular.x += (Kp_ang * error_roll + mArmTotalError[4] * Ki_ang);
 
             auto velocities = ikVelCalc(adjusted_v);
 
@@ -409,6 +422,10 @@ namespace mrover {
                         velocities->velocities[2] == 0 &&
                         velocities->velocities[3] == 0 &&
                         velocities->velocities[4] == 0)) {
+                        if (velocities->velocities[1] < 0) {
+                            velocities->velocities[1] = -0.05;
+                        }
+                        else velocities->velocities[1] = 0.05;
                         mVelPub->publish(velocities.value());
                
             } else {

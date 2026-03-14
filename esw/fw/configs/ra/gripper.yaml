@@ -1,0 +1,43 @@
+# CAN messaging
+can_id: 53
+host_can_id: 16
+
+# system configuration
+motor_en: true
+motor_inv: true
+quad_en: true
+quad_phase: false
+
+# limit configuration
+lim_a_en: true
+lim_a_active_high: false
+lim_a_is_forward: false
+lim_a_use_readjust: true
+lim_b_en: false
+lim_b_active_high: false
+lim_b_is_forward: false
+lim_b_use_readjust: false
+
+# encoder params
+quad_cpr: 48.0  # was 24 - TODO this changes with new enc updates
+gear_ratio: 76.9  # ratio to one, 47:1 gearbox, 11:18 sprocket
+rotor_output_ratio: 0.005334 # (0.21 in/rev * 0.0254m/in)
+
+# position & velocity limits
+limit_a_position: 0.0
+limit_b_position: 0.09
+max_pwm: 1.0
+min_pos: 0.0
+max_pos: 0.09
+min_vel: -1.6
+max_vel: 1.6
+
+# control gains
+pos_k_p: 300.0
+pos_k_i: 10.0
+pos_k_d: 0.0
+pos_k_f: 0.0
+vel_k_p: 30.0
+vel_k_i: 0.0
+vel_k_d: 0.0
+vel_k_f: 2.0

@@ -36,6 +36,7 @@ namespace mrover {
         ArmPos mCheckCarrotPos;
         //bool hold = false;
         bool not_initialized = true;
+        double mArmTotalError[5];
 
         struct JointWrapper {
             struct JointLimits {
@@ -125,10 +126,10 @@ namespace mrover {
 
         // From: rover.urdf.xacro
         // A is the prismatic joint, B is the first revolute joint, C is the second revolute joint
-        static constexpr double LINK_BC = 0.5344417294;
-        static constexpr double LINK_CD = 0.5531735368;
+        static constexpr double LINK_BC = 0.53271;
+        static constexpr double LINK_CD = 0.39403;
         static constexpr double END_EFFECTOR_LENGTH = 0.20482814; // from CAD
-        static constexpr double JOINT_C_OFFSET = 0.1608485915;
+        static constexpr double JOINT_C_OFFSET = 0.208954;
         static constexpr double JOINT_VEL_THRESH = 0.05;
         static constexpr double MAX_SPEED = 0.1; // in m/s, this is just an estimate
 
