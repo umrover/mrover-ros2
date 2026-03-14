@@ -8,7 +8,7 @@ from rclpy.publisher import Publisher
 from rclpy.client import Client
 
 from backend.input import filter_input, simulated_axis, safe_index, DeviceInputs
-from backend.mappings import ControllerAxis, ControllerButton
+from backend.mappings import ControllerButton
 from mrover.msg import Throttle
 
 import logging
@@ -56,7 +56,7 @@ def compute_manual_joint_controls(controller: DeviceInputs) -> list[float]:
         ),
         0.0, #placeholder
         filter_input(
-            simulated_axis(controller.axes, ControllerAxis.RIGHT_TRIGGER, ControllerAxis.LEFT_TRIGGER),
+            simulated_axis(controller.buttons, ControllerButton.RIGHT_TRIGGER, ControllerButton.LEFT_TRIGGER),
             scale=JOINT_SCALES[Joint.AUGER.value],
         ),
         0.0, #placeholder
