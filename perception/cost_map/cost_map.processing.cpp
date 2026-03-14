@@ -331,6 +331,21 @@ namespace mrover {
         RCLCPP_INFO_STREAM(get_logger(), "Done changing dilation");
     }
 
+    auto CostMapNode::toggleCostMapCallback(std_srvs::srv::SetBool::Request::ConstSharedPtr& req, std_srvs::srv::SetBool::Response::SharedPtr& res) -> void {
+        if (!req->data && mPcSub) {
+            mPcSub.reset();
+        }
+
+        else if (req->data && !mPcSub) {
+            mPcSub = create_subscription<sensor_msgs::msg::PointCloud2>("/zed/left/points", 1, [this](sensor_msgs::msg::PointCloud2::ConstSharedPtr const& msg) {
+                pointCloudCallback(msg);
+            });
+        }
+
+        res->success = true;
+        res->message = "";
+    }
+
     auto CostMapNode::indexToCoordinate(int const index) const -> CostMapNode::Coordinate {
         return {index / mWidth, index % mWidth};
     }
