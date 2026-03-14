@@ -13,23 +13,13 @@ differential_drive_controller:
       max_linear_speed: 10.0
       max_angular_speed: 10.0
 
+# Drive: can0
+# Arm: can1
+# SP: can2
+
 can_bridge_0:
   ros__parameters:
     interface: can0
-    is_extended_frame: true
-    devices:
-      jetson:
-        id: 0x10
-      pdlb:
-        id: 0x11
-      mast_gimbal_pitch:
-        id: 0x12
-      mast_gimbal_yaw:
-        id: 0x13
-
-can_bridge_1:
-  ros__parameters:
-    interface: can1
     is_extended_frame: true
     devices:
       jetson:
@@ -47,9 +37,9 @@ can_bridge_1:
       back_right:
         id: 0x25
 
-can_bridge_2:
+can_bridge_1:
   ros__parameters:
-    interface: can2
+    interface: can1
     is_extended_frame: true
     devices:
       jetson:
@@ -68,6 +58,14 @@ can_bridge_2:
         id: 0x35
       pusher:
         id: 0x36
+
+can_bridge_2:
+  ros__parameters:
+    interface: can2
+    is_extended_frame: true
+    devices:
+      jetson:
+        id: 0x10
       science:
         id: 0x40
       auger:
