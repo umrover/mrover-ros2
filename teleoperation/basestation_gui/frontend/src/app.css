@@ -843,6 +843,28 @@ html {
   }
 }
 
+.compact-table {
+  table-layout: auto;
+
+  th, td {
+    white-space: nowrap;
+    text-align: center;
+  }
+
+  td:first-child {
+    text-align: left;
+  }
+}
+
+.numeric-col {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.row-no-data {
+  opacity: 0.4;
+}
+
 .cmd-scroll {
   overflow-y: auto;
   scrollbar-color: var(--text-muted) transparent;
