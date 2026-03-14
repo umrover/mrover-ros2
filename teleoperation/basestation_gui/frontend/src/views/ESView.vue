@@ -5,32 +5,37 @@
     :topics="['arm', 'drive']"
   >
     <template #arm-controls>
-      <div class="island p-2 rounded h-100">
+      <div class="island p-2 rounded h-full">
         <ArmControls />
       </div>
     </template>
 
     <template #drive-controls>
-      <div class="island p-2 rounded h-100">
+      <div class="island p-2 rounded h-full">
         <DriveControls />
       </div>
     </template>
 
     <template #rover-3d>
-      <div class="island rounded overflow-hidden h-100">
-        <Rover3D class="w-100 h-100" />
+      <div class="island rounded overflow-hidden h-full">
+        <Rover3D class="w-full h-full" />
       </div>
     </template>
 
-    <template #controller_state>
-      <div class="island p-2 rounded d-flex flex-column gap-2 h-100">
-        <ControllerDataTable mode="arm" header="Arm" />
-        <ControllerDataTable mode="drive" header="Drive" />
+    <template #arm-data>
+      <div class="island p-2 rounded h-full">
+        <ArmDataTable />
+      </div>
+    </template>
+
+    <template #drive-data>
+      <div class="island p-2 rounded h-full">
+        <DriveDataTable />
       </div>
     </template>
 
     <template #auton-typing>
-      <div class="island p-2 rounded h-100">
+      <div class="island p-2 rounded h-full">
         <AutonTyping />
       </div>
     </template>
@@ -39,7 +44,8 @@
 
 <script lang="ts" setup>
 import BaseGridView from '@/components/BaseGridView.vue'
-import ControllerDataTable from '@/components/ControllerDataTable.vue'
+import ArmDataTable from '@/components/ControllerDataTable/ArmDataTable.vue'
+import DriveDataTable from '@/components/ControllerDataTable/DriveDataTable.vue'
 import ArmControls from '@/components/ArmControls.vue'
 import DriveControls from '@/components/DriveControls.vue'
 import Rover3D from '@/components/Rover3D.vue'
@@ -48,8 +54,9 @@ import AutonTyping from '@/components/AutonTyping.vue'
 const defaultLayout = [
   { x: 0, y: 0, w: 3, h: 2, i: 'arm-controls' },
   { x: 3, y: 0, w: 1, h: 2, i: 'drive-controls' },
-  { x: 0, y: 2, w: 4, h: 3, i: 'auton-typing' },
-  { x: 0, y: 5, w: 4, h: 7, i: 'controller_state' },
+  { x: 0, y: 2, w: 4, h: 2, i: 'auton-typing' },
+  { x: 0, y: 4, w: 4, h: 4, i: 'arm-data' },
+  { x: 0, y: 8, w: 4, h: 4, i: 'drive-data' },
   { x: 4, y: 0, w: 8, h: 12, i: 'rover-3d' },
 ]
 </script>
