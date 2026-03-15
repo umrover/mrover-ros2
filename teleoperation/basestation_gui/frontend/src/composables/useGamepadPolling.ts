@@ -1,4 +1,4 @@
-import { ref, onMounted, onBeforeUnmount, type Ref, computed } from 'vue'
+import { ref, onMounted, onBeforeUnmount, type Ref} from 'vue'
 import { useWebsocketStore } from '@/stores/websocket'
 
 export interface UseGamepadPollingOptions {
@@ -47,23 +47,6 @@ export function useGamepadPolling(options: UseGamepadPollingOptions): UseGamepad
         axes: sendAxes,
         buttons: mappedButtons,
       })
-
-      // const supportsVibration = computed(() => gamepad.vibrationActuator)
-      // console.log("Supports Vibration = " + supportsVibration.value)
-
-      // supportsVibration.value.playEffect('dual-rumble', {
-      // startDelay: 0,
-      // duration: 1000,
-      // weakMagnitude: 1,
-      // strongMagnitude: 1,})
-
-      // const actuator = gamepad.hapticActuators[0]
-      // actuator.playEffect('dual-rumble', {
-      // startDelay: 0,
-      // duration: 1000,
-      // weakMagnitude: 1,
-      // strongMagnitude: 1,})
-
     }, 1000 / hz)
   })
 

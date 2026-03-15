@@ -105,15 +105,12 @@ const newRAMode = async (newMode: string) => {
   }
 }
 
-// Defined outside as not to recalculate every time
+// Indexes coressponding to joints in this order:
+// joint_a, joint_b, joint_c, joint_de_pitch, joint_de_roll, gripper, cam
 let jointThrIdx = []
 
 watch(armMessage, (msg: unknown) => {
 if (!msg || typeof msg !== 'object') return
-
-  // const gamepads = navigator.getGamepads()
-  // const gamepad = gamepads.find(gp => gp && gp.id.includes('Microsoft'))
-  // console.log(gamepad)
 
   if ('type' in msg && msg.type === "arm_state"){
     const typedMsg = msg as ControllerStateMessage
@@ -126,8 +123,7 @@ if (!msg || typeof msg !== 'object') return
     const typedMessage = msg as ThrottleMessage
     forcing_limit.value = false;
 
-    // Find what index is what joint
-    // console.log(typedMessage.names.length)
+    // Find what index is what joint. Only done first time thrust input is recieved
     if(jointThrIdx.length == 0){
       for(let i = 0; i < typedMessage.names.length; ++i){
         let currName = typedMessage.names[i]
@@ -156,8 +152,6 @@ if (!msg || typeof msg !== 'object') return
           default:
         }
       }
-      console.log("Joint thrust indexes:")
-      console.log(jointThrIdx)
     }
 
     // Determine if limits hit
@@ -168,34 +162,6 @@ if (!msg || typeof msg !== 'object') return
         forcing_limit.value = true
       }
     }
-
-    // // Joint A
-    // if(limits_hit_external.value[0] == 1 && typedMessage.throttles[0] < 0){
-    //   forcing_limit.value = true
-    // } else if (limits_hit_external.value[0] == 2 && typedMessage.throttles[0] > 0) {
-    //   forcing_limit.value = true
-    // }
-
-    // // Joint B
-    // if(limits_hit_external.value[1] == 1 && typedMessage.throttles[5] < 0){
-    //   forcing_limit.value = true
-    // } else if (limits_hit_external.value[1] == 2 && typedMessage.throttles[5] > 0) {
-    //   forcing_limit.value = true
-    // }
-
-    // // Joint C
-    // if(limits_hit_external.value[2] == 1 && typedMessage.throttles[6] < 0){
-    //   forcing_limit.value = true
-    // } else if (limits_hit_external.value[2] == 2 && typedMessage.throttles[6] > 0) {
-    //   forcing_limit.value = true
-    // }
-
-    // // Roll Joint
-    // if(limits_hit_external.value[4] == 1 && typedMessage.throttles[6] < 0){
-    //   forcing_limit.value = true
-    // } else if (limits_hit_external.value[4] == 2 && typedMessage.throttles[6] > 0) {
-    //   forcing_limit.value = true
-    // }
   }
 
   if(forcing_limit.value){
@@ -205,13 +171,6 @@ if (!msg || typeof msg !== 'object') return
       weakMagnitude: 0.1,
       strongMagnitude: 0,})
   }
-
-  // if ('type' in msg && msg.type === "arm_velocity_command"){
-  //   console.log("read")
-
-  //   // const typedMessage = msg as VelocityMessage
-  //   // console.log(typedMessage)
-  // }
 })
 </script>
 
