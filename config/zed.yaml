@@ -17,6 +17,6 @@
     grab_resolution: "HD720"
     depth_mode: "NEURAL"
     depth_maximum_distance: 12.0
-    use_builtin_visual_odom: false
+    use_builtin_visual_odom: true
     use_pose_smoothing: true
     use_area_memory: true

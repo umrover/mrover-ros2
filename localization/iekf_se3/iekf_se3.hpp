@@ -7,12 +7,12 @@
 #include "pch.hpp"
 
 using Matrix33d = Eigen::Matrix<double, 3, 3>;
-using Matrix44d = Eigen::Matrix<double, 5, 5>;
+using Matrix44d = Eigen::Matrix<double, 4, 4>;
 using Matrix66d = Eigen::Matrix<double, 6, 6>;
 using Matrix36d = Eigen::Matrix<double, 3, 6>;
 using Matrix63d = Eigen::Matrix<double, 6, 3>;
 using Vector3d = Eigen::Vector3d;
-using Vector4d = Eigen::Matrix<double, 5, 1>;
+using Vector4d = Eigen::Matrix<double, 4, 1>;
 using Vector6d = Eigen::Matrix<double, 6, 1>;
 
 namespace mrover {
@@ -32,9 +32,11 @@ namespace mrover {
         void accel_callback(const geometry_msgs::msg::Vector3 &a, const Matrix33d &cov_a);
         void vel_callback(const geometry_msgs::msg::Vector3Stamped::ConstSharedPtr& vel_msg, const mrover::msg::FixStatus::ConstSharedPtr& vel_status_msg);
         void drive_forward_callback();
+        void visual_odom_callback();
         void rtk_heading_callback(const mrover::msg::Heading::ConstSharedPtr& rtk_heading, const mrover::msg::FixStatus::ConstSharedPtr& rtk_heading_status);
 
         // InEKF functions
+        void predict_visual_odom(const Vector3d& v, const Matrix33d& cov_v, const Vector3d& w, const Matrix33d& cov_w, double dt);
         void predict_imu(const Vector3d& w, const Matrix33d& cov_w, double dt);
         void predict_vel(const Vector3d& v, const Matrix33d& cov_v, double dt);
         void correct(const Vector4d& Y, const Vector4d& b, const Matrix33d& N, const Matrix36d& H);
@@ -88,12 +90,16 @@ namespace mrover {
         // parameters
         std::string world_frame;
         std::string gps_frame;
+        std::string zed_left_frame;
+        std::string odom_frame;
         double scale_cov_a;
         double scale_cov_w;
         double pos_noise_fixed;
         double vel_noise;
         double mag_heading_noise;
         double rtk_heading_noise;
+        double odom_vel_noise;
+        double odom_angular_vel_noise;
         double drive_forward_heading_noise;
 
         double rover_heading_change_threshold;

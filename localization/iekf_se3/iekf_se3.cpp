@@ -14,6 +14,11 @@ namespace mrover {
         declare_parameter("mag_heading_noise", rclcpp::ParameterType::PARAMETER_DOUBLE);
         declare_parameter("rtk_heading_noise", rclcpp::ParameterType::PARAMETER_DOUBLE);
         declare_parameter("drive_forward_heading_noise", rclcpp::ParameterType::PARAMETER_DOUBLE);
+        
+        declare_parameter("odom", rclcpp::ParameterType::PARAMETER_STRING);
+        declare_parameter("zed_left_camera_frame", rclcpp::ParameterType::PARAMETER_STRING);
+        declare_parameter("odom_vel_noise",  rclcpp::ParameterType::PARAMETER_DOUBLE);
+        declare_parameter("odom_angular_vel_noise",  rclcpp::ParameterType::PARAMETER_DOUBLE);
 
         declare_parameter("rover_heading_change_threshold", rclcpp::ParameterType::PARAMETER_DOUBLE);
         declare_parameter("minimum_linear_speed", rclcpp::ParameterType::PARAMETER_DOUBLE);
@@ -30,6 +35,11 @@ namespace mrover {
         mag_heading_noise = get_parameter("mag_heading_noise").as_double();
         rtk_heading_noise = get_parameter("rtk_heading_noise").as_double();
         drive_forward_heading_noise = get_parameter("drive_forward_heading_noise").as_double();
+
+        zed_left_frame = get_parameter("zed_left_camera_frame").as_string();
+        odom_frame = get_parameter("odom").as_string();
+        odom_vel_noise = get_parameter("odom_vel_noise").as_double();
+        odom_angular_vel_noise = get_parameter("odom_angular_vel_noise").as_double();
 
         rover_heading_change_threshold = get_parameter("rover_heading_change_threshold").as_double();
         minimum_linear_speed = get_parameter("minimum_linear_speed").as_double();
@@ -94,6 +104,7 @@ namespace mrover {
         rtk_heading_sync->registerCallback(&IEKF_SE3::rtk_heading_callback, this);
 
         correction_timer = this->create_wall_timer(WINDOW.to_chrono<std::chrono::milliseconds>(), [this]() -> void {
+            visual_odom_callback();
             drive_forward_callback();
         });
 
@@ -160,7 +171,30 @@ namespace mrover {
         
     }
 
+    void IEKF_SE3::predict_visual_odom(const Vector3d& v, const Matrix33d& cov_v, const Vector3d& w, const Matrix33d& cov_w, double dt)
+    {
+        // Angular velocity like IMU first then linear velocity like vel callback
+        Matrix66d adj_x = adjoint();
+        Matrix66d Q = Matrix66d::Zero();
+        Matrix66d Q_d = Matrix66d::Zero();
 
+        A << Matrix33d::Zero(), Matrix33d::Zero(), manif::skew(v), Matrix33d::Zero();
+
+        // covariance
+        Q.block<3, 3>(0, 0) = cov_w.cwiseAbs();
+        Q.block<3, 3>(3, 3) = cov_v.cwiseAbs();
+
+        Q_d = (A * dt).exp() * Q * dt * ((A * dt).exp()).transpose();
+
+        // propagate
+        X.block<3, 1>(0, 3) =  X.block<3, 1>(0, 3) + v * dt;
+        X.block<3, 3>(0, 0) = X.block<3, 3>(0, 0) * (manif::skew(w) * dt).exp();
+        P = (A * dt).exp() * P * ((A * dt).exp()).transpose() + adj_x * Q_d * adj_x.transpose();
+    }
+
+    // Problem for using visual odom for correction step: visual odom is inherently only a locally accurate measurement,
+    // using it for global correction can cause the filter to diverge due to unexpected measurement errors
+    // Need to ask Sid about this, it seems a little suspect to use visual odom as fallback to GPS
     void IEKF_SE3::correct(const Vector4d& Y, const Vector4d& b, const Matrix33d& N, const Matrix36d& H) {
 
         Vector4d innov = X * Y - b;
@@ -223,7 +257,7 @@ namespace mrover {
         }
         predict_vel(Vector3d{vel_msg->vector.x, vel_msg->vector.y, vel_msg->vector.z}, cov_v, dt);
         
-        last_vel_time = vel_msg->header.stamp;
+        last_vel_time = vel_msg->header.stamp;       
 
        
     }
@@ -327,6 +361,35 @@ namespace mrover {
 
         correct(Y, b, N, H);
 
+    }
+
+    void IEKF_SE3::visual_odom_callback() {
+        rclcpp::Time end = get_clock()->now();
+        rclcpp::Time start = end - WINDOW;
+        // For each time block in the window, we estimate the rovers angular and linear velocity
+        // This is because visual odometry is only locally accurate, therefore cannot be trusted for absolute position or absolute heading
+        // However, we can use the changes to estimate what the relative position and relative velocity are, like the IMU or velocity callback
+        // Idea: Could we instead use the direct changes in position and heading as prediction measurement instead of this veloity?
+        for (rclcpp::Time t = start; t < end; t += STEP) {
+            
+            try {
+                auto rover_in_map_old = SE3Conversions::fromTfTree(tf_buffer, odom_frame, zed_left_frame, t - STEP);
+                auto rover_in_map_new = SE3Conversions::fromTfTree(tf_buffer, odom_frame, zed_left_frame, t);
+                R3d rover_velocity_in_map = (rover_in_map_new.translation() - rover_in_map_old.translation()) / STEP.seconds();
+                R3d rover_angular_velocity_in_map = (rover_in_map_new.rotation() * rover_in_map_old.rotation().inverse()).pow(STEP.seconds());
+                
+                predict_visual_odom(rover_velocity_in_map, odom_vel_noise * Matrix33d::Identity(), rover_angular_velocity_in_map, odom_angular_vel_noise * Matrix33d::Identity(), STEP.seconds());
+            } catch (tf2::ConnectivityException const& e) {
+                RCLCPP_WARN_STREAM(get_logger(), e.what());
+                return;
+            } catch (tf2::LookupException const& e) {
+                RCLCPP_WARN_STREAM(get_logger(), e.what());
+                return;
+            } catch (tf2::ExtrapolationException const& e) {
+                RCLCPP_WARN_STREAM(get_logger(), e.what());
+                return;
+            }
+        }
     }
 
     void IEKF_SE3::drive_forward_callback() {

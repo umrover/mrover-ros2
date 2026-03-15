@@ -47,7 +47,7 @@ namespace mrover {
                     {"grab_resolution", grabResolutionString, std::string{sl::toString(sl::RESOLUTION::HD720)}},
                     {"depth_mode", depthModeString, std::string{sl::toString(sl::DEPTH_MODE::NEURAL)}},
                     {"depth_maximum_distance", mDepthMaximumDistance, 12.0},
-                    {"use_builtin_visual_odom", mUseBuiltinPosTracking, false},
+                    {"use_builtin_visual_odom", mUseBuiltinPosTracking, true},
                     {"use_pose_smoothing", mUsePoseSmoothing, true},
                     {"use_area_memory", mUseAreaMemory, true}};
 
