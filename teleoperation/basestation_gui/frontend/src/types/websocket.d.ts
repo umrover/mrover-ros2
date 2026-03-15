@@ -113,6 +113,15 @@ export interface SPPressureMessage {
   pressure: number;
 }
 
+export interface SPSensorStateMessage {
+  type: 'sp_sensor_state';
+  uv_state: boolean;
+  thp_state: boolean;
+  oxygen_state: boolean;
+  ozone_state: boolean;
+  co2_state: boolean;
+}
+
 // export interface VelocityMessage {
 //   header?: {
 //     stamp: { sec: number; nanosec: number };
@@ -131,4 +140,4 @@ export interface ThrottleMessage {
   throttles: number[];
 }
 
-export type ScienceMessage = OxygenMessage | UVMessage | TemperatureMessage | HumidityMessage | SPHumidityMessage | SPTemperatureMessage | SPOxygenMessage | SPUVMessage | SPOzoneMessage | SPCO2Message | SPPressureMessage;
+export type ScienceMessage = OxygenMessage | UVMessage | TemperatureMessage | HumidityMessage | SPHumidityMessage | SPTemperatureMessage | SPOxygenMessage | SPUVMessage | SPOzoneMessage | SPCO2Message | SPPressureMessage | SPSensorStateMessage;
