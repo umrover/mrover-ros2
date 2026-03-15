@@ -1,4 +1,4 @@
-import { ref, onMounted, onBeforeUnmount, type Ref } from 'vue'
+import { ref, onMounted, onBeforeUnmount, type Ref, computed } from 'vue'
 import { useWebsocketStore } from '@/stores/websocket'
 
 export interface UseGamepadPollingOptions {
@@ -13,6 +13,7 @@ export interface UseGamepadPollingReturn {
   connected: Ref<boolean>
   axes: Ref<number[]>
   buttons: Ref<number[]>
+  vibrationActuator: Ref<GamepadHapticActuator>
 }
 
 export function useGamepadPolling(options: UseGamepadPollingOptions): UseGamepadPollingReturn {
@@ -22,6 +23,7 @@ export function useGamepadPolling(options: UseGamepadPollingOptions): UseGamepad
   const connected = ref(false)
   const axes = ref<number[]>([0, 0, 0, 0])
   const buttons = ref<number[]>(new Array(17).fill(0))
+  const vibrationActuator = ref<GamepadHapticActuator>()
 
   let interval: number | undefined
 
@@ -32,6 +34,7 @@ export function useGamepadPolling(options: UseGamepadPollingOptions): UseGamepad
       connected.value = !!gamepad
       if (!gamepad) return
 
+      vibrationActuator.value = gamepad.vibrationActuator
       const rawAxes = Array.from(gamepad.axes)
       const mappedButtons = gamepad.buttons.map(b => b.value)
 
@@ -44,6 +47,23 @@ export function useGamepadPolling(options: UseGamepadPollingOptions): UseGamepad
         axes: sendAxes,
         buttons: mappedButtons,
       })
+
+      // const supportsVibration = computed(() => gamepad.vibrationActuator)
+      // console.log("Supports Vibration = " + supportsVibration.value)
+
+      // supportsVibration.value.playEffect('dual-rumble', {
+      // startDelay: 0,
+      // duration: 1000,
+      // weakMagnitude: 1,
+      // strongMagnitude: 1,})
+
+      // const actuator = gamepad.hapticActuators[0]
+      // actuator.playEffect('dual-rumble', {
+      // startDelay: 0,
+      // duration: 1000,
+      // weakMagnitude: 1,
+      // strongMagnitude: 1,})
+
     }, 1000 / hz)
   })
 
@@ -53,5 +73,5 @@ export function useGamepadPolling(options: UseGamepadPollingOptions): UseGamepad
     }
   })
 
-  return { connected, axes, buttons }
+  return { connected, axes, buttons, vibrationActuator }
 }
