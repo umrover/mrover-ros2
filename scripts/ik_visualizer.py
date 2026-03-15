@@ -16,18 +16,21 @@ from rclpy.duration import Duration
 from geometry_msgs.msg import Point
 from geometry_msgs.msg import Vector3
 from std_msgs.msg import Header
+from tf2_msgs.msg import TFMessage
 
 
 
 class IK_Visualization(Node):
     def __init__(self):
         super().__init__("ik_visualizer")
-
         self.get_logger().info("Starting...")
 
         # Set up values to obtain arm pos from tf tree
         self.tf_buffer = tf2_ros.Buffer()
-        tf2_ros.TransformListener(self.tf_buffer, self)
+        self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self)
+
+        # Subscriber
+        self.tf_sub = self.create_subscription(TFMessage, "/tf", self.visualize, 1)
 
         # Set up marker publisher
         self.valid_points_pub = self.create_publisher(Marker, "valid_ik_points", 1)
@@ -52,18 +55,15 @@ class IK_Visualization(Node):
 
         self.get_logger().info("Ready for input...")
 
-        while True:
-            time.sleep(0.5)
-            if self.visualize():
-                self.get_logger().info('Points Visualized')
+    def visualize(self, msg):
+        self.get_logger().info('Starting Visualization')
 
-    def visualize(self) -> bool :
         # Obtain Guarenteed Point
         self.arm_pose = self.get_arm_pose_in_map()
 
         if self.arm_pose == None:
             self.get_logger().warn("Arm pose is not on the tf tree, unable to visualize")
-            return False
+            return
 
         arm_x,arm_y,arm_z = self.arm_pose.translation()
 
@@ -73,18 +73,33 @@ class IK_Visualization(Node):
         # Create Markers for points
         self.publish_valid_points_marker([0,255,0], "valid_ik")
 
-        return True
+        self.get_logger().info('Finsihed Visualized')
+
+        time.sleep(5)
+        return
     
     def recursive_check_points(self, arm_x,arm_y,arm_z):
-        request = Vector3(arm_x, arm_y, arm_z)
+        request = IkSample.Request()
+        request.pos.x = arm_x
+        request.pos.y = arm_y
+        request.pos.z = arm_z
 
-        if request in self.invalid_points or request in self.valid_points:
+        if (arm_x,arm_y,arm_z) in self.invalid_points or (arm_x,arm_y,arm_z) in self.valid_points:
             return
 
-        result = self.client.call(request)
+        self.get_logger().info("Start Call")
+
+        future = self.client.call_async(request)
+        rclpy.spin_until_future_complete(self, future, timeout_sec=0.2) 
+        if future.result() is None:
+            return
+        
+        result = future.result().valid
+
+        self.get_logger().info("Done")
         
         if result.valid:
-            self.valid_points.add(request)
+            self.valid_points.add((arm_x,arm_y,arm_z))
 
             # Check +-step in x, y, and z coordinates
             self.recursive_check_points(arm_x - self.step,arm_y, arm_z)
@@ -94,13 +109,13 @@ class IK_Visualization(Node):
             self.recursive_check_points(arm_x,arm_y, arm_z - self.step)
             self.recursive_check_points(arm_x,arm_y, arm_z + self.step)
         else:
-            self.invalid_points.add(request)
+            self.invalid_points.add((arm_x,arm_y,arm_z))
 
         return
     
     def get_arm_pose_in_map(self) -> SE3 | None:
         try:
-            return SE3.from_tf_tree(self.tf_buffer, "arm_fk", "base_link")
+            return SE3.from_tf_tree(self.tf_buffer, "arm_fk", "arm_base_link")
         except (
             tf2_ros.LookupException,
             tf2_ros.ConnectivityException,
@@ -131,8 +146,8 @@ class IK_Visualization(Node):
             points_marker.pose.orientation.w = 1.0
 
             for point in self.valid_points:
-                assert len(point) > 1, f"Invalid point has size {len(point)}"
-                p = Point(x=point.x, y=point.y, z=point.z)
+                # assert len(point) > 1, f"Invalid point has size {len(point)}"
+                p = Point(x=point[0], y=point[1], z=point[2])
                 points_marker.points.append(p)
 
             points_marker.type = Marker.SPHERE_LIST
@@ -153,8 +168,10 @@ class IK_Visualization(Node):
 def main():
     try:
         rclpy.init(args=sys.argv)
-
         ik_node = IK_Visualization()
+
+        while True:
+            rclpy.spin(ik_node)
 
     except KeyboardInterrupt:
         pass

@@ -28,6 +28,6 @@
 #include <mrover/msg/position.hpp>
 #include <mrover/msg/velocity.hpp>
 #include <mrover/srv/ik_mode.hpp>
-#include <mrover/action/typing_position.hpp>
+// #include <mrover/action/typing_position.hpp>
 
 #include <lie.hpp>
