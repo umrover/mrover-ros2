@@ -1,0 +1,29 @@
+motor_test_bridge:
+  ros__parameters:
+    moteus:
+      min_velocity: -1.00
+      max_velocity: 1.00
+      min_position: 0.0
+      max_position: 0.35
+      max_torque: 3.0
+      limit_switch_0_present: false
+      limit_switch_0_enabled: false
+      limit_switch_0_limits_forward: true
+      limit_switch_0_active_high: false
+      limit_switch_0_used_for_readjustment: true
+      limit_switch_0_readjust_position: 0.4
+      limit_switch_0_aux_number: 1
+      limit_switch_0_aux_pin: 0
+      limit_switch_1_present: false
+      limit_switch_1_enabled: false
+      limit_switch_1_limits_forward: false
+      limit_switch_1_active_high: false
+      limit_switch_1_used_for_readjustment: true
+      limit_switch_1_readjust_position: 0.0
+      limit_switch_1_aux_number: 1
+      limit_switch_1_aux_pin: 2
+    bmc:
+      motor_en: true
+      lim_a_en: true
+      lim_a_is_forward: true
+      lim_b_en: true
