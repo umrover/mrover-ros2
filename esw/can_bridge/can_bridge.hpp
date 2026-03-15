@@ -5,9 +5,6 @@
 
 namespace mrover {
 
-    static constexpr uint32_t MOTEUS_PREFIX = 0x0000;
-    static constexpr uint32_t MOTEUS_REPLY_MASK = 0x8000;
-
     struct RawCANFDID_t {
         std::uint32_t identifier : 29 {};
         bool is_error_frame : 1 {};

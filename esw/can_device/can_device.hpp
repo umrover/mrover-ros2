@@ -6,7 +6,7 @@
 #include <string>
 #include <variant>
 
-#include <CANBus1.hpp>
+#include <MRoverCAN.hpp>
 #include <moteus/moteus.h>
 #include <mrover/msg/can.hpp>
 #include <rclcpp/rclcpp.hpp>
@@ -16,8 +16,6 @@ namespace mrover {
 
     using namespace mjbots;
 
-    static constexpr uint32_t MOTEUS_PREFIX = 0x0000;
-
     template<typename Variant, typename NewType>
     struct add_to_variant;
 
@@ -26,8 +24,8 @@ namespace mrover {
         using type = std::variant<Ts..., NewType>;
     };
 
-    using CANMsg_t = add_to_variant<CANBus1Msg_t, moteus::CanFdFrame>::type;
-    static_assert(std::is_trivially_copyable_v<CANBus1Msg_t> && sizeof(CANBus1Msg_t) <= 64);
+    using CANMsg_t = add_to_variant<MRoverCANMsg_t, moteus::CanFdFrame>::type;
+    static_assert(std::is_trivially_copyable_v<MRoverCANMsg_t> && sizeof(MRoverCANMsg_t) <= 64);
 
     class CANDevice {
         rclcpp::Node::SharedPtr mNode;
@@ -60,7 +58,7 @@ namespace mrover {
 
             [&]<typename... Ts>(std::variant<Ts...>*) {
                 (tryParse.operator()<Ts>(), ...);
-            }(static_cast<CANBus1Msg_t*>(nullptr));
+            }(static_cast<MRoverCANMsg_t*>(nullptr));
         }
 
     public:

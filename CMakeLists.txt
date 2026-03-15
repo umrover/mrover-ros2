@@ -328,7 +328,7 @@ if (NOT APPLE)
 
     mrover_add_esw_bridge_node(drive_hw_bridge esw/drive_hw_bridge.cpp)
     mrover_add_esw_bridge_node(arm_hw_bridge esw/arm_hw_bridge.cpp)
-    mrover_add_esw_bridge_node(science_hw_bridge esw/science_hw_bridge.cpp)
+    # mrover_add_esw_bridge_node(science_hw_bridge esw/science_hw_bridge.cpp)
 endif()
 
 mrover_add_node(differential_drive_controller esw/differential_drive_controller.cpp)
