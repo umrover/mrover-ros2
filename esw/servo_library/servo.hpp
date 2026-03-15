@@ -32,6 +32,8 @@ namespace mrover {
             VelocityPGain = 78,
             VelocityIGain = 76,
             CurrentLimit = 102,
+            ProfileVelocity = 112,
+            ProfileAcceleration = 108,
         };
 
         enum class ServoMode {

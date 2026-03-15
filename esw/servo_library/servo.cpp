@@ -29,6 +29,9 @@ auto Servo::updateConfigFromParameters() -> void {
     double currentLimit;
     float positionMultiplier;
 
+    double profileAcceleration;
+    double profileVelocity;
+
     std::vector<ParameterWrapper> parameters = {
             {std::format("{}.position_multiplier", mServoName), positionMultiplier, 340.0},
             {std::format("{}.reverse_limit", mServoName), reverseLimit, 0.0},
@@ -38,7 +41,10 @@ auto Servo::updateConfigFromParameters() -> void {
             {std::format("{}.position_d", mServoName), positionDGain, 0.0},
             {std::format("{}.velocity_p", mServoName), velocityPGain, 180.0},
             {std::format("{}.velocity_i", mServoName), velocityIGain, 90.0},
-            {std::format("{}.current_limit", mServoName), currentLimit, 1750.0}};
+            {std::format("{}.current_limit", mServoName), currentLimit, 1750.0},
+            {std::format("{}.profile_acceleration", mServoName), profileAcceleration, 100.0},
+            {std::format("{}.profile_velocity", mServoName), profileVelocity, 100.0}
+        };
 
     ParameterWrapper::declareParameters(mNode.get(), parameters);
 
@@ -51,6 +57,10 @@ auto Servo::updateConfigFromParameters() -> void {
     mNode->get_parameter(std::format("{}.velocity_p", mServoName), velocityPGain);
     mNode->get_parameter(std::format("{}.velocity_i", mServoName), velocityIGain);
     mNode->get_parameter(std::format("{}.current_limit", mServoName), currentLimit);
+    mNode->get_parameter(std::format("{}.profile_acceleration", mServoName), profileAcceleration);
+    mNode->get_parameter(std::format("{}.profile_velocity", mServoName), profileVelocity);
+
+    
 
     setProperty(ServoProperty::PositionPGain, static_cast<uint16_t>(positionPGain));
     setProperty(ServoProperty::PositionIGain, static_cast<uint16_t>(positionIGain));
@@ -58,6 +68,8 @@ auto Servo::updateConfigFromParameters() -> void {
     setProperty(ServoProperty::VelocityPGain, static_cast<uint16_t>(velocityPGain));
     setProperty(ServoProperty::VelocityIGain, static_cast<uint16_t>(velocityIGain));
     setProperty(ServoProperty::CurrentLimit, static_cast<uint16_t>(currentLimit));
+    setProperty(ServoProperty::ProfileAcceleration, static_cast<uint16_t>(profileAcceleration));
+    setProperty(ServoProperty::ProfileVelocity, static_cast<uint16_t>(profileVelocity));
 
     ParameterWrapper::declareParameters(mNode.get(), parameters);
     
@@ -224,6 +236,9 @@ auto Servo::getPositionAbsolute(ServoPosition& position) -> u2d2::U2D2Status {
 
 auto Servo::setProperty(ServoProperty prop, uint16_t value) -> u2d2::U2D2Status {
     uint8_t hardwareStatus;
+    if (prop == ServoProperty::ProfileVelocity || prop == ServoProperty::ProfileAcceleration) {
+        return u2d2::write4Byte(static_cast<ServoAddr>(prop), value, mServoId, &hardwareStatus);
+    }
     return u2d2::write2Byte(static_cast<ServoAddr>(prop), value, mServoId, &hardwareStatus);
 }
 
