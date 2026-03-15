@@ -63,12 +63,6 @@ namespace mrover {
         auto handleTypingAccepted(std::shared_ptr<rclcpp_action::ServerGoalHandle<action::TypingPosition>> typingGoalHandle) -> void;
         std::optional<rclcpp_action::GoalUUID> mTypingGoalID;
 
-        rclcpp_action::Server<action::TypingDeltas>::SharedPtr mTypingServer;
-        auto handleTypingGoal(const rclcpp_action::GoalUUID & uuid, std::shared_ptr<const action::TypingDeltas_Goal> typingGoal) -> rclcpp_action::GoalResponse;
-        auto handleTypingCancel(std::shared_ptr<rclcpp_action::ServerGoalHandle<action::TypingDeltas>> typingGoalHandle) -> rclcpp_action::CancelResponse;
-        auto handleTypingAccepted(std::shared_ptr<rclcpp_action::ServerGoalHandle<action::TypingDeltas>> typingGoalHandle) -> void;
-        std::optional<rclcpp_action::GoalUUID> mTypingGoalID;
-
         rclcpp::Publisher<msg::Position>::SharedPtr mPosPub;
         rclcpp::Publisher<msg::Velocity>::SharedPtr mVelPub;
         tf2_ros::TransformBroadcaster mTfBroadcaster{this};

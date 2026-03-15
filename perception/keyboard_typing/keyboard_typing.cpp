@@ -604,20 +604,20 @@ namespace mrover{
         current_key = 'z';
     }
 
-    // auto KeyboardTypingNode::rotateGripper(float radians) -> void {
-    //     SE3d armbase_to_armfk;
+    auto KeyboardTypingNode::rotateGripper(float radians) -> void {
+        SE3d armbase_to_armfk;
 
-    //     try{
-    //         armbase_to_armfk = SE3Conversions::fromTfTree(tf_buffer, "arm_fk", "arm_base_link");
-    //         // grab current pitch
-    //         // Get the forward pointing vector of the gripper (usually the X-axis of the arm_fk frame)
-    //         double current_pitch = std::atan2(-armbase_to_armfk.rotation()(2, 0), std::hypot(armbase_to_armfk.rotation()(0, 0), armbase_to_armfk.rotation()(1, 0)));
+        try{
+            armbase_to_armfk = SE3Conversions::fromTfTree(tf_buffer, "arm_fk", "arm_base_link");
+            // grab current pitch
+            // Get the forward pointing vector of the gripper (usually the X-axis of the arm_fk frame)
+            double current_pitch = std::atan2(-armbase_to_armfk.rotation()(2, 0), std::hypot(armbase_to_armfk.rotation()(0, 0), armbase_to_armfk.rotation()(1, 0)));
 
-    //         sendIKCommand(armbase_to_armfk.translation().x(), armbase_to_armfk.translation().y(), armbase_to_armfk.translation().z(), current_pitch, radians);
-    //     } catch (tf2::TransformException const& e) {
-    //         RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, std::format("TF tree error processing keyboard typing: {}", e.what()));
-    //     }
-    // }
+            sendIKCommand(armbase_to_armfk.translation().x(), armbase_to_armfk.translation().y(), armbase_to_armfk.translation().z(), current_pitch, radians);
+        } catch (tf2::TransformException const& e) {
+            RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, std::format("TF tree error processing keyboard typing: {}", e.what()));
+        }
+    }
 
     auto KeyboardTypingNode::sendIKCommand(float x, float y, float z, float pitch, float roll) -> void {
         if(!mIKPub){
