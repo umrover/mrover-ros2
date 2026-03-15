@@ -2,11 +2,9 @@
 
 
 #include <cstdint>
-#include <dynamixel_sdk/dynamixel_sdk.h>
-#include <dynamixel_sdk/packet_handler.h>
-#include <dynamixel_sdk/port_handler.h>
 #include <parameter.hpp>
 #include <string>
+#include <u2d2.hpp>
 
 static constexpr uint16_t DEFAULT_CURRENT_LIMIT = 1750;
 static constexpr uint16_t DEFAULT_POSITION_P_GAIN = 400;
@@ -25,21 +23,7 @@ namespace mrover {
         using ServoAddr = uint16_t;
 
     public:
-        enum class ServoStatus {
-            Active = 400,
-            HardwareFailure = 401,
-            Success = 0,
-            FailedToOpenPort,
-            FailedToSetBaud,
-            CommPortBusy = -1000,
-            CommTxFail = -1001,
-            CommRxFail = -1002,
-            CommTxError = -2000,
-            CommRxWaiting = -3000,
-            CommRxTimeout = -3001,
-            CommRxCorrupt = -3002,
-            CommNotAvailable = -9000,
-        };
+        
 
         enum class ServoProperty {
             PositionPGain = 84,
@@ -59,30 +43,17 @@ namespace mrover {
 
         Servo(rclcpp::Node::SharedPtr node, ServoId id, std::string name);
 
-        auto setPosition(ServoPosition position, ServoMode mode) -> ServoStatus;
-        auto getPosition(ServoPosition& position) -> ServoStatus;
-        auto getVelocity(ServoVelocity& velocity) -> ServoStatus;
-        auto getCurrent(ServoCurrent& current) -> ServoStatus;
-        auto getPositionAbsolute(ServoPosition& position) -> ServoStatus;
-        auto setProperty(ServoProperty prop, uint16_t value) -> ServoStatus;
-        auto getTargetStatus() -> ServoStatus;
+        auto setPosition(ServoPosition position, ServoMode mode) -> u2d2::U2D2Status;
+        auto getPosition(ServoPosition& position) -> u2d2::U2D2Status;
+        auto getVelocity(ServoVelocity& velocity) -> u2d2::U2D2Status;
+        auto getCurrent(ServoCurrent& current) -> u2d2::U2D2Status;
+        auto getPositionAbsolute(ServoPosition& position) -> u2d2::U2D2Status;
+        auto setProperty(ServoProperty prop, uint16_t value) -> u2d2::U2D2Status;
+        auto getTargetStatus() -> u2d2::U2D2Status;
         [[nodiscard]] auto getLimitStatus() const -> bool;
-
-        static auto init(std::string const& deviceName) -> ServoStatus;
 
     private:
         auto updateConfigFromParameters() -> void;
-
-        inline auto write1Byte(ServoAddr addr, uint8_t data, uint8_t* hardwareStatus) const -> Servo::ServoStatus;
-        inline auto write2Byte(ServoAddr addr, uint16_t data, uint8_t* hardwareStatus) const -> Servo::ServoStatus;
-        inline auto write4Byte(ServoAddr addr, uint32_t data, uint8_t* hardwareStatus) const -> Servo::ServoStatus;
-
-        inline auto read1Byte(ServoAddr addr, uint8_t& data, uint8_t* hardwareStatus) const -> Servo::ServoStatus;
-        inline auto read2Byte(ServoAddr addr, uint16_t& data, uint8_t* hardwareStatus) const -> Servo::ServoStatus;
-        inline auto read4Byte(ServoAddr addr, uint32_t& data, uint8_t* hardwareStatus) const -> Servo::ServoStatus;
-
-        inline static dynamixel::PortHandler* portHandler;
-        inline static dynamixel::PacketHandler* packetHandler;
 
         ServoId mServoId;
         std::string mServoName;

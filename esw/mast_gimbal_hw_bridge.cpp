@@ -32,10 +32,10 @@ namespace mrover {
             servos.insert({name, std::make_shared<mrover::Servo>(shared_from_this(), id, name)});
         }
 
-        static auto servos_active(std::vector<Servo::ServoStatus>& statuses) -> bool {
+        static auto servos_active(std::vector<u2d2::U2D2Status>& statuses) -> bool {
             bool active = false;
             for (auto& status: statuses) {
-                if (status == Servo::ServoStatus::Active) {
+                if (status == u2d2::U2D2Status::Active) {
                     active = true;
                 }
             }
@@ -46,7 +46,7 @@ namespace mrover {
 
             
             std::string device_name = this->declare_parameter<std::string>("device_name", "/dev/ttyUSB0");
-            Servo::init(device_name);
+            u2d2::init(device_name);
             
             for (auto const& servo: mServoNames) {
                 create_servo(servo.second, servo.first);
@@ -56,7 +56,7 @@ namespace mrover {
                                                                                                           mrover::srv::ServoPosition::Request::SharedPtr const& request,
                                                                                                           mrover::srv::ServoPosition::Response::SharedPtr const& response) {
                 size_t const n = request->names.size();
-                std::vector<Servo::ServoStatus> statuses = std::vector<Servo::ServoStatus>(n);
+                std::vector<u2d2::U2D2Status> statuses = std::vector<u2d2::U2D2Status>(n);
 
                 auto const timeout = std::chrono::seconds(3);
                 auto const start = this->get_clock()->now();
@@ -68,7 +68,7 @@ namespace mrover {
                 while (servos_active(statuses)) {
                     for (size_t i = 0; i < n; i++) {
                         statuses[i] = servos.at(request->names[i])->getTargetStatus();
-                        response->at_tgts[i] = (statuses[i] == Servo::ServoStatus::Success);
+                        response->at_tgts[i] = (statuses[i] == u2d2::U2D2Status::Success);
                     }
                     if (this->get_clock()->now() - start > timeout) {
                         RCLCPP_WARN(this->get_logger(), "Timeout reached while waiting for servo to reach target position");
@@ -116,7 +116,7 @@ namespace mrover {
                 float vel = 0.0f;
                 float cur = 0.0f;
 
-                Servo::ServoStatus err = servo.getPosition(pos);
+                u2d2::U2D2Status err = servo.getPosition(pos);
                 servo.getVelocity(vel);
                 servo.getCurrent(cur);
 
@@ -124,58 +124,10 @@ namespace mrover {
                 mControllerState.velocities[i] = vel;
                 mControllerState.currents[i] = cur;
 
-                Servo::ServoStatus ts = servo.getTargetStatus();
+                u2d2::U2D2Status ts = servo.getTargetStatus();
 
-                /*mControllerState.state[i] = {servo->getState()};*/
-                if (ts == Servo::ServoStatus::Active) {
-                    mControllerState.states[i] = "active";
-                } else if (ts == Servo::ServoStatus::Success) {
-                    mControllerState.states[i] = "success";
-                } else {
-                    mControllerState.states[i] = "error";
-                }
-
-                /*mControllerState.error[i] = {servo->getErrorState()};*/
-                switch (err) {
-                    case Servo::ServoStatus::CommNotAvailable:
-                        mControllerState.errors[i] = "CommNotAvailable";
-                        break;
-                    case Servo::ServoStatus::CommTxError:
-                        mControllerState.errors[i] = "CommTxError";
-                        break;
-                    case Servo::ServoStatus::HardwareFailure:
-                        mControllerState.errors[i] = "HardwareFailure";
-                        break;
-                    case Servo::ServoStatus::CommRxCorrupt:
-                        mControllerState.errors[i] = "CommRxCorrupt";
-                        break;
-                    case Servo::ServoStatus::CommRxTimeout:
-                        mControllerState.errors[i] = "CommRxTimeout";
-                        break;
-                    case Servo::ServoStatus::CommRxFail:
-                        mControllerState.errors[i] = "CommRxFail";
-                        break;
-                    case Servo::ServoStatus::CommTxFail:
-                        mControllerState.errors[i] = "CommTxFail";
-                        break;
-                    case Servo::ServoStatus::CommPortBusy:
-                        mControllerState.errors[i] = "CommPortBusy";
-                        break;
-                    case Servo::ServoStatus::CommRxWaiting:
-                        mControllerState.errors[i] = "CommRxWaiting";
-                        break;
-                    case Servo::ServoStatus::FailedToOpenPort:
-                        mControllerState.errors[i] = "FailedToOpenPort";
-                        break;
-                    case Servo::ServoStatus::FailedToSetBaud:
-                        mControllerState.errors[i] = "FailedToSetBaud";
-                        break;
-                    default:
-                        mControllerState.errors[i] = "NoError";
-                        break;
-                }
-
-                /*mControllerState.limit_hit[i] = {servo->getLimitsHitBits()};*/
+                mControllerState.states[i] = u2d2::stringifyStatus(ts);
+                mControllerState.errors[i] = u2d2::stringifyStatus(err);
             }
 
             mGimbalStatePub->publish(mControllerState);
