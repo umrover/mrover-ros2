@@ -31,6 +31,7 @@ class ImageCapture(Node):
             / ".."
             / ".."
             / ".."
+            / ".."
             / "src"
             / "mrover"
             / "data"
@@ -51,9 +52,15 @@ class ImageCapture(Node):
 def main() -> None:
     try:
         rclpy.init(args=sys.argv)
+
+        imgNode = ImageCapture()
+        amount = 0
+
         while True:
             input()
-            rclpy.spin_once(ImageCapture())
+            amount += 1
+            print(f"Amount {amount}")
+            rclpy.spin_once(imgNode)
         rclpy.shutdown()
     except KeyboardInterrupt:
         pass

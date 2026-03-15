@@ -2,7 +2,7 @@
   <div class="waypoints p-2">
     <div class="waypoint-header mb-1">
       <h5 class="mb-0">{{ waypoint.name }}</h5>
-      <small class="text-muted">ID: {{ waypoint.id }}</small>
+      <small class="text-muted">ID: {{ waypoint.tag_id }}</small>
     </div>
 
     <div class="coordinates mb-1">
