@@ -6,22 +6,21 @@ import random
 import math
 import argparse
 
-from mrover.msg import Humidity, Temperature, Oxygen, UV, Ozone, CO2, Pressure, ControllerState, Throttle
+from mrover.msg import Humidity, Temperature, Oxygen, UV, Ozone, CO2, Pressure, ControllerState, Throttle, SensorStates
 
 SP_MOTORS = ["linear_actuator", "auger", "pump_0", "pump_1", "sensor_actuator"]
-
-
 class MockSensorData(Node):
     def __init__(self, sensor_rate: float, controller_rate: float):
         super().__init__("mock_sensor_data")
 
-        self.humidity_pub = self.create_publisher(Humidity, "/sp_humidity_data", 10)
-        self.temp_pub = self.create_publisher(Temperature, "/sp_temperature_data", 10)
-        self.oxygen_pub = self.create_publisher(Oxygen, "/sp_oxygen_data", 10)
-        self.uv_pub = self.create_publisher(UV, "/sp_uv_data", 10)
-        self.ozone_pub = self.create_publisher(Ozone, "/sp_ozone_data", 10)
-        self.co2_pub = self.create_publisher(CO2, "/sp_co2_data", 10)
-        self.pressure_pub = self.create_publisher(Pressure, "/sp_pressure_data", 10)
+        self.humidity_pub = self.create_publisher(Humidity, "/sp_humidity_data", 1)
+        self.temp_pub = self.create_publisher(Temperature, "/sp_temperature_data", 1)
+        self.oxygen_pub = self.create_publisher(Oxygen, "/sp_oxygen_data", 1)
+        self.uv_pub = self.create_publisher(UV, "/sp_uv_data", 1)
+        self.ozone_pub = self.create_publisher(Ozone, "/sp_ozone_data", 1)
+        self.co2_pub = self.create_publisher(CO2, "/sp_co2_data", 1)
+        self.pressure_pub = self.create_publisher(Pressure, "/sp_pressure_data", 1)
+        self.sensor_states_pub = self.create_publisher(SensorStates, "/sp_sensor_states", 1)
         self.state_pub = self.create_publisher(ControllerState, "/sp_controller_state", 10)
 
         self.create_subscription(Throttle, "/sp_thr_cmd", self.on_throttle, 10)
@@ -66,6 +65,10 @@ class MockSensorData(Node):
         pressure_msg = Pressure()
         pressure_msg.pressure = 101325.0 + 2000.0 * math.sin(self.t * 0.4) + random.uniform(-200, 200)
         self.pressure_pub.publish(pressure_msg)
+        
+        state_msg = SensorStates()
+        state_msg.uv_state, state_msg.co2_state, state_msg.thp_state, state_msg.oxygen_state, state_msg.ozone_state = bool(random.getrandbits(1)), bool(random.getrandbits(1)), bool(random.getrandbits(1)), bool(random.getrandbits(1)), bool(random.getrandbits(1))
+        self.sensor_states_pub.publish(state_msg)
 
     def publish_controller_state(self):
         msg = ControllerState()
