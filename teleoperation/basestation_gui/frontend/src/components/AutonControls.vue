@@ -1,6 +1,6 @@
 <template>
   <div class="flex flex-row gap-2">
-    <div class="flex flex-col gap-1" style="flex: 1;">
+    <div class="flex flex-col gap-1 flex-none w-1/3">
       <FeedbackButton
         ref="autonCheckbox"
         class="w-full"
@@ -20,7 +20,7 @@
         @toggle="handleTeleopToggle"
       />
     </div>
-    <div class="flex flex-col gap-1" style="flex: 1;">
+    <div class="flex flex-col gap-1 flex-none w-1/3">
       <FeedbackButton
         class="w-full"
         data-testid="pw-pure-pursuit-toggle"
@@ -45,6 +45,8 @@
         :action="pathInterpolationAction"
         @toggle="handlePathInterpolationToggle"
       />
+    </div>
+    <div class="flex flex-col gap-1 flex-none w-1/3">
       <FeedbackButton
         class="w-full"
         :name="'Stereo Detector'"
