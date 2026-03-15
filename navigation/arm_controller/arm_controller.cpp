@@ -229,7 +229,7 @@ namespace mrover {
         //auto error_pitch = mCarrotPos.pitch - mArmPosCheck.pitch;
         //auto error_roll = mCarrotPos.roll - mArmPosCheck.roll;
 
-        double const max_dist = 0.015;
+        double const max_dist = 0.01;
 
         double error_total = std::sqrt(error_x * error_x + error_y * error_y + error_z * error_z);
 
@@ -350,6 +350,9 @@ namespace mrover {
             if (velZeroCheck()) {
                 mCarrotPos = mArmPos;
                 mCheckCarrotPos = mArmPos;
+                for (int i = 0; i < 5; i++) {
+                    mArmTotalError[i] = 0.0;
+                }
             }   
 
             auto const now = get_clock()->now();
@@ -360,7 +363,7 @@ namespace mrover {
                 carrot_initialized = true;
             }
 
-            double dt = 0.01;
+            double dt = 0.033;
 
             double k = 1;
 
@@ -390,22 +393,24 @@ namespace mrover {
             auto error_pitch = mCarrotPos.pitch - mArmPos.pitch;
             auto error_roll = mCarrotPos.roll - mArmPos.roll;
 
-            mArmTotalError[0] += error_x;
-            mArmTotalError[1] += error_y;
-            mArmTotalError[2] += error_z;
-            mArmTotalError[3] += error_pitch;
-            mArmTotalError[4] += error_roll;
+            mArmTotalError[0] += error_x * dt;
+            mArmTotalError[1] += error_y * dt;
+            mArmTotalError[2] += error_z * dt;
+            mArmTotalError[3] += error_pitch * dt;
+            mArmTotalError[4] += error_roll * dt;
 
-            for (int i = 0; i <= 4; i++) {
-                mArmTotalError[i] = std::min(std::max(mArmTotalError[i], -0.005), 0.0-5);
+            double lim = 0.03;
+
+            for (int i = 0; i < 5; i++) {
+                mArmTotalError[i] = std::min(std::max(mArmTotalError[i], -1 * lim), lim);
             }
 
 
-            double const Kp_lin = 5.0;
-            double const Kp_ang = 5.0;
+            double const Kp_lin = 40;
+            double const Kp_ang = 40;
 
-            double const Ki_lin = 0.5;
-            double const Ki_ang = 0.5;
+            double const Ki_lin = 10;
+            double const Ki_ang = 10;
 
             adjusted_v.linear.x += (Kp_lin * error_x + mArmTotalError[0] * Ki_lin);
             adjusted_v.linear.y += (Kp_lin * error_y + mArmTotalError[1] * Ki_lin);
@@ -422,10 +427,10 @@ namespace mrover {
                         velocities->velocities[2] == 0 &&
                         velocities->velocities[3] == 0 &&
                         velocities->velocities[4] == 0)) {
-                        if (velocities->velocities[1] < 0) {
+                        /*if (velocities->velocities[1] < 0) {
                             velocities->velocities[1] = -0.05;
                         }
-                        else velocities->velocities[1] = 0.05;
+                        else velocities->velocities[1] = 0.05;*/
                         mVelPub->publish(velocities.value());
                
             } else {
