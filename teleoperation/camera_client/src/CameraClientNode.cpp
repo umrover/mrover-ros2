@@ -1,21 +1,5 @@
 #include "CameraClientNode.hpp"
 
-#include <chrono>
-#include <format>
-
-#include <QDebug>
-
-#include <memory>
-#include <opencv2/core.hpp>
-#include <rclcpp/logging.hpp>
-#include <rclcpp_action/create_client.hpp>
-#include <sensor_msgs/image_encodings.hpp>
-
-#include <gst_utils.hpp>
-
-#include "GstRtpVideoCreatorWidget.hpp"
-#include "mrover/action/detail/ik_image_sample__struct.hpp"
-
 namespace mrover {
 
     CameraClientNode::CameraClientNode()
@@ -122,15 +106,15 @@ namespace mrover {
         emit imageCaptured(QString::fromStdString(cameraName), qImg.copy());
     }
 
-    void CameraClientNode::sendClickIk(std::uint32_t x, std::uint32_t y) {
+    void CameraClientNode::sendClickIk(float x, float y) {
         if (!mClickIkClient->action_server_is_ready()) {
             RCLCPP_WARN(get_logger(), "ClickIk action server not ready");
             return;
         }
         auto goal = action::ClickIk::Goal{};
-        goal.point_in_image_x = x / 2;
-        goal.point_in_image_y = y / 2;
-        RCLCPP_INFO(get_logger(), "Sending ClickIk goal: (%u, %u)", x, y);
+        goal.set__point_in_image_x(static_cast<float>(x));
+        goal.set__point_in_image_y(static_cast<float>(y));
+        RCLCPP_INFO(get_logger(), "Sending ClickIk goal: (%f, %f)", x, y);
 
         auto options = rclcpp_action::Client<action::ClickIk>::SendGoalOptions{};
         options.feedback_callback =

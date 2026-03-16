@@ -1,22 +1,14 @@
 #pragma once
 
-#include "mrover/action/detail/ik_image_sample__struct.hpp"
 #include <memory>
-#include <qimage.h>
-#include <string>
-#include <unordered_map>
-
-#include <QImage>
-#include <QObject>
-#include <QTimer>
-
-#include <rclcpp/rclcpp.hpp>
-#include <rclcpp_action/rclcpp_action.hpp>
-#include <sensor_msgs/msg/image.hpp>
-#include <std_srvs/srv/trigger.hpp>
+#include <pch.hpp>
 
 #include <mrover/action/click_ik.hpp>
+#include <mrover/action/ik_image_sample.hpp>
 #include <mrover/srv/media_control.hpp>
+#include <rclcpp_action/rclcpp_action.hpp>
+
+#include "GstRtpVideoCreatorWidget.hpp"
 
 namespace mrover {
 
@@ -58,7 +50,7 @@ namespace mrover {
         bool requestPlay(std::string const& cameraName);
         bool requestStop(std::string const& cameraName);
         bool requestScreenshot(std::string const& cameraName);
-        void sendClickIk(std::uint32_t x, std::uint32_t y);
+        void sendClickIk(float x, float y);
         void sampleClickIk();
     };
 

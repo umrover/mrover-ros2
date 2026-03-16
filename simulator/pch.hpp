@@ -90,3 +90,6 @@
 #include <mrover/msg/throttle.hpp>
 #include <mrover/msg/velocity.hpp>
 #include <mrover/srv/ik_mode.hpp>
+
+#include <mrover/action/click_ik.hpp>
+#include <mrover/action/ik_image_sample.hpp>

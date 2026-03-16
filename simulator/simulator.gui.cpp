@@ -1,5 +1,4 @@
 #include "simulator.hpp"
-#include <cstdint>
 #include <imgui.h>
 #include <webgpu.hpp>
 

@@ -40,9 +40,11 @@ def generate_launch_description():
         condition=LaunchConfigurationEquals("mode", "sim"),
     )
 
-    return LaunchDescription([
-        mode_arg,
-        camera_client_node,
-        long_range_streamer_node,
-        zed_streamer_node,
-    ])
+    return LaunchDescription(
+        [
+            mode_arg,
+            camera_client_node,
+            long_range_streamer_node,
+            zed_streamer_node,
+        ]
+    )
