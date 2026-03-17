@@ -98,6 +98,7 @@ namespace mrover {
                     {"joint_b_segment_length", mJointBSegmentLength.rep, 0.0},
                     {"joint_b_actuator_length", mJointBActuatorLength.rep, 0.0},
                     {"joint_b_mount_length", mJointBMountLength.rep, 0.0},
+                    {"joint_b_offset", mJointBOffset.rep, 0.0},
                     {"joint_b_mount_theta", mJointBMountTheta.rep, 0.0},
                     {"joint_b_segment_offset_theta", mJointBSegmentOffsetTheta.rep, 0.0},
                     {"joint_de_pitch_offset", mJointDePitchOffset.rep, 0.0},
@@ -177,7 +178,7 @@ namespace mrover {
         rclcpp::Service<srv::Pusher>::SharedPtr mPusherService;
 
         Meters mJointBSegmentLength, mJointBActuatorLength, mJointBMountLength;
-        Radians mJointBMountTheta, mJointBSegmentOffsetTheta;
+        Radians mJointBMountTheta, mJointBSegmentOffsetTheta, mJointBOffset;
 
         Percent mPusherThrottle;
         float mPusherWaitDuration, mPusherWaitCycles;
@@ -610,7 +611,7 @@ namespace mrover {
                     case 'j' + 'b': {
                         auto const pos_m = Meters{mJointB->getPosition()};
                         auto const vel_mps = MetersPerSecond{mJointB->getVelocity()};
-                        auto const pos_rad = bMetersToRadians(pos_m);
+                        auto const pos_rad = bMetersToRadians(pos_m) - mJointBOffset;
                         auto const vel_radps = bVelocityToAngular(vel_mps, pos_m, pos_rad);
                         mControllerState.names[i] = name;
                         mControllerState.states[i] = mJointB->getState();
