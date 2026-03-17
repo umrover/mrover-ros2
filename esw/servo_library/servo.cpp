@@ -137,6 +137,49 @@ auto Servo::setPosition(ServoPosition position, ServoMode mode) -> u2d2::U2D2Sta
             break;
         case ServoMode::Limited: {
             
+            // // Gets middle point between limits
+            // int middleLimit = (mForwardLimit + mReverseLimit) / 2;
+            
+            // // Corrects middle limit if on wrong side
+            // if (mForwardLimit > mReverseLimit) {
+            //   middleLimit = (mForwardLimit + mReverseLimit + 4096) / 2;
+            // }
+            // middleLimit %= SERVO_TICKS;
+
+            // int newForwardLimit = (mForwardLimit - middleLimit + 4096) % SERVO_TICKS;
+            // int newReverseLimit = (mReverseLimit - middleLimit + 4096) % SERVO_TICKS;
+            // int newCurrentPosition = (currentPosition - middleLimit + 4096) % SERVO_TICKS;
+            // int newTargetPosition = (targetPosition - middleLimit + 4096) % SERVO_TICKS;
+
+            // normalizedDifference = (newTargetPosition - newCurrentPosition);
+            
+            // // If the current path to the final position goes over the middle limit, go the other way
+            // if (0 > newCurrentPosition && 0 < newTargetPosition) {
+
+            //     if (normalizedDifference > 0)
+            //         normalizedDifference -= SERVO_TICKS;
+            //     else if (normalizedDifference < 0)
+            //         normalizedDifference += SERVO_TICKS;
+            // }
+
+            // mAtLimit = false;
+
+            // // Limit destination if between mForwardLimit and middleLimit
+            // if (upper(newTargetPosition) > newForwardLimit && newTargetPosition < upper(0)) {
+            //     normalizedDifference = (newForwardLimit - newCurrentPosition) % SERVO_TICKS;
+            //     if (normalizedDifference < 0 && !(upper(newCurrentPosition) > newForwardLimit && newCurrentPosition < upper(0))) normalizedDifference += SERVO_TICKS;
+            //     mAtLimit = true;
+            // }
+
+            // // Limit destination if between mReverseLimit and middleLimit
+            // else if (upper(newTargetPosition) > 0 && newTargetPosition < upper(newReverseLimit)) {
+            //   printf("Got here 3\n");
+            //     normalizedDifference = (newReverseLimit - newCurrentPosition) % SERVO_TICKS;
+            //     if (normalizedDifference > 0 && !(upper(newCurrentPosition) > 0 && newCurrentPosition < upper(newReverseLimit))) normalizedDifference -= SERVO_TICKS;
+            //     mAtLimit = true;
+            // }
+            
+            
             // Gets middle point between limits
             int middleLimit = (mForwardLimit + mReverseLimit) / 2;
 
