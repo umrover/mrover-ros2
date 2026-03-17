@@ -9,10 +9,9 @@ export const armAPI = {
     })
   },
 
-  // TODO(stow): Add stowArm() method.
   stowArm(): Promise<StowResponse> {
-    return apiFetch('/arm/stow', {
-      method: 'POST',
+    return apiFetch('/arm/stow/', {
+      method: 'POST'
     })
   }
 }

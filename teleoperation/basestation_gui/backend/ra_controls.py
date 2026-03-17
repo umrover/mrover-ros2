@@ -39,17 +39,17 @@ def get_ra_mode() -> str:
         return ra_mode
 
 
-async def set_ra_mode(new_ra_mode: str):
+async def set_ra_mode(new_ra_mode: str) -> bool:
     global ra_mode, stow_task
     if new_ra_mode == "ik-pos":
         if not await call_ik_mode_service(IK_MODE_POSITION_CONTROL):
-            return
+            return False
     elif new_ra_mode == "ik-vel":
         if not await call_ik_mode_service(IK_MODE_VELOCITY_CONTROL):
-            return
+            return False
     elif new_ra_mode == "stow":
         if not await call_ik_mode_service(IK_MODE_POSITION_CONTROL):
-            return
+            return False
 
     with ra_mode_lock:
         ra_mode = new_ra_mode
@@ -59,6 +59,8 @@ async def set_ra_mode(new_ra_mode: str):
             _ik_pos_pub.publish(STOW_POSITION)
         if stow_task is None or stow_task.done():
             stow_task = asyncio.create_task(stow_timer_loop())
+    
+    return True
 
 
 async def call_ik_mode_service(mode: int) -> bool:
@@ -73,7 +75,7 @@ IK_MODE_POSITION_CONTROL = 0
 IK_MODE_VELOCITY_CONTROL = 1
 IK_MODE_TYPING = 2
 
-# TODO(stow): Define stow position constant. Get values from hardware team.
+# DEFINE STOW TARGET HERE
 STOW_POSITION = IK()
 STOW_POSITION.pos.x = 0.0
 STOW_POSITION.pos.y = 0.0
