@@ -5,9 +5,8 @@ from rclpy.time import Time
 from std_msgs.msg import Header
 from geometry_msgs.msg import Point
 
-def gen_marker(
-    time: Time, point=[0.0, 0.0], color=[1.0, 1.0, 1.0], size=0.2, lifetime=5, id=0, delete=False
-) -> Marker:
+
+def gen_marker(time: Time, point=[0.0, 0.0], color=[1.0, 1.0, 1.0], size=0.2, lifetime=5, id=0, delete=False) -> Marker:
     """
     Creates and publishes a single spherical marker at the specified (x, y, z) coordinates.
 
@@ -53,6 +52,7 @@ def gen_marker(
     marker.pose.orientation.w = 1.0
 
     return marker
+
 
 def ring_marker(
     time: Time, point=[0.0, 0.0], color=[1.0, 1.0, 1.0], radius=0.5, size=0.1, lifetime=5, id=0, delete=False

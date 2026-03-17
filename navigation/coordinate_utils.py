@@ -66,6 +66,7 @@ def vec_angle(self, v1: tuple, v2: tuple) -> float:
 
     return abs(angle_rad)
 
+
 def segment_path(context: Context, dest: np.ndarray, seg_len: float = 2.0):
     """
     Segment the path from the rover's current position to the current waypoint into equally spaced points

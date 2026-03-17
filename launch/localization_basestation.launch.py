@@ -12,7 +12,10 @@ def generate_launch_description():
         package="mrover",
         executable="basestation_gps_driver.py",
         name="basestation_gps_driver",
-        parameters=[os.path.join(get_package_share_directory("mrover"), "config", "localization.yaml"), os.path.join(get_package_share_directory("mrover"), "config", "reference_coords.yaml")],
+        parameters=[
+            os.path.join(get_package_share_directory("mrover"), "config", "localization.yaml"),
+            os.path.join(get_package_share_directory("mrover"), "config", "reference_coords.yaml"),
+        ],
     )
 
     return LaunchDescription(

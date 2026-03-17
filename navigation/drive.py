@@ -26,7 +26,7 @@ class DriveController:
     lookahead_pub: Publisher
     intersection_pub: Publisher
 
-    def __init__(self, node: Node, lookahead_pub : Publisher, intersect_pub : Publisher):
+    def __init__(self, node: Node, lookahead_pub: Publisher, intersect_pub: Publisher):
         self.node = node
         self._last_angular_error = None
         self._last_target = None
@@ -57,14 +57,10 @@ class DriveController:
         """
         turning_p = self.node.get_parameter("drive.turning_p").value
         driving_p = self.node.get_parameter("drive.driving_p").value
-        min_turning_effort = self.node.get_parameter(
-            "drive.min_turning_effort").value
-        max_turning_effort = self.node.get_parameter(
-            "drive.max_turning_effort").value
-        min_driving_effort = self.node.get_parameter(
-            "drive.min_driving_effort").value
-        max_driving_effort = self.node.get_parameter(
-            "drive.max_driving_effort").value
+        min_turning_effort = self.node.get_parameter("drive.min_turning_effort").value
+        max_turning_effort = self.node.get_parameter("drive.max_turning_effort").value
+        min_driving_effort = self.node.get_parameter("drive.min_driving_effort").value
+        max_driving_effort = self.node.get_parameter("drive.max_driving_effort").value
 
         # if we are at the target position, reset the controller and return a zero command
         if abs(linear_error) < completion_thresh:
@@ -112,8 +108,7 @@ class DriveController:
             # check in the TURN_IN_PLACE state and cause oscillation, checking it this way makes it so that we only
             # switch back into the TURN_IN_PLACE state on the "rising edge" of the turn error
             last_angular_was_inside = (
-                self._last_angular_error is not None and abs(
-                    self._last_angular_error) < turn_in_place_thresh
+                self._last_angular_error is not None and abs(self._last_angular_error) < turn_in_place_thresh
             )
             cur_angular_is_outside = abs(angular_error) >= turn_in_place_thresh
             if cur_angular_is_outside and last_angular_was_inside:
@@ -163,8 +158,7 @@ class DriveController:
         # compute the vector from the previous target position to the rover position
         rover_vec = rover_pos - path_start
         # compute the projection of the rover vector onto the target vector
-        proj_vec = np.dot(rover_vec, path_vec) / \
-            np.dot(path_vec, path_vec) * path_vec
+        proj_vec = np.dot(rover_vec, path_vec) / np.dot(path_vec, path_vec) * path_vec
         lookahead_vec = lookahead_dist * normalized(path_vec)
         lookahead_point = proj_vec + lookahead_vec
         # if the lookahead point is further away than the target, just return the target
@@ -186,10 +180,18 @@ class DriveController:
         # If target_pos is a Trajectory we use pure pursuit instead of deafult_drive_command
         if isinstance(target_pos, np.ndarray):
             return self.get_default_drive_command(
-                target_pos, rover_pose, completion_thresh, turn_in_place_thresh, drive_back, path_start,
+                target_pos,
+                rover_pose,
+                completion_thresh,
+                turn_in_place_thresh,
+                drive_back,
+                path_start,
             )
         return self.get_pure_pursuit_drive_command(
-            target_pos, rover_pose, completion_thresh, drive_back,
+            target_pos,
+            rover_pose,
+            completion_thresh,
+            drive_back,
         )
 
     def get_default_drive_command(
@@ -229,11 +231,9 @@ class DriveController:
             self.reset()
             return Twist(), True
 
-        lookahead_distance = self.node.get_parameter(
-            "drive.lookahead_distance").value
+        lookahead_distance = self.node.get_parameter("drive.lookahead_distance").value
         if path_start is not None and np.linalg.norm(path_start - target_pos) > lookahead_distance:
-            target_pos = self.compute_lookahead_point(
-                path_start, target_pos, rover_pos, lookahead_distance)
+            target_pos = self.compute_lookahead_point(path_start, target_pos, rover_pos, lookahead_distance)
 
         target_dir = target_pos - rover_pos
 
@@ -267,7 +267,7 @@ class DriveController:
         drive_back: bool = False,
     ) -> tuple[Twist, bool]:
         """
-        Returns a drive command to get the rover to the target position, using pure pursuit logic 
+        Returns a drive command to get the rover to the target position, using pure pursuit logic
         :param waypoints: The current trajectory of the rover.
         :param rover_pose: The current pose of the rover.
         :param completion_thresh: The distance threshold to consider the rover at the target position.
@@ -280,9 +280,9 @@ class DriveController:
         # pursuit logic: https://wiki.purduesigbots.com/software/control-algorithms/basic-pure-pursuit
 
         # Trajectory is None -> There are no points to go to
-        if (waypoints is None):
+        if waypoints is None:
             return (Twist(), True)
-        
+
         # Get the direction vector of the rover and position,
         # zero the Z components since our controller only assumes motion and control over the rover in the XY plane
         rover_dir = rover_pose.rotation()[:, 0]
@@ -295,7 +295,7 @@ class DriveController:
             rover_dir *= -1
 
         # Check and set if there is a new farther found point in the path
-        self.set_farthest_path_point(self,waypoints, rover_pos)
+        self.set_farthest_path_point(self, waypoints, rover_pos)
 
         # Compute intersection points with the path
         intersection_points = self.compute_intersection_point(waypoints, rover_pos)
@@ -307,7 +307,7 @@ class DriveController:
         if np.linalg.norm(target_pos - rover_pos) < completion_thresh:
             return Twist(), True
 
-        self.display_markers(rover_pos, [target_pos])
+        self.display_markers(rover_pos, target_pos)
 
         # Get target direction vector
         target_dir = target_pos - rover_pos
@@ -345,23 +345,24 @@ class DriveController:
         max_driving_effort = self.node.get_parameter("drive.max_driving_effort").value
         min_lookahead_dist = self.node.get_parameter("pure_pursuit.min_lookahead_distance").value
         max_lookahead_dist = self.node.get_parameter("pure_pursuit.max_lookahead_distance").value
-        
+
         # Modify the error to be in the range -pi/2 to pi/2
         edited_err = angular_error
-        if (angular_error > 0):
-            edited_err = min(angular_error, np.pi/2)
-        elif (angular_error < 0):
-            edited_err = max(angular_error, -1*np.pi/2)
-        
+        if angular_error > 0:
+            edited_err = min(angular_error, np.pi / 2)
+        elif angular_error < 0:
+            edited_err = max(angular_error, -1 * np.pi / 2)
 
         # Drive controller for linear and angular velocity
         # Equation for angular velocity was determined through papers such as Purdue's
         # Equation for linear velocity varies based on system, was found through testing and referencing other works
-        linear_vel = max_driving_effort * max(0.0001, np.cos(abs(edited_err)+(np.pi / 2)) + 1)
-        angular_vel = (2*np.sin(angular_error) / self._last_lookahead_dist) * 1/linear_vel
+        linear_vel = max_driving_effort * max(0.0001, np.cos(abs(edited_err) + (np.pi / 2)) + 1)
+        angular_vel = (2 * np.sin(angular_error) / self._last_lookahead_dist) * 1 / linear_vel
 
         # Dynamically adjust the lookahead distance based on linear velocity
-        self._last_lookahead_dist = ((max_lookahead_dist - min_lookahead_dist) * (linear_vel / max_driving_effort)) + min_lookahead_dist
+        self._last_lookahead_dist = (
+            (max_lookahead_dist - min_lookahead_dist) * (linear_vel / max_driving_effort)
+        ) + min_lookahead_dist
 
         # Return velocity command
         cmd_vel = Twist(
@@ -403,7 +404,7 @@ class DriveController:
             waypoints.decerement_point()
             if not len(intersections):
                 return waypoints.get_current_point()
-        
+
         # Intersections are empty (get back on to the path)
         if not len(intersections):
             # Get back to the path
@@ -414,22 +415,20 @@ class DriveController:
         if len(intersections) == 1:
             waypoints.decerement_point()
             return intersections[0]
-        
+
         path_point_x = waypoints.get_current_point()[0]
         path_point_y = waypoints.get_current_point()[1]
 
-        dist_1 = np.sqrt((path_point_x - intersections[0][0])**2 + (path_point_y - intersections[0][1])**2)
-        dist_2 = np.sqrt((path_point_x - intersections[1][0])**2 + (path_point_y - intersections[1][1])**2)
+        dist_1 = np.sqrt((path_point_x - intersections[0][0]) ** 2 + (path_point_y - intersections[0][1]) ** 2)
+        dist_2 = np.sqrt((path_point_x - intersections[1][0]) ** 2 + (path_point_y - intersections[1][1]) ** 2)
 
-        target_pos = [0.0,0.0,0.0]
+        target_pos = np.array([0.0, 0.0, 0.0])
 
         # Pick the intersection point which is closer to the next point in the trajectory
         if dist_1 < dist_2:
-            target_pos[0] = intersections[0][0]
-            target_pos[1] = intersections[0][1]
+            target_pos = np.array([intersections[0][0], intersections[0][1], 0.0])
         else:
-            target_pos[0] = intersections[1][0]
-            target_pos[1] = intersections[1][1]
+            target_pos = np.array([intersections[1][0], intersections[1][1], 0.0])
 
         waypoints.decerement_point()
         return target_pos
@@ -453,25 +452,23 @@ class DriveController:
         stop_incrementing = False
 
         # Determine next point
-        while(not waypoints.done() and not stop_incrementing):
+        while not waypoints.done() and not stop_incrementing:
             # Increment to the next point in the path
             waypoints.increment_point()
 
-            if (waypoints.done()):
+            if waypoints.done():
                 continue
 
             # Check if the next point is valid
             next_point: np.ndarray = waypoints.get_current_point()
-            if (self._last_lookahead_dist < np.linalg.norm(next_point - rover_pos)):
+            if self._last_lookahead_dist < np.linalg.norm(next_point - rover_pos):
                 stop_incrementing = True
 
         if stop_incrementing or waypoints.done():
             waypoints.decerement_point()
 
     @staticmethod
-    def sign(
-        val : float
-    ) -> float:
+    def sign(val: float) -> float:
         """
         Helper function for compute_intersection_point:
         Gives the sign of a float
@@ -485,11 +482,7 @@ class DriveController:
         else:
             return -1.0
 
-    def compute_intersection_point(
-        self,
-        waypoints: Trajectory,
-        rover_pos: np.ndarray
-    ) -> list | None:
+    def compute_intersection_point(self, waypoints: Trajectory, rover_pos: np.ndarray) -> list:
         """
         Helper function for Pure Pursuit:
         Computes the potential points that the rover should follow
@@ -499,13 +492,13 @@ class DriveController:
         :return: A list of valid intersection points
         :modifies: nothing
         """
-        intersections = []
+        intersections: list = []
 
         # Ensure a trajectory was passed through
         if waypoints is None:
             raise ValueError("Attempt to detect intersection with no waypoints")
             return
-        
+
         x1 = waypoints.get_current_point()[0]
         y1 = waypoints.get_current_point()[1]
 
@@ -523,29 +516,29 @@ class DriveController:
         x1_offset = x1 - x_pos
         x2_offset = x2 - x_pos
         y1_offset = y1 - y_pos
-        y2_offset = y2 - y_pos 
+        y2_offset = y2 - y_pos
 
         # Get dx and dy
         d_x = x2_offset - x1_offset
         d_y = y2_offset - y1_offset
 
         d_r = np.sqrt((d_x**2) + (d_y**2))
-        det = x1_offset*y2_offset - x2_offset*y1_offset
+        det = x1_offset * y2_offset - x2_offset * y1_offset
 
         # Calculate the discriminate
-        discriminate = ((self._last_lookahead_dist**2)*(d_r**2)) - (det**2)
+        discriminate = ((self._last_lookahead_dist**2) * (d_r**2)) - (det**2)
 
         valid_intersection_1 = False
         valid_intersection_2 = False
-        intersection_1 = [0.0,0.0,0.0]
-        intersection_2 = [0.0,0.0,0.0]
+        intersection_1 = [0.0, 0.0, 0.0]
+        intersection_2 = [0.0, 0.0, 0.0]
 
         # Determine if there is an intersection
-        if (discriminate >= 0):
-            x_sol_1 = (det*d_y + self.sign(d_y)*d_x*np.sqrt(discriminate)) / (d_r**2)
-            x_sol_2 = (det*d_y - self.sign(d_y)*d_x*np.sqrt(discriminate)) / (d_r**2)
-            y_sol_1 = (-det*d_x + abs(d_y)*np.sqrt(discriminate)) / (d_r**2)
-            y_sol_2 = (-det*d_x - abs(d_y)*np.sqrt(discriminate)) / (d_r**2)
+        if discriminate >= 0:
+            x_sol_1 = (det * d_y + self.sign(d_y) * d_x * np.sqrt(discriminate)) / (d_r**2)
+            x_sol_2 = (det * d_y - self.sign(d_y) * d_x * np.sqrt(discriminate)) / (d_r**2)
+            y_sol_1 = (-det * d_x + abs(d_y) * np.sqrt(discriminate)) / (d_r**2)
+            y_sol_2 = (-det * d_x - abs(d_y) * np.sqrt(discriminate)) / (d_r**2)
 
             intersection_1 = [x_sol_1 + x_pos, y_sol_1 + y_pos, 0.0]
             intersection_2 = [x_sol_2 + x_pos, y_sol_2 + y_pos, 0.0]
@@ -555,18 +548,18 @@ class DriveController:
             max_x = max(x1, x2)
             max_y = max(y1, y2)
 
-            if (min_x <= intersection_1[0] <= max_x and min_y <= intersection_1[1] <= max_y):
+            if min_x <= intersection_1[0] <= max_x and min_y <= intersection_1[1] <= max_y:
                 valid_intersection_1 = True
-            if (min_x <= intersection_2[0] <= max_x and min_y <= intersection_2[1] <= max_y):
+            if min_x <= intersection_2[0] <= max_x and min_y <= intersection_2[1] <= max_y:
                 valid_intersection_2 = True
         else:
             waypoints.decerement_point()
             intersections.append([x2, y2, 0.0])
             return intersections
 
-        if (valid_intersection_1):
+        if valid_intersection_1:
             intersections.append(intersection_1)
-        if (valid_intersection_2):
+        if valid_intersection_2:
             intersections.append(intersection_2)
 
         waypoints.decerement_point()
@@ -592,7 +585,7 @@ class DriveController:
             self.intersection_pub.publish(
                 gen_marker(
                     time=self.node.get_clock().now(),
-                    point=[point[0],point[1]],
+                    point=[point[0], point[1]],
                     color=[0.0, 1.0, 0.0],
                     id=i,
                     lifetime=self.node.get_parameter("pub_lookahead_rate").value,

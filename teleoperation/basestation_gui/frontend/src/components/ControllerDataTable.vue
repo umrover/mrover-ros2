@@ -1,49 +1,67 @@
 <template>
   <div class='d-flex flex-column border border-2 p-2 rounded mw-100' style="flex: 1 0 auto; min-width: 0;">
-    <h4 class="mb-2">{{ header }}</h4>
+    <div class="d-flex align-items-center justify-content-between mb-2">
+      <h4 class="m-0">{{ header }}</h4>
+      <div class="d-flex gap-2">
+        <button
+          type="button"
+          class="btn btn-sm"
+          :class="showStatus ? 'btn-success' : 'btn-danger'"
+          @mousedown.prevent
+          @click="showStatus = !showStatus"
+        >Status</button>
+        <button
+          type="button"
+          class="btn btn-sm"
+          :class="showValues ? 'btn-success' : 'btn-danger'"
+          @mousedown.prevent
+          @click="showValues = !showValues"
+        >Values</button>
+      </div>
+    </div>
     <div class="overflow-x-auto">
       <table class='table table-bordered table-sm m-0 w-auto text-nowrap compact-table'>
         <tbody>
         <tr>
           <th class='table-secondary text-nowrap sticky-col px-2 py-1'>Motor</th>
-          <td v-for='(name, i) in name' :key='i' class="text-center small px-2 py-1">
-            {{ name }}
+          <td v-for='(n, i) in names' :key='i' class="text-center small px-2 py-1">
+            {{ n }}
           </td>
         </tr>
-        <tr>
+        <tr v-if="showStatus">
           <th class='table-secondary text-nowrap sticky-col px-2 py-1'>State</th>
-          <td v-for='(state, i) in state' :key='i' class="text-center small px-2 py-1">
-            {{ state }}
+          <td v-for='(s, i) in states' :key='i' class="text-center small px-2 py-1">
+            {{ s }}
           </td>
         </tr>
-        <tr>
+        <tr v-if="showStatus">
           <th class='table-secondary text-nowrap sticky-col px-2 py-1'>Error</th>
-          <td v-for='(error, i) in error' :key='i' class="text-center small px-2 py-1">
-            {{ error }}
+          <td v-for='(e, i) in errors' :key='i' class="text-center small px-2 py-1">
+            {{ e }}
           </td>
         </tr>
-        <tr>
+        <tr v-if="showStatus">
           <th class='table-secondary text-nowrap sticky-col px-2 py-1'>Limit Hit</th>
-          <td v-for='(limits, i) in limits' :key='i' class="text-center small px-2 py-1">
-            {{ limits }}
+          <td v-for='(l, i) in limitHits' :key='i' class="text-center small px-2 py-1">
+            {{ l }}
           </td>
         </tr>
-        <tr>
+        <tr v-if="showValues">
           <th class='table-secondary text-nowrap sticky-col px-2 py-1'>Position</th>
-          <td v-for='(pos, i) in position' :key='i' class="text-center small px-2 py-1">
-            {{ pos.toFixed(2) }}
+          <td v-for='(p, i) in positions' :key='i' class="text-center small px-2 py-1">
+            {{ p.toFixed(2) }}
           </td>
         </tr>
-        <tr>
+        <tr v-if="showValues">
           <th class='table-secondary text-nowrap sticky-col px-2 py-1'>Velocity</th>
-          <td v-for='(vel, i) in velocity' :key='i' class="text-center small px-2 py-1">
-            {{ vel.toFixed(2) }}
+          <td v-for='(v, i) in velocities' :key='i' class="text-center small px-2 py-1">
+            {{ v.toFixed(2) }}
           </td>
         </tr>
-        <tr>
+        <tr v-if="showValues">
           <th class='table-secondary text-nowrap sticky-col px-2 py-1'>Current</th>
-          <td v-for='(cur, i) in current' :key='i' class="text-center small px-2 py-1">
-            {{ cur.toFixed(2) }}
+          <td v-for='(c, i) in currents' :key='i' class="text-center small px-2 py-1">
+            {{ c.toFixed(2) }}
           </td>
         </tr>
         </tbody>
@@ -58,68 +76,90 @@ import { useWebsocketStore } from '@/stores/websocket'
 import { storeToRefs } from 'pinia'
 import type { ControllerStateMessage } from '@/types/websocket'
 
-const props = defineProps({
-  header: {
-    type: String,
-    required: true,
-  },
-  msgType: {
-    type: String,
-    required: true,
-  }
-})
+const props = defineProps<{
+  header: string
+  mode: 'drive' | 'arm' | 'sp'
+}>()
 
 const websocketStore = useWebsocketStore()
 const { messages } = storeToRefs(websocketStore)
 
-const name = ref<string[]>([])
-const state = ref<string[]>([])
-const error = ref<string[]>([])
-const limits = ref<boolean[]>([])
-const position = ref<number[]>([])
-const velocity = ref<number[]>([])
-const current = ref<number[]>([])
+const statusKey = `controllerDataTable_${props.mode}_showStatus`
+const valuesKey = `controllerDataTable_${props.mode}_showValues`
 
-const armMessage = computed(() => messages.value['arm'])
+const showStatus = ref(localStorage.getItem(statusKey) === 'true')
+const showValues = ref(localStorage.getItem(valuesKey) === 'true')
+
+watch(showStatus, (val) => localStorage.setItem(statusKey, String(val)))
+watch(showValues, (val) => localStorage.setItem(valuesKey, String(val)))
+
+const names = ref<string[]>([])
+const states = ref<string[]>([])
+const errors = ref<string[]>([])
+const limitHits = ref<boolean[]>([])
+const positions = ref<number[]>([])
+const velocities = ref<number[]>([])
+const currents = ref<number[]>([])
+
+const leftState = ref<ControllerStateMessage | null>(null)
+const rightState = ref<ControllerStateMessage | null>(null)
+
+function updateFromMessage(msg: ControllerStateMessage) {
+  names.value = msg.names
+  states.value = msg.states
+  errors.value = msg.errors
+  limitHits.value = msg.limits_hit
+  positions.value = msg.positions
+  velocities.value = msg.velocities
+  currents.value = msg.currents
+}
+
+function combineLeftRight() {
+  const left = leftState.value
+  const right = rightState.value
+  if (!left && !right) return
+
+  const l = left || { names: [], states: [], errors: [], limits_hit: [], positions: [], velocities: [], currents: [] }
+  const r = right || { names: [], states: [], errors: [], limits_hit: [], positions: [], velocities: [], currents: [] }
+
+  names.value = [...l.names, ...r.names]
+  states.value = [...l.states, ...r.states]
+  errors.value = [...l.errors, ...r.errors]
+  limitHits.value = [...l.limits_hit, ...r.limits_hit]
+  positions.value = [...l.positions, ...r.positions]
+  velocities.value = [...l.velocities, ...r.velocities]
+  currents.value = [...l.currents, ...r.currents]
+}
+
 const driveMessage = computed(() => messages.value['drive'])
+const armMessage = computed(() => messages.value['arm'])
 const scienceMessage = computed(() => messages.value['science'])
 
-watch(armMessage, (msg) => {
-  if (msg && (msg as ControllerStateMessage).type == props.msgType) {
-    const controllerMsg = msg as ControllerStateMessage;
-    name.value = controllerMsg.name
-    state.value = controllerMsg.state
-    error.value = controllerMsg.error
-    limits.value = controllerMsg.limit_hit
-    position.value = controllerMsg.position
-    velocity.value = controllerMsg.velocity
-    current.value = controllerMsg.current
+watch(driveMessage, (msg) => {
+  if (props.mode !== 'drive' || !msg) return
+  const typed = msg as ControllerStateMessage
+  if (typed.type === 'drive_left_state') {
+    leftState.value = typed
+    combineLeftRight()
+  } else if (typed.type === 'drive_right_state') {
+    rightState.value = typed
+    combineLeftRight()
   }
 })
 
-watch(driveMessage, (msg) => {
-  if (msg && (msg as ControllerStateMessage).type == props.msgType) {
-    const controllerMsg = msg as ControllerStateMessage;
-    name.value = controllerMsg.name
-    state.value = controllerMsg.state
-    error.value = controllerMsg.error
-    limits.value = controllerMsg.limit_hit
-    position.value = controllerMsg.position
-    velocity.value = controllerMsg.velocity
-    current.value = controllerMsg.current
+watch(armMessage, (msg) => {
+  if (props.mode !== 'arm' || !msg) return
+  const typed = msg as ControllerStateMessage
+  if (typed.type === 'arm_state') {
+    updateFromMessage(typed)
   }
 })
 
 watch(scienceMessage, (msg) => {
-  if (msg && (msg as ControllerStateMessage).type == props.msgType) {
-    const controllerMsg = msg as ControllerStateMessage;
-    name.value = controllerMsg.name
-    state.value = controllerMsg.state
-    error.value = controllerMsg.error
-    limits.value = controllerMsg.limit_hit
-    position.value = controllerMsg.position
-    velocity.value = controllerMsg.velocity
-    current.value = controllerMsg.current
+  if (props.mode !== 'sp' || !msg) return
+  const typed = msg as ControllerStateMessage
+  if (typed.type === 'sp_controller_state') {
+    updateFromMessage(typed)
   }
 })
 </script>
