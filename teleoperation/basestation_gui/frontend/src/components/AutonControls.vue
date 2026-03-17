@@ -1,9 +1,10 @@
 <template>
-  <div class="d-flex flex-row gap-2">
-    <div class="d-flex flex-column gap-1" style="flex: 1;">
+  <div class="flex flex-row gap-2">
+    <div class="flex flex-col gap-1" style="flex: 1;">
       <FeedbackButton
         ref="autonCheckbox"
-        class="w-100"
+        class="w-full"
+        data-testid="pw-auton-toggle"
         :name="'Autonomy Mode'"
         :checked="autonEnabled"
         :action="autonAction"
@@ -11,7 +12,7 @@
       />
       <FeedbackButton
         ref="teleopCheckbox"
-        class="w-100"
+        class="w-full"
         data-testid="pw-teleop-toggle"
         :name="'Teleop Controls'"
         :checked="teleopEnabled"
@@ -19,23 +20,26 @@
         @toggle="handleTeleopToggle"
       />
     </div>
-    <div class="d-flex flex-column gap-1" style="flex: 1;">
+    <div class="flex flex-col gap-1" style="flex: 1;">
       <FeedbackButton
-        class="w-100"
+        class="w-full"
+        data-testid="pw-pure-pursuit-toggle"
         :name="'Pure Pursuit'"
         :checked="purePursuitEnabled"
         :action="purePursuitAction"
         @toggle="handlePurePursuitToggle"
       />
       <FeedbackButton
-        class="w-100"
+        class="w-full"
+        data-testid="pw-path-relaxation-toggle"
         :name="'Path Relaxation'"
         :checked="pathRelaxationEnabled"
         :action="pathRelaxationAction"
         @toggle="handlePathRelaxationToggle"
       />
       <FeedbackButton
-        class="w-100"
+        class="w-full"
+        data-testid="pw-path-interpolation-toggle"
         :name="'Path Interpolation'"
         :checked="pathInterpolationEnabled"
         :action="pathInterpolationAction"
@@ -62,17 +66,16 @@ const teleopEnabled = computed(() => autonomyStore.teleopEnabled)
 const purePursuitEnabled = computed(() => autonomyStore.purePursuitEnabled)
 const pathRelaxationEnabled = computed(() => autonomyStore.pathRelaxationEnabled)
 const pathInterpolationEnabled = computed(() => autonomyStore.pathInterpolationEnabled)
-  
+
 const autonAction = (newState: boolean) => {
-  const route = autonomyStore.route
+  const routeMap = autonomyStore.routeForMap
   const waypoints = newState
-    ? route.map((waypoint) => ({
+    ? routeMap.map((waypoint) => ({
         latitude_degrees: waypoint.latLng.lat,
         longitude_degrees: waypoint.latLng.lng,
-        tag_id: waypoint.id,
+        tag_id: waypoint.tag_id,
         type: waypoint.type,
         enable_costmap: waypoint.enable_costmap,
-        coverage_radius: waypoint.coverage_radius,
       }))
     : []
 

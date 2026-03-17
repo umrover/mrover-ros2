@@ -1,15 +1,15 @@
 <template>
-  <div class="d-flex flex-column gap-2 flex-fill">
-    <div class="cmd-panel status-panel px-3 py-2" :class="stuckStatus ? 'status-panel--error' : 'status-panel--ok'">
-      <div class="d-flex align-items-center gap-2">
-        <span class="status-dot rounded-circle"></span>
+  <div class="flex flex-col gap-2 flex-1">
+    <div class="cmd-panel status-panel px-4 py-2" data-testid="pw-status-panel" :class="stuckStatus ? 'status-panel--error' : 'status-panel--ok'">
+      <div class="flex items-center gap-2">
+        <span class="status-dot rounded-full"></span>
         <span class="status-label">{{ stuckStatus ? 'Obstruction Detected' : 'Nominal Conditions' }}</span>
       </div>
     </div>
-    <div class="cmd-panel nav-state-panel flex-fill d-flex align-items-center justify-content-center" :class="ledColorClass">
-      <div class="d-flex flex-column align-items-center gap-1">
+    <div class="cmd-panel nav-state-panel flex-1 flex items-center justify-center" data-testid="pw-nav-state-panel" :class="ledColorClass">
+      <div class="flex flex-col items-center gap-1">
         <span class="cmd-data-label">Nav State</span>
-        <span class="nav-state-value">{{ navState }}</span>
+        <span class="nav-state-value" data-testid="pw-nav-state-value">{{ navState }}</span>
       </div>
     </div>
   </div>
@@ -18,30 +18,32 @@
 <script lang="ts" setup>
 import { ref, computed, watch } from 'vue'
 import { useWebsocketStore } from '@/stores/websocket'
+import { useAutonomyStore } from '@/stores/autonomy'
 import { storeToRefs } from 'pinia'
 
 const websocketStore = useWebsocketStore()
 const { messages } = storeToRefs(websocketStore)
 
-const ledColorClass = ref('nav-state--error')
+const autonomyStore = useAutonomyStore()
+const { teleopEnabled } = storeToRefs(autonomyStore)
+
 const stuckStatus = ref(false)
 const navState = ref('OffState')
+
+const ledColorClass = computed(() => {
+  if (teleopEnabled.value) return 'nav-state--info'
+  if (navState.value === 'DoneState') return 'nav-state--ok nav-state--blink'
+  return 'nav-state--error'
+})
+
 
 const navMessage = computed(() => messages.value['nav'])
 
 watch(navMessage, (msg: unknown) => {
   if (typeof msg === 'object' && msg !== null && 'type' in msg) {
-    const typedMsg = msg as { type: string; state?: string; color?: number }
+    const typedMsg = msg as { type: string; state?: string }
     if (typedMsg.type === 'nav_state') {
       navState.value = typedMsg.state || 'OffState'
-    } else if (typedMsg.type === 'led_color') {
-      if (typedMsg.color === 0) {
-        ledColorClass.value = 'nav-state--error'
-      } else if (typedMsg.color === 1) {
-        ledColorClass.value = 'nav-state--info'
-      } else if (typedMsg.color === 2) {
-        ledColorClass.value = 'nav-state--ok nav-state--blink'
-      }
     }
   }
 })
@@ -49,9 +51,9 @@ watch(navMessage, (msg: unknown) => {
 
 <style scoped>
 .status-dot {
+  flex-shrink: 0;
   width: clamp(8px, 0.6vw, 12px);
   height: clamp(8px, 0.6vw, 12px);
-  flex-shrink: 0;
 }
 
 .status-label {
@@ -62,16 +64,16 @@ watch(navMessage, (msg: unknown) => {
 }
 
 .status-panel--ok {
-  background-color: var(--bs-success);
-  border-color: var(--bs-success);
+  background-color: var(--cmd-status-ok);
+  border-color: var(--cmd-status-ok);
 }
 
 .status-panel--ok .status-dot { background-color: #fff; }
 .status-panel--ok .status-label { color: #fff; }
 
 .status-panel--error {
-  background-color: var(--bs-danger);
-  border-color: var(--bs-danger);
+  background-color: var(--cmd-status-error);
+  border-color: var(--cmd-status-error);
 }
 
 .status-panel--error .status-dot { background-color: #fff; }
@@ -89,27 +91,27 @@ watch(navMessage, (msg: unknown) => {
 }
 
 .nav-state--error {
-  background-color: var(--bs-danger);
-  border-color: var(--bs-danger);
+  background-color: var(--cmd-status-error);
+  border-color: var(--cmd-status-error);
 }
 
-.nav-state--error .cmd-data-label { color: rgba(255, 255, 255, 0.8); }
+.nav-state--error .cmd-data-label { color: rgb(255 255 255 / 80%); }
 .nav-state--error .nav-state-value { color: #fff; }
 
 .nav-state--ok {
-  background-color: var(--bs-success);
-  border-color: var(--bs-success);
+  background-color: var(--cmd-status-ok);
+  border-color: var(--cmd-status-ok);
 }
 
-.nav-state--ok .cmd-data-label { color: rgba(255, 255, 255, 0.8); }
+.nav-state--ok .cmd-data-label { color: rgb(255 255 255 / 80%); }
 .nav-state--ok .nav-state-value { color: #fff; }
 
 .nav-state--info {
-  background-color: var(--bs-primary);
-  border-color: var(--bs-primary);
+  background-color: var(--cmd-accent);
+  border-color: var(--cmd-accent);
 }
 
-.nav-state--info .cmd-data-label { color: rgba(255, 255, 255, 0.8); }
+.nav-state--info .cmd-data-label { color: rgb(255 255 255 / 80%); }
 .nav-state--info .nav-state-value { color: #fff; }
 
 .nav-state--blink .nav-state-value {

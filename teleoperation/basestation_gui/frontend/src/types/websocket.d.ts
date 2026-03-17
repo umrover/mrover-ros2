@@ -29,7 +29,7 @@ export interface ControllerStateMessage {
   positions: number[];
   velocities: number[];
   currents: number[];
-  limits_hit: boolean[];
+  limits_hit: number[];
 }
 
 export interface JointStateMessage {
@@ -105,7 +105,7 @@ export interface SPOzoneMessage {
 
 export interface SPCO2Message {
   type: 'sp_co2';
-  ppm: number;
+  percent: number;
 }
 
 export interface SPPressureMessage {
@@ -113,4 +113,31 @@ export interface SPPressureMessage {
   pressure: number;
 }
 
-export type ScienceMessage = OxygenMessage | UVMessage | TemperatureMessage | HumidityMessage | SPHumidityMessage | SPTemperatureMessage | SPOxygenMessage | SPUVMessage | SPOzoneMessage | SPCO2Message | SPPressureMessage;
+export interface SPSensorStateMessage {
+  type: 'sp_sensor_state';
+  uv_state: boolean;
+  thp_state: boolean;
+  oxygen_state: boolean;
+  ozone_state: boolean;
+  co2_state: boolean;
+}
+
+// export interface VelocityMessage {
+//   header?: {
+//     stamp: { sec: number; nanosec: number };
+//     frame_id: string;
+//   }; 
+//   names: string[];
+//   velocities: number[];
+// }
+
+export interface ThrottleMessage {
+  header?: {
+    stamp: { sec: number; nanosec: number };
+    frame_id: string;
+  }; 
+  names: string[];
+  throttles: number[];
+}
+
+export type ScienceMessage = OxygenMessage | UVMessage | TemperatureMessage | HumidityMessage | SPHumidityMessage | SPTemperatureMessage | SPOxygenMessage | SPUVMessage | SPOzoneMessage | SPCO2Message | SPPressureMessage | SPSensorStateMessage;

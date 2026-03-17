@@ -1,17 +1,17 @@
 <template>
   <Teleport to="body">
     <div
-      class="modal-backdrop d-flex justify-content-center align-items-center"
+      class="modal-backdrop flex justify-center items-center"
       @click.self="$emit('close')"
     >
       <div class="sensor-modal-content cmd-panel">
       <div class="sensor-modal-header">
         <h4 class="component-header">All Sensor Charts</h4>
-        <div class="d-flex gap-2">
-          <button class="btn btn-sm border-2 border-secondary" @click="$emit('reset')">
+        <div class="flex gap-2">
+          <button class="cmd-btn cmd-btn-sm cmd-btn-outline-secondary" @click="$emit('reset')">
             <i class="bi bi-arrow-counterclockwise"></i> Reset
           </button>
-          <button class="btn btn-sm border-2 border-secondary close-btn" @click="$emit('close')">
+          <button class="cmd-btn cmd-btn-sm cmd-btn-outline-secondary close-btn" @click="$emit('close')">
             <i class="bi bi-x-lg"></i>
           </button>
         </div>
@@ -25,11 +25,11 @@
         >
           <div class="sensor-chart-sidebar">
             <h5 class="sensor-chart-title">{{ config.title }}</h5>
-            <div class="d-flex flex-column gap-1">
-              <button class="btn btn-sm border-2 border-secondary" @click="downloadPNG(index)">
+            <div class="flex flex-col gap-1">
+              <button class="cmd-btn cmd-btn-sm cmd-btn-outline-secondary" @click="downloadPNG(index)">
                 <i class="bi bi-download"></i> PNG
               </button>
-              <button class="btn btn-sm border-2 border-secondary" @click="downloadCSV(index)">
+              <button class="cmd-btn cmd-btn-sm cmd-btn-outline-secondary" @click="downloadCSV(index)">
                 <i class="bi bi-download"></i> CSV
               </button>
             </div>
@@ -252,28 +252,28 @@ onMounted(() => {
   position: fixed;
   top: 0;
   left: 0;
+  z-index: 1000;
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0.7);
-  z-index: 1000;
+  background-color: var(--cmd-backdrop);
 }
 
 .sensor-modal-content {
+  display: flex;
+  flex-direction: column;
   width: 90%;
   max-width: 1200px;
   height: 90vh;
   overflow: hidden;
-  display: flex;
-  flex-direction: column;
 }
 
 .sensor-modal-header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
   padding-bottom: 0.5rem;
-  border-bottom: 2px solid var(--cmd-panel-border);
   margin-bottom: 0.5rem;
+  border-bottom: 2px solid var(--cmd-panel-border);
 }
 
 .close-btn {
@@ -283,52 +283,52 @@ onMounted(() => {
 
 .sensor-charts-container {
   display: flex;
+  flex: 1;
   flex-direction: column;
   gap: 0.5rem;
-  flex: 1;
   overflow: hidden;
 }
 
 .sensor-chart-panel {
   display: flex;
+  flex: 1;
   flex-direction: row;
   gap: 0.75rem;
-  flex: 1;
   min-height: 0;
+  padding: 0.5rem;
   border: var(--cmd-border-width) solid var(--cmd-panel-border);
   border-radius: var(--cmd-radius-sm);
-  padding: 0.5rem;
 }
 
 .sensor-chart-sidebar {
   display: flex;
+  flex-shrink: 0;
   flex-direction: column;
   align-items: flex-start;
   width: 160px;
-  flex-shrink: 0;
 }
 
 .sensor-chart-title {
+  margin-bottom: 0.5rem;
   font-size: 0.75rem;
   font-weight: 600;
+  color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.03em;
-  color: var(--text-muted);
-  margin-bottom: 0.5rem;
   white-space: nowrap;
 }
 
-.sensor-chart-sidebar .btn {
+.sensor-chart-sidebar .cmd-btn {
   font-size: 0.6875rem;
 }
 
-.sensor-modal-content .btn:hover {
+.sensor-modal-content .cmd-btn:hover {
   background-color: var(--table-header-bg);
 }
 
 .sensor-chart-canvas {
-  flex: 1;
   display: flex;
+  flex: 1;
   min-width: 0;
 }
 </style>

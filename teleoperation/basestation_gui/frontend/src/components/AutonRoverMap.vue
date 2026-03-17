@@ -1,5 +1,5 @@
 <template>
-  <div class="position-relative w-100 h-100">
+  <div class="relative w-full h-full">
     <l-map
       @ready="handleMapReady"
       ref="mapRef"
@@ -22,7 +22,7 @@
         :icon="basestationIcon"
       />
       <l-marker
-        v-for="(waypoint, index) in waypointList"
+        v-for="(waypoint, index) in waypointListForMap"
         :key="index"
         :lat-lng="waypoint.latLng"
         :icon="waypointIcon"
@@ -40,18 +40,18 @@
     </l-map>
 
     <div class="map-controls cmd-panel">
-      <div class="d-flex align-items-center gap-2">
+      <div class="flex items-center gap-2">
         <input
         v-model="online"
           type="checkbox"
-          class="form-check-input p-0"
+          class="cmd-form-check p-0"
         />
         <span class="cmd-data-label">Online</span>
       </div>
-      <button @click="centerOnRover" class="btn btn-sm btn-outline-control border-2 map-btn">
+      <button @click="centerOnRover" class="cmd-btn cmd-btn-sm cmd-btn-outline-control map-btn">
         Center on Rover
       </button>
-      <button @click="centerOnBasestation" class="btn btn-sm btn-outline-control border-2 map-btn">
+      <button @click="centerOnBasestation" class="cmd-btn cmd-btn-sm cmd-btn-outline-control map-btn">
         Center on Base
       </button>
     </div>
@@ -76,7 +76,7 @@ import { useRoverMap } from '@/composables/useRoverMap'
 import type { NavMessage } from '@/types/coordinates'
 
 const autonomyStore = useAutonomyStore()
-const { route, waypointList } = storeToRefs(autonomyStore)
+const { routeForMap, waypointListForMap } = storeToRefs(autonomyStore)
 
 const {
   center,
@@ -118,7 +118,7 @@ const basestationLatLng = computed(() => {
 
 const polylinePath = computed(() => {
   return [odomLatLng.value].concat(
-    route.value.map((waypoint) => waypoint.latLng),
+    routeForMap.value.map((waypoint) => waypoint.latLng),
   )
 })
 
@@ -155,10 +155,10 @@ watch(navMessage, (msg) => {
   position: absolute;
   top: var(--cmd-gap-md);
   right: var(--cmd-gap-md);
+  z-index: 1000;
   display: flex;
   flex-direction: column;
   gap: var(--cmd-gap-sm);
-  z-index: 1000;
 }
 
 .map-btn {

@@ -10,17 +10,9 @@ class FakeControllerStatePublisher(Node):
     def __init__(self):
         super().__init__("fake_controller_state_publisher")
 
-        self.arm_publisher = self.create_publisher(
-            ControllerState,
-            "/arm_controller_state",
-            10
-        )
+        self.arm_publisher = self.create_publisher(ControllerState, "/arm_controller_state", 10)
 
-        self.drive_publisher = self.create_publisher(
-            ControllerState,
-            "/drive_controller_data",
-            10
-        )
+        self.drive_publisher = self.create_publisher(ControllerState, "/drive_controller_data", 10)
 
         self.timer = self.create_timer(0.1, self.publish_messages)
 

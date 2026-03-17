@@ -1,9 +1,11 @@
 from backend.ws.base_ws import WebSocketHandler
+from backend.managers.ros import get_logger
 from backend.input import DeviceInputs
 from backend.ra_controls import send_ra_controls, register_ik_pos_pub
 from mrover.msg import Throttle, IK, ControllerState
 from geometry_msgs.msg import Twist
 from rclpy.publisher import Publisher
+
 
 class ArmHandler(WebSocketHandler):
     arm_thr_pub: Publisher
@@ -22,6 +24,7 @@ class ArmHandler(WebSocketHandler):
 
         self.forward_ros_topic("/arm_controller_state", ControllerState, "arm_state")
         self.forward_ros_topic("/arm_ik", IK, "ik_target")
+        self.forward_ros_topic("/arm_thr_cmd", Throttle, "arm_throttle_command")
 
     async def handle_message(self, data):
         msg_type = data.get('type')
@@ -37,11 +40,11 @@ class ArmHandler(WebSocketHandler):
                 self.ik_vel_pub,
             )
         else:
-            print(f"Unhandled ARM message: {msg_type}")
+            get_logger().warning(f"Unhandled ARM message: {msg_type}")
 
     async def trigger_stow(self):
         send_ra_controls(
-            None, 
+            None,
             self.arm_thr_pub,
             self.ik_pos_pub,
             self.ik_vel_pub,

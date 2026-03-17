@@ -1,6 +1,6 @@
 <template>
-  <div class="d-flex flex-column w-100 h-100">
-    <div class="d-flex justify-content-between align-items-center w-100">
+  <div class="flex flex-col w-full h-full">
+    <div class="flex justify-between items-center w-full">
       <h4 class="component-header">Drive Controls</h4>
       <IndicatorDot :is-active="connected" />
     </div>

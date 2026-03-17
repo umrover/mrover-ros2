@@ -1,22 +1,22 @@
 <template>
-  <div class="cmd-list-item border border-2 rounded p-2" :class="{ 'cmd-list-item--drone': waypoint.drone }">
-    <div class="d-flex justify-content-between align-items-center mb-1">
-      <h5 class="m-0">{{ waypoint.name }}</h5>
+  <div class="cmd-list-item" :class="{ 'cmd-list-item--drone': waypoint.drone }">
+    <div class="flex justify-between items-center mb-1">
+      <h5>{{ waypoint.name }}</h5>
       <span class="cmd-data-label">#{{ index }}</span>
     </div>
 
-    <div class="d-flex align-items-baseline gap-1 mb-2">
-      <span class="cmd-data-value waypoint-coord">{{ waypoint.latLng.lat.toFixed(5) }}</span>
-      <span class="cmd-data-unit">ºN</span>
+    <div class="flex items-baseline gap-1 mb-2">
+      <span class="cmd-data-value waypoint-coord">{{ waypoint.lat.toFixed(5) }}</span>
+      <span class="cmd-data-unit">N</span>
       <span class="text-muted mx-1">|</span>
-      <span class="cmd-data-value waypoint-coord">{{ waypoint.latLng.lng.toFixed(5) }}</span>
-      <span class="cmd-data-unit">ºW</span>
+      <span class="cmd-data-value waypoint-coord">{{ waypoint.lon.toFixed(5) }}</span>
+      <span class="cmd-data-unit">W</span>
     </div>
 
-    <div class="d-flex gap-1">
-      <button class="btn btn-success btn-sm border-2 flex-fill" @click="$emit('find', { index: index })">Find</button>
-      <button class="btn btn-success btn-sm border-2 flex-fill" @click="$emit('search', {index: index})">Search</button>
-      <button class="btn btn-outline-danger btn-sm border-2 flex-fill" @click="$emit('delete', { index: index })">Delete</button>
+    <div class="flex gap-1">
+      <button class="cmd-btn cmd-btn-success cmd-btn-sm flex-1" @click="$emit('find', { index: index })">Find</button>
+      <button class="cmd-btn cmd-btn-success cmd-btn-sm flex-1" @click="$emit('search', {index: index})">Search</button>
+      <button class="cmd-btn cmd-btn-sm cmd-btn-outline-primary flex-1" @click="$emit('delete', { index: index })">Delete</button>
     </div>
   </div>
 </template>
@@ -35,20 +35,16 @@ defineProps({
 </script>
 
 <style scoped>
-.cmd-list-item {
-  background-color: var(--card-bg);
-}
-
 .waypoint-coord {
   font-size: 0.9375rem;
 }
 
 .cmd-list-item--drone {
+  background-color: rgb(30 102 245 / 5%);
   border-color: var(--cmd-status-info) !important;
-  background-color: rgba(30, 102, 245, 0.05);
 }
 
-[data-bs-theme='dark'] .cmd-list-item--drone {
-  background-color: rgba(137, 180, 250, 0.1);
+:is([data-theme='dark'], [data-theme='high-contrast-dark']) .cmd-list-item--drone {
+  background-color: rgb(137 180 250 / 10%);
 }
 </style>

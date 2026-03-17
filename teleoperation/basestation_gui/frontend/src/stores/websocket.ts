@@ -36,7 +36,11 @@ interface WebsocketStoreActions {
   addOutgoingMetrics: (id: string, bytes: number) => void
 }
 
-function debounceFlashClear(id: string, type: 'in' | 'out', store: WebsocketStoreActions) {
+function debounceFlashClear(
+  id: string,
+  type: 'in' | 'out',
+  store: WebsocketStoreActions,
+) {
   const timers = type === 'in' ? flashTimersIn : flashTimersOut
   if (timers[id]) {
     clearTimeout(timers[id])
@@ -66,7 +70,7 @@ function setupWebsocket(id: string, store: WebsocketStoreActions) {
     return
   }
 
-  const socket = new WebSocket(`ws://localhost:8000/${id}`)
+  const socket = new WebSocket(`ws://localhost:8000/ws/${id}`)
   socket.binaryType = 'arraybuffer'
 
   socket.onopen = () => {
@@ -103,8 +107,14 @@ function setupWebsocket(id: string, store: WebsocketStoreActions) {
       return
     }
 
-    const delay = Math.min(BASE_RECONNECT_DELAY_MS * Math.pow(2, attempts - 1), MAX_RECONNECT_DELAY_MS)
-    console.log(`WebSocket ${id} closed. Reconnecting in ${delay}ms (attempt ${attempts}/${MAX_RECONNECT_ATTEMPTS})...`, e.reason)
+    const delay = Math.min(
+      BASE_RECONNECT_DELAY_MS * Math.pow(2, attempts - 1),
+      MAX_RECONNECT_DELAY_MS,
+    )
+    console.log(
+      `WebSocket ${id} closed. Reconnecting in ${delay}ms (attempt ${attempts}/${MAX_RECONNECT_ATTEMPTS})...`,
+      e.reason,
+    )
 
     reconnectTimers[id] = setTimeout(() => {
       delete reconnectTimers[id]
@@ -119,14 +129,23 @@ function setupWebsocket(id: string, store: WebsocketStoreActions) {
   }
 
   const originalSend = socket.send
-  socket.send = function (data: string | ArrayBufferLike | Blob | ArrayBufferView) {
+  socket.send = function (
+    data: string | ArrayBufferLike | Blob | ArrayBufferView,
+  ) {
     if (this.readyState !== WebSocket.OPEN) {
-      console.warn(`WebSocket [${id}] is not open. Current state: ${this.readyState}`)
+      console.warn(
+        `WebSocket [${id}] is not open. Current state: ${this.readyState}`,
+      )
       return
     }
     store.setLastOutgoingActivity(id, Date.now())
     store.setFlashOut(id, true)
-    const byteLength = data instanceof Blob ? data.size : (data as ArrayBufferView).byteLength ?? (data as ArrayBuffer).byteLength ?? 0
+    const byteLength =
+      data instanceof Blob
+        ? data.size
+        : ((data as ArrayBufferView).byteLength ??
+          (data as ArrayBuffer).byteLength ??
+          0)
     store.addOutgoingMetrics(id, byteLength)
     debounceFlashClear(id, 'out', store)
     return originalSend.call(this, data)
@@ -144,7 +163,7 @@ export const useWebsocketStore = defineStore('websocket', () => {
   }
 
   function setConnectionStatus(id: string, status: string) {
-    connectionStatus.value[id] = status
+    connectionStatus.value = { ...connectionStatus.value, [id]: status }
   }
 
   function setFlashIn(id: string, value: boolean) {
@@ -215,11 +234,11 @@ export const useWebsocketStore = defineStore('websocket', () => {
   function sendMessage(id: string, message: unknown) {
     const socket = webSockets[id]
     if (!socket) {
-      console.log('websocket selection failed with id', id)
+      console.error('WebSocket not found for id:', id)
       return
     }
-    if (socket.readyState === socket.CLOSED) {
-      console.log('websocket ' + id + ' not ready')
+    if (socket.readyState !== WebSocket.OPEN) {
+      console.error(`WebSocket ${id} not ready (state: ${socket.readyState})`)
       return
     }
     const packed = encode(message)
@@ -243,7 +262,7 @@ export const useWebsocketStore = defineStore('websocket', () => {
       clearFlashIn,
       clearFlashOut,
       addIncomingMetrics,
-      addOutgoingMetrics
+      addOutgoingMetrics,
     })
   }
 
@@ -289,6 +308,6 @@ export const useWebsocketStore = defineStore('websocket', () => {
     getOutgoingBytes,
     sendMessage,
     setupWebSocket,
-    closeWebSocket
+    closeWebSocket,
   }
 })

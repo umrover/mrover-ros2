@@ -1,14 +1,19 @@
 <template>
-  <div class="d-flex flex-column gap-2 h-100">
-    <div class="d-flex justify-content-between align-items-center">
-      <h4 class="component-header m-0">Arm Controls</h4>
-      <IndicatorDot :is-active="connected" class="me-2" />
+  <div class="flex flex-col gap-2 h-full">
+    <div class="flex justify-between items-center">
+      <h4 class="component-header">Arm Controls</h4>
+      <p 
+      class="text-danger"
+      :class="forcing_limit === true ? 'visible' : 'invisible'">
+        Limit Reached!
+      </p>
+      <IndicatorDot :is-active="connected" class="mr-2" />
     </div>
-    <div class="btn-group w-100 border-2" role="group" aria-label="Arm mode selection" data-testid="pw-arm-mode-buttons">
+    <div class="btn-group w-full" role="group" aria-label="Arm mode selection" data-testid="pw-arm-mode-buttons">
         <button
           type="button"
-          class="btn btn-sm border-2"
-          :class="mode === 'disabled' ? 'btn-danger' : 'btn-outline-danger'"
+          class="cmd-btn cmd-btn-sm"
+          :class="mode === 'disabled' ? 'cmd-btn-danger' : 'cmd-btn-outline-danger'"
           data-testid="pw-arm-mode-disabled"
           @click="newRAMode('disabled')"
         >
@@ -16,8 +21,8 @@
         </button>
         <button
           type="button"
-          class="btn btn-sm border-2"
-          :class="mode === 'throttle' ? 'btn-success' : 'btn-outline-success'"
+          class="cmd-btn cmd-btn-sm"
+          :class="mode === 'throttle' ? 'cmd-btn-success' : 'cmd-btn-outline-success'"
           data-testid="pw-arm-mode-throttle"
           @click="newRAMode('throttle')"
         >
@@ -25,8 +30,8 @@
         </button>
         <button
           type="button"
-          class="btn btn-sm border-2"
-          :class="mode === 'ik-pos' ? 'btn-success' : 'btn-outline-success'"
+          class="cmd-btn cmd-btn-sm"
+          :class="mode === 'ik-pos' ? 'cmd-btn-success' : 'cmd-btn-outline-success'"
           data-testid="pw-arm-mode-ik-pos"
           @click="newRAMode('ik-pos')"
         >
@@ -34,8 +39,8 @@
         </button>
         <button
           type="button"
-          class="btn btn-sm border-2"
-          :class="mode === 'ik-vel' ? 'btn-success' : 'btn-outline-success'"
+          class="cmd-btn cmd-btn-sm"
+          :class="mode === 'ik-vel' ? 'cmd-btn-success' : 'cmd-btn-outline-success'"
           data-testid="pw-arm-mode-ik-vel"
           @click="newRAMode('ik-vel')"
         >
@@ -43,13 +48,11 @@
         </button>
       </div>
 
-    <!-- TODO(stow): Add stow button. Gray out while stowing, show distance to target.
-         On convergence or timeout, call setRAMode("disabled"). -->
-    <button class="btn btn-sm btn-outline-warning border-2 w-100" :disabled="isStowing" @click="stowArm">
-      Stow
+    <button class="cmd-btn cmd-btn-sm cmd-btn-outline-warning w-full" :disabled="isStowing" @click="stowArm">
+      {{ isStowing ? 'Stowing...' : 'Stow' }}
     </button>
 
-    <GamepadDisplay :axes="axes" :buttons="buttons" layout="horizontal" class="flex-grow-1 min-height-0" />
+    <GamepadDisplay :axes="axes" :buttons="buttons" layout="horizontal" class="grow min-h-0" />
   </div>
 </template>
 
@@ -61,6 +64,7 @@ import GamepadDisplay from './GamepadDisplay.vue'
 import IndicatorDot from './IndicatorDot.vue'
 
 const mode = ref('disabled')
+const forcing_limit = ref(false)
 
 const { connected, axes, buttons } = useGamepadPolling({
   controllerIdFilter: 'Microsoft',
@@ -82,48 +86,32 @@ onBeforeUnmount(() => {
   document.removeEventListener('keydown', keyDown)
 })
 
-// TODO(stow): Implement stow arm. /arm_ik reports actual EE position in 3-space.
-//
-// Approach:
-//   1. Call armAPI.stowArm() -- REST sets ra_mode to "stow", returns target {x,y,z}
-//   2. The 15 Hz gamepad polling continues sending ra_controller messages via WebSocket.
-//      In "stow" mode, send_ra_controls() publishes STOW_POSITION instead of gamepad input,
-//      keeping the arm watchdog timer satisfied.
-//   3. Watch websocketStore.messages['arm'] for 'ik_target' messages (streamed from /arm_ik
-//      ROS topic at 30 Hz). Compute Euclidean distance from current EE position to stow target.
-//   4. On convergence (distance < STOW_THRESHOLD): call setRAMode("disabled"), show success.
-//      On timeout (STOW_TIMEOUT_MS): call setRAMode("disabled"), show failure.
-//
-const STOW_THRESHOLD = 0.01
-const STOW_TIMEOUT_MS = 30_000
-
 const isStowing = ref(false)
 const stowTarget = ref<{ x: number; y: number; z: number } | null>(null)
-const stowDistance = ref<number | null>(null)
-// let stowTimeoutId: number | undefined
-//
-// const euclideanDistance = (a: { x: number; y: number; z: number }, b: { x: number; y: number; z: number }) =>
-//   Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2 + (a.z - b.z) ** 2)
-//
+
 const stowArm = async () => {
-  // TODO(stow)
-  isStowing.value = true;
-  const result = await armAPI.stowArm();
-
-  // start timeout
-  // watcher function goes somewhere in this file
-
-  stowTarget.value = { x: result.stow_target.pos.x, y: result.stow_target.pos.y, z: result.stow_target.pos.z };
-
-
+  try {
+    isStowing.value = true
+    const result = await armAPI.stowArm()
+    if (result.status === 'success') {
+      mode.value = 'stow'
+      stowTarget.value = {
+        x: result.stow_target.pos.x,
+        y: result.stow_target.pos.y,
+        z: result.stow_target.pos.z,
+      }
+    } else {
+      isStowing.value = false
+    }
+  } catch (error) {
+    console.error('Failed to start stow:', error)
+    isStowing.value = false
+  }
 }
-//
-// const completeStow = async (reason: 'success' | 'timeout') => {
-//   // TODO(stow)
-// }
 
 const newRAMode = async (newMode: string) => {
   try {
+    isStowing.value = false
     mode.value = newMode
     const data = await armAPI.setRAMode(mode.value)
     if (data.status === 'success' && data.mode) {
@@ -134,9 +122,3 @@ const newRAMode = async (newMode: string) => {
   }
 }
 </script>
-
-<style scoped>
-.min-height-0 {
-  min-height: 0;
-}
-</style>

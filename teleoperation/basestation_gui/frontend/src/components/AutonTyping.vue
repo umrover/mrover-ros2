@@ -7,16 +7,17 @@ make an autonTyping rosaction
 create instance of rosaction in callback area -->
 
 <template>
-  <div class="auton-typing-container">
-    <div class="d-flex flex-column align-items-center text-center w-100">
+  <div class="grid grid-cols-2 gap-6 w-full p-2 items-start mx-0">
+    <div class="flex flex-col items-center text-center">
       <h4 class="component-header mb-2">Typing Input</h4>
       <form>
         <div class="form-group">
           <input
             v-model="typingMessage"
             type="text"
-            class="form-control cmd-input border-2"
+            class="cmd-form-control cmd-input"
             id="autonTyping"
+            data-testid="pw-typing-input"
             placeholder="Message"
             maxlength="6"
             required
@@ -25,10 +26,11 @@ create instance of rosaction in callback area -->
         </div>
         <span class="typing-hint">Must be 3-6 characters long.</span>
 
-        <div class="d-flex justify-content-center">
+        <div class="flex justify-center">
           <button
             v-if="!codeSent"
-            class="btn btn-sm btn-outline-control border-2 typing-btn"
+            class="cmd-btn cmd-btn-sm cmd-btn-outline-control typing-btn"
+            data-testid="pw-typing-submit"
             :disabled="typingMessage.length < 3"
             @click.prevent="submitMessage()"
           >
@@ -36,7 +38,7 @@ create instance of rosaction in callback area -->
           </button>
           <button
             v-if="codeSent"
-            class="btn btn-sm btn-outline-secondary border-2 typing-btn"
+            class="cmd-btn cmd-btn-sm cmd-btn-outline-secondary typing-btn"
             @click.prevent="submitMessage()"
           >
             Cancel
@@ -45,16 +47,15 @@ create instance of rosaction in callback area -->
       </form>
     </div>
 
-    <div class="d-flex flex-column gap-3">
-      <div class="d-flex flex-column align-items-center text-center w-100">
+    <div class="flex flex-col gap-4">
+      <div class="flex flex-col items-center text-center w-full">
         <h4 class="component-header mb-2">Feedback</h4>
-        <table class="feedback-table">
+        <table class="feedback-table" data-testid="pw-typing-feedback">
           <tbody>
             <tr>
               <td
                 v-for="index in 6"
                 :key="index"
-                class="border-2"
                 :class="getLetterClass(letterStates[index - 1] ?? 'grey')"
               >
                 {{ typingMessage[index - 1] ?? '_' }}
@@ -64,9 +65,9 @@ create instance of rosaction in callback area -->
         </table>
       </div>
 
-      <div class="d-flex flex-column align-items-center text-center w-100">
+      <div class="flex flex-col items-center text-center w-full">
         <h4 class="component-header mb-2">Planar Alignment</h4>
-        <div class="d-flex align-items-baseline justify-content-center gap-1 p-2 rounded bg-theme-view">
+        <div class="flex items-baseline justify-center gap-1 p-2 rounded bg-theme-view">
           <span class="cmd-data-value">0</span>
           <span class="cmd-data-unit">degrees</span>
         </div>
@@ -177,28 +178,19 @@ function getLetterClass(state: string) {
 </script>
 
 <style scoped>
-.auton-typing-container {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--cmd-gap-xl);
-  justify-content: center;
-  align-items: start;
-  width: 100%;
-  padding: var(--cmd-padding-sm);
-}
-
-
 .cmd-input {
+  /* stylelint-disable-next-line declaration-property-value-disallowed-list */
   text-align: center;
   text-transform: uppercase;
   letter-spacing: 0.1em;
 }
 
 .typing-hint {
-  font-size: var(--cmd-font-xs);
-  color: var(--text-muted);
+  /* stylelint-disable-next-line declaration-property-value-disallowed-list */
   display: block;
   margin: var(--cmd-gap-xs) 0 var(--cmd-gap-md);
+  font-size: var(--cmd-font-xs);
+  color: var(--text-muted);
 }
 
 .typing-btn {
@@ -207,35 +199,36 @@ function getLetterClass(state: string) {
 }
 
 .feedback-table {
-  border-collapse: collapse;
   margin-top: var(--cmd-gap-md);
+  border-collapse: collapse;
 }
 
 .feedback-table td {
   width: clamp(30px, 2vw, 44px);
   height: clamp(30px, 2vw, 44px);
-  text-align: center;
   font-size: var(--cmd-font-xl);
   font-weight: 700;
+  /* stylelint-disable-next-line declaration-property-value-disallowed-list */
+  text-align: center;
 }
 
 .grey-cell {
-  background-color: var(--view-bg);
   color: var(--text-muted);
+  background-color: var(--view-bg);
 }
 
 .typed-cell {
+  color: #fff;
   background-color: var(--cmd-status-ok);
-  color: white;
 }
 
 .in-progress-cell {
-  background-color: #f59e0b;
-  color: white;
+  color: #fff;
+  background-color: var(--cmd-status-warn);
 }
 
 .not-typed-cell {
+  color: #fff;
   background-color: var(--cmd-status-error);
-  color: white;
 }
 </style>

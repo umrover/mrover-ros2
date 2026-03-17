@@ -13,21 +13,8 @@ def pytest_configure(config):
     config.addinivalue_line(
         'markers', 'ros: marks tests that require ROS 2 environment'
     )
+    config.addinivalue_line(
+        'markers', 'api: marks tests as API contract tests (require backend only)'
+    )
 
 
-@pytest.fixture(scope='session')
-def backend_url():
-    """Base URL for the backend server."""
-    return 'http://localhost:8000'
-
-
-@pytest.fixture(scope='session')
-def frontend_url():
-    """Base URL for the frontend dev server."""
-    return 'http://localhost:8080'
-
-
-@pytest.fixture(scope='session')
-def ws_base_url():
-    """Base WebSocket URL for the backend server."""
-    return 'ws://localhost:8000'

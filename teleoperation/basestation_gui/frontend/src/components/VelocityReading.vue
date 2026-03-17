@@ -1,17 +1,17 @@
 <template>
-  <div class="d-flex flex-column gap-2">
-    <div class="d-flex align-items-baseline justify-content-between">
+  <div class="flex flex-col gap-2">
+    <div class="flex items-baseline justify-between">
       <span class="cmd-data-label">Linear</span>
       <div>
-        <span class="cmd-data-value velocity-value">{{ linear_x.toFixed(2) }}</span>
-        <span class="cmd-data-unit ms-1">m/s</span>
+        <span class="cmd-data-value text-base">{{ linear_x.toFixed(2) }}</span>
+        <span class="cmd-data-unit ml-1">m/s</span>
       </div>
     </div>
-    <div class="d-flex align-items-baseline justify-content-between">
+    <div class="flex items-baseline justify-between">
       <span class="cmd-data-label">Angular</span>
       <div>
-        <span class="cmd-data-value velocity-value">{{ angular_z.toFixed(2) }}</span>
-        <span class="cmd-data-unit ms-1">rad/s</span>
+        <span class="cmd-data-value text-base">{{ angular_z.toFixed(2) }}</span>
+        <span class="cmd-data-unit ml-1">rad/s</span>
       </div>
     </div>
   </div>
@@ -40,9 +40,3 @@ watch(navMessage, (msg) => {
 })
 </script>
 
-<style scoped>
-.velocity-value {
-  font-family: var(--cmd-font-mono);
-  font-size: 1rem;
-}
-</style>
