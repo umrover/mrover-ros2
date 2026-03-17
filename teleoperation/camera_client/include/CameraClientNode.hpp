@@ -1,20 +1,14 @@
 #pragma once
 
 #include <memory>
-#include <string>
-#include <unordered_map>
-
-#include <QImage>
-#include <QObject>
-#include <QTimer>
-
-#include <rclcpp/rclcpp.hpp>
-#include <rclcpp_action/rclcpp_action.hpp>
-#include <sensor_msgs/msg/image.hpp>
-#include <std_srvs/srv/trigger.hpp>
+#include <pch.hpp>
 
 #include <mrover/action/click_ik.hpp>
+#include <mrover/action/ik_image_sample.hpp>
 #include <mrover/srv/media_control.hpp>
+#include <rclcpp_action/rclcpp_action.hpp>
+
+#include "GstRtpVideoCreatorWidget.hpp"
 
 namespace mrover {
 
@@ -31,6 +25,8 @@ namespace mrover {
         std::unordered_map<std::string, rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr> mImageCaptureClients;
         std::unordered_map<std::string, rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr> mImageCaptureSubscribers;
         rclcpp_action::Client<action::ClickIk>::SharedPtr mClickIkClient;
+        rclcpp_action::Client<action::IkImageSample>::SharedPtr mIkSampleClient;
+        action::IkImageSample::Result::SharedPtr mImageSample;
 
         auto imageCaptureCallback(std::string const& cameraName, sensor_msgs::msg::Image::ConstSharedPtr const& msg) -> void;
         auto sendMediaControlRequest(std::string const& cameraName, std::uint8_t command) -> bool;
@@ -47,13 +43,15 @@ namespace mrover {
         void imageCaptured(QString cameraName, QImage image);
         void clickIkFeedback(float distance);
         void clickIkResult(bool success);
+        void ikImageSampleResult(action::IkImageSample::Result::SharedPtr imageSample);
 
     public slots:
         bool requestPause(std::string const& cameraName);
         bool requestPlay(std::string const& cameraName);
         bool requestStop(std::string const& cameraName);
         bool requestScreenshot(std::string const& cameraName);
-        void sendClickIk(std::uint32_t x, std::uint32_t y);
+        void sendClickIk(float x, float y);
+        void sampleClickIk();
     };
 
 } // namespace mrover

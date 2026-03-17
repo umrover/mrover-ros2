@@ -1,37 +1,11 @@
 #include "click_ik.hpp"
-#include "lie.hpp"
-#include "mrover/action/detail/click_ik__struct.hpp"
-#include "mrover/action/detail/ik_image_sample__struct.hpp"
-#include "mrover/msg/detail/arm_status__struct.hpp"
-#include "mrover/msg/detail/ik__struct.hpp"
-#include "mrover/srv/detail/ik_sample__struct.hpp"
-#include <chrono>
-#include <cstddef>
-#include <future>
-#include <geometry_msgs/msg/detail/vector3__struct.hpp>
-#include <manif/impl/se3/SE3.h>
-#include <memory>
-#include <optional>
-#include <queue>
-#include <rclcpp/create_timer.hpp>
-#include <rclcpp/executors.hpp>
-#include <rclcpp/future_return_code.hpp>
-#include <rclcpp/logging.hpp>
-#include <rclcpp_action/create_server.hpp>
-#include <rclcpp_action/server.hpp>
-#include <rclcpp_action/server_goal_handle.hpp>
-#include <sensor_msgs/msg/detail/point_cloud2__struct.hpp>
-#include <tf2/exceptions.h>
-#include <tf2/exceptions.hpp>
-#include <thread>
-
 
 namespace mrover {
 
     ClickIkNode::ClickIkNode(rclcpp::NodeOptions const& options) : Node("click_ik", options) {
 
         auto handle_goal = [this](rclcpp_action::GoalUUID const& uuid, action::ClickIk_Goal::ConstSharedPtr const& goal) -> rclcpp_action::GoalResponse {
-            RCLCPP_INFO(this->get_logger(), "Click Ik request received for point: (%d, %d)", goal->point_in_image_x, goal->point_in_image_y);
+            RCLCPP_INFO(this->get_logger(), "Click Ik request received for point: (%f, %f)", goal->point_in_image_x, goal->point_in_image_y);
             (void) uuid;
             return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
         };
@@ -100,7 +74,7 @@ namespace mrover {
         });
 
         // IK Publisher
-        mIkPub = create_publisher<msg::IK>("/ee_pos_cmd", 1);
+        mIkPub = create_publisher<msg::IK>("/ik_pos_cmd", 1);
 
         // ArmStatus subscriber
         mStatusSub = create_subscription<msg::ArmStatus>("/arm_cmd_status", 1, [this](msg::ArmStatus const& msg) {
@@ -121,12 +95,16 @@ namespace mrover {
         auto const goal = goal_handle->get_goal();
         auto feedback = std::make_shared<action::ClickIk::Feedback>();
         auto result = std::make_shared<action::ClickIk::Result>();
-        auto target_point = spiralSearchInImg(static_cast<size_t>(goal->point_in_image_x), static_cast<size_t>(goal->point_in_image_y));
+        auto target_point = spiralSearchInImg(
+                static_cast<size_t>(goal->point_in_image_x * static_cast<float>(mPointCloudWidth)),
+                static_cast<size_t>(goal->point_in_image_y * static_cast<float>(mPointCloudHeight)));
 
         if (!target_point.has_value()) {
             RCLCPP_WARN(get_logger(), "Target point does not exist.");
+            auto result = std::make_shared<action::ClickIk::Result>();
             result->success = false;
-            goal_handle->canceled(result);
+            mCurrentGoalHandle->abort(result);
+            mCurrentGoalHandle = nullptr;
             return; // fix
         }
 
@@ -136,15 +114,33 @@ namespace mrover {
         pose.position.set__x(target_point.value().x - offset);
         pose.position.set__y(target_point.value().y);
         pose.position.set__z(target_point.value().z);
-        SE3d target_pose = SE3Conversions::fromPose(pose);
+        SE3d targetInZed = SE3Conversions::fromPose(pose);
         target_point->x -= ArmController::END_EFFECTOR_LENGTH;
-        SE3d target_transfer = SE3Conversions::fromTfTree(*mTfBuffer, "zed_left_camera_frame", "arm_base_link");
-        target_transfer *= target_pose;
+        SE3d targetInArm = SE3Conversions::fromTfTree(*mTfBuffer, "zed_left_camera_frame", "arm_base_link");
+        targetInArm *= targetInZed;
+        auto req = std::make_shared<srv::IkSample::Request>();
+        req->pos.x = targetInArm.x();
+        req->pos.y = targetInArm.y();
+        req->pos.z = targetInArm.z();
+        auto a = mIkSampleClient->async_send_request(req);
+        if (a.wait_for(std::chrono::milliseconds(1000)) != std::future_status::ready) {
+            RCLCPP_INFO(this->get_logger(), "Point Sample timed out.");
+            auto result = std::make_shared<action::ClickIk::Result>();
+            result->success = false;
+            mCurrentGoalHandle->abort(result);
+            mCurrentGoalHandle = nullptr;
+            return;
+        } else if (!a.get()->valid) {
+            RCLCPP_INFO(this->get_logger(), "Aborted, Invalid point.");
+            auto result = std::make_shared<action::ClickIk::Result>();
+            result->success = false;
+            mCurrentGoalHandle->abort(result);
+            mCurrentGoalHandle = nullptr;
+            return;
+        }
+        RCLCPP_INFO(this->get_logger(), "Point Verified");
 
-
-        // message.pos = pose;
-        // message.target.header.frame_id = "zed_left_camera_frame";
-        timer = this->create_wall_timer(std::chrono::milliseconds(10), [this, target_pose, target_transfer, goal_handle, result, feedback]() {
+        timer = this->create_wall_timer(std::chrono::milliseconds(10), [this, targetInZed, targetInArm, goal_handle, result, feedback]() {
             if (goal_handle->is_canceling()) {
                 auto result = std::make_shared<action::ClickIk::Result>();
                 result->success = false;
@@ -159,11 +155,10 @@ namespace mrover {
 
             float const tolerance = 0.02;
             try {
-                SE3d arm_position = SE3Conversions::fromTfTree(*mTfBuffer, "arm_e_link", "zed_left_camera_frame");
-                double distance = pow(pow(arm_position.x() + ArmController::END_EFFECTOR_LENGTH - target_pose.x(), 2) + pow(arm_position.y() - target_pose.y(), 2) + pow(arm_position.z() - target_pose.z(), 2), 0.5);
+                SE3d arm_position = SE3Conversions::fromTfTree(*mTfBuffer, "arm_base_link", "arm_fk");
+                double distance = pow(pow(arm_position.x() + targetInArm.x(), 2) + pow(arm_position.y() + targetInArm.y(), 2) + pow(arm_position.z() + targetInArm.z(), 2), 0.5);
                 RCLCPP_INFO(this->get_logger(), "Arm Position: %f, %f, %f", arm_position.x(), arm_position.y(), arm_position.z());
-                RCLCPP_INFO(this->get_logger(), "Arm Command: %f, %f, %f", target_transfer.x(), target_transfer.y(), target_transfer.z());
-                RCLCPP_INFO(this->get_logger(), "Desired Position: %f, %f, %f", target_pose.x(), target_pose.y(), target_pose.z());
+                RCLCPP_INFO(this->get_logger(), "Arm Command: %f, %f, %f", targetInArm.x(), targetInArm.y(), targetInArm.z());
 
                 feedback->distance = static_cast<float>(distance);
                 goal_handle->publish_feedback(feedback);
@@ -172,12 +167,13 @@ namespace mrover {
                     timer->cancel();
                     result->success = true;
                     goal_handle->succeed(result);
+                    mCurrentGoalHandle = nullptr;
                     return;
                 }
                 msg::IK ik;
-                ik.pos.x = target_transfer.x();
-                ik.pos.y = target_transfer.y();
-                ik.pos.z = target_transfer.z();
+                ik.pos.x = targetInArm.x();
+                ik.pos.y = targetInArm.y();
+                ik.pos.z = targetInArm.z();
                 mIkPub->publish(ik);
             } catch (tf2::ExtrapolationException& e) {
                 RCLCPP_WARN(this->get_logger(), "ExtrapolationException (due to lag?): %s", e.what());
@@ -225,7 +221,7 @@ namespace mrover {
             if (currX > mPointCloudWidth)
                 currX = mPointCloudWidth;
             if (currY > mPointCloudHeight)
-                currY = mPointCloudWidth;
+                currY = mPointCloudHeight;
             if (currX + currY * mPointCloudWidth >= temp)
                 return std::nullopt;
 
@@ -268,10 +264,12 @@ namespace mrover {
         }
 
         auto const goal = goal_handle->get_goal();
+        RCLCPP_INFO(get_logger(), "Goal, w:%d, h:%d, scale:%f", goal->w, goal->h, goal->scale);
         auto result = std::make_shared<action::IkImageSample::Result>();
         result->success.resize(goal->w * goal->h);
-        for (int i = 0; i < goal->w; i++) {
-            for (int j = 0; j < goal->h; j++) {
+        SE3d target_transfer_function = SE3Conversions::fromTfTree(*mTfBuffer, "zed_left_camera_frame", "arm_base_link");
+        for (size_t i = 0; i < goal->w; i++) {
+            for (size_t j = 0; j < goal->h; j++) {
                 if (goal_handle->is_canceling()) {
                     goal_handle->canceled(result);
                     if (iSCurrentGoalHandle)
@@ -279,9 +277,11 @@ namespace mrover {
                     RCLCPP_INFO(get_logger(), "ClickIk Goal Cancelled Successfully.");
                     return;
                 }
-                auto target_point = spiralSearchInImg(static_cast<size_t>(goal->scale * i), static_cast<size_t>(goal->scale * j));
+                auto target_point = spiralSearchInImg(
+                        static_cast<size_t>((static_cast<float>(i) / static_cast<float>(goal->w)) * static_cast<float>(mPointCloudWidth)),
+                        static_cast<size_t>((static_cast<float>(j) / static_cast<float>(goal->h)) * static_cast<float>(mPointCloudHeight)));
                 if (!target_point.has_value()) {
-                    result->success[i * goal->w + j] = false;
+                    result->success[j * goal->w + i] = false;
                     continue;
                 }
 
@@ -291,15 +291,15 @@ namespace mrover {
                 pose.position.set__x(target_point.value().x - offset);
                 pose.position.set__y(target_point.value().y);
                 pose.position.set__z(target_point.value().z);
-                SE3d target_pose = SE3Conversions::fromPose(pose);
+                SE3d targetInZed = SE3Conversions::fromPose(pose);
                 target_point->x -= ArmController::END_EFFECTOR_LENGTH;
-                SE3d target_transfer = SE3Conversions::fromTfTree(*mTfBuffer, "zed_left_camera_frame", "arm_base_link");
-                target_transfer *= target_pose;
+                SE3d targetInArm = target_transfer_function;
+                targetInArm *= targetInZed;
                 srv::IkSample::Request::SharedPtr sendReq = std::make_shared<srv::IkSample::Request>();
                 geometry_msgs::msg::Vector3 vec;
-                vec.set__x(target_transfer.x());
-                vec.set__y(target_transfer.y());
-                vec.set__z(target_transfer.z());
+                vec.set__x(targetInArm.x());
+                vec.set__y(targetInArm.y());
+                vec.set__z(targetInArm.z());
                 sendReq->set__pos(vec);
                 size_t index = j * goal->w + i;
                 auto future = mIkSampleClient->async_send_request(sendReq);
@@ -311,89 +311,11 @@ namespace mrover {
                     result->success[index] = false;
                     RCLCPP_INFO(this->get_logger(), "Point: %zu resolved unsuccessfully.", index);
                 }
-                // RCLCPP_INFO(this->get_logger(), "Requesting sample point: %zu", index);
-                // futures.push(mIkSampleClient->async_send_request(sendReq, [this, &resp, index](rclcpp::Client<srv::IkSample>::SharedFuture response) {
-                //     resp->success[index] = response.get()->valid;
-                //     RCLCPP_DEBUG(this->get_logger(), "Point resolved to %d!", response.get()->valid ? 1 : 0);
-                // }));
-                // if (futures.front().wait_for(std::chrono::milliseconds(100)) == std::future_status::ready)
-                //     futures.pop();
             }
         }
         iSCurrentGoalHandle = nullptr;
         goal_handle->succeed(result);
     }
-    // while (!futures.empty()) {
-    //     try {
-    //         if (futures.front().wait_for(std::chrono::seconds(0)) != std::future_status::ready)
-    //             futures.front().wait_for(std::chrono::milliseconds(20));
-    //         futures.front().get()->valid;
-    //         futures.pop();
-    //     } catch (...) {
-    //         futures.pop();
-    //     }
-    //     RCLCPP_INFO(this->get_logger(), "Resolved future for sample point: %zu", bufSize + 1 - futures.size());
-    // }
-
-    // void ClickIkNode::imageSampleCallback(srv::IkImageSample::Request::ConstSharedPtr const& req, srv::IkImageSample::Response::SharedPtr const& resp) {
-    //     std::queue<rclcpp::Client<srv::IkSample>::SharedFutureAndRequestId> futures;
-    //     size_t bufSize = req->w * req->h;
-    //     resp->success.resize(req->w * req->h);
-    //     for (int i = 0; i < req->w; i++) {
-    //         for (int j = 0; j < req->h; j++) {
-    //             auto target_point = spiralSearchInImg(static_cast<size_t>(req->scale * i), static_cast<size_t>(req->scale * j));
-    //             if (!target_point.has_value()) {
-    //                 resp->success[i * req->w + j] = false;
-    //                 continue;
-    //             }
-
-    //             geometry_msgs::msg::Pose pose;
-
-    //             double offset = 0.1; // make sure we don't collide by moving back a little from the target
-    //             pose.position.set__x(target_point.value().x - offset);
-    //             pose.position.set__y(target_point.value().y);
-    //             pose.position.set__z(target_point.value().z);
-    //             SE3d target_pose = SE3Conversions::fromPose(pose);
-    //             target_point->x -= ArmController::END_EFFECTOR_LENGTH;
-    //             SE3d target_transfer = SE3Conversions::fromTfTree(*mTfBuffer, "zed_left_camera_frame", "arm_base_link");
-    //             target_transfer *= target_pose;
-    //             srv::IkSample::Request::SharedPtr sendReq = std::make_shared<srv::IkSample::Request>();
-    //             geometry_msgs::msg::Vector3 vec;
-    //             vec.set__x(target_pose.x());
-    //             vec.set__y(target_pose.y());
-    //             vec.set__z(target_pose.z());
-    //             sendReq->set__pos(vec);
-    //             size_t index = j * req->w + i;
-    //             auto future = mIkSampleClient->async_send_request(sendReq);
-
-    //             if (future.wait_for(std::chrono::milliseconds(2000)) == std::future_status::ready) {
-    //                 resp->success[index] = future.get()->valid;
-    //                 RCLCPP_INFO(this->get_logger(), "Point: %zu resolved successfully.", index);
-    //             } else {
-    //                 resp->success[index] = false;
-    //                 RCLCPP_INFO(this->get_logger(), "Point: %zu resolved unsuccessfully.", index);
-    //             }
-    //             // RCLCPP_INFO(this->get_logger(), "Requesting sample point: %zu", index);
-    //             // futures.push(mIkSampleClient->async_send_request(sendReq, [this, &resp, index](rclcpp::Client<srv::IkSample>::SharedFuture response) {
-    //             //     resp->success[index] = response.get()->valid;
-    //             //     RCLCPP_DEBUG(this->get_logger(), "Point resolved to %d!", response.get()->valid ? 1 : 0);
-    //             // }));
-    //             // if (futures.front().wait_for(std::chrono::milliseconds(100)) == std::future_status::ready)
-    //             //     futures.pop();
-    //         }
-    //     }
-    // while (!futures.empty()) {
-    //     try {
-    //         if (futures.front().wait_for(std::chrono::seconds(0)) != std::future_status::ready)
-    //             futures.front().wait_for(std::chrono::milliseconds(20));
-    //         futures.front().get()->valid;
-    //         futures.pop();
-    //     } catch (...) {
-    //         futures.pop();
-    //     }
-    //     RCLCPP_INFO(this->get_logger(), "Resolved future for sample point: %zu", bufSize + 1 - futures.size());
-    // }
-
 
 } // namespace mrover
 
