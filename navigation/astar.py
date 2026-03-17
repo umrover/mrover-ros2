@@ -41,7 +41,7 @@ class AStar:
         self.context = context
         self.TRAVERSABLE_COST = self.context.node.get_parameter("search.traversable_cost").value
         self.COSTMAP_THRESH = self.context.node.get_parameter("costmap.costmap_thresh").value
-        self.USE_PURE_PURSUIT = context.node.get_parameter_or("drive.use_pure_pursuit", True).value
+        self.USE_PURE_PURSUIT = context.node.get_parameter_or("pure_pursuit.use_pure_pursuit", True).value
 
     @staticmethod
     def return_path(came_from: dict[tuple, tuple], current_pos: tuple):

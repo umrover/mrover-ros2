@@ -574,31 +574,31 @@ class DriveController:
         intersection_points: np.ndarray,
     ):
         """
-        Displays lookahead circle and intersection points for Pure Pursuit
+        Displays lookahead circle and intersection point for Pure Pursuit
         when using pure pursuit
         :param waypoints: The current trajectory of the rover.
         :param intersection_points: List of potential intersection points
         :return: nothing
         :modifies: nothing
         """
-        for i, point in enumerate(intersection_points):
-            self.intersection_pub.publish(
-                gen_marker(
-                    time=self.node.get_clock().now(),
-                    point=[point[0], point[1]],
-                    color=[0.0, 1.0, 0.0],
-                    id=i,
-                    lifetime=self.node.get_parameter("pub_lookahead_rate").value,
-                    size=0.2,
-                )
+    
+        self.intersection_pub.publish(
+            gen_marker(
+                time=self.node.get_clock().now(),
+                point=[intersection_points[0], intersection_points[1]],
+                color=[0.0, 1.0, 0.0],
+                id=1,
+                lifetime=self.node.get_parameter("pub_lookahead_rate").value,
+                size=0.2,
             )
+        )
 
         self.lookahead_pub.publish(
             ring_marker(
                 time=self.node.get_clock().now(),
                 point=rover_pos,
                 color=[1.0, 0.0, 0.0],
-                id=len(intersection_points) + 1,
+                id=1,
                 lifetime=self.node.get_parameter("pub_lookahead_rate").value,
                 radius=self._last_lookahead_dist,
             )
