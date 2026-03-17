@@ -405,9 +405,9 @@ class Context:
 
         self.node = node
 
-        self.lookahead_pub = node.create_publisher(Marker, "", 10)
-        self.intersect_pub = node.create_publisher(Marker, "", 10)
-        self.drive = DriveController(node, self.lookahead_pub, self.intersect_pub)
+        self.lookahead_pub = self.node.create_publisher(Marker, "lookahead_circle", 10)
+        self.intersection_pub = self.node.create_publisher(Marker, "intersection_points", 10)
+        self.drive = DriveController(node, self.lookahead_pub, self.intersection_pub)
 
         self.world_frame = node.get_parameter("world_frame").value
         self.rover_frame = node.get_parameter("rover_frame").value
