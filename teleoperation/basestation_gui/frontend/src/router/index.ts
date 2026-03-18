@@ -3,7 +3,7 @@ import Menu from '@/views/HomeView.vue'
 import DMTask from '@/views/DMView.vue'
 import ESTask from '@/views/ESView.vue'
 import AutonTask from '@/views/AutonView.vue'
-import Rover3D from '@/components/three/Rover3D.vue'
+import Rover3D from '@/components/Rover3D.vue'
 import ScienceTask from '@/views/ScienceView.vue'
 import DevView from '@/views/DevView.vue'
 

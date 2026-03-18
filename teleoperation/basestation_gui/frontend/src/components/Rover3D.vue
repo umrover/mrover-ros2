@@ -1,79 +1,56 @@
 <template>
-  <div class="flex flex-col w-full h-full">
-    <div class="flex flex-wrap gap-1 mb-2 shrink-0">
-      <button
-        type="button"
-        class="cmd-btn cmd-btn-sm cmd-btn-outline-control grow"
-        :class="{ 'active': camera_type === 'default' }"
-        @click="setCamera('default')">
-        Default
-      </button>
-      <button
-        type="button"
-        class="cmd-btn cmd-btn-sm cmd-btn-outline-control grow"
-        :class="{ 'active': camera_type === 'follow' }"
-        @click="setCamera('follow')">
-        Follow
-      </button>
-      <button
-        type="button"
-        class="cmd-btn cmd-btn-sm cmd-btn-outline-control grow"
-        :class="{ 'active': camera_type === 'arm' }"
-        @click="setCamera('arm')">
-        Arm
-      </button>
-      <button
-        type="button"
-        class="cmd-btn cmd-btn-sm cmd-btn-outline-control grow"
-        :class="{ 'active': camera_type === 'full arm' }"
-        @click="setCamera('full arm')">
-        Full Arm
-      </button>
-      <button
-        type="button"
-        class="cmd-btn cmd-btn-sm cmd-btn-outline-control grow"
-        :class="{ 'active': camera_type === 'side arm' }"
-        @click="setCamera('side arm')">
-        Side Arm
-      </button>
-      <button
-        type="button"
-        class="cmd-btn cmd-btn-sm cmd-btn-outline-control grow"
-        :class="{ 'active': camera_type === 'top' }"
-        @click="setCamera('top')">
-        Top Down
-      </button>
+  <div class="rover3d-root">
+    <canvas class="webgl"></canvas>
+    <div class="rover3d-toolbar">
+      <div class="relative">
+        <button
+          type="button"
+          class="toolbar-btn"
+          @click="cameraDropdownOpen = !cameraDropdownOpen">
+          {{ cameraLabels[camera_type] }}
+          <i class="bi bi-chevron-down"></i>
+        </button>
+        <ul class="cmd-dropdown-menu left-0 right-auto" :class="{ show: cameraDropdownOpen }">
+          <li v-for="(label, key) in cameraLabels" :key="key">
+            <button
+              class="cmd-dropdown-item"
+              :class="{ active: camera_type === key }"
+              @click="setCamera(key); cameraDropdownOpen = false">
+              {{ label }}
+            </button>
+          </li>
+        </ul>
+      </div>
 
-      <button
-        type="button"
-        class="cmd-btn cmd-btn-sm cmd-btn-outline-secondary grow"
-        @click="toggleCostMap()">
-        Toggle Cost Map
-      </button>
-
-      <button
-        type="button"
-        class="cmd-btn cmd-btn-sm cmd-btn-outline-secondary grow"
-        :class="{ 'active': doCostmapRotation }"
-        @click="toggleCostmapRotation()">
-        Relative Rotation
-      </button>
+      <div class="flex gap-1">
+        <button
+          type="button"
+          class="toolbar-btn"
+          :class="{ 'toolbar-btn-active': costmapVisible }"
+          @click="toggleCostMap()">
+          Cost Map
+        </button>
+        <button
+          type="button"
+          class="toolbar-btn"
+          :class="{ 'toolbar-btn-active': doCostmapRotation }"
+          @click="toggleCostmapRotation()">
+          Rotation
+        </button>
+      </div>
     </div>
-    <canvas class="webgl grow min-h-0 w-full"></canvas>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
+import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { useWebsocketStore } from '@/stores/websocket'
-import { storeToRefs } from 'pinia'
 import type { ControllerStateMessage, IkFeedbackMessage, OccupancyGridMessage } from '@/types/websocket'
-import type { NavMessage, OrientationMessage } from '@/types/coordinates'
+import type { OrientationMessage } from '@/types/coordinates'
 import { quaternionToMapAngle } from '@/utils/map'
-import { useRoverScene, NUM_COSTMAP_BLOCKS } from '@/composables/useRoverScene'
+import { useRoverScene, NUM_COSTMAP_BLOCKS, type CameraType } from '@/composables/useRoverScene'
 
-const websocketStore = useWebsocketStore()
-const { messages } = storeToRefs(websocketStore)
+const { onMessage, setupWebSocket, closeWebSocket } = useWebsocketStore()
 
 const {
   setup: setupScene,
@@ -87,6 +64,16 @@ const {
   updateJoints,
   updateIKTarget,
 } = useRoverScene()
+
+const cameraDropdownOpen = ref(false)
+const cameraLabels: Record<CameraType, string> = {
+  default: 'Default',
+  follow: 'Follow',
+  arm: 'Arm',
+  'full arm': 'Full Arm',
+  'side arm': 'Side Arm',
+  top: 'Top Down',
+}
 
 const jointNameMap: Record<string, string> = {
   joint_a: 'chassis_to_arm_a',
@@ -112,53 +99,42 @@ onMounted(() => {
   if (!costmapVisible.value) {
     setCostMapVisibility(false)
   }
-  websocketStore.setupWebSocket('nav')
+  setupWebSocket('nav')
 })
 
 onBeforeUnmount(() => {
   disposeScene()
-  websocketStore.closeWebSocket('nav')
+  closeWebSocket('nav')
 })
 
-const armMessage = computed(() => messages.value['arm'])
-const driveMessage = computed(() => messages.value['drive'])
-const navMessage = computed(() => messages.value['nav'])
+onMessage<ControllerStateMessage>('arm', 'arm_state', (msg) => {
+  const joints = msg.names.map((name: string, index: number) => {
+    const urdfName = jointNameMap[name] || name
+    const rawPosition: number = msg.positions[index] ?? 0
+    const position = urdfName === 'chassis_to_arm_a'
+      ? rawPosition * -100 + 40
+      : rawPosition
 
-watch(armMessage, (msg: unknown) => {
-  if (!msg || typeof msg !== 'object') return
+    return { name: urdfName, position }
+  })
 
-  if ('type' in msg && msg.type === 'arm_state') {
-    const typedMsg = msg as ControllerStateMessage
-    const joints = typedMsg.names.map((name: string, index: number) => {
-      const urdfName = jointNameMap[name] || name
-      const rawPosition: number = typedMsg.positions[index] ?? 0
-      const position = urdfName === 'chassis_to_arm_a'
-        ? rawPosition * -100 + 40
-        : rawPosition
+  updateJoints(joints)
+})
 
-      return { name: urdfName, position }
-    })
-
-    updateJoints(joints)
-  } else if ('type' in msg && msg.type === 'ik_feedback') {
-    const typedMsg = msg as IkFeedbackMessage
-    updateIKTarget({
-      x: typedMsg.pos.x * 100,
-      y: typedMsg.pos.z * 100,
-      z: typedMsg.pos.y * -100 + 20,
-    })
-  }
+onMessage<IkFeedbackMessage>('arm', 'ik_feedback', (msg) => {
+  updateIKTarget({
+    x: msg.pos.x * 100,
+    y: msg.pos.z * 100,
+    z: msg.pos.y * -100 + 20,
+  })
 })
 
 let roverMapPos = { x: 0, y: 0 }
 const rover_bearing_deg = ref(0)
 const doCostmapRotation = ref(true)
 
-watch(driveMessage, (msg: unknown) => {
-  if (!msg || typeof msg !== 'object' || !('data' in msg)) return
-
-  const typedMsg = msg as OccupancyGridMessage
-  const { resolution, width, height, origin } = typedMsg.info
+onMessage<OccupancyGridMessage>('drive', 'costmap', (msg) => {
+  const { resolution, width, height, origin } = msg.info
 
   const roverCol = Math.floor((roverMapPos.x - origin.position.x) / resolution)
   const roverRow = Math.floor((roverMapPos.y - origin.position.y) / resolution)
@@ -175,7 +151,7 @@ watch(driveMessage, (msg: unknown) => {
       if (col < 0 || col >= width || row < 0 || row >= height) {
         processedData[k] = -1
       } else {
-        processedData[k] = typedMsg.data[row * width + col] ?? -1
+        processedData[k] = msg.data[row * width + col] ?? -1
       }
     }
   }
@@ -187,15 +163,10 @@ watch(driveMessage, (msg: unknown) => {
   }
 })
 
-watch(navMessage, (msg) => {
-  if (!msg) return
-  const navMsg = msg as NavMessage
-  if (navMsg.type === 'orientation') {
-    const orientationMsg = navMsg as OrientationMessage
-    rover_bearing_deg.value = quaternionToMapAngle(navMsg.orientation)
-    if (orientationMsg.position) {
-      roverMapPos = { x: orientationMsg.position.x, y: orientationMsg.position.y }
-    }
+onMessage<OrientationMessage>('nav', 'orientation', (msg) => {
+  rover_bearing_deg.value = quaternionToMapAngle(msg.orientation)
+  if (msg.position) {
+    roverMapPos = { x: msg.position.x, y: msg.position.y }
   }
 })
 
@@ -208,3 +179,65 @@ function toggleCostmapRotation() {
   }
 }
 </script>
+
+<style scoped>
+.rover3d-root {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.webgl {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.rover3d-toolbar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem;
+  pointer-events: none;
+}
+
+.rover3d-toolbar > * {
+  pointer-events: auto;
+}
+
+.toolbar-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  font-family: var(--cmd-font-mono);
+  color: var(--text-primary);
+  background: color-mix(in srgb, var(--card-bg) 80%, transparent);
+  backdrop-filter: blur(8px);
+  border: var(--cmd-border-width) solid var(--cmd-panel-border);
+  border-radius: var(--cmd-radius-md);
+  cursor: pointer;
+  transition: all var(--cmd-transition);
+}
+
+.toolbar-btn:hover {
+  background: var(--card-bg);
+  border-color: var(--control-primary);
+}
+
+.toolbar-btn-active {
+  color: #fff;
+  background: color-mix(in srgb, var(--control-primary) 85%, transparent);
+  border-color: var(--control-primary);
+}
+
+.toolbar-btn-active:hover {
+  background: var(--control-primary);
+}
+</style>

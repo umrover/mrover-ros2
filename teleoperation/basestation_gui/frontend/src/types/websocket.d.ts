@@ -41,13 +41,14 @@ export interface JointStateMessage {
 }
 
 export interface OccupancyGridMessage {
+  type: 'costmap';
   header: {
     seq: number;
-    stamp: number; //time
+    stamp: number;
     frame_id: number;
   };
   info: {
-    map_load_time: number; //time
+    map_load_time: number;
     resolution: number;
     width: number;
     height: number;
@@ -57,7 +58,7 @@ export interface OccupancyGridMessage {
         y: number;
         z: number;
       };
-      orientation : {
+      orientation: {
         x: number;
         y: number;
         z: number;
