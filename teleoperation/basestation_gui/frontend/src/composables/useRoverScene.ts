@@ -13,7 +13,7 @@ export function useRoverScene() {
   let costmap: CostmapRenderer | null = null
   let roverModel: RoverModel | null = null
 
-  const cameraType = ref<CameraType>('default')
+  const cameraType = ref<CameraType>('orbit')
 
   function setup(canvas: HTMLCanvasElement) {
     sceneCtx = createScene(canvas)
@@ -21,7 +21,6 @@ export function useRoverScene() {
     costmap = createCostmap(sceneCtx.scene)
     roverModel = loadRover(sceneCtx.scene)
 
-    // Wire resize to camera aspect updates
     const resizeObserver = new ResizeObserver(() => {
       cameraManager?.updateAspect(canvas.clientWidth, canvas.clientHeight)
     })
@@ -29,7 +28,10 @@ export function useRoverScene() {
 
     sceneCtx.startRenderLoop(
       () => cameraManager!.getActive(),
-      () => cameraManager?.controls.update(),
+      () => {
+        cameraManager?.controls.update()
+        cameraManager?.tickNav()
+      },
     )
   }
 
@@ -66,6 +68,14 @@ export function useRoverScene() {
     costmap?.setRotation(radians)
   }
 
+  function resetCamera() {
+    cameraManager?.resetActive()
+  }
+
+  function setNavAzimuth(radians: number) {
+    cameraManager?.setNavAzimuth(radians)
+  }
+
   function updateJoints(joints: JointUpdate[]) {
     roverModel?.updateJoints(joints)
   }
@@ -74,11 +84,17 @@ export function useRoverScene() {
     roverModel?.updateIKTarget(position)
   }
 
+  function setRoverHeading(radians: number) {
+    roverModel?.setHeading(radians)
+  }
+
   return {
     setup,
     dispose,
     cameraType,
     setCamera,
+    resetCamera,
+    setNavAzimuth,
     updateCostMap,
     resetCostMap,
     toggleCostMapVisibility,
@@ -86,6 +102,7 @@ export function useRoverScene() {
     setCostMapRotation,
     updateJoints,
     updateIKTarget,
+    setRoverHeading,
     NUM_COSTMAP_BLOCKS,
   }
 }

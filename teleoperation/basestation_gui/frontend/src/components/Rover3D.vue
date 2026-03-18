@@ -1,78 +1,209 @@
 <template>
   <div class="rover3d-root">
-    <canvas class="webgl"></canvas>
+    <canvas
+      class="webgl"
+      @click="closeDropdowns()"
+      @pointerdown="onPointerDown"
+      @pointermove="onPointerMove"
+      @pointerup="onPointerUp"
+    ></canvas>
     <div class="rover3d-toolbar">
-      <div class="relative">
+      <div class="flex gap-1">
+        <div class="relative">
+          <button
+            type="button"
+            class="toolbar-btn"
+            :class="{ 'toolbar-btn-active': isNavMode }"
+            @click="viewDropdownOpen = !viewDropdownOpen">
+            {{ viewLabels[viewMode] }}
+            <i class="bi bi-chevron-down"></i>
+          </button>
+          <ul class="cmd-dropdown-menu left-0 right-auto" :class="{ show: viewDropdownOpen }">
+            <li v-for="(label, key) in viewLabels" :key="key">
+              <button
+                class="cmd-dropdown-item"
+                :class="{ active: viewMode === key }"
+                @click="switchView(key); viewDropdownOpen = false">
+                {{ label }}
+              </button>
+            </li>
+          </ul>
+        </div>
+
+        <template v-if="isNavMode">
+          <div class="relative">
+            <button
+              type="button"
+              class="toolbar-btn"
+              @click="rotationDropdownOpen = !rotationDropdownOpen">
+              {{ rotationLabels[rotationMode] }}
+              <i class="bi bi-chevron-down"></i>
+            </button>
+            <ul class="cmd-dropdown-menu left-0 right-auto" :class="{ show: rotationDropdownOpen }">
+              <li v-for="(label, key) in rotationLabels" :key="key">
+                <button
+                  class="cmd-dropdown-item"
+                  :class="{ active: rotationMode === key }"
+                  @click="setRotationMode(key); rotationDropdownOpen = false">
+                  {{ label }}
+                </button>
+              </li>
+            </ul>
+          </div>
+        </template>
+
         <button
+          v-if="showReset"
           type="button"
           class="toolbar-btn"
-          @click="cameraDropdownOpen = !cameraDropdownOpen">
-          {{ cameraLabels[camera_type] }}
-          <i class="bi bi-chevron-down"></i>
+          title="Reset camera position"
+          @click="handleReset()">
+          <i class="bi bi-arrow-counterclockwise"></i>
         </button>
-        <ul class="cmd-dropdown-menu left-0 right-auto" :class="{ show: cameraDropdownOpen }">
-          <li v-for="(label, key) in cameraLabels" :key="key">
-            <button
-              class="cmd-dropdown-item"
-              :class="{ active: camera_type === key }"
-              @click="setCamera(key); cameraDropdownOpen = false">
-              {{ label }}
-            </button>
-          </li>
-        </ul>
       </div>
 
-      <div class="flex gap-1">
-        <button
-          type="button"
-          class="toolbar-btn"
-          :class="{ 'toolbar-btn-active': costmapVisible }"
-          @click="toggleCostMap()">
-          Cost Map
-        </button>
-        <button
-          type="button"
-          class="toolbar-btn"
-          :class="{ 'toolbar-btn-active': doCostmapRotation }"
-          @click="toggleCostmapRotation()">
-          Rotation
-        </button>
-      </div>
+      <button
+        type="button"
+        class="toolbar-btn"
+        :class="{ 'toolbar-btn-active': costmapVisible }"
+        @click="toggleCostMap()">
+        Cost Map
+      </button>
     </div>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useWebsocketStore } from '@/stores/websocket'
 import type { ControllerStateMessage, IkFeedbackMessage, OccupancyGridMessage } from '@/types/websocket'
 import type { OrientationMessage } from '@/types/coordinates'
 import { quaternionToMapAngle } from '@/utils/map'
-import { useRoverScene, NUM_COSTMAP_BLOCKS, type CameraType } from '@/composables/useRoverScene'
+import { useRoverScene, NUM_COSTMAP_BLOCKS } from '@/composables/useRoverScene'
 
 const { onMessage, setupWebSocket, closeWebSocket } = useWebsocketStore()
 
 const {
   setup: setupScene,
   dispose: disposeScene,
-  cameraType: camera_type,
   setCamera,
+  resetCamera,
+  setNavAzimuth,
   updateCostMap,
   toggleCostMapVisibility,
   setCostMapVisibility,
   setCostMapRotation,
   updateJoints,
   updateIKTarget,
+  setRoverHeading,
 } = useRoverScene()
 
-const cameraDropdownOpen = ref(false)
-const cameraLabels: Record<CameraType, string> = {
-  default: 'Default',
-  follow: 'Follow',
-  arm: 'Arm',
-  'full arm': 'Full Arm',
-  'side arm': 'Side Arm',
-  top: 'Top Down',
+enum ViewMode {
+  Orbit = 'orbit',
+  Follow = 'follow',
+  SideArm = 'side arm',
+  Nav = 'nav',
+}
+
+enum RotationMode {
+  Manual = 'manual',
+  North = 'north',
+  FollowHeading = 'follow',
+}
+
+const viewLabels: Record<ViewMode, string> = {
+  [ViewMode.Orbit]: 'Orbit',
+  [ViewMode.Follow]: 'Follow',
+  [ViewMode.SideArm]: 'Side Arm',
+  [ViewMode.Nav]: 'Nav',
+}
+
+const rotationLabels: Record<RotationMode, string> = {
+  [RotationMode.Manual]: 'Manual',
+  [RotationMode.North]: 'True North',
+  [RotationMode.FollowHeading]: 'Follow Heading',
+}
+
+const LS_VIEW_MODE = 'rover3d.viewMode'
+const LS_ROTATION_MODE = 'rover3d.rotationMode'
+
+const viewMode = ref<ViewMode>(
+  (localStorage.getItem(LS_VIEW_MODE) as ViewMode | null) ?? ViewMode.Orbit,
+)
+const rotationMode = ref<RotationMode>(
+  (localStorage.getItem(LS_ROTATION_MODE) as RotationMode | null) ?? RotationMode.FollowHeading,
+)
+const viewDropdownOpen = ref(false)
+const rotationDropdownOpen = ref(false)
+
+const isNavMode = computed(() => viewMode.value === ViewMode.Nav)
+const showReset = computed(() => {
+  if (viewMode.value === ViewMode.Orbit) return true
+  if (isNavMode.value && rotationMode.value === RotationMode.Manual) return true
+  return false
+})
+
+let manualAzimuth = 0
+
+function switchView(mode: ViewMode) {
+  viewMode.value = mode
+  localStorage.setItem(LS_VIEW_MODE, mode)
+
+  if (mode === ViewMode.Nav) {
+    setCamera('top')
+    setCostMapVisibility(costmapVisible.value)
+    if (rotationMode.value === RotationMode.Manual) {
+      manualAzimuth = 0
+      setNavAzimuth(0)
+      setCostMapRotation(-Math.PI / 2)
+    } else {
+      applyCostmapRotation()
+    }
+  } else {
+    setCamera(mode)
+    setCostMapRotation(0)
+  }
+}
+
+function handleReset() {
+  if (isNavMode.value && rotationMode.value === RotationMode.Manual) {
+    manualAzimuth = 0
+    setNavAzimuth(0)
+    setCostMapRotation(-Math.PI / 2)
+  } else {
+    resetCamera()
+  }
+}
+
+function closeDropdowns() {
+  viewDropdownOpen.value = false
+  rotationDropdownOpen.value = false
+}
+
+// Manual rotation via pointer drag
+let dragStartX = 0
+let dragStartAzimuth = 0
+let isDragging = false
+
+function onPointerDown(e: PointerEvent) {
+  if (!isNavMode.value || rotationMode.value !== RotationMode.Manual) return
+  if (e.button !== 0) return
+  isDragging = true
+  dragStartX = e.clientX
+  dragStartAzimuth = manualAzimuth
+  ;(e.target as HTMLElement).setPointerCapture(e.pointerId)
+}
+
+function onPointerMove(e: PointerEvent) {
+  if (!isDragging) return
+  const deltaX = e.clientX - dragStartX
+  const sensitivity = 0.005
+  manualAzimuth = dragStartAzimuth + deltaX * sensitivity
+  setNavAzimuth(manualAzimuth)
+}
+
+function onPointerUp() {
+  isDragging = false
 }
 
 const jointNameMap: Record<string, string> = {
@@ -99,6 +230,7 @@ onMounted(() => {
   if (!costmapVisible.value) {
     setCostMapVisibility(false)
   }
+  switchView(viewMode.value)
   setupWebSocket('nav')
 })
 
@@ -130,8 +262,34 @@ onMessage<IkFeedbackMessage>('arm', 'ik_feedback', (msg) => {
 })
 
 let roverMapPos = { x: 0, y: 0 }
-const rover_bearing_deg = ref(0)
-const doCostmapRotation = ref(true)
+const roverBearingDeg = ref(0)
+
+function setRotationMode(mode: RotationMode) {
+  rotationMode.value = mode
+  localStorage.setItem(LS_ROTATION_MODE, mode)
+
+  if (mode === RotationMode.Manual) {
+    manualAzimuth = 0
+    setNavAzimuth(0)
+    setCostMapRotation(-Math.PI / 2)
+  } else {
+    applyCostmapRotation()
+  }
+}
+
+let roverHeadingRad = 0
+
+function applyCostmapRotation() {
+  if (!isNavMode.value) return
+  const mode = rotationMode.value
+  if (mode === RotationMode.North) {
+    setCostMapRotation(-Math.PI / 2)
+    setNavAzimuth(0)
+  } else if (mode === RotationMode.FollowHeading) {
+    setCostMapRotation(-Math.PI / 2)
+    setNavAzimuth(roverHeadingRad + Math.PI / 2)
+  }
+}
 
 onMessage<OccupancyGridMessage>('drive', 'costmap', (msg) => {
   const { resolution, width, height, origin } = msg.info
@@ -157,27 +315,18 @@ onMessage<OccupancyGridMessage>('drive', 'costmap', (msg) => {
   }
 
   updateCostMap(processedData)
-
-  if (doCostmapRotation.value) {
-    setCostMapRotation(Math.PI * rover_bearing_deg.value / 180 - Math.PI / 2)
-  }
+  applyCostmapRotation()
 })
 
 onMessage<OrientationMessage>('nav', 'orientation', (msg) => {
-  rover_bearing_deg.value = quaternionToMapAngle(msg.orientation)
+  roverBearingDeg.value = quaternionToMapAngle(msg.orientation)
   if (msg.position) {
     roverMapPos = { x: msg.position.x, y: msg.position.y }
   }
+  roverHeadingRad = -(Math.PI * roverBearingDeg.value / 180 + Math.PI / 2)
+  setRoverHeading(roverHeadingRad)
+  applyCostmapRotation()
 })
-
-function toggleCostmapRotation() {
-  if (doCostmapRotation.value) {
-    doCostmapRotation.value = false
-    setCostMapRotation(0)
-  } else {
-    doCostmapRotation.value = true
-  }
-}
 </script>
 
 <style scoped>

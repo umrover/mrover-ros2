@@ -1,16 +1,31 @@
 import * as THREE from 'three'
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 
-export type CameraType = 'default' | 'follow' | 'full arm' | 'arm' | 'side arm' | 'top'
+export type CameraType = 'orbit' | 'follow' | 'side arm' | 'top'
 
 type CameraMap = { [K in CameraType]: THREE.PerspectiveCamera }
+
+interface CameraPreset {
+  position: THREE.Vector3
+  target: THREE.Vector3
+}
 
 export interface CameraManager {
   cameras: CameraMap
   controls: OrbitControls
   setType: (type: CameraType) => void
   getActive: () => THREE.PerspectiveCamera
+  resetActive: () => void
+  setNavAzimuth: (radians: number) => void
+  tickNav: () => void
   updateAspect: (width: number, height: number) => void
+}
+
+const PRESETS: Record<CameraType, CameraPreset> = {
+  orbit: { position: new THREE.Vector3(100, 50, -100), target: new THREE.Vector3(0, 0, 0) },
+  follow: { position: new THREE.Vector3(-130, 120, 0), target: new THREE.Vector3(0, 30, 0) },
+  'side arm': { position: new THREE.Vector3(25, 40, 70), target: new THREE.Vector3(75, 0, 0) },
+  top: { position: new THREE.Vector3(0, 300, 0), target: new THREE.Vector3(0, 0, 0) },
 }
 
 export function createCameras(
@@ -21,47 +36,93 @@ export function createCameras(
   const makeCamera = () => new THREE.PerspectiveCamera(75, aspect, 0.1, 1000)
 
   const cameras: CameraMap = {
-    default: makeCamera(),
+    orbit: makeCamera(),
     follow: makeCamera(),
-    'full arm': makeCamera(),
-    arm: makeCamera(),
     'side arm': makeCamera(),
     top: makeCamera(),
   }
 
-  cameras.default.position.set(100, 50, -100)
-  cameras.default.lookAt(0, 0, 0)
-
-  cameras.follow.position.set(-130, 120, 0)
-  cameras.follow.lookAt(0, 30, 0)
-
-  cameras['full arm'].position.set(-20, 60, 0)
-  cameras['full arm'].lookAt(75, 0, 0)
-
-  cameras.arm.position.set(0, 30, 10)
-  cameras.arm.lookAt(75, 10, 10)
-
-  cameras['side arm'].position.set(25, 40, 70)
-  cameras['side arm'].lookAt(75, 0, 0)
-
-  cameras.top.position.set(-1, 160, 0)
-  cameras.top.lookAt(0, 0, 0)
-
-  for (const cam of Object.values(cameras)) {
+  for (const [key, cam] of Object.entries(cameras)) {
+    const preset = PRESETS[key as CameraType]
+    cam.position.copy(preset.position)
+    cam.lookAt(preset.target)
     scene.add(cam)
   }
 
-  // OrbitControls only attached to default camera
-  const controls = new OrbitControls(cameras.default, canvas)
+  const controls = new OrbitControls(cameras.orbit, canvas)
 
-  let activeCamera = cameras.default
+  let activeType: CameraType = 'orbit'
+  let navAzimuth = 0
+  let navActive = false
 
   function setType(type: CameraType) {
-    activeCamera = cameras[type]
+    const wasOrbitOrTop = activeType === 'orbit' || activeType === 'top'
+    activeType = type
+
+    if (type === 'orbit') {
+      navActive = false
+      controls.object = cameras.orbit
+      controls.target.copy(PRESETS.orbit.target)
+      controls.enableRotate = true
+      controls.enablePan = true
+      controls.enabled = true
+      controls.update()
+    } else if (type === 'top') {
+      navActive = true
+      navAzimuth = 0
+      controls.object = cameras.top
+      controls.target.set(0, 0, 0)
+      controls.enableRotate = false
+      controls.enablePan = false
+      controls.enabled = true
+      controls.update()
+      applyNavOrientation()
+    } else if (wasOrbitOrTop) {
+      navActive = false
+      controls.enabled = false
+    }
   }
 
   function getActive(): THREE.PerspectiveCamera {
-    return activeCamera
+    return cameras[activeType]
+  }
+
+  function resetActive() {
+    const preset = PRESETS[activeType]
+    const cam = cameras[activeType]
+    cam.position.copy(preset.position)
+    if (activeType === 'orbit') {
+      cam.up.set(0, 1, 0)
+      cam.lookAt(preset.target)
+      controls.target.copy(preset.target)
+      controls.update()
+    } else if (activeType === 'top') {
+      controls.target.set(0, 0, 0)
+      controls.update()
+      navAzimuth = 0
+      applyNavOrientation()
+    }
+  }
+
+  function setNavAzimuth(radians: number) {
+    navAzimuth = radians
+    if (navActive) {
+      applyNavOrientation()
+    }
+  }
+
+  function applyNavOrientation() {
+    const cam = cameras.top
+    cam.up.set(Math.sin(navAzimuth), 0, Math.cos(navAzimuth))
+    cam.lookAt(controls.target)
+  }
+
+  // Call after controls.update() each frame to re-apply nav orientation
+  // (OrbitControls caches the initial up vector quaternion and overrides ours)
+  function tickNav() {
+    if (navActive) {
+      applyNavOrientation()
+    }
   }
 
   function updateAspect(width: number, height: number) {
@@ -71,5 +132,5 @@ export function createCameras(
     }
   }
 
-  return { cameras, controls, setType, getActive, updateAspect }
+  return { cameras, controls, setType, getActive, resetActive, setNavAzimuth, tickNav, updateAspect }
 }

@@ -18,6 +18,13 @@ export function createCostmap(scene: THREE.Scene): CostmapRenderer {
   const anchor = new THREE.Object3D()
   scene.add(anchor)
 
+  const costmapAxes = new THREE.AxesHelper(200)
+  anchor.add(costmapAxes)
+
+  const container = new THREE.Group()
+  container.rotation.y = -Math.PI / 2
+  anchor.add(container)
+
   // Color plane via DataTexture
   const textureData = new Uint8Array(GRID_SIZE * 4)
   const texture = new THREE.DataTexture(
@@ -32,11 +39,11 @@ export function createCostmap(scene: THREE.Scene): CostmapRenderer {
 
   const colorPlane = new THREE.Mesh(
     new THREE.PlaneGeometry(SIDE_LENGTH, SIDE_LENGTH),
-    new THREE.MeshBasicMaterial({ map: texture }),
+    new THREE.MeshBasicMaterial({ map: texture, transparent: true }),
   )
   colorPlane.position.set(-BLOCK_WIDTH / 2, -50, -BLOCK_WIDTH / 2)
   colorPlane.rotation.x = -Math.PI / 2
-  anchor.add(colorPlane)
+  container.add(colorPlane)
 
   // Text overlay via CanvasTexture
   const textCanvas = document.createElement('canvas')
@@ -51,7 +58,7 @@ export function createCostmap(scene: THREE.Scene): CostmapRenderer {
   )
   textPlane.position.set(-BLOCK_WIDTH / 2, -49, -BLOCK_WIDTH / 2)
   textPlane.lookAt(-BLOCK_WIDTH / 2, 50, -BLOCK_WIDTH / 2)
-  anchor.add(textPlane)
+  container.add(textPlane)
 
   // Initialize text canvas style
   const fontSize = BLOCK_WIDTH * 0.3
@@ -59,6 +66,37 @@ export function createCostmap(scene: THREE.Scene): CostmapRenderer {
   ctx.font = fontSize + 'px Arial'
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
+
+  let hasData = false
+  showUnavailable()
+
+  function showUnavailable() {
+    for (let i = 0; i < GRID_SIZE; i++) {
+      const idx = i * 4
+      textureData[idx] = 80
+      textureData[idx + 1] = 80
+      textureData[idx + 2] = 80
+      textureData[idx + 3] = 120
+    }
+    texture.needsUpdate = true
+
+    ctx.clearRect(0, 0, SIDE_LENGTH, SIDE_LENGTH)
+    ctx.save()
+    ctx.translate(SIDE_LENGTH / 2, SIDE_LENGTH / 2)
+    ctx.rotate(Math.PI / 2)
+    ctx.fillStyle = 'white'
+    ctx.font = 'bold 48px Arial'
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    ctx.fillText('This Side North', 0, -30)
+    ctx.fillText('Costmap Not Available', 0, 30)
+    ctx.restore()
+    ctx.fillStyle = 'white'
+    ctx.font = fontSize + 'px Arial'
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    textTexture.needsUpdate = true
+  }
 
   function fillText(gridData: number[]) {
     for (let i = 0; i < NUM_COSTMAP_BLOCKS; i++) {
@@ -73,6 +111,7 @@ export function createCostmap(scene: THREE.Scene): CostmapRenderer {
   }
 
   function update(gridData: number[]) {
+    hasData = true
     for (let i = 0; i < GRID_SIZE; i++) {
       const val = gridData[i] ?? -1
       const idx = i * 4
