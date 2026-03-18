@@ -1,73 +1,89 @@
 <template>
-  <div class="d-flex flex-column align-items-center">
-    <div class="d-flex flex-column gap-2 align-items-center">
-      <div class="d-flex justify-content-between align-items-center w-100">
-        <h4 class="m-0">Arm Controls</h4>
-        <IndicatorDot :is-active="controllerConnected" class="me-2" />
-      </div>
-      <div
-      class="btn-group d-flex justify-content-between"
-      role="group"
-      aria-label="Arm mode selection"
-      >
+  <div class="flex flex-col gap-2 h-full">
+    <div class="flex justify-between items-center">
+      <h4 class="component-header">Arm Controls</h4>
+      <p 
+      class="text-danger"
+      :class="forcing_limit === true ? 'visible' : 'invisible'">
+        Limit Reached!
+      </p>
+      <IndicatorDot :is-active="connected" class="mr-2" />
+    </div>
+    <div class="flex w-full" role="group" aria-label="Arm mode selection" data-testid="pw-arm-mode-buttons">
+      <div class="cmd-btn-group-connected w-full">
         <button
           type="button"
-          class="btn flex-fill"
-          :class="mode === 'disabled' ? 'btn-danger' : 'btn-outline-danger'"
+          class="cmd-btn cmd-btn-sm flex-1"
+          :class="mode === 'disabled' ? 'cmd-btn-danger' : 'cmd-btn-outline-danger'"
+          data-testid="pw-arm-mode-disabled"
           @click="newRAMode('disabled')"
-        >
-        Disabled
-      </button>
-      <button
+          >
+          Disabled
+        </button>
+        <button
           type="button"
-          class="btn flex-fill"
-          :class="mode === 'throttle' ? 'btn-success' : 'btn-outline-success'"
+          class="cmd-btn cmd-btn-sm flex-1"
+          :class="isStowing ? 'cmd-btn-warning' : 'cmd-btn-outline-warning'"
+          :disabled="isStowing"
+          @click="stowArm"
+        >
+          Stow
+        </button>
+        <button
+          type="button"
+          class="cmd-btn cmd-btn-sm flex-1"
+          :class="mode === 'throttle' ? 'cmd-btn-success' : 'cmd-btn-outline-success'"
+          data-testid="pw-arm-mode-throttle"
           @click="newRAMode('throttle')"
         >
           Throttle
         </button>
         <button
           type="button"
-          class="btn flex-fill"
-          :class="mode === 'ik-pos' ? 'btn-success' : 'btn-outline-success'"
+          class="cmd-btn cmd-btn-sm flex-1"
+          :class="mode === 'ik-pos' ? 'cmd-btn-success' : 'cmd-btn-outline-success'"
+          data-testid="pw-arm-mode-ik-pos"
           @click="newRAMode('ik-pos')"
         >
           IK Pos
         </button>
         <button
           type="button"
-          class="btn flex-fill"
-          :class="mode === 'ik-vel' ? 'btn-success' : 'btn-outline-success'"
+          class="cmd-btn cmd-btn-sm flex-1"
+          :class="mode === 'ik-vel' ? 'cmd-btn-success' : 'cmd-btn-outline-success'"
+          data-testid="pw-arm-mode-ik-vel"
           @click="newRAMode('ik-vel')"
         >
           IK Vel
         </button>
       </div>
-      <GamepadDisplay :axes="axes" :buttons="buttons" layout="horizontal" />
     </div>
+    <GamepadDisplay :axes="axes" :buttons="buttons" layout="horizontal" class="grow min-h-0" />
   </div>
 </template>
 
-
 <script lang="ts" setup>
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
-import { useWebsocketStore } from '@/stores/websocket'
+import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { armAPI } from '@/utils/api'
+import { useGamepadPolling } from '@/composables/useGamepadPolling'
+import { useWebsocketStore } from '@/stores/websocket'
+import type { IkFeedbackMessage } from '@/types/websocket'
 import GamepadDisplay from './GamepadDisplay.vue'
 import IndicatorDot from './IndicatorDot.vue'
 
-const websocketStore = useWebsocketStore()
+const { onMessage } = useWebsocketStore()
 
 const mode = ref('disabled')
-const gamepadConnected = ref(false)
-const axes = ref<number[]>([0, 0, 0, 0])
-const buttons = ref<number[]>(new Array(17).fill(0))
+const forcing_limit = ref(false)
 
-const controllerConnected = computed(() => gamepadConnected.value)
+const isStowing = ref(false)
+const stowTarget = ref<{ x: number; y: number; z: number } | null>(null)
 
-let interval: number | undefined = undefined
-
-const UPDATE_HZ = 30
+const { connected, axes, buttons } = useGamepadPolling({
+  controllerIdFilter: 'Microsoft',
+  topic: 'arm',
+  messageType: 'ra_controller',
+})
 
 const keyDown = async (event: { key: string }) => {
   if (event.key === ' ') {
@@ -77,43 +93,45 @@ const keyDown = async (event: { key: string }) => {
 
 onMounted(() => {
   document.addEventListener('keydown', keyDown)
-  interval = window.setInterval(() => {
-    const gamepads = navigator.getGamepads()
-    const gamepad = gamepads.find(
-      gamepad => gamepad && gamepad.id.includes('Microsoft')
-    )
-    gamepadConnected.value = !!gamepad
-    if (!gamepad) return
-
-    axes.value = [...gamepad.axes]
-    buttons.value = gamepad.buttons.map(button => button.value)
-
-    const controllerData = {
-      axes: gamepad.axes,
-      buttons: gamepad.buttons.map(button => button.value)
-    }
-
-    websocketStore.sendMessage('arm', {
-      type: 'ra_controller',
-      ...controllerData
-    })
-  }, 1000 / UPDATE_HZ)
 })
 
 onBeforeUnmount(() => {
-  window.clearInterval(interval)
   document.removeEventListener('keydown', keyDown)
 })
 
+onMessage<IkFeedbackMessage>('arm', 'ik_feedback', (msg) => {
+  console.log('yippee:', msg.pos)
+})
+
+const stowArm = async () => {
+  try {
+    isStowing.value = true
+    const result = await armAPI.stowArm()
+    if (result.status === 'success') {
+      mode.value = 'stow'
+      stowTarget.value = {
+        x: result.stow_target.pos.x,
+        y: result.stow_target.pos.y,
+        z: result.stow_target.pos.z,
+      }
+    } else {
+      isStowing.value = false
+    }
+  } catch (error) {
+    console.error('Failed to start stow:', error)
+    isStowing.value = false
+  }
+}
+
 const newRAMode = async (newMode: string) => {
   try {
+    isStowing.value = false
     mode.value = newMode
     const data = await armAPI.setRAMode(mode.value)
     if (data.status === 'success' && data.mode) {
-        mode.value = data.mode
-      };
+      mode.value = data.mode
     }
-     catch (error) {
+  } catch (error) {
     console.error('Failed to set arm mode:', error)
   }
 }

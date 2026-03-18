@@ -5,40 +5,55 @@
     :topics="['arm', 'drive', 'chassis', 'nav']"
   >
     <template #rover-3d>
-      <div class="island rounded overflow-hidden h-100">
-        <Rover3D class="w-100 h-100" />
+      <div class="island rounded overflow-hidden h-full">
+        <Rover3D class="w-full h-full" />
       </div>
     </template>
 
     <template #odometry>
-      <div class="island p-2 rounded h-100">
+      <div class="island p-2 rounded h-full">
         <OdometryReading />
       </div>
     </template>
 
-    <template #moteus>
-      <div class="island p-2 rounded d-flex flex-row gap-2 h-100">
-        <ControllerDataTable mode="arm" header="Arm" />
-        <ControllerDataTable mode="drive" header="Drive" />
+    <template #arm-data>
+      <div class="island p-2 rounded h-full">
+        <ArmDataTable />
       </div>
     </template>
 
-    <template #controls>
-      <div class="island p-2 rounded d-flex flex-row justify-content-between h-100">
+    <template #drive-data>
+      <div class="island p-2 rounded h-full">
+        <DriveDataTable />
+      </div>
+    </template>
+
+    <template #arm-controls>
+      <div class="island p-2 rounded h-full">
         <ArmControls />
+      </div>
+    </template>
+
+    <template #gimbal-controls>
+      <div class="island p-2 rounded h-full">
         <GimbalControls />
+      </div>
+    </template>
+
+    <template #drive-controls>
+      <div class="island p-2 rounded h-full">
         <DriveControls />
       </div>
     </template>
 
     <template #map>
-      <div class="island p-0 rounded overflow-hidden h-100">
+      <div class="island p-0 rounded overflow-hidden h-full">
         <BasicMap />
       </div>
     </template>
 
     <template #waypoints>
-      <div class="island p-2 rounded h-100">
+      <div class="island p-2 rounded h-full">
         <BasicWaypointEditor :enableDrone="true" />
       </div>
     </template>
@@ -47,7 +62,8 @@
 
 <script lang="ts" setup>
 import BaseGridView from '@/components/BaseGridView.vue'
-import ControllerDataTable from '@/components/ControllerDataTable.vue'
+import ArmDataTable from '@/components/ControllerDataTable/ArmDataTable.vue'
+import DriveDataTable from '@/components/ControllerDataTable/DriveDataTable.vue'
 import ArmControls from '@/components/ArmControls.vue'
 import BasicMap from '@/components/BasicRoverMap.vue'
 import BasicWaypointEditor from '@/components/BasicWaypointEditor.vue'
@@ -59,8 +75,11 @@ import Rover3D from '@/components/three/Rover3D.vue'
 const defaultLayout = [
   { x: 0, y: 0, w: 6, h: 4, i: 'rover-3d' },
   { x: 0, y: 4, w: 6, h: 2, i: 'odometry' },
-  { x: 0, y: 6, w: 6, h: 2, i: 'controls' },
-  { x: 0, y: 8, w: 6, h: 4, i: 'moteus' },
+  { x: 0, y: 6, w: 3, h: 2, i: 'arm-controls' },
+  { x: 3, y: 6, w: 2, h: 2, i: 'gimbal-controls' },
+  { x: 5, y: 6, w: 1, h: 2, i: 'drive-controls' },
+  { x: 0, y: 8, w: 3, h: 4, i: 'arm-data' },
+  { x: 3, y: 8, w: 3, h: 4, i: 'drive-data' },
   { x: 6, y: 0, w: 6, h: 6, i: 'map' },
   { x: 6, y: 6, w: 6, h: 6, i: 'waypoints' },
 ]

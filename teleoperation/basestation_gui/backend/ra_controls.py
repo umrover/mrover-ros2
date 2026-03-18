@@ -2,20 +2,36 @@ import asyncio
 from enum import Enum
 import threading
 
-from rclpy.node import Node
 from rclpy.publisher import Publisher
 
 from backend.input import filter_input, simulated_axis, safe_index, DeviceInputs
 from backend.mappings import ControllerAxis, ControllerButton
-from backend.managers.ros import get_service_client
+from backend.managers.ros import get_service_client, get_logger
+from backend.utils.ros_service import call_service_async
 from mrover.msg import Throttle, IK
 from mrover.srv import IkMode
 from geometry_msgs.msg import Twist
 
-from tf2_ros.buffer import Buffer
-
 ra_mode = "disabled"
 ra_mode_lock = threading.Lock()
+
+_ik_pos_pub: Publisher | None = None
+stow_task: asyncio.Task | None = None
+
+
+async def stow_timer_loop():
+    """Background loop to periodically publish STOW_POSITION when in stow mode."""
+    while True:
+        if get_ra_mode() == "stow" and _ik_pos_pub is not None:
+            _ik_pos_pub.publish(STOW_POSITION)
+        else:
+            break
+        await asyncio.sleep(0.1)  # 10 Hz
+
+
+def register_ik_pos_pub(pub: Publisher) -> None:
+    global _ik_pos_pub
+    _ik_pos_pub = pub
 
 
 def get_ra_mode() -> str:
@@ -23,52 +39,50 @@ def get_ra_mode() -> str:
         return ra_mode
 
 
-async def set_ra_mode(new_ra_mode: str):
-    global ra_mode
+async def set_ra_mode(new_ra_mode: str) -> bool:
+    global ra_mode, stow_task
+    if new_ra_mode == "ik-pos":
+        if not await call_ik_mode_service(IK_MODE_POSITION_CONTROL):
+            return False
+    elif new_ra_mode == "ik-vel":
+        if not await call_ik_mode_service(IK_MODE_VELOCITY_CONTROL):
+            return False
+    elif new_ra_mode == "stow":
+        if not await call_ik_mode_service(IK_MODE_POSITION_CONTROL):
+            return False
+
     with ra_mode_lock:
         ra_mode = new_ra_mode
 
-    if new_ra_mode == "ik-pos":
-        await call_ik_mode_service(IK_MODE_POSITION_CONTROL)
-    elif new_ra_mode == "ik-vel":
-        await call_ik_mode_service(IK_MODE_VELOCITY_CONTROL)
+    if new_ra_mode == "stow":
+        if _ik_pos_pub is not None:
+            _ik_pos_pub.publish(STOW_POSITION)
+        if stow_task is None or stow_task.done():
+            stow_task = asyncio.create_task(stow_timer_loop())
+    
+    return True
 
 
 async def call_ik_mode_service(mode: int) -> bool:
     client = get_service_client(IkMode, "/ik_mode")
-
-    try:
-        service_ready = await asyncio.wait_for(
-            asyncio.get_event_loop().run_in_executor(
-                None, lambda: client.wait_for_service(timeout_sec=0.1)
-            ),
-            timeout=1.0
-        )
-        if not service_ready:
-            return False
-    except asyncio.TimeoutError:
-        return False
-
     request = IkMode.Request()
     request.mode = mode
-
-    future = client.call_async(request)
-    try:
-        await asyncio.wait_for(
-            asyncio.get_event_loop().run_in_executor(None, future.result),
-            timeout=5.0
-        )
-        result = future.result()
-        return result.success if result else False
-    except asyncio.TimeoutError:
-        return False
-    except Exception:
-        return False
+    result = await call_service_async(client, request, timeout=5.0)
+    return result.success if result else False
 
 
 IK_MODE_POSITION_CONTROL = 0
 IK_MODE_VELOCITY_CONTROL = 1
 IK_MODE_TYPING = 2
+
+# DEFINE STOW TARGET HERE
+STOW_POSITION = IK()
+STOW_POSITION.pos.x = 1.124319
+STOW_POSITION.pos.y = 0.0
+STOW_POSITION.pos.z = 0.042229
+STOW_POSITION.pitch = 0.072694
+STOW_POSITION.roll = 0.0
+
 
 
 class Joint(Enum):
@@ -133,7 +147,7 @@ def compute_manual_joint_controls(controller: DeviceInputs) -> list[float]:
             deadzone=CONTROLLER_STICK_DEADZONE,
         ),
         filter_input(
-            simulated_axis(controller.axes, ControllerAxis.RIGHT_TRIGGER, ControllerAxis.LEFT_TRIGGER),
+            simulated_axis(controller.buttons, ControllerButton.RIGHT_TRIGGER, ControllerButton.LEFT_TRIGGER),
             scale=JOINT_SCALES[Joint.DE_PITCH.value],
         ),
         filter_input(
@@ -152,17 +166,19 @@ def compute_manual_joint_controls(controller: DeviceInputs) -> list[float]:
 
 
 def subset(names: list[str], values: list[float], joints: set[Joint]) -> tuple[list[str], list[float]]:
-    filtered_joints = [j for j in joints]
-    return [names[i.value] for i in filtered_joints], [values[i.value] for i in filtered_joints]
+    return [names[i.value] for i in joints], [values[i.value] for i in joints]
 
 
 def send_ra_controls(
-    inputs: DeviceInputs, node: Node, thr_pub: Publisher, ee_pos_pub: Publisher, ee_vel_pub: Publisher, buffer: Buffer
+    inputs: DeviceInputs, thr_pub: Publisher, ee_pos_pub: Publisher, ee_vel_pub: Publisher,
 ) -> None:
     current_mode = get_ra_mode()
     match current_mode:
-        case "throttle" | "ik-pos" | "ik-vel":
+        case "throttle" | "ik-pos" | "ik-vel" | "stow":
             match current_mode:
+                case "stow":
+                    ee_pos_pub.publish(STOW_POSITION)
+
                 case "throttle":
                     manual_controls = compute_manual_joint_controls(inputs)
                     throttle_msg = Throttle()
@@ -176,7 +192,7 @@ def send_ra_controls(
                     ik_pos_msg.pos.x = (-1.0) * safe_index(inputs.axes, ControllerAxis.LEFT_Y)
                     ik_pos_msg.pos.y = (-1.0) * safe_index(inputs.axes, ControllerAxis.LEFT_X)
                     ik_pos_msg.pos.z = (-1.0) * safe_index(inputs.axes, ControllerAxis.RIGHT_Y)
-                    ik_pos_msg.pitch = 1.0 * simulated_axis(inputs.axes, ControllerAxis.RIGHT_TRIGGER, ControllerAxis.LEFT_TRIGGER)
+                    ik_pos_msg.pitch = 1.0 * simulated_axis(inputs.buttons, ControllerButton.RIGHT_TRIGGER, ControllerButton.LEFT_TRIGGER)
                     ik_pos_msg.roll = 1.0 * simulated_axis(inputs.buttons, ControllerButton.RIGHT_BUMPER, ControllerButton.LEFT_BUMPER)
                     ee_pos_pub.publish(ik_pos_msg)
                 case "ik-vel":
@@ -185,12 +201,14 @@ def send_ra_controls(
                     ik_vel_msg.linear.y = (-1.0) * filter_input(safe_index(inputs.axes, ControllerAxis.LEFT_X), deadzone=CONTROLLER_STICK_DEADZONE)
                     ik_vel_msg.linear.z = (-1.0) * filter_input(safe_index(inputs.axes, ControllerAxis.RIGHT_Y), deadzone=CONTROLLER_STICK_DEADZONE)
                     ik_vel_msg.angular.y = 1.0 * simulated_axis(inputs.buttons, ControllerButton.RIGHT_BUMPER, ControllerButton.LEFT_BUMPER)
-                    ik_vel_msg.angular.x = 1.0 * simulated_axis(inputs.axes, ControllerAxis.RIGHT_TRIGGER, ControllerAxis.LEFT_TRIGGER)
+                    ik_vel_msg.angular.x = 1.0 * simulated_axis(inputs.buttons, ControllerButton.RIGHT_TRIGGER, ControllerButton.LEFT_TRIGGER)
                     ee_vel_pub.publish(ik_vel_msg)
 
-                    manual_controls = compute_manual_joint_controls(inputs)
+                    cam_throttle = filter_input(
+                        simulated_axis(inputs.buttons, ControllerButton.Y, ControllerButton.A),
+                        scale=JOINT_SCALES[Joint.CAM.value],
+                    )
                     throttle_msg = Throttle()
-                    joint_names, throttle_values = subset(JOINT_NAMES, manual_controls, set(Joint))
                     throttle_msg.names = ["cam"]
-                    throttle_msg.throttles = [throttle_values[joint_names.index("cam")]]
+                    throttle_msg.throttles = [cam_throttle]
                     thr_pub.publish(throttle_msg)
