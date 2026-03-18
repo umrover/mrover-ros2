@@ -302,7 +302,7 @@ namespace mrover {
                     if (result.mode == moteus::Mode::kPositionTimeout) {
                         setStop();
                         RCLCPP_WARN_STREAM(mNode->get_logger(), "Position timeout hit on " << this->mControllerName);
-                    }else if(result.mode == moteus::Mode::kFault){
+                    } else if (result.mode == moteus::Mode::kFault) {
                         setStop();
                         RCLCPP_WARN_STREAM(mNode->get_logger(), "Moteus fault occurred on " << this->mControllerName);
                     }

@@ -6,4 +6,4 @@
 	url = https://dawn.googlesource.com/dawn
 [submodule "esw/fw"]
 	path = esw/fw
-	url = git@github.com:umrover/mrover-esw.git
+	url = https://github.com/umrover/mrover-esw.git

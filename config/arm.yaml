@@ -25,11 +25,12 @@ arm_hw_bridge:
     joint_b_segment_length: 0.434
     joint_b_actuator_length: 0.324
     joint_b_mount_length: 0.157
+    joint_b_offset: -0.07754990  # rad
     joint_b_mount_theta: 1.25499645 # 71.906deg
     joint_b_segment_offset_theta: 0.09384635 # 5.377deg
     joint_c:
-      min_velocity: -0.06
-      max_velocity: 0.06
+      min_velocity: -0.377
+      max_velocity: 0.377
       min_position: -1.04719755 # -60deg
       max_position: 3.05432619 # 175deg
       max_torque: 200.0

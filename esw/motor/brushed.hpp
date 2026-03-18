@@ -132,7 +132,7 @@ namespace mrover {
                     this->mReportedMode = mode;
                     this->mState = (mode == Mode_t::FAULT) ? "Fault" : "Running";
                     this->mErrorState = errorToString(static_cast<BMCError_t>(decoded.fault_code));
-                } else if constexpr (std::is_same_v<T, BMCAck>) {
+                } else if constexpr (std::is_same_v<T, ESWAck>) {
                     RCLCPP_INFO(mNode->get_logger(), "BMC Ack received: %u", decoded.data);
                 } else {
                     RCLCPP_WARN(mNode->get_logger(), "BMC received unexpected message type %s", typeid(T).name());
