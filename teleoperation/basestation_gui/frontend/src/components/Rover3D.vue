@@ -62,7 +62,7 @@ import type { ControllerStateMessage } from '@/types/websocket'
 import threeSetup, { updatePose, updateIKTarget, set_camera_type, updateCostMapGrid} from '../rover_three.js'
 
 interface ArmIKMessage {
-  type: 'ik_target'
+  type: 'ik_feedback'
   target: {
     pose: {
       position: {
