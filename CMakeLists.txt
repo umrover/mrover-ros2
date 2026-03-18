@@ -308,9 +308,10 @@ mrover_executable_from_component(cost_map perception/executables/cost_map.cpp co
 
 # Embedded
 
-add_subdirectory(esw/fw/lib)
+set(MROVER_EMBEDDED_ROOT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/esw/fw/lib")
+if (EXISTS ${MROVER_EMBEDDED_ROOT_DIR} AND NOT APPLE)
+    add_subdirectory(esw/fw/lib)
 
-if (NOT APPLE)
     mrover_add_header_only_library(can_device esw/can_device)
     target_link_libraries(can_device INTERFACE ${rclcpp_LIBRARIES} moteus dbc)
 
@@ -328,15 +329,12 @@ if (NOT APPLE)
 
     mrover_add_esw_bridge_node(drive_hw_bridge esw/drive_hw_bridge.cpp)
     mrover_add_esw_bridge_node(arm_hw_bridge esw/arm_hw_bridge.cpp)
-    # mrover_add_esw_bridge_node(science_hw_bridge esw/science_hw_bridge.cpp)
+    mrover_add_esw_bridge_node(science_hw_bridge esw/science_hw_bridge.cpp)
 endif()
 
 mrover_add_node(differential_drive_controller esw/differential_drive_controller.cpp)
 ament_target_dependencies(differential_drive_controller rclcpp std_srvs)
 target_link_libraries(differential_drive_controller units)
-# mrover_add_node(science_hw_bridge esw/science_hw_bridge.cpp)
-# ament_target_dependencies(science_hw_bridge rclcpp)
-# target_link_libraries(science_hw_bridge can_device dbc)
 
 mrover_add_node(arm_controller navigation/arm_controller/arm_controller.cpp navigation/arm_controller/pch.hpp)
 target_link_libraries(arm_controller lie)
