@@ -27,7 +27,7 @@
           :disabled="isStowing"
           @click="stowArm"
         >
-          {{ isStowing ? 'Stowing...' : 'Stow' }}
+          Stow
         </button>
         <button
           type="button"
@@ -66,8 +66,12 @@
 import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { armAPI } from '@/utils/api'
 import { useGamepadPolling } from '@/composables/useGamepadPolling'
+import { useWebsocketStore } from '@/stores/websocket'
+import type { IkFeedbackMessage } from '@/types/websocket'
 import GamepadDisplay from './GamepadDisplay.vue'
 import IndicatorDot from './IndicatorDot.vue'
+
+const { onMessage } = useWebsocketStore()
 
 const mode = ref('disabled')
 const forcing_limit = ref(false)
@@ -93,6 +97,10 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   document.removeEventListener('keydown', keyDown)
+})
+
+onMessage<IkFeedbackMessage>('arm', 'ik_feedback', (msg) => {
+  console.log('yippee:', msg.pos)
 })
 
 const stowArm = async () => {

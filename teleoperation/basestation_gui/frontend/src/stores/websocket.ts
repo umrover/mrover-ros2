@@ -1,6 +1,10 @@
 import { defineStore } from 'pinia'
-import { ref, shallowRef } from 'vue'
+import { ref, shallowRef, computed, watch, onBeforeUnmount, getCurrentInstance } from 'vue'
 import { encode, decode } from '@msgpack/msgpack'
+
+interface TypedMessage {
+  type: string
+}
 
 const webSockets: Record<string, WebSocket> = {}
 const refCounts: Record<string, number> = {}
@@ -286,6 +290,28 @@ export const useWebsocketStore = defineStore('websocket', () => {
     }
   }
 
+  function onMessage<T extends TypedMessage>(
+    topic: string,
+    messageType: T['type'],
+    callback: (msg: T) => void,
+  ) {
+    const topicMessage = computed(() => messages.value[topic])
+    const stop = watch(topicMessage, (msg: unknown) => {
+      if (
+        msg &&
+        typeof msg === 'object' &&
+        'type' in msg &&
+        (msg as TypedMessage).type === messageType
+      ) {
+        callback(msg as T)
+      }
+    })
+    if (getCurrentInstance()) {
+      onBeforeUnmount(stop)
+    }
+    return stop
+  }
+
   return {
     messages,
     connectionStatus,
@@ -309,5 +335,6 @@ export const useWebsocketStore = defineStore('websocket', () => {
     sendMessage,
     setupWebSocket,
     closeWebSocket,
+    onMessage,
   }
 })
