@@ -58,21 +58,8 @@
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useWebsocketStore } from '@/stores/websocket'
 import { storeToRefs } from 'pinia'
-import type { ControllerStateMessage } from '@/types/websocket'
+import type { ControllerStateMessage, IkFeedbackMessage } from '@/types/websocket'
 import threeSetup, { updatePose, updateIKTarget, set_camera_type, updateCostMapGrid} from '../rover_three.js'
-
-interface ArmIKMessage {
-  type: 'ik_feedback'
-  target: {
-    pose: {
-      position: {
-        x: number
-        y: number
-        z: number
-      }
-    }
-  }
-}
 
 const websocketStore = useWebsocketStore()
 const { messages } = storeToRefs(websocketStore)
@@ -121,16 +108,14 @@ watch(armMessage, (msg: unknown) => {
     })
 
     updatePose(joints)
-  } else if ('type' in msg && msg.type === 'ik_target') {
-    const typedMsg = msg as ArmIKMessage
-    if (typedMsg.target.pose && typedMsg.target.pose.position) {
-      const position = {
-        x: typedMsg.target.pose.position.x * 100,
-        y: typedMsg.target.pose.position.z * 100,
-        z: typedMsg.target.pose.position.y * -100 + 20,
-      }
-      updateIKTarget(position)
+  } else if ('type' in msg && msg.type === 'ik_feedback') {
+    const typedMsg = msg as IkFeedbackMessage
+    const position = {
+      x: typedMsg.pos.x * 100,
+      y: typedMsg.pos.z * 100,
+      z: typedMsg.pos.y * -100 + 20,
     }
+    updateIKTarget(position)
   }
 })
 

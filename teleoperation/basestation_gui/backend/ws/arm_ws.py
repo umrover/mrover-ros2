@@ -40,7 +40,7 @@ class ArmHandler(WebSocketHandler):
                 return
             
             arm_in_base = SE3.from_tf_tree(self.buffer, "arm_base_link", "arm_fk")
-            pos = arm_in_base.pos()
+            pos = arm_in_base.translation()
             # maybe pitch/roll in the future?
             data_to_send = {
                 "type": "ik_feedback",
