@@ -1,6 +1,7 @@
 name: CI
 on:
-  workflow_dispatch
+  workflow_dispatch:
+    - main
 jobs:
   style:
     name: Style Checks
