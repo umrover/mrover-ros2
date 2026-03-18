@@ -581,7 +581,7 @@ class DriveController:
         :return: nothing
         :modifies: nothing
         """
-    
+
         self.intersection_pub.publish(
             gen_marker(
                 time=self.node.get_clock().now(),
