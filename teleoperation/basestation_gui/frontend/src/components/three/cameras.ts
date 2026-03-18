@@ -1,7 +1,12 @@
 import * as THREE from 'three'
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 
-export type CameraType = 'orbit' | 'follow' | 'side arm' | 'top'
+export enum CameraType {
+  Orbit = 'view.orbit',
+  Follow = 'view.follow',
+  Arm = 'view.arm',
+  Top = 'view.top',
+}
 
 type CameraMap = { [K in CameraType]: THREE.PerspectiveCamera }
 
@@ -22,10 +27,10 @@ export interface CameraManager {
 }
 
 const PRESETS: Record<CameraType, CameraPreset> = {
-  orbit: { position: new THREE.Vector3(100, 50, -100), target: new THREE.Vector3(0, 0, 0) },
-  follow: { position: new THREE.Vector3(-130, 120, 0), target: new THREE.Vector3(0, 30, 0) },
-  'side arm': { position: new THREE.Vector3(25, 40, 70), target: new THREE.Vector3(75, 0, 0) },
-  top: { position: new THREE.Vector3(0, 300, 0), target: new THREE.Vector3(0, 0, 0) },
+  [CameraType.Orbit]: { position: new THREE.Vector3(100, 50, -100), target: new THREE.Vector3(0, 0, 0) },
+  [CameraType.Follow]: { position: new THREE.Vector3(-130, 120, 0), target: new THREE.Vector3(0, 30, 0) },
+  [CameraType.Arm]: { position: new THREE.Vector3(25, 40, 70), target: new THREE.Vector3(75, 0, 0) },
+  [CameraType.Top]: { position: new THREE.Vector3(0, 300, 0), target: new THREE.Vector3(0, 0, 0) },
 }
 
 export function createCameras(
@@ -33,13 +38,13 @@ export function createCameras(
   scene: THREE.Scene,
 ): CameraManager {
   const aspect = canvas.clientWidth / canvas.clientHeight
-  const makeCamera = () => new THREE.PerspectiveCamera(75, aspect, 0.1, 1000)
+  const makeCamera = () => new THREE.PerspectiveCamera(75, aspect, 0.1, 5000)
 
   const cameras: CameraMap = {
-    orbit: makeCamera(),
-    follow: makeCamera(),
-    'side arm': makeCamera(),
-    top: makeCamera(),
+    [CameraType.Orbit]: makeCamera(),
+    [CameraType.Follow]: makeCamera(),
+    [CameraType.Arm]: makeCamera(),
+    [CameraType.Top]: makeCamera(),
   }
 
   for (const [key, cam] of Object.entries(cameras)) {
@@ -49,28 +54,28 @@ export function createCameras(
     scene.add(cam)
   }
 
-  const controls = new OrbitControls(cameras.orbit, canvas)
+  const controls = new OrbitControls(cameras[CameraType.Orbit], canvas)
 
-  let activeType: CameraType = 'orbit'
+  let activeType: CameraType = CameraType.Orbit
   let navAzimuth = 0
   let navActive = false
 
   function setType(type: CameraType) {
-    const wasOrbitOrTop = activeType === 'orbit' || activeType === 'top'
+    const wasOrbitOrTop = activeType === CameraType.Orbit || activeType === CameraType.Top
     activeType = type
 
-    if (type === 'orbit') {
+    if (type === CameraType.Orbit) {
       navActive = false
-      controls.object = cameras.orbit
-      controls.target.copy(PRESETS.orbit.target)
+      controls.object = cameras[CameraType.Orbit]
+      controls.target.copy(PRESETS[CameraType.Orbit].target)
       controls.enableRotate = true
       controls.enablePan = true
       controls.enabled = true
       controls.update()
-    } else if (type === 'top') {
+    } else if (type === CameraType.Top) {
       navActive = true
       navAzimuth = 0
-      controls.object = cameras.top
+      controls.object = cameras[CameraType.Top]
       controls.target.set(0, 0, 0)
       controls.enableRotate = false
       controls.enablePan = false
@@ -91,12 +96,12 @@ export function createCameras(
     const preset = PRESETS[activeType]
     const cam = cameras[activeType]
     cam.position.copy(preset.position)
-    if (activeType === 'orbit') {
+    if (activeType === CameraType.Orbit) {
       cam.up.set(0, 1, 0)
       cam.lookAt(preset.target)
       controls.target.copy(preset.target)
       controls.update()
-    } else if (activeType === 'top') {
+    } else if (activeType === CameraType.Top) {
       controls.target.set(0, 0, 0)
       controls.update()
       navAzimuth = 0
@@ -112,7 +117,7 @@ export function createCameras(
   }
 
   function applyNavOrientation() {
-    const cam = cameras.top
+    const cam = cameras[CameraType.Top]
     cam.up.set(Math.sin(navAzimuth), 0, Math.cos(navAzimuth))
     cam.lookAt(controls.target)
   }

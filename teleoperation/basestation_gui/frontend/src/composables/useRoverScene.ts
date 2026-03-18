@@ -1,11 +1,11 @@
 import { ref } from 'vue'
 import { createScene, type SceneContext } from '@/components/three/scene'
-import { createCameras, type CameraManager, type CameraType } from '@/components/three/cameras'
+import { createCameras, type CameraManager, CameraType } from '@/components/three/cameras'
 import { createCostmap, NUM_COSTMAP_BLOCKS, type CostmapRenderer } from '@/components/three/costmap'
 import { loadRover, type RoverModel, type JointUpdate, type Position3D } from '@/components/three/rover-model'
 
-export type { JointUpdate, Position3D, CameraType }
-export { NUM_COSTMAP_BLOCKS }
+export type { JointUpdate, Position3D }
+export { CameraType, NUM_COSTMAP_BLOCKS }
 
 export function useRoverScene() {
   let sceneCtx: SceneContext | null = null
@@ -13,7 +13,7 @@ export function useRoverScene() {
   let costmap: CostmapRenderer | null = null
   let roverModel: RoverModel | null = null
 
-  const cameraType = ref<CameraType>('orbit')
+  const cameraType = ref<CameraType>(CameraType.Orbit)
 
   function setup(canvas: HTMLCanvasElement) {
     sceneCtx = createScene(canvas)

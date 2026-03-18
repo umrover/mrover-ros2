@@ -7,13 +7,12 @@
       @pointermove="onPointerMove"
       @pointerup="onPointerUp"
     ></canvas>
-    <div class="rover3d-toolbar">
+    <div class="overlay-toolbar left-0 right-0 items-center justify-between">
       <div class="flex gap-1">
         <div class="relative">
           <button
             type="button"
-            class="toolbar-btn"
-            :class="{ 'toolbar-btn-active': isNavMode }"
+            class="overlay-toolbar-btn"
             @click="viewDropdownOpen = !viewDropdownOpen">
             {{ viewLabels[viewMode] }}
             <i class="bi bi-chevron-down"></i>
@@ -30,11 +29,11 @@
           </ul>
         </div>
 
-        <template v-if="isNavMode">
+        <template v-if="isTopMode">
           <div class="relative">
             <button
               type="button"
-              class="toolbar-btn"
+              class="overlay-toolbar-btn"
               @click="rotationDropdownOpen = !rotationDropdownOpen">
               {{ rotationLabels[rotationMode] }}
               <i class="bi bi-chevron-down"></i>
@@ -55,7 +54,7 @@
         <button
           v-if="showReset"
           type="button"
-          class="toolbar-btn"
+          class="overlay-toolbar-btn"
           title="Reset camera position"
           @click="handleReset()">
           <i class="bi bi-arrow-counterclockwise"></i>
@@ -64,8 +63,8 @@
 
       <button
         type="button"
-        class="toolbar-btn"
-        :class="{ 'toolbar-btn-active': costmapVisible }"
+        class="overlay-toolbar-btn"
+        :class="{ 'overlay-toolbar-btn-active': costmapVisible }"
         @click="toggleCostMap()">
         Cost Map
       </button>
@@ -79,7 +78,7 @@ import { useWebsocketStore } from '@/stores/websocket'
 import type { ControllerStateMessage, IkFeedbackMessage, OccupancyGridMessage } from '@/types/websocket'
 import type { OrientationMessage } from '@/types/coordinates'
 import { quaternionToMapAngle } from '@/utils/map'
-import { useRoverScene, NUM_COSTMAP_BLOCKS } from '@/composables/useRoverScene'
+import { useRoverScene, CameraType, NUM_COSTMAP_BLOCKS } from '@/composables/useRoverScene'
 
 const { onMessage, setupWebSocket, closeWebSocket } = useWebsocketStore()
 
@@ -101,8 +100,8 @@ const {
 enum ViewMode {
   Orbit = 'orbit',
   Follow = 'follow',
-  SideArm = 'side arm',
-  Nav = 'nav',
+  Arm = 'arm',
+  Top = 'top',
 }
 
 enum RotationMode {
@@ -114,8 +113,8 @@ enum RotationMode {
 const viewLabels: Record<ViewMode, string> = {
   [ViewMode.Orbit]: 'Orbit',
   [ViewMode.Follow]: 'Follow',
-  [ViewMode.SideArm]: 'Side Arm',
-  [ViewMode.Nav]: 'Nav',
+  [ViewMode.Arm]: 'Arm',
+  [ViewMode.Top]: 'Top-Down',
 }
 
 const rotationLabels: Record<RotationMode, string> = {
@@ -127,30 +126,42 @@ const rotationLabels: Record<RotationMode, string> = {
 const LS_VIEW_MODE = 'rover3d.viewMode'
 const LS_ROTATION_MODE = 'rover3d.rotationMode'
 
-const viewMode = ref<ViewMode>(
-  (localStorage.getItem(LS_VIEW_MODE) as ViewMode | null) ?? ViewMode.Orbit,
-)
-const rotationMode = ref<RotationMode>(
-  (localStorage.getItem(LS_ROTATION_MODE) as RotationMode | null) ?? RotationMode.FollowHeading,
-)
+const validViewModes = new Set(Object.values(ViewMode))
+const validRotationModes = new Set(Object.values(RotationMode))
+
+function loadEnum<T>(key: string, valid: Set<string>, fallback: T): T {
+  const stored = localStorage.getItem(key)
+  return stored && valid.has(stored) ? (stored as T) : fallback
+}
+
+const viewMode = ref<ViewMode>(loadEnum(LS_VIEW_MODE, validViewModes, ViewMode.Orbit))
+const rotationMode = ref<RotationMode>(loadEnum(LS_ROTATION_MODE, validRotationModes, RotationMode.FollowHeading))
 const viewDropdownOpen = ref(false)
 const rotationDropdownOpen = ref(false)
 
-const isNavMode = computed(() => viewMode.value === ViewMode.Nav)
+const isTopMode = computed(() => viewMode.value === ViewMode.Top)
 const showReset = computed(() => {
   if (viewMode.value === ViewMode.Orbit) return true
-  if (isNavMode.value && rotationMode.value === RotationMode.Manual) return true
+  if (isTopMode.value && rotationMode.value === RotationMode.Manual) return true
   return false
 })
 
 let manualAzimuth = 0
 
+const viewToCameraType: Record<ViewMode, CameraType> = {
+  [ViewMode.Orbit]: CameraType.Orbit,
+  [ViewMode.Follow]: CameraType.Follow,
+  [ViewMode.Arm]: CameraType.Arm,
+  [ViewMode.Top]: CameraType.Top,
+}
+
 function switchView(mode: ViewMode) {
   viewMode.value = mode
   localStorage.setItem(LS_VIEW_MODE, mode)
 
-  if (mode === ViewMode.Nav) {
-    setCamera('top')
+  setCamera(viewToCameraType[mode])
+
+  if (mode === ViewMode.Top) {
     setCostMapVisibility(costmapVisible.value)
     if (rotationMode.value === RotationMode.Manual) {
       manualAzimuth = 0
@@ -160,13 +171,12 @@ function switchView(mode: ViewMode) {
       applyCostmapRotation()
     }
   } else {
-    setCamera(mode)
     setCostMapRotation(0)
   }
 }
 
 function handleReset() {
-  if (isNavMode.value && rotationMode.value === RotationMode.Manual) {
+  if (isTopMode.value && rotationMode.value === RotationMode.Manual) {
     manualAzimuth = 0
     setNavAzimuth(0)
     setCostMapRotation(-Math.PI / 2)
@@ -186,7 +196,7 @@ let dragStartAzimuth = 0
 let isDragging = false
 
 function onPointerDown(e: PointerEvent) {
-  if (!isNavMode.value || rotationMode.value !== RotationMode.Manual) return
+  if (!isTopMode.value || rotationMode.value !== RotationMode.Manual) return
   if (e.button !== 0) return
   isDragging = true
   dragStartX = e.clientX
@@ -280,7 +290,7 @@ function setRotationMode(mode: RotationMode) {
 let roverHeadingRad = 0
 
 function applyCostmapRotation() {
-  if (!isNavMode.value) return
+  if (!isTopMode.value) return
   const mode = rotationMode.value
   if (mode === RotationMode.North) {
     setCostMapRotation(-Math.PI / 2)
@@ -340,53 +350,5 @@ onMessage<OrientationMessage>('nav', 'orientation', (msg) => {
   display: block;
   width: 100%;
   height: 100%;
-}
-
-.rover3d-toolbar {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.5rem;
-  pointer-events: none;
-}
-
-.rover3d-toolbar > * {
-  pointer-events: auto;
-}
-
-.toolbar-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  padding: 0.25rem 0.5rem;
-  font-size: 0.75rem;
-  font-weight: 500;
-  font-family: var(--cmd-font-mono);
-  color: var(--text-primary);
-  background: color-mix(in srgb, var(--card-bg) 80%, transparent);
-  backdrop-filter: blur(8px);
-  border: var(--cmd-border-width) solid var(--cmd-panel-border);
-  border-radius: var(--cmd-radius-md);
-  cursor: pointer;
-  transition: all var(--cmd-transition);
-}
-
-.toolbar-btn:hover {
-  background: var(--card-bg);
-  border-color: var(--control-primary);
-}
-
-.toolbar-btn-active {
-  color: #fff;
-  background: color-mix(in srgb, var(--control-primary) 85%, transparent);
-  border-color: var(--control-primary);
-}
-
-.toolbar-btn-active:hover {
-  background: var(--control-primary);
 }
 </style>

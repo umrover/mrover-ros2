@@ -18,9 +18,6 @@ export function createCostmap(scene: THREE.Scene): CostmapRenderer {
   const anchor = new THREE.Object3D()
   scene.add(anchor)
 
-  const costmapAxes = new THREE.AxesHelper(200)
-  anchor.add(costmapAxes)
-
   const container = new THREE.Group()
   container.rotation.y = -Math.PI / 2
   anchor.add(container)
@@ -67,7 +64,6 @@ export function createCostmap(scene: THREE.Scene): CostmapRenderer {
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
 
-  let hasData = false
   showUnavailable()
 
   function showUnavailable() {
@@ -83,13 +79,13 @@ export function createCostmap(scene: THREE.Scene): CostmapRenderer {
     ctx.clearRect(0, 0, SIDE_LENGTH, SIDE_LENGTH)
     ctx.save()
     ctx.translate(SIDE_LENGTH / 2, SIDE_LENGTH / 2)
-    ctx.rotate(Math.PI / 2)
+    ctx.rotate(0)
     ctx.fillStyle = 'white'
     ctx.font = 'bold 48px Arial'
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
-    ctx.fillText('This Side North', 0, -30)
-    ctx.fillText('Costmap Not Available', 0, 30)
+    ctx.fillText('This Side North', 0, -50)
+    ctx.fillText('Costmap Not Available', 0, 80)
     ctx.restore()
     ctx.fillStyle = 'white'
     ctx.font = fontSize + 'px Arial'
@@ -111,7 +107,6 @@ export function createCostmap(scene: THREE.Scene): CostmapRenderer {
   }
 
   function update(gridData: number[]) {
-    hasData = true
     for (let i = 0; i < GRID_SIZE; i++) {
       const val = gridData[i] ?? -1
       const idx = i * 4
