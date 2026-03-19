@@ -20,7 +20,7 @@
           <th>Humidity (%)</th>
           <th>Temp (°C)</th>
           <th>Ozone (ppb)</th>
-          <th>CO2 (ppm)</th>
+          <th>CO2 (Rel. %)</th>
           <th>Pressure (Pa)</th>
         </tr>
       </thead>
