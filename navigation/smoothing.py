@@ -36,15 +36,15 @@ def smoothing(trajectory: Trajectory, context: Context, should_relax: bool, shou
     
     
     output = Trajectory(cartesian_coords)
-    context.publish_path_marker(output, [1.0, 0.0, 0.0], "relaxed")
+    context.publish_path_marker(output.coordinates, [1.0, 0.0, 0.0], "relaxed")
 
     if should_interpolate:
         # Perform spline interpolation
-        spline_path = SplineInterpolation.interpolate(context, output, spacing=2.0)
+        spline_path = SplineInterpolation.interpolate(context, output, spacing=0.5)
         # plot_spline_path = SplineInterpolation.interpolate(context, output, spacing=0.1)
 
 
-        context.publish_path_marker(output, [0.0, 1.0, 0.0], "interp")
+        context.publish_path_marker(output.coordinates, [0.0, 1.0, 0.0], "interp")
 
         # Check if new interpolated spline is worse than relaxed/original trajectory
         spline_cost = Relaxation.cost_full(context, spline_path)[0]
