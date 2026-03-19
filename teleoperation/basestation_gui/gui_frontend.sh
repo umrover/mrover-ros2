@@ -1,4 +1,4 @@
 #!/bin/bash
 
 cd teleoperation/basestation_gui/frontend || exit 1
-exec bun run dev
+exec bun --bun run dev
