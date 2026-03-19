@@ -1,0 +1,34 @@
+CompileFlags:
+  CompilationDatabase: "build/"
+
+  Add: [
+    "-mthumb",
+    "-mfloat-abi=hard",
+    "-mfpu=fpv4-sp-d16",
+    "--target=arm-none-eabi",
+{%- for include in includes%}
+    "-I{{ include }}",
+{%- endfor%}
+    "-D__GNUC__=11",
+    "-Wno-unknown-attributes",
+    "-Wno-missing-declarations"
+  ]
+
+  Remove: [-fno-fat-lto-objects, -mno-unaligned-access, -mslow-flash-data, -fstack-usage]
+
+Index:
+  Background: Build
+
+---
+
+If:
+  PathMatch: [.*\.c, .*\.h]
+CompileFlags:
+  Add: [-std=c{{ c_standard }}]
+
+---
+
+If:
+  PathMatch: [.*\.cpp, .*\.hpp, .*\.cc]
+CompileFlags:
+  Add: [-std=c++{{ cxx_standard }}]

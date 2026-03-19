@@ -1,0 +1,6 @@
+[
+    "src/tests/serial",
+    "src/tests/logger",
+    "src/bmc",
+    "src/pdlb"
+]
