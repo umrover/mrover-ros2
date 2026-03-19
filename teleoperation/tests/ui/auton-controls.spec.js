@@ -5,14 +5,14 @@ test.beforeEach(async ({ page }) => {
 });
 
 test('teleop toggle visible', async ({ page }) => {
-  await page.goto('http://localhost:8080/AutonTask');
+  await page.goto('/AutonTask');
   await page.waitForLoadState('networkidle');
   const toggle = page.getByTestId('pw-teleop-toggle');
   await expect(toggle).toBeVisible({ timeout: 10000 });
 });
 
 test('teleop sends POST on click', async ({ page }) => {
-  await page.goto('http://localhost:8080/AutonTask');
+  await page.goto('/AutonTask');
   await page.waitForLoadState('networkidle');
 
   const toggle = page.getByTestId('pw-teleop-toggle');
@@ -29,7 +29,7 @@ test('teleop sends POST on click', async ({ page }) => {
 });
 
 test('teleop shows enabled state', async ({ page }) => {
-  await page.goto('http://localhost:8080/AutonTask');
+  await page.goto('/AutonTask');
   await page.waitForLoadState('networkidle');
 
   const toggle = page.getByTestId('pw-teleop-toggle');
@@ -44,7 +44,7 @@ test('teleop shows enabled state', async ({ page }) => {
 });
 
 test('teleop shows disabled after re-toggle', async ({ page }) => {
-  await page.goto('http://localhost:8080/AutonTask');
+  await page.goto('/AutonTask');
   await page.waitForLoadState('networkidle');
 
   const toggle = page.getByTestId('pw-teleop-toggle');
@@ -70,25 +70,25 @@ test('teleop shows disabled after re-toggle', async ({ page }) => {
 });
 
 test('autonomy mode button visible', async ({ page }) => {
-  await page.goto('http://localhost:8080/AutonTask');
+  await page.goto('/AutonTask');
   await page.waitForLoadState('networkidle');
   await expect(page.getByTestId('pw-auton-toggle')).toBeVisible({ timeout: 10000 });
 });
 
 test('pure pursuit button visible', async ({ page }) => {
-  await page.goto('http://localhost:8080/AutonTask');
+  await page.goto('/AutonTask');
   await page.waitForLoadState('networkidle');
   await expect(page.getByTestId('pw-pure-pursuit-toggle')).toBeVisible({ timeout: 10000 });
 });
 
 test('path relaxation button visible', async ({ page }) => {
-  await page.goto('http://localhost:8080/AutonTask');
+  await page.goto('/AutonTask');
   await page.waitForLoadState('networkidle');
   await expect(page.getByTestId('pw-path-relaxation-toggle')).toBeVisible({ timeout: 10000 });
 });
 
 test('path interpolation button visible', async ({ page }) => {
-  await page.goto('http://localhost:8080/AutonTask');
+  await page.goto('/AutonTask');
   await page.waitForLoadState('networkidle');
   await expect(page.getByTestId('pw-path-interpolation-toggle')).toBeVisible({ timeout: 10000 });
 });

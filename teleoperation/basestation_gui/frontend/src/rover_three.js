@@ -412,7 +412,7 @@ export function updateIKTarget(position) {
   ) {
     ikTargetSphere.position.set(position.x + 10, position.y, position.z)
     ikTargetSphere.visible = true
-    console.log('pos ', position.x, position.y, position.z)
+    // console.log('pos ', position.x, position.y, position.z)
   } else if (position === null || position === undefined) {
     // Hide sphere if no position provided
     ikTargetSphere.visible = false

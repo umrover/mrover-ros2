@@ -5,13 +5,13 @@ test.beforeEach(async ({ page }) => {
 });
 
 test('bell button visible', async ({ page }) => {
-  await page.goto('http://localhost:8080/');
+  await page.goto('/');
   await page.waitForLoadState('networkidle');
   await expect(page.getByTestId('pw-notification-bell')).toBeVisible({ timeout: 10000 });
 });
 
 test('clicking bell opens panel', async ({ page }) => {
-  await page.goto('http://localhost:8080/');
+  await page.goto('/');
   await page.waitForLoadState('networkidle');
   const bell = page.getByTestId('pw-notification-bell');
   await expect(bell).toBeVisible({ timeout: 10000 });
@@ -20,7 +20,7 @@ test('clicking bell opens panel', async ({ page }) => {
 });
 
 test('clicking bell again closes panel', async ({ page }) => {
-  await page.goto('http://localhost:8080/');
+  await page.goto('/');
   await page.waitForLoadState('networkidle');
   const bell = page.getByTestId('pw-notification-bell');
   await expect(bell).toBeVisible({ timeout: 10000 });

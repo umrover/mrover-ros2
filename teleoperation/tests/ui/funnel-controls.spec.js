@@ -5,14 +5,14 @@ test.beforeEach(async ({ page }) => {
 });
 
 test('funnel controls visible on ScienceTask', async ({ page }) => {
-  await page.goto('http://localhost:8080/ScienceTask');
+  await page.goto('/ScienceTask');
   await page.waitForLoadState('networkidle');
   const controls = page.getByTestId('pw-funnel-controls');
   await expect(controls).toBeVisible({ timeout: 15000 });
 });
 
 test('6 site buttons visible', async ({ page }) => {
-  await page.goto('http://localhost:8080/ScienceTask');
+  await page.goto('/ScienceTask');
   await page.waitForLoadState('networkidle');
   await expect(page.getByTestId('pw-funnel-controls')).toBeVisible({ timeout: 15000 });
 
@@ -22,7 +22,7 @@ test('6 site buttons visible', async ({ page }) => {
 });
 
 test('clicking site shows active state', async ({ page }) => {
-  await page.goto('http://localhost:8080/ScienceTask');
+  await page.goto('/ScienceTask');
   await page.waitForLoadState('networkidle');
 
   const siteBtn = page.getByTestId('pw-funnel-site-1');

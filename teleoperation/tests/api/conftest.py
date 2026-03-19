@@ -56,30 +56,26 @@ def ensure_auton_defaults():
     seed_auton_defaults()
 
 
-def _url(api, path):
+def url(api, path):
     return f'{api.base_url}{path}'
 
 
 @pytest.fixture
 def clean_auton_waypoints(api):
-    api.delete(_url(api, '/api/waypoints/auton/clear/'))
+    api.delete(url(api, '/api/waypoints/auton/clear/'))
     yield
-    api.delete(_url(api, '/api/waypoints/auton/clear/'))
+    api.delete(url(api, '/api/waypoints/auton/clear/'))
 
 
 @pytest.fixture
 def clean_basic_waypoints(api):
-    api.delete(_url(api, '/api/waypoints/basic/clear/'))
+    api.delete(url(api, '/api/waypoints/basic/clear/'))
     yield
-    api.delete(_url(api, '/api/waypoints/basic/clear/'))
+    api.delete(url(api, '/api/waypoints/basic/clear/'))
 
 
 @pytest.fixture
 def clean_recordings(api):
-    api.delete(_url(api, '/api/recordings/clear/'))
+    api.delete(url(api, '/api/recordings/clear/'))
     yield
-    api.delete(_url(api, '/api/recordings/clear/'))
-
-
-def url(api, path):
-    return f'{api.base_url}{path}'
+    api.delete(url(api, '/api/recordings/clear/'))

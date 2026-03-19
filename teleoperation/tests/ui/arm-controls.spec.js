@@ -6,7 +6,7 @@ test.describe('ArmControls', () => {
   });
 
   test('gamepad joystick input sends arm throttle command via WebSocket', async ({ page }) => {
-    await page.goto('http://localhost:8080/DMTask');
+    await page.goto('/DMTask');
     await page.waitForLoadState('networkidle');
 
     const throttleButton = page.getByTestId('pw-arm-mode-throttle');
@@ -49,7 +49,7 @@ test.describe('ArmControls', () => {
   });
 
   test('arm mode buttons switch correctly', async ({ page }) => {
-    await page.goto('http://localhost:8080/DMTask');
+    await page.goto('/DMTask');
     await page.waitForLoadState('networkidle');
 
     const disabledButton = page.getByTestId('pw-arm-mode-disabled');
@@ -73,7 +73,7 @@ test.describe('ArmControls', () => {
   });
 
   test('spacebar disables arm mode', async ({ page }) => {
-    await page.goto('http://localhost:8080/DMTask');
+    await page.goto('/DMTask');
     await page.waitForLoadState('networkidle');
 
     const throttleButton = page.getByTestId('pw-arm-mode-throttle');
@@ -111,7 +111,7 @@ test.describe('ArmControls', () => {
   });
 
   test('IK position mode activates', async ({ page }) => {
-    await page.goto('http://localhost:8080/DMTask');
+    await page.goto('/DMTask');
     await page.waitForLoadState('networkidle');
 
     const ikPosButton = page.getByTestId('pw-arm-mode-ik-pos');
@@ -127,7 +127,7 @@ test.describe('ArmControls', () => {
   });
 
   test('IK velocity mode activates', async ({ page }) => {
-    await page.goto('http://localhost:8080/DMTask');
+    await page.goto('/DMTask');
     await page.waitForLoadState('networkidle');
 
     const ikVelButton = page.getByTestId('pw-arm-mode-ik-vel');

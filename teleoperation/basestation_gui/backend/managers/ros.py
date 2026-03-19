@@ -1,3 +1,4 @@
+from _thread import LockType
 import logging
 import rclpy
 import threading
@@ -14,7 +15,7 @@ context = None
 node = None
 ros_thread = None
 service_clients = {}
-service_clients_lock = threading.Lock()
+service_clients_lock: LockType = threading.Lock()
 
 
 def get_node() -> Node:
@@ -29,15 +30,15 @@ def get_logger():
     return get_node().get_logger()
 
 
+def get_publisher(pub_name):
+    return node.publishers[pub_name]
+
+
 def get_service_client(srv_type, srv_name):
     with service_clients_lock:
-        if srv_name in service_clients:
-            client = service_clients[srv_name]
-            if client.service_is_ready():
-                return client
-            client.destroy()
-        n = get_node()
-        service_clients[srv_name] = n.create_client(srv_type, srv_name)
+        if srv_name not in service_clients:
+            n = get_node()
+            service_clients[srv_name] = n.create_client(srv_type, srv_name)
         return service_clients[srv_name]
 
 

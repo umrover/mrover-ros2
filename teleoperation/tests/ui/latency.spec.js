@@ -5,13 +5,13 @@ test.beforeEach(async ({ page }) => {
 });
 
 test('benchmark page loads', async ({ page }) => {
-  await page.goto('http://localhost:8080/dev');
+  await page.goto('/dev');
   await page.waitForLoadState('networkidle');
   await expect(page.getByTestId('pw-latency-start')).toBeVisible({ timeout: 15000 });
 });
 
 test('start button visible', async ({ page }) => {
-  await page.goto('http://localhost:8080/dev');
+  await page.goto('/dev');
   await page.waitForLoadState('networkidle');
   const startBtn = page.getByTestId('pw-latency-start');
   await expect(startBtn).toBeVisible({ timeout: 15000 });
@@ -19,13 +19,13 @@ test('start button visible', async ({ page }) => {
 });
 
 test('reset button visible', async ({ page }) => {
-  await page.goto('http://localhost:8080/dev');
+  await page.goto('/dev');
   await page.waitForLoadState('networkidle');
   await expect(page.getByTestId('pw-latency-reset')).toBeVisible({ timeout: 15000 });
 });
 
 test('frequency input defaults to 10', async ({ page }) => {
-  await page.goto('http://localhost:8080/dev');
+  await page.goto('/dev');
   await page.waitForLoadState('networkidle');
   const freqInput = page.getByTestId('pw-latency-freq');
   await expect(freqInput).toBeVisible({ timeout: 15000 });

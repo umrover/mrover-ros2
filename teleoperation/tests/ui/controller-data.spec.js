@@ -5,14 +5,14 @@ test.beforeEach(async ({ page }) => {
 });
 
 test('data table visible on DMTask', async ({ page }) => {
-  await page.goto('http://localhost:8080/DMTask');
+  await page.goto('/DMTask');
   await page.waitForLoadState('networkidle');
   const statusToggle = page.getByTestId('pw-controller-status-toggle').first();
   await expect(statusToggle).toBeVisible({ timeout: 15000 });
 });
 
 test('status toggle clickable', async ({ page }) => {
-  await page.goto('http://localhost:8080/DMTask');
+  await page.goto('/DMTask');
   await page.waitForLoadState('networkidle');
   const statusToggle = page.getByTestId('pw-controller-status-toggle').first();
   await expect(statusToggle).toBeVisible({ timeout: 15000 });
@@ -25,7 +25,7 @@ test('status toggle clickable', async ({ page }) => {
 });
 
 test('values toggle clickable', async ({ page }) => {
-  await page.goto('http://localhost:8080/DMTask');
+  await page.goto('/DMTask');
   await page.waitForLoadState('networkidle');
   const valuesToggle = page.getByTestId('pw-controller-values-toggle').first();
   await expect(valuesToggle).toBeVisible({ timeout: 15000 });
