@@ -6,7 +6,7 @@ from backend.ws.base_ws import WebSocketHandler
 from backend.managers.ros import get_logger
 from backend.input import DeviceInputs
 from backend.ra_controls import send_ra_controls, register_ik_pos_pub
-from mrover.msg import Throttle, IK, ControllerState
+from mrover.msg import Throttle, IK, ControllerState, KeyboardYaw
 from geometry_msgs.msg import Twist
 from rclpy.publisher import Publisher
 
@@ -15,6 +15,7 @@ class ArmHandler(WebSocketHandler):
     arm_thr_pub: Publisher
     ik_pos_pub: Publisher
     ik_vel_pub: Publisher
+    keyboard_yaw_pub: Publisher
 
     def __init__(self, websocket):
         super().__init__(websocket, 'arm')
@@ -31,6 +32,7 @@ class ArmHandler(WebSocketHandler):
         self.forward_ros_topic("/arm_controller_state", ControllerState, "arm_state")
         self.forward_ros_topic("/arm_ik", IK, "ik_target")
         self.forward_ros_topic("/arm_thr_cmd", Throttle, "arm_throttle_command")
+        self.forward_ros_topic("/keyboard_yaw_cmd", KeyboardYaw, "keyboard_yaw_command")
 
         self.timers.append(self.node.create_timer(0.1, self.send_arm_feedback_callback))
 
