@@ -44,10 +44,10 @@ namespace mrover {
 
         auto init() -> void {
 
-            
+
             std::string device_name = this->declare_parameter<std::string>("device_name", "/dev/ttyUSB0");
             u2d2::init(device_name);
-            
+
             for (auto const& servo: mServoNames) {
                 create_servo(servo.second, servo.first);
             }
