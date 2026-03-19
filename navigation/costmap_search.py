@@ -9,7 +9,7 @@ from rclpy.duration import Duration
 import time
 from navigation import approach_target, stuck_recovery, waypoint, state
 from navigation.astar import AStar, SpiralEnd, NoPath, OutOfBounds
-from navigation.coordinate_utils import d_calc, is_high_cost_point, cartesian_to_ij, gen_marker
+from navigation.coordinate_utils import d_calc, is_high_cost_point, cartesian_to_ij
 from navigation.context import Context
 from navigation.trajectory import Trajectory, SearchTrajectory
 from visualization_msgs.msg import Marker
