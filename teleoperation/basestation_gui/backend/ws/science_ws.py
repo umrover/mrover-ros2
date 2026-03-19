@@ -13,7 +13,7 @@ class ScienceHandler(WebSocketHandler):
         self.publishers.append(self.sp_thr_pub)
 
         self.forward_ros_topic("/sp_humidity_data", Humidity, "sp_humidity")
-        self.forward_ros_topic("/sp_temp_data", Temperature, "sp_temp")
+        self.forward_ros_topic("/sp_temperature_data", Temperature, "sp_temp")
         self.forward_ros_topic("/sp_oxygen_data", Oxygen, "sp_oxygen")
         self.forward_ros_topic("/sp_uv_data", UV, "sp_uv")
         self.forward_ros_topic("/sp_ozone_data", Ozone, "sp_ozone")

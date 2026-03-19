@@ -41,25 +41,6 @@ def generate_launch_description():
         ],
     )
 
-    led_node = Node(package="mrover", executable="led", name="led")
-
-    pdlb_hw_bridge_node = Node(
-        package="mrover",
-        executable="pdlb_hw_bridge",
-        name="pdlb_hw_bridge",
-        parameters=[Path(get_package_share_directory("mrover"), "config", "esw.yaml")],
-    )
-
-    mast_gimbal_hw_bridge_node = Node(
-        package="mrover",
-        executable="mast_gimbal_hw_bridge",
-        name="mast_gimbal_hw_bridge",
-        parameters=[
-            Path(get_package_share_directory("mrover"), "config", "esw.yaml"),
-            Path(get_package_share_directory("mrover"), "config", "mast_gimbal.yaml"),
-        ],
-    )
-
     mob_left_streamer_node = Node(
         package="mrover",
         executable="gst_camera_server",
@@ -109,12 +90,9 @@ def generate_launch_description():
             launch_include_can,
             diff_drive_controller_node,
             superstructure_node,
-            led_node,
             drive_hw_bridge_node,
-            pdlb_hw_bridge_node,
             mob_left_streamer_node,
             static_streamer_node,
-            mast_gimbal_hw_bridge_node,
             zed_container,
         ]
     )
