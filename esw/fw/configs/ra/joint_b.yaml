@@ -1,0 +1,48 @@
+# CAN messaging
+can_id: 49
+host_can_id: 16
+
+# system configuration
+motor_en: true
+motor_inv: true
+quad_en: true
+quad_phase: false
+stall_en: false
+
+# limit configuration
+lim_a_en: true
+lim_a_active_high: false
+lim_a_is_forward: false
+lim_a_use_readjust: true
+lim_b_en: false
+lim_b_active_high: false
+lim_b_is_forward: false
+lim_b_use_readjust: false
+
+# encoder params
+quad_cpr: 964.0 # pulses/inch
+gear_ratio: 1.0  # :1
+rotor_output_ratio: 0.0254 # meters per inch
+
+# position & velocity limits
+limit_a_position: 0.0
+limit_b_position: 0.2
+max_pwm: 1.0
+min_pos: 0.0
+max_pos: 0.2
+min_vel: -0.0125
+max_vel: 0.0125
+
+# control gains
+pos_k_p: 300.0
+pos_k_i: 10.0
+pos_k_d: 0.0
+pos_k_f: 5.0
+vel_k_p: 100.0
+vel_k_i: 10.0
+vel_k_d: 5.0
+vel_k_f: 150.0
+
+# stall detection
+delta_current: 0.01
+delta_position: 1.0  # post-multiplier (already in units)

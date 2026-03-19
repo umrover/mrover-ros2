@@ -1,0 +1,92 @@
+VERSION ""
+
+
+NS_ : 
+	NS_DESC_
+	CM_
+	BA_DEF_
+	BA_
+	VAL_
+	CAT_DEF_
+	CAT_
+	FILTER
+	BA_DEF_DEF_
+	EV_DATA_
+	ENVVAR_DATA_
+	SGTYPE_
+	SGTYPE_VAL_
+	BA_DEF_SGTYPE_
+	BA_SGTYPE_
+	SIG_TYPE_REF_
+	VAL_TABLE_
+	SIG_GROUP_
+	SIG_VALTYPE_
+	SIGTYPE_VALTYPE_
+	BO_TX_BU_
+	BA_DEF_REL_
+	BA_REL_
+	BA_DEF_DEF_REL_
+	BU_SG_REL_
+	BU_EV_REL_
+	BU_BO_REL_
+	SG_MUL_VAL_
+
+BS_:
+
+BU_:
+
+
+BO_ 3221225472 VECTOR__INDEPENDENT_SIG_MSG: 0 Vector__XXX
+ SG_ ISH_EnableWLED2 : 73|1@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ ISH_EnableWLED1 : 72|1@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ ISH_EnableHeater2 : 71|1@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ ISH_EnableHeater1 : 70|1@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ ISH_EnableHeater2AS : 69|1@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ ISH_EnableHeater1AS : 68|1@1+ (1,0) [0|0] "" Vector__XXX
+
+BO_ 80 Science_Sensors: 16 Vector__XXX
+ SG_ Sensors_Temperature : 0|32@1- (1,0) [0|0] "Degrees Celsius" Vector__XXX
+ SG_ Sensors_Humidity : 32|32@1- (1,0) [0|0] "Relative Humidity (%)" Vector__XXX
+ SG_ Sensors_UV : 64|32@1- (1,0) [0|0] "UV Index" Vector__XXX
+ SG_ Sensors_Oxygen : 96|32@1- (1,0) [0|0] "PPM" Vector__XXX
+
+BO_ 81 Science_ISHOutbound: 12 Vector__XXX
+ SG_ ISH_Heater1Temp : 0|32@1- (1,0) [0|0] "Degrees Celsius" Vector__XXX
+ SG_ ISH_Heater2Temp : 32|32@1- (1,0) [0|0] "Degrees Celsius" Vector__XXX
+ SG_ ISH_Heater1State : 64|1@1+ (1,0) [0|0] "Off/On (0/1)" Vector__XXX
+ SG_ ISH_Heater2State : 65|1@1+ (1,0) [0|0] "Off/On (0/1)" Vector__XXX
+ SG_ ISH_WLED1State : 66|1@1+ (1,0) [0|0] "Off/On (0/1)" Vector__XXX
+ SG_ ISH_WLED2State : 67|1@1+ (1,0) [0|0] "Off/On (0/1)" Vector__XXX
+
+BO_ 82 Science_ISHInbound: 1 Vector__XXX
+ SG_ ISH_Heater1Enable : 0|1@1+ (1,0) [0|0] "Off/On (0/1)" Vector__XXX
+ SG_ ISH_Heater2Enable : 1|1@1+ (1,0) [0|0] "Off/On (0/1)" Vector__XXX
+ SG_ ISH_Heater1EnableAS : 2|1@1+ (1,0) [0|0] "Off/On (0/1)" Vector__XXX
+ SG_ ISH_Heater2EnableAS : 3|1@1+ (1,0) [0|0] "Off/On (0/1)" Vector__XXX
+ SG_ ISH_WLED1Enable : 4|1@1+ (1,0) [0|0] "Off/On (0/1)" Vector__XXX
+ SG_ ISH_WLED2Enable : 5|1@1+ (1,0) [0|0] "Off/On (0/1)" Vector__XXX
+
+
+
+BA_DEF_ BO_  "CANFD_BRS" ENUM  "0","1";
+BA_DEF_  "BusType" STRING ;
+BA_DEF_ BU_  "ECU" STRING ;
+BA_DEF_ BO_  "VFrameFormat" ENUM  "StandardCAN","ExtendedCAN","reserved","reserved","reserved","reserved","reserved","reserved","reserved","reserved","reserved","reserved","reserved","reserved","StandardCAN_FD","ExtendedCAN_FD";
+BA_DEF_DEF_  "CANFD_BRS" "1";
+BA_DEF_DEF_  "BusType" "";
+BA_DEF_DEF_  "ECU" "";
+BA_DEF_DEF_  "VFrameFormat" "StandardCAN";
+BA_ "BusType" "CAN FD";
+BA_ "VFrameFormat" BO_ 80 14;
+BA_ "CANFD_BRS" BO_ 80 1;
+BA_ "VFrameFormat" BO_ 81 14;
+BA_ "CANFD_BRS" BO_ 81 1;
+BA_ "VFrameFormat" BO_ 82 14;
+BA_ "CANFD_BRS" BO_ 82 1;
+SIG_VALTYPE_ 80 Sensors_Temperature : 1;
+SIG_VALTYPE_ 80 Sensors_Humidity : 1;
+SIG_VALTYPE_ 80 Sensors_UV : 1;
+SIG_VALTYPE_ 80 Sensors_Oxygen : 1;
+SIG_VALTYPE_ 81 ISH_Heater1Temp : 1;
+SIG_VALTYPE_ 81 ISH_Heater2Temp : 1;
+
