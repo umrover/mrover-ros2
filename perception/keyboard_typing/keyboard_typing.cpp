@@ -67,20 +67,20 @@ namespace mrover{
             std::bind(&KeyboardTypingNode::handle_accepted, this, std::placeholders::_1));
 
         // subscribe to image stream
-        mImageSub = create_subscription<sensor_msgs::msg::Image>("/finger_camera/image", rclcpp::QoS(1), [this](sensor_msgs::msg::Image::ConstSharedPtr const& msg) {
+        mImageSub = create_subscription<sensor_msgs::msg::Image>("/video4/image", rclcpp::QoS(1), [this](sensor_msgs::msg::Image::ConstSharedPtr const& msg) {
             yawCallback(msg);
         });
 
         // grab transform from finger_cam to gripper
         // wait until the transformation is acquired
-        while (true) {
-            try {
-                gripper_to_cam = SE3Conversions::fromTfTree(tf_buffer, "finger_camera_frame", "arm_fk");
-                break;
-            } catch (tf2::TransformException const& e) {
-                RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, std::format("TF tree error processing keyboard typing: {}", e.what()));
-            }
-        }
+        // while (true) {
+        //     try {
+        //         gripper_to_cam = SE3Conversions::fromTfTree(tf_buffer, "finger_camera_frame", "arm_fk");
+        //         break;
+        //     } catch (tf2::TransformException const& e) {
+        //         RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, std::format("TF tree error processing keyboard typing: {}", e.what()));
+        //     }
+        // }
 
         // Create Ik mode client
         mIkModeClient = create_client<srv::IkMode>("ik_mode");
@@ -175,12 +175,12 @@ namespace mrover{
 
             SE3d arm_fk_to_tag{arm_fk_pos, transformed_rotation};
 
-            // Publish to tf tree
-            SE3Conversions::pushToTfTree(tf_broadcaster, "keyboard_tag", "arm_fk", gripper_to_cam*arm_fk_to_tag, get_clock()->now());
+            // // Publish to tf tree
+            // SE3Conversions::pushToTfTree(tf_broadcaster, "keyboard_tag", "arm_fk", gripper_to_cam*arm_fk_to_tag, get_clock()->now());
 
-            // Initialize transforms for every key, temporarily here for now
-            SE3d z_to_tag{mZKeyTransform, Eigen::Quaterniond::Identity()};
-            SE3Conversions::pushToTfTree(tf_broadcaster, "keyboard_z", "keyboard_tag", z_to_tag, get_clock()->now());
+            // // Initialize transforms for every key, temporarily here for now
+            // SE3d z_to_tag{mZKeyTransform, Eigen::Quaterniond::Identity()};
+            // SE3Conversions::pushToTfTree(tf_broadcaster, "keyboard_z", "keyboard_tag", z_to_tag, get_clock()->now());
         }
     }
 
@@ -218,18 +218,21 @@ namespace mrover{
         // Read in images
         cv::Mat bgraImage{static_cast<int>(msg->height), static_cast<int>(msg->width), CV_8UC4, const_cast<uint8_t*>(msg->data.data())};
 
+        cv::Mat rotated;
+        cv::rotate(bgraImage, rotated, cv::ROTATE_180);
+
         // For debugging image
         cv::Mat bgrImage;
-        cv::cvtColor(bgraImage, bgrImage, cv::COLOR_BGRA2BGR);
+        cv::cvtColor(rotated, bgrImage, cv::COLOR_BGRA2BGR);
 
         // convert to gray for estimation
         cv::Mat grayImage;
-        cv::cvtColor(bgraImage, grayImage, cv::COLOR_BGRA2GRAY);
+        cv::cvtColor(rotated, grayImage, cv::COLOR_BGRA2GRAY);
         // Optional: enhance contrast
-        // cv::equalizeHist(grayImage, grayImage);
+        cv::equalizeHist(grayImage, grayImage);
 
         // Optional: apply Gaussian blur to reduce noise
-        // cv::GaussianBlur(grayImage, grayImage, cv::Size(5,5), 0);
+        cv::GaussianBlur(grayImage, grayImage, cv::Size(5,5), 0);
 
         // Define variables
 
@@ -239,30 +242,30 @@ namespace mrover{
 
         // Could potentially run a mild gaussian blur plus sharpening kernel if instability is encountered
 
-        detectorParams->adaptiveThreshWinSizeMin = 3;
-        detectorParams->adaptiveThreshWinSizeMax = 23;
-        detectorParams->adaptiveThreshWinSizeStep = 2;
+        // detectorParams->adaptiveThreshWinSizeMin = 3;
+        // detectorParams->adaptiveThreshWinSizeMax = 23;
+        // detectorParams->adaptiveThreshWinSizeStep = 2;
 
-        detectorParams->adaptiveThreshConstant = 7;
+        // detectorParams->adaptiveThreshConstant = 7;
 
-        detectorParams->perspectiveRemovePixelPerCell = 3;
+        // detectorParams->perspectiveRemovePixelPerCell = 3;
 
-        detectorParams->minDistanceToBorder = 1;   // default is 3
-        detectorParams->minMarkerPerimeterRate = 0.05;   // default ~0.03
+        // detectorParams->minDistanceToBorder = 1;   // default is 3
+        // detectorParams->minMarkerPerimeterRate = 0.05;   // default ~0.03
 
         detectorParams->cornerRefinementMethod = cv::aruco::CORNER_REFINE_SUBPIX;
 
-        detectorParams->polygonalApproxAccuracyRate = 0.05;
+        // detectorParams->polygonalApproxAccuracyRate = 0.05;
 
-        detectorParams->cornerRefinementWinSize = 3;
+        // detectorParams->cornerRefinementWinSize = 3;
 
-        detectorParams->cornerRefinementMaxIterations = 20;
+        // detectorParams->cornerRefinementMaxIterations = 20;
 
-        detectorParams->errorCorrectionRate = 0.8;
+        // detectorParams->errorCorrectionRate = 0.8;
 
-        detectorParams->maxErroneousBitsInBorderRate = 0.5;
+        // detectorParams->maxErroneousBitsInBorderRate = 0.5;
 
-        detectorParams->minCornerDistanceRate = 0.05;
+        // detectorParams->minCornerDistanceRate = 0.05;
 
         // Define coordinate system
         float markerLength = 0.019;  // meters
@@ -446,6 +449,12 @@ namespace mrover{
 
             // Draw after kalman filter
             // cv::drawFrameAxes(grayImage, camMatrix, distCoeffs, combined_rvec, combined_tvec, markerLength * 3.0f, 4);
+
+            RCLCPP_INFO_STREAM(get_logger(), "x: " << combined_tvec[0]);
+            RCLCPP_INFO_STREAM(get_logger(), "y: " << combined_tvec[1]);
+            RCLCPP_INFO_STREAM(get_logger(), "z: " << combined_tvec[2]);
+
+
             cv::drawFrameAxes(bgrImage, mCameraMatrix, mDistCoeffs, combined_rvec, combined_tvec, markerLength * 1.5f, 2);
 
             // Draw circle for debugging
