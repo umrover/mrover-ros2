@@ -6,25 +6,16 @@
 #include <string>
 #include <u2d2.hpp>
 
-static constexpr uint16_t DEFAULT_CURRENT_LIMIT = 1750;
-static constexpr uint16_t DEFAULT_POSITION_P_GAIN = 400;
-static constexpr uint16_t DEFAULT_POSITION_I_GAIN = 0;
-static constexpr uint16_t DEFAULT_POSITION_D_GAIN = 0;
-static constexpr uint16_t DEFAULT_VELOCITY_P_GAIN = 180;
-static constexpr uint16_t DEFAULT_VELOCITY_I_GAIN = 0;
-
 namespace mrover {
 
     class Servo {
         using ServoId = uint8_t;
-        using ServoPosition = float; // Degrees
-        using ServoVelocity = float; // rot/sec
-        using ServoCurrent = float;  // mA
+        using ServoPosition = double; // Degrees
+        using ServoVelocity = double; // rot/sec
+        using ServoCurrent = double;  // mA
         using ServoAddr = uint16_t;
 
     public:
-        
-
         enum class ServoProperty {
             PositionPGain = 84,
             PositionIGain = 82,
@@ -45,13 +36,13 @@ namespace mrover {
 
         Servo(rclcpp::Node::SharedPtr node, ServoId id, std::string name);
 
-        auto setPosition(ServoPosition position, ServoMode mode) -> u2d2::U2D2Status;
-        auto getPosition(ServoPosition& position) -> u2d2::U2D2Status;
-        auto getVelocity(ServoVelocity& velocity) -> u2d2::U2D2Status;
-        auto getCurrent(ServoCurrent& current) -> u2d2::U2D2Status;
-        auto getPositionAbsolute(ServoPosition& position) -> u2d2::U2D2Status;
-        auto setProperty(ServoProperty prop, uint16_t value) -> u2d2::U2D2Status;
-        auto getTargetStatus() -> u2d2::U2D2Status;
+        auto setPosition(ServoPosition position, ServoMode mode) -> u2d2::Status;
+        auto getPosition(ServoPosition& position) const -> u2d2::Status;
+        auto getVelocity(ServoVelocity& velocity) const -> u2d2::Status;
+        auto getCurrent(ServoCurrent& current) const -> u2d2::Status;
+        auto getPositionAbsolute(ServoPosition& position) const -> u2d2::Status;
+        auto setProperty(ServoProperty prop, uint16_t value) -> u2d2::Status;
+        [[nodiscard]] auto getTargetStatus() const -> u2d2::Status;
         [[nodiscard]] auto getLimitStatus() const -> bool;
 
     private:
@@ -59,10 +50,11 @@ namespace mrover {
 
         ServoId mServoId;
         std::string mServoName;
-        int mForwardLimit;
-        int mReverseLimit;
+        int mLimitAdjustment;
+        int mAdjustedForwardLimit;
+        int mAdjustedReverseLimit;
         uint32_t mGoalPosition;
-        uint32_t mPositionMultiplier;
+        float mPositionMultiplier;
 
         bool mAtLimit = false;
 
