@@ -126,7 +126,7 @@ namespace mrover {
         velocities.names = {"joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_roll"};
         velocities.velocities = {
                 static_cast<float>(vel.linear.y),
-                static_cast<float>(0.6 * joint_b_vel),
+                static_cast<float>(joint_b_vel),
                 static_cast<float>(joint_c_vel),
                 static_cast<float>(joint_de_pitch_vel),
                 static_cast<float>(vel.angular.x),
@@ -347,37 +347,53 @@ namespace mrover {
             }
         } else if (mArmMode == ArmMode::VELOCITY_CONTROL) {
 
-            if (velZeroCheck()) {
+            if (mVelTarget.linear.x == 0 &&
+                mVelTarget.linear.y == 0 &&
+                mVelTarget.linear.z == 0 &&
+                mVelTarget.angular.x == 0 &&
+                mVelTarget.angular.y == 0) {
+                // no movement command, so just stop the arm
                 mCarrotPos = mArmPos;
                 mCheckCarrotPos = mArmPos;
                 for (int i = 0; i < 5; i++) {
-                    mArmTotalError[i] = 0.0;
+                    mArmTotalError[i] = 0;
                 }
             }   
+
+            //hold = false;
 
             auto const now = get_clock()->now();
 
             if (!carrot_initialized) {
+                mPrevTime = now;
                 mCarrotPos = mArmPos;
                 mCheckCarrotPos = mArmPos;
                 carrot_initialized = true;
             }
 
-            double dt = 0.033;
+            double dt = (now - mPrevTime).seconds();
+            mPrevTime = now;
 
-            double k = 1;
+            if (dt <= 0.0 || dt > 1.0) {
+                dt = 0.033;
+            }
 
-            carrotPosAdjust(mCarrotPos, mVelTarget, dt, k);
-            carrotPosAdjust(mCheckCarrotPos, mVelTarget, dt, k);
-            carrotPosCheck(mCarrotPos, mCheckCarrotPos, mArmPos);
+            dt = 0.015;
 
-            SE3Conversions::pushToTfTree(
-                    mTfBroadcaster,
-                    "carrot_target",
-                    "arm_base_link",
-                    mCarrotPos.toSE3(),
-                    now);
-            
+            double const k = 1;
+
+            mCarrotPos.x += mVelTarget.linear.x * dt * k;
+            mCarrotPos.y += mVelTarget.linear.y * dt * k;
+            mCarrotPos.z += mVelTarget.linear.z * dt * k;
+            mCarrotPos.pitch += mVelTarget.angular.y * dt * k;
+            mCarrotPos.roll += mVelTarget.angular.x * dt * k;
+
+            mCheckCarrotPos.x += mVelTarget.linear.x * dt * k;
+            mCheckCarrotPos.y += mVelTarget.linear.y * dt * k;
+            mCheckCarrotPos.z += mVelTarget.linear.z * dt * k;
+            mCheckCarrotPos.pitch += mVelTarget.angular.y * dt * k;
+            mCheckCarrotPos.roll += mVelTarget.angular.x * dt * k;
+
             SE3Conversions::pushToTfTree(
                     mTfBroadcaster,
                     "checking_target",
@@ -385,13 +401,51 @@ namespace mrover {
                     mCheckCarrotPos.toSE3(),
                     now);
 
-            auto adjusted_v = mVelTarget;
-
             auto error_x = mCarrotPos.x - mArmPos.x;
             auto error_y = mCarrotPos.y - mArmPos.y;
             auto error_z = mCarrotPos.z - mArmPos.z;
             auto error_pitch = mCarrotPos.pitch - mArmPos.pitch;
             auto error_roll = mCarrotPos.roll - mArmPos.roll;
+
+            double const max_dist = 0.07;
+
+            double error_total = std::sqrt(error_x * error_x + error_y * error_y + error_z * error_z);
+
+            if (error_total > max_dist) {
+                double const reduce_factor = max_dist / error_total;
+                mCarrotPos.x = mArmPos.x + error_x * reduce_factor;
+                mCarrotPos.y = mArmPos.y + error_y * reduce_factor;
+                mCarrotPos.z = mArmPos.z + error_z * reduce_factor;
+            }
+
+            double error_check_x = mCheckCarrotPos.x - mCarrotPos.x;
+            double error_check_y = mCheckCarrotPos.y - mCarrotPos.y;
+            double error_check_z = mCheckCarrotPos.z - mCarrotPos.z;
+            double error_check = std::sqrt(error_check_x * error_check_x + error_check_y * error_check_y + error_check_z * error_check_z);
+
+            if (error_check > 0.04) {
+                RCLCPP_WARN_THROTTLE(
+                            get_logger(),
+                            *get_clock(),
+                            1000,
+                            "Arm IK failing! Desired movement will not be achieved. Return to normal bounds");
+            }
+
+            SE3Conversions::pushToTfTree(
+                    mTfBroadcaster,
+                    "carrot_target",
+                    "arm_base_link",
+                    mCarrotPos.toSE3(),
+                    now);
+
+
+            auto adjusted_v = mVelTarget;
+
+            error_x = mCarrotPos.x - mArmPos.x;
+            error_y = mCarrotPos.y - mArmPos.y;
+            error_z = mCarrotPos.z - mArmPos.z;
+            error_pitch = mCarrotPos.pitch - mArmPos.pitch;
+            error_roll = mCarrotPos.roll - mArmPos.roll;
 
             mArmTotalError[0] += error_x * dt;
             mArmTotalError[1] += error_y * dt;
@@ -399,18 +453,18 @@ namespace mrover {
             mArmTotalError[3] += error_pitch * dt;
             mArmTotalError[4] += error_roll * dt;
 
-            double lim = 0.03;
+            double lim = 0.3;
 
             for (int i = 0; i < 5; i++) {
                 mArmTotalError[i] = std::min(std::max(mArmTotalError[i], -1 * lim), lim);
             }
 
 
-            double const Kp_lin = 40;
-            double const Kp_ang = 40;
+            double const Kp_lin = 20;
+            double const Kp_ang = 30;
 
-            double const Ki_lin = 10;
-            double const Ki_ang = 10;
+            double const Ki_lin = 0;
+            double const Ki_ang = 0;
 
             adjusted_v.linear.x += (Kp_lin * error_x + mArmTotalError[0] * Ki_lin);
             adjusted_v.linear.y += (Kp_lin * error_y + mArmTotalError[1] * Ki_lin);
@@ -427,12 +481,15 @@ namespace mrover {
                         velocities->velocities[2] == 0 &&
                         velocities->velocities[3] == 0 &&
                         velocities->velocities[4] == 0)) {
-                        /*if (velocities->velocities[1] < 0) {
-                            velocities->velocities[1] = -0.05;
+
+                        /*if (velocities->velocities[1] < 0.030 && velocities->velocities[1] > -0.030) {
+                            velocities->velocities[1] = 0;
                         }
+                        if (velocities->velocities[1] < 0) { velocities->velocities[1] = -0.05;}
                         else velocities->velocities[1] = 0.05;*/
+
                         mVelPub->publish(velocities.value());
-               
+        
             } else {
                 if (!velocities) {
                     RCLCPP_WARN_THROTTLE(

@@ -56,7 +56,7 @@ namespace mrover {
                 .pos = 0
             }},
             {"joint_b", {
-                .limits = {.minPos = -1.1, .maxPos = 0.25, .minVel = -0.05, .maxVel = 0.05},
+                .limits = {.minPos = -1.1, .maxPos = 0.25, .minVel = -0.035, .maxVel = 0.035},
                 .pos = 0
             }},
             {"joint_c", {
