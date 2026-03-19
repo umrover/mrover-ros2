@@ -19,6 +19,7 @@
     "@types/three": "^0.183.1",
     "@types/vuedraggable": "^2.24.0",
     "@vue-leaflet/vue-leaflet": "^0.10.1",
+    "@fontsource/jetbrains-mono": "^5.2.8",
     "bootstrap-icons": "^1.13.1",
     "chart.js": "^4.5.1",
     "gamepad-display": "^1.1.0",
