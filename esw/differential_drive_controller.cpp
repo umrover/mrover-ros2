@@ -19,47 +19,13 @@
 namespace mrover {
 
     class DifferentialDriveController final : public rclcpp::Node {
-        struct cmd_t {
-            geometry_msgs::msg::Twist msg;
-            rclcpp::Time stamp;
-            bool valid{false};
-        };
-
         static constexpr RadiansPerSecond MAX_SPEED{70.0};
-        static constexpr auto TIMEOUT = std::chrono::milliseconds(200);
 
         std::vector<std::string> const NAMES{"front_left", "middle_left", "back_left", "front_right", "middle_right", "back_right"};
 
-        cmd_t mJoystick, mController, mNavigation;
         rclcpp::Publisher<msg::Velocity>::SharedPtr mVelocityPub;
-        rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr mJoystickSub, mControllerSub, mNavigationSub;
+        rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr mCmdVelSub;
         rclcpp::TimerBase::SharedPtr mTimer;
-
-        auto joystickCallback(geometry_msgs::msg::Twist::ConstSharedPtr const& msg) -> void {
-            mJoystick = {*msg, now(), true};
-        }
-
-        auto controllerCallback(geometry_msgs::msg::Twist::ConstSharedPtr const& msg) -> void {
-            mController = {*msg, now(), true};
-        }
-
-        auto navigationCallback(geometry_msgs::msg::Twist::ConstSharedPtr const& msg) -> void {
-            mNavigation = {*msg, now(), true};
-        }
-
-        void update() {
-            auto is_fresh = [&](cmd_t const& c) {
-                return c.valid && (now() - c.stamp) < TIMEOUT;
-            };
-
-            if (is_fresh(mJoystick)) {
-                moveDrive(std::make_shared<geometry_msgs::msg::Twist>(mJoystick.msg));
-            } else if (is_fresh(mController)) {
-                moveDrive(std::make_shared<geometry_msgs::msg::Twist>(mController.msg));
-            } else if (is_fresh(mNavigation)) {
-                moveDrive(std::make_shared<geometry_msgs::msg::Twist>(mNavigation.msg));
-            }
-        }
 
         auto moveDrive(geometry_msgs::msg::Twist::ConstSharedPtr const& msg) const -> void {
             // See 13.3.1.4 in "Modern Robotics" for the math
@@ -108,13 +74,9 @@ namespace mrover {
             declare_parameter("rover.length", rclcpp::ParameterType::PARAMETER_DOUBLE);
             declare_parameter("rover.wheel_radius", rclcpp::ParameterType::PARAMETER_DOUBLE);
 
-            mVelocityPub = create_publisher<msg::Velocity>("drive_velocity_cmd", 10);
+            mVelocityPub = create_publisher<msg::Velocity>("drive_velocity_cmd", 1);
 
-            mJoystickSub = create_subscription<geometry_msgs::msg::Twist>("/joystick_vel_cmd", 10, [this](geometry_msgs::msg::Twist::ConstSharedPtr const& msg) { joystickCallback(msg); });
-            mControllerSub = create_subscription<geometry_msgs::msg::Twist>("/controller_vel_cmd", 10, [this](geometry_msgs::msg::Twist::ConstSharedPtr const& msg) { controllerCallback(msg); });
-            mNavigationSub = create_subscription<geometry_msgs::msg::Twist>("/nav_vel_cmd", 10, [this](geometry_msgs::msg::Twist::ConstSharedPtr const& msg) { navigationCallback(msg); });
-
-            mTimer = create_wall_timer(std::chrono::milliseconds(20), [this]() -> void { update(); });
+            mCmdVelSub = create_subscription<geometry_msgs::msg::Twist>("/cmd_vel", 1, [this](geometry_msgs::msg::Twist::ConstSharedPtr const& msg) { moveDrive(msg); });
         }
     };
 
