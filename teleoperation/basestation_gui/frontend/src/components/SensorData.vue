@@ -137,7 +137,7 @@ watch(scienceMessage, (msg) => {
       sensor_data.value.sp_ozone = scienceMsg.ppb
       break
     case 'sp_co2':
-      sensor_data.value.sp_co2 = scienceMsg.ppm
+      sensor_data.value.sp_co2 = scienceMsg.percent
       break
     case 'sp_pressure':
       sensor_data.value.sp_pressure = scienceMsg.pressure
