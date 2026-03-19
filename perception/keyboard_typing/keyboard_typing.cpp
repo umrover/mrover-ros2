@@ -407,7 +407,8 @@ namespace mrover{
         if (!tvecs.empty()) {
             // Pass all vectors and the current ROS time
             // Returns the filtered pose
-            geometry_msgs::msg::Pose finalestimation; ///updateKalmanFilter(combined_tvec, combined_rvec);
+            std::tie(combined_tvec, combined_rvec) = vectorMedianFilter(combined_tvec, combined_rvec);
+            geometry_msgs::msg::Pose finalestimation; /// updateKalmanFilter(combined_tvec, combined_rvec);
 
             Eigen::Vector3d rvec(
                 combined_rvec[0],
