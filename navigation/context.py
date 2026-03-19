@@ -107,7 +107,7 @@ class Environment:
 
     def get_time_diff(self, frame: str) -> None | Time:
         try:
-            waste, t = SE3.from_tf_tree_with_time(self.ctx.tf_buffer, frame, self.ctx.world_frame)
+            _, t = SE3.from_tf_tree_with_time(self.ctx.tf_buffer, frame, self.ctx.world_frame)
         except (
             tf2_ros.LookupException,
             tf2_ros.ConnectivityException,
