@@ -112,7 +112,7 @@ auto Servo::setPosition(ServoPosition position, ServoMode mode) -> u2d2::Status 
     presentPosition = static_cast<uint32_t>(static_cast<double>(presentPosition) / mPositionMultiplier);
 
     // Get current position (make sure its positive)
-    uint16_t currentPosition = static_cast<uint16_t>(((presentPosition % SERVO_TICKS) + SERVO_TICKS) % SERVO_TICKS);
+    uint16_t currentPosition = static_cast<uint16_t>((presentPosition + SERVO_TICKS) % SERVO_TICKS);
 
     // Calculate the signed difference (accounting for overflow)
     int normalizedDifference = static_cast<int>(targetPosition - currentPosition);
