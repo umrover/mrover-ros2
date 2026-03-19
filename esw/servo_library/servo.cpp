@@ -157,7 +157,6 @@ auto Servo::setPosition(ServoPosition position, ServoMode mode) -> u2d2::Status 
             // Limit destination if between mForwardLimit and middleLimit
             if (upper(adjustedTargetPosition) > mAdjustedForwardLimit) {
                 normalizedDifference = (mAdjustedForwardLimit - adjustedCurrentPosition) % SERVO_TICKS;
-                printf("Normalized Difference: %d\n", normalizedDifference);
                 if (normalizedDifference < 0 && !(upper(adjustedCurrentPosition) > mAdjustedForwardLimit && adjustedCurrentPosition < SERVO_TICKS)) normalizedDifference += SERVO_TICKS;
                 mAtLimit = true;
             }
@@ -166,7 +165,6 @@ auto Servo::setPosition(ServoPosition position, ServoMode mode) -> u2d2::Status 
             else if (adjustedTargetPosition < upper(mAdjustedReverseLimit)) {
 
                 normalizedDifference = (mAdjustedReverseLimit - adjustedCurrentPosition) % SERVO_TICKS;
-                printf("Normalized Difference: %d\n", normalizedDifference);
                 if (normalizedDifference > 0 && !(upper(adjustedCurrentPosition) > 0 && adjustedCurrentPosition < upper(mAdjustedReverseLimit))) normalizedDifference -= SERVO_TICKS;
                 mAtLimit = true;
             }
