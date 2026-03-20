@@ -2,7 +2,7 @@
 
 namespace mrover {
 
-    CanNetLink::CanNetLink(rclcpp::Logger const& logger, std::string interface)
+    CANNetLink::CANNetLink(rclcpp::Logger const& logger, std::string interface)
         : mInterface{std::move(interface)} {
 
         try {
@@ -66,7 +66,7 @@ namespace mrover {
             //     }
             // }
 
-            RCLCPP_INFO_STREAM(logger, "Set up");
+            RCLCPP_INFO_STREAM(logger, "netlink configured");
 
         } catch (std::exception const& exception) {
             RCLCPP_FATAL_STREAM(logger, std::format("Exception in setup: {}", exception.what()));
@@ -74,7 +74,7 @@ namespace mrover {
         }
     }
 
-    CanNetLink::~CanNetLink() {
+    CANNetLink::~CANNetLink() {
         if (!mSocket || !mCache) return;
 
         // TODO: just assume interface is always up
