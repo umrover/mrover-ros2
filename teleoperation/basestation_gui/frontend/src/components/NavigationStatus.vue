@@ -114,11 +114,11 @@ watch(navMessage, (msg: unknown) => {
 .nav-state--info .cmd-data-label { color: rgb(255 255 255 / 80%); }
 .nav-state--info .nav-state-value { color: #fff; }
 
-.nav-state--blink .nav-state-value {
-  animation: blink-text 1s infinite;
+.nav-state--blink {
+  animation: blink-bg 1s infinite;
 }
 
-@keyframes blink-text {
+@keyframes blink-bg {
   0%, 50% { opacity: 1; }
   51%, 100% { opacity: 0.3; }
 }
