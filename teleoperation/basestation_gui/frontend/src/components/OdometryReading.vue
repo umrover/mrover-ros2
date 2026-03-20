@@ -5,15 +5,15 @@
       <span class="odom-header">Rover</span>
       <div class="odom-rows">
         <div class="odom-coord-row">
-          <span class="odom-value"><span class="odom-pad">{{ padCoord(rover_latitude_deg, 3, 6).pad }}</span>{{ padCoord(rover_latitude_deg, 3, 6).num }}</span>
-          <span class="odom-unit">{{ rover_latitude_deg >= 0 ? 'N' : 'S' }}</span>
+          <span class="odom-value" :class="{ 'odom-no-data': fmtCoord(rover_latitude_deg, 3, 6).noData }"><span class="odom-pad">{{ fmtCoord(rover_latitude_deg, 3, 6).pad }}</span>{{ fmtCoord(rover_latitude_deg, 3, 6).num }}</span>
+          <span class="odom-unit">{{ dirLabel(rover_latitude_deg, 'N', 'S') }}</span>
         </div>
         <div class="odom-coord-row">
-          <span class="odom-value"><span class="odom-pad">{{ padCoord(rover_longitude_deg, 3, 6).pad }}</span>{{ padCoord(rover_longitude_deg, 3, 6).num }}</span>
-          <span class="odom-unit">{{ rover_longitude_deg >= 0 ? 'E' : 'W' }}</span>
+          <span class="odom-value" :class="{ 'odom-no-data': fmtCoord(rover_longitude_deg, 3, 6).noData }"><span class="odom-pad">{{ fmtCoord(rover_longitude_deg, 3, 6).pad }}</span>{{ fmtCoord(rover_longitude_deg, 3, 6).num }}</span>
+          <span class="odom-unit">{{ dirLabel(rover_longitude_deg, 'E', 'W') }}</span>
         </div>
         <div class="odom-coord-row">
-          <span class="odom-value"><span class="odom-pad">{{ padCoord(rover_altitude, 3, 1).pad }}</span>{{ padCoord(rover_altitude, 3, 1).num }}</span>
+          <span class="odom-value" :class="{ 'odom-no-data': fmtCoord(rover_altitude, 3, 1).noData }"><span class="odom-pad">{{ fmtCoord(rover_altitude, 3, 1).pad }}</span>{{ fmtCoord(rover_altitude, 3, 1).num }}</span>
           <span class="odom-unit">m</span>
         </div>
       </div>
@@ -24,12 +24,12 @@
       <span class="odom-header">Base</span>
       <div class="odom-rows">
         <div class="odom-coord-row">
-          <span class="odom-value"><span class="odom-pad">{{ padCoord(basestation_latitude_deg, 3, 6).pad }}</span>{{ padCoord(basestation_latitude_deg, 3, 6).num }}</span>
-          <span class="odom-unit">{{ basestation_latitude_deg >= 0 ? 'N' : 'S' }}</span>
+          <span class="odom-value" :class="{ 'odom-no-data': fmtCoord(basestation_latitude_deg, 3, 6).noData }"><span class="odom-pad">{{ fmtCoord(basestation_latitude_deg, 3, 6).pad }}</span>{{ fmtCoord(basestation_latitude_deg, 3, 6).num }}</span>
+          <span class="odom-unit">{{ dirLabel(basestation_latitude_deg, 'N', 'S') }}</span>
         </div>
         <div class="odom-coord-row">
-          <span class="odom-value"><span class="odom-pad">{{ padCoord(basestation_longitude_deg, 3, 6).pad }}</span>{{ padCoord(basestation_longitude_deg, 3, 6).num }}</span>
-          <span class="odom-unit">{{ basestation_longitude_deg >= 0 ? 'E' : 'W' }}</span>
+          <span class="odom-value" :class="{ 'odom-no-data': fmtCoord(basestation_longitude_deg, 3, 6).noData }"><span class="odom-pad">{{ fmtCoord(basestation_longitude_deg, 3, 6).pad }}</span>{{ fmtCoord(basestation_longitude_deg, 3, 6).num }}</span>
+          <span class="odom-unit">{{ dirLabel(basestation_longitude_deg, 'E', 'W') }}</span>
         </div>
       </div>
     </div>
@@ -40,15 +40,15 @@
       <div class="odom-rows">
         <div class="odom-row">
           <span class="odom-label">Yaw</span>
-          <span class="odom-value">{{ rover_bearing_deg.toFixed(0) }}<span class="odom-unit">&deg;</span></span>
+          <span class="odom-value" :class="{ 'odom-no-data': rover_bearing_deg == null }">{{ fmtDeg(rover_bearing_deg) }}<span class="odom-unit">&deg;</span></span>
         </div>
         <div class="odom-row">
           <span class="odom-label">Pit</span>
-          <span class="odom-value">{{ pitch.toFixed(0) }}<span class="odom-unit">&deg;</span></span>
+          <span class="odom-value" :class="{ 'odom-no-data': pitch == null }">{{ fmtDeg(pitch) }}<span class="odom-unit">&deg;</span></span>
         </div>
         <div class="odom-row">
           <span class="odom-label">Rol</span>
-          <span class="odom-value">{{ roll.toFixed(0) }}<span class="odom-unit">&deg;</span></span>
+          <span class="odom-value" :class="{ 'odom-no-data': roll == null }">{{ fmtDeg(roll) }}<span class="odom-unit">&deg;</span></span>
         </div>
       </div>
     </div>
@@ -59,30 +59,30 @@
       <div class="odom-rows">
         <div class="odom-row">
           <span class="odom-label">Rov</span>
-          <IndicatorDot :is-active="rover_status >= 0" :size="16" />
+          <IndicatorDot :is-active="rover_status != null && rover_status >= 0" :size="16" />
         </div>
         <div class="odom-row">
           <span class="odom-label">Drn</span>
-          <IndicatorDot :is-active="drone_status >= 0" :size="16" />
+          <IndicatorDot :is-active="drone_status != null && drone_status >= 0" :size="16" />
         </div>
       </div>
     </div>
 
-    <!-- IMU Cal -->
+    <!-- IMU -->
     <div class="odom-col">
       <span class="odom-header">IMU</span>
       <div class="odom-rows">
         <div class="odom-row">
           <span class="odom-label">Mag</span>
-          <IndicatorDot :is-active="mag_calibration == 3" :size="16" />
+          <IndicatorDot :is-active="mag_calibration === 3" :size="16" />
         </div>
         <div class="odom-row">
           <span class="odom-label">Gyr</span>
-          <IndicatorDot :is-active="gyro_calibration == 3" :size="16" />
+          <IndicatorDot :is-active="gyro_calibration === 3" :size="16" />
         </div>
         <div class="odom-row">
           <span class="odom-label">Acc</span>
-          <IndicatorDot :is-active="accel_calibration == 3" :size="16" />
+          <IndicatorDot :is-active="accel_calibration === 3" :size="16" />
         </div>
       </div>
     </div>
@@ -92,12 +92,12 @@
       <span class="odom-header">VEL</span>
       <div class="odom-rows">
         <div class="odom-coord-row">
-          <span class="odom-value"><span class="odom-pad">{{ padCoord(linear_x, 2, 2).pad }}</span>{{ padCoord(linear_x, 2, 2).num }}</span>
+          <span class="odom-value" :class="{ 'odom-no-data': fmtCoord(linear_x, 2, 2).noData }"><span class="odom-pad">{{ fmtCoord(linear_x, 2, 2).pad }}</span>{{ fmtCoord(linear_x, 2, 2).num }}</span>
           <span class="odom-unit">m/s</span>
         </div>
         <div class="odom-coord-row">
-          <span class="odom-value"><span class="odom-pad">{{ padCoord(angular_z, 2, 2).pad }}</span>{{ padCoord(angular_z, 2, 2).num }}</span>
-          <span class="odom-unit">rad/s</span>
+          <span class="odom-value" :class="{ 'odom-no-data': fmtCoord(angular_z, 2, 2).noData }"><span class="odom-pad">{{ fmtCoord(angular_z, 2, 2).pad }}</span>{{ fmtCoord(angular_z, 2, 2).num }}</span>
+          <span class="odom-unit">&deg;/s</span>
         </div>
       </div>
     </div>
@@ -105,79 +105,90 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, watch } from 'vue'
+import { ref } from 'vue'
 import { useWebsocketStore } from '@/stores/websocket'
-import { storeToRefs } from 'pinia'
 import { quaternionToMapAngle } from '../utils/map.ts'
-import type { NavMessage, CalibrationMessage } from '../types/coordinates'
+import type { GpsFixMessage, BasestationPositionMessage, DroneWaypointMessage, OrientationMessage, CalibrationMessage } from '../types/coordinates'
 import type { CmdVelMessage } from '@/types/websocket'
 import IndicatorDot from './IndicatorDot.vue'
 
 const websocketStore = useWebsocketStore()
-const { messages } = storeToRefs(websocketStore)
 
-const rover_latitude_deg = ref(38.4071654)
-const rover_longitude_deg = ref(-110.7923927)
-const rover_bearing_deg = ref(0)
-const rover_altitude = ref(0)
-const rover_status = ref(-1)
-const drone_status = ref(-1)
-const basestation_latitude_deg = ref(38.4071654)
-const basestation_longitude_deg = ref(-110.7923927)
+const rover_latitude_deg = ref<number | null>(null)
+const rover_longitude_deg = ref<number | null>(null)
+const rover_bearing_deg = ref<number | null>(null)
+const rover_altitude = ref<number | null>(null)
+const rover_status = ref<number | null>(null)
+const drone_status = ref<number | null>(null)
+const basestation_latitude_deg = ref<number | null>(null)
+const basestation_longitude_deg = ref<number | null>(null)
 
-const pitch = ref(0)
-const roll = ref(0)
+const pitch = ref<number | null>(null)
+const roll = ref<number | null>(null)
 
-const mag_calibration = ref(0)
-const gyro_calibration = ref(0)
-const accel_calibration = ref(0)
+const mag_calibration = ref<number | null>(null)
+const gyro_calibration = ref<number | null>(null)
+const accel_calibration = ref<number | null>(null)
 
-const linear_x = ref(0)
-const angular_z = ref(0)
+const linear_x = ref<number | null>(null)
+const angular_z = ref<number | null>(null)
 
-function padCoord(value: number, intDigits: number, fracDigits: number): { pad: string; num: string } {
+function fmtCoord(value: number | null, intDigits: number, fracDigits: number): { pad: string; num: string; noData: boolean } {
+  if (value === null) {
+    const placeholder = '\u2012'.repeat(intDigits) + '.' + '\u2012'.repeat(fracDigits)
+    return { pad: '', num: placeholder, noData: true }
+  }
   const abs = Math.abs(value)
   const fixed = abs.toFixed(fracDigits)
   const intPart = fixed.split('.')[0]
   const padCount = Math.max(0, intDigits - intPart.length)
-  return { pad: '0'.repeat(padCount), num: fixed }
+  return { pad: '0'.repeat(padCount), num: fixed, noData: false }
 }
 
-const navMessage = computed(() => messages.value['nav'] as (NavMessage | CmdVelMessage) | undefined)
+function fmtDeg(value: number | null): string {
+  if (value === null) return '\u2012\u2012\u2012'
+  return value.toFixed(0)
+}
 
-watch(navMessage, msg => {
-  if (!msg) return
+function dirLabel(value: number | null, pos: string, neg: string): string {
+  if (value === null) return '-'
+  return value >= 0 ? pos : neg
+}
 
-  if (msg.type === 'cmd_vel') {
-    linear_x.value = msg.linear.x
-    angular_z.value = msg.angular.z
-    return
-  }
+websocketStore.onMessage<GpsFixMessage>('nav', 'gps_fix', msg => {
+  rover_latitude_deg.value = msg.latitude
+  rover_longitude_deg.value = msg.longitude
+  rover_altitude.value = msg.altitude
+  rover_status.value = msg.status.status
+})
 
-  const navMsg = msg as NavMessage
-  if (navMsg.type === 'gps_fix') {
-    rover_latitude_deg.value = navMsg.latitude
-    rover_longitude_deg.value = navMsg.longitude
-    rover_altitude.value = navMsg.altitude
-    rover_status.value = navMsg.status.status
-  } else if (navMsg.type === 'basestation_position') {
-    basestation_latitude_deg.value = navMsg.latitude
-    basestation_longitude_deg.value = navMsg.longitude
-  } else if (navMsg.type === 'drone_waypoint') {
-    drone_status.value = navMsg.status.status
-  } else if (navMsg.type === 'orientation') {
-    rover_bearing_deg.value = quaternionToMapAngle(navMsg.orientation)
-    const { x: qx, y: qy, z: qz, w: qw } = navMsg.orientation
-    pitch.value = (Math.asin(2 * (qx * qz - qy * qw)) * 180) / Math.PI
-    roll.value =
-      (Math.atan2(2 * (qy * qz + qx * qw), 1 - 2 * (qx * qx + qy * qy)) * 180) /
-      Math.PI
-  } else if (navMsg.type === 'calibration') {
-    const calMsg = navMsg as CalibrationMessage
-    mag_calibration.value = calMsg.magnetometer_calibration
-    gyro_calibration.value = calMsg.gyroscope_calibration
-    accel_calibration.value = calMsg.acceleration_calibration
-  }
+websocketStore.onMessage<BasestationPositionMessage>('nav', 'basestation_position', msg => {
+  basestation_latitude_deg.value = msg.latitude
+  basestation_longitude_deg.value = msg.longitude
+})
+
+websocketStore.onMessage<DroneWaypointMessage>('nav', 'drone_waypoint', msg => {
+  drone_status.value = msg.status.status
+})
+
+websocketStore.onMessage<OrientationMessage>('nav', 'orientation', msg => {
+  rover_bearing_deg.value = quaternionToMapAngle(msg.orientation)
+  const { x: qx, y: qy, z: qz, w: qw } = msg.orientation
+  pitch.value = (Math.asin(2 * (qx * qz - qy * qw)) * 180) / Math.PI
+  roll.value =
+    (Math.atan2(2 * (qy * qz + qx * qw), 1 - 2 * (qx * qx + qy * qy)) * 180) /
+    Math.PI
+})
+
+websocketStore.onMessage<CalibrationMessage>('nav', 'calibration', msg => {
+  mag_calibration.value = msg.magnetometer_calibration
+  gyro_calibration.value = msg.gyroscope_calibration
+  accel_calibration.value = msg.acceleration_calibration
+})
+
+websocketStore.onMessage<CmdVelMessage>('nav', 'cmd_vel', msg => {
+  linear_x.value = msg.linear.x
+  angular_z.value = msg.angular.z * (180 / Math.PI)
 })
 </script>
 
@@ -248,5 +259,10 @@ watch(navMessage, msg => {
 
 .odom-pad {
   opacity: 0.25;
+}
+
+.odom-no-data {
+  color: var(--text-muted);
+  opacity: 0.4;
 }
 </style>
