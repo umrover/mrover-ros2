@@ -1,5 +1,7 @@
 import { ref, onUnmounted } from 'vue'
 
+export { formatNumber, formatValue, formatState, formatLimit, formatError, type FormattedNumber } from '@/utils/formatNumber'
+
 const STALE_TIMEOUT_MS = 1000
 
 export function useStaleTimer() {
@@ -15,26 +17,6 @@ export function useStaleTimer() {
   onUnmounted(() => { if (timer) clearTimeout(timer) })
 
   return { stale, reset }
-}
-
-export function formatState(v: string | undefined): string {
-  return v || '---'
-}
-
-export function formatNumber(v: unknown): string {
-  if (typeof v === 'number' && Number.isFinite(v)) return v.toFixed(2)
-  return '---'
-}
-
-export function formatLimit(v: number | undefined): string {
-  if (v === undefined) return '---'
-  return String(v)
-}
-
-export function formatError(v: string | undefined): string {
-  if (v === undefined) return '---'
-  if (v === '') return 'None'
-  return v
 }
 
 function hasError(v: string | undefined): boolean {

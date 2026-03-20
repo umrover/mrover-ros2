@@ -17,8 +17,8 @@
             <td class="font-bold">{{ w.label }}</td>
             <td>{{ formatState(states[w.idx]) }}</td>
             <td>{{ formatError(errors[w.idx]) }}</td>
-            <td class="numeric-col">{{ formatNumber(velocities[w.idx]) }}</td>
-            <td class="numeric-col">{{ formatNumber(currents[w.idx]) }}</td>
+            <FormattedCell :value="velocities[w.idx]" :int-digits="1" />
+            <FormattedCell :value="currents[w.idx]" :int-digits="1" />
           </tr>
         </tbody>
       </table>
@@ -31,7 +31,8 @@ import { ref, computed, watch } from 'vue'
 import { useWebsocketStore } from '@/stores/websocket'
 import { storeToRefs } from 'pinia'
 import type { ControllerStateMessage } from '@/types/websocket'
-import { useStaleTimer, formatState, formatNumber, formatError, stateRowClass } from '@/composables/useControllerState'
+import { useStaleTimer, formatState, formatError, stateRowClass } from '@/composables/useControllerState'
+import FormattedCell from './FormattedCell.vue'
 
 const websocketStore = useWebsocketStore()
 const { messages } = storeToRefs(websocketStore)

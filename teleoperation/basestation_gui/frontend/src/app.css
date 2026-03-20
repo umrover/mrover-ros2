@@ -902,9 +902,23 @@ html {
   }
 }
 
-.numeric-col {
+/* -----------------------------------------------
+   Formatted Number Display
+   Shared by OdometryReading, Controller Data Tables
+   ----------------------------------------------- */
+
+.fmt-num-tabular {
   font-variant-numeric: tabular-nums;
   text-align: right;
+}
+
+.fmt-num-pad {
+  opacity: 0.25;
+}
+
+.fmt-num-no-data {
+  color: var(--text-muted);
+  opacity: 0.4;
 }
 
 .row-no-data {
