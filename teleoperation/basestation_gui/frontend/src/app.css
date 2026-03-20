@@ -622,10 +622,11 @@ html {
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
+  font-family: var(--cmd-font-sans);
+  font-size: 0.75rem;
   color: var(--text-muted);
   opacity: 0.5;
   pointer-events: none;
-  font-size: 0.75rem;
 }
 
 .course-empty-state i {
@@ -686,10 +687,20 @@ html {
 }
 
 .cmd-data-value {
+  font-family: var(--cmd-font-mono);
   font-size: 1.25rem;
   font-weight: 600;
+  font-variant-numeric: tabular-nums;
   color: var(--text-primary);
   letter-spacing: -0.02em;
+}
+
+.cmd-data-value-sm {
+  font-family: var(--cmd-font-mono);
+  font-size: 0.875rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
 }
 
 .cmd-data-label {
