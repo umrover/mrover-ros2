@@ -33,4 +33,5 @@
 #include <netlink/route/link.h>
 #include <netlink/route/link/can.h>
 
+#include <MRoverCAN.hpp>
 #include <mrover/msg/can.hpp>
