@@ -1,6 +1,6 @@
 import L from 'leaflet'
 import 'leaflet-rotatedmarker'
-import { ref, computed, watch, nextTick } from 'vue'
+import { ref, shallowRef, triggerRef, computed, watch, nextTick } from 'vue'
 import { useGridLayoutStore } from '@/stores/gridLayout'
 import { useWebsocketStore } from '@/stores/websocket'
 import { storeToRefs } from 'pinia'
@@ -36,7 +36,7 @@ export function useRoverMap(options: UseRoverMapOptions = {}) {
   const roverRef = ref<{ leafletObject: L.Marker } | null>(null)
   let roverMarker: L.Marker | null = null
   const odomCount = ref(0)
-  const odomPath = ref<L.LatLng[]>([])
+  const odomPath = shallowRef<L.LatLng[]>([])
   const findRover = ref(false)
 
   const onlineUrl = 'http://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}'
@@ -126,9 +126,11 @@ export function useRoverMap(options: UseRoverMapOptions = {}) {
 
     odomCount.value++
     if (odomCount.value % drawFrequency === 0) {
-      odomPath.value = odomPath.value.length > maxOdomCount
-        ? [...odomPath.value.slice(1), latLng]
-        : [...odomPath.value, latLng]
+      if (odomPath.value.length > maxOdomCount) {
+        odomPath.value.shift()
+      }
+      odomPath.value.push(latLng)
+      triggerRef(odomPath)
       odomCount.value = 0
     }
   })

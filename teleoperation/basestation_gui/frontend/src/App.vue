@@ -29,44 +29,48 @@ html,
 body {
   height: 100%;
   margin: 0;
+  /* stylelint-disable-next-line declaration-property-value-disallowed-list */
   overflow: hidden;
 }
 
 #app {
-  font-family: 'Avenir', Helvetica, Arial, sans-serif;
+  /* stylelint-disable declaration-property-value-disallowed-list */
   display: flex;
   flex-direction: column;
   height: 100%;
   overflow: hidden;
+  /* stylelint-enable declaration-property-value-disallowed-list */
+  font-family: Avenir, Helvetica, Arial, sans-serif;
 }
 
 .view-wrapper {
-  flex: 1;
-  min-height: 0;
-  width: 100%;
-  background-color: var(--view-bg);
-  overflow: hidden;
   box-sizing: border-box;
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  /* stylelint-disable-next-line declaration-property-value-disallowed-list */
+  overflow: hidden;
+  background-color: var(--view-bg);
 }
 
 .island {
   background-color: var(--island-bg);
-  border-radius: 6px;
+  border-radius: var(--cmd-radius-md);
 }
 
 h1, h2, h3, h4, h5, h6 {
-  font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', 'Monaco', monospace;
+  padding: 0;
+  margin: 0;
+  font-family: 'JetBrains Mono', 'Fira Code', Consolas, Monaco, monospace;
   font-weight: 600;
+  line-height: 1.2;
   color: var(--text-primary);
   letter-spacing: -0.04em;
-  margin: 0;
-  padding: 0;
-  line-height: 1.2;
 }
 
 .vue-grid-layout {
-  height: 100% !important;
   width: 100% !important;
+  height: 100% !important;
 }
 
 .vue-grid-item {
@@ -74,7 +78,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .vue-grid-item > div {
-  height: 100%;
   width: 100%;
+  height: 100%;
 }
 </style>

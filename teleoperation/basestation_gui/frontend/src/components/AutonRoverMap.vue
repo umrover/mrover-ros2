@@ -1,5 +1,5 @@
 <template>
-  <div class="position-relative w-100 h-100">
+  <div class="relative w-full h-full">
     <l-map
       @ready="handleMapReady"
       ref="mapRef"
@@ -22,7 +22,7 @@
         :icon="basestationIcon"
       />
       <l-marker
-        v-for="(waypoint, index) in waypointList"
+        v-for="(waypoint, index) in waypointListForMap"
         :key="index"
         :lat-lng="waypoint.latLng"
         :icon="waypointIcon"
@@ -36,24 +36,22 @@
         :color="'red'"
         :dash-array="'5, 5'"
       />
-      <l-polyline :lat-lngs="[...odomPath]" :color="'blue'" :dash-array="'5, 5'" />
+      <l-polyline :lat-lngs="odomPath" :color="'blue'" :dash-array="'5, 5'" />
     </l-map>
 
-    <div class="controls px-2 py-2 position-absolute d-flex flex-column gap-2 top-0 end-0 m-2 rounded border shadow-sm bg-theme-card">
-      <div class="d-flex align-items-center gap-2">
+    <div class="map-controls cmd-panel">
+      <div class="flex items-center gap-2">
         <input
         v-model="online"
           type="checkbox"
-          class="form-check-input p-0"
+          class="cmd-form-check p-0"
         />
-        <p class="mb-0 text-body" style="font-size: 14px; line-height: 18px">
-          Online
-        </p>
+        <span class="cmd-data-label">Online</span>
       </div>
-      <button @click="centerOnRover" class="btn btn-sm btn-light border" style="font-size: 14px; padding: 4px 8px">
+      <button @click="centerOnRover" class="cmd-btn cmd-btn-sm cmd-btn-outline-control map-btn">
         Center on Rover
       </button>
-      <button @click="centerOnBasestation" class="btn btn-sm btn-light border" style="font-size: 14px; padding: 4px 8px">
+      <button @click="centerOnBasestation" class="cmd-btn cmd-btn-sm cmd-btn-outline-control map-btn">
         Center on Base
       </button>
     </div>
@@ -78,8 +76,7 @@ import { useRoverMap } from '@/composables/useRoverMap'
 import type { NavMessage } from '@/types/coordinates'
 
 const autonomyStore = useAutonomyStore()
-const { route, waypointList } = storeToRefs(autonomyStore)
-const { setClickPoint } = autonomyStore
+const { routeForMap, waypointListForMap } = storeToRefs(autonomyStore)
 
 const {
   center,
@@ -121,7 +118,7 @@ const basestationLatLng = computed(() => {
 
 const polylinePath = computed(() => {
   return [odomLatLng.value].concat(
-    route.value.map((waypoint) => waypoint.latLng),
+    routeForMap.value.map((waypoint) => waypoint.latLng),
   )
 })
 
@@ -137,10 +134,10 @@ const centerOnBasestation = () => {
 }
 
 const getClickedLatLon = (e: { latlng: { lat: number; lng: number } }) => {
-  setClickPoint({
+  autonomyStore.clickPoint = {
     lat: e.latlng.lat,
     lon: e.latlng.lng,
-  })
+  }
 }
 
 watch(navMessage, (msg) => {
@@ -152,3 +149,20 @@ watch(navMessage, (msg) => {
   }
 })
 </script>
+
+<style scoped>
+.map-controls {
+  position: absolute;
+  top: var(--cmd-gap-md);
+  right: var(--cmd-gap-md);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: var(--cmd-gap-sm);
+}
+
+.map-btn {
+  font-size: var(--cmd-font-xs);
+  text-transform: uppercase;
+}
+</style>

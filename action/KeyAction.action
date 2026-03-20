@@ -1,0 +1,6 @@
+string code
+---
+bool success
+---
+char key
+string state

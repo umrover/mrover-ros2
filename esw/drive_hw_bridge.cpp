@@ -130,7 +130,7 @@ namespace mrover {
         }
 
     private:
-        std::vector<std::string> mMotors = {"right_front", "right_middle", "right_back", "left_front", "left_middle", "left_back"};
+        std::vector<std::string> mMotors = {"front_right", "middle_right", "back_right", "front_left", "middle_left", "back_left"};
         std::unordered_map<std::string, BrushlessController<Revolutions>> mControllers;
 
         rclcpp::Subscription<msg::Velocity>::SharedPtr mVelocitySub;
