@@ -45,6 +45,7 @@ class WaypointState(State):
     UPDATE_DELAY: float
     NO_SEARCH_WAIT_TIME: float
     USE_COSTMAP: bool
+    USE_PURE_PURSUIT: bool
 
     def on_enter(self, context: Context) -> None:
         if context.course is None:
@@ -77,7 +78,10 @@ class WaypointState(State):
         if current_waypoint is None:
             return
 
-        self.USE_COSTMAP = context.node.get_parameter("costmap.use_costmap").value or current_waypoint.enable_costmap
+        self.USE_PURE_PURSUIT = context.node.get_parameter_or("pure_pursuit.use_pure_pursuit", True).value
+        self.USE_COSTMAP = (
+            context.node.get_parameter_or("costmap.use_costmap", True).value or current_waypoint.enable_costmap
+        )
         if self.USE_COSTMAP:
             context.node.get_logger().info("Resetting costmap dilation")
             context.reset_dilation()
@@ -166,14 +170,24 @@ class WaypointState(State):
                 self.waypoint_traj.increment_point()
                 if self.waypoint_traj.done():
                     return self.next_state(context=context)
+
             return self
+
+        # Only use pure pursuit if outside of a meter from final target position
+        rover_pos = rover_pose.translation()
+        target_pos = context.course.current_waypoint_pose_in_map().translation()
+        rover_pos[2] = 0
+        target_pos[2] = 0
+        distance_to_target = np.linalg.norm(target_pos - rover_pos)
 
         arrived = False
         cmd_vel = Twist()
         if len(self.astar_traj.coordinates) - self.astar_traj.cur_pt != 0:
             waypoint_position_in_map = self.astar_traj.get_current_point()
             cmd_vel, arrived = context.drive.get_drive_command(
-                waypoint_position_in_map,
+                (
+                    self.astar_traj if self.USE_PURE_PURSUIT and distance_to_target > 1 else waypoint_position_in_map
+                ),  # Determine if we are going to use pure pursuit or not
                 context.rover.get_pose_in_map(),
                 context.node.get_parameter("waypoint.stop_threshold").value,
                 context.node.get_parameter("waypoint.drive_forward_threshold").value,

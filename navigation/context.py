@@ -37,6 +37,7 @@ from std_msgs.msg import Bool, Header
 from .drive import DriveController
 from collections import deque
 from copy import deepcopy
+from visualization_msgs.msg import Marker
 
 NO_TAG: int = -1
 
@@ -403,7 +404,10 @@ class Context:
         from .state import OffState
 
         self.node = node
-        self.drive = DriveController(node)
+
+        self.lookahead_pub = self.node.create_publisher(Marker, "lookahead_circle", 10)
+        self.intersection_pub = self.node.create_publisher(Marker, "intersection_points", 10)
+        self.drive = DriveController(node, self.lookahead_pub, self.intersection_pub)
 
         self.world_frame = node.get_parameter("world_frame").value
         self.rover_frame = node.get_parameter("rover_frame").value
