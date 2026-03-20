@@ -734,6 +734,21 @@ html {
   .cmd-status-dot { background-color: var(--cmd-status-info); }
 }
 
+.drag-handle {
+  color: var(--text-muted);
+  cursor: grab;
+}
+
+.drag-handle:active {
+  cursor: grabbing;
+}
+
+.drag-ghost {
+  background-color: var(--control-primary);
+  border-style: dashed !important;
+  opacity: 0.4;
+}
+
 .cmd-list-item {
   padding: 0.5rem;
   margin-bottom: 0.5rem;
