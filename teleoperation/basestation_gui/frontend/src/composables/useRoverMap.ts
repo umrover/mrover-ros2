@@ -1,6 +1,6 @@
 import L from 'leaflet'
 import 'leaflet-rotatedmarker'
-import { ref, shallowRef, triggerRef, computed, watch, nextTick } from 'vue'
+import { ref, shallowRef, computed, watch, nextTick } from 'vue'
 import { useGridLayoutStore } from '@/stores/gridLayout'
 import { useWebsocketStore } from '@/stores/websocket'
 import { storeToRefs } from 'pinia'
@@ -126,11 +126,10 @@ export function useRoverMap(options: UseRoverMapOptions = {}) {
 
     odomCount.value++
     if (odomCount.value % drawFrequency === 0) {
-      if (odomPath.value.length > maxOdomCount) {
-        odomPath.value.shift()
-      }
-      odomPath.value.push(latLng)
-      triggerRef(odomPath)
+      const path = odomPath.value.length >= maxOdomCount
+        ? [...odomPath.value.slice(1), latLng]
+        : [...odomPath.value, latLng]
+      odomPath.value = path
       odomCount.value = 0
     }
   })
