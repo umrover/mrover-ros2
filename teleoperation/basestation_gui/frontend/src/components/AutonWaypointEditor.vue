@@ -17,7 +17,11 @@
           </button>
         </div>
       </div>
-      <div class="waypoint-wrapper p-2 rounded grow overflow-auto" data-testid="pw-waypoint-store-list">
+      <div class="waypoint-wrapper p-2 rounded grow overflow-auto relative" data-testid="pw-waypoint-store-list">
+        <div v-if="autonomyStore.waypoints.length === 0" class="course-empty-state">
+          <i class="bi bi-geo-alt"></i>
+          <span>No waypoints in store</span>
+        </div>
         <WaypointStore
           v-for="(waypoint, index) in autonomyStore.waypoints"
           :key="waypoint.db_id || index"
