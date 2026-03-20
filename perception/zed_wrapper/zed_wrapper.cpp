@@ -1,4 +1,5 @@
 #include "zed_wrapper.hpp"
+#include <stdexcept>
 
 namespace mrover {
     template<typename TEnum>
@@ -220,7 +221,7 @@ namespace mrover {
 
                 mLoopProfilerGrab.measureEvent("publish_imu_and_mag");
 
-            } catch (std::exception const& e) {
+            } catch (std::runtime_error const& e) {
                 RCLCPP_WARN_STREAM(get_logger(), std::format("Exception while running grab thread: {}", e.what()));
             }
         }
