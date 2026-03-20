@@ -84,6 +84,7 @@ namespace mrover {
                                std::vector<Detection>& detections) const -> void;
 
         static auto preprocessYOLOv8Input(Model const& model, cv::Mat const& rgbImage, cv::Mat& blobSizedImage, cv::Mat& blob) -> void;
+
     public:
         explicit ObjectDetectorBase(rclcpp::NodeOptions const& options = rclcpp::NodeOptions());
 
