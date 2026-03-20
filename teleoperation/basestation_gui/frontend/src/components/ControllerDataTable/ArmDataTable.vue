@@ -66,6 +66,7 @@ watch(armMessage, (msg) => {
 })
 
 const joints = [
+  { id: 'pusher', label: 'Pusher' },
   { id: 'gripper', label: 'Gripper' },
   { id: 'joint_de_roll', label: 'DE Roll' },
   { id: 'joint_de_pitch', label: 'DE Pitch' },
