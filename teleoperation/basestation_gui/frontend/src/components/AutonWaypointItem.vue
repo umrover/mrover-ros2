@@ -72,12 +72,4 @@ function toggleCostmap() {
   letter-spacing: 0.03em;
 }
 
-.drag-handle {
-  color: var(--text-muted);
-  cursor: grab;
-}
-
-.drag-handle:active {
-  cursor: grabbing;
-}
 </style>

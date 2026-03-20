@@ -1,7 +1,10 @@
 <template>
   <div class="cmd-list-item" :class="{ 'cmd-list-item--drone': waypoint.drone }">
     <div class="flex justify-between items-center mb-1">
-      <h5>{{ waypoint.name }}</h5>
+      <div class="flex items-center gap-2">
+        <i class="bi bi-grip-vertical drag-handle"></i>
+        <h5>{{ waypoint.name }}</h5>
+      </div>
       <span class="cmd-data-label">#{{ index }}</span>
     </div>
 

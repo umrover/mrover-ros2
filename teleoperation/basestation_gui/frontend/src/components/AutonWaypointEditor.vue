@@ -42,22 +42,21 @@
           All Costmaps
         </button>
       </div>
-      <draggable
+      <VueDraggable
         v-model="autonomyStore.route"
-        item-key="tag_id"
         handle=".drag-handle"
         ghost-class="drag-ghost"
         class="waypoint-wrapper p-2 rounded flex flex-col gap-1 grow overflow-auto"
         @end="autonomyStore.saveRoute()"
       >
-        <template #item="{ element }">
-          <WaypointItem
-            :waypoint="element"
-            @delete="autonomyStore.removeFromRoute(element)"
-            @toggleCostmap="autonomyStore.toggleRouteCostmap"
-          />
-        </template>
-      </draggable>
+        <WaypointItem
+          v-for="element in autonomyStore.route"
+          :key="element.tag_id"
+          :waypoint="element"
+          @delete="autonomyStore.removeFromRoute(element)"
+          @toggleCostmap="autonomyStore.toggleRouteCostmap"
+        />
+      </VueDraggable>
     </div>
   </div>
 
@@ -81,7 +80,7 @@ import WaypointItem from './AutonWaypointItem.vue'
 import WaypointStore from './AutonWaypointStore.vue'
 import AutonAddWaypointModal from './AutonAddWaypointModal.vue'
 import ConfirmModal from './ConfirmModal.vue'
-import draggable from 'vuedraggable'
+import { VueDraggable } from 'vue-draggable-plus'
 import type { AutonWaypoint } from '@/types/waypoints'
 import { useAutonomyStore } from '@/stores/autonomy'
 
@@ -121,9 +120,4 @@ function handleStoreUpdate(waypoint: AutonWaypoint, index: number) {
   background-color: var(--view-bg);
 }
 
-.drag-ghost {
-  background-color: var(--control-primary);
-  border-style: dashed !important;
-  opacity: 0.4;
-}
 </style>
