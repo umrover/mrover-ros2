@@ -46,6 +46,8 @@ namespace mrover {
 
         rclcpp::Service<mrover::srv::DilateCostMap>::SharedPtr mCostServer;
 
+        rclcpp::Service<std_srvs::srv::SetBool>::SharedPtr mToggleCostMap;
+
         struct BinEntry {
             R3f pointInCamera;
             R3f pointInMap;
@@ -64,6 +66,8 @@ namespace mrover {
 
         // To Test (CLI): ros2 service call /dilate_cost_map mrover/srv/DilateCostMap "{dilation_amount: [enter here]}"
         auto dilateCostMapCallback(mrover::srv::DilateCostMap::Request::ConstSharedPtr& req, mrover::srv::DilateCostMap::Response::SharedPtr& res) -> void;
+
+        auto toggleCostMapCallback(std_srvs::srv::SetBool::Request::ConstSharedPtr& req, std_srvs::srv::SetBool::Response::SharedPtr& res) -> void;
 
         void uploadPC();
 

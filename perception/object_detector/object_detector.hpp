@@ -95,6 +95,10 @@ namespace mrover {
     private:
         rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr mSensorSub;
 
+        rclcpp::Service<std_srvs::srv::SetBool>::SharedPtr mToggleStereoDetector;
+
+        auto toggleStereoDetector(std_srvs::srv::SetBool::Request::ConstSharedPtr& req, std_srvs::srv::SetBool::Response::SharedPtr& res) -> void;
+
     public:
         explicit StereoObjectDetector(rclcpp::NodeOptions const& options = rclcpp::NodeOptions());
 
@@ -108,6 +112,10 @@ namespace mrover {
         rclcpp::Publisher<mrover::msg::ImageTargets>::SharedPtr mTargetsPub;
 
         rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr mSensorSub;
+
+        rclcpp::Service<std_srvs::srv::SetBool>::SharedPtr mToggleImageDetector;
+
+        auto toggleImageDetector(std_srvs::srv::SetBool::Request::ConstSharedPtr& req, std_srvs::srv::SetBool::Response::SharedPtr& res) -> void;
 
         float mCameraHorizontalFov{};
 
