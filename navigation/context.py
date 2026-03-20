@@ -421,6 +421,7 @@ class Context:
         node.create_service(EnableAuton, "enable_auton", self.enable_auton)
         node.create_service(SetBool, "toggle_path_relaxation", self.toggle_path_relaxation)
         node.create_service(SetBool, "toggle_path_interpolation", self.toggle_path_interpolation)
+        node.create_service(SetBool, "toggle_pure_pursuit", self.toggle_pure_pursuit)
 
         self.command_publisher = node.create_publisher(Twist, "nav_cmd_vel", 1)
         self.search_point_publisher = node.create_publisher(GPSPointList, "search_path", 1)
@@ -488,6 +489,14 @@ class Context:
         response.message = f"Set path interpolation toggle to {request.data}."
         return response
 
+    def toggle_pure_pursuit(self, request: SetBool.Request, response: SetBool.Response) -> SetBool.Response:
+        self.node.set_parameters([Parameter("pure_pursuit.use_pure_pursuit", Parameter.Type.BOOL, request.data)])
+        self.node.get_logger().info(f"Set pure pursuit toggle to {request.data}.")
+
+        response.success = True
+        response.message = f"Set pure pursuit toggle to {request.data}."
+
+        return response
     def stuck_callback(self, msg: Bool) -> None:
         self.rover.stuck = msg.data
 
