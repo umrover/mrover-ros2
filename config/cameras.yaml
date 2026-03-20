@@ -112,7 +112,7 @@ camera_client:
   ros__parameters:
     test: 10
     cameras:
-      - "mob_cam_left"
+      - "mob_cam"
       - "joint_a_cam"
       - "ee1_cam"
       - "zed_mini"
