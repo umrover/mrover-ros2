@@ -612,6 +612,26 @@ html {
   border-top: var(--cmd-border-width) solid var(--cmd-panel-border);
 }
 
+/* ===== Empty State — centered placeholder for empty course/waypoint lists ===== */
+
+.course-empty-state {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  color: var(--text-muted);
+  opacity: 0.5;
+  pointer-events: none;
+  font-size: 0.75rem;
+}
+
+.course-empty-state i {
+  font-size: 1.5rem;
+}
+
 /* ===== Existing cmd-* component classes (unchanged) ===== */
 
 .cmd-btn-icon {

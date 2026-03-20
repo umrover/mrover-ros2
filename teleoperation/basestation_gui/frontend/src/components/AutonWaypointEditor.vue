@@ -46,9 +46,13 @@
         v-model="autonomyStore.route"
         handle=".drag-handle"
         ghost-class="drag-ghost"
-        class="waypoint-wrapper p-2 rounded flex flex-col gap-1 grow overflow-auto"
+        class="waypoint-wrapper p-2 rounded flex flex-col gap-1 grow overflow-auto relative"
         @end="autonomyStore.saveRoute()"
       >
+        <div v-if="autonomyStore.route.length === 0" class="course-empty-state">
+          <i class="bi bi-signpost-split"></i>
+          <span>No waypoints in course</span>
+        </div>
         <WaypointItem
           v-for="element in autonomyStore.route"
           :key="element.tag_id"
@@ -119,5 +123,6 @@ function handleStoreUpdate(waypoint: AutonWaypoint, index: number) {
   scrollbar-gutter: stable;
   background-color: var(--view-bg);
 }
+
 
 </style>

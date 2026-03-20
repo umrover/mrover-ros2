@@ -99,9 +99,13 @@
         v-model="erdStore.waypoints"
         handle=".drag-handle"
         ghost-class="drag-ghost"
-        class="bg-theme-view p-2 rounded overflow-y-auto flex flex-col gap-2 grow"
+        class="bg-theme-view p-2 rounded overflow-y-auto flex flex-col gap-2 grow relative"
         data-testid="pw-basic-wp-list"
       >
+        <div v-if="erdStore.waypoints.length === 0" class="course-empty-state">
+          <i class="bi bi-signpost-split"></i>
+          <span>No waypoints in course</span>
+        </div>
         <WaypointItem
           v-for="(waypoint, i) in erdStore.waypoints"
           :key="waypoint.db_id || i"
