@@ -41,20 +41,40 @@ def generate_launch_description():
         ],
     )
 
-    mob_left_streamer_node = Node(
+    mob_streamer_node = Node(
         package="mrover",
         executable="gst_camera_server",
-        name="mob_left_streamer",
+        name="mob_streamer",
         output="screen",
         parameters=[
             Path(get_package_share_directory("mrover"), "config", "cameras.yaml"),
         ],
     )
 
-    static_streamer_node = Node(
+    joint_a_streamer_node = Node(
         package="mrover",
         executable="gst_camera_server",
-        name="static_streamer",
+        name="joint_a_streamer",
+        output="screen",
+        parameters=[
+            Path(get_package_share_directory("mrover"), "config", "cameras.yaml"),
+        ],
+    )
+
+    ee1_streamer_node = Node(
+        package="mrover",
+        executable="gst_camera_server",
+        name="ee1_streamer",
+        output="screen",
+        parameters=[
+            Path(get_package_share_directory("mrover"), "config", "cameras.yaml"),
+        ],
+    )
+
+    zed_mini_streamer_node = Node(
+        package="mrover",
+        executable="gst_camera_server",
+        name="zed_mini_streamer",
         output="screen",
         parameters=[
             Path(get_package_share_directory("mrover"), "config", "cameras.yaml"),
@@ -91,8 +111,10 @@ def generate_launch_description():
             diff_drive_controller_node,
             superstructure_node,
             drive_hw_bridge_node,
-            mob_left_streamer_node,
-            static_streamer_node,
+            mob_streamer_node,
+            joint_a_streamer_node,
+            ee1_streamer_node,
+            zed_mini_streamer_node,
             zed_container,
         ]
     )

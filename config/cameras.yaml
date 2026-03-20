@@ -1,26 +1,9 @@
 /**:
   ros__parameters:
-    static_cam:
-      address: 10.1.0.2 # if using RTP, should be set to IP of basestation
-      port: 8081
-      dev_node: "/dev/static_cam"
-      dev_path: ""
-      stream:
-        pixel_format: MJPG # from v4l2-ctl -d DEV_NODE --list-formats-ext
-        width: 640
-        height: 480
-        framerate: 15
-        codec: H265
-        bitrate: 1000000
-      image_capture:
-        pixel_format: YUYV
-        width: 1280
-        height: 720
-        framerate: 5
-    boom_cam:
+    mob_cam:
       address: 10.1.0.2 # if using RTP, should be set to IP of basestation
       port: 8082
-      dev_node: "/dev/boomcam"
+      dev_node: "/dev/mob_cam"
       dev_path: ""
       stream:
         pixel_format: MJPG # from v4l2-ctl -d DEV_NODE --list-formats-ext
@@ -34,10 +17,10 @@
         width: 1280
         height: 720
         framerate: 5
-    mob_cam_left:
+    joint_a_cam:
       address: 10.1.0.2
       port: 8083
-      dev_node: "/dev/mobcam_left"
+      dev_node: "/dev/joint_a_cam"
       dev_path: ""
       stream:
         pixel_format: MJPG # from v4l2-ctl -d DEV_NODE --list-formats-ext
@@ -51,10 +34,10 @@
         width: 1280
         height: 720
         framerate: 5
-    mob_cam_right:
+    ee1_cam:
       address: 10.1.0.2
       port: 8084
-      dev_node: "/dev/mobcam_right"
+      dev_node: "/dev/ee1_cam"
       dev_path: ""
       stream:
         pixel_format: MJPG # from v4l2-ctl -d DEV_NODE --list-formats-ext
@@ -68,24 +51,6 @@
         width: 1280
         height: 720
         framerate: 5
-    long_range_cam:
-      address: 10.1.0.2
-      port: 8085
-      image_topic: "/long_range_cam/image"
-      dev_node: ""
-      dev_path: ""
-      stream:
-        pixel_format: ABGR32
-        width: 640
-        height: 480
-        framerate: 30
-        codec: H265
-        bitrate: 1000000
-      image_capture:
-        pixel_format: ABGR32
-        width: 640
-        height: 480
-        framerate: 30
     zed_mini:
       address: 10.1.0.2
       port: 8086
@@ -123,25 +88,17 @@
         height: 720
         framerate: 15
 
-boom_streamer:
+mob_streamer:
   ros__parameters:
-    camera: "boom_cam"
+    camera: "mob_cam"
 
-mob_left_streamer:
+joint_a_streamer:
   ros__parameters:
-    camera: "mob_cam_left"
+    camera: "joint_a_cam"
 
-mob_right_streamer:
+ee1_streamer:
   ros__parameters:
-    camera: "mob_cam_right"
-
-long_range_streamer:
-  ros__parameters:
-    camera: "long_range_cam"
-
-static_streamer:
-  ros__parameters:
-    camera: "static_cam"
+    camera: "ee1_cam"
 
 zed_mini_streamer:
   ros__parameters:
@@ -155,10 +112,9 @@ camera_client:
   ros__parameters:
     test: 10
     cameras:
-      - "boom_cam"
       - "mob_cam_left"
-      - "static_cam"
-      - "long_range_cam"
+      - "joint_a_cam"
+      - "ee1_cam"
       - "zed_mini"
       - "zed"
     rtp_jitter_ms: 50
