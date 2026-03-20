@@ -20,6 +20,8 @@ class MockAuton(Node):
         self.create_service(SetBool, "/toggle_pure_pursuit", self.on_toggle("pure_pursuit"))
         self.create_service(SetBool, "/toggle_path_relaxation", self.on_toggle("path_relaxation"))
         self.create_service(SetBool, "/toggle_path_interpolation", self.on_toggle("path_interpolation"))
+        self.create_service(SetBool, "/toggle_stereo_detector", self.on_toggle("stereo_detector"))
+        self.create_service(SetBool, "/toggle_image_detector", self.on_toggle("image_detector"))
 
         self.action_server = ActionServer(self, TypingCode, "/es_typing_code", self.execute_typing)
 
