@@ -13,7 +13,7 @@ namespace mrover {
                 {"decrement_weight", mObjDecrementWeight, 1},
                 {"hitcount_threshold", mObjHitThreshold, 5},
                 {"hitcount_max", mObjMaxHitcount, 10},
-                {"model_name", modelName, "Large-Dataset"},
+                {"model_name", modelName, "mock-mission"},
                 {"model_score_threshold", mModelScoreThreshold, 0.75},
                 {"model_nms_threshold", mModelNMSThreshold, 0.5},
                 {"object_detector_debug", mDebug, true}};
