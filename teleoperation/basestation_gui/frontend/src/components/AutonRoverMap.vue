@@ -88,8 +88,8 @@ const {
   getMap,
   navMessage,
 } = useRoverMap({
-  maxOdomCount: 10,
-  drawFrequency: 10,
+  maxOdomCount: 100,
+  drawFrequency: 1,
   initialCenter: [38.4071654, -110.7923927],
   offlineUrl: 'map/urc/{z}/{x}/{y}.jpg',
 })
