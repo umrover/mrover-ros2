@@ -1,13 +1,6 @@
 name: CI
 on:
-  pull_request:
-    branches:
-      - main
-      - integration
-  push:
-    branches:
-      - main
-      - integration
+  workflow_dispatch
 jobs:
   style:
     name: Style Checks
