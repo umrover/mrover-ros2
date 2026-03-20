@@ -38,6 +38,7 @@ class CostmapSearchState(State):
     astar: AStar
 
     USE_COSTMAP: bool
+    USE_PURE_PURSUIT: bool
     USE_RELAXATION: bool
     USE_INTERPOLATION: bool
     STOP_THRESH: float
@@ -58,6 +59,7 @@ class CostmapSearchState(State):
         self.USE_COSTMAP = context.node.get_parameter("costmap.use_costmap").value or current_waypoint.enable_costmap
         self.USE_RELAXATION = context.node.get_parameter("smoothing.use_relaxation").value
         self.USE_INTERPOLATION = context.node.get_parameter("smoothing.use_interpolation").value
+        self.USE_PURE_PURSUIT = context.node.get_parameter_or("pure_pursuit.use_pure_pursuit", True).value
 
         self.STOP_THRESH = context.node.get_parameter("search.stop_threshold").value
         self.DRIVE_FWD_THRESH = context.node.get_parameter("search.drive_forward_threshold").value
@@ -198,7 +200,9 @@ class CostmapSearchState(State):
         target_position_in_map = self.astar_traj.get_current_point()
 
         cmd_vel, arrived = context.drive.get_drive_command(
-            target_position_in_map,
+            (
+                self.astar_traj if self.USE_PURE_PURSUIT and self.spiral_traj.cur_pt > 7 else target_position_in_map
+            ),  # Parameter depends on if pure pursuit is used
             context.rover.get_pose_in_map(),
             self.STOP_THRESH,
             self.DRIVE_FWD_THRESH,

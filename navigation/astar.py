@@ -35,11 +35,13 @@ class AStar:
     context: Context
     TRAVERSABLE_COST: float
     COSTMAP_THRESH: float
+    USE_PURE_PURSUIT: bool
 
     def __init__(self, context: Context) -> None:
         self.context = context
         self.TRAVERSABLE_COST = self.context.node.get_parameter("search.traversable_cost").value
         self.COSTMAP_THRESH = self.context.node.get_parameter("costmap.costmap_thresh").value
+        self.USE_PURE_PURSUIT = context.node.get_parameter_or("pure_pursuit.use_pure_pursuit", True).value
 
     @staticmethod
     def return_path(came_from: dict[tuple, tuple], current_pos: tuple):
@@ -151,7 +153,10 @@ class AStar:
         rover_position_in_map = rover_SE3.translation()[:2]
 
         if not self.use_astar(dest=dest):
-            return Trajectory(np.array([dest]))
+            if not self.USE_PURE_PURSUIT:
+                return Trajectory(np.array([dest]))
+            else:
+                return Trajectory(np.array([rover_SE3.translation(), dest]))
 
         costmap_length = self.context.env.cost_map.data.shape[0]
         rover_ij = cartesian_to_ij(self.context, rover_position_in_map)

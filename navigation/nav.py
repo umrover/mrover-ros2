@@ -12,6 +12,7 @@ from navigation.stuck_recovery import StuckRecoveryState
 from navigation.costmap_search import CostmapSearchState
 from navigation.state import DoneState, OffState, off_check
 from navigation.waypoint import WaypointState
+from nav_msgs.msg import Path
 from rclpy import Parameter
 from rclpy.executors import ExternalShutdownException, SingleThreadedExecutor
 from rclpy.node import Node
@@ -37,6 +38,7 @@ class Navigation(Node):
                 # General
                 ("update_rate", Parameter.Type.DOUBLE),
                 ("pub_path_rate", Parameter.Type.DOUBLE),
+                ("pub_lookahead_rate", Parameter.Type.INTEGER),
                 ("path_hist_size", Parameter.Type.INTEGER),
                 ("display_markers", Parameter.Type.BOOL),
                 ("world_frame", Parameter.Type.STRING),
@@ -45,6 +47,12 @@ class Navigation(Node):
                 ("ref_lon", Parameter.Type.DOUBLE),
                 ("ref_alt", Parameter.Type.DOUBLE),
                 ("target_expiration_duration", Parameter.Type.DOUBLE),
+                # Pure Pursuit
+                ("pure_pursuit.drive_forward_threshold", Parameter.Type.DOUBLE),
+                ("pure_pursuit.min_lookahead_distance", Parameter.Type.DOUBLE),
+                ("pure_pursuit.max_lookahead_distance", Parameter.Type.DOUBLE),
+                ("pure_pursuit.driving_p", Parameter.Type.DOUBLE),
+                ("pure_pursuit.use_pure_pursuit", Parameter.Type.BOOL),
                 # Costmap
                 ("costmap.custom_costmap", Parameter.Type.BOOL),
                 ("costmap.use_costmap", Parameter.Type.BOOL),
