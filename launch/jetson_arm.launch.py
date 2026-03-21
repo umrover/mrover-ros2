@@ -56,8 +56,8 @@ def generate_launch_description():
         [
             launch_include_jetson_base,
             arm_hw_bridge_node,
-            boom_streamer_node,
-            zed_mini_streamer_node,
-            launch_localization,
+            # boom_streamer_node,
+            # zed_mini_streamer_node,
+            # launch_localization,
         ]
     )
