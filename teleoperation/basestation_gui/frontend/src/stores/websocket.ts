@@ -1,10 +1,14 @@
 import { defineStore } from 'pinia'
-import { ref, shallowRef, computed, watch, onBeforeUnmount, getCurrentInstance } from 'vue'
+import { ref, shallowRef, onBeforeUnmount, getCurrentInstance } from 'vue'
 import { encode, decode } from '@msgpack/msgpack'
 
 interface TypedMessage {
   type: string
 }
+
+type MessageCallback = (msg: unknown) => void
+const messageHandlers: Map<string, Map<string, Set<MessageCallback>>> = new Map()
+
 
 const webSockets: Record<string, WebSocket> = {}
 const refCounts: Record<string, number> = {}
@@ -163,6 +167,10 @@ export const useWebsocketStore = defineStore('websocket', () => {
   const connectionStatus = ref<Record<string, string>>({})
 
   function setMessage(id: string, message: unknown) {
+    const type = (message as Record<string, unknown>)?.type as string | undefined
+    if (type) {
+      messageHandlers.get(id)?.get(type)?.forEach(h => h(message))
+    }
     messages.value = { ...messages.value, [id]: message }
   }
 
@@ -290,22 +298,19 @@ export const useWebsocketStore = defineStore('websocket', () => {
     }
   }
 
-  function onMessage<T extends TypedMessage>(
+  function onMessage<T extends TypedMessage = TypedMessage>(
     topic: string,
-    messageType: T['type'],
+    messageType: string,
     callback: (msg: T) => void,
   ) {
-    const topicMessage = computed(() => messages.value[topic])
-    const stop = watch(topicMessage, (msg: unknown) => {
-      if (
-        msg &&
-        typeof msg === 'object' &&
-        'type' in msg &&
-        (msg as TypedMessage).type === messageType
-      ) {
-        callback(msg as T)
-      }
-    })
+    if (!messageHandlers.has(topic)) messageHandlers.set(topic, new Map())
+    const topicHandlers = messageHandlers.get(topic)!
+    if (!topicHandlers.has(messageType)) topicHandlers.set(messageType, new Set())
+    topicHandlers.get(messageType)!.add(callback as MessageCallback)
+
+    const stop = () => {
+      topicHandlers.get(messageType)?.delete(callback as MessageCallback)
+    }
     if (getCurrentInstance()) {
       onBeforeUnmount(stop)
     }

@@ -153,7 +153,7 @@ import { useErdStore } from '@/stores/erd'
 import { useWebsocketStore } from '@/stores/websocket'
 import { storeToRefs } from 'pinia'
 import { recordingAPI } from '@/utils/api'
-import type { NavMessage } from '@/types/coordinates'
+import type { GpsFixMessage } from '@/types/coordinates'
 
 defineProps({
   enableDrone: {
@@ -166,7 +166,6 @@ const erdStore = useErdStore()
 const { clickPoint } = storeToRefs(erdStore)
 
 const websocketStore = useWebsocketStore()
-const { messages } = storeToRefs(websocketStore)
 
 const rover_latitude_deg = ref(0)
 const rover_longitude_deg = ref(0)
@@ -190,15 +189,9 @@ const formatted_odom = computed(() => ({
   lon: { d: rover_longitude_deg.value },
 }))
 
-const navMessage = computed(() => messages.value['nav'])
-
-watch(navMessage, (msg) => {
-  if (!msg) return
-  const navMsg = msg as NavMessage
-  if (navMsg.type === 'gps_fix') {
-    rover_latitude_deg.value = navMsg.latitude
-    rover_longitude_deg.value = navMsg.longitude
-  }
+websocketStore.onMessage<GpsFixMessage>('nav', 'gps_fix', (msg) => {
+  rover_latitude_deg.value = msg.latitude
+  rover_longitude_deg.value = msg.longitude
 })
 
 watch(clickPoint, (pt) => {

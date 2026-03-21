@@ -103,7 +103,7 @@ JOINT_NAMES = [
     "joint_c",
     "joint_de_pitch",
     "joint_de_roll",
-    "cam",
+    "pusher",
     "gripper",
 ]
 
@@ -113,7 +113,7 @@ JOINT_SCALES = [
     1.0,
     -1.0,
     1.0,
-    1.0,
+    0.4,
     1.0,
 ]
 

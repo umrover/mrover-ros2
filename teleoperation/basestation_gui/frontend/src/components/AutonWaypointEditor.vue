@@ -128,5 +128,4 @@ function handleStoreUpdate(waypoint: AutonWaypoint, index: number) {
   background-color: var(--view-bg);
 }
 
-
 </style>

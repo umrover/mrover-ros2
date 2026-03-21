@@ -16,13 +16,13 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed } from 'vue'
 import { useWebsocketStore } from '@/stores/websocket'
 import { useAutonomyStore } from '@/stores/autonomy'
 import { storeToRefs } from 'pinia'
+import type { NavStateMessage } from '@/types/coordinates'
 
 const websocketStore = useWebsocketStore()
-const { messages } = storeToRefs(websocketStore)
 
 const autonomyStore = useAutonomyStore()
 const { teleopEnabled } = storeToRefs(autonomyStore)
@@ -36,16 +36,8 @@ const ledColorClass = computed(() => {
   return 'nav-state--error'
 })
 
-
-const navMessage = computed(() => messages.value['nav'])
-
-watch(navMessage, (msg: unknown) => {
-  if (typeof msg === 'object' && msg !== null && 'type' in msg) {
-    const typedMsg = msg as { type: string; state?: string }
-    if (typedMsg.type === 'nav_state') {
-      navState.value = typedMsg.state || 'OffState'
-    }
-  }
+websocketStore.onMessage<NavStateMessage>('nav', 'nav_state', (msg) => {
+  navState.value = msg.state || 'OffState'
 })
 </script>
 
@@ -114,11 +106,11 @@ watch(navMessage, (msg: unknown) => {
 .nav-state--info .cmd-data-label { color: rgb(255 255 255 / 80%); }
 .nav-state--info .nav-state-value { color: #fff; }
 
-.nav-state--blink .nav-state-value {
-  animation: blink-text 1s infinite;
+.nav-state--blink {
+  animation: blink-bg 1s infinite;
 }
 
-@keyframes blink-text {
+@keyframes blink-bg {
   0%, 50% { opacity: 1; }
   51%, 100% { opacity: 0.3; }
 }
