@@ -39,4 +39,27 @@ rm -rf "$(pwd)/build/$build_profile/mrover/.cmake/api"
 
 ln -sf "$(pwd)/build/$build_profile/compile_commands.json" "$(pwd)/src/mrover/compile_commands.json"
 
-source "$(pwd)/install/$build_profile/setup.zsh"
+# same as .zshrc
+readonly MROVER_ROS2_WS_PATH="$HOME/ros2_ws"
+
+source_mrover_overlay(){
+    build_profiles=("RelWithDebInfo" "Release" "Debug")
+
+    target_file="/not/a/real/file"
+
+    for profile in "${build_profiles[@]}"; do
+        file="${MROVER_ROS2_WS_PATH}/install/${profile}/setup.zsh"
+
+        if [ -f "${file}" ]; then
+            if [[ "${file}" -nt "${target_file}" ]]; then
+                target_file="${file}"
+            fi
+        fi
+    done
+
+    if [ -f "${target_file}" ]; then
+        source "${target_file}"
+    fi
+}
+
+source_mrover_overlay

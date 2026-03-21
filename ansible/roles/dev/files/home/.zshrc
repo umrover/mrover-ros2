@@ -100,31 +100,31 @@ source $ZSH/oh-my-zsh.sh
 # alias zshconfig="mate ~/.zshrc"
 # alias ohmyzsh="mate ~/.oh-my-zsh"
 
-source /opt/ros/humble/setup.zsh
-
-readonly ROS2_WS_PATH=~/ros2_ws
+readonly MROVER_ROS2_WS_PATH="$HOME/ros2_ws"
 
 source_mrover_overlay(){
-    build_profiles=("RelWithDebInfo", "Release", "Debug")
+    build_profiles=("RelWithDebInfo" "Release" "Debug")
 
-    target_file="${ROS2_WS_PATH}/install/RelWithDebInfo/setup.zsh"
+    target_file="/not/a/real/file"
 
     for profile in "${build_profiles[@]}"; do
-        file="${ROS2_WS_PATH}/install/${profile}/setup.zsh"
+        file="${MROVER_ROS2_WS_PATH}/install/${profile}/setup.zsh"
 
-        echo ${file}
-
-        if [ -f ${file} ]; then
-            if [[ "${file}" -nt "${target_file}"]]; then
+        if [ -f "${file}" ]; then
+            if [[ "${file}" -nt "${target_file}" ]]; then
                 target_file="${file}"
             fi
         fi
     done
 
-    source "${target_file}"
+    if [ -f "${target_file}" ]; then
+        source "${target_file}"
+    fi
 }
 
 alias mrover="cd ~/ros2_ws/src/mrover && source ~/ros2_ws/src/mrover/venv/bin/activate && source_mrover_overlay"
+
+source /opt/ros/humble/setup.zsh
 
 # bun completions
 [ -s "/home/mrover/.bun/_bun" ] && source "/home/mrover/.bun/_bun"
