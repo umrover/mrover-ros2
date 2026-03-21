@@ -21,6 +21,7 @@
         :lat-lng="basestationLatLng"
         :icon="basestationIcon"
       />
+      <l-marker ref="droneRef" :lat-lng="droneLatLng" :icon="droneIcon" />
       <l-marker
         v-for="(waypoint, index) in waypointListForMap"
         :key="index"
@@ -37,6 +38,7 @@
         :dash-array="'5, 5'"
       />
       <l-polyline :lat-lngs="odomPath" :color="'blue'" :dash-array="'5, 5'" />
+      <l-polyline :lat-lngs="dronePath" :color="'green'" />
     </l-map>
 
     <div class="overlay-toolbar right-0">
@@ -45,6 +47,7 @@
       </button>
       <button @click="centerOnRover" class="overlay-toolbar-btn">Center on Rover</button>
       <button @click="centerOnBasestation" class="overlay-toolbar-btn">Center on Base</button>
+      <button @click="centerOnDrone" class="overlay-toolbar-btn">Center on Drone</button>
     </div>
   </div>
 </template>
@@ -62,9 +65,10 @@ import { useAutonomyStore } from '@/stores/autonomy'
 import { storeToRefs } from 'pinia'
 import 'leaflet/dist/leaflet.css'
 import L from 'leaflet'
-import { ref, computed, watch } from 'vue'
+import { ref, computed } from 'vue'
 import { useRoverMap } from '@/composables/useRoverMap'
-import type { NavMessage } from '@/types/coordinates'
+import { useWebsocketStore } from '@/stores/websocket'
+import type { BasestationPositionMessage } from '@/types/coordinates'
 
 const autonomyStore = useAutonomyStore()
 const { routeForMap, waypointListForMap } = storeToRefs(autonomyStore)
@@ -83,16 +87,22 @@ const {
   attribution,
   locationIcon,
   waypointIcon,
+  droneRef,
+  dronePath,
+  droneLatLng,
+  droneIcon,
   onMapReady,
   centerOnRover,
+  centerOnDrone,
   getMap,
-  navMessage,
 } = useRoverMap({
   maxOdomCount: 100,
   drawFrequency: 1,
   initialCenter: [38.4071654, -110.7923927],
   offlineUrl: 'map/urc/{z}/{x}/{y}.jpg',
 })
+
+const websocketStore = useWebsocketStore()
 
 const basestation_latitude_deg = ref(0)
 const basestation_longitude_deg = ref(0)
@@ -131,13 +141,9 @@ const getClickedLatLon = (e: { latlng: { lat: number; lng: number } }) => {
   }
 }
 
-watch(navMessage, (msg) => {
-  if (!msg) return
-  const navMsg = msg as NavMessage
-  if (navMsg.type === 'basestation_position') {
-    basestation_latitude_deg.value = navMsg.latitude
-    basestation_longitude_deg.value = navMsg.longitude
-  }
+websocketStore.onMessage<BasestationPositionMessage>('nav', 'basestation_position', (msg) => {
+  basestation_latitude_deg.value = msg.latitude
+  basestation_longitude_deg.value = msg.longitude
 })
 </script>
 
