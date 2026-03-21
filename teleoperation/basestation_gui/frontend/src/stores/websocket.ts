@@ -1,6 +1,13 @@
 import { defineStore } from 'pinia'
-import { ref, shallowRef } from 'vue'
+import { ref, shallowRef, onBeforeUnmount, getCurrentInstance } from 'vue'
 import { encode, decode } from '@msgpack/msgpack'
+
+interface TypedMessage {
+  type: string
+}
+
+type MessageCallback = (msg: unknown) => void
+const messageHandlers: Map<string, Map<string, Set<MessageCallback>>> = new Map()
 
 const webSockets: Record<string, WebSocket> = {}
 const refCounts: Record<string, number> = {}
@@ -159,6 +166,10 @@ export const useWebsocketStore = defineStore('websocket', () => {
   const connectionStatus = ref<Record<string, string>>({})
 
   function setMessage(id: string, message: unknown) {
+    const type = (message as Record<string, unknown>)?.type as string | undefined
+    if (type) {
+      messageHandlers.get(id)?.get(type)?.forEach(h => h(message))
+    }
     messages.value = { ...messages.value, [id]: message }
   }
 
@@ -286,6 +297,25 @@ export const useWebsocketStore = defineStore('websocket', () => {
     }
   }
 
+  function onMessage<T extends TypedMessage = TypedMessage>(
+    topic: string,
+    messageType: string,
+    callback: (msg: T) => void,
+  ) {
+    if (!messageHandlers.has(topic)) messageHandlers.set(topic, new Map())
+    const topicHandlers = messageHandlers.get(topic)!
+    if (!topicHandlers.has(messageType)) topicHandlers.set(messageType, new Set())
+    topicHandlers.get(messageType)!.add(callback as MessageCallback)
+
+    const stop = () => {
+      topicHandlers.get(messageType)?.delete(callback as MessageCallback)
+    }
+    if (getCurrentInstance()) {
+      onBeforeUnmount(stop)
+    }
+    return stop
+  }
+
   return {
     messages,
     connectionStatus,
@@ -309,5 +339,6 @@ export const useWebsocketStore = defineStore('websocket', () => {
     sendMessage,
     setupWebSocket,
     closeWebSocket,
+    onMessage,
   }
 })
