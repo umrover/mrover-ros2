@@ -62,10 +62,9 @@ import { useAutonomyStore } from '@/stores/autonomy'
 import { storeToRefs } from 'pinia'
 import 'leaflet/dist/leaflet.css'
 import L from 'leaflet'
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useRoverMap } from '@/composables/useRoverMap'
-import { useWebsocketStore } from '@/stores/websocket'
-import type { BasestationPositionMessage } from '@/types/coordinates'
+import type { NavMessage } from '@/types/coordinates'
 
 const autonomyStore = useAutonomyStore()
 const { routeForMap, waypointListForMap } = storeToRefs(autonomyStore)
@@ -87,6 +86,7 @@ const {
   onMapReady,
   centerOnRover,
   getMap,
+  navMessage,
 } = useRoverMap({
   maxOdomCount: 100,
   drawFrequency: 1,
@@ -131,10 +131,13 @@ const getClickedLatLon = (e: { latlng: { lat: number; lng: number } }) => {
   }
 }
 
-const websocketStore = useWebsocketStore()
-websocketStore.onMessage<BasestationPositionMessage>('nav', 'basestation_position', (msg) => {
-  basestation_latitude_deg.value = msg.latitude
-  basestation_longitude_deg.value = msg.longitude
+watch(navMessage, (msg) => {
+  if (!msg) return
+  const navMsg = msg as NavMessage
+  if (navMsg.type === 'basestation_position') {
+    basestation_latitude_deg.value = navMsg.latitude
+    basestation_longitude_deg.value = navMsg.longitude
+  }
 })
 </script>
 
