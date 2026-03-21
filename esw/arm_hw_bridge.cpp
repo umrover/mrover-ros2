@@ -74,11 +74,48 @@ namespace mrover {
             auto subOptions = rclcpp::SubscriptionOptions();
             subOptions.callback_group = mCbGroup;
 
+            std::vector<ParameterWrapper> parameters = {
+                    {"joint_b_segment_length", mJointBSegmentLength.rep, 0.0},
+                    {"joint_b_actuator_length", mJointBActuatorLength.rep, 0.0},
+                    {"joint_b_mount_length", mJointBMountLength.rep, 0.0},
+                    {"joint_b_offset", mJointBOffset.rep, 0.0},
+                    {"joint_b_mount_theta", mJointBMountTheta.rep, 0.0},
+                    {"joint_b_segment_offset_theta", mJointBSegmentOffsetTheta.rep, 0.0},
+                    {"joint_c_offset_theta", mJointCOffsetTheta.rep, 0.0},
+                    {"joint_de_pitch_offset", mJointDePitchOffset.rep, 0.0},
+                    {"joint_de_roll_offset", mJointDeRollOffset.rep, 0.0},
+                    {"joint_de_pitch_max_position", mJointDePitchMaxPosition.rep, std::numeric_limits<float>::infinity()},
+                    {"joint_de_pitch_min_position", mJointDePitchMinPosition.rep, -std::numeric_limits<float>::infinity()},
+                    {"joint_de_roll_max_position", mJointDERollMaxPosition.rep, std::numeric_limits<float>::infinity()},
+                    {"joint_de_roll_min_position", mJointDeRollMinPosition.rep, -std::numeric_limits<float>::infinity()},
+                    {"pusher_throttle", mPusherThrottle.rep, 0.0},
+                    {"pusher_wait_duration", mPusherWaitDuration, 0.0},
+            };
+            ParameterWrapper::declareParameters(this, parameters);
+
+            BrushlessController<Revolutions>::Options joint_de_opts{
+                .query_abs_position = true,
+                .use_abs_position = true,
+                .abs_position_offset = 0.0, // TODO(eric) port DE offsets to this
+                .query_abs_velocity = true,
+                .use_abs_velocity = true,
+                .abs_units_multiplier = 2.0 * M_PI // revs to radians on the output
+            };
+
+            BrushlessController<Radians>::Options joint_c_opts{
+                .query_abs_position = true,
+                .use_abs_position = true,
+                .abs_position_offset = mJointCOffsetTheta.get(),
+                .query_abs_velocity = true,
+                .use_abs_velocity = false,
+                .abs_units_multiplier = 2.0 * M_PI
+            };
+
             mJointA = std::make_shared<BrushlessController<Meters>>(shared_from_this(), "jetson", "joint_a");
             mJointB = std::make_shared<BrushedController<Meters>>(shared_from_this(), "jetson", "joint_b");
-            mJointC = std::make_shared<BrushlessController<Radians>>(shared_from_this(), "jetson", "joint_c");
-            mJointDE0 = std::make_shared<BrushlessController<Revolutions>>(shared_from_this(), "jetson", "joint_de_0");
-            mJointDE1 = std::make_shared<BrushlessController<Revolutions>>(shared_from_this(), "jetson", "joint_de_1");
+            mJointC = std::make_shared<BrushlessController<Radians>>(shared_from_this(), "jetson", "joint_c", joint_c_opts);
+            mJointDE0 = std::make_shared<BrushlessController<Revolutions>>(shared_from_this(), "jetson", "joint_de_0", joint_de_opts);
+            mJointDE1 = std::make_shared<BrushlessController<Revolutions>>(shared_from_this(), "jetson", "joint_de_1", joint_de_opts);
             mGripper = std::make_shared<BrushedController<Meters>>(shared_from_this(), "jetson", "gripper");
             mPusher = std::make_shared<BrushedController<Meters>>(shared_from_this(), "jetson", "pusher");
 
@@ -93,24 +130,6 @@ namespace mrover {
                     },
                     rmw_qos_profile_services_default,
                     mCbGroup);
-
-            std::vector<ParameterWrapper> parameters = {
-                    {"joint_b_segment_length", mJointBSegmentLength.rep, 0.0},
-                    {"joint_b_actuator_length", mJointBActuatorLength.rep, 0.0},
-                    {"joint_b_mount_length", mJointBMountLength.rep, 0.0},
-                    {"joint_b_offset", mJointBOffset.rep, 0.0},
-                    {"joint_b_mount_theta", mJointBMountTheta.rep, 0.0},
-                    {"joint_b_segment_offset_theta", mJointBSegmentOffsetTheta.rep, 0.0},
-                    {"joint_de_pitch_offset", mJointDePitchOffset.rep, 0.0},
-                    {"joint_de_roll_offset", mJointDeRollOffset.rep, 0.0},
-                    {"joint_de_pitch_max_position", mJointDePitchMaxPosition.rep, std::numeric_limits<float>::infinity()},
-                    {"joint_de_pitch_min_position", mJointDePitchMinPosition.rep, -std::numeric_limits<float>::infinity()},
-                    {"joint_de_roll_max_position", mJointDERollMaxPosition.rep, std::numeric_limits<float>::infinity()},
-                    {"joint_de_roll_min_position", mJointDeRollMinPosition.rep, -std::numeric_limits<float>::infinity()},
-                    {"pusher_throttle", mPusherThrottle.rep, 0.0},
-                    {"pusher_wait_duration", mPusherWaitDuration, 0.0},
-            };
-            ParameterWrapper::declareParameters(this, parameters);
 
             // sanity check joint b geometry
             if ((mJointBSegmentLength + mJointBActuatorLength <= mJointBMountLength) ||
@@ -132,7 +151,7 @@ namespace mrover {
                         probeIfBrushless(mJointDE1, "joint_de_1");
                     });
 
-            mDEOffsetTimer = create_wall_timer(std::chrono::milliseconds(500), [this]() { updateDEOffsets(); });
+            mDEOffsetTimer = create_wall_timer(std::chrono::milliseconds(500), [this]() { updateAbsoluteOffsets(); });
 
             mPublishDataTimer = create_wall_timer(
                     std::chrono::milliseconds(100),
@@ -180,7 +199,7 @@ namespace mrover {
         rclcpp::Service<srv::Pusher>::SharedPtr mPusherService;
 
         Meters mJointBSegmentLength, mJointBActuatorLength, mJointBMountLength;
-        Radians mJointBMountTheta, mJointBSegmentOffsetTheta, mJointBOffset;
+        Radians mJointBMountTheta, mJointBSegmentOffsetTheta, mJointBOffset, mJointCOffsetTheta;
 
         Percent mPusherThrottle;
         float mPusherWaitDuration, mPusherWaitCycles;
@@ -506,7 +525,9 @@ namespace mrover {
             }
         }
 
-        auto updateDEOffsets() -> void {
+        auto updateAbsoluteOffsets() const -> void {
+            mJointC->adjust(Radians{mJointC->getPosition()});
+
             if (!mJointDEPitchRoll) return;
 
             Vector2<Radians> motorPositions = PITCH_ROLL_TO_01_SCALE * PITCH_ROLL_TO_0_1 * mJointDEPitchRoll.value();

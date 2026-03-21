@@ -28,6 +28,7 @@ arm_hw_bridge:
     joint_b_offset: -0.07754990  # rad
     joint_b_mount_theta: 1.25499645 # 71.906deg
     joint_b_segment_offset_theta: 0.09384635 # 5.377deg
+    joint_c_offset_theta: 2.55547   # rad
     joint_c:
       min_velocity: -0.377
       max_velocity: 0.377

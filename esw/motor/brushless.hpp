@@ -64,6 +64,15 @@ namespace mrover {
     public:
         using OutputVelocity = compound_unit<OutputPosition, inverse<Seconds>>;
 
+        struct Options {
+            bool query_abs_position{false};
+            bool use_abs_position{false};
+            double abs_position_offset{0.0};
+            bool query_abs_velocity{false};
+            bool use_abs_velocity{false};
+            double abs_units_multiplier{2.0 * M_PI};
+        };
+
     private:
         using Base = ControllerBase<BrushlessController>;
 
@@ -105,6 +114,9 @@ namespace mrover {
         constexpr static std::size_t MAX_NUM_LIMIT_SWITCHES = 2;
         static_assert(MAX_NUM_LIMIT_SWITCHES <= 2, "Only 2 limit switches are supported");
 
+        Options mOptions;
+        int mAbsPosExtraIndex = -1;
+        int mAbsVelExtraIndex = -1;
         OutputVelocity mMinVelocity = OutputVelocity{-1.0};
         OutputVelocity mMaxVelocity = OutputVelocity{1.0};
         OutputPosition mMinPosition = OutputPosition{-1.0};
@@ -119,8 +131,8 @@ namespace mrover {
         bool mHasLimit{};
 
     public:
-        BrushlessController(rclcpp::Node::SharedPtr node, std::string masterName, std::string controllerName)
-            : Base{std::move(node), std::move(masterName), std::move(controllerName)} {
+        BrushlessController(rclcpp::Node::SharedPtr node, std::string masterName, std::string controllerName, Options options = Options{})
+            : Base{std::move(node), std::move(masterName), std::move(controllerName)}, mOptions{options} {
 
             double minVelocity, maxVelocity;
             double minPosition, maxPosition;
@@ -169,32 +181,32 @@ namespace mrover {
                 }
             }
 
-            moteus::Controller::Options options;
+            moteus::Controller::Options moteusOptions;
             moteus::Query::Format queryFormat{};
             queryFormat.aux1_gpio = moteus::kInt8;
             queryFormat.aux2_gpio = moteus::kInt8;
-            if (this->mControllerName.find("joint_de") != std::string::npos) {
-                // DE0 and DE1 have absolute encoders
-                // They are not used for their internal control loops
-                // Instead we request them at the ROS level and send adjust commands periodically
-                // Therefore we do not get them as part of normal messages and must request them explicitly
-                queryFormat.extra[0] = moteus::Query::ItemFormat{
-                        .register_number = moteus::Register::kEncoder1Position,
-                        .resolution = moteus::kFloat,
-                };
-                queryFormat.extra[1] = moteus::Query::ItemFormat{
-                        .register_number = moteus::Register::kEncoder1Velocity,
-                        .resolution = moteus::kFloat,
+
+            int extraIdx = 0;
+            if (mOptions.query_abs_position) {
+                mAbsPosExtraIndex = extraIdx++;
+                queryFormat.extra[mAbsPosExtraIndex] = moteus::Query::ItemFormat{
+                    .register_number = moteus::Register::kEncoder1Position,
+                    .resolution = moteus::kFloat,
                 };
             }
-            options.query_format = queryFormat;
-            mMoteus.emplace(options);
+            if (mOptions.query_abs_velocity) {
+                mAbsVelExtraIndex = extraIdx++;
+                queryFormat.extra[mAbsVelExtraIndex] = moteus::Query::ItemFormat{
+                    .register_number = moteus::Register::kEncoder1Velocity,
+                    .resolution = moteus::kFloat,
+                };
+            }
+
+            moteusOptions.query_format = queryFormat;
+            mMoteus.emplace(moteusOptions);
         }
 
-        auto setDesiredThrottle(Percent throttle) -> void {
-#ifdef DEBUG_BUILD
-            RCLCPP_DEBUG(mNode->get_logger(), "%s throttle set to: %f. Commanding velocity...", mControllerName.c_str(), throttle.rep);
-#endif
+        auto setDesiredThrottle(Percent const throttle) -> void {
             setDesiredVelocity(mapThrottleToVelocity(throttle));
         }
 
@@ -206,9 +218,6 @@ namespace mrover {
                 if (auto [isFwdPressed, isBwdPressed] = getPressedLimitSwitchInfo();
                     (velocity > OutputVelocity{0} && isFwdPressed) ||
                     (velocity < OutputVelocity{0} && isBwdPressed)) {
-#ifdef DEBUG_BUILD
-                    RCLCPP_DEBUG(mNode->get_logger(), "%s hit limit switch. Not commanding velocity", mControllerName.c_str());
-#endif
                     setBrake();
                     return;
                 }
@@ -235,10 +244,6 @@ namespace mrover {
                 moteus::CanFdFrame velocityFrame = mMoteus->MakePosition(command, &format);
                 mDevice.publishMessage(velocityFrame);
             }
-
-#ifdef DEBUG_BUILD
-            RCLCPP_DEBUG(mNode->get_logger(), "Commanding %s velocity to: %f", mControllerName.c_str(), velocity.get());
-#endif
         }
 
         auto setDesiredPosition(OutputPosition position) -> void {
@@ -248,9 +253,6 @@ namespace mrover {
                 if (auto [isFwdPressed, isBwdPressed] = getPressedLimitSwitchInfo();
                     (mPosition < position.get() && isFwdPressed) ||
                     (mPosition > position.get() && isBwdPressed)) {
-#ifdef DEBUG_BUILD
-                    RCLCPP_DEBUG(mNode->get_logger(), "%s hit limit switch. Not commanding position", mControllerName.c_str());
-#endif
                     setBrake();
                     return;
                 }
@@ -273,10 +275,6 @@ namespace mrover {
 
             moteus::CanFdFrame positionFrame = mMoteus->MakePosition(command, &format);
             mDevice.publishMessage(positionFrame);
-
-#ifdef DEBUG_BUILD
-            RCLCPP_DEBUG(mNode->get_logger(), "Commanding %s position to: %f", mControllerName.c_str(), position.get());
-#endif
         }
 
         auto processMessage(CANMsg_t const& msg) -> void {
@@ -285,13 +283,18 @@ namespace mrover {
                 if constexpr (std::is_same_v<T, moteus::CanFdFrame>) {
                     auto result = moteus::Query::Parse(val.data, val.size);
 
-                    if (this->mControllerName.find("joint_de") != std::string::npos) {
-                        mPosition = result.extra[0].value * 2.0f * M_PI;
-                        mVelocity = result.extra[1].value * 2.0f * M_PI;
+                    if (mOptions.use_abs_position && mAbsPosExtraIndex != -1) {
+                        mPosition = (result.extra[mAbsPosExtraIndex].value * mOptions.abs_units_multiplier) - mOptions.abs_position_offset;
                     } else {
                         mPosition = static_cast<float>(result.position);
+                    }
+
+                    if (mOptions.use_abs_velocity && mAbsVelExtraIndex != -1) {
+                        mVelocity = result.extra[mAbsVelExtraIndex].value * mOptions.abs_units_multiplier;
+                    } else {
                         mVelocity = static_cast<float>(result.velocity);
                     }
+
                     mCurrent = static_cast<float>(result.torque);
                     mErrorState = moteusErrorCodeToErrorState(result.mode, static_cast<ErrorCode>(result.fault));
                     mState = moteusModeToState(result.mode);
