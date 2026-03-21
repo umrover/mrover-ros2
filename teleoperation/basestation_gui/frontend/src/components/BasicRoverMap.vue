@@ -65,9 +65,10 @@ import L from 'leaflet'
 import 'leaflet-rotatedmarker'
 import type { LeafletMouseEvent } from 'leaflet'
 import type { MapWaypoint } from '@/types/waypoints'
-import type { NavMessage } from '@/types/coordinates'
+import type { DroneWaypointMessage } from '@/types/coordinates'
 import { ref, shallowRef, triggerRef, computed, watch } from 'vue'
 import { useRoverMap } from '@/composables/useRoverMap'
+import { useWebsocketStore } from '@/stores/websocket'
 
 const erdStore = useErdStore()
 const { waypointListForMap, highlightedWaypoint, searchWaypoint } = storeToRefs(erdStore)
@@ -89,7 +90,6 @@ const {
   onMapReady,
   centerOnRover,
   getMap,
-  navMessage,
 } = useRoverMap({
   maxOdomCount: 1000,
   drawFrequency: 1,
@@ -150,13 +150,10 @@ const getWaypointIcon = (waypoint: MapWaypoint, index: number) => {
   }
 }
 
-watch(navMessage, (msg) => {
-  if (!msg) return
-  const navMsg = msg as NavMessage
-  if (navMsg.type === 'drone_waypoint') {
-    drone_latitude_deg.value = navMsg.latitude
-    drone_longitude_deg.value = navMsg.longitude
-  }
+const websocketStore = useWebsocketStore()
+websocketStore.onMessage<DroneWaypointMessage>('nav', 'drone_waypoint', (msg) => {
+  drone_latitude_deg.value = msg.latitude
+  drone_longitude_deg.value = msg.longitude
 })
 
 watch([drone_latitude_deg, drone_longitude_deg], () => {

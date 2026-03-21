@@ -18,25 +18,18 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, watch } from 'vue'
+import { ref } from 'vue'
 import { useWebsocketStore } from '@/stores/websocket'
-import { storeToRefs } from 'pinia'
 import type { CmdVelMessage } from '@/types/websocket'
 
 const websocketStore = useWebsocketStore()
-const { messages } = storeToRefs(websocketStore)
 
 const linear_x = ref(0)
 const angular_z = ref(0)
 
-const navMessage = computed(() => messages.value['nav'])
-
-watch(navMessage, (msg) => {
-  if (msg && (msg as CmdVelMessage).type == 'cmd_vel') {
-    const cmdVelMsg = msg as CmdVelMessage;
-    linear_x.value = cmdVelMsg.linear.x
-    angular_z.value = cmdVelMsg.angular.z
-  }
+websocketStore.onMessage<CmdVelMessage>('nav', 'cmd_vel', (msg) => {
+  linear_x.value = msg.linear.x
+  angular_z.value = msg.angular.z
 })
 </script>
 

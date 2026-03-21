@@ -5,7 +5,7 @@ import { useGridLayoutStore } from '@/stores/gridLayout'
 import { useWebsocketStore } from '@/stores/websocket'
 import { storeToRefs } from 'pinia'
 import { quaternionToMapAngle } from '@/utils/map'
-import type { NavMessage } from '@/types/coordinates'
+import type { GpsFixMessage, OrientationMessage } from '@/types/coordinates'
 
 export interface UseRoverMapOptions {
   maxOdomCount?: number
@@ -23,7 +23,6 @@ export function useRoverMap(options: UseRoverMapOptions = {}) {
   } = options
 
   const websocketStore = useWebsocketStore()
-  const { messages } = storeToRefs(websocketStore)
   const gridLayoutStore = useGridLayoutStore()
   const { locked: gridLocked } = storeToRefs(gridLayoutStore)
 
@@ -64,7 +63,6 @@ export function useRoverMap(options: UseRoverMapOptions = {}) {
   })
 
   const odomLatLng = computed(() => L.latLng(rover_latitude_deg.value, rover_longitude_deg.value))
-  const navMessage = computed(() => messages.value['nav'])
 
   const getMap = (): L.Map | null => {
     return mapRef.value?.leafletObject as L.Map | null
@@ -100,15 +98,13 @@ export function useRoverMap(options: UseRoverMapOptions = {}) {
     }
   }, { immediate: true })
 
-  watch(navMessage, (msg) => {
-    if (!msg) return
-    const navMsg = msg as NavMessage
-    if (navMsg.type === 'gps_fix') {
-      rover_latitude_deg.value = navMsg.latitude
-      rover_longitude_deg.value = navMsg.longitude
-    } else if (navMsg.type === 'orientation') {
-      rover_bearing_deg.value = quaternionToMapAngle(navMsg.orientation)
-    }
+  websocketStore.onMessage<GpsFixMessage>('nav', 'gps_fix', (msg) => {
+    rover_latitude_deg.value = msg.latitude
+    rover_longitude_deg.value = msg.longitude
+  })
+
+  websocketStore.onMessage<OrientationMessage>('nav', 'orientation', (msg) => {
+    rover_bearing_deg.value = quaternionToMapAngle(msg.orientation)
   })
 
   watch([rover_latitude_deg, rover_longitude_deg, rover_bearing_deg], () => {
@@ -157,7 +153,5 @@ export function useRoverMap(options: UseRoverMapOptions = {}) {
     onMapReady,
     centerOnRover,
     getMap,
-
-    navMessage,
   }
 }
