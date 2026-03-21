@@ -1,5 +1,8 @@
+import logging
 import sqlite3
 import os
+
+logger = logging.getLogger(__name__)
 
 BASE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), '../..')
 
@@ -60,14 +63,14 @@ def init_waypoints_db():
         cursor.execute("SELECT count(*) FROM auton_waypoints")
         if cursor.fetchone()[0] == 0:
             defaults = [
-                ("No Search 1", 0, 0, 0.0, 0.0, 1, 0), # Not deletable
-                ("No Search 2", 1, 0, 0.0, 0.0, 1, 0), # Not deletable
-                ("Post 1", 2, 1, 0.0, 0.0, 1, 0),      # Not deletable
-                ("Post 2", 3, 1, 0.0, 0.0, 1, 0),      # Not deletable
-                ("Post 3", 4, 1, 0.0, 0.0, 1, 0),      # Not deletable
-                ("Mallet", 5, 2, 0.0, 0.0, 1, 0),      # Not deletable
-                ("Water Bottle", 6, 3, 0.0, 0.0, 1, 0),# Not deletable
-                ("Rock Pick", 7, 4, 0.0, 0.0, 1, 0),   # Not deletable
+                ("No Search 1", 0, 0, 0.0, 0.0, 1, 0),
+                ("No Search 2", 1, 0, 0.0, 0.0, 1, 0),
+                ("Post 1", 2, 1, 0.0, 0.0, 1, 0),
+                ("Post 2", 3, 1, 0.0, 0.0, 1, 0),
+                ("Post 3", 4, 1, 0.0, 0.0, 1, 0),
+                ("Mallet", 5, 2, 0.0, 0.0, 1, 0),
+                ("Water Bottle", 6, 3, 0.0, 0.0, 1, 0),
+                ("Rock Pick", 7, 4, 0.0, 0.0, 1, 0),
             ]
             cursor.executemany('''
                 INSERT INTO auton_waypoints (name, tag_id, type, latitude, longitude, enable_costmap, deletable)
@@ -80,9 +83,9 @@ def init_waypoints_db():
 
         conn.commit()
         conn.close()
-        print(f"Waypoints database initialized: {WAYPOINTS_DB}")
+        logger.info(f"Waypoints database initialized: {WAYPOINTS_DB}")
     except Exception as e:
-        print(f"Error initializing waypoints database: {e}")
+        logger.error(f"Error initializing waypoints database: {e}")
         raise
 
 def init_recordings_db():
@@ -118,9 +121,9 @@ def init_recordings_db():
 
         conn.commit()
         conn.close()
-        print(f"Recordings database initialized: {RECORDINGS_DB}")
+        logger.info(f"Recordings database initialized: {RECORDINGS_DB}")
     except Exception as e:
-        print(f"Error initializing recordings database: {e}")
+        logger.error(f"Error initializing recordings database: {e}")
         raise
 
 def get_waypoints_db():
@@ -137,6 +140,5 @@ def get_recordings_db():
 def get_db_connection():
     return get_waypoints_db()
 
-# Initialize on module load
 init_waypoints_db()
 init_recordings_db()
