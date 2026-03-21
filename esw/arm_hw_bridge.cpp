@@ -151,7 +151,7 @@ namespace mrover {
                         probeIfBrushless(mJointDE1, "joint_de_1");
                     });
 
-            mDEOffsetTimer = create_wall_timer(std::chrono::milliseconds(500), [this]() { updateAbsoluteOffsets(); });
+            mAbsOffsetTimer = create_wall_timer(std::chrono::milliseconds(500), [this]() { updateAbsoluteOffsets(); });
 
             mPublishDataTimer = create_wall_timer(
                     std::chrono::milliseconds(100),
@@ -217,7 +217,7 @@ namespace mrover {
         rclcpp::TimerBase::SharedPtr mProbeTimer;
         rclcpp::TimerBase::SharedPtr mPublishDataTimer;
         rclcpp::TimerBase::SharedPtr mPusherControlTimer;
-        rclcpp::TimerBase::SharedPtr mDEOffsetTimer;
+        rclcpp::TimerBase::SharedPtr mAbsOffsetTimer;
         rclcpp::Publisher<msg::ControllerState>::SharedPtr mControllerStatePub;
         msg::ControllerState mControllerState;
 
@@ -495,33 +495,34 @@ namespace mrover {
                         break;
                 }
             }
-            if (jointDEPitchPosition.has_value() || jointDERollPosition.has_value()) {
-                if (!mJointDEPitchRoll.has_value()) {
-                    RCLCPP_WARN(get_logger(), "Commanding Joint DE position with no position readings! Not commanding position");
-                    return;
-                }
-
-                if (!jointDEPitchPosition.has_value()) {
-                    jointDEPitchPosition = (*mJointDEPitchRoll)[0];
-                } else if (!jointDERollPosition.has_value()) {
-                    jointDERollPosition = (*mJointDEPitchRoll)[1];
-                }
-
-                if ((*jointDEPitchPosition >= mJointDePitchMaxPosition) || (*jointDEPitchPosition <= mJointDePitchMinPosition)) {
-                    RCLCPP_INFO(get_logger(), "Joint DE Pitch limit hit!");
-                    jointDEPitchPosition = (*mJointDEPitchRoll)[0];
-                }
-                if ((*jointDERollPosition >= mJointDERollMaxPosition) || (*jointDERollPosition <= mJointDeRollMinPosition)) {
-                    RCLCPP_INFO(get_logger(), "Joint DE Roll limit hit!");
-                    jointDERollPosition = (*mJointDEPitchRoll)[1];
-                }
-
-                Vector2<Radians> const pitchRollPositions{jointDEPitchPosition.value(), jointDERollPosition.value()};
-                Vector2<Radians> motorPositions = PITCH_ROLL_TO_01_SCALE * PITCH_ROLL_TO_0_1 * pitchRollPositions;
-
-                mJointDE0->setDesiredPosition(motorPositions[1]);
-                mJointDE1->setDesiredPosition(motorPositions[0]);
-            }
+            // TODO(eric) something is off here
+            // if (jointDEPitchPosition.has_value() || jointDERollPosition.has_value()) {
+            //     if (!mJointDEPitchRoll.has_value()) {
+            //         RCLCPP_WARN(get_logger(), "Commanding Joint DE position with no position readings! Not commanding position");
+            //         return;
+            //     }
+            //
+            //     if (!jointDEPitchPosition.has_value()) {
+            //         jointDEPitchPosition = (*mJointDEPitchRoll)[0];
+            //     } else if (!jointDERollPosition.has_value()) {
+            //         jointDERollPosition = (*mJointDEPitchRoll)[1];
+            //     }
+            //
+            //     if ((*jointDEPitchPosition >= mJointDePitchMaxPosition) || (*jointDEPitchPosition <= mJointDePitchMinPosition)) {
+            //         RCLCPP_INFO(get_logger(), "Joint DE Pitch limit hit!");
+            //         jointDEPitchPosition = (*mJointDEPitchRoll)[0];
+            //     }
+            //     if ((*jointDERollPosition >= mJointDERollMaxPosition) || (*jointDERollPosition <= mJointDeRollMinPosition)) {
+            //         RCLCPP_INFO(get_logger(), "Joint DE Roll limit hit!");
+            //         jointDERollPosition = (*mJointDEPitchRoll)[1];
+            //     }
+            //
+            //     Vector2<Radians> const pitchRollPositions{jointDEPitchPosition.value(), jointDERollPosition.value()};
+            //     Vector2<Radians> motorPositions = PITCH_ROLL_TO_01_SCALE * PITCH_ROLL_TO_0_1 * pitchRollPositions;
+            //
+            //     mJointDE0->setDesiredPosition(motorPositions[1]);
+            //     mJointDE1->setDesiredPosition(motorPositions[0]);
+            // }
         }
 
         auto updateAbsoluteOffsets() const -> void {
@@ -557,7 +558,7 @@ namespace mrover {
             if (mPusherState == PusherState::IDLE) return;
 
             uint8_t const limits = mPusher->getLimitsHitBits();
-            bool const stalled = mPusher->getIsStalled();
+            bool const stalled = false; // mPusher->getIsStalled();
 
             switch (mPusherState) {
                 case PusherState::DRIVING_FORWARD:
