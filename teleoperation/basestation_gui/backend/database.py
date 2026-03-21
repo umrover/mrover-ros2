@@ -140,5 +140,11 @@ def get_recordings_db():
 def get_db_connection():
     return get_waypoints_db()
 
-init_waypoints_db()
-init_recordings_db()
+_initialized = False
+
+def ensure_initialized():
+    global _initialized
+    if not _initialized:
+        init_waypoints_db()
+        init_recordings_db()
+        _initialized = True

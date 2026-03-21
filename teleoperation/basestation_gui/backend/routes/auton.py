@@ -8,6 +8,7 @@ from backend.managers.led import set_teleop_enabled
 from backend.utils.ros_service import call_service_async
 from mrover.srv import EnableAuton
 from mrover.msg import GPSWaypoint, WaypointType
+from std_srvs.srv import SetBool
 
 router = APIRouter(prefix="/api", tags=["auton"])
 
@@ -59,4 +60,34 @@ async def enable_auton(data: AutonEnableRequest):
 @router.post("/enable_teleop/")
 def enable_teleop(data: TeleopEnableRequest):
     set_teleop_enabled(data.enabled)
+    return {'status': 'success', 'enabled': data.enabled}
+
+
+@router.post("/toggle_pure_pursuit/")
+async def toggle_pure_pursuit(data: TeleopEnableRequest):
+    client = get_service_client(SetBool, "/toggle_pure_pursuit")
+    request = SetBool.Request(data=data.enabled)
+    result = await call_service_async(client, request)
+    if result is None:
+        raise HTTPException(status_code=500, detail="Service /toggle_pure_pursuit is not available or timed out")
+    return {'status': 'success', 'enabled': data.enabled}
+
+
+@router.post("/toggle_path_relaxation/")
+async def toggle_path_relaxation(data: TeleopEnableRequest):
+    client = get_service_client(SetBool, "/toggle_path_relaxation")
+    request = SetBool.Request(data=data.enabled)
+    result = await call_service_async(client, request)
+    if result is None:
+        raise HTTPException(status_code=500, detail="Service /toggle_path_relaxation is not available or timed out")
+    return {'status': 'success', 'enabled': data.enabled}
+
+
+@router.post("/toggle_path_interpolation/")
+async def toggle_path_interpolation(data: TeleopEnableRequest):
+    client = get_service_client(SetBool, "/toggle_path_interpolation")
+    request = SetBool.Request(data=data.enabled)
+    result = await call_service_async(client, request)
+    if result is None:
+        raise HTTPException(status_code=500, detail="Service /toggle_path_interpolation is not available or timed out")
     return {'status': 'success', 'enabled': data.enabled}
