@@ -65,7 +65,7 @@ class MockOdom(Node):
 
         self.gps_pub = self.create_publisher(NavSatFix, "/gps/fix", 10)
         self.base_pub = self.create_publisher(NavSatFix, "basestation/position", 10)
-        self.drone_pub = self.create_publisher(NavSatFix, "/drone_odometry", 10)
+        self.drone_pub = self.create_publisher(NavSatFix, "/drone_odom", 10)
         self.cal_pub = self.create_publisher(CalibrationStatus, "/calibration", 10)
         self.vel_pub = self.create_publisher(Twist, "/cmd_vel", 10)
         self.tf_broadcaster = tf2_ros.TransformBroadcaster(self)
@@ -79,9 +79,7 @@ class MockOdom(Node):
         self.create_timer(self.dt, self.tick)
         self.create_timer(5.0, self.cycle_gps_status)
 
-        self.get_logger().info(
-            f"Started at {rate} Hz (blackout: {blackout_duration}s every {blackout_period}s)"
-        )
+        self.get_logger().info(f"Started at {rate} Hz (blackout: {blackout_duration}s every {blackout_period}s)")
 
     def in_blackout(self) -> bool:
         if self.blackout_period <= 0:
@@ -106,29 +104,38 @@ class MockOdom(Node):
     def publish_gps(self, stamp):
         rover_swing = swing_magnitude(self.t)
         rover_status = GPS_STATUSES[self.gps_status_idx][0]
-        self.gps_pub.publish(make_navsatfix(
-            stamp, "base_link",
-            lat=rover_swing * math.sin(self.t * 0.3),
-            lon=rover_swing * math.cos(self.t * 0.2),
-            status=rover_status,
-            alt=250.0 + 5.0 * math.sin(self.t * 0.1),
-        ))
+        self.gps_pub.publish(
+            make_navsatfix(
+                stamp,
+                "base_link",
+                lat=rover_swing * math.sin(self.t * 0.3),
+                lon=rover_swing * math.cos(self.t * 0.2),
+                status=rover_status,
+                alt=250.0 + 5.0 * math.sin(self.t * 0.1),
+            )
+        )
 
         base_swing = swing_magnitude(self.t, phase=2.0)
-        self.base_pub.publish(make_navsatfix(
-            stamp, "basestation",
-            lat=base_swing * math.sin(self.t * 0.25),
-            lon=base_swing * math.cos(self.t * 0.15),
-            status=NavSatStatus.STATUS_FIX,
-        ))
+        self.base_pub.publish(
+            make_navsatfix(
+                stamp,
+                "basestation",
+                lat=base_swing * math.sin(self.t * 0.25),
+                lon=base_swing * math.cos(self.t * 0.15),
+                status=NavSatStatus.STATUS_FIX,
+            )
+        )
 
         drone_status = NavSatStatus.STATUS_FIX if square_wave(self.t, 14.0, 7.0) else NavSatStatus.STATUS_NO_FIX
-        self.drone_pub.publish(make_navsatfix(
-            stamp, "drone",
-            lat=42.295 + 0.001 * math.cos(self.t * 0.1),
-            lon=-83.712 + 0.001 * math.sin(self.t * 0.1),
-            status=drone_status,
-        ))
+        self.drone_pub.publish(
+            make_navsatfix(
+                stamp,
+                "drone",
+                lat=42.295 + 0.001 * math.cos(self.t * 0.1),
+                lon=-83.712 + 0.001 * math.sin(self.t * 0.1),
+                status=drone_status,
+            )
+        )
 
     def publish_tf(self, stamp):
         qx, qy, qz, qw = euler_to_quaternion(
@@ -167,7 +174,9 @@ class MockOdom(Node):
 def main(args=None):
     parser = argparse.ArgumentParser(description="Mock odometry for OdometryReading.vue")
     parser.add_argument("-r", "--rate", type=float, default=5.0, help="Publish rate in Hz (default: 5)")
-    parser.add_argument("--blackout-period", type=float, default=60.0, help="Blackout cycle in seconds, 0 to disable (default: 60)")
+    parser.add_argument(
+        "--blackout-period", type=float, default=60.0, help="Blackout cycle in seconds, 0 to disable (default: 60)"
+    )
     parser.add_argument("--blackout-duration", type=float, default=5.0, help="Blackout length in seconds (default: 5)")
     parsed = parser.parse_args()
 

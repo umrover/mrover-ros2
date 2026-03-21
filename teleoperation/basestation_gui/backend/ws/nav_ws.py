@@ -12,7 +12,7 @@ from geometry_msgs.msg import Twist
 
 class NavHandler(WebSocketHandler):
     def __init__(self, websocket):
-        super().__init__(websocket, 'nav')
+        super().__init__(websocket, "nav")
         self.buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.buffer, self.node, spin_thread=False)
 
@@ -24,7 +24,7 @@ class NavHandler(WebSocketHandler):
 
         self.forward_ros_topic("/gps/fix", NavSatFix, "gps_fix")
         self.forward_ros_topic("basestation/position", NavSatFix, "basestation_position")
-        self.forward_ros_topic("/drone_odometry", NavSatFix, "drone_waypoint")
+        self.forward_ros_topic("/drone_odom", NavSatFix, "drone_waypoint")
         self.forward_ros_topic("/calibration", CalibrationStatus, "calibration")
         self.forward_ros_topic("/cmd_vel", Twist, "cmd_vel")
 

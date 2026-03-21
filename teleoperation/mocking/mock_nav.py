@@ -21,7 +21,7 @@ class MockNav(Node):
 
         self.gps_pub = self.create_publisher(NavSatFix, "/gps/fix", 10)
         self.base_pub = self.create_publisher(NavSatFix, "basestation/position", 10)
-        self.drone_pub = self.create_publisher(NavSatFix, "/drone_odometry", 10)
+        self.drone_pub = self.create_publisher(NavSatFix, "/drone_odom", 10)
         self.nav_state_pub = self.create_publisher(StateMachineStateUpdate, "/nav_state", 10)
         self.led_pub = self.create_publisher(LED, "/led", 10)
 
