@@ -93,7 +93,7 @@ namespace mrover {
             };
             ParameterWrapper::declareParameters(this, parameters);
 
-            BrushlessController<Revolutions>::Options joint_de_opts{
+            BrushlessController<Radians>::Options joint_de_opts{
                 .query_abs_position = true,
                 .use_abs_position = true,
                 .abs_position_offset = 0.0, // TODO(eric) port DE offsets to this
@@ -114,8 +114,8 @@ namespace mrover {
             mJointA = std::make_shared<BrushlessController<Meters>>(shared_from_this(), "jetson", "joint_a");
             mJointB = std::make_shared<BrushedController<Meters>>(shared_from_this(), "jetson", "joint_b");
             mJointC = std::make_shared<BrushlessController<Radians>>(shared_from_this(), "jetson", "joint_c", joint_c_opts);
-            mJointDE0 = std::make_shared<BrushlessController<Revolutions>>(shared_from_this(), "jetson", "joint_de_0", joint_de_opts);
-            mJointDE1 = std::make_shared<BrushlessController<Revolutions>>(shared_from_this(), "jetson", "joint_de_1", joint_de_opts);
+            mJointDE0 = std::make_shared<BrushlessController<Radians>>(shared_from_this(), "jetson", "joint_de_0", joint_de_opts);
+            mJointDE1 = std::make_shared<BrushlessController<Radians>>(shared_from_this(), "jetson", "joint_de_1", joint_de_opts);
             mGripper = std::make_shared<BrushedController<Meters>>(shared_from_this(), "jetson", "gripper");
             mPusher = std::make_shared<BrushedController<Meters>>(shared_from_this(), "jetson", "pusher");
 
@@ -184,8 +184,8 @@ namespace mrover {
         std::shared_ptr<BrushlessController<Meters>> mJointA;
         std::shared_ptr<BrushedController<Meters>> mJointB;
         std::shared_ptr<BrushlessController<Radians>> mJointC;
-        std::shared_ptr<BrushlessController<Revolutions>> mJointDE0;
-        std::shared_ptr<BrushlessController<Revolutions>> mJointDE1;
+        std::shared_ptr<BrushlessController<Radians>> mJointDE0;
+        std::shared_ptr<BrushlessController<Radians>> mJointDE1;
         std::shared_ptr<BrushedController<Meters>> mGripper;
         std::shared_ptr<BrushedController<Meters>> mPusher;
 
@@ -495,7 +495,6 @@ namespace mrover {
                         break;
                 }
             }
-
             if (jointDEPitchPosition.has_value() || jointDERollPosition.has_value()) {
                 if (!mJointDEPitchRoll.has_value()) {
                     RCLCPP_WARN(get_logger(), "Commanding Joint DE position with no position readings! Not commanding position");
@@ -520,8 +519,8 @@ namespace mrover {
                 Vector2<Radians> const pitchRollPositions{jointDEPitchPosition.value(), jointDERollPosition.value()};
                 Vector2<Radians> motorPositions = PITCH_ROLL_TO_01_SCALE * PITCH_ROLL_TO_0_1 * pitchRollPositions;
 
-                mJointDE0->setDesiredPosition(motorPositions[0]);
-                mJointDE1->setDesiredPosition(motorPositions[1]);
+                mJointDE0->setDesiredPosition(motorPositions[1]);
+                mJointDE1->setDesiredPosition(motorPositions[0]);
             }
         }
 
