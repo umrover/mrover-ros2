@@ -190,15 +190,15 @@ namespace mrover {
             if (mOptions.query_abs_position) {
                 mAbsPosExtraIndex = extraIdx++;
                 queryFormat.extra[mAbsPosExtraIndex] = moteus::Query::ItemFormat{
-                    .register_number = moteus::Register::kEncoder1Position,
-                    .resolution = moteus::kFloat,
+                        .register_number = moteus::Register::kEncoder1Position,
+                        .resolution = moteus::kFloat,
                 };
             }
             if (mOptions.query_abs_velocity) {
                 mAbsVelExtraIndex = extraIdx++;
                 queryFormat.extra[mAbsVelExtraIndex] = moteus::Query::ItemFormat{
-                    .register_number = moteus::Register::kEncoder1Velocity,
-                    .resolution = moteus::kFloat,
+                        .register_number = moteus::Register::kEncoder1Velocity,
+                        .resolution = moteus::kFloat,
                 };
             }
 

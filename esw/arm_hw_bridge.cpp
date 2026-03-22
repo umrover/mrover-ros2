@@ -94,30 +94,30 @@ namespace mrover {
             ParameterWrapper::declareParameters(this, parameters);
 
             BrushlessController<Radians>::Options jointDE0Opts{
-                .query_abs_position = true,
-                .use_abs_position = true,
-                .abs_position_offset = mJointDERollOffset.get(),
-                .query_abs_velocity = true,
-                .use_abs_velocity = true,
-                .abs_units_multiplier = 2.0 * M_PI // output encoder is raw/cpr, scale to rads
+                    .query_abs_position = true,
+                    .use_abs_position = true,
+                    .abs_position_offset = mJointDERollOffset.get(),
+                    .query_abs_velocity = true,
+                    .use_abs_velocity = true,
+                    .abs_units_multiplier = 2.0 * M_PI // output encoder is raw/cpr, scale to rads
             };
 
             BrushlessController<Radians>::Options jointDE1Opts{
-                .query_abs_position = true,
-                .use_abs_position = true,
-                .abs_position_offset = mJointDEPitchOffset.get(),
-                .query_abs_velocity = true,
-                .use_abs_velocity = true,
-                .abs_units_multiplier = 2.0 * M_PI // output encoder is raw/cpr, scale to rads
+                    .query_abs_position = true,
+                    .use_abs_position = true,
+                    .abs_position_offset = mJointDEPitchOffset.get(),
+                    .query_abs_velocity = true,
+                    .use_abs_velocity = true,
+                    .abs_units_multiplier = 2.0 * M_PI // output encoder is raw/cpr, scale to rads
             };
 
             BrushlessController<Radians>::Options jointCOpts{
-                .query_abs_position = true,
-                .use_abs_position = true,
-                .abs_position_offset = mJointCOffsetTheta.get(),
-                .query_abs_velocity = true,
-                .use_abs_velocity = false,
-                .abs_units_multiplier = 2.0 * M_PI // output encoder is raw/cpr, scale to rads
+                    .query_abs_position = true,
+                    .use_abs_position = true,
+                    .abs_position_offset = mJointCOffsetTheta.get(),
+                    .query_abs_velocity = true,
+                    .use_abs_velocity = false,
+                    .abs_units_multiplier = 2.0 * M_PI // output encoder is raw/cpr, scale to rads
             };
 
             mJointA = std::make_shared<BrushlessController<Meters>>(shared_from_this(), "jetson", "joint_a");
