@@ -186,3 +186,6 @@
       - "{{ ros2_workspace }}/src/mrover[dev]"
     virtualenv: "{{ ros2_workspace }}/src/mrover/venv"
     virtualenv_command: /usr/bin/python3 -m venv
+
+- name: Build and Install Dynamixel SDK
+  command: ./scripts/build_dynamixel_sdk.sh
