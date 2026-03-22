@@ -1,5 +1,5 @@
 <template>
-  <div ref="container"></div>
+  <div ref="container" class="w-full h-full"></div>
 </template>
 
 <script setup lang="ts">
@@ -33,8 +33,7 @@ watch(
     if (display && props.axes && props.buttons) {
       display.update(props.axes, props.buttons)
     }
-  },
-  { deep: true }
+  }
 )
 
 onUnmounted(() => {
