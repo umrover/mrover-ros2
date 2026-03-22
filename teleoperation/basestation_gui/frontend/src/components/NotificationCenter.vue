@@ -207,7 +207,7 @@ export default defineComponent({
 }
 
 .notification-item:last-child {
-  border-bottom: none !important;
+  border-bottom: none;
 }
 
 .notification-component {

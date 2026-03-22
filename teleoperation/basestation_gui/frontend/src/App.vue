@@ -29,17 +29,14 @@ html,
 body {
   height: 100%;
   margin: 0;
-  /* stylelint-disable-next-line declaration-property-value-disallowed-list */
   overflow: hidden;
 }
 
 #app {
-  /* stylelint-disable declaration-property-value-disallowed-list */
   display: flex;
   flex-direction: column;
   height: 100%;
   overflow: hidden;
-  /* stylelint-enable declaration-property-value-disallowed-list */
   font-family: Avenir, Helvetica, Arial, sans-serif;
 }
 
@@ -48,7 +45,6 @@ body {
   flex: 1;
   width: 100%;
   min-height: 0;
-  /* stylelint-disable-next-line declaration-property-value-disallowed-list */
   overflow: hidden;
   background-color: var(--view-bg);
 }

@@ -166,9 +166,9 @@ export default defineComponent({
 }
 
 h1 {
-  margin: 0 !important;
-  font-size: clamp(1.25rem, 1rem + 0.5vw, 1.75rem) !important;
-  line-height: 1 !important;
+  margin: 0;
+  font-size: clamp(1.25rem, 1rem + 0.5vw, 1.75rem);
+  line-height: 1;
 }
 
 .nav-divider {

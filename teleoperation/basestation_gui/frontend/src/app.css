@@ -16,7 +16,7 @@
 *,
 *::before,
 *::after {
-  font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', 'Monaco', monospace !important;
+  font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', 'Monaco', monospace;
   border-color: var(--cmd-panel-border);
 }
 
@@ -641,7 +641,7 @@ html {
   justify-content: center;
   width: var(--cmd-icon-btn-size);
   height: var(--cmd-icon-btn-size);
-  padding: 0 !important;
+  padding: 0;
   font-size: 0.875rem;
   border-radius: var(--cmd-radius-sm);
   transition: all var(--cmd-transition);
@@ -784,7 +784,7 @@ html {
   padding: 0.5rem;
   margin-bottom: 0.5rem;
   background-color: var(--card-bg);
-  border: none;
+  border: 1px solid transparent;
   border-radius: var(--cmd-radius-md);
   transition: all var(--cmd-transition);
 
@@ -838,7 +838,7 @@ html {
   justify-content: center;
   width: var(--cmd-btn-height-sm);
   height: var(--cmd-btn-height-sm);
-  padding: 0 !important;
+  padding: 0;
   font-size: 0.875rem;
   line-height: 1;
   border-radius: var(--cmd-radius-sm);
@@ -907,18 +907,9 @@ html {
    Shared by OdometryReading, Controller Data Tables
    ----------------------------------------------- */
 
-.fmt-num-tabular {
-  font-variant-numeric: tabular-nums;
-  text-align: right;
-}
-
-.fmt-num-pad {
+.fmt-dim {
   opacity: 0.25;
-}
-
-.fmt-num-no-data {
-  color: var(--text-muted);
-  opacity: 0.4;
+  user-select: none;
 }
 
 .row-no-data {

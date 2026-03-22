@@ -44,7 +44,7 @@ defineProps({
 
 .cmd-list-item--drone {
   background-color: rgb(30 102 245 / 5%);
-  border-color: var(--cmd-status-info) !important;
+  border-color: var(--cmd-status-info);
 }
 
 :is([data-theme='dark'], [data-theme='high-contrast-dark']) .cmd-list-item--drone {

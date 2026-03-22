@@ -1,6 +1,6 @@
 import { ref, onUnmounted } from 'vue'
 
-export { formatNumber, formatValue, formatState, formatLimit, formatError, type FormattedNumber } from '@/utils/formatNumber'
+export { formatNumber, formatState, formatLimit, formatError } from '@/utils/formatNumber'
 
 const STALE_TIMEOUT_MS = 1000
 

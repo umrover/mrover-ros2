@@ -178,14 +178,14 @@ function getLetterClass(state: string) {
 
 <style scoped>
 .cmd-input {
-  /* stylelint-disable-next-line declaration-property-value-disallowed-list */
+
   text-align: center;
   text-transform: uppercase;
   letter-spacing: 0.1em;
 }
 
 .typing-hint {
-  /* stylelint-disable-next-line declaration-property-value-disallowed-list */
+
   display: block;
   margin: var(--cmd-gap-xs) 0 var(--cmd-gap-md);
   font-size: var(--cmd-font-xs);
@@ -207,7 +207,7 @@ function getLetterClass(state: string) {
   height: clamp(30px, 2vw, 44px);
   font-size: var(--cmd-font-xl);
   font-weight: 700;
-  /* stylelint-disable-next-line declaration-property-value-disallowed-list */
+
   text-align: center;
 }
 

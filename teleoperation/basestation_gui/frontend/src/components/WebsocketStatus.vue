@@ -2,7 +2,7 @@
   <div class="flex justify-center" style="user-select: none;">
     <div
       v-if="Object.keys(connectionStatus as Record<string, any>).length > 0"
-      class="justify-center items-center border border-2 rounded px-1 mr-1"
+      class="justify-center items-center border-2 rounded px-1 mr-1"
     >
       <div class="flex items-center gap-2">
         <IndicatorDot :is-active="true" />
@@ -18,7 +18,7 @@
         v-for="(status, id) in connectionStatus"
         :key="id"
         :class="[
-          'mx-0 flex-col items-center border border-2 rounded p-1',
+          'mx-0 flex-col items-center border-2 rounded p-1',
           status === 'disconnected' ? 'bg-cmd-warning' : ''
         ]"
       >
@@ -38,9 +38,9 @@
         </div>
       </div>
     </div>
-    <div class="border border-2 rounded px-1 ml-1 flex flex-col justify-center">
-      <div class="flex gap-2"><span class="text-cmd-success font-semibold">TX</span> {{ txMsgRate }}/s {{ formatBytes(txByteRate) }}/s</div>
-      <div class="flex gap-2"><span class="text-cmd-danger font-semibold">RX</span> {{ rxMsgRate }}/s {{ formatBytes(rxByteRate) }}/s</div>
+    <div class="border-2 rounded px-1 ml-1 flex flex-col justify-center">
+      <div class="flex gap-2"><span class="text-cmd-success font-semibold">TX</span> <span v-html="formatNumber(txMsgRate, 3, 0)"></span>/s <span v-html="formatNumber(txByteRate / 1024, 3, 2)"></span>KB/s</div>
+      <div class="flex gap-2"><span class="text-cmd-danger font-semibold">RX</span> <span v-html="formatNumber(rxMsgRate, 3, 0)"></span>/s <span v-html="formatNumber(rxByteRate / 1024, 3, 2)"></span>KB/s</div>
     </div>
   </div>
 </template>
@@ -49,6 +49,7 @@
 import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { useWebsocketStore } from '@/stores/websocket'
 import { storeToRefs } from 'pinia'
+import { formatNumber } from '@/utils/formatNumber'
 import IndicatorDot from './IndicatorDot.vue'
 
 const websocketStore = useWebsocketStore()
@@ -108,12 +109,6 @@ function updateRates() {
     flashInDisplay.value[id] = getFlashIn(id)
     flashOutDisplay.value[id] = getFlashOut(id)
   }
-}
-
-function formatBytes(bytes: number): string {
-  if (bytes < 1024) return `${bytes}B`
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)}KB`
-  return `${(bytes / (1024 * 1024)).toFixed(1)}MB`
 }
 
 onMounted(() => {

@@ -19,9 +19,9 @@
             <td class="font-bold">{{ j.label }}</td>
             <td>{{ formatState(fieldAt(states, j.id)) }}</td>
             <td>{{ formatError(fieldAt(errors, j.id)) }}</td>
-            <FormattedCell :value="fieldAt(positions, j.id)" :int-digits="1" />
-            <FormattedCell :value="fieldAt(velocities, j.id)" :int-digits="1" />
-            <FormattedCell :value="fieldAt(currents, j.id)" :int-digits="1" />
+            <td v-html="formatNumber(fieldAt(positions, j.id), 1, 2, true)"></td>
+            <td v-html="formatNumber(fieldAt(velocities, j.id), 1, 2, true)"></td>
+            <td v-html="formatNumber(fieldAt(currents, j.id), 1)"></td>
             <td>{{ formatLimit(fieldAt(limitHits, j.id)) }}</td>
           </tr>
         </tbody>
@@ -36,7 +36,7 @@ import { useWebsocketStore } from '@/stores/websocket'
 import { storeToRefs } from 'pinia'
 import type { ControllerStateMessage } from '@/types/websocket'
 import { useStaleTimer, formatState, formatLimit, formatError, stateRowClass } from '@/composables/useControllerState'
-import FormattedCell from './FormattedCell.vue'
+import { formatNumber } from '@/utils/formatNumber'
 
 const websocketStore = useWebsocketStore()
 const { messages } = storeToRefs(websocketStore)

@@ -34,7 +34,7 @@ export default defineComponent({
 
 .terminal-link:hover .prefix {
   color: var(--text-primary);
-  opacity: 1 !important;
+  opacity: 1;
 }
 
 .terminal-link::before {

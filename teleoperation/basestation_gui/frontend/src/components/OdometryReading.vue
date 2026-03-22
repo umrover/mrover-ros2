@@ -5,15 +5,15 @@
       <span class="odom-header">Rover</span>
       <div class="odom-rows">
         <div class="odom-coord-row">
-          <span class="odom-value" :class="{ 'fmt-num-no-data': fmtCoord(rover_latitude_deg, 3, 6).noData }"><span class="fmt-num-pad">{{ fmtCoord(rover_latitude_deg, 3, 6).pad }}</span>{{ fmtCoord(rover_latitude_deg, 3, 6).num }}</span>
+          <span class="odom-value" v-html="formatNumber(rover_latitude_deg, 3, 6)"></span>
           <span class="odom-unit">{{ dirLabel(rover_latitude_deg, 'N', 'S') }}</span>
         </div>
         <div class="odom-coord-row">
-          <span class="odom-value" :class="{ 'fmt-num-no-data': fmtCoord(rover_longitude_deg, 3, 6).noData }"><span class="fmt-num-pad">{{ fmtCoord(rover_longitude_deg, 3, 6).pad }}</span>{{ fmtCoord(rover_longitude_deg, 3, 6).num }}</span>
+          <span class="odom-value" v-html="formatNumber(rover_longitude_deg, 3, 6)"></span>
           <span class="odom-unit">{{ dirLabel(rover_longitude_deg, 'E', 'W') }}</span>
         </div>
         <div class="odom-coord-row">
-          <span class="odom-value" :class="{ 'fmt-num-no-data': fmtCoord(rover_altitude, 3, 1).noData }"><span class="fmt-num-pad">{{ fmtCoord(rover_altitude, 3, 1).pad }}</span>{{ fmtCoord(rover_altitude, 3, 1).num }}</span>
+          <span class="odom-value" v-html="formatNumber(rover_altitude, 3, 1)"></span>
           <span class="odom-unit">m</span>
         </div>
       </div>
@@ -24,11 +24,11 @@
       <span class="odom-header">Base</span>
       <div class="odom-rows">
         <div class="odom-coord-row">
-          <span class="odom-value" :class="{ 'fmt-num-no-data': fmtCoord(basestation_latitude_deg, 3, 6).noData }"><span class="fmt-num-pad">{{ fmtCoord(basestation_latitude_deg, 3, 6).pad }}</span>{{ fmtCoord(basestation_latitude_deg, 3, 6).num }}</span>
+          <span class="odom-value" v-html="formatNumber(basestation_latitude_deg, 3, 6)"></span>
           <span class="odom-unit">{{ dirLabel(basestation_latitude_deg, 'N', 'S') }}</span>
         </div>
         <div class="odom-coord-row">
-          <span class="odom-value" :class="{ 'fmt-num-no-data': fmtCoord(basestation_longitude_deg, 3, 6).noData }"><span class="fmt-num-pad">{{ fmtCoord(basestation_longitude_deg, 3, 6).pad }}</span>{{ fmtCoord(basestation_longitude_deg, 3, 6).num }}</span>
+          <span class="odom-value" v-html="formatNumber(basestation_longitude_deg, 3, 6)"></span>
           <span class="odom-unit">{{ dirLabel(basestation_longitude_deg, 'E', 'W') }}</span>
         </div>
       </div>
@@ -92,11 +92,11 @@
       <span class="odom-header">VEL</span>
       <div class="odom-rows">
         <div class="odom-coord-row">
-          <span class="odom-value" :class="{ 'fmt-num-no-data': fmtCoord(linear_x, 2, 2).noData }"><span class="fmt-num-pad">{{ fmtCoord(linear_x, 2, 2).pad }}</span>{{ fmtCoord(linear_x, 2, 2).num }}</span>
+          <span class="odom-value" v-html="formatNumber(linear_x, 2, 2)"></span>
           <span class="odom-unit">m/s</span>
         </div>
         <div class="odom-coord-row">
-          <span class="odom-value" :class="{ 'fmt-num-no-data': fmtCoord(angular_z, 2, 2).noData }"><span class="fmt-num-pad">{{ fmtCoord(angular_z, 2, 2).pad }}</span>{{ fmtCoord(angular_z, 2, 2).num }}</span>
+          <span class="odom-value" v-html="formatNumber(angular_z, 2, 2)"></span>
           <span class="odom-unit">&deg;/s</span>
         </div>
       </div>
@@ -134,9 +134,6 @@ const accel_calibration = ref<number | null>(null)
 const linear_x = ref<number | null>(null)
 const angular_z = ref<number | null>(null)
 
-function fmtCoord(value: number | null, intDigits: number, fracDigits: number) {
-  return formatNumber(value, intDigits, fracDigits)
-}
 
 function fmtDeg(value: number | null): string {
   if (value === null) return '\u2012\u2012\u2012'
