@@ -587,11 +587,11 @@ class Context:
         return False
 
     def toggle_pure_pursuit(self, request: SetBool.Request, response: SetBool.Response) -> SetBool.Response:
-       self.node.set_parameters([Parameter("pure_pursuit.use_pure_pursuit", Parameter.Type.BOOL, request.data)])
-       response.message = f"Set pure pursuit toggle to {request.data}."
-       self.node.get_logger().info(response.message)
-       response.success = True
-       return response
+        self.node.set_parameters([Parameter("pure_pursuit.use_pure_pursuit", Parameter.Type.BOOL, request.data)])
+        response.message = f"Set pure pursuit toggle to {request.data}."
+        self.node.get_logger().info(response.message)
+        response.success = True
+        return response
 
     def publish_path_marker(
         self,
