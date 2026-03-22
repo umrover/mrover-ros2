@@ -148,9 +148,6 @@
 
 - name: Build and Install Dynamixel SDK
   command: ./scripts/build_dynamixel_sdk.sh
-  args: 
-    chdir:
-    creates:
 
 - name: Initialize rosdep
   become: True
