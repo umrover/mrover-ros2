@@ -6,6 +6,7 @@ import numpy as np
 import pymap3d
 import rclpy
 from scipy import ndimage
+from rclpy.parameter import Parameter
 
 import tf2_ros
 from geometry_msgs.msg import Twist, Point
@@ -20,6 +21,8 @@ from mrover.msg import (
     ImageTarget,
     ImageTargets,
 )
+
+from std_srvs.srv import SetBool
 from mrover.srv import EnableAuton
 from nav_msgs.msg import Path
 from nav_msgs.msg import OccupancyGrid
@@ -380,6 +383,7 @@ class Context:
     path_history_publisher: Publisher
     path_marker_publisher: Publisher
     COSTMAP_THRESH: float
+    USE_PURE_PURSUIT: bool
     current_dilation_radius: float
     exec: SingleThreadedExecutor
 
@@ -416,7 +420,10 @@ class Context:
         self.env = Environment(self, image_targets=ImageTargetsStore(self), cost_map=CostMap())
         self.disable_requested = False
 
+        self.USE_PURE_PURSUIT = node.get_parameter_or("pure_pursuit.use_pure_pursuit", False).value
+
         node.create_service(EnableAuton, "enable_auton", self.enable_auton)
+        node.create_service(SetBool, "toggle_pure_pursuit", self.toggle_pure_pursuit)
 
         self.command_publisher = node.create_publisher(Twist, "nav_cmd_vel", 1)
         self.search_point_publisher = node.create_publisher(GPSPointList, "search_path", 1)
@@ -578,6 +585,13 @@ class Context:
                 self.dilate_cost(self.current_dilation_radius)
             return True
         return False
+
+    def toggle_pure_pursuit(self, request: SetBool.Request, response: SetBool.Response) -> SetBool.Response:
+       self.node.set_parameters([Parameter("pure_pursuit.use_pure_pursuit", Parameter.Type.BOOL, request.data)])
+       response.message = f"Set pure pursuit toggle to {request.data}."
+       self.node.get_logger().info(response.message)
+       response.success = True
+       return response
 
     def publish_path_marker(
         self,
