@@ -53,7 +53,7 @@
         framerate: 5
     ee2_cam:
       address: 10.1.0.2
-      port: 8089
+      port: 8085
       dev_node: "/dev/ee2_cam"
       dev_path: ""
       stream:
