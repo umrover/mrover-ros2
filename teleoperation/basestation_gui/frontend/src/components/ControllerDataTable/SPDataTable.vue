@@ -1,8 +1,8 @@
 <template>
   <div class="flex flex-col gap-2 h-full">
     <h4 class="component-header">SP</h4>
-    <div class="overflow-x-auto cmd-scroll flex-1">
-      <table class="cmd-table compact-table w-full">
+    <div class="overflow-x-auto scroll flex-1">
+      <table class="table compact-table w-full">
         <thead>
           <tr>
             <th>Motor</th>

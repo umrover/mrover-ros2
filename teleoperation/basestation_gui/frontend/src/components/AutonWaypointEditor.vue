@@ -5,14 +5,14 @@
         <h4 class="component-header">Waypoint Store</h4>
         <div class="flex gap-2 items-center">
           <button
-            class="cmd-btn cmd-btn-danger cmd-btn-sm cmd-btn-icon-sm"
+            class="btn btn-danger btn-sm btn-icon-sm"
             data-testid="pw-reset-waypoints-btn"
             @click="resetModal?.open()"
             title="Reset waypoints"
           >
             <i class="bi bi-arrow-clockwise"></i>
           </button>
-          <button class="cmd-btn cmd-btn-sm cmd-btn-success" data-testid="pw-add-from-map" @click="addModal?.open()">
+          <button class="btn btn-sm btn-success" data-testid="pw-add-from-map" @click="addModal?.open()">
             Add from Map
           </button>
         </div>
@@ -38,8 +38,8 @@
       <div class="waypoint-header p-2 mb-2 flex justify-between items-center border-b">
         <h4 class="component-header">Current Course</h4>
         <button
-          class="cmd-btn cmd-btn-sm"
-          :class="autonomyStore.allCostmapToggle ? 'cmd-btn-success' : 'cmd-btn-danger'"
+          class="btn btn-sm"
+          :class="autonomyStore.allCostmapToggle ? 'btn-success' : 'btn-danger'"
           data-testid="pw-costmap-toggle-all"
           @click="autonomyStore.toggleAllCostmaps()"
         >

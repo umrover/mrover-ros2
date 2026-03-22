@@ -40,15 +40,15 @@
       <div class="odom-rows">
         <div class="odom-row">
           <span class="odom-label">Yaw</span>
-          <span class="odom-value" :class="{ 'fmt-num-no-data': rover_bearing_deg == null }">{{ fmtDeg(rover_bearing_deg) }}<span class="odom-unit">&deg;</span></span>
+          <span class="odom-value" v-html="formatNumber(rover_bearing_deg, 3, 0)"></span><span class="odom-unit">&deg;</span>
         </div>
         <div class="odom-row">
           <span class="odom-label">Pit</span>
-          <span class="odom-value" :class="{ 'fmt-num-no-data': pitch == null }">{{ fmtDeg(pitch) }}<span class="odom-unit">&deg;</span></span>
+          <span class="odom-value" v-html="formatNumber(pitch, 3, 0)"></span><span class="odom-unit">&deg;</span>
         </div>
         <div class="odom-row">
           <span class="odom-label">Rol</span>
-          <span class="odom-value" :class="{ 'fmt-num-no-data': roll == null }">{{ fmtDeg(roll) }}<span class="odom-unit">&deg;</span></span>
+          <span class="odom-value" v-html="formatNumber(roll, 3, 0)"></span><span class="odom-unit">&deg;</span>
         </div>
       </div>
     </div>
@@ -135,11 +135,6 @@ const linear_x = ref<number | null>(null)
 const angular_z = ref<number | null>(null)
 
 
-function fmtDeg(value: number | null): string {
-  if (value === null) return '\u2012\u2012\u2012'
-  return value.toFixed(0)
-}
-
 function dirLabel(value: number | null, pos: string, neg: string): string {
   if (value === null) return '-'
   return value >= 0 ? pos : neg
@@ -187,7 +182,6 @@ websocketStore.onMessage<CmdVelMessage>('nav', 'cmd_vel', msg => {
   display: grid;
   grid-template-columns: 3fr 3fr 2fr 2fr 2fr 2fr;
   height: 100%;
-  font-family: var(--cmd-font-mono);
   font-size: 1.1rem;
 }
 
@@ -196,7 +190,7 @@ websocketStore.onMessage<CmdVelMessage>('nav', 'cmd_vel', msg => {
   flex-direction: column;
   gap: 0.5rem;
   padding: 0.5rem 0.75rem;
-  border-right: 1px solid var(--cmd-panel-border);
+  border-right: 1px solid var(--panel-border);
   min-width: 0;
 }
 

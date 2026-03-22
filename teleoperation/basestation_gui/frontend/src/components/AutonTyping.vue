@@ -15,7 +15,7 @@ create instance of rosaction in callback area -->
           <input
             v-model="typingMessage"
             type="text"
-            class="cmd-form-control cmd-input"
+            class="form-control input"
             id="autonTyping"
             data-testid="pw-typing-input"
             placeholder="Message"
@@ -29,7 +29,7 @@ create instance of rosaction in callback area -->
         <div class="flex justify-center">
           <button
             v-if="!codeSent"
-            class="cmd-btn cmd-btn-sm cmd-btn-outline-control typing-btn"
+            class="btn btn-sm btn-outline-control typing-btn"
             data-testid="pw-typing-submit"
             :disabled="typingMessage.length < 3"
             @click.prevent="submitMessage()"
@@ -38,7 +38,7 @@ create instance of rosaction in callback area -->
           </button>
           <button
             v-if="codeSent"
-            class="cmd-btn cmd-btn-sm cmd-btn-outline-secondary typing-btn"
+            class="btn btn-sm btn-outline-secondary typing-btn"
             @click.prevent="submitMessage()"
           >
             Cancel
@@ -68,8 +68,8 @@ create instance of rosaction in callback area -->
       <div class="flex flex-col items-center text-center w-full">
         <h4 class="component-header mb-2">Planar Alignment</h4>
         <div class="flex items-baseline justify-center gap-1 p-2 rounded bg-theme-view">
-          <span class="cmd-data-value">0</span>
-          <span class="cmd-data-unit">degrees</span>
+          <span class="data-value">0</span>
+          <span class="data-unit">degrees</span>
         </div>
       </div>
     </div>
@@ -177,7 +177,7 @@ function getLetterClass(state: string) {
 </script>
 
 <style scoped>
-.cmd-input {
+.input {
 
   text-align: center;
   text-transform: uppercase;
@@ -187,8 +187,8 @@ function getLetterClass(state: string) {
 .typing-hint {
 
   display: block;
-  margin: var(--cmd-gap-xs) 0 var(--cmd-gap-md);
-  font-size: var(--cmd-font-xs);
+  margin: 0.25rem 0 0.5rem;
+  font-size: 0.75rem;
   color: var(--text-muted);
 }
 
@@ -198,14 +198,14 @@ function getLetterClass(state: string) {
 }
 
 .feedback-table {
-  margin-top: var(--cmd-gap-md);
+  margin-top: 0.5rem;
   border-collapse: collapse;
 }
 
 .feedback-table td {
   width: clamp(30px, 2vw, 44px);
   height: clamp(30px, 2vw, 44px);
-  font-size: var(--cmd-font-xl);
+  font-size: 1.25rem;
   font-weight: 700;
 
   text-align: center;
@@ -217,17 +217,17 @@ function getLetterClass(state: string) {
 }
 
 .typed-cell {
-  color: #fff;
-  background-color: var(--cmd-status-ok);
+  color: var(--text-on-status);
+  background-color: var(--status-ok);
 }
 
 .in-progress-cell {
-  color: #fff;
-  background-color: var(--cmd-status-warn);
+  color: var(--text-on-status);
+  background-color: var(--status-warn);
 }
 
 .not-typed-cell {
-  color: #fff;
-  background-color: var(--cmd-status-error);
+  color: var(--text-on-status);
+  background-color: var(--status-error);
 }
 </style>

@@ -18,7 +18,6 @@ export default defineComponent({
 
 <style scoped>
 .terminal-link {
-  font-family: var(--cmd-font-mono);
   font-size: 1rem;
   color: var(--text-muted);
   transition: color 0.1s ease;

@@ -62,9 +62,8 @@ const throttleWidth = computed(() => Math.max(0, throttleNorm.value * 80))
 
 <style scoped>
 .joystick-svg {
-  --outline: #6c757d;
-  --base: #dee2e6;
-  --label: #6c757d;
+  --outline: var(--text-muted);
+  --base: var(--input-border);
   width: 100%;
   height: auto;
 }

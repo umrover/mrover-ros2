@@ -1,7 +1,7 @@
 <template>
   <div class="grid grid-cols-3 gap-2">
     <div class="flex flex-col gap-1">
-      <span class="cmd-data-label">General</span>
+      <span class="data-label">General</span>
       <FeedbackButton
         ref="autonCheckbox"
         class="w-full"
@@ -22,7 +22,7 @@
       />
     </div>
     <div class="flex flex-col gap-1">
-      <span class="cmd-data-label">Navigation</span>
+      <span class="data-label">Navigation</span>
       <FeedbackButton
         class="w-full"
         data-testid="pw-pure-pursuit-toggle"
@@ -49,7 +49,7 @@
       />
     </div>
     <div class="flex flex-col gap-1">
-      <span class="cmd-data-label">Perception</span>
+      <span class="data-label">Perception</span>
       <FeedbackButton
         class="w-full"
         :name="'Stereo Detector'"

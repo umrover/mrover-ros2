@@ -19,7 +19,7 @@
         :key="id"
         :class="[
           'mx-0 flex-col items-center border-2 rounded p-1',
-          status === 'disconnected' ? 'bg-cmd-warning' : ''
+          status === 'disconnected' ? 'bg-warning' : ''
         ]"
       >
         <p class="font-bold text-center">{{ getAlias(id) }}</p>
@@ -27,20 +27,20 @@
         <div class="flex justify-center items-center gap-2">
           <div
             class="rounded-full"
-            :class="flashOutDisplay[id] ? 'bg-cmd-success' : 'bg-cmd-secondary'"
+            :class="flashOutDisplay[id] ? 'bg-success' : 'bg-secondary'"
             style="width: 16px; height: 16px"
           ></div>
           <div
             class="rounded-full"
-            :class="flashInDisplay[id] ? 'bg-cmd-danger' : 'bg-cmd-secondary'"
+            :class="flashInDisplay[id] ? 'bg-danger' : 'bg-secondary'"
             style="width: 16px; height: 16px"
           ></div>
         </div>
       </div>
     </div>
     <div class="border-2 rounded px-1 ml-1 flex flex-col justify-center">
-      <div class="flex gap-2"><span class="text-cmd-success font-semibold">TX</span> <span v-html="formatNumber(txMsgRate, 3, 0)"></span>/s <span v-html="formatNumber(txByteRate / 1024, 3, 2)"></span>KB/s</div>
-      <div class="flex gap-2"><span class="text-cmd-danger font-semibold">RX</span> <span v-html="formatNumber(rxMsgRate, 3, 0)"></span>/s <span v-html="formatNumber(rxByteRate / 1024, 3, 2)"></span>KB/s</div>
+      <div class="flex gap-2"><span class="text-success font-semibold">TX</span> <span v-html="formatNumber(txMsgRate, 3, 0)"></span>/s <span v-html="formatNumber(txByteRate / 1024, 3, 2)"></span>KB/s</div>
+      <div class="flex gap-2"><span class="text-danger font-semibold">RX</span> <span v-html="formatNumber(rxMsgRate, 3, 0)"></span>/s <span v-html="formatNumber(rxByteRate / 1024, 3, 2)"></span>KB/s</div>
     </div>
   </div>
 </template>
