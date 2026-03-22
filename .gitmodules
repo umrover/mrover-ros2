@@ -7,3 +7,7 @@
 [submodule "esw/fw"]
 	path = esw/fw
 	url = https://github.com/umrover/mrover-esw.git
+[submodule "deps/dynamixel_sdk"]
+	path = deps/dynamixel_sdk
+	url = https://github.com/ROBOTIS-GIT/DynamixelSDK.git
+	branch = ros2

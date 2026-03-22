@@ -146,6 +146,12 @@
     chdir: "{{ ansible_env.HOME }}/ros2_ws/src/mrover/"
     creates: "{{ ansible_env.HOME }}/ros2_ws/src/mrover/deps/dawn/out/Release/src/dawn/native/libwebgpu_dawn.so"
 
+- name: Build and Install Dynamixel SDK
+  command: ./scripts/build_dynamixel_sdk.sh
+  args: 
+    chdir:
+    creates:
+
 - name: Initialize rosdep
   become: True
   command: rosdep init
