@@ -117,6 +117,10 @@ ee1_streamer:
   ros__parameters:
     camera: "ee1_cam"
 
+ee2_streamer:
+  ros__parameters:
+    camera: "ee2_cam"
+
 zed_mini_streamer:
   ros__parameters:
     camera: "zed_mini"
