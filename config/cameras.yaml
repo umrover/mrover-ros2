@@ -51,6 +51,23 @@
         width: 1280
         height: 720
         framerate: 5
+    ee2_cam:
+      address: 10.1.0.2
+      port: 8084
+      dev_node: "/dev/ee2_cam"
+      dev_path: ""
+      stream:
+        pixel_format: MJPG # from v4l2-ctl -d DEV_NODE --list-formats-ext
+        width: 640
+        height: 480
+        framerate: 15
+        codec: H265
+        bitrate: 1000000
+      image_capture:
+        pixel_format: YUYV
+        width: 1280
+        height: 720
+        framerate: 5
     zed_mini:
       address: 10.1.0.2
       port: 8086
@@ -115,6 +132,7 @@ camera_client:
       - "mob_cam"
       - "joint_a_cam"
       - "ee1_cam"
+      - "ee2_cam"
       - "zed_mini"
       - "zed"
     rtp_jitter_ms: 50

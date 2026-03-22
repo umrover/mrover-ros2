@@ -51,26 +51,6 @@ def generate_launch_description():
         ],
     )
 
-    joint_a_streamer_node = Node(
-        package="mrover",
-        executable="gst_camera_server",
-        name="joint_a_streamer",
-        output="screen",
-        parameters=[
-            Path(get_package_share_directory("mrover"), "config", "cameras.yaml"),
-        ],
-    )
-
-    ee1_streamer_node = Node(
-        package="mrover",
-        executable="gst_camera_server",
-        name="ee1_streamer",
-        output="screen",
-        parameters=[
-            Path(get_package_share_directory("mrover"), "config", "cameras.yaml"),
-        ],
-    )
-
     zed_mini_streamer_node = Node(
         package="mrover",
         executable="gst_camera_server",
@@ -112,8 +92,6 @@ def generate_launch_description():
             superstructure_node,
             drive_hw_bridge_node,
             mob_streamer_node,
-            joint_a_streamer_node,
-            ee1_streamer_node,
             zed_mini_streamer_node,
             zed_container,
         ]
