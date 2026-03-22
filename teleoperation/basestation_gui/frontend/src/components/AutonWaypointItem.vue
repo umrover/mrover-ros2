@@ -11,12 +11,6 @@
     <div class="flex justify-between items-center">
       <small class="text-muted">{{ waypoint.lat.toFixed(6) }}N, {{ waypoint.lon.toFixed(6) }}W</small>
       <div class="flex gap-1">
-        <button
-          class="cmd-btn cmd-btn-sm cmd-btn-text"
-          :class="waypoint.enable_costmap ? 'cmd-btn-success' : 'cmd-btn-danger'"
-          data-testid="pw-route-costmap-toggle"
-          @click="toggleCostmap"
-        >Costmap</button>
         <button class="cmd-btn cmd-btn-sm cmd-btn-danger cmd-btn-icon" @click="$emit('delete', { waypoint })"><i class="bi bi-trash-fill"></i></button>
       </div>
     </div>
@@ -32,15 +26,9 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   delete: [payload: { waypoint: AutonWaypoint }]
-  toggleCostmap: [payload: { waypoint: AutonWaypoint; enable_costmap: boolean }]
 }>()
 
-function toggleCostmap() {
-  emit('toggleCostmap', {
-    waypoint: props.waypoint,
-    enable_costmap: !props.waypoint.enable_costmap,
-  })
-}
+
 </script>
 
 <style scoped>
