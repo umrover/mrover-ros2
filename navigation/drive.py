@@ -25,12 +25,14 @@ class DriveController:
     _driver_state: DriveMode
     lookahead_pub: Publisher
     intersection_pub: Publisher
+    USE_PURE_PURSUIT: bool
 
     def __init__(self, node: Node, lookahead_pub: Publisher, intersect_pub: Publisher):
         self.node = node
         self._last_angular_error = None
         self._last_target = None
         self._last_lookahead_dist = self.node.get_parameter("pure_pursuit.min_lookahead_distance").value
+        self.USE_PURE_PURSUIT = self.node.get_parameter_or("pure_pursuit.use_pure_pursuit", True).value
         self.lookahead_pub = lookahead_pub
         self.intersection_pub = intersect_pub
         self._driver_state = self.DriveMode.STOPPED
@@ -177,10 +179,28 @@ class DriveController:
         drive_back: bool = False,
         path_start: np.ndarray | None = None,
     ) -> tuple[Twist, bool]:
-        # If target_pos is a Trajectory we use pure pursuit instead of deafult_drive_command
+        """
+        :param target_pos: The trajectory of the rover.
+        :param rover_pose: The current pose of the rover.
+        :param completion_thresh: The distance threshold to consider the rover at the target position.
+        :param turn_in_place_thresh: The angle threshold to consider the rover facing the target position and ready to drive forward towards it.
+        :param drive_back: True if rover should drive backwards, false otherwise.
+        :param path_start: If you want the rover to drive on a line segment (and actively try to stay on the line), pass the start of the line segment as this param, otherwise pass None.
+        :return: A tuple of the drive command and a boolean indicating whether the rover is at the target position.
+        """
+        # If target_pos is a Trajectory we use pure pursuit instead of default_drive_command
         if isinstance(target_pos, np.ndarray):
             return self.get_default_drive_command(
                 target_pos,
+                rover_pose,
+                completion_thresh,
+                turn_in_place_thresh,
+                drive_back,
+                path_start,
+            )
+        elif target_pos.is_last():
+            return self.get_default_drive_command(
+                target_pos.get_current_point(),
                 rover_pose,
                 completion_thresh,
                 turn_in_place_thresh,
