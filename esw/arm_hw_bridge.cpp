@@ -82,10 +82,10 @@ namespace mrover {
                     {"joint_b_mount_theta", mJointBMountTheta.rep, 0.0},
                     {"joint_b_segment_offset_theta", mJointBSegmentOffsetTheta.rep, 0.0},
                     {"joint_c_offset_theta", mJointCOffsetTheta.rep, 0.0},
-                    {"joint_de_pitch_offset", mJointDePitchOffset.rep, 0.0},
-                    {"joint_de_roll_offset", mJointDeRollOffset.rep, 0.0},
-                    {"joint_de_pitch_max_position", mJointDePitchMaxPosition.rep, std::numeric_limits<float>::infinity()},
-                    {"joint_de_pitch_min_position", mJointDePitchMinPosition.rep, -std::numeric_limits<float>::infinity()},
+                    {"joint_de_pitch_offset", mJointDEPitchOffset.rep, 0.0},
+                    {"joint_de_roll_offset", mJointDERollOffset.rep, 0.0},
+                    {"joint_de_pitch_max_position", mJointDEPitchMaxPosition.rep, std::numeric_limits<float>::infinity()},
+                    {"joint_de_pitch_min_position", mJointDEPitchMinPosition.rep, -std::numeric_limits<float>::infinity()},
                     {"joint_de_roll_max_position", mJointDERollMaxPosition.rep, std::numeric_limits<float>::infinity()},
                     {"joint_de_roll_min_position", mJointDeRollMinPosition.rep, -std::numeric_limits<float>::infinity()},
                     {"pusher_throttle", mPusherThrottle.rep, 0.0},
@@ -93,29 +93,38 @@ namespace mrover {
             };
             ParameterWrapper::declareParameters(this, parameters);
 
-            BrushlessController<Radians>::Options joint_de_opts{
+            BrushlessController<Radians>::Options jointDE0Opts{
                 .query_abs_position = true,
                 .use_abs_position = true,
-                .abs_position_offset = 0.0, // TODO(eric) port DE offsets to this
+                .abs_position_offset = mJointDERollOffset.get(),
                 .query_abs_velocity = true,
                 .use_abs_velocity = true,
-                .abs_units_multiplier = 2.0 * M_PI // revs to radians on the output
+                .abs_units_multiplier = 2.0 * M_PI // output encoder is raw/cpr, scale to rads
             };
 
-            BrushlessController<Radians>::Options joint_c_opts{
+            BrushlessController<Radians>::Options jointDE1Opts{
+                .query_abs_position = true,
+                .use_abs_position = true,
+                .abs_position_offset = mJointDEPitchOffset.get(),
+                .query_abs_velocity = true,
+                .use_abs_velocity = true,
+                .abs_units_multiplier = 2.0 * M_PI // output encoder is raw/cpr, scale to rads
+            };
+
+            BrushlessController<Radians>::Options jointCOpts{
                 .query_abs_position = true,
                 .use_abs_position = true,
                 .abs_position_offset = mJointCOffsetTheta.get(),
                 .query_abs_velocity = true,
                 .use_abs_velocity = false,
-                .abs_units_multiplier = 2.0 * M_PI
+                .abs_units_multiplier = 2.0 * M_PI // output encoder is raw/cpr, scale to rads
             };
 
             mJointA = std::make_shared<BrushlessController<Meters>>(shared_from_this(), "jetson", "joint_a");
             mJointB = std::make_shared<BrushedController<Meters>>(shared_from_this(), "jetson", "joint_b");
-            mJointC = std::make_shared<BrushlessController<Radians>>(shared_from_this(), "jetson", "joint_c", joint_c_opts);
-            mJointDE0 = std::make_shared<BrushlessController<Radians>>(shared_from_this(), "jetson", "joint_de_0", joint_de_opts);
-            mJointDE1 = std::make_shared<BrushlessController<Radians>>(shared_from_this(), "jetson", "joint_de_1", joint_de_opts);
+            mJointC = std::make_shared<BrushlessController<Radians>>(shared_from_this(), "jetson", "joint_c", jointCOpts);
+            mJointDE0 = std::make_shared<BrushlessController<Radians>>(shared_from_this(), "jetson", "joint_de_0", jointDE0Opts);
+            mJointDE1 = std::make_shared<BrushlessController<Radians>>(shared_from_this(), "jetson", "joint_de_1", jointDE1Opts);
             mGripper = std::make_shared<BrushedController<Meters>>(shared_from_this(), "jetson", "gripper");
             mPusher = std::make_shared<BrushedController<Meters>>(shared_from_this(), "jetson", "pusher");
 
@@ -204,10 +213,10 @@ namespace mrover {
         Percent mPusherThrottle;
         float mPusherWaitDuration, mPusherWaitCycles;
 
-        Radians mJointDePitchOffset, mJointDeRollOffset;
+        Radians mJointDEPitchOffset, mJointDERollOffset;
         std::optional<Vector2<Radians>> mJointDEPitchRoll; // position after offset is applied (raw - offset)
 
-        Radians mJointDePitchMaxPosition, mJointDePitchMinPosition;
+        Radians mJointDEPitchMaxPosition, mJointDEPitchMinPosition;
         Radians mJointDERollMaxPosition, mJointDeRollMinPosition;
 
         std::unordered_map<std::string_view, rclcpp::Time> mLastCommandTime;
@@ -366,8 +375,8 @@ namespace mrover {
                 }
 
                 if (mJointDEPitchRoll.has_value()) {
-                    if ((*jointDePitchThrottle > Dimensionless{0} && (*mJointDEPitchRoll)[0] >= mJointDePitchMaxPosition) ||
-                        (*jointDePitchThrottle < Dimensionless{0} && (*mJointDEPitchRoll)[0] <= mJointDePitchMinPosition)) {
+                    if ((*jointDePitchThrottle > Dimensionless{0} && (*mJointDEPitchRoll)[0] >= mJointDEPitchMaxPosition) ||
+                        (*jointDePitchThrottle < Dimensionless{0} && (*mJointDEPitchRoll)[0] <= mJointDEPitchMinPosition)) {
                         RCLCPP_INFO(get_logger(), "Joint DE Pitch limit hit!");
                         jointDePitchThrottle = Dimensionless{0};
                     }
@@ -436,8 +445,8 @@ namespace mrover {
                 }
 
                 if (mJointDEPitchRoll.has_value()) {
-                    if ((*jointDePitchVelocity > RadiansPerSecond{0} && (*mJointDEPitchRoll)[0] >= mJointDePitchMaxPosition) ||
-                        (*jointDePitchVelocity < RadiansPerSecond{0} && (*mJointDEPitchRoll)[0] <= mJointDePitchMinPosition)) {
+                    if ((*jointDePitchVelocity > RadiansPerSecond{0} && (*mJointDEPitchRoll)[0] >= mJointDEPitchMaxPosition) ||
+                        (*jointDePitchVelocity < RadiansPerSecond{0} && (*mJointDEPitchRoll)[0] <= mJointDEPitchMinPosition)) {
                         RCLCPP_INFO(get_logger(), "Joint DE Pitch limit hit!");
                         jointDePitchVelocity = RadiansPerSecond{0};
                     }
@@ -605,8 +614,8 @@ namespace mrover {
         auto publishDataCallback() -> void {
             mControllerState.header.stamp = now();
 
-            auto const pitchWrapped = wrapAngle((Radians{mJointDE1->getPosition()} - mJointDePitchOffset).get());
-            auto const rollWrapped = wrapAngle((Radians{-1 * mJointDE0->getPosition()} - mJointDeRollOffset).get());
+            auto const pitchWrapped = wrapAngle(mJointDE1->getPosition());
+            auto const rollWrapped = -1 * wrapAngle(mJointDE0->getPosition());
             mJointDEPitchRoll = {pitchWrapped, rollWrapped};
 
             for (std::size_t i = 0; i < mJointNames.size(); ++i) {
