@@ -698,10 +698,6 @@ html {
   &:hover {
     box-shadow: var(--shadow-sm);
   }
-
-  &:last-child {
-    margin-bottom: 0;
-  }
 }
 
 .drag-handle {
@@ -717,6 +713,64 @@ html {
   background-color: var(--control-primary);
   border-style: dashed !important;
   opacity: 0.4;
+}
+
+/* ===== Keyboard navigation ===== */
+
+.kbd-highlighted {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+}
+
+.kbd-mode-badge {
+  position: absolute;
+  bottom: 0.5rem;
+  right: 0.5rem;
+  padding: 0.125rem 0.5rem;
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: var(--island-bg);
+  background-color: var(--color-primary);
+  border-radius: var(--radius-sm);
+  pointer-events: none;
+  z-index: 10;
+}
+
+.kbd-cheatsheet {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 20;
+}
+
+.kbd-cheatsheet-content {
+  background-color: var(--island-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  max-width: 36rem;
+  width: 100%;
+  font-size: 0.75rem;
+}
+
+.kbd-row {
+  margin-bottom: 0.25rem;
+  line-height: 1.6;
+}
+
+.kbd-row kbd {
+  display: inline-block;
+  padding: 0.1rem 0.35rem;
+  font-size: 0.6875rem;
+  font-family: inherit;
+  background-color: var(--view-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: 3px;
+  margin-right: 0.15rem;
 }
 
 /* ===== Empty state placeholder ===== */

@@ -8,6 +8,7 @@
       v-for="(wp, index) in autonomyStore.execution"
       :key="wp.db_id ?? index"
       class="list-item"
+      :class="{ 'kbd-highlighted': highlightedIndex === index }"
     >
       <div class="flex justify-between items-center mb-1">
         <h5 class="list-item-title">{{ wp.name }}</h5>
@@ -16,8 +17,8 @@
       <div class="flex justify-between items-center">
         <small class="text-muted">{{ wp.lat.toFixed(6) }}N, {{ wp.lon.toFixed(6) }}W</small>
         <div class="flex gap-1">
-          <button class="btn btn-sm btn-warning btn-icon" :disabled="autonomyStore.isNavigating" @click="autonomyStore.unstageOne(wp)"><i class="bi bi-box-arrow-left"></i></button>
-          <button class="btn btn-sm btn-danger btn-icon" :disabled="autonomyStore.isNavigating" @click="autonomyStore.removeFromExecution(wp)"><i class="bi bi-trash-fill"></i></button>
+          <button class="btn btn-sm btn-warning btn-icon" :disabled="autonomyStore.isNavigating" @click="autonomyStore.unstageOne(wp)"><i class="bi bi-box-arrow-left" /></button>
+          <button class="btn btn-sm btn-danger btn-icon" :disabled="autonomyStore.isNavigating" @click="autonomyStore.removeFromExecution(wp)"><i class="bi bi-trash-fill" /></button>
         </div>
       </div>
     </div>
@@ -26,6 +27,10 @@
 
 <script lang="ts" setup>
 import { useAutonomyStore } from '@/stores/autonomy'
+
+defineProps<{
+  highlightedIndex?: number
+}>()
 
 const autonomyStore = useAutonomyStore()
 </script>

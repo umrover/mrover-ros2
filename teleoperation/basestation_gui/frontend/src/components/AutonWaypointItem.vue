@@ -1,5 +1,5 @@
 <template>
-  <div class="list-item" data-testid="pw-route-item">
+  <div class="list-item" :class="{ 'kbd-highlighted': highlighted }" data-testid="pw-route-item">
     <div class="flex justify-between items-center mb-1">
       <div class="flex items-center gap-2">
         <i class="bi bi-grip-vertical drag-handle"></i>
@@ -23,6 +23,7 @@ import type { AutonWaypoint } from '@/types/waypoints'
 
 defineProps<{
   waypoint: AutonWaypoint
+  highlighted?: boolean
 }>()
 
 defineEmits<{
