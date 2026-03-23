@@ -311,5 +311,3 @@ onBeforeUnmount(() => {
   charts.length = 0
 })
 </script>
-
-

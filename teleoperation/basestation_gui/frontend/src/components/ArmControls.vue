@@ -2,7 +2,7 @@
   <div class="flex flex-col gap-2 h-full">
     <div class="flex justify-between items-center">
       <h4 class="component-header">Arm Controls</h4>
-      <p 
+      <p
       class="text-danger"
       :class="forcing_limit === true ? 'visible' : 'invisible'">
         Limit Reached!

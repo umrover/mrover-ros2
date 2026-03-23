@@ -178,7 +178,6 @@ const handleEscape = (event: KeyboardEvent): void => {
 }
 
 onMounted(() => {
-  console.log()
   window.addEventListener('keydown', handleEscape)
 
   const firstHistory = props.sensorHistory[0]
