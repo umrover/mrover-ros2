@@ -34,11 +34,36 @@
       <l-polyline :lat-lngs="dronePath" :color="'green'" />
     </l-map>
     <div class="overlay-toolbar right-0">
-      <button class="overlay-toolbar-btn" :class="{ 'overlay-toolbar-btn-active': online }" @click="online = !online">
-        Online
+      <button class="overlay-toolbar-btn" @click="online = !online">
+        Online <i :class="online ? 'bi bi-check-square-fill' : 'bi bi-square'"></i>
       </button>
-      <button @click="centerOnRover" class="overlay-toolbar-btn">Center on Rover</button>
-      <button @click="centerOnDrone" class="overlay-toolbar-btn">Center on Drone</button>
+      <button class="overlay-toolbar-btn" @click="followRover = !followRover">
+        Follow Rover <i :class="followRover ? 'bi bi-check-square-fill' : 'bi bi-square'"></i>
+      </button>
+      <div class="overlay-dropdown">
+        <button class="overlay-toolbar-btn" :disabled="followRover" @click="centerOpen = !centerOpen; zoomOpen = false">
+          Center <i class="bi bi-chevron-down"></i>
+        </button>
+        <div v-if="centerOpen" class="overlay-dropdown-menu">
+          <button class="overlay-dropdown-item" @click="centerOnRover(); centerOpen = false">Rover</button>
+          <button class="overlay-dropdown-item" @click="centerOnDrone(); centerOpen = false">Drone</button>
+        </div>
+      </div>
+      <div class="overlay-dropdown">
+        <button class="overlay-toolbar-btn" @click="zoomOpen = !zoomOpen; centerOpen = false">
+          Zoom <i class="bi bi-chevron-down"></i>
+        </button>
+        <div v-if="zoomOpen" class="overlay-dropdown-menu">
+          <button
+            v-for="z in zoomLevels"
+            :key="z"
+            class="overlay-dropdown-item"
+            @click="setZoom(z); zoomOpen = false"
+          >
+            {{ z }}
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -68,6 +93,7 @@ const { waypointListForMap, highlightedWaypoint, searchWaypoint } = storeToRefs(
 const {
   center,
   online,
+  followRover,
   mapRef,
   roverRef,
   odomPath,
@@ -86,6 +112,10 @@ const {
   onMapReady,
   centerOnRover,
   centerOnDrone,
+  centerOpen,
+  zoomOpen,
+  zoomLevels,
+  setZoom,
   getMap,
 } = useRoverMap({
   maxOdomCount: 1000,

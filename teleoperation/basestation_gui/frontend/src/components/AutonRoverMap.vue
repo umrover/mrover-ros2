@@ -4,7 +4,7 @@
       @ready="handleMapReady"
       ref="mapRef"
       class="map z-0"
-      :zoom="16"
+      :zoom="22"
       :center="center"
       @click="getClickedLatLon($event)"
     >
@@ -23,7 +23,7 @@
       />
       <l-marker ref="droneRef" :lat-lng="droneLatLng" :icon="droneIcon" />
       <l-marker
-        v-for="(waypoint, index) in waypointListForMap"
+        v-for="(waypoint, index) in storeForMap"
         :key="index"
         :lat-lng="waypoint.latLng"
         :icon="waypointIcon"
@@ -33,21 +33,51 @@
         </l-tooltip>
       </l-marker>
       <l-polyline
-        :lat-lngs="polylinePath"
-        :color="'red'"
-        :dash-array="'5, 5'"
+        :lat-lngs="executionPath"
+        color="red"
+        dash-array="5, 5"
+      />
+      <l-polyline
+        :lat-lngs="stagingPath"
+        color="gray"
+        dash-array="5, 5"
       />
       <l-polyline :lat-lngs="odomPath" :color="'blue'" :dash-array="'5, 5'" />
       <l-polyline :lat-lngs="dronePath" :color="'green'" />
     </l-map>
 
     <div class="overlay-toolbar right-0">
-      <button class="overlay-toolbar-btn" :class="{ 'overlay-toolbar-btn-active': online }" @click="online = !online">
-        Online
+      <button class="overlay-toolbar-btn" @click="online = !online">
+        Online <i :class="online ? 'bi bi-check-square-fill' : 'bi bi-square'"></i>
       </button>
-      <button @click="centerOnRover" class="overlay-toolbar-btn">Center on Rover</button>
-      <button @click="centerOnBasestation" class="overlay-toolbar-btn">Center on Base</button>
-      <button @click="centerOnDrone" class="overlay-toolbar-btn">Center on Drone</button>
+      <button class="overlay-toolbar-btn" @click="followRover = !followRover">
+        Follow Rover <i :class="followRover ? 'bi bi-check-square-fill' : 'bi bi-square'"></i>
+      </button>
+      <div class="overlay-dropdown">
+        <button class="overlay-toolbar-btn" :disabled="followRover" @click="centerOpen = !centerOpen; zoomOpen = false">
+          Center <i class="bi bi-chevron-down"></i>
+        </button>
+        <div v-if="centerOpen" class="overlay-dropdown-menu">
+          <button class="overlay-dropdown-item" @click="centerOnRover(); centerOpen = false">Rover</button>
+          <button class="overlay-dropdown-item" @click="centerOnBasestation(); centerOpen = false">Base</button>
+          <button class="overlay-dropdown-item" @click="centerOnDrone(); centerOpen = false">Drone</button>
+        </div>
+      </div>
+      <div class="overlay-dropdown">
+        <button class="overlay-toolbar-btn" @click="zoomOpen = !zoomOpen; centerOpen = false">
+          Zoom <i class="bi bi-chevron-down"></i>
+        </button>
+        <div v-if="zoomOpen" class="overlay-dropdown-menu">
+          <button
+            v-for="z in zoomLevels"
+            :key="z"
+            class="overlay-dropdown-item"
+            @click="setZoom(z); zoomOpen = false"
+          >
+            {{ z }}
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -71,11 +101,12 @@ import { useWebsocketStore } from '@/stores/websocket'
 import type { BasestationPositionMessage } from '@/types/coordinates'
 
 const autonomyStore = useAutonomyStore()
-const { routeForMap, waypointListForMap } = storeToRefs(autonomyStore)
+const { stagingForMap, executionForMap, storeForMap } = storeToRefs(autonomyStore)
 
 const {
   center,
   online,
+  followRover,
   mapRef,
   roverRef,
   odomPath,
@@ -94,9 +125,13 @@ const {
   onMapReady,
   centerOnRover,
   centerOnDrone,
+  centerOpen,
+  zoomOpen,
+  zoomLevels,
+  setZoom,
   getMap,
 } = useRoverMap({
-  maxOdomCount: 100,
+  maxOdomCount: 500,
   drawFrequency: 1,
   initialCenter: [38.4071654, -110.7923927],
   offlineUrl: 'map/urc/{z}/{x}/{y}.jpg',
@@ -117,9 +152,17 @@ const basestationLatLng = computed(() => {
   return L.latLng(basestation_latitude_deg.value, basestation_longitude_deg.value)
 })
 
-const polylinePath = computed(() => {
+const executionPath = computed(() => {
   return [odomLatLng.value].concat(
-    routeForMap.value.map((waypoint) => waypoint.latLng),
+    executionForMap.value.map((wp) => wp.latLng),
+  )
+})
+
+const stagingPath = computed(() => {
+  const lastExecution = executionForMap.value.at(-1)
+  const start = lastExecution ? lastExecution.latLng : odomLatLng.value
+  return [start].concat(
+    stagingForMap.value.map((wp) => wp.latLng),
   )
 })
 

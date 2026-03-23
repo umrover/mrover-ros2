@@ -64,9 +64,8 @@
       <button
         type="button"
         class="overlay-toolbar-btn"
-        :class="{ 'overlay-toolbar-btn-active': costmapVisible }"
         @click="toggleCostMap()">
-        Cost Map
+        Cost Map <i :class="costmapVisible ? 'bi bi-check-square-fill' : 'bi bi-square'"></i>
       </button>
     </div>
   </div>

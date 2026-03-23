@@ -2,12 +2,22 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import L from 'leaflet'
 import type { AutonWaypoint, MapWaypoint, MapRouteWaypoint } from '@/types/waypoints'
-import { waypointsAPI } from '@/utils/api'
+import { waypointsAPI, autonAPI } from '@/utils/api'
+
+function isInList(list: AutonWaypoint[], wp: AutonWaypoint): boolean {
+  return wp.db_id != null && list.some(item => item.db_id === wp.db_id)
+}
 
 export const useAutonomyStore = defineStore('autonomy', () => {
-  const waypoints = ref<AutonWaypoint[]>([])
-  const route = ref<AutonWaypoint[]>([])
+  const store = ref<AutonWaypoint[]>([])
+  const staging = ref<AutonWaypoint[]>([])
+  const execution = ref<AutonWaypoint[]>([])
   const allCostmapToggle = ref(true)
+  const navState = ref('OffState')
+
+  const isNavigating = computed(() =>
+    navState.value !== 'OffState' && navState.value !== 'DoneState'
+  )
 
   const highlightedWaypoint = ref(-1)
   const autonEnabled = ref(false)
@@ -20,127 +30,234 @@ export const useAutonomyStore = defineStore('autonomy', () => {
   const odomFormat = ref('DM')
   const clickPoint = ref({ lat: 0, lon: 0 })
 
-  const waypointListForMap = computed<MapWaypoint[]>(() =>
-    waypoints.value.map(wp => ({
+  const storeForMap = computed<MapWaypoint[]>(() =>
+    store.value.map(wp => ({
       latLng: L.latLng(wp.lat, wp.lon),
       name: wp.name
     }))
   )
 
-  const routeForMap = computed<MapRouteWaypoint[]>(() =>
-    route.value.map(wp => ({
+  const stagingForMap = computed<MapRouteWaypoint[]>(() =>
+    staging.value.map(wp => ({
       latLng: L.latLng(wp.lat, wp.lon),
       name: wp.name,
       tag_id: wp.tag_id,
       type: wp.type,
-      enable_costmap: wp.enable_costmap
     }))
   )
 
-  function isInRoute(wp: AutonWaypoint): boolean {
-    return route.value.some(
-      r => r.name === wp.name && r.tag_id === wp.tag_id && r.type === wp.type
-    )
+  const executionForMap = computed<MapRouteWaypoint[]>(() =>
+    execution.value.map(wp => ({
+      latLng: L.latLng(wp.lat, wp.lon),
+      name: wp.name,
+      tag_id: wp.tag_id,
+      type: wp.type,
+    }))
+  )
+
+  // --- Fetch ---
+
+  async function fetchStore() {
+    const resp = await waypointsAPI.getStore()
+    if (resp.status === 'success') {
+      store.value = resp.waypoints || []
+    }
+  }
+
+  async function fetchStaging() {
+    const resp = await waypointsAPI.getStaging()
+    if (resp.status === 'success') {
+      staging.value = resp.course || []
+    }
+  }
+
+  async function fetchExecution() {
+    const resp = await waypointsAPI.getExecution()
+    if (resp.status === 'success') {
+      execution.value = resp.course || []
+    }
   }
 
   async function fetchAll() {
     try {
-      const autonData = await waypointsAPI.getAuton()
-      if (autonData.status === 'success') {
-        waypoints.value = autonData.waypoints || []
-      }
-
-      const courseData = await waypointsAPI.getCurrentAutonCourse()
-      if (courseData.status === 'success') {
-        route.value = courseData.course || []
-      }
+      await Promise.all([fetchStore(), fetchStaging(), fetchExecution()])
     } catch (error) {
       console.error('Failed to load waypoints:', error)
     }
   }
 
-  async function createWaypoint(payload: Omit<AutonWaypoint, 'db_id' | 'deletable'>) {
-    const resp = await waypointsAPI.createAuton(payload)
+  // --- Store: add, update, remove ---
+
+  async function addToStore(payload: Omit<AutonWaypoint, 'db_id' | 'deletable'>) {
+    const resp = await waypointsAPI.addToStore(payload)
     if (resp.status === 'success' && resp.waypoint) {
-      waypoints.value = [...waypoints.value, resp.waypoint]
+      store.value = [...store.value, resp.waypoint]
     }
     return resp
   }
 
-  async function updateWaypoint(dbId: number, fields: Partial<AutonWaypoint>) {
-    const resp = await waypointsAPI.updateAuton(dbId, fields)
+  async function updateStore(dbId: number, fields: Partial<AutonWaypoint>) {
+    const resp = await waypointsAPI.updateStore(dbId, fields)
     if (resp.status === 'success' && resp.waypoint) {
-      waypoints.value = waypoints.value.map(wp =>
+      store.value = store.value.map(wp =>
         wp.db_id === dbId ? resp.waypoint! : wp
       )
     }
     return resp
   }
 
-  async function deleteWaypoint(index: number) {
-    const wp = waypoints.value[index]
+  async function removeFromStore(index: number) {
+    const wp = store.value[index]
     if (!wp) return
 
-    const next = [...waypoints.value]
+    const next = [...store.value]
     next.splice(index, 1)
-    waypoints.value = next
+    store.value = next
 
     if (wp.db_id != null && wp.deletable) {
       try {
-        await waypointsAPI.deleteAutonWaypoint(wp)
+        await waypointsAPI.removeFromStore(wp)
       } catch (error) {
         console.error('Failed to delete waypoint:', error)
-        waypoints.value = [...waypoints.value.slice(0, index), wp, ...waypoints.value.slice(index)]
+        store.value = [...store.value.slice(0, index), wp, ...store.value.slice(index)]
       }
     }
   }
 
-  async function addToRoute(waypoint: AutonWaypoint) {
-    const newPoint = { ...waypoint, enable_costmap: allCostmapToggle.value }
-    route.value = [...route.value, newPoint]
-    await saveRoute()
+  // --- Staging: add, remove, save ---
+
+  async function addToStaging(waypoint: AutonWaypoint) {
+    if (isInList(staging.value, waypoint) || isInList(execution.value, waypoint)) return
+    staging.value = [...staging.value, { ...waypoint }]
+    await saveStaging()
   }
 
-  async function removeFromRoute(waypoint: AutonWaypoint) {
-    const index = route.value.indexOf(waypoint)
-    if (index > -1) {
-      const next = [...route.value]
-      next.splice(index, 1)
-      route.value = next
-    }
-    await saveRoute()
+  async function removeFromStaging(waypoint: AutonWaypoint) {
+    const index = staging.value.findIndex(wp => wp.db_id === waypoint.db_id)
+    if (index === -1) return
+    const next = [...staging.value]
+    next.splice(index, 1)
+    staging.value = next
+    await saveStaging()
   }
 
-  async function saveRoute() {
+  async function clearStaging() {
+    staging.value = []
+    await saveStaging()
+  }
+
+  async function stageAllToExecution() {
+    const toMove = staging.value.filter(wp => !isInList(execution.value, wp))
+    if (toMove.length === 0) return
+    execution.value = [...execution.value, ...toMove]
+    staging.value = []
+    await Promise.all([saveStaging(), saveExecution()])
+  }
+
+  async function saveStaging() {
     try {
-      await waypointsAPI.saveCurrentAutonCourse(route.value)
+      await waypointsAPI.saveStaging(staging.value)
     } catch (error) {
-      console.error('Failed to save current auton course:', error)
+      console.error('Failed to save staging:', error)
     }
   }
 
-  async function toggleRouteCostmap(payload: { waypoint: AutonWaypoint; enable_costmap: boolean }) {
-    route.value = route.value.map(wp =>
-      wp === payload.waypoint ? { ...wp, enable_costmap: payload.enable_costmap } : wp
-    )
-    await saveRoute()
+  // --- Execution: add, remove, save ---
+
+  async function addToExecution(waypoint: AutonWaypoint) {
+    if (isInList(execution.value, waypoint) || isInList(staging.value, waypoint)) return
+    execution.value = [...execution.value, { ...waypoint }]
+    await saveExecution()
   }
 
-  async function toggleAllCostmaps() {
+  async function removeFromExecution(waypoint: AutonWaypoint) {
+    const index = execution.value.findIndex(wp => wp.db_id === waypoint.db_id)
+    if (index === -1) return
+    const next = [...execution.value]
+    next.splice(index, 1)
+    execution.value = next
+    await saveExecution()
+  }
+
+  async function stageToExecution(waypoint: AutonWaypoint) {
+    const stagingIndex = staging.value.findIndex(wp => wp.db_id === waypoint.db_id)
+    if (stagingIndex === -1) return
+
+    const nextStaging = [...staging.value]
+    nextStaging.splice(stagingIndex, 1)
+    staging.value = nextStaging
+    execution.value = [...execution.value, { ...waypoint }]
+    await Promise.all([saveStaging(), saveExecution()])
+  }
+
+  async function saveExecution() {
+    try {
+      await waypointsAPI.saveExecution(execution.value)
+    } catch (error) {
+      console.error('Failed to save execution:', error)
+    }
+  }
+
+  // --- Composite operations ---
+
+  async function stageNext() {
+    if (staging.value.length === 0) return
+
+    const [next, ...remaining] = staging.value
+    execution.value = [...execution.value, { ...next }]
+    staging.value = remaining
+
+    await Promise.all([saveStaging(), saveExecution()])
+  }
+
+  async function clearExecution() {
+    try {
+      await autonAPI.enable(false, [])
+      autonEnabled.value = false
+    } catch (error) {
+      console.error('Failed to disable autonomy:', error)
+    }
+    execution.value = []
+    await saveExecution()
+  }
+
+  async function unstageOne(waypoint: AutonWaypoint) {
+    const index = execution.value.findIndex(wp => wp.db_id === waypoint.db_id)
+    if (index === -1) return
+
+    const nextExecution = [...execution.value]
+    nextExecution.splice(index, 1)
+    execution.value = nextExecution
+    staging.value = [waypoint, ...staging.value]
+    await Promise.all([saveStaging(), saveExecution()])
+  }
+
+  async function unstageExecution() {
+    staging.value = [...execution.value, ...staging.value]
+    execution.value = []
+    await Promise.all([saveStaging(), saveExecution()])
+  }
+
+  function toggleAllCostmaps() {
     allCostmapToggle.value = !allCostmapToggle.value
-    route.value = route.value.map(wp => ({ ...wp, enable_costmap: allCostmapToggle.value }))
-    await saveRoute()
   }
 
-  async function resetUserWaypoints() {
-    await waypointsAPI.clearAuton()
+  function setNavState(state: string) {
+    navState.value = state
+  }
+
+  async function resetAll() {
+    await waypointsAPI.clearStore()
     await fetchAll()
   }
 
   return {
-    waypoints,
-    route,
+    store,
+    staging,
+    execution,
     allCostmapToggle,
+    navState,
+    isNavigating,
     highlightedWaypoint,
     autonEnabled,
     teleopEnabled,
@@ -151,18 +268,31 @@ export const useAutonomyStore = defineStore('autonomy', () => {
     imageDetectorEnabled,
     odomFormat,
     clickPoint,
-    waypointListForMap,
-    routeForMap,
-    isInRoute,
+    storeForMap,
+    stagingForMap,
+    executionForMap,
+    fetchStore,
+    fetchStaging,
+    fetchExecution,
     fetchAll,
-    createWaypoint,
-    updateWaypoint,
-    deleteWaypoint,
-    addToRoute,
-    removeFromRoute,
-    saveRoute,
-    toggleRouteCostmap,
+    addToStore,
+    updateStore,
+    removeFromStore,
+    addToStaging,
+    removeFromStaging,
+    clearStaging,
+    stageAllToExecution,
+    saveStaging,
+    addToExecution,
+    removeFromExecution,
+    saveExecution,
+    stageToExecution,
+    stageNext,
+    clearExecution,
+    unstageOne,
+    unstageExecution,
     toggleAllCostmaps,
-    resetUserWaypoints,
+    setNavState,
+    resetAll,
   }
 })

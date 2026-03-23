@@ -761,6 +761,14 @@ html {
   }
 }
 
+/* ===== Leaflet map: checkerboard for missing tiles ===== */
+
+.leaflet-container {
+  background:
+    repeating-conic-gradient(#e0e0e0 0% 25%, #c0c0c0 0% 50%)
+    0 0 / 20px 20px;
+}
+
 /* ===== Floating overlay toolbar for map/3D controls ===== */
 
 .overlay-toolbar {
@@ -798,12 +806,48 @@ html {
   border-color: var(--control-primary);
 }
 
-.overlay-toolbar-btn-active {
-  color: var(--text-on-status);
-  background: color-mix(in srgb, var(--control-primary) 85%, transparent);
-  border-color: var(--control-primary);
+.overlay-toolbar-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
-.overlay-toolbar-btn-active:hover {
-  background: var(--control-primary);
+.overlay-toolbar-btn:disabled:hover {
+  background: color-mix(in srgb, var(--card-bg) 80%, transparent);
+  border-color: var(--panel-border);
+}
+
+
+.overlay-dropdown {
+  position: relative;
+}
+
+.overlay-dropdown-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 0.25rem;
+  display: flex;
+  flex-direction: column;
+  background: color-mix(in srgb, var(--card-bg) 90%, transparent);
+  backdrop-filter: blur(8px);
+  border: var(--border-width) solid var(--panel-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  z-index: 1001;
+}
+
+.overlay-dropdown-item {
+  padding: 0.375rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.overlay-dropdown-item:hover {
+  background: color-mix(in srgb, var(--text-primary) 10%, transparent);
 }

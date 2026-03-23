@@ -11,6 +11,8 @@ import type {
 import { apiFetch } from './apiFetch'
 
 export const waypointsAPI = {
+  // --- Basic waypoints ---
+
   getBasic(): Promise<BasicWaypointsResponse> {
     return apiFetch('/waypoints/basic/')
   },
@@ -35,51 +37,67 @@ export const waypointsAPI = {
     })
   },
 
-  getAuton(): Promise<WaypointsResponse> {
-    return apiFetch('/waypoints/auton/')
+  deleteAll(): Promise<BasicWaypointsResponse> {
+    return apiFetch('/waypoints/basic/clear/', { method: 'DELETE' })
   },
 
-  createAuton(waypoint: Omit<AutonWaypoint, 'db_id' | 'deletable'>): Promise<CreateWaypointResponse> {
-    return apiFetch('/waypoints/auton/', {
+  // --- Store: persistent waypoint library ---
+
+  getStore(): Promise<WaypointsResponse> {
+    return apiFetch('/waypoints/auton/store/')
+  },
+
+  addToStore(waypoint: Omit<AutonWaypoint, 'db_id' | 'deletable'>): Promise<CreateWaypointResponse> {
+    return apiFetch('/waypoints/auton/store/', {
       method: 'POST',
       body: JSON.stringify(waypoint)
     })
   },
 
-  updateAuton(id: number, fields: Partial<AutonWaypoint>): Promise<CreateWaypointResponse> {
-    return apiFetch(`/waypoints/auton/${id}/`, {
+  updateStore(id: number, fields: Partial<AutonWaypoint>): Promise<CreateWaypointResponse> {
+    return apiFetch(`/waypoints/auton/store/${id}/`, {
       method: 'PATCH',
       body: JSON.stringify(fields)
     })
   },
 
-  getCurrentAutonCourse(): Promise<CurrentCourseResponse> {
-    return apiFetch('/waypoints/auton/current/')
+  removeFromStore(waypoint: AutonWaypoint): Promise<DeleteWaypointResponse> {
+    return apiFetch(`/waypoints/auton/store/${waypoint.db_id}/`, {
+      method: 'DELETE',
+    })
   },
 
-  saveCurrentAutonCourse(course: AutonWaypoint[]): Promise<CurrentCourseResponse> {
-    return apiFetch('/waypoints/auton/current/save/', {
+  clearStore(): Promise<DeleteWaypointResponse> {
+    return apiFetch('/waypoints/auton/store/clear/', { method: 'DELETE' })
+  },
+
+  clearStoreAll(): Promise<DeleteWaypointResponse> {
+    return apiFetch('/waypoints/auton/store/clear/all/', { method: 'DELETE' })
+  },
+
+  // --- Staging: planned route queue ---
+
+  getStaging(): Promise<CurrentCourseResponse> {
+    return apiFetch('/waypoints/auton/staging/')
+  },
+
+  saveStaging(course: AutonWaypoint[]): Promise<CurrentCourseResponse> {
+    return apiFetch('/waypoints/auton/staging/save/', {
       method: 'POST',
       body: JSON.stringify({ waypoints: course })
     })
   },
 
-  deleteAutonWaypoint(waypoint: AutonWaypoint): Promise<DeleteWaypointResponse> {
-    return apiFetch(`/waypoints/auton/${waypoint.db_id}/`, {
-      method: 'DELETE',
-      body: JSON.stringify(waypoint)
+  // --- Execution: active navigation batch ---
+
+  getExecution(): Promise<CurrentCourseResponse> {
+    return apiFetch('/waypoints/auton/execution/')
+  },
+
+  saveExecution(course: AutonWaypoint[]): Promise<CurrentCourseResponse> {
+    return apiFetch('/waypoints/auton/execution/save/', {
+      method: 'POST',
+      body: JSON.stringify({ waypoints: course })
     })
   },
-
-  deleteAll(): Promise<BasicWaypointsResponse> {
-    return apiFetch('/waypoints/basic/clear/', { method: 'DELETE' })
-  },
-
-  clearAuton(): Promise<DeleteWaypointResponse> {
-    return apiFetch('/waypoints/auton/clear/', { method: 'DELETE' })
-  },
-
-  clearAllAuton(): Promise<DeleteWaypointResponse> {
-    return apiFetch('/waypoints/auton/clear/all/', { method: 'DELETE' })
-  }
 }

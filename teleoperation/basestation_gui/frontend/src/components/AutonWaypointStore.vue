@@ -2,7 +2,7 @@
   <div class="list-item" data-testid="pw-waypoint-store-item">
     <div class="flex justify-between items-center mb-1">
       <h5 class="list-item-title" data-testid="pw-waypoint-name">{{ waypoint.name }}</h5>
-      <div class="flex items-center gap-2">
+      <div v-if="waypoint.tag_id != null" class="flex items-center gap-2">
         <span class="data-label">Tag ID: {{ waypoint.tag_id }}</span>
       </div>
     </div>

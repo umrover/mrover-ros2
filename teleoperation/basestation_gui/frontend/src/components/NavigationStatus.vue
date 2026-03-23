@@ -25,10 +25,9 @@ import type { NavStateMessage } from '@/types/coordinates'
 const websocketStore = useWebsocketStore()
 
 const autonomyStore = useAutonomyStore()
-const { teleopEnabled } = storeToRefs(autonomyStore)
+const { teleopEnabled, navState } = storeToRefs(autonomyStore)
 
 const stuckStatus = ref(false)
-const navState = ref('OffState')
 
 const ledColorClass = computed(() => {
   if (teleopEnabled.value) return 'nav-state--info'
@@ -37,7 +36,7 @@ const ledColorClass = computed(() => {
 })
 
 websocketStore.onMessage<NavStateMessage>('nav', 'nav_state', (msg) => {
-  navState.value = msg.state || 'OffState'
+  autonomyStore.setNavState(msg.state || 'OffState')
 })
 </script>
 

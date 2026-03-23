@@ -31,6 +31,7 @@ export function useRoverMap(options: UseRoverMapOptions = {}) {
   const rover_bearing_deg = ref(0)
   const center = ref<[number, number]>(initialCenter)
   const online = ref(true)
+  const followRover = ref(false)
   const mapRef = ref<{ leafletObject: L.Map } | null>(null)
   const roverRef = ref<{ leafletObject: L.Marker } | null>(null)
   let roverMarker: L.Marker | null = null
@@ -111,6 +112,15 @@ export function useRoverMap(options: UseRoverMapOptions = {}) {
     }
   }
 
+  const centerOpen = ref(false)
+  const zoomOpen = ref(false)
+  const zoomLevels = [18, 19, 20, 21, 22, 23, 24]
+
+  const setZoom = (level: number) => {
+    const map = getMap()
+    if (map) map.setZoom(level)
+  }
+
   watch(gridLocked, (locked) => {
     const map = getMap()
     if (!map) return
@@ -161,6 +171,11 @@ export function useRoverMap(options: UseRoverMapOptions = {}) {
       roverMarker.setLatLng(latLng)
     }
 
+    if (followRover.value) {
+      const map = getMap()
+      if (map) map.setView(latLng, map.getZoom(), { animate: false })
+    }
+
     odomCount.value++
     if (odomCount.value % drawFrequency === 0) {
       const path = odomPath.value.length >= maxOdomCount
@@ -174,6 +189,7 @@ export function useRoverMap(options: UseRoverMapOptions = {}) {
   return {
     center,
     online,
+    followRover,
     mapRef,
     roverRef,
     odomPath,
@@ -199,6 +215,10 @@ export function useRoverMap(options: UseRoverMapOptions = {}) {
     onMapReady,
     centerOnRover,
     centerOnDrone,
+    centerOpen,
+    zoomOpen,
+    zoomLevels,
+    setZoom,
     getMap,
   }
 }
