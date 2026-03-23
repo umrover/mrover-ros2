@@ -131,10 +131,6 @@
       />
     </div>
 
-    <div v-if="editorFocused" class="kbd-mode-badge">
-      {{ keyboard.mode.value }}
-    </div>
-
     <div v-if="keyboard.showCheatSheet.value" class="kbd-cheatsheet" @click="keyboard.showCheatSheet.value = false">
       <div class="kbd-cheatsheet-content" @click.stop>
         <div class="flex justify-between items-center mb-3">
@@ -239,6 +235,8 @@ function toggleFocusLock() {
   localStorage.setItem(LS_FOCUS_LOCK, String(focusLocked.value))
   if (focusLocked.value) {
     editorRef.value?.focus()
+  } else {
+    editorRef.value?.blur()
   }
 }
 
