@@ -171,7 +171,8 @@ class ApproachTargetState(State):
             return self
         
         if self.SPIN_ROVER:
-            self.target_traj
+            self.target_traj.add_end_point(rover_pose.translation() - rover_pose.rotation()[:, 0])
+            self.target_traj.add_end_point(self.target_position[0:2])
         # If the target trajectory is empty, develop a new path to it
         if len(self.target_traj.coordinates) == 0:
             context.node.get_logger().info("Generating approach segmented path")
