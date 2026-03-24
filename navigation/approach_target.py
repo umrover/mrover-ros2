@@ -12,6 +12,7 @@ from rclpy.publisher import Publisher
 from rclpy.time import Time
 from rclpy.timer import Timer
 from rclpy.duration import Duration
+from navigation.waypoint import WaypointType
 from navigation.coordinate_utils import is_high_cost_point, d_calc, segment_path, cartesian_to_ij
 
 
@@ -28,7 +29,7 @@ class ApproachTargetState(State):
     target_position: np.ndarray | None
     marker_timer: Timer
     update_timer: Timer
-    object_type: waypoint
+    object_type: WaypointType
     no_look_ahead_dict: dict
 
     def on_enter(self, context: Context) -> None:
@@ -393,7 +394,7 @@ class ApproachTargetState(State):
             return False
         rover_translation = rover_SE3.translation()[0:2]
         distance_to_target = d_calc(rover_translation, tuple(target_pos))
-        if object_type in ("NO_SEARCH","POST"):
+        if object_type in ("NO_SEARCH", "POST"):
             return distance_to_target < self.DISTANCE_THRESHOLD
         else:
             return distance_to_target < self.LOOK_DISTANCE_THRESHOLD and time_diff < Duration(nanoseconds=50000000)
