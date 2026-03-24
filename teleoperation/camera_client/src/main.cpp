@@ -30,7 +30,7 @@ namespace {
         if (gPreviousHandler) return gPreviousHandler(dpy, event);
         return 0;
     }
-}
+} // namespace
 
 auto main(int argc, char** argv) -> int {
     QApplication app(argc, argv);
@@ -75,12 +75,19 @@ auto main(int argc, char** argv) -> int {
                              videoWidget->setGstPipeline(info.pipeline);
                              videoWidget->setImageSize(1280, 720);
                              panel->placeZedWidget(videoWidget);
-
+                             QObject::connect(panel, &mrover::ClickIkPanel::sample, panel, [nodePtr = node.get()]() {
+                                 nodePtr->sampleClickIk();
+                             });
                              QObject::connect(videoWidget, &mrover::GstVideoWidget::clicked,
-                                              panel, [panel, nodePtr = node.get()](std::uint32_t x, std::uint32_t y) {
+                                              panel, [panel, videoWidget, nodePtr = node.get()](std::uint32_t x, std::uint32_t y) {
                                                   if (panel->canSendClick()) {
+                                                      auto uiW = static_cast<float>(videoWidget->width());
+                                                      auto uiH = static_cast<float>(videoWidget->height());
+
+                                                      float streamX = static_cast<float>(x) / uiW;
+                                                      float streamY = static_cast<float>(y) / uiH;
                                                       panel->markRunning();
-                                                      nodePtr->sendClickIk(x, y);
+                                                      nodePtr->sendClickIk(streamX, streamY);
                                                   }
                                               });
                          } else {
@@ -95,6 +102,8 @@ auto main(int argc, char** argv) -> int {
                      mainWindow->getClickIkPanel(), &mrover::ClickIkPanel::updateFeedback);
     QObject::connect(node.get(), &mrover::CameraClientNode::clickIkResult,
                      mainWindow->getClickIkPanel(), &mrover::ClickIkPanel::updateResult);
+    QObject::connect(node.get(), &mrover::CameraClientNode::ikImageSampleResult,
+                     mainWindow->getClickIkPanel(), &mrover::ClickIkPanel::enableOverlayWidget);
 
     node->discoverCameras();
 

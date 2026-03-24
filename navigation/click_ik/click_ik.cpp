@@ -69,15 +69,15 @@ namespace mrover {
 
         mIkSampleClient = create_client<srv::IkSample>("ik_sample");
 
-        mPcSub = create_subscription<sensor_msgs::msg::PointCloud2>("/zed/left/points", 1, [this](sensor_msgs::msg::PointCloud2::ConstSharedPtr const& msg) {
+        mPcSub = create_subscription<sensor_msgs::msg::PointCloud2>("zed/left/points", 1, [this](sensor_msgs::msg::PointCloud2::ConstSharedPtr const& msg) {
             pointCloudCallback(msg);
         });
 
         // IK Publisher
-        mIkPub = create_publisher<msg::IK>("/ik_pos_cmd", 1);
+        mIkPub = create_publisher<msg::IK>("ik_pos_cmd", 1);
 
         // ArmStatus subscriber
-        mStatusSub = create_subscription<msg::ArmStatus>("/arm_cmd_status", 1, [this](msg::ArmStatus const& msg) {
+        mStatusSub = create_subscription<msg::ArmStatus>("arm_cmd_status", 1, [this](msg::ArmStatus const& msg) {
             statusCallback(msg);
         });
 

@@ -140,8 +140,8 @@ namespace mrover {
             mIkTargetPub->publish(ik);
         } else if (mClickIk && mPublishClickIk) {
             action::ClickIk::Goal goal;
-            goal.set__point_in_image_x(static_cast<unsigned int>(mClickIkX));
-            goal.set__point_in_image_y(static_cast<unsigned int>(mClickIkY));
+            goal.set__point_in_image_x(static_cast<float>(mClickIkX) / static_cast<float>(mStereoCameras.front().base.resolution.x()));
+            goal.set__point_in_image_y(static_cast<float>(mClickIkY) / static_cast<float>(mStereoCameras.front().base.resolution.y()));
             rclcpp_action::Client<action::ClickIk>::SendGoalOptions options;
             options.result_callback = [this](rclcpp_action::ClientGoalHandle<action::ClickIk>::WrappedResult const& result) {
                 this->mPublishClickIk = false;
@@ -154,8 +154,8 @@ namespace mrover {
             mCancelClickIk = false;
         } else if (mSampleIk) {
             mHasSampled = true;
-            size_t x = mStereoCameras.front().base.resolution.x() / IMAGE_SAMPLE_RESOLUTION;
-            size_t y = mStereoCameras.front().base.resolution.y() / IMAGE_SAMPLE_RESOLUTION;
+            float x = static_cast<float>(mStereoCameras.front().base.resolution.x()) / static_cast<float>(IMAGE_SAMPLE_RESOLUTION);
+            float y = static_cast<float>(mStereoCameras.front().base.resolution.y()) / static_cast<float>(IMAGE_SAMPLE_RESOLUTION);
             action::IkImageSample::Goal goal;
             goal.set__w(x);
             goal.set__h(y);

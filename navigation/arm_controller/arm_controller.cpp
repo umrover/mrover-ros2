@@ -308,9 +308,6 @@ namespace mrover {
         resp->success = true;
     }
 
-    void poseCalcTimeoutWrapper(msg::IK::ConstSharedPtr const& ik_target) {
-    }
-
     void ArmController::sampleCallback(srv::IkSample::Request::ConstSharedPtr const& req, srv::IkSample::Response::SharedPtr const& resp) {
         ArmPos testPose;
         testPose.x = req->pos.x;
