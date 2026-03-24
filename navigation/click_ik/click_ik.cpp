@@ -301,6 +301,8 @@ namespace mrover {
                 vec.set__y(targetInArm.y());
                 vec.set__z(targetInArm.z());
                 sendReq->set__pos(vec);
+                sendReq->set__roll(0);
+                sendReq->set__pitch(0);
                 size_t index = j * goal->w + i;
                 auto future = mIkSampleClient->async_send_request(sendReq);
 

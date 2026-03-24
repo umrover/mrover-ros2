@@ -313,6 +313,8 @@ namespace mrover {
         testPose.x = req->pos.x;
         testPose.y = req->pos.y;
         testPose.z = req->pos.z;
+        testPose.pitch = req->pitch;
+        testPose.roll = req->roll;
         RCLCPP_INFO(this->get_logger(), "Checking Position Validity: x:%f, y:%f, z:%f\n", req->pos.x, req->pos.y, req->pos.z);
         auto positions = ikPosCalc(testPose);
         if (positions == std::nullopt)
