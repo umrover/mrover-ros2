@@ -59,6 +59,7 @@ find_package(sensor_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(rtcm_msgs REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
+find_package(action_msgs REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(urdf REQUIRED)
@@ -151,6 +152,9 @@ message(STATUS "Found message files: ${MROVER_MESSAGE_FILE_PATHS}")
 file(GLOB_RECURSE MROVER_SERVICE_FILE_PATHS RELATIVE ${CMAKE_CURRENT_LIST_DIR} CONFIGURE_DEPENDS srv/*.srv)
 message(STATUS "Found service files: ${MROVER_SERVICE_FILE_PATHS}")
 
+file(GLOB_RECURSE MROVER_ACTION_FILE_PATHS RELATIVE ${CMAKE_CURRENT_LIST_DIR} CONFIGURE_DEPENDS action/*.action)
+message(STATUS "Found action files: ${MROVER_ACTION_FILE_PATHS}")
+
 # Starter Project
 message(STATUS "PROJ NAME: ${PROJECT_NAME}")
 
@@ -167,7 +171,8 @@ message(STATUS "Found message files: ${MROVER_MESSAGE_FILE_PATHS}")
 rosidl_generate_interfaces(${PROJECT_NAME}
     ${MROVER_MESSAGE_FILE_PATHS}
     ${MROVER_SERVICE_FILE_PATHS}
-    DEPENDENCIES nav_msgs sensor_msgs geometry_msgs
+    ${MROVER_ACTION_FILE_PATHS}
+    DEPENDENCIES nav_msgs sensor_msgs geometry_msgs action_msgs
 )
 
 # Starter project 
@@ -339,9 +344,6 @@ target_link_libraries(differential_drive_controller units)
 mrover_add_node(arm_controller navigation/arm_controller/arm_controller.cpp navigation/arm_controller/pch.hpp)
 target_link_libraries(arm_controller lie)
 ament_target_dependencies(arm_controller rclcpp)
-
-# mrover_add_node(led esw/led.cpp)
-# ament_target_dependencies(led rclcpp std_srvs)
 
 if (Gst_FOUND AND GstApp_FOUND)
     mrover_add_node(usb_camera esw/usb_camera/*.cpp esw/usb_camera/pch.hpp)
