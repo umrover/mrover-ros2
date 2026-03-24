@@ -30,7 +30,7 @@ class IK_Visualization(Node):
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self)
 
         # Subscriber
-        self.tf_sub = self.create_subscription(TFMessage, "/tf", self.visualize, 1)
+        self.tf_sub = self.create_subscription(TFMessage, "/tf", self.get_arm_pose_in_map, 1)
 
         # Set up marker publisher
         self.valid_points_pub = self.create_publisher(Marker, "valid_ik_points", 1)
@@ -55,15 +55,11 @@ class IK_Visualization(Node):
 
         self.get_logger().info("Ready for input...")
 
-    def visualize(self, msg):
-        self.get_logger().info('Starting Visualization')
-
-        # Obtain Guarenteed Point
-        self.arm_pose = self.get_arm_pose_in_map()
-
+    def visualize(self) -> bool :
         if self.arm_pose == None:
-            self.get_logger().warn("Arm pose is not on the tf tree, unable to visualize")
-            return
+            return False
+
+        self.get_logger().info('Starting Visualization')
 
         arm_x,arm_y,arm_z = self.arm_pose.translation()
 
@@ -71,12 +67,13 @@ class IK_Visualization(Node):
         self.recursive_check_points(arm_x,arm_y,arm_z)
 
         # Create Markers for points
-        self.publish_valid_points_marker([0,255,0], "valid_ik")
+        self.publish_valid_points_marker([0.0,255.0,0.0], "valid_ik")
 
-        self.get_logger().info('Finsihed Visualized')
-
-        time.sleep(5)
-        return
+        self.valid_points = set()
+        self.invalid_points = set()
+        self.arm_pose = None
+        self.get_logger().info('Finished Visualized')
+        return True
     
     def recursive_check_points(self, arm_x,arm_y,arm_z):
         request = IkSample.Request()
@@ -98,7 +95,7 @@ class IK_Visualization(Node):
 
         self.get_logger().info("Done")
         
-        if result.valid:
+        if result:
             self.valid_points.add((arm_x,arm_y,arm_z))
 
             # Check +-step in x, y, and z coordinates
@@ -113,9 +110,9 @@ class IK_Visualization(Node):
 
         return
     
-    def get_arm_pose_in_map(self) -> SE3 | None:
+    def get_arm_pose_in_map(self, msg):
         try:
-            return SE3.from_tf_tree(self.tf_buffer, "arm_fk", "arm_base_link")
+            self.arm_pose = SE3.from_tf_tree(self.tf_buffer, "arm_fk", "arm_base_link")
         except (
             tf2_ros.LookupException,
             tf2_ros.ConnectivityException,
@@ -124,7 +121,6 @@ class IK_Visualization(Node):
             self.get_logger().warn(
                 "Failed to get arm pose. Is localization running?", throttle_duration_sec=1
             )
-            return None
         
     def publish_valid_points_marker(
         self,
@@ -133,29 +129,28 @@ class IK_Visualization(Node):
         size=0.2,
         lifetime=0,
     ) -> None:
-        if self.get_parameter("display_markers").value:
-            points_marker = Marker()
-            points_marker.lifetime = Duration(seconds=lifetime).to_msg()
-            points_marker.header = Header(frame_id="map", stamp=self.get_clock().now().to_msg())
-            points_marker.ns = ns
-            points_marker.action = Marker.ADD
-            points_marker.color.r = color[0]
-            points_marker.color.g = color[1]
-            points_marker.color.b = color[2]
-            points_marker.color.a = 1.0
-            points_marker.pose.orientation.w = 1.0
+        points_marker = Marker()
+        points_marker.lifetime = Duration(seconds=lifetime).to_msg()
+        points_marker.header = Header(frame_id="map", stamp=self.get_clock().now().to_msg())
+        points_marker.ns = ns
+        points_marker.action = Marker.ADD
+        points_marker.color.r = color[0]
+        points_marker.color.g = color[1]
+        points_marker.color.b = color[2]
+        points_marker.color.a = 1.0
+        points_marker.pose.orientation.w = 1.0
 
-            for point in self.valid_points:
-                # assert len(point) > 1, f"Invalid point has size {len(point)}"
-                p = Point(x=point[0], y=point[1], z=point[2])
-                points_marker.points.append(p)
+        for point in self.valid_points:
+            # assert len(point) > 1, f"Invalid point has size {len(point)}"
+            p = Point(x=point[0], y=point[1], z=point[2])
+            points_marker.points.append(p)
 
-            points_marker.type = Marker.SPHERE_LIST
-            points_marker.id = 0
-            points_marker.scale.x = size
-            points_marker.scale.y = size
+        points_marker.type = Marker.SPHERE_LIST
+        points_marker.id = 0
+        points_marker.scale.x = size
+        points_marker.scale.y = size
 
-            self.valid_points_pub.publish(points_marker)
+        self.valid_points_pub.publish(points_marker)
 
     def reset_markers(self) -> None:
         if self.get_parameter("display_markers").value:
@@ -169,9 +164,15 @@ def main():
     try:
         rclpy.init(args=sys.argv)
         ik_node = IK_Visualization()
+        visualized = False
 
         while True:
-            rclpy.spin(ik_node)
+            input()
+            while (not visualized):
+                rclpy.spin_once(ik_node)
+                visualized = ik_node.visualize()
+            ik_node.get_logger().info("Waiting for input...")
+            visualized = False
 
     except KeyboardInterrupt:
         pass
