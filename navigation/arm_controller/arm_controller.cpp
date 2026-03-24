@@ -352,35 +352,31 @@ namespace mrover {
                 mVelTarget.linear.z == 0 &&
                 mVelTarget.angular.x == 0 &&
                 mVelTarget.angular.y == 0) {
-                // no movement command, so just stop the arm
-                mCarrotPos = mArmPos;
-                mCheckCarrotPos = mArmPos;
-                for (int i = 0; i < 5; i++) {
-                    mArmTotalError[i] = 0;
+                    mCarrotPos = mArmPos;
+                    mCheckCarrotPos = mArmPos;
+                    //carrot_initialized = false;
+                    for (int i = 0; i < 5; i++) {
+                        mArmTotalError[i] = 0;
+                    }
+                    return;
                 }
-            }   
-
-            //hold = false;
-
-            auto const now = get_clock()->now();
+            
+            auto now = get_clock()->now();
 
             if (!carrot_initialized) {
-                mPrevTime = now;
-                mCarrotPos = mArmPos;
-                mCheckCarrotPos = mArmPos;
+                //mCarrotPos = mArmPos;
+                //mCheckCarrotPos = mArmPos;
                 carrot_initialized = true;
+                mPrevTime = now;
             }
+
 
             double dt = (now - mPrevTime).seconds();
             mPrevTime = now;
-
-            if (dt <= 0.0 || dt > 1.0) {
-                dt = 0.033;
-            }
-
             dt = 0.015;
+            //double dt = 0.033;
 
-            double const k = 1;
+            double const k = 1.1;
 
             mCarrotPos.x += mVelTarget.linear.x * dt * k;
             mCarrotPos.y += mVelTarget.linear.y * dt * k;
@@ -407,7 +403,7 @@ namespace mrover {
             auto error_pitch = mCarrotPos.pitch - mArmPos.pitch;
             auto error_roll = mCarrotPos.roll - mArmPos.roll;
 
-            double const max_dist = 0.07;
+            double const max_dist = 0.2;
 
             double error_total = std::sqrt(error_x * error_x + error_y * error_y + error_z * error_z);
 
@@ -416,6 +412,9 @@ namespace mrover {
                 mCarrotPos.x = mArmPos.x + error_x * reduce_factor;
                 mCarrotPos.y = mArmPos.y + error_y * reduce_factor;
                 mCarrotPos.z = mArmPos.z + error_z * reduce_factor;
+                //mCarrotPos.pitch = mArmPos.pitch + error_pitch * reduce_factor;
+                //mCarrotPos.roll = mArmPos.roll + error_roll * reduce_factor;
+
             }
 
             double error_check_x = mCheckCarrotPos.x - mCarrotPos.x;
@@ -459,20 +458,21 @@ namespace mrover {
                 mArmTotalError[i] = std::min(std::max(mArmTotalError[i], -1 * lim), lim);
             }
 
+            double const Kp_lin = 100;
+            double const Kp_ang = 8;
 
-            double const Kp_lin = 20;
-            double const Kp_ang = 30;
-
-            double const Ki_lin = 0;
+            double const Ki_lin = 0.00;
             double const Ki_ang = 0;
 
-            adjusted_v.linear.x += (Kp_lin * error_x + mArmTotalError[0] * Ki_lin);
-            adjusted_v.linear.y += (Kp_lin * error_y + mArmTotalError[1] * Ki_lin);
-            adjusted_v.linear.z += (Kp_lin * error_z + mArmTotalError[2] * Ki_lin);
-            adjusted_v.angular.y += (Kp_ang * error_pitch + mArmTotalError[3] * Ki_ang);
-            adjusted_v.angular.x += (Kp_ang * error_roll + mArmTotalError[4] * Ki_ang);
+            adjusted_v.linear.x += (Kp_lin * error_x) + (mArmTotalError[0] * Ki_lin);
+            adjusted_v.linear.y += (Kp_lin * error_y) + (mArmTotalError[1] * Ki_lin);
+            adjusted_v.linear.z += (Kp_lin * error_z) + (mArmTotalError[2] * Ki_lin);
+            adjusted_v.angular.y += (Kp_ang * error_pitch) + (mArmTotalError[3] * Ki_ang);
+            adjusted_v.angular.x += (Kp_ang * error_roll) + (mArmTotalError[4] * Ki_ang);
 
             auto velocities = ikVelCalc(adjusted_v);
+            /*auto velocities_weird_idk = ikVelCalc(mVelTarget);
+            velocities->velocities[2] = velocities_weird_idk->velocities[2];*/
 
             if (velocities &&
                 !(
