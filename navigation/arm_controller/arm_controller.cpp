@@ -231,10 +231,10 @@ namespace mrover {
             mPosPub->publish(mPosFallback.value());
             return;
         }
+        msg::ArmStatus status;
+        status.set__status(true);
 
         if (mArmMode == ArmMode::POSITION_CONTROL) {
-            msg::ArmStatus status;
-            status.set__status(true);
             auto positions = ikPosCalc(mPosTarget);
             SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_target", "arm_base_link", mPosTarget.toSE3(), get_clock()->now());
             if (positions) {
@@ -246,7 +246,6 @@ namespace mrover {
                 mPosPub->publish(mPosFallback.value());
                 status.set__status(false);
             }
-            mStatusPub->publish(status);
         } else if (mArmMode == ArmMode::VELOCITY_CONTROL) {
             // TODO: Determine joint velocities that cancels out arm sag
             auto velocities = ikVelCalc(mVelTarget);
@@ -263,6 +262,7 @@ namespace mrover {
                 if (!velocities) RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1000, "Velocity IK failed!");
                 if (!mPosFallback) mPosFallback = mCurrPos;
                 mPosPub->publish(mPosFallback.value());
+                status.set__status(false);
             }
         } else { // typing mode
             msg::Position positions;
@@ -290,6 +290,7 @@ namespace mrover {
             mPosFallback = std::nullopt;
             mPosPub->publish(positions);
         }
+        mStatusPub->publish(status);
     }
 
     auto ArmController::modeCallback(srv::IkMode::Request::ConstSharedPtr const& req, srv::IkMode::Response::SharedPtr const& resp) -> void {
