@@ -1,10 +1,7 @@
 #pragma once
 
 #include "GstVideoWidgets.hpp"
-#include "mrover/action/detail/ik_image_sample__struct.hpp"
 #include "pch.hpp"
-#include <qlabel.h>
-#include <qpushbutton.h>
 
 namespace mrover {
 
@@ -42,7 +39,7 @@ namespace mrover {
     public slots:
         void updateFeedback(float distance);
         void updateResult(bool success);
-        void enableOverlayWidget(mrover::action::IkImageSample::Result::SharedPtr imageSample);
+        void enableOverlayWidget(mrover::action::IkImageSample::Result::SharedPtr const& imageSample);
         void markRunning();
 
     signals:

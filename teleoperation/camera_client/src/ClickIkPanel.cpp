@@ -1,7 +1,4 @@
 #include "ClickIkPanel.hpp"
-#include "mrover/action/detail/ik_image_sample__struct.hpp"
-#include <qnamespace.h>
-#include <qpixmap.h>
 
 namespace mrover {
 
@@ -19,10 +16,10 @@ namespace mrover {
         mFeedbackLabel = new QLabel(this);
         mFeedbackLabel->setAlignment(Qt::AlignCenter);
         mSampleButton = new QPushButton("Sample", this);
-        mSampleButton->setCheckable(true);
+        // mSampleButton->setCheckable(true);
         connect(mSampleButton, &QPushButton::clicked, this, &ClickIkPanel::onSample);
         mClearOverlayButton = new QPushButton("Clear Overlay", this);
-        mClearOverlayButton->setCheckable(true);
+        // mClearOverlayButton->setCheckable(true);
         connect(mClearOverlayButton, &QPushButton::clicked, this, &ClickIkPanel::onClearOverlay);
         mInfoRow->addWidget(mToggleButton);
         mInfoRow->addWidget(mStatusLabel, 1);
@@ -99,7 +96,7 @@ namespace mrover {
         mSampleOverlay->setVisible(false);
     };
 
-    void ClickIkPanel::enableOverlayWidget(mrover::action::IkImageSample::Result::SharedPtr imageSample) {
+    void ClickIkPanel::enableOverlayWidget(mrover::action::IkImageSample::Result::SharedPtr const& imageSample) {
         if (imageSample) {
             QColor green(0, 255, 0, 80);
             QColor red(255, 0, 0, 80);

@@ -11,6 +11,7 @@
 #include <QCheckBox>
 #include <QComboBox>
 #include <QDateTime>
+#include <QDebug>
 #include <QDockWidget>
 #include <QDrag>
 #include <QDragEnterEvent>
@@ -22,14 +23,13 @@
 #include <QLabel>
 #include <QLineEdit>
 #include <QMainWindow>
-#include <QDebug>
 #include <QMenu>
 #include <QMenuBar>
 #include <QMimeData>
 #include <QMouseEvent>
 #include <QPixmap>
-#include <QResizeEvent>
 #include <QPushButton>
+#include <QResizeEvent>
 #include <QScrollArea>
 #include <QStandardPaths>
 #include <QToolBar>
@@ -47,3 +47,5 @@
 #include <std_srvs/srv/trigger.hpp>
 
 #include <gst_utils.hpp>
+
+#include <mrover/action/detail/ik_image_sample__struct.hpp>

@@ -1,13 +1,4 @@
 #include "simulator.hpp"
-#include "mrover/action/detail/click_ik__struct.hpp"
-#include "mrover/action/detail/ik_image_sample__struct.hpp"
-#include <cstddef>
-#include <future>
-#include <memory>
-#include <rclcpp/logging.hpp>
-#include <rclcpp_action/client.hpp>
-#include <vector>
-
 namespace mrover {
 
     auto Simulator::throttlesCallback(msg::Throttle::ConstSharedPtr const& msg) -> void {
@@ -132,11 +123,6 @@ namespace mrover {
             ik.pos.z = mIkTarget.z();
             ik.pitch = mIkPitch;
             ik.roll = mIkRoll;
-            ik.pos.x = mIkTarget.x();
-            ik.pos.y = mIkTarget.y();
-            ik.pos.z = mIkTarget.z();
-            ik.pitch = mIkPitch;
-            ik.roll = mIkRoll;
             mIkTargetPub->publish(ik);
         } else if (mClickIk && mPublishClickIk) {
             action::ClickIk::Goal goal;
@@ -154,14 +140,14 @@ namespace mrover {
             mCancelClickIk = false;
         } else if (mSampleIk) {
             mHasSampled = true;
-            float x = static_cast<float>(mStereoCameras.front().base.resolution.x()) / static_cast<float>(IMAGE_SAMPLE_RESOLUTION);
-            float y = static_cast<float>(mStereoCameras.front().base.resolution.y()) / static_cast<float>(IMAGE_SAMPLE_RESOLUTION);
+            size_t x = mStereoCameras.front().base.resolution.x() / IMAGE_SAMPLE_RESOLUTION;
+            size_t y = mStereoCameras.front().base.resolution.y() / IMAGE_SAMPLE_RESOLUTION;
             action::IkImageSample::Goal goal;
             goal.set__w(x);
             goal.set__h(y);
             goal.set__scale(IMAGE_SAMPLE_RESOLUTION);
             rclcpp_action::Client<action::IkImageSample>::SendGoalOptions options;
-            options.result_callback = [this](rclcpp_action::ClientGoalHandle<action::IkImageSample>::WrappedResult const future) {
+            options.result_callback = [this](rclcpp_action::ClientGoalHandle<action::IkImageSample>::WrappedResult const& future) {
                 if (future.code == rclcpp_action::ResultCode::ABORTED)
                     return;
                 this->mImageSample = future.result;

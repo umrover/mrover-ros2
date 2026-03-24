@@ -17,6 +17,7 @@
 #include <thread>
 #include <type_traits>
 #include <unordered_map>
+#include <vector>
 
 #include <mrover/srv/ik_sample.hpp>
 #include <rclcpp/node.hpp>
