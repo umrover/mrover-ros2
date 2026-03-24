@@ -1,14 +1,7 @@
-/**
- * API Request and Response Types
- */
+import type { AutonWaypoint, BasicWaypointRecord } from '@/types/waypoints'
 
-import type { AutonWaypoint, APIBasicWaypoint } from '@/types/waypoints'
+export type { AutonWaypoint, BasicWaypointRecord }
 
-// Re-export waypoint types for API usage
-export type { AutonWaypoint }
-export type BasicWaypoint = APIBasicWaypoint
-
-// API Response types
 export interface APIResponse {
   status: 'success' | 'error'
   message?: string
@@ -20,7 +13,7 @@ export interface WaypointsResponse extends APIResponse {
 }
 
 export interface BasicWaypointsResponse extends APIResponse {
-  waypoints?: BasicWaypoint[]
+  waypoints?: BasicWaypointRecord[]
 }
 
 export interface CurrentCourseResponse extends APIResponse {
@@ -40,7 +33,14 @@ export interface DeleteWaypointResponse extends APIResponse {
   deleted?: boolean
 }
 
-// Auton waypoint for enable request (subset of AutonWaypoint)
+export interface CreateWaypointResponse extends APIResponse {
+  waypoint?: AutonWaypoint
+}
+
+export interface CreateBasicWaypointResponse extends APIResponse {
+  waypoint?: BasicWaypointRecord
+}
+
 export interface AutonEnableWaypoint {
   latitude_degrees: number
   longitude_degrees: number

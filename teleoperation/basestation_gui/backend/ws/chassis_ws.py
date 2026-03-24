@@ -1,4 +1,5 @@
 from backend.ws.base_ws import WebSocketHandler
+from backend.managers.ros import get_logger
 from mrover.msg import ControllerState
 
 class ChassisHandler(WebSocketHandler):
@@ -9,4 +10,4 @@ class ChassisHandler(WebSocketHandler):
         self.forward_ros_topic("/gimbal_controller_state", ControllerState, "gimbal_controller_state")
 
     async def handle_message(self, data):
-        print(f"Chassis handler received unexpected message: {data}")
+        get_logger().warning(f"Chassis handler received unexpected message: {data}")
