@@ -1,5 +1,6 @@
+import threading
 from typing import Optional
-from backend.managers.ros import get_node
+from backend.managers.ros import get_node, get_logger
 from backend.database import get_recordings_db
 from sensor_msgs.msg import NavSatFix
 from rclpy.qos import qos_profile_sensor_data
@@ -74,7 +75,7 @@ class RecordingManager:
             conn.commit()
             self.recording_sequence += 1
         except Exception as e:
-            print(f"Failed to save waypoint: {e}")
+            get_logger().error(f"Failed to save waypoint: {e}")
         finally:
             if conn:
                 conn.close()
@@ -103,7 +104,7 @@ class RecordingManager:
             self.recording_callback
         )
 
-        print(f"Started recording: {name} (ID: {recording_id}) at {RECORDING_RATE_HZ}Hz")
+        get_logger().info(f"Started recording: {name} (ID: {recording_id}) at {RECORDING_RATE_HZ}Hz")
 
         return recording_id
 
@@ -123,7 +124,7 @@ class RecordingManager:
         self.recording_sequence = 0
         self.is_drone_recording = False
 
-        print(f"Stopped recording ID: {recording_id} with {waypoint_count} waypoints")
+        get_logger().info(f"Stopped recording ID: {recording_id} with {waypoint_count} waypoints")
 
         return {
             "recording_id": recording_id,
@@ -139,11 +140,14 @@ class RecordingManager:
         }
 
 
-recording_manager = None
+_recording_manager = None
+_recording_manager_lock = threading.Lock()
 
 
 def get_recording_manager() -> RecordingManager:
-    global recording_manager
-    if recording_manager is None:
-        recording_manager = RecordingManager()
-    return recording_manager
+    global _recording_manager
+    if _recording_manager is None:
+        with _recording_manager_lock:
+            if _recording_manager is None:
+                _recording_manager = RecordingManager()
+    return _recording_manager
