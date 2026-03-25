@@ -16,7 +16,7 @@ from visualization_msgs.msg import Marker
 from geometry_msgs.msg import Twist
 from state_machine.state import State
 from rclpy.publisher import Publisher
-
+from navigation.smoothing import smoothing
 
 # REFERENCE: https://docs.google.com/document/d/18GjDWxIu5f5-N5t5UgbrZGdEyaDj9ZMEUuXex8-NKrA/edit
 class CostmapSearchState(State):
@@ -38,6 +38,8 @@ class CostmapSearchState(State):
     astar: AStar
 
     USE_COSTMAP: bool
+    USE_RELAXATION: bool
+    USE_INTERPOLATION: bool
     STOP_THRESH: float
     DRIVE_FWD_THRESH: float
     UPDATE_DELAY: float
@@ -54,6 +56,8 @@ class CostmapSearchState(State):
             return
 
         self.USE_COSTMAP = context.node.get_parameter("costmap.use_costmap").value or current_waypoint.enable_costmap
+        self.USE_RELAXATION = context.node.get_parameter("smoothing.use_relaxation").value
+        self.USE_INTERPOLATION = context.node.get_parameter("smoothing.use_interpolation").value
 
         self.STOP_THRESH = context.node.get_parameter("search.stop_threshold").value
         self.DRIVE_FWD_THRESH = context.node.get_parameter("search.drive_forward_threshold").value
@@ -105,6 +109,7 @@ class CostmapSearchState(State):
         context.rover.send_drive_command(Twist())
         try:
             self.astar_traj = self.astar.generate_trajectory(self.spiral_traj.get_current_point())
+            self.astar_traj = smoothing(self.astar_traj, context, self.USE_RELAXATION, self.USE_INTERPOLATION)
         except Exception as e:
             context.node.get_logger().info(str(e))
             return self

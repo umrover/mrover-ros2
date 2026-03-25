@@ -24,7 +24,7 @@ from nav_msgs.msg import Path
 from std_msgs.msg import Header
 from visualization_msgs.msg import Marker
 import numpy as np
-
+from navigation.smoothing import smoothing
 
 class WaypointState(State):
     # STOP_THRESHOLD: float = rospy.get_param("waypoint/stop_threshold")
@@ -45,6 +45,8 @@ class WaypointState(State):
     UPDATE_DELAY: float
     NO_SEARCH_WAIT_TIME: float
     USE_COSTMAP: bool
+    USE_RELAXATION: bool
+    USE_INTERPOLATION: bool
 
     def on_enter(self, context: Context) -> None:
         if context.course is None:
@@ -76,6 +78,9 @@ class WaypointState(State):
         current_waypoint = context.course.current_waypoint()
         if current_waypoint is None:
             return
+        
+        self.USE_RELAXATION = context.node.get_parameter("smoothing.use_relaxation").value
+        self.USE_INTERPOLATION = context.node.get_parameter("smoothing.use_interpolation").value
 
         self.USE_COSTMAP = (
             context.node.get_parameter_or("costmap.use_costmap", True).value or current_waypoint.enable_costmap
@@ -159,6 +164,7 @@ class WaypointState(State):
             self.display_markers(context=context)
             try:
                 self.astar_traj = self.astar.generate_trajectory(self.waypoint_traj.get_current_point())
+                self.astar_traj = smoothing(self.astar_traj, context, self.USE_RELAXATION, self.USE_INTERPOLATION)
             except Exception as e:
                 context.node.get_logger().info(str(e))
                 return self
