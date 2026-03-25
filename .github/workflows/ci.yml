@@ -60,6 +60,9 @@ jobs:
       - name: manif Submodule Update
         if: github.event.pull_request.draft == false
         run: cd $GITHUB_WORKSPACE/src/mrover/ && git submodule update --init deps/manif
+      - name: Dynamixel Submodule Update & Install
+        if: github.event.pull_request.draft == false
+        run: cd $GITHUB_WORKSPACE/src/mrover/ && git submodule update --init deps/dynamixel_sdk && ./scripts/build_dynamixel_sdk.sh
       - name: Build
         if: github.event.pull_request.draft == false
         run: . /opt/ros/humble/setup.sh && . /home/mrover/ros2_ws/src/mrover/venv/bin/activate && cd $GITHUB_WORKSPACE/src/mrover/ && ./build.sh
