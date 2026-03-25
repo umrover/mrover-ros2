@@ -100,31 +100,7 @@ source $ZSH/oh-my-zsh.sh
 # alias zshconfig="mate ~/.zshrc"
 # alias ohmyzsh="mate ~/.oh-my-zsh"
 
-readonly MROVER_ROS2_WS_PATH="$HOME/ros2_ws"
-
-source_mrover_overlay(){
-    build_profiles=("RelWithDebInfo" "Release" "Debug")
-
-    target_file="/not/a/real/file"
-
-    for profile in "${build_profiles[@]}"; do
-        file="${MROVER_ROS2_WS_PATH}/install/${profile}/setup.zsh"
-
-        if [ -f "${file}" ]; then
-            if [[ "${file}" -nt "${target_file}" ]]; then
-                target_file="${file}"
-            fi
-        fi
-    done
-
-    if [ -f "${target_file}" ]; then
-        source "${target_file}"
-    fi
-}
-
 alias mrover="cd ~/ros2_ws/src/mrover && source ~/ros2_ws/src/mrover/venv/bin/activate && source_mrover_overlay"
-
-source /opt/ros/humble/setup.zsh
 
 # bun completions
 [ -s "/home/mrover/.bun/_bun" ] && source "/home/mrover/.bun/_bun"
@@ -136,9 +112,6 @@ export PATH="$BUN_INSTALL/bin:$PATH"
 # ros2 completions
 eval "$(register-python-argcomplete3 ros2)"
 eval "$(register-python-argcomplete3 colcon)"
-
-# ros domain id
-export ROS_DOMAIN_ID=5
 
 # cuda
 export PATH=/usr/local/cuda/bin:$PATH
