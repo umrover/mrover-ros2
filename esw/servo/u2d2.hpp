@@ -2,13 +2,13 @@
 
 #include <dynamixel_sdk/packet_handler.h>
 #include <dynamixel_sdk/port_handler.h>
+#include <mutex>
 #include <rclcpp/logger.hpp>
 #include <rclcpp/logging.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp/utilities.hpp>
 #include <string>
 #include <unordered_set>
-#include <mutex>
 
 namespace mrover {
 
@@ -52,7 +52,7 @@ namespace mrover {
         }
 
         static auto getSharedInstance() -> std::shared_ptr<U2D2> {
-            static std::shared_ptr<U2D2> inst{getInstance(), [](U2D2*){}};
+            static std::shared_ptr<U2D2> inst{getInstance(), [](U2D2*) {}};
             return inst;
         }
 

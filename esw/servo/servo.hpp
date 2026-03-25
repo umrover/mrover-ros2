@@ -24,7 +24,7 @@ namespace mrover {
 
         static constexpr int32_t SERVO_TICKS = 4096;
         static constexpr uint8_t SERVO_POSITION_DEAD_ZONE = 5;
-        
+
         static constexpr int getUpper(int const val) { return val == 0 ? 4096 : val; }
 
         ServoID mServoID;
@@ -58,9 +58,8 @@ namespace mrover {
             Limited,
         };
 
-        Servo(rclcpp::Node::SharedPtr node, std::string servoName) :
-            mServoName{std::move(servoName)}, mLimitAdjustment{0}, mAdjustedForwardLimit{0},
-            mAdjustedReverseLimit{0}, mGoalPosition{0}, mPositionMultiplier{0}, mNode{std::move(node)} {
+        Servo(rclcpp::Node::SharedPtr node, std::string servoName) : mServoName{std::move(servoName)}, mLimitAdjustment{0}, mAdjustedForwardLimit{0},
+                                                                     mAdjustedReverseLimit{0}, mGoalPosition{0}, mPositionMultiplier{0}, mNode{std::move(node)} {
 
             int id;
             std::vector<ParameterWrapper> parameters = {

@@ -49,19 +49,17 @@ namespace mrover {
             subOptions.callback_group = mServiceGroup;
 
             mPositionService = this->create_service<srv::ServoPosition>(
-                "gimbal_servo",
-                [this](srv::ServoPosition::Request::SharedPtr const& req, srv::ServoPosition::Response::SharedPtr const& res) {
-                    servoPositionCallback(req, res);
-                },
-                rmw_qos_profile_services_default,
-                mServiceGroup
-            );
+                    "gimbal_servo",
+                    [this](srv::ServoPosition::Request::SharedPtr const& req, srv::ServoPosition::Response::SharedPtr const& res) {
+                        servoPositionCallback(req, res);
+                    },
+                    rmw_qos_profile_services_default,
+                    mServiceGroup);
 
             mPublishTimer = this->create_wall_timer(
-                std::chrono::milliseconds(100),
-                [this]() { publishDataCallback(); },
-                mTimerGroup
-            );
+                    std::chrono::milliseconds(100),
+                    [this]() { publishDataCallback(); },
+                    mTimerGroup);
 
             mGimbalStatePub = this->create_publisher<msg::ControllerState>("gimbal_controller_state", 10);
         }
@@ -80,8 +78,8 @@ namespace mrover {
         rclcpp::Publisher<msg::ControllerState>::SharedPtr mGimbalStatePub;
         rclcpp::TimerBase::SharedPtr mPublishTimer;
         msg::ControllerState mControllerState;
-        
-        auto servoPositionCallback(srv::ServoPosition::Request::SharedPtr const& req, srv::ServoPosition::Response::SharedPtr const& res) -> void  {
+
+        auto servoPositionCallback(srv::ServoPosition::Request::SharedPtr const& req, srv::ServoPosition::Response::SharedPtr const& res) -> void {
             size_t const n = req->names.size();
             res->at_tgts.resize(n, false);
 
@@ -125,7 +123,7 @@ namespace mrover {
             mControllerState.states.clear();
             mControllerState.limits_hit.clear();
 
-            for (auto const& [name, servo] : mServos) {
+            for (auto const& [name, servo]: mServos) {
                 double pos, vel, cur;
                 U2D2::Status const status = servo->getPosition(pos);
                 servo->getVelocity(vel);

@@ -5,14 +5,14 @@
 #include <rclcpp/node.hpp>
 #include <rclcpp/rclcpp.hpp>
 
-#include <mrover/srv/servo_position.hpp>
 #include <mrover/msg/controller_state.hpp>
 #include <mrover/msg/throttle.hpp>
+#include <mrover/srv/servo_position.hpp>
 
 #include <brushed.hpp>
 #include <science.hpp>
-#include <u2d2.hpp>
 #include <servo.hpp>
+#include <u2d2.hpp>
 
 
 namespace mrover {
@@ -49,13 +49,12 @@ namespace mrover {
             subOptions.callback_group = mServiceGroup;
 
             mFunnelPositionService = this->create_service<srv::ServoPosition>(
-               "gimbal_servo",
-               [this](srv::ServoPosition::Request::SharedPtr const& req, srv::ServoPosition::Response::SharedPtr const& res) {
-                   servoPositionCallback(req, res);
-               },
-               rmw_qos_profile_services_default,
-               mServiceGroup
-            );
+                    "gimbal_servo",
+                    [this](srv::ServoPosition::Request::SharedPtr const& req, srv::ServoPosition::Response::SharedPtr const& res) {
+                        servoPositionCallback(req, res);
+                    },
+                    rmw_qos_profile_services_default,
+                    mServiceGroup);
 
             mSPThrottleSub = create_subscription<msg::Throttle>("sp_thr_cmd", 1, [this](msg::Throttle::ConstSharedPtr const& msg) { processThrottleCmd(msg); });
 
@@ -120,7 +119,7 @@ namespace mrover {
             }
         }
 
-        auto servoPositionCallback(srv::ServoPosition::Request::SharedPtr const& req, srv::ServoPosition::Response::SharedPtr const& res) const -> void  {
+        auto servoPositionCallback(srv::ServoPosition::Request::SharedPtr const& req, srv::ServoPosition::Response::SharedPtr const& res) const -> void {
             if (req->names.size() != 1 || req->names.at(0) != "funnel_servo") return;
 
             mFunnelServo->setPosition(req->positions[0], Servo::ServoMode::Limited);
