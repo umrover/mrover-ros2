@@ -151,15 +151,6 @@ export interface SPSensorStateMessage {
   co2_state: boolean;
 }
 
-// export interface VelocityMessage {
-//   header?: {
-//     stamp: { sec: number; nanosec: number };
-//     frame_id: string;
-//   }; 
-//   names: string[];
-//   velocities: number[];
-// }
-
 export interface ThrottleMessage {
   header?: {
     stamp: { sec: number; nanosec: number };
