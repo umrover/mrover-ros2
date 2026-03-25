@@ -34,8 +34,8 @@
 import { useControllerMessage, formatState, formatNumber, formatLimit, formatError, stateRowClass } from '@/composables/useControllerState'
 
 const { stale, data } = useControllerMessage({
-  storeKey: 'arm',
-  messageTypes: ['arm_state'],
+  topic: 'arm',
+  messageType: 'arm_state',
 })
 
 const joints = [

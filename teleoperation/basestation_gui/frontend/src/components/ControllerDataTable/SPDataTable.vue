@@ -32,7 +32,7 @@
 import { useControllerMessage, formatState, formatNumber, formatLimit, formatError, stateRowClass } from '@/composables/useControllerState'
 
 const { stale, data } = useControllerMessage({
-  storeKey: 'science',
-  messageTypes: ['sp_controller_state'],
+  topic: 'science',
+  messageType: 'sp_controller_state',
 })
 </script>

@@ -30,8 +30,8 @@
 import { useControllerMessage, formatState, formatNumber, formatError, stateRowClass } from '@/composables/useControllerState'
 
 const { stale, data } = useControllerMessage({
-  storeKey: 'drive',
-  messageTypes: ['drive_state'],
+  topic: 'drive',
+  messageType: 'drive_state',
 })
 
 const wheels = [
