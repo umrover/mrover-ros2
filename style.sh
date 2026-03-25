@@ -112,7 +112,7 @@ if command -v shellcheck &> /dev/null; then
     ./*.sh
   )
   # SC2155 is separate declaration and command.
-  shellcheck --exclude=SC2155 "${SHELL_FILES[@]}"
+  shellcheck --shell=bash --exclude=SC2155 "${SHELL_FILES[@]}"
   echo "Done"
 fi
 
