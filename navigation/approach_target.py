@@ -220,7 +220,7 @@ class ApproachTargetState(State):
         if not self.astar_traj.done():
             curr_point = self.astar_traj.get_current_point()
             cmd_vel, arrived = context.drive.get_drive_command(
-                curr_point,
+                self.astar_traj,
                 rover_pose,
                 context.node.get_parameter("single_tag.stop_threshold").value,
                 context.node.get_parameter("waypoint.drive_forward_threshold").value,
