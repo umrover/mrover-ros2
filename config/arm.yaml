@@ -40,9 +40,9 @@ arm_hw_bridge:
     joint_de_pitch_offset: 0.130767 # radians
     joint_de_roll_offset: 0.4271226 # radians
     joint_de_pitch_max_position: 1.39 # radians
-    joint_de_pitch_min_position: -0.85 # radians
-    joint_de_roll_max_position: 1.57 # radians
-    joint_de_roll_min_position: -1.57 # radians
+    joint_de_pitch_min_position: -1.00 # radians
+    joint_de_roll_max_position: 2.00 # radians
+    joint_de_roll_min_position: -2.00 # radians
     joint_de_0:
       min_velocity: -5.0
       max_velocity: 5.0
@@ -56,7 +56,7 @@ arm_hw_bridge:
       max_position: 10000.0
       max_torque: 20.0
     pusher_throttle: 1.0
-    pusher_wait_duration: 2.5
+    pusher_wait_duration: 5.0
     # TODO(eric): configure and enable DE limits
 #      limit_switch_0_present: true
 #      limit_switch_0_enabled: true

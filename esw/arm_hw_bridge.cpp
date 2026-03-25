@@ -572,6 +572,7 @@ namespace mrover {
             switch (mPusherState) {
                 case PusherState::DRIVING_FORWARD:
                     mPusher->setDesiredThrottle(mPusherThrottle);
+                    if (stalled) RCLCPP_INFO(get_logger(), "pusher stalled on extension");
                     if ((limits & PUSHER_FWD_MASK) || stalled) {
                         mPusher->setDesiredThrottle(Percent{0.0});
                         mPusherWaitCycles = 0;
