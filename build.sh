@@ -1,4 +1,4 @@
-#!/usr/bin/env zsh
+#!/usr/bin/env bash
 
 set -euxo pipefail
 
@@ -38,5 +38,3 @@ COLCON_EXTENSION_BLOCKLIST=colcon_core.event_handler.desktop_notification colcon
 rm -rf "$(pwd)/build/$build_profile/mrover/.cmake/api"
 
 ln -sf "$(pwd)/build/$build_profile/compile_commands.json" "$(pwd)/src/mrover/compile_commands.json"
-
-source_mrover_overlay
