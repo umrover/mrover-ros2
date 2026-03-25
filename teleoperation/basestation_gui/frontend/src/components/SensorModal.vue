@@ -98,8 +98,8 @@ const chartConfigs: readonly ChartConfig[] = [
     datasets: [{ label: 'Ozone', color: '#F9A825', historyIndex: 4 }],
   },
   {
-    title: 'CO2 (ppm)',
-    datasets: [{ label: 'CO2', color: '#8D6E63', historyIndex: 5 }],
+    title: 'CO₂ (Rel. %)',
+    datasets: [{ label: 'CO₂', color: '#8D6E63', historyIndex: 5 }],
   },
   {
     title: 'Pressure (Pa)',
