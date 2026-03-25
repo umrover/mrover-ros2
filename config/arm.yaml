@@ -28,7 +28,7 @@ arm_hw_bridge:
     joint_b_offset: -0.07754990  # radians
     joint_b_mount_theta: 1.25499645 # radians
     joint_b_segment_offset_theta: 0.09384635 # radians
-    joint_c_offset_theta: 2.55547 # radians
+    joint_c_offset_theta: 1.2273 # radians
     joint_c:
       min_velocity: -0.377
       max_velocity: 0.377
@@ -56,7 +56,7 @@ arm_hw_bridge:
       max_position: 10000.0
       max_torque: 20.0
     pusher_throttle: 1.0
-    pusher_wait_duration: 5.0
+    pusher_wait_duration: 2.5
     # TODO(eric): configure and enable DE limits
 #      limit_switch_0_present: true
 #      limit_switch_0_enabled: true
