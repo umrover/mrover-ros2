@@ -30,17 +30,18 @@ objects:
     position: [ -6.25, 10.5, 0.3 ]
   rock1:
     type: urdf
-    uri: package://mrover/urdf/world/rock.urdf.xacro
-    position: [ 2.0, -2.0, 0.1 ]
+    uri: package://mrover/urdf/world/medium_rock.urdf.xacro
+    position: [ 2.0, -2.0, 0.5 ]
   rock2:
     type: urdf
-    uri: package://mrover/urdf/world/rock.urdf.xacro
-    position: [ 7.0, -6.0, 0.2 ]
+    uri: package://mrover/urdf/world/large_rock.urdf.xacro
+    position: [ 7.0, -6.0, 0.5 ]
   rock3:
     type: urdf
-    uri: package://mrover/urdf/world/rock.urdf.xacro
-    position: [ 8.0, -10.0, 1.0 ]
+    uri: package://mrover/urdf/world/small_rock.urdf.xacro
+    position: [ 8.0, -10.0, 0.5 ]
   rock4:
     type: urdf
     uri: package://mrover/urdf/world/rock.urdf.xacro
     position: [ 9.0, -2.0, 0.2 ]
+    

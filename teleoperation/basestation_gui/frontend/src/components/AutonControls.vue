@@ -1,6 +1,7 @@
 <template>
-  <div class="flex flex-row gap-2">
-    <div class="flex flex-col gap-1" style="flex: 1;">
+  <div class="flex flex-col gap-2">
+    <div class="flex flex-col gap-1">
+      <span class="data-label">General</span>
       <FeedbackButton
         ref="autonCheckbox"
         class="w-full"
@@ -20,7 +21,18 @@
         @toggle="handleTeleopToggle"
       />
     </div>
-    <div class="flex flex-col gap-1" style="flex: 1;">
+    <div class="flex flex-col gap-1">
+      <span class="data-label">Costmap</span>
+      <FeedbackButton
+        class="w-full"
+        data-testid="pw-costmap-toggle-all"
+        :name="'All Costmaps'"
+        :checked="allCostmapToggle"
+        @toggle="handleCostmapToggle"
+      />
+    </div>
+    <div class="flex flex-col gap-1">
+      <span class="data-label">Navigation</span>
       <FeedbackButton
         class="w-full"
         data-testid="pw-pure-pursuit-toggle"
@@ -46,6 +58,23 @@
         @toggle="handlePathInterpolationToggle"
       />
     </div>
+    <div class="flex flex-col gap-1">
+      <span class="data-label">Perception</span>
+      <FeedbackButton
+        class="w-full"
+        :name="'Stereo Detector'"
+        :checked="stereoDetectorEnabled"
+        :action="stereoDetectorAction"
+        @toggle="handleStereoDetectorToggle"
+      />
+      <FeedbackButton
+        class="w-full"
+        :name="'Image Detector'"
+        :checked="imageDetectorEnabled"
+        :action="imageDetectorAction"
+        @toggle="handleImageDetectorToggle"
+      />
+    </div>
   </div>
 </template>
 
@@ -59,6 +88,20 @@ const emit = defineEmits<{
   toggleTeleop: [enabled: boolean]
 }>()
 
+const autonAction = (newState: boolean) => {
+  const waypoints = newState
+    ? autonomyStore.execution.map(wp => ({
+        latitude_degrees: wp.lat,
+        longitude_degrees: wp.lon,
+        tag_id: wp.tag_id,
+        type: wp.type,
+        enable_costmap: autonomyStore.allCostmapToggle,
+      }))
+    : []
+
+  return autonAPI.enable(newState, waypoints)
+}
+
 const autonomyStore = useAutonomyStore()
 
 const autonEnabled = computed(() => autonomyStore.autonEnabled)
@@ -66,28 +109,19 @@ const teleopEnabled = computed(() => autonomyStore.teleopEnabled)
 const purePursuitEnabled = computed(() => autonomyStore.purePursuitEnabled)
 const pathRelaxationEnabled = computed(() => autonomyStore.pathRelaxationEnabled)
 const pathInterpolationEnabled = computed(() => autonomyStore.pathInterpolationEnabled)
+const stereoDetectorEnabled = computed(() => autonomyStore.stereoDetectorEnabled)
+const imageDetectorEnabled = computed(() => autonomyStore.imageDetectorEnabled)
+const allCostmapToggle = computed(() => autonomyStore.allCostmapToggle)
 
-const autonAction = (newState: boolean) => {
-  const routeMap = autonomyStore.routeForMap
-  const waypoints = newState
-    ? routeMap.map((waypoint) => ({
-        latitude_degrees: waypoint.latLng.lat,
-        longitude_degrees: waypoint.latLng.lng,
-        tag_id: waypoint.tag_id,
-        type: waypoint.type,
-        enable_costmap: waypoint.enable_costmap,
-      }))
-    : []
-
-  return autonAPI.enable(newState, waypoints)
-}
+const teleopAction = (newState: boolean) => autonAPI.enableTeleop(newState)
+const purePursuitAction = (newState: boolean) => autonAPI.togglePurePursuit(newState)
+const pathRelaxationAction = (newState: boolean) => autonAPI.togglePathRelaxation(newState)
+const pathInterpolationAction = (newState: boolean) => autonAPI.togglePathInterpolation(newState)
+const stereoDetectorAction = (newState: boolean) => autonAPI.toggleStereoDetector(newState)
+const imageDetectorAction = (newState: boolean) => autonAPI.toggleImageDetector(newState)
 
 const handleAutonToggle = (newState: boolean) => {
   autonomyStore.autonEnabled = newState
-}
-
-const teleopAction = (newState: boolean) => {
-  return autonAPI.enableTeleop(newState)
 }
 
 const handleTeleopToggle = (newState: boolean) => {
@@ -95,28 +129,27 @@ const handleTeleopToggle = (newState: boolean) => {
   emit('toggleTeleop', newState)
 }
 
-const purePursuitAction = (newState: boolean) => {
-  return autonAPI.togglePurePursuit(newState)
-}
-
 const handlePurePursuitToggle = (newState: boolean) => {
   autonomyStore.purePursuitEnabled = newState
-}
-
-const pathRelaxationAction = (newState: boolean) => {
-  return autonAPI.togglePathRelaxation(newState)
 }
 
 const handlePathRelaxationToggle = (newState: boolean) => {
   autonomyStore.pathRelaxationEnabled = newState
 }
 
-const pathInterpolationAction = (newState: boolean) => {
-  return autonAPI.togglePathInterpolation(newState)
-}
-
 const handlePathInterpolationToggle = (newState: boolean) => {
   autonomyStore.pathInterpolationEnabled = newState
 }
-</script>
 
+const handleStereoDetectorToggle = (newState: boolean) => {
+  autonomyStore.stereoDetectorEnabled = newState
+}
+
+const handleImageDetectorToggle = (newState: boolean) => {
+  autonomyStore.imageDetectorEnabled = newState
+}
+
+const handleCostmapToggle = (newState: boolean) => {
+  autonomyStore.allCostmapToggle = newState
+}
+</script>

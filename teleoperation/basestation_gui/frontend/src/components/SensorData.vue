@@ -2,39 +2,39 @@
   <div class="flex items-center gap-2 mb-2">
     <h4 class="component-header">Sensor<br>Data</h4>
     <div class="flex flex-col gap-1">
-      <button class="cmd-btn cmd-btn-outline-control cmd-btn-sm" data-testid="pw-sensor-view-all" @click="showModal = true">
+      <button class="btn btn-outline-control btn-sm" data-testid="pw-sensor-view-all" @click="showModal = true">
         View All
       </button>
-      <button class="cmd-btn cmd-btn-outline-secondary cmd-btn-sm" data-testid="pw-sensor-csv-btn" @click="downloadCSV">
+      <button class="btn btn-outline-secondary btn-sm" data-testid="pw-sensor-csv-btn" @click="downloadCSV">
         <i class="bi bi-download"></i> CSV
       </button>
     </div>
     <div class="flex gap-2 grow">
-      <div class="flex-1 flex flex-col items-center bg-theme-view rounded p-1">
+      <div class="flex-1 flex flex-col items-center rounded p-1" :class="sensor_data.sensor_states.oxygen_state ? 'bg-theme-view' : 'bg-yellow-500/50'">
         <span class="font-semibold uppercase text-muted text-[0.65rem] tracking-[0.05em]">Oxygen</span>
         <span class="font-bold">{{ sensor_data.sp_oxygen.toFixed(2) }}<span class="text-muted ml-1 text-sm">%</span></span>
       </div>
-      <div class="flex-1 flex flex-col items-center bg-theme-view rounded p-1">
+      <div class="flex-1 flex flex-col items-center rounded p-1" :class="sensor_data.sensor_states.uv_state ? 'bg-theme-view' : 'bg-yellow-500/50'">
         <span class="font-semibold uppercase text-muted text-[0.65rem] tracking-[0.05em]">UV</span>
         <span class="font-bold">{{ sensor_data.sp_uv.toFixed(2) }}<span class="text-muted ml-1 text-sm">idx</span></span>
       </div>
-      <div class="flex-1 flex flex-col items-center bg-theme-view rounded p-1">
+      <div class="flex-1 flex flex-col items-center rounded p-1" :class="sensor_data.sensor_states.thp_state ? 'bg-theme-view' : 'bg-yellow-500/50'">
         <span class="font-semibold uppercase text-muted text-[0.65rem] tracking-[0.05em]">Humidity</span>
         <span class="font-bold">{{ sensor_data.sp_humidity.toFixed(2) }}<span class="text-muted ml-1 text-sm">%</span></span>
       </div>
-      <div class="flex-1 flex flex-col items-center bg-theme-view rounded p-1">
+      <div class="flex-1 flex flex-col items-center rounded p-1" :class="sensor_data.sensor_states.thp_state ? 'bg-theme-view' : 'bg-yellow-500/50'">
         <span class="font-semibold uppercase text-muted text-[0.65rem] tracking-[0.05em]">Temp</span>
         <span class="font-bold">{{ sensor_data.sp_temp.toFixed(2) }}<span class="text-muted ml-1 text-sm">&deg;C</span></span>
       </div>
-      <div class="flex-1 flex flex-col items-center bg-theme-view rounded p-1">
+      <div class="flex-1 flex flex-col items-center rounded p-1" :class="sensor_data.sensor_states.ozone_state ? 'bg-theme-view' : 'bg-yellow-500/50'">
         <span class="font-semibold uppercase text-muted text-[0.65rem] tracking-[0.05em]">Ozone</span>
         <span class="font-bold">{{ sensor_data.sp_ozone.toFixed(2) }}<span class="text-muted ml-1 text-sm">ppb</span></span>
       </div>
-      <div class="flex-1 flex flex-col items-center bg-theme-view rounded p-1">
+      <div class="flex-1 flex flex-col items-center rounded p-1" :class="sensor_data.sensor_states.co2_state ? 'bg-theme-view' : 'bg-yellow-500/50'">
         <span class="font-semibold uppercase text-muted text-[0.65rem] tracking-[0.05em]">CO2</span>
         <span class="font-bold">{{ sensor_data.sp_co2.toFixed(2) }}<span class="text-muted ml-1 text-sm">ppm</span></span>
       </div>
-      <div class="flex-1 flex flex-col items-center bg-theme-view rounded p-1">
+      <div class="flex-1 flex flex-col items-center rounded p-1" :class="sensor_data.sensor_states.thp_state ? 'bg-theme-view' : 'bg-yellow-500/50'">
         <span class="font-semibold uppercase text-muted text-[0.65rem] tracking-[0.05em]">Pressure</span>
         <span class="font-bold">{{ sensor_data.sp_pressure.toFixed(0) }}<span class="text-muted ml-1 text-sm">Pa</span></span>
       </div>
@@ -43,28 +43,28 @@
 
   <div class="flex flex-col gap-2 grow min-h-0">
     <div class="flex gap-2 flex-1 min-h-0">
-      <div class="cmd-panel flex flex-col flex-1 min-w-0 p-1">
-        <span class="cmd-data-label mb-1">Humidity (%)</span>
+      <div class="panel flex flex-col flex-1 min-w-0 p-1">
+        <span class="data-label mb-1">Humidity (%)</span>
         <div class="grow min-h-0">
           <canvas ref="chartRef0"></canvas>
         </div>
       </div>
-      <div class="cmd-panel flex flex-col flex-1 min-w-0 p-1">
-        <span class="cmd-data-label mb-1">UV Index</span>
+      <div class="panel flex flex-col flex-1 min-w-0 p-1">
+        <span class="data-label mb-1">UV Index</span>
         <div class="grow min-h-0">
           <canvas ref="chartRef1"></canvas>
         </div>
       </div>
     </div>
     <div class="flex gap-2 flex-1 min-h-0">
-      <div class="cmd-panel flex flex-col flex-1 min-w-0 p-1">
-        <span class="cmd-data-label mb-1">Ozone (ppb)</span>
+      <div class="panel flex flex-col flex-1 min-w-0 p-1">
+        <span class="data-label mb-1">Ozone (ppb)</span>
         <div class="grow min-h-0">
           <canvas ref="chartRef2"></canvas>
         </div>
       </div>
-      <div class="cmd-panel flex flex-col flex-1 min-w-0 p-1">
-        <span class="cmd-data-label mb-1">Pressure (Pa)</span>
+      <div class="panel flex flex-col flex-1 min-w-0 p-1">
+        <span class="data-label mb-1">Pressure (Pa)</span>
         <div class="grow min-h-0">
           <canvas ref="chartRef3"></canvas>
         </div>
@@ -103,6 +103,13 @@ const sensor_data = ref<SensorData>({
   sp_ozone: 0,
   sp_co2: 0,
   sp_pressure: 0,
+  sensor_states: {
+    uv_state: false,
+    thp_state: false,
+    oxygen_state: false,
+    ozone_state: false,
+    co2_state: false,
+  },
 })
 const sensor_history = ref<number[][]>([
   Array(20).fill(0),
@@ -141,6 +148,15 @@ watch(scienceMessage, (msg) => {
       break
     case 'sp_pressure':
       sensor_data.value.sp_pressure = scienceMsg.pressure
+      break
+    case 'sp_sensor_state':
+      sensor_data.value.sensor_states = {
+        uv_state: scienceMsg.uv_state,
+        thp_state: scienceMsg.thp_state,
+        oxygen_state: scienceMsg.oxygen_state,
+        ozone_state: scienceMsg.ozone_state,
+        co2_state: scienceMsg.co2_state,
+      }
       break
   }
 })

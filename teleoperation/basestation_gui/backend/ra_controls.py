@@ -1,3 +1,4 @@
+import asyncio
 from enum import Enum
 import threading
 
@@ -5,7 +6,7 @@ from rclpy.publisher import Publisher
 
 from backend.input import filter_input, simulated_axis, safe_index, DeviceInputs
 from backend.mappings import ControllerAxis, ControllerButton
-from backend.managers.ros import get_service_client
+from backend.managers.ros import get_service_client, get_logger
 from backend.utils.ros_service import call_service_async
 from mrover.msg import Throttle, IK
 from mrover.srv import IkMode
@@ -14,23 +15,52 @@ from geometry_msgs.msg import Twist
 ra_mode = "disabled"
 ra_mode_lock = threading.Lock()
 
+_ik_pos_pub: Publisher | None = None
+stow_task: asyncio.Task | None = None
+
+
+async def stow_timer_loop():
+    """Background loop to periodically publish STOW_POSITION when in stow mode."""
+    while True:
+        if get_ra_mode() == "stow" and _ik_pos_pub is not None:
+            _ik_pos_pub.publish(STOW_POSITION)
+        else:
+            break
+        await asyncio.sleep(0.1)  # 10 Hz
+
+
+def register_ik_pos_pub(pub: Publisher) -> None:
+    global _ik_pos_pub
+    _ik_pos_pub = pub
+
 
 def get_ra_mode() -> str:
     with ra_mode_lock:
         return ra_mode
 
 
-async def set_ra_mode(new_ra_mode: str):
-    global ra_mode
+async def set_ra_mode(new_ra_mode: str) -> bool:
+    global ra_mode, stow_task
     if new_ra_mode == "ik-pos":
         if not await call_ik_mode_service(IK_MODE_POSITION_CONTROL):
-            return
+            return False
     elif new_ra_mode == "ik-vel":
         if not await call_ik_mode_service(IK_MODE_VELOCITY_CONTROL):
-            return
+            return False
+    elif new_ra_mode == "stow":
+        if not await call_ik_mode_service(IK_MODE_POSITION_CONTROL):
+            return False
 
     with ra_mode_lock:
         ra_mode = new_ra_mode
+
+    if new_ra_mode == "stow":
+        if _ik_pos_pub is not None:
+            _ik_pos_pub.publish(STOW_POSITION)
+        if stow_task is None or stow_task.done():
+            stow_task = asyncio.create_task(stow_timer_loop())
+    
+    return True
 
 
 async def call_ik_mode_service(mode: int) -> bool:
@@ -44,6 +74,15 @@ async def call_ik_mode_service(mode: int) -> bool:
 IK_MODE_POSITION_CONTROL = 0
 IK_MODE_VELOCITY_CONTROL = 1
 IK_MODE_TYPING = 2
+
+# DEFINE STOW TARGET HERE
+STOW_POSITION = IK()
+STOW_POSITION.pos.x = 1.124319
+STOW_POSITION.pos.y = 0.0
+STOW_POSITION.pos.z = 0.042229
+STOW_POSITION.pitch = 0.072694
+STOW_POSITION.roll = 0.0
+
 
 
 class Joint(Enum):
@@ -135,8 +174,11 @@ def send_ra_controls(
 ) -> None:
     current_mode = get_ra_mode()
     match current_mode:
-        case "throttle" | "ik-pos" | "ik-vel":
+        case "throttle" | "ik-pos" | "ik-vel" | "stow":
             match current_mode:
+                case "stow":
+                    ee_pos_pub.publish(STOW_POSITION)
+
                 case "throttle":
                     manual_controls = compute_manual_joint_controls(inputs)
                     throttle_msg = Throttle()

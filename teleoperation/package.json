@@ -1,0 +1,15 @@
+{
+  "name": "mrover-teleoperation-tests",
+  "version": "1.0.0",
+  "description": "E2E and integration tests for MRover teleoperation stack",
+  "scripts": {
+    "test": "playwright test",
+    "test:ui": "playwright test tests/ui/",
+    "test:headed": "playwright test --headed",
+    "test:debug": "playwright test --debug",
+    "test:report": "playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.40.0"
+  }
+}

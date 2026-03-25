@@ -19,12 +19,12 @@
         <span class="axis-label-spacer"></span>
       </div>
       <div class="btn-row" data-testid="pw-gimbal-pitch-btns">
-        <button class="cmd-btn cmd-btn-outline-control cmd-btn-sm control-btn" @click="adjustGimbal('pitch', -10)" :disabled="!hasServoState">-10</button>
-        <button class="cmd-btn cmd-btn-outline-control cmd-btn-sm control-btn" @click="adjustGimbal('pitch', -5)" :disabled="!hasServoState">-5</button>
-        <button class="cmd-btn cmd-btn-outline-control cmd-btn-sm control-btn" @click="adjustGimbal('pitch', -1)" :disabled="!hasServoState">-1</button>
-        <button class="cmd-btn cmd-btn-outline-control cmd-btn-sm control-btn" @click="adjustGimbal('pitch', 1)" :disabled="!hasServoState">+1</button>
-        <button class="cmd-btn cmd-btn-outline-control cmd-btn-sm control-btn" @click="adjustGimbal('pitch', 5)" :disabled="!hasServoState">+5</button>
-        <button class="cmd-btn cmd-btn-outline-control cmd-btn-sm control-btn" @click="adjustGimbal('pitch', 10)" :disabled="!hasServoState">+10</button>
+        <button class="btn btn-outline-control btn-sm control-btn" @click="adjustGimbal('pitch', -10)" :disabled="!hasServoState">-10</button>
+        <button class="btn btn-outline-control btn-sm control-btn" @click="adjustGimbal('pitch', -5)" :disabled="!hasServoState">-5</button>
+        <button class="btn btn-outline-control btn-sm control-btn" @click="adjustGimbal('pitch', -1)" :disabled="!hasServoState">-1</button>
+        <button class="btn btn-outline-control btn-sm control-btn" @click="adjustGimbal('pitch', 1)" :disabled="!hasServoState">+1</button>
+        <button class="btn btn-outline-control btn-sm control-btn" @click="adjustGimbal('pitch', 5)" :disabled="!hasServoState">+5</button>
+        <button class="btn btn-outline-control btn-sm control-btn" @click="adjustGimbal('pitch', 10)" :disabled="!hasServoState">+10</button>
       </div>
     </div>
 
@@ -35,31 +35,30 @@
         <span class="axis-label-spacer"></span>
       </div>
       <div class="btn-row" data-testid="pw-gimbal-yaw-btns">
-        <button class="cmd-btn cmd-btn-outline-control cmd-btn-sm control-btn" @click="adjustGimbal('yaw', -10)" :disabled="!hasServoState">-10</button>
-        <button class="cmd-btn cmd-btn-outline-control cmd-btn-sm control-btn" @click="adjustGimbal('yaw', -5)" :disabled="!hasServoState">-5</button>
-        <button class="cmd-btn cmd-btn-outline-control cmd-btn-sm control-btn" @click="adjustGimbal('yaw', -1)" :disabled="!hasServoState">-1</button>
-        <button class="cmd-btn cmd-btn-outline-control cmd-btn-sm control-btn" @click="adjustGimbal('yaw', 1)" :disabled="!hasServoState">+1</button>
-        <button class="cmd-btn cmd-btn-outline-control cmd-btn-sm control-btn" @click="adjustGimbal('yaw', 5)" :disabled="!hasServoState">+5</button>
-        <button class="cmd-btn cmd-btn-outline-control cmd-btn-sm control-btn" @click="adjustGimbal('yaw', 10)" :disabled="!hasServoState">+10</button>
+        <button class="btn btn-outline-control btn-sm control-btn" @click="adjustGimbal('yaw', -10)" :disabled="!hasServoState">-10</button>
+        <button class="btn btn-outline-control btn-sm control-btn" @click="adjustGimbal('yaw', -5)" :disabled="!hasServoState">-5</button>
+        <button class="btn btn-outline-control btn-sm control-btn" @click="adjustGimbal('yaw', -1)" :disabled="!hasServoState">-1</button>
+        <button class="btn btn-outline-control btn-sm control-btn" @click="adjustGimbal('yaw', 1)" :disabled="!hasServoState">+1</button>
+        <button class="btn btn-outline-control btn-sm control-btn" @click="adjustGimbal('yaw', 5)" :disabled="!hasServoState">+5</button>
+        <button class="btn btn-outline-control btn-sm control-btn" @click="adjustGimbal('yaw', 10)" :disabled="!hasServoState">+10</button>
       </div>
     </div>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { computed } from 'vue'
+import { ref, computed } from 'vue'
 import { chassisAPI } from '@/utils/chassisAPI'
 import { useWebsocketStore } from '@/stores/websocket'
 import type { ControllerStateMessage } from '@/types/websocket'
 import IndicatorDot from './IndicatorDot.vue'
 
-const websocketStore = useWebsocketStore()
+const { onMessage } = useWebsocketStore()
 
-const gimbalJointState = computed((): ControllerStateMessage | null => {
-  const msg = websocketStore.messages['chassis']
-  if (!msg) return null
-  const typedMsg = msg as ControllerStateMessage
-  return typedMsg.type === 'gimbal_controller_state' ? typedMsg : null
+const gimbalJointState = ref<ControllerStateMessage | null>(null)
+
+onMessage<ControllerStateMessage>('chassis', 'gimbal_controller_state', (msg) => {
+  gimbalJointState.value = msg
 })
 
 const hasServoState = computed((): boolean => {
@@ -152,7 +151,7 @@ const adjustGimbal = async (
   font-weight: 600;
   background-color: var(--card-bg);
   border: 2px solid var(--input-border);
-  border-radius: var(--cmd-radius-sm);
+  border-radius: var(--radius-sm);
 }
 
 .btn-row {
