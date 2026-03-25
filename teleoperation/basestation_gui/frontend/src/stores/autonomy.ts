@@ -108,19 +108,15 @@ export const useAutonomyStore = defineStore('autonomy', () => {
 
   async function removeFromStore(index: number) {
     const wp = store.value[index]
-    if (!wp) return
+    if (!wp || wp.db_id == null) return
 
-    const next = [...store.value]
-    next.splice(index, 1)
-    store.value = next
-
-    if (wp.db_id != null && wp.deletable) {
-      try {
-        await waypointsAPI.removeFromStore(wp)
-      } catch (error) {
-        console.error('Failed to delete waypoint:', error)
-        store.value = [...store.value.slice(0, index), wp, ...store.value.slice(index)]
-      }
+    try {
+      await waypointsAPI.removeFromStore(wp)
+      const next = [...store.value]
+      next.splice(index, 1)
+      store.value = next
+    } catch (error) {
+      console.error('Failed to delete waypoint:', error)
     }
   }
 

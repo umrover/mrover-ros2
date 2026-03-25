@@ -21,7 +21,7 @@
           </button>
         </div>
         <div class="flex gap-2 items-center">
-          <button
+        <button
             class="btn btn-danger btn-sm btn-icon-sm"
             data-testid="pw-reset-waypoints-btn"
             @click="resetModal?.open()"
