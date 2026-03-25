@@ -1,4 +1,7 @@
-import { ref, onUnmounted } from 'vue'
+import { ref, computed, watch, onUnmounted } from 'vue'
+import { useWebsocketStore } from '@/stores/websocket'
+import { storeToRefs } from 'pinia'
+import type { ControllerStateMessage, GeneralWebSocketMessage } from '@/types/websocket'
 
 const STALE_TIMEOUT_MS = 1000
 
@@ -15,6 +18,56 @@ export function useStaleTimer() {
   onUnmounted(() => { if (timer) clearTimeout(timer) })
 
   return { stale, reset }
+}
+
+export interface ControllerState {
+  names: string[]
+  states: string[]
+  errors: string[]
+  positions: number[]
+  velocities: number[]
+  currents: number[]
+  limitsHit: number[]
+}
+
+function emptyControllerState(): ControllerState {
+  return { names: [], states: [], errors: [], positions: [], velocities: [], currents: [], limitsHit: [] }
+}
+
+function applyMessage(target: ControllerState, msg: ControllerStateMessage) {
+  target.names = msg.names
+  target.states = msg.states
+  target.errors = msg.errors
+  target.positions = msg.positions
+  target.velocities = msg.velocities
+  target.currents = msg.currents
+  target.limitsHit = msg.limits_hit
+}
+
+interface ControllerMessageOptions {
+  storeKey: string
+  messageTypes: string[]
+}
+
+export function useControllerMessage(options: ControllerMessageOptions) {
+  const websocketStore = useWebsocketStore()
+  const { messages } = storeToRefs(websocketStore)
+  const { stale, reset } = useStaleTimer()
+  const data = ref<ControllerState>(emptyControllerState())
+
+  const messageSelector = computed<GeneralWebSocketMessage | undefined>(
+    () => messages.value[options.storeKey],
+  )
+
+  watch(messageSelector, (msg) => {
+    if (!msg) return
+    const typed = msg as ControllerStateMessage
+    if (!options.messageTypes.includes(typed.type)) return
+    reset()
+    applyMessage(data.value, typed)
+  })
+
+  return { stale, data }
 }
 
 export function formatState(v: string | undefined): string {

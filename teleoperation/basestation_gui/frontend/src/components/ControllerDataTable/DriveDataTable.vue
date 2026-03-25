@@ -13,12 +13,12 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="w in wheels" :key="w.id" :class="stale ? 'row-no-data' : stateRowClass(states[w.idx], errors[w.idx])">
+          <tr v-for="w in wheels" :key="w.id" :class="stale ? 'row-no-data' : stateRowClass(combined.states[w.idx], combined.errors[w.idx])">
             <td class="font-bold">{{ w.label }}</td>
-            <td>{{ formatState(states[w.idx]) }}</td>
-            <td>{{ formatError(errors[w.idx]) }}</td>
-            <td class="numeric-col">{{ formatNumber(velocities[w.idx]) }}</td>
-            <td class="numeric-col">{{ formatNumber(currents[w.idx]) }}</td>
+            <td>{{ formatState(combined.states[w.idx]) }}</td>
+            <td>{{ formatError(combined.errors[w.idx]) }}</td>
+            <td class="numeric-col">{{ formatNumber(combined.velocities[w.idx]) }}</td>
+            <td class="numeric-col">{{ formatNumber(combined.currents[w.idx]) }}</td>
           </tr>
         </tbody>
       </table>
@@ -37,22 +37,25 @@ const websocketStore = useWebsocketStore()
 const { messages } = storeToRefs(websocketStore)
 const { stale, reset: resetStale } = useStaleTimer()
 
-const states = ref<string[]>([])
-const errors = ref<string[]>([])
-const velocities = ref<number[]>([])
-const currents = ref<number[]>([])
-
 let leftState: ControllerStateMessage | null = null
 let rightState: ControllerStateMessage | null = null
 
-function combineLeftRight() {
-  const l = leftState || { states: [], errors: [], velocities: [], currents: [] }
-  const r = rightState || { states: [], errors: [], velocities: [], currents: [] }
+const combined = ref({
+  states: [] as string[],
+  errors: [] as string[],
+  velocities: [] as number[],
+  currents: [] as number[],
+})
 
-  states.value = [...l.states, ...r.states]
-  errors.value = [...l.errors, ...r.errors]
-  velocities.value = [...l.velocities, ...r.velocities]
-  currents.value = [...l.currents, ...r.currents]
+function mergeLeftRight() {
+  const l = leftState ?? { states: [], errors: [], velocities: [], currents: [] }
+  const r = rightState ?? { states: [], errors: [], velocities: [], currents: [] }
+  combined.value = {
+    states: [...l.states, ...r.states],
+    errors: [...l.errors, ...r.errors],
+    velocities: [...l.velocities, ...r.velocities],
+    currents: [...l.currents, ...r.currents],
+  }
 }
 
 const driveMessage = computed(() => messages.value['drive'])
@@ -63,11 +66,11 @@ watch(driveMessage, (msg) => {
   if (typed.type === 'drive_left_state') {
     resetStale()
     leftState = typed
-    combineLeftRight()
+    mergeLeftRight()
   } else if (typed.type === 'drive_right_state') {
     resetStale()
     rightState = typed
-    combineLeftRight()
+    mergeLeftRight()
   }
 })
 

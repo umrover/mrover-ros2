@@ -19,10 +19,10 @@
             <td class="font-bold">{{ j.label }}</td>
             <td>{{ formatState(stateFor(j.id)) }}</td>
             <td>{{ formatError(errorFor(j.id)) }}</td>
-            <td class="numeric-col">{{ formatNumber(valueFor(positions, j.id)) }}</td>
-            <td class="numeric-col">{{ formatNumber(valueFor(velocities, j.id)) }}</td>
-            <td class="numeric-col">{{ formatNumber(valueFor(currents, j.id)) }}</td>
-            <td>{{ formatLimit(limitFor(j.id)) }}</td>
+            <td class="numeric-col">{{ formatNumber(fieldAt(data.positions, j.id)) }}</td>
+            <td class="numeric-col">{{ formatNumber(fieldAt(data.velocities, j.id)) }}</td>
+            <td class="numeric-col">{{ formatNumber(fieldAt(data.currents, j.id)) }}</td>
+            <td>{{ formatLimit(fieldAt(data.limitsHit, j.id)) }}</td>
           </tr>
         </tbody>
       </table>
@@ -31,38 +31,11 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, watch } from 'vue'
-import { useWebsocketStore } from '@/stores/websocket'
-import { storeToRefs } from 'pinia'
-import type { ControllerStateMessage } from '@/types/websocket'
-import { useStaleTimer, formatState, formatNumber, formatLimit, formatError, stateRowClass } from '@/composables/useControllerState'
+import { useControllerMessage, formatState, formatNumber, formatLimit, formatError, stateRowClass } from '@/composables/useControllerState'
 
-const websocketStore = useWebsocketStore()
-const { messages } = storeToRefs(websocketStore)
-const { stale, reset: resetStale } = useStaleTimer()
-
-const names = ref<string[]>([])
-const states = ref<string[]>([])
-const errors = ref<string[]>([])
-const positions = ref<number[]>([])
-const velocities = ref<number[]>([])
-const currents = ref<number[]>([])
-const limitHits = ref<number[]>([])
-
-const armMessage = computed(() => messages.value['arm'])
-
-watch(armMessage, (msg) => {
-  if (!msg) return
-  const typed = msg as ControllerStateMessage
-  if (typed.type !== 'arm_state') return
-  resetStale()
-  names.value = typed.names
-  states.value = typed.states
-  errors.value = typed.errors
-  positions.value = typed.positions
-  velocities.value = typed.velocities
-  currents.value = typed.currents
-  limitHits.value = typed.limits_hit
+const { stale, data } = useControllerMessage({
+  storeKey: 'arm',
+  messageTypes: ['arm_state'],
 })
 
 const joints = [
@@ -75,7 +48,7 @@ const joints = [
 ]
 
 function indexFor(id: string): number {
-  return names.value.indexOf(id)
+  return data.value.names.indexOf(id)
 }
 
 function fieldAt<T>(arr: T[], id: string): T | undefined {
@@ -84,18 +57,10 @@ function fieldAt<T>(arr: T[], id: string): T | undefined {
 }
 
 function stateFor(id: string): string | undefined {
-  return fieldAt(states.value, id)
+  return fieldAt(data.value.states, id)
 }
 
 function errorFor(id: string): string | undefined {
-  return fieldAt(errors.value, id)
-}
-
-function valueFor(arr: number[], id: string): number | undefined {
-  return fieldAt(arr, id)
-}
-
-function limitFor(id: string): number | undefined {
-  return fieldAt(limitHits.value, id)
+  return fieldAt(data.value.errors, id)
 }
 </script>
