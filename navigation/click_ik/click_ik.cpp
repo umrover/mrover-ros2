@@ -1,4 +1,7 @@
 #include "click_ik.hpp"
+#include "mrover/srv/detail/ik_sample__struct.hpp"
+#include <chrono>
+#include <rclcpp/logging.hpp>
 
 namespace mrover {
 
@@ -77,9 +80,9 @@ namespace mrover {
         mIkPub = create_publisher<msg::IK>("ik_pos_cmd", 1);
 
         // ArmStatus subscriber
-        mStatusSub = create_subscription<msg::ArmStatus>("arm_cmd_status", 1, [this](msg::ArmStatus const& msg) {
-            statusCallback(msg);
-        });
+        // mStatusSub = create_subscription<msg::ArmStatus>("arm_cmd_status", 1, [this](msg::ArmStatus const& msg) {
+        //     statusCallback(msg);
+        // });
 
         mCurrentGoalHandle = nullptr;
     }
@@ -249,12 +252,12 @@ namespace mrover {
         return std::make_optional<Point>(point);
     }
 
-    auto ClickIkNode::statusCallback(msg::ArmStatus const& msg) -> void {
-        if (!msg.status && mCurrentGoalHandle) {
-            RCLCPP_WARN(get_logger(), "Arm position unreachable");
-            abortClickIk();
-        }
-    }
+    // auto ClickIkNode::statusCallback(msg::ArmStatus const& msg) -> void {
+    //     if (!msg.status && mCurrentGoalHandle) {
+    //         RCLCPP_WARN(get_logger(), "Arm position unreachable");
+    //         abortClickIk();
+    //     }
+    // }
 
     void ClickIkNode::executeIkImageSample(std::shared_ptr<rclcpp_action::ServerGoalHandle<action::IkImageSample>> const& goal_handle) {
         RCLCPP_INFO(get_logger(), "Executing goal");

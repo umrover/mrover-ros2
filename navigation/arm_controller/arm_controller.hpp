@@ -1,9 +1,5 @@
 #pragma once
-#include "mrover/msg/detail/arm_status__struct.hpp"
-#include "mrover/srv/detail/ik_sample__struct.hpp"
 #include "pch.hpp"
-#include <rclcpp/publisher.hpp>
-#include <std_msgs/msg/detail/bool__struct.hpp>
 
 namespace mrover {
 
@@ -57,7 +53,7 @@ namespace mrover {
         };
 
         // ClickIK Verification
-        void sampleCallback(srv::IkSample::Request::ConstSharedPtr const& req, srv::IkSample::Response::SharedPtr const& resp);
+        void ikSampleCallback(srv::IkSample::Request::ConstSharedPtr const& req, srv::IkSample::Response::SharedPtr const& resp);
         rclcpp::Service<srv::IkSample>::SharedPtr mSampleServ;
 
         [[maybe_unused]] rclcpp::Subscription<msg::IK>::SharedPtr mIkSub;
@@ -66,7 +62,6 @@ namespace mrover {
 
         rclcpp::Publisher<msg::Position>::SharedPtr mPosPub;
         rclcpp::Publisher<msg::Velocity>::SharedPtr mVelPub;
-        rclcpp::Publisher<msg::ArmStatus>::SharedPtr mStatusPub;
         tf2_ros::TransformBroadcaster mTfBroadcaster{this};
         tf2_ros::Buffer mTfBuffer{get_clock()};
         tf2_ros::TransformListener mTfListener{mTfBuffer};

@@ -6,7 +6,6 @@ namespace mrover {
     class ClickIkNode final : public rclcpp::Node {
         rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::ConstSharedPtr mPcSub;
         rclcpp::Publisher<msg::IK>::SharedPtr mIkPub;
-        rclcpp::Subscription<msg::ArmStatus>::ConstSharedPtr mStatusSub;
 
         rclcpp_action::Server<action::ClickIk>::SharedPtr server;
         rclcpp_action::Server<action::IkImageSample>::SharedPtr iSServer;
@@ -41,7 +40,6 @@ namespace mrover {
         ~ClickIkNode() override = default;
 
         auto pointCloudCallback(sensor_msgs::msg::PointCloud2::ConstSharedPtr const& msg) -> void;
-        auto statusCallback(msg::ArmStatus const& msg) -> void;
 
         auto abortClickIk() -> void;
 

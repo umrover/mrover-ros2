@@ -1,16 +1,10 @@
 #include "arm_controller.hpp"
-#include "lie.hpp"
-#include "mrover/msg/detail/arm_status__struct.hpp"
-#include "mrover/srv/detail/ik_sample__struct.hpp"
-#include <optional>
-#include <rclcpp/logging.hpp>
 namespace mrover {
     rclcpp::Duration const ArmController::TIMEOUT = rclcpp::Duration(0, 0.3 * 1e9); // 0.3 seconds
 
     ArmController::ArmController() : Node{"arm_controller"}, mLastUpdate{get_clock()->now() - TIMEOUT} {
         mPosPub = create_publisher<msg::Position>("arm_pos_cmd", 10);
         mVelPub = create_publisher<msg::Velocity>("arm_vel_cmd", 10);
-        mStatusPub = create_publisher<msg::ArmStatus>("arm_cmd_status", 10);
 
         mIkSub = create_subscription<msg::IK>("ik_pos_cmd", 1, [this](msg::IK::ConstSharedPtr const& msg) {
             posCallback(msg);
@@ -33,7 +27,7 @@ namespace mrover {
         });
 
         mSampleServ = create_service<srv::IkSample>("ik_sample", [this](srv::IkSample::Request::ConstSharedPtr const& req, srv::IkSample::Response::SharedPtr const& resp) {
-            sampleCallback(req, resp);
+            ikSampleCallback(req, resp);
         });
     }
 
@@ -231,8 +225,6 @@ namespace mrover {
             mPosPub->publish(mPosFallback.value());
             return;
         }
-        msg::ArmStatus status;
-        status.set__status(true);
 
         if (mArmMode == ArmMode::POSITION_CONTROL) {
             auto positions = ikPosCalc(mPosTarget);
@@ -244,7 +236,6 @@ namespace mrover {
                 RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1000, "Position IK failed!");
                 if (!mPosFallback) mPosFallback = mCurrPos;
                 mPosPub->publish(mPosFallback.value());
-                status.set__status(false);
             }
         } else if (mArmMode == ArmMode::VELOCITY_CONTROL) {
             // TODO: Determine joint velocities that cancels out arm sag
@@ -262,7 +253,6 @@ namespace mrover {
                 if (!velocities) RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1000, "Velocity IK failed!");
                 if (!mPosFallback) mPosFallback = mCurrPos;
                 mPosPub->publish(mPosFallback.value());
-                status.set__status(false);
             }
         } else { // typing mode
             msg::Position positions;
@@ -290,7 +280,6 @@ namespace mrover {
             mPosFallback = std::nullopt;
             mPosPub->publish(positions);
         }
-        mStatusPub->publish(status);
     }
 
     auto ArmController::modeCallback(srv::IkMode::Request::ConstSharedPtr const& req, srv::IkMode::Response::SharedPtr const& resp) -> void {
@@ -309,7 +298,7 @@ namespace mrover {
         resp->success = true;
     }
 
-    void ArmController::sampleCallback(srv::IkSample::Request::ConstSharedPtr const& req, srv::IkSample::Response::SharedPtr const& resp) {
+    void ArmController::ikSampleCallback(srv::IkSample::Request::ConstSharedPtr const& req, srv::IkSample::Response::SharedPtr const& resp) {
         ArmPos testPose;
         testPose.x = req->pos.x;
         testPose.y = req->pos.y;
