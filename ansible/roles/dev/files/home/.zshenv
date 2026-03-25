@@ -1,5 +1,3 @@
-. "$HOME/.cargo/env"
-
 # MRover ROS
 readonly MROVER_ROS2_WS_PATH="$HOME/ros2_ws"
 
@@ -29,3 +27,11 @@ source_mrover_overlay(){
         source "${target_file}" >> /dev/null
     fi
 }
+
+# cuda
+export PATH=/usr/local/cuda/bin:$PATH
+export LD_LIBRARY_PATH=/usr/local/cuda/lib64:$LD_LIBRARY_PATH
+
+# bun
+export BUN_INSTALL="$HOME/.bun"
+export PATH="$BUN_INSTALL/bin:$PATH"
