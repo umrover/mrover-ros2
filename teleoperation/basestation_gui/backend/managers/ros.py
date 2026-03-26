@@ -1,7 +1,3 @@
-<<<<<<< HEAD
-from _thread import LockType
-=======
->>>>>>> origin/main
 import logging
 import rclpy
 import threading
