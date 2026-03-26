@@ -1,5 +1,4 @@
 #include "zed_wrapper.hpp"
-#include <stdexcept>
 
 namespace mrover {
     template<typename TEnum>
@@ -126,9 +125,9 @@ namespace mrover {
 
 
     auto ZedWrapper::grabThread() -> void {
-        RCLCPP_INFO(this->get_logger(), "Starting grab thread");
-        while (rclcpp::ok()) {
-            try {
+        try {
+            RCLCPP_INFO(this->get_logger(), "Starting grab thread");
+            while (rclcpp::ok()) {
                 mLoopProfilerGrab.beginLoop();
 
                 sl::RuntimeParameters runtimeParameters;
@@ -220,14 +219,17 @@ namespace mrover {
                 }
 
                 mLoopProfilerGrab.measureEvent("publish_imu_and_mag");
-
-            } catch (std::runtime_error const& e) {
-                RCLCPP_WARN_STREAM(get_logger(), std::format("Exception while running grab thread: {}", e.what()));
             }
-        }
 
-        mZed.close();
-        RCLCPP_INFO(get_logger(), "Grab thread finished");
+            mZed.close();
+            RCLCPP_INFO(get_logger(), "Grab thread finished");
+
+        } catch (std::exception const& e) {
+            RCLCPP_FATAL_STREAM(get_logger(), std::format("Exception while running grab thread: {}", e.what()));
+            mZed.close();
+            rclcpp::shutdown();
+            std::exit(EXIT_FAILURE);
+        }
     }
 
     auto ZedWrapper::pointCloudUpdateThread() -> void {

@@ -272,6 +272,10 @@ namespace mrover {
                 double distRemaining = sqrt(pow(joints["joint_a"].pos - mPosTarget.y, 2) + pow((joints["gripper"].pos - mPosTarget.gripper), 2));
                 // make param
                 if(distRemaining < 0.004) {
+                    rclcpp::Time start = this->get_clock()->now();
+                    while((this->get_clock()->now().nanoseconds() - start.nanoseconds()) < 3e9) {
+                        continue;
+                    }
                     result->success = true;
                     typingGoalHandle->succeed(result);
 
