@@ -88,8 +88,7 @@ namespace mrover {
                     });
                 };
                 addGroup("arm", "arm_controller_state", {"joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_roll", "gripper"}, "_thr_cmd", "_vel_cmd", "_pos_cmd");
-                addGroup("drive_left", "left_controller_state", {"front_left", "middle_left", "back_left"});
-                addGroup("drive_right", "right_controller_state", {"front_right", "middle_right", "back_right"});
+                addGroup("drive", "drive_controller_state", {"front_right", "middle_right", "back_right", "front_left", "middle_left", "back_left"});
 
                 std::vector<decltype(mMsgToUrdf)::value_type> elements{
                         {"joint_a", "arm_a_link"},

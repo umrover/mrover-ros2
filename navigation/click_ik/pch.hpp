@@ -34,7 +34,6 @@
 #include <manif/impl/se3/SE3.h>
 #include <mrover/action/click_ik.hpp>
 #include <mrover/action/ik_image_sample.hpp>
-#include <mrover/msg/arm_status.hpp>
 #include <mrover/msg/ik.hpp>
 #include <mrover/srv/ik_mode.hpp>
 #include <point.hpp>
