@@ -17,12 +17,12 @@ class MockArm(Node):
 
         self.state_pub = self.create_publisher(ControllerState, "/arm_controller_state", 10)
         self.ik_pub = self.create_publisher(IK, "/arm_ik", 10)
-        self.keyboard_yaw_pub = self.create_publisher(KeyboardYaw, "/keyboard_yaw", 10)
+        self.keyboard_yaw_pub = self.create_publisher(KeyboardYaw, "/keyboard_yaw_cmd", 10)
 
         self.create_subscription(Throttle, "/arm_thr_cmd", self.on_throttle, 10)
         self.create_subscription(IK, "/ik_pos_cmd", self.on_ik_pos, 10)
         self.create_subscription(Twist, "/ik_vel_cmd", self.on_ik_vel, 10)
-        self.create_subscription(IK, "/keyboard_yaw_cmd", self.on_keyboard_yaw, 10)
+        self.create_subscription(KeyboardYaw, "/keyboard_yaw_cmd", self.on_keyboard_yaw, 10)
 
         self.create_service(IkMode, "/ik_mode", self.on_ik_mode)
 
@@ -79,7 +79,11 @@ class MockArm(Node):
         self.get_logger().info(f"IK mode set to {mode_name}")
         response.success = True
         return response
-
+    def on_keyboard_yaw(self, msg: KeyboardYaw):
+        now = self.get_clock().now().nanoseconds / 1e9
+        if now - self.last_log_time > 1.0:
+            self.get_logger().info(f"Keyboard yaw: {msg.pitch:.2f} degrees")
+            self.last_log_time = now    
 
 def main(args=None):
     parser = argparse.ArgumentParser(description="Mock arm subsystem")

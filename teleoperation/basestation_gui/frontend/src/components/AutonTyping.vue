@@ -107,10 +107,11 @@ onMounted(() => {
   }
 
   websocketStore.onMessage<IKFeedbackMessage>('arm', 'ik_feedback', msg => {
-    const x = msg.pos?.x ?? 0
-    const y = msg.pos?.y ?? 0
-    const deg = (Math.atan2(y, x) * 180) / Math.PI
-    planarAngle.value = Math.round(deg)
+  const p: any = msg.pos ?? (msg as any).position ?? [0, 0]
+  const x = Number(p.x ?? p[0] ?? 0)
+  const y = Number(p.y ?? p[1] ?? 0)
+  if (!isFinite(x) || !isFinite(y)) return
+  planarAngle.value = Math.round((Math.atan2(y, x) * 180) / Math.PI)
   })
 })
 
