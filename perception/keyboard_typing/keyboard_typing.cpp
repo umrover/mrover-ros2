@@ -472,9 +472,9 @@ namespace mrover{
             if(key == 't'){
                 align_to_z();
             }
-            if(key == 'g'){
-                rotateGripper(-M_PI/2);
-            }
+            // if(key == 'g'){
+            //     rotateGripper(-M_PI/2);
+            // }
             if(key == 'h'){
                 SE3d transform = SE3Conversions::fromTfTree(tf_buffer, "arm_fk", "arm_gripper_link");
                 RCLCPP_INFO_STREAM(get_logger(), "y: " << transform.translation().y());
