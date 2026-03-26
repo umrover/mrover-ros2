@@ -1,4 +1,3 @@
-import asyncio
 from enum import Enum
 import threading
 
@@ -6,7 +5,7 @@ from rclpy.publisher import Publisher
 
 from backend.input import filter_input, simulated_axis, safe_index, DeviceInputs
 from backend.mappings import ControllerAxis, ControllerButton
-from backend.managers.ros import get_service_client, get_logger
+from backend.managers.ros import get_service_client
 from backend.utils.ros_service import call_service_async
 from mrover.msg import Throttle, IK
 from mrover.srv import IkMode
@@ -39,28 +38,17 @@ def get_ra_mode() -> str:
         return ra_mode
 
 
-async def set_ra_mode(new_ra_mode: str) -> bool:
-    global ra_mode, stow_task
+async def set_ra_mode(new_ra_mode: str):
+    global ra_mode
     if new_ra_mode == "ik-pos":
         if not await call_ik_mode_service(IK_MODE_POSITION_CONTROL):
-            return False
+            return
     elif new_ra_mode == "ik-vel":
         if not await call_ik_mode_service(IK_MODE_VELOCITY_CONTROL):
-            return False
-    elif new_ra_mode == "stow":
-        if not await call_ik_mode_service(IK_MODE_POSITION_CONTROL):
-            return False
+            return
 
     with ra_mode_lock:
         ra_mode = new_ra_mode
-
-    if new_ra_mode == "stow":
-        if _ik_pos_pub is not None:
-            _ik_pos_pub.publish(STOW_POSITION)
-        if stow_task is None or stow_task.done():
-            stow_task = asyncio.create_task(stow_timer_loop())
-    
-    return True
 
 
 async def call_ik_mode_service(mode: int) -> bool:
@@ -103,7 +91,7 @@ JOINT_NAMES = [
     "joint_c",
     "joint_de_pitch",
     "joint_de_roll",
-    "cam",
+    "pusher",
     "gripper",
 ]
 
@@ -113,7 +101,7 @@ JOINT_SCALES = [
     1.0,
     -1.0,
     1.0,
-    1.0,
+    0.4,
     1.0,
 ]
 

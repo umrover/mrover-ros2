@@ -80,6 +80,7 @@ const isStowing = ref(false)
 const stowTarget = ref<{ x: number; y: number; z: number } | null>(null)
 
 const { connected, axes, buttons, vibrationActuator } = useGamepadPolling({
+
   controllerIdFilter: 'Microsoft',
   topic: 'arm',
   messageType: 'ra_controller',
@@ -264,3 +265,4 @@ onMessage<ThrottleMessage>('arm', 'arm_throttle_command', (msg) => {
   // }
 // })
 </script>
+

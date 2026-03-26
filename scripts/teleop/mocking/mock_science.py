@@ -16,7 +16,7 @@ class MockSensorData(Node):
         super().__init__("mock_sensor_data")
 
         self.humidity_pub = self.create_publisher(Humidity, "/sp_humidity_data", 10)
-        self.temp_pub = self.create_publisher(Temperature, "/sp_temp_data", 10)
+        self.temp_pub = self.create_publisher(Temperature, "/sp_temperature_data", 10)
         self.oxygen_pub = self.create_publisher(Oxygen, "/sp_oxygen_data", 10)
         self.uv_pub = self.create_publisher(UV, "/sp_uv_data", 10)
         self.ozone_pub = self.create_publisher(Ozone, "/sp_ozone_data", 10)
@@ -51,7 +51,8 @@ class MockSensorData(Node):
         self.oxygen_pub.publish(oxygen_msg)
 
         uv_msg = UV()
-        uv_msg.uv_index = max(0, min(11, int(5 + 5 * math.sin(self.t * 1.2) + random.uniform(-1, 1))))
+        uv_msg.uv_index = 5.0 + 5.0 * math.sin(self.t * 1.2) + random.uniform(-1, 1)
+        uv_msg.uv_index = max(0.0, min(11.0, uv_msg.uv_index))
         self.uv_pub.publish(uv_msg)
 
         ozone_msg = Ozone()
@@ -59,7 +60,7 @@ class MockSensorData(Node):
         self.ozone_pub.publish(ozone_msg)
 
         co2_msg = CO2()
-        co2_msg.ppm = 500.0 + 200.0 * math.sin(self.t * 0.5) + random.uniform(-20, 20)
+        co2_msg.percent = 0.04 + 0.02 * math.sin(self.t * 0.5) + random.uniform(-0.005, 0.005)
         self.co2_pub.publish(co2_msg)
 
         pressure_msg = Pressure()

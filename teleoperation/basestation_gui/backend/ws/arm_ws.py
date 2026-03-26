@@ -1,11 +1,7 @@
-import rclpy.time
-import tf2_ros
-from tf2_ros import LookupException, ConnectivityException, ExtrapolationException
-from lie import SE3
 from backend.ws.base_ws import WebSocketHandler
 from backend.managers.ros import get_logger
 from backend.input import DeviceInputs
-from backend.ra_controls import send_ra_controls, register_ik_pos_pub
+from backend.ra_controls import send_ra_controls
 from mrover.msg import Throttle, IK, ControllerState
 from geometry_msgs.msg import Twist
 from rclpy.publisher import Publisher
@@ -18,8 +14,6 @@ class ArmHandler(WebSocketHandler):
 
     def __init__(self, websocket):
         super().__init__(websocket, 'arm')
-        self.buffer = tf2_ros.Buffer()
-        self.tf_listener = tf2_ros.TransformListener(self.buffer, self.node, spin_thread=False)
 
     async def setup(self):
         self.arm_thr_pub = self.node.create_publisher(Throttle, "/arm_thr_cmd", 1)
@@ -71,11 +65,3 @@ class ArmHandler(WebSocketHandler):
             )
         else:
             get_logger().warning(f"Unhandled ARM message: {msg_type}")
-
-    async def trigger_stow(self):
-        send_ra_controls(
-            None,
-            self.arm_thr_pub,
-            self.ik_pos_pub,
-            self.ik_vel_pub,
-        )

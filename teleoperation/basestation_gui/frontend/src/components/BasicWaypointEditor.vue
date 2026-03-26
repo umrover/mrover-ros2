@@ -95,7 +95,13 @@
         <h4 class="component-header">Current Course</h4>
         <button class="cmd-btn cmd-btn-danger cmd-btn-sm" @click="handleClearList">Clear</button>
       </div>
-      <div class="bg-theme-view p-2 rounded overflow-y-auto flex flex-col gap-2 grow" data-testid="pw-basic-wp-list">
+      <VueDraggable
+        v-model="erdStore.waypoints"
+        handle=".drag-handle"
+        ghost-class="drag-ghost"
+        class="bg-theme-view p-2 rounded overflow-y-auto flex flex-col gap-2 grow"
+        data-testid="pw-basic-wp-list"
+      >
         <WaypointItem
           v-for="(waypoint, i) in erdStore.waypoints"
           :key="waypoint.db_id || i"
@@ -105,7 +111,7 @@
           @find="erdStore.setHighlighted($event.index)"
           @search="erdStore.setSearch($event.index)"
         />
-      </div>
+      </VueDraggable>
     </div>
 
     <RecordingsModal
@@ -135,6 +141,7 @@
 
 <script lang="ts" setup>
 import { ref, computed, watch, onMounted } from 'vue'
+import { VueDraggable } from 'vue-draggable-plus'
 import WaypointItem from './BasicWaypointItem.vue'
 import RecordingsModal from './RecordingsModal.vue'
 import ConfirmModal from './ConfirmModal.vue'
@@ -142,7 +149,7 @@ import { useErdStore } from '@/stores/erd'
 import { useWebsocketStore } from '@/stores/websocket'
 import { storeToRefs } from 'pinia'
 import { recordingAPI } from '@/utils/api'
-import type { NavMessage } from '@/types/coordinates'
+import type { GpsFixMessage } from '@/types/coordinates'
 
 defineProps({
   enableDrone: {
@@ -155,7 +162,6 @@ const erdStore = useErdStore()
 const { clickPoint } = storeToRefs(erdStore)
 
 const websocketStore = useWebsocketStore()
-const { messages } = storeToRefs(websocketStore)
 
 const rover_latitude_deg = ref(0)
 const rover_longitude_deg = ref(0)
@@ -179,15 +185,9 @@ const formatted_odom = computed(() => ({
   lon: { d: rover_longitude_deg.value },
 }))
 
-const navMessage = computed(() => messages.value['nav'])
-
-watch(navMessage, (msg) => {
-  if (!msg) return
-  const navMsg = msg as NavMessage
-  if (navMsg.type === 'gps_fix') {
-    rover_latitude_deg.value = navMsg.latitude
-    rover_longitude_deg.value = navMsg.longitude
-  }
+websocketStore.onMessage<GpsFixMessage>('nav', 'gps_fix', (msg) => {
+  rover_latitude_deg.value = msg.latitude
+  rover_longitude_deg.value = msg.longitude
 })
 
 watch(clickPoint, (pt) => {

@@ -1,4 +1,5 @@
-import { ref, onMounted, onBeforeUnmount, type Ref} from 'vue'
+
+import { ref, onMounted, onBeforeUnmount, type Ref } from 'vue'
 import { useWebsocketStore } from '@/stores/websocket'
 
 export interface UseGamepadPollingOptions {

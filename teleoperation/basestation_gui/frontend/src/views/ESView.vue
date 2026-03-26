@@ -22,15 +22,15 @@
       </div>
     </template>
 
-    <template #arm-data>
+    <template #arm-moteus>
       <div class="island p-2 rounded h-full">
-        <ArmDataTable />
+        <ControllerDataTable mode="arm" header="Arm" />
       </div>
     </template>
 
-    <template #drive-data>
+    <template #drive-moteus>
       <div class="island p-2 rounded h-full">
-        <DriveDataTable />
+        <ControllerDataTable mode="drive" header="Drive" />
       </div>
     </template>
 
@@ -55,8 +55,8 @@ const defaultLayout = [
   { x: 0, y: 0, w: 3, h: 2, i: 'arm-controls' },
   { x: 3, y: 0, w: 1, h: 2, i: 'drive-controls' },
   { x: 0, y: 2, w: 4, h: 2, i: 'auton-typing' },
-  { x: 0, y: 4, w: 4, h: 4, i: 'arm-data' },
-  { x: 0, y: 8, w: 4, h: 4, i: 'drive-data' },
+  { x: 0, y: 4, w: 4, h: 4, i: 'arm-moteus' },
+  { x: 0, y: 8, w: 4, h: 4, i: 'drive-moteus' },
   { x: 4, y: 0, w: 8, h: 12, i: 'rover-3d' },
 ]
 </script>

@@ -131,7 +131,6 @@ watch(autonMessage, (msg: unknown) => {
 })
 
 function submitMessage() {
-  console.log('sending a message')
   if (!codeSent.value) {
     // sending message
     websocketStore.sendMessage('auton', {

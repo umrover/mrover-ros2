@@ -102,15 +102,19 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, watch } from 'vue'
+import { ref } from 'vue'
 import { useWebsocketStore } from '@/stores/websocket'
-import { storeToRefs } from 'pinia'
 import { quaternionToMapAngle } from '../utils/map.ts'
-import type { NavMessage, CalibrationMessage } from '../types/coordinates'
+import type {
+  GpsFixMessage,
+  BasestationPositionMessage,
+  DroneWaypointMessage,
+  OrientationMessage,
+  CalibrationMessage,
+} from '../types/coordinates'
 import IndicatorDot from './IndicatorDot.vue'
 
 const websocketStore = useWebsocketStore()
-const { messages } = storeToRefs(websocketStore)
 
 const rover_latitude_deg = ref(38.4071654)
 const rover_longitude_deg = ref(-110.7923927)
@@ -128,34 +132,35 @@ const mag_calibration = ref(0)
 const gyro_calibration = ref(0)
 const accel_calibration = ref(0)
 
-const navMessage = computed(() => messages.value['nav'])
+websocketStore.onMessage<GpsFixMessage>('nav', 'gps_fix', (msg) => {
+  rover_latitude_deg.value = msg.latitude
+  rover_longitude_deg.value = msg.longitude
+  rover_altitude.value = msg.altitude
+  rover_status.value = msg.status.status
+})
 
-watch(navMessage, msg => {
-  if (!msg) return
-  const navMsg = msg as NavMessage
-  if (navMsg.type === 'gps_fix') {
-    rover_latitude_deg.value = navMsg.latitude
-    rover_longitude_deg.value = navMsg.longitude
-    rover_altitude.value = navMsg.altitude
-    rover_status.value = navMsg.status.status
-  } else if (navMsg.type === 'basestation_position') {
-    basestation_latitude_deg.value = navMsg.latitude
-    basestation_longitude_deg.value = navMsg.longitude
-  } else if (navMsg.type === 'drone_waypoint') {
-    drone_status.value = navMsg.status.status
-  } else if (navMsg.type === 'orientation') {
-    rover_bearing_deg.value = quaternionToMapAngle(navMsg.orientation)
-    const { x: qx, y: qy, z: qz, w: qw } = navMsg.orientation
-    pitch.value = (Math.asin(2 * (qx * qz - qy * qw)) * 180) / Math.PI
-    roll.value =
-      (Math.atan2(2 * (qy * qz + qx * qw), 1 - 2 * (qx * qx + qy * qy)) * 180) /
-      Math.PI
-  } else if (navMsg.type === 'calibration') {
-    const calMsg = msg as CalibrationMessage
-    mag_calibration.value = calMsg.magnetometer_calibration
-    gyro_calibration.value = calMsg.gyroscope_calibration
-    accel_calibration.value = calMsg.acceleration_calibration
-  }
+websocketStore.onMessage<BasestationPositionMessage>('nav', 'basestation_position', (msg) => {
+  basestation_latitude_deg.value = msg.latitude
+  basestation_longitude_deg.value = msg.longitude
+})
+
+websocketStore.onMessage<DroneWaypointMessage>('nav', 'drone_waypoint', (msg) => {
+  drone_status.value = msg.status.status
+})
+
+websocketStore.onMessage<OrientationMessage>('nav', 'orientation', (msg) => {
+  rover_bearing_deg.value = quaternionToMapAngle(msg.orientation)
+  const { x: qx, y: qy, z: qz, w: qw } = msg.orientation
+  pitch.value = (Math.asin(2 * (qx * qz - qy * qw)) * 180) / Math.PI
+  roll.value =
+    (Math.atan2(2 * (qy * qz + qx * qw), 1 - 2 * (qx * qx + qy * qy)) * 180) /
+    Math.PI
+})
+
+websocketStore.onMessage<CalibrationMessage>('nav', 'calibration', (msg) => {
+  mag_calibration.value = msg.magnetometer_calibration
+  gyro_calibration.value = msg.gyroscope_calibration
+  accel_calibration.value = msg.acceleration_calibration
 })
 </script>
 

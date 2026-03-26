@@ -734,6 +734,21 @@ html {
   .cmd-status-dot { background-color: var(--cmd-status-info); }
 }
 
+.drag-handle {
+  color: var(--text-muted);
+  cursor: grab;
+}
+
+.drag-handle:active {
+  cursor: grabbing;
+}
+
+.drag-ghost {
+  background-color: var(--control-primary);
+  border-style: dashed !important;
+  opacity: 0.4;
+}
+
 .cmd-list-item {
   padding: 0.5rem;
   margin-bottom: 0.5rem;
@@ -841,28 +856,6 @@ html {
   :is([data-theme='dark'], [data-theme='high-contrast-dark']) & tbody tr:hover {
     background-color: rgba(255, 255, 255, 0.02);
   }
-}
-
-.compact-table {
-  table-layout: auto;
-
-  th, td {
-    white-space: nowrap;
-    text-align: center;
-  }
-
-  td:first-child {
-    text-align: left;
-  }
-}
-
-.numeric-col {
-  font-variant-numeric: tabular-nums;
-  text-align: right;
-}
-
-.row-no-data {
-  opacity: 0.4;
 }
 
 .cmd-scroll {
