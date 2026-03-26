@@ -84,7 +84,7 @@ class SearchState(State):
                 False,
                 max_segment_length=context.node.get_parameter("search.max_segment_length").value,
             )
-        else:  # water bottle or mallet
+        else:  # water bottle, mallet, or rock pick
             SearchState.trajectory = SearchTrajectory.spiral_traj(
                 context.course.current_waypoint_pose_in_map().translation()[0:2],
                 context.node.get_parameter("object_search.coverage_radius").value,
