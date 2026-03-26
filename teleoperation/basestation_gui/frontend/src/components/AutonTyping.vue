@@ -68,7 +68,7 @@ create instance of rosaction in callback area -->
       <div class="flex flex-col items-center text-center w-full">
         <h4 class="component-header mb-2">Planar Alignment</h4>
         <div class="flex items-baseline justify-center gap-1 p-2 rounded bg-theme-view">
-          <span class="cmd-data-value">0</span>
+          <span class="cmd-data-value">{{ planarAngle }}</span>
           <span class="cmd-data-unit">degrees</span>
         </div>
       </div>
@@ -95,13 +95,28 @@ const codeSent = ref(false)
 const currentIndex = ref(0)
 const currentState = ref('')
 const letterStates = ref<string[]>(Array(6).fill('notTyped'))
+const planarAngle = ref(0)
 
 onMounted(() => {
   websocketStore.setupWebSocket('auton')
+  websocketStore.setupWebSocket('arm')
+
+  interface IKFeedbackMessage {
+    type: 'ik_feedback'
+    pos: { x: number; y: number; z: number }
+  }
+
+  websocketStore.onMessage<IKFeedbackMessage>('arm', 'ik_feedback', msg => {
+    const x = msg.pos?.x ?? 0
+    const y = msg.pos?.y ?? 0
+    const deg = (Math.atan2(y, x) * 180) / Math.PI
+    planarAngle.value = Math.round(deg)
+  })
 })
 
 onBeforeUnmount(() => {
   websocketStore.closeWebSocket('auton')
+  websocketStore.closeWebSocket('arm')
 })
 
 const autonMessage = computed(() => messages.value['auton'])
