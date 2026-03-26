@@ -18,7 +18,7 @@ export interface RootState {
 }
 
 export interface ControllerStateMessage {
-  type: 'arm_state' | 'sp_state' | 'drive_left_state' | 'drive_right_state' | 'gimbal_state' | 'sp_controller_state' | 'gimbal_controller_state';
+  type: 'arm_state' | 'sp_state' | 'drive_state' | 'gimbal_state' | 'sp_controller_state' | 'gimbal_controller_state';
   header?: {
     stamp: { sec: number; nanosec: number };
     frame_id: string;
@@ -150,15 +150,6 @@ export interface SPSensorStateMessage {
   ozone_state: boolean;
   co2_state: boolean;
 }
-
-// export interface VelocityMessage {
-//   header?: {
-//     stamp: { sec: number; nanosec: number };
-//     frame_id: string;
-//   }; 
-//   names: string[];
-//   velocities: number[];
-// }
 
 export interface ThrottleMessage {
   header?: {

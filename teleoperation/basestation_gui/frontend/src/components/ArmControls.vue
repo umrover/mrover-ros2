@@ -23,15 +23,6 @@
         <button
           type="button"
           class="btn btn-sm flex-1"
-          :class="isStowing ? 'btn-warning' : 'btn-outline-warning'"
-          :disabled="isStowing"
-          @click="stowArm"
-        >
-          Stow
-        </button>
-        <button
-          type="button"
-          class="btn btn-sm flex-1"
           :class="mode === 'throttle' ? 'btn-success' : 'btn-outline-success'"
           data-testid="pw-arm-mode-throttle"
           @click="newRAMode('throttle')"
@@ -136,4 +127,3 @@ const newRAMode = async (newMode: string) => {
   }
 }
 </script>
-
