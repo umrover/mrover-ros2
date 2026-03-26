@@ -325,14 +325,14 @@ if (EXISTS ${MROVER_EMBEDDED_ROOT_DIR} AND NOT APPLE)
     target_link_libraries(motor INTERFACE can_device units parameter_utils)
 
     mrover_add_header_only_library(servo esw/servo)
-    target_link_libraries(servo INTERFACE units parameter_utils dynamixel_sdk)
+    target_link_libraries(servo INTERFACE units parameter_utils)
 
     mrover_add_header_only_library(science esw/science)
     target_link_libraries(science INTERFACE can_device units)
 
     macro(mrover_add_esw_bridge_node name sources)
         mrover_add_node(${name} ${sources})
-        ament_target_dependencies(${name} rclcpp std_srvs)
+        ament_target_dependencies(${name} rclcpp std_srvs dynamixel_sdk)
         target_link_libraries(${name} can_device units motor science servo)
     endmacro()
 
