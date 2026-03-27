@@ -24,6 +24,8 @@ import datetime
 import os
 from enum import Enum
 
+from Source import *
+
 def get_quaternion_from_euler(roll, pitch, yaw):
   """
   Convert an Euler angle to a quaternion.
@@ -66,47 +68,14 @@ class PanoRate():
         if(duration_seconds > 0):
             time.sleep(duration_seconds)
 
-# class PanoramaStitcher():
-#     def __init__(self, img_list):
-#         self.sift = cv2.SIFT.create()
-#         self.img_list = img_list
-
-#     def compute_features(self):
-#         result_map = {}
-#         for index, img in enumerate(self.img_list):
-#             feature_tuple = self.sift.detectAndCompute(img, None)
-#             result_map[index] = feature_tuple
-        
-#         return result_map
-
-#     def match_neighbors(self):
-        
-#         pass
-
-#     def estimate_rotations(self):
-#         pass
-
-#     def bundle_adjust(self):
-#         pass
-
-#     def spherical_warp(self):
-#         pass
-
-#     def compensate_exposure(self):
-#         pass
-
-#     def find_seams(self):
-#         pass
-
-#     def multiband_blend(self):
-#         pass
-
 class Panorama(Node):
     def __init__(self):
         super().__init__('panorama')
 
         # Variable for the ZED you'd like to use (zed or zed_mini)
         self.zed_version= "zed"
+        self.zed_fov_deg = 102
+        self.zed_image_width_pixels = 1280
 
         # Pano Action Server
         self.start_pano = self.create_service(PanoramaStart, '/panorama/start', self.start_callback)
@@ -120,24 +89,28 @@ class Panorama(Node):
         # Heading variables
         self.heading_sub = self.create_subscription(Heading, "/heading/fix", self.heading_callback, 1)
         self.pano_dirs = ['N', 'E', 'S', 'W']
-        self.cur_heading = 90 # degrees
+        self.cur_heading = 0.0 # degrees
 
         # PC Stitching Variables
         self.pc_sub = message_filters.Subscriber(self, PointCloud2, f"/{self.zed_version}/left/points")
+        self.img_sub = message_filters.Subscriber(self, Image, f"/{self.zed_version}/left/image")
         self.imu_sub = message_filters.Subscriber(self, Imu, f"/{self.zed_version}_imu/data_raw")
         self.pc_publisher = self.create_publisher(PointCloud2, "/stitched_pc", 1)
         self.pano_img_debug_publisher = self.create_publisher(Image, "/debug_pano", 1)
         self.pc_rate = PanoRate(2, self)
 
         self.stitched_pc = np.empty((0, 8), dtype=np.float32)
-        self.sync = message_filters.ApproximateTimeSynchronizer([self.pc_sub, self.imu_sub], 10, 1)
+        self.sync = message_filters.ApproximateTimeSynchronizer([self.pc_sub, self.imu_sub, self.img_sub], 10, 1)
         self.sync.registerCallback(self.synced_gps_pc_callback)
+        self.img_list = [] # list of images
+        self.img_dirs = [] # list of imu values per image
+        self.pixels_per_deg = self.zed_image_width_pixels / self.zed_fov_deg
 
-        # Image Stitching Variables
-        self.img_sub = self.create_subscription(Image, f"/{self.zed_version}/left/image", self.image_callback, 1)
-        self.img_list = []
-        self.stitcher = cv2.Stitcher_create(cv2.Stitcher_PANORAMA)
-        self.img_rate = PanoRate(2, self)
+        # # Image Stitching Variables
+        # self.img_sub = self.create_subscription(Image, f"/{self.zed_version}/left/image", self.image_callback, 1)
+        # self.img_list = []
+        # self.stitcher = cv2.Stitcher_create(cv2.Stitcher_PANORAMA)
+        # self.img_rate = PanoRate(2, self)
 
         if not os.path.isdir("data/raw-pano-images"):
             os.mkdir("data/raw-pano-images")
@@ -155,7 +128,7 @@ class Panorama(Node):
         pc[:, 0:3] = np.delete(rotated_points, 3, 1)
         return pc
 
-    def synced_gps_pc_callback(self, pc_msg: PointCloud2, imu_msg: Imu):
+    def synced_gps_pc_callback(self, pc_msg: PointCloud2, imu_msg: Imu, img_msg: Image):
         # extract xyzrgb fields
         # get every tenth point to make the pc sparser
         # TODO: dtype hard-coded to float32
@@ -175,25 +148,34 @@ class Panorama(Node):
                 [1 - 2*y**2 - 2*z**2, 2*x*y - 2*z*w, 2*x*z + 2*y*w, 0],
                 [2*x*y + 2*z*w, 1 - 2*x**2 - 2*z**2, 2*y*z - 2*x*w, 0],
                 [2*x*z - 2*y*w, 2*y*z + 2*x*w, 1 - 2*x**2 - 2*y**2, 0],
-                [0, 0, 0, 0]
+                [0, 0, 0, 1]
             ]) 
 
             rotated_pc = self.rotate_pc(rotation, self.arr_pc)
             self.stitched_pc = np.vstack((self.stitched_pc, rotated_pc))
             self.pc_rate.sleep()
 
-    def image_callback(self, msg: Image):
-        if self.record_image:
+            # Record Image
             self.current_img = cv2.cvtColor(
-                np.frombuffer(msg.data, dtype=np.uint8).reshape(msg.height, msg.width, 4), cv2.COLOR_RGBA2RGB
+                np.frombuffer(img_msg.data, dtype=np.uint8).reshape(img_msg.height, img_msg.width, 4), cv2.COLOR_RGBA2RGB
             )
 
             if self.current_img is not None:
                 self.img_list.append(copy.deepcopy(self.current_img))
-            self.img_rate.sleep()
+                self.img_dirs.append(np.arctan(rotation[0][0] / rotation[0][1]))
+
+    # def image_callback(self, msg: Image):
+    #     if self.record_image:
+    #         self.current_img = cv2.cvtColor(
+    #             np.frombuffer(msg.data, dtype=np.uint8).reshape(msg.height, msg.width, 4), cv2.COLOR_RGBA2RGB
+    #         )
+
+    #         if self.current_img is not None:
+    #             self.img_list.append(copy.deepcopy(self.current_img))
 
     def heading_callback(self, heading: Heading):
-        pass
+        self.get_logger().info("Heading is {heading.heading}")
+        self.cur_heading = int(heading.heading)
 
     def label_pano(self, order: np.ndarray[int], pano: np.ndarray):
         # label hard coded NESW as a test
@@ -244,7 +226,8 @@ class Panorama(Node):
         if self.pc_sub is None and self.imu_sub is None: 
             self.pc_sub = message_filters.Subscriber(self, PointCloud2, f"/{self.zed_version}/left/points")
             self.imu_sub = message_filters.Subscriber(self, Imu, f"/{self.zed_version}_imu/data_raw")
-            self.sync = message_filters.ApproximateTimeSynchronizer([self.pc_sub, self.imu_sub], 10, 1)
+            self.img_sub = message_filters.Subscriber(self, Imu, f"/{self.zed_version}/left/image")
+            self.sync = message_filters.ApproximateTimeSynchronizer([self.pc_sub, self.imu_sub, self.img_sub], 10, 1)
             self.sync.registerCallback(self.synced_gps_pc_callback)
 
         if self.heading_sub is not None:
@@ -273,15 +256,13 @@ class Panorama(Node):
         # req.position = [90.0, 0.0] # TODO is 90 correct?? 0?
         # self.gimbal_client.call_async(req)
 
-        if self.img_sub is not None:
-            self.destroy_subscription(self.img_sub)
-            self.img_sub = None
-
         if self.pc_sub is not None and self.imu_sub is not None:
             self.destroy_subscription(self.pc_sub.sub)
             self.destroy_subscription(self.imu_sub.sub)
+            self.destroy_subscription(self.img_sub.sub)
             self.pc_sub = None
             self.imu_sub = None
+            self.img_sub = None
             self.sync = None
 
         # construct pc from stitched
@@ -312,14 +293,17 @@ class Panorama(Node):
         new_path = f"data/raw-pano-images/{unique_id}"
         os.mkdir(new_path)
         for i, img in enumerate(self.img_list):
-            cv2.imwrite(f"{new_path}/{i}.png", img)              
+            cv2.imwrite(f"{new_path}/{i}.png", img)  
 
         # stitch the pano together
-        self.get_logger().info(f"Stitching {len(self.img_list)} images...")
-        status, pano = self.stitcher.stitch(self.img_list)
+        self.get_logger().info(f"Stitching {len(self.img_list)} images...")            
 
-        if status != cv2.Stitcher_OK:
-            print(f"Stitching failed with error code {status}")
+        # Calculate shifts
+        self.img_dirs = self.img_dirs * (180 / np.pi)
+        diffs = np.diff(self.img_dirs)
+        diffs = diffs * self.pixels_per_deg
+        diffs = diffs.astype(int)
+        pano = calcPanorama(new_path, diffs)
 
         # Construct Pano and Save, get stitching order
         if pano is not None:

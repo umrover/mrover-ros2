@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# coding: utf-8
 
 import numpy as np
 import cv2
@@ -131,20 +130,15 @@ def calcPanorama(images_dir, shift):
         path = calcSeamPath(E,e)
         panorama = stitchImage(panorama, curr_img, path, overlap)
         print("The time taken for merging " + str(i+1) + " images: " + str(time.time() - start))
-#     fig = plt.figure(figsize=(20,10))
-#     plt.axis('off')
-#     plt.imshow(panorama/np.max(panorama));
-    print("The image has been saved as output.png")
-    imageio.imwrite(images_dir+'output.png', np.array(255*panorama/np.max(panorama)).astype('uint8'))
+#     print("The image has been saved as output.png")
+#     imageio.imwrite(images_dir+'output.png', np.array(255*panorama/np.max(panorama)).astype('uint8'))
     return panorama
 
-# calcPanorama('./results/3/', [55]*11)
+# calcPanorama('../data/3/', [55]*11)
 
 # calcPanorama('./results/2/', [109]*6)
 
 # calcPanorama('./results/1/', [36]*16)
 
 # calcPanorama('./results/4/', [85]*5)
-
-print([85] * 11)
 
