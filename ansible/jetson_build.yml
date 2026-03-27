@@ -1,0 +1,12 @@
+---
+- hosts: all
+  vars:
+    ros_distro: humble
+    ubuntu_release: jammy
+    ifname: eth0
+  roles:
+    - jetson_pre_build
+    - build
+    - jetson_build
+    - jetson_networks
+    - dev

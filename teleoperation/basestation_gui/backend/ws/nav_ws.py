@@ -1,20 +1,21 @@
-import asyncio
+import rclpy.time
 import tf2_ros
+from tf2_ros import LookupException, ConnectivityException, ExtrapolationException
 from lie import SE3
 from backend.ws.base_ws import WebSocketHandler
-from backend.led_manager import set_nav_state, register_led_callback
+from backend.managers.ros import get_logger
+from backend.managers.led import set_nav_state
 from mrover.msg import StateMachineStateUpdate
 from sensor_msgs.msg import NavSatFix
+
 
 class NavHandler(WebSocketHandler):
     def __init__(self, websocket):
         super().__init__(websocket, 'nav')
         self.buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.buffer, self.node, spin_thread=False)
-        register_led_callback(self.on_led_color_change)
 
     async def setup(self):
-        """Setup NAV endpoint subscriptions and timers"""
         self.nav_state_sub = self.node.create_subscription(
             StateMachineStateUpdate, "/nav_state", self.nav_state_callback, 10
         )
@@ -28,8 +29,9 @@ class NavHandler(WebSocketHandler):
         self.timers.append(timer)
 
     def send_localization_callback(self):
-        """Send orientation from TF tree"""
         try:
+            if not self.buffer.can_transform("map", "base_link", rclpy.time.Time()):
+                return
             base_link_in_map = SE3.from_tf_tree(self.buffer, "map", "base_link")
             quat = base_link_in_map.quat().tolist()
             data_to_send = {
@@ -41,20 +43,16 @@ class NavHandler(WebSocketHandler):
                     "w": quat[3],
                 },
             }
-            asyncio.run_coroutine_threadsafe(self.send_msgpack(data_to_send), self.loop)
-        except Exception:
-            # Errors are expected if localization isn't running
+            self.schedule_send(data_to_send)
+        except (LookupException, ConnectivityException, ExtrapolationException):
             pass
+        except Exception as e:
+            get_logger().error(f"NavHandler localization error: {e}")
 
     def nav_state_callback(self, msg):
-        """Handle nav state updates and update LED accordingly"""
         set_nav_state(msg.state)
-
-    def on_led_color_change(self, color: str):
-        """Called when LED color changes"""
-        data_to_send = {"type": "led_color", "color": color}
-        asyncio.run_coroutine_threadsafe(self.send_msgpack(data_to_send), self.loop)
+        data_to_send = {"type": "nav_state", "state": msg.state}
+        self.schedule_send(data_to_send)
 
     async def handle_message(self, data):
-        """Handle incoming NAV messages"""
-        print(f"Nav handler received message: {data}")
+        get_logger().info(f"Nav handler received message: {data}")

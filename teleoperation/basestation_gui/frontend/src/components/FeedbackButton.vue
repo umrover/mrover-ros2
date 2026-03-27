@@ -1,9 +1,9 @@
 <template>
-  <button :class="['btn', currentColor]" :style="customStyles" @click="handleClick">
-    <span class="d-inline-flex align-items-center gap-2">
+  <button :class="['cmd-btn', currentColor]" :style="customStyles" :disabled="disabled" @click="handleClick">
+    <span class="flex items-center w-full">
       <span>{{ displayName }}</span>
-      <i v-if="mode === 'toggle'" :class="checked ? 'bi bi-check-square-fill' : 'bi bi-square'"></i>
-      <i v-else-if="isWaiting" class="bi bi-arrow-repeat spin"></i>
+      <i v-if="mode === 'toggle'" class="ml-auto" :class="checked ? 'bi bi-check-square-fill' : 'bi bi-square'"></i>
+      <i v-else-if="isWaiting" class="bi bi-arrow-repeat animate-spin ml-auto"></i>
     </span>
   </button>
 </template>
@@ -39,6 +39,10 @@ export default defineComponent({
       type: [String, Number],
       default: '',
     },
+    disabled: {
+      type: Boolean,
+      default: false,
+    },
     mode: {
       type: String as PropType<'toggle' | 'action'>,
       default: 'toggle',
@@ -63,12 +67,12 @@ export default defineComponent({
   computed: {
     currentColor(): string {
       if (this.mode === 'action') {
-        if (this.isComplete) return 'btn-success'
-        if (this.isWaiting) return 'btn-warning'
-        return 'btn-primary'
+        if (this.isComplete) return 'cmd-btn-success'
+        if (this.isWaiting) return 'cmd-btn-warning'
+        return 'cmd-btn-success'
       }
-      if (this.isWaiting) return 'btn-warning'
-      return this.checked ? 'btn-success' : 'btn-danger'
+      if (this.isWaiting) return 'cmd-btn-warning'
+      return this.checked ? 'cmd-btn-success' : 'cmd-btn-danger'
     },
 
     displayName(): string {
@@ -118,7 +122,6 @@ export default defineComponent({
           console.error(`${this.name} action failed:`, response.message)
           this.notificationsStore.addNotification({
             component: this.name,
-            errorType: 'API Error',
             message: response.message || 'Action failed',
             fullData: response
           })
@@ -127,15 +130,8 @@ export default defineComponent({
           setTimeout(() => { this.isComplete = false }, 2000)
         }
         this.$emit('complete', response)
-      } catch (error) {
-        console.error(`${this.name} action failed:`, error)
-        this.notificationsStore.addNotification({
-          component: this.name,
-          errorType: 'Exception',
-          message: error instanceof Error ? error.message : String(error),
-          fullData: error instanceof Error ? { message: error.message, stack: error.stack } : { error: String(error) }
-        })
-        this.$emit('error', error)
+      } catch {
+        this.$emit('error')
       } finally {
         this.isWaiting = false
       }
@@ -159,20 +155,12 @@ export default defineComponent({
           console.error(`${this.name} command failed:`, response.message)
           this.notificationsStore.addNotification({
             component: this.name,
-            errorType: 'API Error',
             message: response.message || 'Command failed',
             fullData: response
           })
           this.$emit('toggle', !targetState)
         }
-      } catch (error) {
-        console.error(`${this.name} command failed:`, error)
-        this.notificationsStore.addNotification({
-          component: this.name,
-          errorType: 'Exception',
-          message: error instanceof Error ? error.message : String(error),
-          fullData: error instanceof Error ? { message: error.message, stack: error.stack } : { error: String(error) }
-        })
+      } catch {
         this.$emit('toggle', !targetState)
       } finally {
         this.isWaiting = false
@@ -182,13 +170,3 @@ export default defineComponent({
 })
 </script>
 
-<style scoped>
-.spin {
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-</style>

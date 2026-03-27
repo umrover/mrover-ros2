@@ -4,59 +4,40 @@ import type {
   RecordingsListResponse,
   RecordingWaypointsResponse
 } from './apiTypes'
-
-const API_BASE = '/api'
+import { apiFetch } from './apiFetch'
 
 export const recordingAPI = {
-  async create(name: string, isDrone: boolean): Promise<RecordingCreateResponse> {
-    const response = await fetch(`${API_BASE}/recordings/create/`, {
+  create(name: string, isDrone: boolean): Promise<RecordingCreateResponse> {
+    return apiFetch('/recordings/create/', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name, is_drone: isDrone })
     })
-    return response.json()
   },
 
-  async stop(): Promise<APIResponse> {
-    const response = await fetch(`${API_BASE}/recordings/stop/`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' }
-    })
-    return response.json()
+  stop(): Promise<APIResponse> {
+    return apiFetch('/recordings/stop/', { method: 'POST' })
   },
 
-  async addWaypoint(recordingId: number, lat: number, lon: number, sequence: number): Promise<APIResponse> {
-    const response = await fetch(`${API_BASE}/recordings/${recordingId}/waypoints/`, {
+  addWaypoint(recordingId: number, lat: number, lon: number, sequence: number): Promise<APIResponse> {
+    return apiFetch(`/recordings/${recordingId}/waypoints/`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ lat, lon, sequence })
     })
-    return response.json()
   },
 
-  async getAll(): Promise<RecordingsListResponse> {
-    const response = await fetch(`${API_BASE}/recordings/`)
-    return response.json()
+  getAll(): Promise<RecordingsListResponse> {
+    return apiFetch('/recordings/')
   },
 
-  async getWaypoints(recordingId: number): Promise<RecordingWaypointsResponse> {
-    const response = await fetch(`${API_BASE}/recordings/${recordingId}/waypoints/`)
-    return response.json()
+  getWaypoints(recordingId: number): Promise<RecordingWaypointsResponse> {
+    return apiFetch(`/recordings/${recordingId}/waypoints/`)
   },
 
-  async delete(recordingId: number): Promise<APIResponse> {
-    const response = await fetch(`${API_BASE}/recordings/${recordingId}/`, {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' }
-    })
-    return response.json()
+  delete(recordingId: number): Promise<APIResponse> {
+    return apiFetch(`/recordings/${recordingId}/`, { method: 'DELETE' })
   },
 
-  async deleteAll(): Promise<APIResponse> {
-    const response = await fetch(`${API_BASE}/recordings/clear/`, {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' }
-    })
-    return response.json()
+  deleteAll(): Promise<APIResponse> {
+    return apiFetch('/recordings/clear/', { method: 'DELETE' })
   }
 }
