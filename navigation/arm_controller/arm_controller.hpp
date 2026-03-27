@@ -37,6 +37,7 @@ namespace mrover {
         //bool hold = false;
         bool not_initialized = true;
         double mArmTotalError[5];
+        double mPrevArmError[5];
 
         struct JointWrapper {
             struct JointLimits {

@@ -353,10 +353,11 @@ namespace mrover {
                 mVelTarget.angular.x == 0 &&
                 mVelTarget.angular.y == 0) {
                     mCarrotPos = mArmPos;
-                    mCheckCarrotPos = mArmPos;
+                    //mCheckCarrotPos = mArmPos;
                     //carrot_initialized = false;
                     for (int i = 0; i < 5; i++) {
                         mArmTotalError[i] = 0;
+                        mPrevArmError[i] = 0;
                     }
                     return;
                 }
@@ -364,25 +365,64 @@ namespace mrover {
             auto now = get_clock()->now();
 
             if (!carrot_initialized) {
-                //mCarrotPos = mArmPos;
+                mCarrotPos = mArmPos;
                 //mCheckCarrotPos = mArmPos;
                 carrot_initialized = true;
                 mPrevTime = now;
+                for (int i = 0; i < 5; i++) {
+                        mArmTotalError[i] = 0;
+                        mPrevArmError[i] = 0;
+                }
             }
 
 
             double dt = (now - mPrevTime).seconds();
             mPrevTime = now;
+
             dt = 0.015;
             //double dt = 0.033;
 
-            double const k = 1.1;
+            double const k = 1.2; //1.2 //1,75 //1.5
+            double const kang = 3; //3
+            double const Ki = 0.003; //0.003 //0.05 /0.02
+            double const kd = 0.006; //0.006 //0.01 //0.009
 
-            mCarrotPos.x += mVelTarget.linear.x * dt * k;
-            mCarrotPos.y += mVelTarget.linear.y * dt * k;
-            mCarrotPos.z += mVelTarget.linear.z * dt * k;
-            mCarrotPos.pitch += mVelTarget.angular.y * dt * k;
-            mCarrotPos.roll += mVelTarget.angular.x * dt * k;
+
+            auto error_x = mCarrotPos.x - mArmPos.x;
+            auto error_y = mCarrotPos.y - mArmPos.y;
+            auto error_z = mCarrotPos.z - mArmPos.z;
+            auto error_pitch = mCarrotPos.pitch - mArmPos.pitch;
+            auto error_roll = mCarrotPos.roll - mArmPos.roll;
+
+            double d_x = (error_x - mPrevArmError[0]) / dt;
+            double d_y = (error_y - mPrevArmError[1]) / dt;
+            double d_z = (error_z - mPrevArmError[2]) / dt;
+            double d_pitch = ((error_pitch - mPrevArmError[3]) / dt);
+            double d_roll = ((error_roll - mPrevArmError[4]) / dt);
+
+            mPrevArmError[0] = error_x;
+            mPrevArmError[1] = error_y;
+            mPrevArmError[2] = error_z;
+            mPrevArmError[3] = error_pitch;
+            mPrevArmError[4] = error_roll;
+
+            mArmTotalError[0] += error_x * dt;
+            mArmTotalError[1] += error_y * dt;
+            mArmTotalError[2] += error_z * dt;
+            mArmTotalError[3] += error_pitch * dt;
+            mArmTotalError[4] += error_roll * dt;
+
+            double lim = 0.25;
+
+            for (int i = 0; i < 5; i++) {
+                mArmTotalError[i] = std::min(std::max(mArmTotalError[i], -1 * lim), lim);
+            }
+
+            mCarrotPos.x += mVelTarget.linear.x * dt * k + (mArmTotalError[0] * Ki) + (d_x * kd);
+            mCarrotPos.y += mVelTarget.linear.y * dt * k + (mArmTotalError[1] * Ki) + (d_y * kd);
+            mCarrotPos.z += mVelTarget.linear.z * dt * k + (mArmTotalError[2] * Ki) + (d_z * kd);
+            mCarrotPos.pitch += mVelTarget.angular.y * dt * kang + (mArmTotalError[3] * Ki) + (d_pitch * kd);
+            mCarrotPos.roll += mVelTarget.angular.x * dt * kang + (mArmTotalError[4] * Ki) + (d_roll * kd);
 
             mCheckCarrotPos.x += mVelTarget.linear.x * dt * k;
             mCheckCarrotPos.y += mVelTarget.linear.y * dt * k;
@@ -397,13 +437,13 @@ namespace mrover {
                     mCheckCarrotPos.toSE3(),
                     now);
 
-            auto error_x = mCarrotPos.x - mArmPos.x;
-            auto error_y = mCarrotPos.y - mArmPos.y;
-            auto error_z = mCarrotPos.z - mArmPos.z;
-            auto error_pitch = mCarrotPos.pitch - mArmPos.pitch;
-            auto error_roll = mCarrotPos.roll - mArmPos.roll;
+            error_x = mCarrotPos.x - mArmPos.x;
+            error_y = mCarrotPos.y - mArmPos.y;
+            error_z = mCarrotPos.z - mArmPos.z;
+            error_pitch = mCarrotPos.pitch - mArmPos.pitch;
+            error_roll = mCarrotPos.roll - mArmPos.roll;
 
-            double const max_dist = 0.2;
+            double const max_dist = 0.3; //0.3 /1
 
             double error_total = std::sqrt(error_x * error_x + error_y * error_y + error_z * error_z);
 
@@ -412,8 +452,8 @@ namespace mrover {
                 mCarrotPos.x = mArmPos.x + error_x * reduce_factor;
                 mCarrotPos.y = mArmPos.y + error_y * reduce_factor;
                 mCarrotPos.z = mArmPos.z + error_z * reduce_factor;
-                //mCarrotPos.pitch = mArmPos.pitch + error_pitch * reduce_factor;
-                //mCarrotPos.roll = mArmPos.roll + error_roll * reduce_factor;
+                mCarrotPos.pitch = mArmPos.pitch + error_pitch * reduce_factor;
+                mCarrotPos.roll = mArmPos.roll + error_roll * reduce_factor;
 
             }
 
@@ -452,7 +492,7 @@ namespace mrover {
             mArmTotalError[3] += error_pitch * dt;
             mArmTotalError[4] += error_roll * dt;
 
-            double lim = 0.3;
+            lim = 0.3;
 
             for (int i = 0; i < 5; i++) {
                 mArmTotalError[i] = std::min(std::max(mArmTotalError[i], -1 * lim), lim);
@@ -469,6 +509,8 @@ namespace mrover {
             adjusted_v.linear.z += (Kp_lin * error_z) + (mArmTotalError[2] * Ki_lin);
             adjusted_v.angular.y += (Kp_ang * error_pitch) + (mArmTotalError[3] * Ki_ang);
             adjusted_v.angular.x += (Kp_ang * error_roll) + (mArmTotalError[4] * Ki_ang);
+            //adjusted_v.angular.x = mVelTarget.angular.x;
+            //adjusted_v.angular.y = mVelTarget.angular.y;
 
             auto velocities = ikVelCalc(adjusted_v);
             /*auto velocities_weird_idk = ikVelCalc(mVelTarget);
