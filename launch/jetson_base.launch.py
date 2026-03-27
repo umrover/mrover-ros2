@@ -51,6 +51,7 @@ def generate_launch_description():
         ],
     )
 
+<<<<<<< HEAD
     joint_a_streamer_node = Node(
         package="mrover",
         executable="gst_camera_server",
@@ -81,6 +82,8 @@ def generate_launch_description():
         ],
     )
 
+=======
+>>>>>>> 89401dcde0c9d45333e006e1bda57eaaf142e242
     zed_mini_streamer_node = Node(
         package="mrover",
         executable="gst_camera_server",
@@ -122,9 +125,12 @@ def generate_launch_description():
             superstructure_node,
             drive_hw_bridge_node,
             mob_streamer_node,
+<<<<<<< HEAD
             joint_a_streamer_node,
             ee1_streamer_node,
             ee2_streamer_node,
+=======
+>>>>>>> 89401dcde0c9d45333e006e1bda57eaaf142e242
             zed_mini_streamer_node,
             zed_container,
         ]

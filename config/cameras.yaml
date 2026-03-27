@@ -53,7 +53,11 @@
         framerate: 5
     ee2_cam:
       address: 10.1.0.2
+<<<<<<< HEAD
       port: 8084
+=======
+      port: 8085
+>>>>>>> 89401dcde0c9d45333e006e1bda57eaaf142e242
       dev_node: "/dev/ee2_cam"
       dev_path: ""
       stream:
@@ -133,7 +137,7 @@ camera_client:
   ros__parameters:
     test: 10
     cameras:
-      - "mob_cam_left"
+      - "mob_cam"
       - "joint_a_cam"
       - "ee1_cam"
       - "ee2_cam"

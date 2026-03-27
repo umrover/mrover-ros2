@@ -36,6 +36,36 @@ def generate_launch_description():
         ],
     )
 
+    joint_a_streamer_node = Node(
+        package="mrover",
+        executable="gst_camera_server",
+        name="joint_a_streamer",
+        output="screen",
+        parameters=[
+            Path(get_package_share_directory("mrover"), "config", "cameras.yaml"),
+        ],
+    )
+
+    ee1_streamer_node = Node(
+        package="mrover",
+        executable="gst_camera_server",
+        name="ee1_streamer",
+        output="screen",
+        parameters=[
+            Path(get_package_share_directory("mrover"), "config", "cameras.yaml"),
+        ],
+    )
+
+    ee2_streamer_node = Node(
+        package="mrover",
+        executable="gst_camera_server",
+        name="ee2_streamer",
+        output="screen",
+        parameters=[
+            Path(get_package_share_directory("mrover"), "config", "cameras.yaml"),
+        ],
+    )
+
     zed_mini_streamer_node = Node(
         package="mrover",
         executable="gst_camera_server",
@@ -55,9 +85,9 @@ def generate_launch_description():
     return LaunchDescription(
         [
             launch_include_jetson_base,
+            joint_a_streamer_node,
+            ee1_streamer_node,
+            ee2_streamer_node,
             arm_hw_bridge_node,
-            # boom_streamer_node,
-            # zed_mini_streamer_node,
-            # launch_localization,
         ]
     )
