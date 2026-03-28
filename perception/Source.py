@@ -2,18 +2,9 @@
 
 import numpy as np
 import cv2
-import imageio
-from PIL import Image
-import matplotlib.pyplot as plt
+from PIL import Image as PilImage
 import time
-import math
 import glob
-import matplotlib.colors as colors
-from skimage import color, io, exposure
-from scipy.ndimage import morphology as morph
-from skimage.morphology import disk
-from skimage.transform import resize
-from skimage import filters
 
 def calcErrorSurface(panorama, curr_img, overlap, channel):
     A = panorama[:, -overlap-1:, channel]
@@ -108,7 +99,7 @@ def calcPanorama(images_dir, shift):
     files = sorted(files)
     print(len(files))
     
-    image_files = [np.array(Image.open(files[i])) for i in range(len(files))]
+    image_files = [np.array(PilImage.open(files[i])) for i in range(len(files))]
     
     images_temp = [ image_files[i].astype('float64') for i in range(len(image_files))]
     
@@ -130,8 +121,6 @@ def calcPanorama(images_dir, shift):
         path = calcSeamPath(E,e)
         panorama = stitchImage(panorama, curr_img, path, overlap)
         print("The time taken for merging " + str(i+1) + " images: " + str(time.time() - start))
-#     print("The image has been saved as output.png")
-#     imageio.imwrite(images_dir+'output.png', np.array(255*panorama/np.max(panorama)).astype('uint8'))
     return panorama
 
 # calcPanorama('../data/3/', [55]*11)

@@ -1,28 +1,21 @@
 #!/usr/bin/env python3
 
-import numpy as np
-import copy
-from sensor_msgs.msg import PointCloud2, Image
-from std_msgs.msg import Header
-import sensor_msgs
-import tf2_ros
-# from lie import SE3
-from sensor_msgs.msg import Imu
-from mrover.srv import PanoramaStart, PanoramaEnd, Pano, ServoPosition
-from mrover.msg import Heading
-
 import rclpy
 from rclpy.node import Node
-from rclpy.duration import Duration
-import sys
-from datetime import datetime
+
+from sensor_msgs.msg import PointCloud2, Image
+from std_msgs.msg import Header
+from sensor_msgs.msg import Imu
+from mrover.srv import PanoramaStart, PanoramaEnd, ServoPosition
+from mrover.msg import Heading
 
 import cv2
 import time
 import message_filters
-import datetime
 import os
-from enum import Enum
+import numpy as np
+import copy
+from datetime import datetime
 
 from Source import *
 
@@ -93,10 +86,10 @@ class Panorama(Node):
 
         # PC Stitching Variables
         self.pc_sub = message_filters.Subscriber(self, PointCloud2, f"/{self.zed_version}/left/points")
-        self.img_sub = message_filters.Subscriber(self, Image, f"/{self.zed_version}/left/image")
         self.imu_sub = message_filters.Subscriber(self, Imu, f"/{self.zed_version}_imu/data_raw")
-        self.pc_publisher = self.create_publisher(PointCloud2, "/stitched_pc", 1)
-        self.pano_img_debug_publisher = self.create_publisher(Image, "/debug_pano", 1)
+        self.img_sub = message_filters.Subscriber(self, Image, f"/{self.zed_version}/left/image")
+        self.pc_publisher = self.create_publisher(PointCloud2, "/stitched_pc", 10)
+        self.pano_img_debug_publisher = self.create_publisher(Image, "/debug_pano", 10)
         self.pc_rate = PanoRate(2, self)
 
         self.stitched_pc = np.empty((0, 8), dtype=np.float32)
@@ -177,7 +170,7 @@ class Panorama(Node):
         self.get_logger().info("Heading is {heading.heading}")
         self.cur_heading = int(heading.heading)
 
-    def label_pano(self, order: np.ndarray[int], pano: np.ndarray):
+    def label_pano(self, order: np.ndarray[int], pano: np.ndarray, dir_diffs: np.ndarray):
         # label hard coded NESW as a test
         fontFace = cv2.FONT_HERSHEY_SIMPLEX
         fontScale = 2.0
@@ -188,8 +181,8 @@ class Panorama(Node):
         # make array of approx heading for each image
         heading_step = 340 / len(self.img_list)
         approx_heading = np.array([])
-        for i in range(len(self.img_list)):
-            approx_heading = np.append(approx_heading, [int(self.cur_heading + i*heading_step) % 340])
+        approx_heading = np.cumsum(dir_diffs)
+        approx_heading = (approx_heading + self.cur_heading).astype(int)
         
         # For each cardinal dir, find which image has closest heading to that direction
         # Then find the image closest to that one in number from the order list
@@ -301,9 +294,9 @@ class Panorama(Node):
         # Calculate shifts
         self.img_dirs = self.img_dirs * (180 / np.pi)
         diffs = np.diff(self.img_dirs)
-        diffs = diffs * self.pixels_per_deg
-        diffs = diffs.astype(int)
-        pano = calcPanorama(new_path, diffs)
+        shift = diffs * self.pixels_per_deg
+        shift = diffs.astype(int)
+        pano = calcPanorama(new_path, shift)
 
         # Construct Pano and Save, get stitching order
         if pano is not None:
