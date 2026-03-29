@@ -1,5 +1,6 @@
 from enum import Enum
 import threading
+import asyncio
 
 from rclpy.publisher import Publisher
 
@@ -49,6 +50,8 @@ async def set_ra_mode(new_ra_mode: str):
 
     with ra_mode_lock:
         ra_mode = new_ra_mode
+    
+    return True
 
 
 async def call_ik_mode_service(mode: int) -> bool:
