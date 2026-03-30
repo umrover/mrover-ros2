@@ -271,8 +271,8 @@ namespace mrover {
 
         bool mPublishIk = true;
         bool mIkMode = true; // true = position control, false = velocity control
-        Eigen::Vector3f mIkTarget{0.912, 0.01, -0.217};
-        float mIkPitch{0};
+        Eigen::Vector3f mIkTarget{0.31, 0.0f, -0.139};
+        float mIkPitch{1.077};
         float mIkRoll{0};
         // TODO: switch this to a twist
         Eigen::Vector3f mIkVel{0, 0, 0};
