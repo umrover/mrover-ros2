@@ -7,12 +7,7 @@ namespace mrover {
         struct ArmPos {
             double x{0}, y{0}, z{0}, pitch{0}, roll{0}, gripper{0};
             [[nodiscard]] auto toSE3() const -> SE3d {
-                return SE3d{{
-                                    x,
-                                    y,
-                                    z,
-                            },
-                            SO3d{Eigen::Quaterniond{Eigen::AngleAxisd{pitch, R3d::UnitY()} * Eigen::AngleAxisd{roll, R3d::UnitX()}}}};
+                return SE3d{{x, y, z,}, SO3d{Eigen::Quaterniond{Eigen::AngleAxisd{pitch, R3d::UnitY()} * Eigen::AngleAxisd{roll, R3d::UnitX()}}}};
             }
 
             auto operator+(R3d offset) const -> ArmPos {
@@ -57,9 +52,9 @@ namespace mrover {
         [[maybe_unused]] rclcpp::Client<srv::Pusher>::SharedPtr mPusherCli;
 
         rclcpp_action::Server<action::TypingPosition>::SharedPtr mTypingServer;
-        auto handleTypingGoal(const rclcpp_action::GoalUUID & uuid, std::shared_ptr<const action::TypingPosition_Goal> typingGoal) -> rclcpp_action::GoalResponse;
-        auto handleTypingCancel(std::shared_ptr<rclcpp_action::ServerGoalHandle<action::TypingPosition>> typingGoalHandle) -> rclcpp_action::CancelResponse;
-        auto handleTypingAccepted(std::shared_ptr<rclcpp_action::ServerGoalHandle<action::TypingPosition>> typingGoalHandle) -> void;
+        auto handleTypingGoal(const rclcpp_action::GoalUUID & uuid, const std::shared_ptr<const action::TypingPosition_Goal> &typingGoal) -> rclcpp_action::GoalResponse;
+        auto handleTypingCancel(const std::shared_ptr<rclcpp_action::ServerGoalHandle<action::TypingPosition>> &typingGoalHandle) -> rclcpp_action::CancelResponse;
+        auto handleTypingAccepted(const std::shared_ptr<rclcpp_action::ServerGoalHandle<action::TypingPosition>> &typingGoalHandle) -> void;
         std::optional<rclcpp_action::GoalUUID> mTypingGoalID;
 
         rclcpp::Publisher<msg::Position>::SharedPtr mPosPub;
@@ -75,16 +70,9 @@ namespace mrover {
         auto timerCallback() -> void;
 
         ArmPos mArmPos, mTypingOrigin, mPosTarget;
+        std::optional<msg::Position> mPosFallback;
         geometry_msgs::msg::Twist mVelTarget;
         rclcpp::Time mLastUpdate;
-
-        double mCarrotTime = 0.033;
-        double mCarrotk = 1;
-        rclcpp::Time mPrevTime;
-        bool mCarrotInitialized = false;
-        ArmPos mCarrotPos;
-        bool mHold = false;
-        bool mNotInitialized = true;
 
         enum class ArmMode : char {
             VELOCITY_CONTROL,
@@ -92,17 +80,17 @@ namespace mrover {
             TYPING
         };
         ArmMode mArmMode = ArmMode::POSITION_CONTROL;
-        static rclcpp::Duration const TIMEOUT;
+        static const rclcpp::Duration TIMEOUT;
 
     public:
         // TODO(quintin): Neven, please load these from config YAML files instead of hard coding. Ideally they would even be computed at runtime. This way you can change the xacro without worry.
 
         // From: rover.urdf.xacro
         // A is the prismatic joint, B is the first revolute joint, C is the second revolute joint
-        static constexpr double LINK_BC = 0.53271;
-        static constexpr double LINK_CD = 0.39403;
+        static constexpr double LINK_BC = 0.5344417294;
+        static constexpr double LINK_CD = 0.5531735368;
         static constexpr double END_EFFECTOR_LENGTH = 0.20482814; // from CAD
-        static constexpr double JOINT_C_OFFSET = 0.208954;
+        static constexpr double JOINT_C_OFFSET = 0.1608485915;
         static constexpr double JOINT_VEL_THRESH = 0.05;
         static constexpr double MAX_SPEED = 0.1; // in m/s, this is just an estimate
 
