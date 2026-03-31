@@ -11,11 +11,19 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from urllib.request import Request, urlopen
 from urllib.error import URLError
 
+"""
+the mt in the url specifies what sort of layer you want, in our case, it specifies satellite + roads
+this url endpoint is not publicly documented
+{s} specifies the server to pull from, like mt0 or mt1 to avoid being rate limited
+{x}, {y} is coordinates, {z} is zoom
+"""
+
 TILE_URL = "https://mt{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}"
 CONCURRENCY = 64
 OUTPUT = Path(__file__).resolve().parent / "basestation_gui" / "frontend" / "public" / "map"
 
 LOCATIONS = {
+    "a2": (42.293988, -83.710156),
     "urc": (38.406422, -110.791900),
     "circ": (51.470181, -112.744886),
 }
