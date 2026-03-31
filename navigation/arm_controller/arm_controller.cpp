@@ -185,7 +185,7 @@ namespace mrover {
                 continue;
             }
             if (std::isnan(joint_state->positions[i])) {
-                RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, "Joint \"" << joint_state->names[i] << "\" has an invalid position");
+                RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, "Joint \"" << joint_state->names[i] << "\" has an invalid posiion.");
                 return;
             }
             it->second.pos = joint_state->positions[i];
@@ -277,15 +277,12 @@ namespace mrover {
                 if(distRemaining < 0.004) {
                     RCLCPP_INFO(get_logger(), "Reached target position.");
                     // make param
-                    int waitTime = 1;
-                    std::this_thread::sleep_for(std::chrono::seconds(waitTime));
+                    auto pauseTime = std::chrono::seconds(1);
+                    std::this_thread::sleep_for(pauseTime);
 
-                    while(!mPusherCli->wait_for_service(std::chrono::seconds(waitTime))) {
-                        if(!rclcpp::ok()) return;
-                        RCLCPP_INFO(get_logger(), "Waiting for pusher sercice to be made available"); 
-                    }
-
-                    RCLCPP_INFO(get_logger(), "Calling pusher service.");
+                    auto pusherTimeout = std::chrono::seconds(3);
+                    if(mPusherCli->wait_for_service(pusherTimeout)) {
+                        RCLCPP_INFO(get_logger(), "Calling pusher service.");
 
                     auto pusherReq = std::make_shared<srv::Pusher::Request>();
                     pusherReq->start = true;    
@@ -293,24 +290,25 @@ namespace mrover {
 
                     if(pusherFuture.wait_for(std::chrono::seconds(5)) == std::future_status::ready) {
                         RCLCPP_INFO(get_logger(), "Pusher service succeeded.");
-
-                        std::this_thread::sleep_for(std::chrono::seconds(waitTime));
-                        result->success = true;
-                        typingGoalHandle->succeed(result);
-
-                        mTypingGoalID = std::nullopt;
-
-                        RCLCPP_INFO(get_logger(), "Typing goal sucessfully finished");
+                            std::this_thread::sleep_for(pauseTime);
+                            result->success = true;
+                        } else {
+                            RCLCPP_INFO(get_logger(), "Pusher service failed.");
+                            result->success = false;
+                        }
                     } else {
+                        if(!rclcpp::ok()) return;
+                        RCLCPP_WARN(get_logger(), "Pusher service took too long to become available"); 
+                        result->success = false;
+                    }
+                    if(result->success)
+                        RCLCPP_INFO(get_logger(), "Pusher service succeeded.");
+                    else 
                         RCLCPP_INFO(get_logger(), "Pusher service failed.");
 
-                        result->success = false;
-                        typingGoalHandle->succeed(result);
-
-                        mTypingGoalID = std::nullopt;
-
-                        RCLCPP_INFO(get_logger(), "Typing goal failed");
-                    }
+                    mTypingGoalID = std::nullopt;
+                    typingGoalHandle->succeed(result);
+                    
                     return;
                 }
 
