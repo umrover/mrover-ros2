@@ -1,15 +1,5 @@
 #include "CameraClientNode.hpp"
 
-#include <chrono>
-#include <format>
-
-#include <QDebug>
-
-#include <opencv2/core.hpp>
-#include <sensor_msgs/image_encodings.hpp>
-
-#include <gst_utils.hpp>
-
 #include "GstRtpVideoCreatorWidget.hpp"
 
 namespace mrover {

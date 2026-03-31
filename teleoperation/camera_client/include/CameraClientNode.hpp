@@ -1,18 +1,6 @@
 #pragma once
 
-#include <memory>
-#include <string>
-#include <unordered_map>
-
-#include <QImage>
-#include <QObject>
-#include <QTimer>
-
-#include <rclcpp/rclcpp.hpp>
-#include <sensor_msgs/msg/image.hpp>
-#include <std_srvs/srv/trigger.hpp>
-
-#include <mrover/srv/media_control.hpp>
+#include "pch.hpp"
 
 namespace mrover {
 
