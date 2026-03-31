@@ -271,8 +271,8 @@ namespace mrover {
         auto result = std::make_shared<action::IkImageSample::Result>();
         result->success.resize(goal->w * goal->h);
         SE3d target_transfer_function = SE3Conversions::fromTfTree(*mTfBuffer, "zed_left_camera_frame", "arm_base_link");
-        for (size_t i = 0; i < goal->w; i++) {
-            for (size_t j = 0; j < goal->h; j++) {
+        for (size_t j = 0; j < goal->h; j++) {
+            for (size_t i = 0; i < goal->w; i++) {
                 if (goal_handle->is_canceling()) {
                     goal_handle->canceled(result);
                     if (iSCurrentGoalHandle)

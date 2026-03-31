@@ -132,7 +132,7 @@ namespace mrover {
         RCLCPP_INFO(this->get_logger(), "Sending ClickIK Image Sample Request.");
         auto goal = action::IkImageSample::Goal();
         goal.set__w(128);
-        goal.set__h(720);
+        goal.set__h(72);
         goal.set__scale(10);
         auto options = rclcpp_action::Client<action::IkImageSample>::SendGoalOptions{};
         options.result_callback =
