@@ -23,10 +23,11 @@ class ImageCapture(Node):
 
     def save_image(self, msg: Image):
         img = np.frombuffer(msg.data, dtype=np.uint8).reshape(msg.height, msg.width, -1)
-        unique_id = "{date:%Y-%m-%d_%H:%M:%S}".format(date=datetime.datetime.now())
+        unique_id = "{date:%Y-%m-%d_%H:%M:%S:%f}".format(date=datetime.datetime.now())
 
         path = (
             Path(get_package_share_directory("mrover"))
+            / ".."
             / ".."
             / ".."
             / ".."
@@ -51,9 +52,15 @@ class ImageCapture(Node):
 def main() -> None:
     try:
         rclpy.init(args=sys.argv)
+
+        imgNode = ImageCapture()
+        amount = 0
+
         while True:
             input()
-            rclpy.spin_once(ImageCapture())
+            amount += 1
+            print(f"Amount {amount}")
+            rclpy.spin_once(imgNode)
         rclpy.shutdown()
     except KeyboardInterrupt:
         pass
