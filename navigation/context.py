@@ -383,7 +383,6 @@ class Context:
     path_history_publisher: Publisher
     path_marker_publisher: Publisher
     COSTMAP_THRESH: float
-    USE_PURE_PURSUIT: bool
     current_dilation_radius: float
     exec: SingleThreadedExecutor
 
@@ -419,8 +418,6 @@ class Context:
         self.rover = Rover(self, False, OffState(), Path(header=Header(frame_id=self.world_frame)))
         self.env = Environment(self, image_targets=ImageTargetsStore(self), cost_map=CostMap())
         self.disable_requested = False
-
-        self.USE_PURE_PURSUIT = node.get_parameter_or("pure_pursuit.use_pure_pursuit", False).value
 
         node.create_service(EnableAuton, "enable_auton", self.enable_auton)
         node.create_service(SetBool, "toggle_pure_pursuit", self.toggle_pure_pursuit)

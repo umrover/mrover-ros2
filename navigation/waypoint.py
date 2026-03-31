@@ -77,9 +77,7 @@ class WaypointState(State):
         if current_waypoint is None:
             return
 
-        self.USE_COSTMAP = (
-            context.node.get_parameter_or("costmap.use_costmap", True).value or current_waypoint.enable_costmap
-        )
+        self.USE_COSTMAP = context.node.get_parameter("costmap.use_costmap").value or current_waypoint.enable_costmap
         if self.USE_COSTMAP:
             context.node.get_logger().info("Resetting costmap dilation")
             context.reset_dilation()
@@ -168,13 +166,11 @@ class WaypointState(State):
                 self.waypoint_traj.increment_point()
                 if self.waypoint_traj.done():
                     return self.next_state(context=context)
-
             return self
 
         arrived = False
         cmd_vel = Twist()
         if len(self.astar_traj.coordinates) - self.astar_traj.cur_pt != 0:
-            waypoint_position_in_map = self.astar_traj.get_current_point()
             cmd_vel, arrived = context.drive.get_drive_command(
                 self.astar_traj,
                 context.rover.get_pose_in_map(),

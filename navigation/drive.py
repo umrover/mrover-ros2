@@ -169,7 +169,6 @@ class DriveController:
         else:
             return path_start + lookahead_point
 
-    # @overload
     def get_drive_command(
         self: DriveController,
         target_pos: np.ndarray | Trajectory,
@@ -198,7 +197,9 @@ class DriveController:
                 drive_back,
                 path_start,
             )
-        elif target_pos.is_last():
+        # The Pure Pursuit is known for its trouble to arrive at a given point, it is mainly used for paths
+        # Adding this condition makes the controller use the default drive command, fixing this issue
+        elif target_pos.is_last() or not self.USE_PURE_PURSUIT or drive_back:
             return self.get_default_drive_command(
                 target_pos.get_current_point(),
                 rover_pose,
@@ -211,7 +212,6 @@ class DriveController:
             target_pos,
             rover_pose,
             completion_thresh,
-            drive_back,
         )
 
     def get_default_drive_command(
@@ -284,7 +284,6 @@ class DriveController:
         waypoints: Trajectory,
         rover_pose: SE3,
         completion_thresh: float,
-        drive_back: bool = False,
     ) -> tuple[Twist, bool]:
         """
         Returns a drive command to get the rover to the target position, using pure pursuit logic
@@ -309,10 +308,6 @@ class DriveController:
         rover_dir[2] = 0
         rover_pos = rover_pose.translation()
         rover_pos[2] = 0
-
-        # Reverse the rover_dir to drive backwards
-        if drive_back:
-            rover_dir *= -1
 
         # Check and set if there is a new farther found point in the path
         self.set_farthest_path_point(self, waypoints, rover_pos)
@@ -339,10 +334,6 @@ class DriveController:
         output = self.get_twist_for_arch(
             angular_error,
         )
-
-        # If driving backwards, linear velocity will be reversed
-        if drive_back:
-            output[0].linear.x *= -1
 
         return output
 
