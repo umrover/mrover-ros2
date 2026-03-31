@@ -57,6 +57,7 @@ find_package(ament_cmake_python REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
+find_package(visualization_msgs REQUIRED)
 find_package(rtcm_msgs REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 find_package(action_msgs REQUIRED)
@@ -172,7 +173,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
     ${MROVER_MESSAGE_FILE_PATHS}
     ${MROVER_SERVICE_FILE_PATHS}
     ${MROVER_ACTION_FILE_PATHS}
-    DEPENDENCIES nav_msgs sensor_msgs geometry_msgs action_msgs
+    DEPENDENCIES nav_msgs sensor_msgs geometry_msgs visualization_msgs action_msgs
 )
 
 # Starter project 
@@ -217,7 +218,7 @@ target_link_libraries(gst_utils INTERFACE magic_enum::magic_enum PkgConfig::Gst 
 # Simulator
 
 mrover_add_node(simulator simulator/*.cpp simulator simulator/pch.hpp)
-ament_target_dependencies(simulator rclcpp rclcpp_components nav_msgs sensor_msgs geometry_msgs tf2 tf2_ros urdf yaml_cpp_vendor)
+ament_target_dependencies(simulator rclcpp rclcpp_components nav_msgs visualization_msgs sensor_msgs geometry_msgs tf2 tf2_ros urdf yaml_cpp_vendor)
 target_link_libraries(simulator
     assimp::assimp glfw3webgpu webgpu glfw webgpu_hpp imgui
     ${BULLET_LIBRARIES}

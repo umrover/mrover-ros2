@@ -1,14 +1,16 @@
 #include "arm_controller.hpp"
 #include <rclcpp/logging.hpp>
 
-//test
 
 namespace mrover {
-    const rclcpp::Duration ArmController::TIMEOUT = rclcpp::Duration(0, 0.3 * 1e9); // 0.3 seconds
+    rclcpp::Duration const ArmController::TIMEOUT = rclcpp::Duration(0, 0.3 * 1e9); // 0.3 seconds
 
     ArmController::ArmController() : Node{"arm_controller"}, mLastUpdate{get_clock()->now() - TIMEOUT} {
         mPosPub = create_publisher<msg::Position>("arm_pos_cmd", 10);
         mVelPub = create_publisher<msg::Velocity>("arm_vel_cmd", 10);
+        mEEPathPub = create_publisher<nav_msgs::msg::Path>("ee_path", 10);
+        mEEPointPub = create_publisher<visualization_msgs::msg::Marker>("ee_point", 10);
+        mCtPointPub = create_publisher<visualization_msgs::msg::Marker>("carrot_point", 10);
 
         mIkSub = create_subscription<msg::IK>("ik_pos_cmd", 1, [this](msg::IK::ConstSharedPtr const& msg) {
             posCallback(msg);
@@ -18,7 +20,7 @@ namespace mrover {
             velCallback(msg);
         });
 
-        mJointSub = create_subscription<msg::ControllerState>("arm_controller_state", 1, [this](msg::ControllerState::ConstSharedPtr const& msg) {
+        mJointSub = create_subscription<mrover::msg::ControllerState>("arm_controller_state", 1, [this](mrover::msg::ControllerState::ConstSharedPtr const& msg) {
             fkCallback(msg);
         });
 
@@ -60,11 +62,11 @@ namespace mrover {
         msg::Position positions;
         positions.names = {"joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_roll"};
         positions.positions = {
-            static_cast<float>(y),
-            static_cast<float>(q1),
-            static_cast<float>(q2),
-            static_cast<float>(q3),
-            static_cast<float>(target.roll),
+                static_cast<float>(y),
+                static_cast<float>(q1),
+                static_cast<float>(q2),
+                static_cast<float>(q3),
+                static_cast<float>(target.roll),
         };
 
         for (size_t i = 0; i < positions.names.size(); ++i) {
@@ -80,7 +82,7 @@ namespace mrover {
                 return std::nullopt;
             }
         }
-        
+
         return positions;
     }
 
@@ -123,11 +125,11 @@ namespace mrover {
         msg::Velocity velocities;
         velocities.names = {"joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_roll"};
         velocities.velocities = {
-            static_cast<float>(vel.linear.y),
-            static_cast<float>(joint_b_vel),
-            static_cast<float>(joint_c_vel),
-            static_cast<float>(joint_de_pitch_vel),
-            static_cast<float>(vel.angular.x),
+                static_cast<float>(vel.linear.y),
+                static_cast<float>(joint_b_vel),
+                static_cast<float>(joint_c_vel),
+                static_cast<float>(joint_de_pitch_vel),
+                static_cast<float>(vel.angular.x),
         };
 
         double scaleFactor = 1;
@@ -149,7 +151,7 @@ namespace mrover {
         // scale down all velocities so that we don't exceed motor velocity limits
         if (scaleFactor > 1)
             RCLCPP_INFO_STREAM_THROTTLE(get_logger(), *get_clock(), 500, "Commanded velocity too high. Scaling down by factor of " << scaleFactor);
-        for (auto& v : velocities.velocities)
+        for (auto& v: velocities.velocities)
             v = static_cast<float>(v / scaleFactor);
 
         return velocities;
@@ -166,17 +168,13 @@ namespace mrover {
             RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 100, "Received velocity command in position mode!");
     }
 
-    void ArmController::fkCallback(msg::ControllerState::ConstSharedPtr const& joint_state) {
+    void ArmController::fkCallback(mrover::msg::ControllerState::ConstSharedPtr const& joint_state) {
         // update joint positions stored in ArmController class
         for (size_t i = 0; i < joint_state->names.size(); ++i) {
             auto it = joints.find(joint_state->names[i]);
             if (it == joints.end()) {
                 RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, "Unknown joint \"" << joint_state->names[i] << "\"");
                 continue;
-            }
-            if (std::isnan(joint_state->positions[i])) {
-                RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, "Joint \"" << joint_state->names[i] << "\" has an invalid posiion.");
-                return;
             }
             it->second.pos = joint_state->positions[i];
         }
@@ -203,26 +201,139 @@ namespace mrover {
         mPosTarget = *ik_target;
         SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_target", "arm_base_link", mPosTarget.toSE3(), get_clock()->now());
         if (mArmMode == ArmMode::POSITION_CONTROL || mArmMode == ArmMode::TYPING)
-                mLastUpdate = get_clock()->now();
+            mLastUpdate = get_clock()->now();
         else
-                RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 100, "Received position command in velocity mode!");
+            RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 100, "Received position command in velocity mode!");
+    }
+
+    auto ArmController::velZeroCheck() -> bool {
+         return mVelTarget.linear.x == 0 &&
+                mVelTarget.linear.y == 0 &&
+                mVelTarget.linear.z == 0 &&
+                mVelTarget.angular.x == 0 &&
+                mVelTarget.angular.y == 0;
+    }
+
+    auto ArmController::carrotPosAdjust(ArmController::ArmPos &mPos, geometry_msgs::msg::Twist &mVel, double dt, double k) -> void {
+            mPos.x += mVel.linear.x * dt * k;
+            mPos.y += mVel.linear.y * dt * k;
+            mPos.z += mVel.linear.z * dt * k;
+            mPos.pitch += mVel.angular.y * dt * k;
+            mPos.roll += mVel.angular.x * dt * k;
+    }
+
+    auto ArmController::carrotPosCheck(ArmController::ArmPos &mCarrotPos, ArmController::ArmPos &mCheckCarrotPos, ArmController::ArmPos &mArmPosCheck) -> void {
+        auto error_x = mCarrotPos.x - mArmPosCheck.x;
+        auto error_y = mCarrotPos.y - mArmPosCheck.y;
+        auto error_z = mCarrotPos.z - mArmPosCheck.z;
+        //auto error_pitch = mCarrotPos.pitch - mArmPosCheck.pitch;
+        //auto error_roll = mCarrotPos.roll - mArmPosCheck.roll;
+
+        double const max_dist = 0.01;
+
+        double error_total = std::sqrt(error_x * error_x + error_y * error_y + error_z * error_z);
+
+        if (error_total > max_dist) {
+            double const reduce_factor = max_dist / error_total;
+            mCarrotPos.x = mArmPosCheck.x + error_x * reduce_factor;
+            mCarrotPos.y = mArmPosCheck.y + error_y * reduce_factor;
+            mCarrotPos.z = mArmPosCheck.z + error_z * reduce_factor;
+        }
+
+        double error_check_x = mCheckCarrotPos.x - mCarrotPos.x;
+        double error_check_y = mCheckCarrotPos.y - mCarrotPos.y;
+        double error_check_z = mCheckCarrotPos.z - mCarrotPos.z;
+        double error_check = std::sqrt(error_check_x * error_check_x + error_check_y * error_check_y + error_check_z * error_check_z);
+
+        if (error_check > 0.04) {
+            RCLCPP_WARN_THROTTLE(
+                        get_logger(),
+                        *get_clock(),
+                        1000,
+                        "Arm IK failing! Desired movement will not be achieved. Return to normal bounds");
+        }
+    }
+
+    auto ArmController::configure_posestamped(geometry_msgs::msg::PoseStamped &p_stamped) -> void {
+        auto const now = get_clock()->now();
+        p_stamped.header.stamp = now;
+        p_stamped.header.frame_id = "arm_base_link";
+        p_stamped.pose.position.x = mArmPos.x;
+        p_stamped.pose.position.y = mArmPos.y;
+        p_stamped.pose.position.z = mArmPos.z;
+    }
+
+    auto ArmController::configure_vis_marker(visualization_msgs::msg::Marker &point,
+                                             ArmController::ArmPos &mTargetPos,
+                                             float x, float y, float z,
+                                             float a, float r, float g, float b) -> void {
+        auto const now = get_clock()->now();
+        point.header.stamp = now;
+        point.header.frame_id = "arm_base_link";
+        point.pose.position.x = mTargetPos.x;
+        point.pose.position.y = mTargetPos.y;
+        point.pose.position.z = mTargetPos.z;
+        point.scale.x = x;
+        point.scale.y = y;
+        point.scale.z = z;
+        point.color.a = a;
+        point.color.r = r;
+        point.color.g = g;
+        point.color.b = b;
+    }
+
+    auto ArmController::visualize_carrot_ee() -> void {
+        geometry_msgs::msg::PoseStamped p_stamped;
+        visualization_msgs::msg::Marker ee_point;
+        visualization_msgs::msg::Marker ct_point;
+
+        auto const now = get_clock()->now();
+
+        configure_posestamped(p_stamped);
+
+        ct_point.ns = "ct_pt";
+        ct_point.id = 0;
+        ct_point.type = visualization_msgs::msg::Marker::SPHERE;
+        ct_point.action = visualization_msgs::msg::Marker::ADD;
+
+        ee_point.ns = "ee_pt";
+        ee_point.id = 0;
+        ee_point.type = visualization_msgs::msg::Marker::SPHERE;
+        ee_point.action = visualization_msgs::msg::Marker::ADD;
+
+        configure_vis_marker(ct_point, mCarrotPos, 0.05, 0.05, 0.05, 1.0, 0.0, 0.0, 1.0);
+        configure_vis_marker(ee_point, mArmPos, 0.05, 0.05, 0.05, 1.0, 1.0, 0.0, 0.0);
+
+        mCtPointPub->publish(ct_point);
+        mEEPointPub->publish(ee_point);
+
+        mPathPoses.push_back(p_stamped);
+
+        if (mPathPoses.size() >= 500) {
+            mPathPoses.pop_front();
+        }
+
+        nav_msgs::msg::Path path_msg;
+        path_msg.header.stamp = now;
+        path_msg.header.frame_id = "arm_base_link";
+        path_msg.poses.assign(mPathPoses.begin(), mPathPoses.end());
+
+        mEEPathPub->publish(path_msg);
     }
 
     auto ArmController::timerCallback() -> void {
         msg::Position mCurrPos;
         mCurrPos.names = {"joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_roll"};
         mCurrPos.positions = {
-            static_cast<float>(joints["joint_a"].pos),
-            static_cast<float>(joints["joint_b"].pos),
-            static_cast<float>(joints["joint_c"].pos),
-            static_cast<float>(joints["joint_de_pitch"].pos),
-            static_cast<float>(joints["joint_de_roll"].pos),
+                static_cast<float>(joints["joint_a"].pos),
+                static_cast<float>(joints["joint_b"].pos),
+                static_cast<float>(joints["joint_c"].pos),
+                static_cast<float>(joints["joint_de_pitch"].pos),
+                static_cast<float>(joints["joint_de_roll"].pos),
         };
 
         if (get_clock()->now() - mLastUpdate > TIMEOUT) {
             RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 100, "IK Timed Out");
-            if(!mPosFallback) mPosFallback = mCurrPos;
-            mPosPub->publish(mPosFallback.value());
             return;
         }
 
@@ -231,37 +342,159 @@ namespace mrover {
             SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_target", "arm_base_link", mPosTarget.toSE3(), get_clock()->now());
             if (positions) {
                 mPosPub->publish(positions.value());
-                mPosFallback = std::nullopt;
             } else {
                 RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1000, "Position IK failed!");
-                if(!mPosFallback) mPosFallback = mCurrPos;
-                mPosPub->publish(mPosFallback.value());
             }
         } else if (mArmMode == ArmMode::VELOCITY_CONTROL) {
-            // TODO: Determine joint velocities that cancels out arm sag
-            auto velocities = ikVelCalc(mVelTarget);
+
+            auto now = get_clock()->now();
+
+            if (velZeroCheck()) {
+                mCarrotPos = mArmPos;
+                carrot_initialized = false;
+                mPIDx.reset();
+                mPIDy.reset();
+                mPIDz.reset();
+                mPIDpitch.reset();
+                mPIDroll.reset();
+                return;
+            }           
+            if (!carrot_initialized) {
+                mCarrotPos = mArmPos;
+                //mCheckCarrotPos = mArmPos;
+                carrot_initialized = true;
+                mPrevTime = now;
+                for (int i = 0; i < 5; i++) {
+                        mArmTotalError[i] = 0;
+                        mPrevArmError[i] = 0;
+                }
+            }
+
+
+            double dt = (now - mPrevTime).seconds();
+            mPrevTime = now;
+
+            dt = 0.015;
+            //double dt = 0.033;
+
+            double const k = 1.3; //1.2 //1,75 //1.5
+
+            mCarrotPos.x += mVelTarget.linear.x * dt * k;
+            mCarrotPos.y += mVelTarget.linear.y * dt * k;
+            mCarrotPos.z += mVelTarget.linear.z * dt * k;
+            mCarrotPos.pitch += mVelTarget.angular.y * dt * k;
+            mCarrotPos.roll += mVelTarget.angular.x * dt * k;
+
+        /*(SE3Conversions::pushToTfTree(
+                    mTfBroadcaster,
+                    "checking_target",
+                    "arm_base_link",
+                    mCheckCarrotPos.toSE3(),
+                    now);*/
+
+            auto error_x = mCarrotPos.x - mArmPos.x;
+            auto error_y = mCarrotPos.y - mArmPos.y;
+            auto error_z = mCarrotPos.z - mArmPos.z;
+            auto error_pitch = mCarrotPos.pitch - mArmPos.pitch;
+            auto error_roll = mCarrotPos.roll - mArmPos.roll;
+
+            double const max_dist = 0.3; //0.3 /1
+
+            double error_total = std::sqrt(error_x * error_x + error_y * error_y + error_z * error_z);
+
+            if (error_total > max_dist) {
+                double const reduce_factor = max_dist / error_total;
+                mCarrotPos.x = mArmPos.x + error_x * reduce_factor;
+                mCarrotPos.y = mArmPos.y + error_y * reduce_factor;
+                mCarrotPos.z = mArmPos.z + error_z * reduce_factor;
+                mCarrotPos.pitch = mArmPos.pitch + error_pitch * reduce_factor;
+                mCarrotPos.roll = mArmPos.roll + error_roll * reduce_factor;
+
+            }
+
+            /*double error_check_x = mCheckCarrotPos.x - mCarrotPos.x;
+            double error_check_y = mCheckCarrotPos.y - mCarrotPos.y;
+            double error_check_z = mCheckCarrotPos.z - mCarrotPos.z;
+            double error_check = std::sqrt(error_check_x * error_check_x + error_check_y * error_check_y + error_check_z * error_check_z);
+
+            if (error_check > 0.04) {
+                RCLCPP_WARN_THROTTLE(
+                            get_logger(),
+                            *get_clock(),
+                            1000,
+                            "Arm IK failing! Desired movement will not be achieved. Return to normal bounds");
+            }*/
+
+            SE3Conversions::pushToTfTree(
+                    mTfBroadcaster,
+                    "carrot_target",
+                    "arm_base_link",
+                    mCarrotPos.toSE3(),
+                    now);
+
+
+            auto adjusted_v = mVelTarget;
+
+            error_x = mCarrotPos.x - mArmPos.x;
+            error_y = mCarrotPos.y - mArmPos.y;
+            error_z = mCarrotPos.z - mArmPos.z;
+            error_pitch = mCarrotPos.pitch - mArmPos.pitch;
+            error_roll = mCarrotPos.roll - mArmPos.roll;
+
+            adjusted_v.linear.x += mPIDx.update(error_x, dt);
+            adjusted_v.linear.y += mPIDy.update(error_y, dt);
+            adjusted_v.linear.z += mPIDz.update(error_z, dt);
+            adjusted_v.angular.y += mPIDpitch.update(error_pitch, dt);
+            adjusted_v.angular.x += mPIDroll.update(error_roll, dt);
+            //adjusted_v.angular.x = mVelTarget.angular.x;
+            //adjusted_v.angular.y = mVelTarget.angular.y;
+
+            auto velocities = ikVelCalc(adjusted_v);
+            /*auto velocities_weird_idk = ikVelCalc(mVelTarget);
+            velocities->velocities[2] = velocities_weird_idk->velocities[2];*/
+
             if (velocities &&
                 !(
-                    velocities->velocities[0] == 0 &&
-                    velocities->velocities[1] == 0 &&
-                    velocities->velocities[2] == 0 &&
-                    velocities->velocities[3] == 0 &&
-                    velocities->velocities[4] == 0
-                )
-            ) {
-                mVelPub->publish(velocities.value());
-                mPosFallback = std::nullopt;
+                        velocities->velocities[0] == 0 &&
+                        velocities->velocities[1] == 0 &&
+                        velocities->velocities[2] == 0 &&
+                        velocities->velocities[3] == 0 &&
+                        velocities->velocities[4] == 0)) {
+
+                        /*if (velocities->velocities[1] < 0.030 && velocities->velocities[1] > -0.030) {
+                            velocities->velocities[1] = 0;
+                        }
+                        if (velocities->velocities[1] < 0) { velocities->velocities[1] = -0.05;}
+                        else velocities->velocities[1] = 0.05;*/
+
+                        mVelPub->publish(velocities.value());
+        
             } else {
-                if(!velocities) RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1000, "Velocity IK failed!");
-                if(!mPosFallback) mPosFallback = mCurrPos;
-                mPosPub->publish(mPosFallback.value());
+                if (!velocities) {
+                    RCLCPP_WARN_THROTTLE(
+                            get_logger(),
+                            *get_clock(),
+                            1000,
+                            "Velocity IK failed!");
+                    mCarrotPos = mArmPos;
+                    mCheckCarrotPos = mArmPos;
+                    carrot_initialized = false;
+                    mPIDx.reset();
+                    mPIDy.reset();
+                    mPIDz.reset();
+                    mPIDroll.reset();
+                    mPIDpitch.reset();
+                }
             }
+
+            visualize_carrot_ee();
+
         } else { // typing mode
             msg::Position positions;
             positions.names = {"joint_a", "gripper"};
             positions.positions = {
-                static_cast<float>(mPosTarget.y + mTypingOrigin.y),
-                static_cast<float>(mPosTarget.z + mTypingOrigin.gripper),
+                    static_cast<float>(mPosTarget.y + mTypingOrigin.y),
+                    static_cast<float>(mPosTarget.z + mTypingOrigin.gripper),
             };
 
             // bounds checking and such
@@ -279,7 +512,6 @@ namespace mrover {
                     return;
                 }
             }
-            mPosFallback = std::nullopt;
             mPosPub->publish(positions);
         }
     }
@@ -291,6 +523,8 @@ namespace mrover {
         } else if (req->mode == srv::IkMode::Request::VELOCITY_CONTROL) {
             mArmMode = ArmMode::VELOCITY_CONTROL;
             RCLCPP_INFO(get_logger(), "IK Switching to Velocity Control Mode");
+            not_initialized = true;
+            carrot_initialized = false;
         } else { // typing mode
             mArmMode = ArmMode::TYPING;
             RCLCPP_INFO(get_logger(), "IK Switching to Typing (position) Mode");

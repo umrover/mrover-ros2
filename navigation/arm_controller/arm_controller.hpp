@@ -1,5 +1,9 @@
 #pragma once
 #include "pch.hpp"
+#include <nav_msgs/msg/path.hpp>
+#include <geometry_msgs/msg/pose_stamped.hpp>
+#include <visualization_msgs/msg/marker.hpp>
+#include <deque>
 
 namespace mrover {
 
@@ -24,6 +28,16 @@ namespace mrover {
             }
         };
 
+        //double mCarrotTime = 0.033;
+        //double mCarrotk = 1;
+        rclcpp::Time mPrevTime;
+        bool carrot_initialized = false;
+        ArmPos mCarrotPos;
+        ArmPos mCheckCarrotPos;
+        //bool hold = false;
+        bool not_initialized = true;
+        double mArmTotalError[5];
+        double mPrevArmError[5];
 
         struct JointWrapper {
             struct JointLimits {
@@ -35,8 +49,46 @@ namespace mrover {
             JointLimits limits;
             double pos;
         };
+
+        struct ArmPidController {
+            double Kp;
+            double Ki;
+            double Kd;
+            double prev_error = 0;
+            double error_integral = 0;
+            double lim;
+            bool first = true;
+
+            ArmPidController(double p, double i, double d, double l)
+                : Kp(p), Ki(i), Kd(d), lim(l) { }
+
+            double update(double carrot_error, double dt) {
+                error_integral += carrot_error * dt;
+                error_integral = std::clamp(error_integral, -1 * lim, lim);
+                double derivative = 0;
+                if (!first) {
+                    derivative = (carrot_error - prev_error)/dt;
+                }
+                first = false;
+                prev_error = carrot_error;
+                return (Kp * carrot_error) + (Ki * error_integral) + (Kd * derivative);
+            }
+
+            void reset() {
+                error_integral = 0;
+                prev_error = 0;
+                first = true;
+            }
+
+        };
+
+        ArmPidController mPIDx{80, 0.004, 0.0, 0.05};
+        ArmPidController mPIDy{40, 0.004, 0.0, 0.05};
+        ArmPidController mPIDz{80, 0.004, 0.0, 0.2};
+        ArmPidController mPIDpitch{8, 0.0, 0.0, 0.05};
+        ArmPidController mPIDroll{8, 0.0, 0.0, 0.05};
         
-        // TODO: update velocity limits to make them real
+        // these positional limits are slightly conservative versions of the limits listed in the 2025-26 cdr
         std::unordered_map<std::string, JointWrapper> joints = {
             {"joint_a", {
                 .limits = {.minPos = 0, .maxPos = 0.35, .minVel = -0.05, .maxVel = 0.05},
@@ -51,7 +103,7 @@ namespace mrover {
                 .pos = 0
             }},
             {"joint_de_pitch", {
-                .limits = {.minPos = -1.3, .maxPos = 1.2, .minVel = -0.2, .maxVel = 0.2}, // pretty conservative limits atm
+                .limits = {.minPos = -1.3, .maxPos = 1.2, .minVel = -0.2, .maxVel = 0.2}, 
                 .pos = 0
             }},
             {"joint_de_roll", {
@@ -66,10 +118,16 @@ namespace mrover {
 
         [[maybe_unused]] rclcpp::Subscription<msg::IK>::SharedPtr mIkSub;
         [[maybe_unused]] rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr mVelSub;
-        [[maybe_unused]] rclcpp::Subscription<msg::ControllerState>::SharedPtr mJointSub;
+        [[maybe_unused]] rclcpp::Subscription<mrover::msg::ControllerState>::SharedPtr mJointSub;
+
+        
 
         rclcpp::Publisher<msg::Position>::SharedPtr mPosPub;
         rclcpp::Publisher<msg::Velocity>::SharedPtr mVelPub;
+        rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr mEEPathPub;
+        rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr mEEPointPub;
+        rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr mCtPointPub;
+        std::deque<geometry_msgs::msg::PoseStamped> mPathPoses;
         tf2_ros::TransformBroadcaster mTfBroadcaster{this};
         tf2_ros::Buffer mTfBuffer{get_clock()};
         tf2_ros::TransformListener mTfListener{mTfBuffer};
@@ -79,9 +137,18 @@ namespace mrover {
         auto ikPosCalc(ArmPos target) -> std::optional<msg::Position>;
         auto ikVelCalc(geometry_msgs::msg::Twist) -> std::optional<msg::Velocity>;
         auto timerCallback() -> void;
+        auto velZeroCheck() -> bool;
+        auto carrotPosAdjust(ArmPos &mPos, geometry_msgs::msg::Twist &mVel, double dt, double k) -> void;
+        auto carrotPosCheck(ArmPos &mCarrotPos, ArmPos &mCheckCarrotPos, ArmPos &mArmPosCheck) -> void;
+        auto visualize_carrot_ee() -> void;
+        auto configure_posestamped(geometry_msgs::msg::PoseStamped &p_stamped) -> void;
+        auto configure_vis_marker(visualization_msgs::msg::Marker &point,
+                                             ArmController::ArmPos &mTargetPos,
+                                             float x, float y, float z,
+                                             float a, float r, float g, float b) -> void;
+        
 
         ArmPos mArmPos, mTypingOrigin, mPosTarget;
-        std::optional<msg::Position> mPosFallback;
         geometry_msgs::msg::Twist mVelTarget;
         rclcpp::Time mLastUpdate;
 
@@ -109,7 +176,7 @@ namespace mrover {
 
         void posCallback(msg::IK::ConstSharedPtr const& ik_target);
         void velCallback(geometry_msgs::msg::Twist::ConstSharedPtr const& ik_vel);
-        void fkCallback(msg::ControllerState::ConstSharedPtr const& joint_state);
+        void fkCallback(mrover::msg::ControllerState::ConstSharedPtr const& joint_state);
         auto modeCallback(srv::IkMode::Request::ConstSharedPtr const& req, srv::IkMode::Response::SharedPtr const& resp) -> void;
     };
 
