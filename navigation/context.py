@@ -85,7 +85,7 @@ class Environment:
 
     def get_target_position(self, frame: str) -> np.ndarray | None:
         """
-        :param frame:   Target frame name. Could be for a tag, the hammer, or the water bottle.
+        :param frame:   Target frame name. Could be for a tag, the hammer, rock pick, or the water bottle.
         :return:        Pose of the target in the world frame if it exists and is not too old, otherwise None
         """
         try:
@@ -129,6 +129,8 @@ class Environment:
                 return self.get_target_position("hammer")
             case Waypoint(type=WaypointType(val=WaypointType.WATER_BOTTLE)):
                 return self.get_target_position("bottle")
+            case Waypoint(type=WaypointType(val=WaypointType.ROCK_PICK)):
+                return self.get_target_position("pick")
             case _:
                 return None
     
@@ -284,6 +286,7 @@ class Course:
         return current_waypoint is not None and current_waypoint.type.val in {
             WaypointType.MALLET,
             WaypointType.WATER_BOTTLE,
+            WaypointType.ROCK_PICK,
         }
 
     def image_target_name(self) -> str:
@@ -294,6 +297,8 @@ class Course:
                 return "hammer"
             case Waypoint(type=WaypointType(val=WaypointType.WATER_BOTTLE)):
                 return "bottle"
+            case Waypoint(type=WaypointType(val=WaypointType.ROCK_PICK)):
+                return "pick"
             case Waypoint(type=WaypointType(val=WaypointType.NO_SEARCH)):
                 return ""
             case _:
