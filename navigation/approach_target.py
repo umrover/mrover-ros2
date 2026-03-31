@@ -169,10 +169,24 @@ class ApproachTargetState(State):
             context.node.get_logger().warn("Rover has no pose, waiting...")
             context.rover.send_drive_command(Twist())
             return self
-        
-        if self.SPIN_ROVER:
-            self.target_traj.add_end_point(rover_pose.translation() - rover_pose.rotation()[:, 0])
-            self.target_traj.add_end_point(self.target_position[0:2])
+        if self.SPIN_ROVER is None or self.SPIN_ROVER:
+            if self.SPIN_ROVER is not None:
+                cmd_vel_func, arrived_func = self.spin_rover_drive(context, rover_pose.translation() - rover_pose.rotation()[:, 0])
+                if(arrived_func):
+                    self.SPIN_ROVER = None
+                else:
+                    context.rover.send_drive_command(cmd_vel_func)
+            else:
+                cmd_vel_func, arrived_func = self.spin_rover_drive(context, rover_pose.translation(),self.target_position)
+                if self.self_in_distance_threshold(context, self.object_type):
+                    context.node.get_logger().info("Exited through distance threshold")
+                    return self.next_state(context=context, is_finished=True)
+                if(arrived_func):
+                    context.node.get_logger().info("Exited without distance threshold")
+                    self.next_state(context, True)
+                else:
+                    context.rover.send_drive_command(cmd_vel_func)
+            return self
         # If the target trajectory is empty, develop a new path to it
         if len(self.target_traj.coordinates) == 0:
             context.node.get_logger().info("Generating approach segmented path")
@@ -255,7 +269,6 @@ class ApproachTargetState(State):
                 self.astar_traj.clear()
                 context.node.get_logger().info("Arrived at segment point")
                 self.target_traj.increment_point()
-
                 # If we finished the target trajectory
                 if self.target_traj.done():
                     self.target_traj.clear()
@@ -271,11 +284,10 @@ class ApproachTargetState(State):
                         if not context.shrink_dilation():
                             # Fully dilated and still failed, go to next state
                             context.node.get_logger().info("Exited without distance threshold")
-                            self.self_in_distance_threshold(context, self.object_type)
-                            if not self.SPIN_ROVER:
+                            if self.SPIN_ROVER is not None and not self.SPIN_ROVER:
                                 self.SPIN_ROVER = True
                             else:
-                                self.next_state(context, is_finished=True)
+                                return self.next_state(context, is_finished=True)
                             #return self.next_state(context=context, is_finished=True)
                         return self
 
@@ -397,6 +409,16 @@ class ApproachTargetState(State):
             context.publish_path_marker(
                 points=np.array([self.target_position]), color=[1.0, 1.0, 0.0], ns=str(type(self))
             )
+    def spin_rover_drive(self, context: Context, phase_1: np.ndarray, phase_2: np.ndarray = None):
+        cmd_vel, arrived = context.drive.get_drive_command(
+                phase_2 if phase_2 is not None else phase_1,
+                context.rover.get_pose_in_map(),
+                context.node.get_parameter("single_tag.stop_threshold").value / 10,
+                context.node.get_parameter("waypoint.drive_forward_threshold").value / 5,
+                False if phase_2 is not None else True
+            )
+        return cmd_vel, arrived
+
 
     def self_in_distance_threshold(self, context: Context, object_type: int):
         rover_SE3 = context.rover.get_pose_in_map()

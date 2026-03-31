@@ -482,7 +482,6 @@ class Context:
 
     def enable_auton(self, request: EnableAuton.Request, response: EnableAuton.Response) -> EnableAuton.Response:
         self.node.get_logger().info("Received new course to navigate!")
-        self.node.get_logger().info(str(request.waypoints[0].type))
         if request.enable:
             ref_point = np.array(
                 [

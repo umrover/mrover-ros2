@@ -27,8 +27,15 @@ class Trajectory:
         """
         self.cur_pt = max(0, self.cur_pt - 1)
         return self.cur_pt <= 0
-    def add_end_point(self, position: list) -> int:
-        self.coordinates.append(position)
+
+    def add_end_point(self, position: np.ndarray) -> int:
+        """
+        Adds point to end of trajectory, returns index of end point added
+        """
+        if(len(self.coordinates)) == 0:
+            self.coordinates = np.atleast_2d(position)
+        else:
+            self.coordinates = np.vstack((self.coordinates, position))
         return len(self.coordinates) - 1
 
     def done(self) -> bool:
