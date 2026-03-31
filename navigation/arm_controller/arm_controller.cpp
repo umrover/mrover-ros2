@@ -347,23 +347,18 @@ namespace mrover {
             }
         } else if (mArmMode == ArmMode::VELOCITY_CONTROL) {
 
-            if (mVelTarget.linear.x == 0 &&
-                mVelTarget.linear.y == 0 &&
-                mVelTarget.linear.z == 0 &&
-                mVelTarget.angular.x == 0 &&
-                mVelTarget.angular.y == 0) {
-                    mCarrotPos = mArmPos;
-                    //mCheckCarrotPos = mArmPos;
-                    //carrot_initialized = false;
-                    for (int i = 0; i < 5; i++) {
-                        mArmTotalError[i] = 0;
-                        mPrevArmError[i] = 0;
-                    }
-                    return;
-                }
-            
             auto now = get_clock()->now();
 
+            if (velZeroCheck()) {
+                mCarrotPos = mArmPos;
+                carrot_initialized = false;
+                mPIDx.reset();
+                mPIDy.reset();
+                mPIDz.reset();
+                mPIDpitch.reset();
+                mPIDroll.reset();
+                return;
+            }           
             if (!carrot_initialized) {
                 mCarrotPos = mArmPos;
                 //mCheckCarrotPos = mArmPos;
@@ -382,66 +377,26 @@ namespace mrover {
             dt = 0.015;
             //double dt = 0.033;
 
-            double const k = 1.2; //1.2 //1,75 //1.5
-            double const kang = 3; //3
-            double const Ki = 0.003; //0.003 //0.05 /0.02
-            double const kd = 0.006; //0.006 //0.01 //0.009
+            double const k = 1.3; //1.2 //1,75 //1.5
 
+            mCarrotPos.x += mVelTarget.linear.x * dt * k;
+            mCarrotPos.y += mVelTarget.linear.y * dt * k;
+            mCarrotPos.z += mVelTarget.linear.z * dt * k;
+            mCarrotPos.pitch += mVelTarget.angular.y * dt * k;
+            mCarrotPos.roll += mVelTarget.angular.x * dt * k;
+
+        /*(SE3Conversions::pushToTfTree(
+                    mTfBroadcaster,
+                    "checking_target",
+                    "arm_base_link",
+                    mCheckCarrotPos.toSE3(),
+                    now);*/
 
             auto error_x = mCarrotPos.x - mArmPos.x;
             auto error_y = mCarrotPos.y - mArmPos.y;
             auto error_z = mCarrotPos.z - mArmPos.z;
             auto error_pitch = mCarrotPos.pitch - mArmPos.pitch;
             auto error_roll = mCarrotPos.roll - mArmPos.roll;
-
-            double d_x = (error_x - mPrevArmError[0]) / dt;
-            double d_y = (error_y - mPrevArmError[1]) / dt;
-            double d_z = (error_z - mPrevArmError[2]) / dt;
-            double d_pitch = ((error_pitch - mPrevArmError[3]) / dt);
-            double d_roll = ((error_roll - mPrevArmError[4]) / dt);
-
-            mPrevArmError[0] = error_x;
-            mPrevArmError[1] = error_y;
-            mPrevArmError[2] = error_z;
-            mPrevArmError[3] = error_pitch;
-            mPrevArmError[4] = error_roll;
-
-            mArmTotalError[0] += error_x * dt;
-            mArmTotalError[1] += error_y * dt;
-            mArmTotalError[2] += error_z * dt;
-            mArmTotalError[3] += error_pitch * dt;
-            mArmTotalError[4] += error_roll * dt;
-
-            double lim = 0.25;
-
-            for (int i = 0; i < 5; i++) {
-                mArmTotalError[i] = std::min(std::max(mArmTotalError[i], -1 * lim), lim);
-            }
-
-            mCarrotPos.x += mVelTarget.linear.x * dt * k + (mArmTotalError[0] * Ki) + (d_x * kd);
-            mCarrotPos.y += mVelTarget.linear.y * dt * k + (mArmTotalError[1] * Ki) + (d_y * kd);
-            mCarrotPos.z += mVelTarget.linear.z * dt * k + (mArmTotalError[2] * Ki) + (d_z * kd);
-            mCarrotPos.pitch += mVelTarget.angular.y * dt * kang + (mArmTotalError[3] * Ki) + (d_pitch * kd);
-            mCarrotPos.roll += mVelTarget.angular.x * dt * kang + (mArmTotalError[4] * Ki) + (d_roll * kd);
-
-            mCheckCarrotPos.x += mVelTarget.linear.x * dt * k;
-            mCheckCarrotPos.y += mVelTarget.linear.y * dt * k;
-            mCheckCarrotPos.z += mVelTarget.linear.z * dt * k;
-            mCheckCarrotPos.pitch += mVelTarget.angular.y * dt * k;
-            mCheckCarrotPos.roll += mVelTarget.angular.x * dt * k;
-
-            SE3Conversions::pushToTfTree(
-                    mTfBroadcaster,
-                    "checking_target",
-                    "arm_base_link",
-                    mCheckCarrotPos.toSE3(),
-                    now);
-
-            error_x = mCarrotPos.x - mArmPos.x;
-            error_y = mCarrotPos.y - mArmPos.y;
-            error_z = mCarrotPos.z - mArmPos.z;
-            error_pitch = mCarrotPos.pitch - mArmPos.pitch;
-            error_roll = mCarrotPos.roll - mArmPos.roll;
 
             double const max_dist = 0.3; //0.3 /1
 
@@ -457,7 +412,7 @@ namespace mrover {
 
             }
 
-            double error_check_x = mCheckCarrotPos.x - mCarrotPos.x;
+            /*double error_check_x = mCheckCarrotPos.x - mCarrotPos.x;
             double error_check_y = mCheckCarrotPos.y - mCarrotPos.y;
             double error_check_z = mCheckCarrotPos.z - mCarrotPos.z;
             double error_check = std::sqrt(error_check_x * error_check_x + error_check_y * error_check_y + error_check_z * error_check_z);
@@ -468,7 +423,7 @@ namespace mrover {
                             *get_clock(),
                             1000,
                             "Arm IK failing! Desired movement will not be achieved. Return to normal bounds");
-            }
+            }*/
 
             SE3Conversions::pushToTfTree(
                     mTfBroadcaster,
@@ -486,29 +441,11 @@ namespace mrover {
             error_pitch = mCarrotPos.pitch - mArmPos.pitch;
             error_roll = mCarrotPos.roll - mArmPos.roll;
 
-            mArmTotalError[0] += error_x * dt;
-            mArmTotalError[1] += error_y * dt;
-            mArmTotalError[2] += error_z * dt;
-            mArmTotalError[3] += error_pitch * dt;
-            mArmTotalError[4] += error_roll * dt;
-
-            lim = 0.3;
-
-            for (int i = 0; i < 5; i++) {
-                mArmTotalError[i] = std::min(std::max(mArmTotalError[i], -1 * lim), lim);
-            }
-
-            double const Kp_lin = 100;
-            double const Kp_ang = 8;
-
-            double const Ki_lin = 0.00;
-            double const Ki_ang = 0;
-
-            adjusted_v.linear.x += (Kp_lin * error_x) + (mArmTotalError[0] * Ki_lin);
-            adjusted_v.linear.y += (Kp_lin * error_y) + (mArmTotalError[1] * Ki_lin);
-            adjusted_v.linear.z += (Kp_lin * error_z) + (mArmTotalError[2] * Ki_lin);
-            adjusted_v.angular.y += (Kp_ang * error_pitch) + (mArmTotalError[3] * Ki_ang);
-            adjusted_v.angular.x += (Kp_ang * error_roll) + (mArmTotalError[4] * Ki_ang);
+            adjusted_v.linear.x += mPIDx.update(error_x, dt);
+            adjusted_v.linear.y += mPIDy.update(error_y, dt);
+            adjusted_v.linear.z += mPIDz.update(error_z, dt);
+            adjusted_v.angular.y += mPIDpitch.update(error_pitch, dt);
+            adjusted_v.angular.x += mPIDroll.update(error_roll, dt);
             //adjusted_v.angular.x = mVelTarget.angular.x;
             //adjusted_v.angular.y = mVelTarget.angular.y;
 
@@ -541,6 +478,12 @@ namespace mrover {
                             "Velocity IK failed!");
                     mCarrotPos = mArmPos;
                     mCheckCarrotPos = mArmPos;
+                    carrot_initialized = false;
+                    mPIDx.reset();
+                    mPIDy.reset();
+                    mPIDz.reset();
+                    mPIDroll.reset();
+                    mPIDpitch.reset();
                 }
             }
 

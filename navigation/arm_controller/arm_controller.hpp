@@ -49,6 +49,44 @@ namespace mrover {
             JointLimits limits;
             double pos;
         };
+
+        struct ArmPidController {
+            double Kp;
+            double Ki;
+            double Kd;
+            double prev_error = 0;
+            double error_integral = 0;
+            double lim;
+            bool first = true;
+
+            ArmPidController(double p, double i, double d, double l)
+                : Kp(p), Ki(i), Kd(d), lim(l) { }
+
+            double update(double carrot_error, double dt) {
+                error_integral += carrot_error * dt;
+                error_integral = std::clamp(error_integral, -1 * lim, lim);
+                double derivative = 0;
+                if (!first) {
+                    derivative = (carrot_error - prev_error)/dt;
+                }
+                first = false;
+                prev_error = carrot_error;
+                return (Kp * carrot_error) + (Ki * error_integral) + (Kd * derivative);
+            }
+
+            void reset() {
+                error_integral = 0;
+                prev_error = 0;
+                first = true;
+            }
+
+        };
+
+        ArmPidController mPIDx{80, 0.004, 0.0, 0.05};
+        ArmPidController mPIDy{40, 0.004, 0.0, 0.05};
+        ArmPidController mPIDz{80, 0.004, 0.0, 0.2};
+        ArmPidController mPIDpitch{8, 0.0, 0.0, 0.05};
+        ArmPidController mPIDroll{8, 0.0, 0.0, 0.05};
         
         // these positional limits are slightly conservative versions of the limits listed in the 2025-26 cdr
         std::unordered_map<std::string, JointWrapper> joints = {
