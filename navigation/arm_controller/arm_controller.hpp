@@ -24,26 +24,44 @@ namespace mrover {
             }
         };
 
+
         struct JointWrapper {
             struct JointLimits {
                 double minPos, maxPos, minVel, maxVel;
-                [[nodiscard]] auto posInBounds(double pos) const -> bool { return minPos <= pos && pos <= maxPos; }
-                [[nodiscard]] auto velInBounds(double vel) const -> bool { return minPos <= vel && vel <= maxPos; }
+                [[nodiscard]] auto posInBounds(double pos) const -> bool {return minPos <= pos && pos <= maxPos;}
+                [[nodiscard]] auto velInBounds(double vel) const -> bool {return minPos <= vel && vel <= maxPos;}
             };
-
+            
             JointLimits limits;
             double pos;
         };
-
-        // these positional limits are slightly conservative versions of the limits listed in the 2025-26 cdr
+        
+        // TODO: update velocity limits to make them real
         std::unordered_map<std::string, JointWrapper> joints = {
-                {"joint_a", {.limits = {.minPos = 0, .maxPos = 0.37, .minVel = -0.05, .maxVel = 0.05}, .pos = 0}},
-                {"joint_b", {.limits = {.minPos = -1.1, .maxPos = 0.25, .minVel = -0.05, .maxVel = 0.05}, .pos = 0}},
-                {"joint_c", {.limits = {.minPos = -1.0, .maxPos = 3.0, .minVel = -0.05 * 2 * std::numbers::pi, .maxVel = 0.05 * 2 * std::numbers::pi}, .pos = 0}},
-                {"joint_de_pitch", {.limits = {.minPos = -1.1, .maxPos = 1.1, .minVel = -0.2, .maxVel = 0.2}, .pos = 0}},
-                {"joint_de_roll", {.limits = {.minPos = -3.14, .maxPos = 3.13, .minVel = -1, .maxVel = 1}, .pos = 0}},
-                {"gripper", {.limits = {.minPos = 0, .maxPos = 0.1, .minVel = -1, .maxVel = 1}, .pos = 0}},
-                {"pusher", {.limits = {.minPos = 0, .maxPos = 0.08, .minVel = -0.1, .maxVel = 0.1}, .pos = 0}},
+            {"joint_a", {
+                .limits = {.minPos = 0, .maxPos = 0.35, .minVel = -0.05, .maxVel = 0.05},
+                .pos = 0
+            }},
+            {"joint_b", {
+                .limits = {.minPos = -0.9, .maxPos = 0, .minVel = -0.05, .maxVel = 0.05},
+                .pos = 0
+            }},
+            {"joint_c", {
+                .limits = {.minPos = -0.959931, .maxPos = 2.87979, .minVel = -0.05 * 2 * std::numbers::pi, .maxVel = 0.05 * 2 * std::numbers::pi},
+                .pos = 0
+            }},
+            {"joint_de_pitch", {
+                .limits = {.minPos = -1.3, .maxPos = 1.2, .minVel = -0.2, .maxVel = 0.2}, // pretty conservative limits atm
+                .pos = 0
+            }},
+            {"joint_de_roll", {
+                .limits = {.minPos = -2.36, .maxPos = 1.44, .minVel = -1, .maxVel = 1},
+                .pos = 0
+            }},
+            {"gripper", {
+                .limits = {.minPos = 0, .maxPos = 0.1, .minVel = -1, .maxVel = 1},
+                .pos = 0
+            }},
         };
 
         [[maybe_unused]] rclcpp::Subscription<msg::IK>::SharedPtr mIkSub;

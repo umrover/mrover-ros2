@@ -14,6 +14,7 @@ import tkinter as tk
 from mrover.srv import IkMode
 import time
 
+
 class DebugTyping(Node):
     root: tk.Tk
     ik_mode_client: Client
@@ -21,12 +22,12 @@ class DebugTyping(Node):
     goal_entries: list[tk.Entry]
     typing_future: Future | None
     cancel: bool
-    
+
     def __init__(self, root: tk.Tk):
         super().__init__("debug_typing")
         self.root = root
         self.cancel = False
-        self.current_goal_handle = None
+        self.current_goal_handle: Future | None = None
         self.typing_future = None
 
         self.ik_mode_client = self.create_client(IkMode, "ik_mode")
@@ -55,7 +56,7 @@ class DebugTyping(Node):
 
         send_goals_button = tk.Button(btn_frame, text="Send Goals", command=self.send_goals)
         send_goals_button.pack(side="left", padx=5)
-        
+
         cancel_goals_button = tk.Button(btn_frame, text="Cancel Goals", command=self.cancel_goals)
         cancel_goals_button.pack(side="right", padx=5)
 
@@ -76,46 +77,48 @@ class DebugTyping(Node):
             self.get_logger().info(f"Sending goal {goal}")
 
             self.typing_future = self.typing_client.send_goal_async(goal)
-            
+
             while not self.typing_future.done():
                 rclpy.spin_once(self, timeout_sec=0)
                 self.root.update()
-                if self.cancel: return
-            
+                if self.cancel:
+                    return
+
             self.current_goal_handle = self.typing_future.result()
 
             if not self.current_goal_handle.accepted:
-                self.get_logger().info('Goal rejected')
+                self.get_logger().info("Goal rejected")
                 continue
 
-            self.get_logger().info('Goal accepted')
+            self.get_logger().info("Goal accepted")
 
             result_future = self.current_goal_handle.get_result_async()
             while not result_future.done():
                 rclpy.spin_once(self, timeout_sec=0)
                 self.root.update()
-                if self.cancel: 
+                if self.cancel:
                     return
-            
+
             finish_time = self.get_clock().now()
-            while((self.get_clock().now() - finish_time) < Duration(seconds=1.5)):
+            while (self.get_clock().now() - finish_time) < Duration(seconds=1.5):
                 rclpy.spin_once(self, timeout_sec=0)
                 self.root.update()
 
-            self.get_logger().info('Goal finished')
+            self.get_logger().info("Goal finished")
 
     def cancel_goals(self):
         self.cancel = True
         if self.current_goal_handle is not None:
-            self.get_logger().info('Canceling goal...')
+            self.get_logger().info("Canceling goal...")
             self.current_goal_handle.cancel_goal_async()
+
 
 if __name__ == "__main__":
     rclpy.init(args=sys.argv)
     root = tk.Tk()
     root.title("Debug Typing")
     node = DebugTyping(root)
-    
+
     try:
         root.mainloop()
     except KeyboardInterrupt:
