@@ -122,7 +122,7 @@ namespace mrover {
         auto servoPositionCallback(srv::ServoPosition::Request::SharedPtr const& req, srv::ServoPosition::Response::SharedPtr const& res) const -> void {
             if (req->names.size() != 1 || req->names.at(0) != "funnel_servo") return;
 
-            mFunnelServo->setPosition(req->positions[0], Servo::ServoMode::Limited);
+            mFunnelServo->setPosition(req->positions[0], Servo::ServoMode::CounterClockwise);
             res->at_tgts.resize(1);
 
             auto const start = this->now();

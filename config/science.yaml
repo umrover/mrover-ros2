@@ -1,16 +1,16 @@
 science_hw_bridge:
   ros__parameters:
-    u2d2_device: "/dev/u2d2"
+    u2d2_device: "/dev/ttyUSB0"
     funnel_servo: # TODO(eric) validate
       id: 5
-      position_multiplier: 1.0
-      forward_limit: 110.0
-      reverse_limit: 350.0
+      position_multiplier: 6.7471679688
+      forward_limit: 360.0
+      reverse_limit: 0.0
       position_p: 5000.0
       position_i: 0.0
       position_d: 0.0
       velocity_p: 0.0
       velocity_i: 0.0
       current_limit: 1750.0
-      profile_acceleration: 10.0
-      profile_velocity: 60.0
+      profile_acceleration: 60.0
+      profile_velocity: 500.0
