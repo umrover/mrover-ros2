@@ -221,11 +221,13 @@ namespace mrover {
         if (last_vel_time) {
             dt = (vel_msg->header.stamp.sec + vel_msg->header.stamp.nanosec * 1e-9) - (last_vel_time.value().sec + last_vel_time.value().nanosec * 1e-9);
         }
+
+        last_vel = Vector3d{vel_msg->vector.x, vel_msg->vector.y, vel_msg->vector.z};
+
         predict_vel(Vector3d{vel_msg->vector.x, vel_msg->vector.y, vel_msg->vector.z}, cov_v, dt);
         
         last_vel_time = vel_msg->header.stamp;
 
-       
     }
 
 
@@ -341,58 +343,23 @@ namespace mrover {
             return;
         }
 
-        R2d rover_velocity_sum = R2d::Zero();
-        double rover_heading_old = 0.0;
-        double rover_heading_new = 0.0;
-        double rover_heading_change = 0.0;
-        std::size_t readings = 0;
 
-        rclcpp::Time end = get_clock()->now();
-        rclcpp::Time start = end - WINDOW;
-
-        for (rclcpp::Time t = start; t < end; t += STEP) {
-
-            try {
-                auto rover_in_map_old = SE3Conversions::fromTfTree(tf_buffer, gps_frame, world_frame, t - STEP);
-                auto rover_in_map_new = SE3Conversions::fromTfTree(tf_buffer, gps_frame, world_frame, t);
-                R3d rover_velocity_in_map = (rover_in_map_new.translation() - rover_in_map_old.translation()) / STEP.seconds();
-
-                if (t == start) {
-                    rover_heading_old = std::atan2(rover_velocity_in_map(1), rover_velocity_in_map(0));
-                    rover_heading_new = rover_heading_old;
-                }
-                else {
-                    rover_heading_new = std::atan2(rover_velocity_in_map(1), rover_velocity_in_map(0));
-                }
-
-                rover_velocity_sum += rover_velocity_in_map.head<2>();
-                rover_heading_change += (rover_heading_new - rover_heading_old);
-                rover_heading_old = rover_heading_new;
-                ++readings;
-            } catch (tf2::ConnectivityException const& e) {
-                RCLCPP_WARN_STREAM(get_logger(), e.what());
-                return;
-            } catch (tf2::LookupException const& e) {
-                RCLCPP_WARN_STREAM(get_logger(), e.what());
-                return;
-            } catch (tf2::ExtrapolationException const& e) {
-                RCLCPP_WARN_STREAM(get_logger(), e.what());
-                return;
-            }
+        R3d velocity = last_vel.value_or(R3d::Zero());
+        if (velocity.norm() < minimum_linear_speed) {
+            RCLCPP_WARN(get_logger(), "Rover stationary - insufficient speed: %.3f m/s", velocity.norm());
+            return;
         }
+
+        double drive_forward_heading = atan2(velocity.y(), velocity.x());
+
+        double rover_heading_change = drive_forward_heading - last_heading.value_or(0.0);
 
         if (rover_heading_change > rover_heading_change_threshold) {
             RCLCPP_WARN(get_logger(), "Rover is not moving straight enough: Heading change = {%f} deg", rover_heading_change * (180 / M_PI));
             return;
         }
 
-        R2d mean_velocity = rover_velocity_sum / static_cast<double>(readings);
-        if (mean_velocity.norm() < minimum_linear_speed) {
-            RCLCPP_WARN(get_logger(), "Rover stationary - insufficient speed: %.3f m/s", mean_velocity.norm());
-            return;
-        }
-        
-        double drive_forward_heading = atan2(rover_velocity_sum.y(), rover_velocity_sum.x());
+        last_heading = drive_forward_heading;
 
         RCLCPP_INFO(get_logger(), "Drive forward heading: %f deg", drive_forward_heading * (180 / M_PI));
 
@@ -413,7 +380,6 @@ namespace mrover {
         }
         
     }
-
 
 }
 

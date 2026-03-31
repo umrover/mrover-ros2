@@ -77,6 +77,8 @@ namespace mrover {
         Matrix44d X;
         Matrix66d P;
         Matrix66d A;
+        std::optional<Vector3d> last_vel;
+        std::optional<float> last_heading;
         
         // constants
         const double IMU_DT = 0.016;
