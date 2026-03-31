@@ -16,7 +16,7 @@ namespace mrover {
             velCallback(msg);
         });
 
-        mJointSub = create_subscription<mrover::msg::ControllerState>("arm_controller_state", 1, [this](mrover::msg::ControllerState::ConstSharedPtr const& msg) {
+        mJointSub = create_subscription<msg::ControllerState>("arm_controller_state", 1, [this](msg::ControllerState::ConstSharedPtr const& msg) {
             fkCallback(msg);
         });
 
@@ -164,13 +164,17 @@ namespace mrover {
             RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 100, "Received velocity command in position mode!");
     }
 
-    void ArmController::fkCallback(mrover::msg::ControllerState::ConstSharedPtr const& joint_state) {
+    void ArmController::fkCallback(msg::ControllerState::ConstSharedPtr const& joint_state) {
         // update joint positions stored in ArmController class
         for (size_t i = 0; i < joint_state->names.size(); ++i) {
             auto it = joints.find(joint_state->names[i]);
             if (it == joints.end()) {
                 RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, "Unknown joint \"" << joint_state->names[i] << "\"");
                 continue;
+            }
+            if (std::isnan(joint_state->positions[i])) {
+                RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, "Joint \"" << joint_state->names[i] << "\" has an invalid posiion.");
+                return;
             }
             it->second.pos = joint_state->positions[i];
         }
@@ -190,7 +194,7 @@ namespace mrover {
         z += END_EFFECTOR_LENGTH * std::sin(angle);
         mArmPos = {x, y, z, -angle, joint_state->positions[4], std::max(joint_state->positions[5], 0.0f)};
 
-	SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_fk", "arm_base_link", mArmPos.toSE3(), get_clock()->now());
+        SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_fk", "arm_base_link", mArmPos.toSE3(), get_clock()->now());
     }
 
     void ArmController::posCallback(msg::IK::ConstSharedPtr const& ik_target) {

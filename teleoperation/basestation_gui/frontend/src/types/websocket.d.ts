@@ -105,7 +105,7 @@ export interface SPOzoneMessage {
 
 export interface SPCO2Message {
   type: 'sp_co2';
-  ppm: number;
+  percent: number;
 }
 
 export interface SPPressureMessage {

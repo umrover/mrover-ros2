@@ -66,7 +66,7 @@ namespace mrover {
 
         [[maybe_unused]] rclcpp::Subscription<msg::IK>::SharedPtr mIkSub;
         [[maybe_unused]] rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr mVelSub;
-        [[maybe_unused]] rclcpp::Subscription<mrover::msg::ControllerState>::SharedPtr mJointSub;
+        [[maybe_unused]] rclcpp::Subscription<msg::ControllerState>::SharedPtr mJointSub;
 
         rclcpp::Publisher<msg::Position>::SharedPtr mPosPub;
         rclcpp::Publisher<msg::Velocity>::SharedPtr mVelPub;
@@ -108,7 +108,7 @@ namespace mrover {
 
         void posCallback(msg::IK::ConstSharedPtr const& ik_target);
         void velCallback(geometry_msgs::msg::Twist::ConstSharedPtr const& ik_vel);
-        void fkCallback(mrover::msg::ControllerState::ConstSharedPtr const& joint_state);
+        void fkCallback(msg::ControllerState::ConstSharedPtr const& joint_state);
         auto modeCallback(srv::IkMode::Request::ConstSharedPtr const& req, srv::IkMode::Response::SharedPtr const& resp) -> void;
     };
 

@@ -1,5 +1,5 @@
-import asyncio
 from backend.ws.base_ws import WebSocketHandler
+from backend.managers.ros import get_logger
 from backend.input import DeviceInputs
 from backend.sp_controls import send_sp_controls
 from mrover.msg import Throttle, ControllerState, Humidity, Temperature, Oxygen, UV, Ozone, CO2, Pressure
@@ -9,11 +9,11 @@ class ScienceHandler(WebSocketHandler):
         super().__init__(websocket, 'science')
 
     async def setup(self):
-        self.sp_thr_pub = self.node.create_publisher(Throttle, "/sp_thr_cmd", 10)
+        self.sp_thr_pub = self.node.create_publisher(Throttle, "/sp_thr_cmd", 1)
         self.publishers.append(self.sp_thr_pub)
 
         self.forward_ros_topic("/sp_humidity_data", Humidity, "sp_humidity")
-        self.forward_ros_topic("/sp_temp_data", Temperature, "sp_temp")
+        self.forward_ros_topic("/sp_temperature_data", Temperature, "sp_temp")
         self.forward_ros_topic("/sp_oxygen_data", Oxygen, "sp_oxygen")
         self.forward_ros_topic("/sp_uv_data", UV, "sp_uv")
         self.forward_ros_topic("/sp_ozone_data", Ozone, "sp_ozone")
@@ -28,6 +28,6 @@ class ScienceHandler(WebSocketHandler):
             axes = data.get('axes', [])
             buttons = data.get('buttons', [])
             device_input = DeviceInputs(axes, buttons)
-            await asyncio.to_thread(send_sp_controls, device_input, self.sp_thr_pub)
+            send_sp_controls(device_input, self.sp_thr_pub)
         else:
-            print(f"Unhandled SCIENCE message: {msg_type}")
+            get_logger().warning(f"Unhandled SCIENCE message: {msg_type}")

@@ -1,0 +1,3 @@
+Package: cmake*
+Pin: version 3*
+Pin-Priority: 990
