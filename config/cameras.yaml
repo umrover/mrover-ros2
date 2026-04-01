@@ -43,7 +43,7 @@
         pixel_format: MJPG # from v4l2-ctl -d DEV_NODE --list-formats-ext
         width: 640
         height: 480
-        framerate: 15
+        framerate: 60
         codec: H265
         bitrate: 1000000
       image_capture:
@@ -60,7 +60,7 @@
         pixel_format: MJPG # from v4l2-ctl -d DEV_NODE --list-formats-ext
         width: 640
         height: 480
-        framerate: 15
+        framerate: 60
         codec: H265
         bitrate: 1000000
       image_capture:
@@ -77,7 +77,7 @@
         pixel_format: MJPG # from v4l2-ctl -d DEV_NODE --list-formats-ext
         width: 640
         height: 480
-        framerate: 15
+        framerate: 60
         codec: H265
         bitrate: 1000000
       image_capture:
