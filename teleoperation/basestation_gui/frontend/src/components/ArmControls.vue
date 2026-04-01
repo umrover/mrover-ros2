@@ -67,7 +67,7 @@ import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { armAPI } from '@/utils/api'
 import { useGamepadPolling } from '@/composables/useGamepadPolling'
 import { useWebsocketStore } from '@/stores/websocket'
-import type { IkFeedbackMessage, ControllerStateMessage, ThrottleMessage } from '@/types/websocket'
+import type { IkFeedbackMessage, ControllerStateMessage, ThrottleMessage, VelocityMessage } from '@/types/websocket'
 import GamepadDisplay from './GamepadDisplay.vue'
 import IndicatorDot from './IndicatorDot.vue'
 
@@ -141,6 +141,7 @@ const newRAMode = async (newMode: string) => {
 // Indexes coressponding to joints in this order:
 // joint_a, joint_b, joint_c, joint_de_pitch, joint_de_roll, gripper, cam
 let jointThrIdx = []
+let jointVelIdx = []
 
 let limits_hit_external = ref<number[]>([0, 0, 0, 0, 0, 0])
 
@@ -189,6 +190,59 @@ onMessage<ThrottleMessage>('arm', 'arm_throttle_command', (msg) => {
     if(limits_hit_external.value[jointThrIdx[i]] == 1 && msg.throttles[i] < 0){
       forcing_limit.value = true
     } else if (limits_hit_external.value[jointThrIdx[i]] == 2 && msg.throttles[i] > 0) {
+      forcing_limit.value = true
+    }
+  }
+
+  if(forcing_limit.value){
+  vibrationActuator.value.playEffect('dual-rumble', {
+    startDelay: 0,
+    duration: 100,
+    weakMagnitude: 0.1,
+    strongMagnitude: 0,})
+  }
+})
+
+// TODO me
+onMessage<VelocityMessage>('arm', 'arm_velocity_command', (msg) => {
+  forcing_limit.value = false;
+
+  // Find what index is what joint. Only done first time velocity input is recieved
+  if(jointVelIdx.length == 0){
+    for(let i = 0; i < msg.names.length; ++i){
+      let currName = msg.names[i]
+      switch(currName){
+        case "joint_a":
+          jointVelIdx.push(0);
+          break;
+        case "joint_b":
+          jointVelIdx.push(1);
+          break;
+        case "joint_c":
+          jointVelIdx.push(2);
+          break;
+        case "joint_de_pitch":
+          jointVelIdx.push(3);
+          break;
+        case "joint_de_roll":
+          jointVelIdx.push(4);
+          break;
+        case "gripper":
+          jointVelIdx.push(5);
+          break;
+        case "cam":
+          jointVelIdx.push(6);
+          break;
+        default:
+      }
+    }
+  }
+
+  // Determine if limits hit
+  for(let i = 0; i < jointVelIdx.length; ++i){
+    if(limits_hit_external.value[jointVelIdx[i]] == 1 && msg.velocities[i] < 0){
+      forcing_limit.value = true
+    } else if (limits_hit_external.value[jointVelIdx[i]] == 2 && msg.velocities[i] > 0) {
       forcing_limit.value = true
     }
   }
