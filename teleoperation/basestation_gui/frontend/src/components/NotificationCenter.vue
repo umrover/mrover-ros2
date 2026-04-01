@@ -1,65 +1,57 @@
 <template>
-  <div class="notification-center">
+  <div class="relative flex self-stretch">
     <button
-      class="border border-2 rounded p-1 bg-transparent position-relative d-flex flex-column align-items-center justify-content-center"
-      style="width: 50px; height: 50px; color: inherit; cursor: pointer;"
+      class="notification-btn border border-2 rounded"
+      data-testid="pw-notification-bell"
       @click="togglePanel"
     >
-      <i class="bi bi-bell-fill" style="font-size: 1.25rem;"></i>
+      <i class="bi bi-bell-fill"></i>
       <span
         v-if="unreadCount > 0"
-        class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+        class="notification-badge"
       >
         {{ unreadCount }}
       </span>
     </button>
 
-    <div v-if="showPanel" class="notification-panel">
-      <div class="panel-header d-flex justify-content-between align-items-center p-3">
-        <h5 class="m-0">Notifications</h5>
-        <div class="d-flex gap-2">
+    <div v-if="showPanel" class="notification-panel cmd-panel" data-testid="pw-notification-panel">
+      <div class="flex justify-between items-center p-4 border-b border-2">
+        <h4 class="component-header">Notifications</h4>
+        <div class="flex gap-2">
           <button
             v-if="notifications.length > 0"
-            class="btn btn-sm btn-outline-secondary"
-            @click="markAllAsRead"
-          >
-            Mark All Read
-          </button>
-          <button
-            v-if="notifications.length > 0"
-            class="btn btn-sm btn-outline-danger"
+            class="cmd-btn cmd-btn-sm cmd-btn-outline-primary"
+            data-testid="pw-notification-clear-all"
             @click="clearAll"
           >
             Clear All
           </button>
-          <button class="btn btn-sm btn-close" @click="showPanel = false"></button>
+          <button class="cmd-btn cmd-btn-sm cmd-btn-outline-secondary cmd-btn-icon-sm" @click="showPanel = false">
+            <i class="bi bi-x-lg"></i>
+          </button>
         </div>
       </div>
 
-      <div class="panel-body">
-        <div v-if="notifications.length === 0" class="text-center text-muted p-4">
+      <div class="notification-list overflow-auto">
+        <div v-if="notifications.length === 0" class="text-center text-muted p-6 notification-empty">
           No notifications
         </div>
 
         <div
           v-for="notification in notifications"
           :key="notification.id"
-          class="notification-item"
-          :class="{ unread: !notification.read }"
+          class="p-4 border-b border-2 notification-item"
         >
-          <div class="notification-header d-flex justify-content-between align-items-start">
-            <div class="flex-grow-1">
-              <div class="d-flex align-items-center gap-2">
-                <span class="badge bg-danger">{{ notification.errorType }}</span>
-                <strong>{{ notification.component }}</strong>
-                <span class="text-muted small">
-                  {{ formatTimestamp(notification.timestamp) }}
-                </span>
+          <div class="flex justify-between items-start">
+            <div class="grow">
+              <div class="flex items-center gap-2">
+                <span class="notification-component">{{ notification.component }}</span>
+                <span class="notification-time text-muted">{{ formatTimestamp(notification.timestamp) }}</span>
               </div>
-              <p class="mb-1 mt-2">{{ notification.message }}</p>
+              <p class="mt-2 mb-1">{{ notification.message }}</p>
             </div>
             <button
-              class="btn btn-sm btn-link text-danger p-0"
+              class="cmd-btn cmd-btn-sm cmd-btn-outline-secondary cmd-btn-icon-sm"
               @click="removeNotification(notification.id)"
               title="Remove"
             >
@@ -67,40 +59,25 @@
             </button>
           </div>
 
-          <div class="notification-actions mt-2">
+          <div class="mt-2">
             <button
-              class="btn btn-sm btn-link p-0"
+              class="cmd-btn cmd-btn-sm cmd-btn-outline-control"
               @click="toggleDetails(notification.id)"
             >
-              <i
-                :class="
-                  expandedNotifications.includes(notification.id)
-                    ? 'bi bi-chevron-up'
-                    : 'bi bi-chevron-down'
-                "
-              ></i>
+              <i :class="expandedNotifications.includes(notification.id) ? 'bi bi-chevron-up' : 'bi bi-chevron-down'"></i>
               {{ expandedNotifications.includes(notification.id) ? 'Hide' : 'Show' }} Details
-            </button>
-            <button
-              v-if="!notification.read"
-              class="btn btn-sm btn-link p-0 ms-3"
-              @click="markAsRead(notification.id)"
-            >
-              Mark as Read
             </button>
           </div>
 
-          <div
+          <pre
             v-if="expandedNotifications.includes(notification.id)"
-            class="notification-details mt-2"
-          >
-            <pre class="json-display">{{ JSON.stringify(notification.fullData, null, 2) }}</pre>
-          </div>
+            class="notification-details p-2 mt-2 rounded overflow-auto"
+          >{{ JSON.stringify(notification.fullData, null, 2) }}</pre>
         </div>
       </div>
     </div>
 
-    <div v-if="showPanel" class="notification-overlay" @click="showPanel = false"></div>
+    <div v-if="showPanel" class="fixed top-0 left-0 w-full h-full" style="z-index: 1050;" @click="showPanel = false"></div>
   </div>
 </template>
 
@@ -131,12 +108,6 @@ export default defineComponent({
   },
 
   methods: {
-    markAsRead(id: number) {
-      this.notificationsStore.markAsRead(id)
-    },
-    markAllAsRead() {
-      this.notificationsStore.markAllAsRead()
-    },
     removeNotification(id: number) {
       this.notificationsStore.removeNotification(id)
     },
@@ -146,6 +117,9 @@ export default defineComponent({
 
     togglePanel() {
       this.showPanel = !this.showPanel
+      if (this.showPanel) {
+        this.notificationsStore.markAllAsRead()
+      }
     },
 
     toggleDetails(notificationId: number) {
@@ -162,22 +136,18 @@ export default defineComponent({
       const now = new Date()
       const diff = now.getTime() - date.getTime()
 
-      // Less than 1 minute
       if (diff < 60000) {
         return 'Just now'
       }
-      // Less than 1 hour
       if (diff < 3600000) {
         const minutes = Math.floor(diff / 60000)
         return `${minutes} min${minutes > 1 ? 's' : ''} ago`
       }
-      // Less than 1 day
       if (diff < 86400000) {
         const hours = Math.floor(diff / 3600000)
         return `${hours} hour${hours > 1 ? 's' : ''} ago`
       }
 
-      // Format as date
       return date.toLocaleString()
     }
   }
@@ -185,81 +155,74 @@ export default defineComponent({
 </script>
 
 <style scoped>
-.notification-center {
+.notification-btn {
   position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 48px;
+  height: 100%;
+  padding: 0.25rem 0.5rem;
+  cursor: pointer;
+  background-color: var(--card-bg);
+}
+
+.notification-btn i {
+  font-size: 1.25rem;
+}
+
+.notification-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  line-height: 18px;
+  color: #fff;
+  text-align: center;
+  background-color: var(--cmd-status-error);
+  border-radius: 50rem;
 }
 
 .notification-panel {
   position: absolute;
   top: 100%;
   right: 0;
-  margin-top: 10px;
+  z-index: 1051;
   width: 500px;
-  max-height: 600px;
-  background-color: white;
-  border-radius: 8px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-  z-index: 1001;
-  display: flex;
-  flex-direction: column;
+  margin-top: 0.5rem;
+  box-shadow: var(--cmd-shadow-md);
 }
 
-.notification-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 1000;
-}
-
-.panel-header {
-  border-bottom: 1px solid #dee2e6;
-  background-color: #f8f9fa;
-  border-radius: 8px 8px 0 0;
-}
-
-.panel-body {
-  overflow-y: auto;
+.notification-list {
   max-height: 520px;
 }
 
-.notification-item {
-  padding: 16px;
-  border-bottom: 1px solid #dee2e6;
-  transition: background-color 0.2s;
-}
-
-.notification-item:hover {
-  background-color: #f8f9fa;
-}
-
-.notification-item.unread {
-  background-color: #e7f3ff;
-  border-left: 4px solid #0d6efd;
-}
-
-.notification-item.unread:hover {
-  background-color: #d4e9ff;
+.notification-empty {
+  font-size: 0.875rem;
 }
 
 .notification-item:last-child {
-  border-bottom: none;
+  border-bottom: none !important;
 }
 
-.json-display {
-  background-color: #f8f9fa;
-  border: 1px solid #dee2e6;
-  border-radius: 4px;
-  padding: 12px;
-  font-size: 12px;
-  overflow-x: auto;
+.notification-component {
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.notification-time {
+  font-size: 0.6875rem;
+}
+
+.notification-details {
   max-height: 300px;
-  margin: 0;
-}
-
-.badge.rounded-pill {
-  font-size: 10px;
-  padding: 4px 6px;
+  font-size: 0.75rem;
+  background-color: var(--view-bg);
+  border: 2px solid var(--cmd-panel-border);
 }
 </style>
