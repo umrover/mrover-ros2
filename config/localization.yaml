@@ -27,7 +27,10 @@ heading_filter:
     imu_watchdog_timeout: 1.0
     mag_heading_noise: 10.0
     rtk_heading_noise: 0.01
+    drive_forward_heading_noise: 0.1
     process_noise: 0.000001
+    minimum_linear_speed: 0.05
+    rover_heading_change_threshold: 0.4
 
 pose_filter:
   ros__parameters:

@@ -14,6 +14,7 @@ namespace mrover {
         // callbacks
         void sync_rtk_heading_callback(const mrover::msg::Heading::ConstSharedPtr &heading, const mrover::msg::FixStatus::ConstSharedPtr &heading_status);
         void sync_imu_and_mag_callback(const sensor_msgs::msg::Imu::ConstSharedPtr &imu, const mrover::msg::Heading::ConstSharedPtr &mag_heading);
+        void drive_forward_callback();
 
         // subscribers and publishers
         rclcpp::Subscription<geometry_msgs::msg::Vector3Stamped>::SharedPtr linearized_position_sub;
@@ -21,6 +22,7 @@ namespace mrover {
         message_filters::Subscriber<mrover::msg::Heading> mag_heading_sub;
         message_filters::Subscriber<mrover::msg::Heading> rtk_heading_sub;
         message_filters::Subscriber<mrover::msg::FixStatus> rtk_heading_status_sub;
+        rclcpp::Subscription<geometry_msgs::msg::Twist>::ConstSharedPtr cmd_vel_sub;
 
         // transform broadcaster
         tf2_ros::Buffer tf_buffer{get_clock()};
@@ -35,6 +37,7 @@ namespace mrover {
 
         // imu data watchdog
         rclcpp::TimerBase::SharedPtr imu_and_mag_watchdog;
+        rclcpp::TimerBase::SharedPtr drive_forward_timer;
 
         // 1D Kalman Filter state
         double X;
@@ -43,6 +46,8 @@ namespace mrover {
         // data store
         std::optional<sensor_msgs::msg::Imu> last_imu;
         std::optional<geometry_msgs::msg::Vector3Stamped> last_position;
+        std::vector<geometry_msgs::msg::Twist> twists;
+        std::deque<geometry_msgs::msg::Vector3Stamped> position_window;        
     
     public:
 

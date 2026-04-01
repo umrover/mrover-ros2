@@ -9,12 +9,27 @@ namespace mrover {
         declare_parameter("imu_watchdog_timeout", rclcpp::ParameterType::PARAMETER_DOUBLE);
         declare_parameter("mag_heading_noise", rclcpp::ParameterType::PARAMETER_DOUBLE);
         declare_parameter("rtk_heading_noise", rclcpp::ParameterType::PARAMETER_DOUBLE);
+        declare_parameter("drive_forward_heading_noise", rclcpp::ParameterType::PARAMETER_DOUBLE);
         declare_parameter("process_noise", rclcpp::ParameterType::PARAMETER_DOUBLE);
+        declare_parameter("minimum_linear_speed", rclcpp::ParameterType::PARAMETER_DOUBLE);
+        declare_parameter("rover_heading_change_threshold", rclcpp::ParameterType::PARAMETER_DOUBLE);
 
         // subscribers
         linearized_position_sub = this->create_subscription<geometry_msgs::msg::Vector3Stamped>("/linearized_position", 1, [&](const geometry_msgs::msg::Vector3Stamped::ConstSharedPtr &position) {
             last_position = *position;
+            position_window.push_back(*position);
+            if (position_window.size() > 50) {
+                position_window.pop();
+            }
         });
+
+        cmd_vel_sub = this->create_subscription<geometry_msgs::msg::Twist>("/cmd_vel", 1, [&](const geometry_msgs::msg::Twist::ConstSharedPtr &twist_msg) {
+            twists.push_back(*twist_msg);
+            if (twists.size() > 50) {
+                twists.erase(twists.begin(), twists.begin() + (twists.size() - 50));
+            }
+        });
+
         rtk_heading_sub.subscribe(this, "/heading/fix");
         rtk_heading_status_sub.subscribe(this, "/heading_fix_status");
         imu_sub.subscribe(this, "/zed_imu/data_raw");
@@ -25,6 +40,13 @@ namespace mrover {
         imu_and_mag_watchdog = this->create_wall_timer(IMU_AND_MAG_WATCHDOG_TIMEOUT.to_chrono<std::chrono::milliseconds>(), [&]() {
             RCLCPP_WARN(get_logger(), "ZED IMU data watchdog expired");
             last_imu.reset();
+        });
+
+        //drive forward timer
+        constexpr double STEP = 0.5;
+        constexpr double WINDOW = STEP * 2.5;
+        drive_forward_timer = this->create_wall_timer(std::chrono::milliseconds(static_cast<int64_t>(WINDOW * 1000.0)), [this]() -> void {
+            drive_forward_callback();
         });
 
         // synchronizers
