@@ -53,12 +53,25 @@
         framerate: 5
     ee2_cam:
       address: 10.1.0.2
-<<<<<<< HEAD
-      port: 8084
-=======
       port: 8085
->>>>>>> 89401dcde0c9d45333e006e1bda57eaaf142e242
       dev_node: "/dev/ee2_cam"
+      dev_path: ""
+      stream:
+        pixel_format: MJPG # from v4l2-ctl -d DEV_NODE --list-formats-ext
+        width: 640
+        height: 480
+        framerate: 15
+        codec: H265
+        bitrate: 1000000
+      image_capture:
+        pixel_format: YUYV
+        width: 1280
+        height: 720
+        framerate: 5
+    ee3_cam:
+      address: 10.1.0.2
+      port: 8086
+      dev_node: "/dev/ee3_cam"
       dev_path: ""
       stream:
         pixel_format: MJPG # from v4l2-ctl -d DEV_NODE --list-formats-ext
@@ -74,7 +87,7 @@
         framerate: 5
     zed_mini:
       address: 10.1.0.2
-      port: 8086
+      port: 8087
       dev_node: "/dev/zed_mini"
       dev_path: ""
       crop_right: 672
@@ -92,7 +105,7 @@
         framerate: 15
     zed:
       address: 10.1.0.2
-      port: 8087
+      port: 8088
       image_topic: "/zed/left/image"
       dev_node: ""
       dev_path: ""
@@ -125,6 +138,10 @@ ee2_streamer:
   ros__parameters:
     camera: "ee2_cam"
 
+ee3_streamer:
+  ros__parameters:
+    camera: "ee3_cam"
+
 zed_mini_streamer:
   ros__parameters:
     camera: "zed_mini"
@@ -141,6 +158,7 @@ camera_client:
       - "joint_a_cam"
       - "ee1_cam"
       - "ee2_cam"
+      - "ee3_cam"
       - "zed_mini"
       - "zed"
     rtp_jitter_ms: 50

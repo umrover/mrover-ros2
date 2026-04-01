@@ -10,37 +10,6 @@ from launch_ros.descriptions import ComposableNode
 
 
 def generate_launch_description():
-
-    launch_include_can = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            Path(get_package_share_directory("mrover"), "launch/jetson_can.launch.py").__str__()
-        )
-    )
-
-    diff_drive_controller_node = Node(
-        package="mrover",
-        executable="differential_drive_controller",
-        name="differential_drive_controller",
-        parameters=[Path(get_package_share_directory("mrover"), "config", "esw.yaml")],
-    )
-
-    superstructure_node = Node(
-        package="mrover",
-        executable="superstructure.py",
-        name="superstructure",
-        parameters=[Path(get_package_share_directory("mrover"), "config", "superstructure.yaml")],
-    )
-
-    drive_hw_bridge_node = Node(
-        package="mrover",
-        executable="drive_hw_bridge",
-        name="drive_hw_bridge",
-        parameters=[
-            Path(get_package_share_directory("mrover"), "config", "esw.yaml"),
-            Path(get_package_share_directory("mrover"), "config", "drive.yaml"),
-        ],
-    )
-
     mob_streamer_node = Node(
         package="mrover",
         executable="gst_camera_server",
@@ -51,7 +20,6 @@ def generate_launch_description():
         ],
     )
 
-<<<<<<< HEAD
     joint_a_streamer_node = Node(
         package="mrover",
         executable="gst_camera_server",
@@ -82,8 +50,16 @@ def generate_launch_description():
         ],
     )
 
-=======
->>>>>>> 89401dcde0c9d45333e006e1bda57eaaf142e242
+    ee3_streamer_node = Node(
+        package="mrover",
+        executable="gst_camera_server",
+        name="ee3_streamer",
+        output="screen",
+        parameters=[
+            Path(get_package_share_directory("mrover"), "config", "cameras.yaml"),
+        ],
+    )
+
     zed_mini_streamer_node = Node(
         package="mrover",
         executable="gst_camera_server",
@@ -120,17 +96,11 @@ def generate_launch_description():
 
     return LaunchDescription(
         [
-            launch_include_can,
-            diff_drive_controller_node,
-            superstructure_node,
-            drive_hw_bridge_node,
             mob_streamer_node,
-<<<<<<< HEAD
             joint_a_streamer_node,
             ee1_streamer_node,
             ee2_streamer_node,
-=======
->>>>>>> 89401dcde0c9d45333e006e1bda57eaaf142e242
+            ee3_streamer_node,
             zed_mini_streamer_node,
             zed_container,
         ]
