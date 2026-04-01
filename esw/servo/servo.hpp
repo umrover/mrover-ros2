@@ -256,18 +256,6 @@ namespace mrover {
 
             ParameterWrapper::declareParameters(mNode.get(), parameters);
 
-            mNode->get_parameter(std::format("{}.position_multiplier", mServoName), positionMultiplier);
-            mNode->get_parameter(std::format("{}.reverse_limit", mServoName), reverseLimit);
-            mNode->get_parameter(std::format("{}.forward_limit", mServoName), forwardLimit);
-            mNode->get_parameter(std::format("{}.position_p", mServoName), positionPGain);
-            mNode->get_parameter(std::format("{}.position_i", mServoName), positionIGain);
-            mNode->get_parameter(std::format("{}.position_d", mServoName), positionDGain);
-            mNode->get_parameter(std::format("{}.velocity_p", mServoName), velocityPGain);
-            mNode->get_parameter(std::format("{}.velocity_i", mServoName), velocityIGain);
-            mNode->get_parameter(std::format("{}.current_limit", mServoName), currentLimit);
-            mNode->get_parameter(std::format("{}.profile_acceleration", mServoName), profileAcceleration);
-            mNode->get_parameter(std::format("{}.profile_velocity", mServoName), profileVelocity);
-
             check(setProperty(ServoProperty::PositionPGain, static_cast<uint16_t>(positionPGain)) == U2D2::Status::Success, "pos p gain error");
             check(setProperty(ServoProperty::PositionIGain, static_cast<uint16_t>(positionIGain)) == U2D2::Status::Success, "pos i gain error");
             check(setProperty(ServoProperty::PositionDGain, static_cast<uint16_t>(positionDGain)) == U2D2::Status::Success, "pos d gain error");
