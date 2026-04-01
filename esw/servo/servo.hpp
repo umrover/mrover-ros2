@@ -154,7 +154,7 @@ namespace mrover {
             // Calculate final goal position
             mGoalPosition = currentPosition + normalizedDifference;
             // Write goal position
-            return U2D2::getInstance()->write4Byte(ADDR_GOAL_POSITION, mGoalPosition * static_cast<uint32_t>(mPositionMultiplier), mServoID, &hardwareStatus);
+            return U2D2::getInstance()->write4Byte(ADDR_GOAL_POSITION, static_cast<uint32_t>(static_cast<float>(mGoalPosition) * mPositionMultiplier), mServoID, &hardwareStatus);
         }
 
 

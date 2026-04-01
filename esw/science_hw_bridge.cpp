@@ -49,7 +49,7 @@ namespace mrover {
             subOptions.callback_group = mServiceGroup;
 
             mFunnelPositionService = this->create_service<srv::ServoPosition>(
-                    "gimbal_servo",
+                    "funnel_servo",
                     [this](srv::ServoPosition::Request::SharedPtr const& req, srv::ServoPosition::Response::SharedPtr const& res) {
                         servoPositionCallback(req, res);
                     },
@@ -194,7 +194,11 @@ auto main(int const argc, char** argv) -> int {
     rclcpp::init(argc, argv);
     auto const scienceBridge = std::make_shared<mrover::ScienceHWBridge>();
     scienceBridge->init();
-    rclcpp::spin(scienceBridge);
+
+    rclcpp::executors::MultiThreadedExecutor executor;
+    executor.add_node(scienceBridge);
+    executor.spin();
+
     rclcpp::shutdown();
     return EXIT_SUCCESS;
 }
