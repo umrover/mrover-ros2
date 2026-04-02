@@ -222,7 +222,7 @@ namespace mrover {
             dt = (vel_msg->header.stamp.sec + vel_msg->header.stamp.nanosec * 1e-9) - (last_vel_time.value().sec + last_vel_time.value().nanosec * 1e-9);
         }
 
-        last_vel = Vector3d{vel_msg->vector.x, vel_msg->vector.y, vel_msg->vector.z};
+        sliding_window_velocities.push_back({vel_msg->header.stamp, Vector3d{vel_msg->vector.x, vel_msg->vector.y, vel_msg->vector.z}});
 
         predict_vel(Vector3d{vel_msg->vector.x, vel_msg->vector.y, vel_msg->vector.z}, cov_v, dt);
         
@@ -343,14 +343,44 @@ namespace mrover {
             return;
         }
 
+        rclcpp::Time end = get_clock()->now();
+        rclcpp::Time start = end - WINDOW;
 
-        R3d velocity = last_vel.value_or(R3d::Zero());
-        if (velocity.norm() < minimum_linear_speed) {
-            RCLCPP_WARN(get_logger(), "Rover stationary - insufficient speed: %.3f m/s", velocity.norm());
+        R3d sum_velocities = R3d::Zero();
+
+        int to_pop = 0;
+        double readings = 0;
+
+        for (auto & [t, v] : sliding_window_velocities) 
+        {
+            if (t < start) {
+                to_pop++;
+                continue;
+            }
+            else if (t > end) {
+                break;
+            }
+
+            sum_velocities += v;
+            readings += 1;
+        }
+
+        while (to_pop > 0)
+        {
+            if (!sliding_window_velocities.empty() && sliding_window_velocities.front().first < start) {
+                sliding_window_velocities.pop_front();
+            }
+            to_pop--;
+        }
+
+
+        R3d mean_velocity = sum_velocities / readings;
+        if (mean_velocity.norm() < minimum_linear_speed) {
+            RCLCPP_WARN(get_logger(), "Rover stationary - insufficient speed: %.3f m/s", mean_velocity.norm());
             return;
         }
 
-        double drive_forward_heading = atan2(velocity.y(), velocity.x());
+        double drive_forward_heading = atan2(mean_velocity.y(), mean_velocity.x());
 
         double rover_heading_change = drive_forward_heading - last_heading.value_or(0.0);
 

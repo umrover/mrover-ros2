@@ -77,8 +77,8 @@ namespace mrover {
         Matrix44d X;
         Matrix66d P;
         Matrix66d A;
-        std::optional<Vector3d> last_vel;
         std::optional<float> last_heading;
+        std::deque<std::pair<rclcpp::Time, Vector3d>> sliding_window_velocities;
         
         // constants
         const double IMU_DT = 0.016;
