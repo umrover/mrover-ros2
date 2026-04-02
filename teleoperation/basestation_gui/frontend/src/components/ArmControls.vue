@@ -70,6 +70,7 @@ import { useWebsocketStore } from '@/stores/websocket'
 import type { IkFeedbackMessage, ControllerStateMessage, ThrottleMessage, VelocityMessage } from '@/types/websocket'
 import GamepadDisplay from './GamepadDisplay.vue'
 import IndicatorDot from './IndicatorDot.vue'
+import { randFloat } from 'three/src/math/MathUtils.js'
 
 const { onMessage } = useWebsocketStore()
 
@@ -153,6 +154,7 @@ onMessage<ControllerStateMessage>('arm', 'arm_state', (msg) => {
 
 onMessage<ThrottleMessage>('arm', 'arm_throttle_command', (msg) => {
   forcing_limit.value = false;
+  // console.log(axes.value[0])
 
   // Find what index is what joint. Only done first time thrust input is recieved
   if(jointThrIdx.length == 0){
@@ -183,17 +185,24 @@ onMessage<ThrottleMessage>('arm', 'arm_throttle_command', (msg) => {
         default:
       }
     }
-    console.log(jointThrIdx)
+    // console.log(jointThrIdx)
   }
 
   // Determine if limits hit
-  // console.log(limits_hit_external.value)
   for(let i = 0; i < jointThrIdx.length; ++i){
     if(limits_hit_external.value[jointThrIdx[i]] == 1 && msg.throttles[i] < 0){
       forcing_limit.value = true
     } else if (limits_hit_external.value[jointThrIdx[i]] == 2 && msg.throttles[i] > 0) {
       forcing_limit.value = true
     }
+  }
+
+  // TODO duct tape solution for ik_velocity limits
+  // console.log(axes[0] > 0)
+  if(axes.value[0] > 0.05 && limits_hit_external.value[0] == 1){
+    forcing_limit.value = true
+  } else if (axes.value[0] < 0.05 && limits_hit_external.value[0] == 2){
+    forcing_limit.value = true
   }
 
   if(forcing_limit.value){
@@ -208,6 +217,7 @@ onMessage<ThrottleMessage>('arm', 'arm_throttle_command', (msg) => {
 // TODO me
 onMessage<VelocityMessage>('arm', 'arm_velocity_command', (msg) => {
   // forcing_limit.value = false;
+  // console.log(axes)
 
   // Find what index is what joint. Only done first time velocity input is recieved
   if(jointVelIdx.length == 0){
@@ -238,15 +248,20 @@ onMessage<VelocityMessage>('arm', 'arm_velocity_command', (msg) => {
         default:
       }
     }
+    console.log(jointVelIdx)
   }
 
   // Determine if limits hit
+  // console.log("==header==")
   for(let i = 0; i < jointVelIdx.length; ++i){
     if(limits_hit_external.value[jointVelIdx[i]] == 1 && msg.velocities[i] < 0){
       forcing_limit.value = true
+      console.log("Limit hit")
     } else if (limits_hit_external.value[jointVelIdx[i]] == 2 && msg.velocities[i] > 0) {
       forcing_limit.value = true
+      console.log("Limit hit")
     }
+    // console.log(jointVelIdx[i] + " is associated with " + msg.velocities[i])
   }
 
   if(forcing_limit.value){
