@@ -87,7 +87,7 @@ function hasError(v: string | undefined): boolean {
 
 export function stateRowClass(state: string | undefined, error?: string | undefined): string {
   if (!state) return 'row-no-data'
-  if (hasError(error)) return 'bg-cmd-danger-subtle'
-  if (state === 'ARMED') return 'bg-cmd-success-subtle'
+  if (hasError(error)) return 'bg-danger-subtle'
+  if (state === 'ARMED') return 'bg-success-subtle'
   return ''
 }
