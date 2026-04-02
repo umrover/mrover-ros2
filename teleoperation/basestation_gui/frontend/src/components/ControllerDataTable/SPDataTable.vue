@@ -18,8 +18,8 @@
             <td class="font-bold">{{ name }}</td>
             <td>{{ formatState(data.states[i]) }}</td>
             <td>{{ formatError(data.errors[i]) }}</td>
-            <td class="numeric-col">{{ formatNumber(data.positions[i]) }}</td>
-            <td class="numeric-col">{{ formatNumber(data.currents[i]) }}</td>
+            <td class="numeric-col"><span v-html="formatNumber(data.positions[i], 3, 2, true)"></span></td>
+            <td class="numeric-col"><span v-html="formatNumber(data.currents[i], 3, 2, true)"></span></td>
             <td>{{ formatLimit(data.limitsHit[i]) }}</td>
           </tr>
         </tbody>

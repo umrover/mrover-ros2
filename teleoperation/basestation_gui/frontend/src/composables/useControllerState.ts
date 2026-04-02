@@ -65,10 +65,7 @@ export function formatState(v: string | undefined): string {
   return v || '---'
 }
 
-export function formatNumber(v: unknown): string {
-  if (typeof v === 'number' && Number.isFinite(v)) return v.toFixed(2)
-  return '---'
-}
+export { formatNumber } from '@/utils/formatNumber'
 
 export function formatLimit(v: number | undefined): string {
   if (v === undefined) return '---'

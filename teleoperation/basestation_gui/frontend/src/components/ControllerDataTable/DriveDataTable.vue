@@ -17,8 +17,8 @@
             <td class="font-bold">{{ w.label }}</td>
             <td>{{ formatState(stateFor(w.id)) }}</td>
             <td>{{ formatError(errorFor(w.id)) }}</td>
-            <td class="numeric-col">{{ formatNumber(fieldAt(data.velocities, w.id)) }}</td>
-            <td class="numeric-col">{{ formatNumber(fieldAt(data.currents, w.id)) }}</td>
+            <td class="numeric-col"><span v-html="formatNumber(fieldAt(data.velocities, w.id), 3, 2, true)"></span></td>
+            <td class="numeric-col"><span v-html="formatNumber(fieldAt(data.currents, w.id), 3, 2, true)"></span></td>
           </tr>
         </tbody>
       </table>
