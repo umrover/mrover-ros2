@@ -176,6 +176,7 @@ class WaypointState(State):
                 context.rover.get_pose_in_map(),
                 context.node.get_parameter("waypoint.stop_threshold").value,
                 context.node.get_parameter("waypoint.drive_forward_threshold").value,
+                full_traj=self.waypoint_traj,
             )
 
         if arrived:

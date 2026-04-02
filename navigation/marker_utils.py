@@ -8,7 +8,7 @@ from geometry_msgs.msg import Point
 
 def gen_marker(time: Time, point=[0.0, 0.0], color=[1.0, 1.0, 1.0], size=0.2, lifetime=5, id=0, delete=False) -> Marker:
     """
-    Creates and publishes a single spherical marker at the specified (x, y, z) coordinates.
+    Creates a single spherical marker at the specified (x, y, z) coordinates.
 
     :param point: A tuple or list containing the (x, y) coordinates of the marker.
                 The Z coordinate is set to 0.0 by default.
@@ -58,7 +58,7 @@ def ring_marker(
     time: Time, point=[0.0, 0.0], color=[1.0, 1.0, 1.0], radius=0.5, size=0.1, lifetime=5, id=0, delete=False
 ) -> Marker:
     """
-    Creates and publishes a ring around the specified (x, y, z) coordinates with the given radius.
+    Creates a ring around the specified (x, y, z) coordinates with the given radius.
 
     :param point: A tuple or list containing the (x, y) coordinates of the marker.
                 The Z coordinate is set to 0.0 by default.

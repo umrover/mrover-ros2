@@ -32,6 +32,7 @@ class DriveController:
         self._last_angular_error = None
         self._last_target = None
         self._last_lookahead_dist = self.node.get_parameter("pure_pursuit.min_lookahead_distance").value
+        self._last_point = None
         self.USE_PURE_PURSUIT = self.node.get_parameter_or("pure_pursuit.use_pure_pursuit", True).value
         self.lookahead_pub = lookahead_pub
         self.intersection_pub = intersect_pub
@@ -177,14 +178,16 @@ class DriveController:
         turn_in_place_thresh: float,
         drive_back: bool = False,
         path_start: np.ndarray | None = None,
+        full_traj: Trajectory | None = None,
     ) -> tuple[Twist, bool]:
         """
-        :param target_pos: The trajectory of the rover.
+        :param target_pos: The target point of the rover. If using pure pursuit, use target_pos for the astar_traj and use full_traj for the full trajectory.
         :param rover_pose: The current pose of the rover.
         :param completion_thresh: The distance threshold to consider the rover at the target position.
         :param turn_in_place_thresh: The angle threshold to consider the rover facing the target position and ready to drive forward towards it.
         :param drive_back: True if rover should drive backwards, false otherwise.
         :param path_start: If you want the rover to drive on a line segment (and actively try to stay on the line), pass the start of the line segment as this param, otherwise pass None.
+        :param full_traj: Used for pure pursuit to determine the end of the path.
         :return: A tuple of the drive command and a boolean indicating whether the rover is at the target position.
         """
         # If target_pos is a Trajectory we use pure pursuit instead of default_drive_command
@@ -197,9 +200,13 @@ class DriveController:
                 drive_back,
                 path_start,
             )
-        # The Pure Pursuit is known for its trouble to arrive at a given point, it is mainly used for paths
-        # Adding this condition makes the controller use the default drive command, fixing this issue
-        elif target_pos.is_last() or not self.USE_PURE_PURSUIT or drive_back:
+        # Prevent misuse of the Pure Pursuit drive command
+        elif full_traj == None and self.USE_PURE_PURSUIT:
+            self.node.get_logger().warn("You are attempting to use Pure Pursuit without adding the full trajectory.")
+            return Twist(), False
+        # The Pure Pursuit is known for its trouble to arrive at a given point, it is mainly used for paths but not arriving at a point.
+        # Adding this condition makes the controller use the default drive command, fixing this issue, and is the reason why the whole trajectory (full_traj) is needed (so we know the end)
+        elif not self.USE_PURE_PURSUIT or drive_back or (target_pos.is_last() and full_traj.is_last()):
             return self.get_default_drive_command(
                 target_pos.get_current_point(),
                 rover_pose,
@@ -211,7 +218,6 @@ class DriveController:
         return self.get_pure_pursuit_drive_command(
             target_pos,
             rover_pose,
-            completion_thresh,
         )
 
     def get_default_drive_command(
@@ -283,7 +289,6 @@ class DriveController:
         self: DriveController,
         waypoints: Trajectory,
         rover_pose: SE3,
-        completion_thresh: float,
     ) -> tuple[Twist, bool]:
         """
         Returns a drive command to get the rover to the target position, using pure pursuit logic
@@ -299,6 +304,7 @@ class DriveController:
         # pursuit logic: https://wiki.purduesigbots.com/software/control-algorithms/basic-pure-pursuit
 
         # Trajectory is None -> There are no points to go to
+        # Should never occur
         if waypoints is None:
             return (Twist(), True)
 
@@ -312,15 +318,15 @@ class DriveController:
         # Check and set if there is a new farther found point in the path
         self.set_farthest_path_point(self, waypoints, rover_pos)
 
+        # If we are at the end of the traj, return a zero command
+        if waypoints.done():
+            return Twist(), True
+
         # Compute intersection points with the path
         intersection_points = self.compute_intersection_point(waypoints, rover_pos)
 
         # Determine the target_pos given the intersection points
         target_pos = self.determine_next_point(waypoints, intersection_points)
-
-        # If we are at the target position, return a zero command
-        if np.linalg.norm(target_pos - rover_pos) < completion_thresh:
-            return Twist(), True
 
         self.display_markers(rover_pos, target_pos)
 
@@ -407,8 +413,9 @@ class DriveController:
         :return: The current target point that the rover should follow
         :modifies: nothing
         """
-
-        waypoints.increment_point()
+        # Protection for if astar traj wasn't used
+        if len(waypoints.coordinates != 1):
+            waypoints.increment_point()
 
         # The end is in lookahead dist
         if waypoints.done():
@@ -441,7 +448,10 @@ class DriveController:
         else:
             target_pos = np.array([intersections[1][0], intersections[1][1], 0.0])
 
-        waypoints.decerement_point()
+        # Protection for if astar traj wasn't used
+        if len(waypoints.coordinates != 1):
+            waypoints.decerement_point()
+        
         return target_pos
 
     @staticmethod
@@ -468,14 +478,23 @@ class DriveController:
             waypoints.increment_point()
 
             if waypoints.done():
-                continue
+                # If we are at the end of the path, we need to determine if this is a point we have seen
+                waypoints.decerement_point()
+                next_point: np.ndarray = waypoints.get_current_point() # Obtain last point
+                waypoints.increment_point() # Leave the traj to be done
+
+                # Will determine if we continue to go to the last point or we are done
+                if self._last_lookahead_dist > np.linalg.norm(next_point - rover_pos):
+                    return
+                stop_incrementing = True
+                break
 
             # Check if the next point is valid
             next_point: np.ndarray = waypoints.get_current_point()
-            if self._last_lookahead_dist < np.linalg.norm(next_point - rover_pos):
+            if self._last_lookahead_dist <= np.linalg.norm(next_point - rover_pos):
                 stop_incrementing = True
 
-        if stop_incrementing or waypoints.done():
+        if stop_incrementing:
             waypoints.decerement_point()
 
     @staticmethod
@@ -516,7 +535,13 @@ class DriveController:
         # If the goal point is last, return the goal
         if waypoints.increment_point():
             waypoints.decerement_point()
-            return intersections
+
+            # astar was never used, just use the segment between the rover and the point
+            if len(waypoints.coordinates) == 1:
+                x1 = rover_pos[0]
+                y1 = rover_pos[1]
+            else:
+                return intersections
 
         x_pos = rover_pos[0]
         y_pos = rover_pos[1]
@@ -564,7 +589,10 @@ class DriveController:
             if min_x <= intersection_2[0] <= max_x and min_y <= intersection_2[1] <= max_y:
                 valid_intersection_2 = True
         else:
-            waypoints.decerement_point()
+            # Protection for if astar traj wasn't used
+            if len(waypoints.coordinates) != 1:
+                waypoints.decerement_point()
+
             intersections.append([x2, y2, 0.0])
             return intersections
 
@@ -573,7 +601,9 @@ class DriveController:
         if valid_intersection_2:
             intersections.append(intersection_2)
 
-        waypoints.decerement_point()
+        # Protection for if astar traj wasn't used
+        if len(waypoints.coordinates) != 1:
+            waypoints.decerement_point()
 
         if not len(intersections):
             intersections.append([x2, y2, 0.0])
