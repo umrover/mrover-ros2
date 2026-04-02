@@ -177,15 +177,17 @@ onMessage<ThrottleMessage>('arm', 'arm_throttle_command', (msg) => {
         case "gripper":
           jointThrIdx.push(5);
           break;
-        case "cam":
+        case "pusher":
           jointThrIdx.push(6);
           break;
         default:
       }
     }
+    console.log(jointThrIdx)
   }
 
   // Determine if limits hit
+  // console.log(limits_hit_external.value)
   for(let i = 0; i < jointThrIdx.length; ++i){
     if(limits_hit_external.value[jointThrIdx[i]] == 1 && msg.throttles[i] < 0){
       forcing_limit.value = true
@@ -205,7 +207,7 @@ onMessage<ThrottleMessage>('arm', 'arm_throttle_command', (msg) => {
 
 // TODO me
 onMessage<VelocityMessage>('arm', 'arm_velocity_command', (msg) => {
-  forcing_limit.value = false;
+  // forcing_limit.value = false;
 
   // Find what index is what joint. Only done first time velocity input is recieved
   if(jointVelIdx.length == 0){
@@ -230,7 +232,7 @@ onMessage<VelocityMessage>('arm', 'arm_velocity_command', (msg) => {
         case "gripper":
           jointVelIdx.push(5);
           break;
-        case "cam":
+        case "pusher":
           jointVelIdx.push(6);
           break;
         default:
