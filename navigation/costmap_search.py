@@ -198,7 +198,7 @@ class CostmapSearchState(State):
             self.STOP_THRESH,
             self.DRIVE_FWD_THRESH,
             path_start=self.prev_target_pos_in_map,
-            full_traj=self.spiral_traj
+            last_point=self.spiral_traj.is_last()
         )
 
         if not arrived:

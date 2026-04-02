@@ -224,7 +224,7 @@ class ApproachTargetState(State):
                 rover_pose,
                 context.node.get_parameter("single_tag.stop_threshold").value,
                 context.node.get_parameter("waypoint.drive_forward_threshold").value,
-                full_traj=self.target_traj,
+                last_point=self.target_traj.is_last(),
             )
 
         # If we have arrived increment the a-star trajectory

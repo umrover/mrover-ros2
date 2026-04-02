@@ -178,7 +178,7 @@ class DriveController:
         turn_in_place_thresh: float,
         drive_back: bool = False,
         path_start: np.ndarray | None = None,
-        full_traj: Trajectory | None = None,
+        last_point: bool =  True,
     ) -> tuple[Twist, bool]:
         """
         :param target_pos: The target point of the rover. If using pure pursuit, use target_pos for the astar_traj and use full_traj for the full trajectory.
@@ -187,7 +187,7 @@ class DriveController:
         :param turn_in_place_thresh: The angle threshold to consider the rover facing the target position and ready to drive forward towards it.
         :param drive_back: True if rover should drive backwards, false otherwise.
         :param path_start: If you want the rover to drive on a line segment (and actively try to stay on the line), pass the start of the line segment as this param, otherwise pass None.
-        :param full_traj: Used for pure pursuit to determine the end of the path.
+        :param last_point: Used for pure pursuit to determine if the rover is at the end of its path.
         :return: A tuple of the drive command and a boolean indicating whether the rover is at the target position.
         """
         # If target_pos is a Trajectory we use pure pursuit instead of default_drive_command
@@ -200,13 +200,9 @@ class DriveController:
                 drive_back,
                 path_start,
             )
-        # Prevent misuse of the Pure Pursuit drive command
-        elif full_traj == None and self.USE_PURE_PURSUIT:
-            self.node.get_logger().warn("You are attempting to use Pure Pursuit without adding the full trajectory.")
-            return Twist(), False
         # The Pure Pursuit is known for its trouble to arrive at a given point, it is mainly used for paths but not arriving at a point.
         # Adding this condition makes the controller use the default drive command, fixing this issue, and is the reason why the whole trajectory (full_traj) is needed (so we know the end)
-        elif not self.USE_PURE_PURSUIT or drive_back or (target_pos.is_last() and full_traj.is_last()):
+        elif not self.USE_PURE_PURSUIT or drive_back or (target_pos.is_last() and last_point):
             return self.get_default_drive_command(
                 target_pos.get_current_point(),
                 rover_pose,
@@ -240,6 +236,9 @@ class DriveController:
         :return: A tuple of the drive command and a boolean indicating whether the rover is at the target position.
         :modifies: self._last_angular_error
         """
+
+        # Set the pure pursuit lookahead distance to the minimum incase it will be used again
+        self._last_lookahead_dist = self.node.get_parameter("pure_pursuit.min_lookahead_distance").value
 
         # Get the direction vector of the rover and the target position,
         # zero the Z components since our controller only assumes motion and control over the rover in the XY plane
