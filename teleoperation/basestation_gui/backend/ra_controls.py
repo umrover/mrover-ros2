@@ -83,6 +83,14 @@ STOW_POSITION.pos.z = 0.042229
 STOW_POSITION.pitch = 0.072694
 STOW_POSITION.roll = 0.0
 
+def get_stow_position() -> IK:
+    return STOW_POSITION
+
+
+def set_stow_position(new_stow_position: IK) -> None:
+    global STOW_POSITION
+    STOW_POSITION = new_stow_position
+
 
 
 class Joint(Enum):

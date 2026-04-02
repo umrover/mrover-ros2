@@ -59,6 +59,29 @@
       </div>
     </div>
     <GamepadDisplay :axes="axes" :buttons="buttons" layout="horizontal" class="grow min-h-0" />
+
+    <div>
+      <form action="/submit-data" method="POST">
+        <div>
+          <label for="field1">x:</label>
+          <input type="number" id="x" name="x" placeholder="x">
+        </div>
+        
+        <div>
+          <label for="field2">y:</label>
+          <input type="number" id="y" name="y" placeholder="y">
+        </div>
+
+        <div>
+          <label for="field3">z:</label>
+          <input type="number" id="z" name="z" placeholder="z">
+        </div>
+
+        <button type="submit">Submit</button>
+      </form>
+
+    </div>
+
   </div>
 
   <div>
@@ -67,7 +90,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { ref, onMounted, onBeforeUnmount, computed } from 'vue'
 import { armAPI } from '@/utils/api'
 import { useGamepadPolling } from '@/composables/useGamepadPolling'
 import { useWebsocketStore } from '@/stores/websocket'
@@ -81,8 +104,8 @@ const mode = ref('disabled')
 const forcing_limit = ref(false)
 
 const isStowing = ref(false)
-const stowTarget = ref<{ x: number; y: number; z: number } | null>(null)
-const stowResult = ref<{ x: number; y: number; z: number } | null>(null)
+const stowTarget = ref<{ x: number; y: number; z: number } >({x: 1.124319, y: 0.0, z: 0.042229})
+const position = ref<{ x: number; y: number; z: number } >({x: 0.0, y: 0.0, z: 0.0})
 const stowDistance = ref(0)
 const closeEnough = ref(false)
 
@@ -107,6 +130,7 @@ onBeforeUnmount(() => {
 })
 
 onMessage<IkFeedbackMessage>('arm', 'ik_feedback', (msg) => {
+  position.value = msg.pos
   console.log('yippee:', msg.pos)
 })
 
@@ -122,30 +146,26 @@ const stowArm = async () => {
         z: result.stow_target.pos.z,
       }
 
-      let time = 0;
-      let remaining = 0;
+      let time = 0
       const interval = setInterval(() => {
-        time += 100;  // 0.1 s
-        
+        time += 100 // 0.1 s
+
         if (stowTarget.value) {
-          remaining = euclideanDistance(stowTarget.value)
-          stowDistance.value = remaining
-          console.log("updated stowDistance to")
-          console.log(remaining)
+          stowDistance.value = euclideanDistance.value
         }
 
-        if (remaining < 0.1) {
-          closeEnough.value = true;
-          clearInterval(interval);
+        if (stowDistance.value < 0.1) {
+          closeEnough.value = true
+          clearInterval(interval)
+          isStowing.value = false
           // reached target
-
         } else if (time >= 5000) {
-          closeEnough.value = true;
-          clearInterval(interval);
+          console.log('stow timed out')
+          clearInterval(interval)
+          isStowing.value = false
           // 5s timeout
         }
-      }, 100); 
-
+      }, 100)
     } else {
       isStowing.value = false
     }
@@ -168,11 +188,16 @@ const newRAMode = async (newMode: string) => {
   }
 }
 
-const euclideanDistance = (a: { x: number; y: number; z: number }) => {
-  // hardcoded values from ra_controls.py
-  const b = ({x: 1.124319, y: 0.0, z: 0.042229 })
-  return Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2 + (a.z - b.z) ** 2)
-}
+const euclideanDistance = computed(() => {
+  const a = position.value
+  const b = stowTarget.value
+  
+  return Math.sqrt(
+    (a.x - b.x) ** 2 + 
+    (a.y - b.y) ** 2 + 
+    (a.z - b.z) ** 2
+  )
+})
 // current task: show distance, set timeout
 
 </script>
