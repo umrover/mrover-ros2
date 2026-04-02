@@ -2,6 +2,7 @@
 
 import rclpy
 from rclpy.node import Node
+from ament_index_python import get_package_share_directory
 
 from sensor_msgs.msg import PointCloud2, Image
 from std_msgs.msg import Header
@@ -15,7 +16,7 @@ import message_filters
 import os
 import numpy as np
 import copy
-from datetime import datetime
+import datetime
 
 from Source import *
 
@@ -67,7 +68,7 @@ class Panorama(Node):
 
         # Variable for the ZED you'd like to use (zed or zed_mini)
         self.zed_version= "zed"
-        self.zed_fov_deg = 102
+        self.zed_fov_deg = 110
         self.zed_image_width_pixels = 1280
 
         # Pano Action Server
@@ -126,6 +127,7 @@ class Panorama(Node):
         # get every tenth point to make the pc sparser
         # TODO: dtype hard-coded to float32
         if self.record_pc:
+            self.get_logger().info("HERE!")
             self.current_pc = pc_msg
             self.arr_pc = np.frombuffer(bytearray(pc_msg.data), dtype=np.float32).reshape(
                 pc_msg.height * pc_msg.width, int(pc_msg.point_step / 4)
@@ -213,13 +215,13 @@ class Panorama(Node):
         self.record_image = True
         self.record_pc = True
 
-        if self.img_sub is None:
-            self.img_sub = self.create_subscription(Image, f"/{self.zed_version}/left/image", self.image_callback, 1)
+        # if self.img_sub is None:
+        #     self.img_sub = self.create_subscription(Image, f"/{self.zed_version}/left/image", self.image_callback, 1)
 
         if self.pc_sub is None and self.imu_sub is None: 
             self.pc_sub = message_filters.Subscriber(self, PointCloud2, f"/{self.zed_version}/left/points")
             self.imu_sub = message_filters.Subscriber(self, Imu, f"/{self.zed_version}_imu/data_raw")
-            self.img_sub = message_filters.Subscriber(self, Imu, f"/{self.zed_version}/left/image")
+            self.img_sub = message_filters.Subscriber(self, Image, f"/{self.zed_version}/left/image")
             self.sync = message_filters.ApproximateTimeSynchronizer([self.pc_sub, self.imu_sub, self.img_sub], 10, 1)
             self.sync.registerCallback(self.synced_gps_pc_callback)
 
@@ -283,7 +285,8 @@ class Panorama(Node):
 
         # Save the images
         unique_id = "{date:%Y-%m-%d_%H:%M:%S}".format(date=datetime.datetime.now())
-        new_path = f"data/raw-pano-images/{unique_id}"
+        share_dir = get_package_share_directory("mrover")
+        new_path = f"{share_dir}/../../../../../src/mrover/data/raw-pano-images/{unique_id}/"
         os.mkdir(new_path)
         for i, img in enumerate(self.img_list):
             cv2.imwrite(f"{new_path}/{i}.png", img)  
@@ -292,11 +295,16 @@ class Panorama(Node):
         self.get_logger().info(f"Stitching {len(self.img_list)} images...")            
 
         # Calculate shifts
-        self.img_dirs = self.img_dirs * (180 / np.pi)
-        diffs = np.diff(self.img_dirs)
+        dirs = np.abs(np.array(self.img_dirs).astype(float) * (180 / np.pi))
+        diffs = np.abs(np.diff(dirs))
         shift = diffs * self.pixels_per_deg
-        shift = diffs.astype(int)
+        shift = shift.astype(int)
+        print(self.pixels_per_deg)
+        print("Directions (deg): " + str(dirs))
+        print("Diffs: " + str(diffs))
+        print("Shifts: " + str(shift))
         pano = calcPanorama(new_path, shift)
+        # pano = None
 
         # Construct Pano and Save, get stitching order
         if pano is not None:
@@ -336,6 +344,7 @@ class Panorama(Node):
             
         self.stitched_pc = np.empty((0, 8), dtype=np.float32)
         self.img_list = []
+        self.img_dirs = []
         self.get_logger().info('Pano response sent to frontend')
         return response
 
