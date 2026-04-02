@@ -87,26 +87,6 @@ export interface CmdVelMessage {
   angular: { x: number; y: number; z: number };
 }
 
-export interface OxygenMessage {
-  type: 'oxygen';
-  percent: number;
-}
-
-export interface UVMessage {
-  type: 'uv';
-  uv_index: number;
-}
-
-export interface TemperatureMessage {
-  type: 'temperature';
-  temperature: number;
-}
-
-export interface HumidityMessage {
-  type: 'humidity';
-  relative_humidity: number;
-}
-
 export interface SPHumidityMessage {
   type: 'sp_humidity';
   relative_humidity: number;

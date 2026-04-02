@@ -77,9 +77,8 @@ create instance of rosaction in callback area -->
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
+import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { useWebsocketStore } from '@/stores/websocket'
-import { storeToRefs } from 'pinia'
 
 interface TypingFeedbackMessage {
   type: 'typing_feedback'
@@ -87,8 +86,11 @@ interface TypingFeedbackMessage {
   current_state: string
 }
 
+interface TypingCancelledMessage {
+  type: 'typing_cancelled'
+}
+
 const websocketStore = useWebsocketStore()
-const { messages } = storeToRefs(websocketStore)
 
 const typingMessage = ref('')
 const codeSent = ref(false)
@@ -104,30 +106,25 @@ onBeforeUnmount(() => {
   websocketStore.closeWebSocket('auton')
 })
 
-const autonMessage = computed(() => messages.value['auton'])
+websocketStore.onMessage<TypingFeedbackMessage>('auton', 'typing_feedback', (msg) => {
+  currentIndex.value = msg.current_index
+  currentState.value = msg.current_state
 
-watch(autonMessage, (msg: unknown) => {
-  if (!msg || typeof msg !== 'object') return
-
-  if ('type' in msg && msg.type === 'typing_feedback') {
-    const typedMsg = msg as TypingFeedbackMessage
-    currentIndex.value = typedMsg.current_index
-    currentState.value = typedMsg.current_state
-
-    if (typedMsg.current_state === 'complete') {
-      for (let i = 0; i < typingMessage.value.length; i++) {
-        letterStates.value[i] = 'typed'
-      }
-      codeSent.value = false
-      typingMessage.value = ''
-    } else {
-      updateLetterStates()
+  if (msg.current_state === 'complete') {
+    for (let i = 0; i < typingMessage.value.length; i++) {
+      letterStates.value[i] = 'typed'
     }
-  } else if ('type' in msg && msg.type === 'typing_cancelled') {
     codeSent.value = false
     typingMessage.value = ''
-    letterStates.value = Array(6).fill('notTyped')
+  } else {
+    updateLetterStates()
   }
+})
+
+websocketStore.onMessage<TypingCancelledMessage>('auton', 'typing_cancelled', () => {
+  codeSent.value = false
+  typingMessage.value = ''
+  letterStates.value = Array(6).fill('notTyped')
 })
 
 function submitMessage() {
