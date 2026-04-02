@@ -30,7 +30,7 @@ namespace mrover {
             struct JointLimits {
                 double minPos, maxPos, minVel, maxVel;
                 [[nodiscard]] auto posInBounds(double pos) const -> bool {return minPos <= pos && pos <= maxPos;}
-                [[nodiscard]] auto velInBounds(double vel) const -> bool {return minPos <= vel && vel <= maxPos;}
+                [[nodiscard]] auto velInBounds(double vel) const -> bool {return minVel <= vel && vel <= maxVel;}
             };
             
             JointLimits limits;
@@ -40,7 +40,7 @@ namespace mrover {
         // TODO: update velocity limits to make them real
         std::unordered_map<std::string, JointWrapper> joints = {
             {"joint_a", {
-                .limits = {.minPos = 0, .maxPos = 0.35, .minVel = -0.05, .maxVel = 0.05},
+                .limits = {.minPos = -0.2, .maxPos = 0.45, .minVel = -0.05, .maxVel = 0.05},
                 .pos = 0
             }},
             {"joint_b", {
@@ -71,11 +71,20 @@ namespace mrover {
 
         rclcpp::Publisher<msg::Position>::SharedPtr mPosPub;
         rclcpp::Publisher<msg::Velocity>::SharedPtr mVelPub;
+
+        rclcpp::Publisher<msg::Position>::SharedPtr jointA_Pub;
+        rclcpp::Publisher<msg::Position>::SharedPtr gripperPub;
+        rclcpp::Publisher<msg::Position>::SharedPtr armPub;
+
         tf2_ros::TransformBroadcaster mTfBroadcaster{this};
         tf2_ros::Buffer mTfBuffer{get_clock()};
         tf2_ros::TransformListener mTfListener{mTfBuffer};
         rclcpp::TimerBase::SharedPtr mTimer;
         rclcpp::Service<srv::IkMode>::SharedPtr mModeServ;
+
+        
+        void publishFakeData();
+
 
         auto ikPosCalc(ArmPos target) -> std::optional<msg::Position>;
         auto ikVelCalc(geometry_msgs::msg::Twist) -> std::optional<msg::Velocity>;
@@ -103,7 +112,7 @@ namespace mrover {
         static constexpr double END_EFFECTOR_LENGTH = 0.20482814; // from CAD
         static constexpr double JOINT_C_OFFSET = 0.1608485915;
         static constexpr double JOINT_VEL_THRESH = 0.05;
-        static constexpr double MAX_SPEED = 0.1; // in m/s, this is just an estimate
+        static constexpr double MAX_SPEED = 0.3; // in m/s, this is just an estimate
 
         ArmController();
 
@@ -111,6 +120,8 @@ namespace mrover {
         void velCallback(geometry_msgs::msg::Twist::ConstSharedPtr const& ik_vel);
         void fkCallback(sensor_msgs::msg::JointState::ConstSharedPtr const& joint_state);
         auto modeCallback(srv::IkMode::Request::ConstSharedPtr const& req, srv::IkMode::Response::SharedPtr const& resp) -> void;
+
+    
     };
 
 } // namespace mrover

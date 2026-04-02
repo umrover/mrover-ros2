@@ -352,6 +352,11 @@ mrover_add_node(arm_controller navigation/arm_controller/arm_controller.cpp navi
 target_link_libraries(arm_controller lie)
 ament_target_dependencies(arm_controller rclcpp)
 
+mrover_add_node(joint_gripper_publisher navigation/arm_controller/joint_gripper_publisher.cpp navigation/arm_controller/pch.hpp)
+target_link_libraries(joint_gripper_publisher lie)
+ament_target_dependencies(joint_gripper_publisher rclcpp)
+
+
 mrover_add_node(led esw/led.cpp)
 ament_target_dependencies(led rclcpp std_srvs)
 
