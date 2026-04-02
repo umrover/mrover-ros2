@@ -154,7 +154,7 @@ onMessage<ControllerStateMessage>('arm', 'arm_state', (msg) => {
 
 onMessage<ThrottleMessage>('arm', 'arm_throttle_command', (msg) => {
   forcing_limit.value = false;
-  // console.log(axes.value[0])
+  // console.log(axes.value[1])
 
   // Find what index is what joint. Only done first time thrust input is recieved
   if(jointThrIdx.length == 0){
@@ -189,21 +189,41 @@ onMessage<ThrottleMessage>('arm', 'arm_throttle_command', (msg) => {
   }
 
   // Determine if limits hit
-  for(let i = 0; i < jointThrIdx.length; ++i){
-    if(limits_hit_external.value[jointThrIdx[i]] == 1 && msg.throttles[i] < 0){
-      forcing_limit.value = true
-    } else if (limits_hit_external.value[jointThrIdx[i]] == 2 && msg.throttles[i] > 0) {
-      forcing_limit.value = true
-    }
-  }
+  // for(let i = 0; i < jointThrIdx.length; ++i){
+  //   if(limits_hit_external.value[jointThrIdx[i]] == 1 && msg.throttles[i] < 0){
+  //     forcing_limit.value = true
+  //   } else if (limits_hit_external.value[jointThrIdx[i]] == 2 && msg.throttles[i] > 0) {
+  //     forcing_limit.value = true
+  //   }
+  // }
 
-  // TODO duct tape solution for ik_velocity limits
-  // console.log(axes[0] > 0)
+  // TODO duct tape?
+  console.log(axes.value[3])
   if(axes.value[0] > 0.05 && limits_hit_external.value[0] == 1){
     forcing_limit.value = true
-  } else if (axes.value[0] < 0.05 && limits_hit_external.value[0] == 2){
+  } else if (axes.value[0] < -0.05 && limits_hit_external.value[0] == 2){
     forcing_limit.value = true
   }
+
+  if(axes.value[1] < -0.05 && limits_hit_external.value[1] == 1){
+    forcing_limit.value = true
+  } else if (axes.value[1] > 0.05 && limits_hit_external.value[1] == 2){
+    forcing_limit.value = true
+  }
+
+  if(axes.value[3] < -0.05 && limits_hit_external.value[2] == 1){
+    forcing_limit.value = true
+  } else if (axes.value[3] > 0.05 && limits_hit_external.value[2] == 2){
+    forcing_limit.value = true
+  }
+
+  if(buttons.value[4] && limits_hit_external.value[5] == 1){
+    forcing_limit.value = true
+  } else if (buttons.value[5] > 0.05 && limits_hit_external.value[5] == 2){
+    forcing_limit.value = true
+  }
+
+  // console.log(buttons.value)
 
   if(forcing_limit.value){
   vibrationActuator.value.playEffect('dual-rumble', {
