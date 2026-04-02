@@ -60,6 +60,10 @@
     </div>
     <GamepadDisplay :axes="axes" :buttons="buttons" layout="horizontal" class="grow min-h-0" />
   </div>
+
+  <div>
+    <p>Distance: {{stowDistance}}</p>
+  </div>
 </template>
 
 <script lang="ts" setup>
@@ -78,6 +82,9 @@ const forcing_limit = ref(false)
 
 const isStowing = ref(false)
 const stowTarget = ref<{ x: number; y: number; z: number } | null>(null)
+const stowResult = ref<{ x: number; y: number; z: number } | null>(null)
+const stowDistance = ref(0)
+const closeEnough = ref(false)
 
 const { connected, axes, buttons } = useGamepadPolling({
   controllerIdFilter: 'Microsoft',
@@ -114,6 +121,31 @@ const stowArm = async () => {
         y: result.stow_target.pos.y,
         z: result.stow_target.pos.z,
       }
+
+      let time = 0;
+      let remaining = 0;
+      const interval = setInterval(() => {
+        time += 100;  // 0.1 s
+        
+        if (stowTarget.value) {
+          remaining = euclideanDistance(stowTarget.value)
+          stowDistance.value = remaining
+          console.log("updated stowDistance to")
+          console.log(remaining)
+        }
+
+        if (remaining < 0.1) {
+          closeEnough.value = true;
+          clearInterval(interval);
+          // reached target
+
+        } else if (time >= 5000) {
+          closeEnough.value = true;
+          clearInterval(interval);
+          // 5s timeout
+        }
+      }, 100); 
+
     } else {
       isStowing.value = false
     }
@@ -135,4 +167,12 @@ const newRAMode = async (newMode: string) => {
     console.error('Failed to set arm mode:', error)
   }
 }
+
+const euclideanDistance = (a: { x: number; y: number; z: number }) => {
+  // hardcoded values from ra_controls.py
+  const b = ({x: 1.124319, y: 0.0, z: 0.042229 })
+  return Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2 + (a.z - b.z) ** 2)
+}
+// current task: show distance, set timeout
+
 </script>
