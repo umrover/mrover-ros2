@@ -158,8 +158,8 @@ def send_ra_controls(
                     ik_vel_msg.linear.x = (-1.0) * filter_input(safe_index(inputs.axes, ControllerAxis.LEFT_Y), deadzone=CONTROLLER_STICK_DEADZONE)
                     ik_vel_msg.linear.y = (-1.0) * filter_input(safe_index(inputs.axes, ControllerAxis.LEFT_X), deadzone=CONTROLLER_STICK_DEADZONE)
                     ik_vel_msg.linear.z = (-1.0) * filter_input(safe_index(inputs.axes, ControllerAxis.RIGHT_Y), deadzone=CONTROLLER_STICK_DEADZONE)
-                    ik_vel_msg.angular.y = 1.0 * simulated_axis(inputs.buttons, ControllerButton.RIGHT_BUMPER, ControllerButton.LEFT_BUMPER)
-                    ik_vel_msg.angular.x = 1.0 * simulated_axis(inputs.buttons, ControllerButton.RIGHT_TRIGGER, ControllerButton.LEFT_TRIGGER)
+                    ik_vel_msg.angular.y = 1.0 * simulated_axis(inputs.buttons, ControllerButton.RIGHT_TRIGGER, ControllerButton.LEFT_TRIGGER)
+                    ik_vel_msg.angular.x = 1.0 * simulated_axis(inputs.buttons, ControllerButton.RIGHT_BUMPER, ControllerButton.LEFT_BUMPER)
                     ee_vel_pub.publish(ik_vel_msg)
 
                     cam_throttle = filter_input(
