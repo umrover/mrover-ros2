@@ -5,7 +5,7 @@
       ref="mapRef"
       class="map z-0"
       :zoom="22"
-      :center="center"
+    :center="center"
       @click="getClickedLatLon($event)"
     >
       <l-control-scale :imperial="false" />
@@ -187,5 +187,4 @@ watch(searchWaypoint, (newIndex) => {
 .map {
   min-height: 50vh;
 }
-
 </style>
