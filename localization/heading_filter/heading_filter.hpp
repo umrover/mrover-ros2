@@ -47,7 +47,8 @@ namespace mrover {
         std::optional<sensor_msgs::msg::Imu> last_imu;
         std::optional<geometry_msgs::msg::Vector3Stamped> last_position;
         std::vector<geometry_msgs::msg::Twist> twists;
-        std::deque<geometry_msgs::msg::Vector3Stamped> position_window;        
+        std::deque<geometry_msgs::msg::Vector3Stamped> position_window;    
+        bool use_mag;    
     
     public:
 

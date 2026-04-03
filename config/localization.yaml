@@ -29,8 +29,9 @@ heading_filter:
     rtk_heading_noise: 0.01
     drive_forward_heading_noise: 0.1
     process_noise: 0.000001
-    minimum_linear_speed: 0.05
-    rover_heading_change_threshold: 0.4
+    minimum_linear_speed: 0.4
+    rover_heading_change_threshold: 0.05
+    use_mag: false
 
 pose_filter:
   ros__parameters:
