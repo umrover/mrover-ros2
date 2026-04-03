@@ -32,9 +32,9 @@ namespace mrover {
 
             mImageTargetsPub = create_publisher<msg::ImageTargets>("objects", 1);
 
-            mIkTargetPub = create_publisher<msg::IK>("ee_pos_cmd", 1);
+            mIkTargetPub = create_publisher<msg::IK>("ik_pos_cmd", 1);
 
-            mIkVelPub = create_publisher<geometry_msgs::msg::Twist>("ee_vel_cmd", 1);
+            mIkVelPub = create_publisher<geometry_msgs::msg::Twist>("ik_vel_cmd", 1);
 
             mIkModeClient = create_client<srv::IkMode>("ik_mode");
 
@@ -63,8 +63,7 @@ namespace mrover {
                     });
                 };
                 addGroup("arm", "arm_controller_state", {"joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_roll", "gripper"}, "_thr_cmd", "_vel_cmd", "_pos_cmd");
-                addGroup("drive_left", "left_controller_state", {"front_left", "middle_left", "back_left"});
-                addGroup("drive_right", "right_controller_state", {"front_right", "middle_right", "back_right"});
+                addGroup("drive", "drive_controller_state", {"front_right", "middle_right", "back_right", "front_left", "middle_left", "back_left"});
 
                 std::vector<decltype(mMsgToUrdf)::value_type> elements{
                         {"joint_a", "arm_a_link"},
