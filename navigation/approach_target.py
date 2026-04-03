@@ -29,6 +29,7 @@ class ApproachTargetState(State):
     astar: AStar
     time_last_updated: Time
     target_position: np.ndarray | None
+    fixed_position: np.ndarray | None
     marker_timer: Timer
     update_timer: Timer
     object_type: int
@@ -61,6 +62,7 @@ class ApproachTargetState(State):
         self.target_traj = Trajectory(np.array([]))
         self.astar = AStar(context=context)
         self.target_position = None
+        self.fixed_position = None
         self.time_last_updated = context.node.get_clock().now()
         self.time_begin = context.node.get_clock().now()
         self.object_type = current_waypoint.type.val
@@ -170,8 +172,10 @@ class ApproachTargetState(State):
             context.rover.send_drive_command(Twist())
             return self
         if self.SPIN_ROVER is None or self.SPIN_ROVER:
+            if self.fixed_position is None:
+                self.fixed_position = rover_pose.translation() - rover_pose.rotation()[:, 0] + np.array([1e-8, 0, 0])
             if self.SPIN_ROVER is not None:
-                cmd_vel_func, arrived_func = self.spin_rover_drive(context, rover_pose.translation() - rover_pose.rotation()[:, 0])
+                cmd_vel_func, arrived_func = self.spin_rover_drive(context, self.fixed_position)
                 if(arrived_func):
                     self.SPIN_ROVER = None
                 else:
@@ -410,11 +414,15 @@ class ApproachTargetState(State):
                 points=np.array([self.target_position]), color=[1.0, 1.0, 0.0], ns=str(type(self))
             )
     def spin_rover_drive(self, context: Context, phase_1: np.ndarray, phase_2: np.ndarray = None):
+        context.node.get_logger().info("rover_dir" + str(context.rover.get_pose_in_map().rotation()[:, 0][:2] * -1))
+        context.node.get_logger().info("target_dir" + str((phase_1 - context.rover.get_pose_in_map().translation())[:2]))
         cmd_vel, arrived = context.drive.get_drive_command(
                 phase_2 if phase_2 is not None else phase_1,
                 context.rover.get_pose_in_map(),
-                context.node.get_parameter("single_tag.stop_threshold").value / 10,
-                context.node.get_parameter("waypoint.drive_forward_threshold").value / 5,
+                context.node.get_parameter("single_tag.stop_threshold").value 
+                if phase_2 is not None else context.node.get_parameter("single_tag.stop_threshold").value / 10, 
+                context.node.get_parameter("waypoint.drive_forward_threshold").value 
+                if phase_2 is not None else context.node.get_parameter("backup.drive_forward_threshold").value,
                 False if phase_2 is not None else True
             )
         return cmd_vel, arrived
@@ -444,6 +452,7 @@ class ApproachTargetState(State):
         rover_to_model /= rover_norm_model
         rover_forward = rover_SE3.rotation()[:, 0]
         rover_dot_model = np.dot(rover_to_model, rover_forward)
+        context.node.get_logger().info("Rover to model: " + str(rover_to_model) + ", rover_forward: " + str(rover_forward))
         angle_to_model = np.arccos(rover_dot_model)
         angle_to_model = math.copysign(angle_to_model, np.cross(rover_forward, rover_to_model)[2])
         context.node.get_logger().info("Angle to model" + str(angle_to_model))
