@@ -470,6 +470,7 @@ class DriveController:
         """
 
         stop_incrementing = False
+        next_point: np.ndarray = np.ndarray([])
 
         # Determine next point
         while not waypoints.done() and not stop_incrementing:
@@ -479,7 +480,7 @@ class DriveController:
             if waypoints.done():
                 # If we are at the end of the path, we need to determine if this is a point we have seen
                 waypoints.decerement_point()
-                next_point: np.ndarray = waypoints.get_current_point()  # Obtain last point
+                next_point = waypoints.get_current_point()  # Obtain last point
                 waypoints.increment_point()  # Leave the traj to be done
 
                 # Will determine if we continue to go to the last point or we are done
@@ -489,7 +490,7 @@ class DriveController:
                 break
 
             # Check if the next point is valid
-            next_point: np.ndarray = waypoints.get_current_point()
+            next_point = waypoints.get_current_point()
             if self._last_lookahead_dist <= np.linalg.norm(next_point - rover_pos):
                 stop_incrementing = True
 
