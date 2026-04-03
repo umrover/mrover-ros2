@@ -5,7 +5,7 @@
       ref="mapRef"
       class="map z-0"
       :zoom="22"
-      :center="center"
+    :center="center"
       @click="getClickedLatLon($event)"
     >
       <l-control-scale :imperial="false" />
@@ -33,18 +33,12 @@
       <l-polyline :lat-lngs="odomPath" :color="'blue'" />
       <l-polyline :lat-lngs="dronePath" :color="'green'" />
     </l-map>
-    <div class="map-controls cmd-panel">
-      <div class="flex items-center gap-2">
-        <input
-          v-model="online"
-          type="checkbox"
-          class="cmd-form-check p-0"
-        />
-        <span class="cmd-data-label">Online</span>
-      </div>
-      <button @click="centerOnRover" class="cmd-btn cmd-btn-sm cmd-btn-outline-control map-btn">
-        Center
+    <div class="overlay-toolbar right-0">
+      <button class="overlay-toolbar-btn" :class="{ 'overlay-toolbar-btn-active': online }" @click="online = !online">
+        Online
       </button>
+      <button @click="centerOnRover" class="overlay-toolbar-btn">Center on Rover</button>
+      <button @click="centerOnDrone" class="overlay-toolbar-btn">Center on Drone</button>
     </div>
   </div>
 </template>
@@ -65,10 +59,8 @@ import L from 'leaflet'
 import 'leaflet-rotatedmarker'
 import type { LeafletMouseEvent } from 'leaflet'
 import type { MapWaypoint } from '@/types/waypoints'
-import type { DroneWaypointMessage } from '@/types/coordinates'
-import { ref, shallowRef, triggerRef, computed, watch } from 'vue'
+import { ref, watch } from 'vue'
 import { useRoverMap } from '@/composables/useRoverMap'
-import { useWebsocketStore } from '@/stores/websocket'
 
 const erdStore = useErdStore()
 const { waypointListForMap, highlightedWaypoint, searchWaypoint } = storeToRefs(erdStore)
@@ -87,8 +79,13 @@ const {
   attribution,
   locationIcon,
   waypointIcon,
+  droneRef,
+  dronePath,
+  droneLatLng,
+  droneIcon,
   onMapReady,
   centerOnRover,
+  centerOnDrone,
   getMap,
 } = useRoverMap({
   maxOdomCount: 1000,
@@ -96,18 +93,7 @@ const {
   initialCenter: [38.4225202, -110.7844653],
 })
 
-const drone_latitude_deg = ref(0)
-const drone_longitude_deg = ref(0)
-const droneRef = ref<{ leafletObject: L.Marker } | null>(null)
-let droneMarker: L.Marker | null = null
-const dronePath = shallowRef<L.LatLng[]>([])
 const circle = ref<L.Circle | null>(null)
-
-const droneIcon = L.icon({
-  iconUrl: '/drone_marker.svg',
-  iconSize: [64, 64],
-  iconAnchor: [32, 32],
-})
 const droneWaypointIcon = L.icon({
   iconUrl: '/waypoint_marker_drone.svg',
   iconSize: [64, 64],
@@ -121,16 +107,8 @@ const highlightedWaypointIcon = L.icon({
   popupAnchor: [0, -32],
 })
 
-const droneLatLng = computed(() => {
-  return L.latLng(drone_latitude_deg.value, drone_longitude_deg.value)
-})
-
 const handleMapReady = () => {
-  onMapReady(() => {
-    if (droneRef.value) {
-      droneMarker = droneRef.value.leafletObject as L.Marker
-    }
-  })
+  onMapReady()
 }
 
 const getClickedLatLon = (e: LeafletMouseEvent) => {
@@ -149,25 +127,6 @@ const getWaypointIcon = (waypoint: MapWaypoint, index: number) => {
     return waypointIcon
   }
 }
-
-const websocketStore = useWebsocketStore()
-websocketStore.onMessage<DroneWaypointMessage>('nav', 'drone_waypoint', (msg) => {
-  drone_latitude_deg.value = msg.latitude
-  drone_longitude_deg.value = msg.longitude
-})
-
-watch([drone_latitude_deg, drone_longitude_deg], () => {
-  const latLng = L.latLng(drone_latitude_deg.value, drone_longitude_deg.value)
-  if (droneMarker) {
-    droneMarker.setLatLng(latLng)
-  }
-
-  if (dronePath.value.length > 1000) {
-    dronePath.value.shift()
-  }
-  dronePath.value.push(latLng)
-  triggerRef(dronePath)
-})
 
 watch(searchWaypoint, (newIndex) => {
   const map = getMap()
@@ -198,20 +157,4 @@ watch(searchWaypoint, (newIndex) => {
 .map {
   min-height: 50vh;
 }
-
-.map-controls {
-  position: absolute;
-  top: var(--cmd-gap-md);
-  right: var(--cmd-gap-md);
-  z-index: 1000;
-  display: flex;
-  flex-direction: column;
-  gap: var(--cmd-gap-sm);
-}
-
-.map-btn {
-  font-size: var(--cmd-font-xs);
-  text-transform: uppercase;
-}
-
 </style>

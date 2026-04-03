@@ -219,8 +219,6 @@ namespace mrover {
 
         if (get_clock()->now() - mLastUpdate > TIMEOUT) {
             RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 100, "IK Timed Out");
-            if(!mPosFallback) mPosFallback = mCurrPos;
-            mPosPub->publish(mPosFallback.value());
             return;
         }
 

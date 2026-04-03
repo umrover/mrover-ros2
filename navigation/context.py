@@ -6,7 +6,6 @@ import numpy as np
 import pymap3d
 import rclpy
 from scipy import ndimage
-from rclpy.parameter import Parameter
 
 import tf2_ros
 from geometry_msgs.msg import Twist, Point
@@ -21,13 +20,10 @@ from mrover.msg import (
     ImageTarget,
     ImageTargets,
 )
-
-from std_srvs.srv import SetBool
 from mrover.srv import EnableAuton
 from nav_msgs.msg import Path
 from nav_msgs.msg import OccupancyGrid
 from visualization_msgs.msg import Marker, MarkerArray
-from rclpy import Parameter
 from rclpy.duration import Duration
 from rclpy.node import Node
 from rclpy.publisher import Publisher
@@ -41,7 +37,6 @@ from std_msgs.msg import Bool, Header
 from .drive import DriveController
 from collections import deque
 from copy import deepcopy
-from visualization_msgs.msg import Marker
 
 NO_TAG: int = -1
 
@@ -413,10 +408,7 @@ class Context:
         from .state import OffState
 
         self.node = node
-
-        self.lookahead_pub = self.node.create_publisher(Marker, "lookahead_circle", 10)
-        self.intersection_pub = self.node.create_publisher(Marker, "intersection_points", 10)
-        self.drive = DriveController(node, self.lookahead_pub, self.intersection_pub)
+        self.drive = DriveController(node)
 
         self.world_frame = node.get_parameter("world_frame").value
         self.rover_frame = node.get_parameter("rover_frame").value
@@ -426,9 +418,6 @@ class Context:
         self.disable_requested = False
 
         node.create_service(EnableAuton, "enable_auton", self.enable_auton)
-        node.create_service(SetBool, "toggle_path_relaxation", self.toggle_path_relaxation)
-        node.create_service(SetBool, "toggle_path_interpolation", self.toggle_path_interpolation)
-        node.create_service(SetBool, "toggle_pure_pursuit", self.toggle_pure_pursuit)
 
         self.command_publisher = node.create_publisher(Twist, "nav_cmd_vel", 1)
         self.search_point_publisher = node.create_publisher(GPSPointList, "search_path", 1)
@@ -478,22 +467,6 @@ class Context:
         else:
             self.disable_requested = True
         response.success = True
-        return response
-    
-    def toggle_path_relaxation(self, request: SetBool.Request, response: SetBool.Response) -> SetBool.Response:
-        self.node.set_parameters([Parameter("smoothing.use_relaxation", Parameter.Type.BOOL, request.data)])
-        self.node.get_logger().info(f"Set path relaxation toggle to {request.data}.")
-
-        response.success = True
-        response.message = f"Set path relaxation toggle to {request.data}."
-        return response
-
-    def toggle_path_interpolation(self, request: SetBool.Request, response: SetBool.Response) -> SetBool.Response:
-        self.node.set_parameters([Parameter("smoothing.use_interpolation", Parameter.Type.BOOL, request.data)])
-        self.node.get_logger().info(f"Set path interpolation toggle to {request.data}.")
-
-        response.success = True
-        response.message = f"Set path interpolation toggle to {request.data}."
         return response
 
     def stuck_callback(self, msg: Bool) -> None:
@@ -606,14 +579,6 @@ class Context:
                 self.dilate_cost(self.current_dilation_radius)
             return True
         return False
-
-    def toggle_pure_pursuit(self, request: SetBool.Request, response: SetBool.Response) -> SetBool.Response:
-        self.node.set_parameters([Parameter("pure_pursuit.use_pure_pursuit", Parameter.Type.BOOL, request.data)])
-        self.drive.USE_PURE_PURSUIT = request.data
-        response.message = f"Set pure pursuit toggle to {request.data}."
-        self.node.get_logger().info(response.message)
-        response.success = True
-        return response
 
     def publish_path_marker(
         self,

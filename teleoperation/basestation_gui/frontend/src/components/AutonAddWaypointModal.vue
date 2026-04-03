@@ -1,28 +1,28 @@
 <template>
   <Teleport to="body">
-    <div v-if="isOpen" class="cmd-modal-backdrop" @click.self="close" data-testid="pw-waypoint-modal">
-      <div class="cmd-modal-dialog">
-        <div class="cmd-modal-content">
-          <div class="cmd-modal-header">
-            <h5 class="cmd-modal-title">Add Waypoint</h5>
-            <button type="button" class="cmd-btn-close" @click="close"><i class="bi bi-x-lg"></i></button>
+    <div v-if="isOpen" class="modal-backdrop" @click.self="close" data-testid="pw-waypoint-modal">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Add Waypoint</h5>
+            <button type="button" class="btn-close" @click="close"><i class="bi bi-x-lg"></i></button>
           </div>
-          <div class="cmd-modal-body">
+          <div class="modal-body">
             <div class="grid grid-cols-2 gap-4">
               <div>
-                <label for="waypointname" class="cmd-form-label">Name:</label>
+                <label for="waypointname" class="form-label">Name:</label>
                 <input
-                  class="cmd-form-control"
+                  class="form-control"
                   id="waypointname"
                   data-testid="pw-waypoint-name-input"
                   v-model="form.name"
                 />
               </div>
               <div>
-                <label for="waypointid" class="cmd-form-label">Tag ID:</label>
+                <label for="waypointid" class="form-label">Tag ID:</label>
                 <input
                   v-if="form.type == 1"
-                  class="cmd-form-control"
+                  class="form-control"
                   id="waypointid"
                   v-model="form.tag_id"
                   type="number"
@@ -32,7 +32,7 @@
                 />
                 <input
                   v-else
-                  class="cmd-form-control"
+                  class="form-control"
                   id="waypointid"
                   type="number"
                   placeholder="-1"
@@ -40,8 +40,8 @@
                 />
               </div>
               <div class="col-span-2">
-                <label class="cmd-form-label">Type:</label>
-                <select class="cmd-form-select" v-model="form.type">
+                <label class="form-label">Type:</label>
+                <select class="form-select" v-model="form.type">
                   <option value="0">No Search</option>
                   <option value="1">Post</option>
                   <option value="2">Mallet</option>
@@ -51,10 +51,10 @@
               </div>
             </div>
           </div>
-          <div class="cmd-modal-footer">
+          <div class="modal-footer">
             <button
               type="button"
-              class="cmd-btn cmd-btn-secondary"
+              class="btn btn-secondary"
               data-testid="pw-add-waypoint-submit"
               @click="submit"
             >

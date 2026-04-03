@@ -21,6 +21,7 @@
         :lat-lng="basestationLatLng"
         :icon="basestationIcon"
       />
+      <l-marker ref="droneRef" :lat-lng="droneLatLng" :icon="droneIcon" />
       <l-marker
         v-for="(waypoint, index) in waypointListForMap"
         :key="index"
@@ -37,23 +38,16 @@
         :dash-array="'5, 5'"
       />
       <l-polyline :lat-lngs="odomPath" :color="'blue'" :dash-array="'5, 5'" />
+      <l-polyline :lat-lngs="dronePath" :color="'green'" />
     </l-map>
 
-    <div class="map-controls cmd-panel">
-      <div class="flex items-center gap-2">
-        <input
-        v-model="online"
-          type="checkbox"
-          class="cmd-form-check p-0"
-        />
-        <span class="cmd-data-label">Online</span>
-      </div>
-      <button @click="centerOnRover" class="cmd-btn cmd-btn-sm cmd-btn-outline-control map-btn">
-        Center on Rover
+    <div class="overlay-toolbar right-0">
+      <button class="overlay-toolbar-btn" :class="{ 'overlay-toolbar-btn-active': online }" @click="online = !online">
+        Online
       </button>
-      <button @click="centerOnBasestation" class="cmd-btn cmd-btn-sm cmd-btn-outline-control map-btn">
-        Center on Base
-      </button>
+      <button @click="centerOnRover" class="overlay-toolbar-btn">Center on Rover</button>
+      <button @click="centerOnBasestation" class="overlay-toolbar-btn">Center on Base</button>
+      <button @click="centerOnDrone" class="overlay-toolbar-btn">Center on Drone</button>
     </div>
   </div>
 </template>
@@ -93,8 +87,13 @@ const {
   attribution,
   locationIcon,
   waypointIcon,
+  droneRef,
+  dronePath,
+  droneLatLng,
+  droneIcon,
   onMapReady,
   centerOnRover,
+  centerOnDrone,
   getMap,
 } = useRoverMap({
   maxOdomCount: 100,
@@ -102,6 +101,8 @@ const {
   initialCenter: [38.4071654, -110.7923927],
   offlineUrl: 'map/urc/{z}/{x}/{y}.jpg',
 })
+
+const websocketStore = useWebsocketStore()
 
 const basestation_latitude_deg = ref(0)
 const basestation_longitude_deg = ref(0)
@@ -140,26 +141,12 @@ const getClickedLatLon = (e: { latlng: { lat: number; lng: number } }) => {
   }
 }
 
-const websocketStore = useWebsocketStore()
 websocketStore.onMessage<BasestationPositionMessage>('nav', 'basestation_position', (msg) => {
   basestation_latitude_deg.value = msg.latitude
   basestation_longitude_deg.value = msg.longitude
 })
 </script>
+<<<<<<< HEAD
 
-<style scoped>
-.map-controls {
-  position: absolute;
-  top: var(--cmd-gap-md);
-  right: var(--cmd-gap-md);
-  z-index: 1000;
-  display: flex;
-  flex-direction: column;
-  gap: var(--cmd-gap-sm);
-}
-
-.map-btn {
-  font-size: var(--cmd-font-xs);
-  text-transform: uppercase;
-}
-</style>
+=======
+>>>>>>> km/teleop-threejs
