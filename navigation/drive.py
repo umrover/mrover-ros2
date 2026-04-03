@@ -178,7 +178,7 @@ class DriveController:
         turn_in_place_thresh: float,
         drive_back: bool = False,
         path_start: np.ndarray | None = None,
-        last_point: bool =  True,
+        last_point: bool = True,
     ) -> tuple[Twist, bool]:
         """
         :param target_pos: The target point of the rover. If using pure pursuit, use target_pos for the astar_traj and use full_traj for the full trajectory.
@@ -450,7 +450,7 @@ class DriveController:
         # Protection for if astar traj wasn't used
         if len(waypoints.coordinates != 1):
             waypoints.decerement_point()
-        
+
         return target_pos
 
     @staticmethod
@@ -479,8 +479,8 @@ class DriveController:
             if waypoints.done():
                 # If we are at the end of the path, we need to determine if this is a point we have seen
                 waypoints.decerement_point()
-                next_point: np.ndarray = waypoints.get_current_point() # Obtain last point
-                waypoints.increment_point() # Leave the traj to be done
+                next_point: np.ndarray = waypoints.get_current_point()  # Obtain last point
+                waypoints.increment_point()  # Leave the traj to be done
 
                 # Will determine if we continue to go to the last point or we are done
                 if self._last_lookahead_dist > np.linalg.norm(next_point - rover_pos):
