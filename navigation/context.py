@@ -27,6 +27,7 @@ from mrover.srv import EnableAuton
 from nav_msgs.msg import Path
 from nav_msgs.msg import OccupancyGrid
 from visualization_msgs.msg import Marker, MarkerArray
+from rclpy import Parameter
 from rclpy.duration import Duration
 from rclpy.node import Node
 from rclpy.publisher import Publisher
@@ -425,6 +426,8 @@ class Context:
         self.disable_requested = False
 
         node.create_service(EnableAuton, "enable_auton", self.enable_auton)
+        node.create_service(SetBool, "toggle_path_relaxation", self.toggle_path_relaxation)
+        node.create_service(SetBool, "toggle_path_interpolation", self.toggle_path_interpolation)
         node.create_service(SetBool, "toggle_pure_pursuit", self.toggle_pure_pursuit)
 
         self.command_publisher = node.create_publisher(Twist, "nav_cmd_vel", 1)
@@ -475,6 +478,22 @@ class Context:
         else:
             self.disable_requested = True
         response.success = True
+        return response
+    
+    def toggle_path_relaxation(self, request: SetBool.Request, response: SetBool.Response) -> SetBool.Response:
+        self.node.set_parameters([Parameter("smoothing.use_relaxation", Parameter.Type.BOOL, request.data)])
+        self.node.get_logger().info(f"Set path relaxation toggle to {request.data}.")
+
+        response.success = True
+        response.message = f"Set path relaxation toggle to {request.data}."
+        return response
+
+    def toggle_path_interpolation(self, request: SetBool.Request, response: SetBool.Response) -> SetBool.Response:
+        self.node.set_parameters([Parameter("smoothing.use_interpolation", Parameter.Type.BOOL, request.data)])
+        self.node.get_logger().info(f"Set path interpolation toggle to {request.data}.")
+
+        response.success = True
+        response.message = f"Set path interpolation toggle to {request.data}."
         return response
 
     def stuck_callback(self, msg: Bool) -> None:
