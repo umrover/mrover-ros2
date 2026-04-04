@@ -30,12 +30,6 @@ namespace mrover {
             };
             ParameterWrapper::declareParameters(this, parameters);
 
-            mU2D2 = U2D2::getSharedInstance();
-            if (mU2D2->init(mU2D2DeviceName) != U2D2::Status::Success) {
-                RCLCPP_FATAL(this->get_logger(), "failed to initialize U2D2 on %s", mU2D2DeviceName.c_str());
-                rclcpp::shutdown();
-            }
-
             for (std::string const& servoName: mServoNames) {
                 auto servo = std::make_shared<Servo>(shared_from_this(), servoName);
                 mServos.insert_or_assign(servoName, servo);
@@ -68,7 +62,6 @@ namespace mrover {
         std::vector<std::string> mServoNames = {"gimbal_pitch", "gimbal_yaw"};
         std::unordered_map<std::string, std::shared_ptr<Servo>> mServos;
 
-        std::shared_ptr<U2D2> mU2D2;
         std::string mU2D2DeviceName;
 
         rclcpp::CallbackGroup::SharedPtr mServiceGroup;

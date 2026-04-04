@@ -1,3 +1,4 @@
+from rclpy.impl.implementation_singleton import package
 from pathlib import Path
 
 from ament_index_python import get_package_share_directory
@@ -22,6 +23,16 @@ def generate_launch_description():
         executable="differential_drive_controller",
         name="differential_drive_controller",
         parameters=[Path(get_package_share_directory("mrover"), "config", "esw.yaml")],
+    )
+
+    u2d2_bridge = Node(
+        package="mrover",
+        executable="u2d2_bridge",
+        name="u2d2_bridge",
+        parameters=[
+            Path(get_package_share_directory("mrover"), "config", "esw.yaml"),
+            Path(get_package_share_directory("mrover"), "config", "u2d2.yaml")
+        ],
     )
 
     superstructure_node = Node(
@@ -99,6 +110,7 @@ def generate_launch_description():
         [
             launch_include_can,
             diff_drive_controller_node,
+            u2d2_bridge,
             superstructure_node,
             drive_hw_bridge_node,
             mob_left_streamer_node,

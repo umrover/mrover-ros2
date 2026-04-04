@@ -1,7 +1,6 @@
 science_hw_bridge:
   ros__parameters:
-    u2d2_device: "/dev/u2d2"
-    funnel: # TODO(eric) validate
+    funnel:
       id: 5
       position_multiplier: 5.859375
       forward_limit: 6.28

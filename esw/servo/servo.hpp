@@ -1,27 +1,32 @@
 #pragma once
 
+#include <atomic>
+#include <cstdint>
+#include <cmath>
 #include <parameter.hpp>
 #include <rclcpp/logging.hpp>
+#include <rclcpp/publisher.hpp>
+#include <rclcpp/rclcpp.hpp>
 #include <string>
 #include <utility>
 
 #include "u2d2.hpp"
+#include <mrover/msg/servo_configure.hpp>
+#include <mrover/msg/servo_in.hpp>
+#include <mrover/msg/servo_out.hpp>
 
 namespace mrover {
 
     class Servo {
         using ServoID = uint8_t;
-        using ServoPosition = double; // Degrees
-        using ServoVelocity = double; // rot/sec
-        using ServoCurrent = double;  // mA
+        using ServoPosition = double;
+        using ServoVelocity = double;
+        using ServoCurrent = double;
         using ServoAddr = uint16_t;
 
         static constexpr uint8_t ADDR_OPERATING_MODE = 11;
         static constexpr uint8_t ADDR_TORQUE_ENABLE = 64;
         static constexpr uint8_t ADDR_GOAL_POSITION = 116;
-        static constexpr uint8_t ADDR_PRESENT_POSITION = 132;
-        static constexpr uint8_t ADDR_PRESENT_VELOCITY = 128;
-        static constexpr uint8_t ADDR_PRESENT_CURRENT = 126;
 
         static constexpr int32_t SERVO_TICKS = 4096;
         static constexpr uint8_t SERVO_POSITION_DEAD_ZONE = 5;
@@ -30,7 +35,6 @@ namespace mrover {
 
         [[nodiscard]] constexpr auto getUpper(int64_t const val) const -> auto { return val == 0 ? SERVO_TICKS : val; }
 
-        ServoID mServoID;
         std::string mServoName;
         int64_t mLimitAdjustment;
         int64_t mAdjustedForwardLimit;
@@ -40,8 +44,18 @@ namespace mrover {
         double mPositionMultiplier;
 
         bool mAtLimit = false;
+        uint8_t mServoID;
 
         rclcpp::Node::SharedPtr mNode;
+        rclcpp::Publisher<msg::ServoConfigure>::SharedPtr mConfigPub;
+        rclcpp::Publisher<msg::ServoIn>::SharedPtr mCmdPub;
+        rclcpp::Subscription<msg::ServoOut>::SharedPtr mStateSub;
+
+        std::atomic<bool> mHasReceivedData{false};
+        std::atomic<uint32_t> mCachedRawPosition{0};
+        std::atomic<uint32_t> mCachedRawVelocity{0};
+        std::atomic<uint16_t> mCachedRawCurrent{0};
+        std::atomic<U2D2::Status> mCachedStatus{U2D2::Status::CommRxWaiting};
 
     public:
         enum class ServoProperty {
@@ -55,35 +69,44 @@ namespace mrover {
             ProfileAcceleration = 108,
         };
 
-        enum class ServoMode {
-            Optimal,
-            Clockwise,
-            CounterClockwise,
-            Limited,
-        };
+        enum class ServoMode { Optimal,
+                               Clockwise,
+                               CounterClockwise,
+                               Limited };
 
         Servo(rclcpp::Node::SharedPtr node, std::string servoName) : mServoName{std::move(servoName)}, mLimitAdjustment{0}, mAdjustedForwardLimit{0},
                                                                      mAdjustedReverseLimit{0}, mGoalPosition{0}, mPositionOffsetTicks{0}, mPositionMultiplier{1}, mNode{std::move(node)} {
 
-            int id;
-            std::vector<ParameterWrapper> parameters = {
-                    {std::format("{}.id", mServoName), id, 0},
-            };
-            ParameterWrapper::declareParameters(mNode.get(), parameters);
-            mServoID = static_cast<ServoID>(id);
+            mConfigPub = mNode->create_publisher<msg::ServoConfigure>("/u2d2/configure", rclcpp::QoS(10).transient_local()); // transient so messages queued if published before subscribed
+            mCmdPub = mNode->create_publisher<msg::ServoIn>(std::format("/u2d2/{}/in", mServoName), 10);
 
-            U2D2::getInstance()->registerServo(mServoID);
+            mStateSub = mNode->create_subscription<msg::ServoOut>(
+                    std::format("/u2d2/{}/out", mServoName), 10,
+                    [this](msg::ServoOut::ConstSharedPtr const& msg) {
+                        if (!mHasReceivedData) {
+                            mPositionOffsetTicks = msg->position;
+                            mHasReceivedData = true;
+                        }
+                        mCachedRawPosition = msg->position;
+                        mCachedRawVelocity = msg->velocity;
+                        mCachedRawCurrent = msg->current;
+                        mCachedStatus = static_cast<U2D2::Status>(msg->status);
+                    });
+
             updateConfigFromParameters();
 
-            uint8_t hardwareStatus;
+            rclcpp::sleep_for(std::chrono::milliseconds(200));
 
-            // Use Position Control Mode
-            U2D2::getInstance()->write1Byte(ADDR_OPERATING_MODE, 4, mServoID, &hardwareStatus);
+            msg::ServoConfigure configMessage;
+            configMessage.name = mServoName;
+            configMessage.id = mServoID;
+            mConfigPub->publish(configMessage);
 
-            // Enable torque
-            U2D2::getInstance()->write1Byte(ADDR_TORQUE_ENABLE, 1, mServoID, &hardwareStatus);
+            rclcpp::sleep_for(std::chrono::milliseconds(200));
+
+            publishWrite(ADDR_OPERATING_MODE, 1, 4); // Position Control Mode
+            publishWrite(ADDR_TORQUE_ENABLE, 1, 1);  // Enable torque
         }
-
 
         auto setPosition(ServoPosition const position, ServoMode const mode) -> U2D2::Status {
             // Convert degrees to ticks (0.0 - 360.0) to (0 to SERVO_TICKS)
@@ -96,9 +119,7 @@ namespace mrover {
                 return currentPositionAndStatus.second;
             }
 
-            // Calculate the signed difference (accounting for overflow)
             auto normalizedDifference = static_cast<int64_t>(mGoalPosition - currentPositionAndStatus.first);
-
             mAtLimit = false;
 
             switch (mode) {
@@ -125,9 +146,7 @@ namespace mrover {
                     int64_t const adjustedCurrentPosition = (currentPositionAndStatus.first - mLimitAdjustment + SERVO_TICKS) % SERVO_TICKS;
                     int64_t const adjustedTargetPosition = (mGoalPosition - mLimitAdjustment + SERVO_TICKS) % SERVO_TICKS;
 
-                    // If the current path to the final position goes over the middle limit, go the other way
                     if (0 > adjustedCurrentPosition && 0 < adjustedTargetPosition) {
-
                         if (normalizedDifference > 0)
                             mGoalPosition -= SERVO_TICKS;
                         else if (normalizedDifference < 0)
@@ -135,8 +154,6 @@ namespace mrover {
                     }
 
                     mAtLimit = false;
-
-                    // Limit destination if between mForwardLimit and middleLimit
                     if (getUpper(adjustedTargetPosition) > mAdjustedForwardLimit) {
                         mGoalPosition = (mAdjustedForwardLimit - adjustedCurrentPosition) % SERVO_TICKS;
                         if (normalizedDifference < 0 && !(getUpper(adjustedCurrentPosition) > mAdjustedForwardLimit && adjustedCurrentPosition < SERVO_TICKS)) mGoalPosition += SERVO_TICKS;
@@ -153,12 +170,9 @@ namespace mrover {
                 }
             }
 
-            // Write goal position
-            uint8_t hardwareStatus;
-            uint32_t rawGoal = offsetToRaw(mGoalPosition);
-            return U2D2::getInstance()->write4Byte(ADDR_GOAL_POSITION, rawGoal, mServoID, &hardwareStatus);
+            publishWrite(ADDR_GOAL_POSITION, 4, offsetToRaw(mGoalPosition));
+            return U2D2::Status::Success;
         }
-
 
         auto getPosition(ServoPosition& position) const -> U2D2::Status {
             auto const positionTicks = getCurrentServoPosition();
@@ -167,51 +181,44 @@ namespace mrover {
         }
 
         auto getVelocity(ServoVelocity& velocity) const -> U2D2::Status {
-            uint8_t hardwareStatus;
-            uint32_t velocity_int;
-            U2D2::Status const status = U2D2::getInstance()->read4Byte(ADDR_PRESENT_VELOCITY, velocity_int, mServoID, &hardwareStatus);
-            velocity = (static_cast<double>(velocity_int) * 0.22888); // 0.22888f Conversion factor to get rot/sec (found in dynamixel wizard)
-            return status;
+            velocity = (static_cast<double>(mCachedRawVelocity.load()) * 0.22888);
+            return mCachedStatus.load();
         }
 
         auto getCurrent(ServoCurrent& current) const -> U2D2::Status {
-            uint8_t hardwareStatus;
-            uint16_t currentInt;
-            U2D2::Status const status = U2D2::getInstance()->read2Byte(ADDR_PRESENT_CURRENT, currentInt, mServoID, &hardwareStatus);
-            current = static_cast<double>(currentInt) / 1000.0;
-            return status;
+            current = static_cast<double>(mCachedRawCurrent.load()) / 1000.0;
+            return mCachedStatus.load();
         }
 
-        [[nodiscard]] auto setProperty(ServoProperty prop, uint16_t const value) const -> U2D2::Status {
-            uint8_t hardwareStatus;
-            if (prop == ServoProperty::ProfileVelocity || prop == ServoProperty::ProfileAcceleration) {
-                return U2D2::getInstance()->write4Byte(static_cast<ServoAddr>(prop), value, mServoID, &hardwareStatus);
-            }
-            return U2D2::getInstance()->write2Byte(static_cast<ServoAddr>(prop), value, mServoID, &hardwareStatus);
+        auto setProperty(ServoProperty prop, uint16_t const value) const -> U2D2::Status {
+            uint8_t const len = (prop == ServoProperty::ProfileVelocity || prop == ServoProperty::ProfileAcceleration) ? 4 : 2;
+            publishWrite(static_cast<ServoAddr>(prop), len, value);
+            return U2D2::Status::Success;
         }
 
         [[nodiscard]] auto getTargetStatus() const -> U2D2::Status {
+            if (!mHasReceivedData) return U2D2::Status::CommRxWaiting;
             auto const currentPositionAndStatus = getCurrentServoPosition();
-
             if (currentPositionAndStatus.second != U2D2::Status::Success) return currentPositionAndStatus.second;
-
             if (std::abs(currentPositionAndStatus.first - mGoalPosition) < SERVO_POSITION_DEAD_ZONE) {
                 return U2D2::Status::Success;
             }
-
             return U2D2::Status::Active;
         }
 
-        [[nodiscard]] auto getLimitStatus() const -> bool {
-            return mAtLimit;
-        }
+        [[nodiscard]] auto getLimitStatus() const -> bool { return mAtLimit; }
 
     private:
-        auto check(bool const condition, std::string const& errMsg) const -> void {
-            if (!condition) RCLCPP_ERROR(mNode->get_logger(), "%s", errMsg.c_str());
+        auto publishWrite(uint8_t addr, uint8_t len, uint32_t val) const -> void {
+            msg::ServoIn msg;
+            msg.addr = addr;
+            msg.length = len;
+            msg.value = val;
+            mCmdPub->publish(msg);
         }
 
         auto updateConfigFromParameters() -> void {
+            int servoID;
             double forwardLimit;
             double reverseLimit;
             double positionPGain;
@@ -224,6 +231,7 @@ namespace mrover {
             double profileVelocity;
 
             std::vector<ParameterWrapper> parameters = {
+                    {std::format("{}.id", mServoName), servoID, 0},
                     {std::format("{}.position_multiplier", mServoName), mPositionMultiplier, 1.0},
                     {std::format("{}.reverse_limit", mServoName), reverseLimit, 0.0},
                     {std::format("{}.forward_limit", mServoName), forwardLimit, 340.0},
@@ -238,22 +246,21 @@ namespace mrover {
 
             ParameterWrapper::declareParameters(mNode.get(), parameters);
 
-            check(setProperty(ServoProperty::PositionPGain, static_cast<uint16_t>(positionPGain)) == U2D2::Status::Success, "pos p gain error");
-            check(setProperty(ServoProperty::PositionIGain, static_cast<uint16_t>(positionIGain)) == U2D2::Status::Success, "pos i gain error");
-            check(setProperty(ServoProperty::PositionDGain, static_cast<uint16_t>(positionDGain)) == U2D2::Status::Success, "pos d gain error");
-            check(setProperty(ServoProperty::VelocityPGain, static_cast<uint16_t>(velocityPGain)) == U2D2::Status::Success, "vel p gain error");
-            check(setProperty(ServoProperty::VelocityIGain, static_cast<uint16_t>(velocityIGain)) == U2D2::Status::Success, "vel i gain error");
-            check(setProperty(ServoProperty::CurrentLimit, static_cast<uint16_t>(currentLimit)) == U2D2::Status::Success, "current limit gain error");
-            check(setProperty(ServoProperty::ProfileAcceleration, static_cast<uint16_t>(profileAcceleration)) == U2D2::Status::Success, "profile accel gain error");
-            check(setProperty(ServoProperty::ProfileVelocity, static_cast<uint16_t>(profileVelocity)) == U2D2::Status::Success, "profile vel gain error");
+            mServoID = static_cast<uint8_t>(servoID);
 
-            ParameterWrapper::declareParameters(mNode.get(), parameters);
+            setProperty(ServoProperty::PositionPGain, static_cast<uint16_t>(positionPGain));
+            setProperty(ServoProperty::PositionIGain, static_cast<uint16_t>(positionIGain));
+            setProperty(ServoProperty::PositionDGain, static_cast<uint16_t>(positionDGain));
+            setProperty(ServoProperty::VelocityPGain, static_cast<uint16_t>(velocityPGain));
+            setProperty(ServoProperty::VelocityIGain, static_cast<uint16_t>(velocityIGain));
+            setProperty(ServoProperty::CurrentLimit, static_cast<uint16_t>(currentLimit));
+            setProperty(ServoProperty::ProfileAcceleration, static_cast<uint16_t>(profileAcceleration));
+            setProperty(ServoProperty::ProfileVelocity, static_cast<uint16_t>(profileVelocity));
 
             int const reverseLimitTicks = static_cast<int>((reverseLimit / TAU) * SERVO_TICKS);
             int const forwardLimitTicks = static_cast<int>((forwardLimit / TAU) * SERVO_TICKS);
 
             mLimitAdjustment = (forwardLimitTicks + reverseLimitTicks) / 2;
-
             if (forwardLimitTicks > reverseLimitTicks) {
                 mLimitAdjustment = (forwardLimitTicks + reverseLimitTicks + SERVO_TICKS) / 2;
             }
@@ -261,18 +268,6 @@ namespace mrover {
 
             mAdjustedReverseLimit = (static_cast<int64_t>((reverseLimit / TAU) * SERVO_TICKS) - mLimitAdjustment + SERVO_TICKS) % SERVO_TICKS;
             mAdjustedForwardLimit = (static_cast<int>((forwardLimit / TAU) * static_cast<double>(SERVO_TICKS)) - mLimitAdjustment + SERVO_TICKS) % SERVO_TICKS;
-
-            setOffset();
-        }
-
-        auto setOffset() -> void {
-            // Read the servos current position
-            uint8_t hardwareStatus;
-            uint32_t presentPosition;
-            U2D2::getInstance()->read4Byte(ADDR_PRESENT_POSITION, presentPosition, mServoID, &hardwareStatus);
-
-            // Update the offset of the servo
-            mPositionOffsetTicks = presentPosition;
         }
 
         [[nodiscard]] auto rawToOffset(uint32_t position) const -> int64_t {
@@ -310,14 +305,8 @@ namespace mrover {
         }
 
         [[nodiscard]] auto getCurrentServoPosition() const -> std::pair<int64_t, U2D2::Status> {
-            uint8_t hardwareStatus;
-            uint32_t presentPosition;
-            U2D2::Status const status = U2D2::getInstance()->read4Byte(ADDR_PRESENT_POSITION, presentPosition, mServoID, &hardwareStatus);
-
-            int64_t offsetPosition = rawToOffset(presentPosition);
-
-
-            return std::make_pair(offsetPosition, status);
+            int64_t offsetPosition = rawToOffset(mCachedRawPosition.load());
+            return std::make_pair(offsetPosition, mCachedStatus.load());
         }
     };
 } // namespace mrover

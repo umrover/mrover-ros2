@@ -32,12 +32,6 @@ namespace mrover {
             };
             ParameterWrapper::declareParameters(this, parameters);
 
-            mU2D2 = U2D2::getSharedInstance();
-            if (mU2D2->init(mU2D2DeviceName) != U2D2::Status::Success) {
-                RCLCPP_FATAL(this->get_logger(), "failed to initialize U2D2 on %s", mU2D2DeviceName.c_str());
-                rclcpp::shutdown();
-            }
-
             mScienceBoard = std::make_shared<ScienceBoard>(shared_from_this(), "jetson", "science");
             mAuger = std::make_shared<BrushedController<Radians>>(shared_from_this(), "jetson", "auger");
             mLinearActuator = std::make_shared<BrushedController<Meters>>(shared_from_this(), "jetson", "linear_actuator");
@@ -87,7 +81,6 @@ namespace mrover {
         std::shared_ptr<BrushedController<Meters>> mLinearActuator;
         std::shared_ptr<Servo> mFunnelServo;
 
-        std::shared_ptr<U2D2> mU2D2;
         std::string mU2D2DeviceName;
 
         rclcpp::CallbackGroup::SharedPtr mServiceGroup;

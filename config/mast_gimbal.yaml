@@ -1,6 +1,5 @@
 mast_gimbal_hw_bridge:
   ros__parameters:
-    u2d2_device: "/dev/u2d2"
     gimbal_pitch:
       id: 3
       position_multiplier: 1.0
