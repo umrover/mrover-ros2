@@ -87,7 +87,6 @@ namespace mrover {
             // Convert degrees to ticks (0.0 - 360.0) to (0 to mTicksPerRevolution)
             mGoalPosition = static_cast<int64_t>((position / 360.0f) * static_cast<double>(mTicksPerRevolution));
 
-            RCLCPP_INFO_STREAM(mNode->get_logger(), "Setting goal position: " << mGoalPosition);
 
             auto currentPositionAndStatus = getCurrentServoPosition();
 
@@ -155,7 +154,6 @@ namespace mrover {
             // Write goal position
             uint8_t hardwareStatus;
             uint32_t rawGoal = offsetToRaw(mGoalPosition);
-            RCLCPP_INFO_STREAM(mNode->get_logger(), "Setting raw position: " << rawGoal);
             return U2D2::getInstance()->write4Byte(ADDR_GOAL_POSITION, rawGoal, mServoID, &hardwareStatus);
         }
 
@@ -319,7 +317,6 @@ namespace mrover {
 
             int64_t offsetPosition = rawToOffset(presentPosition);
 
-            RCLCPP_INFO_STREAM(mNode->get_logger(), "Current raw servo position " << presentPosition << " offset " << mPositionOffsetTicks << " offset position " << offsetPosition << " offset target " << mGoalPosition << " raw target position " << offsetToRaw(mGoalPosition));
 
             return std::make_pair(offsetPosition, status);
         }

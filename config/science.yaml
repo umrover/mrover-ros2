@@ -1,6 +1,6 @@
 science_hw_bridge:
   ros__parameters:
-    u2d2_device: "/dev/ttyUSB0"
+    u2d2_device: "/dev/u2d2"
     funnel_servo: # TODO(eric) validate
       id: 5
       ticks_per_revolution: 24000
