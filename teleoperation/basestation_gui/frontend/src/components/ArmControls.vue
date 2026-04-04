@@ -67,10 +67,9 @@ import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { armAPI } from '@/utils/api'
 import { useGamepadPolling } from '@/composables/useGamepadPolling'
 import { useWebsocketStore } from '@/stores/websocket'
-import type { IkFeedbackMessage, ControllerStateMessage, ThrottleMessage, VelocityMessage } from '@/types/websocket'
+import type { IkFeedbackMessage, ControllerStateMessage } from '@/types/websocket'
 import GamepadDisplay from './GamepadDisplay.vue'
 import IndicatorDot from './IndicatorDot.vue'
-import { randFloat } from 'three/src/math/MathUtils.js'
 
 const { onMessage } = useWebsocketStore()
 
@@ -139,92 +138,40 @@ const newRAMode = async (newMode: string) => {
   }
 }
 
-// Indexes coressponding to joints in this order:
-// joint_a, joint_b, joint_c, joint_de_pitch, joint_de_roll, gripper, cam
-let jointThrIdx = []
-let jointVelIdx = []
-
-let limits_hit_external = ref<number[]>([0, 0, 0, 0, 0, 0])
-
 onMessage<ControllerStateMessage>('arm', 'arm_state', (msg) => {
   for(let i = 0; i < 6; ++i){
-    limits_hit_external.value[i] = msg.limits_hit[i]
+    msg.limits_hit[i] = msg.limits_hit[i]
   }
-})
 
-onMessage<ThrottleMessage>('arm', 'arm_throttle_command', (msg) => {
   forcing_limit.value = false;
-  // console.log(axes.value[1])
-
-  // Find what index is what joint. Only done first time thrust input is recieved
-  if(jointThrIdx.length == 0){
-    for(let i = 0; i < msg.names.length; ++i){
-      let currName = msg.names[i]
-      switch(currName){
-        case "joint_a":
-          jointThrIdx.push(0);
-          break;
-        case "joint_b":
-          jointThrIdx.push(1);
-          break;
-        case "joint_c":
-          jointThrIdx.push(2);
-          break;
-        case "joint_de_pitch":
-          jointThrIdx.push(3);
-          break;
-        case "joint_de_roll":
-          jointThrIdx.push(4);
-          break;
-        case "gripper":
-          jointThrIdx.push(5);
-          break;
-        case "pusher":
-          jointThrIdx.push(6);
-          break;
-        default:
-      }
-    }
-    // console.log(jointThrIdx)
-  }
-
-  // Determine if limits hit
-  // for(let i = 0; i < jointThrIdx.length; ++i){
-  //   if(limits_hit_external.value[jointThrIdx[i]] == 1 && msg.throttles[i] < 0){
-  //     forcing_limit.value = true
-  //   } else if (limits_hit_external.value[jointThrIdx[i]] == 2 && msg.throttles[i] > 0) {
-  //     forcing_limit.value = true
-  //   }
-  // }
-
-  // TODO duct tape?
+  
+  // check if controller input is over limit
   console.log(axes.value[3])
-  if(axes.value[0] > 0.05 && limits_hit_external.value[0] == 1){
+  if(axes.value[0] > 0.05 && msg.limits_hit[0] == 1){
     forcing_limit.value = true
-  } else if (axes.value[0] < -0.05 && limits_hit_external.value[0] == 2){
-    forcing_limit.value = true
-  }
-
-  if(axes.value[1] < -0.05 && limits_hit_external.value[1] == 1){
-    forcing_limit.value = true
-  } else if (axes.value[1] > 0.05 && limits_hit_external.value[1] == 2){
+  } else if (axes.value[0] < -0.05 && msg.limits_hit[0] == 2){
     forcing_limit.value = true
   }
 
-  if(axes.value[3] < -0.05 && limits_hit_external.value[2] == 1){
+  if(axes.value[1] < -0.05 && msg.limits_hit[1] == 1){
     forcing_limit.value = true
-  } else if (axes.value[3] > 0.05 && limits_hit_external.value[2] == 2){
-    forcing_limit.value = true
-  }
-
-  if(buttons.value[4] && limits_hit_external.value[5] == 1){
-    forcing_limit.value = true
-  } else if (buttons.value[5] > 0.05 && limits_hit_external.value[5] == 2){
+  } else if (axes.value[1] > 0.05 && msg.limits_hit[1] == 2){
     forcing_limit.value = true
   }
 
-  // console.log(buttons.value)
+  if(axes.value[3] < -0.05 && msg.limits_hit[2] == 1){
+    forcing_limit.value = true
+  } else if (axes.value[3] > 0.05 && msg.limits_hit[2] == 2){
+    forcing_limit.value = true
+  }
 
+  if(buttons.value[4] && msg.limits_hit[4] == 1){
+    forcing_limit.value = true
+  } else if (buttons.value[5] && msg.limits_hit[4] == 2){
+    forcing_limit.value = true
+  }
+
+  // make controller respond
   if(forcing_limit.value){
   vibrationActuator.value.playEffect('dual-rumble', {
     startDelay: 0,
@@ -233,128 +180,5 @@ onMessage<ThrottleMessage>('arm', 'arm_throttle_command', (msg) => {
     strongMagnitude: 0,})
   }
 })
-
-// TODO me
-onMessage<VelocityMessage>('arm', 'arm_velocity_command', (msg) => {
-  // forcing_limit.value = false;
-  // console.log(axes)
-
-  // Find what index is what joint. Only done first time velocity input is recieved
-  if(jointVelIdx.length == 0){
-    for(let i = 0; i < msg.names.length; ++i){
-      let currName = msg.names[i]
-      switch(currName){
-        case "joint_a":
-          jointVelIdx.push(0);
-          break;
-        case "joint_b":
-          jointVelIdx.push(1);
-          break;
-        case "joint_c":
-          jointVelIdx.push(2);
-          break;
-        case "joint_de_pitch":
-          jointVelIdx.push(3);
-          break;
-        case "joint_de_roll":
-          jointVelIdx.push(4);
-          break;
-        case "gripper":
-          jointVelIdx.push(5);
-          break;
-        case "pusher":
-          jointVelIdx.push(6);
-          break;
-        default:
-      }
-    }
-    console.log(jointVelIdx)
-  }
-
-  // Determine if limits hit
-  // console.log("==header==")
-  for(let i = 0; i < jointVelIdx.length; ++i){
-    if(limits_hit_external.value[jointVelIdx[i]] == 1 && msg.velocities[i] < 0){
-      forcing_limit.value = true
-      console.log("Limit hit")
-    } else if (limits_hit_external.value[jointVelIdx[i]] == 2 && msg.velocities[i] > 0) {
-      forcing_limit.value = true
-      console.log("Limit hit")
-    }
-    // console.log(jointVelIdx[i] + " is associated with " + msg.velocities[i])
-  }
-
-  if(forcing_limit.value){
-  vibrationActuator.value.playEffect('dual-rumble', {
-    startDelay: 0,
-    duration: 100,
-    weakMagnitude: 0.1,
-    strongMagnitude: 0,})
-  }
-})
-
-// watch(armMessage, (msg: unknown) => {
-// if (!msg || typeof msg !== 'object') return
-
-//   if ('type' in msg && msg.type === "arm_state"){
-//     const typedMsg = msg as ControllerStateMessage
-//     for(let i = 0; i < 6; ++i){
-//       limits_hit_external.value[i] = typedMsg.limits_hit[i]
-//     }
-//   }
-
-  // if ('type' in msg && msg.type === "arm_throttle_command"){
-  //   const typedMessage = msg as ThrottleMessage
-  //   forcing_limit.value = false;
-
-  //   // Find what index is what joint. Only done first time thrust input is recieved
-  //   if(jointThrIdx.length == 0){
-  //     for(let i = 0; i < typedMessage.names.length; ++i){
-  //       let currName = typedMessage.names[i]
-  //       switch(currName){
-  //         case "joint_a":
-  //           jointThrIdx.push(0);
-  //           break;
-  //         case "joint_b":
-  //           jointThrIdx.push(1);
-  //           break;
-  //         case "joint_c":
-  //           jointThrIdx.push(2);
-  //           break;
-  //         case "joint_de_pitch":
-  //           jointThrIdx.push(3);
-  //           break;
-  //         case "joint_de_roll":
-  //           jointThrIdx.push(4);
-  //           break;
-  //         case "gripper":
-  //           jointThrIdx.push(5);
-  //           break;
-  //         case "cam":
-  //           jointThrIdx.push(6);
-  //           break;
-  //         default:
-  //       }
-  //     }
-  //   }
-
-  //   // Determine if limits hit
-  //   for(let i = 0; i < jointThrIdx.length; ++i){
-  //     if(limits_hit_external.value[jointThrIdx[i]] == 1 && typedMessage.throttles[i] < 0){
-  //       forcing_limit.value = true
-  //     } else if (limits_hit_external.value[jointThrIdx[i]] == 2 && typedMessage.throttles[i] > 0) {
-  //       forcing_limit.value = true
-  //     }
-  //   }
-  // }
-
-  // if(forcing_limit.value){
-  //   vibrationActuator.value.playEffect('dual-rumble', {
-  //     startDelay: 0,
-  //     duration: 100,
-  //     weakMagnitude: 0.1,
-  //     strongMagnitude: 0,})
-  // }
-// })
 </script>
 
